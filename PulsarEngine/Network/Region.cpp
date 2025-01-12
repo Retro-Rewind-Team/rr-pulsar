@@ -11,10 +11,10 @@ namespace Network {
 static u32 region = 0x0A;
 
 static void PatchRegionNumber() {
-    bool is200 = System::sInstance->IsContext(PULSAR_200_WW) ? WWMODE_200 : WWMODE_DEFAULT;
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT) == true) {
+    WWMode mode = System::sInstance->IsContext(PULSAR_200_WW) ? WWMODE_200 : WWMODE_DEFAULT;
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
         region = 0x0B;
-    } else if (is200 == WWMODE_200) {
+    } else if (mode == WWMODE_200) {
         region = 0x0C;
     } else {
         region = 0x0A;
