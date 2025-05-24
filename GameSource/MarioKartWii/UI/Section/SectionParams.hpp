@@ -2,7 +2,7 @@
 #define _SECTIONPARAMS_
 #include <kamek.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
-#include <MarioKartWii/MII/MiiGroup.hpp>
+#include <MarioKartWii/Mii/MiiGroup.hpp>
 
 struct PlayerCombo {
     CharacterId selCharacter;

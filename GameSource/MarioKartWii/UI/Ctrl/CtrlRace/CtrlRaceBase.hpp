@@ -2,7 +2,7 @@
 #define _CTRLRACEBASE_
 #include <MarioKartWii/UI/Ctrl/UIControl.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
-#include <MarioKartWii/Race/Racedata.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 
 
 class CtrlRaceBase : public LayoutUIControl { //one element is one CtrlRaceBase

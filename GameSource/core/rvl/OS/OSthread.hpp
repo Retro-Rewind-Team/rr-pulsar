@@ -1,7 +1,7 @@
 #ifndef _OSTHREAD_
 #define _OSTHREAD_
 #include <types.hpp>
-#include <core/rvl/os/OScontext.hpp>
+#include <core/rvl/OS/OSContext.hpp>
 
 namespace OS {
 class Thread;

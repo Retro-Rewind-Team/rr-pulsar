@@ -2,9 +2,9 @@
 #define _GX_
 
 #include <types.hpp>
-#include <core/rvl/GX/GXEnum.hpp>
-#include <core/rvl/GX/GXStruct.hpp>
-#include <core/rvl/os/OSthread.hpp>
+#include <core/rvl/gx/GXEnum.hpp>
+#include <core/rvl/gx/GXStruct.hpp>
+#include <core/rvl/OS/OSthread.hpp>
 
 namespace GX {
 

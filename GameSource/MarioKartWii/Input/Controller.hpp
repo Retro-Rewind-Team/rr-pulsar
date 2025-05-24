@@ -9,9 +9,9 @@ Contributors:
 #ifndef _INPUT_CONTROLLER_
 #define _INPUT_CONTROLLER_
 #include <kamek.hpp>
-#include <core/rvl/pad.hpp>
-#include <core/rvl/kpad.hpp>
-#include <core/rvl/wpad.hpp>
+#include <core/rvl/PAD.hpp>
+#include <core/rvl/KPAD.hpp>
+#include <core/rvl/WPAD.hpp>
 #include <MarioKartWii/Input/InputState.hpp>
 #include <MarioKartWii/Input/GhostWriter.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>

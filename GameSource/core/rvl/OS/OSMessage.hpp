@@ -1,7 +1,7 @@
 #ifndef _OSMESSAGE_
 #define _OSMESSAGE_
 #include <types.hpp>
-#include <core/rvl/os/OSthread.hpp>
+#include <core/rvl/OS/OSthread.hpp>
 
 namespace OS {
 typedef void* Message;

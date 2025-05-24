@@ -1,9 +1,9 @@
 #ifndef _THPSTRUCTS_
 #define _THPSTRUCTS_
 #include <kamek.hpp>
-#include <core/rvl/os/OSMessage.hpp>
+#include <core/rvl/OS/OSMessage.hpp>
 #include <core/rvl/dvd/dvd.hpp>
-#include <core/rvl/VI/vi.hpp>
+#include <core/rvl/VI/VI.hpp>
 #include <core/rvl/AI.hpp>
 #include <core/rvl/gx/GXStruct.hpp>
 #include <MarioKartWii/THP/THPFile.hpp>

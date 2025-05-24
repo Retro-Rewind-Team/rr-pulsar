@@ -1,7 +1,7 @@
 #ifndef _NANDUTILS_
 #define _NANDUTILS_
 #include <kamek.hpp>
-#include <core/rvl/nand.hpp>
+#include <core/rvl/NAND.hpp>
 
 namespace NandUtils {
 enum Result {

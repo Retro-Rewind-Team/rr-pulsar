@@ -2,7 +2,7 @@
 #include <MarioKartWii/3D/Camera/CameraMgr.hpp>
 #include <MarioKartWii/3D/Camera/RaceCamera.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
-#include <MarioKartWii/Race/Raceinfo/Raceinfo.hpp>
+#include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 
 namespace Pulsar {

@@ -1,8 +1,8 @@
 #ifndef _NW4R_UT_MISC_
 #define _NW4R_UT_MISC_
 #include <types.hpp>
-#include <core/rvl/os/OS.hpp>
-#include <core/rvl/os/OSMutex.hpp>
+#include <core/rvl/OS/OS.hpp>
+#include <core/rvl/OS/OSMutex.hpp>
 
 namespace nw4r {
 namespace ut {

@@ -1,7 +1,7 @@
 #ifndef _CUPSDEF_
 #define _CUPSDEF_
 #include <kamek.hpp>
-#include <MarioKartWii/Race/Racedata.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/System/Random.hpp>
 #include <Config.hpp>

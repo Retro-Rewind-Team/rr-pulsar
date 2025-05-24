@@ -1,4 +1,4 @@
-#include <MarioKartWii/Race/Racedata.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/Settings.hpp>

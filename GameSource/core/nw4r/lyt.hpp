@@ -10,7 +10,7 @@
 #include <core/nw4r/lyt/lytTypes.hpp>
 #include <core/nw4r/lyt/Material.hpp>
 #include <core/nw4r/lyt/Pane.hpp>
-#include <core/nw4r/lyt/Textbox.hpp>
+#include <core/nw4r/lyt/TextBox.hpp>
 #include <core/nw4r/lyt/Picture.hpp>
 #include <core/nw4r/lyt/Window.hpp>
 #include <core/nw4r/lyt/ResourceAccessor.hpp>

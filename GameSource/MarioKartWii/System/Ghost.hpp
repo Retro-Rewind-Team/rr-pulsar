@@ -6,7 +6,7 @@
 #include <MarioKartWii/File/RKG.hpp>
 #include <MarioKartWii/Input/Controller.hpp>
 #include <MarioKartWii/Mii/Mii.hpp>
-#include <MarioKartWii/System/identifiers.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/System/Timer.hpp>
 
 enum GhostGroupType {

@@ -1,7 +1,7 @@
 #ifndef _MUTEX_
 #define _MUTEX_
 #include <types.hpp>
-#include <core/rvl/os/OSthread.hpp>
+#include <core/rvl/OS/OSthread.hpp>
 
 namespace OS {
 struct Mutex { //RVL mutexes are recursive

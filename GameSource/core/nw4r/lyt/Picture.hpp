@@ -2,7 +2,7 @@
 #define _NW4R_LYTPICTURE_
 #include <types.hpp>
 #include <core/nw4r/lyt/Pane.hpp>
-#include <core/nw4r/lyt/Common.hpp>
+#include <core/nw4r/lyt/common.hpp>
 #include <core/nw4r/lyt/TexMap.hpp>
 
 namespace nw4r {

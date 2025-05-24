@@ -1,7 +1,7 @@
 #ifndef _KPAD_
 #define _KPAD_
 #include <types.hpp>
-#include <core/rvl/wpad.hpp>
+#include <core/rvl/WPAD.hpp>
 #include <core/rvl/mtx/mtx.hpp>
 
 namespace KPAD { //KPAD, high-level wii remote library
