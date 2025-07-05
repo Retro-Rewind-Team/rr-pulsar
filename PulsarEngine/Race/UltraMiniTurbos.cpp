@@ -95,7 +95,7 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     const u8 id = movement->GetPlayerIdx();
     bool* state = umtState;
     const float umtMultiplier = 1.32; //10% faster
-    const float insideDriftMultiplier = 1.26f; //5% faster
+    const float insideDriftMultiplier = 1.236f; //3% faster
     const float defaultMTMultiplier = 1.2f;
     bool insideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {

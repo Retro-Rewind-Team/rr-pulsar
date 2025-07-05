@@ -14,9 +14,9 @@ public:
     u32 GetPropertiesBitfield() override; //0x2c 80777324
     void LoadAnimations() override; //0x5c 807772c8
 
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 80775c58
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 80775c58
     ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-        ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 80775ce0
+        ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 80775ce0
 
     virtual void vf_0xec(); //0xec 8077731c
     virtual void UpdateWithRot(); //0xf0 807757a0

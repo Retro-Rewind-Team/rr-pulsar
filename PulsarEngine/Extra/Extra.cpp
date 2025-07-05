@@ -189,6 +189,9 @@ kmWrite32(0x800ECAAC, 0x7C7E1B78);
 kmWrite8(0x80899ACA, 0x00000058);
 kmWrite8(0x80899AF7, 0x00000058);
 
+//Disable Camera Shaking from Bombs [ZPL]
+kmWrite32(0x805a906c, 0x4E800020);
+
 //Ultra Uncut [MrBean35000vr + Chadderz]
 asmFunc GetUltraUncut() {
     ASM(

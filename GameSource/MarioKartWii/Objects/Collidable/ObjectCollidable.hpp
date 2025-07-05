@@ -26,10 +26,10 @@ class ObjectCollidable : public Object { //collision is added as there is no KCL
     virtual void BeforeKartCollision(const Kart::Player& kartPlayer, ObjToKartHit* objToKart, KartToObjHit& kartToObj); //0xb8 8081f66c
     virtual void BeforeItemCollision(const ItemObj& item,
         ObjToItemInteraction* objToItem, ItemToObjInteraction& itemToObj); //0xbc 8081f778
-    virtual ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj); //0xc0 8068179c
+    virtual ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj); //0xc0 8068179c
     //depends on factors like speed and obviously the kartToObj as a goomba does not do anything to a player in a mega
     virtual ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-        ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed); //0xc4 806817a4
+        ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed); //0xc4 806817a4
     //same as above but with items
     virtual void OnWallCollision(const Kart::Player& kartPlayer, Vec3 position); //0xc8 8081f548 sound and playereffectsx
     //for objects that behave like walls such as goombas at low speeds

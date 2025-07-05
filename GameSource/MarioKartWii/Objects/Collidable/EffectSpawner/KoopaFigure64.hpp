@@ -13,7 +13,7 @@ public:
     void Update() override; //0x14 806dab5c
     void LoadCollision() override; //0x60 806db154
     void UpdateCollision() override; //0x74 806dafb8
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806db168
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806db168
 
     void UpdateForCPURace(); //806daf10 inlined
 

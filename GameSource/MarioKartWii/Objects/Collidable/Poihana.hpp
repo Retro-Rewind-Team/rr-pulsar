@@ -56,9 +56,9 @@ public:
     void Update() override; //0x14 80748b70
 
     void LoadAnimations() override; //0x5c 80748cec
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 80749378
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 80749378
     ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-        ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 80749504
+        ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 80749504
 
     //AI::Base vtable 808cbb6c at 0xe4, all vf offsets from start of Collidable's vtable
     //~Poihana(); //thunk 8074ae24 func 807488bc

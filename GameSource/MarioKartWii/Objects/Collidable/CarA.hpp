@@ -22,9 +22,9 @@ public:
     void LoadCollision() override; //0x60 806b7b44
     void UpdateCollision() override; //0x74 806b7bc4
 
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806b7e60
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806b7e60
     ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-        ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806b802c
+        ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806b802c
 
     //StatePtmfTrigger vtable 808c234c at 0xB0
     //~CarA() override; thunk 806b8f8c    

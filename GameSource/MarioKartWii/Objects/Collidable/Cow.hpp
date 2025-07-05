@@ -17,9 +17,9 @@ public:
     ~CowBase() override; //806bbf24 vtable 808c2aec
 
     void LoadAnimations() override; //0x5c 806bf364
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806bc2ac
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806bc2ac
     ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-        ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806bc3f0
+        ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806bc3f0
     virtual int vf_0xec(); //0xec 806bf35c
     virtual void vf_0xf0(); //0xf0 806bc87c
     u32 startDelay; //0xb0 setting3

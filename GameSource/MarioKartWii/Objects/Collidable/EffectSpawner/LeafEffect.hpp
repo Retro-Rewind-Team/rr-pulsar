@@ -10,7 +10,7 @@ public:
     explicit LeafEffect(const KMP::Holder<GOBJ>& gobjHolder); //806c085c
     ~LeafEffect() override; //806c0cd8 vtable 808c3180
     void Update() override; //0x14 806c0b54
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806c099c
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806c099c
 
     //0xb4 = rk_leaf_effect
     u32 unknown_0xb8; //0xb8

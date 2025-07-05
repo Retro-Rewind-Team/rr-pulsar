@@ -81,9 +81,9 @@ public:
     void UpdateShadow() override; //0x70 806da728
     void UpdateCollision() override; //0x74 806d7bf8
     float GetCollisionDiameter() const override; //0xa0 806d69c0
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806d7328
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806d7328
     ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-        ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806d7780
+        ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806d7780
     void ProcessCollision(ObjectCollision* collision, Vec3 position) override; //0xd0 806da660
     const Vec3& GetSolidityCenter() const override; //0xe8 806d7cf8
 

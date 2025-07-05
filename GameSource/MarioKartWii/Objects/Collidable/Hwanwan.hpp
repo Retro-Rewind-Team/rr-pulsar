@@ -21,9 +21,9 @@ public:
     void LoadRoute() override; //0x64 806ec7a8
     void UpdateModelMatrix() override; //0x6c 806ec74c
     void UpdateShadow() override; //0x70 806ebe90
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806e9cac
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806e9cac
     ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-        ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806e9d6c
+        ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806e9d6c
 
     //StatePtmfTrigger vtable 808c7640 at 0xb0
     //~HwanwanBall() override; thunk 806ec7c0

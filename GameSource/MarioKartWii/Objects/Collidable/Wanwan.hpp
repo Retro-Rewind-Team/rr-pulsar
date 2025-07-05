@@ -33,7 +33,7 @@ class Wanwan_Chn : public ObjectCollidable {
     void LoadCollision() override; //0x60 806e41a4
     void UpdateCollision() override; //0x74 806e4220
     float GetCollisionDiameter() const override; //0xa0 806e94c4
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806e4218
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806e4218
     float unknown_0xb0[4];
 }; //0xc0
 
@@ -47,9 +47,9 @@ class Wanwan : public ObjectCollidable, public StatePtmfTrigger<Wanwan> { //Obje
     u32 GetPropertiesBitfield() override; //0x2c 806e94bc
     void LoadAnimations() override; //0x5c 806e9468
     void UpdateModelMatrix() override; //0x6c 806e9464
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806e526c
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806e526c
     //depends on factors like speed and obviously the kartToObj as a goomba does not do anything to a player in a mega
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer, ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806e546c
+    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc4 806e546c
 
     //StatePtmfTrigger vtable 808c72b0 at 0xb0, 7 ptmfs
     //~Wanwan() override; thunk 806e95a8 

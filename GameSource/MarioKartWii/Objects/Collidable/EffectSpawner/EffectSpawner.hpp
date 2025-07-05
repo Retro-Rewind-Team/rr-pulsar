@@ -14,8 +14,8 @@ class EffectSpawner : public ObjectCollidable {
     void Update() override; //0x14 806c06f0
     u32 GetPropertiesBitfield() override; //0x2c 806c0854
 
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit default, KartToObjHit kartToObj) override; //0xc0 806c0570
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer, ObjToItemInteraction default, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc0 806c0824
+    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override; //0xc0 806c0570
+    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override; //0xc0 806c0824
     void OnWallCollision(const Kart::Player& kartPlayer, Vec3 position) override; //0xc8 806c0850
 
     bool isColliding; //0xb0
