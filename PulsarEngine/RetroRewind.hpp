@@ -5,11 +5,6 @@
 #include <MarioKartWii/System/Identifiers.hpp>
 
 extern u32 FPSPatchHook;
-extern u32 ItemBoxHook;
-extern u32 ItemRainHook;
-extern u32 DCHook;
-extern u32 OTTFixHook;
-extern u32 MaxWeightHook;
 extern u32 PredictionHook;
 extern u32 BloomHook;
 extern u8 FontRename;

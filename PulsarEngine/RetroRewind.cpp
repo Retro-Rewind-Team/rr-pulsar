@@ -2,8 +2,13 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/Settings.hpp>
+#include <MarioKartWii/Kart/KartValues.hpp>
+#include <MarioKartWii/File/StatsParam.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
 #include <Dolphin/DolphinIOS.hpp>
+#include <MarioKartWii/Kart/KartManager.hpp>
+#include <core/rvl/OS/OS.hpp>
 
 namespace RetroRewind {
 Pulsar::System *System::Create() {
@@ -60,103 +65,24 @@ void FPSPatch() {
   bool isDolphin = Dolphin::IsEmulator();
   const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
   u32 localPlayerCount = scenario.localPlayerCount;
-  if (static_cast<Pulsar::FPS>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTIGNRR_RADIO_FPS)) == Pulsar::FPS_HALF || localPlayerCount > 1 && !isDolphin) {
+  if (static_cast<Pulsar::FPS>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTIGNRR_RADIO_FPS)) == Pulsar::FPS_HALF || (localPlayerCount > 1 && !isDolphin) ||
+      (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERAIN) && !isDolphin) || (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODESTORM) && !isDolphin)) {
       FPSPatchHook = 0x00FF0100;
   }
 }
 static PageLoadHook PatchFPS(FPSPatch);
 
-//Item Box Respawn Modifier [Unnamed]
-asmFunc GetItemBoxRespawn() {
-    ASM(
-loc_0x0:
-  stw       r0, 0xB0(r27);
-  lis       r12, 0x8000;
-  lbz       r12, 0x1206(r12);
-  cmpwi     r12, 0;
-  beq       end;
-  li        r12, 0x5A;
-  stw       r12, 0xB8(r27);
-  stw       r0, 0xB0(r27);
-
-end:
-  blr;
-    )
-}
-kmCall(0x80828EDC, GetItemBoxRespawn);
-
-void ItemBoxPatch() {
+void ItemBoxRespawn(Objects::Itembox* itembox) {
   bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
   bool isFastRespawn = Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMBOXRESPAWN) ? Pulsar::ITEMBOX_DEFAULTRESPAWN : Pulsar::ITEMBOX_FASTRESPAWN;
-  ItemBoxHook = 0x00;
+  itembox->respawnTime = 180;
+  itembox->isActive = 0;
   if (isFastRespawn == Pulsar::ITEMBOX_DEFAULTRESPAWN || is200) {
-    ItemBoxHook = 0x00FF0100;
+    itembox->respawnTime = 75;
+    itembox->isActive = 0;
   }
 }
-static PageLoadHook PatchItemBox(ItemBoxPatch);
-
-asmFunc GetMaxWeight() {
-    ASM(
-loc_0x0:
-  lfs	      f1, 0x0014 (r28);
-  lis       r12, 0x8000;
-  lbz       r12, 0x120C(r12);
-  cmpwi     r12, 0;
-  beq       end;
-  lfs       f1, 0x0(r28);
-
-end:
-  blr;
-    )
-}
-kmCall(0x8057083C, GetMaxWeight);
-
-void MaxWeightPatch() {
-  bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
-  MaxWeightHook = 0x00;
-  if (is200) {
-    MaxWeightHook = 0x00FF0100;
-  }
-}
-static PageLoadHook PatchMaxWeight(MaxWeightPatch);
-
-//No Disconnect from being Idle [Bully]
-asmFunc GetNoDC() {
-    ASM(
-loc_0x0:
-  addi      r0, r3, 1;
-  lis       r12, 0x8000;
-  lbz       r12, 0x1208(r12);
-  cmpwi     r12, 0;
-  beq       end;
-  li        r0, 0;
-
-end:
-  blr;
-    )
-}
-kmCall(0x80521408, GetNoDC);
-kmCall(0x8053EF6C, GetNoDC);
-kmCall(0x8053F0B4, GetNoDC);
-kmCall(0x8053F124, GetNoDC);
-
-void NoDCPatch() {
-  DCHook = 0x00;
-  if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST) {
-    DCHook = 0x00FF0100;
-  }
-}
-static PageLoadHook PatchNoDC(NoDCPatch);
-
-extern "C" void ItemVanish(unsigned int r0, unsigned int r12) {
-  if (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_MODE_OTT)) {
-    if(r12 == 0) return;
-    volatile unsigned int cmp = (r0 == 10);
-    (void)cmp;
-    return;
-  }
-}
-kmCall(0x8079F748, ItemVanish);
+kmCall(0x80828EDC, ItemBoxRespawn);
 
 void PredictionPatch() {
   PredictionHook = 0x3dcccccd;

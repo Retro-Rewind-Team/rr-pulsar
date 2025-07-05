@@ -79,6 +79,10 @@ Kart::Stats* ApplySpeedModifier(KartId kartId, CharacterId characterId) {
     stats->standard_acceleration_as[1] *= factor;
     stats->standard_acceleration_as[2] *= factor;
     stats->standard_acceleration_as[3] *= factor;
+    
+    if (is200) {
+        stats->weight = 0x9C;
+    }
 
     Kart::minDriftSpeedRatio = 0.55f * (factor > 1.0f ? (1.0f / factor) : 1.0f);
     Kart::unknown_70 = 70.0f * factor;

@@ -333,6 +333,16 @@ static bool MutePositionTracker(CtrlRaceRankNum& tracker) { //isInactive = muted
 kmCall(0x807F4AC4, MutePositionTracker);
 kmCall(0x807f4b00, MutePositionTracker);
 
+extern "C" void ItemVanish(unsigned int r0, unsigned int r12) {
+  if (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_MODE_OTT)) {
+    if(r12 == 0) return;
+    volatile unsigned int cmp = (r0 == 10);
+    (void)cmp;
+    return;
+  }
+}
+kmCall(0x8079F748, ItemVanish);
+
 //Hide Names part of battleglitch
 
 }//namespace OTT
