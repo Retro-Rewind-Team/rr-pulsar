@@ -428,7 +428,6 @@ WriteToRKSYS2ndInst__7NandMgrFPCvUiUib = 0x8052c2d4
 CreateRKSYS2ndInst__7NandMgrFUi = 0x8052c68c
 DeleteRKSYS2ndInst__7NandMgrFUib = 0x8052c7e8
 
-
 #KPAD
 Read__4KPADFiPQ24KPAD6StatusUi = 0x80197380
 
@@ -862,11 +861,14 @@ DeleteMii__8MiiGroupFUc = 0x805faa84
 ##KART
 #KartCollision
 CheckKartCollision__Q24Kart9CollisionFRCQ24Kart6Player = 0x8056f7f0
+DisableBumping = 0x80570D00
+paramBins__4Kart = 0x809c1910
 
 #KartBRRESHandle
 __ct__Q24Kart11BRRESHandleFP5LightbUc = 0x80576b3c
 
 #KartMovement
+ApplyLightning__Q24Kart8MovementFv = 0x80580438
 ApplyLightningEffect__Q24Kart8MovementFiii = 0x80580778
 UpdateSlipstream__Q24Kart8MovementFv = 0x80586fa8
 
@@ -890,6 +892,7 @@ GetStats__Q24Kart4LinkCFv = 0x80590874
 GetType__Q24Kart4LinkCFv = 0x80590a10
 GetPlayerIdx__Q24Kart4LinkCFv = 0x80590a5c
 GetPosition__Q24Kart4LinkCFv = 0x8059020c
+GetMovement__Q24Kart4LinkFv = 0x8059077c
 
 #KartPlayer
 GetDriftState__Q24Kart6PlayerCFv = 0x805911d8
@@ -1862,6 +1865,7 @@ sInstance__11CourseMgr = 0x809c2F44
 __ct__Q24Item13ObjPropertiesFRCQ24Item13ObjProperties = 0x80790e7c
 itemObjProperties = 0x809c2f48
 behaviourTable__Q24Item8Behavior = 0x809c36a0
+objProperties__Q24Item13ObjProperties = 0x809c2f48
 
 #Player
 Update__19ItemHolderPlayerSubFv = 0x80795668
@@ -1885,8 +1889,10 @@ LoadGraphicsImplicitBRRES__Q24Item3ObjFPCcPCcUcPQ34Item3Obj8AnmParamQ44nw4r3g3d6
 LoadGraphics__Q24Item3ObjFPCcPCcPCcUcPQ34Item3Obj8AnmParamQ44nw4r3g3d6ScnMdl12BufferOptionPvUi = 0x807a0040
 CreateItemDirect__Q24Item7ManagerF9ItemObjIdPC4Vec3P4Vec3Ui = 0x80799fbc
 DeployBlooper__Q24Item8GessoMgrFUs = 0x807a9128
+DisappearDueToExcess__Q24Item3ObjFb = 0x807a6c14
 
 #ItemSlot
+sInstance__Q24Item12ItemSlotDataFv = 0x809c3670
 DecideItem__Q24Item12ItemSlotDataFUsUcbbPQ24Item6Player = 0x807bb42c
 DecideRouletteItem__Q24Item12ItemSlotDataFUsUc6ItemIdb = 0x807bb8d0
 itemSlotData = 0x809c3670
@@ -2037,10 +2043,7 @@ sprintf = 0x80011a2c
 
 WWFC_CUSTOM_REGION = 0x80005efc
 FPSPatchHook = 0x80001202
-ItemBoxHook = 0x80001204
-DCHook = 0x80001206
 OTTFixHook = 0x80001208
-MaxWeightHook = 0x8000120A
 PredictionHook = 0x80891B28
 BloomHook = 0x802575DF
 beginFrame= 0x8020fe24
@@ -2086,18 +2089,10 @@ SCGetProductCode = 0x801b2424
 
 #Comp
 Comp_encodeSZS = 0x802156ac
-ItemRainHook = 0x80000B24
 current_time = 0x800f24c8
 
 Update__8ElineMgrFv = 0x8052d888
 UpdateFromPrevRace__16RacedataScenarioFv = 0x8052f1e0
-
-IsConnectedToAnyone__Q25RKNet10ControllerCFv = 0x80656f00
-GetOwnSelectId__Q25RKNet13SELECTHandlerCFv = 0x80660470
-KillFromOtherCollision__Q24Item3ObjFb = 0x807a6560
-UpdateTotalItemCountMinus30__Q24Item7ManagerFv = 0x80799a50
-GetBodyMatCol1__Q24Kart4LinkCFR4Vec3 = 0x80590c6c
-Sqrt__Q23EGG4MathFf = 0x8022f80c
 
 gpiAppendStringToBuffer__2GPFPPQ22GP10ConnectionPQ22GP7IBufferPCc = 0x800ff014
 
