@@ -54,6 +54,7 @@ struct PulROOM : public     RKNet::ROOMPacket {
 
     //Generic ROOM settings
     u64 hostSystemContext; //System's context but with just gamemodes taken from the settings
+    u32 hostSystemContext2;
     u8 raceCount;
 
     // Extended Team settings

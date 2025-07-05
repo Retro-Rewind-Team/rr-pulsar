@@ -18,6 +18,7 @@ namespace Network {
 static void ConvertROOMPacketToData(const PulROOM& packet) {
     System* system = System::sInstance;
     system->netMgr.hostContext = packet.hostSystemContext;
+    system->netMgr.hostContext2 = packet.hostSystemContext2;
     system->netMgr.racesPerGP = packet.raceCount;
 }
 
@@ -66,6 +67,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         const u8 transmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE;
         const u8 transmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA;
         const u8 itemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
+        const u8 itemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
         const u8 extendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_EXTENDEDTEAMS) == EXTENDEDTEAMS_ENABLED;
         const u8 megaTC = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_THUNDERCLOUD);
 
@@ -83,9 +85,6 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
             | charRestrictHeavy << PULSAR_CHARRESTRICTHEAVY
             | kartRestrict << PULSAR_KARTRESTRICT
             | bikeRestrict << PULSAR_BIKERESTRICT
-            | itemModeRandom << PULSAR_ITEMMODERANDOM
-            | itemModeBlast << PULSAR_ITEMMODEBLAST
-            | itemModeNone << PULSAR_ITEMMODENONE
             | koFinal << PULSAR_KOFINAL
             | changeCombo << PULSAR_CHANGECOMBO
             | megaTC << PULSAR_THUNDERCLOUD
@@ -95,10 +94,16 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
             | RetroOnly << PULSAR_RETROS
             | CtsOnly << PULSAR_CTS
             | itemBoxRepsawnFast << PULSAR_ITEMBOXRESPAWN
-            | transmissionInside << PULSAR_TRANSMISSIONINSIDE
+            | extendedTeams << PULSAR_EXTENDEDTEAMS;
+
+        destPacket->hostSystemContext2 |= transmissionInside << PULSAR_TRANSMISSIONINSIDE
             | transmissionOutside << PULSAR_TRANSMISSIONOUTSIDE
             | transmissionVanilla << PULSAR_TRANSMISSIONVANILLA
-            | extendedTeams << PULSAR_EXTENDEDTEAMS;
+            | itemModeRandom << PULSAR_ITEMMODERANDOM
+            | itemModeBlast << PULSAR_ITEMMODEBLAST
+            | itemModeNone << PULSAR_ITEMMODENONE
+            | itemModeRain << PULSAR_ITEMMODERAIN
+            | itemModeStorm << PULSAR_ITEMMODESTORM;
 
         u8 raceCount;
         if(koSetting == KOSETTING_ENABLED) raceCount = 0xFE;
@@ -177,8 +182,6 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
         bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_HEAVYONLY;
         bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_KARTSELECT) == KART_KARTONLY;
         bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_KARTSELECT) == KART_BIKEONLY;
-        bool isItemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_RANDOM;
-        bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_BLAST;
         bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_EXTENDEDTEAMS) == EXTENDEDTEAMS_ENABLED;
         u32 newContext = 0;
         Network::Mgr& netMgr = Pulsar::System::sInstance->netMgr;
@@ -188,13 +191,10 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
             isCharRestrictHeavy = newContext & (1 << PULSAR_CHARRESTRICTHEAVY);
             isKartRestrictKart = newContext & (1 << PULSAR_KARTRESTRICT);
             isKartRestrictBike = newContext & (1 << PULSAR_BIKERESTRICT);
-            isItemModeRandom = newContext & (1 << PULSAR_ITEMMODERANDOM);
-            isItemModeBlast = newContext & (1 << PULSAR_ITEMMODEBLAST);
             isExtendedTeams = newContext & (1 << PULSAR_EXTENDEDTEAMS);
         netMgr.hostContext = newContext;
 
-        u32 context = (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) | (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) | (isKartRestrictBike << PULSAR_BIKERESTRICT) |
-        (isItemModeRandom << PULSAR_ITEMMODERANDOM) | (isItemModeBlast << PULSAR_ITEMMODEBLAST) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
+        u32 context = (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) | (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) | (isKartRestrictBike << PULSAR_BIKERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
         Pulsar::System::sInstance->context = context;
 
         //Also exit the settings page to prevent weird graphical artefacts

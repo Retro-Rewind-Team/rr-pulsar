@@ -34,7 +34,7 @@ u8 Params::optionsPerPagePerScroller[Params::pageCount][Params::maxScrollerCount
     { 0, 0, 0, 0, 0}, //OTT
     { 4, 4, 0, 0, 0}, //KO
     { 3, 0, 0, 0, 0}, //RR1
-    { 3, 4, 0, 0, 0}, //RRHost
+    { 5, 4, 0, 0, 0}, //RRHost
     { 13, 0, 0, 0, 0}, //RRLanguage
 };
 

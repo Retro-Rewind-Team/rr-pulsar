@@ -16,7 +16,6 @@
 
 
 namespace Pulsar {
-
 namespace KO {
 class Mgr;
 }//namespace KO
@@ -44,19 +43,24 @@ enum Context {
     PULSAR_BIKERESTRICT,
     PULSAR_500,
     PULSAR_THUNDERCLOUD,
-    PULSAR_ITEMMODERANDOM,
-    PULSAR_ITEMMODEBLAST,
-    PULSAR_ITEMMODENONE,
     PULSAR_REGS,
     PULSAR_RETROS,
     PULSAR_CTS,
     PULSAR_ALL,
     PULSAR_CHANGECOMBO,
     PULSAR_ITEMBOXRESPAWN,
+    PULSAR_EXTENDEDTEAMS,
+};
+
+enum Context2 {
     PULSAR_TRANSMISSIONINSIDE,
     PULSAR_TRANSMISSIONOUTSIDE,
     PULSAR_TRANSMISSIONVANILLA,
-    PULSAR_EXTENDEDTEAMS,
+    PULSAR_ITEMMODERANDOM,
+    PULSAR_ITEMMODEBLAST,
+    PULSAR_ITEMMODERAIN,
+    PULSAR_ITEMMODESTORM,
+    PULSAR_ITEMMODENONE
 };
 
 
@@ -88,6 +92,7 @@ public:
     const Info& GetInfo() const { return this->info; }
 
     bool IsContext(Context context) const { return (this->context & (1 << context)) != 0; }
+    bool IsContext(Context2 context2) const { return (this->context2 & (1 << context2)) != 0; }
     static s32 OnSceneEnter(Random& random);
 
     const char* GetModFolder() const { return modFolderName; }
@@ -120,7 +125,8 @@ public:
     char modFolderName[IOS::ipcMaxFileName + 1]; //0xC
     u8 padding[2];
     Info info; //0x1c
-    u64 context;
+    u32 context;
+    u32 context2;
 
 public:
     //Network variables only set when reading a ROOM packet that starts the GP; they are only ever used in UpdateState; no need to clear them as ROOM will reupdat ethem

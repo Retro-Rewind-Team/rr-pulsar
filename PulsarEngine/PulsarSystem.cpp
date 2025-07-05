@@ -161,6 +161,7 @@ void System::UpdateContext() {
     bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_BLAST;
     bool isItemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_NONE;
     bool isItemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
+    bool isItemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
     bool isTrackSelectionRegs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
     bool isTrackSelectionRetros = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
     bool isTrackSelectionCts = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
@@ -174,7 +175,8 @@ void System::UpdateContext() {
     bool isFeather = this->info.HasFeather();
     bool isUMTs = this->info.HasUMTs();
     bool isMegaTC = this->info.HasMegaTC();
-    u64 newContext = 0;
+    u32 newContext = 0;
+    u32 newContext2 = 0;
     if(sceneId != SCENE_ID_GLOBE && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN) {
         switch(controller->roomType) {
             case(RKNet::ROOMTYPE_VS_REGIONAL):
@@ -185,15 +187,18 @@ void System::UpdateContext() {
             case(RKNet::ROOMTYPE_FROOM_NONHOST):
                 isCT = mode != MODE_BATTLE && mode != MODE_PUBLIC_BATTLE && mode != MODE_PRIVATE_BATTLE;
                 newContext = netMgr.hostContext;
+                newContext2 = netMgr.hostContext2;
                 isKOFinal = newContext & (1 << PULSAR_KOFINAL);
                 isCharRestrictLight = newContext & (1 << PULSAR_CHARRESTRICTLIGHT);
                 isCharRestrictMid = newContext & (1 << PULSAR_CHARRESTRICTMID);
                 isCharRestrictHeavy = newContext & (1 << PULSAR_CHARRESTRICTHEAVY);
                 isKartRestrictKart = newContext & (1 << PULSAR_KARTRESTRICT);
                 isKartRestrictBike = newContext & (1 << PULSAR_BIKERESTRICT);
-                isItemModeRandom = newContext & (1 << PULSAR_ITEMMODERANDOM);
-                isItemModeBlast = newContext & (1 << PULSAR_ITEMMODEBLAST);
-                isItemModeNone = newContext & (1 << PULSAR_ITEMMODENONE);
+                isItemModeRandom = newContext2 & (1 << PULSAR_ITEMMODERANDOM);
+                isItemModeBlast = newContext2 & (1 << PULSAR_ITEMMODEBLAST);
+                isItemModeRain = newContext2 & (1 << PULSAR_ITEMMODERAIN);
+                isItemModeStorm = newContext2 & (1 << PULSAR_ITEMMODESTORM);
+                isItemModeNone = newContext2 & (1 << PULSAR_ITEMMODENONE);
                 isTrackSelectionRegs = newContext & (1 << PULSAR_REGS);
                 isTrackSelectionRetros = newContext & (1 << PULSAR_RETROS);
                 isTrackSelectionCts = newContext & (1 << PULSAR_CTS);
@@ -205,12 +210,12 @@ void System::UpdateContext() {
                 isKO = newContext & (1 << PULSAR_MODE_KO);
                 isOTT = newContext & (1 << PULSAR_MODE_OTT);
                 isOTTOnline |= newContext & (1 << PULSAR_MODE_OTT);
-                isMiiHeads = newContext & (1 << PULSAR_MIIHEADS);
+                isMiiHeads = newContext2 & (1 << PULSAR_MIIHEADS);
                 isThunderCloud = newContext & (1 << PULSAR_THUNDERCLOUD);
                 isItemBoxRepsawnFast = newContext & (1 << PULSAR_ITEMBOXRESPAWN);
-                isTransmissionInside = newContext & (1 << PULSAR_TRANSMISSIONINSIDE);
-                isTransmissionOutside = newContext & (1 << PULSAR_TRANSMISSIONOUTSIDE);
-                isTransmissionVanilla = newContext & (1 << PULSAR_TRANSMISSIONVANILLA);
+                isTransmissionInside = newContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
+                isTransmissionOutside = newContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
+                isTransmissionVanilla = newContext2 & (1 << PULSAR_TRANSMISSIONVANILLA);
                 isExtendedTeams = newContext & (1 << PULSAR_EXTENDEDTEAMS);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
@@ -230,29 +235,35 @@ void System::UpdateContext() {
         }
     }
     this->netMgr.hostContext = newContext;
+    this->netMgr.hostContext2 = newContext2;
 
     u32 preserved = this->context & ((1 << PULSAR_200_WW) | (1 << PULSAR_MODE_OTT));
     
     // Set the new context value
-    u64 newContextValue = (static_cast<u64>(isCT) << PULSAR_CT) | (static_cast<u64>(isHAW) << PULSAR_HAW) | (static_cast<u64>(isMiiHeads) << PULSAR_MIIHEADS);
+    u32 newContextValue = (isCT) << PULSAR_CT | (isHAW) << PULSAR_HAW;
+    u32 newContextValue2 = (isMiiHeads) << PULSAR_MIIHEADS;
     if(isCT) {
-        newContextValue |= (static_cast<u64>(is200) << PULSAR_200) | (static_cast<u64>(isFeather) << PULSAR_FEATHER) | 
-                          (static_cast<u64>(isUMTs) << PULSAR_UMTS) | (static_cast<u64>(isMegaTC) << PULSAR_MEGATC) | 
-                          (static_cast<u64>(isOTT) << PULSAR_MODE_OTT) | (static_cast<u64>(isKO) << PULSAR_MODE_KO) |
-                          (static_cast<u64>(isCharRestrictLight) << PULSAR_CHARRESTRICTLIGHT) | (static_cast<u64>(isCharRestrictMid) << PULSAR_CHARRESTRICTMID) | 
-                          (static_cast<u64>(isCharRestrictHeavy) << PULSAR_CHARRESTRICTHEAVY) | (static_cast<u64>(isKartRestrictKart) << PULSAR_KARTRESTRICT) | 
-                          (static_cast<u64>(isKartRestrictBike) << PULSAR_BIKERESTRICT) | (static_cast<u64>(isChangeCombo) << PULSAR_CHANGECOMBO) |
-                          (static_cast<u64>(is500) << PULSAR_500) | (static_cast<u64>(isThunderCloud) << PULSAR_THUNDERCLOUD) | 
-                          (static_cast<u64>(isItemModeRandom) << PULSAR_ITEMMODERANDOM) | (static_cast<u64>(isItemModeBlast) << PULSAR_ITEMMODEBLAST) | 
-                          (static_cast<u64>(isItemModeNone) << PULSAR_ITEMMODENONE) | (static_cast<u64>(isTrackSelectionRegs) << PULSAR_REGS) | 
-                          (static_cast<u64>(isKOFinal) << PULSAR_KOFINAL) | (static_cast<u64>(isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN) | 
-                          (static_cast<u64>(isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE) | (static_cast<u64>(isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE) | 
-                          (static_cast<u64>(isExtendedTeams) << PULSAR_EXTENDEDTEAMS) | (static_cast<u64>(isTrackSelectionRetros) << PULSAR_RETROS) | 
-                          (static_cast<u64>(isTrackSelectionCts) << PULSAR_CTS) | (static_cast<u64>(isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA);
+        newContextValue |= (is200) << PULSAR_200 | (isFeather) << PULSAR_FEATHER | 
+                          (isUMTs) << PULSAR_UMTS | (isMegaTC) << PULSAR_MEGATC | 
+                          (isOTT) << PULSAR_MODE_OTT | (isKO) << PULSAR_MODE_KO |
+                          (isCharRestrictLight) << PULSAR_CHARRESTRICTLIGHT | (isCharRestrictMid) << PULSAR_CHARRESTRICTMID | 
+                          (isCharRestrictHeavy) << PULSAR_CHARRESTRICTHEAVY | (isKartRestrictKart) << PULSAR_KARTRESTRICT | 
+                          (isKartRestrictBike) << PULSAR_BIKERESTRICT | (isChangeCombo) << PULSAR_CHANGECOMBO |
+                          (is500) << PULSAR_500 | (isThunderCloud) << PULSAR_THUNDERCLOUD | 
+                          (isTrackSelectionRegs) << PULSAR_REGS | 
+                          (isKOFinal) << PULSAR_KOFINAL | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
+                          (isExtendedTeams) << PULSAR_EXTENDEDTEAMS | (isTrackSelectionRetros) << PULSAR_RETROS |
+                          (isTrackSelectionCts) << PULSAR_CTS;
+
+        newContextValue2 |= (isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE | (isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE |
+                          (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
+                          (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeNone) << PULSAR_ITEMMODENONE |
+                          (isItemModeRain) << PULSAR_ITEMMODERAIN | (isItemModeStorm) << PULSAR_ITEMMODESTORM;
     }
     
     // Combine the new context with preserved bits
     this->context = newContextValue | preserved;
+    this->context2 = newContextValue2;
 
     // Set contexts based on region for regionals
     const u32 region = this->netMgr.region;
@@ -373,7 +384,7 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 kmWrite32(0x800017D0, 0x0A);
 
 //Retro Rewind Internal Version
-kmWrite32(0x800017D4, 618);
+kmWrite32(0x800017D4, 619);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";
