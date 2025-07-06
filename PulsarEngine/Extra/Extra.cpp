@@ -169,15 +169,6 @@ kmWrite16(0x808565C2, 0x00007530);
 kmWrite16(0x8085C322, 0x00007530);
 kmWrite16(0x8085C32A, 0x00007530);
 
-// Fix VR limit in serverbrowser requests [ppeb]
-// EV
-kmWrite16(0x80659342, 0x00007530); // 80659340 28 00 27 0f     cmplwi     r0,0x270f
-kmWrite16(0x8065934A, 0x00007530); // 80659348 38 00 27 0f     li         r0,0x270f
-
-// EB
-kmWrite16(0x80659422, 0x00007530); // 80659420 28 00 27 0f     cmplwi     r0,0x270f
-kmWrite16(0x8065942A, 0x00007530); // 80659428 38 00 27 0f     li         r0,0x270f
-
 //Mushroom Glitch Fix [Vabold]
 kmWrite8(0x807BA077, 0x00);
 
