@@ -8,49 +8,6 @@
 
 namespace RetroRewind {
 
-void *GetCustomKartParam(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
-    bool insideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    bool outsideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    bool vanilla = Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-        insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE) ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-        outsideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE) ? Pulsar::FORCE_TRANSMISSION_OUTSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-        vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA) ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    }
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_WW || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_WW) {
-        name = "kartParam.bin";
-    } else {
-        if (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE) {
-            name = "kartParamAll.bin";
-        }
-        else if (outsideAll == Pulsar::FORCE_TRANSMISSION_OUTSIDE) {
-            name = "kartParamOut.bin";
-        }
-        else if (vanilla == Pulsar::FORCE_TRANSMISSION_VANILLA) {
-            name = "kartParam.bin";
-        }
-        else if (static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTINGRR_RADIO_TRANSMISSION)) == Pulsar::TRANSMISSION_INSIDEALL)
-        {
-            name="kartParamAll.bin";
-        }
-        else if (static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTINGRR_RADIO_TRANSMISSION)) == Pulsar::TRANSMISSION_INSIDEBIKE)
-        {
-            name="kartParamBike.bin";
-        }
-        else if (static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTINGRR_RADIO_TRANSMISSION)) == Pulsar::TRANSMISSION_OUTSIDE)
-        {
-            name="kartParamOut.bin";
-        }
-    }
-
-#ifdef PROD
-    AntiCheat::VerifyBinFile(name);
-#endif
-
-    return archive->GetFile(type, name, length);
-}
-kmCall(0x80591a30, GetCustomKartParam);
-
 void *GetCustomKartAIParam(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length){
     const GameMode gameMode = Racedata::sInstance->racesScenario.settings.gamemode;
     if (static_cast<Pulsar::HardAI>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTINGRR_RADIO_HARDAI)) == Pulsar::HARDAI_ENABLED)

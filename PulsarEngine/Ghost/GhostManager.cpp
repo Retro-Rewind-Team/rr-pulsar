@@ -2,6 +2,7 @@
 #include <Settings/Settings.hpp>
 #include <IO/IO.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <MarioKartWii/Kart/KartManager.hpp>
 
 namespace Pulsar {
 namespace Ghosts {
@@ -223,6 +224,7 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
     buffer.ClearBuffer();
 
     bool gotTrophy = false;
+    buffer.header.unknown_3 = reinterpret_cast<u32>(&Kart::Manager::sInstance->GetKartPlayer(0)->GetStats());
     if(data.CreateRKG(buffer) && buffer.CompressTo(this->rkg)) {
         if(this->cb != nullptr) {
             this->cb(buffer, IS_SAVING_GHOST, -1);
