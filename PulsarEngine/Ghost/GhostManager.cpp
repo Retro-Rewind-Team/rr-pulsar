@@ -224,7 +224,39 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
     buffer.ClearBuffer();
 
     bool gotTrophy = false;
-    buffer.header.unknown_3 = reinterpret_cast<u32>(&Kart::Manager::sInstance->GetKartPlayer(0)->GetStats());
+    // if racing a ghost and local player and ghost share same combo, reuse ghost's saved transmission
+    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    int localIdx = -1;
+    int ghostIdx = -1;
+    for(int pid=0; pid<scenario.playerCount; ++pid) {
+        if(scenario.players[pid].playerType == PLAYER_REAL_LOCAL) localIdx = pid;
+        else if(scenario.players[pid].playerType == PLAYER_GHOST) ghostIdx = pid;
+    }
+    if(localIdx >=0 && ghostIdx >=0 &&
+       scenario.players[localIdx].kartId == scenario.players[ghostIdx].kartId &&
+       scenario.players[localIdx].characterId == scenario.players[ghostIdx].characterId) {
+        u8 offset = (scenario.players[0].playerType != PLAYER_GHOST) ? 1 : 0;
+        int rkgIndex = ghostIdx - offset;
+        if(rkgIndex >= 0) {
+            // reuse ghost's radio setting
+            RKG& loaded = Racedata::sInstance->ghosts[rkgIndex];
+            buffer.header.unknown_3 = loaded.header.unknown_3;
+        }
+        else {
+            // fallback to local setting
+            u32 tv = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+                static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
+                Pulsar::SETTINGRR_RADIO_TRANSMISSION);
+            buffer.header.unknown_3 = tv;
+        }
+    } else {
+        // default: save local player's radio setting
+        u32 transValue = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
+            Pulsar::SETTINGRR_RADIO_TRANSMISSION);
+        buffer.header.unknown_3 = transValue;
+    }
+
     if(data.CreateRKG(buffer) && buffer.CompressTo(this->rkg)) {
         if(this->cb != nullptr) {
             this->cb(buffer, IS_SAVING_GHOST, -1);

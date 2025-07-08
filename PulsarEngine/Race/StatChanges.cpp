@@ -9,6 +9,7 @@
 #include <Race/200ccParams.hpp>
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
+#include <MarioKartWii/File/RKG.hpp>
 
 namespace Pulsar {
 
@@ -82,8 +83,16 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         }
     }
 
+    int ghostPlayerIdx = -1;
     if(isGhostPlayer) {
-        return stats; // don't apply transmission changes if ghost and player have the same combo
+        for(int pid = 0; pid < scenario.playerCount; ++pid) {
+            if(scenario.players[pid].kartId == kartId &&
+               scenario.players[pid].characterId == characterId &&
+               scenario.players[pid].playerType == PLAYER_GHOST) {
+                ghostPlayerIdx = pid;
+                break;
+            }
+        }
     }
 
     bool insideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
@@ -94,8 +103,26 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         outsideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE) ? Pulsar::FORCE_TRANSMISSION_OUTSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
         vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA) ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
     }
-    u32 transmission = static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTINGRR_RADIO_TRANSMISSION));
-    if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_BT_WW && isLocalPlayer) {
+    u32 transmission = static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
+        Pulsar::SETTINGRR_RADIO_TRANSMISSION));
+    if(ghostPlayerIdx >= 0) {
+        u8 offset = (scenario.players[0].playerType != PLAYER_GHOST) ? 1 : 0;
+        int rkgIndex = ghostPlayerIdx - offset;
+        if(rkgIndex >= 0) {
+            RKG& ghostRkg = Racedata::sInstance->ghosts[rkgIndex];
+            u32 savedTrans = ghostRkg.header.unknown_3;
+            transmission = savedTrans;
+            insideAll = outsideAll = vanilla = Pulsar::FORCE_TRANSMISSION_DEFAULT;
+            if(savedTrans == Pulsar::TRANSMISSION_INSIDEALL) insideAll = Pulsar::FORCE_TRANSMISSION_INSIDE;
+            else if(savedTrans == Pulsar::TRANSMISSION_OUTSIDE) outsideAll = Pulsar::FORCE_TRANSMISSION_OUTSIDE;
+            else if(savedTrans == Pulsar::TRANSMISSION_INSIDEBIKE) vanilla = Pulsar::FORCE_TRANSMISSION_VANILLA;
+        }
+    }
+
+    if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW && 
+        RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_BT_WW && 
+        (isLocalPlayer || ghostPlayerIdx >= 0)) {
         if (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE) {
             if (stats->type == INSIDE_BIKE) {
                 stats->type = INSIDE_BIKE;

@@ -5,6 +5,7 @@
 #include <Sound/MiscSound.hpp>
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
+#include <MarioKartWii/File/RKG.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -97,23 +98,55 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     const float umtMultiplier = 1.32; //10% faster
     const float insideDriftMultiplier = 1.236f; //3% faster
     const float defaultMTMultiplier = 1.2f;
+    // determine default inside drift context
     bool insideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-        insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE) ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+        insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE)
+            ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    }
+    // check if a matching ghost combo is present (same kart+character)
+    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    int comboGhostIdx = -1;
+    for(int pid = 0; pid < scenario.playerCount; ++pid) {
+        if(scenario.players[pid].playerType == PLAYER_GHOST &&
+           scenario.players[pid].kartId == scenario.players[id].kartId &&
+           scenario.players[pid].characterId == scenario.players[id].characterId) {
+            comboGhostIdx = pid;
+            break;
+        }
+    }
+    bool ghostCombo = comboGhostIdx >= 0;
+    u32 savedTrans = 0;
+    if(ghostCombo) {
+        u8 offset = (scenario.players[0].playerType != PLAYER_GHOST) ? 1 : 0;
+        int rkgIndex = comboGhostIdx - offset;
+        if(rkgIndex >= 0) {
+            RKG& ghostRkg = Racedata::sInstance->ghosts[rkgIndex];
+            savedTrans = ghostRkg.header.unknown_3;
+        }
     }
 
-    if (static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTINGRR_RADIO_TRANSMISSION)) == Pulsar::TRANSMISSION_INSIDEALL
-    || insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE) {
-        if (!isBoosting) state[id] = false;
-        if (boost.multiplier == defaultMTMultiplier || boost.multiplier == insideDriftMultiplier) {
-            if (state[id]) boost.multiplier = insideDriftMultiplier;
-            else boost.multiplier = defaultMTMultiplier;
-        }
+    // determine whether to use inside drift multiplier (respect ghost combo override if present)
+    bool useInside;
+    if(ghostCombo) {
+        useInside = (savedTrans == Pulsar::TRANSMISSION_INSIDEALL);
+    } else {
+        u32 userTrans = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
+            Pulsar::SETTINGRR_RADIO_TRANSMISSION);
+        useInside = (static_cast<Pulsar::Transmission>(userTrans) == Pulsar::TRANSMISSION_INSIDEALL)
+            || (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE);
+    }
+    if (useInside) {
+         if (!isBoosting) state[id] = false;
+         if (boost.multiplier == defaultMTMultiplier || boost.multiplier == insideDriftMultiplier) {
+            boost.multiplier = state[id] ? insideDriftMultiplier : defaultMTMultiplier;
+         }
     } else {
         if (!isBoosting) state[id] = false;
         if (boost.multiplier == defaultMTMultiplier || boost.multiplier == umtMultiplier) {
-            if (state[id]) boost.multiplier = umtMultiplier;
-            else boost.multiplier = defaultMTMultiplier;
+            boost.multiplier = state[id] ? umtMultiplier : defaultMTMultiplier;
         }
     }
     return isBoosting;
