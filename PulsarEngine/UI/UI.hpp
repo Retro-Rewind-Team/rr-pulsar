@@ -190,6 +190,9 @@ enum BMG {
     //VR Rating
     BMG_VR_RATING = 0x285e,
 
+    //Language
+    BMG_LANGUAGE_RESET_REQUIRED = 0x295f,
+
     //KO
     BMG_KO_OUT = 0x2860,
     BMG_KO_WINNER = 0x2861,

@@ -320,12 +320,30 @@ void SettingsPanel::SaveSettings(bool writeFile) {
 }
 
 void SettingsPanel::OnBackPress(u32 hudSlotId) {
+    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_RRLANGUAGE) {
+        Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
+        messageBox->Reset();
+        messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
+        this->AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
+        PushButton& okButton = *this->externControls[0];
+        okButton.SelectFocus();      
+        this->LoadPrevMenuAndSaveSettings(okButton);
+        return;
+    }
     PushButton& okButton = *this->externControls[0];
     okButton.SelectFocus();      
     this->LoadPrevMenuAndSaveSettings(okButton);
 }
 
 void SettingsPanel::OnSaveButtonClick(PushButton& button, u32 hudSlotId) {
+    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_RRLANGUAGE) {
+        Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
+        messageBox->Reset();
+        messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
+        this->AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
+        this->LoadPrevMenuAndSaveSettings(button);
+        return;
+    }
     this->LoadPrevMenuAndSaveSettings(button);
 }
 
