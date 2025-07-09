@@ -59,17 +59,17 @@ static ItemObjId GetRandomItem() {
         
     static const ItemWeight weightedItems[] = {
         {OBJ_MUSHROOM, 20},
-        {OBJ_GREEN_SHELL, 20},
-        {OBJ_BANANA, 20},
+        {OBJ_GREEN_SHELL, 18},
+        {OBJ_BANANA, 18},
         {OBJ_RED_SHELL, 8},
         {OBJ_FAKE_ITEM_BOX, 8},
-        {OBJ_BOBOMB, 8},
-        {OBJ_STAR, 3},
+        {OBJ_BOBOMB, 4},
+        {OBJ_STAR, 6},
         {OBJ_BLUE_SHELL, 3},
         {OBJ_GOLDEN_MUSHROOM, 3},
-        {OBJ_MEGA_MUSHROOM, 4},
+        {OBJ_MEGA_MUSHROOM, 6},
         {OBJ_POW_BLOCK, 1},
-        {OBJ_BULLET_BILL, 1},
+        {OBJ_BULLET_BILL, 3},
         {OBJ_LIGHTNING, 1}
     };
     const u32 totalWeight = 100;
