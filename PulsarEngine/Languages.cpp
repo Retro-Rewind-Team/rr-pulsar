@@ -12,23 +12,8 @@ void RenameFont() {
             Pulsar::SETTINGRRLANGUAGE_LANGUAGE));
             
     switch (currentLanguage) {
-        case Pulsar::LANGUAGE_JAPANESE:
-            FontRename = 0x4A; // 'J'
-            break;
-        case Pulsar::LANGUAGE_FINNISH:
-            FontRename = 0x49; // 'I'
-            break;
         case Pulsar::LANGUAGE_KOREAN:
             FontRename = 0x4B; // 'K'
-            break;
-        case Pulsar::LANGUAGE_RUSSIAN:
-            FontRename = 0x52; // 'R'
-            break;
-        case Pulsar::LANGUAGE_TURKISH:
-            FontRename = 0x54; // 'T'
-            break;
-        case Pulsar::LANGUAGE_CZECH:
-            FontRename = 0x43; // 'C'
             break;
         default:
             // Keep default value

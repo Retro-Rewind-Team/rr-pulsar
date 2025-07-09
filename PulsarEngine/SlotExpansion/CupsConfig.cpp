@@ -45,8 +45,8 @@ winningCourse(PULSARID_NONE), selectedCourse(PULSARID_FIRSTREG), lastSelectedCup
     memcpy(mainTracks, &rawCups.tracks, sizeof(Track) * ctsCount);
     memcpy(variants, (reinterpret_cast<const u8*>(&rawCups.tracks) + sizeof(Track) * ctsCount), sizeof(Variant) * rawCups.totalVariantCount);
     
-    // First 176 tracks remain in original order
-    for (int i = 0; i < 176; ++i) {
+    // First 184 tracks remain in original order
+    for (int i = 0; i < 184; ++i) {
         alphabeticalArray[i] = i;
         invertedAlphabeticalArray[i] = i;
     }
@@ -57,7 +57,7 @@ winningCourse(PULSARID_NONE), selectedCourse(PULSARID_FIRSTREG), lastSelectedCup
     // Create a temporary array for sorting the last 80 tracks
     u16 lastTrackIndices[80];
     for (int i = 0; i < 80; ++i) {
-        lastTrackIndices[i] = i + 176;  // Initialize with sequential indices 176-239
+        lastTrackIndices[i] = i + 184;  // Initialize with sequential indices 184-239
     }
     
     // Sort the last 80 tracks based on their position in the original alphabetical array
@@ -83,12 +83,12 @@ winningCourse(PULSARID_NONE), selectedCourse(PULSARID_FIRSTREG), lastSelectedCup
     
     // Apply the sorted indices to the alphabetical array
     for (int i = 0; i < 80; ++i) {
-        alphabeticalArray[176 + i] = lastTrackIndices[i];
+        alphabeticalArray[184 + i] = lastTrackIndices[i];
     }
 
     u16 cumulativeVarCount = 0;
     for (int i = 0; i < ctsCount; ++i) {
-        if (i >= 176) {
+        if (i >= 184) {
             invertedAlphabeticalArray[alphabeticalArray[i]] = i;
         }
         variantsOffs[i] = cumulativeVarCount * sizeof(Variant);
@@ -236,8 +236,8 @@ PulsarId CupsConfig::RandomizeTrack() const {
        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C) isRetroOnly = TRACKSELECTION_RETROS;
        if (System::sInstance->netMgr.region == 0x14 || System::sInstance->netMgr.region == 0x15 || System::sInstance->netMgr.region == 0x16) isCTOnly = TRACKSELECTION_CTS;
     }
-    if (isRetroOnly == TRACKSELECTION_RETROS && isRegsOnly != TRACKSELECTION_REGS) pulsarId = random.NextLimited(176) + 0x100;
-    else if (isCTOnly == TRACKSELECTION_CTS && isRegsOnly != TRACKSELECTION_REGS) pulsarId = random.NextLimited(80) + 0x100 + 176;
+    if (isRetroOnly == TRACKSELECTION_RETROS && isRegsOnly != TRACKSELECTION_REGS) pulsarId = random.NextLimited(184) + 0x100;
+    else if (isCTOnly == TRACKSELECTION_CTS && isRegsOnly != TRACKSELECTION_REGS) pulsarId = random.NextLimited(80) + 0x100 + 184;
     else if (isRegsOnly == TRACKSELECTION_REGS) pulsarId = random.NextLimited(32);
     else if (this->HasRegs()) {
         pulsarId = random.NextLimited(this->GetCtsTrackCount() + 32);
@@ -276,7 +276,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
        if (System::sInstance->netMgr.region == 0x14 || System::sInstance->netMgr.region == 0x15 || System::sInstance->netMgr.region == 0x16) isCTOnly = TRACKSELECTION_CTS;
     }
     if (isRetroOnly == TRACKSELECTION_RETROS && isRegsOnly != TRACKSELECTION_REGS) {
-        const u32 countRetro = 44;
+        const u32 countRetro = 46;
         const u32 minRetro = countRetro < 8 ? 8 : 0;
         const u32 nextIdxRetro = ((idx + direction + countRetro) % countRetro) + minRetro;
         if(!this->hasRegs && nextIdxRetro < 8) return static_cast<PulsarCupId>(nextIdxRetro + countRetro + 0x38);
@@ -284,7 +284,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
     } else if (isCTOnly == TRACKSELECTION_CTS && isRegsOnly != TRACKSELECTION_REGS) {
         const u32 countCT = 20;
         const u32 lastCupIndex = this->GetTotalCupCount() - 1;
-        const u32 startIdx = 52;
+        const u32 startIdx = 54;
         const u32 nextIdxCT = startIdx + ((idx - startIdx + direction + countCT) % countCT);
         if(!this->hasRegs && nextIdxCT < 8) return static_cast<PulsarCupId>(nextIdxCT + countCT + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxCT);
