@@ -123,35 +123,35 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW && 
         RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_BT_WW && 
         (isLocalPlayer || ghostPlayerIdx >= 0)) {
-        if (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE) {
+        if (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE && (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
             if (stats->type == INSIDE_BIKE) {
                 stats->type = INSIDE_BIKE;
                 stats->targetAngle = 0.0f;
-            } if (stats->type == KART) {
+            } else if (stats->type == KART) {
                 stats->type = INSIDE_BIKE;
                 stats->mt += 20.0f;
-            } if (stats->type == OUTSIDE_BIKE) {
+            } else if (stats->type == OUTSIDE_BIKE) {
                 stats->type = INSIDE_BIKE;
                 stats->targetAngle = 0.0f;
             }
         }
-        else if (outsideAll == Pulsar::FORCE_TRANSMISSION_OUTSIDE) {
+        else if (outsideAll == Pulsar::FORCE_TRANSMISSION_OUTSIDE && (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
             if (stats->type == INSIDE_BIKE) {
                 stats->type = OUTSIDE_BIKE;
                 stats->targetAngle = 45.0f;
-            } if (stats->type == KART) {
+            } else if (stats->type == KART) {
                 stats->type = KART;
-            } if (stats->type == OUTSIDE_BIKE) {
+            } else if (stats->type == OUTSIDE_BIKE) {
                 stats->type = OUTSIDE_BIKE;
                 stats->targetAngle = 45.0f;
             }
         }
-        else if (vanilla == Pulsar::FORCE_TRANSMISSION_VANILLA) {
+        else if (vanilla == Pulsar::FORCE_TRANSMISSION_VANILLA && (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
             if (stats->type == INSIDE_BIKE) {
                 stats->type = INSIDE_BIKE;
-            } if (stats->type == KART) {
+            } else if (stats->type == KART) {
                 stats->type = KART;
-            } if (stats->type == OUTSIDE_BIKE) {
+            } else if (stats->type == OUTSIDE_BIKE) {
                 stats->type = OUTSIDE_BIKE;
             }
         }
@@ -160,10 +160,10 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
             if (stats->type == INSIDE_BIKE) {
                 stats->type = INSIDE_BIKE;
                 stats->targetAngle = 0.0f;
-            } if (stats->type == KART) {
+            } else if (stats->type == KART) {
                 stats->type = INSIDE_BIKE;
                 stats->mt += 20.0f;
-            } if (stats->type == OUTSIDE_BIKE) {
+            } else if (stats->type == OUTSIDE_BIKE) {
                 stats->type = INSIDE_BIKE;
                 stats->targetAngle = 0.0f;
             }
@@ -173,9 +173,9 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
             if (stats->type == INSIDE_BIKE) {
                 stats->type = INSIDE_BIKE;
                 stats->targetAngle = 0.0f;
-            } if (stats->type == KART) {
+            } else if (stats->type == KART) {
                 stats->type = KART;
-            } if (stats->type == OUTSIDE_BIKE) {
+            } else if (stats->type == OUTSIDE_BIKE) {
                 stats->type = INSIDE_BIKE;
                 stats->targetAngle = 0.0f;
             }
@@ -185,9 +185,9 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
             if (stats->type == INSIDE_BIKE) {
                 stats->type = OUTSIDE_BIKE;
                 stats->targetAngle = 45.0f;
-            } if (stats->type == KART) {
+            } else if (stats->type == KART) {
                 stats->type = KART;
-            } if (stats->type == OUTSIDE_BIKE) {
+            } else if (stats->type == OUTSIDE_BIKE) {
                 stats->type = OUTSIDE_BIKE;
                 stats->targetAngle = 45.0f;
             }

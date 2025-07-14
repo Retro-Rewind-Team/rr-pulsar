@@ -100,10 +100,16 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     const float defaultMTMultiplier = 1.2f;
     // determine default inside drift context
     bool insideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    bool vanilla = Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    bool outsideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
         insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE)
             ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+        vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA)
+            ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+        outsideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE)
+            ? Pulsar::FORCE_TRANSMISSION_OUTSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
     }
     // check if a matching ghost combo is present (same kart+character)
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
@@ -135,8 +141,9 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
         u32 userTrans = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
             static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
             Pulsar::SETTINGRR_RADIO_TRANSMISSION);
-        useInside = (static_cast<Pulsar::Transmission>(userTrans) == Pulsar::TRANSMISSION_INSIDEALL)
-            || (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE);
+        useInside = ((static_cast<Pulsar::Transmission>(userTrans) == Pulsar::TRANSMISSION_INSIDEALL)
+            || (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE)) && vanilla != Pulsar::FORCE_TRANSMISSION_VANILLA
+            && outsideAll != Pulsar::FORCE_TRANSMISSION_OUTSIDE;
     }
     if (useInside) {
          if (!isBoosting) state[id] = false;
