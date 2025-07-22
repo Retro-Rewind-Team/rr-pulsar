@@ -23,21 +23,21 @@ void ItemModeCheck() {
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODESTORM)) {
             ITEMS_PER_SPAWN = 3;
-            MAX_ITEM_LIFETIME = 90;
+            MAX_ITEM_LIFETIME = 360;
         }
         else {
             ITEMS_PER_SPAWN = 1;
-            MAX_ITEM_LIFETIME = 200;
+            MAX_ITEM_LIFETIME = 600;
         }
     }
 }
 static RaceLoadHook ItemModeCheckHook(ItemModeCheck);
 
 static int GetSpawnInterval(u8 playerCount) {
-    if (playerCount <= 3) return 4;
-    if (playerCount <= 6) return 8;
-    if (playerCount <= 9) return 12;
-    return 16;
+    if (playerCount <= 3) return 6;
+    if (playerCount <= 6) return 12;
+    if (playerCount <= 9) return 18;
+    return 24;
 }
 
 static u32 GetRandom() {
@@ -63,13 +63,13 @@ static ItemObjId GetRandomItem() {
         {OBJ_BANANA, 18},
         {OBJ_RED_SHELL, 8},
         {OBJ_FAKE_ITEM_BOX, 8},
-        {OBJ_BOBOMB, 4},
+        {OBJ_BOBOMB, 1},
         {OBJ_STAR, 6},
-        {OBJ_BLUE_SHELL, 3},
-        {OBJ_GOLDEN_MUSHROOM, 3},
+        {OBJ_BLUE_SHELL, 2},
+        {OBJ_GOLDEN_MUSHROOM, 5},
         {OBJ_MEGA_MUSHROOM, 6},
         {OBJ_POW_BLOCK, 1},
-        {OBJ_BULLET_BILL, 3},
+        {OBJ_BULLET_BILL, 5},
         {OBJ_LIGHTNING, 1}
     };
     const u32 totalWeight = 100;
@@ -101,7 +101,7 @@ void DespawnItems(bool checkDistance = false) {
             Item::Obj* obj = holder.itemObj[j];
             if (!obj || (obj->bitfield74 & 0x1)) continue;
             bool shouldDespawn = obj->duration > MAX_ITEM_LIFETIME;
-            if (checkDistance && obj->duration >= 900) {
+            if (checkDistance && obj->duration >= 300) {
                 bool farFromAll = true;
                 for (int k = 0; k < playerCount && k < 12 && farFromAll; k++) {
                     Vec3 diff;
@@ -150,7 +150,9 @@ void SpawnItemRain() {
     dummyDirection.z = 0.0f;
 
     for (int i = 0; i < ITEMS_PER_SPAWN; i++) {
-        for (int playerIdx = 0; playerIdx < playerCount; playerIdx++) {
+        int spawnDivisor = (sRaceInfoFrameCounter < 300) ? 4 : 1; 
+
+        for (int playerIdx = 0; playerIdx < playerCount; playerIdx += spawnDivisor) {
             Item::Player& player = Item::Manager::sInstance->players[playerIdx];
             Vec3 playerPos = player.GetPosition();
             Vec3 forwardDir;
