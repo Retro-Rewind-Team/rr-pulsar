@@ -21,21 +21,76 @@ int Mgr::GetSettingsBinSize(u32 trackCount) const {
 
 void Mgr::Save() {
     IO* io = IO::sInstance;
-    io->OpenFile(this->filePath, FILE_MODE_WRITE);
-    io->Overwrite(this->rawBin->header.fileSize, this->rawBin);
+
+    this->SaveTrophiesToFile();
+
+    Binary* sanitized = io->Alloc<Binary>(this->rawBin->header.fileSize);
+    memcpy(sanitized, this->rawBin, this->rawBin->header.fileSize);
+    TrophiesHolder& sanitizedTrophies = sanitized->GetSection<TrophiesHolder>();
+    const u32 trackCount = sanitized->GetSection<MiscParams>().trackCount;
+    this->ResetTrophies(sanitizedTrophies, trackCount);
+
+    if (!io->OpenFile(this->filePath, FILE_MODE_READ_WRITE)) io->CreateAndOpen(this->filePath, FILE_MODE_READ_WRITE);
+    io->Overwrite(sanitized->header.fileSize, sanitized);
     io->Close();
+
+    delete sanitized;
 };
 
-void Mgr::Init(const u16* totalTrophyCount, const char* path /*, const char *curMagic, u32 curVersion*/) {
+void Mgr::ResetTrophies(TrophiesHolder& trophies, u32 trackCount) const {
+    memset(trophies.trophyCount, 0, sizeof(trophies.trophyCount));
+    for (u32 i = 0; i < trackCount; ++i) {
+        for (int mode = 0; mode < 4; ++mode) trophies.trophies[i].hastrophy[mode] = false;
+    }
+}
+
+void Mgr::SaveTrophiesToFile() const {
+    IO* io = IO::sInstance;
+    const TrophiesHolder& trophies = this->rawBin->GetSection<TrophiesHolder>();
+    const u32 size = trophies.header.size;
+    if (!io->OpenFile(this->trophiesFilePath, FILE_MODE_READ_WRITE)) io->CreateAndOpen(this->trophiesFilePath, FILE_MODE_READ_WRITE);
+    io->Overwrite(size, &trophies);
+    io->Close();
+}
+
+void Mgr::LoadTrophiesFromFile(bool hadLegacyData) {
+    IO* io = IO::sInstance;
+    TrophiesHolder& trophies = this->rawBin->GetSection<TrophiesHolder>();
+    const u32 expectedSize = trophies.header.size;
+    bool loaded = false;
+
+    if (io->OpenFile(this->trophiesFilePath, FILE_MODE_READ)) {
+        const s32 fileSize = io->GetFileSize();
+        if (fileSize == static_cast<s32>(expectedSize)) {
+            TrophiesHolder* buffer = io->Alloc<TrophiesHolder>(expectedSize);
+            const s32 bytesRead = io->Read(expectedSize, buffer);
+            if (bytesRead == static_cast<s32>(expectedSize) && buffer->header.magic == TrophiesHolder::tropMagic && buffer->header.version == TrophiesHolder::version) {
+                memcpy(&trophies, buffer, expectedSize);
+                loaded = true;
+            }
+            delete buffer;
+        }
+        io->Close();
+    }
+
+    if (!loaded && !hadLegacyData) {
+        const u32 trackCount = this->rawBin->GetSection<MiscParams>().trackCount;
+        this->ResetTrophies(trophies, trackCount);
+    }
+}
+
+void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char* trophiesPath) {
     this->pulsarPageCount = Settings::Params::pulsarPageCount;
     this->userPageCount = Settings::Params::userPageCount;
 
     for (int i = 0; i < 4; ++i) this->totalTrophyCount[i] = totalTrophyCount[i];
-    strncpy(this->filePath, path, IOS::ipcMaxPath);
+    strncpy(this->filePath, settingsPath, IOS::ipcMaxPath);
+    this->filePath[IOS::ipcMaxPath - 1] = '\0';
+    strncpy(this->trophiesFilePath, trophiesPath, IOS::ipcMaxPath);
+    this->trophiesFilePath[IOS::ipcMaxPath - 1] = '\0';
 
     const u32 trackCount = CupsConfig::sInstance->GetEffectiveTrackCount();
     const u32 size = this->GetSettingsBinSize(trackCount);
-    System* system = System::sInstance;
     IO* io = IO::sInstance;
 
     Binary* buffer;
@@ -45,9 +100,7 @@ void Mgr::Init(const u16* totalTrophyCount, const char* path /*, const char *cur
     } else {
         alignas(0x20) BinaryHeader header;
         ret = io->Read(sizeof(BinaryHeader), &header) == sizeof(BinaryHeader);
-        if (header.magic != Binary::binMagic)
-            ret = false;
-        else {
+        if (ret && header.magic == Binary::binMagic) {
             buffer = io->Alloc<Binary>(header.fileSize);
             io->Seek(0);
             io->Read(header.fileSize, buffer);
@@ -55,6 +108,8 @@ void Mgr::Init(const u16* totalTrophyCount, const char* path /*, const char *cur
                 buffer = this->CreateFromOld(buffer);
                 if (buffer == nullptr) ret = false;
             }
+        } else {
+            ret = false;
         }
     }
     if (!ret) {
@@ -62,6 +117,7 @@ void Mgr::Init(const u16* totalTrophyCount, const char* path /*, const char *cur
         memset(buffer, 0, size);
         new (buffer) Binary(this->pulsarPageCount, this->userPageCount, trackCount);
     }
+    io->Close();
 
     TrophiesHolder& trophies = buffer->GetSection<TrophiesHolder>();
     for (int i = 0; i < 4; ++i) {
@@ -70,9 +126,26 @@ void Mgr::Init(const u16* totalTrophyCount, const char* path /*, const char *cur
     }
 
     this->rawBin = buffer;
+
+    bool hadLegacyTrophies = false;
+    for (int mode = 0; mode < 4; ++mode) {
+        if (trophies.trophyCount[mode] != 0) {
+            hadLegacyTrophies = true;
+            break;
+        }
+    }
+    if (!hadLegacyTrophies) {
+        const u32 legacyTrackCount = this->rawBin->GetSection<MiscParams>().trackCount;
+        for (u32 idx = 0; idx < legacyTrackCount && !hadLegacyTrophies; ++idx) {
+            const TrackTrophy& trophy = trophies.trophies[idx];
+            if (trophy.hastrophy[0] || trophy.hastrophy[1] || trophy.hastrophy[2] || trophy.hastrophy[3]) hadLegacyTrophies = true;
+        }
+    }
+
+    this->LoadTrophiesFromFile(hadLegacyTrophies);
+
     this->AdjustSections();
-    io->Overwrite(this->rawBin->header.fileSize, this->rawBin);
-    io->Close();
+    this->Save();
 }
 
 TrackTrophy* Mgr::FindTrackTrophy(u32 crc32, TTMode mode) const {
@@ -108,7 +181,7 @@ u8 Mgr::GetSettingValue(Type type, u32 setting) const {
     return this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting];
 }
 u8 Mgr::GetUserSettingValue(UserType type, u32 setting) const {
-    return this->rawBin->GetSection<PagesHolder>().pages[type + 5].settings[setting];
+    return this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting];
 }
 
 void Mgr::SetSettingValue(Type type, u32 setting, u8 value) {

@@ -47,12 +47,12 @@ kmCall(0x80799808, SetStartingItem);
 // From JoshuaMK, ported to C++ by Brawlbox and adapted as a setting
 static int MiiHeads(Racedata* racedata, u32 unused, u32 unused2, u8 id) {
     CharacterId charId = racedata->racesScenario.players[id].characterId;
-    bool miiHeadFroom = HOSTSETTING_ALLOW_MIIHEADS_ENABLED;
+    bool miiHeadFroom = ALLOW_MIIHEADS_ENABLED;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-        miiHeadFroom = System::sInstance->IsContext(PULSAR_MIIHEADS) ? HOSTSETTING_ALLOW_MIIHEADS_ENABLED : HOSTSETTING_ALLOW_MIIHEADS_DISABLED;
+        miiHeadFroom = System::sInstance->IsContext(PULSAR_MIIHEADS) ? ALLOW_MIIHEADS_ENABLED : ALLOW_MIIHEADS_DISABLED;
     }
-    if (Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_MII) == RACESETTING_MII_ENABLED) {
-        if (miiHeadFroom == HOSTSETTING_ALLOW_MIIHEADS_ENABLED) {
+    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS) == MII_ENABLED) {
+        if (miiHeadFroom == ALLOW_MIIHEADS_ENABLED) {
             if (charId < MII_M) {
                 if (id == 0)
                     charId = MII_M;
@@ -69,9 +69,9 @@ kmWrite32(0x807eb160, 0x88de01b4);
 
 // credit to XeR for finding the float address
 static void BattleGlitchEnable() {
-    const u8 val = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_BATTLE);
+    const u8 val = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE2, RADIO_BATTLEGLITCH);
     float maxDistance = 7500.0f;
-    if (val == RACESETTING_BATTLE_GLITCH_ENABLED) maxDistance = 75000.0f;
+    if (val == BATTLE_GLITCH_ENABLED) maxDistance = 75000.0f;
     System* system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_OTT)) {
         const Input::RealControllerHolder* controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
@@ -107,9 +107,7 @@ kmWrite32(0x807F4DB8, 0x38000001);
 
 // Draggable blue shells
 static void DraggableBlueShells(Item::PlayerObj& sub) {
-    if (Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_BLUES) == RACESETTING_DRAGGABLE_BLUES_DISABLED) {
-        sub.isNotDragged = true;
-    }
+    sub.isNotDragged = false;
 }
 kmBranch(0x807ae8ac, DraggableBlueShells);
 

@@ -101,8 +101,8 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA) ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
     }
     u32 transmission = static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
-        Pulsar::SETTINGRR_RADIO_TRANSMISSION));
+        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
+        Pulsar::RADIO_TRANSMISSION));
     if (ghostPlayerIdx >= 0) {
         u8 offset = (scenario.players[0].playerType != PLAYER_GHOST) ? 1 : 0;
         int rkgIndex = ghostPlayerIdx - offset;

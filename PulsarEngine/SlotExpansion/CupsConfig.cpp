@@ -176,7 +176,7 @@ void CupsConfig::ToggleCTs(bool enabled) {
     const GameMode mode = racedataSettings.gamemode;
     u32 isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
     if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && !isBattle) {
-        isRegs = System::sInstance->IsContext(PULSAR_REGS) ? TRACKSELECTION_REGS : false;
+        if (System::sInstance->IsContext(PULSAR_REGS)) isRegs = TRACKSELECTION_REGS;
     }
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_WW || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_WW || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_WW) {
         isRegs = TRACKSELECTION_REGS;
@@ -204,7 +204,7 @@ void CupsConfig::ToggleCTs(bool enabled) {
 }
 
 void CupsConfig::SetLayout() {
-    CupsConfig::sInstance->isAlphabeticalLayout = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_MENU, SETTINGMENU_RADIO_LAYOUT) == MENUSETTING_LAYOUT_ALPHABETICAL;
+    CupsConfig::sInstance->isAlphabeticalLayout = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, RADIO_LAYOUT) == LAYOUT_ALPHABETICAL;
 }
 Settings::Hook CTLayout(CupsConfig::SetLayout);
 
@@ -233,9 +233,9 @@ PulsarId CupsConfig::RandomizeTrack() const {
         if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = TRACKSELECTION_REGS;
     }
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
-        if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS) isRetroOnly = TRACKSELECTION_RETROS;
-        if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS) isCTOnly = TRACKSELECTION_CTS;
-        if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS) isRegsOnly = TRACKSELECTION_REGS;
+        if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS) isRetroOnly = TRACKSELECTION_RETROS;
+        if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS) isCTOnly = TRACKSELECTION_CTS;
+        if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS) isRegsOnly = TRACKSELECTION_REGS;
     }
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
         if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D) isRetroOnly = TRACKSELECTION_RETROS;

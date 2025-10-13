@@ -10,7 +10,7 @@ namespace RetroRewind {
 
 void *GetCustomKartAIParam(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
     const GameMode gameMode = Racedata::sInstance->racesScenario.settings.gamemode;
-    if (static_cast<Pulsar::HardAI>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTINGRR_RADIO_HARDAI)) == Pulsar::HARDAI_ENABLED) {
+    if (static_cast<Pulsar::HardAI>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_HARDAI)) == Pulsar::HARDAI_ENABLED) {
         name = "kartAISpdParamRR.bin";
     }
 

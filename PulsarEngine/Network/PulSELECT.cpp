@@ -2,6 +2,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <PulsarSystem.hpp>
+#include <core/rvl/os/OS.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Network/GPReport.hpp>
 #include <Network/Network.hpp>
@@ -80,7 +81,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
 
     if (mode == RKNet::ONLINEMODE_PRIVATE_VS && system->IsContext(PULSAR_MODE_KO)) system->koMgr->PatchAids(sub);
 
-    if (mode == RKNet::ONLINEMODE_PRIVATE_VS && Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_HOSTWINS)) {
+    if (mode == RKNet::ONLINEMODE_PRIVATE_VS && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS)) {
         self.toSendPacket.winningVoterAid = hostAid;
         u16 hostVote = self.toSendPacket.pulVote;
         if (hostVote == 0xFF) hostVote = cupsConfig->RandomizeTrack();
@@ -142,8 +143,11 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         self.toSendPacket.pulWinningTrack = vote;
         self.toSendPacket.variantIdx = cupsConfig->RandomizeVariant(vote);
         if (isCT) {
-            system->netMgr.lastTracks[system->netMgr.curBlockingArrayIdx] = vote;
-            system->netMgr.curBlockingArrayIdx = (system->netMgr.curBlockingArrayIdx + 1) % system->GetInfo().GetTrackBlocking();
+            const u32 blockingCount = system->GetInfo().GetTrackBlocking();
+            if (blockingCount != 0 && system->netMgr.lastTracks != nullptr) {
+                system->netMgr.lastTracks[system->netMgr.curBlockingArrayIdx] = vote;
+                system->netMgr.curBlockingArrayIdx = (system->netMgr.curBlockingArrayIdx + 1) % blockingCount;
+            }
         }
 
         ReportU32(
@@ -165,18 +169,29 @@ kmCall(0x80650ea8, SetCorrectSlot);
 
 static void SetCorrectTrack(ArchiveMgr* root, PulsarId winningCourse) {
     CupsConfig* cupsConfig = CupsConfig::sInstance;
-    // System* system = System::sInstance; ONLY STORE IF NON HOST
-    // system->lastTracks[system->curBlockingArrayIdx] = winningCourse;
-    // system->curBlockingArrayIdx = (system->curBlockingArrayIdx + 1) % Info::GetTrackBlocking();
+    System* system = System::sInstance;
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
     const Network::PulSELECT* select;
     const u8 hostAid = sub.hostAid;
-    if (hostAid == sub.localAid)
+    const bool isHost = (hostAid == sub.localAid);
+    if (isHost)
         select = &handler.toSendPacket;
     else
         select = &handler.receivedPackets[hostAid];
+
+    if (!isHost && system->IsContext(PULSAR_CT)) {
+        const u32 blockingCount = system->GetInfo().GetTrackBlocking();
+        if (blockingCount != 0 && system->netMgr.lastTracks != nullptr) {
+            const u32 writeIdx = system->netMgr.curBlockingArrayIdx;
+            const u32 prevIdx = (writeIdx + blockingCount - 1) % blockingCount;
+            if (system->netMgr.lastTracks[prevIdx] != winningCourse) {
+                system->netMgr.lastTracks[writeIdx] = winningCourse;
+                system->netMgr.curBlockingArrayIdx = (writeIdx + 1) % blockingCount;
+            }
+        }
+    }
 
     cupsConfig->SetWinning(winningCourse, select->variantIdx);
     root->RequestLoadCourseAsync(static_cast<CourseId>(winningCourse));
@@ -186,7 +201,7 @@ kmCall(0x80644414, SetCorrectTrack);
 // Overwrites CC rules -> 10% 100, 65% 150, 25% mirror and/or in frooms, overwritten by host setting
 static void DecideCC(ExpSELECTHandler& handler) {
     System* system = System::sInstance;
-    const u8 ccSetting = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_CC);
+    const u8 ccSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC);
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::RoomType roomType = controller->roomType;
     u8 ccClass = 1;  // 1 100, 2 150, 3 mirror
@@ -194,7 +209,7 @@ static void DecideCC(ExpSELECTHandler& handler) {
     bool isOTT = (roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && System::sInstance->IsContext(PULSAR_MODE_OTT) ? WWMODE_OTT : WWMODE_DEFAULT;
     if (roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
         roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_JOINING_WW ||
-        isOTT || (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTSETTING_CC_NORMAL)) {
+        isOTT || (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_NORMAL)) {
         Random random;
         const u32 result = random.NextLimited(100);  // 25
         System* system = System::sInstance;
@@ -207,9 +222,9 @@ static void DecideCC(ExpSELECTHandler& handler) {
     }
     if (is200 == Pulsar::WWMODE_200)
         ccClass = 1;
-    else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTSETTING_CC_150)
+    else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_150)
         ccClass = 2;
-    else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTSETTING_CC_500 || roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTSETTING_CC_100)
+    else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_500 || roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_100)
         ccClass = 1;
     handler.toSendPacket.engineClass = ccClass;
 }
@@ -320,10 +335,10 @@ void InitPatch() {
     if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)
         allowChangeCombo = true;
     else
-        allowChangeCombo = settings.GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ALLOWCHANGECOMBO);
+        allowChangeCombo = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWCHANGECOMBO);
     select->toSendPacket.allowChangeComboStatus = allowChangeCombo;
-    select->toSendPacket.koPerRace = settings.GetSettingValue(Settings::SETTINGSTYPE_KO, SETTINGKO_KOPERRACE) + 1;
-    select->toSendPacket.racesPerKO = settings.GetSettingValue(Settings::SETTINGSTYPE_KO, SETTINGKO_RACESPERKO) + 1;
+    select->toSendPacket.koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
+    select->toSendPacket.racesPerKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_RACESPERKO) + 1;
     for (int aid = 0; aid < 12; ++aid) {
         PulSELECT& cur = select->receivedPackets[aid];
         cur.pulVote = 0x43;

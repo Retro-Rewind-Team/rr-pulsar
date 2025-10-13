@@ -141,8 +141,8 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
         useInside = (savedTrans == Pulsar::TRANSMISSION_INSIDEALL);
     } else {
         u32 userTrans = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
-            Pulsar::SETTINGRR_RADIO_TRANSMISSION);
+            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
+            Pulsar::RADIO_TRANSMISSION);
         useInside = ((static_cast<Pulsar::Transmission>(userTrans) == Pulsar::TRANSMISSION_INSIDEALL) || (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE)) && vanilla != Pulsar::FORCE_TRANSMISSION_VANILLA && outsideAll != Pulsar::FORCE_TRANSMISSION_OUTSIDE;
     }
     if (useInside) {

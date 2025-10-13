@@ -94,7 +94,7 @@ void ApplyFFABattle() {
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
     bool isFFA = Pulsar::System::sInstance->IsContext(PULSAR_TEAM_BATTLE) == BATTLE_TEAMS_ENABLED;
-    bool isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) == HOSTSETTING_ELIMINATION_ENABLED;
+    bool isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) == ELIMINATION_ENABLED;
     if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && (mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE)) {
         isFFA ? BATTLE_TEAMS_ENABLED : BATTLE_TEAMS_DISABLED;
     } else if (mode != MODE_BATTLE && mode != MODE_PRIVATE_BATTLE && mode != MODE_PUBLIC_BATTLE) {

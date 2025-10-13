@@ -43,9 +43,9 @@ kmCall(0x800079b0, CheckControllerStrap);
 char bootParams[17];
 SectionId BootIntoSection(const NdevArgsExtractor& extractor) {
     SectionId section = SECTION_NONE;
-    const u8 bootSetting = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_MENU, SETTINGMENU_SCROLL_BOOT);
+    const u8 bootSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, SCROLL_BOOT);
     u8 license = 0;
-    if (bootSetting != MENUSETTING_BOOT_DISABLED) {
+    if (bootSetting != BOOT_DISABLED) {
         const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
         if (rksysMgr->CheckLicenseMagic(bootSetting - 1)) {
             const RKSYS::LicenseMgr* licenseMgr = &rksysMgr->licenses[bootSetting - 1];

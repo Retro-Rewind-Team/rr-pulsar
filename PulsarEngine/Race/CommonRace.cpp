@@ -2,6 +2,7 @@
 #include <PulsarSystem.hpp>
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
+#include <Gamemodes/LapKO/LapKOMgr.hpp>
 
 namespace Pulsar {
 // For hooks which are shared by different things
@@ -12,7 +13,9 @@ void UpdatePoints(RacedataScenario& scenario) {
     const System* system = System::sInstance;
     Racedata* racedata = Racedata::sInstance;
 
-    if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating) scenario.settings.gametype = GAMETYPE_DEFAULT;
+    bool forceDefault = false;
+    if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating) forceDefault = true;
+    if (forceDefault) scenario.settings.gametype = GAMETYPE_DEFAULT;
     bool hasVSGhost = false;
     if (system->IsContext(PULSAR_MODE_OTT)) {
         if (racedata->racesScenario.players[racedata->racesScenario.playerCount - 1].playerType == PLAYER_GHOST) {

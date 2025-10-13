@@ -41,7 +41,7 @@ s32 ExpFroomMessages::clickedButtonIdx = 0;
 //     register ExpFroomMessages* msg;
 //     asm(mr msg, r31;);
 
-//     if (!Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_HOSTWINS)) {
+//     if (!Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS)) {
 //         msg->onModeButtonClickHandler.ptmf = &Pages::FriendRoomMessages::OnModeButtonClick;
 //         msg->msgCount = 4;
 //     }
@@ -66,7 +66,7 @@ s32 ExpFroomMessages::clickedButtonIdx = 0;
 // //kmWrite32(0x805dc4c0, 0x60000000);
 
 // static void OnBackPress(ExpFroomMessages& msg) {
-//     if (Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_HOSTWINS) && msg.location == 1) {
+//     if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS) && msg.location == 1) {
 //         if (!msg.isOnModeSelection) {
 //             msg.isEnding = false;
 //             msg.OnActivate();
@@ -87,7 +87,7 @@ s32 ExpFroomMessages::clickedButtonIdx = 0;
 //     asm(mr rowIdx, r22;);
 //     register const ExpFroomMessages* messages;
 //     asm(mr messages, r19;);
-//     if (Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_HOSTWINS) && !messages->isOnModeSelection) {
+//     if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS) && !messages->isOnModeSelection) {
 //         if (messages->clickedButtonIdx >= 2 && messages->clickedButtonIdx < 4) {
 //             return BMG_BATTLE + messages->curPageIdx * 4 + rowIdx + DELFINO_PIER;
 //         }

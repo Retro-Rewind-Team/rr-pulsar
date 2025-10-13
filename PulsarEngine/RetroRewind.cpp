@@ -68,7 +68,7 @@ void FPSPatch() {
     bool froomOrVS = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
     bool isTimeTrial = mode == MODE_TIME_TRIAL;
     u32 localPlayerCount = scenario.localPlayerCount;
-    if (static_cast<Pulsar::FPS>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR), Pulsar::SETTIGNRR_RADIO_FPS)) == Pulsar::FPS_HALF || (localPlayerCount > 1 && !isDolphin) ||
+    if (static_cast<Pulsar::FPS>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE2), Pulsar::RADIO_FPS)) == Pulsar::FPS_HALF || (localPlayerCount > 1 && !isDolphin) ||
         (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERAIN) && !isDolphin && froomOrVS) || (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODESTORM) && !isDolphin && froom)) {
         FPSPatchHook = 0x00FF0100;
     }
@@ -92,7 +92,7 @@ kmCall(0x80828EDC, ItemBoxRespawn);
 
 void PredictionPatch() {
     PredictionHook = 0x3dcccccd;
-    if (static_cast<Pulsar::MenuSettingPredictionRemoval>(Pulsar::Settings::Mgr::Get().GetSettingValue(static_cast<Pulsar::Settings::Type>(Pulsar::Settings::SETTINGSTYPE_MENU), Pulsar::SETTINGMENU_RADIO_PREDICTIONREMOVAL)) == Pulsar::MENUSETTING_PREDICTIONREMOVAL_ENABLED) {
+    if (static_cast<Pulsar::MenuSettingPredictionRemoval>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_ONLINE), Pulsar::RADIO_PREDICTIONREMOVAL)) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
         PredictionHook = 0x3f800000;
     }
 }

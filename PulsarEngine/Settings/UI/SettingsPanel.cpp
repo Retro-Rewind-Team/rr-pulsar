@@ -227,9 +227,9 @@ void SettingsPanel::OnActivate() {
     if (isVotingSection) {
         if (this->sheetIdx == Settings::SETTINGSTYPE_KO ||
             this->sheetIdx == Settings::SETTINGSTYPE_OTT ||
-            this->sheetIdx == Settings::SETTINGSTYPE_HOST ||
-            this->sheetIdx == Settings::SETTINGSTYPE_RRHOST ||
-            this->sheetIdx == Settings::SETTINGSTYPE_RRLANGUAGE) {
+            this->sheetIdx == Settings::SETTINGSTYPE_FROOM1 ||
+            this->sheetIdx == Settings::SETTINGSTYPE_FROOM2 ||
+            this->sheetIdx == Settings::SETTINGSTYPE_MISC) {
             return;
         }
     }
@@ -335,7 +335,7 @@ void SettingsPanel::SaveSettings(bool writeFile) {
 }
 
 void SettingsPanel::OnBackPress(u32 hudSlotId) {
-    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_RRLANGUAGE) {
+    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC) {
         Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
         messageBox->Reset();
         messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
@@ -351,7 +351,7 @@ void SettingsPanel::OnBackPress(u32 hudSlotId) {
 }
 
 void SettingsPanel::OnSaveButtonClick(PushButton& button, u32 hudSlotId) {
-    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_RRLANGUAGE) {
+    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC) {
         Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
         messageBox->Reset();
         messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
@@ -380,9 +380,9 @@ void SettingsPanel::OnButtonClick(PushButton& button, u32 direction) {
     if (isVotingSection) {
         while (nextIdx == Settings::SETTINGSTYPE_KO ||
                nextIdx == Settings::SETTINGSTYPE_OTT ||
-               nextIdx == Settings::SETTINGSTYPE_HOST ||
-               nextIdx == (Settings::SETTINGSTYPE_RRHOST + Settings::Params::pulsarPageCount) ||
-               nextIdx == (Settings::SETTINGSTYPE_RRLANGUAGE + Settings::Params::pulsarPageCount)) {
+               nextIdx == Settings::SETTINGSTYPE_FROOM1 ||
+               nextIdx == (Settings::SETTINGSTYPE_FROOM2 + Settings::Params::pulsarPageCount) ||
+               nextIdx == (Settings::SETTINGSTYPE_MISC + Settings::Params::pulsarPageCount)) {
             nextIdx = (nextIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
         }
     }

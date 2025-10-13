@@ -14,7 +14,7 @@ void LoadAssetsFile(ArchiveFile* file, const char* path, EGG::Heap* decompressed
     const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
     if (file == &archiveMgr->archivesHolders[ARCHIVE_HOLDER_UI]->archives[3]) {
         const char* fileType = "UI";
-        Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RRLANGUAGE), Pulsar::SETTINGRRLANGUAGE_LANGUAGE));
+        Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE));
 
         bool isRaceScene = (GameScene::GetCurrent()->id == SCENE_ID_RACE);
         const char* baseType = isRaceScene ? "Race" : "UI";

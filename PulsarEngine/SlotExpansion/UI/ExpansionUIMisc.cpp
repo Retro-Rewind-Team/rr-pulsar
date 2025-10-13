@@ -32,7 +32,7 @@ int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
     if (CupsConfig::IsReg(pulsarId))
         bmgId = realId > 32 ? BMG_BATTLE : BMG_REGS;
     else {
-        Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RRLANGUAGE), Pulsar::SETTINGRRLANGUAGE_LANGUAGE));
+        Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE));
         switch (currentLanguage) {
             case Pulsar::LANGUAGE_JAPANESE:
                 bmgId = BMG_TRACKS + 0x1000;
@@ -114,7 +114,7 @@ static void SetVSIntroBmgId(LayoutUIControl* trackName) {
     Text::Info info;
     info.bmgToPass[0] = bmgId;
     u32 authorId;
-    u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RRLANGUAGE), Pulsar::SETTINGRRLANGUAGE_LANGUAGE)) * 0x1000;
+    u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE)) * 0x1000;
     if (bmgId < BMG_TRACKS) authorId = BMG_NINTENDO;
     authorId = bmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
     info.bmgToPass[1] = authorId;

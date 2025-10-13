@@ -162,8 +162,8 @@ kmWrite32(0x800ECAAC, 0x7C7E1B78);
 kmWrite32(0x805a906c, 0x4E800020);
 
 // No VR/BR Loss on Disconnect [Bully]
-kmWrite32(0x80856560, 0x60000000); // Disable VR loss
-kmWrite32(0x808565CC, 0x60000000); // Disable BR loss
+kmWrite32(0x80856560, 0x60000000);  // Disable VR loss
+kmWrite32(0x808565CC, 0x60000000);  // Disable BR loss
 
 // Ultra Uncut [MrBean35000vr + Chadderz]
 asmFunc GetUltraUncut() {
@@ -260,12 +260,189 @@ asmFunc Deflicker() {
     ASM(
         nofralloc;
         cntlzw r0, r3;
-        lwz r5, 0x14 (r5);
+        lwz r5, 0x14(r5);
         cmpwi r5, 0x0;
         bnelr;
         li r0, 0x0;
         blr;)
 }
 kmCall(0x8021A028, Deflicker);
+
+// Edit Battle Item Point Probabilities [Zeraora, B_squo]
+kmWrite32(0x807bd494, 0x38000000);
+kmWrite32(0x807bd498, 0x38A00003);
+kmWrite32(0x807bd4a8, 0x38000000);
+kmWrite32(0x807bd4ac, 0x38A00003);
+kmWrite32(0x807bd4b4, 0x38000000);
+kmWrite32(0x807bd4b8, 0x38A00003);
+
+// Blooper's lighting matches vehicle's lighting [B_squo]
+kmWrite32(0x807a8a5c, 0x60000000);
+
+// Load Vehicle Arm Parts Online [B_squo]
+kmWrite32(0x80577724, 0x48000024);
+
+// Fix Unfocused Small Mii Icon Border [B_squo]
+kmWrite32(0x807eb774, 0x2c000017);
+
+// CPUs/Online Players Have High Detail Particles [Ro]
+kmWrite32(0x8068E494, 0x38600001);
+
+// Show Position in Live View [MrBean35000vr]
+kmWrite32(0x806335B0, 0x3860021A);
+
+// Fix Online Players Stuck on Halfpipe (Halfpipe Warp Fix) [Ro]
+asmFunc halfpipeWarpFix() {
+    ASM(
+        nofralloc;
+        lwz r11, 8(r4);
+        rlwinm.r12, r11, 0, 21, 21;
+        beq - loc_0x20;
+        lha r0, 86(r31);
+        cmpwi r0, 0x52;
+        blt - loc_0x20;
+        rlwinm r11, r11, 0, 22, 20;
+        stw r11, 8(r4);
+
+        loc_0x20 :;
+        mr r4, r11;
+        blr;)
+}
+kmCall(0x8058BF58, halfpipeWarpFix);
+
+// Show Your Respawn Boost Online [Ro] #1
+asmFunc respawnBoostFix1() {
+    ASM(
+        nofralloc;
+        lwz r4, 0(r3);
+        lwz r4, 60(r4);
+        cmpwi r4, 0x0;
+        beq - loc_0x20;
+        lwz r4, 16(r4);
+        lwz r5, 16(r4);
+        xoris r5, r5, 16384;
+        stw r5, 16(r4);
+
+        loc_0x20 :;
+        li r4, 0x3;
+        blr;)
+}
+kmCall(0x80581E40, respawnBoostFix1);
+
+asmFunc respawnBoostFix2() {
+    ASM(
+        nofralloc;
+        lwz r4, 0(r3);
+        lwz r4, 60(r4);
+        cmpwi r4, 0x0;
+        beq - loc_0x20;
+        lwz r4, 16(r4);
+        lwz r5, 16(r4);
+        xoris r5, r5, 16384;
+        stw r5, 16(r4);
+
+        loc_0x20 :;
+        li r4, 0x3;
+        blr;)
+}
+kmCall(0x805820B0, respawnBoostFix2);
+
+// No Shell Tail Dissolve [Ro]
+kmWrite32(0x8068DD68, 0x38600000);
+
+// Online Miis have facial expressions [B_squo]
+kmWrite32(0x807C7944, 0x38800000);
+
+// Live View Icon Shadow Bug Fix [B_squo]
+kmWrite32(0x807eb988, 0x807c01c0);
+
+// Fix Mii opponents having silent / Rosalina voice Bug [B_squo]
+kmWrite32(0x8086975C, 0x4082001C);
+
+// Online Miis look at the camera when finishing in Live View [B_squo]
+kmWrite32(0x80596770, 0x60000000);
+
+// Invincibility Period Against Cars/Trucks Objects in All Slots [Ro]
+kmWrite32(0x806D686C, 0x3800000A);
+kmWrite32(0x80827968, 0x38000000);
+// kmWrite32(0x8078E1EC, 0x3800000A);
+
+// Slot Specific Objects Work in All Slots (pylon01, sunDS, FireSnake and begoman_spike) [Ro]
+kmWrite32(0x8082A4F8, 0x3800000A);
+
+// Cancel Friend Room Joining by Pressing B [Ro]
+extern "C" void ptr_inputBase(void*);
+asmFunc friendRoomJoinCancel() {
+    ASM(
+        nofralloc;
+        lis r31, ptr_inputBase @ha;
+        lwz r31, ptr_inputBase @l(r31);
+        lhz r31, 0x60(r31);
+        andi.r31, r31, 0x2;
+        beq end;
+
+        li r3, 3;
+
+        end :;
+        cmpwi r3, 3;
+        blr;)
+}
+kmCall(0x805DD85C, friendRoomJoinCancel);
+
+/*
+// Dead/Inactive Bomb Cars Are Visible [Ro]
+kmWrite32(0x806D7FF8, 0x81830008);
+kmWrite32(0x806D7FFC, 0x38600044);
+kmWrite32(0x806D8000, 0x986C012C);
+kmWrite32(0x806D8E5C, 0x81830008);
+kmWrite32(0x806D8E60, 0x38600054);
+kmWrite32(0x806D8E64, 0x986C012C);
+
+// Dead Goombas Are Visible [Ro]
+kmWrite32(0x806DC810, 0x48000084);
+*/
+
+// Play Character Icon Damage Animation When Burned Out [Ro]
+asmFunc burnoutIconFix() {
+    ASM(
+        nofralloc;
+        lwz r0, 8(r3);
+        andis.r12, r0, 0x4;
+        beq - loc_0x10;
+        ori r0, r0, 0x1;
+
+        loc_0x10 :;
+        blr;)
+}
+kmCall(0x807EB38C, burnoutIconFix);
+
+// Allow Pausing Before Race Starts [Sponge]
+kmWrite32(0x80856a28, 0x40810050);
+
+// jugemnu_lap.brres [ZPL]
+kmWrite16(0x808a22ec, 'RR');
+
+// Disable 6 minute time limit Online [CLF78]
+kmWrite32(0x8053F478, 0x4800000C);
+
+// Clear Exhaust Pipe Boost Particle After Damage [Ro]
+extern "C" void exhaustPipeboost(void*);
+asmFunc exhaustPipeboostFix() {
+    ASM(
+        nofralloc;
+        lis r3, exhaustPipeboost @h;
+        lwz r3, exhaustPipeboost @l(r3);
+        lwz r3, 104(r3);
+        lwz r4, 0(r31);
+        lwz r5, 40(r4);
+        lwz r4, 0(r4);
+        lbz r4, 16(r4);
+        mulli r4, r4, 0x4;
+        lwzx r3, r3, r4;
+        li r0, 0x0;
+        stw r0, 24(r3);
+        blr;)
+}
+kmCall(0x805674B8, exhaustPipeboostFix);
 
 }  // namespace Codes

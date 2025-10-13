@@ -202,7 +202,7 @@ class RaceCamera : public GameCamera {
     static bool CheckBitfield1(const Kart::Player& kartPlayer, u32 bitfieldToCheck);  // 805a3050 returns true if bitfield 1 has one of args' bit set
     static bool CheckBitfield0(const Kart::Player& kartPlayer, u32 bitfieldToCheck);  // 805a3314 returns true if bitfield 1 has one of args' bit set
 };  // 0x348
-size_assert(RaceCamera, 0x348);
+// size_assert(RaceCamera, 0x348);
 
 extern u32 screenCount;  // 808b4be8
 

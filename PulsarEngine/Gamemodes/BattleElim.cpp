@@ -48,9 +48,9 @@ static void ResetBattleElimState() {
     // reset all elimination-related runtime state.
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
-    bool isElim = HOSTSETTING_ELIMINATION_DISABLED;
+    bool isElim = ELIMINATION_DISABLED;
     if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && (mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE) && System::sInstance->IsContext(PULSAR_TEAM_BATTLE) == BATTLE_TEAMS_DISABLED) {
-        isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? HOSTSETTING_ELIMINATION_ENABLED : HOSTSETTING_ELIMINATION_DISABLED;
+        isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? ELIMINATION_ENABLED : ELIMINATION_DISABLED;
     }
     if ((isElim || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_REGIONAL && System::sInstance->netMgr.region == 0x0F)) && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) {
         gBattleElimFlag = 0;
@@ -119,9 +119,9 @@ static void BattleElimRemainingUpdate() {
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
     Racedata* racedata = Racedata::sInstance;
-    bool isElim = HOSTSETTING_ELIMINATION_DISABLED;
+    bool isElim = ELIMINATION_DISABLED;
     if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && (mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE) && System::sInstance->IsContext(PULSAR_TEAM_BATTLE) == BATTLE_TEAMS_DISABLED) {
-        isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? HOSTSETTING_ELIMINATION_ENABLED : HOSTSETTING_ELIMINATION_DISABLED;
+        isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? ELIMINATION_ENABLED : ELIMINATION_DISABLED;
     }
     if ((isElim || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_REGIONAL && System::sInstance->netMgr.region == 0x0F)) && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) {
         const System* sys = System::sInstance;
@@ -257,6 +257,18 @@ asmFunc GetFanfare() {
         end : blr;)
 }
 
+asmFunc GetFanfareKO() {
+    ASM(
+        nofralloc;
+        lwzx r3, r3, r0;
+        cmpwi r3, 0x68;
+        beq - UnusedFanFareID;
+        b end;
+        UnusedFanFareID :;
+        li r3, 0x6f;
+        end : blr;)
+}
+
 kmRuntimeUse(0x80579C1C);  // OnBattleRespawn [ZPL]
 kmRuntimeUse(0x80535C7C);  // ForceTimerOnStore [ZPL]
 kmRuntimeUse(0x806619AC);  // ForceBalloonBattle [Ro]
@@ -264,7 +276,7 @@ kmRuntimeUse(0x8058CB7C);  // ForceInvisible [Xer, edited by ZPL]
 kmRuntimeUse(0x805348E8);  // Drive after finish [Supastarrio]
 kmRuntimeUse(0x80534880);
 kmRuntimeUse(0x80799CAC);  // Drive thru items [Sponge]
-kmRuntimeUse(0x807123e8);  // GetFanfare [Zerora]
+kmRuntimeUse(0x807123e8);  // GetFanfare [Zeraora]
 void BattleElim() {
     // First, set default patches (no-op behavior) at known addresses.
     kmRuntimeWrite32A(0x80579C1C, 0xa89f02d6);
@@ -277,9 +289,10 @@ void BattleElim() {
     kmRuntimeWrite32A(0x807123e8, 0x7c63002e);
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
-    bool isElim = HOSTSETTING_ELIMINATION_DISABLED;
+    System* system = System::sInstance;
+    bool isElim = ELIMINATION_DISABLED;
     if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && (mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE) && System::sInstance->IsContext(PULSAR_TEAM_BATTLE) == BATTLE_TEAMS_DISABLED && scenario.settings.battleType == BATTLE_BALLOON) {
-        isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? HOSTSETTING_ELIMINATION_ENABLED : HOSTSETTING_ELIMINATION_DISABLED;
+        isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? ELIMINATION_ENABLED : ELIMINATION_DISABLED;
     }
     if ((isElim || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_REGIONAL && System::sInstance->netMgr.region == 0x0F)) && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) {
         // When elimination is active, redirect calls to our ASM stubs
@@ -297,6 +310,9 @@ void BattleElim() {
             // drive-through-items behavior to disable pickups.
             kmRuntimeWrite32A(0x80799CAC, 0x4e800020);
         }
+    }
+    if (system->IsContext(PULSAR_MODE_LAPKO)) {
+        kmRuntimeCallA(0x807123e8, GetFanfareKO);
     }
 }
 static PageLoadHook BattleElimHook(BattleElim);
@@ -316,9 +332,9 @@ void BattleTimer() {
     kmRuntimeWrite32A(0x80532BCC, 0x380000B4);
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
-    bool isElim = HOSTSETTING_ELIMINATION_DISABLED;
+    bool isElim = ELIMINATION_DISABLED;
     if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && (mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE) && System::sInstance->IsContext(PULSAR_TEAM_BATTLE) == BATTLE_TEAMS_DISABLED) {
-        isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? HOSTSETTING_ELIMINATION_ENABLED : HOSTSETTING_ELIMINATION_DISABLED;
+        isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? ELIMINATION_ENABLED : ELIMINATION_DISABLED;
     }
     if ((isElim || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_REGIONAL && System::sInstance->netMgr.region == 0x0F)) && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) {
         if (sub.playerCount == 12 || sub.playerCount == 11 || sub.playerCount == 10) {

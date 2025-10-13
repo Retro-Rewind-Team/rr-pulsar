@@ -20,9 +20,6 @@ namespace UI {
 kmWrite32(0x8054913C, 0x60000000);
 kmWrite32(0x80855f48, 0x48000148);
 
-// BMG size patch (Diamond)
-kmWrite32(0x8007B37C, 0x38000128);
-
 static PageId AfterWifiResults(PageId id) {
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
     const System* system = System::sInstance;
@@ -143,7 +140,7 @@ CameraParamBin* GetKartParamCamera(u32 weight, u32 screenCount) {
         s_hasSavedCameraParams = true;
     }
 
-    FOVChange fovChange = static_cast<FOVChange>(Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RR, SETTINGRR_RADIO_FOV));
+    FOVChange fovChange = static_cast<FOVChange>(Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE2, RADIO_FOV));
     if (fovChange != FOV_CHANGE_DEFAULT) {
         if (fovChange == FOV_CHANGE_16_9) {
             for (int i = 0; i < 9; ++i) {

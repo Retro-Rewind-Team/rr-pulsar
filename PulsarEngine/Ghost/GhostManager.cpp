@@ -245,15 +245,15 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
         } else {
             // fallback to local setting
             u32 tv = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-                static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
-                Pulsar::SETTINGRR_RADIO_TRANSMISSION);
+                static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
+                Pulsar::RADIO_TRANSMISSION);
             buffer.header.unknown_3 = tv;
         }
     } else {
         // default: save local player's radio setting
         u32 transValue = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
-            Pulsar::SETTINGRR_RADIO_TRANSMISSION);
+            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
+            Pulsar::RADIO_TRANSMISSION);
         buffer.header.unknown_3 = transValue;
     }
 

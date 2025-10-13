@@ -8,8 +8,8 @@ void RenameFont() {
 
     Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(
         Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RRLANGUAGE),
-            Pulsar::SETTINGRRLANGUAGE_LANGUAGE));
+            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC),
+            Pulsar::SCROLLER_LANGUAGE));
 
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_KOREAN:
@@ -28,8 +28,8 @@ void RenameRace() {
 
     Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(
         Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RRLANGUAGE),
-            Pulsar::SETTINGRRLANGUAGE_LANGUAGE));
+            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC),
+            Pulsar::SCROLLER_LANGUAGE));
 
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:
@@ -80,8 +80,8 @@ void RenameAward() {
 
     Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(
         Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RRLANGUAGE),
-            Pulsar::SETTINGRRLANGUAGE_LANGUAGE));
+            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC),
+            Pulsar::SCROLLER_LANGUAGE));
 
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:
@@ -133,8 +133,8 @@ void RenameCommon() {
 
     Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(
         Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RRLANGUAGE),
-            Pulsar::SETTINGRRLANGUAGE_LANGUAGE));
+            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC),
+            Pulsar::SCROLLER_LANGUAGE));
 
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:
