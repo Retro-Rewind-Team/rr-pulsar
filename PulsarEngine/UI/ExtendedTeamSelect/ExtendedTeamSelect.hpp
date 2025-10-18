@@ -18,6 +18,7 @@ class ExtendedTeamSelect : public Pages::MenuInteractable {
 
     void OnInit() override;
     void BeforeEntranceAnimations() override;
+    void BeforeExitAnimations() override;
     void BeforeControlUpdate() override;
     void AfterControlUpdate() override;
     void OnResume() override;
