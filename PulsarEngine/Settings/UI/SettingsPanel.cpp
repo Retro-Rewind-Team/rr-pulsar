@@ -227,9 +227,9 @@ void SettingsPanel::OnActivate() {
     if (isVotingSection) {
         if (this->sheetIdx == Settings::SETTINGSTYPE_KO ||
             this->sheetIdx == Settings::SETTINGSTYPE_OTT ||
-            this->sheetIdx == Settings::SETTINGSTYPE_HOST ||
-            this->sheetIdx == Settings::SETTINGSTYPE_RRHOST ||
-            this->sheetIdx == Settings::SETTINGSTYPE_RRLANGUAGE) {
+            this->sheetIdx == Settings::SETTINGSTYPE_FROOM1 ||
+            this->sheetIdx == Settings::SETTINGSTYPE_FROOM2 ||
+            this->sheetIdx == Settings::SETTINGSTYPE_MISC) {
             return;
         }
     }
@@ -294,12 +294,10 @@ void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton& button) {
         section->Get<ExpFroom>()->topSettingsPage = static_cast<PulPageId>(this->pageId);
         this->nextPageId = PAGE_NONE;
         this->EndStateAnimated(0, button.GetAnimationFrameSize());
-    }
-    else if (this->prevPageId == PAGE_VR) {
+    } else if (this->prevPageId == PAGE_VR) {
         this->nextPageId = PAGE_NONE;
         this->EndStateAnimated(0, button.GetAnimationFrameSize());
-    }
-    else {
+    } else {
         this->LoadPrevPage(button);
         if (this->prevPageId == PAGE_WFC_MAIN) {
             section->Get<ExpWFCMain>()->topSettingsPage = static_cast<PulPageId>(this->pageId);
@@ -335,7 +333,7 @@ void SettingsPanel::SaveSettings(bool writeFile) {
 }
 
 void SettingsPanel::OnBackPress(u32 hudSlotId) {
-    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_RRLANGUAGE) {
+    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC) {
         Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
         messageBox->Reset();
         messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
@@ -351,7 +349,7 @@ void SettingsPanel::OnBackPress(u32 hudSlotId) {
 }
 
 void SettingsPanel::OnSaveButtonClick(PushButton& button, u32 hudSlotId) {
-    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_RRLANGUAGE) {
+    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC) {
         Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
         messageBox->Reset();
         messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
@@ -373,6 +371,7 @@ void SettingsPanel::OnLeftButtonClick(PushButton& button, u32 hudSlotId) {
 void SettingsPanel::OnButtonClick(PushButton& button, u32 direction) {
     SectionId id = SectionMgr::sInstance->curSection->sectionId;
     bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING) || (id == SECTION_P1_WIFI_BATTLE_VOTING);
+    bool isOnlineSection = (id == SECTION_P1_WIFI || id == SECTION_P2_WIFI);
 
     int nextIdx = this->GetNextSheetIdx(direction);
 
@@ -380,9 +379,16 @@ void SettingsPanel::OnButtonClick(PushButton& button, u32 direction) {
     if (isVotingSection) {
         while (nextIdx == Settings::SETTINGSTYPE_KO ||
                nextIdx == Settings::SETTINGSTYPE_OTT ||
-               nextIdx == Settings::SETTINGSTYPE_HOST ||
-               nextIdx == (Settings::SETTINGSTYPE_RRHOST + Settings::Params::pulsarPageCount) ||
-               nextIdx == (Settings::SETTINGSTYPE_RRLANGUAGE + Settings::Params::pulsarPageCount)) {
+               nextIdx == Settings::SETTINGSTYPE_FROOM1 ||
+               nextIdx == (Settings::SETTINGSTYPE_FROOM2 + Settings::Params::pulsarPageCount) ||
+               nextIdx == (Settings::SETTINGSTYPE_MISC + Settings::Params::pulsarPageCount)) {
+            nextIdx = (nextIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
+        }
+    }
+
+    if (isOnlineSection) {
+        // Skip restricted pages in online sections
+        while (nextIdx == (Settings::SETTINGSTYPE_MISC + Settings::Params::pulsarPageCount)) {
             nextIdx = (nextIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
         }
     }

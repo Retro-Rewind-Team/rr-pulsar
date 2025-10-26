@@ -36,7 +36,7 @@ void CtrlRaceTrackInfoDisplay::Load() {
     Text::Info info;
     info.bmgToPass[0] = bmgId;
     u32 authorId = BMG_NINTENDO;
-    u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RRLANGUAGE), Pulsar::SETTINGRRLANGUAGE_LANGUAGE)) * 0x1000;
+    u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE)) * 0x1000;
     if (bmgId >= BMG_TRACKS) authorId = bmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
     info.bmgToPass[1] = authorId;
     this->SetMessage(BMG_INFO_DISPLAY, &info);

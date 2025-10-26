@@ -28,7 +28,8 @@ int AllShocksCanLand(Kart::Collision *kartCollision) {
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN)) {
             return UseItem(kartCollision, LIGHTNING);
         }
@@ -47,7 +48,8 @@ int AllMegasCanLand(Kart::Collision *kartCollision) {
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN)) {
             return UseItem(kartCollision, MEGA_MUSHROOM);
         }
@@ -66,7 +68,8 @@ int AllFeathersCanLand(Kart::Collision *kartCollision) {
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN)) {
             return UseItem(kartCollision, BLOOPER);
         }
@@ -85,7 +88,8 @@ int AllPOWsCanLand(Kart::Collision *kartCollision) {
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN)) {
             return UseItem(kartCollision, POW_BLOCK);
         }
@@ -104,7 +108,8 @@ int AllGoldensCanLand(Kart::Collision *kartCollision) {
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN)) {
             return UseItem(kartCollision, MUSHROOM);
         }
@@ -123,7 +128,8 @@ int AllBulletsCanLand(Kart::Collision *kartCollision) {
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN)) {
             return UseItem(kartCollision, BULLET_BILL);
         }
@@ -144,7 +150,8 @@ void AllowDroppedItems() {
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
+        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN)) {
             for (int i = 0; i < 15; i++) {
                 Item::ObjProperties::objProperties[i].canFallOnTheGround = true;

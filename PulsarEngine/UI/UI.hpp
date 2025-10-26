@@ -197,7 +197,7 @@ enum BMG {
     // Elimination
     BMG_BATTLE_BUTTON_ELIM = 0x6919,
     BMG_BATTLE_WW_BOTTOM_ELIM = 0x691a,
-    
+
     // RT
     BMG_TITLE_TEXT_RT = 0x6912,
 

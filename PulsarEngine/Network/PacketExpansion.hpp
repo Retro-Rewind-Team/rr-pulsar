@@ -45,6 +45,13 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u16 timeInDanger;
     u8 almostKOdCounter;
     u8 finalPercentageSum;  // to be divided by racecount at the end of the GP
+
+    // LapKO
+    u8 lapKoSeq;
+    u8 lapKoRoundIndex;
+    u8 lapKoActiveCount;
+    u8 lapKoElimCount;
+    u8 lapKoElims[12];
 };
 struct PulRH2 : public RKNet::RACEHEADER2Packet {};
 struct PulROOM : public RKNet::ROOMPacket {

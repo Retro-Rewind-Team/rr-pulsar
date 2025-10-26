@@ -6,16 +6,16 @@ DoFuncsHook* PageLoadHook::pageLoadHooks = nullptr;
 DoFuncsHook* RaceFrameHook::raceFrameHooks = nullptr;
 
 void DoFuncsHook::Init(void* f, Invoker inv, DoFuncsHook** prev) {
-	this->funcPtr = f;
-	this->invoker = inv;
-	this->next = *prev;
-	*prev = this;
+    this->funcPtr = f;
+    this->invoker = inv;
+    this->next = *prev;
+    *prev = this;
 }
 
 void DoFuncsHook::Exec(DoFuncsHook* first, void* a1, void* a2, void* a3) {
-	for (DoFuncsHook* p = first; p; p = p->next) {
-		p->invoker(p->funcPtr, a1, a2, a3);
-	}
+    for (DoFuncsHook* p = first; p; p = p->next) {
+        p->invoker(p->funcPtr, a1, a2, a3);
+    }
 }
 
 nw4r::ut::List BootHook::list = {nullptr, nullptr, 0, offsetof(BootHook, link)};

@@ -1,11 +1,12 @@
 #include <RetroRewind.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/GlobalFunctions.hpp>
 
 namespace Pulsar {
 
 void SetCharacter() {
-    u32 character = static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetSettingValue(static_cast<Pulsar::Settings::Type>(Pulsar::Settings::SETTINGSTYPE_MENU), Pulsar::SETTINGMENU_SCROLL_CUSTOMCHARACTER));
+    u32 character = static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_CUSTOMCHARACTER));
     CUSTOM_DRIVER = 'D';
     CUSTOM_BABY_MARIO = 'bm';
     CUSTOM_TOAD = 'ko';
@@ -34,7 +35,7 @@ void SetCharacter() {
     CUSTOM_BOWSER_JR = 'jr';
     CUSTOM_BOWSER = 'kp';
     CUSTOM_DRY_BOWSER = 'bk';
-    if (character == Pulsar::MENUSETTING_CUSTOMCHARACTER_ENABLED) {
+    if (character == Pulsar::CUSTOMCHARACTER_ENABLED && GetLocalPlayerCount() == 1) {
         CUSTOM_DRIVER = 'R';
         CUSTOM_BABY_MARIO = 'km';
         CUSTOM_TOAD = 'ct';

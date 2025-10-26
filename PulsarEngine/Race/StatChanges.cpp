@@ -21,6 +21,7 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
 
     Kart::Stats* stats = Kart::ComputeStats(kartId, characterId);
     const GameMode gameMode = Racedata::sInstance->menusScenario.settings.gamemode;
+    const GameType gameType = Racedata::sInstance->menusScenario.settings.gametype;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
     SpeedModConv speedModConv;
@@ -28,7 +29,9 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     speedModConv.kmpValue = (KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->speedMod << 16);
     if (speedModConv.speedMod == 0.0f) speedModConv.speedMod = 1.0f;
     float factor = 1.0f;
-    if (is200 && System::sInstance->IsContext(Pulsar::PULSAR_500)) {
+    if (gameType == GAMETYPE_ONLINE_SPECTATOR && System::sInstance->netMgr.region != 0x0C) {
+        factor = 1.0f;
+    } else if (is200 && System::sInstance->IsContext(Pulsar::PULSAR_500)) {
         factor = 2.66f;
     } else if (is200) {
         factor = Race::speedFactor;
@@ -98,8 +101,8 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA) ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
     }
     u32 transmission = static_cast<Pulsar::Transmission>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RR),
-        Pulsar::SETTINGRR_RADIO_TRANSMISSION));
+        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
+        Pulsar::RADIO_TRANSMISSION));
     if (ghostPlayerIdx >= 0) {
         u8 offset = (scenario.players[0].playerType != PLAYER_GHOST) ? 1 : 0;
         int rkgIndex = ghostPlayerIdx - offset;

@@ -7,6 +7,7 @@
 #include <Extensions/LECODE/LECODEMgr.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOHost.hpp>
+#include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Settings/Settings.hpp>
 #include <Config.hpp>
@@ -44,7 +45,8 @@ BootHook CreateSystem(System::CreateSystem, 0);
 
 System::System() : heap(RKSystem::mInstance.EGGSystem), taskThread(EGG::TaskThread::Create(8, 0, 0x4000, this->heap)),
                    // Modes
-                   koMgr(nullptr) {
+                   koMgr(nullptr),
+                   lapKoMgr(nullptr) {
 }
 
 void System::Init(const ConfigFile& conf) {
@@ -119,9 +121,11 @@ void System::InitIO(IOType type) const {
 
 void System::InitSettings(const u16* totalTrophyCount) const {
     Settings::Mgr* settings = new (this->heap) Settings::Mgr;
-    char path[IOS::ipcMaxPath];
-    snprintf(path, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRSettings.pul");
-    settings->Init(totalTrophyCount, path);  // params
+    char settingsPath[IOS::ipcMaxPath];
+    snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettings.pul");
+    char trophiesPath[IOS::ipcMaxPath];
+    snprintf(trophiesPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRSettings.pul");  // Original settings file
+    settings->Init(totalTrophyCount, settingsPath, trophiesPath);
     Settings::Mgr::sInstance = settings;
 }
 
@@ -134,41 +138,42 @@ void System::UpdateContext() {
     bool isHAW = false;
     bool isKO = false;
     bool isOTT = false;
-    bool isOTTOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RR, SETTINGRR_SCROLLER_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
-    bool isMiiHeads = settings.GetSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_MII);
-    bool is200Online = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RR, SETTINGRR_SCROLLER_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
-    bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_EXTENDEDTEAMS) == EXTENDEDTEAMS_ENABLED;
+    bool isOTTOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
+    bool isMiiHeads = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS);
+    bool is200Online = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
+    bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+    bool isLapBasedKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_LAPBASED && mode != MODE_TIME_TRIAL && mode != MODE_PUBLIC_VS;
 
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     Network::Mgr& netMgr = this->netMgr;
     const u32 sceneId = GameScene::GetCurrent()->id;
 
     bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
-    bool is500 = settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, HOSTSETTING_CC_500);
-    bool isKOFinal = settings.GetSettingValue(Settings::SETTINGSTYPE_KO, SETTINGKO_FINAL) == KOSETTING_FINAL_ALWAYS;
-    bool isCharRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_LIGHTONLY;
-    bool isCharRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
-    bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_HEAVYONLY;
-    bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_KARTSELECT) == KART_KARTONLY;
-    bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_KARTSELECT) == KART_BIKEONLY;
-    bool isThunderCloud = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_THUNDERCLOUD);
-    bool isItemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_RANDOM;
-    bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_BLAST;
-    bool isItemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_NONE;
-    bool isItemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
-    bool isItemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
-    bool isTrackSelectionRegs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
-    bool isTrackSelectionRetros = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
-    bool isTrackSelectionCts = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
-    bool isTrackSelectionRetrosOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode == MODE_PUBLIC_VS;
-    bool isTrackSelectionCtsOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode == MODE_PUBLIC_VS;
-    bool isChangeCombo = settings.GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ALLOWCHANGECOMBO) == OTTSETTING_COMBO_ENABLED;
-    bool isItemBoxRepsawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
-    bool isTransmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE;
-    bool isTransmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE;
-    bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA;
-    bool isTeamBattle = settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_BATTLETEAMS);
-    bool isElimination = settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_ELIMINATION);
+    bool is500 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, HOSTCC_500);
+    bool isKOFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
+    bool isCharRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_LIGHTONLY;
+    bool isCharRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
+    bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_HEAVYONLY;
+    bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_KARTONLY;
+    bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_BIKEONLY;
+    bool isThunderCloud = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD);
+    bool isItemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM;
+    bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST;
+    bool isItemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
+    bool isItemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
+    bool isItemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
+    bool isTrackSelectionRegs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
+    bool isTrackSelectionRetros = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
+    bool isTrackSelectionCts = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
+    bool isTrackSelectionRetrosOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode == MODE_PUBLIC_VS;
+    bool isTrackSelectionCtsOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode == MODE_PUBLIC_VS;
+    bool isChangeCombo = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWCHANGECOMBO) == OTTSETTING_COMBO_ENABLED;
+    bool isItemBoxRepsawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
+    bool isTransmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE;
+    bool isTransmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE;
+    bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA;
+    bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS);
+    bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION);
     bool isFeather = this->info.HasFeather();
     bool isUMTs = this->info.HasUMTs();
     bool isMegaTC = this->info.HasMegaTC();
@@ -216,6 +221,7 @@ void System::UpdateContext() {
                 isTeamBattle = newContext & (1 << PULSAR_TEAM_BATTLE);
                 isExtendedTeams = newContext & (1 << PULSAR_EXTENDEDTEAMS);
                 isElimination = newContext & (1 << PULSAR_ELIMINATION);
+                isLapBasedKO = newContext & (1 << PULSAR_MODE_LAPKO);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -226,11 +232,11 @@ void System::UpdateContext() {
                 isCT = true;
         }
     } else {
-        const u8 ottOffline = settings.GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_OFFLINE);
+        const u8 ottOffline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTOFFLINE);
         isOTT = (mode == MODE_GRAND_PRIX || mode == MODE_VS_RACE) ? (ottOffline != OTTSETTING_OFFLINE_DISABLED) : false;  // offlineOTT
         if (isOTT) {
             isFeather &= (ottOffline == OTTSETTING_OFFLINE_FEATHER);
-            isUMTs = settings.GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ALLOWUMTS);
+            isUMTs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS);
         }
     }
     this->netMgr.hostContext = newContext;
@@ -260,7 +266,7 @@ void System::UpdateContext() {
                            (isKOFinal) << PULSAR_KOFINAL | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
                            (isExtendedTeams) << PULSAR_EXTENDEDTEAMS | (isTrackSelectionRetros) << PULSAR_RETROS |
                            (isTrackSelectionCts) << PULSAR_CTS | (isTeamBattle) << PULSAR_TEAM_BATTLE |
-                           (isElimination) << PULSAR_ELIMINATION;
+                           (isElimination) << PULSAR_ELIMINATION | (isLapBasedKO) << PULSAR_MODE_LAPKO;
 
         newContextValue2 |= (isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE | (isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE |
                             (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
@@ -375,6 +381,15 @@ void System::UpdateContext() {
         delete this->koMgr;
         this->koMgr = nullptr;
     }
+
+    if (isLapBasedKO) {
+        if (this->lapKoMgr == nullptr) {
+            this->lapKoMgr = new (this->heap) LapKO::Mgr;
+        }
+    } else if (this->lapKoMgr != nullptr) {
+        delete this->lapKoMgr;
+        this->lapKoMgr = nullptr;
+    }
 }
 
 void System::UpdateContextWrapper() {
@@ -384,7 +399,7 @@ void System::UpdateContextWrapper() {
 static Pulsar::Settings::Hook UpdateContext(System::UpdateContextWrapper);
 
 void System::ClearOttContext() {
-    bool isOTTEnabled = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_OFFLINE);
+    bool isOTTEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTOFFLINE);
     if (!isOTTEnabled) {
         sInstance->context &= ~(1 << PULSAR_MODE_OTT);
     }
@@ -431,7 +446,7 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 63);
+kmWrite32(0x800017D4, 632);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";

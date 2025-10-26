@@ -49,6 +49,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     PushButton otherButton;
     PushButton battleButton;
     LayoutUIControl playerCount;
+    LayoutUIControl rankInfo;
 
    public:
     PulPageId topSettingsPage;

@@ -19,6 +19,10 @@ namespace KO {
 class Mgr;
 }  // namespace KO
 
+namespace LapKO {
+class Mgr;
+}  // namespace LapKO
+
 class ConfigFile;
 
 enum Context {
@@ -33,6 +37,7 @@ enum Context {
     PULSAR_HAW,
     PULSAR_MODE_OTT,
     PULSAR_MODE_KO,
+    PULSAR_MODE_LAPKO,
     PULSAR_CHARRESTRICTLIGHT,
     PULSAR_CHARRESTRICTMID,
     PULSAR_CHARRESTRICTHEAVY,
@@ -140,6 +145,7 @@ class System {
 
     // Modes
     KO::Mgr* koMgr;
+    LapKO::Mgr* lapKoMgr;
     bool ottHideNames;
     OTT::Mgr ottMgr;
     u8 nonTTGhostPlayersCount;  // because a ghost can be added in vs, racedata's playercount is not reliable

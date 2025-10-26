@@ -107,7 +107,6 @@ static bool isHookedRequest = false;
 static float hookLocalTimer = 0.0f;
 static bool hasRKNetRequestFinished = true;
 
-
 static int RR_numPlayers150cc = 0;
 static int RR_numPlayersCT = 0;
 static int RR_numPlayersRT = 0;
@@ -202,7 +201,7 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
         RR_numPlayers150cc = RR_localRetro;
         RR_numPlayersCT = RR_localCT;
         RR_numPlayersRT = RR_localRT;
-        
+
         RR_numPlayers200cc = RR_local200cc;
         RR_numPlayersOTT = RR_localOTT;
         RR_numPlayersIR = RR_localIR;

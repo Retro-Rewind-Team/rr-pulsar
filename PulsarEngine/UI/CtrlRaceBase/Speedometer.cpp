@@ -5,7 +5,7 @@
 namespace Pulsar {
 namespace UI {
 u32 CtrlRaceSpeedo::Count() {
-    if (Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_SOM) == RACESETTING_SOM_DISABLED) return 0;
+    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_SPEEDOMETER) == SOM_DISABLED) return 0;
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     u32 localPlayerCount = scenario.localPlayerCount;
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
@@ -19,8 +19,8 @@ void CtrlRaceSpeedo::Create(Page& page, u32 index, u32 count) {
         CtrlRaceSpeedo* som = new (CtrlRaceSpeedo);
         page.AddControl(index + i, *som, 0);
         char variant[0x20];
-        int pos = i;
-        if (count == 1 && Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_SOM) == RACESETTING_SOM_RIGHT) pos = 1;
+        int pos = 1;
+        // if (count == 1 && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_SOM) == SOM_RIGHT) pos = 1;
         snprintf(variant, 0x20, "Speedo_%1d_%1d", speedoType, pos);
         som->Load(variant, i);
     }
@@ -61,7 +61,7 @@ void CtrlRaceSpeedo::Init() {
 
 void CtrlRaceSpeedo::OnUpdate() {
     this->UpdatePausePosition();
-    const u8 digits = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_SCROLL_SOM);
+    const u8 digits = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_SPEEDOMETER) - 1;
     const Kart::Pointers& pointers = Kart::Manager::sInstance->players[this->GetPlayerId()]->pointers;
     const Kart::Physics* physics = pointers.kartBody->kartPhysicsHolder->physics;
 

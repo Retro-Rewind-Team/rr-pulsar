@@ -50,7 +50,7 @@ void ExpVR::OnInit() {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL))) isKOd = true;
 
     bool isRandomHidden = false;
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RR, SETTINGRR_RADIO_RANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
+    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
 
     this->AddControl(0xF, this->randomComboButton, 0);
     this->randomComboButton.isHidden = isKOd || isRandomHidden;
@@ -234,7 +234,7 @@ void ExpVR::AfterControlUpdate() {
         if (System::sInstance->IsContext(PULSAR_MODE_OTT) && ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL))) isKOd = true;
 
         bool isRandomHidden = false;
-        if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RR, SETTINGRR_RADIO_RANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
+        if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
 
         this->randomComboButton.isHidden = isKOd || isRandomHidden;
         this->changeComboButton.isHidden = isKOd;
@@ -359,7 +359,7 @@ void ExpCharacterSelect::BeforeControlUpdate() {
         } else if (roulette == 0) {
             if (this->buttonCooldown == 0) {
                 this->ctrlMenuCharSelect.GetButtonDriver(randomizedCharIdx[hudId])->HandleClick(hudId, -1);
-                if (Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_MENU, SETTINGMENU_RADIO_FASTMENUS) == MENUSETTING_FASTMENUS_ENABLED)
+                if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, RADIO_FASTMENUS) == FASTMENUS_ENABLED)
                     this->buttonCooldown = 30;
                 else
                     this->buttonCooldown = 150;

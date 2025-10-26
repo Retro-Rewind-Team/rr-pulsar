@@ -750,6 +750,7 @@ __vt__Q25Input7UIState = 0x808b2f20
 __vt__Q25Input5State = 0x808b2f2c
 
 #Timer
+SetActive__5TimerFb = 0x80544310
 __dt__5TimerFv = 0x8051c334
 __ct__5TimerFv = 0x8051c374
 __ct__5TimerFb = 0x805442c0
@@ -791,6 +792,7 @@ __ct__14RaceinfoPlayerFUcUc = 0x80533ed8
 Init__14RaceinfoPlayerFv = 0x80534194
 Disconnect__14RaceinfoPlayerFv = 0x80534cbc
 EndRace__14RaceinfoPlayerFRC5TimerbUi = 0x805347f4
+Vanish__14RaceinfoPlayerFv = 0x80534c78
 FillTimerWithSplits__14RaceinfoPlayerFUcP5Timer = 0x8053572c
 
 ##RKSYS
@@ -804,6 +806,15 @@ __dt__Q25RKSYS15LicenseLdbEntryFv = 0x8054437c
 #LicenseManager
 GetFavouriteCharacter__Q25RKSYS10LicenseMgrCFv = 0x805493b0
 GetFavouriteKart__Q25RKSYS10LicenseMgrCFv = 0x80549470
+GetVR__Q25RKSYS10LicenseMgrCFv = 0x80547480
+GetBR__Q25RKSYS10LicenseMgrCFv = 0x805474a8
+GetWFCVSWins__Q25RKSYS10LicenseMgrCFv = 0x8054755c
+GetWFCVSLosses__Q25RKSYS10LicenseMgrCFv = 0x80547580
+GetWFCBattleWins__Q25RKSYS10LicenseMgrCFv = 0x805475a4
+GetWFCBattleLosses__Q25RKSYS10LicenseMgrCFv = 0x805475c8
+GetTimes1stPlaceAchieved__Q25RKSYS10LicenseMgrCFv = 0x80547864
+GetDistanceTravelled__Q25RKSYS10LicenseMgrCFv = 0x80547714
+GetDistancetravelledwhilein1stplace__Q25RKSYS10LicenseMgrCFv = 0x8054789c
 
 #RKSYSMgr
 CheckLicenseMagic__Q25RKSYS3MgrCFUc = 0x80544d10
@@ -839,6 +850,7 @@ mInstance__13ScreensHolder = 0x809C1868
 SetInstance__9CameraMgrFP9CameraMgr = 0x805a1a64
 __ct__10RaceCameraFUcR10GameScreenP3BCPUc = 0x805a1d10
 HasEveryOpeningPanEnded__13RaceCameraMgrCFv = 0x805a8fbc
+ChangeFocusedPlayer__13RaceCameraMgrFUc = 0x805a9b04
 sInstance__13RaceCameraMgr = 0x809c19b8
 
 ##MII
@@ -1335,6 +1347,7 @@ ComparePlayers__18CtrlRaceResultTeamFPCQ218CtrlRaceResultTeam6PlayerPCQ218CtrlRa
 
 #CtrlRaceTime
 SetTimer__12CtrlRaceTimeFP5Timer = 0x807f84c0
+CloneTimer__8RaceinfoFP5Timer = 0x80535ca0
 EnableFlashingAnimation__12CtrlRaceTimeFv = 0x807f8878
 
 #CtrlRaceWifiMessage
@@ -1689,6 +1702,8 @@ typeInfo__Q25Pages10VSSettings = 0x809c4618
 #RaceHUD
 AfterControlUpdate__Q25Pages7RaceHUDFv = 0x808574b8
 sInstance__Q25Pages7RaceHUD = 0x809c4680
+OnNextPlayerSwitch__Q25Pages7RaceHUDFUi = 0x808569ac
+OnPrevPlayerSwitch__Q25Pages7RaceHUDFUi = 0x808569b4
 
 ##RACEMENU
 #RaceMenu
@@ -1923,6 +1938,7 @@ GetRaceinfoRandom__9DriverMgrFv = 0x807bd718
 sInstance__9DriverMgr = 0x809c23f8
 isOnlineRace__9DriverMgr = 0x809c38b9
 isTT__9DriverMgr = 0x809c38bc
+ChangeFocusedPlayer__9DriverMgrFUc = 0x8078dde4
 
 
 ##OBJECTS
@@ -2141,3 +2157,18 @@ CUSTOM_DRIVER = 0x808904f1
 
 #Battle
 HasPlayerFinished__12CtrlRaceTimeFUc = 0x807f82bc
+GetLocalPlayerCount__Fv = 0x808605fc
+
+SetGhostRacesWins__Q25RKSYS10LicenseMgrFUiUi = 0x80545e00
+fun_getHUDPlayerID = 0x807EC7F8
+ptr_raceData = 0x809BD728
+ptr_inputBase = 0x809BD70C
+__kAutoMap_0x807123e8 = 0x807123e8
+exhaustPipeboost = 0x809c21d0
+
+SetupOnlineVSProbabilities__Q24Item12ItemSlotDataFv = 0x807bbd60
+SetupVSProbabilities__Q24Item12ItemSlotDataFv = 0x807bbef8
+PostProcessVSTable__Q24Item12ItemSlotDataFPQ34Item12ItemSlotData13Probabilities = 0x807bad20
+ptr_playerBase = 0x809C18F8
+fun_playSound = 0x8071497C
+ptr_menuPageOrSomething = 0x809C2850

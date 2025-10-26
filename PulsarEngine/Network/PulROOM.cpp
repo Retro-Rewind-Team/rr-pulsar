@@ -47,32 +47,33 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
 
-        u8 koSetting = settings.GetSettingValue(Settings::SETTINGSTYPE_KO, SETTINGKO_ENABLED);
-        u8 battleTeam = settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_BATTLETEAMS);
-        u8 battleElim = settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_ELIMINATION);
-        const u8 ottOnline = settings.GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ONLINE);
-        const u8 miiHeads = settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_ALLOW_MIIHEADS) == HOSTSETTING_ALLOW_MIIHEADS_ENABLED;
-        const u8 charRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_LIGHTONLY;
-        const u8 charRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
-        const u8 charRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_HEAVYONLY;
-        const u8 kartRestrict = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_KARTSELECT) == KART_KARTONLY;
-        const u8 bikeRestrict = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_KARTSELECT) == KART_BIKEONLY;
-        const u8 itemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_RANDOM;
-        const u8 itemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_BLAST;
-        const u8 itemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_NONE;
-        const u8 RegOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
-        const u8 RetroOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
-        const u8 CtsOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
-        const u8 koFinal = settings.GetSettingValue(Settings::SETTINGSTYPE_KO, SETTINGKO_FINAL) == KOSETTING_FINAL_ALWAYS;
-        const u8 changeCombo = settings.GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ALLOWCHANGECOMBO) == OTTSETTING_COMBO_ENABLED;
-        const u8 itemBoxRepsawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
-        const u8 transmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE;
-        const u8 transmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE;
-        const u8 transmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA;
-        const u8 itemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
-        const u8 itemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
-        const u8 extendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_EXTENDEDTEAMS) == EXTENDEDTEAMS_ENABLED;
-        const u8 megaTC = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_THUNDERCLOUD);
+        u8 koSetting = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_ENABLED;
+        u8 lapKoSetting = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_LAPBASED;
+        u8 battleTeam = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS);
+        u8 battleElim = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION);
+        const u8 ottOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE);
+        const u8 miiHeads = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLOWMIIHEADS) == ALLOW_MIIHEADS_ENABLED;
+        const u8 charRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_LIGHTONLY;
+        const u8 charRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
+        const u8 charRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_HEAVYONLY;
+        const u8 kartRestrict = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_KARTONLY;
+        const u8 bikeRestrict = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_BIKEONLY;
+        const u8 itemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM;
+        const u8 itemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST;
+        const u8 itemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
+        const u8 RegOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
+        const u8 RetroOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
+        const u8 CtsOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
+        const u8 koFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
+        const u8 changeCombo = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWCHANGECOMBO) == OTTSETTING_COMBO_ENABLED;
+        const u8 itemBoxRepsawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
+        const u8 transmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE;
+        const u8 transmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE;
+        const u8 transmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA;
+        const u8 itemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
+        const u8 itemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
+        const u8 extendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+        const u8 megaTC = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD);
 
         if (extendedTeams) {
             koSetting = KOSETTING_DISABLED;
@@ -85,8 +86,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
 
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT  // ott
                                          | (ottOnline == OTTSETTING_ONLINE_FEATHER) << PULSAR_FEATHER  // ott feather
-                                         | (settings.GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ALLOWUMTS) ^ true) << PULSAR_UMTS  // ott umts
-                                         | koSetting << PULSAR_MODE_KO | charRestrictLight << PULSAR_CHARRESTRICTLIGHT | charRestrictMid << PULSAR_CHARRESTRICTMID | charRestrictHeavy << PULSAR_CHARRESTRICTHEAVY | kartRestrict << PULSAR_KARTRESTRICT | bikeRestrict << PULSAR_BIKERESTRICT | koFinal << PULSAR_KOFINAL | changeCombo << PULSAR_CHANGECOMBO | megaTC << PULSAR_THUNDERCLOUD | settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_CC) << PULSAR_500 | settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_HOSTWINS) << PULSAR_HAW | RegOnly << PULSAR_REGS | RetroOnly << PULSAR_RETROS | CtsOnly << PULSAR_CTS | itemBoxRepsawnFast << PULSAR_ITEMBOXRESPAWN | battleTeam << PULSAR_TEAM_BATTLE | extendedTeams << PULSAR_EXTENDEDTEAMS | battleElim << PULSAR_ELIMINATION;
+                                         | (settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) ^ true) << PULSAR_UMTS  // ott umts
+                                         | koSetting << PULSAR_MODE_KO | lapKoSetting << PULSAR_MODE_LAPKO | charRestrictLight << PULSAR_CHARRESTRICTLIGHT | charRestrictMid << PULSAR_CHARRESTRICTMID | charRestrictHeavy << PULSAR_CHARRESTRICTHEAVY | kartRestrict << PULSAR_KARTRESTRICT | bikeRestrict << PULSAR_BIKERESTRICT | koFinal << PULSAR_KOFINAL | changeCombo << PULSAR_CHANGECOMBO | megaTC << PULSAR_THUNDERCLOUD | settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) << PULSAR_500 | settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS) << PULSAR_HAW | RegOnly << PULSAR_REGS | RetroOnly << PULSAR_RETROS | CtsOnly << PULSAR_CTS | itemBoxRepsawnFast << PULSAR_ITEMBOXRESPAWN | battleTeam << PULSAR_TEAM_BATTLE | extendedTeams << PULSAR_EXTENDEDTEAMS | battleElim << PULSAR_ELIMINATION;
 
         destPacket->hostSystemContext2 |= transmissionInside << PULSAR_TRANSMISSIONINSIDE | transmissionOutside << PULSAR_TRANSMISSIONOUTSIDE | transmissionVanilla << PULSAR_TRANSMISSIONVANILLA | miiHeads << PULSAR_MIIHEADS | itemModeRandom << PULSAR_ITEMMODERANDOM | itemModeBlast << PULSAR_ITEMMODEBLAST | itemModeNone << PULSAR_ITEMMODENONE | itemModeRain << PULSAR_ITEMMODERAIN | itemModeStorm << PULSAR_ITEMMODESTORM;
 
@@ -94,7 +95,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         if (koSetting == KOSETTING_ENABLED)
             raceCount = 0xFE;
         else
-            switch (settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_SCROLL_GP_RACES)) {
+            switch (settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_RACECOUNT)) {
                 case (1):
                     raceCount = 5;
                     break;
@@ -125,7 +126,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
     }
 
     // if we're starting a Extended Team VS or we're the host updating the teams, write the new teams to the packet
-    const bool isExtendedTeams = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_EXTENDEDTEAMS) == EXTENDEDTEAMS_ENABLED;
+    const bool isExtendedTeams = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
     const bool isUpdateTeamMessage = destPacket->messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS;
     const bool isStartVSRaceMessage = destPacket->messageType == 1 && (destPacket->message == 0 || destPacket->message == 2 || destPacket->message == 3);
     if ((isUpdateTeamMessage || (isStartVSRaceMessage && isExtendedTeams)) && sub.localAid == sub.hostAid) {
@@ -163,12 +164,12 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
     if (src.messageType == 1 && !isHost && packetHolder->packetSize == sizeof(PulROOM)) {
         ConvertROOMPacketToData(src);
         const Settings::Mgr& settings = Settings::Mgr::Get();
-        bool isCharRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_LIGHTONLY;
-        bool isCharRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
-        bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_CHARSELECT) == CHAR_HEAVYONLY;
-        bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_KARTSELECT) == KART_KARTONLY;
-        bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_KARTSELECT) == KART_BIKEONLY;
-        bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RRHOST, SETTINGRR3_RADIO_EXTENDEDTEAMS) == EXTENDEDTEAMS_ENABLED;
+        bool isCharRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_LIGHTONLY;
+        bool isCharRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
+        bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_HEAVYONLY;
+        bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_KARTONLY;
+        bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_BIKEONLY;
+        bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
         u32 newContext = 0;
         Network::Mgr& netMgr = Pulsar::System::sInstance->netMgr;
         newContext = netMgr.hostContext;
@@ -227,15 +228,15 @@ void SetAllToSendPackets(RKNet::ROOMHandler& roomHandler, u32 packetArg) {
     const u8 localAid = controller->subs[controller->currentSub].localAid;
     Pulsar::System* system = Pulsar::System::sInstance;
     if((packetReg.packet.messageType) == 1 && localAid == controller->subs[controller->currentSub].hostAid) {
-        const u8 hostParam = Settings::Mgr::GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_RADIO_HOSTWINS);
+        const u8 hostParam = Settings::Mgr::GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS);
         packetReg.packet.message |= hostParam << 2; //uses bit 2 of message
 
-        const u8 gpParam = Settings::Mgr::GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_SCROLL_GP_RACES);
-        const u8 disableMiiHeads = Settings::Mgr::GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_ALLOW_MIIHEADS);
+        const u8 gpParam = Settings::Mgr::GetUserSettingValue(Settings::SETTINGSTYPE_FROOM, SCROLLER_RACECOUNT);
+        const u8 disableMiiHeads = Settings::Mgr::GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLOWMIIHEADS);
         packetReg.packet.message |= gpParam << 3; //uses bits 3-5
         packetReg.packet.message |= disableMiiHeads << 6; //uses bit 6
-        packetReg.packet.message |= Settings::Mgr::GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ONLINE) << 7; //7 for OTT
-        packetReg.packet.message |= Settings::Mgr::GetSettingValue(Settings::SETTINGSTYPE_KO, SETTINGKO_ENABLED) << 8; //8 for KO
+        packetReg.packet.message |= Settings::Mgr::GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) << 7; //7 for OTT
+        packetReg.packet.message |= Settings::Mgr::GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) << 8; //8 for KO
 
         ConvertROOMPacketToData(packetReg.packet.message >> 2); //5 right now (2-8) + 1 reserved (9)
         packetReg.packet.message |= (System::sInstance->SetPackROOMMsg() << 0xA & 0b1111110000000000); //6 bits for packs (10-15)

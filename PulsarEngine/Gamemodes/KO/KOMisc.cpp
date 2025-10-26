@@ -13,8 +13,10 @@
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
+#include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
+#include <Gamemodes/PositionCounter.hpp>
 
 namespace Pulsar {
 namespace KO {
@@ -58,32 +60,7 @@ kmCall(0x8085cc04, EditLdb);
 
 static u8 EditPosTracker(CtrlRaceRankNum& posTracker) {
     const u32 playerId = posTracker.GetPlayerId();
-    const System* system = System::sInstance;
-    Mgr* mgr = system->koMgr;
-    if (system->IsContext(PULSAR_MODE_KO)) {
-        u8 idx = posTracker.hudSlotId;
-        lyt::Picture* posPane = static_cast<nw4r::lyt::Picture*>(posTracker.layout.GetPaneByName("position"));
-        ut::Color color = 0xffffffff;
-
-        u8 playerId;
-        if (mgr->isSpectating)
-            playerId = RaceCameraMgr::sInstance->focusedPlayerIdx;
-        else
-            playerId = Racedata::sInstance->racesScenario.settings.hudPlayerIds[idx];
-
-        if (Raceinfo::sInstance->raceFrames > 0 && mgr->GetWouldBeKnockedOut(playerId)) {
-            s32 increment = mgr->posTrackerAnmFrames[idx] >= 31 ? 8 : -8;
-            color.g = posPane->vertexColours[0].g + increment;
-            color.b = color.g;
-            ++mgr->posTrackerAnmFrames[idx];
-            if (mgr->posTrackerAnmFrames[idx] == 62) mgr->posTrackerAnmFrames[idx] = 0;
-        } else
-            mgr->posTrackerAnmFrames[idx] = 0;
-        posPane->vertexColours[0] = color;
-        posPane->vertexColours[1] = color;
-        posPane->vertexColours[2] = color;
-        posPane->vertexColours[3] = color;
-    }
+    PositionCounter::UpdatePositionDisplay(posTracker);
     return playerId;
 }
 kmCall(0x807f4b64, EditPosTracker);
@@ -91,21 +68,24 @@ kmCall(0x807f4b64, EditPosTracker);
 // Fixes for when spectating
 static u8 ReturnCorrectId(u8 localId) {
     const System* system = System::sInstance;
+    const RaceCameraMgr* cameraMgr = RaceCameraMgr::sInstance;
     if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating) {
-        const RaceCameraMgr* cameraMgr = RaceCameraMgr::sInstance;
-        if (cameraMgr == nullptr) return 0;  // this is needed because this function is called by the ctor of racecameramgr
+        if (cameraMgr == nullptr) return 0;
         return cameraMgr->focusedPlayerIdx;
-    } else
-        return localId;
+    }
+    return localId;
 }
 kmBranch(0x80531f7c, ReturnCorrectId);
 
 static GameType SyncCountdown(const Racedata& raceData) {
     GameType type = raceData.racesScenario.settings.gametype;
     const System* system = System::sInstance;
-    if (system->IsContext(PULSAR_MODE_KO) && type == GAMETYPE_ONLINE_SPECTATOR) {
+    const bool isKoSpectate = system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating;
+    if (isKoSpectate && type == GAMETYPE_ONLINE_SPECTATOR) {
         type = GAMETYPE_DEFAULT;
-        Racedata::sInstance->racesScenario.settings.gametype = GAMETYPE_DEFAULT;
+        if (Racedata::sInstance != nullptr) {
+            Racedata::sInstance->racesScenario.settings.gametype = GAMETYPE_DEFAULT;
+        }
     }
     return type;
 }
@@ -176,23 +156,37 @@ static void SkipVRControlFill(Pages::VR& vr, u32 index, u32 playerId, u32 team, 
 static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) {
     const System* system = System::sInstance;
 
-    if (system->IsContext(PULSAR_MODE_KO)) {
-        Mgr* mgr = system->koMgr;
+    const bool isKO = system->IsContext(PULSAR_MODE_KO);
+    const bool isLapKO = system->IsContext(PULSAR_MODE_LAPKO);
+    const bool needsSelectData = isKO || isLapKO;
+
+    if (needsSelectData) {
         RKNet::Controller* controller = RKNet::Controller::sInstance;
-        RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-        Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
-        const Network::PulSELECT* select;
-        const u8 hostAid = sub.hostAid;
-        if (hostAid == sub.localAid)
-            select = &handler.toSendPacket;
-        else
-            select = &handler.receivedPackets[hostAid];
-        mgr->koPerRace = select->koPerRace;
-        mgr->racesPerKO = select->racesPerKO;
-        mgr->alwaysFinal = select->alwaysFinal;
-        mgr->PatchAids(sub);
-        reinterpret_cast<RKNet::SELECTHandler&>(handler).AllocatePlayerIdsToAids();
-        controller->UpdateAidsBelongingToPlayerIds();
+        if (controller != nullptr) {
+            RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+            Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
+            const Network::PulSELECT* select = nullptr;
+            const u8 hostAid = sub.hostAid;
+            if (hostAid == sub.localAid || hostAid >= 12) {
+                select = &handler.toSendPacket;
+            } else {
+                select = &handler.receivedPackets[hostAid];
+            }
+
+            if (isKO && system->koMgr != nullptr && select != nullptr) {
+                Mgr* mgr = system->koMgr;
+                mgr->koPerRace = select->koPerRace;
+                mgr->racesPerKO = select->racesPerKO;
+                mgr->alwaysFinal = select->alwaysFinal;
+                mgr->PatchAids(sub);
+                reinterpret_cast<RKNet::SELECTHandler&>(handler).AllocatePlayerIdsToAids();
+                controller->UpdateAidsBelongingToPlayerIds();
+            }
+
+            if (isLapKO && system->lapKoMgr != nullptr && select != nullptr) {
+                system->lapKoMgr->SetKoPerRace(select->koPerRace);
+            }
+        }
     }
 
     stageMgr.SetModeTypes();

@@ -2,6 +2,7 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Settings/UI/ExpWFCMainPage.hpp>
 #include <UI/UI.hpp>
+#include <Network/Ranking.hpp>
 #include <UI/PlayerCount.hpp>
 #include <PulsarSystem.hpp>
 
@@ -14,7 +15,7 @@ kmWrite24(0x80899a36, 'PUL');  // 8064ba38
 kmWrite24(0x80899a5B, 'PUL');  // 8064ba90
 
 void ExpWFCMain::OnInit() {
-    this->InitControlGroup(10);  // 5 controls usually + settings button + player count + retro and custom buttons + battle button
+    this->InitControlGroup(11);
     WFCMainMenu::OnInit();
     this->AddControl(5, settingsButton, 0);
 
@@ -25,7 +26,11 @@ void ExpWFCMain::OnInit() {
 
     this->AddControl(6, playerCount, 0);
     ControlLoader loader(&this->playerCount);
-    loader.Load(UI::buttonFolder, "VRButton", "VRButton", nullptr);
+    loader.Load(UI::buttonFolder, "PlayerButton", "VRButton", nullptr);
+
+    this->AddControl(10, rankInfo, 0);
+    ControlLoader rankLoader(&this->rankInfo);
+    rankLoader.Load(UI::buttonFolder, "RankButton", "VRButton", nullptr);
 
     this->AddControl(7, mainButton, 0);
     this->mainButton.Load(UI::buttonFolder, "MainButton", "ButtonMain", 1, 0, 0);
@@ -114,6 +119,16 @@ void ExpWFCMain::BeforeControlUpdate() {
 
     if (!Dolphin::IsEmulator()) {
         this->playerCount.SetPaneVisibility("capsul_null", false);
+    }
+
+    wchar_t rankBuf[48];
+    rankBuf[0] = L'\0';
+    Ranking::FormatRankMessage(rankBuf, sizeof(rankBuf) / sizeof(rankBuf[0]));
+    Text::Info rankInfoTxt;
+    rankInfoTxt.strings[0] = rankBuf;
+    this->rankInfo.SetTextBoxMessage("go", UI::BMG_TEXT, &rankInfoTxt);
+    if (!Dolphin::IsEmulator()) {
+        this->rankInfo.SetPaneVisibility("capsul_null", false);
     }
 }
 

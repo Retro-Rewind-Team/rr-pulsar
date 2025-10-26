@@ -46,7 +46,7 @@ class ExpVR : public Pages::VR {
     PtmfHolder_2A<ExpVR, void, PushButton&, u32> onSettingsClick;
     PushButton randomComboButton;
     PushButton changeComboButton;
-   PushButton settingsButton;
+    PushButton settingsButton;
 
    public:
     u8 comboButtonState;  // 1 = randomize, 2 = change

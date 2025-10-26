@@ -28,7 +28,7 @@ void ItemModeCheck() {
             ITEMS_PER_SPAWN = 1;
             MAX_ITEM_LIFETIME = 570;
         }
-    } else if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL && (System::sInstance->netMgr.region == 0x0D || System::sInstance->netMgr.region == 0x17)) {
+    } else if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && (System::sInstance->netMgr.region == 0x0D)) {
         ITEMS_PER_SPAWN = 1;
         MAX_ITEM_LIFETIME = 570;
     }
@@ -60,28 +60,28 @@ static ItemObjId GetRandomItem() {
     const GameMode mode = scenario.settings.gamemode;
     static const ItemWeight weightsVS[] = {
         {OBJ_MUSHROOM, 20},
-        {OBJ_GREEN_SHELL, 18},
-        {OBJ_BANANA, 18},
+        {OBJ_GREEN_SHELL, 10},
+        {OBJ_BANANA, 15},
         {OBJ_RED_SHELL, 8},
         {OBJ_FAKE_ITEM_BOX, 8},
         {OBJ_BOBOMB, 1},
-        {OBJ_STAR, 6},
+        {OBJ_STAR, 10},
         {OBJ_BLUE_SHELL, 3},
-        {OBJ_GOLDEN_MUSHROOM, 5},
-        {OBJ_MEGA_MUSHROOM, 7},
+        {OBJ_GOLDEN_MUSHROOM, 7},
+        {OBJ_MEGA_MUSHROOM, 12},
         {OBJ_BULLET_BILL, 5},
     };
     static const ItemWeight weightsBattle[] = {
         {OBJ_MUSHROOM, 20},
-        {OBJ_GREEN_SHELL, 18},
-        {OBJ_BANANA, 18},
+        {OBJ_GREEN_SHELL, 10},
+        {OBJ_BANANA, 15},
         {OBJ_RED_SHELL, 8},
         {OBJ_FAKE_ITEM_BOX, 8},
         {OBJ_BOBOMB, 1},
-        {OBJ_STAR, 6},
+        {OBJ_STAR, 10},
         {OBJ_BLUE_SHELL, 8},
-        {OBJ_GOLDEN_MUSHROOM, 5},
-        {OBJ_MEGA_MUSHROOM, 7},
+        {OBJ_GOLDEN_MUSHROOM, 7},
+        {OBJ_MEGA_MUSHROOM, 12},
         {OBJ_BULLET_BILL, 0},
     };
 
@@ -148,7 +148,8 @@ void SpawnItemRain() {
     if (!Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN) && !Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODESTORM)) return;
     if (Pulsar::System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
     if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_FROOM_HOST && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_FROOM_NONHOST &&
-        RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL) return;
+        RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL &&
+        RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_JOINING_REGIONAL) return;
     if (mode == MODE_TIME_TRIAL) return;
     if (!Racedata::sInstance || !Raceinfo::sInstance || !Item::Manager::sInstance) return;
     if (!Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_RACE)) return;
@@ -175,7 +176,6 @@ void SpawnItemRain() {
 
     for (int i = 0; i < ITEMS_PER_SPAWN; i++) {
         for (int playerIdx = 0; playerIdx < playerCount; playerIdx++) {
-
             Item::Player& player = Item::Manager::sInstance->players[playerIdx];
             bool isLocal = false;
             if (player.kartPlayer && player.kartPlayer->IsLocal()) {

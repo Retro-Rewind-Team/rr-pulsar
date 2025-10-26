@@ -29,9 +29,13 @@ class Mgr {
    private:
     static Mgr* sInstance;
     static void SaveTask(void*);
-    void Init(const u16* totalTrophyCount, const char* path);
+    void Init(const u16* totalTrophyCount, const char* settingsPath, const char* trophiesPath);
     int GetSettingsBinSize(u32 trackCount) const;
+    void LoadTrophiesFromFile(bool hadLegacyData);
+    void SaveTrophiesToFile() const;
+    void ResetTrophies(TrophiesHolder& trophies, u32 trackCount) const;
     char filePath[IOS::ipcMaxPath];
+    char trophiesFilePath[IOS::ipcMaxPath];
     Binary* rawBin;
 
     TrackTrophy* FindTrackTrophy(u32 crc32, TTMode mode) const;

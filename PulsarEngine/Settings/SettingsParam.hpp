@@ -13,8 +13,8 @@ namespace Settings {
 
 class Params {
    public:
-    static const int pulsarPageCount = 5;
-    static const int userPageCount = 3;
+    static const int pulsarPageCount = 0;
+    static const int userPageCount = 12;
     static const int pageCount = pulsarPageCount + userPageCount;
 
     static const int maxRadioCount = 8;  // per page, due to space
@@ -29,208 +29,338 @@ class Params {
 
 // Contains all the settings.
 enum Type {
-    SETTINGSTYPE_MENU,
-    SETTINGSTYPE_RACE,
-    SETTINGSTYPE_HOST,
-    SETTINGSTYPE_OTT,
-    SETTINGSTYPE_KO
 };
 
 // If you want to add settings to your packs, they go in this enum, and GetUserSettingValue should be used to obtain the value of a given setting
 enum UserType {
-    SETTINGSTYPE_RR,
-    SETTINGSTYPE_RRHOST,
-    SETTINGSTYPE_RRLANGUAGE
+    SETTINGSTYPE_RACE1,
+    SETTINGSTYPE_RACE2,
+    SETTINGSTYPE_MENU,
+    SETTINGSTYPE_ONLINE,
+    SETTINGSTYPE_SOUND,
+    SETTINGSTYPE_BATTLE,
+    SETTINGSTYPE_FROOM1,
+    SETTINGSTYPE_FROOM2,
+    SETTINGSTYPE_OTT,
+    SETTINGSTYPE_KO,
+    SETTINGSTYPE_EXTENDEDTEAMS,
+    SETTINGSTYPE_MISC,
+
 };
 
 }  // namespace Settings
 
-// SETTINGS ENUM, for the page, DO NOT FORGET THE +6 for scrollers (see menu settings for example)
-// Use these 3 for "u32 setting" in GetSettingValue, the return will be the value of the other enums
+// --------------------------------------------------------------------------------------
+// Page order (User pages):
+//  1) Race 1
+//  2) Race 2
+//  3) Menu
+//  4) Online
+//  5) Sound
+//  6) Battle
+//  7) Friend Room 1
+//  8) Friend Room 2
+//  9) OTT
+// 10) KO
+// 11) Extended Teams
+// 12) Misc
+// --------------------------------------------------------------------------------------
+
+// 1) Race 1
+enum Race1Settings {
+    RADIO_TRANSMISSION = 0,
+    RADIO_BRAKEDRIFT = 1,
+    RADIO_HARDAI = 2,
+    RADIO_INPUTDISPLAY = 3,
+    RADIO_MIIHEADS = 4,
+    RADIO_SPEEDOMETER = 5,
+};
+
+// 2) Race 2
+enum Race2Settings {
+    RADIO_BATTLEGLITCH = 0,
+    RADIO_FPS = 1,
+    RADIO_BLOOM = 2,
+    RADIO_FOV = 3,
+    RADIO_NAMETAG = 4,
+};
+
+// 3) Menu
 enum MenuSettings {
-    SETTINGMENU_RADIO_FASTMENUS = 0,
-    SETTINGMENU_RADIO_LAYOUT = 1,
-    SETTINGMENU_RADIO_MUSIC = 2,
-    SETTINGMENU_RADIO_PREDICTIONREMOVAL = 3,
-    SETTINGMENU_SCROLL_BOOT = 0 + 8,
-    SETTINGMENU_SCROLL_CUSTOMCHARACTER = 1 + 8
+    RADIO_FASTMENUS = 0,
+    RADIO_LAYOUT = 1,
+    SCROLL_BOOT = 0 + 8
 };
 
-enum RaceSettings {
-    SETTINGRACE_RADIO_MII,
-    SETTINGRACE_RADIO_SPEEDUP,
-    SETTINGRACE_RADIO_BATTLE,
-    SETTINGRACE_RADIO_BLUES,
-    SETTINGRACE_RADIO_SOM,
-    SETTINGRACE_RADIO_BLOOM,
-    SETTINGRACE_SCROLL_SOM = 0 + 8
+// 4) Online
+enum OnlineSettings {
+    RADIO_ONLINERANDOMBUTTON = 0,
+    RADIO_PREDICTIONREMOVAL = 1,
 };
 
-enum HostSettings {
-    SETTINGHOST_RADIO_HOSTWINS = 0,
-    SETTINGHOST_RADIO_CC = 1,
-    SETTINGHOST_ALLOW_MIIHEADS = 2,
-    SETTINGHOST_RADIO_BATTLETEAMS = 3,
-    SETTINGHOST_RADIO_ELIMINATION = 4,
-    SETTINGHOST_SCROLL_GP_RACES = 0 + 8
+// 5) Sound
+enum SoundSettings {
+    RADIO_CTMUSIC = 0,
+    RADIO_MUSIC = 1,
+    RADIO_MUSICSPEEDUP = 2,
 };
 
+// 6) Battle
+enum BattleSettings {
+    RADIO_BATTLETEAMS = 0,
+    RADIO_BATTLEELIMINATION = 1,
+};
+
+// 7) Friend Room 1
+enum FriendRoom1Settings {
+    RADIO_FROOMCC = 0,
+    RADIO_KARTSELECT = 1,
+    RADIO_CHARSELECT = 2,
+    SCROLLER_RACECOUNT = 0 + 8,
+    SCROLLER_ITEMMODE = 1 + 8,
+    SCROLLER_TRACKSELECTION = 2 + 8,
+
+};
+
+// 8) Friend Room 2
+enum FriendRoom2Settings {
+    RADIO_HOSTWINS = 0,
+    RADIO_ALLOWMIIHEADS = 1,
+    RADIO_ITEMBOXRESPAWN = 2,
+    RADIO_THUNDERCLOUD = 3,
+    RADIO_FORCETRANSMISSION = 4,
+};
+
+// 9) OTT
 enum OTTSettings {
-    SETTINGOTT_ONLINE = 0,
-    SETTINGOTT_OFFLINE = 1,
-    SETTINGOTT_ALLOWCHANGECOMBO = 2,
-    SETTINGOTT_ALLOWUMTS = 3,
-    SETTINGOTT_MUTEPTANDPLAYERS = 4
+    RADIO_OTTONLINE = 0,
+    RADIO_OTTOFFLINE = 1,
+    RADIO_OTTALLOWCHANGECOMBO = 2,
+    RADIO_OTTALLOWUMTS = 3,
+    RADIO_OTTMUTEPTANDPLAYERS = 4
 };
 
+// 10) KO
 enum KOSettings {
-    SETTINGKO_ENABLED = 0,
-    SETTINGKO_FINAL = 1,
-    SETTINGKO_KOPERRACE = 0 + 8,
-    SETTINGKO_RACESPERKO = 1 + 8
+    RADIO_KOENABLED = 0,
+    RADIO_KOFINAL = 1,
+    SCROLLER_KOPERRACE = 0 + 8,
+    SCROLLER_RACESPERKO = 1 + 8
 };
 
-enum RRettings {
-    SETTINGRR_RADIO_TRANSMISSION = 0,
-    SETTINGRR_RADIO_HARDAI = 1,
-    SETTINGRR_RADIO_BRAKEDRIFT = 2,
-    SETTINGRR_RADIO_FOV = 3,
-    SETTINGRR_RADIO_CTMUSIC = 4,
-    SETTIGNRR_RADIO_FPS = 5,
-    SETTINGRR_RADIO_INPUTDISPLAY = 6,
-    SETTINGRR_RADIO_RANDOMBUTTON = 7,
-    SETTINGRR_SCROLLER_WWMODE = 0 + 8,
+// 11) Extended Teams
+enum ExtendedTeamsSettings {
+    RADIO_EXTENDEDTEAMSENABLED = 0,
+    RADIO_EXTENDEDTEAMSLINE = 1
 };
 
-enum RRHostSettings {
-    SETTINGRR3_RADIO_KARTSELECT = 0,
-    SETTINGRR3_RADIO_CHARSELECT = 1,
-    SETTINGRR3_RADIO_ITEMBOXRESPAWN = 2,
-    SETTINGRR3_RADIO_THUNDERCLOUD = 3,
-    SETTINGRR3_RADIO_EXTENDEDTEAMS = 4,
-    SETTINGRR3_RADIO_FORCETRANSMISSION = 5,
-    SETTINGRR3_SCROLLER_ITEMMODE = 0 + 8,
-    SETTINGRR3_SCROLLER_TRACKSELECTION = 1 + 8
+// 12) Misc
+enum MiscSettings {
+    SCROLLER_CUSTOMCHARACTER = 0 + 8,
+    SCROLLER_LANGUAGE = 1 + 8,
+    SCROLLER_WWMODE = 2 + 8,
 };
 
-enum RRLanguageSettings {
-    SETTINGRRLANGUAGE_LANGUAGE = 0 + 8,
+// --------------------------------------------------------------------------------------
+// Value enums grouped by page order
+// --------------------------------------------------------------------------------------
+
+// 1) Race 1 values
+enum Transmission {
+    TRANSMISSION_DEFAULT,
+    TRANSMISSION_INSIDEALL,
+    TRANSMISSION_INSIDEBIKE,
+    TRANSMISSION_OUTSIDE
 };
 
-// MENU SETTINGS
-enum MenuSettingFastMenus {
-    MENUSETTING_FASTMENUS_DISABLED = 0x0,
-    MENUSETTING_FASTMENUS_ENABLED = 0x1
+enum BrakeDrift {
+    BRAKEDRIFT_DISABLED,
+    BRAKEDRIFT_ENABLED
 };
 
-enum MenuSettingLayout {
-    MENUSETTING_LAYOUT_DEFAULT = 0x0,
-    MENUSETTING_LAYOUT_ALPHABETICAL = 0x1
+enum HardAI {
+    HARDAI_DISABLED,
+    HARDAI_ENABLED
 };
 
-enum MenuSettingMusic {
-    MENUSETTING_MUSIC_DEFAULT = 0x0,
-    MENUSETTING_MUSIC_DISABLE_ALL = 0x1,
-    MENUSETTING_MUSIC_DISABLE_RACE = 0x2
+enum InputDisplay {
+    INPUTDISPLAY_DISABLED,
+    INPUTDISPLAY_ENABLED
 };
 
-enum MenuSettingPredictionRemoval {
-    MENUSETTING_PREDICTIONREMOVAL_DISABLED = 0x0,
-    MENUSETTING_PREDICTIONREMOVAL_ENABLED = 0x1
-};
-
-enum MenuSettingBoot {
-    MENUSETTING_BOOT_DISABLED,
-    MENUSETTING_BOOT_L1,
-    MENUSETTING_BOOT_L2,
-    MENUSETTING_BOOT_L3,
-    MENUSETTING_BOOT_L4
-};
-
-enum MenuSettingCustomCharacter {
-    MENUSETTING_CUSTOMCHARACTER_DISABLED = 0x0,
-    MENUSETTING_CUSTOMCHARACTER_ENABLED = 0x1
-};
-
-// RACE SETTINGS
 enum RaceSettingMII {
-    RACESETTING_MII_DISABLED = 0x0,
-    RACESETTING_MII_ENABLED = 0x1
-};
-
-enum RaceSettingSPEEDUP {
-    RACESETTING_SPEEDUP_DISABLED = 0x0,
-    RACESETTING_SPEEDUP_ENABLED = 0x1
-};
-
-enum RaceSettingBATTLE {
-    RACESETTING_BATTLE_GLITCH_DISABLED = 0x0,
-    RACESETTING_BATTLE_GLITCH_ENABLED = 0x1
-};
-
-enum RaceSettingBLUES {
-    RACESETTING_DRAGGABLE_BLUES_DISABLED = 0x0,
-    RACESETTING_DRAGGABLE_BLUES_ENABLED = 0x1
+    MII_DISABLED = 0x0,
+    MII_ENABLED = 0x1
 };
 
 enum RaceSettingSOM {
-    RACESETTING_SOM_LEFT = 0x0,
-    RACESETTING_SOM_RIGHT = 0x1,
-    RACESETTING_SOM_DISABLED = 0x2
+    SOM_DISABLED,
+    SOM_DIGITS_0,
+    SOM_DIGITS_1,
+    SOM_DIGITS_2,
+};
+
+// 2) Race 2 values
+enum FPS {
+    FPS_DEFAULT,
+    FPS_HALF
 };
 
 enum RaceSettingBLOOM {
-    RACESETTING_BLOOM_DISABLED = 0x0,
-    RACESETTING_BLOOM_ENABLED = 0x1
+    BLOOM_DISABLED = 0x0,
+    BLOOM_ENABLED = 0x1
 };
 
-enum RaceSettingSOMDigits {
-    HOSTSETTING_SOM_DIGITS_0,
-    HOSTSETTING_SOM_DIGITS_1,
-    HOSTSETTING_SOM_DIGITS_2,
-    HOSTSETTING_SOM_DIGITS_3
+enum FOVChange {
+    FOV_CHANGE_DEFAULT,
+    FOV_CHANGE_16_9,
+    FOV_CHANGE_4_3
 };
 
-// HOST SETTINGS
-enum HostSettingHAW {
-    HOSTSETTING_HOSTWINS_DISABLED,
-    HOSTSETTING_HOSTWINS_ENABLED
+enum RaceSettingBATTLE {
+    BATTLE_GLITCH_DISABLED = 0x0,
+    BATTLE_GLITCH_ENABLED = 0x1
 };
 
-enum HostSettingHostCC {
-    HOSTSETTING_CC_NORMAL,
-    HOSTSETTING_CC_150,
-    HOSTSETTING_CC_100,
-    HOSTSETTING_CC_500
+enum RaceSettingNAMETAG {
+    NAMETAG_REGULAR = 0x0,
+    NAMETAG_MII = 0x1
 };
 
-enum HostSettingMiiHeads {
-    HOSTSETTING_ALLOW_MIIHEADS_ENABLED,
-    HOSTSETTING_ALLOW_MIIHEADS_DISABLED
+// 3) Menu values
+enum MenuSettingFastMenus {
+    FASTMENUS_DISABLED = 0x0,
+    FASTMENUS_ENABLED = 0x1
 };
 
+enum MenuSettingLayout {
+    LAYOUT_DEFAULT = 0x0,
+    LAYOUT_ALPHABETICAL = 0x1
+};
+
+enum MenuSettingBoot {
+    BOOT_DISABLED,
+    BOOT_L1,
+    BOOT_L2,
+    BOOT_L3,
+    BOOT_L4
+};
+
+// 4) Online values
+enum RandomButton {
+    RANDOMBUTTON_ENABLED,
+    RANDOMBUTTON_DISABLED
+};
+
+enum MenuSettingPredictionRemoval {
+    PREDICTIONREMOVAL_DISABLED = 0x0,
+    PREDICTIONREMOVAL_ENABLED = 0x1
+};
+
+// 5) Sound values
+enum CTMusic {
+    CTMUSIC_ENABLED,
+    CTMUSIC_DISABLED
+};
+
+enum MenuSettingMusic {
+    MUSIC_DEFAULT = 0x0,
+    MUSIC_DISABLE_ALL = 0x1,
+    MUSIC_DISABLE_RACE = 0x2
+};
+
+enum RaceSettingSPEEDUP {
+    SPEEDUP_DISABLED = 0x0,
+    SPEEDUP_ENABLED = 0x1
+};
+
+// 6) Battle values
 enum BattleTeams {
     BATTLE_TEAMS_DISABLED,
     BATTLE_TEAMS_ENABLED
 };
 
 enum HostSettingElimination {
-    HOSTSETTING_ELIMINATION_DISABLED = 0x0,
-    HOSTSETTING_ELIMINATION_ENABLED = 0x1
+    ELIMINATION_DISABLED = 0x0,
+    ELIMINATION_ENABLED = 0x1
+};
+
+// 7) Friend Room 1 values
+enum HostSettingHostCC {
+    HOSTCC_NORMAL,
+    HOSTCC_150,
+    HOSTCC_100,
+    HOSTCC_500
+};
+
+enum KartRestriction {
+    KART_DEFAULTSELECTION,
+    KART_KARTONLY,
+    KART_BIKEONLY
+};
+
+enum CharacterRestriction {
+    CHAR_DEFAULTSELECTION,
+    CHAR_LIGHTONLY,
+    CHAR_MEDIUMONLY,
+    CHAR_HEAVYONLY
 };
 
 enum HostSettingGPRACES {
-    HOSTSETTING_GP_RACES_4,
-    HOSTSETTING_GP_RACES_8,
-    HOSTSETTING_GP_RACES_12,
-    HOSTSETTING_GP_RACES_24,
-    HOSTSETTING_GP_RACES_32,
-    HOSTSETTING_GP_RACES_64,
-    HOSTSETTING_GP_RACES_2
-    // space for a 7th setting is available
+    GP_RACES_4,
+    GP_RACES_8,
+    GP_RACES_12,
+    GP_RACES_24,
+    GP_RACES_32,
+    GP_RACES_64,
+    GP_RACES_2
 };
 
-// OTT SETTINGS
+enum ItemMode {
+    GAMEMODE_DEFAULT,
+    GAMEMODE_RANDOM,
+    GAMEMODE_BLAST,
+    GAMEMODE_ITEMRAIN,
+    GAMEMODE_ITEMSTORM,
+    GAMEMODE_NONE
+};
+
+enum TrackSelection {
+    TRACKSELECTION_RETROS,
+    TRACKSELECTION_CTS,
+    TRACKSELECTION_ALL,
+    TRACKSELECTION_REGS,
+};
+
+// 8) Friend Room 2 values
+enum HostSettingHAW {
+    HOSTWINS_DISABLED,
+    HOSTWINS_ENABLED
+};
+
+enum HostSettingMiiHeads {
+    ALLOW_MIIHEADS_ENABLED,
+    ALLOW_MIIHEADS_DISABLED
+};
+
+enum ItemBoxRespawn {
+    ITEMBOX_DEFAULTRESPAWN,
+    ITEMBOX_FASTRESPAWN
+};
+
+enum ThunderCloud {
+    THUNDERCLOUD_MEGA,
+    THUNDERCLOUD_NORMAL
+};
+
+enum ForceTransmission {
+    FORCE_TRANSMISSION_DEFAULT,
+    FORCE_TRANSMISSION_INSIDE,
+    FORCE_TRANSMISSION_OUTSIDE,
+    FORCE_TRANSMISSION_VANILLA
+};
+
+// 9) OTT values
 enum OTTSettingOnline {
     OTTSETTING_ONLINE_DISABLED,
     OTTSETTING_ONLINE_NORMAL,
@@ -253,10 +383,11 @@ enum OTTSettingUMTs {
     OTTSETTING_UMTS_ENABLED
 };
 
-// KO SETTINGS
+// 10) KO values
 enum KOSettingEnabled {
     KOSETTING_DISABLED,
-    KOSETTING_ENABLED
+    KOSETTING_ENABLED,
+    KOSETTING_LAPBASED
 };
 
 enum KOSettingFINAL {
@@ -278,103 +409,23 @@ enum KOSettingRacesPerKO {
     KOSETTING_RACESPERKO_4
 };
 
-// RR Settings
-enum Transmission {
-    TRANSMISSION_DEFAULT,
-    TRANSMISSION_INSIDEALL,
-    TRANSMISSION_INSIDEBIKE,
-    TRANSMISSION_OUTSIDE
-};
-
-enum HardAI {
-    HARDAI_DISABLED,
-    HARDAI_ENABLED
-};
-
-enum BrakeDrift {
-    BRAKEDRIFT_DISABLED,
-    BRAKEDRIFT_ENABLED
-};
-
-enum FOVChange {
-    FOV_CHANGE_DEFAULT,
-    FOV_CHANGE_16_9,
-    FOV_CHANGE_4_3
-};
-
-enum CTMusic {
-    CTMUSIC_ENABLED,
-    CTMUSIC_DISABLED
-};
-
-enum FPS {
-    FPS_DEFAULT,
-    FPS_HALF
-};
-
-enum InputDisplay {
-    INPUTDISPLAY_DISABLED,
-    INPUTDISPLAY_ENABLED
-};
-
-enum RandomButton {
-    RANDOMBUTTON_ENABLED,
-    RANDOMBUTTON_DISABLED
-};
-
-// RRHost Settings
-enum KartRestriction {
-    KART_DEFAULTSELECTION,
-    KART_KARTONLY,
-    KART_BIKEONLY
-};
-
-enum CharacterRestriction {
-    CHAR_DEFAULTSELECTION,
-    CHAR_LIGHTONLY,
-    CHAR_MEDIUMONLY,
-    CHAR_HEAVYONLY
-};
-
-enum ItemBoxRespawn {
-    ITEMBOX_DEFAULTRESPAWN,
-    ITEMBOX_FASTRESPAWN
-};
-
-enum ThunderCloud {
-    THUNDERCLOUD_MEGA,
-    THUNDERCLOUD_NORMAL
-};
-
+// 11) Extended Teams values
 enum ExtendedTeams {
     EXTENDEDTEAMS_DISABLED,
     EXTENDEDTEAMS_ENABLED
 };
 
-enum ForceTransmission {
-    FORCE_TRANSMISSION_DEFAULT,
-    FORCE_TRANSMISSION_INSIDE,
-    FORCE_TRANSMISSION_OUTSIDE,
-    FORCE_TRANSMISSION_VANILLA
+enum ExtendedTeamsLine {
+    EXTENDEDTEAMS_LINE_TEAM,
+    EXTENDEDTEAMS_LINE_REGION
 };
 
-enum ItemMode {
-    GAMEMODE_DEFAULT,
-    GAMEMODE_RANDOM,
-    GAMEMODE_BLAST,
-    GAMEMODE_ITEMRAIN,
-    GAMEMODE_ITEMSTORM,
-    GAMEMODE_NONE
+// 12) Misc values
+enum MenuSettingCustomCharacter {
+    CUSTOMCHARACTER_DISABLED = 0x0,
+    CUSTOMCHARACTER_ENABLED = 0x1
 };
 
-enum TrackSelection {
-    TRACKSELECTION_RETROS,
-    TRACKSELECTION_CTS,
-    TRACKSELECTION_ALL,
-    TRACKSELECTION_REGS,
-};
-
-// RR Language Settings
 enum Language {
     LANGUAGE_ENGLISH,
     LANGUAGE_JAPANESE,
@@ -391,7 +442,6 @@ enum Language {
     LANGUAGE_CZECH,
 };
 
-// Extra
 enum WWMode {
     WWMODE_DEFAULT,
     WWMODE_OTT,
