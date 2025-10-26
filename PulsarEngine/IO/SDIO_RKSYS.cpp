@@ -96,7 +96,7 @@ NandUtils::Result SDIO_CheckRKSYSLength(NandMgr* nm, u32 length)  // 8052c20c
                 "* SDIO_RKSYS: CheckRKSYSLength: RKSYS length not matching (queried: %i, actual: %i)\n",
                 length,
                 size);
-            return NandUtils::NAND_RESULT_NOEXISTS;
+            return NandUtils::NAND_RESULT_OK;
         }
     } else {
         OS::Report("* SDIO_RKSYS: CheckRKSYSLength trampoline\n");
@@ -111,6 +111,8 @@ kmBranch(0x8052c20c, SDIO_CheckRKSYSLength);
 
 NandUtils::Result SDIO_WriteToRKSYS(NandMgr* nm, const void* buffer, u32 size, u32 offset, bool r7)  // 8052c2d0
 {
+    OS::Report("* SDIO_RKSYS: WriteToRKSYS base (isNewNotSeparateSavegame: %i)\n", isNewNotSeparateSavegame);
+
     if (IsNewChannel()) {
         /* basically - this is true if this was called into after creating rksys,
         the game wants to write some basic data. but we copied an existing rksys, so
@@ -135,12 +137,20 @@ NandUtils::Result SDIO_WriteToRKSYS(NandMgr* nm, const void* buffer, u32 size, u
                     OS::Report("* SDIO_RKSYS: WriteToRKSYS: Failed to open RKSYS, aborting\n");
                     return NandUtils::NAND_RESULT_NOEXISTS;
                 }
+
+                if(isNewNotSeparateSavegame) {
+                    OS::Report("* SDIO_RKSYS: WriteToRKSYS: Created RKSYS but skipping write\n");
+                    isNewNotSeparateSavegame = false;
+                    IO::sInstance->Close();
+                    return NandUtils::NAND_RESULT_OK;
+                }
             }
 
             IO::sInstance->Seek(offset);
             OS::Report("* SDIO_RKSYS: WriteToRKSYS: wrote %i bytes\n", IO::sInstance->Write(size, buffer));
             IO::sInstance->Close();
         } else {
+            OS::Report("* SDIO_RKSYS: WriteToRKSYS: not writing; isNewNotSeparateSavegame true\n");
             isNewNotSeparateSavegame = false;
         }
 
@@ -170,7 +180,7 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
         SDIO_RKSYS_path(path, sizeof(path));
 
         OS::Report("* SDIO_RKSYS: CreateRKSYS (%s)\n", path);
-        int mode = IO::sInstance->type == IOType_DOLPHIN ? FILE_MODE_NONE : O_CREAT;
+        int mode = IO::sInstance->type == IOType_DOLPHIN ? O_RDWR : O_RDWR & O_CREAT;
 
         res = IO::sInstance->CreateAndOpen(path, mode);
 
@@ -183,11 +193,13 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
         if (!useRedirectedRKSYS()) {
             OS::Report("* SDIO_RKSYS: CreateRKSYS: Copying existing NAND RKSYS\n");
 
+            isNewNotSeparateSavegame = true;
+
             /* this makes ReadRKSYS read from nand*/
             readingNAND = true;
 
             const int rksys_size = 0x2BC000;
-            const int chunk_size = 128;
+            const int chunk_size = 1024*10;
 
             char chunk[chunk_size];
             int read = 0;
@@ -196,9 +208,12 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
             while (read < rksys_size) {
                 OS::Report("* SDIO_RKSYS: CreateRKSYS: Copying chunk %i (offset %i)\n", i, read);
 
+                IO::sInstance->Close();
                 /* if this check fails the file probably doesnt exist... */
                 /* or if it does, wtf */
                 NandUtils::Result r = SDIO_ReadRKSYS(nm, (void*)chunk, chunk_size, chunk_size * i, true);
+
+                IO::sInstance->OpenFile(path, mode);
 
                 if (r != NandUtils::NAND_RESULT_OK) {
                     OS::Report("* SDIO_RKSYS: CreateRKSYS: Failed to read old RKSYS, error %i\n", r);
@@ -213,13 +228,12 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
                 }
 
                 IO::sInstance->Seek(chunk_size * i);
-                IO::sInstance->Write(chunk_size, (void*)chunk);
+                OS::Report("* SDIO_RKSYS: CreateRKSYS: Wrote %i bytes\n", IO::sInstance->Write(chunk_size, (void*)chunk));
 
                 i++;
                 read += chunk_size;
             }
 
-            isNewNotSeparateSavegame = true;
             readingNAND = false;
         }
 
@@ -242,6 +256,7 @@ NandUtils::Result SDIO_DeleteRKSYS(NandMgr* nm, u32 length, bool r5)  // 8052c7e
     OS::Report("* SDIO_RKSYS: DeleteRKSYS base\n");
 
     if (IsNewChannel()) {
+        /* we dont have a way to delete this so just say we did and it'll get overwritten with the new file */
         OS::Report("* SDIO_RKSYS: DeleteRKSYS (length: %p/%i)\n", length, length);
         return NandUtils::NAND_RESULT_OK;
     } else {
