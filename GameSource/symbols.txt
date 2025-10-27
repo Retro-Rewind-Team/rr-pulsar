@@ -695,6 +695,9 @@ GetCurrent__9GameSceneFv = 0x8051bed0
 #RootScene
 sInstance__9RootScene = 0x809bd740
 
+#RaceScene
+UpdateRaceInstances__9RaceSceneFv = 0x80554ad4
+
 ##GHOSTS
 #RKG
 ClearBuffer__3RKGFv = 0x8051c088

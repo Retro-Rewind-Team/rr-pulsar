@@ -2,6 +2,7 @@
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <MarioKartWii/UI/Page/Other/Message.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <Network/GPReport.hpp>
 #include <core/nw4r/ut/Misc.hpp>
 
 namespace Pulsar {
@@ -75,6 +76,23 @@ void ExtendedTeamSelect::BeforeEntranceAnimations() {
     this->shouldDisconnect = false;
 
     this->teamPlayerArrows[0].SelectInitial(0);
+}
+
+void ExtendedTeamSelect::BeforeExitAnimations() {
+    MenuInteractable::BeforeExitAnimations();
+
+    // Report team info to GPCM
+    if (this->manager->hasFriendRoomStarted) {
+        RKNet::Controller* controller = RKNet::Controller::sInstance;
+        RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+
+        u8 numPlayersOnAid = sub.connectionUserDatas[sub.localAid].playersAtConsole;
+        for (int playerOnAid = 0; playerOnAid < numPlayersOnAid; playerOnAid++) {
+            char buffer[64];
+            snprintf(buffer, sizeof(buffer), "hi=%d|tm=%d", playerOnAid, this->manager->GetPlayerTeamByAID(sub.localAid, playerOnAid));
+            Network::Report("wl:mkw_extended_teams", buffer);
+        }
+    }
 }
 
 void ExtendedTeamSelect::OnResume() {
