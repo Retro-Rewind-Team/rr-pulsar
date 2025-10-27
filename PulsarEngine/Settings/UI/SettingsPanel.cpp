@@ -371,7 +371,7 @@ void SettingsPanel::OnLeftButtonClick(PushButton& button, u32 hudSlotId) {
 void SettingsPanel::OnButtonClick(PushButton& button, u32 direction) {
     SectionId id = SectionMgr::sInstance->curSection->sectionId;
     bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING) || (id == SECTION_P1_WIFI_BATTLE_VOTING);
-    bool isOnlineSection = (id == SECTION_P1_WIFI || id == SECTION_P2_WIFI);
+    bool isOnlineSection = (id == SECTION_P1_WIFI || id == SECTION_P2_WIFI || id == SECTION_P1_WIFI_FROM_FROOM_RACE || id == SECTION_P2_WIFI_FROM_FROOM_RACE || id == SECTION_P1_WIFI_FROM_FIND_FRIEND || id == SECTION_P2_WIFI_FROM_FIND_FRIEND);
 
     int nextIdx = this->GetNextSheetIdx(direction);
 
