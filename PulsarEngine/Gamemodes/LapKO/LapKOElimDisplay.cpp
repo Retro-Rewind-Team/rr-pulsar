@@ -2,6 +2,7 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
 #include <MarioKartWii/UI/Layout/ControlLoader.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
+#include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/Mii/Mii.hpp>
@@ -56,6 +57,19 @@ static const wchar_t* CopyNameSafe(const wchar_t* src, size_t srcMax, wchar_t* d
     }
     dst[i] = L'\0';
     return dst;
+}
+
+static const wchar_t* CopyCharacterNameFromBMG(const BMGHolder& holder, s32 bmgId, wchar_t* scratch, size_t length) {
+    if (scratch == nullptr || length <= 1) return nullptr;
+    if (holder.bmgFile == nullptr) return nullptr;
+
+    const s32 msgId = holder.GetMsgId(bmgId);
+    if (msgId < 0) return nullptr;
+
+    const wchar_t* source = holder.GetMsgByMsgId(msgId);
+    if (source == nullptr || source[0] == L'\0') return nullptr;
+
+    return CopyNameSafe(source, length - 1, scratch, length);
 }
 
 class CtrlRaceLapKOElimMessage : public CtrlRaceBase {
@@ -226,11 +240,23 @@ const wchar_t* CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar
         }
     }
 
-    const wchar_t* bmgName = UI::GetCustomMsg(GetCharacterBMGId(player.characterId, true));
-    if (bmgName != nullptr) {
-        ::wcsncpy(scratch, bmgName, length - 1);
-        scratch[length - 1] = L'\0';
-        return scratch;
+    const u32 characterBmgId = GetCharacterBMGId(player.characterId, true);
+    const wchar_t* bmgName = nullptr;
+    if (characterBmgId != 0) {
+        bmgName = UI::GetCustomMsg(static_cast<s32>(characterBmgId));
+        if (CopyCharacterNameFromBMG(this->curFileBmgs, static_cast<s32>(characterBmgId), scratch, length) != nullptr) return scratch;
+        if (CopyCharacterNameFromBMG(this->commonBmgs, static_cast<s32>(characterBmgId), scratch, length) != nullptr) return scratch;
+
+        const SectionMgr* sectionMgr = SectionMgr::sInstance;
+        if (sectionMgr != nullptr && sectionMgr->systemBMG != nullptr) {
+            if (CopyCharacterNameFromBMG(*sectionMgr->systemBMG, static_cast<s32>(characterBmgId), scratch, length) != nullptr) return scratch;
+        }
+
+        if (bmgName != nullptr) {
+            ::wcsncpy(scratch, bmgName, length - 1);
+            scratch[length - 1] = L'\0';
+            return scratch;
+        }
     }
 
     return L"Player";
