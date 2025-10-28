@@ -66,6 +66,6 @@ void SetCharacter() {
         CUSTOM_DRY_BOWSER = 'gk';
     }
 }
-static PageLoadHook SetCharacterHook(SetCharacter);
+static SectionLoadHook SetCharacterHook(SetCharacter);
 
 }  // namespace Pulsar

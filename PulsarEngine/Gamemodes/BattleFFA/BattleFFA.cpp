@@ -120,7 +120,7 @@ void ApplyFFABattle() {
         }
     }
 }
-static PageLoadHook ApplyFFABattleHook(ApplyFFABattle);
+static SectionLoadHook ApplyFFABattleHook(ApplyFFABattle);
 
 }  // namespace BattleFFA
 }  // namespace Pulsar

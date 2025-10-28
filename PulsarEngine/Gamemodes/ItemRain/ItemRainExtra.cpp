@@ -69,7 +69,7 @@ void ItemRainFix() {
         }
     }
 }
-static PageLoadHook FixItemRain(ItemRainFix);
+static SectionLoadHook FixItemRain(ItemRainFix);
 
 }  // namespace ItemRain
 }  // namespace Pulsar

@@ -73,7 +73,7 @@ void FPSPatch() {
         FPSPatchHook = 0x00FF0100;
     }
 }
-static PageLoadHook PatchFPS(FPSPatch);
+static SectionLoadHook PatchFPS(FPSPatch);
 
 void ItemBoxRespawn(Objects::Itembox* itembox) {
     bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
@@ -96,6 +96,6 @@ void PredictionPatch() {
         PredictionHook = 0x3f800000;
     }
 }
-static PageLoadHook PatchPrediction(PredictionPatch);
+static SectionLoadHook PatchPrediction(PredictionPatch);
 
 }  // namespace RetroRewind
