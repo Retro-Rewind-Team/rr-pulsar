@@ -24,6 +24,6 @@ nw4r::ut::List BootHook::list = {nullptr, nullptr, 0, offsetof(BootHook, link)};
 kmCall(0x80543bb4, BootHook::Exec);  // 800074d4
 kmBranch(0x80554728, RaceLoadHook::Exec);
 kmBranch(0x8083822C, RaceLoadHook::Exec);
-kmBranch(0x80601C5C, PageLoadHook::Exec);
+kmBranch(0x80601C60, PageLoadHook::Exec);
 kmBranch(0x8053369c, RaceFrameHook::Exec);  // Raceinfo::Update()
 kmBranch(0x8063507c, SectionLoadHook::Exec);
