@@ -18,6 +18,7 @@ namespace LapKO {
 
 static const u16 pendingBroadcastFrames = 120;
 static const u16 eliminationDisplayDuration = 180;
+static const u8 lapKoNoRoundAdvanceFlag = 0x80;
 
 Mgr::Mgr()
     : koPerRaceSetting(1),
@@ -25,6 +26,7 @@ Mgr::Mgr()
       activeCount(0),
       playerCount(0),
       roundIndex(1),
+    roundDisconnectDebits(0),
       totalRounds(0),
       eventSequence(0),
       appliedSequence(0),
@@ -33,6 +35,7 @@ Mgr::Mgr()
       pendingRound(0),
       pendingActiveCount(0),
       hasPendingEvent(false),
+    pendingNoRoundAdvance(false),
       pendingBatchCount(0),
       isSpectating(false),
       isHost(true),
@@ -65,6 +68,12 @@ void Mgr::SetKoPerRace(u8 value) {
 
 u8 Mgr::GetKoPerRace() const {
     return (this->koPerRaceSetting == 0) ? 1 : this->koPerRaceSetting;
+}
+
+u8 Mgr::GetCurrentRoundEliminationCount() const {
+    if (this->activeCount <= 1) return 0;
+    const u8 usualLapCount = this->GetUsualTrackLapCount();
+    return this->GetRemainingEliminationsForCurrentRound(usualLapCount);
 }
 
 u8 Mgr::BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8* outPlan, u8 capacity) {
@@ -129,6 +138,7 @@ void Mgr::InitForRace() {
     this->activeCount = this->playerCount;
     this->orderCursor = 0;
     this->roundIndex = 1;
+    this->roundDisconnectDebits = 0;
     this->totalRounds = 0;
     this->eventSequence = 0;
     this->appliedSequence = 0;
@@ -138,6 +148,7 @@ void Mgr::InitForRace() {
     this->pendingActiveCount = 0;
     this->pendingTimer = 0;
     this->hasPendingEvent = false;
+    this->pendingNoRoundAdvance = false;
     this->pendingBatchCount = 0;
     this->isSpectating = false;
     this->raceFinished = false;
@@ -183,6 +194,7 @@ void Mgr::InitForRace() {
 
 void Mgr::ResetRound() {
     this->orderCursor = 0;
+    this->roundDisconnectDebits = 0;
     for (int i = 0; i < 12; ++i) {
         this->crossed[i] = false;
         this->crossOrder[i] = 0xFF;
@@ -224,7 +236,7 @@ void Mgr::OnPlayerDisconnected(u8 playerId) {
     OS::Report("LapKO: Disconnect player=%u\n", playerId);
     // In friend rooms, only the host determines eliminations on disconnects
     if (!this->IsFriendRoomOnline() || this->isHost) {
-        this->ProcessElimination(playerId, "disconnect", false);
+        this->ProcessElimination(playerId, ELIMINATION_CAUSE_DISCONNECT, false, true);
     }
 }
 
@@ -235,112 +247,102 @@ void Mgr::TryResolveRound() {
     // Special case for 1-lap tracks: when first place finishes, eliminate everyone else
     const u8 usualLaps = this->GetUsualTrackLapCount();
 
-    // Determine number of eliminations this round
-    u8 planIdx = (this->roundIndex - 1);
-    if (planIdx >= this->totalRounds) return;
-    u8 toEliminate = (planIdx < MaxRounds) ? this->eliminationPlan[planIdx] : 0;
-    if (toEliminate == 0) return;  // no eliminations scheduled this round
-    if (toEliminate >= this->activeCount) toEliminate = static_cast<u8>(this->activeCount - 1);
+    u8 toEliminate = this->GetRemainingEliminationsForCurrentRound(usualLaps);
+    if (toEliminate == 0) return;  // no eliminations remaining this round
 
-    u8 requiredCrossings = static_cast<u8>(this->activeCount - toEliminate);
+    u8 requiredCrossings;
     if (usualLaps <= 1) {
-        // Require just the first to cross to trigger elimination of the rest
         requiredCrossings = 1;
-        // Eliminate everyone except the first crosser
-        toEliminate = static_cast<u8>(this->activeCount - 1);
-    }
-    if (this->orderCursor < requiredCrossings) return;  // wait until all safe players crossed
-
-    // Collect elimination targets = bottom ranked active players at this moment
-    // Prefer Raceinfo's current placement ordering, BUT only eliminate players who have NOT crossed into the new lap yet.
-    // This avoids eliminating a safe player (e.g., host) if placements are momentarily incomplete online at the round boundary.
-    // Provenance: observed early-round host elimination due to transient standings; fixed by gating on !crossed first and
-    // breaking ties using placement order and crossOrder tail.
-    u8 eliminatedList[12];
-    u8 elimCount = 0;
-
-    Raceinfo* raceinfoLocal = Raceinfo::sInstance;
-    if (raceinfoLocal != nullptr && raceinfoLocal->playerIdInEachPosition != nullptr) {
-        // Pass 1: Prefer eliminating those who have not crossed into the next lap yet
-        for (int pos = 11; pos >= 0 && elimCount < toEliminate; --pos) {
-            const u8 pid = raceinfoLocal->playerIdInEachPosition[pos];
-            if (pid >= 12) continue;
-            if (!this->active[pid]) continue;
-            if (this->crossed[pid]) continue;  // safe in this round
-            bool already = false;
-            for (u8 c = 0; c < elimCount; ++c) {
-                if (eliminatedList[c] == pid) {
-                    already = true;
-                    break;
-                }
-            }
-            if (!already) eliminatedList[elimCount++] = pid;
-        }
-        // Pass 2: If still short (e.g., everyone crossed on 1-lap tracks), fill from the tail of cross order
-        for (int idx = this->orderCursor - 1; elimCount < toEliminate && idx >= 0; --idx) {
-            const u8 pid = this->crossOrder[idx];
-            if (pid >= 12) continue;
-            if (!this->active[pid]) continue;
-            bool already = false;
-            for (u8 c = 0; c < elimCount; ++c) {
-                if (eliminatedList[c] == pid) {
-                    already = true;
-                    break;
-                }
-            }
-            if (!already) eliminatedList[elimCount++] = pid;
-        }
+        if (toEliminate >= this->activeCount) toEliminate = static_cast<u8>(this->activeCount - 1);
     } else {
-        // Fallback: use previous approach based on not-crossed and tail of cross order
-        for (u8 i = 0; i < 12 && elimCount < toEliminate; ++i) {
-            if (!this->active[i]) continue;
-            if (this->crossed[i]) continue;
-            eliminatedList[elimCount++] = i;
-        }
-        for (int idx = this->orderCursor - 1; elimCount < toEliminate && idx >= 0; --idx) {
-            u8 pid = this->crossOrder[idx];
-            bool already = false;
-            for (u8 c = 0; c < elimCount; ++c)
-                if (eliminatedList[c] == pid) already = true;
-            if (!already) eliminatedList[elimCount++] = pid;
-        }
+        requiredCrossings = static_cast<u8>(this->activeCount - toEliminate);
     }
+    if (this->orderCursor < requiredCrossings) return;
 
+    u8 eliminatedList[12];
+    const u8 elimCount = this->SelectEliminationCandidates(toEliminate, eliminatedList);
     if (elimCount == 0) return;
 
-    // Apply eliminations sequentially but avoid advancing round until last in batch
     const u8 concludedRound = this->roundIndex;
     for (u8 i = 0; i < elimCount; ++i) {
         const bool lastOne = (i == elimCount - 1);
-        this->ProcessEliminationInternal(eliminatedList[i], "round", false, !lastOne);
+        this->ProcessEliminationInternal(eliminatedList[i], ELIMINATION_CAUSE_ROUND, false, !lastOne);
     }
-    // Host in friend room broadcasts the batch to all clients
     if (this->IsFriendRoomOnline() && this->isHost) {
         this->BroadcastBatch(eliminatedList, elimCount, concludedRound);
     }
 }
 
-void Mgr::ProcessElimination(u8 playerId, const char* reason, bool fromNetwork) {
-    this->ProcessEliminationInternal(playerId, reason, fromNetwork, false);
+void Mgr::ProcessElimination(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance) {
+    this->ProcessEliminationInternal(playerId, cause, fromNetwork, suppressRoundAdvance);
 }
 
-void Mgr::ProcessEliminationInternal(u8 playerId, const char* reason, bool fromNetwork, bool suppressRoundAdvance) {
+u8 Mgr::GetBaseEliminationCountForCurrentRound(u8 usualLapCount) const {
+    if (this->activeCount <= 1) return 0;
+
+    if (usualLapCount <= 1) {
+        return static_cast<u8>(this->activeCount - 1);
+    }
+
+    const u8 idx = (this->roundIndex == 0) ? 0 : static_cast<u8>(this->roundIndex - 1);
+    if (idx >= this->totalRounds) return 0;
+
+    u8 planned = (idx < MaxRounds) ? this->eliminationPlan[idx] : 0;
+    if (planned == 0) return 0;
+    if (planned >= this->activeCount) planned = static_cast<u8>(this->activeCount - 1);
+    return planned;
+}
+
+u8 Mgr::GetRemainingEliminationsForCurrentRound(u8 usualLapCount) const {
+    u8 base = this->GetBaseEliminationCountForCurrentRound(usualLapCount);
+    if (base == 0) return 0;
+
+    if (usualLapCount <= 1) {
+        return base;
+    }
+
+    if (this->roundDisconnectDebits >= base) return 0;
+
+    u8 remaining = static_cast<u8>(base - this->roundDisconnectDebits);
+    if (remaining >= this->activeCount) {
+        remaining = (this->activeCount > 0) ? static_cast<u8>(this->activeCount - 1) : 0;
+    }
+    return remaining;
+}
+
+void Mgr::ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance) {
     if (playerId >= 12) return;
     if (!this->active[playerId]) return;
     if (this->raceFinished) return;
+
     const u8 concludedRound = this->roundIndex;
+    const u8 usualLapCount = this->GetUsualTrackLapCount();
+    const bool supportsDisconnectAdjustments = (usualLapCount > 1);
 
     this->active[playerId] = false;
 
     if (this->activeCount > 0) --this->activeCount;
     this->UpdateActivePlayerCounts();
+
+    if (cause == ELIMINATION_CAUSE_DISCONNECT && supportsDisconnectAdjustments) {
+        if (this->roundDisconnectDebits < 12) ++this->roundDisconnectDebits;
+    }
+
+    if (cause == ELIMINATION_CAUSE_DISCONNECT) {
+        if (supportsDisconnectAdjustments) {
+            const u8 remaining = this->GetRemainingEliminationsForCurrentRound(usualLapCount);
+            suppressRoundAdvance = (remaining > 0);
+        } else {
+            suppressRoundAdvance = (this->activeCount > 1);
+        }
+    }
+
     if (this->isHost && !fromNetwork) {
+        this->pendingNoRoundAdvance = suppressRoundAdvance;
         if (this->IsFriendRoomOnline()) {
-            // Friend rooms: use batched broadcast path even for single eliminations (e.g., disconnects)
             u8 single[1] = {playerId};
             this->BroadcastBatch(single, 1, concludedRound);
         } else {
-            // Legacy single-elimination broadcast for non-friend online rooms
             this->BroadcastEvent(playerId, concludedRound);
         }
     }
@@ -462,30 +464,22 @@ void Mgr::FinishOfflineAtCurrentStandings() {
 }
 
 void Mgr::BroadcastEvent(u8 playerId, u8 concludedRound) {
-    this->pendingSequence = static_cast<u8>((this->eventSequence + 1) & 0xFF);
-    if (this->pendingSequence == 0) this->pendingSequence = 1;
-    this->eventSequence = this->pendingSequence;
-    this->pendingElimination = playerId;
-    this->pendingRound = concludedRound;
-    this->pendingActiveCount = this->activeCount;
-    this->pendingTimer = pendingBroadcastFrames;
-    this->hasPendingEvent = true;
-
+    this->pendingSequence = this->AdvanceSequence();
+    const u8 encodedId = static_cast<u8>((playerId & 0x7F) | (this->pendingNoRoundAdvance ? lapKoNoRoundAdvanceFlag : 0));
+    this->pendingElimination = encodedId;
+    this->pendingBatchCount = 0;
+    this->PreparePendingEvent(concludedRound, this->activeCount);
     OS::Report("LapKO: Broadcast seq=%u player=%u round=%u active=%u\n", this->pendingSequence, playerId, concludedRound, this->pendingActiveCount);
 }
 
 void Mgr::BroadcastBatch(const u8* elimIds, u8 elimCount, u8 concludedRound) {
     if (elimIds == nullptr || elimCount == 0) return;
     if (elimCount > 12) elimCount = 12;
-    this->pendingSequence = static_cast<u8>((this->eventSequence + 1) & 0xFF);
-    if (this->pendingSequence == 0) this->pendingSequence = 1;
-    this->eventSequence = this->pendingSequence;
-    this->pendingRound = concludedRound;
-    this->pendingActiveCount = this->activeCount;
+    this->pendingSequence = this->AdvanceSequence();
     this->pendingBatchCount = elimCount;
     for (u8 i = 0; i < elimCount; ++i) this->pendingBatch[i] = elimIds[i];
-    this->pendingTimer = pendingBroadcastFrames;
-    this->hasPendingEvent = true;
+    this->pendingElimination = 0xFF;
+    this->PreparePendingEvent(concludedRound, this->activeCount);
     OS::Report("LapKO: BroadcastBatch seq=%u count=%u round=%u active=%u\n", this->pendingSequence, elimCount, concludedRound, this->pendingActiveCount);
 }
 
@@ -500,203 +494,73 @@ void Mgr::ClearPendingEvent() {
     this->pendingActiveCount = 0;
     this->pendingTimer = 0;
     this->hasPendingEvent = false;
+    this->pendingNoRoundAdvance = false;
     this->pendingBatchCount = 0;
+    for (u8 i = 0; i < 12; ++i) this->pendingBatch[i] = 0xFF;
 }
 
 void Mgr::ApplyRemoteEvent(u8 seq, u8 eliminatedId, u8 roundIdx, u8 activeCnt) {
-    if (seq == 0 || eliminatedId >= 12) return;
+    if (seq == 0) return;
+    const bool noRoundAdvance = (eliminatedId & lapKoNoRoundAdvanceFlag) != 0;
+    const u8 playerId = static_cast<u8>(eliminatedId & 0x7F);
+    if (playerId >= 12) return;
     if (seq == this->appliedSequence) return;
 
     this->appliedSequence = seq;
     this->roundIndex = roundIdx;
-    this->ProcessElimination(eliminatedId, "network", true);
+    const EliminationCause cause = noRoundAdvance ? ELIMINATION_CAUSE_DISCONNECT : ELIMINATION_CAUSE_ROUND;
+    this->ProcessElimination(playerId, cause, true, noRoundAdvance);
     this->activeCount = activeCnt;
     this->UpdateActivePlayerCounts();
 }
 
-void Mgr::ApplyRemoteBatch(u8 seq, u8 roundIdx, u8 activeCnt, const u8* elimIds, u8 elimCount) {
+void Mgr::ApplyRemoteBatch(u8 seq, u8 roundIdx, u8 activeCnt, const u8* elimIds, u8 elimCount, bool noRoundAdvance) {
     if (seq == 0) return;
     if (seq == this->appliedSequence) return;
     if (elimIds == nullptr || elimCount == 0) return;
     if (elimCount > 12) elimCount = 12;
     this->appliedSequence = seq;
     this->roundIndex = roundIdx;
+    const EliminationCause cause = noRoundAdvance ? ELIMINATION_CAUSE_DISCONNECT : ELIMINATION_CAUSE_ROUND;
     for (u8 i = 0; i < elimCount; ++i) {
         const bool lastOne = (i == elimCount - 1);
-        this->ProcessEliminationInternal(elimIds[i], "network", true, !lastOne);
+        const u8 elimId = static_cast<u8>(elimIds[i] & 0x7F);
+        if (elimId >= 12) continue;
+        const bool suppress = noRoundAdvance ? true : !lastOne;
+        this->ProcessEliminationInternal(elimId, cause, true, suppress);
     }
     this->activeCount = activeCnt;
 }
 
 void Mgr::UpdateFrame() {
-    // Always tick the elimination display timer every frame, independent of network flow
-    if (this->eliminationDisplayTimer > 0) {
-        --this->eliminationDisplayTimer;
-        if (this->eliminationDisplayTimer == 0) {
-            this->ResetEliminationDisplay();
-        }
-    }
+    this->TickEliminationDisplay();
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     Raceinfo* raceinfo = Raceinfo::sInstance;
     if (controller == nullptr || raceinfo == nullptr) return;
 
-    // Observe raceFrames to detect new-race boundary and re-init at start
-    if (raceinfo->players != nullptr) {
-        const u16 rf = raceinfo->raceFrames;
-        // If frames decreased (scene changed) mark init as not done and clear finished flag
-        if (this->lastRaceFrames != 0xFFFF && rf < this->lastRaceFrames) {
-            this->raceInitDone = false;
-            this->raceFinished = false;
-            this->playerCount = 0;
-        }
-        if (!this->raceInitDone && rf == 0) {
-            this->InitForRace();
-        }
-        this->lastRaceFrames = rf;
-    }
+    this->EnsureRaceInitialized(*raceinfo);
 
     if (this->raceFinished && !this->hasPendingEvent) return;
 
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
 
     if (this->isHost && controller->roomType != RKNet::ROOMTYPE_NONE) {
-        const u32 availableAids = sub.availableAids;
-        if (this->disconnectGraceFrames > 0) {
-            --this->disconnectGraceFrames;
-            // During grace period, just update lastAvailableAids but do not eliminate.
-            this->lastAvailableAids = availableAids;
-        } else if (this->lastAvailableAids != 0) {
-            const u32 lost = this->lastAvailableAids & ~availableAids;
-            if (lost != 0) {
-                for (u8 playerId = 0; playerId < 12; ++playerId) {
-                    if (!this->active[playerId]) continue;
-                    const u8 aid = controller->aidsBelongingToPlayerIds[playerId];
-                    if (aid >= 12) continue;
-                    if ((lost & (1 << aid)) != 0) {
-                        OS::Report("LapKO: Detected disconnect AID=%u player=%u (lost=%08x)\n", aid, playerId, lost);
-                        this->ProcessElimination(playerId, "disconnect", false);
-                    }
-                }
-            }
-        }
-        this->lastAvailableAids = availableAids;
+        this->HostMonitorDisconnects(*controller, sub);
     }
 
-    for (u8 playerId = 0; playerId < this->playerCount && playerId < 12; ++playerId) {
-        RaceinfoPlayer* infoPlayer = raceinfo->players[playerId];
-        if (infoPlayer == nullptr) continue;
-        const u16 lapValue = infoPlayer->currentLap;
-        if (lapValue != this->lastLapValue[playerId]) {
-            if (lapValue > this->lastLapValue[playerId]) {
-                this->OnLapComplete(playerId, *infoPlayer);
-            }
-            this->lastLapValue[playerId] = lapValue;
-        }
+    this->UpdateLapProgress(*raceinfo);
+
+    if (this->isSpectating) {
+        this->MaintainSpectatorView(*raceinfo);
     }
 
-    // If we are spectating locally, keep the camera focused on first place every frame
-    // Uses RaceCameraMgr::ChangeFocusedPlayer to update the watched camera when positions change.
-    // Important: ChangeFocusedPlayer expects a CAMERA INDEX, not a playerId. Map leader -> camera index safely.
-    if (this->isSpectating && raceinfo->playerIdInEachPosition != nullptr) {
-        RaceCameraMgr* camMgr = RaceCameraMgr::sInstance;
-        const u8 leaderPid = raceinfo->playerIdInEachPosition[0];
-        if (camMgr != nullptr && camMgr->cameras != nullptr && camMgr->cameraCount > 0 && leaderPid < 12) {
-            // Check if current focused camera already tracks the leader
-            bool alreadyOnLeader = false;
-            if (camMgr->focusedPlayerIdx < camMgr->cameraCount) {
-                RaceCamera* curCam = camMgr->cameras[camMgr->focusedPlayerIdx];
-                if (curCam != nullptr && curCam->playerId == leaderPid) alreadyOnLeader = true;
-            }
-
-            if (!alreadyOnLeader) {
-                // Find the camera index for the leader playerId
-                u8 targetCamIdx = 0xFF;
-                for (u32 i = 0; i < camMgr->cameraCount; ++i) {
-                    RaceCamera* cam = camMgr->cameras[i];
-                    if (cam != nullptr && cam->playerId == leaderPid) {
-                        targetCamIdx = static_cast<u8>(i);
-                        break;
-                    }
-                }
-                if (targetCamIdx != 0xFF) {
-                    // Update both driver watched index and camera focus to the camera index
-                    DriverMgr::ChangeFocusedPlayer(targetCamIdx);
-                    RaceCameraMgr::ChangeFocusedPlayer(targetCamIdx);
-                } else {
-                    // Fallback: retarget the current camera to the leader if no dedicated camera exists (single local player cases)
-                    u32 idx = (camMgr->focusedPlayerIdx < camMgr->cameraCount) ? camMgr->focusedPlayerIdx : 0;
-                    RaceCamera* cam = camMgr->cameras[idx];
-                    if (cam != nullptr) cam->playerId = leaderPid;
-                    // Keep driver watched index consistent with current camera idx
-                    DriverMgr::ChangeFocusedPlayer(static_cast<u8>(idx));
-                }
-            }
-        }
-    }
-
-    // Run the deferred item reweight outside GMData/Raceinfo loops
-    if (this->pendingItemReweightFrames > 0) {
-        --this->pendingItemReweightFrames;
-        if (this->pendingItemReweightFrames == 0) {
-            this->ReweightItemProbabilitiesNow();
-        }
-    }
+    this->ProcessPendingItemReweight();
 
     if (this->isHost) {
-        // Fill outgoing PulRH1 extras for all peers. If we don't have a pending event, explicitly zero seq.
-        for (int aid = 0; aid < 12; ++aid) {
-            if (aid == sub.localAid) continue;
-            if ((sub.availableAids & (1 << aid)) == 0) continue;
-            RKNet::PacketHolder<Network::PulRH1>* holder = controller->GetSendPacketHolder<Network::PulRH1>(aid);
-            if (holder == nullptr) continue;
-            if (holder->packetSize < sizeof(Network::PulRH1)) holder->packetSize = sizeof(Network::PulRH1);
-            Network::PulRH1* packet = holder->packet;
-            if (this->hasPendingEvent && this->IsFriendRoomOnline()) {
-                // Populate LapKO friend-room fields
-                // Ensure Pulsar track id mirrors the base so AfterRH1Reception picks the correct track
-                packet->pulsarTrackId = static_cast<u16>(packet->trackId);
-                packet->variantIdx = 0;
-                packet->lapKoSeq = this->pendingSequence;
-                packet->lapKoRoundIndex = this->pendingRound;
-                packet->lapKoActiveCount = this->pendingActiveCount;
-                if (this->pendingBatchCount > 0) {
-                    packet->lapKoElimCount = this->pendingBatchCount;
-                    for (u8 i = 0; i < this->pendingBatchCount; ++i) packet->lapKoElims[i] = this->pendingBatch[i];
-                    // zero any unused slots
-                    for (u8 i = this->pendingBatchCount; i < 12; ++i) packet->lapKoElims[i] = 0xFF;
-                } else {
-                    packet->lapKoElimCount = 1;
-                    packet->lapKoElims[0] = this->pendingElimination;
-                    for (u8 i = 1; i < 12; ++i) packet->lapKoElims[i] = 0xFF;
-                }
-            } else {
-                packet->lapKoSeq = 0;
-                packet->lapKoElimCount = 0;
-                if (this->IsFriendRoomOnline()) {
-                    // Keep track id consistent even when no event
-                    packet->pulsarTrackId = static_cast<u16>(packet->trackId);
-                    packet->variantIdx = 0;
-                }
-            }
-        }
-        if (this->pendingTimer > 0) {
-            --this->pendingTimer;
-            if (this->pendingTimer == 0) this->ClearPendingEvent();
-        }
+        this->HostDistributeEvents(*controller, sub);
     } else {
-        if (this->hostAid >= 12) return;
-        const u32 bufferIdx = controller->lastReceivedBufferUsed[this->hostAid][RKNet::PACKET_RACEHEADER1];
-        RKNet::SplitRACEPointers* split = controller->splitReceivedRACEPackets[bufferIdx][this->hostAid];
-        if (split == nullptr) return;
-        const RKNet::PacketHolder<Network::PulRH1>* holder = split->GetPacketHolder<Network::PulRH1>();
-        if (holder == nullptr) return;
-        if (holder->packetSize != sizeof(Network::PulRH1)) return;
-        const Network::PulRH1* packet = holder->packet;
-        // Apply LapKO friend-room eliminations from host if present
-        if (this->IsFriendRoomOnline() && packet->lapKoSeq != 0 && packet->lapKoElimCount > 0 && packet->lapKoElimCount <= 12) {
-            this->ApplyRemoteBatch(packet->lapKoSeq, packet->lapKoRoundIndex, packet->lapKoActiveCount, packet->lapKoElims, packet->lapKoElimCount);
-        }
+        this->ClientConsumeHostEvents(*controller, sub);
     }
 }
 
@@ -835,6 +699,252 @@ bool Mgr::IsFriendRoomOnline() const {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return false;
     return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+}
+
+void Mgr::TickEliminationDisplay() {
+    if (this->eliminationDisplayTimer == 0) return;
+    --this->eliminationDisplayTimer;
+    if (this->eliminationDisplayTimer == 0) {
+        this->ResetEliminationDisplay();
+    }
+}
+
+void Mgr::EnsureRaceInitialized(Raceinfo& raceinfo) {
+    if (raceinfo.players == nullptr) return;
+
+    const u16 raceFrames = raceinfo.raceFrames;
+    if (this->lastRaceFrames != 0xFFFF && raceFrames < this->lastRaceFrames) {
+        this->raceInitDone = false;
+        this->raceFinished = false;
+        this->playerCount = 0;
+    }
+    if (!this->raceInitDone && raceFrames == 0) {
+        this->InitForRace();
+    }
+    this->lastRaceFrames = raceFrames;
+}
+
+void Mgr::HostMonitorDisconnects(RKNet::Controller& controller, const RKNet::ControllerSub& sub) {
+    const u32 availableAids = sub.availableAids;
+    if (this->disconnectGraceFrames > 0) {
+        --this->disconnectGraceFrames;
+        this->lastAvailableAids = availableAids;
+        return;
+    }
+
+    if (this->lastAvailableAids != 0) {
+        const u32 lost = this->lastAvailableAids & ~availableAids;
+        if (lost != 0) {
+            for (u8 playerId = 0; playerId < 12; ++playerId) {
+                if (!this->active[playerId]) continue;
+                const u8 aid = controller.aidsBelongingToPlayerIds[playerId];
+                if (aid >= 12) continue;
+                if ((lost & (1 << aid)) != 0) {
+                    OS::Report("LapKO: Detected disconnect AID=%u player=%u (lost=%08x)\n", aid, playerId, lost);
+                    this->ProcessElimination(playerId, ELIMINATION_CAUSE_DISCONNECT, false, true);
+                }
+            }
+        }
+    }
+
+    this->lastAvailableAids = availableAids;
+}
+
+void Mgr::UpdateLapProgress(Raceinfo& raceinfo) {
+    if (raceinfo.players == nullptr) return;
+
+    const u8 maxPlayers = (this->playerCount < 12) ? this->playerCount : 12;
+    for (u8 playerId = 0; playerId < maxPlayers; ++playerId) {
+        RaceinfoPlayer* infoPlayer = raceinfo.players[playerId];
+        if (infoPlayer == nullptr) continue;
+        const u16 lapValue = infoPlayer->currentLap;
+        if (lapValue == this->lastLapValue[playerId]) continue;
+        if (lapValue > this->lastLapValue[playerId]) {
+            this->OnLapComplete(playerId, *infoPlayer);
+        }
+        this->lastLapValue[playerId] = lapValue;
+    }
+}
+
+void Mgr::MaintainSpectatorView(const Raceinfo& raceinfo) {
+    if (!this->isSpectating) return;
+    if (raceinfo.playerIdInEachPosition == nullptr) return;
+
+    RaceCameraMgr* camMgr = RaceCameraMgr::sInstance;
+    const u8 leaderPid = raceinfo.playerIdInEachPosition[0];
+    if (camMgr == nullptr || camMgr->cameras == nullptr || camMgr->cameraCount == 0 || leaderPid >= 12) return;
+
+    bool alreadyOnLeader = false;
+    if (camMgr->focusedPlayerIdx < camMgr->cameraCount) {
+        RaceCamera* curCam = camMgr->cameras[camMgr->focusedPlayerIdx];
+        if (curCam != nullptr && curCam->playerId == leaderPid) {
+            alreadyOnLeader = true;
+        }
+    }
+
+    if (alreadyOnLeader) return;
+
+    u8 targetCamIdx = 0xFF;
+    for (u32 i = 0; i < camMgr->cameraCount; ++i) {
+        RaceCamera* cam = camMgr->cameras[i];
+        if (cam != nullptr && cam->playerId == leaderPid) {
+            targetCamIdx = static_cast<u8>(i);
+            break;
+        }
+    }
+
+    if (targetCamIdx != 0xFF) {
+        DriverMgr::ChangeFocusedPlayer(targetCamIdx);
+        RaceCameraMgr::ChangeFocusedPlayer(targetCamIdx);
+        return;
+    }
+
+    const u32 currentIdx = (camMgr->focusedPlayerIdx < camMgr->cameraCount) ? camMgr->focusedPlayerIdx : 0;
+    RaceCamera* currentCam = camMgr->cameras[currentIdx];
+    if (currentCam != nullptr && currentCam->playerId != leaderPid) {
+        currentCam->playerId = leaderPid;
+    }
+    DriverMgr::ChangeFocusedPlayer(static_cast<u8>(currentIdx));
+}
+
+void Mgr::ProcessPendingItemReweight() {
+    if (this->pendingItemReweightFrames == 0) return;
+    --this->pendingItemReweightFrames;
+    if (this->pendingItemReweightFrames == 0) {
+        this->ReweightItemProbabilitiesNow();
+    }
+}
+
+void Mgr::HostDistributeEvents(RKNet::Controller& controller, const RKNet::ControllerSub& sub) {
+    // Fill outgoing PulRH1 extras for all peers. If we don't have a pending event, explicitly zero seq.
+    for (int aid = 0; aid < 12; ++aid) {
+        if (aid == sub.localAid) continue;
+        if ((sub.availableAids & (1 << aid)) == 0) continue;
+
+        RKNet::PacketHolder<Network::PulRH1>* holder = controller.GetSendPacketHolder<Network::PulRH1>(aid);
+        if (holder == nullptr) continue;
+        if (holder->packetSize < sizeof(Network::PulRH1)) holder->packetSize = sizeof(Network::PulRH1);
+        Network::PulRH1* packet = holder->packet;
+
+        if (this->hasPendingEvent && this->IsFriendRoomOnline()) {
+            packet->pulsarTrackId = static_cast<u16>(packet->trackId);
+            packet->variantIdx = 0;
+            packet->lapKoSeq = this->pendingSequence;
+            packet->lapKoRoundIndex = this->pendingRound;
+            packet->lapKoActiveCount = this->pendingActiveCount;
+            const u8 countFlag = this->pendingNoRoundAdvance ? lapKoNoRoundAdvanceFlag : 0;
+            if (this->pendingBatchCount > 0) {
+                const u8 count = this->pendingBatchCount;
+                packet->lapKoElimCount = static_cast<u8>((count & 0x7F) | countFlag);
+                for (u8 i = 0; i < this->pendingBatchCount; ++i) packet->lapKoElims[i] = this->pendingBatch[i];
+                for (u8 i = this->pendingBatchCount; i < 12; ++i) packet->lapKoElims[i] = 0xFF;
+            } else {
+                packet->lapKoElimCount = static_cast<u8>((1 & 0x7F) | countFlag);
+                packet->lapKoElims[0] = static_cast<u8>(this->pendingElimination & 0x7F);
+                for (u8 i = 1; i < 12; ++i) packet->lapKoElims[i] = 0xFF;
+            }
+        } else {
+            packet->lapKoSeq = 0;
+            packet->lapKoElimCount = 0;
+            if (this->IsFriendRoomOnline()) {
+                packet->pulsarTrackId = static_cast<u16>(packet->trackId);
+                packet->variantIdx = 0;
+            }
+        }
+    }
+
+    if (this->pendingTimer > 0) {
+        --this->pendingTimer;
+        if (this->pendingTimer == 0) {
+            this->ClearPendingEvent();
+        }
+    }
+}
+
+void Mgr::ClientConsumeHostEvents(RKNet::Controller& controller, const RKNet::ControllerSub&) {
+    if (this->hostAid >= 12) return;
+
+    const u32 bufferIdx = controller.lastReceivedBufferUsed[this->hostAid][RKNet::PACKET_RACEHEADER1];
+    RKNet::SplitRACEPointers* split = controller.splitReceivedRACEPackets[bufferIdx][this->hostAid];
+    if (split == nullptr) return;
+
+    const RKNet::PacketHolder<Network::PulRH1>* holder = split->GetPacketHolder<Network::PulRH1>();
+    if (holder == nullptr) return;
+    if (holder->packetSize != sizeof(Network::PulRH1)) return;
+
+    const Network::PulRH1* packet = holder->packet;
+    if (this->IsFriendRoomOnline() && packet->lapKoSeq != 0 && packet->lapKoElimCount != 0) {
+        const u8 rawCount = packet->lapKoElimCount;
+        const u8 elimCount = static_cast<u8>(rawCount & 0x7F);
+        if (elimCount > 0 && elimCount <= 12) {
+            const bool noRoundAdvance = (rawCount & lapKoNoRoundAdvanceFlag) != 0;
+            this->ApplyRemoteBatch(packet->lapKoSeq, packet->lapKoRoundIndex, packet->lapKoActiveCount, packet->lapKoElims, elimCount, noRoundAdvance);
+        }
+    }
+}
+
+u8 Mgr::SelectEliminationCandidates(u8 toEliminate, u8* eliminatedList) const {
+    if (eliminatedList == nullptr || toEliminate == 0) return 0;
+
+    u8 elimCount = 0;
+    Raceinfo* raceinfoLocal = Raceinfo::sInstance;
+
+    if (raceinfoLocal != nullptr && raceinfoLocal->playerIdInEachPosition != nullptr) {
+        for (int pos = 11; pos >= 0 && elimCount < toEliminate; --pos) {
+            const u8 pid = raceinfoLocal->playerIdInEachPosition[pos];
+            if (pid >= 12) continue;
+            if (!this->active[pid]) continue;
+            if (this->crossed[pid]) continue;
+            if (this->HasCandidate(eliminatedList, elimCount, pid)) continue;
+            eliminatedList[elimCount++] = pid;
+        }
+
+        for (int idx = static_cast<int>(this->orderCursor) - 1; elimCount < toEliminate && idx >= 0; --idx) {
+            const u8 pid = this->crossOrder[idx];
+            if (pid >= 12) continue;
+            if (!this->active[pid]) continue;
+            if (this->HasCandidate(eliminatedList, elimCount, pid)) continue;
+            eliminatedList[elimCount++] = pid;
+        }
+        return elimCount;
+    }
+
+    for (u8 i = 0; i < 12 && elimCount < toEliminate; ++i) {
+        if (!this->active[i]) continue;
+        if (this->crossed[i]) continue;
+        eliminatedList[elimCount++] = i;
+    }
+
+    for (int idx = static_cast<int>(this->orderCursor) - 1; elimCount < toEliminate && idx >= 0; --idx) {
+        const u8 pid = this->crossOrder[idx];
+        if (pid >= 12) continue;
+        if (this->HasCandidate(eliminatedList, elimCount, pid)) continue;
+        eliminatedList[elimCount++] = pid;
+    }
+
+    return elimCount;
+}
+
+bool Mgr::HasCandidate(const u8* list, u8 count, u8 playerId) const {
+    if (list == nullptr) return false;
+    for (u8 idx = 0; idx < count; ++idx) {
+        if (list[idx] == playerId) return true;
+    }
+    return false;
+}
+
+u8 Mgr::AdvanceSequence() {
+    u8 next = static_cast<u8>((this->eventSequence + 1) & 0xFF);
+    if (next == 0) next = 1;
+    this->eventSequence = next;
+    return next;
+}
+
+void Mgr::PreparePendingEvent(u8 concludedRound, u8 activeCount) {
+    this->pendingRound = concludedRound;
+    this->pendingActiveCount = activeCount;
+    this->pendingTimer = pendingBroadcastFrames;
+    this->hasPendingEvent = true;
 }
 
 }  // namespace LapKO

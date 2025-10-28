@@ -13,6 +13,10 @@ namespace LapKO {
 class Mgr {
    public:
     enum { MaxRounds = 12 };
+    enum EliminationCause {
+        ELIMINATION_CAUSE_ROUND,
+        ELIMINATION_CAUSE_DISCONNECT
+    };
     Mgr();
     ~Mgr();
 
@@ -23,25 +27,15 @@ class Mgr {
     void OnPlayerDisconnected(u8 playerId);
     void UpdateFrame();
     void ApplyRemoteEvent(u8 seq, u8 eliminatedId, u8 roundIndex, u8 activeCount);
-    void ApplyRemoteBatch(u8 seq, u8 roundIndex, u8 activeCount, const u8* elimIds, u8 elimCount);
+    void ApplyRemoteBatch(u8 seq, u8 roundIndex, u8 activeCount, const u8* elimIds, u8 elimCount, bool noRoundAdvance);
 
     bool IsActive(u8 playerId) const { return this->active[playerId]; }
     u8 GetActiveCount() const { return this->activeCount; }
     u8 GetRoundIndex() const { return this->roundIndex; }
-    u8 GetCurrentRoundEliminationCount() const {
-        if (this->activeCount <= 1) return 0;
-        const u8 idx = (this->roundIndex == 0) ? 0 : static_cast<u8>(this->roundIndex - 1);
-        u8 elim = 1;
-        if (idx < MaxRounds) {
-            u8 planned = this->eliminationPlan[idx];
-            if (planned != 0) elim = planned;
-        }
-        if (elim >= this->activeCount) elim = static_cast<u8>(this->activeCount - 1);
-        return elim;
-    }
+    u8 GetCurrentRoundEliminationCount() const;
 
     u8 GetPendingSequence() const { return this->pendingSequence; }
-    u8 GetPendingElimination() const { return this->pendingElimination; }
+    u8 GetPendingElimination() const { return static_cast<u8>(this->pendingElimination & 0x7F); }
     u8 GetPendingRound() const { return this->pendingRound; }
     u8 GetPendingActiveCount() const { return this->pendingActiveCount; }
     u8 GetRecentEliminationCount() const { return this->recentEliminationCount; }
@@ -64,10 +58,12 @@ class Mgr {
     void ReweightItemProbabilitiesNow();
     void ComputeEliminationPlan();
     u8 GetUsualTrackLapCount() const;
-    void ProcessEliminationInternal(u8 playerId, const char* reason, bool fromNetwork, bool suppressRoundAdvance);
+    u8 GetBaseEliminationCountForCurrentRound(u8 usualLapCount) const;
+    u8 GetRemainingEliminationsForCurrentRound(u8 usualLapCount) const;
+    void ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance);
     void StartNewRound();
     void TryResolveRound();
-    void ProcessElimination(u8 playerId, const char* reason, bool fromNetwork);
+    void ProcessElimination(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance = false);
     bool EnterSpectateIfLocal(u8 playerId);
     void ConcludeRace(u8 winnerId);
     void FinishOfflineAtCurrentStandings();
@@ -78,6 +74,18 @@ class Mgr {
     void RecordEliminationForDisplay(u8 playerId, u8 concludedRound);
     void ResetEliminationDisplay();
     bool IsFriendRoomOnline() const;
+    void TickEliminationDisplay();
+    void EnsureRaceInitialized(Raceinfo& raceinfo);
+    void HostMonitorDisconnects(RKNet::Controller& controller, const RKNet::ControllerSub& sub);
+    void UpdateLapProgress(Raceinfo& raceinfo);
+    void MaintainSpectatorView(const Raceinfo& raceinfo);
+    void ProcessPendingItemReweight();
+    void HostDistributeEvents(RKNet::Controller& controller, const RKNet::ControllerSub& sub);
+    void ClientConsumeHostEvents(RKNet::Controller& controller, const RKNet::ControllerSub& sub);
+    u8 SelectEliminationCandidates(u8 toEliminate, u8* eliminatedList) const;
+    bool HasCandidate(const u8* list, u8 count, u8 playerId) const;
+    u8 AdvanceSequence();
+    void PreparePendingEvent(u8 concludedRound, u8 activeCount);
 
    public:
     u8 koPerRaceSetting;
@@ -92,6 +100,7 @@ class Mgr {
     u8 activeCount;
     u8 playerCount;
     u8 roundIndex;
+    u8 roundDisconnectDebits;
     u8 eventSequence;
     u8 appliedSequence;
     u8 pendingSequence;
@@ -99,6 +108,7 @@ class Mgr {
     u8 pendingRound;
     u8 pendingActiveCount;
     bool hasPendingEvent;
+    bool pendingNoRoundAdvance;
     // Batch pending (friend rooms)
     u8 pendingBatchCount;
     u8 pendingBatch[12];

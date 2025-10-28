@@ -1005,7 +1005,7 @@ Build__10MainLayoutFPCc = 0x805e889c
 __ct__9BMGHolderFv = 0x805f8b34
 __dt__9BMGHolderFv = 0x805f8b50
 Init__9BMGHolderFRC9BMGHeader = 0x805f8c00
-GetMsgId__8BMGHolderFi = 0x805f8c88
+GetMsgId__9BMGHolderCFi = 0x805f8c88
 GetMsgByMsgId__9BMGHolderCFi = 0x805f8cf0
 
 #UIAnimator
