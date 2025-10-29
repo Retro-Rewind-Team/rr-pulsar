@@ -11,6 +11,8 @@
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
+#include <core/rvl/PAD.hpp>
+#include <core/rvl/WPAD.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -22,32 +24,34 @@ static const u8 lapKoNoRoundAdvanceFlag = 0x80;
 
 Mgr::Mgr()
     : koPerRaceSetting(1),
-      orderCursor(0),
-      activeCount(0),
-      playerCount(0),
-      roundIndex(1),
+    orderCursor(0),
+    activeCount(0),
+    playerCount(0),
+    roundIndex(1),
     roundDisconnectDebits(0),
-      totalRounds(0),
-      eventSequence(0),
-      appliedSequence(0),
-      pendingSequence(0),
-      pendingElimination(0xFF),
-      pendingRound(0),
-      pendingActiveCount(0),
-      hasPendingEvent(false),
+    totalRounds(0),
+    eventSequence(0),
+    appliedSequence(0),
+    pendingSequence(0),
+    pendingElimination(0xFF),
+    pendingRound(0),
+    pendingActiveCount(0),
+    hasPendingEvent(false),
     pendingNoRoundAdvance(false),
-      pendingBatchCount(0),
-      isSpectating(false),
-      isHost(true),
-      hostAid(0xFF),
-      pendingTimer(0),
-      raceFinished(false),
-      raceInitDone(false),
-      recentEliminationCount(0),
-      recentEliminationRound(0),
-      eliminationDisplayTimer(0),
-      pendingItemReweightFrames(0),
-      disconnectGraceFrames(0) {
+    pendingBatchCount(0),
+    isSpectating(false),
+    spectateTargetPlayer(0xFF),
+    spectateManualTarget(false),
+    isHost(true),
+    hostAid(0xFF),
+    pendingTimer(0),
+    raceFinished(false),
+    raceInitDone(false),
+    recentEliminationCount(0),
+    recentEliminationRound(0),
+    eliminationDisplayTimer(0),
+    pendingItemReweightFrames(0),
+    disconnectGraceFrames(0) {
     for (int i = 0; i < 12; ++i) {
         this->active[i] = false;
         this->crossed[i] = false;
@@ -151,6 +155,8 @@ void Mgr::InitForRace() {
     this->pendingNoRoundAdvance = false;
     this->pendingBatchCount = 0;
     this->isSpectating = false;
+    this->spectateTargetPlayer = 0xFF;
+    this->spectateManualTarget = false;
     this->raceFinished = false;
     this->raceInitDone = true;
     this->ResetEliminationDisplay();
@@ -552,6 +558,7 @@ void Mgr::UpdateFrame() {
     this->UpdateLapProgress(*raceinfo);
 
     if (this->isSpectating) {
+        this->UpdateSpectatorInputs(*raceinfo);
         this->MaintainSpectatorView(*raceinfo);
     }
 
@@ -620,33 +627,12 @@ bool Mgr::EnterSpectateIfLocal(u8 eliminatedId) {
         if (aid >= 12 || aid != sub.localAid) return false;  // not a local player
 
         this->isSpectating = true;
+        this->spectateManualTarget = false;
+        this->spectateTargetPlayer = 0xFF;
 
-        // Snap focus to current leader if possible (map to camera index safely). If cameras aren't ready yet, UpdateFrame will handle it later.
-        RaceCameraMgr* camMgr = RaceCameraMgr::sInstance;
         Raceinfo* raceinfo = Raceinfo::sInstance;
-        if (raceinfo != nullptr && raceinfo->playerIdInEachPosition != nullptr) {
-            const u8 leaderPid = raceinfo->playerIdInEachPosition[0];
-            if (leaderPid < 12 && camMgr != nullptr && camMgr->cameras != nullptr && camMgr->cameraCount > 0) {
-                // Try to find a camera for the leader immediately
-                u8 targetCamIdx = 0xFF;
-                for (u32 i = 0; i < camMgr->cameraCount; ++i) {
-                    RaceCamera* cam = camMgr->cameras[i];
-                    if (cam != nullptr && cam->playerId == leaderPid) {
-                        targetCamIdx = static_cast<u8>(i);
-                        break;
-                    }
-                }
-                if (targetCamIdx != 0xFF) {
-                    DriverMgr::ChangeFocusedPlayer(targetCamIdx);
-                    RaceCameraMgr::ChangeFocusedPlayer(targetCamIdx);
-                } else {
-                    // Fallback: retarget current camera to leader and keep indices consistent
-                    u32 idx = (camMgr->focusedPlayerIdx < camMgr->cameraCount) ? camMgr->focusedPlayerIdx : 0;
-                    RaceCamera* cam = camMgr->cameras[idx];
-                    if (cam != nullptr && cam->playerId != leaderPid) cam->playerId = leaderPid;
-                    DriverMgr::ChangeFocusedPlayer(static_cast<u8>(idx));
-                }
-            }
+        if (raceinfo != nullptr) {
+            this->InitializeSpectateView(*raceinfo);
         }
     }
     return false;
@@ -766,45 +752,86 @@ void Mgr::UpdateLapProgress(Raceinfo& raceinfo) {
     }
 }
 
+void Mgr::UpdateSpectatorInputs(const Raceinfo& raceinfo) {
+    bool advanceForward = false;
+    bool advanceBackward = false;
+
+    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr != nullptr) {
+        for (u8 hudSlot = 0; hudSlot < 4; ++hudSlot) {
+            Input::RealControllerHolder* holder = sectionMgr->pad.padInfos[hudSlot].controllerHolder;
+            if (holder == nullptr) continue;
+            if (holder->curController == nullptr) continue;
+
+            const u16 current = holder->inputStates[0].buttonRaw;
+            const u16 previous = holder->inputStates[1].buttonRaw;
+            const u16 newInputs = static_cast<u16>(current & static_cast<u16>(~previous));
+            if (newInputs == 0) continue;
+
+            const ControllerType type = holder->curController->GetType();
+            switch (type) {
+                case WHEEL:
+                case NUNCHUCK:
+                    if ((newInputs & WPAD::WPAD_BUTTON_A) != 0) advanceForward = true;
+                    if ((newInputs & WPAD::WPAD_BUTTON_B) != 0) advanceBackward = true;
+                    break;
+                case CLASSIC:
+                    if ((newInputs & WPAD::WPAD_CL_BUTTON_A) != 0) advanceForward = true;
+                    if ((newInputs & WPAD::WPAD_CL_BUTTON_B) != 0) advanceBackward = true;
+                    break;
+                case GCN:
+                    if ((newInputs & PAD::PAD_BUTTON_A) != 0) advanceForward = true;
+                    if ((newInputs & PAD::PAD_BUTTON_B) != 0) advanceBackward = true;
+                    break;
+                default:
+                    if ((newInputs & PAD::PAD_BUTTON_A) != 0) advanceForward = true;
+                    if ((newInputs & PAD::PAD_BUTTON_B) != 0) advanceBackward = true;
+                    if ((newInputs & WPAD::WPAD_BUTTON_A) != 0) advanceForward = true;
+                    if ((newInputs & WPAD::WPAD_BUTTON_B) != 0) advanceBackward = true;
+                    if ((newInputs & WPAD::WPAD_CL_BUTTON_A) != 0) advanceForward = true;
+                    if ((newInputs & WPAD::WPAD_CL_BUTTON_B) != 0) advanceBackward = true;
+                    break;
+            }
+        }
+    }
+
+    if (advanceForward) {
+        const u8 current = this->spectateTargetPlayer;
+        const u8 next = this->FindNextActiveSpectatePlayer(raceinfo, current, true);
+        if (next != 0xFF && next != current) {
+            this->spectateTargetPlayer = next;
+            this->spectateManualTarget = true;
+            this->FocusCameraOnPlayer(next);
+        }
+    } else if (advanceBackward) {
+        const u8 current = this->spectateTargetPlayer;
+        const u8 next = this->FindNextActiveSpectatePlayer(raceinfo, current, false);
+        if (next != 0xFF && next != current) {
+            this->spectateTargetPlayer = next;
+            this->spectateManualTarget = true;
+            this->FocusCameraOnPlayer(next);
+        }
+    }
+
+    if (this->spectateManualTarget) {
+        this->EnsureSpectateTargetIsActive(raceinfo);
+    }
+}
+
 void Mgr::MaintainSpectatorView(const Raceinfo& raceinfo) {
     if (!this->isSpectating) return;
-    if (raceinfo.playerIdInEachPosition == nullptr) return;
-
-    RaceCameraMgr* camMgr = RaceCameraMgr::sInstance;
-    const u8 leaderPid = raceinfo.playerIdInEachPosition[0];
-    if (camMgr == nullptr || camMgr->cameras == nullptr || camMgr->cameraCount == 0 || leaderPid >= 12) return;
-
-    bool alreadyOnLeader = false;
-    if (camMgr->focusedPlayerIdx < camMgr->cameraCount) {
-        RaceCamera* curCam = camMgr->cameras[camMgr->focusedPlayerIdx];
-        if (curCam != nullptr && curCam->playerId == leaderPid) {
-            alreadyOnLeader = true;
+    if (!this->spectateManualTarget) {
+        const u8 leader = this->GetLeaderPlayerId(raceinfo);
+        if (leader != 0xFF) {
+            this->spectateTargetPlayer = leader;
         }
     }
 
-    if (alreadyOnLeader) return;
+    this->EnsureSpectateTargetIsActive(raceinfo);
 
-    u8 targetCamIdx = 0xFF;
-    for (u32 i = 0; i < camMgr->cameraCount; ++i) {
-        RaceCamera* cam = camMgr->cameras[i];
-        if (cam != nullptr && cam->playerId == leaderPid) {
-            targetCamIdx = static_cast<u8>(i);
-            break;
-        }
+    if (this->spectateTargetPlayer < 12) {
+        this->FocusCameraOnPlayer(this->spectateTargetPlayer);
     }
-
-    if (targetCamIdx != 0xFF) {
-        DriverMgr::ChangeFocusedPlayer(targetCamIdx);
-        RaceCameraMgr::ChangeFocusedPlayer(targetCamIdx);
-        return;
-    }
-
-    const u32 currentIdx = (camMgr->focusedPlayerIdx < camMgr->cameraCount) ? camMgr->focusedPlayerIdx : 0;
-    RaceCamera* currentCam = camMgr->cameras[currentIdx];
-    if (currentCam != nullptr && currentCam->playerId != leaderPid) {
-        currentCam->playerId = leaderPid;
-    }
-    DriverMgr::ChangeFocusedPlayer(static_cast<u8>(currentIdx));
 }
 
 void Mgr::ProcessPendingItemReweight() {
@@ -945,6 +972,148 @@ void Mgr::PreparePendingEvent(u8 concludedRound, u8 activeCount) {
     this->pendingActiveCount = activeCount;
     this->pendingTimer = pendingBroadcastFrames;
     this->hasPendingEvent = true;
+}
+
+void Mgr::InitializeSpectateView(const Raceinfo& raceinfo) {
+    const u8 leader = this->GetLeaderPlayerId(raceinfo);
+    if (leader != 0xFF) {
+        this->spectateTargetPlayer = leader;
+    } else {
+        this->spectateTargetPlayer = this->FindNextActiveSpectatePlayer(raceinfo, 0xFF, true);
+    }
+
+    this->EnsureSpectateTargetIsActive(raceinfo);
+
+    if (this->spectateTargetPlayer < 12) {
+        this->FocusCameraOnPlayer(this->spectateTargetPlayer);
+    }
+}
+
+void Mgr::EnsureSpectateTargetIsActive(const Raceinfo& raceinfo) {
+    const u8 current = this->spectateTargetPlayer;
+    if (current < 12 && this->active[current]) return;
+
+    const u8 fallback = this->FindNextActiveSpectatePlayer(raceinfo, current, true);
+    this->spectateTargetPlayer = fallback;
+    if (fallback == 0xFF) {
+        this->spectateManualTarget = false;
+    }
+}
+
+u8 Mgr::BuildActiveSpectateOrder(const Raceinfo& raceinfo, u8* outOrder) const {
+    if (outOrder == nullptr) return 0;
+
+    u8 count = 0;
+    if (raceinfo.playerIdInEachPosition != nullptr) {
+        const u8 maxEntries = (this->playerCount != 0 && this->playerCount < 12) ? this->playerCount : 12;
+        for (u8 pos = 0; pos < maxEntries && count < 12; ++pos) {
+            const u8 pid = raceinfo.playerIdInEachPosition[pos];
+            if (pid >= 12) continue;
+            if (!this->active[pid]) continue;
+
+            bool already = false;
+            for (u8 i = 0; i < count; ++i) {
+                if (outOrder[i] == pid) {
+                    already = true;
+                    break;
+                }
+            }
+            if (!already) {
+                outOrder[count++] = pid;
+            }
+        }
+    }
+
+    for (u8 pid = 0; pid < 12 && count < this->activeCount && count < 12; ++pid) {
+        if (!this->active[pid]) continue;
+
+        bool already = false;
+        for (u8 i = 0; i < count; ++i) {
+            if (outOrder[i] == pid) {
+                already = true;
+                break;
+            }
+        }
+        if (!already) {
+            outOrder[count++] = pid;
+        }
+    }
+
+    return count;
+}
+
+u8 Mgr::FindNextActiveSpectatePlayer(const Raceinfo& raceinfo, u8 current, bool forward) const {
+    u8 order[12];
+    const u8 count = this->BuildActiveSpectateOrder(raceinfo, order);
+    if (count == 0) return 0xFF;
+
+    s32 idx = -1;
+    if (current < 12) {
+        for (u8 i = 0; i < count; ++i) {
+            if (order[i] == current) {
+                idx = static_cast<s32>(i);
+                break;
+            }
+        }
+    }
+
+    if (idx < 0) {
+        return forward ? order[0] : order[count - 1];
+    }
+
+    if (count == 1) return order[0];
+
+    if (forward) {
+        idx = (idx + 1) % count;
+    } else {
+        idx = (idx + count - 1) % count;
+    }
+
+    return order[idx];
+}
+
+u8 Mgr::GetLeaderPlayerId(const Raceinfo& raceinfo) const {
+    if (raceinfo.playerIdInEachPosition == nullptr) return 0xFF;
+
+    const u8 maxEntries = (this->playerCount != 0 && this->playerCount < 12) ? this->playerCount : 12;
+    for (u8 pos = 0; pos < maxEntries; ++pos) {
+        const u8 pid = raceinfo.playerIdInEachPosition[pos];
+        if (pid >= 12) continue;
+        if (!this->active[pid]) continue;
+        return pid;
+    }
+
+    return 0xFF;
+}
+
+bool Mgr::FocusCameraOnPlayer(u8 playerId) const {
+    if (playerId >= 12) return false;
+
+    RaceCameraMgr* camMgr = RaceCameraMgr::sInstance;
+    if (camMgr == nullptr || camMgr->cameras == nullptr || camMgr->cameraCount == 0) return false;
+
+    u8 targetCamIdx = 0xFF;
+    for (u32 i = 0; i < camMgr->cameraCount; ++i) {
+        RaceCamera* cam = camMgr->cameras[i];
+        if (cam != nullptr && cam->playerId == playerId) {
+            targetCamIdx = static_cast<u8>(i);
+            break;
+        }
+    }
+
+    if (targetCamIdx != 0xFF) {
+        DriverMgr::ChangeFocusedPlayer(targetCamIdx);
+        RaceCameraMgr::ChangeFocusedPlayer(targetCamIdx);
+        return true;
+    }
+
+    const u32 currentIdx = (camMgr->focusedPlayerIdx < camMgr->cameraCount) ? camMgr->focusedPlayerIdx : 0;
+    RaceCamera* currentCam = camMgr->cameras[currentIdx];
+    if (currentCam != nullptr && currentCam->playerId != playerId) {
+        currentCam->playerId = playerId;
+    }
+    DriverMgr::ChangeFocusedPlayer(static_cast<u8>(currentIdx));
+    return true;
 }
 
 }  // namespace LapKO

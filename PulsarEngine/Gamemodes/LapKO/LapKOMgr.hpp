@@ -78,6 +78,7 @@ class Mgr {
     void EnsureRaceInitialized(Raceinfo& raceinfo);
     void HostMonitorDisconnects(RKNet::Controller& controller, const RKNet::ControllerSub& sub);
     void UpdateLapProgress(Raceinfo& raceinfo);
+    void UpdateSpectatorInputs(const Raceinfo& raceinfo);
     void MaintainSpectatorView(const Raceinfo& raceinfo);
     void ProcessPendingItemReweight();
     void HostDistributeEvents(RKNet::Controller& controller, const RKNet::ControllerSub& sub);
@@ -86,6 +87,12 @@ class Mgr {
     bool HasCandidate(const u8* list, u8 count, u8 playerId) const;
     u8 AdvanceSequence();
     void PreparePendingEvent(u8 concludedRound, u8 activeCount);
+    void InitializeSpectateView(const Raceinfo& raceinfo);
+    void EnsureSpectateTargetIsActive(const Raceinfo& raceinfo);
+    u8 BuildActiveSpectateOrder(const Raceinfo& raceinfo, u8* outOrder) const;
+    u8 FindNextActiveSpectatePlayer(const Raceinfo& raceinfo, u8 current, bool forward) const;
+    u8 GetLeaderPlayerId(const Raceinfo& raceinfo) const;
+    bool FocusCameraOnPlayer(u8 playerId) const;
 
    public:
     u8 koPerRaceSetting;
@@ -113,6 +120,8 @@ class Mgr {
     u8 pendingBatchCount;
     u8 pendingBatch[12];
     bool isSpectating;
+    u8 spectateTargetPlayer;
+    bool spectateManualTarget;
     bool isHost;
     u8 hostAid;
     u16 pendingTimer;
