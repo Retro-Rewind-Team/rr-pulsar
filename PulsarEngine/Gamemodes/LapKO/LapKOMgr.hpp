@@ -49,12 +49,6 @@ class Mgr {
     static u8 BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8* outPlan, u8 capacity);
 
     void ClearPendingEvent();
-
-   private:
-    // Schedules and performs safe, deferred item probability reweighting.
-    // We avoid touching Item::Manager::playerCount mid-race; instead we only
-    // re-run ItemSlot post-processing a couple frames after active player
-    // count changes.
     void ReweightItemProbabilitiesNow();
     void ComputeEliminationPlan();
     u8 GetUsualTrackLapCount() const;
@@ -94,7 +88,6 @@ class Mgr {
     u8 GetLeaderPlayerId(const Raceinfo& raceinfo) const;
     bool FocusCameraOnPlayer(u8 playerId) const;
 
-   public:
     u8 koPerRaceSetting;
     u8 eliminationPlan[MaxRounds];
     u8 totalRounds;

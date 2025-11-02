@@ -1,3 +1,4 @@
+#include <Gamemodes/Battle/BattleElimination.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
 #include <MarioKartWii/UI/Layout/ControlLoader.hpp>
@@ -39,9 +40,6 @@ asmFunc playElimSound() {
         blr;)
 }
 
-// Safely copy a wchar_t name from a fixed-size source buffer to dst.
-// - Stops at the first null in src or at srcMax, and ensures dst is null-terminated.
-// - Returns dst if at least one character was copied, otherwise nullptr.
 static const wchar_t* CopyNameSafe(const wchar_t* src, size_t srcMax, wchar_t* dst, size_t dstLen) {
     if (src == nullptr || dst == nullptr || dstLen == 0) return nullptr;
     size_t i = 0;
@@ -51,7 +49,6 @@ static const wchar_t* CopyNameSafe(const wchar_t* src, size_t srcMax, wchar_t* d
         dst[i] = ch;
     }
     if (i == 0) {
-        // Nothing copied (empty string)
         if (dstLen > 0) dst[0] = L'\0';
         return nullptr;
     }
@@ -62,13 +59,8 @@ static const wchar_t* CopyNameSafe(const wchar_t* src, size_t srcMax, wchar_t* d
 static const wchar_t* CopyCharacterNameFromBMG(const BMGHolder& holder, s32 bmgId, wchar_t* scratch, size_t length) {
     if (scratch == nullptr || length <= 1) return nullptr;
     if (holder.bmgFile == nullptr) return nullptr;
-
     const s32 msgId = holder.GetMsgId(bmgId);
-    if (msgId < 0) return nullptr;
-
     const wchar_t* source = holder.GetMsgByMsgId(msgId);
-    if (source == nullptr || source[0] == L'\0') return nullptr;
-
     return CopyNameSafe(source, length - 1, scratch, length);
 }
 
@@ -76,12 +68,11 @@ class CtrlRaceLapKOElimMessage : public CtrlRaceBase {
    public:
     static u32 Count();
     static void Create(Page& page, u32 index, u32 count);
-
     void Load(u8 hudSlotId);
     void OnUpdate() override;
 
    private:
-    void UpdateMessage(const Mgr& mgr);
+    void UpdateMessage(const u8* playerIds, u8 count);
     void Show(bool visible);
     const wchar_t* GetPlayerDisplayName(u8 playerId, wchar_t* scratch, size_t length) const;
 
@@ -96,16 +87,13 @@ static UI::CustomCtrlBuilder sLapKOElimMessageBuilder(
 
 u32 CtrlRaceLapKOElimMessage::Count() {
     const System* system = System::sInstance;
-    if (system == nullptr) return 0;
-    if (!system->IsContext(PULSAR_MODE_LAPKO)) return 0;
-    if (system->lapKoMgr == nullptr) return 0;
-
+    const bool lapKoDisplay = system->IsContext(PULSAR_MODE_LAPKO) && system->IsContext(PULSAR_ELIMINATION);
+    const bool battleDisplay = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
+    if (!lapKoDisplay && !battleDisplay) return 0;
     const Racedata* racedata = Racedata::sInstance;
-    if (racedata == nullptr) return 0;
-
     const RacedataScenario& scenario = racedata->racesScenario;
     u32 localCount = scenario.localPlayerCount;
-    if (localCount == 0) localCount = 1;  // cover spectator view / online
+    if (localCount == 0) localCount = 1;
     return localCount;
 }
 
@@ -135,23 +123,43 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     this->UpdatePausePosition();
 
     const System* system = System::sInstance;
-    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO) || system->lapKoMgr == nullptr) {
+    const bool lapKoContext = (system->IsContext(PULSAR_MODE_LAPKO) && system->IsContext(PULSAR_ELIMINATION) && system->lapKoMgr != nullptr);
+    const bool battleContext = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
+
+    u16 timer = 0;
+    u8 eliminationCount = 0;
+    u8 playerIds[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+
+    if (lapKoContext) {
+        const Mgr& mgr = *system->lapKoMgr;
+        timer = mgr.GetEliminationDisplayTimer();
+        eliminationCount = mgr.GetRecentEliminationCount();
+        for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
+            playerIds[idx] = mgr.GetRecentEliminationId(idx);
+        }
+    } else if (battleContext) {
+        timer = ::Pulsar::BattleElim::GetEliminationDisplayTimer();
+        eliminationCount = ::Pulsar::BattleElim::GetRecentEliminationCount();
+        for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
+            playerIds[idx] = ::Pulsar::BattleElim::GetRecentEliminationId(idx);
+        }
+    } else {
         this->Show(false);
+        this->lastDisplayTimer = 0;
+        this->soundPlayedThisDisplay = false;
         return;
     }
 
-    const Mgr& mgr = *system->lapKoMgr;
-    const u16 timer = mgr.GetEliminationDisplayTimer();
-    if (timer == 0 || mgr.GetRecentEliminationCount() == 0) {
+    if (timer == 0 || eliminationCount == 0) {
         this->Show(false);
         this->lastDisplayTimer = 0;
-        this->soundPlayedThisDisplay = false;  // reset so next display will play sound
+        this->soundPlayedThisDisplay = false;
         return;
     }
 
     this->Show(true);
     if (timer != this->lastDisplayTimer) {
-        this->UpdateMessage(mgr);
+        this->UpdateMessage(playerIds, eliminationCount);
         this->lastDisplayTimer = timer;
     }
 
@@ -162,57 +170,33 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     }
 }
 
-void CtrlRaceLapKOElimMessage::UpdateMessage(const Mgr& mgr) {
-    if (this->textBox == nullptr) return;
-
+void CtrlRaceLapKOElimMessage::UpdateMessage(const u8* playerIds, u8 count) {
+    if (this->textBox == nullptr || playerIds == nullptr) return;
     wchar_t buffer[128];
     buffer[0] = L'\0';
     const size_t bufferLen = sizeof(buffer) / sizeof(buffer[0]);
-    int written = ::swprintf(buffer, bufferLen, L"\nEliminated: ");
-    if (written < 0) {
-        written = 0;
-        buffer[0] = L'\0';
-    }
-
+    int written = 0;
     wchar_t nameScratch[64];
-    const u8 count = mgr.GetRecentEliminationCount();
-    for (u8 idx = 0; idx < count; ++idx) {
-        const u8 playerId = mgr.GetRecentEliminationId(idx);
+    const u8 limitedCount = (count > 4) ? static_cast<u8>(4) : count;
+    for (u8 idx = 0; idx < limitedCount; ++idx) {
+        const u8 playerId = playerIds[idx];
         const wchar_t* displayName = this->GetPlayerDisplayName(playerId, nameScratch, sizeof(nameScratch) / sizeof(nameScratch[0]));
         if (displayName == nullptr) continue;
         size_t remaining = (written >= 0) ? bufferLen - static_cast<size_t>(written) : bufferLen;
         if (remaining <= 1) break;
-
-        if (idx > 0) {
-            if (remaining <= 3) break;
-            const int res = ::swprintf(buffer + written, remaining, L", ");
-            if (res > 0) {
-                written += res;
-                remaining = bufferLen - static_cast<size_t>(written);
-            }
-        }
-
-        if (remaining <= 1) break;
-        const int res = ::swprintf(buffer + written, remaining, L"%ls", displayName);
+        const int res = ::swprintf(buffer + written, remaining, L"\n%ls has been eliminated!", displayName);
         if (res > 0) written += res;
     }
-
-    // Play the elimination sound the first time this message is established for the
-    // current display. Subsequent updates while the display is active won't replay it.
     if (!this->soundPlayedThisDisplay) {
         playElimSound();
         this->soundPlayedThisDisplay = true;
     }
-
     Text::Info info;
     info.strings[0] = buffer;
     this->SetMessage(UI::BMG_TEXT, &info);
 }
 
 void CtrlRaceLapKOElimMessage::Show(bool visible) {
-    // Visibility is handled via the pane flag's bit 0x01 in nw4r::lyt::Pane; however
-    // LayoutUIControl exposes SetPaneVisibility by name. Since we have direct pointers,
-    // simply toggle alpha and rely on animations/layout visibility.
     if (this->root != nullptr) this->root->alpha = visible ? 255 : 0;
     if (this->textBox != nullptr) this->textBox->alpha = visible ? 255 : 0;
 }
@@ -220,20 +204,16 @@ void CtrlRaceLapKOElimMessage::Show(bool visible) {
 const wchar_t* CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar_t* scratch, size_t length) const {
     if (playerId >= 12 || scratch == nullptr || length == 0) return nullptr;
     const Racedata* racedata = Racedata::sInstance;
-    if (racedata == nullptr) return nullptr;
 
     const RacedataScenario& scenario = racedata->racesScenario;
     const RacedataPlayer& player = scenario.players[playerId];
 
     scratch[0] = L'\0';
-    // Prefer the resolved Mii name from AdditionalInfo (up to 10-11 wide chars)
     if (player.mii.isLoaded) {
-        // RFL::AdditionalInfo::name is 11 wchar_t according to headers
         if (player.mii.info.name[0] != L'\0') {
             const wchar_t* copied = CopyNameSafe(player.mii.info.name, 11, scratch, length);
             if (copied != nullptr) return copied;
         }
-        // Fallback to the raw stored miiName (10 wchar_t)
         if (player.mii.rawStoreMii.miiName[0] != L'\0') {
             const wchar_t* copied = CopyNameSafe(player.mii.rawStoreMii.miiName, 10, scratch, length);
             if (copied != nullptr) return copied;

@@ -31,6 +31,7 @@ The following features are licensed under AGPLv3:
 - The battle expansion code from Insane Kart Wii
 - Item Rain code found in ItemRain.cpp
 - Worldwide rank system found in Ranking.cpp
+- Battle Elimination implementation
 
 **NOTE:** You can ask to be fully exempted from these licensing constraints, feel free to contact the code author(s)
 

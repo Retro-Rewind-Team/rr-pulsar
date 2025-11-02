@@ -14,6 +14,10 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum& posTracker) {
     const System* system = System::sInstance;
     if (system == nullptr) return;
 
+    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const GameMode mode = scenario.settings.gamemode;
+    if (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) return;
+
     const u8 hudSlotId = posTracker.hudSlotId;
     if (hudSlotId >= 2) return;
 

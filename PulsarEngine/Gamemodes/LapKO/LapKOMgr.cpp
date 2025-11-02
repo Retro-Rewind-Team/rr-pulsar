@@ -991,7 +991,16 @@ void Mgr::InitializeSpectateView(const Raceinfo& raceinfo) {
 
 void Mgr::EnsureSpectateTargetIsActive(const Raceinfo& raceinfo) {
     const u8 current = this->spectateTargetPlayer;
-    if (current < 12 && this->active[current]) return;
+    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const GameMode mode = scenario.settings.gamemode;
+    if (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) {
+        if (current < 12) {
+            RaceinfoPlayer* rifPlayerCur = nullptr;
+            if (raceinfo.players != nullptr) rifPlayerCur = raceinfo.players[current];
+            const bool isBattleEliminated = (rifPlayerCur != nullptr && rifPlayerCur->battleScore == 0);
+            if (this->active[current] && !isBattleEliminated) return;
+        }
+    }
 
     const u8 fallback = this->FindNextActiveSpectatePlayer(raceinfo, current, true);
     this->spectateTargetPlayer = fallback;
@@ -1002,6 +1011,9 @@ void Mgr::EnsureSpectateTargetIsActive(const Raceinfo& raceinfo) {
 
 u8 Mgr::BuildActiveSpectateOrder(const Raceinfo& raceinfo, u8* outOrder) const {
     if (outOrder == nullptr) return 0;
+    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const GameMode mode = scenario.settings.gamemode;
+    const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
 
     u8 count = 0;
     if (raceinfo.playerIdInEachPosition != nullptr) {
@@ -1009,7 +1021,12 @@ u8 Mgr::BuildActiveSpectateOrder(const Raceinfo& raceinfo, u8* outOrder) const {
         for (u8 pos = 0; pos < maxEntries && count < 12; ++pos) {
             const u8 pid = raceinfo.playerIdInEachPosition[pos];
             if (pid >= 12) continue;
+            RaceinfoPlayer* rifPlayerPos = nullptr;
+            if (raceinfo.players != nullptr) rifPlayerPos = raceinfo.players[pid];
             if (!this->active[pid]) continue;
+            if (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) {
+                if (rifPlayerPos != nullptr && rifPlayerPos->battleScore == 0) continue;
+            }
 
             bool already = false;
             for (u8 i = 0; i < count; ++i) {
@@ -1024,11 +1041,16 @@ u8 Mgr::BuildActiveSpectateOrder(const Raceinfo& raceinfo, u8* outOrder) const {
         }
     }
 
-    for (u8 pid = 0; pid < 12 && count < this->activeCount && count < 12; ++pid) {
+    for (u8 pid = 0; pid < playerCount && pid < 12 && count < this->activeCount && count < 12; ++pid) {
+        RaceinfoPlayer* rifPlayer = nullptr;
+        if (raceinfo.players != nullptr) rifPlayer = raceinfo.players[pid];
         if (!this->active[pid]) continue;
+        if (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) {
+            if (rifPlayer != nullptr && rifPlayer->battleScore == 0) continue;
+        }
 
         bool already = false;
-        for (u8 i = 0; i < count; ++i) {
+        for (u8 i = 0; i < playerCount < count; ++i) {
             if (outOrder[i] == pid) {
                 already = true;
                 break;

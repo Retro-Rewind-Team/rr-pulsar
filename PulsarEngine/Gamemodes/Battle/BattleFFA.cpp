@@ -4,6 +4,8 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
+#include <MarioKartWii/UI/Page/Leaderboard/TeamLeaderboard.hpp>
+#include <MarioKartWii/UI/Page/Page.hpp>
 #include <Network/Network.hpp>
 #include <runtimeWrite.hpp>
 
@@ -94,7 +96,6 @@ void ApplyFFABattle() {
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
     bool isFFA = Pulsar::System::sInstance->IsContext(PULSAR_TEAM_BATTLE) == BATTLE_TEAMS_ENABLED;
-    bool isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) == ELIMINATION_ENABLED;
     if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && (mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE)) {
         isFFA ? BATTLE_TEAMS_ENABLED : BATTLE_TEAMS_DISABLED;
     } else if (mode != MODE_BATTLE && mode != MODE_PRIVATE_BATTLE && mode != MODE_PUBLIC_BATTLE) {
@@ -115,7 +116,12 @@ void ApplyFFABattle() {
         kmRuntimeWrite32A(0x8052E9E0, 0x38600000);
         kmRuntimeWrite32A(0x8052EA7C, 0x38800000);
         kmRuntimeWrite32A(0x8052EB98, 0x38600000);
-        if (((isElim && mode == MODE_PRIVATE_BATTLE) || (mode == MODE_PUBLIC_BATTLE && System::sInstance->netMgr.region != 0x0E)) && scenario.settings.battleType == BATTLE_BALLOON) {
+        Racedata::sInstance->racesScenario.settings.modeFlags &= ~0x2;
+        bool isElim = ELIMINATION_DISABLED;
+        if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && (mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_BATTLE) && System::sInstance->IsContext(PULSAR_TEAM_BATTLE) == BATTLE_TEAMS_DISABLED) {
+            isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? ELIMINATION_ENABLED : ELIMINATION_DISABLED;
+        }
+        if ((isElim || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_REGIONAL && System::sInstance->netMgr.region == 0x0F)) && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW && scenario.settings.battleType == BATTLE_BALLOON) {
             kmRuntimeWrite8A(0x80890209, 'E');
         }
     }
