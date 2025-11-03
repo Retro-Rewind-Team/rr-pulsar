@@ -178,14 +178,38 @@ void CtrlRaceLapKOElimMessage::UpdateMessage(const u8* playerIds, u8 count) {
     int written = 0;
     wchar_t nameScratch[64];
     const u8 limitedCount = (count > 4) ? static_cast<u8>(4) : count;
+    u8 addedNames = 0;
     for (u8 idx = 0; idx < limitedCount; ++idx) {
         const u8 playerId = playerIds[idx];
         const wchar_t* displayName = this->GetPlayerDisplayName(playerId, nameScratch, sizeof(nameScratch) / sizeof(nameScratch[0]));
         if (displayName == nullptr) continue;
         size_t remaining = (written >= 0) ? bufferLen - static_cast<size_t>(written) : bufferLen;
         if (remaining <= 1) break;
-        const int res = ::swprintf(buffer + written, remaining, L"\n%ls has been eliminated!", displayName);
-        if (res > 0) written += res;
+        if (addedNames == 0) {
+            const int res = ::swprintf(buffer + written, remaining, L"\n%ls", displayName);
+            if (res > 0) {
+                written += res;
+                ++addedNames;
+            }
+        } else {
+            const int res = ::swprintf(buffer + written, remaining, L", %ls", displayName);
+            if (res > 0) {
+                written += res;
+                ++addedNames;
+            }
+        }
+    }
+    if (addedNames > 0) {
+        size_t remaining = (written >= 0) ? bufferLen - static_cast<size_t>(written) : bufferLen;
+        if (remaining > 1) {
+            if (addedNames == 1) {
+                const int res = ::swprintf(buffer + written, remaining, L" has been Eliminated!");
+                if (res > 0) written += res;
+            } else {
+                const int res = ::swprintf(buffer + written, remaining, L" have been Eliminated!");
+                if (res > 0) written += res;
+            }
+        }
     }
     if (!this->soundPlayedThisDisplay) {
         playElimSound();

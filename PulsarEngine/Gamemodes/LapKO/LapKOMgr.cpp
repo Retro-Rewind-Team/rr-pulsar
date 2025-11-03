@@ -993,6 +993,7 @@ void Mgr::EnsureSpectateTargetIsActive(const Raceinfo& raceinfo) {
     const u8 current = this->spectateTargetPlayer;
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
+    if (current < 12 && this->active[current]) return;
     if (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) {
         if (current < 12) {
             RaceinfoPlayer* rifPlayerCur = nullptr;

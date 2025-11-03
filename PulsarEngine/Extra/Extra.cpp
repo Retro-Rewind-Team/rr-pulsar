@@ -449,19 +449,4 @@ asmFunc exhaustPipeboostFix() {
 }
 kmCall(0x805674B8, exhaustPipeboostFix);
 
-// CPUs / Online Rivals use regular voices [B_squo]
-kmWrite32(0x80863AD0, 0x38600001);
-kmWrite32(0x80863B88, 0x60000000);
-kmWrite32(0x80863CD0, 0x807E06C0);
-kmWrite32(0x80863CD4, 0x4BD2C97D);
-asmFunc onlineVoiceLines() {
-    ASM(
-        nofralloc;
-        mr r0, r3;
-        li r3, 0x0;
-        li r4, 0xFFFF;
-        blr;)
-}
-kmCall(0x80863CD8, onlineVoiceLines);
-
 }  // namespace Codes
