@@ -9,7 +9,10 @@ static void FrameUpdate() {
     if (system == nullptr) return;
     if (!system->IsContext(PULSAR_MODE_LAPKO)) return;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const GameMode mode = scenario.settings.gamemode;
     if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
+    if (mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_GRAND_PRIX) return;
     system->lapKoMgr->UpdateFrame();
 }
 static RaceFrameHook lapKoFrameHook(FrameUpdate);

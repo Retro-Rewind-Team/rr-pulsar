@@ -123,6 +123,8 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     this->UpdatePausePosition();
 
     const System* system = System::sInstance;
+    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const GameMode mode = scenario.settings.gamemode;
     const bool lapKoContext = (system->IsContext(PULSAR_MODE_LAPKO) && system->IsContext(PULSAR_ELIMINATION) && system->lapKoMgr != nullptr);
     const bool battleContext = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
 
@@ -130,14 +132,14 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     u8 eliminationCount = 0;
     u8 playerIds[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
-    if (lapKoContext) {
+    if (lapKoContext && (mode == MODE_PRIVATE_VS || mode == MODE_VS_RACE)) {
         const Mgr& mgr = *system->lapKoMgr;
         timer = mgr.GetEliminationDisplayTimer();
         eliminationCount = mgr.GetRecentEliminationCount();
         for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
             playerIds[idx] = mgr.GetRecentEliminationId(idx);
         }
-    } else if (battleContext) {
+    } else if (battleContext && (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_BATTLE)) {
         timer = ::Pulsar::BattleElim::GetEliminationDisplayTimer();
         eliminationCount = ::Pulsar::BattleElim::GetRecentEliminationCount();
         for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
@@ -203,10 +205,10 @@ void CtrlRaceLapKOElimMessage::UpdateMessage(const u8* playerIds, u8 count) {
         size_t remaining = (written >= 0) ? bufferLen - static_cast<size_t>(written) : bufferLen;
         if (remaining > 1) {
             if (addedNames == 1) {
-                const int res = ::swprintf(buffer + written, remaining, L" has been Eliminated!");
+                const int res = ::swprintf(buffer + written, remaining, L" has been eliminated!");
                 if (res > 0) written += res;
             } else {
-                const int res = ::swprintf(buffer + written, remaining, L" have been Eliminated!");
+                const int res = ::swprintf(buffer + written, remaining, L" have been eliminated!");
                 if (res > 0) written += res;
             }
         }
