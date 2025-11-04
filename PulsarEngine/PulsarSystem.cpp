@@ -464,6 +464,4 @@ void FriendSelectPage_joinFriend(Pages::FriendInfo* _this, u32 animDir, float an
 kmCall(0x805d686c, FriendSelectPage_joinFriend);
 kmCall(0x805d6754, FriendSelectPage_joinFriend);
 
-kmWrite32(0x805C3C34, 0x3D800000);
-
 }  // namespace Pulsar
