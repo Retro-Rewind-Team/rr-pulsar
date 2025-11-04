@@ -18,7 +18,6 @@ class Mgr {
         ELIMINATION_CAUSE_DISCONNECT
     };
     Mgr();
-    ~Mgr();
 
     void InitForRace();
     void ResetRound();

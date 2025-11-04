@@ -24,34 +24,34 @@ static const u8 lapKoNoRoundAdvanceFlag = 0x80;
 
 Mgr::Mgr()
     : koPerRaceSetting(1),
-    orderCursor(0),
-    activeCount(0),
-    playerCount(0),
-    roundIndex(1),
-    roundDisconnectDebits(0),
-    totalRounds(0),
-    eventSequence(0),
-    appliedSequence(0),
-    pendingSequence(0),
-    pendingElimination(0xFF),
-    pendingRound(0),
-    pendingActiveCount(0),
-    hasPendingEvent(false),
-    pendingNoRoundAdvance(false),
-    pendingBatchCount(0),
-    isSpectating(false),
-    spectateTargetPlayer(0xFF),
-    spectateManualTarget(false),
-    isHost(true),
-    hostAid(0xFF),
-    pendingTimer(0),
-    raceFinished(false),
-    raceInitDone(false),
-    recentEliminationCount(0),
-    recentEliminationRound(0),
-    eliminationDisplayTimer(0),
-    pendingItemReweightFrames(0),
-    disconnectGraceFrames(0) {
+      orderCursor(0),
+      activeCount(0),
+      playerCount(0),
+      roundIndex(1),
+      roundDisconnectDebits(0),
+      totalRounds(0),
+      eventSequence(0),
+      appliedSequence(0),
+      pendingSequence(0),
+      pendingElimination(0xFF),
+      pendingRound(0),
+      pendingActiveCount(0),
+      hasPendingEvent(false),
+      pendingNoRoundAdvance(false),
+      pendingBatchCount(0),
+      isSpectating(false),
+      spectateTargetPlayer(0xFF),
+      spectateManualTarget(false),
+      isHost(true),
+      hostAid(0xFF),
+      pendingTimer(0),
+      raceFinished(false),
+      raceInitDone(false),
+      recentEliminationCount(0),
+      recentEliminationRound(0),
+      eliminationDisplayTimer(0),
+      pendingItemReweightFrames(0),
+      disconnectGraceFrames(0) {
     for (int i = 0; i < 12; ++i) {
         this->active[i] = false;
         this->crossed[i] = false;
@@ -63,19 +63,15 @@ Mgr::Mgr()
     this->ResetEliminationDisplay();
 }
 
-Mgr::~Mgr() {}
-
 void Mgr::SetKoPerRace(u8 value) {
-    if (value == 0) value = 1;
     this->koPerRaceSetting = value;
 }
 
 u8 Mgr::GetKoPerRace() const {
-    return (this->koPerRaceSetting == 0) ? 1 : this->koPerRaceSetting;
+    return this->koPerRaceSetting;
 }
 
 u8 Mgr::GetCurrentRoundEliminationCount() const {
-    if (this->activeCount <= 1) return 0;
     const u8 usualLapCount = this->GetUsualTrackLapCount();
     return this->GetRemainingEliminationsForCurrentRound(usualLapCount);
 }
@@ -89,18 +85,15 @@ u8 Mgr::BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8* outPlan, u
     if (playerCount < 2) return 0;
 
     if (usualLapCount <= 1) {
-        if (outPlan != nullptr && capacity > 0) {
+        if (capacity > 0) {
             outPlan[0] = (playerCount > 1) ? static_cast<u8>(playerCount - 1) : 0;
         }
         return 1;
     }
 
-    if (koPerRace == 0) koPerRace = 1;
-
     const bool twoLapTrack = (usualLapCount == 2);
     if (twoLapTrack && playerCount >= 3) {
         u16 doubled = static_cast<u16>(koPerRace) * 2;
-        if (doubled > 255) doubled = 255;
         koPerRace = static_cast<u8>(doubled);
     }
 
@@ -109,7 +102,6 @@ u8 Mgr::BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8* outPlan, u
     while (remainingPlayers > 1 && round < capacity) {
         u8 planned = koPerRace;
         if (planned >= remainingPlayers) planned = static_cast<u8>(remainingPlayers - 1);
-        if (planned == 0) planned = 1;
         if (outPlan != nullptr) outPlan[round] = planned;
         remainingPlayers = static_cast<u8>(remainingPlayers - planned);
         ++round;
@@ -119,17 +111,10 @@ u8 Mgr::BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8* outPlan, u
 
 void Mgr::InitForRace() {
     this->raceInitDone = true;
-    OS::Report("LapKO: InitForRace start\n");
     const System* system = System::sInstance;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
 
     this->playerCount = system->nonTTGhostPlayersCount;
-    if (this->playerCount == 0) {
-        const Racedata* racedata = Racedata::sInstance;
-        if (racedata != nullptr) this->playerCount = racedata->racesScenario.playerCount;
-    }
-    if (this->playerCount == 0) this->playerCount = 12;
-
     Raceinfo* raceinfo = Raceinfo::sInstance;
 
     for (int i = 0; i < 12; ++i) {
@@ -160,11 +145,9 @@ void Mgr::InitForRace() {
     this->raceFinished = false;
     this->raceInitDone = true;
     this->ResetEliminationDisplay();
-    // Start with a short grace window before we interpret missing AIDs as disconnects.
-    // This mitigates first-round false eliminations of the host due to transient AID availability.
-    this->disconnectGraceFrames = 180;  // ~3 seconds at 60fps
+    this->disconnectGraceFrames = 180;
 
-    if (controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE) {
+    if (controller->roomType != RKNet::ROOMTYPE_NONE) {
         const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
         this->hostAid = sub.hostAid;
         this->isHost = (sub.localAid == sub.hostAid);
@@ -184,18 +167,9 @@ void Mgr::InitForRace() {
         raceDataMutable->menusScenario.settings.lapCount = raceDataMutable->racesScenario.settings.lapCount;
     }
 
-    // Safe: initialize the Item::Manager playerCount at race start only.
-    // Do not mutate it mid-race as it sizes internal arrays.
-    if (Item::Manager::sInstance != nullptr) {
-        Item::Manager::sInstance->playerCount = this->playerCount;
-    }
-
+    Item::Manager::sInstance->playerCount = this->playerCount;
     this->UpdateActivePlayerCounts();
-
-    // Build elimination plan using the configured KO-per-race setting
     this->ComputeEliminationPlan();
-    for (u8 i = 0; i < this->totalRounds; ++i) OS::Report("%u", this->eliminationPlan[i]);
-    OS::Report("\nLapKO: InitForRace done players=%u host=%u\n", this->playerCount, this->isHost);
 }
 
 void Mgr::ResetRound() {
@@ -208,7 +182,6 @@ void Mgr::ResetRound() {
 }
 
 void Mgr::OnLapComplete(u8 playerId, RaceinfoPlayer& player) {
-    if (playerId >= 12) return;
     if (!this->active[playerId]) return;
     if (this->crossed[playerId]) return;
     if (player.currentLap <= this->roundIndex) return;
@@ -217,44 +190,30 @@ void Mgr::OnLapComplete(u8 playerId, RaceinfoPlayer& player) {
         this->crossOrder[this->orderCursor] = playerId;
         ++this->orderCursor;
     }
-    // In friend rooms, only the host computes eliminations; non-hosts wait for network
     if (!this->IsFriendRoomOnline() || this->isHost) {
         this->TryResolveRound();
     }
 }
 
 void Mgr::OnPlayerFinished(u8 playerId) {
-    if (playerId >= 12) return;
     if (!this->active[playerId]) return;
-    // Treat race finish as lap completion as well
     Raceinfo* raceinfo = Raceinfo::sInstance;
-    if (raceinfo != nullptr) {
-        RaceinfoPlayer* infoPlayer = raceinfo->players[playerId];
-        if (infoPlayer != nullptr) {
-            this->OnLapComplete(playerId, *infoPlayer);
-        }
-    }
+    RaceinfoPlayer* infoPlayer = raceinfo->players[playerId];
+    this->OnLapComplete(playerId, *infoPlayer);
 }
 
 void Mgr::OnPlayerDisconnected(u8 playerId) {
-    if (playerId >= 12) return;
     if (!this->active[playerId]) return;
-    OS::Report("LapKO: Disconnect player=%u\n", playerId);
-    // In friend rooms, only the host determines eliminations on disconnects
     if (!this->IsFriendRoomOnline() || this->isHost) {
         this->ProcessElimination(playerId, ELIMINATION_CAUSE_DISCONNECT, false, true);
     }
 }
 
 void Mgr::TryResolveRound() {
-    if (this->raceFinished) return;
-    if (this->activeCount <= 1) return;
-
-    // Special case for 1-lap tracks: when first place finishes, eliminate everyone else
     const u8 usualLaps = this->GetUsualTrackLapCount();
 
     u8 toEliminate = this->GetRemainingEliminationsForCurrentRound(usualLaps);
-    if (toEliminate == 0) return;  // no eliminations remaining this round
+    if (toEliminate == 0) return;
 
     u8 requiredCrossings;
     if (usualLaps <= 1) {
@@ -317,10 +276,6 @@ u8 Mgr::GetRemainingEliminationsForCurrentRound(u8 usualLapCount) const {
 }
 
 void Mgr::ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance) {
-    if (playerId >= 12) return;
-    if (!this->active[playerId]) return;
-    if (this->raceFinished) return;
-
     const u8 concludedRound = this->roundIndex;
     const u8 usualLapCount = this->GetUsualTrackLapCount();
     const bool supportsDisconnectAdjustments = (usualLapCount > 1);
@@ -356,16 +311,11 @@ void Mgr::ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool f
     this->RecordEliminationForDisplay(playerId, concludedRound);
 
     Raceinfo* raceinfo = Raceinfo::sInstance;
-    if (raceinfo != nullptr) {
-        RaceinfoPlayer* infoPlayer = raceinfo->players[playerId];
-        if (infoPlayer != nullptr) {
-            infoPlayer->Vanish();
-        }
-    }
+    RaceinfoPlayer* infoPlayer = raceinfo->players[playerId];
+    infoPlayer->Vanish();
 
-    // If the eliminated player is local, either enter spectate (online) or end the race offline.
     if (this->EnterSpectateIfLocal(playerId)) {
-        return;  // Offline eliminations end the race immediately.
+        return;
     }
 
     if (!suppressRoundAdvance) {
@@ -380,26 +330,20 @@ void Mgr::ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool f
                 break;
             }
         }
-        OS::Report("LapKO: Winner=%u\n", winnerId);
         this->ConcludeRace(winnerId);
         return;
     }
 
     if (!suppressRoundAdvance) {
         ++this->roundIndex;
-        OS::Report("LapKO: NextRound=%u active=%u\n", this->roundIndex, this->activeCount);
     }
 }
 
 void Mgr::ConcludeRace(u8 winnerId) {
-    if (this->raceFinished) return;
     this->raceFinished = true;
 
     Raceinfo* raceinfo = Raceinfo::sInstance;
-    if (raceinfo == nullptr) return;
-
-    // If we're offline, immediately finish everyone at their current standings and return.
-    if (RKNet::Controller::sInstance == nullptr || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
+    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
         this->FinishOfflineAtCurrentStandings();
         return;
     }
@@ -407,13 +351,9 @@ void Mgr::ConcludeRace(u8 winnerId) {
     u8 finishId = winnerId;
     if (finishId >= 12) {
         finishId = 0xFF;
-        if (raceinfo->players != nullptr) {
-            for (u8 i = 0; i < 12; ++i) {
-                if (raceinfo->players[i] != nullptr) {
-                    finishId = i;
-                    break;
-                }
-            }
+        for (u8 i = 0; i < 12; ++i) {
+                finishId = i;
+                break;
         }
     }
 
@@ -425,15 +365,10 @@ void Mgr::ConcludeRace(u8 winnerId) {
 
 void Mgr::FinishOfflineAtCurrentStandings() {
     Raceinfo* raceinfo = Raceinfo::sInstance;
-    if (raceinfo == nullptr) return;
-    if (raceinfo->players == nullptr || raceinfo->playerIdInEachPosition == nullptr) return;
-
-    // Derive a reference time from Raceinfo
     Timer now(false);
     raceinfo->CloneTimer(&now);
     now.SetActive(true);
 
-    // Walk current placements; cap to 12 and playerCount
     u8 total = 12;
     const Racedata* racedata = Racedata::sInstance;
     if (racedata != nullptr) total = racedata->racesScenario.playerCount;
@@ -442,27 +377,19 @@ void Mgr::FinishOfflineAtCurrentStandings() {
     if (raceinfo->playerIdInEachPosition != nullptr) {
         for (u8 pos = 0; pos < total && pos < 12; ++pos) {
             const u8 pid = raceinfo->playerIdInEachPosition[pos];
-            if (pid >= 12) continue;
             RaceinfoPlayer* p = raceinfo->players[pid];
-            if (p == nullptr) continue;
-
-            // Determine the finish time to commit: keep existing active finish time if any; else use 'now'.
             const Timer* commitTime = &now;
-            if (p->raceFinishTime != nullptr && p->raceFinishTime->isActive) {
+            if (p->raceFinishTime->isActive) {
                 commitTime = p->raceFinishTime;
             }
-
-            // Mark player as finished and commit placement.
             p->EndRace(*commitTime, false, 0);
             raceinfo->EndPlayerRace(pid);
         }
     } else {
-        // Fallback: iterate player IDs directly if standings are unavailable.
         for (u8 pid = 0; pid < total && pid < 12; ++pid) {
             RaceinfoPlayer* p = raceinfo->players[pid];
-            if (p == nullptr) continue;
             const Timer* commitTime = &now;
-            if (p->raceFinishTime != nullptr && p->raceFinishTime->isActive) commitTime = p->raceFinishTime;
+            if (p->raceFinishTime->isActive) commitTime = p->raceFinishTime;
             p->EndRace(*commitTime, false, 0);
             raceinfo->EndPlayerRace(pid);
         }
@@ -475,7 +402,6 @@ void Mgr::BroadcastEvent(u8 playerId, u8 concludedRound) {
     this->pendingElimination = encodedId;
     this->pendingBatchCount = 0;
     this->PreparePendingEvent(concludedRound, this->activeCount);
-    OS::Report("LapKO: Broadcast seq=%u player=%u round=%u active=%u\n", this->pendingSequence, playerId, concludedRound, this->pendingActiveCount);
 }
 
 void Mgr::BroadcastBatch(const u8* elimIds, u8 elimCount, u8 concludedRound) {
@@ -486,7 +412,6 @@ void Mgr::BroadcastBatch(const u8* elimIds, u8 elimCount, u8 concludedRound) {
     for (u8 i = 0; i < elimCount; ++i) this->pendingBatch[i] = elimIds[i];
     this->pendingElimination = 0xFF;
     this->PreparePendingEvent(concludedRound, this->activeCount);
-    OS::Report("LapKO: BroadcastBatch seq=%u count=%u round=%u active=%u\n", this->pendingSequence, elimCount, concludedRound, this->pendingActiveCount);
 }
 
 void Mgr::UpdateActivePlayerCounts() {
@@ -543,7 +468,6 @@ void Mgr::UpdateFrame() {
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     Raceinfo* raceinfo = Raceinfo::sInstance;
-    if (controller == nullptr || raceinfo == nullptr) return;
 
     this->EnsureRaceInitialized(*raceinfo);
 
@@ -575,28 +499,14 @@ kmRuntimeUse(0x809c3670);
 void Mgr::ReweightItemProbabilitiesNow() {
     if (!this->raceInitDone || this->raceFinished) return;
     Raceinfo* ri = Raceinfo::sInstance;
-    if (ri == nullptr) return;
     if (ri->raceFrames < 90) return;
-    if (Item::Manager::sInstance == nullptr) return;
 
-    // In retail, Item::ItemSlotData::sInstance is stored at 0x809c3670 as a pointer to the instance.
-    // Read the pointer value from that address.
     Item::ItemSlotData* slot = *reinterpret_cast<Item::ItemSlotData**>(kmRuntimeAddr(0x809c3670));
-    if (slot == nullptr) return;
-
     u8 activePlayers = this->activeCount;
     if (activePlayers == 0) activePlayers = 1;
-
-    // If nothing changed, don’t touch memory
     if (slot->playerCount == activePlayers) return;
-
-    // Tell the setup how many effective players we have now.
-    // DO NOT touch Item::Manager::playerCount mid-race.
     slot->playerCount = activePlayers;
-
-    // Rebuild VS probabilities the same way the game does, to ensure all caches
-    // and roulette-related structures are consistent.
-    const bool isOnline = (RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE);
+    const bool isOnline = (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE);
     if (isOnline) {
         slot->SetupOnlineVSProbabilities();
     } else {
@@ -604,36 +514,30 @@ void Mgr::ReweightItemProbabilitiesNow() {
     }
 }
 
-// Enter spectating if the eliminated player belongs to the local AID online.
-// Offline eliminations instead end the race immediately so the player skips spectating.
 bool Mgr::EnterSpectateIfLocal(u8 eliminatedId) {
     if (this->raceFinished) return true;
 
     const Racedata* racedata = Racedata::sInstance;
-    const bool isOffline = (RKNet::Controller::sInstance == nullptr || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE);
-    if (isOffline && racedata != nullptr && eliminatedId < racedata->racesScenario.playerCount) {
+    const bool isOffline = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE;
+    if (isOffline && eliminatedId < racedata->racesScenario.playerCount) {
         const RacedataPlayer& eliminatedPlayer = racedata->racesScenario.players[eliminatedId];
         if (eliminatedPlayer.playerType == PLAYER_REAL_LOCAL) {
-            // Offline: instead of spectating, end the entire race now and lock in placements/times.
             this->FinishOfflineAtCurrentStandings();
             this->raceFinished = true;
             return true;
         }
     } else {
         RKNet::Controller* controller = RKNet::Controller::sInstance;
-        if (controller == nullptr) return false;
         const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
         const u8 aid = controller->aidsBelongingToPlayerIds[eliminatedId];
-        if (aid >= 12 || aid != sub.localAid) return false;  // not a local player
+        if (aid >= 12 || aid != sub.localAid) return false;
 
         this->isSpectating = true;
         this->spectateManualTarget = false;
         this->spectateTargetPlayer = 0xFF;
 
         Raceinfo* raceinfo = Raceinfo::sInstance;
-        if (raceinfo != nullptr) {
-            this->InitializeSpectateView(*raceinfo);
-        }
+        this->InitializeSpectateView(*raceinfo);
     }
     return false;
 }
@@ -645,7 +549,6 @@ void Mgr::ComputeEliminationPlan() {
 }
 
 u8 Mgr::GetUsualTrackLapCount() const {
-    // Default to 3 if KMP not available
     u8 usual = 3;
     if (KMP::Manager::sInstance != nullptr &&
         KMP::Manager::sInstance->stgiSection != nullptr &&
@@ -683,7 +586,6 @@ void Mgr::ResetEliminationDisplay() {
 
 bool Mgr::IsFriendRoomOnline() const {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return false;
     return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
 }
 
@@ -696,8 +598,6 @@ void Mgr::TickEliminationDisplay() {
 }
 
 void Mgr::EnsureRaceInitialized(Raceinfo& raceinfo) {
-    if (raceinfo.players == nullptr) return;
-
     const u16 raceFrames = raceinfo.raceFrames;
     if (this->lastRaceFrames != 0xFFFF && raceFrames < this->lastRaceFrames) {
         this->raceInitDone = false;
@@ -726,7 +626,6 @@ void Mgr::HostMonitorDisconnects(RKNet::Controller& controller, const RKNet::Con
                 const u8 aid = controller.aidsBelongingToPlayerIds[playerId];
                 if (aid >= 12) continue;
                 if ((lost & (1 << aid)) != 0) {
-                    OS::Report("LapKO: Detected disconnect AID=%u player=%u (lost=%08x)\n", aid, playerId, lost);
                     this->ProcessElimination(playerId, ELIMINATION_CAUSE_DISCONNECT, false, true);
                 }
             }
@@ -742,7 +641,6 @@ void Mgr::UpdateLapProgress(Raceinfo& raceinfo) {
     const u8 maxPlayers = (this->playerCount < 12) ? this->playerCount : 12;
     for (u8 playerId = 0; playerId < maxPlayers; ++playerId) {
         RaceinfoPlayer* infoPlayer = raceinfo.players[playerId];
-        if (infoPlayer == nullptr) continue;
         const u16 lapValue = infoPlayer->currentLap;
         if (lapValue == this->lastLapValue[playerId]) continue;
         if (lapValue > this->lastLapValue[playerId]) {
@@ -757,41 +655,37 @@ void Mgr::UpdateSpectatorInputs(const Raceinfo& raceinfo) {
     bool advanceBackward = false;
 
     SectionMgr* sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr != nullptr) {
-        for (u8 hudSlot = 0; hudSlot < 4; ++hudSlot) {
-            Input::RealControllerHolder* holder = sectionMgr->pad.padInfos[hudSlot].controllerHolder;
-            if (holder == nullptr) continue;
-            if (holder->curController == nullptr) continue;
+    for (u8 hudSlot = 0; hudSlot < 4; ++hudSlot) {
+        Input::RealControllerHolder* holder = sectionMgr->pad.padInfos[hudSlot].controllerHolder;
 
-            const u16 current = holder->inputStates[0].buttonRaw;
-            const u16 previous = holder->inputStates[1].buttonRaw;
-            const u16 newInputs = static_cast<u16>(current & static_cast<u16>(~previous));
-            if (newInputs == 0) continue;
+        const u16 current = holder->inputStates[0].buttonRaw;
+        const u16 previous = holder->inputStates[1].buttonRaw;
+        const u16 newInputs = static_cast<u16>(current & static_cast<u16>(~previous));
+        if (newInputs == 0) continue;
 
-            const ControllerType type = holder->curController->GetType();
-            switch (type) {
-                case WHEEL:
-                case NUNCHUCK:
-                    if ((newInputs & WPAD::WPAD_BUTTON_A) != 0) advanceForward = true;
-                    if ((newInputs & WPAD::WPAD_BUTTON_B) != 0) advanceBackward = true;
-                    break;
-                case CLASSIC:
-                    if ((newInputs & WPAD::WPAD_CL_BUTTON_A) != 0) advanceForward = true;
-                    if ((newInputs & WPAD::WPAD_CL_BUTTON_B) != 0) advanceBackward = true;
-                    break;
-                case GCN:
-                    if ((newInputs & PAD::PAD_BUTTON_A) != 0) advanceForward = true;
-                    if ((newInputs & PAD::PAD_BUTTON_B) != 0) advanceBackward = true;
-                    break;
-                default:
-                    if ((newInputs & PAD::PAD_BUTTON_A) != 0) advanceForward = true;
-                    if ((newInputs & PAD::PAD_BUTTON_B) != 0) advanceBackward = true;
-                    if ((newInputs & WPAD::WPAD_BUTTON_A) != 0) advanceForward = true;
-                    if ((newInputs & WPAD::WPAD_BUTTON_B) != 0) advanceBackward = true;
-                    if ((newInputs & WPAD::WPAD_CL_BUTTON_A) != 0) advanceForward = true;
-                    if ((newInputs & WPAD::WPAD_CL_BUTTON_B) != 0) advanceBackward = true;
-                    break;
-            }
+        const ControllerType type = holder->curController->GetType();
+        switch (type) {
+            case WHEEL:
+            case NUNCHUCK:
+                if ((newInputs & WPAD::WPAD_BUTTON_A) != 0) advanceForward = true;
+                if ((newInputs & WPAD::WPAD_BUTTON_B) != 0) advanceBackward = true;
+                break;
+            case CLASSIC:
+                if ((newInputs & WPAD::WPAD_CL_BUTTON_A) != 0) advanceForward = true;
+                if ((newInputs & WPAD::WPAD_CL_BUTTON_B) != 0) advanceBackward = true;
+                break;
+            case GCN:
+                if ((newInputs & PAD::PAD_BUTTON_A) != 0) advanceForward = true;
+                if ((newInputs & PAD::PAD_BUTTON_B) != 0) advanceBackward = true;
+                break;
+            default:
+                if ((newInputs & PAD::PAD_BUTTON_A) != 0) advanceForward = true;
+                if ((newInputs & PAD::PAD_BUTTON_B) != 0) advanceBackward = true;
+                if ((newInputs & WPAD::WPAD_BUTTON_A) != 0) advanceForward = true;
+                if ((newInputs & WPAD::WPAD_BUTTON_B) != 0) advanceBackward = true;
+                if ((newInputs & WPAD::WPAD_CL_BUTTON_A) != 0) advanceForward = true;
+                if ((newInputs & WPAD::WPAD_CL_BUTTON_B) != 0) advanceBackward = true;
+                break;
         }
     }
 
@@ -843,13 +737,10 @@ void Mgr::ProcessPendingItemReweight() {
 }
 
 void Mgr::HostDistributeEvents(RKNet::Controller& controller, const RKNet::ControllerSub& sub) {
-    // Fill outgoing PulRH1 extras for all peers. If we don't have a pending event, explicitly zero seq.
     for (int aid = 0; aid < 12; ++aid) {
         if (aid == sub.localAid) continue;
         if ((sub.availableAids & (1 << aid)) == 0) continue;
-
         RKNet::PacketHolder<Network::PulRH1>* holder = controller.GetSendPacketHolder<Network::PulRH1>(aid);
-        if (holder == nullptr) continue;
         if (holder->packetSize < sizeof(Network::PulRH1)) holder->packetSize = sizeof(Network::PulRH1);
         Network::PulRH1* packet = holder->packet;
 
@@ -889,14 +780,10 @@ void Mgr::HostDistributeEvents(RKNet::Controller& controller, const RKNet::Contr
 }
 
 void Mgr::ClientConsumeHostEvents(RKNet::Controller& controller, const RKNet::ControllerSub&) {
-    if (this->hostAid >= 12) return;
-
     const u32 bufferIdx = controller.lastReceivedBufferUsed[this->hostAid][RKNet::PACKET_RACEHEADER1];
     RKNet::SplitRACEPointers* split = controller.splitReceivedRACEPackets[bufferIdx][this->hostAid];
-    if (split == nullptr) return;
 
     const RKNet::PacketHolder<Network::PulRH1>* holder = split->GetPacketHolder<Network::PulRH1>();
-    if (holder == nullptr) return;
     if (holder->packetSize != sizeof(Network::PulRH1)) return;
 
     const Network::PulRH1* packet = holder->packet;
@@ -911,12 +798,12 @@ void Mgr::ClientConsumeHostEvents(RKNet::Controller& controller, const RKNet::Co
 }
 
 u8 Mgr::SelectEliminationCandidates(u8 toEliminate, u8* eliminatedList) const {
-    if (eliminatedList == nullptr || toEliminate == 0) return 0;
+    if (toEliminate == 0) return 0;
 
     u8 elimCount = 0;
     Raceinfo* raceinfoLocal = Raceinfo::sInstance;
 
-    if (raceinfoLocal != nullptr && raceinfoLocal->playerIdInEachPosition != nullptr) {
+    if (raceinfoLocal->playerIdInEachPosition != nullptr) {
         for (int pos = 11; pos >= 0 && elimCount < toEliminate; --pos) {
             const u8 pid = raceinfoLocal->playerIdInEachPosition[pos];
             if (pid >= 12) continue;
@@ -953,7 +840,6 @@ u8 Mgr::SelectEliminationCandidates(u8 toEliminate, u8* eliminatedList) const {
 }
 
 bool Mgr::HasCandidate(const u8* list, u8 count, u8 playerId) const {
-    if (list == nullptr) return false;
     for (u8 idx = 0; idx < count; ++idx) {
         if (list[idx] == playerId) return true;
     }
@@ -1111,9 +997,7 @@ u8 Mgr::GetLeaderPlayerId(const Raceinfo& raceinfo) const {
 
 bool Mgr::FocusCameraOnPlayer(u8 playerId) const {
     if (playerId >= 12) return false;
-
     RaceCameraMgr* camMgr = RaceCameraMgr::sInstance;
-    if (camMgr == nullptr || camMgr->cameras == nullptr || camMgr->cameraCount == 0) return false;
 
     u8 targetCamIdx = 0xFF;
     for (u32 i = 0; i < camMgr->cameraCount; ++i) {
