@@ -21,22 +21,10 @@ kmCall(0x8073ae9c, GetCustomKartAIParam);
 void *GetCustomItemSlot(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
-    bool itemModeRandom = Pulsar::GAMEMODE_DEFAULT;
-    bool itemModeBlast = Pulsar::GAMEMODE_DEFAULT;
-    bool itemModeNone = Pulsar::GAMEMODE_DEFAULT;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || mode == MODE_VS_RACE || mode == MODE_BATTLE) {
-        itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) ? Pulsar::GAMEMODE_RANDOM : Pulsar::GAMEMODE_DEFAULT;
-        itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST) ? Pulsar::GAMEMODE_BLAST : Pulsar::GAMEMODE_DEFAULT;
-        itemModeNone = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODENONE) ? Pulsar::GAMEMODE_NONE : Pulsar::GAMEMODE_DEFAULT;
-    }
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_WW) {
-        itemModeNone = Pulsar::GAMEMODE_NONE;
-    }
+    bool itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) ? Pulsar::GAMEMODE_RANDOM : Pulsar::GAMEMODE_DEFAULT;
+    bool itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST) ? Pulsar::GAMEMODE_BLAST : Pulsar::GAMEMODE_DEFAULT;
     if (itemModeRandom == Pulsar::GAMEMODE_DEFAULT || itemModeBlast == Pulsar::GAMEMODE_DEFAULT) {
         name = "ItemSlotRR.bin";
-    }
-    if (itemModeNone == Pulsar::GAMEMODE_NONE) {
-        name = "ItemSlot.bin";
     }
     if (itemModeRandom == Pulsar::GAMEMODE_RANDOM) {
         name = "ItemSlotRandom.bin";

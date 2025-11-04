@@ -98,21 +98,10 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     const float insideDriftMultiplier = 1.236f;  // 3% faster
     const float defaultMTMultiplier = 1.2f;
     // determine default inside drift context
-    bool insideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    bool vanilla = Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    bool outsideAll = Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-        insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE)
-                        ? Pulsar::FORCE_TRANSMISSION_INSIDE
-                        : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-        vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA)
-                      ? Pulsar::FORCE_TRANSMISSION_VANILLA
-                      : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-        outsideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE)
-                         ? Pulsar::FORCE_TRANSMISSION_OUTSIDE
-                         : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    }
+    bool insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE) ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    bool outsideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE) ? Pulsar::FORCE_TRANSMISSION_OUTSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    bool vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA) ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    
     // check if a matching ghost combo is present (same kart+character)
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     int comboGhostIdx = -1;

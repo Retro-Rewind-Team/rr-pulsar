@@ -62,7 +62,7 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum& posTracker) {
         if (raceinfo->raceFrames > 0) {
             isInDanger = system->koMgr->GetWouldBeKnockedOut(playerId);
         }
-    } else if (isLapKO && system->lapKoMgr != nullptr) {
+    } else if (isLapKO) {
         // LapKO: Highlight only as many trailing active players as will actually be eliminated this round.
         // This fixes the previous heuristic that always highlighted bottom two even on single-elim rounds.
         if (raceinfo->raceFrames > 0 && system->lapKoMgr->IsActive(playerId)) {

@@ -183,7 +183,7 @@ static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) 
                 controller->UpdateAidsBelongingToPlayerIds();
             }
 
-            if (isLapKO && system->lapKoMgr != nullptr && select != nullptr) {
+            if (isLapKO) {
                 system->lapKoMgr->SetKoPerRace(select->koPerRace);
             }
         }

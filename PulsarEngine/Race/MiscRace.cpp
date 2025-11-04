@@ -152,14 +152,7 @@ kmWrite24(0x808A9C16, 'PUL');  // item_window_new -> item_window_PUL
 const char* ChangeItemWindowPane(ItemId id, u32 itemCount) {
     const bool feather = System::sInstance->IsContext(PULSAR_FEATHER);
     bool MegaTC = true;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-        if (System::sInstance->IsContext(PULSAR_THUNDERCLOUD) == THUNDERCLOUD_NORMAL) {
-            MegaTC = false;
-        } else {
-            MegaTC = true;
-        }
-    }
+    if (System::sInstance->IsContext(PULSAR_THUNDERCLOUD)) MegaTC = false;
     const char* paneName;
     if (id == BLOOPER && feather) {
         if (itemCount == 2)

@@ -275,9 +275,9 @@ enum RaceSettingSPEEDUP {
 };
 
 // 6) Battle values
-enum BattleTeams {
-    BATTLE_TEAMS_DISABLED,
-    BATTLE_TEAMS_ENABLED
+enum BattleFFA {
+    BATTLE_FFA_DISABLED,
+    BATTLE_FFA_ENABLED
 };
 
 enum HostSettingElimination {

@@ -449,4 +449,8 @@ asmFunc exhaustPipeboostFix() {
 }
 kmCall(0x805674B8, exhaustPipeboostFix);
 
+// Battle Timer Fix [B_squo]
+kmWrite32(0x80532744, 0x3800012C);
+kmWrite32(0x80532780, 0x3800012C);
+
 }  // namespace Codes

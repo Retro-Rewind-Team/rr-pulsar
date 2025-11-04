@@ -20,7 +20,6 @@ namespace Race {
 bool IsLapKOEnabled(const System* system) {
     if (system == nullptr) return false;
     if (system->IsContext(PULSAR_MODE_LAPKO)) return true;
-    if (system->lapKoMgr != nullptr) return true;
     if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_FROOM_HOST && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) return false;
     return false;
 }
@@ -47,18 +46,16 @@ RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
         // Base KO lap count (existing behaviour)
         const u8 basePlayers = GetLapKOTargetCount(system, racedata, 1);
         const RKNet::Controller* controller = RKNet::Controller::sInstance;
-        const bool offlineLapKO = (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE);
+        const bool offlineLapKO = (controller->roomType == RKNet::ROOMTYPE_NONE);
 
         u8 koPerRace = 1;
-        if (system != nullptr && system->lapKoMgr != nullptr && !offlineLapKO) {
+        if (!offlineLapKO) {
             koPerRace = system->lapKoMgr->GetKoPerRace();
         } else {
             const Settings::Mgr& settings = Settings::Mgr::Get();
             koPerRace = static_cast<u8>(settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1);
             if (koPerRace == 0) koPerRace = 1;
-            if (system != nullptr && system->lapKoMgr != nullptr) {
-                system->lapKoMgr->SetKoPerRace(koPerRace);
-            }
+            system->lapKoMgr->SetKoPerRace(koPerRace);
         }
 
         const u8 usualTrackLaps = KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->lapCount;

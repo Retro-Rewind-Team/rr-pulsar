@@ -87,7 +87,7 @@ static UI::CustomCtrlBuilder sLapKOElimMessageBuilder(
 
 u32 CtrlRaceLapKOElimMessage::Count() {
     const System* system = System::sInstance;
-    const bool lapKoDisplay = system->IsContext(PULSAR_MODE_LAPKO) && system->IsContext(PULSAR_ELIMINATION);
+    const bool lapKoDisplay = system->IsContext(PULSAR_MODE_LAPKO);
     const bool battleDisplay = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
     if (!lapKoDisplay && !battleDisplay) return 0;
     const Racedata* racedata = Racedata::sInstance;
@@ -125,21 +125,21 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     const System* system = System::sInstance;
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
-    const bool lapKoContext = (system->IsContext(PULSAR_MODE_LAPKO) && system->IsContext(PULSAR_ELIMINATION) && system->lapKoMgr != nullptr);
+    const bool lapKoContext = system->IsContext(PULSAR_MODE_LAPKO);
     const bool battleContext = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
 
     u16 timer = 0;
     u8 eliminationCount = 0;
     u8 playerIds[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
-    if (lapKoContext && (mode == MODE_PRIVATE_VS || mode == MODE_VS_RACE)) {
+    if (lapKoContext) {
         const Mgr& mgr = *system->lapKoMgr;
         timer = mgr.GetEliminationDisplayTimer();
         eliminationCount = mgr.GetRecentEliminationCount();
         for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
             playerIds[idx] = mgr.GetRecentEliminationId(idx);
         }
-    } else if (battleContext && (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_BATTLE)) {
+    } else if (battleContext) {
         timer = ::Pulsar::BattleElim::GetEliminationDisplayTimer();
         eliminationCount = ::Pulsar::BattleElim::GetRecentEliminationCount();
         for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
