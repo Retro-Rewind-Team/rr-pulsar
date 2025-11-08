@@ -43,9 +43,6 @@ static asmFunc FFAResults() {
         beq lbl_setFFA_Froom2;
         cmpwi r4, 0x77;
         beq lbl_setFFA_Froom2;
-        cmpwi r4, 0x60;
-        bne lbl_chk58;
-        lbl_chk58 : cmpwi r4, 0x58;
         bne lbl_orig;
         lbl_setFFAP1 : li r4, 0x20;
         b lbl_orig;
