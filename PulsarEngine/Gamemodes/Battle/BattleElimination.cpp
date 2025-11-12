@@ -260,8 +260,7 @@ void BattleElim() {
     if (eliminationActive) {
         kmRuntimeCallA(0x806619AC, ForceBalloonBattle);
         kmRuntimeCallA(0x807123e8, GetFanfare);
-    }
-    else if (system->IsContext(PULSAR_MODE_LAPKO)) {
+    } else if (system->IsContext(PULSAR_MODE_LAPKO)) {
         kmRuntimeCallA(0x807123e8, GetFanfareKO);
     }
 }
