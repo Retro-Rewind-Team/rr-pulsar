@@ -139,6 +139,7 @@ void System::UpdateContext() {
     const u32 sceneId = GameScene::GetCurrent()->id;
 
     bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
     bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
     bool isBalloonBattle = isBattle && racedataSettings.battleType == BATTLE_BALLOON;
     bool isNotPublic = isFroom || controller->roomType == RKNet::ROOMTYPE_NONE;
@@ -176,6 +177,12 @@ void System::UpdateContext() {
     bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && isFroom;
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
+    bool isStartRetro = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_RETROS;
+    bool isStartCT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_CTS;
+    bool isStartRTS = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_RTS;
+    bool isStart200 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_200;
+    bool isStartOTT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_OTT;
+    bool isStartItemRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_ITEMRAIN;
     bool isFeather = this->info.HasFeather();
     bool isUMTs = this->info.HasUMTs();
     bool isMegaTC = this->info.HasMegaTC();
@@ -207,13 +214,13 @@ void System::UpdateContext() {
                 isTrackSelectionCts = newContext & (1 << PULSAR_CTS);
                 is500 = newContext & (1 << PULSAR_500);
                 is200Online |= newContext & (1 << PULSAR_200_WW);
-                isHAW = newContext & (1 << PULSAR_HAW);
+                isHAW = newContext2 & (1 << PULSAR_HAW);
                 isKO = newContext & (1 << PULSAR_MODE_KO);
                 isOTT = newContext & (1 << PULSAR_MODE_OTT);
                 isOTTOnline |= newContext & (1 << PULSAR_MODE_OTT);
                 isMiiHeads = newContext2 & (1 << PULSAR_MIIHEADS);
                 isThunderCloud = newContext & (1 << PULSAR_THUNDERCLOUD);
-                isItemBoxRepsawnFast = newContext & (1 << PULSAR_ITEMBOXRESPAWN);
+                isItemBoxRepsawnFast = newContext2 & (1 << PULSAR_ITEMBOXRESPAWN);
                 isTransmissionInside = newContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
                 isTransmissionOutside = newContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
                 isTransmissionVanilla = newContext2 & (1 << PULSAR_TRANSMISSIONVANILLA);
@@ -221,6 +228,12 @@ void System::UpdateContext() {
                 isExtendedTeams = newContext & (1 << PULSAR_EXTENDEDTEAMS);
                 isElimination = newContext & (1 << PULSAR_ELIMINATION);
                 isLapBasedKO = newContext & (1 << PULSAR_MODE_LAPKO);
+                isStartRetro = newContext & (1 << PULSAR_STARTRETROS);
+                isStartCT = newContext & (1 << PULSAR_STARTCTS);
+                isStartRTS = newContext & (1 << PULSAR_STARTREGS);
+                isStart200 = newContext & (1 << PULSAR_START200);
+                isStartOTT = newContext & (1 << PULSAR_STARTOTT);
+                isStartItemRain = newContext & (1 << PULSAR_STARTITEMRAIN);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -251,7 +264,7 @@ void System::UpdateContext() {
     }
 
     // Set the new context value
-    u32 newContextValue = (isCT) << PULSAR_CT | (isHAW) << PULSAR_HAW;
+    u32 newContextValue = (isCT) << PULSAR_CT;
     u32 newContextValue2 = 0;
     if (isCT) {
         newContextValue |= (is200) << PULSAR_200 | (isFeather) << PULSAR_FEATHER |
@@ -261,16 +274,19 @@ void System::UpdateContext() {
                            (isCharRestrictHeavy) << PULSAR_CHARRESTRICTHEAVY | (isKartRestrictKart) << PULSAR_KARTRESTRICT |
                            (isKartRestrictBike) << PULSAR_BIKERESTRICT | (isChangeCombo) << PULSAR_CHANGECOMBO |
                            (is500) << PULSAR_500 | (isThunderCloud) << PULSAR_THUNDERCLOUD |
-                           (isTrackSelectionRegs) << PULSAR_REGS |
-                           (isKOFinal) << PULSAR_KOFINAL | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
+                           (isTrackSelectionRegs) << PULSAR_REGS | (isKOFinal) << PULSAR_KOFINAL |
                            (isExtendedTeams) << PULSAR_EXTENDEDTEAMS | (isTrackSelectionRetros) << PULSAR_RETROS |
                            (isTrackSelectionCts) << PULSAR_CTS | (isTeamBattle) << PULSAR_FFA |
-                           (isElimination) << PULSAR_ELIMINATION | (isLapBasedKO) << PULSAR_MODE_LAPKO;
+                           (isElimination) << PULSAR_ELIMINATION | (isLapBasedKO) << PULSAR_MODE_LAPKO |
+                           (isStartRetro) << PULSAR_STARTRETROS | (isStartCT) << PULSAR_STARTCTS |
+                           (isStartRTS) << PULSAR_STARTREGS | (isStart200) << PULSAR_START200 |
+                           (isStartOTT) << PULSAR_STARTOTT | (isStartItemRain) << PULSAR_STARTITEMRAIN;
 
         newContextValue2 |= (isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE | (isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE |
                             (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
                             (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN | 
-                            (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS;                     
+                            (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
+                            (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN;                     
     }
 
     // Combine the new context with preserved bits
@@ -279,7 +295,7 @@ void System::UpdateContext() {
 
     // Set contexts based on region for regionals
     const u32 region = this->netMgr.region;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_REGIONAL) {
+    if (isRegionalRoom) {
         switch (region) {
             case 0x0A:  // Regular retro tracks
                 this->context |= (1 << PULSAR_RETROS);

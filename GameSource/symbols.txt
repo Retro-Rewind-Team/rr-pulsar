@@ -132,6 +132,9 @@ SSL_Initialised = 0x80386d4c
 
 #DWC
 Printf__3DWCFUiPCce = 0x800cd068
+SetOwnStatusData__3DWCFPCcUi = 0x800ce24c
+AddMatchKeyString__3DWCFUcPCcPCc = 0x800d45f4
+AddMatchKeyInt__3DWCFUcPCcPCi = 0x800d4258
 InitGHTTP__3DWCFPCc = 0x800cd3b0
 ShutdownGHTTP__3DWCFv = 0x800cd3f4
 ProcessGHTTP__3DWCFv = 0x800cd4a8
@@ -732,6 +735,7 @@ __vt__Q25Input16ControllerHolder = 0x808b2dd8
 #RealControllerHolder
 SetController__Q25Input20RealControllerHolderFPCQ25Input10ControllerPUi = 0x80521554
 SetController__Q25Input20RealControllerHolderFPQ25Input10ControllerPv = 0x80521554
+StartMatching__Q25RKNet10ControllerFv = 0x80659044
 EndGhostWriting__Q25Input20RealControllerHolderFv = 0x80521688
 __dt__Q25Input20RealControllerHolderFv = 0x805222f4
 __vt__Q25Input20RealControllerHolder = 0x808b2d90
@@ -951,6 +955,11 @@ GetControllerHolder__10SectionPadCFUi = 0x8061b398
 EnablePointer__10SectionPadFb = 0x8061bd14
 GetType__10SectionPadFUi = 0x8061bfac
 
+#EggVideo
+GetTickPerVRetrace__Q23EGG5VideoFv = 0x80243ed0
+SetFramerate__9GameSceneFUc = 0x8051af84
+GetStaticInstance__8RKSystemFv = 0x80008e84
+
 #Section
 __ct__7SectionFv = 0x80621d0c
 Draw__7SectionFUi = 0x80622764
@@ -977,6 +986,7 @@ LoadSection__10SectionMgrFv = 0x80634fbc
 SetNextSection__10SectionMgrF9SectionIdUi = 0x80635a3c
 RequestSceneChange__10SectionMgrFUiUi = 0x80635ac8
 sInstance__10SectionMgr = 0x809c1e38
+GetSectionPriority__10SectionMgrF9SectionId = 0x80634b80
 
 ##CONTROLS
 ##Supporting SubClasses
@@ -1543,6 +1553,7 @@ UpdateOnlineParams__Q25Pages14SELECTStageMgrFv = 0x806515cc
 SetModeTypes__Q25Pages14SELECTStageMgrFv = 0x80651854
 IsHomeMenuWorking__Q25Pages14SELECTStageMgrCFv = 0x80651ba8
 GetRuntimeTypeInfo__Q25Pages14SELECTStageMgrCFv = 0x80651bb0
+Reset__12OnlineParamsFv = 0x805e3ba8
 
 ##MENU
 #Menu
@@ -1768,9 +1779,13 @@ ScheduleShutdown__Q25RKNet10ControllerFv = 0x806561a8
 ResetRH1andROOM__Q25RKNet10ControllerFv = 0x80656898
 ProcessPlayerDisconnect__Q25RKNet10ControllerFUi = 0x80658990
 ProcessRACEPacket__Q25RKNet10ControllerFUiRCQ25RKNet16RACEPacketHeaderUi = 0x80659a84
+StartSearchRegional__Q25RKNet10ControllerFUi = 0x80656270
 UpdateAidsBelongingToPlayerIds__Q25RKNet10ControllerFv = 0x80659bc0
  GetFriendSearchType__Q25RKNet10ControllerCFUi = 0x80659fa4
 sInstance__Q25RKNet10Controller = 0x809c20d8
+UpdateStatusDatas__Q25RKNet10ControllerFv = 0x8065a0b4
+SetupGameServer__Q25RKNet10ControllerFv = 0x800d1984
+UpdateServersAsync__Q25RKNet10ControllerFv = 0x80656b44
 
 #PacketMgr
 sInstance__Q25RKNet9PacketMgr = 0x809c1f50
@@ -1785,6 +1800,7 @@ GetOwnPlayerIdToAid__Q25RKNet13SELECTHandlerCFv = 0x806604cc
 #ROOM
 sInstance__Q25RKNet11ROOMHandler = 0x809c20e0
 SetAllToSendPackets__Q25RKNet11ROOMHandlerFQ25RKNet10ROOMPacket = 0x8065ae70
+Reset__Q25RKNet11ROOMHandlerFv = 0x8065ac94
 
 #RH1
 sInstance__Q25RKNet10RH1Handler = 0x809c2118
@@ -1812,6 +1828,9 @@ DecideTrack__Q25RKNet13SELECTHandlerFv = 0x80661ce8
 AllocatePlayerIdsToAids__Q25RKNet13SELECTHandlerFv = 0x80662034
 DecidePrivateTeams__Q25RKNet13SELECTHandlerFRUi = 0x80662588
 
+#Rating
+GetLowerRange__Q25RKNet16RatingRangeMakerCFUsb = 0x8065a5e0
+GetUpperRange__Q25RKNet16RatingRangeMakerCFUsb = 0x8065a64c
 
 ##EFFECTS
 #EffectsMgr
@@ -1879,6 +1898,9 @@ sInstance__8GlobeMgr = 0x809c2cb8
 
 #Entity
 MakeDynamic__6EntityFv = 0x80786f6c
+
+#EntityManager
+sInstance__13EntityManager = 0x809c2ef0
 
 #CourseMgr
 IsCollidingAddEntry__9CourseMgrFRC4Vec3RC4Vec311KCLBitfieldP13CollisionInfoP13KCLTypeHolderUif = 0x807907f8
@@ -2175,3 +2197,9 @@ PostProcessVSTable__Q24Item12ItemSlotDataFPQ34Item12ItemSlotData13Probabilities 
 ptr_playerBase = 0x809C18F8
 fun_playSound = 0x8071497C
 ptr_menuPageOrSomething = 0x809C2850
+DWC_GetGroupId = 0x800d4994
+DWCi_SetupGameServer_InterChange = 0x800e6b10
+gpIsBuddy = 0x800fc2a4
+ConnectToAnybodyAsync__Q25RKNet10ControllerFv = 0x80659170
+DWC_RequestSuspendMatchAsync = 0x800d49b0
+FriendStatusHook = 0x8065a110
