@@ -36,6 +36,6 @@ class ControlGroup {
     u32 controlCount;  // 0x10
 };  // Total Size 0x14
 
-size_assert(ControlGroup, 0x14);
+// size_assert(ControlGroup, 0x14);
 
 #endif

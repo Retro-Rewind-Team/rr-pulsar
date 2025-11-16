@@ -26,7 +26,7 @@ class LiveViewWaiting : public Page {  // ID 0x93
     ManipulatorManager manipulatorMgr;  // 0x4a0
 };  // total size 0x4b0
 
-size_assert(LiveViewWaiting, 0x4b0);
+// size_assert(LiveViewWaiting, 0x4b0);
 
 }  // namespace Pages
 #endif

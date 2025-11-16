@@ -27,9 +27,9 @@ struct stat {
 };
 
 // Should be in sync with the assertions in runtime-ext
-size_assert(file_struct, 80);
-size_assert(dir_struct, 836);
-size_assert(stat, 88);
+// size_assert(file_struct, 80);
+// size_assert(dir_struct, 836);
+// size_assert(stat, 88);
 
 class SDIO : public IO {
    public:

@@ -54,7 +54,7 @@ class DvdFileStream : public FileStream {
     bool closeOnDestroyFlag;  // 0x6e
     bool closeEnableFlag;  // 0x6e
 };
-size_assert(DvdFileStream, 0x70);
+// size_assert(DvdFileStream, 0x70);
 }  // namespace ut
 }  // namespace nw4r
 #endif

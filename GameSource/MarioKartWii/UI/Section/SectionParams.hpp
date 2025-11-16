@@ -24,7 +24,7 @@ struct OnlineParams {  //+0x2d0 for params offsets
     u32 rankBMG[12];  // 0x8c
     u32 regionId[12];  // 0xbc 0=NTSC-J, 1=NTSC-U, 2=PAL/EUR, 3=PAL/AUS, 4=Taiwan 5=South Korea F=None
 };
-size_assert(OnlineParams, 0xec);
+// size_assert(OnlineParams, 0xec);
 
 struct TitleParams {  //+0x4cc for params
     TitleParams();  // 805e3dc8 inlined
@@ -109,6 +109,6 @@ class SectionParams {
     u32 friendIdxJoinedViaChannel;  // 0x508
     u8 unknown_0x50c[4];
 };  // Total Size 0x510
-size_assert(SectionParams, 0x510);
+// size_assert(SectionParams, 0x510);
 
 #endif

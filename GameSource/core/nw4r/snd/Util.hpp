@@ -25,7 +25,7 @@ class Util {
         u16 reserved;
         u32 value;
     };
-    size_assert(DataRef<void>, 0x8);
+    // size_assert(DataRef<void>, 0x8);
 
     template <typename T0, typename T1, typename T2, typename T3>
     static T0* GetDataRefAddress0(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {

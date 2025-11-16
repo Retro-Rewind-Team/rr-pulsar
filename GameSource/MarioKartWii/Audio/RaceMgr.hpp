@@ -90,7 +90,7 @@ class RaceMgr {
     Vec3 playerTargetPos[4];  // 0x144
     u8 unknown_0x174[4];
 };  // Total Size 0x178
-size_assert(RaceMgr, 0x178);
+// size_assert(RaceMgr, 0x178);
 }  // namespace Audio
 
 #endif

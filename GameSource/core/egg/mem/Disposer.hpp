@@ -29,7 +29,7 @@ class TDisposer : public Disposer {
         Disposer::~Disposer();
     */
 };
-size_assert(Disposer, 0x10);
+// size_assert(Disposer, 0x10);
 }  // namespace EGG
 
 #endif

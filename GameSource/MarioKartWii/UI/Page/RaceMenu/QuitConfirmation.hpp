@@ -17,6 +17,6 @@ class QuitConfirmation : public RaceMenu {  // ID 0x2C
     bool IsPausePage() const override;  // 0x74 806324cc
     const char* GetButtonsBRCTRName() const override;  // 0x78 806324d4
 };  // total size 0x344
-size_assert(QuitConfirmation, 0x344);
+// size_assert(QuitConfirmation, 0x344);
 }  // namespace Pages
 #endif

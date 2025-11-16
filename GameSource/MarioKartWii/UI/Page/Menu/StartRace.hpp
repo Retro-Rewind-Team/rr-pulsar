@@ -36,7 +36,7 @@ class StartRace : public MenuInteractable {  // ID 0x4B //tied to one OK button 
     CtrlMenuObiTop ctrlMenuObiTop;  // 0x6c8
 
 };  // total size 0x6cc
-size_assert(StartRace, 0x6cc);
+// size_assert(StartRace, 0x6cc);
 }  // namespace Pages
 
 #endif

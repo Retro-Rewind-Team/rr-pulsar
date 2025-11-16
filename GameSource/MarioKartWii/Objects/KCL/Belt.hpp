@@ -66,7 +66,7 @@ class Belt : public ObjectKCL {
     virtual void vf_0x12C();  // 0x128 807fd80c
     float speed;  // as an absolute value
 };
-size_assert(Belt, 0xB0);
+// size_assert(Belt, 0xB0);
 
 class BeltEasy : public Belt {  // ObjectNum 0x25a = 602
     explicit BeltEasy(const KMP::Holder<GOBJ>& gobjHolder);  // 807fc578

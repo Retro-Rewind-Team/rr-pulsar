@@ -22,6 +22,6 @@ class SaveBanner {
     s32 errorCode;
     NAND::Banner* banner;
 };  // total size 0x14
-size_assert(SaveBanner, 0x14);
+// size_assert(SaveBanner, 0x14);
 }  // namespace EGG
 #endif

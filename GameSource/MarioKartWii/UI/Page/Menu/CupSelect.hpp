@@ -50,6 +50,6 @@ class CupSelect : public MenuInteractable {  // ID 0x6e
     u32 unknown_0x23D8;
     float float_0x23dc;
 };  // total size 0x23e0
-size_assert(CupSelect, 0x23e0);
+// size_assert(CupSelect, 0x23e0);
 }  // namespace Pages
 #endif

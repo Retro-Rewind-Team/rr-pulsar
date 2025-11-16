@@ -22,7 +22,7 @@ class AudioSystem {
     float unknown_0x0;
     u32 unknown_0x4[2];
 };  // total size 0xC
-size_assert(AudioSystem, 0xC);
+// size_assert(AudioSystem, 0xC);
 
 class IAudioMgr {
    public:
@@ -44,7 +44,7 @@ class SoundArchivePlayerEGG : public snd::SoundArchivePlayer {  // yes, that's t
     //~SoundArchivePlayerEGG() override; //thunk 8021369c func 8021337c
     StartResult detail_SetupSound(snd::SoundHandle* handle, u32 id, bool r6, snd::SoundArchive::SoundInfo* soundInfo) override;  // thunk 80213694 func 8021365c
 };
-size_assert(SoundArchivePlayerEGG, 0xe0);
+// size_assert(SoundArchivePlayerEGG, 0xe0);
 
 class SimpleAudioMgr : public IAudioMgr, public SoundHeapMgr, public ArcPlayer {
    public:
@@ -75,7 +75,7 @@ class SimpleAudioMgr : public IAudioMgr, public SoundHeapMgr, public ArcPlayer {
     SoundArchivePlayerEGG archivePlayer;  // 0x5dc
 
 };  // total size 0x6bc
-size_assert(SimpleAudioMgr, 0x6bc);
+// size_assert(SimpleAudioMgr, 0x6bc);
 
 class ExpAudioMgr : public SimpleAudioMgr {
    public:

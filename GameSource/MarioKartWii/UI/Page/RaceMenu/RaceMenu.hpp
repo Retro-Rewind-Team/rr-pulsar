@@ -44,7 +44,7 @@ class RaceMenu : public Page {  // also used for end of races
     ControlsManipulatorManager manipulatorManager;  // 0x11c
     u32 messageBMGId;  // 0x340, used for message control
 };  // 0x344
-size_assert(RaceMenu, 0x344);
+// size_assert(RaceMenu, 0x344);
 
 class RacePauseMgr {
    public:

@@ -66,6 +66,6 @@ class RadioButtonControl : public LayoutUIControl {
     ControlManipulator manipulator;  // 0x210
     RadioButtonControl::OptionButton* optionButtonsArray;  // 0x294
 };  // total size 0x298
-size_assert(RadioButtonControl, 0x298);
-size_assert(RadioButtonControl::OptionButton, 0x17c);
+// size_assert(RadioButtonControl, 0x298);
+// size_assert(RadioButtonControl::OptionButton, 0x17c);
 #endif

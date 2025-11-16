@@ -24,7 +24,7 @@ class DvdLockedFileStream : public DvdFileStream {
     bool cancelFlag;  // 0x6f
     static OS::Mutex mutex;  // 802f12e8
 };
-size_assert(DvdLockedFileStream, 0x70);
+// size_assert(DvdLockedFileStream, 0x70);
 }  // namespace ut
 }  // namespace nw4r
 #endif

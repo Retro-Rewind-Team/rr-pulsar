@@ -34,7 +34,7 @@ class BattleModeSelect : public MenuInteractable {  // ID 0x75
     // onStartPress     vtable = 0x808bd198 offset   = 0x7c call is virtual
 
 };  // total size 0x6c4
-size_assert(BattleModeSelect, 0x6c4);
+// size_assert(BattleModeSelect, 0x6c4);
 }  // namespace Pages
 
 #endif

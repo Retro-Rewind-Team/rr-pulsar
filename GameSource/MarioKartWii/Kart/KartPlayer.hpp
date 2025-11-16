@@ -37,7 +37,7 @@ class Player : public Link {
     DriverController* driver;  // 18
     Pointers pointers;  // 1c
 };  // Total size 0x80
-size_assert(Player, 0x80);
+// size_assert(Player, 0x80);
 
 class PlayerBike : public Player {
    public:

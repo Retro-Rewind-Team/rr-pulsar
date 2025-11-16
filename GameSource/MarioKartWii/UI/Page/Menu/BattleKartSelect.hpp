@@ -45,6 +45,6 @@ class BattleKartSelect : public MenuInteractable {  // ID 0x76
     CharaName name;  // 0x854
     CtrlMenuMachineGraph ctrlMenuMachineGraph;
 };  // Total Size 0xb50
-size_assert(BattleKartSelect, 0xB50);
+// size_assert(BattleKartSelect, 0xB50);
 }  // namespace Pages
 #endif

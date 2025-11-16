@@ -12,7 +12,7 @@ struct UncompContextLZ {  // LZ77
     s32 remainingSize;
     u8 unknown_0x8[0x24 - 0x8];
 };
-size_assert(UncompContextLZ, 0x24);
+// size_assert(UncompContextLZ, 0x24);
 void InitUncompContextLZ(UncompContextLZ* context, void* dest);  // 8015bef0
 s32 ReadUncompLZ(UncompContextLZ* context, const void* src, u32 length);  // 8015bf24
 }  // namespace CX

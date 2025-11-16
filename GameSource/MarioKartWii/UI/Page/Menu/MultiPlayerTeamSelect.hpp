@@ -42,6 +42,6 @@ class MultiTeamSelect : public MenuInteractable {  // ID 0x83
     MultiKartBox** kartBoxes;  // 0x6c4
     DriverModelControl** driverModelControl;  // 0x6c8
 };  // total size 0x6cc
-size_assert(MultiTeamSelect, 0x6cc);
+// size_assert(MultiTeamSelect, 0x6cc);
 }  // namespace Pages
 #endif

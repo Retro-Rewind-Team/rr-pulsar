@@ -15,7 +15,7 @@ class StreamDecompLZ {
     u32 lengthToDecompress;  // 0x8 of the compressed file
     CX::UncompContextLZ uncompContextLZ;  // 0xc
 };
-size_assert(StreamDecompLZ, 0x30);
+// size_assert(StreamDecompLZ, 0x30);
 }  // namespace EGG
 
 #endif

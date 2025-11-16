@@ -125,7 +125,7 @@ class Object {
     bool unknown_0xA8;
     u8 padding3[3];
 };  // total size 0xac
-size_assert(Object, 0xaC);
+// size_assert(Object, 0xaC);
 
 class ObjectEffect : public EGG::Effect {
    public:

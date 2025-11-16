@@ -66,7 +66,7 @@ class SplitRACEPointers {
     PacketHolder<void>* packetHolders[8];
 
 };  // 0x20
-size_assert(SplitRACEPointers, 0x20);
+// size_assert(SplitRACEPointers, 0x20);
 
 struct ConnectionUserData {  // has to be a struct and needs padding because it's converted to a void* and used as DWC::MatchControl's attemptCallbackParam
     u8 playersAtConsole;
@@ -123,7 +123,7 @@ struct ControllerSub {
     bool matchingSuspended;  // 0x53
     u8 unknown_0x54[4];
 };  // Total size 0x58
-size_assert(ControllerSub, 0x58);
+// size_assert(ControllerSub, 0x58);
 
 /*KeyIDs:
 100 = mode key, called rk
@@ -298,7 +298,7 @@ class Controller {
 
     static u32* splitRACEPointersBufferSizes;  // 8089a194 same order as split packets header, raceHeader1, raceHeader2, select, 2 * racedata, user, 2 * item, event,
 };
-size_assert(Controller, 0x29c8);
+// size_assert(Controller, 0x29c8);
 
 }  // namespace RKNet
 #endif

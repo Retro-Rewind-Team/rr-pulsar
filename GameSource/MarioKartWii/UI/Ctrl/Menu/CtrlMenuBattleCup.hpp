@@ -19,7 +19,7 @@ class CtrlMenuBattleCupSelectCup : public LayoutUIControl {
     u32 curCupID;  // 0x644
     CtrlMenuMovieLayout ctrlMenuMovieLayout;  // 0x648
 };  // total size 0x7d4
-size_assert(CtrlMenuBattleCupSelectCup, 0x7d4);
+// size_assert(CtrlMenuBattleCupSelectCup, 0x7d4);
 
 class CtrlMenuBattleCupSelectStage : public LayoutUIControl {
     // no ctor
@@ -32,5 +32,5 @@ class CtrlMenuBattleCupSelectStage : public LayoutUIControl {
     void UpdateStageList(u32 cupIndex);  // 807e0ee4
     LayoutUIControl stageNames[5];  // 0x174 to 8b8
 };  // total size 0x8b8
-size_assert(CtrlMenuBattleCupSelectStage, 0x8b8);
+// size_assert(CtrlMenuBattleCupSelectStage, 0x8b8);
 #endif

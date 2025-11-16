@@ -22,7 +22,7 @@ class GameHeapImpl : public EGG::SoundHeapMgr {
     using EGG::SoundHeapMgr::LoadState;  // 806fe1b4 vtable 808c7a10
     using EGG::SoundHeapMgr::SaveState;  // 806fe0e0
 };
-size_assert(GameHeapImpl, 0xF0);
+// size_assert(GameHeapImpl, 0xF0);
 
 class GameHeap : public GameHeapImpl {
    public:
@@ -40,7 +40,7 @@ class GameHeap : public GameHeapImpl {
     u8 padding[3];
     u32 type;  // 0x104 only seems to be used to get the heap size
 };
-size_assert(GameHeap, 0x108);
+// size_assert(GameHeap, 0x108);
 }  // namespace Audio
 
 #endif

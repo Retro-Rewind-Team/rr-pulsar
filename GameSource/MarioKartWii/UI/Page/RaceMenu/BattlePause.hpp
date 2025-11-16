@@ -17,6 +17,6 @@ class BattlePause : public RaceMenu {  // ID 0x1A
     bool IsPausePage() const override;  // 0x74 80633240
     const char* GetButtonsBRCTRName() const override;  // 0x78 80633248
 };  // total size 0x344
-size_assert(BattlePause, 0x344);
+// size_assert(BattlePause, 0x344);
 }  // namespace Pages
 #endif

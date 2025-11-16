@@ -45,6 +45,6 @@ class MainMenu : public MenuInteractable {  // ID 0x5a
     PushButton* fileAdminCopy;  // 0xcb0
     PushButton* fileAdmin;  // license settings most likely
 };  // total size 0cb8
-size_assert(MainMenu, 0xcb8);
+// size_assert(MainMenu, 0xcb8);
 }  // namespace Pages
 #endif

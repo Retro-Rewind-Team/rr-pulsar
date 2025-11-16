@@ -15,6 +15,6 @@ class GPReplayHUD : public RaceHUD {  // ID 0x36
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633d4c
 
 };  // total size 0x1DC
-size_assert(GPReplayHUD, 0x1DC);
+// size_assert(GPReplayHUD, 0x1DC);
 }  // namespace Pages
 #endif

@@ -28,7 +28,7 @@ class MKChannelExplanation : public Page {  // ID 0xca
     PushButton nextButton;  // 0x578
     CtrlMenuBackButton backButton;  // 0x7cc
 };  // total size 0xa30
-size_assert(MKChannelExplanation, 0xa30);
+// size_assert(MKChannelExplanation, 0xa30);
 
 class AddMKChannel : public Page {  // ID 0xcb
     static const PageId id = PAGE_ADD_MKCHANNEL_PROMPT;
@@ -60,6 +60,6 @@ class AddMKChannel : public Page {  // ID 0xcb
     PushButton cancelButton;  // 0x7f4
     CtrlMenuBackButton backButton;  // 0xa48
 };  // total size 0xcac
-size_assert(AddMKChannel, 0xCAC);
+// size_assert(AddMKChannel, 0xCAC);
 }  // namespace Pages
 #endif

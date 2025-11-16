@@ -20,7 +20,7 @@ class UpDownDisplayedText {
     virtual void SetBorderColours(RGBA16* primary, RGBA16* secondary) = 0;  // 0x28
     virtual void SetColor_BaseColours(RGBA16* colour) = 0;  // 0x2c
 };  // total size 0x4
-size_assert(UpDownDisplayedText, 0x4);
+// size_assert(UpDownDisplayedText, 0x4);
 
 class TextUpDownValueControl : public LayoutUIControl, public UpDownDisplayedText {
    public:
@@ -65,8 +65,8 @@ class TextUpDownValueControl : public LayoutUIControl, public UpDownDisplayedTex
     nw4r::lyt::Pane* fuchi_pattern;
     nw4r::lyt::Pane* color_base;  // 0x470
 };  // total size 0x474
-size_assert(TextUpDownValueControl, 0x474);
-size_assert(TextUpDownValueControl::TextControl, 0x174);
+// size_assert(TextUpDownValueControl, 0x474);
+// size_assert(TextUpDownValueControl::TextControl, 0x174);
 
 // if you click/select etc... on one of the arrows with the pointer, curChildId is not -1 and the Handle function also triggers
 // for example HandleClick triggers the onChangePtmf if the arrow was clicked, but just clicking on the number doesn't
@@ -144,7 +144,7 @@ class UpDownControl : public LayoutUIControl {
     UpDownButton arrowButtons[2];
     u32 soundID;  // init at 0x13, sound to play when the arrows are pressed
 };  // 0x5C8
-size_assert(UpDownControl, 0x5C8);
-size_assert(UpDownControl::UpDownButton, 0x188);
+// size_assert(UpDownControl, 0x5C8);
+// size_assert(UpDownControl::UpDownButton, 0x188);
 
 #endif

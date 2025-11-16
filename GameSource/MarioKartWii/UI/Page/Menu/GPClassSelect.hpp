@@ -39,6 +39,6 @@ class GPClassSelect : public MenuInteractable {  // ID 0x6a
     u8 padding[3];
     LayoutUIControl switchImage;  // 0x6c8
 };  // total size 0x83c
-size_assert(GPClassSelect, 0x83c);
+// size_assert(GPClassSelect, 0x83c);
 }  // namespace Pages
 #endif

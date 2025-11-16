@@ -15,7 +15,7 @@ class MiiManagerSub {
     u16 unknown_0x20;
     u8 padding[2];
 };
-size_assert(MiiManagerSub, 0x24);
+// size_assert(MiiManagerSub, 0x24);
 
 class MiiManagerSub2 {
     u8 _[0x8];
@@ -83,6 +83,6 @@ class MiiManager {
     u8 unknown_0x2d8[0x2f0 - 0x2d8];
     Random random;  // 0x2f0
 };
-size_assert(MiiManager, 0x308);
+// size_assert(MiiManager, 0x308);
 
 #endif

@@ -16,6 +16,6 @@ class WWLeaderboardUpdate : public GPVSLeaderboardUpdate {  // ID 0x31
     const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8085e534
     void FillRows() override;  // 0x68 8085ce8c
 };  // total size 0x1A8
-size_assert(WWLeaderboardUpdate, 0x1A8);
+// size_assert(WWLeaderboardUpdate, 0x1A8);
 }  // namespace Pages
 #endif

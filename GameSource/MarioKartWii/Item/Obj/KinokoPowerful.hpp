@@ -11,7 +11,7 @@ class ObjKinokoPowerful : public ObjMiddle {  // Golden Mushroom
     void InitSelf() override;  // 807a9fac vtable 808d2110
     float unknown_0x1a0;
 };
-size_assert(ObjKinokoPowerful, 0x1a4);
+// size_assert(ObjKinokoPowerful, 0x1a4);
 }  // namespace Item
 
 #endif

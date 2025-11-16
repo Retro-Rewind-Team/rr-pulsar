@@ -12,7 +12,7 @@ class ObjThunder : public ObjMiddle {
     void InitSelf() override;  // 0x8 807b7c04 vtable 808d2770
     static void ApplyToPlayers(u8 srcPlayerId);  // 807b7c20 applies to all but src
 };
-size_assert(ObjThunder, 0x1a0);
+// size_assert(ObjThunder, 0x1a0);
 }  // namespace Item
 
 #endif

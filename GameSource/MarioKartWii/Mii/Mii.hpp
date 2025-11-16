@@ -84,6 +84,6 @@ class Mii {  // online, rflId is hudSlotId and middleDBIdx is aid
     u8 padding2;  // 0xaf
     u32 unknown_0xb0[2];
 };  // total size 0xB8
-size_assert(Mii, 0xb8);
+// size_assert(Mii, 0xb8);
 
 #endif

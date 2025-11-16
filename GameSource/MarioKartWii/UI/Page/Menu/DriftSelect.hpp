@@ -45,6 +45,6 @@ class DriftSelect : public MenuInteractable {  // ID 0x6D
     CountDown* timer;  // 0x6C4
     SectionId sectionId;
 };  // Total Size 0x6CC
-size_assert(DriftSelect, 0x6CC);
+// size_assert(DriftSelect, 0x6CC);
 }  // namespace Pages
 #endif

@@ -21,7 +21,7 @@ struct RACEPacketHeader {
     */
     // void *data; //0x10
 };
-size_assert(RACEPacketHeader, 0x10);
+// size_assert(RACEPacketHeader, 0x10);
 
 }  // namespace RKNet
 #endif

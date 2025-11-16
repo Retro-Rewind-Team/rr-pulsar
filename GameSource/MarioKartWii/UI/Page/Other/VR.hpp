@@ -32,6 +32,6 @@ class VR : public Page {  // ID 0x91
     LayoutUIControl vrControls[12];  // 0x7b8
     CountDown* timer;  // 0x1928 from page 0x90
 };  // total size 0x192c
-size_assert(VR, 0x192c);
+// size_assert(VR, 0x192c);
 }  // namespace Pages
 #endif

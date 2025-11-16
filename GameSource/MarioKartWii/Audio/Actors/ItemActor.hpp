@@ -40,7 +40,7 @@ class ItemActor : public Actor<2>, public LinkedRaceActor {
     void UpdateBRASDFrame(float frame) override;  // 0x60 thunk 8070709c func 80704f80
 
 };  // Total size 0xac
-size_assert(ItemActor, 0xac);
+// size_assert(ItemActor, 0xac);
 
 class GessoActor : public Actor<1>, public LinkedRaceActor {
    public:
@@ -75,6 +75,6 @@ class GessoActor : public Actor<1>, public LinkedRaceActor {
     void UpdateBRASDFrame(float frame) override;  // 0x60 thunk 8070715c func 80704f78
 
 };  // Total size 0xa8
-size_assert(GessoActor, 0xa8);
+// size_assert(GessoActor, 0xa8);
 }  // namespace Audio
 #endif

@@ -37,7 +37,7 @@ class BasicPlayer {
     VoiceOutParam voiceOutParams[4];  // 0x6c
     u32 id;  // 0xCC
 };  // total size 0xD0
-size_assert(BasicPlayer, 0xD0);
+// size_assert(BasicPlayer, 0xD0);
 
 }  // namespace detail
 

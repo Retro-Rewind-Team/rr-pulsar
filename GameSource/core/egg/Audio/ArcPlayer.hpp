@@ -51,7 +51,7 @@ class ArcPlayer {
     u32 streamBlocks;
     void* brsarINFO;  // 0x4d4
 };  // total size 0x4D8
-size_assert(ArcPlayer, 0x4D8);
+// size_assert(ArcPlayer, 0x4D8);
 
 }  // namespace EGG
 

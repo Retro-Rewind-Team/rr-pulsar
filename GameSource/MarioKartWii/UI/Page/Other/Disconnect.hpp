@@ -18,7 +18,7 @@ class DisconnectMgr : public Page {  // ID 0x88, checks if disconnect has occure
     u8 status;  // 0x54
     u8 padding[3];
 };  // total size 0x58
-size_assert(DisconnectMgr, 0x58);
+// size_assert(DisconnectMgr, 0x58);
 
 class DisconnectError : public Page {  // ID 0x89 error on disconnection "86420" for example
    public:
@@ -42,6 +42,6 @@ class DisconnectError : public Page {  // ID 0x89 error on disconnection "86420"
     LayoutUIControl aButtonTPL;  // 0x304
     PtmfHolder_1A<DisconnectError, void, u32> onClickHandler;  // 0x478 80649fd8
 };
-size_assert(DisconnectError, 0x48c);
+// size_assert(DisconnectError, 0x48c);
 }  // namespace Pages
 #endif

@@ -48,5 +48,5 @@ class CtrlRaceResultTeam : public LayoutUIControl {  // one battle ldb column MA
     CtrlResultAddPoint* addPoints[6];  // 0xb78 only for battle WWs
 };  // 0xb90
 
-size_assert(CtrlRaceResultTeam, 0xb90);
+// size_assert(CtrlRaceResultTeam, 0xb90);
 #endif

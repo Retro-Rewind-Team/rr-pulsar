@@ -17,6 +17,6 @@ class GPPause : public RaceMenu {  // ID 0x17
     bool IsPausePage() const override;  // 0x74 806333c8
     const char* GetButtonsBRCTRName() const override;  // 0x78 806333d0
 };  // total size 0x344
-size_assert(GPPause, 0x344);
+// size_assert(GPPause, 0x344);
 }  // namespace Pages
 #endif

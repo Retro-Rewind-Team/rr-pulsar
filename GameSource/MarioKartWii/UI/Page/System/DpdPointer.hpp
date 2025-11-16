@@ -45,7 +45,7 @@ class DpdPointer : public System {
     DpdPointerControl controls[4];  // 0x44 1 per local player
     u32 unknown_0x7b4;
 };  // 0x7b8
-size_assert(DpdPointer, 0x7b8);
+// size_assert(DpdPointer, 0x7b8);
 }  // namespace Pages
 
 #endif

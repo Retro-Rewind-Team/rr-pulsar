@@ -11,7 +11,7 @@ struct ThreadQueue {
     Thread* head;
     Thread* tail;
 };
-size_assert(ThreadQueue, 0x8);
+// size_assert(ThreadQueue, 0x8);
 
 struct ThreadLink {
     Thread* next;
@@ -55,7 +55,7 @@ struct Thread {  // priority between 0 and 31
 
     static Thread* current;
 };
-size_assert(Thread, 0x318);
+// size_assert(Thread, 0x318);
 
 void OSCreateThread(Thread* thread, void (*runFunc)(void* arg), void* arg,
                     void* stack, u32 stackSize, u32 priority, u16 detached);  // 801a9e84

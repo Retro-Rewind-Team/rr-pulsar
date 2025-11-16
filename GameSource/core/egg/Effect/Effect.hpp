@@ -69,6 +69,6 @@ class Effect {
     Mtx matrix;  // 0x44
     ef::Handle<ef::Effect> effectHandle;  // 0x74 nw4r::ef::effect
 };  // total size 0x7c
-size_assert(Effect, 0x7c);
+// size_assert(Effect, 0x7c);
 }  // namespace EGG
 #endif

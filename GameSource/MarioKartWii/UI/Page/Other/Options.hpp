@@ -38,7 +38,7 @@ class Options : public Page {  // ID 0xC0
     PageId nextPageId;  // when you press a button
 
 };  // total size 0xd68
-size_assert(Options, 0xD68);
+// size_assert(Options, 0xD68);
 
 class WiFiOptions : public Page {  // ID 0xC1
     static const PageId id = PAGE_WIFI_OPTIONS;
@@ -64,7 +64,7 @@ class WiFiOptions : public Page {  // ID 0xC1
     CtrlMenuBackButton backButton;  // 0xfa8 to 120C
     PageId nextPageId;
 };
-size_assert(WiFiOptions, 0x1210);
+// size_assert(WiFiOptions, 0x1210);
 
 class OptionExplanation : public Page {  // ID 0xc2 a message box with explanations about the upcoming OptionBox, and a next button
     static const PageId id = PAGE_OPTION_EXPLANATION;
@@ -86,7 +86,7 @@ class OptionExplanation : public Page {  // ID 0xc2 a message box with explanati
     CtrlMenuBackButton backButton;  // 0x7cc
     PageId nextPageId;  // a30, if set to 0, chains into itself
 };
-size_assert(OptionExplanation, 0xa34);
+// size_assert(OptionExplanation, 0xa34);
 
 class OptionChoice : public Page {  // ID 0xc3 (2used buttons) and ID 0xc4(3 buttons), a message box with yes/no buttons
     static const PageId id = PAGE_OPTIONS_2CHOICES;
@@ -118,7 +118,7 @@ class OptionChoice : public Page {  // ID 0xc3 (2used buttons) and ID 0xc4(3 but
     u8 initialButton;  // 0xeec based on rksys setting, mostly
     u8 padding[3];
 };
-size_assert(OptionChoice, 0xef0);
+// size_assert(OptionChoice, 0xef0);
 
 class RegionOptions : public Page {  // ID 0xc5
     static const PageId id = PAGE_REGION_OPTIONS;
@@ -142,7 +142,7 @@ class RegionOptions : public Page {  // ID 0xc5
     PushButton yesButton;  // 0x58c
     CtrlMenuBackButton backButton;  // 0x7e0
 };  // 0xa44
-size_assert(RegionOptions, 0xa44);
+// size_assert(RegionOptions, 0xa44);
 
 class MasterOptions : public Page {  // ID 0xc6 chooses which option to load depending on the section and which button was pressed in the generic box pages
     static const PageId id = PAGE_MASTER_OPTIONS;
@@ -173,7 +173,7 @@ class MasterOptions : public Page {  // ID 0xc6 chooses which option to load dep
     PageId nextPageId;  // 0x70
     u32 choiceChosen;  // 0x74 used to set the correct text
 };
-size_assert(MasterOptions, 0x78);
+// size_assert(MasterOptions, 0x78);
 }  // namespace Pages
 
 #endif

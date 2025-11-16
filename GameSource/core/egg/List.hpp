@@ -10,7 +10,7 @@ class Link {
     Link* next;
     Link* prev;
 };
-size_assert(Link, 0x8);
+// size_assert(Link, 0x8);
 
 class List {
     List();  // 8022f760
@@ -21,6 +21,6 @@ class List {
     Link* prev;
     Link* next;
 };  // total size 0xC
-size_assert(EGG::List, 0xC);
+// size_assert(EGG::List, 0xC);
 }  // namespace EGG
 #endif

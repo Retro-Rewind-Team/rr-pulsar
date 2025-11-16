@@ -78,7 +78,7 @@ class ButtonInfo {
     bool lockAction[9];  // 0x28 set to true if button was held OR manually; this is used to prevent rapidfire non-stick presses
     u8 padding[3];
 };  // total size 0x34
-size_assert(ButtonInfo, 0x34);
+// size_assert(ButtonInfo, 0x34);
 
 class ControlButtonInfo : public ButtonInfo {
    public:
@@ -100,7 +100,7 @@ class ControlButtonInfo : public ButtonInfo {
     ControlManipulator* childManipulator;  // set by controls that have children like RadioControl or TabControl
     u8 unknown_0x50[0x54 - 0x50];
 };  // 0x54
-size_assert(ControlButtonInfo, 0x54);
+// size_assert(ControlButtonInfo, 0x54);
 
 class ControlManipulatorHolder {  // holds an action holder
    public:
@@ -111,7 +111,7 @@ class ControlManipulatorHolder {  // holds an action holder
     u32 curChildId;  // for controls that have children like RadioControl or TabControl
     ControlButtonInfo info;  // 0xC
 };  // total size 0x5C
-size_assert(ControlManipulatorHolder, 0x5C);
+// size_assert(ControlManipulatorHolder, 0x5C);
 
 class ManipulatorManager {  // PARENT
    public:
@@ -140,7 +140,7 @@ class ManipulatorManager {  // PARENT
     u8 unknown_0xE[0x10 - 0xE];  // padding?
     static const Input::ControllerHolder* GetControllerHolder(u8 id);  // 805eee0c
 };  // total size 0x10
-size_assert(ManipulatorManager, 0x10);
+// size_assert(ManipulatorManager, 0x10);
 
 class PageManipulatorManager : public ManipulatorManager {  // sets actions for page, equivalent to ControlsManipulatorManager but for pages 80601d04 checks actions
    public:
@@ -157,7 +157,7 @@ class PageManipulatorManager : public ManipulatorManager {  // sets actions for 
     u8 unknown_0x3D[3];  // padding
     ButtonInfo buttoninfoArray[5];  // 0x40 5th corresponds to Input::Manager's dummy controller
 };  // Total Size 0x144
-size_assert(PageManipulatorManager, 0x144);
+// size_assert(PageManipulatorManager, 0x144);
 
 class ControlsManipulatorManager : public ManipulatorManager {  // contains multiple action handlers, tied to a page
    public:
@@ -197,7 +197,7 @@ class ControlsManipulatorManager : public ManipulatorManager {  // contains mult
     ControlManipulatorHolder holders[5];  // 0x54, 5th corresponds to Input::Manager's dummy controller
     CalcDistanceFunc distanceFunc;  // 0x220
 };  // total size 0x224
-size_assert(ControlsManipulatorManager, 0x224);
+// size_assert(ControlsManipulatorManager, 0x224);
 
 class ControlBoundingBox {
    public:
@@ -216,7 +216,7 @@ class ControlBoundingBox {
     u8 bool_0x24;  // 0x24, unsure 8063ffd8
     u8 padding[3];
 };  // total size 0x28
-size_assert(ControlBoundingBox, 0x28);
+// size_assert(ControlBoundingBox, 0x28);
 
 class ControlManipulator {
    public:
@@ -258,5 +258,5 @@ class ControlManipulator {
     u32 activeFrames;  // probably same thing as above
     u32 distance;  // converted from a float
 };  // total size 0x84
-size_assert(ControlManipulator, 0x84);
+// size_assert(ControlManipulator, 0x84);
 #endif

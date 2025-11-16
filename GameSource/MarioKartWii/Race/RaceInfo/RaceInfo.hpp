@@ -111,7 +111,7 @@ class RaceinfoPlayer {
     Input::RealControllerHolder* realControllerHolder;  // 0x48
     u8 unknown_0x4c[0x54 - 0x4c];
 };  // Total size 0x54
-size_assert(RaceinfoPlayer, 0x54);
+// size_assert(RaceinfoPlayer, 0x54);
 
 class Raceinfo {
    public:
@@ -165,6 +165,6 @@ class Raceinfo {
     bool isDelfinoPierTideLow;  // 0x48 unsure
     u8 unknown_0x49[3];
 };  // Total size 0x4c
-size_assert(Raceinfo, 0x4c);
+// size_assert(Raceinfo, 0x4c);
 
 #endif

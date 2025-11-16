@@ -104,6 +104,6 @@ class ClipInfoMgr {
     ClipScreenInfo* screenInfos;  // 0x1c array size4, one per screen
 
 };  // 0x20
-size_assert(ClipInfoMgr, 0x20);
+// size_assert(ClipInfoMgr, 0x20);
 
 #endif

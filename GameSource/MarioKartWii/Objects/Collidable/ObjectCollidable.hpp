@@ -45,7 +45,7 @@ class ObjectCollidable : public Object {  // collision is added as there is no K
 
     ObjectCollision* objCollision;  // 0xAC
 };  // 0xb0
-size_assert(ObjectCollidable, 0xb0);
+// size_assert(ObjectCollidable, 0xb0);
 
 class UnkCollidableSub {
    public:

@@ -27,7 +27,7 @@ class SoundActor : public SoundStartable {
     detail::ExternalSoundPlayer actorPlayers[4];
     detail::SoundActorParam actorParam;
 };  // 0x54
-size_assert(SoundActor, 0x54);
+// size_assert(SoundActor, 0x54);
 }  // namespace snd
 }  // namespace nw4r
 

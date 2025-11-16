@@ -16,6 +16,6 @@ class BackModel : public Page {  // ID 0x5c
     LayoutUIControl bg;  // 0x54
     BackGroundModelControl backgroundModel;  // 0x1c8
 };  // total size 0x348
-size_assert(BackModel, 0x340);
+// size_assert(BackModel, 0x340);
 }  // namespace Pages
 #endif

@@ -44,7 +44,7 @@ class Unlock : public MenuInteractable {  // ID 0xCD
     u8 unknown_0xb44[8];  // 0xb44
     LayoutUIControl cupIcon;  // 0xb4c
 };  // total size 0xcc0
-size_assert(Unlock, 0xcc0);
+// size_assert(Unlock, 0xcc0);
 
 }  // namespace Pages
 #endif

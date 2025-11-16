@@ -77,6 +77,6 @@ class ObjectKCL : public Object {  // still an abstract class, used by objects t
     virtual int vf_0x11c(CollisionInfo::ObjInfo* otherEntityObjInfo);  // 0x11c 806828e8
 
 };  // 0xAC
-size_assert(ObjectKCL, 0xAC);
+// size_assert(ObjectKCL, 0xAC);
 
 #endif

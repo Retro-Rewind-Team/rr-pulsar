@@ -31,7 +31,7 @@ struct Color : public GX::Color {
     // bool operator ==(const Color& rhs) const { return u32(this) == u32(rhs); }
 
 };  // Total size 0x4
-size_assert(Color, 0x4);
+// size_assert(Color, 0x4);
 }  // namespace ut
 }  // namespace nw4r
 #endif

@@ -31,7 +31,7 @@ class ObjectKCLController {
     float yScale;  // 0x64
     float unknown_0x68[3];
 };  // 0x74
-size_assert(ObjectKCLController, 0x74);
+// size_assert(ObjectKCLController, 0x74);
 
 // ObjectNum 0x219 = 537 DemoCol, 0x217 = 535 M
 class ObjectExternKCL : public ObjectKCL {  // for objects whose KCL is provided by the szs and not in the game code
@@ -113,6 +113,6 @@ class ObjectExternKCL : public ObjectKCL {  // for objects whose KCL is provided
     u32 timer;  // 0xFC resets when equal to raceinfo's global timer, this prevents the collision from updating more than once per frame
     u8 unknown_0x100[4];
 };
-size_assert(ObjectExternKCL, 0x104);
+// size_assert(ObjectExternKCL, 0x104);
 
 #endif

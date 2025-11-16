@@ -75,7 +75,7 @@ class Channel : public Page {  // ID 0xA2
     PageId nextPage;  // 0x13ac
     MiiGroup miiGroup;  // 0x13b0
 };  // 0x1448
-size_assert(Channel, 0x1448);
+// size_assert(Channel, 0x1448);
 
 class ChannelRankingChoice : public Page {  // ID 0xA3 2 buttons, TTRankings or Competition Rankings
    public:

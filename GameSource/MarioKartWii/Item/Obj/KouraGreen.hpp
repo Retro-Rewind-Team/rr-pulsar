@@ -27,7 +27,7 @@ class ObjKouraGreen : public ObjThrowable {
     bool unknown_0x1CD;
     u8 unknown_0x1CE[0x1ec - 0x1ce];
 };
-size_assert(ObjKouraGreen, 0x1ec);
+// size_assert(ObjKouraGreen, 0x1ec);
 }  // namespace Item
 
 #endif

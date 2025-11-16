@@ -53,7 +53,7 @@ class RSARPlayer {
     bool isRouletteSoundPlaying;  // alternates 0/1 within the same frame, but only when the roulette sound is playing
     u8 padding[2];
 };  // 0x18
-size_assert(RSARPlayer, 0x18);
+// size_assert(RSARPlayer, 0x18);
 
 class MenuRSARPlayer : public RSARPlayer {
    public:

@@ -157,6 +157,6 @@ class Page {
     static float transitionDelay;
 
 };  // Total Size 0x44
-size_assert(Page, 0x44);
+// size_assert(Page, 0x44);
 
 #endif

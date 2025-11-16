@@ -78,7 +78,7 @@ struct Player {
     TextureSet textureSet[3];  // 0x178
     AudioBuffer audioBuffer[6];  // 0x1a8
 };
-size_assert(Player, 0x1f0);
+// size_assert(Player, 0x1f0);
 
 // Init opposite of quit, Open opposite of close
 

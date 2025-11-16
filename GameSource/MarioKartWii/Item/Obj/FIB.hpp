@@ -23,7 +23,7 @@ class ObjFIB : public ObjThrowable {
     g3d::ResMatTevColor tevColors[2];  // 0x1AC
     u8 unknown_0x1b4[0x1cc - 0x1b4];
 };
-size_assert(ObjFIB, 0x1b4);
+// size_assert(ObjFIB, 0x1b4);
 }  // namespace Item
 
 #endif

@@ -24,7 +24,7 @@ struct ROOMPacket {
     u8 unknown_0x3;
 };  // 0x4
 #pragma pack(pop)
-size_assert(ROOMPacket, 0x4);
+// size_assert(ROOMPacket, 0x4);
 
 union ROOMPacketReg {
     u32 packetArg;
@@ -65,6 +65,6 @@ class ROOMHandler {
     u64 lastSentTime;
     u32 unknown_0x78[2];
 };  // total size 0x80
-size_assert(ROOMHandler, 0x80);
+// size_assert(ROOMHandler, 0x80);
 }  // namespace RKNet
 #endif

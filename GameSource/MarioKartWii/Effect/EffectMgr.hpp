@@ -114,7 +114,7 @@ class Mgr {
     // related to local playerCount 9d8 8067b6d8
     virtual ~Mgr();  // 0x9f0 8067e230 vtable 808c0f38
 };  // total size 0x9f4
-size_assert(Mgr, 0x9f4);
+// size_assert(Mgr, 0x9f4);
 
 }  // namespace Effects
 

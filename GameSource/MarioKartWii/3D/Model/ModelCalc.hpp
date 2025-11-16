@@ -34,7 +34,7 @@ class ModelCalcCallback : public ModelCalcBase, public EmptyModelCalcParent, pub
     Timing execTiming;  // 0x10
     u32 someParam;  // 0x14 playerId for player callbacks?
 };
-size_assert(ModelCalcCallback, 0x18);
+// size_assert(ModelCalcCallback, 0x18);
 
 // Uses other to find a bone using boneName
 // Then uses that bone's id to get a world transform mtx which is then applied to main

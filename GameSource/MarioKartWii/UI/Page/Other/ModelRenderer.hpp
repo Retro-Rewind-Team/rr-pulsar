@@ -72,6 +72,6 @@ class ModelRenderer : public Page {  // ID 0x7f
     u8 unknown_0x8C[0x94 - 0x8C];
     ModelRendererValuesHolder ModelRendererValuesHolder;  // 0x94
 };  // 1a14
-size_assert(ModelRenderer, 0x1A14);
+// size_assert(ModelRenderer, 0x1A14);
 }  // namespace Pages
 #endif

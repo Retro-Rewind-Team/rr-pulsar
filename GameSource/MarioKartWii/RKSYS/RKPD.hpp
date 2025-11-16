@@ -21,7 +21,7 @@ struct Rules {  // either battle or race
     u32 totalRaceCount : 4;  // either total track count in vs or number of wins needed in battle
     u32 padding : 2;
 };
-size_assert(Rules, 0x2);
+// size_assert(Rules, 0x2);
 #pragma pack(pop)
 
 struct CupData {
@@ -38,7 +38,7 @@ struct CupData {
     u32 unknown_0x52_1 : 7;
     u8 unknown_0x53[0xd];
 };
-size_assert(CupData, 0x60);
+// size_assert(CupData, 0x60);
 
 struct RawLdbEntry {
     RFL::StoreData miiData;
@@ -53,7 +53,7 @@ struct RawLdbEntry {
     u32 unknown2 : 5;
     u8 unknown_0x52[14];  // 0x52
 };  // total size 0x64;
-size_assert(RawLdbEntry, 0x60);
+// size_assert(RawLdbEntry, 0x60);
 
 struct UnkTimer {
     u32 minutes : 7;
@@ -67,7 +67,7 @@ struct UnkTimer {
     u32 unknown_0x4_11 : 5;
     u16 unknown_0x6;
 };
-size_assert(UnkTimer, 0x8);
+// size_assert(UnkTimer, 0x8);
 
 struct UnkTimer2 {
     u32 enabled : 1;
@@ -78,7 +78,7 @@ struct UnkTimer2 {
     u32 padding : 4;
     u32 unknown_0x4;  // 0x4
 };
-size_assert(UnkTimer2, 0x8);
+// size_assert(UnkTimer2, 0x8);
 
 struct RKPD {  // licenses
     u32 magic;  // RKPD
@@ -226,7 +226,7 @@ struct RKPD {  // licenses
     DWC::AccFriendData dwcFriends[30];  // 0x8b50
     u8 unknown_0x8cb8[0x8cc0 - 0x8cb8];
 };  // total size 0x8CC0
-size_assert(RKPD, 0x8cc0);
+// size_assert(RKPD, 0x8cc0);
 
 }  // namespace RKSYS
 

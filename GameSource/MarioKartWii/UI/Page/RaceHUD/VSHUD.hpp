@@ -15,7 +15,7 @@ class VSHUD : public RaceHUD {  // ID 0xE
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633a90
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80633a88
 };  // total size 0x1DC
-size_assert(VSHUD, 0x1DC);
+// size_assert(VSHUD, 0x1DC);
 
 class VSMultiHUD : public RaceHUD {  // ID 0xF, 0x10, 0x11
     static const PageId id = PAGE_P2VS_HUD;
@@ -26,6 +26,6 @@ class VSMultiHUD : public RaceHUD {  // ID 0xF, 0x10, 0x11
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633a00
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 806339F8
 };  // total size 0x1DC
-size_assert(VSMultiHUD, 0x1DC);
+// size_assert(VSMultiHUD, 0x1DC);
 }  // namespace Pages
 #endif

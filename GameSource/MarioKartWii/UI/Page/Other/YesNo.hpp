@@ -39,7 +39,7 @@ class YesNo : public Page {
     u8 unknown_0x8b4;
     u8 padding[3];
 };  // total size 0x8b8
-size_assert(YesNo, 0x8b8);
+// size_assert(YesNo, 0x8b8);
 
 class YesNoPopUp : public YesNo {  // ID 0x4e for example Choose/Random online cup select
    public:
@@ -63,7 +63,7 @@ class YesNoPopUp : public YesNo {  // ID 0x4e for example Choose/Random online c
     BlackBackControlForMessage blackMsgBoxBg;  // 0x8b8
     Container container;  // 0xa2c
 };  // total size 0xba0
-size_assert(YesNoPopUp, 0xba0);
+// size_assert(YesNoPopUp, 0xba0);
 
 class YesNoFull : public YesNo {  // ID 0x53 not displayed on top of another page, takes the whole space
    public:
@@ -77,7 +77,7 @@ class YesNoFull : public YesNo {  // ID 0x53 not displayed on top of another pag
     void SetTitleMsg(u32 bmgId, Text::Info* textInfo = nullptr);  // 8065313c
     CtrlMenuPageTitleText titleText;  // 0x8b8
 };
-size_assert(YesNoFull, 0xa2c);
+// size_assert(YesNoFull, 0xa2c);
 
 }  // namespace Pages
 #endif

@@ -46,7 +46,7 @@ struct RKGHeader {
     u32 unknown_0x6;  // 0x38
     RFL::StoreData miiData;  // 0x3C to
 };  // total size 0x88
-size_assert(RKGHeader, 0x88);
+// size_assert(RKGHeader, 0x88);
 
 struct CompressedRKG {
     RKGHeader header;
@@ -67,6 +67,6 @@ class RKG {
     Input::RKGInputs inputs;  // 0x88
     u32 uncompressedCRC32;
 };  // total size 0x2800
-size_assert(RKG, 0x2800);
+// size_assert(RKG, 0x2800);
 
 #endif

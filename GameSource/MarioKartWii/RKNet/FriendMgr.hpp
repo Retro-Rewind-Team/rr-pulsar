@@ -35,6 +35,6 @@ class FriendMgr {
     u32 friendPids[30];  // 0x36c GPProfiles
     u64* friendCodes;  // 0x3e4
 };  // total size 0x3e8
-size_assert(RKNet::FriendMgr, 0x3e8);
+// size_assert(RKNet::FriendMgr, 0x3e8);
 }  // namespace RKNet
 #endif

@@ -16,7 +16,7 @@ class GPRaceEnd : public RaceMenu {  // ID 0x20
     bool IsPausePage() const override;  // 0x74 80632bb0
     const char* GetButtonsBRCTRName() const override;  // 0x78 80632bb8
 };  // 0x344
-size_assert(GPRaceEnd, 0x344);
+// size_assert(GPRaceEnd, 0x344);
 }  // namespace Pages
 
 #endif

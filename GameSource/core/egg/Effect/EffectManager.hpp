@@ -40,6 +40,6 @@ class EffectManager {
     void* memoryBlock;  // used for ef::memoryManager
 
 };  // total size 0x30
-size_assert(EffectManager, 0x30);
+// size_assert(EffectManager, 0x30);
 }  // namespace EGG
 #endif

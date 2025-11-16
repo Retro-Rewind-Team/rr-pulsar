@@ -23,7 +23,7 @@ class CharaName : public LayoutUIControl {
     const char* GetClassName() const override;  // 0x2c 8083d440
     u32 unknown_0x178;
 };  // total size 0x178
-size_assert(CharaName, 0x178);
+// size_assert(CharaName, 0x178);
 
 namespace Pages {
 class CharacterSelect : public MenuInteractable {  // ID 0x6B

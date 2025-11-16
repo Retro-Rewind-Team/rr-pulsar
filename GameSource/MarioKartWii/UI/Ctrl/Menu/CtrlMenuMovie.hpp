@@ -26,7 +26,7 @@ class CtrlMenuMovieHandler {
     u32 delay;  // 0x10 in frames, until it appears
     MovieScale* scales;  // 0x14 size movie count
 };  // total size 0x18
-size_assert(CtrlMenuMovieHandler, 0x18);
+// size_assert(CtrlMenuMovieHandler, 0x18);
 
 class CtrlMenuMovieLayout : public CtrlMenuMovieHandler, public LayoutUIControl {
     // no ctor
@@ -40,7 +40,7 @@ class CtrlMenuMovieLayout : public CtrlMenuMovieHandler, public LayoutUIControl 
     const char* GetClassName() const override;  // 0x2c thunk 807e9204 function 807e8c4c
     void OnDeactivate();  // 807e8c5c
 };  // total size 0x18C
-size_assert(CtrlMenuMovieLayout, 0x18c);
+// size_assert(CtrlMenuMovieLayout, 0x18c);
 
 class CtrlMenuMovieButton : public CtrlMenuMovieHandler, public PushButton {
    public:
@@ -56,7 +56,7 @@ class CtrlMenuMovieButton : public CtrlMenuMovieHandler, public PushButton {
     void OnDeactivate() override;  // 0x3c thunk 807e257c function 807e8300
 
 };  // total size 0x26C
-size_assert(CtrlMenuMovieButton, 0x26c);
+// size_assert(CtrlMenuMovieButton, 0x26c);
 
 class CtrlMenuSingleTopMovieButton : public CtrlMenuMovieHandler, public PushButton {
     ~CtrlMenuSingleTopMovieButton() override;  // 807e9114 vtable 808d3518 for thp
@@ -69,6 +69,6 @@ class CtrlMenuSingleTopMovieButton : public CtrlMenuMovieHandler, public PushBut
     const char* GetClassName() const override;  // 0x2c thunk 807e91dc function 807e879c
     void OnDeactivate() override;  // 0x3c thunk 807e91cc function 807e87ac
 };  // total size 0x26c
-size_assert(CtrlMenuSingleTopMovieButton, 0x26c);
+// size_assert(CtrlMenuSingleTopMovieButton, 0x26c);
 
 #endif

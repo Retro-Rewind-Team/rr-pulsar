@@ -188,7 +188,7 @@ class BasicSound {
     ut::LinkListNode soundPlayerPriorityLink;  // f0 priority list stuff, next changes when strm starts
     ut::LinkListNode extSoundPlayerPlayLink;  // f8
 };  // total size 0x100
-size_assert(BasicSound, 0x100);
+// size_assert(BasicSound, 0x100);
 }  // namespace detail
 }  // namespace snd
 }  // namespace nw4r

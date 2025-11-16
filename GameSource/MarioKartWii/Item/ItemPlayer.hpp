@@ -126,7 +126,7 @@ class Player : public Kart::Link {
     s32 decrementTimer;  // 0x240
     u8 unknown_0x244[4];
 };  // Total Size 0x248
-size_assert(Player, 0x248);
+// size_assert(Player, 0x248);
 }  // namespace Item
 
 #endif

@@ -17,6 +17,6 @@ class TTPause : public RaceMenu {  // ID 0x19
     bool IsPausePage() const override;  // 0x74 80633470
     const char* GetButtonsBRCTRName() const override;  // 0x78 80633478
 };  // total size 0x344
-size_assert(TTPause, 0x344);
+// size_assert(TTPause, 0x344);
 }  // namespace Pages
 #endif

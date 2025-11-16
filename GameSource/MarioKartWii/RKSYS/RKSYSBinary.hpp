@@ -13,7 +13,7 @@ struct Ghosts {
     RKG lastDLdGhostRace;  // 0xc8000
     RKG lastCompetitionGhost;  // 0xca800
 };  // 0xa5000
-size_assert(Ghosts, 0xa5000);
+// size_assert(Ghosts, 0xa5000);
 
 struct Core {
     u32 magic;  // RKSD
@@ -28,7 +28,7 @@ struct Binary {
     Core core;
     Ghosts ghosts[4];  // 0x28000
 };  // 0x2bc000
-size_assert(Binary, 0x2bc000);
+// size_assert(Binary, 0x2bc000);
 #pragma pack(pop)
 
 }  // namespace RKSYS

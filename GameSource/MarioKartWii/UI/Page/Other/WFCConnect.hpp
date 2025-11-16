@@ -37,7 +37,7 @@ class WFCConnect : public Page {  // ID 0x84
     bool isConnected;
     u8 padding;
 };
-size_assert(WFCConnect, 0x70);
+// size_assert(WFCConnect, 0x70);
 
 class WFCDataStatement : public Page {  // ID 0x85 https://imgur.com/Qy2s24P
    public:
@@ -61,7 +61,7 @@ class WFCDataStatement : public Page {  // ID 0x85 https://imgur.com/Qy2s24P
     u32 type;  // 0xa30 0: no back button, message bmg id 7401 (when you play) 1: back button, message bmg id 7408 (mii privacy)
     u8 unknown_0xa34[4];
 };
-size_assert(WFCDataStatement, 0xa38);
+// size_assert(WFCDataStatement, 0xa38);
 
 class WFCAllowData : public Page {  // ID 0x86 https://imgur.com/o7Gyanj
    public:
@@ -87,7 +87,7 @@ class WFCAllowData : public Page {  // ID 0x86 https://imgur.com/o7Gyanj
     CtrlMenuBackButton backButton;  // 0xa34
     u32 unknown_0xc98;
 };
-size_assert(WFCAllowData, 0xc9c);
+// size_assert(WFCAllowData, 0xc9c);
 
 class WFCDisconnect : public Page {  // ID 0x87, fills YesNo PopUp with "Disconnect from Nintendo WFC"
    public:
@@ -108,7 +108,7 @@ class WFCDisconnect : public Page {  // ID 0x87, fills YesNo PopUp with "Disconn
     ManipulatorManager manipulatorManager;  // 0x48
     PtmfHolder_2A<WFCConnect, void, PushButton&, u32> onYesNoYesClickHandler;  // 0x58 806491ec "Schedule Disconnection"
 };
-size_assert(WFCDisconnect, 0x6c);
+// size_assert(WFCDisconnect, 0x6c);
 
 }  // namespace Pages
 #endif

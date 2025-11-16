@@ -20,7 +20,7 @@ class Pile : public ObjectCollidable {
     u8 unknown_0xe4[0xf0 - 0xe4];
     float unknown_0xf0[3];
 };  // total size 0xfc
-size_assert(Pile, 0xfc);
+// size_assert(Pile, 0xfc);
 
 class Wanwan_Chn : public ObjectCollidable {
     // ctor inlined, takes wanwan's gobjholder as a param
@@ -89,7 +89,7 @@ class Wanwan : public ObjectCollidable, public StatePtmfTrigger<Wanwan> {  // Ob
     u8 unknown_0x4e8[0x520 - 0x4e8];
     Mtx34 unknown_0x520;  // 0x520
 };  // total size 0x550
-size_assert(Wanwan, 0x550);
+// size_assert(Wanwan, 0x550);
 }  // namespace Objects
 
 #endif

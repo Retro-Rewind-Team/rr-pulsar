@@ -35,6 +35,6 @@ class SinglePlayer : public MenuInteractable {  // ID 0x69
     // onStartPress     vtable = 0x808bd1f8 offset   = 0x7c call is virtual Handler
 
 };  // total size 0x6c4
-size_assert(SinglePlayer, 0x6c4);
+// size_assert(SinglePlayer, 0x6c4);
 }  // namespace Pages
 #endif

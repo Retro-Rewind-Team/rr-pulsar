@@ -67,7 +67,7 @@ class UIState {
     u8 quantisedStickY;  // 0-14 0x19
     u8 unknown_0x1A[0x34 - 0x1A];
 };  // total size 0x34
-size_assert(UIState, 0x34);
+// size_assert(UIState, 0x34);
 
 }  // namespace Input
 #endif

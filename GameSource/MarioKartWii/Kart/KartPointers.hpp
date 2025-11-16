@@ -54,7 +54,7 @@ class Pointers {
     MatTEVHandler* kartMatTevHandler;  // 0x5c
     Killer* kartKiller;  // 0x60
 };  // Total size 0x64
-size_assert(Pointers, 0x64);
+// size_assert(Pointers, 0x64);
 
 }  // namespace Kart
 

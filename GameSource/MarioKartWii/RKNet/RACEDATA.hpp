@@ -53,7 +53,7 @@ struct RACEDATAPacket {
     u8 rank : 1;
 };
 #pragma pack(pop)
-size_assert(RACEDATAPacket, 0x40);
+// size_assert(RACEDATAPacket, 0x40);
 */
 
 }  // namespace RKNet

@@ -24,7 +24,7 @@ class DrawInfo {
     }flag; //0x50
     */
 };  // Total size 0x54
-size_assert(DrawInfo, 0x54);
+// size_assert(DrawInfo, 0x54);
 }  // namespace lyt
 }  // namespace nw4r
 

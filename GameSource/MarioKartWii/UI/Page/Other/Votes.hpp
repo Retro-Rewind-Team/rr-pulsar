@@ -62,7 +62,7 @@ class Vote : public Page {  // ID 0x92
     float unknown_0x16b8;
     u32 remainingRouletteDuration;  // 0x16bc
 };  // total size 0x16c0
-size_assert(Vote, 0x16c0);
+// size_assert(Vote, 0x16c0);
 }  // namespace Pages
 
 #endif

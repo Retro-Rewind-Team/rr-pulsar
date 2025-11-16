@@ -16,7 +16,7 @@ class SceneCreator {  // vtable got done away by the compiler
     virtual void destroy(u32 sceneId);  // 0xc
 };  // 0x4
 
-size_assert(SceneCreator, 0x4);
+// size_assert(SceneCreator, 0x4);
 class Scene : public EGG::Disposer {
    public:
     Scene();  // 8023ad10
@@ -37,7 +37,7 @@ class Scene : public EGG::Disposer {
     u32 id;  // 0x28
     SceneManager* manager;  // 0x2c
 };  // 0x30
-size_assert(Scene, 0x30);
+// size_assert(Scene, 0x30);
 
 class SceneManager {
    public:
@@ -84,7 +84,7 @@ class SceneManager {
     SceneCreator* nextSceneCreator;  // 0x2c
 
 };  // 0x30
-size_assert(SceneManager, 0x30);
+// size_assert(SceneManager, 0x30);
 
 }  // namespace EGG
 

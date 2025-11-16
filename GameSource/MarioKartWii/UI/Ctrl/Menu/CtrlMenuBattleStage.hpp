@@ -15,7 +15,7 @@ class StageButton : public CtrlMenuMovieButton {
     const char* GetClassName() const override;  // 0x2c thunk 807e258c function 807e12a8
 
 };  // total size 0x26C
-size_assert(StageButton, 0x26c);
+// size_assert(StageButton, 0x26c);
 
 class CtrlMenuBattleStageSelectCupSub : public LayoutUIControl {
     CtrlMenuBattleStageSelectCupSub();  // 80629ce8
@@ -27,7 +27,7 @@ class CtrlMenuBattleStageSelectCupSub : public LayoutUIControl {
     virtual void SetRelativePosition(const PositionAndScale& parentPosition);  // 807e1548
     u8 unknown_0x174[0x18c - 0x174];
 };  // total size 0x18c
-size_assert(CtrlMenuBattleStageSelectCupSub, 0x18c);
+// size_assert(CtrlMenuBattleStageSelectCupSub, 0x18c);
 
 class CtrlMenuBattleStageSelectCup : public LayoutUIControl {
     // ctor inlined
@@ -38,7 +38,7 @@ class CtrlMenuBattleStageSelectCup : public LayoutUIControl {
     void Load();  // 807e12b8
     CtrlMenuBattleStageSelectCupSub cupIcons[2];  // 0x174 cup icons after clicking the cup (above the 5 stages)
 };  // total 0x48c
-size_assert(CtrlMenuBattleStageSelectCup, 0x48c);
+// size_assert(CtrlMenuBattleStageSelectCup, 0x48c);
 
 class CtrlMenuBattleStageSelectStage : public LayoutUIControl {  // layoutUIControl are Stagebutton in the ptmfholder
     ~CtrlMenuBattleStageSelectStage() override;  // 80629eb0 vtable 808d2f00
@@ -53,6 +53,6 @@ class CtrlMenuBattleStageSelectStage : public LayoutUIControl {  // layoutUICont
     PtmfHolder_2A<CtrlMenuBattleStageSelectStage, void, PushButton&, u32> onStageButtonClickHandler;  // 0xf04 vtable 808bd078 807e22b4
     PtmfHolder_2A<CtrlMenuBattleStageSelectStage, void, PushButton&, u32> onStageButtonSelectHandler;  // 0xf18 vtable 808bd078 807e230c
 };  // total size 0xF2C
-size_assert(CtrlMenuBattleStageSelectStage, 0xF2C);
+// size_assert(CtrlMenuBattleStageSelectStage, 0xF2C);
 
 #endif

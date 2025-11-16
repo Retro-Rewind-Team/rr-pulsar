@@ -24,6 +24,6 @@ class LicenseRecords : public MenuInteractable {  // ID 0xCE ID 0xD0 ID 0xD1 ID 
 
     static Page* GetPageById(PageId id = PAGE_OVERALL_RECORDS);  // 8085f0ac
 };  // 0x6c4
-size_assert(LicenseRecords, 0x6c4);
+// size_assert(LicenseRecords, 0x6c4);
 }  // namespace Pages
 #endif

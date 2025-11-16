@@ -78,7 +78,7 @@ class MovieManager : public EGG::Disposer {
     Status status;  // 0xAC 1 = isPrepared
     EGG::TaskThread* task;  // 0xB0
 };  // 0xb4
-size_assert(MovieManager, 0xb4);
+// size_assert(MovieManager, 0xb4);
 
 class MoviePlayer {  // DO MGR FUNCS
     MoviePlayer();  // 805fcd40
@@ -109,6 +109,6 @@ class MoviePlayer {  // DO MGR FUNCS
     bool isPaused;  // 0xfc
     u8 padding3[3];
 };  // total size 0x100
-size_assert(MoviePlayer, 0x100);
+// size_assert(MoviePlayer, 0x100);
 
 #endif

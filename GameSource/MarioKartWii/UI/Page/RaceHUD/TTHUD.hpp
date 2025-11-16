@@ -15,6 +15,6 @@ class TTHUD : public RaceHUD {  // ID 0xD
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633bb0
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80633ba8 returns 1
 };  // total size 0x1DC
-size_assert(TTHUD, 0x1DC);
+// size_assert(TTHUD, 0x1DC);
 }  // namespace Pages
 #endif

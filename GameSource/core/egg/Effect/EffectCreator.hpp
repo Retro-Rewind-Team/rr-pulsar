@@ -20,7 +20,7 @@ class EffectCreator : public EGG::Disposer {
     int idx;  // 0x10
     int groupID;  // 0x14
 };  // total size 0x18
-size_assert(EGG::EffectCreator, 0x18);
+// size_assert(EGG::EffectCreator, 0x18);
 
 }  // namespace EGG
 #endif

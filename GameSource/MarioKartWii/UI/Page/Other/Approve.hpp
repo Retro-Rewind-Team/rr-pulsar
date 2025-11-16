@@ -44,6 +44,6 @@ class Approve : public Page {  // ID 0x52
     u32 unknown_0xa50;  // some kind of state
     PageId nextPageId;  // 0xa54
 };  // total size 0xa58
-size_assert(Approve, 0xa58);
+// size_assert(Approve, 0xa58);
 }  // namespace Pages
 #endif

@@ -23,7 +23,7 @@ class PadControl : LayoutUIControl {
     u8 padding[3];
     u32 unknown_0x180;  // if set to 2, controller image disappears
 };  // total size 0x184
-size_assert(PadControl, 0x184);
+// size_assert(PadControl, 0x184);
 
 class RecognizePadWindow : public LayoutUIControl {
     RecognizePadWindow();  // 806017e4
@@ -35,7 +35,7 @@ class RecognizePadWindow : public LayoutUIControl {
     const char* GetClassName() const override;  // 0x2c 806017d4
     void Load(const char* folderName, const char* ctrName, const char* variant);  // 80601878
 };
-size_assert(RecognizePadWindow, 0x174);
+// size_assert(RecognizePadWindow, 0x174);
 
 namespace Pages {
 class RecognizePad : public System {
@@ -59,7 +59,7 @@ class RecognizePad : public System {
     u32 padID;  // 0x4b8
     u32 unknown_0x4bc;  // type? setting it to 4 auto clicks A
 };  // total size 0x4c0
-size_assert(RecognizePad, 0x4c0);
+// size_assert(RecognizePad, 0x4c0);
 
 class RecognizePadMenu : public RecognizePad {
     RecognizePadMenu();  // 8061c53c

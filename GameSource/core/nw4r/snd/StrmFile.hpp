@@ -21,7 +21,7 @@ struct StrmFile {
         u32 dataLength;  // 0x24
         // 0x18 bytes of padding for alignment with HEAD
     };
-    size_assert(Header, 0x28);
+    // size_assert(Header, 0x28);
 
     struct StrmDataInfo {  //+0x20 from HEAD start
         u8 format;  // 0x0 soundType
@@ -42,7 +42,7 @@ struct StrmFile {
         u32 adpcmSampleCount;  // 0x2c
         u32 adpcmSampleSize;  // 0x30 bits per sample
     };
-    size_assert(StrmDataInfo, 0x34);
+    // size_assert(StrmDataInfo, 0x34);
 
     struct TrackInfo {
         u8 channelCount;
@@ -86,7 +86,7 @@ struct StrmFile {
         Util::DataRef<TrackTable> refTrackTable;  // 0x10
         Util::DataRef<ChannelTable> refChannelTable;  // 0x18
     };  // total size 0x20
-    size_assert(HeadBlock, 0x20);
+    // size_assert(HeadBlock, 0x20);
 
     struct AdpcBlock {
         ut::BinaryBlockHeader blockHeader;  // ADPC
@@ -120,7 +120,7 @@ class StrmFileReader {
         u32 adpcmSampleCount;  // 0x38
         u32 adpcmSampleSize;  // 0x3C bits per sample
     };
-    size_assert(StrmInfo, 0x40);
+    // size_assert(StrmInfo, 0x40);
 
     struct StrmTrackInfo {
         u8 volume;

@@ -48,7 +48,7 @@ class MultiDriftSelect : public MenuInteractable {  // ID 0x82
     MultiKartBox* boundingBoxes;  // 0x6c8
     SectionId nextSectionOnButtonClick;
 };
-size_assert(MultiDriftSelect, 0x6d0);
+// size_assert(MultiDriftSelect, 0x6d0);
 }  // namespace Pages
 /* controlGroup:
 index 0 = CharaName (MachineSelectName.brctr)

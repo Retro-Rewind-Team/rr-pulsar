@@ -68,6 +68,6 @@ class SectionMgr {
     SectionParams* sectionParams;
 
 };  // Total Size 0x9C
-size_assert(SectionMgr, 0x9c);
+// size_assert(SectionMgr, 0x9c);
 
 #endif

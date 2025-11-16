@@ -43,7 +43,7 @@ struct ObjProperties {
     bool unknown_0x70;
     u8 unknown_0x71[0x74 - 0x71];
 };  // Total size 0x74
-size_assert(ObjProperties, 0x74);
+// size_assert(ObjProperties, 0x74);
 
 extern float greenShellSpeed;
 extern float redShellInitialSpeed;

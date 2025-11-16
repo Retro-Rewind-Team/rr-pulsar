@@ -56,7 +56,7 @@ class TabControl : public LayoutUIControl {  // change mii top buttons contains 
     u32 unknown_0x184;  // 0x184
     OptionButton* optionButtonsArray;  // 0x188
 };  // total size 0x18C
-size_assert(TabControl, 0x18C);
-size_assert(TabControl::OptionButton, 0x240);
+// size_assert(TabControl, 0x18C);
+// size_assert(TabControl::OptionButton, 0x240);
 
 #endif

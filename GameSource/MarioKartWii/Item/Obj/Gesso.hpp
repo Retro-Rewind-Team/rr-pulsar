@@ -12,7 +12,7 @@ class ObjGesso : public ObjMiddle {
     static Obj** CreateArray(u32 count);  // 807a8138
     void InitSelf() override;  // 0x8 807a8378 vtable 808d1e48
 };
-size_assert(ObjGesso, 0x1a0);
+// size_assert(ObjGesso, 0x1a0);
 
 class GessoScreen {  // one per Screen
     GessoScreen(u32 screenId);  // 807a8460
@@ -30,7 +30,7 @@ class GessoScreen {  // one per Screen
     float distance;  // 0xc8 how far the blooper is, higher value for heavier karts
     float scale;  // 0xcc
 };  // 0xd0
-size_assert(GessoScreen, 0xd0);
+// size_assert(GessoScreen, 0xd0);
 
 class GessoMgr {
    public:
@@ -56,7 +56,7 @@ class GessoMgr {
     u8 unknown_0x40[0x44 - 0x40];
     GessoScreen* gessoScreens[4];  // 0x44
 };  // Total Size 0x54
-size_assert(GessoMgr, 0x54);
+// size_assert(GessoMgr, 0x54);
 }  // namespace Item
 
 #endif

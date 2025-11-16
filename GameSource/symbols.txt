@@ -156,9 +156,14 @@ gsimalloc = 0x800f3860
 DWCi_QR2Startup = 0x800d4e58
 DWC_SetReportLevel = 0x800cd060
 DWCi_SBCallback = 0x800e31c0
+DWCi_NodeInfoList_GetNodeInfoForAid = 0x800e7ee0
+DWCi_GT2ClosedProcess = 0x800d37bc
 DWC_ProcessFriendsMatch = 0x800d115c
 GetLastErrorEx__3DWCFPUiPQ23DWC9ErrorType = 0x800ccb64
 CreateFriendKey__3DWCFPCQ23DWC11AccUserData = 0x800ec6bc
+
+#MatchControl
+sInstance__Q23DWC19FriendsMatchControl = 0x803862F0
 
 #GS
 GSIAvailableCheckThink__2GSFv = 0x800f3a20
@@ -913,6 +918,7 @@ GetType__Q24Kart4LinkCFv = 0x80590a10
 GetPlayerIdx__Q24Kart4LinkCFv = 0x80590a5c
 GetPosition__Q24Kart4LinkCFv = 0x8059020c
 GetMovement__Q24Kart4LinkFv = 0x8059077c
+IsLocal__Q24Kart4LinkCFv = 0x80590650
 
 #KartPlayer
 GetDriftState__Q24Kart6PlayerCFv = 0x805911d8
@@ -940,6 +946,8 @@ Update__Q24Kart18WheelPhysicsHolderFRC4Vec3RC5Mtx34f = 0x8059a278
 sInstance__10KartParams = 0x809c1918
 sInstance__12DriverParams = 0x809c191c
 
+#ItemObjHolder
+GetTotalItemCount__Q24Item9ObjHolderCFv = 0x807974ac
 
 ##UI
 #SECTION
@@ -1321,6 +1329,10 @@ GetPlayerId__12CtrlRaceBaseCFv = 0x807ec7f8
 GetRuntimeTypeInfo__12CtrlRaceBaseCFv = 0x807ec8ec
 IsOnlineVS__12CtrlRaceTimeFRC8Racedata = 0x807f83a4
 __vt__12CtrlRaceBase = 0x808d3a98
+
+#CtrlRace2DMap
+__vt__19CtrlRace2DMapObject = 0x808d3900
+LoadPictureLayout__15LayoutUIControlFPCcPCc = 0x8063d9c0
 
 #CtrlRaceGhostDiffTime
 SubtractTimers__21CtrlRaceGhostDiffTimeFRC5TimerRC5Timer = 0x807ee860
@@ -1801,6 +1813,13 @@ GetOwnPlayerIdToAid__Q25RKNet13SELECTHandlerCFv = 0x806604cc
 sInstance__Q25RKNet11ROOMHandler = 0x809c20e0
 SetAllToSendPackets__Q25RKNet11ROOMHandlerFQ25RKNet10ROOMPacket = 0x8065ae70
 Reset__Q25RKNet11ROOMHandlerFv = 0x8065ac94
+GetTimer__Q25RKNet11ITEMHandlerCFUc = 0x8065d4ac
+IsPlayerIdConnected__Q25RKNet11ITEMHandlerCFUc = 0x8065d55c
+GetDraggedItemMode__Q25RKNet11ITEMHandlerCFUc = 0x8065d3f8
+IsPlayerConnected__Q25RKNet9PacketMgrCFUi = 0x80654820
+IsPlayerLocal__Q25RKNet9PacketMgrCFUi = 0x806548a8
+GetHudSlotId__Q25RKNet9PacketMgrCFUi = 0x80654918
+GetLocalPlayerId__Q25RKNet10ControllerCFi = 0x80659d58
 
 #RH1
 sInstance__Q25RKNet10RH1Handler = 0x809c2118
@@ -1814,6 +1833,8 @@ sInstance__Q25RKNet12EVENTHandler = 0x809c20f0
 GetStoredItem__Q25RKNet11ITEMHandlerCFUc = 0x8065d21c
 ImportNewPackets__Q25RKNet11ITEMHandlerFv = 0x8065dd3c
 sInstance__Q25RKNet11ITEMHandler = 0x809c20f8
+GetStoredItemMode__Q25RKNet11ITEMHandlerCFUc = 0x8065d364
+GetDraggedItem__Q25RKNet11ITEMHandlerCFUc = 0x8065d2b0
 
 #SELECT
 DestroyInstance__Q25RKNet13SELECTHandlerFv = 0x8065ff60
@@ -1947,6 +1968,7 @@ itemSlotData = 0x809c3670
 Update__Q24Item15PlayerInventoryFv = 0x807bc6e8
 SetItem__Q24Item15PlayerInventoryF6ItemIdb = 0x807bc940
 RemoveItems__Q24Item15PlayerInventoryFUi = 0x807bc97c
+ClearAll__Q24Item15PlayerInventoryFv = 0x807bc9c0
 
 #Misc
 greenShellSpeed__4Item = 0x808a5dc0

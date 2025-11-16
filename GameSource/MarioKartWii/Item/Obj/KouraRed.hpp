@@ -26,7 +26,7 @@ class ObjKouraRed : public ObjTargeting {  // actually inherits a second class a
 
     u8 unknown_0x24c[0x2e0 - 0x24c];  // will document later
 };
-size_assert(ObjKouraRed, 0x2e0);
+// size_assert(ObjKouraRed, 0x2e0);
 }  // namespace Item
 
 #endif

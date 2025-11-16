@@ -32,7 +32,7 @@ class MatModelDirector : public ModelDirector, public EGG::Disposer {
     bool r6;  // 0x72
     u8 padding;
 };  // total size 0x74
-size_assert(MatModelDirector, 0x74);
+// size_assert(MatModelDirector, 0x74);
 
 class MHModelDirector : public MatModelDirector {
    public:

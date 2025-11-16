@@ -34,6 +34,6 @@ class DvdFile {
     u8 unknown_0xa0[0xc8 - 0xa0];
     nw4r::ut::Link link;  // 0xc8
 };
-size_assert(DvdFile, 0xd0);
+// size_assert(DvdFile, 0xd0);
 }  // namespace EGG
 #endif

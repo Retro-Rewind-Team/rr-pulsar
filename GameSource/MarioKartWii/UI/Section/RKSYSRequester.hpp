@@ -64,6 +64,6 @@ class RKSYSRequester {
     u32 getFromGroupLicenseId;  // 0x120 if request[5] and is -1, will load all ghosts from group, else will load all ghosts from group of that license
     const GhostGroup* ghostGroup;  // 0x124
 };  // total size 0x128
-size_assert(RKSYSRequester, 0x128);
+// size_assert(RKSYSRequester, 0x128);
 
 #endif

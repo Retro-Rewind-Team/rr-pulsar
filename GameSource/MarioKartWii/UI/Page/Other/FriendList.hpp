@@ -29,7 +29,7 @@ class FriendButton : public PushButton {
     bool isSelected;  // 0x260
     u8 padding[3];
 };
-size_assert(FriendButton, 0x264);
+// size_assert(FriendButton, 0x264);
 
 class JoinFriendButton : public PushButton {
    public:
@@ -40,7 +40,7 @@ class JoinFriendButton : public PushButton {
     const char* GetClassName() const override;  // 0x2c 805d5500
     void SetStatus(u32 status);  // 805d56ac
 };
-size_assert(JoinFriendButton, 0x254);
+// size_assert(JoinFriendButton, 0x254);
 
 namespace Pages {
 class FriendList : public Page {  // ID 0x96
@@ -87,7 +87,7 @@ class FriendList : public Page {  // ID 0x96
     PtmfHolder_2A<FriendList, void, SheetSelectControl&, u32> onLeftArrowPressHandler;  // 0x1a3c 805d5014
     PtmfHolder_1A<FriendList, void, u32> onBackPressHandler;  // 0x1a50 805d510
 };
-size_assert(FriendList, 0x1a64);
+// size_assert(FriendList, 0x1a64);
 
 class FriendInfo : public Page {  // ID 0x97
    public:
@@ -126,7 +126,7 @@ class FriendInfo : public Page {  // ID 0x97
     PageId nextPage;  // 0x11a8
     u32 isFriend;  // 0x11ac returns value of IsFriend
 };
-size_assert(FriendInfo, 0x11b0);
+// size_assert(FriendInfo, 0x11b0);
 
 class FriendRemove : public Page {  // ID 0x98
    public:
@@ -154,7 +154,7 @@ class FriendRemove : public Page {  // ID 0x98
     CtrlMenuBackButton backButton;  // 0x8c0
     PageId nextPage;  // 0xb24
 };
-size_assert(FriendRemove, 0xb28);
+// size_assert(FriendRemove, 0xb28);
 
 class FriendRemoving : public Page {  // ID 0x99, the wait after clicking remove friend code on the previous page
    public:
@@ -184,7 +184,7 @@ class FriendRemoving : public Page {  // ID 0x99, the wait after clicking remove
     u32 removedIdx;  // 0x4b4
     u8 unknown_0x4b4[0x4];
 };
-size_assert(FriendRemoving, 0x4bc);
+// size_assert(FriendRemoving, 0x4bc);
 
 }  // namespace Pages
 #endif

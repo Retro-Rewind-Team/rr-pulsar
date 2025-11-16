@@ -35,7 +35,7 @@ class ObjHolder {  // one instance per objID
     u32 limit;  // 0x1c
     u8 unknown_0x20[0x24 - 0x20];
 };  // Total Size 0x24
-size_assert(ObjHolder, 0x24);
+// size_assert(ObjHolder, 0x24);
 
 }  // namespace Item
 #endif

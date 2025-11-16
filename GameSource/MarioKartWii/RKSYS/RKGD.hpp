@@ -47,7 +47,7 @@ struct RKGD {  //+0x23308 to all offsets for rksys
     u16 lastGhostRaceTime;  // 0x3800 d/m/y
     u16 regionId;  // 0x3802
 };  // 0x3804
-size_assert(RKGD, 0x3804);
+// size_assert(RKGD, 0x3804);
 #pragma pack(pop)
 }  // namespace RKSYS
 

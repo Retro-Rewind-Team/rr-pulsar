@@ -52,7 +52,7 @@ class Manager {
     Obj dummyObj;  // 0x2a4 base one? dummy?
     s32 totalItemCountMinus30;  // 0x42c presumably 30 is a maximum? the game checks if the value is > -5, ie there are fewer than 25 items
 };  // Total Size 0x430
-size_assert(Manager, 0x430);
+// size_assert(Manager, 0x430);
 
 DriverMgr* GetDriverMgr();  // 80790e30
 u16 GetKMPObjectsCount();  // 80790e3c

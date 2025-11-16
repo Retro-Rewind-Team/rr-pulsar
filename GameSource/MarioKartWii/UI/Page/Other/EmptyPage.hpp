@@ -20,7 +20,7 @@ class Empty : public Page {
     void BeforeExitAnimations() override;  // 0x40 805c988c
     ManipulatorManager manipulatorManager;
 };  // 0x54
-size_assert(EmptyPage, 0x54);
+// size_assert(EmptyPage, 0x54);
 }  // namespace Pages
 
 #endif

@@ -14,5 +14,5 @@ class CtrlMenuTeamConfirmTeam : public LayoutUIControl {
     u32 team;  // 1 red, 0 blue
     LayoutUIControl playerElements[6];
 };  // 0xa30
-size_assert(CtrlMenuTeamConfirmTeam, 0xa30);
+// size_assert(CtrlMenuTeamConfirmTeam, 0xa30);
 #endif

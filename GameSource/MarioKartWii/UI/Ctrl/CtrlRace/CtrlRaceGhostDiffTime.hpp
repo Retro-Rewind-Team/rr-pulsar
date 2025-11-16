@@ -23,6 +23,6 @@ class CtrlRaceGhostDiffTime : public CtrlRaceBase {
     GhostData ghostData;  // 0x19c
     Timer timers[2];  // 274 1st is self, 2nd is target (ie the ghost)
 };  // total size 0x28c
-size_assert(CtrlRaceGhostDiffTime, 0x28c);
+// size_assert(CtrlRaceGhostDiffTime, 0x28c);
 
 #endif

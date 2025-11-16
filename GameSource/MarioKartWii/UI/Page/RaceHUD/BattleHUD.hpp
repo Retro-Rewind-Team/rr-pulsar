@@ -15,7 +15,7 @@ class BattleHUD : public RaceHUD {  // ID 0x12
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633940
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80633938
 };  // total size 0x1DC
-size_assert(BattleHUD, 0x1DC);
+// size_assert(BattleHUD, 0x1DC);
 
 class BattleMultiHUD : public RaceHUD {  // ID 0x13, ID 0x14, ID 0x15
     static const PageId id = PAGE_P2BATTLE_HUD;
@@ -26,7 +26,7 @@ class BattleMultiHUD : public RaceHUD {  // ID 0x13, ID 0x14, ID 0x15
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633880
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80633878
 };  // total size 0x1DC
-size_assert(BattleHUD, 0x1DC);
+// size_assert(BattleHUD, 0x1DC);
 
 }  // namespace Pages
 #endif

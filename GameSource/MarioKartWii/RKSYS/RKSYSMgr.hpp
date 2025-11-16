@@ -81,7 +81,7 @@ class Mgr {
 
     static u32 groupTypeSaveOffset;  // 0x80890d28
 };  // total size 0x25008
-// size_assert(Mgr, 0x25008);
+// // size_assert(Mgr, 0x25008);
 
 // these are mostly inlined
 

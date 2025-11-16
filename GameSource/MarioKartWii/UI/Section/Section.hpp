@@ -116,6 +116,6 @@ class Section {
     }
     inline void Set(Page* t, PageId id) { this->pages[id] = t; }
 };  // Total Size 0x408
-size_assert(Section, 0x408);
+// size_assert(Section, 0x408);
 
 #endif

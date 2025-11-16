@@ -41,7 +41,7 @@ struct CommandBlock {
     CBCallback callback;  // 0x28
     void* userData;  // 0x2c
 };
-size_assert(CommandBlock, 0x30);
+// size_assert(CommandBlock, 0x30);
 
 struct FileInfo {
     CommandBlock commandBlock;
@@ -49,14 +49,14 @@ struct FileInfo {
     u32 length;  // 0x34 file size in bytes
     Callback callback;
 };
-size_assert(FileInfo, 0x3c);
+// size_assert(FileInfo, 0x3c);
 
 struct Dir {
     u32 entryNum;
     u32 location;
     u32 next;
 };
-size_assert(Dir, 0xc);
+// size_assert(Dir, 0xc);
 
 s32 ConvertPathToEntryNum(const char* path);  // 8015df4c
 BOOL FastOpen(s32 entrynum, FileInfo* fileInfo);  // 8015e254

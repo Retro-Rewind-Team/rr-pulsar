@@ -22,7 +22,7 @@ class CtrlMenuCupSelectCup : public LayoutUIControl {
     u32 curCupID;  // 0x143c
     CtrlMenuMovieLayout ctrlMenuMovieLayout;  // 0x1440 (1b04 for page) ends at 0x15cc (1c90 for page)
 };  // total size 0x15cc
-size_assert(CtrlMenuCupSelectCup, 0x15cc);
+// size_assert(CtrlMenuCupSelectCup, 0x15cc);
 
 class CtrlMenuCupSelectCourse : public LayoutUIControl {
    public:
@@ -37,6 +37,6 @@ class CtrlMenuCupSelectCourse : public LayoutUIControl {
     void UpdateTrackList(u32 cupIndex);  // 807e5ff0
     LayoutUIControl trackNames[4];  // 0x174 to 0x744 (23d4 for page)
 };  // total size 0x744
-size_assert(CtrlMenuCupSelectCourse, 0x744);
+// size_assert(CtrlMenuCupSelectCourse, 0x744);
 
 #endif

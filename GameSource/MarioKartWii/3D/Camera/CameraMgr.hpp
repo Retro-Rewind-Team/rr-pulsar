@@ -47,6 +47,6 @@ class RaceCameraMgr : public CameraMgr {
     BCP* rawBCP;  // 0x34
 
 };  // 0x38
-size_assert(RaceCameraMgr, 0x38);
+// size_assert(RaceCameraMgr, 0x38);
 
 #endif

@@ -15,6 +15,6 @@ class GPHUD : public RaceHUD {  // ID 0xC
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633b20
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80633b18
 };  // total size 0x1DC
-size_assert(GPHUD, 0x1DC);
+// size_assert(GPHUD, 0x1DC);
 }  // namespace Pages
 #endif

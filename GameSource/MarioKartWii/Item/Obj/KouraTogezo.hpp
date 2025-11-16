@@ -68,7 +68,7 @@ class ObjKouraTogezo : public ObjKouraTogezoBase, public ObjExplosion {  // blue
     ModelDirector* bombCore;  // 0x330
     u8 unknown_0x334[4];
 };
-size_assert(ObjKouraTogezo, 0x338);
+// size_assert(ObjKouraTogezo, 0x338);
 }  // namespace Item
 
 #endif

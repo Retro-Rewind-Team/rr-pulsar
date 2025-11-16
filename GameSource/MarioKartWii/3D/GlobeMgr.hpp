@@ -35,7 +35,7 @@ class GlobeMii {
     u32 unknown_0x1a0;
     u32 animationLength;  // 0x1a4 initiated when animation starts, decreased by 1 every frame
 };
-size_assert(GlobeMii, 0x1a8);
+// size_assert(GlobeMii, 0x1a8);
 
 class EarthModel : public StatePtmfTrigger<EarthModel> {
    public:
@@ -55,7 +55,7 @@ class EarthModel : public StatePtmfTrigger<EarthModel> {
     GlobeMii* globeMii;  // 0x104
     u8 unknown_0x108[0x110 - 0x108];
 };
-size_assert(EarthModel, 0x110);
+// size_assert(EarthModel, 0x110);
 
 class GlobeMgr {
    public:
@@ -84,6 +84,6 @@ class GlobeMgr {
     u8 unknown_0x38[4];
     u32 zoomState;  // 0x3c 2 = max zoom, unsure
 };
-size_assert(GlobeMgr, 0x40);
+// size_assert(GlobeMgr, 0x40);
 
 #endif

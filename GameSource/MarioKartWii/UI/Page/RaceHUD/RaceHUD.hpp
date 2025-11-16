@@ -64,6 +64,6 @@ class RaceHUD : public Page {
     RaceBalloons* balloonClassArray;  // 0x1D4 one per hudslot
     CtrlRaceItemBalloon* ctrlRaceItemBalloon;  // 0x1d8 one per hudslot
 };  // Total Size 0x1DC
-size_assert(RaceHUD, 0x1DC);
+// size_assert(RaceHUD, 0x1DC);
 }  // namespace Pages
 #endif

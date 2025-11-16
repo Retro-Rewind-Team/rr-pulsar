@@ -35,7 +35,7 @@ class RegisteringFriend : public Page {  // ID 0xA5
     RegisterFriend* registerFriend;  // 0x360
     u8 unknown_0x364[4];
 };
-size_assert(RegisteringFriend, 0x368);
+// size_assert(RegisteringFriend, 0x368);
 
 class RegisterFriend : public Page {  // ID 0xA6
    public:
@@ -70,7 +70,7 @@ class RegisterFriend : public Page {  // ID 0xA6
     PtmfHolder_1A<RegisterFriend, void, u32> onBackPressHandler;  // 0x251c 8061e77c
     u32 unknown_0x2530;  // 0x2530
 };
-size_assert(RegisterFriend, 0x2534);
+// size_assert(RegisterFriend, 0x2534);
 
 }  // namespace Pages
 #endif

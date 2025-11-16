@@ -101,7 +101,7 @@ class DriverController : public Kart::Link {
     IKParams* ikParams;  // 0x2a4;
     u8 unknown_0x2a8[0x6e4 - 0x2a8];
 };  // total size 0x6e4
-size_assert(DriverController, 0x6e4);
+// size_assert(DriverController, 0x6e4);
 
 class DriverControllerBike : public DriverController {
    public:

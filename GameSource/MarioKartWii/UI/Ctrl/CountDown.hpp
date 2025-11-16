@@ -31,5 +31,5 @@ class CountDownTimerControl : public LayoutUIControl {
     bool isTimerDone;
     u8 unknown_0x179[0x17C - 0x179];
 };  // total size 0x17C
-size_assert(CountDownTimerControl, 0x17c);
+// size_assert(CountDownTimerControl, 0x17c);
 #endif

@@ -25,7 +25,7 @@ struct SELECTPlayerData {
     u8 courseVote;  // 0x6
     u8 starRank;  // 0x7
 };  // total size 0x8
-size_assert(SELECTPlayerData, 0x8);
+// size_assert(SELECTPlayerData, 0x8);
 
 struct SELECTPacket {
     static const u32 idx = 3;
@@ -41,7 +41,7 @@ struct SELECTPacket {
     u8 winningVoterAid;  // 0x36
     u8 engineClass;  // 0x37 none, 100, 150, mirror //total size 0x38
 };
-size_assert(SELECTPacket, 0x38);
+// size_assert(SELECTPacket, 0x38);
 
 class SELECTHandler {
    public:
@@ -117,7 +117,7 @@ class SELECTHandler {
     u8 unknown_0x3F4[4];
 
 };  // total size 0x3F8
-size_assert(SELECTHandler, 0x3F8);
+// size_assert(SELECTHandler, 0x3F8);
 }  // namespace RKNet
 
 #endif

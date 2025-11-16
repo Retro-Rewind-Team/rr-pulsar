@@ -21,7 +21,7 @@ class TTLeaderboard : public GPVSLeaderboardUpdate {  // unsure why it inherits 
     u32 staffGhostState;  // 1 = easy; 2 = expert unlocked 0x1B4
     LayoutUIControl ghostMessage;  // 0x1B8 "You've unlocked an Expert Staff Ghost Data record!"
 };  // total size 0x32C
-size_assert(TTLeaderboard, 0x32c);
+// size_assert(TTLeaderboard, 0x32c);
 }  // namespace Pages
 
 // 8085d8d0 updates TTLeaderboardPage

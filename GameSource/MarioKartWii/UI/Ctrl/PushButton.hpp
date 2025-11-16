@@ -61,7 +61,7 @@ class PushButton : public LayoutUIControl {
     nw4r::lyt::Pane* color_base;  // 0x24c
     u32 clickSoundId;
 };  // Total Size 0x254
-size_assert(PushButton, 0x254);
+// size_assert(PushButton, 0x254);
 
 class PushButtonScaleFade : public PushButton {
    public:

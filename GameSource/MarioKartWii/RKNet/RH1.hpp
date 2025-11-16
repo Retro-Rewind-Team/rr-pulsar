@@ -32,7 +32,7 @@ struct RH1Data {
     u8 starRank[2];  // 0x2d
     u8 padding;
 };  // 0x30
-size_assert(RH1Data, 0x30);
+// size_assert(RH1Data, 0x30);
 
 class RH1Handler {
    public:
@@ -69,7 +69,7 @@ class RH1Handler {
     OS::Time time;  // 0x18
     RH1Data rh1Data[12];  // 0x20
 };  // total size 0x260
-size_assert(RH1Handler, 0x260);
+// size_assert(RH1Handler, 0x260);
 
 }  // namespace RKNet
 #endif

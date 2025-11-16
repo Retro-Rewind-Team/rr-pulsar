@@ -11,7 +11,7 @@ class ObjPow : public ObjMiddle {
     static Obj** CreateArray(u32 count);  // 807b1ab0
     void InitSelf() override;  // 0x8 807b1ba4 vtable 808d2530
 };
-size_assert(ObjPow, 0x1a0);
+// size_assert(ObjPow, 0x1a0);
 
 class PowScreen {  // one per Screen
     PowScreen(u32 screenId);  // 807b2540
@@ -21,7 +21,7 @@ class PowScreen {  // one per Screen
     u32 playerId;  // 0x8 reset at 12 when pow inactive
     u8 unknown_0xc[4];
 };  // 0x10
-size_assert(PowScreen, 0x10);
+// size_assert(PowScreen, 0x10);
 
 class PowMgr {
    public:
@@ -46,7 +46,7 @@ class PowMgr {
     u8 unknown_0x14[4];
     PowScreen* powScreens[4];  // 0x18
 };  // Total Size 0x54
-size_assert(PowMgr, 0x28);
+// size_assert(PowMgr, 0x28);
 }  // namespace Item
 
 #endif

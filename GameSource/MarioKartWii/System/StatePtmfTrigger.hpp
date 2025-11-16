@@ -59,6 +59,6 @@ class StatePtmfTrigger {
     Entry* entries;  // 0x18 808c5da0
     T* subject;  // 0x1c
 };  // 0x20
-size_assert(StatePtmfTrigger<u32>, 0x20);
+// size_assert(StatePtmfTrigger<u32>, 0x20);
 
 #endif

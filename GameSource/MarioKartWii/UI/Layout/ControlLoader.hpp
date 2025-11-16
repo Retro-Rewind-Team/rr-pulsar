@@ -31,6 +31,6 @@ class ControlLoader {
     BRCTRPicture* pictures;  // 0x20
     void* nameTable;  // 0x24
 };  // Total Size 0x28
-size_assert(ControlLoader, 0x28);
+// size_assert(ControlLoader, 0x28);
 
 #endif

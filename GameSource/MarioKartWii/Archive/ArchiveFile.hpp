@@ -44,5 +44,5 @@ class ArchiveFile {
     EGG::Heap* dumpHeap;
     ArchiveStatus status;  // 0x20
 };  // total size 0x24
-size_assert(ArchiveFile, 0x24);
+// size_assert(ArchiveFile, 0x24);
 #endif

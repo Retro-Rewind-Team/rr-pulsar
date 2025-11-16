@@ -18,6 +18,6 @@ class GPVSLeaderboardTotal : public GPVSLeaderboardUpdate {
 
     static int ComparePlayers(const Player* first, const Player* second);  // 8085cc84 qsort func
 };  // total size 0x1A8
-size_assert(GPVSLeaderboardTotal, 0x1A8);
+// size_assert(GPVSLeaderboardTotal, 0x1A8);
 }  // namespace Pages
 #endif

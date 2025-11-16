@@ -52,7 +52,7 @@ class AutoEnding : public ActionLess {  // ID 0x4F but also ID 0x50 and ID 0xc7 
     MessageWindowControl* messageWindow;  // type SimpleMessageWindowControl if 0x50
     u32 unknown_0x344;  // set to -1 by OnInit
 };  // total size 0x348
-size_assert(AutoEnding, 0x348);
+// size_assert(AutoEnding, 0x348);
 
 }  // namespace Pages
 

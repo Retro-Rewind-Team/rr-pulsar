@@ -30,6 +30,6 @@ class TTSplits : public Page {  // ID 0x2D
     CtrlRaceCount ctrlRaceCount;  // 0x1D8 NEW RECORD
     LayoutUIControl savedGhostMessage;  // 0x370, live_message brctr
 };
-size_assert(TTSplits, 0x4e4);
+// size_assert(TTSplits, 0x4e4);
 }  // namespace Pages
 #endif

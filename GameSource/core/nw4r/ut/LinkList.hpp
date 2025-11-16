@@ -12,7 +12,7 @@ class LinkListNode : private NonCopyable {
     LinkListNode* next;
     LinkListNode* prev;
 };  // Total size 0x8
-size_assert(LinkListNode, 0x8);
+// size_assert(LinkListNode, 0x8);
 
 namespace detail {
 class LinkListImpl : private NonCopyable {

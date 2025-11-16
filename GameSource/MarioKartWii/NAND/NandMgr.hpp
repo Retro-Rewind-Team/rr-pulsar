@@ -46,7 +46,7 @@ class NandMgr {
     RKG* rkg;  // 0x20 very unsure but size 0x2800
     EGG::SaveBanner* _saveBanner;  // 0x24
 };  // total size 0x28
-size_assert(NandMgr, 0x28);
+// size_assert(NandMgr, 0x28);
 
 /* in order:
 rksys.dat

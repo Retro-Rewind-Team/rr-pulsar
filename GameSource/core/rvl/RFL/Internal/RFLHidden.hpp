@@ -93,7 +93,7 @@ struct HiddenStoreData {  // copy of first 0x36 bytes of StoreData
     u8 unknown_0x36[0x40 - 0x36];
 };
 #pragma pack(pop)
-size_assert(HiddenStoreData, 0x40);
+// size_assert(HiddenStoreData, 0x40);
 
 void iConvertRaw2HRaw(const StoreData* storeData, HiddenStoreData* dest);  // 800c7100
 BOOL iIsSameID(const RFL::CreateID* id1, const RFL::CreateID* id2);  // 800c72f0

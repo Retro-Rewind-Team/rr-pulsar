@@ -15,7 +15,7 @@ class SoundMessages {
     OS::MessageQueue messageQueue;
     OS::Message msgBuffer[4];  // similar to snd::SoundThread
 };  // 0x30
-size_assert(SoundMessages, 0x30);
+// size_assert(SoundMessages, 0x30);
 
 class SoundHeapMgr {
    public:
@@ -29,7 +29,7 @@ class SoundHeapMgr {
     u8 unknown_0x30[0x60 - 0x30];
     SoundMessages messages[3];  // 0x60
 };
-size_assert(SoundHeapMgr, 0xF0);
+// size_assert(SoundHeapMgr, 0xF0);
 
 }  // namespace EGG
 

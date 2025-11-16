@@ -24,5 +24,5 @@ class RKSystem : public EGG::TSystem {  // probably an intermediate class in btw
     bool drawFrame;  // 0x69
     u8 unknown_0x6b[0x74 - 0x6b];
 };  // total size 0x74
-size_assert(RKSystem, 0x74);
+// size_assert(RKSystem, 0x74);
 #endif

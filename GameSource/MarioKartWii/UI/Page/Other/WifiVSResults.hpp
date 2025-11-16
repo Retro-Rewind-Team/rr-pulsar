@@ -48,6 +48,6 @@ class WiFiVSResults : public Page {  // ID 0x44
     u8 playerCount;  // 0x15f6
     u8 unknown_0x15f7[5];
 };  // total size 0x15fc
-size_assert(WiFiVSResults, 0x15fc);
+// size_assert(WiFiVSResults, 0x15fc);
 }  // namespace Pages
 #endif

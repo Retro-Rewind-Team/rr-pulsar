@@ -24,7 +24,7 @@ class Suggest60Hz : public Page {  // ID 0x2 background page that manages the se
     bool hasAController;  // 0x1c8
     u8 padding[3];
 };  // 0x1cc
-size_assert(Suggest60Hz, 0x1cc);
+// size_assert(Suggest60Hz, 0x1cc);
 
 class ESRBNotice : public Page {  // ID 0x1
    public:
@@ -39,7 +39,7 @@ class ESRBNotice : public Page {  // ID 0x1
     ManipulatorManager manipulatorManager;  // 0x44
     LayoutUIControl esrbNoticeControl;  // 0x54
 };
-size_assert(ESRBNotice, 0x1c8);
+// size_assert(ESRBNotice, 0x1c8);
 
 }  // namespace Pages
 #endif

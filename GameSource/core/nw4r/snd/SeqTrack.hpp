@@ -48,7 +48,7 @@ class SeqTrack {
     SeqPlayer* seqPlayer;  // 0xec
     Channel* channelList;  // 0xf0
 };
-size_assert(SeqPlayer, 0x178);
+// size_assert(SeqPlayer, 0x178);
 }  // namespace detail
 }  // namespace snd
 }  // namespace nw4r

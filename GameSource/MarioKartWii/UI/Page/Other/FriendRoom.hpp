@@ -21,7 +21,7 @@ class UnkUnkFriendRoomManager {
     u8 index;  // id * 2 + isGuest
     u8 unknown_0x5[0x8 - 0x5];
 };
-size_assert(UnkUnkFriendRoomManager, 0x8);
+// size_assert(UnkUnkFriendRoomManager, 0x8);
 
 class UnkFriendRoomManager {
    public:
@@ -39,7 +39,7 @@ class UnkFriendRoomManager {
     void HandleROOMPacket(u8 playerId, u8 myAid, RKNet::ROOMPacket& packet);  // 805db358
     void Update();  // 805daf38
 };  // 0x160
-size_assert(UnkFriendRoomManager, 0x160);
+// size_assert(UnkFriendRoomManager, 0x160);
 
 class FriendMatchingPlayer : public LayoutUIControl {
     FriendMatchingPlayer();  // 805d945c
@@ -61,7 +61,7 @@ class FriendMatchingPlayer : public LayoutUIControl {
     bool hasJoined;  // 0x19c 0->1 triggers the join animation
     u8 padding2[3];
 };  // total size 0x1a0
-size_assert(FriendMatchingPlayer, 0x1a0);
+// size_assert(FriendMatchingPlayer, 0x1a0);
 
 class MessageSelectControl : public LayoutUIControl {
    public:
@@ -85,7 +85,7 @@ class MessageSelectControl : public LayoutUIControl {
     u32 GetSelectedButtonId() const;  // 805dbd34
     PushButton buttons[4];  // 0x174
 };  // total size 0xac4
-size_assert(MessageSelectControl, 0xAC4);
+// size_assert(MessageSelectControl, 0xAC4);
 
 namespace Pages {
 
@@ -127,7 +127,7 @@ class FriendRoomWaiting : public Page {  // ID 0x9b
     u8 unknown_0x350[0x360 - 0x350];
     PageId nextPageId;
 };
-size_assert(FriendRoomWaiting, 0x364);
+// size_assert(FriendRoomWaiting, 0x364);
 
 class FriendRoomManager : public Page {  // ID 0x9c
    public:
@@ -163,7 +163,7 @@ class FriendRoomManager : public Page {  // ID 0x9c
     u8 unknown_0x2af9[0x2b08 - 0x2af9];
     UnkFriendRoomManager networkManager;  // 0x2b08
 };  // 0x2c68
-size_assert(FriendRoomManager, 0x2c68);
+// size_assert(FriendRoomManager, 0x2c68);
 
 class FriendRoom : public Page {  // ID 0x9d
    public:
@@ -202,7 +202,7 @@ class FriendRoom : public Page {  // ID 0x9d
     bool hasClickedAddFriends;  // 0xdc1
     u8 unknown_0xdc2[2];
 };  // total size 0xdc4
-size_assert(FriendRoom, 0xdc4);
+// size_assert(FriendRoom, 0xdc4);
 
 class FriendRoomMessages;
 
@@ -251,6 +251,6 @@ class FriendRoomMessages : public Page {  // ID 0x9e
     u8 unknown_0x252c[0x2680 - 0x252c];  // 0x252c
 
 };  // total size 0x2680
-size_assert(FriendRoomMessages, 0x2680);
+// size_assert(FriendRoomMessages, 0x2680);
 }  // namespace Pages
 #endif

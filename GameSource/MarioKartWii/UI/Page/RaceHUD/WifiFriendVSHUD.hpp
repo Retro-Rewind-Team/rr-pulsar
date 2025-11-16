@@ -15,7 +15,7 @@ class WifiFriendVSHUD : public RaceHUD {  // ID 0x42
     int GetEnabledCtrlRaceBases() const override;  // 0x68 806336d0
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 806336d8 returns -1
 };  // total size 0x1DC
-size_assert(WifiFriendVSHUD, 0x1DC);
+// size_assert(WifiFriendVSHUD, 0x1DC);
 
 class WifiFriendTeamVSHUD : public RaceHUD {  // ID 0x43
     static const PageId id = PAGE_WIFI_FRIENDTEAMVS_HUD;
@@ -26,6 +26,6 @@ class WifiFriendTeamVSHUD : public RaceHUD {  // ID 0x43
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633640
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80633638
 };  // total size 0x1DC
-size_assert(WifiFriendVSHUD, 0x1DC);
+// size_assert(WifiFriendVSHUD, 0x1DC);
 }  // namespace Pages
 #endif

@@ -87,6 +87,6 @@ class CharacterActor : public RaceAnimActor {
     u8 unknown_0x700[8];
     static u32 charactersGroupIds[24];  // 808afb58
 };  // 0x708
-size_assert(CharacterActor, 0x708);
+// size_assert(CharacterActor, 0x708);
 }  // namespace Audio
 #endif

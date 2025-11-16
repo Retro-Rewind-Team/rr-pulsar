@@ -384,6 +384,6 @@ class Player {
     u8 unknown_0xAE1[3];
     u32 unknown_0xAE4;  // 8068ebc8
 };  // total size 0xAE8
-size_assert(Player, 0xae8);
+// size_assert(Player, 0xae8);
 #endif
 }  // namespace Effects

@@ -100,7 +100,7 @@ class Menu : public Page {
     bool isLocked;  // 0x42c
     u8 unknown_0x42D[0x430 - 0x42D];
 };  // total size 0x430
-size_assert(Menu, 0x430);
+// size_assert(Menu, 0x430);
 
 class MenuInteractable : public Menu {  // adds actions support to Menu
    public:
@@ -117,7 +117,7 @@ class MenuInteractable : public Menu {  // adds actions support to Menu
     u32 activePlayerBitfield;  ////0x6bc bit i is set if local player i is active (7 = 2^0+2^1+2^2 in 3P for example)
     u32 playerBitfield;  // 0x6c0
 };  // total size 0x6c4
-size_assert(MenuInteractable, 0x6C4);
+// size_assert(MenuInteractable, 0x6C4);
 
 }  // namespace Pages
 

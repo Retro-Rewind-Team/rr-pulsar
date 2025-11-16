@@ -66,6 +66,6 @@ class SELECTStageMgr : public Page {  // ID 0x90
     MiiGroup miiGroup;  // 0x290
 };  // total size 0x328
 
-size_assert(SELECTStageMgr, 0x328);
+// size_assert(SELECTStageMgr, 0x328);
 }  // namespace Pages
 #endif

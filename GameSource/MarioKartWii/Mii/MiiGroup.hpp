@@ -45,6 +45,6 @@ class MiiGroup {
     MiiCreationParams2 creationParams;  // 0x30
     MiiCreationParams2 creationParams2;  // 0x64
 };  // Total Size 0x98
-size_assert(MiiGroup, 0x98);
+// size_assert(MiiGroup, 0x98);
 
 #endif

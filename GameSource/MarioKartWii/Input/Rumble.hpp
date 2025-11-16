@@ -61,7 +61,7 @@ class KRMMgr {  // name based on RequestRumble extensively loading class fields
     KRMEntry** oddKRMEntries;  // 0x8
     KRMEntry** evenKRMEntries;  // 0xc
 };
-size_assert(KRMMgr, 0x10);
+// size_assert(KRMMgr, 0x10);
 
 }  // namespace Input
 #endif

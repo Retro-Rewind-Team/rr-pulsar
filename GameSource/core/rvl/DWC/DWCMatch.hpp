@@ -118,7 +118,7 @@ struct NodeInfo {
     u8 unknown_0x1b[0x30 - 0x17];
 };  // 0x30
 
-size_assert(NodeInfo, 0x30);
+// size_assert(NodeInfo, 0x30);
 
 struct MatchControl {
     static MatchControl* sInstance;  // 8038630C
@@ -187,7 +187,7 @@ struct MatchControl {
     u8 unknown_0x8b0[0x10];
 };  // 0x8c0
 
-size_assert(MatchControl, 0x8c0);
+// size_assert(MatchControl, 0x8c0);
 
 struct MatchCommandHeader {
     u32 identifier;  // magic

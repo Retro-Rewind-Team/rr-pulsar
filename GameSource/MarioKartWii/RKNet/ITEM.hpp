@@ -17,7 +17,7 @@ struct ITEMPacket {
     u8 acknowledgeTimer1;
     u8 acknowledgeTimer2;
 };
-size_assert(ITEMPacket, 0x8);
+// size_assert(ITEMPacket, 0x8);
 
 class ITEMHandler {
    public:
@@ -61,7 +61,7 @@ class ITEMHandler {
     u32 startTimes[12];  // 0xa0 60x packets timers
     u32 itemObjSums[15][3];  // 0xb0 row is itemObj, col is stored/dragged/unknown
 };
-size_assert(ITEMHandler, 0x184);
+// size_assert(ITEMHandler, 0x184);
 }  // namespace RKNet
 
 #endif

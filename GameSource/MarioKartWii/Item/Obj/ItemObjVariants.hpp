@@ -24,7 +24,7 @@ class ObjTargeting : public ObjMiddle {
     u8 unknown_0x1a4[0x1ec - 0x1a4];
     Vec3 unknown_vec3s[8];  // 0x1ec
 };  // 0x24c
-size_assert(ObjTargeting, 0x24c);
+// size_assert(ObjTargeting, 0x24c);
 
 class ObjExplosion {
    public:

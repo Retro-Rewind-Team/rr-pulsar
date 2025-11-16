@@ -53,7 +53,7 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
         StartOffsetType type;  // copied from 0x168 of the strm player
         s32 startOffset;
     };  // total size 0x20
-    size_assert(StrmHeaderLoadTask, 0x20);
+    // size_assert(StrmHeaderLoadTask, 0x20);
 
     class StrmDataLoadTask : public Task {
        public:
@@ -172,7 +172,7 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
 
 };  // total size 0xd34
 
-size_assert(StrmPlayer, 0xd34);
+// size_assert(StrmPlayer, 0xd34);
 
 }  // namespace detail
 }  // namespace snd

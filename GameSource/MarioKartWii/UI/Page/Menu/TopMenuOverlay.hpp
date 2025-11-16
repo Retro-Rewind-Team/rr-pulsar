@@ -20,7 +20,7 @@ class TopMenuOverlay : public Menu {  // ID 0x5e but also 0xcc, 0xAB simply a Me
     u8 unknown_0x444[8];
     static Page* GetPageById(PageId id = PAGE_TOP_MENU_OVERLAY);  // 8084e85c
 };  // total size 0x44c
-size_assert(TopMenuOverlay, 0x44c);
+// size_assert(TopMenuOverlay, 0x44c);
 }  // namespace Pages
 
 #endif

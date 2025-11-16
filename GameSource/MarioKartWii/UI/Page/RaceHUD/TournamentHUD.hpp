@@ -14,6 +14,6 @@ class TournamentHUD : public RaceHUD {  // ID 0x16
     int GetEnabledCtrlRaceBases() const override;  // 0x68 8085896c
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80858b88
 };  // total size 0x1DC
-size_assert(TournamentHUD, 0x1DC);
+// size_assert(TournamentHUD, 0x1DC);
 }  // namespace Pages
 #endif

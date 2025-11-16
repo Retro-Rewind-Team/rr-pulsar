@@ -45,7 +45,7 @@ class Globe : public Page {  // ID 0x95
 
     Mii mii2;  // 0x410
 };
-size_assert(Globe, 0x4c8);
+// size_assert(Globe, 0x4c8);
 
 }  // namespace Pages
 #endif

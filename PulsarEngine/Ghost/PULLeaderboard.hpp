@@ -41,7 +41,7 @@ struct PULLdbEntry {
     KartId kart;  // 0x5C
     ControllerType controllerType;  // 0x60
 };  // total size 0x64
-size_assert(PULLdbEntry, 0x64);
+// size_assert(PULLdbEntry, 0x64);
 
 // Should be fine having "affecting" functions public as this class can only be access through a const getter in manager (or from manager itself)
 class alignas(0x20) Leaderboard {

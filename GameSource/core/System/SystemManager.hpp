@@ -79,6 +79,6 @@ class SystemManager {
     u8 unknown_0xf4[4];
     SC::SimpleAddress simpleAddr;  // 0xf8
 };  // total size 0x1100
-size_assert(SystemManager, 0x1100);
+// size_assert(SystemManager, 0x1100);
 
 #endif

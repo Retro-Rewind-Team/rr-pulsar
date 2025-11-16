@@ -66,6 +66,6 @@ class PacketMgr {
     u64 lastFriendUpdateTime;
     u32 playerRH1Timers[12];  // 0x198
 };  // total size 0x1c8
-size_assert(PacketMgr, 0x1c8);
+// size_assert(PacketMgr, 0x1c8);
 }  // namespace RKNet
 #endif

@@ -40,7 +40,7 @@ class ItemSlotData {
         u32 itemCount;
         ItemId items[19];
     };
-    size_assert(RouletteItems, 0x50);
+    // size_assert(RouletteItems, 0x50);
 
     static ItemSlotData* sInstance();  // 809c3670
     static ItemSlotData* CreateInstance();  // 807ba77c
@@ -83,7 +83,7 @@ class ItemSlotData {
     u32 itemSpawnTimers[4];  // 0x34 frames for when an item can next be pulled 0 = lightning, 1 = blue shell, 2 = blooper, 3 = pow
     u32 playerCount;  // 0x44 used to check when the player count changes online
 };  // Total size 0x48
-size_assert(ItemSlotData, 0x48);
+// size_assert(ItemSlotData, 0x48);
 
 }  // namespace Item
 

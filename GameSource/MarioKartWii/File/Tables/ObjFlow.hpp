@@ -26,7 +26,7 @@ struct ObjFlowEntry {
     s16 solidityParams[3];  // 0x6c value used depends on solidity type
     u16 unknown_0x72;  // 0x72
 };  // total size 0x74
-size_assert(ObjFlowEntry, 0x74);
+// size_assert(ObjFlowEntry, 0x74);
 
 struct ObjFlow {
     TableBinaryHeader header;

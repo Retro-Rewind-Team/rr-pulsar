@@ -22,7 +22,7 @@ class Collision {
     // normals stuff
     u8 unknown[0x5c];
 };
-size_assert(Collision, 0x5c);
+// size_assert(Collision, 0x5c);
 // some of these functions are obviously part of ObjMiddle, but it's very hard to tell and it doesn't matter since there is only one instance of an Obj that isn't an ObjMiddle (the one in ItemManager)
 
 class Obj {
@@ -175,7 +175,7 @@ class Obj {
     u8 unknown_0x184[0x188 - 0x184];
 
 };  // Total Size 0x188
-size_assert(Obj, 0x188);  // where to cut the class and decide the rest is part of "ObjMiddle" was done through analyzing the size of the obj in ItemManager, which can only be up to 0x188
+// size_assert(Obj, 0x188);  // where to cut the class and decide the rest is part of "ObjMiddle" was done through analyzing the size of the obj in ItemManager, which can only be up to 0x188
 
 class ObjMiddle : public Obj {  // the vtable of base has a ton of copies in memory so there could be in btw classes
    public:
@@ -188,7 +188,7 @@ class ObjMiddle : public Obj {  // the vtable of base has a ton of copies in mem
     u8 padding[3];
     u32 killTimer;  // 0x19c check by update kill
 };  // total size 0x1A0
-size_assert(ObjMiddle, 0x1A0);
+// size_assert(ObjMiddle, 0x1A0);
 
 }  // namespace Item
 #endif

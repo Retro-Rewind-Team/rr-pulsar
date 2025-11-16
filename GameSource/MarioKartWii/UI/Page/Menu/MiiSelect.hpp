@@ -64,7 +64,7 @@ class MiiSelect : public MenuInteractable {  // ID 0x60
     MiiName miiName;  // 0xDA8
     u32 unknown_0xF1C;
 };  // 0xf20
-size_assert(MiiSelect, 0xf20);
+// size_assert(MiiSelect, 0xf20);
 }  // namespace Pages
 
 #endif

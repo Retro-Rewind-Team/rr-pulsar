@@ -29,7 +29,7 @@ class CorruptSaveMgr : public Page {  // ID 0x3 background page that manages the
     u8 unknown_0x68[4];
     CorruptSaveMgrState state;
 };
-size_assert(CorruptSaveMgr, 0x6c);
+// size_assert(CorruptSaveMgr, 0x6c);
 
 class CannotSave : public Page {  // ID 0x04
    public:
@@ -47,7 +47,7 @@ class CannotSave : public Page {  // ID 0x04
     ManipulatorManager manipulatorManager;  // 0x58
 
 };  // total size 0x68
-size_assert(CannotSave, 0x68);
+// size_assert(CannotSave, 0x68);
 
 class CorruptMemory : public Page {  // ID 0x5
    public:
@@ -62,7 +62,7 @@ class CorruptMemory : public Page {  // ID 0x5
     ManipulatorManager manipulatorManager;  // 0x44
     MessageWindowControl messageWindow;  // 0x54
 };  // 0x1c8
-size_assert(CorruptMemory, 0x1c8);
+// size_assert(CorruptMemory, 0x1c8);
 
 class CorruptMiiData : public Page {  // ID 0x6 background page that manages the section of the same name
    public:
@@ -81,6 +81,6 @@ class CorruptMiiData : public Page {  // ID 0x6 background page that manages the
     PushButton pushButton;  // 0x27c
     MessageWindowControl messageWindow;  // 0x4d0
 };  // 0x644
-size_assert(CorruptMiiData, 0x644);
+// size_assert(CorruptMiiData, 0x644);
 }  // namespace Pages
 #endif

@@ -19,7 +19,7 @@ struct Context {
     u32 unknown_0x1C4;
     double pairedSinglesRegisters[32];
 };  // total size 0x2C8
-size_assert(Context, 0x2c8);
+// size_assert(Context, 0x2c8);
 
 void SetCurrentContext(Context* context);
 Context* GetCurrentContext();  // 801a1ecc

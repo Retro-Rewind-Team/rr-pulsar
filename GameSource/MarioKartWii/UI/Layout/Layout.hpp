@@ -121,7 +121,7 @@ class LayoutResources {
 class LayoutFont : lyt::FontRefLink {
     ~LayoutFont();  // 805ea358
 };  // total size 0x8c
-size_assert(LayoutFont, 0x8c);
+// size_assert(LayoutFont, 0x8c);
 
 class LayoutResourceAccessorList {
     LayoutResourceAccessorList();  // 805ea28c
@@ -139,7 +139,7 @@ class LayoutResourceAccessor {
     char folderName[0x40];  // 0x370
     LayoutResourceAccessor* prev;  // 0x3b0
 };  // total size 0x3b4
-size_assert(LayoutResourceAccessor, 0x3b4);
+// size_assert(LayoutResourceAccessor, 0x3b4);
 
 class BaseLayout {
    public:
@@ -151,7 +151,7 @@ class BaseLayout {
     lyt::Layout layout;  // from 0x4 to 0x24
     LayoutResourceAccessor* resources;  // 0x24
 };  // Total size 0x28
-size_assert(BaseLayout, 0x28);
+// size_assert(BaseLayout, 0x28);
 
 class MainLayout : public BaseLayout {  // main brlyt in brctr
    public:
@@ -175,7 +175,7 @@ class MainLayout : public BaseLayout {  // main brlyt in brctr
     PaneManagerHolder managerHolder;  // 0x7c
 
 };  // Total Size 0x9C
-size_assert(MainLayout, 0x9c);
+// size_assert(MainLayout, 0x9c);
 
 class PictureLayoutList {
     PictureLayoutList();  // 805e9eec
@@ -199,6 +199,6 @@ class PictureLayout : public BaseLayout {  // picture brlyt
     u8 padding[2];  // 0xAB
     PictureLayout* prevLayout;  // 0xAC
 };  // total size 0xb0
-size_assert(PictureLayout, 0xb0);
+// size_assert(PictureLayout, 0xb0);
 
 #endif

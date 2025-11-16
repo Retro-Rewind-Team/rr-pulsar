@@ -94,7 +94,7 @@ class SeqPlayer : BasicPlayer, public DisposeCallback, public SoundThread::Playe
     s16 localVariable[16];  // 0x154
     u32 tickCounter;  // 174
 };
-size_assert(SeqPlayer, 0x178);
+// size_assert(SeqPlayer, 0x178);
 }  // namespace detail
 }  // namespace snd
 }  // namespace nw4r

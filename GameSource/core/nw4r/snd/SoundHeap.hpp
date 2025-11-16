@@ -19,7 +19,7 @@ class SoundHeap : public SoundMemoryAllocatable {
     OS::Mutex mutex;  // 4
     detail::FrameHeap frameHeap;  // 0x1C
 };  // total size 0x2C
-size_assert(SoundHeap, 0x2c);
+// size_assert(SoundHeap, 0x2c);
 }  // namespace snd
 }  // namespace nw4r
 

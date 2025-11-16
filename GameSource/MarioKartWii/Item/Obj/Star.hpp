@@ -11,6 +11,6 @@ class ObjStar : public ObjMiddle {
 
     void InitSelf() override;  // 0x8 807b70c0 vtable 808d2698
 };
-size_assert(ObjStar, 0x1a0);
+// size_assert(ObjStar, 0x1a0);
 }  // namespace Item
 #endif

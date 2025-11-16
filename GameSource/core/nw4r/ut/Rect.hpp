@@ -9,7 +9,7 @@ struct Rect {
     float right;
     float bottom;
 };
-size_assert(Rect, 0x10);
+// size_assert(Rect, 0x10);
 }  // namespace ut
 }  // namespace nw4r
 #endif

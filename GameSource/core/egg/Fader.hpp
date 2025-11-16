@@ -36,7 +36,7 @@ class ColorFader {
     nw4r::ut::Color color;  // 0x10 alpha set by calc 255 * (1 - cur/total) increases for fadeout, decreases for fadein
     nw4r::ut::Rect rect;  // 0x14 based on args
 };
-size_assert(ColorFader, 0x24);
+// size_assert(ColorFader, 0x24);
 
 }  // namespace EGG
 

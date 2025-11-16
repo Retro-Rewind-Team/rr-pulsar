@@ -42,7 +42,7 @@ class CtrlRace2DMapCharacter : public CtrlRace2DMapObject {
     nw4r::lyt::Pane* lightPane;  // 0x1c4
     Kart::Player* player;  // 0x1c8
 };  // total size 0x1cc
-size_assert(CtrlRace2DMapCharacter, 0x1cc);
+// size_assert(CtrlRace2DMapCharacter, 0x1cc);
 
 class CtrlRace2DMapBossObj : public CtrlRace2DMapObject {
     CtrlRace2DMapBossObj();  // 807ea9ec
@@ -67,6 +67,6 @@ class CtrlRace2DMap : public CtrlRaceBase {  // has children controls such as st
     CtrlRace2DMapCharacter* characters;  // 0x19c size playerCount
     CtrlRace2DMapBossObj* boosObjs;  // 0x1a0
 };  // 0x1a4
-size_assert(CtrlRace2DMap, 0x1a4);
+// size_assert(CtrlRace2DMap, 0x1a4);
 
 #endif

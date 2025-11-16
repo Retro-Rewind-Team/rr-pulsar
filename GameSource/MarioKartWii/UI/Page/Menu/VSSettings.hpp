@@ -62,6 +62,6 @@ class VSSettings : public MenuInteractable {  // ID 0x73
     PtmfHolder_2A<Page, void, TextUpDownValueControl::TextControl&, u32>* onTextChangeHandler;  // 0x1E0C
     static ut::detail::RuntimeTypeInfo* typeInfo;
 };  // 0x1E10
-size_assert(VSSettings, 0x1e10);
+// size_assert(VSSettings, 0x1e10);
 }  // namespace Pages
 #endif

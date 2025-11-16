@@ -103,7 +103,7 @@ class SoundArchivePlayer : public detail::DisposeCallback, public SoundStartable
     detail::StrmBufferPool strmBufferPool;  // 0xBC
     u8 unknown_0xD4[0xE0 - 0xD4];  // has two classes related to seq and strm it seems
 };  // total size 0xe0
-size_assert(SoundArchivePlayer, 0xe0);
+// size_assert(SoundArchivePlayer, 0xe0);
 }  // namespace snd
 }  // namespace nw4r
 

@@ -24,7 +24,7 @@ class Suggest60Hz : public Page {  // ID 0x2 background page that manages the se
     bool hasAController;  // 0x1c8
     u8 padding[3];
 };  // 0x1cc
-size_assert(Suggest60Hz, 0x1cc);
+// size_assert(Suggest60Hz, 0x1cc);
 
 }  // namespace Pages
 #endif

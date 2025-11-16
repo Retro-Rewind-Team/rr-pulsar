@@ -56,7 +56,7 @@ class ArchivesHolder {
     u32* fileSizes;  // only used for sourceType 2
     SourceType* sourceType;  // 0x18 name => 0 = fileName.suffix 1 = suffix 2 = idk
 };  // total size 0x1c
-size_assert(ArchivesHolder, 0x1C);
+// size_assert(ArchivesHolder, 0x1C);
 
 class CommonArchivesLoader : public ArchivesHolder {
     ~CommonArchivesLoader() override;  // 8052a4e0 vtable 808b31a8

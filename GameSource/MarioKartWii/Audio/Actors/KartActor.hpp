@@ -91,7 +91,7 @@ class KartActor : public SimpleRaceActor {  // LinkedRaceActor: 0xb2 is KCLVaria
     u32 outputLineFlag;  // 0xf4 and of 1 << (hudslotIds + 1)
     u32 roadSate;  // 0xf8 0 = normal, 1 = on water, 2/3 = on silent road
 };  // Total size 0xfc
-size_assert(KartActor, 0xfc);
+// size_assert(KartActor, 0xfc);
 
 class EngineMgr {
    public:

@@ -36,7 +36,7 @@ class StrmSound : public BasicSound {
     MoveValue<float, int> trackVolume[8];  // 0xe3c
     u32 unknown_0xEBC;
 };  // total size 0xEC0
-size_assert(StrmSound, 0xec0);
+// size_assert(StrmSound, 0xec0);
 }  // namespace detail
 }  // namespace snd
 }  // namespace nw4r

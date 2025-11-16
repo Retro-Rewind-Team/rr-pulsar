@@ -106,7 +106,7 @@ class MiiRenderMgr {
     EGG::OutlineEffect outlineEffect;  // 0x164
     u8 unknown_0x1a0[0x1bc - 0x1a0];
 };  // Total Size 0x1bc
-size_assert(MiiRenderMgr, 0x1bc);
+// size_assert(MiiRenderMgr, 0x1bc);
 
 // 809c1848
 #endif

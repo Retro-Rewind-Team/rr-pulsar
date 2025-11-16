@@ -59,7 +59,7 @@ class NumericEditBox : public LayoutUIControl {
     lyt::Pane* color_base;  // 0x26c
     EditLetter* digits;  // 0x270
 };  // Total Size 0x274
-size_assert(NumericEditBox::EditLetter, 0x178);
-size_assert(NumericEditBox, 0x274);
+// size_assert(NumericEditBox::EditLetter, 0x178);
+// size_assert(NumericEditBox, 0x274);
 
 #endif

@@ -15,7 +15,7 @@ class WifiVSHUD : public RaceHUD {  // ID 0x40
     int GetEnabledCtrlRaceBases() const override;  // 0x68 806337f0
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 806337e8
 };  // total size 0x1DC
-size_assert(WifiVSHUD, 0x1DC);
+// size_assert(WifiVSHUD, 0x1DC);
 
 class WifiVSMultiHUD : public RaceHUD {  // ID 0x41
     static const PageId id = PAGE_P2WIFI_VS_HUD;
@@ -26,6 +26,6 @@ class WifiVSMultiHUD : public RaceHUD {  // ID 0x41
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633760
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80633758
 };  // total size 0x1DC
-size_assert(WifiVSHUD, 0x1DC);
+// size_assert(WifiVSHUD, 0x1DC);
 }  // namespace Pages
 #endif

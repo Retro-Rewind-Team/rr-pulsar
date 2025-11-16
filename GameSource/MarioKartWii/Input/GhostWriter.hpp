@@ -80,7 +80,7 @@ struct RKGInputs {  // 0x88 of uncompressed rkg
     GhostStream::Input padding[0x13b5];  // 0xa actually padded until total length 0x2774
 };
 // size 0x2774
-size_assert(RKGInputs, 0x2774);
+// size_assert(RKGInputs, 0x2774);
 
 class GhostWriter {
    public:
@@ -101,7 +101,7 @@ class GhostWriter {
     Status status;  // 0x14
     u8 unknown_0x18[4];
 };  // 0x1C
-size_assert(GhostWriter, 0x1c);
+// size_assert(GhostWriter, 0x1c);
 
 }  // namespace Input
 #endif

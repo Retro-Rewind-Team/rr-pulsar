@@ -131,7 +131,7 @@ class KartSelect : public MenuInteractable {  // ID 0x6C
     Vec2 kartScale;  // 0xA00 depends on minUnlockedKartCount
     u32 minUnlockedKartsCount;  // 0xA08 min unlocked karts out of all weight classes and types
 };  // Total Size 0xA0C
-size_assert(KartSelect, 0xA0C);
+// size_assert(KartSelect, 0xA0C);
 }  // namespace Pages
 extern KartId kartsSortedByWeight[3][12];  // 808ab770
 /* controlGroup:

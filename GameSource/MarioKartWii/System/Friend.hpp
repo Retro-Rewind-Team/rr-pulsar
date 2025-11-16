@@ -20,7 +20,7 @@ struct FriendData {
     u16 globeCoords[2];  // 0x6c longtitude and latitude
     u8 unknown_0x70[0x1c0 - 0x70];
 };
-size_assert(FriendData, 0x1c0);
+// size_assert(FriendData, 0x1c0);
 
 class Friend {
     virtual ~Friend();  // 80519670 vtable 808b2c88

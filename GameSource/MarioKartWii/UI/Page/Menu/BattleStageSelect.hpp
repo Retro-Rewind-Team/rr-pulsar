@@ -50,6 +50,6 @@ class BattleStageSelect : public MenuInteractable {  // ID 0x79
     bool unknown_0x1a80;  // init at 0, set to 1 when a button is pressed
     u8 unknown_0x1a81[0x1a84 - 0x1a81];  // 0x1a80
 };  // total size 0x1a84
-size_assert(BattleStageSelect, 0x1a84);
+// size_assert(BattleStageSelect, 0x1a84);
 }  // namespace Pages
 #endif

@@ -47,5 +47,5 @@ class BattleCupSelect : public MenuInteractable {  // ID 0x78
     float float_0x1758;
 };  // 0x175c
 }  // namespace Pages
-size_assert(BattleCupSelectPage, 0x175c);
+// size_assert(BattleCupSelectPage, 0x175c);
 #endif

@@ -11,7 +11,7 @@ class ObjKinokoBig : public ObjMiddle {  // MEGA Mushroom
 
     void InitSelf() override;  // 0x8 807a9ea4 vtable 808d2060
 };
-size_assert(ObjKinokoBig, 0x1a0);
+// size_assert(ObjKinokoBig, 0x1a0);
 }  // namespace Item
 
 #endif

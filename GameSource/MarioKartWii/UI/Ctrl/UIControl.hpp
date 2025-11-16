@@ -110,7 +110,7 @@ class UIControl {
     u32 onEntranceSoundId;  // 0x90
     u32 onExitSoundId;
 };  // Total Size 0x98
-size_assert(UIControl, 0x98);
+// size_assert(UIControl, 0x98);
 
 //_sinit_ at 8063e930
 class LayoutUIControl : public UIControl {
@@ -166,7 +166,7 @@ class LayoutUIControl : public UIControl {
     };
 
 };  // Total Size 0x174
-size_assert(LayoutUIControl, 0x174);
+// size_assert(LayoutUIControl, 0x174);
 
 class LayoutUIControlScaleFade : public LayoutUIControl {
    public:

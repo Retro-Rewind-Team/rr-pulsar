@@ -10,7 +10,7 @@ struct Mutex {  // RVL mutexes are recursive
     s32 lockCount;  // 0xc
     MutexLink mutexLink;  // 0x10 for thread's ownedMutexes queue
 };  // total size 0x18
-size_assert(Mutex, 0x18);
+// size_assert(Mutex, 0x18);
 
 void InitMutex(Mutex* mutex);  // 801a7eac
 

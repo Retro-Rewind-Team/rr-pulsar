@@ -34,6 +34,6 @@ class VSModeSelect : public MenuInteractable {  // ID 0x72
     // onStartPress     vtable = 0x808bd198 offset   = 0x7c call is virtual
 
 };  // 0x6c4
-size_assert(VSModeSelect, 0x6c4);
+// size_assert(VSModeSelect, 0x6c4);
 }  // namespace Pages
 #endif

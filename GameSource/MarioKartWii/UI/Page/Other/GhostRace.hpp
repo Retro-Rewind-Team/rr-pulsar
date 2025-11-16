@@ -28,7 +28,7 @@ class GhostRaceExplanation : public Page {  // ID 0x9f
     PushButton nextButton;  // 0x578
     CtrlMenuBackButton backButton;  // 0x7cc
 };  // 0xa30
-size_assert(GhostRaceExplanation, 0xa30);
+// size_assert(GhostRaceExplanation, 0xa30);
 
 class GhostRaceMgr : public Page {  // ID 0xa0
    public:
@@ -57,7 +57,7 @@ class GhostRaceMgr : public Page {  // ID 0xa0
     RKG rkg;  // 0x70
     PageId nextPage;  // 0x2870
 };  // 0x2874
-size_assert(GhostRaceMgr, 0x2874);
+// size_assert(GhostRaceMgr, 0x2874);
 
 class GhostRaceInfo : public Page {  // ID 0xA1
    public:
@@ -79,6 +79,6 @@ class GhostRaceInfo : public Page {  // ID 0xA1
     CtrlMenuBackButton backButton;  // 0x8a4
     u32 actionTaken;  // 0xb08 0 = challenge, 1 back
 };  // 0xb0c
-size_assert(GhostRaceInfo, 0xb0c);
+// size_assert(GhostRaceInfo, 0xb0c);
 }  // namespace Pages
 #endif

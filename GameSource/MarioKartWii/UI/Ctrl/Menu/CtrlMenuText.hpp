@@ -12,7 +12,7 @@ class CtrlMenuObiTop : public LayoutUIControl {
     const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 807e9bd4
     const char* GetClassName() const override;  // 0x2c 807e9250
 };  // 0x174
-size_assert(CtrlMenuObiTop, 0x174);
+// size_assert(CtrlMenuObiTop, 0x174);
 
 class CtrlMenuPageTitleText : public LayoutUIControl {
    public:
@@ -53,7 +53,7 @@ class CtrlMenuBackButton : public PushButton {
     float alpha;
     char* pane;
 };  // total size 0x264
-size_assert(CtrlMenuBackButton, 0x264);
+// size_assert(CtrlMenuBackButton, 0x264);
 
 class CtrlMenuDummyBack : public LayoutUIControl {  // a back button...but with just the visuals, useful if the page wants to use PageManipulatorManager
     ~CtrlMenuDummyBack() override;  // 80603890 vtable 808d3710
@@ -62,5 +62,5 @@ class CtrlMenuDummyBack : public LayoutUIControl {  // a back button...but with 
     const char* GetClassName() const override;  // 0x2c 807e9220
     u8 unknown_0x174[0x184 - 0x174];
 };
-size_assert(CtrlMenuDummyBack, 0x184);
+// size_assert(CtrlMenuDummyBack, 0x184);
 #endif

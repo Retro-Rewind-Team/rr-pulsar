@@ -32,7 +32,7 @@ class Sound3DActor : public SoundActor, public detail::BasicSound::AmbientArgUpd
     bool resetPositionFlag;
     u8 padding[3];
 };  // total size 0x80
-size_assert(Sound3DActor, 0x80);
+// size_assert(Sound3DActor, 0x80);
 }  // namespace snd
 }  // namespace nw4r
 

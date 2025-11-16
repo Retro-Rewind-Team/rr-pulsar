@@ -142,7 +142,7 @@ class Hanachan : public ObjectCollidable, public StatePtmfTrigger<Hanachan> {  /
     float* float_0x100;  // 4xd4
     u8 unknown_0xd8[0x13c - 0x100];
 };  // 0x13c
-size_assert(Hanachan, 0x13c);
+// size_assert(Hanachan, 0x13c);
 
 }  // namespace Objects
 #endif

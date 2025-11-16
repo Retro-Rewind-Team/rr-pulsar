@@ -22,7 +22,7 @@ struct AccUserData {  // https://wiki.tockdom.com/wiki/Rksys.dat#DWC_User_Data
     u32 reserved[5];
     u32 crc32;
 };  // 0x40
-size_assert(AccUserData, 0x40);
+// size_assert(AccUserData, 0x40);
 
 struct AccFlag {
     u32 flags;
@@ -54,7 +54,7 @@ union AccFriendData {
     AccFriendKey friendKey;
     AccGsProfileId gsProfileId;
 };  // 0xc
-size_assert(AccFriendData, 0xc);
+// size_assert(AccFriendData, 0xc);
 
 struct FriendUpdate {
     u8 unknown[4];

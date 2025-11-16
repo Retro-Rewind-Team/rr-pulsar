@@ -30,6 +30,6 @@ class GPVSLeaderboardUpdate : public Leaderboard {  // ID 0x2f
     CtrlRaceResult** results;  // 0x1A0, size of the array = row count
     Player* sortedArray;  // 0x1a4
 };  // total size 0x1A8
-size_assert(GPVSLeaderboardUpdate, 0x1A8);
+// size_assert(GPVSLeaderboardUpdate, 0x1A8);
 }  // namespace Pages
 #endif

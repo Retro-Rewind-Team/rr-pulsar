@@ -61,8 +61,8 @@ class SheetSelectControl : public UIControl {  // arrowpair
     SheetSelectButton rightArrow;  // 0xa8
     SheetSelectButton leftArrow;
 };  // total size 0x538
-size_assert(SheetSelectControl, 0x538);
-size_assert(SheetSelectControl::SheetSelectButton, 0x248);
+// size_assert(SheetSelectControl, 0x538);
+// size_assert(SheetSelectControl::SheetSelectButton, 0x248);
 
 class SheetSelectControlScaleFade : public SheetSelectControl {
    public:

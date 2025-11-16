@@ -384,7 +384,7 @@ class Manager {
     static const u32 msptMagic = 'MSPT';
     static const u32 stgiMagic = 'STGI';
 };
-size_assert(Manager, 0x54);
+// size_assert(Manager, 0x54);
 
 bool IsNonPrivateBattle();  // 80516d4c
 

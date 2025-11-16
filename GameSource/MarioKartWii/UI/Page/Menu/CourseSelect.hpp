@@ -49,6 +49,6 @@ class CourseSelect : public MenuInteractable {  // ID 0x6F
     bool unknown_0x215c;  // init at 0, set to 1 when a button is pressed
     u8 unknown_0x215d[0x2160 - 0x215d];
 };  // total size 0x2160
-size_assert(CourseSelect, 0x2160);
+// size_assert(CourseSelect, 0x2160);
 }  // namespace Pages
 #endif

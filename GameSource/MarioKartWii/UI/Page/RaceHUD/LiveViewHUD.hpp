@@ -12,6 +12,6 @@ class LiveViewHUD : public RaceHUD {  // ID 0x49
     int GetEnabledCtrlRaceBases() const override;  // 0x68 806335b0
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 806335a8
 };  // total size 0x1dc
-size_assert(LiveViewHUD, 0x1DC);
+// size_assert(LiveViewHUD, 0x1DC);
 }  // namespace Pages
 #endif

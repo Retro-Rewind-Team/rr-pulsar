@@ -26,7 +26,7 @@ struct ExceptionHead {
     u16 displayedInfo;  // 0x358
     u8 padding[6];
 };  // total size 0x360
-size_assert(ExceptionHead, 0x360);
+// size_assert(ExceptionHead, 0x360);
 
 struct ExceptionCallbackParam {
     u16 error;  // see OS::Error

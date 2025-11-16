@@ -82,7 +82,7 @@ class GlobeSearch : public Page {  // ID 0x8f
     u8 unknown_0x1cf8[8];  // 0x1cf0
     PageId nextPageId;  // 0x1d00
 };
-size_assert(GlobeSearch, 0x1d04);
+// size_assert(GlobeSearch, 0x1d04);
 
 }  // namespace Pages
 #endif

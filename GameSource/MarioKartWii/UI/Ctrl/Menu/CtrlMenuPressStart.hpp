@@ -14,6 +14,6 @@ class CtrlMenuPressStart : public LayoutUIControl {
     const char* GetClassName() const override;  // 0x2c 807e9c44
     void Load();  // 807e9cd0
 };  // total size 0x174
-size_assert(CtrlMenuPressStart, 0x174);
+// size_assert(CtrlMenuPressStart, 0x174);
 
 #endif

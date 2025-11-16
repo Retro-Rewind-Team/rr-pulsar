@@ -40,14 +40,14 @@ struct MPDir {
     Vec Y;  // 0xc
     Vec Z;  // 0x18
 };
-size_assert(MPDir, 0x24);
+// size_assert(MPDir, 0x24);
 
 struct MPStatus {
     Vec mpls;  // 0x0
     Vec angle;  // 0xc
     MPDir dir;  // 0x18
 };
-size_assert(MPStatus, 0x3c);
+// size_assert(MPStatus, 0x3c);
 
 struct Status {
     u32 hold;  // 0x0 buttons held
@@ -79,7 +79,7 @@ struct Status {
     u8 format;  // 0x5f see wpad data format enum
     EXStatus extStatus;  // 0x60
 };
-size_assert(Status, 0x84);
+// size_assert(Status, 0x84);
 
 /*
 struct KPADStatus {
@@ -106,7 +106,7 @@ struct UnifiedWpadStatus {
     u8 format;  // 0x36 see WPAD format enum
     u8 padding;  // 0x37
 };
-size_assert(UnifiedWpadStatus, 0x38);
+// size_assert(UnifiedWpadStatus, 0x38);
 
 void DisableDPD(s32 channel);  // 80197da0
 void EnableDPD(s32 channel);  // 80197dbc

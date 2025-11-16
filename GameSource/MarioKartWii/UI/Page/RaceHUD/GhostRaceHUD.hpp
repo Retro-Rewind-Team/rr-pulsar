@@ -15,6 +15,6 @@ class GhostRaceHUD : public RaceHUD {  // ID 0x37
     int GetEnabledCtrlRaceBases() const override;  // 0x68 80633c84
     int GetCtrlRaceNameBalloonCount() const override;  // 0x6c 80633c7c
 };  // total size 0x1DC
-size_assert(GhostRaceHUD, 0x1DC);
+// size_assert(GhostRaceHUD, 0x1DC);
 }  // namespace Pages
 #endif

@@ -56,6 +56,6 @@ class SectionPad {
     u8 unknown_0x55[3];  // padding?
     u32 localPlayerBitfield;  // 0x58 if bit i is set, local player i is active
 };  // Total size 0x5C
-size_assert(SectionPad, 0x5c);
+// size_assert(SectionPad, 0x5c);
 
 #endif

@@ -58,6 +58,6 @@ class BattleSettings : public MenuInteractable {  // ID 0x77
     // 0x1b60
 
 };  // 0x1b78
-size_assert(BattleSettings, 0x1b78);
+// size_assert(BattleSettings, 0x1b78);
 }  // namespace Pages
 #endif

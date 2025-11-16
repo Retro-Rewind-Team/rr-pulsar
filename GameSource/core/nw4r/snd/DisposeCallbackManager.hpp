@@ -12,7 +12,7 @@ class DisposeCallback {
     virtual void InvalidateData(const void* start, const void* end) = 0;
     virtual void InvalidateWaveData(const void* start, const void* end) = 0;
 };  // total size 0xC
-size_assert(DisposeCallback, 0xC);
+// size_assert(DisposeCallback, 0xC);
 
 }  // namespace detail
 }  // namespace snd

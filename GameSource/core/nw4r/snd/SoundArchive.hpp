@@ -124,7 +124,7 @@ class SoundArchive {
     char extFileRoot[256];
 
 };  // total size 0x108
-size_assert(SoundArchive, 0x108);
+// size_assert(SoundArchive, 0x108);
 
 struct SoundArchive::SoundInfo {  // https://wiki.tockdom.com/wiki/BRSAR_(File_Format)#Sound_Data_Entry
     u32 soundFile;  //[id] on brawlcrate

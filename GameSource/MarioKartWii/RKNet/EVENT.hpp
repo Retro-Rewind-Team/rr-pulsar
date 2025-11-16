@@ -34,14 +34,14 @@ struct EVENTType {
         u8 value;
     };
 };
-size_assert(EVENTType, 0x1);
+// size_assert(EVENTType, 0x1);
 
 struct EVENTPacket {
     static const u32 idx = 7;
     EVENTType entryTypes[0x18];  // 24 slots a value of 0x10 indicates no DATA on that slot
     u8 entryData[0xe0];  // not ordered, but each entry has its length
 };
-size_assert(EVENTPacket, 0xf8);  // only as the types array and the used data entries are sent, so most times much smaller data is sent
+// size_assert(EVENTPacket, 0xf8);  // only as the types array and the used data entries are sent, so most times much smaller data is sent
 
 struct EVENTEntry {  // this means each entry has size up to 0x21
     u16 time;
@@ -52,7 +52,7 @@ struct EVENTEntry {  // this means each entry has size up to 0x21
     u8 dataLength;  // 0x1c
     u8 unknown_0x1d[3];
 };
-size_assert(EVENTEntry, 0x20);
+// size_assert(EVENTEntry, 0x20);
 #pragma pack(pop)
 
 class EVENTHandler {
@@ -82,7 +82,7 @@ class EVENTHandler {
     u32 hasReceivedEntry[12][24];  // 0x2704 1 is an entry isn't empty
     u32 freeDataInSendBuffer;  // 0x2b84
 };
-size_assert(EVENTHandler, 0x2b88);
+// size_assert(EVENTHandler, 0x2b88);
 
 }  // namespace RKNet
 

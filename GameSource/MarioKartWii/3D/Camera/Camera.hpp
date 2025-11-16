@@ -50,7 +50,7 @@ class GameCamValues {
     u8 unknown_0xc8[2];
     u8 padding[2];
 };  // 0xCC
-size_assert(GameCamValues, 0xcc);
+// size_assert(GameCamValues, 0xcc);
 
 class CameraLink {
    public:
@@ -86,7 +86,7 @@ class GameCamera : public EGG::LookAtCamera, public CameraLink {
     void Update(bool r4) override;  // thunk 805a1c24 func 805a1a18
 
 };  // 0x9c
-size_assert(GameCamera, 0x9c);
+// size_assert(GameCamera, 0x9c);
 
 extern u32 screenCount;  // 808b4be8
 

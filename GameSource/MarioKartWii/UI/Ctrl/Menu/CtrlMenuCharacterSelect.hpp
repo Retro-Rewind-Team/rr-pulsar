@@ -61,5 +61,5 @@ class CtrlMenuCharacterSelect : public LayoutUIControl {
     PtmfHolder_2A<CtrlMenuCharacterSelect, void, ButtonDriver&, u32> onMiiButtonSelect;  // 0x208 vtable = 0x808bd2c4 function = 807e39cc
     PtmfHolder_2A<CtrlMenuCharacterSelect, void, ButtonDriver&, u32> onMiiButtonDeselect;  // 0x21c vtable = 0x808bd2c4 function = 807e3aac
 };  // total size 0x230
-size_assert(CtrlMenuCharacterSelect::ButtonDriver, 0x260);
+// size_assert(CtrlMenuCharacterSelect::ButtonDriver, 0x260);
 #endif

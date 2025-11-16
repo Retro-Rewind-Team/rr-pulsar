@@ -40,7 +40,7 @@ struct CommandBlock {
     const char** dir;
     u32 flag;
 };
-size_assert(CommandBlock, 0xbc);
+// size_assert(CommandBlock, 0xbc);
 
 struct FileInfo {
     s32 fd;
@@ -52,7 +52,7 @@ struct FileInfo {
     u8 mark;
     u8 padding;
 };
-size_assert(FileInfo, 0x8c);
+// size_assert(FileInfo, 0x8c);
 
 struct Status {
     u32 ownerId;

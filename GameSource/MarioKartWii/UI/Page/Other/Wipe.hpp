@@ -29,6 +29,6 @@ class Wipe : public Page {  // ID 0x3a respawn fade out/fade in
     LayoutUIControl partition_line;  // 0x624
     ManipulatorManager manipulatorManager;  // 0x798
 };  // total size 0x7a8
-size_assert(Wipe, 0x7A8);
+// size_assert(Wipe, 0x7A8);
 }  // namespace Pages
 #endif

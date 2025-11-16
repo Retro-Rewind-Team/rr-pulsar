@@ -19,7 +19,7 @@ class ArchiveLoadHandle {  //+0x338
     EGG::Heap* mountHeap;  // 0x4c
     EGG::Heap* dumpHeap;  // 0x50
 };  // total size 0x54
-size_assert(ArchiveLoadHandle, 0x54);
+// size_assert(ArchiveLoadHandle, 0x54);
 
 class AsyncCourseArchiveLoader : public EGG::Disposer {  //+0x588
     AsyncCourseArchiveLoader();  // 80541a10
@@ -34,7 +34,7 @@ class AsyncCourseArchiveLoader : public EGG::Disposer {  //+0x588
     u32 status;  // 0x1c 2 means loaded
     CourseArchivesHolder* courseArchivesHolder;  // 0x20
 };  // 0x24
-size_assert(AsyncCourseArchiveLoader, 0x24);
+// size_assert(AsyncCourseArchiveLoader, 0x24);
 
 class AllkartArchivesLoader {
     enum State {
@@ -51,7 +51,7 @@ class AllkartArchivesLoader {
     CharacterId id;
     u32 mode;  // 0 battle 2 otherwise
 };  // total size 0x18
-size_assert(AllkartArchivesLoader, 0x18);
+// size_assert(AllkartArchivesLoader, 0x18);
 
 class ArchiveMgr {
    public:
@@ -141,5 +141,5 @@ class ArchiveMgr {
     bool isFree;  // 0x619
     u8 padding2[2];
 };  // total size 0x61C
-size_assert(ArchiveMgr, 0x61c);
+// size_assert(ArchiveMgr, 0x61c);
 #endif

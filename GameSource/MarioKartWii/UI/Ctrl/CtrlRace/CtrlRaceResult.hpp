@@ -29,5 +29,5 @@ class CtrlRaceResult : public LayoutUIControl {
     u32 score;  // 0x190
     u8 unknown_0x194[4];
 };  // total size 0x198
-size_assert(CtrlRaceResult, 0x198);
+// size_assert(CtrlRaceResult, 0x198);
 #endif

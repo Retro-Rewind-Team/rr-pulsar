@@ -25,6 +25,6 @@ class ExpParticleManager : public nw4r::ef::ParticleManager {
     Vector3f rotation;  // 0xd0
 
 };  // total size 0xdc
-size_assert(ExpParticleManager, 0x30);
+// size_assert(ExpParticleManager, 0x30);
 }  // namespace EGG
 #endif

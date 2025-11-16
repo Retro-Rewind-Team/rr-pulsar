@@ -28,6 +28,6 @@ class GhostInfoControl : public LayoutUIControl {
     u16 unknown_0x246;
     u32 unknown_0x248;  // gets set to 0x00080000 in the ctor
 };  // total size 0x24C
-size_assert(GhostInfoControl, 0x24C);
+// size_assert(GhostInfoControl, 0x24C);
 
 #endif

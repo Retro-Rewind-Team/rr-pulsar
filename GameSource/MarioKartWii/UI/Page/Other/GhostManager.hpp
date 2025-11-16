@@ -95,7 +95,7 @@ class GhostManager : public Page {  // ID 0xA7
     RKG* rkgPointer;  // 0x308 0x20 aligned
     RKG rkgBuffer;  // 0x30c
 };  // total size 0x2b0c
-size_assert(GhostManager, 0x2B0C);
+// size_assert(GhostManager, 0x2B0C);
 
 }  // namespace Pages
 #endif

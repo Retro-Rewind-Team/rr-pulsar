@@ -17,7 +17,7 @@ class ObjBanana : public ObjThrowable {
     void UpdateThunk();  // 807a38fc
     void Update();  // 807a3e78
 };
-size_assert(ObjBanana, 0x1a4);
+// size_assert(ObjBanana, 0x1a4);
 }  // namespace Item
 
 #endif

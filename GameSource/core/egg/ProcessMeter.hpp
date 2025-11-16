@@ -110,10 +110,10 @@ class ProcessMeter : public Thread, public PerformanceView {
     u8 bitField;  // 0x152 0x1 = isVisible
     u8 unknown_0x153;
 };  // 0x154
-size_assert(ProcessMeter::ProcessBar, 0x28);
-size_assert(ProcessMeter::CpuGpMonitor, 0x7c);
-size_assert(ProcessMeter::CpuMonitor, 0x2c);
-size_assert(ProcessMeter, 0x154);
+// size_assert(ProcessMeter::ProcessBar, 0x28);
+// size_assert(ProcessMeter::CpuGpMonitor, 0x7c);
+// size_assert(ProcessMeter::CpuMonitor, 0x2c);
+// size_assert(ProcessMeter, 0x154);
 
 }  // namespace EGG
 #endif

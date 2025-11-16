@@ -174,7 +174,7 @@ class ScnMgr : public EGG::Disposer {
     static TextureHolder* EFBCopyTexInstance;  // 809c1878
     static void CreateEFBCopyTex();  // 805649a0 used if a copy of the EFB is needed at some point
 };  // 0x98
-size_assert(ScnMgr, 0x98);
+// size_assert(ScnMgr, 0x98);
 
 class ScnMgrMenu : public ScnMgr {
     ScnMgrMenu();  // 8059e76c

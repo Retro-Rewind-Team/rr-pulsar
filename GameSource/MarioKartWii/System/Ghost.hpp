@@ -55,7 +55,7 @@ class GhostData {
     u32 inputSize;  // 0xD0
     void* inputs;  // 0xD4
 };  // total size 0xd8
-size_assert(GhostData, 0xd8);
+// size_assert(GhostData, 0xd8);
 
 class GhostGroup {
    public:

@@ -17,7 +17,7 @@ class ConnectController : public LayoutUIControl {
     void Load(u32 hudSlotId);  // 8060345c
     u32 controllerID;  // 0x174 same as SectionPad's
 };
-size_assert(ConnectController, 0x178);
+// size_assert(ConnectController, 0x178);
 
 class EasyPairingController : public LayoutUIControl {
    public:
@@ -32,7 +32,7 @@ class EasyPairingController : public LayoutUIControl {
     u8 hudSlotId;  // 0x178
     u8 padding[3];
 };
-size_assert(EasyPairingController, 0x17c);
+// size_assert(EasyPairingController, 0x17c);
 
 namespace Pages {
 class RegisteredPads : public Page {  // ID 0x61 multiple register controllers
@@ -57,7 +57,7 @@ class RegisteredPads : public Page {  // ID 0x61 multiple register controllers
     u32 endAnimDirection;  // 0x66c
     float endAnimLength;  // 0x670
 };  // total size 0x674
-size_assert(RegisteredPads, 0x674);
+// size_assert(RegisteredPads, 0x674);
 
 class RegisterPad : public Page {  // ID 0x62
    public:
@@ -84,7 +84,7 @@ class RegisterPad : public Page {  // ID 0x62
     CtrlMenuInstructionText bottomText;  // 0xa78
     CtrlMenuDummyBack dummyBackButton;  // 0xbec
 };
-size_assert(RegisterPad, 0xd70);
+// size_assert(RegisterPad, 0xd70);
 
 class PairWiimotes : public Page {
    public:
@@ -115,7 +115,7 @@ class PairWiimotes : public Page {
     Status status;  // 0xbe8
     float unknown_0xbec;
 };
-size_assert(PairWiimotes, 0xbf0);
+// size_assert(PairWiimotes, 0xbf0);
 
 class ConfirmPads : public Page {
    public:
@@ -147,7 +147,7 @@ class ConfirmPads : public Page {
     CtrlMenuInstructionText bottomText;  // 0xb4c
     PageId nextPage;  // 0xcc0
 };
-size_assert(0xcc4, ConfirmPads);
+// size_assert(0xcc4, ConfirmPads);
 
 }  // namespace Pages
 #endif

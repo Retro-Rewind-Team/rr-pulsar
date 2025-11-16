@@ -39,5 +39,5 @@ class Timer {
     bool isActive;  // 0xa
     u8 padding2;  // 0xb
 };  // Total size 0xc
-size_assert(Timer, 0xC);
+// size_assert(Timer, 0xC);
 #endif

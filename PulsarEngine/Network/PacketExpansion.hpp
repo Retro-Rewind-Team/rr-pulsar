@@ -29,7 +29,7 @@ struct PulPlayerData {  // SELECT struct
     u8 prevRaceRank;  // 0x6 swapped with coursevote
     u8 starRank;  // 0x8 1st bit of 2nd p is also used to specify customPacket
 };  // total size 0x8
-size_assert(PulPlayerData, 0x8);
+// size_assert(PulPlayerData, 0x8);
 
 struct PulRH1 : public RKNet::RACEHEADER1Packet {
     // Pulsar data

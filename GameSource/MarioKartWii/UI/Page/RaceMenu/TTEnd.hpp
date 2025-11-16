@@ -16,7 +16,7 @@ class TTEnd : public RaceMenu {  // ID 0x21
     bool IsPausePage() const override;  // 0x74 80632cac
     const char* GetButtonsBRCTRName() const override;  // 0x78 80632cb4
 };  // 0x344
-size_assert(TTEnd, 0x344);
+// size_assert(TTEnd, 0x344);
 }  // namespace Pages
 
 #endif

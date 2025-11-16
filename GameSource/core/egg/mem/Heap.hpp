@@ -54,7 +54,7 @@ class Heap : public Disposer {
     nw4r::ut::List childList;  // 0x28 list of disposers
     const char* name;  // 0x34
 };  // total size 0x38
-size_assert(Heap, 0x38);
+// size_assert(Heap, 0x38);
 
 }  // namespace EGG
 

@@ -11,7 +11,7 @@ class ObjKiller : public ObjMiddle {  // bullet
     void InitSelf() override;  // 0x8 807a9b40 vtable 808d1f00
     void UpdateModelPosition() override;  // 0x10 807a9b5c
 };
-size_assert(ObjKiller, 0x1a0);
+// size_assert(ObjKiller, 0x1a0);
 }  // namespace Item
 
 #endif

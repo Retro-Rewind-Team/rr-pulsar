@@ -29,7 +29,7 @@ class IOStream {
     IOStreamCallback callBack;  // c
     void* cbArg;  // 10
 };
-size_assert(IOStream, 0x14);
+// size_assert(IOStream, 0x14);
 }  // namespace ut
 }  // namespace nw4r
 

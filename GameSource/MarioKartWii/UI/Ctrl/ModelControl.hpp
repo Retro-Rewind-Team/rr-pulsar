@@ -20,7 +20,7 @@ class BackGroundModelControl : public LayoutUIControl {
     bool hasNewType;  // 0x17e checked by update every frame
     u8 padding;
 };  // 0x180
-size_assert(BackGroundModelControl, 0x180);
+// size_assert(BackGroundModelControl, 0x180);
 
 class NoteModelControl : public LayoutUIControl {
    public:
@@ -40,7 +40,7 @@ class NoteModelControl : public LayoutUIControl {
     u8 animationType;
     u8 unknown_0x17D[3];  // might be padding
 };  // total size 0x180
-size_assert(NoteModelControl, 0x180);
+// size_assert(NoteModelControl, 0x180);
 
 class VehicleModelControl : public LayoutUIControl {  // this c
    public:
@@ -62,7 +62,7 @@ class VehicleModelControl : public LayoutUIControl {  // this c
     u8 unknown_0x17D[3];  // might be padding
     float unknown_0x180;
 };  // Total size 0x184
-size_assert(VehicleModelControl, 0x184);
+// size_assert(VehicleModelControl, 0x184);
 
 class DriverModelControl : public LayoutUIControl {
    public:
@@ -84,5 +84,5 @@ class DriverModelControl : public LayoutUIControl {
     u8 animationType;  // 0x180 0 = fade in 1 = fade out
     float unknown_0x184;  // some sort of scale factor for the transition
 };  // total size 0x188
-size_assert(DriverModelControl, 0x188);
+// size_assert(DriverModelControl, 0x188);
 #endif

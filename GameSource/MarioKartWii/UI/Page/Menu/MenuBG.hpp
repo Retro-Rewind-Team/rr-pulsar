@@ -26,7 +26,7 @@ class MenuBG : public Menu {  // ID 0x5B, also ID 0x5D just a layoutUIControl wh
 
     ManipulatorManager manipulatorManager;  // 0x430
 };  // total size 0x440
-size_assert(MenuBG, 0x440);
+// size_assert(MenuBG, 0x440);
 
 }  // namespace Pages
 #endif

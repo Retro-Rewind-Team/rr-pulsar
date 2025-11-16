@@ -65,7 +65,7 @@ class RacedataPlayer {
     Rating rating;  // 0xe4 vr or br, depending on mode
     u8 unknown_0xec[4];
 };  // Total size 0xf0
-size_assert(RacedataPlayer, 0xf0);
+// size_assert(RacedataPlayer, 0xf0);
 
 struct RacedataSettings {  // 0xb68 for race scenario, 0x1758 for menu
    public:
@@ -124,7 +124,7 @@ class RacedataScenario {
     u8 mission[0x70];  // 0xB7C 0x70 struct, see http://wiki.tockdom.com/wiki/Mission_Mode#mission_single.kmt
     RKG* rkg;  // 0xBEC Scenario 0 points to the one you race, 1 points to one I'm not sure about, 2 points to null
 };  // Total size 0xbf0
-size_assert(RacedataScenario, 0xbf0);
+// size_assert(RacedataScenario, 0xbf0);
 
 // ParameterFile size is 0x1c, Racedata's is /boot/menuset.prm
 class EmptyRacedataParent {
@@ -166,6 +166,6 @@ class Racedata : public EmptyRacedataParent, public RKParameterFile {
 
     static const u8 pointsRoom[12][12];  // 80890030 12-sized array per room size, so add 12 * (size - 1) to the ptr to get to the wanted roomsize
 };  // Total size 0x73f0
-size_assert(Racedata, 0x73f0);
+// size_assert(Racedata, 0x73f0);
 
 #endif

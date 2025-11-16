@@ -19,7 +19,7 @@ public:
     u32 bufferSize; //0x4 maximum data size 0x50
     u32 packetSize; //0x8 current data size 0x38 -> 0x38 + len
 }; //Total size 0xc
-size_assert(PacketHolder, 0xc);
+// size_assert(PacketHolder, 0xc);
 */
 
 template <class T>

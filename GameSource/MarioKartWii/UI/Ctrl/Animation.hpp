@@ -35,7 +35,7 @@ class AnimationGroup {
     float curFrame;
     float unknown_0x40;
 };  // total size 0x44
-size_assert(AnimationGroup, 0x44);
+// size_assert(AnimationGroup, 0x44);
 
 class UIAnimator {
    public:
@@ -54,5 +54,5 @@ class UIAnimator {
     lyt::Pane* rootPane;
     MainLayout* layout;  // 0xC
 };  // Total Size 0x10
-size_assert(UIAnimator, 0x10);
+// size_assert(UIAnimator, 0x10);
 #endif

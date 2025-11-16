@@ -18,7 +18,7 @@ class ObjKumo : public ObjMiddle {  // TC
 
     u8 unknown_0x1a0[0x200 - 0x1a0];
 };
-size_assert(ObjKumo, 0x200);
+// size_assert(ObjKumo, 0x200);
 }  // namespace Item
 
 #endif

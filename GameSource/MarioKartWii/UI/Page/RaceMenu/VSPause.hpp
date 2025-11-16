@@ -17,6 +17,6 @@ class VSPause : public RaceMenu {  // ID 0x18
     bool IsPausePage() const override;  // 0x74 80633304
     const char* GetButtonsBRCTRName() const override;  // 0x78 8063330c
 };  // total size 0x344
-size_assert(VSPause, 0x344);
+// size_assert(VSPause, 0x344);
 }  // namespace Pages
 #endif

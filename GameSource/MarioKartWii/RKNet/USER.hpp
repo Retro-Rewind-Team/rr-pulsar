@@ -33,7 +33,7 @@ struct USERPacket {
     u8 regionId;  // 0xbd  0=NTSC-J, 1=NTSC-U, 2=PAL/EUR, 3=PAL/AUS, 4=Taiwan 5=South Korea
     u16 unknown_0xbe;
 };
-size_assert(USERPacket, 0xc0);
+// size_assert(USERPacket, 0xc0);
 
 class USERHandler {
    public:

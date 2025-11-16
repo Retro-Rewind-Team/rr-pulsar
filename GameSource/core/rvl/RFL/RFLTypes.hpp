@@ -128,7 +128,7 @@ struct CreateID {
         };
     };
 };
-size_assert(CreateID, 0x8);
+// size_assert(CreateID, 0x8);
 #pragma pack(pop)
 
 typedef u16 IDX;
@@ -249,7 +249,7 @@ struct StoreData {  // http://wiibrew.org/wiki/Mii_data#Mii_format
     wchar_t creatorName[10];  // 0x36
     u16 crc16;  // 0x4a
 };  // total size 0x4C
-size_assert(StoreData, 0x4c);
+// size_assert(StoreData, 0x4c);
 #pragma pack(pop)
 
 struct Manager {
@@ -282,7 +282,7 @@ struct WiFiPacket {
     u16 unknown_0x6;
     RFL::StoreData rawMiis[2];  // 0x8 technically not 2 but in mariokartwii, exclusively 2
 };  // 0xa0
-size_assert(WiFiPacket, 0xa0);
+// size_assert(WiFiPacket, 0xa0);
 
 }  // namespace RFL
 

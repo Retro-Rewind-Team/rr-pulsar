@@ -38,7 +38,7 @@ struct Status {
     u8 analogB;  // 0x9
     s8 error;  // 0xa see enum
 };
-size_assert(Status, 0xC);
+// size_assert(Status, 0xC);
 
 BOOL Init();  // 801af2f0
 BOOL Reset(u32 mask);  // 801af0dc

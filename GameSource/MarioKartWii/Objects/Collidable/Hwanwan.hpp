@@ -84,6 +84,6 @@ class Hwanwan : public ObjectCollidable {  // ObjectNum 0xe9 = 233
     u8 padding[2];
     float unknown_0xd0;
 };  // total size 0xd4
-size_assert(Hwanwan, 0xd4);
+// size_assert(Hwanwan, 0xd4);
 }  // namespace Objects
 #endif

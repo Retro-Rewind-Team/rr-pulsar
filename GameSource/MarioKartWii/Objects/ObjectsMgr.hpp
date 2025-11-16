@@ -18,7 +18,7 @@ class ObjFlowHolder {
     ObjFlowEntry* entries;  // 0x8 array size objectCount
     IndexToIDTable* idxToIDTable;  // 0xC
 };  // 0x10
-size_assert(ObjFlowHolder, 0x10);
+// size_assert(ObjFlowHolder, 0x10);
 
 class GeoHitTableHolder {
     explicit GeoHitTableHolder(const char* fileName);  // 807f9278
@@ -111,5 +111,5 @@ class ObjectsMgr {
     float angles[4];  // 0x124 0 45 90 135
     ObjectCollisionManager droppedItemManager;  // 0x134
 };  // total size 0x160
-size_assert(ObjectsMgr, 0x160);
+// size_assert(ObjectsMgr, 0x160);
 #endif

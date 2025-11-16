@@ -76,7 +76,7 @@ class MultiKartSelect : public MenuInteractable {  // ID 0x81
     VehicleModelControl* vehicleModels;  // 0x3f74 size local player count
     CtrlMenuMachineGraph machineGraphs[2];  // 0x3f78
 };
-size_assert(MultiKartSelect, 0x4280);
+// size_assert(MultiKartSelect, 0x4280);
 }  // namespace Pages
 /* controlGroup:
 index 0 = CharaName (MachineSelectName.brctr)

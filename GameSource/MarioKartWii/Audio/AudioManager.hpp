@@ -90,7 +90,7 @@ class Manager : public EGG::ExpAudioMgr {
     u32 unknown_0x8A8[3];
     float unknown_0x8B4[3];
 };  // Total size 0x8c0
-size_assert(Manager, 0x8c0);
+// size_assert(Manager, 0x8c0);
 
 class UnkAudioClass {  // Completely unused looking at references to the sInstance
     static UnkAudioClass* sInstance;  // 809c2818

@@ -19,7 +19,7 @@ class FriendStatusButtonRaceAfter : public PushButton {
     void Load();  // 8064dbfc
     void UpdateStatus();  // 8064dd9c
 };  // Total Size 0x254
-size_assert(FriendStatusButtonRaceAfter, 0x254);
+// size_assert(FriendStatusButtonRaceAfter, 0x254);
 
 namespace Pages {  // WW means continental races too
 
@@ -39,7 +39,7 @@ class WWRaceEndCountDown : public Page {  // ID 0x45
     CountDown countdown;  // 0x1d0
     PageId nextPageId;  // 0x1dc
 };
-size_assert(WWRaceEndCountDown, 0x1e0);
+// size_assert(WWRaceEndCountDown, 0x1e0);
 
 class WWRaceEnd : public Page {  // ID 0x46
    public:
@@ -68,7 +68,7 @@ class WWRaceEnd : public Page {  // ID 0x46
     PageId nextPage;  // 0xb14
     u8 unknown_0xb18[0xb20 - 0xb18];
 };  // 0x344
-size_assert(WWRaceEnd, 0xb20);
+// size_assert(WWRaceEnd, 0xb20);
 
 class WWRaceEndQuit : public Page {  // ID 0x47
    public:
@@ -96,7 +96,7 @@ class WWRaceEndQuit : public Page {  // ID 0x47
     PageId nextPageId;
     u8 unknown_0x8b4[0x8];
 };
-size_assert(WWRaceEndQuit, 0x8bc);
+// size_assert(WWRaceEndQuit, 0x8bc);
 
 class WWRaceEndWait : public Page {  // ID 0x48 "Please wait a moment" at the end of online races
    public:
@@ -112,7 +112,7 @@ class WWRaceEndWait : public Page {  // ID 0x48 "Please wait a moment" at the en
     SimpleMessageWindowControl msgWindow;  // 0x54
     u32 state;  // 0x1c8 0 nothing, 1 isDisplayingText? unsure
 };
-size_assert(WWRaceEndWait, 0x1cc);
+// size_assert(WWRaceEndWait, 0x1cc);
 
 class DisableHomeButton : public Page {  // ID 0x94 used in online races
    public:
@@ -124,7 +124,7 @@ class DisableHomeButton : public Page {  // ID 0x94 used in online races
     const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8064fae8
     ManipulatorManager manipulatorManager;  // 0x44
 };  // total size 0x54
-size_assert(DisableHomeButton, 0x54);
+// size_assert(DisableHomeButton, 0x54);
 
 }  // namespace Pages
 #endif

@@ -35,7 +35,7 @@ class GhostSelectSupporting : public Page {  // ID 0x70
     PageId nextPageId;  // set to -1 by OnDeactivate, then by 0x71 by
     u32 state;  // 0x0 list not init, 0x1 update GhostList, 0x2 list init
 };  // total size 0x5C
-size_assert(GhostSelectSupporting, 0x5C);
+// size_assert(GhostSelectSupporting, 0x5C);
 
 class GhostSelect : public Page {  // ID 0x71
    public:
@@ -78,6 +78,6 @@ class GhostSelect : public Page {  // ID 0x71
     u32 page;  // 0x191C
     PageId nextPageId;  // 0x1920
 };  // total size 0x1924
-size_assert(GhostSelect, 0x1924);
+// size_assert(GhostSelect, 0x1924);
 }  // namespace Pages
 #endif

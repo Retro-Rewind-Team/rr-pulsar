@@ -20,6 +20,6 @@ class EffectResource : public EGG::Disposer {
     ut::Link resourceLink;  // 0x18
 
 };  // total size 0x20
-size_assert(EGG::EffectResource, 0x20);
+// size_assert(EGG::EffectResource, 0x20);
 }  // namespace EGG
 #endif

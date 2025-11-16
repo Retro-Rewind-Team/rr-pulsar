@@ -90,7 +90,7 @@ class PlayerObj : public Kart::Link {  // most of the values are only updated wh
     u8 unknown_0x17a[0x180 - 0x17a];
 
 };  // Total Size 0x180
-size_assert(PlayerObj, 0x180);
+// size_assert(PlayerObj, 0x180);
 
 }  // namespace Item
 

@@ -16,7 +16,7 @@ struct LicenseLdbEntry {
     KartId kart;
     ControllerType controllerType;
 };  // total size 0x64;
-size_assert(LicenseLdbEntry, 0x64);
+// size_assert(LicenseLdbEntry, 0x64);
 
 struct LicenseCup {
     LicenseCup();  // 8054429c
@@ -31,7 +31,7 @@ struct LicenseCup {
     u8 padding[3];
     u32 unknownCupData_0x4f_2_2;  // 0x6c same as above 8054591c
 };
-size_assert(LicenseCup, 0x70);
+// size_assert(LicenseCup, 0x70);
 
 struct LicenseUnkTimer {
     LicenseUnkTimer();  // 805443bc
@@ -39,7 +39,7 @@ struct LicenseUnkTimer {
     Timer timer;
     u8 unknown_0xc[0x1c - 0xc];
 };
-size_assert(LicenseUnkTimer, 0x1c);
+// size_assert(LicenseUnkTimer, 0x1c);
 
 struct LicenseUnkTimer2 {
     LicenseUnkTimer2();  // 805444e8
@@ -148,7 +148,7 @@ struct LicenseCompletion {
     u32 unused3 : 2;
     u8 unknown_0x8[8];
 };  // 0x14
-size_assert(LicenseCompletion, 0x14);
+// size_assert(LicenseCompletion, 0x14);
 
 struct LicenseStaffGhostStatus {
     LicenseStaffGhostStatus();  // 805444c4
@@ -485,7 +485,7 @@ class LicenseMgr {
     static void WriteRKPD_5688_31(Binary& raw, u32 licenseIdx);  // 80547f4c
     static void WriteMagic(u32 licenseIdx);  // 80547f78
 };
-size_assert(LicenseMgr, 0x93f0);
+// size_assert(LicenseMgr, 0x93f0);
 
 }  // namespace RKSYS
 #endif

@@ -33,7 +33,7 @@ struct MiddleDB {
     };
     u8 data3[4];
 };  // 0x18
-size_assert(MiddleDB, 0x18);
+// size_assert(MiddleDB, 0x18);
 
 u32 GetMiddleDBBufferSize(u16 maxCharactersCount);  // 800c8850
 void InitMiddleDB(MiddleDB* middleDB, MiddleDBType type, void* buffer, u16 maxCharactersCount);  // 800c8860

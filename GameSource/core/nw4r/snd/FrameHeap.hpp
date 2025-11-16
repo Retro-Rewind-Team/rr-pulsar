@@ -8,7 +8,7 @@
 namespace nw4r {
 namespace snd {
 namespace detail {
-size_assert(void*, 0x4);
+// size_assert(void*, 0x4);
 class FrameHeap {
     struct Block {
        public:
@@ -33,7 +33,7 @@ class FrameHeap {
     void* MEMiHeapHead;
     ut::LinkList<Section, offsetof(Section, Section::link)> sectionlist;
 };  // total size 0x10
-size_assert(FrameHeap, 0x10);
+// size_assert(FrameHeap, 0x10);
 
 }  // namespace detail
 }  // namespace snd

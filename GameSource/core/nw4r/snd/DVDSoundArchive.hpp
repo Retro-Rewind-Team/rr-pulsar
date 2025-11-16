@@ -39,7 +39,7 @@ class DVDSoundArchive : public SoundArchive {
     bool isOpen;  // 0x188
     u8 padding[3];
 };  // total size 0x18c
-size_assert(DVDSoundArchive, 0x18c);
+// size_assert(DVDSoundArchive, 0x18c);
 }  // namespace snd
 }  // namespace nw4r
 

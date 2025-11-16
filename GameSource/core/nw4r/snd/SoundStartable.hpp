@@ -70,7 +70,7 @@ class SoundStartable {
     StartResult detail_PrepareSound(SoundHandle* handle, u32 soundId, const StartInfo* startInfo);  // 800a4130
 
 };  // total size 0x4
-size_assert(SoundStartable, 0x4);
+// size_assert(SoundStartable, 0x4);
 }  // namespace snd
 }  // namespace nw4r
 

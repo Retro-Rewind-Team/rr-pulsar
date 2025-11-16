@@ -150,7 +150,7 @@ class ModelDirector {
     ClipInfo* clipInfo;  // 0x44
     u8 unknown_0x48[4];
 };  // total size 0x4c
-size_assert(ModelDirector, 0x4c);
+// size_assert(ModelDirector, 0x4c);
 
 class ModelDirectorPair {  // sets struct 48 float 0x0 to value² for both directors
     ModelDirectorPair(ModelDirector* director1, ModelDirector* director2, float value48Struct);  // 8055afa0

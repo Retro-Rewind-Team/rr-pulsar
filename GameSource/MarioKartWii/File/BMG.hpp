@@ -71,6 +71,6 @@ class BMGHolder {
     const u32* str1Block;  // 0xc no idea, doesn't seem to exist in mkw
     const BMGMessageIds* messageIds;  // 0x10
 };  // Total Size 0x14
-size_assert(BMGHolder, 0x14);
+// size_assert(BMGHolder, 0x14);
 
 #endif

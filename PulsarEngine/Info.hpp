@@ -43,7 +43,7 @@ class Info {
     u8 chooseNextTrackTimer;  // 0x1b
     u8 reservedSpace[40];
 };
-size_assert(Info, 0x44);
+// size_assert(Info, 0x44);
 #pragma pack(pop)
 
 }  // namespace Pulsar

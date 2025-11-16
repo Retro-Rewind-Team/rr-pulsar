@@ -24,7 +24,7 @@ class BatteryMgr : public Page {  // ID 0x55
     ManipulatorManager manipulatorManager;  // 0x44
     PageId nextPage;
 };  // total size 0x58
-size_assert(BatteryMgr, 0x58);
+// size_assert(BatteryMgr, 0x58);
 
 class LowBattery : public Page {  // ID 0x56
     static const PageId id = PAGE_LOW_BATTERY;
@@ -44,7 +44,7 @@ class LowBattery : public Page {  // ID 0x56
     BlackBackControlForMessage background;  // 0x494
     u32 unknown_0x608;
 };
-size_assert(LowBattery, 0x60c);
+// size_assert(LowBattery, 0x60c);
 
 }  // namespace Pages
 

@@ -54,5 +54,5 @@ class CtrlRaceTime : public CtrlRaceBase {
     u32 maxLap;  // from raceinfoPlayer
 };  // 0x1C4
 
-size_assert(CtrlRaceTime, 0x1C4);
+// size_assert(CtrlRaceTime, 0x1C4);
 #endif

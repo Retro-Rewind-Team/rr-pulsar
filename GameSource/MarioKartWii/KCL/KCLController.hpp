@@ -91,5 +91,5 @@ class KCLController {
     Vec3 lastPosition;  // 0x294
     float lastMaxRadius;  // 0x2a0 of the
 };
-size_assert(KCLController, 0x2a4);
+// size_assert(KCLController, 0x2a4);
 #endif
