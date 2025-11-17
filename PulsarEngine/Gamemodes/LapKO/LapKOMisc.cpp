@@ -69,7 +69,17 @@ asmFunc cameraIDHUD() {
         lwz r0, 0x14(sp);
         blr;)
 }
-kmCall(0x807EC8D4, cameraIDHUD);
+
+kmRuntimeUse(0x807EC8D4);
+static void camerIDHUDLocal() {
+    kmRuntimeWrite32A(0x807EC8D4, 0x80010014);
+    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const u8 localPlayerCount = scenario.localPlayerCount;
+    if (localPlayerCount <= 1) {
+        kmRuntimeCallA(0x807EC8D4, cameraIDHUD);
+    }
+}
+static PageLoadHook cameraIDHUDHook(camerIDHUDLocal);
 
 extern "C" void ptr_playerBase(void*);
 asmFunc HideMapIcon() {
