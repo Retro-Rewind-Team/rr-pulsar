@@ -301,7 +301,7 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
     io->Close();
 
     self->SaveLeaderboard();
-    Settings::Mgr::sInstance->Save();  // trophies
+    Settings::Mgr::sInstance->SaveTrophies();  // trophies
 
     char prevGhostFile[IOS::ipcMaxPath];
     u32 prevFileIndex = self->files[self->mainGhostIndex].padding;

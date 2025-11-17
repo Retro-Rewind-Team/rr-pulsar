@@ -10,8 +10,10 @@ DoFuncsHook* Hook::settingsHooks = nullptr;
 
 Mgr* Mgr::sInstance = nullptr;
 
-void Mgr::SaveTask(void*) {
-    sInstance->Save();
+void Mgr::SaveTask(void* data) {
+    if (data == nullptr) sInstance->Save();
+    else if (data == reinterpret_cast<void*>(1)) sInstance->SaveTrophies();
+    else sInstance->Save();
 }
 
 int Mgr::GetSettingsBinSize(u32 trackCount) const {
@@ -21,62 +23,18 @@ int Mgr::GetSettingsBinSize(u32 trackCount) const {
 
 void Mgr::Save() {
     IO* io = IO::sInstance;
-
-    this->SaveTrophiesToFile();
-
-    Binary* sanitized = io->Alloc<Binary>(this->rawBin->header.fileSize);
-    memcpy(sanitized, this->rawBin, this->rawBin->header.fileSize);
-    TrophiesHolder& sanitizedTrophies = sanitized->GetSection<TrophiesHolder>();
-    const u32 trackCount = sanitized->GetSection<MiscParams>().trackCount;
-    this->ResetTrophies(sanitizedTrophies, trackCount);
-
-    if (!io->OpenFile(this->filePath, FILE_MODE_READ_WRITE)) io->CreateAndOpen(this->filePath, FILE_MODE_READ_WRITE);
-    io->Overwrite(sanitized->header.fileSize, sanitized);
+    io->OpenFile(this->filePath, FILE_MODE_WRITE);
+    io->Overwrite(this->rawBin->header.fileSize, this->rawBin);
     io->Close();
-
-    delete sanitized;
 };
 
-void Mgr::ResetTrophies(TrophiesHolder& trophies, u32 trackCount) const {
-    memset(trophies.trophyCount, 0, sizeof(trophies.trophyCount));
-    for (u32 i = 0; i < trackCount; ++i) {
-        for (int mode = 0; mode < 4; ++mode) trophies.trophies[i].hastrophy[mode] = false;
-    }
-}
-
-void Mgr::SaveTrophiesToFile() const {
+void Mgr::SaveTrophies() {
     IO* io = IO::sInstance;
-    const TrophiesHolder& trophies = this->rawBin->GetSection<TrophiesHolder>();
-    const u32 size = trophies.header.size;
-    if (!io->OpenFile(this->trophiesFilePath, FILE_MODE_READ_WRITE)) io->CreateAndOpen(this->trophiesFilePath, FILE_MODE_READ_WRITE);
-    io->Overwrite(size, &trophies);
-    io->Close();
-}
-
-void Mgr::LoadTrophiesFromFile(bool hadLegacyData) {
-    IO* io = IO::sInstance;
+    bool ret = io->OpenFile(this->trophiesFilePath, FILE_MODE_WRITE);
+    if (!ret) io->CreateAndOpen(this->trophiesFilePath, FILE_MODE_WRITE);
     TrophiesHolder& trophies = this->rawBin->GetSection<TrophiesHolder>();
-    const u32 expectedSize = trophies.header.size;
-    bool loaded = false;
-
-    if (io->OpenFile(this->trophiesFilePath, FILE_MODE_READ)) {
-        const s32 fileSize = io->GetFileSize();
-        if (fileSize == static_cast<s32>(expectedSize)) {
-            TrophiesHolder* buffer = io->Alloc<TrophiesHolder>(expectedSize);
-            const s32 bytesRead = io->Read(expectedSize, buffer);
-            if (bytesRead == static_cast<s32>(expectedSize) && buffer->header.magic == TrophiesHolder::tropMagic && buffer->header.version == TrophiesHolder::version) {
-                memcpy(&trophies, buffer, expectedSize);
-                loaded = true;
-            }
-            delete buffer;
-        }
-        io->Close();
-    }
-
-    if (!loaded && !hadLegacyData) {
-        const u32 trackCount = this->rawBin->GetSection<MiscParams>().trackCount;
-        this->ResetTrophies(trophies, trackCount);
-    }
+    io->Overwrite(trophies.header.size, &trophies);
+    io->Close();
 }
 
 void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char* trophiesPath) {
@@ -84,13 +42,14 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
     this->userPageCount = Settings::Params::userPageCount;
 
     for (int i = 0; i < 4; ++i) this->totalTrophyCount[i] = totalTrophyCount[i];
-    strncpy(this->filePath, settingsPath, IOS::ipcMaxPath);
+    strncpy(this->filePath, settingsPath, IOS::ipcMaxPath);;
     this->filePath[IOS::ipcMaxPath - 1] = '\0';
     strncpy(this->trophiesFilePath, trophiesPath, IOS::ipcMaxPath);
     this->trophiesFilePath[IOS::ipcMaxPath - 1] = '\0';
 
     const u32 trackCount = CupsConfig::sInstance->GetEffectiveTrackCount();
     const u32 size = this->GetSettingsBinSize(trackCount);
+    System* system = System::sInstance;
     IO* io = IO::sInstance;
 
     Binary* buffer;
@@ -100,7 +59,9 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
     } else {
         alignas(0x20) BinaryHeader header;
         ret = io->Read(sizeof(BinaryHeader), &header) == sizeof(BinaryHeader);
-        if (ret && header.magic == Binary::binMagic) {
+        if (header.magic != Binary::binMagic)
+            ret = false;
+        else {
             buffer = io->Alloc<Binary>(header.fileSize);
             io->Seek(0);
             io->Read(header.fileSize, buffer);
@@ -108,8 +69,6 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
                 buffer = this->CreateFromOld(buffer);
                 if (buffer == nullptr) ret = false;
             }
-        } else {
-            ret = false;
         }
     }
     if (!ret) {
@@ -117,7 +76,6 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         memset(buffer, 0, size);
         new (buffer) Binary(this->pulsarPageCount, this->userPageCount, trackCount);
     }
-    io->Close();
 
     TrophiesHolder& trophies = buffer->GetSection<TrophiesHolder>();
     for (int i = 0; i < 4; ++i) {
@@ -126,26 +84,33 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
     }
 
     this->rawBin = buffer;
-
-    bool hadLegacyTrophies = false;
-    for (int mode = 0; mode < 4; ++mode) {
-        if (trophies.trophyCount[mode] != 0) {
-            hadLegacyTrophies = true;
-            break;
-        }
-    }
-    if (!hadLegacyTrophies) {
-        const u32 legacyTrackCount = this->rawBin->GetSection<MiscParams>().trackCount;
-        for (u32 idx = 0; idx < legacyTrackCount && !hadLegacyTrophies; ++idx) {
-            const TrackTrophy& trophy = trophies.trophies[idx];
-            if (trophy.hastrophy[0] || trophy.hastrophy[1] || trophy.hastrophy[2] || trophy.hastrophy[3]) hadLegacyTrophies = true;
-        }
-    }
-
-    this->LoadTrophiesFromFile(hadLegacyTrophies);
-
     this->AdjustSections();
-    this->Save();
+
+    bool hasTrophies = io->OpenFile(this->trophiesFilePath, FILE_MODE_READ_WRITE);
+    if (hasTrophies) {
+        alignas(0x20) Pulsar::SectionHeader tropHeader;
+        if (io->Read(sizeof(Pulsar::SectionHeader), &tropHeader) == sizeof(Pulsar::SectionHeader) &&
+            tropHeader.magic == TrophiesHolder::tropMagic) {
+            io->Seek(0);
+            TrophiesHolder* tmp = io->Alloc<TrophiesHolder>(tropHeader.size);
+            io->Read(tropHeader.size, tmp);
+            TrophiesHolder& destT = this->rawBin->GetSection<TrophiesHolder>();
+            u32 destSize = destT.header.size;
+            u32 srcSize = tmp->header.size;
+            u32 copySize = srcSize < destSize ? srcSize : destSize;
+            memcpy(&destT, tmp, copySize);
+        }
+        io->Close();
+    } else {
+        io->CreateAndOpen(this->trophiesFilePath, FILE_MODE_WRITE);
+        TrophiesHolder& trophies = this->rawBin->GetSection<TrophiesHolder>();
+        io->Overwrite(trophies.header.size, &trophies);
+        io->Close();
+    }
+
+    io->OpenFile(this->filePath, FILE_MODE_WRITE);
+    io->Overwrite(this->rawBin->header.fileSize, this->rawBin);
+    io->Close();
 }
 
 TrackTrophy* Mgr::FindTrackTrophy(u32 crc32, TTMode mode) const {
@@ -164,6 +129,7 @@ void Mgr::AddTrophy(u32 crc32, TTMode mode) {
     if (trophy != nullptr && !trophy->hastrophy[mode]) {
         ++(this->rawBin->GetSection<TrophiesHolder>().trophyCount[mode]);
         trophy->hastrophy[mode] = true;
+        this->RequestTrophiesSave();
     }
 }
 
@@ -255,7 +221,7 @@ void Mgr::AdjustSections() {
                 ++idx;
             }
         }
-        this->Save();
+        this->SaveTrophies();
     } else if (oldTrackCount > trackCount) {
         for (int curOld = 0; curOld < oldTrackCount; ++curOld) {  // 4032 4132
             if (toberemovedCRCIndex[curOld] == 0xFFFF) {

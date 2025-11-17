@@ -31,9 +31,6 @@ class Mgr {
     static void SaveTask(void*);
     void Init(const u16* totalTrophyCount, const char* settingsPath, const char* trophiesPath);
     int GetSettingsBinSize(u32 trackCount) const;
-    void LoadTrophiesFromFile(bool hadLegacyData);
-    void SaveTrophiesToFile() const;
-    void ResetTrophies(TrophiesHolder& trophies, u32 trackCount) const;
     char filePath[IOS::ipcMaxPath];
     char trophiesFilePath[IOS::ipcMaxPath];
     Binary* rawBin;
@@ -48,10 +45,10 @@ class Mgr {
         Hook::Exec();
         this->RequestSave();
     }
-    void RequestSave() {
-        System::sInstance->taskThread->Request(&Mgr::SaveTask, nullptr, 0);
-    }
+    void RequestSave() { System::sInstance->taskThread->Request(&Mgr::SaveTask, nullptr, 0); }
+    void RequestTrophiesSave() { System::sInstance->taskThread->Request(&Mgr::SaveTask, reinterpret_cast<void*>(1), 0); }
     void Save();
+    void SaveTrophies();
     void AddTrophy(u32 crc32, TTMode mode);
     void SetLastSelectedCup(PulsarCupId id) { this->rawBin->GetSection<MiscParams>().lastSelectedCup = id; }
 
