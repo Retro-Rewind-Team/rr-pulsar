@@ -51,15 +51,15 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
     float vrNorm = (vrClamped / 30000.0f) * 100.0f;
 
     // Normalize added metrics to 0-100
-    float firstsNorm = (times1st >= 1500) ? 100.0f : (100.0f * (float)times1st / 1250.0f);
-    float distNorm = (distTravelled >= 75000.0f) ? 100.0f : (100.0f * distTravelled / 50000.0f);
-    float distFirstNorm = (distInFirst >= 20000.0f) ? 100.0f : (100.0f * distInFirst / 10000.0f);
+    float firstsNorm = (times1st >= 2725) ? 100.0f : (100.0f * (float)times1st / 1250.0f);
+    float distNorm = (distTravelled >= 100000.0f) ? 100.0f : (100.0f * distTravelled / 50000.0f);
+    float distFirstNorm = (distInFirst >= 25000.0f) ? 100.0f : (100.0f * distInFirst / 10000.0f);
 
     // Weighted composite emphasizing VR and VS performance; battle stats removed.
     // Base weights (sum = 1.0): VR 0.60, RWin 0.20, Firsts 0.10, Dist 0.05, DistInFirst 0.05
     // Then apply affine scaling so that high/low anchors map to 100/10.
-    const float W_VR = 0.60f;
-    const float W_RWIN = 0.20f;
+    const float W_VR = 0.50f;
+    const float W_RWIN = 0.30f;
     const float W_FIRSTS = 0.10f;
     const float W_DIST = 0.05f;
     const float W_DIST1ST = 0.05f;
@@ -67,11 +67,11 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
     float baseM = (W_VR * vrNorm) + (W_RWIN * racingWinPct) + (W_FIRSTS * firstsNorm) + (W_DIST * distNorm) + (W_DIST1ST * distFirstNorm);
 
     // Anchors
-    const float AH_VR = 100.0f, AH_RWIN = 65.0f, AH_FIRSTS = 100.0f, AH_DIST = 100.0f, AH_DIST1ST = 100.0f;  // -> 100
+    const float AH_VR = 100.0f, AH_RWIN = 65.0f, AH_FIRSTS = 55.0f, AH_DIST = 75.0f, AH_DIST1ST = 80.0f;  // -> 100
     const float AL_VR = 16.6667f, AL_RWIN = 50.0f, AL_FIRSTS = 0.0f, AL_DIST = 0.0f, AL_DIST1ST = 0.0f;  // -> 10
-    float M1 = W_VR * AH_VR + W_RWIN * AH_RWIN + W_FIRSTS * AH_FIRSTS + W_DIST * AH_DIST + W_DIST1ST * AH_DIST1ST;  // ~93.0
-    float M2 = W_VR * AL_VR + W_RWIN * AL_RWIN + W_FIRSTS * AL_FIRSTS + W_DIST * AL_DIST + W_DIST1ST * AL_DIST1ST;  // ~20.0
-    float alpha = 90.0f / (M1 - M2);  // 100-10 over delta
+    float M1 = W_VR * AH_VR + W_RWIN * AH_RWIN + W_FIRSTS * AH_FIRSTS + W_DIST * AH_DIST + W_DIST1ST * AH_DIST1ST;  // ~100.0
+    float M2 = W_VR * AL_VR + W_RWIN * AL_RWIN + W_FIRSTS * AL_FIRSTS + W_DIST * AL_DIST + W_DIST1ST * AL_DIST1ST;  // ~10.0
+    float alpha = 89.0f / (M1 - M2);  // 100-10 over delta
     float beta = 100.0f - alpha * M1;
 
     float finalScore = alpha * baseM + beta;
