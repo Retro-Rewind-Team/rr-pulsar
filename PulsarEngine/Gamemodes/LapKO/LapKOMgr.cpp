@@ -85,7 +85,7 @@ u8 Mgr::BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8* outPlan, u
     if (playerCount < 2) return 0;
 
     if (usualLapCount <= 1) {
-        if (capacity > 0) {
+        if (outPlan != nullptr && capacity > 0) {
             outPlan[0] = (playerCount > 1) ? static_cast<u8>(playerCount - 1) : 0;
         }
         return 1;
