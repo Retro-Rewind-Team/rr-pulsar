@@ -73,6 +73,11 @@ static void multiplyVR() {
     }
     vrSelected = vrSelected * vrMultiplier;
     vrCurrent = vrCurrent + vrSelected;
+    if (vrCurrent >= 30000) {
+        vrCurrent = 30000;
+    } else if (vrCurrent < 1) {
+        vrCurrent = 1;
+    }
     applyVRPlayerMultiplier();
 }
 kmCall(0x8052ec80, multiplyVR);

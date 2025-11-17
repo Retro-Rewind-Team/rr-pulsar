@@ -127,9 +127,7 @@ void ExpWFCMain::BeforeControlUpdate() {
     Text::Info rankInfoTxt;
     rankInfoTxt.strings[0] = rankBuf;
     this->rankInfo.SetTextBoxMessage("go", UI::BMG_TEXT, &rankInfoTxt);
-    if (!Dolphin::IsEmulator()) {
-        this->rankInfo.SetPaneVisibility("capsul_null", false);
-    }
+    this->rankInfo.SetPaneVisibility("capsul_null", true);
 }
 
 // ExpWFCModeSel
