@@ -162,7 +162,7 @@ void System::UpdateContext() {
     bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_HEAVYONLY;
     bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_KARTONLY;
     bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_BIKEONLY;
-    bool isThunderCloud = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) && isNotPublic;
+    bool isThunderCloud = (settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL) && isNotPublic;
     bool isItemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
     bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
     bool isItemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
@@ -185,7 +185,6 @@ void System::UpdateContext() {
     bool isStartItemRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_ITEMRAIN;
     bool isFeather = this->info.HasFeather();
     bool isUMTs = this->info.HasUMTs();
-    bool isMegaTC = this->info.HasMegaTC();
     u32 newContext = 0;
     u32 newContext2 = 0;
     if (sceneId != SCENE_ID_GLOBE && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN) {
@@ -268,19 +267,19 @@ void System::UpdateContext() {
     u32 newContextValue2 = 0;
     if (isCT) {
         newContextValue |= (is200) << PULSAR_200 | (isFeather) << PULSAR_FEATHER |
-                           (isUMTs) << PULSAR_UMTS | (isMegaTC) << PULSAR_MEGATC |
+                           (isUMTs) << PULSAR_UMTS | (is500) << PULSAR_500 |
                            (isOTT) << PULSAR_MODE_OTT | (isKO) << PULSAR_MODE_KO |
                            (isCharRestrictLight) << PULSAR_CHARRESTRICTLIGHT | (isCharRestrictMid) << PULSAR_CHARRESTRICTMID |
                            (isCharRestrictHeavy) << PULSAR_CHARRESTRICTHEAVY | (isKartRestrictKart) << PULSAR_KARTRESTRICT |
                            (isKartRestrictBike) << PULSAR_BIKERESTRICT | (isChangeCombo) << PULSAR_CHANGECOMBO |
-                           (is500) << PULSAR_500 | (isThunderCloud) << PULSAR_THUNDERCLOUD |
                            (isTrackSelectionRegs) << PULSAR_REGS | (isKOFinal) << PULSAR_KOFINAL |
                            (isExtendedTeams) << PULSAR_EXTENDEDTEAMS | (isTrackSelectionRetros) << PULSAR_RETROS |
                            (isTrackSelectionCts) << PULSAR_CTS | (isTeamBattle) << PULSAR_FFA |
                            (isElimination) << PULSAR_ELIMINATION | (isLapBasedKO) << PULSAR_MODE_LAPKO |
                            (isStartRetro) << PULSAR_STARTRETROS | (isStartCT) << PULSAR_STARTCTS |
                            (isStartRTS) << PULSAR_STARTREGS | (isStart200) << PULSAR_START200 |
-                           (isStartOTT) << PULSAR_STARTOTT | (isStartItemRain) << PULSAR_STARTITEMRAIN;
+                           (isStartOTT) << PULSAR_STARTOTT | (isStartItemRain) << PULSAR_STARTITEMRAIN |
+                           (isThunderCloud) << PULSAR_THUNDERCLOUD;
 
         newContextValue2 |= (isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE | (isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE |
                             (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
@@ -464,7 +463,7 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 642);
+kmWrite32(0x800017D4, 65);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";

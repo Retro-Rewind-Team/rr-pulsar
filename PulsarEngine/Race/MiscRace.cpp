@@ -153,6 +153,7 @@ const char* ChangeItemWindowPane(ItemId id, u32 itemCount) {
     const bool feather = System::sInstance->IsContext(PULSAR_FEATHER);
     bool MegaTC = true;
     if (System::sInstance->IsContext(PULSAR_THUNDERCLOUD)) MegaTC = false;
+    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) MegaTC = true;
     const char* paneName;
     if (id == BLOOPER && feather) {
         if (itemCount == 2)
