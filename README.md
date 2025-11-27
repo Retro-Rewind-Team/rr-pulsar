@@ -32,6 +32,7 @@ The following features are licensed under AGPLv3:
 - Item Rain code found in ItemRain.cpp
 - Worldwide rank system found in Ranking.cpp
 - Battle Elimination implementation
+- Expanded VR/BR Rating System
 
 **NOTE:** You can ask to be fully exempted from these licensing constraints, feel free to contact the code author(s)
 

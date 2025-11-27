@@ -5,6 +5,7 @@
 #include <Network/Ranking.hpp>
 #include <UI/PlayerCount.hpp>
 #include <PulsarSystem.hpp>
+#include <Network/Rating/PlayerRating.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -198,24 +199,42 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
 
     Text::Info info;
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
-    u32 vr = 0;
-    u32 br = 0;
+    float vr = 0.0f;
+    float br = 0.0f;
     if (rksysMgr->curLicenseId >= 0) {
-        RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
-        vr = license.vr.points;
-        br = license.br.points;
+        vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
+        br = PointRating::GetUserBR(rksysMgr->curLicenseId);
     }
-    info.intToPass[0] = vr;
+    
+    wchar_t buffer[64];
+    int vrInt = (int)vr;
+    int vrDec = (int)((vr - (float)vrInt) * 100.0f + 0.5f);
+    if (vrDec >= 100) { vrInt++; vrDec -= 100; }
+    if(vrDec < 0) vrDec = -vrDec;
+    if (vrInt == 0) swprintf(buffer, 64, L"%dVR", vrDec);
+    else swprintf(buffer, 64, L"%d%02dVR", vrInt, vrDec);
+    info.strings[0] = buffer;
+    
+    self.ctButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
+    self.regButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
+    self.twoHundredButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
+    self.ottButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
+    self.itemRainButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
+    
     if (ExpWFCMain::lastClickedMainMenuButton == 8) {
-        info.intToPass[0] = br;
+        int brInt = (int)br;
+        int brDec = (int)((br - (float)brInt) * 100.0f + 0.5f);
+        if (brDec >= 100) { brInt++; brDec -= 100; }
+        if(brDec < 0) brDec = -brDec;
+        if (brInt == 0) swprintf(buffer, 64, L"%dBR", brDec);
+        else swprintf(buffer, 64, L"%d%02dBR", brInt, brDec);
+        info.strings[0] = buffer;
+        self.RRbattleButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
+        self.RRbattleButtonElim.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
+    } else {
+        self.RRbattleButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
+        self.RRbattleButtonElim.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
     }
-    self.ctButton.SetTextBoxMessage("go", BMG_VR_RATING, &info);
-    self.regButton.SetTextBoxMessage("go", BMG_VR_RATING, &info);
-    self.twoHundredButton.SetTextBoxMessage("go", BMG_VR_RATING, &info);
-    self.ottButton.SetTextBoxMessage("go", BMG_VR_RATING, &info);
-    self.itemRainButton.SetTextBoxMessage("go", BMG_VR_RATING, &info);
-    self.RRbattleButton.SetTextBoxMessage("go", BMG_BR_RATING, &info);
-    self.RRbattleButtonElim.SetTextBoxMessage("go", BMG_BR_RATING, &info);
 }
 kmCall(0x8064c294, ExpWFCModeSel::InitButton);
 
@@ -465,19 +484,32 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     }
 
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
-    u32 vr = 0;
-    u32 br = 0;
+    float vr = 0.0f;
+    float br = 0.0f;
     if (rksysMgr->curLicenseId >= 0) {
-        RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
-        vr = license.vr.points;
-        br = license.br.points;
+        vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
+        br = PointRating::GetUserBR(rksysMgr->curLicenseId);
     }
 
-    info.intToPass[0] = vr;
-    this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_VR_RATING, &info);
+    wchar_t buffer[64];
+    int vrInt = (int)vr;
+    int vrDec = (int)((vr - (float)vrInt) * 100.0f + 0.5f);
+    if (vrDec >= 100) { vrInt++; vrDec -= 100; }
+    if(vrDec < 0) vrDec = -vrDec;
+    if (vrInt == 0) swprintf(buffer, 64, L"%dVR", vrDec);
+    else swprintf(buffer, 64, L"%d%02dVR", vrInt, vrDec);
+    info.strings[0] = buffer;
+    
+    this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     if (ExpWFCMain::lastClickedMainMenuButton == 8) {
-        info.intToPass[0] = br;
-        this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_BR_RATING, &info);
+        int brInt = (int)br;
+        int brDec = (int)((br - (float)brInt) * 100.0f + 0.5f);
+        if (brDec >= 100) { brInt++; brDec -= 100; }
+        if(brDec < 0) brDec = -brDec;
+        if (brInt == 0) swprintf(buffer, 64, L"%dBR", brDec);
+        else swprintf(buffer, 64, L"%d%02dBR", brInt, brDec);
+        info.strings[0] = buffer;
+        this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     }
 
     if (!Dolphin::IsEmulator()) {

@@ -8,14 +8,36 @@
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
+#include <Network/Rating/PlayerRating.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 
 namespace Pulsar {
 namespace Network {
 
 void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* src, u32 len) {  // len is sizeof(RKNet::SELECTPacket) by default
     const System* system = System::sInstance;
+
+    const ExpSELECTHandler& handler = ExpSELECTHandler::Get();
+    const bool isBattle = (handler.mode == RKNet::ONLINEMODE_PUBLIC_BATTLE || handler.mode == RKNet::ONLINEMODE_PRIVATE_BATTLE);
+    const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+
+    if (rksys) {
+        u32 licenseId = rksys->curLicenseId;
+        float rating;
+        if (isBattle)
+            rating = PointRating::GetUserBR(licenseId);
+        else
+            rating = PointRating::GetUserVR(licenseId);
+
+        float decimal = rating - (int)rating;
+        src->decimalVR[0] = (u8)(decimal * 100.0f + 0.5f);
+    } else {
+        src->decimalVR[0] = 0;
+    }
+    src->decimalVR[1] = 0;
+
     if (!system->IsContext(PULSAR_CT)) {
         const u8 vanillaWinning = CupsConfig::ConvertTrack_PulsarIdToRealId(static_cast<PulsarId>(src->pulWinningTrack));
         src->winningCourse = vanillaWinning;
@@ -33,6 +55,11 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     asm(mr handler, r18;);
     register u8 aid;
     asm(mr aid, r19;);
+
+    for (int i = 0; i < 2; ++i) {
+        PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
+    }
+
     PulSELECT& dest = handler->receivedPackets[aid];
     register RKNet::PacketHolder<PulSELECT>* holder;
     asm(mr holder, r27);

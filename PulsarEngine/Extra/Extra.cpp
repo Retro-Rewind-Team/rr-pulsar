@@ -135,22 +135,6 @@ kmWrite32(0x80643C2C, 0x60000000);
 // No Disconnect on Countdown [_tZ]
 kmWrite32(0x80655578, 0x60000000);
 
-// Change VR Limit [XeR]
-kmWrite16(0x8052D286, 0x00007530);
-kmWrite16(0x8052D28E, 0x00007530);
-kmWrite16(0x8064F6DA, 0x00007530);
-kmWrite16(0x8064F6E6, 0x00007530);
-kmWrite16(0x8085654E, 0x00007530);
-kmWrite16(0x80856556, 0x00007530);
-kmWrite16(0x8085C23E, 0x00007530);
-kmWrite16(0x8085C246, 0x00007530);
-kmWrite16(0x8064F76A, 0x00007530);
-kmWrite16(0x8064F776, 0x00007530);
-kmWrite16(0x808565BA, 0x00007530);
-kmWrite16(0x808565C2, 0x00007530);
-kmWrite16(0x8085C322, 0x00007530);
-kmWrite16(0x8085C32A, 0x00007530);
-
 // Mushroom Glitch Fix [Vabold]
 kmWrite8(0x807BA077, 0x00);
 
@@ -198,48 +182,6 @@ asmFunc AntiLagStart() {
         blr;)
 }
 kmCall(0x80533430, AntiLagStart);
-
-// VR System Changes [MrBean35000vr]
-// Multiply VR difference by 2 [Winner]
-asmFunc GetVRScaleWin() {
-    ASM(
-        li r5, 2;
-        divw r3, r3, r5;
-        extsh r3, r3;)
-}
-kmCall(0x8052D150, GetVRScaleWin);
-
-// Cap VR loss from one victorious opponent between 0 and -8.
-asmFunc GetCapVRLoss() {
-    ASM(
-        lwz r3, 0x14(r1);
-        cmpwi r3, -8;
-        bge 0f;
-        li r3, -8;
-        b 1f;
-        0 :;
-        cmpwi r3, 0;
-        ble 1f;
-        li r3, 0;
-        1 :;)
-}
-kmCall(0x8052D260, GetCapVRLoss);
-
-// Cap VR gain from one defeated opponent between 2 and 12.
-asmFunc GetCapVRGain() {
-    ASM(
-        lwz r3, 0x14(r1);
-        cmpwi r3, 2;
-        bge 0f;
-        li r3, 2;
-        b 1f;
-        0 :;
-        cmpwi r3, 12;
-        ble 1f;
-        li r3, 12;
-        1 :;)
-}
-kmCall(0x8052D1B0, GetCapVRGain);
 
 // Prevent Lag Abuse [???]
 kmWrite32(0x80654b00, 0x4E800020);
