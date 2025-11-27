@@ -231,12 +231,6 @@ kmWrite32(0x80577724, 0x48000024);
 // Fix Unfocused Small Mii Icon Border [B_squo]
 kmWrite32(0x807eb774, 0x2c000017);
 
-// CPUs/Online Players Have High Detail Particles [Ro]
-kmWrite32(0x8068E494, 0x38600001);
-
-// Show Position in Live View [MrBean35000vr]
-kmWrite32(0x806335B0, 0x3860021A);
-
 // Fix Online Players Stuck on Halfpipe (Halfpipe Warp Fix) [Ro]
 asmFunc halfpipeWarpFix() {
     ASM(
@@ -394,5 +388,8 @@ kmCall(0x805674B8, exhaustPipeboostFix);
 // Battle Timer Fix [B_squo]
 kmWrite32(0x80532744, 0x3800012C);
 kmWrite32(0x80532780, 0x3800012C);
+
+// Disable Data Save Reset for Region ID Change [Vega]
+kmWrite32(0x80544928, 0x7C601B78);
 
 }  // namespace Codes
