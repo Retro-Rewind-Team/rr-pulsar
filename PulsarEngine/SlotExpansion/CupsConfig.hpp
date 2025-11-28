@@ -33,6 +33,7 @@ class CupsConfig {
     void ToggleCTs(bool enabled);
     static void SetLayout();
     void GetExpertPath(char* dest, PulsarId id, TTMode mode) const;
+    void LoadFileNames(const char* buffer, u32 length);
 
     // Ghosts
     int GetCRC32(PulsarId id) const;
@@ -92,6 +93,8 @@ class CupsConfig {
     u8 GetCurVariantIdx() const { return this->curVariantIdx; }
     PulsarId GetSelected() const { return this->selectedCourse; };
     void SetSelected(PulsarId id) { this->selectedCourse = id; }
+    const char* GetFileName(PulsarId id, u8 variantIdx) const;
+    u32 GetTotalVariantCount() const { return this->totalVariantCount; }
 
     // Cup variables can be public because they're seldom used and do not lead to faulty file loads
     PulsarCupId lastSelectedCup;  // 0
@@ -118,6 +121,11 @@ class CupsConfig {
 
     u16* alphabeticalArray;  // 0x30
     u16* invertedAlphabeticalArray;
+    char** trackFileNames;
+    char** variantFileNames;
+    u32 totalVariantCount;
+
+    void RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name);
 };  // 0x28
 
 }  // namespace Pulsar

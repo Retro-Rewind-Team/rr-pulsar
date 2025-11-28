@@ -16,10 +16,19 @@ s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, bool isFi
     const char* root = archive->extFileRoot;
     const char* lapSpecifier = isFinalLap ? "_f" : "_n";
     s32 ret = -1;
-    char trackName[0x100];
-    UI::GetTrackBMG(trackName, id);
-    snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, trackName, lapSpecifier);
-    ret = DVD::ConvertPathToEntryNum(pulPath);
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const u8 variantIdx = cupsConfig->GetCurVariantIdx();
+    const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
+    if (creatorName != nullptr) {
+        snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, creatorName, lapSpecifier);
+        ret = DVD::ConvertPathToEntryNum(pulPath);
+    }
+    if (ret < 0) {
+        char trackName[0x100];
+        UI::GetTrackBMG(trackName, id);
+        snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, trackName, lapSpecifier);
+        ret = DVD::ConvertPathToEntryNum(pulPath);
+    }
     if (ret < 0) {
         snprintf(pulPath, 0x50, "%sstrm/%d%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier);
         ret = DVD::ConvertPathToEntryNum(pulPath);

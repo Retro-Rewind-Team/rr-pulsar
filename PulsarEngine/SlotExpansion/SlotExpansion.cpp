@@ -59,19 +59,25 @@ kmCall(0x807e5da8, UpdateLastSelCup);
 static void FormatTrackPath(char* path, u32 length, const char* format, const char* fileName) {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     PulsarId pulsarId = cupsConfig->GetWinning();  // fileName already set through racedata's courseId, which has been set to slot before
-    if (IsBattle() || CupsConfig::IsReg(pulsarId))
-        snprintf(path, 0x80, format, fileName);
-    else {
-        const u8 variantIdx = cupsConfig->GetCurVariantIdx();
-        const char* format;
-        if (variantIdx == 0)
-            format = "Race/Course/%d";
-        else
-            format = "Race/Course/%d_%d";
-
-        if (cupsConfig->HasOddCups() && pulsarId >= (cupsConfig->GetCtsTrackCount() - 4)) pulsarId = static_cast<PulsarId>(pulsarId % 4);
-        snprintf(path, 0x80, format, CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId), variantIdx);
+    if (IsBattle() || CupsConfig::IsReg(pulsarId)) {
+        snprintf(path, length, format, fileName);
+        return;
     }
+
+    const u8 variantIdx = cupsConfig->GetCurVariantIdx();
+    const char* creatorFile = cupsConfig->GetFileName(pulsarId, variantIdx);
+    if (creatorFile != nullptr) {
+        snprintf(path, length, "Race/Course/%s", creatorFile);
+        return;
+    }
+
+    const char* slotFormat = (variantIdx == 0) ? "Race/Course/%d" : "Race/Course/%d_%d";
+    if (cupsConfig->HasOddCups() && pulsarId >= (cupsConfig->GetCtsTrackCount() - 4)) pulsarId = static_cast<PulsarId>(pulsarId % 4);
+    const CourseId realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
+    if (variantIdx == 0)
+        snprintf(path, length, slotFormat, realId);
+    else
+        snprintf(path, length, slotFormat, realId, variantIdx);
 }
 kmCall(0x80540820, FormatTrackPath);
 kmCall(0x80540870, FormatTrackPath);

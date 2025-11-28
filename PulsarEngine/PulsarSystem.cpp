@@ -78,6 +78,16 @@ void System::Init(const ConfigFile& conf) {
     this->InitIO(type);
     this->InitSettings(&conf.GetSection<CupsHolder>().trophyCount[0]);
 
+    const PulBMG& bmgSection = conf.GetSection<PulBMG>();
+    const u8* confStart = reinterpret_cast<const u8*>(&conf);
+    const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
+    const u32 totalSize = ConfigFile::readBytes;
+    const u32 offset = static_cast<u32>(fileSection - confStart);
+    if (offset < totalSize) {
+        const u32 remaining = totalSize - offset;
+        CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining);
+    }
+
     // Initialize last selected cup and courses
     const PulsarCupId last = Settings::Mgr::sInstance->GetSavedSelectedCup();
     CupsConfig* cupsConfig = CupsConfig::sInstance;

@@ -10,6 +10,56 @@
 
 namespace Pulsar {
 
+static bool ParseHexKey(const char* text, u32& value) {
+    value = 0;
+    if (text == nullptr || *text == '\0') return false;
+    while (*text != '\0') {
+        char c = *text++;
+        if (c == '\r' || c == '\n') break;
+        value <<= 4;
+        if (c >= '0' && c <= '9')
+            value |= static_cast<u32>(c - '0');
+        else if (c >= 'A' && c <= 'F')
+            value |= static_cast<u32>(c - 'A' + 10);
+        else if (c >= 'a' && c <= 'f')
+            value |= static_cast<u32>(c - 'a' + 10);
+        else
+            return false;
+    }
+    return true;
+}
+
+static void TrimLine(char* line) {
+    if (line == nullptr) return;
+    char* start = line;
+    while (*start == ' ' || *start == '\t') ++start;
+    if (start != line) {
+        const size_t len = strlen(start);
+        memmove(line, start, len + 1);
+    }
+    size_t length = strlen(line);
+    while (length > 0) {
+        char c = line[length - 1];
+        if (c == '\r' || c == '\n' || c == ' ' || c == '\t') {
+            line[length - 1] = '\0';
+            --length;
+        } else
+            break;
+    }
+}
+
+static char* DuplicateFileName(const char* src) {
+    if (src == nullptr || *src == '\0') return nullptr;
+    size_t len = strlen(src);
+    if (len == 0) return nullptr;
+    const size_t maxLen = IOS::ipcMaxFileName;
+    if (len > maxLen) len = maxLen;
+    char* copy = new char[maxLen + 1];
+    memcpy(copy, src, len);
+    copy[len] = '\0';
+    return copy;
+}
+
 CupsConfig* CupsConfig::sInstance = nullptr;
 
 CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
@@ -20,6 +70,7 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
                                                     lastSelectedCup(PULSARCUPID_FIRSTREG),
                                                     lastSelectedCupButtonIdx(0),
                                                     isAlphabeticalLayout(false) {
+    totalVariantCount = rawCups.totalVariantCount;
     if (regsMode != 1) {
         lastSelectedCup = PULSARCUPID_FIRSTCT;
         selectedCourse = PULSARID_FIRSTCT;
@@ -42,11 +93,18 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
     variantsOffs = new u16[ctsCount];
     alphabeticalArray = new u16[ctsCount];
     invertedAlphabeticalArray = new u16[ctsCount];
+    trackFileNames = new char*[ctsCount];
+    memset(trackFileNames, 0, sizeof(char*) * ctsCount);
+    variantFileNames = nullptr;
+    if (totalVariantCount != 0) {
+        variantFileNames = new char*[totalVariantCount];
+        memset(variantFileNames, 0, sizeof(char*) * totalVariantCount);
+    }
 
     memcpy(mainTracks, &rawCups.tracks, sizeof(Track) * ctsCount);
     memcpy(variants, (reinterpret_cast<const u8*>(&rawCups.tracks) + sizeof(Track) * ctsCount), sizeof(Variant) * rawCups.totalVariantCount);
 
-    for (int i = 0; i < 184; ++i) {
+    for (int i = 0; i < 196; ++i) {
         alphabeticalArray[i] = i;
         invertedAlphabeticalArray[i] = i;
     }
@@ -55,7 +113,7 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
 
     u16 lastTrackIndices[80];
     for (int i = 0; i < 80; ++i) {
-        lastTrackIndices[i] = i + 184;
+        lastTrackIndices[i] = i + 196;
     }
     for (int i = 0; i < 80; ++i) {
         for (int j = i + 1; j < 80; ++j) {
@@ -74,15 +132,15 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
         }
     }
     for (int i = 0; i < 80; ++i) {
-        alphabeticalArray[184 + i] = lastTrackIndices[i];
+        alphabeticalArray[196 + i] = lastTrackIndices[i];
     }
-    for (int i = 184 + 80; i < ctsCount; ++i) {
+    for (int i = 196 + 80; i < ctsCount; ++i) {
         alphabeticalArray[i] = i;
     }
 
     u16 cumulativeVarCount = 0;
     for (int i = 0; i < ctsCount; ++i) {
-        if (i >= 184) {
+        if (i >= 196) {
             invertedAlphabeticalArray[alphabeticalArray[i]] = i;
         }
         variantsOffs[i] = cumulativeVarCount * sizeof(Variant);
@@ -129,6 +187,92 @@ void CupsConfig::GetTrackGhostFolder(char* dest, PulsarId pulsarId) const {
         snprintf(dest, IOS::ipcMaxPath, "%s/Ghosts/%s", modFolder, &crc32);
     else
         snprintf(dest, IOS::ipcMaxPath, "%s/Ghosts/%08x", modFolder, crc32);
+}
+
+void CupsConfig::LoadFileNames(const char* buffer, u32 length) {
+    if (buffer == nullptr || length == 0 || this->GetCtsTrackCount() == 0) return;
+    char* temp = new char[length + 1];
+    memcpy(temp, buffer, length);
+    temp[length] = '\0';
+    char* cursor = temp;
+    if (length >= 3 && static_cast<u8>(cursor[0]) == 0xEF && static_cast<u8>(cursor[1]) == 0xBB && static_cast<u8>(cursor[2]) == 0xBF)
+        cursor += 3;
+    if (length < 4 || cursor[0] != 'F' || cursor[1] != 'I' || cursor[2] != 'L' || cursor[3] != 'E') {
+        delete[] temp;
+        return;
+    }
+    char* lineBreak = strchr(cursor, '\n');
+    if (lineBreak == nullptr) {
+        delete[] temp;
+        return;
+    }
+    cursor = lineBreak + 1;
+    while (*cursor != '\0') {
+        char* lineStart = cursor;
+        char* next = strchr(cursor, '\n');
+        if (next != nullptr) {
+            *next = '\0';
+            cursor = next + 1;
+        } else {
+            cursor += strlen(cursor);
+        }
+        TrimLine(lineStart);
+        if (*lineStart == '\0') continue;
+        char* equals = strchr(lineStart, '=');
+        if (equals == nullptr) continue;
+        *equals = '\0';
+        char* keyStr = lineStart;
+        char* valueStr = equals + 1;
+        TrimLine(keyStr);
+        TrimLine(valueStr);
+        if (*keyStr == '\0' || *valueStr == '\0') continue;
+        u32 key = 0;
+        if (!ParseHexKey(keyStr, key)) continue;
+        char* pipe = strchr(valueStr, '|');
+        if (pipe != nullptr) {
+            *pipe = '\0';
+            TrimLine(valueStr);
+        }
+        const u32 trackIdx = key & 0x0FFF;
+        const u32 variantIdx = key >> 12;
+        this->RegisterFileName(trackIdx, variantIdx, valueStr);
+    }
+    delete[] temp;
+}
+
+void CupsConfig::RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name) {
+    if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount()) || name == nullptr || *name == '\0') return;
+    char* stored = DuplicateFileName(name);
+    if (stored == nullptr) return;
+    if (variantIdx == 0) {
+        if (trackFileNames[trackIdx] != nullptr) delete[] trackFileNames[trackIdx];
+        trackFileNames[trackIdx] = stored;
+        return;
+    }
+    if (variantIdx - 1 >= this->mainTracks[trackIdx].variantCount || this->variantFileNames == nullptr) {
+        delete[] stored;
+        return;
+    }
+    const u32 base = this->variantsOffs[trackIdx] / sizeof(Variant);
+    const u32 variantArrayIdx = base + (variantIdx - 1);
+    if (variantArrayIdx >= this->totalVariantCount) {
+        delete[] stored;
+        return;
+    }
+    if (variantFileNames[variantArrayIdx] != nullptr) delete[] variantFileNames[variantArrayIdx];
+    variantFileNames[variantArrayIdx] = stored;
+}
+
+const char* CupsConfig::GetFileName(PulsarId id, u8 variantIdx) const {
+    if (IsReg(id)) return nullptr;
+    const u32 trackIdx = ConvertTrack_PulsarIdToRealId(id);
+    if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount())) return nullptr;
+    if (variantIdx == 0) return trackFileNames[trackIdx];
+    if (variantIdx - 1 >= this->mainTracks[trackIdx].variantCount || this->variantFileNames == nullptr) return nullptr;
+    const u32 base = this->variantsOffs[trackIdx] / sizeof(Variant);
+    const u32 variantArrayIdx = base + (variantIdx - 1);
+    if (variantArrayIdx >= this->totalVariantCount) return nullptr;
+    return variantFileNames[variantArrayIdx];
 }
 
 u32 CupsConfig::RandomizeVariant(PulsarId id) const {
@@ -242,9 +386,9 @@ PulsarId CupsConfig::RandomizeTrack() const {
         if (System::sInstance->netMgr.region == 0x14) isCTOnly = TRACKSELECTION_CTS;
     }
     if (isRetroOnly == TRACKSELECTION_RETROS && isRegsOnly != TRACKSELECTION_REGS && !isBattle)
-        pulsarId = random.NextLimited(184) + 0x100;
+        pulsarId = random.NextLimited(196) + 0x100;
     else if (isCTOnly == TRACKSELECTION_CTS && isRegsOnly != TRACKSELECTION_REGS && !isBattle)
-        pulsarId = random.NextLimited(80) + 0x100 + 184;
+        pulsarId = random.NextLimited(80) + 0x100 + 196;
     else if (isRegsOnly == TRACKSELECTION_REGS && !isBattle)
         pulsarId = random.NextLimited(32);
     else if (isBattle)
@@ -253,7 +397,7 @@ PulsarId CupsConfig::RandomizeTrack() const {
         pulsarId = random.NextLimited(this->GetCtsTrackCount() + 32);
         if (pulsarId > 31) pulsarId += (0x100 - 32);
     } else
-        pulsarId = random.NextLimited(264) + 0x100;
+        pulsarId = random.NextLimited(276) + 0x100;
     return static_cast<PulsarId>(pulsarId);
 }
 
@@ -289,7 +433,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         if (System::sInstance->netMgr.region == 0x14) isCTOnly = TRACKSELECTION_CTS;
     }
     if (isRetroOnly == TRACKSELECTION_RETROS && isRegsOnly != TRACKSELECTION_REGS && !isBattle) {
-        const u32 countRetro = 46;
+        const u32 countRetro = 49;
         const u32 minRetro = countRetro < 8 ? 8 : 0;
         const u32 nextIdxRetro = ((idx + direction + countRetro) % countRetro) + minRetro;
         if (!this->hasRegs && nextIdxRetro < 8) return static_cast<PulsarCupId>(nextIdxRetro + countRetro + 0x38);
@@ -304,12 +448,12 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
     } else if (isBattle) {
         const u32 countBT = 10;
         const u32 lastCupIndex = this->GetTotalCupCount() - 1;
-        const u32 startIdx = 74;
+        const u32 startIdx = 77;
         const u32 nextIdxBT = startIdx + ((idx - startIdx + direction + countBT) % countBT);
         if (!this->hasRegs && nextIdxBT < 8) return static_cast<PulsarCupId>(nextIdxBT + countBT + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxBT);
     } else {
-        const u32 count = 66;
+        const u32 count = 69;
         const u32 min = count < 8 ? 8 : 0;
         const u32 nextIdx = ((idx + direction + count) % count) + min;
         if (!this->hasRegs && nextIdx < 8) return static_cast<PulsarCupId>(nextIdx + count + 0x38);
