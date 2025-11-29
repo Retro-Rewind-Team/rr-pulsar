@@ -103,12 +103,19 @@ static float GetPlayerRating(const RacedataScenario& scenario, int playerIdx) {
         }
         if (localCount == 0) {
             RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+            RKNet::Controller* controller = RKNet::Controller::sInstance;
             if (rksys) {
                 bool isBattle = IsBattle(scenario.settings.gamemode);
-                if (isBattle)
+                if (isBattle) {
                     return GetUserBR(rksys->curLicenseId);
-                else
+                }
+                bool isRegionalVs = false;
+                if (controller != nullptr) {
+                    isRegionalVs = (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
+                }
+                if (!isBattle && isRegionalVs && scenario.settings.gamemode == MODE_PUBLIC_VS) {
                     return GetUserVR(rksys->curLicenseId);
+                }
             }
         }
     } else if (player.playerType == PLAYER_REAL_ONLINE) {
@@ -149,10 +156,20 @@ static void UpdatePlayerRating(RacedataScenario& scenario, int playerIdx, float 
         }
         if(localCount == 0) {
             RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+            RKNet::Controller* controller = RKNet::Controller::sInstance;
             if (rksys) {
                 bool isBattle = IsBattle(scenario.settings.gamemode);
-                if(isBattle) SetUserBR(rksys->curLicenseId, next);
-                else SetUserVR(rksys->curLicenseId, next);
+                if (isBattle) {
+                    SetUserBR(rksys->curLicenseId, next);
+                } else {
+                    bool isRegionalVs = false;
+                    if (controller != nullptr) {
+                        isRegionalVs = (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
+                    }
+                    if (isRegionalVs && scenario.settings.gamemode == MODE_PUBLIC_VS) {
+                        SetUserVR(rksys->curLicenseId, next);
+                    }
+                }
             }
         }
     }
