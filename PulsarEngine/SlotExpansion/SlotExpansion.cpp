@@ -66,14 +66,14 @@ static void FormatTrackPath(char* path, u32 length, const char* format, const ch
 
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
     const char* creatorFile = cupsConfig->GetFileName(pulsarId, variantIdx);
-    if (creatorFile != nullptr) {
+    const CourseId realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
+    OS::Report("Formatting track path for pulsarId %d variant %d, creatorFile: %s\n", pulsarId, variantIdx, creatorFile ? creatorFile : "null");
+    if (creatorFile != nullptr && realId > 119) {
         snprintf(path, length, "Race/Course/%s", creatorFile);
         return;
     }
 
     const char* slotFormat = (variantIdx == 0) ? "Race/Course/%d" : "Race/Course/%d_%d";
-    if (cupsConfig->HasOddCups() && pulsarId >= (cupsConfig->GetCtsTrackCount() - 4)) pulsarId = static_cast<PulsarId>(pulsarId % 4);
-    const CourseId realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
     if (variantIdx == 0)
         snprintf(path, length, slotFormat, realId);
     else
