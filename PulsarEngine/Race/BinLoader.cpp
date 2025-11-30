@@ -44,5 +44,7 @@ kmCall(0x807bb030, GetCustomItemSlot);
 kmCall(0x807bb200, GetCustomItemSlot);
 kmCall(0x807bb53c, GetCustomItemSlot);
 kmCall(0x807bbb58, GetCustomItemSlot);
+kmCall(0x807bbdd4, GetCustomItemSlot);
+kmCall(0x807bbf50, GetCustomItemSlot);
 
 }  // namespace RetroRewind
