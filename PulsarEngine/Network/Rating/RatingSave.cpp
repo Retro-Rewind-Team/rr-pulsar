@@ -263,16 +263,28 @@ static void ApplyToLicense(u32 licenseIdx, RKSYS::LicenseMgr& license) {
     license.br.points = ClampRating(entry->br);
 }
 
-static void StoreFromLicense(u32 licenseIdx, const RKSYS::LicenseMgr& license) {
+static void StoreFromLicense(u32 licenseIdx, RKSYS::LicenseMgr& license) {
     EnsureLoaded();
     if (licenseIdx >= kMaxLicenses) return;
 
+    LicenseBackup& backup = sLicenseBackups[licenseIdx];
+    if (!backup.hasOriginal) {
+        backup.originalVr = ClampRating((float)license.vr.points);
+        backup.originalBr = ClampRating((float)license.br.points);
+        backup.hasOriginal = true;
+    }
+
     ProfileEntry* entry = ResolveEntryForLicense(license, true);
-    if (entry != nullptr && !entry->hasData) {
-        entry->vr = (float)license.vr.points / 100.0f;
-        entry->br = (float)license.br.points / 100.0f;
-        entry->hasData = true;
-        Persist();
+    if (entry != nullptr) {
+        if (!entry->hasData) {
+            entry->vr = (float)license.vr.points / 100.0f;
+            entry->br = (float)license.br.points / 100.0f;
+            entry->hasData = true;
+            Persist();
+        }
+
+        license.vr.points = ClampRating(entry->vr);
+        license.br.points = ClampRating(entry->br);
     }
 }
 
