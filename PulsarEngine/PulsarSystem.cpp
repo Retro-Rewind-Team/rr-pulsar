@@ -193,6 +193,7 @@ void System::UpdateContext() {
     bool isStart200 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_200;
     bool isStartOTT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_OTT;
     bool isStartItemRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_ITEMRAIN;
+    bool isRanking = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_RANKINGS) == RANKINGS_ENABLED && isFroom;
     bool isFeather = this->info.HasFeather();
     bool isUMTs = this->info.HasUMTs();
     u32 newContext = 0;
@@ -243,6 +244,7 @@ void System::UpdateContext() {
                 isStart200 = newContext & (1 << PULSAR_START200);
                 isStartOTT = newContext & (1 << PULSAR_STARTOTT);
                 isStartItemRain = newContext & (1 << PULSAR_STARTITEMRAIN);
+                isRanking = newContext2 & (1 << PULSAR_RANKING);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -295,7 +297,8 @@ void System::UpdateContext() {
                             (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
                             (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN | 
                             (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
-                            (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN;                     
+                            (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
+                            (isRanking) << PULSAR_RANKING;                     
     }
 
     // Combine the new context with preserved bits

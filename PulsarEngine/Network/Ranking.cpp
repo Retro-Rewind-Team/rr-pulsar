@@ -189,7 +189,7 @@ static void DisplayOnlineRanking() {
 
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    if (mode != MODE_PUBLIC_VS) return;
+    if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING)) return;
     int rank = GetCurrentLicenseRankVS();
     if (rank < 0) rank = 0;
     const RKSYS::LicenseMgr& license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
