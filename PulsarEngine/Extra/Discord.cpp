@@ -6,6 +6,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Core/rvl/DWC/DWCAccount.hpp>
+#include <Network/Rating/PlayerRating.hpp>
 
 namespace Discord {
 
@@ -50,12 +51,12 @@ void DiscordRichPresence(Section* _this) {
     int maxPlayers = 0;
 
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
-    u32 vr = 0, br = 0;
+    float vr = 0, br = 0;
     u64 fc = 0;
     if (rksysMgr && rksysMgr->curLicenseId >= 0) {
         RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
-        vr = license.vr.points;
-        br = license.br.points;
+        vr = Pulsar::PointRating::GetUserVR(rksysMgr->curLicenseId);
+        br = Pulsar::PointRating::GetUserBR(rksysMgr->curLicenseId);
         fc = DWC::CreateFriendKey(&license.dwcAccUserData);
     }
 
@@ -223,7 +224,9 @@ void DiscordRichPresence(Section* _this) {
 
     if (_this->sectionId >= SECTION_P1_WIFI && _this->sectionId <= SECTION_P2_WIFI_FRIEND_COIN) {
         char newDetails[0x100];
-        snprintf(newDetails, 0x100, "%s (VR: %d)", details, vr, br);
+        int vrScaled = (int)(vr * 100.0f + 0.5f);
+        int brScaled = (int)(br * 100.0f + 0.5f);
+        snprintf(newDetails, 0x100, "%s (VR: %d BR: %d)", details, vrScaled, brScaled);
         details = newDetails;
     }
 

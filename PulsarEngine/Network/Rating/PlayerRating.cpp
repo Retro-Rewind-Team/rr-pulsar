@@ -30,10 +30,10 @@ namespace PointRating {
 u8 remoteDecimalVR[12][2];
 float lastRaceDeltas[12];
 
-static const int kDeltaClamp = 9998;
 static const int kSplineBias = 7499;
 static const float kSplineScale = 0.00020004001271445304f;
 static const float kOneSixth = 0.16666667f;
+static const float kRatingRangeScale = 5.0f;
 
 static const s16 kSplineControlPoints[5] = {0, 1, 8, 50, 125};
 
@@ -71,23 +71,43 @@ float EvaluateSpline(float x) {
 }
 
 static float CalcPosPoints(float selfPoints, float opponentPoints) {
-    float diff = (opponentPoints - selfPoints) * 20.0f;
+    float diff = opponentPoints - selfPoints;
+    float scaledDiff = diff * kRatingRangeScale;
 
-    float sample = (float)kSplineBias + diff;
+    float sample = (float)kSplineBias + scaledDiff;
     float result = EvaluateSpline(kSplineScale * sample);
-    if (result > 2.50f) result = 2.50f;
+    if (result > 2.40f) result = 2.40f;
     if (result < 0.20f) result = 0.20f;
     return result / 10.0f;
 }
 
 static float CalcNegPoints(float selfPoints, float opponentPoints) {
-    float diff = (opponentPoints - selfPoints) * 20.0f;
+    float diff = opponentPoints - selfPoints;
+    float scaledDiff = diff * kRatingRangeScale;
 
-    float sample = (float)kSplineBias - diff;
+    float sample = (float)kSplineBias - scaledDiff;
     float result = -EvaluateSpline(kSplineScale * sample);
     if (result < -1.80f) result = -1.80f;
     if (result > 0.0f) result = 0.0f;
     return result / 10.0f;
+}
+
+static float GetMaxPositiveDeltaForRating(float rating) {
+    const float kRampStart = 1500.0f;
+    const float kRampEnd = 9000.0f;
+    const float kMinimumGain = 3.0f;
+    const float kInitialCap = 1000.0f;
+    const float kUnlimitedGain = 1e6f;
+
+    if (rating < kRampStart) {
+        return kUnlimitedGain;
+    }
+    if (rating >= kRampEnd) {
+        return kMinimumGain;
+    }
+
+    const float progress = (rating - kRampStart) / (kRampEnd - kRampStart);
+    return kMinimumGain + (kInitialCap - kMinimumGain) * (1.0f - progress);
 }
 
 static bool IsBattle(GameMode mode) {
@@ -242,6 +262,12 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
         for (u32 i = 0; i < playerCount; ++i) {
             deltas[i] *= multiplier;
             float oldRating = GetPlayerRating(*scenario, i);
+            if (deltas[i] > 0.0f) {
+                const float gainCap = GetMaxPositiveDeltaForRating(oldRating);
+                if (deltas[i] > gainCap) {
+                    deltas[i] = gainCap;
+                }
+            }
             float next = oldRating + deltas[i];
             if (next < (float)MinRating) next = (float)MinRating;
             if (next > (float)MaxRating) next = (float)MaxRating;
