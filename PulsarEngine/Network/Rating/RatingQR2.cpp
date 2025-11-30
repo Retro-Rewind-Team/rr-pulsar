@@ -40,14 +40,14 @@ static void MyServerKeyCallback(int key, void* buffer) {
         licenseId = rksys->curLicenseId;
     }
 
-    if (key == 0x65) { // ev
+    if (key == 0x65) {  // ev
         float vr = PointRating::GetUserVR(licenseId);
         char buf[32];
-        snprintf(buf, sizeof(buf), "%d", (int)(vr * 100.0f)); 
+        snprintf(buf, sizeof(buf), "%d", (int)(vr * 100.0f));
         qr2_buffer_addA(buffer, buf);
         return;
     }
-    if (key == 0x66) { // eb
+    if (key == 0x66) {  // eb
         float br = PointRating::GetUserBR(licenseId);
         char buf[32];
         snprintf(buf, sizeof(buf), "%d", (int)(br * 100.0f));
@@ -66,5 +66,5 @@ static int Hook_qr2_init_socketA(void* q, int s, int bound_port, const char* gam
 }
 kmCall(0x800d4f28, Hook_qr2_init_socketA);
 
-} // namespace Rating
-} // namespace Pulsar
+}  // namespace Rating
+}  // namespace Pulsar

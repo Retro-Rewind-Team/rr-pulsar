@@ -11,7 +11,7 @@ float GetRatingMultiplier() {
     float multiplier = 1.0f;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    
+
     if (BattleElim::ShouldApplyBattleElimination()) {
         if (sub.playerCount <= 5) {
             multiplier = 1.0f;
@@ -32,11 +32,11 @@ float GetRatingMultiplier() {
             (month == 3 && day >= 13 && day <= 17) ||
             (month == 4 && day >= 10 && day <= 14) ||
             (month == 8 && day >= 23 && day <= 29)) {
-            
             multiplier = 2.0f;
             if (BattleElim::ShouldApplyBattleElimination()) {
                 if (sub.playerCount > 5) {
-                    multiplier = 2.0f + ((float)(sub.playerCount - 5) * 0.166f);}
+                    multiplier = 2.0f + ((float)(sub.playerCount - 5) * 0.166f);
+                }
             }
         }
     }

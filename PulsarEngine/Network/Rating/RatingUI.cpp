@@ -62,7 +62,7 @@ static void FillVRControl(Pages::VR* page, u32 index, u32 playerId, u32 team, u8
         Text::Info pointsInfo;
         u32 valueMessageId = 0;
         u32 unitsMessageId = 0;
-        
+
         wchar_t buffer[64];
         bool useString = false;
 
@@ -97,10 +97,15 @@ static void FillVRControl(Pages::VR* page, u32 index, u32 playerId, u32 team, u8
                 if (hasDecimal) {
                     int rInt = (int)rating;
                     int rDec = (int)((rating - (float)rInt) * 100.0f + 0.5f);
-                    if (rDec >= 100) { rInt++; rDec -= 100; }
+                    if (rDec >= 100) {
+                        rInt++;
+                        rDec -= 100;
+                    }
                     if (rDec < 0) rDec = -rDec;
-                    if (rInt == 0) swprintf(buffer, 64, L"%d", rDec);
-                    else swprintf(buffer, 64, L"%d%02d", rInt, rDec);
+                    if (rInt == 0)
+                        swprintf(buffer, 64, L"%d", rDec);
+                    else
+                        swprintf(buffer, 64, L"%d%02d", rInt, rDec);
                     pointsInfo.strings[0] = buffer;
                     useString = true;
                     valueMessageId = UI::BMG_TEXT;
@@ -142,10 +147,15 @@ static void FillVRControl(Pages::VR* page, u32 index, u32 playerId, u32 team, u8
                 if (hasDecimal) {
                     int rInt = (int)rating;
                     int rDec = (int)((rating - (float)rInt) * 100.0f + 0.5f);
-                    if (rDec >= 100) { rInt++; rDec -= 100; }
+                    if (rDec >= 100) {
+                        rInt++;
+                        rDec -= 100;
+                    }
                     if (rDec < 0) rDec = -rDec;
-                    if (rInt == 0) swprintf(buffer, 64, L"%d", rDec);
-                    else swprintf(buffer, 64, L"%d.%02d", rInt, rDec);
+                    if (rInt == 0)
+                        swprintf(buffer, 64, L"%d", rDec);
+                    else
+                        swprintf(buffer, 64, L"%d.%02d", rInt, rDec);
                     pointsInfo.strings[0] = buffer;
                     useString = true;
                     valueMessageId = UI::BMG_TEXT;

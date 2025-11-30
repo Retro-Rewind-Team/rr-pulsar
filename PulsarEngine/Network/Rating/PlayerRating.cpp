@@ -38,41 +38,41 @@ static const float kOneSixth = 0.16666667f;
 static const s16 kSplineControlPoints[5] = {0, 1, 8, 50, 125};
 
 inline float Abs(float value) {
-	return (value >= 0.0f) ? value : -value;
+    return (value >= 0.0f) ? value : -value;
 }
 
 float EvaluateSpline(float x) {
-	float total = 0.0f;
-	for (int offset = -2; offset <= 6; ++offset) {
-		int tableIdx = offset;
-		if (tableIdx < 0) {
-			tableIdx = 0;
-		} else if (tableIdx > 4) {
-			tableIdx = 4;
-		}
+    float total = 0.0f;
+    for (int offset = -2; offset <= 6; ++offset) {
+        int tableIdx = offset;
+        if (tableIdx < 0) {
+            tableIdx = 0;
+        } else if (tableIdx > 4) {
+            tableIdx = 4;
+        }
 
-		float delta = Abs(x - static_cast<float>(offset));
-		float weight = 0.0f;
+        float delta = Abs(x - static_cast<float>(offset));
+        float weight = 0.0f;
 
-		if (delta <= 1.0f) {
-			const float delta2 = delta * delta;
-			const float delta3 = delta2 * delta;
-			weight = (4.0f - 6.0f * delta2 + 3.0f * delta3) * kOneSixth;
-		} else if (delta < 2.0f) {
-			const float t = 2.0f - delta;
-			weight = (t * t * t) * kOneSixth;
-		} else {
-			continue;
-		}
+        if (delta <= 1.0f) {
+            const float delta2 = delta * delta;
+            const float delta3 = delta2 * delta;
+            weight = (4.0f - 6.0f * delta2 + 3.0f * delta3) * kOneSixth;
+        } else if (delta < 2.0f) {
+            const float t = 2.0f - delta;
+            weight = (t * t * t) * kOneSixth;
+        } else {
+            continue;
+        }
 
-		total += weight * static_cast<float>(kSplineControlPoints[tableIdx]);
-	}
-	return total;
+        total += weight * static_cast<float>(kSplineControlPoints[tableIdx]);
+    }
+    return total;
 }
 
 static float CalcPosPoints(float selfPoints, float opponentPoints) {
     float diff = (opponentPoints - selfPoints) * 20.0f;
-    
+
     float sample = (float)kSplineBias + diff;
     float result = EvaluateSpline(kSplineScale * sample);
     if (result > 2.50f) result = 2.50f;
@@ -143,18 +143,18 @@ static void UpdatePlayerRating(RacedataScenario& scenario, int playerIdx, float 
     float next = current + delta;
     if (next < (float)MinRating) next = (float)MinRating;
     if (next > (float)MaxRating) next = (float)MaxRating;
-    
+
     next = (float)((int)(next * 100.0f)) / 100.0f;
 
     scenario.players[playerIdx].rating.points = (u16)next;
-    
+
     const RacedataPlayer& player = scenario.players[playerIdx];
     if (player.playerType == PLAYER_REAL_LOCAL) {
         int localCount = 0;
-        for(int i=0; i<playerIdx; ++i) {
-            if(scenario.players[i].playerType == PLAYER_REAL_LOCAL) localCount++;
+        for (int i = 0; i < playerIdx; ++i) {
+            if (scenario.players[i].playerType == PLAYER_REAL_LOCAL) localCount++;
         }
-        if(localCount == 0) {
+        if (localCount == 0) {
             RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
             RKNet::Controller* controller = RKNet::Controller::sInstance;
             if (rksys) {
@@ -179,38 +179,42 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
     u32 playerCount = scenario->playerCount;
     if (scenario->settings.gametype == GAMETYPE_DEFAULT) {
         float deltas[12];
-        for(int i=0; i<12; ++i) deltas[i] = 0.0f;
+        for (int i = 0; i < 12; ++i) deltas[i] = 0.0f;
 
         Raceinfo* raceInfo = Raceinfo::sInstance;
-        
+
         for (u32 i = 0; i < playerCount; ++i) {
             bool isBattle = IsBattle(scenario->settings.gamemode);
             u8 myPos = raceInfo->players[i]->position;
             u16 myScore = isBattle ? raceInfo->players[i]->battleScore : 0;
-            
+
             bool shouldCalc = (scenario->settings.gamemode > MODE_6 && scenario->settings.gamemode < MODE_AWARD);
-            
+
             if (shouldCalc) {
                 float myRating = GetPlayerRating(*scenario, i);
-                
+
                 for (u32 j = 0; j < playerCount; ++j) {
                     if (i == j) continue;
-                    
+
                     bool win = false;
                     bool lose = false;
-                    
+
                     if (isBattle) {
                         u16 oppScore = raceInfo->players[j]->battleScore;
-                        if (oppScore < myScore) win = true;
-                        else if (myScore < oppScore) lose = true;
+                        if (oppScore < myScore)
+                            win = true;
+                        else if (myScore < oppScore)
+                            lose = true;
                     } else {
                         u8 oppPos = raceInfo->players[j]->position;
-                        if (myPos < oppPos) win = true;
-                        else if (oppPos < myPos) lose = true;
+                        if (myPos < oppPos)
+                            win = true;
+                        else if (oppPos < myPos)
+                            lose = true;
                     }
-                    
+
                     float oppRating = GetPlayerRating(*scenario, j);
-                    
+
                     if (win) {
                         deltas[i] += CalcPosPoints(myRating, oppRating);
                     } else if (lose) {
@@ -218,15 +222,15 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
                     }
                 }
             }
-            
+
             if (myPos != 0 && playerCount != 0) {
                 scenario->players[i].finishPos = myPos;
-                
+
                 u16 points = 0;
                 if (!isBattle && (scenario->settings.gamemode < 9 || scenario->settings.gamemode > 10)) {
-                     if(playerCount <= 12 && myPos <= 12 && myPos > 0) {
-                         points = Racedata::pointsRoom[playerCount-1][myPos-1];
-                     }
+                    if (playerCount <= 12 && myPos <= 12 && myPos > 0) {
+                        points = Racedata::pointsRoom[playerCount - 1][myPos - 1];
+                    }
                 } else {
                     points = raceInfo->players[i]->battleScore;
                 }
