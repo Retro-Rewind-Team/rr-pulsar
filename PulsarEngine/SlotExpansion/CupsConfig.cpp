@@ -319,7 +319,7 @@ void CupsConfig::ToggleCTs(bool enabled) {
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
     u32 isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
-    if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && !isBattle) {
+    if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && !isBattle) {
         if (System::sInstance->IsContext(PULSAR_REGS)) isRegs = TRACKSELECTION_REGS;
     }
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_WW || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_WW || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_WW) {
