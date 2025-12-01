@@ -67,7 +67,7 @@ float EvaluateSpline(float x) {
 
         total += weight * static_cast<float>(kSplineControlPoints[tableIdx]);
     }
-    return total;
+    return total / 40.0f;
 }
 
 static float CalcPosPoints(float selfPoints, float opponentPoints) {
@@ -76,9 +76,9 @@ static float CalcPosPoints(float selfPoints, float opponentPoints) {
 
     float sample = (float)kSplineBias + scaledDiff;
     float result = EvaluateSpline(kSplineScale * sample);
-    if (result > 2.40f) result = 2.40f;
-    if (result < 0.20f) result = 0.20f;
-    return result / 10.0f;
+    if (result > 0.24f) result = 0.24f;
+    if (result < 0.020f) result = 0.020f;
+    return result;
 }
 
 static float CalcNegPoints(float selfPoints, float opponentPoints) {
@@ -87,15 +87,15 @@ static float CalcNegPoints(float selfPoints, float opponentPoints) {
 
     float sample = (float)kSplineBias - scaledDiff;
     float result = -EvaluateSpline(kSplineScale * sample);
-    if (result < -1.80f) result = -1.80f;
+    if (result < -0.19f) result = -0.19f;
     if (result > 0.0f) result = 0.0f;
-    return result / 10.0f;
+    return result;
 }
 
 static float GetMaxPositiveDeltaForRating(float rating) {
     const float kRampStart = 1500.0f;
     const float kRampEnd = 9000.0f;
-    const float kMinimumGain = 3.0f;
+    const float kMinimumGain = 0.03f;
     const float kInitialCap = 1000.0f;
     const float kUnlimitedGain = 1e6f;
 
