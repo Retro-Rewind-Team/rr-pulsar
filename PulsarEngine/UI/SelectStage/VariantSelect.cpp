@@ -131,7 +131,7 @@ void VariantSelect::ApplyVariantButtonState() {
         Text::Info info;
         memset(&info, 0, sizeof(info));
         u32 bmgId;
-        if (variantIdx == 0) {
+        if (variantIdx == 0 && cups->GetTrack(selectedPulsarId).variantCount == 0) {
             u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(selectedPulsarId);
             const u32 VARIANT_TRACKS_BASE = 0x400000;
             bmgId = VARIANT_TRACKS_BASE + (realId << 4);

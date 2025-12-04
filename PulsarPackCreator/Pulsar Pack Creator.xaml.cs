@@ -472,16 +472,19 @@ namespace Pulsar_Pack_Creator
                 {
                     for (int i = 0; i < 4; i++)
                     {
-                        Cup.Track.Variant cur = cup.tracks[i].main;
+                        Cup.Track track = cup.tracks[i];
+                        Cup.Track.Variant cur = track.main;
                         bool hasFile = cur.fileName != "" && cur.fileName != Cup.defaultFile;
-                        bool hasName = cur.trackName != "" && cur.trackName != Cup.defaultTrack;
+                        // Use commonName (BMG_TRACKS) when available, fall back to main.trackName
+                        string trackName = !string.IsNullOrEmpty(track.commonName) ? track.commonName : cur.trackName;
+                        bool hasName = trackName != "" && trackName != Cup.defaultTrack;
                         if (!(hasFile || hasName))
                         {
                             isDone = true;
                             break;
                         }
                         massImportText[0] += cur.fileName + "\n";
-                        massImportText[1] += cur.trackName + "\n";
+                        massImportText[1] += trackName + "\n";
                         massImportText[2] += cur.authorName + "\n";
                         massImportText[3] += cur.versionName + "\n";
                         massImportText[4] += PulsarGame.MarioKartWii.idxToFullNames[Array.IndexOf(PulsarGame.MarioKartWii.idxToCourseId, cur.slot)] + "\n";

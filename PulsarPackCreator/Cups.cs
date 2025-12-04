@@ -405,11 +405,10 @@ namespace Pulsar_Pack_Creator
             {
                 int idx = Grid.GetRow(box);
                 Cup.Track track = cups[curCup].tracks[idx - firstTrackRow];
-                if (track.variants.Count > 0)
-                {
-                    track.commonName = box.Text;
-                }
-                else
+                // Always set commonName for BMG_TRACKS
+                track.commonName = box.Text;
+                // Also set main.trackName when there are no variants for compatibility
+                if (track.variants.Count == 0)
                 {
                     track.main.trackName = box.Text;
                 }
@@ -470,7 +469,8 @@ namespace Pulsar_Pack_Creator
             Cup.Track track = cups[curCup].tracks[row];
             Cup.Track.Variant mainTrack = track.main;
             GetFileBox(row).Text = mainTrack.fileName;
-            string name = (track.variants.Count > 0 && !string.IsNullOrEmpty(track.commonName)) ? track.commonName : mainTrack.trackName;
+            // Always use commonName (BMG_TRACKS) when available, fall back to main.trackName only if empty
+            string name = !string.IsNullOrEmpty(track.commonName) ? track.commonName : mainTrack.trackName;
             GetNameBox(row).Text = name;
             GetAuthorBox(row).Text = mainTrack.authorName;
             GetVersionBox(row).Text = mainTrack.versionName;
@@ -511,7 +511,8 @@ namespace Pulsar_Pack_Creator
                 Cup cup = cups[idx];
                 for (int i = 0; i < 4; i++)
                 {
-                    string name = (cup.tracks[i].variants.Count > 0 && !string.IsNullOrEmpty(cup.tracks[i].commonName)) ? cup.tracks[i].commonName : cup.tracks[i].main.trackName;
+                    // Always use commonName (BMG_TRACKS) when available
+                    string name = !string.IsNullOrEmpty(cup.tracks[i].commonName) ? cup.tracks[i].commonName : cup.tracks[i].main.trackName;
                     indexedArray[cup.idx * 4 + i] = name + (cup.tracks[i].main.versionName == "Version" ? "" : $" {cup.tracks[i].main.versionName}");
                 }
             }

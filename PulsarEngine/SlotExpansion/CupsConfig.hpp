@@ -96,7 +96,6 @@ class CupsConfig {
     PulsarId GetSelected() const { return this->selectedCourse; };
     void SetSelected(PulsarId id) { this->selectedCourse = id; }
     const char* GetFileName(PulsarId id, u8 variantIdx) const;
-    u32 GetVariantNameBmgId(PulsarId pulsarId, u8 variantIdx) const;
     u32 GetTotalVariantCount() const { return this->totalVariantCount; }
 
     // Cup variables can be public because they're seldom used and do not lead to faulty file loads
@@ -132,8 +131,7 @@ class CupsConfig {
     u32* variantNameBmgIds;
     u32 totalVariantCount;
 
-    void RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name, u32 bmgId);
-    void RegisterVariantBmg(u32 trackIdx, u32 variantIdx, u32 bmgId);
+    void RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name);
 };  // 0x28
 
 }  // namespace Pulsar

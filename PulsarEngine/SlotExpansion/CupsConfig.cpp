@@ -99,15 +99,11 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
     invertedAlphabeticalArray = new u16[ctsCount];
     trackFileNames = new char*[ctsCount];
     memset(trackFileNames, 0, sizeof(char*) * ctsCount);
-    trackNameBmgIds = new u32[ctsCount];
-    memset(trackNameBmgIds, 0, sizeof(u32) * ctsCount);
     variantFileNames = nullptr;
     variantNameBmgIds = nullptr;
     if (totalVariantCount != 0) {
         variantFileNames = new char*[totalVariantCount];
         memset(variantFileNames, 0, sizeof(char*) * totalVariantCount);
-        variantNameBmgIds = new u32[totalVariantCount];
-        memset(variantNameBmgIds, 0, sizeof(u32) * totalVariantCount);
     }
 
     memcpy(mainTracks, &rawCups.tracks, sizeof(Track) * ctsCount);
@@ -240,31 +236,26 @@ void CupsConfig::LoadFileNames(const char* buffer, u32 length) {
         u32 key = 0;
         if (!ParseHexKey(keyStr, key)) continue;
         char* pipe = strchr(valueStr, '|');
-        u32 bmgId = 0;
         if (pipe != nullptr) {
-            char* bmgValue = pipe + 1;
             *pipe = '\0';
             TrimLine(valueStr);
-            TrimLine(bmgValue);
-            ParseHexKey(bmgValue, bmgId);
         } else {
             TrimLine(valueStr);
         }
         const u32 trackIdx = key & 0x0FFF;
         const u32 variantIdx = key >> 12;
-        this->RegisterFileName(trackIdx, variantIdx, valueStr, bmgId);
+        this->RegisterFileName(trackIdx, variantIdx, valueStr);
     }
     delete[] temp;
 }
 
-void CupsConfig::RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name, u32 bmgId) {
+void CupsConfig::RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name) {
     if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount()) || name == nullptr || *name == '\0') return;
     char* stored = DuplicateFileName(name);
     if (stored == nullptr) return;
     if (variantIdx == 0) {
         if (trackFileNames[trackIdx] != nullptr) delete[] trackFileNames[trackIdx];
         trackFileNames[trackIdx] = stored;
-        trackNameBmgIds[trackIdx] = bmgId;
         return;
     }
     if (variantIdx - 1 >= this->mainTracks[trackIdx].variantCount || this->variantFileNames == nullptr) {
@@ -279,36 +270,6 @@ void CupsConfig::RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name
     }
     if (variantFileNames[variantArrayIdx] != nullptr) delete[] variantFileNames[variantArrayIdx];
     variantFileNames[variantArrayIdx] = stored;
-    if (variantNameBmgIds != nullptr) variantNameBmgIds[variantArrayIdx] = bmgId;
-}
-
-void CupsConfig::RegisterVariantBmg(u32 trackIdx, u32 variantIdx, u32 bmgId) {
-    if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount())) return;
-    if (variantIdx == 0) {
-        trackNameBmgIds[trackIdx] = bmgId;
-        return;
-    }
-    if (variantNameBmgIds == nullptr) return;
-    if (variantIdx - 1 >= this->mainTracks[trackIdx].variantCount) return;
-    const u32 base = this->variantsOffs[trackIdx] / sizeof(Variant);
-    const u32 variantArrayIdx = base + (variantIdx - 1);
-    if (variantArrayIdx >= this->totalVariantCount) return;
-    variantNameBmgIds[variantArrayIdx] = bmgId;
-}
-
-u32 CupsConfig::GetVariantNameBmgId(PulsarId pulsarId, u8 variantIdx) const {
-    if (IsReg(pulsarId)) return 0;
-    const u32 trackIdx = ConvertTrack_PulsarIdToRealId(pulsarId);
-    if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount())) return 0;
-    if (variantIdx == 0) {
-        return trackNameBmgIds[trackIdx];
-    }
-    if (variantNameBmgIds == nullptr) return 0;
-    if (variantIdx - 1 >= this->mainTracks[trackIdx].variantCount) return 0;
-    const u32 base = this->variantsOffs[trackIdx] / sizeof(Variant);
-    const u32 variantArrayIdx = base + (variantIdx - 1);
-    if (variantArrayIdx >= this->totalVariantCount) return 0;
-    return variantNameBmgIds[variantArrayIdx];
 }
 
 const char* CupsConfig::GetFileName(PulsarId id, u8 variantIdx) const {

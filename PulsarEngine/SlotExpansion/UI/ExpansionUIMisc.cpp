@@ -69,13 +69,14 @@ int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
         return bmgBase + realId;
     }
     u32 languageBase = GetLanguageTrackBase();
-    u32 languageOffset = languageBase - BMG_TRACKS;
 
     if (variantIdx == 8) variantIdx = 0;
+    if (variantIdx == 0 && CupsConfig::sInstance->GetTrack(pulsarId).variantCount == 0)
+        return languageBase + realId;
 
     const u32 VARIANT_TRACKS_BASE = 0x400000;
     u32 variantOffset = static_cast<u32>(variantIdx);
-    return VARIANT_TRACKS_BASE + (realId << 4) + variantOffset;
+    return VARIANT_TRACKS_BASE + (realId << 4) + variantOffset + languageBase;
 }
 
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
@@ -85,7 +86,7 @@ int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
         if (cupsConfig->GetTrack(pulsarId).variantCount > 0) {
             if (useCommonName) {
                 u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
-                return BMG_TRACKS + realId;
+                return realId + GetLanguageTrackBase();
             }
             variantIdx = static_cast<u8>(cupsConfig->GetCurVariantIdx());
         }

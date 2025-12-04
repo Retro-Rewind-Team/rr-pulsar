@@ -278,6 +278,8 @@ namespace Pulsar_Pack_Creator
 
                 if (type == Type.MASSIMPORT)
                 {
+                    // Also set commonName (BMG_TRACKS) for the track
+                    parent.cups[cupIdx].tracks[row].commonName = importStringArrays[0][line];
                     if (cupIdx == parent.curCup)
                     {
                         parent.UpdateCurCup(0);

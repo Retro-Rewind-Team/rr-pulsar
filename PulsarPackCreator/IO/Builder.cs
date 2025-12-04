@@ -483,7 +483,7 @@ namespace Pulsar_Pack_Creator.IO
                 trackName += $" \\c{{red3}}{variant.versionName}\\c{{off}}";
             }
 
-            const uint VARIANT_TRACKS_BASE = 0x400000u;
+            const uint VARIANT_TRACKS_BASE = 0x420000u;
             const uint VARIANT_AUTHORS_BASE = 0x500000u;
             uint bmgId;
             uint authorId;
