@@ -3,11 +3,14 @@
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Page/Other/GhostSelect.hpp>
 #include <MarioKartWii/UI/Page/Other/Votes.hpp>
+#include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpCupSelect.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
+#include <Network/PacketExpansion.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -25,70 +28,69 @@ static void LoadCorrectTrackListBox(ControlLoader& loader, const char* folder, c
 }
 kmCall(0x807e5f24, LoadCorrectTrackListBox);
 
-// BMG
-int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
-    u32 bmgId;
-    u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
-    if (CupsConfig::IsReg(pulsarId))
-        bmgId = realId > 32 ? BMG_BATTLE : BMG_REGS;
-    else {
-        Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE));
-        switch (currentLanguage) {
-            case Pulsar::LANGUAGE_JAPANESE:
-                bmgId = BMG_TRACKS + 0x1000;
-                break;
-            case Pulsar::LANGUAGE_FRENCH:
-                bmgId = BMG_TRACKS + 0x2000;
-                break;
-            case Pulsar::LANGUAGE_GERMAN:
-                bmgId = BMG_TRACKS + 0x3000;
-                break;
-            case Pulsar::LANGUAGE_DUTCH:
-                bmgId = BMG_TRACKS + 0x4000;
-                break;
-            case Pulsar::LANGUAGE_SPANISHUS:
-                bmgId = BMG_TRACKS + 0x5000;
-                break;
-            case Pulsar::LANGUAGE_SPANISHEU:
-                bmgId = BMG_TRACKS + 0x6000;
-                break;
-            case Pulsar::LANGUAGE_FINNISH:
-                bmgId = BMG_TRACKS + 0x7000;
-                break;
-            case Pulsar::LANGUAGE_ITALIAN:
-                bmgId = BMG_TRACKS + 0x8000;
-                break;
-            case Pulsar::LANGUAGE_KOREAN:
-                bmgId = BMG_TRACKS + 0x9000;
-                break;
-            case Pulsar::LANGUAGE_RUSSIAN:
-                bmgId = BMG_TRACKS + 0xA000;
-                break;
-            case Pulsar::LANGUAGE_TURKISH:
-                bmgId = BMG_TRACKS + 0xB000;
-                break;
-            case Pulsar::LANGUAGE_CZECH:
-                bmgId = BMG_TRACKS + 0xC000;
-                break;
-            case Pulsar::LANGUAGE_ENGLISH:
-                bmgId = BMG_TRACKS;
-                break;
-            default:
-                bmgId = BMG_TRACKS;
-                break;
-        }
-        const CupsConfig* cupsConfig = CupsConfig::sInstance;
-        u8 variantIdx;
-        if (useCommonName) {
-            if (cupsConfig->GetTrack(pulsarId).variantCount > 0)
-                variantIdx = 8;
-            else
-                variantIdx = 0;
-        } else
-            variantIdx = cupsConfig->GetCurVariantIdx();
-        realId += variantIdx << 12;
+static u32 GetLanguageTrackBase() {
+    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE));
+    switch (currentLanguage) {
+        case Pulsar::LANGUAGE_JAPANESE:
+            return BMG_TRACKS + 0x1000;
+        case Pulsar::LANGUAGE_FRENCH:
+            return BMG_TRACKS + 0x2000;
+        case Pulsar::LANGUAGE_GERMAN:
+            return BMG_TRACKS + 0x3000;
+        case Pulsar::LANGUAGE_DUTCH:
+            return BMG_TRACKS + 0x4000;
+        case Pulsar::LANGUAGE_SPANISHUS:
+            return BMG_TRACKS + 0x5000;
+        case Pulsar::LANGUAGE_SPANISHEU:
+            return BMG_TRACKS + 0x6000;
+        case Pulsar::LANGUAGE_FINNISH:
+            return BMG_TRACKS + 0x7000;
+        case Pulsar::LANGUAGE_ITALIAN:
+            return BMG_TRACKS + 0x8000;
+        case Pulsar::LANGUAGE_KOREAN:
+            return BMG_TRACKS + 0x9000;
+        case Pulsar::LANGUAGE_RUSSIAN:
+            return BMG_TRACKS + 0xA000;
+        case Pulsar::LANGUAGE_TURKISH:
+            return BMG_TRACKS + 0xB000;
+        case Pulsar::LANGUAGE_CZECH:
+            return BMG_TRACKS + 0xC000;
+        case Pulsar::LANGUAGE_ENGLISH:
+        default:
+            return BMG_TRACKS;
     }
-    return bmgId + realId;
+}
+
+int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
+    u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
+    if (CupsConfig::IsReg(pulsarId)) {
+        u32 bmgBase = realId > 32 ? BMG_BATTLE : BMG_REGS;
+        return bmgBase + realId;
+    }
+    u32 languageBase = GetLanguageTrackBase();
+    u32 languageOffset = languageBase - BMG_TRACKS;
+
+    if (variantIdx == 8) variantIdx = 0;
+
+    const u32 VARIANT_TRACKS_BASE = 0x400000;
+    u32 variantOffset = static_cast<u32>(variantIdx);
+    return VARIANT_TRACKS_BASE + (realId << 4) + variantOffset;
+}
+
+int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
+    u8 variantIdx = 0;
+    if (!CupsConfig::IsReg(pulsarId)) {
+        const CupsConfig* cupsConfig = CupsConfig::sInstance;
+        if (cupsConfig->GetTrack(pulsarId).variantCount > 0) {
+            if (useCommonName) {
+                u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
+                return BMG_TRACKS + realId;
+            }
+            variantIdx = static_cast<u8>(cupsConfig->GetCurVariantIdx());
+        }
+    }
+    return GetTrackVariantBMGId(pulsarId, variantIdx);
 }
 
 int GetTrackBMGByRowIdx(u32 cupTrackIdx) {
@@ -116,9 +118,23 @@ static void SetVSIntroBmgId(LayoutUIControl* trackName) {
     u32 authorId;
     const PulsarId winning = CupsConfig::sInstance->GetWinning();
     if (CupsConfig::IsReg(winning)) return;
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
     u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE)) * 0x1000;
-    if (bmgId < BMG_TRACKS) authorId = BMG_NINTENDO;
-    authorId = bmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
+    const u32 VARIANT_TRACKS_BASE = 0x400000;
+    const u32 VARIANT_AUTHORS_BASE = 0x500000;
+    bool hasVariants = cupsConfig->GetTrack(winning).variantCount > 0;
+    u8 curVariant = cupsConfig->GetCurVariantIdx();
+    u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(winning);
+    if (bmgId < BMG_TRACKS)
+        authorId = BMG_NINTENDO;
+    else if (hasVariants && curVariant > 0 && bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE)
+        authorId = VARIANT_AUTHORS_BASE + (bmgId - VARIANT_TRACKS_BASE);
+    else if (bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE)
+        authorId = BMG_AUTHORS + realId;
+    else if (bmgId >= BMG_TRACKS && bmgId < VARIANT_TRACKS_BASE)
+        authorId = BMG_AUTHORS + realId;
+    else
+        authorId = bmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
     info.bmgToPass[1] = authorId;
     trackName->SetMessage(BMG_INFO_DISPLAY, &info);
 }
@@ -202,7 +218,22 @@ kmWrite32(0x808394e8, 0x388000ff);
 kmWrite32(0x80644104, 0x3b5b0000);
 static void CourseVoteBMG(VoteControl* vote, bool isCourseIdInvalid, PulsarId courseVote, MiiGroup& miiGroup, u32 playerId, bool isLocalPlayer, u32 team) {
     u32 bmgId = courseVote;
-    if (bmgId != 0x1101 && bmgId < 0x2498) bmgId = GetTrackBMGId(courseVote, true);
+
+    if (bmgId != 0x1101 && bmgId < 0x2498) {
+        u8 variantIdx = 0;
+        if (!CupsConfig::IsReg(courseVote)) {
+            const CupsConfig* cupsConfig = CupsConfig::sInstance;
+            if (cupsConfig->GetTrack(courseVote).variantCount > 0) {
+                Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+                if (selectStageMgr != nullptr && playerId < 12) {
+                    const PlayerInfo& info = selectStageMgr->infos[playerId];
+                    const Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
+                    variantIdx = handler.GetVoteVariantIdx(info.aid, info.hudSlotid);
+                }
+            }
+        }
+        bmgId = GetTrackVariantBMGId(courseVote, variantIdx);
+    }
     vote->Fill(isCourseIdInvalid, bmgId, miiGroup, playerId, isLocalPlayer, team);
 }
 kmCall(0x806441b8, CourseVoteBMG);
@@ -219,7 +250,24 @@ kmCall(0x8083d02c, BattleArenaBMGFix);
 static void WinningTrackBMG(PulsarId winningCourse) {
     register Pages::Vote* vote;
     asm(mr vote, r27;);
-    vote->trackBmgId = GetTrackBMGId(winningCourse, true);
+
+    u8 variantIdx = 0;
+    if (!CupsConfig::IsReg(winningCourse)) {
+        const CupsConfig* cupsConfig = CupsConfig::sInstance;
+        if (cupsConfig->GetTrack(winningCourse).variantCount > 0) {
+            RKNet::Controller* controller = RKNet::Controller::sInstance;
+            RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+            const Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
+            const u8 hostAid = sub.hostAid;
+
+            if (hostAid == sub.localAid) {
+                variantIdx = handler.toSendPacket.variantIdx;
+            } else {
+                variantIdx = handler.receivedPackets[hostAid].variantIdx;
+            }
+        }
+    }
+    vote->trackBmgId = GetTrackVariantBMGId(winningCourse, variantIdx);
 }
 kmCall(0x80644344, WinningTrackBMG);
 

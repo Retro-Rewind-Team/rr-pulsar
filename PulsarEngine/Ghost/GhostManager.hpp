@@ -34,6 +34,7 @@ class Mgr {
 
     bool HasExpert() const { return this->expertGhost.isActive; }
     const PulsarId GetPulsarId() const { return this->pulsarId; }
+    u8 GetVariantIdx() const { return this->variantIdx; }
     const Timer& GetExpert() const { return this->expertGhost; }
     u32 GetFavGhostFileIndex(TTMode mode) const { return this->favGhostFileIndex[mode]; }
     void ToggleGhostSaving(bool savingIsEnabled) {
@@ -71,7 +72,7 @@ class Mgr {
     bool LoadGhost(RKG& dest, u32 index) const;
 
    private:
-    Mgr() : pulsarId(PULSARID_NONE), files(nullptr), areGhostsSaving(true) {
+    Mgr() : pulsarId(PULSARID_NONE), variantIdx(0), files(nullptr), areGhostsSaving(true) {
         Racedata* racedata = Racedata::sInstance;
         for (int i = 0; i < 4; ++i) racedata->ghosts[i].ClearBuffer();
     }
@@ -79,7 +80,7 @@ class Mgr {
         delete[] this->files;  // in case Reset wasn't called before
     }
     static Mgr* sInstance;
-    void Init(PulsarId id);
+    void Init(PulsarId id, u8 variantIdx);
     void Reset();
     void SaveLeaderboard();
     bool SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool isFlap);
@@ -94,6 +95,7 @@ class Mgr {
 
     GhostData* files;
     PulsarId pulsarId;
+    u8 variantIdx;  // variant index for ghost folder separation
     Timer expertGhost;  // 0x8
     u32 rkgCount;  // 0x14
     u32 mainGhostIndex;  // 0x18 from the watch replay;

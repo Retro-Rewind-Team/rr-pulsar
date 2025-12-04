@@ -295,10 +295,10 @@ void System::UpdateContext() {
 
         newContextValue2 |= (isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE | (isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE |
                             (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
-                            (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN | 
+                            (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN |
                             (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
                             (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
-                            (isRanking) << PULSAR_RANKING;                     
+                            (isRanking) << PULSAR_RANKING;
     }
 
     // Combine the new context with preserved bits

@@ -38,7 +38,21 @@ void CtrlRaceTrackInfoDisplay::Load() {
     info.bmgToPass[0] = bmgId;
     u32 authorId = BMG_NINTENDO;
     u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE)) * 0x1000;
-    if (bmgId >= BMG_TRACKS) authorId = bmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
+    const u32 VARIANT_TRACKS_BASE = 0x400000;
+    const u32 VARIANT_AUTHORS_BASE = 0x500000;
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const PulsarId winning = cupsConfig->GetWinning();
+    bool hasVariants = !CupsConfig::IsReg(winning) && cupsConfig->GetTrack(winning).variantCount > 0;
+    u8 curVariant = cupsConfig->GetCurVariantIdx();
+    u32 realId = !CupsConfig::IsReg(winning) ? CupsConfig::ConvertTrack_PulsarIdToRealId(winning) : 0;
+    if (hasVariants && curVariant > 0 && bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE)
+        authorId = VARIANT_AUTHORS_BASE + (bmgId - VARIANT_TRACKS_BASE);
+    else if (!CupsConfig::IsReg(winning) && bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE)
+        authorId = BMG_AUTHORS + realId;
+    else if (!CupsConfig::IsReg(winning) && bmgId >= BMG_TRACKS && bmgId < VARIANT_TRACKS_BASE)
+        authorId = BMG_AUTHORS + realId;
+    else
+        authorId = bmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
     info.bmgToPass[1] = authorId;
     this->SetMessage(BMG_INFO_DISPLAY, &info);
 }

@@ -90,6 +90,8 @@ struct PulSELECT : public RKNet::SELECTPacket {
     bool alwaysFinal;
 
     u8 decimalVR[2];
+
+    u8 voteVariantIdx[2];
 };
 
 struct PulRACEDATA : public RKNet::RACEDATAPacket {};
@@ -162,6 +164,10 @@ class ExpSELECTHandler {
    public:
     static ExpSELECTHandler& Get() { return *reinterpret_cast<ExpSELECTHandler*>(RKNet::SELECTHandler::sInstance); };
     static void DecideTrack(ExpSELECTHandler& self);
+
+    // Get the vote variant index for a specific player
+    u8 GetVoteVariantIdx(u8 aid, u8 hudSlotId) const;
+
     RKNet::OnlineMode mode;  // from page 0x90 OnInit SectionId Switch
     u32 unknown_0x4;
     PulSELECT toSendPacket;  // 0x8

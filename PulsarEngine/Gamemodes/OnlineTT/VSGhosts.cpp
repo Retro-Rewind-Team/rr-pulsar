@@ -44,7 +44,8 @@ void AddGhostToVS() {
         char folderPath[IOS::ipcMaxPath];
         const PulsarId id = CupsConfig::sInstance->GetWinning();
         const CupsConfig* cupsConfig = CupsConfig::sInstance;
-        cupsConfig->GetTrackGhostFolder(folderPath, id);
+        const u8 variantIdx = cupsConfig->GetCurVariantIdx();
+        cupsConfig->GetTrackGhostFolder(folderPath, id, variantIdx);
 
         alignas(0x20) Ghosts::Leaderboard leaderboard(folderPath, id, false);
         const TTMode ttMode = static_cast<TTMode>(racedata->menusScenario.settings.engineClass % 2 + 2 * system->IsContext(PULSAR_FEATHER));  // CC_150 (2) becomes 0 (TT_MODE_150), CC_100 (1) becomes 1 (TT_MODE_100)
@@ -59,7 +60,7 @@ void AddGhostToVS() {
         racedata->ghosts[0].ClearBuffer();
         char ghostPath[IOS::ipcMaxPath];
         if (initial == '?') {  // the fav is the expert
-            cupsConfig->GetExpertPath(ghostPath, id, ttMode);
+            cupsConfig->GetExpertPath(ghostPath, id, ttMode, variantIdx);
             DVD::FileInfo info;
             DVD::Open(ghostPath, &info);
             DVD::ReadPrio(&info, rkg, info.length, 0, 2);

@@ -8,6 +8,7 @@
 namespace Pulsar {
 namespace UI {
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName);
+int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx);
 
 inline void GetTrackBMG(char* dest, PulsarId id) {
     const wchar_t* name = UI::GetCustomMsg(GetTrackBMGId(id, false));

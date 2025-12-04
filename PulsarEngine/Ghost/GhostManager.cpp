@@ -32,14 +32,22 @@ Cornerstone function; Creates the folders if they have been deleted somehow,
 reads them, fetches the leaderboard, creates GhostDatas based on the rkgs, sets the expert time
 */
 
-void Mgr::Init(PulsarId id) {
+void Mgr::Init(PulsarId id, u8 variantIdx) {
     this->Reset();
     this->pulsarId = id;
+    this->variantIdx = variantIdx;
     IO* io = IO::sInstance;
     const System* system = System::sInstance;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const TTMode ttMode = system->ttMode;
-    cupsConfig->GetTrackGhostFolder(folderPath, id);
+    
+    // For variants, create parent folder first if needed
+    if (variantIdx > 0) {
+        char parentPath[IOS::ipcMaxPath];
+        cupsConfig->GetTrackGhostFolder(parentPath, id, 0);  // Get base folder
+        if (!io->FolderExists(parentPath)) io->CreateFolder(parentPath);
+    }
+    cupsConfig->GetTrackGhostFolder(folderPath, id, variantIdx);
 
     bool exists = io->FolderExists(folderPath);  // Create CRC32 folder
     if (!exists) io->CreateFolder(folderPath);
@@ -59,7 +67,7 @@ void Mgr::Init(PulsarId id) {
     s32 expertCRC32 = -1;
     DVD::FileInfo info;
     char expertName[IOS::ipcMaxPath];
-    cupsConfig->GetExpertPath(expertName, id, ttMode);
+    cupsConfig->GetExpertPath(expertName, id, ttMode, variantIdx);
     this->expertEntryNum = DVD::ConvertPathToEntryNum(expertName);
     if (this->expertEntryNum >= 0) {
         DVD::FastOpen(this->expertEntryNum, &info);
@@ -116,6 +124,7 @@ void Mgr::Init(PulsarId id) {
 void Mgr::Reset() {
     IO::sInstance->CloseFolder();
     this->pulsarId = PULSARID_NONE;
+    this->variantIdx = 0;
     this->lastUsedSlot = 0;
     this->expertGhost.isActive = false;
     mainGhostIndex = 0xFF;
@@ -133,7 +142,7 @@ void Mgr::Reset() {
 
 void Mgr::SaveLeaderboard() {
     char folderPath[IOS::ipcMaxPath];
-    CupsConfig::sInstance->GetTrackGhostFolder(folderPath, this->pulsarId);
+    CupsConfig::sInstance->GetTrackGhostFolder(folderPath, this->pulsarId, this->variantIdx);
     this->leaderboard.Save(folderPath);
 }
 /*
@@ -307,7 +316,7 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
     u32 prevFileIndex = self->files[self->mainGhostIndex].padding;
     if (prevFileIndex != expertFileIdx) io->GetFolderFilePath(prevGhostFile, prevFileIndex);
 
-    self->Init(CupsConfig::sInstance->GetWinning());
+    self->Init(CupsConfig::sInstance->GetWinning(), CupsConfig::sInstance->GetCurVariantIdx());
 
     if (prevFileIndex == expertFileIdx)
         self->mainGhostIndex = 0;
@@ -328,7 +337,7 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
 void Mgr::InsertCustomGroupToList(GhostList* list, CourseId) {  // check id here
     Mgr* self = Mgr::sInstance;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    self->Init(cupsConfig->GetWinning());
+    self->Init(cupsConfig->GetWinning(), cupsConfig->GetCurVariantIdx());
     u32 index = 0;
     const u32 rkgCount = IO::sInstance->GetFileCount();
     for (int i = 0; i < rkgCount; ++i) {

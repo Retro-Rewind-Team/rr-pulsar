@@ -68,10 +68,25 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
         src->pulWinningTrack = pulWinning;  // this is safe because src is a ptr to the buffer of holder which is always big enough
         const u16 pulVote = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->playersData[0].courseVote));
         src->pulVote = pulVote;
+        // Non-CT players won't have voteVariantIdx, default to 0
+        src->voteVariantIdx[0] = 0;
+        src->voteVariantIdx[1] = 0;
     }
     memcpy(&dest, src, sizeof(PulSELECT));
 }
 kmCall(0x80661130, AfterSELECTReception);
+
+// Get vote variant index for a specific aid and hudSlotId
+u8 ExpSELECTHandler::GetVoteVariantIdx(u8 aid, u8 hudSlotId) const {
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+
+    if (aid == sub.localAid) {
+        return this->toSendPacket.voteVariantIdx[hudSlotId];
+    } else {
+        return this->receivedPackets[aid].voteVariantIdx[hudSlotId];
+    }
+}
 
 static u8 GetEngineClass(const ExpSELECTHandler& select) {
     if (select.toSendPacket.phase != 0) return select.toSendPacket.engineClass;
@@ -111,15 +126,21 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
     if (mode == RKNet::ONLINEMODE_PRIVATE_VS && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS)) {
         self.toSendPacket.winningVoterAid = hostAid;
         u16 hostVote = self.toSendPacket.pulVote;
-        if (hostVote == 0xFF) hostVote = cupsConfig->RandomizeTrack();
-        self.toSendPacket.pulWinningTrack = hostVote;
-        self.toSendPacket.variantIdx = cupsConfig->RandomizeVariant(static_cast<PulsarId>(hostVote));
+        bool hostVotedRandom = (hostVote == 0xFF);
+        if (hostVotedRandom) hostVote = cupsConfig->RandomizeTrack();
+        self.toSendPacket.pulWinningTrack = hostVote;  // If host voted random, also randomize the variant
+        if (hostVotedRandom) {
+            self.toSendPacket.variantIdx = cupsConfig->RandomizeVariant(static_cast<PulsarId>(hostVote));
+        } else {
+            self.toSendPacket.variantIdx = cupsConfig->GetCurVariantIdx();
+        }
     } else {
         const bool isCT = system->IsContext(PULSAR_CT);
         const u32 availableAids = sub.availableAids;  // has been modified to remove KO'd player if KO is on
         u8 aids[12];
         u8 newVotesAids[12];  // only used for track blocking
         PulsarId votes[12];
+        bool votedRandom[12];
         int playerCount = 0;
         int newVoters = 0;
         for (u8 aid = 0; aid < 12; ++aid) {
@@ -128,6 +149,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
             ++playerCount;
 
             PulsarId aidVote = static_cast<PulsarId>(aid == sub.localAid ? self.toSendPacket.pulVote : self.receivedPackets[aid].pulVote);
+            votedRandom[aid] = (aidVote == 0xFF);
             if (aidVote == 0xFF) {
                 if (isCT)
                     aidVote = cupsConfig->RandomizeTrack();
@@ -168,7 +190,20 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         PulsarId vote = static_cast<PulsarId>(votes[winner]);
         self.toSendPacket.winningVoterAid = winner;
         self.toSendPacket.pulWinningTrack = vote;
-        self.toSendPacket.variantIdx = cupsConfig->RandomizeVariant(vote);
+
+        // Use the winner's variant selection, or randomize if they voted random
+        // The winner's variant is stored in voteVariantIdx[0] (hudSlotId 0 is P1 on their console)
+        u8 winnerVariant = 0;
+        if (votedRandom[winner]) {
+            // Winner voted random, so also randomize the variant
+            winnerVariant = cupsConfig->RandomizeVariant(vote);
+        } else if (winner == sub.localAid) {
+            winnerVariant = self.toSendPacket.voteVariantIdx[0];
+        } else {
+            winnerVariant = self.receivedPackets[winner].voteVariantIdx[0];
+        }
+        self.toSendPacket.variantIdx = winnerVariant;
+
         if (isCT) {
             const u32 blockingCount = system->GetInfo().GetTrackBlocking();
             if (blockingCount != 0 && system->netMgr.lastTracks != nullptr) {
@@ -375,14 +410,50 @@ void InitPatch() {
 }
 kmCall(0x806600ec, InitPatch);
 kmPatchExitPoint(InitPatch, 0x806601bc);
-// SetPlayerData
-asmFunc SetPlayerDataPatch(register ExpSELECTHandler* select, u8 r4, u8 r5, u8 r6, register u8 hudSlotId) {  // r3 = handler, r0 = hudslot * sizeof(SELECTPlayerData)
+
+// SetPlayerData - stores the pulVote and voteVariantIdx for each player
+// Original function at 0x80660750:
+//   r3=handler, r4=character, r5=kart, r6=courseVote, r7=hudSlotId, r8=starRank
+// We need to store pulVote (r6 extended to u16) then let original continue
+asmFunc SetPlayerDataPatch() {
     ASM(
-        rlwinm r0, r7, 3, 0, 28;  // default
-        sth r6, ExpSELECTHandler.toSendPacket + PulSELECT.pulVote(r3);)
+        nofralloc;
+        // Original first instruction: rlwinm r0, r7, 3, 0, 28
+        rlwinm r0, r7, 3, 0, 28;
+        // Store the u16 pulVote (courseVote from r6)
+        sth r6, ExpSELECTHandler.toSendPacket + PulSELECT.pulVote(r3);
+        blr;)
 }
 kmBranch(0x80660750, SetPlayerDataPatch);
 kmPatchExitPoint(SetPlayerDataPatch, 0x80660754);
+
+// Store voteVariantIdx when SetPlayerData is called - hook after the bl call
+// The kmCall replaces "addi r28, r28, 0xc" at 0x80643758 and 0x806437ac
+// We need to execute that instruction's effect by returning the right value
+// r27 = hudSlotId (loop index), r28 = offset (needs += 0xc)
+static void StoreVoteVariantAfterSetPlayerData() {
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    u8 variantIdx = cupsConfig ? cupsConfig->GetCurVariantIdx() : 0;
+
+    // Get hudSlotId from r27 which contains the loop index
+    register u32 hudSlotId;
+    asm(mr hudSlotId, r27;);
+
+    ExpSELECTHandler& handler = ExpSELECTHandler::Get();
+    if (hudSlotId < 2) {
+        handler.toSendPacket.voteVariantIdx[hudSlotId] = variantIdx;
+    }
+
+    // Execute the replaced instruction: addi r28, r28, 0xc
+    register u32 r28_val;
+    asm(mr r28_val, r28;);
+    r28_val += 0xc;
+    asm(mr r28, r28_val;);
+}
+// Hook after the first SetPlayerData call (VS mode) - replaces "addi r28, r28, 0xc"
+kmCall(0x80643758, StoreVoteVariantAfterSetPlayerData);
+// Hook after the second SetPlayerData call (Battle mode) - replaces "addi r28, r28, 0xc"
+kmCall(0x806437ac, StoreVoteVariantAfterSetPlayerData);
 
 // ResetSendPacket
 // kmWrite32(0x80660908, 0xB3B80000 + offsetof(PulSELECT, pulLocalVotes));
