@@ -75,6 +75,8 @@ static float CalcPosPoints(float selfPoints, float opponentPoints) {
     float scaledDiff = diff * kRatingRangeScale;
 
     float sample = (float)kSplineBias + scaledDiff;
+    if (sample < 0.0f) sample = 0.0f;
+    if (sample > (float)(kSplineBias * 2)) sample = (float)(kSplineBias * 2);
     float result = EvaluateSpline(kSplineScale * sample);
     if (result > 0.24f) result = 0.24f;
     if (result < 0.020f) result = 0.020f;
@@ -86,6 +88,8 @@ static float CalcNegPoints(float selfPoints, float opponentPoints) {
     float scaledDiff = diff * kRatingRangeScale;
 
     float sample = (float)kSplineBias - scaledDiff;
+    if (sample < 0.0f) sample = 0.0f;
+    if (sample > (float)(kSplineBias * 2)) sample = (float)(kSplineBias * 2);
     float result = -EvaluateSpline(kSplineScale * sample);
     if (result < -0.19f) result = -0.19f;
     if (result > 0.0f) result = 0.0f;
