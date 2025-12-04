@@ -87,5 +87,46 @@ namespace Pulsar_Pack_Creator
                 }
             }
         }
+
+        private void OnImportGhostsFromFileNamesClick(object sender, RoutedEventArgs e)
+        {
+            // Import ghost file names from the track file names
+            for (int cupIdx = 0; cupIdx < ctsCupCount; cupIdx++)
+            {
+                for (int trackIdx = 0; trackIdx < 4; trackIdx++)
+                {
+                    Cup.Track track = cups[cupIdx].tracks[trackIdx];
+                    string trackFileName = track.main.fileName;
+                    if (trackFileName != Cup.defaultFile && trackFileName != "")
+                    {
+                        // Set the track file name as the ghost file name for all modes
+                        for (int mode = 0; mode < 4; mode++)
+                        {
+                            if (track.expertFileNames[mode] == "" || track.expertFileNames[mode] == Cup.defaultGhost)
+                            {
+                                track.expertFileNames[mode] = trackFileName;
+                            }
+                        }
+                    }
+                    // Also import for variants
+                    foreach (var variant in track.variants)
+                    {
+                        string variantFileName = variant.fileName;
+                        if (variantFileName != Cup.defaultFile && variantFileName != "")
+                        {
+                            for (int mode = 0; mode < 4; mode++)
+                            {
+                                if (variant.expertFileNames[mode] == "" || variant.expertFileNames[mode] == Cup.defaultGhost)
+                                {
+                                    variant.expertFileNames[mode] = variantFileName;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            UpdateCurCup(0);
+            MsgWindow.Show("Ghost file names imported from track file names.");
+        }
     }
 }

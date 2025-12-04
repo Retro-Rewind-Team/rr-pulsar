@@ -343,15 +343,21 @@ namespace Pulsar_Pack_Creator.IO
 
         private Result WriteMainTrack(MainWindow.Cup.Track track, uint idx, string[] expertFileNames, bool isFake)
         {
-            Result ret = WriteVariant(track.main, idx, 0, expertFileNames, isFake);
+            Result ret;
+            // Write the common name to the base BMG_TRACKS block
+            string commonName = string.IsNullOrEmpty(track.commonName) ? track.main.trackName : track.commonName;
+            if (!isFake) bmgSW.WriteLine($"  {BMGIds.BMG_TRACKS + idx:X}    = {commonName}");
+
+            // If the track has variants, the main track variant should be written into the first variant block (1).
+            ret = WriteVariant(track.main, idx, 0, expertFileNames, isFake);
 
             if (ret != Result.Success) return ret;
-            string[] empty = new string[4];
-            if (track.variants.Count > 0) bmgSW.WriteLine($"  {BMGIds.BMG_TRACKS + (8 << 12) + idx:X}    = {track.commonName}");
+            // Move commonName mapping already handled at start of function when track has variants.
             for (int j = 0; j < track.variants.Count; j++)
             {
                 Cup.Track.Variant variant = track.variants[j];
-                ret = WriteVariant(variant, idx, (uint)j + 1, empty, isFake);
+                uint vIdx = (uint)j + 1;
+                ret = WriteVariant(variant, idx, vIdx, variant.expertFileNames, isFake);
                 if (ret != Result.Success) return ret;
                 variantTracksList.Add(new PulsarGame.Variant(variant));
             }
@@ -388,8 +394,7 @@ namespace Pulsar_Pack_Creator.IO
                         string rkgName = $"input/{PulsarGame.ttModeFolders[mode, 1]}/{expertName}.rkg".ToLowerInvariant();
                         if (!inputFiles.Contains(rkgName))
                         {
-                            error = $"{rkgName}";
-                            return Result.FileNotFound;
+                            continue;
                         }
                         using BigEndianReader rkg = new BigEndianReader(File.Open(rkgName, FileMode.Open));
                         rkg.BaseStream.Position = 0xC;
@@ -407,6 +412,44 @@ namespace Pulsar_Pack_Creator.IO
                         finalRkg.Write(rkgCrc32);
                     }
                     trophyCount[mode]++;
+                }
+            }
+
+            // Write expert ghosts for variants
+            for (int j = 0; j < track.variants.Count; j++)
+            {
+                Cup.Track.Variant variant = track.variants[j];
+                uint vIdx = (uint)j + 1;
+                for (int mode = 0; mode < 4; mode++)
+                {
+                    string variantExpertName = variant.expertFileNames[mode];
+                    if (variantExpertName != "RKG File" && variantExpertName != "")
+                    {
+                        if (buildParams != BuildParams.ConfigOnly)
+                        {
+                            string rkgName = $"input/{PulsarGame.ttModeFolders[mode, 1]}/{variantExpertName}.rkg".ToLowerInvariant();
+                            if (!inputFiles.Contains(rkgName))
+                            {
+                                continue;
+                            }
+                            using BigEndianReader rkg = new BigEndianReader(File.Open(rkgName, FileMode.Open));
+                            rkg.BaseStream.Position = 0xC;
+                            ushort halfC = rkg.ReadUInt16();
+                            ushort newC = (ushort)((halfC & ~(0x7F << 2)) + (0x26 << 2)); //change ghostType to expert
+
+                            rkg.BaseStream.Position = 0;
+                            byte[] rkgBytes = rkg.ReadBytes((int)(rkg.BaseStream.Length - 4)); //-4 to remove crc32
+                            // Variant expert filename format: idx_v{variantIdx}_{mode}.rkg
+                            using BigEndianWriter finalRkg =
+                            new BigEndianWriter(File.Create($"{modFolder}/Ghosts/Experts/{idx}_v{vIdx}_{PulsarGame.ttModeFolders[mode, 0]}.rkg"));
+                            rkgBytes[0xC] = (byte)(newC >> 8);
+                            rkgBytes[0xD] = (byte)(newC & 0xFF);
+                            finalRkg.Write(rkgBytes);
+                            int rkgCrc32 = BitConverter.ToInt32(System.IO.Hashing.Crc32.Hash(rkgBytes), 0);
+                            finalRkg.Write(rkgCrc32);
+                        }
+                        trophyCount[mode]++;
+                    }
                 }
             }
             return Result.Success;
@@ -440,8 +483,34 @@ namespace Pulsar_Pack_Creator.IO
                 trackName += $" \\c{{red3}}{variant.versionName}\\c{{off}}";
             }
 
-            bmgSW.WriteLine($"  {BMGIds.BMG_TRACKS + (variantIdx << 12) + idx:X}    = {trackName}");
-            bmgSW.WriteLine($"  {BMGIds.BMG_AUTHORS + (variantIdx << 12) + idx:X}    = {variant.authorName}");
+            const uint VARIANT_TRACKS_BASE = 0x400000u;
+            const uint VARIANT_AUTHORS_BASE = 0x500000u;
+            uint bmgId;
+            uint authorId;
+            if (variantIdx == 0)
+            {
+                // For variant 0 (Main Track), we only write the Variant-specific ID (0x400000 range).
+                // The Common Name (BMG_TRACKS) is handled in WriteMainTrack.
+                // However, we still need to write the Author to BMG_AUTHORS because WriteMainTrack doesn't do it.
+                authorId = (uint)BMGIds.BMG_AUTHORS + idx;  
+
+                uint idxShifted = idx << 4;
+                uint variantBmgId = VARIANT_TRACKS_BASE + idxShifted;
+                bmgSW.WriteLine($"  {variantBmgId:X}    = {trackName}");
+                
+                // We skip writing bmgId for BMG_TRACKS here.
+                bmgSW.WriteLine($"  {authorId:X}    = {variant.authorName}");
+            }
+            else
+            {
+                uint idxShifted = idx << 4;
+                bmgId = VARIANT_TRACKS_BASE + idxShifted + variantIdx;
+                authorId = VARIANT_AUTHORS_BASE + idxShifted + variantIdx;
+                
+                bmgSW.WriteLine($"  {bmgId:X}    = {trackName}");
+                bmgSW.WriteLine($"  {authorId:X}    = {variant.authorName}");
+            }
+            
             fileSW.WriteLine($"{(variantIdx << 12) + idx:X}={variant.fileName}|" +
             $"{expertFileNames[0]}|{expertFileNames[1]}|{expertFileNames[2]}|{expertFileNames[3]}");
             return Result.Success;

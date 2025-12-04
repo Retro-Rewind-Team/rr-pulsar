@@ -319,6 +319,7 @@
                 <DockPanel>
                     <Button DockPanel.Dock="Left" Content="&lt;" FontWeight="Bold" FontSize="18" Click="OnLeftArrowClick" />
                     <Button DockPanel.Dock="Right" Content="&gt;" FontWeight="Bold" FontSize="18" Click="OnRightArrowClick" />
+                    <Button DockPanel.Dock="Top" Content="Import from File Names" FontSize="12" Height="25" Margin="5" Click="OnImportGhostsFromFileNamesClick" />
                     <Grid Name="GhostGrid" >
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1.5*"/>

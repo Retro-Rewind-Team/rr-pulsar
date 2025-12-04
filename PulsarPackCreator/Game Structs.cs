@@ -17,8 +17,8 @@ public class PulsarGame
             "rSL","rSGB","rDS","rWS",
             "rDH","rBC3","rDKJP","rMC",
             "rMC3","rPG","rDKM","rBC",
-            //"aBP","aDP","aFS","aCCW","aTD",
-            //"arBC4","arBC3","arS","arCL","arTH"
+            "aBP","aDP","aFS","aCCW","aTD",
+            "arBC4","arBC3","arS","arCL","arTH"
         };
 
         public static readonly string[] idxToFullNames =
@@ -31,8 +31,8 @@ public class PulsarGame
             "N64 Sherbet Land", "GBA Shy Guy Beach", "DS Delfino Square", "GCN Waluigi Stadium",
             "DS Desert Hills", "GBA Bowser Castle 3", "N64 DK's Jungle Parkway", "GCN Mario Circuit",
             "SNES Mario Circuit 3", "DS Peach Gardens", "GCN DK Mountain", "N64 Bowser's Castle",
-            //"Block Plaza", "Delfino Pier", "Funky Stadium", "Chain Chomp Wheel", "Thwomp Desert",
-            //"SNES Battle Course 4", "GBA Battle Course 3", "N64 Skyscraper", "GCN Cookie Land", "DS Twilight House"
+            "Block Plaza", "Delfino Pier", "Funky Stadium", "Chain Chomp Wheel", "Thwomp Desert",
+            "SNES Battle Course 4", "GBA Battle Course 3", "N64 Skyscraper", "GCN Cookie Land", "DS Twilight House"
         };
 
         public static readonly byte[] idxToCourseId =
@@ -45,8 +45,8 @@ public class PulsarGame
             0x1b,0x1f,0x17,0x12,
             0x15,0x1e,0x1d,0x11,
             0x18,0x16,0x13,0x1c,
-            //0x21,0x20,0x23,0x22,0x24,
-            //0x27,0x28,0x29,0x25,0x26
+            0x21,0x20,0x23,0x22,0x24,
+            0x27,0x28,0x29,0x25,0x26
         };
 
         public static readonly string[] musicIdxToAbbrev =

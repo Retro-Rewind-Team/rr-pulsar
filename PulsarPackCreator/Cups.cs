@@ -137,6 +137,7 @@ namespace Pulsar_Pack_Creator
                         trackName = defaultTrack;
                         authorName = defaultAuthor;
                         versionName = defaultVersion;
+                        expertFileNames = new string[4] { defaultGhost, defaultGhost, defaultGhost, defaultGhost };
                     }
                     public Variant(PulsarGame.Variant raw)
                     {
@@ -146,6 +147,7 @@ namespace Pulsar_Pack_Creator
                         trackName = defaultTrack;
                         authorName = defaultAuthor;
                         versionName = defaultVersion;
+                        expertFileNames = new string[4] { defaultGhost, defaultGhost, defaultGhost, defaultGhost };
                     }
                     public string fileName;
                     public string trackName;
@@ -153,6 +155,7 @@ namespace Pulsar_Pack_Creator
                     public string versionName;
                     public byte slot;
                     public byte musicSlot;
+                    public string[] expertFileNames;
                 };
                 public Track()
                 {
@@ -192,16 +195,21 @@ namespace Pulsar_Pack_Creator
                 List<Cup> cups = (GetWindow(App.Current.MainWindow) as MainWindow).cups;
                 this.idx = (uint)cups.Count;
 
+                // rawVariants is expected to be the contiguous list of variants for the cup in track order.
+                int varOffset = 0;
                 for (int i = 0; i < 4; i++)
                 {
-                    if (rawTracks[i].slot >= 0x20) this.tracks[i].main.slot = 0x08; //remove battle slots from old config.pul
-                    else
-                    {
-                        this.tracks[i].main.slot = rawTracks[i].slot;
-                        for (int j = 0; j < rawTracks[i].variantCount; j++) this.tracks[i].variants.Add(new Track.Variant(rawVariants[j]));
-
-                    }
+                    this.tracks[i].main.slot = rawTracks[i].slot;
                     this.tracks[i].main.musicSlot = rawTracks[i].musicSlot;
+                    int count = rawTracks[i].variantCount;
+                    for (int j = 0; j < count; j++)
+                    {
+                        if (varOffset + j < rawVariants.Length)
+                        {
+                            this.tracks[i].variants.Add(new Track.Variant(rawVariants[varOffset + j]));
+                        }
+                    }
+                    varOffset += count;
                 }
 
                 if (idx < maxCupIcons)
@@ -223,8 +231,7 @@ namespace Pulsar_Pack_Creator
                 for (int i = 0; i < 4; i++)
                 {
                     PulsarGame.Track rawTrack = raw.tracks[i];
-                    if (rawTrack.slot >= 0x20) tracks[i].main.slot = 0x08; //remove battle slots from old config.pul
-                    else tracks[i].main.slot = rawTrack.slot;
+                    tracks[i].main.slot = rawTrack.slot;
                     tracks[i].main.musicSlot = rawTrack.musicSlot;
                 }
 
@@ -247,8 +254,8 @@ namespace Pulsar_Pack_Creator
                 for (int i = 0; i < 4; i++)
                 {
                     PulsarGame.Track rawTrack = raw.tracks[i];
-                    if (rawTrack.slot >= 0x20) tracks[i].main.slot = 0x08; //remove battle slots from old config.pul
-                    else tracks[i].main.slot = rawTrack.slot;
+                    // Preserve battle slots (0x20+) instead of coercing to 0x08
+                    tracks[i].main.slot = rawTrack.slot;
                     tracks[i].main.musicSlot = rawTrack.musicSlot;
                 }
 
@@ -397,7 +404,15 @@ namespace Pulsar_Pack_Creator
             if (box.IsKeyboardFocused)
             {
                 int idx = Grid.GetRow(box);
-                cups[curCup].tracks[idx - firstTrackRow].main.trackName = box.Text;
+                Cup.Track track = cups[curCup].tracks[idx - firstTrackRow];
+                if (track.variants.Count > 0)
+                {
+                    track.commonName = box.Text;
+                }
+                else
+                {
+                    track.main.trackName = box.Text;
+                }
                 SetGhostLabelName(idx - firstTrackRow, box.Text);
             }
 
@@ -455,7 +470,8 @@ namespace Pulsar_Pack_Creator
             Cup.Track track = cups[curCup].tracks[row];
             Cup.Track.Variant mainTrack = track.main;
             GetFileBox(row).Text = mainTrack.fileName;
-            GetNameBox(row).Text = mainTrack.trackName;
+            string name = (track.variants.Count > 0 && !string.IsNullOrEmpty(track.commonName)) ? track.commonName : mainTrack.trackName;
+            GetNameBox(row).Text = name;
             GetAuthorBox(row).Text = mainTrack.authorName;
             GetVersionBox(row).Text = mainTrack.versionName;
             GetSlotBox(row).SelectedValue = PulsarGame.MarioKartWii.idxToAbbrev[Array.IndexOf(PulsarGame.MarioKartWii.idxToCourseId, mainTrack.slot)];
@@ -463,7 +479,7 @@ namespace Pulsar_Pack_Creator
             System.Windows.Media.Brush brush = System.Windows.Media.Brushes.Black;
             if (track.variants.Count > 0) brush = System.Windows.Media.Brushes.MediumVioletRed;
             GetVariantsButton(row).Foreground = brush;
-            SetGhostLabelName(row, mainTrack.trackName);
+            SetGhostLabelName(row, name);
             for (int col = 0; col < 4; col++)
             {
                 SetExpertName(track.expertFileNames[col], row, col);
@@ -495,7 +511,8 @@ namespace Pulsar_Pack_Creator
                 Cup cup = cups[idx];
                 for (int i = 0; i < 4; i++)
                 {
-                    indexedArray[cup.idx * 4 + i] = cup.tracks[i].main.trackName + (cup.tracks[i].main.versionName == "Version" ? "" : $" {cup.tracks[i].main.versionName}");
+                    string name = (cup.tracks[i].variants.Count > 0 && !string.IsNullOrEmpty(cup.tracks[i].commonName)) ? cup.tracks[i].commonName : cup.tracks[i].main.trackName;
+                    indexedArray[cup.idx * 4 + i] = name + (cup.tracks[i].main.versionName == "Version" ? "" : $" {cup.tracks[i].main.versionName}");
                 }
             }
             string[] sortedArray = indexedArray.OrderBy(x => Regex.Replace(x, @"\\[mMxzuc]{.*?}", "").Trim()).ToArray();

@@ -45,11 +45,17 @@ namespace Pulsar_Pack_Creator.IO
                 + Marshal.OffsetOf(typeof(PulsarGame.CupsHolderV3), "totalVariantCount")
                 + Marshal.SizeOf(typeof(int));
             nint trackSize = Marshal.SizeOf(typeof(PulsarGame.TrackV3));
-            nint variantsOffset = tracksOffset + trackSize * ctsCupCount * 4;
+            
+            // Account for padding tracks if cup count is odd
+            int totalTracks = ctsCupCount * 4;
+            if (ctsCupCount % 2 != 0) totalTracks += 4;
+            
+            nint variantsOffset = tracksOffset + trackSize * totalTracks;
             nint variantSize = Marshal.SizeOf(typeof(PulsarGame.Variant));
 
             PulsarGame.TrackV3[] curCup = new PulsarGame.TrackV3[4];
-            PulsarGame.Variant[] variants = new PulsarGame.Variant[8]; //max 8 variants
+            // We'll collect all variants for a cup into a single array so each track can read its portion.
+            List<PulsarGame.Variant> variantsList = new List<PulsarGame.Variant>();
             for (int i = 0; i < ctsCupCount; i++)
             {
                 for (int j = 0; j < 4; j++)
@@ -57,12 +63,15 @@ namespace Pulsar_Pack_Creator.IO
                     curCup[j] = CreateSubCat<PulsarGame.TrackV3>(raw, (int)tracksOffset);
                     for (int k = 0; k < curCup[j].variantCount; k++)
                     {
-                        variants[k] = CreateSubCat<PulsarGame.Variant>(raw, (int)variantsOffset);
+                        // Append each variant for the current track in sequence
+                        variantsList.Add(CreateSubCat<PulsarGame.Variant>(raw, (int)variantsOffset));
                         variantsOffset += variantSize;
                     }
                     tracksOffset += trackSize;
                 }
-                ReadCup(curCup, variants);
+                // Convert the gathered list to an array and pass it into the cup
+                ReadCup(curCup, variantsList.ToArray());
+                variantsList.Clear();
 
             }
 
@@ -232,21 +241,25 @@ namespace Pulsar_Pack_Creator.IO
             {
                 if (curLine != "")
                 {
-                    uint bmgId;
-                    bool ret = uint.TryParse(curLine.Substring(1, 5), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bmgId);
-                    if (!ret)
+                    uint bmgId = 0;
+                    bool ret = false;
+                    string[] parts = curLine.Split('=');
+                    if (parts.Length >= 2)
                     {
-                        ret = uint.TryParse(curLine.Substring(2, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bmgId);
+                        string idPart = parts[0].Trim();
+                        ret = uint.TryParse(idPart, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bmgId);
                     }
+
                     if (ret)
                     {
                         if (bmgId == 0x2847) date = curLine.Split(' ')[curLine.Split(' ').Length - 1];
-                        else if (bmgId >= 0x10000 && bmgId < 0x60000)
+                        else if (bmgId >= 0x10000 && bmgId < 0x600000)
                         {
                             string content = "";
                             try
                             {
-                                content = curLine.Split('=')[1].TrimStart(' ');
+                                // Re-join parts in case content contained '='
+                                content = string.Join("=", parts.Skip(1)).TrimStart(' ');
                             }
                             catch
                             {
@@ -254,9 +267,59 @@ namespace Pulsar_Pack_Creator.IO
                             }
                             if (ret)
                             {
-                                uint type = bmgId & 0xFFFF0000;
-                                uint rest = bmgId & 0xFFFF;
-                                uint variantIdx = (rest & 0xf000) >> 12;
+                                const uint VARIANT_TRACKS_BASE = 0x400000u;
+                                const uint VARIANT_AUTHORS_BASE = 0x500000u;
+                                uint type = 0;
+                                uint rest = 0;
+                                int variantIdxParsed = 0; // 0 == base
+
+                                if (bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE)
+                                {
+                                    // Variant track block (0x400000..0x4FFFFF)
+                                    uint raw = bmgId - VARIANT_TRACKS_BASE;
+                                    rest = (raw >> 4); // original idx
+                                    variantIdxParsed = (int)(raw & 0xF);
+                                    type = (uint)BMGIds.BMG_TRACKS;
+                                }
+                                else if (bmgId >= VARIANT_AUTHORS_BASE && bmgId < VARIANT_AUTHORS_BASE + 0x100000u)
+                                {
+                                    // Variant authors block (0x500000..0x5FFFFF)
+                                    uint raw = bmgId - VARIANT_AUTHORS_BASE;
+                                    rest = (raw >> 4);
+                                    variantIdxParsed = (int)(raw & 0xF);
+                                    type = (uint)BMGIds.BMG_AUTHORS;
+                                }
+                                else
+                                {
+                                    uint rawType = bmgId & 0xFFFF0000; // original high word block
+                                    rest = bmgId & 0xFFFF;
+                                    // Normalize type block to base group 0x20000 (tracks) or 0x30000 (authors)
+                                    uint typeGroup = (rawType >> 16) & 0xFFFF;
+                                    if (typeGroup == 1)
+                                    {
+                                        type = (uint)BMGIds.BMG_CUPS;
+                                    }
+                                    else
+                                    {
+                                        // For BMG_TRACKS (0x20000) and BMG_AUTHORS (0x30000) the group values are 2 and 3.
+                                        uint normalizedTypeGroup = (typeGroup % 2 == 0) ? 2u : 3u;
+                                        type = normalizedTypeGroup << 16;
+                                    }
+                                    // Determine if old low-nibble maps to a variant
+                                    uint lowIdx = (rest & 0xF000) >> 12;
+                                    if (lowIdx >= 8)
+                                        variantIdxParsed = -1; // use common/base name
+                                    else if (lowIdx == 0)
+                                    {
+                                        if (type == (uint)BMGIds.BMG_AUTHORS)
+                                            variantIdxParsed = 0; // BMG_AUTHORS (0x30000) is Main Track Author
+                                        else
+                                            variantIdxParsed = -1; // BMG_TRACKS (0x20000) is Common Name
+                                    }
+                                    else
+                                        variantIdxParsed = (int)lowIdx; // old mapping 1..7
+                                }
+
                                 int cupIdx = (int)(rest & 0xFFF) / 4;
                                 if (cupIdx < ctsCupCount)
                                 {
@@ -270,19 +333,34 @@ namespace Pulsar_Pack_Creator.IO
                                         case (uint)BMGIds.BMG_TRACKS:
                                         case (uint)BMGIds.BMG_AUTHORS:
                                             {
-                                                if (variantIdx >= 8)
+                                                int parsedVariantIdx = variantIdxParsed; // -1 means common/base name
+
+                                                MainWindow.Cup.Track.Variant variant;
+                                                if (parsedVariantIdx == -1)
                                                 {
-                                                    track.commonName = content;
+                                                    // common name
+                                                    if (type == (uint)BMGIds.BMG_TRACKS)
+                                                    {
+                                                        track.commonName = content;
+                                                        // Only set main track name as fallback if it's still default
+                                                        if (track.main.trackName == MainWindow.Cup.defaultTrack)
+                                                            track.main.trackName = content;
+                                                    }
                                                     break;
                                                 }
-                                                MainWindow.Cup.Track.Variant variant;
-                                                if (variantIdx == 0)
+                                                else if (parsedVariantIdx == 0)
                                                 {
+                                                    // main track
                                                     variant = track.main;
                                                 }
                                                 else
                                                 {
-                                                    variant = track.variants[(int)(variantIdx - 1)];
+                                                    // variant mapping: parsedVariantIdx 1 maps to track.variants[0]
+                                                    int vIndex = parsedVariantIdx - 1;
+                                                    if (vIndex >= 0 && vIndex < track.variants.Count)
+                                                        variant = track.variants[vIndex];
+                                                    else
+                                                        variant = track.main;
                                                 }
                                                 if (type == (uint)BMGIds.BMG_AUTHORS)
                                                 {
@@ -297,7 +375,7 @@ namespace Pulsar_Pack_Creator.IO
                                                         variant.trackName = split[0].Trim();
                                                         variant.versionName = split[1].Split("\\c{off}")[0];
                                                     }
-                                                    else cups[cupIdx].tracks[trackIdx].main.trackName = content.Trim();
+                                                    else variant.trackName = content.Trim();
                                                 }
                                             }
                                             break;
@@ -364,8 +442,28 @@ namespace Pulsar_Pack_Creator.IO
                                         {
                                             cups[cupIdx].tracks[trackIdx].expertFileNames[i - 1] = names[i];
                                         }
+                                        
+                                        string trackFile = names[0];
+                                        bool hasValidTrackFile = !string.IsNullOrWhiteSpace(trackFile) && trackFile != "File";
+                                        bool hasExplicit200 = names.Length >= 3 && !string.IsNullOrWhiteSpace(names[2]);
+                                        if (hasValidTrackFile && !hasExplicit200)
+                                        {
+                                            cups[cupIdx].tracks[trackIdx].expertFileNames[1] = trackFile; // 200cc index
+                                        }
                                     }
-                                    else if (variantIdx <= 7) cups[cupIdx].tracks[trackIdx].variants[variantIdx - 1].fileName = names[0];
+                                    else if (variantIdx <= 7) 
+                                    {
+                                        int variantIndex = variantIdx - 1;
+                                        if (variantIndex < cups[cupIdx].tracks[trackIdx].variants.Count)
+                                        {
+                                            cups[cupIdx].tracks[trackIdx].variants[variantIndex].fileName = names[0];
+                                            // Read expert file names for variants
+                                            for (int i = 1; i < names.Length && i <= 4; i++)
+                                            {
+                                                cups[cupIdx].tracks[trackIdx].variants[variantIndex].expertFileNames[i - 1] = names[i];
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
