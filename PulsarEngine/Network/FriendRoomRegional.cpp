@@ -95,7 +95,7 @@ static bool ConvertFriendRoomStateToRegional() {
         }
     }
 
-    controller->roomType = wasHost ? RKNet::ROOMTYPE_VS_REGIONAL : RKNet::ROOMTYPE_JOINING_REGIONAL;
+    controller->roomType = RKNet::ROOMTYPE_VS_REGIONAL;
     controller->localStatusData.regionId = REGIONID;
     controller->localStatusData.status = RKNet::FRIEND_STATUS_PUBLIC_VS;
     controller->localStatusData.playerCount = totalPlayerCount != 0 ? totalPlayerCount : localPlayerCount;
