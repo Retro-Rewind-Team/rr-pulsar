@@ -267,68 +267,87 @@ namespace Pulsar_Pack_Creator.IO
                             }
                             if (ret)
                             {
-                                const uint VARIANT_TRACKS_BASE = 0x400000u;
-                                const uint VARIANT_AUTHORS_BASE = 0x500000u;
+                                const uint VARIANT_TRACKS_BASE = 0x420000u;
+                                const uint VARIANT_AUTHORS_BASE = 0x520000u;
                                 uint type = 0;
-                                uint rest = 0;
+                                uint trackIndex = 0; // The track index (0-based across all cups)
                                 int variantIdxParsed = 0; // 0 == base
 
                                 if (bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE)
                                 {
-                                    // Variant track block (0x400000..0x4FFFFF)
+                                    // Variant track block (0x420000..0x51FFFF)
                                     uint raw = bmgId - VARIANT_TRACKS_BASE;
-                                    rest = (raw >> 4); // original idx
+                                    trackIndex = (raw >> 4); // track index in upper bits
                                     variantIdxParsed = (int)(raw & 0xF);
                                     type = (uint)BMGIds.BMG_TRACKS;
                                 }
                                 else if (bmgId >= VARIANT_AUTHORS_BASE && bmgId < VARIANT_AUTHORS_BASE + 0x100000u)
                                 {
-                                    // Variant authors block (0x500000..0x5FFFFF)
+                                    // Variant authors block (0x520000..0x61FFFF)
                                     uint raw = bmgId - VARIANT_AUTHORS_BASE;
-                                    rest = (raw >> 4);
+                                    trackIndex = (raw >> 4);
                                     variantIdxParsed = (int)(raw & 0xF);
                                     type = (uint)BMGIds.BMG_AUTHORS;
                                 }
                                 else
                                 {
                                     uint rawType = bmgId & 0xFFFF0000; // original high word block
-                                    rest = bmgId & 0xFFFF;
+                                    uint rest = bmgId & 0xFFFF;
                                     // Normalize type block to base group 0x20000 (tracks) or 0x30000 (authors)
                                     uint typeGroup = (rawType >> 16) & 0xFFFF;
                                     if (typeGroup == 1)
                                     {
                                         type = (uint)BMGIds.BMG_CUPS;
+                                        trackIndex = rest; // For cups, this is the cup index
+                                    }
+                                    else if (typeGroup == 2)
+                                    {
+                                        // BMG_TRACKS base range (0x20000 + trackIdx) - common track name
+                                        // The entire lower 16 bits is the track index, no variant component
+                                        type = (uint)BMGIds.BMG_TRACKS;
+                                        trackIndex = rest; // Full 16 bits is the track index
+                                        variantIdxParsed = -1; // common name
+                                    }
+                                    else if (typeGroup == 3)
+                                    {
+                                        // BMG_AUTHORS base range (0x30000 + trackIdx) - main track author
+                                        // The entire lower 16 bits is the track index, no variant component
+                                        type = (uint)BMGIds.BMG_AUTHORS;
+                                        trackIndex = rest; // Full 16 bits is the track index
+                                        variantIdxParsed = 0; // main track author
                                     }
                                     else
                                     {
-                                        // For BMG_TRACKS (0x20000) and BMG_AUTHORS (0x30000) the group values are 2 and 3.
+                                        // For other ranges (0x4XXXX, etc. that didn't match variant blocks),
+                                        // try to normalize as before (legacy handling)
                                         uint normalizedTypeGroup = (typeGroup % 2 == 0) ? 2u : 3u;
                                         type = normalizedTypeGroup << 16;
-                                    }
-                                    // Determine if old low-nibble maps to a variant
-                                    uint lowIdx = (rest & 0xF000) >> 12;
-                                    if (lowIdx >= 8)
-                                        variantIdxParsed = -1; // use common/base name
-                                    else if (lowIdx == 0)
-                                    {
-                                        if (type == (uint)BMGIds.BMG_AUTHORS)
-                                            variantIdxParsed = 0; // BMG_AUTHORS (0x30000) is Main Track Author
+                                        // In legacy format, bits 12-15 of rest hold variant index
+                                        uint lowIdx = (rest & 0xF000) >> 12;
+                                        trackIndex = rest & 0xFFF; // Lower 12 bits is track index
+                                        if (lowIdx >= 8)
+                                            variantIdxParsed = -1; // use common/base name
+                                        else if (lowIdx == 0)
+                                        {
+                                            if (type == (uint)BMGIds.BMG_AUTHORS)
+                                                variantIdxParsed = 0;
+                                            else
+                                                variantIdxParsed = -1;
+                                        }
                                         else
-                                            variantIdxParsed = -1; // BMG_TRACKS (0x20000) is Common Name
+                                            variantIdxParsed = (int)lowIdx; // old mapping 1..7
                                     }
-                                    else
-                                        variantIdxParsed = (int)lowIdx; // old mapping 1..7
                                 }
 
-                                int cupIdx = (int)(rest & 0xFFF) / 4;
+                                int cupIdx = (int)trackIndex / 4;
                                 if (cupIdx < ctsCupCount)
                                 {
-                                    int trackIdx = (int)(rest & 0xFFF) % 4;
+                                    int trackIdx = (int)trackIndex % 4;
                                     MainWindow.Cup.Track track = cups[cupIdx].tracks[trackIdx];
                                     switch (type)
                                     {
                                         case (uint)BMGIds.BMG_CUPS:
-                                            if ((int)rest < ctsCupCount) cups[(int)rest].name = content;
+                                            if ((int)trackIndex < ctsCupCount) cups[(int)trackIndex].name = content;
                                             break;
                                         case (uint)BMGIds.BMG_TRACKS:
                                         case (uint)BMGIds.BMG_AUTHORS:

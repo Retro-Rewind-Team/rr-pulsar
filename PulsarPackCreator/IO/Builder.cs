@@ -484,7 +484,7 @@ namespace Pulsar_Pack_Creator.IO
             }
 
             const uint VARIANT_TRACKS_BASE = 0x420000u;
-            const uint VARIANT_AUTHORS_BASE = 0x500000u;
+            const uint VARIANT_AUTHORS_BASE = 0x520000u;
             uint bmgId;
             uint authorId;
             if (variantIdx == 0)
