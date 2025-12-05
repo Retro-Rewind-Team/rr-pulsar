@@ -8,3 +8,4 @@ PulsarEngine/Security/
 PulsarEngine/Network/RoomKey.cpp
 /.github
 AGENTS.md
+/.agent

@@ -8,8 +8,13 @@ namespace Pulsar {
 namespace Network {
 
 void Report(const char* key, const char* string) {
-    GP::Connection** connection = DWC::MatchControl::sInstance->gpConnection;
-    if (connection == nullptr) {
+    DWC::MatchControl* matchControl = DWC::MatchControl::sInstance;
+    if (matchControl == nullptr) {
+        return;
+    }
+
+    GP::Connection** connection = matchControl->gpConnection;
+    if (connection == nullptr || *connection == nullptr) {
         return;
     }
 
