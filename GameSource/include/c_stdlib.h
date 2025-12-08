@@ -5,10 +5,13 @@
 extern "C" {
 #endif
 
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
 #ifdef __INTELLISENSE__
 typedef unsigned long long size_t;
 #else
 typedef unsigned long size_t;
+#endif
 #endif
 
 typedef struct va_list_struct {

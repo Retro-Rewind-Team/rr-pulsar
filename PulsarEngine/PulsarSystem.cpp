@@ -18,6 +18,7 @@
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <RetroRewindChannel.hpp>
 #include <Dolphin/DolphinIOS.hpp>
+#include <hooks.hpp>
 
 namespace Pulsar {
 
@@ -99,7 +100,7 @@ void System::Init(const ConfigFile& conf) {
     }
 
     // Track blocking
-    u32 trackBlocking = 32;
+    u32 trackBlocking = this->info.GetTrackBlocking();
     this->netMgr.lastTracks = new PulsarId[trackBlocking];
     for (int i = 0; i < trackBlocking; ++i) this->netMgr.lastTracks[i] = PULSARID_NONE;
     const BMGHeader* const confBMG = &conf.GetSection<PulBMG>().header;

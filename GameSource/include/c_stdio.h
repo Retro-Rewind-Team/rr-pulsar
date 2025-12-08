@@ -12,7 +12,6 @@ size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream);
 size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream);
 int fseek(FILE* stream, long int offset, int whence);
 long int ftell(FILE* stream);
-size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
 void rewind(FILE* stream);
 
 int printf(const char* format, ...);

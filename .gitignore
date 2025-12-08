@@ -9,3 +9,4 @@ PulsarEngine/Network/RoomKey.cpp
 /.github
 AGENTS.md
 /.agent
+/.clangd
