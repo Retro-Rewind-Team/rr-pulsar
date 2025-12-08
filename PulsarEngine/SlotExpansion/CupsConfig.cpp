@@ -193,7 +193,7 @@ void CupsConfig::GetTrackGhostFolder(char* dest, PulsarId pulsarId, u8 variantId
     else if (variantIdx == 0)
         snprintf(dest, IOS::ipcMaxPath, "%s/Ghosts/%08x", modFolder, crc32);
     else
-        snprintf(dest, IOS::ipcMaxPath, "%s/Ghosts/%08x/v%d", modFolder, crc32, variantIdx);
+        snprintf(dest, IOS::ipcMaxPath, "%s/Ghosts/%08x/%d", modFolder, crc32, variantIdx);
 }
 
 void CupsConfig::LoadFileNames(const char* buffer, u32 length) {
