@@ -345,7 +345,7 @@ namespace Pulsar_Pack_Creator.IO {
             if (!isFake) {
                 string crc32Folder = "";
                 if (buildParams != BuildParams.ConfigOnly) {
-                    crcToFile.WriteLine($"{track.main.trackName} = {crc32:X8}");
+                    crcToFile.WriteLine($"{commonName} = {crc32:X8}");
                     crc32Folder = $"{modFolder}/Ghosts/{crc32:X8}".ToLowerInvariant();
                     Directory.CreateDirectory(crc32Folder);
                 }
