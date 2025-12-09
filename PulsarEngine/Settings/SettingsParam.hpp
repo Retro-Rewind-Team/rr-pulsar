@@ -50,22 +50,6 @@ enum UserType {
 
 }  // namespace Settings
 
-// --------------------------------------------------------------------------------------
-// Page order (User pages):
-//  1) Race 1
-//  2) Race 2
-//  3) Menu
-//  4) Online
-//  5) Sound
-//  6) Battle
-//  7) Friend Room 1
-//  8) Friend Room 2
-//  9) OTT
-// 10) KO
-// 11) Extended Teams
-// 12) Misc
-// --------------------------------------------------------------------------------------
-
 // 1) Race 1
 enum Race1Settings {
     RADIO_TRANSMISSION = 0,
@@ -74,6 +58,8 @@ enum Race1Settings {
     RADIO_INPUTDISPLAY = 3,
     RADIO_MIIHEADS = 4,
     RADIO_SPEEDOMETER = 5,
+    SCROLLER_ITEMMODE = 0 + 8,
+    SCROLLER_TRACKSELECTION = 1 + 8,
 };
 
 // 2) Race 2
@@ -118,8 +104,6 @@ enum FriendRoom1Settings {
     RADIO_CHARSELECT = 2,
     RADIO_RANKINGS = 3,
     SCROLLER_RACECOUNT = 0 + 8,
-    SCROLLER_ITEMMODE = 1 + 8,
-    SCROLLER_TRACKSELECTION = 2 + 8,
 
 };
 
@@ -163,10 +147,6 @@ enum MiscSettings {
     SCROLLER_WWMODE = 2 + 8,
 };
 
-// --------------------------------------------------------------------------------------
-// Value enums grouped by page order
-// --------------------------------------------------------------------------------------
-
 // 1) Race 1 values
 enum Transmission {
     TRANSMISSION_DEFAULT,
@@ -200,6 +180,22 @@ enum RaceSettingSOM {
     SOM_DIGITS_0,
     SOM_DIGITS_1,
     SOM_DIGITS_2,
+};
+
+enum ItemMode {
+    GAMEMODE_DEFAULT,
+    GAMEMODE_RANDOM,
+    GAMEMODE_BLAST,
+    GAMEMODE_ITEMRAIN,
+    GAMEMODE_ITEMSTORM,
+    GAMEMODE_NONE
+};
+
+enum TrackSelection {
+    TRACKSELECTION_RETROS,
+    TRACKSELECTION_CTS,
+    TRACKSELECTION_ALL,
+    TRACKSELECTION_REGS,
 };
 
 // 2) Race 2 values
@@ -321,22 +317,6 @@ enum HostSettingGPRACES {
     GP_RACES_32,
     GP_RACES_64,
     GP_RACES_2
-};
-
-enum ItemMode {
-    GAMEMODE_DEFAULT,
-    GAMEMODE_RANDOM,
-    GAMEMODE_BLAST,
-    GAMEMODE_ITEMRAIN,
-    GAMEMODE_ITEMSTORM,
-    GAMEMODE_NONE
-};
-
-enum TrackSelection {
-    TRACKSELECTION_RETROS,
-    TRACKSELECTION_CTS,
-    TRACKSELECTION_ALL,
-    TRACKSELECTION_REGS,
 };
 
 // 8) Friend Room 2 values
