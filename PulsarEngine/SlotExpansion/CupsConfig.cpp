@@ -3,6 +3,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
+#include <Settings/SettingsParam.hpp>
 #include <Settings/UI/ExpWFCMainPage.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Settings/Settings.hpp>
@@ -443,6 +444,11 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         if (System::sInstance->IsContext(PULSAR_CTS)) isCTOnly = TRACKSELECTION_CTS;
         if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = TRACKSELECTION_REGS;
     }
+    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
+        if (System::sInstance->IsContext(PULSAR_RETROS)) isRetroOnly = TRACKSELECTION_ALL;
+        if (System::sInstance->IsContext(PULSAR_CTS)) isCTOnly = TRACKSELECTION_ALL;
+        if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = TRACKSELECTION_REGS;
+    }
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
         if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D) isRetroOnly = TRACKSELECTION_RETROS;
         if (System::sInstance->netMgr.region == 0x14) isCTOnly = TRACKSELECTION_CTS;
@@ -467,6 +473,10 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         const u32 nextIdxBT = startIdx + ((idx - startIdx + direction + countBT) % countBT);
         if (!this->hasRegs && nextIdxBT < 8) return static_cast<PulsarCupId>(nextIdxBT + countBT + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxBT);
+    } else if (isRegsOnly) {
+        const u32 count = 8;
+        const u32 nextIdx = ((idx + direction + count) % count);
+        return ConvertCup_IdxToPulsarId(nextIdx);
     } else {
         const u32 count = 65;
         const u32 min = count < 8 ? 8 : 0;

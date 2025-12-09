@@ -42,28 +42,34 @@ static void CourseSelect_OnCourseButtonClick(CtrlMenuCourseSelectCourse* self, P
     if (!isVariantContext) {
         PulsarCupId lastCup = cups->lastSelectedCup;
         PulsarId selected = cups->ConvertTrack_PulsarCupToTrack(lastCup, courseButton.buttonId);
+
+        bool hasVariants = false;
         if (!cups->IsReg(selected)) {
             const Track& track = cups->GetTrack(selected);
-            if (track.variantCount > 0) {
-                cups->SetSelected(selected);
-                Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
-                if (coursePage != nullptr) {
-                    variantPage->SetBaseRowIdx(static_cast<u8>(courseButton.buttonId));
-                    coursePage->LoadNextPageById(static_cast<PageId>(PULPAGE_VARIANTSELECT), courseButton);
-                    return;
-                }
-                return;
-            }
+            if (track.variantCount > 0) hasVariants = true;
+        }
+
+        if (hasVariants) {
+            cups->SetSelected(selected);
             Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
             if (coursePage != nullptr) {
-                coursePage->LoadNextPage(coursePage->CtrlMenuCourseSelectCourse, courseButton, hudSlotId);
+                variantPage->SetBaseRowIdx(static_cast<u8>(courseButton.buttonId));
+                coursePage->LoadNextPageById(static_cast<PageId>(PULPAGE_VARIANTSELECT), courseButton);
                 return;
             }
+            return;
         }
+
+        Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
+        if (coursePage != nullptr) {
+            cups->SetSelected(selected);
+            coursePage->LoadNextPage(coursePage->CtrlMenuCourseSelectCourse, courseButton, hudSlotId);
+            return;
+        }
+
     } else if (variantPage != nullptr) {
         u32 variantIdx = variantPage->GetVariantIndexForButton(courseButton);
         if (variantIdx != 0xFFFFFFFF) {
-            PulsarId sel = cups->GetSelected();
             cups->SetPendingVariant(static_cast<u8>(variantIdx));
             variantPage->LoadNextPage(variantPage->CtrlMenuCourseSelectCourse, courseButton, hudSlotId);
             handled = true;
