@@ -353,43 +353,13 @@ namespace Pulsar_Pack_Creator.IO {
 
             mainTracksList.Add(new PulsarGame.TrackV3(track.main, crc32, (short)track.variants.Count));
 
-            for (int mode = 0; mode < 4; mode++)  // write experts
-            {
-                string expertName = expertFileNames[mode];
-                if (expertName != "RKG File" && expertName != "") {
-                    if (buildParams != BuildParams.ConfigOnly) {
-                        string rkgName = $"input/{PulsarGame.ttModeFolders[mode, 1]}/{expertName}.rkg".ToLowerInvariant();
-                        if (!inputFiles.Contains(rkgName)) {
-                            continue;
-                        }
-                        using BigEndianReader rkg = new BigEndianReader(File.Open(rkgName, FileMode.Open));
-                        rkg.BaseStream.Position = 0xC;
-                        ushort halfC = rkg.ReadUInt16();
-                        ushort newC = (ushort)((halfC & ~(0x7F << 2)) + (0x26 << 2));  // change ghostType to expert
-
-                        rkg.BaseStream.Position = 0;
-                        byte[] rkgBytes = rkg.ReadBytes((int)(rkg.BaseStream.Length - 4));  //-4 to remove crc32
-                        using BigEndianWriter finalRkg =
-                            new BigEndianWriter(File.Create($"{modFolder}/Ghosts/Experts/{idx}_{PulsarGame.ttModeFolders[mode, 0]}.rkg"));
-                        rkgBytes[0xC] = (byte)(newC >> 8);
-                        rkgBytes[0xD] = (byte)(newC & 0xFF);
-                        finalRkg.Write(rkgBytes);
-                        int rkgCrc32 = BitConverter.ToInt32(System.IO.Hashing.Crc32.Hash(rkgBytes), 0);
-                        finalRkg.Write(rkgCrc32);
-                    }
-                    trophyCount[mode]++;
-                }
-            }
-
-            // Write expert ghosts for variants
-            for (int j = 0; j < track.variants.Count; j++) {
-                Cup.Track.Variant variant = track.variants[j];
-                uint vIdx = (uint)j + 1;
-                for (int mode = 0; mode < 4; mode++) {
-                    string variantExpertName = variant.expertFileNames[mode];
-                    if (variantExpertName != "RKG File" && variantExpertName != "") {
+            if (!isFake) {
+                for (int mode = 0; mode < 4; mode++)  // write experts
+                {
+                    string expertName = expertFileNames[mode];
+                    if (expertName != "RKG File" && expertName != "") {
                         if (buildParams != BuildParams.ConfigOnly) {
-                            string rkgName = $"input/{PulsarGame.ttModeFolders[mode, 1]}/{variantExpertName}.rkg".ToLowerInvariant();
+                            string rkgName = $"input/{PulsarGame.ttModeFolders[mode, 1]}/{expertName}.rkg".ToLowerInvariant();
                             if (!inputFiles.Contains(rkgName)) {
                                 continue;
                             }
@@ -400,9 +370,8 @@ namespace Pulsar_Pack_Creator.IO {
 
                             rkg.BaseStream.Position = 0;
                             byte[] rkgBytes = rkg.ReadBytes((int)(rkg.BaseStream.Length - 4));  //-4 to remove crc32
-                            // Variant expert filename format: idx_v{variantIdx}_{mode}.rkg
                             using BigEndianWriter finalRkg =
-                                new BigEndianWriter(File.Create($"{modFolder}/Ghosts/Experts/{idx}_v{vIdx}_{PulsarGame.ttModeFolders[mode, 0]}.rkg"));
+                                new BigEndianWriter(File.Create($"{modFolder}/Ghosts/Experts/{idx}_{PulsarGame.ttModeFolders[mode, 0]}.rkg"));
                             rkgBytes[0xC] = (byte)(newC >> 8);
                             rkgBytes[0xD] = (byte)(newC & 0xFF);
                             finalRkg.Write(rkgBytes);
@@ -410,6 +379,39 @@ namespace Pulsar_Pack_Creator.IO {
                             finalRkg.Write(rkgCrc32);
                         }
                         trophyCount[mode]++;
+                    }
+                }
+
+                // Write expert ghosts for variants
+                for (int j = 0; j < track.variants.Count; j++) {
+                    Cup.Track.Variant variant = track.variants[j];
+                    uint vIdx = (uint)j + 1;
+                    for (int mode = 0; mode < 4; mode++) {
+                        string variantExpertName = variant.expertFileNames[mode];
+                        if (variantExpertName != "RKG File" && variantExpertName != "") {
+                            if (buildParams != BuildParams.ConfigOnly) {
+                                string rkgName = $"input/{PulsarGame.ttModeFolders[mode, 1]}/{variantExpertName}.rkg".ToLowerInvariant();
+                                if (!inputFiles.Contains(rkgName)) {
+                                    continue;
+                                }
+                                using BigEndianReader rkg = new BigEndianReader(File.Open(rkgName, FileMode.Open));
+                                rkg.BaseStream.Position = 0xC;
+                                ushort halfC = rkg.ReadUInt16();
+                                ushort newC = (ushort)((halfC & ~(0x7F << 2)) + (0x26 << 2));  // change ghostType to expert
+
+                                rkg.BaseStream.Position = 0;
+                                byte[] rkgBytes = rkg.ReadBytes((int)(rkg.BaseStream.Length - 4));  //-4 to remove crc32
+                                // Variant expert filename format: idx_v{variantIdx}_{mode}.rkg
+                                using BigEndianWriter finalRkg =
+                                    new BigEndianWriter(File.Create($"{modFolder}/Ghosts/Experts/{idx}_v{vIdx}_{PulsarGame.ttModeFolders[mode, 0]}.rkg"));
+                                rkgBytes[0xC] = (byte)(newC >> 8);
+                                rkgBytes[0xD] = (byte)(newC & 0xFF);
+                                finalRkg.Write(rkgBytes);
+                                int rkgCrc32 = BitConverter.ToInt32(System.IO.Hashing.Crc32.Hash(rkgBytes), 0);
+                                finalRkg.Write(rkgCrc32);
+                            }
+                            trophyCount[mode]++;
+                        }
                     }
                 }
             }
