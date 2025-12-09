@@ -205,29 +205,39 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
         vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
         br = PointRating::GetUserBR(rksysMgr->curLicenseId);
     }
-    
+
     wchar_t buffer[64];
     int vrInt = (int)vr;
     int vrDec = (int)((vr - (float)vrInt) * 100.0f + 0.5f);
-    if (vrDec >= 100) { vrInt++; vrDec -= 100; }
-    if(vrDec < 0) vrDec = -vrDec;
-    if (vrInt == 0) swprintf(buffer, 64, L"%dVR", vrDec);
-    else swprintf(buffer, 64, L"%d%02dVR", vrInt, vrDec);
+    if (vrDec >= 100) {
+        vrInt++;
+        vrDec -= 100;
+    }
+    if (vrDec < 0) vrDec = -vrDec;
+    if (vrInt == 0)
+        swprintf(buffer, 64, (vr >= 1000.0f) ? L"%dVR\uF06D" : L"%dVR", vrDec);
+    else
+        swprintf(buffer, 64, (vr >= 1000.0f) ? L"%d%02dVR\uF06D" : L"%d%02dVR", vrInt, vrDec);
     info.strings[0] = buffer;
-    
+
     self.ctButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
     self.regButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
     self.twoHundredButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
     self.ottButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
     self.itemRainButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
-    
+
     if (ExpWFCMain::lastClickedMainMenuButton == 8) {
         int brInt = (int)br;
         int brDec = (int)((br - (float)brInt) * 100.0f + 0.5f);
-        if (brDec >= 100) { brInt++; brDec -= 100; }
-        if(brDec < 0) brDec = -brDec;
-        if (brInt == 0) swprintf(buffer, 64, L"%dBR", brDec);
-        else swprintf(buffer, 64, L"%d%02dBR", brInt, brDec);
+        if (brDec >= 100) {
+            brInt++;
+            brDec -= 100;
+        }
+        if (brDec < 0) brDec = -brDec;
+        if (brInt == 0)
+            swprintf(buffer, 64, (br >= 1000.0f) ? L"%dBR\uF06D" : L"%dBR", brDec);
+        else
+            swprintf(buffer, 64, (br >= 1000.0f) ? L"%d%02dBR\uF06D" : L"%d%02dBR", brInt, brDec);
         info.strings[0] = buffer;
         self.RRbattleButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
         self.RRbattleButtonElim.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
@@ -494,20 +504,30 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     wchar_t buffer[64];
     int vrInt = (int)vr;
     int vrDec = (int)((vr - (float)vrInt) * 100.0f + 0.5f);
-    if (vrDec >= 100) { vrInt++; vrDec -= 100; }
-    if(vrDec < 0) vrDec = -vrDec;
-    if (vrInt == 0) swprintf(buffer, 64, L"%dVR", vrDec);
-    else swprintf(buffer, 64, L"%d%02dVR", vrInt, vrDec);
+    if (vrDec >= 100) {
+        vrInt++;
+        vrDec -= 100;
+    }
+    if (vrDec < 0) vrDec = -vrDec;
+    if (vrInt == 0)
+        swprintf(buffer, 64, (vr >= 1000.0f) ? L"%dVR\uF06D" : L"%dVR", vrDec);
+    else
+        swprintf(buffer, 64, (vr >= 1000.0f) ? L"%d%02dVR\uF06D" : L"%d%02dVR", vrInt, vrDec);
     info.strings[0] = buffer;
-    
+
     this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     if (ExpWFCMain::lastClickedMainMenuButton == 8) {
         int brInt = (int)br;
         int brDec = (int)((br - (float)brInt) * 100.0f + 0.5f);
-        if (brDec >= 100) { brInt++; brDec -= 100; }
-        if(brDec < 0) brDec = -brDec;
-        if (brInt == 0) swprintf(buffer, 64, L"%dBR", brDec);
-        else swprintf(buffer, 64, L"%d%02dBR", brInt, brDec);
+        if (brDec >= 100) {
+            brInt++;
+            brDec -= 100;
+        }
+        if (brDec < 0) brDec = -brDec;
+        if (brInt == 0)
+            swprintf(buffer, 64, (br >= 1000.0f) ? L"%dBR\uF06D" : L"%dBR", brDec);
+        else
+            swprintf(buffer, 64, (br >= 1000.0f) ? L"%d%02dBR\uF06D" : L"%d%02dBR", brInt, brDec);
         info.strings[0] = buffer;
         this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     }
