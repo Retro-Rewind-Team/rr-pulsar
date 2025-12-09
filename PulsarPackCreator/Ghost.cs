@@ -3,75 +3,66 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Pulsar_Pack_Creator
-{
+namespace Pulsar_Pack_Creator {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    partial class MainWindow : Window
-    {
-        //CTsGhosts
-        private void SetGhostLabelName(int row, string text)
-        {
+    partial class MainWindow : Window {
+        // CTsGhosts
+        private void SetGhostLabelName(int row, string text) {
             TextBlock ghostLabel = GhostGrid.Children.Cast<UIElement>().First(x => Grid.GetRow(x) == row + firstTrackRow && Grid.GetColumn(x) == 0) as TextBlock;
             ghostLabel.Text = text == "Name" ? $"Track {row + 1}" : text;
         }
 
-        private void SetExpertName(string text, int row, int col)
-        {
+        private void SetExpertName(string text, int row, int col) {
             TextBox ghostBox = GhostGrid.Children.Cast<UIElement>().First(x => Grid.GetRow(x) == row + firstTrackRow && Grid.GetColumn(x) == col + 1) as TextBox;
-            if (text == "") ghostBox.Text = "RKG File";
-            else ghostBox.Text = text;
+            if (text == "")
+                ghostBox.Text = "RKG File";
+            else
+                ghostBox.Text = text;
         }
-        private void OnGhostChange(object sender, TextChangedEventArgs e)
-        {
+        private void OnGhostChange(object sender, TextChangedEventArgs e) {
             TextBox box = sender as TextBox;
-            if (box.IsKeyboardFocused)
-            {
+            if (box.IsKeyboardFocused) {
                 int row = Grid.GetRow(box) - 1;
                 int col = Grid.GetColumn(box) - 1;
                 string oldText = cups[curCup].tracks[row].expertFileNames[col];
                 string text = box.Text;
                 cups[curCup].tracks[row].expertFileNames[col] = text;
-                if (text != "RKG File" && text != "" && (oldText == "RKG File" || oldText == ""))
-                {
+                if (text != "RKG File" && text != "" && (oldText == "RKG File" || oldText == "")) {
                     trophyCount[col]++;
-                }
-                else if (trophyCount[col] > 0 && (text == "RKG File" || text == "")) trophyCount[col]--;
+                } else if (trophyCount[col] > 0 && (text == "RKG File" || text == ""))
+                    trophyCount[col]--;
             }
         }
 
-        //RegsGhosts
-        private void OnRegsGhostChange(object sender, TextChangedEventArgs e)
-        {
+        // RegsGhosts
+        private void OnRegsGhostChange(object sender, TextChangedEventArgs e) {
             TextBox box = sender as TextBox;
-            if (box.IsKeyboardFocused)
-            {
+            if (box.IsKeyboardFocused) {
                 int row = Grid.GetRow(box) - 1;
                 int col = Grid.GetColumn(box) - 1;
-                //string oldText = cups[curCup].expertFileNames[row, col];
+                // string oldText = cups[curCup].expertFileNames[row, col];
                 string text = box.Text;
                 regsExperts[curRegsCup, row, col] = text;
             }
         }
 
-        private void OnLeftRegsArrowClick(object sender, RoutedEventArgs e)
-        {
+        private void OnLeftRegsArrowClick(object sender, RoutedEventArgs e) {
             UpdateCurRegsPage(-1);
         }
-        private void OnRightRegsArrowClick(object sender, RoutedEventArgs e)
-        {
+        private void OnRightRegsArrowClick(object sender, RoutedEventArgs e) {
             UpdateCurRegsPage(1);
         }
-        private void SetRegsExpertName(string text, int row, int col)
-        {
+        private void SetRegsExpertName(string text, int row, int col) {
             TextBox ghostBox = RegsGhostGrid.Children.Cast<UIElement>().First(x => Grid.GetRow(x) == row + firstTrackRow && Grid.GetColumn(x) == col + 1) as TextBox;
-            if (text == "" || text == null) ghostBox.Text = "RKG File";
-            else ghostBox.Text = text;
+            if (text == "" || text == null)
+                ghostBox.Text = "RKG File";
+            else
+                ghostBox.Text = text;
         }
 
-        private void UpdateCurRegsPage(short direction)
-        {
+        private void UpdateCurRegsPage(short direction) {
             curRegsCup = (ushort)((curRegsCup + 8 + direction) % 8);
 
             RegsGhostTrackName1.Text = PulsarGame.MarioKartWii.idxToFullNames[curRegsCup * 4];
@@ -79,47 +70,31 @@ namespace Pulsar_Pack_Creator
             RegsGhostTrackName3.Text = PulsarGame.MarioKartWii.idxToFullNames[curRegsCup * 4 + 2];
             RegsGhostTrackName4.Text = PulsarGame.MarioKartWii.idxToFullNames[curRegsCup * 4 + 3];
 
-            for (int row = 0; row < 4; row++)
-            {
-                for (int col = 0; col < 4; col++)
-                {
+            for (int row = 0; row < 4; row++) {
+                for (int col = 0; col < 4; col++) {
                     SetRegsExpertName(regsExperts[curRegsCup, row, col], row, col);
                 }
             }
         }
 
-        private void OnImportGhostsFromFileNamesClick(object sender, RoutedEventArgs e)
-        {
+        private void OnImportGhostsFromFileNamesClick(object sender, RoutedEventArgs e) {
             // Import ghost file names from the track file names
-            for (int cupIdx = 0; cupIdx < ctsCupCount; cupIdx++)
-            {
-                for (int trackIdx = 0; trackIdx < 4; trackIdx++)
-                {
+            for (int cupIdx = 0; cupIdx < ctsCupCount; cupIdx++) {
+                for (int trackIdx = 0; trackIdx < 4; trackIdx++) {
                     Cup.Track track = cups[cupIdx].tracks[trackIdx];
                     string trackFileName = track.main.fileName;
-                    if (trackFileName != Cup.defaultFile && trackFileName != "")
-                    {
+                    if (trackFileName != Cup.defaultFile && trackFileName != "") {
                         // Set the track file name as the ghost file name for all modes
-                        for (int mode = 0; mode < 4; mode++)
-                        {
-                            if (track.expertFileNames[mode] == "" || track.expertFileNames[mode] == Cup.defaultGhost)
-                            {
-                                track.expertFileNames[mode] = trackFileName;
-                            }
+                        for (int mode = 0; mode < 4; mode++) {
+                            track.expertFileNames[mode] = trackFileName;
                         }
                     }
                     // Also import for variants
-                    foreach (var variant in track.variants)
-                    {
+                    foreach (var variant in track.variants) {
                         string variantFileName = variant.fileName;
-                        if (variantFileName != Cup.defaultFile && variantFileName != "")
-                        {
-                            for (int mode = 0; mode < 4; mode++)
-                            {
-                                if (variant.expertFileNames[mode] == "" || variant.expertFileNames[mode] == Cup.defaultGhost)
-                                {
-                                    variant.expertFileNames[mode] = variantFileName;
-                                }
+                        if (variantFileName != Cup.defaultFile && variantFileName != "") {
+                            for (int mode = 0; mode < 4; mode++) {
+                                variant.expertFileNames[mode] = variantFileName;
                             }
                         }
                     }
