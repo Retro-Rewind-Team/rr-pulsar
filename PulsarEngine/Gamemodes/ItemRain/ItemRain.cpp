@@ -12,9 +12,9 @@ namespace ItemRain {
 static s32 sRaceInfoFrameCounter = 0;
 
 static int ITEMS_PER_SPAWN = 1;
-static int SPAWN_HEIGHT = 1500;
+static int SPAWN_HEIGHT = 2000;
 static int SPAWN_RADIUS = 8000;
-static int MAX_ITEM_LIFETIME = 600;
+static int MAX_ITEM_LIFETIME = 570;
 static int DESPAWN_CHECK_INTERVAL = 2;
 
 void ItemModeCheck() {
@@ -22,7 +22,7 @@ void ItemModeCheck() {
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
         if (Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODESTORM)) {
-            ITEMS_PER_SPAWN = 5;
+            ITEMS_PER_SPAWN = 3;
             MAX_ITEM_LIFETIME = 180;
         } else {
             ITEMS_PER_SPAWN = 1;
@@ -36,7 +36,7 @@ void ItemModeCheck() {
 static RaceLoadHook ItemModeCheckHook(ItemModeCheck);
 
 static int GetSpawnInterval(u8 playerCount) {
-    return 6;
+    return 12;
 }
 
 static u32 GetRandom() {
