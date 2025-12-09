@@ -1,5 +1,6 @@
 #include <AutoTrackSelect/ExpFroomMessages.hpp>
 #include <Settings/Settings.hpp>
+#include <Settings/SettingsParam.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <Gamemodes/OnlineTT/OTTRegional.hpp>
@@ -81,32 +82,53 @@ s32 ExpFroomMessages::clickedButtonIdx = 0;
 // }
 // kmBranch(0x805dd314, OnBackButtonClick);
 
-// //kmWrite32(0x805dcb6c, 0x7EC4B378); //Get the loop idx in r4
-// u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
-//     register u32 rowIdx;
-//     asm(mr rowIdx, r22;);
-//     register const ExpFroomMessages* messages;
-//     asm(mr messages, r19;);
-//     if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS) && !messages->isOnModeSelection) {
-//         if (messages->clickedButtonIdx >= 2 && messages->clickedButtonIdx < 4) {
-//             return BMG_BATTLE + messages->curPageIdx * 4 + rowIdx + DELFINO_PIER;
-//         }
-//         else {
-//             if (rowIdx + messages->curPageIdx * 4 == messages->msgCount - 1) {
-//                 return BMG_RANDOM_TRACK;
-//             }
-//             else {
-//                 CupsConfig* cupsConfig = CupsConfig::sInstance;
-//                 bool hasRegs = cupsConfig->HasRegs();
-//                 u32 idx = messages->curPageIdx;
-//                 if (!hasRegs) idx += 8;
-//                 return GetTrackBMGId(cupsConfig->ConvertTrack_PulsarCupToTrack(CupsConfig::ConvertCup_IdxToPulsarId(idx), rowIdx), true);
-//             }
-//         }
-//     }
-//     else return Pages::FriendRoomManager::GetMessageBmg(packet, 0);
-// }
-// kmCall(0x805dcb74, CorrectModeButtonsBMG);
+// kmWrite32(0x805dcb6c, 0x7EC4B378);  // Get the loop idx in r4
+u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
+    register u32 rowIdx;
+    asm(mr rowIdx, r22;);
+    register const ExpFroomMessages* messages;
+    asm(mr messages, r19;);
+    u32 bmgId;
+    bmgId = Pages::FriendRoomManager::GetMessageBmg(packet, 0);
+    if (rowIdx == 0) {
+        const u32 hostContext = System::sInstance->netMgr.hostContext;
+        const u32 wwSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE);
+        const u32 isOTT = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
+        const u32 isKO = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) != KOSETTING_DISABLED;
+        const u32 isExtendedTeam = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+        const bool isStartRetro = wwSetting == START_WORLDWIDE_RETROS;
+        const bool isStartCT = wwSetting == START_WORLDWIDE_CTS;
+        const bool isStartRTS = wwSetting == START_WORLDWIDE_RTS;
+        const bool isStart200 = wwSetting == START_WORLDWIDE_200;
+        const bool isStartOTT = wwSetting == START_WORLDWIDE_OTT;
+        const bool isStartItemRain = wwSetting == START_WORLDWIDE_ITEMRAIN;
+        if (isOTT && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
+            bmgId = BMG_PLAY_OTT;
+        } else if (isKO && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
+            bmgId = BMG_PLAY_KO;
+        } else if (isOTT && isKO && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
+            bmgId = BMG_PLAY_OTTKO;
+        } else if (isExtendedTeam && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
+            bmgId = BMG_EXTENDEDTEAMS_PLAY;
+        } else if (isStartRetro) {
+            bmgId = BMG_RETRO_START_MESSAGE;
+        } else if (isStartCT) {
+            bmgId = BMG_CUSTOM_START_MESSAGE;
+        } else if (isStartRTS) {
+            bmgId = BMG_REGS_START_MESSAGE;
+        } else if (isStart200) {
+            bmgId = BMG_200_START_MESSAGE;
+        } else if (isStartOTT) {
+            bmgId = BMG_OTT_START_MESSAGE;
+        } else if (isStartItemRain) {
+            bmgId = BMG_ITEMRAIN_START_MESSAGE;
+        } else {
+            bmgId = BMG_PLAY_GP;
+        }
+    }
+    return bmgId;
+}
+kmCall(0x805dcb74, CorrectModeButtonsBMG);
 
 void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Text::Info* info) {
     Network::SetGlobeMsgColor(control, -1);
