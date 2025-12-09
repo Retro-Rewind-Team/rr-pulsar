@@ -79,7 +79,7 @@ static void camerIDHUDLocal() {
         kmRuntimeCallA(0x807EC8D4, cameraIDHUD);
     }
 }
-static PageLoadHook cameraIDHUDHook(camerIDHUDLocal);
+static SectionLoadHook cameraIDHUDHook(camerIDHUDLocal);
 
 extern "C" void ptr_playerBase(void*);
 asmFunc HideMapIcon() {

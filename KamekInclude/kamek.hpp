@@ -299,25 +299,13 @@ class RaceFrameHook : public DoFuncsHook {
     static void Exec(void* a1 = nullptr, void* a2 = nullptr, void* a3 = nullptr) { DoFuncsHook::Exec(raceFrameHooks, a1, a2, a3); }
 };
 
-class SectionLoadHook {
-   private:
-    typedef void(Func)();
-    Func* func;
-    SectionLoadHook* mNext;
-
-    static SectionLoadHook* sHooks;
+class SectionLoadHook : public DoFuncsHook {
+    static DoFuncsHook* sHooks;
 
    public:
-    SectionLoadHook(Func* f) {
-        mNext = sHooks;
-        sHooks = this;
-        func = f;
-    }
-
-    static void Exec() {
-        for (SectionLoadHook* p = sHooks; p; p = p->mNext)
-            p->func();
-    }
+    template <typename F>
+    SectionLoadHook(F f) : DoFuncsHook(f, &sHooks) {}
+    static void Exec(void* a1 = nullptr, void* a2 = nullptr, void* a3 = nullptr) { DoFuncsHook::Exec(sHooks, a1, a2, a3); }
 };
 
 // REL has NOT loaded yet, so do NOT do anything with REL addr, it will not work
