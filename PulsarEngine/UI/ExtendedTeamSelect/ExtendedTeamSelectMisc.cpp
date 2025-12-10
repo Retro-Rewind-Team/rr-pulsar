@@ -61,7 +61,7 @@ void SetBroadcastROOMPacket(RKNet::ROOMHandler* _this, u32 pkt) {
     friendRoomBackPage->networkManager.lastSentPacket = *(RKNet::ROOMPacket*)&pkt;
 }
 
-kmWriteNop(0x805dce38);  // friendRoomBackPage->lastSentPacket = packet;
+// kmWriteNop(0x805dce38);  // friendRoomBackPage->lastSentPacket = packet;
 kmCall(0x805dce34, SetBroadcastROOMPacket);
 
 void RecvRoomPacket(UnkFriendRoomManager* _this, u8 playerId, u8 myAid, RKNet::ROOMPacket& packet) {

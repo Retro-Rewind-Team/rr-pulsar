@@ -18,6 +18,7 @@
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <RetroRewindChannel.hpp>
 #include <Dolphin/DolphinIOS.hpp>
+#include <Network/PacketExpansion.hpp>
 #include <hooks.hpp>
 
 namespace Pulsar {
@@ -188,12 +189,12 @@ void System::UpdateContext() {
     bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && isFroom;
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
-    bool isStartRetro = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_RETROS;
-    bool isStartCT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_CTS;
-    bool isStartRTS = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_RTS;
-    bool isStart200 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_200;
-    bool isStartOTT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_OTT;
-    bool isStartItemRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_ITEMRAIN;
+    bool isStartRetro = false;
+    bool isStartCT = false;
+    bool isStartRTS = false;
+    bool isStart200 = false;
+    bool isStartOTT = false;
+    bool isStartItemRain = false;
     bool isRanking = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_RANKINGS) == RANKINGS_ENABLED && isFroom;
     bool isFeather = this->info.HasFeather();
     bool isUMTs = this->info.HasUMTs();

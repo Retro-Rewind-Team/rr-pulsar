@@ -34,6 +34,42 @@ static void HandleExtendedTeamUpdates(const PulROOM& packet) {
     }
 }
 
+static bool ApplyHostContextLocally(u32 hostContext) {
+    System* system = System::sInstance;
+
+    const bool isCharRestrictLight = hostContext & (1 << PULSAR_CHARRESTRICTLIGHT);
+    const bool isCharRestrictMid = hostContext & (1 << PULSAR_CHARRESTRICTMID);
+    const bool isCharRestrictHeavy = hostContext & (1 << PULSAR_CHARRESTRICTHEAVY);
+    const bool isKartRestrictKart = hostContext & (1 << PULSAR_KARTRESTRICT);
+    const bool isKartRestrictBike = hostContext & (1 << PULSAR_BIKERESTRICT);
+    const bool isExtendedTeams = hostContext & (1 << PULSAR_EXTENDEDTEAMS);
+    const bool isStartRetro = hostContext & (1 << PULSAR_STARTRETROS);
+    const bool isStartCT = hostContext & (1 << PULSAR_STARTCTS);
+    const bool isStartRTS = hostContext & (1 << PULSAR_STARTREGS);
+    const bool isStart200 = hostContext & (1 << PULSAR_START200);
+    const bool isStartOTT = hostContext & (1 << PULSAR_STARTOTT);
+    const bool isStartItemRain = hostContext & (1 << PULSAR_STARTITEMRAIN);
+
+    u32 context = (isStartRetro << PULSAR_STARTRETROS) | (isStartCT << PULSAR_STARTCTS) |
+                  (isStartRTS << PULSAR_STARTREGS) | (isStart200 << PULSAR_START200) |
+                  (isStartOTT << PULSAR_STARTOTT) | (isStartItemRain << PULSAR_STARTITEMRAIN) |
+                  (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) |
+                  (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) |
+                  (isKartRestrictBike << PULSAR_BIKERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
+    system->context = context;
+
+    if (isStartCT || isStartRetro || isStartRTS || isStart200 || isStartOTT || isStartItemRain) {
+        system->context &= ~(1 << PULSAR_EXTENDEDTEAMS);
+        system->context &= ~(1 << PULSAR_CHARRESTRICTHEAVY);
+        system->context &= ~(1 << PULSAR_CHARRESTRICTMID);
+        system->context &= ~(1 << PULSAR_CHARRESTRICTLIGHT);
+        system->context &= ~(1 << PULSAR_KARTRESTRICT);
+        system->context &= ~(1 << PULSAR_BIKERESTRICT);
+    }
+
+    return isExtendedTeams;
+}
+
 static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* src, u32 len) {
     packetHolder->Copy(src, len);  // default
 
@@ -43,6 +79,13 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
     PulROOM* destPacket = packetHolder->packet;
     if (destPacket->messageType == 1 && sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);  // this has been changed by copy so it's safe to do this
+
+        // Store original message index for worldwide option detection
+        const u8 originalMessage = destPacket->message;
+        if (originalMessage >= 4 && originalMessage <= 9) {
+            destPacket->message = 0;
+        }
+
         const Settings::Mgr& settings = Settings::Mgr::Get();
         const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
@@ -81,12 +124,12 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         const u8 itemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
         const u8 extendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
         const u8 normalTC = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
-        const u8 isStartRetro = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_RETROS;
-        const u8 isStartCT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_CTS;
-        const u8 isStartRTS = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_RTS;
-        const u8 isStart200 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_200;
-        const u8 isStartOTT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_OTT;
-        const u8 isStartItemRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_ITEMRAIN;
+        const u8 isStartRetro = (originalMessage == 4);
+        const u8 isStartCT = (originalMessage == 5);
+        const u8 isStartRTS = (originalMessage == 6);
+        const u8 isStart200 = (originalMessage == 7);
+        const u8 isStartOTT = (originalMessage == 8);
+        const u8 isStartItemRain = (originalMessage == 9);
         const u8 Ranking = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_RANKINGS) == RANKINGS_ENABLED;
 
         if (extendedTeams) {
@@ -96,15 +139,6 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
             } else {
                 battleTeam = BATTLE_FFA_DISABLED;
             }
-        }
-
-        if (isStartCT || isStartRetro || isStartRTS || isStart200 || isStartOTT || isStartItemRain) {
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_EXTENDEDTEAMS);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_CHARRESTRICTHEAVY);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_CHARRESTRICTMID);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_CHARRESTRICTLIGHT);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_KARTRESTRICT);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_BIKERESTRICT);
         }
 
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT |  // ott
@@ -158,6 +192,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
             }
         destPacket->raceCount = raceCount;
         ConvertROOMPacketToData(*destPacket);
+        (void)ApplyHostContextLocally(destPacket->hostSystemContext);
 
         if (extendedTeams) {
             UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
@@ -202,54 +237,10 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
     // START msg sent by the host, size check should always be guaranteed in theory
     if (src.messageType == 1 && !isHost && packetHolder->packetSize == sizeof(PulROOM)) {
         ConvertROOMPacketToData(src);
-        const Settings::Mgr& settings = Settings::Mgr::Get();
 
-        bool isCharRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_LIGHTONLY;
-        bool isCharRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
-        bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_HEAVYONLY;
-        bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_KARTONLY;
-        bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_BIKEONLY;
-        bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
-        bool isStartRetro = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_RETROS;
-        bool isStartCT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_CTS;
-        bool isStartRTS = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_RTS;
-        bool isStart200 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_200;
-        bool isStartOTT = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_OTT;
-        bool isStartItemRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE) == START_WORLDWIDE_ITEMRAIN;
-        u32 newContext = 0;
+        // Get context from host packet (no need to read local settings - host values take precedence)
         Network::Mgr& netMgr = Pulsar::System::sInstance->netMgr;
-        newContext = netMgr.hostContext;
-        isCharRestrictLight = newContext & (1 << PULSAR_CHARRESTRICTLIGHT);
-        isCharRestrictMid = newContext & (1 << PULSAR_CHARRESTRICTMID);
-        isCharRestrictHeavy = newContext & (1 << PULSAR_CHARRESTRICTHEAVY);
-        isKartRestrictKart = newContext & (1 << PULSAR_KARTRESTRICT);
-        isKartRestrictBike = newContext & (1 << PULSAR_BIKERESTRICT);
-        isExtendedTeams = newContext & (1 << PULSAR_EXTENDEDTEAMS);
-        isStartRetro = newContext & (1 << PULSAR_STARTRETROS);
-        isStartCT = newContext & (1 << PULSAR_STARTCTS);
-        isStartRTS = newContext & (1 << PULSAR_STARTREGS);
-        isStart200 = newContext & (1 << PULSAR_START200);
-        isStartOTT = newContext & (1 << PULSAR_STARTOTT);
-        isStartItemRain = newContext & (1 << PULSAR_STARTITEMRAIN);
-        bool isThunderCloud = newContext & (1 << PULSAR_THUNDERCLOUD);
-        netMgr.hostContext = newContext;
-
-        u32 context = (isStartRetro << PULSAR_STARTRETROS) | (isStartCT << PULSAR_STARTCTS) |
-                      (isStartRTS << PULSAR_STARTREGS) | (isStart200 << PULSAR_START200) |
-                      (isStartOTT << PULSAR_STARTOTT) | (isStartItemRain << PULSAR_STARTITEMRAIN) |
-                      (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) |
-                      (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) |
-                      (isKartRestrictBike << PULSAR_BIKERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
-        Pulsar::System::sInstance->context = context;
-
-        if (isStartCT || isStartRetro || isStartRTS || isStart200 || isStartOTT || isStartItemRain) {
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_EXTENDEDTEAMS);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_CHARRESTRICTHEAVY);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_CHARRESTRICTMID);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_CHARRESTRICTLIGHT);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_KARTRESTRICT);
-            Pulsar::System::sInstance->context &= ~(1 << PULSAR_BIKERESTRICT);
-        }
+        const bool isExtendedTeams = ApplyHostContextLocally(netMgr.hostContext);
 
         // Also exit the settings page to prevent weird graphical artefacts
         Page* topPage = SectionMgr::sInstance->curSection->GetTopLayerPage();

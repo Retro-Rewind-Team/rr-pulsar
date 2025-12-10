@@ -82,46 +82,50 @@ s32 ExpFroomMessages::clickedButtonIdx = 0;
 // }
 // kmBranch(0x805dd314, OnBackButtonClick);
 
-// kmWrite32(0x805dcb6c, 0x7EC4B378);  // Get the loop idx in r4
+// Expand message count from 4 to 10 for worldwide start options
+static void OnStartButtonFroomMsgActivate() {
+    register ExpFroomMessages* msg;
+    asm(mr msg, r31;);
+    msg->msgCount = 10;  // 4 normal + 6 worldwide options
+}
+kmCall(0x805dc480, OnStartButtonFroomMsgActivate);
+
 u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
     register u32 rowIdx;
-    asm(mr rowIdx, r22;);
+    asm(mr rowIdx, r24;);  // r24 contains the actual message index
     register const ExpFroomMessages* messages;
     asm(mr messages, r19;);
     u32 bmgId;
     bmgId = Pages::FriendRoomManager::GetMessageBmg(packet, 0);
+
+    switch (rowIdx) {
+        case 4:
+            return BMG_RETRO_START_MESSAGE;
+        case 5:
+            return BMG_CUSTOM_START_MESSAGE;
+        case 6:
+            return BMG_REGS_START_MESSAGE;
+        case 7:
+            return BMG_200_START_MESSAGE;
+        case 8:
+            return BMG_OTT_START_MESSAGE;
+        case 9:
+            return BMG_ITEMRAIN_START_MESSAGE;
+    }
+
     if (rowIdx == 0) {
-        const u32 hostContext = System::sInstance->netMgr.hostContext;
-        const u32 wwSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, SCROLLER_STARTWORLDWIDE);
         const u32 isOTT = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
         const u32 isKO = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) != KOSETTING_DISABLED;
         const u32 isExtendedTeam = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
-        const bool isStartRetro = wwSetting == START_WORLDWIDE_RETROS;
-        const bool isStartCT = wwSetting == START_WORLDWIDE_CTS;
-        const bool isStartRTS = wwSetting == START_WORLDWIDE_RTS;
-        const bool isStart200 = wwSetting == START_WORLDWIDE_200;
-        const bool isStartOTT = wwSetting == START_WORLDWIDE_OTT;
-        const bool isStartItemRain = wwSetting == START_WORLDWIDE_ITEMRAIN;
-        if (isOTT && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
-            bmgId = BMG_PLAY_OTT;
-        } else if (isKO && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
-            bmgId = BMG_PLAY_KO;
-        } else if (isOTT && isKO && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
+
+        if (isOTT && isKO) {
             bmgId = BMG_PLAY_OTTKO;
-        } else if (isExtendedTeam && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
+        } else if (isOTT) {
+            bmgId = BMG_PLAY_OTT;
+        } else if (isKO) {
+            bmgId = BMG_PLAY_KO;
+        } else if (isExtendedTeam) {
             bmgId = BMG_EXTENDEDTEAMS_PLAY;
-        } else if (isStartRetro) {
-            bmgId = BMG_RETRO_START_MESSAGE;
-        } else if (isStartCT) {
-            bmgId = BMG_CUSTOM_START_MESSAGE;
-        } else if (isStartRTS) {
-            bmgId = BMG_REGS_START_MESSAGE;
-        } else if (isStart200) {
-            bmgId = BMG_200_START_MESSAGE;
-        } else if (isStartOTT) {
-            bmgId = BMG_OTT_START_MESSAGE;
-        } else if (isStartItemRain) {
-            bmgId = BMG_ITEMRAIN_START_MESSAGE;
         } else {
             bmgId = BMG_PLAY_GP;
         }
@@ -129,6 +133,24 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
     return bmgId;
 }
 kmCall(0x805dcb74, CorrectModeButtonsBMG);
+
+static void RemapAndStoreSentMessage() {
+    register u32 packet;
+    register u32 manager;
+    asm(mr packet, r30;);
+    asm(mr manager, r28;);
+
+    // Extract message from bits 8-23 (button ID shifted left by 8)
+    u32 message = (packet >> 8) & 0xFFFF;
+    if (message >= 4 && message <= 9) {
+        // Clear message bits and set to 0 (treat as VS mode locally)
+        packet = packet & 0xFF0000FF;
+    }
+
+    // Perform the original store: stw r30, 0x2c60(r28)
+    *(volatile u32*)((u8*)manager + 0x2c60) = packet;
+}
+kmCall(0x805dce38, RemapAndStoreSentMessage);
 
 void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Text::Info* info) {
     Network::SetGlobeMsgColor(control, -1);
