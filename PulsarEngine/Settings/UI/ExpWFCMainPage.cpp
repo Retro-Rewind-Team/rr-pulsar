@@ -118,10 +118,6 @@ void ExpWFCMain::BeforeControlUpdate() {
     info.intToPass[0] = RR_numRetro + RR_numCT + RR_numRT + RR_num200cc + RR_numOTT + RR_numIR + BT_numRegulars + BT_numElim + numRegulars;
     this->playerCount.SetTextBoxMessage("go", BMG_PLAYER_COUNT, &info);
 
-    if (!Dolphin::IsEmulator()) {
-        this->playerCount.SetPaneVisibility("capsul_null", false);
-    }
-
     wchar_t rankBuf[48];
     rankBuf[0] = L'\0';
     Ranking::FormatRankMessage(rankBuf, sizeof(rankBuf) / sizeof(rankBuf[0]));
@@ -530,17 +526,6 @@ void ExpWFCModeSel::BeforeControlUpdate() {
             swprintf(buffer, 64, (br >= 1000.0f) ? L"%d%02dBR\uF06D" : L"%d%02dBR", brInt, brDec);
         info.strings[0] = buffer;
         this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
-    }
-
-    if (!Dolphin::IsEmulator()) {
-        this->vsButton.SetPaneVisibility("capsul_null", false);
-        this->ottButton.SetPaneVisibility("capsul_null", false);
-        this->twoHundredButton.SetPaneVisibility("capsul_null", false);
-        this->ctButton.SetPaneVisibility("capsul_null", false);
-        this->itemRainButton.SetPaneVisibility("capsul_null", false);
-        this->regButton.SetPaneVisibility("capsul_null", false);
-        this->RRbattleButton.SetPaneVisibility("capsul_null", false);
-        this->RRbattleButtonElim.SetPaneVisibility("capsul_null", false);
     }
 }
 

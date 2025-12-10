@@ -307,12 +307,14 @@ void hook_DWC_SetReportLevel(u32 level) {
 
 void hook_Section_calc(Section* _this) {
     _this->UpdateLayers();
-    if (!Dolphin::IsEmulator())
-        return;
 
     hookLocalTimer += 1.0f / 60.0f;
 
-    if (hasQR2Initialized && !isHookedRequest && hasRKNetRequestFinished && hookLocalTimer >= 5.0f && SectionMgr::sInstance->curSection->pages[Pages::Globe::id] && DWC::MatchControl::sInstance) {
+    bool isConnectionIdle = RKNet::Controller::sInstance &&
+                            RKNet::Controller::sInstance->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
+
+    if (hasQR2Initialized && !isHookedRequest && hasRKNetRequestFinished && hookLocalTimer >= 5.0f &&
+        SectionMgr::sInstance->curSection->pages[Pages::Globe::id] && DWC::MatchControl::sInstance && isConnectionIdle) {
         isHookedRequest = true;
         hookLocalTimer = 0.0f;
         Pulsar::System::sInstance->taskThread->Request(StartRequestTask, nullptr, 0);

@@ -1822,6 +1822,7 @@ sInstance__Q25RKNet10Controller = 0x809c20d8
 UpdateStatusDatas__Q25RKNet10ControllerFv = 0x8065a0b4
 SetupGameServer__Q25RKNet10ControllerFv = 0x800d1984
 UpdateServersAsync__Q25RKNet10ControllerFv = 0x80656b44
+GetConnectionState__Q25RKNet10ControllerCFv = 0x80658148
 
 #PacketMgr
 sInstance__Q25RKNet9PacketMgr = 0x809c1f50
