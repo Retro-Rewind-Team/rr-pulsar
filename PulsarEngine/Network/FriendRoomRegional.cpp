@@ -77,11 +77,6 @@ static bool ConvertFriendRoomStateToRegional() {
     raceSettings.modeFlags &= ~static_cast<u32>(2);
     raceSettings.gametype = GAMETYPE_DEFAULT;
 
-    SystemManager* sysMgr = SystemManager::sInstance;
-    if (sysMgr != nullptr) {
-        sysMgr->regionId = REGIONID;
-    }
-
     const u8 localPlayerCount = controller->subs[controller->currentSub].localPlayerCount;
     const u8 totalPlayerCount = controller->subs[controller->currentSub].playerCount;
 
