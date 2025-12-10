@@ -473,7 +473,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         const u32 nextIdxBT = startIdx + ((idx - startIdx + direction + countBT) % countBT);
         if (!this->hasRegs && nextIdxBT < 8) return static_cast<PulsarCupId>(nextIdxBT + countBT + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxBT);
-    } else if (isRegsOnly) {
+    } else if (isRegsOnly == TRACKSELECTION_REGS) {
         const u32 count = 8;
         const u32 nextIdx = ((idx + direction + count) % count);
         return ConvertCup_IdxToPulsarId(nextIdx);
