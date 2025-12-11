@@ -33,6 +33,16 @@ static const qr2_buffer_addA_t qr2_buffer_addA = (qr2_buffer_addA_t)kmRuntimeAdd
 typedef void (*ServerKeyCallback)(int key, void* buffer);
 static const ServerKeyCallback OriginalServerKeyCallback = (ServerKeyCallback)kmRuntimeAddr(0x800e4c88);
 
+static int ClampRatingForQr2(float vr) {
+    int scaled = (int)(vr * 100.0f);
+    if (scaled < 1) {
+        scaled = 1;
+    } else if (scaled > 30000) {
+        scaled = 30000;
+    }
+    return scaled;
+}
+
 static void MyServerKeyCallback(int key, void* buffer) {
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     u32 licenseId = 0;
@@ -43,14 +53,14 @@ static void MyServerKeyCallback(int key, void* buffer) {
     if (key == 0x65) {  // ev
         float vr = PointRating::GetUserVR(licenseId);
         char buf[32];
-        snprintf(buf, sizeof(buf), "%d", (int)(vr * 100.0f));
+        snprintf(buf, sizeof(buf), "%d", ClampRatingForQr2(vr));
         qr2_buffer_addA(buffer, buf);
         return;
     }
     if (key == 0x66) {  // eb
         float br = PointRating::GetUserBR(licenseId);
         char buf[32];
-        snprintf(buf, sizeof(buf), "%d", (int)(br * 100.0f));
+        snprintf(buf, sizeof(buf), "%d", ClampRatingForQr2(br));
         qr2_buffer_addA(buffer, buf);
         return;
     }
