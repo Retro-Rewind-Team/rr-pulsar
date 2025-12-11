@@ -68,8 +68,9 @@ void FPSPatch() {
     bool froomOrVS = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
     bool isTimeTrial = mode == MODE_TIME_TRIAL;
     u32 localPlayerCount = scenario.localPlayerCount;
-    if (static_cast<Pulsar::FPS>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE2), Pulsar::RADIO_FPS)) == Pulsar::FPS_HALF || (localPlayerCount > 1 && !isDolphin) ||
-        (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODESTORM) && !isDolphin && froom)) {
+    if ((static_cast<Pulsar::FPS>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE2), Pulsar::RADIO_FPS)) == Pulsar::FPS_HALF || (localPlayerCount > 1 && !isDolphin) ||
+         (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODESTORM) && !isDolphin && froom)) &&
+        !isTimeTrial) {
         FPSPatchHook = 0x00FF0100;
     }
 }
