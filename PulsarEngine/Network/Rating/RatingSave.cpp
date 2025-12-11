@@ -60,7 +60,7 @@ static ProfileEntry sProfileEntries[kMaxProfiles] = {};
 static LicenseBackup sLicenseBackups[kMaxLicenses] = {};
 static u32 sNextReplacementIdx = 0;
 static bool sLoaded = false;
-static char sFilePath[IOS::ipcMaxPath] = {0};
+static char sFilePath[IOS::ipcMaxPath] __attribute__((aligned(32))) = {0};
 
 static const char* GetFilePath() {
     if (sFilePath[0] == '\0') {
@@ -136,15 +136,29 @@ static void EnsureLoaded() {
     if (io == nullptr || path == nullptr) return;
 
     if (io->OpenFile(path, FILE_MODE_READ)) {
-        PackedHeader header = {};
-        const s32 readHeader = io->Read(sizeof(header), &header);
+        union {
+            PackedHeader header;
+            u8 padding[32];
+        } headerBuf __attribute__((aligned(32)));
+        memset(&headerBuf, 0, sizeof(headerBuf));
+
+        const s32 readHeader = io->Read(sizeof(PackedHeader), &headerBuf.header);
+        const PackedHeader& header = headerBuf.header;
+
         if (readHeader == sizeof(header) && header.magic == kMagic && header.version == kVersion) {
             const u16 count = header.count <= kMaxProfiles ? header.count : kMaxProfiles;
             for (u16 idx = 0; idx < count; ++idx) {
-                PackedEntry entry = {};
-                if (io->Read(sizeof(entry), &entry) != static_cast<s32>(sizeof(entry))) {
+                union {
+                    PackedEntry entry;
+                    u8 padding[32];
+                } entryBuf __attribute__((aligned(32)));
+                memset(&entryBuf, 0, sizeof(entryBuf));
+
+                if (io->Read(sizeof(PackedEntry), &entryBuf.entry) != static_cast<s32>(sizeof(PackedEntry))) {
                     break;
                 }
+                const PackedEntry& entry = entryBuf.entry;
+
                 if ((entry.flags & 0x1) != 0 && IsValidProfileId(entry.profileId)) {
                     ProfileEntry& dest = sProfileEntries[idx];
                     dest.profileId = entry.profileId;
@@ -167,7 +181,9 @@ static void Persist() {
     struct PackedFile {
         PackedHeader header;
         PackedEntry entries[kMaxProfiles];
-    } file = {};
+        u8 padding[32];
+    } file __attribute__((aligned(32)));
+    memset(&file, 0, sizeof(file));
 
     file.header.magic = kMagic;
     file.header.version = kVersion;
