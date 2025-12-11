@@ -155,7 +155,7 @@ static void FillVRControl(Pages::VR* page, u32 index, u32 playerId, u32 team, u8
                     if (rInt == 0)
                         swprintf(buffer, 64, L"%d", rDec);
                     else
-                        swprintf(buffer, 64, L"%d.%02d", rInt, rDec);
+                        swprintf(buffer, 64, L"%d%02d", rInt, rDec);
                     pointsInfo.strings[0] = buffer;
                     useString = true;
                     valueMessageId = UI::BMG_TEXT;
