@@ -1660,6 +1660,7 @@ __dt__12CourseButtonFv = 0x80628130
 __dt__26CtrlMenuCourseSelectCourseFv = 0x80628000
 __vt__26CtrlMenuCourseSelectCourse = 0x808d30c0
 Load__26CtrlMenuCourseSelectCourseFUib = 0x807e444c
+OnTimeout__Q25Pages12CourseSelectFv = 0x80840ba0
 
 #CupSelect
 __ct__Q25Pages9CupSelectFv = 0x80627684

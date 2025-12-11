@@ -37,6 +37,7 @@ class VariantSelect : public Pages::CourseSelect {
     void OnActivate() override;
     void OnDeactivate() override;
     UIControl* CreateControl(u32 controlId) override;
+    void BeforeControlUpdate() override;
     void AfterControlUpdate() override;
     void OnInit() override;
     void OnBackPress(u32 hudSlotId);

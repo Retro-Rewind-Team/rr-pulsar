@@ -22,6 +22,8 @@
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCourse.hpp>
+#include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
+#include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <UI/UI.hpp>
 #include <MarioKartWii/UI/Text/Text.hpp>
 
@@ -57,6 +59,23 @@ void VariantSelect::OnDeactivate() {
 }
 
 UIControl* VariantSelect::CreateControl(u32 controlId) { return Pages::CourseSelect::CreateControl(controlId); }
+
+void VariantSelect::BeforeControlUpdate() {
+    Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+    if (selectStageMgr != nullptr) {
+        CountDown* timer = &selectStageMgr->countdown;
+        if (timer->countdown <= 0) {
+            CupsConfig* cups = CupsConfig::sInstance;
+            if (cups != nullptr) {
+                cups->ClearPendingVariant();
+                cups->SetSelected(static_cast<PulsarId>(RANDOM));
+            }
+            this->OnTimeout();
+            return;
+        }
+    }
+    Pages::CourseSelect::BeforeControlUpdate();
+}
 
 void VariantSelect::AfterControlUpdate() {
     if (variantButtonsPopulated) ApplyVariantButtonState();
