@@ -36,7 +36,7 @@ void ItemModeCheck() {
 static RaceLoadHook ItemModeCheckHook(ItemModeCheck);
 
 static int GetSpawnInterval(u8 playerCount) {
-    return 12;
+    return 9;
 }
 
 static u32 GetRandom() {
