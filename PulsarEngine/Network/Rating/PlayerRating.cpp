@@ -34,7 +34,6 @@ float lastRaceDeltas[12];
 static const int kSplineBias = 7499;
 static const float kSplineScale = 0.00020004001271445304f;
 static const float kOneSixth = 0.16666667f;
-static const float kRatingRangeScale = 5.0f;
 
 static const s16 kSplineControlPoints[5] = {0, 1, 8, 50, 125};
 
@@ -73,7 +72,7 @@ float EvaluateSpline(float x) {
 
 static float CalcPosPoints(float selfPoints, float opponentPoints) {
     float diff = opponentPoints - selfPoints;
-    float scaledDiff = diff * kRatingRangeScale;
+    float scaledDiff = diff * 5.0f;
 
     float sample = (float)kSplineBias + scaledDiff;
     if (sample < 0.0f) sample = 0.0f;
@@ -86,7 +85,7 @@ static float CalcPosPoints(float selfPoints, float opponentPoints) {
 
 static float CalcNegPoints(float selfPoints, float opponentPoints) {
     float diff = opponentPoints - selfPoints;
-    float scaledDiff = diff * kRatingRangeScale;
+    float scaledDiff = diff * 15.0f;
 
     float sample = (float)kSplineBias - scaledDiff;
     if (sample < 0.0f) sample = 0.0f;
@@ -116,7 +115,7 @@ static float GetMaxPositiveDeltaForRating(float rating) {
 }
 
 static float GetMaxNegativeDeltaForRating(float rating) {
-    const float kRampStart = 750.0f;
+    const float kRampStart = 500.0f;
     const float kRampEnd = 150.0f;
     const float kMinimumLoss = -0.5f;
     const float kMaxLossAtRampStart = -2.09f;
