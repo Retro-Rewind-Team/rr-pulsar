@@ -17,6 +17,7 @@
 */
 
 #include <kamek.hpp>
+#include <runtimeWrite.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
@@ -67,7 +68,7 @@ float EvaluateSpline(float x) {
 
         total += weight * static_cast<float>(kSplineControlPoints[tableIdx]);
     }
-    return total / 40.0f;
+    return total / 30.0f;
 }
 
 static float CalcPosPoints(float selfPoints, float opponentPoints) {
@@ -99,7 +100,7 @@ static float CalcNegPoints(float selfPoints, float opponentPoints) {
 static float GetMaxPositiveDeltaForRating(float rating) {
     const float kRampStart = 1500.0f;
     const float kRampEnd = 9000.0f;
-    const float kMinimumGain = 0.03f;
+    const float kMinimumGain = 0.10f;
     const float kInitialCap = 1000.0f;
     const float kUnlimitedGain = 1e6f;
 
@@ -112,6 +113,23 @@ static float GetMaxPositiveDeltaForRating(float rating) {
 
     const float progress = (rating - kRampStart) / (kRampEnd - kRampStart);
     return kMinimumGain + (kInitialCap - kMinimumGain) * (1.0f - progress);
+}
+
+static float GetMaxNegativeDeltaForRating(float rating) {
+    const float kRampStart = 750.0f;
+    const float kRampEnd = 150.0f;
+    const float kMinimumLoss = -0.5f;
+    const float kMaxLossAtRampStart = -2.09f;
+
+    if (rating <= kRampEnd) {
+        return kMinimumLoss;
+    }
+    if (rating >= kRampStart) {
+        return kMaxLossAtRampStart;
+    }
+
+    const float progress = (rating - kRampEnd) / (kRampStart - kRampEnd);
+    return kMinimumLoss + (kMaxLossAtRampStart - kMinimumLoss) * progress;
 }
 
 static bool IsBattle(GameMode mode) {
@@ -266,11 +284,14 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
         for (u32 i = 0; i < playerCount; ++i) {
             deltas[i] *= multiplier;
             float oldRating = GetPlayerRating(*scenario, i);
-            if (deltas[i] > 0.0f) {
-                const float gainCap = GetMaxPositiveDeltaForRating(oldRating);
-                if (deltas[i] > gainCap) {
-                    deltas[i] = gainCap;
-                }
+
+            const float gainCap = GetMaxPositiveDeltaForRating(oldRating);
+            const float lossCap = GetMaxNegativeDeltaForRating(oldRating);
+            if (deltas[i] > gainCap) {
+                deltas[i] = gainCap;
+            }
+            if (deltas[i] < lossCap) {
+                deltas[i] = lossCap;
             }
             float next = oldRating + deltas[i];
             if (next < (float)MinRating) next = (float)MinRating;
@@ -282,7 +303,14 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
         }
     }
 }
-kmBranch(0x8052e950, RR_UpdatePoints);
+kmRuntimeUse(0x8052e950);
+void ApplyPlayerRatingPatches() {
+    kmRuntimeBranchA(0x8052e950, RR_UpdatePoints);
+    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+        kmRuntimeWrite32A(0x8052e950, 0x9421ff70);
+    }
+}
+static SectionLoadHook ratingHook(ApplyPlayerRatingPatches);
 
 kmWrite16(0x8064F6DA, 30000);
 kmWrite16(0x8064F6E6, 30000);
