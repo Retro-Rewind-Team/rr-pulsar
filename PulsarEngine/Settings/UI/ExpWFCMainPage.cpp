@@ -419,7 +419,7 @@ void ExpWFCModeSel::OnActivatePatch() {
     } else if (ExpWFCMain::lastClickedMainMenuButton == 7) {
         TWObutton->Select(0);
     } else if (ExpWFCMain::lastClickedMainMenuButton == 6) {
-        button->Select(0);
+        page->vsButton.Select(0);
     }
 }
 kmCall(0x8064c5f0, ExpWFCModeSel::OnActivatePatch);
