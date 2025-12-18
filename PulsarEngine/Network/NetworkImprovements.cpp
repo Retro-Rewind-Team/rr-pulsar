@@ -13,8 +13,5 @@ kmWrite32(0x80657ea8, 0x28040009);
 kmWrite32(0x8010a6c4, 0x28000190);  // cmplwi r0, 400
 kmWrite32(0x8010a720, 0x2800001E);  // cmplwi r0, 30
 
-kmWrite32(0x80657b18, 0x3BC001F4);
-kmWrite32(0x8010a58c, 0x3800EA60);
-
 }  // namespace Network
 }  // namespace Pulsar

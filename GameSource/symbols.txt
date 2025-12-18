@@ -158,6 +158,7 @@ DWC_SetReportLevel = 0x800cd060
 DWCi_SBCallback = 0x800e31c0
 DWCi_NodeInfoList_GetNodeInfoForAid = 0x800e7ee0
 DWCi_GT2ClosedProcess = 0x800d37bc
+DWCi_Auth_GetIngamesnCheckResult = 0x800ed680
 DWC_ProcessFriendsMatch = 0x800d115c
 GetLastErrorEx__3DWCFPUiPQ23DWC9ErrorType = 0x800ccb64
 CreateFriendKey__3DWCFPCQ23DWC11AccUserData = 0x800ec6bc
@@ -712,6 +713,11 @@ ClearBuffer__3RKGFv = 0x8051c088
 CheckValidity__3RKGCFv = 0x8051c120
 CompressTo__3RKGCFR3RKG = 0x8051d0e0
 DecompressTo__3RKGCFR3RKG = 0x8051d1b4
+
+#Decomp
+getExpandSize__Q23EGG6DecompFPUc = 0x8021997c
+decodeSZS__Q23EGG6DecompFPUcPUc = 0x80218c2c
+DCStoreRange__2OSFPvUi = 0x801a165c
 
 #GhostGroup
 GetGhostData__10GhostGroupCFUs = 0x8051d084
