@@ -3,6 +3,7 @@
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/ServerDateTime.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -20,10 +21,27 @@ float GetRatingMultiplier() {
         }
     }
 
-    SystemManager* sm = SystemManager::sInstance;
-    if (sm->isValidDate) {
-        const unsigned month = static_cast<unsigned>(sm->month);
-        const unsigned day = static_cast<unsigned>(sm->day);
+    unsigned month = 0;
+    unsigned day = 0;
+    bool hasValidDate = false;
+
+    ServerDateTime* serverDT = ServerDateTime::sInstance;
+    if (serverDT != nullptr && serverDT->isValid) {
+        month = static_cast<unsigned>(serverDT->month);
+        day = static_cast<unsigned>(serverDT->day);
+        hasValidDate = true;
+    } else {
+        SystemManager* sm = SystemManager::sInstance;
+        if (sm != nullptr && sm->isValidDate) {
+            month = static_cast<unsigned>(sm->month);
+            day = static_cast<unsigned>(sm->day);
+            hasValidDate = true;
+        }
+    }
+
+    OS::Report("RatingMultiplier: %d/%d\n", month, day);
+
+    if (hasValidDate) {
         // Christmas Season/New Year Season, Halloween, Start of Summer, St. Patrick's Day, End of Summer, MKWii's Birthday
         if ((month == 12 && day >= 23 && day <= 31) ||
             (month == 1 && day >= 1 && day <= 3) ||
