@@ -37,8 +37,8 @@ static int ClampRatingForQr2(float vr) {
     int scaled = (int)(vr * 100.0f);
     if (scaled < 1) {
         scaled = 1;
-    } else if (scaled > 30000) {
-        scaled = 30000;
+    } else if (scaled > 1000000) {
+        scaled = 1000000;
     }
     return scaled;
 }
