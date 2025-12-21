@@ -75,6 +75,7 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
                                                     lastSelectedCup(PULSARCUPID_FIRSTREG),
                                                     lastSelectedCupButtonIdx(0),
                                                     isAlphabeticalLayout(false) {
+    memset(this->vsTrackVariantIdx, 0, sizeof(this->vsTrackVariantIdx));
     totalVariantCount = rawCups.totalVariantCount;
     if (regsMode != 1) {
         lastSelectedCup = PULSARCUPID_FIRSTCT;

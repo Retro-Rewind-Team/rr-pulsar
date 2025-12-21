@@ -2,6 +2,7 @@
 #include <MarioKartWii/UI/Page/Menu/CupSelect.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Page/Other/Votes.hpp>
+#include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 
@@ -128,9 +129,10 @@ static void VSRaceRandomFix(SectionParams* params) {  // properly randomizes tra
             }
         } while (isRepeat);
         params->vsTracks[i] = static_cast<CourseId>(id);
+        cupsConfig->vsTrackVariantIdx[i] = static_cast<u8>(cupsConfig->RandomizeVariant(id));
     }
 
-    cupsConfig->SetWinning(static_cast<PulsarId>(params->vsTracks[0]));
+    cupsConfig->SetWinning(static_cast<PulsarId>(params->vsTracks[0]), cupsConfig->vsTrackVariantIdx[0]);
     Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
 };
 kmBranch(0x805e32ec, VSRaceRandomFix);
@@ -149,12 +151,13 @@ static void VSRaceOrderedFix(SectionParams* params) {
         }
     }
     params->vsRaceLimit = 32;
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    CupsConfig* cupsConfig = CupsConfig::sInstance;
     // const PulsarId initial = cupsConfig->winningCourse;
     PulsarCupId cupId = cupsConfig->lastSelectedCup;
     u32 idx = 0;
     while (idx < 32) {
         params->vsTracks[idx] = static_cast<CourseId>(cupsConfig->ConvertTrack_PulsarCupToTrack(cupId, rowIdx));
+        cupsConfig->vsTrackVariantIdx[idx] = 0;
         ++idx;
         ++rowIdx;
         if (rowIdx == 4) {
@@ -167,7 +170,18 @@ kmCall(0x80840a24, VSRaceOrderedFix);
 
 CourseId VSNextTrackFix(PulsarId pulsarId) {  // properly sets the next track
     CupsConfig* cupsConfig = CupsConfig::sInstance;
-    cupsConfig->SetWinning(pulsarId);
+    u8 variantIdx = 0;
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
+        const SectionParams* params = sectionMgr->sectionParams;
+        for (u32 i = 0; i < 32; ++i) {
+            if (params->vsTracks[i] == static_cast<CourseId>(pulsarId)) {
+                variantIdx = cupsConfig->vsTrackVariantIdx[i];
+                break;
+            }
+        }
+    }
+    cupsConfig->SetWinning(pulsarId, variantIdx);
     return cupsConfig->GetCorrectTrackSlot();
 }
 kmBranch(0x808606cc, VSNextTrackFix);

@@ -132,6 +132,8 @@ class CupsConfig {
     u32 totalVariantCount;
 
     void RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name);
+
+    u8 vsTrackVariantIdx[32];
 };  // 0x28
 
 }  // namespace Pulsar
