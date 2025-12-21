@@ -74,8 +74,11 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
                                                     hasPendingVariant(false),
                                                     lastSelectedCup(PULSARCUPID_FIRSTREG),
                                                     lastSelectedCupButtonIdx(0),
-                                                    isAlphabeticalLayout(false) {
+                                                    isAlphabeticalLayout(false),
+                                                    lastVariantIdxByTrack(nullptr) {
     memset(this->vsTrackVariantIdx, 0, sizeof(this->vsTrackVariantIdx));
+    lastVariantIdxByTrack = new u8[0x2000];
+    memset(lastVariantIdxByTrack, 0, 0x2000);
     totalVariantCount = rawCups.totalVariantCount;
     if (regsMode != 1) {
         lastSelectedCup = PULSARCUPID_FIRSTCT;
@@ -304,6 +307,18 @@ void CupsConfig::SetPendingVariant(u8 variantIdx) {
 void CupsConfig::ClearPendingVariant() {
     this->pendingVariantIdx = 0;
     this->hasPendingVariant = false;
+}
+
+u8 CupsConfig::GetLastSelectedVariant(PulsarId id) const {
+    const u32 trackIdx = static_cast<u32>(id);
+    if (trackIdx >= 0x2000 || this->lastVariantIdxByTrack == nullptr) return 0;
+    return this->lastVariantIdxByTrack[trackIdx];
+}
+
+void CupsConfig::SetLastSelectedVariant(PulsarId id, u8 variantIdx) {
+    const u32 trackIdx = static_cast<u32>(id);
+    if (trackIdx >= 0x2000 || this->lastVariantIdxByTrack == nullptr) return;
+    this->lastVariantIdxByTrack[trackIdx] = variantIdx;
 }
 
 void CupsConfig::SetWinning(PulsarId id, u32 variantIdx) {

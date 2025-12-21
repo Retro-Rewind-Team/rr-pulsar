@@ -130,7 +130,17 @@ void VariantSelect::PopulateVariantButtons() {
     }
 
     ApplyVariantButtonState();
-    if (variantButtonsPopulated) this->CtrlMenuCourseSelectCourse.courseButtons[0].Select(0);
+    if (variantButtonsPopulated) {
+        const u8 desiredVariantIdx = cups->GetLastSelectedVariant(selectedPulsarId);
+        u32 desiredButtonIdx = 0;
+        for (u32 i = 0; i < 4; ++i) {
+            if (variantButtonVariants[i] == desiredVariantIdx) {
+                desiredButtonIdx = i;
+                break;
+            }
+        }
+        this->CtrlMenuCourseSelectCourse.courseButtons[desiredButtonIdx].Select(0);
+    }
 }
 
 void VariantSelect::ApplyVariantButtonState() {

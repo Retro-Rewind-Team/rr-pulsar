@@ -70,6 +70,7 @@ static void CourseSelect_OnCourseButtonClick(CtrlMenuCourseSelectCourse* self, P
     } else if (variantPage != nullptr) {
         u32 variantIdx = variantPage->GetVariantIndexForButton(courseButton);
         if (variantIdx != 0xFFFFFFFF) {
+            cups->SetLastSelectedVariant(cups->GetSelected(), static_cast<u8>(variantIdx));
             cups->SetPendingVariant(static_cast<u8>(variantIdx));
             variantPage->LoadNextPage(variantPage->CtrlMenuCourseSelectCourse, courseButton, hudSlotId);
             handled = true;

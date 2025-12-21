@@ -91,6 +91,8 @@ class CupsConfig {
     void SetWinning(PulsarId id, u32 variantIdx = 0xFF);
     void SetPendingVariant(u8 variantIdx);
     void ClearPendingVariant();
+    u8 GetLastSelectedVariant(PulsarId id) const;
+    void SetLastSelectedVariant(PulsarId id, u8 variantIdx);
     PulsarId GetWinning() const { return this->winningCourse; }
     u8 GetCurVariantIdx() const { return this->curVariantIdx; }
     PulsarId GetSelected() const { return this->selectedCourse; };
@@ -134,6 +136,7 @@ class CupsConfig {
     void RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name);
 
     u8 vsTrackVariantIdx[32];
+    u8* lastVariantIdxByTrack;
 };  // 0x28
 
 }  // namespace Pulsar
