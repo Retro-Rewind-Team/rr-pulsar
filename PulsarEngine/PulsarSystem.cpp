@@ -26,6 +26,10 @@ namespace Pulsar {
 System* System::sInstance = nullptr;
 System::Inherit* System::inherit = nullptr;
 
+static inline bool ShouldForceNandIoSaves() {
+    return *reinterpret_cast<volatile u32*>(0x800017D8) == 0x01;
+}
+
 void System::CreateSystem() {
     if (sInstance != nullptr) return;
     EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
@@ -68,6 +72,10 @@ void System::Init(const ConfigFile& conf) {
             type = IOType_DOLPHIN;
             IOS::Close(ret);
         }
+    }
+
+    if (ShouldForceNandIoSaves()) {
+        type = IOType_DOLPHIN;
     }
 
     strncpy(this->modFolderName, conf.header.modFolderName, IOS::ipcMaxFileName);
@@ -478,7 +486,7 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 655);
+kmWrite32(0x800017D4, 656);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";

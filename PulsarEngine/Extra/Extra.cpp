@@ -392,4 +392,7 @@ kmWrite32(0x80532780, 0x3800012C);
 // Disable Data Save Reset for Region ID Change [Vega]
 kmWrite32(0x80544928, 0x7C601B78);
 
+// VR/BR assigned to Guest Modifier [Unnamed]
+kmWrite32(0x8065117C, 0x39C00096);
+
 }  // namespace Codes
