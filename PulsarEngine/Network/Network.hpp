@@ -6,6 +6,8 @@
 namespace Pulsar {
 namespace Network {
 
+static const u32 MAX_TRACK_BLOCKING = 8;  // Maximum number of blocked tracks synced via packets
+
 enum DenyType {
     DENY_TYPE_NORMAL,
     DENY_TYPE_BAD_PACK,
@@ -15,7 +17,7 @@ enum DenyType {
 
 class Mgr {  // Manages network related stuff within Pulsar
    public:
-    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), region(0x0A) {}
+    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A) {}
     u32 hostContext;
     u32 hostContext2;
     DenyType denyType;
@@ -24,7 +26,8 @@ class Mgr {  // Manages network related stuff within Pulsar
     u8 statusDatas[30];
     u8 curBlockingArrayIdx;
     u8 racesPerGP;
-    u8 padding[2];
+    bool lastGroupedTrackPlayed;  // Whether the most recent blocked track was a grouped track
+    u8 padding[1];
     u32 region;
     PulsarId* lastTracks;
 };

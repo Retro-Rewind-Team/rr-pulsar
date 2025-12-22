@@ -38,6 +38,19 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
     }
     src->decimalVR[1] = 0;
 
+    const Network::Mgr& netMgr = system->netMgr;
+    const u32 blockingCount = system->GetInfo().GetTrackBlocking();
+    const u32 writeCount = (blockingCount < MAX_TRACK_BLOCKING) ? blockingCount : MAX_TRACK_BLOCKING;
+    src->blockedTrackCount = static_cast<u8>(writeCount);
+    src->curBlockingArrayIdx = netMgr.curBlockingArrayIdx;
+    src->lastGroupedTrackPlayed = netMgr.lastGroupedTrackPlayed;
+    for (u32 i = 0; i < writeCount; ++i) {
+        src->blockedTracks[i] = (netMgr.lastTracks != nullptr) ? static_cast<u16>(netMgr.lastTracks[i]) : 0xFFFF;
+    }
+    for (u32 i = writeCount; i < MAX_TRACK_BLOCKING; ++i) {
+        src->blockedTracks[i] = 0xFFFF;
+    }
+
     if (!system->IsContext(PULSAR_CT)) {
         const u8 vanillaWinning = CupsConfig::ConvertTrack_PulsarIdToRealId(static_cast<PulsarId>(src->pulWinningTrack));
         src->winningCourse = vanillaWinning;
@@ -63,7 +76,7 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     PulSELECT& dest = handler->receivedPackets[aid];
     register RKNet::PacketHolder<PulSELECT>* holder;
     asm(mr holder, r27);
-    if (holder->packetSize == sizeof(RKNet::SELECTPacket)) {
+    if (holder != nullptr && holder->packetSize == sizeof(RKNet::SELECTPacket)) {
         const u16 pulWinning = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->winningCourse));
         src->pulWinningTrack = pulWinning;  // this is safe because src is a ptr to the buffer of holder which is always big enough
         const u16 pulVote = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->playersData[0].courseVote));
@@ -71,7 +84,61 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
         // Non-CT players won't have voteVariantIdx, default to 0
         src->voteVariantIdx[0] = 0;
         src->voteVariantIdx[1] = 0;
+        src->blockedTrackCount = 0;
+        src->curBlockingArrayIdx = 0;
+        src->lastGroupedTrackPlayed = false;
+        for (u32 i = 0; i < MAX_TRACK_BLOCKING; ++i) {
+            src->blockedTracks[i] = 0xFFFF;
+        }
     }
+
+    System* system = System::sInstance;
+    if (system != nullptr && holder != nullptr && holder->packetSize == sizeof(PulSELECT)) {
+        Network::Mgr& netMgr = system->netMgr;
+        const u32 localBlockingCount = system->GetInfo().GetTrackBlocking();
+
+        if (localBlockingCount > 0 && netMgr.lastTracks != nullptr && src->blockedTrackCount > 0) {
+            u32 localCount = 0;
+            for (u32 i = 0; i < localBlockingCount; ++i) {
+                if (netMgr.lastTracks[i] != PULSARID_NONE) localCount++;
+            }
+
+            u32 srcCount = 0;
+            const u32 checkCount = (src->blockedTrackCount < localBlockingCount) ? src->blockedTrackCount : localBlockingCount;
+            for (u32 i = 0; i < checkCount; ++i) {
+                if (src->blockedTracks[i] != 0xFFFF) srcCount++;
+            }
+
+            bool shouldSync = false;
+            const RKNet::Controller* controller = RKNet::Controller::sInstance;
+            if (controller != nullptr) {
+                const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+                if (sub.localAid == sub.hostAid) {
+                    // I am host, sync if client has more info
+                    if (srcCount > localCount) shouldSync = true;
+                } else {
+                    // I am client
+                    if (aid == sub.hostAid) {
+                        // Sync from host if they have at least as much info as me
+                        if (srcCount >= localCount) shouldSync = true;
+                    } else {
+                        // Sync from other clients only if I am empty
+                        if (localCount == 0 && srcCount > 0) shouldSync = true;
+                    }
+                }
+            }
+
+            if (shouldSync) {
+                const u32 copyCount = (src->blockedTrackCount < localBlockingCount) ? src->blockedTrackCount : localBlockingCount;
+                for (u32 i = 0; i < copyCount; ++i) {
+                    netMgr.lastTracks[i] = static_cast<PulsarId>(src->blockedTracks[i]);
+                }
+                netMgr.curBlockingArrayIdx = src->curBlockingArrayIdx % localBlockingCount;
+                netMgr.lastGroupedTrackPlayed = src->lastGroupedTrackPlayed;
+            }
+        }
+    }
+
     memcpy(&dest, src, sizeof(PulSELECT));
 }
 kmCall(0x80661130, AfterSELECTReception);
@@ -230,6 +297,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
             if (blockingCount != 0 && system->netMgr.lastTracks != nullptr) {
                 system->netMgr.lastTracks[system->netMgr.curBlockingArrayIdx] = vote;
                 system->netMgr.curBlockingArrayIdx = (system->netMgr.curBlockingArrayIdx + 1) % blockingCount;
+                system->netMgr.lastGroupedTrackPlayed = IsGroupedTrack(vote);
             }
         }
 
@@ -272,6 +340,7 @@ static void SetCorrectTrack(ArchiveMgr* root, PulsarId winningCourse) {
             if (system->netMgr.lastTracks[prevIdx] != winningCourse) {
                 system->netMgr.lastTracks[writeIdx] = winningCourse;
                 system->netMgr.curBlockingArrayIdx = (writeIdx + 1) % blockingCount;
+                system->netMgr.lastGroupedTrackPlayed = IsGroupedTrack(winningCourse);
             }
         }
     }

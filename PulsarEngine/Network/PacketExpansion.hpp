@@ -62,6 +62,13 @@ struct PulROOM : public RKNet::ROOMPacket {
 
     // Extended Team settings
     u8 extendedTeams[6];  // 4 bits per PlayerIDX, they encode the team ID (4 * 12 = 48 bits = 6 bytes)
+
+    // Track blocking
+    u8 blockedTrackCount;  // Number of valid entries in blockedTracks (up to MAX_TRACK_BLOCKING)
+    u8 curBlockingArrayIdx;  // Current write index in circular buffer
+    bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
+    u8 padding;
+    u16 blockedTracks[8];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 };
 
 enum SELECTComboStatus {
@@ -92,6 +99,13 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 decimalVR[2];
 
     u8 voteVariantIdx[2];
+
+    // Track blocking sync for regional rooms (late joiner support)
+    u8 blockedTrackCount;  // Number of valid entries in blockedTracks
+    u8 curBlockingArrayIdx;  // Current write index in circular buffer
+    bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
+    u8 blockingPadding;
+    u16 blockedTracks[8];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 };
 
 struct PulRACEDATA : public RKNet::RACEDATAPacket {};

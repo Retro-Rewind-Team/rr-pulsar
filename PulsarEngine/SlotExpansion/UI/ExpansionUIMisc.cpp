@@ -11,9 +11,61 @@
 #include <SlotExpansion/UI/ExpCupSelect.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <core/nw4r/lyt/TextBox.hpp>
 
 namespace Pulsar {
 namespace UI {
+
+static bool IsGroupedTrack(PulsarId id) {
+    if (CupsConfig::IsReg(id)) return false;
+    const u32 idx = id - 0x100;
+    switch (idx) {
+        case 6:
+        case 9:
+        case 27:
+        case 29:
+        case 31:
+        case 32:
+        case 37:
+        case 51:
+        case 57:
+        case 61:
+        case 63:
+        case 67:
+        case 73:
+        case 76:
+        case 77:
+        case 85:
+            return true;
+        default:
+            if (idx >= 88 && idx <= 103) return true;
+            return false;
+    }
+}
+
+static bool IsTrackBlocked(PulsarId id) {
+    System* system = System::sInstance;
+    if (!system || !system->IsContext(PULSAR_CT)) return false;
+
+    const u32 blockingCount = system->GetInfo().GetTrackBlocking();
+    if (blockingCount == 0 || system->netMgr.lastTracks == nullptr) return false;
+
+    for (u32 i = 0; i < blockingCount; ++i) {
+        if (system->netMgr.lastTracks[i] == id) return true;
+    }
+
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller != nullptr &&
+        (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
+         controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
+        if (IsGroupedTrack(id) && system->netMgr.lastGroupedTrackPlayed) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // Change brctr names
 kmWrite24(0x808a85ef, 'PUL');  // used by 807e5754
 
@@ -351,6 +403,19 @@ static void ExtCourseSelectCupInitSelf(CtrlMenuCourseSelectCup* courseCups) {
 };
 kmWritePointer(0x808d3190, ExtCourseSelectCupInitSelf);  // 807e45c0
 
+static void SetCourseButtonTextColor(PushButton& button, bool isBlocked) {
+    nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(button.layout.GetPaneByName("text"));
+    if (textBox != nullptr) {
+        if (isBlocked) {
+            textBox->color1[0] = nw4r::ut::Color(255, 80, 80, 255);  // Red for blocked tracks
+            textBox->color1[1] = nw4r::ut::Color(180, 40, 40, 255);  // Darker red gradient
+        } else {
+            textBox->color1[0] = nw4r::ut::Color(255, 255, 255, 255);  // White (default)
+            textBox->color1[1] = nw4r::ut::Color(255, 255, 255, 255);
+        }
+    }
+}
+
 static void ExtCourseSelectCourseInitSelf(CtrlMenuCourseSelectCourse* course) {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const Section* curSection = SectionMgr::sInstance->curSection;
@@ -365,7 +430,12 @@ static void ExtCourseSelectCourseInitSelf(CtrlMenuCourseSelectCourse* course) {
         curButton.buttonId = i;
         const u32 bmgId = GetTrackBMGByRowIdx(i);
         curButton.SetMessage(bmgId);
-        if (cupsConfig->ConvertTrack_PulsarCupToTrack(cupsConfig->lastSelectedCup, i) == cupsConfig->GetSelected()) {
+
+        // Check if this track is blocked and set text color accordingly
+        PulsarId trackId = cupsConfig->ConvertTrack_PulsarCupToTrack(cupsConfig->lastSelectedCup, i);
+        SetCourseButtonTextColor(curButton, IsTrackBlocked(trackId));
+
+        if (trackId == cupsConfig->GetSelected()) {
             toSelect = &curButton;
         }
     };
