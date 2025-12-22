@@ -191,7 +191,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
                         break;
                     }
                 }
-                if (!isRepeatVote && blockingCount > 0 && IsGroupedTrack(aidVote)) {
+                if (!isRepeatVote && blockingCount > 0 && IsGroupedTrack(aidVote) && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
                     const u32 lastIdx = (system->netMgr.curBlockingArrayIdx + blockingCount - 1) % blockingCount;
                     if (IsGroupedTrack(system->netMgr.lastTracks[lastIdx])) {
                         isRepeatVote = true;
