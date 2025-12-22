@@ -187,6 +187,14 @@ void VariantSelect::ApplyVariantButtonState() {
         }
         btn.SetMessage(UI::BMG_TEXT, &info);
     }
+
+    // Apply repick prevention coloring - base track being blocked means all variants are blocked
+    const bool isBlocked = IsTrackBlocked(selectedPulsarId);
+    for (u32 i = 0; i < 4; ++i) {
+        if (variantButtonVariants[i] != 0xFF) {
+            SetCourseButtonTextColor(this->CtrlMenuCourseSelectCourse.courseButtons[i], isBlocked);
+        }
+    }
 }
 
 u32 VariantSelect::GetVariantIndexForButton(const PushButton& button) const {

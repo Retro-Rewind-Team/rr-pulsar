@@ -2,6 +2,7 @@
 #define _EXPANSIONUIMISC_
 #include <kamek.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/UI/Ctrl/PushButton.hpp>
 #include <PulsarSystem.hpp>
 #include <UI/UI.hpp>
 
@@ -9,6 +10,8 @@ namespace Pulsar {
 namespace UI {
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName);
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx);
+bool IsTrackBlocked(PulsarId id);
+void SetCourseButtonTextColor(PushButton& button, bool isBlocked);
 
 inline void GetTrackBMG(char* dest, PulsarId id) {
     const wchar_t* name = UI::GetCustomMsg(GetTrackBMGId(id, false));

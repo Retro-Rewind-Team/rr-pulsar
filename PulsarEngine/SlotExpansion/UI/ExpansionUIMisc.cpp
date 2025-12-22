@@ -43,7 +43,7 @@ static bool IsGroupedTrack(PulsarId id) {
     }
 }
 
-static bool IsTrackBlocked(PulsarId id) {
+bool IsTrackBlocked(PulsarId id) {
     System* system = System::sInstance;
     if (!system || !system->IsContext(PULSAR_CT)) return false;
 
@@ -403,7 +403,7 @@ static void ExtCourseSelectCupInitSelf(CtrlMenuCourseSelectCup* courseCups) {
 };
 kmWritePointer(0x808d3190, ExtCourseSelectCupInitSelf);  // 807e45c0
 
-static void SetCourseButtonTextColor(PushButton& button, bool isBlocked) {
+void SetCourseButtonTextColor(PushButton& button, bool isBlocked) {
     nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(button.layout.GetPaneByName("text"));
     if (textBox != nullptr) {
         if (isBlocked) {
