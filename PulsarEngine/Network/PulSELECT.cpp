@@ -112,6 +112,19 @@ PulsarId FixRandom(Random& random) {
 }
 kmCall(0x80661f34, FixRandom);
 
+static bool IsGroupedTrack(PulsarId id) {
+    if (CupsConfig::IsReg(id)) return false;
+    const u32 idx = id - 0x100;
+    switch (idx) {
+        case 6: case 9: case 27: case 29: case 31: case 32: case 37: case 51:
+        case 57: case 61: case 63: case 67: case 73: case 76: case 77: case 85:
+            return true;
+        default:
+            if (idx >= 88 && idx <= 103) return true;
+            return false;
+    }
+}
+
 void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
     Random random;
     System* system = System::sInstance;
@@ -171,8 +184,16 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
             votes[aid] = aidVote;
             if (isCT) {
                 bool isRepeatVote = false;
-                for (int i = 0; i < system->GetInfo().GetTrackBlocking(); ++i) {
+                const u32 blockingCount = system->GetInfo().GetTrackBlocking();
+                for (int i = 0; i < blockingCount; ++i) {
                     if (system->netMgr.lastTracks[i] == aidVote) {
+                        isRepeatVote = true;
+                        break;
+                    }
+                }
+                if (!isRepeatVote && blockingCount > 0 && IsGroupedTrack(aidVote)) {
+                    const u32 lastIdx = (system->netMgr.curBlockingArrayIdx + blockingCount - 1) % blockingCount;
+                    if (IsGroupedTrack(system->netMgr.lastTracks[lastIdx])) {
                         isRepeatVote = true;
                     }
                 }
