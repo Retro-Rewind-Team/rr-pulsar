@@ -124,6 +124,12 @@ mInstance__Q22OS8BootInfo = 0x80000000
 current__Q22OS6Thread = 0x800000e4
 busClock__2OS = 0x800000f8
 
+#RFL
+CalcCRC16__3RFLFPvUi = 0x800c78d0
+IsAvailableOfficialData__3RFLFUs = 0x800c7290
+GetStoreData__3RFLFRQ23RFL9StoreDataUiUs = 0x800c7df0
+GetStoreData__3RFLFPQ23RFL9StoreDataUiUs = 0x800c7df0
+
 #Low Level Network
 Patch_LoginPrintHeader = 0x80276054
 Patch_WiimmfiURLs = 0x8027a404

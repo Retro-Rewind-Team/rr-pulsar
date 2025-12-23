@@ -5,6 +5,7 @@
 #include <MarioKartWii/UI/Section/Section.hpp>
 #include <MarioKartWii/Race/Racedata.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/RKNet/USER.hpp>
 #include <Config.hpp>
 #include <PulsarSystem.hpp>
 #include <Network/Network.hpp>
@@ -102,6 +103,10 @@ static bool ConvertFriendRoomStateToRegional() {
     controller->localStatusData.status = RKNet::FRIEND_STATUS_PUBLIC_VS;
     controller->localStatusData.playerCount = totalPlayerCount != 0 ? totalPlayerCount : localPlayerCount;
     controller->localStatusData.curRace = 0;
+
+    if (RKNet::USERHandler::sInstance != nullptr) {
+        RKNet::USERHandler::sInstance->isInitialized = false;
+    }
 
     for (int i = 0; i < 2; ++i) {
         controller->subs[i].matchingSuspended = false;
