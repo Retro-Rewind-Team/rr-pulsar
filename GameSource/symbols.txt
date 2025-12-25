@@ -2157,6 +2157,15 @@ BloomHook = 0x802575DF
 beginFrame= 0x8020fe24
 
 sInstance__Q25RKNet11USERHandler = 0x809c2108
+CopySendToPacketHolder__Q25RKNet11USERHandlerFUc = 0x80662abc
+CreateSendPacket__Q25RKNet11USERHandlerFv = 0x8066300c
+InitPackets__Q25RKNet13SELECTHandlerFv = 0x8065ffa4
+
+#FriendMgr
+sInstance__Q25RKNet9FriendMgr = 0x809c2110
+CreateFriendCode__Q25RKNet9FriendMgrCFv = 0x80663618
+GetFriendIdx__Q25RKNet9FriendMgrCFRCUx = 0x806637fc
+
 saveFcAndCountryHookExit__Fv = 0x806513e4
 saveFcAndCountryInLiveHookExit__Fv = 0x8060a2b4
 displayFcAndCountryHookExit__Fv = 0x807f0050
