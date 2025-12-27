@@ -65,9 +65,10 @@ kmCall(0x8084b68c, LoadCorrectPageAfterMultiDrift);
 void RaceMenuExtraControls(Pages::RaceMenu& page, u32 gameControlCount) {
     const SectionId curSectionId = SectionMgr::sInstance->curSection->sectionId;
     if (curSectionId >= SECTION_P1_WIFI_FRIEND_VS || curSectionId >= SECTION_P2_WIFI_FRIEND_COIN) {
-        if (page.pageId == ChooseNextTrack::fakeId)
+        const ExpSection* section = ExpSection::GetSection();
+        if (page.pageId == ChooseNextTrack::fakeId && section->GetPulPage<ChooseNextTrack>() == &page)
             return static_cast<ChooseNextTrack&>(page).InitExtraControls(gameControlCount);
-        else if (page.pageId == KO::RaceEndPage::fakeId)
+        else if (page.pageId == KO::RaceEndPage::fakeId && section->GetPulPage<KO::RaceEndPage>() == &page)
             return static_cast<KO::RaceEndPage&>(page).InitExtraControls(gameControlCount);
     }
     page.InitControlGroup(gameControlCount);
