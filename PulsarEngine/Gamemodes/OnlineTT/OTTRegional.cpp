@@ -65,15 +65,27 @@ u64 AddModeToStatusData(const RKNet::StatusData* own) {
 kmCall(0x8065a0e8, AddModeToStatusData);
 
 u8 ReceiveMode(const DWC::AccFriendData* data, char* dest, int* size) {
-    const u8 ret = DWC::GetFriendStatusData(data, dest, size);  // the stack should have enough space that the provided char arg is enough
-    register u8 idx;
+    register u32 idx;
     asm(mr idx, r26;);
+    char temp[32];
+    const u8 ret = DWC::GetFriendStatusData(data, temp, size);
     u8 val = 0;
+    if (*size >= 9) {
+        val = temp[8];
+    }
+
+    int copySize = *size;
+    if (copySize > 16) copySize = 16;
+    for (int i = 0; i < copySize; ++i) {
+        dest[i] = temp[i];
+    }
+
     if (*size == 9) {
-        val = dest[8];
         *size = 8;
     }
-    System::sInstance->netMgr.statusDatas[idx] = val;
+    if (idx < 30) {
+        System::sInstance->netMgr.statusDatas[idx] = val;
+    }
     return ret;
 }
 kmCall(0x8065a1d4, ReceiveMode);

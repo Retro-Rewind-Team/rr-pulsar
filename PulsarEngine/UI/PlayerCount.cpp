@@ -280,12 +280,34 @@ int hook_ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
         msleep(10);
 
     hasRKNetRequestFinished = false;
+
+    unsigned char newFields[64];
+    int newNumFields = 0;
+
+    if (basicFields && numBasicFields > 0) {
+        newNumFields = numBasicFields;
+        if (newNumFields > 60) newNumFields = 60;
+        for (int i = 0; i < newNumFields; i++) {
+            newFields[i] = basicFields[i];
+        }
+    }
+
+    bool hasEV = false;
+    bool hasEB = false;
+    for (int i = 0; i < newNumFields; i++) {
+        if (newFields[i] == 0x65) hasEV = true;
+        if (newFields[i] == 0x66) hasEB = true;
+    }
+
+    if (!hasEV) newFields[newNumFields++] = 0x65;
+    if (!hasEB) newFields[newNumFields++] = 0x66;
+
     int res = ServerBrowserLimitUpdateA(
         sb,
         async,
         disconnectOnComplete,
-        basicFields,
-        numBasicFields,
+        newFields,
+        newNumFields,
         serverFilter,
         maxServers);
 
