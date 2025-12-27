@@ -3,6 +3,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
 #include <MarioKartWii/RKNet/SELECT.hpp>
+#include <MarioKartWii/RKNet/FriendMgr.hpp>
 #include <MarioKartWii/System/random.hpp>
 #include <Settings/Settings.hpp>
 #include <PulsarSystem.hpp>
@@ -54,7 +55,36 @@ static CourseId OnTrackDecidedHook(RKNet::SELECTHandler* handler) {
 }
 kmCall(0x80644318, OnTrackDecidedHook);
 
-static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid) {
+extern "C" void* sInstance__Q23DWC12MatchControl;
+
+static u32 GetPidForAid(u32 aid) {
+    u8* stpMatchCnt = (u8*)sInstance__Q23DWC12MatchControl;
+    if (stpMatchCnt == nullptr) return 0;
+
+    u32 numHost = *(u32*)(stpMatchCnt + 0x30);
+    for (u32 i = 0; i < numHost; i++) {
+        u8* node = stpMatchCnt + 0x38 + i * 0x30;
+        if (*(node + 0x16) == aid) {
+            return *(u32*)node;
+        }
+    }
+    return 0;
+}
+
+static bool IsFriend(u32 pid) {
+    if (pid == 0) return false;
+    RKNet::FriendMgr* friendMgr = RKNet::FriendMgr::sInstance;
+    if (friendMgr == nullptr) return false;
+
+    for (int i = 0; i < 30; i++) {
+        if (friendMgr->friendPids[i] == pid) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid, RKNet::USERPacket* userPacket) {
     const Settings::Mgr& settings = Settings::Mgr::Get();
     if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
         return;
@@ -63,25 +93,36 @@ static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid) {
         return;
     }
 
+    // Check if the person we are sending to is a friend or ourselves
+    u32 pid = GetPidForAid(aid);
+    if (pid != 0) {
+        if (IsFriend(pid)) return;
+
+        u8* stpMatchCnt = (u8*)sInstance__Q23DWC12MatchControl;
+        if (stpMatchCnt && pid == *(u32*)(stpMatchCnt + 0x8a8)) return;
+    }
+
     u32 playerRandomIndex = (baseRandomIndex + aid) % 6;
 
-    RFL::StoreData* miiSlot0 = &handler->toSendPacket.rflPacket.rawMiis[0];
-    RFL::StoreData* miiSlot1 = &handler->toSendPacket.rflPacket.rawMiis[1];
+    RFL::StoreData* miiSlot0 = &userPacket->rflPacket.rawMiis[0];
+    RFL::StoreData* miiSlot1 = &userPacket->rflPacket.rawMiis[1];
 
     RFL::GetStoreData(miiSlot0, RFL::RFLDataSource_Default, playerRandomIndex);
     RFL::GetStoreData(miiSlot1, RFL::RFLDataSource_Default, playerRandomIndex);
 }
 
 static void CopySendToPacketHolderHook(RKNet::USERHandler* handler, u32 aid) {
-    ReplaceWithRandomPlayerMii(handler, aid);
     if (!handler->isInitialized) return;
+
+    RKNet::USERPacket packet = handler->toSendPacket;
+    ReplaceWithRandomPlayerMii(handler, aid, &packet);
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     u32 bufferIdx = controller->lastSendBufferUsed[aid];
     RKNet::SplitRACEPointers* splitPointers = controller->splitToSendRACEPackets[bufferIdx][aid];
     RKNet::PacketHolder<RKNet::USERPacket>* holder = splitPointers->GetPacketHolder<RKNet::USERPacket>();
 
-    holder->Copy(&handler->toSendPacket, sizeof(RKNet::USERPacket));
+    holder->Copy(&packet, sizeof(RKNet::USERPacket));
 }
 kmBranch(0x80662abc, CopySendToPacketHolderHook);
 
