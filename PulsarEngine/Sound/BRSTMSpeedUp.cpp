@@ -1,8 +1,10 @@
 #include <kamek.hpp>
+#include <runtimeWrite.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/Audio/RaceMgr.hpp>
 #include <MarioKartWii/Audio/Actors/KartActor.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceGhostDiffTime.hpp>
 #include <Settings/Settings.hpp>
 
@@ -31,6 +33,9 @@ static void MusicSpeedup(Audio::RaceRSARPlayer* rsarSoundPlayer, u32 jingle, u8 
         snd::detail::BasicSound& sound = kartActor->soundArchivePlayer->soundPlayerArray[0].soundList.GetFront();
         if (isSpeedUp == SPEEDUP_ENABLED || sound.soundId == SOUND_ID_GALAXY_COLOSSEUM) {
             const Raceinfo* raceInfo = Raceinfo::sInstance;
+            if (raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL && (maxLap != curLap)) {
+                raceAudioMgr->raceState = static_cast<Audio::RaceState>(0x6);
+            }
             const Timer& raceTimer = raceInfo->timerMgr->timers[0];
             const Timer& playerTimer = raceInfo->players[raceDataSettings.hudPlayerIds[hudSlotId]]->lapSplits[maxLap - 2];
             const Timer difference = CtrlRaceGhostDiffTime::SubtractTimers(raceTimer, playerTimer);
@@ -50,6 +55,29 @@ static void MusicSpeedup(Audio::RaceRSARPlayer* rsarSoundPlayer, u32 jingle, u8 
 kmCall(0x8070b2f8, MusicSpeedup);
 kmWrite32(0x8070b2c0, 0x60000000);
 kmWrite32(0x8070b2d4, 0x60000000);
+
+kmRuntimeUse(0x807125d4);
+static void RaceSoundManager_CheckRaceState(void* raceSoundManager) {
+    const Racedata* racedata = Racedata::sInstance;
+    const RKNet::Controller* rknet = RKNet::Controller::sInstance;
+    Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
+    if (racedata != nullptr && rknet != nullptr && raceAudioMgr != nullptr && rknet->roomType != RKNet::ROOMTYPE_NONE) {
+        const RacedataSettings& settings = racedata->racesScenario.settings;
+        if (settings.lapCount == 1 && raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL) {
+            const u8 localPlayerId = raceAudioMgr->playerIdFirstLocalPlayer;
+            Raceinfo* raceInfo = Raceinfo::sInstance;
+            if (raceInfo != nullptr && raceInfo->players != nullptr && localPlayerId < 12) {
+                RaceinfoPlayer* player = raceInfo->players[localPlayerId];
+                if (player != nullptr && player->raceFinishTime != nullptr && player->raceFinishTime->isActive) {
+                    raceAudioMgr->raceState = static_cast<Audio::RaceState>(0x6);
+                }
+            }
+        }
+    }
+
+    reinterpret_cast<void (*)(void*)>(kmRuntimeAddr(0x807125d4))(raceSoundManager);
+}
+kmCall(0x80710f84, RaceSoundManager_CheckRaceState);
 
 }  // namespace Sound
 }  // namespace Pulsar
