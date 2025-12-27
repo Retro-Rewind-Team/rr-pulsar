@@ -12,6 +12,7 @@
 #include <MarioKartWii/UI/Page/Other/VR.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -68,7 +69,7 @@ void ExpVR::OnInit() {
     this->settingsButton.buttonId = 5;
     this->settingsButton.SetOnClickHandler(this->onSettingsClick, 0);
     this->settingsButton.SetOnSelectHandler(this->onButtonSelectHandler);
-    this->topSettingsPage = SettingsPanel::id;
+    this->topSettingsPage = SettingsPageSelect::id;
 
     // Share timer with settings panel
     SettingsPanel* settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
@@ -206,7 +207,9 @@ void ExpVR::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
     this->changeComboButton.isHidden = true;
     this->settingsButton.isHidden = true;
     SettingsPanel* settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
-    settingsPanel->prevPageId = PAGE_VR;
+    settingsPanel->prevPageId = PAGE_NONE;
+    SettingsPageSelect* settingsPageSelect = ExpSection::GetSection()->GetPulPage<SettingsPageSelect>();
+    settingsPageSelect->prevPageId = PAGE_NONE;
     this->AddPageLayer(static_cast<PageId>(this->topSettingsPage), 0);
 }
 
@@ -521,18 +524,6 @@ asmFunc LoadCorrectPageAfterDrift() {  // r0 has gamemode
         blr;)
 }
 kmCall(0x8084e670, LoadCorrectPageAfterDrift);
-
-void SettingsPanel::BeforeControlUpdate() {
-    SectionId id = SectionMgr::sInstance->curSection->sectionId;
-    bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING);
-    if (isVotingSection) {
-        Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
-        CountDown* timer = &selectStageMgr->countdown;
-        if (timer->countdown <= 0) {
-            this->OnBackPress(0);
-        }
-    }
-}
 
 }  // namespace UI
 }  // namespace Pulsar

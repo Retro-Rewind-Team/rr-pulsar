@@ -1,6 +1,7 @@
 #include <MarioKartWii/UI/Page/Other/GlobeSearch.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Settings/UI/ExpWFCMainPage.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/UI.hpp>
 #include <Network/Ranking.hpp>
 #include <UI/PlayerCount.hpp>
@@ -59,7 +60,7 @@ void ExpWFCMain::OnInit() {
     this->regionalButton.isHidden = true;
     this->worldwideButton.isHidden = true;
 
-    this->topSettingsPage = SettingsPanel::id;
+    this->topSettingsPage = SettingsPageSelect::id;  // Navigate to page selection first
 
     // Set retro button as default selected
     this->mainButton.Select(0);
@@ -84,6 +85,8 @@ void ExpWFCMain::OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId) {
 }
 
 void ExpWFCMain::OnSettingsButtonClick(PushButton& pushButton, u32 r5) {
+    // Set up SettingsPageSelect's and SettingsPanel's previous page
+    ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_WFC_MAIN;
     ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_WFC_MAIN;
     this->nextPageId = static_cast<PageId>(this->topSettingsPage);
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());

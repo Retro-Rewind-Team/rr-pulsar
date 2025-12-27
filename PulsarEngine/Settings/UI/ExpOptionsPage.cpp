@@ -1,6 +1,7 @@
 #include <UI/UI.hpp>
 #include <Settings/UI/ExpOptionsPage.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -23,7 +24,8 @@ void ExpOptions::OnInit() {
 
 void ExpOptions::ExpandedOnButtonClick(PushButton& pushButton, u32 hudSlotId) {
     if (pushButton.buttonId == 5) {
-        this->nextPageId = static_cast<PageId>(SettingsPanel::id);
+        // Navigate to settings page selection menu first
+        this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
         this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
     } else {
         this->OnButtonClick(pushButton, hudSlotId);

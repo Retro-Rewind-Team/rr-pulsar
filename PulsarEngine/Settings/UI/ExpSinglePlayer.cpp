@@ -4,6 +4,7 @@
 #include <PulsarSystem.hpp>
 #include <UI/UI.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
 // Implements 4 TT modes by splitting the "Time Trials" button
 
 namespace Pulsar {
@@ -133,8 +134,10 @@ kmWritePointer(0x808D9F64, &OnButtonSelect);
 void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
     const u32 id = button.buttonId;
     if (page->externControlCount > 4 && id == page->externControlCount - 1) {
+        // Navigate to page selection first
+        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
         ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
-        page->nextPageId = static_cast<PageId>(SettingsPanel::id);
+        page->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
         page->EndStateAnimated(0, button.GetAnimationFrameSize());
         return;
     }

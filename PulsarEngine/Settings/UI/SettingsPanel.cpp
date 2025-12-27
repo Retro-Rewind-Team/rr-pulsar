@@ -1,4 +1,5 @@
 #include <Settings/UI/SettingsPanel.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/UI/ExpOptionsPage.hpp>
 #include <Settings/UI/ExpFroomPage.hpp>
@@ -7,6 +8,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
+#include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <core/System/SystemManager.hpp>
 
 namespace Pulsar {
@@ -17,7 +19,7 @@ SettingsPanel::SettingsPanel() {
     bmgOffset = BMG_USERSETTINGSOFFSET;
     sheetIdx = Settings::Params::pulsarPageCount;
     catIdx = 0;
-    externControlCount = 3;
+    externControlCount = 1;  // Only save button, no left/right navigation
     internControlCount = Settings::Params::maxRadioCount + Settings::Params::maxScrollerCount;
     hasBackButton = false;
     nextPageId = static_cast<PageId>(id);
@@ -179,8 +181,6 @@ void SettingsPanel::OnActivate() {
     SectionId id = SectionMgr::sInstance->curSection->sectionId;
     bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING) || (id == SECTION_P1_WIFI_BATTLE_VOTING);
 
-    this->externControls[1]->SetMessage(BMG_SETTINGS_PAGE + this->GetNextBMGOffset(1));
-    this->externControls[2]->SetMessage(BMG_SETTINGS_PAGE + this->GetNextBMGOffset(-1));
     for (int i = 0; i < Settings::Params::maxRadioCount; ++i) {
         RadioButtonControl& radio = this->radioButtonControls[i];
         bool isDisabled = false;
@@ -229,6 +229,7 @@ void SettingsPanel::OnActivate() {
             this->sheetIdx == Settings::SETTINGSTYPE_OTT ||
             this->sheetIdx == Settings::SETTINGSTYPE_FROOM1 ||
             this->sheetIdx == Settings::SETTINGSTYPE_FROOM2 ||
+            this->sheetIdx == Settings::SETTINGSTYPE_EXTENDEDTEAMS ||
             this->sheetIdx == Settings::SETTINGSTYPE_MISC) {
             return;
         }
@@ -266,14 +267,8 @@ const ut::detail::RuntimeTypeInfo* SettingsPanel::GetRuntimeTypeInfo() const {
 }
 
 void SettingsPanel::OnExternalButtonSelect(PushButton& button, u32 r5) {
-    u32 bmgId = BMG_SETTINGS_BOTTOM;  // default "save"
-    const u32 id = button.buttonId;
-
-    if (id == 1)
-        bmgId += 1 + this->GetNextBMGOffset(1);
-    else if (id == 2)
-        bmgId += 1 + this->GetNextBMGOffset(-1);
-    this->bottomText->SetMessage(bmgId);
+    // Only save button exists now (id == 0)
+    this->bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
 }
 
 int SettingsPanel::GetActivePlayerBitfield() const {
@@ -289,21 +284,9 @@ ManipulatorManager& SettingsPanel::GetManipulatorManager() {
 }
 
 void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton& button) {
-    const Section* section = SectionMgr::sInstance->curSection;
-    if (this->prevPageId == PAGE_FRIEND_ROOM) {
-        section->Get<ExpFroom>()->topSettingsPage = static_cast<PulPageId>(this->pageId);
-        this->nextPageId = PAGE_NONE;
-        this->EndStateAnimated(0, button.GetAnimationFrameSize());
-    } else if (this->prevPageId == PAGE_VR) {
-        this->nextPageId = PAGE_NONE;
-        this->EndStateAnimated(0, button.GetAnimationFrameSize());
-    } else {
-        this->LoadPrevPage(button);
-        if (this->prevPageId == PAGE_WFC_MAIN) {
-            section->Get<ExpWFCMain>()->topSettingsPage = static_cast<PulPageId>(this->pageId);
-        }
-    }
-
+    // Navigate back to SettingsPageSelect instead of the original menu
+    this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
+    this->EndStateAnimated(0, button.GetAnimationFrameSize());
     this->SaveSettings(true);
 }
 
@@ -380,6 +363,7 @@ void SettingsPanel::OnButtonClick(PushButton& button, u32 direction) {
         while (nextIdx == Settings::SETTINGSTYPE_KO ||
                nextIdx == Settings::SETTINGSTYPE_OTT ||
                nextIdx == Settings::SETTINGSTYPE_FROOM1 ||
+               nextIdx == (Settings::SETTINGSTYPE_EXTENDEDTEAMS + Settings::Params::pulsarPageCount) ||
                nextIdx == (Settings::SETTINGSTYPE_FROOM2 + Settings::Params::pulsarPageCount) ||
                nextIdx == (Settings::SETTINGSTYPE_MISC + Settings::Params::pulsarPageCount)) {
             nextIdx = (nextIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
@@ -446,6 +430,18 @@ int SettingsPanel::GetNextBMGOffset(s32 direction) {
         return nextIdx;
     else
         return BMG_USERSETTINGSOFFSET + nextIdx - Settings::Params::pulsarPageCount;
+}
+
+void SettingsPanel::BeforeControlUpdate() {
+    SectionId id = SectionMgr::sInstance->curSection->sectionId;
+    bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING);
+    if (isVotingSection) {
+        Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        CountDown* timer = &selectStageMgr->countdown;
+        if (timer->countdown <= 0) {
+            this->OnBackPress(0);
+        }
+    }
 }
 
 }  // namespace UI

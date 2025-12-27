@@ -8,6 +8,7 @@
 #include <Settings/UI/ExpWFCMainPage.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 #include <UI/RoomKick/RoomKickPage.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -22,7 +23,7 @@ void ExpFroom::OnInit() {
     this->settingsButton.buttonId = 5;
     this->settingsButton.SetOnClickHandler(this->onSettingsClickHandler, 0);
     this->settingsButton.SetOnSelectHandler(this->onButtonSelectHandler);
-    this->topSettingsPage = SettingsPanel::id;
+    this->topSettingsPage = SettingsPageSelect::id;  // Navigate to page selection first
 
     this->AddControl(6, teamsButton, 0);
     this->teamsButton.Load(UI::buttonFolder, "FroomButton", "Teams", 1, 0, false);
@@ -71,7 +72,8 @@ void ExpFroom::OnActivate() {
 
 void ExpFroom::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
     this->areControlsHidden = true;
-    ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_FRIEND_ROOM;
+    ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_NONE;
+    ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_NONE;
     this->AddPageLayer(static_cast<PageId>(this->topSettingsPage), 0);
 }
 

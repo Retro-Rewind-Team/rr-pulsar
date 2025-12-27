@@ -27,6 +27,7 @@
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 
 namespace Pulsar {
@@ -79,6 +80,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_P2_WIFI_FROOM_BALLOON_VOTING:  // 0x66
         case SECTION_P2_WIFI_FROOM_COIN_VOTING:  // 0x67
             this->CreateAndInitPage(*this, SettingsPanel::id);
+            this->CreateAndInitPage(*this, SettingsPageSelect::id);
             break;
 
         case SECTION_P1_WIFI_VS:  // 0x68
@@ -124,6 +126,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_P1_WIFI_VS_VOTING:  // 0x60
         case SECTION_P1_WIFI_BATTLE_VOTING:
             this->CreateAndInitPage(*this, SettingsPanel::id);
+            this->CreateAndInitPage(*this, SettingsPageSelect::id);
             break;
     }
     Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
@@ -227,6 +230,9 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
             break;
         case SettingsPanel::id:
             page = new SettingsPanel;
+            break;
+        case SettingsPageSelect::id:
+            page = new SettingsPageSelect;
             break;
         case ExtendedTeamSelect::id:
             page = new ExtendedTeamSelect;

@@ -2,6 +2,7 @@
 #include <MarioKartWii/RKNet/ROOM.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
 #include <Settings/Settings.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
@@ -301,6 +302,9 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
         if (topId == UI::SettingsPanel::id) {
             UI::SettingsPanel* panel = static_cast<UI::SettingsPanel*>(topPage);
             panel->OnBackPress(0);
+        } else if (topId == UI::SettingsPageSelect::id) {
+            UI::SettingsPageSelect* pageSelect = static_cast<UI::SettingsPageSelect*>(topPage);
+            pageSelect->OnBackPress(0);
         }
 
         // Extended Team VS start
