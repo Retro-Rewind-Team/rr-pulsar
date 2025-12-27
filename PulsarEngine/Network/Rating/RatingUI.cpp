@@ -72,7 +72,8 @@ static void FillVRControl(Pages::VR* page, u32 index, u32 playerId, u32 team, u8
 
             if (isLocalPlayer) {
                 RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
-                if (rksys && rksys->curLicenseId >= 0) {
+                const u8 hudSlotId = selectMgr->infos[playerId].hudSlotid;
+                if (hudSlotId == 0 && rksys && rksys->curLicenseId >= 0) {
                     rating = GetUserVR(rksys->curLicenseId);
                     hasDecimal = true;
                 } else {
@@ -122,7 +123,8 @@ static void FillVRControl(Pages::VR* page, u32 index, u32 playerId, u32 team, u8
 
             if (isLocalPlayer) {
                 RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
-                if (rksys && rksys->curLicenseId >= 0) {
+                const u8 hudSlotId = selectMgr->infos[playerId].hudSlotid;
+                if (hudSlotId == 0 && rksys && rksys->curLicenseId >= 0) {
                     rating = GetUserBR(rksys->curLicenseId);
                     hasDecimal = true;
                 } else {

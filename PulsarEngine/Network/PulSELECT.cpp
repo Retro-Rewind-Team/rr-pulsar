@@ -12,6 +12,7 @@
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -37,6 +38,16 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         src->decimalVR[0] = 0;
     }
     src->decimalVR[1] = 0;
+
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller->subs[controller->currentSub].localPlayerCount == 2) {
+        const Racedata* racedata = Racedata::sInstance;
+        const RacedataPlayer& p2 = racedata->menusScenario.players[1];
+        src->playersData[1].character = static_cast<u8>(p2.characterId);
+        src->playersData[1].kart = static_cast<u8>(p2.kartId);
+        src->playersData[1].sumPoints = 50.00f;
+        src->playersData[1].starRank = 0;
+    }
 
     const Network::Mgr& netMgr = system->netMgr;
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();
