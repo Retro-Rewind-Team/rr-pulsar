@@ -1,4 +1,6 @@
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
+#include <MarioKartWii/Item/ItemSlot.hpp>
+#include <MarioKartWii/Item/ItemManager.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -111,6 +113,41 @@ asmFunc HideNametag() {
         end : blr;)
 }
 kmCall(0x807F09A4, HideNametag);
+
+static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 position, bool isHuman, bool disableTripleShellsAndBananas, Item::Player* player) {
+    ItemId item = slotData->DecideItem(setting, position, isHuman, disableTripleShellsAndBananas, player);
+
+    System* system = System::sInstance;
+    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return item;
+
+    if (item == BLUE_SHELL) {
+        const Raceinfo* ri = Raceinfo::sInstance;
+        if (ri == nullptr) return item;
+
+        u8 playerCount = Item::Manager::sInstance->playerCount;
+        if (playerCount < 6) {
+            float threshold = 0.04f * (6 - playerCount);
+
+            u8 firstId = ri->playerIdInEachPosition[0];
+            u8 secondId = ri->playerIdInEachPosition[1];
+
+            if (firstId >= 12 || secondId >= 12) return item;
+
+            RaceinfoPlayer* first = ri->players[firstId];
+            RaceinfoPlayer* second = ri->players[secondId];
+
+            if (first == nullptr || second == nullptr) return item;
+
+            float diff = first->raceCompletion - second->raceCompletion;
+
+            if (diff < threshold) {
+                return MUSHROOM;
+            }
+        }
+    }
+    return item;
+}
+kmCall(0x807ba160, DecideItemHook);
 
 }  // namespace LapKO
 }  // namespace Pulsar
