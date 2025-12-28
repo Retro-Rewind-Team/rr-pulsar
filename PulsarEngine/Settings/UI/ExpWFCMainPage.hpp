@@ -21,6 +21,8 @@ class ExpWFCMain : public Pages::WFCMainMenu {
         this->onOtherClick.ptmf = &ExpWFCMain::OnOtherButtonClick;
         this->onBattleClick.subject = this;
         this->onBattleClick.ptmf = &ExpWFCMain::OnBattleButtonClick;
+        this->onLeaderboardClick.subject = this;
+        this->onLeaderboardClick.ptmf = &ExpWFCMain::OnLeaderboardButtonClick;
         this->onButtonSelectHandler.ptmf = &ExpWFCMain::ExtOnButtonSelect;
 
         // this->onStartPress.subject = this;
@@ -35,6 +37,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     void OnMainButtonClick(PushButton& PushButton, u32 hudSlotId);
     void OnOtherButtonClick(PushButton& PushButton, u32 hudSlotId);
     void OnBattleButtonClick(PushButton& PushButton, u32 hudSlotId);
+    void OnLeaderboardButtonClick(PushButton& PushButton, u32 hudSlotId);
     // void ExtOnStartPress(u32 hudSlotId) {
     //     s_displayPlayerCount = !s_displayPlayerCount;
     // }
@@ -43,11 +46,13 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onMainClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onOtherClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onBattleClick;
+    PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onLeaderboardClick;
     // PtmfHolder_1A<ExpWFCMain, void, u32> onStartPress;
     PushButton settingsButton;
     PushButton mainButton;
     PushButton otherButton;
     PushButton battleButton;
+    PushButton leaderboardButton;
     LayoutUIControl playerCount;
     LayoutUIControl rankInfo;
 

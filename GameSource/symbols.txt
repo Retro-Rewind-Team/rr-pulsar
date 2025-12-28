@@ -29,6 +29,11 @@ __div2u = 0x80021604
 __mod2u = 0x80021828
 strtol = 0x80015350
 msleep = 0x800f2510
+atoi = 0x8001543c
+wcscpy = 0x800179b4
+strncmp = 0x800133b8
+
+LoadAnimation__10UIAnimatorFUiUiPCcUibf = 0x8063c714
 
 ##Misc##
 #Misc
@@ -497,6 +502,12 @@ Patch_WiimmfiHook2 = 0x801d4efc
 
 #NHTTP
 GetBodyAll__5NHTTPFPQ25NHTTP3ResPPc = 0x801d937c
+NHTTPStartup__FPvPvUi = 0x801d8d30
+NHTTPCreateRequest = 0x801d8ff8
+NHTTPSetRootCADefault = 0x801d9738
+NHTTPSetVerifyOption = 0x801d9444
+NHTTPSendRequestAsync = 0x801d925c
+NHTTPDestroyResponse = 0x801d92f8
 
 #SSL
 initialized__3SSL = 0x80386d4c
@@ -887,6 +898,10 @@ __vt__3Mii = 0x808b3148
 InitModel__13MiiHeadsModelFP3MiiP14MiiDriverModelUiQ44nw4r3g3d6ScnMdl12BufferOptionUiUi = 0x8055c580
 
 #MiiGroup
+__ct__8MiiGroupFv = 0x805f9e78
+__dt__8MiiGroupFv = 0x805f9f58
+Init__8MiiGroupFUiUiPQ23EGG4Heap = 0x805fa04c
+Reset__8MiiGroupFv = 0x805fa370
 AddMii__8MiiGroupFUcP3Mii = 0x805fa3fc
 LoadMii__8MiiGroupFUcPQ23RFL9StoreData = 0x805fa610
 LoadMii__8MiiGroupFUcUs = 0x805fa748
@@ -1310,6 +1325,7 @@ UpdateTrackList__23CtrlMenuCupSelectCourseFUi = 0x807e5ff0
 
 #CtrlMenuBackButton
 __vt__18CtrlMenuBackButton = 0x808d374c
+__dt__18CtrlMenuBackButtonFv = 0x805be7f4
 
 #CtrlMenuTitle
 __dt__21CtrlMenuPageTitleTextFv = 0x805baf10
@@ -1837,6 +1853,8 @@ UpdateStatusDatas__Q25RKNet10ControllerFv = 0x8065a0b4
 SetupGameServer__Q25RKNet10ControllerFv = 0x800d1984
 UpdateServersAsync__Q25RKNet10ControllerFv = 0x80656b44
 GetConnectionState__Q25RKNet10ControllerCFv = 0x80658148
+Alloc__Q25RKNet10ControllerFUii = 0x8065832c
+Free__Q25RKNet10ControllerFPv = 0x806583b4
 
 #PacketMgr
 sInstance__Q25RKNet9PacketMgr = 0x809c1f50
@@ -2147,6 +2165,9 @@ s_auth_error = 0x802f1cB8
 NHTTPDestroyResponse__FPv = 0x801d92f8
 NHTTPSendRequestAsync__FPv = 0x801d925c
 NHTTPCreateRequest__FPCciPvUiPvPv = 0x801d8ff8
+NHTTPSetVerifyOption__FUi = 0x801d9444
+NHTTPSetRootCADefault__Fv = 0x801d9738
+NHTTPSetClientCertDefault__Fv = 0x801d9798
 sprintf = 0x80011a2c
 
 WWFC_CUSTOM_REGION = 0x80005efc

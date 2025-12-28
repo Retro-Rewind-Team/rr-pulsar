@@ -29,6 +29,7 @@
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
+#include <UI/VRLeaderboard/VRLeaderboard.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -127,6 +128,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_P1_WIFI_BATTLE_VOTING:
             this->CreateAndInitPage(*this, SettingsPanel::id);
             this->CreateAndInitPage(*this, SettingsPageSelect::id);
+            this->CreateAndInitPage(*this, VRLeaderboardPage::id);
             break;
     }
     Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
@@ -245,6 +247,9 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
             break;
         case PULPAGE_VARIANTSELECT:
             page = new VariantSelect;
+            break;
+        case VRLeaderboardPage::id:
+            page = new VRLeaderboardPage;
             break;
         default:
             page = self.CreatePageById(initId);

@@ -13,4 +13,9 @@ s32 NHTTPSendRequestAsync(void* request);
 
 s32 NHTTPDestroyResponse(void* response);
 
+// SSL/HTTPS support functions
+s32 NHTTPSetRootCADefault();
+s32 NHTTPSetClientCertDefault();
+s32 NHTTPSetVerifyOption(u32 option);
+
 #endif

@@ -17,7 +17,7 @@ kmWrite24(0x80899a36, 'PUL');  // 8064ba38
 kmWrite24(0x80899a5B, 'PUL');  // 8064ba90
 
 void ExpWFCMain::OnInit() {
-    this->InitControlGroup(11);
+    this->InitControlGroup(12);
     WFCMainMenu::OnInit();
     this->AddControl(5, settingsButton, 0);
 
@@ -54,6 +54,13 @@ void ExpWFCMain::OnInit() {
     this->battleButton.SetMessage(BMG_BATTLE_MODES);
     this->battleButton.SetOnClickHandler(this->onBattleClick, 0);
     this->battleButton.SetOnSelectHandler(this->onButtonSelectHandler);
+
+    this->AddControl(11, leaderboardButton, 0);
+    this->leaderboardButton.Load(UI::buttonFolder, "Settings1P", "Leaderboard", 1, 0, 0);
+    this->leaderboardButton.buttonId = 9;
+    this->leaderboardButton.SetMessage(BMG_VR_LEADERBOARD_BUTTON);
+    this->leaderboardButton.SetOnClickHandler(this->onLeaderboardClick, 0);
+    this->leaderboardButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
     this->regionalButton.manipulator.inaccessible = true;
     this->worldwideButton.manipulator.inaccessible = true;
@@ -92,6 +99,11 @@ void ExpWFCMain::OnSettingsButtonClick(PushButton& pushButton, u32 r5) {
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
 }
 
+void ExpWFCMain::OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId) {
+    this->nextPageId = static_cast<PageId>(PULPAGE_VRLEADERBOARD);
+    this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
+}
+
 void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
     if (button.buttonId == 5) {
         u32 bmgId = BMG_SETTINGS_BOTTOM + 1;
@@ -100,6 +112,8 @@ void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
         else if (this->topSettingsPage == PAGE_BATTLE_MODE_SELECT)
             bmgId += 2;
         this->bottomText.SetMessage(bmgId, 0);
+    } else if (button.buttonId == 9) {
+        this->bottomText.SetMessage(BMG_VR_LEADERBOARD_BOTTOM, 0);
     } else
         this->OnButtonSelect(button, hudSlotId);
 }
