@@ -112,8 +112,6 @@ void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
         else if (this->topSettingsPage == PAGE_BATTLE_MODE_SELECT)
             bmgId += 2;
         this->bottomText.SetMessage(bmgId, 0);
-    } else if (button.buttonId == 9) {
-        this->bottomText.SetMessage(BMG_VR_LEADERBOARD_BOTTOM, 0);
     } else
         this->OnButtonSelect(button, hudSlotId);
 }

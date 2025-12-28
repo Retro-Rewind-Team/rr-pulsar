@@ -433,7 +433,6 @@ void VRLeaderboardPage::OnInit() {
 
     this->AddControl(0, *titleText, 0);
     titleText->Load(0);
-    titleText->SetMessage(BMG_VR_LEADERBOARD_TITLE, nullptr);
 
     this->AddControl(1, *bottomText, 0);
     bottomText->Load();
@@ -471,7 +470,6 @@ void VRLeaderboardPage::OnActivate() {
 
 void VRLeaderboardPage::BeforeEntranceAnimations() {
     this->nextPageId = PAGE_NONE;
-    titleText->SetMessage(BMG_VR_LEADERBOARD_TITLE, nullptr);
     backButton->SelectInitial(0);
 }
 
