@@ -908,7 +908,8 @@ LoadMii__8MiiGroupFUcUs = 0x805fa748
 GetMii__8MiiGroupFUc = 0x805fa930
 DeleteMii__8MiiGroupFUc = 0x805faa84
 
-
+#BRSAR
+PlaySoundById__Q25Audio10RSARPlayerFUiUiP4Page = 0x807146a8
 
 ##KART
 #KartCollision
@@ -2187,6 +2188,8 @@ InitPackets__Q25RKNet13SELECTHandlerFv = 0x8065ffa4
 sInstance__Q25RKNet9FriendMgr = 0x809c2110
 CreateFriendCode__Q25RKNet9FriendMgrCFv = 0x80663618
 GetFriendIdx__Q25RKNet9FriendMgrCFRCUx = 0x806637fc
+IsAvailable__Q25RKNet9FriendMgrCFv = 0x8066374c
+CheckFriendCode__Q25RKNet9FriendMgrCFRCUx = 0x80663618
 
 saveFcAndCountryHookExit__Fv = 0x806513e4
 saveFcAndCountryInLiveHookExit__Fv = 0x8060a2b4
@@ -2276,6 +2279,7 @@ HasPlayerFinished__12CtrlRaceTimeFUc = 0x807f82bc
 GetLocalPlayerCount__Fv = 0x808605fc
 
 SetGhostRacesWins__Q25RKSYS10LicenseMgrFUiUi = 0x80545e00
+GetFriends__Q25RKSYS10LicenseMgrFv = 0x805470fc
 fun_getHUDPlayerID = 0x807EC7F8
 ptr_raceData = 0x809BD728
 ptr_inputBase = 0x809BD70C

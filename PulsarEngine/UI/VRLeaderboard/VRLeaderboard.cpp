@@ -4,17 +4,26 @@
 #include <UI/UI.hpp>
 
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/File/BMG.hpp>
+#include <MarioKartWii/RKNet/FriendMgr.hpp>
+#include <MarioKartWii/UI/FriendList.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/RKSYS/LicenseMgr.hpp>
+#include <MarioKartWii/System/Friend.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/egg/mem/Heap.hpp>
+#include <core/rvl/DWC/DWCAccount.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
 #include <core/rvl/OS/OS.hpp>
+#include <core/nw4r/lyt/TextBox.hpp>
 #include <include/c_stdio.h>
 #include <include/c_string.h>
 #include <hooks.hpp>
 
-kmWrite32(0x800c9980, 0x4800000c); // b 0x800c998c
+kmWrite32(0x800c9980, 0x4800000c);  // b 0x800c998c
 
 void* NHTTPCreateRequest(const char* url, int param_2, void* buffer, u32 length, void* callback, void* userdata);
 s32 NHTTPSendRequestAsync(void* request);
@@ -94,6 +103,8 @@ static u64 s_requestStartTime = 0;
 static bool s_nhttpStarted = false;
 static const u32 s_nhttpWorkBufSize = 0x20000;
 static u32 s_requestGeneration = 0;
+static u64 s_currentUserFriendCode = 0;
+static u32 s_entrySoundFrameCounter = 0;
 
 static const u32 s_requestTimeoutMs = 45000;
 
@@ -209,6 +220,19 @@ static const char* ParseJsonU32(const char* p, u32& out) {
     if (*p < '0' || *p > '9') return nullptr;
     while (*p >= '0' && *p <= '9') {
         out = out * 10 + static_cast<u32>(*p - '0');
+        ++p;
+    }
+    return p;
+}
+
+static const char* ParseJsonU64(const char* p, u64& out) {
+    out = 0;
+    p = SkipWhitespace(p);
+    if (p == nullptr) return nullptr;
+    if (*p == '-') return nullptr;
+    if (*p < '0' || *p > '9') return nullptr;
+    while (*p >= '0' && *p <= '9') {
+        out = out * 10 + static_cast<u64>(*p - '0');
         ++p;
     }
     return p;
@@ -388,6 +412,29 @@ static const char* FindMatchingObjectEnd(const char* objStart) {
     return nullptr;
 }
 
+static bool IsFriendCodeInLicenseFriends(u64 friendCode) {
+    if (friendCode == 0) return false;
+    
+    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    if (rksysMgr == nullptr) return false;
+    
+    // Only check the current license's friends list
+    if (rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return false;
+    
+    RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    RKSYS::LicenseFriends& licenseFriends = license.GetFriends();
+    
+    // Check each friend in the current license's friends list
+    for (u32 friendIdx = 0; friendIdx < 30; ++friendIdx) {
+        const FriendData& friendData = licenseFriends.friends[friendIdx];
+        if (friendData.friendCode == friendCode) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 VRLeaderboardPage::VRLeaderboardPage() {
     nextPageId = PAGE_NONE;
     curPage = 0;
@@ -465,6 +512,8 @@ void VRLeaderboardPage::OnActivate() {
     s_nhttpStarted = false;
     ResetRowsToLoading();
     OS::Report("[VRLeaderboard] OnActivate\n");
+    // Play leaderboard loading sound effect
+    this->PlaySound(SOUND_ID_BUTTON_SELECT, -1);
     StartFetch(this);
 }
 
@@ -490,11 +539,21 @@ void VRLeaderboardPage::OnUpdate() {
     }
 
     if (s_fetchState == FETCH_READY && !s_hasApplied) {
+        s_entrySoundFrameCounter = 0;  // Reset frame counter when applying results
         ApplyResults();
         s_hasApplied = true;
     } else if (s_fetchState == FETCH_ERROR && !s_hasApplied) {
         ApplyError("Failed to load leaderboard");
         s_hasApplied = true;
+    }
+
+    // Play staggered sounds for entries after results are applied (like VS Leaderboard)
+    if (s_fetchState == FETCH_READY && s_hasApplied && s_entrySoundFrameCounter < kRowsPerPage) {
+        const u32 targetFrame = s_entrySoundFrameCounter * 2;  // 2 frames per entry
+        if (this->curStateDuration >= targetFrame) {
+            Audio::RSARPlayer::PlaySoundById(0xdf, 0, this);
+            ++s_entrySoundFrameCounter;
+        }
     }
 
     if (s_fetchState == FETCH_READY && s_hasApplied) {
@@ -506,45 +565,57 @@ void VRLeaderboardPage::OnUpdate() {
             const u16 newInputs = (inputs & ~controllerHolder->inputStates[1].buttonRaw);
 
             bool pageChanged = false;
+            bool pageWentLeft = false;
             if (controllerType == CLASSIC) {
                 if (((newInputs & WPAD::WPAD_CL_TRIGGER_L) != 0 || (newInputs & WPAD::WPAD_CL_BUTTON_LEFT) != 0) && curPage > 0) {
                     --curPage;
                     pageChanged = true;
+                    pageWentLeft = true;
                 }
                 if (((newInputs & WPAD::WPAD_CL_TRIGGER_R) != 0 || (newInputs & WPAD::WPAD_CL_BUTTON_RIGHT) != 0) && curPage + 1 < kPageCount) {
                     ++curPage;
                     pageChanged = true;
+                    pageWentLeft = false;
                 }
             } else if (controllerType == WHEEL) {
                 if ((newInputs & WPAD::WPAD_BUTTON_UP) != 0 && curPage > 0) {
                     --curPage;
                     pageChanged = true;
+                    pageWentLeft = true;
                 }
                 if ((newInputs & WPAD::WPAD_BUTTON_DOWN) != 0 && curPage + 1 < kPageCount) {
                     ++curPage;
                     pageChanged = true;
+                    pageWentLeft = false;
                 }
             } else if (controllerType == NUNCHUCK) {
                 if ((newInputs & WPAD::WPAD_BUTTON_LEFT) != 0 && curPage > 0) {
                     --curPage;
                     pageChanged = true;
+                    pageWentLeft = true;
                 }
                 if ((newInputs & WPAD::WPAD_BUTTON_RIGHT) != 0 && curPage + 1 < kPageCount) {
                     ++curPage;
                     pageChanged = true;
+                    pageWentLeft = false;
                 }
             } else {
                 if (((newInputs & PAD::PAD_BUTTON_L) != 0 || (newInputs & PAD::PAD_BUTTON_LEFT) != 0) && curPage > 0) {
                     --curPage;
                     pageChanged = true;
+                    pageWentLeft = true;
                 }
                 if (((newInputs & PAD::PAD_BUTTON_R) != 0 || (newInputs & PAD::PAD_BUTTON_RIGHT) != 0) && curPage + 1 < kPageCount) {
                     ++curPage;
                     pageChanged = true;
+                    pageWentLeft = false;
                 }
             }
 
             if (pageChanged) {
+                // Play appropriate sound effect based on direction
+                SoundIDs soundId = pageWentLeft ? SOUND_ID_LEFT_ARROW_PRESS : SOUND_ID_RIGHT_ARROW_PRESS;
+                this->PlaySound(soundId, -1);
                 ApplyResults();
             }
         }
@@ -589,6 +660,7 @@ void VRLeaderboardPage::ApplyResults() {
         swprintf(s_positionText, sizeof(s_positionText) / sizeof(s_positionText[0]), L"#%d", idx + 1);
         swprintf(s_entries[idx].line, sizeof(s_entries[idx].line) / sizeof(s_entries[idx].line[0]), L"%ls", s_entries[idx].name);
 
+
         Text::Info nameInfo;
         nameInfo.strings[0] = s_entries[idx].line;
         SetTextBoxIfPresent(*rows[i], "player_name", UI::BMG_TEXT, &nameInfo);
@@ -605,6 +677,56 @@ void VRLeaderboardPage::ApplyResults() {
         Text::Info labelInfo;
         labelInfo.strings[0] = s_rowLabelVR;
         SetTextBoxIfPresent(*rows[i], "total_point", UI::BMG_TEXT, &labelInfo);
+
+        // Determine color: gold for current user, green for friends, white for others
+        bool isCurrentUser = (s_currentUserFriendCode != 0 && s_entries[idx].friendCode != 0 && s_currentUserFriendCode == s_entries[idx].friendCode);
+        bool isFriend = false;
+        if (!isCurrentUser && s_entries[idx].friendCode != 0) {
+            // Check DWC friends list via FriendMgr
+            RKNet::FriendMgr* friendMgr = RKNet::FriendMgr::sInstance;
+            if (friendMgr != nullptr && friendMgr->IsAvailable()) {
+                s32 friendIdx = friendMgr->GetFriendIdx(s_entries[idx].friendCode);
+                isFriend = (friendIdx >= 0);
+            }
+            
+            // Also check all licenses' friends lists from save file
+            if (!isFriend) {
+                isFriend = IsFriendCodeInLicenseFriends(s_entries[idx].friendCode);
+            }
+        }
+
+        nw4r::ut::Color textColor;
+        if (isCurrentUser) {
+            // Gold color: RGB(255, 215, 0)
+            textColor = nw4r::ut::Color(255, 215, 0, 255);
+        } else if (isFriend) {
+            // Green color: RGB(0, 255, 0)
+            textColor = nw4r::ut::Color(0, 255, 0, 255);
+        } else {
+            // White (default)
+            textColor = nw4r::ut::Color(255, 255, 255, 255);
+        }
+
+        nw4r::lyt::TextBox* nameTextBox = reinterpret_cast<nw4r::lyt::TextBox*>(rows[i]->layout.GetPaneByName("player_name"));
+        if (nameTextBox != nullptr) {
+            nameTextBox->color1[0] = textColor;
+            nameTextBox->color1[1] = textColor;
+        }
+        nw4r::lyt::TextBox* posTextBox = reinterpret_cast<nw4r::lyt::TextBox*>(rows[i]->layout.GetPaneByName("position"));
+        if (posTextBox != nullptr) {
+            posTextBox->color1[0] = textColor;
+            posTextBox->color1[1] = textColor;
+        }
+        nw4r::lyt::TextBox* scoreTextBox = reinterpret_cast<nw4r::lyt::TextBox*>(rows[i]->layout.GetPaneByName("total_score"));
+        if (scoreTextBox != nullptr) {
+            scoreTextBox->color1[0] = textColor;
+            scoreTextBox->color1[1] = textColor;
+        }
+        nw4r::lyt::TextBox* pointTextBox = reinterpret_cast<nw4r::lyt::TextBox*>(rows[i]->layout.GetPaneByName("total_point"));
+        if (pointTextBox != nullptr) {
+            pointTextBox->color1[0] = textColor;
+            pointTextBox->color1[1] = textColor;
+        }
 
         miiGroup->LoadMii(i, &s_entries[idx].miiData);
         rows[i]->SetMiiPane("chara_icon", *miiGroup, i, 2);
@@ -651,6 +773,18 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* /*page*/) {
     s_lastLoggedState = -1;
     s_requestStartTime = OS::GetTime();
     ++s_requestGeneration;
+
+    // Get current user's friend code
+    s_currentUserFriendCode = 0;
+    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    if (rksysMgr != nullptr && rksysMgr->curLicenseId >= 0) {
+        RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+        s_currentUserFriendCode = DWC::CreateFriendKey(&license.dwcAccUserData);
+        OS::Report("[VRLeaderboard] Current user friend code: %llu\n", s_currentUserFriendCode);
+    } else {
+        OS::Report("[VRLeaderboard] Failed to get current user friend code (rksysMgr=%p, curLicenseId=%d)\n",
+                   rksysMgr, (rksysMgr != nullptr) ? rksysMgr->curLicenseId : -1);
+    }
 
     memset(s_entries, 0, sizeof(s_entries));
     memset(s_responseBuf, 0, sizeof(s_responseBuf));
@@ -779,6 +913,7 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     for (int i = parsed; i < kMaxEntries; ++i) {
         CopyAsciiToWide(s_entries[i].name, sizeof(s_entries[i].name) / sizeof(s_entries[i].name[0]), "----");
         s_entries[i].vr = 0;
+        s_entries[i].friendCode = 0;
     }
     s_fetchState = FETCH_READY;
     s_hasApplied = false;
@@ -804,11 +939,16 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
 
         outEntries[count].name[0] = L'\0';
         outEntries[count].vr = 0;
+        outEntries[count].friendCode = 0;
         memset(&outEntries[count].miiData, 0, sizeof(outEntries[count].miiData));
 
         const char* miiKey = FindStrInRange(objStart, objEnd, "\"miiData\"");
         const char* nameKey = FindStrInRange(objStart, objEnd, "\"name\"");
         const char* vrKey = FindStrInRange(objStart, objEnd, "\"vr\"");
+        const char* friendCodeKey = FindStrInRange(objStart, objEnd, "\"friendCode\"");
+        if (friendCodeKey == nullptr) {
+            friendCodeKey = FindStrInRange(objStart, objEnd, "\"friend_code\"");
+        }
 
         if (miiKey != nullptr) {
             const char* colon = FindStrInRange(miiKey, objEnd, ":");
@@ -818,7 +958,7 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
                 (void)after;
                 DecodeBase64(miiB64, reinterpret_cast<u8*>(&outEntries[count].miiData), sizeof(outEntries[count].miiData));
                 ExtractMiiNameFromStoreData(&outEntries[count].miiData, outEntries[count].name,
-                                           sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
+                                            sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
             }
         }
 
@@ -837,6 +977,36 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
                 (void)ParseJsonU32(colon + 1, vrValue);
                 outEntries[count].vr = vrValue;
             }
+        }
+
+        if (friendCodeKey != nullptr) {
+            const char* colon = FindStrInRange(friendCodeKey, objEnd, ":");
+            if (colon != nullptr) {
+                colon = SkipWhitespace(colon + 1);
+                if (colon != nullptr && *colon == '"') {
+                    // Friend code is a string, parse it
+                    char fcStr[32];
+                    const char* after = ParseJsonStringIntoAscii(colon, fcStr, sizeof(fcStr));
+                    (void)after;
+                    // Try to parse as number (remove dashes if present)
+                    u64 friendCodeValue = 0;
+                    for (const char* p = fcStr; *p != '\0'; ++p) {
+                        if (*p >= '0' && *p <= '9') {
+                            friendCodeValue = friendCodeValue * 10 + static_cast<u64>(*p - '0');
+                        }
+                    }
+                    outEntries[count].friendCode = friendCodeValue;
+                    OS::Report("[VRLeaderboard] Parsed friend code string '%s' -> %llu\n", fcStr, friendCodeValue);
+                } else {
+                    // Friend code is a number
+                    u64 friendCodeValue = 0;
+                    (void)ParseJsonU64(colon, friendCodeValue);
+                    outEntries[count].friendCode = friendCodeValue;
+                    OS::Report("[VRLeaderboard] Parsed friend code number: %llu\n", friendCodeValue);
+                }
+            }
+        } else {
+            OS::Report("[VRLeaderboard] No friendCode field found in entry %d\n", count);
         }
 
         if (outEntries[count].name[0] != L'\0') {

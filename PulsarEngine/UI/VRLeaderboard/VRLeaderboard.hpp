@@ -48,6 +48,7 @@ class VRLeaderboardPage : public Page {
         u32 vr;
         wchar_t line[64];
         RFL::StoreData miiData;
+        u64 friendCode;
     };
 
     static void OnLeaderboardReceived(s32 result, void* response, void* userdata);
