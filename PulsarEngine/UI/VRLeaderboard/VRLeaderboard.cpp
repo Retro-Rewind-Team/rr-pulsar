@@ -86,7 +86,7 @@ static wchar_t s_statusText[128];
 static wchar_t s_rowTextLoading[] = L"Loading...";
 static wchar_t s_rowTextDash[] = L"----";
 static wchar_t s_rowLabelVR[] = L"VR";
-static wchar_t s_rowLabelScroll[] = L"Scroll with D-pad";
+static wchar_t s_rowLabelScroll[] = L"Use left and right on the D-Pad to navigate pages.";
 static wchar_t s_rowBlank[] = L"";
 static wchar_t s_positionText[8];
 static int s_lastLoggedState = -1;
@@ -586,7 +586,7 @@ void VRLeaderboardPage::ApplyResults() {
     for (int i = 0; i < kRowsPerPage; ++i) {
         const int idx = base + i;
         if (idx < 0 || idx >= kMaxEntries) continue;
-        swprintf(s_positionText, sizeof(s_positionText) / sizeof(s_positionText[0]), L"%d", idx + 1);
+        swprintf(s_positionText, sizeof(s_positionText) / sizeof(s_positionText[0]), L"#%d", idx + 1);
         swprintf(s_entries[idx].line, sizeof(s_entries[idx].line) / sizeof(s_entries[idx].line[0]), L"%ls", s_entries[idx].name);
 
         Text::Info nameInfo;
