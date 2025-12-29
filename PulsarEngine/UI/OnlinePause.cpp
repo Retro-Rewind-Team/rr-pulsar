@@ -9,6 +9,8 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/Audio/RSARPlayer.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <hooks.hpp>
 
@@ -103,8 +105,12 @@ void OnlineHUDVisibilityHook() {
                 if (quitConf && quitConf->currentState != STATE_DEACTIVATED) quitConf->EndState();
             }
 
-            // Always release input pause at race finish; avoid touching RaceHUD pointers here.
+            // Always release input pause at race finish and restore music volume
             SetInputPaused(false);
+            Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+            if (rsarPlayer) {
+                rsarPlayer->SetFullVolume();
+            }
             return;
         }
 
@@ -122,6 +128,16 @@ void OnlineHUDVisibilityHook() {
                 (btPause && btPause->currentState != STATE_DEACTIVATED) ||
                 (quitConf && quitConf->currentState != STATE_DEACTIVATED)) {
                 isPauseOpen = true;
+            }
+            
+            // Manage music volume based on pause state
+            Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+            if (rsarPlayer) {
+                if (isPauseOpen) {
+                    rsarPlayer->HalveVolume();
+                } else {
+                    rsarPlayer->SetFullVolume();
+                }
             }
             
             if (!isPauseOpen) {
@@ -144,6 +160,12 @@ void OnlinePauseControl(void* r3) {
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_RACE)) {
             SetRaceHUDVisibility(false);
             SetInputPaused(true);
+            // Play pause sound effect and reduce music volume
+            Audio::RSARPlayer::PlaySoundById(SOUND_ID_PAUSE, 0, nullptr);
+            Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+            if (rsarPlayer) {
+                rsarPlayer->SetFullVolume();
+            }
         }
         return;
     }
@@ -164,6 +186,12 @@ void OnlineUnpauseControl(void* r3) {
         }
         SetRaceHUDVisibility(true);
         SetInputPaused(false);
+        // Play resume sound effect and restore music volume
+        Audio::RSARPlayer::PlaySoundById(SOUND_ID_RESUME, 0, nullptr);
+        Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+        if (rsarPlayer) {
+            rsarPlayer->HalveVolume();
+        }
         return;
     }
     reinterpret_cast<void (*)(void*)>(kmRuntimeAddr(0x80860100))(r3);

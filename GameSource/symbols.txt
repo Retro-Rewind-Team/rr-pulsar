@@ -2280,6 +2280,8 @@ GetLocalPlayerCount__Fv = 0x808605fc
 
 SetGhostRacesWins__Q25RKSYS10LicenseMgrFUiUi = 0x80545e00
 GetFriends__Q25RKSYS10LicenseMgrFv = 0x805470fc
+SetFullVolume__Q25Audio14RaceRSARPlayerFv = 0x80716008
+HalveVolume__Q25Audio14RaceRSARPlayerFv = 0x80716018
 fun_getHUDPlayerID = 0x807EC7F8
 ptr_raceData = 0x809BD728
 ptr_inputBase = 0x809BD70C
