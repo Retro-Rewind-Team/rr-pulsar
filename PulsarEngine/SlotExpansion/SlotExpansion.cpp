@@ -4,7 +4,9 @@
 #include <MarioKartWii/UI/Page/Other/Votes.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
+#include <MarioKartWii/Archive/ArchiveFile.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <core/egg/Archive.hpp>
 
 namespace Pulsar {
 
@@ -194,5 +196,21 @@ static void DemoFix(register Racedata* raceData) {
     CupsConfig::sInstance->SetWinning(static_cast<PulsarId>(id));
 }
 kmCall(0x8085a95c, DemoFix);
+
+static EGG::Archive* SafeMount(void* archive, EGG::Heap* heap, int align) {
+    register ArchiveFile* file;
+    asm(mr file, r30;);
+    EGG::Archive* mounted = nullptr;
+    if (archive != nullptr) {
+        mounted = EGG::Archive::Mount(archive, heap, align);
+    }
+    file->archive = mounted;
+    file->status = mounted ? ARCHIVE_STATUS_MOUNTED : ARCHIVE_STATUS_NONE;
+    return mounted;
+}
+kmCall(0x80518f80, SafeMount);
+kmWrite32(0x80518f84, 0x60000000); // li r0, 4
+kmWrite32(0x80518f88, 0x60000000); // stw r3, 4(r30)
+kmWrite32(0x80518f8c, 0x60000000); // stw r0, 0x20(r30)
 
 }  // namespace Pulsar
