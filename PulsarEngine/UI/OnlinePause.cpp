@@ -93,6 +93,16 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void* sceneSoundManager) 
     if (racedata) {
         const GameMode mode = racedata->menusScenario.settings.gamemode;
         if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
+            // Subtract 210 VR points when quitting through pause menu in VS
+            if (mode == MODE_PUBLIC_VS) {
+                RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+                if (rksys) {
+                    float currentVR = PointRating::GetUserVR(rksys->curLicenseId);
+                    float newVR = currentVR - 2.1f;
+                    PointRating::SetUserVR(rksys->curLicenseId, newVR);
+                }
+            }
+
             SectionMgr* sectionMgr = SectionMgr::sInstance;
             if (sectionMgr && sectionMgr->curSection) {
                 sectionMgr->curSection->ScheduleDisconnection();
