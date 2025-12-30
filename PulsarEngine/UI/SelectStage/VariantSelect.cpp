@@ -101,6 +101,7 @@ void VariantSelect::OnInit() {
 
 void VariantSelect::OnBackPress(u32 hudSlotId) {
     if (CupsConfig::sInstance != nullptr) CupsConfig::sInstance->ClearPendingVariant();
+    this->PlaySound(SOUND_ID_BACK_PRESS, 0);
     this->LoadPrevPageById(PAGE_COURSE_SELECT, this->backButton);
 }
 
