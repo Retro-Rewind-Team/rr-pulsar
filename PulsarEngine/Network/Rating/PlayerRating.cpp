@@ -279,6 +279,49 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
             }
         }
 
+        // Check for disconnect penalties: only applies to VR (not BR)
+        // Only applies to VR (not BR), so check if we're in a VR context
+        bool isVRContext = false;
+        bool isBattle = IsBattle(scenario->settings.gamemode);
+        if (!isBattle) {
+            RKNet::Controller* controller = RKNet::Controller::sInstance;
+            if (controller != nullptr) {
+                bool isRegionalVs = (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
+                if (isRegionalVs && scenario->settings.gamemode == MODE_PUBLIC_VS) {
+                    isVRContext = true;
+                }
+            }
+        }
+
+        bool applyDisconnectPenalty[12];  // -2.10 penalty for 4+ players
+        bool applyDisconnectZeroGain[12];  // 0 gain for 3 or less players
+        for (u32 i = 0; i < playerCount; ++i) {
+            applyDisconnectPenalty[i] = false;
+            applyDisconnectZeroGain[i] = false;
+            if (isVRContext) {
+                // Check if all other players are disconnected
+                bool allOthersDisconnected = true;
+                for (u32 j = 0; j < playerCount; ++j) {
+                    if (i != j) {
+                        // Check if player j is disconnected (stateFlags & 0x10)
+                        if (!(raceInfo->players[j]->stateFlags & 0x10)) {
+                            allOthersDisconnected = false;
+                            break;
+                        }
+                    }
+                }
+                if (allOthersDisconnected) {
+                    if (playerCount >= 4) {
+                        // 4+ players: apply -2.10 penalty
+                        applyDisconnectPenalty[i] = true;
+                    } else if (playerCount <= 3) {
+                        // 3 or less players: gain 0
+                        applyDisconnectZeroGain[i] = true;
+                    }
+                }
+            }
+        }
+
         float multiplier = GetRatingMultiplier();
         for (u32 i = 0; i < playerCount; ++i) {
             deltas[i] *= multiplier;
@@ -292,6 +335,16 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
             if (deltas[i] < lossCap) {
                 deltas[i] = lossCap;
             }
+
+            // Apply disconnect penalties after caps
+            if (applyDisconnectPenalty[i]) {
+                // 4+ players: apply -2.10 penalty
+                deltas[i] = -2.10f;
+            } else if (applyDisconnectZeroGain[i]) {
+                // 3 or less players: gain 0
+                deltas[i] = 0.0f;
+            }
+
             float next = oldRating + deltas[i];
             if (next < (float)MinRating) next = (float)MinRating;
             if (next > (float)MaxRating) next = (float)MaxRating;
