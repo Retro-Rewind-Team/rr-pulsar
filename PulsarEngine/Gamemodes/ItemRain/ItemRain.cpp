@@ -223,5 +223,78 @@ void SpawnItemRain() {
 }
 RaceFrameHook ItemRainHook(SpawnItemRain);
 
+static int SafeGetMovingRoadType(void* colInfo) {
+    if (colInfo) {
+        void* obj = *(void**)((u32)colInfo + 0x4);
+        if (obj) {
+            void** vtable = *(void***)obj;
+            if (vtable) {
+                int (*func)(void*) = (int (*)(void*))vtable[0x104 / 4];
+                if (func) {
+                    return func(obj);
+                }
+            }
+        }
+    }
+    return 0;
+}
+kmBranch(0x807bd850, SafeGetMovingRoadType);
+
+static float SafeGetMovingRoadVelocity(void* colInfo) {
+    if (colInfo) {
+        void* obj = *(void**)((u32)colInfo + 0x4);
+        if (obj) {
+            void** vtable = *(void***)obj;
+            if (vtable) {
+                float (*func)(void*) = (float (*)(void*))vtable[0x108 / 4];
+                if (func) {
+                    return func(obj);
+                }
+            }
+        }
+    }
+    return 0.0f;
+}
+kmBranch(0x807bd8d4, SafeGetMovingRoadVelocity);
+
+static void SafeCallVtable10C(void* colInfo) {
+    if (colInfo) {
+        void* obj = *(void**)((u32)colInfo + 0x4);
+        if (obj) {
+            void** vtable = *(void***)obj;
+            if (vtable && vtable[0x10C / 4]) {
+                ((void (*)(void*))vtable[0x10C / 4])(obj);
+            }
+        }
+    }
+}
+kmBranch(0x807bd878, SafeCallVtable10C);
+
+static void SafeCallVtable110(void* colInfo, void* param2) {
+    if (colInfo) {
+        void* obj = *(void**)((u32)colInfo + 0x4);
+        if (obj) {
+            void** vtable = *(void***)obj;
+            if (vtable && vtable[0x110 / 4]) {
+                ((void (*)(void*, void*, void*))vtable[0x110 / 4])(obj, colInfo, param2);
+            }
+        }
+    }
+}
+kmBranch(0x807bd8a4, SafeCallVtable110);
+
+static void SafeCallVtable114(void* colInfo, void* param2) {
+    if (colInfo) {
+        void* obj = *(void**)((u32)colInfo + 0x4);
+        if (obj) {
+            void** vtable = *(void***)obj;
+            if (vtable && vtable[0x114 / 4]) {
+                ((void (*)(void*, void*, void*))vtable[0x114 / 4])(obj, colInfo, param2);
+            }
+        }
+    }
+}
+kmBranch(0x807bd8ec, SafeCallVtable114);
+
 }  // namespace ItemRain
 }  // namespace Pulsar
