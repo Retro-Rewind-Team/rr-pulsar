@@ -339,9 +339,9 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
 
             // Apply disconnect penalties after caps
             if (applyDisconnectPenalty[i]) {
-                // 4+ players: apply -2.10 penalty (or -0.5 on real hardware)
+                // 4+ players: apply -1.00 penalty (or -0.5 on real hardware)
                 if (Dolphin::IsEmulator()) {
-                    deltas[i] = -2.10f;
+                    deltas[i] = -1.00f;
                 } else {
                     // Cap at -0.5 on real hardware
                     deltas[i] = -0.5f;
