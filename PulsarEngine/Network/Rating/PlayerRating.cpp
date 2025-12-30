@@ -24,6 +24,7 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <Dolphin/DolphinIOS.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -338,8 +339,13 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
 
             // Apply disconnect penalties after caps
             if (applyDisconnectPenalty[i]) {
-                // 4+ players: apply -2.10 penalty
-                deltas[i] = -2.10f;
+                // 4+ players: apply -2.10 penalty (or -0.5 on real hardware)
+                if (Dolphin::IsEmulator()) {
+                    deltas[i] = -2.10f;
+                } else {
+                    // Cap at -0.5 on real hardware
+                    deltas[i] = -0.5f;
+                }
             } else if (applyDisconnectZeroGain[i]) {
                 // 3 or less players: gain 0
                 deltas[i] = 0.0f;
