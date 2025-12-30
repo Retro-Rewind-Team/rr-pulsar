@@ -551,7 +551,7 @@ void VRLeaderboardPage::OnUpdate() {
     if (s_fetchState == FETCH_READY && s_hasApplied && s_entrySoundFrameCounter < kRowsPerPage) {
         const u32 targetFrame = s_entrySoundFrameCounter * 2;  // 2 frames per entry
         if (this->curStateDuration >= targetFrame) {
-            Audio::RSARPlayer::PlaySoundById(0xdf, 0, this);
+            Audio::RSARPlayer::PlaySoundById(0x23, 0, this);
             ++s_entrySoundFrameCounter;
         }
     }
