@@ -93,8 +93,16 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void* sceneSoundManager) 
     if (racedata) {
         const GameMode mode = racedata->menusScenario.settings.gamemode;
         if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
+            SectionMgr* sectionMgr = SectionMgr::sInstance;
+            bool isLiveView = false;
+            if (sectionMgr && sectionMgr->curSection) {
+                SectionId sid = sectionMgr->curSection->sectionId;
+                isLiveView = (sid == SECTION_P1_WIFI_VS_LIVEVIEW || sid == SECTION_P2_WIFI_VS_LIVEVIEW ||
+                             sid == SECTION_P1_WIFI_BT_LIVEVIEW || sid == SECTION_P2_WIFI_BT_LIVEVIEW);
+            }
+            
             // Subtract 210 VR points when quitting through pause menu in VS
-            if (mode == MODE_PUBLIC_VS) {
+            if (mode == MODE_PUBLIC_VS && !isLiveView) {
                 RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
                 if (rksys) {
                     float currentVR = PointRating::GetUserVR(rksys->curLicenseId);
@@ -103,7 +111,6 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void* sceneSoundManager) 
                 }
             }
 
-            SectionMgr* sectionMgr = SectionMgr::sInstance;
             if (sectionMgr && sectionMgr->curSection) {
                 sectionMgr->curSection->ScheduleDisconnection();
             }
