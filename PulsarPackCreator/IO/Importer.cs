@@ -360,10 +360,14 @@ namespace Pulsar_Pack_Creator.IO
                                                     // common name
                                                     if (type == (uint)BMGIds.BMG_TRACKS)
                                                     {
-                                                        track.commonName = content;
+                                                        // Strip the visual marker appended at export (" ->") so it isn't imported into commonName
+                                                        string sanitizedContent = content;
+                                                        if (sanitizedContent.EndsWith(" ->"))
+                                                            sanitizedContent = sanitizedContent.Substring(0, sanitizedContent.Length - 3).TrimEnd();
+                                                        track.commonName = sanitizedContent;
                                                         // Only set main track name as fallback if it's still default
                                                         if (track.main.trackName == MainWindow.Cup.defaultTrack)
-                                                            track.main.trackName = content;
+                                                            track.main.trackName = sanitizedContent;
                                                     }
                                                     break;
                                                 }
