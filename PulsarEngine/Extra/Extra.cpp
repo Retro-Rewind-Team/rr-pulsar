@@ -395,4 +395,7 @@ kmWrite32(0x80544928, 0x7C601B78);
 // VR/BR assigned to Guest Modifier [Unnamed]
 kmWrite32(0x8065117C, 0x39C00096);
 
+// Mega Mushroom Flips Trucks [JoshuaMK]
+kmWrite32(0x8082AC00, 0x3B800001);
+
 }  // namespace Codes

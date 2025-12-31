@@ -33,7 +33,8 @@ class ObjHolder {  // one instance per objID
     u32 spawnedCount;  // 0x14
     u32 finishedThrowCount;  // 0x18 only incremented when the object has finished its throw (for example the fib growing) movement/anm
     u32 limit;  // 0x1c
-    u8 unknown_0x20[0x24 - 0x20];
+    u16 totalSpawnedCount;  // 0x20 counter used for eventBitfield generation, wraps at 0x80
+    u8 unknown_0x22[0x24 - 0x22];
 };  // Total Size 0x24
 // size_assert(ObjHolder, 0x24);
 

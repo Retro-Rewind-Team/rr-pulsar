@@ -1,15 +1,15 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
+#include <MarioKartWii/Item/Obj/ItemObjHolder.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/Item/Obj/ItemObj.hpp>
 #include <MarioKartWii/Kart/KartPlayer.hpp>
 #include <PulsarSystem.hpp>
+#include <SlotExpansion/CupsConfig.hpp>
 
 namespace Pulsar {
 namespace ItemRain {
-
-static s32 sRaceInfoFrameCounter = 0;
 
 static int ITEMS_PER_SPAWN = 1;
 static int SPAWN_HEIGHT = 2000;
@@ -39,18 +39,16 @@ static int GetSpawnInterval(u8 playerCount) {
     return 9;
 }
 
-static u32 GetRandom() {
-    static u32 counter = 0;
-    counter++;
-    u32 value = (sRaceInfoFrameCounter * 1103515245 + counter * 12345) ^ (counter << 8);
+static u32 GetSyncedRandom(u32 raceFrames, u32 iteration, u32 pulsarCourseId) {
+    u32 value = (raceFrames * 1103515245 + iteration * 12345 + pulsarCourseId * 2147483647) ^ (iteration << 8);
     return value * 1664525 + 1013904223;
 }
 
-static float GetRandomRange(float min, float max) {
-    return min + ((GetRandom() & 0xFFFF) / 65535.0f) * (max - min);
+static float GetSyncedRandomRange(u32 raceFrames, u32 iteration, u32 pulsarCourseId, float min, float max) {
+    return min + ((GetSyncedRandom(raceFrames, iteration, pulsarCourseId) & 0xFFFF) / 65535.0f) * (max - min);
 }
 
-static ItemObjId GetRandomItem() {
+static ItemObjId GetSyncedRandomItem(u32 raceFrames, u32 iteration, u32 pulsarCourseId) {
     struct ItemWeight {
         ItemObjId id;
         u32 weight;
@@ -96,7 +94,7 @@ static ItemObjId GetRandomItem() {
     for (u32 i = 0; i < count; i++) totalWeight += weights[i].weight;
     if (totalWeight == 0) return OBJ_MUSHROOM;
 
-    u32 roll = GetRandom() % totalWeight;
+    u32 roll = GetSyncedRandom(raceFrames, iteration, pulsarCourseId) % totalWeight;
     u32 cumulative = 0;
     for (u32 i = 0; i < count; i++) {
         cumulative += weights[i].weight;
@@ -153,70 +151,88 @@ void SpawnItemRain() {
     if (mode == MODE_TIME_TRIAL) return;
     if (!Racedata::sInstance || !Raceinfo::sInstance || !Item::Manager::sInstance) return;
     if (!Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_RACE)) return;
+    if (!CupsConfig::sInstance) return;
 
-    sRaceInfoFrameCounter++;
+    const u32 raceFrames = Raceinfo::sInstance->raceFrames;
+    const PulsarId pulsarCourseId = CupsConfig::sInstance->GetWinning();
 
-    if ((sRaceInfoFrameCounter % DESPAWN_CHECK_INTERVAL) == 0) {
+    if ((raceFrames % DESPAWN_CHECK_INTERVAL) == 0) {
         DespawnItems();
     }
-    if ((sRaceInfoFrameCounter % (DESPAWN_CHECK_INTERVAL * 2)) == 0) {
+    if ((raceFrames % (DESPAWN_CHECK_INTERVAL * 2)) == 0) {
         DespawnItems(true);
     }
     u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     if (playerCount == 0) return;
-    if ((sRaceInfoFrameCounter % GetSpawnInterval(playerCount)) != 0) return;
+    if ((raceFrames % GetSpawnInterval(playerCount)) != 0) return;
+
+    int localPlayerId = -1;
+    for (int i = 0; i < playerCount; i++) {
+        if (scenario.players[i].playerType == PLAYER_REAL_LOCAL) {
+            localPlayerId = i;
+            break;
+        }
+    }
+    if (localPlayerId < 0) return;
 
     Vec3 dummyDirection;
     dummyDirection.x = 0.0f;
     dummyDirection.y = 0.0f;
     dummyDirection.z = 0.0f;
 
-    Vec3 positions[12];
-    for (int i = 0; i < playerCount && i < 12; i++) positions[i] = Item::Manager::sInstance->players[i].GetPosition();
+    u32 spawnCycle = raceFrames / GetSpawnInterval(playerCount);
+    u32 iteration = spawnCycle * 100;
 
     for (int i = 0; i < ITEMS_PER_SPAWN; i++) {
-        for (int playerIdx = 0; playerIdx < playerCount; playerIdx++) {
-            Item::Player& player = Item::Manager::sInstance->players[playerIdx];
-            bool isLocal = false;
-            if (player.kartPlayer && player.kartPlayer->IsLocal()) {
-                isLocal = true;
-            } else if (scenario.players[playerIdx].playerType == PLAYER_REAL_LOCAL) {
-                isLocal = true;
+        int targetPlayerIdx = (spawnCycle + i) % playerCount;
+        Item::Player& player = Item::Manager::sInstance->players[targetPlayerIdx];
+        Vec3 playerPos = player.GetPosition();
+        Vec3 forwardDir;
+        if (player.kartPlayer) {
+            forwardDir = player.kartPlayer->GetMovement().dir;
+        } else {
+            forwardDir.x = 0.0f;
+            forwardDir.y = 0.0f;
+            forwardDir.z = 1.0f;
+        }
+        Vec3 rightDir;
+        rightDir.x = forwardDir.z;
+        rightDir.y = 0.0f;
+        rightDir.z = -forwardDir.x;
+
+        float forward = GetSyncedRandomRange(raceFrames, iteration++, static_cast<u32>(pulsarCourseId), 1000.0f, 12000.0f);
+        float side = GetSyncedRandomRange(raceFrames, iteration++, static_cast<u32>(pulsarCourseId), -SPAWN_RADIUS, SPAWN_RADIUS);
+
+        Vec3 spawnPos;
+        spawnPos.x = playerPos.x + forwardDir.x * forward + rightDir.x * side;
+        spawnPos.y = playerPos.y + SPAWN_HEIGHT;
+        spawnPos.z = playerPos.z + forwardDir.z * forward + rightDir.z * side;
+
+        ItemObjId selectedItem = GetSyncedRandomItem(raceFrames, iteration++, static_cast<u32>(pulsarCourseId));
+
+        Item::ObjHolder& holder = Item::Manager::sInstance->itemObjHolders[selectedItem];
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            if (attempt > 0) {
+                float newForward = GetSyncedRandomRange(raceFrames, iteration++, static_cast<u32>(pulsarCourseId), 1000.0f, 12000.0f);
+                float newSide = GetSyncedRandomRange(raceFrames, iteration++, static_cast<u32>(pulsarCourseId), -SPAWN_RADIUS, SPAWN_RADIUS);
+                spawnPos.x = playerPos.x + forwardDir.x * newForward + rightDir.x * newSide;
+                spawnPos.z = playerPos.z + forwardDir.z * newForward + rightDir.z * newSide;
             }
-            if (!isLocal) continue;
 
-            Vec3 playerPos = positions[playerIdx];
-            Vec3 forwardDir;
-            if (player.kartPlayer) {
-                forwardDir = player.kartPlayer->GetMovement().dir;
-            } else {
-                forwardDir.x = 0.0f;
-                forwardDir.y = 0.0f;
-                forwardDir.z = 1.0f;
-            }
-            Vec3 rightDir;
-            rightDir.x = forwardDir.z;
-            rightDir.y = 0.0f;
-            rightDir.z = -forwardDir.x;
+            u32 countBefore = holder.spawnedCount;
+            Item::Manager::sInstance->CreateItemDirect(selectedItem, &spawnPos, &dummyDirection, localPlayerId);
 
-            float forward = GetRandomRange(1000.0f, 12000.0f);
-            float side = GetRandomRange(-SPAWN_RADIUS, SPAWN_RADIUS);
+            if (holder.spawnedCount > countBefore) {
+                Item::Obj* obj = holder.itemObj[holder.spawnedCount - 1];
+                if (obj) {
+                    u16 syncedCounter = (u16)((spawnCycle * 64 + selectedItem * 4 + i * 3 + attempt) & 0x7F);
+                    u16 syncedEventBitfield = ((u16)targetPlayerIdx << 8) | syncedCounter;
+                    obj->eventBitfield = syncedEventBitfield;
 
-            Vec3 spawnPos;
-            spawnPos.x = playerPos.x + forwardDir.x * forward + rightDir.x * side;
-            spawnPos.y = playerPos.y + SPAWN_HEIGHT;
-            spawnPos.z = playerPos.z + forwardDir.z * forward + rightDir.z * side;
-
-            ItemObjId selectedItem = GetRandomItem();
-            for (int attempt = 0; attempt < 3; attempt++) {
-                if (attempt > 0) {
-                    float newForward = GetRandomRange(1000.0f, 12000.0f);
-                    float newSide = GetRandomRange(-SPAWN_RADIUS, SPAWN_RADIUS);
-                    spawnPos.x = playerPos.x + forwardDir.x * newForward + rightDir.x * newSide;
-                    spawnPos.z = playerPos.z + forwardDir.z * newForward + rightDir.z * newSide;
+                    obj->bitfield7c |= 0x20;
+                    obj->bitfield7c |= 0x12;
                 }
-
-                Item::Manager::sInstance->CreateItemDirect(selectedItem, &spawnPos, &dummyDirection, playerIdx);
             }
         }
     }
@@ -256,45 +272,6 @@ static float SafeGetMovingRoadVelocity(void* colInfo) {
     return 0.0f;
 }
 kmBranch(0x807bd8d4, SafeGetMovingRoadVelocity);
-
-static void SafeCallVtable10C(void* colInfo) {
-    if (colInfo) {
-        void* obj = *(void**)((u32)colInfo + 0x4);
-        if (obj) {
-            void** vtable = *(void***)obj;
-            if (vtable && vtable[0x10C / 4]) {
-                ((void (*)(void*))vtable[0x10C / 4])(obj);
-            }
-        }
-    }
-}
-kmBranch(0x807bd878, SafeCallVtable10C);
-
-static void SafeCallVtable110(void* colInfo, void* param2) {
-    if (colInfo) {
-        void* obj = *(void**)((u32)colInfo + 0x4);
-        if (obj) {
-            void** vtable = *(void***)obj;
-            if (vtable && vtable[0x110 / 4]) {
-                ((void (*)(void*, void*, void*))vtable[0x110 / 4])(obj, colInfo, param2);
-            }
-        }
-    }
-}
-kmBranch(0x807bd8a4, SafeCallVtable110);
-
-static void SafeCallVtable114(void* colInfo, void* param2) {
-    if (colInfo) {
-        void* obj = *(void**)((u32)colInfo + 0x4);
-        if (obj) {
-            void** vtable = *(void***)obj;
-            if (vtable && vtable[0x114 / 4]) {
-                ((void (*)(void*, void*, void*))vtable[0x114 / 4])(obj, colInfo, param2);
-            }
-        }
-    }
-}
-kmBranch(0x807bd8ec, SafeCallVtable114);
 
 }  // namespace ItemRain
 }  // namespace Pulsar
