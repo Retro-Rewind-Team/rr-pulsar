@@ -3,6 +3,7 @@
 #include <kamek.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
+#include <MarioKartWii/UI/Page/Other/Votes.hpp>
 #include <PulsarSystem.hpp>
 #include <UI/UI.hpp>
 
@@ -11,7 +12,9 @@ namespace UI {
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName);
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx);
 bool IsTrackBlocked(PulsarId id);
-void SetCourseButtonTextColor(PushButton& button, bool isBlocked);
+void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx);
+void SetVoteControlMessage(VoteControl& vote, u32 bmgId, PulsarId courseVote, u32 playerId);
+void ApplyBlockedColorToString(wchar_t* dest, const wchar_t* src, u32 maxLen);
 
 inline void GetTrackBMG(char* dest, PulsarId id) {
     const wchar_t* name = UI::GetCustomMsg(GetTrackBMGId(id, false));

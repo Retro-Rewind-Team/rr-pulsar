@@ -147,6 +147,7 @@ void VariantSelect::PopulateVariantButtons() {
 void VariantSelect::ApplyVariantButtonState() {
     CupsConfig* cups = CupsConfig::sInstance;
     if (!cups) return;
+    const bool isBlocked = UI::IsTrackBlocked(selectedPulsarId);
     for (u32 i = 0; i < 4; ++i) {
         CourseButton& btn = this->CtrlMenuCourseSelectCourse.courseButtons[i];
         const u8 variantIdx = variantButtonVariants[i];
@@ -166,35 +167,32 @@ void VariantSelect::ApplyVariantButtonState() {
             const u32 VARIANT_TRACKS_BASE = 0x400000;
             bmgId = VARIANT_TRACKS_BASE + (realId << 4);
         } else {
-            bmgId = GetTrackVariantBMGId(selectedPulsarId, variantIdx);
+            bmgId = UI::GetTrackVariantBMGId(selectedPulsarId, variantIdx);
         }
 
         if (bmgId != 0) {
-            info.bmgToPass[0] = bmgId;
-            btn.SetMessage(bmgId, &info);
+            UI::SetCourseButtonMessage(btn, bmgId, selectedPulsarId, i);
             continue;
         } else {
             wchar_t* nameBuf = variantButtonNames[i];
+            wchar_t tempBuf[128];
             const char* fileName = cups->GetFileName(selectedPulsarId, variantIdx);
             if (fileName != nullptr) {
-                mbstowcs(nameBuf, fileName, 127);
-                nameBuf[127] = L'\0';
+                mbstowcs(tempBuf, fileName, 127);
+                tempBuf[127] = L'\0';
             } else if (variantIdx == 0) {
-                swprintf(nameBuf, 128, L"%ls", L"Default");
+                swprintf(tempBuf, 128, L"%ls", L"Default");
             } else {
-                swprintf(nameBuf, 128, L"Variant %u", static_cast<u32>(variantIdx));
+                swprintf(tempBuf, 128, L"Variant %u", static_cast<u32>(variantIdx));
+            }
+            if (isBlocked) {
+                UI::ApplyBlockedColorToString(nameBuf, tempBuf, 128);
+            } else {
+                wcscpy(nameBuf, tempBuf);
             }
             info.strings[0] = nameBuf;
         }
         btn.SetMessage(UI::BMG_TEXT, &info);
-    }
-
-    // Apply repick prevention coloring - base track being blocked means all variants are blocked
-    const bool isBlocked = IsTrackBlocked(selectedPulsarId);
-    for (u32 i = 0; i < 4; ++i) {
-        if (variantButtonVariants[i] != 0xFF) {
-            SetCourseButtonTextColor(this->CtrlMenuCourseSelectCourse.courseButtons[i], isBlocked);
-        }
     }
 }
 
