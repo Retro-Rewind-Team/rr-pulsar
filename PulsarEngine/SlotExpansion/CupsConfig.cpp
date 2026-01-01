@@ -49,11 +49,13 @@ static void TrimLine(char* line) {
     }
 }
 
+const size_t trackMaxFileName = 48;
+
 static char* DuplicateFileName(const char* src) {
     if (src == nullptr || *src == '\0') return nullptr;
     size_t len = strlen(src);
     if (len == 0) return nullptr;
-    const size_t maxLen = IOS::ipcMaxFileName;
+    const size_t maxLen = trackMaxFileName;
     if (len > maxLen) len = maxLen;
     char* copy = new char[maxLen + 1];
     memcpy(copy, src, len);

@@ -10,3 +10,5 @@ PulsarEngine/Network/RoomKey.cpp
 AGENTS.md
 /.agent
 /.clangd
+PulsarEngine/Testing.cpp
+/.claude
