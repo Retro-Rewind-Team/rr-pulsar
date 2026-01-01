@@ -170,7 +170,7 @@ void System::UpdateContext() {
     bool isKO = false;
     bool isOTT = false;
     bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
-    bool is500 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, HOSTCC_500);
+    bool is500 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) == HOSTCC_500;
     bool isOTTOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
     bool isMiiHeads = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS);
     bool is200Online = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;

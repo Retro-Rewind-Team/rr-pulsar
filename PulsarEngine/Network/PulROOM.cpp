@@ -200,7 +200,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                          charRestrictHeavy << PULSAR_CHARRESTRICTHEAVY | kartRestrict << PULSAR_KARTRESTRICT |
                                          bikeRestrict << PULSAR_BIKERESTRICT | koFinal << PULSAR_KOFINAL |
                                          changeCombo << PULSAR_CHANGECOMBO | normalTC << PULSAR_THUNDERCLOUD |
-                                         settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) << PULSAR_500 | RegOnly << PULSAR_REGS |
+                                         (settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) == HOSTCC_500) << PULSAR_500 | RegOnly << PULSAR_REGS |
                                          RetroOnly << PULSAR_RETROS | CtsOnly << PULSAR_CTS |
                                          battleTeam << PULSAR_FFA | extendedTeams << PULSAR_EXTENDEDTEAMS |
                                          battleElim << PULSAR_ELIMINATION | isStartRetro << PULSAR_STARTRETROS |
