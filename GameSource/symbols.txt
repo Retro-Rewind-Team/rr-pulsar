@@ -1991,6 +1991,8 @@ __ct__Q24Item13ObjPropertiesFRCQ24Item13ObjProperties = 0x80790e7c
 itemObjProperties = 0x809c2f48
 behaviourTable__Q24Item8Behavior = 0x809c36a0
 objProperties__Q24Item13ObjProperties = 0x809c2f48
+ComputeCapacities__Q24Item13ObjPropertiesFv = 0x80790fb8
+LoadObjProperties__4ItemFv = 0x80790ad8
 
 #Player
 Update__19ItemHolderPlayerSubFv = 0x80795668
