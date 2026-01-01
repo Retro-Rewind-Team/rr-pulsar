@@ -27,14 +27,16 @@
 #include <MarioKartWii/System/Rating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
+#include <Settings/SettingsParam.hpp>
 #include <runtimeWrite.hpp>
 #include <core/rvl/OS/OS.hpp>
 
 namespace Pulsar {
 namespace Ranking {
 
+// Developers
 static const u64 PRIORITY_BADGE_FC_LIST[] = {
-    000000000000ULL  // No one for now
+    128849122696ULL  // ZPL
 };
 
 static bool IsPriorityBadgeFC(u64 fc) {
@@ -178,19 +180,20 @@ int FormatRankMessage(wchar_t* dst, size_t dstLen) {
 // Address found by B_squo, original idea by Zeraora, developed by ZPL
 kmRuntimeUse(0x806436a0);
 static void DisplayOnlineRanking() {
+    kmRuntimeWrite32A(0x806436a0, 0x38600000);  // li r3,0
+    const Settings::Mgr& settings = Settings::Mgr::Get();
+    if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
+        const u64 myFc = RKNet::USERHandler::sInstance->toSendPacket.fc;
+        if (IsPriorityBadgeFC(myFc) && settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
+            kmRuntimeWrite32A(0x806436a0, 0x3860000B);  // li r3,11 -> Developers
+            return;
+        }
+    }
+
 #ifdef BETA
     kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10
     return;
 #endif
-
-    kmRuntimeWrite32A(0x806436a0, 0x38600000);  // li r3,0
-    if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
-        const u64 myFc = RKNet::USERHandler::sInstance->toSendPacket.fc;
-        if (IsPriorityBadgeFC(myFc)) {
-            kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10
-            return;
-        }
-    }
 
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
