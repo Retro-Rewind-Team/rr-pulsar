@@ -271,7 +271,8 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
             this->cb(buffer, IS_SAVING_GHOST, -1);
         }
         u32 crc32 = Mgr::GetRKGcrc32(this->rkg);
-        if (ldbPosition >= 0) this->leaderboard.Update(ldbPosition, entry, crc32);  // in this order as save opens files too
+        // Only update leaderboard if position is valid (0-10), not when leaderboard is full (position = -1)
+        if (ldbPosition <= ENTRY_10TH) this->leaderboard.Update(ldbPosition, entry, crc32);  // in this order as save opens files too
         const System* system = System::sInstance;
         system->taskThread->Request(&Mgr::CreateAndSaveFiles, this, 0);
 

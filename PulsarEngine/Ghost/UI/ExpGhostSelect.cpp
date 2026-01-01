@@ -264,9 +264,13 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
 
         } else if (position < 0)
             page->ctrlRaceCount.isHidden = true;
-        if (hasFlap || position >= 0) {
-            bool gotTrophy = manager->SaveGhost(entry, position, hasFlap);
-            if (gotTrophy) page->savedGhostMessage.SetMessage(UI::BMG_TROPHY_EARNED);
+        // Always save ghost for time trials, even when leaderboard is full
+        bool gotTrophy = manager->SaveGhost(entry, position, hasFlap);
+        if (gotTrophy) {
+            page->savedGhostMessage.SetMessage(UI::BMG_TROPHY_EARNED);
+        } else if (hasFlap || position >= 0) {
+            // Show saved ghost message for top 10 times or fastest lap
+            page->savedGhostMessage.SetMessage(UI::BMG_SAVED_GHOST);
         }
     }
 }
