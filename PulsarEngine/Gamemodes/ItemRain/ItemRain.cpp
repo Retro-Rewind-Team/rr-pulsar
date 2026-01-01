@@ -16,6 +16,7 @@ static int SPAWN_HEIGHT = 2000;
 static int SPAWN_RADIUS = 8000;
 static int MAX_ITEM_LIFETIME = 570;
 static int DESPAWN_CHECK_INTERVAL = 2;
+static const float GROUP_DISTANCE_SQ = 12000.0f * 12000.0f;
 
 void ItemModeCheck() {
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
@@ -36,7 +37,7 @@ void ItemModeCheck() {
 static RaceLoadHook ItemModeCheckHook(ItemModeCheck);
 
 static int GetSpawnInterval(u8 playerCount) {
-    return 9;
+    return 6;
 }
 
 static u32 GetSyncedRandom(u32 raceFrames, u32 iteration, u32 pulsarCourseId) {
@@ -183,8 +184,44 @@ void SpawnItemRain() {
     u32 spawnCycle = raceFrames / GetSpawnInterval(playerCount);
     u32 iteration = spawnCycle * 100;
 
+    u8 eligibleIndices[12];
+    u8 eligibleCount = 0;
+
+    for (int i = 0; i < playerCount && i < 12; i++) {
+        bool isLeader = true;
+        Item::Player& playerI = Item::Manager::sInstance->players[i];
+        Vec3 posI = playerI.GetPosition();
+        float compI = Raceinfo::sInstance->players[i]->raceCompletion;
+
+        for (int j = 0; j < playerCount && j < 12; j++) {
+            if (i == j) continue;
+
+            float compJ = Raceinfo::sInstance->players[j]->raceCompletion;
+            if (compJ > compI) {
+                Item::Player& playerJ = Item::Manager::sInstance->players[j];
+                Vec3 posJ = playerJ.GetPosition();
+
+                float dx = posI.x - posJ.x;
+                float dy = posI.y - posJ.y;
+                float dz = posI.z - posJ.z;
+                float distSq = dx * dx + dy * dy + dz * dz;
+
+                if (distSq < GROUP_DISTANCE_SQ) {
+                    isLeader = false;
+                    break;
+                }
+            }
+        }
+
+        if (isLeader) {
+            eligibleIndices[eligibleCount++] = i;
+        }
+    }
+
+    if (eligibleCount == 0) return;
+
     for (int i = 0; i < ITEMS_PER_SPAWN; i++) {
-        int targetPlayerIdx = (spawnCycle + i) % playerCount;
+        int targetPlayerIdx = eligibleIndices[(spawnCycle + i) % eligibleCount];
         Item::Player& player = Item::Manager::sInstance->players[targetPlayerIdx];
         Vec3 playerPos = player.GetPosition();
         Vec3 forwardDir;
@@ -230,7 +267,10 @@ void SpawnItemRain() {
                     u16 syncedEventBitfield = ((u16)targetPlayerIdx << 8) | syncedCounter;
                     obj->eventBitfield = syncedEventBitfield;
 
-                    obj->bitfield7c |= 0x20;
+                    // Only set isOnline bit (0x20) when actually online
+                    if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) {
+                        obj->bitfield7c |= 0x20;
+                    }
                     obj->bitfield7c |= 0x12;
                 }
             }
