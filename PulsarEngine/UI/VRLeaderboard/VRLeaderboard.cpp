@@ -414,16 +414,16 @@ static const char* FindMatchingObjectEnd(const char* objStart) {
 
 static bool IsFriendCodeInLicenseFriends(u64 friendCode) {
     if (friendCode == 0) return false;
-    
+
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr) return false;
-    
+
     // Only check the current license's friends list
     if (rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return false;
-    
+
     RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
     RKSYS::LicenseFriends& licenseFriends = license.GetFriends();
-    
+
     // Check each friend in the current license's friends list
     for (u32 friendIdx = 0; friendIdx < 30; ++friendIdx) {
         const FriendData& friendData = licenseFriends.friends[friendIdx];
@@ -431,7 +431,7 @@ static bool IsFriendCodeInLicenseFriends(u64 friendCode) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -660,7 +660,6 @@ void VRLeaderboardPage::ApplyResults() {
         swprintf(s_positionText, sizeof(s_positionText) / sizeof(s_positionText[0]), L"#%d", idx + 1);
         swprintf(s_entries[idx].line, sizeof(s_entries[idx].line) / sizeof(s_entries[idx].line[0]), L"%ls", s_entries[idx].name);
 
-
         Text::Info nameInfo;
         nameInfo.strings[0] = s_entries[idx].line;
         SetTextBoxIfPresent(*rows[i], "player_name", UI::BMG_TEXT, &nameInfo);
@@ -688,7 +687,7 @@ void VRLeaderboardPage::ApplyResults() {
                 s32 friendIdx = friendMgr->GetFriendIdx(s_entries[idx].friendCode);
                 isFriend = (friendIdx >= 0);
             }
-            
+
             // Also check all licenses' friends lists from save file
             if (!isFriend) {
                 isFriend = IsFriendCodeInLicenseFriends(s_entries[idx].friendCode);
@@ -819,7 +818,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* /*page*/) {
 
     char url[256];
     snprintf(url, sizeof(url),
-             "http://%s:8000/api/leaderboard/top/50?isActive=true?isSuspicious=false",
+             "http://%s:8000/api/leaderboard/top/no-mii/50",
              WWFC_DOMAIN);
 
     OS::Report("[VRLeaderboard] fetching %s\n", url);
