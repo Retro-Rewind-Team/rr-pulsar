@@ -12,12 +12,12 @@
 namespace Pulsar {
 namespace Network {
 
-static u32 baseRandomIndex = 0;
+u32 streamerModeRandomIndex = 0;
 static bool trackDecidedTriggered = false;
 
 static void RerandomizeBaseIndex() {
     Random random;
-    baseRandomIndex = random.NextLimited(6);
+    streamerModeRandomIndex = random.NextLimited(6);
     trackDecidedTriggered = false;
 }
 static SectionLoadHook RerandomizeHook(RerandomizeBaseIndex);
@@ -26,7 +26,7 @@ static void UpdateStreamerMiis() {
     RKNet::Controller* controller = RKNet::Controller::sInstance;
 
     Random random;
-    baseRandomIndex = random.NextLimited(6);
+    streamerModeRandomIndex = random.NextLimited(6);
 
     RKNet::USERHandler* userHandler = RKNet::USERHandler::sInstance;
     if (userHandler) {
@@ -102,7 +102,7 @@ static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid, RKN
         if (stpMatchCnt && pid == *(u32*)(stpMatchCnt + 0x8a8)) return;
     }
 
-    u32 playerRandomIndex = (baseRandomIndex + aid) % 6;
+    u32 playerRandomIndex = (streamerModeRandomIndex + aid) % 6;
 
     RFL::StoreData* miiSlot0 = &userPacket->rflPacket.rawMiis[0];
     RFL::StoreData* miiSlot1 = &userPacket->rflPacket.rawMiis[1];

@@ -19,11 +19,23 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <core/rvl/os/OS.hpp>
+#include <core/rvl/RFL/RFL.hpp>
 #include <include/c_stdio.h>
+#include <include/c_string.h>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/RKNet/USER.hpp>
+#include <MarioKartWii/Mii/Mii.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Settings/Settings.hpp>
 
 namespace Pulsar {
+namespace Network {
+extern u32 streamerModeRandomIndex;
+}
+
+static wchar_t fakeMiiName[11];
+
 namespace Rating {
 
 kmRuntimeUse(0x8010f434);
@@ -32,6 +44,19 @@ typedef void (*qr2_buffer_addA_t)(void* buffer, const char* value);
 static const qr2_buffer_addA_t qr2_buffer_addA = (qr2_buffer_addA_t)kmRuntimeAddr(0x8010f434);
 typedef void (*ServerKeyCallback)(int key, void* buffer);
 static const ServerKeyCallback OriginalServerKeyCallback = (ServerKeyCallback)kmRuntimeAddr(0x800e4c88);
+
+static bool IsStreamerModeActiveForServer() {
+    const Settings::Mgr& settings = Settings::Mgr::Get();
+    if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
+        return false;
+    }
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return false;
+    if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+        return false;
+    }
+    return true;
+}
 
 static int ClampRatingForQr2(float vr) {
     int scaled = (int)(vr * 100.0f);
@@ -75,6 +100,88 @@ static int Hook_qr2_init_socketA(void* q, int s, int bound_port, const char* gam
     return qr2_init_socketA_Real(q, s, bound_port, gamename, secret_key, is_public, nat_negotiate, (void*)MyServerKeyCallback, player_key_callback, team_key_callback, key_list_callback, count_callback, adderror_callback, userdata);
 }
 kmCall(0x800d4f28, Hook_qr2_init_socketA);
+
+static void ReplaceUserPacketMiiForServer(RKNet::USERHandler* handler) {
+    if (!IsStreamerModeActiveForServer()) {
+        return;
+    }
+
+    u32 randomIdx = Network::streamerModeRandomIndex;
+    RFL::StoreData* miiSlot0 = &handler->toSendPacket.rflPacket.rawMiis[0];
+    RFL::StoreData* miiSlot1 = &handler->toSendPacket.rflPacket.rawMiis[1];
+
+    RFL::GetStoreData(miiSlot0, RFL::RFLDataSource_Default, randomIdx);
+    RFL::GetStoreData(miiSlot1, RFL::RFLDataSource_Default, randomIdx);
+}
+
+asm void AsmHook_AfterMiiCopyLoop() {
+    nofralloc
+    // Save volatile registers used by the caller
+    stwu    r1, -0x20(r1)
+    mflr    r12
+    stw     r12, 0x24(r1)
+    stw     r3, 0x8(r1)
+    stw     r4, 0xc(r1)
+    stw     r30, 0x10(r1)
+
+    // Call our C++ function with r31 (USERHandler*) as argument
+    mr      r3, r31
+    bl      ReplaceUserPacketMiiForServer
+
+    // Restore registers
+    lwz     r30, 0x10(r1)
+    lwz     r4, 0xc(r1)
+    lwz     r3, 0x8(r1)
+    lwz     r12, 0x24(r1)
+    addi    r1, r1, 0x20
+    mtlr    r12
+
+    // Execute the replaced instruction: lis r4, -0x7f64 (0x80a0)
+    lis     r4, -0x7f64
+
+    // Return
+    blr
+}
+kmCall(0x80663088, AsmHook_AfterMiiCopyLoop);
+
+static wchar_t* GetLoginMiiName(Mii* mii) {
+    if (IsStreamerModeActiveForServer()) {
+        RFL::StoreData tempMii;
+        u32 randomIdx = Network::streamerModeRandomIndex;
+        RFL::GetStoreData(&tempMii, RFL::RFLDataSource_Default, randomIdx);
+        memcpy(fakeMiiName, tempMii.miiName, sizeof(fakeMiiName));
+        return fakeMiiName;
+    }
+    return mii->info.name;
+}
+
+asm void AsmHook_BeforeDWCLoginAsync() {
+    nofralloc
+    
+    stwu    r1, -0x30(r1)
+    mflr    r0
+    stw     r0, 0x34(r1)
+    // Save registers that DWC_LoginAsync needs
+    stw     r4, 0x10(r1)
+    stw     r5, 0x14(r1)
+    stw     r6, 0x18(r1)
+    
+    // r3 already has the Mii pointer
+    bl      GetLoginMiiName
+    
+    // r3 now has the name pointer to use
+    // Restore registers for DWC_LoginAsync
+    lwz     r4, 0x10(r1)
+    lwz     r5, 0x14(r1)
+    lwz     r6, 0x18(r1)
+    lwz     r0, 0x34(r1)
+    mtlr    r0
+    addi    r1, r1, 0x30
+    
+    // Return with r3 = name pointer
+    blr
+}
+kmCall(0x80658cd8, AsmHook_BeforeDWCLoginAsync);
 
 }  // namespace Rating
 }  // namespace Pulsar
