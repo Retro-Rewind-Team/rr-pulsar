@@ -54,6 +54,7 @@ class VRLeaderboardPage : public Page {
     static void OnLeaderboardReceived(s32 result, void* response, void* userdata);
     static void StartFetch(VRLeaderboardPage* page);
     static int ParseResponse(const char* json, Entry* outEntries, int maxEntries);
+    static void OverrideOwnMiiData(Entry* entries, int entryCount, u64 ownFriendCode);
 
     static FetchState s_fetchState;
     static bool s_hasApplied;
