@@ -58,6 +58,9 @@ float GetRatingMultiplier() {
             }
         }
     }
+    #ifdef BETA
+    return 1.15f;
+    #endif
     return multiplier;
 }
 

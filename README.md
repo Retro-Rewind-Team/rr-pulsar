@@ -29,7 +29,6 @@ The following features are licensed under AGPLv3:
 - Extended Team VS, UI changes, feature implementation, and all code associated
 - The specific Discord Rich Presence implementation used by Retro Rewind and code associated
 - The battle expansion code from Insane Kart Wii
-- Item Rain code found in ItemRain.cpp
 - Worldwide rank system found in Ranking.cpp
 - Battle Elimination implementation
 - Expanded VR/BR Rating System

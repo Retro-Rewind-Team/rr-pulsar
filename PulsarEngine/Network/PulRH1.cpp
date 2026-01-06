@@ -6,6 +6,7 @@
 #include <PulsarSystem.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <Gamemodes/ItemRain/ItemRain.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -19,13 +20,41 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         packetHolder.packet->pulsarTrackId = static_cast<u16>(CupsConfig::sInstance->GetWinning());
         packetHolder.packet->variantIdx = CupsConfig::sInstance->GetCurVariantIdx();
     }
+
+    // Pack ItemRain sync data if host
+    if (ItemRain::IsHost() && (System::sInstance->IsContext(PULSAR_ITEMMODERAIN) || System::sInstance->IsContext(PULSAR_ITEMMODESTORM))) {
+        packetHolder.packetSize = sizeof(Network::PulRH1);
+        
+        // Clear ItemRain fields first to avoid garbage data
+        memset(packetHolder.packet->itemRainItems, 0, sizeof(packetHolder.packet->itemRainItems));
+        
+        ItemRain::ItemRainSyncData syncData;
+        ItemRain::PackItemData(&syncData);
+        packetHolder.packet->itemRainItemCount = syncData.itemCount;
+        packetHolder.packet->itemRainSyncFrame = syncData.syncFrame;
+        for (u32 i = 0; i < syncData.itemCount && i < ItemRain::MAX_RAIN_ITEMS_PER_PACKET; i++) {
+            u8* dest = &packetHolder.packet->itemRainItems[i * 6];
+            dest[0] = syncData.items[i].itemObjId;
+            dest[1] = syncData.items[i].targetPlayer;
+            dest[2] = static_cast<u8>(syncData.items[i].forwardOffset >> 8);
+            dest[3] = static_cast<u8>(syncData.items[i].forwardOffset & 0xFF);
+            dest[4] = static_cast<u8>(syncData.items[i].rightOffset >> 8);
+            dest[5] = static_cast<u8>(syncData.items[i].rightOffset & 0xFF);
+        }
+    } else {
+        // Not host or ItemRain disabled - ensure ItemRain fields are cleared
+        packetHolder.packet->itemRainItemCount = 0;
+        packetHolder.packet->itemRainSyncFrame = 0;
+    }
 }
 kmCall(0x80655458, BeforeRH1Send);
 kmCall(0x806550e4, BeforeRH1Send);
 
 static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder<PulRH1>& holder, u32 len) {
     register RKNet::RH1Data* data;
+    register u8 senderAid;
     asm(subi data, aidArrDest, 0x20;);  // offset of the array in data
+    asm(mr senderAid, r29;);  // r29 contains the current AID being processed in the loop
 
     const PulRH1* packet = holder.packet;
     const u32 packetSize = holder.packetSize;
@@ -37,6 +66,31 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
         track = static_cast<CourseId>(packet->trackId);
     data->trackId = track;
     memcpy(aidArrDest, &packet->aidsBelongingToPlayerIds[0], len);
+
+    // Process ItemRain sync data from host
+    if (packetSize == sizeof(PulRH1) && !ItemRain::IsHost() &&
+        (System::sInstance->IsContext(PULSAR_ITEMMODERAIN) || System::sInstance->IsContext(PULSAR_ITEMMODESTORM))) {
+        
+        RKNet::Controller* controller = RKNet::Controller::sInstance;
+        if (controller) {
+            const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+            
+            // Only process ItemRain data if this packet is from the host
+            if (senderAid == sub.hostAid && packet->itemRainItemCount > 0) {
+                ItemRain::ItemRainSyncData syncData;
+                syncData.itemCount = packet->itemRainItemCount;
+                syncData.syncFrame = packet->itemRainSyncFrame;
+                for (u32 i = 0; i < syncData.itemCount && i < ItemRain::MAX_RAIN_ITEMS_PER_PACKET; i++) {
+                    const u8* src = &packet->itemRainItems[i * 6];
+                    syncData.items[i].itemObjId = src[0];
+                    syncData.items[i].targetPlayer = src[1];
+                    syncData.items[i].forwardOffset = static_cast<s16>((src[2] << 8) | src[3]);
+                    syncData.items[i].rightOffset = static_cast<s16>((src[4] << 8) | src[5]);
+                }
+                ItemRain::UnpackAndSpawn(&syncData, senderAid);
+            }
+        }
+    }
 }
 kmCall(0x806652d0, AfterRH1Reception);
 

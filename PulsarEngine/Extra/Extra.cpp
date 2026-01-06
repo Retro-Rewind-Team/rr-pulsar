@@ -398,4 +398,7 @@ kmWrite32(0x8065117C, 0x39C00096);
 // Mega Mushroom Flips Trucks [JoshuaMK]
 kmWrite32(0x8082AC00, 0x3B800001);
 
+// Disable Rainbow Road's Bottom Road Respawn and Bullet Bill Cancel [Ro]
+kmWrite32(0x8059BE20, 0x38600000);
+
 }  // namespace Codes

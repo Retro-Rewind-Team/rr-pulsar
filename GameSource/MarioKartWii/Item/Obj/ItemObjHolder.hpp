@@ -14,7 +14,7 @@ class ObjHolder {  // one instance per objID
     void HideAll();  // 80795d94
     void Init(ItemObjId id, u32* initialIdx);  // 80795ccc
     void Update();  // 80796470
-    void Spawn(u32 quantity, ItemObj* usedObjHolder, u8 playerId, const Vec3& playerPos, bool r8);  // 80795e04 usedObj is filled by the function for each obj used
+    void Spawn(u32 quantity, Obj** usedObjHolder, u8 playerId, const Vec3& playerPos, bool r8);  // 80795e04 usedObj is filled by the function for each obj used
     int GetTotalItemCount() const;  // 807974ac held by players + body count
     void UpdateModelPositions();  // 80796b30
 

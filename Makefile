@@ -36,7 +36,7 @@ build/%.o: $(PULSAR)/%.cpp | build
 
 force_link: build/kamek.o build/RuntimeWrite.o $(OBJS)
 	@echo Linking...
-	@$(KAMEK) $^ -dynamic $(EXTERNALS) -output-combined=build/Code.pul
+	@$(KAMEK) $^ -dynamic $(EXTERNALS) -output-combined=build/Code.pul -output-map=build/Code.map
 
 install: force_link
 	@echo Copying binaries to $(RIIVO)/Binaries...

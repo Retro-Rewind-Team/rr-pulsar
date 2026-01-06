@@ -52,6 +52,11 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u8 lapKoActiveCount;
     u8 lapKoElimCount;
     u8 lapKoElims[12];
+
+    // ItemRain sync (host broadcasts spawn commands to all clients)
+    u8 itemRainItemCount;      // Number of valid items (0-4)
+    u8 itemRainSyncFrame;      // Frame counter for ordering
+    u8 itemRainItems[24];      // 4 items * 6 bytes each (itemObjId, targetPlayer, fwdOffset[2], rightOffset[2])
 };
 struct PulRH2 : public RKNet::RACEHEADER2Packet {};
 struct PulROOM : public RKNet::ROOMPacket {

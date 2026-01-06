@@ -32,6 +32,7 @@ msleep = 0x800f2510
 atoi = 0x8001543c
 wcscpy = 0x800179b4
 strncmp = 0x800133b8
+strtoul = 0x800152a8
 
 LoadAnimation__10UIAnimatorFUiUiPCcUibf = 0x8063c714
 
@@ -168,11 +169,40 @@ DWCi_QR2Startup = 0x800d4e58
 DWC_SetReportLevel = 0x800cd060
 DWCi_SBCallback = 0x800e31c0
 DWCi_NodeInfoList_GetNodeInfoForAid = 0x800e7ee0
+DWCi_NodeInfoList_GetNodeInfoForProfileId = 0x800e7e64
+DWCi_NodeInfoList_GetServerNodeInfo = 0x800e8010
 DWCi_GT2ClosedProcess = 0x800d37bc
+DWCi_GetGT2Connection = 0x800d2900
+DWCi_GetGT2ConnectionByIdx = 0x800d2a74
+DWCi_GT2GetConnectionListIdx = 0x800d29d0
+DWCi_GetConnectionInfoByIdx = 0x800d2b10
+DWCi_ResetLastSomeDataRecvTimeByAid = 0x800e8724
+DWCi_PostProcessConnection = 0x800e0074
+DWCi_GT2ConnectAttemptCallback = 0x800d8858
+DWCi_GT2ConnectedCallback = 0x800d8e78
+DWCi_SendMatchSynPacket = 0x800e1590
+DWCi_SetMatchStatus = 0x800e7b10
+DWCi_StopMeshMaking = 0x800e7b78
+DWCi_GetNextMeshMakeTryTick = 0x800e79a8
+DWCi_ProcessRecvMatchCommand = 0x800dc234
+DWCi_SendGPBuddyMsgCommand = 0x800dbd38
+DWCi_SendMatchCommand = 0x800dbd38
+stpMatchCnt__Q36Pulsar7Network10FastNATNEG = 0x8038630c
+stpDwcCnt__Q36Pulsar7Network10FastNATNEG = 0x803862F0
+DWC_IsServerMyself = 0x800d2760
+DWC_GetMyAid = 0x800d2170
+DWC_GetServerAid = 0x800d26e8
+DWC_GetAidBitmap = 0x800d24b4
+DWC_CloseConnectionHard = 0x800d2000
+DWC_CloseAllConnectionsHard = 0x800d2040
+sMatchStateTick__Q36Pulsar7Network10FastNATNEG = 0x80386310
 DWCi_Auth_GetIngamesnCheckResult = 0x800ed680
 DWC_ProcessFriendsMatch = 0x800d115c
 GetLastErrorEx__3DWCFPUiPQ23DWC9ErrorType = 0x800ccb64
 CreateFriendKey__3DWCFPCQ23DWC11AccUserData = 0x800ec6bc
+gt2Listen = 0x8010a9b0
+UpdateSubsAndVR__Q25RKNet10ControllerFv = 0x80658de0
+TrySendNextRACEPacket__Q25RKNet10ControllerFv = 0x80657e30
 
 #MatchControl
 sInstance__Q23DWC19FriendsMatchControl = 0x803862F0
@@ -180,16 +210,26 @@ sInstance__Q23DWC19FriendsMatchControl = 0x803862F0
 #GS
 GSIAvailableCheckThink__2GSFv = 0x800f3a20
 
-#SB
+#GT2
+gt2Connect = 0x8010a9bc
+gt2Accept = 0x8010a9b4
+gt2Reject = 0x8010a9b8
+gt2AddressToString = 0x8010e9c0
+gt2SetConnectionData = 0x8010ad04
+gt2GetConnectionData = 0x8010ad0c
+gt2GetRemoteIP = 0x8010acbc
+gt2GetRemotePort = 0x8010acc4
 ServerBrowserNewA = 0x8011e038
 ServerBrowserLimitUpdateA = 0x8011e2a0
 ServerBrowserGetServer = 0x8011e480
 ServerBrowserCount = 0x8011e488
+ServerBrowserSortA = 0x8011e490
 ServerBrowserClear = 0x8011e3fc
 ServerBrowserFree = 0x8011e11c
 ServerBrowserThink = 0x8011e3c8
 SBServerGetStringValueA = 0x8011d254
 SBServerGetIntValueA = 0x8011d2b0
+SBServerAddIntKeyValue = 0x8011d1e4
 TableMapSafe = 0x800f017c
 
 #qr2
@@ -932,6 +972,7 @@ Update__Q24Kart5BoostFPb = 0x80588e24
 Update__Q24Kart7ManagerFv = 0x8058ffe8
 GetKartPlayer__Q24Kart7ManagerCFUi = 0x80590100
 sInstance__Q24Kart7Manager = 0x809c18f8
+kartObjects__Q24Kart7Manager = 0x809c1900
 
 #KartLink
 __ct__Q24Kart4LinkFv = 0x8059018c
@@ -976,6 +1017,8 @@ sInstance__12DriverParams = 0x809c191c
 
 #ItemObjHolder
 GetTotalItemCount__Q24Item9ObjHolderCFv = 0x807974ac
+Spawn__Q24Item9ObjHolderFUiPPQ24Item3ObjUcRC4Vec3b = 0x80795e04
+OnObjKillFinish__Q24Item9ObjHolderFPQ24Item3Obj = 0x80795f68
 
 ##UI
 #SECTION
@@ -1906,6 +1949,7 @@ DecideEngineClass__Q25RKNet13SELECTHandlerFv = 0x80661a5c
 DecideTrack__Q25RKNet13SELECTHandlerFv = 0x80661ce8
 AllocatePlayerIdsToAids__Q25RKNet13SELECTHandlerFv = 0x80662034
 DecidePrivateTeams__Q25RKNet13SELECTHandlerFRUi = 0x80662588
+Update__Q25RKNet13SELECTHandlerFv = 0x806602fc
 
 #Rating
 GetLowerRange__Q25RKNet16RatingRangeMakerCFUsb = 0x8065a5e0
@@ -1977,6 +2021,7 @@ sInstance__8GlobeMgr = 0x809c2cb8
 
 #Entity
 MakeDynamic__6EntityFv = 0x80786f6c
+Prepare__6EntityFUi = 0x80786fa8
 
 #EntityManager
 sInstance__13EntityManager = 0x809c2ef0
@@ -2004,6 +2049,7 @@ UseMegaMushroom__Q24Item6PlayerFv = 0x807a9e50
 #ItemManager
 Update__Q24Item7ManagerFv = 0x80799850
 sInstance__Q24Item7Manager = 0x809c3618
+IsThereCapacityForItem__Q24Item7ManagerF6ItemId = 0x80799be8
 
 #ItemEVENT
 FillOrExtractShootPos__Q24Item11EVENTBufferFPsP4Vec3b = 0x8079ad38
@@ -2017,6 +2063,11 @@ LoadGraphics__Q24Item3ObjFPCcPCcPCcUcPQ34Item3Obj8AnmParamQ44nw4r3g3d6ScnMdl12Bu
 CreateItemDirect__Q24Item7ManagerF9ItemObjIdPC4Vec3P4Vec3Ui = 0x80799fbc
 DeployBlooper__Q24Item8GessoMgrFUs = 0x807a9128
 DisappearDueToExcess__Q24Item3ObjFb = 0x807a6c14
+KillFromPlayerCollision__Q24Item3ObjFbUc = 0x807a6614
+KillFromOtherCollision__Q24Item3ObjFb = 0x807a6560
+Spawn__Q24Item3ObjF9ItemObjIdUcRC4Vec3b = 0x8079e550
+OnFinishThrow__Q24Item9ObjHolderFPQ24Item12ObjThrowable = 0x80796bbc
+ProcessOtherCollision__Q24Item3ObjFUiRC4Vec3RC4Vec3 = 0x807a18fc
 
 #ItemSlot
 sInstance__Q24Item12ItemSlotDataFv = 0x809c3670
@@ -2302,3 +2353,14 @@ gpIsBuddy = 0x800fc2a4
 ConnectToAnybodyAsync__Q25RKNet10ControllerFv = 0x80659170
 DWC_RequestSuspendMatchAsync = 0x800d49b0
 FriendStatusHook = 0x8065a110
+VIWaitForRetrace = 0x801b99ec
+OSDisableInterrupts = 0x801a65ac
+OSRestoreInterrupts = 0x801a65d4
+reset__14RaceInputStateFv = 0x8051e85c
+DWCi_RetryReserving = 0x800df094
+DWCi_RandomizeServers = 0x800e4ad0
+qr2_buffer_addA = 0x8010f434
+DWCi_QR2ServerKeyCallback = 0x800e4c88
+qr2_init_socketA = 0x8010ecac
+RequestPause__12RacePauseMgrFv = 0x808600dc
+RequestUnpause__12RacePauseMgrFv = 0x80860100
