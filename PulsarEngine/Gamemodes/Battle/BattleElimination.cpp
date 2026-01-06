@@ -282,7 +282,7 @@ void BattleElim() {
         kmRuntimeCallA(0x807123e8, GetFanfareKO);
     }
 }
-static PageLoadHook BattleElimHook(BattleElim);
+static FrameLoadHook BattleElimHook(BattleElim);
 
 // Fix Balloon Stealing [Gaberboo]
 kmWrite32(0x80538a28, 0x38000002);
@@ -310,7 +310,7 @@ void BattleTimer() {
         }
     }
 }
-static PageLoadHook BattleTimerHook(BattleTimer);
+static FrameLoadHook BattleTimerHook(BattleTimer);
 
 }  // namespace BattleElim
 }  // namespace Pulsar

@@ -32,7 +32,7 @@ void LoadCorrectSectionForBattle() {
         sectionMgr->nextSectionId = SECTION_P2_WIFI_FROOM_COIN_VOTING;
     }
 }
-static PageLoadHook PatchLoadCorrectSectionForBattle(LoadCorrectSectionForBattle);
+static FrameLoadHook PatchLoadCorrectSectionForBattle(LoadCorrectSectionForBattle);
 
 // Offline Battle Expansion [Ro]
 kmWrite32(0x8084e674, 0x48000018);

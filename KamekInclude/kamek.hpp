@@ -281,13 +281,13 @@ class RaceLoadHook : public DoFuncsHook {
     static void Exec(void* a1 = nullptr, void* a2 = nullptr, void* a3 = nullptr) { DoFuncsHook::Exec(raceLoadHooks, a1, a2, a3); }
 };
 
-class PageLoadHook : public DoFuncsHook {
-    static DoFuncsHook* pageLoadHooks;
+class FrameLoadHook : public DoFuncsHook {
+    static DoFuncsHook* FrameLoadHooks;
 
    public:
     template <typename F>
-    PageLoadHook(F f) : DoFuncsHook(f, &pageLoadHooks) {}
-    static void Exec(void* a1 = nullptr, void* a2 = nullptr, void* a3 = nullptr) { DoFuncsHook::Exec(pageLoadHooks, a1, a2, a3); }
+    FrameLoadHook(F f) : DoFuncsHook(f, &FrameLoadHooks) {}
+    static void Exec(void* a1 = nullptr, void* a2 = nullptr, void* a3 = nullptr) { DoFuncsHook::Exec(FrameLoadHooks, a1, a2, a3); }
 };
 
 class RaceFrameHook : public DoFuncsHook {

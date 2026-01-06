@@ -14,7 +14,7 @@ void DisableFoginRaces() {
         kmRuntimeWrite32A(0x805ADFF0, 0x4E800020);  // blr
     }
 }
-static PageLoadHook DisableFogHook(DisableFoginRaces);
+static FrameLoadHook DisableFogHook(DisableFoginRaces);
 
 }  // namespace Race
 }  // namespace Pulsar
