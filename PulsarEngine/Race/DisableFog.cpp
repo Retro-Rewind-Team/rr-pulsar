@@ -10,7 +10,7 @@ void DisableFoginRaces() {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     PulsarId pulsarId = cupsConfig->GetWinning();
     kmRuntimeWrite32A(0x805ADFF0, 0x3CC08089);  // set DisableFogInRaces to true
-    if (CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 164) {  // GP Rainbow Coaster
+    if (CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 162) {  // GP Rainbow Coaster
         kmRuntimeWrite32A(0x805ADFF0, 0x4E800020);  // blr
     }
 }

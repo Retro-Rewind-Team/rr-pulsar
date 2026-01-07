@@ -92,10 +92,11 @@ void ItemBoxRespawn(Objects::Itembox* itembox) {
 kmCall(0x80828EDC, ItemBoxRespawn);
 
 void PredictionPatch() {
-    PredictionHook = 0x3dcccccd;
+    float predictionValue = 1.0f;
     if (static_cast<Pulsar::MenuSettingPredictionRemoval>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_ONLINE), Pulsar::RADIO_PREDICTIONREMOVAL)) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
-        PredictionHook = 0x3f800000;
+        predictionValue = 0.1f;
     }
+    PredictionHook = *reinterpret_cast<u32*>(&predictionValue);
 }
 static SectionLoadHook PatchPrediction(PredictionPatch);
 
