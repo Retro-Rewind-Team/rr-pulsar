@@ -296,15 +296,15 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
     const u32 minutes = rkg.header.minutes;
     const u32 seconds = rkg.header.seconds;
     u32 milliseconds = rkg.header.milliseconds;
-    const char* format = "%s/%01dm%02ds%03d.rkg";
-    const char* folder = io->GetFolderName();
+    const char* format = "%s/%s/%01dm%02ds%03d.rkg";
     char letter = '?';
     if (repeatCount > 1) {
-        format = "%s/%01dm%02ds%02d%c.rkg";
+        format = "%s/%s/%01dm%02ds%02d%c.rkg";
         letter += repeatCount;
         milliseconds = milliseconds / 10;
     }
-    snprintf(path, IOS::ipcMaxPath, format, folder, minutes, seconds, milliseconds, letter);
+    const TTMode ttMode = System::sInstance->ttMode;
+    snprintf(path, IOS::ipcMaxPath, format, folderPath, System::ttModeFolders[ttMode], minutes, seconds, milliseconds, letter);
 
     io->CreateAndOpen(path, FILE_MODE_WRITE);
     io->Overwrite(GetRKGLength(rkg), &rkg);
@@ -314,22 +314,29 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
     Settings::Mgr::sInstance->SaveTrophies();  // trophies
 
     char prevGhostFile[IOS::ipcMaxPath];
-    u32 prevFileIndex = self->files[self->mainGhostIndex].padding;
-    if (prevFileIndex != expertFileIdx) io->GetFolderFilePath(prevGhostFile, prevFileIndex);
+    prevGhostFile[0] = '\0';
+    u32 prevFileIndex = expertFileIdx;
+    if (self->mainGhostIndex != 0xFF && self->mainGhostIndex < self->rkgCount) {
+        prevFileIndex = self->files[self->mainGhostIndex].padding;
+        if (prevFileIndex != expertFileIdx) {
+            snprintf(prevGhostFile, IOS::ipcMaxPath, "%s/%s/%s", folderPath, System::ttModeFolders[ttMode], io->GetFileName(prevFileIndex));
+        }
+    }
 
     self->Init(CupsConfig::sInstance->GetWinning(), CupsConfig::sInstance->GetCurVariantIdx());
 
     if (prevFileIndex == expertFileIdx)
         self->mainGhostIndex = 0;
-    else
+    else if (prevGhostFile[0] != '\0') {
         for (int i = 1; i < self->rkgCount; ++i) {
             char curFileName[IOS::ipcMaxPath];
-            io->GetFolderFilePath(curFileName, self->files[i].padding);
+            snprintf(curFileName, IOS::ipcMaxPath, "%s/%s/%s", folderPath, System::ttModeFolders[System::sInstance->ttMode], io->GetFileName(self->files[i].padding));
             if (strcmp(prevGhostFile, curFileName) == 0) {
                 self->mainGhostIndex = i;
                 break;
             }
         }
+    }
 
     SectionMgr::sInstance->sectionParams->isNewTime = true;
 }
