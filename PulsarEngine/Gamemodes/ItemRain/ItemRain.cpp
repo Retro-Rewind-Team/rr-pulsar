@@ -256,7 +256,7 @@ void UnpackAndSpawn(const ItemRainSyncData* src, u8 senderAid) {
         DoSpawnItem(itemId, entry.targetPlayer, fOff, rOff, isStorm);
     }
 }
-kmWrite32(0x8065F630, 0x60000000);
+
 static void OnTimerUpdate(u32 oldFrame) {
     RaceTimerMgr* tm = Raceinfo::sInstance->timerMgr;
     tm->raceFrameCounter = oldFrame + 1;
@@ -376,7 +376,8 @@ static void ProcessOtherCollisionWrapper(Item::Obj* obj, u32 result, Vec3* other
     obj->ProcessOtherCollision(result, *otherPos, *otherSpeed);
 }
 
-static void SendBreakEvent(Item::Obj* obj, u8 playerId = 0xC, u32 breakType = 2) {
+static void SendBreakEvent(Item::Obj* obj, u8 playerId = 0xC, u32 breakType = 1) {
+    if (!obj) return;
     u16 eventBitfield = *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 0xC);
     reinterpret_cast<void (*)(ItemObjId, u32, u32, u16)>(kmRuntimeAddr(0x8079c3c4))(obj->itemObjId, breakType, playerId, eventBitfield);
 }
@@ -394,7 +395,7 @@ static void KillFromOtherCollisionHook(Item::Obj* obj, bool sendBreak) {
         return;
     }
     if (obj->duration == 1) {
-        obj->KillFromPlayerCollision(true, 12);
+        obj->KillFromOtherCollision(true);
         return;
     }
     if (IsItemRainEnabled() && IsOnline()) {
@@ -409,9 +410,7 @@ static void ObjSpawnHook(Item::Obj* obj, ItemObjId id, u8 playerId, const Vec3& 
         *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164) = Raceinfo::sInstance->timerMgr->raceFrameCounter;
 }
 
-static void StoreTrackPlayerCount(u32 val) { sState.trackPlayerCount = val; }
-kmCall(0x807EF0EC, StoreTrackPlayerCount);
-
+kmRuntimeUse(0x808D1BDC);
 static void BombExplosion() {
     register Item::Obj* obj;
     register void* r0_val;
@@ -424,7 +423,7 @@ static void BombExplosion() {
         if (obj->entity) {
             Item::ObjBomb* bomb = reinterpret_cast<Item::ObjBomb*>(obj);
             bomb->timer = 300;
-            r0_val = *reinterpret_cast<void**>(0x808D1BDC);
+            r0_val = *reinterpret_cast<void**>(kmRuntimeAddr(0x808D1BDC));
         } else {
             obj->KillFromOtherCollision(false);
             return;
@@ -477,14 +476,13 @@ kmRuntimeUse(0x807a1010);
 kmRuntimeUse(0x807a1c68);
 kmRuntimeUse(0x80795f00);
 kmRuntimeUse(0x807a3838);
-
 static void HookItemRain() {
     kmRuntimeWrite32A(0x80535C7C, 0x901D0048);
     kmRuntimeWrite32A(0x807a0ffc, 0x48000901);
     kmRuntimeWrite32A(0x807a1010, 0x480008ED);
     kmRuntimeWrite32A(0x807a1c68, 0x480048F9);
     kmRuntimeWrite32A(0x80795f00, 0x48008651);
-    kmRuntimeWrite32A(0x807a3838, 0x48002DDC);
+    kmRuntimeWrite32A(0x807a3838, 0x48002DDD);
 
     if (!IsItemRainEnabled()) return;
 
