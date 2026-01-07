@@ -386,7 +386,7 @@ namespace Pulsar_Pack_Creator
         public static bool CheckTrackName(string name)
         {
             char[] invalid = Path.GetInvalidFileNameChars();
-            invalid = invalid.Where(x => x != '\\' && x != ':' && x != '*').ToArray();
+            invalid = invalid.Where(x => x != '\\' && x != ':' && x != '*' && x != '?').ToArray();
             return name.IndexOfAny(invalid) < 0;
         }
         private void OnTrackNameInput(object sender, TextCompositionEventArgs e)
@@ -394,7 +394,7 @@ namespace Pulsar_Pack_Creator
             string text = e.Text;
             if (!CheckTrackName(text))
             {
-                MsgWindow.Show("Track names cannot contain any of <>\"/|?");
+                MsgWindow.Show("Track names cannot contain any of <>\"/|");
                 e.Handled = true;
             }
         }
@@ -423,7 +423,7 @@ namespace Pulsar_Pack_Creator
             if (!CheckTrackName(text))
             {
                 e.CancelCommand();
-                Dispatcher.BeginInvoke(new Action(() => MsgWindow.Show("Track names cannot contain any of <>\"/|?")));
+                Dispatcher.BeginInvoke(new Action(() => MsgWindow.Show("Track names cannot contain any of <>\"/|")));
             }
         }
 

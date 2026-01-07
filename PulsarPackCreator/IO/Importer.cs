@@ -355,22 +355,19 @@ namespace Pulsar_Pack_Creator.IO
                                                 int parsedVariantIdx = variantIdxParsed; // -1 means common/base name
 
                                                 MainWindow.Cup.Track.Variant variant;
-                                                if (parsedVariantIdx == -1)
-                                                {
-                                                    // common name
-                                                    if (type == (uint)BMGIds.BMG_TRACKS)
-                                                    {
-                                                        // Strip the visual marker appended at export (" ->") so it isn't imported into commonName
-                                                        string sanitizedContent = content;
-                                                        if (sanitizedContent.EndsWith(" ->"))
-                                                            sanitizedContent = sanitizedContent.Substring(0, sanitizedContent.Length - 3).TrimEnd();
-                                                        track.commonName = sanitizedContent;
-                                                        // Only set main track name as fallback if it's still default
-                                                        if (track.main.trackName == MainWindow.Cup.defaultTrack)
-                                                            track.main.trackName = sanitizedContent;
-                                                    }
-                                                    break;
-                                                }
+	                                                if (parsedVariantIdx == -1)
+	                                                {
+	                                                    // Base BMG_TRACKS block (0x20000 + trackIdx): always import into the main track name,
+	                                                    // and only map into commonName when the exported visual marker indicates variants.
+	                                                    if (type == (uint)BMGIds.BMG_TRACKS)
+	                                                    {
+	                                                        bool hadVariantMarker;
+	                                                        string sanitizedContent = StripCommonNameVisualMarker(content, out hadVariantMarker);
+	                                                        track.main.trackName = sanitizedContent;
+	                                                        track.commonName = hadVariantMarker ? sanitizedContent : null;
+	                                                    }
+	                                                    break;
+	                                                }
                                                 else if (parsedVariantIdx == 0)
                                                 {
                                                     // main track
@@ -494,6 +491,70 @@ namespace Pulsar_Pack_Creator.IO
                 }
                 curLine = fileSR.ReadLine();
             }
+        }
+
+        private static string StripCommonNameVisualMarker(string content, out bool hadVariantMarker)
+        {
+            hadVariantMarker = false;
+
+            if (string.IsNullOrEmpty(content))
+                return content;
+
+            string trimmed = content.TrimEnd();
+
+            // Legacy marker
+            if (trimmed.EndsWith(" ->", StringComparison.Ordinal))
+            {
+                hadVariantMarker = true;
+                return trimmed.Substring(0, trimmed.Length - 3).TrimEnd();
+            }
+
+            // Plain marker
+            if (trimmed.EndsWith(" *", StringComparison.Ordinal))
+            {
+                hadVariantMarker = true;
+                return trimmed.Substring(0, trimmed.Length - 2).TrimEnd();
+            }
+
+            // Colored marker (e.g. " ... \\c{red1}*")
+            if (trimmed.EndsWith("*", StringComparison.Ordinal))
+            {
+                int spaceIndex = trimmed.LastIndexOf(' ');
+                if (spaceIndex >= 0 && spaceIndex < trimmed.Length - 1)
+                {
+                    string suffix = trimmed.Substring(spaceIndex + 1);
+                    if (suffix.EndsWith("*", StringComparison.Ordinal))
+                    {
+                        string escapeSequence = suffix.Substring(0, suffix.Length - 1);
+                        if (IsEscapeSequence(escapeSequence))
+                        {
+                            hadVariantMarker = true;
+                            return trimmed.Substring(0, spaceIndex).TrimEnd();
+                        }
+                    }
+                }
+            }
+
+            return trimmed;
+        }
+
+        private static bool IsEscapeSequence(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value[0] != '\\')
+                return false;
+
+            int openBraceIndex = value.IndexOf('{');
+            if (openBraceIndex <= 1)
+                return false;
+
+            for (int i = 1; i < openBraceIndex; i++)
+            {
+                if (!char.IsLetter(value[i]))
+                    return false;
+            }
+
+            int closeBraceIndex = value.IndexOf('}', openBraceIndex + 1);
+            return closeBraceIndex == value.Length - 1;
         }
 
         public Result ImportV2()

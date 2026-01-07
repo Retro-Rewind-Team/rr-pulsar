@@ -313,14 +313,14 @@ namespace Pulsar_Pack_Creator.IO {
             return Result.Success;
         }
 
-        private Result WriteMainTrack(MainWindow.Cup.Track track, uint idx, string[] expertFileNames, bool isFake) {
-            Result ret;
-            // Write the common name to the base BMG_TRACKS block
-            string commonName = string.IsNullOrEmpty(track.commonName) ? track.main.trackName : track.commonName;
-            // Append marker to BMG entry if this track has variants (visual cue in BMG)
-            string bmgCommonName = track.variants.Count > 0 ? commonName + " ->" : commonName;
-            if (!isFake)
-                bmgSW.WriteLine($"  {BMGIds.BMG_TRACKS + idx:X}    = {bmgCommonName}");
+	        private Result WriteMainTrack(MainWindow.Cup.Track track, uint idx, string[] expertFileNames, bool isFake) {
+	            Result ret;
+	            // Write the common name to the base BMG_TRACKS block
+	            string commonName = string.IsNullOrEmpty(track.commonName) ? track.main.trackName : track.commonName;
+	            // Append marker to BMG entry if this track has variants (visual cue in BMG)
+	            string bmgCommonName = track.variants.Count > 0 ? AppendVariantMarker(commonName) : commonName;
+	            if (!isFake)
+	                bmgSW.WriteLine($"  {BMGIds.BMG_TRACKS + idx:X}    = {bmgCommonName}");
 
             // If the track has variants, the main track variant should be written into the first variant block (1).
             ret = WriteVariant(track.main, idx, 0, expertFileNames, isFake, track.variants.Count > 0);
@@ -416,12 +416,39 @@ namespace Pulsar_Pack_Creator.IO {
                         }
                     }
                 }
-            }
-            return Result.Success;
-        }
+	            }
+	            return Result.Success;
+	        }
 
-        private Result WriteVariant(MainWindow.Cup.Track.Variant variant, uint idx, uint variantIdx, string[] expertFileNames, bool isFake, bool hasVariants)  // 0 = main track
-        {
+	        private static string AppendVariantMarker(string commonName) {
+	            string leadingEscapeSequence = TryGetLeadingEscapeSequence(commonName);
+	            if (!string.IsNullOrEmpty(leadingEscapeSequence))
+	                return $"{commonName} {leadingEscapeSequence}*";
+	            return $"{commonName} *";
+	        }
+
+	        private static string TryGetLeadingEscapeSequence(string name) {
+	            if (string.IsNullOrEmpty(name) || name[0] != '\\')
+	                return "";
+
+	            int openBraceIndex = name.IndexOf('{');
+	            if (openBraceIndex <= 1)
+	                return "";
+
+	            for (int i = 1; i < openBraceIndex; i++) {
+	                if (!char.IsLetter(name[i]))
+	                    return "";
+	            }
+
+	            int closeBraceIndex = name.IndexOf('}', openBraceIndex + 1);
+	            if (closeBraceIndex < 0)
+	                return "";
+
+	            return name.Substring(0, closeBraceIndex + 1);
+	        }
+
+	        private Result WriteVariant(MainWindow.Cup.Track.Variant variant, uint idx, uint variantIdx, string[] expertFileNames, bool isFake, bool hasVariants)  // 0 = main track
+	        {
             string fileName = variant.fileName;
             if (buildParams != BuildParams.ConfigOnly) {
                 string curFile = $"input/{fileName}.szs".ToLowerInvariant();
