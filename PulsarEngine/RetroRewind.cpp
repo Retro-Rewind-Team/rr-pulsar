@@ -61,16 +61,8 @@ kmWrite32(0x8055422C, 0x48000044);
 
 void FPSPatch() {
     FPSPatchHook = 0x00;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    const GameMode mode = scenario.settings.gamemode;
-    bool isDolphin = Dolphin::IsEmulator();
-    bool froom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE;
-    bool froomOrVS = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
-    bool isTimeTrial = mode == MODE_TIME_TRIAL;
-    u32 localPlayerCount = scenario.localPlayerCount;
-    if ((static_cast<Pulsar::FPS>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE2), Pulsar::RADIO_FPS)) == Pulsar::FPS_HALF || (localPlayerCount > 1 && !isDolphin) ||
-         (Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODESTORM) && !isDolphin && froom)) &&
-        !isTimeTrial) {
+    const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
+    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_RACE2, Pulsar::RADIO_FPS) == Pulsar::FPS_HALF && mode != MODE_TIME_TRIAL) {
         FPSPatchHook = 0x00FF0100;
     }
 }
@@ -93,7 +85,7 @@ kmCall(0x80828EDC, ItemBoxRespawn);
 
 void PredictionPatch() {
     float predictionValue = 1.0f;
-    if (static_cast<Pulsar::MenuSettingPredictionRemoval>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_ONLINE), Pulsar::RADIO_PREDICTIONREMOVAL)) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
+    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_ONLINE, Pulsar::RADIO_PREDICTIONREMOVAL) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
         predictionValue = 0.1f;
     }
     PredictionHook = *reinterpret_cast<u32*>(&predictionValue);
