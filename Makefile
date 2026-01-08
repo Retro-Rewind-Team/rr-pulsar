@@ -1,4 +1,6 @@
 CC := mwcceppc.exe
+AS := mwasmeppc.exe
+
 GAMESOURCE := ./GameSource
 PULSAR := ./PulsarEngine
 KAMEK := Kamek.exe
@@ -7,17 +9,29 @@ KAMEK_H := ./KamekInclude
 -include .env
 
 CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) -i $(PULSAR) -opt all -inline auto -enum int -proc gekko -fp hard -sdata 0 -sdata2 0 -maxerrors 1 -func_align 4 $(CFLAGS)
+ASFLAGS := -proc gekko -c
+
 EXTERNALS := -externals=$(GAMESOURCE)/symbols.txt -externals=$(GAMESOURCE)/anticheat.txt -versions=$(GAMESOURCE)/versions.txt
 
-SRCS := $(shell find $(PULSAR) -type f -name "*.cpp")
-OBJS := $(patsubst $(PULSAR)/%.cpp, build/%.o, $(SRCS))
+# Source files
+CPP_SRCS := $(shell find $(PULSAR) -type f -name "*.cpp")
+ASM_SRCS := $(shell find $(PULSAR) -type f -name "*.S")
+
+# Object files
+CPP_OBJS := $(patsubst $(PULSAR)/%.cpp, build/%.o, $(CPP_SRCS))
+ASM_OBJS := $(patsubst $(PULSAR)/%.S, build/%.o, $(ASM_SRCS))
+
+OBJS := $(CPP_OBJS) $(ASM_OBJS)
 
 all: build force_link
 
-.PHONY: all force_link
+.PHONY: all force_link clean test
 
 test:
-	@echo "$(SRCS)"
+	@echo "CPP sources:"
+	@echo "$(CPP_SRCS)"
+	@echo "ASM sources:"
+	@echo "$(ASM_SRCS)"
 
 build:
 	@mkdir -p build
@@ -29,10 +43,17 @@ build/RuntimeWrite.o: $(KAMEK_H)/RuntimeWrite.cpp | build
 	@echo Compiling $<...
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
+# C++ compilation
 build/%.o: $(PULSAR)/%.cpp | build
-	@echo Compiling $<...
+	@echo Compiling C++ $<...
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c -o $@ $<
+
+# Assembly compilation (.S)
+build/%.o: $(PULSAR)/%.S | build
+	@echo Assembling $<...
+	@mkdir -p $(dir $@)
+	@$(AS) $(ASFLAGS) -o $@ $<
 
 force_link: build/kamek.o build/RuntimeWrite.o $(OBJS)
 	@echo Linking...
