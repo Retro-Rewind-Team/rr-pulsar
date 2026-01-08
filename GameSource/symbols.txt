@@ -921,6 +921,9 @@ SetAndLoadProjection__10GameScreenFUiUi = 0x80566020
 SetProjection__10GameScreenFUiUi = 0x805661e8
 mInstance__13ScreensHolder = 0x809C1868
 
+#GameScreenEffects
+Update__20GameScreenEffectsMgrFv = 0x8054f1b0
+
 #Camera
 SetInstance__9CameraMgrFP9CameraMgr = 0x805a1a64
 __ct__10RaceCameraFUcR10GameScreenP3BCPUc = 0x805a1d10
