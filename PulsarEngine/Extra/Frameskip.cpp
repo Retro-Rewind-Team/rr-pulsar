@@ -1,4 +1,6 @@
-#include <RetroRewind.hpp>
+﻿#include <RetroRewind.hpp>
+#include <MarioKartWii/3D/GameScreenEffects/GameScreenEffects.hpp>
+#include <kamek.hpp>
 
 namespace Frameskip {
 
@@ -341,5 +343,18 @@ asmFunc GetFrameskip2() {
 kmCall(0x800095C4, GetFrameskip2);
 kmWrite32(0x80001614, 0x000F7709);
 kmWrite32(0x80001634, 0x00000006);
+
+static void ResetFrameskipState() {
+    *(u32*)0x80001638 = 0;
+}
+static SectionLoadHook ResetFrameskipHook(ResetFrameskipState);
+
+static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr* mgr) {
+    if (*(u32*)0x80001638 >= 30) {
+        return;
+    }
+    mgr->Update();
+}
+kmCall(0x805A9050, PatchedGameScreenEffectsMgrUpdate);
 
 }  // namespace Frameskip
