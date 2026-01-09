@@ -23,6 +23,7 @@ struct ItemRainSyncData {
 };
 #pragma pack(pop)
 
+bool IsItemRainEnabled();
 void PackItemData(ItemRainSyncData* dest);
 void UnpackAndSpawn(const ItemRainSyncData* src, u8 senderAid);
 bool IsHost();

@@ -1022,6 +1022,24 @@ sInstance__12DriverParams = 0x809c191c
 GetTotalItemCount__Q24Item9ObjHolderCFv = 0x807974ac
 Spawn__Q24Item9ObjHolderFUiPPQ24Item3ObjUcRC4Vec3b = 0x80795e04
 OnObjKillFinish__Q24Item9ObjHolderFPQ24Item3Obj = 0x80795f68
+SpawnItemInternal__Q24Item9ObjHolderFPQ24Item3Obj = 0x807961f0
+
+#ItemObj
+Spawn__Q24Item3ObjF9ItemObjIdUcRC4Vec3b = 0x8079e550
+InitProperties__Q24Item3ObjFUiP4Vec3P4Vec3P4Vec3 = 0x807a6f74
+LoadEntity__Q24Item3ObjFb = 0x8079ee30
+AddHitFreeEVENTEntry__Q24Item3ObjF9ItemObjIdUiUcUs = 0x8079c3c4
+GetRadius__Q24Item3ObjFUi = 0x8079ec44
+ProcessKartCollision__Q24Item3ObjFPQ24Kart6PlayerUi = 0x807a3790
+ProcessOtherCollision__Q24Item3ObjFUiRC4Vec3RC4Vec3 = 0x807a18fc
+KillFromPlayerCollision__Q24Item3ObjFbUc = 0x807a6614
+KillFromOtherCollision__Q24Item3ObjFb = 0x807a6560
+
+#ItemEntity
+Resize__Q24Item6EntityFff = 0x80786f7c
+
+#TimerManager
+UpdateTimers__12TimerManagerFv = 0x80535904
 
 ##UI
 #SECTION
