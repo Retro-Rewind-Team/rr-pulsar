@@ -101,10 +101,29 @@ static int Hook_qr2_init_socketA(void* q, int s, int bound_port, const char* gam
 }
 kmCall(0x800d4f28, Hook_qr2_init_socketA);
 
+static RFL::StoreData s_originalMiis[2];
+static bool s_originalMiisStored = false;
+
+void GetOriginalMiis(RFL::StoreData* outMii0, RFL::StoreData* outMii1) {
+    if (s_originalMiisStored) {
+        *outMii0 = s_originalMiis[0];
+        *outMii1 = s_originalMiis[1];
+    }
+}
+
+bool HasOriginalMiisStored() {
+    return s_originalMiisStored;
+}
+
 static void ReplaceUserPacketMiiForServer(RKNet::USERHandler* handler) {
     if (!IsStreamerModeActiveForServer()) {
+        s_originalMiisStored = false;
         return;
     }
+
+    s_originalMiis[0] = handler->toSendPacket.rflPacket.rawMiis[0];
+    s_originalMiis[1] = handler->toSendPacket.rflPacket.rawMiis[1];
+    s_originalMiisStored = true;
 
     u32 randomIdx = Network::streamerModeRandomIndex;
     RFL::StoreData* miiSlot0 = &handler->toSendPacket.rflPacket.rawMiis[0];

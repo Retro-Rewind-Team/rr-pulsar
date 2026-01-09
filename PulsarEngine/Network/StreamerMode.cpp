@@ -10,6 +10,11 @@
 #include <Network/PacketExpansion.hpp>
 
 namespace Pulsar {
+namespace Rating {
+void GetOriginalMiis(RFL::StoreData* outMii0, RFL::StoreData* outMii1);
+bool HasOriginalMiisStored();
+}
+
 namespace Network {
 
 u32 streamerModeRandomIndex = 0;
@@ -93,13 +98,22 @@ static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid, RKN
         return;
     }
 
-    // Check if the person we are sending to is a friend or ourselves
     u32 pid = GetPidForAid(aid);
     if (pid != 0) {
-        if (IsFriend(pid)) return;
+        if (IsFriend(pid)) {
+            if (Rating::HasOriginalMiisStored()) {
+                Rating::GetOriginalMiis(&userPacket->rflPacket.rawMiis[0], &userPacket->rflPacket.rawMiis[1]);
+            }
+            return;
+        }
 
         u8* stpMatchCnt = (u8*)sInstance__Q23DWC12MatchControl;
-        if (stpMatchCnt && pid == *(u32*)(stpMatchCnt + 0x8a8)) return;
+        if (stpMatchCnt && pid == *(u32*)(stpMatchCnt + 0x8a8)) {
+            if (Rating::HasOriginalMiisStored()) {
+                Rating::GetOriginalMiis(&userPacket->rflPacket.rawMiis[0], &userPacket->rflPacket.rawMiis[1]);
+            }
+            return;
+        }
     }
 
     u32 playerRandomIndex = (streamerModeRandomIndex + aid) % 6;
