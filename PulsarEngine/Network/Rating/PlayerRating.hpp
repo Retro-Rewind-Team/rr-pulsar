@@ -16,20 +16,17 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#ifndef _PULSAR_PLAYER_RATING_HPP_
+#define _PULSAR_PLAYER_RATING_HPP_
 
 #include <kamek.hpp>
 
 namespace Pulsar {
 namespace PointRating {
 
-struct PlayerRating {
-    u16 points;
-    u8 padding[2];
-};
-
-static const u16 MinRating = 1;
-static const u16 MaxRating = 10000;
+static const u16 MIN_RATING = 1;
+static const u16 MAX_RATING = 10000;
+static const float DEFAULT_RATING = 50.0f;
 
 float GetUserVR(u32 licenseId);
 float GetUserBR(u32 licenseId);
@@ -38,7 +35,10 @@ void SetUserBR(u32 licenseId, float br);
 
 extern u8 remoteDecimalVR[12][2];
 extern float lastRaceDeltas[12];
-float GetRatingMultiplier();
+
+float GetMultiplier();
 
 }  // namespace PointRating
 }  // namespace Pulsar
+
+#endif  // _PULSAR_PLAYER_RATING_HPP_

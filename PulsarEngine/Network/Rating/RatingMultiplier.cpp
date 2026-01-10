@@ -8,60 +8,47 @@
 namespace Pulsar {
 namespace PointRating {
 
-float GetRatingMultiplier() {
-    float multiplier = 1.0f;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+static bool IsEventDay(unsigned m, unsigned d) {
+    return (m == 12 && d >= 23) ||          // Christmas
+           (m == 1 && d <= 3) ||            // New Year
+           (m == 10 && d >= 25) ||          // Halloween
+           (m == 6 && d >= 5 && d <= 8) ||  // Start of Summer
+           (m == 3 && d >= 13 && d <= 17) || // St. Patrick's Day
+           (m == 4 && d >= 10 && d <= 14) || // MKWii Birthday
+           (m == 8 && d >= 23 && d <= 29);  // End of Summer
+}
 
-    if (BattleElim::ShouldApplyBattleElimination()) {
-        if (sub.playerCount <= 5) {
-            multiplier = 1.0f;
-        } else {
-            multiplier = 1.0f + ((float)(sub.playerCount - 5) * 0.166f);
-        }
-    }
+static float GetBattleBonus() {
+    if (!BattleElim::ShouldApplyBattleElimination()) return 0.0f;
+    const RKNet::Controller* ctrl = RKNet::Controller::sInstance;
+    int count = ctrl->subs[ctrl->currentSub].playerCount;
+    return (count > 5) ? (float)(count - 5) * 0.166f : 0.0f;
+}
 
-    unsigned month = 0;
-    unsigned day = 0;
-    bool hasValidDate = false;
-
-    ServerDateTime* serverDT = ServerDateTime::sInstance;
-    if (serverDT != nullptr && serverDT->isValid) {
-        month = static_cast<unsigned>(serverDT->month);
-        day = static_cast<unsigned>(serverDT->day);
-        hasValidDate = true;
+float GetMultiplier() {
+#ifdef BETA
+    return 1.15f;
+#endif
+    
+    unsigned month = 0, day = 0;
+    bool valid = false;
+    
+    ServerDateTime* sdt = ServerDateTime::sInstance;
+    if (sdt && sdt->isValid) {
+        month = sdt->month;
+        day = sdt->day;
+        valid = true;
     } else {
         SystemManager* sm = SystemManager::sInstance;
-        if (sm != nullptr && sm->isValidDate) {
-            month = static_cast<unsigned>(sm->month);
-            day = static_cast<unsigned>(sm->day);
-            hasValidDate = true;
+        if (sm && sm->isValidDate) {
+            month = sm->month;
+            day = sm->day;
+            valid = true;
         }
     }
-
-    OS::Report("RatingMultiplier: %d/%d\n", month, day);
-
-    if (hasValidDate) {
-        // Christmas Season/New Year Season, Halloween, Start of Summer, St. Patrick's Day, End of Summer, MKWii's Birthday
-        if ((month == 12 && day >= 23 && day <= 31) ||
-            (month == 1 && day >= 1 && day <= 3) ||
-            (month == 10 && day >= 25 && day <= 31) ||
-            (month == 6 && day >= 5 && day <= 8) ||
-            (month == 3 && day >= 13 && day <= 17) ||
-            (month == 4 && day >= 10 && day <= 14) ||
-            (month == 8 && day >= 23 && day <= 29)) {
-            multiplier = 2.0f;
-            if (BattleElim::ShouldApplyBattleElimination()) {
-                if (sub.playerCount > 5) {
-                    multiplier = 2.0f + ((float)(sub.playerCount - 5) * 0.166f);
-                }
-            }
-        }
-    }
-    #ifdef BETA
-    return 1.15f;
-    #endif
-    return multiplier;
+    
+    float base = (valid && IsEventDay(month, day)) ? 2.0f : 1.0f;
+    return base + GetBattleBonus();
 }
 
 }  // namespace PointRating

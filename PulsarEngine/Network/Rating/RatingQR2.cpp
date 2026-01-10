@@ -36,7 +36,7 @@ extern u32 streamerModeRandomIndex;
 
 static wchar_t fakeMiiName[11];
 
-namespace Rating {
+namespace PointRating {
 
 kmRuntimeUse(0x8010f434);
 kmRuntimeUse(0x800e4c88);
@@ -202,5 +202,5 @@ asm void AsmHook_BeforeDWCLoginAsync() {
 }
 kmCall(0x80658cd8, AsmHook_BeforeDWCLoginAsync);
 
-}  // namespace Rating
+}  // namespace PointRating
 }  // namespace Pulsar

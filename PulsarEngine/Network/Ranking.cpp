@@ -36,13 +36,37 @@ namespace Ranking {
 
 // Developers
 static const u64 PRIORITY_BADGE_FC_LIST[] = {
-    128849122696ULL  // ZPL
-};
+    8906072005ULL,  // ZPL
+    100000011ULL,  // Dynohack
+    348484848484ULL,  // Gab
+    464464664446ULL,  // Weebo
+    331616161616ULL,  // Noel
+    464666644446ULL,  // Eppe
+    121212121245ULL,  // Bodacious
+    188978569675ULL,  // Cyrus
+    421507127201ULL,  // Jacher
+    800580ULL,  // Rambo
+    0ULL};
+
+// FOR THE COLONY
+static const u64 ANT_BADGE_FC_LIST[] = {
+    65400900000ULL,  // Fenixien
+    116565656533ULL,  // ImZeraora
+    77776769ULL,  // Saucy
+    0ULL};
 
 static bool IsPriorityBadgeFC(u64 fc) {
     if (fc == 0) return false;
     for (size_t i = 0; PRIORITY_BADGE_FC_LIST[i] != 0ULL; ++i) {
         if (PRIORITY_BADGE_FC_LIST[i] == fc) return true;
+    }
+    return false;
+}
+
+static bool IsAntBadgeFC(u64 fc) {
+    if (fc == 0) return false;
+    for (size_t i = 0; ANT_BADGE_FC_LIST[i] != 0ULL; ++i) {
+        if (ANT_BADGE_FC_LIST[i] == fc) return true;
     }
     return false;
 }
@@ -184,6 +208,11 @@ static void DisplayOnlineRanking() {
     const Settings::Mgr& settings = Settings::Mgr::Get();
     if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
         const u64 myFc = RKNet::USERHandler::sInstance->toSendPacket.fc;
+        // Force "Ant Defined" badge for specific friend codes regardless of other settings
+        if (IsAntBadgeFC(myFc) && settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
+            kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10 -> Ants
+            return;
+        }
         if (IsPriorityBadgeFC(myFc) && settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
             kmRuntimeWrite32A(0x806436a0, 0x3860000B);  // li r3,11 -> Developers
             return;

@@ -32,174 +32,104 @@
 namespace Pulsar {
 namespace PointRating {
 
-static u8 GetNameRatingIcon(u8 wiiWheelIconType, u8 starRating) {
-    return static_cast<u8>((wiiWheelIconType * 4U) + starRating);
+static u8 GetNameRatingIcon(u8 wheelType, u8 starRating) {
+    return wheelType * 4 + starRating;
 }
 kmBranch(0x805e3d38, GetNameRatingIcon);
 
-static void FillVRControl(Pages::VR* page, u32 index, u32 playerId, u32 team, u8 type, bool isLocalPlayer) {
-    if (page == nullptr || index >= 12) {
+static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool isLocal, bool isBR, bool* hasDecimal) {
+    *hasDecimal = false;
+    if (isLocal) {
+        RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+        if (mgr->infos[playerId].hudSlotid == 0 && rksys && rksys->curLicenseId >= 0) {
+            *hasDecimal = true;
+            return isBR ? GetUserBR(rksys->curLicenseId) : GetUserVR(rksys->curLicenseId);
+        }
+        return (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
+    }
+    u8 aid = mgr->infos[playerId].aid;
+    u8 slot = mgr->infos[playerId].hudSlotid;
+    if (aid < 12 && slot < 2) {
+        *hasDecimal = true;
+        float base = (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
+        return base + (float)remoteDecimalVR[aid][slot] / 100.0f;
+    }
+    return (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
+}
+
+static void FormatRatingText(float rating, bool hasDecimal, wchar_t* buf, Text::Info* info, u32* valMsg, u32* unitMsg, u32 unitId) {
+    if ((u16)rating == 0xffff) {
+        *valMsg = 0x25e7;
         return;
     }
-
-    LayoutUIControl& control = page->vrControls[index];
-    control.ResetMsg();
-    control.isHidden = false;
-
-    Pages::SELECTStageMgr* selectMgr = nullptr;
-    if (SectionMgr::sInstance != nullptr && SectionMgr::sInstance->curSection != nullptr) {
-        selectMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+    if (hasDecimal) {
+        int rInt = (int)rating;
+        int rDec = (int)((rating - (float)rInt) * 100.0f + 0.5f);
+        if (rDec >= 100) { rInt++; rDec -= 100; }
+        if (rDec < 0) rDec = -rDec;
+        if (rInt == 0) swprintf(buf, 64, L"%d", rDec);
+        else swprintf(buf, 64, L"%d%02d", rInt, rDec);
+        info->strings[0] = buf;
+        *valMsg = UI::BMG_TEXT;
+    } else {
+        *valMsg = 0x13f1;
+        info->intToPass[0] = (u16)rating;
     }
+    *unitMsg = unitId;
+}
 
-    if (selectMgr != nullptr && playerId < selectMgr->playerCount) {
-        control.SetMiiPane("chara_icon", selectMgr->miiGroup, playerId, 2);
-        control.SetMiiPane("chara_icon_sha", selectMgr->miiGroup, playerId, 2);
-
+static void FillVRControl(Pages::VR* page, u32 idx, u32 playerId, u32 team, u8 type, bool isLocal) {
+    if (!page || idx >= 12) return;
+    
+    LayoutUIControl& ctrl = page->vrControls[idx];
+    ctrl.ResetMsg();
+    ctrl.isHidden = false;
+    
+    Pages::SELECTStageMgr* mgr = nullptr;
+    if (SectionMgr::sInstance && SectionMgr::sInstance->curSection) {
+        mgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+    }
+    
+    if (mgr && playerId < mgr->playerCount) {
+        ctrl.SetMiiPane("chara_icon", mgr->miiGroup, playerId, 2);
+        ctrl.SetMiiPane("chara_icon_sha", mgr->miiGroup, playerId, 2);
+        
         Text::Info nameInfo;
-        nameInfo.miis[0] = selectMgr->miiGroup.GetMii(static_cast<u8>(playerId));
-        control.SetTextBoxMessage("mii_name", 0x251d, &nameInfo);
-
-        Text::Info pointsInfo;
-        u32 valueMessageId = 0;
-        u32 unitsMessageId = 0;
-
-        wchar_t buffer[64];
-        bool useString = false;
-
-        if (type == 1) {
-            float rating = 0.0f;
-            bool hasDecimal = false;
-
-            if (isLocalPlayer) {
-                RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
-                const u8 hudSlotId = selectMgr->infos[playerId].hudSlotid;
-                if (hudSlotId == 0 && rksys && rksys->curLicenseId >= 0) {
-                    rating = GetUserVR(rksys->curLicenseId);
-                    hasDecimal = true;
-                } else {
-                    rating = (float)selectMgr->infos[playerId].vr;
-                }
-            } else {
-                u8 aid = selectMgr->infos[playerId].aid;
-                u8 slot = selectMgr->infos[playerId].hudSlotid;
-                if (aid < 12 && slot < 2) {
-                    float baseRating = (float)selectMgr->infos[playerId].vr;
-                    float decimal = (float)remoteDecimalVR[aid][slot] / 100.0f;
-                    rating = baseRating + decimal;
-                    hasDecimal = true;
-                } else {
-                    rating = (float)selectMgr->infos[playerId].vr;
-                }
-            }
-
-            if ((u16)rating == 0xffff) {
-                valueMessageId = 0x25e7;
-            } else {
-                if (hasDecimal) {
-                    int rInt = (int)rating;
-                    int rDec = (int)((rating - (float)rInt) * 100.0f + 0.5f);
-                    if (rDec >= 100) {
-                        rInt++;
-                        rDec -= 100;
-                    }
-                    if (rDec < 0) rDec = -rDec;
-                    if (rInt == 0)
-                        swprintf(buffer, 64, L"%d", rDec);
-                    else
-                        swprintf(buffer, 64, L"%d%02d", rInt, rDec);
-                    pointsInfo.strings[0] = buffer;
-                    useString = true;
-                    valueMessageId = UI::BMG_TEXT;
-                    unitsMessageId = 0x25e4;
-                } else {
-                    valueMessageId = 0x13f1;
-                    unitsMessageId = 0x25e4;
-                    pointsInfo.intToPass[0] = (u16)rating;
-                }
-            }
-        } else if (type == 2) {
-            float rating = 0.0f;
-            bool hasDecimal = false;
-
-            if (isLocalPlayer) {
-                RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
-                const u8 hudSlotId = selectMgr->infos[playerId].hudSlotid;
-                if (hudSlotId == 0 && rksys && rksys->curLicenseId >= 0) {
-                    rating = GetUserBR(rksys->curLicenseId);
-                    hasDecimal = true;
-                } else {
-                    rating = (float)selectMgr->infos[playerId].br;
-                }
-            } else {
-                u8 aid = selectMgr->infos[playerId].aid;
-                u8 slot = selectMgr->infos[playerId].hudSlotid;
-                if (aid < 12 && slot < 2) {
-                    float baseRating = (float)selectMgr->infos[playerId].br;
-                    float decimal = (float)remoteDecimalVR[aid][slot] / 100.0f;
-                    rating = baseRating + decimal;
-                    hasDecimal = true;
-                } else {
-                    rating = (float)selectMgr->infos[playerId].br;
-                }
-            }
-
-            if ((u16)rating == 0xffff) {
-                valueMessageId = 0x25e7;
-            } else {
-                if (hasDecimal) {
-                    int rInt = (int)rating;
-                    int rDec = (int)((rating - (float)rInt) * 100.0f + 0.5f);
-                    if (rDec >= 100) {
-                        rInt++;
-                        rDec -= 100;
-                    }
-                    if (rDec < 0) rDec = -rDec;
-                    if (rInt == 0)
-                        swprintf(buffer, 64, L"%d", rDec);
-                    else
-                        swprintf(buffer, 64, L"%d%02d", rInt, rDec);
-                    pointsInfo.strings[0] = buffer;
-                    useString = true;
-                    valueMessageId = UI::BMG_TEXT;
-                    unitsMessageId = 0x25e5;
-                } else {
-                    valueMessageId = 0x13f1;
-                    unitsMessageId = 0x25e5;
-                    pointsInfo.intToPass[0] = (u16)rating;
-                }
-            }
+        nameInfo.miis[0] = mgr->miiGroup.GetMii((u8)playerId);
+        ctrl.SetTextBoxMessage("mii_name", 0x251d, &nameInfo);
+        
+        wchar_t buf[64];
+        Text::Info ptsInfo;
+        u32 valMsg = 0, unitMsg = 0;
+        
+        if (type == 1 || type == 2) {
+            bool hasDecimal;
+            float rating = GetRatingForDisplay(mgr, playerId, isLocal, type == 2, &hasDecimal);
+            FormatRatingText(rating, hasDecimal, buf, &ptsInfo, &valMsg, &unitMsg, (type == 1) ? 0x25e4 : 0x25e5);
         }
-
-        if (valueMessageId != 0) {
-            control.SetTextBoxMessage("point_2", valueMessageId, &pointsInfo);
-            control.SetTextBoxMessage("point_sha_2", valueMessageId, &pointsInfo);
-            if (unitsMessageId != 0) {
-                control.SetTextBoxMessage("pts_2", unitsMessageId);
-                control.SetTextBoxMessage("pts_sha_2", unitsMessageId);
+        
+        if (valMsg) {
+            ctrl.SetTextBoxMessage("point_2", valMsg, &ptsInfo);
+            ctrl.SetTextBoxMessage("point_sha_2", valMsg, &ptsInfo);
+            if (unitMsg) {
+                ctrl.SetTextBoxMessage("pts_2", unitMsg);
+                ctrl.SetTextBoxMessage("pts_sha_2", unitMsg);
             }
         }
     } else {
-        control.ResetTextBoxMessage("mii_name");
-        control.SetPicturePane("chara_icon", "no_linkmii");
-        control.SetPicturePane("chara_icon_sha", "no_linkmii");
+        ctrl.ResetTextBoxMessage("mii_name");
+        ctrl.SetPicturePane("chara_icon", "no_linkmii");
+        ctrl.SetPicturePane("chara_icon_sha", "no_linkmii");
     }
-
-    if (team == 0) {
-        control.SetPaneVisibility("red_null", true);
-        control.SetPaneVisibility("blue_null", false);
-    } else if (team == 1) {
-        control.SetPaneVisibility("red_null", false);
-        control.SetPaneVisibility("blue_null", true);
-    } else {
-        control.SetPaneVisibility("red_null", false);
-        control.SetPaneVisibility("blue_null", false);
-    }
-
-    AnimationGroup& highlight = control.animator.GetAnimationGroupById(1);
-    AnimationGroup& shadow = control.animator.GetAnimationGroupById(2);
-    const u32 frame = isLocalPlayer ? 0U : 1U;
-    highlight.PlayAnimationAtFrame(frame, 0.0f);
-    shadow.PlayAnimationAtFrame(frame, 0.0f);
+    
+    ctrl.SetPaneVisibility("red_null", team == 0);
+    ctrl.SetPaneVisibility("blue_null", team == 1);
+    
+    AnimationGroup& hl = ctrl.animator.GetAnimationGroupById(1);
+    AnimationGroup& sh = ctrl.animator.GetAnimationGroupById(2);
+    u32 frame = isLocal ? 0 : 1;
+    hl.PlayAnimationAtFrame(frame, 0.0f);
+    sh.PlayAnimationAtFrame(frame, 0.0f);
 }
 kmBranch(0x8064ab08, FillVRControl);
 
