@@ -1945,6 +1945,16 @@ GetLocalPlayerId__Q25RKNet10ControllerCFi = 0x80659d58
 
 #RH1
 sInstance__Q25RKNet10RH1Handler = 0x809c2118
+GetPlayerRH1Timer__Q25RKNet9PacketMgrCFUi = 0x806544a8
+GetPlayerLagFrames__Q25RKNet9PacketMgrCFUi = 0x80654568
+
+#KartNet
+RacedataHandler_calc__Q24Kart14KartNetReceiverFv = 0x8058998c
+RacedataHandler_adjust__Q24Kart14KartNetReceiverFv = 0x8058b9f8
+RacedataHandler_unpackPackets__Q24Kart14KartNetReceiverFv = 0x80589f64
+RacedataFactory_packRacedataRecord__Q24Kart13KartNetSenderFv = 0x8058cb30
+setRACEDATAs__Q25RKNet9PacketMgrFPQ25RKNet14RACEDATAPacketUiUi = 0x80653960
+getRACEDATAPacket__Q25RKNet9PacketMgrFUi = 0x80653abc
 
 #EVENT
 AddEntry__Q25RKNet12EVENTHandlerF9ItemObjIdQ25RKNet11EVENTActionPCvUi = 0x8065b780

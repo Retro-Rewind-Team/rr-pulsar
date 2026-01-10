@@ -32,32 +32,41 @@ struct PulPlayerData {  // SELECT struct
 // size_assert(PulPlayerData, 0x8);
 
 struct PulRH1 : public RKNet::RACEHEADER1Packet {
-    // Pulsar data
+    // Pulsar data (always sent)
     u16 pulsarTrackId;  // current
     u8 variantIdx;
 
-    // HAW Vote
+    // HAW Vote (always sent)
     u8 chooseNextStatus;
     bool hasTrack;
     u16 nextTrack;  // PulsarId
 
-    // KOStats
+    // These fields are only populated/read when their respective game modes are enabled
+    // They are always present in the struct for memory layout, but zeroed when not in use
+
+    // KOStats - only used when PULSAR_MODE_KO is enabled
     u16 timeInDanger;
     u8 almostKOdCounter;
     u8 finalPercentageSum;  // to be divided by racecount at the end of the GP
 
-    // LapKO
+    // ItemRain sync - only used when PULSAR_ITEMMODERAIN or PULSAR_ITEMMODESTORM is enabled
+    u8 itemRainItemCount;  // Number of valid items (0-4)
+    u8 itemRainSyncFrame;  // Frame counter for ordering
+    u8 itemRainItems[24];  // 4 items * 6 bytes each (itemObjId, targetPlayer, fwdOffset[2], rightOffset[2])
+
+    // LapKO - only used when PULSAR_MODE_LAPKO is enabled AND in friend rooms
+    // Must be at the END so we can conditionally expand packet size
     u8 lapKoSeq;
     u8 lapKoRoundIndex;
     u8 lapKoActiveCount;
     u8 lapKoElimCount;
     u8 lapKoElims[12];
-
-    // ItemRain sync (host broadcasts spawn commands to all clients)
-    u8 itemRainItemCount;      // Number of valid items (0-4)
-    u8 itemRainSyncFrame;      // Frame counter for ordering
-    u8 itemRainItems[24];      // 4 items * 6 bytes each (itemObjId, targetPlayer, fwdOffset[2], rightOffset[2])
 };
+
+// Size constants for conditional packet expansion
+static const u32 PulRH1SizeBase = sizeof(PulRH1) - 16;  // Size without LapKO fields (16 bytes)
+static const u32 PulRH1SizeFull = sizeof(PulRH1);  // Full size with LapKO fields
+
 struct PulRH2 : public RKNet::RACEHEADER2Packet {};
 struct PulROOM : public RKNet::ROOMPacket {
     // Generic ROOM settings

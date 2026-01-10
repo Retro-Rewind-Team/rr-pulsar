@@ -322,7 +322,8 @@ static void OnTimerUpdate(u32 oldFrame) {
                     RKNet::SplitRACEPointers* splitPacket = controller->splitReceivedRACEPackets[lastBufferUsed][hostAid];
                     if (splitPacket) {
                         RKNet::PacketHolder<Network::PulRH1>* holder = splitPacket->GetPacketHolder<Network::PulRH1>();
-                        if (holder && holder->packetSize == sizeof(Network::PulRH1)) {
+                        // Accept both base and full Pulsar packet sizes
+                        if (holder && holder->packetSize >= Network::PulRH1SizeBase) {
                             const Network::PulRH1* packet = holder->packet;
                             if (packet && packet->itemRainItemCount > 0 && packet->itemRainItemCount <= MAX_RAIN_ITEMS_PER_PACKET) {
                                 ItemRainSyncData syncData;

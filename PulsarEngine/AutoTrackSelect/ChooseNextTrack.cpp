@@ -237,7 +237,8 @@ SectionId ChooseNextTrack::ProcessHAW(SectionId defaultId) {
         const u32 lastBufferUsed = controller->lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
         const RKNet::PacketHolder<Network::PulRH1>* holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
 
-        if (holder->packetSize == sizeof(Network::PulRH1)) {
+        // Accept both base and full Pulsar packet sizes
+        if (holder->packetSize >= Network::PulRH1SizeBase) {
             const Network::PulRH1* rh1 = holder->packet;
             if (aid == sub.hostAid) {
                 if (rh1->chooseNextStatus == STATUS_TRACK) {

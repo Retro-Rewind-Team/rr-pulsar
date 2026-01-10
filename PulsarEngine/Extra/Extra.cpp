@@ -402,7 +402,7 @@ kmWrite32(0x8082AC00, 0x3B800001);
 kmWrite32(0x8059BE20, 0x38600000);
 
 // Slower High Data Rate [MrBean35000vr]
-kmWrite32(0x80657EA8, 0x2804000A);
+kmWrite32(0x80657EA8, 0x2804000C);
 kmWrite32(0x80657F5C, 0x3B400000);
 
 }  // namespace Codes

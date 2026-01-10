@@ -11,19 +11,43 @@
 namespace Pulsar {
 namespace Network {
 
+// Helper to check if we're in a friend room (where LapKO data should be sent)
+static bool IsFriendRoom() {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (!controller) return false;
+    return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || 
+            controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+}
+
 // Fixes for spectating
 void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u32 len) {
     packetHolder.Copy(packet, len);
 
-    if (System::sInstance->IsContext(PULSAR_CT)) {  // CHECK if this only exists in races
-        packetHolder.packetSize += sizeof(Network::PulRH1) - sizeof(RKNet::RACEHEADER1Packet);  // this has been changed by copy so it's safe to do this
+    const System* system = System::sInstance;
+    
+    // Determine target packet size based on room type and LapKO mode
+    // LapKO fields are only sent in friend rooms when PULSAR_MODE_LAPKO is enabled
+    const bool inFriendRoom = IsFriendRoom();
+    const bool lapKoEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_LAPKO);
+    const u32 targetSize = lapKoEnabled ? PulRH1SizeFull : PulRH1SizeBase;
+
+    if (system->IsContext(PULSAR_CT)) {
+        packetHolder.packetSize = targetSize;
         packetHolder.packet->pulsarTrackId = static_cast<u16>(CupsConfig::sInstance->GetWinning());
         packetHolder.packet->variantIdx = CupsConfig::sInstance->GetCurVariantIdx();
     }
 
-    // Pack ItemRain sync data if host
-    if (ItemRain::IsHost() && (System::sInstance->IsContext(PULSAR_ITEMMODERAIN) || System::sInstance->IsContext(PULSAR_ITEMMODESTORM))) {
-        packetHolder.packetSize = sizeof(Network::PulRH1);
+    // Clear KO Stats fields if KO mode is not enabled
+    if (!system->IsContext(PULSAR_MODE_KO)) {
+        packetHolder.packet->timeInDanger = 0;
+        packetHolder.packet->almostKOdCounter = 0;
+        packetHolder.packet->finalPercentageSum = 0;
+    }
+
+    // Pack ItemRain sync data only if host AND ItemRain/ItemStorm mode is enabled
+    const bool itemRainEnabled = system->IsContext(PULSAR_ITEMMODERAIN) || system->IsContext(PULSAR_ITEMMODESTORM);
+    if (ItemRain::IsHost() && itemRainEnabled) {
+        packetHolder.packetSize = targetSize;
         
         // Clear ItemRain fields first to avoid garbage data
         memset(packetHolder.packet->itemRainItems, 0, sizeof(packetHolder.packet->itemRainItems));
@@ -42,9 +66,19 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
             dest[5] = static_cast<u8>(syncData.items[i].rightOffset & 0xFF);
         }
     } else {
-        // Not host or ItemRain disabled - ensure ItemRain fields are cleared
+        // ItemRain disabled or not host - clear ItemRain fields
         packetHolder.packet->itemRainItemCount = 0;
         packetHolder.packet->itemRainSyncFrame = 0;
+        memset(packetHolder.packet->itemRainItems, 0, sizeof(packetHolder.packet->itemRainItems));
+    }
+
+    // Clear LapKO fields if LapKO mode is not enabled (they won't be sent anyway due to packet size)
+    if (!lapKoEnabled) {
+        packetHolder.packet->lapKoSeq = 0;
+        packetHolder.packet->lapKoRoundIndex = 0;
+        packetHolder.packet->lapKoActiveCount = 0;
+        packetHolder.packet->lapKoElimCount = 0;
+        memset(packetHolder.packet->lapKoElims, 0xFF, sizeof(packetHolder.packet->lapKoElims));
     }
 }
 kmCall(0x80655458, BeforeRH1Send);
@@ -60,7 +94,8 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
     const u32 packetSize = holder.packetSize;
     CourseId track;
     u8 variantIdx = 0;
-    if (packetSize == sizeof(PulRH1))
+    // Accept both base and full Pulsar packet sizes
+    if (packetSize >= PulRH1SizeBase)
         track = static_cast<CourseId>(packet->pulsarTrackId);
     else
         track = static_cast<CourseId>(packet->trackId);
@@ -68,7 +103,8 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
     memcpy(aidArrDest, &packet->aidsBelongingToPlayerIds[0], len);
 
     // Process ItemRain sync data from host
-    if (packetSize == sizeof(PulRH1) && !ItemRain::IsHost() &&
+    // ItemRain data is present in both base and full packets
+    if (packetSize >= PulRH1SizeBase && !ItemRain::IsHost() &&
         (System::sInstance->IsContext(PULSAR_ITEMMODERAIN) || System::sInstance->IsContext(PULSAR_ITEMMODESTORM))) {
         
         RKNet::Controller* controller = RKNet::Controller::sInstance;
