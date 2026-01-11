@@ -120,7 +120,7 @@ static void WriteHeaderCrash(u16 error, const OS::Context* context, u32 dsisr, u
         // we just set the flag, generate dump file and return to the channel
         NewChannel_SetCrashFlag();
     } else {
-        db::Exception_Printf_("Press A to exit. Send Crash.pul to the creator.\n");
+        db::Exception_Printf_("Saving Crash.pul and exiting...\n");
         db::PrintContext_(error, context, dsisr, dar);
     }
 }
@@ -128,60 +128,21 @@ kmCall(0x80023484, WriteHeaderCrash);
 
 static void CreateCrashFile(s32 channel, KPAD::Status buff[], u32 count) {
     IO* io = IO::sInstance;
-    ;
-    bool exit = false;
-    if (io == nullptr)
-        exit = true;  // should always exist if the crash is after strap
-    else {
-        KPAD::Read(channel, buff, count);
-        u8 wiimoteExtension = buff[0].extension;
-        if (buff[0].error == WPAD::WPAD_ERR_NONE && wiimoteExtension < WPAD::WPAD_DEV_FUTURE &&
-            (wiimoteExtension == WPAD::WPAD_DEV_CLASSIC && buff[0].extStatus.cl.trig & WPAD::WPAD_CL_BUTTON_A || buff[0].trig & WPAD::WPAD_BUTTON_A))
-            exit = true;
-        else {
-            PAD::Status padStatus[4];
-            PAD::Read(&padStatus[0]);
-            for (int channel = 0; channel < 4; ++channel) {
-                if (padStatus[channel].error == PAD::PAD_ERR_NONE) {
-                    if (padStatus[channel].buttons & PAD::PAD_BUTTON_A) {
-                        exit = true;
-                        break;
-                    }
-                }
-            }
-        }
-        if (exit || IsNewChannel()) {
-            OS::Thread* thread = crashThread;
-            OS::DetachThread(thread);
-            OS::CancelThread(thread);
+    OS::Thread* thread = crashThread;
+    OS::DetachThread(thread);
+    OS::CancelThread(thread);
 
-            /* failsafe, but bad for ISI
-            register u32* const addressPtr = (u32*)(thread->context.srr0 + 4);
-            const s32 diff = static_cast<int>(reinterpret_cast<u32>(&LaunchSoftware) - reinterpret_cast<u32>(addressPtr));
-            u32 instruction = 0x48000000;
-            if(diff < 0) instruction = 0x4B000000;
-            *addressPtr = instruction + (diff & 0x00FFFFFF);
-            asm{
-                ASM(
-                dcbst 0, addressPtr; //update main memory from data cache so that it contains the correct instruction at addressPtr
-                sync;                //memory barrier, ie wait for dcbst to complete
-                icbi 0, addressPtr;  //invalidate instruction cache block at addressPtr so that the instruciton is fetched from the (updated) main memory
-                isync;               //discard prefetched instructions in case the update addressPtr was prefetched
-                )
-            }
-            */
-
-            alignas(0x20) ExceptionFile exception(thread->context);
-            exception.error = static_cast<OS::Error>(crashError);
-            char path[IOS::ipcMaxPath];
-            const System* system = System::sInstance;
-            snprintf(path, IOS::ipcMaxPath, "%s/Crash.pul", system->GetModFolder());
-            io->CreateAndOpen(path, IOS::MODE_READ_WRITE);
-            io->Overwrite(sizeof(ExceptionFile), &exception);
-            io->Close();
-        }
+    if (io != nullptr) {
+        alignas(0x20) ExceptionFile exception(thread->context);
+        exception.error = static_cast<OS::Error>(crashError);
+        char path[IOS::ipcMaxPath];
+        const System* system = System::sInstance;
+        snprintf(path, IOS::ipcMaxPath, "%s/Crash.pul", system->GetModFolder());
+        io->CreateAndOpen(path, IOS::MODE_READ_WRITE);
+        io->Overwrite(sizeof(ExceptionFile), &exception);
+        io->Close();
     }
-    if (exit || IsNewChannel()) LaunchSoftware();
+    LaunchSoftware();
 }
 kmCall(0x80226610, CreateCrashFile);
 
