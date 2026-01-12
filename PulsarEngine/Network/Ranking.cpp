@@ -53,7 +53,6 @@ static const u64 PRIORITY_BADGE_FC_LIST[] = {
 static const u64 ANT_BADGE_FC_LIST[] = {
     65400900000ULL,  // Fenixien
     116565656533ULL,  // ImZeraora
-    77776769ULL,  // Saucy
     0ULL};
 
 static bool IsPriorityBadgeFC(u64 fc) {
