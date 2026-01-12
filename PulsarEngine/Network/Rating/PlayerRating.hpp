@@ -37,6 +37,8 @@ extern u8 remoteDecimalVR[12][2];
 extern float lastRaceDeltas[12];
 
 float GetMultiplier();
+bool IsWeekendMultiplierActive();
+bool IsWeekendMultiplierActiveForRegion(u8 region);
 
 }  // namespace PointRating
 }  // namespace Pulsar

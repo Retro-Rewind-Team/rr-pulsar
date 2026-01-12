@@ -7,9 +7,20 @@
 #include <UI/PlayerCount.hpp>
 #include <PulsarSystem.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/ServerDateTime.hpp>
 
 namespace Pulsar {
 namespace UI {
+
+static void ApplyVRMultiplierHighlight(PushButton& button, bool hasMultiplier) {
+    nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(button.layout.GetPaneByName("go"));
+    if (textBox != nullptr) {
+        nw4r::ut::Color color = hasMultiplier ? nw4r::ut::Color(0, 255, 0, 255) : nw4r::ut::Color(255, 255, 255, 255);
+        textBox->color1[0] = color;
+        textBox->color1[1] = color;
+    }
+}
+
 // EXPANDED WFC, keeping WW button and just hiding it in case it is ever needed...
 
 kmWrite32(0x8064b984, 0x60000000);  // nop the InitControl call in the init func
@@ -542,6 +553,11 @@ void ExpWFCModeSel::BeforeControlUpdate() {
         info.strings[0] = buffer;
         this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     }
+
+    // Apply green highlight to buttons with active VR multiplier
+    ApplyVRMultiplierHighlight(this->twoHundredButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0C));
+    ApplyVRMultiplierHighlight(this->ottButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0B));
+    ApplyVRMultiplierHighlight(this->itemRainButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0D));
 }
 
 }  // namespace UI
