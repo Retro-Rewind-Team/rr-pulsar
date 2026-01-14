@@ -78,12 +78,8 @@ u32 Apply(u32 timer) {
 }
 
 // Reset delay values when race scene is created
-// Uses the RaceLoadHook mechanism to avoid duplicate hook conflicts
 static void ResetDelayOnRaceStart() {
     Delay::Reset();
-    Kick::Reset();
-    ConnectionQuality::Reset();
-    HostRouting::Reset();
 }
 RaceLoadHook raceLoadResetDelay(ResetDelayOnRaceStart);
 
