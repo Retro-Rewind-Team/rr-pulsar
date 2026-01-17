@@ -197,6 +197,7 @@ void System::UpdateContext() {
     bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && isFroom;
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
+    bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
     bool isStartRetro = false;
     bool isStartCT = false;
     bool isStartRTS = false;
@@ -255,6 +256,7 @@ void System::UpdateContext() {
                 isStartOTT = newContext & (1 << PULSAR_STARTOTT);
                 isStartItemRain = newContext & (1 << PULSAR_STARTITEMRAIN);
                 isRanking = newContext2 & (1 << PULSAR_RANKING);
+                isVR = newContext2 & (1 << PULSAR_VR);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -308,7 +310,7 @@ void System::UpdateContext() {
                             (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN |
                             (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
                             (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
-                            (isRanking) << PULSAR_RANKING;
+                            (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR;
     }
 
     // Combine the new context with preserved bits

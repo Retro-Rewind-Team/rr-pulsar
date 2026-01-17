@@ -102,6 +102,7 @@ enum FriendRoom1Settings {
     RADIO_KARTSELECT = 1,
     RADIO_CHARSELECT = 2,
     RADIO_RANKINGS = 3,
+    RADIO_VR = 4,
     SCROLLER_RACECOUNT = 0 + 8,
 
 };
@@ -297,6 +298,11 @@ enum CharacterRestriction {
 enum RankingSetting {
     RANKINGS_DISABLED,
     RANKINGS_ENABLED
+};
+
+enum VRSetting {
+    VR_DISABLED,
+    VR_ENABLED
 };
 
 enum HostSettingGPRACES {

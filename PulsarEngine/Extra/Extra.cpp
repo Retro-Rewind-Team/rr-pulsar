@@ -427,4 +427,7 @@ kmWrite32(0x8082AC00, 0x3B800001);
 // Disable Rainbow Road's Bottom Road Respawn and Bullet Bill Cancel [Ro]
 kmWrite32(0x8059BE20, 0x38600000);
 
+// Accurate Item Roulette [Ro]
+kmWrite32(0x807BB8EC, 0x60000000);
+
 }  // namespace Codes

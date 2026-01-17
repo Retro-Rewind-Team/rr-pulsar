@@ -97,6 +97,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_P1_WIFI_FRIEND_COIN:
         case SECTION_P2_WIFI_FRIEND_BALLOON:
         case SECTION_P2_WIFI_FRIEND_COIN:
+            this->CreateAndInitPage(*this, ExpWWLeaderboardUpdate::id);
             if (system->IsContext(PULSAR_MODE_OTT)) {
                 this->CreateAndInitPage(*this, PAGE_TT_SPLITS);
                 Pages::RaceHUD::sInstance->nextPageId = PAGE_TT_SPLITS;
@@ -154,6 +155,16 @@ void ExpSection::CreatePulPages() {
 void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
     Page* page;
     PageId initId = static_cast<PageId>(id);  // in case a pulpage wants a specific init id
+
+    // Forced redirection for ranked friend rooms
+    if ((id == PAGE_GPVS_LEADERBOARD_UPDATE || id == PAGE_BATTLE_LEADERBOARDS_UPDATE) &&
+        System::sInstance->IsContext(PULSAR_VR) && self.sectionId >= SECTION_P1_WIFI_FRIEND_VS && self.sectionId <= SECTION_P2_WIFI_FRIEND_COIN) {
+        page = new ExpWWLeaderboardUpdate;
+        self.Set(page, initId);
+        page->Init(PAGE_WW_LEADERBOARDS_UPDATE);
+        return;
+    }
+
     switch (id) {
         case PAGE_CUP_SELECT:
             page = new ExpCupSelect;

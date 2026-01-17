@@ -221,9 +221,18 @@ RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScena
         }
 
         if (playerIndexOnConsole < 2) {
-            float oldRating = (float)racePlayer.rating.points;
-            float decimal = (float)PointRating::remoteDecimalVR[aid][playerIndexOnConsole] / 100.0f;
-            oldRating += decimal;
+            float oldRating;
+            const RKNet::RoomType roomType = controller->roomType;
+            if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+                oldRating = (float)racePlayer.previousScore;
+            } else {
+                oldRating = (float)racePlayer.rating.points;
+            }
+
+            float remote = PointRating::remoteRatings[aid][playerIndexOnConsole];
+            if (remote >= 0.0f) {
+                oldRating = remote;
+            }
 
             float delta = PointRating::lastRaceDeltas[playerId];
             float current = oldRating + delta;

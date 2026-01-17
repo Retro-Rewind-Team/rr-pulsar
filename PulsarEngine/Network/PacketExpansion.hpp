@@ -97,6 +97,11 @@ enum SELECTComboStatus {
 
 };
 
+struct PulSelectExtra {
+    float rating;
+    u8 voteVariant;
+};
+
 struct PulSELECT : public RKNet::SELECTPacket {
     u16 pulVote;  // 0x38 no need for 2, they're guaranteed to be the same
     u16 pulWinningTrack;  // 0x3a
@@ -111,9 +116,7 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 racesPerKO;
     bool alwaysFinal;
 
-    u8 decimalVR[2];
-
-    u8 voteVariantIdx[2];
+    PulSelectExtra players[2];
 
     // Track blocking sync for regional rooms (late joiner support)
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks
@@ -124,7 +127,9 @@ struct PulSELECT : public RKNet::SELECTPacket {
 };
 
 struct PulRACEDATA : public RKNet::RACEDATAPacket {};
-struct PulUSER : public RKNet::USERPacket {};
+struct PulUSER : public RKNet::USERPacket {
+    float ratings[2];
+};
 struct PulITEM : public RKNet::ITEMPacket {};
 struct PulEVENT : public RKNet::EVENTPacket {};  // NOT RECOMMENDED as this has variable length
 #pragma pack(pop)

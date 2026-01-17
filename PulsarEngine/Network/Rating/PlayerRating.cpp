@@ -23,13 +23,14 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <PulsarSystem.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 
 namespace Pulsar {
 namespace PointRating {
 
-u8 remoteDecimalVR[12][2];
+float remoteRatings[12][2];
 float lastRaceDeltas[12];
 
 static const s16 SPLINE_CONTROL_POINTS[5] = {0, 1, 8, 50, 125};
@@ -94,6 +95,17 @@ static bool IsRegionalVS() {
     return ctrl && (ctrl->roomType == RKNet::ROOMTYPE_VS_REGIONAL || ctrl->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
 }
 
+static bool IsRankedFroom() {
+    RKNet::Controller* ctrl = RKNet::Controller::sInstance;
+    return ctrl && (ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) &&
+           System::sInstance->IsContext(PULSAR_VR);
+}
+
+static bool IsRegionalBT() {
+    RKNet::Controller* ctrl = RKNet::Controller::sInstance;
+    return ctrl && (ctrl->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
+}
+
 static bool IsRankedMode(const RacedataSettings& settings) {
     return settings.gamemode > MODE_6 && settings.gamemode < MODE_AWARD;
 }
@@ -115,7 +127,7 @@ static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
             if (IsBattle(scenario.settings.gamemode)) {
                 return GetUserBR(rksys->curLicenseId);
             }
-            if (IsRegionalVS() && scenario.settings.gamemode == MODE_PUBLIC_VS) {
+            if ((IsRegionalVS() && scenario.settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom()) {
                 return GetUserVR(rksys->curLicenseId);
             }
         }
@@ -123,12 +135,22 @@ static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
         const Network::CustomRKNetController* ctrl = 
             reinterpret_cast<const Network::CustomRKNetController*>(RKNet::Controller::sInstance);
         u8 aid = ctrl->aidsBelongingToPlayerIds[idx];
+        
+        float base;
+        if (ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+            base = (float)player.previousScore;
+        } else {
+            base = (float)player.rating.points;
+        }
+
         int slot = 0;
         for (int i = 0; i < idx; ++i) {
             if (ctrl->aidsBelongingToPlayerIds[i] == aid) slot++;
         }
         if (slot < 2) {
-            return (float)player.rating.points + (float)remoteDecimalVR[aid][slot] / 100.0f;
+            float remote = remoteRatings[aid][slot];
+            if (remote >= 0.0f) return remote;
+            return base;
         }
     }
     return (float)player.rating.points;
@@ -146,8 +168,8 @@ static void SaveLocalRating(const RacedataScenario& scenario, int idx, float rat
     if (!rksys) return;
     
     if (IsBattle(scenario.settings.gamemode)) {
-        SetUserBR(rksys->curLicenseId, rating);
-    } else if (IsRegionalVS() && scenario.settings.gamemode == MODE_PUBLIC_VS) {
+        if (IsRegionalBT() || IsRankedFroom()) SetUserBR(rksys->curLicenseId, rating);
+    } else if ((IsRegionalVS() && scenario.settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom()) {
         SetUserVR(rksys->curLicenseId, rating);
     }
 }
@@ -166,7 +188,7 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
     Raceinfo* raceInfo = Raceinfo::sInstance;
     bool isBattle = IsBattle(scenario->settings.gamemode);
     bool isRanked = IsRankedMode(scenario->settings);
-    bool isVR = !isBattle && IsRegionalVS() && scenario->settings.gamemode == MODE_PUBLIC_VS;
+    bool isVR = !isBattle && ((IsRegionalVS() && scenario->settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom());
     
     float deltas[12] = {};
     
@@ -234,7 +256,7 @@ kmRuntimeUse(0x8052e950);
 static void ApplyRatingPatch() {
     kmRuntimeBranchA(0x8052e950, RR_UpdatePoints);
     RKNet::Controller* ctrl = RKNet::Controller::sInstance;
-    if (ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    if ((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && !System::sInstance->IsContext(PULSAR_VR)) {
         kmRuntimeWrite32A(0x8052e950, 0x9421ff70);
     }
 }

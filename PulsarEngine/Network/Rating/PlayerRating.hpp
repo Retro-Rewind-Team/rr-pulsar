@@ -33,7 +33,7 @@ float GetUserBR(u32 licenseId);
 void SetUserVR(u32 licenseId, float vr);
 void SetUserBR(u32 licenseId, float br);
 
-extern u8 remoteDecimalVR[12][2];
+extern float remoteRatings[12][2];
 extern float lastRaceDeltas[12];
 
 float GetMultiplier();

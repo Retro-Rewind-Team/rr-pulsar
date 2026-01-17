@@ -32,12 +32,14 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         else
             rating = PointRating::GetUserVR(licenseId);
 
-        float decimal = rating - (int)rating;
-        src->decimalVR[0] = (u8)(decimal * 100.0f + 0.5f);
+        src->players[0].rating = rating;
+        if (Pulsar::System::sInstance->IsContext(PULSAR_VR)) {
+            src->playersData[0].sumPoints = static_cast<u16>(rating);
+        }
     } else {
-        src->decimalVR[0] = 0;
+        src->players[0].rating = -1.0f;
     }
-    src->decimalVR[1] = 0;
+    src->players[1].rating = -1.0f;
 
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller->subs[controller->currentSub].localPlayerCount == 2) {
@@ -45,7 +47,15 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const RacedataPlayer& p2 = racedata->menusScenario.players[1];
         src->playersData[1].character = static_cast<u8>(p2.characterId);
         src->playersData[1].kart = static_cast<u8>(p2.kartId);
-        src->playersData[1].sumPoints = 50.00f;
+
+        float rating;
+        if (isBattle)
+            rating = PointRating::GetUserBR(rksys->curLicenseId);
+        else
+            rating = PointRating::GetUserVR(rksys->curLicenseId);
+
+        src->players[1].rating = rating;
+        src->playersData[1].sumPoints = static_cast<u16>(rating);
         src->playersData[1].starRank = 0;
     }
 
@@ -68,8 +78,14 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const u8 vanillaVote = CupsConfig::ConvertTrack_PulsarIdToRealId(static_cast<PulsarId>(src->pulVote));
         src->playersData[0].courseVote = vanillaVote;
         src->playersData[1].courseVote = vanillaVote;
-    } else
+    }
+
+    // Always send expanded packet in friend rooms for VR decimals and other features
+    const RKNet::RoomType roomType = controller->roomType;
+    if (system->IsContext(PULSAR_CT) || roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
         len = sizeof(PulSELECT);
+    }
+
     packetHolder->Copy(src, len);
 }
 kmCall(0x80661040, BeforeSELECTSend);
@@ -81,20 +97,27 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     asm(mr aid, r19;);
 
     for (int i = 0; i < 2; ++i) {
-        PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
+        PointRating::remoteRatings[aid][i] = -1.0f;
+    }
+    register RKNet::PacketHolder<PulSELECT>* holder;
+    asm(mr holder, r27);
+    if (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) {
+        for (int i = 0; i < 2; ++i) {
+            PointRating::remoteRatings[aid][i] = src->players[i].rating;
+        }
     }
 
     PulSELECT& dest = handler->receivedPackets[aid];
-    register RKNet::PacketHolder<PulSELECT>* holder;
-    asm(mr holder, r27);
     if (holder != nullptr && holder->packetSize == sizeof(RKNet::SELECTPacket)) {
         const u16 pulWinning = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->winningCourse));
         src->pulWinningTrack = pulWinning;  // this is safe because src is a ptr to the buffer of holder which is always big enough
         const u16 pulVote = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->playersData[0].courseVote));
         src->pulVote = pulVote;
-        // Non-CT players won't have voteVariantIdx, default to 0
-        src->voteVariantIdx[0] = 0;
-        src->voteVariantIdx[1] = 0;
+        // Non-CT players won't have pul ratings or voteVariantIdx, default to 0
+        src->players[0].rating = -1.0f;
+        src->players[1].rating = -1.0f;
+        src->players[0].voteVariant = 0;
+        src->players[1].voteVariant = 0;
         src->blockedTrackCount = 0;
         src->curBlockingArrayIdx = 0;
         src->lastGroupedTrackPlayed = false;
@@ -160,9 +183,9 @@ u8 ExpSELECTHandler::GetVoteVariantIdx(u8 aid, u8 hudSlotId) const {
     RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
 
     if (aid == sub.localAid) {
-        return this->toSendPacket.voteVariantIdx[hudSlotId];
+        return this->toSendPacket.players[hudSlotId].voteVariant;
     } else {
-        return this->receivedPackets[aid].voteVariantIdx[hudSlotId];
+        return this->receivedPackets[aid].players[hudSlotId].voteVariant;
     }
 }
 
@@ -194,8 +217,22 @@ static bool IsGroupedTrack(PulsarId id) {
     if (CupsConfig::IsReg(id)) return false;
     const u32 idx = id - 0x100;
     switch (idx) {
-        case 6: case 9: case 27: case 29: case 31: case 32: case 37: case 51:
-        case 57: case 61: case 63: case 67: case 73: case 76: case 77: case 85:
+        case 6:
+        case 9:
+        case 27:
+        case 29:
+        case 31:
+        case 32:
+        case 37:
+        case 51:
+        case 57:
+        case 61:
+        case 63:
+        case 67:
+        case 73:
+        case 76:
+        case 77:
+        case 85:
             return true;
         default:
             if (idx >= 88 && idx <= 103) return true;
@@ -297,9 +334,9 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
             // Winner voted random, so also randomize the variant
             winnerVariant = cupsConfig->RandomizeVariant(vote);
         } else if (winner == sub.localAid) {
-            winnerVariant = self.toSendPacket.voteVariantIdx[0];
+            winnerVariant = self.toSendPacket.players[0].voteVariant;
         } else {
-            winnerVariant = self.receivedPackets[winner].voteVariantIdx[0];
+            winnerVariant = self.receivedPackets[winner].players[0].voteVariant;
         }
         self.toSendPacket.variantIdx = winnerVariant;
 
@@ -542,7 +579,7 @@ static void StoreVoteVariantAfterSetPlayerData() {
 
     ExpSELECTHandler& handler = ExpSELECTHandler::Get();
     if (hudSlotId < 2) {
-        handler.toSendPacket.voteVariantIdx[hudSlotId] = variantIdx;
+        handler.toSendPacket.players[hudSlotId].voteVariant = variantIdx;
     }
 
     // Execute the replaced instruction: addi r28, r28, 0xc
