@@ -17,7 +17,9 @@ enum DenyType {
 
 class Mgr {  // Manages network related stuff within Pulsar
    public:
-    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A), customItemsBitfield(0x7FFFF) {}
+    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), lastGroupedTrackPlayedLocked(false), region(0x0A), customItemsBitfield(0x7FFFF) {
+        for (int i = 0; i < MAX_TRACK_BLOCKING; i++) lockedTracks[i] = PULSARID_NONE;
+    }
     u32 hostContext;
     u32 hostContext2;
     u32 customItemsBitfield;
@@ -28,9 +30,11 @@ class Mgr {  // Manages network related stuff within Pulsar
     u8 curBlockingArrayIdx;
     u8 racesPerGP;
     bool lastGroupedTrackPlayed;  // Whether the most recent blocked track was a grouped track
+    bool lastGroupedTrackPlayedLocked;
     u8 padding[1];
     u32 region;
     PulsarId* lastTracks;
+    PulsarId lockedTracks[MAX_TRACK_BLOCKING];
 };
 
 }  // namespace Network

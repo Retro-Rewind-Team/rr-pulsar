@@ -111,7 +111,10 @@ void System::Init(const ConfigFile& conf) {
     // Track blocking
     u32 trackBlocking = this->info.GetTrackBlocking();
     this->netMgr.lastTracks = new PulsarId[trackBlocking];
-    for (int i = 0; i < trackBlocking; ++i) this->netMgr.lastTracks[i] = PULSARID_NONE;
+    for (int i = 0; i < trackBlocking; ++i) {
+        this->netMgr.lastTracks[i] = PULSARID_NONE;
+        this->netMgr.lockedTracks[i] = PULSARID_NONE;
+    }
     const BMGHeader* const confBMG = &conf.GetSection<PulBMG>().header;
     this->rawBmg = EGG::Heap::alloc<BMGHeader>(confBMG->fileLength, 0x4, RootScene::sInstance->expHeapGroup.heaps[1]);
     memcpy(this->rawBmg, confBMG, confBMG->fileLength);
