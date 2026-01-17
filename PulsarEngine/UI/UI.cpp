@@ -1,4 +1,5 @@
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
+#include <MarioKartWii/UI/Layout/Layout.hpp>
 #include <UI/UI.hpp>
 #include <PulsarSystem.hpp>
 
@@ -16,6 +17,7 @@
 #include <UI/ChangeCombo/ChangeCombo.hpp>
 
 // Pulsar Custom Pages:
+#include <UI/CustomItems/CustomItemPage.hpp>
 #include <UI/TeamSelect/TeamSelect.hpp>
 #include <UI/RoomKick/RoomKickPage.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
@@ -82,6 +84,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_P2_WIFI_FROOM_COIN_VOTING:  // 0x67
             this->CreateAndInitPage(*this, SettingsPanel::id);
             this->CreateAndInitPage(*this, SettingsPageSelect::id);
+            this->CreateAndInitPage(*this, CustomItemPage::id);
             break;
 
         case SECTION_P1_WIFI_VS:  // 0x68
@@ -128,6 +131,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_P1_WIFI_BATTLE_VOTING:
             this->CreateAndInitPage(*this, SettingsPanel::id);
             this->CreateAndInitPage(*this, SettingsPageSelect::id);
+            this->CreateAndInitPage(*this, CustomItemPage::id);
             this->CreateAndInitPage(*this, VRLeaderboardPage::id);
             break;
     }
@@ -251,6 +255,9 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
         case VRLeaderboardPage::id:
             page = new VRLeaderboardPage;
             break;
+        case CustomItemPage::id:
+            page = new CustomItemPage;
+            break;
         default:
             page = self.CreatePageById(initId);
     }
@@ -310,7 +317,20 @@ kmCall(0x8062314c, ExpSection::SetNextPage);
 // Various Util funcs
 void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tplName) {
     TPLPalettePtr tplRes = static_cast<TPLPalettePtr>(control.layout.resources->multiArcResourceAccessor.GetResource(lyt::res::RESOURCETYPE_TEXTURE, tplName));
-    if (tplRes != nullptr) control.layout.GetPaneByName(paneName)->GetMaterial()->GetTexMapAry()->ReplaceImage(tplRes);
+    if (tplRes == nullptr) {
+        Section* section = SectionMgr::sInstance->curSection;
+        if (section && section->resourceAccessorList) {
+            LayoutResourceAccessor* acc = *reinterpret_cast<LayoutResourceAccessor**>(section->resourceAccessorList);
+            for (; acc != nullptr; acc = acc->prev) {
+                tplRes = static_cast<TPLPalettePtr>(acc->multiArcResourceAccessor.GetResource(lyt::res::RESOURCETYPE_TEXTURE, tplName));
+                if (tplRes) break;
+            }
+        }
+    }
+    if (tplRes != nullptr) {
+        lyt::Pane* pane = control.layout.GetPaneByName(paneName);
+        if (pane) pane->GetMaterial()->GetTexMapAry()->ReplaceImage(tplRes);
+    }
 };
 
 // Implements the use of Pulsar's BMGHolder when needed

@@ -1,4 +1,5 @@
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <UI/CustomItems/CustomItemPage.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/UI/Page/Menu/VSSettings.hpp>
@@ -159,6 +160,12 @@ void SettingsPageSelect::OnBackPress(u32 hudSlotId) {
 void SettingsPageSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
     // Get the SettingsPanel and set up the selected page
     const u32 selectedPage = button.buttonId;
+
+    if (selectedPage == 12) {
+        this->nextPageId = static_cast<PageId>(CustomItemPage::id);
+        this->EndStateAnimated(0, button.GetAnimationFrameSize());
+        return;
+    }
 
     SettingsPanel* settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
     if (settingsPanel != nullptr) {

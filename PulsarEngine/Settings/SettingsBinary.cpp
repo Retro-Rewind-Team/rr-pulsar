@@ -30,6 +30,7 @@ Binary::Binary(u32 pulsarPageCount, u32 userPageCount, u32 trackCount) {
     params.header.size = sizeof(MiscParams);
     params.trackCount = trackCount;
     params.lastSelectedCup = PULSARCUPID_NONE;
+    params.customItemsBitfield = 0x7FFFF;
 
     TrophiesHolder& trophies = this->GetSection<TrophiesHolder>();
     trophies.header.magic = TrophiesHolder::tropMagic;

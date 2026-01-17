@@ -20,6 +20,7 @@ static void ConvertROOMPacketToData(const PulROOM& packet) {
     System* system = System::sInstance;
     system->netMgr.hostContext = packet.hostSystemContext;
     system->netMgr.hostContext2 = packet.hostSystemContext2;
+    system->netMgr.customItemsBitfield = packet.customItemsBitfield;
     system->netMgr.racesPerGP = packet.raceCount;
 }
 
@@ -214,6 +215,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                           itemModeRain << PULSAR_ITEMMODERAIN | itemModeStorm << PULSAR_ITEMMODESTORM |
                                           settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS) << PULSAR_HAW | itemBoxRepsawnFast << PULSAR_ITEMBOXRESPAWN |
                                           Ranking << PULSAR_RANKING;
+
+        destPacket->customItemsBitfield = settings.GetCustomItems();
 
         u8 raceCount;
         if (koSetting == KOSETTING_ENABLED)

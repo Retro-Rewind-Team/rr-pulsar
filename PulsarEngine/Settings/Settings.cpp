@@ -86,6 +86,11 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
     this->rawBin = buffer;
     this->AdjustSections();
 
+    MiscParams& params = this->rawBin->GetSection<MiscParams>();
+    if (params.customItemsBitfield == 0) {
+        params.customItemsBitfield = 0x7FFFF;
+    }
+
     bool hasTrophies = io->OpenFile(this->trophiesFilePath, FILE_MODE_READ_WRITE);
     if (hasTrophies) {
         alignas(0x20) Pulsar::SectionHeader tropHeader;

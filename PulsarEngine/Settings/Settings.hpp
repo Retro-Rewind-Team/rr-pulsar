@@ -14,6 +14,7 @@ class Mgr;
 }
 namespace UI {
 class SettingsPanel;
+class CustomItemPage;
 }
 namespace Settings {
 
@@ -54,13 +55,16 @@ class Mgr {
 
    public:
     Mgr() : rawBin(nullptr) {}
-    static const Mgr& Get() { return *sInstance; }
+    static Mgr& Get() { return *sInstance; }
+    static const Mgr& GetConst() { return *sInstance; }
 
     bool HasTrophy(u32 crc32, TTMode mode) const;
     bool HasTrophy(PulsarId id, TTMode mode) const;
     u16 GetTotalTrophyCount(TTMode mode) const { return totalTrophyCount[mode]; }
     int GetTrophyCount(TTMode mode) const { return this->rawBin->GetSection<TrophiesHolder>().trophyCount[mode]; }
     PulsarCupId GetSavedSelectedCup() const { return this->rawBin->GetSection<MiscParams>().lastSelectedCup; }
+    u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
+    void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }
 
     // GP
     static u8 GetGPStatus(u32 idx, u32 cc) {
