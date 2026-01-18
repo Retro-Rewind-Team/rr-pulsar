@@ -184,9 +184,9 @@ static void UniversalLimitLock() {
         ItemObjProperties* properties = reinterpret_cast<ItemObjProperties*> kmRuntimeAddr(0x809C2F48);
         if (properties) {
             for (int i = 0; i < 15; i++) {
-                if (properties[i].limit < 20) properties[i].limit = 20;
-                if (properties[i].capacity < 20) properties[i].capacity = 20;
-                if (properties[i].capacity2 < 20) properties[i].capacity2 = 20;
+                if (properties[i].limit < 12) properties[i].limit = 12;
+                if (properties[i].capacity < 12) properties[i].capacity = 12;
+                if (properties[i].capacity2 < 12) properties[i].capacity2 = 12;
             }
         }
     }
