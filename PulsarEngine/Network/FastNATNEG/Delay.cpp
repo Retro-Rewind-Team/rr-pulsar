@@ -86,11 +86,12 @@ RaceLoadHook raceLoadResetDelay(ResetDelayOnRaceStart);
 // mainNetworkLoop patch
 // Calculate delay during online races (hooked into VIWaitForRetrace call)
 static void CalcDelayInNetworkLoop() {
-    DWC::MatchControl* matchCnt = *stpMatchCnt;
-    if (matchCnt != nullptr) {
-        Raceinfo* raceInfo = Raceinfo::sInstance;
-        if (DriverMgr::isOnlineRace && raceInfo != nullptr) {
-            Delay::Calc(raceInfo->raceFrames);
+    if (stpMatchCnt != nullptr && *stpMatchCnt != nullptr) {
+        if (DriverMgr::isOnlineRace) {
+            Raceinfo* raceInfo = Raceinfo::sInstance;
+            if (raceInfo != nullptr) {
+                Delay::Calc(raceInfo->raceFrames);
+            }
         }
     }
     VIWaitForRetrace();
