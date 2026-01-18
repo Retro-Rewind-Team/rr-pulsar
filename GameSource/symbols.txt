@@ -161,6 +161,7 @@ Patch_AuthServerOverride = 0x800ecaac
 Patch_HostHeader = 0x800ed868
 Patch_WiimmfiHook1 = 0x800ee3a0
 loginRegion__3DWC = 0x80384fd0
+DWC_LoginAsync = 0x800d13f8
 DWC_AuthServer = 0x80386338
 authServer__3DWC = 0x80386338 
 sInstance__Q23DWC12MatchControl = 0x8038630C
@@ -1918,6 +1919,7 @@ UpdateStatusDatas__Q25RKNet10ControllerFv = 0x8065a0b4
 SetupGameServer__Q25RKNet10ControllerFv = 0x800d1984
 UpdateServersAsync__Q25RKNet10ControllerFv = 0x80656b44
 GetConnectionState__Q25RKNet10ControllerCFv = 0x80658148
+ConnectToWFC__Q25RKNet10ControllerFv = 0x80658b9c
 Alloc__Q25RKNet10ControllerFUii = 0x8065832c
 Free__Q25RKNet10ControllerFPv = 0x806583b4
 
