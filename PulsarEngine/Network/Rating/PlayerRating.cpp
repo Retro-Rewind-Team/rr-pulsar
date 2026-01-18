@@ -242,7 +242,9 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
                 }
             }
             if (allDisconnected) {
-                deltas[i] = (playerCount >= 4) ? (Dolphin::IsEmulator() ? -1.0f : -0.5f) : 0.0f;
+                deltas[i] = (playerCount >= 4) ? -0.01f : 0.0f;
+            } else if (deltas[i] >= -0.0101f && deltas[i] < 0.0f) {
+                deltas[i] = 0.0f;
             }
         }
         
