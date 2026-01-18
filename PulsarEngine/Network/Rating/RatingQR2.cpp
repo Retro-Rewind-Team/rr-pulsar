@@ -40,10 +40,20 @@ namespace PointRating {
 
 kmRuntimeUse(0x8010f434);
 kmRuntimeUse(0x800e4c88);
+kmRuntimeUse(0x8010f354);
+kmRuntimeUse(0x800e5524);
+
 typedef void (*qr2_buffer_addA_t)(void* buffer, const char* value);
 static const qr2_buffer_addA_t qr2_buffer_addA = (qr2_buffer_addA_t)kmRuntimeAddr(0x8010f434);
+
+typedef void (*qr2_keybuffer_add_t)(void* buffer, int key);
+static const qr2_keybuffer_add_t qr2_keybuffer_add = (qr2_keybuffer_add_t)kmRuntimeAddr(0x8010f354);
+
 typedef void (*ServerKeyCallback)(int key, void* buffer);
 static const ServerKeyCallback OriginalServerKeyCallback = (ServerKeyCallback)kmRuntimeAddr(0x800e4c88);
+
+typedef void (*KeyListCallback)(int keyType, void* buffer);
+static KeyListCallback OriginalKeyListCallback = nullptr;
 
 static bool IsStreamerModeActiveForServer() {
     const Settings::Mgr& settings = Settings::Mgr::Get();
@@ -92,12 +102,32 @@ static void MyServerKeyCallback(int key, void* buffer) {
     OriginalServerKeyCallback(key, buffer);
 }
 
+static void MyKeyListCallback(int keyType, void* buffer) {
+    if (OriginalKeyListCallback) {
+        OriginalKeyListCallback(keyType, buffer);
+    }
+    if (keyType == 0) { // QR2_SERVER_KEY
+        // Add ev and eb if they aren't already in the buffer (they are missing in private rooms)
+        unsigned char* b = (unsigned char*)buffer;
+        int count = *(int*)(b + 0x100);
+        bool hasEv = false;
+        bool hasEb = false;
+        for (int i = 0; i < count; i++) {
+            if (b[i] == 0x65) hasEv = true;
+            if (b[i] == 0x66) hasEb = true;
+        }
+        if (!hasEv) qr2_keybuffer_add(buffer, 0x65);
+        if (!hasEb) qr2_keybuffer_add(buffer, 0x66);
+    }
+}
+
 kmRuntimeUse(0x8010ecac);
 typedef int (*qr2_init_socketA_t)(void* q, int s, int bound_port, const char* gamename, const char* secret_key, int is_public, int nat_negotiate, void* server_key_callback, void* player_key_callback, void* team_key_callback, void* key_list_callback, void* count_callback, void* adderror_callback, void* userdata);
 static const qr2_init_socketA_t qr2_init_socketA_Real = (qr2_init_socketA_t)kmRuntimeAddr(0x8010ecac);
 
 static int Hook_qr2_init_socketA(void* q, int s, int bound_port, const char* gamename, const char* secret_key, int is_public, int nat_negotiate, void* server_key_callback, void* player_key_callback, void* team_key_callback, void* key_list_callback, void* count_callback, void* adderror_callback, void* userdata) {
-    return qr2_init_socketA_Real(q, s, bound_port, gamename, secret_key, is_public, nat_negotiate, (void*)MyServerKeyCallback, player_key_callback, team_key_callback, key_list_callback, count_callback, adderror_callback, userdata);
+    OriginalKeyListCallback = (KeyListCallback)key_list_callback;
+    return qr2_init_socketA_Real(q, s, bound_port, gamename, secret_key, is_public, nat_negotiate, (void*)MyServerKeyCallback, player_key_callback, team_key_callback, (void*)MyKeyListCallback, count_callback, adderror_callback, userdata);
 }
 kmCall(0x800d4f28, Hook_qr2_init_socketA);
 
