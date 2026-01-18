@@ -116,7 +116,8 @@ void SettingsPageSelect::OnActivate() {
                 i == Settings::SETTINGSTYPE_BATTLE ||
                 i == (Settings::SETTINGSTYPE_EXTENDEDTEAMS + Settings::Params::pulsarPageCount) ||
                 i == (Settings::SETTINGSTYPE_FROOM2 + Settings::Params::pulsarPageCount) ||
-                i == (Settings::SETTINGSTYPE_MISC + Settings::Params::pulsarPageCount)) {
+                i == (Settings::SETTINGSTYPE_MISC + Settings::Params::pulsarPageCount) ||
+                i == (Settings::SETTINGSTYPE_ITEMS + Settings::Params::pulsarPageCount)) {
                 isHidden = true;
             }
         }
