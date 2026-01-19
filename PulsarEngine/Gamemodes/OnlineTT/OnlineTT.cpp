@@ -1,3 +1,4 @@
+#include <hooks.hpp>
 #include <kamek.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
@@ -175,7 +176,11 @@ static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
     const Pages::SELECTStageMgr::Status old = stageMgr->status;
     if (system->ottMgr.voteState != COMBO_NONE) stageMgr->status = Pages::SELECTStageMgr::STATUS_VR_PAGE;  // so that the countdown shows
     stageMgr->Pages::SELECTStageMgr::BeforeControlUpdate();
-    stageMgr->status = old;
+    if (system->ottMgr.voteState == COMBO_SELECTED) {
+        stageMgr->status = Pages::SELECTStageMgr::STATUS_WAITING;
+    } else {
+        stageMgr->status = old;
+    }
 
     if (system->IsContext(PULSAR_MODE_OTT)) {
         const RKNet::Controller* controller = RKNet::Controller::sInstance;
@@ -296,15 +301,17 @@ kmCall(0x80643da0, PreventVoteChangeSection);
 
 static void FixAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {  // menu is either drift or multidrift
     System* system = System::sInstance;
-    if (system->ottMgr.voteState == COMBO_SELECTION) {
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
         system->ottMgr.voteState = COMBO_SELECTED;
         Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
         handler.toSendPacket.playersData[0].character = SectionMgr::sInstance->sectionParams->characters[0];
         handler.toSendPacket.playersData[0].kart = SectionMgr::sInstance->sectionParams->karts[0];
         handler.toSendPacket.allowChangeComboStatus = Network::SELECT_COMBO_SELECTED;
         menu.EndStateAnimated(0, 0.0f);
-    } else
-        menu.LoadNextPageById(id, button);
+        menu.LoadNextPageById(PAGE_SELECT_STAGE_MGR, button);
+        return;
+    }
+    menu.LoadNextPageById(id, button);
 }
 kmCall(0x8084e698, FixAfterDrift);
 // kmCall(0x8084b7d4, FixAfterDrift);
