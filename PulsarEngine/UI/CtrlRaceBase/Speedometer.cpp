@@ -7,6 +7,7 @@ namespace UI {
 u32 CtrlRaceSpeedo::Count() {
     if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_SPEEDOMETER) == SOM_DISABLED) return 0;
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    if (scenario.localPlayerCount > 1) return 0;
     u32 localPlayerCount = scenario.localPlayerCount;
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) localPlayerCount += 1;

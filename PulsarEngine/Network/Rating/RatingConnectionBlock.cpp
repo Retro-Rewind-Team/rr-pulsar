@@ -13,7 +13,7 @@ void CheckVRAndLogin(wchar_t* miiName, int unk, void* callback, RKNet::Controlle
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys) {
         float vr = PointRating::GetUserVR(rksys->curLicenseId);
-        if (vr > 2000.0f) {
+        if (vr > 1837.67f) {
             block = true;
         }
     }
