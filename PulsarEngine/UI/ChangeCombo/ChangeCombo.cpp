@@ -37,15 +37,9 @@ kmWrite24(0x808998b3, 'PUL');  // WifiMemberConfirmButton -> PULiMemberConfirmBu
 void ExpVR::OnInit() {
     this->InitControlGroup(0x12);
     VR::OnInit();
-    System* system = System::sInstance;
-    const u32 blockingCount = system->GetInfo().GetTrackBlocking();
-    for (u32 i = 0; i < blockingCount; ++i) {
-        system->netMgr.lockedTracks[i] = system->netMgr.lastTracks[i];
-    }
-    system->netMgr.lastGroupedTrackPlayedLocked = system->netMgr.lastGroupedTrackPlayed;
-
     bool hideSettings = false;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const System* system = System::sInstance;
 
     const Section* curSection = SectionMgr::sInstance->curSection;
     Pages::SELECTStageMgr* selectStageMgr = curSection->Get<Pages::SELECTStageMgr>();

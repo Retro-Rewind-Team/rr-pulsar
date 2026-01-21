@@ -53,14 +53,14 @@ bool IsTrackBlocked(PulsarId id) {
     if (blockingCount == 0 || system->netMgr.lastTracks == nullptr) return false;
 
     for (u32 i = 0; i < blockingCount; ++i) {
-        if (system->netMgr.lockedTracks[i] == id) return true;
+        if (system->netMgr.lastTracks[i] == id) return true;
     }
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller != nullptr &&
         (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
          controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
-        if (IsGroupedTrack(id) && system->netMgr.lastGroupedTrackPlayedLocked) {
+        if (IsGroupedTrack(id) && system->netMgr.lastGroupedTrackPlayed) {
             return true;
         }
     }
