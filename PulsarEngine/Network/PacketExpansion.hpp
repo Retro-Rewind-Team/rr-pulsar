@@ -83,7 +83,7 @@ struct PulROOM : public RKNet::ROOMPacket {
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
     u8 padding;
-    u16 blockedTracks[8];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+    u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 };
 
 enum SELECTComboStatus {
@@ -120,7 +120,7 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
     u8 blockingPadding;
-    u16 blockedTracks[8];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+    u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 };
 
 struct PulRACEDATA : public RKNet::RACEDATAPacket {};

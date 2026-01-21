@@ -18,7 +18,7 @@ class Info {
     inline u32 GetWiimmfiRegion() const { return this->wiimmfiRegion; }
     inline u32 GetProb100() const { return this->prob100cc; }
     inline u32 GetProb150() const { return this->prob150cc; }
-    inline u32 GetTrackBlocking() const { return this->trackBlocking; }
+    inline u32 GetTrackBlocking() const { return 12; }
     inline u16 GetCupIconCount() const {
         u16 count = this->cupIconCount;
         if (count == 0) count = 100;
