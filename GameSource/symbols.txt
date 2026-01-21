@@ -587,6 +587,9 @@ _PSSinCosRad__Q24nw4r2efFPff = 0x80036f70
 GetPtr__Q34nw4r2ef10HandleBaseCFv = 0x800375f0
 
 #g3d
+CheckRevision__Q34nw4r3g3d7ResFileCFv = 0x8004d900
+Init__Q34nw4r3g3d7ResFileFv = 0x8004d630
+Bind__Q34nw4r3g3d7ResFileFQ34nw4r3g3d7ResFile = 0x8004d1f0
 GetResMdl__Q34nw4r3g3d7ResFileCFPCc = 0x8004c240
 GetResMat__Q34nw4r3g3d6ResMdlCFPCc = 0x8004e8f0
 SetMtx__Q34nw4r3g3d6ScnObjFQ44nw4r3g3d6ScnObj13ScnObjMtxTypeRCQ34nw4r4math5MTX34 = 0x8006dc20
