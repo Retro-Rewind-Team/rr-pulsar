@@ -4,6 +4,7 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
+#include <MarioKartWii/Item/ItemBehaviour.hpp>
 #include <MarioKartWii/Item/Obj/ItemObjHolder.hpp>
 #include <MarioKartWii/Item/Obj/ObjProperties.hpp>
 #include <MarioKartWii/Item/Obj/Bomb.hpp>
@@ -25,7 +26,7 @@ static const float SPAWN_HEIGHT = 2500.0f;
 static const float XZ_RANGE = 8000.0f;
 static const float MIN_FORWARD_OFFSET = 3500.0f;
 static const u32 BOBOMB_DURATION_EXTRA = 20;
-static const float PLAYER_PROXIMITY_SQ = 10000.0f * 10000.0f;
+static const float PLAYER_PROXIMITY_SQ = 7000.0f * 7000.0f;
 static const u32 ITEMS_PER_PLAYER_PER_FRAME = 1;
 static const u32 LIGHTNING_MIN_FRAME = 1800;
 static const float OFFSET_SCALE = 10.0f;
@@ -253,6 +254,23 @@ static void OnTimerUpdate(u32 oldFrame) {
     tm->raceFrameCounter = oldFrame + 1;
     if (!IsItemRainEnabled()) return;
 
+    Item::Manager* im = Item::Manager::sInstance;
+    if (im) {
+        u32 currentFrame = tm->raceFrameCounter;
+        for (int i = 0; i < 15; i++) {
+            Item::ObjHolder& holder = im->itemObjHolders[i];
+            for (u32 j = 0; j < holder.capacity; j++) {
+                Item::Obj* obj = holder.itemObj[j];
+                if (obj && (obj->bitfield74 & 1) == 0) {
+                    u32 spawnFrame = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164);
+                    if (spawnFrame != 0 && (currentFrame - spawnFrame) > 300) {
+                        obj->KillFromOtherCollision(true);
+                    }
+                }
+            }
+        }
+    }
+
     if (!(tm->hasRaceStarted & 1)) return;
 
     SectionMgr* sm = SectionMgr::sInstance;
@@ -399,7 +417,6 @@ static void BombExplosion() {
     *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x170) = r0_val;
 }
 
-kmRuntimeUse(0x80786f7c);
 static void SafeBombExplosionResize(void* entity, float radius, float maxSpeed) {
     if (entity) Resize__Q24Item6EntityFff(entity, radius, maxSpeed);
 }
@@ -413,6 +430,28 @@ static void SafeOffroadEntityWrapper(Item::Obj* obj, u32 param) {
         obj->entity->paramsBitfield |= 0x800;
     }
     obj->bitfield78 &= ~0x10;
+}
+
+static int IsSpawnLimitNotReachedHook(ItemId id) {
+    if (IsItemRainEnabled()) return 1;
+    if (id >= 19) return 0;
+    const Item::Behavior& behave = Item::Behavior::behaviourTable[id];
+    Item::Manager* im = Item::Manager::sInstance;
+    Item::ObjHolder& holder = im->itemObjHolders[behave.objId];
+    int currentCount = holder.GetTotalItemCount();
+    return behave.numberOfItems <= (holder.capacity2 - currentCount);
+}
+
+static void TotalItemCountHook() {
+    register int total;
+    register Item::Manager* manager;
+    asm {
+        mr total, r27
+        mr manager, r30
+    }
+    int res = total - 30;
+    if (IsItemRainEnabled()) res = -30;
+    manager->totalItemCountMinus30 = res;
 }
 
 // Hooks
@@ -440,6 +479,10 @@ kmWrite32(0x807b6edc, 0x60000000);
 kmWrite32(0x807b6ee0, 0x60000000);
 kmWrite32(0x807b6ee4, 0x60000000);
 kmWrite32(0x807b6ee8, 0x60000000);
+
+kmBranch(0x80799be8, IsSpawnLimitNotReachedHook);
+kmWrite32(0x8079992c, 0x60000000);
+kmCall(0x80799930, TotalItemCountHook);
 
 }  // namespace ItemRain
 }  // namespace Pulsar
