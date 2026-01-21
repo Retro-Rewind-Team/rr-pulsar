@@ -1041,6 +1041,7 @@ KillFromOtherCollision__Q24Item3ObjFb = 0x807a6560
 
 #ItemEntity
 Resize__Q24Item6EntityFff = 0x80786f7c
+Resize__6EntityFff = 0x80786f7c
 
 #TimerManager
 UpdateTimers__12TimerManagerFv = 0x80535904

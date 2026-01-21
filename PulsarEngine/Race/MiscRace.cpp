@@ -1,4 +1,5 @@
 #include <kamek.hpp>
+#include <MarioKartWii/RKNet/FriendMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBalloon.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceResult.hpp>
@@ -44,20 +45,53 @@ static void SetStartingItem(Item::PlayerInventory& inventory, ItemId id, bool is
 }
 kmCall(0x80799808, SetStartingItem);
 
+extern "C" void* sInstance__Q23DWC12MatchControl;
+
+static u32 GetPidForAid(u32 aid) {
+    u8* stpMatchCnt = (u8*)sInstance__Q23DWC12MatchControl;
+    if (stpMatchCnt == nullptr) return 0;
+
+    u32 numHost = *(u32*)(stpMatchCnt + 0x30);
+    for (u32 i = 0; i < numHost; i++) {
+        u8* node = stpMatchCnt + 0x38 + i * 0x30;
+        if (*(node + 0x16) == aid) {
+            return *(u32*)node;
+        }
+    }
+    return 0;
+}
+
+static bool IsFriend(u32 pid) {
+    if (pid == 0) return false;
+    RKNet::FriendMgr* friendMgr = RKNet::FriendMgr::sInstance;
+    if (friendMgr == nullptr) return false;
+
+    for (int i = 0; i < 30; i++) {
+        if (friendMgr->friendPids[i] == pid) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // From JoshuaMK, ported to C++ by Brawlbox and adapted as a setting
-static int MiiHeads(Racedata* racedata, u32 unused, u32 unused2, u8 id) {
+static int MiiHeads(Racedata* racedata, u32 unused, u32 unused2, u8 id, u32 aid) {
     CharacterId charId = racedata->racesScenario.players[id].characterId;
     bool miiHeadFroom = ALLOW_MIIHEADS_ENABLED;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    bool isfroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    if (isfroom) {
         miiHeadFroom = System::sInstance->IsContext(PULSAR_MIIHEADS) ? ALLOW_MIIHEADS_ENABLED : ALLOW_MIIHEADS_DISABLED;
     }
+    u32 pid = GetPidForAid(aid);
     if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS) == MII_ENABLED) {
-        if (miiHeadFroom == ALLOW_MIIHEADS_ENABLED) {
-            if (charId < MII_M) {
-                if (id == 0)
-                    charId = MII_M;
-                else if (RKNet::Controller::sInstance->connectionState != 0)
-                    charId = MII_M;
+        if (!IsFriend(pid) || isfroom) {
+            if (miiHeadFroom == ALLOW_MIIHEADS_ENABLED) {
+                if (charId < MII_M) {
+                    if (id == 0)
+                        charId = MII_M;
+                    else if (RKNet::Controller::sInstance->connectionState != 0)
+                        charId = MII_M;
+                }
             }
         }
     }
@@ -110,6 +144,13 @@ static void DraggableBlueShells(Item::PlayerObj& sub) {
     sub.isNotDragged = false;
 }
 kmBranch(0x807ae8ac, DraggableBlueShells);
+
+void SafeResizeSphere(float radius, float maxSpeed, Entity* entity) {
+    if (entity != nullptr) {
+        entity->Resize(radius, maxSpeed);
+    }
+}
+kmCall(0x807ae32c, SafeResizeSphere);
 
 // Coloured Minimap
 kmWrite32(0x807DFC24, 0x60000000);
