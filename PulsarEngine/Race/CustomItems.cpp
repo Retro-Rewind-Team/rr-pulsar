@@ -39,7 +39,17 @@ static ItemId GetRandomEnabledItem() {
     int count = 0;
     for (int i = 0; i < 19; i++) {
         if ((bitfield >> i) & 1) {
-            enabled[count++] = static_cast<ItemId>(i);
+            if (Item::Manager::IsThereCapacityForItem(static_cast<ItemId>(i))) {
+                enabled[count++] = static_cast<ItemId>(i);
+            }
+        }
+    }
+
+    if (count == 0) {
+        for (int i = 0; i < 19; i++) {
+            if ((bitfield >> i) & 1) {
+                enabled[count++] = static_cast<ItemId>(i);
+            }
         }
     }
 
@@ -165,33 +175,33 @@ kmCall(0x807bb8b8, DecideItemFallback);
 // Restore original probability sum logic (removes legacy partial filtering)
 kmWrite32(0x807bb83c, 0x7ED60214);
 
-struct ItemObjProperties {
-    void* makeArray;  // 0x0
-    u32 limit;  // 0x4
-    u32 unk_0x8;
-    u32 capacity;  // 0xC
-    u32 capacity2;  // 0x10
-    u8 padding[0x74 - 0x14];
-};
-
 kmRuntimeUse(0x80790fb8);
-kmRuntimeUse(0x809C2F48);
-static void UniversalLimitLock() {
+kmRuntimeUse(0x809C35A0);
+static void IncreaseThunderCloudCapacity() {
     reinterpret_cast<void (*)()> kmRuntimeAddr(0x80790fb8)();
 
-    u32 bitfield = GetEffectiveCustomItemsBitfield();
-    if (bitfield != 0 && bitfield != 0x7FFFF) {
-        ItemObjProperties* properties = reinterpret_cast<ItemObjProperties*> kmRuntimeAddr(0x809C2F48);
-        if (properties) {
-            for (int i = 0; i < 15; i++) {
-                if (properties[i].limit < 12) properties[i].limit = 12;
-                if (properties[i].capacity < 12) properties[i].capacity = 12;
-                if (properties[i].capacity2 < 12) properties[i].capacity2 = 12;
-            }
-        }
-    }
+    u32* tcProperties = reinterpret_cast<u32*> kmRuntimeAddr(0x809C35A0);
+    tcProperties[1] = 24;  // limit (offset 0x4)
+    tcProperties[3] = 24;  // capacity (offset 0xC)
+    tcProperties[4] = 24;  // capacity2 (offset 0x10)
 }
-kmCall(0x80790ae8, UniversalLimitLock);
+kmCall(0x80790ae8, IncreaseThunderCloudCapacity);
+
+static void InitItemFallback1() {
+    register Item::PlayerRoulette* roulette;
+    asm(mr roulette, r23);
+    roulette->nextItemId = GetRandomEnabledItem();
+}
+kmBranch(0x807ba138, InitItemFallback1);
+kmPatchExitPoint(InitItemFallback1, 0x807ba140);
+
+static void InitItemFallback2() {
+    register Item::PlayerRoulette* roulette;
+    asm(mr roulette, r23);
+    roulette->nextItemId = GetRandomEnabledItem();
+}
+kmBranch(0x807ba194, InitItemFallback2);
+kmPatchExitPoint(InitItemFallback2, 0x807ba19c);
 
 }  // namespace Race
 }  // namespace Pulsar
