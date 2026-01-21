@@ -5,7 +5,6 @@ bin/
 build/
 .env
 PulsarEngine/Security/
-PulsarEngine/Network/RoomKey.cpp
 /.github
 AGENTS.md
 /.agent

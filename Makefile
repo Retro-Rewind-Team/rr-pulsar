@@ -6,9 +6,16 @@ PULSAR := ./PulsarEngine
 KAMEK := Kamek.exe
 KAMEK_H := ./KamekInclude
 
+ifneq ($(filter install%,$(MAKECMDGOALS)),)
+PULSAR_RANDOM_KEY := $(shell python -c "import random; print(hex(random.randint(0, 0xFFFFFFFF)))")
+$(info [PULSAR] Random Room Key generated: $(PULSAR_RANDOM_KEY))
+else
+PULSAR_RANDOM_KEY := 0xADD2BFAF
+endif
+
 -include .env
 
-CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) -i $(PULSAR) -opt all -inline auto -enum int -proc gekko -fp hard -sdata 0 -sdata2 0 -maxerrors 1 -func_align 4 $(CFLAGS)
+CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) -i $(PULSAR) -opt all -inline auto -enum int -proc gekko -fp hard -sdata 0 -sdata2 0 -maxerrors 1 -func_align 4 -DPULSAR_RANDOM_KEY=$(PULSAR_RANDOM_KEY) $(CFLAGS)
 ASFLAGS := -proc gekko -c
 
 EXTERNALS := -externals=$(GAMESOURCE)/symbols.txt -externals=$(GAMESOURCE)/anticheat.txt -versions=$(GAMESOURCE)/versions.txt
@@ -54,6 +61,10 @@ build/%.o: $(PULSAR)/%.S | build
 	@echo Assembling $<...
 	@mkdir -p $(dir $@)
 	@$(AS) $(ASFLAGS) -o $@ $<
+
+build/Network/RoomKey.o: .force
+
+.force:
 
 force_link: build/kamek.o build/RuntimeWrite.o $(OBJS)
 	@echo Linking...
