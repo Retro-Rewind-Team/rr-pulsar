@@ -4,6 +4,7 @@
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <core/RK/RKSystem.hpp>
+#include <core/rvl/OS/OS.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -114,9 +115,10 @@ void CustomItemPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
     u32 bitfield = Settings::Mgr::Get().GetCustomItems();
     if (button.buttonId == 19) {
         // Randomize - using a LCG
-        static u32 seed = 0x1234;
+        static u32 seed = 0;
+        if (seed == 0) seed = OS::GetTick();
         seed = seed * 1103515245 + 12345;
-        bitfield = (seed >> 16) & 0x7FFFF;  // 19 bits
+        bitfield = (seed >> 13) & 0x7FFFF;  // 19 bits
         if (bitfield == 0) bitfield = 0x7FFFF;  // Re-enable all if all are disabled
     } else {
         // Toggle bit
