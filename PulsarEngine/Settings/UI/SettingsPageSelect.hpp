@@ -34,11 +34,14 @@ class SettingsPageSelect : public Pages::MenuInteractable {
     void BeforeControlUpdate() override;
 
     void OnBackPress(u32 hudSlotId);
+    void OnBackButtonClick(PushButton& button, u32 hudSlotId);
 
    private:
     void OnButtonClick(PushButton& button, u32 hudSlotId);
     void OnButtonSelect(PushButton& button, u32 hudSlotId);
     void OnButtonDeselect(PushButton& button, u32 hudSlotId) {}
+
+    PtmfHolder_2A<SettingsPageSelect, void, PushButton&, u32> onBackButtonClickHandler;
 
     // Buttons for each settings page - max 12 pages
     PushButton pageButtons[Settings::Params::pageCount];

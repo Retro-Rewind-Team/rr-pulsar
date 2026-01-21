@@ -43,6 +43,7 @@ class SettingsPanel : public Pages::MenuInteractable {
     UIControl* CreateControl(u32 id) override;  // 0x88
     void SetButtonHandlers(PushButton& pushButton) override;  // 80853aac 0x8C
     void OnBackPress(u32 hudSlotId);
+    void OnBackButtonClick(PushButton& button, u32 hudSlotId);
     void BeforeControlUpdate() override;
 
    private:
@@ -79,6 +80,7 @@ class SettingsPanel : public Pages::MenuInteractable {
     // u32 scrollersCount; //0x72c
     PtmfHolder_2A<MenuInteractable, void, PushButton&, u32> onRightButtonClickHandler;  // 0x738
     PtmfHolder_2A<MenuInteractable, void, PushButton&, u32> onLeftButtonClickHandler;  // 0x74c
+    PtmfHolder_2A<SettingsPanel, void, PushButton&, u32> onBackButtonClickHandler;
 
     u8 radioSettings[Settings::Params::pageCount][Settings::Params::maxRadioCount];
     u8 scrollerSettings[Settings::Params::pageCount][Settings::Params::maxScrollerCount];

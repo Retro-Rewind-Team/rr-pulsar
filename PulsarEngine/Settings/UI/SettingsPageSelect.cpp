@@ -44,6 +44,8 @@ SettingsPageSelect::SettingsPageSelect() {
     onButtonDeselectHandler.ptmf = &SettingsPageSelect::OnButtonDeselect;
     onBackPressHandler.subject = this;
     onBackPressHandler.ptmf = &SettingsPageSelect::OnBackPress;
+    onBackButtonClickHandler.subject = this;
+    onBackButtonClickHandler.ptmf = &SettingsPageSelect::OnBackButtonClick;
 
     this->controlsManipulatorManager.Init(1, false);
     this->SetManipulatorManager(controlsManipulatorManager);
@@ -53,6 +55,7 @@ SettingsPageSelect::SettingsPageSelect() {
 void SettingsPageSelect::OnInit() {
     MenuInteractable::OnInit();
     this->SetTransitionSound(0, 0);
+    this->backButton.SetOnClickHandler(this->onBackButtonClickHandler, 0);
 }
 
 UIControl* SettingsPageSelect::CreateControl(u32 id) {
@@ -153,9 +156,12 @@ ManipulatorManager& SettingsPageSelect::GetManipulatorManager() {
 }
 
 void SettingsPageSelect::OnBackPress(u32 hudSlotId) {
-    PushButton& firstButton = this->pageButtons[0];
-    firstButton.SelectFocus();
-    this->LoadPrevPage(firstButton);
+    this->backButton.SelectFocus();
+    this->LoadPrevPage(this->backButton);
+}
+
+void SettingsPageSelect::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
+    this->OnBackPress(hudSlotId);
 }
 
 void SettingsPageSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {

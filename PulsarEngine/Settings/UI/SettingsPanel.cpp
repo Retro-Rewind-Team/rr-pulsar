@@ -21,7 +21,7 @@ SettingsPanel::SettingsPanel() {
     catIdx = 0;
     externControlCount = 1;  // Only save button, no left/right navigation
     internControlCount = Settings::Params::maxRadioCount + Settings::Params::maxScrollerCount;
-    hasBackButton = false;
+    hasBackButton = true;
     nextPageId = static_cast<PageId>(id);
     // titleBmg = BMG_SETTINGS_TITLE;
     activePlayerBitfield = 1;
@@ -61,6 +61,8 @@ SettingsPanel::SettingsPanel() {
     onButtonDeselectHandler.ptmf = &Pages::VSSettings::OnButtonDeselect;
     onBackPressHandler.subject = this;
     onBackPressHandler.ptmf = &SettingsPanel::OnBackPress;
+    onBackButtonClickHandler.subject = this;
+    onBackButtonClickHandler.ptmf = &SettingsPanel::OnBackButtonClick;
     onStartPressHandler.subject = this;
     onStartPressHandler.ptmf = &MenuInteractable::HandleStartPress;
 
@@ -90,6 +92,8 @@ void SettingsPanel::OnInit() {
     // radioButtonControls = new RadioButtonControl[this->radioCount];
     // upDownControls = new UpDownControl[this->scrollersCount];
     // textUpDown = new TextUpDownValueControl[this->scrollersCount];
+
+    this->backButton.SetOnClickHandler(this->onBackButtonClickHandler, 0);
 
     const Settings::Mgr& settings = Settings::Mgr::Get();
     for (int i = 0; i < Settings::Params::pageCount; ++i) {
@@ -321,14 +325,16 @@ void SettingsPanel::OnBackPress(u32 hudSlotId) {
         messageBox->Reset();
         messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
         this->AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
-        PushButton& okButton = *this->externControls[0];
-        okButton.SelectFocus();
-        this->LoadPrevMenuAndSaveSettings(okButton);
+        this->backButton.SelectFocus();
+        this->LoadPrevMenuAndSaveSettings(this->backButton);
         return;
     }
-    PushButton& okButton = *this->externControls[0];
-    okButton.SelectFocus();
-    this->LoadPrevMenuAndSaveSettings(okButton);
+    this->backButton.SelectFocus();
+    this->LoadPrevMenuAndSaveSettings(this->backButton);
+}
+
+void SettingsPanel::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
+    this->OnBackPress(hudSlotId);
 }
 
 void SettingsPanel::OnSaveButtonClick(PushButton& button, u32 hudSlotId) {
