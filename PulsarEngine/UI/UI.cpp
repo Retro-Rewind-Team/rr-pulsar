@@ -37,6 +37,16 @@ namespace Pulsar {
 namespace UI {
 
 // ExpSection
+ExpSection::ExpSection() {
+    this->layoutAllocator = nullptr;
+    this->resourceAccessorList = nullptr;
+    this->pictureLayoutList = nullptr;
+    this->moviePlayer = nullptr;
+    this->friendList = nullptr;
+    memset(&this->pulPages, 0, sizeof(Page*) * PULPAGE_MAX);
+    this->hasAutoVote = false;
+}
+
 static ExpSection* CreateSection() {
     return new ExpSection;
 }
@@ -47,7 +57,6 @@ void ExpSection::CreatePages(ExpSection& self, SectionId id) {
     const System* system = System::sInstance;
     // self.hasAutoVote = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) && system->IsContext(PULSAR_HAW); //can't think of a better way to do this awkward thing, where the usual pages are NOT built
     if (!self.hasAutoVote) self.CreateSectionPages(id);
-    memset(&self.pulPages, 0, sizeof(Page*) * PULPAGE_MAX);
     self.CreatePulPages();
 }
 kmCall(0x80622088, ExpSection::CreatePages);
