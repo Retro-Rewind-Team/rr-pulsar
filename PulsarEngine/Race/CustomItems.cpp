@@ -203,5 +203,40 @@ static void InitItemFallback2() {
 kmBranch(0x807ba194, InitItemFallback2);
 kmPatchExitPoint(InitItemFallback2, 0x807ba19c);
 
+static ItemId DecideRouletteItemFiltered(Item::ItemSlotData* slotData, u16 itemBoxType, u8 position, ItemId prevRandomItem, bool r7) {
+    u32 bitfield = GetEffectiveCustomItemsBitfield();
+    if (bitfield == 0x7FFFF) {
+        return slotData->DecideRouletteItem(itemBoxType, position, prevRandomItem, r7);
+    }
+
+    ItemId enabledItems[19];
+    int enabledCount = 0;
+
+    for (int i = 0; i < 19; i++) {
+        if ((bitfield >> i) & 1) {
+            enabledItems[enabledCount++] = static_cast<ItemId>(i);
+        }
+    }
+
+    if (enabledCount == 0) {
+        return MUSHROOM;
+    }
+
+    static u32 rouletteSeed = 0;
+    if (rouletteSeed == 0) rouletteSeed = OS::GetTick();
+
+    rouletteSeed = rouletteSeed * 1103515245 + 12345;
+    u32 idx = (rouletteSeed >> 16) % enabledCount;
+
+    ItemId selected = enabledItems[idx];
+    if (selected == prevRandomItem && enabledCount > 1) {
+        idx = (idx + 1) % enabledCount;
+        selected = enabledItems[idx];
+    }
+
+    return selected;
+}
+kmCall(0x807ba428, DecideRouletteItemFiltered);
+
 }  // namespace Race
 }  // namespace Pulsar
