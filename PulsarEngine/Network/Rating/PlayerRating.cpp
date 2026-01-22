@@ -23,14 +23,13 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
-#include <PulsarSystem.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 
 namespace Pulsar {
 namespace PointRating {
 
-float remoteRatings[12][2];
+u8 remoteDecimalVR[12][2];
 float lastRaceDeltas[12];
 
 static const s16 SPLINE_CONTROL_POINTS[5] = {0, 1, 8, 50, 125};
@@ -135,22 +134,14 @@ static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
         const Network::CustomRKNetController* ctrl = 
             reinterpret_cast<const Network::CustomRKNetController*>(RKNet::Controller::sInstance);
         u8 aid = ctrl->aidsBelongingToPlayerIds[idx];
-        
-        float base;
-        if (ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-            base = (float)player.previousScore;
-        } else {
-            base = (float)player.rating.points;
-        }
 
         int slot = 0;
         for (int i = 0; i < idx; ++i) {
             if (ctrl->aidsBelongingToPlayerIds[i] == aid) slot++;
         }
         if (slot < 2) {
-            float remote = remoteRatings[aid][slot];
-            if (remote >= 0.0f) return remote;
-            return base;
+            float remote = remoteDecimalVR[aid][slot];
+            return remote;
         }
     }
     return (float)player.rating.points;

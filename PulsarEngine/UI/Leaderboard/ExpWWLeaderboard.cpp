@@ -228,11 +228,9 @@ RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScena
             } else {
                 oldRating = (float)racePlayer.rating.points;
             }
-
-            float remote = PointRating::remoteRatings[aid][playerIndexOnConsole];
-            if (remote >= 0.0f) {
-                oldRating = remote;
-            }
+            
+            float decimal = (float)PointRating::remoteDecimalVR[aid][playerIndexOnConsole] / 100.0f;
+            oldRating += decimal;
 
             float delta = PointRating::lastRaceDeltas[playerId];
             float current = oldRating + delta;

@@ -82,18 +82,13 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     register u8 aid;
     asm(mr aid, r19;);
 
+    for (int i = 0; i < 2; ++i) {
+        PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
+    }
+
     PulSELECT& dest = handler->receivedPackets[aid];
     register RKNet::PacketHolder<PulSELECT>* holder;
     asm(mr holder, r27);
-
-    for (int i = 0; i < 2; ++i) {
-        float rating = static_cast<float>(src->playersData[i].sumPoints);
-        if (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) {
-            rating += static_cast<float>(src->decimalVR[i]) / 100.0f;
-        }
-        PointRating::remoteRatings[aid][i] = rating;
-    }
-
     if (holder != nullptr && holder->packetSize == sizeof(RKNet::SELECTPacket)) {
         const u16 pulWinning = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->winningCourse));
         src->pulWinningTrack = pulWinning;  // this is safe because src is a ptr to the buffer of holder which is always big enough
