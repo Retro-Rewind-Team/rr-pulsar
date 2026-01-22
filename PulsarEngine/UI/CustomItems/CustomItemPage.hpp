@@ -22,6 +22,7 @@ public:
     void OnButtonSelect(PushButton& button, u32 hudSlotId);
     void OnButtonDeselect(PushButton& button, u32 hudSlotId);
     void OnBackPress(u32 hudSlotId);
+    void AfterControlUpdate() override;
     
     // Menu virtuals
     int GetActivePlayerBitfield() const override { return this->activePlayerBitfield; }

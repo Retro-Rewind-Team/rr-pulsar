@@ -3,6 +3,8 @@
 #include <Settings/SettingsBinary.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/rvl/OS/OS.hpp>
 
@@ -97,6 +99,14 @@ void CustomItemPage::OnActivate() {
     this->UpdateButtonVisuals();
     this->SelectButton(buttons[0]);
     this->OnButtonSelect(buttons[0], 0);
+}
+
+void CustomItemPage::AfterControlUpdate() {
+    Pages::MenuInteractable::AfterControlUpdate();
+    const Pages::FriendRoomManager* mgr = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
+    if (mgr && mgr->startedGameMode < 4) {
+        this->LoadPrevPageById(static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT), buttons[0]);
+    }
 }
 
 void CustomItemPage::OnDeactivate() {

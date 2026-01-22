@@ -239,8 +239,8 @@ void Mgr::AdjustSections() {
             }
         }
     }
-    delete[] (missingCRCIndex);
-    delete[] (toberemovedCRCIndex);
+    heap->free(missingCRCIndex);
+    heap->free(toberemovedCRCIndex);
 }
 
 void Mgr::AdjustSectionsSizes() {
