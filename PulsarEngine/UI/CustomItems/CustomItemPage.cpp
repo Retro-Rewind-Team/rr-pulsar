@@ -104,7 +104,7 @@ void CustomItemPage::OnActivate() {
 void CustomItemPage::AfterControlUpdate() {
     Pages::MenuInteractable::AfterControlUpdate();
     const Pages::FriendRoomManager* mgr = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
-    if (mgr && mgr->startedGameMode < 4) {
+    if (mgr && mgr->startedGameMode < 4 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
         this->LoadPrevPageById(static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT), buttons[0]);
     }
 }
