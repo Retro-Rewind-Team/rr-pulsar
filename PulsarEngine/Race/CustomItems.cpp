@@ -2,6 +2,7 @@
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
+#include <MarioKartWii/Item/ItemBehaviour.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -31,38 +32,102 @@ static u32 GetEffectiveCustomItemsBitfield() {
     return 0x7FFFF;
 }
 
-static ItemId GetRandomEnabledItem() {
-    u32 bitfield = GetEffectiveCustomItemsBitfield();
-    if (bitfield == 0) return MUSHROOM;  // Safety
+static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
+    if (id >= 19) return false;
 
-    ItemId enabled[19];
-    int count = 0;
-    for (int i = 0; i < 19; i++) {
-        if ((bitfield >> i) & 1) {
-            if (Item::Manager::IsThereCapacityForItem(static_cast<ItemId>(i))) {
-                enabled[count++] = static_cast<ItemId>(i);
+    // Timer checks
+    ItemObjId objId = Item::Behavior::behaviourTable[id].objId;
+    if (slotData) {
+        if (objId == 6 && slotData->itemSpawnTimers[0] != 0) return false;  // Lightning
+        if (objId == 5 && slotData->itemSpawnTimers[1] != 0) return false;  // Blue Shell
+        if (objId == 10 && slotData->itemSpawnTimers[2] != 0) return false;  // Blooper
+        if (objId == 11 && slotData->itemSpawnTimers[3] != 0) return false;  // POW
+    }
+
+    // Capacity check
+    return Item::Manager::IsThereCapacityForItem(id);
+}
+
+kmRuntimeUse(0x809c3670);
+static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
+    u32 bitfield = GetEffectiveCustomItemsBitfield();
+    if (bitfield == 0 || bitfield == 0x7FFFF) return MUSHROOM;  // Safety or Vanilla Fallback
+
+    Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**> kmRuntimeAddr(0x809c3670);
+    if (!slotData) return MUSHROOM;
+
+    const Item::ItemSlotData::Probabilities* probs;
+    if (isSpecial)
+        probs = &slotData->specialChances;
+    else if (isHuman)
+        probs = &slotData->playerChances;
+    else
+        probs = &slotData->cpuChances;
+
+    if (!probs || !probs->probabilities) return MUSHROOM;
+
+    u32 rowCount = probs->rowCount;
+    if (position >= rowCount) position = rowCount - 1;
+
+    const u16* data = probs->probabilities;
+
+    // Search outward for the closest position with at least one enabled item that has capacity
+    // If multiple items are available on a row, we pick randomly between them.
+    for (int dist = 0; dist < static_cast<int>(rowCount); ++dist) {
+        int low = static_cast<int>(position) - dist;
+        int high = static_cast<int>(position) + dist;
+        int checks[2] = {low, high};
+        for (int i = 0; i < 2; ++i) {
+            int p = checks[i];
+            if (i == 1 && high == low) continue;  // Skip redundant check for dist 0
+            if (p >= 0 && p < static_cast<int>(rowCount)) {
+                ItemId rowEnabled[19];
+                int count = 0;
+                for (int item = 0; item < 19; ++item) {
+                    if (((bitfield >> item) & 1) && data[p * 19 + item] > 0) {
+                        if (IsItemAvailable(static_cast<ItemId>(item), slotData)) {
+                            rowEnabled[count++] = static_cast<ItemId>(item);
+                        }
+                    }
+                }
+                if (count > 0) {
+                    static u32 lcgSeed = 0;
+                    if (lcgSeed == 0) lcgSeed = OS::GetTick();
+
+                    lcgSeed = lcgSeed * 1103515245 + 12345;
+                    ItemId ret = rowEnabled[(lcgSeed >> 16) % count];
+                    if (ret > 18) ret = MUSHROOM;  // UI Safety
+                    return ret;
+                }
             }
         }
     }
 
-    if (count == 0) {
+    // Absolute fallback: pick any enabled item that has capacity, anywhere
+    ItemId anyEnabled[19];
+    int anyCount = 0;
+    for (int i = 0; i < 19; i++) {
+        if (((bitfield >> i) & 1) && IsItemAvailable(static_cast<ItemId>(i), slotData)) {
+            anyEnabled[anyCount++] = static_cast<ItemId>(i);
+        }
+    }
+
+    if (anyCount == 0) {
+        // Really desperate: pick any enabled item regardless of availability
         for (int i = 0; i < 19; i++) {
             if ((bitfield >> i) & 1) {
-                enabled[count++] = static_cast<ItemId>(i);
+                anyEnabled[anyCount++] = static_cast<ItemId>(i);
             }
         }
     }
 
-    if (count == 0) return MUSHROOM;
+    if (anyCount == 0) return MUSHROOM;
 
-    static u32 lcgSeed = 0;
-    if (lcgSeed == 0) lcgSeed = OS::GetTick();
-
-    lcgSeed = lcgSeed * 1103515245 + 12345;
-    u32 idx = (lcgSeed >> 16) % count;
-
-    ItemId ret = enabled[idx];
-    if (ret > 18) ret = MUSHROOM;  // UI Safety
+    static u32 fallbackSeed = 0;
+    if (fallbackSeed == 0) fallbackSeed = OS::GetTick();
+    fallbackSeed = fallbackSeed * 1103515245 + 12345;
+    ItemId ret = anyEnabled[(fallbackSeed >> 16) % anyCount];
+    if (ret > 18) ret = MUSHROOM;
     return ret;
 }
 
@@ -75,25 +140,23 @@ static u32 GetBestPlacement(const Item::ItemSlotData::Probabilities* probs, u32 
     u32 rowCount = probs->rowCount;
     if (currentPlacement >= rowCount) currentPlacement = rowCount - 1;
 
-    // Check if current placement has any enabled item with prob > 0
     const u16* data = probs->probabilities;
-    for (int i = 0; i < 19; i++) {
-        if (((bitfield >> i) & 1) && data[currentPlacement * 19 + i] > 0) {
-            return currentPlacement;
-        }
-    }
+    Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**> kmRuntimeAddr(0x809c3670);
 
-    // Search outward for the closest placement with at least one enabled item
-    for (int dist = 1; dist < static_cast<int>(rowCount); ++dist) {
+    // Check if current or any other row is better, respecting capacity
+    for (int dist = 0; dist < static_cast<int>(rowCount); ++dist) {
         int low = static_cast<int>(currentPlacement) - dist;
         int high = static_cast<int>(currentPlacement) + dist;
         int checks[2] = {low, high};
         for (int i = 0; i < 2; ++i) {
             int p = checks[i];
+            if (i == 1 && high == low) continue;
             if (p >= 0 && p < static_cast<int>(rowCount)) {
                 for (int item = 0; item < 19; ++item) {
                     if (((bitfield >> item) & 1) && data[p * 19 + item] > 0) {
-                        return static_cast<u32>(p);
+                        if (IsItemAvailable(static_cast<ItemId>(item), slotData)) {
+                            return static_cast<u32>(p);
+                        }
                     }
                 }
             }
@@ -156,7 +219,7 @@ kmPatchExitPoint(CustomLimitCheck, 0x807bb7dc);  // Return to the ble instructio
 static void CalcItemFallback() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r31);
-    roulette->nextItemId = GetRandomEnabledItem();
+    roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
 kmBranch(0x807ba48c, CalcItemFallback);
 kmPatchExitPoint(CalcItemFallback, 0x807ba494);
@@ -165,7 +228,15 @@ static ItemId DecideItemFallback() {
     register ItemId res;
     asm(mr res, r24);
     if (res == 0x14) {  // ITEM_NONE
-        return GetRandomEnabledItem();
+        register u32 row;
+        register bool isHuman;
+        register u32 boxType;
+        asm {
+            mr row, r21
+            mr isHuman, r20
+            mr boxType, r22
+        }
+        return GetRandomEnabledItem(row, isHuman, boxType != 0);
     }
     return res;
 }
@@ -177,20 +248,36 @@ kmWrite32(0x807bb83c, 0x7ED60214);
 
 kmRuntimeUse(0x80790fb8);
 kmRuntimeUse(0x809C35A0);
-static void IncreaseThunderCloudCapacity() {
+static void IncreaseItemCapacities() {
     reinterpret_cast<void (*)()> kmRuntimeAddr(0x80790fb8)();
 
+    u32 bitfield = GetEffectiveCustomItemsBitfield();
+    if (bitfield == 0 || bitfield == 0x7FFFF) return;
+
     u32* tcProperties = reinterpret_cast<u32*> kmRuntimeAddr(0x809C35A0);
+    // Thunder Cloud (14)
     tcProperties[1] = 24;  // limit (offset 0x4)
     tcProperties[3] = 24;  // capacity (offset 0xC)
     tcProperties[4] = 24;  // capacity2 (offset 0x10)
+
+    // POW (11) - 0x15C bytes (87 u32s) before TC
+    u32* powProperties = tcProperties - 87;
+    powProperties[1] = 24;  // limit
+    powProperties[3] = 24;  // capacity
+    powProperties[4] = 24;  // capacity2
+
+    // Blooper (10) - 0x1D0 bytes (116 u32s) before TC
+    u32* blooperProperties = tcProperties - 116;
+    blooperProperties[1] = 24;
+    blooperProperties[3] = 24;
+    blooperProperties[4] = 24;
 }
-kmCall(0x80790ae8, IncreaseThunderCloudCapacity);
+kmCall(0x80790ae8, IncreaseItemCapacities);
 
 static void InitItemFallback1() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
-    roulette->nextItemId = GetRandomEnabledItem();
+    roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
 kmBranch(0x807ba138, InitItemFallback1);
 kmPatchExitPoint(InitItemFallback1, 0x807ba140);
@@ -198,7 +285,7 @@ kmPatchExitPoint(InitItemFallback1, 0x807ba140);
 static void InitItemFallback2() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
-    roulette->nextItemId = GetRandomEnabledItem();
+    roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
 kmBranch(0x807ba194, InitItemFallback2);
 kmPatchExitPoint(InitItemFallback2, 0x807ba19c);
@@ -209,32 +296,8 @@ static ItemId DecideRouletteItemFiltered(Item::ItemSlotData* slotData, u16 itemB
         return slotData->DecideRouletteItem(itemBoxType, position, prevRandomItem, r7);
     }
 
-    ItemId enabledItems[19];
-    int enabledCount = 0;
-
-    for (int i = 0; i < 19; i++) {
-        if ((bitfield >> i) & 1) {
-            enabledItems[enabledCount++] = static_cast<ItemId>(i);
-        }
-    }
-
-    if (enabledCount == 0) {
-        return MUSHROOM;
-    }
-
-    static u32 rouletteSeed = 0;
-    if (rouletteSeed == 0) rouletteSeed = OS::GetTick();
-
-    rouletteSeed = rouletteSeed * 1103515245 + 12345;
-    u32 idx = (rouletteSeed >> 16) % enabledCount;
-
-    ItemId selected = enabledItems[idx];
-    if (selected == prevRandomItem && enabledCount > 1) {
-        idx = (idx + 1) % enabledCount;
-        selected = enabledItems[idx];
-    }
-
-    return selected;
+    // Use closest logic for visual items too if custom items are enabled
+    return GetRandomEnabledItem(position, true, itemBoxType != 0);
 }
 kmCall(0x807ba428, DecideRouletteItemFiltered);
 
