@@ -74,7 +74,8 @@ enum Race2Settings {
 enum MenuSettings {
     RADIO_FASTMENUS = 0,
     RADIO_LAYOUT = 1,
-    SCROLL_BOOT = 0 + 8
+    SCROLL_BOOT = 0 + 8,
+    SCROLL_HUDCOLOR = 1 + 8,
 };
 
 // 4) Online
@@ -229,6 +230,21 @@ enum MenuSettingBoot {
     BOOT_L2,
     BOOT_L3,
     BOOT_L4
+};
+
+enum MenuSettingHUDColor {
+    HUDCOLOR_WHITE,
+    HUDCOLOR_BLACK,
+    HUDCOLOR_RED,
+    HUDCOLOR_ORANGE,
+    HUDCOLOR_YELLOW,
+    HUDCOLOR_GREEN,
+    HUDCOLOR_BLUE,
+    HUDCOLOR_PURPLE,
+    HUDCOLOR_PINK,
+    HUDCOLOR_MAGENTA,
+    HUDCOLOR_CYAN,
+    HUDCOLOR_TEAL
 };
 
 // 4) Online values

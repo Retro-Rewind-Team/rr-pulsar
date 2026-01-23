@@ -250,7 +250,9 @@ void UnpackAndSpawn(const ItemRainSyncData* src, u8 senderAid) {
 }
 
 static void OnTimerUpdate(u32 oldFrame) {
+    if (!Raceinfo::sInstance) return;
     RaceTimerMgr* tm = Raceinfo::sInstance->timerMgr;
+    if (!tm) return;
     tm->raceFrameCounter = oldFrame + 1;
     if (!IsItemRainEnabled()) return;
 

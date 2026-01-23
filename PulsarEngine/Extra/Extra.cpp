@@ -1,22 +1,10 @@
 #include <RetroRewind.hpp>
+#include <hooks.hpp>
+#include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 
 namespace Codes {
-
-// HUD Color [Spaghetti Noppers]
-kmWrite32(0x80895CC0, 0x00FF00FD);
-kmWrite32(0x80895CC4, 0x00FF00FD);
-kmWrite32(0x80895CC8, 0x00FF00FD);
-kmWrite32(0x80895CCC, 0x00FF00FD);
-kmWrite32(0x80895CD0, 0x00FF00FD);
-kmWrite32(0x80895CD4, 0x00FF0046);
-kmWrite32(0x80895CD8, 0x00FF00FF);
-kmWrite32(0x80895CDC, 0x00FF00FF);
-kmWrite32(0x80895CE0, 0x00FF00FF);
-kmWrite32(0x80895CE4, 0x00FF00FF);
-kmWrite32(0x80895CE8, 0x00FF00FF);
-kmWrite32(0x80895CEC, 0x00FF0046);
 
 // Remove Background Blur [Davidevgen]
 kmWrite32(0x80258184, 0x30);
@@ -72,18 +60,17 @@ void EnableDelimitersForAllItems() {
     kmRuntimeCallA(0x807B1B44, GetItemDelimiterPOW);
 
     if (RKNet::Controller::sInstance && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-        RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
+                                         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
         kmRuntimeWrite32A(0x807B7C34, 0x1fa300f0);
         kmRuntimeWrite32A(0x807A81C0, 0x39610050);
         kmRuntimeWrite32A(0x807B1B44, 0x7c7e1b78);
 
         // Anti Online Item Delimiter check (Usage)
-        kmRuntimeWrite32A(0x807BB380, 0x38600000); // li r3, 0
-        kmRuntimeWrite32A(0x807BB384, 0x4E800020); // blr
-    }
-    else {
-        kmRuntimeWrite32A(0x807BB380, 0x7C0500D0); // neg r0, r5
-        kmRuntimeWrite32A(0x807BB384, 0x2C840006); // cmpwi cr1, r4, 6
+        kmRuntimeWrite32A(0x807BB380, 0x38600000);  // li r3, 0
+        kmRuntimeWrite32A(0x807BB384, 0x4E800020);  // blr
+    } else {
+        kmRuntimeWrite32A(0x807BB380, 0x7C0500D0);  // neg r0, r5
+        kmRuntimeWrite32A(0x807BB384, 0x2C840006);  // cmpwi cr1, r4, 6
     }
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
