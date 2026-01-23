@@ -140,8 +140,9 @@ static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
             if (ctrl->aidsBelongingToPlayerIds[i] == aid) slot++;
         }
         if (slot < 2) {
-            float remote = remoteDecimalVR[aid][slot];
-            return remote;
+            float base = (float)player.rating.points;
+            float decimal = (float)remoteDecimalVR[aid][slot] / 100.0f;
+            return base + decimal;
         }
     }
     return (float)player.rating.points;
