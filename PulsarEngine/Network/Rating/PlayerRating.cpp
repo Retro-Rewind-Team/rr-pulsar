@@ -37,16 +37,18 @@ static const int SPLINE_BIAS = 7499;
 static const float SPLINE_SCALE = 0.00020004f;  // 1/(2*SPLINE_BIAS)
 
 static inline float Clamp(float val, float min, float max) {
-    return (val < min) ? min : (val > max) ? max : val;
+    return (val < min) ? min : (val > max) ? max
+                                           : val;
 }
 
 static float EvaluateSpline(float x) {
     float result = 0.0f;
     for (int i = -2; i <= 6; ++i) {
-        int idx = (i < 0) ? 0 : (i > 4) ? 4 : i;
+        int idx = (i < 0) ? 0 : (i > 4) ? 4
+                                        : i;
         float d = x - (float)i;
         if (d < 0.0f) d = -d;
-        
+
         float w = 0.0f;
         if (d <= 1.0f) {
             w = (4.0f - 6.0f * d * d + 3.0f * d * d * d) / 6.0f;
@@ -119,7 +121,7 @@ static int CountLocalPlayersBefore(const RacedataScenario& scenario, int idx) {
 
 static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
     const RacedataPlayer& player = scenario.players[idx];
-    
+
     if (player.playerType == PLAYER_REAL_LOCAL && CountLocalPlayersBefore(scenario, idx) == 0) {
         RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
         if (rksys) {
@@ -131,7 +133,7 @@ static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
             }
         }
     } else if (player.playerType == PLAYER_REAL_ONLINE) {
-        const Network::CustomRKNetController* ctrl = 
+        const Network::CustomRKNetController* ctrl =
             reinterpret_cast<const Network::CustomRKNetController*>(RKNet::Controller::sInstance);
         u8 aid = ctrl->aidsBelongingToPlayerIds[idx];
 
@@ -155,10 +157,10 @@ static float TruncateToCentis(float val) {
 static void SaveLocalRating(const RacedataScenario& scenario, int idx, float rating) {
     const RacedataPlayer& player = scenario.players[idx];
     if (player.playerType != PLAYER_REAL_LOCAL || CountLocalPlayersBefore(scenario, idx) != 0) return;
-    
+
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (!rksys) return;
-    
+
     if (IsBattle(scenario.settings.gamemode)) {
         if (IsRegionalBT() || IsRankedFroom()) SetUserBR(rksys->curLicenseId, rating);
     } else if ((IsRegionalVS() && scenario.settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom()) {
@@ -175,37 +177,41 @@ static void UpdatePlayerRating(RacedataScenario& scenario, int idx, float delta)
 
 void RR_UpdatePoints(RacedataScenario* scenario) {
     if (scenario->settings.gametype != GAMETYPE_DEFAULT) return;
-    
+
     const u32 playerCount = scenario->playerCount;
     Raceinfo* raceInfo = Raceinfo::sInstance;
     bool isBattle = IsBattle(scenario->settings.gamemode);
     bool isRanked = IsRankedMode(scenario->settings);
     bool isVR = !isBattle && ((IsRegionalVS() && scenario->settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom());
-    
+
     float deltas[12] = {};
-    
+
     for (u32 i = 0; i < playerCount; ++i) {
         u8 myPos = raceInfo->players[i]->position;
         u16 myScore = isBattle ? raceInfo->players[i]->battleScore : 0;
-        
+
         if (isRanked) {
             float myRating = GetPlayerRating(*scenario, i);
             for (u32 j = 0; j < playerCount; ++j) {
                 if (i == j) continue;
                 float oppRating = GetPlayerRating(*scenario, j);
-                
+
                 if (isBattle) {
                     u16 oppScore = raceInfo->players[j]->battleScore;
-                    if (oppScore < myScore) deltas[i] += CalcPosPoints(myRating, oppRating);
-                    else if (myScore < oppScore) deltas[i] += CalcNegPoints(myRating, oppRating);
+                    if (oppScore < myScore)
+                        deltas[i] += CalcPosPoints(myRating, oppRating);
+                    else if (myScore < oppScore)
+                        deltas[i] += CalcNegPoints(myRating, oppRating);
                 } else {
                     u8 oppPos = raceInfo->players[j]->position;
-                    if (myPos < oppPos) deltas[i] += CalcPosPoints(myRating, oppRating);
-                    else if (oppPos < myPos) deltas[i] += CalcNegPoints(myRating, oppRating);
+                    if (myPos < oppPos)
+                        deltas[i] += CalcPosPoints(myRating, oppRating);
+                    else if (oppPos < myPos)
+                        deltas[i] += CalcNegPoints(myRating, oppRating);
                 }
             }
         }
-        
+
         if (myPos != 0 && playerCount != 0) {
             scenario->players[i].finishPos = myPos;
             u16 pts = 0;
@@ -218,13 +224,13 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
             scenario->players[i].score = scenario->players[i].previousScore + pts;
         }
     }
-    
+
     float multiplier = GetMultiplier();
     for (u32 i = 0; i < playerCount; ++i) {
         deltas[i] *= multiplier;
         float oldRating = GetPlayerRating(*scenario, i);
         deltas[i] = Clamp(deltas[i], GetLossCap(oldRating), GetGainCap(oldRating));
-        
+
         if (isVR) {
             bool allDisconnected = true;
             for (u32 j = 0; j < playerCount; ++j) {
@@ -239,7 +245,7 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
                 deltas[i] = 0.0f;
             }
         }
-        
+
         float next = Clamp(oldRating + deltas[i], (float)MIN_RATING, (float)MAX_RATING);
         next = TruncateToCentis(next);
         UpdatePlayerRating(*scenario, i, deltas[i]);

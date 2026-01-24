@@ -49,11 +49,6 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u8 almostKOdCounter;
     u8 finalPercentageSum;  // to be divided by racecount at the end of the GP
 
-    // ItemRain sync - only used when PULSAR_ITEMMODERAIN or PULSAR_ITEMMODESTORM is enabled
-    u8 itemRainItemCount;  // Number of valid items (0-4)
-    u8 itemRainSyncFrame;  // Frame counter for ordering
-    u8 itemRainItems[24];  // 4 items * 6 bytes each (itemObjId, targetPlayer, fwdOffset[2], rightOffset[2])
-
     // LapKO - only used when PULSAR_MODE_LAPKO is enabled AND in friend rooms
     // Must be at the END so we can conditionally expand packet size
     u8 lapKoSeq;

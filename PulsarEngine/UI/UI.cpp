@@ -37,16 +37,6 @@ namespace Pulsar {
 namespace UI {
 
 // ExpSection
-ExpSection::ExpSection() {
-    this->layoutAllocator = nullptr;
-    this->resourceAccessorList = nullptr;
-    this->pictureLayoutList = nullptr;
-    this->moviePlayer = nullptr;
-    this->friendList = nullptr;
-    memset(&this->pulPages, 0, sizeof(Page*) * PULPAGE_MAX);
-    this->hasAutoVote = false;
-}
-
 static ExpSection* CreateSection() {
     return new ExpSection;
 }
@@ -57,6 +47,7 @@ void ExpSection::CreatePages(ExpSection& self, SectionId id) {
     const System* system = System::sInstance;
     // self.hasAutoVote = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) && system->IsContext(PULSAR_HAW); //can't think of a better way to do this awkward thing, where the usual pages are NOT built
     if (!self.hasAutoVote) self.CreateSectionPages(id);
+    memset(&self.pulPages, 0, sizeof(Page*) * PULPAGE_MAX);
     self.CreatePulPages();
 }
 kmCall(0x80622088, ExpSection::CreatePages);
@@ -106,7 +97,6 @@ void ExpSection::CreatePulPages() {
         case SECTION_P1_WIFI_FRIEND_COIN:
         case SECTION_P2_WIFI_FRIEND_BALLOON:
         case SECTION_P2_WIFI_FRIEND_COIN:
-            this->CreateAndInitPage(*this, ExpWWLeaderboardUpdate::id);
             if (system->IsContext(PULSAR_MODE_OTT)) {
                 this->CreateAndInitPage(*this, PAGE_TT_SPLITS);
                 Pages::RaceHUD::sInstance->nextPageId = PAGE_TT_SPLITS;
@@ -164,16 +154,6 @@ void ExpSection::CreatePulPages() {
 void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
     Page* page;
     PageId initId = static_cast<PageId>(id);  // in case a pulpage wants a specific init id
-
-    // Forced redirection for ranked friend rooms
-    if ((id == PAGE_GPVS_LEADERBOARD_UPDATE || id == PAGE_BATTLE_LEADERBOARDS_UPDATE) &&
-        System::sInstance->IsContext(PULSAR_VR) && self.sectionId >= SECTION_P1_WIFI_FRIEND_VS && self.sectionId <= SECTION_P2_WIFI_FRIEND_COIN) {
-        page = new ExpWWLeaderboardUpdate;
-        self.Set(page, initId);
-        page->Init(PAGE_WW_LEADERBOARDS_UPDATE);
-        return;
-    }
-
     switch (id) {
         case PAGE_CUP_SELECT:
             page = new ExpCupSelect;

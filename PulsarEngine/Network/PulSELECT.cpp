@@ -196,8 +196,22 @@ static bool IsGroupedTrack(PulsarId id) {
     if (CupsConfig::IsReg(id)) return false;
     const u32 idx = id - 0x100;
     switch (idx) {
-        case 6: case 9: case 27: case 29: case 31: case 32: case 37: case 51:
-        case 57: case 61: case 63: case 67: case 73: case 76: case 77: case 85:
+        case 6:
+        case 9:
+        case 27:
+        case 29:
+        case 31:
+        case 32:
+        case 37:
+        case 51:
+        case 57:
+        case 61:
+        case 63:
+        case 67:
+        case 73:
+        case 76:
+        case 77:
+        case 85:
             return true;
         default:
             if (idx >= 88 && idx <= 103) return true;

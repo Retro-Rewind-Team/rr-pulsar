@@ -8,7 +8,6 @@ namespace UI {
 class ExpWWLeaderboardUpdate : public Pages::WWLeaderboardUpdate {
    public:
     void OnUpdate() override;
-    PageId GetNextPage() const override;
 };
 }  // namespace UI
 }  // namespace Pulsar
