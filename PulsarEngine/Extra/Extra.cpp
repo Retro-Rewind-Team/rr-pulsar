@@ -1,4 +1,5 @@
 #include <RetroRewind.hpp>
+#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
@@ -60,7 +61,8 @@ void EnableDelimitersForAllItems() {
     kmRuntimeCallA(0x807B1B44, GetItemDelimiterPOW);
 
     if (RKNet::Controller::sInstance && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-                                         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
+                                         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) ||
+        Pulsar::ItemRain::IsItemRainEnabled()) {
         kmRuntimeWrite32A(0x807B7C34, 0x1fa300f0);
         kmRuntimeWrite32A(0x807A81C0, 0x39610050);
         kmRuntimeWrite32A(0x807B1B44, 0x7c7e1b78);
