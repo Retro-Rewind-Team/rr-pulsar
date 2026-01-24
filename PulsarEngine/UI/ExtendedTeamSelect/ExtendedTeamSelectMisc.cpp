@@ -21,6 +21,23 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
     _this->StartRoom();
 
     Pages::FriendRoomManager* friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
+
+    if (friendRoomManager) {
+        RKNet::Controller* controller = RKNet::Controller::sInstance;
+        if (controller) {
+            RKNet::StatusData& status = controller->localStatusData;
+            const bool isHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST;
+            const u32 mode = friendRoomManager->startedGameMode;
+            const bool isBattle = mode >= 2;
+
+            if (isHost) {
+                status.status = isBattle ? RKNet::FRIEND_STATUS_FROOM_BATTLE_HOST : RKNet::FRIEND_STATUS_FROOM_VS_HOST;
+            } else {
+                status.status = isBattle ? RKNet::FRIEND_STATUS_FROOM_BATTLE_NON_HOST : RKNet::FRIEND_STATUS_FROOM_VS_NON_HOST;
+            }
+            controller->UpdateStatusDatas();
+        }
+    }
     if (System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && (friendRoomManager->startedGameMode == 0 || friendRoomManager->startedGameMode == 2 || friendRoomManager->startedGameMode == 3)) {
         _this->countdown.SetInitial(86400.0f);
         _this->AddPageLayer(static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT), 0);
