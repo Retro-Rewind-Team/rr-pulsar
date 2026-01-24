@@ -34,7 +34,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
 
         float decimal = rating - (int)rating;
         src->decimalVR[0] = (u8)(decimal * 100.0f + 0.5f);
-        if (System::sInstance->IsContext(PULSAR_VR)) {
+        if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
             src->playersData[0].sumPoints = static_cast<u16>(rating);
         }
     } else {

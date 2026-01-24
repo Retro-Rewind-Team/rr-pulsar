@@ -1,4 +1,5 @@
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
 
 namespace Pulsar {
@@ -24,7 +25,7 @@ static SectionId GetFFASectionId(SectionId id) {
             default:
                 return id;
         }
-    } else if (System::sInstance->IsContext(PULSAR_VR)) {
+    } else if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
         switch (id) {
             case SECTION_P1_WIFI_FRIEND_VS:
                 return SECTION_P1_WIFI_VS;

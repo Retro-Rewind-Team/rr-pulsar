@@ -185,6 +185,13 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
     bool isVR = !isBattle && ((IsRegionalVS() && scenario->settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom());
 
     float deltas[12] = {};
+    bool allDisconnected = false;
+    if (isVR) {
+        const RKNet::Controller* rkCtrl = RKNet::Controller::sInstance;
+        if (rkCtrl->subs[rkCtrl->currentSub].connectionCount <= 1) {
+            allDisconnected = true;
+        }
+    }
 
     for (u32 i = 0; i < playerCount; ++i) {
         u8 myPos = raceInfo->players[i]->position;
@@ -232,13 +239,6 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
         deltas[i] = Clamp(deltas[i], GetLossCap(oldRating), GetGainCap(oldRating));
 
         if (isVR) {
-            bool allDisconnected = true;
-            for (u32 j = 0; j < playerCount; ++j) {
-                if (i != j && !(raceInfo->players[j]->stateFlags & 0x10)) {
-                    allDisconnected = false;
-                    break;
-                }
-            }
             if (allDisconnected) {
                 deltas[i] = (playerCount >= 4) ? -0.01f : 0.0f;
             } else if (deltas[i] >= -0.0101f && deltas[i] < 0.0f) {
