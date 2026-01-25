@@ -431,4 +431,22 @@ void ApplyRacePacketThreshold() {
 }
 static SectionLoadHook PatchRacePacketThreshold(ApplyRacePacketThreshold);
 
+// Prevent Crash from Invalid Camera Pointer in Broken KMP [Gab]
+asmFunc InvalidCameraPointerFix() {
+    ASM(
+        nofralloc;
+        loc_0x0 :
+        cmpwi r31, 0;
+        bne + loc_0x18;
+        mflr r12;
+        addi r12, r12, 0xA0;
+        mtlr r12;
+        blr;
+
+        loc_0x18 :
+        lwz r3, 0x0(r31);
+        blr;)
+}
+kmCall(0x805ABE14, InvalidCameraPointerFix);
+
 }  // namespace Codes
