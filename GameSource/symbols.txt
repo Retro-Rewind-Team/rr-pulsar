@@ -2401,6 +2401,3 @@ DWCi_QR2ServerKeyCallback = 0x800e4c88
 qr2_init_socketA = 0x8010ecac
 RequestPause__12RacePauseMgrFv = 0x808600dc
 RequestUnpause__12RacePauseMgrFv = 0x80860100
-
-InitHandle__3ARCFPvPQ23ARC6Handle = 0x80124500
-ConvertPathToEntrynum__3ARCFPQ23ARC6HandlePCc = 0x80124894
