@@ -176,7 +176,7 @@ static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
     const Pages::SELECTStageMgr::Status old = stageMgr->status;
     if (system->ottMgr.voteState == COMBO_SELECTION) stageMgr->status = Pages::SELECTStageMgr::STATUS_VR_PAGE;  // so that the countdown shows
     stageMgr->Pages::SELECTStageMgr::BeforeControlUpdate();
-    if (system->ottMgr.voteState == COMBO_SELECTED) {
+    if (system->ottMgr.voteState != COMBO_SELECTION && system->ottMgr.voteState != COMBO_NONE) {
         stageMgr->status = Pages::SELECTStageMgr::STATUS_DISCONNECT_NO_MSG;
     } else {
         stageMgr->status = old;
