@@ -1,4 +1,3 @@
-#include <RetroRewind.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <hooks.hpp>
 #include <kamek.hpp>
@@ -420,17 +419,16 @@ kmWrite32(0x8059BE20, 0x38600000);
 // Accurate Item Roulette [Ro]
 kmWrite32(0x807BB8EC, 0x60000000);
 
-// Reduce Race Packet Send Threshold for Dolphin [ImZeraora]
-// Original: cmplwi r4, 0x11 (17ms threshold)
-// Dolphin:  cmplwi r4, 0x7  (7ms threshold)
+// Reduce Race Packet Send Threshold for Dolphin [MrBean35000vr, Chadderz]
 kmRuntimeUse(0x80657EA8);
 void ApplyRacePacketThreshold() {
     if (Dolphin::IsEmulator()) {
-        kmRuntimeWrite32A(0x80657EA8, 0x28040007);  // cmplwi r4, 0x7
+        kmRuntimeWrite32A(0x80657EA8, 0x2804000A);  // cmplwi r4, 0xA
     } else {
-        kmRuntimeWrite32A(0x80657EA8, 0x28040011);  // cmplwi r4, 0x11 (original)
+        kmRuntimeWrite32A(0x80657EA8, 0x28040011);  // cmplwi r4, 0x11
     }
 }
 static SectionLoadHook PatchRacePacketThreshold(ApplyRacePacketThreshold);
+kmWrite32(0x80657F5C, 0x3B400000);
 
 }  // namespace Codes
