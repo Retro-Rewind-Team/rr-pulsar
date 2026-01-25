@@ -3,6 +3,7 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <Dolphin/DolphinIOS.hpp>
 
 namespace Codes {
 
@@ -416,5 +417,18 @@ kmWrite32(0x8059BE20, 0x38600000);
 
 // Accurate Item Roulette [Ro]
 kmWrite32(0x807BB8EC, 0x60000000);
+
+// Reduce Race Packet Send Threshold for Dolphin [ImZeraora]
+// Original: cmplwi r4, 0x11 (17ms threshold)
+// Dolphin:  cmplwi r4, 0x7  (7ms threshold)
+kmRuntimeUse(0x80657EA8);
+void ApplyRacePacketThreshold() {
+    if (Dolphin::IsEmulator()) {
+        kmRuntimeWrite32A(0x80657EA8, 0x28040007);  // cmplwi r4, 0x7
+    } else {
+        kmRuntimeWrite32A(0x80657EA8, 0x28040011);  // cmplwi r4, 0x11 (original)
+    }
+}
+static SectionLoadHook PatchRacePacketThreshold(ApplyRacePacketThreshold);
 
 }  // namespace Codes
