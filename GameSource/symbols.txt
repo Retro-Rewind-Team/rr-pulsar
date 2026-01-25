@@ -649,6 +649,10 @@ OnEnter__Q23EGG6ThreadFv = 0x80008e80
 #Archive
 Mount__Q23EGG7ArchiveFPvPQ23EGG4Heapi = 0x8020f768
 
+#ARC
+InitHandle__3ARCFPvPQ23ARC6Handle = 0x80124500
+ConvertPathToEntrynum__3ARCFPQ23ARC6HandlePCc = 0x80124894
+
 #DVDRipper
 LoadToMainRAM__Q23EGG9DvdRipperFPCcPvPQ23EGG4HeapQ33EGG9DvdRipper15EAllocDirectionUiPUiPUi = 0x802226d8
 
@@ -747,6 +751,7 @@ sInstance__Q23KMP7Manager = 0x809BD6E8
 Load__11ArchiveFileFPCcPQ23EGG4HeapbiPQ23EGG4HeapPQ33EGG7Archive8FileInfo = 0x80518e10
 MountFromRawArchive__11ArchiveFileFPvUiPQ23EGG4Heapb = 0x80518fbc
 Dump__11ArchiveFileFPCcPQ23EGG4Heapi = 0x805190f0
+Decompress__11ArchiveFileFPCcPQ23EGG4HeapPQ33EGG7Archive8FileInfo = 0x80519508
 Unmount__11ArchiveFileFv = 0x805192cc
 Unmount__10ArchiveMgrFP14ArchivesHolder = 0x805411e4
 DumpArchive__14ArchivesHolderFPcPQ23EGG4Heap = 0x8052ab6c
