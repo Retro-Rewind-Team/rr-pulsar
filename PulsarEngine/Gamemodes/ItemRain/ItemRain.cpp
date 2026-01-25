@@ -196,7 +196,7 @@ static void OnTimerUpdate(u32 oldFrame) {
                 if (obj && (obj->bitfield74 & 1) == 0) {
                     u32 spawnFrame = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164);
                     if (spawnFrame != 0 && (currentFrame - spawnFrame) > 300) {
-                        obj->KillFromOtherCollision(false);
+                        obj->DisappearDueToExcess(false);
                     }
                 }
             }
@@ -256,10 +256,6 @@ static void ProcessOtherCollisionWrapper(Item::Obj* obj, u32 result, Vec3* other
     if (!IsItemRainEnabled() || !obj) return;
     if (obj->itemObjId == OBJ_BOBOMB && result == 2) sState.bobombSurvive = true;
     obj->ProcessOtherCollision(result, *otherPos, *otherSpeed);
-}
-
-static void KillFromPlayerCollisionHook(Item::Obj* obj, bool sendBreak, u8 playerId) {
-    obj->KillFromPlayerCollision(false, playerId);
 }
 
 static void KillFromOtherCollisionHook(Item::Obj* obj, bool sendBreak) {
@@ -347,7 +343,6 @@ kmCall(0x807a0ffc, ProcessOtherCollisionWrapper);
 kmCall(0x807a1010, ProcessOtherCollisionWrapper);
 kmCall(0x807a1c68, KillFromOtherCollisionHook);
 kmCall(0x80795f00, ObjSpawnHook);
-kmCall(0x807a3838, KillFromPlayerCollisionHook);
 
 kmCall(0x807A7170, BombExplosion);
 kmCall(0x807a4714, SafeBombExplosionResize);
