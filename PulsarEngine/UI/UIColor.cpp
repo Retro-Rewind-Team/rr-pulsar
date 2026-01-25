@@ -47,10 +47,10 @@ kmBranch(0x805f0440, GetHUDColor);
 
 void GetHUDBaseColor(void* self, RGBA16* c) {
     UpdateHUDColor();
-    c->red = hudR;
-    c->green = hudG;
-    c->blue = hudB;
-    c->alpha = 0x0A;
+    c->red = 0;
+    c->green = 0;
+    c->blue = 0;
+    c->alpha = 0x46;
 }
 kmBranch(0x805f04d8, GetHUDBaseColor);
 
