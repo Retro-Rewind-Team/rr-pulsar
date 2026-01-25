@@ -126,7 +126,7 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
 
         u8 playerCount = Item::Manager::sInstance->playerCount;
         if (playerCount < 6) {
-            float threshold = 0.04f * (6 - playerCount);
+            float threshold = 0.08f * (6 - playerCount);
 
             u8 firstId = ri->playerIdInEachPosition[0];
             u8 secondId = ri->playerIdInEachPosition[1];
