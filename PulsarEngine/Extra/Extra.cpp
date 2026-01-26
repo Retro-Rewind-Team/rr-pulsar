@@ -418,6 +418,9 @@ kmWrite32(0x8059BE20, 0x38600000);
 // Accurate Item Roulette [Ro]
 kmWrite32(0x807BB8EC, 0x60000000);
 
+// Prevent Item Usage in Bullet Bill [Ro]
+kmWrite32(0x80797C44, 0x3C600A0C);
+
 // Reduce Race Packet Send Threshold for Dolphin [ImZeraora]
 // Original: cmplwi r4, 0x11 (17ms threshold)
 // Dolphin:  cmplwi r4, 0x7  (7ms threshold)
