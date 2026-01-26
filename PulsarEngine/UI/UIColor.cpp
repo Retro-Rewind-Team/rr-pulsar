@@ -11,15 +11,15 @@ static u8 hudB = 255;
 static const u8 hudColors[12][3] = {
     {255, 255, 255},  // White
     {60, 60, 60},  // Black
-    {255, 0, 0},  // Red
-    {255, 165, 0},  // Orange
-    {255, 255, 0},  // Yellow
-    {0, 255, 0},  // Green
-    {0, 0, 255},  // Blue
-    {128, 0, 128},  // Purple
+    {232, 46, 46},  // Red
+    {245, 129, 47},  // Orange
+    {233, 212, 0},  // Yellow
+    {169, 255, 69},  // Green
+    {64, 99, 227},  // Blue
+    {96, 38, 158},  // Purple
     {255, 192, 203},  // Pink
     {255, 0, 255},  // Magenta
-    {0, 255, 255},  // Cyan
+    {36, 224, 255},  // Cyan
     {0, 128, 128}  // Teal
 };
 
@@ -47,10 +47,10 @@ kmBranch(0x805f0440, GetHUDColor);
 
 void GetHUDBaseColor(void* self, RGBA16* c) {
     UpdateHUDColor();
-    c->red = hudR;
-    c->green = hudG;
-    c->blue = hudB;
-    c->alpha = 0x0A;
+    c->red = 0;
+    c->green = 0;
+    c->blue = 0;
+    c->alpha = 0x46;
 }
 kmBranch(0x805f04d8, GetHUDBaseColor);
 

@@ -6,7 +6,6 @@
 #include <PulsarSystem.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
-#include <Gamemodes/ItemRain/ItemRain.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -15,7 +14,7 @@ namespace Network {
 static bool IsFriendRoom() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (!controller) return false;
-    return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || 
+    return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
             controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
 }
 
@@ -24,7 +23,7 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
     packetHolder.Copy(packet, len);
 
     const System* system = System::sInstance;
-    
+
     // Determine target packet size based on room type and LapKO mode
     // LapKO fields are only sent in friend rooms when PULSAR_MODE_LAPKO is enabled
     const bool inFriendRoom = IsFriendRoom();
@@ -42,34 +41,6 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         packetHolder.packet->timeInDanger = 0;
         packetHolder.packet->almostKOdCounter = 0;
         packetHolder.packet->finalPercentageSum = 0;
-    }
-
-    // Pack ItemRain sync data only if host AND ItemRain/ItemStorm mode is enabled
-    const bool itemRainEnabled = system->IsContext(PULSAR_ITEMMODERAIN) || system->IsContext(PULSAR_ITEMMODESTORM);
-    if (ItemRain::IsHost() && itemRainEnabled) {
-        packetHolder.packetSize = targetSize;
-        
-        // Clear ItemRain fields first to avoid garbage data
-        memset(packetHolder.packet->itemRainItems, 0, sizeof(packetHolder.packet->itemRainItems));
-        
-        ItemRain::ItemRainSyncData syncData;
-        ItemRain::PackItemData(&syncData);
-        packetHolder.packet->itemRainItemCount = syncData.itemCount;
-        packetHolder.packet->itemRainSyncFrame = syncData.syncFrame;
-        for (u32 i = 0; i < syncData.itemCount && i < ItemRain::MAX_RAIN_ITEMS_PER_PACKET; i++) {
-            u8* dest = &packetHolder.packet->itemRainItems[i * 6];
-            dest[0] = syncData.items[i].itemObjId;
-            dest[1] = syncData.items[i].targetPlayer;
-            dest[2] = static_cast<u8>(syncData.items[i].forwardOffset >> 8);
-            dest[3] = static_cast<u8>(syncData.items[i].forwardOffset & 0xFF);
-            dest[4] = static_cast<u8>(syncData.items[i].rightOffset >> 8);
-            dest[5] = static_cast<u8>(syncData.items[i].rightOffset & 0xFF);
-        }
-    } else {
-        // ItemRain disabled or not host - clear ItemRain fields
-        packetHolder.packet->itemRainItemCount = 0;
-        packetHolder.packet->itemRainSyncFrame = 0;
-        memset(packetHolder.packet->itemRainItems, 0, sizeof(packetHolder.packet->itemRainItems));
     }
 
     // Clear LapKO fields if LapKO mode is not enabled (they won't be sent anyway due to packet size)
@@ -101,32 +72,6 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
         track = static_cast<CourseId>(packet->trackId);
     data->trackId = track;
     memcpy(aidArrDest, &packet->aidsBelongingToPlayerIds[0], len);
-
-    // Process ItemRain sync data from host
-    // ItemRain data is present in both base and full packets
-    if (packetSize >= PulRH1SizeBase && !ItemRain::IsHost() &&
-        (System::sInstance->IsContext(PULSAR_ITEMMODERAIN) || System::sInstance->IsContext(PULSAR_ITEMMODESTORM))) {
-        
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
-        if (controller) {
-            const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-            
-            // Only process ItemRain data if this packet is from the host
-            if (senderAid == sub.hostAid && packet->itemRainItemCount > 0) {
-                ItemRain::ItemRainSyncData syncData;
-                syncData.itemCount = packet->itemRainItemCount;
-                syncData.syncFrame = packet->itemRainSyncFrame;
-                for (u32 i = 0; i < syncData.itemCount && i < ItemRain::MAX_RAIN_ITEMS_PER_PACKET; i++) {
-                    const u8* src = &packet->itemRainItems[i * 6];
-                    syncData.items[i].itemObjId = src[0];
-                    syncData.items[i].targetPlayer = src[1];
-                    syncData.items[i].forwardOffset = static_cast<s16>((src[2] << 8) | src[3]);
-                    syncData.items[i].rightOffset = static_cast<s16>((src[4] << 8) | src[5]);
-                }
-                ItemRain::UnpackAndSpawn(&syncData, senderAid);
-            }
-        }
-    }
 }
 kmCall(0x806652d0, AfterRH1Reception);
 

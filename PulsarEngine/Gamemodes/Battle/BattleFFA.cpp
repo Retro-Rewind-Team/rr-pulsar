@@ -1,3 +1,5 @@
+#include <MarioKartWii/System/Identifiers.hpp>
+#include <hooks.hpp>
 #include <kamek.hpp>
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
@@ -12,57 +14,38 @@
 namespace Pulsar {
 namespace Battle {
 
+static void SetFFAmodeHelper(Racedata* racedata) {
+    if (System::sInstance->IsContext(PULSAR_FFA)) {
+        racedata->racesScenario.settings.modeFlags = 0;
+    } else {
+        racedata->racesScenario.settings.modeFlags = racedata->menusScenario.settings.modeFlags;
+    }
+}
+
 static asmFunc SetFFAmode() {
     ASM(
         nofralloc;
-        li r7, 0x03;
-        lbl_loop : subi r10, r10, 0x01;
-        subic.r7, r7, 0x01;
-        bne lbl_loop;
-        lbl_done : stw r7, 2960(r31);  // Original
-        blr;);
-}
+        stwu r1, -0x20(r1);
+        stw r0, 0x10(r1);
+        mflr r0;
+        stw r0, 0x24(r1);
+        stw r3, 0x8(r1);
+        stw r6, 0xC(r1);
 
-static asmFunc FFAResults() {
-    ASM(
-        nofralloc;
-        lis r10, 0x8000;
-        cmpwi r4, 0x28;
-        beq lbl_setFFAP1;
-        cmpwi r4, 0x29;
-        beq lbl_setFFAP2;
-        cmpwi r4, 0x2a;
-        beq lbl_setFFAP3;
-        cmpwi r4, 0x2b;
-        beq lbl_setFFAP4;
-        cmpwi r4, 0x72;
-        beq lbl_setFFA_Froom;
-        cmpwi r4, 0x73;
-        beq lbl_setFFA_Froom;
-        cmpwi r4, 0x76;
-        beq lbl_setFFA_Froom2;
-        cmpwi r4, 0x77;
-        beq lbl_setFFA_Froom2;
-        bne lbl_orig;
-        lbl_setFFAP1 : li r4, 0x20;
-        b lbl_orig;
-        lbl_setFFAP2 : li r4, 0x21;
-        b lbl_orig;
-        lbl_setFFAP3 : li r4, 0x22;
-        b lbl_orig;
-        lbl_setFFAP4 : li r4, 0x23;
-        b lbl_orig;
-        lbl_setFFA_Froom : li r4, 0x70;
-        b lbl_orig;
-        lbl_setFFA_Froom2 : li r4, 0x74;
-        b lbl_orig;
-        lbl_orig : mr r31, r4;  // Original
+        mr r3, r31;
+        bl SetFFAmodeHelper;
+
+        lwz r6, 0xC(r1);
+        lwz r3, 0x8(r1);
+        lwz r0, 0x24(r1);
+        mtlr r0;
+        lwz r0, 0x10(r1);
+        addi r1, r1, 0x20;
         blr;);
 }
 
 // Patches
 kmRuntimeUse(0x8053056c);  // SetFFAmode [Nameless1]
-kmRuntimeUse(0x80621e1c);  // FFAResults [Nameless1]
 kmRuntimeUse(0x80633a90);  // Single Player VS [B_squo, Ro]
 kmRuntimeUse(0x80633a00);  // Multiplayer VS
 kmRuntimeUse(0x80633940);  // Wifi Battle
@@ -77,7 +60,6 @@ kmRuntimeUse(0x8052EA7C);
 kmRuntimeUse(0x8052EB98);
 void ApplyFFABattle() {
     kmRuntimeWrite32A(0x8053056c, 0x90FF0B90);
-    kmRuntimeWrite32A(0x80621e1c, 0x7C9F2378);
     kmRuntimeWrite32A(0x80633a90, 0x3860087E);
     kmRuntimeWrite32A(0x80633a00, 0x3860087C);
     kmRuntimeWrite32A(0x80633940, 0x386008CE);
@@ -104,7 +86,6 @@ void ApplyFFABattle() {
         kmRuntimeWrite32A(0x80633880, 0x386028de);
         kmRuntimeWrite32A(0x806336d0, 0x386028de);
         kmRuntimeCallA(0x8053056c, SetFFAmode);
-        kmRuntimeCallA(0x80621e1c, FFAResults);
         kmRuntimeWrite32A(0x8052E9E0, 0x38600000);
         kmRuntimeWrite32A(0x8052EA7C, 0x38800000);
         kmRuntimeWrite32A(0x8052EB98, 0x38600000);
@@ -116,6 +97,6 @@ void ApplyFFABattle() {
     }
 }
 static SectionLoadHook ApplyFFABattleHook(ApplyFFABattle);
-    
+
 }  // namespace Battle
 }  // namespace Pulsar

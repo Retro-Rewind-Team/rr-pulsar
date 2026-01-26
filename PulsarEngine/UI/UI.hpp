@@ -46,7 +46,6 @@ enum PulPageId {
 
 class ExpSection : public Section {  // u32 id -> either a standard pageId but can also be a PulPageId
    public:
-    ExpSection();
     static ExpSection* GetSection() { return reinterpret_cast<ExpSection*>(SectionMgr::sInstance->curSection); }
 
     static void CreatePages(ExpSection& self, SectionId id);

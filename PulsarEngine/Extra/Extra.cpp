@@ -1,4 +1,4 @@
-#include <RetroRewind.hpp>
+#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
@@ -61,7 +61,8 @@ void EnableDelimitersForAllItems() {
     kmRuntimeCallA(0x807B1B44, GetItemDelimiterPOW);
 
     if (RKNet::Controller::sInstance && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-                                         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
+                                         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) ||
+        Pulsar::ItemRain::IsItemRainEnabled()) {
         kmRuntimeWrite32A(0x807B7C34, 0x1fa300f0);
         kmRuntimeWrite32A(0x807A81C0, 0x39610050);
         kmRuntimeWrite32A(0x807B1B44, 0x7c7e1b78);
@@ -427,12 +428,13 @@ kmWrite32(0x80797C44, 0x3C600A0C);
 kmRuntimeUse(0x80657EA8);
 void ApplyRacePacketThreshold() {
     if (Dolphin::IsEmulator()) {
-        kmRuntimeWrite32A(0x80657EA8, 0x28040007);  // cmplwi r4, 0x7
+        kmRuntimeWrite32A(0x80657EA8, 0x2804000A);  // cmplwi r4, 0xA
     } else {
-        kmRuntimeWrite32A(0x80657EA8, 0x28040011);  // cmplwi r4, 0x11 (original)
+        kmRuntimeWrite32A(0x80657EA8, 0x28040011);  // cmplwi r4, 0x11
     }
 }
 static SectionLoadHook PatchRacePacketThreshold(ApplyRacePacketThreshold);
+kmWrite32(0x80657F5C, 0x3B400000);
 
 // Prevent Crash from Invalid Camera Pointer in Broken KMP [Gab]
 asmFunc InvalidCameraPointerFix() {

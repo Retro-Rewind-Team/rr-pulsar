@@ -50,14 +50,14 @@ static const MarkLicensesDirtyFn sMarkLicensesDirty = reinterpret_cast<MarkLicen
 
 struct CtrlRaceResult_Inputs {
     u8 _00[0x178];
-    float timer;      // 0x178
-    bool playSfx;     // 0x17C
-    bool direction;   // 0x17D
+    float timer;  // 0x178
+    bool playSfx;  // 0x17C
+    bool direction;  // 0x17D
     u8 _17E[0x184 - 0x17E];
-    float step;       // 0x184
-    float current;    // 0x188
-    u32 target;       // 0x18C
-    u32 messageId;    // 0x190
+    float step;  // 0x184
+    float current;  // 0x188
+    u32 target;  // 0x18C
+    u32 messageId;  // 0x190
 };
 
 static const u32 FLOAT_MODE_MAGIC = 0x1337CAFE;
@@ -78,7 +78,7 @@ void CtrlRaceResult_calcSelf_Hook(CtrlRaceResult* self) {
                 inputs->current = targetVal;
                 finished = true;
             }
-            
+
             if (!finished && inputs->timer <= 0.0f) {
                 inputs->current = targetVal;
                 finished = true;
@@ -92,11 +92,16 @@ void CtrlRaceResult_calcSelf_Hook(CtrlRaceResult* self) {
             float val = inputs->current;
             int iVal = (int)val;
             int dVal = (int)((val - (float)iVal) * 100.0f + 0.5f);
-            if (dVal >= 100) { iVal++; dVal -= 100; }
+            if (dVal >= 100) {
+                iVal++;
+                dVal -= 100;
+            }
             if (dVal < 0) dVal = -dVal;
 
-            if (iVal == 0) swprintf(buffer, 64, L"%d", dVal);
-            else swprintf(buffer, 64, L"%d%02d", iVal, dVal);
+            if (iVal == 0)
+                swprintf(buffer, 64, L"%d", dVal);
+            else
+                swprintf(buffer, 64, L"%d%02d", iVal, dVal);
 
             Text::Info info;
             info.strings[0] = buffer;
@@ -106,9 +111,8 @@ void CtrlRaceResult_calcSelf_Hook(CtrlRaceResult* self) {
                 self->PlaySound(0xde, -1);
             }
         }
-    }
-    else {
-        reinterpret_cast<void(*)(CtrlRaceResult*)>(kmRuntimeAddr(0x807f5a50))(self);
+    } else {
+        reinterpret_cast<void (*)(CtrlRaceResult*)>(kmRuntimeAddr(0x807f5a50))(self);
     }
 }
 
@@ -175,7 +179,7 @@ RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScena
     RatingDisplay display = {};
     const float MAX_RATING = 10000.0f;
     const float MIN_RATING = 1.0f;
-    
+
     const RacedataPlayer& racePlayer = raceScenario.players[playerId];
     const RacedataPlayer& menuPlayer = menuScenario.players[playerId];
 
@@ -184,16 +188,20 @@ RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScena
         if (rksys && rksys->curLicenseId >= 0) {
             float current = isBattle ? PointRating::GetUserBR(rksys->curLicenseId) : PointRating::GetUserVR(rksys->curLicenseId);
             float delta = PointRating::lastRaceDeltas[playerId];
-            
-            float oldRating = current - delta;
-            
-            float startRating = (float)racePlayer.rating.points;
-            if (startRating >= MAX_RATING) oldRating = MAX_RATING;
-            else if (startRating <= MIN_RATING) oldRating = MIN_RATING;
 
-            if(current > MAX_RATING) current = MAX_RATING;
-            else if(current < MIN_RATING) current = MIN_RATING;
-            
+            float oldRating = current - delta;
+
+            float startRating = (float)racePlayer.rating.points;
+            if (startRating >= MAX_RATING)
+                oldRating = MAX_RATING;
+            else if (startRating <= MIN_RATING)
+                oldRating = MIN_RATING;
+
+            if (current > MAX_RATING)
+                current = MAX_RATING;
+            else if (current < MIN_RATING)
+                current = MIN_RATING;
+
             if (oldRating >= MAX_RATING && delta > 0.0f) {
                 delta = 0.0f;
                 current = MAX_RATING;
@@ -221,23 +229,18 @@ RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScena
         }
 
         if (playerIndexOnConsole < 2) {
-            float oldRating;
-            const RKNet::RoomType roomType = controller->roomType;
-            if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-                oldRating = (float)racePlayer.previousScore;
-            } else {
-                oldRating = (float)racePlayer.rating.points;
-            }
-            
+            float oldRating = (float)racePlayer.rating.points;
             float decimal = (float)PointRating::remoteDecimalVR[aid][playerIndexOnConsole] / 100.0f;
             oldRating += decimal;
 
             float delta = PointRating::lastRaceDeltas[playerId];
             float current = oldRating + delta;
 
-            if(current > MAX_RATING) current = MAX_RATING;
-            else if(current < MIN_RATING) current = MIN_RATING;
-            
+            if (current > MAX_RATING)
+                current = MAX_RATING;
+            else if (current < MIN_RATING)
+                current = MIN_RATING;
+
             if (oldRating >= MAX_RATING && delta > 0.0f) {
                 delta = 0.0f;
                 current = MAX_RATING;
@@ -357,7 +360,7 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
         if (!skipScores) {
             RatingDisplay display = BuildRatingDisplay(playerId, isBattle, raceScenario, menuScenario);
             const u32 messageId = isBattle ? 0x540 : 0x53f;
-            
+
             if (display.isFloat) {
                 float endVal = display.total;
                 float startVal = endVal - display.delta;
@@ -374,39 +377,52 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
                 wchar_t buffer[64];
                 int tInt = (int)startVal;
                 int tDec = (int)((startVal - (float)tInt) * 100.0f + 0.5f);
-                if (tDec >= 100) { tInt++; tDec -= 100; }
-                if(tDec < 0) tDec = -tDec;
-                if (tInt == 0) swprintf(buffer, 64, L"%d", tDec);
-                else swprintf(buffer, 64, L"%d%02d", tInt, tDec);
-                
+                if (tDec >= 100) {
+                    tInt++;
+                    tDec -= 100;
+                }
+                if (tDec < 0) tDec = -tDec;
+                if (tInt == 0)
+                    swprintf(buffer, 64, L"%d", tDec);
+                else
+                    swprintf(buffer, 64, L"%d%02d", tInt, tDec);
+
                 Text::Info info;
                 info.strings[0] = buffer;
                 result->SetTextBoxMessage("total_score", UI::BMG_TEXT, &info);
                 result->SetTextBoxMessage("total_point", messageId);
-                
+
                 int dInt = (int)display.delta;
                 int dDec;
                 if (display.delta >= 0) {
                     dDec = (int)((display.delta - (float)dInt) * 100.0f + 0.5f);
-                    if (dDec >= 100) { dInt++; dDec -= 100; }
+                    if (dDec >= 100) {
+                        dInt++;
+                        dDec -= 100;
+                    }
                 } else {
                     dDec = (int)((display.delta - (float)dInt) * 100.0f - 0.5f);
-                    if (dDec <= -100) { dInt--; dDec += 100; }
-                }
-                if (dDec < 0) dDec = -dDec;
-                
-                wchar_t deltaBuffer[64];
-                if (display.delta >= 0) {
-                    if (dInt == 0) swprintf(deltaBuffer, 64, L"+%d", dDec);
-                    else swprintf(deltaBuffer, 64, L"+%d%02d", dInt, dDec);
-                } else {
-                    if (dInt == 0) {
-                         swprintf(deltaBuffer, 64, L"-%d", dDec);
-                    } else {
-                         swprintf(deltaBuffer, 64, L"%d%02d", dInt, dDec);
+                    if (dDec <= -100) {
+                        dInt--;
+                        dDec += 100;
                     }
                 }
-                
+                if (dDec < 0) dDec = -dDec;
+
+                wchar_t deltaBuffer[64];
+                if (display.delta >= 0) {
+                    if (dInt == 0)
+                        swprintf(deltaBuffer, 64, L"+%d", dDec);
+                    else
+                        swprintf(deltaBuffer, 64, L"+%d%02d", dInt, dDec);
+                } else {
+                    if (dInt == 0) {
+                        swprintf(deltaBuffer, 64, L"-%d", dDec);
+                    } else {
+                        swprintf(deltaBuffer, 64, L"%d%02d", dInt, dDec);
+                    }
+                }
+
                 Text::Info deltaInfo;
                 deltaInfo.strings[0] = deltaBuffer;
                 result->SetTextBoxMessage("get_point", UI::BMG_TEXT, &deltaInfo);

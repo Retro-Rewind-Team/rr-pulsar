@@ -34,7 +34,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
 
         float decimal = rating - (int)rating;
         src->decimalVR[0] = (u8)(decimal * 100.0f + 0.5f);
-        if (System::sInstance->IsContext(PULSAR_VR)) {
+        if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
             src->playersData[0].sumPoints = static_cast<u16>(rating);
         }
     } else {
@@ -196,8 +196,22 @@ static bool IsGroupedTrack(PulsarId id) {
     if (CupsConfig::IsReg(id)) return false;
     const u32 idx = id - 0x100;
     switch (idx) {
-        case 6: case 9: case 27: case 29: case 31: case 32: case 37: case 51:
-        case 57: case 61: case 63: case 67: case 73: case 76: case 77: case 85:
+        case 6:
+        case 9:
+        case 27:
+        case 29:
+        case 31:
+        case 32:
+        case 37:
+        case 51:
+        case 57:
+        case 61:
+        case 63:
+        case 67:
+        case 73:
+        case 76:
+        case 77:
+        case 85:
             return true;
         default:
             if (idx >= 88 && idx <= 103) return true;

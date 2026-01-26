@@ -357,14 +357,19 @@ namespace Pulsar_Pack_Creator.IO
                                                 MainWindow.Cup.Track.Variant variant;
 	                                                if (parsedVariantIdx == -1)
 	                                                {
-	                                                    // Base BMG_TRACKS block (0x20000 + trackIdx): always import into the main track name,
-	                                                    // and only map into commonName when the exported visual marker indicates variants.
+	                                                    // Base BMG_TRACKS block (0x20000 + trackIdx): import as the common (BMG_TRACKS) name.
+	                                                    // Always set the track.commonName from this base entry. Only overwrite the
+	                                                    // main track name when there are no variants configured for the track.
 	                                                    if (type == (uint)BMGIds.BMG_TRACKS)
 	                                                    {
 	                                                        bool hadVariantMarker;
 	                                                        string sanitizedContent = StripCommonNameVisualMarker(content, out hadVariantMarker);
-	                                                        track.main.trackName = sanitizedContent;
-	                                                        track.commonName = hadVariantMarker ? sanitizedContent : null;
+	                                                        // Use the base entry as the common name unconditionally
+	                                                        track.commonName = sanitizedContent;
+	                                                        // Preserve per-variant/main names when variants exist; if there are no variants,
+	                                                        // populate the main track name from the common name for compatibility.
+	                                                        if (track.variants.Count == 0)
+	                                                            track.main.trackName = sanitizedContent;
 	                                                    }
 	                                                    break;
 	                                                }
