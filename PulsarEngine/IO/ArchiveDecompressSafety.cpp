@@ -50,15 +50,22 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     u32 appliedOverrides = 0;
     u32 patchedNodes = 0;
     u32 missingOverrides = 0;
+    u32 finalSize = allocSize;
+
     if (canApplyOverrides && overridesTotalAligned > 0) {
         ApplyLooseOverrides(archiveBaseLower, decompressedBuffer, expandSize, &appliedOverrides, &patchedNodes, &missingOverrides);
+    } else if (canApplyOverrides && overridesTotalAligned == 0 && IsDVDOverrideSource()) {
+        u8* newBuffer = decompressedBuffer;
+        if (ApplyLooseOverridesDVD(archiveBaseLower, &newBuffer, expandSize, heap, &finalSize, &appliedOverrides, &patchedNodes, &missingOverrides)) {
+            decompressedBuffer = newBuffer;
+        }
     }
 
-    file->archiveSize = allocSize;
+    file->archiveSize = finalSize;
     file->rawArchive = decompressedBuffer;
     file->archiveHeap = heap;
 
-    OS::DCStoreRange(decompressedBuffer, allocSize);
+    OS::DCStoreRange(decompressedBuffer, finalSize);
     file->status = ARCHIVE_STATUS_DECOMPRESSED;
 }
 kmBranch(0x80519508, SafeDecompress);

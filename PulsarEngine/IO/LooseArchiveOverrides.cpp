@@ -37,8 +37,10 @@ namespace IOOverrides {
 
 namespace {
 
-const char kModsRoot[] = "/files/Mods";
-const char kModsRootPrefix[] = "/files/Mods/";
+const char kModsRoot[] = "/mods";
+const char kModsRootAlt[] = "/Mods";
+const char kModsRootPrefix[] = "/mods/";
+const char kModsRootAltPrefix[] = "/Mods/";
 const u32 kMaxOverridesTotal = 1024;
 
 struct OverrideEntry {
@@ -60,6 +62,12 @@ struct U8Node {
     u32 typeName;
     u32 dataOffset;
     u32 dataSize;
+};
+
+struct DVDOverrideMatch {
+    u32 nodeIndex;
+    u32 size;
+    char path[OVERRIDE_MAX_PATH];
 };
 
 struct sd_vtable {
@@ -87,6 +95,7 @@ static bool sModIndexAttempted = false;
 static bool sModsRootChecked = false;
 static bool sModsRootPresent = false;
 static bool sOverrideSourceChecked = false;
+static const char* sModsRootPath = kModsRoot;
 
 enum OverrideSource {
     OVERRIDE_SOURCE_NONE = 0,
@@ -262,24 +271,55 @@ static bool DVDFileExists(const char* path) {
     return false;
 }
 
-static bool ModsRootExists() {
-    PulsarIOClass* io = PulsarIOClass::sInstance;
-    if (io == nullptr) {
-        OVERRIDE_WARN("Mods root check skipped (IO not initialized).\n");
-        return false;
-    }
+static bool ReadDVDFile(const char* path, void* dest, u32 size) {
+    DVD::FileInfo info;
+    if (!DVD::Open(path, &info)) return false;
+    const s32 read = DVD::ReadPrio(&info, dest, static_cast<s32>(size), 0, 2);
+    DVD::Close(&info);
+    return read == static_cast<s32>(size);
+}
 
+static bool BuildOverridePathWithRoot(const char* root, const char* name, const char* tag, char* outPath, u32 outSize) {
+    if (root == nullptr || name == nullptr || outPath == nullptr || outSize == 0) return false;
+    int written = 0;
+    if (tag != nullptr && tag[0] != '\0') {
+        written = snprintf(outPath, outSize, "%s/%s.%s", root, name, tag);
+    } else {
+        written = snprintf(outPath, outSize, "%s/%s", root, name);
+    }
+    if (written <= 0 || static_cast<u32>(written) >= outSize) return false;
+    return true;
+}
+
+static const char* ChooseDVDModsRoot(const char* name, const char* tag) {
+    char path[OVERRIDE_MAX_PATH];
+    if (BuildOverridePathWithRoot(kModsRoot, name, tag, path, sizeof(path))) {
+        if (DVDFileExists(path)) return kModsRoot;
+    }
+    if (BuildOverridePathWithRoot(kModsRootAlt, name, tag, path, sizeof(path))) {
+        if (DVDFileExists(path)) return kModsRootAlt;
+    }
+    return kModsRoot;
+}
+
+static bool ModsRootExists() {
     if (sModsRootChecked) return sModsRootPresent;
 
     sModsRootChecked = true;
     sModsRootPresent = false;
 
-    OVERRIDE_LOG("Mods root probe: ioType=%d path=%s\n", io->type, kModsRoot);
-    sOverrideSource = GetOverrideSource(io->type);
+    PulsarIOClass* io = PulsarIOClass::sInstance;
+    const int ioType = io ? io->type : -1;
+    if (io == nullptr) {
+        OVERRIDE_WARN("IO not initialized; forcing DVD override source.\n");
+    }
+
+    OVERRIDE_LOG("Mods root probe (DVD forced): ioType=%d primary=%s alt=%s\n", ioType, kModsRoot, kModsRootAlt);
+    sOverrideSource = GetOverrideSource(io ? io->type : IOType_RIIVO);
     sModsRootPresent = (sOverrideSource != OVERRIDE_SOURCE_NONE);
 
     if (sModsRootPresent) {
-        OVERRIDE_LOG("Mods root found: %s (source=%d)\n", kModsRoot, sOverrideSource);
+        OVERRIDE_LOG("Mods root set: %s (source=%d)\n", sModsRootPath, sOverrideSource);
     } else {
         OVERRIDE_WARN("Mods root missing: %s (overrides disabled).\n", kModsRoot);
     }
@@ -290,54 +330,11 @@ static bool ModsRootExists() {
 static OverrideSource GetOverrideSource(IOType ioType) {
     if (sOverrideSourceChecked) return sOverrideSource;
     sOverrideSourceChecked = true;
-    sOverrideSource = OVERRIDE_SOURCE_NONE;
-
-    s32 riivoFd = PulsarIOClass::OpenFix("file", IOS::MODE_NONE);
-    if (riivoFd >= 0) {
-        s32 dirFd = IOS::IOCtl(riivoFd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_OPENDIR),
-                               (void*)kModsRoot, strlen(kModsRoot) + 1, nullptr, 0);
-        OVERRIDE_LOG("Riivo root IOCtl(OPENDIR) ret=%d\n", dirFd);
-        if (dirFd >= 0) {
-            IOS::IOCtl(riivoFd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_CLOSEDIR), (void*)&dirFd, sizeof(s32), nullptr, 0);
-            IOS::Close(riivoFd);
-            sOverrideSource = OVERRIDE_SOURCE_RIIVO;
-            return sOverrideSource;
-        }
-        IOS::Close(riivoFd);
-    } else {
-        OVERRIDE_LOG("Riivo root open failed (fd=%d)\n", riivoFd);
-    }
-
-    if (ioType == IOType_SD) {
-        if (sSdVtable != nullptr) {
-            stat st;
-            const int statRet = sSdVtable->stat(kModsRoot, &st);
-            OVERRIDE_LOG("SD root stat ret=%d mode=0x%X\n", statRet, st.st_mode);
-            if (statRet == 0 && ((st.st_mode & S_IFMT) == S_IFDIR)) {
-                sOverrideSource = OVERRIDE_SOURCE_SD;
-                return sOverrideSource;
-            }
-        } else {
-            OVERRIDE_WARN("SD root stat skipped (vtable missing).\n");
-        }
-    }
-
-    if (ioType != IOType_SD) {
-        u32 count = 0;
-        s32 ret = ISFS::ReadDir(kModsRoot, nullptr, &count);
-        OVERRIDE_LOG("ISFS root ReadDir ret=%d count=%u\n", ret, count);
-        if (ret >= 0) {
-            sOverrideSource = OVERRIDE_SOURCE_ISFS;
-            return sOverrideSource;
-        }
-    }
-
-    if (ioType == IOType_DOLPHIN) {
-        OVERRIDE_WARN("Riivolution FS missing; falling back to DVD-only override probing.\n");
-        sOverrideSource = OVERRIDE_SOURCE_DVD;
-        return sOverrideSource;
-    }
-
+    (void)ioType;
+    sOverrideSource = OVERRIDE_SOURCE_DVD;
+    sModsRootPath = kModsRoot;
+    OVERRIDE_LOG("Override source forced to DVD (ignoring Riivolution/SD/ISFS). root=%s alt=%s\n",
+                 kModsRoot, kModsRootAlt);
     return sOverrideSource;
 }
 
@@ -666,14 +663,14 @@ static void EnsureModIndexBuilt() {
 
     u32 count = 0;
     bool truncated = false;
-    ScanModsDir(kModsRoot, "", nullptr, kMaxOverridesTotal, count, truncated);
+    ScanModsDir(sModsRootPath, "", nullptr, kMaxOverridesTotal, count, truncated);
     if (count >= kMaxOverridesTotal) {
         truncated = true;
     }
     if (count == 0) {
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
-        OVERRIDE_LOG("No overrides found under %s.\n", kModsRoot);
+        OVERRIDE_LOG("No overrides found under %s.\n", sModsRootPath);
         return;
     }
 
@@ -687,7 +684,7 @@ static void EnsureModIndexBuilt() {
 
     u32 filled = 0;
     bool truncatedFill = false;
-    ScanModsDir(kModsRoot, "", entries, count, filled, truncatedFill);
+    ScanModsDir(sModsRootPath, "", entries, count, filled, truncatedFill);
 
     sModIndex.entries = entries;
     sModIndex.count = filled;
@@ -705,7 +702,7 @@ static bool IsFileExtensionSZS(const char* path) {
 }  // namespace
 
 bool IsModsPath(const char* path) {
-    return path != nullptr && StartsWith(path, kModsRootPrefix);
+    return path != nullptr && (StartsWith(path, kModsRootPrefix) || StartsWith(path, kModsRootAltPrefix));
 }
 
 const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 resolvedSize, bool* outRedirected) {
@@ -718,26 +715,49 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
     const char* base = FindBasename(path);
     if (base == nullptr || base[0] == '\0') return path;
 
-    const int written = snprintf(resolvedPath, resolvedSize, "%s/%s", kModsRoot, base);
-    if (written <= 0 || static_cast<u32>(written) >= resolvedSize) {
-        OVERRIDE_WARN("Override path truncated for %s (buffer=%u).\n", path, resolvedSize);
-        return path;
-    }
-
     bool exists = false;
     switch (sOverrideSource) {
-        case OVERRIDE_SOURCE_RIIVO:
+        case OVERRIDE_SOURCE_RIIVO: {
+            const int written = snprintf(resolvedPath, resolvedSize, "%s/%s", sModsRootPath, base);
+            if (written <= 0 || static_cast<u32>(written) >= resolvedSize) {
+                OVERRIDE_WARN("Override path truncated for %s (buffer=%u).\n", path, resolvedSize);
+                return path;
+            }
             exists = RiivoFileExists(resolvedPath);
             break;
-        case OVERRIDE_SOURCE_SD:
+        }
+        case OVERRIDE_SOURCE_SD: {
+            const int written = snprintf(resolvedPath, resolvedSize, "%s/%s", sModsRootPath, base);
+            if (written <= 0 || static_cast<u32>(written) >= resolvedSize) {
+                OVERRIDE_WARN("Override path truncated for %s (buffer=%u).\n", path, resolvedSize);
+                return path;
+            }
             exists = SDFileExists(resolvedPath);
             break;
-        case OVERRIDE_SOURCE_ISFS:
+        }
+        case OVERRIDE_SOURCE_ISFS: {
+            const int written = snprintf(resolvedPath, resolvedSize, "%s/%s", sModsRootPath, base);
+            if (written <= 0 || static_cast<u32>(written) >= resolvedSize) {
+                OVERRIDE_WARN("Override path truncated for %s (buffer=%u).\n", path, resolvedSize);
+                return path;
+            }
             exists = ISFSFileExists(resolvedPath);
             break;
-        case OVERRIDE_SOURCE_DVD:
-            exists = DVDFileExists(resolvedPath);
+        }
+        case OVERRIDE_SOURCE_DVD: {
+            char dvdPath[OVERRIDE_MAX_PATH];
+            const char* dvdRoot = ChooseDVDModsRoot(base, nullptr);
+            if (!BuildOverridePathWithRoot(dvdRoot, base, nullptr, dvdPath, sizeof(dvdPath))) {
+                OVERRIDE_WARN("DVD override path truncated for %s.\n", base);
+                return path;
+            }
+            exists = DVDFileExists(dvdPath);
+            if (exists) {
+                strncpy(resolvedPath, dvdPath, resolvedSize);
+                resolvedPath[resolvedSize - 1] = '\0';
+            }
             break;
+        }
         default:
             break;
     }
@@ -773,6 +793,11 @@ bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 arc
 
 u32 GetLooseOverridesTotalAligned(const char* archiveBaseLower, u32* outApplicableCount) {
     if (outApplicableCount != nullptr) *outApplicableCount = 0;
+    if (IsDVDOverrideSource()) {
+        OVERRIDE_LOG("DVD override source active; using per-archive probes for %s.\n",
+                     archiveBaseLower ? archiveBaseLower : "?");
+        return 0;
+    }
     EnsureModIndexBuilt();
 
     if (sModIndex.entries == nullptr || sModIndex.count == 0) return 0;
@@ -907,6 +932,142 @@ void ApplyLooseOverrides(const char* archiveBaseLower, u8* archiveBase, u32 base
                  archiveBaseLower, appliedOverrides, patchedNodes, missingOverrides, writeOffset);
 }
 
+bool IsDVDOverrideSource() {
+    if (!ModsRootExists()) return false;
+    return sOverrideSource == OVERRIDE_SOURCE_DVD;
+}
+
+bool ApplyLooseOverridesDVD(const char* archiveBaseLower, u8** archiveBase, u32 baseSize, EGG::Heap* heap,
+                            u32* outNewSize, u32* outAppliedOverrides, u32* outPatchedNodes, u32* outMissingOverrides) {
+    if (outNewSize != nullptr) *outNewSize = baseSize;
+    if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
+    if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
+    if (outMissingOverrides != nullptr) *outMissingOverrides = 0;
+
+    if (!IsDVDOverrideSource()) return false;
+    if (archiveBase == nullptr || *archiveBase == nullptr || heap == nullptr) return false;
+
+    ARC::Header* header = reinterpret_cast<ARC::Header*>(*archiveBase);
+    U8Node* nodes = reinterpret_cast<U8Node*>(*archiveBase + header->nodeOffset);
+    const u32 nodeCount = nodes[0].dataSize;
+    if (nodeCount == 0) return false;
+
+    char* stringTable = reinterpret_cast<char*>(nodes + nodeCount);
+    DVDOverrideMatch* matches = EGG::Heap::alloc<DVDOverrideMatch>(sizeof(DVDOverrideMatch) * nodeCount, 0x20, heap);
+    if (matches == nullptr) {
+        OVERRIDE_WARN("DVD override match alloc failed (nodes=%u).\n", nodeCount);
+        return false;
+    }
+
+    u32 matchCount = 0;
+    u32 totalAligned = 0;
+    for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+        if (NodeIsDir(nodes[nodeIdx])) continue;
+        const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
+        if (nodeName == nullptr || nodeName[0] == '\0') continue;
+
+        char taggedPath[OVERRIDE_MAX_PATH];
+        char plainPath[OVERRIDE_MAX_PATH];
+        const bool hasTag = archiveBaseLower != nullptr && archiveBaseLower[0] != '\0';
+        bool found = false;
+        u32 size = 0;
+
+        if (hasTag) {
+            const char* tagRoot = ChooseDVDModsRoot(nodeName, archiveBaseLower);
+            if (BuildOverridePathWithRoot(tagRoot, nodeName, archiveBaseLower, taggedPath, sizeof(taggedPath))) {
+                DVD::FileInfo info;
+                if (DVD::Open(taggedPath, &info)) {
+                    size = info.length;
+                    DVD::Close(&info);
+                    found = true;
+                    strncpy(matches[matchCount].path, taggedPath, sizeof(matches[matchCount].path));
+                    matches[matchCount].path[sizeof(matches[matchCount].path) - 1] = '\0';
+                }
+            }
+        }
+
+        if (!found) {
+            const char* plainRoot = ChooseDVDModsRoot(nodeName, nullptr);
+            if (BuildOverridePathWithRoot(plainRoot, nodeName, nullptr, plainPath, sizeof(plainPath))) {
+                DVD::FileInfo info;
+                if (DVD::Open(plainPath, &info)) {
+                    size = info.length;
+                    DVD::Close(&info);
+                    found = true;
+                    strncpy(matches[matchCount].path, plainPath, sizeof(matches[matchCount].path));
+                    matches[matchCount].path[sizeof(matches[matchCount].path) - 1] = '\0';
+                }
+            }
+        }
+
+        if (!found || size == 0) continue;
+
+        matches[matchCount].nodeIndex = nodeIdx;
+        matches[matchCount].size = size;
+        totalAligned += nw4r::ut::RoundUp(size, 0x20);
+        ++matchCount;
+    }
+
+    if (matchCount == 0) {
+        OVERRIDE_LOG("DVD overrides: no matching files for archive %s under %s/%s.\n",
+                     archiveBaseLower ? archiveBaseLower : "?", kModsRoot, kModsRootAlt);
+        EGG::Heap::free(matches, heap);
+        return false;
+    }
+
+    const u32 newSize = nw4r::ut::RoundUp(baseSize + totalAligned, 0x20);
+    u8* newBuffer = EGG::Heap::alloc<u8>(newSize, 0x20, heap);
+    if (newBuffer == nullptr) {
+        OVERRIDE_WARN("DVD override alloc failed (size=0x%X, matches=%u).\n", newSize, matchCount);
+        EGG::Heap::free(matches, heap);
+        return false;
+    }
+
+    memcpy(newBuffer, *archiveBase, baseSize);
+    ARC::Header* newHeader = reinterpret_cast<ARC::Header*>(newBuffer);
+    U8Node* newNodes = reinterpret_cast<U8Node*>(newBuffer + newHeader->nodeOffset);
+    u32 writeOffset = 0;
+    u32 appliedOverrides = 0;
+    u32 patchedNodes = 0;
+    u32 missingOverrides = 0;
+
+    for (u32 i = 0; i < matchCount; ++i) {
+        const DVDOverrideMatch& match = matches[i];
+        u8* dest = newBuffer + baseSize + writeOffset;
+        if (!ReadDVDFile(match.path, dest, match.size)) {
+            OVERRIDE_WARN("DVD override read failed: %s\n", match.path);
+            ++missingOverrides;
+            continue;
+        }
+        const u32 alignedSize = nw4r::ut::RoundUp(match.size, 0x20);
+        newNodes[match.nodeIndex].dataOffset = baseSize + writeOffset;
+        newNodes[match.nodeIndex].dataSize = match.size;
+        OS::DCStoreRange(dest, match.size);
+        ++patchedNodes;
+        ++appliedOverrides;
+        writeOffset += alignedSize;
+        OVERRIDE_LOG("DVD override applied: %s (node=%u).\n", match.path, match.nodeIndex);
+    }
+
+    if (patchedNodes > 0) {
+        OS::DCStoreRange(newNodes, nodeCount * sizeof(U8Node));
+    }
+
+    EGG::Heap::free(matches, heap);
+    EGG::Heap::free(*archiveBase, heap);
+    *archiveBase = newBuffer;
+
+    if (outNewSize != nullptr) *outNewSize = newSize;
+    if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
+    if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
+    if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+
+    OVERRIDE_LOG("DVD overrides applied to %s: files=%u nodes=%u missing=%u write=0x%X.\n",
+                 archiveBaseLower ? archiveBaseLower : "?", appliedOverrides, patchedNodes, missingOverrides, writeOffset);
+
+    return true;
+}
+
 static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::Heap* mountHeap, bool isCompressed,
                                     s32 allocDirection, EGG::Heap* dumpHeap, EGG::Archive::FileInfo* info) {
     char resolvedPath[OVERRIDE_MAX_PATH];
@@ -934,6 +1095,9 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
 
         if (file->compressedArchiveSize == 0 || rippedData == nullptr) {
             file->compressedArchiveSize = 0;
+            if (redirected) {
+                OVERRIDE_WARN("Whole-file override load failed: %s -> %s\n", path, finalPath);
+            }
         } else {
             file->dumpHeap = dumpHeap;
             ripped = true;

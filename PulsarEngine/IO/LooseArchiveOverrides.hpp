@@ -3,6 +3,10 @@
 
 #include <kamek.hpp>
 
+namespace EGG {
+class Heap;
+}
+
 #ifdef IO
 #undef IO
 #endif
@@ -22,6 +26,10 @@ u32 GetLooseOverridesTotalAligned(const char* archiveBaseLower, u32* outApplicab
 
 void ApplyLooseOverrides(const char* archiveBaseLower, u8* archiveBase, u32 baseSize, u32* outAppliedOverrides,
                          u32* outPatchedNodes, u32* outMissingOverrides);
+
+bool IsDVDOverrideSource();
+bool ApplyLooseOverridesDVD(const char* archiveBaseLower, u8** archiveBase, u32 baseSize, EGG::Heap* heap,
+                            u32* outNewSize, u32* outAppliedOverrides, u32* outPatchedNodes, u32* outMissingOverrides);
 
 }  // namespace IOOverrides
 }  // namespace Pulsar
