@@ -3,10 +3,21 @@
 #include <MarioKartWii/Item/Obj/ObjProperties.hpp>
 #include <RetroRewind.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <Race/CustomItems.hpp>
 
 // Origial code from VP, adapted to Pulsar 2.0
 namespace RetroRewind {
 namespace Race {
+
+static u32 CountEnabledItems(u32 bitfield) {
+    u32 count = 0;
+    while (bitfield) {
+        count += bitfield & 1;
+        bitfield >>= 1;
+    }
+    return count;
+}
+
 static void ChangeBlueOBJProperties(Item::ObjProperties* dest, const Item::ObjProperties& rel) {
     bool itemModeRandom = Pulsar::GAMEMODE_DEFAULT;
     bool itemModeBlast = Pulsar::GAMEMODE_DEFAULT;
@@ -17,9 +28,13 @@ static void ChangeBlueOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
     new (dest) Item::ObjProperties(rel);
     if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
         dest->limit = 25;
-    }
-    if (itemModeRandom == Pulsar::GAMEMODE_RANDOM) {
+    } else if (itemModeRandom == Pulsar::GAMEMODE_RANDOM) {
         dest->limit = 5;
+    } else {
+        u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
+        if (bitfield != 0x7FFF && CountEnabledItems(bitfield) <= 5) {
+            dest->limit = 12;
+        }
     }
 }
 
@@ -35,8 +50,7 @@ static void ChangeBillOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
     new (dest) Item::ObjProperties(rel);
     if (itemModeRandom == Pulsar::GAMEMODE_RANDOM) {
         dest->limit = 25;
-    }
-    if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
+    } else if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
         dest->limit = 5;
     }
 }
@@ -53,12 +67,22 @@ static void ChangeBombOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
     new (dest) Item::ObjProperties(rel);
     if (itemModeRandom == Pulsar::GAMEMODE_RANDOM) {
         dest->limit = 20;
-    }
-    if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
+    } else if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
         dest->limit = 25;
     }
 }
 
 kmCall(0x80790bb4, ChangeBombOBJProperties);
+
+static void ChangeItemOBJProperties(Item::ObjProperties* dest, const Item::ObjProperties& rel) {
+    new (dest) Item::ObjProperties(rel);
+    if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != 0x7FFF) {
+        dest->limit = 16;
+    }
+}
+kmCall(0x80790bc4, ChangeItemOBJProperties);  // Blooper
+kmCall(0x80790bd4, ChangeItemOBJProperties);  // POW
+kmCall(0x80790c04, ChangeItemOBJProperties);  // Thunder Cloud
+
 }  // namespace Race
 }  // namespace RetroRewind

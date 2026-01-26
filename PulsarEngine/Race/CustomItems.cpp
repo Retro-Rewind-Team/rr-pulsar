@@ -1,5 +1,6 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
+#include <Race/CustomItems.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/ItemBehaviour.hpp>
@@ -11,7 +12,7 @@
 namespace Pulsar {
 namespace Race {
 
-static u32 GetEffectiveCustomItemsBitfield() {
+u32 Pulsar::Race::GetEffectiveCustomItemsBitfield() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller) {
         const RKNet::RoomType roomType = controller->roomType;
@@ -49,7 +50,7 @@ static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
     }
 
     // Capacity check bypass for custom items
-    u32 bitfield = GetEffectiveCustomItemsBitfield();
+    u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
     if (bitfield != 0 && bitfield != 0x7FFFF) {
         if ((bitfield >> id) & 1) return true;
     }
@@ -59,7 +60,7 @@ static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
 }
 
 static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
-    u32 bitfield = GetEffectiveCustomItemsBitfield();
+    u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
     if (bitfield == 0 || bitfield == 0x7FFFF) return MUSHROOM;  // Safety or Vanilla Fallback
 
     Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**>(kmRuntimeAddr(0x809c3670));
@@ -141,7 +142,7 @@ static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
 static u32 GetBestPlacement(const Item::ItemSlotData::Probabilities* probs, u32 currentPlacement) {
     if (probs == nullptr || probs->probabilities == nullptr) return currentPlacement;
 
-    u32 bitfield = GetEffectiveCustomItemsBitfield();
+    u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
     if (bitfield == 0x7FFFF || bitfield == 0) return currentPlacement;
 
     u32 rowCount = probs->rowCount;
@@ -206,7 +207,7 @@ static void CustomLimitCheck() {
         mr itemIdx, r21
     }
 
-    u32 bitfield = GetEffectiveCustomItemsBitfield();
+    u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
     if (bitfield == 0) bitfield = 0x7FFFF;
 
     if (itemIdx < 19) {
@@ -276,7 +277,7 @@ kmBranch(0x807ba194, InitItemFallback2);
 kmPatchExitPoint(InitItemFallback2, 0x807ba19c);
 
 static ItemId DecideRouletteItemFiltered(Item::ItemSlotData* slotData, u16 itemBoxType, u8 position, ItemId prevRandomItem, bool r7) {
-    u32 bitfield = GetEffectiveCustomItemsBitfield();
+    u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
     if (bitfield == 0x7FFFF) {
         return slotData->DecideRouletteItem(itemBoxType, position, prevRandomItem, r7);
     }
