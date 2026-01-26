@@ -44,7 +44,7 @@ static const ItemWeight ITEM_WEIGHTS[] = {
     {0x747B, OBJ_BULLET_BILL},
     {0x7852, OBJ_BOBOMB},
     {0x7C29, OBJ_POW_BLOCK},
-    {0x7EB8, OBJ_BLUE_SHELL},
+    {0x7FAE, OBJ_BLUE_SHELL},
     {0x8000, OBJ_LIGHTNING},
 };
 
@@ -237,7 +237,7 @@ static void OnTimerUpdate(u32 oldFrame) {
     }
 
     bool isStorm = System::sInstance->IsContext(PULSAR_ITEMMODESTORM);
-    u32 spawnsPerPlayer = isStorm ? 4 : 2;
+    u32 spawnsPerPlayer = isStorm ? 3 : 1;
 
     for (s32 idx = 0; idx < count; idx++) {
         if (!IsLocalPlayer(idx)) continue;

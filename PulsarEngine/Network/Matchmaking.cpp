@@ -22,7 +22,6 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <include/c_stdlib.h>
-#include <core/rvl/OS/OS.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -33,8 +32,6 @@ kmRuntimeUse(0x8011e488);
 kmRuntimeUse(0x8011e480);
 kmRuntimeUse(0x8011e490);
 static u32 joinAttempts = 0;
-static u64 votingRoomWaitStart = 0;  // OSTime when we started waiting for voting room
-static bool isWaitingForVotingRoom = false;
 
 // SBServerGetIntValueA
 typedef int (*SBServerGetIntValueA_t)(void* server, const char* key, int defaultValue);
@@ -90,81 +87,20 @@ void CustomRandomizeServers() {
         bool isLowVR = !isBattle && playerRating < 15000; // 150 VR * 100
         int maxRoomRating = playerRating + 20000; // Player VR + 200 VR * 100
 
-        // Check if we're waiting for a voting room and if 10 seconds have passed
-        u64 currentTime = OS::GetTime();
-        bool votingRoomTimeout = false;
-        if (isWaitingForVotingRoom) {
-            // OSTime is in ticks; convert to milliseconds
-            // busClock / 4 gives ticks per millisecond
-            u64 elapsedTicks = currentTime - votingRoomWaitStart;
-            u64 ticksPerMs = OS::busClock / 4000;
-            u64 elapsedMs = elapsedTicks / ticksPerMs;
-            
-            if (elapsedMs >= 10000) { // 10 seconds
-                votingRoomTimeout = true;
-                isWaitingForVotingRoom = false;
-            }
-        }
-
-        // First pass: calculate differences and find closest room
-        int closestIdx = -1;
-        int closestDiff = 0x7fffffff;
-        
         for (int i = 0; i < count; ++i) {
             void* server = ServerBrowserGetServerAtIndexA(sb, i);
             if (!server) continue;
-            
-            int serverRating = SBServerGetIntValueA(server, key, 0);
-            
-            // Skip rooms that are too high for low VR players
-            if (isLowVR && serverRating > maxRoomRating) continue;
-            
-            int diff = playerRating - serverRating;
-            if (diff < 0) diff = -diff;
-            
-            if (diff < closestDiff) {
-                closestDiff = diff;
-                closestIdx = i;
-            }
-        }
-
-        // Second pass: assign eval scores based on voting state and timeout
-        for (int i = 0; i < count; ++i) {
-            void* server = ServerBrowserGetServerAtIndexA(sb, i);
-            if (!server) continue;
-            
             int serverRating = SBServerGetIntValueA(server, key, 0);
             int diff = playerRating - serverRating;
             if (diff < 0) diff = -diff;
             
-            // Get room state (dwc_hoststate: 2 = SV_WAITING/voting)
-            int hoststate = SBServerGetIntValueA(server, "dwc_hoststate", 0);
-            bool isVoting = (hoststate == 2);
-            
-            // If player is low VR and room is above the threshold, deprioritize heavily
+            // If player is low VR and room is above the threshold, mark it with very high eval
             if (isLowVR && serverRating > maxRoomRating) {
                 SBServerSetIntValueA(server, "dwc_eval", 999999);
-            } 
-            // If this is the closest room and it's voting
-            else if (i == closestIdx && isVoting && !votingRoomTimeout) {
-                if (!isWaitingForVotingRoom) {
-                    // Start waiting for this voting room
-                    isWaitingForVotingRoom = true;
-                    votingRoomWaitStart = currentTime;
-                }
-                // Give it the best score so we wait for it
-                SBServerSetIntValueA(server, "dwc_eval", diff);
-            } 
-            // If we've timed out on voting rooms, deprioritize all voting rooms
-            else if (votingRoomTimeout && isVoting) {
-                SBServerSetIntValueA(server, "dwc_eval", diff + 500000);
-            } 
-            // Normal case: use VR difference
-            else {
+            } else {
                 SBServerSetIntValueA(server, "dwc_eval", diff);
             }
         }
-        
         // Sort by dwc_eval ascending (closest first)
         ServerBrowserSortA(sb, true, "dwc_eval", 0);
     } else {
@@ -182,8 +118,6 @@ kmBranch(0x800e4ad0, CustomRandomizeServers);
 // Reset when starting ConnectToAnyoneAsync
 static void OnConnectToAnyoneAsync(RKNet::Controller* self) {
     joinAttempts = 0;
-    isWaitingForVotingRoom = false;
-    votingRoomWaitStart = 0;
     self->ConnectToAnybodyAsync();
 }
 kmCall(0x806590b4, OnConnectToAnyoneAsync);

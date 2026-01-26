@@ -422,7 +422,7 @@ kmWrite32(0x807BB8EC, 0x60000000);
 // Prevent Item Usage in Bullet Bill [Ro]
 kmWrite32(0x80797C44, 0x3C600A0C);
 
-// Reduce Race Packet Send Threshold for Dolphin [ImZeraora]
+// Reduce Race Packet Send Threshold for Dolphin [MrBean35000vr, Chadderz]
 // Original: cmplwi r4, 0x11 (17ms threshold)
 // Dolphin:  cmplwi r4, 0x7  (7ms threshold)
 kmRuntimeUse(0x80657EA8);
