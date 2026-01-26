@@ -22,14 +22,9 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
 
 bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 archiveBaseLowerSize);
 
-u32 GetLooseOverridesTotalAligned(const char* archiveBaseLower, u32* outApplicableCount);
-
-void ApplyLooseOverrides(const char* archiveBaseLower, u8* archiveBase, u32 baseSize, u32* outAppliedOverrides,
-                         u32* outPatchedNodes, u32* outMissingOverrides);
-
-bool IsDVDOverrideSource();
-bool ApplyLooseOverridesDVD(const char* archiveBaseLower, u8** archiveBase, u32 baseSize, EGG::Heap* heap,
-                            u32* outNewSize, u32* outAppliedOverrides, u32* outPatchedNodes, u32* outMissingOverrides);
+bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize, EGG::Heap* sourceHeap,
+                         EGG::Heap*& archiveHeap, u32* outAppliedOverrides, u32* outPatchedNodes,
+                         u32* outMissingOverrides);
 
 }  // namespace IOOverrides
 }  // namespace Pulsar

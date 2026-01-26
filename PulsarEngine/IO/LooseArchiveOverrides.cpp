@@ -6,12 +6,14 @@
 #include <IO/LooseArchiveOverrides.hpp>
 #include <MarioKartWii/Archive/ArchiveFile.hpp>
 #include <core/egg/Archive.hpp>
+#include <core/RK/RKSystem.hpp>
 #include <core/egg/DVD/DvdRipper.hpp>
 #include <core/egg/mem/Heap.hpp>
 #include <core/nw4r/ut/Misc.hpp>
 #include <core/rvl/arc/arc.hpp>
 #include <core/rvl/devfs/isfs.hpp>
 #include <core/rvl/dvd/dvd.hpp>
+#include <core/rvl/OS/OSBootInfo.hpp>
 #include <core/rvl/os/OS.hpp>
 #include <core/rvl/os/OSCache.hpp>
 
@@ -42,6 +44,8 @@ const char kModsRootAlt[] = "/Mods";
 const char kModsRootPrefix[] = "/mods/";
 const char kModsRootAltPrefix[] = "/Mods/";
 const u32 kMaxOverridesTotal = 1024;
+const u32 kOverrideRepackGrowthFallback = 0x100000;
+const u32 kOverrideMaxGrowthOnSourceHeap = 0x100000;
 
 struct OverrideEntry {
     char fullPath[OVERRIDE_MAX_PATH];
@@ -62,6 +66,12 @@ struct U8Node {
     u32 typeName;
     u32 dataOffset;
     u32 dataSize;
+};
+
+struct FSTEntry {
+    u32 typeName;
+    u32 offset;
+    u32 size;
 };
 
 struct DVDOverrideMatch {
@@ -181,6 +191,14 @@ static u32 NodeNameOffset(const U8Node& node) {
     return node.typeName & 0x00FFFFFF;
 }
 
+static bool FSTEntryIsDir(const FSTEntry& entry) {
+    return (entry.typeName & 0xFF000000) != 0;
+}
+
+static u32 FSTNameOffset(const FSTEntry& entry) {
+    return entry.typeName & 0x00FFFFFF;
+}
+
 static bool IsDotEntry(const char* name) {
     if (name == nullptr) return false;
     if (name[0] == '.' && name[1] == '\0') return true;
@@ -205,6 +223,20 @@ static bool BuildChildPaths(char* childAbs, u32 childAbsSize, char* childRel, u3
     return true;
 }
 
+static bool AppendPath(char* path, u32 pathSize, u32& pathLen, const char* name) {
+    if (path == nullptr || name == nullptr || pathSize == 0) return false;
+    int written = 0;
+    if (pathLen == 0) {
+        written = snprintf(path, pathSize, "%s", name);
+    } else {
+        written = snprintf(path + pathLen, pathSize - pathLen, "/%s", name);
+    }
+    if (written <= 0) return false;
+    if (pathLen + static_cast<u32>(written) >= pathSize) return false;
+    pathLen += static_cast<u32>(written);
+    return true;
+}
+
 static EGG::Heap* GetOverridesHeap() {
     System* system = System::sInstance;
     if (system == nullptr) return 0;
@@ -213,6 +245,7 @@ static EGG::Heap* GetOverridesHeap() {
 
 static bool ModsRootExists();
 static OverrideSource GetOverrideSource(IOType ioType);
+static bool FindModsDirInFST(u32& outIndex, u32& outEnd, const char*& outRootPath);
 
 static bool OpenRiivoDir(const char* path, s32* outDeviceFd, s32* outDirFd) {
     if (outDeviceFd == nullptr || outDirFd == nullptr) return false;
@@ -262,15 +295,6 @@ static bool ISFSFileExists(const char* path) {
     return true;
 }
 
-static bool DVDFileExists(const char* path) {
-    DVD::FileInfo info;
-    if (DVD::Open(path, &info)) {
-        DVD::Close(&info);
-        return true;
-    }
-    return false;
-}
-
 static bool ReadDVDFile(const char* path, void* dest, u32 size) {
     DVD::FileInfo info;
     if (!DVD::Open(path, &info)) return false;
@@ -291,17 +315,6 @@ static bool BuildOverridePathWithRoot(const char* root, const char* name, const 
     return true;
 }
 
-static const char* ChooseDVDModsRoot(const char* name, const char* tag) {
-    char path[OVERRIDE_MAX_PATH];
-    if (BuildOverridePathWithRoot(kModsRoot, name, tag, path, sizeof(path))) {
-        if (DVDFileExists(path)) return kModsRoot;
-    }
-    if (BuildOverridePathWithRoot(kModsRootAlt, name, tag, path, sizeof(path))) {
-        if (DVDFileExists(path)) return kModsRootAlt;
-    }
-    return kModsRoot;
-}
-
 static bool ModsRootExists() {
     if (sModsRootChecked) return sModsRootPresent;
 
@@ -310,13 +323,23 @@ static bool ModsRootExists() {
 
     PulsarIOClass* io = PulsarIOClass::sInstance;
     const int ioType = io ? io->type : -1;
-    if (io == nullptr) {
-        OVERRIDE_WARN("IO not initialized; forcing DVD override source.\n");
-    }
 
     OVERRIDE_LOG("Mods root probe (DVD forced): ioType=%d primary=%s alt=%s\n", ioType, kModsRoot, kModsRootAlt);
     sOverrideSource = GetOverrideSource(io ? io->type : IOType_RIIVO);
-    sModsRootPresent = (sOverrideSource != OVERRIDE_SOURCE_NONE);
+
+    if (sOverrideSource == OVERRIDE_SOURCE_DVD) {
+        u32 modsIndex = 0;
+        u32 modsEnd = 0;
+        const char* rootPath = kModsRoot;
+        if (FindModsDirInFST(modsIndex, modsEnd, rootPath)) {
+            sModsRootPresent = true;
+            sModsRootPath = rootPath;
+        } else {
+            sModsRootPresent = false;
+        }
+    } else {
+        sModsRootPresent = (sOverrideSource != OVERRIDE_SOURCE_NONE);
+    }
 
     if (sModsRootPresent) {
         OVERRIDE_LOG("Mods root set: %s (source=%d)\n", sModsRootPath, sOverrideSource);
@@ -399,6 +422,8 @@ static bool ReadOverrideFile(const OverrideEntry& entry, void* dest) {
             return ReadSDFile(entry, dest);
         case OVERRIDE_SOURCE_ISFS:
             return ReadISFSFile(entry, dest);
+        case OVERRIDE_SOURCE_DVD:
+            return ReadDVDFile(entry.fullPath, dest, entry.size);
         default:
             break;
     }
@@ -616,6 +641,132 @@ static void ScanModsDirISFS(const char* absPath, const char* relPath, OverrideEn
     EGG::Heap::free(buffer, heap);
 }
 
+static bool FindModsDirInFST(u32& outIndex, u32& outEnd, const char*& outRootPath) {
+    if (OS::BootInfo::mInstance.FSTLocation == nullptr) {
+        OVERRIDE_WARN("FST location unavailable; cannot scan /mods.\n");
+        return false;
+    }
+
+    const FSTEntry* entries = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
+    const u32 entryCount = entries[0].size;
+    if (entryCount == 0) return false;
+
+    const char* stringTable = reinterpret_cast<const char*>(entries) + (entryCount * sizeof(FSTEntry));
+
+    for (u32 i = 1; i < entryCount; ++i) {
+        const FSTEntry& entry = entries[i];
+        if (!FSTEntryIsDir(entry)) continue;
+        if (entry.offset != 0) continue;  // only root children
+        const char* name = stringTable + FSTNameOffset(entry);
+        if (name == nullptr) continue;
+        if (strcmp(name, "mods") == 0) {
+            outIndex = i;
+            outEnd = entry.size;
+            outRootPath = kModsRoot;
+            return true;
+        }
+    }
+
+    for (u32 i = 1; i < entryCount; ++i) {
+        const FSTEntry& entry = entries[i];
+        if (!FSTEntryIsDir(entry)) continue;
+        if (entry.offset != 0) continue;
+        const char* name = stringTable + FSTNameOffset(entry);
+        if (name == nullptr) continue;
+        if (strcmp(name, "Mods") == 0) {
+            outIndex = i;
+            outEnd = entry.size;
+            outRootPath = kModsRootAlt;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
+    u32 modsIndex = 0;
+    u32 modsEnd = 0;
+    const char* rootPath = kModsRoot;
+    if (!FindModsDirInFST(modsIndex, modsEnd, rootPath)) {
+        OVERRIDE_WARN("No /mods directory found in FST.\n");
+        return;
+    }
+
+    sModsRootPath = rootPath;
+    sModsRootPresent = true;
+
+    const FSTEntry* fst = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
+    const u32 entryCount = fst[0].size;
+    if (modsIndex >= entryCount || modsEnd > entryCount || modsEnd <= modsIndex) {
+        OVERRIDE_WARN("FST /mods bounds invalid (index=%u end=%u count=%u).\n", modsIndex, modsEnd, entryCount);
+        return;
+    }
+    const char* stringTable = reinterpret_cast<const char*>(fst) + (entryCount * sizeof(FSTEntry));
+
+    struct DirStackEntry {
+        u32 endIndex;
+        u32 prevLen;
+    };
+
+    DirStackEntry stack[32];
+    u32 depth = 0;
+    char relPath[OVERRIDE_MAX_PATH];
+    u32 relLen = 0;
+    relPath[0] = '\0';
+
+    for (u32 i = modsIndex + 1; i < modsEnd && count < maxCount; ++i) {
+        while (depth > 0 && i >= stack[depth - 1].endIndex) {
+            relLen = stack[depth - 1].prevLen;
+            relPath[relLen] = '\0';
+            --depth;
+        }
+
+        const FSTEntry& entry = fst[i];
+        const char* name = stringTable + FSTNameOffset(entry);
+        if (name == nullptr || name[0] == '\0') continue;
+
+        if (FSTEntryIsDir(entry)) {
+            if (depth >= 32) {
+                OVERRIDE_WARN("FST /mods depth exceeded; skipping %s.\n", name);
+                continue;
+            }
+            const u32 prevLen = relLen;
+            if (!AppendPath(relPath, sizeof(relPath), relLen, name)) {
+                OVERRIDE_WARN("Override path too long under %s, skipping %s.\n", rootPath, name);
+                relLen = prevLen;
+                relPath[relLen] = '\0';
+                continue;
+            }
+            stack[depth].endIndex = entry.size;
+            stack[depth].prevLen = prevLen;
+            ++depth;
+            continue;
+        }
+
+        char relativePath[OVERRIDE_MAX_PATH];
+        int relWritten = 0;
+        if (relLen > 0) {
+            relWritten = snprintf(relativePath, sizeof(relativePath), "%s/%s", relPath, name);
+        } else {
+            relWritten = snprintf(relativePath, sizeof(relativePath), "%s", name);
+        }
+        if (relWritten <= 0 || static_cast<u32>(relWritten) >= sizeof(relativePath)) {
+            OVERRIDE_WARN("Override path too long under %s, skipping %s.\n", rootPath, name);
+            continue;
+        }
+
+        char fullPath[OVERRIDE_MAX_PATH];
+        if (!BuildOverridePathWithRoot(rootPath, relativePath, nullptr, fullPath, sizeof(fullPath))) {
+            OVERRIDE_WARN("Override path truncated for %s/%s.\n", rootPath, relativePath);
+            continue;
+        }
+
+        AddEntry(entries, maxCount, count, truncated, fullPath, relativePath, entry.size);
+        if (truncated) break;
+    }
+}
+
 static void ScanModsDir(const char* absPath, const char* relPath, OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
     if (!ModsRootExists()) return;
 
@@ -630,7 +781,7 @@ static void ScanModsDir(const char* absPath, const char* relPath, OverrideEntry*
             ScanModsDirISFS(absPath, relPath, entries, maxCount, count, truncated);
             break;
         case OVERRIDE_SOURCE_DVD:
-            OVERRIDE_WARN("Loose override scan skipped (DVD source has no directory listing).\n");
+            ScanModsDirDVD(entries, maxCount, count, truncated);
             break;
         default:
             break;
@@ -640,16 +791,10 @@ static void ScanModsDir(const char* absPath, const char* relPath, OverrideEntry*
 static void EnsureModIndexBuilt() {
     if (sModIndexAttempted) return;
 
-    if (PulsarIOClass::sInstance == nullptr) {
-        OVERRIDE_WARN("Mod index build skipped (IO not initialized).\n");
-        return;
-    }
-
-    sModIndexAttempted = true;
-
     if (!ModsRootExists()) {
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
+        sModIndexAttempted = true;
         return;
     }
 
@@ -660,6 +805,8 @@ static void EnsureModIndexBuilt() {
         sModIndex.count = 0;
         return;
     }
+
+    sModIndexAttempted = true;
 
     u32 count = 0;
     bool truncated = false;
@@ -692,11 +839,27 @@ static void EnsureModIndexBuilt() {
     if (truncated || truncatedFill) {
         OVERRIDE_WARN("Mod index truncated at %u entries (max=%u).\n", filled, kMaxOverridesTotal);
     }
-    OVERRIDE_LOG("Mod index built: %u overrides.\n", filled);
+    u32 taggedCount = 0;
+    for (u32 i = 0; i < filled; ++i) {
+        if (entries[i].isTagged) ++taggedCount;
+    }
+    OVERRIDE_LOG("Mod index built: %u overrides (tagged=%u).\n", filled, taggedCount);
+    if (taggedCount == 0) {
+        OVERRIDE_WARN("No tagged overrides found under %s. Use <file>.<archiveBase> (e.g. foo.tpl.title).\n",
+                      sModsRootPath);
+    }
 }
 
 static bool IsFileExtensionSZS(const char* path) {
     return EndsWithIgnoreCase(path, ".szs");
+}
+
+static u32 GetFileDataStart(const ARC::Header* header) {
+    if (header == nullptr) return 0;
+    const u32 metaEnd = header->nodeOffset + header->combinedNodeSize;
+    u32 dataStart = header->fileOffset;
+    if (dataStart < metaEnd) dataStart = metaEnd;
+    return nw4r::ut::RoundUp(dataStart, 0x20);
 }
 
 }  // namespace
@@ -745,16 +908,18 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
             break;
         }
         case OVERRIDE_SOURCE_DVD: {
-            char dvdPath[OVERRIDE_MAX_PATH];
-            const char* dvdRoot = ChooseDVDModsRoot(base, nullptr);
-            if (!BuildOverridePathWithRoot(dvdRoot, base, nullptr, dvdPath, sizeof(dvdPath))) {
-                OVERRIDE_WARN("DVD override path truncated for %s.\n", base);
-                return path;
+            if (!sModIndexAttempted) {
+                EnsureModIndexBuilt();
             }
-            exists = DVDFileExists(dvdPath);
-            if (exists) {
-                strncpy(resolvedPath, dvdPath, resolvedSize);
-                resolvedPath[resolvedSize - 1] = '\0';
+            if (sModIndex.entries != nullptr && sModIndex.count > 0) {
+                for (u32 i = 0; i < sModIndex.count; ++i) {
+                    if (strcmp(sModIndex.entries[i].relativePath, base) == 0) {
+                        if (BuildOverridePathWithRoot(sModsRootPath, base, nullptr, resolvedPath, resolvedSize)) {
+                            exists = true;
+                        }
+                        break;
+                    }
+                }
             }
             break;
         }
@@ -791,43 +956,28 @@ bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 arc
     return true;
 }
 
-u32 GetLooseOverridesTotalAligned(const char* archiveBaseLower, u32* outApplicableCount) {
-    if (outApplicableCount != nullptr) *outApplicableCount = 0;
-    if (IsDVDOverrideSource()) {
-        OVERRIDE_LOG("DVD override source active; using per-archive probes for %s.\n",
-                     archiveBaseLower ? archiveBaseLower : "?");
-        return 0;
-    }
-    EnsureModIndexBuilt();
-
-    if (sModIndex.entries == nullptr || sModIndex.count == 0) return 0;
-
-    u32 total = 0;
-    for (u32 i = 0; i < sModIndex.count; ++i) {
-        total += nw4r::ut::RoundUp(sModIndex.entries[i].size, 0x20);
-    }
-    if (outApplicableCount != nullptr) *outApplicableCount = sModIndex.count;
-
-    OVERRIDE_LOG("Loose overrides available for %s: %u entries (total aligned 0x%X).\n",
-                 archiveBaseLower ? archiveBaseLower : "?", sModIndex.count, total);
-
-    return total;
-}
-
-void ApplyLooseOverrides(const char* archiveBaseLower, u8* archiveBase, u32 baseSize, u32* outAppliedOverrides,
-                         u32* outPatchedNodes, u32* outMissingOverrides) {
+bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize, EGG::Heap* sourceHeap,
+                         EGG::Heap*& archiveHeap, u32* outAppliedOverrides, u32* outPatchedNodes,
+                         u32* outMissingOverrides) {
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
     if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
     if (outMissingOverrides != nullptr) *outMissingOverrides = 0;
 
     EnsureModIndexBuilt();
-    if (sModIndex.entries == nullptr || sModIndex.count == 0) return;
-    if (archiveBase == nullptr || archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') return;
+    if (sModIndex.entries == nullptr || sModIndex.count == 0) return false;
+    if (archiveBase == nullptr || archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') return false;
+    if (sourceHeap == nullptr) {
+        OVERRIDE_WARN("Override heap unavailable for %s.\n", archiveBaseLower);
+        return false;
+    }
+    if (archiveHeap == nullptr) {
+        archiveHeap = sourceHeap;
+    }
 
     ARC::Handle handle;
     if (!ARC::InitHandle(archiveBase, &handle)) {
         OVERRIDE_WARN("ARC::InitHandle failed for archive %s.\n", archiveBaseLower);
-        return;
+        return false;
     }
 
     ARC::Header* header = reinterpret_cast<ARC::Header*>(archiveBase);
@@ -835,19 +985,35 @@ void ApplyLooseOverrides(const char* archiveBaseLower, u8* archiveBase, u32 base
     const u32 nodeCount = nodes[0].dataSize;
     if (nodeCount == 0) {
         OVERRIDE_WARN("U8 node table empty for archive %s.\n", archiveBaseLower);
-        return;
+        return false;
     }
 
     char* stringTable = reinterpret_cast<char*>(nodes + nodeCount);
-    u32 writeOffset = 0;
-    u32 appliedOverrides = 0;
-    u32 patchedNodes = 0;
+    s32* nodeOverrideIndex = EGG::Heap::alloc<s32>(sizeof(s32) * nodeCount, 0x20, sourceHeap);
+    u8* entryApplied = EGG::Heap::alloc<u8>(sizeof(u8) * sModIndex.count, 0x20, sourceHeap);
+    if (nodeOverrideIndex == nullptr || entryApplied == nullptr) {
+        OVERRIDE_WARN("Override temp alloc failed (nodes=%u entries=%u).\n", nodeCount, sModIndex.count);
+        if (nodeOverrideIndex != nullptr) EGG::Heap::free(nodeOverrideIndex, sourceHeap);
+        if (entryApplied != nullptr) EGG::Heap::free(entryApplied, sourceHeap);
+        return false;
+    }
+
+    memset(nodeOverrideIndex, 0xFF, sizeof(s32) * nodeCount);
+    memset(entryApplied, 0, sizeof(u8) * sModIndex.count);
+
+    bool anyOverrides = false;
     u32 missingOverrides = 0;
+    u32 skippedOverrides = 0;
 
     for (u32 i = 0; i < sModIndex.count; ++i) {
         const OverrideEntry& entry = sModIndex.entries[i];
         const bool tagMatches = entry.isTagged && (strcmp(entry.archiveTagLower, archiveBaseLower) == 0);
-        const char* matchName = tagMatches ? entry.strippedName : entry.relativePath;
+        if (!tagMatches) {
+            ++skippedOverrides;
+            continue;
+        }
+
+        const char* matchName = entry.strippedName;
         if (matchName[0] == '\0') {
             OVERRIDE_WARN("Skip empty match name for override %s.\n", entry.fullPath);
             continue;
@@ -865,207 +1031,281 @@ void ApplyLooseOverrides(const char* archiveBaseLower, u8* archiveBase, u32 base
                 ++missingOverrides;
                 continue;
             }
-
-            void* dest = archiveBase + baseSize + writeOffset;
-            if (!ReadOverrideFile(entry, dest)) {
-                OVERRIDE_WARN("Failed to read override file: %s\n", entry.fullPath);
-                continue;
-            }
-
-            const u32 alignedSize = nw4r::ut::RoundUp(entry.size, 0x20);
-            nodes[entryNum].dataOffset = baseSize + writeOffset;
-            nodes[entryNum].dataSize = entry.size;
-            OS::DCStoreRange(dest, entry.size);
-
-            OVERRIDE_LOG("Override applied: %s -> %s (archive=%s).\n", entry.fullPath, matchName, archiveBaseLower);
-            ++patchedNodes;
-            ++appliedOverrides;
-            writeOffset += alignedSize;
+            nodeOverrideIndex[entryNum] = static_cast<s32>(i);
+            anyOverrides = true;
         } else {
             u32 matchCount = 0;
             for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
                 if (NodeIsDir(nodes[nodeIdx])) continue;
                 const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
                 if (strcmp(nodeName, matchName) == 0) {
+                    nodeOverrideIndex[nodeIdx] = static_cast<s32>(i);
                     ++matchCount;
                 }
             }
-
             if (matchCount == 0) {
                 OVERRIDE_WARN("No matching filename in archive %s for %s.\n", archiveBaseLower, matchName);
                 ++missingOverrides;
                 continue;
             }
+            anyOverrides = true;
+        }
+    }
 
-            void* dest = archiveBase + baseSize + writeOffset;
+    if (!anyOverrides) {
+        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+        if (skippedOverrides > 0) {
+            OVERRIDE_LOG("Ignored %u overrides without matching tag for %s.\n", skippedOverrides, archiveBaseLower);
+        }
+        EGG::Heap::free(nodeOverrideIndex, sourceHeap);
+        EGG::Heap::free(entryApplied, sourceHeap);
+        return false;
+    }
+
+    bool needsRepack = false;
+    for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+        const s32 idx = nodeOverrideIndex[nodeIdx];
+        if (idx < 0) continue;
+        if (NodeIsDir(nodes[nodeIdx])) continue;
+        if (sModIndex.entries[idx].size > nodes[nodeIdx].dataSize) {
+            needsRepack = true;
+            break;
+        }
+    }
+
+    u32 patchedNodes = 0;
+    if (!needsRepack) {
+        for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+            const s32 idx = nodeOverrideIndex[nodeIdx];
+            if (idx < 0) continue;
+            if (NodeIsDir(nodes[nodeIdx])) continue;
+
+            const OverrideEntry& entry = sModIndex.entries[idx];
+            if (entry.size > nodes[nodeIdx].dataSize) {
+                OVERRIDE_WARN("Override too large for in-place: %s (size=%u, nodeSize=%u, archive=%s).\n",
+                              entry.fullPath, entry.size, nodes[nodeIdx].dataSize, archiveBaseLower);
+                continue;
+            }
+
+            void* dest = archiveBase + nodes[nodeIdx].dataOffset;
             if (!ReadOverrideFile(entry, dest)) {
                 OVERRIDE_WARN("Failed to read override file: %s\n", entry.fullPath);
                 continue;
             }
-
-            const u32 alignedSize = nw4r::ut::RoundUp(entry.size, 0x20);
-            for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
-                if (NodeIsDir(nodes[nodeIdx])) continue;
-                const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
-                if (strcmp(nodeName, matchName) == 0) {
-                    nodes[nodeIdx].dataOffset = baseSize + writeOffset;
-                    nodes[nodeIdx].dataSize = entry.size;
-                    ++patchedNodes;
-                }
-            }
+            nodes[nodeIdx].dataSize = entry.size;
             OS::DCStoreRange(dest, entry.size);
-            OVERRIDE_LOG("Override applied: %s -> %s (archive=%s, nodes=%u).\n", entry.fullPath, matchName, archiveBaseLower, matchCount);
-            ++appliedOverrides;
-            writeOffset += alignedSize;
+            entryApplied[idx] = 1;
+            ++patchedNodes;
         }
+
+        if (patchedNodes > 0) {
+            OS::DCStoreRange(nodes, nodeCount * sizeof(U8Node));
+        }
+
+        u32 appliedOverrides = 0;
+        for (u32 i = 0; i < sModIndex.count; ++i) {
+            if (entryApplied[i]) ++appliedOverrides;
+        }
+
+        if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
+        if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
+        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+
+        OVERRIDE_LOG("Applied overrides to %s: files=%u nodes=%u missing=%u (in-place).\n",
+                     archiveBaseLower, appliedOverrides, patchedNodes, missingOverrides);
+        if (skippedOverrides > 0) {
+            OVERRIDE_LOG("Ignored %u overrides without matching tag for %s.\n", skippedOverrides, archiveBaseLower);
+        }
+
+        EGG::Heap::free(nodeOverrideIndex, sourceHeap);
+        EGG::Heap::free(entryApplied, sourceHeap);
+        return appliedOverrides > 0;
     }
 
-    if (patchedNodes > 0) {
-        OS::DCStoreRange(nodes, nodeCount * sizeof(U8Node));
-    }
-
-    if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
-    if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
-    if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
-
-    OVERRIDE_LOG("Applied overrides to %s: files=%u nodes=%u missing=%u write=0x%X.\n",
-                 archiveBaseLower, appliedOverrides, patchedNodes, missingOverrides, writeOffset);
-}
-
-bool IsDVDOverrideSource() {
-    if (!ModsRootExists()) return false;
-    return sOverrideSource == OVERRIDE_SOURCE_DVD;
-}
-
-bool ApplyLooseOverridesDVD(const char* archiveBaseLower, u8** archiveBase, u32 baseSize, EGG::Heap* heap,
-                            u32* outNewSize, u32* outAppliedOverrides, u32* outPatchedNodes, u32* outMissingOverrides) {
-    if (outNewSize != nullptr) *outNewSize = baseSize;
-    if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
-    if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
-    if (outMissingOverrides != nullptr) *outMissingOverrides = 0;
-
-    if (!IsDVDOverrideSource()) return false;
-    if (archiveBase == nullptr || *archiveBase == nullptr || heap == nullptr) return false;
-
-    ARC::Header* header = reinterpret_cast<ARC::Header*>(*archiveBase);
-    U8Node* nodes = reinterpret_cast<U8Node*>(*archiveBase + header->nodeOffset);
-    const u32 nodeCount = nodes[0].dataSize;
-    if (nodeCount == 0) return false;
-
-    char* stringTable = reinterpret_cast<char*>(nodes + nodeCount);
-    DVDOverrideMatch* matches = EGG::Heap::alloc<DVDOverrideMatch>(sizeof(DVDOverrideMatch) * nodeCount, 0x20, heap);
-    if (matches == nullptr) {
-        OVERRIDE_WARN("DVD override match alloc failed (nodes=%u).\n", nodeCount);
+    const u32 dataStart = GetFileDataStart(header);
+    if (dataStart == 0 || dataStart > archiveSize) {
+        OVERRIDE_WARN("Archive data start invalid for %s (start=0x%X size=0x%X).\n",
+                      archiveBaseLower, dataStart, archiveSize);
+        EGG::Heap::free(nodeOverrideIndex, sourceHeap);
+        EGG::Heap::free(entryApplied, sourceHeap);
         return false;
     }
 
-    u32 matchCount = 0;
-    u32 totalAligned = 0;
+    u32 totalDataSize = 0;
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
         if (NodeIsDir(nodes[nodeIdx])) continue;
-        const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
-        if (nodeName == nullptr || nodeName[0] == '\0') continue;
-
-        char taggedPath[OVERRIDE_MAX_PATH];
-        char plainPath[OVERRIDE_MAX_PATH];
-        const bool hasTag = archiveBaseLower != nullptr && archiveBaseLower[0] != '\0';
-        bool found = false;
-        u32 size = 0;
-
-        if (hasTag) {
-            const char* tagRoot = ChooseDVDModsRoot(nodeName, archiveBaseLower);
-            if (BuildOverridePathWithRoot(tagRoot, nodeName, archiveBaseLower, taggedPath, sizeof(taggedPath))) {
-                DVD::FileInfo info;
-                if (DVD::Open(taggedPath, &info)) {
-                    size = info.length;
-                    DVD::Close(&info);
-                    found = true;
-                    strncpy(matches[matchCount].path, taggedPath, sizeof(matches[matchCount].path));
-                    matches[matchCount].path[sizeof(matches[matchCount].path) - 1] = '\0';
-                }
-            }
+        const s32 idx = nodeOverrideIndex[nodeIdx];
+        u32 size = nodes[nodeIdx].dataSize;
+        if (idx >= 0) {
+            size = sModIndex.entries[idx].size;
         }
-
-        if (!found) {
-            const char* plainRoot = ChooseDVDModsRoot(nodeName, nullptr);
-            if (BuildOverridePathWithRoot(plainRoot, nodeName, nullptr, plainPath, sizeof(plainPath))) {
-                DVD::FileInfo info;
-                if (DVD::Open(plainPath, &info)) {
-                    size = info.length;
-                    DVD::Close(&info);
-                    found = true;
-                    strncpy(matches[matchCount].path, plainPath, sizeof(matches[matchCount].path));
-                    matches[matchCount].path[sizeof(matches[matchCount].path) - 1] = '\0';
-                }
-            }
-        }
-
-        if (!found || size == 0) continue;
-
-        matches[matchCount].nodeIndex = nodeIdx;
-        matches[matchCount].size = size;
-        totalAligned += nw4r::ut::RoundUp(size, 0x20);
-        ++matchCount;
+        totalDataSize += nw4r::ut::RoundUp(size, 0x20);
     }
 
-    if (matchCount == 0) {
-        OVERRIDE_LOG("DVD overrides: no matching files for archive %s under %s/%s.\n",
-                     archiveBaseLower ? archiveBaseLower : "?", kModsRoot, kModsRootAlt);
-        EGG::Heap::free(matches, heap);
-        return false;
+    u32 newSize = dataStart + totalDataSize;
+    newSize = nw4r::ut::RoundUp(newSize, 0x20);
+
+    const u32 growth = (newSize > archiveSize) ? (newSize - archiveSize) : 0;
+    EGG::Heap* repackHeap = archiveHeap;
+
+    EGG::Heap* candidates[3];
+    candidates[0] = RKSystem::mInstance.EGGRootMEM2;
+    candidates[1] = RKSystem::mInstance.EGGRootMEM1;
+    candidates[2] = GetOverridesHeap();
+
+    for (u32 i = 0; i < 3; ++i) {
+        EGG::Heap* candidate = candidates[i];
+        if (candidate == nullptr || candidate == archiveHeap) continue;
+        const u32 available = candidate->getAllocatableSize(0x20);
+        if (available < newSize) continue;
+        repackHeap = candidate;
+        break;
     }
 
-    const u32 newSize = nw4r::ut::RoundUp(baseSize + totalAligned, 0x20);
-    u8* newBuffer = EGG::Heap::alloc<u8>(newSize, 0x20, heap);
+    const bool allowSourceHeap = (growth <= kOverrideMaxGrowthOnSourceHeap);
+    bool triedSourceHeap = false;
+    u8* newBuffer = nullptr;
+
+    if (repackHeap == archiveHeap && !allowSourceHeap) {
+        OVERRIDE_WARN("Repack skipped on source heap (growth=0x%X, limit=0x%X) for %s.\n",
+                      growth, kOverrideMaxGrowthOnSourceHeap, archiveBaseLower);
+    } else {
+        newBuffer = static_cast<u8*>(EGG::Heap::alloc(newSize, 0x20, repackHeap));
+    }
+    if (newBuffer == nullptr && repackHeap != archiveHeap) {
+        OVERRIDE_WARN("Override repack alloc failed on fallback heap (size=0x%X).\n", newSize);
+        if (allowSourceHeap) {
+            repackHeap = archiveHeap;
+            newBuffer = static_cast<u8*>(EGG::Heap::alloc(newSize, 0x20, repackHeap));
+            triedSourceHeap = true;
+        }
+    }
+    if (newBuffer == nullptr && repackHeap == archiveHeap && !triedSourceHeap && allowSourceHeap) {
+        newBuffer = static_cast<u8*>(EGG::Heap::alloc(newSize, 0x20, repackHeap));
+        triedSourceHeap = true;
+    }
     if (newBuffer == nullptr) {
-        OVERRIDE_WARN("DVD override alloc failed (size=0x%X, matches=%u).\n", newSize, matchCount);
-        EGG::Heap::free(matches, heap);
-        return false;
-    }
-
-    memcpy(newBuffer, *archiveBase, baseSize);
-    ARC::Header* newHeader = reinterpret_cast<ARC::Header*>(newBuffer);
-    U8Node* newNodes = reinterpret_cast<U8Node*>(newBuffer + newHeader->nodeOffset);
-    u32 writeOffset = 0;
-    u32 appliedOverrides = 0;
-    u32 patchedNodes = 0;
-    u32 missingOverrides = 0;
-
-    for (u32 i = 0; i < matchCount; ++i) {
-        const DVDOverrideMatch& match = matches[i];
-        u8* dest = newBuffer + baseSize + writeOffset;
-        if (!ReadDVDFile(match.path, dest, match.size)) {
-            OVERRIDE_WARN("DVD override read failed: %s\n", match.path);
-            ++missingOverrides;
-            continue;
+        OVERRIDE_WARN("Override repack alloc failed (size=0x%X). Falling back to in-place.\n", newSize);
+        for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+            const s32 idx = nodeOverrideIndex[nodeIdx];
+            if (idx < 0) continue;
+            if (NodeIsDir(nodes[nodeIdx])) continue;
+            const OverrideEntry& entry = sModIndex.entries[idx];
+            if (entry.size > nodes[nodeIdx].dataSize) {
+                OVERRIDE_WARN("Override too large, skipped: %s (size=%u, nodeSize=%u, archive=%s).\n",
+                              entry.fullPath, entry.size, nodes[nodeIdx].dataSize, archiveBaseLower);
+                continue;
+            }
+            void* dest = archiveBase + nodes[nodeIdx].dataOffset;
+            if (!ReadOverrideFile(entry, dest)) {
+                OVERRIDE_WARN("Failed to read override file: %s\n", entry.fullPath);
+                continue;
+            }
+            nodes[nodeIdx].dataSize = entry.size;
+            OS::DCStoreRange(dest, entry.size);
+            entryApplied[idx] = 1;
+            ++patchedNodes;
         }
-        const u32 alignedSize = nw4r::ut::RoundUp(match.size, 0x20);
-        newNodes[match.nodeIndex].dataOffset = baseSize + writeOffset;
-        newNodes[match.nodeIndex].dataSize = match.size;
-        OS::DCStoreRange(dest, match.size);
-        ++patchedNodes;
-        ++appliedOverrides;
-        writeOffset += alignedSize;
-        OVERRIDE_LOG("DVD override applied: %s (node=%u).\n", match.path, match.nodeIndex);
+
+        if (patchedNodes > 0) {
+            OS::DCStoreRange(nodes, nodeCount * sizeof(U8Node));
+        }
+
+        u32 appliedOverrides = 0;
+        for (u32 i = 0; i < sModIndex.count; ++i) {
+            if (entryApplied[i]) ++appliedOverrides;
+        }
+
+        if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
+        if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
+        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+
+        OVERRIDE_LOG("Applied overrides to %s: files=%u nodes=%u missing=%u (partial).\n",
+                     archiveBaseLower, appliedOverrides, patchedNodes, missingOverrides);
+        if (skippedOverrides > 0) {
+            OVERRIDE_LOG("Ignored %u overrides without matching tag for %s.\n", skippedOverrides, archiveBaseLower);
+        }
+
+        EGG::Heap::free(nodeOverrideIndex, sourceHeap);
+        EGG::Heap::free(entryApplied, sourceHeap);
+        return appliedOverrides > 0;
     }
 
-    if (patchedNodes > 0) {
-        OS::DCStoreRange(newNodes, nodeCount * sizeof(U8Node));
+    memcpy(newBuffer, archiveBase, dataStart);
+    ARC::Header* newHeader = reinterpret_cast<ARC::Header*>(newBuffer);
+    newHeader->fileOffset = dataStart;
+    U8Node* newNodes = reinterpret_cast<U8Node*>(newBuffer + newHeader->nodeOffset);
+
+    u32 writeOffset = dataStart;
+    for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+        if (NodeIsDir(nodes[nodeIdx])) continue;
+
+        const s32 idx = nodeOverrideIndex[nodeIdx];
+        const u32 oldOffset = nodes[nodeIdx].dataOffset;
+        const u32 oldSize = nodes[nodeIdx].dataSize;
+        bool useOverride = (idx >= 0);
+        u32 newFileSize = useOverride ? sModIndex.entries[idx].size : oldSize;
+
+        writeOffset = nw4r::ut::RoundUp(writeOffset, 0x20);
+        const u32 alignedSize = nw4r::ut::RoundUp(newFileSize, 0x20);
+        if (writeOffset + alignedSize > newSize) {
+            OVERRIDE_WARN("Repack overflow for %s; keeping original data for node %u.\n", archiveBaseLower, nodeIdx);
+            useOverride = false;
+            newFileSize = oldSize;
+        }
+
+        newNodes[nodeIdx].dataOffset = writeOffset;
+        if (useOverride) {
+            const OverrideEntry& entry = sModIndex.entries[idx];
+            if (!ReadOverrideFile(entry, newBuffer + writeOffset)) {
+                OVERRIDE_WARN("Failed to read override file: %s\n", entry.fullPath);
+                useOverride = false;
+                newFileSize = oldSize;
+            } else {
+                entryApplied[idx] = 1;
+                ++patchedNodes;
+            }
+        }
+
+        if (!useOverride) {
+            memcpy(newBuffer + writeOffset, archiveBase + oldOffset, oldSize);
+        }
+
+        newNodes[nodeIdx].dataSize = newFileSize;
+        writeOffset += nw4r::ut::RoundUp(newFileSize, 0x20);
     }
 
-    EGG::Heap::free(matches, heap);
-    EGG::Heap::free(*archiveBase, heap);
-    *archiveBase = newBuffer;
+    u32 finalSize = nw4r::ut::RoundUp(writeOffset, 0x20);
+    if (finalSize > newSize) finalSize = newSize;
+    OS::DCStoreRange(newBuffer, finalSize);
 
-    if (outNewSize != nullptr) *outNewSize = newSize;
+    if (repackHeap != archiveHeap) {
+        OVERRIDE_LOG("Repack heap switched for %s (growth=0x%X).\n", archiveBaseLower, growth);
+    }
+
+    EGG::Heap::free(archiveBase, sourceHeap);
+    archiveBase = newBuffer;
+    archiveSize = finalSize;
+    archiveHeap = repackHeap;
+
+    u32 appliedOverrides = 0;
+    for (u32 i = 0; i < sModIndex.count; ++i) {
+        if (entryApplied[i]) ++appliedOverrides;
+    }
+
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
     if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
     if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
 
-    OVERRIDE_LOG("DVD overrides applied to %s: files=%u nodes=%u missing=%u write=0x%X.\n",
-                 archiveBaseLower ? archiveBaseLower : "?", appliedOverrides, patchedNodes, missingOverrides, writeOffset);
+    OVERRIDE_LOG("Applied overrides to %s: files=%u nodes=%u missing=%u size=0x%X.\n",
+                 archiveBaseLower, appliedOverrides, patchedNodes, missingOverrides, archiveSize);
+    if (skippedOverrides > 0) {
+        OVERRIDE_LOG("Ignored %u overrides without matching tag for %s.\n", skippedOverrides, archiveBaseLower);
+    }
 
-    return true;
+    EGG::Heap::free(nodeOverrideIndex, sourceHeap);
+    EGG::Heap::free(entryApplied, sourceHeap);
+    return appliedOverrides > 0;
 }
 
 static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::Heap* mountHeap, bool isCompressed,
