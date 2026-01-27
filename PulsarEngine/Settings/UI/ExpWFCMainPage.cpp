@@ -557,7 +557,7 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     // Apply green highlight to buttons with active VR multiplier
     ApplyVRMultiplierHighlight(this->twoHundredButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0C));
     ApplyVRMultiplierHighlight(this->ottButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0B));
-    ApplyVRMultiplierHighlight(this->itemRainButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0D));
+    ApplyVRMultiplierHighlight(this->itemRainButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0D) || PointRating::IsItemRainEventActive());
 }
 
 }  // namespace UI

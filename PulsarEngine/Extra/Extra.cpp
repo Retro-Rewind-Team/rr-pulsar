@@ -422,18 +422,7 @@ kmWrite32(0x807BB8EC, 0x60000000);
 // Prevent Item Usage in Bullet Bill [Ro]
 kmWrite32(0x80797C44, 0x3C600A0C);
 
-// Reduce Race Packet Send Threshold for Dolphin [MrBean35000vr, Chadderz]
-// Original: cmplwi r4, 0x11 (17ms threshold)
-// Dolphin:  cmplwi r4, 0x7  (7ms threshold)
-kmRuntimeUse(0x80657EA8);
-void ApplyRacePacketThreshold() {
-    if (Dolphin::IsEmulator()) {
-        kmRuntimeWrite32A(0x80657EA8, 0x2804000A);  // cmplwi r4, 0xA
-    } else {
-        kmRuntimeWrite32A(0x80657EA8, 0x28040011);  // cmplwi r4, 0x11
-    }
-}
-static SectionLoadHook PatchRacePacketThreshold(ApplyRacePacketThreshold);
+// High Data Rate Line 2 [MrBean35000vr, Chadderz]
 kmWrite32(0x80657F5C, 0x3B400000);
 
 // Prevent Crash from Invalid Camera Pointer in Broken KMP [Gab]
