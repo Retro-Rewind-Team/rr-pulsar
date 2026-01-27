@@ -522,7 +522,9 @@ static void ExtCourseSelectCourseInitSelf(CtrlMenuCourseSelectCourse* course) {
             toSelect = &curButton;
         }
     };
-    coursePage->SelectButton(*toSelect);
+    if (coursePage != nullptr) {
+        coursePage->SelectButton(*toSelect);
+    }
 };
 kmWritePointer(0x808d30d8, ExtCourseSelectCourseInitSelf);  // 807e5118
 
