@@ -46,13 +46,14 @@ static const u64 PRIORITY_BADGE_FC_LIST[] = {
     188978569675ULL,  // Cyrus
     421507127201ULL,  // Jacher
     800580ULL,  // Rambo
-    81604380197ULL, // Patchzy
+    81604380197ULL,  // Patchzy
     0ULL};
 
 // FOR THE COLONY
 static const u64 ANT_BADGE_FC_LIST[] = {
     65400900000ULL,  // Fenixien
     116565656533ULL,  // ImZeraora
+    524266609436ULL,  // TheBeefBai
     0ULL};
 
 static bool IsPriorityBadgeFC(u64 fc) {
