@@ -121,6 +121,11 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
     if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return item;
 
     if (item == BLUE_SHELL) {
+        LapKO::Mgr* lapKoMgr = system->lapKoMgr;
+        if (lapKoMgr->roundIndex >= lapKoMgr->totalRounds) {
+            return MEGA_MUSHROOM;
+        }
+
         const Raceinfo* ri = Raceinfo::sInstance;
         if (ri == nullptr) return item;
 
@@ -141,7 +146,7 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
             float diff = first->raceCompletion - second->raceCompletion;
 
             if (diff < threshold) {
-                return MUSHROOM;
+                return MEGA_MUSHROOM;
             }
         }
     }
