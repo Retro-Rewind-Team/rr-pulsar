@@ -86,7 +86,6 @@ kmBranch(0x800ed6b4, NHTTPFreeFromEggHeap);
 VRLeaderboardPage::FetchState VRLeaderboardPage::s_fetchState = VRLeaderboardPage::FETCH_IDLE;
 bool VRLeaderboardPage::s_hasApplied = false;
 VRLeaderboardPage::Entry VRLeaderboardPage::s_entries[VRLeaderboardPage::kMaxEntries];
-char VRLeaderboardPage::s_responseBuf[65536];
 
 static wchar_t s_statusText[128];
 static wchar_t s_rowTextLoading[] = L"Loading...";
@@ -684,7 +683,6 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* /*page*/) {
     }
 
     memset(s_entries, 0, sizeof(s_entries));
-    memset(s_responseBuf, 0, sizeof(s_responseBuf));
 
     if (!s_nhttpStarted) {
         const s32 startupRet = NHTTPStartup(reinterpret_cast<void*>(&NHTTPAllocFromEggHeap),
@@ -784,10 +782,21 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     }
     // OS::Report("[VRLeaderboard] bodyText=%.*s\n", MinInt(bodyLen, 512), body);
 
+    char* responseBuf = reinterpret_cast<char*>(NHTTPAllocFromEggHeap(kResponseBufSize, 4));
+    if (responseBuf == nullptr) {
+        NHTTPDestroyResponse(response);
+        s_fetchState = FETCH_ERROR;
+        if (ctx != nullptr) {
+            if (ctx->workBuf != nullptr) NHTTPFreeFromEggHeap(ctx->workBuf);
+            NHTTPFreeFromEggHeap(ctx);
+        }
+        return;
+    }
+
     int copyLen = bodyLen;
-    if (copyLen > static_cast<int>(sizeof(s_responseBuf) - 1)) copyLen = sizeof(s_responseBuf) - 1;
-    memcpy(s_responseBuf, body, copyLen);
-    s_responseBuf[copyLen] = '\0';
+    if (copyLen > static_cast<int>(kResponseBufSize - 1)) copyLen = kResponseBufSize - 1;
+    memcpy(responseBuf, body, copyLen);
+    responseBuf[copyLen] = '\0';
 
     NHTTPDestroyResponse(response);
     if (ctx != nullptr) {
@@ -795,7 +804,8 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
         NHTTPFreeFromEggHeap(ctx);
     }
 
-    int parsed = ParseResponse(s_responseBuf, s_entries, kMaxEntries);
+    int parsed = ParseResponse(responseBuf, s_entries, kMaxEntries);
+    NHTTPFreeFromEggHeap(responseBuf);
     // OS::Report("[VRLeaderboard] parsed=%d\n", parsed);
     if (parsed <= 0) {
         s_fetchState = FETCH_ERROR;
