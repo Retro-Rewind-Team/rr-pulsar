@@ -32,7 +32,7 @@ static void ChangeBlueOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
         dest->limit = 5;
     } else {
         u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-        if (bitfield != 0x7FFF && CountEnabledItems(bitfield) <= 5) {
+        if (bitfield != 0x7FFFF && CountEnabledItems(bitfield) <= 5) {
             dest->limit = 12;
         }
     }
@@ -76,7 +76,7 @@ kmCall(0x80790bb4, ChangeBombOBJProperties);
 
 static void ChangeItemOBJProperties(Item::ObjProperties* dest, const Item::ObjProperties& rel) {
     new (dest) Item::ObjProperties(rel);
-    if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != 0x7FFF) {
+    if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != 0x7FFFF) {
         dest->limit = 16;
     }
 }
