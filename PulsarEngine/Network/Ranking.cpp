@@ -47,6 +47,7 @@ static const u64 PRIORITY_BADGE_FC_LIST[] = {
     421507127201ULL,  // Jacher
     800580ULL,  // Rambo
     81604380197ULL,  // Patchzy
+    400032268799ULL,  // Wrkus
     0ULL};
 
 // FOR THE COLONY
