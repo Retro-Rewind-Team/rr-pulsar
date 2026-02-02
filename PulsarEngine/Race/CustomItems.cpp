@@ -230,7 +230,10 @@ kmPatchExitPoint(CustomLimitCheck, 0x807bb7dc);  // Return to the ble instructio
 static void CalcItemFallback() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r31);
-    roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
+    if (GetEffectiveCustomItemsBitfield() == 0x7FFFF)
+        roulette->nextItemId = TRIPLE_MUSHROOM;
+    else
+        roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
 kmBranch(0x807ba48c, CalcItemFallback);
 kmPatchExitPoint(CalcItemFallback, 0x807ba494);
@@ -263,6 +266,9 @@ kmWrite32(0x80795e4c, 0x408100C8);
 static void InitItemFallback1() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
+    if (GetEffectiveCustomItemsBitfield() == 0x7FFFF)
+        roulette->nextItemId = TRIPLE_MUSHROOM;
+    else
     roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
 kmBranch(0x807ba138, InitItemFallback1);
@@ -271,6 +277,9 @@ kmPatchExitPoint(InitItemFallback1, 0x807ba140);
 static void InitItemFallback2() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
+    if (GetEffectiveCustomItemsBitfield() == 0x7FFFF)
+        roulette->nextItemId = TRIPLE_MUSHROOM;
+    else
     roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
 kmBranch(0x807ba194, InitItemFallback2);

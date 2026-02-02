@@ -34,6 +34,8 @@ static void ChangeBlueOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
         u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
         if (bitfield != 0x7FFFF && CountEnabledItems(bitfield) <= 5) {
             dest->limit = 12;
+        } else {
+            dest->limit = 1;
         }
     }
 }
@@ -52,6 +54,8 @@ static void ChangeBillOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
         dest->limit = 25;
     } else if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
         dest->limit = 5;
+    } else {
+        dest->limit = 1;
     }
 }
 
@@ -69,6 +73,8 @@ static void ChangeBombOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
         dest->limit = 20;
     } else if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
         dest->limit = 25;
+    } else {
+        dest->limit = 3;
     }
 }
 
@@ -78,6 +84,8 @@ static void ChangeItemOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
     new (dest) Item::ObjProperties(rel);
     if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != 0x7FFFF) {
         dest->limit = 16;
+    } else {
+        dest->limit = 1;
     }
 }
 kmCall(0x80790bc4, ChangeItemOBJProperties);  // Blooper
