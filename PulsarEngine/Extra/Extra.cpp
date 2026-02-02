@@ -422,9 +422,6 @@ kmWrite32(0x807BB8EC, 0x60000000);
 // Prevent Item Usage in Bullet Bill [Ro]
 kmWrite32(0x80797C44, 0x3C600A0C);
 
-// High Data Rate Line 2 [MrBean35000vr, Chadderz]
-kmWrite32(0x80657F5C, 0x3B400000);
-
 // Prevent Crash from Invalid Camera Pointer in Broken KMP [Gab]
 asmFunc InvalidCameraPointerFix() {
     ASM(
