@@ -12,6 +12,7 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Debug/Debug.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
+#include <runtimeWrite.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -178,6 +179,16 @@ CameraParamBin* GetKartParamCamera(u32 weight, u32 screenCount) {
 }
 
 kmCall(0x805a20d4, GetKartParamCamera);
+
+kmRuntimeUse(0x8060245c);
+typedef void (*PageInitChildrenFn)(Page*, u32);
+static const PageInitChildrenFn sPageInitChildren = reinterpret_cast<PageInitChildrenFn>(kmRuntimeAddr(0x8060245c));
+
+static void RankingTopTenDownloadPage_InitControlGroupAndChildren(Page* page, u32 param) {
+    page->InitControlGroup(1);
+    sPageInitChildren(page, param);
+}
+kmCall(0x8060bf68, RankingTopTenDownloadPage_InitControlGroupAndChildren);
 
 }  // namespace UI
 }  // namespace Pulsar

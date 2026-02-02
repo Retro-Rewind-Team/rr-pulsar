@@ -29,12 +29,8 @@ kmWrite32(0x800E77FC, 0x60000000);
 
 // Slower High Data Rate [MrBean35000vr, Chadderz]
 kmWrite32(0x80657EA8, 0x2804000C);
-kmWrite32(0x80657F5C, 0x3B400000);
 
 // Pulsar Network Optimizations [ZPL]
-// Reduce init packet retry timeout from 500ms to 300ms (addi r3, r3, 0x1f4 -> 0x12c)
-kmWrite16(0x8011AD12, 300);
-
 // Reduce GT2 keep-alive timeout from 30000ms to 20000ms (cmplwi r0, 0x7530 -> 0x4e20)
 kmWrite16(0x8010A666, 20000);
 

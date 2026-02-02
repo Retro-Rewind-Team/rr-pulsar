@@ -62,7 +62,8 @@ static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
 static ItemId GetVanillaFallback(u8 position) {
     if (position == 0) return GREEN_SHELL;
     if (position <= 3) return MUSHROOM;
-    return TRIPLE_MUSHROOM;
+    if (position <= 9) return TRIPLE_MUSHROOM;
+    return STAR;
 }
 
 static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
