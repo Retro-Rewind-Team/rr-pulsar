@@ -4,6 +4,7 @@
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/ItemBehaviour.hpp>
+#include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -32,6 +33,8 @@ u32 Pulsar::Race::GetEffectiveCustomItemsBitfield() {
     }
     return 0x7FFFF;
 }
+
+static bool sFallbackItemDropFix[12];
 
 kmRuntimeUse(0x809c3670);  // Item::ItemSlotData
 kmRuntimeUse(0x809c36a0);  // Item::Behavior::behaviourTable
@@ -252,12 +255,19 @@ static ItemId DecideItemFallback() {
         register u32 row;
         register bool isHuman;
         register u32 boxType;
+        register Item::Player* itemPlayer;
         asm {
             mr row, r21
             mr isHuman, r20
             mr boxType, r22
+            mr itemPlayer, r18
         }
-        return GetRandomEnabledItem(row, isHuman, boxType != 0);
+        ItemId ret = GetRandomEnabledItem(row, isHuman, boxType != 0);
+        if (itemPlayer) {
+            const u8 playerId = itemPlayer->id;
+            if (playerId < 12) sFallbackItemDropFix[playerId] = true;
+        }
+        return ret;
     }
     return res;
 }
@@ -302,6 +312,27 @@ static ItemId DecideRouletteItemFiltered(Item::ItemSlotData* slotData, u16 itemB
     return GetRandomEnabledItem(position, true, itemBoxType != 0);
 }
 kmCall(0x807ba428, DecideRouletteItemFiltered);
+
+static void SetItemFix(Item::PlayerInventory& inventory, ItemId id, bool isItemForcedDueToCapacity) {
+    Item::Player* itemPlayer = inventory.itemPlayer;
+    if (itemPlayer) {
+        const u8 playerId = itemPlayer->id;
+        if (playerId < 12 && sFallbackItemDropFix[playerId]) {
+            isItemForcedDueToCapacity = false;
+            sFallbackItemDropFix[playerId] = false;
+        }
+    }
+
+    inventory.currentItemId = id;
+    inventory.currentItemCount = Item::Behavior::behaviourTable[id].numberOfItems;
+    inventory.loseDelayDueToDmg = 0;
+    inventory.isItemForcedDueToCapacity = isItemForcedDueToCapacity;
+    inventory.hasGolden = Item::Behavior::behaviourTable[id].unknown_0x10;
+    for (u32 i = 0; i < sizeof(inventory.unknown_0x1D); ++i) inventory.unknown_0x1D[i] = 0;
+    inventory.goldenTimer = 0;
+    for (u32 i = 0; i < sizeof(inventory.unknown_0x24); ++i) inventory.unknown_0x24[i] = 0;
+}
+kmBranch(0x807bc940, SetItemFix);
 
 }  // namespace Race
 }  // namespace Pulsar

@@ -31,12 +31,6 @@ kmWrite32(0x800E77FC, 0x60000000);
 kmWrite32(0x80657EA8, 0x2804000C);
 
 // Pulsar Network Optimizations [ZPL]
-// Reduce GT2 keep-alive timeout from 30000ms to 20000ms (cmplwi r0, 0x7530 -> 0x4e20)
-kmWrite16(0x8010A666, 20000);
-
-// Reduce GT2 ACK delay from 100ms to 50ms (cmplwi r0, 0x64 -> 0x32)
-kmWrite16(0x8010A722, 50);
-
 // Reduce server polling interval from 15000ms to 10000ms (li r6, 0x3a98 -> 0x2710)
 kmWrite16(0x800E6E1E, 10000);
 
@@ -45,9 +39,6 @@ kmWrite16(0x800D69AA, 2000);
 
 // Reduce connection check delay from 5000ms to 3000ms (li r6, 0x1388 -> 0xbb8)
 kmWrite16(0x800D771E, 3000);
-
-// Reduce NN phase timeout from 6000ms to 4000ms (li r6, 0x1770 -> 0xfa0)
-kmWrite16(0x800D6C96, 4000);
 
 // Reduce NATNEG report retry delay from 1000ms to 500ms (addi r0, r3, 0x3e8 -> 0x1f4)
 kmWrite16(0x8011B6F6, 500);
