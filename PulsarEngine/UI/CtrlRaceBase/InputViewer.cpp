@@ -97,6 +97,7 @@ void CtrlRaceInputViewer::Init() {
     this->m_playerId = this->GetPlayerId();
     this->HudSlotColorEnable("Stick", true);
     this->HudSlotColorEnable("StickBackdrop", true);
+    this->HudSlotColorEnable("ChukBg", true);
 
     LayoutUIControl::Init();
 }
