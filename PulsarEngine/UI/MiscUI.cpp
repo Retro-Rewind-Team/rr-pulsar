@@ -180,15 +180,11 @@ CameraParamBin* GetKartParamCamera(u32 weight, u32 screenCount) {
 
 kmCall(0x805a20d4, GetKartParamCamera);
 
-kmRuntimeUse(0x8060245c);
-typedef void (*PageInitChildrenFn)(Page*, u32);
-static const PageInitChildrenFn sPageInitChildren = reinterpret_cast<PageInitChildrenFn>(kmRuntimeAddr(0x8060245c));
-
-static void RankingTopTenDownloadPage_InitControlGroupAndChildren(Page* page, u32 param) {
-    page->InitControlGroup(1);
-    sPageInitChildren(page, param);
+static void SafeControlGroupInsert(ControlGroup* controlGroup, int index, UIControl* control, u32 drawPass) {
+    if (control == nullptr) return;
+    controlGroup->SetControl(index, *control, drawPass);
 }
-kmCall(0x8060bf68, RankingTopTenDownloadPage_InitControlGroupAndChildren);
+kmBranch(0x80602470, SafeControlGroupInsert);
 
 }  // namespace UI
 }  // namespace Pulsar
