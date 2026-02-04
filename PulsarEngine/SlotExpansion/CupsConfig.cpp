@@ -426,7 +426,7 @@ PulsarId CupsConfig::RandomizeTrack() const {
     else if (isRegsOnly == TRACKSELECTION_REGS && !isBattle)
         pulsarId = random.NextLimited(32);
     else if (isBattle)
-        pulsarId = random.NextLimited(40) + 0x100 + 260;
+        pulsarId = random.NextLimited(40) + 0x100 + 264;
     else if (this->HasRegs()) {
         pulsarId = random.NextLimited(this->GetCtsTrackCount() + 32);
         if (pulsarId > 31) pulsarId += (0x100 - 32);
