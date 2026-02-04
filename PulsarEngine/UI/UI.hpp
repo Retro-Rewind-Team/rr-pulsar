@@ -221,6 +221,9 @@ enum BMG {
     // VR Leaderboard
     BMG_VR_LEADERBOARD_BUTTON = 0x691c,
 
+    // Ranking
+    BMG_RANKING_TEXT = 0x691d,
+
     // Start Worldwide Message
     BMG_RETRO_START_MESSAGE = 0x6920,
     BMG_CUSTOM_START_MESSAGE = 0x6921,

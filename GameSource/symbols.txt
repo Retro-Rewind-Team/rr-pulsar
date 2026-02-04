@@ -1107,6 +1107,7 @@ Load__13ControlLoaderFPCcPCcPCcPPCc = 0x805c2c60
 ##TEXT
 #Info
 __ct__Q24Text4InfoFv = 0x805cd94c
+GetBMGInfo__Q24Text11PaneHandlerFRC9BMGHolderRC9BMGHolderUiPwPQ24Text9FontIndex = 0x805cef10
 
 #Layout
 GetPaneByName__10BaseLayoutCFPCc = 0x805e8368

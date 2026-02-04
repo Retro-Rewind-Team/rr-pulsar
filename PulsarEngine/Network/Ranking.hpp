@@ -11,6 +11,7 @@ namespace Ranking {
 int GetCurrentLicenseRankVS();
 int GetCurrentLicenseScore();
 int FormatRankMessage(wchar_t* dst, size_t dstLen);
+int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen);
 
 }  // namespace Ranking
 }  // namespace Pulsar

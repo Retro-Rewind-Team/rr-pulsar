@@ -1,5 +1,7 @@
 #include <MarioKartWii/UI/Page/Other/GlobeSearch.hpp>
+#include <MarioKartWii/UI/Page/Other/Message.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/UI/Text/Text.hpp>
 #include <Settings/UI/ExpWFCMainPage.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/UI.hpp>
@@ -8,9 +10,12 @@
 #include <PulsarSystem.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/ServerDateTime.hpp>
+#include <include/c_wchar.h>
 
 namespace Pulsar {
 namespace UI {
+
+static wchar_t s_rankDetailsBuffer[512];
 
 static void ApplyVRMultiplierHighlight(PushButton& button, bool hasMultiplier) {
     nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(button.layout.GetPaneByName("go"));
@@ -28,45 +33,45 @@ kmWrite24(0x80899a36, 'PUL');  // 8064ba38
 kmWrite24(0x80899a5B, 'PUL');  // 8064ba90
 
 void ExpWFCMain::OnInit() {
-    this->InitControlGroup(12);
+    this->InitControlGroup(13);
     WFCMainMenu::OnInit();
-    this->AddControl(5, settingsButton, 0);
+    this->AddControl(6, settingsButton, 0);
 
     this->settingsButton.Load(UI::buttonFolder, "Settings1P", "Settings", 1, 0, false);
     this->settingsButton.buttonId = 5;
     this->settingsButton.SetOnClickHandler(this->onSettingsClick, 0);
     this->settingsButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
-    this->AddControl(6, playerCount, 0);
+    this->AddControl(7, playerCount, 0);
     ControlLoader loader(&this->playerCount);
     loader.Load(UI::buttonFolder, "PlayerButton", "VRButton", nullptr);
 
-    this->AddControl(10, rankInfo, 0);
+    this->AddControl(8, rankInfo, 0);
     ControlLoader rankLoader(&this->rankInfo);
     rankLoader.Load(UI::buttonFolder, "RankButton", "VRButton", nullptr);
 
-    this->AddControl(7, mainButton, 0);
+    this->AddControl(9, mainButton, 0);
     this->mainButton.Load(UI::buttonFolder, "MainButton", "ButtonMain", 1, 0, 0);
     this->mainButton.buttonId = 6;
     this->mainButton.SetMessage(BMG_MAIN_MODES);
     this->mainButton.SetOnClickHandler(this->onMainClick, 0);
     this->mainButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
-    this->AddControl(8, otherButton, 0);
+    this->AddControl(10, otherButton, 0);
     this->otherButton.Load(UI::buttonFolder, "OtherButton", "ButtonOther", 1, 0, 0);
     this->otherButton.buttonId = 7;
     this->otherButton.SetMessage(BMG_OTHER_MODES);
     this->otherButton.SetOnClickHandler(this->onOtherClick, 0);
     this->otherButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
-    this->AddControl(9, battleButton, 0);
+    this->AddControl(11, battleButton, 0);
     this->battleButton.Load(UI::buttonFolder, "BattleButton", "ButtonBattle", 1, 0, 0);
     this->battleButton.buttonId = 8;
     this->battleButton.SetMessage(BMG_BATTLE_MODES);
     this->battleButton.SetOnClickHandler(this->onBattleClick, 0);
     this->battleButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
-    this->AddControl(11, leaderboardButton, 0);
+    this->AddControl(12, leaderboardButton, 0);
     this->leaderboardButton.Load(UI::buttonFolder, "Settings1P", "Leaderboard", 1, 0, 0);
     this->leaderboardButton.buttonId = 9;
     this->leaderboardButton.SetMessage(BMG_VR_LEADERBOARD_BUTTON);
@@ -82,8 +87,8 @@ void ExpWFCMain::OnInit() {
 
     // Set retro button as default selected
     this->mainButton.Select(0);
-
-    // this->manipulatorManager.SetGlobalHandler(START_PRESS, this->onStartPress, false, false);
+    
+    this->manipulatorManager.SetGlobalHandler(START_PRESS, this->onStartPress, false, false);
 }
 
 u32 Pulsar::UI::ExpWFCMain::lastClickedMainMenuButton = 6;
@@ -115,6 +120,20 @@ void ExpWFCMain::OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId)
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
 }
 
+void ExpWFCMain::ExtOnStartPress(u32) {
+    Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
+    if (messageBox == nullptr) return;
+
+    s_rankDetailsBuffer[0] = L'\0';
+    Ranking::FormatRankDetailsMessage(s_rankDetailsBuffer, sizeof(s_rankDetailsBuffer) / sizeof(s_rankDetailsBuffer[0]));
+
+    Text::Info info;
+    info.strings[0] = s_rankDetailsBuffer;
+    messageBox->Reset();
+    messageBox->SetMessageWindowText(UI::BMG_TEXT, &info);
+    this->AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
+}
+
 void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
     if (button.buttonId == 5) {
         u32 bmgId = BMG_SETTINGS_BOTTOM + 1;
@@ -125,6 +144,7 @@ void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
         this->bottomText.SetMessage(bmgId, 0);
     } else
         this->OnButtonSelect(button, hudSlotId);
+        this->bottomText.SetMessage(BMG_RANKING_TEXT, 0);
 }
 
 void ExpWFCMain::BeforeControlUpdate() {
