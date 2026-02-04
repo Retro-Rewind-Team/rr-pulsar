@@ -32,6 +32,7 @@ void CtrlRaceInputViewer::Init() {
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
     bool isBrakedriftToggled = (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) || (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
+    bool isNunchuk = (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_INPUTDISPLAY)) == Pulsar::INPUTDISPLAY_CHUK);
     RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
 
     for (int i = 0; i < (int)DpadState_Count; ++i) {
@@ -52,10 +53,19 @@ void CtrlRaceInputViewer::Init() {
 
         snprintf(name, 32, "Accel%.*s", strlen(stateName), stateName);
         nw4r::lyt::Pane* pane = this->layout.GetPaneByName(name);
+        nw4r::lyt::Pane* chuk_b = this->layout.GetPaneByName("TriggerRPressed");
+        nw4r::lyt::Pane* chuk_boff = this->layout.GetPaneByName("TriggerROff");
         this->SetPaneVisibility(name, state == AccelState_Off);
         if (isBrakedriftToggled) {
-            pane->trans.x += pane->scale.x * 15.0f;
-            pane->trans.y += pane->scale.z * 15.0f;
+            if (isNunchuk) {
+                pane->trans.y -= pane->scale.z * 10.0f;
+                chuk_b->trans.y -= chuk_b->scale.z * 6.0f;
+                chuk_boff->trans.y -= chuk_boff->scale.z * 6.0f;
+            } else {
+                pane->trans.x += pane->scale.x * 15.0f;
+                pane->trans.y += pane->scale.z * 15.0f;
+            }
+            
         }
         this->m_accelPanes[i] = pane;
 
@@ -143,7 +153,7 @@ void CtrlRaceInputViewer::OnUpdate() {
 }
 
 u32 CtrlRaceInputViewer::Count() {
-    if (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_INPUTDISPLAY)) == Pulsar::INPUTDISPLAY_ENABLED) {
+    if (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_INPUTDISPLAY)) != Pulsar::INPUTDISPLAY_DISABLED) {
         const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
         u32 localPlayerCount = scenario.localPlayerCount;
         const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
@@ -174,7 +184,11 @@ void CtrlRaceInputViewer::Load(const char* variant, u8 id) {
     this->hudSlotId = id;
     ControlLoader loader(this);
     const char* groups[] = {nullptr, nullptr};
-    loader.Load(UI::raceFolder, "PULInputViewer", variant, groups);
+    if (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_INPUTDISPLAY)) == Pulsar::INPUTDISPLAY_CHUK) {
+        loader.Load(UI::raceFolder, "PULInputViewerChuk", variant, groups);
+    } else {
+        loader.Load(UI::raceFolder, "PULInputViewer", variant, groups);
+    }
 }
 
 void CtrlRaceInputViewer::setDpad(DpadState state) {

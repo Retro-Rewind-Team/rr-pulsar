@@ -16,7 +16,7 @@ u8 Params::scrollerCount[Params::pageCount] = {0, 0, 2, 0, 0, 0, 3, 0, 0, 2, 0, 
 
 u8 Params::buttonsPerPagePerRow[Params::pageCount][Params::maxRadioCount] =  // first row is PulsarSettingsType, 2nd is rowIdx of radio
     {
-        {4, 2, 2, 2, 2, 4, 0, 0},
+        {4, 2, 2, 3, 2, 4, 0, 0},
         {2, 2, 2, 3, 2, 0, 0, 0},
         {2, 2, 0, 0, 0, 0, 0, 0},
         {2, 2, 2, 0, 0, 0, 0, 0},
