@@ -43,7 +43,7 @@ static const u64 PRIORITY_BADGE_FC_LIST[] = {
     331616161616ULL,  // Noel
     464666644446ULL,  // Eppe
     121212121245ULL,  // Bodacious
-    188978569675ULL,  // Cyrus
+    506980546757ULL,  // Cyrus
     421507127201ULL,  // Jacher
     800580ULL,  // Rambo
     81604380197ULL,  // Patchzy
