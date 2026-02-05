@@ -61,6 +61,10 @@ void LoadCorrectPageAfterMultiDrift(Pages::MultiDriftSelect* page, u32 animDirec
 }
 kmCall(0x8084b68c, LoadCorrectPageAfterMultiDrift);
 
+// MultiDriftSelect::CreateControl writes drift state while controls are being created.
+// In 2P online this can leave both locals in manual before voting starts.
+kmWrite32(0x8084b120, 0x60000000);
+
 // if more custom racemenus added in pulsar, make the func virtual
 void RaceMenuExtraControls(Pages::RaceMenu& page, u32 gameControlCount) {
     const SectionId curSectionId = SectionMgr::sInstance->curSection->sectionId;
