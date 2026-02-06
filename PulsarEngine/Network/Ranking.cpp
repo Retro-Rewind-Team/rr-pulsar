@@ -237,7 +237,7 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
         dst, dstLen,
         L"Retro Rewind Rank:\n"
         L"VR: %d VR out of 100000 VR\n"
-        L"Win Rate: %.1f%% out of 65%%\n"
+        L"Win Rate: %.1f%% out of 65%% Needed\n"
         L"1st Places: %u Firsts out of 2500 Firsts\n"
         L"Distance: %.1f KM out of 50000 KM\n"
         L"1st Distance: %.1f KM out of 10000 KM\n"
