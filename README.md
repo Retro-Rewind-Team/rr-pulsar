@@ -52,6 +52,9 @@ Core:
 - [XPF support](https://github.com/Gabriela-Orzechowska/LE-CODE-XPF) (from Gabriela)
 - [USB GCN Support](https://github.com/Gabriela-Orzechowska/MKW-Cosmos/blob/main/code/System/WUP028.hpp) (from Gabriela)
 
+Additional Features:
+- (WIP) Discord Rich Presence Small Icons for Characters
+
 
 UI:
 - A speedometer that is flush with the game UI
