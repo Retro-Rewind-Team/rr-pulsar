@@ -96,6 +96,12 @@ void DiscordRichPresence(Section* _this) {
         
         switch (charID)
         {
+            case DAISY:
+            case DAISY_BIKER:
+                snprintf(smallImageKey, 32, "daisy");
+                snprintf(smallImageText, 32, "Daisy");
+                break;
+
             case FUNKY_KONG:
                 snprintf(smallImageKey, 32, "funky");
                 snprintf(smallImageText, 32, "Funky Kong");
