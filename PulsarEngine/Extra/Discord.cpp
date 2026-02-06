@@ -96,16 +96,129 @@ void DiscordRichPresence(Section* _this) {
         
         switch (charID)
         {
+            case BABY_MARIO:
+                snprintf(smallImageKey, 32, "bMario");
+                snprintf(smallImageText, 32, "Baby Mario");
+                break;
+
+            case BABY_LUIGI:
+                snprintf(smallImageKey, 32, "bLuigi");
+                snprintf(smallImageText, 32, "Baby Luigi");
+                break;
+
+            case BABY_PEACH:
+                snprintf(smallImageKey, 32, "bPeach");
+                snprintf(smallImageText, 32, "Baby Peach");
+                break;
+
+            case BABY_DAISY:
+                snprintf(smallImageKey, 32, "bDaisy");
+                snprintf(smallImageText, 32, "Baby Daisy");
+                break;
+
+            case TOAD:
+                snprintf(smallImageKey, 32, "toad");
+                snprintf(smallImageText, 32, "Toad");
+                break;
+
+            case TOADETTE:
+                snprintf(smallImageKey, 32, "toadette");
+                snprintf(smallImageText, 32, "Toadette");
+                break;
+
+            case KOOPA_TROOPA:
+                snprintf(smallImageKey, 32, "koopa_troopa");
+                snprintf(smallImageText, 32, "Koopa Troopa");
+                break;
+
+            case DRY_BONES:
+                snprintf(smallImageKey, 32, "dry_bones");
+                snprintf(smallImageText, 32, "Dry Bones");
+                break;
+
+            case MARIO:
+                snprintf(smallImageKey, 32, "mario");
+                snprintf(smallImageText, 32, "Mario");
+                break;
+                
+            case LUIGI:
+                snprintf(smallImageKey, 32, "luigi");
+                snprintf(smallImageText, 32, "Luigi");
+                break;
+
+            case PEACH:
+            case PEACH_BIKER:
+                snprintf(smallImageKey, 32, "peach");
+                snprintf(smallImageText, 32, "Peach");
+                break;
+
             case DAISY:
             case DAISY_BIKER:
                 snprintf(smallImageKey, 32, "daisy");
                 snprintf(smallImageText, 32, "Daisy");
                 break;
 
+            case YOSHI:
+                snprintf(smallImageKey, 32, "yoshi");
+                snprintf(smallImageText, 32, "Yoshi");
+                break;
+
+            case BIRDO:
+                snprintf(smallImageKey, 32, "birdo");
+                snprintf(smallImageText, 32, "Birdo");
+                break;
+
+            case DIDDY_KONG:
+                snprintf(smallImageKey, 32, "diddy");
+                snprintf(smallImageText, 32, "Diddy Kong");
+                break;
+
+            case BOWSER_JR:
+                snprintf(smallImageKey, 32, "bowser_Jr");
+                snprintf(smallImageText, 32, "Bowser Jr");
+                break;
+
+            case WARIO:
+                snprintf(smallImageKey, 32, "wario");
+                snprintf(smallImageText, 32, "Wario");
+                break;
+
+            case WALUIGI:
+                snprintf(smallImageKey, 32, "waluigi");
+                snprintf(smallImageText, 32, "Waluigi");
+                break;
+
+            case DONKEY_KONG:
+                snprintf(smallImageKey, 32, "DK");
+                snprintf(smallImageText, 32, "DK");
+                break;
+
+            case BOWSER:
+                snprintf(smallImageKey, 32, "bowser");
+                snprintf(smallImageText, 32, "Bowser");
+                break;
+
+            case KING_BOO:
+                snprintf(smallImageKey, 32, "King_Boo");
+                snprintf(smallImageText, 32, "King Boo");
+                break;
+
+            case ROSALINA:
+            case ROSALINA_BIKER:
+                snprintf(smallImageKey, 32, "rosalina");
+                snprintf(smallImageText, 32, "Rosalina");
+                break;
+
             case FUNKY_KONG:
                 snprintf(smallImageKey, 32, "funky");
                 snprintf(smallImageText, 32, "Funky Kong");
                 break;
+
+            case DRY_BOWSER:
+                snprintf(smallImageKey, 32, "dry_Bowser");
+                snprintf(smallImageText, 32, "Dry Bowser");
+                break;
+
         }
     }
 
