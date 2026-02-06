@@ -60,7 +60,6 @@ CustomItemPage::CustomItemPage() {
 }
 
 void CustomItemPage::OnInit() {
-    this->InitControlGroup(22);
     ::Pages::Menu::OnInit();
     this->Pages::Menu::titleText = &this->titleText;
     this->AddControl(21, this->titleText, 0);
