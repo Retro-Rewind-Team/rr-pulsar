@@ -5,7 +5,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
-#include <Core/rvl/DWC/DWCAccount.hpp>
+#include <core/rvl/DWC/DWCAccount.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 
 namespace Discord {
@@ -14,6 +14,10 @@ static bool hasWrittenClientID = false;
 static int frameCount = 0;
 static u64 startTimeStamp = 0;
 SectionId prevSectionId = SECTION_NONE;
+static CharacterId charID = CHARACTER_NONE;
+
+static char smallImageKey[32] = "";
+static char smallImageText[32] = "";
 
 // Removes 00 1A escapes from the BMG text
 void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
@@ -40,7 +44,7 @@ void DiscordRichPresence(Section* _this) {
     }
 
     if (!hasWrittenClientID) {
-        Dolphin::SetDiscordClient("1341243005176385578");
+        Dolphin::SetDiscordClient("");
         hasWrittenClientID = true;
     }
 
@@ -70,6 +74,30 @@ void DiscordRichPresence(Section* _this) {
         char fcText[32];
         snprintf(fcText, 32, "Friend Code: %04u-%04u-%04u", fcParts[2], fcParts[1], fcParts[0]);
         largeImageText = fcText;
+    }
+
+    // ACCESS THE CURRENT CHARACTER SELECTED
+    // ONLY ASSUME SELECTED ONCE IN A RACE
+    // 
+    // IT IS NOW ASSUMED THAT THE PLAYER IDX
+    // IS MADE AVAILABLE UNDER RACE DATA - NOT INFO
+
+    Racedata* raceData = Racedata::sInstance;
+    if(raceData)
+    {
+        const RacedataPlayer& player = raceData->menusScenario.players[0];
+        charID = player.characterId;
+        
+        switch (charID)
+        {
+            case FUNKY_KONG:
+                snprintf(smallImageKey, 32, "funky");
+                snprintf(smallImageText, 32, "Funky Kong");
+                break;
+            
+                default:
+                    break;
+        }
     }
 
     if (_this->sectionId != prevSectionId) {
@@ -235,8 +263,8 @@ void DiscordRichPresence(Section* _this) {
         state,
         "image_logo",
         largeImageText,
-        "",
-        "",
+        smallImageKey,
+        smallImageText,
         startTimeStamp,
         0,
         minPlayers,
