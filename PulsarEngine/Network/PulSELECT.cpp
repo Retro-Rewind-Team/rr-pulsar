@@ -754,7 +754,7 @@ void ProcessNewPacketVoting() {
                 send.battleTypeAndTeams = curRecv.battleTypeAndTeams;
                 send.selectId = curRecv.selectId;
                 send.engineClass = curRecv.engineClass;
-                if (curRecv.phase != 0) send.phase = 1;
+                if (curRecv.phase == 1) send.phase = 1;
             } else if (myPhase == 1) {
                 u32 accField = handler->aidsThatHaveVoted;
                 if (accField != 0) {
@@ -786,7 +786,7 @@ void ProcessNewPacketVoting() {
             if ((availableAids & accField) != availableAids) isConnectedToAnyone = false;
         }
         if (isConnectedToAnyone && curRecv.pulVote != 0x43) handler->aidsThatHaveVoted |= aidBit;
-        if (handler->hasNewRACEHEADER_1 != 0) send.phase = 2;  // people have already progressed?
+        if (handler->hasNewRACEHEADER_1 != 0 && send.phase >= 1) send.phase = 2;  // people have already progressed?
     }
 }
 kmCall(0x80661520, ProcessNewPacketVoting);
