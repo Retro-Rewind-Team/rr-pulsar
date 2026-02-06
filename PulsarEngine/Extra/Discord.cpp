@@ -82,8 +82,14 @@ void DiscordRichPresence(Section* _this) {
     // IT IS NOW ASSUMED THAT THE PLAYER IDX
     // IS MADE AVAILABLE UNDER RACE DATA - NOT INFO
 
+    // NULL TERMINATE PROPERLY AFTER EACH REFERENCE
+    // (NOT IN A RACE)
+
+    smallImageKey[0] = 0;
+    smallImageText[0] = 0;
+
     Racedata* raceData = Racedata::sInstance;
-    if(raceData)
+    if(raceData && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO))
     {
         const RacedataPlayer& player = raceData->menusScenario.players[0];
         charID = player.characterId;
@@ -94,9 +100,6 @@ void DiscordRichPresence(Section* _this) {
                 snprintf(smallImageKey, 32, "funky");
                 snprintf(smallImageText, 32, "Funky Kong");
                 break;
-            
-                default:
-                    break;
         }
     }
 
