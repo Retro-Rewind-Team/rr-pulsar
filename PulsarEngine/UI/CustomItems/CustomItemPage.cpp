@@ -59,6 +59,10 @@ CustomItemPage::CustomItemPage() {
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, onBackPressHandler, false, false);
 }
 
+CustomItemPage::~CustomItemPage() {
+    delete[] buttons;
+}
+
 void CustomItemPage::OnInit() {
     ::Pages::Menu::OnInit();
     this->Pages::Menu::titleText = &this->titleText;
@@ -67,7 +71,7 @@ void CustomItemPage::OnInit() {
 }
 
 UIControl* CustomItemPage::CreateControl(u32 controlId) {
-    if (controlId < 20) {
+    if (controlId < 20 && buttons != nullptr) {
         this->AddControl(controlId, buttons[controlId], 0);
         char variant[32];
         snprintf(variant, 32, "CustomItem_%d", controlId);

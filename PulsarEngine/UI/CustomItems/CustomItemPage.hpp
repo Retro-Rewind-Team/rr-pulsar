@@ -12,7 +12,7 @@ namespace UI {
 class CustomItemPage : public ::Pages::MenuInteractable {
 public:
     CustomItemPage();
-    ~CustomItemPage() override {}
+    ~CustomItemPage() override;
     void OnInit() override;
     void OnActivate() override;
     void OnDeactivate() override;
