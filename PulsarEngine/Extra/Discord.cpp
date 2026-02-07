@@ -57,6 +57,14 @@ void DiscordRichPresence(Section* _this) {
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
     float vr = 0, br = 0;
     u64 fc = 0;
+
+    // NULL TERMINATE PROPERLY AFTER EACH REFERENCE
+    // (WIP) THIS REFERENCE EXTENDS TO THE SAME REFERENCE
+    // IN THE BUFFER
+
+    smallImageKey[0] = 0;
+    smallImageText[0] = 0;
+
     if (rksysMgr && rksysMgr->curLicenseId >= 0) {
         RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
         vr = Pulsar::PointRating::GetUserVR(rksysMgr->curLicenseId);
@@ -82,12 +90,6 @@ void DiscordRichPresence(Section* _this) {
     // IT IS NOW ASSUMED THAT THE PLAYER IDX
     // IS MADE AVAILABLE UNDER RACE DATA - NOT INFO
 
-    // NULL TERMINATE PROPERLY AFTER EACH REFERENCE
-    // (NOT IN A RACE)
-
-    smallImageKey[0] = 0;
-    smallImageText[0] = 0;
-
     Racedata* raceData = Racedata::sInstance;
     if(raceData && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO))
     {
@@ -97,22 +99,22 @@ void DiscordRichPresence(Section* _this) {
         switch (charID)
         {
             case BABY_MARIO:
-                snprintf(smallImageKey, 32, "bMario");
+                snprintf(smallImageKey, 32, "bmario");
                 snprintf(smallImageText, 32, "Baby Mario");
                 break;
 
             case BABY_LUIGI:
-                snprintf(smallImageKey, 32, "bLuigi");
+                snprintf(smallImageKey, 32, "bluigi");
                 snprintf(smallImageText, 32, "Baby Luigi");
                 break;
 
             case BABY_PEACH:
-                snprintf(smallImageKey, 32, "bPeach");
+                snprintf(smallImageKey, 32, "bpeach");
                 snprintf(smallImageText, 32, "Baby Peach");
                 break;
 
             case BABY_DAISY:
-                snprintf(smallImageKey, 32, "bDaisy");
+                snprintf(smallImageKey, 32, "bdaisy");
                 snprintf(smallImageText, 32, "Baby Daisy");
                 break;
 
@@ -174,7 +176,7 @@ void DiscordRichPresence(Section* _this) {
                 break;
 
             case BOWSER_JR:
-                snprintf(smallImageKey, 32, "bowser_Jr");
+                snprintf(smallImageKey, 32, "bowser_jr");
                 snprintf(smallImageText, 32, "Bowser Jr");
                 break;
 
@@ -189,7 +191,7 @@ void DiscordRichPresence(Section* _this) {
                 break;
 
             case DONKEY_KONG:
-                snprintf(smallImageKey, 32, "DK");
+                snprintf(smallImageKey, 32, "dk");
                 snprintf(smallImageText, 32, "DK");
                 break;
 
@@ -199,7 +201,7 @@ void DiscordRichPresence(Section* _this) {
                 break;
 
             case KING_BOO:
-                snprintf(smallImageKey, 32, "King_Boo");
+                snprintf(smallImageKey, 32, "king_boo");
                 snprintf(smallImageText, 32, "King Boo");
                 break;
 
@@ -215,7 +217,7 @@ void DiscordRichPresence(Section* _this) {
                 break;
 
             case DRY_BOWSER:
-                snprintf(smallImageKey, 32, "dry_Bowser");
+                snprintf(smallImageKey, 32, "dry_bowser");
                 snprintf(smallImageText, 32, "Dry Bowser");
                 break;
 
