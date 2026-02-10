@@ -107,6 +107,7 @@ struct ConfigFile {
     }
     static const char error[];
     static ConfigFile& LoadConfig();
+    static ConfigFile* LoadConfigFile(const char* path, u32& readBytesOut);
     template <typename T>
     inline const T& GetSection() const {
         const T& section = *reinterpret_cast<const T*>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));

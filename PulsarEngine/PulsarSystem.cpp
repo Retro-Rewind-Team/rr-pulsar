@@ -41,10 +41,24 @@ void System::CreateSystem() {
         system = new System();
     System::sInstance = system;
     UI::ExtendedTeamManager::CreateInstance(new UI::ExtendedTeamManager());
-    ConfigFile& conf = ConfigFile::LoadConfig();
-    system->Init(conf);
+
+    u32 rtReadBytes = 0;
+    u32 ctReadBytes = 0;
+    u32 btReadBytes = 0;
+    ConfigFile* confRT = ConfigFile::LoadConfigFile("Binaries/ConfigRT.pul", rtReadBytes);
+    ConfigFile* confCT = ConfigFile::LoadConfigFile("Binaries/ConfigCT.pul", ctReadBytes);
+    ConfigFile* confBT = ConfigFile::LoadConfigFile("Binaries/ConfigBT.pul", btReadBytes);
+    ConfigFile::readBytes = rtReadBytes;
+
+    system->Init(*confRT, *confCT, *confBT, rtReadBytes, ctReadBytes, btReadBytes);
     prev->BecomeCurrentHeap();
-    conf.Destroy();
+
+    ConfigFile::readBytes = btReadBytes;
+    confBT->Destroy();
+    ConfigFile::readBytes = ctReadBytes;
+    confCT->Destroy();
+    ConfigFile::readBytes = rtReadBytes;
+    confRT->Destroy();
 }
 // kmCall(0x80543bb4, System::CreateSystem);
 BootHook CreateSystem(System::CreateSystem, 0);
@@ -55,7 +69,22 @@ System::System() : heap(RKSystem::mInstance.EGGSystem), taskThread(EGG::TaskThre
                    lapKoMgr(nullptr) {
 }
 
-void System::Init(const ConfigFile& conf) {
+static void PatchBMGOffsets(BMGHolder& holder, u32 cupOffset, u32 trackOffset) {
+    if (holder.messageIds == nullptr) return;
+    BMGMessageIds* msgIds = const_cast<BMGMessageIds*>(holder.messageIds);
+    const u32 variantTrackOffset = trackOffset << 4;
+    for (u16 i = 0; i < msgIds->msgCount; ++i) {
+        u32& mid = msgIds->messageIds[i];
+        if (mid >= 0x500000) mid += variantTrackOffset;
+        else if (mid >= 0x400000) mid += variantTrackOffset;
+        else if (mid >= 0x30000) mid += trackOffset;
+        else if (mid >= 0x20000) mid += trackOffset;
+        else if (mid >= 0x10000) mid += cupOffset;
+    }
+}
+
+void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const ConfigFile& confBT,
+                  u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes) {
     IOType type = IOType_ISO;
     bool isDolphin = Dolphin::IsEmulator();
     s32 ret = IO::OpenFix("file", IOS::MODE_NONE);
@@ -78,24 +107,51 @@ void System::Init(const ConfigFile& conf) {
         type = IOType_DOLPHIN;
     }
 
-    strncpy(this->modFolderName, conf.header.modFolderName, IOS::ipcMaxFileName);
+    strncpy(this->modFolderName, confRT.header.modFolderName, IOS::ipcMaxFileName);
     static char* pulMagic = reinterpret_cast<char*>(0x800017CC);
     strcpy(pulMagic, "PUL2");
 
-    // InitInstances
-    CupsConfig::sInstance = new CupsConfig(conf.GetSection<CupsHolder>());
-    this->info.Init(conf.GetSection<InfoHolder>().info);
-    this->InitIO(type);
-    this->InitSettings(&conf.GetSection<CupsHolder>().trophyCount[0]);
+    const CupsHolder& rtCups = confRT.GetSection<CupsHolder>();
+    const CupsHolder& ctCups = confCT.GetSection<CupsHolder>();
+    const CupsHolder& btCups = confBT.GetSection<CupsHolder>();
 
-    const PulBMG& bmgSection = conf.GetSection<PulBMG>();
-    const u8* confStart = reinterpret_cast<const u8*>(&conf);
-    const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
-    const u32 totalSize = ConfigFile::readBytes;
-    const u32 offset = static_cast<u32>(fileSection - confStart);
-    if (offset < totalSize) {
-        const u32 remaining = totalSize - offset;
-        CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining);
+    CupsConfig::sInstance = new CupsConfig(rtCups, ctCups, btCups);
+    this->info.Init(confRT.GetSection<InfoHolder>().info);
+    this->InitIO(type);
+    this->InitSettings(&rtCups.trophyCount[0]);
+
+    u32 rtTrackCount = rtCups.ctsCupCount * 4;
+    u32 ctTrackCount = ctCups.ctsCupCount * 4;
+
+    {
+        const PulBMG& bmgSection = confRT.GetSection<PulBMG>();
+        const u8* confStart = reinterpret_cast<const u8*>(&confRT);
+        const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
+        const u32 offset = static_cast<u32>(fileSection - confStart);
+        if (offset < rtReadBytes) {
+            const u32 remaining = rtReadBytes - offset;
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, 0);
+        }
+    }
+    {
+        const PulBMG& bmgSection = confCT.GetSection<PulBMG>();
+        const u8* confStart = reinterpret_cast<const u8*>(&confCT);
+        const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
+        const u32 offset = static_cast<u32>(fileSection - confStart);
+        if (offset < ctReadBytes) {
+            const u32 remaining = ctReadBytes - offset;
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount);
+        }
+    }
+    {
+        const PulBMG& bmgSection = confBT.GetSection<PulBMG>();
+        const u8* confStart = reinterpret_cast<const u8*>(&confBT);
+        const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
+        const u32 offset = static_cast<u32>(fileSection - confStart);
+        if (offset < btReadBytes) {
+            const u32 remaining = btReadBytes - offset;
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount + ctTrackCount);
+        }
     }
 
     // Initialize last selected cup and courses
@@ -114,10 +170,26 @@ void System::Init(const ConfigFile& conf) {
     for (int i = 0; i < trackBlocking; ++i) {
         this->netMgr.lastTracks[i] = PULSARID_NONE;
     }
-    const BMGHeader* const confBMG = &conf.GetSection<PulBMG>().header;
-    this->rawBmg = EGG::Heap::alloc<BMGHeader>(confBMG->fileLength, 0x4, RootScene::sInstance->expHeapGroup.heaps[1]);
-    memcpy(this->rawBmg, confBMG, confBMG->fileLength);
+
+    EGG::Heap* bmgHeap = RootScene::sInstance->expHeapGroup.heaps[1];
+
+    const BMGHeader* const rtBMG = &confRT.GetSection<PulBMG>().header;
+    this->rawBmg = EGG::Heap::alloc<BMGHeader>(rtBMG->fileLength, 0x4, bmgHeap);
+    memcpy(this->rawBmg, rtBMG, rtBMG->fileLength);
     this->customBmgs.Init(*this->rawBmg);
+
+    const BMGHeader* const ctBMG = &confCT.GetSection<PulBMG>().header;
+    this->rawBmgCT = EGG::Heap::alloc<BMGHeader>(ctBMG->fileLength, 0x4, bmgHeap);
+    memcpy(this->rawBmgCT, ctBMG, ctBMG->fileLength);
+    this->customBmgsCT.Init(*this->rawBmgCT);
+
+    const BMGHeader* const btBMG = &confBT.GetSection<PulBMG>().header;
+    this->rawBmgBT = EGG::Heap::alloc<BMGHeader>(btBMG->fileLength, 0x4, bmgHeap);
+    memcpy(this->rawBmgBT, btBMG, btBMG->fileLength);
+    this->customBmgsBT.Init(*this->rawBmgBT);
+
+    PatchBMGOffsets(this->customBmgsCT, rtCups.ctsCupCount, rtTrackCount);
+    PatchBMGOffsets(this->customBmgsBT, rtCups.ctsCupCount + ctCups.ctsCupCount, rtTrackCount + ctTrackCount);
 
     this->AfterInit();
 }

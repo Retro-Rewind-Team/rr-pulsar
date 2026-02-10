@@ -81,7 +81,8 @@ class System {
 
    public:
     // System functions
-    void Init(const ConfigFile& conf);
+    void Init(const ConfigFile& confRT, const ConfigFile& confCT, const ConfigFile& confBT,
+              u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes);
     void InitInstances(const ConfigFile& conf, IOType type);
     void InitIO(IOType type) const;
     void InitCups(const ConfigFile& conf);
@@ -119,6 +120,8 @@ class System {
 
     // BMG
     const BMGHolder& GetBMG() const { return customBmgs; }
+    const BMGHolder& GetBMGCT() const { return customBmgsCT; }
+    const BMGHolder& GetBMGBT() const { return customBmgsBT; }
     /*
     #define PatchRegion(addr)\
         static inline u64 GetWiimmfiRegionStatic##addr(u64 src) {\
@@ -161,6 +164,10 @@ class System {
     // Custom BMGS
     BMGHolder customBmgs;
     BMGHeader* rawBmg;
+    BMGHolder customBmgsCT;
+    BMGHeader* rawBmgCT;
+    BMGHolder customBmgsBT;
+    BMGHeader* rawBmgBT;
 
    public:
     // string pool

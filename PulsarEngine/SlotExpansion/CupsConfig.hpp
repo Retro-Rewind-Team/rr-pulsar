@@ -18,6 +18,7 @@ class CupsConfig {
     static const u32 RegsCRC32[];
 
     CupsConfig(const CupsHolder& rawCups);
+    CupsConfig(const CupsHolder& rtCups, const CupsHolder& ctCups, const CupsHolder& btCups);
 
     PulsarId ConvertTrack_PulsarCupToTrack(PulsarCupId pulsarCupId, u32 rowIdx) const {
         if (IsRegCup(pulsarCupId) || !this->isAlphabeticalLayout)
@@ -33,7 +34,7 @@ class CupsConfig {
     void ToggleCTs(bool enabled);
     static void SetLayout();
     void GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantIdx) const;
-    void LoadFileNames(const char* buffer, u32 length);
+    void LoadFileNames(const char* buffer, u32 length, u32 trackIdxOffset = 0);
 
     // Ghosts
     int GetCRC32(PulsarId id) const;
@@ -120,6 +121,15 @@ class CupsConfig {
     u32 definedCTsCupCount;  // 0x14
     u32 ctsCupCount;  // 0x18
     u16 trophyCount[4];  // 0x1c
+
+    u32 retroCupCount;
+    u32 ctOnlyCupCount;
+    u32 battleCupCount;
+
+    u32 GetRetroTrackCount() const { return retroCupCount * 4; }
+    u32 GetCTOnlyTrackCount() const { return ctOnlyCupCount * 4; }
+    u32 GetBattleTrackCount() const { return battleCupCount * 4; }
+    u32 GetRetroPlusCTCupCount() const { return retroCupCount + ctOnlyCupCount; }
 
     Track* mainTracks;  // 0x28
     Variant* variants;

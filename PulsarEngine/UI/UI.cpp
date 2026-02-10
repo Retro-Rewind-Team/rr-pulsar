@@ -355,15 +355,31 @@ static int GetMsgIdxByBmgId(const BMGHolder& bmg, s32 bmgId) {
     return ret;
 }
 
+static const BMGHolder* matchedCustomBmg = nullptr;
+
 static int GetMsgIdxById(const BMGHolder& normalHolder, s32 bmgId) {
     int ret = GetMsgIdxByBmgId(System::sInstance->GetBMG(), bmgId);
-    if (ret < 0) {
-        isCustom = BMG_NORMAL;
-        ret = GetMsgIdxByBmgId(normalHolder, bmgId);
-    } else
+    if (ret >= 0) {
         isCustom = CUSTOM_BMG;
+        matchedCustomBmg = &System::sInstance->GetBMG();
+        return ret;
+    }
+    ret = GetMsgIdxByBmgId(System::sInstance->GetBMGCT(), bmgId);
+    if (ret >= 0) {
+        isCustom = CUSTOM_BMG;
+        matchedCustomBmg = &System::sInstance->GetBMGCT();
+        return ret;
+    }
+    ret = GetMsgIdxByBmgId(System::sInstance->GetBMGBT(), bmgId);
+    if (ret >= 0) {
+        isCustom = CUSTOM_BMG;
+        matchedCustomBmg = &System::sInstance->GetBMGBT();
+        return ret;
+    }
+    isCustom = BMG_NORMAL;
+    matchedCustomBmg = nullptr;
+    ret = GetMsgIdxByBmgId(normalHolder, bmgId);
     return ret;
-    //}
 }
 kmBranch(0x805f8c88, GetMsgIdxById);
 
@@ -376,31 +392,12 @@ wchar_t* GetMsgByMsgIdx(const BMGHolder& bmg, s32 msgIdx) {
 }
 
 wchar_t* GetMsg(const BMGHolder& normalHolder, s32 msgIdx) {
-    /*
     wchar_t* ret = nullptr;
-    if(isCustom) ret = GetMsgByMsgIdx(System::sInstance->GetBMG(), msgIdx);
-    if(ret == nullptr) ret = GetMsgByMsgIdx(normalHolder, msgIdx);
-    return ret;
-    */
-
-    /*if(isCustom == CUP_TEXT) {
-        CupsConfig* config = CupsConfig::sInstance;
-        u32 idx = isCustom & 0xFFFF;
-        switch((isCustom & ~0xFFFF) >> 12) {
-            case(1):
-                return config->GetCupName(static_cast<PulsarCupId>(idx));
-            case(2):
-                return config->GetTrackName(static_cast<PulsarId>(idx));
-            case(3):
-                return config->GetTrackAuthor(static_cast<PulsarId>(idx));
-        }
+    if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
+        ret = GetMsgByMsgIdx(*matchedCustomBmg, msgIdx);
     }
-    else {*/
-    wchar_t* ret = nullptr;
-    if (isCustom == CUSTOM_BMG) ret = GetMsgByMsgIdx(System::sInstance->GetBMG(), msgIdx);
     if (ret == nullptr) ret = GetMsgByMsgIdx(normalHolder, msgIdx);
     return ret;
-    //}
 }
 kmBranch(0x805f8cf0, GetMsg);
 
@@ -412,8 +409,9 @@ const u8* GetFontIndex(const BMGHolder& bmg, s32 msgIdx) {
 
 const u8* GetFont(const BMGHolder& normalHolder, s32 msgIdx) {
     const u8* ret = nullptr;
-    // if(isCustom == CUP_TEXT) msgIdx = 0;
-    if (isCustom == CUSTOM_BMG) ret = GetFontIndex(System::sInstance->GetBMG(), msgIdx);
+    if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
+        ret = GetFontIndex(*matchedCustomBmg, msgIdx);
+    }
     if (ret == nullptr) ret = GetFontIndex(normalHolder, msgIdx);
     return ret;
 }
@@ -421,7 +419,11 @@ kmBranch(0x805f8d2c, GetFont);
 
 const wchar_t* GetCustomMsg(s32 bmgId) {
     const BMGHolder& bmg = System::sInstance->GetBMG();
-    return GetMsgByMsgIdx(bmg, GetMsgIdxById(bmg, bmgId));
+    int msgIdx = GetMsgIdxById(bmg, bmgId);
+    if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
+        return GetMsgByMsgIdx(*matchedCustomBmg, msgIdx);
+    }
+    return GetMsgByMsgIdx(bmg, msgIdx);
 }
 void ResetMatColor(lyt::Pane* pane, u32 color) {
     lyt::Material* mat = pane->material;
