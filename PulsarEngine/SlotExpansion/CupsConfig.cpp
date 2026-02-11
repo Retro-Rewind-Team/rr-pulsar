@@ -309,12 +309,26 @@ int CupsConfig::GetCRC32(PulsarId pulsarId) const {
 void CupsConfig::GetTrackGhostFolder(char* dest, PulsarId pulsarId, u8 variantIdx) const {
     const u32 crc32 = this->GetCRC32(pulsarId);
     const char* modFolder = System::sInstance->GetModFolder();
+    const char* ghostFolder;
+    if (IsReg(pulsarId)) {
+        ghostFolder = "GhostsRT";
+    } else {
+        u32 trackIdx = pulsarId - PULSARID_FIRSTCT;
+        u32 rtTrackCount = this->retroCupCount * 4;
+        u32 ctTrackCount = this->ctOnlyCupCount * 4;
+        if (trackIdx < rtTrackCount)
+            ghostFolder = "GhostsRT";
+        else if (trackIdx < rtTrackCount + ctTrackCount)
+            ghostFolder = "GhostsCT";
+        else
+            ghostFolder = "GhostsBT";
+    }
     if (IsReg(pulsarId))
-        snprintf(dest, IOS::ipcMaxPath, "%s/Ghosts/%s", modFolder, &crc32);
+        snprintf(dest, IOS::ipcMaxPath, "%s/%s/%s", modFolder, ghostFolder, &crc32);
     else if (variantIdx == 0)
-        snprintf(dest, IOS::ipcMaxPath, "%s/Ghosts/%08x", modFolder, crc32);
+        snprintf(dest, IOS::ipcMaxPath, "%s/%s/%08x", modFolder, ghostFolder, crc32);
     else
-        snprintf(dest, IOS::ipcMaxPath, "%s/Ghosts/%08x/%d", modFolder, crc32, variantIdx);
+        snprintf(dest, IOS::ipcMaxPath, "%s/%s/%08x/%d", modFolder, ghostFolder, crc32, variantIdx);
 }
 
 void CupsConfig::LoadFileNames(const char* buffer, u32 length, u32 trackIdxOffset) {
@@ -505,13 +519,30 @@ void CupsConfig::SetLayout() {
 Settings::Hook CTLayout(CupsConfig::SetLayout);
 
 void CupsConfig::GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantIdx) const {
+    const char* ghostFolder;
+    u32 trackIdx = id - PULSARID_FIRSTCT;
+    u32 rtTrackCount = this->retroCupCount * 4;
+    u32 ctTrackCount = this->ctOnlyCupCount * 4;
+    if (trackIdx < rtTrackCount)
+        ghostFolder = "GhostsRT";
+    else if (trackIdx < rtTrackCount + ctTrackCount)
+        ghostFolder = "GhostsCT";
+    else
+        ghostFolder = "GhostsBT";
     if (this->IsReg(id)) {
         const u32 crc32 = this->GetCRC32(id);
-        snprintf(dest, IOS::ipcMaxPath, "/Experts/%s_%s.rkg", &crc32, System::ttModeFolders[mode]);
-    } else if (variantIdx == 0) {
-        snprintf(dest, IOS::ipcMaxPath, "/Experts/%d_%s.rkg", this->ConvertTrack_PulsarIdToRealId(id), System::ttModeFolders[mode]);
+        snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%s_%s.rkg", ghostFolder, &crc32, System::ttModeFolders[mode]);
     } else {
-        snprintf(dest, IOS::ipcMaxPath, "/Experts/%d_v%d_%s.rkg", this->ConvertTrack_PulsarIdToRealId(id), variantIdx, System::ttModeFolders[mode]);
+        u32 localIdx = trackIdx;
+        if (trackIdx >= rtTrackCount + ctTrackCount)
+            localIdx = trackIdx - rtTrackCount - ctTrackCount;
+        else if (trackIdx >= rtTrackCount)
+            localIdx = trackIdx - rtTrackCount;
+        if (variantIdx == 0) {
+            snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%d_%s.rkg", ghostFolder, localIdx, System::ttModeFolders[mode]);
+        } else {
+            snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%d_v%d_%s.rkg", ghostFolder, localIdx, variantIdx, System::ttModeFolders[mode]);
+        }
     }
 }
 
