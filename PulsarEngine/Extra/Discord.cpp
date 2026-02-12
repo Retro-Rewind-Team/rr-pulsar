@@ -44,7 +44,7 @@ void DiscordRichPresence(Section* _this) {
     }
 
     if (!hasWrittenClientID) {
-        Dolphin::SetDiscordClient("");
+        Dolphin::SetDiscordClient("1471316950004006963");
         hasWrittenClientID = true;
     }
 
@@ -192,7 +192,7 @@ void DiscordRichPresence(Section* _this) {
 
             case DONKEY_KONG:
                 snprintf(smallImageKey, 32, "dk");
-                snprintf(smallImageText, 32, "DK");
+                snprintf(smallImageText, 32, "Donkey Kong");
                 break;
 
             case BOWSER:
@@ -219,6 +219,26 @@ void DiscordRichPresence(Section* _this) {
             case DRY_BOWSER:
                 snprintf(smallImageKey, 32, "dry_bowser");
                 snprintf(smallImageText, 32, "Dry Bowser");
+                break;
+
+            case MII_L_A_MALE:
+            case MII_L_A_FEMALE:
+            case MII_M_A_MALE:
+            case MII_M_A_FEMALE:
+            case MII_S_A_MALE:
+            case MII_S_A_FEMALE:
+                snprintf(smallImageKey, 32, "mii_a");
+                snprintf(smallImageText, 32, "Mii (Outfit A)");
+                break;
+
+            case MII_L_B_MALE:
+            case MII_L_B_FEMALE:
+            case MII_M_B_MALE:
+            case MII_M_B_FEMALE:
+            case MII_S_B_MALE:
+            case MII_S_B_FEMALE:
+                snprintf(smallImageKey, 32, "mii_b");
+                snprintf(smallImageText, 32, "Mii (Outfit B)");
                 break;
 
         }
@@ -339,27 +359,27 @@ void DiscordRichPresence(Section* _this) {
             break;
         case SECTION_P1_WIFI_VS:
         case SECTION_P2_WIFI_VS:
-            details = "Racing a WiFi VS";
+            details = "Racing in a WiFi VS";
             break;
         case SECTION_P1_WIFI_BT:
         case SECTION_P2_WIFI_BT:
-            details = "Racing a WiFi Battle";
+            details = "Racing in a WiFi Battle";
             break;
         case SECTION_P1_WIFI_FRIEND_VS:
         case SECTION_P2_WIFI_FRIEND_VS:
-            details = "Racing a WiFi Friend VS";
+            details = "Racing in a WiFi Friend VS";
             break;
         case SECTION_P1_WIFI_FRIEND_TEAMVS:
         case SECTION_P2_WIFI_FRIEND_TEAMVS:
-            details = "Racing a WiFi Friend Team VS";
+            details = "Racing in a WiFi Friend Team VS";
             break;
         case SECTION_P1_WIFI_FRIEND_BALLOON:
         case SECTION_P2_WIFI_FRIEND_BALLOON:
-            details = "Racing a WiFi Friend Balloon Battle";
+            details = "Racing in a WiFi Friend Balloon Battle";
             break;
         case SECTION_P1_WIFI_FRIEND_COIN:
         case SECTION_P2_WIFI_FRIEND_COIN:
-            details = "Racing a WiFi Friend Coin Runners";
+            details = "Racing in a WiFi Friend Coin Runners";
             break;
         case SECTION_P1_WIFI_VS_LIVEVIEW:
         case SECTION_P2_WIFI_VS_LIVEVIEW:
