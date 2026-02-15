@@ -81,10 +81,17 @@ static float GetGainCap(float rating) {
 }
 
 static float GetLossCap(float rating) {
-    if (rating <= 150.0f) return -0.5f;
     if (rating >= 500.0f) return -2.09f;
+    if (rating <= 150.0f) return -2.09f;
     float t = (rating - 150.0f) / 350.0f;
     return -0.5f + (-2.09f + 0.5f) * t;
+}
+
+static float GetLowVrLossDivider(float rating) {
+    if (rating >= 150.0f) return 1.0f;
+    if (rating <= 0.0f) return 10.0f;
+    float t = rating / 150.0f;
+    return 10.0f - 9.0f * t;
 }
 
 static bool IsBattle(GameMode mode) {
@@ -234,8 +241,12 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
 
     float multiplier = GetMultiplier();
     for (u32 i = 0; i < playerCount; ++i) {
-        deltas[i] *= multiplier;
         float oldRating = GetPlayerRating(*scenario, i);
+        if (isVR && oldRating < 150.0f && deltas[i] < 0.0f) {
+            float divider = GetLowVrLossDivider(oldRating);
+            if (divider > 1.0f) deltas[i] /= divider;
+        }
+        deltas[i] *= multiplier;
         deltas[i] = Clamp(deltas[i], GetLossCap(oldRating), GetGainCap(oldRating));
 
         if (isVR) {
