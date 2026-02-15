@@ -10,6 +10,7 @@
 #include <MarioKartWii/Kart/KartStatus.hpp>
 #include <MarioKartWii/Objects/Object.hpp>
 #include <MarioKartWii/Objects/ObjectsMgr.hpp>
+#include <MarioKartWii/Objects/KCL/ObjectKCLManager.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 
@@ -467,10 +468,6 @@ static void ConditionalProcessAllAndCalcKCL(void* kclMgr) {
             ApplyPerScreenVisibility(*obj, state);
         }
     }
-
-    typedef void (*OriginalCalcFn)(void*);
-    OriginalCalcFn originalCalc = reinterpret_cast<OriginalCalcFn>(0x8081b618);
-    originalCalc(kclMgr);
 }
 kmCall(0x8082aa40, ConditionalProcessAllAndCalcKCL);  // ObjectDriveableDirector::calc call in ObjectsMgr::Update
 
