@@ -706,6 +706,9 @@ Normalize__Q23EGG8Vector3fFv = 0x80243b6c
 #Scn
 CreatePath__Q23EGG11ScnRendererFUiPQ23EGG9Allocator = 0x8023bd38
 
+#ScnMgr
+AppendScreenSpecificModelDirector__6ScnMgrFP13ModelDirector = 0x805635cc
+
 #TaskThread
 Create__Q23EGG10TaskThreadFiiUiPQ23EGG4Heap = 0x802428e8
 Request__Q23EGG10TaskThreadFPFPv_vPvUi = 0x80242c18
@@ -916,6 +919,10 @@ BindBRRES__13ModelDirectorFRQ34nw4r3g3d7ResFile13ArchiveSourcePCc = 0x8055b618
 LoadNoAnm__13ModelDirectorFPCcRQ34nw4r3g3d7ResFileP5Light = 0x8055c2b8
 LinkAnimation__13ModelDirectorFUiRQ34nw4r3g3d7ResFilePCc7AnmTypebPCc13ArchiveSourceUc = 0x8055ddec
 UpdateDrawPriority__13ModelDirectorFUi = 0x8055f4c4
+EnableScreen__13ModelDirectorFUi = 0x8055cce0
+DisableScreen__13ModelDirectorFUi = 0x8055ccf8
+GetScnManager__13ModelDirectorCFv = 0x8055f2c4
+BRRESExists__13ModelDirectorF13ArchiveSourcePCc = 0x8055ba00
 
 #MHModelDirector
 matNames__15MHModelDirector = 0x808d1860
@@ -1014,6 +1021,7 @@ unknown_70__4Kart = 0x808cb550
 #KartStatus
 UpdateFromInput__Q24Kart6StatusFv = 0x8059487c
 ApplyStartBoost__Q24Kart6StatusFi = 0x80595af8
+UpdateCollisions__Q24Kart6StatusFv = 0x80594bd4
 
 #KartPhyiscsHolder
 Update__Q24Kart18WheelPhysicsHolderFRC4Vec3RC5Mtx34f = 0x8059a278

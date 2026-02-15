@@ -8,6 +8,9 @@
 
 namespace Pulsar {
 namespace Race {
+void PushConditionalCollisionPlayerContext(u8 playerId);
+void PopConditionalCollisionPlayerContext();
+
 // Credit CLF78 and Stebler, this is mostly a port of their version with slightly different hooks and proper arguments naming since this is C++
 void UseFeather(Item::Player& itemPlayer) {
     const Kart::Pointers* pointers = itemPlayer.pointers;
@@ -43,6 +46,10 @@ kmCall(0x80796d8c, ReplaceBlooperUseOtherPlayers);  // replaces the small bloope
 // kmWrite32(0x805b68d8, 0x7DE97B78); //mr r9, r15 to get playercollision
 static bool ConditionalIgnoreInvisibleWalls(float radius, CourseMgr& mgr, const Vec3& position, const Vec3& prevPosition,
                                             KCLBitfield acceptedFlags, CollisionInfo* info, KCLTypeHolder& kclFlags) {
+    register u32 playerIdRaw;
+    asm(mr playerIdRaw, r16;);
+    PushConditionalCollisionPlayerContext(static_cast<u8>(playerIdRaw));
+
     if (System::sInstance->IsContext(PULSAR_FEATHER)) {
         register Kart::Collision* collision;
         asm(mr collision, r15;);
@@ -52,7 +59,9 @@ static bool ConditionalIgnoreInvisibleWalls(float radius, CourseMgr& mgr, const 
         }
         // to remove invisible walls from the list of flags checked, these walls at flag 0xD and 2^0xD = 0x2000*
     }
-    return mgr.IsCollidingAddEntry(position, prevPosition, acceptedFlags, info, &kclFlags, 0, radius);
+    const bool isColliding = mgr.IsCollidingAddEntry(position, prevPosition, acceptedFlags, info, &kclFlags, 0, radius);
+    PopConditionalCollisionPlayerContext();
+    return isColliding;
 }
 kmCall(0x805b68dc, ConditionalIgnoreInvisibleWalls);
 
