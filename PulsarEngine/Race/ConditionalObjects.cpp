@@ -40,6 +40,12 @@ static void FillScreenState(bool (&screenIsActive)[4], bool value) {
     for (u8 i = 0; i < 4; ++i) screenIsActive[i] = value;
 }
 
+static bool IsModelDirectorReadyForPerScreenVisibility(const ModelDirector* director) {
+    if (director == nullptr) return false;
+    if ((director->bitfield & 0x100000) == 0) return false;
+    return director->scnMdlEx[0] != nullptr && director->scnMdlEx[1] != nullptr;
+}
+
 static void InitConditionalState(ConditionalState& state) {
     state.isConditional = false;
     state.isActive = true;
@@ -214,7 +220,8 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
 }
 
 static void ApplyModelDirectorScreenVisibility(ModelDirector* director, const ConditionalState& state) {
-    if (director == nullptr) return;
+    // ScnMgr::UpdateVisibility dereferences both scnMdlEx slots for screen-specific directors.
+    if (!IsModelDirectorReadyForPerScreenVisibility(director)) return;
 
     for (u8 screenIdx = 0; screenIdx < state.localScreenCount; ++screenIdx) {
         if (state.screenIsActive[screenIdx])
@@ -234,7 +241,8 @@ static bool IsScreenSpecificModelRegistered(const ScnMgr& scnMgr, const ModelDir
 }
 
 static void EnsureScreenSpecificModelRegistration(ModelDirector* director) {
-    if (director == nullptr) return;
+    // Only register directors that are safe for ScnMgr::UpdateVisibility.
+    if (!IsModelDirectorReadyForPerScreenVisibility(director)) return;
 
     ScnMgr* scnMgr = director->GetScnManager();
     if (scnMgr == nullptr) return;
