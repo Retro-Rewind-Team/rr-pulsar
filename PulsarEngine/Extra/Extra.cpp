@@ -426,18 +426,20 @@ kmWrite32(0x80797C44, 0x3C600A0C);
 asmFunc InvalidCameraPointerFix() {
     ASM(
         nofralloc;
-        loc_0x0 :
-        cmpwi r31, 0;
+        loc_0x0 : cmpwi r31, 0;
         bne + loc_0x18;
         mflr r12;
         addi r12, r12, 0xA0;
         mtlr r12;
         blr;
 
-        loc_0x18 :
-        lwz r3, 0x0(r31);
+        loc_0x18 : lwz r3, 0x0(r31);
         blr;)
 }
 kmCall(0x805ABE14, InvalidCameraPointerFix);
+
+// Texture Animation Fix in Multiplayer [ZPL]
+kmWrite32(0x80820768, 0x60000000);  // Object::LoadAnimations
+kmWrite32(0x80820ad8, 0x60000000);  // Object::LoadAnimationByType
 
 }  // namespace Codes
