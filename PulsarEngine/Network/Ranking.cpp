@@ -43,16 +43,18 @@ static const u64 PRIORITY_BADGE_FC_LIST[] = {
     331616161616ULL,  // Noel
     464666644446ULL,  // Eppe
     121212121245ULL,  // Bodacious
-    188978569675ULL,  // Cyrus
+    506980546757ULL,  // Cyrus
     421507127201ULL,  // Jacher
     800580ULL,  // Rambo
-    81604380197ULL, // Patchzy
+    81604380197ULL,  // Patchzy
+    400032268799ULL,  // Wrkus
     0ULL};
 
 // FOR THE COLONY
 static const u64 ANT_BADGE_FC_LIST[] = {
     65400900000ULL,  // Fenixien
     116565656533ULL,  // ImZeraora
+    524266609436ULL,  // TheBeefBai
     0ULL};
 
 static bool IsPriorityBadgeFC(u64 fc) {
@@ -128,6 +130,31 @@ static int ScoreToRank(float finalScore) {
     return 0;
 }
 
+static const wchar_t* RankToLabel(int rank) {
+    switch (rank) {
+        case 1:
+            return L"\uF07D";
+        case 2:
+            return L"\uF07E";
+        case 3:
+            return L"\uF07F";
+        case 4:
+            return L"\uF080";
+        case 5:
+            return L"\uF081";
+        case 6:
+            return L"\uF082";
+        case 7:
+            return L"\uF083";
+        case 8:
+            return L"\uF084";
+        case 9:
+            return L"\uF085";
+        default:
+            return L"0";
+    }
+}
+
 int GetCurrentLicenseRankVS() {
     const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
@@ -164,41 +191,58 @@ int FormatRankMessage(wchar_t* dst, size_t dstLen) {
     int score = GetCurrentLicenseScore();
     if (rank < 0) rank = 0;
     if (score < 0) score = 0;
-    const wchar_t* rankLabel = L"0";
-    switch (rank) {
-        case 1:
-            rankLabel = L"\uF07D";
-            break;
-        case 2:
-            rankLabel = L"\uF07E";
-            break;
-        case 3:
-            rankLabel = L"\uF07F";
-            break;
-        case 4:
-            rankLabel = L"\uF080";
-            break;
-        case 5:
-            rankLabel = L"\uF081";
-            break;
-        case 6:
-            rankLabel = L"\uF082";
-            break;
-        case 7:
-            rankLabel = L"\uF083";
-            break;
-        case 8:
-            rankLabel = L"\uF084";
-            break;
-        case 9:
-            rankLabel = L"\uF085";
-            break;
-        default:
-            rankLabel = L"0";
-            break;
-    }
+    const wchar_t* rankLabel = RankToLabel(rank);
 
     return ::swprintf(dst, dstLen, L"Rank: %ls\nScore: %d", rankLabel, score);
+}
+
+int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
+    if (dst == nullptr || dstLen == 0) return -1;
+    const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) {
+        return ::swprintf(dst, dstLen, L"No license loaded.");
+    }
+
+    const RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    const u32 vsWins = license.GetWFCVSWins();
+    const u32 vsLosses = license.GetWFCVSLosses();
+    const u32 totalVs = vsWins + vsLosses;
+    const u32 MIN_VS_MATCHES = 100;
+
+    float winPct = (totalVs > 0) ? (100.0f * (float)vsWins / (float)totalVs) : 45.0f;
+
+    float vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
+    if (vr < 0.0f) vr = 0.0f;
+    u32 vrClamped = (vr > 1000.0f) ? 1000.0f : vr * 100.0f;
+
+    u32 times1st = license.GetTimes1stPlaceAchieved();
+    float distTravelled = license.GetDistanceTravelled();
+    float distInFirst = license.GetDistancetravelledwhilein1stplace();
+
+    int rank = GetCurrentLicenseRankVS();
+    float score = 0.0f;
+    if (totalVs >= MIN_VS_MATCHES) {
+        score = ComputeVsScoreFromLicense(license);
+    }
+
+    if (rank < 0) rank = 0;
+    static const float kRankThresholds[] = {12.0f, 24.0f, 36.0f, 48.0f, 60.0f, 72.0f, 84.0f, 94.0f, 100.0f};
+    float nextThreshold = (rank >= 9) ? 100.0f : kRankThresholds[rank];
+    float scoreNeededForNextRank = (rank >= 9) ? 0.0f : (nextThreshold - score);
+    if (scoreNeededForNextRank < 0.0f) scoreNeededForNextRank = 0.0f;
+    int nextRank = (rank >= 9) ? 9 : (rank + 1);
+    const wchar_t* nextRankLabel = RankToLabel(nextRank);
+
+    return ::swprintf(
+        dst, dstLen,
+        L"Retro Rewind Rank:\n"
+        L"VR: %d VR out of 100000 VR\n"
+        L"Win Rate: %.1f%% out of 65%% Needed\n"
+        L"1st Places: %u Firsts out of 2500 Firsts\n"
+        L"Distance: %.1f KM out of 50000 KM\n"
+        L"1st Distance: %.1f KM out of 10000 KM\n"
+        L"Score: %.2f Points (%.2f till Rank %ls)\n",
+        vrClamped, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
 }
 
 // Address found by B_squo, original idea by Zeraora, developed by ZPL

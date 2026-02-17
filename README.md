@@ -52,6 +52,9 @@ Core:
 - [XPF support](https://github.com/Gabriela-Orzechowska/LE-CODE-XPF) (from Gabriela)
 - [USB GCN Support](https://github.com/Gabriela-Orzechowska/MKW-Cosmos/blob/main/code/System/WUP028.hpp) (from Gabriela)
 
+Additional Features:
+- (WIP) Discord Rich Presence Small Icons for Characters
+
 
 UI:
 - A speedometer that is flush with the game UI
@@ -97,7 +100,7 @@ A makefile is available at the root of the repository. The `CFLAGS` environment 
 
 When using nwfc.wiinoma.com for a local testing server, the default key is used, which can be found [here](https://github.com/Retro-Rewind-Team/wfc-patcher-wii/blob/main/misc/private-key-DEFAULT.pem)
 
-`CC` and `KAMEK` can both be set in a `.env` file to specify the location of your copy of mwcceppc and Kamek respectively.
+`AS`, `CC` and `KAMEK` can both be set in a `.env` file to specify the location of your copy of mwasmeppc, mwcceppc and Kamek respectively.
 
 Credits:
 - Treeki for [Kamek](https://github.com/Treeki/Kamek/tree/master). The engine has been ever so slightly modified to create a new output format which combines the usual 4 binaries. 

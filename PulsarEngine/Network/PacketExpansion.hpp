@@ -79,6 +79,9 @@ struct PulROOM : public RKNet::ROOMPacket {
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
     u8 padding;
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+
+    // Anti-cheat verification tag - proves sender has correct encryption key
+    u32 acVerifyTag;
 };
 
 enum SELECTComboStatus {
@@ -116,6 +119,9 @@ struct PulSELECT : public RKNet::SELECTPacket {
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
     u8 blockingPadding;
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+
+    // Anti-cheat verification tag - proves sender has correct encryption key
+    u32 acVerifyTag;  // Must be last encrypted field for alignment
 };
 
 struct PulRACEDATA : public RKNet::RACEDATAPacket {};

@@ -1,9 +1,9 @@
-#include <RetroRewind.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <Dolphin/DolphinIOS.hpp>
 
 namespace Codes {
 
@@ -418,5 +418,28 @@ kmWrite32(0x8059BE20, 0x38600000);
 
 // Accurate Item Roulette [Ro]
 kmWrite32(0x807BB8EC, 0x60000000);
+
+// Prevent Item Usage in Bullet Bill [Ro]
+kmWrite32(0x80797C44, 0x3C600A0C);
+
+// Prevent Crash from Invalid Camera Pointer in Broken KMP [Gab]
+asmFunc InvalidCameraPointerFix() {
+    ASM(
+        nofralloc;
+        loc_0x0 : cmpwi r31, 0;
+        bne + loc_0x18;
+        mflr r12;
+        addi r12, r12, 0xA0;
+        mtlr r12;
+        blr;
+
+        loc_0x18 : lwz r3, 0x0(r31);
+        blr;)
+}
+kmCall(0x805ABE14, InvalidCameraPointerFix);
+
+// Texture Animation Fix in Multiplayer [ZPL]
+kmWrite32(0x80820768, 0x60000000);  // Object::LoadAnimations
+kmWrite32(0x80820ad8, 0x60000000);  // Object::LoadAnimationByType
 
 }  // namespace Codes

@@ -44,7 +44,7 @@ static const ItemWeight ITEM_WEIGHTS[] = {
     {0x747B, OBJ_BULLET_BILL},
     {0x7852, OBJ_BOBOMB},
     {0x7C29, OBJ_POW_BLOCK},
-    {0x7EB8, OBJ_BLUE_SHELL},
+    {0x7FAE, OBJ_BLUE_SHELL},
     {0x8000, OBJ_LIGHTNING},
 };
 
@@ -196,7 +196,7 @@ static void OnTimerUpdate(u32 oldFrame) {
                 if (obj && (obj->bitfield74 & 1) == 0) {
                     u32 spawnFrame = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164);
                     if (spawnFrame != 0 && (currentFrame - spawnFrame) > 300) {
-                        obj->KillFromOtherCollision(false);
+                        obj->DisappearDueToExcess(false);
                     }
                 }
             }
@@ -237,7 +237,7 @@ static void OnTimerUpdate(u32 oldFrame) {
     }
 
     bool isStorm = System::sInstance->IsContext(PULSAR_ITEMMODESTORM);
-    u32 spawnsPerPlayer = isStorm ? 2 : 1;
+    u32 spawnsPerPlayer = isStorm ? 3 : 1;
 
     for (s32 idx = 0; idx < count; idx++) {
         if (!IsLocalPlayer(idx)) continue;
@@ -250,36 +250,6 @@ static void OnTimerUpdate(u32 oldFrame) {
             }
         }
     }
-}
-
-static void ProcessOtherCollisionWrapper(Item::Obj* obj, u32 result, Vec3* otherPos, Vec3* otherSpeed) {
-    if (!IsItemRainEnabled() || !obj) return;
-    if (obj->itemObjId == OBJ_BOBOMB && result == 2) sState.bobombSurvive = true;
-    obj->ProcessOtherCollision(result, *otherPos, *otherSpeed);
-}
-
-static void KillFromPlayerCollisionHook(Item::Obj* obj, bool sendBreak, u8 playerId) {
-    obj->KillFromPlayerCollision(false, playerId);
-}
-
-static void KillFromOtherCollisionHook(Item::Obj* obj, bool sendBreak) {
-    if (IsItemRainEnabled()) {
-        if (sState.bobombSurvive && obj->itemObjId == OBJ_BOBOMB) {
-            sState.bobombSurvive = false;
-            return;
-        }
-        if (obj->duration == 1) {
-            obj->KillFromOtherCollision(false);
-            return;
-        }
-    }
-    obj->KillFromOtherCollision(false);
-}
-
-static void ObjSpawnHook(Item::Obj* obj, ItemObjId id, u8 playerId, const Vec3& pos, bool r7) {
-    obj->Spawn(id, playerId, pos, r7);
-    if (IsItemRainEnabled() && Raceinfo::sInstance->timerMgr)
-        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164) = Raceinfo::sInstance->timerMgr->raceFrameCounter;
 }
 
 kmRuntimeUse(0x808D1BDC);
@@ -308,68 +278,9 @@ static void SafeBombExplosionResize(void* entity, float radius, float maxSpeed) 
     if (entity) Resize__Q24Item6EntityFff(entity, radius, maxSpeed);
 }
 
-static void SafeOffroadEntityWrapper(Item::Obj* obj, u32 param) {
-    if (obj->entity) obj->entity->paramsBitfield &= ~0x100;
-    float radius = GetRadius__Q24Item3ObjFUi(obj, param);
-    if (obj->entity) {
-        obj->entity->radius = radius;
-        obj->entity->range = radius;
-        obj->entity->paramsBitfield |= 0x800;
-    }
-    obj->bitfield78 &= ~0x10;
-}
-
-static int IsSpawnLimitNotReachedHook(ItemId id) {
-    if (IsItemRainEnabled()) return 1;
-    if (id >= 19) return 0;
-    const Item::Behavior& behave = Item::Behavior::behaviourTable[id];
-    Item::Manager* im = Item::Manager::sInstance;
-    Item::ObjHolder& holder = im->itemObjHolders[behave.objId];
-    int currentCount = holder.GetTotalItemCount();
-    return behave.numberOfItems <= (holder.capacity2 - currentCount);
-}
-
-static void TotalItemCountHook() {
-    register int total;
-    register Item::Manager* manager;
-    asm {
-        mr total, r27
-        mr manager, r30
-    }
-    int res = total - 30;
-    if (IsItemRainEnabled()) res = -30;
-    manager->totalItemCountMinus30 = res;
-}
-
-// Hooks
 kmCall(0x80535C7C, OnTimerUpdate);
-kmCall(0x807a0ffc, ProcessOtherCollisionWrapper);
-kmCall(0x807a1010, ProcessOtherCollisionWrapper);
-kmCall(0x807a1c68, KillFromOtherCollisionHook);
-kmCall(0x80795f00, ObjSpawnHook);
-kmCall(0x807a3838, KillFromPlayerCollisionHook);
-
 kmCall(0x807A7170, BombExplosion);
 kmCall(0x807a4714, SafeBombExplosionResize);
-kmCall(0x807b6ebc, SafeOffroadEntityWrapper);
-kmWrite32(0x807b6eb0, 0x60000000);  // NOPs for FIB offroad entity setup
-kmWrite32(0x807b6eb4, 0x60000000);
-kmWrite32(0x807b6eb8, 0x60000000);
-kmWrite32(0x807b6ec0, 0x60000000);
-kmWrite32(0x807b6ec4, 0x60000000);
-kmWrite32(0x807b6ec8, 0x60000000);
-kmWrite32(0x807b6ecc, 0x60000000);
-kmWrite32(0x807b6ed0, 0x60000000);
-kmWrite32(0x807b6ed4, 0x60000000);
-kmWrite32(0x807b6ed8, 0x60000000);
-kmWrite32(0x807b6edc, 0x60000000);
-kmWrite32(0x807b6ee0, 0x60000000);
-kmWrite32(0x807b6ee4, 0x60000000);
-kmWrite32(0x807b6ee8, 0x60000000);
-
-kmBranch(0x80799be8, IsSpawnLimitNotReachedHook);
-kmWrite32(0x8079992c, 0x60000000);
-kmCall(0x80799930, TotalItemCountHook);
 
 }  // namespace ItemRain
 }  // namespace Pulsar

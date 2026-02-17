@@ -256,7 +256,7 @@ kmRuntimeUse(0x8052e950);
 static void ApplyRatingPatch() {
     kmRuntimeBranchA(0x8052e950, RR_UpdatePoints);
     RKNet::Controller* ctrl = RKNet::Controller::sInstance;
-    if ((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && !System::sInstance->IsContext(PULSAR_VR)) {
+    if (((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && !System::sInstance->IsContext(PULSAR_VR)) || ctrl->roomType == RKNet::ROOMTYPE_NONE) {
         kmRuntimeWrite32A(0x8052e950, 0x9421ff70);
     }
 }

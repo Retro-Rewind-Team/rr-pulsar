@@ -239,7 +239,7 @@ static void SetAwardsResultCupInfo(LayoutUIControl& awardType, const char* textB
         awardType.layout.GetPaneByName("cup_icon")->flag &= ~1;
         u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
         u32 cupBmgId;
-        u16 iconCount = System::sInstance->GetInfo().GetCupIconCount();
+        u16 iconCount = static_cast<u16>(CupsConfig::sInstance->definedCTsCupCount);
         if (realCupId > iconCount - 1) {
             wchar_t cupName[0x20];
             swprintf(cupName, 0x20, L"Cup %d", realCupId);
@@ -259,7 +259,7 @@ static void SetGPIntroInfo(LayoutUIControl& titleText, u32 bmgId, Text::Info& in
         titleText.layout.GetPaneByName("cup_icon")->flag &= ~1;
         u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
         u32 cupBmgId;
-        u16 iconCount = System::sInstance->GetInfo().GetCupIconCount();
+        u16 iconCount = static_cast<u16>(CupsConfig::sInstance->definedCTsCupCount);
         if (realCupId > iconCount - 1) {
             wchar_t cupName[0x20];
             swprintf(cupName, 0x20, L"Cup %d", realCupId);
@@ -522,7 +522,9 @@ static void ExtCourseSelectCourseInitSelf(CtrlMenuCourseSelectCourse* course) {
             toSelect = &curButton;
         }
     };
-    coursePage->SelectButton(*toSelect);
+    if (coursePage != nullptr) {
+        coursePage->SelectButton(*toSelect);
+    }
 };
 kmWritePointer(0x808d30d8, ExtCourseSelectCourseInitSelf);  // 807e5118
 

@@ -63,7 +63,7 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     stats->standard_acceleration_as[3] *= factor;
 
     if (is200) {
-        stats->weight = 0x9C;
+        stats->weight = 6.0f;
     }
 
     bool isLocalPlayer = false;

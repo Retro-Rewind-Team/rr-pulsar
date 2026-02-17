@@ -14,8 +14,18 @@
 namespace Pulsar {
 namespace Network {
 
-static bool IsWiFiMenuSection(SectionId id) {
+static bool ShouldResetTrackBlocking(SectionId id) {
     switch (id) {
+        case SECTION_MAIN_MENU_FROM_BOOT:
+        case SECTION_MAIN_MENU_FROM_RESET:
+        case SECTION_MAIN_MENU_FROM_MENU:
+        case SECTION_MAIN_MENU_FROM_NEW_LICENSE:
+        case SECTION_MAIN_MENU_FROM_LICENSE:
+        case SECTION_MII_SELECT_1:
+        case SECTION_MII_SELECT_2:
+        case SECTION_LICENSE_SETTINGS_MENU:
+        case SECTION_SINGLE_P_FROM_MENU:
+        case SECTION_LOCAL_MULTIPLAYER:
         case SECTION_P1_WIFI:
         case SECTION_P1_WIFI_FROM_FROOM_RACE:
         case SECTION_P1_WIFI_FROM_FIND_FRIEND:
@@ -35,7 +45,7 @@ static void ResetTrackBlockingOnRoomEnd() {
     if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
 
     const SectionId sectionId = sectionMgr->curSection->sectionId;
-    if (!IsWiFiMenuSection(sectionId)) return;
+    if (!ShouldResetTrackBlocking(sectionId)) return;
 
     System* system = System::sInstance;
     if (system == nullptr) return;

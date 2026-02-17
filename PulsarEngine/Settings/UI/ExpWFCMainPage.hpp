@@ -25,8 +25,8 @@ class ExpWFCMain : public Pages::WFCMainMenu {
         this->onLeaderboardClick.ptmf = &ExpWFCMain::OnLeaderboardButtonClick;
         this->onButtonSelectHandler.ptmf = &ExpWFCMain::ExtOnButtonSelect;
 
-        // this->onStartPress.subject = this;
-        // this->onStartPress.ptmf = &ExpWFCMain::ExtOnStartPress;
+        this->onStartPress.subject = this;
+        this->onStartPress.ptmf = &ExpWFCMain::ExtOnStartPress;
     }
     void OnInit() override;
     void BeforeControlUpdate() override;
@@ -38,16 +38,14 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     void OnOtherButtonClick(PushButton& PushButton, u32 hudSlotId);
     void OnBattleButtonClick(PushButton& PushButton, u32 hudSlotId);
     void OnLeaderboardButtonClick(PushButton& PushButton, u32 hudSlotId);
-    // void ExtOnStartPress(u32 hudSlotId) {
-    //     s_displayPlayerCount = !s_displayPlayerCount;
-    // }
+    void ExtOnStartPress(u32 hudSlotId);
 
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onSettingsClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onMainClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onOtherClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onBattleClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onLeaderboardClick;
-    // PtmfHolder_1A<ExpWFCMain, void, u32> onStartPress;
+    PtmfHolder_1A<ExpWFCMain, void, u32> onStartPress;
     PushButton settingsButton;
     PushButton mainButton;
     PushButton otherButton;

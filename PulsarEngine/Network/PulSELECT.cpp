@@ -13,6 +13,9 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#ifdef PROD
+#include <Security/IntegrityCheck.hpp>
+#endif
 
 namespace Pulsar {
 namespace Network {
@@ -64,6 +67,14 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         src->blockedTracks[i] = 0xFFFF;
     }
 
+#ifdef PROD
+    // Set anti-cheat verification tag before encryption
+    // This tag proves the sender has the correct encryption key
+    const RKNet::Controller* ctrlForTag = RKNet::Controller::sInstance;
+    u8 localAid = (ctrlForTag != nullptr) ? ctrlForTag->subs[ctrlForTag->currentSub].localAid : 0;
+    src->acVerifyTag = Security::g_antiCheatKey.ComputePacketTag(localAid);
+#endif
+
     if (!system->IsContext(PULSAR_CT)) {
         const u8 vanillaWinning = CupsConfig::ConvertTrack_PulsarIdToRealId(static_cast<PulsarId>(src->pulWinningTrack));
         src->winningCourse = vanillaWinning;
@@ -73,6 +84,18 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
     } else
         len = sizeof(PulSELECT);
     packetHolder->Copy(src, len);
+
+#ifdef PROD
+    // Encrypt the Pulsar extension portion of the packet after copy
+    if (len == sizeof(PulSELECT) && Security::g_antiCheatKey.initialized) {
+        u8* pulsarData = ((u8*)packetHolder->packet) + sizeof(RKNet::SELECTPacket);
+        const u32 extSize = sizeof(PulSELECT) - sizeof(RKNet::SELECTPacket);
+        const u32 encSize = (extSize / 16) * 16;  // Only encrypt complete AES blocks
+        if (encSize > 0) {
+            Security::AES128_EncryptCBC(&Security::g_antiCheatKey.aesCtx, pulsarData, pulsarData, encSize, Security::g_antiCheatKey.baseIV);
+        }
+    }
+#endif
 }
 kmCall(0x80661040, BeforeSELECTSend);
 
@@ -81,14 +104,35 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     asm(mr handler, r18;);
     register u8 aid;
     asm(mr aid, r19;);
+    register RKNet::PacketHolder<PulSELECT>* holder;
+    asm(mr holder, r27);
+
+#ifdef PROD
+    // Decrypt the Pulsar extension before any field access
+    if (holder != nullptr && holder->packetSize == sizeof(PulSELECT) && Security::g_antiCheatKey.initialized) {
+        u8* pulsarData = ((u8*)src) + sizeof(RKNet::SELECTPacket);
+        const u32 extSize = sizeof(PulSELECT) - sizeof(RKNet::SELECTPacket);
+        const u32 encSize = (extSize / 16) * 16;
+        if (encSize > 0) {
+            Security::AES128_DecryptCBC(&Security::g_antiCheatKey.aesCtx, pulsarData, pulsarData, encSize, Security::g_antiCheatKey.baseIV);
+        }
+
+        // Verify the sender has the correct key by checking verification tag
+        if (!Security::g_antiCheatKey.VerifyPacketTag(src->acVerifyTag, aid)) {
+            // Tag mismatch - sender doesn't have valid anti-cheat key
+            // Mark this AID for disconnection and skip processing
+            RKNet::Controller* controller = RKNet::Controller::sInstance;
+            reinterpret_cast<CustomRKNetController*>(controller)->toDisconnectAids |= (1 << aid);
+            return;
+        }
+    }
+#endif
 
     for (int i = 0; i < 2; ++i) {
         PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
     }
 
     PulSELECT& dest = handler->receivedPackets[aid];
-    register RKNet::PacketHolder<PulSELECT>* holder;
-    asm(mr holder, r27);
     if (holder != nullptr && holder->packetSize == sizeof(RKNet::SELECTPacket)) {
         const u16 pulWinning = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->winningCourse));
         src->pulWinningTrack = pulWinning;  // this is safe because src is a ptr to the buffer of holder which is always big enough
@@ -508,6 +552,7 @@ void InitPatch() {
     asm(mr select, r31;);
     select->toSendPacket.pulVote = 0x43;
     select->toSendPacket.pulWinningTrack = 0xff;
+    select->toSendPacket.acVerifyTag = 0;
     const Settings::Mgr& settings = Settings::Mgr::Get();
     bool allowChangeCombo;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
@@ -522,6 +567,7 @@ void InitPatch() {
         PulSELECT& cur = select->receivedPackets[aid];
         cur.pulVote = 0x43;
         cur.pulWinningTrack = 0xff;
+        cur.acVerifyTag = 0;
         reinterpret_cast<RKNet::SELECTHandler*>(select)->ResetPacket(select->receivedPackets[aid]);
     }
 }
@@ -708,7 +754,7 @@ void ProcessNewPacketVoting() {
                 send.battleTypeAndTeams = curRecv.battleTypeAndTeams;
                 send.selectId = curRecv.selectId;
                 send.engineClass = curRecv.engineClass;
-                if (curRecv.phase != 0) send.phase = 1;
+                if (curRecv.phase == 1) send.phase = 1;
             } else if (myPhase == 1) {
                 u32 accField = handler->aidsThatHaveVoted;
                 if (accField != 0) {
@@ -740,7 +786,7 @@ void ProcessNewPacketVoting() {
             if ((availableAids & accField) != availableAids) isConnectedToAnyone = false;
         }
         if (isConnectedToAnyone && curRecv.pulVote != 0x43) handler->aidsThatHaveVoted |= aidBit;
-        if (handler->hasNewRACEHEADER_1 != 0) send.phase = 2;  // people have already progressed?
+        if (handler->hasNewRACEHEADER_1 != 0 && send.phase >= 1) send.phase = 2;  // people have already progressed?
     }
 }
 kmCall(0x80661520, ProcessNewPacketVoting);

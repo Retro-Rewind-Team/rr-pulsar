@@ -5,6 +5,7 @@
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/ServerDateTime.hpp>
 #include <PulsarSystem.hpp>
+#include <Gamemodes/ItemRain/ItemRain.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -29,12 +30,12 @@ static float GetBattleBonus() {
 bool IsWeekendMultiplierActive() {
     ServerDateTime* sdt = ServerDateTime::sInstance;
     if (sdt == nullptr || !sdt->isValid) return false;
-    
+
     // Use SERVER time for the actual check (this is the authoritative time from login)
     u8 dow = ServerDateTime::GetDayOfWeek(sdt->year, sdt->month, sdt->day);
     bool isWeekend = (dow == 0 || dow == 6);  // Sunday or Saturday
     if (!isWeekend) return false;
-    
+
     u32 weekNum = sdt->GetWeekNumber();
     return (weekNum % 2) == 1;  // Even weeks get the multiplier
 }
@@ -45,11 +46,35 @@ bool IsWeekendMultiplierActiveForRegion(u8 region) {
     return sdt->GetCurrentVRMultiplierRegion() == region;
 }
 
-float GetMultiplier() {
-#ifdef BETA
-    return 1.15f;
-#endif
+bool IsItemRainEventActive() {
+    unsigned year = 0, month = 0, day = 0;
+    bool valid = false;
 
+    ServerDateTime* sdt = ServerDateTime::sInstance;
+    if (sdt && sdt->isValid) {
+        year = sdt->year;
+        month = sdt->month;
+        day = sdt->day;
+        valid = true;
+    } else {
+        SystemManager* sm = SystemManager::sInstance;
+        if (sm && sm->isValidDate) {
+            year = sm->year + 2000;
+            month = sm->month;
+            day = sm->day;
+            valid = true;
+        }
+    }
+
+    if (valid) {
+        if (year == 2026 && month == 1 && day >= 26 && day <= 29) {
+            return true;
+        }
+    }
+    return false;
+}
+
+float GetMultiplier() {
     unsigned month = 0, day = 0;
     bool valid = false;
 
@@ -69,11 +94,19 @@ float GetMultiplier() {
 
     float base = (valid && IsEventDay(month, day)) ? 2.0f : 1.0f;
 
-    // Weekend VR multiplier (1.5x) for the active region
+    // Item Rain VR multiplier (1.25x) - Jan 27-29, 2026
+    if (IsItemRainEventActive() && ItemRain::IsItemRainEnabled()) {
+        base *= 1.25f;
+    }
+
+    // Weekend VR multiplier (1.25x) for the active region
     u8 currentRegion = System::sInstance->netMgr.region;
     if (IsWeekendMultiplierActiveForRegion(currentRegion)) {
         base *= 1.25f;
     }
+#ifdef BETA
+    return (base + GetBattleBonus()) * 1.15f;
+#endif
 
     return base + GetBattleBonus();
 }

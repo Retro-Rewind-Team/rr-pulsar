@@ -12,6 +12,7 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Debug/Debug.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
+#include <runtimeWrite.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -178,6 +179,12 @@ CameraParamBin* GetKartParamCamera(u32 weight, u32 screenCount) {
 }
 
 kmCall(0x805a20d4, GetKartParamCamera);
+
+static void SafeControlGroupInsert(ControlGroup* controlGroup, int index, UIControl* control, u32 drawPass) {
+    if (control == nullptr) return;
+    controlGroup->SetControl(index, *control, drawPass);
+}
+kmBranch(0x80602470, SafeControlGroupInsert);
 
 }  // namespace UI
 }  // namespace Pulsar

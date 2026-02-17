@@ -59,7 +59,7 @@ class VRLeaderboardPage : public Page {
     static FetchState s_fetchState;
     static bool s_hasApplied;
     static Entry s_entries[kMaxEntries];
-    static char s_responseBuf[65536];
+    static const u32 kResponseBufSize = 65536;
 
     CtrlMenuPageTitleText* titleText;
     CtrlMenuInstructionText* bottomText;

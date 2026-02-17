@@ -212,6 +212,9 @@ void Mgr::OnPlayerDisconnected(u8 playerId) {
 void Mgr::TryResolveRound() {
     const u8 usualLaps = this->GetUsualTrackLapCount();
 
+    // Skip eliminations on the final lap
+    if (this->roundIndex >= this->totalRounds) return;
+
     u8 toEliminate = this->GetRemainingEliminationsForCurrentRound(usualLaps);
     if (toEliminate == 0) return;
 

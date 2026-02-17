@@ -93,7 +93,7 @@ bool DisconnectBadAids() {
 
     int old = OS::DisableInterrupts();
     for (int aid = 0; aid < 12; ++aid) {
-        if (controller->toDisconnectAids >> aid) DWC::CloseConnectionHard(aid);
+        if ((controller->toDisconnectAids >> aid) & 1) DWC::CloseConnectionHard(aid);
     }
     controller->toDisconnectAids = 0;
     OS::RestoreInterrupts(old);
