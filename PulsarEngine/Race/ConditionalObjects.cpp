@@ -70,6 +70,7 @@ static const u32 BOXCOL_FLAG_ITEM = 0x2;
 static const u32 BOXCOL_FLAG_OBJECT = 0x4;
 static const u32 BOXCOL_FLAG_OBJECT_OBSTACLE_ENEMY = 0x8;
 static const u32 BOXCOL_FLAG_DRIVABLE = 0x10;
+static const u8 MAX_CONDITIONAL_LAP_INDEX_COUNT = 8;
 
 struct BoxColUnitView {
     u8 padding[0x0c];
@@ -126,6 +127,19 @@ static const GOBJ* GetObjectGobj(const Object& object) {
     return *reinterpret_cast<GOBJ* const*>(view.gobjLink);
 }
 
+static bool TryGetTrackDefinedLapCount(u8& lapCount) {
+    const KMP::Manager* kmp = KMP::Manager::sInstance;
+    if (kmp == nullptr || kmp->stgiSection == nullptr || kmp->stgiSection->holdersArray[0] == nullptr ||
+        kmp->stgiSection->holdersArray[0]->raw == nullptr) {
+        return false;
+    }
+
+    lapCount = kmp->stgiSection->holdersArray[0]->raw->lapCount;
+    if (lapCount == 0) return false;
+    if (lapCount > MAX_CONDITIONAL_LAP_INDEX_COUNT) lapCount = MAX_CONDITIONAL_LAP_INDEX_COUNT;
+    return true;
+}
+
 static bool TryGetConditionalConfig(const Object& object, ConditionalConfig& config) {
     static const u16 LAP_PROGRESS_STEPS_PER_LAP = 100;
 
@@ -159,10 +173,17 @@ static bool TryGetConditionalConfig(const Object& object, ConditionalConfig& con
     return true;
 }
 
-static u8 GetPlayerLapRangeIdx(const RaceinfoPlayer& player) {
+static u8 GetPlayerLapRangeIdx(const RaceinfoPlayer& player, u8 trackLapCount) {
     u16 currentLap = player.currentLap;
     if (currentLap == 0) currentLap = 1;
-    if (currentLap > 8) currentLap = 8;
+
+    if (trackLapCount > 0) {
+        currentLap = static_cast<u16>(((currentLap - 1) % trackLapCount) + 1);
+    } else if (currentLap > MAX_CONDITIONAL_LAP_INDEX_COUNT) {
+        currentLap = MAX_CONDITIONAL_LAP_INDEX_COUNT;
+    }
+
+    if (currentLap > MAX_CONDITIONAL_LAP_INDEX_COUNT) currentLap = MAX_CONDITIONAL_LAP_INDEX_COUNT;
     return static_cast<u8>(currentLap - 1);
 }
 
@@ -187,21 +208,26 @@ static u16 GetLapProgressValue(u8 lapIdx, u8 progressPercent) {
     return value;
 }
 
-static u16 GetPlayerLapProgressRangeValue(const RaceinfoPlayer& player) {
+static u16 GetPlayerLapProgressRangeValue(const RaceinfoPlayer& player, u8 trackLapCount) {
     static const float LAP_PROGRESS_STEPS_PER_LAP_FLOAT = 100.0f;
+    static const s32 LAP_PROGRESS_STEPS_PER_LAP_INT = 100;
     static const u16 LAP_PROGRESS_WRAP = 800;
 
     float raceCompletion = player.raceCompletion;
     if (raceCompletion < 1.0f) raceCompletion = 1.0f;
-    if (raceCompletion > 9.0f) raceCompletion = 9.0f;
+    if (trackLapCount == 0 && raceCompletion > 9.0f) raceCompletion = 9.0f;
 
     s32 lapProgress = static_cast<s32>((raceCompletion - 1.0f) * LAP_PROGRESS_STEPS_PER_LAP_FLOAT);
     if (lapProgress < 0) lapProgress = 0;
+    if (trackLapCount > 0) {
+        const s32 lapProgressCycleWrap = static_cast<s32>(trackLapCount) * LAP_PROGRESS_STEPS_PER_LAP_INT;
+        if (lapProgressCycleWrap > 0) lapProgress %= lapProgressCycleWrap;
+    }
     if (lapProgress >= LAP_PROGRESS_WRAP) lapProgress = LAP_PROGRESS_WRAP - 1;
     return static_cast<u16>(lapProgress);
 }
 
-static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, const ConditionalConfig& config, u16 ckptCount) {
+static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, const ConditionalConfig& config, u16 ckptCount, u8 trackLapCount) {
     switch (config.mode) {
         case ConditionalConfig::MODE_CHECKPOINT_RANGE: {
             const u8 checkpointIdx = GetPlayerCheckpointRangeIdx(player, ckptCount);
@@ -210,7 +236,7 @@ static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, const Condi
         case ConditionalConfig::MODE_LAP_PROGRESS_RANGE: {
             static const u16 LAP_PROGRESS_WRAP = 800;
 
-            const u16 currentProgress = GetPlayerLapProgressRangeValue(player);
+            const u16 currentProgress = GetPlayerLapProgressRangeValue(player, trackLapCount);
             const u16 startProgress = GetLapProgressValue(config.startIdx, config.startProgressPercent);
             const u16 endProgress = GetLapProgressValue(config.endIdx, config.endProgressPercent);
             return IsInWrappedRange(currentProgress, startProgress, endProgress, LAP_PROGRESS_WRAP);
@@ -219,7 +245,7 @@ static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, const Condi
             break;
     }
 
-    const u8 lapIdx = GetPlayerLapRangeIdx(player);
+    const u8 lapIdx = GetPlayerLapRangeIdx(player, trackLapCount);
     return IsInWrappedRange(lapIdx, config.startIdx, config.endIdx);
 }
 
@@ -232,13 +258,16 @@ static bool EvaluateConditionalForPlayer(const ConditionalConfig& config, u8 pla
     if (player == nullptr) return true;
 
     u16 ckptCount = 0;
+    u8 trackLapCount = 0;
     if (config.mode == ConditionalConfig::MODE_CHECKPOINT_RANGE) {
         const KMP::Manager* kmp = KMP::Manager::sInstance;
         if (kmp == nullptr || kmp->ckptSection == nullptr || kmp->ckptSection->pointCount == 0) return true;
         ckptCount = kmp->ckptSection->pointCount;
+    } else {
+        TryGetTrackDefinedLapCount(trackLapCount);
     }
 
-    const bool inRange = IsPlayerInConditionalRange(*player, config, ckptCount);
+    const bool inRange = IsPlayerInConditionalRange(*player, config, ckptCount, trackLapCount);
     return config.invert ? !inRange : inRange;
 }
 
