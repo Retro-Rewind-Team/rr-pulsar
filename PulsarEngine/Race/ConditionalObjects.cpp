@@ -23,9 +23,17 @@ struct ObjectConditionalView {
 };
 
 struct ConditionalConfig {
+    enum Mode {
+        MODE_LAP_RANGE,
+        MODE_CHECKPOINT_RANGE,
+        MODE_LAP_PROGRESS_RANGE
+    };
+
     u8 startIdx;
     u8 endIdx;
-    bool useCheckpointMode;
+    u8 startProgressPercent;
+    u8 endProgressPercent;
+    Mode mode;
     bool invert;
 };
 
@@ -102,6 +110,16 @@ static bool IsInWrappedRange(u8 value, u8 start, u8 end) {
     return value >= start || value <= end;
 }
 
+static bool IsInWrappedRange(u16 value, u16 start, u16 end, u16 wrapSize) {
+    if (wrapSize == 0) return false;
+    if (value >= wrapSize) value = static_cast<u16>(wrapSize - 1);
+    if (start >= wrapSize) start = static_cast<u16>(wrapSize - 1);
+    if (end >= wrapSize) end = static_cast<u16>(wrapSize - 1);
+
+    if (start <= end) return value >= start && value <= end;
+    return value >= start || value <= end;
+}
+
 static const GOBJ* GetObjectGobj(const Object& object) {
     const ObjectConditionalView& view = reinterpret_cast<const ObjectConditionalView&>(object);
     if (view.gobjLink == nullptr) return nullptr;
@@ -109,34 +127,100 @@ static const GOBJ* GetObjectGobj(const Object& object) {
 }
 
 static bool TryGetConditionalConfig(const Object& object, ConditionalConfig& config) {
+    static const u16 LAP_PROGRESS_STEPS_PER_LAP = 100;
+
     const GOBJ* gobj = GetObjectGobj(object);
     if (gobj == nullptr) return false;
 
     const u16 flags = gobj->presenceFlags;
     const u8 mode = static_cast<u8>((flags >> 3) & 0x7);
-    if (mode == 0 || mode > 4) return false;
+    if (mode == 0 || mode > 6) return false;
 
     config.startIdx = static_cast<u8>((flags >> 6) & 0x7);
     config.endIdx = static_cast<u8>((flags >> 9) & 0x7);
-    config.useCheckpointMode = (mode == 2 || mode == 4);
-    config.invert = (mode == 3 || mode == 4);
+    config.startProgressPercent = 0;
+    config.endProgressPercent = 0;
+
+    if (mode == 2 || mode == 4) {
+        config.mode = ConditionalConfig::MODE_CHECKPOINT_RANGE;
+    } else if (mode == 5 || mode == 6) {
+        config.mode = ConditionalConfig::MODE_LAP_PROGRESS_RANGE;
+
+        // For lap progression modes, GOBJ padding packs start/end lap percentage as [start, end] bytes.
+        config.startProgressPercent = static_cast<u8>((gobj->padding >> 8) & 0xFF);
+        config.endProgressPercent = static_cast<u8>(gobj->padding & 0xFF);
+        if (config.startProgressPercent > LAP_PROGRESS_STEPS_PER_LAP) config.startProgressPercent = LAP_PROGRESS_STEPS_PER_LAP;
+        if (config.endProgressPercent > LAP_PROGRESS_STEPS_PER_LAP) config.endProgressPercent = LAP_PROGRESS_STEPS_PER_LAP;
+    } else {
+        config.mode = ConditionalConfig::MODE_LAP_RANGE;
+    }
+
+    config.invert = (mode == 3 || mode == 4 || mode == 6);
     return true;
 }
 
-static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, bool useCheckpointMode, u16 ckptCount, u8 startIdx, u8 endIdx) {
-    u8 currentIdx = 0;
-    if (useCheckpointMode) {
-        u16 checkpoint = player.checkpoint;
-        if (checkpoint >= ckptCount) checkpoint = static_cast<u16>(ckptCount - 1);
-        currentIdx = static_cast<u8>((checkpoint * 8u) / ckptCount);
-        if (currentIdx > 7) currentIdx = 7;
-    } else {
-        u16 currentLap = player.currentLap;
-        if (currentLap == 0) currentLap = 1;
-        if (currentLap > 8) currentLap = 8;
-        currentIdx = static_cast<u8>(currentLap - 1);
+static u8 GetPlayerLapRangeIdx(const RaceinfoPlayer& player) {
+    u16 currentLap = player.currentLap;
+    if (currentLap == 0) currentLap = 1;
+    if (currentLap > 8) currentLap = 8;
+    return static_cast<u8>(currentLap - 1);
+}
+
+static u8 GetPlayerCheckpointRangeIdx(const RaceinfoPlayer& player, u16 ckptCount) {
+    u16 checkpoint = player.checkpoint;
+    if (checkpoint >= ckptCount) checkpoint = static_cast<u16>(ckptCount - 1);
+
+    u8 currentIdx = static_cast<u8>((checkpoint * 8u) / ckptCount);
+    if (currentIdx > 7) currentIdx = 7;
+    return currentIdx;
+}
+
+static u16 GetLapProgressValue(u8 lapIdx, u8 progressPercent) {
+    static const u16 LAP_PROGRESS_STEPS_PER_LAP = 100;
+    static const u16 LAP_PROGRESS_WRAP = 8 * LAP_PROGRESS_STEPS_PER_LAP;
+
+    if (lapIdx > 7) lapIdx = 7;
+    if (progressPercent > LAP_PROGRESS_STEPS_PER_LAP) progressPercent = LAP_PROGRESS_STEPS_PER_LAP;
+
+    u16 value = static_cast<u16>(lapIdx) * LAP_PROGRESS_STEPS_PER_LAP + progressPercent;
+    if (value >= LAP_PROGRESS_WRAP) value = static_cast<u16>(LAP_PROGRESS_WRAP - 1);
+    return value;
+}
+
+static u16 GetPlayerLapProgressRangeValue(const RaceinfoPlayer& player) {
+    static const float LAP_PROGRESS_STEPS_PER_LAP_FLOAT = 100.0f;
+    static const u16 LAP_PROGRESS_WRAP = 800;
+
+    float raceCompletion = player.raceCompletion;
+    if (raceCompletion < 1.0f) raceCompletion = 1.0f;
+    if (raceCompletion > 9.0f) raceCompletion = 9.0f;
+
+    s32 lapProgress = static_cast<s32>((raceCompletion - 1.0f) * LAP_PROGRESS_STEPS_PER_LAP_FLOAT);
+    if (lapProgress < 0) lapProgress = 0;
+    if (lapProgress >= LAP_PROGRESS_WRAP) lapProgress = LAP_PROGRESS_WRAP - 1;
+    return static_cast<u16>(lapProgress);
+}
+
+static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, const ConditionalConfig& config, u16 ckptCount) {
+    switch (config.mode) {
+        case ConditionalConfig::MODE_CHECKPOINT_RANGE: {
+            const u8 checkpointIdx = GetPlayerCheckpointRangeIdx(player, ckptCount);
+            return IsInWrappedRange(checkpointIdx, config.startIdx, config.endIdx);
+        }
+        case ConditionalConfig::MODE_LAP_PROGRESS_RANGE: {
+            static const u16 LAP_PROGRESS_WRAP = 800;
+
+            const u16 currentProgress = GetPlayerLapProgressRangeValue(player);
+            const u16 startProgress = GetLapProgressValue(config.startIdx, config.startProgressPercent);
+            const u16 endProgress = GetLapProgressValue(config.endIdx, config.endProgressPercent);
+            return IsInWrappedRange(currentProgress, startProgress, endProgress, LAP_PROGRESS_WRAP);
+        }
+        default:
+            break;
     }
-    return IsInWrappedRange(currentIdx, startIdx, endIdx);
+
+    const u8 lapIdx = GetPlayerLapRangeIdx(player);
+    return IsInWrappedRange(lapIdx, config.startIdx, config.endIdx);
 }
 
 static bool EvaluateConditionalForPlayer(const ConditionalConfig& config, u8 playerId) {
@@ -148,13 +232,13 @@ static bool EvaluateConditionalForPlayer(const ConditionalConfig& config, u8 pla
     if (player == nullptr) return true;
 
     u16 ckptCount = 0;
-    if (config.useCheckpointMode) {
+    if (config.mode == ConditionalConfig::MODE_CHECKPOINT_RANGE) {
         const KMP::Manager* kmp = KMP::Manager::sInstance;
         if (kmp == nullptr || kmp->ckptSection == nullptr || kmp->ckptSection->pointCount == 0) return true;
         ckptCount = kmp->ckptSection->pointCount;
     }
 
-    const bool inRange = IsPlayerInConditionalRange(*player, config.useCheckpointMode, ckptCount, config.startIdx, config.endIdx);
+    const bool inRange = IsPlayerInConditionalRange(*player, config, ckptCount);
     return config.invert ? !inRange : inRange;
 }
 
