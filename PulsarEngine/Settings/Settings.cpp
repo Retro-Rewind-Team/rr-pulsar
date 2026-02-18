@@ -66,8 +66,9 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
             io->Seek(0);
             io->Read(header.fileSize, buffer);
             if (header.version != Binary::curVersion) {
-                buffer = this->CreateFromOld(buffer);
-                if (buffer == nullptr) ret = false;
+                // Force a fresh RRGameSettings.pul when the binary version changes.
+                delete buffer;
+                ret = false;
             }
         }
     }
