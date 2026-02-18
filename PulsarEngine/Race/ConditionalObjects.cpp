@@ -1,5 +1,6 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
+#include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/3D/Camera/CameraMgr.hpp>
 #include <MarioKartWii/CourseMgr.hpp>
 #include <MarioKartWii/KMP/GOBJ.hpp>
@@ -71,12 +72,22 @@ static const u32 BOXCOL_FLAG_OBJECT = 0x4;
 static const u32 BOXCOL_FLAG_OBJECT_OBSTACLE_ENEMY = 0x8;
 static const u32 BOXCOL_FLAG_DRIVABLE = 0x10;
 static const u8 MAX_CONDITIONAL_LAP_INDEX_COUNT = 8;
+static const char* CONDITIONAL_OBJECTS_ENABLE_FILE = "enable.cobj";
+
+enum ConditionalTrackFileState {
+    CONDITIONAL_TRACK_FILE_UNKNOWN = -1,
+    CONDITIONAL_TRACK_FILE_MISSING = 0,
+    CONDITIONAL_TRACK_FILE_PRESENT = 1
+};
 
 struct BoxColUnitView {
     u8 padding[0x0c];
     u32 unitType;
     void* userData;
 };
+
+static const void* sCachedCourseArchive = nullptr;
+static s8 sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
 
 void PushConditionalCollisionPlayerContext(u8 playerId) {
     if (playerId >= 12) playerId = 0xFF;
@@ -121,6 +132,30 @@ static bool IsInWrappedRange(u16 value, u16 start, u16 end, u16 wrapSize) {
     return value >= start || value <= end;
 }
 
+static bool IsTrackConditionalObjectsEnabled() {
+    const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+    if (archiveMgr == nullptr) {
+        sCachedCourseArchive = nullptr;
+        sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
+        return false;
+    }
+
+    const void* courseArchive = archiveMgr->GetArchive(ARCHIVE_HOLDER_COURSE, 0);
+    if (courseArchive != sCachedCourseArchive) {
+        sCachedCourseArchive = courseArchive;
+        sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
+    }
+
+    if (sConditionalTrackFileState == CONDITIONAL_TRACK_FILE_UNKNOWN) {
+        if (courseArchive == nullptr) return false;
+
+        const void* condFile = archiveMgr->GetFile(ARCHIVE_HOLDER_COURSE, CONDITIONAL_OBJECTS_ENABLE_FILE, nullptr);
+        sConditionalTrackFileState = (condFile != nullptr) ? CONDITIONAL_TRACK_FILE_PRESENT : CONDITIONAL_TRACK_FILE_MISSING;
+    }
+
+    return sConditionalTrackFileState == CONDITIONAL_TRACK_FILE_PRESENT;
+}
+
 static const GOBJ* GetObjectGobj(const Object& object) {
     const ObjectConditionalView& view = reinterpret_cast<const ObjectConditionalView&>(object);
     if (view.gobjLink == nullptr) return nullptr;
@@ -142,6 +177,7 @@ static bool TryGetTrackDefinedLapCount(u8& lapCount) {
 
 static bool TryGetConditionalConfig(const Object& object, ConditionalConfig& config) {
     static const u16 LAP_PROGRESS_STEPS_PER_LAP = 100;
+    if (!IsTrackConditionalObjectsEnabled()) return false;
 
     const GOBJ* gobj = GetObjectGobj(object);
     if (gobj == nullptr) return false;

@@ -760,6 +760,7 @@ GetTotalMountedArchivesSize__14ArchivesHolderCFv = 0x8052aca0
 GetFile__10ArchiveMgrCF13ArchiveSourcePCcPUi = 0x805411fc
 RequestLoadCourseAsync__10ArchiveMgrF8CourseId = 0x805419ac
 sInstance__10ArchiveMgr = 0x809bd738
+GetArchive__10ArchiveMgrCF13ArchiveSourceUi = 0x80541614
 GetFile__14ArchivesHolderCFPCcPUi = 0x8052a760
 
 ##SCENE
