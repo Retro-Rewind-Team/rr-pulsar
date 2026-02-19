@@ -41,6 +41,7 @@ struct ConditionalConfig {
 struct ConditionalState {
     bool isConditional;
     bool isActive;
+    bool isCollisionActive;
     u8 localScreenCount;
     bool screenIsActive[4];
 };
@@ -58,6 +59,7 @@ static bool IsModelDirectorReadyForPerScreenVisibility(const ModelDirector* dire
 static void InitConditionalState(ConditionalState& state) {
     state.isConditional = false;
     state.isActive = true;
+    state.isCollisionActive = true;
     state.localScreenCount = 1;
     FillScreenState(state.screenIsActive, true);
 }
@@ -315,6 +317,17 @@ static bool IsConditionalReplayPlayer(const RacedataScenario& scenario, const Ra
     return raceInfo.players[playerId] != nullptr;
 }
 
+static bool EvaluateConditionalForAnyReplayPlayer(const ConditionalConfig& config, const RacedataScenario& scenario, const Raceinfo& raceInfo) {
+    bool hasReplayPlayer = false;
+    for (u8 playerId = 0; playerId < 12; ++playerId) {
+        if (!IsConditionalReplayPlayer(scenario, raceInfo, playerId)) continue;
+
+        hasReplayPlayer = true;
+        if (EvaluateConditionalForPlayer(config, playerId)) return true;
+    }
+    return !hasReplayPlayer;
+}
+
 static void EvaluateConditionalState(const Object& object, ConditionalState& state) {
     InitConditionalState(state);
 
@@ -331,6 +344,9 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
     const bool isTTMode = (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE);
 
     if (isTTMode) {
+        // Keep collision/update active whenever any replay-relevant player can interact with this object.
+        state.isCollisionActive = EvaluateConditionalForAnyReplayPlayer(config, scenario, *raceInfo);
+
         u8 watchedPlayerId = 0xFF;
         const RaceCameraMgr* cameraMgr = RaceCameraMgr::sInstance;
         if (cameraMgr != nullptr) {
@@ -346,7 +362,7 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
         if (watchedPlayerId != 0xFF) {
             state.isActive = EvaluateConditionalForPlayer(config, watchedPlayerId);
         } else {
-            state.isActive = true;
+            state.isActive = state.isCollisionActive;
         }
 
         state.localScreenCount = 1;
@@ -360,11 +376,15 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
     state.localScreenCount = localScreenCount;
     FillScreenState(state.screenIsActive, true);
     state.isActive = false;
+    state.isCollisionActive = false;
     for (u8 i = 0; i < localScreenCount; ++i) {
         const u8 playerId = scenario.settings.hudPlayerIds[i];
         const bool playerActive = EvaluateConditionalForPlayer(config, playerId);
         state.screenIsActive[i] = playerActive;
-        if (playerActive) state.isActive = true;
+        if (playerActive) {
+            state.isActive = true;
+            state.isCollisionActive = true;
+        }
     }
 }
 
@@ -418,7 +438,7 @@ static void ApplyConditionalState(Object& object, const ConditionalState& state)
     if (!state.isConditional) return;
 
     object.ToggleVisible(state.isActive);
-    if (state.isActive)
+    if (state.isCollisionActive)
         object.EnableCollision();
     else
         object.DisableCollision();
@@ -428,7 +448,7 @@ static void ApplyKCLConditionalState(Object& object, const ConditionalState& sta
     if (!state.isConditional) return;
 
     object.ToggleVisible(state.isActive);
-    if (state.isActive) {
+    if (state.isCollisionActive) {
         object.EnableCollision();
         if (object.entity != nullptr) object.entity->paramsBitfield |= 0x10;
     } else {
@@ -595,7 +615,7 @@ static void ConditionalObjectUpdate(Object* object) {
     ConditionalState state;
     EvaluateConditionalState(*object, state);
     ApplyConditionalState(*object, state);
-    if (state.isActive) object->Update();
+    if (state.isActive || state.isCollisionActive) object->Update();
 }
 kmCall(0x8082a9e0, ConditionalObjectUpdate);  // Object::Update call in ObjectsMgr::Update
 
@@ -638,7 +658,7 @@ static void ConditionalKCLObjectUpdate(Object* object) {
     ConditionalState state;
     EvaluateConditionalState(*object, state);
     ApplyKCLConditionalState(*object, state);
-    if (state.isActive) object->Update();
+    if (state.isActive || state.isCollisionActive) object->Update();
 }
 kmCall(0x8081b658, ConditionalKCLObjectUpdate);  // ObjectKCL::Update call in ObjectDriveableDirector::calc
 
