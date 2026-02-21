@@ -220,7 +220,11 @@ void System::InitIO(IOType type) const {
 void System::InitSettings(const u16* totalTrophyCount) const {
     Settings::Mgr* settings = new (this->heap) Settings::Mgr;
     char settingsPath[IOS::ipcMaxPath];
+    #ifdef BETA
+    snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettingsBeta.pul");
+    #else
     snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettings.pul");
+    #endif
     char trophiesPath[IOS::ipcMaxPath];
     snprintf(trophiesPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRSettings.pul");  // Original settings file
     settings->Init(totalTrophyCount, settingsPath, trophiesPath);
