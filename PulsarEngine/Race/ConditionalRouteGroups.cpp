@@ -4,6 +4,7 @@
 #include <MarioKartWii/KMP/ITPH.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Race/ConditionalTrackState.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -45,12 +46,18 @@ static void ResetRouteGroupCache() {
     sCachedKmpMgr = nullptr;
 }
 
+void ResetConditionalRouteGroupsState() {
+    sCachedCourseArchive = nullptr;
+    sConditionalRouteTrackFileState = CONDITIONAL_ROUTE_TRACK_FILE_UNKNOWN;
+    sLapCacheRaceFrame = 0xFFFFFFFF;
+    sLapCacheValid = false;
+    ResetRouteGroupCache();
+}
+
 static bool IsTrackConditionalRouteGroupsEnabled() {
     const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
     if (archiveMgr == nullptr) {
-        sCachedCourseArchive = nullptr;
-        sConditionalRouteTrackFileState = CONDITIONAL_ROUTE_TRACK_FILE_UNKNOWN;
-        ResetRouteGroupCache();
+        ResetConditionalRouteGroupsState();
         return false;
     }
 

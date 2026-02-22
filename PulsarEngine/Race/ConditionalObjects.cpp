@@ -14,6 +14,7 @@
 #include <MarioKartWii/Objects/KCL/ObjectKCLManager.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Race/ConditionalTrackState.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -91,6 +92,11 @@ struct BoxColUnitView {
 static const void* sCachedCourseArchive = nullptr;
 static s8 sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
 
+void ResetConditionalObjectsTrackState() {
+    sCachedCourseArchive = nullptr;
+    sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
+}
+
 void PushConditionalCollisionPlayerContext(u8 playerId) {
     if (playerId >= 12) playerId = 0xFF;
 
@@ -137,8 +143,7 @@ static bool IsInWrappedRange(u16 value, u16 start, u16 end, u16 wrapSize) {
 static bool IsTrackConditionalObjectsEnabled() {
     const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
     if (archiveMgr == nullptr) {
-        sCachedCourseArchive = nullptr;
-        sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
+        ResetConditionalObjectsTrackState();
         return false;
     }
 
