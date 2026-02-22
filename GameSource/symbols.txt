@@ -697,7 +697,10 @@ __vt__Q33EGG12ProcessMeter10CpuMonitor = 0x802a3d60
 
 #Quatf
 Set__Q23EGG5QuatfFffff = 0x80239dfc
+SetAxisRotation__Q23EGG5QuatfFRCQ23EGG8Vector3ff = 0x8023a0a0
 RotateVector__Q23EGG5QuatfFRCQ23EGG8Vector3fRQ23EGG8Vector3f = 0x8023a2d0
+SlerpTo__Q23EGG5QuatfCFRCQ23EGG5QuatfRQ23EGG5Quatff = 0x8023a5c4
+Normalise__Q23EGG5QuatfFv = 0x8023a168
 
 #Vector3f
 Mult__Q23EGG5QuatfFRCQ23EGG5QuatfRCQ23EGG8Vector3fRQ23EGG5Quatf = 0x8023a540
@@ -724,6 +727,7 @@ console__Q23EGG9Exception = 0x80386E3C
 #Vector
 __mi__4Vec2CFRC4Vec2 = 0x8051201c
 __mi__4Vec3FRC4Vec3 = 0x8051486c
+RotateQuaternion__4Vec3FRCQ23EGG5QuatfRC4Vec3 = 0x805147fc
 
 #KMP
 GetHolder<4GOBJ>__Q23KMP7ManagerCFUs_PQ23KMP13Holder<4GOBJ> = 0x80514148
@@ -738,6 +742,10 @@ GetHolder<4CKPT>__Q23KMP7ManagerCFUs_PQ23KMP13Holder<4CKPT> = 0x80515c24
 GetHolder<4CKPH>__Q23KMP7ManagerCFUs_PQ23KMP13Holder<4CKPH> = 0x80515c70
 GetHolder<4POTI>__Q23KMP7ManagerCFUs_PQ23KMP13Holder<4POTI> = 0x80515e04
 GetHolder<4AREA>__Q23KMP7ManagerCFUs_PQ23KMP13Holder<4AREA> = 0x80516768
+IsPointInAREA__Q23KMP13Holder<4AREA>FRC4Vec3 = 0x805160b0
+GravityDebugCreateOneTimeEffectPosScale = 0x806b5b88
+GravityDebugEffectMgrInstance = 0x809c21d0
+GravityFieldsMovementUpdateUps = 0x8057d398
 FindAREA__Q23KMP7ManagerFRC4Vec3UiUc = 0x80516808
 GetHolder<4CAME>__Q23KMP7ManagerCFUs_PQ23KMP13Holder<4CAME> = 0x80516bb0
 GetHolder<4JGPT>__Q23KMP7ManagerCFUs_PQ23KMP13Holder<4JGPT> = 0x80518920
@@ -1003,6 +1011,7 @@ GetPlayerIdx__Q24Kart4LinkCFv = 0x80590a5c
 GetPosition__Q24Kart4LinkCFv = 0x8059020c
 GetMovement__Q24Kart4LinkFv = 0x8059077c
 IsLocal__Q24Kart4LinkCFv = 0x80590650
+UpdateCameraOnRespawn__Q24Kart4LinkCFv = 0x80590e28
 
 #KartPlayer
 GetDriftState__Q24Kart6PlayerCFv = 0x805911d8
@@ -2412,3 +2421,5 @@ DWCi_QR2ServerKeyCallback = 0x800e4c88
 qr2_init_socketA = 0x8010ecac
 RequestPause__12RacePauseMgrFv = 0x808600dc
 RequestUnpause__12RacePauseMgrFv = 0x80860100
+Sqrt__Q23EGG4MathFf = 0x8022f80c
+Acos__Q23EGG4MathFf = 0x8022f8c0

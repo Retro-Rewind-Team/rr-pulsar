@@ -3,6 +3,7 @@
 #include <MarioKartWii/Effect/EffectMgr.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Race/200ccParams.hpp>
+#include <Race/GravityFields.hpp>
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -137,12 +138,19 @@ static int BrakeEffectKarts(Effects::Player& effects) {
 kmCall(0x8069804c, BrakeEffectKarts);
 
 static void FastFallingBody(Kart::Status& status, Kart::Physics& physics) {  // weird thing 0x96 padding byte used
+    Vec3 gravityVector;
+    float gravityStrength = GravityFields::GetDefaultGravityStrength();
+    GravityFields::UpdateKartGravity(*status.link, gravityVector, gravityStrength);
+    (void)gravityStrength;
+    physics.gravity = gravityVector.y;
+
     bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
     if (is200 || RetroRewind::System::Is500cc()) {
         if ((status.airtime >= 2) && (!status.bool_0x96 || (status.airtime > 19))) {
             Input::ControllerHolder& controllerHolder = status.link->GetControllerHolder();
             float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
-            physics.gravity -= input * fastFallingBodyGravity;
+            const float gravitySign = physics.gravity < 0.0f ? -1.0f : 1.0f;
+            physics.gravity += gravitySign * input * fastFallingBodyGravity;
         }
     }
     status.UpdateFromInput();
@@ -151,7 +159,7 @@ kmCall(0x805967a4, FastFallingBody);
 
 kmWrite32(0x8059739c, 0x38A10014);  // addi r5, sp, 0x14 to align with the Vec3 on the stack
 static Kart::WheelPhysicsHolder& FastFallingWheels(Kart::Sub& sub, u8 wheelIdx, Vec3& gravityVector) {  // weird thing 0x96 status
-    float gravity = -1.3f;
+    float gravityScale = 1.0f;
     bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
     if (is200 || RetroRewind::System::Is500cc()) {
         Kart::Status* status = sub.kartStatus;
@@ -161,10 +169,18 @@ static Kart::WheelPhysicsHolder& FastFallingWheels(Kart::Sub& sub, u8 wheelIdx, 
             Input::ControllerHolder& controllerHolder = sub.GetControllerHolder();
             float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f
                                                                           : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
-            gravity *= (input * fastFallingWheelGravity + 1.0f);
+            gravityScale = input * fastFallingWheelGravity + 1.0f;
         }
     }
-    gravityVector.y = gravity;
+
+    Vec3 baseGravityVector;
+    float gravityStrength = GravityFields::GetDefaultGravityStrength();
+    GravityFields::UpdateKartGravity(sub, baseGravityVector, gravityStrength);
+    (void)gravityStrength;
+    gravityVector.x = baseGravityVector.x * gravityScale;
+    gravityVector.y = baseGravityVector.y * gravityScale;
+    gravityVector.z = baseGravityVector.z * gravityScale;
+
     return sub.GetWheelPhysicsHolder(wheelIdx);
 };
 kmCall(0x805973a4, FastFallingWheels);

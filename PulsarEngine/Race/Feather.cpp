@@ -4,6 +4,8 @@
 #include <MarioKartWii/Driver/DriverManager.hpp>
 #include <MarioKartWii/Input/InputManager.hpp>
 #include <MarioKartWii/CourseMgr.hpp>
+#include <core/egg/Math/Math.hpp>
+#include <Race/GravityFields.hpp>
 #include <PulsarSystem.hpp>
 
 namespace Pulsar {
@@ -66,13 +68,20 @@ static bool ConditionalIgnoreInvisibleWalls(float radius, CourseMgr& mgr, const 
 kmCall(0x805b68dc, ConditionalIgnoreInvisibleWalls);
 
 u8 ConditionalFastFallingBody(const Kart::Sub& sub) {
+    const Kart::PhysicsHolder& physicsHolder = sub.GetPhysicsHolder();
+    Vec3 gravityVector;
+    float gravityStrength = GravityFields::GetDefaultGravityStrength();
+    GravityFields::UpdateKartGravity(sub, gravityVector, gravityStrength);
+    (void)gravityStrength;
+    physicsHolder.physics->gravity = gravityVector.y;
+
     if (System::sInstance->IsContext(PULSAR_FEATHER)) {
-        const Kart::PhysicsHolder& physicsHolder = sub.GetPhysicsHolder();
         const Kart::Status* status = sub.pointers->kartStatus;
         if (status->bitfield0 & 0x40000000 && status->jumpPadType == 0x7 && status->airtime >= 2 && (!status->bool_0x97 || status->airtime > 19)) {
             Input::ControllerHolder& controllerHolder = sub.GetControllerHolder();
             float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
-            physicsHolder.physics->gravity -= input * 0.39f;
+            const float gravitySign = physicsHolder.physics->gravity < 0.0f ? -1.0f : 1.0f;
+            physicsHolder.physics->gravity += gravitySign * input * 0.39f;
         }
     }
     return sub.GetPlayerIdx();
@@ -88,7 +97,16 @@ void ConditionalFastFallingWheels(float unk_float, Kart::WheelPhysicsHolder* whe
             else if (status->airtime >= 2 && (!status->bool_0x97 || status->airtime > 19)) {
                 const Input::ControllerHolder& controllerHolder = wheelPhysicsHolder->GetControllerHolder();
                 float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
-                gravityVector.y -= input * 0.39f;
+                const float gravityMagnitudeSq = gravityVector.x * gravityVector.x + gravityVector.y * gravityVector.y + gravityVector.z * gravityVector.z;
+                if (gravityMagnitudeSq > 0.000001f) {
+                    const float gravityMagnitude = EGG::Math::Sqrt(gravityMagnitudeSq);
+                    const float scale = (gravityMagnitude + input * 0.39f) / gravityMagnitude;
+                    gravityVector.x *= scale;
+                    gravityVector.y *= scale;
+                    gravityVector.z *= scale;
+                } else {
+                    gravityVector.y -= input * 0.39f;
+                }
             }
         }
     }
