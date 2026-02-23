@@ -553,6 +553,39 @@ void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector) {
     physics.normalAcceleration.z = gravityVector.z;
 }
 
+void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector, const Kart::Status& status) {
+    const bool grounded = (status.bitfield0 & 0x40000) != 0;
+    if (grounded) {
+        // Let wheel suspension own stick-to-surface while grounded.
+        // Injecting lateral body acceleration here causes floor contact flicker.
+        physics.normalAcceleration.x = 0.0f;
+        physics.normalAcceleration.z = 0.0f;
+
+        // Sideways/tilted gravity can still produce tiny upward detaches at rest.
+        // Remove only "away from surface" velocity while grounded, preserving jump/hop/trick lift.
+        const bool allowLift = (status.bitfield0 & 0x80000) != 0 || (status.bitfield0 & 0x40000000) != 0 || (status.bitfield1 & 0x40) != 0;
+        if (!allowLift) {
+            Vec3 gravityDown = gravityVector;
+            if (NormalizeSafe(gravityDown)) {
+                const float horizontalDownSq = gravityDown.x * gravityDown.x + gravityDown.z * gravityDown.z;
+                if (horizontalDownSq > 0.0004f) {
+                    const Vec3 gravityUp = ScaleVec(gravityDown, -1.0f);
+                    const float liftSpeed = DotVec(physics.speed0, gravityUp);
+                    if (liftSpeed > 0.0f) {
+                        physics.speed0.x -= gravityUp.x * liftSpeed;
+                        physics.speed0.y -= gravityUp.y * liftSpeed;
+                        physics.speed0.z -= gravityUp.z * liftSpeed;
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    physics.normalAcceleration.x = gravityVector.x;
+    physics.normalAcceleration.z = gravityVector.z;
+}
+
 s16 GetActiveAreaId(u8 playerIdx) {
     if (playerIdx >= kMaxTrackedPlayers) return -1;
     return sGravityStates[playerIdx].areaId;

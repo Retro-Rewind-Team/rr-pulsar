@@ -143,7 +143,7 @@ static void FastFallingBody(Kart::Status& status, Kart::Physics& physics) {  // 
     float gravityStrength = GravityFields::GetDefaultGravityStrength();
     GravityFields::UpdateKartGravity(*status.link, gravityVector, gravityStrength);
     physics.gravity = GravityFields::GetBodyGravityScalar(gravityVector, gravityStrength, physics.gravity);
-    GravityFields::ApplyBodyGravityVector(physics, gravityVector);
+    GravityFields::ApplyBodyGravityVector(physics, gravityVector, status);
 
     bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
     if (is200 || RetroRewind::System::Is500cc()) {

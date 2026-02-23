@@ -25,6 +25,7 @@ void PrepareKartCollisionForGravity(Kart::Status& status);
 Vec3 GetGravityDownAtPosition(const Vec3& position);
 float GetBodyGravityScalar(const Vec3& gravityVector, float gravityStrength, float previousScalar);
 void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector);
+void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector, const Kart::Status& status);
 s16 GetActiveAreaId(u8 playerIdx);
 
 }  // namespace GravityFields
