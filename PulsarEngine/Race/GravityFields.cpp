@@ -37,6 +37,7 @@ struct GravityState {
     u16 blendFrames;
     u16 exitGraceCounter;
     u32 lastResolvedRaceFrame;
+    u32 lastCorrectionFrame;
 };
 
 GravityState sGravityStates[kMaxTrackedPlayers];
@@ -145,6 +146,7 @@ void ResetGravityState(GravityState& state) {
     state.blendFrames = kDefaultBlendFrames;
     state.exitGraceCounter = 0;
     state.lastResolvedRaceFrame = 0xFFFFFFFF;
+    state.lastCorrectionFrame = 0xFFFFFFFF;
 }
 
 void ResetAllGravityStates() {
@@ -367,20 +369,75 @@ MovementUpdateUpsFunc sMovementUpdateUps = GravityFieldsMovementUpdateUps;
 void UpdateUpsWithGravityField(Kart::Movement& movement) {
     sMovementUpdateUps(&movement);
 
-    const Kart::Link& link = movement;
+    Kart::Link& link = movement;
     const u8 playerIdx = link.GetPlayerIdx();
     if (playerIdx >= kMaxTrackedPlayers) return;
 
-    const GravityState& state = sGravityStates[playerIdx];
+    GravityState& state = sGravityStates[playerIdx];
     if (!ShouldOverrideKartUpFromGravity(state)) return;
 
     Vec3 localUp = ScaleVec(state.gravityDown, -1.0f);
     if (!NormalizeSafe(localUp)) return;
 
-    // Align movement-space up vectors to gravity so steering/camera can follow local gravity.
-    // Do not force collision floor normals here; those must come from the real contact solver.
+    // === Body gravity force correction ===
+    // The game only applies physics->gravity (a scalar) to normalAcceleration.y.
+    // GetBodyGravityScalar correctly extracts the Y component of our custom gravity.
+    // But the X and Z components are lost — we inject them into speed0 directly.
+    // This must happen exactly once per player per frame.
+    Raceinfo* raceinfo = Raceinfo::sInstance;
+    const u32 currentFrame = (raceinfo != nullptr) ? raceinfo->raceFrames : 0xFFFFFFFF;
+    if (state.lastCorrectionFrame != currentFrame) {
+        state.lastCorrectionFrame = currentFrame;
+
+        Kart::PhysicsHolder& physicsHolder = link.GetPhysicsHolder();
+        Kart::Physics* physics = physicsHolder.physics;
+        if (physics != nullptr) {
+            const float extraX = state.gravityDown.x * state.gravityStrength;
+            const float extraZ = state.gravityDown.z * state.gravityStrength;
+            if (extraX != 0.0f || extraZ != 0.0f) {
+                // Inject the missing gravity components into body velocity.
+                physics->speed0.x += extraX;
+                physics->speed0.z += extraZ;
+                // Also update total speed so position integration picks it up immediately.
+                physics->speed.x += extraX;
+                physics->speed.z += extraZ;
+                physicsHolder.speed.x += extraX;
+                physicsHolder.speed.z += extraZ;
+            }
+        }
+    }
+
+    // === Force ground state when touching any surface ===
+    // The game classifies floor vs wall by comparing collision normals against world-up (0,1,0).
+    // In a custom gravity field, wall/ceiling surfaces aligned with our gravity-up ARE floors.
+    // Detect any surface contact and force ground flags so the kart can drive, accelerate, steer.
+    Kart::Status* status = static_cast<Kart::Status*>(0);
+    if (movement.pointers != 0) status = movement.pointers->kartStatus;
+    if (status != nullptr) {
+        const u32 collisionMask = 0x20 | 0x40 | 0x400 | 0x800;  // wall3, wall, body floor, wheel floor
+        const bool touchingSurface = (status->bitfield0 & collisionMask) != 0;
+        if (touchingSurface) {
+            status->bitfield0 |= 0x40000;   // bit 18: ground
+            status->bitfield0 |= 0x1000;    // bit 12: floor collision with all wheels
+            status->bitfield0 |= 0x800;     // bit 11: floor collision with any wheel
+            status->bitfield0 |= 0x400;     // bit 10: floor collision with kart body
+            status->bitfield0 &= ~0x8000;   // clear bit 15: airtime > 20
+            const u16 wheelCount = link.GetWheelCount0();
+            movement.flooorCollisionCount = static_cast<s16>(wheelCount);
+            status->airtime = 0;
+        }
+    }
+
+    // === Override up vectors and floor normals ===
+    // Align movement-space up vectors to local gravity so steering, camera, and
+    // ground-contour following work relative to the custom gravity direction.
     movement.up = localUp;
     movement.smoothedUp = localUp;
+
+    if (status != nullptr) {
+        status->floorNor = localUp;
+        status->unknown_0x34 = localUp;
+    }
 }
 kmCall(0x80578a34, UpdateUpsWithGravityField);
 kmCall(0x80578f30, UpdateUpsWithGravityField);
@@ -431,10 +488,11 @@ void SyncRespawnGravity(Kart::Link& link) {
     Vec3 gravityVector;
     float gravityStrength;
     ComputeKartGravity(link, true, gravityVector, gravityStrength);
-    (void)gravityStrength;
 
     Kart::PhysicsHolder& physicsHolder = link.GetPhysicsHolder();
-    if (physicsHolder.physics != nullptr) physicsHolder.physics->gravity = gravityVector.y;
+    if (physicsHolder.physics != nullptr) {
+        physicsHolder.physics->gravity = GetBodyGravityScalar(gravityVector, gravityStrength, physicsHolder.physics->gravity);
+    }
 
     Vec3 gravityDown = WorldDown();
     if (gravityStrength > kVectorEpsilon) gravityDown = ScaleVec(gravityVector, 1.0f / gravityStrength);
@@ -494,6 +552,12 @@ Vec3 GetGravityDownAtPosition(const Vec3& position) {
     float gravityStrength;
     TryGetGravityAtPosition(position, gravityDown, gravityStrength);
     return gravityDown;
+}
+
+float GetBodyGravityScalar(const Vec3& gravityVector, float gravityStrength, float previousScalar) {
+    (void)gravityStrength;
+    (void)previousScalar;
+    return gravityVector.y;
 }
 
 }  // namespace GravityFields

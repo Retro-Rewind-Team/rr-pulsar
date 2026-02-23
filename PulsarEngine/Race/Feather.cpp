@@ -72,8 +72,7 @@ u8 ConditionalFastFallingBody(const Kart::Sub& sub) {
     Vec3 gravityVector;
     float gravityStrength = GravityFields::GetDefaultGravityStrength();
     GravityFields::UpdateKartGravity(sub, gravityVector, gravityStrength);
-    (void)gravityStrength;
-    physicsHolder.physics->gravity = gravityVector.y;
+    physicsHolder.physics->gravity = GravityFields::GetBodyGravityScalar(gravityVector, gravityStrength, physicsHolder.physics->gravity);
 
     if (System::sInstance->IsContext(PULSAR_FEATHER)) {
         const Kart::Status* status = sub.pointers->kartStatus;

@@ -19,6 +19,7 @@ void UpdateKartGravity(const Kart::Sub& sub, Vec3& gravityVector, float& gravity
 void ForceKartGravityRefresh(const Kart::Link& link);
 
 Vec3 GetGravityDownAtPosition(const Vec3& position);
+float GetBodyGravityScalar(const Vec3& gravityVector, float gravityStrength, float previousScalar);
 
 }  // namespace GravityFields
 }  // namespace Race
