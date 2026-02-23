@@ -89,9 +89,9 @@ static float GetLossCap(float rating) {
 
 static float GetLowVrLossDivider(float rating) {
     if (rating >= 150.0f) return 1.0f;
-    if (rating <= 0.0f) return 10.0f;
+    if (rating <= 0.0f) return 7.5f;
     float t = rating / 150.0f;
-    return 10.0f - 9.0f * t;
+    return 7.5f - 6.5f * t;
 }
 
 static bool IsBattle(GameMode mode) {
