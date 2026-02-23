@@ -72,11 +72,15 @@ u8 ConditionalFastFallingBody(const Kart::Sub& sub) {
     Vec3 gravityVector;
     float gravityStrength = GravityFields::GetDefaultGravityStrength();
     GravityFields::UpdateKartGravity(sub, gravityVector, gravityStrength);
-    physicsHolder.physics->gravity = GravityFields::GetBodyGravityScalar(gravityVector, gravityStrength, physicsHolder.physics->gravity);
+    if (physicsHolder.physics != nullptr) {
+        physicsHolder.physics->gravity = GravityFields::GetBodyGravityScalar(gravityVector, gravityStrength, physicsHolder.physics->gravity);
+        GravityFields::ApplyBodyGravityVector(*physicsHolder.physics, gravityVector);
+    }
 
     if (System::sInstance->IsContext(PULSAR_FEATHER)) {
         const Kart::Status* status = sub.pointers->kartStatus;
-        if (status->bitfield0 & 0x40000000 && status->jumpPadType == 0x7 && status->airtime >= 2 && (!status->bool_0x97 || status->airtime > 19)) {
+        if (physicsHolder.physics != nullptr && status->bitfield0 & 0x40000000 && status->jumpPadType == 0x7 && status->airtime >= 2 &&
+            (!status->bool_0x97 || status->airtime > 19)) {
             Input::ControllerHolder& controllerHolder = sub.GetControllerHolder();
             float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
             const float gravitySign = physicsHolder.physics->gravity < 0.0f ? -1.0f : 1.0f;

@@ -14,6 +14,7 @@
 #include <MarioKartWii/Objects/KCL/ObjectKCLManager.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Race/GravityFields.hpp>
 #include <Race/ConditionalTrackState.hpp>
 
 namespace Pulsar {
@@ -606,9 +607,12 @@ static void ConditionalResetIterators(void* boxColMgr) {
 kmBranch(0x80785f2c, ConditionalResetIterators);  // BoxColManager::resetIterators
 
 static void ConditionalCalcCollisions(Kart::Status* status) {
+    if (status == nullptr || status->link == nullptr) return;
+
     Kart::Link* link = status->link;
     u8 playerId = link->GetPlayerIdx();
     PushConditionalCollisionPlayerContext(playerId);
+    GravityFields::PrepareKartCollisionForGravity(*status);
     status->UpdateCollisions();
     PopConditionalCollisionPlayerContext();
 }

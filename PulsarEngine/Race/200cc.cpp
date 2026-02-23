@@ -4,6 +4,7 @@
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Race/200ccParams.hpp>
 #include <Race/GravityFields.hpp>
+#include <Race/GravityFieldsTempDebug.hpp>
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -142,6 +143,7 @@ static void FastFallingBody(Kart::Status& status, Kart::Physics& physics) {  // 
     float gravityStrength = GravityFields::GetDefaultGravityStrength();
     GravityFields::UpdateKartGravity(*status.link, gravityVector, gravityStrength);
     physics.gravity = GravityFields::GetBodyGravityScalar(gravityVector, gravityStrength, physics.gravity);
+    GravityFields::ApplyBodyGravityVector(physics, gravityVector);
 
     bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
     if (is200 || RetroRewind::System::Is500cc()) {
@@ -152,6 +154,7 @@ static void FastFallingBody(Kart::Status& status, Kart::Physics& physics) {  // 
             physics.gravity += gravitySign * input * fastFallingBodyGravity;
         }
     }
+    GravityFields::TempDebug::OnBodyGravityApplied(status.link->GetPlayerIdx(), GravityFields::GetActiveAreaId(status.link->GetPlayerIdx()), status, physics, gravityVector);
     status.UpdateFromInput();
 }
 kmCall(0x805967a4, FastFallingBody);

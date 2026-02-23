@@ -37,13 +37,14 @@ struct GravityState {
     u16 blendFrames;
     u16 exitGraceCounter;
     u32 lastResolvedRaceFrame;
-    u32 lastCorrectionFrame;
 };
 
 GravityState sGravityStates[kMaxTrackedPlayers];
 
 typedef void (*ItemVelocityInitFunc)(Item::Obj* obj, const Vec3* sourcePosition, const Vec3* sourceSpeed, const Vec3* direction, bool useRandomness);
 ItemVelocityInitFunc sItemVelocityInit = reinterpret_cast<ItemVelocityInitFunc>(0x807a6738);
+typedef bool (*ItemUpdateFunc)(Item::Obj* obj, int updateMode);
+ItemUpdateFunc sItemUpdate = reinterpret_cast<ItemUpdateFunc>(0x8079efec);
 
 Vec3 MakeVec(float x, float y, float z) {
     Vec3 vec;
@@ -146,7 +147,6 @@ void ResetGravityState(GravityState& state) {
     state.blendFrames = kDefaultBlendFrames;
     state.exitGraceCounter = 0;
     state.lastResolvedRaceFrame = 0xFFFFFFFF;
-    state.lastCorrectionFrame = 0xFFFFFFFF;
 }
 
 void ResetAllGravityStates() {
@@ -362,6 +362,19 @@ bool ShouldOverrideKartUpFromGravity(const GravityState& state) {
     return state.isInitialized && state.areaId >= 0;
 }
 
+bool TryGetStateGravityUp(u8 playerIdx, Vec3& gravityUp, s16* outAreaId) {
+    if (playerIdx >= kMaxTrackedPlayers) return false;
+
+    GravityState& state = sGravityStates[playerIdx];
+    if (!ShouldOverrideKartUpFromGravity(state)) return false;
+
+    gravityUp = ScaleVec(state.gravityDown, -1.0f);
+    if (!NormalizeSafe(gravityUp)) return false;
+
+    if (outAreaId != nullptr) *outAreaId = state.areaId;
+    return true;
+}
+
 typedef void (*MovementUpdateUpsFunc)(Kart::Movement* movement);
 extern "C" void GravityFieldsMovementUpdateUps(Kart::Movement* movement);
 MovementUpdateUpsFunc sMovementUpdateUps = GravityFieldsMovementUpdateUps;
@@ -376,68 +389,25 @@ void UpdateUpsWithGravityField(Kart::Movement& movement) {
     GravityState& state = sGravityStates[playerIdx];
     if (!ShouldOverrideKartUpFromGravity(state)) return;
 
+    Kart::Status* status = static_cast<Kart::Status*>(0);
+    if (movement.pointers != 0) status = movement.pointers->kartStatus;
+
     Vec3 localUp = ScaleVec(state.gravityDown, -1.0f);
     if (!NormalizeSafe(localUp)) return;
 
-    // === Body gravity force correction ===
-    // The game only applies physics->gravity (a scalar) to normalAcceleration.y.
-    // GetBodyGravityScalar correctly extracts the Y component of our custom gravity.
-    // But the X and Z components are lost — we inject them into speed0 directly.
-    // This must happen exactly once per player per frame.
-    Raceinfo* raceinfo = Raceinfo::sInstance;
-    const u32 currentFrame = (raceinfo != nullptr) ? raceinfo->raceFrames : 0xFFFFFFFF;
-    if (state.lastCorrectionFrame != currentFrame) {
-        state.lastCorrectionFrame = currentFrame;
-
-        Kart::PhysicsHolder& physicsHolder = link.GetPhysicsHolder();
-        Kart::Physics* physics = physicsHolder.physics;
-        if (physics != nullptr) {
-            const float extraX = state.gravityDown.x * state.gravityStrength;
-            const float extraZ = state.gravityDown.z * state.gravityStrength;
-            if (extraX != 0.0f || extraZ != 0.0f) {
-                // Inject the missing gravity components into body velocity.
-                physics->speed0.x += extraX;
-                physics->speed0.z += extraZ;
-                // Also update total speed so position integration picks it up immediately.
-                physics->speed.x += extraX;
-                physics->speed.z += extraZ;
-                physicsHolder.speed.x += extraX;
-                physicsHolder.speed.z += extraZ;
-            }
-        }
-    }
-
-    // === Force ground state when touching any surface ===
-    // The game classifies floor vs wall by comparing collision normals against world-up (0,1,0).
-    // In a custom gravity field, wall/ceiling surfaces aligned with our gravity-up ARE floors.
-    // Detect any surface contact and force ground flags so the kart can drive, accelerate, steer.
-    Kart::Status* status = static_cast<Kart::Status*>(0);
-    if (movement.pointers != 0) status = movement.pointers->kartStatus;
-    if (status != nullptr) {
-        const u32 collisionMask = 0x20 | 0x40 | 0x400 | 0x800;  // wall3, wall, body floor, wheel floor
-        const bool touchingSurface = (status->bitfield0 & collisionMask) != 0;
-        if (touchingSurface) {
-            status->bitfield0 |= 0x40000;   // bit 18: ground
-            status->bitfield0 |= 0x1000;    // bit 12: floor collision with all wheels
-            status->bitfield0 |= 0x800;     // bit 11: floor collision with any wheel
-            status->bitfield0 |= 0x400;     // bit 10: floor collision with kart body
-            status->bitfield0 &= ~0x8000;   // clear bit 15: airtime > 20
-            const u16 wheelCount = link.GetWheelCount0();
-            movement.flooorCollisionCount = static_cast<s16>(wheelCount);
-            status->airtime = 0;
-        }
-    }
-
-    // === Override up vectors and floor normals ===
-    // Align movement-space up vectors to local gravity so steering, camera, and
-    // ground-contour following work relative to the custom gravity direction.
     movement.up = localUp;
     movement.smoothedUp = localUp;
 
+    bool overrideApplied = true;
     if (status != nullptr) {
-        status->floorNor = localUp;
+        const bool grounded = (status->bitfield0 & 0x40000) != 0;
+        if (!grounded) {
+            status->floorNor = localUp;
+        }
         status->unknown_0x34 = localUp;
     }
+
+    TempDebug::OnMovementUpApplied(playerIdx, state.areaId, status, movement, localUp, overrideApplied);
 }
 kmCall(0x80578a34, UpdateUpsWithGravityField);
 kmCall(0x80578f30, UpdateUpsWithGravityField);
@@ -482,6 +452,15 @@ kmCall(0x807a1bc8, InitItemVelocityWithGravityField);
 kmCall(0x807a1c5c, InitItemVelocityWithGravityField);
 kmCall(0x807a381c, InitItemVelocityWithGravityField);
 
+bool UpdateItemWithGravityField(Item::Obj& itemObj, int updateMode) {
+    const bool isExpired = sItemUpdate(&itemObj, updateMode);
+    if (!isExpired) ApplyItemGravityField(itemObj);
+    return isExpired;
+}
+kmCall(0x807965ec, UpdateItemWithGravityField);
+kmCall(0x80796784, UpdateItemWithGravityField);
+kmCall(0x807968b8, UpdateItemWithGravityField);
+
 void SyncRespawnGravity(Kart::Link& link) {
     link.UpdateCameraOnRespawn();
 
@@ -492,6 +471,7 @@ void SyncRespawnGravity(Kart::Link& link) {
     Kart::PhysicsHolder& physicsHolder = link.GetPhysicsHolder();
     if (physicsHolder.physics != nullptr) {
         physicsHolder.physics->gravity = GetBodyGravityScalar(gravityVector, gravityStrength, physicsHolder.physics->gravity);
+        ApplyBodyGravityVector(*physicsHolder.physics, gravityVector);
     }
 
     Vec3 gravityDown = WorldDown();
@@ -547,6 +527,14 @@ void ForceKartGravityRefresh(const Kart::Link& link) {
     (void)gravityStrength;
 }
 
+bool TryGetPlayerGravityUp(u8 playerIdx, Vec3& gravityUp) {
+    return TryGetStateGravityUp(playerIdx, gravityUp, nullptr);
+}
+
+void PrepareKartCollisionForGravity(Kart::Status& status) {
+    (void)status;
+}
+
 Vec3 GetGravityDownAtPosition(const Vec3& position) {
     Vec3 gravityDown;
     float gravityStrength;
@@ -558,6 +546,16 @@ float GetBodyGravityScalar(const Vec3& gravityVector, float gravityStrength, flo
     (void)gravityStrength;
     (void)previousScalar;
     return gravityVector.y;
+}
+
+void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector) {
+    physics.normalAcceleration.x = gravityVector.x;
+    physics.normalAcceleration.z = gravityVector.z;
+}
+
+s16 GetActiveAreaId(u8 playerIdx) {
+    if (playerIdx >= kMaxTrackedPlayers) return -1;
+    return sGravityStates[playerIdx].areaId;
 }
 
 }  // namespace GravityFields

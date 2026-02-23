@@ -25,6 +25,8 @@ const u8 kMaxTrackedPlayers = 12;
 
 const float kVectorEpsilon = 0.0001f;
 const u16 kItemLogBudgetPerRace = 40;
+const u16 kBodyLogBudgetPerRace = 120;
+const u16 kMovementLogBudgetPerRace = 120;
 const u16 kMaxVisualizedAreasPerTick = 32;
 const u32 kVisualSpawnIntervalFrames = 8;
 
@@ -37,8 +39,21 @@ extern "C" void* GravityDebugEffectMgrInstance;
 struct DebugState {
     u32 visualFrameCounter;
     u16 itemLogsRemaining;
+    u16 bodyLogsRemaining;
+    u16 movementLogsRemaining;
     bool itemBudgetExhaustedPrinted;
+    bool bodyBudgetExhaustedPrinted;
+    bool movementBudgetExhaustedPrinted;
     s16 lastKnownAreaByPlayer[kMaxTrackedPlayers];
+    bool bodyStateInitializedByPlayer[kMaxTrackedPlayers];
+    s16 lastBodyAreaByPlayer[kMaxTrackedPlayers];
+    bool lastBodyGroundedByPlayer[kMaxTrackedPlayers];
+    bool lastBodyWheelFloorByPlayer[kMaxTrackedPlayers];
+    bool lastBodyKartFloorByPlayer[kMaxTrackedPlayers];
+    bool movementStateInitializedByPlayer[kMaxTrackedPlayers];
+    s16 lastMovementAreaByPlayer[kMaxTrackedPlayers];
+    bool lastMovementGroundedByPlayer[kMaxTrackedPlayers];
+    bool lastMovementOverrideByPlayer[kMaxTrackedPlayers];
 };
 
 DebugState sDebugState;
@@ -136,10 +151,36 @@ bool IsGravityAreaHolder(const KMP::Holder<AREA>* holder) {
 void ResetRaceDebugState() {
     sDebugState.visualFrameCounter = 0;
     sDebugState.itemLogsRemaining = kItemLogBudgetPerRace;
+    sDebugState.bodyLogsRemaining = kBodyLogBudgetPerRace;
+    sDebugState.movementLogsRemaining = kMovementLogBudgetPerRace;
     sDebugState.itemBudgetExhaustedPrinted = false;
+    sDebugState.bodyBudgetExhaustedPrinted = false;
+    sDebugState.movementBudgetExhaustedPrinted = false;
     for (u8 i = 0; i < kMaxTrackedPlayers; ++i) {
         sDebugState.lastKnownAreaByPlayer[i] = -1;
+        sDebugState.bodyStateInitializedByPlayer[i] = false;
+        sDebugState.lastBodyAreaByPlayer[i] = -1;
+        sDebugState.lastBodyGroundedByPlayer[i] = false;
+        sDebugState.lastBodyWheelFloorByPlayer[i] = false;
+        sDebugState.lastBodyKartFloorByPlayer[i] = false;
+        sDebugState.movementStateInitializedByPlayer[i] = false;
+        sDebugState.lastMovementAreaByPlayer[i] = -1;
+        sDebugState.lastMovementGroundedByPlayer[i] = false;
+        sDebugState.lastMovementOverrideByPlayer[i] = false;
     }
+}
+
+bool ConsumeBudget(u16& budget, bool& exhaustedPrinted, const char* budgetName) {
+    if (budget > 0) {
+        --budget;
+        return true;
+    }
+
+    if (!exhaustedPrinted) {
+        OS::Report("[GravityDebug] %s logs budget exhausted for this race.\n", budgetName);
+        exhaustedPrinted = true;
+    }
+    return false;
 }
 
 void BuildAreaBasis(const KMP::Holder<AREA>& holder, Vec3& up, Vec3& right, Vec3& forward) {
@@ -441,15 +482,7 @@ void OnItemGravityApplied(const Item::Obj& itemObj, s16 areaId, const Vec3& grav
     if (!kEnableTempGravityDebugLogs) return;
     if (areaId < 0) return;
 
-    if (sDebugState.itemLogsRemaining == 0) {
-        if (!sDebugState.itemBudgetExhaustedPrinted) {
-            OS::Report("[GravityDebug] Item gravity logs budget exhausted for this race.\n");
-            sDebugState.itemBudgetExhaustedPrinted = true;
-        }
-        return;
-    }
-
-    --sDebugState.itemLogsRemaining;
+    if (!ConsumeBudget(sDebugState.itemLogsRemaining, sDebugState.itemBudgetExhaustedPrinted, "Item gravity")) return;
     OS::Report(
         "[GravityDebug] Item id=%u owner=%u area=%d pos=(%d,%d,%d) down=(%d,%d,%d) g=%d left=%u\n",
         static_cast<u32>(itemObj.itemObjId),
@@ -463,6 +496,100 @@ void OnItemGravityApplied(const Item::Obj& itemObj, s16 areaId, const Vec3& grav
         ToMilli(gravityDown.z),
         ToMilli(gravityStrength),
         sDebugState.itemLogsRemaining);
+}
+
+void OnBodyGravityApplied(u8 playerIdx, s16 areaId, const Kart::Status& status, const Kart::Physics& physics, const Vec3& gravityVector) {
+    if (!kEnableTempGravityDebugLogs) return;
+    if (playerIdx >= kMaxTrackedPlayers) return;
+
+    const bool grounded = (status.bitfield0 & 0x40000) != 0;
+    const bool wheelFloor = (status.bitfield0 & 0x800) != 0;
+    const bool kartFloor = (status.bitfield0 & 0x400) != 0;
+
+    const bool initialized = sDebugState.bodyStateInitializedByPlayer[playerIdx];
+    const bool areaChanged = sDebugState.lastBodyAreaByPlayer[playerIdx] != areaId;
+    const bool groundedChanged = sDebugState.lastBodyGroundedByPlayer[playerIdx] != grounded;
+    const bool wheelFloorChanged = sDebugState.lastBodyWheelFloorByPlayer[playerIdx] != wheelFloor;
+    const bool kartFloorChanged = sDebugState.lastBodyKartFloorByPlayer[playerIdx] != kartFloor;
+    if (initialized && !areaChanged && !groundedChanged && !wheelFloorChanged && !kartFloorChanged) return;
+
+    sDebugState.bodyStateInitializedByPlayer[playerIdx] = true;
+    sDebugState.lastBodyAreaByPlayer[playerIdx] = areaId;
+    sDebugState.lastBodyGroundedByPlayer[playerIdx] = grounded;
+    sDebugState.lastBodyWheelFloorByPlayer[playerIdx] = wheelFloor;
+    sDebugState.lastBodyKartFloorByPlayer[playerIdx] = kartFloor;
+
+    if (!ConsumeBudget(sDebugState.bodyLogsRemaining, sDebugState.bodyBudgetExhaustedPrinted, "Body gravity")) return;
+    OS::Report(
+        "[GravityDebug] Body P%u area=%d ground=%u floor(body=%u wheel=%u) airtime=%u gVec=(%d,%d,%d) scalarY=%d force=(%d,%d,%d) vel0=(%d,%d,%d) left=%u\n",
+        playerIdx,
+        areaId,
+        grounded ? 1 : 0,
+        kartFloor ? 1 : 0,
+        wheelFloor ? 1 : 0,
+        status.airtime,
+        ToMilli(gravityVector.x),
+        ToMilli(gravityVector.y),
+        ToMilli(gravityVector.z),
+        ToMilli(physics.gravity),
+        ToMilli(physics.normalAcceleration.x),
+        ToMilli(physics.normalAcceleration.y),
+        ToMilli(physics.normalAcceleration.z),
+        ToMilli(physics.speed0.x),
+        ToMilli(physics.speed0.y),
+        ToMilli(physics.speed0.z),
+        sDebugState.bodyLogsRemaining);
+}
+
+void OnMovementUpApplied(u8 playerIdx, s16 areaId, const Kart::Status* status, const Kart::Movement& movement, const Vec3& localUp, bool overrideApplied) {
+    if (!kEnableTempGravityDebugLogs) return;
+    if (playerIdx >= kMaxTrackedPlayers) return;
+
+    const bool grounded = status != nullptr && ((status->bitfield0 & 0x40000) != 0);
+    const bool initialized = sDebugState.movementStateInitializedByPlayer[playerIdx];
+    const bool areaChanged = sDebugState.lastMovementAreaByPlayer[playerIdx] != areaId;
+    const bool groundedChanged = sDebugState.lastMovementGroundedByPlayer[playerIdx] != grounded;
+    const bool overrideChanged = sDebugState.lastMovementOverrideByPlayer[playerIdx] != overrideApplied;
+    if (initialized && !areaChanged && !groundedChanged && !overrideChanged) return;
+
+    sDebugState.movementStateInitializedByPlayer[playerIdx] = true;
+    sDebugState.lastMovementAreaByPlayer[playerIdx] = areaId;
+    sDebugState.lastMovementGroundedByPlayer[playerIdx] = grounded;
+    sDebugState.lastMovementOverrideByPlayer[playerIdx] = overrideApplied;
+
+    if (!ConsumeBudget(sDebugState.movementLogsRemaining, sDebugState.movementBudgetExhaustedPrinted, "Movement up")) return;
+
+    u32 statusBits = 0;
+    u32 airtime = 0;
+    Vec3 floorNor = MakeVec(0.0f, 0.0f, 0.0f);
+    if (status != nullptr) {
+        statusBits = status->bitfield0;
+        airtime = status->airtime;
+        floorNor = status->floorNor;
+    }
+
+    OS::Report(
+        "[GravityDebug] MoveUp P%u area=%d ground=%u override=%u floorCnt=%d bits=0x%08x airtime=%u up=(%d,%d,%d) smooth=(%d,%d,%d) localUp=(%d,%d,%d) floorNor=(%d,%d,%d) left=%u\n",
+        playerIdx,
+        areaId,
+        grounded ? 1 : 0,
+        overrideApplied ? 1 : 0,
+        movement.flooorCollisionCount,
+        statusBits,
+        airtime,
+        ToMilli(movement.up.x),
+        ToMilli(movement.up.y),
+        ToMilli(movement.up.z),
+        ToMilli(movement.smoothedUp.x),
+        ToMilli(movement.smoothedUp.y),
+        ToMilli(movement.smoothedUp.z),
+        ToMilli(localUp.x),
+        ToMilli(localUp.y),
+        ToMilli(localUp.z),
+        ToMilli(floorNor.x),
+        ToMilli(floorNor.y),
+        ToMilli(floorNor.z),
+        sDebugState.movementLogsRemaining);
 }
 
 }  // namespace TempDebug
