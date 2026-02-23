@@ -2,6 +2,7 @@
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <MarioKartWii/Kart/KartPhysics.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
+#include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Item/Obj/ItemObj.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <core/egg/Math/Math.hpp>
@@ -411,6 +412,47 @@ void UpdateUpsWithGravityField(Kart::Movement& movement) {
 }
 kmCall(0x80578a34, UpdateUpsWithGravityField);
 kmCall(0x80578f30, UpdateUpsWithGravityField);
+
+float ComputeHopWorldYImpulse(const Kart::Movement& movement) {
+    const float baseHopVelY = movement.hopVelY;
+
+    if (movement.pointers == nullptr || movement.pointers->values == nullptr) return baseHopVelY;
+    const u8 playerIdx = movement.pointers->values->playerIdx;
+
+    Vec3 localUp;
+    if (!TryGetPlayerGravityUp(playerIdx, localUp)) return baseHopVelY;
+
+    // Hop code writes this directly into world-Y velocity.
+    // Project to world-Y so sideways fields stop adding world-up impulse.
+    return baseHopVelY * localUp.y;
+}
+
+extern "C" float GravityFieldsResolveHopWorldYImpulse(const Kart::Movement* movement) {
+    if (movement == nullptr) return 0.0f;
+    return ComputeHopWorldYImpulse(*movement);
+}
+
+static asm void GetHopWorldYImpulseWithGravityFieldAsm() {
+    nofralloc
+
+    // Hook point is an inlined load, not a function call site.
+    // Preserve live registers expected by the surrounding vanilla code.
+    stwu r1, -0x20(r1)
+    mflr r0
+    stw r0, 0x1c(r1)
+    stw r3, 0x08(r1)
+    stfd f0, 0x10(r1)
+
+    bl GravityFieldsResolveHopWorldYImpulse
+
+    lwz r3, 0x08(r1)
+    lfd f0, 0x10(r1)
+    lwz r0, 0x1c(r1)
+    mtlr r0
+    addi r1, r1, 0x20
+    blr
+}
+kmCall(0x8057db7c, GetHopWorldYImpulseWithGravityFieldAsm);
 
 void ApplyItemGravityField(Item::Obj& itemObj) {
     s16 areaId = -1;
