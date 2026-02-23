@@ -126,8 +126,8 @@ static int ScoreToRank(float finalScore) {
     if (finalScore >= 48.0f) return 4;
     if (finalScore >= 36.0f) return 3;
     if (finalScore >= 24.0f) return 2;
-    if (finalScore >= 12.0f) return 1;
-    return 0;
+    //if (finalScore >= 12.0f) return 1;
+    return 1;
 }
 
 static const wchar_t* RankToLabel(int rank) {
