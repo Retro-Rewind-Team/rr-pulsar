@@ -1,4 +1,5 @@
 #include <kamek.hpp>
+#include <runtimeWrite.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <MarioKartWii/Kart/KartPhysics.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
@@ -13,6 +14,9 @@ namespace Pulsar {
 namespace Race {
 namespace GravityFields {
 namespace {
+
+kmRuntimeUse(0x807a6738);  // Item init velocity
+kmRuntimeUse(0x8079efec);  // Item update
 
 // KMP AREA contract:
 // - type 11: gravity field
@@ -43,9 +47,15 @@ struct GravityState {
 GravityState sGravityStates[kMaxTrackedPlayers];
 
 typedef void (*ItemVelocityInitFunc)(Item::Obj* obj, const Vec3* sourcePosition, const Vec3* sourceSpeed, const Vec3* direction, bool useRandomness);
-ItemVelocityInitFunc sItemVelocityInit = reinterpret_cast<ItemVelocityInitFunc>(0x807a6738);
 typedef bool (*ItemUpdateFunc)(Item::Obj* obj, int updateMode);
-ItemUpdateFunc sItemUpdate = reinterpret_cast<ItemUpdateFunc>(0x8079efec);
+
+ItemVelocityInitFunc GetItemVelocityInitFunc() {
+    return reinterpret_cast<ItemVelocityInitFunc>(kmRuntimeAddr(0x807a6738));
+}
+
+ItemUpdateFunc GetItemUpdateFunc() {
+    return reinterpret_cast<ItemUpdateFunc>(kmRuntimeAddr(0x8079efec));
+}
 
 Vec3 MakeVec(float x, float y, float z) {
     Vec3 vec;
@@ -437,19 +447,43 @@ static asm void GetHopWorldYImpulseWithGravityFieldAsm() {
 
     // Hook point is an inlined load, not a function call site.
     // Preserve live registers expected by the surrounding vanilla code.
-    stwu r1, -0x20(r1)
+    stwu r1, -0x70(r1)
+    stw r0, 0x08(r1)
+    mfcr r0
+    stw r0, 0x0c(r1)
     mflr r0
-    stw r0, 0x1c(r1)
-    stw r3, 0x08(r1)
-    stfd f0, 0x10(r1)
+    stw r0, 0x10(r1)
+    stw r3, 0x14(r1)
+    stw r4, 0x18(r1)
+    stw r5, 0x1c(r1)
+    stw r6, 0x20(r1)
+    stw r7, 0x24(r1)
+    stw r8, 0x28(r1)
+    stw r9, 0x2c(r1)
+    stw r10, 0x30(r1)
+    stw r11, 0x34(r1)
+    stw r12, 0x38(r1)
+    stfd f0, 0x40(r1)
 
     bl GravityFieldsResolveHopWorldYImpulse
 
-    lwz r3, 0x08(r1)
-    lfd f0, 0x10(r1)
-    lwz r0, 0x1c(r1)
+    lwz r3, 0x14(r1)
+    lwz r4, 0x18(r1)
+    lwz r5, 0x1c(r1)
+    lwz r6, 0x20(r1)
+    lwz r7, 0x24(r1)
+    lwz r8, 0x28(r1)
+    lwz r9, 0x2c(r1)
+    lwz r10, 0x30(r1)
+    lwz r11, 0x34(r1)
+    lwz r12, 0x38(r1)
+    lfd f0, 0x40(r1)
+    lwz r0, 0x0c(r1)
+    mtcrf 0xFF, r0
+    lwz r0, 0x10(r1)
     mtlr r0
-    addi r1, r1, 0x20
+    lwz r0, 0x08(r1)
+    addi r1, r1, 0x70
     blr
 }
 kmCall(0x8057db7c, GetHopWorldYImpulseWithGravityFieldAsm);
@@ -461,42 +495,39 @@ void ApplyItemGravityField(Item::Obj& itemObj) {
     u16 blendFrames = kDefaultBlendFrames;
     if (!ResolveGravityField(itemObj.position, -1, areaId, gravityDown, gravityStrength, blendFrames)) return;
 
-    u8* itemObjBytes = reinterpret_cast<u8*>(&itemObj);
-    // Item::ObjMiddle stores the per-frame acceleration vector at 0x18c.
-    float* itemAcceleration = reinterpret_cast<float*>(itemObjBytes + 0x18c);
+    // Keep item memory access on known Obj fields only.
+    // Vanilla applies world-down acceleration each frame, so inject the delta needed
+    // to turn that into the local gravity direction for this field.
+    const Vec3 desiredAcceleration = ScaleVec(gravityDown, gravityStrength);
+    const Vec3 defaultAcceleration = ScaleVec(WorldDown(), kDefaultGravityStrength);
+    const Vec3 accelerationDelta = SubVec(desiredAcceleration, defaultAcceleration);
+    if (VecLength(accelerationDelta) <= kVectorEpsilon) return;
 
-    Vec3 oldAcceleration = MakeVec(itemAcceleration[0], itemAcceleration[1], itemAcceleration[2]);
-    float accelMagnitude = VecLength(oldAcceleration);
-    if (accelMagnitude <= kVectorEpsilon) return;
-
-    const float gravityScale = gravityStrength / kDefaultGravityStrength;
-    accelMagnitude *= gravityScale;
-
-    const Vec3 newAcceleration = ScaleVec(gravityDown, accelMagnitude);
-    const Vec3 accelerationDelta = SubVec(newAcceleration, oldAcceleration);
     itemObj.speed.x += accelerationDelta.x;
     itemObj.speed.y += accelerationDelta.y;
     itemObj.speed.z += accelerationDelta.z;
 
-    itemAcceleration[0] = newAcceleration.x;
-    itemAcceleration[1] = newAcceleration.y;
-    itemAcceleration[2] = newAcceleration.z;
-
     TempDebug::OnItemGravityApplied(itemObj, areaId, gravityDown, gravityStrength);
 }
 
-void InitItemVelocityWithGravityField(Item::Obj& itemObj, const Vec3& sourcePosition, const Vec3& sourceSpeed, const Vec3& direction, bool useRandomness) {
-    sItemVelocityInit(&itemObj, &sourcePosition, &sourceSpeed, &direction, useRandomness);
-    ApplyItemGravityField(itemObj);
+extern "C" void InitItemVelocityWithGravityField(Item::Obj* itemObj, const Vec3* sourcePosition, const Vec3* sourceSpeed, const Vec3* direction, bool useRandomness) {
+    if (itemObj == nullptr || sourcePosition == nullptr || sourceSpeed == nullptr || direction == nullptr) return;
+    ItemVelocityInitFunc itemVelocityInit = GetItemVelocityInitFunc();
+    if (itemVelocityInit == nullptr) return;
+    itemVelocityInit(itemObj, sourcePosition, sourceSpeed, direction, useRandomness);
+    ApplyItemGravityField(*itemObj);
 }
 kmCall(0x8079fc1c, InitItemVelocityWithGravityField);
 kmCall(0x807a1bc8, InitItemVelocityWithGravityField);
 kmCall(0x807a1c5c, InitItemVelocityWithGravityField);
 kmCall(0x807a381c, InitItemVelocityWithGravityField);
 
-bool UpdateItemWithGravityField(Item::Obj& itemObj, int updateMode) {
-    const bool isExpired = sItemUpdate(&itemObj, updateMode);
-    if (!isExpired) ApplyItemGravityField(itemObj);
+extern "C" bool UpdateItemWithGravityField(Item::Obj* itemObj, int updateMode) {
+    if (itemObj == nullptr) return true;
+    ItemUpdateFunc itemUpdate = GetItemUpdateFunc();
+    if (itemUpdate == nullptr) return true;
+    const bool isExpired = itemUpdate(itemObj, updateMode);
+    if (!isExpired) ApplyItemGravityField(*itemObj);
     return isExpired;
 }
 kmCall(0x807965ec, UpdateItemWithGravityField);
