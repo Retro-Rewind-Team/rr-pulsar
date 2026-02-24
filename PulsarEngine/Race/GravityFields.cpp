@@ -17,6 +17,8 @@ namespace {
 
 kmRuntimeUse(0x807a6738);  // Item init velocity
 kmRuntimeUse(0x8079efec);  // Item update
+kmRuntimeUse(0x807a0cd4);  // Item model update (quat path)
+kmRuntimeUse(0x807a07b8);  // Item model update (vec path)
 
 // KMP AREA contract:
 // - type 11: gravity field
@@ -48,6 +50,8 @@ GravityState sGravityStates[kMaxTrackedPlayers];
 
 typedef void (*ItemVelocityInitFunc)(Item::Obj* obj, const Vec3* sourcePosition, const Vec3* sourceSpeed, const Vec3* direction, bool useRandomness);
 typedef bool (*ItemUpdateFunc)(Item::Obj* obj, int updateMode);
+typedef void (*ItemModelFromQuatFunc)(Item::Obj* obj, Mtx34* transMtxCopy);
+typedef void (*ItemModelFromVecsFunc)(Item::Obj* obj, float spinBlend, Mtx34* transMtxCopy);
 
 ItemVelocityInitFunc GetItemVelocityInitFunc() {
     return reinterpret_cast<ItemVelocityInitFunc>(kmRuntimeAddr(0x807a6738));
@@ -55,6 +59,14 @@ ItemVelocityInitFunc GetItemVelocityInitFunc() {
 
 ItemUpdateFunc GetItemUpdateFunc() {
     return reinterpret_cast<ItemUpdateFunc>(kmRuntimeAddr(0x8079efec));
+}
+
+ItemModelFromQuatFunc GetItemModelFromQuatFunc() {
+    return reinterpret_cast<ItemModelFromQuatFunc>(kmRuntimeAddr(0x807a0cd4));
+}
+
+ItemModelFromVecsFunc GetItemModelFromVecsFunc() {
+    return reinterpret_cast<ItemModelFromVecsFunc>(kmRuntimeAddr(0x807a07b8));
 }
 
 Vec3 MakeVec(float x, float y, float z) {
@@ -92,6 +104,10 @@ Vec3 CrossVec(const Vec3& lhs, const Vec3& rhs) {
 
 Vec3 SubVec(const Vec3& lhs, const Vec3& rhs) {
     return MakeVec(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
+}
+
+Vec3 AddVec(const Vec3& lhs, const Vec3& rhs) {
+    return MakeVec(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
 }
 
 Vec3 ScaleVec(const Vec3& vec, float scale) {
@@ -488,24 +504,108 @@ static asm void GetHopWorldYImpulseWithGravityFieldAsm() {
 }
 kmCall(0x8057db7c, GetHopWorldYImpulseWithGravityFieldAsm);
 
-void ApplyItemGravityField(Item::Obj& itemObj) {
+struct ItemMotionSnapshot {
+    Vec3 position;
+    Vec3 speed;
+};
+
+struct ItemOrientationSnapshot {
+    Quat quaternion;
+    Vec3 basis[3];
+};
+
+void CaptureItemMotionSnapshot(const Item::Obj& itemObj, ItemMotionSnapshot& snapshot) {
+    snapshot.position = itemObj.position;
+    snapshot.speed = itemObj.speed;
+}
+
+void CaptureItemOrientationSnapshot(const Item::Obj& itemObj, ItemOrientationSnapshot& snapshot) {
+    snapshot.quaternion = itemObj.quaternion;
+    snapshot.basis[0] = itemObj.unknown_0x20[0];
+    snapshot.basis[1] = itemObj.unknown_0x20[1];
+    snapshot.basis[2] = itemObj.unknown_0x20[2];
+}
+
+void RestoreItemOrientationSnapshot(Item::Obj& itemObj, const ItemOrientationSnapshot& snapshot) {
+    itemObj.quaternion = snapshot.quaternion;
+    itemObj.unknown_0x20[0] = snapshot.basis[0];
+    itemObj.unknown_0x20[1] = snapshot.basis[1];
+    itemObj.unknown_0x20[2] = snapshot.basis[2];
+}
+
+bool ResolveItemGravity(const Item::Obj& itemObj, s16& areaId, Vec3& gravityDown, float& gravityStrength) {
+    u16 blendFrames = kDefaultBlendFrames;
+    return ResolveGravityField(itemObj.position, -1, areaId, gravityDown, gravityStrength, blendFrames);
+}
+
+Vec3 RemapWorldDownComponent(const Vec3& sourceVector, const Vec3& targetDown, float downScale) {
+    const Vec3 worldDown = WorldDown();
+    const float worldDownAmount = DotVec(sourceVector, worldDown);
+    const Vec3 worldDownComponent = ScaleVec(worldDown, worldDownAmount);
+    const Vec3 targetDownComponent = ScaleVec(targetDown, worldDownAmount * downScale);
+    return AddVec(SubVec(sourceVector, worldDownComponent), targetDownComponent);
+}
+
+Quat ConcatQuat(const Quat& lhs, const Quat& rhs) {
+    Quat outQuat = IdentityQuat();
+    outQuat.x = lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y;
+    outQuat.y = lhs.w * rhs.y - lhs.x * rhs.z + lhs.y * rhs.w + lhs.z * rhs.x;
+    outQuat.z = lhs.w * rhs.z + lhs.x * rhs.y - lhs.y * rhs.x + lhs.z * rhs.w;
+    outQuat.w = lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z;
+    outQuat.Normalise();
+    return outQuat;
+}
+
+void RotateItemOrientation(Item::Obj& itemObj, const Quat& rotation) {
+    itemObj.quaternion = ConcatQuat(rotation, itemObj.quaternion);
+    itemObj.unknown_0x20[0] = Vec3::RotateQuaternion(rotation, itemObj.unknown_0x20[0]);
+    itemObj.unknown_0x20[1] = Vec3::RotateQuaternion(rotation, itemObj.unknown_0x20[1]);
+    itemObj.unknown_0x20[2] = Vec3::RotateQuaternion(rotation, itemObj.unknown_0x20[2]);
+}
+
+bool TryResolveItemGravityRotation(const Item::Obj& itemObj, s16& outAreaId, Vec3& outGravityDown, float& outGravityStrength, Quat& outRotation) {
+    if (!ResolveItemGravity(itemObj, outAreaId, outGravityDown, outGravityStrength)) return false;
+
+    Vec3 normalizedDown = outGravityDown;
+    if (!NormalizeSafe(normalizedDown)) return false;
+    if (DotVec(normalizedDown, WorldDown()) > 0.9999f) return false;
+
+    outRotation = MakeRotationQuat(WorldDown(), normalizedDown);
+    return true;
+}
+
+void ApplyItemGravityField(Item::Obj& itemObj, const ItemMotionSnapshot* preUpdateSnapshot) {
     s16 areaId = -1;
     Vec3 gravityDown = WorldDown();
     float gravityStrength = kDefaultGravityStrength;
-    u16 blendFrames = kDefaultBlendFrames;
-    if (!ResolveGravityField(itemObj.position, -1, areaId, gravityDown, gravityStrength, blendFrames)) return;
+    if (!ResolveItemGravity(itemObj, areaId, gravityDown, gravityStrength)) return;
 
-    // Keep item memory access on known Obj fields only.
-    // Vanilla applies world-down acceleration each frame, so inject the delta needed
-    // to turn that into the local gravity direction for this field.
-    const Vec3 desiredAcceleration = ScaleVec(gravityDown, gravityStrength);
-    const Vec3 defaultAcceleration = ScaleVec(WorldDown(), kDefaultGravityStrength);
-    const Vec3 accelerationDelta = SubVec(desiredAcceleration, defaultAcceleration);
-    if (VecLength(accelerationDelta) <= kVectorEpsilon) return;
+    Vec3 normalizedDown = gravityDown;
+    if (!NormalizeSafe(normalizedDown)) return;
 
-    itemObj.speed.x += accelerationDelta.x;
-    itemObj.speed.y += accelerationDelta.y;
-    itemObj.speed.z += accelerationDelta.z;
+    if (preUpdateSnapshot != nullptr) {
+        const Vec3 positionDelta = SubVec(itemObj.position, preUpdateSnapshot->position);
+        const Vec3 speedDelta = SubVec(itemObj.speed, preUpdateSnapshot->speed);
+
+        const float speedDownScale = gravityStrength / kDefaultGravityStrength;
+        const Vec3 remappedPositionDelta = RemapWorldDownComponent(positionDelta, normalizedDown, 1.0f);
+        const Vec3 remappedSpeedDelta = RemapWorldDownComponent(speedDelta, normalizedDown, speedDownScale);
+
+        itemObj.position = AddVec(preUpdateSnapshot->position, remappedPositionDelta);
+        itemObj.speed = AddVec(preUpdateSnapshot->speed, remappedSpeedDelta);
+    } else {
+        // Keep item memory access on known Obj fields only.
+        // Vanilla applies world-down acceleration each frame, so inject the delta needed
+        // to turn that into the local gravity direction for this field.
+        const Vec3 desiredAcceleration = ScaleVec(normalizedDown, gravityStrength);
+        const Vec3 defaultAcceleration = ScaleVec(WorldDown(), kDefaultGravityStrength);
+        const Vec3 accelerationDelta = SubVec(desiredAcceleration, defaultAcceleration);
+        if (VecLength(accelerationDelta) > kVectorEpsilon) {
+            itemObj.speed.x += accelerationDelta.x;
+            itemObj.speed.y += accelerationDelta.y;
+            itemObj.speed.z += accelerationDelta.z;
+        }
+    }
 
     TempDebug::OnItemGravityApplied(itemObj, areaId, gravityDown, gravityStrength);
 }
@@ -515,19 +615,53 @@ extern "C" void InitItemVelocityWithGravityField(Item::Obj* itemObj, const Vec3*
     ItemVelocityInitFunc itemVelocityInit = GetItemVelocityInitFunc();
     if (itemVelocityInit == nullptr) return;
     itemVelocityInit(itemObj, sourcePosition, sourceSpeed, direction, useRandomness);
-    ApplyItemGravityField(*itemObj);
+    ApplyItemGravityField(*itemObj, nullptr);
 }
 kmCall(0x8079fc1c, InitItemVelocityWithGravityField);
 kmCall(0x807a1bc8, InitItemVelocityWithGravityField);
 kmCall(0x807a1c5c, InitItemVelocityWithGravityField);
 kmCall(0x807a381c, InitItemVelocityWithGravityField);
 
+extern "C" void UpdateItemModelPositionWithGravityField(Item::Obj* itemObj) {
+    if (itemObj == nullptr) return;
+
+    ItemModelFromQuatFunc updateModelFromQuat = GetItemModelFromQuatFunc();
+    ItemModelFromVecsFunc updateModelFromVecs = GetItemModelFromVecsFunc();
+    if (updateModelFromQuat == nullptr || updateModelFromVecs == nullptr) return;
+
+    ItemOrientationSnapshot orientationSnapshot;
+    bool hasRotationOverride = false;
+
+    s16 areaId = -1;
+    Vec3 gravityDown = WorldDown();
+    float gravityStrength = kDefaultGravityStrength;
+    Quat gravityRotation = IdentityQuat();
+    if (TryResolveItemGravityRotation(*itemObj, areaId, gravityDown, gravityStrength, gravityRotation)) {
+        CaptureItemOrientationSnapshot(*itemObj, orientationSnapshot);
+        RotateItemOrientation(*itemObj, gravityRotation);
+        hasRotationOverride = true;
+    }
+
+    if ((itemObj->bitfield78 & 0x1000000) != 0) {
+        updateModelFromQuat(itemObj, nullptr);
+    } else {
+        updateModelFromVecs(itemObj, 0.0f, nullptr);
+    }
+
+    if (hasRotationOverride) RestoreItemOrientationSnapshot(*itemObj, orientationSnapshot);
+}
+kmBranch(0x807a05d0, UpdateItemModelPositionWithGravityField);
+
 extern "C" bool UpdateItemWithGravityField(Item::Obj* itemObj, int updateMode) {
     if (itemObj == nullptr) return true;
     ItemUpdateFunc itemUpdate = GetItemUpdateFunc();
     if (itemUpdate == nullptr) return true;
+
+    ItemMotionSnapshot preUpdateSnapshot;
+    CaptureItemMotionSnapshot(*itemObj, preUpdateSnapshot);
+
     const bool isExpired = itemUpdate(itemObj, updateMode);
-    if (!isExpired) ApplyItemGravityField(*itemObj);
+    if (!isExpired) ApplyItemGravityField(*itemObj, &preUpdateSnapshot);
     return isExpired;
 }
 kmCall(0x807965ec, UpdateItemWithGravityField);
