@@ -88,8 +88,8 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
     if (vrClamped < 0) vrClamped = 0;
     float vrNorm = (vrClamped / 1000.0f) * 100.0f;
 
-    float firstsNorm = (times1st >= 2500.0f) ? 100.0f : (100.0f * times1st / 2500.0f);
-    float distNorm = (distTravelled >= 50000.0f) ? 100.0f : (100.0f * distTravelled / 50000.0f);
+    float firstsNorm = (times1st >= 2250.0f) ? 100.0f : (100.0f * times1st / 2250.0f);
+    float distNorm = (distTravelled >= 40000.0f) ? 100.0f : (100.0f * distTravelled / 40000.0f);
     float distFirstNorm = (distInFirst >= 10000.0f) ? 100.0f : (100.0f * distInFirst / 10000.0f);
 
     const float W_VR = 0.60f;
@@ -237,8 +237,8 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
         L"Retro Rewind Rank:\n"
         L"VR: %d VR out of 100000 VR\n"
         L"Win Rate: %.1f%% out of 65%% Needed\n"
-        L"1st Places: %u Firsts out of 2500 Firsts\n"
-        L"Distance: %.1f KM out of 50000 KM\n"
+        L"1st Places: %u Firsts out of 2250 Firsts\n"
+        L"Distance: %.1f KM out of 40000 KM\n"
         L"1st Distance: %.1f KM out of 10000 KM\n"
         L"Score: %.2f Points (%.2f till Rank %ls)\n",
         vrClamped, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
