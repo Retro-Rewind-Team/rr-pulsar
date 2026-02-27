@@ -5,6 +5,7 @@
 #include <MarioKartWii/Kart/KartMovement.hpp>
 #include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Item/Obj/ItemObj.hpp>
+#include <MarioKartWii/Item/Obj/ItemObjVariants.hpp>
 #include <MarioKartWii/Item/PlayerObj.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <core/egg/Math/Math.hpp>
@@ -18,6 +19,7 @@ namespace {
 
 kmRuntimeUse(0x807a6738);  // Item init velocity
 kmRuntimeUse(0x807b5178);  // Shell/targeting item initial placement helper
+kmRuntimeUse(0x807b7104);  // Throwable item initial placement helper
 kmRuntimeUse(0x8079efec);  // Item update
 kmRuntimeUse(0x807a0cd4);  // Item model update (quat path)
 kmRuntimeUse(0x807a07b8);  // Item model update (vec path)
@@ -54,6 +56,7 @@ GravityState sGravityStates[kMaxTrackedPlayers];
 
 typedef void (*ItemVelocityInitFunc)(Item::Obj* obj, const Vec3* sourcePosition, const Vec3* sourceSpeed, const Vec3* direction, bool useRandomness);
 typedef void (*ItemShellInitFunc)(Item::Obj* obj, Item::PlayerObj* playerObj, s32 param5, bool isThrow, bool unkFlag, float speed);
+typedef void (*ItemThrowableInitFunc)(Item::ObjThrowable* obj, Item::PlayerObj& playerObj, u32 groundEffectDelay, bool isThrow, float speed, float throwHeight, float dropHeight);
 typedef bool (*ItemUpdateFunc)(Item::Obj* obj, int updateMode);
 typedef void (*ItemModelFromQuatFunc)(Item::Obj* obj, Mtx34* transMtxCopy);
 typedef void (*ItemModelFromVecsFunc)(Item::Obj* obj, float spinBlend, Mtx34* transMtxCopy);
@@ -64,6 +67,10 @@ ItemVelocityInitFunc GetItemVelocityInitFunc() {
 
 ItemShellInitFunc GetItemShellInitFunc() {
     return reinterpret_cast<ItemShellInitFunc>(kmRuntimeAddr(0x807b5178));
+}
+
+ItemThrowableInitFunc GetItemThrowableInitFunc() {
+    return reinterpret_cast<ItemThrowableInitFunc>(kmRuntimeAddr(0x807b7104));
 }
 
 ItemUpdateFunc GetItemUpdateFunc() {
@@ -90,6 +97,10 @@ Vec3 WorldDown() {
     return MakeVec(0.0f, -1.0f, 0.0f);
 }
 
+Vec3 WorldUp() {
+    return MakeVec(0.0f, 1.0f, 0.0f);
+}
+
 float ClampFloat(float value, float min, float max) {
     if (value < min) return min;
     if (value > max) return max;
@@ -98,10 +109,6 @@ float ClampFloat(float value, float min, float max) {
 
 float MinFloat(float lhs, float rhs) {
     return lhs < rhs ? lhs : rhs;
-}
-
-float AbsFloat(float value) {
-    return value < 0.0f ? -value : value;
 }
 
 float DotVec(const Vec3& lhs, const Vec3& rhs) {
@@ -529,12 +536,6 @@ struct ItemOrientationSnapshot {
 
 const Vec3* ResolveItemPositionForGravity(const Item::Obj& itemObj);
 
-void CaptureItemMotionSnapshot(const Item::Obj& itemObj, ItemMotionSnapshot& snapshot) {
-    const Vec3* activePosition = ResolveItemPositionForGravity(itemObj);
-    snapshot.position = *activePosition;
-    snapshot.speed = itemObj.speed;
-}
-
 Vec3* ResolveItemPositionForGravity(Item::Obj& itemObj) {
     if ((itemObj.bitfield7c & kItemUseRelativePositionBit) != 0) {
         return &itemObj.positionRelativeToPlayer;
@@ -605,7 +606,21 @@ bool ResolveItemGravity(const Item::Obj& itemObj, s16& areaId, Vec3& gravityDown
 
     u16 blendFrames = kDefaultBlendFrames;
     const Vec3* position = ResolveItemPositionForGravity(itemObj);
-    return ResolveGravityField(*position, -1, areaId, gravityDown, gravityStrength, blendFrames);
+    if (ResolveGravityField(*position, -1, areaId, gravityDown, gravityStrength, blendFrames)) return true;
+
+    // Fallback for newly-thrown items that briefly sit outside the area volume bounds.
+    const u8 ownerPlayerIdx = itemObj.playerUsedItemId;
+    if (ownerPlayerIdx < kMaxTrackedPlayers) {
+        const GravityState& ownerState = sGravityStates[ownerPlayerIdx];
+        if (ownerState.isInitialized && ownerState.areaId >= 0) {
+            areaId = ownerState.areaId;
+            gravityDown = ownerState.gravityDown;
+            gravityStrength = ownerState.gravityStrength;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 Vec3 RemapWorldDownComponent(const Vec3& sourceVector, const Vec3& targetDown, float downScale) {
@@ -633,87 +648,47 @@ void RotateItemOrientation(Item::Obj& itemObj, const Quat& rotation) {
     itemObj.unknown_0x20[2] = Vec3::RotateQuaternion(rotation, itemObj.unknown_0x20[2]);
 }
 
-Quat MakeItemGravityRotation(const Item::Obj& itemObj, const Vec3& targetDown) {
-    Vec3 normalizedDown = targetDown;
-    if (!NormalizeSafe(normalizedDown)) return IdentityQuat();
-
-    const Vec3 worldDown = WorldDown();
-    const float dot = ClampFloat(DotVec(worldDown, normalizedDown), -1.0f, 1.0f);
-    if (dot > 0.9999f) return IdentityQuat();
-
-    if (dot < -0.9999f) {
-        // 180-degree flips are underconstrained; use item basis so shells/bananas
-        // keep a stable relation to the player when driving on ceilings.
-        Vec3 helper = itemObj.unknown_0x20[0];
-        if (!NormalizeSafe(helper) || AbsFloat(DotVec(helper, worldDown)) > 0.95f) {
-            helper = itemObj.unknown_0x20[2];
-            if (!NormalizeSafe(helper) || AbsFloat(DotVec(helper, worldDown)) > 0.95f) {
-                helper = MakeVec(1.0f, 0.0f, 0.0f);
-            }
-        }
-
-        // Rotate around the item's own lateral basis to preserve relative roll.
-        // Using Cross(worldDown, helper) over-rotates shells on 180-degree flips.
-        Vec3 axis = helper;
-        if (!NormalizeSafe(axis)) axis = MakeVec(1.0f, 0.0f, 0.0f);
-
-        Quat rotation = IdentityQuat();
-        rotation.SetAxisRotation(axis, PI);
-        return rotation;
-    }
-
-    return MakeRotationQuat(worldDown, normalizedDown);
+Quat MakeItemGravityRotation(const Vec3& targetDown) {
+    Vec3 normalizedTargetDown = targetDown;
+    if (!NormalizeSafe(normalizedTargetDown)) return IdentityQuat();
+    return MakeRotationQuat(WorldUp(), normalizedTargetDown);
 }
 
 bool TryResolveItemGravityRotation(const Item::Obj& itemObj, s16& outAreaId, Vec3& outGravityDown, float& outGravityStrength, Quat& outRotation) {
-    // Bananas already orient well through vanilla collision/model code; forcing an
-    // additional gravity quaternion causes inversion on 180-degree zones.
-    if (itemObj.itemObjId == OBJ_BANANA) return false;
-
     if (!ResolveItemGravity(itemObj, outAreaId, outGravityDown, outGravityStrength)) return false;
 
     Vec3 normalizedDown = outGravityDown;
     if (!NormalizeSafe(normalizedDown)) return false;
     if (DotVec(normalizedDown, WorldDown()) > 0.9999f) return false;
 
-    outRotation = MakeItemGravityRotation(itemObj, normalizedDown);
+    outRotation = MakeItemGravityRotation(normalizedDown);
     return true;
 }
 
 void ApplyItemGravityField(Item::Obj& itemObj, const ItemMotionSnapshot* preUpdateSnapshot, bool forceOnRelativePosition = false) {
-    if (!forceOnRelativePosition && IsItemUsingRelativePosition(itemObj)) return;
-
     s16 areaId = -1;
     Vec3 gravityDown = WorldDown();
     float gravityStrength = kDefaultGravityStrength;
     if (!ResolveItemGravity(itemObj, areaId, gravityDown, gravityStrength)) return;
 
-    Vec3* activePosition = ResolveItemPositionForGravity(itemObj);
-    if (activePosition == nullptr) return;
-
     Vec3 normalizedDown = gravityDown;
     if (!NormalizeSafe(normalizedDown)) return;
 
-    if (preUpdateSnapshot != nullptr) {
-        const Vec3 speedDelta = SubVec(itemObj.speed, preUpdateSnapshot->speed);
+    const bool shouldRemapSpeed = forceOnRelativePosition || !IsItemUsingRelativePosition(itemObj);
 
+    if (shouldRemapSpeed) {
         const float speedDownScale = gravityStrength / kDefaultGravityStrength;
-        const Vec3 remappedSpeedDelta = RemapWorldDownComponent(speedDelta, normalizedDown, speedDownScale);
-
-        itemObj.speed = AddVec(preUpdateSnapshot->speed, remappedSpeedDelta);
-        itemObj.lastPosition = *activePosition;
-    } else {
-        // Keep item memory access on known Obj fields only.
-        // Vanilla applies world-down acceleration each frame, so inject the delta needed
-        // to turn that into the local gravity direction for this field.
-        const Vec3 desiredAcceleration = ScaleVec(normalizedDown, gravityStrength);
-        const Vec3 defaultAcceleration = ScaleVec(WorldDown(), kDefaultGravityStrength);
-        const Vec3 accelerationDelta = SubVec(desiredAcceleration, defaultAcceleration);
-        if (VecLength(accelerationDelta) > kVectorEpsilon) {
-            itemObj.speed.x += accelerationDelta.x;
-            itemObj.speed.y += accelerationDelta.y;
-            itemObj.speed.z += accelerationDelta.z;
+        if (preUpdateSnapshot != nullptr) {
+            const Vec3 speedDelta = SubVec(itemObj.speed, preUpdateSnapshot->speed);
+            itemObj.speed = AddVec(preUpdateSnapshot->speed, RemapWorldDownComponent(speedDelta, normalizedDown, speedDownScale));
+        } else {
+            itemObj.speed = RemapWorldDownComponent(itemObj.speed, normalizedDown, speedDownScale);
         }
+    }
+
+    Vec3* shellMotionDelta = TryGetShellMotionDelta(itemObj);
+    if (shellMotionDelta != nullptr) {
+        *shellMotionDelta = RemapWorldDownComponent(*shellMotionDelta, normalizedDown, 1.0f);
     }
 
     TempDebug::OnItemGravityApplied(itemObj, areaId, gravityDown, gravityStrength);
@@ -739,16 +714,17 @@ extern "C" void InitShellVelocityWithGravityField(Item::Obj* itemObj, Item::Play
     ItemShellInitFunc shellInit = GetItemShellInitFunc();
     if (shellInit == nullptr) return;
 
+    ItemMotionSnapshot sourceSnapshot;
+    sourceSnapshot.position = itemObj->position;
+    sourceSnapshot.speed = itemObj->speed;
+
     shellInit(itemObj, playerObj, param5, isThrow, unkFlag, speed);
 
-    if (playerObj == nullptr) {
-        ApplyItemGravityField(*itemObj, nullptr, true);
-        return;
+    if (playerObj != nullptr) {
+        sourceSnapshot.position = playerObj->playerPos;
+        sourceSnapshot.speed = playerObj->playerSpeed;
     }
 
-    ItemMotionSnapshot sourceSnapshot;
-    sourceSnapshot.position = playerObj->playerPos;
-    sourceSnapshot.speed = playerObj->playerSpeed;
     ApplyItemGravityField(*itemObj, &sourceSnapshot, true);
 }
 kmCall(0x807aa6e4, InitShellVelocityWithGravityField);
@@ -757,6 +733,26 @@ kmCall(0x807ac744, InitShellVelocityWithGravityField);
 kmCall(0x807aebe4, InitShellVelocityWithGravityField);
 kmCall(0x807aec30, InitShellVelocityWithGravityField);
 kmCall(0x807b48ac, InitShellVelocityWithGravityField);
+
+extern "C" void InitThrowableVelocityWithGravityField(Item::ObjThrowable* itemObj, Item::PlayerObj& playerObj, u32 groundEffectDelay, bool isThrow, float speed, float throwHeight, float dropHeight) {
+    if (itemObj == nullptr) return;
+    ItemThrowableInitFunc throwableInit = GetItemThrowableInitFunc();
+    if (throwableInit == nullptr) return;
+
+    throwableInit(itemObj, playerObj, groundEffectDelay, isThrow, speed, throwHeight, dropHeight);
+
+    ItemMotionSnapshot sourceSnapshot;
+    sourceSnapshot.position = playerObj.playerPos;
+    sourceSnapshot.speed = playerObj.playerSpeed;
+    ApplyItemGravityField(*itemObj, &sourceSnapshot, true);
+}
+kmCall(0x807a3c30, InitThrowableVelocityWithGravityField);
+kmCall(0x807a3c60, InitThrowableVelocityWithGravityField);
+kmCall(0x807a4ac4, InitThrowableVelocityWithGravityField);
+kmCall(0x807a4af8, InitThrowableVelocityWithGravityField);
+kmCall(0x807a4b18, InitThrowableVelocityWithGravityField);
+kmCall(0x807a7990, InitThrowableVelocityWithGravityField);
+kmCall(0x807a79c0, InitThrowableVelocityWithGravityField);
 
 extern "C" void UpdateItemModelPositionWithGravityField(Item::Obj* itemObj) {
     if (itemObj == nullptr) return;
@@ -776,18 +772,6 @@ extern "C" void UpdateItemModelPositionWithGravityField(Item::Obj* itemObj) {
         CaptureItemOrientationSnapshot(*itemObj, orientationSnapshot);
         RotateItemOrientation(*itemObj, gravityRotation);
         hasRotationOverride = true;
-
-        // Tethered red/green shells derive extra model orientation from these vectors.
-        // Remap them into local gravity each frame so shell orientation follows the kart.
-        if (IsItemUsingRelativePosition(*itemObj)) {
-            Vec3 normalizedDown = gravityDown;
-            if (NormalizeSafe(normalizedDown)) {
-                Vec3* shellMotionDelta = TryGetShellMotionDelta(*itemObj);
-                if (shellMotionDelta != nullptr) {
-                    *shellMotionDelta = RemapWorldDownComponent(*shellMotionDelta, normalizedDown, 1.0f);
-                }
-            }
-        }
     }
 
     if ((itemObj->bitfield78 & 0x1000000) != 0) {
@@ -805,8 +789,13 @@ extern "C" bool UpdateItemWithGravityField(Item::Obj* itemObj, int updateMode) {
     ItemUpdateFunc itemUpdate = GetItemUpdateFunc();
     if (itemUpdate == nullptr) return true;
 
+    ItemMotionSnapshot preUpdateSnapshot;
+    const Vec3* activePosition = ResolveItemPositionForGravity(*itemObj);
+    preUpdateSnapshot.position = activePosition != nullptr ? *activePosition : itemObj->position;
+    preUpdateSnapshot.speed = itemObj->speed;
+
     const bool isExpired = itemUpdate(itemObj, updateMode);
-    if (!isExpired) ApplyItemGravityField(*itemObj, nullptr);
+    if (!isExpired) ApplyItemGravityField(*itemObj, &preUpdateSnapshot);
     return isExpired;
 }
 kmCall(0x807965ec, UpdateItemWithGravityField);
