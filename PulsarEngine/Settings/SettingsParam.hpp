@@ -83,6 +83,7 @@ enum OnlineSettings {
     RADIO_ONLINERANDOMBUTTON = 0,
     RADIO_PREDICTIONREMOVAL = 1,
     RADIO_STREAMERMODE = 2,
+    RADIO_INFINITEMATCHMAKINGTIMEOUT = 3,
 };
 
 // 5) Sound
@@ -262,6 +263,11 @@ enum MenuSettingPredictionRemoval {
 enum MenuSettingStreamerMode {
     STREAMERMODE_DISABLED = 0x0,
     STREAMERMODE_ENABLED = 0x1
+};
+
+enum MatchmakingTimeoutSetting {
+    MATCHMAKINGTIMEOUT_DEFAULT = 0x0,
+    MATCHMAKINGTIMEOUT_INFINITE = 0x1
 };
 
 // 5) Sound values
