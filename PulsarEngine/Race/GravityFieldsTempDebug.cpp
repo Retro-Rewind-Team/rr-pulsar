@@ -24,7 +24,6 @@ const u8 kGravityVolumeShapeSphere = 2;
 const u8 kMaxTrackedPlayers = 12;
 
 const float kVectorEpsilon = 0.0001f;
-const u16 kItemLogBudgetPerRace = 40;
 const u16 kBodyLogBudgetPerRace = 120;
 const u16 kMovementLogBudgetPerRace = 120;
 const u16 kMaxVisualizedAreasPerTick = 32;
@@ -38,10 +37,8 @@ extern "C" void* GravityDebugEffectMgrInstance;
 
 struct DebugState {
     u32 visualFrameCounter;
-    u16 itemLogsRemaining;
     u16 bodyLogsRemaining;
     u16 movementLogsRemaining;
-    bool itemBudgetExhaustedPrinted;
     bool bodyBudgetExhaustedPrinted;
     bool movementBudgetExhaustedPrinted;
     s16 lastKnownAreaByPlayer[kMaxTrackedPlayers];
@@ -150,10 +147,8 @@ bool IsGravityAreaHolder(const KMP::Holder<AREA>* holder) {
 
 void ResetRaceDebugState() {
     sDebugState.visualFrameCounter = 0;
-    sDebugState.itemLogsRemaining = kItemLogBudgetPerRace;
     sDebugState.bodyLogsRemaining = kBodyLogBudgetPerRace;
     sDebugState.movementLogsRemaining = kMovementLogBudgetPerRace;
-    sDebugState.itemBudgetExhaustedPrinted = false;
     sDebugState.bodyBudgetExhaustedPrinted = false;
     sDebugState.movementBudgetExhaustedPrinted = false;
     for (u8 i = 0; i < kMaxTrackedPlayers; ++i) {
@@ -476,26 +471,6 @@ void OnRespawn(const Kart::Link& link, s16 areaId, const Vec3& gravityDown, floa
         ToMilli(gravityDown.y),
         ToMilli(gravityDown.z),
         ToMilli(gravityStrength));
-}
-
-void OnItemGravityApplied(const Item::Obj& itemObj, s16 areaId, const Vec3& gravityDown, float gravityStrength) {
-    if (!kEnableTempGravityDebugLogs) return;
-    if (areaId < 0) return;
-
-    if (!ConsumeBudget(sDebugState.itemLogsRemaining, sDebugState.itemBudgetExhaustedPrinted, "Item gravity")) return;
-    OS::Report(
-        "[GravityDebug] Item id=%u owner=%u area=%d pos=(%d,%d,%d) down=(%d,%d,%d) g=%d left=%u\n",
-        static_cast<u32>(itemObj.itemObjId),
-        static_cast<u32>(itemObj.playerUsedItemId),
-        areaId,
-        RoundToInt(itemObj.position.x),
-        RoundToInt(itemObj.position.y),
-        RoundToInt(itemObj.position.z),
-        ToMilli(gravityDown.x),
-        ToMilli(gravityDown.y),
-        ToMilli(gravityDown.z),
-        ToMilli(gravityStrength),
-        sDebugState.itemLogsRemaining);
 }
 
 void OnBodyGravityApplied(u8 playerIdx, s16 areaId, const Kart::Status& status, const Kart::Physics& physics, const Vec3& gravityVector) {
