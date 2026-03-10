@@ -37,6 +37,7 @@ const u32 kPhysicsTopCurrentOffset = 0x158;
 const u32 kPhysicsTopOffset = 0x180;
 
 kmRuntimeUse(0x8057c69c);
+kmRuntimeUse(0x80579968);
 
 struct GravityState {
     bool isInitialized;
@@ -392,6 +393,22 @@ typedef void (*MovementUpdateUpsFunc)(Kart::Movement* movement);
 extern "C" void GravityFieldsMovementUpdateUps(Kart::Movement* movement);
 MovementUpdateUpsFunc sMovementUpdateUps = GravityFieldsMovementUpdateUps;
 
+typedef void (*MovementUpdateHopPhysicsFunc)(Kart::Movement* movement);
+MovementUpdateHopPhysicsFunc sMovementUpdateHopPhysics = reinterpret_cast<MovementUpdateHopPhysicsFunc>(kmRuntimeAddr(0x80579968));
+
+// Hop physics uses a scalar gravity value along hopUp, so wall/ceiling gravity
+// needs a dedicated magnitude fix instead of relying on physics.gravity.y.
+void UpdateHopPhysicsWithGravity(Kart::Movement& movement) {
+    const u8 playerIdx = movement.GetPlayerIdx();
+    if (playerIdx < kMaxTrackedPlayers) {
+        GravityState& state = sGravityStates[playerIdx];
+        if (ShouldOverrideKartUpFromGravity(state)) movement.hopGravity = -state.gravityStrength;
+    }
+
+    sMovementUpdateHopPhysics(&movement);
+}
+kmCall(0x805976f0, UpdateHopPhysicsWithGravity);
+
 void UpdateUpsWithGravityField(Kart::Movement& movement) {
     sMovementUpdateUps(&movement);
 
@@ -405,19 +422,22 @@ void UpdateUpsWithGravityField(Kart::Movement& movement) {
     Kart::Status* status = static_cast<Kart::Status*>(0);
     if (movement.pointers != 0) status = movement.pointers->kartStatus;
 
-    Vec3 localUp = ScaleVec(state.gravityDown, -1.0f);
-    if (!NormalizeSafe(localUp)) return;
+    // Grounded orientation already comes from vanilla collision normals.
+    // Only replace the airborne recovery that would otherwise drift back to world up.
+    const bool grounded = status != nullptr && (status->bitfield0 & kStatusBitfield0Ground) != 0;
+    bool overrideApplied = false;
+    Vec3 appliedUp = movement.up;
+    if (!grounded) {
+        Vec3 gravityUp = ScaleVec(state.gravityDown, -1.0f);
+        if (!NormalizeSafe(gravityUp)) return;
 
-    movement.up = localUp;
-    movement.smoothedUp = localUp;
-
-    bool overrideApplied = true;
-    if (status != nullptr) {
-        status->floorNor = localUp;
-        status->unknown_0x34 = localUp;
+        movement.up = gravityUp;
+        movement.smoothedUp = gravityUp;
+        appliedUp = gravityUp;
+        overrideApplied = true;
     }
 
-    TempDebug::OnMovementUpApplied(playerIdx, state.areaId, status, movement, localUp, overrideApplied);
+    TempDebug::OnMovementUpApplied(playerIdx, state.areaId, status, movement, appliedUp, overrideApplied);
 }
 kmCall(0x80578a34, UpdateUpsWithGravityField);
 kmCall(0x80578f30, UpdateUpsWithGravityField);
@@ -456,10 +476,6 @@ void SyncRespawnGravity(Kart::Link& link) {
     Vec3 gravityVector;
     float gravityStrength;
     ComputeKartGravity(link, true, gravityVector, gravityStrength);
-
-    if (link.pointers != nullptr && link.pointers->kartStatus != nullptr) {
-        PrepareKartCollisionForGravity(*link.pointers->kartStatus);
-    }
 
     link.UpdateCameraOnRespawn();
     GravityCamera::RefreshCameraOnRespawn(link);
@@ -527,16 +543,6 @@ bool TryGetPlayerGravityUp(u8 playerIdx, Vec3& gravityUp) {
     return TryGetStateGravityUp(playerIdx, gravityUp, nullptr);
 }
 
-void PrepareKartCollisionForGravity(Kart::Status& status) {
-    if (status.link == nullptr) return;
-
-    Vec3 gravityUp;
-    if (!TryGetStateGravityUp(status.link->GetPlayerIdx(), gravityUp, nullptr)) return;
-
-    status.floorNor = gravityUp;
-    status.unknown_0x34 = gravityUp;
-}
-
 Vec3 GetGravityDownAtPosition(const Vec3& position) {
     Vec3 gravityDown;
     float gravityStrength;
@@ -557,16 +563,11 @@ void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector) {
 
 void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector, const Kart::Status& status) {
     const bool grounded = (status.bitfield0 & kStatusBitfield0Ground) != 0;
-    bool hasCustomGravity = false;
-    if (status.link != nullptr) {
-        hasCustomGravity = GetActiveAreaId(status.link->GetPlayerIdx()) >= 0;
-    }
-
     if (grounded) {
         // Preserve the custom-gravity pull while grounded so walls and ceilings still
-        // behave like floor contact, but keep vanilla zero lateral pull elsewhere.
-        physics.normalAcceleration.x = hasCustomGravity ? gravityVector.x : 0.0f;
-        physics.normalAcceleration.z = hasCustomGravity ? gravityVector.z : 0.0f;
+        // behave like floor contact.
+        physics.normalAcceleration.x = gravityVector.x;
+        physics.normalAcceleration.z = gravityVector.z;
 
         // Sideways/tilted gravity can still produce tiny upward detaches at rest.
         // Remove only "away from surface" velocity while grounded, preserving jump/hop/trick lift.

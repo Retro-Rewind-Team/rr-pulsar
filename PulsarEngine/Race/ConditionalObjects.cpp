@@ -612,7 +612,6 @@ static void ConditionalCalcCollisions(Kart::Status* status) {
     Kart::Link* link = status->link;
     u8 playerId = link->GetPlayerIdx();
     PushConditionalCollisionPlayerContext(playerId);
-    GravityFields::PrepareKartCollisionForGravity(*status);
     status->UpdateCollisions();
     PopConditionalCollisionPlayerContext();
 }

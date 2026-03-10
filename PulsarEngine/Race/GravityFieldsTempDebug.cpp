@@ -14,8 +14,8 @@ namespace GravityFields {
 namespace TempDebug {
 namespace {
 
-const bool kEnableTempGravityDebugLogs = true;
-const bool kEnableTempGravityDebugVisuals = true;
+const bool kEnableTempGravityDebugLogs = false;
+const bool kEnableTempGravityDebugVisuals = false;
 
 const u8 kGravityAreaType = 11;
 const u8 kGravityVolumeShapeBox = 0;

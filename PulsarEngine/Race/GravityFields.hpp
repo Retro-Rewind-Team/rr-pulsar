@@ -20,7 +20,6 @@ void UpdateKartGravity(const Kart::Link& link, Vec3& gravityVector, float& gravi
 void UpdateKartGravity(const Kart::Sub& sub, Vec3& gravityVector, float& gravityStrength);
 void ForceKartGravityRefresh(const Kart::Link& link);
 bool TryGetPlayerGravityUp(u8 playerIdx, Vec3& gravityUp);
-void PrepareKartCollisionForGravity(Kart::Status& status);
 
 Vec3 GetGravityDownAtPosition(const Vec3& position);
 float GetBodyGravityScalar(const Vec3& gravityVector, float gravityStrength, float previousScalar);
