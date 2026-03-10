@@ -1,6 +1,7 @@
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
+#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -118,6 +119,12 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
     ItemId item = slotData->DecideItem(setting, position, isHuman, disableTripleShellsAndBananas, player);
 
     System* system = System::sInstance;
+    if (ItemRain::IsItemRainEnabled()) {
+        if (item == GREEN_SHELL || item == RED_SHELL || item == BLUE_SHELL || item == BANANA || item == BOBOMB || item == TRIPLE_BANANA || item == TRIPLE_GREEN_SHELL || item == TRIPLE_RED_SHELL || item == FAKE_ITEM_BOX) {
+            return MUSHROOM;
+        }
+    }
+
     if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return item;
 
     if (item == BLUE_SHELL) {
