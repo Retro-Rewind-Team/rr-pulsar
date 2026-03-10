@@ -1,10 +1,12 @@
 #include <kamek.hpp>
+#include <runtimeWrite.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <MarioKartWii/Kart/KartPhysics.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
 #include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <core/egg/Math/Math.hpp>
+#include <Race/GravityCamera.hpp>
 #include <Race/GravityFields.hpp>
 #include <Race/GravityFieldsTempDebug.hpp>
 
@@ -27,6 +29,14 @@ const u8 kMaxTrackedPlayers = 12;
 const u8 kGravityVolumeShapeBox = 0;
 const u8 kGravityVolumeShapeCylinder = 1;
 const u8 kGravityVolumeShapeSphere = 2;
+const u32 kStatusBitfield0Ground = 0x40000;
+const u32 kStatusBitfield0Hop = 0x80000;
+const u32 kStatusBitfield0JumpPad = 0x40000000;
+const u32 kStatusBitfield1Trick = 0x40;
+const u32 kPhysicsTopCurrentOffset = 0x158;
+const u32 kPhysicsTopOffset = 0x180;
+
+kmRuntimeUse(0x8057c69c);
 
 struct GravityState {
     bool isInitialized;
@@ -403,10 +413,7 @@ void UpdateUpsWithGravityField(Kart::Movement& movement) {
 
     bool overrideApplied = true;
     if (status != nullptr) {
-        const bool grounded = (status->bitfield0 & 0x40000) != 0;
-        if (!grounded) {
-            status->floorNor = localUp;
-        }
+        status->floorNor = localUp;
         status->unknown_0x34 = localUp;
     }
 
@@ -415,12 +422,47 @@ void UpdateUpsWithGravityField(Kart::Movement& movement) {
 kmCall(0x80578a34, UpdateUpsWithGravityField);
 kmCall(0x80578f30, UpdateUpsWithGravityField);
 
-void SyncRespawnGravity(Kart::Link& link) {
-    link.UpdateCameraOnRespawn();
+Vec3& PhysicsTopTarget(Kart::Physics& physics) {
+    return *reinterpret_cast<Vec3*>(reinterpret_cast<u8*>(&physics) + kPhysicsTopOffset);
+}
 
+Vec3& PhysicsTopCurrent(Kart::Physics& physics) {
+    return *reinterpret_cast<Vec3*>(reinterpret_cast<u8*>(&physics) + kPhysicsTopCurrentOffset);
+}
+
+typedef void (*MovementUpdateRotationFunc)(Kart::Movement* movement);
+MovementUpdateRotationFunc sMovementUpdateRotation = reinterpret_cast<MovementUpdateRotationFunc>(kmRuntimeAddr(0x8057c69c));
+
+void UpdateRotationWithGravity(Kart::Movement& movement) {
+    sMovementUpdateRotation(&movement);
+
+    if (movement.pointers == 0 || movement.pointers->values == 0 || movement.pointers->values->isBike == 0) return;
+
+    const u8 playerIdx = movement.GetPlayerIdx();
+    if (GetActiveAreaId(playerIdx) < 0) return;
+
+    Kart::PhysicsHolder& physicsHolder = movement.GetPhysicsHolder();
+    if (physicsHolder.physics == nullptr) return;
+
+    Vec3 gravityUp = movement.smoothedUp;
+    if (!NormalizeSafe(gravityUp) && !TryGetStateGravityUp(playerIdx, gravityUp, nullptr)) return;
+
+    PhysicsTopCurrent(*physicsHolder.physics) = gravityUp;
+    PhysicsTopTarget(*physicsHolder.physics) = gravityUp;
+}
+kmCall(0x8057993c, UpdateRotationWithGravity);
+
+void SyncRespawnGravity(Kart::Link& link) {
     Vec3 gravityVector;
     float gravityStrength;
     ComputeKartGravity(link, true, gravityVector, gravityStrength);
+
+    if (link.pointers != nullptr && link.pointers->kartStatus != nullptr) {
+        PrepareKartCollisionForGravity(*link.pointers->kartStatus);
+    }
+
+    link.UpdateCameraOnRespawn();
+    GravityCamera::RefreshCameraOnRespawn(link);
 
     Kart::PhysicsHolder& physicsHolder = link.GetPhysicsHolder();
     if (physicsHolder.physics != nullptr) {
@@ -486,7 +528,13 @@ bool TryGetPlayerGravityUp(u8 playerIdx, Vec3& gravityUp) {
 }
 
 void PrepareKartCollisionForGravity(Kart::Status& status) {
-    (void)status;
+    if (status.link == nullptr) return;
+
+    Vec3 gravityUp;
+    if (!TryGetStateGravityUp(status.link->GetPlayerIdx(), gravityUp, nullptr)) return;
+
+    status.floorNor = gravityUp;
+    status.unknown_0x34 = gravityUp;
 }
 
 Vec3 GetGravityDownAtPosition(const Vec3& position) {
@@ -508,16 +556,24 @@ void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector) {
 }
 
 void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector, const Kart::Status& status) {
-    const bool grounded = (status.bitfield0 & 0x40000) != 0;
+    const bool grounded = (status.bitfield0 & kStatusBitfield0Ground) != 0;
+    bool hasCustomGravity = false;
+    if (status.link != nullptr) {
+        hasCustomGravity = GetActiveAreaId(status.link->GetPlayerIdx()) >= 0;
+    }
+
     if (grounded) {
-        // Let wheel suspension own stick-to-surface while grounded.
-        // Injecting lateral body acceleration here causes floor contact flicker.
-        physics.normalAcceleration.x = 0.0f;
-        physics.normalAcceleration.z = 0.0f;
+        // Preserve the custom-gravity pull while grounded so walls and ceilings still
+        // behave like floor contact, but keep vanilla zero lateral pull elsewhere.
+        physics.normalAcceleration.x = hasCustomGravity ? gravityVector.x : 0.0f;
+        physics.normalAcceleration.z = hasCustomGravity ? gravityVector.z : 0.0f;
 
         // Sideways/tilted gravity can still produce tiny upward detaches at rest.
         // Remove only "away from surface" velocity while grounded, preserving jump/hop/trick lift.
-        const bool allowLift = (status.bitfield0 & 0x80000) != 0 || (status.bitfield0 & 0x40000000) != 0 || (status.bitfield1 & 0x40) != 0;
+        const bool allowLift =
+            (status.bitfield0 & kStatusBitfield0Hop) != 0 ||
+            (status.bitfield0 & kStatusBitfield0JumpPad) != 0 ||
+            (status.bitfield1 & kStatusBitfield1Trick) != 0;
         if (!allowLift) {
             Vec3 gravityDown = gravityVector;
             if (NormalizeSafe(gravityDown)) {
