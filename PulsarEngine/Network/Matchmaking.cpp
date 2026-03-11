@@ -21,6 +21,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Settings/Settings.hpp>
 #include <include/c_stdlib.h>
 
 namespace Pulsar {
@@ -31,7 +32,23 @@ kmRuntimeUse(0x8011d1e4);
 kmRuntimeUse(0x8011e488);
 kmRuntimeUse(0x8011e480);
 kmRuntimeUse(0x8011e490);
+kmRuntimeUse(0x800d6c94);
+kmRuntimeUse(0x800d6ee4);
 static u32 joinAttempts = 0;
+static u32 previousRoomGroupId = 0;
+
+static void ApplyMatchmakingTimeoutPatch() {
+    const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
+        Settings::SETTINGSTYPE_ONLINE,
+        RADIO_INFINITEMATCHMAKINGTIMEOUT);
+
+    const u32 timeoutMs =
+        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
+    const u32 liR6TimeoutMs = 0x38c00000 | timeoutMs;
+
+    kmRuntimeWrite32A(0x800d6c94, liR6TimeoutMs);
+    kmRuntimeWrite32A(0x800d6ee4, liR6TimeoutMs);
+}
 
 // SBServerGetIntValueA
 typedef int (*SBServerGetIntValueA_t)(void* server, const char* key, int defaultValue);
@@ -91,9 +108,18 @@ void CustomRandomizeServers() {
         bool isHighVR = !isBattle && playerRating > 60000; // 600 VR * 100
         int lowRoomThreshold = 30000; // 300 VR * 100
 
+        const int previousRoomPenalty = 2000000000;
+
         for (int i = 0; i < count; ++i) {
             void* server = ServerBrowserGetServerAtIndexA(sb, i);
             if (!server) continue;
+
+            int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
+            if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) {
+                SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
+                continue;
+            }
+
             int serverRating = SBServerGetIntValueA(server, key, 0);
             int diff = playerRating - serverRating;
             if (diff < 0) diff = -diff;
@@ -111,10 +137,16 @@ void CustomRandomizeServers() {
         ServerBrowserSortA(sb, true, "dwc_eval", 0);
     } else {
         // Fallback to random
+        const int previousRoomPenalty = 2000000000;
         for (int i = 0; i < count; ++i) {
             void* server = ServerBrowserGetServerAtIndexA(sb, i);
             if (!server) continue;
-            SBServerSetIntValueA(server, "dwc_eval", rand());
+            int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
+            if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) {
+                SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
+            } else {
+                SBServerSetIntValueA(server, "dwc_eval", rand());
+            }
         }
         ServerBrowserSortA(sb, true, "dwc_eval", 0);
     }
@@ -123,6 +155,11 @@ kmBranch(0x800e4ad0, CustomRandomizeServers);
 
 // Reset when starting ConnectToAnyoneAsync
 static void OnConnectToAnyoneAsync(RKNet::Controller* self) {
+    if (self) {
+        const u32 activeGroupId = self->subs[0].groupId;
+        if (activeGroupId != 0) previousRoomGroupId = activeGroupId;
+    }
+    ApplyMatchmakingTimeoutPatch();
     joinAttempts = 0;
     self->ConnectToAnybodyAsync();
 }
@@ -139,8 +176,8 @@ kmCall(0x800d66ac, OnRetryReserving);
 kmCall(0x800d6950, OnRetryReserving);
 
 // Patch timeouts to 20s (20000ms = 0x4e20)
-kmWrite32(0x800d6c94, 0x38c04e20);  // li r6, 20000
-kmWrite32(0x800d6ee4, 0x38c04e20);  // li r6, 20000
+kmWrite32(0x800d6c94, 0x38c04e20);  // li r6, 20000 (default)
+kmWrite32(0x800d6ee4, 0x38c04e20);  // li r6, 20000 (default)
 
 }  // namespace Network
 }  // namespace Pulsar
