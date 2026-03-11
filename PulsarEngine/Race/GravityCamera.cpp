@@ -180,6 +180,15 @@ Vec3 BuildPerpendicularInPlane(const Vec3& planeNormal, const Vec3& vector, cons
     return NormalizedOrFallback(fallback, WorldUp());
 }
 
+Vec3 RemapWorldVerticalToGravityUp(const Vec3& offset, const Vec3& gravityUp) {
+    const Vec3 worldUp = WorldUp();
+    const float worldVertical = DotVec(offset, worldUp);
+
+    Vec3 remapped = SubVec(offset, ScaleVec(worldUp, worldVertical));
+    remapped = AddVec(remapped, ScaleVec(gravityUp, worldVertical));
+    return remapped;
+}
+
 Quat IdentityQuat() {
     Quat quat;
     quat.Set(1.0f, 0.0f, 0.0f, 0.0f);
@@ -310,7 +319,7 @@ void UpdateCameraTargetImpl(float positionInterp, float topDotInterp, float heig
     }
 
     camera->unknown_0xAC = AddVec(context.anchorPos, ScaleVec(CameraVec(*camera, kCameraUpAxisOffset), values->verticalOffset2));
-    camera->unknown_0xAC.y += field108;
+    camera->unknown_0xAC = AddVec(camera->unknown_0xAC, ScaleVec(context.up, field108));
 }
 
 void UpdateCameraTargetWithGravity(float positionInterp, float topDotInterp, float heightInterp, RaceCamera* camera,
@@ -368,6 +377,11 @@ void FinalizeCameraWithGravity(float upInterp, RaceCamera* camera, Kart::Link* k
     if (!BuildGravityContext(camera, kartPlayer, context) || (camera->bitfield & kCameraFlagScript) != 0) {
         sOriginalFinalizeCamera(upInterp, camera, kartPlayer, mode);
         return;
+    }
+
+    if (DotVec(context.up, WorldUp()) < -0.75f) {
+        Vec3 positionOffset = SubVec(BasePosition(*camera), BaseTarget(*camera));
+        BasePosition(*camera) = AddVec(BaseTarget(*camera), RemapWorldVerticalToGravityUp(positionOffset, context.up));
     }
 
     Vec3 lookDir = SubVec(BaseTarget(*camera), BasePosition(*camera));
