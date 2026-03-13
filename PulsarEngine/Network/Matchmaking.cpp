@@ -40,7 +40,7 @@ static u32 previousRoomGroupId = 0;
 static void ApplyMatchmakingTimeoutPatch() {
     const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
         Settings::SETTINGSTYPE_ONLINE,
-        RADIO_INFINITEMATCHMAKINGTIMEOUT);
+        SCROLLER_MATCHMAKINGTIMEOUT);
 
     const u32 timeoutMs =
         (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
@@ -81,6 +81,13 @@ void CustomRandomizeServers() {
     int count = ServerBrowserCountA(sb);
     if (count <= 0) return;
 
+    const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
+        Settings::SETTINGSTYPE_ONLINE,
+        SCROLLER_MATCHMAKINGTIMEOUT);
+    const bool isMatchmakingTimeoutEnabled =
+        (timeoutSetting != MATCHMAKINGTIMEOUT_INFINITE);
+    const int smallRoomPenalty = 1000000;
+
     if (joinAttempts < 3) {
         u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
 
@@ -120,18 +127,29 @@ void CustomRandomizeServers() {
                 continue;
             }
 
+            int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
+            bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
+
             int serverRating = SBServerGetIntValueA(server, key, 0);
             int diff = playerRating - serverRating;
             if (diff < 0) diff = -diff;
+
+            int eval;
             
             // If player is low VR and room is above the threshold, mark it with very high eval
             if (isLowVR && serverRating > maxRoomRating) {
-                SBServerSetIntValueA(server, "dwc_eval", 999999);
+                eval = 999999;
             } else if (isHighVR && serverRating > 0 && serverRating < lowRoomThreshold) {
-                SBServerSetIntValueA(server, "dwc_eval", 999999);
+                eval = 999999;
             } else {
-                SBServerSetIntValueA(server, "dwc_eval", diff);
+                eval = diff;
             }
+
+            if (isMatchmakingTimeoutEnabled && isSmallRoom) {
+                eval += smallRoomPenalty;
+            }
+
+            SBServerSetIntValueA(server, "dwc_eval", eval);
         }
         // Sort by dwc_eval ascending (closest first)
         ServerBrowserSortA(sb, true, "dwc_eval", 0);
@@ -142,10 +160,16 @@ void CustomRandomizeServers() {
             void* server = ServerBrowserGetServerAtIndexA(sb, i);
             if (!server) continue;
             int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
+            int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
+            bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
             if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) {
                 SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
             } else {
-                SBServerSetIntValueA(server, "dwc_eval", rand());
+                int eval = rand();
+                if (isMatchmakingTimeoutEnabled && isSmallRoom) {
+                    eval += smallRoomPenalty;
+                }
+                SBServerSetIntValueA(server, "dwc_eval", eval);
             }
         }
         ServerBrowserSortA(sb, true, "dwc_eval", 0);
