@@ -17,8 +17,9 @@ class VRLeaderboardPage : public Page {
     static const PulPageId id = PULPAGE_VRLEADERBOARD;
 
     static const int kRowsPerPage = 10;
-    static const int kPageCount = 5;
-    static const int kMaxEntries = kRowsPerPage * kPageCount;
+    static const int kPagesPerAPIFetch = 5;
+    static const int kPageCount = 50;
+    static const int kMaxEntries = kRowsPerPage * kPagesPerAPIFetch;
 
     VRLeaderboardPage();
     ~VRLeaderboardPage() override;
@@ -46,6 +47,7 @@ class VRLeaderboardPage : public Page {
     struct Entry {
         wchar_t name[24];
         u32 vr;
+        u32 rank;
         wchar_t line[64];
         RFL::StoreData miiData;
         u64 friendCode;
