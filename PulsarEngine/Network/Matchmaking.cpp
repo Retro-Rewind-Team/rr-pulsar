@@ -40,7 +40,7 @@ static u32 previousRoomGroupId = 0;
 static void ApplyMatchmakingTimeoutPatch() {
     const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
         Settings::SETTINGSTYPE_ONLINE,
-        SCROLLER_MATCHMAKINGTIMEOUT);
+        RADIO_INFINITEMATCHMAKINGTIMEOUT);
 
     const u32 timeoutMs =
         (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
@@ -83,7 +83,7 @@ void CustomRandomizeServers() {
 
     const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
         Settings::SETTINGSTYPE_ONLINE,
-        SCROLLER_MATCHMAKINGTIMEOUT);
+        RADIO_INFINITEMATCHMAKINGTIMEOUT);
     const bool isMatchmakingTimeoutEnabled =
         (timeoutSetting != MATCHMAKINGTIMEOUT_INFINITE);
     const int smallRoomPenalty = 1000000;
@@ -108,12 +108,12 @@ void CustomRandomizeServers() {
         }
 
         // For players below 150 VR, filter out rooms above their VR + 200
-        bool isLowVR = !isBattle && playerRating < 15000; // 150 VR * 100
-        int maxRoomRating = playerRating + 20000; // Player VR + 200 VR * 100
+        bool isLowVR = !isBattle && playerRating < 15000;  // 150 VR * 100
+        int maxRoomRating = playerRating + 20000;  // Player VR + 200 VR * 100
 
         // For players above 600 VR, heavily deprioritize rooms below 300 VR
-        bool isHighVR = !isBattle && playerRating > 60000; // 600 VR * 100
-        int lowRoomThreshold = 30000; // 300 VR * 100
+        bool isHighVR = !isBattle && playerRating > 60000;  // 600 VR * 100
+        int lowRoomThreshold = 30000;  // 300 VR * 100
 
         const int previousRoomPenalty = 2000000000;
 
@@ -135,7 +135,7 @@ void CustomRandomizeServers() {
             if (diff < 0) diff = -diff;
 
             int eval;
-            
+
             // If player is low VR and room is above the threshold, mark it with very high eval
             if (isLowVR && serverRating > maxRoomRating) {
                 eval = 999999;
