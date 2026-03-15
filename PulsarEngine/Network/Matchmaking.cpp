@@ -84,7 +84,7 @@ void CustomRandomizeServers() {
     const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
         Settings::SETTINGSTYPE_ONLINE,
         RADIO_INFINITEMATCHMAKINGTIMEOUT);
-    const bool isMatchmakingTimeoutEnabled =
+    const bool isCompetitiveMatchmakingEnabled =
         (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE);
     const int smallRoomPenalty = 1000000;
 
@@ -145,7 +145,7 @@ void CustomRandomizeServers() {
                 eval = diff;
             }
 
-            if (isMatchmakingTimeoutEnabled && isSmallRoom) {
+            if (isCompetitiveMatchmakingEnabled && isSmallRoom) {
                 eval += smallRoomPenalty;
             }
 
@@ -166,7 +166,7 @@ void CustomRandomizeServers() {
                 SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
             } else {
                 int eval = rand();
-                if (isMatchmakingTimeoutEnabled && isSmallRoom) {
+                if (isCompetitiveMatchmakingEnabled && isSmallRoom) {
                     eval += smallRoomPenalty;
                 }
                 SBServerSetIntValueA(server, "dwc_eval", eval);
