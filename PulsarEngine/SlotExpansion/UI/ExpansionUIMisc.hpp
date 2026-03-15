@@ -11,6 +11,8 @@ namespace Pulsar {
 namespace UI {
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName);
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx);
+u32 GetTrackAuthorBMGId(PulsarId pulsarId, u32 trackBmgId);
+bool SetTrackNameAuthorMessage(LayoutUIControl& control, PulsarId pulsarId, u32 trackBmgId);
 bool IsTrackBlocked(PulsarId id);
 void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx);
 void SetVoteControlMessage(VoteControl& vote, u32 bmgId, PulsarId courseVote, u32 playerId);
