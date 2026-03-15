@@ -239,9 +239,12 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
 bool SetTrackNameAuthorMessage(LayoutUIControl& control, PulsarId trackId, u32 trackBmgId) {
     if (CupsConfig::IsReg(trackId)) return false;
 
-    const u32 commonTrackBmgId = GetTrackVariantBMGId(trackId, true);
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const bool hasVariants = cupsConfig->GetTrack(trackId).variantCount > 0;
+    const u32 trackNameBmgId =
+        hasVariants ? GetTrackVariantBMGId(trackId, static_cast<u8>(cupsConfig->GetCurVariantIdx())) : GetTrackBMGId(trackId, true);
     const u32 authorId = GetTrackAuthorBMGId(trackId, trackBmgId);
-    const wchar_t* trackText = GetCustomMsg(commonTrackBmgId);
+    const wchar_t* trackText = GetCustomMsg(trackNameBmgId);
     const wchar_t* authorText = GetCustomMsg(authorId);
 
     if (trackText == nullptr || authorText == nullptr) return false;
