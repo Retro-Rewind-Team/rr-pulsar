@@ -239,7 +239,7 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
 bool SetTrackNameAuthorMessage(LayoutUIControl& control, PulsarId trackId, u32 trackBmgId) {
     if (CupsConfig::IsReg(trackId)) return false;
 
-    const u32 commonTrackBmgId = GetTrackBMGId(trackId, true);
+    const u32 commonTrackBmgId = GetTrackVariantBMGId(trackId, true);
     const u32 authorId = GetTrackAuthorBMGId(trackId, trackBmgId);
     const wchar_t* trackText = GetCustomMsg(commonTrackBmgId);
     const wchar_t* authorText = GetCustomMsg(authorId);
