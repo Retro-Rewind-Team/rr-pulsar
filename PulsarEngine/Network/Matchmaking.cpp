@@ -85,7 +85,7 @@ void CustomRandomizeServers() {
         Settings::SETTINGSTYPE_ONLINE,
         RADIO_INFINITEMATCHMAKINGTIMEOUT);
     const bool isMatchmakingTimeoutEnabled =
-        (timeoutSetting != MATCHMAKINGTIMEOUT_INFINITE);
+        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE);
     const int smallRoomPenalty = 1000000;
 
     if (joinAttempts < 3) {
