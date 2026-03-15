@@ -1,9 +1,9 @@
-CC := ""
-AS := ""
+CC := mwcceppc.exe
+AS := mwasmeppc.exe
 
 GAMESOURCE := ./GameSource
 PULSAR := ./PulsarEngine
-KAMEK := ""
+KAMEK := Kamek.exe
 KAMEK_H := ./KamekInclude
 
 ifneq ($(filter install%,$(MAKECMDGOALS)),)
@@ -15,7 +15,7 @@ endif
 
 -include .env
 
-CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) -i $(PULSAR) -opt all -inline auto -enum int -fp hard -sdata 0 -sdata2 0 -maxerrors 1 -func_align 4 -DPULSAR_RANDOM_KEY=$(PULSAR_RANDOM_KEY) $(CFLAGS)
+CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) -i $(PULSAR) -opt all -inline auto -enum int -proc gekko -fp hard -sdata 0 -sdata2 0 -maxerrors 1 -func_align 4 -DPULSAR_RANDOM_KEY=$(PULSAR_RANDOM_KEY) $(CFLAGS)
 ASFLAGS := -proc gekko -c
 
 EXTERNALS := -externals=$(GAMESOURCE)/symbols.txt -externals=$(GAMESOURCE)/anticheat.txt -versions=$(GAMESOURCE)/versions.txt
