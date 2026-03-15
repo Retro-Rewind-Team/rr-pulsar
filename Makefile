@@ -1,9 +1,9 @@
-CC := "C:\Program Files (x86)\Freescale\CW for MPC55xx and MPC56xx 2.10\PowerPC_EABI_Tools\Command_Line_Tools\mwcceppc.exe"
-AS := "C:\Program Files (x86)\Freescale\CW for MPC55xx and MPC56xx 2.10\PowerPC_EABI_Tools\Command_Line_Tools\mwasmeppc.exe"
+CC := ""
+AS := ""
 
 GAMESOURCE := ./GameSource
 PULSAR := ./PulsarEngine
-KAMEK := "C:\Users\TheNi\Downloads\rr-pulsar-main\rr-pulsar-main\KamekLinker\Kamek.exe"
+KAMEK := ""
 KAMEK_H := ./KamekInclude
 
 ifneq ($(filter install%,$(MAKECMDGOALS)),)
