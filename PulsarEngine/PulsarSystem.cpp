@@ -130,7 +130,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         const u32 offset = static_cast<u32>(fileSection - confStart);
         if (offset < rtReadBytes) {
             const u32 remaining = rtReadBytes - offset;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, 0);
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, 0, rtTrackCount);
         }
     }
     {
@@ -140,7 +140,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         const u32 offset = static_cast<u32>(fileSection - confStart);
         if (offset < ctReadBytes) {
             const u32 remaining = ctReadBytes - offset;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount);
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount, ctTrackCount);
         }
     }
     {
@@ -150,7 +150,8 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         const u32 offset = static_cast<u32>(fileSection - confStart);
         if (offset < btReadBytes) {
             const u32 remaining = btReadBytes - offset;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount + ctTrackCount);
+            const u32 btTrackCount = btCups.ctsCupCount * 4;
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount + ctTrackCount, btTrackCount);
         }
     }
 
