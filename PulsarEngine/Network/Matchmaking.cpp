@@ -37,6 +37,37 @@ kmRuntimeUse(0x800d6ee4);
 static u32 joinAttempts = 0;
 static u32 previousRoomGroupId = 0;
 
+static bool IsPublicMatchmakingRoomType(const RKNet::RoomType roomType) {
+    switch (roomType) {
+        case RKNet::ROOMTYPE_VS_WW:
+        case RKNet::ROOMTYPE_VS_REGIONAL:
+        case RKNet::ROOMTYPE_BT_WW:
+        case RKNet::ROOMTYPE_BT_REGIONAL:
+        case RKNet::ROOMTYPE_JOINING_WW:
+        case RKNet::ROOMTYPE_JOINING_REGIONAL:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static u32 GetTrackedRoomGroupId(const RKNet::Controller* controller) {
+    if (controller == nullptr) return 0;
+    const u32 currentSub = static_cast<u32>(controller->currentSub) & 1;
+    for (u32 i = 0; i < 2; ++i) {
+        const u32 groupId = controller->subs[(currentSub + i) & 1].groupId;
+        if (groupId != 0) return groupId;
+    }
+    return 0;
+}
+
+static void RememberPreviousPublicRoomGroupId(const RKNet::Controller* controller) {
+    if (controller == nullptr || !IsPublicMatchmakingRoomType(controller->roomType)) return;
+
+    const u32 activeGroupId = GetTrackedRoomGroupId(controller);
+    if (activeGroupId != 0) previousRoomGroupId = activeGroupId;
+}
+
 static void ApplyMatchmakingTimeoutPatch() {
     const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
         Settings::SETTINGSTYPE_ONLINE,
@@ -177,14 +208,17 @@ void CustomRandomizeServers() {
 }
 kmBranch(0x800e4ad0, CustomRandomizeServers);
 
+static void UpdateMatchmakingInfosAndRememberGroupId(RKNet::Controller* self) {
+    self->UpdateSubsAndVR();
+    RememberPreviousPublicRoomGroupId(self);
+}
+kmCall(0x80657990, UpdateMatchmakingInfosAndRememberGroupId);
+
 // Reset when starting ConnectToAnyoneAsync
 static void OnConnectToAnyoneAsync(RKNet::Controller* self) {
-    if (self) {
-        const u32 activeGroupId = self->subs[0].groupId;
-        if (activeGroupId != 0) previousRoomGroupId = activeGroupId;
-    }
     ApplyMatchmakingTimeoutPatch();
     joinAttempts = 0;
+    RememberPreviousPublicRoomGroupId(self);
     self->ConnectToAnybodyAsync();
 }
 kmCall(0x806590b4, OnConnectToAnyoneAsync);
