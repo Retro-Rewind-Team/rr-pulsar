@@ -1,8 +1,6 @@
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
-
 #include <Network/WiiLink.hpp>
 #include <UI/UI.hpp>
-
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/File/BMG.hpp>
@@ -88,10 +86,10 @@ bool VRLeaderboardPage::s_hasApplied = false;
 VRLeaderboardPage::Entry VRLeaderboardPage::s_entries[VRLeaderboardPage::kMaxEntries];
 
 static wchar_t s_statusText[128];
+static wchar_t s_bottomStatusText[128];
 static wchar_t s_rowTextLoading[] = L"Loading...";
 static wchar_t s_rowTextDash[] = L"----";
 static wchar_t s_rowLabelVR[] = L"VR";
-static wchar_t s_rowLabelScroll[] = L"Use left and right on the D-Pad to navigate pages.";
 static wchar_t s_rowBlank[] = L"";
 static wchar_t s_positionText[8];
 static int s_lastLoggedState = -1;
@@ -101,14 +99,36 @@ static const u32 s_nhttpWorkBufSize = 0x20000;
 static u32 s_requestGeneration = 0;
 static u64 s_currentUserFriendCode = 0;
 static u32 s_entrySoundFrameCounter = 0;
+static u32 s_loadedAPIPage = 0;
+static s32 s_loadedEntryCount = 0;
 
 static const u32 s_requestTimeoutMs = 45000;
 
 struct NHTTPRequestCtx {
     u32 generation;
-    void* workBuf;
-    u32 workBufSize;
+    u32 apiPage;
 };
+
+// This page only issues a new request after the prior one has completed, so a single
+// persistent request context/work buffer avoids lifetime bugs without affecting boot.
+static NHTTPRequestCtx s_requestCtx;
+static void* s_requestWorkBuf = nullptr;
+static char s_requestUrl[256];
+
+static u32 GetAPIPageForInGamePage(u32 inGamePage) {
+    return inGamePage / VRLeaderboardPage::kPagesPerAPIFetch + 1;
+}
+
+static void SetLeaderboardRowTextColor(LayoutUIControl& row, const nw4r::ut::Color& textColor) {
+    const char* textBoxNames[] = {"player_name", "position", "total_score", "total_point"};
+    for (int j = 0; j < 4; ++j) {
+        nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(row.layout.GetPaneByName(textBoxNames[j]));
+        if (textBox != nullptr) {
+            textBox->color1[0] = textColor;
+            textBox->color1[1] = textColor;
+        }
+    }
+}
 
 static bool HasPane(const LayoutUIControl& control, const char* paneName) {
     if (paneName == nullptr) return false;
@@ -441,6 +461,8 @@ void VRLeaderboardPage::OnActivate() {
     s_hasApplied = false;
     s_fetchState = FETCH_IDLE;
     s_nhttpStarted = false;
+    s_loadedAPIPage = 0;
+    s_loadedEntryCount = 0;
     ResetRowsToLoading();
     // OS::Report("[VRLeaderboard] OnActivate\n");
     // Play leaderboard loading sound effect
@@ -526,7 +548,12 @@ void VRLeaderboardPage::OnUpdate() {
 
             if (pageChanged) {
                 this->PlaySound(pageWentLeft ? SOUND_ID_LEFT_ARROW_PRESS : SOUND_ID_RIGHT_ARROW_PRESS, -1);
-                ApplyResults();
+                if (GetAPIPageForInGamePage(curPage) == s_loadedAPIPage) {
+                    ApplyResults();
+                } else {
+                    ResetRowsToLoading();
+                    StartFetch(this);
+                }
             }
         }
     }
@@ -543,6 +570,12 @@ void VRLeaderboardPage::OnBackButtonClick(PushButton& button, u32 /*hudSlotId*/)
 }
 
 void VRLeaderboardPage::ResetRowsToLoading() {
+    swprintf(s_bottomStatusText, sizeof(s_bottomStatusText) / sizeof(s_bottomStatusText[0]),
+             L"Loading page %d/%d...", static_cast<int>(this->curPage) + 1, kPageCount);
+    Text::Info bottomInfo;
+    bottomInfo.strings[0] = s_bottomStatusText;
+    bottomText->SetMessage(UI::BMG_TEXT, &bottomInfo);
+
     for (int i = 0; i < kRowsPerPage; ++i) {
         Text::Info nameInfo;
         nameInfo.strings[0] = s_rowTextLoading;
@@ -557,17 +590,35 @@ void VRLeaderboardPage::ResetRowsToLoading() {
         labelInfo.strings[0] = s_rowBlank;
         SetTextBoxIfPresent(*rows[i], "position", UI::BMG_TEXT, &labelInfo);
 
+        SetLeaderboardRowTextColor(*rows[i], nw4r::ut::Color(255, 255, 255, 255));
         SetPaneVisibleIfPresent(*rows[i], "chara_icon", false);
         SetPaneVisibleIfPresent(*rows[i], "chara_icon_sha", false);
     }
 }
 
 void VRLeaderboardPage::ApplyResults() {
-    const int base = static_cast<int>(curPage) * kRowsPerPage;
+    const int base = static_cast<int>(curPage % kPagesPerAPIFetch) * kRowsPerPage;
     for (int i = 0; i < kRowsPerPage; ++i) {
         const int idx = base + i;
-        if (idx < 0 || idx >= kMaxEntries) continue;
-        swprintf(s_positionText, sizeof(s_positionText) / sizeof(s_positionText[0]), L"#%d", idx + 1);
+        if (idx < 0 || idx >= s_loadedEntryCount) {
+            Text::Info nameInfo;
+            nameInfo.strings[0] = s_rowTextDash;
+            SetTextBoxIfPresent(*rows[i], "player_name", UI::BMG_TEXT, &nameInfo);
+
+            Text::Info blankInfo;
+            blankInfo.strings[0] = s_rowBlank;
+            SetTextBoxIfPresent(*rows[i], "position", UI::BMG_TEXT, &blankInfo);
+            SetTextBoxIfPresent(*rows[i], "total_score", UI::BMG_TEXT, &blankInfo);
+            SetTextBoxIfPresent(*rows[i], "total_point", UI::BMG_TEXT, &blankInfo);
+
+            SetLeaderboardRowTextColor(*rows[i], nw4r::ut::Color(255, 255, 255, 255));
+            SetPaneVisibleIfPresent(*rows[i], "chara_icon", false);
+            SetPaneVisibleIfPresent(*rows[i], "chara_icon_sha", false);
+            continue;
+        }
+
+        const u32 rank = s_entries[idx].rank != 0 ? s_entries[idx].rank : static_cast<u32>(curPage) * kRowsPerPage + i + 1;
+        swprintf(s_positionText, sizeof(s_positionText) / sizeof(s_positionText[0]), L"#%u", rank);
         swprintf(s_entries[idx].line, sizeof(s_entries[idx].line) / sizeof(s_entries[idx].line[0]), L"%ls", s_entries[idx].name);
 
         Text::Info nameInfo;
@@ -617,15 +668,7 @@ void VRLeaderboardPage::ApplyResults() {
             textColor = nw4r::ut::Color(255, 255, 255, 255);
         }
 
-        // Apply text color to all text boxes
-        const char* textBoxNames[] = {"player_name", "position", "total_score", "total_point"};
-        for (int j = 0; j < 4; ++j) {
-            nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(rows[i]->layout.GetPaneByName(textBoxNames[j]));
-            if (textBox != nullptr) {
-                textBox->color1[0] = textColor;
-                textBox->color1[1] = textColor;
-            }
-        }
+        SetLeaderboardRowTextColor(*rows[i], textColor);
 
         miiGroup->LoadMii(i, &s_entries[idx].miiData);
         rows[i]->SetMiiPane("chara_icon", *miiGroup, i, 2);
@@ -634,8 +677,11 @@ void VRLeaderboardPage::ApplyResults() {
         SetPaneVisibleIfPresent(*rows[i], "chara_icon_sha", true);
     }
 
+    swprintf(s_bottomStatusText, sizeof(s_bottomStatusText) / sizeof(s_bottomStatusText[0]),
+             L"Page %d/%d - Use left and right on the D-Pad to navigate pages.",
+             static_cast<int>(curPage) + 1, kPageCount);
     Text::Info info;
-    info.strings[0] = s_rowLabelScroll;
+    info.strings[0] = s_bottomStatusText;
     bottomText->SetMessage(UI::BMG_TEXT, &info);
 }
 
@@ -660,13 +706,20 @@ void VRLeaderboardPage::ApplyError(const char* msg) {
         labelInfo.strings[0] = s_rowBlank;
         SetTextBoxIfPresent(*rows[i], "position", UI::BMG_TEXT, &labelInfo);
 
+        SetLeaderboardRowTextColor(*rows[i], nw4r::ut::Color(255, 255, 255, 255));
         SetPaneVisibleIfPresent(*rows[i], "chara_icon", false);
         SetPaneVisibleIfPresent(*rows[i], "chara_icon_sha", false);
     }
 }
 
-void VRLeaderboardPage::StartFetch(VRLeaderboardPage* /*page*/) {
+void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
     if (s_fetchState == FETCH_REQUESTING) return;
+    if (page == nullptr) {
+        s_fetchState = FETCH_ERROR;
+        return;
+    }
+
+    const u32 apiPage = GetAPIPageForInGamePage(page->curPage);
     s_fetchState = FETCH_REQUESTING;
     s_hasApplied = false;
     s_lastLoggedState = -1;
@@ -696,33 +749,27 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* /*page*/) {
         s_nhttpStarted = true;
     }
 
-    NHTTPRequestCtx* ctx = reinterpret_cast<NHTTPRequestCtx*>(NHTTPAllocFromEggHeap(sizeof(NHTTPRequestCtx), 0x20));
-    if (ctx == nullptr) {
-        s_fetchState = FETCH_ERROR;
-        return;
-    }
+    NHTTPRequestCtx* ctx = &s_requestCtx;
     ctx->generation = s_requestGeneration;
-    ctx->workBufSize = s_nhttpWorkBufSize;
-    ctx->workBuf = NHTTPAllocFromEggHeap(ctx->workBufSize, 0x20);
-    // OS::Report("[VRLeaderboard] workBuf=%p workBufSize=%u gen=%u\n", ctx->workBuf, ctx->workBufSize, ctx->generation);
-    if (ctx->workBuf == nullptr) {
-        NHTTPFreeFromEggHeap(ctx);
-        s_fetchState = FETCH_ERROR;
-        return;
+    ctx->apiPage = apiPage;
+    if (s_requestWorkBuf == nullptr) {
+        s_requestWorkBuf = NHTTPAllocFromEggHeap(s_nhttpWorkBufSize, 0x20);
+        if (s_requestWorkBuf == nullptr) {
+            s_fetchState = FETCH_ERROR;
+            return;
+        }
     }
-    memset(ctx->workBuf, 0, ctx->workBufSize);
+    memset(s_requestWorkBuf, 0, s_nhttpWorkBufSize);
 
-    char url[256];
-    snprintf(url, sizeof(url), "http://%s:8000/api/leaderboard/top/no-mii/50", WWFC_DOMAIN);
+    char* url = s_requestUrl;
+    snprintf(url, sizeof(s_requestUrl), "http://%s:8000/api/leaderboard/in-game?page=%u", WWFC_DOMAIN, apiPage);
 
     // OS::Report("[VRLeaderboard] fetching %s\n", url);
-    void* request = NHTTPCreateRequest(url, 0, ctx->workBuf, ctx->workBufSize,
+    void* request = NHTTPCreateRequest(url, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
                                        reinterpret_cast<void*>(&VRLeaderboardPage::OnLeaderboardReceived),
                                        ctx);
     if (request == nullptr) {
         // OS::Report("[VRLeaderboard] NHTTPCreateRequest failed\n");
-        if (ctx->workBuf != nullptr) NHTTPFreeFromEggHeap(ctx->workBuf);
-        NHTTPFreeFromEggHeap(ctx);
         s_fetchState = FETCH_ERROR;
         return;
     }
@@ -732,10 +779,8 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* /*page*/) {
     }
     const s32 sendRet = NHTTPSendRequestAsync(request);
     // OS::Report("[VRLeaderboard] NHTTPSendRequestAsync req=%p ret=%d\n", request, sendRet);
-    if (sendRet != 0) {
+    if (sendRet < 0) {
         s_nhttpStarted = false;
-        if (ctx->workBuf != nullptr) NHTTPFreeFromEggHeap(ctx->workBuf);
-        NHTTPFreeFromEggHeap(ctx);
         s_fetchState = FETCH_ERROR;
     }
 }
@@ -748,27 +793,17 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     }
     if (response == nullptr) {
         s_fetchState = FETCH_ERROR;
-        if (ctx != nullptr) {
-            if (ctx->workBuf != nullptr) NHTTPFreeFromEggHeap(ctx->workBuf);
-            NHTTPFreeFromEggHeap(ctx);
-        }
         return;
     }
     if (ctx != nullptr && ctx->generation != s_requestGeneration) {
         // OS::Report("[VRLeaderboard] ignoring stale response gen=%u curGen=%u\n", ctx->generation, s_requestGeneration);
         NHTTPDestroyResponse(response);
-        if (ctx->workBuf != nullptr) NHTTPFreeFromEggHeap(ctx->workBuf);
-        NHTTPFreeFromEggHeap(ctx);
         return;
     }
 
     if (result != 0) {
         NHTTPDestroyResponse(response);
         s_fetchState = FETCH_ERROR;
-        if (ctx != nullptr) {
-            if (ctx->workBuf != nullptr) NHTTPFreeFromEggHeap(ctx->workBuf);
-            NHTTPFreeFromEggHeap(ctx);
-        }
         return;
     }
 
@@ -782,41 +817,36 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     }
     // OS::Report("[VRLeaderboard] bodyText=%.*s\n", MinInt(bodyLen, 512), body);
 
-    char* responseBuf = reinterpret_cast<char*>(NHTTPAllocFromEggHeap(kResponseBufSize, 4));
+    const u32 responseBufSize = static_cast<u32>(bodyLen) + 1;
+    char* responseBuf = reinterpret_cast<char*>(NHTTPAllocFromEggHeap(responseBufSize, 4));
     if (responseBuf == nullptr) {
         NHTTPDestroyResponse(response);
         s_fetchState = FETCH_ERROR;
-        if (ctx != nullptr) {
-            if (ctx->workBuf != nullptr) NHTTPFreeFromEggHeap(ctx->workBuf);
-            NHTTPFreeFromEggHeap(ctx);
-        }
         return;
     }
 
-    int copyLen = bodyLen;
-    if (copyLen > static_cast<int>(kResponseBufSize - 1)) copyLen = kResponseBufSize - 1;
-    memcpy(responseBuf, body, copyLen);
-    responseBuf[copyLen] = '\0';
+    memcpy(responseBuf, body, bodyLen);
+    responseBuf[bodyLen] = '\0';
 
     NHTTPDestroyResponse(response);
-    if (ctx != nullptr) {
-        if (ctx->workBuf != nullptr) NHTTPFreeFromEggHeap(ctx->workBuf);
-        NHTTPFreeFromEggHeap(ctx);
-    }
+    s_loadedAPIPage = ctx != nullptr ? ctx->apiPage : 0;
 
     int parsed = ParseResponse(responseBuf, s_entries, kMaxEntries);
     NHTTPFreeFromEggHeap(responseBuf);
     // OS::Report("[VRLeaderboard] parsed=%d\n", parsed);
     if (parsed <= 0) {
         s_fetchState = FETCH_ERROR;
+        s_loadedEntryCount = 0;
         return;
     }
 
     OverrideOwnMiiData(s_entries, parsed, s_currentUserFriendCode);
 
+    s_loadedEntryCount = parsed;
     for (int i = parsed; i < kMaxEntries; ++i) {
         CopyAsciiToWide(s_entries[i].name, sizeof(s_entries[i].name) / sizeof(s_entries[i].name[0]), "----");
         s_entries[i].vr = 0;
+        s_entries[i].rank = 0;
         s_entries[i].friendCode = 0;
     }
     s_fetchState = FETCH_READY;
@@ -843,12 +873,14 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
 
         outEntries[count].name[0] = L'\0';
         outEntries[count].vr = 0;
+        outEntries[count].rank = 0;
         outEntries[count].friendCode = 0;
         memset(&outEntries[count].miiData, 0, sizeof(outEntries[count].miiData));
 
         const char* miiKey = FindStrInRange(objStart, objEnd, "\"miiData\"");
         const char* nameKey = FindStrInRange(objStart, objEnd, "\"name\"");
         const char* vrKey = FindStrInRange(objStart, objEnd, "\"vr\"");
+        const char* rankKey = FindStrInRange(objStart, objEnd, "\"rank\"");
         const char* friendCodeKey = FindStrInRange(objStart, objEnd, "\"friendCode\"");
         if (friendCodeKey == nullptr) {
             friendCodeKey = FindStrInRange(objStart, objEnd, "\"friend_code\"");
@@ -880,6 +912,15 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
                 u32 vrValue = 0;
                 (void)ParseJsonU32(colon + 1, vrValue);
                 outEntries[count].vr = vrValue;
+            }
+        }
+
+        if (rankKey != nullptr) {
+            const char* colon = FindStrInRange(rankKey, objEnd, ":");
+            if (colon != nullptr) {
+                u32 rankValue = 0;
+                (void)ParseJsonU32(colon + 1, rankValue);
+                outEntries[count].rank = rankValue;
             }
         }
 

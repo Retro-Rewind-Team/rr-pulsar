@@ -1,10 +1,14 @@
 
 #include <MarioKartWii/UI/Page/Menu/CupSelect.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
+#include <MarioKartWii/UI/Page/Other/YesNo.hpp>
+#include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Page/Other/Votes.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/Archive/ArchiveFile.hpp>
+#include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <core/egg/Archive.hpp>
 
@@ -42,6 +46,32 @@ void SetVotedTrack(Pages::Vote* vote) {  // cast because we actually want to tra
     vote->SetVotedCourseId(static_cast<CourseId>(id));
 }
 kmCall(0x8084099c, SetVotedTrack);
+
+static bool ShouldForceHAWRandomVote() {
+    const System* system = System::sInstance;
+    if (system == nullptr || !system->IsContext(PULSAR_HAW)) return false;
+
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return false;
+
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    return sub.localAid != sub.hostAid;
+}
+
+static void HandleCourseSelectTimeout(Pages::YesNo* page) {
+    if (page->currentState != STATE_ACTIVE) return;
+
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || !IsOnlineSection(sectionMgr->curSection->sectionId)) return;
+
+    Pages::SELECTStageMgr* selectStageMgr = sectionMgr->curSection->Get<Pages::SELECTStageMgr>();
+    if (selectStageMgr == nullptr) return;
+
+    if (ShouldForceHAWRandomVote() || selectStageMgr->countdown.countdown <= 0.0f) {
+        selectStageMgr->countdown.countdown = 0.0f;
+    }
+}
+kmBranch(0x80652564, HandleCourseSelectTimeout);
 
 // CtrlMenuCupSelectCup::OnCupButtonClick patch that updates lastSelectCup so that the game remembers it in btw races
 void UpdateLastSelCup(Pages::CupSelect* page, CtrlMenuCupSelectCup& cups, PushButton& button, u32 hudSlotId) {
