@@ -99,6 +99,34 @@ static const ServerBrowserGetServerAtIndexA_t ServerBrowserGetServerAtIndexA = (
 typedef void (*ServerBrowserSortA_t)(void* sb, bool ascending, const char* sortKey, int sortType);
 static const ServerBrowserSortA_t ServerBrowserSortA = (ServerBrowserSortA_t)kmRuntimeAddr(0x8011e490);
 
+static bool HasNonSmallRoomOption(void* sb, int count) {
+    for (int i = 0; i < count; ++i) {
+        void* server = ServerBrowserGetServerAtIndexA(sb, i);
+        if (!server) continue;
+
+        const int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
+        if (serverPlayerCount >= 6) return true;
+    }
+    return false;
+}
+
+static bool HasAlternativeRoomOption(void* sb, int count, bool blockSmallRooms) {
+    for (int i = 0; i < count; ++i) {
+        void* server = ServerBrowserGetServerAtIndexA(sb, i);
+        if (!server) continue;
+
+        const int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
+        if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) continue;
+
+        const int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
+        const bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
+        if (blockSmallRooms && isSmallRoom) continue;
+
+        return true;
+    }
+    return false;
+}
+
 // Hook DWCi_RandomizeServers to sort by VR proximity
 kmRuntimeUse(0x8038630C);
 void CustomRandomizeServers() {
@@ -117,7 +145,11 @@ void CustomRandomizeServers() {
         RADIO_INFINITEMATCHMAKINGTIMEOUT);
     const bool isCompetitiveMatchmakingEnabled =
         (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE);
-    const int smallRoomPenalty = 1000000;
+    const bool blockSmallRooms = isCompetitiveMatchmakingEnabled && HasNonSmallRoomOption(sb, count);
+    const bool hasAlternativeRoomOption = HasAlternativeRoomOption(sb, count, blockSmallRooms);
+    const int previousRoomPenalty = hasAlternativeRoomOption ? 2000000000 : 0;
+    const int blockedSmallRoomEval = 0x50000000;
+    const int fullRoomEval = 0x60000000;
 
     if (joinAttempts < 3) {
         u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
@@ -146,11 +178,15 @@ void CustomRandomizeServers() {
         bool isHighVR = !isBattle && playerRating > 60000;  // 600 VR * 100
         int lowRoomThreshold = 30000;  // 300 VR * 100
 
-        const int previousRoomPenalty = 2000000000;
-
         for (int i = 0; i < count; ++i) {
             void* server = ServerBrowserGetServerAtIndexA(sb, i);
             if (!server) continue;
+
+            int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
+            if (isCompetitiveMatchmakingEnabled && serverPlayerCount >= 12) {
+                SBServerSetIntValueA(server, "dwc_eval", fullRoomEval);
+                continue;
+            }
 
             int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
             if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) {
@@ -158,8 +194,11 @@ void CustomRandomizeServers() {
                 continue;
             }
 
-            int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
             bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
+            if (blockSmallRooms && isSmallRoom) {
+                SBServerSetIntValueA(server, "dwc_eval", blockedSmallRoomEval);
+                continue;
+            }
 
             int serverRating = SBServerGetIntValueA(server, key, 0);
             int diff = playerRating - serverRating;
@@ -176,30 +215,29 @@ void CustomRandomizeServers() {
                 eval = diff;
             }
 
-            if (isCompetitiveMatchmakingEnabled && isSmallRoom) {
-                eval += smallRoomPenalty;
-            }
-
             SBServerSetIntValueA(server, "dwc_eval", eval);
         }
         // Sort by dwc_eval ascending (closest first)
         ServerBrowserSortA(sb, true, "dwc_eval", 0);
     } else {
         // Fallback to random
-        const int previousRoomPenalty = 2000000000;
         for (int i = 0; i < count; ++i) {
             void* server = ServerBrowserGetServerAtIndexA(sb, i);
             if (!server) continue;
-            int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
             int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
+            if (isCompetitiveMatchmakingEnabled && serverPlayerCount >= 12) {
+                SBServerSetIntValueA(server, "dwc_eval", fullRoomEval);
+                continue;
+            }
+
+            int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
             bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
             if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) {
                 SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
+            } else if (blockSmallRooms && isSmallRoom) {
+                SBServerSetIntValueA(server, "dwc_eval", blockedSmallRoomEval);
             } else {
-                int eval = rand();
-                if (isCompetitiveMatchmakingEnabled && isSmallRoom) {
-                    eval += smallRoomPenalty;
-                }
+                int eval = blockSmallRooms ? (rand() & 0x3fffffff) : rand();
                 SBServerSetIntValueA(server, "dwc_eval", eval);
             }
         }
