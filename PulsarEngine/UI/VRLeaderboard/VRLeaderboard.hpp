@@ -35,7 +35,7 @@ class VRLeaderboardPage : public Page {
     void OnBackButtonClick(PushButton& button, u32 hudSlotId);
     void ResetRowsToLoading();
     void ApplyResults();
-    void ApplyError(const char* msg);
+    void ApplyError();
 
     enum FetchState {
         FETCH_IDLE = 0,
