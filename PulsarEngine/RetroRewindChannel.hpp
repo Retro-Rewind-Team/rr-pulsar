@@ -7,6 +7,7 @@ namespace Pulsar {
 #define RRC_SIGNATURE_ADDRESS 0x817ffff8
 #define RRC_SIGNATURE 0xDEADBEEF
 
+// IMPORTANT: Always keep these bitflags in sync with the channel's code when adding new ones so they don't conflict!
 #define RRC_BITFLAGS_ADDRESS 0x817ffff0
 #define RRC_BITFLAG_SEPARATE_SAVEGAME 0x1
 #define RRC_BITFLAG_LOADED_FROM_RR 0x2
