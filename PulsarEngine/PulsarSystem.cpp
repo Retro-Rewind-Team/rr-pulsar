@@ -93,7 +93,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         type = IOType_RIIVO;
         IOS::Close(ret);
     } else if (IsNewChannel() && !isDolphin) {
-        NewChannel_SetLoadedFromRRFlag();
+        NewChannel_Init();
         type = IOType_SD;
     } else {
         ret = IO::OpenFix("/dev/dolphin", IOS::MODE_NONE);
