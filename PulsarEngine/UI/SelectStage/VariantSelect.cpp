@@ -17,8 +17,10 @@
 */
 
 #include <UI/SelectStage/VariantSelect.hpp>
+#include <Ghost/UI/ExpGhostSelect.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCourse.hpp>
@@ -29,6 +31,10 @@
 
 namespace Pulsar {
 namespace UI {
+
+static bool IsTimeTrialVariantMenu() {
+    return Racedata::sInstance != nullptr && Racedata::sInstance->menusScenario.settings.gamemode == MODE_TIME_TRIAL;
+}
 
 VariantSelect::VariantSelect() {
     this->onBackPressHandler.subject = this;
@@ -47,6 +53,7 @@ void VariantSelect::OnActivate() {
     ToggleCourseSelectDecor(true);
     selectedPulsarId = CupsConfig::sInstance->GetSelected();
     PopulateVariantButtons();
+    UpdateBottomText();
 }
 
 void VariantSelect::OnDeactivate() {
@@ -97,6 +104,16 @@ void VariantSelect::ToggleCourseSelectDecor(bool hidden) {
 void VariantSelect::OnInit() {
     Pages::CourseSelect::OnInit();
     this->backButton.SetOnClickHandler(this->onBackClickHandler, 0);
+}
+
+void VariantSelect::UpdateBottomText() {
+    if (this->bottomText == nullptr) return;
+    if (!IsTimeTrialVariantMenu() || this->selectedPulsarId == PULSARID_NONE) return;
+
+    u32 bmgId = 0;
+    const Text::Info text = GetCourseBottomText(this->selectedPulsarId, &bmgId);
+    this->bottomText->isHidden = false;
+    this->bottomText->SetMessage(bmgId, &text);
 }
 
 void VariantSelect::OnBackPress(u32 hudSlotId) {

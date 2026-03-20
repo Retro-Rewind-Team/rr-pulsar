@@ -49,6 +49,7 @@ class VariantSelect : public Pages::CourseSelect {
     void PopulateVariantButtons();
     void ApplyVariantButtonState();
     void ResetVariantButtonState();
+    void UpdateBottomText();
     void ToggleCourseSelectDecor(bool hidden);
     PulsarId selectedPulsarId;
     u8 baseRowIdx;
