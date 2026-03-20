@@ -71,6 +71,12 @@ static inline u32 GetStoredTrackCount(u32 cupCount) {
     return GetStoredCupCount(cupCount) * 4;
 }
 
+static inline u16 CombineTrophyCount(u16 first, u16 second) {
+    u32 total = first + second;
+    if (total > 0xFFFF) total = 0xFFFF;
+    return static_cast<u16>(total);
+}
+
 static const Track* GetSourceTracks(const CupsHolder& cups) {
     return &cups.tracks[0];
 }
@@ -227,7 +233,9 @@ CupsConfig::CupsConfig(const CupsHolder& rtCups, const CupsHolder& ctCups, const
     }
     definedCTsCupCount = count;
     ctsCupCount = count;
-    for (int i = 0; i < 4; ++i) trophyCount[i] = rtCups.trophyCount[i];
+    for (int i = 0; i < 4; ++i) {
+        trophyCount[i] = CombineTrophyCount(rtCups.trophyCount[i], ctCups.trophyCount[i]);
+    }
 
     const u16 rtTrackCount = retroCupCount * 4;
     const u16 ctTrackCount = ctOnlyCupCount * 4;

@@ -118,7 +118,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     CupsConfig::sInstance = new CupsConfig(rtCups, ctCups, btCups);
     this->info.Init(confRT.GetSection<InfoHolder>().info);
     this->InitIO(type);
-    this->InitSettings(&rtCups.trophyCount[0]);
+    this->InitSettings(&CupsConfig::sInstance->trophyCount[0]);
 
     u32 rtTrackCount = rtCups.ctsCupCount * 4;
     u32 ctTrackCount = ctCups.ctsCupCount * 4;
