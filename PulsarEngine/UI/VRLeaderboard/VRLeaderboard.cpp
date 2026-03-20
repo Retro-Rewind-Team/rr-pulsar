@@ -119,7 +119,7 @@ kmBranch(0x800ed6b4, NHTTPFreeFromEggHeap);
 
 VRLeaderboardPage::FetchState VRLeaderboardPage::s_fetchState = VRLeaderboardPage::FETCH_IDLE;
 bool VRLeaderboardPage::s_hasApplied = false;
-VRLeaderboardPage::Entry VRLeaderboardPage::s_entries[VRLeaderboardPage::kMaxEntries];
+VRLeaderboardPage::Entry* VRLeaderboardPage::s_entries = nullptr;
 
 static wchar_t s_statusText[128];
 static wchar_t s_bottomStatusText[128];
@@ -499,10 +499,36 @@ void VRLeaderboardPage::OnActivate() {
     s_loadedAPIPage = 0;
     s_loadedEntryCount = 0;
     ResetRowsToLoading();
+
+    if (s_entries == nullptr) {
+        EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
+        if (heap != nullptr) {
+            s_entries = new (heap, 0x20) Entry[kMaxEntries];
+        }
+    }
+    if (s_entries == nullptr) {
+        s_fetchState = FETCH_ERROR;
+        return;
+    }
+
     // OS::Report("[VRLeaderboard] OnActivate\n");
     // Play leaderboard loading sound effect
     this->PlaySound(SOUND_ID_BUTTON_SELECT, -1);
     StartFetch(this);
+}
+
+void VRLeaderboardPage::OnDeactivate() {
+    ++s_requestGeneration;
+    s_fetchState = FETCH_IDLE;
+    s_hasApplied = false;
+    s_loadedAPIPage = 0;
+    s_loadedEntryCount = 0;
+    s_currentUserFriendCode = 0;
+    s_entrySoundFrameCounter = 0;
+    s_lastLoggedState = -1;
+
+    delete[] s_entries;
+    s_entries = nullptr;
 }
 
 void VRLeaderboardPage::BeforeEntranceAnimations() {
@@ -631,6 +657,11 @@ void VRLeaderboardPage::ResetRowsToLoading() {
 }
 
 void VRLeaderboardPage::ApplyResults() {
+    if (s_entries == nullptr) {
+        ApplyError();
+        return;
+    }
+
     const int base = static_cast<int>(curPage % kPagesPerAPIFetch) * kRowsPerPage;
     for (int i = 0; i < kRowsPerPage; ++i) {
         const int idx = base + i;
@@ -748,7 +779,7 @@ void VRLeaderboardPage::ApplyError() {
 
 void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
     if (s_fetchState == FETCH_REQUESTING) return;
-    if (page == nullptr) {
+    if (page == nullptr || s_entries == nullptr) {
         s_fetchState = FETCH_ERROR;
         return;
     }
@@ -769,7 +800,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
         // OS::Report("[VRLeaderboard] Current user friend code: %llu\n", s_currentUserFriendCode);
     }
 
-    memset(s_entries, 0, sizeof(s_entries));
+    memset(s_entries, 0, sizeof(Entry) * kMaxEntries);
 
     if (!s_nhttpStarted) {
         const s32 startupRet = NHTTPStartup(reinterpret_cast<void*>(&NHTTPAllocFromEggHeap),
@@ -832,6 +863,11 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     if (ctx != nullptr && ctx->generation != s_requestGeneration) {
         // OS::Report("[VRLeaderboard] ignoring stale response gen=%u curGen=%u\n", ctx->generation, s_requestGeneration);
         NHTTPDestroyResponse(response);
+        return;
+    }
+    if (s_entries == nullptr) {
+        NHTTPDestroyResponse(response);
+        s_fetchState = FETCH_ERROR;
         return;
     }
 
