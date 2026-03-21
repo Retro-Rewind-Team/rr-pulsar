@@ -81,9 +81,17 @@ NandUtils::Result SDIO_CheckRKSYSLength(NandMgr* nm, u32 length)  // 8052c20c
         int mode = IO::sInstance->type == IOType_DOLPHIN ? FILE_MODE_READ : O_RDONLY;
         res = IO::sInstance->OpenFile(path, mode);
         if (!res) {
-            OS::Report("* SDIO_RKSYS: CheckRKSYSLength: Failed to open RKSYS\n");
+            OS::Report("* SDIO_RKSYS: CheckRKSYSLength: Failed to open RKSYS. We'll create a new one.\n");
             IO::sInstance->Close();
-            return NandUtils::NAND_RESULT_NOEXISTS;
+            // We do it this way rather than falling through "properly" because of how the game handles creation.
+            // Given that when separate savegame is disabled, the game will try to read the existing save,
+            // we cannot let the game normally create the save, since it assumes the created save is empty.
+            // Therefore, the game displays an empty save file (even if we copied an existing one) until the game is restarted.
+            // We fix this by sneakily creating one early, and pretending it was there all along. This way, 
+            // when the game tries to read the save, it reads the correct save from the start, and if it needs to create a new one,
+            // it creates it without us having to do anything special.
+            NandUtils::Result cres = SDIO_CreateRKSYS(nm, length);
+            return cres;
         }
 
         s32 size = IO::sInstance->GetFileSize();
