@@ -180,7 +180,7 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
         SDIO_RKSYS_path(path, sizeof(path));
 
         OS::Report("* SDIO_RKSYS: CreateRKSYS (%s)\n", path);
-        int mode = IO::sInstance->type == IOType_DOLPHIN ? O_RDWR : O_RDWR & O_CREAT;
+        int mode = IO::sInstance->type == IOType_DOLPHIN ? O_RDWR : IOS::MODE_WRITE;
 
         res = IO::sInstance->CreateAndOpen(path, mode);
 
