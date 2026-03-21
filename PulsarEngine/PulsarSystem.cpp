@@ -209,11 +209,7 @@ void System::InitIO(IOType type) const {
         Debug::FatalError(path);
     }
     char ghostPath[IOS::ipcMaxPath];
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsRT");
-    io->CreateFolder(ghostPath);
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsCT");
-    io->CreateFolder(ghostPath);
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsBT");
+    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/Ghosts");
     io->CreateFolder(ghostPath);
 }
 #pragma suppress_warnings reset

@@ -361,20 +361,7 @@ int CupsConfig::GetCRC32(PulsarId pulsarId) const {
 void CupsConfig::GetTrackGhostFolder(char* dest, PulsarId pulsarId, u8 variantIdx) const {
     const u32 crc32 = this->GetCRC32(pulsarId);
     const char* modFolder = System::sInstance->GetModFolder();
-    const char* ghostFolder;
-    if (IsReg(pulsarId)) {
-        ghostFolder = "GhostsRT";
-    } else {
-        u32 trackIdx = pulsarId - PULSARID_FIRSTCT;
-        u32 rtTrackCount = this->retroCupCount * 4;
-        u32 ctTrackCount = this->ctOnlyCupCount * 4;
-        if (trackIdx < rtTrackCount)
-            ghostFolder = "GhostsRT";
-        else if (trackIdx < rtTrackCount + ctTrackCount)
-            ghostFolder = "GhostsCT";
-        else
-            ghostFolder = "GhostsBT";
-    }
+    const char* ghostFolder = "Ghosts";
     if (IsReg(pulsarId))
         snprintf(dest, IOS::ipcMaxPath, "%s/%s/%s", modFolder, ghostFolder, &crc32);
     else if (variantIdx == 0)
@@ -576,19 +563,18 @@ void CupsConfig::SetLayout() {
 Settings::Hook CTLayout(CupsConfig::SetLayout);
 
 void CupsConfig::GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantIdx) const {
-    const char* ghostFolder;
+    const char* ghostFolder = "Ghosts";
+    const char* expertsFolder = "Experts";
     u32 trackIdx = id - PULSARID_FIRSTCT;
     u32 rtTrackCount = this->retroCupCount * 4;
     u32 ctTrackCount = this->ctOnlyCupCount * 4;
     if (trackIdx < rtTrackCount)
-        ghostFolder = "GhostsRT";
-    else if (trackIdx < rtTrackCount + ctTrackCount)
-        ghostFolder = "GhostsCT";
+        expertsFolder = "ExpertsRT";
     else
-        ghostFolder = "GhostsBT";
+        expertsFolder = "ExpertsCT";
     if (this->IsReg(id)) {
         const u32 crc32 = this->GetCRC32(id);
-        snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%s_%s.rkg", ghostFolder, &crc32, System::ttModeFolders[mode]);
+        snprintf(dest, IOS::ipcMaxPath, "%s/%s/%s_%s.rkg", ghostFolder, expertsFolder, &crc32, System::ttModeFolders[mode]);
     } else {
         u32 localIdx = trackIdx;
         if (trackIdx >= rtTrackCount + ctTrackCount)
@@ -596,9 +582,9 @@ void CupsConfig::GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantI
         else if (trackIdx >= rtTrackCount)
             localIdx = trackIdx - rtTrackCount;
         if (variantIdx == 0) {
-            snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%d_%s.rkg", ghostFolder, localIdx, System::ttModeFolders[mode]);
+            snprintf(dest, IOS::ipcMaxPath, "%s/%s/%d_%s.rkg", ghostFolder, expertsFolder, localIdx, System::ttModeFolders[mode]);
         } else {
-            snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%d_v%d_%s.rkg", ghostFolder, localIdx, variantIdx, System::ttModeFolders[mode]);
+            snprintf(dest, IOS::ipcMaxPath, "%s/%s/%d_v%d_%s.rkg", ghostFolder, expertsFolder, localIdx, variantIdx, System::ttModeFolders[mode]);
         }
     }
 }
