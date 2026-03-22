@@ -1,6 +1,7 @@
 ﻿#include <RetroRewind.hpp>
 #include <MarioKartWii/3D/GameScreenEffects/GameScreenEffects.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
+#include <SlotExpansion/CupsConfig.hpp>
 #include <kamek.hpp>
 
 namespace Frameskip {
@@ -351,7 +352,10 @@ static void ResetFrameskipState() {
 static SectionLoadHook ResetFrameskipHook(ResetFrameskipState);
 
 static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr* mgr) {
-    if (*(u32*)0x80001638 >= 15 || Pulsar::ItemRain::IsItemRainEnabled()) {
+    const Pulsar::CupsConfig* cupsConfig = Pulsar::CupsConfig::sInstance;
+    Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
+    bool isNoLightningFlashTrack = Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 166 || Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 117;  // SW2 Whistlestop Summit/3DS Rosalina's Ice World
+    if (*(u32*)0x80001638 >= 15 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack) {
         return;
     }
     mgr->Update();
