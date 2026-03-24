@@ -15,6 +15,7 @@
 #include <core/egg/mem/Heap.hpp>
 #include <core/rvl/DWC/DWCAccount.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
+#include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <core/nw4r/lyt/TextBox.hpp>
 #include <include/c_stdio.h>
@@ -24,13 +25,6 @@
 #include <Settings/SettingsParam.hpp>
 
 kmWrite32(0x800c9980, 0x4800000c);  // b 0x800c998c
-
-void* NHTTPCreateRequest(const char* url, int param_2, void* buffer, u32 length, void* callback, void* userdata);
-s32 NHTTPSendRequestAsync(void* request);
-s32 NHTTPDestroyResponse(void* response);
-s32 NHTTPSetRootCADefault();
-s32 NHTTPSetVerifyOption(u32 option);
-s32 NHTTPStartup(void* alloc, void* free, u32 param_3);
 
 static void NHTTPConfigureHttpsForRequest(void* request) {
     if (request == nullptr) return;
