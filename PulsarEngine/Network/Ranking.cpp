@@ -56,6 +56,7 @@ static const u64 ANT_BADGE_FC_LIST[] = {
     116565656533ULL,  // ImZeraora
     524266609436ULL,  // TheBeefBai
     42949793189ULL,  // Mikudayo
+    125154416615ULL,  // Galden
     0ULL};
 
 static bool IsPriorityBadgeFC(u64 fc) {
