@@ -19,6 +19,29 @@ static CharacterId charID = CHARACTER_NONE;
 static char smallImageKey[32] = "";
 static char smallImageText[32] = "";
 
+// 27/03/26 - ADDED THIS DUE TO 
+// FINDING A BUG WITH THE CHARACTER ICONS
+// WHILE ONLINE
+//
+// FORCING THE FIRST CHAR INDEX OF THE FIRST PLAYER
+// LOADED INTO THE SPECTATE VIEW
+
+static bool CheckSpectatingView() 
+{
+    if (!SectionMgr::sInstance || !SectionMgr::sInstance->curSection) return false;
+
+    // BRUTE FORCE OF VARIOUS MENU SCENARIOUS
+    // MAKE SURE THAT THE CORE ONES ARE INVOLVED
+    SectionId id = SectionMgr::sInstance->curSection->sectionId;
+    return id == SECTION_WATCH_GHOST_FROM_CHANNEL
+        || id == SECTION_WATCH_GHOST_FROM_DOWNLOADS
+        || id == SECTION_WATCH_GHOST_FROM_MENU
+        || id == SECTION_P1_WIFI_VS_LIVEVIEW
+        || id == SECTION_P2_WIFI_VS_LIVEVIEW
+        || id == SECTION_P1_WIFI_BT_LIVEVIEW
+        || id == SECTION_P2_WIFI_BT_LIVEVIEW;
+}
+
 // Removes 00 1A escapes from the BMG text
 void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
     int inc = 0;
@@ -58,10 +81,6 @@ void DiscordRichPresence(Section* _this) {
     float vr = 0, br = 0;
     u64 fc = 0;
 
-    // NULL TERMINATE PROPERLY AFTER EACH REFERENCE
-    // (WIP) THIS REFERENCE EXTENDS TO THE SAME REFERENCE
-    // IN THE BUFFER
-
     smallImageKey[0] = 0;
     smallImageText[0] = 0;
 
@@ -84,14 +103,12 @@ void DiscordRichPresence(Section* _this) {
         largeImageText = fcText;
     }
 
-    // ACCESS THE CURRENT CHARACTER SELECTED
-    // ONLY ASSUME SELECTED ONCE IN A RACE
-    // 
-    // IT IS NOW ASSUMED THAT THE PLAYER IDX
-    // IS MADE AVAILABLE UNDER RACE DATA - NOT INFO
-
     Racedata* raceData = Racedata::sInstance;
-    if(raceData && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO))
+    if(raceData 
+        && Raceinfo::sInstance 
+        && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO)
+        && !Raceinfo::sInstance->isSpectating
+        && !CheckSpectatingView())
     {
         const RacedataPlayer& player = raceData->menusScenario.players[0];
         charID = player.characterId;
@@ -323,6 +340,9 @@ void DiscordRichPresence(Section* _this) {
             details = "Watching a GP Replay";
             break;
         case SECTION_TT_REPLAY:
+        case SECTION_WATCH_GHOST_FROM_CHANNEL:
+        case SECTION_WATCH_GHOST_FROM_DOWNLOADS:
+        case SECTION_WATCH_GHOST_FROM_MENU:
             details = "Watching a TT Replay";
             break;
         case SECTION_P1_WIFI:
