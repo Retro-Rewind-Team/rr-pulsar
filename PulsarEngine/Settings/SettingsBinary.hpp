@@ -110,7 +110,7 @@ struct PagesHolderV1 {
 class alignas(0x20) Binary {
     static const u32 binMagic = 'PULP';
     static const u32 sectionCount = 4;
-    static const u32 curVersion = 4;
+    static const u32 curVersion = 5;
 
     Binary(u32 pulsarPageCount, u32 userPageCount, u32 trackCount);
 

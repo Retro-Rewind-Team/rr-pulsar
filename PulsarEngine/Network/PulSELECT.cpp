@@ -271,10 +271,13 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
     RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     const u8 hostAid = controller->subs[controller->currentSub].hostAid;
     const RKNet::OnlineMode mode = self.mode;
+    const RKNet::RoomType roomType = controller->roomType;
+    const bool isFriendRoom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    const bool isFriendRoomVS = isFriendRoom && (mode == RKNet::ONLINEMODE_PRIVATE_VS || mode == RKNet::ONLINEMODE_PUBLIC_VS);
 
     if (mode == RKNet::ONLINEMODE_PRIVATE_VS && system->IsContext(PULSAR_MODE_KO)) system->koMgr->PatchAids(sub);
 
-    if (mode == RKNet::ONLINEMODE_PRIVATE_VS && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS)) {
+    if (isFriendRoomVS && system->IsContext(PULSAR_HAW)) {
         self.toSendPacket.winningVoterAid = hostAid;
         u16 hostVote = self.toSendPacket.pulVote;
         bool hostVotedRandom = (hostVote == 0xFF);

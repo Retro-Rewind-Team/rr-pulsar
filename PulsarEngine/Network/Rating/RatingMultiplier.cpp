@@ -94,18 +94,13 @@ float GetMultiplier() {
 
     float base = (valid && IsEventDay(month, day)) ? 2.0f : 1.0f;
 
-    // Item Rain VR multiplier (1.25x) - Jan 27-29, 2026
-    if (IsItemRainEventActive() && ItemRain::IsItemRainEnabled()) {
-        base *= 1.25f;
-    }
-
-    // Weekend VR multiplier (1.25x) for the active region
+    // Weekend VR multiplier (1.5x) for the active region
     u8 currentRegion = System::sInstance->netMgr.region;
-    if (IsWeekendMultiplierActiveForRegion(currentRegion)) {
-        base *= 1.25f;
+    if (IsWeekendMultiplierActiveForRegion(currentRegion) || (sdt->month == 4 && sdt->day == 1)) {
+        base *= 1.5f;
     }
 #ifdef BETA
-    return (base + GetBattleBonus()) * 1.15f;
+    return (base + GetBattleBonus()) * 1.25f;
 #endif
 
     return base + GetBattleBonus();

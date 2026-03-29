@@ -6,6 +6,7 @@
 #include <MarioKartWii/Item/Obj/ItemObj.hpp>
 #include <PulsarSystem.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
+#include <Race/ConditionalTrackState.hpp>
 
 // https://wiki.tockdom.com/wiki/LEX_(File_Format)
 
@@ -21,6 +22,9 @@ void LexMgr::Reset() {
 
 const KMPHeader* LexMgr::LoadLEXAndKMP(u32, const char* kmpString) {
     Pulsar::System* system = Pulsar::System::sInstance;
+    Pulsar::Race::ResetConditionalObjectsTrackState();
+    Pulsar::Race::ResetConditionalRouteGroupsState();
+
     LexMgr& self = system->lecodeMgr.lexMgr;
     self.Reset();
     if (system->IsContext(Pulsar::PULSAR_CT)) {

@@ -2,9 +2,35 @@
 #include <Ghost/GhostManager.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace Ghosts {
+typedef int (*FastStaffGhostUnlockFunc)(CourseId courseId);
+
+kmRuntimeUse(0x80550468);
+const FastStaffGhostUnlockFunc realIsFastStaffGhostUnlocked = reinterpret_cast<FastStaffGhostUnlockFunc>kmRuntimeAddr(0x80550468);
+
+bool ResolveTrackFromCourseId(CourseId courseId, PulsarId& trackId, CourseId& realCourseId, u8& variantIdx) {
+    trackId = static_cast<PulsarId>(courseId);
+    realCourseId = courseId;
+    variantIdx = 0;
+
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (cupsConfig != nullptr) {
+        const PulsarId winning = cupsConfig->GetWinning();
+        const CourseId winningSlot = cupsConfig->GetCorrectTrackSlot();
+        if (courseId == static_cast<CourseId>(winning) || courseId == winningSlot) {
+            trackId = winning;
+            variantIdx = cupsConfig->GetCurVariantIdx();
+            realCourseId = CupsConfig::ConvertTrack_PulsarIdToRealId(winning);
+            return true;
+        }
+    }
+
+    return !CupsConfig::IsReg(trackId);
+}
+
 const char Leaderboard::filePathFormat[] = "%s/ldb.pul";
 // CTOR to build a leaderboard from scratch
 Leaderboard::Leaderboard() {
@@ -138,13 +164,39 @@ kmCall(0x8085da54, Leaderboard::GetEntry);
 
 // Correct BMG if you beat the expert
 kmWrite32(0x8085d744, 0x38805000);
-int Leaderboard::ExpertBMGDisplay() {
+int Leaderboard::ExpertBMGDisplay(CourseId courseId) {
+    PulsarId trackId;
+    CourseId realCourseId;
+    u8 variantIdx;
+    const bool hasPulsarTrack = ResolveTrackFromCourseId(courseId, trackId, realCourseId, variantIdx);
+    if (!hasPulsarTrack || CupsConfig::IsReg(trackId)) {
+        return realIsFastStaffGhostUnlocked(realCourseId);
+    }
+
+    if (System::sInstance == nullptr || System::sInstance->heap == nullptr) return 1;
+
     Mgr* manager = Mgr::sInstance;
-    manager->GetLeaderboard().EntryToTimer(manager->entry.timer, ENTRY_1ST);
+    if (manager == nullptr) {
+        manager = new (System::sInstance->heap, 0x20) Mgr;
+        Mgr::sInstance = manager;
+    }
+
+    if (manager->pulsarId != trackId || manager->variantIdx != variantIdx || manager->files == nullptr) {
+        manager->Init(trackId, variantIdx);
+    }
+
+    Timer bestTime;
+    manager->GetLeaderboard().EntryToTimer(bestTime, ENTRY_1ST);
     const Timer& expert = manager->GetExpert();
-    if (expert.isActive && expert > manager->entry.timer) return 2;
+    if (expert.isActive && bestTime.isActive && expert > bestTime) return 2;
     return 1;
 }
+kmCall(0x805e2360, Leaderboard::ExpertBMGDisplay);
+kmCall(0x805e237c, Leaderboard::ExpertBMGDisplay);
+kmCall(0x80613758, Leaderboard::ExpertBMGDisplay);
+kmCall(0x80617ef8, Leaderboard::ExpertBMGDisplay);
+kmCall(0x80618e28, Leaderboard::ExpertBMGDisplay);
+kmCall(0x8085d60c, Leaderboard::ExpertBMGDisplay);
 kmCall(0x8085dc0c, Leaderboard::ExpertBMGDisplay);
 kmWrite32(0x8085dc10, 0x38000002);
 

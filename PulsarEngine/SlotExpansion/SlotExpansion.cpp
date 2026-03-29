@@ -1,10 +1,14 @@
 
 #include <MarioKartWii/UI/Page/Menu/CupSelect.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
+#include <MarioKartWii/UI/Page/Other/YesNo.hpp>
+#include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Page/Other/Votes.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/Archive/ArchiveFile.hpp>
+#include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <core/egg/Archive.hpp>
 
@@ -42,6 +46,32 @@ void SetVotedTrack(Pages::Vote* vote) {  // cast because we actually want to tra
     vote->SetVotedCourseId(static_cast<CourseId>(id));
 }
 kmCall(0x8084099c, SetVotedTrack);
+
+static bool ShouldForceHAWRandomVote() {
+    const System* system = System::sInstance;
+    if (system == nullptr || !system->IsContext(PULSAR_HAW)) return false;
+
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return false;
+
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    return sub.localAid != sub.hostAid;
+}
+
+static void HandleCourseSelectTimeout(Pages::YesNo* page) {
+    if (page->currentState != STATE_ACTIVE) return;
+
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || !IsOnlineSection(sectionMgr->curSection->sectionId)) return;
+
+    Pages::SELECTStageMgr* selectStageMgr = sectionMgr->curSection->Get<Pages::SELECTStageMgr>();
+    if (selectStageMgr == nullptr) return;
+
+    if (ShouldForceHAWRandomVote() || selectStageMgr->countdown.countdown <= 0.0f) {
+        selectStageMgr->countdown.countdown = 0.0f;
+    }
+}
+kmBranch(0x80652564, HandleCourseSelectTimeout);
 
 // CtrlMenuCupSelectCup::OnCupButtonClick patch that updates lastSelectCup so that the game remembers it in btw races
 void UpdateLastSelCup(Pages::CupSelect* page, CtrlMenuCupSelectCup& cups, PushButton& button, u32 hudSlotId) {
@@ -140,33 +170,60 @@ static void VSRaceRandomFix(SectionParams* params) {  // properly randomizes tra
 kmBranch(0x805e32ec, VSRaceRandomFix);
 kmWrite32(0x8084e5e4, 0x60000000);  // nop racedata courseId store since it's done in the function
 
+static void AdvanceOrderedVSTrack(const CupsConfig& cupsConfig, PulsarCupId& cupId, u32& rowIdx) {
+    ++rowIdx;
+    if (rowIdx == 4) {
+        cupId = cupsConfig.GetNextCupId(cupId, 1);
+        rowIdx = 0;
+    }
+}
+
+static u8 GetOrderedVSVariantCount(const CupsConfig& cupsConfig, PulsarId trackId) {
+    if (CupsConfig::IsReg(trackId)) return 1;
+    return static_cast<u8>(cupsConfig.GetTrack(trackId).variantCount + 1);
+}
+
+static u8 ClampOrderedVSVariantIdx(const CupsConfig& cupsConfig, PulsarId trackId, u8 variantIdx) {
+    const u8 variantCount = GetOrderedVSVariantCount(cupsConfig, trackId);
+    if (variantCount == 0 || variantIdx >= variantCount) return 0;
+    return variantIdx;
+}
+
+static void AppendOrderedVSTrackVariants(SectionParams* params, CupsConfig& cupsConfig, PulsarCupId& cupId, u32& rowIdx, u32& scheduleIdx, u8 startVariantIdx, bool wrapVariants) {
+    const PulsarId trackId = cupsConfig.ConvertTrack_PulsarCupToTrack(cupId, rowIdx);
+    const u8 variantCount = GetOrderedVSVariantCount(cupsConfig, trackId);
+    const u8 firstVariantIdx = ClampOrderedVSVariantIdx(cupsConfig, trackId, startVariantIdx);
+
+    const u32 variantsToSchedule = wrapVariants ? variantCount : static_cast<u32>(variantCount - firstVariantIdx);
+    for (u32 variantOffset = 0; variantOffset < variantsToSchedule && scheduleIdx < 32; ++variantOffset) {
+        const u8 variantIdx = wrapVariants ? static_cast<u8>((firstVariantIdx + variantOffset) % variantCount)
+                                           : static_cast<u8>(firstVariantIdx + variantOffset);
+        params->vsTracks[scheduleIdx] = static_cast<CourseId>(trackId);
+        cupsConfig.vsTrackVariantIdx[scheduleIdx] = variantIdx;
+        ++scheduleIdx;
+    }
+
+    AdvanceOrderedVSTrack(cupsConfig, cupId, rowIdx);
+}
+
 // Same as GP, racedata only ever has courseId
 static void VSRaceOrderedFix(SectionParams* params) {
-    register const Pages::CourseSelect* course;
-    asm(mr course, r29;);
-    u32 rowIdx = 0;
-    for (int i = 0; i < 4; ++i) {
-        const CourseButton& cur = course->CtrlMenuCourseSelectCourse.courseButtons[i];
-        if (cur.IsSelected()) {
-            rowIdx = i;
-            break;
-        }
-    }
     params->vsRaceLimit = 32;
     CupsConfig* cupsConfig = CupsConfig::sInstance;
-    // const PulsarId initial = cupsConfig->winningCourse;
-    PulsarCupId cupId = cupsConfig->lastSelectedCup;
+    PulsarId selectedTrack = cupsConfig->GetSelected();
+    if (selectedTrack == PULSARID_NONE) selectedTrack = cupsConfig->GetWinning();
+    PulsarCupId cupId = CupsConfig::ConvertCup_PulsarTrackToCup(selectedTrack);
+    u32 rowIdx = static_cast<u32>(selectedTrack) % 4;
+    const u8 selectedVariantIdx = cupsConfig->GetCurVariantIdx();
     u32 idx = 0;
+
+    AppendOrderedVSTrackVariants(params, *cupsConfig, cupId, rowIdx, idx, selectedVariantIdx, false);
     while (idx < 32) {
-        params->vsTracks[idx] = static_cast<CourseId>(cupsConfig->ConvertTrack_PulsarCupToTrack(cupId, rowIdx));
-        cupsConfig->vsTrackVariantIdx[idx] = 0;
-        ++idx;
-        ++rowIdx;
-        if (rowIdx == 4) {
-            cupId = cupsConfig->GetNextCupId(cupId, 1);
-            rowIdx = 0;
-        }
+        AppendOrderedVSTrackVariants(params, *cupsConfig, cupId, rowIdx, idx, 0, true);
     }
+
+    cupsConfig->SetWinning(static_cast<PulsarId>(params->vsTracks[0]), cupsConfig->vsTrackVariantIdx[0]);
+    Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
 };
 kmCall(0x80840a24, VSRaceOrderedFix);
 
@@ -176,10 +233,17 @@ CourseId VSNextTrackFix(PulsarId pulsarId) {  // properly sets the next track
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
         const SectionParams* params = sectionMgr->sectionParams;
-        for (u32 i = 0; i < 32; ++i) {
-            if (params->vsTracks[i] == static_cast<CourseId>(pulsarId)) {
-                variantIdx = cupsConfig->vsTrackVariantIdx[i];
-                break;
+        if (params->vsRaceLimit != 0) {
+            const u32 raceIdx = params->vsRaceNumber % params->vsRaceLimit;
+            if (params->vsTracks[raceIdx] == static_cast<CourseId>(pulsarId)) {
+                variantIdx = cupsConfig->vsTrackVariantIdx[raceIdx];
+            } else {
+                for (u32 i = 0; i < 32; ++i) {
+                    if (params->vsTracks[i] == static_cast<CourseId>(pulsarId)) {
+                        variantIdx = cupsConfig->vsTrackVariantIdx[i];
+                        break;
+                    }
+                }
             }
         }
     }

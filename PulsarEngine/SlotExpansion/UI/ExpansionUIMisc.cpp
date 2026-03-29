@@ -17,6 +17,10 @@ namespace Pulsar {
 namespace UI {
 
 static void BuildBlockedTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen);
+static void RemoveAllEscapeSequences(wchar_t* dest, const wchar_t* src);
+static u32 AppendTrackTextPreservingColor(wchar_t* dest, const wchar_t* src, u32 outLen, u32 maxLen);
+
+static void BuildTrackNameAndAuthor(wchar_t* dest, const wchar_t* trackName, const wchar_t* authorName, u32 maxLen);
 
 static bool IsGroupedTrack(PulsarId id) {
     if (CupsConfig::IsReg(id)) return false;
@@ -204,31 +208,64 @@ int GetCurTrackBMG() {
     return GetTrackBMGId(CupsConfig::sInstance->GetWinning(), false);
 }
 
+u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
+    if (CupsConfig::IsReg(trackId) || trackBmgId < BMG_TRACKS) return BMG_NINTENDO;
+
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const u32 VARIANT_TRACKS_BASE = 0x400000;
+    const u32 VARIANT_AUTHORS_BASE = 0x500000;
+
+    const bool hasVariants = cupsConfig->GetTrack(trackId).variantCount > 0;
+    const u8 curVariant = cupsConfig->GetCurVariantIdx();
+    const u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(trackId);
+
+    if (hasVariants && curVariant > 0 && trackBmgId >= VARIANT_TRACKS_BASE && trackBmgId < VARIANT_AUTHORS_BASE) {
+        return VARIANT_AUTHORS_BASE + (trackBmgId - VARIANT_TRACKS_BASE);
+    }
+    if (trackBmgId >= VARIANT_TRACKS_BASE && trackBmgId < VARIANT_AUTHORS_BASE) {
+        return BMG_AUTHORS + realId;
+    }
+    if (trackBmgId >= BMG_TRACKS && trackBmgId < VARIANT_TRACKS_BASE) {
+        return BMG_AUTHORS + realId;
+    }
+
+    const u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+                                static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC),
+                                Pulsar::SCROLLER_LANGUAGE)) *
+                            0x1000;
+    return trackBmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
+}
+
+bool SetTrackNameAuthorMessage(LayoutUIControl& control, PulsarId trackId, u32 trackBmgId) {
+    if (CupsConfig::IsReg(trackId)) return false;
+
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const bool hasVariants = cupsConfig->GetTrack(trackId).variantCount > 0;
+    const u32 trackNameBmgId =
+        hasVariants ? GetTrackVariantBMGId(trackId, static_cast<u8>(cupsConfig->GetCurVariantIdx())) : GetTrackBMGId(trackId, true);
+    const u32 authorId = GetTrackAuthorBMGId(trackId, trackBmgId);
+    const wchar_t* trackText = GetCustomMsg(trackNameBmgId);
+    const wchar_t* authorText = GetCustomMsg(authorId);
+
+    if (trackText == nullptr || authorText == nullptr) return false;
+
+    static wchar_t s_trackAuthorBuffer[0x200];
+    BuildTrackNameAndAuthor(s_trackAuthorBuffer, trackText, authorText, 0x200);
+    Text::Info customInfo;
+    customInfo.strings[0] = s_trackAuthorBuffer;
+    control.SetMessage(BMG_TEXT, &customInfo);
+    return true;
+}
+
 static void SetVSIntroBmgId(LayoutUIControl* trackName) {
     u32 bmgId = GetCurTrackBMG();
     Text::Info info;
     info.bmgToPass[0] = bmgId;
-    u32 authorId;
     const PulsarId winning = CupsConfig::sInstance->GetWinning();
     if (CupsConfig::IsReg(winning)) return;
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE)) * 0x1000;
-    const u32 VARIANT_TRACKS_BASE = 0x400000;
-    const u32 VARIANT_AUTHORS_BASE = 0x500000;
-    bool hasVariants = cupsConfig->GetTrack(winning).variantCount > 0;
-    u8 curVariant = cupsConfig->GetCurVariantIdx();
-    u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(winning);
-    if (bmgId < BMG_TRACKS)
-        authorId = BMG_NINTENDO;
-    else if (hasVariants && curVariant > 0 && bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE)
-        authorId = VARIANT_AUTHORS_BASE + (bmgId - VARIANT_TRACKS_BASE);
-    else if (bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE)
-        authorId = BMG_AUTHORS + realId;
-    else if (bmgId >= BMG_TRACKS && bmgId < VARIANT_TRACKS_BASE)
-        authorId = BMG_AUTHORS + realId;
-    else
-        authorId = bmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
-    info.bmgToPass[1] = authorId;
+    if (SetTrackNameAuthorMessage(*trackName, winning, bmgId)) return;
+
+    info.bmgToPass[1] = GetTrackAuthorBMGId(winning, bmgId);
     trackName->SetMessage(BMG_INFO_DISPLAY, &info);
 }
 kmCall(0x808552cc, SetVSIntroBmgId);
@@ -445,6 +482,7 @@ static void ExtCourseSelectCupInitSelf(CtrlMenuCourseSelectCup* courseCups) {
 kmWritePointer(0x808d3190, ExtCourseSelectCupInitSelf);  // 807e45c0
 
 static const wchar_t COLOR_ESCAPE_RED[] = {0x001A, 0x0800, 0x0001, 0x0017, 0x0000};
+static const wchar_t FONT_SIZE_ESCAPE_SMALL[] = {0x001A, 0x0800, 0x0000, 0x0050, 0x0000};
 
 static void RemoveAllEscapeSequences(wchar_t* dest, const wchar_t* src) {
     while (*src != L'\0') {
@@ -465,6 +503,75 @@ static void BuildBlockedTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen)
         dest[i] = COLOR_ESCAPE_RED[i];
     }
     RemoveAllEscapeSequences(dest + prefixLen, src);
+}
+
+static void BuildTrackNameAndAuthor(wchar_t* dest, const wchar_t* trackName, const wchar_t* authorName, u32 maxLen) {
+    if (maxLen == 0) return;
+
+    wchar_t cleanAuthor[0x100];
+    RemoveAllEscapeSequences(cleanAuthor, authorName);
+
+    u32 out = AppendTrackTextPreservingColor(dest, trackName, 0, maxLen);
+
+    if (out < maxLen - 1) {
+        dest[out++] = L'\n';
+    }
+
+    const u32 prefixLen = 4;
+    for (u32 i = 0; i < prefixLen && out < maxLen - 1; ++i) {
+        dest[out++] = FONT_SIZE_ESCAPE_SMALL[i];
+    }
+
+    const wchar_t* curAuthor = cleanAuthor;
+    while (*curAuthor != L'\0' && out < maxLen - 1) {
+        dest[out++] = *curAuthor++;
+    }
+
+    dest[out] = L'\0';
+}
+
+static u32 AppendTrackTextPreservingColor(wchar_t* dest, const wchar_t* src, u32 outLen, u32 maxLen) {
+    if (src == nullptr || maxLen == 0 || outLen >= maxLen - 1) return outLen;
+
+    u8* destBytes = reinterpret_cast<u8*>(dest);
+    const u8* srcBytes = reinterpret_cast<const u8*>(src);
+    u32 outBytes = outLen * sizeof(wchar_t);
+    const u32 maxDataBytes = (maxLen - 1) * sizeof(wchar_t);
+
+    while (outBytes < maxDataBytes) {
+        const wchar_t cur = *reinterpret_cast<const wchar_t*>(srcBytes);
+        if (cur == L'\0') break;
+
+        if (cur == 0x001A) {
+            const u8 escapeLen = srcBytes[2];
+            if ((escapeLen == 0) || (escapeLen & 1)) break;
+
+            bool keepEscape = false;
+            if (escapeLen >= 8) {
+                const wchar_t* escapeWchars = reinterpret_cast<const wchar_t*>(srcBytes);
+                const u8 escapeType = srcBytes[3];
+                keepEscape = (escapeType == 0) && (escapeWchars[2] == 0x0001);
+            }
+
+            if (keepEscape) {
+                if (outBytes + escapeLen > maxDataBytes) break;
+                for (u32 i = 0; i < static_cast<u32>(escapeLen); ++i) {
+                    destBytes[outBytes + i] = srcBytes[i];
+                }
+                outBytes += escapeLen;
+            }
+            srcBytes += escapeLen;
+            continue;
+        }
+
+        if (outBytes + sizeof(wchar_t) > maxDataBytes) break;
+        *reinterpret_cast<wchar_t*>(destBytes + outBytes) = cur;
+        outBytes += sizeof(wchar_t);
+        srcBytes += sizeof(wchar_t);
+    }
+
+    dest[outBytes / sizeof(wchar_t)] = L'\0';
+    return outBytes / sizeof(wchar_t);
 }
 
 static wchar_t s_blockedTrackNameBuffer[4][0x100];

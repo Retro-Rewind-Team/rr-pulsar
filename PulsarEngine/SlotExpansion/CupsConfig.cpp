@@ -63,6 +63,42 @@ static char* DuplicateFileName(const char* src) {
     return copy;
 }
 
+static inline u32 GetStoredCupCount(u32 cupCount) {
+    return (cupCount & 1) != 0 ? cupCount + 1 : cupCount;
+}
+
+static inline u32 GetStoredTrackCount(u32 cupCount) {
+    return GetStoredCupCount(cupCount) * 4;
+}
+
+static inline u16 CombineTrophyCount(u16 first, u16 second) {
+    u32 total = first + second;
+    if (total > 0xFFFF) total = 0xFFFF;
+    return static_cast<u16>(total);
+}
+
+static const Track* GetSourceTracks(const CupsHolder& cups) {
+    return &cups.tracks[0];
+}
+
+static const Variant* GetSourceVariants(const CupsHolder& cups) {
+    const u8* trackData = reinterpret_cast<const u8*>(&cups.tracks[0]);
+    return reinterpret_cast<const Variant*>(trackData + sizeof(Track) * GetStoredTrackCount(cups.ctsCupCount));
+}
+
+static const u16* GetSourceAlphabeticalArray(const CupsHolder& cups) {
+    const u8* variantData = reinterpret_cast<const u8*>(GetSourceVariants(cups));
+    return reinterpret_cast<const u16*>(variantData + sizeof(Variant) * cups.totalVariantCount);
+}
+
+static u32 CountSourceVariants(const Track* tracks, u32 trackCount) {
+    u32 count = 0;
+    for (u32 i = 0; i < trackCount; ++i) {
+        count += tracks[i].variantCount;
+    }
+    return count;
+}
+
 CupsConfig* CupsConfig::sInstance = nullptr;
 
 CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
@@ -113,15 +149,20 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
         memset(variantFileNames, 0, sizeof(char*) * totalVariantCount);
     }
 
-    memcpy(mainTracks, &rawCups.tracks, sizeof(Track) * ctsCount);
-    memcpy(variants, (reinterpret_cast<const u8*>(&rawCups.tracks) + sizeof(Track) * ctsCount), sizeof(Variant) * rawCups.totalVariantCount);
+    const Track* sourceTracks = GetSourceTracks(rawCups);
+    memcpy(mainTracks, sourceTracks, sizeof(Track) * ctsCount);
+
+    if (rawCups.totalVariantCount != 0) {
+        const Variant* sourceVariants = GetSourceVariants(rawCups);
+        memcpy(variants, sourceVariants, sizeof(Variant) * rawCups.totalVariantCount);
+    }
 
     for (int i = 0; i < 176; ++i) {
         alphabeticalArray[i] = i;
         invertedAlphabeticalArray[i] = i;
     }
 
-    const u16* originalAlphabeticalArray = reinterpret_cast<const u16*>(reinterpret_cast<const u8*>(&rawCups.tracks) + sizeof(Track) * ctsCount);
+    const u16* originalAlphabeticalArray = GetSourceAlphabeticalArray(rawCups);
 
     u16 lastTrackIndices[88];
     for (int i = 0; i < 88; ++i) {
@@ -179,7 +220,6 @@ CupsConfig::CupsConfig(const CupsHolder& rtCups, const CupsHolder& ctCups, const
     memset(this->vsTrackVariantIdx, 0, sizeof(this->vsTrackVariantIdx));
     lastVariantIdxByTrack = new u8[0x2000];
     memset(lastVariantIdxByTrack, 0, 0x2000);
-    totalVariantCount = rtCups.totalVariantCount + ctCups.totalVariantCount + btCups.totalVariantCount;
     if (regsMode != 1) {
         lastSelectedCup = PULSARCUPID_FIRSTCT;
         selectedCourse = PULSARID_FIRSTCT;
@@ -193,12 +233,26 @@ CupsConfig::CupsConfig(const CupsHolder& rtCups, const CupsHolder& ctCups, const
     }
     definedCTsCupCount = count;
     ctsCupCount = count;
-    for (int i = 0; i < 4; ++i) trophyCount[i] = rtCups.trophyCount[i];
+    for (int i = 0; i < 4; ++i) {
+        trophyCount[i] = CombineTrophyCount(rtCups.trophyCount[i], ctCups.trophyCount[i]);
+    }
 
-    u16 rtTrackCount = retroCupCount * 4;
-    u16 ctTrackCount = ctOnlyCupCount * 4;
-    u16 btTrackCount = battleCupCount * 4;
-    u16 ctsCount = count * 4;
+    const u16 rtTrackCount = retroCupCount * 4;
+    const u16 ctTrackCount = ctOnlyCupCount * 4;
+    const u16 btTrackCount = battleCupCount * 4;
+    const u16 ctsCount = count * 4;
+    const u16 rtStoredTrackCount = GetStoredTrackCount(rtCups.ctsCupCount);
+    const u16 ctStoredTrackCount = GetStoredTrackCount(ctCups.ctsCupCount);
+    const u16 btStoredTrackCount = GetStoredTrackCount(btCups.ctsCupCount);
+
+    const Track* rtSourceTracks = GetSourceTracks(rtCups);
+    const Track* ctSourceTracks = GetSourceTracks(ctCups);
+    const Track* btSourceTracks = GetSourceTracks(btCups);
+
+    const u32 rtVariantCount = CountSourceVariants(rtSourceTracks, rtTrackCount);
+    const u32 ctVariantCount = CountSourceVariants(ctSourceTracks, ctTrackCount);
+    const u32 btVariantCount = CountSourceVariants(btSourceTracks, btTrackCount);
+    totalVariantCount = rtVariantCount + ctVariantCount + btVariantCount;
 
     mainTracks = new Track[ctsCount];
     variants = new Variant[totalVariantCount];
@@ -214,29 +268,27 @@ CupsConfig::CupsConfig(const CupsHolder& rtCups, const CupsHolder& ctCups, const
         memset(variantFileNames, 0, sizeof(char*) * totalVariantCount);
     }
 
-    memcpy(mainTracks, &rtCups.tracks, sizeof(Track) * rtTrackCount);
-    memcpy(mainTracks + rtTrackCount, &ctCups.tracks, sizeof(Track) * ctTrackCount);
-    memcpy(mainTracks + rtTrackCount + ctTrackCount, &btCups.tracks, sizeof(Track) * btTrackCount);
+    memcpy(mainTracks, rtSourceTracks, sizeof(Track) * rtTrackCount);
+    memcpy(mainTracks + rtTrackCount, ctSourceTracks, sizeof(Track) * ctTrackCount);
+    memcpy(mainTracks + rtTrackCount + ctTrackCount, btSourceTracks, sizeof(Track) * btTrackCount);
     if (ctsCount > rtTrackCount + ctTrackCount + btTrackCount) {
         memset(mainTracks + rtTrackCount + ctTrackCount + btTrackCount, 0,
                sizeof(Track) * (ctsCount - rtTrackCount - ctTrackCount - btTrackCount));
     }
 
-    const u8* rtVarData = reinterpret_cast<const u8*>(&rtCups.tracks) + sizeof(Track) * rtTrackCount;
-    const u8* ctVarData = reinterpret_cast<const u8*>(&ctCups.tracks) + sizeof(Track) * ctTrackCount;
-    const u8* btVarData = reinterpret_cast<const u8*>(&btCups.tracks) + sizeof(Track) * btTrackCount;
-    memcpy(variants, rtVarData, sizeof(Variant) * rtCups.totalVariantCount);
-    memcpy(reinterpret_cast<u8*>(variants) + sizeof(Variant) * rtCups.totalVariantCount,
-           ctVarData, sizeof(Variant) * ctCups.totalVariantCount);
-    memcpy(reinterpret_cast<u8*>(variants) + sizeof(Variant) * (rtCups.totalVariantCount + ctCups.totalVariantCount),
-           btVarData, sizeof(Variant) * btCups.totalVariantCount);
+    const u8* rtVarData = reinterpret_cast<const u8*>(&rtCups.tracks[0]) + sizeof(Track) * rtStoredTrackCount;
+    const u8* ctVarData = reinterpret_cast<const u8*>(&ctCups.tracks[0]) + sizeof(Track) * ctStoredTrackCount;
+    const u8* btVarData = reinterpret_cast<const u8*>(&btCups.tracks[0]) + sizeof(Track) * btStoredTrackCount;
+    if (rtVariantCount != 0) memcpy(variants, rtVarData, sizeof(Variant) * rtVariantCount);
+    if (ctVariantCount != 0) memcpy(variants + rtVariantCount, ctVarData, sizeof(Variant) * ctVariantCount);
+    if (btVariantCount != 0) memcpy(variants + rtVariantCount + ctVariantCount, btVarData, sizeof(Variant) * btVariantCount);
 
     for (u32 i = 0; i < static_cast<u32>(ctsCount); ++i) {
         alphabeticalArray[i] = i;
         invertedAlphabeticalArray[i] = i;
     }
 
-    const u16* ctOrigAlphabetical = reinterpret_cast<const u16*>(ctVarData);
+    const u16* ctOrigAlphabetical = GetSourceAlphabeticalArray(ctCups);
     if (ctTrackCount > 0) {
         u16* ctTrackIndices = new u16[ctTrackCount];
         for (u32 i = 0; i < ctTrackCount; ++i) {
@@ -309,20 +361,7 @@ int CupsConfig::GetCRC32(PulsarId pulsarId) const {
 void CupsConfig::GetTrackGhostFolder(char* dest, PulsarId pulsarId, u8 variantIdx) const {
     const u32 crc32 = this->GetCRC32(pulsarId);
     const char* modFolder = System::sInstance->GetModFolder();
-    const char* ghostFolder;
-    if (IsReg(pulsarId)) {
-        ghostFolder = "GhostsRT";
-    } else {
-        u32 trackIdx = pulsarId - PULSARID_FIRSTCT;
-        u32 rtTrackCount = this->retroCupCount * 4;
-        u32 ctTrackCount = this->ctOnlyCupCount * 4;
-        if (trackIdx < rtTrackCount)
-            ghostFolder = "GhostsRT";
-        else if (trackIdx < rtTrackCount + ctTrackCount)
-            ghostFolder = "GhostsCT";
-        else
-            ghostFolder = "GhostsBT";
-    }
+    const char* ghostFolder = "Ghosts";
     if (IsReg(pulsarId))
         snprintf(dest, IOS::ipcMaxPath, "%s/%s/%s", modFolder, ghostFolder, &crc32);
     else if (variantIdx == 0)
@@ -331,7 +370,7 @@ void CupsConfig::GetTrackGhostFolder(char* dest, PulsarId pulsarId, u8 variantId
         snprintf(dest, IOS::ipcMaxPath, "%s/%s/%08x/%d", modFolder, ghostFolder, crc32, variantIdx);
 }
 
-void CupsConfig::LoadFileNames(const char* buffer, u32 length, u32 trackIdxOffset) {
+void CupsConfig::LoadFileNames(const char* buffer, u32 length, u32 trackIdxOffset, u32 sourceTrackCount) {
     if (buffer == nullptr || length == 0 || this->GetCtsTrackCount() == 0) return;
     char* temp = new char[length + 1];
     memcpy(temp, buffer, length);
@@ -375,10 +414,14 @@ void CupsConfig::LoadFileNames(const char* buffer, u32 length, u32 trackIdxOffse
         *pipe = '\0';
         TrimLine(valueStr);
         const u32 rawTrackIdx = key & 0x0FFF;
+        if (sourceTrackCount != 0 && rawTrackIdx >= sourceTrackCount) continue;
         const u32 variantIdx = key >> 12;
         u32 trackIdx = rawTrackIdx + trackIdxOffset;
-        if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount()) && rawTrackIdx < static_cast<u32>(this->GetCtsTrackCount())) {
-            trackIdx = rawTrackIdx;
+        if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount())) {
+            if (sourceTrackCount == 0 && rawTrackIdx < static_cast<u32>(this->GetCtsTrackCount()))
+                trackIdx = rawTrackIdx;
+            else
+                continue;
         }
         this->RegisterFileName(trackIdx, variantIdx, valueStr);
     }
@@ -454,11 +497,12 @@ void CupsConfig::SetLastSelectedVariant(PulsarId id, u8 variantIdx) {
 
 void CupsConfig::SetWinning(PulsarId id, u32 variantIdx) {
     if (variantIdx == 0xFF) variantIdx = 0;
+    if (IsReg(id)) variantIdx = 0;
 
     if (!IsReg(id)) {
         const Track& track = GetTrack(id);
+        if (variantIdx > track.variantCount) variantIdx = 0;
         cur.crc32 = track.crc32;
-        const GameMode mode = Racedata::sInstance->menusScenario.settings.gamemode;
 
         u8 slot;
         u8 musicSlot;
@@ -519,19 +563,18 @@ void CupsConfig::SetLayout() {
 Settings::Hook CTLayout(CupsConfig::SetLayout);
 
 void CupsConfig::GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantIdx) const {
-    const char* ghostFolder;
+    const char* ghostFolder = "Ghosts";
+    const char* expertsFolder = "Experts";
     u32 trackIdx = id - PULSARID_FIRSTCT;
     u32 rtTrackCount = this->retroCupCount * 4;
     u32 ctTrackCount = this->ctOnlyCupCount * 4;
     if (trackIdx < rtTrackCount)
-        ghostFolder = "GhostsRT";
-    else if (trackIdx < rtTrackCount + ctTrackCount)
-        ghostFolder = "GhostsCT";
+        expertsFolder = "ExpertsRT";
     else
-        ghostFolder = "GhostsBT";
+        expertsFolder = "ExpertsCT";
     if (this->IsReg(id)) {
         const u32 crc32 = this->GetCRC32(id);
-        snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%s_%s.rkg", ghostFolder, &crc32, System::ttModeFolders[mode]);
+        snprintf(dest, IOS::ipcMaxPath, "%s/%s/%s_%s.rkg", ghostFolder, expertsFolder, &crc32, System::ttModeFolders[mode]);
     } else {
         u32 localIdx = trackIdx;
         if (trackIdx >= rtTrackCount + ctTrackCount)
@@ -539,9 +582,9 @@ void CupsConfig::GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantI
         else if (trackIdx >= rtTrackCount)
             localIdx = trackIdx - rtTrackCount;
         if (variantIdx == 0) {
-            snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%d_%s.rkg", ghostFolder, localIdx, System::ttModeFolders[mode]);
+            snprintf(dest, IOS::ipcMaxPath, "%s/%s/%d_%s.rkg", ghostFolder, expertsFolder, localIdx, System::ttModeFolders[mode]);
         } else {
-            snprintf(dest, IOS::ipcMaxPath, "%s/Experts/%d_v%d_%s.rkg", ghostFolder, localIdx, variantIdx, System::ttModeFolders[mode]);
+            snprintf(dest, IOS::ipcMaxPath, "%s/%s/%d_v%d_%s.rkg", ghostFolder, expertsFolder, localIdx, variantIdx, System::ttModeFolders[mode]);
         }
     }
 }

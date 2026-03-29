@@ -1,5 +1,6 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
+#include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/3D/Camera/CameraMgr.hpp>
 #include <MarioKartWii/CourseMgr.hpp>
 #include <MarioKartWii/KMP/GOBJ.hpp>
@@ -13,6 +14,7 @@
 #include <MarioKartWii/Objects/KCL/ObjectKCLManager.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Race/ConditionalTrackState.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -23,15 +25,24 @@ struct ObjectConditionalView {
 };
 
 struct ConditionalConfig {
+    enum Mode {
+        MODE_LAP_RANGE,
+        MODE_CHECKPOINT_RANGE,
+        MODE_LAP_PROGRESS_RANGE
+    };
+
     u8 startIdx;
     u8 endIdx;
-    bool useCheckpointMode;
+    u8 startProgressPercent;
+    u8 endProgressPercent;
+    Mode mode;
     bool invert;
 };
 
 struct ConditionalState {
     bool isConditional;
     bool isActive;
+    bool isCollisionActive;
     u8 localScreenCount;
     bool screenIsActive[4];
 };
@@ -49,6 +60,7 @@ static bool IsModelDirectorReadyForPerScreenVisibility(const ModelDirector* dire
 static void InitConditionalState(ConditionalState& state) {
     state.isConditional = false;
     state.isActive = true;
+    state.isCollisionActive = true;
     state.localScreenCount = 1;
     FillScreenState(state.screenIsActive, true);
 }
@@ -62,12 +74,28 @@ static const u32 BOXCOL_FLAG_ITEM = 0x2;
 static const u32 BOXCOL_FLAG_OBJECT = 0x4;
 static const u32 BOXCOL_FLAG_OBJECT_OBSTACLE_ENEMY = 0x8;
 static const u32 BOXCOL_FLAG_DRIVABLE = 0x10;
+static const u8 MAX_CONDITIONAL_LAP_INDEX_COUNT = 8;
+static const char* CONDITIONAL_OBJECTS_ENABLE_FILE = "enable.cobj";
+
+enum ConditionalTrackFileState {
+    CONDITIONAL_TRACK_FILE_UNKNOWN = -1,
+    CONDITIONAL_TRACK_FILE_MISSING = 0,
+    CONDITIONAL_TRACK_FILE_PRESENT = 1
+};
 
 struct BoxColUnitView {
     u8 padding[0x0c];
     u32 unitType;
     void* userData;
 };
+
+static const void* sCachedCourseArchive = nullptr;
+static s8 sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
+
+void ResetConditionalObjectsTrackState() {
+    sCachedCourseArchive = nullptr;
+    sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
+}
 
 void PushConditionalCollisionPlayerContext(u8 playerId) {
     if (playerId >= 12) playerId = 0xFF;
@@ -102,41 +130,166 @@ static bool IsInWrappedRange(u8 value, u8 start, u8 end) {
     return value >= start || value <= end;
 }
 
+static bool IsInWrappedRange(u16 value, u16 start, u16 end, u16 wrapSize) {
+    if (wrapSize == 0) return false;
+    if (value >= wrapSize) value = static_cast<u16>(wrapSize - 1);
+    if (start >= wrapSize) start = static_cast<u16>(wrapSize - 1);
+    if (end >= wrapSize) end = static_cast<u16>(wrapSize - 1);
+
+    if (start <= end) return value >= start && value <= end;
+    return value >= start || value <= end;
+}
+
+static bool IsTrackConditionalObjectsEnabled() {
+    const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+    if (archiveMgr == nullptr) {
+        ResetConditionalObjectsTrackState();
+        return false;
+    }
+
+    const void* courseArchive = archiveMgr->GetArchive(ARCHIVE_HOLDER_COURSE, 0);
+    if (courseArchive != sCachedCourseArchive) {
+        sCachedCourseArchive = courseArchive;
+        sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
+    }
+
+    if (sConditionalTrackFileState == CONDITIONAL_TRACK_FILE_UNKNOWN) {
+        if (courseArchive == nullptr) return false;
+
+        const void* condFile = archiveMgr->GetFile(ARCHIVE_HOLDER_COURSE, CONDITIONAL_OBJECTS_ENABLE_FILE, nullptr);
+        sConditionalTrackFileState = (condFile != nullptr) ? CONDITIONAL_TRACK_FILE_PRESENT : CONDITIONAL_TRACK_FILE_MISSING;
+    }
+
+    return sConditionalTrackFileState == CONDITIONAL_TRACK_FILE_PRESENT;
+}
+
 static const GOBJ* GetObjectGobj(const Object& object) {
     const ObjectConditionalView& view = reinterpret_cast<const ObjectConditionalView&>(object);
     if (view.gobjLink == nullptr) return nullptr;
     return *reinterpret_cast<GOBJ* const*>(view.gobjLink);
 }
 
+static bool TryGetTrackDefinedLapCount(u8& lapCount) {
+    const KMP::Manager* kmp = KMP::Manager::sInstance;
+    if (kmp == nullptr || kmp->stgiSection == nullptr || kmp->stgiSection->holdersArray[0] == nullptr ||
+        kmp->stgiSection->holdersArray[0]->raw == nullptr) {
+        return false;
+    }
+
+    lapCount = kmp->stgiSection->holdersArray[0]->raw->lapCount;
+    if (lapCount == 0) return false;
+    if (lapCount > MAX_CONDITIONAL_LAP_INDEX_COUNT) lapCount = MAX_CONDITIONAL_LAP_INDEX_COUNT;
+    return true;
+}
+
 static bool TryGetConditionalConfig(const Object& object, ConditionalConfig& config) {
+    static const u16 LAP_PROGRESS_STEPS_PER_LAP = 100;
+    if (!IsTrackConditionalObjectsEnabled()) return false;
+
     const GOBJ* gobj = GetObjectGobj(object);
     if (gobj == nullptr) return false;
 
     const u16 flags = gobj->presenceFlags;
     const u8 mode = static_cast<u8>((flags >> 3) & 0x7);
-    if (mode == 0 || mode > 4) return false;
+    if (mode == 0 || mode > 6) return false;
 
     config.startIdx = static_cast<u8>((flags >> 6) & 0x7);
     config.endIdx = static_cast<u8>((flags >> 9) & 0x7);
-    config.useCheckpointMode = (mode == 2 || mode == 4);
-    config.invert = (mode == 3 || mode == 4);
+    config.startProgressPercent = 0;
+    config.endProgressPercent = 0;
+
+    if (mode == 2 || mode == 4) {
+        config.mode = ConditionalConfig::MODE_CHECKPOINT_RANGE;
+    } else if (mode == 5 || mode == 6) {
+        config.mode = ConditionalConfig::MODE_LAP_PROGRESS_RANGE;
+
+        // For lap progression modes, GOBJ padding packs start/end lap percentage as [start, end] bytes.
+        config.startProgressPercent = static_cast<u8>((gobj->padding >> 8) & 0xFF);
+        config.endProgressPercent = static_cast<u8>(gobj->padding & 0xFF);
+        if (config.startProgressPercent > LAP_PROGRESS_STEPS_PER_LAP) config.startProgressPercent = LAP_PROGRESS_STEPS_PER_LAP;
+        if (config.endProgressPercent > LAP_PROGRESS_STEPS_PER_LAP) config.endProgressPercent = LAP_PROGRESS_STEPS_PER_LAP;
+    } else {
+        config.mode = ConditionalConfig::MODE_LAP_RANGE;
+    }
+
+    config.invert = (mode == 3 || mode == 4 || mode == 6);
     return true;
 }
 
-static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, bool useCheckpointMode, u16 ckptCount, u8 startIdx, u8 endIdx) {
-    u8 currentIdx = 0;
-    if (useCheckpointMode) {
-        u16 checkpoint = player.checkpoint;
-        if (checkpoint >= ckptCount) checkpoint = static_cast<u16>(ckptCount - 1);
-        currentIdx = static_cast<u8>((checkpoint * 8u) / ckptCount);
-        if (currentIdx > 7) currentIdx = 7;
-    } else {
-        u16 currentLap = player.currentLap;
-        if (currentLap == 0) currentLap = 1;
-        if (currentLap > 8) currentLap = 8;
-        currentIdx = static_cast<u8>(currentLap - 1);
+static u8 GetPlayerLapRangeIdx(const RaceinfoPlayer& player, u8 trackLapCount) {
+    u16 currentLap = player.currentLap;
+    if (currentLap == 0) currentLap = 1;
+
+    if (trackLapCount > 0) {
+        currentLap = static_cast<u16>(((currentLap - 1) % trackLapCount) + 1);
+    } else if (currentLap > MAX_CONDITIONAL_LAP_INDEX_COUNT) {
+        currentLap = MAX_CONDITIONAL_LAP_INDEX_COUNT;
     }
-    return IsInWrappedRange(currentIdx, startIdx, endIdx);
+
+    if (currentLap > MAX_CONDITIONAL_LAP_INDEX_COUNT) currentLap = MAX_CONDITIONAL_LAP_INDEX_COUNT;
+    return static_cast<u8>(currentLap - 1);
+}
+
+static u8 GetPlayerCheckpointRangeIdx(const RaceinfoPlayer& player, u16 ckptCount) {
+    u16 checkpoint = player.checkpoint;
+    if (checkpoint >= ckptCount) checkpoint = static_cast<u16>(ckptCount - 1);
+
+    u8 currentIdx = static_cast<u8>((checkpoint * 8u) / ckptCount);
+    if (currentIdx > 7) currentIdx = 7;
+    return currentIdx;
+}
+
+static u16 GetLapProgressValue(u8 lapIdx, u8 progressPercent) {
+    static const u16 LAP_PROGRESS_STEPS_PER_LAP = 100;
+    static const u16 LAP_PROGRESS_WRAP = 8 * LAP_PROGRESS_STEPS_PER_LAP;
+
+    if (lapIdx > 7) lapIdx = 7;
+    if (progressPercent > LAP_PROGRESS_STEPS_PER_LAP) progressPercent = LAP_PROGRESS_STEPS_PER_LAP;
+
+    u16 value = static_cast<u16>(lapIdx) * LAP_PROGRESS_STEPS_PER_LAP + progressPercent;
+    if (value >= LAP_PROGRESS_WRAP) value = static_cast<u16>(LAP_PROGRESS_WRAP - 1);
+    return value;
+}
+
+static u16 GetPlayerLapProgressRangeValue(const RaceinfoPlayer& player, u8 trackLapCount) {
+    static const float LAP_PROGRESS_STEPS_PER_LAP_FLOAT = 100.0f;
+    static const s32 LAP_PROGRESS_STEPS_PER_LAP_INT = 100;
+    static const u16 LAP_PROGRESS_WRAP = 800;
+
+    float raceCompletion = player.raceCompletion;
+    if (raceCompletion < 1.0f) raceCompletion = 1.0f;
+    if (trackLapCount == 0 && raceCompletion > 9.0f) raceCompletion = 9.0f;
+
+    s32 lapProgress = static_cast<s32>((raceCompletion - 1.0f) * LAP_PROGRESS_STEPS_PER_LAP_FLOAT);
+    if (lapProgress < 0) lapProgress = 0;
+    if (trackLapCount > 0) {
+        const s32 lapProgressCycleWrap = static_cast<s32>(trackLapCount) * LAP_PROGRESS_STEPS_PER_LAP_INT;
+        if (lapProgressCycleWrap > 0) lapProgress %= lapProgressCycleWrap;
+    }
+    if (lapProgress >= LAP_PROGRESS_WRAP) lapProgress = LAP_PROGRESS_WRAP - 1;
+    return static_cast<u16>(lapProgress);
+}
+
+static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, const ConditionalConfig& config, u16 ckptCount, u8 trackLapCount) {
+    switch (config.mode) {
+        case ConditionalConfig::MODE_CHECKPOINT_RANGE: {
+            const u8 checkpointIdx = GetPlayerCheckpointRangeIdx(player, ckptCount);
+            return IsInWrappedRange(checkpointIdx, config.startIdx, config.endIdx);
+        }
+        case ConditionalConfig::MODE_LAP_PROGRESS_RANGE: {
+            static const u16 LAP_PROGRESS_WRAP = 800;
+
+            const u16 currentProgress = GetPlayerLapProgressRangeValue(player, trackLapCount);
+            const u16 startProgress = GetLapProgressValue(config.startIdx, config.startProgressPercent);
+            const u16 endProgress = GetLapProgressValue(config.endIdx, config.endProgressPercent);
+            return IsInWrappedRange(currentProgress, startProgress, endProgress, LAP_PROGRESS_WRAP);
+        }
+        default:
+            break;
+    }
+
+    const u8 lapIdx = GetPlayerLapRangeIdx(player, trackLapCount);
+    return IsInWrappedRange(lapIdx, config.startIdx, config.endIdx);
 }
 
 static bool EvaluateConditionalForPlayer(const ConditionalConfig& config, u8 playerId) {
@@ -148,13 +301,16 @@ static bool EvaluateConditionalForPlayer(const ConditionalConfig& config, u8 pla
     if (player == nullptr) return true;
 
     u16 ckptCount = 0;
-    if (config.useCheckpointMode) {
+    u8 trackLapCount = 0;
+    if (config.mode == ConditionalConfig::MODE_CHECKPOINT_RANGE) {
         const KMP::Manager* kmp = KMP::Manager::sInstance;
         if (kmp == nullptr || kmp->ckptSection == nullptr || kmp->ckptSection->pointCount == 0) return true;
         ckptCount = kmp->ckptSection->pointCount;
+    } else {
+        TryGetTrackDefinedLapCount(trackLapCount);
     }
 
-    const bool inRange = IsPlayerInConditionalRange(*player, config.useCheckpointMode, ckptCount, config.startIdx, config.endIdx);
+    const bool inRange = IsPlayerInConditionalRange(*player, config, ckptCount, trackLapCount);
     return config.invert ? !inRange : inRange;
 }
 
@@ -164,6 +320,17 @@ static bool IsConditionalReplayPlayer(const RacedataScenario& scenario, const Ra
     const PlayerType type = scenario.players[playerId].playerType;
     if (type != PLAYER_GHOST && type != PLAYER_REAL_LOCAL) return false;
     return raceInfo.players[playerId] != nullptr;
+}
+
+static bool EvaluateConditionalForAnyReplayPlayer(const ConditionalConfig& config, const RacedataScenario& scenario, const Raceinfo& raceInfo) {
+    bool hasReplayPlayer = false;
+    for (u8 playerId = 0; playerId < 12; ++playerId) {
+        if (!IsConditionalReplayPlayer(scenario, raceInfo, playerId)) continue;
+
+        hasReplayPlayer = true;
+        if (EvaluateConditionalForPlayer(config, playerId)) return true;
+    }
+    return !hasReplayPlayer;
 }
 
 static void EvaluateConditionalState(const Object& object, ConditionalState& state) {
@@ -182,6 +349,9 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
     const bool isTTMode = (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE);
 
     if (isTTMode) {
+        // Keep collision/update active whenever any replay-relevant player can interact with this object.
+        state.isCollisionActive = EvaluateConditionalForAnyReplayPlayer(config, scenario, *raceInfo);
+
         u8 watchedPlayerId = 0xFF;
         const RaceCameraMgr* cameraMgr = RaceCameraMgr::sInstance;
         if (cameraMgr != nullptr) {
@@ -197,7 +367,7 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
         if (watchedPlayerId != 0xFF) {
             state.isActive = EvaluateConditionalForPlayer(config, watchedPlayerId);
         } else {
-            state.isActive = true;
+            state.isActive = state.isCollisionActive;
         }
 
         state.localScreenCount = 1;
@@ -211,11 +381,15 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
     state.localScreenCount = localScreenCount;
     FillScreenState(state.screenIsActive, true);
     state.isActive = false;
+    state.isCollisionActive = false;
     for (u8 i = 0; i < localScreenCount; ++i) {
         const u8 playerId = scenario.settings.hudPlayerIds[i];
         const bool playerActive = EvaluateConditionalForPlayer(config, playerId);
         state.screenIsActive[i] = playerActive;
-        if (playerActive) state.isActive = true;
+        if (playerActive) {
+            state.isActive = true;
+            state.isCollisionActive = true;
+        }
     }
 }
 
@@ -269,7 +443,7 @@ static void ApplyConditionalState(Object& object, const ConditionalState& state)
     if (!state.isConditional) return;
 
     object.ToggleVisible(state.isActive);
-    if (state.isActive)
+    if (state.isCollisionActive)
         object.EnableCollision();
     else
         object.DisableCollision();
@@ -279,7 +453,7 @@ static void ApplyKCLConditionalState(Object& object, const ConditionalState& sta
     if (!state.isConditional) return;
 
     object.ToggleVisible(state.isActive);
-    if (state.isActive) {
+    if (state.isCollisionActive) {
         object.EnableCollision();
         if (object.entity != nullptr) object.entity->paramsBitfield |= 0x10;
     } else {
@@ -446,7 +620,7 @@ static void ConditionalObjectUpdate(Object* object) {
     ConditionalState state;
     EvaluateConditionalState(*object, state);
     ApplyConditionalState(*object, state);
-    if (state.isActive) object->Update();
+    if (state.isActive || state.isCollisionActive) object->Update();
 }
 kmCall(0x8082a9e0, ConditionalObjectUpdate);  // Object::Update call in ObjectsMgr::Update
 
@@ -462,7 +636,8 @@ static void ConditionalObjectModelUpdate(Object* object) {
 }
 kmCall(0x8082aa20, ConditionalObjectModelUpdate);  // Object::UpdateModel call in ObjectsMgr::Update
 
-static void ConditionalProcessAllAndCalcKCL(void* kclMgr) {
+kmRuntimeUse(0x8081b618);
+static void ConditionalProcessAllAndCalcKCL(void* kclMgr, ObjectsMgr& objectsMgr) {
     if (kclMgr != nullptr) {
         const u16 kclCount = *reinterpret_cast<const u16*>(reinterpret_cast<const u8*>(kclMgr) + 0x4);
         Object** kclObjects = *reinterpret_cast<Object***>(reinterpret_cast<u8*>(kclMgr) + 0x8);
@@ -476,6 +651,9 @@ static void ConditionalProcessAllAndCalcKCL(void* kclMgr) {
             ApplyPerScreenVisibility(*obj, state);
         }
     }
+    typedef void (*OriginalCalcFn)(void*);
+    OriginalCalcFn originalCalc = reinterpret_cast<OriginalCalcFn>(kmRuntimeAddr(0x8081b618));
+    originalCalc(kclMgr);
 }
 kmCall(0x8082aa40, ConditionalProcessAllAndCalcKCL);  // ObjectDriveableDirector::calc call in ObjectsMgr::Update
 
@@ -485,7 +663,7 @@ static void ConditionalKCLObjectUpdate(Object* object) {
     ConditionalState state;
     EvaluateConditionalState(*object, state);
     ApplyKCLConditionalState(*object, state);
-    if (state.isActive) object->Update();
+    if (state.isActive || state.isCollisionActive) object->Update();
 }
 kmCall(0x8081b658, ConditionalKCLObjectUpdate);  // ObjectKCL::Update call in ObjectDriveableDirector::calc
 

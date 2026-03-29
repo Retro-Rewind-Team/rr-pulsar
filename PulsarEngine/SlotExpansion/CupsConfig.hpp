@@ -34,7 +34,7 @@ class CupsConfig {
     void ToggleCTs(bool enabled);
     static void SetLayout();
     void GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantIdx) const;
-    void LoadFileNames(const char* buffer, u32 length, u32 trackIdxOffset = 0);
+    void LoadFileNames(const char* buffer, u32 length, u32 trackIdxOffset = 0, u32 sourceTrackCount = 0);
 
     // Ghosts
     int GetCRC32(PulsarId id) const;

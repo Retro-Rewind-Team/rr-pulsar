@@ -39,12 +39,12 @@ static const u64 PRIORITY_BADGE_FC_LIST[] = {
     8906072005ULL,  // ZPL
     100000011ULL,  // Dynohack
     348484848484ULL,  // Gab
-    464464664446ULL,  // Weebo
     331616161616ULL,  // Noel
     464666644446ULL,  // Eppe
     121212121245ULL,  // Bodacious
     506980546757ULL,  // Cyrus
     421507127201ULL,  // Jacher
+    417212285076ULL,  // y21
     800580ULL,  // Rambo
     81604380197ULL,  // Patchzy
     400032268799ULL,  // Wrkus
@@ -55,6 +55,8 @@ static const u64 ANT_BADGE_FC_LIST[] = {
     65400900000ULL,  // Fenixien
     116565656533ULL,  // ImZeraora
     524266609436ULL,  // TheBeefBai
+    42949793189ULL,  // Mikudayo
+    125154416615ULL,  // Galden
     0ULL};
 
 static bool IsPriorityBadgeFC(u64 fc) {
@@ -89,8 +91,8 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
     if (vrClamped < 0) vrClamped = 0;
     float vrNorm = (vrClamped / 1000.0f) * 100.0f;
 
-    float firstsNorm = (times1st >= 2500.0f) ? 100.0f : (100.0f * times1st / 2500.0f);
-    float distNorm = (distTravelled >= 50000.0f) ? 100.0f : (100.0f * distTravelled / 50000.0f);
+    float firstsNorm = (times1st >= 2250.0f) ? 100.0f : (100.0f * times1st / 2250.0f);
+    float distNorm = (distTravelled >= 40000.0f) ? 100.0f : (100.0f * distTravelled / 40000.0f);
     float distFirstNorm = (distInFirst >= 10000.0f) ? 100.0f : (100.0f * distInFirst / 10000.0f);
 
     const float W_VR = 0.60f;
@@ -126,8 +128,184 @@ static int ScoreToRank(float finalScore) {
     if (finalScore >= 48.0f) return 4;
     if (finalScore >= 36.0f) return 3;
     if (finalScore >= 24.0f) return 2;
-    if (finalScore >= 12.0f) return 1;
-    return 0;
+    // if (finalScore >= 12.0f) return 1;
+    return 1;
+}
+
+struct RankText {
+    const wchar_t* summaryFormat;
+    const wchar_t* noLicenseLoaded;
+    const wchar_t* detailsFormat;
+};
+
+static Language GetCurrentLanguage() {
+    return static_cast<Language>(
+        Settings::Mgr::Get().GetUserSettingValue(
+            static_cast<Settings::UserType>(Settings::SETTINGSTYPE_MISC),
+            SCROLLER_LANGUAGE));
+}
+
+static const RankText& GetRankText() {
+    static const RankText english = {
+        L"Rank: %ls\nScore: %d",
+        L"No license loaded.",
+        L"Retro Rewind Rank:\n"
+        L"VR: %u / 100000\n"
+        L"Win Rate: %.1f%% / 65%%\n"
+        L"1st Places: %u / 2250\n"
+        L"Distance: %.1f km / 40000 km\n"
+        L"1st Distance: %.1f km / 10000 km\n"
+        L"Score: %.2f points (need %.2f for Rank %ls)\n"};
+
+    static const RankText japanese = {
+        L"\u30E9\u30F3\u30AF: %ls\n\u30B9\u30B3\u30A2: %d",
+        L"\u30E9\u30A4\u30BB\u30F3\u30B9\u304C\u8AAD\u307F\u8FBC\u307E\u308C\u3066\u3044\u307E\u305B\u3093\u3002",
+        L"Retro Rewind\u30E9\u30F3\u30AF:\n"
+        L"VR: %u / 100000\n"
+        L"\u52DD\u7387: %.1f%% / 65%%\n"
+        L"1\u4F4D\u56DE\u6570: %u / 2250\n"
+        L"\u8D70\u884C\u8DDD\u96E2: %.1f km / 40000 km\n"
+        L"1\u4F4D\u8DDD\u96E2: %.1f km / 10000 km\n"
+        L"\u30B9\u30B3\u30A2: %.2f (\u5FC5\u8981: %.2f / \u30E9\u30F3\u30AF %ls)\n"};
+
+    static const RankText french = {
+        L"Rang : %ls\nScore : %d",
+        L"Aucune licence charg\u00E9e.",
+        L"Rang Retro Rewind :\n"
+        L"VR : %u / 100000\n"
+        L"Taux de victoire : %.1f%% / 65%%\n"
+        L"1res places : %u / 2250\n"
+        L"Distance : %.1f km / 40000 km\n"
+        L"Distance en 1re : %.1f km / 10000 km\n"
+        L"Score : %.2f points (il faut %.2f pour le rang %ls)\n"};
+
+    static const RankText german = {
+        L"Rang: %ls\nPunktzahl: %d",
+        L"Keine Lizenz geladen.",
+        L"Retro Rewind-Rang:\n"
+        L"VR: %u / 100000\n"
+        L"Siegrate: %.1f%% / 65%%\n"
+        L"1. Pl\u00E4tze: %u / 2250\n"
+        L"Distanz: %.1f km / 40000 km\n"
+        L"Distanz auf Platz 1: %.1f km / 10000 km\n"
+        L"Punktzahl: %.2f Punkte (%.2f ben\u00F6tigt f\u00FCr Rang %ls)\n"};
+
+    static const RankText dutch = {
+        L"Rang: %ls\nScore: %d",
+        L"Geen licentie geladen.",
+        L"Retro Rewind-rang:\n"
+        L"VR: %u / 100000\n"
+        L"Winstpercentage: %.1f%% / 65%%\n"
+        L"1e plaatsen: %u / 2250\n"
+        L"Afstand: %.1f km / 40000 km\n"
+        L"Afstand op plek 1: %.1f km / 10000 km\n"
+        L"Score: %.2f punten (%.2f nodig voor rang %ls)\n"};
+
+    static const RankText spanish = {
+        L"Rango: %ls\nPuntuaci\u00F3n: %d",
+        L"No hay licencia cargada.",
+        L"Rango de Retro Rewind:\n"
+        L"VR: %u / 100000\n"
+        L"Tasa de victorias: %.1f%% / 65%%\n"
+        L"Primeros puestos: %u / 2250\n"
+        L"Distancia: %.1f km / 40000 km\n"
+        L"Distancia en 1.er lugar: %.1f km / 10000 km\n"
+        L"Puntuaci\u00F3n: %.2f puntos (faltan %.2f para el rango %ls)\n"};
+
+    static const RankText finnish = {
+        L"Sijoitus: %ls\nPisteet: %d",
+        L"Lisenssi\u00E4 ei ole ladattu.",
+        L"Retro Rewind -sijoitus:\n"
+        L"VR: %u / 100000\n"
+        L"Voittoprosentti: %.1f%% / 65%%\n"
+        L"1. sijat: %u / 2250\n"
+        L"Matka: %.1f km / 40000 km\n"
+        L"Matka 1. sijalla: %.1f km / 10000 km\n"
+        L"Pisteet: %.2f (tarvitaan %.2f sijoitukseen %ls)\n"};
+
+    static const RankText italian = {
+        L"Grado: %ls\nPunteggio: %d",
+        L"Nessuna licenza caricata.",
+        L"Grado Retro Rewind:\n"
+        L"VR: %u / 100000\n"
+        L"Tasso di vittoria: %.1f%% / 65%%\n"
+        L"Primi posti: %u / 2250\n"
+        L"Distanza: %.1f km / 40000 km\n"
+        L"Distanza in 1a posizione: %.1f km / 10000 km\n"
+        L"Punteggio: %.2f punti (ne servono %.2f per il grado %ls)\n"};
+
+    static const RankText korean = {
+        L"\uB7AD\uD06C: %ls\n\uC810\uC218: %d",
+        L"\uB85C\uB4DC\uB41C \uB77C\uC774\uC13C\uC2A4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
+        L"Retro Rewind \uB7AD\uD06C:\n"
+        L"VR: %u / 100000\n"
+        L"\uC2B9\uB960: %.1f%% / 65%%\n"
+        L"1\uC704 \uD69F\uC218: %u / 2250\n"
+        L"\uC8FC\uD589 \uAC70\uB9AC: %.1f km / 40000 km\n"
+        L"1\uC704 \uC8FC\uD589 \uAC70\uB9AC: %.1f km / 10000 km\n"
+        L"\uC810\uC218: %.2f (\uD544\uC694: %.2f / \uB7AD\uD06C %ls)\n"};
+
+    static const RankText russian = {
+        L"\u0420\u0430\u043D\u0433: %ls\n\u041E\u0447\u043A\u0438: %d",
+        L"\u041B\u0438\u0446\u0435\u043D\u0437\u0438\u044F \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u0430.",
+        L"\u0420\u0430\u043D\u0433 Retro Rewind:\n"
+        L"VR: %u / 100000\n"
+        L"\u041F\u0440\u043E\u0446\u0435\u043D\u0442 \u043F\u043E\u0431\u0435\u0434: %.1f%% / 65%%\n"
+        L"\u041F\u0435\u0440\u0432\u044B\u0445 \u043C\u0435\u0441\u0442: %u / 2250\n"
+        L"\u0414\u0438\u0441\u0442\u0430\u043D\u0446\u0438\u044F: %.1f km / 40000 km\n"
+        L"\u0414\u0438\u0441\u0442\u0430\u043D\u0446\u0438\u044F \u043D\u0430 1-\u043C \u043C\u0435\u0441\u0442\u0435: %.1f km / 10000 km\n"
+        L"\u041E\u0447\u043A\u0438: %.2f (\u043D\u0443\u0436\u043D\u043E %.2f \u0434\u043B\u044F \u0440\u0430\u043D\u0433\u0430 %ls)\n"};
+
+    static const RankText turkish = {
+        L"R\u00FCtbe: %ls\nPuan: %d",
+        L"Y\u00FCkl\u00FC lisans yok.",
+        L"Retro Rewind r\u00FCtbesi:\n"
+        L"VR: %u / 100000\n"
+        L"Kazanma oran\u0131: %.1f%% / 65%%\n"
+        L"Birincilik say\u0131s\u0131: %u / 2250\n"
+        L"Mesafe: %.1f km / 40000 km\n"
+        L"Birincilik mesafesi: %.1f km / 10000 km\n"
+        L"Puan: %.2f (gerekli: %.2f / r\u00FCtbe %ls)\n"};
+
+    static const RankText czech = {
+        L"Hodnost: %ls\nSk\u00F3re: %d",
+        L"Nen\u00ED na\u010Dten\u00E1 \u017E\u00E1dn\u00E1 licence.",
+        L"Hodnost Retro Rewind:\n"
+        L"VR: %u / 100000\n"
+        L"M\u00EDra v\u00FDher: %.1f%% / 65%%\n"
+        L"1. m\u00EDsta: %u / 2250\n"
+        L"Vzd\u00E1lenost: %.1f km / 40000 km\n"
+        L"Vzd\u00E1lenost na 1. m\u00EDst\u011B: %.1f km / 10000 km\n"
+        L"Sk\u00F3re: %.2f bod\u016F (pot\u0159eba %.2f pro hodnost %ls)\n"};
+
+    switch (GetCurrentLanguage()) {
+        case LANGUAGE_JAPANESE:
+            return japanese;
+        case LANGUAGE_FRENCH:
+            return french;
+        case LANGUAGE_GERMAN:
+            return german;
+        case LANGUAGE_DUTCH:
+            return dutch;
+        case LANGUAGE_SPANISHUS:
+        case LANGUAGE_SPANISHEU:
+            return spanish;
+        case LANGUAGE_FINNISH:
+            return finnish;
+        case LANGUAGE_ITALIAN:
+            return italian;
+        case LANGUAGE_KOREAN:
+            return korean;
+        case LANGUAGE_RUSSIAN:
+            return russian;
+        case LANGUAGE_TURKISH:
+            return turkish;
+        case LANGUAGE_CZECH:
+            return czech;
+        case LANGUAGE_ENGLISH:
+        default:
+            return english;
+    }
 }
 
 static const wchar_t* RankToLabel(int rank) {
@@ -187,20 +365,22 @@ int GetCurrentLicenseScore() {
 
 int FormatRankMessage(wchar_t* dst, size_t dstLen) {
     if (dst == nullptr || dstLen == 0) return -1;
+    const RankText& text = GetRankText();
     int rank = GetCurrentLicenseRankVS();
     int score = GetCurrentLicenseScore();
     if (rank < 0) rank = 0;
     if (score < 0) score = 0;
     const wchar_t* rankLabel = RankToLabel(rank);
 
-    return ::swprintf(dst, dstLen, L"Rank: %ls\nScore: %d", rankLabel, score);
+    return ::swprintf(dst, dstLen, text.summaryFormat, rankLabel, score);
 }
 
 int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
     if (dst == nullptr || dstLen == 0) return -1;
+    const RankText& text = GetRankText();
     const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) {
-        return ::swprintf(dst, dstLen, L"No license loaded.");
+        return ::swprintf(dst, dstLen, text.noLicenseLoaded);
     }
 
     const RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
@@ -235,13 +415,7 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
 
     return ::swprintf(
         dst, dstLen,
-        L"Retro Rewind Rank:\n"
-        L"VR: %d VR out of 100000 VR\n"
-        L"Win Rate: %.1f%% out of 65%% Needed\n"
-        L"1st Places: %u Firsts out of 2500 Firsts\n"
-        L"Distance: %.1f KM out of 50000 KM\n"
-        L"1st Distance: %.1f KM out of 10000 KM\n"
-        L"Score: %.2f Points (%.2f till Rank %ls)\n",
+        text.detailsFormat,
         vrClamped, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
 }
 

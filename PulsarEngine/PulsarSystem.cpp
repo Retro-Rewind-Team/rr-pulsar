@@ -93,7 +93,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         type = IOType_RIIVO;
         IOS::Close(ret);
     } else if (IsNewChannel() && !isDolphin) {
-        NewChannel_SetLoadedFromRRFlag();
+        NewChannel_Init();
         type = IOType_SD;
     } else {
         ret = IO::OpenFix("/dev/dolphin", IOS::MODE_NONE);
@@ -118,7 +118,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     CupsConfig::sInstance = new CupsConfig(rtCups, ctCups, btCups);
     this->info.Init(confRT.GetSection<InfoHolder>().info);
     this->InitIO(type);
-    this->InitSettings(&rtCups.trophyCount[0]);
+    this->InitSettings(&CupsConfig::sInstance->trophyCount[0]);
 
     u32 rtTrackCount = rtCups.ctsCupCount * 4;
     u32 ctTrackCount = ctCups.ctsCupCount * 4;
@@ -130,7 +130,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         const u32 offset = static_cast<u32>(fileSection - confStart);
         if (offset < rtReadBytes) {
             const u32 remaining = rtReadBytes - offset;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, 0);
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, 0, rtTrackCount);
         }
     }
     {
@@ -140,7 +140,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         const u32 offset = static_cast<u32>(fileSection - confStart);
         if (offset < ctReadBytes) {
             const u32 remaining = ctReadBytes - offset;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount);
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount, ctTrackCount);
         }
     }
     {
@@ -150,7 +150,8 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         const u32 offset = static_cast<u32>(fileSection - confStart);
         if (offset < btReadBytes) {
             const u32 remaining = btReadBytes - offset;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount + ctTrackCount);
+            const u32 btTrackCount = btCups.ctsCupCount * 4;
+            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount + ctTrackCount, btTrackCount);
         }
     }
 
@@ -208,11 +209,7 @@ void System::InitIO(IOType type) const {
         Debug::FatalError(path);
     }
     char ghostPath[IOS::ipcMaxPath];
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsRT");
-    io->CreateFolder(ghostPath);
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsCT");
-    io->CreateFolder(ghostPath);
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsBT");
+    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/Ghosts");
     io->CreateFolder(ghostPath);
 }
 #pragma suppress_warnings reset
@@ -220,7 +217,11 @@ void System::InitIO(IOType type) const {
 void System::InitSettings(const u16* totalTrophyCount) const {
     Settings::Mgr* settings = new (this->heap) Settings::Mgr;
     char settingsPath[IOS::ipcMaxPath];
+    #ifdef BETA
+    snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettingsBeta.pul");
+    #else
     snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettings.pul");
+    #endif
     char trophiesPath[IOS::ipcMaxPath];
     snprintf(trophiesPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRSettings.pul");  // Original settings file
     settings->Init(totalTrophyCount, settingsPath, trophiesPath);
@@ -566,7 +567,7 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 69);
+kmWrite32(0x800017D4, 691);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";

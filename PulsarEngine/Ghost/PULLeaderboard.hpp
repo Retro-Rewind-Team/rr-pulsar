@@ -67,7 +67,7 @@ class alignas(0x20) Leaderboard {
     const char* GetFavGhost(TTMode mode) const { return this->favGhost[mode]; }
     static void CreateFile(PulsarId id);
     static const RKSYS::LicenseLdbEntry* GetEntry(u32 index);  // pointer as the game expects as such
-    static int ExpertBMGDisplay();
+    static int ExpertBMGDisplay(CourseId courseId);
 
    private:
     u32 magic;  // PULL

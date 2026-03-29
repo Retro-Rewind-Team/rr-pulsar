@@ -17,8 +17,9 @@ class VRLeaderboardPage : public Page {
     static const PulPageId id = PULPAGE_VRLEADERBOARD;
 
     static const int kRowsPerPage = 10;
-    static const int kPageCount = 5;
-    static const int kMaxEntries = kRowsPerPage * kPageCount;
+    static const int kPagesPerAPIFetch = 5;
+    static const int kPageCount = 50;
+    static const int kMaxEntries = kRowsPerPage * kPagesPerAPIFetch;
 
     VRLeaderboardPage();
     ~VRLeaderboardPage() override;
@@ -26,6 +27,7 @@ class VRLeaderboardPage : public Page {
     PageId GetNextPage() const override;
     void OnInit() override;
     void OnActivate() override;
+    void OnDeactivate() override;
     void BeforeEntranceAnimations() override;
     void OnUpdate() override;
 
@@ -34,7 +36,7 @@ class VRLeaderboardPage : public Page {
     void OnBackButtonClick(PushButton& button, u32 hudSlotId);
     void ResetRowsToLoading();
     void ApplyResults();
-    void ApplyError(const char* msg);
+    void ApplyError();
 
     enum FetchState {
         FETCH_IDLE = 0,
@@ -46,6 +48,7 @@ class VRLeaderboardPage : public Page {
     struct Entry {
         wchar_t name[24];
         u32 vr;
+        u32 rank;
         wchar_t line[64];
         RFL::StoreData miiData;
         u64 friendCode;
@@ -58,7 +61,7 @@ class VRLeaderboardPage : public Page {
 
     static FetchState s_fetchState;
     static bool s_hasApplied;
-    static Entry s_entries[kMaxEntries];
+    static Entry* s_entries;
     static const u32 kResponseBufSize = 65536;
 
     CtrlMenuPageTitleText* titleText;
