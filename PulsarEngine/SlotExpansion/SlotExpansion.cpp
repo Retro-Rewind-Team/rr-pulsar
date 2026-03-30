@@ -206,14 +206,27 @@ static void AppendOrderedVSTrackVariants(SectionParams* params, CupsConfig& cups
     AdvanceOrderedVSTrack(cupsConfig, cupId, rowIdx);
 }
 
+static void ResolveOrderedVSStart(const CupsConfig& cupsConfig, PulsarId selectedTrack, PulsarCupId& cupId, u32& rowIdx) {
+    if (cupsConfig.IsAlphabetical() && !CupsConfig::IsReg(selectedTrack)) {
+        const u32 trackIdx = static_cast<u32>(selectedTrack - PULSARID_FIRSTCT);
+        cupId = static_cast<PulsarCupId>(PULSARCUPID_FIRSTCT + (cupsConfig.GetInvertedArray()[trackIdx] / 4));
+        rowIdx = cupsConfig.GetInvertedArray()[trackIdx] % 4;
+        return;
+    }
+
+    cupId = CupsConfig::ConvertCup_PulsarTrackToCup(selectedTrack);
+    rowIdx = static_cast<u32>(selectedTrack) % 4;
+}
+
 // Same as GP, racedata only ever has courseId
 static void VSRaceOrderedFix(SectionParams* params) {
     params->vsRaceLimit = 32;
     CupsConfig* cupsConfig = CupsConfig::sInstance;
     PulsarId selectedTrack = cupsConfig->GetSelected();
     if (selectedTrack == PULSARID_NONE) selectedTrack = cupsConfig->GetWinning();
-    PulsarCupId cupId = CupsConfig::ConvertCup_PulsarTrackToCup(selectedTrack);
-    u32 rowIdx = static_cast<u32>(selectedTrack) % 4;
+    PulsarCupId cupId;
+    u32 rowIdx;
+    ResolveOrderedVSStart(*cupsConfig, selectedTrack, cupId, rowIdx);
     const u8 selectedVariantIdx = cupsConfig->GetCurVariantIdx();
     u32 idx = 0;
 
