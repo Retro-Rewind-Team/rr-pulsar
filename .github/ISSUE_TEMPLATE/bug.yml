@@ -46,7 +46,7 @@ body:
     required: true
 - type: "upload"
   attributes:
-    label: "Crashdump"
-    description: "Please always request a crash.pul from users and provide it in the issue."
+    label: "Crashdump (Archive formats only)"
+    description: "Please always request a crash.pul from users and provide it in the issue. The upload needs to be done in an archive format such as ZIP."
   validations:
     required: false
