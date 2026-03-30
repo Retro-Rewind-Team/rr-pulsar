@@ -41,6 +41,12 @@ body:
 - type: "textarea"
   attributes:
     label: "Reproduction steps"
-    description: "Please explain here how to reproduce the bug. Please always request a crash.pul from users and provide it in the issue."
+    description: "Please explain here how to reproduce the bug. If you already resolved the crashdump, you can paste the stacktrace in here instead of uploading a crash.pul below."
   validations:
     required: true
+- type: "upload"
+  attributes:
+    label: "Crashdump"
+    description: "Please always request a crash.pul from users and provide it in the issue."
+  validations:
+    required: false
