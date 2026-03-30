@@ -5,6 +5,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/rvl/DWC/DWCAccount.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 
@@ -19,29 +20,6 @@ static CharacterId charID = CHARACTER_NONE;
 static char smallImageKey[32] = "";
 static char smallImageText[32] = "";
 
-// 27/03/26 - ADDED THIS DUE TO 
-// FINDING A BUG WITH THE CHARACTER ICONS
-// WHILE ONLINE
-//
-// FORCING THE FIRST CHAR INDEX OF THE FIRST PLAYER
-// LOADED INTO THE SPECTATE VIEW
-
-static bool CheckSpectatingView() 
-{
-    if (!SectionMgr::sInstance || !SectionMgr::sInstance->curSection) return false;
-
-    // BRUTE FORCE OF VARIOUS MENU SCENARIOUS
-    // MAKE SURE THAT THE CORE ONES ARE INVOLVED
-    SectionId id = SectionMgr::sInstance->curSection->sectionId;
-    return id == SECTION_WATCH_GHOST_FROM_CHANNEL
-        || id == SECTION_WATCH_GHOST_FROM_DOWNLOADS
-        || id == SECTION_WATCH_GHOST_FROM_MENU
-        || id == SECTION_P1_WIFI_VS_LIVEVIEW
-        || id == SECTION_P2_WIFI_VS_LIVEVIEW
-        || id == SECTION_P1_WIFI_BT_LIVEVIEW
-        || id == SECTION_P2_WIFI_BT_LIVEVIEW;
-}
-
 // Removes 00 1A escapes from the BMG text
 void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
     int inc = 0;
@@ -54,6 +32,31 @@ void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
             inc++;
         }
     }
+}
+
+static CharacterId GetFirstLocalRaceCharacter() {
+    const GameScene* scene = GameScene::GetCurrent();
+    Racedata* raceData = Racedata::sInstance;
+    Raceinfo* raceInfo = Raceinfo::sInstance;
+    if (scene == nullptr || scene->id != SCENE_ID_RACE || raceData == nullptr || raceInfo == nullptr ||
+        !raceInfo->IsAtLeastStage(RACESTAGE_INTRO)) {
+        return CHARACTER_NONE;
+    }
+
+    const RacedataScenario& scenario = raceData->racesScenario;
+    if (scenario.localPlayerCount > 0) {
+        const u8 playerId = scenario.settings.hudPlayerIds[0];
+        if (playerId < scenario.playerCount && scenario.players[playerId].playerType == PLAYER_REAL_LOCAL) {
+            return scenario.players[playerId].characterId;
+        }
+    }
+
+    for (u32 i = 0; i < scenario.playerCount; ++i) {
+        if (scenario.players[i].playerType == PLAYER_REAL_LOCAL) {
+            return scenario.players[i].characterId;
+        }
+    }
+    return CHARACTER_NONE;
 }
 
 void DiscordRichPresence(Section* _this) {
@@ -103,18 +106,9 @@ void DiscordRichPresence(Section* _this) {
         largeImageText = fcText;
     }
 
-    Racedata* raceData = Racedata::sInstance;
-    if(raceData 
-        && Raceinfo::sInstance 
-        && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO)
-        && !Raceinfo::sInstance->isSpectating
-        && !CheckSpectatingView())
-    {
-        const RacedataPlayer& player = raceData->menusScenario.players[0];
-        charID = player.characterId;
-        
-        switch (charID)
-        {
+    charID = GetFirstLocalRaceCharacter();
+    if (charID != CHARACTER_NONE) {
+        switch (charID) {
             case BABY_MARIO:
                 snprintf(smallImageKey, 32, "bmario");
                 snprintf(smallImageText, 32, "Baby Mario");
@@ -257,7 +251,8 @@ void DiscordRichPresence(Section* _this) {
                 snprintf(smallImageKey, 32, "mii_b");
                 snprintf(smallImageText, 32, "Mii (Outfit B)");
                 break;
-
+            default:
+                break;
         }
     }
 
