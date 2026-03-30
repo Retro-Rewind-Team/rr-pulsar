@@ -301,7 +301,7 @@ kmCall(0x80643da0, PreventVoteChangeSection);
 
 static void FixAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {  // menu is either drift or multidrift
     System* system = System::sInstance;
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
+    if (system->IsContext(PULSAR_MODE_OTT) && system->ottMgr.voteState == COMBO_SELECTION) {
         system->ottMgr.voteState = COMBO_SELECTED;
         Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
         handler.toSendPacket.playersData[0].character = SectionMgr::sInstance->sectionParams->characters[0];
