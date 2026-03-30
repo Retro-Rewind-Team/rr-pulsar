@@ -30,8 +30,8 @@ namespace IOOverrides {
 #endif
 
 #if PULSAR_OVERRIDE_LOGGING
-#define OVERRIDE_LOG(...) OS::Report("[Pulsar][Overrides] " __VA_ARGS__)
-#define OVERRIDE_WARN(...) OS::Report("[Pulsar][Overrides][Warn] " __VA_ARGS__)
+#define OVERRIDE_LOG(...) Pulsar_Log("[Pulsar][Overrides] " __VA_ARGS__)
+#define OVERRIDE_WARN(...) Pulsar_Log("[Pulsar][Overrides][Warn] " __VA_ARGS__)
 #else
 #define OVERRIDE_LOG(...)
 #define OVERRIDE_WARN(...)

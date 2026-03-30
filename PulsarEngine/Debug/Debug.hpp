@@ -1,9 +1,15 @@
 #ifndef _PUL_Debug_
 #define _PUL_Debug_
 
+#include <include/c_stdio.h>
+#include <core/rvl/OS/OSContext.hpp>
 #include <core/rvl/OS/OSError.hpp>
 
 namespace Pulsar {
+
+void Pulsar_LogMessage(const char* message);
+bool Pulsar_FlushLogs();
+
 namespace Debug {
 
 void FatalError(const char* string);
@@ -54,5 +60,12 @@ struct ExceptionFile {
 
 }  // namespace Debug
 }  // namespace Pulsar
+
+#define Pulsar_Log(...)                                            \
+    do {                                                           \
+        char pulsarLogBuffer[1024];                                \
+        snprintf(pulsarLogBuffer, sizeof(pulsarLogBuffer), __VA_ARGS__); \
+        ::Pulsar::Pulsar_LogMessage(pulsarLogBuffer);              \
+    } while (0)
 
 #endif

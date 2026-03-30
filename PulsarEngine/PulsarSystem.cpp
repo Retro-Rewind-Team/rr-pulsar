@@ -201,6 +201,7 @@ void System::InitIO(IOType type) const {
     IO* io = IO::CreateInstance(type, this->heap, this->taskThread);
     bool ret;
     if (io->type == IOType_DOLPHIN) ret = ISFS::CreateDir("/shared2/Pulsar", 0, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE);
+    io->CreateFolder("/logs");
     const char* modFolder = this->GetModFolder();
     ret = io->CreateFolder(modFolder);
     if (!ret && io->type == IOType_DOLPHIN) {
@@ -208,6 +209,7 @@ void System::InitIO(IOType type) const {
         snprintf(path, 0x100, "Unable to automatically create a folder for this CT distribution\nPlease create a Pulsar folder in Dolphin Emulator/Wii/shared2", modFolder);
         Debug::FatalError(path);
     }
+    Pulsar_Log("[Pulsar][Log] Logger initialized: ioType=%d modFolder=%s\n", io->type, modFolder);
     char ghostPath[IOS::ipcMaxPath];
     snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/Ghosts");
     io->CreateFolder(ghostPath);
