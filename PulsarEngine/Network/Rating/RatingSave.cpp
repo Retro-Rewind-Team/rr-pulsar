@@ -20,6 +20,7 @@
 #include <IO/IO.hpp>
 #include <PulsarSystem.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/Rating/RatingSync.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/System/Rating.hpp>
 
@@ -30,6 +31,10 @@ static const u32 MAGIC = 'RRRT';
 static const u16 VERSION = 1;
 static const u32 MAX_LICENSES = 4;
 static const u32 MAX_PROFILES = 100;
+static const s32 RESERVED_PROFILE_ID_BASE = 1000000000;
+#ifdef TEST
+RESERVED_PROFILE_ID_BASE = 2000000000;
+#endif
 
 struct ProfileEntry {
     s32 profileId;
@@ -59,9 +64,14 @@ struct PackedEntry {
 
 static ProfileEntry sProfiles[MAX_PROFILES] = {};
 static LicenseBackup sBackups[MAX_LICENSES] = {};
+static s32 sBoundProfileIds[MAX_LICENSES] = {};
 static u32 sReplaceIdx = 0;
 static bool sLoaded = false;
 static char sPath[IOS::ipcMaxPath] __attribute__((aligned(32))) = {};
+
+static bool IsUsableProfileId(s32 id) {
+    return id > 0 && id < RESERVED_PROFILE_ID_BASE;
+}
 
 static const char* GetPath() {
     if (sPath[0] == '\0') {
@@ -73,7 +83,7 @@ static const char* GetPath() {
 }
 
 static ProfileEntry* FindProfile(s32 id) {
-    if (id <= 0) return nullptr;
+    if (!IsUsableProfileId(id)) return nullptr;
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         if (sProfiles[i].profileId == id) return &sProfiles[i];
     }
@@ -97,17 +107,31 @@ static ProfileEntry* AllocProfile(s32 id) {
 }
 
 static ProfileEntry* GetProfile(s32 id, bool create) {
-    if (id <= 0) return nullptr;
+    if (!IsUsableProfileId(id)) return nullptr;
     ProfileEntry* e = FindProfile(id);
     if (e) return e;
     if (create) return AllocProfile(id);
     return nullptr;
 }
 
-static ProfileEntry* GetProfileForLicense(u32 licenseId, bool create) {
+static s32 ResolveProfileIdForLicense(u32 licenseId) {
+    if (licenseId >= MAX_LICENSES) return 0;
+
     RKSYS::Mgr* mgr = RKSYS::Mgr::sInstance;
-    if (!mgr || licenseId >= MAX_LICENSES) return nullptr;
-    return GetProfile(mgr->licenses[licenseId].dwcAccUserData.gsProfileId, create);
+    if (mgr != nullptr) {
+        const s32 liveProfileId = mgr->licenses[licenseId].dwcAccUserData.gsProfileId;
+        if (IsUsableProfileId(liveProfileId)) {
+            sBoundProfileIds[licenseId] = liveProfileId;
+            return liveProfileId;
+        }
+    }
+
+    const s32 boundProfileId = sBoundProfileIds[licenseId];
+    return IsUsableProfileId(boundProfileId) ? boundProfileId : 0;
+}
+
+static ProfileEntry* GetProfileForLicense(u32 licenseId, bool create) {
+    return GetProfile(ResolveProfileIdForLicense(licenseId), create);
 }
 
 static void Load() {
@@ -138,7 +162,7 @@ static void Load() {
             u8 pad[32];
         } eBuf __attribute__((aligned(32))) = {};
         if (io->Read(sizeof(PackedEntry), &eBuf.e) != (s32)sizeof(PackedEntry)) break;
-        if ((eBuf.e.flags & 1) && eBuf.e.profileId > 0) {
+        if ((eBuf.e.flags & 1) && IsUsableProfileId(eBuf.e.profileId)) {
             sProfiles[i].profileId = eBuf.e.profileId;
             sProfiles[i].vr = eBuf.e.vr;
             sProfiles[i].br = eBuf.e.br;
@@ -184,6 +208,26 @@ static float ClampF(float v) {
                                                                                  : v;
 }
 
+void SaveProfileVR(s32 profileId, float vr) {
+    Load();
+    ProfileEntry* e = GetProfile(profileId, true);
+    if (e) {
+        e->vr = ClampF(vr);
+        e->hasData = true;
+        Save();
+    }
+}
+
+void SaveProfileBR(s32 profileId, float br) {
+    Load();
+    ProfileEntry* e = GetProfile(profileId, true);
+    if (e) {
+        e->br = ClampF(br);
+        e->hasData = true;
+        Save();
+    }
+}
+
 float GetUserVR(u32 licenseId) {
     Load();
     ProfileEntry* e = GetProfileForLicense(licenseId, false);
@@ -203,6 +247,7 @@ void SetUserVR(u32 licenseId, float vr) {
         e->vr = ClampF(vr);
         e->hasData = true;
         Save();
+        ReportCurrentRatings(licenseId);
     }
 }
 
@@ -213,11 +258,13 @@ void SetUserBR(u32 licenseId, float br) {
         e->br = ClampF(br);
         e->hasData = true;
         Save();
+        ReportCurrentRatings(licenseId);
     }
 }
 
-static ProfileEntry* GetProfileByLicense(const RKSYS::LicenseMgr& lic, bool create) {
-    return GetProfile(lic.dwcAccUserData.gsProfileId, create);
+void BindLicenseProfileId(u32 licenseId, s32 profileId) {
+    if (licenseId >= MAX_LICENSES) return;
+    if (IsUsableProfileId(profileId)) sBoundProfileIds[licenseId] = profileId;
 }
 
 static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr& lic) {
@@ -228,7 +275,8 @@ static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr& lic) {
     sBackups[idx].originalBr = ClampU16((float)lic.br.points);
     sBackups[idx].hasOriginal = true;
 
-    ProfileEntry* e = GetProfileByLicense(lic, true);
+    const s32 profileId = ResolveProfileIdForLicense(idx);
+    ProfileEntry* e = GetProfile(profileId, true);
     if (!e) return;
 
     if (!e->hasData) {
@@ -251,7 +299,8 @@ static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr& lic) {
         sBackups[idx].hasOriginal = true;
     }
 
-    ProfileEntry* e = GetProfileByLicense(lic, true);
+    const s32 profileId = ResolveProfileIdForLicense(idx);
+    ProfileEntry* e = GetProfile(profileId, true);
     if (!e) return;
 
     if (!e->hasData) {
