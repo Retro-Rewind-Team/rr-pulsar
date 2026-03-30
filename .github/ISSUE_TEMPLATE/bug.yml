@@ -1,5 +1,8 @@
 name: "Bug Report"
-fields:
+description: "Bug report form for team members and contributors only!"
+title: "[Bug]: "
+labels: ["bug"]
+body:
 - type: "markdown"
   attributes:
     value: "This form **only** serves Retro Rewind **team members and contributors** to report bugs.\nPeople outside of the team can report bugs on the [Retro Rewind Discord Server](https://discord.gg/RetroRewind) in the bug-report channel.\n\nThis triaging is done to make it easier for the developers to work on the project, as bug reports from users are often invalid."
