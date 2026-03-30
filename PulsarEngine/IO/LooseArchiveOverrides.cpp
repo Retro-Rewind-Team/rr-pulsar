@@ -43,6 +43,7 @@ const char kModsRoot[] = "/mods";
 const char kModsRootAlt[] = "/Mods";
 const char kModsRootPrefix[] = "/mods/";
 const char kModsRootAltPrefix[] = "/Mods/";
+const char kOverrideDiagBuild[] = "override-diag-20260330b";
 const u32 kMaxOverridesTotal = 1024;
 const u32 kOverrideRepackGrowthFallback = 0x100000;
 const u32 kOverrideMaxGrowthOnSourceHeap = 0x100000;
@@ -105,6 +106,8 @@ static bool sModIndexAttempted = false;
 static bool sModsRootChecked = false;
 static bool sModsRootPresent = false;
 static bool sOverrideSourceChecked = false;
+static bool sLoggedDiagBuild = false;
+static bool sLoggedFSTSummary = false;
 static char sModsRootPath[OVERRIDE_MAX_PATH] = "/mods";
 
 enum OverrideSource {
@@ -116,6 +119,12 @@ enum OverrideSource {
 };
 
 static OverrideSource sOverrideSource = OVERRIDE_SOURCE_NONE;
+
+static void LogDiagBuildOnce() {
+    if (sLoggedDiagBuild) return;
+    sLoggedDiagBuild = true;
+    OVERRIDE_LOG("Diagnostics build=%s\n", kOverrideDiagBuild);
+}
 
 static bool StartsWith(const char* str, const char* prefix) {
     if (str == nullptr || prefix == nullptr) return false;
@@ -261,6 +270,53 @@ static bool ModsRootExists();
 static OverrideSource GetOverrideSource(IOType ioType);
 static bool FindModsDirInFST(u32& outIndex, u32& outEnd, const char*& outRootPath);
 
+static bool ResolveFSTDirByPath(const char* path, u32 entryCount, u32& outIndex, u32& outEnd) {
+    if (path == nullptr || path[0] == '\0') return false;
+    const s32 entryNum = DVD::ConvertPathToEntryNum(path);
+    OVERRIDE_LOG("FST path lookup: %s -> entry=%d\n", path, entryNum);
+    if (entryNum < 0) return false;
+    if (static_cast<u32>(entryNum) >= entryCount) {
+        OVERRIDE_WARN("FST path lookup out of bounds: %s -> entry=%d count=%u\n", path, entryNum, entryCount);
+        return false;
+    }
+    const FSTEntry* entries = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
+    if (!FSTEntryIsDir(entries[entryNum])) {
+        OVERRIDE_WARN("FST path lookup is not a dir: %s -> entry=%d\n", path, entryNum);
+        return false;
+    }
+    outIndex = static_cast<u32>(entryNum);
+    outEnd = entries[outIndex].size;
+    OVERRIDE_LOG("FST path resolved: %s -> index=%u end=%u\n", path, outIndex, outEnd);
+    return true;
+}
+
+static void LogFSTProbeSummary(const FSTEntry* entries, u32 entryCount, const char* stringTable) {
+    if (sLoggedFSTSummary) return;
+    sLoggedFSTSummary = true;
+    OVERRIDE_LOG("FST probe: location=%08x entryCount=%u\n", reinterpret_cast<u32>(entries), entryCount);
+
+    u32 rootLogged = 0;
+    u32 namedMatches = 0;
+    for (u32 i = 1; i < entryCount; ++i) {
+        const FSTEntry& entry = entries[i];
+        const char* name = stringTable + FSTNameOffset(entry);
+        if (name == nullptr) continue;
+
+        if (FSTEntryIsDir(entry) && entry.offset == 0 && rootLogged < 24) {
+            OVERRIDE_LOG("FST root dir[%u]: index=%u name=%s end=%u\n", rootLogged, i, name, entry.size);
+            ++rootLogged;
+        }
+
+        if (strcmp(name, "mods") == 0 || strcmp(name, "Mods") == 0) {
+            OVERRIDE_LOG("FST named entry[%u]: index=%u name=%s isDir=%d offset=%u size=%u\n",
+                         namedMatches, i, name, FSTEntryIsDir(entry) ? 1 : 0, entry.offset, entry.size);
+            ++namedMatches;
+        }
+    }
+
+    OVERRIDE_LOG("FST probe summary: rootDirsLogged=%u namedModsMatches=%u\n", rootLogged, namedMatches);
+}
+
 static bool OpenRiivoDir(const char* path, s32* outDeviceFd, s32* outDirFd) {
     if (outDeviceFd == nullptr || outDirFd == nullptr) return false;
     s32 riivoFd = PulsarIOClass::OpenFix("file", IOS::MODE_NONE);
@@ -361,15 +417,33 @@ static bool BuildModsRootFromModFolder(const char* prefix, const char* modFolder
     return true;
 }
 
+static bool TryRiivoModsRootCandidate(const char* path) {
+    if (path == nullptr || path[0] == '\0') return false;
+    const bool exists = RiivoDirExists(path);
+    OVERRIDE_LOG("Riivo mods candidate: %s -> %s\n", path, exists ? "hit" : "miss");
+    if (exists) {
+        SetModsRootPath(path);
+    }
+    return exists;
+}
+
 static bool ResolveRiivoModsRoot() {
-    if (RiivoDirExists(kModsRoot)) {
-        SetModsRootPath(kModsRoot);
-        return true;
+    System* system = System::sInstance;
+    const char* modFolder = nullptr;
+    if (system != nullptr) modFolder = system->GetModFolder();
+
+    char path[OVERRIDE_MAX_PATH];
+    if (modFolder != nullptr) {
+        if (BuildModsRootFromModFolder("", modFolder, "Mods", path, sizeof(path)) && TryRiivoModsRootCandidate(path)) return true;
+        if (BuildModsRootFromModFolder("", modFolder, "mods", path, sizeof(path)) && TryRiivoModsRootCandidate(path)) return true;
+        if (BuildModsRootFromModFolder("/mnt/sd", modFolder, "Mods", path, sizeof(path)) && TryRiivoModsRootCandidate(path)) return true;
+        if (BuildModsRootFromModFolder("/mnt/sd", modFolder, "mods", path, sizeof(path)) && TryRiivoModsRootCandidate(path)) return true;
+        if (BuildModsRootFromModFolder("/mnt/usb", modFolder, "Mods", path, sizeof(path)) && TryRiivoModsRootCandidate(path)) return true;
+        if (BuildModsRootFromModFolder("/mnt/usb", modFolder, "mods", path, sizeof(path)) && TryRiivoModsRootCandidate(path)) return true;
     }
-    if (RiivoDirExists(kModsRootAlt)) {
-        SetModsRootPath(kModsRootAlt);
-        return true;
-    }
+
+    if (TryRiivoModsRootCandidate(kModsRoot)) return true;
+    if (TryRiivoModsRootCandidate(kModsRootAlt)) return true;
     return false;
 }
 
@@ -434,6 +508,7 @@ static bool ModsRootExists() {
 
     sModsRootChecked = true;
     sModsRootPresent = false;
+    LogDiagBuildOnce();
 
     PulsarIOClass* io = PulsarIOClass::sInstance;
     const int ioType = io ? io->type : -1;
@@ -458,6 +533,16 @@ static OverrideSource GetOverrideSource(IOType ioType) {
     sOverrideSource = OVERRIDE_SOURCE_NONE;
     SetModsRootPath(kModsRoot);
 
+    u32 modsIndex = 0;
+    u32 modsEnd = 0;
+    const char* rootPath = kModsRoot;
+    if (FindModsDirInFST(modsIndex, modsEnd, rootPath)) {
+        SetModsRootPath(rootPath);
+        sOverrideSource = OVERRIDE_SOURCE_DVD;
+        OVERRIDE_LOG("Override source selected: DVD (ioType=%d root=%s)\n", ioType, sModsRootPath);
+        return sOverrideSource;
+    }
+
     if (ResolveRiivoModsRoot()) {
         sOverrideSource = OVERRIDE_SOURCE_RIIVO;
         OVERRIDE_LOG("Override source selected: Riivolution (ioType=%d root=%s)\n", ioType, sModsRootPath);
@@ -467,16 +552,6 @@ static OverrideSource GetOverrideSource(IOType ioType) {
     if (ioType == IOType_SD && ResolveSDModsRoot()) {
         sOverrideSource = OVERRIDE_SOURCE_SD;
         OVERRIDE_LOG("Override source selected: SD (ioType=%d root=%s)\n", ioType, sModsRootPath);
-        return sOverrideSource;
-    }
-
-    u32 modsIndex = 0;
-    u32 modsEnd = 0;
-    const char* rootPath = kModsRoot;
-    if (FindModsDirInFST(modsIndex, modsEnd, rootPath)) {
-        SetModsRootPath(rootPath);
-        sOverrideSource = OVERRIDE_SOURCE_DVD;
-        OVERRIDE_LOG("Override source selected: DVD (ioType=%d root=%s)\n", ioType, sModsRootPath);
         return sOverrideSource;
     }
 
@@ -649,11 +724,16 @@ static void AddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& tru
 static void ScanModsDirRiivo(const char* absPath, const char* relPath, OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
     s32 deviceFd = -1;
     s32 dirFd = -1;
-    if (!OpenRiivoDir(absPath, &deviceFd, &dirFd)) return;
+    if (!OpenRiivoDir(absPath, &deviceFd, &dirFd)) {
+        OVERRIDE_WARN("Riivo scan open failed: %s\n", absPath);
+        return;
+    }
+    OVERRIDE_LOG("Riivo scan open: path=%s deviceFd=%d dirFd=%d\n", absPath, deviceFd, dirFd);
 
     alignas(0x20) IOS::IOCtlvRequest request[3];
     alignas(0x20) char fileName[riivoMaxPath];
     alignas(0x20) RiivoStats stats;
+    u32 listed = 0;
 
     while (count < maxCount) {
         request[0].address = &dirFd;
@@ -663,10 +743,19 @@ static void ScanModsDirRiivo(const char* absPath, const char* relPath, OverrideE
         request[2].address = &stats;
         request[2].size = sizeof(RiivoStats);
         s32 ret = IOS::IOCtlv(deviceFd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_NEXTDIR), 1, 2, request);
-        if (ret != 0) break;
+        if (ret != 0) {
+            OVERRIDE_LOG("Riivo NEXTDIR stop: path=%s ret=%d listed=%u\n", absPath, ret, listed);
+            break;
+        }
         if (IsDotEntry(fileName)) continue;
+        ++listed;
 
         const bool isDir = (stats.mode & S_IFDIR) == S_IFDIR;
+        if (listed <= 8) {
+            OVERRIDE_LOG("Riivo entry[%u]: parent=%s name=%s dir=%d size=%u mode=%08x\n",
+                         listed - 1, absPath, fileName, isDir ? 1 : 0, static_cast<u32>(stats.size),
+                         static_cast<u32>(stats.mode));
+        }
 
         char childAbs[OVERRIDE_MAX_PATH];
         char childRel[OVERRIDE_MAX_PATH];
@@ -684,6 +773,8 @@ static void ScanModsDirRiivo(const char* absPath, const char* relPath, OverrideE
         }
     }
 
+    OVERRIDE_LOG("Riivo scan summary: path=%s listed=%u totalCount=%u truncated=%d\n",
+                 absPath, listed, count, truncated ? 1 : 0);
     CloseRiivoDir(deviceFd, dirFd);
 }
 
@@ -778,9 +869,22 @@ static bool FindModsDirInFST(u32& outIndex, u32& outEnd, const char*& outRootPat
 
     const FSTEntry* entries = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
     const u32 entryCount = entries[0].size;
-    if (entryCount == 0) return false;
+    if (entryCount == 0) {
+        OVERRIDE_WARN("FST entry count is zero.\n");
+        return false;
+    }
 
     const char* stringTable = reinterpret_cast<const char*>(entries) + (entryCount * sizeof(FSTEntry));
+    LogFSTProbeSummary(entries, entryCount, stringTable);
+
+    if (ResolveFSTDirByPath(kModsRoot, entryCount, outIndex, outEnd)) {
+        outRootPath = kModsRoot;
+        return true;
+    }
+    if (ResolveFSTDirByPath(kModsRootAlt, entryCount, outIndex, outEnd)) {
+        outRootPath = kModsRootAlt;
+        return true;
+    }
 
     for (u32 i = 1; i < entryCount; ++i) {
         const FSTEntry& entry = entries[i];
@@ -792,6 +896,7 @@ static bool FindModsDirInFST(u32& outIndex, u32& outEnd, const char*& outRootPat
             outIndex = i;
             outEnd = entry.size;
             outRootPath = kModsRoot;
+            OVERRIDE_LOG("FST matched root /mods: index=%u end=%u\n", outIndex, outEnd);
             return true;
         }
     }
@@ -799,17 +904,34 @@ static bool FindModsDirInFST(u32& outIndex, u32& outEnd, const char*& outRootPat
     for (u32 i = 1; i < entryCount; ++i) {
         const FSTEntry& entry = entries[i];
         if (!FSTEntryIsDir(entry)) continue;
-        if (entry.offset != 0) continue;
+        const char* name = stringTable + FSTNameOffset(entry);
+        if (name == nullptr) continue;
+        if (strcmp(name, "mods") == 0) {
+            outIndex = i;
+            outEnd = entry.size;
+            outRootPath = kModsRoot;
+            OVERRIDE_WARN("FST fallback matched non-root mods dir: index=%u parent=%u end=%u\n",
+                          outIndex, entry.offset, outEnd);
+            return true;
+        }
+    }
+
+    for (u32 i = 1; i < entryCount; ++i) {
+        const FSTEntry& entry = entries[i];
+        if (!FSTEntryIsDir(entry)) continue;
         const char* name = stringTable + FSTNameOffset(entry);
         if (name == nullptr) continue;
         if (strcmp(name, "Mods") == 0) {
             outIndex = i;
             outEnd = entry.size;
             outRootPath = kModsRootAlt;
+            OVERRIDE_WARN("FST fallback matched non-root Mods dir: index=%u parent=%u end=%u\n",
+                          outIndex, entry.offset, outEnd);
             return true;
         }
     }
 
+    OVERRIDE_WARN("FST did not expose root /mods or /Mods.\n");
     return false;
 }
 
@@ -937,9 +1059,22 @@ static void EnsureModIndexBuilt() {
 
     sModIndexAttempted = true;
 
+    OVERRIDE_LOG("Mod index build start: source=%d root=%s\n", sOverrideSource, sModsRootPath);
     u32 count = 0;
     bool truncated = false;
     ScanModsDir(sModsRootPath, "", nullptr, kMaxOverridesTotal, count, truncated);
+    if (count == 0 && sOverrideSource == OVERRIDE_SOURCE_RIIVO) {
+        u32 modsIndex = 0;
+        u32 modsEnd = 0;
+        const char* rootPath = kModsRoot;
+        if (FindModsDirInFST(modsIndex, modsEnd, rootPath)) {
+            OVERRIDE_WARN("Riivo /mods enumeration returned zero entries; retrying via DVD/FST at %s.\n", rootPath);
+            SetModsRootPath(rootPath);
+            sOverrideSource = OVERRIDE_SOURCE_DVD;
+            OVERRIDE_LOG("Mod index retry: source=%d root=%s\n", sOverrideSource, sModsRootPath);
+            ScanModsDirDVD(nullptr, kMaxOverridesTotal, count, truncated);
+        }
+    }
     if (count >= kMaxOverridesTotal) {
         truncated = true;
     }
@@ -994,7 +1129,14 @@ static u32 GetFileDataStart(const ARC::Header* header) {
 }  // namespace
 
 bool IsModsPath(const char* path) {
-    return path != nullptr && (StartsWith(path, kModsRootPrefix) || StartsWith(path, kModsRootAltPrefix));
+    if (path == nullptr) return false;
+    if (strcmp(path, kModsRoot) == 0 || strcmp(path, kModsRootAlt) == 0) return true;
+    if (StartsWith(path, kModsRootPrefix) || StartsWith(path, kModsRootAltPrefix)) return true;
+
+    const u32 rootLen = strlen(sModsRootPath);
+    if (rootLen == 0) return false;
+    if (strncmp(path, sModsRootPath, rootLen) != 0) return false;
+    return path[rootLen] == '\0' || path[rootLen] == '/';
 }
 
 const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 resolvedSize, bool* outRedirected) {
