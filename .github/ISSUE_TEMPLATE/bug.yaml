@@ -1,0 +1,43 @@
+name: "Bug Report"
+fields:
+- type: "markdown"
+  attributes:
+    value: "This form **only** serves Retro Rewind **team members and contributors** to report bugs.\nPeople outside of the team can report bugs on the [Retro Rewind Discord Server](https://discord.gg/RetroRewind) in the bug-report channel.\n\nThis triaging is done to make it easier for the developers to work on the project, as bug reports from users are often invalid."
+- type: "markdown"
+  attributes:
+    value: "### Reporting guidelines\n- Please only report bugs, that you were able to confirm are actually present.\n  - Examples for this are: Confirming it yourself ingame, receiving video/picture evidence etc.\n- Don't report My Stuff-related bugs unless it is a large scale issue affecting most users.\n  - Ineligible reports are, for example, when MenuSingles or Race files stop displaying properly after a RaceAssets/UIAssets etc. edit, which can be fixed by the mod editor\n  - Eligible reports may be, for example, if every user with a non-RR specialized Race.szs always crashes\n- Don't use this form for feature suggestions.\n  - Exceptions are when certain user experiences are so misleading, that they negatively affect most of RRs observable player base."
+- type: "checkboxes"
+  attributes:
+    label: "Authorization check"
+    description: "By checking this box, you agree that you are authorized to make a bug report. If you are not authorized, your issue may be closed without explanation."
+    options:
+    - label: "Yes"
+      required: true
+  validations:
+    required: false
+- type: "textarea"
+  attributes:
+    label: "Version"
+    description: "What version was this bug originally found on?"
+    placeholder: "v6.7"
+  validations:
+    required: true
+- type: "textarea"
+  attributes:
+    label: "Type of bug"
+    description: "What type of bug is this?"
+    placeholder: "such as Crash, UI, Visual, Gameplay etc."
+  validations:
+    required: true
+- type: "textarea"
+  attributes:
+    label: "Bug description"
+    description: "Describe the bug in greater detail."
+  validations:
+    required: true
+- type: "textarea"
+  attributes:
+    label: "Reproduction steps"
+    description: "Please explain here how to reproduce the bug. Please always request a crash.pul from users and provide it in the issue."
+  validations:
+    required: true
