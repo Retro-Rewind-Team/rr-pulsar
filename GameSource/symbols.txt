@@ -2195,6 +2195,9 @@ Init__9ObjectKCLFv = 0x8081a79c
 RegisterEntity__9ObjectKCLFf = 0x8081a85c
 UpdateModel__9ObjectKCLFv = 0x8081a8d0
 
+#ObjectsKCLMgr
+Update__13ObjectsKCLMgrFv = 0x8081b618
+
 #ExternKCL
 GetRawKMP__Q23KMP7ManagerF13ArchiveSourcePCc = 0x80512c10
 CalcCoordinates_0Indexed__Q23KMP13Holder<4KTPT>FR4Vec3R4Vec3UiUi = 0x80514368

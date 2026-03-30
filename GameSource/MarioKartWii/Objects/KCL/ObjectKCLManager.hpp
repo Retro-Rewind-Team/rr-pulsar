@@ -18,6 +18,7 @@ struct ObjectKCLArray {
 };  // 0x8
 
 class ObjectsKCLMgr {
+   public:
     static ObjectsKCLMgr* sInstance;  // 809c4310
     static ObjectsKCLMgr* CreateInstance();  // 8081b428
     static void DestroyInstance();  // 8081b4b0

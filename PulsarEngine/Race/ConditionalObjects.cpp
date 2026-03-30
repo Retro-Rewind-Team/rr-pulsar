@@ -636,8 +636,7 @@ static void ConditionalObjectModelUpdate(Object* object) {
 }
 kmCall(0x8082aa20, ConditionalObjectModelUpdate);  // Object::UpdateModel call in ObjectsMgr::Update
 
-kmRuntimeUse(0x8081b618);
-static void ConditionalProcessAllAndCalcKCL(void* kclMgr, ObjectsMgr& objectsMgr) {
+static void ConditionalProcessAllAndCalcKCL(ObjectsKCLMgr* kclMgr, ObjectsMgr& objectsMgr) {
     if (kclMgr != nullptr) {
         const u16 kclCount = *reinterpret_cast<const u16*>(reinterpret_cast<const u8*>(kclMgr) + 0x4);
         Object** kclObjects = *reinterpret_cast<Object***>(reinterpret_cast<u8*>(kclMgr) + 0x8);
@@ -651,9 +650,7 @@ static void ConditionalProcessAllAndCalcKCL(void* kclMgr, ObjectsMgr& objectsMgr
             ApplyPerScreenVisibility(*obj, state);
         }
     }
-    typedef void (*OriginalCalcFn)(void*);
-    OriginalCalcFn originalCalc = reinterpret_cast<OriginalCalcFn>(kmRuntimeAddr(0x8081b618));
-    originalCalc(kclMgr);
+    kclMgr->Update();
 }
 kmCall(0x8082aa40, ConditionalProcessAllAndCalcKCL);  // ObjectDriveableDirector::calc call in ObjectsMgr::Update
 
