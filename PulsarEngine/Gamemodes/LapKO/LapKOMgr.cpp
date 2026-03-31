@@ -22,6 +22,19 @@ static const u16 pendingBroadcastFrames = 120;
 static const u16 eliminationDisplayDuration = 180;
 static const u8 lapKoNoRoundAdvanceFlag = 0x80;
 
+static bool AreAllOfflineLocalPlayersEliminated(const Mgr& mgr, const Racedata& racedata) {
+    const RacedataScenario& scenario = racedata.menusScenario;
+    const u8 localPlayerCount = scenario.localPlayerCount;
+    if (localPlayerCount == 0) return false;
+
+    for (u8 localIdx = 0; localIdx < localPlayerCount; ++localIdx) {
+        const u32 playerId = racedata.GetPlayerIdOfLocalPlayer(localIdx);
+        if (playerId >= 12) return false;
+        if (mgr.IsActive(static_cast<u8>(playerId))) return false;
+    }
+    return true;
+}
+
 Mgr::Mgr()
     : koPerRaceSetting(1),
       orderCursor(0),
@@ -525,9 +538,12 @@ bool Mgr::EnterSpectateIfLocal(u8 eliminatedId) {
     if (isOffline && eliminatedId < racedata->racesScenario.playerCount) {
         const RacedataPlayer& eliminatedPlayer = racedata->racesScenario.players[eliminatedId];
         if (eliminatedPlayer.playerType == PLAYER_REAL_LOCAL) {
-            this->FinishOfflineAtCurrentStandings();
-            this->raceFinished = true;
-            return true;
+            if (AreAllOfflineLocalPlayersEliminated(*this, *racedata)) {
+                this->FinishOfflineAtCurrentStandings();
+                this->raceFinished = true;
+                return true;
+            }
+            return false;
         }
     } else {
         RKNet::Controller* controller = RKNet::Controller::sInstance;
