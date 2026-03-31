@@ -17,38 +17,51 @@ namespace Pulsar {
 namespace Sound {
 
 using namespace nw4r;
-static void MusicSpeedup(Audio::RaceRSARPlayer* rsarSoundPlayer, u32 jingle, u8 hudSlotId) {
-    // static u8 hudSlotIdFinalLap;
+static const Audio::RaceState RACE_STATE_FINAL_LAP_JINGLE = static_cast<Audio::RaceState>(0x6);
+static const u8 INVALID_HUD_SLOT_ID = 0xFF;
+static u8 finalLapSpeedupHudSlot = INVALID_HUD_SLOT_ID;
 
+static void MusicSpeedup(Audio::RaceRSARPlayer* rsarSoundPlayer, u32 jingle, u8 hudSlotId) {
     u8 isSpeedUp = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSICSPEEDUP);
     Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
+    Raceinfo* raceInfo = Raceinfo::sInstance;
     const u8 maxLap = raceAudioMgr->maxLap;
     const u8 curLap = raceAudioMgr->lap;
     const RacedataSettings& raceDataSettings = Racedata::sInstance->racesScenario.settings;
-    // const u8 idFirstFinalLap = hudSlotIdFinalLap;
+    RaceinfoPlayer* hudPlayer = nullptr;
+    if (raceInfo != nullptr && raceInfo->players != nullptr) {
+        hudPlayer = raceInfo->players[raceDataSettings.hudPlayerIds[hudSlotId]];
+    }
+    const bool isNewLapTrigger = (maxLap != curLap);
+    const bool hudPlayerReachedFinalLap = hudPlayer != nullptr && hudPlayer->currentLap >= raceDataSettings.lapCount;
+    const bool isFirstFinalLapTrigger = isNewLapTrigger && raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL && hudPlayerReachedFinalLap;
+    if (raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL && maxLap != raceDataSettings.lapCount) {
+        finalLapSpeedupHudSlot = INVALID_HUD_SLOT_ID;
+    }
     if (maxLap == 1) return;
     if (maxLap == raceDataSettings.lapCount) {
         register Audio::KartActor* kartActor;
         asm(mr kartActor, r29;);
         snd::detail::BasicSound& sound = kartActor->soundArchivePlayer->soundPlayerArray[0].soundList.GetFront();
         if (isSpeedUp == SPEEDUP_ENABLED || sound.soundId == SOUND_ID_GALAXY_COLOSSEUM) {
-            const Raceinfo* raceInfo = Raceinfo::sInstance;
-            if (raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL && (maxLap != curLap)) {
-                raceAudioMgr->raceState = static_cast<Audio::RaceState>(0x6);
+            if (isFirstFinalLapTrigger) {
+                finalLapSpeedupHudSlot = hudSlotId;
+                raceAudioMgr->raceState = RACE_STATE_FINAL_LAP_JINGLE;
+                rsarSoundPlayer->PlaySound(SOUND_ID_FINAL_LAP, hudSlotId);
             }
-            const Timer& raceTimer = raceInfo->timerMgr->timers[0];
-            const Timer& playerTimer = raceInfo->players[raceDataSettings.hudPlayerIds[hudSlotId]]->lapSplits[maxLap - 2];
-            const Timer difference = CtrlRaceGhostDiffTime::SubtractTimers(raceTimer, playerTimer);
-            if (difference.minutes < 1 && difference.seconds < 5) {
-                sound.ambientParam.pitch += 0.0002f;
+            if (finalLapSpeedupHudSlot == hudSlotId && raceInfo != nullptr && raceInfo->players != nullptr) {
+                const Timer& raceTimer = raceInfo->timerMgr->timers[0];
+                const Timer& playerTimer = raceInfo->players[raceDataSettings.hudPlayerIds[finalLapSpeedupHudSlot]]->lapSplits[maxLap - 2];
+                const Timer difference = CtrlRaceGhostDiffTime::SubtractTimers(raceTimer, playerTimer);
+                if (difference.minutes < 1 && difference.seconds < 5) {
+                    sound.ambientParam.pitch += 0.0002f;
+                }
             }
-            if (maxLap != curLap) rsarSoundPlayer->PlaySound(SOUND_ID_FINAL_LAP, hudSlotId);
-        } else if ((maxLap != curLap) && (raceAudioMgr->raceState == 0x4 || raceAudioMgr->raceState == 0x6)) {
+        } else if (isNewLapTrigger && (raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL || raceAudioMgr->raceState == RACE_STATE_FINAL_LAP_JINGLE)) {
             raceAudioMgr->SetRaceState(Audio::RACE_STATE_FAST);
         }
-    } else if (maxLap != curLap) {
+    } else if (isNewLapTrigger) {
         rsarSoundPlayer->PlaySound(SOUND_ID_NORMAL_LAP, hudSlotId);
-        // hudSlotIdFinalLap = raceAudioMgr->playerIdFirstLocalPlayer;
     }
     return;
 }
@@ -69,7 +82,7 @@ static void RaceSoundManager_CheckRaceState(void* raceSoundManager) {
             if (raceInfo != nullptr && raceInfo->players != nullptr && localPlayerId < 12) {
                 RaceinfoPlayer* player = raceInfo->players[localPlayerId];
                 if (player != nullptr && player->raceFinishTime != nullptr && player->raceFinishTime->isActive) {
-                    raceAudioMgr->raceState = static_cast<Audio::RaceState>(0x6);
+                    raceAudioMgr->raceState = RACE_STATE_FINAL_LAP_JINGLE;
                 }
             }
         }
