@@ -1,7 +1,6 @@
 name: "Feature Implementation"
 description: "Feature implementation form for team members and contributors only!"
-title: "[Feature Implementation]: "
-labels: ["feature"]
+labels: ["feature", "implementation"]
 body:
 - type: "markdown"
   attributes:
