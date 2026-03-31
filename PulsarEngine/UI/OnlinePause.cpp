@@ -11,11 +11,32 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <hooks.hpp>
 
 namespace Pulsar {
 namespace UI {
+
+static bool IsOnlinePauseMode() {
+    const Racedata* racedata = Racedata::sInstance;
+    if (!racedata) return false;
+
+    const GameMode mode = racedata->menusScenario.settings.gamemode;
+    return mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE;
+}
+
+static Page* GetActiveOnlinePausePage(Section* section) {
+    if (!section) return 0;
+
+    Page* pausePage = section->pages[PAGE_VS_RACE_PAUSE_MENU];
+    if (pausePage && pausePage->currentState != STATE_DEACTIVATED) return pausePage;
+
+    pausePage = section->pages[PAGE_BATTLE_PAUSE_MENU];
+    if (pausePage && pausePage->currentState != STATE_DEACTIVATED) return pausePage;
+
+    return 0;
+}
 
 // Allow pausing online in RaceHUD::initInputs
 kmWrite32(0x808567d4, 0x60000000);
@@ -120,10 +141,34 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void* sceneSoundManager) 
 }
 kmCall(0x8085a2d0, OnOnlineQuitConfirm_DisconnectAndStopSound);
 
+// The default quit-confirmation cancel path restores the previous page.
+// For online pause, cancel should dismiss the whole pause stack instead.
+static void CloseOnlineQuitConfirmation(Pages::RaceMenu* page, PageId nextPage) {
+    if (page && page->pageId == PAGE_QUIT_CONFIRMATION && IsOnlinePauseMode()) {
+        Section* section = SectionMgr::sInstance ? SectionMgr::sInstance->curSection : 0;
+        Page* pausePage = GetActiveOnlinePausePage(section);
+
+        // Online quit confirmation should dismiss the full pause stack instead of resuming the pause page.
+        if (pausePage && pausePage != page && pausePage->currentState != STATE_DEACTIVATED) {
+            pausePage->EndStateAnimated(1, 0.0f);
+        }
+        page->SetNextPage(static_cast<PageId>(-1));
+
+        Pages::RacePauseMgr* pauseMgr = Pages::RacePauseMgr::sInstance;
+        if (pauseMgr) pauseMgr->RequestUnpause();
+        else {
+            SetRaceHUDVisibility(true);
+            SetInputPaused(false);
+        }
+        return;
+    }
+
+    page->SetNextPage(nextPage);
+}
+kmCall(0x8085bbc8, CloseOnlineQuitConfirmation);
+
 void OnlineHUDVisibilityHook() {
-    const Racedata* racedata = Racedata::sInstance;
-    GameMode mode = racedata->menusScenario.settings.gamemode;
-    if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
+    if (IsOnlinePauseMode()) {
         const Raceinfo* raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_IS_FINISHING)) {
             Section* section = 0;
@@ -173,15 +218,13 @@ static RaceFrameHook OnlineHUDVisibility(OnlineHUDVisibilityHook);
 
 kmRuntimeUse(0x808600dc);
 void OnlinePauseControl(void* r3) {
-    const Racedata* racedata = Racedata::sInstance;
-    GameMode mode = racedata->menusScenario.settings.gamemode;
-    if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
+    if (IsOnlinePauseMode()) {
         const Raceinfo* raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_RACE)) {
             SetRaceHUDVisibility(false);
             SetInputPaused(true);
             // Play pause sound effect and reduce music volume
-            Audio::RSARPlayer::PlaySoundById(SOUND_ID_PAUSE, 0, nullptr);
+            Audio::RSARPlayer::PlaySoundById(SOUND_ID_PAUSE, 0, 0);
             Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
             if (rsarPlayer) {
                 rsarPlayer->SetFullVolume();
@@ -195,9 +238,7 @@ kmCall(0x80856b38, OnlinePauseControl);
 
 kmRuntimeUse(0x80860100);
 void OnlineUnpauseControl(void* r3) {
-    const Racedata* racedata = Racedata::sInstance;
-    GameMode mode = racedata->menusScenario.settings.gamemode;
-    if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
+    if (IsOnlinePauseMode()) {
         const Raceinfo* raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_IS_FINISHING)) {
             // Race is ending; ensure we don't keep any pause state alive.
@@ -207,7 +248,7 @@ void OnlineUnpauseControl(void* r3) {
         SetRaceHUDVisibility(true);
         SetInputPaused(false);
         // Play resume sound effect and restore music volume
-        Audio::RSARPlayer::PlaySoundById(SOUND_ID_RESUME, 0, nullptr);
+        Audio::RSARPlayer::PlaySoundById(SOUND_ID_RESUME, 0, 0);
         Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
         if (rsarPlayer) {
             rsarPlayer->HalveVolume();
