@@ -50,7 +50,15 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
         src->playersData[1].character = static_cast<u8>(sectionParams->characters[1]);
         src->playersData[1].kart = static_cast<u8>(sectionParams->karts[1]);
-        src->playersData[1].sumPoints = 50.00f;
+        src->playersData[1].sumPoints = 0;
+        const Racedata* racedata = Racedata::sInstance;
+        if (racedata != nullptr) {
+            const RacedataScenario& menuScenario = racedata->menusScenario;
+            const u8 guestPlayerId = menuScenario.settings.hudPlayerIds[1];
+            if (guestPlayerId < 12) {
+                src->playersData[1].sumPoints = menuScenario.players[guestPlayerId].score;
+            }
+        }
         src->playersData[1].starRank = 0;
     }
 
