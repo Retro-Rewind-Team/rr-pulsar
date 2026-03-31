@@ -36,6 +36,8 @@ body:
       required: false
     - label: "All new tracks have a sound track?"
       required: false
+    - label: "Translations done or English placeholder set?"
+      required: false
   validations:
     required: false
 - type: "checkboxes"
