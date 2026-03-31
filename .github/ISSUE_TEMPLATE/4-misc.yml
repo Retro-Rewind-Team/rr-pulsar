@@ -1,0 +1,35 @@
+name: "Miscellaneous Requests"
+description: "Miscellaneous requests form for team members and contributors only!"
+labels: ["help wanted", "discussion"]
+body:
+- type: "markdown"
+  attributes:
+    value: "This form **only** serves Retro Rewind **team members and contributors** to bring up miscellaneous requests to the team.\n\nPeople outside of the team are not permitted to raise such requests. Feel free to reach out through a ticket on the [Retro Rewind Discord Server](https://discord.gg/RetroRewind) via the create-ticket channel, if there's special requests.\n\nUse this form to request things from team members, that don't apply to other forms."
+- type: "checkboxes"
+  attributes:
+    label: "I am a team member or contributor"
+    description: "By checking this box, you agree that you are authorized to make a miscellaneous request. If you are not authorized, your issue may be closed without explanation."
+    options:
+    - label: "Yes"
+      required: true
+  validations:
+    required: false
+- type: "textarea"
+  attributes:
+    label: "Version"
+    description: "What version is the pack on, at the time of making this request?"
+    placeholder: "v6.7"
+  validations:
+    required: false
+- type: "textarea"
+  attributes:
+    label: "Request item"
+    description: "What are you requesting?"
+  validations:
+    required: true
+- type: "textarea"
+  attributes:
+    label: "Request reason"
+    description: "Why are you requesting this?"
+  validations:
+    required: true

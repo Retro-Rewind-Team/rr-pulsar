@@ -1,0 +1,76 @@
+name: "Update"
+description: "Update checklist form for team members and contributors only!"
+labels: ["update"]
+body:
+- type: "markdown"
+  attributes:
+    value: "If you are not part of the Retro Rewind Team, your issue will be closed without explanation."
+- type: "textarea"
+  attributes:
+    label: "Version"
+    description: "What version number will this update have?"
+    placeholder: "v6.7"
+  validations:
+    required: true
+- type: "checkboxes"
+  attributes:
+    label: "Checklist"
+    description: "Please make sure that all checkboxes are checked (or that there's a good justification for the unchecked ones)."
+    options:
+    - label: "All new features tested?"
+      required: false
+    - label: "Regular gameplay tested?"
+      required: false
+    - label: "Mogi Staff informed about new track additions to evaluate track bans?"
+      required: false
+    - label: "BKT Updaters informed about new track additions for the BKT Sheet and Submission forum?"
+      required: false
+    - label: "BKT Updaters informed about updated tracks that de-sync ghosts for the BKT Sheet and Submission forum?"
+      required: false
+    - label: "Website maintainers informed about new track additions for the TT leaderboard and statistics page?"
+      required: false
+    - label: "Staff ghosts available for all tracks?"
+      required: false
+    - label: "Staff ghost holders informed about their ghost being replaced, so they can submit a new one for this or future updates?"
+      required: false
+    - label: "All new tracks have a sound track?"
+      required: false
+    - label: "Translations done or English placeholder set?"
+      required: false
+  validations:
+    required: false
+- type: "checkboxes"
+  attributes:
+    label: "Niche checklist"
+    description: "These checkboxes may only apply for certain cases, that still need to be kept in mind for some updates."
+    options:
+    - label: "Channel update required?"
+      required: false
+    - label: "Retro WFC update required?"
+      required: false
+    - label: "New media (such as graphics, tutorials or similar) required?"
+      required: false
+  validations:
+    required: false
+- type: "checkboxes"
+  attributes:
+    label: "Release checklist"
+    description: "These checkboxes can be used as guidance for the update release."
+    options:
+    - label: "Tracklist updated?"
+      required: false
+    - label: "Hash updated?"
+      required: false
+    - label: "Old hash removed?"
+      required: false
+    - label: "Full download updated?"
+      required: false
+    - label: "Update files uploaded?"
+      required: false
+    - label: "Discord Announcement made?"
+      required: false
+  validations:
+    required: false
+- type: "markdown"
+  attributes:
+    value: "Feel free to use the issue to track the current state of the update and add extra comments for greater detail."

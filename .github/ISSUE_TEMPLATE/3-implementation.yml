@@ -1,0 +1,38 @@
+name: "Feature Implementation"
+description: "Feature implementation form for team members and contributors only!"
+labels: ["feature", "implementation"]
+body:
+- type: "markdown"
+  attributes:
+    value: "This form **only** serves Retro Rewind **team members and contributors** to handle feature implementations.\n\nPeople outside of the team are not permitted to implement features before applying through the [Feature Submission form](https://github.com/Retro-Rewind-Team/rr-pulsar/issues/new?template=submission.yml). Feel free to discuss your ideas on the [Retro Rewind Discord Server](https://discord.gg/RetroRewind). The reason behind the developers not taking unapproved feature submissions can be found in the feature-suggestions channel on Discord."
+- type: "markdown"
+  attributes:
+    value: "### Implementation guidelines\n- Test features, that you're implementing.\n  - Large feature implementations should be tested by a broader part of the team or the Retro Rewind Testers.\n- Credit co-authors and address contributors for the feature, that you're implementing.\n- Unless absolutely necessary, don't take features from other packs. If you do, **double-check the licensing** before pushing the feature."
+- type: "checkboxes"
+  attributes:
+    label: "I am a team member or contributor"
+    description: "By checking this box, you agree that you are authorized to implement a feature. If you are not authorized, your issue may be closed without explanation."
+    options:
+    - label: "Yes"
+      required: true
+  validations:
+    required: false
+- type: "textarea"
+  attributes:
+    label: "Version"
+    description: "What version is the pack on, at the time of planning this implementation?"
+    placeholder: "v6.7"
+  validations:
+    required: true
+- type: "textarea"
+  attributes:
+    label: "Feature description"
+    description: "What would the feature you're suggesting do?"
+  validations:
+    required: true
+- type: "textarea"
+  attributes:
+    label: "Pitch"
+    description: "What is the idea behind this feature?"
+  validations:
+    required: false
