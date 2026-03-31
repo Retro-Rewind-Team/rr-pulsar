@@ -10,6 +10,42 @@ namespace Pulsar {
 namespace Sound {
 using namespace nw4r;
 
+static bool IsOnlineRaceSection(SectionId sectionId) {
+    switch (sectionId) {
+        case SECTION_P1_WIFI_VS:
+        case SECTION_P2_WIFI_VS:
+        case SECTION_P1_WIFI_FRIEND_VS:
+        case SECTION_P1_WIFI_FRIEND_TEAMVS:
+        case SECTION_P2_WIFI_FRIEND_VS:
+        case SECTION_P2_WIFI_FRIEND_TEAMVS:
+        case SECTION_P1_WIFI_VS_LIVEVIEW:
+        case SECTION_P2_WIFI_VS_LIVEVIEW:
+        case SECTION_P1_WIFI_BT:
+        case SECTION_P2_WIFI_BT:
+        case SECTION_P1_WIFI_FRIEND_BALLOON:
+        case SECTION_P1_WIFI_FRIEND_COIN:
+        case SECTION_P2_WIFI_FRIEND_BALLOON:
+        case SECTION_P2_WIFI_FRIEND_COIN:
+        case SECTION_P1_WIFI_BT_LIVEVIEW:
+        case SECTION_P2_WIFI_BT_LIVEVIEW:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool ShouldRefreshWifiMenuMusic(u32 soundId) {
+    if (soundId != SOUND_ID_WIFI_MUSIC) return false;
+
+    const u8 musicSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC);
+    if (musicSetting != MUSIC_DISABLE_RACE) return false;
+
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr) return false;
+
+    return IsOnlineRaceSection(sectionMgr->prevSectionId);
+}
+
 // RaceAudioMgr SetRaceState patch that skips the entire func, effectively disabling the mgr
 static void DisableRaceMusic(Audio::SinglePlayer& singlePlayer, u32 soundId, s16 delay) {
     const bool isEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC) == MUSIC_DEFAULT;
@@ -37,6 +73,7 @@ kmCall(0x806fa64c, DisableMenuMusic);
 static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 soundId) {
     const bool isEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC) != MUSIC_DISABLE_ALL;
     if (isEnabled) {
+        const bool shouldRefreshWifiMusic = ShouldRefreshWifiMenuMusic(soundId);
         const char* customBGPath = nullptr;
         if (soundId == SOUND_ID_TITLE)
             customBGPath = titleMusicFile;
@@ -51,9 +88,14 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
                 DVD::Close(&info);
                 if (info.length > 0) {
                     soundId = SOUND_ID_KC;
-                    singlePlayer.PrepareSound(soundId, false);  // needed so that the streamsMgr has its internal handle set
                 }
             }
+        }
+        if (shouldRefreshWifiMusic) {
+            singlePlayer.StopSound();
+            singlePlayer.PrepareSound(soundId, true);
+        } else if (customBGPath != nullptr) {
+            singlePlayer.PrepareSound(soundId, false);  // needed so that the streamsMgr has its internal handle set
         }
         singlePlayer.PlaySound(soundId, 0);
     }
