@@ -1,23 +1,13 @@
 name: "Bug Report"
-description: "Bug report form for team members and contributors only!"
-title: "[Bug]: "
+description: "Bug report form for technical users."
 labels: ["bug"]
 body:
 - type: "markdown"
   attributes:
-    value: "This form **only** serves Retro Rewind **team members and contributors** to report bugs.\nPeople outside of the team can report bugs on the [Retro Rewind Discord Server](https://discord.gg/RetroRewind) in the bug-report channel.\n\nThis triaging is done to make it easier for the developers to work on the project, as bug reports from users are often invalid."
+    value: "This form is for technical users to report bugs.\nNon-technical users can report bugs on the [Retro Rewind Discord Server](https://discord.gg/RetroRewind) in the bug-report channel.\n\nThis triaging is done to make it easier for the developers to work on the project, as bug reports from users are often invalid."
 - type: "markdown"
   attributes:
-    value: "### Reporting guidelines\n- Please only report bugs, that you were able to confirm are actually present.\n  - Examples for this are: Confirming it yourself ingame, receiving video/picture evidence etc.\n- Don't report My Stuff-related bugs unless it is a large scale issue affecting most users.\n  - Ineligible reports are, for example, when MenuSingles or Race files stop displaying properly after a RaceAssets/UIAssets etc. edit, which can be fixed by the mod editor\n  - Eligible reports may be, for example, if every user with a non-RR specialized Race.szs always crashes\n- Don't use this form for feature suggestions.\n  - Exceptions are when certain user experiences are so misleading, that they negatively affect most of RRs observable player base."
-- type: "checkboxes"
-  attributes:
-    label: "Authorization check"
-    description: "By checking this box, you agree that you are authorized to make a bug report. If you are not authorized, your issue may be closed without explanation."
-    options:
-    - label: "Yes"
-      required: true
-  validations:
-    required: false
+    value: "### Reporting guidelines\n- Please only report bugs, that you were able to confirm are actually present.\n  - Examples for this are: Confirming it yourself ingame, receiving video/picture evidence etc.\n- Don't report My Stuff-related bugs unless it is a large scale issue affecting most users.\n  - Ineligible reports are, for example, when MenuSingles or Race files stop displaying properly after a RaceAssets/UIAssets etc. edit, which can be fixed by the mod editor\n  - Eligible reports may be, for example, if every user with a non-RR specialized Race.szs always crashes\n- Don't use this form for feature suggestions.\n  - Exceptions are when certain user experiences are so misleading, that they negatively affect most of RRs observable player base.\nBug reports not following these guidelines may be closed without explanation."
 - type: "textarea"
   attributes:
     label: "Version"
