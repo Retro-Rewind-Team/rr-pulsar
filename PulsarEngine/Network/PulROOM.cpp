@@ -197,7 +197,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
 
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT |  // ott
                                          (ottOnline == OTTSETTING_ONLINE_FEATHER) << PULSAR_FEATHER |  // ott feather
-                                         (settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) ^ true) << PULSAR_UMTS |  // ott umts
+                                         (settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED) << PULSAR_UMTS |  // ott umts
                                          koSetting << PULSAR_MODE_KO | lapKoSetting << PULSAR_MODE_LAPKO |
                                          charRestrictLight << PULSAR_CHARRESTRICTLIGHT | charRestrictMid << PULSAR_CHARRESTRICTMID |
                                          charRestrictHeavy << PULSAR_CHARRESTRICTHEAVY | kartRestrict << PULSAR_KARTRESTRICT |

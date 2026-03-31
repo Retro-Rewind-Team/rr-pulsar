@@ -350,7 +350,7 @@ void System::UpdateContext() {
         isOTT = (mode == MODE_GRAND_PRIX || mode == MODE_VS_RACE) ? (ottOffline != OTTSETTING_OFFLINE_DISABLED) : false;  // offlineOTT
         if (isOTT) {
             isFeather &= (ottOffline == OTTSETTING_OFFLINE_FEATHER);
-            isUMTs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS);
+            isUMTs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED;
         }
     }
     this->netMgr.hostContext = newContext;
