@@ -59,14 +59,20 @@ kmWrite32(0x80554224, 0x3C808000);
 kmWrite32(0x80554228, 0x88841204);
 kmWrite32(0x8055422C, 0x48000044);
 
+static bool IsTTMode(const GameMode mode) {
+    return mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE;
+}
+
 void FPSPatch() {
     FPSPatchHook = 0x00;
     const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_RACE2, Pulsar::RADIO_FPS) == Pulsar::FPS_HALF && mode != MODE_TIME_TRIAL) {
+    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_RACE2, Pulsar::RADIO_FPS) == Pulsar::FPS_HALF &&
+        !IsTTMode(mode)) {
         FPSPatchHook = 0x00FF0100;
     }
 }
 static SectionLoadHook PatchFPS(FPSPatch);
+static RaceLoadHook PatchFPSOnRaceLoad(FPSPatch);
 
 void ItemBoxRespawn(Objects::Itembox* itembox) {
     bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
