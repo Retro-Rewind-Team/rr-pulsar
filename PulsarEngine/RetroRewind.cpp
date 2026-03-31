@@ -98,4 +98,24 @@ void PredictionPatch() {
 }
 static SectionLoadHook PatchPrediction(PredictionPatch);
 
+// Clear contexts from worldwides upon disconnecting from WFC. [Opt]
+static void ClearContextsUponWFCDisconnect() {
+    Pulsar::System* system = Pulsar::System::sInstance;
+    SectionId id = SectionMgr::sInstance->curSection->sectionId;
+
+    // Single-player menu
+    const bool isSinglePlayerMenu = (id == SECTION_SINGLE_P_FROM_MENU);
+
+    // Local splitscreen multiplayer menu
+    const bool isLocalMultiplayerMenu = (id == SECTION_LOCAL_MULTIPLAYER);
+
+    if (isSinglePlayerMenu || isLocalMultiplayerMenu) {
+        // Reset OTT context the same way StartWW does
+        system->context = 0;
+        system->UpdateContext();
+    }
+}
+
+SectionLoadHook clearContext(ClearContextsUponWFCDisconnect);
+
 }  // namespace RetroRewind
