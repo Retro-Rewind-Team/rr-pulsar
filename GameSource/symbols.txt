@@ -1594,6 +1594,22 @@ OnButtonClick__Q25Pages7OptionsFR10PushButtonUi = 0x805fd90c
 GetNextPage__Q25Pages7OptionsCFv = 0x80601060
 GetRuntimeTypeInfo__Q25Pages7OptionsCFv = 0x80601068
 
+#MultiPlayer
+__ct__Q25Pages11MultiPlayerFv = 0x8062b240
+__dt__Q25Pages11MultiPlayerFv = 0x8084dc4c
+CreateControl__Q25Pages11MultiPlayerFUi = 0x8084d3a8
+CreateExternalControl__Q25Pages11MultiPlayerFUi = 0x8084d260
+SetButtonHandlers__Q25Pages11MultiPlayerFR10PushButton = 0x8084dbe8
+GetManipulatorManager__Q25Pages11MultiPlayerFv = 0x8084dc44
+GetPlayerBitfield__Q25Pages11MultiPlayerCFv = 0x8084dbd8
+GetActivePlayerBitfield__Q25Pages11MultiPlayerCFv = 0x8084dbe0
+OnExternalButtonSelect__Q25Pages11MultiPlayerFR10PushButtonUi = 0x8084d6fc
+GetRuntimeTypeInfo__Q25Pages11MultiPlayerCFv = 0x8084dccc
+AfterControlUpdate__Q25Pages11MultiPlayerFv = 0x8084d4d8
+OnInit__Q25Pages11MultiPlayerFv = 0x8084d200
+OnActivate__Q25Pages11MultiPlayerFv = 0x8084d3b0
+OnDeactivate__Q25Pages11MultiPlayerFv = 0x8084dbd4
+
 #GhostSelect
 __ct__Q25Pages11GhostSelectFv = 0x806395ec
 __dt__Q25Pages11GhostSelectFv = 0x8063982c
