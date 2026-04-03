@@ -4,43 +4,17 @@ Retro Rewind is a custom track distribution created by ZPL. It features every re
 
 ## Licensing
 
-The majority of the source code here is licensed under the MIT License.
+All source code in this repository is licensed under AGPLv3. This includes all features written by the Retro Rewind Team and any contributors.
 
-Including [**mkw-sp**](https://github.com/mkw-sp/mkw-sp) ported features such as (see LICENSE_mkw-sp for more information):
+We borrow features from mkw-sp under MIT, specifically the Input Viewer. mkw-sp can be found under the MIT license in [mkw-sp](https://github.com/mkw-sp/mkw-sp); see LICENSE_mkw-sp for more information.
 
-- Input Viewer
-
-
-However, **certain features are licensed under the AGPLv3** (GNU Affero General Public License v3). If you plan to use these features, the following conditions apply:
-
-- You are allowed to use, distribute, modify, and use the features privately, but must comply with these requirements:
-    - Disclose the source code of your project
-    - Include the license and display a copyright notice
-    - ~~Apply the same license to your project~~
-        - We **will not enforce a specific license for your project**. You are free to choose any license, as long as all other requirements are met.
-    - Specify the changes made to the original feature
-
-Beware that **Network use is distribution**, it means that Users who interact with the licensed material via network are given the right to receive a copy of the source code.
-
-The following features are licensed under AGPLv3:
-
-- Room kick page and feature implementation
-- Player count calculation, display and feature implementation
-- Extended Team VS, UI changes, feature implementation, and all code associated
-- The specific Discord Rich Presence implementation used by Retro Rewind and code associated
-- The battle expansion code from Insane Kart Wii
-- Worldwide rank system found in Ranking.cpp
-- Battle Elimination implementation
-- Expanded VR/BR Rating System
-- Course Variant Selection Menu
+Pulsar is licensed under MIT. Pulsar can be found under the MIT license in [Pulsar](https://github.com/MelgMKW/Pulsar); see LICENSE_pulsar for more information.
 
 **NOTE:** You can ask to be fully exempted from these licensing constraints, feel free to contact the code author(s).
 
-The original credits for Pulsar can be found in the Pulsar repository.
-
 # Features
 Retro Rewind is based on Pulsar. The original feature list from Pulsar can be found in the Pulsar repository.
-Retro Rewinds feature list is always documented on the [Retro Rewind Tockdom page](https://wiki.tockdom.com/wiki/Retro_Rewind). The feature list may be behind the actual features available in the repository.
+Retro Rewind's feature list is always documented on the [Retro Rewind Tockdom page](https://wiki.tockdom.com/wiki/Retro_Rewind). The feature list may be behind the actual features available in the repository.
 
 # Building
 
