@@ -44,7 +44,7 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     u32 appliedOverrides = 0;
     u32 patchedNodes = 0;
     u32 missingOverrides = 0;
-    u32 finalSize = allocSize;
+    u32 finalSize = expandSize;
 
     u8* archiveBase = decompressedBuffer;
     EGG::Heap* archiveHeap = heap;
