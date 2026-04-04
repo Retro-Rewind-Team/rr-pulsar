@@ -442,4 +442,8 @@ kmCall(0x805ABE14, InvalidCameraPointerFix);
 kmWrite32(0x80820768, 0x60000000);  // Object::LoadAnimations
 kmWrite32(0x80820ad8, 0x60000000);  // Object::LoadAnimationByType
 
+// Allow Looking Backwards During Respawn & Countdown [Ro & Gaberboo]
+kmWrite32(0x805A228C, 0x60000000);
+kmWrite32(0x805A225C, 0x38800001);
+
 }  // namespace Codes
