@@ -592,7 +592,7 @@ static bool ReadRiivoFile(const OverrideEntry& entry, void* dest) {
     if (fd < 0) return false;
 
     const u32 readSizeAligned = nw4r::ut::RoundUp(entry.size, 0x20);
-    sDCInvalidateRange(dest, readSizeAligned);
+    
 
     u32 totalRead = 0;
     while (totalRead < entry.size) {
@@ -602,7 +602,7 @@ static bool ReadRiivoFile(const OverrideEntry& entry, void* dest) {
     }
     IOS::Close(fd);
     if (totalRead == entry.size) {
-        sDCInvalidateRange(dest, readSizeAligned);
+        
     }
     return totalRead == entry.size;
 }
@@ -617,7 +617,7 @@ static bool ReadSDFile(const OverrideEntry& entry, void* dest) {
     const int fd = reinterpret_cast<int>(&file);
 
     const u32 readSizeAligned = nw4r::ut::RoundUp(entry.size, 0x20);
-    sDCInvalidateRange(dest, readSizeAligned);
+    
 
     u32 totalRead = 0;
     while (totalRead < entry.size) {
@@ -627,7 +627,7 @@ static bool ReadSDFile(const OverrideEntry& entry, void* dest) {
     }
     sSdVtable->close(fd);
     if (totalRead == entry.size) {
-        sDCInvalidateRange(dest, readSizeAligned);
+        
     }
     return totalRead == entry.size;
 }
@@ -640,7 +640,7 @@ static bool ReadISFSFile(const OverrideEntry& entry, void* dest) {
     if (fd < 0) return false;
 
     const u32 readSizeAligned = nw4r::ut::RoundUp(entry.size, 0x20);
-    sDCInvalidateRange(dest, readSizeAligned);
+    
 
     u32 totalRead = 0;
     while (totalRead < entry.size) {
@@ -651,7 +651,7 @@ static bool ReadISFSFile(const OverrideEntry& entry, void* dest) {
 
     ISFS::Close(fd);
     if (totalRead == entry.size) {
-        sDCInvalidateRange(dest, readSizeAligned);
+        
     }
     return totalRead == entry.size;
 }
