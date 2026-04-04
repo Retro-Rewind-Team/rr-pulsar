@@ -43,12 +43,15 @@ const char kModsRoot[] = "/mods";
 const char kModsRootAlt[] = "/Mods";
 const char kModsRootPrefix[] = "/mods/";
 const char kModsRootAltPrefix[] = "/Mods/";
-const char kOverrideDiagBuild[] = "override-diag-20260405c";
+const char kOverrideDiagBuild[] = "override-diag-20260405g";
 const u32 kMaxOverridesTotal = 1024;
 const u32 kOverrideRepackGrowthFallback = 0x100000;
 const u32 kOverrideMaxGrowthOnSourceHeap = 0x100000;
 const u32 kMaxLoggedSDEntries = 12;
 const u32 kMaxLoggedArchiveMatches = 24;
+
+typedef void (*DCInvalidateRangeFunc)(void* addr, u32 size);
+static DCInvalidateRangeFunc sDCInvalidateRange = reinterpret_cast<DCInvalidateRangeFunc>(0x801a1600);
 
 struct OverrideEntry {
     char fullPath[OVERRIDE_MAX_PATH];
@@ -288,7 +291,6 @@ static EGG::Heap* GetPersistentOverrideHeap(u32 requiredSize) {
 static bool ModsRootExists();
 static OverrideSource GetOverrideSource(IOType ioType);
 static bool FindModsDirInFST(u32& outIndex, u32& outEnd, const char*& outRootPath);
-
 static bool ResolveFSTDirByPath(const char* path, u32 entryCount, u32& outIndex, u32& outEnd) {
     if (path == nullptr || path[0] == '\0') return false;
     const s32 entryNum = DVD::ConvertPathToEntryNum(path);
@@ -589,6 +591,9 @@ static bool ReadRiivoFile(const OverrideEntry& entry, void* dest) {
     s32 fd = PulsarIOClass::OpenFix(fullPath, static_cast<IOS::Mode>(RIIVO_MODE_READ));
     if (fd < 0) return false;
 
+    const u32 readSizeAligned = nw4r::ut::RoundUp(entry.size, 0x20);
+    sDCInvalidateRange(dest, readSizeAligned);
+
     u32 totalRead = 0;
     while (totalRead < entry.size) {
         const s32 readNow = IOS::Read(fd, reinterpret_cast<u8*>(dest) + totalRead, entry.size - totalRead);
@@ -596,6 +601,9 @@ static bool ReadRiivoFile(const OverrideEntry& entry, void* dest) {
         totalRead += static_cast<u32>(readNow);
     }
     IOS::Close(fd);
+    if (totalRead == entry.size) {
+        sDCInvalidateRange(dest, readSizeAligned);
+    }
     return totalRead == entry.size;
 }
 
@@ -608,6 +616,9 @@ static bool ReadSDFile(const OverrideEntry& entry, void* dest) {
     }
     const int fd = reinterpret_cast<int>(&file);
 
+    const u32 readSizeAligned = nw4r::ut::RoundUp(entry.size, 0x20);
+    sDCInvalidateRange(dest, readSizeAligned);
+
     u32 totalRead = 0;
     while (totalRead < entry.size) {
         const int readNow = sSdVtable->read(fd, reinterpret_cast<u8*>(dest) + totalRead, entry.size - totalRead);
@@ -615,6 +626,9 @@ static bool ReadSDFile(const OverrideEntry& entry, void* dest) {
         totalRead += static_cast<u32>(readNow);
     }
     sSdVtable->close(fd);
+    if (totalRead == entry.size) {
+        sDCInvalidateRange(dest, readSizeAligned);
+    }
     return totalRead == entry.size;
 }
 
@@ -625,6 +639,9 @@ static bool ReadISFSFile(const OverrideEntry& entry, void* dest) {
     s32 fd = ISFS::Open(tmp, ISFS::MODE_READ);
     if (fd < 0) return false;
 
+    const u32 readSizeAligned = nw4r::ut::RoundUp(entry.size, 0x20);
+    sDCInvalidateRange(dest, readSizeAligned);
+
     u32 totalRead = 0;
     while (totalRead < entry.size) {
         s32 readNow = ISFS::Read(fd, reinterpret_cast<u8*>(dest) + totalRead, entry.size - totalRead);
@@ -633,6 +650,9 @@ static bool ReadISFSFile(const OverrideEntry& entry, void* dest) {
     }
 
     ISFS::Close(fd);
+    if (totalRead == entry.size) {
+        sDCInvalidateRange(dest, readSizeAligned);
+    }
     return totalRead == entry.size;
 }
 
