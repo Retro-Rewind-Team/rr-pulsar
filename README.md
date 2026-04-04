@@ -8,6 +8,8 @@ All source code in this repository is licensed under AGPLv3. This includes all f
 
 We borrow features from mkw-sp under MIT, specifically the Input Viewer. mkw-sp can be found under the MIT license in [mkw-sp](https://github.com/mkw-sp/mkw-sp); see LICENSE_mkw-sp for more information.
 
+Additionally, we borrow features from [wfc-patcher-wii](https://github.com/WiiLink24/wfc-patcher-wii), sublicensed under the [GPLv3](https://github.com/WiiLink24/wfc-patcher-wii/tree/main?tab=readme-ov-file#license). See LICENSE for more information.
+
 Pulsar is licensed under MIT. Pulsar can be found under the MIT license in [Pulsar](https://github.com/MelgMKW/Pulsar); see LICENSE_pulsar for more information.
 
 **NOTE:** You can ask to be fully exempted from these licensing constraints, feel free to contact the code author(s).

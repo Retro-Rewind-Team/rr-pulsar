@@ -1,3 +1,11 @@
+/*
+    Based on wfc-patcher-wii
+    Written by mkwcat
+
+    Copyright (c) 2023-2025 WiiLink
+    SPDX-License-Identifier: gpl-2.0-or-later
+*/
+
 #include <kamek.hpp>
 #include <Network/SHA256.hpp>
 
