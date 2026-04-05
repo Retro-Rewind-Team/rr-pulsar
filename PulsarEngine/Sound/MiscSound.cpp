@@ -88,14 +88,14 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
                 DVD::Close(&info);
                 if (info.length > 0) {
                     soundId = SOUND_ID_KC;
+                    if (shouldRefreshWifiMusic) {
+                        singlePlayer.StopSound();
+                        singlePlayer.PrepareSound(soundId, true);
+                    } else if (customBGPath != nullptr) {
+                        singlePlayer.PrepareSound(soundId, false);  // needed so that the streamsMgr has its internal handle set
+                    }
                 }
             }
-        }
-        if (shouldRefreshWifiMusic) {
-            singlePlayer.StopSound();
-            singlePlayer.PrepareSound(soundId, true);
-        } else if (customBGPath != nullptr) {
-            singlePlayer.PrepareSound(soundId, false);  // needed so that the streamsMgr has its internal handle set
         }
         singlePlayer.PlaySound(soundId, 0);
     }

@@ -42,20 +42,20 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
     const char firstChar = extFilePath[0xC];
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const PulsarId track = cupsConfig->GetWinning();
+    register SoundIDs toPlayId;
+    asm(mr toPlayId, r20;);
 
-    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
+    if (toPlayId == SOUND_ID_KC) {
         const SectionId section = SectionMgr::sInstance->curSection->sectionId;
-        register SoundIDs toPlayId;
-        asm(mr toPlayId, r20;);
-        if (toPlayId == SOUND_ID_KC) {
-            if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
-                extFilePath = titleMusicFile;
-            } else if (section >= SECTION_P1_WIFI && section <= SECTION_P2_WIFI_FROOM_COIN_VOTING) {
-                extFilePath = wifiMusicFile;
-            } else if (section >= SECTION_SINGLE_P_FROM_MENU && section <= SECTION_SINGLE_P_LIST_RACE_GHOST || section == SECTION_LOCAL_MULTIPLAYER) {
-                extFilePath = offlineMusicFile;
-            }
-        } else if (!CupsConfig::IsReg(track)) {
+        if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
+            extFilePath = titleMusicFile;
+        } else if (section >= SECTION_P1_WIFI && section <= SECTION_P2_WIFI_FROOM_COIN_VOTING) {
+            extFilePath = wifiMusicFile;
+        } else if (section >= SECTION_SINGLE_P_FROM_MENU && section <= SECTION_SINGLE_P_LIST_RACE_GHOST || section == SECTION_LOCAL_MULTIPLAYER) {
+            extFilePath = offlineMusicFile;
+        }
+    } else if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
+        if (!CupsConfig::IsReg(track)) {
             bool isFinalLap = false;
             register u32 strLength;
             asm(mr strLength, r28;);
