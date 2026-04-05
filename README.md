@@ -4,7 +4,7 @@ Retro Rewind is a custom track distribution created by ZPL. It features every re
 
 ## Licensing
 
-All source code in this repository is licensed under AGPLv3. This includes all features written by the Retro Rewind Team and any contributors.
+All source code in this repository is licensed under GPLv3. This includes all features written by the Retro Rewind Team and any contributors.
 
 We borrow features from mkw-sp under MIT, specifically the Input Viewer. mkw-sp can be found under the MIT license in [mkw-sp](https://github.com/mkw-sp/mkw-sp); see LICENSE_mkw-sp for more information.
 
