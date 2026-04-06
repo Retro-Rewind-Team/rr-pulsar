@@ -34,4 +34,22 @@ When using nwfc.wiinoma.com for a local testing server, the default key is used,
 
 rr-pulsar is not built to work with WFC servers other than [Retro Rewinds WiiLink fork](https://github.com/Retro-Rewind-Team/wfc-server).
 
+# Testing
 
+There are two options for server testing. You can either use our testing server
+or host one locally.
+
+##### Using zpltest.xyz:
+
+This is recommended if you are making only simple client-side changes but still
+need online match-making. Simply compile using `-DTEST` and you will be
+connected to our test server, which does not have any version checks. If the
+server appears down for some reason, please contact `@ppeb` on Discord, either
+via DMs or via our [Discord server](https://discord.gg/RetroRewind).
+
+##### Hosting Locally
+
+This is necessary if you are making changes reliant on server behavior.
+Follow the instructions on our fork of
+[wfc-server](https://github.com/Retro-Rewind-Team/wfc-server). Use the default
+local testing key for the payload and compile Pulsar with no domain flags.
