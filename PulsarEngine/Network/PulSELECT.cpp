@@ -9,6 +9,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
@@ -93,6 +94,13 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         len = sizeof(PulSELECT);
     packetHolder->Copy(src, len);
 
+    const u8 customCharacterFlags = CustomCharacters::GetLocalOnlineCustomCharacterFlags();
+    for (int hudSlotId = 0; hudSlotId < 2; ++hudSlotId) {
+        u8& starRank = packetHolder->packet->playersData[hudSlotId].starRank;
+        starRank &= 0x7F;
+        if (((customCharacterFlags >> hudSlotId) & 1) != 0) starRank |= 0x80;
+    }
+
 #ifdef PROD
     // Encrypt the Pulsar extension portion of the packet after copy
     if (len == sizeof(PulSELECT) && Security::g_antiCheatKey.initialized) {
@@ -135,6 +143,14 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
         }
     }
 #endif
+
+    u8 customCharacterFlags = 0;
+    for (int hudSlotId = 0; hudSlotId < 2; ++hudSlotId) {
+        const u8 starRank = src->playersData[hudSlotId].starRank;
+        if ((starRank & 0x80) != 0) customCharacterFlags |= 1 << hudSlotId;
+        src->playersData[hudSlotId].starRank = starRank & 0x7F;
+    }
+    CustomCharacters::UpdateOnlineCustomCharacterFlagsFromAid(aid, src->playerIdToAid, customCharacterFlags);
 
     for (int i = 0; i < 2; ++i) {
         PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];

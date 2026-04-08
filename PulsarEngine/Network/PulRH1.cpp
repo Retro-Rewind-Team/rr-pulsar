@@ -4,6 +4,7 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <PulsarSystem.hpp>
+#include <CustomCharacters.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 
@@ -51,6 +52,13 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         packetHolder.packet->lapKoElimCount = 0;
         memset(packetHolder.packet->lapKoElims, 0xFF, sizeof(packetHolder.packet->lapKoElims));
     }
+
+    const u8 customCharacterFlags = CustomCharacters::GetLocalOnlineCustomCharacterFlags();
+    for (int hudSlotId = 0; hudSlotId < 2; ++hudSlotId) {
+        u8& starRank = packetHolder.packet->starRank[hudSlotId];
+        starRank &= 0x7F;
+        if (((customCharacterFlags >> hudSlotId) & 1) != 0) starRank |= 0x80;
+    }
 }
 kmCall(0x80655458, BeforeRH1Send);
 kmCall(0x806550e4, BeforeRH1Send);
@@ -71,6 +79,15 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
     else
         track = static_cast<CourseId>(packet->trackId);
     data->trackId = track;
+
+    u8 customCharacterFlags = 0;
+    for (int hudSlotId = 0; hudSlotId < 2; ++hudSlotId) {
+        const u8 starRank = packet->starRank[hudSlotId];
+        if ((starRank & 0x80) != 0) customCharacterFlags |= 1 << hudSlotId;
+        data->starRank[hudSlotId] &= 0x7F;
+    }
+    CustomCharacters::UpdateOnlineCustomCharacterFlagsFromAid(senderAid, &packet->aidsBelongingToPlayerIds[0], customCharacterFlags);
+
     memcpy(aidArrDest, &packet->aidsBelongingToPlayerIds[0], len);
 }
 kmCall(0x806652d0, AfterRH1Reception);
