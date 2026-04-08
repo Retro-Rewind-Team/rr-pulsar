@@ -43,14 +43,12 @@ static bool IsOfflineRaceOrBattle() {
 }
 
 static bool IsAllItemsCanLandSettingEnabled() {
-    const u8 setting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLITEMSCANLAND);
-    if (setting != ALLITEMSCANLAND_ENABLED) {
-        return false;
+    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
+    if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST || IsOfflineRaceOrBattle()) {
+        return Pulsar::System::sInstance->IsContext(PULSAR_ALLITEMSCANLAND);
     }
 
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    const bool isFroom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
-    return isFroom || IsOfflineRaceOrBattle();
+    return false;
 }
 
 static bool IsAllItemsCanLandActive() {

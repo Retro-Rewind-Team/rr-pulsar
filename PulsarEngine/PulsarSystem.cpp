@@ -274,6 +274,7 @@ void System::UpdateContext() {
     bool isTransmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE && isFroom;
     bool isTransmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE && isFroom;
     bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && isFroom;
+    bool isAllItemsCanLand = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
@@ -320,6 +321,7 @@ void System::UpdateContext() {
                 isOTTOnline |= newContext & (1 << PULSAR_MODE_OTT);
                 isMiiHeads = newContext2 & (1 << PULSAR_MIIHEADS);
                 isThunderCloud = newContext & (1 << PULSAR_THUNDERCLOUD);
+                isAllItemsCanLand = newContext2 & (1 << PULSAR_ALLITEMSCANLAND);
                 isItemBoxRepsawnFast = newContext2 & (1 << PULSAR_ITEMBOXRESPAWN);
                 isTransmissionInside = newContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
                 isTransmissionOutside = newContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
@@ -388,6 +390,7 @@ void System::UpdateContext() {
                             (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
                             (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN |
                             (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
+                            (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND |
                             (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
                             (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR;
     }
