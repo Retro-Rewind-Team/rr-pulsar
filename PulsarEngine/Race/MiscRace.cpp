@@ -52,10 +52,11 @@ kmCall(0x80799808, SetStartingItem);
 // From JoshuaMK, ported to C++ by Brawlbox and adapted as a setting
 static int MiiHeads(Racedata* racedata, u32 unused, u32 unused2, u8 id) {
     CharacterId charId = racedata->racesScenario.players[id].characterId;
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    const bool isPrivateFroom = (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-    const bool miiHeadFroom = isPrivateFroom && System::sInstance->IsContext(PULSAR_MIIHEADS);
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS) == MII_ENABLED) {
+    bool miiHeadFroom = ALLOW_MIIHEADS_ENABLED;
+    bool isFroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    if (isFroom)
+        miiHeadFroom = System::sInstance->IsContext(PULSAR_MIIHEADS) ? ALLOW_MIIHEADS_ENABLED : ALLOW_MIIHEADS_DISABLED;
+    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS) == MII_ENABLED && isFroom) {
         if (miiHeadFroom == ALLOW_MIIHEADS_ENABLED) {
             if (charId < MII_M) {
                 if (id == 0)
