@@ -442,6 +442,9 @@ kmCall(0x805ABE14, InvalidCameraPointerFix);
 kmWrite32(0x80820768, 0x60000000);  // Object::LoadAnimations
 kmWrite32(0x80820ad8, 0x60000000);  // Object::LoadAnimationByType
 
+// Force Game Language to Default [ZPL]
+kmWrite32(0x8000ad10, 0x38600001);
+
 // Allow Looking Backwards During Respawn & Countdown [Ro & Gaberboo]
 kmWrite32(0x805A228C, 0x60000000);
 kmWrite32(0x805A225C, 0x38800001);
