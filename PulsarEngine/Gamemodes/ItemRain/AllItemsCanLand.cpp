@@ -33,18 +33,9 @@ static bool IsItemRainForcedEnabled() {
     return false;
 }
 
-static bool IsOfflineRaceOrBattle() {
-    if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) {
-        return false;
-    }
-
-    const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    return mode == MODE_VS_RACE || mode == MODE_PRIVATE_VS || mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE;
-}
-
 static bool IsAllItemsCanLandSettingEnabled() {
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST || IsOfflineRaceOrBattle()) {
+    if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST || roomType == RKNet::ROOMTYPE_NONE) {
         return Pulsar::System::sInstance->IsContext(PULSAR_ALLITEMSCANLAND);
     }
 
