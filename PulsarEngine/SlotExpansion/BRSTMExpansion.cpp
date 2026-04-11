@@ -12,6 +12,24 @@ namespace Sound {
 // kmWrite32(0x8009e0dc, 0x7F87E378); //mr r7, r28 to get string length
 
 static char pulPath[0x100];
+
+static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
+    if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
+        extFilePath = titleMusicFile;
+        return true;
+    }
+    if (section >= SECTION_P1_WIFI && section <= SECTION_P2_WIFI_FROOM_COIN_VOTING) {
+        extFilePath = wifiMusicFile;
+        return true;
+    }
+    if ((section >= SECTION_SINGLE_P_FROM_MENU && section <= SECTION_SINGLE_P_LIST_RACE_GHOST) || section == SECTION_LOCAL_MULTIPLAYER) {
+        extFilePath = offlineMusicFile;
+        return true;
+    }
+
+    return false;
+}
+
 s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, bool isFinalLap) {
     const char* root = archive->extFileRoot;
     const char* lapSpecifier = isFinalLap ? "_f" : "_n";
@@ -47,14 +65,11 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
 
     if (toPlayId == SOUND_ID_KC) {
         const SectionId section = SectionMgr::sInstance->curSection->sectionId;
-        if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
-            extFilePath = titleMusicFile;
-        } else if (section >= SECTION_P1_WIFI && section <= SECTION_P2_WIFI_FROOM_COIN_VOTING) {
-            extFilePath = wifiMusicFile;
-        } else if (section >= SECTION_SINGLE_P_FROM_MENU && section <= SECTION_SINGLE_P_LIST_RACE_GHOST || section == SECTION_LOCAL_MULTIPLAYER) {
-            extFilePath = offlineMusicFile;
+        if (ResolveKCMenuMusicPath(section, extFilePath)) {
+            return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
         }
-    } else if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
+    }
+    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
         if (!CupsConfig::IsReg(track)) {
             bool isFinalLap = false;
             register u32 strLength;
