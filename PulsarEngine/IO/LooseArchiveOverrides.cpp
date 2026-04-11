@@ -8,7 +8,7 @@
  * that license.
  *
  * Use of this system in a non-GPLv3 project requires prior permission from
- * the Retro Rewind team and patchzy.
+ * the Retro Rewind team and/ or patchzy.
  */
 
 #include <kamek.hpp>
@@ -776,6 +776,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
 
             void* dest = archiveBase + nodes[nodeIdx].dataOffset;
+            // zappelin patches le game
             if (!ReadOverrideFile(entry, dest)) {
                 continue;
             }
@@ -987,6 +988,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             const OverrideEntry& entry = sModIndex.entries[idx];
             const u32 oldSize = nodes[nodeIdx].dataSize;
             const u32 newOffset = repackOffsets[nodeIdx];
+
+            // Zappelin patches le game
             if (!ReadOverrideFile(entry, newBuffer + newOffset)) {
                 newNodes[nodeIdx].dataSize = oldSize;
                 continue;
