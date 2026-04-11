@@ -89,7 +89,8 @@ class IO {
     const IOType type;
 
    protected:
-    IO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread) : type(type), heap(heap), taskThread(taskThread) {
+    IO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread)
+        : type(type), heap(heap), taskThread(taskThread), fileCount(0), fileNames(nullptr) {
         folderName[0] = '\0';
     }
     void Bind(const char* path) { strncpy(this->folderName, path, IOS::ipcMaxPath); }
