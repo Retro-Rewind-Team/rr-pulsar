@@ -31,9 +31,10 @@ static const u32 MAGIC = 'RRRT';
 static const u16 VERSION = 1;
 static const u32 MAX_LICENSES = 4;
 static const u32 MAX_PROFILES = 100;
-static const s32 RESERVED_PROFILE_ID_BASE = 1000000000;
 #ifdef TEST
-RESERVED_PROFILE_ID_BASE = 2000000000;
+static const s32 RESERVED_PROFILE_ID_BASE = 2000000000;
+#else
+static const s32 RESERVED_PROFILE_ID_BASE = 1000000000;
 #endif
 
 struct ProfileEntry {
