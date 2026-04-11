@@ -161,5 +161,33 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
 }
 kmCall(0x807ba160, DecideItemHook);
 
+// Fix Lap Counter Color in LapKO [Saucy]
+extern "C" void LapCounterColorFixHelper(CtrlRaceBase* self) {
+    System* system = System::sInstance;
+    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return;
+    self->HudSlotColorEnable("lap_lefft", true);
+    self->HudSlotColorEnable("lap_riighter", true);
+}
+
+asmFunc LapCounterColorFix() {
+    ASM(
+        nofralloc;
+        stwu sp, -0x10(sp);
+        mflr r0;
+        stw r0, 0x14(sp);
+
+        mr r3, r28;
+        bl LapCounterColorFixHelper;
+
+        lwz r0, 0x14(sp);
+        mtlr r0;
+        addi sp, sp, 0x10;
+
+        mr r3, r28;
+        blr;
+    )
+}
+kmCall(0x807EF7E8, LapCounterColorFix);
+
 }  // namespace LapKO
 }  // namespace Pulsar
