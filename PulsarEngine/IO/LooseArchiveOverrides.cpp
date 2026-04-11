@@ -224,54 +224,32 @@ static bool GetSDModsRootPath(char* outPath, u32 outSize) {
     if (outPath == nullptr || outSize == 0) return false;
 
     const System* system = System::sInstance;
-    if (system == nullptr) {
-        OS::Report("[LooseOverrides] GetSDModsRootPath: no System instance\n");
-        return false;
-    }
+    if (system == nullptr) return false;
 
     const char* modFolder = system->GetModFolder();
-    if (modFolder == nullptr || modFolder[0] == '\0') {
-        OS::Report("[LooseOverrides] GetSDModsRootPath: invalid mod folder\n");
-        return false;
-    }
+    if (modFolder == nullptr || modFolder[0] == '\0') return false;
 
     const int written = snprintf(outPath, outSize, "%s/Mods", modFolder);
-    if (written <= 0 || static_cast<u32>(written) >= outSize) {
-        OS::Report("[LooseOverrides] GetSDModsRootPath: failed to build Mods path for '%s'\n", modFolder);
-        return false;
-    }
-    OS::Report("[LooseOverrides] GetSDModsRootPath: '%s'\n", outPath);
+    if (written <= 0 || static_cast<u32>(written) >= outSize) return false;
     return true;
 }
 
 static bool ModsRootExistsOnSD() {
     IO* io = IO::sInstance;
-    if (io == nullptr) {
-        OS::Report("[LooseOverrides] ModsRootExistsOnSD: no IO instance\n");
-        return false;
-    }
-    if (!ShouldProbeSDModsPath()) {
-        OS::Report("[LooseOverrides] ModsRootExistsOnSD: IO type is %d, skipping SD lookup\n", io->type);
-        return false;
-    }
+    if (io == nullptr) return false;
+    if (!ShouldProbeSDModsPath()) return false;
 
     char modsPath[OVERRIDE_MAX_PATH];
     if (!GetSDModsRootPath(modsPath, sizeof(modsPath))) return false;
     bool exists = false;
     if (io->type == IOType_SD) {
-        OS::Report("[LooseOverrides] ModsRootExistsOnSD: checking with active SD IO\n");
         exists = io->FolderExists(modsPath);
     } else {
         System* system = System::sInstance;
-        if (system == nullptr) {
-            OS::Report("[LooseOverrides] ModsRootExistsOnSD: no System instance for temporary SDIO\n");
-            return false;
-        }
-        OS::Report("[LooseOverrides] ModsRootExistsOnSD: checking with temporary SDIO (Dolphin + channel)\n");
+        if (system == nullptr) return false;
         SDIO sdIo(IOType_SD, system->heap, system->taskThread);
         exists = sdIo.FolderExists(modsPath);
     }
-    OS::Report("[LooseOverrides] ModsRootExistsOnSD: '%s' exists=%d\n", modsPath, exists);
     return exists;
 }
 
@@ -300,26 +278,17 @@ static void InvalidateRange(void* addr, u32 size) {
 
 static bool ReadDVDFile(const char* path, void* dest, u32 size) {
     DVD::FileInfo info;
-    OS::Report("[LooseOverrides] ReadDVDFile: path='%s' size=%u\n", path, size);
-    if (!DVD::Open(path, &info)) {
-        OS::Report("[LooseOverrides] ReadDVDFile: DVD::Open failed for '%s'\n", path);
-        return false;
-    }
+    if (!DVD::Open(path, &info)) return false;
     InvalidateRange(dest, size);
     const s32 read = DVD::ReadPrio(&info, dest, static_cast<s32>(size), 0, 2);
     DVD::Close(&info);
-    OS::Report("[LooseOverrides] ReadDVDFile: read=%d expected=%u for '%s'\n", read, size, path);
     return read == static_cast<s32>(size);
 }
 
 static bool DVDFileExists(const char* path) {
     DVD::FileInfo info;
-    if (!DVD::Open(path, &info)) {
-        OS::Report("[LooseOverrides] DVDFileExists: '%s' -> false\n", path);
-        return false;
-    }
+    if (!DVD::Open(path, &info)) return false;
     DVD::Close(&info);
-    OS::Report("[LooseOverrides] DVDFileExists: '%s' -> true\n", path);
     return true;
 }
 
@@ -343,19 +312,14 @@ static bool ModsRootExists() {
     u32 modsIndex = 0;
     u32 modsEnd = 0;
     sModsRootPresent = FindModsDirInFST(modsIndex, modsEnd);
-    OS::Report("[LooseOverrides] ModsRootExists: FST lookup for '%s' present=%d index=%u end=%u\n",
-               kModsRoot, sModsRootPresent, modsIndex, modsEnd);
     if (!sModsRootPresent) {
         sModsRootPresent = ModsRootExistsOnSD();
     }
-    OS::Report("[LooseOverrides] ModsRootExists: final present=%d rootPath='%s'\n", sModsRootPresent, sModsRootPath);
     return sModsRootPresent;
 }
 
 static bool ReadOverrideFile(const OverrideEntry& entry, void* dest) {
     if (!ModsRootExists()) return false;
-    OS::Report("[LooseOverrides] ReadOverrideFile: full='%s' relative='%s' size=%u\n",
-               entry.fullPath, entry.relativePath, entry.size);
     return ReadDVDFile(entry.fullPath, dest, entry.size);
 }
 
@@ -421,34 +385,21 @@ static void AddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& tru
 }
 
 static bool FindModsDirInFST(u32& outIndex, u32& outEnd) {
-    if (OS::BootInfo::mInstance.FSTLocation == nullptr) {
-        OS::Report("[LooseOverrides] FindModsDirInFST: no FST location\n");
-        return false;
-    }
+    if (OS::BootInfo::mInstance.FSTLocation == nullptr) return false;
 
     const FSTEntry* entries = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
     const u32 entryCount = entries[0].size;
-    if (entryCount == 0) {
-        OS::Report("[LooseOverrides] FindModsDirInFST: empty FST\n");
-        return false;
-    }
-    const bool found = ResolveFSTDirByPath(kModsRoot, entryCount, outIndex, outEnd);
-    OS::Report("[LooseOverrides] FindModsDirInFST: path='%s' found=%d entryCount=%u index=%u end=%u\n",
-               kModsRoot, found, entryCount, outIndex, outEnd);
-    return found;
+    if (entryCount == 0) return false;
+    return ResolveFSTDirByPath(kModsRoot, entryCount, outIndex, outEnd);
 }
 
 static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
     u32 modsIndex = 0;
     u32 modsEnd = 0;
-    if (!FindModsDirInFST(modsIndex, modsEnd)) {
-        OS::Report("[LooseOverrides] ScanModsDirDVD: mods dir not found in FST\n");
-        return;
-    }
+    if (!FindModsDirInFST(modsIndex, modsEnd)) return;
 
     SetModsRootPath(kModsRoot);
     sModsRootPresent = true;
-    OS::Report("[LooseOverrides] ScanModsDirDVD: scanning '%s' index=%u end=%u\n", kModsRoot, modsIndex, modsEnd);
 
     const FSTEntry* fst = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
     const u32 entryCount = fst[0].size;
@@ -511,91 +462,53 @@ static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, boo
             continue;
         }
 
-        OS::Report("[LooseOverrides] ScanModsDirDVD: found file full='%s' relative='%s' size=%u\n",
-                   fullPath, relativePath, entry.size);
         AddEntry(entries, maxCount, count, truncated, fullPath, relativePath, entry.size);
         if (truncated) break;
     }
-    OS::Report("[LooseOverrides] ScanModsDirDVD: finished count=%u truncated=%d\n", count, truncated);
 }
 
 static void ScanModsDirFromIO(IO& io, OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
     char modsPath[OVERRIDE_MAX_PATH];
     if (!GetSDModsRootPath(modsPath, sizeof(modsPath))) return;
-    if (!io.FolderExists(modsPath)) {
-        OS::Report("[LooseOverrides] ScanModsDirSD: folder '%s' does not exist\n", modsPath);
-        return;
-    }
+    if (!io.FolderExists(modsPath)) return;
 
-    OS::Report("[LooseOverrides] ScanModsDirSD: reading folder '%s'\n", modsPath);
     io.ReadFolder(modsPath);
     const u32 fileCount = io.GetFileCount();
-    OS::Report("[LooseOverrides] ScanModsDirSD: folder '%s' fileCount=%u\n", modsPath, fileCount);
     for (u32 i = 0; i < fileCount && count < maxCount; ++i) {
         const char* fileName = io.GetFileName(i);
-        if (fileName == nullptr || fileName[0] == '\0') {
-            OS::Report("[LooseOverrides] ScanModsDirSD: file %u has empty name\n", i);
-            continue;
-        }
-        if (strlen(fileName) >= OVERRIDE_MAX_PATH) {
-            OS::Report("[LooseOverrides] ScanModsDirSD: file '%s' too long\n", fileName);
-            continue;
-        }
+        if (fileName == nullptr || fileName[0] == '\0') continue;
+        if (strlen(fileName) >= OVERRIDE_MAX_PATH) continue;
 
         char sdPath[OVERRIDE_MAX_PATH];
         io.GetFolderFilePath(sdPath, i);
-        OS::Report("[LooseOverrides] ScanModsDirSD: file %u name='%s' sdPath='%s'\n", i, fileName, sdPath);
-        if (!io.OpenFile(sdPath, FILE_MODE_READ)) {
-            OS::Report("[LooseOverrides] ScanModsDirSD: failed to open '%s'\n", sdPath);
-            continue;
-        }
+        if (!io.OpenFile(sdPath, FILE_MODE_READ)) continue;
 
         const s32 fileSize = io.GetFileSize();
         io.Close();
-        if (fileSize < 0) {
-            OS::Report("[LooseOverrides] ScanModsDirSD: invalid size %d for '%s'\n", fileSize, sdPath);
-            continue;
-        }
+        if (fileSize < 0) continue;
 
         char fullPath[OVERRIDE_MAX_PATH];
-        if (!BuildOverridePathWithRoot(kModsRoot, fileName, nullptr, fullPath, sizeof(fullPath))) {
-            OS::Report("[LooseOverrides] ScanModsDirSD: failed to build virtual path for '%s'\n", fileName);
-            continue;
-        }
+        if (!BuildOverridePathWithRoot(kModsRoot, fileName, nullptr, fullPath, sizeof(fullPath))) continue;
 
-        OS::Report("[LooseOverrides] ScanModsDirSD: adding virtual='%s' relative='%s' size=%d\n",
-                   fullPath, fileName, fileSize);
         AddEntry(entries, maxCount, count, truncated, fullPath, fileName, static_cast<u32>(fileSize));
         if (truncated) break;
     }
     io.CloseFolder();
-    OS::Report("[LooseOverrides] ScanModsDirSD: finished count=%u truncated=%d\n", count, truncated);
 }
 
 static void ScanModsDirSD(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
     IO* io = IO::sInstance;
-    if (io == nullptr) {
-        OS::Report("[LooseOverrides] ScanModsDirSD: no IO instance\n");
-        return;
-    }
-    if (!ShouldProbeSDModsPath()) {
-        OS::Report("[LooseOverrides] ScanModsDirSD: IO type %d is not eligible for SD probing\n", io->type);
-        return;
-    }
+    if (io == nullptr) return;
+    if (!ShouldProbeSDModsPath()) return;
 
     if (io->type == IOType_SD) {
-        OS::Report("[LooseOverrides] ScanModsDirSD: using active SD IO\n");
         ScanModsDirFromIO(*io, entries, maxCount, count, truncated);
         return;
     }
 
     System* system = System::sInstance;
-    if (system == nullptr) {
-        OS::Report("[LooseOverrides] ScanModsDirSD: no System instance for temporary SDIO\n");
-        return;
-    }
+    if (system == nullptr) return;
 
-    OS::Report("[LooseOverrides] ScanModsDirSD: using temporary SDIO (Dolphin + channel)\n");
     SDIO sdIo(IOType_SD, system->heap, system->taskThread);
     ScanModsDirFromIO(sdIo, entries, maxCount, count, truncated);
 }
@@ -605,12 +518,10 @@ static void ScanModsDir(OverrideEntry* entries, u32 maxCount, u32& count, bool& 
 
     IO* io = IO::sInstance;
     if (io != nullptr && ShouldProbeSDModsPath()) {
-        OS::Report("[LooseOverrides] ScanModsDir: using SD scan path\n");
         ScanModsDirSD(entries, maxCount, count, truncated);
         return;
     }
 
-    OS::Report("[LooseOverrides] ScanModsDir: using DVD/FST scan path\n");
     ScanModsDirDVD(entries, maxCount, count, truncated);
 }
 
@@ -618,7 +529,6 @@ static void EnsureModIndexBuilt() {
     if (sModIndexAttempted) return;
 
     if (!ModsRootExists()) {
-        OS::Report("[LooseOverrides] EnsureModIndexBuilt: mods root does not exist\n");
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
         sModIndexAttempted = true;
@@ -630,12 +540,10 @@ static void EnsureModIndexBuilt() {
     u32 count = 0;
     bool truncated = false;
     ScanModsDir(nullptr, kMaxOverridesTotal, count, truncated);
-    OS::Report("[LooseOverrides] EnsureModIndexBuilt: discovered count=%u truncated=%d\n", count, truncated);
     if (count >= kMaxOverridesTotal) {
         truncated = true;
     }
     if (count == 0) {
-        OS::Report("[LooseOverrides] EnsureModIndexBuilt: no override entries found\n");
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
         return;
@@ -644,7 +552,6 @@ static void EnsureModIndexBuilt() {
     const u32 requiredSize = sizeof(OverrideEntry) * count;
     EGG::Heap* heap = GetPersistentOverrideHeap(requiredSize);
     if (heap == nullptr) {
-        OS::Report("[LooseOverrides] EnsureModIndexBuilt: failed to find heap for %u bytes\n", requiredSize);
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
         return;
@@ -652,7 +559,6 @@ static void EnsureModIndexBuilt() {
 
     OverrideEntry* entries = EGG::Heap::alloc<OverrideEntry>(requiredSize, 0x20, heap);
     if (entries == nullptr) {
-        OS::Report("[LooseOverrides] EnsureModIndexBuilt: allocation failed for %u bytes\n", requiredSize);
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
         return;
@@ -665,7 +571,6 @@ static void EnsureModIndexBuilt() {
 
     sModIndex.entries = entries;
     sModIndex.count = filled;
-    OS::Report("[LooseOverrides] EnsureModIndexBuilt: built index filled=%u truncated=%d\n", filled, truncated);
 }
 
 static bool IsFileExtensionSZS(const char* path) {
@@ -697,14 +602,8 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
     if (outRedirected != nullptr) *outRedirected = false;
     if (path == nullptr || resolvedPath == nullptr || resolvedSize == 0) return path;
 
-    if (IsModsPath(path)) {
-        OS::Report("[LooseOverrides] ResolveWholeFileOverride: '%s' already under mods\n", path);
-        return path;
-    }
-    if (!ModsRootExists()) {
-        OS::Report("[LooseOverrides] ResolveWholeFileOverride: mods root missing for '%s'\n", path);
-        return path;
-    }
+    if (IsModsPath(path)) return path;
+    if (!ModsRootExists()) return path;
 
     const char* base = FindBasename(path);
     if (base == nullptr || base[0] == '\0') return path;
@@ -716,11 +615,9 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
 
     if (DVDFileExists(resolvedPath)) {
         if (outRedirected != nullptr) *outRedirected = true;
-        OS::Report("[LooseOverrides] ResolveWholeFileOverride: redirected '%s' -> '%s'\n", path, resolvedPath);
         return resolvedPath;
     }
 
-    OS::Report("[LooseOverrides] ResolveWholeFileOverride: no redirect for '%s' (candidate '%s')\n", path, resolvedPath);
     return path;
 }
 
@@ -755,10 +652,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     if (outMissingOverrides != nullptr) *outMissingOverrides = 0;
 
     EnsureModIndexBuilt();
-    if (sModIndex.entries == nullptr || sModIndex.count == 0) {
-        OS::Report("[LooseOverrides] ApplyLooseOverrides: no mod index for '%s'\n", archiveBaseLower);
-        return false;
-    }
+    if (sModIndex.entries == nullptr || sModIndex.count == 0) return false;
     if (archiveBase == nullptr || archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') return false;
     if (sourceHeap == nullptr) {
         return false;
@@ -776,11 +670,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         }
     }
     if (taggedCandidates == 0) {
-        OS::Report("[LooseOverrides] ApplyLooseOverrides: no tagged candidates for '%s'\n", archiveBaseLower);
         return false;
     }
-    OS::Report("[LooseOverrides] ApplyLooseOverrides: archive='%s' taggedCandidates=%u totalEntries=%u\n",
-               archiveBaseLower, taggedCandidates, sModIndex.count);
 
     ARC::Handle handle;
     if (!ARC::InitHandle(archiveBase, &handle)) {
@@ -854,8 +745,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     if (!anyOverrides) {
-        OS::Report("[LooseOverrides] ApplyLooseOverrides: no matching overrides for '%s' missing=%u\n",
-                   archiveBaseLower, missingOverrides);
         if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
         EGG::Heap::free(nodeOverrideIndex, tempHeap);
         EGG::Heap::free(entryApplied, tempHeap);
@@ -912,8 +801,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
         if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
         if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
-        OS::Report("[LooseOverrides] ApplyLooseOverrides: in-place archive='%s' applied=%u patchedNodes=%u missing=%u\n",
-                   archiveBaseLower, appliedOverrides, patchedNodes, missingOverrides);
 
         EGG::Heap::free(nodeOverrideIndex, tempHeap);
         EGG::Heap::free(entryApplied, tempHeap);
@@ -1167,8 +1054,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
     if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
     if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
-    OS::Report("[LooseOverrides] ApplyLooseOverrides: repacked archive='%s' applied=%u patchedNodes=%u missing=%u finalSize=%u\n",
-               archiveBaseLower, appliedOverrides, patchedNodes, missingOverrides, finalSize);
 
     if (repackOffsets != nullptr) EGG::Heap::free(repackOffsets, tempHeap);
     if (repackSizes != nullptr) EGG::Heap::free(repackSizes, tempHeap);
