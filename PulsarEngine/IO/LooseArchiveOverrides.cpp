@@ -38,7 +38,6 @@ const char kModsRoot[] = "/patches";
 const char kModsRootPrefix[] = "/patches/";
 //max mods allowed, can be increased maybe but for now if someone has more than 1024 overrides they deserve to have some not work ;/
 const u32 kMaxOverridesTotal = 1024;
-//only let the rebuilt archive grow by up to 1 MiB on the source heap before preferring another heap
 const u32 kOverrideMaxGrowthOnSourceHeap = 0x100000;
 
 typedef void (*DCInvalidateRangeFunc)(void* addr, u32 size);
