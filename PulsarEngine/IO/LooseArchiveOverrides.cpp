@@ -33,10 +33,9 @@ namespace Pulsar {
 namespace IOOverrides {
 
 namespace {
-//main mod folder
-//todo: rename to patches
-const char kModsRoot[] = "/mods";
-const char kModsRootPrefix[] = "/mods/";
+//main patch folder
+const char kModsRoot[] = "/patches";
+const char kModsRootPrefix[] = "/patches/";
 //max mods allowed, can be increased maybe but for now if someone has more than 1024 overrides they deserve to have some not work ;/
 const u32 kMaxOverridesTotal = 1024;
 //only let the rebuilt archive grow by up to 1 MiB on the source heap before preferring another heap
@@ -76,7 +75,7 @@ static ModIndex sModIndex = {nullptr, 0};
 static bool sModIndexAttempted = false;
 static bool sModsRootChecked = false;
 static bool sModsRootPresent = false;
-static char sModsRootPath[OVERRIDE_MAX_PATH] = "/mods";
+static char sModsRootPath[OVERRIDE_MAX_PATH] = "/patches";
 static char sLastUIArchiveBase[32] = "";
 
 static bool StartsWith(const char* str, const char* prefix) {
@@ -229,7 +228,7 @@ static bool GetSDModsRootPath(char* outPath, u32 outSize) {
     const char* modFolder = system->GetModFolder();
     if (modFolder == nullptr || modFolder[0] == '\0') return false;
 
-    const int written = snprintf(outPath, outSize, "%s/Mods", modFolder);
+    const int written = snprintf(outPath, outSize, "%s/Patches", modFolder);
     if (written <= 0 || static_cast<u32>(written) >= outSize) return false;
     return true;
 }
