@@ -542,6 +542,9 @@ static void EnsureModIndexBuilt() {
     if (count >= kMaxOverridesTotal) {
         truncated = true;
     }
+    if (truncated) {
+        OS::Report("[Pulsar] Loose overrides truncated at %u entries (max %u)\n", count, kMaxOverridesTotal);
+    }
     if (count == 0) {
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
@@ -551,6 +554,8 @@ static void EnsureModIndexBuilt() {
     const u32 requiredSize = sizeof(OverrideEntry) * count;
     EGG::Heap* heap = GetPersistentOverrideHeap(requiredSize);
     if (heap == nullptr) {
+        OS::Report("[Pulsar] Loose overrides index allocation skipped: need 0x%X bytes, no persistent heap available\n",
+                   requiredSize);
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
         return;
@@ -558,6 +563,7 @@ static void EnsureModIndexBuilt() {
 
     OverrideEntry* entries = EGG::Heap::alloc<OverrideEntry>(requiredSize, 0x20, heap);
     if (entries == nullptr) {
+        OS::Report("[Pulsar] Loose overrides index allocation failed: size=0x%X\n", requiredSize);
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
         return;
@@ -637,9 +643,6 @@ bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 arc
     memcpy(archiveBaseLower, base, copyLen);
     archiveBaseLower[copyLen] = '\0';
     ToLowerInPlace(archiveBaseLower);
-    if (strcmp(archiveBaseLower, "menusingle") != 0 && strcmp(archiveBaseLower, "menusingle_e") != 0) {
-        return false;
-    }
     return true;
 }
 
@@ -744,6 +747,10 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     if (!anyOverrides) {
+        if (missingOverrides > 0) {
+            OS::Report("[Pulsar] Loose overrides skipped for '%s': %u tagged file(s) did not match archive contents\n",
+                       archiveBaseLower, missingOverrides);
+        }
         if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
         EGG::Heap::free(nodeOverrideIndex, tempHeap);
         EGG::Heap::free(entryApplied, tempHeap);
@@ -932,6 +939,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         triedSourceHeap = true;
     }
     if (newBuffer == nullptr) {
+        OS::Report("[Pulsar] Loose override repack allocation failed for '%s': old=0x%X new=0x%X growth=0x%X%s\n",
+                   archiveBaseLower, archiveSize, newSize, growth, allowSourceHeap ? "" : " source-heap growth capped");
         if (archiveBase == nullptr && compressedData != nullptr) {
             archiveBase = static_cast<u8*>(EGG::Heap::alloc(originalArchiveSize, 0x20, sourceHeap));
             if (archiveBase != nullptr) {
@@ -1012,6 +1021,9 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             writeOffset = nw4r::ut::RoundUp(writeOffset, 0x20);
             const u32 alignedSize = nw4r::ut::RoundUp(newFileSize, 0x20);
             if (writeOffset + alignedSize > newSize) {
+                const OverrideEntry& entry = sModIndex.entries[idx];
+                OS::Report("[Pulsar] Loose override '%s' skipped in '%s': repack buffer too small for 0x%X bytes\n",
+                           entry.relativePath, archiveBaseLower, newFileSize);
                 useOverride = false;
                 newFileSize = oldSize;
             }
@@ -1056,6 +1068,10 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
     if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
     if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+    if (missingOverrides > 0) {
+        OS::Report("[Pulsar] Loose overrides for '%s': applied=%u patched=%u missing=%u\n", archiveBaseLower,
+                   appliedOverrides, patchedNodes, missingOverrides);
+    }
 
     if (repackOffsets != nullptr) EGG::Heap::free(repackOffsets, tempHeap);
     if (repackSizes != nullptr) EGG::Heap::free(repackSizes, tempHeap);
