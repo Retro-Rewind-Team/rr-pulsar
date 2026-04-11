@@ -1,3 +1,17 @@
+/*
+ * This feature was developed by patchzy as part of the Retro Rewind project.
+ *
+ * Copyright (C) Retro Rewind.
+ *
+ * Licensed under the GNU General Public License v3.0 only.
+ * You may not use, modify, or distribute this code except in compliance with
+ * that license.
+ *
+ * Use of this system in a non-GPLv3 project requires prior permission from
+ * the Retro Rewind team and/ or patchzy.
+ */
+
+
 #ifndef _PULSAR_LOOSE_ARCHIVE_OVERRIDES_
 #define _PULSAR_LOOSE_ARCHIVE_OVERRIDES_
 
