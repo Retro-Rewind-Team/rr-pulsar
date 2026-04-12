@@ -40,9 +40,6 @@ const char kModsRootPrefix[] = "/patches/";
 const u32 kMaxOverridesTotal = 1024;
 const u32 kOverrideMaxGrowthOnSourceHeap = 0x100000;
 
-typedef void (*DCInvalidateRangeFunc)(void* addr, u32 size);
-static DCInvalidateRangeFunc sDCInvalidateRange = reinterpret_cast<DCInvalidateRangeFunc>(0x801a1600);
-
 struct OverrideEntry {
     char fullPath[OVERRIDE_MAX_PATH];
     char relativePath[OVERRIDE_MAX_PATH];
@@ -310,10 +307,10 @@ static bool ResolveFSTDirByPath(const char* path, u32 entryCount, u32& outIndex,
 }
 
 static void InvalidateRange(void* addr, u32 size) {
-    if (sDCInvalidateRange == nullptr || addr == nullptr || size == 0) return;
+    if (addr == nullptr || size == 0) return;
     const u32 start = reinterpret_cast<u32>(addr) & ~0x1F;
     const u32 end = nw4r::ut::RoundUp(reinterpret_cast<u32>(addr) + size, 0x20);
-    sDCInvalidateRange(reinterpret_cast<void*>(start), end - start);
+    OS::DCInvalidateRange(reinterpret_cast<void*>(start), end - start);
 }
 
 static bool ReadDVDFile(const char* path, void* dest, u32 size) {

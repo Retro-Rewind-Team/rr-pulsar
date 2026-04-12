@@ -499,6 +499,7 @@ PSVECMag__3MTXFPC3Vec = 0x8019ac68
 #OS
 OSGetArenaLo__Fv = 0x801a10cc
 DCInvalidateRange__FPvUi = 0x801a1600
+DCInvalidateRange__2OSFPvUi = 0x801a1600
 DCFlushRange = 0x801a162c
 DCStoreRange__FPvUi = 0x801a165c
 DCFlushRange__2OSFPvUi = 0x801a162c
