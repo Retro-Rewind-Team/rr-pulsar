@@ -9,6 +9,8 @@
 #include <Network/RSA.hpp>
 #include <Network/SHA256.hpp>
 #include <Network/WiiLink.hpp>
+#include <core/RK/RKSystem.hpp>
+#include <core/egg/mem/Heap.hpp>
 #include <core/rvl/DWC/DWC.hpp>
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/ipc/ipc.hpp>
@@ -17,7 +19,7 @@
 #ifndef _WIILINK_
 #define _WIILINK_
 
-static u8 s_payloadBlock[PAYLOAD_BLOCK_SIZE + 0x20];
+static void* s_payloadStorage = nullptr;
 static void *s_payload = nullptr;
 static bool s_payloadReady = false;
 static u8 s_saltHash[SHA256_DIGEST_SIZE];
@@ -38,6 +40,22 @@ static asm void DWCi_Auth_SendRequest(
     stwu r1, -0x1B0(r1)
     b Real_DWCi_Auth_SendRequest
     // clang-format on
+}
+
+static bool EnsurePayloadBuffer() {
+    if (s_payload != nullptr) return true;
+
+    if (s_payloadStorage == nullptr) {
+        EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
+        if (heap == nullptr) return false;
+
+        // Keep the large payload buffer out of Kamek's boot-time BSS reservation.
+        s_payloadStorage = EGG::Heap::alloc(PAYLOAD_BLOCK_SIZE + 0x20, 0x20, heap);
+        if (s_payloadStorage == nullptr) return false;
+    }
+
+    s_payload = reinterpret_cast<void*>((u32(s_payloadStorage) + 31) & ~31);
+    return true;
 }
 
 bool GenerateRandomSalt(u8 *out) {
@@ -167,7 +185,11 @@ kmBranchDefCpp(
         return;
     }
 
-    s_payload = (void *)((u32(s_payloadBlock) + 31) & ~31);
+    if (!EnsurePayloadBuffer()) {
+        s_auth_error = WL_ERROR_PAYLOAD_STAGE1_ALLOC;
+        return;
+    }
+
     memset(s_payload, 0, PAYLOAD_BLOCK_SIZE);
 
     u8 salt[SHA256_DIGEST_SIZE];
