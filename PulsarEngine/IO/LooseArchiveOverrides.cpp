@@ -169,6 +169,48 @@ static void CopyPath(char* dest, u32 destSize, const char* src) {
     dest[destSize - 1] = '\0';
 }
 
+static bool DecodeOverrideRelativePath(char* dest, u32 destSize, const char* src) {
+    if (dest == nullptr || destSize == 0) return false;
+    if (src == nullptr) {
+        dest[0] = '\0';
+        return true;
+    }
+
+    u32 writeIdx = 0;
+    const char* cursor = src;
+
+    // Allow archive subpaths to be expressed as leading bracketed segments,
+    // e.g. [button][timg]icon.tpl.Channel -> button/timg/icon.tpl.Channel.
+    while (*cursor == '[') {
+        const char* close = strchr(cursor + 1, ']');
+        if (close == nullptr || close == cursor + 1) {
+            break;
+        }
+
+        const u32 segmentLen = static_cast<u32>(close - (cursor + 1));
+        if (writeIdx + segmentLen + 1 >= destSize) {
+            dest[0] = '\0';
+            return false;
+        }
+
+        memcpy(dest + writeIdx, cursor + 1, segmentLen);
+        writeIdx += segmentLen;
+        dest[writeIdx++] = '/';
+        cursor = close + 1;
+    }
+
+    for (; *cursor != '\0'; ++cursor) {
+        if (writeIdx + 1 >= destSize) {
+            dest[0] = '\0';
+            return false;
+        }
+        dest[writeIdx++] = *cursor;
+    }
+
+    dest[writeIdx] = '\0';
+    return true;
+}
+
 static void SetModsRootPath(const char* path) {
     CopyPath(sModsRootPath, sizeof(sModsRootPath), path);
 }
@@ -324,33 +366,35 @@ static bool ReadOverrideFile(const OverrideEntry& entry, void* dest) {
 static void FillOverrideEntry(OverrideEntry& entry, const char* fullPath, const char* relativePath, u32 size) {
     strncpy(entry.fullPath, fullPath, sizeof(entry.fullPath));
     entry.fullPath[sizeof(entry.fullPath) - 1] = '\0';
-    strncpy(entry.relativePath, relativePath, sizeof(entry.relativePath));
-    entry.relativePath[sizeof(entry.relativePath) - 1] = '\0';
 
-    entry.hasSubpath = (strchr(relativePath, '/') != nullptr);
+    if (!DecodeOverrideRelativePath(entry.relativePath, sizeof(entry.relativePath), relativePath)) {
+        entry.relativePath[0] = '\0';
+    }
+
+    entry.hasSubpath = (strchr(entry.relativePath, '/') != nullptr);
     entry.isTagged = false;
     entry.archiveTagLower[0] = '\0';
 
-    const char* filename = FindLastChar(relativePath, '/');
+    const char* filename = FindLastChar(entry.relativePath, '/');
     if (filename != nullptr) {
         filename++;
     } else {
-        filename = relativePath;
+        filename = entry.relativePath;
     }
 
     const char* lastDot = FindLastChar(filename, '.');
     if (lastDot != nullptr && lastDot[1] != '\0') {
         entry.isTagged = true;
         ToLowerCopy(entry.archiveTagLower, lastDot + 1, sizeof(entry.archiveTagLower));
-        const u32 prefixLen = static_cast<u32>(lastDot - relativePath);
+        const u32 prefixLen = static_cast<u32>(lastDot - entry.relativePath);
         if (prefixLen < sizeof(entry.strippedName)) {
-            memcpy(entry.strippedName, relativePath, prefixLen);
+            memcpy(entry.strippedName, entry.relativePath, prefixLen);
             entry.strippedName[prefixLen] = '\0';
         } else {
             entry.strippedName[0] = '\0';
         }
     } else {
-        strncpy(entry.strippedName, relativePath, sizeof(entry.strippedName));
+        strncpy(entry.strippedName, entry.relativePath, sizeof(entry.strippedName));
         entry.strippedName[sizeof(entry.strippedName) - 1] = '\0';
     }
 
