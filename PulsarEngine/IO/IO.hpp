@@ -8,6 +8,7 @@
 
 namespace Pulsar {
 
+//todo: look into if this can be higher, havent done any research yet
 const int maxFileCount = 100;
 typedef char FileName[255];
 
@@ -89,7 +90,8 @@ class IO {
     const IOType type;
 
    protected:
-    IO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread) : type(type), heap(heap), taskThread(taskThread) {
+    IO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread)
+        : type(type), heap(heap), taskThread(taskThread), fileCount(0), fileNames(nullptr) {
         folderName[0] = '\0';
     }
     void Bind(const char* path) { strncpy(this->folderName, path, IOS::ipcMaxPath); }
