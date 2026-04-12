@@ -8,6 +8,7 @@
 
 namespace Pulsar {
 
+//todo: look into if this can be higher, havent done any research yet
 const int maxFileCount = 100;
 typedef char FileName[255];
 
