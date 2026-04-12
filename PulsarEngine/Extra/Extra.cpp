@@ -216,6 +216,9 @@ kmCall(0x8057C3F8, StarOffroadFix);
 kmWrite32(0x80549898, 0x38600000);
 kmWrite32(0x8054989c, 0x4E800020);
 
+// Fix Bullet Bill speed dropping to 120 km/h after cannons [ZPL]
+kmWrite32(0x8057BBD4, 0xD3FD002C);
+
 // Deflicker when 480p [MKW-SP]
 asmFunc Deflicker() {
     ASM(
