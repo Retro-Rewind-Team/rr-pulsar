@@ -22,6 +22,7 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
 
     char archiveBaseLower[OVERRIDE_MAX_NAME];
     archiveBaseLower[0] = '\0';
+    // This gate is cheap on purpose: skip all index work for non-SZS loads before allocating extra scratch logic.
     const bool canApplyOverrides = ShouldApplyLooseOverrides(path, archiveBaseLower, sizeof(archiveBaseLower));
     const u32 allocSize = nw4r::ut::RoundUp(expandSize, 0x20);
     void* buffer = EGG::Heap::alloc(allocSize, 0x20, heap);
@@ -42,6 +43,7 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     u8* archiveBase = decompressedBuffer;
     EGG::Heap* archiveHeap = heap;
     if (canApplyOverrides) {
+        // `ApplyLooseOverrides()` may swap `archiveBase` to a repacked buffer on another heap.
         ApplyLooseOverrides(archiveBaseLower, archiveBase, finalSize, heap, archiveHeap, &appliedOverrides, &patchedNodes,
                             &missingOverrides, compressedData);
     }

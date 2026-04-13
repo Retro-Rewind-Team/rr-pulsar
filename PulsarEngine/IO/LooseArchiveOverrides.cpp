@@ -33,6 +33,24 @@ namespace Pulsar {
 namespace IOOverrides {
 
 namespace {
+/*
+ * LooseArchiveOverrides is split into two separate behaviors that share the
+ * same `/patches` root:
+ *
+ * 1. Whole-file redirects:
+ *    `ResolveWholeFileOverride()` swaps an original path like
+ *    `/Scene/UI/Common.szs` to `/patches/Common.szs` before loading if a loose
+ *    replacement exists. This is to mimic the original my-stuff folder behavior
+ *
+ * 2. Tagged archive-member overrides:
+ *    files named `member.ext.ArchiveTag` are indexed once, then matched against
+ *    a decompressed archive named `ArchiveTag.szs`.(for example) The filename before the last
+ *    dot becomes the target node path inside the archive.
+ *
+ * The implementation is Wii-safe: fixed-size buffers,
+ * one persistent array for the index, and a sorted-by-tag layout so runtime
+ * archive loads only touch the slice relevant to the current archive.
+ */
 //main patch folder
 const char kModsRoot[] = "/patches";
 const char kModsRootPrefix[] = "/patches/";
@@ -50,6 +68,10 @@ struct OverrideEntry {
     u32 size;
 };
 
+
+// Cached loose-override index. This is built once on first use and then kept in
+// a persistent heap because archive loads can happen frequently and often on
+// hot paths such as UI transitions. It might be worth figuring out if this is really cheaper though
 struct ModIndex {
     OverrideEntry* entries;
     u32 count;
@@ -88,6 +110,7 @@ static bool EndsWithIgnoreCase(const char* str, const char* suffix) {
     if (str == nullptr || suffix == nullptr) return false;
     const size_t strLen = strlen(str);
     const size_t suffixLen = strlen(suffix);
+    // Reject impossible matches early so callers can use this as a cheap extension filter.
     if (suffixLen > strLen) return false;
     const char* tail = str + (strLen - suffixLen);
     for (size_t i = 0; i < suffixLen; ++i) {
@@ -130,6 +153,7 @@ static void ToLowerCopy(char* dest, const char* src, u32 destSize) {
         if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
         dest[i] = c;
     }
+    // Tags are only lookup keys, so truncation is acceptable as long as the string stays terminated.
     dest[i] = '\0';
 }
 
@@ -172,13 +196,21 @@ static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32
     for (const char* p = filename; p < lastDot; ++p) {
         if (*p == '.') extDot = p;
     }
-    // Loose archive overrides use name.ext.Tag. Single-extension files like Common.szs
-    // are whole-file overrides and should not be indexed here.
+
+    // Loose archive-member overrides intentionally require at least two dots:
+    // `name.ext.Tag`
+
+    // `Tag` is the archive basename, and `name.ext` remains the target node
+    // path once any bracket-prefix path encoding has been expanded. This keeps
+    // ordinary single-extension files such as `Common.szs` in the whole-file
+    // redirect lane instead of accidentally treating `szs` as an archive tag.
+
     if (extDot == nullptr || extDot == filename || extDot + 1 >= lastDot) {
         return false;
     }
 
     const u32 prefixLen = static_cast<u32>(lastDot - relativePath);
+    // Refuse to index an entry if its decoded member path would have to be truncated.
     if (prefixLen + 1 > strippedNameSize) {
         return false;
     }
@@ -191,6 +223,13 @@ static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32
 
 static void SortOverrideEntriesByArchiveTag(OverrideEntry* entries, u32 count) {
     if (entries == nullptr || count < 2) return;
+
+
+    // The index is ordered with a tiny insertion sort during its one-time build step.
+    // Entries are grouped by archive tag first, then by stripped member path so
+    // binary range lookup can hand ApplyLooseOverrides() a contiguous bucket for
+    // the current archive. The secondary key keeps the ordering deterministic for
+    // debugging and duplicate-resolution behavior.
 
     for (u32 i = 1; i < count; ++i) {
         const OverrideEntry key = entries[i];
@@ -214,6 +253,10 @@ static bool FindArchiveTagRange(const ModIndex& index, const char* archiveBaseLo
         return false;
     }
 
+    // Standard lower/upper-bound search over the sorted index. Returning a
+    // half-open range keeps the runtime loop branch-light and avoids rescanning
+    // unrelated loose overrides for every archive load.
+
     u32 low = 0;
     u32 high = index.count;
     while (low < high) {
@@ -225,6 +268,7 @@ static bool FindArchiveTagRange(const ModIndex& index, const char* archiveBaseLo
             high = mid;
         }
     }
+    // No exact match here means this archive has no bucket in the prebuilt index.
     if (low >= index.count || strcmp(index.entries[low].archiveTagLower, archiveBaseLower) != 0) {
         return false;
     }
@@ -268,6 +312,7 @@ static void CopyPath(char* dest, u32 destSize, const char* src) {
         return;
     }
     strncpy(dest, src, destSize);
+    // Downstream path logic assumes explicit NUL termination after every bounded copy.
     dest[destSize - 1] = '\0';
 }
 
@@ -281,8 +326,13 @@ static bool DecodeOverrideRelativePath(char* dest, u32 destSize, const char* src
     u32 writeIdx = 0;
     const char* cursor = src;
 
-    // Allow archive subpaths to be expressed as leading bracketed segments,
-    // e.g. [button][timg]icon.tpl.Channel -> button/timg/icon.tpl.Channel.
+    // Loose files live in a flat directory on disk, so nested archive paths use
+    // a bracket prefix encoding. The decoded form is only used for archive node
+    // matching; the original filename on disk remains untouched.
+
+    // Example:
+    // `[button][timg]icon.tpl.Channel` -> `button/timg/icon.tpl.Channel`
+
     while (*cursor == '[') {
         const char* close = strchr(cursor + 1, ']');
         if (close == nullptr || close == cursor + 1) {
@@ -326,6 +376,7 @@ static bool AppendPath(char* path, u32 pathSize, u32& pathLen, const char* name)
         written = snprintf(path + pathLen, pathSize - pathLen, "/%s", name);
     }
     if (written <= 0) return false;
+    // The traversal stack restores `pathLen`, so partial writes would corrupt later path reconstruction.
     if (pathLen + static_cast<u32>(written) >= pathSize) return false;
     pathLen += static_cast<u32>(written);
     return true;
@@ -343,6 +394,10 @@ static EGG::Heap* GetPersistentOverrideHeap(u32 requiredSize) {
     candidates[1] = RKSystem::mInstance.EGGRootMEM1;
     candidates[2] = GetOverridesHeap();
 
+    // The index is persistent for the process lifetime, so prefer large root
+    // heaps over transient/archive-specific heaps. Falling back to the system
+    // heap is still better than rebuilding the index every archive load.
+
     for (u32 i = 0; i < 3; ++i) {
         EGG::Heap* heap = candidates[i];
         if (heap == nullptr) continue;
@@ -357,6 +412,7 @@ static bool FindModsDirInFST(u32& outIndex, u32& outEnd);
 static bool ShouldProbeSDModsPath() {
     IO* io = IO::sInstance;
     if (io == nullptr) return false;
+    // Hardware SD can use the active IO backend directly; Dolphin channel mode needs an explicit SD probe.
     if (io->type == IOType_SD) return true;
     if (io->type == IOType_DOLPHIN && IsNewChannel()) return true;
     return false;
@@ -369,6 +425,7 @@ static bool GetSDModsRootPath(char* outPath, u32 outSize) {
     if (system == nullptr) return false;
 
     const char* modFolder = system->GetModFolder();
+    // No mod folder means there is no external loose-override root to resolve.
     if (modFolder == nullptr || modFolder[0] == '\0') return false;
 
     const int written = snprintf(outPath, outSize, "%s/Patches", modFolder);
@@ -389,6 +446,7 @@ static bool ModsRootExistsOnSD() {
     } else {
         System* system = System::sInstance;
         if (system == nullptr) return false;
+        // Dolphin channel mode is not backed by the main IO object, so probe through a temporary SDIO instance.
         SDIO sdIo(IOType_SD, system->heap, system->taskThread);
         exists = sdIo.FolderExists(modsPath);
     }
@@ -403,6 +461,7 @@ static bool ResolveFSTDirByPath(const char* path, u32 entryCount, u32& outIndex,
         return false;
     }
     const FSTEntry* entries = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
+    // The DVD scan walks a directory range directly, so `/patches` must resolve to a directory entry.
     if (!FSTEntryIsDir(entries[entryNum])) {
         return false;
     }
@@ -421,6 +480,7 @@ static void InvalidateRange(void* addr, u32 size) {
 static bool ReadDVDFile(const char* path, void* dest, u32 size) {
     DVD::FileInfo info;
     if (!DVD::Open(path, &info)) return false;
+    // External media reads can bypass the CPU cache; invalidate before the DMA-style read.
     InvalidateRange(dest, size);
     const s32 read = DVD::ReadPrio(&info, dest, static_cast<s32>(size), 0, 2);
     DVD::Close(&info);
@@ -449,12 +509,17 @@ static bool BuildOverridePathWithRoot(const char* root, const char* name, const 
 static bool ModsRootExists() {
     if (sModsRootChecked) return sModsRootPresent;
 
+    // Probe once, then cache both presence and the root path flavor we resolved.
+    // DVD builds use `/patches` directly; SD/Dolphin setups may resolve to the
+    // external mod folder path instead.
+
     sModsRootChecked = true;
     SetModsRootPath(kModsRoot);
     u32 modsIndex = 0;
     u32 modsEnd = 0;
     sModsRootPresent = FindModsDirInFST(modsIndex, modsEnd);
     if (!sModsRootPresent) {
+        // Disc FST lookup is preferred; SD probing is only the fallback path.
         sModsRootPresent = ModsRootExistsOnSD();
     }
     return sModsRootPresent;
@@ -462,6 +527,7 @@ static bool ModsRootExists() {
 
 static bool ReadOverrideFile(const OverrideEntry& entry, void* dest) {
     if (!ModsRootExists()) return false;
+    // The index already cached the final logical path and size, so patch reads become direct file copies.
     return ReadDVDFile(entry.fullPath, dest, entry.size);
 }
 
@@ -470,8 +536,17 @@ static void FillOverrideEntry(OverrideEntry& entry, const char* fullPath, const 
     entry.fullPath[sizeof(entry.fullPath) - 1] = '\0';
 
     if (!DecodeOverrideRelativePath(entry.relativePath, sizeof(entry.relativePath), relativePath)) {
+        // Keep the entry structurally valid even if path decoding failed; later matching will naturally reject it.
         entry.relativePath[0] = '\0';
     }
+
+
+    // `strippedName` is the archive lookup key:
+    // - `button/timg/icon.tpl` for nested overrides
+    // - `icon.tpl` for basename-only overrides that may match multiple nodes
+
+    // `archiveTagLower` is the archive bucket key, derived from the final suffix
+    // in `name.ext.ArchiveTag`.
 
     entry.hasSubpath = (strchr(entry.relativePath, '/') != nullptr);
     entry.isTagged = TryParseArchiveTag(entry.relativePath, entry.strippedName, sizeof(entry.strippedName),
@@ -499,9 +574,15 @@ static bool CanAddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& 
 static void AddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated,
                      const char* fullPath, const char* relativePath, u32 size) {
     if (fullPath == nullptr || relativePath == nullptr) return;
+    // All persistent storage is fixed-size, so oversized filenames are intentionally dropped.
     if (strlen(fullPath) >= OVERRIDE_MAX_PATH || strlen(relativePath) >= OVERRIDE_MAX_PATH) {
         return;
     }
+
+    // The index intentionally contains only tagged archive-member overrides.
+    // Plain loose files like `Common.szs` are served by ResolveWholeFileOverride()
+    // and do not need to consume index slots or per-archive lookup time here.
+
     char strippedName[OVERRIDE_MAX_PATH];
     char archiveTagLower[OVERRIDE_MAX_NAME];
     if (!TryParseArchiveTag(relativePath, strippedName, sizeof(strippedName),
@@ -534,6 +615,7 @@ static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, boo
 
     const FSTEntry* fst = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
     const u32 entryCount = fst[0].size;
+    // Abort on malformed directory bounds before walking raw FST indices.
     if (modsIndex >= entryCount || modsEnd > entryCount || modsEnd <= modsIndex) {
         return;
     }
@@ -550,6 +632,11 @@ static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, boo
     u32 relLen = 0;
     relPath[0] = '\0';
 
+
+    // Walk the disc FST subtree rooted at `/patches` without allocating a
+    // recursive directory structure. The manual stack mirrors the nested FST
+    // directory ranges so we can rebuild relative paths on the fly.
+
     for (u32 i = modsIndex + 1; i < modsEnd && count < maxCount; ++i) {
         while (depth > 0 && i >= stack[depth - 1].endIndex) {
             relLen = stack[depth - 1].prevLen;
@@ -563,6 +650,7 @@ static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, boo
 
         if (FSTEntryIsDir(entry)) {
             if (depth >= 32) {
+                // The scan stays non-recursive and fixed-memory; over-deep trees are skipped rather than overflowing.
                 continue;
             }
             const u32 prevLen = relLen;
@@ -608,6 +696,7 @@ static void ScanModsDirFromIO(IO& io, OverrideEntry* entries, u32 maxCount, u32&
     for (u32 i = 0; i < fileCount && count < maxCount; ++i) {
         const char* fileName = io.GetFileName(i);
         if (fileName == nullptr || fileName[0] == '\0') continue;
+        // SD scanning is intentionally flat; bracket prefixes encode any desired archive subpath.
         if (strlen(fileName) >= OVERRIDE_MAX_PATH) continue;
 
         char sdPath[OVERRIDE_MAX_PATH];
@@ -616,6 +705,7 @@ static void ScanModsDirFromIO(IO& io, OverrideEntry* entries, u32 maxCount, u32&
 
         const s32 fileSize = io.GetFileSize();
         io.Close();
+        // Negative sizes indicate an IO failure, not a valid zero-length override.
         if (fileSize < 0) continue;
 
         char fullPath[OVERRIDE_MAX_PATH];
@@ -649,10 +739,12 @@ static void ScanModsDir(OverrideEntry* entries, u32 maxCount, u32& count, bool& 
 
     IO* io = IO::sInstance;
     if (io != nullptr && ShouldProbeSDModsPath()) {
+        // Prefer SD when available so loose files can change without rebuilding the disc image.
         ScanModsDirSD(entries, maxCount, count, truncated);
         return;
     }
 
+    // Otherwise walk the baked-in `/patches` subtree from the DVD FST.
     ScanModsDirDVD(entries, maxCount, count, truncated);
 }
 
@@ -668,6 +760,17 @@ static void EnsureModIndexBuilt() {
 
     sModIndexAttempted = true;
 
+
+    // Two-pass build:
+
+    // Pass 1 counts valid tagged overrides so we can allocate a tightly sized
+    // persistent array instead of keeping slack memory around forever.
+
+    // Pass 2 fills and sorts the array by archive tag.
+
+    // This makes archive-time work predictable: one binary lookup and one scan
+    // over the relevant tag bucket.
+
     u32 count = 0;
     bool truncated = false;
     ScanModsDir(nullptr, kMaxOverridesTotal, count, truncated);
@@ -678,6 +781,7 @@ static void EnsureModIndexBuilt() {
         OS::Report("[Pulsar] Loose overrides truncated at %u entries (max %u)\n", count, kMaxOverridesTotal);
     }
     if (count == 0) {
+        // Once this is discovered, future archive loads can skip the feature with a single pointer check.
         sModIndex.entries = nullptr;
         sModIndex.count = 0;
         return;
@@ -705,6 +809,7 @@ static void EnsureModIndexBuilt() {
     bool truncatedFill = false;
     ScanModsDir(entries, count, filled, truncatedFill);
     truncated = truncated || truncatedFill;
+    // The sorted layout is what makes per-archive binary range lookup possible later.
     SortOverrideEntriesByArchiveTag(entries, filled);
 
     sModIndex.entries = entries;
@@ -729,6 +834,11 @@ bool IsModsPath(const char* path) {
     if (path == nullptr) return false;
     if (strcmp(path, kModsRoot) == 0) return true;
     if (StartsWith(path, kModsRootPrefix)) return true;
+
+
+    // The logical `/patches` prefix is always treated as internal to the feature,
+    // but `sModsRootPath` may point at an SD-resolved location instead. Both need
+    // to be recognized so redirected reads do not recursively redirect again.
 
     const u32 rootLen = strlen(sModsRootPath);
     if (rootLen == 0) return false;
@@ -761,8 +871,15 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
 
 bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 archiveBaseLowerSize) {
     if (path == nullptr || archiveBaseLower == nullptr || archiveBaseLowerSize == 0) return false;
+    // Loose files under the mods root are already redirected content, so never feed them back into archive patching.
     if (IsModsPath(path)) return false;
+    // Tagged member overrides only target compressed archive loads.
     if (!IsFileExtensionSZS(path)) return false;
+
+
+    // This is only a cheap gate. It does not inspect the index yet. it simply
+    // answers "is this a non-mods `.szs` request, and if so what bucket key would
+    // its tagged member overrides live under?"
 
     const char* base = FindBasename(path);
     if (base == nullptr) return false;
@@ -785,6 +902,17 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
     if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
     if (outMissingOverrides != nullptr) *outMissingOverrides = 0;
+
+
+    // Runtime flow:
+    // 1. Pull the prebuilt bucket for this archive tag.
+    // 2. Resolve each override to concrete U8 node indices.
+    // 3. Patch in place when every replacement fits inside the original node.
+    // 4. Otherwise repack the archive into a larger buffer and rewrite offsets.
+
+    // `outAppliedOverrides` counts unique loose files that were successfully
+    // consumed, while `outPatchedNodes` counts archive nodes rewritten. Those can
+    // differ when one basename-only override matches multiple nodes.
 
     EnsureModIndexBuilt();
     if (sModIndex.entries == nullptr || sModIndex.count == 0) return false;
@@ -821,6 +949,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     s32* nodeOverrideIndex = EGG::Heap::alloc<s32>(sizeof(s32) * nodeCount, 0x20, tempHeap);
     u8* entryApplied = EGG::Heap::alloc<u8>(sizeof(u8) * taggedCandidates, 0x20, tempHeap);
     if (nodeOverrideIndex == nullptr || entryApplied == nullptr) {
+        // `nodeOverrideIndex` maps archive nodes to loose entries; `entryApplied` deduplicates reporting per loose file.
         if (nodeOverrideIndex != nullptr) EGG::Heap::free(nodeOverrideIndex, tempHeap);
         if (entryApplied != nullptr) EGG::Heap::free(entryApplied, tempHeap);
         return false;
@@ -832,6 +961,12 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     bool anyOverrides = false;
     u32 missingOverrides = 0;
 
+    //Build a node -> override table for this archive.
+
+    //Nested paths (`button/timg/icon.tpl`) resolve directly through ARC path
+    //lookup. Basename-only entries intentionally fan out to every file node with
+    //that name, which is useful for archives that duplicate assets in multiple
+    //folders but still want one shared loose override.
     for (u32 i = rangeStart; i < rangeEnd; ++i) {
         const OverrideEntry& entry = sModIndex.entries[i];
         const char* matchName = entry.strippedName;
@@ -842,10 +977,12 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         if (entry.hasSubpath) {
             s32 entryNum = ARC::ConvertPathToEntrynum(&handle, matchName);
             if (entryNum < 0) {
+                // Count it as missing so logs can tell "override exists on disk" from "archive actually contains that node".
                 ++missingOverrides;
                 continue;
             }
             if (NodeIsDir(nodes[entryNum])) {
+                // A matching directory path is still unusable because only file payload nodes can be replaced.
                 ++missingOverrides;
                 continue;
             }
@@ -857,6 +994,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 if (NodeIsDir(nodes[nodeIdx])) continue;
                 const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
                 if (strcmp(nodeName, matchName) == 0) {
+                    // Basename-only overrides intentionally fan out across every sibling with the same leaf filename.
                     nodeOverrideIndex[nodeIdx] = static_cast<s32>(i);
                     ++matchCount;
                 }
@@ -885,6 +1023,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         const s32 idx = nodeOverrideIndex[nodeIdx];
         if (idx < 0) continue;
         if (NodeIsDir(nodes[nodeIdx])) continue;
+        // Any growth would invalidate later file offsets, so one oversized replacement forces the repack path.
         if (sModIndex.entries[idx].size > nodes[nodeIdx].dataSize) {
             needsRepack = true;
             break;
@@ -894,6 +1033,16 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
     u32 patchedNodes = 0;
     if (!needsRepack) {
+
+        // Fast path: overwrite file payloads in place.
+
+        // Smaller replacements are zero-filled to erase stale bytes from the old
+        // payload, then the node size is updated so consumers see the trimmed file.
+        // This avoids rebuilding the archive metadata when offsets stay valid.
+        // This is also why any documentation should mention that 
+        // replacing files with smaller loose overrides is safer for stability than larger ones, 
+        // which always require repacking.
+
         for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
             const s32 idx = nodeOverrideIndex[nodeIdx];
             if (idx < 0) continue;
@@ -901,6 +1050,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
             const OverrideEntry& entry = sModIndex.entries[idx];
             if (entry.size > nodes[nodeIdx].dataSize) {
+                // Oversized writes are intentionally left to the repack path, never to in-place patching.
                 continue;
             }
 
@@ -938,6 +1088,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     const u32 dataStart = GetFileDataStart(header);
+    // Repacking preserves the metadata prefix and rebuilds only the payload region starting here.
     if (dataStart == 0 || dataStart > archiveSize) {
         EGG::Heap::free(nodeOverrideIndex, tempHeap);
         EGG::Heap::free(entryApplied, tempHeap);
@@ -950,6 +1101,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         const s32 idx = nodeOverrideIndex[nodeIdx];
         u32 size = nodes[nodeIdx].dataSize;
         if (idx >= 0) {
+            // Reserve space for replacement sizes up front so the repack layout is fully known before copying.
             size = sModIndex.entries[idx].size;
         }
         totalDataSize += nw4r::ut::RoundUp(size, 0x20);
@@ -966,6 +1118,11 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     candidates[0] = RKSystem::mInstance.EGGRootMEM2;
     candidates[1] = RKSystem::mInstance.EGGRootMEM1;
     candidates[2] = GetOverridesHeap();
+
+
+    // Repack path: prefer moving to a roomier heap first so large overrides do
+    // not starve the original archive heap. Growing the source heap is capped to
+    // keep one oversized override from destabilizing the caller's allocation pool.
 
     for (u32 i = 0; i < 3; ++i) {
         EGG::Heap* candidate = candidates[i];
@@ -987,6 +1144,13 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     u32 repackOrderCount = 0;
 
     if (repackHeap == archiveHeap && allowSourceHeap && compressedData != nullptr) {
+
+        // Same-heap repack is only safe when every file moves forward and no
+        // override shrinks after later files have been relocated. In that narrow
+        // case we can free the old archive, decompress the original SZS back into
+        // a new larger buffer on the same heap, and then move files downward from
+        // highest original offset to lowest without clobbering unread data.
+
         repackOffsets = EGG::Heap::alloc<u32>(sizeof(u32) * nodeCount, 0x20, tempHeap);
         repackSizes = EGG::Heap::alloc<u32>(sizeof(u32) * nodeCount, 0x20, tempHeap);
         repackOriginalSizes = EGG::Heap::alloc<u32>(sizeof(u32) * nodeCount, 0x20, tempHeap);
@@ -1048,6 +1212,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     if (useSameHeapRepack) {
+        // Free first, then recreate from compressed data; the old decompressed buffer has no headroom for growth.
         EGG::Heap::free(archiveBase, sourceHeap);
         archiveBase = nullptr;
         newBuffer = static_cast<u8*>(EGG::Heap::alloc(newSize, 0x20, repackHeap));
@@ -1076,6 +1241,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         OS::Report("[Pulsar] Loose override repack allocation failed for '%s': old=0x%X new=0x%X growth=0x%X%s\n",
                    archiveBaseLower, archiveSize, newSize, growth, allowSourceHeap ? "" : " source-heap growth capped");
         if (archiveBase == nullptr && compressedData != nullptr) {
+            // Same-heap repack may already have released the old archive, so rebuild the original before bailing out.
             archiveBase = static_cast<u8*>(EGG::Heap::alloc(originalArchiveSize, 0x20, sourceHeap));
             if (archiveBase != nullptr) {
                 EGG::Decomp::decodeSZS(const_cast<u8*>(compressedData), archiveBase);
@@ -1095,6 +1261,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     if (!useSameHeapRepack) {
+        // Copy the untouched metadata prefix now; file payloads get rewritten into their new aligned slots below.
         memset(newBuffer, 0, newSize);
         memcpy(newBuffer, archiveBase, dataStart);
     }
@@ -1114,6 +1281,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             const u32 newOffset = repackOffsets[nodeIdx];
 
             if (newOffset != oldOffset) {
+                // Same-heap relocation can overlap source and destination ranges, so `memmove` is required.
                 memmove(newBuffer + newOffset, newBuffer + oldOffset, oldSize);
             }
 
@@ -1133,8 +1301,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             const u32 oldSize = repackOriginalSizes[nodeIdx];
             const u32 newOffset = repackOffsets[nodeIdx];
 
-            // Zappelin patches le game
             if (!ReadOverrideFile(entry, newBuffer + newOffset)) {
+                // If the loose file is unreadable, keep the relocated original payload size for this node.
                 newNodes[nodeIdx].dataSize = oldSize;
                 continue;
             }
@@ -1159,6 +1327,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 const OverrideEntry& entry = sModIndex.entries[idx];
                 OS::Report("[Pulsar] Loose override '%s' skipped in '%s': repack buffer too small for 0x%X bytes\n",
                            entry.relativePath, archiveBaseLower, newFileSize);
+                // Recover by copying the original member instead of throwing away the entire repack.
                 useOverride = false;
                 newFileSize = oldSize;
             }
@@ -1167,6 +1336,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             if (useOverride) {
                 const OverrideEntry& entry = sModIndex.entries[idx];
                 if (!ReadOverrideFile(entry, newBuffer + writeOffset)) {
+                    // One broken loose file should not invalidate the rest of the archive rebuild.
                     useOverride = false;
                     newFileSize = oldSize;
                 } else {
@@ -1185,6 +1355,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     u32 finalSize = nw4r::ut::RoundUp(writeOffset, 0x20);
+    // Clamp to the allocated size so bad metadata cannot claim a larger archive than the buffer we own.
     if (finalSize > newSize) finalSize = newSize;
     OS::DCStoreRange(newBuffer, finalSize);
 
@@ -1219,11 +1390,31 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
 static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::Heap* mountHeap, bool isCompressed,
                                     s32 allocDirection, EGG::Heap* dumpHeap, EGG::Archive::FileInfo* info) {
+
+
+    // It first normalizes a quirk of MKW's UI archive naming where a localized
+    // request can be followed by a fallback `.szs` request using only the suffix.
+    // After that, whole-file redirection happens before the game rips/decompresses
+    // the archive, so plain loose replacements bypass the more expensive tagged
+    // member patch pipeline entirely.
+
+    // System::ResourceManager::loadUI at 0x80540680 is the entry point that kicks UI archive loading for scene archive slot 2.
+    // GameSource/MarioKartWii/Archive/ArchiveMgr.hpp:75. <-- this function
+    // System::UIArchivesHolder::Reset at 0x8052a2fc is the part that creates the UI language fallback setup.
+    // it calls the base reset, then writes LOCALIZED_SZS[language] into suffix slot 1. The base reset leaves slot 0 as plain ".szs".
+    // ArchivesHolder::LoadArchives at 0x8052a954 is where the filenames are actually formed.
+    // it effectively does snprintf(fullname, "%s%s", filename, this->suffixes[i]);, 
+    // so the game builds both base + "_E.szs" and base + ".szs" from the same UI base name.
+
+    // ArchivesHolder::GetFile at 0x8052a760 searches mounted archives from the last slot down to the first
+    // so the localized UI archive is checked first and the plain .szs archive is the fallback.
+
     char normalizedPath[OVERRIDE_MAX_PATH];
     const char* requestedPath = path;
     if (path != nullptr) {
         const char* base = FindBasename(path);
         if (base != nullptr && strcmp(base, ".szs") == 0 && StartsWith(sLastUIArchiveBase, "/Scene/UI/")) {
+            // MKW sometimes follows a localized request with a suffix-only `.szs` request; restore the cached basename.
             const int written = snprintf(normalizedPath, sizeof(normalizedPath), "%s.szs", sLastUIArchiveBase);
             if (written > 0 && static_cast<u32>(written) < sizeof(normalizedPath)) {
                 requestedPath = normalizedPath;
@@ -1238,6 +1429,7 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
             if (dot != nullptr && underscore != nullptr && underscore > path && underscore[-1] == '_') {
                 const u32 suffixLen = static_cast<u32>(dot - underscore);
                 const u32 prefixLen = static_cast<u32>((underscore - 1) - path);
+                // Cache only short locale/style suffix forms such as `_E`; longer names are treated as real basenames.
                 if (suffixLen > 0 && suffixLen <= 3 && prefixLen + 1 <= sizeof(sLastUIArchiveBase)) {
                     memcpy(sLastUIArchiveBase, path, prefixLen);
                     sLastUIArchiveBase[prefixLen] = '\0';
