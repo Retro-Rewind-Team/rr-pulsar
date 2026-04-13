@@ -140,6 +140,48 @@ static void ToLowerInPlace(char* str) {
     }
 }
 
+static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32 strippedNameSize,
+                               char* archiveTagLower, u32 archiveTagLowerSize) {
+    if (strippedName != nullptr && strippedNameSize > 0) strippedName[0] = '\0';
+    if (archiveTagLower != nullptr && archiveTagLowerSize > 0) archiveTagLower[0] = '\0';
+    if (relativePath == nullptr || strippedName == nullptr || strippedNameSize == 0 ||
+        archiveTagLower == nullptr || archiveTagLowerSize == 0) {
+        return false;
+    }
+
+    const char* filename = FindLastChar(relativePath, '/');
+    if (filename != nullptr) {
+        ++filename;
+    } else {
+        filename = relativePath;
+    }
+
+    const char* lastDot = FindLastChar(filename, '.');
+    if (lastDot == nullptr || lastDot == filename || lastDot[1] == '\0') {
+        return false;
+    }
+
+    const char* extDot = nullptr;
+    for (const char* p = filename; p < lastDot; ++p) {
+        if (*p == '.') extDot = p;
+    }
+    // Loose archive overrides use name.ext.Tag. Single-extension files like Common.szs
+    // are whole-file overrides and should not be indexed here.
+    if (extDot == nullptr || extDot == filename || extDot + 1 >= lastDot) {
+        return false;
+    }
+
+    const u32 prefixLen = static_cast<u32>(lastDot - relativePath);
+    if (prefixLen + 1 > strippedNameSize) {
+        return false;
+    }
+
+    memcpy(strippedName, relativePath, prefixLen);
+    strippedName[prefixLen] = '\0';
+    ToLowerCopy(archiveTagLower, lastDot + 1, archiveTagLowerSize);
+    return true;
+}
+
 static bool NodeIsDir(const U8Node& node) {
     return (node.typeName >> 24) != 0;
 }
@@ -369,28 +411,9 @@ static void FillOverrideEntry(OverrideEntry& entry, const char* fullPath, const 
     }
 
     entry.hasSubpath = (strchr(entry.relativePath, '/') != nullptr);
-    entry.isTagged = false;
-    entry.archiveTagLower[0] = '\0';
-
-    const char* filename = FindLastChar(entry.relativePath, '/');
-    if (filename != nullptr) {
-        filename++;
-    } else {
-        filename = entry.relativePath;
-    }
-
-    const char* lastDot = FindLastChar(filename, '.');
-    if (lastDot != nullptr && lastDot[1] != '\0') {
-        entry.isTagged = true;
-        ToLowerCopy(entry.archiveTagLower, lastDot + 1, sizeof(entry.archiveTagLower));
-        const u32 prefixLen = static_cast<u32>(lastDot - entry.relativePath);
-        if (prefixLen < sizeof(entry.strippedName)) {
-            memcpy(entry.strippedName, entry.relativePath, prefixLen);
-            entry.strippedName[prefixLen] = '\0';
-        } else {
-            entry.strippedName[0] = '\0';
-        }
-    } else {
+    entry.isTagged = TryParseArchiveTag(entry.relativePath, entry.strippedName, sizeof(entry.strippedName),
+                                        entry.archiveTagLower, sizeof(entry.archiveTagLower));
+    if (!entry.isTagged) {
         strncpy(entry.strippedName, entry.relativePath, sizeof(entry.strippedName));
         entry.strippedName[sizeof(entry.strippedName) - 1] = '\0';
     }
@@ -412,11 +435,17 @@ static bool CanAddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& 
 
 static void AddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated,
                      const char* fullPath, const char* relativePath, u32 size) {
-    if (!CanAddEntry(entries, maxCount, count, truncated)) return;
     if (fullPath == nullptr || relativePath == nullptr) return;
     if (strlen(fullPath) >= OVERRIDE_MAX_PATH || strlen(relativePath) >= OVERRIDE_MAX_PATH) {
         return;
     }
+    char strippedName[OVERRIDE_MAX_PATH];
+    char archiveTagLower[OVERRIDE_MAX_NAME];
+    if (!TryParseArchiveTag(relativePath, strippedName, sizeof(strippedName),
+                            archiveTagLower, sizeof(archiveTagLower))) {
+        return;
+    }
+    if (!CanAddEntry(entries, maxCount, count, truncated)) return;
     if (entries != nullptr) {
         FillOverrideEntry(entries[count], fullPath, relativePath, size);
     }
