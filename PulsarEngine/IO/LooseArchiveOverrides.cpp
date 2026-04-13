@@ -140,6 +140,13 @@ static void ToLowerInPlace(char* str) {
     }
 }
 
+static s32 CompareArchiveTags(const char* lhs, const char* rhs) {
+    if (lhs == rhs) return 0;
+    if (lhs == nullptr) return -1;
+    if (rhs == nullptr) return 1;
+    return strcmp(lhs, rhs);
+}
+
 static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32 strippedNameSize,
                                char* archiveTagLower, u32 archiveTagLowerSize) {
     if (strippedName != nullptr && strippedNameSize > 0) strippedName[0] = '\0';
@@ -180,6 +187,62 @@ static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32
     strippedName[prefixLen] = '\0';
     ToLowerCopy(archiveTagLower, lastDot + 1, archiveTagLowerSize);
     return true;
+}
+
+static void SortOverrideEntriesByArchiveTag(OverrideEntry* entries, u32 count) {
+    if (entries == nullptr || count < 2) return;
+
+    for (u32 i = 1; i < count; ++i) {
+        const OverrideEntry key = entries[i];
+        u32 insertIdx = i;
+        while (insertIdx > 0) {
+            const OverrideEntry& prev = entries[insertIdx - 1];
+            const s32 compare = CompareArchiveTags(prev.archiveTagLower, key.archiveTagLower);
+            if (compare < 0) break;
+            if (compare == 0 && strcmp(prev.strippedName, key.strippedName) <= 0) break;
+            entries[insertIdx] = prev;
+            --insertIdx;
+        }
+        entries[insertIdx] = key;
+    }
+}
+
+static bool FindArchiveTagRange(const ModIndex& index, const char* archiveBaseLower, u32& start, u32& end) {
+    start = 0;
+    end = 0;
+    if (index.entries == nullptr || index.count == 0 || archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') {
+        return false;
+    }
+
+    u32 low = 0;
+    u32 high = index.count;
+    while (low < high) {
+        const u32 mid = low + ((high - low) / 2);
+        const s32 compare = CompareArchiveTags(index.entries[mid].archiveTagLower, archiveBaseLower);
+        if (compare < 0) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+    }
+    if (low >= index.count || strcmp(index.entries[low].archiveTagLower, archiveBaseLower) != 0) {
+        return false;
+    }
+
+    start = low;
+    high = index.count;
+    while (low < high) {
+        const u32 mid = low + ((high - low) / 2);
+        const s32 compare = CompareArchiveTags(index.entries[mid].archiveTagLower, archiveBaseLower);
+        if (compare <= 0) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+    }
+
+    end = low;
+    return end > start;
 }
 
 static bool NodeIsDir(const U8Node& node) {
@@ -642,6 +705,7 @@ static void EnsureModIndexBuilt() {
     bool truncatedFill = false;
     ScanModsDir(entries, count, filled, truncatedFill);
     truncated = truncated || truncatedFill;
+    SortOverrideEntriesByArchiveTag(entries, filled);
 
     sModIndex.entries = entries;
     sModIndex.count = filled;
@@ -732,17 +796,12 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         archiveHeap = sourceHeap;
     }
 
-
-    u32 taggedCandidates = 0;
-    for (u32 i = 0; i < sModIndex.count; ++i) {
-        const OverrideEntry& entry = sModIndex.entries[i];
-        if (entry.isTagged && strcmp(entry.archiveTagLower, archiveBaseLower) == 0) {
-            ++taggedCandidates;
-        }
-    }
-    if (taggedCandidates == 0) {
+    u32 rangeStart = 0;
+    u32 rangeEnd = 0;
+    if (!FindArchiveTagRange(sModIndex, archiveBaseLower, rangeStart, rangeEnd)) {
         return false;
     }
+    const u32 taggedCandidates = rangeEnd - rangeStart;
 
     ARC::Handle handle;
     if (!ARC::InitHandle(archiveBase, &handle)) {
@@ -760,7 +819,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     EGG::Heap* tempHeap = GetOverridesHeap();
     if (tempHeap == nullptr) tempHeap = sourceHeap;
     s32* nodeOverrideIndex = EGG::Heap::alloc<s32>(sizeof(s32) * nodeCount, 0x20, tempHeap);
-    u8* entryApplied = EGG::Heap::alloc<u8>(sizeof(u8) * sModIndex.count, 0x20, tempHeap);
+    u8* entryApplied = EGG::Heap::alloc<u8>(sizeof(u8) * taggedCandidates, 0x20, tempHeap);
     if (nodeOverrideIndex == nullptr || entryApplied == nullptr) {
         if (nodeOverrideIndex != nullptr) EGG::Heap::free(nodeOverrideIndex, tempHeap);
         if (entryApplied != nullptr) EGG::Heap::free(entryApplied, tempHeap);
@@ -768,18 +827,13 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     memset(nodeOverrideIndex, 0xFF, sizeof(s32) * nodeCount);
-    memset(entryApplied, 0, sizeof(u8) * sModIndex.count);
+    memset(entryApplied, 0, sizeof(u8) * taggedCandidates);
 
     bool anyOverrides = false;
     u32 missingOverrides = 0;
 
-    for (u32 i = 0; i < sModIndex.count; ++i) {
+    for (u32 i = rangeStart; i < rangeEnd; ++i) {
         const OverrideEntry& entry = sModIndex.entries[i];
-        const bool tagMatches = entry.isTagged && (strcmp(entry.archiveTagLower, archiveBaseLower) == 0);
-        if (!tagMatches) {
-            continue;
-        }
-
         const char* matchName = entry.strippedName;
         if (matchName[0] == '\0') {
             continue;
@@ -861,7 +915,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             }
             nodes[nodeIdx].dataSize = entry.size;
             OS::DCStoreRange(dest, entry.size);
-            entryApplied[idx] = 1;
+            entryApplied[idx - rangeStart] = 1;
             ++patchedNodes;
         }
 
@@ -870,7 +924,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         }
 
         u32 appliedOverrides = 0;
-        for (u32 i = 0; i < sModIndex.count; ++i) {
+        for (u32 i = 0; i < taggedCandidates; ++i) {
             if (entryApplied[i]) ++appliedOverrides;
         }
 
@@ -1084,7 +1138,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 newNodes[nodeIdx].dataSize = oldSize;
                 continue;
             }
-            entryApplied[idx] = 1;
+            entryApplied[idx - rangeStart] = 1;
             ++patchedNodes;
         }
 
@@ -1116,7 +1170,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                     useOverride = false;
                     newFileSize = oldSize;
                 } else {
-                    entryApplied[idx] = 1;
+                    entryApplied[idx - rangeStart] = 1;
                     ++patchedNodes;
                 }
             }
@@ -1142,7 +1196,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     archiveHeap = repackHeap;
 
     u32 appliedOverrides = 0;
-    for (u32 i = 0; i < sModIndex.count; ++i) {
+    for (u32 i = 0; i < taggedCandidates; ++i) {
         if (entryApplied[i]) ++appliedOverrides;
     }
 
