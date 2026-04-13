@@ -28,8 +28,10 @@ void FatalError(const char* string) {
 }
 
 #pragma suppress_warnings on
-void LaunchSoftware() {  // If dolphin, restarts game, else launches Riivo->HBC->OHBC->WiiMenu
-    s32 result = IO::OpenFix("/title/00010001/57524554/content/title.tmd\0", IOS::MODE_NONE);  // Riivo
+void LaunchSoftware() {
+    // If dolphin, restarts game, else launches Retro Rewind Channel->HBC->OHBC->WiiMenu
+
+    s32 result = IO::OpenFix("/title/00010001/57524554/content/title.tmd\0", IOS::MODE_NONE);  // Retro Rewind Channel
     if (result >= 0) {
         ISFS::Close(result);
         OS::__LaunchTitle(0x00010001, 0x57524554);
