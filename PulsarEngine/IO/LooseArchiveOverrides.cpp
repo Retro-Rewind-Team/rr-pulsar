@@ -16,6 +16,7 @@
 #include <RetroRewindChannel.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
 #include <IO/SDIO.hpp>
+#include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveFile.hpp>
 #include <core/egg/Archive.hpp>
 #include <core/egg/Decomp.hpp>
@@ -95,6 +96,15 @@ static bool sModsRootChecked = false;
 static bool sModsRootPresent = false;
 static char sModsRootPath[OVERRIDE_MAX_PATH] = "/patches";
 static char sLastUIArchiveBase[32] = "";
+
+static bool AreLooseArchiveOverridesEnabled() {
+    if (Settings::Mgr::Get() == nullptr) {
+        // Settings not initialized yet, assume disabled to avoid unsafe behavior.
+        return false;
+    }
+    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MISC, RADIO_LOOSEARCHIVEOVERRIDES) ==
+           LOOSEARCHIVEOVERRIDES_ENABLED;
+}
 
 static bool StartsWith(const char* str, const char* prefix) {
     if (str == nullptr || prefix == nullptr) return false;
@@ -849,6 +859,7 @@ bool IsModsPath(const char* path) {
 const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 resolvedSize, bool* outRedirected) {
     if (outRedirected != nullptr) *outRedirected = false;
     if (path == nullptr || resolvedPath == nullptr || resolvedSize == 0) return path;
+    if (!AreLooseArchiveOverridesEnabled()) return path;
 
     if (IsModsPath(path)) return path;
     if (!ModsRootExists()) return path;
@@ -871,6 +882,7 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
 
 bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 archiveBaseLowerSize) {
     if (path == nullptr || archiveBaseLower == nullptr || archiveBaseLowerSize == 0) return false;
+    if (!AreLooseArchiveOverridesEnabled()) return false;
     // Loose files under the mods root are already redirected content, so never feed them back into archive patching.
     if (IsModsPath(path)) return false;
     // Tagged member overrides only target compressed archive loads.
@@ -902,6 +914,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
     if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
     if (outMissingOverrides != nullptr) *outMissingOverrides = 0;
+    if (!AreLooseArchiveOverridesEnabled()) return false;
 
 
     // Runtime flow:

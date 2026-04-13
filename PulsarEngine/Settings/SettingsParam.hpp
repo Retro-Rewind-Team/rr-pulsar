@@ -149,9 +149,15 @@ enum ExtendedTeamsSettings {
 
 // 12) Misc
 enum MiscSettings {
+    RADIO_LOOSEARCHIVEOVERRIDES = 0,
     SCROLLER_CUSTOMCHARACTER = 0 + 8,
     SCROLLER_LANGUAGE = 1 + 8,
     SCROLLER_WWMODE = 2 + 8,
+};
+
+enum LooseArchiveOverridesSetting {
+    LOOSEARCHIVEOVERRIDES_ENABLED = 0,
+    LOOSEARCHIVEOVERRIDES_DISABLED = 1
 };
 
 // 1) Race 1 values

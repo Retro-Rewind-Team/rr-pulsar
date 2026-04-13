@@ -92,6 +92,12 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         params.customItemsBitfield = 0x7FFFF;
     }
 
+    u8& looseOverridesSetting =
+        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_MISC].settings[RADIO_LOOSEARCHIVEOVERRIDES];
+    if (looseOverridesSetting > LOOSEARCHIVEOVERRIDES_DISABLED) {
+        looseOverridesSetting = LOOSEARCHIVEOVERRIDES_ENABLED;
+    }
+
     bool hasTrophies = io->OpenFile(this->trophiesFilePath, FILE_MODE_READ_WRITE);
     if (hasTrophies) {
         alignas(0x20) Pulsar::SectionHeader tropHeader;
