@@ -98,7 +98,7 @@ static char sModsRootPath[OVERRIDE_MAX_PATH] = "/patches";
 static char sLastUIArchiveBase[32] = "";
 
 static bool AreLooseArchiveOverridesEnabled() {
-    if (Settings::Mgr::Get() == nullptr) {
+    if (!Settings::Mgr::IsCreated()) {
         // Settings not initialized yet, assume disabled to avoid unsafe behavior.
         return false;
     }
