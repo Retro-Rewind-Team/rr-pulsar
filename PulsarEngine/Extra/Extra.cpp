@@ -164,6 +164,12 @@ kmWrite32(0x805a906c, 0x4E800020);
 kmWrite32(0x80856560, 0x60000000);  // Disable VR loss
 kmWrite32(0x808565CC, 0x60000000);  // Disable BR loss
 
+// Remove 99999 Stat Caps for WFC Wins/Losses [Zeraora]
+kmWrite32(0x80545D2C, 0x48000008);
+kmWrite32(0x80545D64, 0x48000008);
+kmWrite32(0x8085C7F0, 0x48000008);
+kmWrite32(0x8085C818, 0x48000008);
+
 // Prevent Race End from Lack of Opponents in Battle [Zeraora, ZPL]
 kmWrite32(0x8053c710, 0x38000000);
 kmWrite32(0x8053D67C, 0x38000000);
