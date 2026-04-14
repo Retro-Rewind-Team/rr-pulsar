@@ -294,6 +294,30 @@ void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton& button) {
     this->SaveSettings(true);
 }
 
+bool SettingsPanel::HasModifiedMiscSettings() const {
+    const Settings::Mgr& settings = Settings::Mgr::Get();
+    const u32 miscSheetIdx = Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC;
+
+    for (int i = 0; i < Settings::Params::radioCount[miscSheetIdx]; ++i) {
+        if (this->radioSettings[miscSheetIdx][i] != settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, i)) {
+            return true;
+        }
+    }
+
+    for (int i = 0; i < Settings::Params::scrollerCount[miscSheetIdx]; ++i) {
+        if (this->scrollerSettings[miscSheetIdx][i] != settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, i + Settings::Params::maxRadioCount)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void SettingsPanel::LoadMainMenuAndSaveSettings(PushButton& button) {
+    this->SaveSettings(true);
+    this->ChangeSectionById(SECTION_MAIN_MENU_FROM_MENU, button);
+}
+
 // On Save Click/Back Press, is called and updates PulsarSettings
 void SettingsPanel::SaveSettings(bool writeFile) {
     const ExpSection* section = ExpSection::GetSection();
@@ -320,13 +344,9 @@ void SettingsPanel::SaveSettings(bool writeFile) {
 }
 
 void SettingsPanel::OnBackPress(u32 hudSlotId) {
-    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC) {
-        Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
-        messageBox->Reset();
-        messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
-        this->AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
+    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC && this->HasModifiedMiscSettings()) {
         this->backButton.SelectFocus();
-        this->LoadPrevMenuAndSaveSettings(this->backButton);
+        this->LoadMainMenuAndSaveSettings(this->backButton);
         return;
     }
     this->backButton.SelectFocus();
@@ -338,12 +358,8 @@ void SettingsPanel::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
 }
 
 void SettingsPanel::OnSaveButtonClick(PushButton& button, u32 hudSlotId) {
-    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC) {
-        Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
-        messageBox->Reset();
-        messageBox->SetMessageWindowText(BMG_LANGUAGE_RESET_REQUIRED, nullptr);
-        this->AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
-        this->LoadPrevMenuAndSaveSettings(button);
+    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC && this->HasModifiedMiscSettings()) {
+        this->LoadMainMenuAndSaveSettings(button);
         return;
     }
     this->LoadPrevMenuAndSaveSettings(button);

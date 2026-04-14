@@ -49,6 +49,8 @@ class SettingsPanel : public Pages::MenuInteractable {
    private:
     void UpdateText();
     void SaveSettings(bool writeFile);
+    bool HasModifiedMiscSettings() const;
+    void LoadMainMenuAndSaveSettings(PushButton& button);
     void OnSaveButtonClick(PushButton& button, u32 hudSlotId);
     void OnRightButtonClick(PushButton& button, u32 hudSlotId);
     void OnLeftButtonClick(PushButton& button, u32 hudSlotId);
