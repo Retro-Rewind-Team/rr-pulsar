@@ -106,20 +106,6 @@ static bool AreLooseArchiveOverridesEnabled() {
            LOOSEARCHIVEOVERRIDES_ENABLED;
 }
 
-static bool IsBlockedLooseRawOverrideExtension(const char* path) {
-    return EndsWithIgnoreCase(path, ".kcl") || EndsWithIgnoreCase(path, ".kmp") || EndsWithIgnoreCase(path, ".slt");
-}
-
-static bool StartsWith(const char* str, const char* prefix) {
-    if (str == nullptr || prefix == nullptr) return false;
-    while (*prefix != '\0') {
-        if (*str != *prefix) return false;
-        ++str;
-        ++prefix;
-    }
-    return true;
-}
-
 static bool EndsWithIgnoreCase(const char* str, const char* suffix) {
     if (str == nullptr || suffix == nullptr) return false;
     const size_t strLen = strlen(str);
@@ -133,6 +119,20 @@ static bool EndsWithIgnoreCase(const char* str, const char* suffix) {
         if (a >= 'A' && a <= 'Z') a = static_cast<char>(a - 'A' + 'a');
         if (b >= 'A' && b <= 'Z') b = static_cast<char>(b - 'A' + 'a');
         if (a != b) return false;
+    }
+    return true;
+}
+
+static bool IsBlockedLooseRawOverrideExtension(const char* path) {
+    return EndsWithIgnoreCase(path, ".kcl") || EndsWithIgnoreCase(path, ".kmp") || EndsWithIgnoreCase(path, ".slt");
+}
+
+static bool StartsWith(const char* str, const char* prefix) {
+    if (str == nullptr || prefix == nullptr) return false;
+    while (*prefix != '\0') {
+        if (*str != *prefix) return false;
+        ++str;
+        ++prefix;
     }
     return true;
 }
