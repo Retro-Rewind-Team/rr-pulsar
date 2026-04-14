@@ -447,10 +447,6 @@ asmFunc InvalidCameraPointerFix() {
 }
 kmCall(0x805ABE14, InvalidCameraPointerFix);
 
-// Texture Animation Fix in Multiplayer [ZPL]
-kmWrite32(0x80820768, 0x60000000);  // Object::LoadAnimations
-kmWrite32(0x80820ad8, 0x60000000);  // Object::LoadAnimationByType
-
 // Force Game Language to Default [ZPL]
 kmWrite32(0x8000ad10, 0x38600001);
 
