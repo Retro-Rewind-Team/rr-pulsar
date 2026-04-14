@@ -1241,6 +1241,7 @@ vf_0x30__9UIControlFv = 0x8063d608
 PlaySound__9UIControlFUiUi = 0x8063d74c
 __vt__9UIControl = 0x808bf008
 SetSoundIds__9UIControlFUiUi = 0x8063d3a4
+SetPosition__9UIControlFf = 0x8063d0b8
 
 #LayoutUIControl
 GetRuntimeTypeInfo__15LayoutUIControlCFv = 0x80636bd0

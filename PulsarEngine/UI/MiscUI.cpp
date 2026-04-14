@@ -1,4 +1,5 @@
 #include <kamek.hpp>
+#include <include/c_string.h>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceWifi.hpp>
 #include <MarioKartWii/UI/Page/Other/Title.hpp>
 #include <MarioKartWii/UI/Page/Other/Message.hpp>
@@ -11,8 +12,8 @@
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Debug/Debug.hpp>
+#include <Dolphin/DolphinIOS.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
-#include <runtimeWrite.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -21,6 +22,18 @@ namespace UI {
 // No ghost saving on RKSYS
 kmWrite32(0x8054913C, 0x60000000);
 kmWrite32(0x80855f48, 0x48000148);
+
+static void CenterTopMenuWifiWaku(ControlLoader* loader, const char* folderName, const char* ctrName, const char* variant, const char** animNames) {
+    loader->Load(folderName, ctrName, variant, animNames);
+    if (Dolphin::IsEmulator() && strcmp(ctrName, "TopMenuWifiWaku") == 0) {
+        LayoutUIControl* control = loader->layoutUIControl;
+        for (int i = 0; i < 4; ++i) {
+            control->positionAndscale[i].position.x += 135.0f;
+        }
+        control->SetPosition(0.0f);
+    }
+}
+kmCall(0x80850604, CenterTopMenuWifiWaku);
 
 static PageId AfterWifiResults(PageId id) {
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
