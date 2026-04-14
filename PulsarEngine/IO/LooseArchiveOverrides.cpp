@@ -106,6 +106,10 @@ static bool AreLooseArchiveOverridesEnabled() {
            LOOSEARCHIVEOVERRIDES_ENABLED;
 }
 
+static bool IsBlockedLooseRawOverrideExtension(const char* path) {
+    return EndsWithIgnoreCase(path, ".kcl") || EndsWithIgnoreCase(path, ".kmp") || EndsWithIgnoreCase(path, ".slt");
+}
+
 static bool StartsWith(const char* str, const char* prefix) {
     if (str == nullptr || prefix == nullptr) return false;
     while (*prefix != '\0') {
@@ -599,6 +603,8 @@ static void AddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& tru
                             archiveTagLower, sizeof(archiveTagLower))) {
         return;
     }
+    // Reject loose raw-file overrides for these resource types, even if they target an archive member.
+    if (IsBlockedLooseRawOverrideExtension(strippedName)) return;
     if (!CanAddEntry(entries, maxCount, count, truncated)) return;
     if (entries != nullptr) {
         FillOverrideEntry(entries[count], fullPath, relativePath, size);
@@ -863,6 +869,9 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
 
     if (IsModsPath(path)) return path;
     if (!ModsRootExists()) return path;
+    // Do not redirect individual loose-file requests for these raw resources into `/patches`.
+    // Tagged archive-member overrides for the same extensions are also rejected during index construction.
+    if (IsBlockedLooseRawOverrideExtension(path)) return path;
 
     const char* base = FindBasename(path);
     if (base == nullptr || base[0] == '\0') return path;
