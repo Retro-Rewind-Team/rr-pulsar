@@ -8,7 +8,7 @@ namespace Pulsar {
 
 class IOSIO : public IO {
    public:
-    IOSIO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread) : fd(-1), IO(type, heap, taskThread) {
+    IOSIO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread) : isBusy(false), fd(-1), fileSize(-1), IO(type, heap, taskThread) {
         filePath[0] = '\0';
     }
 
