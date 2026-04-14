@@ -836,6 +836,29 @@ static bool IsFileExtensionSZS(const char* path) {
     return EndsWithIgnoreCase(path, ".szs");
 }
 
+
+// Ghidra references for DVDConvertPathToEntrynum (8015df4c) show the path-based DVD
+// loaders that bypass ArchiveFile entirely:
+// - 800910b4: nw4r::snd::DVDSoundArchive::Open
+// - 8009130c: nw4r::snd::DVDSoundArchive::OpenExtStream
+// - 8015e2d8: DVD::Open
+// - 80222500: EGG::DvdFile::open(const char*)
+// - 8052a914: system archive path lookup
+// Redirecting those shared lookup sites makes whole-file loose overrides apply
+// to BRSTM streams and other non-SZS files without changing their loaders.
+static s32 ConvertPathToEntryNumWithLooseOverride(const char* path) {
+    if (path == nullptr) return -1;
+
+    char resolvedPath[OVERRIDE_MAX_PATH];
+    const char* finalPath = ResolveWholeFileOverride(path, resolvedPath, sizeof(resolvedPath), nullptr);
+    return DVD::ConvertPathToEntryNum(finalPath);
+}
+kmCall(0x800910b4, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x8009130c, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x8015e2d8, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x80222500, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x8052a914, ConvertPathToEntryNumWithLooseOverride);
+
 static u32 GetFileDataStart(const ARC::Header* header) {
     if (header == nullptr) return 0;
     const u32 metaEnd = header->nodeOffset + header->combinedNodeSize;
