@@ -164,9 +164,25 @@ kmCall(0x807ba160, DecideItemHook);
 // Fix Lap Counter Color in LapKO [Saucy]
 extern "C" void LapCounterColorFixHelper(CtrlRaceBase* self) {
     System* system = System::sInstance;
+    if (self == nullptr) return;
     if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return;
-    self->HudSlotColorEnable("lap_lefft", true);
-    self->HudSlotColorEnable("lap_riighter", true);
+
+    const char* leftPane = nullptr;
+    if (self->layout.GetPaneByName("lap_lefft") != nullptr) {
+        leftPane = "lap_lefft";
+    } else if (self->layout.GetPaneByName("lap_left") != nullptr) {
+        leftPane = "lap_left";
+    }
+
+    const char* rightPane = nullptr;
+    if (self->layout.GetPaneByName("lap_riighter") != nullptr) {
+        rightPane = "lap_riighter";
+    } else if (self->layout.GetPaneByName("lap_right") != nullptr) {
+        rightPane = "lap_right";
+    }
+
+    if (leftPane != nullptr) self->HudSlotColorEnable(leftPane, true);
+    if (rightPane != nullptr) self->HudSlotColorEnable(rightPane, true);
 }
 
 asmFunc LapCounterColorFix() {
