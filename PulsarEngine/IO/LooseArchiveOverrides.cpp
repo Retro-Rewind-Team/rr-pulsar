@@ -1529,7 +1529,10 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
             file->dumpHeap = nullptr;
             file->status = ARCHIVE_STATUS_DECOMPRESSED;
         } else {
-            file->Decompress(finalPath, mountHeap, info);
+            // Preserve the logical request path for tagged member overrides so
+            // `foo.ext.Driver` still patches a whole-file `Driver.szs`
+            // replacement instead of only the original disc archive.
+            file->Decompress(requestedPath, mountHeap, info);
             if (file->compressedArchive != nullptr && file->dumpHeap != nullptr) {
                 EGG::Heap::free(file->compressedArchive, file->dumpHeap);
                 file->compressedArchive = nullptr;
