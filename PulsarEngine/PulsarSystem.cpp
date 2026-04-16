@@ -93,14 +93,9 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         type = IOType_RIIVO;
         IOS::Close(ret);
     } else if (IsNewChannel() && !isDolphin) {
-        NewChannel_Init();
         type = IOType_SD;
-    } else {
-        ret = IO::OpenFix("/dev/dolphin", IOS::MODE_NONE);
-        if (isDolphin) {
-            type = IOType_DOLPHIN;
-            IOS::Close(ret);
-        }
+    } else if (isDolphin) {
+        type = IOType_DOLPHIN;
     }
 
     if (ShouldForceNandIoSaves()) {
@@ -119,6 +114,10 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     this->info.Init(confRT.GetSection<InfoHolder>().info);
     this->InitIO(type);
     this->InitSettings(&CupsConfig::sInstance->trophyCount[0]);
+
+    if(IsNewChannel()) {
+        NewChannel_Init();
+    }
 
     u32 rtTrackCount = rtCups.ctsCupCount * 4;
     u32 ctTrackCount = ctCups.ctsCupCount * 4;

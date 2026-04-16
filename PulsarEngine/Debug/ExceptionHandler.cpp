@@ -11,6 +11,7 @@
 #include <PulsarSystem.hpp>
 #include <IO/IO.hpp>
 #include <RetroRewindChannel.hpp>
+#include <Dolphin/DolphinIOS.hpp>
 
 namespace Pulsar {
 namespace Debug {
@@ -30,6 +31,12 @@ void FatalError(const char* string) {
 #pragma suppress_warnings on
 void LaunchSoftware() {
     // If dolphin, restarts game, else launches Retro Rewind Channel->HBC->OHBC->WiiMenu
+    bool isDolphin = Dolphin::IsEmulator();
+
+    if (isDolphin) {
+        SystemManager::Shutdown();
+        return;
+    }
 
     s32 result = IO::OpenFix("/title/00010001/57524554/content/title.tmd\0", IOS::MODE_NONE);  // Retro Rewind Channel
     if (result >= 0) {
@@ -47,12 +54,6 @@ void LaunchSoftware() {
     if (result >= 0) {
         ISFS::Close(result);
         OS::__LaunchTitle(0x00010001, 0x48424330);
-        return;
-    }
-    result = IO::OpenFix("/dev/dolphin", IOS::MODE_NONE);
-    if (result >= 0 && !IsNewChannel()) {
-        IOS::Close(result);
-        SystemManager::Shutdown();
         return;
     }
     OS::__LaunchTitle(0x1, 0x2);  // Launch Wii Menu if channel isn't found
@@ -116,11 +117,11 @@ static void WriteHeaderCrash(u16 error, const OS::Context* context, u32 dsisr, u
     exception.displayedInfo = 0x23;
     exception.callbackArgs = nullptr;
 
-    if (IsNewChannel()) {
+    if (IsNewChannel() && !Dolphin::IsEmulator()) {
         // just "hide" the console/xfb
         db::DirectPrint_ChangeXfb((void*)0, 0, 0);
         // we just set the flag, generate dump file and return to the channel
-        NewChannel_SetCrashFlag();
+        NewChannel_WriteCrashEphFile();
     } else {
         db::Exception_Printf_("Saving Crash.pul and exiting...\n");
         db::PrintContext_(error, context, dsisr, dar);

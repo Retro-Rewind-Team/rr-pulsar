@@ -1,6 +1,8 @@
 #include <PulsarSystem.hpp>
 #include "Debug/Debug.hpp"
 #include "RetroRewindChannel.hpp"
+#include "IO/SDIO.hpp"
+#include <Dolphin/DolphinIOS.hpp>
 
 namespace Pulsar {
 
@@ -12,12 +14,17 @@ bool NewChannel_UseSeparateSavegame() {
     return (*reinterpret_cast<u8*>(RRC_BITFLAGS_ADDRESS) & RRC_BITFLAG_SEPARATE_SAVEGAME) == RRC_BITFLAG_SEPARATE_SAVEGAME;
 }
 
-void NewChannel_SetLoadedFromRRFlag() {
-    *reinterpret_cast<u8*>(RRC_BITFLAGS_ADDRESS) |= RRC_BITFLAG_LOADED_FROM_RR;
+void NewChannel_WriteLoadedFromRREphFile() {
+    if(IO::sInstance == nullptr) return;
+    IO::sInstance->CreateAndOpen(RRC_LOADED_FROM_RR_EPH_FILE_PATH, IOS::MODE_NONE);
+    IO::sInstance->Close();
 }
 
-void NewChannel_SetCrashFlag() {
-    *reinterpret_cast<u8*>(RRC_BITFLAGS_ADDRESS) |= RRC_BITFLAG_RR_CRASHED;
+void NewChannel_WriteCrashEphFile() {
+    if(IO::sInstance == nullptr) return;
+    OS::Report("* NewChannel: Writing crash eph file\n");
+    IO::sInstance->CreateAndOpen(RRC_CRASH_EPH_FILE_PATH, IOS::MODE_NONE);
+    IO::sInstance->Close();
 }
 
 void NewChannel_Init() {
@@ -32,7 +39,9 @@ void NewChannel_Init() {
         Debug::FatalError(message);
     }
 
-    NewChannel_SetLoadedFromRRFlag();
+    if(!Dolphin::IsEmulator()) {
+        NewChannel_WriteLoadedFromRREphFile();
+    }
 }
 
 }  // namespace Pulsar
