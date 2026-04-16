@@ -1529,7 +1529,7 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
             file->dumpHeap = nullptr;
             file->status = ARCHIVE_STATUS_DECOMPRESSED;
         } else {
-            file->Decompress(finalPath, mountHeap, info);
+            file->Decompress(requestedPath, mountHeap, info);
             if (file->compressedArchive != nullptr && file->dumpHeap != nullptr) {
                 EGG::Heap::free(file->compressedArchive, file->dumpHeap);
                 file->compressedArchive = nullptr;
