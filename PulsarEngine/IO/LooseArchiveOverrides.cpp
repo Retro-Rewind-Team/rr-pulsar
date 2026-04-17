@@ -750,6 +750,47 @@ static void ScanModsDirSD(OverrideEntry* entries, u32 maxCount, u32& count, bool
     ScanModsDirFromIO(sdIo, entries, maxCount, count, truncated);
 }
 
+static u32 CountModsFilesDVD() {
+    u32 modsIndex = 0;
+    u32 modsEnd = 0;
+    if (!FindModsDirInFST(modsIndex, modsEnd)) return 0;
+
+    const FSTEntry* fst = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
+    const u32 entryCount = fst[0].size;
+    if (modsIndex >= entryCount || modsEnd > entryCount || modsEnd <= modsIndex) return 0;
+
+    u32 count = 0;
+    for (u32 i = modsIndex + 1; i < modsEnd; ++i) {
+        if (!FSTEntryIsDir(fst[i])) ++count;
+    }
+    return count;
+}
+
+static u32 CountModsFilesFromIO(IO& io) {
+    char modsPath[OVERRIDE_MAX_PATH];
+    if (!GetSDModsRootPath(modsPath, sizeof(modsPath))) return 0;
+    if (!io.FolderExists(modsPath)) return 0;
+
+    io.ReadFolder(modsPath);
+    const u32 count = io.GetFileCount();
+    io.CloseFolder();
+    return count;
+}
+
+static u32 CountModsFilesSD() {
+    IO* io = IO::sInstance;
+    if (io == nullptr) return 0;
+    if (!ShouldProbeSDModsPath()) return 0;
+
+    if (io->type == IOType_SD) return CountModsFilesFromIO(*io);
+
+    System* system = System::sInstance;
+    if (system == nullptr) return 0;
+
+    SDIO sdIo(IOType_SD, system->heap, system->taskThread);
+    return CountModsFilesFromIO(sdIo);
+}
+
 static void ScanModsDir(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
     if (!ModsRootExists()) return;
 
@@ -1547,6 +1588,21 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
     }
 }
 kmBranch(0x80518e10, ArchiveFileLoadOverride);
+
+bool AreLooseArchiveOverridesEnabledForDebug() {
+    return AreLooseArchiveOverridesEnabled();
+}
+
+u32 GetLooseArchiveOverrideFileCount() {
+    if (!ModsRootExists()) return 0;
+
+    IO* io = IO::sInstance;
+    if (io != nullptr && ShouldProbeSDModsPath()) {
+        return CountModsFilesSD();
+    }
+
+    return CountModsFilesDVD();
+}
 
 }  // namespace IOOverrides
 }  // namespace Pulsar

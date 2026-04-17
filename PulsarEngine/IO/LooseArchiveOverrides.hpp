@@ -40,6 +40,9 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                          EGG::Heap*& archiveHeap, u32* outAppliedOverrides, u32* outPatchedNodes,
                          u32* outMissingOverrides, const u8* compressedData);
 
+bool AreLooseArchiveOverridesEnabledForDebug();
+u32 GetLooseArchiveOverrideFileCount();
+
 }  // namespace IOOverrides
 }  // namespace Pulsar
 

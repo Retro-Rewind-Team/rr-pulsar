@@ -8,6 +8,7 @@
 #include <core/rvl/KPAD.hpp>
 #include <core/egg/Exception.hpp>
 #include <Debug/Debug.hpp>
+#include <Debug/CrashExtra.hpp>
 #include <PulsarSystem.hpp>
 #include <IO/IO.hpp>
 #include <RetroRewindChannel.hpp>
@@ -79,7 +80,7 @@ static void SetConsoleParams() {
 }
 BootHook ConsoleParams(SetConsoleParams, 1);
 
-ExceptionFile::ExceptionFile(const OS::Context& context) : magic('PULD'), region(*reinterpret_cast<u32*>(OS::BootInfo::mInstance.diskID.gameName)), reserved(-1) {
+ExceptionFile::ExceptionFile(const OS::Context& context) : magic('PULD'), region(*reinterpret_cast<u32*>(OS::BootInfo::mInstance.diskID.gameName)), version(EXCEPTION_FILE_VERSION) {
     this->srr0.name = 'srr0';
     this->srr0.gpr = context.srr0;
     this->srr1.name = 'srr1';
@@ -138,6 +139,7 @@ static void CreateCrashFile(s32 channel, KPAD::Status buff[], u32 count) {
     if (io != nullptr) {
         alignas(0x20) ExceptionFile exception(thread->context);
         exception.error = static_cast<OS::Error>(crashError);
+        PopulateCrashExtra(exception);
         char path[IOS::ipcMaxPath];
         const System* system = System::sInstance;
         snprintf(path, IOS::ipcMaxPath, "%s/Crash.pul", system->GetModFolder());
