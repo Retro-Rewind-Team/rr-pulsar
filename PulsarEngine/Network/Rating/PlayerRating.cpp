@@ -82,7 +82,7 @@ static float GetGainCap(float rating) {
 
 static float GetLossCap(float rating) {
     if (rating >= 500.0f) return -2.09f;
-    if (rating <= 150.0f) return -2.09f;
+    if (rating <= 150.0f) return -0.5f;
     float t = (rating - 150.0f) / 350.0f;
     return -0.5f + (-2.09f + 0.5f) * t;
 }
