@@ -380,6 +380,19 @@ asmFunc burnoutIconFix() {
 }
 kmCall(0x807EB38C, burnoutIconFix);
 
+// Fix Pokey Not Respawning After Hit by POW While Dead [Ro]
+asmFunc pokeyDeathFix() {
+    ASM(
+        nofralloc;
+        loc_0x0:;
+        cmpwi r0, 0x1;
+        beq- loc_0xC;
+        cmpwi r0, 0x3;
+        loc_0xC:;
+        blr;)
+}
+kmCall(0x8077AC50, pokeyDeathFix);
+
 // Allow Pausing Before Race Starts [Sponge]
 kmWrite32(0x80856a28, 0x40810050);
 
