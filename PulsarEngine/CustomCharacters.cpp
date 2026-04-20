@@ -3,6 +3,9 @@
 #include <CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/UI/Page/Menu/CharacterSelect.hpp>
+#include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
+#include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -14,12 +17,67 @@ namespace Pulsar {
 namespace CustomCharacters {
 bool onlineCustomCharacterFlags[12];
 
-bool IsCustomCharacterSettingEnabled() {
-    const u32 character = static_cast<Pulsar::Transmission>(
-        Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC),
-            Pulsar::SCROLLER_CUSTOMCHARACTER));
-    return character == Pulsar::CUSTOMCHARACTER_ENABLED && GetLocalPlayerCount() == 1;
+enum CustomCharacterTable {
+    CUSTOM_CHARACTER_TABLE_DEFAULT = 0,
+    CUSTOM_CHARACTER_TABLE_CUSTOM = 1,
+    CUSTOM_CHARACTER_TABLE_COUNT = 2
+};
+
+static u8 activeCustomCharacterTable = CUSTOM_CHARACTER_TABLE_DEFAULT;
+static bool customCharacterTableInitialized = false;
+static u8 pendingDriverArchiveRefreshFrames = 0;
+static u8 pendingModelRefreshFrames = 0;
+static u8 pendingMenuDriverRefreshFrames = 0;
+
+void ApplyDefaultCharacterTable();
+void ApplyCustomCharacterTable();
+void RefreshLocalOnlineCustomCharacterFlags();
+
+static void ApplyCharacterTable(u8 tableIdx) {
+    switch (tableIdx) {
+        case CUSTOM_CHARACTER_TABLE_CUSTOM:
+            ApplyCustomCharacterTable();
+            break;
+        case CUSTOM_CHARACTER_TABLE_DEFAULT:
+        default:
+            ApplyDefaultCharacterTable();
+            break;
+    }
+}
+
+static void SetActiveCustomCharacterTable(u8 tableIdx) {
+    activeCustomCharacterTable = tableIdx % CUSTOM_CHARACTER_TABLE_COUNT;
+    customCharacterTableInitialized = true;
+    ApplyCharacterTable(activeCustomCharacterTable);
+    RefreshLocalOnlineCustomCharacterFlags();
+}
+
+static void ToggleCustomCharacterTable(bool moveRight) {
+    if (GetLocalPlayerCount() != 1) return;
+
+    if (moveRight) {
+        SetActiveCustomCharacterTable((activeCustomCharacterTable + 1) % CUSTOM_CHARACTER_TABLE_COUNT);
+    } else {
+        SetActiveCustomCharacterTable((activeCustomCharacterTable + CUSTOM_CHARACTER_TABLE_COUNT - 1) % CUSTOM_CHARACTER_TABLE_COUNT);
+    }
+    pendingDriverArchiveRefreshFrames = 1;
+    pendingMenuDriverRefreshFrames = 2;
+    pendingModelRefreshFrames = 2;
+}
+
+static void EnsureActiveCustomCharacterTable() {
+    if (customCharacterTableInitialized) {
+        ApplyCharacterTable(activeCustomCharacterTable);
+        return;
+    }
+
+    activeCustomCharacterTable = CUSTOM_CHARACTER_TABLE_DEFAULT;
+    customCharacterTableInitialized = true;
+    ApplyCharacterTable(activeCustomCharacterTable);
+}
+
+bool IsCustomCharacterTableActive() {
+    return activeCustomCharacterTable == CUSTOM_CHARACTER_TABLE_CUSTOM && GetLocalPlayerCount() == 1;
 }
 
 bool IsOnlineRoom(const RKNet::Controller* controller) {
@@ -256,10 +314,10 @@ bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId) {
     if (IsOnlineRoom(controller)) {
         if (IsOnlineMultiLocal(controller)) return false;
         if (!isDisplayCustomSkinsEnabled()) return false;
-        if (IsLocalRacePlayer(playerId)) return IsCustomCharacterSettingEnabled();
+        if (IsLocalRacePlayer(playerId)) return IsCustomCharacterTableActive();
         return playerId < 12 && onlineCustomCharacterFlags[playerId];
     }
-    return IsCustomCharacterSettingEnabled() && IsLocalRacePlayer(playerId);
+    return IsCustomCharacterTableActive() && IsLocalRacePlayer(playerId);
 }
 
 class ScopedCharacterPostfixSwap {
@@ -285,7 +343,6 @@ class ScopedCharacterPostfixSwap {
 };
 
 void ApplyDefaultCharacterTable() {
-    CUSTOM_DRIVER = 'D';
     CUSTOM_BABY_MARIO = 'bm';
     CUSTOM_TOAD = 'ko';
     CUSTOM_MARIO = 'mr';
@@ -316,7 +373,6 @@ void ApplyDefaultCharacterTable() {
 }
 
 void ApplyCustomCharacterTable() {
-    CUSTOM_DRIVER = 'R';
     CUSTOM_BABY_MARIO = 'km';
     CUSTOM_TOAD = 'ct';
     CUSTOM_MARIO = 'sm';
@@ -352,6 +408,74 @@ void ResetOnlineCustomCharacterFlags() {
     }
 }
 
+static void RefreshCharacterSelectModels() {
+    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || sectionMgr->curSection == nullptr) return;
+
+    Pages::CharacterSelect* characterSelect = sectionMgr->curSection->Get<Pages::CharacterSelect>();
+    if (characterSelect == nullptr || characterSelect->models == nullptr) return;
+
+    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        characterSelect->models[hudSlotId].RequestModel(sectionMgr->sectionParams->characters[hudSlotId]);
+    }
+}
+
+static void RefreshKartSelectModel() {
+    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || sectionMgr->curSection == nullptr) return;
+
+    Pages::KartSelect* kartSelect = sectionMgr->curSection->Get<Pages::KartSelect>();
+    if (kartSelect == nullptr) return;
+    if (sectionMgr->sectionParams->localPlayerCount == 0) return;
+
+    kartSelect->vehicleModel.RequestModel(sectionMgr->sectionParams->karts[0]);
+}
+
+static void RefreshMenuDriverModels() {
+    MenuModelMgr* menuModelMgr = MenuModelMgr::sInstance;
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (menuModelMgr == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return;
+
+    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        menuModelMgr->RequestDriverModel(hudSlotId, sectionMgr->sectionParams->characters[hudSlotId]);
+    }
+}
+
+static void RefreshDriverArchive() {
+    ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+    const GameScene* currentScene = GameScene::GetCurrent();
+    if (archiveMgr == nullptr || currentScene == nullptr) return;
+
+    EGG::Heap* archiveHeap = currentScene->archiveHeaps.heaps[0];
+    if (archiveHeap == nullptr) return;
+
+    archiveMgr->Unmount(ARCHIVE_HOLDER_DRIVER);
+    archiveMgr->LoadArchive(ARCHIVE_HOLDER_DRIVER, archiveHeap);
+    archiveMgr->WaitForLoad();
+}
+
+static void RefreshPendingModelsIfReady() {
+    if (pendingDriverArchiveRefreshFrames != 0) {
+        if (--pendingDriverArchiveRefreshFrames == 0) {
+            RefreshDriverArchive();
+        }
+    }
+
+    if (pendingMenuDriverRefreshFrames != 0) {
+        if (--pendingMenuDriverRefreshFrames == 0) {
+            RefreshMenuDriverModels();
+        }
+    }
+
+    if (pendingModelRefreshFrames == 0) return;
+    if (--pendingModelRefreshFrames != 0) return;
+
+    RefreshCharacterSelectModels();
+    RefreshKartSelectModel();
+}
+
 void RefreshLocalOnlineCustomCharacterFlags() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (!IsOnlineRoom(controller)) return;
@@ -361,14 +485,14 @@ void RefreshLocalOnlineCustomCharacterFlags() {
     const Racedata* racedata = Racedata::sInstance;
     if (racedata == nullptr) return;
 
-    const bool isEnabled = IsCustomCharacterSettingEnabled();
+    const bool isCustomTableActive = IsCustomCharacterTableActive();
     const RacedataScenario& scenario = racedata->racesScenario;
     const u8 localPlayerCount = scenario.localPlayerCount > 4 ? 4 : scenario.localPlayerCount;
 
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
         const u32 playerId = racedata->GetPlayerIdOfLocalPlayer(hudSlotId);
         if (playerId < 12) {
-            onlineCustomCharacterFlags[playerId] = isEnabled;
+            onlineCustomCharacterFlags[playerId] = isCustomTableActive;
         }
     }
 }
@@ -386,7 +510,7 @@ void UpdateOnlineCustomCharacterFlagsFromAid(u8 aid, const u8* playerIdToAid, u8
 }
 
 u8 GetLocalOnlineCustomCharacterFlags() {
-    return IsCustomCharacterSettingEnabled() ? 0x1 : 0x0;
+    return IsCustomCharacterTableActive() ? 0x1 : 0x0;
 }
 
 bool ShouldUseCustomCharacterForPlayer(u8 playerId) {
@@ -418,14 +542,76 @@ static RaceLoadHook RefreshOnlineCustomCharacterFlagsHook(RefreshOnlineCustomCha
 
 void SetCharacter() {
     if (!IsOnlineRoom(RKNet::Controller::sInstance)) ResetOnlineCustomCharacterFlags();
-    if (IsRaceSectionActive())
-        ApplyDefaultCharacterTable();
-    else if (IsCustomCharacterSettingEnabled())
-        ApplyCustomCharacterTable();
-    else
-        ApplyDefaultCharacterTable();
+    EnsureActiveCustomCharacterTable();
+    ApplyCharacterTable(activeCustomCharacterTable);
 }
 static SectionLoadHook SetCharacterHook(SetCharacter);
+
+static bool ShouldProcessCustomCharacterInput() {
+    if (GetLocalPlayerCount() != 1) return false;
+
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->pad.padInfos[0].controllerHolder == nullptr) return false;
+
+    const Input::RealControllerHolder* controllerHolder = sectionMgr->pad.padInfos[0].controllerHolder;
+    const Input::Controller* controller = controllerHolder->curController;
+    if (controller == nullptr) return false;
+
+    const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
+    const u16 newInputs = inputs & ~controllerHolder->inputStates[1].buttonRaw;
+
+    u16 previousButton = 0;
+    u16 nextButton = 0;
+    switch (controller->GetType()) {
+        case WHEEL:
+        case NUNCHUCK:
+            previousButton = WPAD::WPAD_BUTTON_MINUS;
+            nextButton = WPAD::WPAD_BUTTON_PLUS;
+            break;
+        case CLASSIC:
+            previousButton = WPAD::WPAD_CL_TRIGGER_L;
+            nextButton = WPAD::WPAD_CL_TRIGGER_R;
+            break;
+        case GCN:
+        default:
+            previousButton = PAD::PAD_BUTTON_L;
+            nextButton = PAD::PAD_BUTTON_R;
+            break;
+    }
+
+    if ((newInputs & previousButton) != 0) {
+        ToggleCustomCharacterTable(false);
+        return true;
+    }
+    if ((newInputs & nextButton) != 0) {
+        ToggleCustomCharacterTable(true);
+        return true;
+    }
+    return false;
+}
+
+kmRuntimeUse(0x8063550c);
+// RaceScene::calcSubsystems -> SectionMgr::Update call site
+static void RaceSceneSectionUpdateHook(SectionMgr* sectionMgr) {
+    ShouldProcessCustomCharacterInput();
+    typedef void (*SectionMgrUpdateFn)(SectionMgr*);
+    const SectionMgrUpdateFn original = reinterpret_cast<SectionMgrUpdateFn>(kmRuntimeAddr(0x8063550c));
+    original(sectionMgr);
+    RefreshPendingModelsIfReady();
+}
+kmCall(0x80554dcc, RaceSceneSectionUpdateHook);
+
+kmRuntimeUse(0x8063583c);
+// MenuScene_vf30 / GlobeScene_vf30 -> SectionMgr::MenuUpdate call sites
+static void MenuSceneSectionUpdateHook(SectionMgr* sectionMgr) {
+    ShouldProcessCustomCharacterInput();
+    typedef void (*SectionMgrUpdateFn)(SectionMgr*);
+    const SectionMgrUpdateFn original = reinterpret_cast<SectionMgrUpdateFn>(kmRuntimeAddr(0x8063583c));
+    original(sectionMgr);
+    RefreshPendingModelsIfReady();
+}
+kmCall(0x805552e8, MenuSceneSectionUpdateHook);
+kmCall(0x80553b30, MenuSceneSectionUpdateHook);
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar
