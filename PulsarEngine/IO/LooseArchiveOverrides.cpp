@@ -1748,7 +1748,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
     if (!useSameHeapRepack) {
         // Copy the untouched metadata prefix now; file payloads get rewritten into their new aligned slots below.
-        memset(newBuffer, 0, newSize);
         memcpy(newBuffer, archiveBase, dataStart);
     }
     ARC::Header* newHeader = reinterpret_cast<ARC::Header*>(newBuffer);
@@ -1836,13 +1835,20 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             }
 
             newNodes[nodeIdx].dataSize = newFileSize;
-            writeOffset += nw4r::ut::RoundUp(newFileSize, 0x20);
+            const u32 paddedSize = nw4r::ut::RoundUp(newFileSize, 0x20);
+            if (paddedSize > newFileSize) {
+                memset(newBuffer + writeOffset + newFileSize, 0, paddedSize - newFileSize);
+            }
+            writeOffset += paddedSize;
         }
     }
 
     u32 finalSize = nw4r::ut::RoundUp(writeOffset, 0x20);
     // Clamp to the allocated size so bad metadata cannot claim a larger archive than the buffer we own.
     if (finalSize > newSize) finalSize = newSize;
+    if (!useSameHeapRepack && finalSize < newSize) {
+        memset(newBuffer + finalSize, 0, newSize - finalSize);
+    }
     OS::DCStoreRange(newBuffer, finalSize);
 
     if (!useSameHeapRepack) {
