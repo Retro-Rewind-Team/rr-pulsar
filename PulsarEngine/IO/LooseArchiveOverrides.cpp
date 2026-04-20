@@ -645,6 +645,47 @@ static u32 MatchArchiveBasenameOverride(const U8Node* nodes, char* stringTable, 
     return matchCount;
 }
 
+static void BuildArchiveFileSlotCapacities(const U8Node* nodes, u32 nodeCount, u32 archiveSize, u32* fileOrder,
+                                           u32* slotCapacities) {
+    if (nodes == nullptr || fileOrder == nullptr || slotCapacities == nullptr) return;
+
+    memset(slotCapacities, 0, sizeof(u32) * nodeCount);
+    u32 fileCount = 0;
+    for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+        if (NodeIsDir(nodes[nodeIdx])) continue;
+        fileOrder[fileCount++] = nodeIdx;
+    }
+
+    // U8 node order is not guaranteed to follow file payload order, so compute
+    // in-place growth limits from a temporary dataOffset-sorted view.
+    for (u32 i = 1; i < fileCount; ++i) {
+        const u32 keyNode = fileOrder[i];
+        const u32 keyOffset = nodes[keyNode].dataOffset;
+        u32 insertIdx = i;
+        while (insertIdx > 0) {
+            const u32 prevNode = fileOrder[insertIdx - 1];
+            if (nodes[prevNode].dataOffset <= keyOffset) break;
+            fileOrder[insertIdx] = prevNode;
+            --insertIdx;
+        }
+        fileOrder[insertIdx] = keyNode;
+    }
+
+    for (u32 i = 0; i < fileCount; ++i) {
+        const u32 nodeIdx = fileOrder[i];
+        const u32 currentOffset = nodes[nodeIdx].dataOffset;
+        if (currentOffset >= archiveSize) continue;
+
+        u32 slotEnd = archiveSize;
+        if (i + 1 < fileCount) {
+            const u32 nextOffset = nodes[fileOrder[i + 1]].dataOffset;
+            if (nextOffset < currentOffset) continue;
+            slotEnd = (nextOffset < archiveSize) ? nextOffset : archiveSize;
+        }
+        slotCapacities[nodeIdx] = slotEnd - currentOffset;
+    }
+}
+
 static void ResetModsRootCache() {
     sModsRootChecked = false;
     sModsRootPresent = false;
@@ -1430,6 +1471,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     s32* basenameHashHeads = sLooseOverrideScratch.basenameHashHeads;
     s32* basenameHashNext = sLooseOverrideScratch.basenameHashNext;
     const u32 basenameHashCapacity = sLooseOverrideScratch.basenameHashCapacity;
+    u32* fileNodeOrder = sLooseOverrideScratch.repackOffsets;
+    u32* fileSlotCapacities = sLooseOverrideScratch.repackSizes;
     u32* repackOffsets = sLooseOverrideScratch.repackOffsets;
     u32* repackSizes = sLooseOverrideScratch.repackSizes;
     u32* repackOriginalSizes = sLooseOverrideScratch.repackOriginalSizes;
@@ -1438,6 +1481,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     memset(nodeOverrideIndex, 0xFF, sizeof(s32) * nodeCount);
     memset(entryApplied, 0, sizeof(u8) * taggedCandidates);
     BuildArchiveBasenameLookup(nodes, nodeCount, stringTable, basenameHashHeads, basenameHashCapacity, basenameHashNext);
+    BuildArchiveFileSlotCapacities(nodes, nodeCount, archiveSize, fileNodeOrder, fileSlotCapacities);
 
     bool anyOverrides = false;
     u32 missingOverrides = 0;
@@ -1495,8 +1539,9 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         const s32 idx = nodeOverrideIndex[nodeIdx];
         if (idx < 0) continue;
         if (NodeIsDir(nodes[nodeIdx])) continue;
-        // Any growth would invalidate later file offsets, so one oversized replacement forces the repack path.
-        if (sModIndex.entries[idx].size > nodes[nodeIdx].dataSize) {
+        // In-place growth is safe as long as the replacement stays inside this
+        // node's real byte slot up to the next file payload.
+        if (sModIndex.entries[idx].size > fileSlotCapacities[nodeIdx]) {
             needsRepack = true;
             break;
         }
@@ -1521,7 +1566,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             if (NodeIsDir(nodes[nodeIdx])) continue;
 
             const OverrideEntry& entry = sModIndex.entries[idx];
-            if (entry.size > nodes[nodeIdx].dataSize) {
+            if (entry.size > fileSlotCapacities[nodeIdx]) {
                 // Oversized writes are intentionally left to the repack path, never to in-place patching.
                 continue;
             }
