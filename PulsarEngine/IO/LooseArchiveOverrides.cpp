@@ -89,6 +89,19 @@ struct WholeFileOverrideIndex {
     EGG::Heap* heap;
 };
 
+struct LooseOverrideScratch {
+    s32* nodeOverrideIndex;
+    u32 nodeOverrideCapacity;
+    u8* entryApplied;
+    u32 entryAppliedCapacity;
+    u32* repackOffsets;
+    u32* repackSizes;
+    u32* repackOriginalSizes;
+    u32* repackOrder;
+    u32 repackCapacity;
+    EGG::Heap* heap;
+};
+
 struct ScanBuildState {
     OverrideEntry* taggedEntries;
     u32 taggedCount;
@@ -121,6 +134,8 @@ static bool sOverrideCacheStateInitialized = false;
 static bool sCachedLooseOverridesEnabled = false;
 static char sCachedModFolder[OVERRIDE_MAX_PATH] = "";
 static char sLastUIArchiveBase[32] = "";
+static LooseOverrideScratch sLooseOverrideScratch = {nullptr, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, 0,
+                                                     nullptr};
 
 static bool AreLooseArchiveOverridesEnabled() {
     if (!Settings::Mgr::IsCreated()) {
@@ -429,6 +444,122 @@ static void FreeWholeFileIndex(WholeFileOverrideIndex& index) {
     index.entries = nullptr;
     index.count = 0;
     index.heap = nullptr;
+}
+
+static u32 GetLooseOverrideScratchFootprint(u32 nodeCapacity, u32 entryCapacity, u32 repackCapacity) {
+    u32 footprint = 0;
+    footprint += nw4r::ut::RoundUp(sizeof(s32) * nodeCapacity, 0x20);
+    footprint += nw4r::ut::RoundUp(sizeof(u8) * entryCapacity, 0x20);
+    if (repackCapacity > 0) {
+        footprint += nw4r::ut::RoundUp(sizeof(u32) * repackCapacity, 0x20) * 4;
+    }
+    return footprint;
+}
+
+static u32 GetLooseOverrideScratchFootprint(const LooseOverrideScratch& scratch) {
+    return GetLooseOverrideScratchFootprint(scratch.nodeOverrideCapacity, scratch.entryAppliedCapacity,
+                                            scratch.repackCapacity);
+}
+
+static void FreeLooseOverrideScratch(LooseOverrideScratch& scratch) {
+    if (scratch.heap != nullptr) {
+        if (scratch.nodeOverrideIndex != nullptr) EGG::Heap::free(scratch.nodeOverrideIndex, scratch.heap);
+        if (scratch.entryApplied != nullptr) EGG::Heap::free(scratch.entryApplied, scratch.heap);
+        if (scratch.repackOffsets != nullptr) EGG::Heap::free(scratch.repackOffsets, scratch.heap);
+        if (scratch.repackSizes != nullptr) EGG::Heap::free(scratch.repackSizes, scratch.heap);
+        if (scratch.repackOriginalSizes != nullptr) EGG::Heap::free(scratch.repackOriginalSizes, scratch.heap);
+        if (scratch.repackOrder != nullptr) EGG::Heap::free(scratch.repackOrder, scratch.heap);
+    }
+    scratch.nodeOverrideIndex = nullptr;
+    scratch.nodeOverrideCapacity = 0;
+    scratch.entryApplied = nullptr;
+    scratch.entryAppliedCapacity = 0;
+    scratch.repackOffsets = nullptr;
+    scratch.repackSizes = nullptr;
+    scratch.repackOriginalSizes = nullptr;
+    scratch.repackOrder = nullptr;
+    scratch.repackCapacity = 0;
+    scratch.heap = nullptr;
+}
+
+static EGG::Heap* GetOverridesHeap();
+
+static EGG::Heap* GetLooseOverrideScratchHeap(u32 requiredSize, EGG::Heap* fallbackHeap) {
+    EGG::Heap* candidates[5];
+    candidates[0] = RKSystem::mInstance.EGGRootMEM2;
+    candidates[1] = sLooseOverrideScratch.heap;
+    candidates[2] = GetOverridesHeap();
+    candidates[3] = RKSystem::mInstance.EGGRootMEM1;
+    candidates[4] = fallbackHeap;
+
+    const u32 currentFootprint = GetLooseOverrideScratchFootprint(sLooseOverrideScratch);
+    for (u32 i = 0; i < 5; ++i) {
+        EGG::Heap* heap = candidates[i];
+        if (heap == nullptr) continue;
+
+        u32 available = heap->getAllocatableSize(0x20);
+        if (heap == sLooseOverrideScratch.heap) {
+            // Scratch contents are transient per archive load, so growth can reclaim the old buffers first.
+            available += currentFootprint;
+        }
+        if (available >= requiredSize) return heap;
+    }
+    return nullptr;
+}
+
+static bool EnsureLooseOverrideScratchCapacity(u32 nodeCapacity, u32 entryCapacity, u32 repackCapacity,
+                                               EGG::Heap* fallbackHeap) {
+    if (nodeCapacity == 0 || entryCapacity == 0) return false;
+    if (sLooseOverrideScratch.nodeOverrideCapacity >= nodeCapacity &&
+        sLooseOverrideScratch.entryAppliedCapacity >= entryCapacity &&
+        sLooseOverrideScratch.repackCapacity >= repackCapacity &&
+        sLooseOverrideScratch.nodeOverrideIndex != nullptr && sLooseOverrideScratch.entryApplied != nullptr &&
+        (repackCapacity == 0 ||
+         (sLooseOverrideScratch.repackOffsets != nullptr && sLooseOverrideScratch.repackSizes != nullptr &&
+          sLooseOverrideScratch.repackOriginalSizes != nullptr && sLooseOverrideScratch.repackOrder != nullptr))) {
+        return true;
+    }
+
+    const u32 targetNodeCapacity =
+        (sLooseOverrideScratch.nodeOverrideCapacity > nodeCapacity) ? sLooseOverrideScratch.nodeOverrideCapacity : nodeCapacity;
+    const u32 targetEntryCapacity = (sLooseOverrideScratch.entryAppliedCapacity > entryCapacity)
+                                        ? sLooseOverrideScratch.entryAppliedCapacity
+                                        : entryCapacity;
+    const u32 targetRepackCapacity =
+        (sLooseOverrideScratch.repackCapacity > repackCapacity) ? sLooseOverrideScratch.repackCapacity : repackCapacity;
+    const u32 requiredSize =
+        GetLooseOverrideScratchFootprint(targetNodeCapacity, targetEntryCapacity, targetRepackCapacity);
+
+    EGG::Heap* heap = GetLooseOverrideScratchHeap(requiredSize, fallbackHeap);
+    if (heap == nullptr) {
+        return false;
+    }
+
+    FreeLooseOverrideScratch(sLooseOverrideScratch);
+
+    sLooseOverrideScratch.nodeOverrideIndex = EGG::Heap::alloc<s32>(sizeof(s32) * targetNodeCapacity, 0x20, heap);
+    sLooseOverrideScratch.entryApplied = EGG::Heap::alloc<u8>(sizeof(u8) * targetEntryCapacity, 0x20, heap);
+    if (targetRepackCapacity > 0) {
+        sLooseOverrideScratch.repackOffsets = EGG::Heap::alloc<u32>(sizeof(u32) * targetRepackCapacity, 0x20, heap);
+        sLooseOverrideScratch.repackSizes = EGG::Heap::alloc<u32>(sizeof(u32) * targetRepackCapacity, 0x20, heap);
+        sLooseOverrideScratch.repackOriginalSizes =
+            EGG::Heap::alloc<u32>(sizeof(u32) * targetRepackCapacity, 0x20, heap);
+        sLooseOverrideScratch.repackOrder = EGG::Heap::alloc<u32>(sizeof(u32) * targetRepackCapacity, 0x20, heap);
+    }
+
+    if (sLooseOverrideScratch.nodeOverrideIndex == nullptr || sLooseOverrideScratch.entryApplied == nullptr ||
+        (targetRepackCapacity > 0 &&
+         (sLooseOverrideScratch.repackOffsets == nullptr || sLooseOverrideScratch.repackSizes == nullptr ||
+          sLooseOverrideScratch.repackOriginalSizes == nullptr || sLooseOverrideScratch.repackOrder == nullptr))) {
+        FreeLooseOverrideScratch(sLooseOverrideScratch);
+        return false;
+    }
+
+    sLooseOverrideScratch.nodeOverrideCapacity = targetNodeCapacity;
+    sLooseOverrideScratch.entryAppliedCapacity = targetEntryCapacity;
+    sLooseOverrideScratch.repackCapacity = targetRepackCapacity;
+    sLooseOverrideScratch.heap = heap;
+    return true;
 }
 
 static void ResetModsRootCache() {
@@ -1207,16 +1338,16 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     char* stringTable = reinterpret_cast<char*>(nodes + nodeCount);
-    EGG::Heap* tempHeap = GetOverridesHeap();
-    if (tempHeap == nullptr) tempHeap = sourceHeap;
-    s32* nodeOverrideIndex = EGG::Heap::alloc<s32>(sizeof(s32) * nodeCount, 0x20, tempHeap);
-    u8* entryApplied = EGG::Heap::alloc<u8>(sizeof(u8) * taggedCandidates, 0x20, tempHeap);
-    if (nodeOverrideIndex == nullptr || entryApplied == nullptr) {
-        // `nodeOverrideIndex` maps archive nodes to loose entries; `entryApplied` deduplicates reporting per loose file.
-        if (nodeOverrideIndex != nullptr) EGG::Heap::free(nodeOverrideIndex, tempHeap);
-        if (entryApplied != nullptr) EGG::Heap::free(entryApplied, tempHeap);
+    if (!EnsureLooseOverrideScratchCapacity(nodeCount, taggedCandidates, nodeCount, sourceHeap)) {
         return false;
     }
+    // These buffers are reused across archive loads and only grow when a larger archive or candidate bucket appears.
+    s32* nodeOverrideIndex = sLooseOverrideScratch.nodeOverrideIndex;
+    u8* entryApplied = sLooseOverrideScratch.entryApplied;
+    u32* repackOffsets = sLooseOverrideScratch.repackOffsets;
+    u32* repackSizes = sLooseOverrideScratch.repackSizes;
+    u32* repackOriginalSizes = sLooseOverrideScratch.repackOriginalSizes;
+    u32* repackOrder = sLooseOverrideScratch.repackOrder;
 
     memset(nodeOverrideIndex, 0xFF, sizeof(s32) * nodeCount);
     memset(entryApplied, 0, sizeof(u8) * taggedCandidates);
@@ -1276,8 +1407,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                        archiveBaseLower, missingOverrides);
         }
         if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
-        EGG::Heap::free(nodeOverrideIndex, tempHeap);
-        EGG::Heap::free(entryApplied, tempHeap);
         return false;
     }
 
@@ -1344,17 +1473,12 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
         if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
         if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
-
-        EGG::Heap::free(nodeOverrideIndex, tempHeap);
-        EGG::Heap::free(entryApplied, tempHeap);
         return appliedOverrides > 0;
     }
 
     const u32 dataStart = GetFileDataStart(header);
     // Repacking preserves the metadata prefix and rebuilds only the payload region starting here.
     if (dataStart == 0 || dataStart > archiveSize) {
-        EGG::Heap::free(nodeOverrideIndex, tempHeap);
-        EGG::Heap::free(entryApplied, tempHeap);
         return false;
     }
 
@@ -1400,10 +1524,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     bool triedSourceHeap = false;
     u8* newBuffer = nullptr;
     bool useSameHeapRepack = false;
-    u32* repackOffsets = nullptr;
-    u32* repackSizes = nullptr;
-    u32* repackOriginalSizes = nullptr;
-    u32* repackOrder = nullptr;
     u32 repackOrderCount = 0;
 
     if (repackHeap == archiveHeap && allowSourceHeap && compressedData != nullptr) {
@@ -1414,63 +1534,48 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         // a new larger buffer on the same heap, and then move files downward from
         // highest original offset to lowest without clobbering unread data.
 
-        repackOffsets = EGG::Heap::alloc<u32>(sizeof(u32) * nodeCount, 0x20, tempHeap);
-        repackSizes = EGG::Heap::alloc<u32>(sizeof(u32) * nodeCount, 0x20, tempHeap);
-        repackOriginalSizes = EGG::Heap::alloc<u32>(sizeof(u32) * nodeCount, 0x20, tempHeap);
-        repackOrder = EGG::Heap::alloc<u32>(sizeof(u32) * nodeCount, 0x20, tempHeap);
-        if (repackOffsets != nullptr && repackSizes != nullptr && repackOriginalSizes != nullptr && repackOrder != nullptr) {
-            memset(repackOffsets, 0, sizeof(u32) * nodeCount);
-            memset(repackSizes, 0, sizeof(u32) * nodeCount);
-            memset(repackOriginalSizes, 0, sizeof(u32) * nodeCount);
-            memset(repackOrder, 0, sizeof(u32) * nodeCount);
-            u32 plannedOffset = dataStart;
-            bool allOffsetsForward = true;
-            bool hasShrinkOverride = false;
-            for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
-                if (NodeIsDir(nodes[nodeIdx])) continue;
-                plannedOffset = nw4r::ut::RoundUp(plannedOffset, 0x20);
-                repackOffsets[nodeIdx] = plannedOffset;
-                const s32 idx = nodeOverrideIndex[nodeIdx];
-                repackOriginalSizes[nodeIdx] = nodes[nodeIdx].dataSize;
-                const u32 plannedSize = (idx >= 0) ? sModIndex.entries[idx].size : nodes[nodeIdx].dataSize;
-                repackSizes[nodeIdx] = plannedSize;
-                repackOrder[repackOrderCount++] = nodeIdx;
-                if (plannedOffset < nodes[nodeIdx].dataOffset) {
-                    allOffsetsForward = false;
-                }
-                if (idx >= 0 && plannedSize < nodes[nodeIdx].dataSize) {
-                    // Same-heap repack cannot safely recover from a failed shrink override after later files move.
-                    hasShrinkOverride = true;
-                }
-                plannedOffset += nw4r::ut::RoundUp(plannedSize, 0x20);
+        memset(repackOffsets, 0, sizeof(u32) * nodeCount);
+        memset(repackSizes, 0, sizeof(u32) * nodeCount);
+        memset(repackOriginalSizes, 0, sizeof(u32) * nodeCount);
+        memset(repackOrder, 0, sizeof(u32) * nodeCount);
+        u32 plannedOffset = dataStart;
+        bool allOffsetsForward = true;
+        bool hasShrinkOverride = false;
+        for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+            if (NodeIsDir(nodes[nodeIdx])) continue;
+            plannedOffset = nw4r::ut::RoundUp(plannedOffset, 0x20);
+            repackOffsets[nodeIdx] = plannedOffset;
+            const s32 idx = nodeOverrideIndex[nodeIdx];
+            repackOriginalSizes[nodeIdx] = nodes[nodeIdx].dataSize;
+            const u32 plannedSize = (idx >= 0) ? sModIndex.entries[idx].size : nodes[nodeIdx].dataSize;
+            repackSizes[nodeIdx] = plannedSize;
+            repackOrder[repackOrderCount++] = nodeIdx;
+            if (plannedOffset < nodes[nodeIdx].dataOffset) {
+                allOffsetsForward = false;
             }
-            useSameHeapRepack = allOffsetsForward && !hasShrinkOverride;
-            if (useSameHeapRepack) {
-                // Same-heap repack must move files from the highest original offset downward.
-                for (u32 i = 1; i < repackOrderCount; ++i) {
-                    const u32 keyNode = repackOrder[i];
-                    const u32 keyOffset = nodes[keyNode].dataOffset;
-                    u32 j = i;
-                    while (j > 0) {
-                        const u32 prevNode = repackOrder[j - 1];
-                        if (nodes[prevNode].dataOffset >= keyOffset) break;
-                        repackOrder[j] = prevNode;
-                        --j;
-                    }
-                    repackOrder[j] = keyNode;
-                }
+            if (idx >= 0 && plannedSize < nodes[nodeIdx].dataSize) {
+                // Same-heap repack cannot safely recover from a failed shrink override after later files move.
+                hasShrinkOverride = true;
             }
+            plannedOffset += nw4r::ut::RoundUp(plannedSize, 0x20);
         }
+        useSameHeapRepack = allOffsetsForward && !hasShrinkOverride;
         if (!useSameHeapRepack) {
-            if (repackOffsets != nullptr) EGG::Heap::free(repackOffsets, tempHeap);
-            if (repackSizes != nullptr) EGG::Heap::free(repackSizes, tempHeap);
-            if (repackOriginalSizes != nullptr) EGG::Heap::free(repackOriginalSizes, tempHeap);
-            if (repackOrder != nullptr) EGG::Heap::free(repackOrder, tempHeap);
-            repackOffsets = nullptr;
-            repackSizes = nullptr;
-            repackOriginalSizes = nullptr;
-            repackOrder = nullptr;
             repackOrderCount = 0;
+        } else {
+            // Same-heap repack must move files from the highest original offset downward.
+            for (u32 i = 1; i < repackOrderCount; ++i) {
+                const u32 keyNode = repackOrder[i];
+                const u32 keyOffset = nodes[keyNode].dataOffset;
+                u32 j = i;
+                while (j > 0) {
+                    const u32 prevNode = repackOrder[j - 1];
+                    if (nodes[prevNode].dataOffset >= keyOffset) break;
+                    repackOrder[j] = prevNode;
+                    --j;
+                }
+                repackOrder[j] = keyNode;
+            }
         }
     }
 
@@ -1513,13 +1618,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             }
         }
         if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
-
-        if (repackOffsets != nullptr) EGG::Heap::free(repackOffsets, tempHeap);
-        if (repackSizes != nullptr) EGG::Heap::free(repackSizes, tempHeap);
-        if (repackOriginalSizes != nullptr) EGG::Heap::free(repackOriginalSizes, tempHeap);
-        if (repackOrder != nullptr) EGG::Heap::free(repackOrder, tempHeap);
-        EGG::Heap::free(nodeOverrideIndex, tempHeap);
-        EGG::Heap::free(entryApplied, tempHeap);
         return false;
     }
 
@@ -1641,13 +1739,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         OS::Report("[Pulsar] Loose overrides for '%s': applied=%u patched=%u missing=%u\n", archiveBaseLower,
                    appliedOverrides, patchedNodes, missingOverrides);
     }
-
-    if (repackOffsets != nullptr) EGG::Heap::free(repackOffsets, tempHeap);
-    if (repackSizes != nullptr) EGG::Heap::free(repackSizes, tempHeap);
-    if (repackOriginalSizes != nullptr) EGG::Heap::free(repackOriginalSizes, tempHeap);
-    if (repackOrder != nullptr) EGG::Heap::free(repackOrder, tempHeap);
-    EGG::Heap::free(nodeOverrideIndex, tempHeap);
-    EGG::Heap::free(entryApplied, tempHeap);
     return appliedOverrides > 0;
 }
 
@@ -1765,6 +1856,19 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
     }
 }
 kmBranch(0x80518e10, ArchiveFileLoadOverride);
+
+bool AreLooseArchiveOverridesEnabledForDebug() {
+    RefreshOverrideCacheState();
+    return AreLooseArchiveOverridesEnabled();
+}
+
+u32 GetLooseArchiveOverrideFileCount() {
+    RefreshOverrideCacheState();
+    if (!AreLooseArchiveOverridesEnabled()) return 0;
+
+    EnsureOverrideIndicesBuilt();
+    return sModIndex.count + sWholeFileIndex.count;
+}
 
 }  // namespace IOOverrides
 }  // namespace Pulsar
