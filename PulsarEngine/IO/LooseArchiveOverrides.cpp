@@ -69,6 +69,10 @@ struct OverrideEntry {
     u32 size;
 };
 
+struct WholeFileOverrideEntry {
+    char basenameLower[OVERRIDE_MAX_PATH];
+    char resolvedPath[OVERRIDE_MAX_PATH];
+};
 
 // Cached loose-override index. This is built once on first use and then kept in
 // a persistent heap because archive loads can happen frequently and often on
@@ -76,6 +80,22 @@ struct OverrideEntry {
 struct ModIndex {
     OverrideEntry* entries;
     u32 count;
+    EGG::Heap* heap;
+};
+
+struct WholeFileOverrideIndex {
+    WholeFileOverrideEntry* entries;
+    u32 count;
+    EGG::Heap* heap;
+};
+
+struct ScanBuildState {
+    OverrideEntry* taggedEntries;
+    u32 taggedCount;
+    bool taggedTruncated;
+    WholeFileOverrideEntry* wholeFileEntries;
+    u32 wholeFileCount;
+    bool wholeFileTruncated;
 };
 
 struct U8Node {
@@ -90,11 +110,16 @@ struct FSTEntry {
     u32 size;
 };
 
-static ModIndex sModIndex = {nullptr, 0};
-static bool sModIndexAttempted = false;
+static ModIndex sModIndex = {nullptr, 0, nullptr};
+static WholeFileOverrideIndex sWholeFileIndex = {nullptr, 0, nullptr};
+static bool sOverrideIndicesAttempted = false;
+static bool sHasWholeFileOverrides = false;
 static bool sModsRootChecked = false;
 static bool sModsRootPresent = false;
 static char sModsRootPath[OVERRIDE_MAX_PATH] = "/patches";
+static bool sOverrideCacheStateInitialized = false;
+static bool sCachedLooseOverridesEnabled = false;
+static char sCachedModFolder[OVERRIDE_MAX_PATH] = "";
 static char sLastUIArchiveBase[32] = "";
 
 static bool AreLooseArchiveOverridesEnabled() {
@@ -179,6 +204,13 @@ static void ToLowerInPlace(char* str) {
 }
 
 static s32 CompareArchiveTags(const char* lhs, const char* rhs) {
+    if (lhs == rhs) return 0;
+    if (lhs == nullptr) return -1;
+    if (rhs == nullptr) return 1;
+    return strcmp(lhs, rhs);
+}
+
+static s32 CompareWholeFileBasenames(const char* lhs, const char* rhs) {
     if (lhs == rhs) return 0;
     if (lhs == nullptr) return -1;
     if (rhs == nullptr) return 1;
@@ -381,6 +413,69 @@ static void SetModsRootPath(const char* path) {
     CopyPath(sModsRootPath, sizeof(sModsRootPath), path);
 }
 
+static void FreeModIndex(ModIndex& index) {
+    if (index.entries != nullptr && index.heap != nullptr) {
+        EGG::Heap::free(index.entries, index.heap);
+    }
+    index.entries = nullptr;
+    index.count = 0;
+    index.heap = nullptr;
+}
+
+static void FreeWholeFileIndex(WholeFileOverrideIndex& index) {
+    if (index.entries != nullptr && index.heap != nullptr) {
+        EGG::Heap::free(index.entries, index.heap);
+    }
+    index.entries = nullptr;
+    index.count = 0;
+    index.heap = nullptr;
+}
+
+static void ResetModsRootCache() {
+    sModsRootChecked = false;
+    sModsRootPresent = false;
+    SetModsRootPath(kModsRoot);
+}
+
+static void InvalidateOverrideIndices() {
+    FreeModIndex(sModIndex);
+    FreeWholeFileIndex(sWholeFileIndex);
+    sOverrideIndicesAttempted = false;
+    sHasWholeFileOverrides = false;
+    ResetModsRootCache();
+}
+
+static void GetCurrentModFolder(char* outPath, u32 outSize) {
+    if (outPath == nullptr || outSize == 0) return;
+    outPath[0] = '\0';
+
+    const System* system = System::sInstance;
+    if (system == nullptr) return;
+
+    const char* modFolder = system->GetModFolder();
+    if (modFolder == nullptr || modFolder[0] == '\0') return;
+    CopyPath(outPath, outSize, modFolder);
+}
+
+static void RefreshOverrideCacheState() {
+    char modFolder[OVERRIDE_MAX_PATH];
+    GetCurrentModFolder(modFolder, sizeof(modFolder));
+    const bool looseOverridesEnabled = AreLooseArchiveOverridesEnabled();
+
+    if (!sOverrideCacheStateInitialized) {
+        CopyPath(sCachedModFolder, sizeof(sCachedModFolder), modFolder);
+        sCachedLooseOverridesEnabled = looseOverridesEnabled;
+        sOverrideCacheStateInitialized = true;
+        return;
+    }
+
+    if (sCachedLooseOverridesEnabled != looseOverridesEnabled || strcmp(sCachedModFolder, modFolder) != 0) {
+        InvalidateOverrideIndices();
+        CopyPath(sCachedModFolder, sizeof(sCachedModFolder), modFolder);
+        sCachedLooseOverridesEnabled = looseOverridesEnabled;
+    }
+}
+
 static bool AppendPath(char* path, u32 pathSize, u32& pathLen, const char* name) {
     if (path == nullptr || name == nullptr || pathSize == 0) return false;
     int written = 0;
@@ -501,13 +596,6 @@ static bool ReadDVDFile(const char* path, void* dest, u32 size) {
     return read == static_cast<s32>(size);
 }
 
-static bool DVDFileExists(const char* path) {
-    DVD::FileInfo info;
-    if (!DVD::Open(path, &info)) return false;
-    DVD::Close(&info);
-    return true;
-}
-
 static bool BuildOverridePathWithRoot(const char* root, const char* name, const char* tag, char* outPath, u32 outSize) {
     if (root == nullptr || name == nullptr || outPath == nullptr || outSize == 0) return false;
     int written = 0;
@@ -573,7 +661,13 @@ static void FillOverrideEntry(OverrideEntry& entry, const char* fullPath, const 
     entry.size = size;
 }
 
-static bool CanAddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
+static void FillWholeFileOverrideEntry(WholeFileOverrideEntry& entry, const char* basename, const char* resolvedPath) {
+    ToLowerCopy(entry.basenameLower, basename, sizeof(entry.basenameLower));
+    strncpy(entry.resolvedPath, resolvedPath, sizeof(entry.resolvedPath));
+    entry.resolvedPath[sizeof(entry.resolvedPath) - 1] = '\0';
+}
+
+static bool CanAddEntry(const void* entries, u32 maxCount, u32& count, bool& truncated) {
     if (count >= maxCount) {
         truncated = true;
         return false;
@@ -585,8 +679,8 @@ static bool CanAddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& 
     return true;
 }
 
-static void AddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated,
-                     const char* fullPath, const char* relativePath, u32 size) {
+static void AddTaggedEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated,
+                           const char* fullPath, const char* relativePath, u32 size) {
     if (fullPath == nullptr || relativePath == nullptr) return;
     // All persistent storage is fixed-size, so oversized filenames are intentionally dropped.
     if (strlen(fullPath) >= OVERRIDE_MAX_PATH || strlen(relativePath) >= OVERRIDE_MAX_PATH) {
@@ -612,6 +706,43 @@ static void AddEntry(OverrideEntry* entries, u32 maxCount, u32& count, bool& tru
     ++count;
 }
 
+static void AddWholeFileEntry(WholeFileOverrideEntry* entries, u32 maxCount, u32& count, bool& truncated,
+                              const char* fullPath, const char* relativePath) {
+    if (fullPath == nullptr || relativePath == nullptr) return;
+    if (strlen(fullPath) >= OVERRIDE_MAX_PATH || strlen(relativePath) >= OVERRIDE_MAX_PATH) {
+        return;
+    }
+
+    char strippedName[OVERRIDE_MAX_PATH];
+    char archiveTagLower[OVERRIDE_MAX_NAME];
+    if (TryParseArchiveTag(relativePath, strippedName, sizeof(strippedName),
+                           archiveTagLower, sizeof(archiveTagLower))) {
+        return;
+    }
+
+    const char* basename = FindBasename(relativePath);
+    if (basename == nullptr || basename[0] == '\0') return;
+    if (IsBlockedLooseRawOverrideExtension(basename)) return;
+    if (!CanAddEntry(entries, maxCount, count, truncated)) return;
+
+    if (entries != nullptr) {
+        FillWholeFileOverrideEntry(entries[count], basename, fullPath);
+    }
+    ++count;
+}
+
+static void AddScannedEntry(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount,
+                            const char* fullPath, const char* relativePath, u32 size) {
+    AddTaggedEntry(state.taggedEntries, maxTaggedCount, state.taggedCount, state.taggedTruncated,
+                   fullPath, relativePath, size);
+    AddWholeFileEntry(state.wholeFileEntries, maxWholeFileCount, state.wholeFileCount, state.wholeFileTruncated,
+                      fullPath, relativePath);
+}
+
+static bool IsScanBuildComplete(const ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
+    return state.taggedCount >= maxTaggedCount && state.wholeFileCount >= maxWholeFileCount;
+}
+
 static bool FindModsDirInFST(u32& outIndex, u32& outEnd) {
     if (OS::BootInfo::mInstance.FSTLocation == nullptr) return false;
 
@@ -621,7 +752,7 @@ static bool FindModsDirInFST(u32& outIndex, u32& outEnd) {
     return ResolveFSTDirByPath(kModsRoot, entryCount, outIndex, outEnd);
 }
 
-static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
+static void ScanModsDirDVD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
     u32 modsIndex = 0;
     u32 modsEnd = 0;
     if (!FindModsDirInFST(modsIndex, modsEnd)) return;
@@ -653,7 +784,7 @@ static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, boo
     // recursive directory structure. The manual stack mirrors the nested FST
     // directory ranges so we can rebuild relative paths on the fly.
 
-    for (u32 i = modsIndex + 1; i < modsEnd && count < maxCount; ++i) {
+    for (u32 i = modsIndex + 1; i < modsEnd && !IsScanBuildComplete(state, maxTaggedCount, maxWholeFileCount); ++i) {
         while (depth > 0 && i >= stack[depth - 1].endIndex) {
             relLen = stack[depth - 1].prevLen;
             relPath[relLen] = '\0';
@@ -697,19 +828,18 @@ static void ScanModsDirDVD(OverrideEntry* entries, u32 maxCount, u32& count, boo
             continue;
         }
 
-        AddEntry(entries, maxCount, count, truncated, fullPath, relativePath, entry.size);
-        if (truncated) break;
+        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, fullPath, relativePath, entry.size);
     }
 }
 
-static void ScanModsDirFromIO(IO& io, OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
+static void ScanModsDirFromIO(IO& io, ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
     char modsPath[OVERRIDE_MAX_PATH];
     if (!GetSDModsRootPath(modsPath, sizeof(modsPath))) return;
     if (!io.FolderExists(modsPath)) return;
 
     io.ReadFolder(modsPath);
     const u32 fileCount = io.GetFileCount();
-    for (u32 i = 0; i < fileCount && count < maxCount; ++i) {
+    for (u32 i = 0; i < fileCount && !IsScanBuildComplete(state, maxTaggedCount, maxWholeFileCount); ++i) {
         const char* fileName = io.GetFileName(i);
         if (fileName == nullptr || fileName[0] == '\0') continue;
         // SD scanning is intentionally flat; bracket prefixes encode any desired archive subpath.
@@ -727,19 +857,18 @@ static void ScanModsDirFromIO(IO& io, OverrideEntry* entries, u32 maxCount, u32&
         char fullPath[OVERRIDE_MAX_PATH];
         if (!BuildOverridePathWithRoot(kModsRoot, fileName, nullptr, fullPath, sizeof(fullPath))) continue;
 
-        AddEntry(entries, maxCount, count, truncated, fullPath, fileName, static_cast<u32>(fileSize));
-        if (truncated) break;
+        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, fullPath, fileName, static_cast<u32>(fileSize));
     }
     io.CloseFolder();
 }
 
-static void ScanModsDirSD(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
+static void ScanModsDirSD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
     IO* io = IO::sInstance;
     if (io == nullptr) return;
     if (!ShouldProbeSDModsPath()) return;
 
     if (io->type == IOType_SD) {
-        ScanModsDirFromIO(*io, entries, maxCount, count, truncated);
+        ScanModsDirFromIO(*io, state, maxTaggedCount, maxWholeFileCount);
         return;
     }
 
@@ -747,75 +876,85 @@ static void ScanModsDirSD(OverrideEntry* entries, u32 maxCount, u32& count, bool
     if (system == nullptr) return;
 
     SDIO sdIo(IOType_SD, system->heap, system->taskThread);
-    ScanModsDirFromIO(sdIo, entries, maxCount, count, truncated);
+    ScanModsDirFromIO(sdIo, state, maxTaggedCount, maxWholeFileCount);
 }
 
-static u32 CountModsFilesDVD() {
-    u32 modsIndex = 0;
-    u32 modsEnd = 0;
-    if (!FindModsDirInFST(modsIndex, modsEnd)) return 0;
-
-    const FSTEntry* fst = static_cast<const FSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
-    const u32 entryCount = fst[0].size;
-    if (modsIndex >= entryCount || modsEnd > entryCount || modsEnd <= modsIndex) return 0;
-
-    u32 count = 0;
-    for (u32 i = modsIndex + 1; i < modsEnd; ++i) {
-        if (!FSTEntryIsDir(fst[i])) ++count;
-    }
-    return count;
-}
-
-static u32 CountModsFilesFromIO(IO& io) {
-    char modsPath[OVERRIDE_MAX_PATH];
-    if (!GetSDModsRootPath(modsPath, sizeof(modsPath))) return 0;
-    if (!io.FolderExists(modsPath)) return 0;
-
-    io.ReadFolder(modsPath);
-    const u32 count = io.GetFileCount();
-    io.CloseFolder();
-    return count;
-}
-
-static u32 CountModsFilesSD() {
-    IO* io = IO::sInstance;
-    if (io == nullptr) return 0;
-    if (!ShouldProbeSDModsPath()) return 0;
-
-    if (io->type == IOType_SD) return CountModsFilesFromIO(*io);
-
-    System* system = System::sInstance;
-    if (system == nullptr) return 0;
-
-    SDIO sdIo(IOType_SD, system->heap, system->taskThread);
-    return CountModsFilesFromIO(sdIo);
-}
-
-static void ScanModsDir(OverrideEntry* entries, u32 maxCount, u32& count, bool& truncated) {
+static void ScanModsDir(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
     if (!ModsRootExists()) return;
 
     IO* io = IO::sInstance;
     if (io != nullptr && ShouldProbeSDModsPath()) {
         // Prefer SD when available so loose files can change without rebuilding the disc image.
-        ScanModsDirSD(entries, maxCount, count, truncated);
+        ScanModsDirSD(state, maxTaggedCount, maxWholeFileCount);
         return;
     }
 
     // Otherwise walk the baked-in `/patches` subtree from the DVD FST.
-    ScanModsDirDVD(entries, maxCount, count, truncated);
+    ScanModsDirDVD(state, maxTaggedCount, maxWholeFileCount);
 }
 
-static void EnsureModIndexBuilt() {
-    if (sModIndexAttempted) return;
+static s32 CompareWholeFileEntries(const WholeFileOverrideEntry& lhs, const WholeFileOverrideEntry& rhs) {
+    const s32 compare = CompareWholeFileBasenames(lhs.basenameLower, rhs.basenameLower);
+    if (compare != 0) return compare;
+
+    const size_t lhsLen = strlen(lhs.resolvedPath);
+    const size_t rhsLen = strlen(rhs.resolvedPath);
+    if (lhsLen < rhsLen) return -1;
+    if (lhsLen > rhsLen) return 1;
+    return strcmp(lhs.resolvedPath, rhs.resolvedPath);
+}
+
+static void SortWholeFileOverrideEntries(WholeFileOverrideEntry* entries, u32 count) {
+    if (entries == nullptr || count < 2) return;
+
+    for (u32 i = 1; i < count; ++i) {
+        const WholeFileOverrideEntry key = entries[i];
+        u32 insertIdx = i;
+        while (insertIdx > 0) {
+            const WholeFileOverrideEntry& prev = entries[insertIdx - 1];
+            if (CompareWholeFileEntries(prev, key) <= 0) break;
+            entries[insertIdx] = prev;
+            --insertIdx;
+        }
+        entries[insertIdx] = key;
+    }
+}
+
+static const WholeFileOverrideEntry* FindWholeFileOverride(const WholeFileOverrideIndex& index, const char* basenameLower) {
+    if (index.entries == nullptr || index.count == 0 || basenameLower == nullptr || basenameLower[0] == '\0') {
+        return nullptr;
+    }
+
+    u32 low = 0;
+    u32 high = index.count;
+    while (low < high) {
+        const u32 mid = low + ((high - low) / 2);
+        const s32 compare = CompareWholeFileBasenames(index.entries[mid].basenameLower, basenameLower);
+        if (compare < 0) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+    }
+
+    if (low >= index.count || strcmp(index.entries[low].basenameLower, basenameLower) != 0) {
+        return nullptr;
+    }
+    return &index.entries[low];
+}
+
+static void EnsureOverrideIndicesBuilt() {
+    if (sOverrideIndicesAttempted) return;
 
     if (!ModsRootExists()) {
-        sModIndex.entries = nullptr;
-        sModIndex.count = 0;
-        sModIndexAttempted = true;
+        FreeModIndex(sModIndex);
+        FreeWholeFileIndex(sWholeFileIndex);
+        sHasWholeFileOverrides = false;
+        sOverrideIndicesAttempted = true;
         return;
     }
 
-    sModIndexAttempted = true;
+    sOverrideIndicesAttempted = true;
 
 
     // Two-pass build:
@@ -828,49 +967,80 @@ static void EnsureModIndexBuilt() {
     // This makes archive-time work predictable: one binary lookup and one scan
     // over the relevant tag bucket.
 
-    u32 count = 0;
-    bool truncated = false;
-    ScanModsDir(nullptr, kMaxOverridesTotal, count, truncated);
-    if (count >= kMaxOverridesTotal) {
-        truncated = true;
+    ScanBuildState countState = {nullptr, 0, false, nullptr, 0, false};
+    ScanModsDir(countState, kMaxOverridesTotal, kMaxOverridesTotal);
+
+    if (countState.taggedCount >= kMaxOverridesTotal) {
+        countState.taggedTruncated = true;
     }
-    if (truncated) {
-        OS::Report("[Pulsar] Loose overrides truncated at %u entries (max %u)\n", count, kMaxOverridesTotal);
+    if (countState.wholeFileCount >= kMaxOverridesTotal) {
+        countState.wholeFileTruncated = true;
     }
-    if (count == 0) {
-        // Once this is discovered, future archive loads can skip the feature with a single pointer check.
-        sModIndex.entries = nullptr;
-        sModIndex.count = 0;
+    if (countState.taggedTruncated) {
+        OS::Report("[Pulsar] Loose tagged overrides truncated at %u entries (max %u)\n",
+                   countState.taggedCount, kMaxOverridesTotal);
+    }
+    if (countState.wholeFileTruncated) {
+        OS::Report("[Pulsar] Loose whole-file overrides truncated at %u entries (max %u)\n",
+                   countState.wholeFileCount, kMaxOverridesTotal);
+    }
+
+    OverrideEntry* taggedEntries = nullptr;
+    WholeFileOverrideEntry* wholeFileEntries = nullptr;
+    EGG::Heap* taggedHeap = nullptr;
+    EGG::Heap* wholeFileHeap = nullptr;
+
+    if (countState.taggedCount > 0) {
+        const u32 requiredSize = sizeof(OverrideEntry) * countState.taggedCount;
+        taggedHeap = GetPersistentOverrideHeap(requiredSize);
+        if (taggedHeap == nullptr) {
+            OS::Report("[Pulsar] Loose tagged override index skipped: need 0x%X bytes, no persistent heap available\n",
+                       requiredSize);
+        } else {
+            taggedEntries = EGG::Heap::alloc<OverrideEntry>(requiredSize, 0x20, taggedHeap);
+            if (taggedEntries == nullptr) {
+                OS::Report("[Pulsar] Loose tagged override index allocation failed: size=0x%X\n", requiredSize);
+                taggedHeap = nullptr;
+            }
+        }
+    }
+
+    if (countState.wholeFileCount > 0) {
+        const u32 requiredSize = sizeof(WholeFileOverrideEntry) * countState.wholeFileCount;
+        wholeFileHeap = GetPersistentOverrideHeap(requiredSize);
+        if (wholeFileHeap == nullptr) {
+            OS::Report("[Pulsar] Loose whole-file override index skipped: need 0x%X bytes, no persistent heap available\n",
+                       requiredSize);
+        } else {
+            wholeFileEntries = EGG::Heap::alloc<WholeFileOverrideEntry>(requiredSize, 0x20, wholeFileHeap);
+            if (wholeFileEntries == nullptr) {
+                OS::Report("[Pulsar] Loose whole-file override index allocation failed: size=0x%X\n", requiredSize);
+                wholeFileHeap = nullptr;
+            }
+        }
+    }
+
+    if (taggedEntries == nullptr && wholeFileEntries == nullptr) {
+        FreeModIndex(sModIndex);
+        FreeWholeFileIndex(sWholeFileIndex);
+        sHasWholeFileOverrides = false;
         return;
     }
 
-    const u32 requiredSize = sizeof(OverrideEntry) * count;
-    EGG::Heap* heap = GetPersistentOverrideHeap(requiredSize);
-    if (heap == nullptr) {
-        OS::Report("[Pulsar] Loose overrides index allocation skipped: need 0x%X bytes, no persistent heap available\n",
-                   requiredSize);
-        sModIndex.entries = nullptr;
-        sModIndex.count = 0;
-        return;
-    }
+    const u32 taggedFillCount = (taggedEntries != nullptr) ? countState.taggedCount : 0;
+    const u32 wholeFileFillCount = (wholeFileEntries != nullptr) ? countState.wholeFileCount : 0;
+    ScanBuildState fillState = {taggedEntries, 0, false, wholeFileEntries, 0, false};
+    ScanModsDir(fillState, taggedFillCount, wholeFileFillCount);
+    SortOverrideEntriesByArchiveTag(taggedEntries, fillState.taggedCount);
+    SortWholeFileOverrideEntries(wholeFileEntries, fillState.wholeFileCount);
 
-    OverrideEntry* entries = EGG::Heap::alloc<OverrideEntry>(requiredSize, 0x20, heap);
-    if (entries == nullptr) {
-        OS::Report("[Pulsar] Loose overrides index allocation failed: size=0x%X\n", requiredSize);
-        sModIndex.entries = nullptr;
-        sModIndex.count = 0;
-        return;
-    }
-
-    u32 filled = 0;
-    bool truncatedFill = false;
-    ScanModsDir(entries, count, filled, truncatedFill);
-    truncated = truncated || truncatedFill;
-    // The sorted layout is what makes per-archive binary range lookup possible later.
-    SortOverrideEntriesByArchiveTag(entries, filled);
-
-    sModIndex.entries = entries;
-    sModIndex.count = filled;
+    sModIndex.entries = taggedEntries;
+    sModIndex.count = fillState.taggedCount;
+    sModIndex.heap = taggedHeap;
+    sWholeFileIndex.entries = wholeFileEntries;
+    sWholeFileIndex.count = fillState.wholeFileCount;
+    sWholeFileIndex.heap = wholeFileHeap;
+    sHasWholeFileOverrides = (wholeFileEntries != nullptr && fillState.wholeFileCount > 0);
 }
 
 static bool IsFileExtensionSZS(const char* path) {
@@ -929,32 +1099,38 @@ bool IsModsPath(const char* path) {
 const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 resolvedSize, bool* outRedirected) {
     if (outRedirected != nullptr) *outRedirected = false;
     if (path == nullptr || resolvedPath == nullptr || resolvedSize == 0) return path;
+    RefreshOverrideCacheState();
     if (!AreLooseArchiveOverridesEnabled()) return path;
 
     if (IsModsPath(path)) return path;
-    if (!ModsRootExists()) return path;
     // Do not redirect individual loose-file requests for these raw resources into `/patches`.
     // Tagged archive-member overrides for the same extensions are also rejected during index construction.
     if (IsBlockedLooseRawOverrideExtension(path)) return path;
+    EnsureOverrideIndicesBuilt();
+    if (!sHasWholeFileOverrides) return path;
 
     const char* base = FindBasename(path);
     if (base == nullptr || base[0] == '\0') return path;
+    if (strlen(base) >= OVERRIDE_MAX_PATH) return path;
 
-    const int written = snprintf(resolvedPath, resolvedSize, "%s/%s", sModsRootPath, base);
-    if (written <= 0 || static_cast<u32>(written) >= resolvedSize) {
+    char basenameLower[OVERRIDE_MAX_PATH];
+    ToLowerCopy(basenameLower, base, sizeof(basenameLower));
+    const WholeFileOverrideEntry* entry = FindWholeFileOverride(sWholeFileIndex, basenameLower);
+    if (entry == nullptr) return path;
+
+    const u32 resolvedLen = static_cast<u32>(strlen(entry->resolvedPath));
+    if (resolvedLen + 1 > resolvedSize) {
         return path;
     }
 
-    if (DVDFileExists(resolvedPath)) {
-        if (outRedirected != nullptr) *outRedirected = true;
-        return resolvedPath;
-    }
-
-    return path;
+    memcpy(resolvedPath, entry->resolvedPath, resolvedLen + 1);
+    if (outRedirected != nullptr) *outRedirected = true;
+    return resolvedPath;
 }
 
 bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 archiveBaseLowerSize) {
     if (path == nullptr || archiveBaseLower == nullptr || archiveBaseLowerSize == 0) return false;
+    RefreshOverrideCacheState();
     if (!AreLooseArchiveOverridesEnabled()) return false;
     // Loose files under the mods root are already redirected content, so never feed them back into archive patching.
     if (IsModsPath(path)) return false;
@@ -987,6 +1163,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
     if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
     if (outMissingOverrides != nullptr) *outMissingOverrides = 0;
+    RefreshOverrideCacheState();
     if (!AreLooseArchiveOverridesEnabled()) return false;
 
 
@@ -1000,7 +1177,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     // consumed, while `outPatchedNodes` counts archive nodes rewritten. Those can
     // differ when one basename-only override matches multiple nodes.
 
-    EnsureModIndexBuilt();
+    EnsureOverrideIndicesBuilt();
     if (sModIndex.entries == nullptr || sModIndex.count == 0) return false;
     if (archiveBase == nullptr || archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') return false;
     if (sourceHeap == nullptr) {
@@ -1588,21 +1765,6 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
     }
 }
 kmBranch(0x80518e10, ArchiveFileLoadOverride);
-
-bool AreLooseArchiveOverridesEnabledForDebug() {
-    return AreLooseArchiveOverridesEnabled();
-}
-
-u32 GetLooseArchiveOverrideFileCount() {
-    if (!ModsRootExists()) return 0;
-
-    IO* io = IO::sInstance;
-    if (io != nullptr && ShouldProbeSDModsPath()) {
-        return CountModsFilesSD();
-    }
-
-    return CountModsFilesDVD();
-}
 
 }  // namespace IOOverrides
 }  // namespace Pulsar
