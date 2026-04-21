@@ -74,33 +74,6 @@ struct WholeFileOverrideEntry {
     char resolvedPath[OVERRIDE_MAX_PATH];
 };
 
-enum BRSAROverrideType {
-    BRSAROVERRIDE_INVALID = 0,
-    BRSAROVERRIDE_BRWSD,
-    BRSAROVERRIDE_BRBNK
-};
-
-struct BRSAROverrideEntry {
-    char fullPath[OVERRIDE_MAX_PATH];
-    char relativePath[OVERRIDE_MAX_PATH];
-    u32 fileId;
-    u8 type;
-    u8 reserved[3];
-    u32 size;
-};
-
-struct LoadedBRSAROverride {
-    u8* buffer;
-    u32 bufferSize;
-    const void* fileData;
-    u32 fileDataSize;
-    const void* waveData;
-    u32 waveDataSize;
-    EGG::Heap* heap;
-    bool loadAttempted;
-    u8 reserved[3];
-};
-
 // Cached loose-override index. This is built once on first use and then kept in
 // a persistent heap because archive loads can happen frequently and often on
 // hot paths such as UI transitions. It might be worth figuring out if this is really cheaper though
@@ -112,13 +85,6 @@ struct ModIndex {
 
 struct WholeFileOverrideIndex {
     WholeFileOverrideEntry* entries;
-    u32 count;
-    EGG::Heap* heap;
-};
-
-struct BRSAROverrideIndex {
-    BRSAROverrideEntry* entries;
-    LoadedBRSAROverride* loadedEntries;
     u32 count;
     EGG::Heap* heap;
 };
@@ -146,9 +112,6 @@ struct ScanBuildState {
     WholeFileOverrideEntry* wholeFileEntries;
     u32 wholeFileCount;
     bool wholeFileTruncated;
-    BRSAROverrideEntry* brsarEntries;
-    u32 brsarCount;
-    bool brsarTruncated;
 };
 
 struct U8Node {
@@ -165,7 +128,6 @@ struct FSTEntry {
 
 static ModIndex sModIndex = {nullptr, 0, nullptr};
 static WholeFileOverrideIndex sWholeFileIndex = {nullptr, 0, nullptr};
-static BRSAROverrideIndex sBRSARIndex = {nullptr, nullptr, 0, nullptr};
 static bool sOverrideIndicesAttempted = false;
 static bool sHasWholeFileOverrides = false;
 static bool sModsRootChecked = false;
@@ -273,19 +235,6 @@ static s32 CompareWholeFileBasenames(const char* lhs, const char* rhs) {
     return strcmp(lhs, rhs);
 }
 
-static s32 CompareBRSARFileIds(u32 lhs, u32 rhs) {
-    if (lhs < rhs) return -1;
-    if (lhs > rhs) return 1;
-    return 0;
-}
-
-static u32 ReadBE32(const void* data) {
-    if (data == nullptr) return 0;
-    const u8* bytes = reinterpret_cast<const u8*>(data);
-    return (static_cast<u32>(bytes[0]) << 24) | (static_cast<u32>(bytes[1]) << 16) | (static_cast<u32>(bytes[2]) << 8) |
-           static_cast<u32>(bytes[3]);
-}
-
 static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32 strippedNameSize,
                                char* archiveTagLower, u32 archiveTagLowerSize) {
     if (strippedName != nullptr && strippedNameSize > 0) strippedName[0] = '\0';
@@ -333,81 +282,6 @@ static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32
     memcpy(strippedName, relativePath, prefixLen);
     strippedName[prefixLen] = '\0';
     ToLowerCopy(archiveTagLower, lastDot + 1, archiveTagLowerSize);
-    return true;
-}
-
-static bool TryParseLeadingFileId(const char* str, u32& outFileId) {
-    outFileId = 0;
-    if (str == nullptr || str[0] == '\0') return false;
-
-    u32 value = 0;
-    u32 digits = 0;
-    const char* cursor = str;
-    while (*cursor >= '0' && *cursor <= '9') {
-        const u32 next = value * 10 + static_cast<u32>(*cursor - '0');
-        if (next < value) return false;
-        value = next;
-        ++cursor;
-        ++digits;
-    }
-    if (digits == 0) return false;
-    if (*cursor != '\0' && *cursor != '_' && *cursor != '-' && *cursor != '.' && *cursor != ' ') {
-        return false;
-    }
-
-    outFileId = value;
-    return true;
-}
-
-static bool IsSupportedBRSAROverrideTypeSuffix(const char* suffix, u8& outType) {
-    outType = BRSAROVERRIDE_INVALID;
-    if (suffix == nullptr || suffix[0] == '\0') return false;
-    if (strcmp(suffix, ".brwsd") == 0) {
-        outType = BRSAROVERRIDE_BRWSD;
-        return true;
-    }
-    if (strcmp(suffix, ".brbnk") == 0) {
-        outType = BRSAROVERRIDE_BRBNK;
-        return true;
-    }
-    return false;
-}
-
-static bool TryParseBRSAROverride(const char* relativePath, u32& outFileId, u8& outType) {
-    outFileId = 0;
-    outType = BRSAROVERRIDE_INVALID;
-    if (relativePath == nullptr) return false;
-
-    const char* filename = FindBasename(relativePath);
-    if (filename == nullptr || filename[0] == '\0') return false;
-
-    char lowerName[OVERRIDE_MAX_PATH];
-    ToLowerCopy(lowerName, filename, sizeof(lowerName));
-
-    static const char kBRSARSuffix[] = ".revo_kart.brsar";
-    if (!EndsWithIgnoreCase(lowerName, kBRSARSuffix)) return false;
-
-    const u32 lowerLen = static_cast<u32>(strlen(lowerName));
-    const u32 suffixLen = static_cast<u32>(strlen(kBRSARSuffix));
-    if (lowerLen <= suffixLen) return false;
-    lowerName[lowerLen - suffixLen] = '\0';
-
-    const char* lastDot = FindLastChar(lowerName, '.');
-    if (lastDot == nullptr) return false;
-
-    u8 type = BRSAROVERRIDE_INVALID;
-    if (!IsSupportedBRSAROverrideTypeSuffix(lastDot, type)) return false;
-
-    const u32 stemLen = static_cast<u32>(lastDot - lowerName);
-    if (stemLen == 0 || stemLen >= sizeof(lowerName)) return false;
-
-    char stem[OVERRIDE_MAX_PATH];
-    memcpy(stem, lowerName, stemLen);
-    stem[stemLen] = '\0';
-
-    if (!TryParseLeadingFileId(stem, outFileId)) return false;
-
-    outType = type;
     return true;
 }
 
@@ -477,49 +351,6 @@ static bool FindArchiveTagRange(const ModIndex& index, const char* archiveBaseLo
 
     end = low;
     return end > start;
-}
-
-static s32 CompareBRSAROverrideEntries(const BRSAROverrideEntry& lhs, const BRSAROverrideEntry& rhs) {
-    const s32 compare = CompareBRSARFileIds(lhs.fileId, rhs.fileId);
-    if (compare != 0) return compare;
-    return strcmp(lhs.relativePath, rhs.relativePath);
-}
-
-static void SortBRSAROverrideEntries(BRSAROverrideEntry* entries, u32 count) {
-    if (entries == nullptr || count < 2) return;
-
-    for (u32 i = 1; i < count; ++i) {
-        const BRSAROverrideEntry key = entries[i];
-        u32 insertIdx = i;
-        while (insertIdx > 0) {
-            const BRSAROverrideEntry& prev = entries[insertIdx - 1];
-            if (CompareBRSAROverrideEntries(prev, key) <= 0) break;
-            entries[insertIdx] = prev;
-            --insertIdx;
-        }
-        entries[insertIdx] = key;
-    }
-}
-
-static s32 FindBRSAROverrideIndex(const BRSAROverrideIndex& index, u32 fileId) {
-    if (index.entries == nullptr || index.count == 0) return -1;
-
-    u32 low = 0;
-    u32 high = index.count;
-    while (low < high) {
-        const u32 mid = low + ((high - low) / 2);
-        const s32 compare = CompareBRSARFileIds(index.entries[mid].fileId, fileId);
-        if (compare < 0) {
-            low = mid + 1;
-        } else {
-            high = mid;
-        }
-    }
-
-    if (low >= index.count || index.entries[low].fileId != fileId) {
-        return -1;
-    }
-    return static_cast<s32>(low);
 }
 
 static bool NodeIsDir(const U8Node& node) {
@@ -634,27 +465,6 @@ static void FreeWholeFileIndex(WholeFileOverrideIndex& index) {
         EGG::Heap::free(index.entries, index.heap);
     }
     index.entries = nullptr;
-    index.count = 0;
-    index.heap = nullptr;
-}
-
-static void FreeBRSAROverrideIndex(BRSAROverrideIndex& index) {
-    if (index.loadedEntries != nullptr) {
-        for (u32 i = 0; i < index.count; ++i) {
-            LoadedBRSAROverride& loaded = index.loadedEntries[i];
-            if (loaded.buffer != nullptr && loaded.heap != nullptr) {
-                EGG::Heap::free(loaded.buffer, loaded.heap);
-            }
-        }
-    }
-    if (index.loadedEntries != nullptr && index.heap != nullptr) {
-        EGG::Heap::free(index.loadedEntries, index.heap);
-    }
-    if (index.entries != nullptr && index.heap != nullptr) {
-        EGG::Heap::free(index.entries, index.heap);
-    }
-    index.entries = nullptr;
-    index.loadedEntries = nullptr;
     index.count = 0;
     index.heap = nullptr;
 }
@@ -885,7 +695,6 @@ static void ResetModsRootCache() {
 static void InvalidateOverrideIndices() {
     FreeModIndex(sModIndex);
     FreeWholeFileIndex(sWholeFileIndex);
-    FreeBRSAROverrideIndex(sBRSARIndex);
     sOverrideIndicesAttempted = false;
     sHasWholeFileOverrides = false;
     ResetModsRootCache();
@@ -1113,20 +922,6 @@ static void FillWholeFileOverrideEntry(WholeFileOverrideEntry& entry, const char
     entry.resolvedPath[sizeof(entry.resolvedPath) - 1] = '\0';
 }
 
-static void FillBRSAROverrideEntry(BRSAROverrideEntry& entry, const char* fullPath, const char* relativePath, u32 fileId,
-                                   u8 type, u32 size) {
-    strncpy(entry.fullPath, fullPath, sizeof(entry.fullPath));
-    entry.fullPath[sizeof(entry.fullPath) - 1] = '\0';
-    strncpy(entry.relativePath, relativePath, sizeof(entry.relativePath));
-    entry.relativePath[sizeof(entry.relativePath) - 1] = '\0';
-    entry.fileId = fileId;
-    entry.type = type;
-    entry.reserved[0] = 0;
-    entry.reserved[1] = 0;
-    entry.reserved[2] = 0;
-    entry.size = size;
-}
-
 static bool CanAddEntry(const void* entries, u32 maxCount, u32& count, bool& truncated) {
     if (count >= maxCount) {
         truncated = true;
@@ -1146,10 +941,6 @@ static void AddTaggedEntry(OverrideEntry* entries, u32 maxCount, u32& count, boo
     if (strlen(fullPath) >= OVERRIDE_MAX_PATH || strlen(relativePath) >= OVERRIDE_MAX_PATH) {
         return;
     }
-
-    u32 brsarFileId = 0;
-    u8 brsarType = BRSAROVERRIDE_INVALID;
-    if (TryParseBRSAROverride(relativePath, brsarFileId, brsarType)) return;
 
     // The index intentionally contains only tagged archive-member overrides.
     // Plain loose files like `Common.szs` are served by ResolveWholeFileOverride()
@@ -1177,10 +968,6 @@ static void AddWholeFileEntry(WholeFileOverrideEntry* entries, u32 maxCount, u32
         return;
     }
 
-    u32 brsarFileId = 0;
-    u8 brsarType = BRSAROVERRIDE_INVALID;
-    if (TryParseBRSAROverride(relativePath, brsarFileId, brsarType)) return;
-
     char strippedName[OVERRIDE_MAX_PATH];
     char archiveTagLower[OVERRIDE_MAX_NAME];
     if (TryParseArchiveTag(relativePath, strippedName, sizeof(strippedName),
@@ -1199,37 +986,16 @@ static void AddWholeFileEntry(WholeFileOverrideEntry* entries, u32 maxCount, u32
     ++count;
 }
 
-static void AddBRSAROverrideEntry(BRSAROverrideEntry* entries, u32 maxCount, u32& count, bool& truncated,
-                                  const char* fullPath, const char* relativePath, u32 size) {
-    if (fullPath == nullptr || relativePath == nullptr) return;
-    if (strlen(fullPath) >= OVERRIDE_MAX_PATH || strlen(relativePath) >= OVERRIDE_MAX_PATH) {
-        return;
-    }
-
-    u32 fileId = 0;
-    u8 type = BRSAROVERRIDE_INVALID;
-    if (!TryParseBRSAROverride(relativePath, fileId, type)) return;
-    if (!CanAddEntry(entries, maxCount, count, truncated)) return;
-
-    if (entries != nullptr) {
-        FillBRSAROverrideEntry(entries[count], fullPath, relativePath, fileId, type, size);
-    }
-    ++count;
-}
-
 static void AddScannedEntry(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount,
                             const char* fullPath, const char* relativePath, u32 size) {
     AddTaggedEntry(state.taggedEntries, maxTaggedCount, state.taggedCount, state.taggedTruncated,
                    fullPath, relativePath, size);
     AddWholeFileEntry(state.wholeFileEntries, maxWholeFileCount, state.wholeFileCount, state.wholeFileTruncated,
                       fullPath, relativePath);
-    AddBRSAROverrideEntry(state.brsarEntries, maxTaggedCount, state.brsarCount, state.brsarTruncated, fullPath,
-                          relativePath, size);
 }
 
 static bool IsScanBuildComplete(const ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
-    return state.taggedCount >= maxTaggedCount && state.wholeFileCount >= maxWholeFileCount &&
-           state.brsarCount >= maxTaggedCount;
+    return state.taggedCount >= maxTaggedCount && state.wholeFileCount >= maxWholeFileCount;
 }
 
 static bool FindModsDirInFST(u32& outIndex, u32& outEnd) {
@@ -1438,7 +1204,6 @@ static void EnsureOverrideIndicesBuilt() {
     if (!ModsRootExists()) {
         FreeModIndex(sModIndex);
         FreeWholeFileIndex(sWholeFileIndex);
-        FreeBRSAROverrideIndex(sBRSARIndex);
         sHasWholeFileOverrides = false;
         sOverrideIndicesAttempted = true;
         return;
@@ -1457,7 +1222,7 @@ static void EnsureOverrideIndicesBuilt() {
     // This makes archive-time work predictable: one binary lookup and one scan
     // over the relevant tag bucket.
 
-    ScanBuildState countState = {nullptr, 0, false, nullptr, 0, false, nullptr, 0, false};
+    ScanBuildState countState = {nullptr, 0, false, nullptr, 0, false};
     ScanModsDir(countState, kMaxOverridesTotal, kMaxOverridesTotal);
 
     if (countState.taggedCount >= kMaxOverridesTotal) {
@@ -1465,9 +1230,6 @@ static void EnsureOverrideIndicesBuilt() {
     }
     if (countState.wholeFileCount >= kMaxOverridesTotal) {
         countState.wholeFileTruncated = true;
-    }
-    if (countState.brsarCount >= kMaxOverridesTotal) {
-        countState.brsarTruncated = true;
     }
     if (countState.taggedTruncated) {
         OS::Report("[Pulsar] Loose tagged overrides truncated at %u entries (max %u)\n",
@@ -1477,18 +1239,11 @@ static void EnsureOverrideIndicesBuilt() {
         OS::Report("[Pulsar] Loose whole-file overrides truncated at %u entries (max %u)\n",
                    countState.wholeFileCount, kMaxOverridesTotal);
     }
-    if (countState.brsarTruncated) {
-        OS::Report("[Pulsar] Loose BRSAR overrides truncated at %u entries (max %u)\n", countState.brsarCount,
-                   kMaxOverridesTotal);
-    }
 
     OverrideEntry* taggedEntries = nullptr;
     WholeFileOverrideEntry* wholeFileEntries = nullptr;
-    BRSAROverrideEntry* brsarEntries = nullptr;
-    LoadedBRSAROverride* loadedBRSAREntries = nullptr;
     EGG::Heap* taggedHeap = nullptr;
     EGG::Heap* wholeFileHeap = nullptr;
-    EGG::Heap* brsarHeap = nullptr;
 
     if (countState.taggedCount > 0) {
         const u32 requiredSize = sizeof(OverrideEntry) * countState.taggedCount;
@@ -1520,48 +1275,19 @@ static void EnsureOverrideIndicesBuilt() {
         }
     }
 
-    if (countState.brsarCount > 0) {
-        const u32 requiredSize =
-            sizeof(BRSAROverrideEntry) * countState.brsarCount + sizeof(LoadedBRSAROverride) * countState.brsarCount;
-        brsarHeap = GetPersistentOverrideHeap(requiredSize);
-        if (brsarHeap == nullptr) {
-            OS::Report("[Pulsar] Loose BRSAR override index skipped: need 0x%X bytes, no persistent heap available\n",
-                       requiredSize);
-        } else {
-            brsarEntries = EGG::Heap::alloc<BRSAROverrideEntry>(sizeof(BRSAROverrideEntry) * countState.brsarCount, 0x20,
-                                                                brsarHeap);
-            loadedBRSAREntries =
-                EGG::Heap::alloc<LoadedBRSAROverride>(sizeof(LoadedBRSAROverride) * countState.brsarCount, 0x20, brsarHeap);
-            if (brsarEntries == nullptr || loadedBRSAREntries == nullptr) {
-                OS::Report("[Pulsar] Loose BRSAR override index allocation failed: count=%u\n", countState.brsarCount);
-                if (brsarEntries != nullptr) EGG::Heap::free(brsarEntries, brsarHeap);
-                if (loadedBRSAREntries != nullptr) EGG::Heap::free(loadedBRSAREntries, brsarHeap);
-                brsarEntries = nullptr;
-                loadedBRSAREntries = nullptr;
-                brsarHeap = nullptr;
-            }
-        }
-    }
-
-    if (taggedEntries == nullptr && wholeFileEntries == nullptr && brsarEntries == nullptr) {
+    if (taggedEntries == nullptr && wholeFileEntries == nullptr) {
         FreeModIndex(sModIndex);
         FreeWholeFileIndex(sWholeFileIndex);
-        FreeBRSAROverrideIndex(sBRSARIndex);
         sHasWholeFileOverrides = false;
         return;
     }
 
     const u32 taggedFillCount = (taggedEntries != nullptr) ? countState.taggedCount : 0;
     const u32 wholeFileFillCount = (wholeFileEntries != nullptr) ? countState.wholeFileCount : 0;
-    const u32 brsarFillCount = (brsarEntries != nullptr) ? countState.brsarCount : 0;
-    ScanBuildState fillState = {taggedEntries, 0, false, wholeFileEntries, 0, false, brsarEntries, 0, false};
+    ScanBuildState fillState = {taggedEntries, 0, false, wholeFileEntries, 0, false};
     ScanModsDir(fillState, taggedFillCount, wholeFileFillCount);
     SortOverrideEntriesByArchiveTag(taggedEntries, fillState.taggedCount);
     SortWholeFileOverrideEntries(wholeFileEntries, fillState.wholeFileCount);
-    SortBRSAROverrideEntries(brsarEntries, fillState.brsarCount);
-    if (loadedBRSAREntries != nullptr) {
-        memset(loadedBRSAREntries, 0, sizeof(LoadedBRSAROverride) * brsarFillCount);
-    }
 
     sModIndex.entries = taggedEntries;
     sModIndex.count = fillState.taggedCount;
@@ -1569,10 +1295,6 @@ static void EnsureOverrideIndicesBuilt() {
     sWholeFileIndex.entries = wholeFileEntries;
     sWholeFileIndex.count = fillState.wholeFileCount;
     sWholeFileIndex.heap = wholeFileHeap;
-    sBRSARIndex.entries = brsarEntries;
-    sBRSARIndex.loadedEntries = loadedBRSAREntries;
-    sBRSARIndex.count = fillState.brsarCount;
-    sBRSARIndex.heap = brsarHeap;
     sHasWholeFileOverrides = (wholeFileEntries != nullptr && fillState.wholeFileCount > 0);
 }
 
@@ -2266,115 +1988,6 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
 }
 kmBranch(0x80518e10, ArchiveFileLoadOverride);
 
-static bool TryFindEmbeddedRWAR(const u8* data, u32 dataSize, u32 fileDataSize, const void*& outWaveData,
-                                u32& outWaveDataSize) {
-    outWaveData = nullptr;
-    outWaveDataSize = 0;
-    if (data == nullptr || dataSize <= fileDataSize || fileDataSize >= dataSize) return false;
-
-    for (u32 offset = fileDataSize; offset + 0x20 <= dataSize; ++offset) {
-        if (memcmp(data + offset, "RWAR", 4) != 0) continue;
-
-        const u16 bom = (static_cast<u16>(data[offset + 0x04]) << 8) | static_cast<u16>(data[offset + 0x05]);
-        const u16 headerSize = (static_cast<u16>(data[offset + 0x0C]) << 8) | static_cast<u16>(data[offset + 0x0D]);
-        const u32 declaredSize = ReadBE32(data + offset + 0x08);
-        if (bom != 0xFEFF || headerSize < 0x20) continue;
-        if (declaredSize < headerSize) continue;
-        if (offset + declaredSize > dataSize) continue;
-
-        outWaveData = data + offset;
-        outWaveDataSize = declaredSize;
-        return true;
-    }
-    return false;
-}
-
-static bool TryLoadLooseBRSAROverride(const BRSAROverrideEntry& entry, LoadedBRSAROverride& loaded) {
-    loaded.loadAttempted = true;
-    if (!ModsRootExists()) return false;
-
-    EGG::Heap* heap = GetPersistentOverrideHeap(entry.size);
-    if (heap == nullptr) {
-        OS::Report("[Pulsar] Loose BRSAR override '%s' skipped: no heap for 0x%X bytes\n", entry.relativePath, entry.size);
-        return false;
-    }
-
-    u8* buffer = EGG::Heap::alloc<u8>(entry.size, 0x20, heap);
-    if (buffer == nullptr) {
-        OS::Report("[Pulsar] Loose BRSAR override '%s' skipped: allocation failed for 0x%X bytes\n", entry.relativePath,
-                   entry.size);
-        return false;
-    }
-
-    if (!ReadDVDFile(entry.fullPath, buffer, entry.size)) {
-        EGG::Heap::free(buffer, heap);
-        OS::Report("[Pulsar] Loose BRSAR override '%s' skipped: read failed\n", entry.relativePath);
-        return false;
-    }
-
-    if (entry.size < 0x20) {
-        EGG::Heap::free(buffer, heap);
-        OS::Report("[Pulsar] Loose BRSAR override '%s' skipped: file too small\n", entry.relativePath);
-        return false;
-    }
-
-    const char* expectedMagic = (entry.type == BRSAROVERRIDE_BRBNK) ? "RBNK" : "RWSD";
-    if (memcmp(buffer, expectedMagic, 4) != 0) {
-        EGG::Heap::free(buffer, heap);
-        OS::Report("[Pulsar] Loose BRSAR override '%s' skipped: expected %s header\n", entry.relativePath, expectedMagic);
-        return false;
-    }
-
-    const u32 fileDataSize = ReadBE32(buffer + 0x08);
-    if (fileDataSize == 0 || fileDataSize > entry.size) {
-        EGG::Heap::free(buffer, heap);
-        OS::Report("[Pulsar] Loose BRSAR override '%s' skipped: invalid declared size 0x%X\n", entry.relativePath,
-                   fileDataSize);
-        return false;
-    }
-
-    loaded.buffer = buffer;
-    loaded.bufferSize = entry.size;
-    loaded.fileData = buffer;
-    loaded.fileDataSize = fileDataSize;
-    loaded.waveData = nullptr;
-    loaded.waveDataSize = 0;
-    loaded.heap = heap;
-
-    TryFindEmbeddedRWAR(buffer, entry.size, fileDataSize, loaded.waveData, loaded.waveDataSize);
-    return true;
-}
-
-bool ResolveLooseBRSAROverride(u32 fileId, const void*& outFileData, u32& outFileSize, const void*& outWaveData,
-                               u32& outWaveDataSize) {
-    outFileData = nullptr;
-    outFileSize = 0;
-    outWaveData = nullptr;
-    outWaveDataSize = 0;
-
-    RefreshOverrideCacheState();
-    if (!AreLooseArchiveOverridesEnabled()) return false;
-
-    EnsureOverrideIndicesBuilt();
-    const s32 index = FindBRSAROverrideIndex(sBRSARIndex, fileId);
-    if (index < 0 || sBRSARIndex.loadedEntries == nullptr) return false;
-
-    LoadedBRSAROverride& loaded = sBRSARIndex.loadedEntries[index];
-    if (!loaded.loadAttempted) {
-        if (!TryLoadLooseBRSAROverride(sBRSARIndex.entries[index], loaded)) {
-            return false;
-        }
-    }
-
-    if (loaded.fileData == nullptr || loaded.fileDataSize == 0) return false;
-
-    outFileData = loaded.fileData;
-    outFileSize = loaded.fileDataSize;
-    outWaveData = loaded.waveData;
-    outWaveDataSize = loaded.waveDataSize;
-    return true;
-}
-
 bool AreLooseArchiveOverridesEnabledForDebug() {
     RefreshOverrideCacheState();
     return AreLooseArchiveOverridesEnabled();
@@ -2385,7 +1998,7 @@ u32 GetLooseArchiveOverrideFileCount() {
     if (!AreLooseArchiveOverridesEnabled()) return 0;
 
     EnsureOverrideIndicesBuilt();
-    return sModIndex.count + sWholeFileIndex.count + sBRSARIndex.count;
+    return sModIndex.count + sWholeFileIndex.count;
 }
 
 }  // namespace IOOverrides

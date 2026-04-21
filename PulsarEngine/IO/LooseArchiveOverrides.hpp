@@ -40,9 +40,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                          EGG::Heap*& archiveHeap, u32* outAppliedOverrides, u32* outPatchedNodes,
                          u32* outMissingOverrides, const u8* compressedData);
 
-bool ResolveLooseBRSAROverride(u32 fileId, const void*& outFileData, u32& outFileSize, const void*& outWaveData,
-                               u32& outWaveDataSize);
-
 bool AreLooseArchiveOverridesEnabledForDebug();
 u32 GetLooseArchiveOverrideFileCount();
 
