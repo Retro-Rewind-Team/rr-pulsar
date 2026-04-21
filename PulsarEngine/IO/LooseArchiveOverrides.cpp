@@ -1217,19 +1217,20 @@ static void AddBRSAROverrideEntry(BRSAROverrideEntry* entries, u32 maxCount, u32
     ++count;
 }
 
-static void AddScannedEntry(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount,
+static void AddScannedEntry(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount, u32 maxBRSARCount,
                             const char* fullPath, const char* relativePath, u32 size) {
     AddTaggedEntry(state.taggedEntries, maxTaggedCount, state.taggedCount, state.taggedTruncated,
                    fullPath, relativePath, size);
     AddWholeFileEntry(state.wholeFileEntries, maxWholeFileCount, state.wholeFileCount, state.wholeFileTruncated,
                       fullPath, relativePath);
-    AddBRSAROverrideEntry(state.brsarEntries, maxTaggedCount, state.brsarCount, state.brsarTruncated, fullPath,
+    AddBRSAROverrideEntry(state.brsarEntries, maxBRSARCount, state.brsarCount, state.brsarTruncated, fullPath,
                           relativePath, size);
 }
 
-static bool IsScanBuildComplete(const ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
+static bool IsScanBuildComplete(const ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount,
+                                u32 maxBRSARCount) {
     return state.taggedCount >= maxTaggedCount && state.wholeFileCount >= maxWholeFileCount &&
-           state.brsarCount >= maxTaggedCount;
+           state.brsarCount >= maxBRSARCount;
 }
 
 static bool FindModsDirInFST(u32& outIndex, u32& outEnd) {
@@ -1241,7 +1242,7 @@ static bool FindModsDirInFST(u32& outIndex, u32& outEnd) {
     return ResolveFSTDirByPath(kModsRoot, entryCount, outIndex, outEnd);
 }
 
-static void ScanModsDirDVD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
+static void ScanModsDirDVD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount, u32 maxBRSARCount) {
     u32 modsIndex = 0;
     u32 modsEnd = 0;
     if (!FindModsDirInFST(modsIndex, modsEnd)) return;
@@ -1273,7 +1274,8 @@ static void ScanModsDirDVD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWho
     // recursive directory structure. The manual stack mirrors the nested FST
     // directory ranges so we can rebuild relative paths on the fly.
 
-    for (u32 i = modsIndex + 1; i < modsEnd && !IsScanBuildComplete(state, maxTaggedCount, maxWholeFileCount); ++i) {
+    for (u32 i = modsIndex + 1; i < modsEnd &&
+                    !IsScanBuildComplete(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount); ++i) {
         while (depth > 0 && i >= stack[depth - 1].endIndex) {
             relLen = stack[depth - 1].prevLen;
             relPath[relLen] = '\0';
@@ -1317,18 +1319,20 @@ static void ScanModsDirDVD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWho
             continue;
         }
 
-        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, fullPath, relativePath, entry.size);
+        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount, fullPath, relativePath, entry.size);
     }
 }
 
-static void ScanModsDirFromIO(IO& io, ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
+static void ScanModsDirFromIO(IO& io, ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount,
+                              u32 maxBRSARCount) {
     char modsPath[OVERRIDE_MAX_PATH];
     if (!GetSDModsRootPath(modsPath, sizeof(modsPath))) return;
     if (!io.FolderExists(modsPath)) return;
 
     io.ReadFolder(modsPath);
     const u32 fileCount = io.GetFileCount();
-    for (u32 i = 0; i < fileCount && !IsScanBuildComplete(state, maxTaggedCount, maxWholeFileCount); ++i) {
+    for (u32 i = 0; i < fileCount &&
+                    !IsScanBuildComplete(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount); ++i) {
         const char* fileName = io.GetFileName(i);
         if (fileName == nullptr || fileName[0] == '\0') continue;
         // SD scanning is intentionally flat; bracket prefixes encode any desired archive subpath.
@@ -1346,18 +1350,19 @@ static void ScanModsDirFromIO(IO& io, ScanBuildState& state, u32 maxTaggedCount,
         char fullPath[OVERRIDE_MAX_PATH];
         if (!BuildOverridePathWithRoot(kModsRoot, fileName, nullptr, fullPath, sizeof(fullPath))) continue;
 
-        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, fullPath, fileName, static_cast<u32>(fileSize));
+        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount, fullPath, fileName,
+                        static_cast<u32>(fileSize));
     }
     io.CloseFolder();
 }
 
-static void ScanModsDirSD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
+static void ScanModsDirSD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount, u32 maxBRSARCount) {
     IO* io = IO::sInstance;
     if (io == nullptr) return;
     if (!ShouldProbeSDModsPath()) return;
 
     if (io->type == IOType_SD) {
-        ScanModsDirFromIO(*io, state, maxTaggedCount, maxWholeFileCount);
+        ScanModsDirFromIO(*io, state, maxTaggedCount, maxWholeFileCount, maxBRSARCount);
         return;
     }
 
@@ -1365,21 +1370,21 @@ static void ScanModsDirSD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWhol
     if (system == nullptr) return;
 
     SDIO sdIo(IOType_SD, system->heap, system->taskThread);
-    ScanModsDirFromIO(sdIo, state, maxTaggedCount, maxWholeFileCount);
+    ScanModsDirFromIO(sdIo, state, maxTaggedCount, maxWholeFileCount, maxBRSARCount);
 }
 
-static void ScanModsDir(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount) {
+static void ScanModsDir(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount, u32 maxBRSARCount) {
     if (!ModsRootExists()) return;
 
     IO* io = IO::sInstance;
     if (io != nullptr && ShouldProbeSDModsPath()) {
         // Prefer SD when available so loose files can change without rebuilding the disc image.
-        ScanModsDirSD(state, maxTaggedCount, maxWholeFileCount);
+        ScanModsDirSD(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount);
         return;
     }
 
     // Otherwise walk the baked-in `/patches` subtree from the DVD FST.
-    ScanModsDirDVD(state, maxTaggedCount, maxWholeFileCount);
+    ScanModsDirDVD(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount);
 }
 
 static s32 CompareWholeFileEntries(const WholeFileOverrideEntry& lhs, const WholeFileOverrideEntry& rhs) {
@@ -1458,7 +1463,7 @@ static void EnsureOverrideIndicesBuilt() {
     // over the relevant tag bucket.
 
     ScanBuildState countState = {nullptr, 0, false, nullptr, 0, false, nullptr, 0, false};
-    ScanModsDir(countState, kMaxOverridesTotal, kMaxOverridesTotal);
+    ScanModsDir(countState, kMaxOverridesTotal, kMaxOverridesTotal, kMaxOverridesTotal);
 
     if (countState.taggedCount >= kMaxOverridesTotal) {
         countState.taggedTruncated = true;
@@ -1555,7 +1560,7 @@ static void EnsureOverrideIndicesBuilt() {
     const u32 wholeFileFillCount = (wholeFileEntries != nullptr) ? countState.wholeFileCount : 0;
     const u32 brsarFillCount = (brsarEntries != nullptr) ? countState.brsarCount : 0;
     ScanBuildState fillState = {taggedEntries, 0, false, wholeFileEntries, 0, false, brsarEntries, 0, false};
-    ScanModsDir(fillState, taggedFillCount, wholeFileFillCount);
+    ScanModsDir(fillState, taggedFillCount, wholeFileFillCount, brsarFillCount);
     SortOverrideEntriesByArchiveTag(taggedEntries, fillState.taggedCount);
     SortWholeFileOverrideEntries(wholeFileEntries, fillState.wholeFileCount);
     SortBRSAROverrideEntries(brsarEntries, fillState.brsarCount);
@@ -1574,6 +1579,9 @@ static void EnsureOverrideIndicesBuilt() {
     sBRSARIndex.count = fillState.brsarCount;
     sBRSARIndex.heap = brsarHeap;
     sHasWholeFileOverrides = (wholeFileEntries != nullptr && fillState.wholeFileCount > 0);
+    if (fillState.brsarCount > 0) {
+        OS::Report("[Pulsar] Loose BRSAR overrides indexed: %u file(s)\n", fillState.brsarCount);
+    }
 }
 
 static bool IsFileExtensionSZS(const char* path) {
@@ -2342,6 +2350,8 @@ static bool TryLoadLooseBRSAROverride(const BRSAROverrideEntry& entry, LoadedBRS
     loaded.heap = heap;
 
     TryFindEmbeddedRWAR(buffer, entry.size, fileDataSize, loaded.waveData, loaded.waveDataSize);
+    OS::Report("[Pulsar] Loose BRSAR override ready: fileId=%u path='%s' file=0x%X wave=0x%X\n", entry.fileId,
+               entry.relativePath, loaded.fileDataSize, loaded.waveDataSize);
     return true;
 }
 
