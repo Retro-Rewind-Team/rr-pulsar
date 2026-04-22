@@ -93,36 +93,82 @@ static EGG::Heap* GetPersistentSoundOverrideHeap(u32 requiredSize) {
     return nullptr;
 }
 
+static void* AllocAudioHeapOverrideBuffer(u32 allocSize) {
+    EGG::ExpAudioMgr* audioMgr = RKSystem::mInstance.audioManager;
+    if (audioMgr == nullptr) return nullptr;
+    return audioMgr->EGG::SoundHeapMgr::heap.Alloc(allocSize);
+}
+
+static void* AllocPersistentSoundOverrideBuffer(u32 allocSize, EGG::Heap*& outHeap) {
+    outHeap = nullptr;
+
+    EGG::Heap* candidates[3];
+    candidates[0] = RKSystem::mInstance.EGGRootMEM2;
+    candidates[1] = RKSystem::mInstance.EGGRootMEM1;
+    EGG::Heap* overridesHeap = nullptr;
+    if (Pulsar::System::sInstance != nullptr) {
+        overridesHeap = static_cast<EGG::Heap*>(Pulsar::System::sInstance->heap);
+    }
+    candidates[2] = overridesHeap;
+
+    for (u32 index = 0; index < 3; ++index) {
+        EGG::Heap* heap = candidates[index];
+        if (heap == nullptr) continue;
+        if (heap->getAllocatableSize(0x20) < allocSize) continue;
+
+        void* buffer = EGG::Heap::alloc<void>(allocSize, 0x20, heap);
+        if (buffer != nullptr) {
+            outHeap = heap;
+            return buffer;
+        }
+    }
+
+    return nullptr;
+}
+
 static const void* GetExternalLooseBRSARBuffer(snd::SoundArchive::FileId fileId, bool waveData, u32 overrideSize) {
     if (fileId >= 1024 || overrideSize == 0) return nullptr;
 
     void** buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
     u8* attempts = waveData ? sExternalWaveAttempts : sExternalFileAttempts;
     if (buffers[fileId] != nullptr) return buffers[fileId];
-    if (attempts[fileId] != 0) return nullptr;
-    attempts[fileId] = 1;
 
     const u32 allocSize = nw4r::ut::RoundUp(overrideSize, 0x20);
-    EGG::Heap* heap = GetPersistentSoundOverrideHeap(allocSize);
-    if (heap == nullptr) {
-        OS::Report("[Pulsar] Loose BRSAR external %s skipped: fileId=%u need 0x%X, no persistent heap\n",
-                   waveData ? "wave" : "file", fileId, allocSize);
+    EGG::Heap* heap = nullptr;
+    void* buffer = nullptr;
+
+    if (waveData) {
+        buffer = AllocAudioHeapOverrideBuffer(allocSize);
+        if (buffer != nullptr) {
+            OS::Report("[Pulsar] Loose BRSAR external wave using audio heap: fileId=%u addr=%p size=0x%X\n", fileId,
+                       buffer, allocSize);
+        }
+    }
+
+    if (buffer == nullptr) {
+        buffer = AllocPersistentSoundOverrideBuffer(allocSize, heap);
+    }
+
+    if (buffer == nullptr) {
+        if (attempts[fileId] == 0) {
+            attempts[fileId] = 1;
+            OS::Report("[Pulsar] Loose BRSAR external %s skipped: fileId=%u need 0x%X, no persistent heap\n",
+                       waveData ? "wave" : "file", fileId, allocSize);
+        }
         return nullptr;
     }
 
-    void* buffer = EGG::Heap::alloc<void>(allocSize, 0x20, heap);
-    if (buffer == nullptr) {
-        OS::Report("[Pulsar] Loose BRSAR external %s skipped: fileId=%u alloc 0x%X failed\n",
-                   waveData ? "wave" : "file", fileId, allocSize);
-        return nullptr;
-    }
+    attempts[fileId] = 0;
 
     const bool readOk = waveData ? IOOverrides::ReadLooseBRSAROverrideWaveData(fileId, buffer, overrideSize)
                                  : IOOverrides::ReadLooseBRSAROverrideFile(fileId, buffer, overrideSize);
     if (!readOk) {
-        EGG::Heap::free(buffer, heap);
-        OS::Report("[Pulsar] Loose BRSAR external %s skipped: fileId=%u read failed\n",
-                   waveData ? "wave" : "file", fileId);
+        if (heap != nullptr) EGG::Heap::free(buffer, heap);
+        if (attempts[fileId] == 0) {
+            attempts[fileId] = 1;
+            OS::Report("[Pulsar] Loose BRSAR external %s skipped: fileId=%u read failed\n",
+                       waveData ? "wave" : "file", fileId);
+        }
         return nullptr;
     }
 
@@ -130,6 +176,7 @@ static const void* GetExternalLooseBRSARBuffer(snd::SoundArchive::FileId fileId,
     OS::DCStoreRange(buffer, allocSize);
 
     buffers[fileId] = buffer;
+    attempts[fileId] = 0;
     OS::Report("[Pulsar] Loose BRSAR external %s ready: fileId=%u addr=%p size=0x%X\n",
                waveData ? "wave" : "file", fileId, buffer, overrideSize);
     return buffer;
