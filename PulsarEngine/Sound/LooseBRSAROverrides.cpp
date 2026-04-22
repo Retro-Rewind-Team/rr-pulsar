@@ -513,52 +513,63 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
                    groupId, item.fileId, fileSize, waveDataSize, item.size, item.waveDataSize);
 
         u32 fileCapacity = 0;
-        if (!TryGetGroupItemSlotCapacity(archive, groupId, groupInfo.itemCount, item, false, groupInfo.size, fileCapacity) ||
-            fileCapacity < fileSize) {
+        const bool canPatchFileInGroup =
+            TryGetGroupItemSlotCapacity(archive, groupId, groupInfo.itemCount, item, false, groupInfo.size, fileCapacity) &&
+            fileCapacity >= fileSize;
+        if (!canPatchFileInGroup) {
             OS::Report("[Pulsar] Loose BRSAR override skipped in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X\n",
                        groupId, item.fileId, fileSize, fileCapacity);
-            continue;
         }
 
         u32 waveCapacity = 0;
+        bool canPatchWaveInGroup = false;
         if (waveDataSize > 0) {
-            if (waveData == nullptr || item.waveDataSize == 0 ||
-                !TryGetGroupItemSlotCapacity(archive, groupId, groupInfo.itemCount, item, true, groupInfo.waveDataSize,
-                                             waveCapacity) ||
-                waveCapacity < waveDataSize) {
+            canPatchWaveInGroup =
+                waveData != nullptr && item.waveDataSize != 0 &&
+                TryGetGroupItemSlotCapacity(archive, groupId, groupInfo.itemCount, item, true, groupInfo.waveDataSize,
+                                            waveCapacity) &&
+                waveCapacity >= waveDataSize;
+            if (!canPatchWaveInGroup) {
                 OS::Report("[Pulsar] Loose BRSAR wave override skipped in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X\n",
                            groupId, item.fileId, waveDataSize, waveCapacity);
-                continue;
+                OS::Report("[Pulsar] Loose BRSAR wave override deferred to external buffer path: fileId=%u group=%u\n",
+                           item.fileId, groupId);
             }
         }
 
-        u8* groupDest = reinterpret_cast<u8*>(groupData) + item.offset;
-        if (!IOOverrides::ReadLooseBRSAROverrideFile(item.fileId, groupDest, fileSize)) {
-            OS::Report("[Pulsar] Loose BRSAR override skipped in group %u: fileId=%u read failed\n", groupId, item.fileId);
-            continue;
+        if (canPatchFileInGroup) {
+            u8* groupDest = reinterpret_cast<u8*>(groupData) + item.offset;
+            if (!IOOverrides::ReadLooseBRSAROverrideFile(item.fileId, groupDest, fileSize)) {
+                OS::Report("[Pulsar] Loose BRSAR override skipped in group %u: fileId=%u read failed\n", groupId,
+                           item.fileId);
+            } else {
+                if (fileSize < item.size) {
+                    memset(groupDest + fileSize, 0, item.size - fileSize);
+                }
+                OS::DCStoreRange(groupDest, fileSize);
+                if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
+                OS::Report("[Pulsar] Loose BRSAR file patched on group load: fileId=%u group=%u addr=%p size=0x%X\n",
+                           item.fileId, groupId, groupDest, fileSize);
+            }
+        } else {
+            OS::Report("[Pulsar] Loose BRSAR file override deferred to address-resolution path: fileId=%u group=%u\n",
+                       item.fileId, groupId);
         }
-        if (fileSize < item.size) {
-            memset(groupDest + fileSize, 0, item.size - fileSize);
-        }
-        OS::DCStoreRange(groupDest, fileSize);
-        if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
-        OS::Report("[Pulsar] Loose BRSAR file patched on group load: fileId=%u group=%u addr=%p size=0x%X\n",
-                   item.fileId, groupId, groupDest, fileSize);
 
-        if (waveDataSize > 0) {
+        if (waveDataSize > 0 && canPatchWaveInGroup) {
             u8* waveDest = reinterpret_cast<u8*>(waveData) + item.waveDataOffset;
             if (!IOOverrides::ReadLooseBRSAROverrideWaveData(item.fileId, waveDest, waveDataSize)) {
                 OS::Report("[Pulsar] Loose BRSAR wave override skipped in group %u: fileId=%u read failed\n", groupId,
                            item.fileId);
-                continue;
+            } else {
+                if (waveDataSize < item.waveDataSize) {
+                    memset(waveDest + waveDataSize, 0, item.waveDataSize - waveDataSize);
+                }
+                OS::DCStoreRange(waveDest, waveDataSize);
+                if (item.fileId < 1024) sPatchedWaveAddresses[item.fileId] = waveDest;
+                OS::Report("[Pulsar] Loose BRSAR wave patched on group load: fileId=%u group=%u addr=%p size=0x%X\n",
+                           item.fileId, groupId, waveDest, waveDataSize);
             }
-            if (waveDataSize < item.waveDataSize) {
-                memset(waveDest + waveDataSize, 0, item.waveDataSize - waveDataSize);
-            }
-            OS::DCStoreRange(waveDest, waveDataSize);
-            if (item.fileId < 1024) sPatchedWaveAddresses[item.fileId] = waveDest;
-            OS::Report("[Pulsar] Loose BRSAR wave patched on group load: fileId=%u group=%u addr=%p size=0x%X\n",
-                       item.fileId, groupId, waveDest, waveDataSize);
         }
     }
 }
