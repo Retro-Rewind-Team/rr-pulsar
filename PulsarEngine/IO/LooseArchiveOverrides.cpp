@@ -230,6 +230,14 @@ static const char* FindLastChar(const char* str, char needle) {
     return last;
 }
 
+static const char* FindFirstChar(const char* str, char needle) {
+    if (str == nullptr) return nullptr;
+    for (const char* p = str; *p != '\0'; ++p) {
+        if (*p == needle) return p;
+    }
+    return nullptr;
+}
+
 static void ToLowerCopy(char* dest, const char* src, u32 destSize) {
     if (dest == nullptr || destSize == 0) return;
     if (src == nullptr) {
@@ -371,30 +379,30 @@ static bool TryParseBRSAROverride(const char* relativePath, u32& outFileId, u8& 
     char lowerName[OVERRIDE_MAX_PATH];
     ToLowerCopy(lowerName, filename, sizeof(lowerName));
 
-    static const char kBRSARSuffix[] = ".revo_kart.brsar";
-    if (!EndsWithIgnoreCase(lowerName, kBRSARSuffix)) return false;
-
-    const u32 lowerLen = static_cast<u32>(strlen(lowerName));
-    const u32 suffixLen = static_cast<u32>(strlen(kBRSARSuffix));
-    if (lowerLen <= suffixLen) return false;
-    lowerName[lowerLen - suffixLen] = '\0';
-
     const char* lastDot = FindLastChar(lowerName, '.');
     if (lastDot == nullptr) return false;
 
     u8 type = BRSAROVERRIDE_INVALID;
     if (!IsSupportedBRSAROverrideTypeSuffix(lastDot, type)) return false;
 
-    const u32 stemLen = static_cast<u32>(lastDot - lowerName);
-    if (stemLen == 0 || stemLen >= sizeof(lowerName)) return false;
+    const char* firstDot = FindFirstChar(lowerName, '.');
+    if (firstDot == nullptr || firstDot == lowerName) return false;
+    if (firstDot != lastDot && firstDot + 1 >= lastDot) {
+        // Reject malformed names such as `<fileId>..brwsd`.
+        return false;
+    }
 
-    char stem[OVERRIDE_MAX_PATH];
-    memcpy(stem, lowerName, stemLen);
-    stem[stemLen] = '\0';
+    const u32 idLen = static_cast<u32>(firstDot - lowerName);
+    if (idLen == 0 || idLen >= sizeof(lowerName)) return false;
 
-    // BRSAR loose overrides intentionally use the short form only:
-    // `<fileId>.<type>.revo_kart.brsar`
-    if (!TryParseExactFileId(stem, outFileId)) return false;
+    char fileIdStem[OVERRIDE_MAX_PATH];
+    memcpy(fileIdStem, lowerName, idLen);
+    fileIdStem[idLen] = '\0';
+
+    // Loose BRSAR overrides use the numeric leading token as the file ID and
+    // infer `revo_kart.brsar` from the file type alone:
+    // `<fileId>.<type>` or `<fileId>.<anything>.<type>`
+    if (!TryParseExactFileId(fileIdStem, outFileId)) return false;
 
     outType = type;
     return true;
