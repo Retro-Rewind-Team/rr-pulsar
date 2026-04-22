@@ -1844,6 +1844,48 @@ bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 arc
     return true;
 }
 
+static u32 ApplyInPlaceLooseOverrides(u8* archiveBase, U8Node* nodes, u32 nodeCount, s32* nodeOverrideIndex,
+                                      u32* fileSlotCapacities, u8* entryApplied, u32 rangeStart,
+                                      u32* outOversizedNodes) {
+    if (outOversizedNodes != nullptr) *outOversizedNodes = 0;
+    if (archiveBase == nullptr || nodes == nullptr || nodeOverrideIndex == nullptr || fileSlotCapacities == nullptr ||
+        entryApplied == nullptr) {
+        return 0;
+    }
+
+    u32 patchedNodes = 0;
+    u32 oversizedNodes = 0;
+    for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+        const s32 idx = nodeOverrideIndex[nodeIdx];
+        if (idx < 0) continue;
+        if (NodeIsDir(nodes[nodeIdx])) continue;
+
+        const OverrideEntry& entry = sModIndex.entries[idx];
+        if (entry.size > fileSlotCapacities[nodeIdx]) {
+            ++oversizedNodes;
+            continue;
+        }
+
+        void* dest = archiveBase + nodes[nodeIdx].dataOffset;
+        if (!ReadOverrideFile(entry, dest)) {
+            continue;
+        }
+        if (entry.size < nodes[nodeIdx].dataSize) {
+            memset(reinterpret_cast<u8*>(dest) + entry.size, 0, nodes[nodeIdx].dataSize - entry.size);
+        }
+        nodes[nodeIdx].dataSize = entry.size;
+        OS::DCStoreRange(dest, entry.size);
+        entryApplied[idx - rangeStart] = 1;
+        ++patchedNodes;
+    }
+
+    if (patchedNodes > 0) {
+        OS::DCStoreRange(nodes, nodeCount * sizeof(U8Node));
+    }
+    if (outOversizedNodes != nullptr) *outOversizedNodes = oversizedNodes;
+    return patchedNodes;
+}
+
 bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize, EGG::Heap* sourceHeap,
                          EGG::Heap*& archiveHeap, u32* outAppliedOverrides, u32* outPatchedNodes,
                          u32* outMissingOverrides, const u8* compressedData) {
@@ -1992,35 +2034,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         // replacing files with smaller loose overrides is safer for stability than larger ones, 
         // which always require repacking.
 
-        for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
-            const s32 idx = nodeOverrideIndex[nodeIdx];
-            if (idx < 0) continue;
-            if (NodeIsDir(nodes[nodeIdx])) continue;
-
-            const OverrideEntry& entry = sModIndex.entries[idx];
-            if (entry.size > fileSlotCapacities[nodeIdx]) {
-                // Oversized writes are intentionally left to the repack path, never to in-place patching.
-                continue;
-            }
-
-
-            void* dest = archiveBase + nodes[nodeIdx].dataOffset;
-            // zappelin patches le game
-            if (!ReadOverrideFile(entry, dest)) {
-                continue;
-            }
-            if (entry.size < nodes[nodeIdx].dataSize) {
-                memset(reinterpret_cast<u8*>(dest) + entry.size, 0, nodes[nodeIdx].dataSize - entry.size);
-            }
-            nodes[nodeIdx].dataSize = entry.size;
-            OS::DCStoreRange(dest, entry.size);
-            entryApplied[idx - rangeStart] = 1;
-            ++patchedNodes;
-        }
-
-        if (patchedNodes > 0) {
-            OS::DCStoreRange(nodes, nodeCount * sizeof(U8Node));
-        }
+        patchedNodes = ApplyInPlaceLooseOverrides(archiveBase, nodes, nodeCount, nodeOverrideIndex, fileSlotCapacities,
+                                                  entryApplied, rangeStart, nullptr);
 
         u32 appliedOverrides = 0;
         for (u32 i = 0; i < taggedCandidates; ++i) {
@@ -2172,6 +2187,27 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 EGG::Decomp::decodeSZS(const_cast<u8*>(compressedData), archiveBase);
                 archiveHeap = sourceHeap;
                 archiveSize = originalArchiveSize;
+            }
+        }
+        if (archiveBase != nullptr) {
+            ARC::Header* fallbackHeader = reinterpret_cast<ARC::Header*>(archiveBase);
+            U8Node* fallbackNodes = reinterpret_cast<U8Node*>(archiveBase + fallbackHeader->nodeOffset);
+            u32 oversizedNodes = 0;
+            patchedNodes = ApplyInPlaceLooseOverrides(archiveBase, fallbackNodes, nodeCount, nodeOverrideIndex,
+                                                      fileSlotCapacities, entryApplied, rangeStart, &oversizedNodes);
+
+            u32 appliedOverrides = 0;
+            for (u32 i = 0; i < taggedCandidates; ++i) {
+                if (entryApplied[i]) ++appliedOverrides;
+            }
+
+            if (patchedNodes > 0) {
+                OS::Report("[Pulsar] Loose override repack fallback used for '%s': applied=%u patched=%u oversized=%u missing=%u\n",
+                           archiveBaseLower, appliedOverrides, patchedNodes, oversizedNodes, missingOverrides);
+                if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
+                if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
+                if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+                return true;
             }
         }
         if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
