@@ -18,7 +18,7 @@
 
 namespace Pulsar {
 namespace CustomCharacters {
-bool onlineCustomCharacterFlags[12];
+static u8 onlineCharacterTables[12];
 
 enum CustomCharacterTable {
     CUSTOM_CHARACTER_TABLE_DEFAULT = 0,
@@ -27,22 +27,115 @@ enum CustomCharacterTable {
     CUSTOM_CHARACTER_TABLE_INVALID = CUSTOM_CHARACTER_TABLE_COUNT
 };
 
+#define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
+
+struct CharacterAssetNames {
+    CharacterId character;
+    CharacterId stateCharacter;
+    const char* defaultPostfix;
+    const char* defaultDriverBrresName;
+};
+
+struct CharacterOverride {
+    CharacterId character;
+    const char* postfix;
+    const char* driverBrresName;
+};
+
+struct CharacterTable {
+    const CharacterOverride* overrides;
+    u8 overrideCount;
+};
+
+static const CharacterAssetNames defaultCharacterAssets[] = {
+        {MARIO, MARIO, "mr", nullptr},
+        {BABY_PEACH, BABY_PEACH, "bpc", nullptr},
+        {WALUIGI, WALUIGI, "wl", nullptr},
+        {BOWSER, BOWSER, "kp", nullptr},
+        {BABY_DAISY, BABY_DAISY, "bds", nullptr},
+        {DRY_BONES, DRY_BONES, "ka", nullptr},
+        {BABY_MARIO, BABY_MARIO, "bmr", nullptr},
+        {LUIGI, LUIGI, "lg", nullptr},
+        {TOAD, TOAD, "ko", nullptr},
+        {DONKEY_KONG, DONKEY_KONG, "dk", nullptr},
+        {YOSHI, YOSHI, "ys", nullptr},
+        {WARIO, WARIO, "wr", nullptr},
+        {BABY_LUIGI, BABY_LUIGI, "blg", nullptr},
+        {TOADETTE, TOADETTE, "kk", nullptr},
+        {KOOPA_TROOPA, KOOPA_TROOPA, "nk", nullptr},
+        {DAISY, DAISY, "ds", nullptr},
+        {PEACH, PEACH, "pc", nullptr},
+        {BIRDO, BIRDO, "ca", nullptr},
+        {DIDDY_KONG, DIDDY_KONG, "dd", nullptr},
+        {KING_BOO, KING_BOO, "kt", nullptr},
+        {BOWSER_JR, BOWSER_JR, "jr", nullptr},
+        {DRY_BOWSER, DRY_BOWSER, "bk", nullptr},
+        {FUNKY_KONG, FUNKY_KONG, "fk", nullptr},
+        {ROSALINA, ROSALINA, "rs", nullptr},
+        {PEACH_BIKER, PEACH, "pc", "pc_menu"},
+        {DAISY_BIKER, DAISY, "ds", "ds_menu"},
+        {ROSALINA_BIKER, ROSALINA, "rs", "rs_menu"},
+};
+
+static const CharacterOverride customCharacterOverrides[] = {
+        {MARIO, "sm", nullptr},
+        {BABY_PEACH, "cpc", nullptr},
+        {WALUIGI, "vw", nullptr},
+        {BOWSER, "db", nullptr},
+        {BABY_DAISY, "rds", nullptr},
+        {DRY_BONES, "bb", nullptr},
+        {BABY_MARIO, "kmr", nullptr},
+        {LUIGI, "cl", nullptr},
+        {TOAD, "ct", nullptr},
+        {DONKEY_KONG, "gd", nullptr},
+        {YOSHI, "ky", nullptr},
+        {WARIO, "hw", nullptr},
+        {BABY_LUIGI, "clg", nullptr},
+        {TOADETTE, "et", nullptr},
+        {KOOPA_TROOPA, "pk", nullptr},
+        {DAISY, "sd", nullptr},
+        {PEACH, "ap", nullptr},
+        {BIRDO, "rb", nullptr},
+        {DIDDY_KONG, "ad", nullptr},
+        {KING_BOO, "kb", nullptr},
+        {BOWSER_JR, "pj", nullptr},
+        {DRY_BOWSER, "gk", nullptr},
+        {FUNKY_KONG, "ck", nullptr},
+        {ROSALINA, "ar", nullptr},
+        {PEACH_BIKER, "ap", "ap_menu"},
+        {DAISY_BIKER, "sd", "sd_menu"},
+        {ROSALINA_BIKER, "ar", "ar_menu"},
+};
+
+// To add another table, add an enum value above CUSTOM_CHARACTER_TABLE_COUNT,
+// add a CharacterOverride array, and register it here.
+// The packet encoding supports table IDs 0-3; raise CUSTOM_CHARACTER_TABLE_PACKET_BITS if more are needed.
+static const CharacterTable customCharacterTables[CUSTOM_CHARACTER_TABLE_COUNT] = {
+        {nullptr, 0},
+        {customCharacterOverrides, static_cast<u8>(ARRAY_COUNT(customCharacterOverrides))},
+};
+
 static const u8 CUSTOM_CHARACTER_COUNT = 0x30;
-static bool customCharacterEnabledByCharacter[CUSTOM_CHARACTER_COUNT];
+static const u8 CUSTOM_CHARACTER_TABLE_PACKET_BITS = 2;
+static const u8 CUSTOM_CHARACTER_TABLE_PACKET_MASK = (1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS) - 1;
+static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS;
+static u8 selectedCharacterTableByCharacter[CUSTOM_CHARACTER_COUNT];
 static u8 pendingMenuDriverReinitFrames = 0;
-static MenuDriverModelMgr* cachedMenuDriverModels[CUSTOM_CHARACTER_TABLE_COUNT] = {nullptr, nullptr};
+static MenuDriverModelMgr* cachedMenuDriverModels[CUSTOM_CHARACTER_TABLE_COUNT] = {nullptr};
 static MenuModelMgr* cachedMenuModelMgr = nullptr;
 static u8 cachedMenuDriverModelPlayerCount = 0;
 static u8 currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static u8 buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static CharacterId hoveredCharacterByHud[4] = {MARIO, MARIO, MARIO, MARIO};
 static u16 heldCustomCharacterToggleButtons = 0;
+static_assert(CUSTOM_CHARACTER_TABLE_COUNT <= CUSTOM_CHARACTER_TABLE_PACKET_COUNT, "character table packet encoding only supports four tables");
+static_assert(CUSTOM_CHARACTER_TABLE_PACKET_BITS * 2 <= 8, "character table packet field is one byte");
 
 static void ApplyCharacterPostfixes();
 void RefreshLocalOnlineCustomCharacterFlags();
 const char* GetCustomCharacterPostfix(CharacterId character);
 const char* GetDefaultCharacterPostfix(CharacterId character);
-static void ApplyCharacterPostfix(CharacterId character, bool useCustomPostfix);
+static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx);
 static const char** GetCharacterPostfixEntry(CharacterId character);
 static bool IsCustomCharacterEnabled(CharacterId character);
 static bool IsCharacterSelectPageActive();
@@ -60,55 +153,117 @@ static CharacterId GetSelectedCharacterForHud(u8 hudSlotId);
 kmRuntimeUse(0x808b3a90);
 static const u32 CHARACTER_POSTFIX_TABLE_ADDRESS = kmRuntimeAddr(0x808b3a90);
 
-static CharacterId GetCustomCharacterStateId(CharacterId character) {
-    switch (character) {
-        case PEACH_BIKER:
-            return PEACH;
-        case DAISY_BIKER:
-            return DAISY;
-        case ROSALINA_BIKER:
-            return ROSALINA;
-        default:
-            return character;
+static const CharacterAssetNames* GetCharacterAssets(CharacterId character) {
+    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
+        if (defaultCharacterAssets[i].character == character) return &defaultCharacterAssets[i];
     }
+    return nullptr;
+}
+
+static const CharacterOverride* GetCharacterOverride(CharacterId character, u8 tableIdx) {
+    if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT || tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) return nullptr;
+
+    const CharacterTable& table = customCharacterTables[tableIdx];
+    for (u8 i = 0; i < table.overrideCount; ++i) {
+        if (table.overrides[i].character == character) return &table.overrides[i];
+    }
+    return nullptr;
+}
+
+static bool IsCharacterTableValidForCharacter(CharacterId character, u8 tableIdx) {
+    if (GetCharacterAssets(character) == nullptr) return false;
+    if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT) return true;
+    return GetCharacterOverride(character, tableIdx) != nullptr;
+}
+
+static u8 NormalizeCharacterTable(CharacterId character, u8 tableIdx) {
+    if (IsCharacterTableValidForCharacter(character, tableIdx)) return tableIdx;
+    return CUSTOM_CHARACTER_TABLE_DEFAULT;
+}
+
+static CharacterId GetCustomCharacterStateId(CharacterId character) {
+    const CharacterAssetNames* assets = GetCharacterAssets(character);
+    if (assets == nullptr) return CHARACTER_NONE;
+    return assets->stateCharacter;
 }
 
 static bool IsCustomCharacterStateIdValid(CharacterId character) {
-    const CharacterId stateCharacter = GetCustomCharacterStateId(character);
-    if (stateCharacter < 0 || stateCharacter >= CUSTOM_CHARACTER_COUNT) return false;
-    return GetCustomCharacterPostfix(character) != nullptr && GetDefaultCharacterPostfix(character) != nullptr;
+    const CharacterAssetNames* assets = GetCharacterAssets(character);
+    if (assets == nullptr) return false;
+    return assets->stateCharacter >= 0 && assets->stateCharacter < CUSTOM_CHARACTER_COUNT;
+}
+
+static u8 GetSelectedCharacterTable(CharacterId character) {
+    if (!IsCustomCharacterStateIdValid(character)) return CUSTOM_CHARACTER_TABLE_DEFAULT;
+
+    const u8 tableIdx = selectedCharacterTableByCharacter[GetCustomCharacterStateId(character)];
+    return NormalizeCharacterTable(character, tableIdx);
 }
 
 static bool IsCustomCharacterEnabled(CharacterId character) {
-    if (!IsCustomCharacterStateIdValid(character)) return false;
-    return customCharacterEnabledByCharacter[GetCustomCharacterStateId(character)];
+    return GetSelectedCharacterTable(character) != CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
 static bool IsAnyCustomCharacterEnabled() {
     for (u8 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
-        if (customCharacterEnabledByCharacter[character]) return true;
+        if (selectedCharacterTableByCharacter[character] != CUSTOM_CHARACTER_TABLE_DEFAULT) return true;
     }
     return false;
 }
 
-static bool SetCustomCharacterEnabled(CharacterId character, bool enabled) {
+static bool SetCustomCharacterTable(CharacterId character, u8 tableIdx) {
     if (!IsCustomCharacterStateIdValid(character)) return false;
+    if (!IsCharacterTableValidForCharacter(character, tableIdx)) return false;
 
     const CharacterId stateCharacter = GetCustomCharacterStateId(character);
-    if (customCharacterEnabledByCharacter[stateCharacter] == enabled) return false;
+    if (selectedCharacterTableByCharacter[stateCharacter] == tableIdx) return false;
 
-    customCharacterEnabledByCharacter[stateCharacter] = enabled;
+    selectedCharacterTableByCharacter[stateCharacter] = tableIdx;
     ApplyCharacterPostfixes();
     RefreshLocalOnlineCustomCharacterFlags();
     return true;
 }
 
-static bool ToggleCustomCharacter(CharacterId character) {
+static bool CycleCustomCharacterTable(CharacterId character, int direction) {
     if (GetLocalPlayerCount() != 1) return false;
+    if (!IsCustomCharacterStateIdValid(character)) return false;
 
-    if (!SetCustomCharacterEnabled(character, !IsCustomCharacterEnabled(character))) return false;
-    pendingMenuDriverReinitFrames = 2;
-    return true;
+    u8 tableIdx = GetSelectedCharacterTable(character);
+    for (u8 i = 0; i < CUSTOM_CHARACTER_TABLE_COUNT; ++i) {
+        if (direction < 0) {
+            tableIdx = tableIdx == 0 ? CUSTOM_CHARACTER_TABLE_COUNT - 1 : tableIdx - 1;
+        } else {
+            tableIdx = tableIdx + 1 >= CUSTOM_CHARACTER_TABLE_COUNT ? CUSTOM_CHARACTER_TABLE_DEFAULT : tableIdx + 1;
+        }
+
+        if (!IsCharacterTableValidForCharacter(character, tableIdx)) continue;
+        if (!SetCustomCharacterTable(character, tableIdx)) return false;
+        pendingMenuDriverReinitFrames = 2;
+        return true;
+    }
+    return false;
+}
+
+static const char* GetCharacterPostfix(CharacterId character, u8 tableIdx) {
+    const CharacterOverride* characterOverride = GetCharacterOverride(character, tableIdx);
+    if (characterOverride != nullptr && characterOverride->postfix != nullptr) return characterOverride->postfix;
+
+    const CharacterAssetNames* assets = GetCharacterAssets(character);
+    if (assets == nullptr) return nullptr;
+    return assets->defaultPostfix;
+}
+
+static const char* GetDriverBRRESName(CharacterId character, u8 tableIdx) {
+    const CharacterOverride* characterOverride = GetCharacterOverride(character, tableIdx);
+    if (characterOverride != nullptr) {
+        if (characterOverride->driverBrresName != nullptr) return characterOverride->driverBrresName;
+        return characterOverride->postfix;
+    }
+
+    const CharacterAssetNames* assets = GetCharacterAssets(character);
+    if (assets == nullptr) return nullptr;
+    if (assets->defaultDriverBrresName != nullptr) return assets->defaultDriverBrresName;
+    return assets->defaultPostfix;
 }
 
 static void EnsureActiveCustomCharacterTable() {
@@ -146,141 +301,32 @@ bool isDisplayCustomSkinsEnabled() {
 }
 
 const char* GetCustomCharacterPostfix(CharacterId character) {
-    switch (character) {
-        case MARIO:
-            return "sm";
-        case BABY_PEACH:
-            return "cpc";
-        case WALUIGI:
-            return "vw";
-        case BOWSER:
-            return "db";
-        case BABY_DAISY:
-            return "rds";
-        case DRY_BONES:
-            return "bb";
-        case BABY_MARIO:
-            return "kmr";
-        case LUIGI:
-            return "cl";
-        case TOAD:
-            return "ct";
-        case DONKEY_KONG:
-            return "gd";
-        case YOSHI:
-            return "ky";
-        case WARIO:
-            return "hw";
-        case BABY_LUIGI:
-            return "clg";
-        case TOADETTE:
-            return "et";
-        case KOOPA_TROOPA:
-            return "pk";
-        case DAISY:
-            return "sd";
-        case PEACH:
-            return "ap";
-        case BIRDO:
-            return "rb";
-        case DIDDY_KONG:
-            return "ad";
-        case KING_BOO:
-            return "kb";
-        case BOWSER_JR:
-            return "pj";
-        case DRY_BOWSER:
-            return "gk";
-        case FUNKY_KONG:
-            return "ck";
-        case ROSALINA:
-            return "ar";
-        case PEACH_BIKER:
-            return "ap";
-        case DAISY_BIKER:
-            return "sd";
-        case ROSALINA_BIKER:
-            return "ar";
-        default:
-            return nullptr;
-    }
+    return GetCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_CUSTOM);
 }
 
 const char* GetDefaultCharacterPostfix(CharacterId character) {
-    switch (character) {
-        case MARIO:
-            return "mr";
-        case BABY_PEACH:
-            return "bpc";
-        case WALUIGI:
-            return "wl";
-        case BOWSER:
-            return "kp";
-        case BABY_DAISY:
-            return "bds";
-        case DRY_BONES:
-            return "ka";
-        case BABY_MARIO:
-            return "bmr";
-        case LUIGI:
-            return "lg";
-        case TOAD:
-            return "ko";
-        case DONKEY_KONG:
-            return "dk";
-        case YOSHI:
-            return "ys";
-        case WARIO:
-            return "wr";
-        case BABY_LUIGI:
-            return "blg";
-        case TOADETTE:
-            return "kk";
-        case KOOPA_TROOPA:
-            return "nk";
-        case DAISY:
-            return "ds";
-        case PEACH:
-            return "pc";
-        case BIRDO:
-            return "ca";
-        case DIDDY_KONG:
-            return "dd";
-        case KING_BOO:
-            return "kt";
-        case BOWSER_JR:
-            return "jr";
-        case DRY_BOWSER:
-            return "bk";
-        case FUNKY_KONG:
-            return "fk";
-        case ROSALINA:
-            return "rs";
-        case PEACH_BIKER:
-            return "pc";
-        case DAISY_BIKER:
-            return "ds";
-        case ROSALINA_BIKER:
-            return "rs";
-        default:
-            return nullptr;
-    }
+    return GetCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_DEFAULT);
 }
 
-static void ApplyCharacterPostfix(CharacterId character, bool useCustomPostfix) {
+static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx) {
     const char** entry = GetCharacterPostfixEntry(character);
     if (entry == nullptr) return;
 
-    const char* postfix = useCustomPostfix ? GetCustomCharacterPostfix(character) : GetDefaultCharacterPostfix(character);
+    const char* postfix = GetCharacterPostfix(character, tableIdx);
     if (postfix != nullptr) *entry = postfix;
 }
 
 void ApplyCharacterTable(u8 tableIdx) {
-    const bool enabled = tableIdx == CUSTOM_CHARACTER_TABLE_CUSTOM;
+    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) tableIdx = CUSTOM_CHARACTER_TABLE_DEFAULT;
     for (u8 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
-        const CharacterId characterId = static_cast<CharacterId>(character);
-        if (IsCustomCharacterStateIdValid(characterId)) {
-            customCharacterEnabledByCharacter[GetCustomCharacterStateId(characterId)] = enabled;
+        selectedCharacterTableByCharacter[character] = CUSTOM_CHARACTER_TABLE_DEFAULT;
+    }
+    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
+        const CharacterId character = defaultCharacterAssets[i].character;
+        const CharacterId stateCharacter = defaultCharacterAssets[i].stateCharacter;
+        if (stateCharacter >= 0 && stateCharacter < CUSTOM_CHARACTER_COUNT) {
+            const u8 normalizedTable = NormalizeCharacterTable(character, tableIdx);
+            if (normalizedTable != CUSTOM_CHARACTER_TABLE_DEFAULT) selectedCharacterTableByCharacter[stateCharacter] = normalizedTable;
         }
     }
     ApplyCharacterPostfixes();
@@ -288,64 +334,17 @@ void ApplyCharacterTable(u8 tableIdx) {
 }
 
 static void ApplyCharacterPostfixes() {
-    ApplyCharacterPostfix(MARIO, IsCustomCharacterEnabled(MARIO));
-    ApplyCharacterPostfix(BABY_PEACH, IsCustomCharacterEnabled(BABY_PEACH));
-    ApplyCharacterPostfix(WALUIGI, IsCustomCharacterEnabled(WALUIGI));
-    ApplyCharacterPostfix(BOWSER, IsCustomCharacterEnabled(BOWSER));
-    ApplyCharacterPostfix(BABY_DAISY, IsCustomCharacterEnabled(BABY_DAISY));
-    ApplyCharacterPostfix(DRY_BONES, IsCustomCharacterEnabled(DRY_BONES));
-    ApplyCharacterPostfix(BABY_MARIO, IsCustomCharacterEnabled(BABY_MARIO));
-    ApplyCharacterPostfix(LUIGI, IsCustomCharacterEnabled(LUIGI));
-    ApplyCharacterPostfix(TOAD, IsCustomCharacterEnabled(TOAD));
-    ApplyCharacterPostfix(DONKEY_KONG, IsCustomCharacterEnabled(DONKEY_KONG));
-    ApplyCharacterPostfix(YOSHI, IsCustomCharacterEnabled(YOSHI));
-    ApplyCharacterPostfix(WARIO, IsCustomCharacterEnabled(WARIO));
-    ApplyCharacterPostfix(BABY_LUIGI, IsCustomCharacterEnabled(BABY_LUIGI));
-    ApplyCharacterPostfix(TOADETTE, IsCustomCharacterEnabled(TOADETTE));
-    ApplyCharacterPostfix(KOOPA_TROOPA, IsCustomCharacterEnabled(KOOPA_TROOPA));
-    ApplyCharacterPostfix(DAISY, IsCustomCharacterEnabled(DAISY));
-    ApplyCharacterPostfix(PEACH, IsCustomCharacterEnabled(PEACH));
-    ApplyCharacterPostfix(BIRDO, IsCustomCharacterEnabled(BIRDO));
-    ApplyCharacterPostfix(DIDDY_KONG, IsCustomCharacterEnabled(DIDDY_KONG));
-    ApplyCharacterPostfix(KING_BOO, IsCustomCharacterEnabled(KING_BOO));
-    ApplyCharacterPostfix(BOWSER_JR, IsCustomCharacterEnabled(BOWSER_JR));
-    ApplyCharacterPostfix(DRY_BOWSER, IsCustomCharacterEnabled(DRY_BOWSER));
-    ApplyCharacterPostfix(FUNKY_KONG, IsCustomCharacterEnabled(FUNKY_KONG));
-    ApplyCharacterPostfix(ROSALINA, IsCustomCharacterEnabled(ROSALINA));
-    ApplyCharacterPostfix(PEACH_BIKER, IsCustomCharacterEnabled(PEACH_BIKER));
-    ApplyCharacterPostfix(DAISY_BIKER, IsCustomCharacterEnabled(DAISY_BIKER));
-    ApplyCharacterPostfix(ROSALINA_BIKER, IsCustomCharacterEnabled(ROSALINA_BIKER));
+    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
+        const CharacterId character = defaultCharacterAssets[i].character;
+        ApplyCharacterPostfix(character, GetSelectedCharacterTable(character));
+    }
 }
 
 static void ApplyMenuDriverModelTablePostfixes(u8 tableIdx) {
-    const bool useCustomPostfix = tableIdx == CUSTOM_CHARACTER_TABLE_CUSTOM;
-    ApplyCharacterPostfix(MARIO, useCustomPostfix);
-    ApplyCharacterPostfix(BABY_PEACH, useCustomPostfix);
-    ApplyCharacterPostfix(WALUIGI, useCustomPostfix);
-    ApplyCharacterPostfix(BOWSER, useCustomPostfix);
-    ApplyCharacterPostfix(BABY_DAISY, useCustomPostfix);
-    ApplyCharacterPostfix(DRY_BONES, useCustomPostfix);
-    ApplyCharacterPostfix(BABY_MARIO, useCustomPostfix);
-    ApplyCharacterPostfix(LUIGI, useCustomPostfix);
-    ApplyCharacterPostfix(TOAD, useCustomPostfix);
-    ApplyCharacterPostfix(DONKEY_KONG, useCustomPostfix);
-    ApplyCharacterPostfix(YOSHI, useCustomPostfix);
-    ApplyCharacterPostfix(WARIO, useCustomPostfix);
-    ApplyCharacterPostfix(BABY_LUIGI, useCustomPostfix);
-    ApplyCharacterPostfix(TOADETTE, useCustomPostfix);
-    ApplyCharacterPostfix(KOOPA_TROOPA, useCustomPostfix);
-    ApplyCharacterPostfix(DAISY, useCustomPostfix);
-    ApplyCharacterPostfix(PEACH, useCustomPostfix);
-    ApplyCharacterPostfix(BIRDO, useCustomPostfix);
-    ApplyCharacterPostfix(DIDDY_KONG, useCustomPostfix);
-    ApplyCharacterPostfix(KING_BOO, useCustomPostfix);
-    ApplyCharacterPostfix(BOWSER_JR, useCustomPostfix);
-    ApplyCharacterPostfix(DRY_BOWSER, useCustomPostfix);
-    ApplyCharacterPostfix(FUNKY_KONG, useCustomPostfix);
-    ApplyCharacterPostfix(ROSALINA, useCustomPostfix);
-    ApplyCharacterPostfix(PEACH_BIKER, useCustomPostfix);
-    ApplyCharacterPostfix(DAISY_BIKER, useCustomPostfix);
-    ApplyCharacterPostfix(ROSALINA_BIKER, useCustomPostfix);
+    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
+        const CharacterId character = defaultCharacterAssets[i].character;
+        ApplyCharacterPostfix(character, NormalizeCharacterTable(character, tableIdx));
+    }
 }
 
 bool IsRaceSectionActive() {
@@ -374,7 +373,8 @@ bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character
         if (IsOnlineMultiLocal(controller)) return false;
         if (!isDisplayCustomSkinsEnabled()) return false;
         if (IsLocalRacePlayer(playerId)) return IsCustomCharacterEnabled(character);
-        return playerId < 12 && onlineCustomCharacterFlags[playerId];
+        return playerId < 12 && IsCharacterTableValidForCharacter(character, onlineCharacterTables[playerId]) &&
+                onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
     }
     return IsCustomCharacterEnabled(character) && IsLocalRacePlayer(playerId);
 }
@@ -393,8 +393,21 @@ class ScopedCharacterPostfixSwap {
         if (this->entry == nullptr) return;
 
         this->previousValue = *this->entry;
-        if (ShouldUseCustomCharacterForArchivePlayer(playerId, character)) {
-            *this->entry = GetCustomCharacterPostfix(character);
+        const RKNet::Controller* controller = RKNet::Controller::sInstance;
+        u8 tableIdx = CUSTOM_CHARACTER_TABLE_DEFAULT;
+        if (IsOnlineRoom(controller) && !IsOnlineMultiLocal(controller) && isDisplayCustomSkinsEnabled()) {
+            if (IsLocalRacePlayer(playerId)) {
+                tableIdx = GetSelectedCharacterTable(character);
+            } else if (playerId < 12) {
+                tableIdx = NormalizeCharacterTable(character, onlineCharacterTables[playerId]);
+            }
+        } else if (IsLocalRacePlayer(playerId)) {
+            tableIdx = GetSelectedCharacterTable(character);
+        }
+
+        const char* postfix = GetCharacterPostfix(character, tableIdx);
+        if (postfix != nullptr) {
+            *this->entry = postfix;
         } else {
             *this->entry = GetDefaultCharacterPostfix(character);
         }
@@ -411,7 +424,7 @@ class ScopedCharacterPostfixSwap {
 
 void ResetOnlineCustomCharacterFlags() {
     for (int playerId = 0; playerId < 12; ++playerId) {
-        onlineCustomCharacterFlags[playerId] = false;
+        onlineCharacterTables[playerId] = CUSTOM_CHARACTER_TABLE_DEFAULT;
     }
 }
 
@@ -565,7 +578,7 @@ static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, Char
 kmBranch(0x8059e568, RequestDriverModelHook);
 
 static u8 GetMenuDriverModelTableForCharacter(CharacterId character) {
-    return IsCustomCharacterEnabled(character) ? CUSTOM_CHARACTER_TABLE_CUSTOM : CUSTOM_CHARACTER_TABLE_DEFAULT;
+    return GetSelectedCharacterTable(character);
 }
 
 static void ScheduleMenuDriverModelReinitForPreview() {
@@ -700,32 +713,6 @@ static void RefreshKartSelectModel() {
     kartSelect->vehicleModel.RequestModel(sectionMgr->sectionParams->karts[0]);
 }
 
-static const char* GetCustomDriverBRRESName(u32 character) {
-    switch (character) {
-        case 0x2d:
-            return "ap_menu";
-        case 0x2e:
-            return "sd_menu";
-        case 0x2f:
-            return "ar_menu";
-        default:
-            return GetCustomCharacterPostfix(static_cast<CharacterId>(character));
-    }
-}
-
-static const char* GetDefaultDriverBRRESName(u32 character) {
-    switch (character) {
-        case 0x2d:
-            return "pc_menu";
-        case 0x2e:
-            return "ds_menu";
-        case 0x2f:
-            return "rs_menu";
-        default:
-            return GetDefaultCharacterPostfix(static_cast<CharacterId>(character));
-    }
-}
-
 static bool IsCharacterSelectPageActive() {
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
     if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
@@ -752,7 +739,7 @@ void RefreshLocalOnlineCustomCharacterFlags() {
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
         const u32 playerId = racedata->GetPlayerIdOfLocalPlayer(hudSlotId);
         if (playerId < 12) {
-            onlineCustomCharacterFlags[playerId] = IsCustomCharacterEnabled(scenario.players[playerId].characterId);
+            onlineCharacterTables[playerId] = GetSelectedCharacterTable(scenario.players[playerId].characterId);
         }
     }
 }
@@ -764,8 +751,10 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 char
     for (u8 playerId = 0; playerId < 12; ++playerId) {
         if (playerIdToAid[playerId] != aid) continue;
 
-        const u8 tableIdx = hudSlotId < 2 ? ((characterTables >> hudSlotId) & 1) : CUSTOM_CHARACTER_TABLE_DEFAULT;
-        onlineCustomCharacterFlags[playerId] = tableIdx == CUSTOM_CHARACTER_TABLE_CUSTOM;
+        const u8 shift = static_cast<u8>(hudSlotId * CUSTOM_CHARACTER_TABLE_PACKET_BITS);
+        const u8 tableIdx = hudSlotId < 2 ? ((characterTables >> shift) & CUSTOM_CHARACTER_TABLE_PACKET_MASK) :
+                CUSTOM_CHARACTER_TABLE_DEFAULT;
+        onlineCharacterTables[playerId] = tableIdx < CUSTOM_CHARACTER_TABLE_COUNT ? tableIdx : CUSTOM_CHARACTER_TABLE_DEFAULT;
         ++hudSlotId;
     }
 }
@@ -782,15 +771,15 @@ u8 GetLocalOnlineCharacterTables() {
     if (localPlayerCount > 2) localPlayerCount = 2;
 
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
-        if (IsCustomCharacterEnabled(GetSelectedCharacterForHud(hudSlotId))) {
-            characterTables |= static_cast<u8>(CUSTOM_CHARACTER_TABLE_CUSTOM << hudSlotId);
-        }
+        const CharacterId character = GetSelectedCharacterForHud(hudSlotId);
+        const u8 tableIdx = GetSelectedCharacterTable(character) & CUSTOM_CHARACTER_TABLE_PACKET_MASK;
+        characterTables |= static_cast<u8>(tableIdx << (hudSlotId * CUSTOM_CHARACTER_TABLE_PACKET_BITS));
     }
     return characterTables;
 }
 
 bool ShouldUseCustomCharacterForPlayer(u8 playerId) {
-    return playerId < 12 && onlineCustomCharacterFlags[playerId];
+    return playerId < 12 && onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
 kmRuntimeUse(0x80540e3c);
@@ -825,7 +814,7 @@ static const char* GetMenuDriverBRRESNameHook(u32 character) {
     const CharacterId characterId = static_cast<CharacterId>(character);
     const u8 tableIdx = buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT ?
             buildingMenuDriverModelTable : GetMenuDriverModelTableForCharacter(characterId);
-    const char* overrideName = tableIdx == CUSTOM_CHARACTER_TABLE_CUSTOM ? GetCustomDriverBRRESName(character) : GetDefaultDriverBRRESName(character);
+    const char* overrideName = GetDriverBRRESName(characterId, tableIdx);
     if (overrideName != nullptr) return overrideName;
 
     typedef const char* (*GetCharacterNameFn)(u32);
@@ -1017,13 +1006,13 @@ static bool ShouldProcessCustomCharacterInput() {
     if (isNextHeld) ConsumeCustomCharacterToggleInput(*controllerHolder, nextButton, nextAction);
 
     if ((newToggleButtons & previousButton) != 0) {
-        if (ToggleCustomCharacter(GetPreviewCharacterForHud(0))) {
+        if (CycleCustomCharacterTable(GetPreviewCharacterForHud(0), -1)) {
             Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
             return true;
         }
     }
     if ((newToggleButtons & nextButton) != 0) {
-        if (ToggleCustomCharacter(GetPreviewCharacterForHud(0))) {
+        if (CycleCustomCharacterTable(GetPreviewCharacterForHud(0), 1)) {
             Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
             return true;
         }
