@@ -96,6 +96,8 @@ struct BRSAROverrideEntry {
 
 struct OverrideTagEntry {
     u32 nameOffset;
+    u16 startIndex;
+    u16 count;
 };
 
 // Cached loose-override index. This is built once on first use and then kept in
@@ -288,13 +290,6 @@ static u32 ReadBE32(const void* data) {
            (static_cast<u32>(bytes[2]) << 8) | static_cast<u32>(bytes[3]);
 }
 
-static s32 CompareArchiveTags(const char* lhs, const char* rhs) {
-    if (lhs == rhs) return 0;
-    if (lhs == nullptr) return -1;
-    if (rhs == nullptr) return 1;
-    return strcmp(lhs, rhs);
-}
-
 static s32 CompareWholeFileBasenames(const char* lhs, const char* rhs) {
     if (lhs == rhs) return 0;
     if (lhs == nullptr) return -1;
@@ -327,14 +322,6 @@ static const char* GetPooledString(const OverrideDatabase& database, u32 offset)
 static const char* GetRelativePath(u32 sourcePathOffset) {
     if (sActiveOverrideDatabase == nullptr) return nullptr;
     return GetPooledString(*sActiveOverrideDatabase, sourcePathOffset);
-}
-
-static const char* GetTagName(u16 tagId) {
-    if (sActiveOverrideDatabase == nullptr || tagId >= sActiveOverrideDatabase->tagCount ||
-        sActiveOverrideDatabase->tags == nullptr) {
-        return nullptr;
-    }
-    return GetPooledString(*sActiveOverrideDatabase, sActiveOverrideDatabase->tags[tagId].nameOffset);
 }
 
 static bool BuildStoredOverridePath(u32 sourcePathOffset, char* outPath, u32 outSize) {
@@ -402,6 +389,8 @@ static bool GetTagIdForName(OverrideDatabase& database, const char* tagName, u16
 
     outTagId = static_cast<u16>(database.tagCount);
     database.tags[database.tagCount].nameOffset = offset;
+    database.tags[database.tagCount].startIndex = 0;
+    database.tags[database.tagCount].count = 0;
     ++database.tagCount;
     return true;
 }
@@ -542,10 +531,8 @@ static bool TryParseBRSAROverride(const char* relativePath, u32& outFileId, u8& 
 }
 
 static s32 CompareTaggedOverrideEntries(const TaggedOverrideEntry& lhs, const TaggedOverrideEntry& rhs) {
-    const char* lhsTag = GetTagName(lhs.tagId);
-    const char* rhsTag = GetTagName(rhs.tagId);
-    const s32 tagCompare = CompareArchiveTags(lhsTag, rhsTag);
-    if (tagCompare != 0) return tagCompare;
+    if (lhs.tagId < rhs.tagId) return -1;
+    if (lhs.tagId > rhs.tagId) return 1;
 
     char lhsName[OVERRIDE_MAX_PATH];
     char rhsName[OVERRIDE_MAX_PATH];
@@ -562,10 +549,10 @@ static void SortOverrideEntriesByArchiveTag(TaggedOverrideEntry* entries, u32 co
 
 
     // The index is ordered with a tiny insertion sort during its one-time build step.
-    // Entries are grouped by archive tag first, then by stripped member path so
-    // binary range lookup can hand ApplyLooseOverrides() a contiguous bucket for
-    // the current archive. The secondary key keeps the ordering deterministic for
-    // debugging and duplicate-resolution behavior.
+    // Entries are grouped by interned tag ID first, then by stripped member path so
+    // each tag record can point at one contiguous bucket in the tagged array.
+    // The secondary key keeps the ordering deterministic for debugging and
+    // duplicate-resolution behavior.
 
     for (u32 i = 1; i < count; ++i) {
         const TaggedOverrideEntry key = entries[i];
@@ -580,48 +567,57 @@ static void SortOverrideEntriesByArchiveTag(TaggedOverrideEntry* entries, u32 co
     }
 }
 
-static bool FindArchiveTagRange(const OverrideDatabase& database, const char* archiveBaseLower, u32& start, u32& end) {
+static void BuildTaggedOverrideRanges(OverrideDatabase& database) {
+    if (database.tags == nullptr || database.tagCount == 0) return;
+
+    for (u32 i = 0; i < database.tagCount; ++i) {
+        database.tags[i].startIndex = 0;
+        database.tags[i].count = 0;
+    }
+
+    if (database.taggedEntries == nullptr || database.taggedCount == 0) return;
+
+    for (u32 i = 0; i < database.taggedCount; ++i) {
+        const u16 tagId = database.taggedEntries[i].tagId;
+        if (tagId >= database.tagCount) continue;
+
+        OverrideTagEntry& tag = database.tags[tagId];
+        if (tag.count == 0) {
+            tag.startIndex = static_cast<u16>(i);
+        }
+        ++tag.count;
+    }
+}
+
+static bool FindArchiveTagId(const OverrideDatabase& database, const char* archiveBaseLower, u16& outTagId) {
+    outTagId = 0;
+    if (database.tags == nullptr || database.tagCount == 0 || archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') {
+        return false;
+    }
+
+    for (u32 i = 0; i < database.tagCount; ++i) {
+        const char* tagName = GetPooledString(database, database.tags[i].nameOffset);
+        if (tagName != nullptr && strcmp(tagName, archiveBaseLower) == 0) {
+            outTagId = static_cast<u16>(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool FindArchiveTagRangeById(const OverrideDatabase& database, u16 tagId, u32& start, u32& end) {
     start = 0;
     end = 0;
-    if (database.taggedEntries == nullptr || database.taggedCount == 0 || archiveBaseLower == nullptr ||
-        archiveBaseLower[0] == '\0') {
+    if (database.tags == nullptr || database.taggedEntries == nullptr || database.taggedCount == 0 ||
+        tagId >= database.tagCount) {
         return false;
     }
 
-    // Standard lower/upper-bound search over the sorted index. Returning a
-    // half-open range keeps the runtime loop branch-light and avoids rescanning
-    // unrelated loose overrides for every archive load.
+    const OverrideTagEntry& tag = database.tags[tagId];
+    if (tag.count == 0) return false;
 
-    u32 low = 0;
-    u32 high = database.taggedCount;
-    while (low < high) {
-        const u32 mid = low + ((high - low) / 2);
-        const s32 compare = CompareArchiveTags(GetTagName(database.taggedEntries[mid].tagId), archiveBaseLower);
-        if (compare < 0) {
-            low = mid + 1;
-        } else {
-            high = mid;
-        }
-    }
-    // No exact match here means this archive has no bucket in the prebuilt index.
-    if (low >= database.taggedCount ||
-        CompareArchiveTags(GetTagName(database.taggedEntries[low].tagId), archiveBaseLower) != 0) {
-        return false;
-    }
-
-    start = low;
-    high = database.taggedCount;
-    while (low < high) {
-        const u32 mid = low + ((high - low) / 2);
-        const s32 compare = CompareArchiveTags(GetTagName(database.taggedEntries[mid].tagId), archiveBaseLower);
-        if (compare <= 0) {
-            low = mid + 1;
-        } else {
-            high = mid;
-        }
-    }
-
-    end = low;
+    start = tag.startIndex;
+    end = start + tag.count;
     return end > start;
 }
 
@@ -1944,6 +1940,7 @@ static void EnsureOverrideIndicesBuilt() {
     database.brsarCount = fillState.brsarCount;
 
     SortOverrideEntriesByArchiveTag(database.taggedEntries, database.taggedCount);
+    BuildTaggedOverrideRanges(database);
     SortWholeFileOverrideEntries(database.wholeFileEntries, database.wholeFileCount);
     SortBRSAROverrideEntries(database.brsarEntries, database.brsarCount);
     BuildBRSAROverrideLookup(database);
@@ -2118,7 +2115,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
 
     // Runtime flow:
-    // 1. Pull the prebuilt bucket for this archive tag.
+    // 1. Resolve the archive basename to an interned tag ID, then pull that
+    //    tag's prebuilt bucket from the range table.
     // 2. Resolve each override to concrete U8 node indices.
     // 3. Patch in place when every replacement fits inside the original node.
     // 4. Otherwise repack the archive into a larger buffer and rewrite offsets.
@@ -2137,9 +2135,14 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         archiveHeap = sourceHeap;
     }
 
+    u16 tagId = 0;
+    if (!FindArchiveTagId(sOverrideDatabase, archiveBaseLower, tagId)) {
+        return false;
+    }
+
     u32 rangeStart = 0;
     u32 rangeEnd = 0;
-    if (!FindArchiveTagRange(sOverrideDatabase, archiveBaseLower, rangeStart, rangeEnd)) {
+    if (!FindArchiveTagRangeById(sOverrideDatabase, tagId, rangeStart, rangeEnd)) {
         return false;
     }
     const u32 taggedCandidates = rangeEnd - rangeStart;
