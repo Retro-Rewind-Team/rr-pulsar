@@ -66,36 +66,6 @@ static u8 sExternalFileBufferSources[1024] = {};
 static u8 sExternalWaveBufferSources[1024] = {};
 static u8 sExternalFileAttempts[1024] = {};
 static u8 sExternalWaveAttempts[1024] = {};
-static u8 sLoggedFileRequests[1024] = {};
-static u8 sLoggedWaveRequests[1024] = {};
-static u8 sLoggedFileLookups[1024] = {};
-static u8 sLoggedWaveLookups[1024] = {};
-static u8 sLoggedGroupLoads[512] = {};
-static u8 sLoggedExternalFileSelections[1024] = {};
-static u8 sLoggedExternalWaveSelections[1024] = {};
-
-static void LogOverrideRequest(u8* logState, snd::SoundArchive::FileId fileId, const char* stage, u32 fileSize, u32 waveDataSize) {
-    if (fileId >= 1024 || logState[fileId] != 0) return;
-    logState[fileId] = 1;
-    OS::Report("[Pulsar] Loose BRSAR %s request: fileId=%u file=0x%X wave=0x%X\n", stage, fileId, fileSize, waveDataSize);
-}
-
-static void LogResolvedLookup(u8* logState, snd::SoundArchive::FileId fileId, bool waveData, const ResolvedBRSARTarget& target) {
-    if (fileId >= 1024 || logState[fileId] != 0) return;
-    logState[fileId] = 1;
-    OS::Report("[Pulsar] Loose BRSAR %s lookup: fileId=%u kind=%u group=%u index=%u addr=%p cap=0x%X\n",
-               waveData ? "wave" : "file", fileId, target.kind, target.groupId, target.groupIndex, target.address,
-               target.capacity);
-}
-
-static void LogExternalSelection(u8* logState, snd::SoundArchive::FileId fileId, bool waveData, const ResolvedBRSARTarget& target,
-                                 u32 overrideSize, const void* external) {
-    if (fileId >= 1024 || logState[fileId] != 0) return;
-    logState[fileId] = 1;
-    OS::Report("[Pulsar] Loose BRSAR external %s selected: fileId=%u from kind=%u group=%u index=%u cap=0x%X override=0x%X addr=%p\n",
-               waveData ? "wave" : "file", fileId, target.kind, target.groupId, target.groupIndex, target.capacity,
-               overrideSize, external);
-}
 
 static void ResetLooseBRSARExternalBuffers() {
     for (u32 fileId = 0; fileId < 1024; ++fileId) {
@@ -118,15 +88,7 @@ static void ResetLooseBRSARExternalBuffers() {
         sExternalWaveBufferSources[fileId] = EXTERNALBUFFER_NONE;
         sExternalFileAttempts[fileId] = 0;
         sExternalWaveAttempts[fileId] = 0;
-        sLoggedFileRequests[fileId] = 0;
-        sLoggedWaveRequests[fileId] = 0;
-        sLoggedFileLookups[fileId] = 0;
-        sLoggedWaveLookups[fileId] = 0;
-        sLoggedExternalFileSelections[fileId] = 0;
-        sLoggedExternalWaveSelections[fileId] = 0;
     }
-
-    memset(sLoggedGroupLoads, 0, sizeof(sLoggedGroupLoads));
 }
 
 static EGG::Heap* GetPersistentSoundOverrideHeap(u32 requiredSize) {
@@ -219,8 +181,6 @@ static const void* PreloadLooseBRSARBufferWithAllocater(snd::SoundMemoryAllocata
     bufferHeaps[fileId] = nullptr;
     bufferSources[fileId] = EXTERNALBUFFER_GROUP_ALLOCATER;
     attempts[fileId] = 0;
-    OS::Report("[Pulsar] Loose BRSAR preloaded external %s ready: fileId=%u addr=%p size=0x%X\n",
-               waveData ? "wave" : "file", fileId, buffer, overrideSize);
     return buffer;
 }
 
@@ -237,10 +197,6 @@ static const void* GetExternalLooseBRSARBuffer(snd::SoundArchive::FileId fileId,
 
     if (waveData) {
         buffer = AllocAudioHeapOverrideBuffer(allocSize);
-        if (buffer != nullptr) {
-            OS::Report("[Pulsar] Loose BRSAR external wave using audio heap: fileId=%u addr=%p size=0x%X\n", fileId,
-                       buffer, allocSize);
-        }
     }
 
     if (buffer == nullptr) {
@@ -279,8 +235,6 @@ static const void* GetExternalLooseBRSARBuffer(snd::SoundArchive::FileId fileId,
     bufferHeaps[fileId] = heap;
     bufferSources[fileId] = (waveData && heap == nullptr) ? EXTERNALBUFFER_AUDIO_HEAP : EXTERNALBUFFER_PERSISTENT_HEAP;
     attempts[fileId] = 0;
-    OS::Report("[Pulsar] Loose BRSAR external %s ready: fileId=%u addr=%p size=0x%X\n",
-               waveData ? "wave" : "file", fileId, buffer, overrideSize);
     return buffer;
 }
 
@@ -485,9 +439,6 @@ static void PatchResolvedAddress(snd::SoundArchive::FileId fileId, bool waveData
     OS::DCStoreRange(dest, target.capacity);
 
     if (fileId < 1024) patchedCache[fileId] = target.address;
-    OS::Report("[Pulsar] Loose BRSAR %s patched in place: fileId=%u kind=%u group=%u addr=%p size=0x%X cap=0x%X\n",
-               waveData ? "wave" : "file", fileId, target.kind, target.groupId, target.address, overrideSize,
-               target.capacity);
 }
 
 static void* LoadLooseBRSARFile(snd::detail::SoundArchiveLoader* loader, snd::SoundArchive::FileId fileId,
@@ -499,7 +450,6 @@ static void* LoadLooseBRSARFile(snd::detail::SoundArchiveLoader* loader, snd::So
     if (!IOOverrides::GetLooseBRSAROverrideSizes(fileId, fileSize, waveDataSize) || fileSize == 0) {
         return nullptr;
     }
-    LogOverrideRequest(sLoggedFileRequests, fileId, "file", fileSize, waveDataSize);
 
     void* buffer = allocater->Alloc(fileSize);
     if (buffer == nullptr) {
@@ -514,7 +464,6 @@ static void* LoadLooseBRSARFile(snd::detail::SoundArchiveLoader* loader, snd::So
 
     OS::DCStoreRange(buffer, fileSize);
     if (fileId < 1024) sPatchedFileAddresses[fileId] = buffer;
-    OS::Report("[Pulsar] Loose BRSAR file loaded: fileId=%u addr=%p size=0x%X\n", fileId, buffer, fileSize);
     return buffer;
 }
 
@@ -533,14 +482,12 @@ static void* LoadWaveDataFileWithLooseBRSAROverride(snd::detail::SoundArchiveLoa
     u32 fileSize = 0;
     u32 waveDataSize = 0;
     if (IOOverrides::GetLooseBRSAROverrideSizes(fileId, fileSize, waveDataSize) && waveDataSize > 0) {
-        LogOverrideRequest(sLoggedWaveRequests, fileId, "wave", fileSize, waveDataSize);
         void* buffer = allocater->Alloc(waveDataSize);
         if (buffer == nullptr) {
             OS::Report("[Pulsar] Loose BRSAR wave override skipped: fileId=%u alloc 0x%X failed\n", fileId, waveDataSize);
         } else if (IOOverrides::ReadLooseBRSAROverrideWaveData(fileId, buffer, waveDataSize)) {
             OS::DCStoreRange(buffer, waveDataSize);
             if (fileId < 1024) sPatchedWaveAddresses[fileId] = buffer;
-            OS::Report("[Pulsar] Loose BRSAR wave loaded: fileId=%u addr=%p size=0x%X\n", fileId, buffer, waveDataSize);
             return buffer;
         } else {
             OS::Report("[Pulsar] Loose BRSAR wave override skipped: fileId=%u read failed\n", fileId);
@@ -554,7 +501,6 @@ static const void* GetFileAddressWithLooseBRSAROverride(const snd::SoundArchiveP
                                                         snd::SoundArchive::FileId fileId) {
     ResolvedBRSARTarget target;
     const void* address = GetOriginalFileAddress(player, fileId, &target);
-    if (address != nullptr) LogResolvedLookup(sLoggedFileLookups, fileId, false, target);
 
     u32 fileSize = 0;
     u32 waveDataSize = 0;
@@ -562,10 +508,7 @@ static const void* GetFileAddressWithLooseBRSAROverride(const snd::SoundArchiveP
 
     if (address == nullptr || target.capacity < fileSize) {
         const void* external = GetExternalLooseBRSARBuffer(fileId, false, fileSize);
-        if (external != nullptr) {
-            LogExternalSelection(sLoggedExternalFileSelections, fileId, false, target, fileSize, external);
-            return external;
-        }
+        if (external != nullptr) return external;
     }
 
     if (address != nullptr) PatchResolvedAddress(fileId, false, target);
@@ -576,7 +519,6 @@ static const void* GetFileWaveDataAddressWithLooseBRSAROverride(const snd::Sound
                                                                 snd::SoundArchive::FileId fileId) {
     ResolvedBRSARTarget target;
     const void* address = GetOriginalWaveDataAddress(player, fileId, &target);
-    if (address != nullptr) LogResolvedLookup(sLoggedWaveLookups, fileId, true, target);
 
     u32 fileSize = 0;
     u32 waveDataSize = 0;
@@ -584,10 +526,7 @@ static const void* GetFileWaveDataAddressWithLooseBRSAROverride(const snd::Sound
 
     if (address == nullptr || target.capacity < waveDataSize) {
         const void* external = GetExternalLooseBRSARBuffer(fileId, true, waveDataSize);
-        if (external != nullptr) {
-            LogExternalSelection(sLoggedExternalWaveSelections, fileId, true, target, waveDataSize, external);
-            return external;
-        }
+        if (external != nullptr) return external;
     }
 
     if (address != nullptr) PatchResolvedAddress(fileId, true, target);
@@ -612,14 +551,6 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
             continue;
         }
 
-        if (groupId < 512 && sLoggedGroupLoads[groupId] == 0) {
-            sLoggedGroupLoads[groupId] = 1;
-            OS::Report("[Pulsar] Loose BRSAR group load: group=%u items=%u groupData=%p waveData=%p\n", groupId,
-                       groupInfo.itemCount, groupData, waveData);
-        }
-        OS::Report("[Pulsar] Loose BRSAR group candidate: group=%u fileId=%u override=0x%X/0x%X slot=0x%X/0x%X\n",
-                   groupId, item.fileId, fileSize, waveDataSize, item.size, item.waveDataSize);
-
         u32 fileCapacity = 0;
         const bool canPatchFileInGroup =
             TryGetGroupItemSlotCapacity(archive, groupId, groupInfo.itemCount, item, false, groupInfo.size, fileCapacity) &&
@@ -640,8 +571,6 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
             if (!canPatchWaveInGroup) {
                 OS::Report("[Pulsar] Loose BRSAR wave override cannot fit in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X\n",
                            groupId, item.fileId, waveDataSize, waveCapacity);
-                OS::Report("[Pulsar] Loose BRSAR wave override deferred to external buffer path: fileId=%u group=%u\n",
-                           item.fileId, groupId);
             }
         }
 
@@ -656,16 +585,9 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
                 }
                 OS::DCStoreRange(groupDest, fileSize);
                 if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
-                OS::Report("[Pulsar] Loose BRSAR file patched on group load: fileId=%u group=%u addr=%p size=0x%X\n",
-                           item.fileId, groupId, groupDest, fileSize);
             }
         } else {
-            if (PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, false, fileSize) != nullptr) {
-                OS::Report("[Pulsar] Loose BRSAR file override preloaded for deferred path: fileId=%u group=%u\n",
-                           item.fileId, groupId);
-            }
-            OS::Report("[Pulsar] Loose BRSAR file override deferred to address-resolution path: fileId=%u group=%u\n",
-                       item.fileId, groupId);
+            PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, false, fileSize);
         }
 
         if (waveDataSize > 0 && canPatchWaveInGroup) {
@@ -679,14 +601,9 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
                 }
                 OS::DCStoreRange(waveDest, waveDataSize);
                 if (item.fileId < 1024) sPatchedWaveAddresses[item.fileId] = waveDest;
-                OS::Report("[Pulsar] Loose BRSAR wave patched on group load: fileId=%u group=%u addr=%p size=0x%X\n",
-                           item.fileId, groupId, waveDest, waveDataSize);
             }
         } else if (waveDataSize > 0) {
-            if (PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, true, waveDataSize) != nullptr) {
-                OS::Report("[Pulsar] Loose BRSAR wave override preloaded for deferred path: fileId=%u group=%u\n",
-                           item.fileId, groupId);
-            }
+            PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, true, waveDataSize);
         }
     }
 }

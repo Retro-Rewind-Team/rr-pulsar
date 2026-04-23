@@ -179,7 +179,6 @@ struct FSTEntry {
 static OverrideDatabase sOverrideDatabase = {nullptr, 0, nullptr, nullptr, 0, 0, nullptr, 0, 0,
                                              nullptr, 0, nullptr, 0, nullptr, 0, 0};
 static OverrideDatabase* sActiveOverrideDatabase = &sOverrideDatabase;
-static u8 sLoggedBRSARLayoutSuccess[1024] = {};
 static u8 sLoggedBRSARLayoutFailure[1024] = {};
 static bool sOverrideIndicesAttempted = false;
 static bool sHasWholeFileOverrides = false;
@@ -1858,11 +1857,6 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
     entry.waveDataOffset = outLayout.waveOffset;
     entry.waveDataSize = outLayout.waveSize;
     entry.layoutState = 1;
-    if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutSuccess[fileId] == 0) {
-        sLoggedBRSARLayoutSuccess[fileId] = 1;
-        OS::Report("[Pulsar] Loose BRSAR layout ready: fileId=%u path='%s' file=0x%X waveOff=0x%X wave=0x%X\n",
-                   fileId, relativePath, outLayout.fileSize, outLayout.waveOffset, outLayout.waveSize);
-    }
     return true;
 }
 
@@ -2041,9 +2035,6 @@ static void EnsureOverrideIndicesBuilt() {
     sOverrideDatabase = database;
     sActiveOverrideDatabase = &sOverrideDatabase;
     sHasWholeFileOverrides = (database.wholeFileEntries != nullptr && database.wholeFileCount > 0);
-    if (database.brsarCount > 0) {
-        OS::Report("[Pulsar] Loose BRSAR overrides indexed: %u file(s)\n", database.brsarCount);
-    }
 }
 
 static bool IsFileExtensionSZS(const char* path) {
@@ -2654,10 +2645,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
     if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
     if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
-    if (missingOverrides > 0) {
-        OS::Report("[Pulsar] Loose overrides for '%s': applied=%u patched=%u missing=%u\n", archiveBaseLower,
-                   appliedOverrides, patchedNodes, missingOverrides);
-    }
     return appliedOverrides > 0;
 }
 
