@@ -555,10 +555,6 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
         const bool canPatchFileInGroup =
             TryGetGroupItemSlotCapacity(archive, groupId, groupInfo.itemCount, item, false, groupInfo.size, fileCapacity) &&
             fileCapacity >= fileSize;
-        if (!canPatchFileInGroup) {
-            OS::Report("[Pulsar] Loose BRSAR file override cannot fit in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X\n",
-                       groupId, item.fileId, fileSize, fileCapacity);
-        }
 
         u32 waveCapacity = 0;
         bool canPatchWaveInGroup = false;
@@ -568,10 +564,6 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
                 TryGetGroupItemSlotCapacity(archive, groupId, groupInfo.itemCount, item, true, groupInfo.waveDataSize,
                                             waveCapacity) &&
                 waveCapacity >= waveDataSize;
-            if (!canPatchWaveInGroup) {
-                OS::Report("[Pulsar] Loose BRSAR wave override cannot fit in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X\n",
-                           groupId, item.fileId, waveDataSize, waveCapacity);
-            }
         }
 
         if (canPatchFileInGroup) {
@@ -587,7 +579,10 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
                 if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
             }
         } else {
-            PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, false, fileSize);
+            const void* external = PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, false, fileSize);
+            OS::Report("[Pulsar] Loose BRSAR file override cannot fit in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X; %s\n",
+                       groupId, item.fileId, fileSize, fileCapacity,
+                       (external != nullptr) ? "external fallback ready" : "override unavailable");
         }
 
         if (waveDataSize > 0 && canPatchWaveInGroup) {
@@ -603,7 +598,10 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
                 if (item.fileId < 1024) sPatchedWaveAddresses[item.fileId] = waveDest;
             }
         } else if (waveDataSize > 0) {
-            PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, true, waveDataSize);
+            const void* external = PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, true, waveDataSize);
+            OS::Report("[Pulsar] Loose BRSAR wave override cannot fit in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X; %s\n",
+                       groupId, item.fileId, waveDataSize, waveCapacity,
+                       (external != nullptr) ? "external fallback ready" : "override unavailable");
         }
     }
 }
