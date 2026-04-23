@@ -5,8 +5,7 @@
 #include <PulsarSystem.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
-#include <Settings/Settings.hpp>
-#include <Settings/SettingsParam.hpp>
+#include <CustomCharacters.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 
 namespace Pulsar {
@@ -120,8 +119,7 @@ void PopulateCrashExtra(ExceptionFile& exception) {
     if (IOOverrides::AreLooseArchiveOverridesEnabledForDebug()) {
         extra.flags |= EXCEPTION_FLAG_LOOSE_ARCHIVE_OVERRIDES_ENABLED;
     }
-    if (Settings::Mgr::IsCreated() &&
-        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_CUSTOMCHARACTER) == CUSTOMCHARACTER_ENABLED) {
+    if (CustomCharacters::IsCustomCharacterTableActive()) {
         extra.flags |= EXCEPTION_FLAG_CUSTOM_CHARACTER_ENABLED;
     }
     extra.looseOverrideFileCount = IOOverrides::GetLooseArchiveOverrideFileCount();

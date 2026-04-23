@@ -27,7 +27,7 @@ struct PulPlayerData {  // SELECT struct
     u8 character;  // 0x4
     u8 kart;  // 0x5
     u8 prevRaceRank;  // 0x6 swapped with coursevote
-    u8 starRank;  // 0x8 1st bit of 2nd p is also used to specify customPacket
+    u8 starRank;  // 0x8
 };  // total size 0x8
 // size_assert(PulPlayerData, 0x8);
 
@@ -117,7 +117,7 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
-    u8 blockingPadding;
+    u8 characterTables;  // bit 0 = local hud 0 table, bit 1 = local hud 1 table
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 
     // Anti-cheat verification tag - proves sender has correct encryption key

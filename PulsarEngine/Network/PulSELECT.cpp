@@ -94,12 +94,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         len = sizeof(PulSELECT);
     packetHolder->Copy(src, len);
 
-    const u8 customCharacterFlags = CustomCharacters::GetLocalOnlineCustomCharacterFlags();
-    for (int hudSlotId = 0; hudSlotId < 2; ++hudSlotId) {
-        u8& starRank = packetHolder->packet->playersData[hudSlotId].starRank;
-        starRank &= 0x7F;
-        if (((customCharacterFlags >> hudSlotId) & 1) != 0) starRank |= 0x80;
-    }
+    packetHolder->packet->characterTables = CustomCharacters::GetLocalOnlineCharacterTables();
 
 #ifdef PROD
     // Encrypt the Pulsar extension portion of the packet after copy
@@ -144,13 +139,8 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     }
 #endif
 
-    u8 customCharacterFlags = 0;
-    for (int hudSlotId = 0; hudSlotId < 2; ++hudSlotId) {
-        const u8 starRank = src->playersData[hudSlotId].starRank;
-        if ((starRank & 0x80) != 0) customCharacterFlags |= 1 << hudSlotId;
-        src->playersData[hudSlotId].starRank = starRank & 0x7F;
-    }
-    CustomCharacters::UpdateOnlineCustomCharacterFlagsFromAid(aid, src->playerIdToAid, customCharacterFlags);
+    const u8 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
+    CustomCharacters::UpdateOnlineCharacterTablesFromAid(aid, src->playerIdToAid, characterTables);
 
     for (int i = 0; i < 2; ++i) {
         PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
@@ -168,6 +158,7 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
         src->blockedTrackCount = 0;
         src->curBlockingArrayIdx = 0;
         src->lastGroupedTrackPlayed = false;
+        src->characterTables = 0;
         for (u32 i = 0; i < MAX_TRACK_BLOCKING; ++i) {
             src->blockedTracks[i] = 0xFFFF;
         }
