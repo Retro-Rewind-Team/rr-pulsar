@@ -1231,6 +1231,12 @@ static bool ReadDVDFileRange(const char* path, void* dest, u32 size, u32 offset)
     return read == static_cast<s32>(size);
 }
 
+static bool ReadOpenedDVDFileRange(DVD::FileInfo& info, void* dest, u32 size, u32 offset) {
+    InvalidateRange(dest, size);
+    const s32 read = DVD::ReadPrio(&info, dest, static_cast<s32>(size), static_cast<s32>(offset), 2);
+    return read == static_cast<s32>(size);
+}
+
 static bool BuildOverridePathWithRoot(const char* root, const char* name, const char* tag, char* outPath, u32 outSize) {
     if (root == nullptr || name == nullptr || outPath == nullptr || outSize == 0) return false;
     int written = 0;
@@ -1718,23 +1724,34 @@ static bool BRSAROverrideMagicMatches(u8 type, const u8* header) {
     return false;
 }
 
-static bool FindEmbeddedRWAROffset(const BRSAROverrideSlot& entry, u32 searchStart, u32& outOffset) {
+static bool FindEmbeddedRWAROffset(DVD::FileInfo& info, const BRSAROverrideSlot& entry, u32 searchStart, u32& outOffset,
+                                   u32& outSize) {
     outOffset = 0;
+    outSize = 0;
     if (searchStart >= entry.size) return false;
 
-    char fullPath[OVERRIDE_MAX_PATH];
-    if (!BuildStoredOverridePath(entry.sourcePathOffset, fullPath, sizeof(fullPath))) return false;
+    u8 exactHeader[0x20] __attribute__((aligned(32)));
+    if (searchStart + sizeof(exactHeader) <= entry.size &&
+        ReadOpenedDVDFileRange(info, exactHeader, sizeof(exactHeader), searchStart) &&
+        memcmp(exactHeader, "RWAR", 4) == 0) {
+        const u32 exactSize = ReadBE32(exactHeader + 8);
+        if (exactSize >= 0x20 && searchStart + exactSize <= entry.size) {
+            outOffset = searchStart;
+            outSize = exactSize;
+            return true;
+        }
+    }
 
     enum { kChunkSize = 0x800 };
     u8 chunk[kChunkSize] __attribute__((aligned(32)));
-    u32 offset = nw4r::ut::RoundUp(searchStart, 0x20);
+    u32 offset = nw4r::ut::RoundUp(searchStart + 0x20, 0x20);
     while (offset + 0x20 <= entry.size) {
         u32 remaining = entry.size - offset;
         u32 readSize = remaining >= kChunkSize ? kChunkSize : remaining;
         readSize &= ~0x1F;
         if (readSize < 0x20) break;
 
-        if (!ReadDVDFileRange(fullPath, chunk, readSize, offset)) {
+        if (!ReadOpenedDVDFileRange(info, chunk, readSize, offset)) {
             offset += readSize;
             continue;
         }
@@ -1746,6 +1763,7 @@ static bool FindEmbeddedRWAROffset(const BRSAROverrideSlot& entry, u32 searchSta
             const u32 candidateOffset = offset + chunkOffset;
             if (candidateSize >= 0x20 && candidateOffset + candidateSize <= entry.size) {
                 outOffset = candidateOffset;
+                outSize = candidateSize;
                 return true;
             }
         }
@@ -1781,8 +1799,20 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
         return false;
     }
 
+    DVD::FileInfo info;
+    if (!DVD::Open(fullPath, &info)) {
+        if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
+            sLoggedBRSARLayoutFailure[fileId] = 1;
+            OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' header read failed\n", fileId,
+                       relativePath);
+        }
+        return false;
+    }
+
     u8 header[0x20] __attribute__((aligned(32)));
-    if (!ReadDVDFileRange(fullPath, header, sizeof(header), 0)) {
+    const bool headerReadOk = ReadOpenedDVDFileRange(info, header, sizeof(header), 0);
+    if (!headerReadOk) {
+        DVD::Close(&info);
         if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
             sLoggedBRSARLayoutFailure[fileId] = 1;
             OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' header read failed\n", fileId,
@@ -1791,6 +1821,7 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
         return false;
     }
     if (!BRSAROverrideMagicMatches(entry.type, header)) {
+        DVD::Close(&info);
         if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
             sLoggedBRSARLayoutFailure[fileId] = 1;
             OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' magic/type mismatch\n", fileId,
@@ -1801,6 +1832,7 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
 
     const u32 fileSize = ReadBE32(header + 8);
     if (fileSize < 0x20 || fileSize > entry.size) {
+        DVD::Close(&info);
         entry.layoutState = 2;
         if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
             sLoggedBRSARLayoutFailure[fileId] = 1;
@@ -1814,33 +1846,13 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
 
     const u32 searchStart = nw4r::ut::RoundUp(fileSize, 0x20);
     u32 waveOffset = 0;
-    if (FindEmbeddedRWAROffset(entry, searchStart, waveOffset)) {
-        u8 waveHeader[0x20] __attribute__((aligned(32)));
-        if (!ReadDVDFileRange(fullPath, waveHeader, sizeof(waveHeader), waveOffset) ||
-            memcmp(waveHeader, "RWAR", 4) != 0) {
-            entry.layoutState = 2;
-            if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
-                sLoggedBRSARLayoutFailure[fileId] = 1;
-                OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' RWAR header read mismatch at 0x%X\n",
-                           fileId, relativePath, waveOffset);
-            }
-            return false;
-        }
-
-        const u32 waveSize = ReadBE32(waveHeader + 8);
-        if (waveSize < 0x20 || waveOffset + waveSize > entry.size) {
-            entry.layoutState = 2;
-            if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
-                sLoggedBRSARLayoutFailure[fileId] = 1;
-                OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' invalid RWAR size=0x%X at 0x%X entry=0x%X\n",
-                           fileId, relativePath, waveSize, waveOffset, entry.size);
-            }
-            return false;
-        }
-
+    u32 waveSize = 0;
+    if (FindEmbeddedRWAROffset(info, entry, searchStart, waveOffset, waveSize)) {
         outLayout.waveOffset = waveOffset;
         outLayout.waveSize = waveSize;
     }
+
+    DVD::Close(&info);
 
     entry.fileDataSize = outLayout.fileSize;
     entry.waveDataOffset = outLayout.waveOffset;
