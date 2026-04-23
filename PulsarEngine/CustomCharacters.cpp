@@ -14,6 +14,7 @@
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
+#include <MarioKartWii/Input/Controller.hpp>
 
 namespace Pulsar {
 namespace CustomCharacters {
@@ -33,6 +34,7 @@ static MenuModelMgr* cachedMenuModelMgr = nullptr;
 static u8 cachedMenuDriverModelPlayerCount = 0;
 static u8 currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_DEFAULT;
 static CharacterId hoveredCharacterByHud[4] = {MARIO, MARIO, MARIO, MARIO};
+static u16 heldCustomCharacterToggleButtons = 0;
 
 void ApplyCharacterTable(u8 tableIdx);
 void RefreshLocalOnlineCustomCharacterFlags();
@@ -721,30 +723,83 @@ kmCall(0x807e36bc, CharacterSelectClickHook);
 kmCall(0x807e39b4, CharacterSelectClickHook);
 kmCall(0x807e3bd0, CharacterSelectClickHook);
 
-static bool ShouldProcessCustomCharacterInput() {
-    if (GetLocalPlayerCount() != 1) return false;
-    if (!IsCharacterSelectPageActive()) return false;
+static ControllerType GetControllerTypeForHudSlot(const SectionMgr& sectionMgr, u8 hudSlotId) {
+    if (hudSlotId >= 4) return GCN;
 
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->pad.padInfos[0].controllerHolder == nullptr) return false;
+    const Input::RealControllerHolder* holder = sectionMgr.pad.padInfos[hudSlotId].controllerHolder;
+    if (holder == nullptr || holder->curController == nullptr) return GCN;
 
-    const Input::RealControllerHolder* controllerHolder = sectionMgr->pad.padInfos[0].controllerHolder;
-    const Input::Controller* controller = controllerHolder->curController;
-    if (controller == nullptr) return false;
+    const ControllerType type = holder->curController->GetType();
+    if (type == WHEEL || type == NUNCHUCK || type == CLASSIC || type == GCN) return type;
+    return GCN;
+}
 
-    const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
-    const u16 newInputs = inputs & ~controllerHolder->inputStates[1].buttonRaw;
+static void HideAllCustomCharacterHintPanes(CharaName& nameUi) {
+    nameUi.SetPaneVisibility("cc_prev_gc", false);
+    nameUi.SetPaneVisibility("cc_next_gc", false);
+    nameUi.SetPaneVisibility("cc_prev_cls", false);
+    nameUi.SetPaneVisibility("cc_next_cls", false);
+    nameUi.SetPaneVisibility("cc_prev_nc", false);
+    nameUi.SetPaneVisibility("cc_next_nc", false);
+    nameUi.SetPaneVisibility("cc_prev_wh", false);
+    nameUi.SetPaneVisibility("cc_next_wh", false);
+}
 
-    u16 previousButton = 0;
-    u16 nextButton = 0;
-    switch (controller->GetType()) {
+static void ApplyCustomCharacterHintPanesForType(CharaName& nameUi, ControllerType type) {
+    HideAllCustomCharacterHintPanes(nameUi);
+    switch (type) {
+        case WHEEL:
+            nameUi.SetPaneVisibility("cc_prev_wh", true);
+            nameUi.SetPaneVisibility("cc_next_wh", true);
+            break;
+        case NUNCHUCK:
+            nameUi.SetPaneVisibility("cc_prev_nc", true);
+            nameUi.SetPaneVisibility("cc_next_nc", true);
+            break;
+        case CLASSIC:
+            nameUi.SetPaneVisibility("cc_prev_cls", true);
+            nameUi.SetPaneVisibility("cc_next_cls", true);
+            break;
+        case GCN:
+        default:
+            nameUi.SetPaneVisibility("cc_prev_gc", true);
+            nameUi.SetPaneVisibility("cc_next_gc", true);
+            break;
+    }
+}
+
+static void UpdateCustomCharacterSelectNamePaneIcons() {
+    if (!IsCharacterSelectPageActive()) return;
+
+    SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return;
+
+    Pages::CharacterSelect* const characterSelect = sectionMgr->curSection->Get<Pages::CharacterSelect>();
+    if (characterSelect == nullptr || characterSelect->names == nullptr) return;
+
+    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        const ControllerType type = GetControllerTypeForHudSlot(*sectionMgr, hudSlotId);
+        ApplyCustomCharacterHintPanesForType(characterSelect->names[hudSlotId], type);
+    }
+}
+
+static void GetCustomCharacterToggleInputs(ControllerType type, u16& previousButton, u16& nextButton, u16& previousAction, u16& nextAction) {
+    previousAction = 0;
+    nextAction = 0;
+
+    switch (type) {
         case WHEEL:
             previousButton = WPAD::WPAD_BUTTON_B;
             nextButton = WPAD::WPAD_BUTTON_A;
+            previousAction = static_cast<u16>(1 << BACK_PRESS);
+            nextAction = static_cast<u16>(1 << FORWARD_PRESS);
             break;
         case NUNCHUCK:
             previousButton = WPAD::WPAD_BUTTON_1;
             nextButton = WPAD::WPAD_BUTTON_2;
+            previousAction = static_cast<u16>(1 << BACK_PRESS);
+            nextAction = static_cast<u16>(1 << FORWARD_PRESS);
             break;
         case CLASSIC:
             previousButton = WPAD::WPAD_CL_TRIGGER_L;
@@ -756,13 +811,61 @@ static bool ShouldProcessCustomCharacterInput() {
             nextButton = PAD::PAD_BUTTON_R;
             break;
     }
+}
 
-    if ((newInputs & previousButton) != 0) {
+static void ConsumeCustomCharacterToggleInput(Input::RealControllerHolder& controllerHolder, u16 rawButton, u16 uiActionMask) {
+    controllerHolder.inputStates[0].buttonRaw &= static_cast<u16>(~rawButton);
+    controllerHolder.uiinputStates[0].rawButtons &= static_cast<u16>(~rawButton);
+    controllerHolder.uiinputStates[0].buttonActions &= static_cast<u16>(~uiActionMask);
+}
+
+static bool ShouldProcessCustomCharacterInput() {
+    if (GetLocalPlayerCount() != 1) {
+        heldCustomCharacterToggleButtons = 0;
+        return false;
+    }
+    if (!IsCharacterSelectPageActive()) {
+        heldCustomCharacterToggleButtons = 0;
+        return false;
+    }
+
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->pad.padInfos[0].controllerHolder == nullptr) {
+        heldCustomCharacterToggleButtons = 0;
+        return false;
+    }
+
+    Input::RealControllerHolder* controllerHolder = sectionMgr->pad.padInfos[0].controllerHolder;
+    const Input::Controller* controller = controllerHolder->curController;
+    if (controller == nullptr) {
+        heldCustomCharacterToggleButtons = 0;
+        return false;
+    }
+
+    const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
+
+    u16 previousButton = 0;
+    u16 nextButton = 0;
+    u16 previousAction = 0;
+    u16 nextAction = 0;
+    GetCustomCharacterToggleInputs(GetControllerTypeForHudSlot(*sectionMgr, 0), previousButton, nextButton, previousAction, nextAction);
+
+    const bool isPreviousHeld = (inputs & previousButton) != 0;
+    const bool isNextHeld = (inputs & nextButton) != 0;
+    const u16 toggleButtons = static_cast<u16>(previousButton | nextButton);
+    const u16 heldToggleButtons = static_cast<u16>(inputs & toggleButtons);
+    const u16 newToggleButtons = static_cast<u16>(heldToggleButtons & ~heldCustomCharacterToggleButtons);
+    heldCustomCharacterToggleButtons = heldToggleButtons;
+
+    if (isPreviousHeld) ConsumeCustomCharacterToggleInput(*controllerHolder, previousButton, previousAction);
+    if (isNextHeld) ConsumeCustomCharacterToggleInput(*controllerHolder, nextButton, nextAction);
+
+    if ((newToggleButtons & previousButton) != 0) {
         Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
         ToggleCustomCharacterTable(false);
         return true;
     }
-    if ((newInputs & nextButton) != 0) {
+    if ((newToggleButtons & nextButton) != 0) {
         Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
         ToggleCustomCharacterTable(true);
         return true;
@@ -773,6 +876,7 @@ static bool ShouldProcessCustomCharacterInput() {
 kmRuntimeUse(0x8063550c);
 // RaceScene::calcSubsystems -> SectionMgr::Update call site
 static void RaceSceneSectionUpdateHook(SectionMgr* sectionMgr) {
+    UpdateCustomCharacterSelectNamePaneIcons();
     ShouldProcessCustomCharacterInput();
     typedef void (*SectionMgrUpdateFn)(SectionMgr*);
     const SectionMgrUpdateFn original = reinterpret_cast<SectionMgrUpdateFn>(kmRuntimeAddr(0x8063550c));
@@ -784,6 +888,7 @@ kmCall(0x80554dcc, RaceSceneSectionUpdateHook);
 kmRuntimeUse(0x8063583c);
 // MenuScene_vf30 / GlobeScene_vf30 -> SectionMgr::MenuUpdate call sites
 static void MenuSceneSectionUpdateHook(SectionMgr* sectionMgr) {
+    UpdateCustomCharacterSelectNamePaneIcons();
     ShouldProcessCustomCharacterInput();
     typedef void (*SectionMgrUpdateFn)(SectionMgr*);
     const SectionMgrUpdateFn original = reinterpret_cast<SectionMgrUpdateFn>(kmRuntimeAddr(0x8063583c));
