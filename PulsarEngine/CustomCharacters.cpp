@@ -23,18 +23,18 @@ bool onlineCustomCharacterFlags[12];
 enum CustomCharacterTable {
     CUSTOM_CHARACTER_TABLE_DEFAULT = 0,
     CUSTOM_CHARACTER_TABLE_CUSTOM = 1,
-    CUSTOM_CHARACTER_TABLE_COUNT = 2
+    CUSTOM_CHARACTER_TABLE_COUNT = 2,
+    CUSTOM_CHARACTER_TABLE_INVALID = CUSTOM_CHARACTER_TABLE_COUNT
 };
 
 static const u8 CUSTOM_CHARACTER_COUNT = 0x30;
 static bool customCharacterEnabledByCharacter[CUSTOM_CHARACTER_COUNT];
-static u32 customCharacterStateGeneration = 1;
 static u8 pendingMenuDriverReinitFrames = 0;
 static MenuDriverModelMgr* cachedMenuDriverModels[CUSTOM_CHARACTER_TABLE_COUNT] = {nullptr, nullptr};
-static u32 cachedMenuDriverModelGenerations[CUSTOM_CHARACTER_TABLE_COUNT] = {0, 0};
 static MenuModelMgr* cachedMenuModelMgr = nullptr;
 static u8 cachedMenuDriverModelPlayerCount = 0;
-static u32 currentMenuDriverModelGeneration = 0;
+static u8 currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+static u8 buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static CharacterId hoveredCharacterByHud[4] = {MARIO, MARIO, MARIO, MARIO};
 static u16 heldCustomCharacterToggleButtons = 0;
 
@@ -50,6 +50,8 @@ static void ReinitializeMenuDriverModels();
 static void ProcessPendingMenuDriverModelReinit();
 static void ResetMenuDriverModelCache();
 static void SyncMenuDriverModelCache();
+static u8 GetMenuDriverModelTableForCharacter(CharacterId character);
+static void ScheduleMenuDriverModelReinitForPreview();
 static void RefreshCharacterSelectModels();
 static void RefreshKartSelectModel();
 static CharacterId GetPreviewCharacterForHud(u8 hudSlotId);
@@ -96,7 +98,6 @@ static bool SetCustomCharacterEnabled(CharacterId character, bool enabled) {
     if (customCharacterEnabledByCharacter[stateCharacter] == enabled) return false;
 
     customCharacterEnabledByCharacter[stateCharacter] = enabled;
-    ++customCharacterStateGeneration;
     ApplyCharacterPostfixes();
     RefreshLocalOnlineCustomCharacterFlags();
     return true;
@@ -282,7 +283,6 @@ void ApplyCharacterTable(u8 tableIdx) {
             customCharacterEnabledByCharacter[GetCustomCharacterStateId(characterId)] = enabled;
         }
     }
-    ++customCharacterStateGeneration;
     ApplyCharacterPostfixes();
     RefreshLocalOnlineCustomCharacterFlags();
 }
@@ -315,6 +315,37 @@ static void ApplyCharacterPostfixes() {
     ApplyCharacterPostfix(PEACH_BIKER, IsCustomCharacterEnabled(PEACH_BIKER));
     ApplyCharacterPostfix(DAISY_BIKER, IsCustomCharacterEnabled(DAISY_BIKER));
     ApplyCharacterPostfix(ROSALINA_BIKER, IsCustomCharacterEnabled(ROSALINA_BIKER));
+}
+
+static void ApplyMenuDriverModelTablePostfixes(u8 tableIdx) {
+    const bool useCustomPostfix = tableIdx == CUSTOM_CHARACTER_TABLE_CUSTOM;
+    ApplyCharacterPostfix(MARIO, useCustomPostfix);
+    ApplyCharacterPostfix(BABY_PEACH, useCustomPostfix);
+    ApplyCharacterPostfix(WALUIGI, useCustomPostfix);
+    ApplyCharacterPostfix(BOWSER, useCustomPostfix);
+    ApplyCharacterPostfix(BABY_DAISY, useCustomPostfix);
+    ApplyCharacterPostfix(DRY_BONES, useCustomPostfix);
+    ApplyCharacterPostfix(BABY_MARIO, useCustomPostfix);
+    ApplyCharacterPostfix(LUIGI, useCustomPostfix);
+    ApplyCharacterPostfix(TOAD, useCustomPostfix);
+    ApplyCharacterPostfix(DONKEY_KONG, useCustomPostfix);
+    ApplyCharacterPostfix(YOSHI, useCustomPostfix);
+    ApplyCharacterPostfix(WARIO, useCustomPostfix);
+    ApplyCharacterPostfix(BABY_LUIGI, useCustomPostfix);
+    ApplyCharacterPostfix(TOADETTE, useCustomPostfix);
+    ApplyCharacterPostfix(KOOPA_TROOPA, useCustomPostfix);
+    ApplyCharacterPostfix(DAISY, useCustomPostfix);
+    ApplyCharacterPostfix(PEACH, useCustomPostfix);
+    ApplyCharacterPostfix(BIRDO, useCustomPostfix);
+    ApplyCharacterPostfix(DIDDY_KONG, useCustomPostfix);
+    ApplyCharacterPostfix(KING_BOO, useCustomPostfix);
+    ApplyCharacterPostfix(BOWSER_JR, useCustomPostfix);
+    ApplyCharacterPostfix(DRY_BOWSER, useCustomPostfix);
+    ApplyCharacterPostfix(FUNKY_KONG, useCustomPostfix);
+    ApplyCharacterPostfix(ROSALINA, useCustomPostfix);
+    ApplyCharacterPostfix(PEACH_BIKER, useCustomPostfix);
+    ApplyCharacterPostfix(DAISY_BIKER, useCustomPostfix);
+    ApplyCharacterPostfix(ROSALINA_BIKER, useCustomPostfix);
 }
 
 bool IsRaceSectionActive() {
@@ -394,10 +425,10 @@ static void ResetMenuDriverModelCache() {
     pendingMenuDriverReinitFrames = 0;
     cachedMenuModelMgr = nullptr;
     cachedMenuDriverModelPlayerCount = 0;
-    currentMenuDriverModelGeneration = customCharacterStateGeneration;
+    currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
+    buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
     for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
         cachedMenuDriverModels[tableIdx] = nullptr;
-        cachedMenuDriverModelGenerations[tableIdx] = 0;
     }
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
@@ -419,23 +450,15 @@ static void SyncMenuDriverModelCache() {
     if (shouldResetCache) {
         cachedMenuModelMgr = menuModelMgr;
         cachedMenuDriverModelPlayerCount = menuModelMgr->playerCount;
+        currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
         for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
             cachedMenuDriverModels[tableIdx] = nullptr;
-            cachedMenuDriverModelGenerations[tableIdx] = 0;
         }
     }
 
-    bool isCurrentManagerCached = false;
-    for (u32 cacheIdx = 0; cacheIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++cacheIdx) {
-        if (cachedMenuDriverModels[cacheIdx] == menuModelMgr->driverModels) {
-            isCurrentManagerCached = true;
-            break;
-        }
-    }
-
-    if (!isCurrentManagerCached) {
-        cachedMenuDriverModels[0] = menuModelMgr->driverModels;
-        cachedMenuDriverModelGenerations[0] = currentMenuDriverModelGeneration;
+    if (currentMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
+            cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr) {
+        cachedMenuDriverModels[currentMenuDriverModelTable] = menuModelMgr->driverModels;
     }
 }
 
@@ -522,6 +545,36 @@ static void StartMenuDriverModelManager(MenuDriverModelMgr& driverModelMgr) {
     original(&driverModelMgr);
 }
 
+kmRuntimeUse(0x80830d00);
+static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, CharacterId character) {
+    if (menuModelMgr == nullptr || !menuModelMgr->isActive) return;
+
+    MenuDriverModelMgr* const driverModels = menuModelMgr->driverModels;
+    if (driverModels == nullptr || playerId >= driverModels->playerCount) return;
+
+    MenuDriverModel* const playerModel = driverModels->players[playerId].playerModel;
+    const bool wasVisible = driverModels->players[playerId].isVisible;
+    if (playerModel != nullptr) playerModel->ToggleVisible(false);
+
+    typedef void (*SetPlayerCharacterFn)(MenuDriverModelMgr*, u8, CharacterId);
+    const SetPlayerCharacterFn original = reinterpret_cast<SetPlayerCharacterFn>(kmRuntimeAddr(0x80830d00));
+    original(driverModels, playerId, character);
+
+    if (wasVisible) driverModels->TogglePlayerModel(playerId, true);
+}
+kmBranch(0x8059e568, RequestDriverModelHook);
+
+static u8 GetMenuDriverModelTableForCharacter(CharacterId character) {
+    return IsCustomCharacterEnabled(character) ? CUSTOM_CHARACTER_TABLE_CUSTOM : CUSTOM_CHARACTER_TABLE_DEFAULT;
+}
+
+static void ScheduleMenuDriverModelReinitForPreview() {
+    if (!IsCharacterSelectPageActive()) return;
+
+    const u8 targetTable = GetMenuDriverModelTableForCharacter(GetPreviewCharacterForHud(0));
+    if (targetTable != currentMenuDriverModelTable) pendingMenuDriverReinitFrames = 1;
+}
+
 static void ReinitializeMenuDriverModels() {
     MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
     GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
@@ -535,33 +588,25 @@ static void ReinitializeMenuDriverModels() {
     if (playerCount == 0) return;
 
     MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
-    MenuDriverModelMgr* newDriverModels = nullptr;
-    for (u32 cacheIdx = 0; cacheIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++cacheIdx) {
-        if (cachedMenuDriverModelGenerations[cacheIdx] == customCharacterStateGeneration) {
-            newDriverModels = cachedMenuDriverModels[cacheIdx];
-            break;
-        }
-    }
+    const u8 targetTable = GetMenuDriverModelTableForCharacter(GetPreviewCharacterForHud(0));
+    if (targetTable == currentMenuDriverModelTable && oldDriverModels != nullptr) return;
 
+    MenuDriverModelMgr* newDriverModels = cachedMenuDriverModels[targetTable];
     if (newDriverModels == nullptr) {
         UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
         currentScene->structsHeaps.SetHeapsGroupId(3);
+        buildingMenuDriverModelTable = targetTable;
+        ApplyMenuDriverModelTablePostfixes(targetTable);
         newDriverModels = CreateMenuDriverModelManager(playerCount);
+        buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+        ApplyCharacterPostfixes();
         currentScene->structsHeaps.SetHeapsGroupId(0);
         if (newDriverModels == nullptr) {
             currentScene->structsHeaps.SetHeapsGroupId(6);
             return;
         }
 
-        u32 cacheIdx = CUSTOM_CHARACTER_TABLE_COUNT - 1;
-        for (u32 idx = 0; idx < CUSTOM_CHARACTER_TABLE_COUNT; ++idx) {
-            if (cachedMenuDriverModels[idx] == nullptr) {
-                cacheIdx = idx;
-                break;
-            }
-        }
-        cachedMenuDriverModels[cacheIdx] = newDriverModels;
-        cachedMenuDriverModelGenerations[cacheIdx] = customCharacterStateGeneration;
+        cachedMenuDriverModels[targetTable] = newDriverModels;
     }
 
     if (oldDriverModels != nullptr && oldDriverModels != newDriverModels) {
@@ -587,7 +632,7 @@ static void ReinitializeMenuDriverModels() {
 
     RefreshCharacterSelectModels();
     RefreshKartSelectModel();
-    currentMenuDriverModelGeneration = customCharacterStateGeneration;
+    currentMenuDriverModelTable = targetTable;
 }
 
 static void ProcessPendingMenuDriverModelReinit() {
@@ -778,7 +823,9 @@ kmBranch(0x805410e4, LoadMenuKartArchiveHook);
 kmRuntimeUse(0x805419c8);
 static const char* GetMenuDriverBRRESNameHook(u32 character) {
     const CharacterId characterId = static_cast<CharacterId>(character);
-    const char* overrideName = IsCustomCharacterEnabled(characterId) ? GetCustomDriverBRRESName(character) : GetDefaultDriverBRRESName(character);
+    const u8 tableIdx = buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT ?
+            buildingMenuDriverModelTable : GetMenuDriverModelTableForCharacter(characterId);
+    const char* overrideName = tableIdx == CUSTOM_CHARACTER_TABLE_CUSTOM ? GetCustomDriverBRRESName(character) : GetDefaultDriverBRRESName(character);
     if (overrideName != nullptr) return overrideName;
 
     typedef const char* (*GetCharacterNameFn)(u32);
@@ -796,14 +843,16 @@ void SetCharacter() {
     if (!IsOnlineRoom(RKNet::Controller::sInstance)) ResetOnlineCustomCharacterFlags();
     ResetMenuDriverModelCache();
     EnsureActiveCustomCharacterTable();
-    currentMenuDriverModelGeneration = customCharacterStateGeneration;
 }
 static SectionLoadHook SetCharacterHook(SetCharacter);
 
 kmRuntimeUse(0x8083e5f4);
 static void CharacterSelectHoverHook(Pages::CharacterSelect* page, CtrlMenuCharacterSelect::ButtonDriver* button, u32 buttonId, u8 hudSlotId) {
-    if (hudSlotId < 4) hoveredCharacterByHud[hudSlotId] = static_cast<CharacterId>(buttonId);
-
+    if (hudSlotId < 4) {
+        hoveredCharacterByHud[hudSlotId] = static_cast<CharacterId>(buttonId);
+        currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+        ReinitializeMenuDriverModels();
+    }
     typedef void (*CharacterSelectHoverFn)(Pages::CharacterSelect*, CtrlMenuCharacterSelect::ButtonDriver*, u32, u8);
     const CharacterSelectHoverFn original = reinterpret_cast<CharacterSelectHoverFn>(kmRuntimeAddr(0x8083e5f4));
     original(page, button, buttonId, hudSlotId);
@@ -816,8 +865,11 @@ kmCall(0x807e3a88, CharacterSelectHoverHook);
 
 kmRuntimeUse(0x8083dfa8);
 static void CharacterSelectClickHook(Pages::CharacterSelect* page, PushButton* button, u32 buttonId, u8 hudSlotId) {
-    if (hudSlotId < 4) hoveredCharacterByHud[hudSlotId] = static_cast<CharacterId>(buttonId);
-
+    if (hudSlotId < 4) {
+        hoveredCharacterByHud[hudSlotId] = static_cast<CharacterId>(buttonId);
+        if (hudSlotId == 0) ScheduleMenuDriverModelReinitForPreview();
+        ReinitializeMenuDriverModels();
+    }
     typedef void (*CharacterSelectClickFn)(Pages::CharacterSelect*, PushButton*, u32, u8);
     const CharacterSelectClickFn original = reinterpret_cast<CharacterSelectClickFn>(kmRuntimeAddr(0x8083dfa8));
     original(page, button, buttonId, hudSlotId);
