@@ -60,6 +60,7 @@ const u32 kMaxOverridesTotal = 1024;
 const u32 kBRSAROverrideSlotCount = 1024;
 const u32 kOverrideMaxGrowthOnSourceHeap = 0x100000;
 const u32 kInvalidPoolOffset = 0xFFFFFFFFu;
+const u16 kInvalidScratchIndex16 = 0xFFFFu;
 
 enum OverrideEntryFlags {
     OVERRIDEENTRYFLAG_NONE = 0,
@@ -129,13 +130,16 @@ struct OverrideDatabase {
 };
 
 struct LooseOverrideScratch {
-    s32* nodeOverrideIndex;
+    u16* nodeOverrideIndex;
     u32 nodeOverrideCapacity;
-    u8* entryApplied;
+    u32* entryAppliedBits;
     u32 entryAppliedCapacity;
-    s32* basenameHashHeads;
-    s32* basenameHashNext;
+    u16* basenameHashHeads16;
+    u16* basenameHashNext16;
+    s32* basenameHashHeads32;
+    s32* basenameHashNext32;
     u32 basenameHashCapacity;
+    bool useWideBasenameIndices;
     u32* repackOffsets;
     u32* repackSizes;
     u32* repackOriginalSizes;
@@ -186,8 +190,8 @@ static bool sOverrideCacheStateInitialized = false;
 static bool sCachedLooseOverridesEnabled = false;
 static char sCachedModFolder[OVERRIDE_MAX_PATH] = "";
 static char sLastUIArchiveBase[32] = "";
-static LooseOverrideScratch sLooseOverrideScratch = {nullptr, 0, nullptr, 0, nullptr, nullptr, 0,
-                                                     nullptr, nullptr, nullptr, nullptr, 0, nullptr};
+static LooseOverrideScratch sLooseOverrideScratch = {nullptr, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, 0,
+                                                     false, nullptr, nullptr, nullptr, nullptr, 0, nullptr};
 
 static bool AreLooseArchiveOverridesEnabled() {
     if (!Settings::Mgr::IsCreated()) {
@@ -740,13 +744,45 @@ static void FreeOverrideDatabase(OverrideDatabase& database) {
     database.brsarCount = 0;
 }
 
+static u32 GetEntryAppliedWordCount(u32 entryCapacity) {
+    return (entryCapacity + 31) >> 5;
+}
+
+static void ClearEntryAppliedBits(u32* entryAppliedBits, u32 entryCapacity) {
+    if (entryAppliedBits == nullptr) return;
+    memset(entryAppliedBits, 0, sizeof(u32) * GetEntryAppliedWordCount(entryCapacity));
+}
+
+static void MarkEntryApplied(u32* entryAppliedBits, u32 entryIndex) {
+    if (entryAppliedBits == nullptr) return;
+    entryAppliedBits[entryIndex >> 5] |= (1u << (entryIndex & 31));
+}
+
+static bool IsEntryApplied(const u32* entryAppliedBits, u32 entryIndex) {
+    if (entryAppliedBits == nullptr) return false;
+    return (entryAppliedBits[entryIndex >> 5] & (1u << (entryIndex & 31))) != 0;
+}
+
+static u32 CountAppliedEntries(const u32* entryAppliedBits, u32 entryCapacity) {
+    u32 appliedCount = 0;
+    for (u32 i = 0; i < entryCapacity; ++i) {
+        if (IsEntryApplied(entryAppliedBits, i)) ++appliedCount;
+    }
+    return appliedCount;
+}
+
 static u32 GetLooseOverrideScratchFootprint(u32 nodeCapacity, u32 entryCapacity, u32 repackCapacity,
-                                            u32 basenameHashCapacity) {
+                                            u32 basenameHashCapacity, bool useWideBasenameIndices) {
     u32 footprint = 0;
-    footprint += nw4r::ut::RoundUp(sizeof(s32) * nodeCapacity, 0x20);
-    footprint += nw4r::ut::RoundUp(sizeof(u8) * entryCapacity, 0x20);
-    footprint += nw4r::ut::RoundUp(sizeof(s32) * nodeCapacity, 0x20);
-    footprint += nw4r::ut::RoundUp(sizeof(s32) * basenameHashCapacity, 0x20);
+    footprint += nw4r::ut::RoundUp(sizeof(u16) * nodeCapacity, 0x20);
+    footprint += nw4r::ut::RoundUp(sizeof(u32) * GetEntryAppliedWordCount(entryCapacity), 0x20);
+    if (useWideBasenameIndices) {
+        footprint += nw4r::ut::RoundUp(sizeof(s32) * nodeCapacity, 0x20);
+        footprint += nw4r::ut::RoundUp(sizeof(s32) * basenameHashCapacity, 0x20);
+    } else {
+        footprint += nw4r::ut::RoundUp(sizeof(u16) * nodeCapacity, 0x20);
+        footprint += nw4r::ut::RoundUp(sizeof(u16) * basenameHashCapacity, 0x20);
+    }
     if (repackCapacity > 0) {
         footprint += nw4r::ut::RoundUp(sizeof(u32) * repackCapacity, 0x20) * 4;
     }
@@ -755,15 +791,18 @@ static u32 GetLooseOverrideScratchFootprint(u32 nodeCapacity, u32 entryCapacity,
 
 static u32 GetLooseOverrideScratchFootprint(const LooseOverrideScratch& scratch) {
     return GetLooseOverrideScratchFootprint(scratch.nodeOverrideCapacity, scratch.entryAppliedCapacity,
-                                            scratch.repackCapacity, scratch.basenameHashCapacity);
+                                            scratch.repackCapacity, scratch.basenameHashCapacity,
+                                            scratch.useWideBasenameIndices);
 }
 
 static void FreeLooseOverrideScratch(LooseOverrideScratch& scratch) {
     if (scratch.heap != nullptr) {
         if (scratch.nodeOverrideIndex != nullptr) EGG::Heap::free(scratch.nodeOverrideIndex, scratch.heap);
-        if (scratch.entryApplied != nullptr) EGG::Heap::free(scratch.entryApplied, scratch.heap);
-        if (scratch.basenameHashHeads != nullptr) EGG::Heap::free(scratch.basenameHashHeads, scratch.heap);
-        if (scratch.basenameHashNext != nullptr) EGG::Heap::free(scratch.basenameHashNext, scratch.heap);
+        if (scratch.entryAppliedBits != nullptr) EGG::Heap::free(scratch.entryAppliedBits, scratch.heap);
+        if (scratch.basenameHashHeads16 != nullptr) EGG::Heap::free(scratch.basenameHashHeads16, scratch.heap);
+        if (scratch.basenameHashNext16 != nullptr) EGG::Heap::free(scratch.basenameHashNext16, scratch.heap);
+        if (scratch.basenameHashHeads32 != nullptr) EGG::Heap::free(scratch.basenameHashHeads32, scratch.heap);
+        if (scratch.basenameHashNext32 != nullptr) EGG::Heap::free(scratch.basenameHashNext32, scratch.heap);
         if (scratch.repackOffsets != nullptr) EGG::Heap::free(scratch.repackOffsets, scratch.heap);
         if (scratch.repackSizes != nullptr) EGG::Heap::free(scratch.repackSizes, scratch.heap);
         if (scratch.repackOriginalSizes != nullptr) EGG::Heap::free(scratch.repackOriginalSizes, scratch.heap);
@@ -771,11 +810,14 @@ static void FreeLooseOverrideScratch(LooseOverrideScratch& scratch) {
     }
     scratch.nodeOverrideIndex = nullptr;
     scratch.nodeOverrideCapacity = 0;
-    scratch.entryApplied = nullptr;
+    scratch.entryAppliedBits = nullptr;
     scratch.entryAppliedCapacity = 0;
-    scratch.basenameHashHeads = nullptr;
-    scratch.basenameHashNext = nullptr;
+    scratch.basenameHashHeads16 = nullptr;
+    scratch.basenameHashNext16 = nullptr;
+    scratch.basenameHashHeads32 = nullptr;
+    scratch.basenameHashNext32 = nullptr;
     scratch.basenameHashCapacity = 0;
+    scratch.useWideBasenameIndices = false;
     scratch.repackOffsets = nullptr;
     scratch.repackSizes = nullptr;
     scratch.repackOriginalSizes = nullptr;
@@ -813,12 +855,17 @@ static bool EnsureLooseOverrideScratchCapacity(u32 nodeCapacity, u32 entryCapaci
                                                EGG::Heap* fallbackHeap) {
     if (nodeCapacity == 0 || entryCapacity == 0) return false;
     const u32 basenameHashCapacity = GetBasenameHashCapacity(nodeCapacity);
+    const bool useWideBasenameIndices = sLooseOverrideScratch.useWideBasenameIndices || (nodeCapacity > 65534);
     if (sLooseOverrideScratch.nodeOverrideCapacity >= nodeCapacity &&
         sLooseOverrideScratch.entryAppliedCapacity >= entryCapacity &&
         sLooseOverrideScratch.basenameHashCapacity >= basenameHashCapacity &&
         sLooseOverrideScratch.repackCapacity >= repackCapacity &&
-        sLooseOverrideScratch.nodeOverrideIndex != nullptr && sLooseOverrideScratch.entryApplied != nullptr &&
-        sLooseOverrideScratch.basenameHashHeads != nullptr && sLooseOverrideScratch.basenameHashNext != nullptr &&
+        sLooseOverrideScratch.useWideBasenameIndices == useWideBasenameIndices &&
+        sLooseOverrideScratch.nodeOverrideIndex != nullptr && sLooseOverrideScratch.entryAppliedBits != nullptr &&
+        ((useWideBasenameIndices && sLooseOverrideScratch.basenameHashHeads32 != nullptr &&
+          sLooseOverrideScratch.basenameHashNext32 != nullptr) ||
+         (!useWideBasenameIndices && sLooseOverrideScratch.basenameHashHeads16 != nullptr &&
+          sLooseOverrideScratch.basenameHashNext16 != nullptr)) &&
         (repackCapacity == 0 ||
          (sLooseOverrideScratch.repackOffsets != nullptr && sLooseOverrideScratch.repackSizes != nullptr &&
           sLooseOverrideScratch.repackOriginalSizes != nullptr && sLooseOverrideScratch.repackOrder != nullptr))) {
@@ -836,7 +883,8 @@ static bool EnsureLooseOverrideScratchCapacity(u32 nodeCapacity, u32 entryCapaci
     const u32 targetRepackCapacity =
         (sLooseOverrideScratch.repackCapacity > repackCapacity) ? sLooseOverrideScratch.repackCapacity : repackCapacity;
     const u32 requiredSize = GetLooseOverrideScratchFootprint(targetNodeCapacity, targetEntryCapacity,
-                                                              targetRepackCapacity, targetBasenameHashCapacity);
+                                                              targetRepackCapacity, targetBasenameHashCapacity,
+                                                              useWideBasenameIndices);
 
     EGG::Heap* heap = GetLooseOverrideScratchHeap(requiredSize, fallbackHeap);
     if (heap == nullptr) {
@@ -845,11 +893,20 @@ static bool EnsureLooseOverrideScratchCapacity(u32 nodeCapacity, u32 entryCapaci
 
     FreeLooseOverrideScratch(sLooseOverrideScratch);
 
-    sLooseOverrideScratch.nodeOverrideIndex = EGG::Heap::alloc<s32>(sizeof(s32) * targetNodeCapacity, 0x20, heap);
-    sLooseOverrideScratch.entryApplied = EGG::Heap::alloc<u8>(sizeof(u8) * targetEntryCapacity, 0x20, heap);
-    sLooseOverrideScratch.basenameHashHeads =
-        EGG::Heap::alloc<s32>(sizeof(s32) * targetBasenameHashCapacity, 0x20, heap);
-    sLooseOverrideScratch.basenameHashNext = EGG::Heap::alloc<s32>(sizeof(s32) * targetNodeCapacity, 0x20, heap);
+    sLooseOverrideScratch.nodeOverrideIndex = EGG::Heap::alloc<u16>(sizeof(u16) * targetNodeCapacity, 0x20, heap);
+    sLooseOverrideScratch.entryAppliedBits =
+        EGG::Heap::alloc<u32>(sizeof(u32) * GetEntryAppliedWordCount(targetEntryCapacity), 0x20, heap);
+    if (useWideBasenameIndices) {
+        sLooseOverrideScratch.basenameHashHeads32 =
+            EGG::Heap::alloc<s32>(sizeof(s32) * targetBasenameHashCapacity, 0x20, heap);
+        sLooseOverrideScratch.basenameHashNext32 =
+            EGG::Heap::alloc<s32>(sizeof(s32) * targetNodeCapacity, 0x20, heap);
+    } else {
+        sLooseOverrideScratch.basenameHashHeads16 =
+            EGG::Heap::alloc<u16>(sizeof(u16) * targetBasenameHashCapacity, 0x20, heap);
+        sLooseOverrideScratch.basenameHashNext16 =
+            EGG::Heap::alloc<u16>(sizeof(u16) * targetNodeCapacity, 0x20, heap);
+    }
     if (targetRepackCapacity > 0) {
         sLooseOverrideScratch.repackOffsets = EGG::Heap::alloc<u32>(sizeof(u32) * targetRepackCapacity, 0x20, heap);
         sLooseOverrideScratch.repackSizes = EGG::Heap::alloc<u32>(sizeof(u32) * targetRepackCapacity, 0x20, heap);
@@ -858,8 +915,11 @@ static bool EnsureLooseOverrideScratchCapacity(u32 nodeCapacity, u32 entryCapaci
         sLooseOverrideScratch.repackOrder = EGG::Heap::alloc<u32>(sizeof(u32) * targetRepackCapacity, 0x20, heap);
     }
 
-    if (sLooseOverrideScratch.nodeOverrideIndex == nullptr || sLooseOverrideScratch.entryApplied == nullptr ||
-        sLooseOverrideScratch.basenameHashHeads == nullptr || sLooseOverrideScratch.basenameHashNext == nullptr ||
+    if (sLooseOverrideScratch.nodeOverrideIndex == nullptr || sLooseOverrideScratch.entryAppliedBits == nullptr ||
+        (useWideBasenameIndices &&
+         (sLooseOverrideScratch.basenameHashHeads32 == nullptr || sLooseOverrideScratch.basenameHashNext32 == nullptr)) ||
+        (!useWideBasenameIndices &&
+         (sLooseOverrideScratch.basenameHashHeads16 == nullptr || sLooseOverrideScratch.basenameHashNext16 == nullptr)) ||
         (targetRepackCapacity > 0 &&
          (sLooseOverrideScratch.repackOffsets == nullptr || sLooseOverrideScratch.repackSizes == nullptr ||
           sLooseOverrideScratch.repackOriginalSizes == nullptr || sLooseOverrideScratch.repackOrder == nullptr))) {
@@ -870,13 +930,34 @@ static bool EnsureLooseOverrideScratchCapacity(u32 nodeCapacity, u32 entryCapaci
     sLooseOverrideScratch.nodeOverrideCapacity = targetNodeCapacity;
     sLooseOverrideScratch.entryAppliedCapacity = targetEntryCapacity;
     sLooseOverrideScratch.basenameHashCapacity = targetBasenameHashCapacity;
+    sLooseOverrideScratch.useWideBasenameIndices = useWideBasenameIndices;
     sLooseOverrideScratch.repackCapacity = targetRepackCapacity;
     sLooseOverrideScratch.heap = heap;
     return true;
 }
 
-static void BuildArchiveBasenameLookup(const U8Node* nodes, u32 nodeCount, char* stringTable, s32* bucketHeads,
-                                       u32 bucketCount, s32* nextNode) {
+static void BuildArchiveBasenameLookup16(const U8Node* nodes, u32 nodeCount, char* stringTable, u16* bucketHeads,
+                                         u32 bucketCount, u16* nextNode) {
+    if (nodes == nullptr || stringTable == nullptr || bucketHeads == nullptr || nextNode == nullptr || bucketCount == 0) {
+        return;
+    }
+
+    memset(bucketHeads, 0xFF, sizeof(u16) * bucketCount);
+    memset(nextNode, 0xFF, sizeof(u16) * nodeCount);
+
+    for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+        if (NodeIsDir(nodes[nodeIdx])) continue;
+        const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
+        if (nodeName == nullptr || nodeName[0] == '\0') continue;
+
+        const u32 bucket = HashArchiveMemberBasename(nodeName) & (bucketCount - 1);
+        nextNode[nodeIdx] = bucketHeads[bucket];
+        bucketHeads[bucket] = static_cast<u16>(nodeIdx);
+    }
+}
+
+static void BuildArchiveBasenameLookup32(const U8Node* nodes, u32 nodeCount, char* stringTable, s32* bucketHeads,
+                                         u32 bucketCount, s32* nextNode) {
     if (nodes == nullptr || stringTable == nullptr || bucketHeads == nullptr || nextNode == nullptr || bucketCount == 0) {
         return;
     }
@@ -895,9 +976,30 @@ static void BuildArchiveBasenameLookup(const U8Node* nodes, u32 nodeCount, char*
     }
 }
 
-static u32 MatchArchiveBasenameOverride(const U8Node* nodes, char* stringTable, const s32* bucketHeads,
-                                        const s32* nextNode, u32 bucketCount, const char* basename, s32 entryIndex,
-                                        s32* nodeOverrideIndex) {
+static u32 MatchArchiveBasenameOverride16(const U8Node* nodes, char* stringTable, const u16* bucketHeads,
+                                          const u16* nextNode, u32 bucketCount, const char* basename, u16 entryIndex,
+                                          u16* nodeOverrideIndex) {
+    if (nodes == nullptr || stringTable == nullptr || bucketHeads == nullptr || nextNode == nullptr || bucketCount == 0 ||
+        basename == nullptr || basename[0] == '\0' || nodeOverrideIndex == nullptr) {
+        return 0;
+    }
+
+    const u32 bucket = HashArchiveMemberBasename(basename) & (bucketCount - 1);
+    u32 matchCount = 0;
+    for (u16 nodeIdx = bucketHeads[bucket]; nodeIdx != kInvalidScratchIndex16; nodeIdx = nextNode[nodeIdx]) {
+        const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
+        if (strcmp(nodeName, basename) != 0) continue;
+
+        // Matching nodes stay fan-out capable: a single basename override still patches every sibling file node.
+        nodeOverrideIndex[nodeIdx] = entryIndex;
+        ++matchCount;
+    }
+    return matchCount;
+}
+
+static u32 MatchArchiveBasenameOverride32(const U8Node* nodes, char* stringTable, const s32* bucketHeads,
+                                          const s32* nextNode, u32 bucketCount, const char* basename, u16 entryIndex,
+                                          u16* nodeOverrideIndex) {
     if (nodes == nullptr || stringTable == nullptr || bucketHeads == nullptr || nextNode == nullptr || bucketCount == 0 ||
         basename == nullptr || basename[0] == '\0' || nodeOverrideIndex == nullptr) {
         return 0;
@@ -909,7 +1011,6 @@ static u32 MatchArchiveBasenameOverride(const U8Node* nodes, char* stringTable, 
         const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
         if (strcmp(nodeName, basename) != 0) continue;
 
-        // Matching nodes stay fan-out capable: a single basename override still patches every sibling file node.
         nodeOverrideIndex[nodeIdx] = entryIndex;
         ++matchCount;
     }
@@ -2041,20 +2142,20 @@ bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 arc
     return true;
 }
 
-static u32 ApplyInPlaceLooseOverrides(u8* archiveBase, U8Node* nodes, u32 nodeCount, s32* nodeOverrideIndex,
-                                      u32* fileSlotCapacities, u8* entryApplied, u32 rangeStart,
+static u32 ApplyInPlaceLooseOverrides(u8* archiveBase, U8Node* nodes, u32 nodeCount, u16* nodeOverrideIndex,
+                                      u32* fileSlotCapacities, u32* entryAppliedBits, u32 rangeStart,
                                       u32* outOversizedNodes) {
     if (outOversizedNodes != nullptr) *outOversizedNodes = 0;
     if (archiveBase == nullptr || nodes == nullptr || nodeOverrideIndex == nullptr || fileSlotCapacities == nullptr ||
-        entryApplied == nullptr) {
+        entryAppliedBits == nullptr) {
         return 0;
     }
 
     u32 patchedNodes = 0;
     u32 oversizedNodes = 0;
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
-        const s32 idx = nodeOverrideIndex[nodeIdx];
-        if (idx < 0) continue;
+        const u16 idx = nodeOverrideIndex[nodeIdx];
+        if (idx == kInvalidScratchIndex16) continue;
         if (NodeIsDir(nodes[nodeIdx])) continue;
 
         const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[idx];
@@ -2072,7 +2173,7 @@ static u32 ApplyInPlaceLooseOverrides(u8* archiveBase, U8Node* nodes, u32 nodeCo
         }
         nodes[nodeIdx].dataSize = entry.size;
         OS::DCStoreRange(dest, entry.size);
-        entryApplied[idx - rangeStart] = 1;
+        MarkEntryApplied(entryAppliedBits, idx - rangeStart);
         ++patchedNodes;
     }
 
@@ -2143,10 +2244,13 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         return false;
     }
     // These buffers are reused across archive loads and only grow when a larger archive or candidate bucket appears.
-    s32* nodeOverrideIndex = sLooseOverrideScratch.nodeOverrideIndex;
-    u8* entryApplied = sLooseOverrideScratch.entryApplied;
-    s32* basenameHashHeads = sLooseOverrideScratch.basenameHashHeads;
-    s32* basenameHashNext = sLooseOverrideScratch.basenameHashNext;
+    u16* nodeOverrideIndex = sLooseOverrideScratch.nodeOverrideIndex;
+    u32* entryAppliedBits = sLooseOverrideScratch.entryAppliedBits;
+    u16* basenameHashHeads16 = sLooseOverrideScratch.basenameHashHeads16;
+    u16* basenameHashNext16 = sLooseOverrideScratch.basenameHashNext16;
+    s32* basenameHashHeads32 = sLooseOverrideScratch.basenameHashHeads32;
+    s32* basenameHashNext32 = sLooseOverrideScratch.basenameHashNext32;
+    const bool useWideBasenameIndices = sLooseOverrideScratch.useWideBasenameIndices;
     const u32 basenameHashCapacity = sLooseOverrideScratch.basenameHashCapacity;
     u32* fileNodeOrder = sLooseOverrideScratch.repackOffsets;
     u32* fileSlotCapacities = sLooseOverrideScratch.repackSizes;
@@ -2155,9 +2259,15 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     u32* repackOriginalSizes = sLooseOverrideScratch.repackOriginalSizes;
     u32* repackOrder = sLooseOverrideScratch.repackOrder;
 
-    memset(nodeOverrideIndex, 0xFF, sizeof(s32) * nodeCount);
-    memset(entryApplied, 0, sizeof(u8) * taggedCandidates);
-    BuildArchiveBasenameLookup(nodes, nodeCount, stringTable, basenameHashHeads, basenameHashCapacity, basenameHashNext);
+    memset(nodeOverrideIndex, 0xFF, sizeof(u16) * nodeCount);
+    ClearEntryAppliedBits(entryAppliedBits, taggedCandidates);
+    if (useWideBasenameIndices) {
+        BuildArchiveBasenameLookup32(nodes, nodeCount, stringTable, basenameHashHeads32, basenameHashCapacity,
+                                     basenameHashNext32);
+    } else {
+        BuildArchiveBasenameLookup16(nodes, nodeCount, stringTable, basenameHashHeads16, basenameHashCapacity,
+                                     basenameHashNext16);
+    }
     BuildArchiveFileSlotCapacities(nodes, nodeCount, archiveSize, fileNodeOrder, fileSlotCapacities);
 
     bool anyOverrides = false;
@@ -2188,12 +2298,16 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 ++missingOverrides;
                 continue;
             }
-            nodeOverrideIndex[entryNum] = static_cast<s32>(i);
+            nodeOverrideIndex[entryNum] = static_cast<u16>(i);
             anyOverrides = true;
         } else {
-            const u32 matchCount = MatchArchiveBasenameOverride(nodes, stringTable, basenameHashHeads, basenameHashNext,
-                                                                basenameHashCapacity, matchName, static_cast<s32>(i),
-                                                                nodeOverrideIndex);
+            const u32 matchCount = useWideBasenameIndices
+                                       ? MatchArchiveBasenameOverride32(nodes, stringTable, basenameHashHeads32,
+                                                                       basenameHashNext32, basenameHashCapacity,
+                                                                       matchName, static_cast<u16>(i), nodeOverrideIndex)
+                                       : MatchArchiveBasenameOverride16(nodes, stringTable, basenameHashHeads16,
+                                                                       basenameHashNext16, basenameHashCapacity,
+                                                                       matchName, static_cast<u16>(i), nodeOverrideIndex);
             if (matchCount == 0) {
                 ++missingOverrides;
                 continue;
@@ -2213,8 +2327,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
     bool needsRepack = false;
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
-        const s32 idx = nodeOverrideIndex[nodeIdx];
-        if (idx < 0) continue;
+        const u16 idx = nodeOverrideIndex[nodeIdx];
+        if (idx == kInvalidScratchIndex16) continue;
         if (NodeIsDir(nodes[nodeIdx])) continue;
         // In-place growth is safe as long as the replacement stays inside this
         // node's real byte slot up to the next file payload.
@@ -2238,12 +2352,9 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         // which always require repacking.
 
         patchedNodes = ApplyInPlaceLooseOverrides(archiveBase, nodes, nodeCount, nodeOverrideIndex, fileSlotCapacities,
-                                                  entryApplied, rangeStart, nullptr);
+                                                  entryAppliedBits, rangeStart, nullptr);
 
-        u32 appliedOverrides = 0;
-        for (u32 i = 0; i < taggedCandidates; ++i) {
-            if (entryApplied[i]) ++appliedOverrides;
-        }
+        const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
 
         if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
         if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
@@ -2260,9 +2371,9 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     u32 totalDataSize = 0;
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
         if (NodeIsDir(nodes[nodeIdx])) continue;
-        const s32 idx = nodeOverrideIndex[nodeIdx];
+        const u16 idx = nodeOverrideIndex[nodeIdx];
         u32 size = nodes[nodeIdx].dataSize;
-        if (idx >= 0) {
+        if (idx != kInvalidScratchIndex16) {
             // Reserve space for replacement sizes up front so the repack layout is fully known before copying.
             size = sOverrideDatabase.taggedEntries[idx].size;
         }
@@ -2320,16 +2431,16 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             if (NodeIsDir(nodes[nodeIdx])) continue;
             plannedOffset = nw4r::ut::RoundUp(plannedOffset, 0x20);
             repackOffsets[nodeIdx] = plannedOffset;
-            const s32 idx = nodeOverrideIndex[nodeIdx];
+            const u16 idx = nodeOverrideIndex[nodeIdx];
             repackOriginalSizes[nodeIdx] = nodes[nodeIdx].dataSize;
             const u32 plannedSize =
-                (idx >= 0) ? sOverrideDatabase.taggedEntries[idx].size : nodes[nodeIdx].dataSize;
+                (idx != kInvalidScratchIndex16) ? sOverrideDatabase.taggedEntries[idx].size : nodes[nodeIdx].dataSize;
             repackSizes[nodeIdx] = plannedSize;
             repackOrder[repackOrderCount++] = nodeIdx;
             if (plannedOffset < nodes[nodeIdx].dataOffset) {
                 allOffsetsForward = false;
             }
-            if (idx >= 0 && plannedSize < nodes[nodeIdx].dataSize) {
+            if (idx != kInvalidScratchIndex16 && plannedSize < nodes[nodeIdx].dataSize) {
                 // Same-heap repack cannot safely recover from a failed shrink override after later files move.
                 hasShrinkOverride = true;
             }
@@ -2398,12 +2509,9 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             U8Node* fallbackNodes = reinterpret_cast<U8Node*>(archiveBase + fallbackHeader->nodeOffset);
             u32 oversizedNodes = 0;
             patchedNodes = ApplyInPlaceLooseOverrides(archiveBase, fallbackNodes, nodeCount, nodeOverrideIndex,
-                                                      fileSlotCapacities, entryApplied, rangeStart, &oversizedNodes);
+                                                      fileSlotCapacities, entryAppliedBits, rangeStart, &oversizedNodes);
 
-            u32 appliedOverrides = 0;
-            for (u32 i = 0; i < taggedCandidates; ++i) {
-                if (entryApplied[i]) ++appliedOverrides;
-            }
+            const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
 
             if (patchedNodes > 0) {
                 OS::Report("[Pulsar] Loose override repack fallback used for '%s': applied=%u patched=%u oversized=%u missing=%u\n",
@@ -2430,8 +2538,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     if (useSameHeapRepack) {
         for (u32 orderIdx = 0; orderIdx < repackOrderCount; ++orderIdx) {
             const u32 nodeIdx = repackOrder[orderIdx];
-
-            const s32 idx = nodeOverrideIndex[nodeIdx];
             const u32 oldOffset = newNodes[nodeIdx].dataOffset;
             const u32 oldSize = newNodes[nodeIdx].dataSize;
             const u32 newFileSize = repackSizes[nodeIdx];
@@ -2451,8 +2557,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
         for (u32 orderIdx = 0; orderIdx < repackOrderCount; ++orderIdx) {
             const u32 nodeIdx = repackOrder[orderIdx];
-            const s32 idx = nodeOverrideIndex[nodeIdx];
-            if (idx < 0) continue;
+            const u16 idx = nodeOverrideIndex[nodeIdx];
+            if (idx == kInvalidScratchIndex16) continue;
 
             const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[idx];
             const u32 oldSize = repackOriginalSizes[nodeIdx];
@@ -2463,7 +2569,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 newNodes[nodeIdx].dataSize = oldSize;
                 continue;
             }
-            entryApplied[idx - rangeStart] = 1;
+            MarkEntryApplied(entryAppliedBits, idx - rangeStart);
             ++patchedNodes;
         }
 
@@ -2472,10 +2578,10 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
             if (NodeIsDir(nodes[nodeIdx])) continue;
 
-            const s32 idx = nodeOverrideIndex[nodeIdx];
+            const u16 idx = nodeOverrideIndex[nodeIdx];
             const u32 oldOffset = nodes[nodeIdx].dataOffset;
             const u32 oldSize = nodes[nodeIdx].dataSize;
-            bool useOverride = (idx >= 0);
+            bool useOverride = (idx != kInvalidScratchIndex16);
             u32 newFileSize = useOverride ? sOverrideDatabase.taggedEntries[idx].size : oldSize;
 
             writeOffset = nw4r::ut::RoundUp(writeOffset, 0x20);
@@ -2498,7 +2604,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                     useOverride = false;
                     newFileSize = oldSize;
                 } else {
-                    entryApplied[idx - rangeStart] = 1;
+                    MarkEntryApplied(entryAppliedBits, idx - rangeStart);
                     ++patchedNodes;
                 }
             }
@@ -2531,10 +2637,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     archiveSize = finalSize;
     archiveHeap = repackHeap;
 
-    u32 appliedOverrides = 0;
-    for (u32 i = 0; i < taggedCandidates; ++i) {
-        if (entryApplied[i]) ++appliedOverrides;
-    }
+    const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
 
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
     if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
