@@ -26,19 +26,25 @@ enum CustomCharacterTable {
     CUSTOM_CHARACTER_TABLE_COUNT = 2
 };
 
-static u8 activeCustomCharacterTable = CUSTOM_CHARACTER_TABLE_DEFAULT;
-static bool customCharacterTableInitialized = false;
+static const u8 CUSTOM_CHARACTER_COUNT = 0x30;
+static bool customCharacterEnabledByCharacter[CUSTOM_CHARACTER_COUNT];
+static u32 customCharacterStateGeneration = 1;
 static u8 pendingMenuDriverReinitFrames = 0;
 static MenuDriverModelMgr* cachedMenuDriverModels[CUSTOM_CHARACTER_TABLE_COUNT] = {nullptr, nullptr};
+static u32 cachedMenuDriverModelGenerations[CUSTOM_CHARACTER_TABLE_COUNT] = {0, 0};
 static MenuModelMgr* cachedMenuModelMgr = nullptr;
 static u8 cachedMenuDriverModelPlayerCount = 0;
-static u8 currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_DEFAULT;
+static u32 currentMenuDriverModelGeneration = 0;
 static CharacterId hoveredCharacterByHud[4] = {MARIO, MARIO, MARIO, MARIO};
 static u16 heldCustomCharacterToggleButtons = 0;
 
-void ApplyCharacterTable(u8 tableIdx);
+static void ApplyCharacterPostfixes();
 void RefreshLocalOnlineCustomCharacterFlags();
+const char* GetCustomCharacterPostfix(CharacterId character);
+const char* GetDefaultCharacterPostfix(CharacterId character);
+static void ApplyCharacterPostfix(CharacterId character, bool useCustomPostfix);
 static const char** GetCharacterPostfixEntry(CharacterId character);
+static bool IsCustomCharacterEnabled(CharacterId character);
 static bool IsCharacterSelectPageActive();
 static void ReinitializeMenuDriverModels();
 static void ProcessPendingMenuDriverModelReinit();
@@ -47,41 +53,69 @@ static void SyncMenuDriverModelCache();
 static void RefreshCharacterSelectModels();
 static void RefreshKartSelectModel();
 static CharacterId GetPreviewCharacterForHud(u8 hudSlotId);
+static CharacterId GetSelectedCharacterForHud(u8 hudSlotId);
 
 kmRuntimeUse(0x808b3a90);
 static const u32 CHARACTER_POSTFIX_TABLE_ADDRESS = kmRuntimeAddr(0x808b3a90);
 
-static void SetActiveCustomCharacterTable(u8 tableIdx) {
-    activeCustomCharacterTable = tableIdx % CUSTOM_CHARACTER_TABLE_COUNT;
-    customCharacterTableInitialized = true;
-    ApplyCharacterTable(activeCustomCharacterTable);
-    RefreshLocalOnlineCustomCharacterFlags();
+static CharacterId GetCustomCharacterStateId(CharacterId character) {
+    switch (character) {
+        case PEACH_BIKER:
+            return PEACH;
+        case DAISY_BIKER:
+            return DAISY;
+        case ROSALINA_BIKER:
+            return ROSALINA;
+        default:
+            return character;
+    }
 }
 
-static void ToggleCustomCharacterTable(bool moveRight) {
-    if (GetLocalPlayerCount() != 1) return;
+static bool IsCustomCharacterStateIdValid(CharacterId character) {
+    const CharacterId stateCharacter = GetCustomCharacterStateId(character);
+    if (stateCharacter < 0 || stateCharacter >= CUSTOM_CHARACTER_COUNT) return false;
+    return GetCustomCharacterPostfix(character) != nullptr && GetDefaultCharacterPostfix(character) != nullptr;
+}
 
-    if (moveRight) {
-        SetActiveCustomCharacterTable((activeCustomCharacterTable + 1) % CUSTOM_CHARACTER_TABLE_COUNT);
-    } else {
-        SetActiveCustomCharacterTable((activeCustomCharacterTable + CUSTOM_CHARACTER_TABLE_COUNT - 1) % CUSTOM_CHARACTER_TABLE_COUNT);
+static bool IsCustomCharacterEnabled(CharacterId character) {
+    if (!IsCustomCharacterStateIdValid(character)) return false;
+    return customCharacterEnabledByCharacter[GetCustomCharacterStateId(character)];
+}
+
+static bool IsAnyCustomCharacterEnabled() {
+    for (u8 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
+        if (customCharacterEnabledByCharacter[character]) return true;
     }
+    return false;
+}
+
+static bool SetCustomCharacterEnabled(CharacterId character, bool enabled) {
+    if (!IsCustomCharacterStateIdValid(character)) return false;
+
+    const CharacterId stateCharacter = GetCustomCharacterStateId(character);
+    if (customCharacterEnabledByCharacter[stateCharacter] == enabled) return false;
+
+    customCharacterEnabledByCharacter[stateCharacter] = enabled;
+    ++customCharacterStateGeneration;
+    ApplyCharacterPostfixes();
+    RefreshLocalOnlineCustomCharacterFlags();
+    return true;
+}
+
+static bool ToggleCustomCharacter(CharacterId character) {
+    if (GetLocalPlayerCount() != 1) return false;
+
+    if (!SetCustomCharacterEnabled(character, !IsCustomCharacterEnabled(character))) return false;
     pendingMenuDriverReinitFrames = 2;
+    return true;
 }
 
 static void EnsureActiveCustomCharacterTable() {
-    if (customCharacterTableInitialized) {
-        ApplyCharacterTable(activeCustomCharacterTable);
-        return;
-    }
-
-    activeCustomCharacterTable = CUSTOM_CHARACTER_TABLE_DEFAULT;
-    customCharacterTableInitialized = true;
-    ApplyCharacterTable(activeCustomCharacterTable);
+    ApplyCharacterPostfixes();
 }
 
 bool IsCustomCharacterTableActive() {
-    return activeCustomCharacterTable == CUSTOM_CHARACTER_TABLE_CUSTOM && GetLocalPlayerCount() == 1;
+    return IsAnyCustomCharacterEnabled();
 }
 
 bool IsOnlineRoom(const RKNet::Controller* controller) {
@@ -241,35 +275,46 @@ static void ApplyCharacterPostfix(CharacterId character, bool useCustomPostfix) 
 }
 
 void ApplyCharacterTable(u8 tableIdx) {
-    const bool useCustomPostfix = tableIdx == CUSTOM_CHARACTER_TABLE_CUSTOM;
+    const bool enabled = tableIdx == CUSTOM_CHARACTER_TABLE_CUSTOM;
+    for (u8 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
+        const CharacterId characterId = static_cast<CharacterId>(character);
+        if (IsCustomCharacterStateIdValid(characterId)) {
+            customCharacterEnabledByCharacter[GetCustomCharacterStateId(characterId)] = enabled;
+        }
+    }
+    ++customCharacterStateGeneration;
+    ApplyCharacterPostfixes();
+    RefreshLocalOnlineCustomCharacterFlags();
+}
 
-    ApplyCharacterPostfix(MARIO, useCustomPostfix);
-    ApplyCharacterPostfix(BABY_PEACH, useCustomPostfix);
-    ApplyCharacterPostfix(WALUIGI, useCustomPostfix);
-    ApplyCharacterPostfix(BOWSER, useCustomPostfix);
-    ApplyCharacterPostfix(BABY_DAISY, useCustomPostfix);
-    ApplyCharacterPostfix(DRY_BONES, useCustomPostfix);
-    ApplyCharacterPostfix(BABY_MARIO, useCustomPostfix);
-    ApplyCharacterPostfix(LUIGI, useCustomPostfix);
-    ApplyCharacterPostfix(TOAD, useCustomPostfix);
-    ApplyCharacterPostfix(DONKEY_KONG, useCustomPostfix);
-    ApplyCharacterPostfix(YOSHI, useCustomPostfix);
-    ApplyCharacterPostfix(WARIO, useCustomPostfix);
-    ApplyCharacterPostfix(BABY_LUIGI, useCustomPostfix);
-    ApplyCharacterPostfix(TOADETTE, useCustomPostfix);
-    ApplyCharacterPostfix(KOOPA_TROOPA, useCustomPostfix);
-    ApplyCharacterPostfix(DAISY, useCustomPostfix);
-    ApplyCharacterPostfix(PEACH, useCustomPostfix);
-    ApplyCharacterPostfix(BIRDO, useCustomPostfix);
-    ApplyCharacterPostfix(DIDDY_KONG, useCustomPostfix);
-    ApplyCharacterPostfix(KING_BOO, useCustomPostfix);
-    ApplyCharacterPostfix(BOWSER_JR, useCustomPostfix);
-    ApplyCharacterPostfix(DRY_BOWSER, useCustomPostfix);
-    ApplyCharacterPostfix(FUNKY_KONG, useCustomPostfix);
-    ApplyCharacterPostfix(ROSALINA, useCustomPostfix);
-    ApplyCharacterPostfix(PEACH_BIKER, useCustomPostfix);
-    ApplyCharacterPostfix(DAISY_BIKER, useCustomPostfix);
-    ApplyCharacterPostfix(ROSALINA_BIKER, useCustomPostfix);
+static void ApplyCharacterPostfixes() {
+    ApplyCharacterPostfix(MARIO, IsCustomCharacterEnabled(MARIO));
+    ApplyCharacterPostfix(BABY_PEACH, IsCustomCharacterEnabled(BABY_PEACH));
+    ApplyCharacterPostfix(WALUIGI, IsCustomCharacterEnabled(WALUIGI));
+    ApplyCharacterPostfix(BOWSER, IsCustomCharacterEnabled(BOWSER));
+    ApplyCharacterPostfix(BABY_DAISY, IsCustomCharacterEnabled(BABY_DAISY));
+    ApplyCharacterPostfix(DRY_BONES, IsCustomCharacterEnabled(DRY_BONES));
+    ApplyCharacterPostfix(BABY_MARIO, IsCustomCharacterEnabled(BABY_MARIO));
+    ApplyCharacterPostfix(LUIGI, IsCustomCharacterEnabled(LUIGI));
+    ApplyCharacterPostfix(TOAD, IsCustomCharacterEnabled(TOAD));
+    ApplyCharacterPostfix(DONKEY_KONG, IsCustomCharacterEnabled(DONKEY_KONG));
+    ApplyCharacterPostfix(YOSHI, IsCustomCharacterEnabled(YOSHI));
+    ApplyCharacterPostfix(WARIO, IsCustomCharacterEnabled(WARIO));
+    ApplyCharacterPostfix(BABY_LUIGI, IsCustomCharacterEnabled(BABY_LUIGI));
+    ApplyCharacterPostfix(TOADETTE, IsCustomCharacterEnabled(TOADETTE));
+    ApplyCharacterPostfix(KOOPA_TROOPA, IsCustomCharacterEnabled(KOOPA_TROOPA));
+    ApplyCharacterPostfix(DAISY, IsCustomCharacterEnabled(DAISY));
+    ApplyCharacterPostfix(PEACH, IsCustomCharacterEnabled(PEACH));
+    ApplyCharacterPostfix(BIRDO, IsCustomCharacterEnabled(BIRDO));
+    ApplyCharacterPostfix(DIDDY_KONG, IsCustomCharacterEnabled(DIDDY_KONG));
+    ApplyCharacterPostfix(KING_BOO, IsCustomCharacterEnabled(KING_BOO));
+    ApplyCharacterPostfix(BOWSER_JR, IsCustomCharacterEnabled(BOWSER_JR));
+    ApplyCharacterPostfix(DRY_BOWSER, IsCustomCharacterEnabled(DRY_BOWSER));
+    ApplyCharacterPostfix(FUNKY_KONG, IsCustomCharacterEnabled(FUNKY_KONG));
+    ApplyCharacterPostfix(ROSALINA, IsCustomCharacterEnabled(ROSALINA));
+    ApplyCharacterPostfix(PEACH_BIKER, IsCustomCharacterEnabled(PEACH_BIKER));
+    ApplyCharacterPostfix(DAISY_BIKER, IsCustomCharacterEnabled(DAISY_BIKER));
+    ApplyCharacterPostfix(ROSALINA_BIKER, IsCustomCharacterEnabled(ROSALINA_BIKER));
 }
 
 bool IsRaceSectionActive() {
@@ -292,15 +337,15 @@ bool IsLocalRacePlayer(u8 playerId) {
     return false;
 }
 
-bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId) {
+bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character) {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (IsOnlineRoom(controller)) {
         if (IsOnlineMultiLocal(controller)) return false;
         if (!isDisplayCustomSkinsEnabled()) return false;
-        if (IsLocalRacePlayer(playerId)) return IsCustomCharacterTableActive();
+        if (IsLocalRacePlayer(playerId)) return IsCustomCharacterEnabled(character);
         return playerId < 12 && onlineCustomCharacterFlags[playerId];
     }
-    return IsCustomCharacterTableActive() && IsLocalRacePlayer(playerId);
+    return IsCustomCharacterEnabled(character) && IsLocalRacePlayer(playerId);
 }
 
 static const char** GetCharacterPostfixEntry(CharacterId character) {
@@ -317,7 +362,7 @@ class ScopedCharacterPostfixSwap {
         if (this->entry == nullptr) return;
 
         this->previousValue = *this->entry;
-        if (ShouldUseCustomCharacterForArchivePlayer(playerId)) {
+        if (ShouldUseCustomCharacterForArchivePlayer(playerId, character)) {
             *this->entry = GetCustomCharacterPostfix(character);
         } else {
             *this->entry = GetDefaultCharacterPostfix(character);
@@ -349,9 +394,10 @@ static void ResetMenuDriverModelCache() {
     pendingMenuDriverReinitFrames = 0;
     cachedMenuModelMgr = nullptr;
     cachedMenuDriverModelPlayerCount = 0;
-    currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_DEFAULT;
+    currentMenuDriverModelGeneration = customCharacterStateGeneration;
     for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
         cachedMenuDriverModels[tableIdx] = nullptr;
+        cachedMenuDriverModelGenerations[tableIdx] = 0;
     }
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
@@ -375,11 +421,21 @@ static void SyncMenuDriverModelCache() {
         cachedMenuDriverModelPlayerCount = menuModelMgr->playerCount;
         for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
             cachedMenuDriverModels[tableIdx] = nullptr;
+            cachedMenuDriverModelGenerations[tableIdx] = 0;
         }
     }
 
-    if (cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr) {
-        cachedMenuDriverModels[currentMenuDriverModelTable] = menuModelMgr->driverModels;
+    bool isCurrentManagerCached = false;
+    for (u32 cacheIdx = 0; cacheIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++cacheIdx) {
+        if (cachedMenuDriverModels[cacheIdx] == menuModelMgr->driverModels) {
+            isCurrentManagerCached = true;
+            break;
+        }
+    }
+
+    if (!isCurrentManagerCached) {
+        cachedMenuDriverModels[0] = menuModelMgr->driverModels;
+        cachedMenuDriverModelGenerations[0] = currentMenuDriverModelGeneration;
     }
 }
 
@@ -479,7 +535,13 @@ static void ReinitializeMenuDriverModels() {
     if (playerCount == 0) return;
 
     MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
-    MenuDriverModelMgr* newDriverModels = cachedMenuDriverModels[activeCustomCharacterTable];
+    MenuDriverModelMgr* newDriverModels = nullptr;
+    for (u32 cacheIdx = 0; cacheIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++cacheIdx) {
+        if (cachedMenuDriverModelGenerations[cacheIdx] == customCharacterStateGeneration) {
+            newDriverModels = cachedMenuDriverModels[cacheIdx];
+            break;
+        }
+    }
 
     if (newDriverModels == nullptr) {
         UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
@@ -490,7 +552,16 @@ static void ReinitializeMenuDriverModels() {
             currentScene->structsHeaps.SetHeapsGroupId(6);
             return;
         }
-        cachedMenuDriverModels[activeCustomCharacterTable] = newDriverModels;
+
+        u32 cacheIdx = CUSTOM_CHARACTER_TABLE_COUNT - 1;
+        for (u32 idx = 0; idx < CUSTOM_CHARACTER_TABLE_COUNT; ++idx) {
+            if (cachedMenuDriverModels[idx] == nullptr) {
+                cacheIdx = idx;
+                break;
+            }
+        }
+        cachedMenuDriverModels[cacheIdx] = newDriverModels;
+        cachedMenuDriverModelGenerations[cacheIdx] = customCharacterStateGeneration;
     }
 
     if (oldDriverModels != nullptr && oldDriverModels != newDriverModels) {
@@ -516,7 +587,7 @@ static void ReinitializeMenuDriverModels() {
 
     RefreshCharacterSelectModels();
     RefreshKartSelectModel();
-    currentMenuDriverModelTable = activeCustomCharacterTable;
+    currentMenuDriverModelGeneration = customCharacterStateGeneration;
 }
 
 static void ProcessPendingMenuDriverModelReinit() {
@@ -553,6 +624,24 @@ static CharacterId GetPreviewCharacterForHud(u8 hudSlotId) {
         previewCharacter = sectionMgr->sectionParams->characters[hudSlotId];
     }
     return previewCharacter;
+}
+
+static CharacterId GetSelectedCharacterForHud(u8 hudSlotId) {
+    if (hudSlotId >= 4) return MARIO;
+
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr &&
+            hudSlotId < sectionMgr->sectionParams->localPlayerCount) {
+        return sectionMgr->sectionParams->characters[hudSlotId];
+    }
+
+    const Racedata* const racedata = Racedata::sInstance;
+    if (racedata != nullptr && hudSlotId < racedata->menusScenario.localPlayerCount) {
+        const u8 playerId = racedata->menusScenario.settings.hudPlayerIds[hudSlotId];
+        if (playerId < 12) return racedata->menusScenario.players[playerId].characterId;
+    }
+
+    return hoveredCharacterByHud[hudSlotId];
 }
 
 static void RefreshKartSelectModel() {
@@ -600,7 +689,7 @@ static bool IsCharacterSelectPageActive() {
     if (characterSelect == nullptr) return false;
 
     const Page* topPage = sectionMgr->curSection->GetTopLayerPage();
-    return topPage != nullptr && topPage->pageId == PAGE_CHARACTER_SELECT;
+    return topPage == characterSelect && characterSelect->currentState == STATE_ACTIVE && !characterSelect->updateState;
 }
 
 void RefreshLocalOnlineCustomCharacterFlags() {
@@ -612,14 +701,13 @@ void RefreshLocalOnlineCustomCharacterFlags() {
     const Racedata* racedata = Racedata::sInstance;
     if (racedata == nullptr) return;
 
-    const bool isCustomTableActive = IsCustomCharacterTableActive();
     const RacedataScenario& scenario = racedata->racesScenario;
     const u8 localPlayerCount = scenario.localPlayerCount > 4 ? 4 : scenario.localPlayerCount;
 
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
         const u32 playerId = racedata->GetPlayerIdOfLocalPlayer(hudSlotId);
         if (playerId < 12) {
-            onlineCustomCharacterFlags[playerId] = isCustomTableActive;
+            onlineCustomCharacterFlags[playerId] = IsCustomCharacterEnabled(scenario.players[playerId].characterId);
         }
     }
 }
@@ -638,7 +726,22 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 char
 }
 
 u8 GetLocalOnlineCharacterTables() {
-    return IsCustomCharacterTableActive() ? CUSTOM_CHARACTER_TABLE_CUSTOM : CUSTOM_CHARACTER_TABLE_DEFAULT;
+    u8 characterTables = 0;
+    u8 localPlayerCount = GetLocalPlayerCount();
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
+        localPlayerCount = static_cast<u8>(sectionMgr->sectionParams->localPlayerCount);
+    } else if (Racedata::sInstance != nullptr) {
+        localPlayerCount = Racedata::sInstance->menusScenario.localPlayerCount;
+    }
+    if (localPlayerCount > 2) localPlayerCount = 2;
+
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        if (IsCustomCharacterEnabled(GetSelectedCharacterForHud(hudSlotId))) {
+            characterTables |= static_cast<u8>(CUSTOM_CHARACTER_TABLE_CUSTOM << hudSlotId);
+        }
+    }
+    return characterTables;
 }
 
 bool ShouldUseCustomCharacterForPlayer(u8 playerId) {
@@ -674,7 +777,8 @@ kmBranch(0x805410e4, LoadMenuKartArchiveHook);
 
 kmRuntimeUse(0x805419c8);
 static const char* GetMenuDriverBRRESNameHook(u32 character) {
-    const char* overrideName = IsCustomCharacterTableActive() ? GetCustomDriverBRRESName(character) : GetDefaultDriverBRRESName(character);
+    const CharacterId characterId = static_cast<CharacterId>(character);
+    const char* overrideName = IsCustomCharacterEnabled(characterId) ? GetCustomDriverBRRESName(character) : GetDefaultDriverBRRESName(character);
     if (overrideName != nullptr) return overrideName;
 
     typedef const char* (*GetCharacterNameFn)(u32);
@@ -692,7 +796,7 @@ void SetCharacter() {
     if (!IsOnlineRoom(RKNet::Controller::sInstance)) ResetOnlineCustomCharacterFlags();
     ResetMenuDriverModelCache();
     EnsureActiveCustomCharacterTable();
-    currentMenuDriverModelTable = activeCustomCharacterTable;
+    currentMenuDriverModelGeneration = customCharacterStateGeneration;
 }
 static SectionLoadHook SetCharacterHook(SetCharacter);
 
@@ -861,14 +965,16 @@ static bool ShouldProcessCustomCharacterInput() {
     if (isNextHeld) ConsumeCustomCharacterToggleInput(*controllerHolder, nextButton, nextAction);
 
     if ((newToggleButtons & previousButton) != 0) {
-        Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
-        ToggleCustomCharacterTable(false);
-        return true;
+        if (ToggleCustomCharacter(GetPreviewCharacterForHud(0))) {
+            Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
+            return true;
+        }
     }
     if ((newToggleButtons & nextButton) != 0) {
-        Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
-        ToggleCustomCharacterTable(true);
-        return true;
+        if (ToggleCustomCharacter(GetPreviewCharacterForHud(0))) {
+            Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
+            return true;
+        }
     }
     return false;
 }
