@@ -454,4 +454,8 @@ kmWrite32(0x8000ad10, 0x38600001);
 kmWrite32(0x805A228C, 0x60000000);
 kmWrite32(0x805A225C, 0x38800001);
 
+// Rename CharacterSelectName [ZPL]
+kmWrite8(0x808acfdf, 'R');
+kmWrite8(0x808ad02b, 'R');
+
 }  // namespace Codes

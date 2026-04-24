@@ -2473,3 +2473,5 @@ DVDCreate = 0x8052a1b0
 __dt__15MenuDriverModelFv = 0x80830708
 __dt__18ModelTransformatorFv = 0x80556774
 RequestSceneReinit__10SectionMgrFUiUi = 0x80635b2c
+ToadetteFix1 = 0x807c89bc
+ToadetteFix2 = 0x807c8aa8

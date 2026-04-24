@@ -3,6 +3,10 @@
 
 #include <kamek.hpp>
 
+namespace Kart {
+class Link;
+}
+
 namespace Pulsar {
 namespace CustomCharacters {
 
@@ -12,6 +16,7 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 char
 u8 GetLocalOnlineCharacterTables();
 bool IsCustomCharacterTableActive();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
+bool ShouldMuteCharacterVoice(const Kart::Link* link);
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar

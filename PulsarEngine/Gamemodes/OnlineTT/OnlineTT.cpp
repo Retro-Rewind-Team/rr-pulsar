@@ -23,6 +23,7 @@
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Settings/Settings.hpp>
+#include <CustomCharacters.hpp>
 
 namespace Pulsar {
 
@@ -327,6 +328,7 @@ kmCall(0x80707620, MuteKartSounds);
 
 static bool MuteCharSounds(Kart::Link* link) {
     const u32 bitfield = link->pointers->kartStatus->bitfield4;
+    if (CustomCharacters::ShouldMuteCharacterVoice(link)) return true;
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTMUTEPTANDPLAYERS) == false) {
         return !(bitfield & 0x2);  // isLocal
     }

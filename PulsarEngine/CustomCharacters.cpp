@@ -6,6 +6,9 @@
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
+#include <MarioKartWii/Driver/Toadette.hpp>
+#include <MarioKartWii/Kart/KartLink.hpp>
+#include <MarioKartWii/Audio/Actors/RaceActor.hpp>
 #include <MarioKartWii/Mii/MiiHeadsModel.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
@@ -22,8 +25,9 @@ static u8 onlineCharacterTables[12];
 
 enum CustomCharacterTable {
     CUSTOM_CHARACTER_TABLE_DEFAULT = 0,
-    CUSTOM_CHARACTER_TABLE_CUSTOM = 1,
-    CUSTOM_CHARACTER_TABLE_COUNT = 2,
+    CUSTOM_CHARACTER_TABLE_SKIN1 = 1,
+    CUSTOM_CHARACTER_TABLE_SKIN2 = 2,
+    CUSTOM_CHARACTER_TABLE_COUNT = 3,
     CUSTOM_CHARACTER_TABLE_INVALID = CUSTOM_CHARACTER_TABLE_COUNT
 };
 
@@ -77,34 +81,64 @@ static const CharacterAssetNames defaultCharacterAssets[] = {
         {ROSALINA_BIKER, ROSALINA, "rs", "rs_menu"},
 };
 
-static const CharacterOverride customCharacterOverrides[] = {
-        {MARIO, "sm", nullptr},
-        {BABY_PEACH, "cpc", nullptr},
-        {WALUIGI, "vw", nullptr},
-        {BOWSER, "db", nullptr},
-        {BABY_DAISY, "rds", nullptr},
-        {DRY_BONES, "bb", nullptr},
-        {BABY_MARIO, "kmr", nullptr},
-        {LUIGI, "cl", nullptr},
-        {TOAD, "ct", nullptr},
-        {DONKEY_KONG, "gd", nullptr},
-        {YOSHI, "ky", nullptr},
-        {WARIO, "hw", nullptr},
-        {BABY_LUIGI, "clg", nullptr},
-        {TOADETTE, "et", nullptr},
-        {KOOPA_TROOPA, "pk", nullptr},
-        {DAISY, "sd", nullptr},
-        {PEACH, "ap", nullptr},
-        {BIRDO, "rb", nullptr},
-        {DIDDY_KONG, "ad", nullptr},
-        {KING_BOO, "kb", nullptr},
-        {BOWSER_JR, "pj", nullptr},
-        {DRY_BOWSER, "gk", nullptr},
-        {FUNKY_KONG, "ck", nullptr},
-        {ROSALINA, "ar", nullptr},
-        {PEACH_BIKER, "ap", "ap_menu"},
-        {DAISY_BIKER, "sd", "sd_menu"},
-        {ROSALINA_BIKER, "ar", "ar_menu"},
+static const CharacterOverride skin1CharacterOverrides[] = {
+        {MARIO, "mr-1", nullptr},
+        {BABY_PEACH, "bpc-1", nullptr},
+        {WALUIGI, "wl-1", nullptr},
+        {BOWSER, "kp-1", nullptr},
+        {BABY_DAISY, "bds-1", nullptr},
+        {DRY_BONES, "ka-1", nullptr},
+        {BABY_MARIO, "bmr-1", nullptr},
+        {LUIGI, "lg-1", nullptr},
+        {TOAD, "ko-1", nullptr},
+        {DONKEY_KONG, "dk-1", nullptr},
+        {YOSHI, "ys-1", nullptr},
+        {WARIO, "wr-1", nullptr},
+        {BABY_LUIGI, "blg-1", nullptr},
+        {TOADETTE, "kk-1", nullptr},
+        {KOOPA_TROOPA, "nk-1", nullptr},
+        {DAISY, "ds-1", nullptr},
+        {PEACH, "pc-1", nullptr},
+        {BIRDO, "ca-1", nullptr},
+        {DIDDY_KONG, "dd-1", nullptr},
+        {KING_BOO, "kt-1", nullptr},
+        {BOWSER_JR, "jr-1", nullptr},
+        {DRY_BOWSER, "bk-1", nullptr},
+        {FUNKY_KONG, "fk-1", nullptr},
+        {ROSALINA, "rs-1", nullptr},
+        {PEACH_BIKER, "pc-1", "pc-1_menu"},
+        {DAISY_BIKER, "ds-1", "ds-1_menu"},
+        {ROSALINA_BIKER, "rs-1", "rs-1_menu"},
+};
+
+static const CharacterOverride skin2CharacterOverrides[] = {
+        {MARIO, "mr-2", nullptr},
+        {BABY_PEACH, "bpc-2", nullptr},
+        {WALUIGI, "wl-2", nullptr},
+        {BOWSER, "kp-2", nullptr},
+        {BABY_DAISY, "bds-2", nullptr},
+        {DRY_BONES, "ka-2", nullptr},
+        {BABY_MARIO, "bmr-2", nullptr},
+        {LUIGI, "lg-2", nullptr},
+        {TOAD, "ko-2", nullptr},
+        {DONKEY_KONG, "dk-2", nullptr},
+        {YOSHI, "ys-2", nullptr},
+        {WARIO, "wr-2", nullptr},
+        {BABY_LUIGI, "blg-2", nullptr},
+        {TOADETTE, "kk-2", nullptr},
+        {KOOPA_TROOPA, "nk-2", nullptr},
+        {DAISY, "ds-2", nullptr},
+        {PEACH, "pc-2", nullptr},
+        {BIRDO, "ca-2", nullptr},
+        {DIDDY_KONG, "dd-2", nullptr},
+        {KING_BOO, "kt-2", nullptr},
+        {BOWSER_JR, "jr-2", nullptr},
+        {DRY_BOWSER, "bk-2", nullptr},
+        {FUNKY_KONG, "fk-2", nullptr},
+        {ROSALINA, "rs-2", nullptr},
+        {PEACH_BIKER, "pc-2", "pc-2_menu"},
+        {DAISY_BIKER, "ds-2", "ds-2_menu"},
+        {ROSALINA_BIKER, "rs-2", "rs-2_menu"},
 };
 
 // To add another table, add an enum value above CUSTOM_CHARACTER_TABLE_COUNT,
@@ -112,7 +146,8 @@ static const CharacterOverride customCharacterOverrides[] = {
 // The packet encoding supports table IDs 0-3; raise CUSTOM_CHARACTER_TABLE_PACKET_BITS if more are needed.
 static const CharacterTable customCharacterTables[CUSTOM_CHARACTER_TABLE_COUNT] = {
         {nullptr, 0},
-        {customCharacterOverrides, static_cast<u8>(ARRAY_COUNT(customCharacterOverrides))},
+        {skin1CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin1CharacterOverrides))},
+        {skin2CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin2CharacterOverrides))},
 };
 
 static const u8 CUSTOM_CHARACTER_COUNT = 0x30;
@@ -301,7 +336,7 @@ bool isDisplayCustomSkinsEnabled() {
 }
 
 const char* GetCustomCharacterPostfix(CharacterId character) {
-    return GetCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_CUSTOM);
+    return GetCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_SKIN1);
 }
 
 const char* GetDefaultCharacterPostfix(CharacterId character) {
@@ -377,6 +412,34 @@ bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character
                 onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
     }
     return IsCustomCharacterEnabled(character) && IsLocalRacePlayer(playerId);
+}
+
+static u8 GetRaceCharacterTable(u8 playerId, CharacterId character) {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (IsOnlineRoom(controller) && !IsOnlineMultiLocal(controller) && isDisplayCustomSkinsEnabled()) {
+        if (IsLocalRacePlayer(playerId)) return GetSelectedCharacterTable(character);
+        return playerId < 12 ? NormalizeCharacterTable(character, onlineCharacterTables[playerId]) : CUSTOM_CHARACTER_TABLE_DEFAULT;
+    }
+    return IsLocalRacePlayer(playerId) ? GetSelectedCharacterTable(character) : CUSTOM_CHARACTER_TABLE_DEFAULT;
+}
+
+bool ShouldMuteCharacterVoice(const Kart::Link* link) {
+    const Racedata* racedata = Racedata::sInstance;
+    if (link == nullptr || racedata == nullptr) return false;
+
+    const u8 playerId = link->GetPlayerIdx();
+    if (playerId >= racedata->racesScenario.playerCount) return false;
+
+    const CharacterId character = racedata->racesScenario.players[playerId].characterId;
+    return GetRaceCharacterTable(playerId, character) == CUSTOM_CHARACTER_TABLE_SKIN2;
+}
+
+static bool ShouldMuteMenuCharacterVoice() {
+    if (IsRaceSectionActive()) return false;
+    if (buildingMenuDriverModelTable == CUSTOM_CHARACTER_TABLE_SKIN2) return true;
+    if (currentMenuDriverModelTable == CUSTOM_CHARACTER_TABLE_SKIN2) return true;
+    if (IsCharacterSelectPageActive()) return GetSelectedCharacterTable(GetPreviewCharacterForHud(0)) == CUSTOM_CHARACTER_TABLE_SKIN2;
+    return false;
 }
 
 static const char** GetCharacterPostfixEntry(CharacterId character) {
@@ -509,6 +572,8 @@ static void DestroyMenuModelManager() {
 }
 
 static void ClearMenuDriverModels(MenuDriverModelMgr& driverModelMgr) {
+    if (driverModelMgr.bangs != nullptr) driverModelMgr.bangs->ToggleVisible(false);
+
     MiiHeadsModel* const* miiHeads = reinterpret_cast<MiiHeadsModel* const*>(driverModelMgr.miiHeads);
     for (u8 playerId = 0; playerId < driverModelMgr.playerCount; ++playerId) {
         MenuDriverModel* const playerModel = driverModelMgr.players[playerId].playerModel;
@@ -544,11 +609,38 @@ static void StartMenuModelManager(MenuModelMgr& menuModelMgr) {
 kmRuntimeUse(0x80830180);
 static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
     typedef MenuDriverModelMgr* (*CreateMenuDriverModelManagerFn)(MenuDriverModelMgr*, u8);
-    void* memory = operator new(sizeof(MenuDriverModelMgr));
-    if (memory == nullptr) return nullptr;
+    GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
+    EGG::ExpHeap* modelHeap = nullptr;
+    EGG::ExpHeap* originalMem1Heap = nullptr;
+    EGG::Heap* previousHeap = nullptr;
+    if (currentScene != nullptr) {
+        modelHeap = currentScene->structsHeaps.heaps[1];
+        originalMem1Heap = currentScene->structsHeaps.heaps[0];
+    }
+
+    // The vanilla constructor hardcodes structsHeaps[0] for model/scn allocations.
+    if (currentScene != nullptr && modelHeap != nullptr) {
+        previousHeap = modelHeap->BecomeCurrentHeap();
+        currentScene->structsHeaps.heaps[0] = modelHeap;
+    }
+
+    void* memory = modelHeap != nullptr ? operator new(sizeof(MenuDriverModelMgr), modelHeap) : operator new(sizeof(MenuDriverModelMgr));
+    if (memory == nullptr) {
+        if (currentScene != nullptr && modelHeap != nullptr) {
+            currentScene->structsHeaps.heaps[0] = originalMem1Heap;
+            if (previousHeap != nullptr) previousHeap->BecomeCurrentHeap();
+        }
+        return nullptr;
+    }
 
     const CreateMenuDriverModelManagerFn original = reinterpret_cast<CreateMenuDriverModelManagerFn>(kmRuntimeAddr(0x80830180));
-    return original(reinterpret_cast<MenuDriverModelMgr*>(memory), playerCount);
+    MenuDriverModelMgr* const manager = original(reinterpret_cast<MenuDriverModelMgr*>(memory), playerCount);
+
+    if (currentScene != nullptr && modelHeap != nullptr) {
+        currentScene->structsHeaps.heaps[0] = originalMem1Heap;
+        if (previousHeap != nullptr) previousHeap->BecomeCurrentHeap();
+    }
+    return manager;
 }
 
 kmRuntimeUse(0x80830748);
@@ -557,6 +649,81 @@ static void StartMenuDriverModelManager(MenuDriverModelMgr& driverModelMgr) {
     const StartMenuDriverModelManagerFn original = reinterpret_cast<StartMenuDriverModelManagerFn>(kmRuntimeAddr(0x80830748));
     original(&driverModelMgr);
 }
+
+kmRuntimeUse(0x807da5c0);
+kmRuntimeUse(0x8055ba64);
+static ToadetteHair* CreateMenuToadetteHairHook(ToadetteHair* hair, g3d::ResFile& file, ModelDirector* toadette, u32 r6) {
+    if (buildingMenuDriverModelTable == CUSTOM_CHARACTER_TABLE_SKIN2) return nullptr;
+
+    typedef bool (*MdlExistsFn)(const char*, const g3d::ResFile&);
+    const MdlExistsFn mdlExists = reinterpret_cast<MdlExistsFn>(kmRuntimeAddr(0x8055ba64));
+    if (!mdlExists("hair", file)) return nullptr;
+
+    typedef ToadetteHair* (*CreateMenuToadetteHairFn)(ToadetteHair*, g3d::ResFile&, ModelDirector*, u32);
+    const CreateMenuToadetteHairFn original = reinterpret_cast<CreateMenuToadetteHairFn>(kmRuntimeAddr(0x807da5c0));
+    return original(hair, file, toadette, r6);
+}
+kmCall(0x808303d0, CreateMenuToadetteHairHook);
+
+kmRuntimeUse(0x807db028);
+static void ToggleMenuToadetteHairLockHook(ToadetteHair* hair, bool isLocked) {
+    if (hair == nullptr) return;
+
+    typedef void (*ToggleMenuToadetteHairLockFn)(ToadetteHair*, bool);
+    const ToggleMenuToadetteHairLockFn original = reinterpret_cast<ToggleMenuToadetteHairLockFn>(kmRuntimeAddr(0x807db028));
+    original(hair, isLocked);
+}
+kmCall(0x808309e4, ToggleMenuToadetteHairLockHook);
+kmCall(0x808309f4, ToggleMenuToadetteHairLockHook);
+
+kmRuntimeUse(0x80590a5c);
+extern "C" bool ShouldSkipRaceToadetteHairForController(DriverController* controller) {
+    typedef u8 (*GetPlayerIdxFn)(const Kart::Link*);
+    const GetPlayerIdxFn getPlayerIdx = reinterpret_cast<GetPlayerIdxFn>(kmRuntimeAddr(0x80590a5c));
+    const u8 playerId = controller != nullptr ? getPlayerIdx(controller) : 0xff;
+    return GetRaceCharacterTable(playerId, TOADETTE) == CUSTOM_CHARACTER_TABLE_SKIN2;
+}
+
+extern "C" void ToadetteFix1(void*);
+extern "C" void ToadetteFix2(void*);
+static asmFunc SkipRaceToadetteHairForSkin2Hook() {
+    ASM(
+        nofralloc;
+        stwu r1, -0x10(r1);
+        mflr r0;
+        stw r0, 0x14(r1);
+        mr r3, r29;
+        bl ShouldSkipRaceToadetteHairForController;
+        cmpwi r3, 0;
+        lwz r0, 0x14(r1);
+        mtlr r0;
+        addi r1, r1, 0x10;
+        bne skipHair;
+
+        lwz r3, 0x0(r29);
+        lwz r3, 0x0(r3);
+        lwz r0, 0x8(r3);
+        cmpwi r0, 0xd;
+        bne skipHair;
+
+        lis r12, ToadetteFix1@h;
+        ori r12, r12, ToadetteFix1@l;
+        mtctr r12;
+        bctr;
+
+    skipHair:
+        lis r12, ToadetteFix2@h;
+        ori r12, r12, ToadetteFix2@l;
+        mtctr r12;
+        bctr;)
+}
+kmBranch(0x807c89a8, SkipRaceToadetteHairForSkin2Hook);
+
+static void SetupMenuCharacterBRASDHook(Audio::LinkedRaceActor* actor, nw4r::snd::detail::AnimSoundFile* rawBRASD) {
+    if (ShouldMuteMenuCharacterVoice()) return;
+    actor->SetupBRASD(rawBRASD);
+}
+kmCall(0x805572d4, SetupMenuCharacterBRASDHook);
 
 kmRuntimeUse(0x80830d00);
 static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, CharacterId character) {

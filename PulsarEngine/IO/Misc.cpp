@@ -9,6 +9,7 @@ namespace Pulsar {
 // Adds extra archives to Common, UI, and Driver holders for custom Pulsar assets
 kmWrite32(0x8052a108, 0x38800003);  // Add one archive to CommonArchiveHolder
 kmWrite32(0x8052a188, 0x38800004);  // Add one archive to UIArchiveHolder
+kmWrite32(0x805550a8, 0x80a418d4);  // Load menu Driver.szs from archiveHeaps.heaps[0] (MEM1), matching GlobeScene
 
 extern "C" void __nw__FUl(void*);
 extern "C" void ArchiveHolder(void*);
