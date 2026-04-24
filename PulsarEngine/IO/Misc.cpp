@@ -49,8 +49,14 @@ void LoadAssetsFile(ArchiveFile* file, const char* path, EGG::Heap* decompressed
                     EGG::Heap* archiveHeap, EGG::Archive::FileInfo* info) {
     const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
     const ArchivesHolder* driverHolder = archiveMgr->archivesHolders[ARCHIVE_HOLDER_DRIVER];
-    if (driverHolder != nullptr && driverHolder->archiveCount > 1 && file == &driverHolder->archives[1])
+    if (driverHolder != nullptr && driverHolder->archiveCount > 1 && file == &driverHolder->archives[1]) {
         path = "/DriverAssets.szs";
+        const GameScene* scene = GameScene::GetCurrent();
+        if (scene != nullptr && (scene->id == SCENE_ID_MENU || scene->id == SCENE_ID_GLOBE)) {
+            decompressedHeap = scene->archiveHeaps.heaps[1];
+            archiveHeap = scene->archiveHeaps.heaps[1];
+        }
+    }
 
     if (file == &archiveMgr->archivesHolders[ARCHIVE_HOLDER_UI]->archives[3]) {
         const char* fileType = "UI";

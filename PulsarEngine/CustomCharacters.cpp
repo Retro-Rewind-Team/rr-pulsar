@@ -613,20 +613,24 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
     EGG::ExpHeap* modelHeap = nullptr;
     EGG::ExpHeap* originalMem1Heap = nullptr;
     EGG::Heap* previousHeap = nullptr;
+    const bool shouldUseVanillaHeapLayout = currentScene != nullptr && currentScene->id == SCENE_ID_GLOBE;
     if (currentScene != nullptr) {
         modelHeap = currentScene->structsHeaps.heaps[1];
         originalMem1Heap = currentScene->structsHeaps.heaps[0];
     }
 
     // The vanilla constructor hardcodes structsHeaps[0] for model/scn allocations.
-    if (currentScene != nullptr && modelHeap != nullptr) {
+    if (!shouldUseVanillaHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
         previousHeap = modelHeap->BecomeCurrentHeap();
         currentScene->structsHeaps.heaps[0] = modelHeap;
     }
 
-    void* memory = modelHeap != nullptr ? operator new(sizeof(MenuDriverModelMgr), modelHeap) : operator new(sizeof(MenuDriverModelMgr));
+    EGG::Heap* allocationHeap = modelHeap;
+    if (shouldUseVanillaHeapLayout) allocationHeap = originalMem1Heap;
+
+    void* memory = allocationHeap != nullptr ? operator new(sizeof(MenuDriverModelMgr), allocationHeap) : operator new(sizeof(MenuDriverModelMgr));
     if (memory == nullptr) {
-        if (currentScene != nullptr && modelHeap != nullptr) {
+        if (!shouldUseVanillaHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
             currentScene->structsHeaps.heaps[0] = originalMem1Heap;
             if (previousHeap != nullptr) previousHeap->BecomeCurrentHeap();
         }
@@ -636,7 +640,7 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
     const CreateMenuDriverModelManagerFn original = reinterpret_cast<CreateMenuDriverModelManagerFn>(kmRuntimeAddr(0x80830180));
     MenuDriverModelMgr* const manager = original(reinterpret_cast<MenuDriverModelMgr*>(memory), playerCount);
 
-    if (currentScene != nullptr && modelHeap != nullptr) {
+    if (!shouldUseVanillaHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
         currentScene->structsHeaps.heaps[0] = originalMem1Heap;
         if (previousHeap != nullptr) previousHeap->BecomeCurrentHeap();
     }
