@@ -52,102 +52,102 @@ struct CharacterTable {
 };
 
 static const CharacterAssetNames defaultCharacterAssets[] = {
-        {MARIO, MARIO, "mr", nullptr},
-        {BABY_PEACH, BABY_PEACH, "bpc", nullptr},
-        {WALUIGI, WALUIGI, "wl", nullptr},
-        {BOWSER, BOWSER, "kp", nullptr},
-        {BABY_DAISY, BABY_DAISY, "bds", nullptr},
-        {DRY_BONES, DRY_BONES, "ka", nullptr},
-        {BABY_MARIO, BABY_MARIO, "bmr", nullptr},
-        {LUIGI, LUIGI, "lg", nullptr},
-        {TOAD, TOAD, "ko", nullptr},
-        {DONKEY_KONG, DONKEY_KONG, "dk", nullptr},
-        {YOSHI, YOSHI, "ys", nullptr},
-        {WARIO, WARIO, "wr", nullptr},
-        {BABY_LUIGI, BABY_LUIGI, "blg", nullptr},
-        {TOADETTE, TOADETTE, "kk", nullptr},
-        {KOOPA_TROOPA, KOOPA_TROOPA, "nk", nullptr},
-        {DAISY, DAISY, "ds", nullptr},
-        {PEACH, PEACH, "pc", nullptr},
-        {BIRDO, BIRDO, "ca", nullptr},
-        {DIDDY_KONG, DIDDY_KONG, "dd", nullptr},
-        {KING_BOO, KING_BOO, "kt", nullptr},
-        {BOWSER_JR, BOWSER_JR, "jr", nullptr},
-        {DRY_BOWSER, DRY_BOWSER, "bk", nullptr},
-        {FUNKY_KONG, FUNKY_KONG, "fk", nullptr},
-        {ROSALINA, ROSALINA, "rs", nullptr},
-        {PEACH_BIKER, PEACH, "pc", "pc_menu"},
-        {DAISY_BIKER, DAISY, "ds", "ds_menu"},
-        {ROSALINA_BIKER, ROSALINA, "rs", "rs_menu"},
+    {MARIO, MARIO, "mr", nullptr},
+    {BABY_PEACH, BABY_PEACH, "bpc", nullptr},
+    {WALUIGI, WALUIGI, "wl", nullptr},
+    {BOWSER, BOWSER, "kp", nullptr},
+    {BABY_DAISY, BABY_DAISY, "bds", nullptr},
+    {DRY_BONES, DRY_BONES, "ka", nullptr},
+    {BABY_MARIO, BABY_MARIO, "bmr", nullptr},
+    {LUIGI, LUIGI, "lg", nullptr},
+    {TOAD, TOAD, "ko", nullptr},
+    {DONKEY_KONG, DONKEY_KONG, "dk", nullptr},
+    {YOSHI, YOSHI, "ys", nullptr},
+    {WARIO, WARIO, "wr", nullptr},
+    {BABY_LUIGI, BABY_LUIGI, "blg", nullptr},
+    {TOADETTE, TOADETTE, "kk", nullptr},
+    {KOOPA_TROOPA, KOOPA_TROOPA, "nk", nullptr},
+    {DAISY, DAISY, "ds", nullptr},
+    {PEACH, PEACH, "pc", nullptr},
+    {BIRDO, BIRDO, "ca", nullptr},
+    {DIDDY_KONG, DIDDY_KONG, "dd", nullptr},
+    {KING_BOO, KING_BOO, "kt", nullptr},
+    {BOWSER_JR, BOWSER_JR, "jr", nullptr},
+    {DRY_BOWSER, DRY_BOWSER, "bk", nullptr},
+    {FUNKY_KONG, FUNKY_KONG, "fk", nullptr},
+    {ROSALINA, ROSALINA, "rs", nullptr},
+    {PEACH_BIKER, PEACH, "pc", "pc_menu"},
+    {DAISY_BIKER, DAISY, "ds", "ds_menu"},
+    {ROSALINA_BIKER, ROSALINA, "rs", "rs_menu"},
 };
 
 static const CharacterOverride skin1CharacterOverrides[] = {
-        {MARIO, "mr-1", nullptr},
-        {BABY_PEACH, "bpc-1", nullptr},
-        {WALUIGI, "wl-1", nullptr},
-        {BOWSER, "kp-1", nullptr},
-        {BABY_DAISY, "bds-1", nullptr},
-        {DRY_BONES, "ka-1", nullptr},
-        {BABY_MARIO, "bmr-1", nullptr},
-        {LUIGI, "lg-1", nullptr},
-        {TOAD, "ko-1", nullptr},
-        {DONKEY_KONG, "dk-1", nullptr},
-        {YOSHI, "ys-1", nullptr},
-        {WARIO, "wr-1", nullptr},
-        {BABY_LUIGI, "blg-1", nullptr},
-        {TOADETTE, "kk-1", nullptr},
-        {KOOPA_TROOPA, "nk-1", nullptr},
-        {DAISY, "ds-1", nullptr},
-        {PEACH, "pc-1", nullptr},
-        {BIRDO, "ca-1", nullptr},
-        {DIDDY_KONG, "dd-1", nullptr},
-        {KING_BOO, "kt-1", nullptr},
-        {BOWSER_JR, "jr-1", nullptr},
-        {DRY_BOWSER, "bk-1", nullptr},
-        {FUNKY_KONG, "fk-1", nullptr},
-        {ROSALINA, "rs-1", nullptr},
-        {PEACH_BIKER, "pc-1", "pc-1_menu"},
-        {DAISY_BIKER, "ds-1", "ds-1_menu"},
-        {ROSALINA_BIKER, "rs-1", "rs-1_menu"},
+    {MARIO, "mr-1", nullptr},
+    {BABY_PEACH, "bpc-1", nullptr},
+    {WALUIGI, "wl-1", nullptr},
+    {BOWSER, "kp-1", nullptr},
+    {BABY_DAISY, "bds-1", nullptr},
+    {DRY_BONES, "ka-1", nullptr},
+    {BABY_MARIO, "bmr-1", nullptr},
+    {LUIGI, "lg-1", nullptr},
+    {TOAD, "ko-1", nullptr},
+    {DONKEY_KONG, "dk-1", nullptr},
+    {YOSHI, "ys-1", nullptr},
+    {WARIO, "wr-1", nullptr},
+    {BABY_LUIGI, "blg-1", nullptr},
+    {TOADETTE, "kk-1", nullptr},
+    {KOOPA_TROOPA, "nk-1", nullptr},
+    {DAISY, "ds-1", nullptr},
+    {PEACH, "pc-1", nullptr},
+    {BIRDO, "ca-1", nullptr},
+    {DIDDY_KONG, "dd-1", nullptr},
+    {KING_BOO, "kt-1", nullptr},
+    {BOWSER_JR, "jr-1", nullptr},
+    {DRY_BOWSER, "bk-1", nullptr},
+    {FUNKY_KONG, "fk-1", nullptr},
+    {ROSALINA, "rs-1", nullptr},
+    {PEACH_BIKER, "pc-1", "pc-1_menu"},
+    {DAISY_BIKER, "ds-1", "ds-1_menu"},
+    {ROSALINA_BIKER, "rs-1", "rs-1_menu"},
 };
 
 static const CharacterOverride skin2CharacterOverrides[] = {
-        {MARIO, "mr-2", nullptr},
-        {BABY_PEACH, "bpc-2", nullptr},
-        {WALUIGI, "wl-2", nullptr},
-        {BOWSER, "kp-2", nullptr},
-        {BABY_DAISY, "bds-2", nullptr},
-        {DRY_BONES, "ka-2", nullptr},
-        {BABY_MARIO, "bmr-2", nullptr},
-        {LUIGI, "lg-2", nullptr},
-        {TOAD, "ko-2", nullptr},
-        {DONKEY_KONG, "dk-2", nullptr},
-        {YOSHI, "ys-2", nullptr},
-        {WARIO, "wr-2", nullptr},
-        {BABY_LUIGI, "blg-2", nullptr},
-        {TOADETTE, "kk-2", nullptr},
-        {KOOPA_TROOPA, "nk-2", nullptr},
-        {DAISY, "ds-2", nullptr},
-        {PEACH, "pc-2", nullptr},
-        {BIRDO, "ca-2", nullptr},
-        {DIDDY_KONG, "dd-2", nullptr},
-        {KING_BOO, "kt-2", nullptr},
-        {BOWSER_JR, "jr-2", nullptr},
-        {DRY_BOWSER, "bk-2", nullptr},
-        {FUNKY_KONG, "fk-2", nullptr},
-        {ROSALINA, "rs-2", nullptr},
-        {PEACH_BIKER, "pc-2", "pc-2_menu"},
-        {DAISY_BIKER, "ds-2", "ds-2_menu"},
-        {ROSALINA_BIKER, "rs-2", "rs-2_menu"},
+    {MARIO, "mr-2", nullptr},
+    {BABY_PEACH, "bpc-2", nullptr},
+    {WALUIGI, "wl-2", nullptr},
+    {BOWSER, "kp-2", nullptr},
+    {BABY_DAISY, "bds-2", nullptr},
+    {DRY_BONES, "ka-2", nullptr},
+    {BABY_MARIO, "bmr-2", nullptr},
+    {LUIGI, "lg-2", nullptr},
+    {TOAD, "ko-2", nullptr},
+    {DONKEY_KONG, "dk-2", nullptr},
+    {YOSHI, "ys-2", nullptr},
+    {WARIO, "wr-2", nullptr},
+    {BABY_LUIGI, "blg-2", nullptr},
+    {TOADETTE, "kk-2", nullptr},
+    {KOOPA_TROOPA, "nk-2", nullptr},
+    {DAISY, "ds-2", nullptr},
+    {PEACH, "pc-2", nullptr},
+    {BIRDO, "ca-2", nullptr},
+    {DIDDY_KONG, "dd-2", nullptr},
+    {KING_BOO, "kt-2", nullptr},
+    {BOWSER_JR, "jr-2", nullptr},
+    {DRY_BOWSER, "bk-2", nullptr},
+    {FUNKY_KONG, "fk-2", nullptr},
+    {ROSALINA, "rs-2", nullptr},
+    {PEACH_BIKER, "pc-2", "pc-2_menu"},
+    {DAISY_BIKER, "ds-2", "ds-2_menu"},
+    {ROSALINA_BIKER, "rs-2", "rs-2_menu"},
 };
 
 // To add another table, add an enum value above CUSTOM_CHARACTER_TABLE_COUNT,
 // add a CharacterOverride array, and register it here.
 // The packet encoding supports table IDs 0-3; raise CUSTOM_CHARACTER_TABLE_PACKET_BITS if more are needed.
 static const CharacterTable customCharacterTables[CUSTOM_CHARACTER_TABLE_COUNT] = {
-        {nullptr, 0},
-        {skin1CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin1CharacterOverrides))},
-        {skin2CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin2CharacterOverrides))},
+    {nullptr, 0},
+    {skin1CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin1CharacterOverrides))},
+    {skin2CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin2CharacterOverrides))},
 };
 
 static const u8 CUSTOM_CHARACTER_COUNT = 0x30;
@@ -409,7 +409,7 @@ bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character
         if (!isDisplayCustomSkinsEnabled()) return false;
         if (IsLocalRacePlayer(playerId)) return IsCustomCharacterEnabled(character);
         return playerId < 12 && IsCharacterTableValidForCharacter(character, onlineCharacterTables[playerId]) &&
-                onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
+               onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
     }
     return IsCustomCharacterEnabled(character) && IsLocalRacePlayer(playerId);
 }
@@ -533,7 +533,7 @@ static void SyncMenuDriverModelCache() {
     }
 
     if (currentMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
-            cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr) {
+        cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr) {
         cachedMenuDriverModels[currentMenuDriverModelTable] = menuModelMgr->driverModels;
     }
 }
@@ -611,27 +611,42 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
     typedef MenuDriverModelMgr* (*CreateMenuDriverModelManagerFn)(MenuDriverModelMgr*, u8);
     GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
     EGG::ExpHeap* modelHeap = nullptr;
-    EGG::ExpHeap* originalMem1Heap = nullptr;
+    EGG::ExpHeap* originalStructMem1Heap = nullptr;
+    EGG::ExpHeap* originalSceneMem1Heap = nullptr;
+    EGG::ExpHeap* originalSceneMem2Heap = nullptr;
     EGG::Heap* previousHeap = nullptr;
-    const bool shouldUseVanillaHeapLayout = currentScene != nullptr && currentScene->id == SCENE_ID_GLOBE;
+    const bool shouldKeepStructHeapLayout = currentScene != nullptr && currentScene->id == SCENE_ID_GLOBE;
     if (currentScene != nullptr) {
         modelHeap = currentScene->structsHeaps.heaps[1];
-        originalMem1Heap = currentScene->structsHeaps.heaps[0];
+        originalStructMem1Heap = currentScene->structsHeaps.heaps[0];
+        originalSceneMem1Heap = currentScene->expHeapGroup.heaps[0];
+        originalSceneMem2Heap = currentScene->expHeapGroup.heaps[1];
     }
 
     // The vanilla constructor hardcodes structsHeaps[0] for model/scn allocations.
-    if (!shouldUseVanillaHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
+    if (!shouldKeepStructHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
         previousHeap = modelHeap->BecomeCurrentHeap();
         currentScene->structsHeaps.heaps[0] = modelHeap;
     }
 
+    // Mii body/head setup uses the inherited scene heap group directly. Redirect it as well
+    // so custom menu-driver caches do not exhaust the small globe MEM1 scene heap.
+    if (currentScene != nullptr && modelHeap != nullptr) {
+        currentScene->expHeapGroup.heaps[0] = modelHeap;
+        currentScene->expHeapGroup.heaps[1] = modelHeap;
+    }
+
     EGG::Heap* allocationHeap = modelHeap;
-    if (shouldUseVanillaHeapLayout) allocationHeap = originalMem1Heap;
+    if (shouldKeepStructHeapLayout) allocationHeap = originalStructMem1Heap;
 
     void* memory = allocationHeap != nullptr ? operator new(sizeof(MenuDriverModelMgr), allocationHeap) : operator new(sizeof(MenuDriverModelMgr));
     if (memory == nullptr) {
-        if (!shouldUseVanillaHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
-            currentScene->structsHeaps.heaps[0] = originalMem1Heap;
+        if (currentScene != nullptr && modelHeap != nullptr) {
+            currentScene->expHeapGroup.heaps[0] = originalSceneMem1Heap;
+            currentScene->expHeapGroup.heaps[1] = originalSceneMem2Heap;
+        }
+        if (!shouldKeepStructHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
+            currentScene->structsHeaps.heaps[0] = originalStructMem1Heap;
             if (previousHeap != nullptr) previousHeap->BecomeCurrentHeap();
         }
         return nullptr;
@@ -640,8 +655,12 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
     const CreateMenuDriverModelManagerFn original = reinterpret_cast<CreateMenuDriverModelManagerFn>(kmRuntimeAddr(0x80830180));
     MenuDriverModelMgr* const manager = original(reinterpret_cast<MenuDriverModelMgr*>(memory), playerCount);
 
-    if (!shouldUseVanillaHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
-        currentScene->structsHeaps.heaps[0] = originalMem1Heap;
+    if (currentScene != nullptr && modelHeap != nullptr) {
+        currentScene->expHeapGroup.heaps[0] = originalSceneMem1Heap;
+        currentScene->expHeapGroup.heaps[1] = originalSceneMem2Heap;
+    }
+    if (!shouldKeepStructHeapLayout && currentScene != nullptr && modelHeap != nullptr) {
+        currentScene->structsHeaps.heaps[0] = originalStructMem1Heap;
         if (previousHeap != nullptr) previousHeap->BecomeCurrentHeap();
     }
     return manager;
@@ -653,6 +672,20 @@ static void StartMenuDriverModelManager(MenuDriverModelMgr& driverModelMgr) {
     const StartMenuDriverModelManagerFn original = reinterpret_cast<StartMenuDriverModelManagerFn>(kmRuntimeAddr(0x80830748));
     original(&driverModelMgr);
 }
+
+kmRuntimeUse(0x807dbd80);
+static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriverModel* driverModel, u32 miiId, Mii* mii, u32 r8) {
+    const GameScene* const currentScene = GameScene::GetCurrent();
+    if (currentScene != nullptr && currentScene->id == SCENE_ID_GLOBE &&
+        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
+        return nullptr;
+    }
+
+    typedef MiiHeadsModel* (*CreateMiiHeadModelFn)(void*, u32, MiiDriverModel*, u32, Mii*, u32);
+    const CreateMiiHeadModelFn original = reinterpret_cast<CreateMiiHeadModelFn>(kmRuntimeAddr(0x807dbd80));
+    return original(memory, type, driverModel, miiId, mii, r8);
+}
+kmCall(0x80830540, CreateMenuMiiHeadModelHook);
 
 kmRuntimeUse(0x807da5c0);
 kmRuntimeUse(0x8055ba64);
@@ -710,14 +743,13 @@ static asmFunc SkipRaceToadetteHairForSkin2Hook() {
         cmpwi r0, 0xd;
         bne skipHair;
 
-        lis r12, ToadetteFix1@h;
-        ori r12, r12, ToadetteFix1@l;
+        lis r12, ToadetteFix1 @h;
+        ori r12, r12, ToadetteFix1 @l;
         mtctr r12;
         bctr;
 
-    skipHair:
-        lis r12, ToadetteFix2@h;
-        ori r12, r12, ToadetteFix2@l;
+        skipHair : lis r12, ToadetteFix2 @h;
+        ori r12, r12, ToadetteFix2 @l;
         mtctr r12;
         bctr;)
 }
@@ -860,7 +892,7 @@ static CharacterId GetSelectedCharacterForHud(u8 hudSlotId) {
 
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr &&
-            hudSlotId < sectionMgr->sectionParams->localPlayerCount) {
+        hudSlotId < sectionMgr->sectionParams->localPlayerCount) {
         return sectionMgr->sectionParams->characters[hudSlotId];
     }
 
@@ -923,8 +955,7 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 char
         if (playerIdToAid[playerId] != aid) continue;
 
         const u8 shift = static_cast<u8>(hudSlotId * CUSTOM_CHARACTER_TABLE_PACKET_BITS);
-        const u8 tableIdx = hudSlotId < 2 ? ((characterTables >> shift) & CUSTOM_CHARACTER_TABLE_PACKET_MASK) :
-                CUSTOM_CHARACTER_TABLE_DEFAULT;
+        const u8 tableIdx = hudSlotId < 2 ? ((characterTables >> shift) & CUSTOM_CHARACTER_TABLE_PACKET_MASK) : CUSTOM_CHARACTER_TABLE_DEFAULT;
         onlineCharacterTables[playerId] = tableIdx < CUSTOM_CHARACTER_TABLE_COUNT ? tableIdx : CUSTOM_CHARACTER_TABLE_DEFAULT;
         ++hudSlotId;
     }
@@ -983,8 +1014,7 @@ kmBranch(0x805410e4, LoadMenuKartArchiveHook);
 kmRuntimeUse(0x805419c8);
 static const char* GetMenuDriverBRRESNameHook(u32 character) {
     const CharacterId characterId = static_cast<CharacterId>(character);
-    const u8 tableIdx = buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT ?
-            buildingMenuDriverModelTable : GetMenuDriverModelTableForCharacter(characterId);
+    const u8 tableIdx = buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT ? buildingMenuDriverModelTable : GetMenuDriverModelTableForCharacter(characterId);
     const char* overrideName = GetDriverBRRESName(characterId, tableIdx);
     if (overrideName != nullptr) return overrideName;
 
