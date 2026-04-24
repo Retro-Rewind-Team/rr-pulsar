@@ -77,6 +77,21 @@ void EnableDelimitersForAllItems() {
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
 
+// Anti Mii Crash
+asmFunc AntiWiper() {
+    ASM(
+        nofralloc;
+        loc_0x0 : cmpwi r4, 0x6;
+        ble validMii;
+        lhz r12, 0xE(r30);
+        cmpwi r12, 0x0;
+        bne validMii;
+        li r31, 0x0;
+        li r4, 0x6;
+        validMii : mr r29, r4;
+        blr;)
+}
+kmCall(0x800CB6C0, AntiWiper);
 kmWrite32(0x80526660, 0x38000001);  // Credits to Ro for the last line.
 
 // Anti Item Collission Crash [Marioiscool246]
