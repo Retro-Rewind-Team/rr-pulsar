@@ -27,7 +27,10 @@ enum CustomCharacterTable {
     CUSTOM_CHARACTER_TABLE_DEFAULT = 0,
     CUSTOM_CHARACTER_TABLE_SKIN1 = 1,
     CUSTOM_CHARACTER_TABLE_SKIN2 = 2,
-    CUSTOM_CHARACTER_TABLE_COUNT = 3,
+    CUSTOM_CHARACTER_TABLE_SKIN3 = 3,
+    CUSTOM_CHARACTER_TABLE_SKIN4 = 4,
+    CUSTOM_CHARACTER_TABLE_SKIN5 = 5,
+    CUSTOM_CHARACTER_TABLE_COUNT = 6,
     CUSTOM_CHARACTER_TABLE_INVALID = CUSTOM_CHARACTER_TABLE_COUNT
 };
 
@@ -124,34 +127,62 @@ static const CharacterOverride skin2CharacterOverrides[] = {
     {DONKEY_KONG, "dk-2", nullptr},
     {YOSHI, "ys-2", nullptr},
     {WARIO, "wr-2", nullptr},
-    {BABY_LUIGI, "blg-2", nullptr},
-    {TOADETTE, "kk-2", nullptr},
     {KOOPA_TROOPA, "nk-2", nullptr},
-    {DAISY, "ds-2", nullptr},
-    {PEACH, "pc-2", nullptr},
-    {BIRDO, "ca-2", nullptr},
     {DIDDY_KONG, "dd-2", nullptr},
-    {KING_BOO, "kt-2", nullptr},
     {BOWSER_JR, "jr-2", nullptr},
-    {DRY_BOWSER, "bk-2", nullptr},
     {FUNKY_KONG, "fk-2", nullptr},
+    {PEACH, "pc-2", nullptr},
+    {DAISY, "ds-2", nullptr},
     {ROSALINA, "rs-2", nullptr},
     {PEACH_BIKER, "pc-2", "pc-2_menu"},
     {DAISY_BIKER, "ds-2", "ds-2_menu"},
     {ROSALINA_BIKER, "rs-2", "rs-2_menu"},
 };
 
+static const CharacterOverride skin3CharacterOverrides[] = {
+    {BOWSER, "kp-3", nullptr},
+    {DRY_BONES, "ka-3", nullptr},
+    {BABY_MARIO, "bmr-3", nullptr},
+    {LUIGI, "lg-3", nullptr},
+    {TOAD, "ko-3", nullptr},
+    {DONKEY_KONG, "dk-3", nullptr},
+    {YOSHI, "ys-3", nullptr},
+    {WARIO, "wr-3", nullptr},
+    {BOWSER_JR, "jr-3", nullptr},
+    {FUNKY_KONG, "fk-3", nullptr},
+    {PEACH, "pc-3", nullptr},
+    {DAISY, "ds-3", nullptr},
+    {ROSALINA, "rs-3", nullptr},
+    {PEACH_BIKER, "pc-3", "pc-3_menu"},
+    {DAISY_BIKER, "ds-3", "ds-3_menu"},
+    {ROSALINA_BIKER, "rs-3", "rs-3_menu"},
+};
+
+static const CharacterOverride skin4CharacterOverrides[] = {
+    {DRY_BONES, "ka-4", nullptr},
+    {BABY_MARIO, "bmr-4", nullptr},
+    {LUIGI, "lg-4", nullptr},
+    {DONKEY_KONG, "dk-4", nullptr},
+    {BOWSER_JR, "jr-4", nullptr},
+};
+
+static const CharacterOverride skin5CharacterOverrides[] = {
+    {BOWSER_JR, "jr-5", nullptr},
+};
+
 // To add another table, add an enum value above CUSTOM_CHARACTER_TABLE_COUNT,
 // add a CharacterOverride array, and register it here.
-// The packet encoding supports table IDs 0-3; raise CUSTOM_CHARACTER_TABLE_PACKET_BITS if more are needed.
 static const CharacterTable customCharacterTables[CUSTOM_CHARACTER_TABLE_COUNT] = {
     {nullptr, 0},
     {skin1CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin1CharacterOverrides))},
     {skin2CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin2CharacterOverrides))},
+    {skin3CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin3CharacterOverrides))},
+    {skin4CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin4CharacterOverrides))},
+    {skin5CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin5CharacterOverrides))},
 };
 
 static const u8 CUSTOM_CHARACTER_COUNT = 0x30;
-static const u8 CUSTOM_CHARACTER_TABLE_PACKET_BITS = 2;
+static const u8 CUSTOM_CHARACTER_TABLE_PACKET_BITS = 3;
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_MASK = (1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS) - 1;
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS;
 static u8 selectedCharacterTableByCharacter[CUSTOM_CHARACTER_COUNT];
@@ -163,7 +194,7 @@ static u8 currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static u8 buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static CharacterId hoveredCharacterByHud[4] = {MARIO, MARIO, MARIO, MARIO};
 static u16 heldCustomCharacterToggleButtons = 0;
-static_assert(CUSTOM_CHARACTER_TABLE_COUNT <= CUSTOM_CHARACTER_TABLE_PACKET_COUNT, "character table packet encoding only supports four tables");
+static_assert(CUSTOM_CHARACTER_TABLE_COUNT <= CUSTOM_CHARACTER_TABLE_PACKET_COUNT, "character table packet encoding cannot fit every table");
 static_assert(CUSTOM_CHARACTER_TABLE_PACKET_BITS * 2 <= 8, "character table packet field is one byte");
 
 static void ApplyCharacterPostfixes();
@@ -615,7 +646,7 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
     EGG::ExpHeap* originalSceneMem1Heap = nullptr;
     EGG::ExpHeap* originalSceneMem2Heap = nullptr;
     EGG::Heap* previousHeap = nullptr;
-    const bool shouldKeepStructHeapLayout = currentScene != nullptr && currentScene->id == SCENE_ID_GLOBE;
+    const bool shouldKeepStructHeapLayout = currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE || currentScene->id == SCENE_ID_MENU);
     if (currentScene != nullptr) {
         modelHeap = currentScene->structsHeaps.heaps[1];
         originalStructMem1Heap = currentScene->structsHeaps.heaps[0];
@@ -676,7 +707,7 @@ static void StartMenuDriverModelManager(MenuDriverModelMgr& driverModelMgr) {
 kmRuntimeUse(0x807dbd80);
 static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriverModel* driverModel, u32 miiId, Mii* mii, u32 r8) {
     const GameScene* const currentScene = GameScene::GetCurrent();
-    if (currentScene != nullptr && currentScene->id == SCENE_ID_GLOBE &&
+    if (currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE ||currentScene->id == SCENE_ID_MENU) &&
         buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
         return nullptr;
     }
