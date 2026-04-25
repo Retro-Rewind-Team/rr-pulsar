@@ -3,7 +3,6 @@
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/UI/Page/Menu/CharacterSelect.hpp>
-#include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/Driver/Toadette.hpp>
@@ -199,7 +198,6 @@ static_assert(CUSTOM_CHARACTER_TABLE_PACKET_BITS * 2 <= 8, "character table pack
 
 static void ApplyCharacterPostfixes();
 void RefreshLocalOnlineCustomCharacterFlags();
-const char* GetCustomCharacterPostfix(CharacterId character);
 const char* GetDefaultCharacterPostfix(CharacterId character);
 static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx);
 static const char** GetCharacterPostfixEntry(CharacterId character);
@@ -209,10 +207,9 @@ static void ReinitializeMenuDriverModels();
 static void ProcessPendingMenuDriverModelReinit();
 static void ResetMenuDriverModelCache();
 static void SyncMenuDriverModelCache();
+static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount);
 static u8 GetMenuDriverModelTableForCharacter(CharacterId character);
-static void ScheduleMenuDriverModelReinitForPreview();
 static void RefreshCharacterSelectModels();
-static void RefreshKartSelectModel();
 static CharacterId GetPreviewCharacterForHud(u8 hudSlotId);
 static CharacterId GetSelectedCharacterForHud(u8 hudSlotId);
 
@@ -293,15 +290,17 @@ static bool SetCustomCharacterTable(CharacterId character, u8 tableIdx) {
 static bool CycleCustomCharacterTable(CharacterId character, int direction) {
     if (GetLocalPlayerCount() != 1) return false;
     if (!IsCustomCharacterStateIdValid(character)) return false;
+    if (CUSTOM_CHARACTER_TABLE_COUNT <= 1) return false;
 
     u8 tableIdx = GetSelectedCharacterTable(character);
-    for (u8 i = 0; i < CUSTOM_CHARACTER_TABLE_COUNT; ++i) {
+    for (u8 i = 1; i < CUSTOM_CHARACTER_TABLE_COUNT; ++i) {
         if (direction < 0) {
             tableIdx = tableIdx == 0 ? CUSTOM_CHARACTER_TABLE_COUNT - 1 : tableIdx - 1;
         } else {
             tableIdx = tableIdx + 1 >= CUSTOM_CHARACTER_TABLE_COUNT ? CUSTOM_CHARACTER_TABLE_DEFAULT : tableIdx + 1;
         }
 
+        // Some characters only have entries in a subset of skin tables.
         if (!IsCharacterTableValidForCharacter(character, tableIdx)) continue;
         if (!SetCustomCharacterTable(character, tableIdx)) return false;
         pendingMenuDriverReinitFrames = 2;
@@ -364,10 +363,6 @@ bool IsOnlineMultiLocal(const RKNet::Controller* controller) {
 
 bool isDisplayCustomSkinsEnabled() {
     return Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_ONLINE, Pulsar::RADIO_DISPLAYCUSTOMSKINS) == Pulsar::DISPLAYCUSTOMSKINS_ENABLED;
-}
-
-const char* GetCustomCharacterPostfix(CharacterId character) {
-    return GetCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_SKIN1);
 }
 
 const char* GetDefaultCharacterPostfix(CharacterId character) {
@@ -462,15 +457,7 @@ bool ShouldMuteCharacterVoice(const Kart::Link* link) {
     if (playerId >= racedata->racesScenario.playerCount) return false;
 
     const CharacterId character = racedata->racesScenario.players[playerId].characterId;
-    return GetRaceCharacterTable(playerId, character) == CUSTOM_CHARACTER_TABLE_SKIN2;
-}
-
-static bool ShouldMuteMenuCharacterVoice() {
-    if (IsRaceSectionActive()) return false;
-    if (buildingMenuDriverModelTable == CUSTOM_CHARACTER_TABLE_SKIN2) return true;
-    if (currentMenuDriverModelTable == CUSTOM_CHARACTER_TABLE_SKIN2) return true;
-    if (IsCharacterSelectPageActive()) return GetSelectedCharacterTable(GetPreviewCharacterForHud(0)) == CUSTOM_CHARACTER_TABLE_SKIN2;
-    return false;
+    return GetRaceCharacterTable(playerId, character) >= CUSTOM_CHARACTER_TABLE_SKIN2;
 }
 
 static const char** GetCharacterPostfixEntry(CharacterId character) {
@@ -564,9 +551,19 @@ static void SyncMenuDriverModelCache() {
     }
 
     if (currentMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
-        cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr) {
+        cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr &&
+        IsMenuDriverModelManagerUsable(menuModelMgr->driverModels, menuModelMgr->playerCount)) {
         cachedMenuDriverModels[currentMenuDriverModelTable] = menuModelMgr->driverModels;
     }
+}
+
+static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount) {
+    if (driverModelMgr == nullptr) return false;
+    if (driverModelMgr->models == nullptr) return false;
+    if (driverModelMgr->playerCount == 0 || driverModelMgr->playerCount > 4) return false;
+    if (playerCount != 0 && driverModelMgr->playerCount != playerCount) return false;
+    if (driverModelMgr->modelCount != 0x18 + driverModelMgr->playerCount * 2) return false;
+    return true;
 }
 
 static void UnlockHeap(EGG::Heap* heap) {
@@ -707,7 +704,7 @@ static void StartMenuDriverModelManager(MenuDriverModelMgr& driverModelMgr) {
 kmRuntimeUse(0x807dbd80);
 static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriverModel* driverModel, u32 miiId, Mii* mii, u32 r8) {
     const GameScene* const currentScene = GameScene::GetCurrent();
-    if (currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE ||currentScene->id == SCENE_ID_MENU) &&
+    if (currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE || currentScene->id == SCENE_ID_MENU) &&
         buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
         return nullptr;
     }
@@ -718,108 +715,24 @@ static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriv
 }
 kmCall(0x80830540, CreateMenuMiiHeadModelHook);
 
-kmRuntimeUse(0x807da5c0);
-kmRuntimeUse(0x8055ba64);
-static ToadetteHair* CreateMenuToadetteHairHook(ToadetteHair* hair, g3d::ResFile& file, ModelDirector* toadette, u32 r6) {
-    if (buildingMenuDriverModelTable == CUSTOM_CHARACTER_TABLE_SKIN2) return nullptr;
-
-    typedef bool (*MdlExistsFn)(const char*, const g3d::ResFile&);
-    const MdlExistsFn mdlExists = reinterpret_cast<MdlExistsFn>(kmRuntimeAddr(0x8055ba64));
-    if (!mdlExists("hair", file)) return nullptr;
-
-    typedef ToadetteHair* (*CreateMenuToadetteHairFn)(ToadetteHair*, g3d::ResFile&, ModelDirector*, u32);
-    const CreateMenuToadetteHairFn original = reinterpret_cast<CreateMenuToadetteHairFn>(kmRuntimeAddr(0x807da5c0));
-    return original(hair, file, toadette, r6);
-}
-kmCall(0x808303d0, CreateMenuToadetteHairHook);
-
-kmRuntimeUse(0x807db028);
-static void ToggleMenuToadetteHairLockHook(ToadetteHair* hair, bool isLocked) {
-    if (hair == nullptr) return;
-
-    typedef void (*ToggleMenuToadetteHairLockFn)(ToadetteHair*, bool);
-    const ToggleMenuToadetteHairLockFn original = reinterpret_cast<ToggleMenuToadetteHairLockFn>(kmRuntimeAddr(0x807db028));
-    original(hair, isLocked);
-}
-kmCall(0x808309e4, ToggleMenuToadetteHairLockHook);
-kmCall(0x808309f4, ToggleMenuToadetteHairLockHook);
-
-kmRuntimeUse(0x80590a5c);
-extern "C" bool ShouldSkipRaceToadetteHairForController(DriverController* controller) {
-    typedef u8 (*GetPlayerIdxFn)(const Kart::Link*);
-    const GetPlayerIdxFn getPlayerIdx = reinterpret_cast<GetPlayerIdxFn>(kmRuntimeAddr(0x80590a5c));
-    const u8 playerId = controller != nullptr ? getPlayerIdx(controller) : 0xff;
-    return GetRaceCharacterTable(playerId, TOADETTE) == CUSTOM_CHARACTER_TABLE_SKIN2;
-}
-
-extern "C" void ToadetteFix1(void*);
-extern "C" void ToadetteFix2(void*);
-static asmFunc SkipRaceToadetteHairForSkin2Hook() {
-    ASM(
-        nofralloc;
-        stwu r1, -0x10(r1);
-        mflr r0;
-        stw r0, 0x14(r1);
-        mr r3, r29;
-        bl ShouldSkipRaceToadetteHairForController;
-        cmpwi r3, 0;
-        lwz r0, 0x14(r1);
-        mtlr r0;
-        addi r1, r1, 0x10;
-        bne skipHair;
-
-        lwz r3, 0x0(r29);
-        lwz r3, 0x0(r3);
-        lwz r0, 0x8(r3);
-        cmpwi r0, 0xd;
-        bne skipHair;
-
-        lis r12, ToadetteFix1 @h;
-        ori r12, r12, ToadetteFix1 @l;
-        mtctr r12;
-        bctr;
-
-        skipHair : lis r12, ToadetteFix2 @h;
-        ori r12, r12, ToadetteFix2 @l;
-        mtctr r12;
-        bctr;)
-}
-kmBranch(0x807c89a8, SkipRaceToadetteHairForSkin2Hook);
-
-static void SetupMenuCharacterBRASDHook(Audio::LinkedRaceActor* actor, nw4r::snd::detail::AnimSoundFile* rawBRASD) {
-    if (ShouldMuteMenuCharacterVoice()) return;
-    actor->SetupBRASD(rawBRASD);
-}
-kmCall(0x805572d4, SetupMenuCharacterBRASDHook);
-
 kmRuntimeUse(0x80830d00);
 static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, CharacterId character) {
     if (menuModelMgr == nullptr || !menuModelMgr->isActive) return;
 
     MenuDriverModelMgr* const driverModels = menuModelMgr->driverModels;
-    if (driverModels == nullptr || playerId >= driverModels->playerCount) return;
+    if (!IsMenuDriverModelManagerUsable(driverModels, menuModelMgr->playerCount) || playerId >= driverModels->playerCount) return;
 
     MenuDriverModel* const playerModel = driverModels->players[playerId].playerModel;
-    const bool wasVisible = driverModels->players[playerId].isVisible;
     if (playerModel != nullptr) playerModel->ToggleVisible(false);
 
     typedef void (*SetPlayerCharacterFn)(MenuDriverModelMgr*, u8, CharacterId);
     const SetPlayerCharacterFn original = reinterpret_cast<SetPlayerCharacterFn>(kmRuntimeAddr(0x80830d00));
     original(driverModels, playerId, character);
-
-    if (wasVisible) driverModels->TogglePlayerModel(playerId, true);
 }
 kmBranch(0x8059e568, RequestDriverModelHook);
 
 static u8 GetMenuDriverModelTableForCharacter(CharacterId character) {
     return GetSelectedCharacterTable(character);
-}
-
-static void ScheduleMenuDriverModelReinitForPreview() {
-    if (!IsCharacterSelectPageActive()) return;
-
-    const u8 targetTable = GetMenuDriverModelTableForCharacter(GetPreviewCharacterForHud(0));
-    if (targetTable != currentMenuDriverModelTable) pendingMenuDriverReinitFrames = 1;
 }
 
 static void ReinitializeMenuDriverModels() {
@@ -839,6 +752,10 @@ static void ReinitializeMenuDriverModels() {
     if (targetTable == currentMenuDriverModelTable && oldDriverModels != nullptr) return;
 
     MenuDriverModelMgr* newDriverModels = cachedMenuDriverModels[targetTable];
+    if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
+        cachedMenuDriverModels[targetTable] = nullptr;
+        newDriverModels = nullptr;
+    }
     if (newDriverModels == nullptr) {
         UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
         currentScene->structsHeaps.SetHeapsGroupId(3);
@@ -848,7 +765,7 @@ static void ReinitializeMenuDriverModels() {
         buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
         ApplyCharacterPostfixes();
         currentScene->structsHeaps.SetHeapsGroupId(0);
-        if (newDriverModels == nullptr) {
+        if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
             currentScene->structsHeaps.SetHeapsGroupId(6);
             return;
         }
@@ -878,7 +795,6 @@ static void ReinitializeMenuDriverModels() {
     }
 
     RefreshCharacterSelectModels();
-    RefreshKartSelectModel();
     currentMenuDriverModelTable = targetTable;
 }
 
@@ -934,17 +850,6 @@ static CharacterId GetSelectedCharacterForHud(u8 hudSlotId) {
     }
 
     return hoveredCharacterByHud[hudSlotId];
-}
-
-static void RefreshKartSelectModel() {
-    SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || sectionMgr->curSection == nullptr) return;
-
-    Pages::KartSelect* const kartSelect = sectionMgr->curSection->Get<Pages::KartSelect>();
-    if (kartSelect == nullptr) return;
-    if (sectionMgr->sectionParams->localPlayerCount == 0) return;
-
-    kartSelect->vehicleModel.RequestModel(sectionMgr->sectionParams->karts[0]);
 }
 
 static bool IsCharacterSelectPageActive() {
@@ -1033,15 +938,6 @@ static ArchivesHolder* LoadKartArchiveHolder2Hook(ArchiveMgr* archiveMgr, u8 pla
 }
 kmCall(0x80554198, LoadKartArchiveHolder2Hook);
 
-kmRuntimeUse(0x805410e4);
-static ArchivesHolder* LoadMenuKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, CharacterId character, u32 type, EGG::Heap* archiveHeap, EGG::Heap* dumpHeap) {
-    typedef ArchivesHolder* (*LoadMenuKartArchiveFn)(ArchiveMgr*, u8, CharacterId, u32, EGG::Heap*, EGG::Heap*);
-    const LoadMenuKartArchiveFn original = reinterpret_cast<LoadMenuKartArchiveFn>(kmRuntimeAddr(0x805410e4));
-    ScopedCharacterPostfixSwap swap(playerId, character);
-    return original(archiveMgr, playerId, character, type, archiveHeap, dumpHeap);
-}
-kmBranch(0x805410e4, LoadMenuKartArchiveHook);
-
 kmRuntimeUse(0x805419c8);
 static const char* GetMenuDriverBRRESNameHook(u32 character) {
     const CharacterId characterId = static_cast<CharacterId>(character);
@@ -1055,24 +951,21 @@ static const char* GetMenuDriverBRRESNameHook(u32 character) {
 }
 kmCall(0x8081e4a0, GetMenuDriverBRRESNameHook);
 
-static void RefreshOnlineCustomCharacterFlagsOnRaceLoad() {
-    RefreshLocalOnlineCustomCharacterFlags();
-}
-static RaceLoadHook RefreshOnlineCustomCharacterFlagsHook(RefreshOnlineCustomCharacterFlagsOnRaceLoad);
-
-void SetCharacter() {
+static void ResetCustomCharacterMenuState() {
     if (!IsOnlineRoom(RKNet::Controller::sInstance)) ResetOnlineCustomCharacterFlags();
     ResetMenuDriverModelCache();
     EnsureActiveCustomCharacterTable();
 }
-static SectionLoadHook SetCharacterHook(SetCharacter);
+static SectionLoadHook ResetCustomCharacterMenuStateHook(ResetCustomCharacterMenuState);
 
 kmRuntimeUse(0x8083e5f4);
 static void CharacterSelectHoverHook(Pages::CharacterSelect* page, CtrlMenuCharacterSelect::ButtonDriver* button, u32 buttonId, u8 hudSlotId) {
     if (hudSlotId < 4) {
         hoveredCharacterByHud[hudSlotId] = static_cast<CharacterId>(buttonId);
         currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
-        ReinitializeMenuDriverModels();
+        if (IsCharacterSelectPageActive()) {
+            ReinitializeMenuDriverModels();
+        }
     }
     typedef void (*CharacterSelectHoverFn)(Pages::CharacterSelect*, CtrlMenuCharacterSelect::ButtonDriver*, u32, u8);
     const CharacterSelectHoverFn original = reinterpret_cast<CharacterSelectHoverFn>(kmRuntimeAddr(0x8083e5f4));
@@ -1083,22 +976,6 @@ kmCall(0x807e304c, CharacterSelectHoverHook);
 kmCall(0x807e34d0, CharacterSelectHoverHook);
 kmCall(0x807e37b0, CharacterSelectHoverHook);
 kmCall(0x807e3a88, CharacterSelectHoverHook);
-
-kmRuntimeUse(0x8083dfa8);
-static void CharacterSelectClickHook(Pages::CharacterSelect* page, PushButton* button, u32 buttonId, u8 hudSlotId) {
-    if (hudSlotId < 4) {
-        hoveredCharacterByHud[hudSlotId] = static_cast<CharacterId>(buttonId);
-        if (hudSlotId == 0) ScheduleMenuDriverModelReinitForPreview();
-        ReinitializeMenuDriverModels();
-    }
-    typedef void (*CharacterSelectClickFn)(Pages::CharacterSelect*, PushButton*, u32, u8);
-    const CharacterSelectClickFn original = reinterpret_cast<CharacterSelectClickFn>(kmRuntimeAddr(0x8083dfa8));
-    original(page, button, buttonId, hudSlotId);
-}
-kmCall(0x807e3570, CharacterSelectClickHook);
-kmCall(0x807e36bc, CharacterSelectClickHook);
-kmCall(0x807e39b4, CharacterSelectClickHook);
-kmCall(0x807e3bd0, CharacterSelectClickHook);
 
 static ControllerType GetControllerTypeForHudSlot(const SectionMgr& sectionMgr, u8 hudSlotId) {
     if (hudSlotId >= 4) return GCN;
@@ -1251,18 +1128,6 @@ static bool ShouldProcessCustomCharacterInput() {
     }
     return false;
 }
-
-kmRuntimeUse(0x8063550c);
-// RaceScene::calcSubsystems -> SectionMgr::Update call site
-static void RaceSceneSectionUpdateHook(SectionMgr* sectionMgr) {
-    UpdateCustomCharacterSelectNamePaneIcons();
-    ShouldProcessCustomCharacterInput();
-    typedef void (*SectionMgrUpdateFn)(SectionMgr*);
-    const SectionMgrUpdateFn original = reinterpret_cast<SectionMgrUpdateFn>(kmRuntimeAddr(0x8063550c));
-    original(sectionMgr);
-    ProcessPendingMenuDriverModelReinit();
-}
-kmCall(0x80554dcc, RaceSceneSectionUpdateHook);
 
 kmRuntimeUse(0x8063583c);
 // MenuScene_vf30 / GlobeScene_vf30 -> SectionMgr::MenuUpdate call sites
