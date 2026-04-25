@@ -13,6 +13,7 @@
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -254,6 +255,16 @@ void ExpVR::AfterControlUpdate() {
             this->shouldRestoreControls = false;
         }
     }
+}
+
+void ExpVR::BeforeExitAnimations() {
+    CustomCharacters::OnVotingVRPageExit();
+    VR::BeforeExitAnimations();
+}
+
+void ExpVR::OnDeactivate() {
+    CustomCharacters::OnVotingVRPageExit();
+    VR::OnDeactivate();
 }
 
 void ExpVR::OnResume() {

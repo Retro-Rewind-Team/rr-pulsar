@@ -17,6 +17,7 @@ u8 GetLocalOnlineCharacterTables();
 bool IsCustomCharacterTableActive();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
 bool ShouldMuteCharacterVoice(const Kart::Link* link);
+void OnVotingVRPageExit();
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar
