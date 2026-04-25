@@ -5,6 +5,7 @@
 #include <core/nw4r/snd.hpp>
 #include <core/rvl/OS/OSCache.hpp>
 #include <core/rvl/os/OS.hpp>
+#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace Sound {
@@ -49,13 +50,20 @@ struct ResolvedBRSARTarget {
     u8 padding[3];
 };
 
-static LoadFileFn sOriginalLoadFile = reinterpret_cast<LoadFileFn>(0x800a0180);
-static LoadWaveDataFileFn sOriginalLoadWaveDataFile = reinterpret_cast<LoadWaveDataFileFn>(0x800a0420);
-static LoadGroupFn sOriginalLoadGroup = reinterpret_cast<LoadGroupFn>(0x8009fa10);
-static ReadFileInfoFn sReadFileInfo = reinterpret_cast<ReadFileInfoFn>(0x8009dff0);
-static ReadFilePosFn sReadFilePos = reinterpret_cast<ReadFilePosFn>(0x8009e000);
-static ReadGroupInfoFn sReadGroupInfo = reinterpret_cast<ReadGroupInfoFn>(0x8009dfc0);
-static ReadGroupItemInfoFn sReadGroupItemInfo = reinterpret_cast<ReadGroupItemInfoFn>(0x8009dfd0);
+kmRuntimeUse(0x800a0180);
+kmRuntimeUse(0x800a0420);
+kmRuntimeUse(0x8009fa10);
+kmRuntimeUse(0x8009dff0);
+kmRuntimeUse(0x8009e000);
+kmRuntimeUse(0x8009dfc0);
+kmRuntimeUse(0x8009dfd0);
+static LoadFileFn sOriginalLoadFile = reinterpret_cast<LoadFileFn>(kmRuntimeAddr(0x800a0180));
+static LoadWaveDataFileFn sOriginalLoadWaveDataFile = reinterpret_cast<LoadWaveDataFileFn>(kmRuntimeAddr(0x800a0420));
+static LoadGroupFn sOriginalLoadGroup = reinterpret_cast<LoadGroupFn>(kmRuntimeAddr(0x8009fa10));
+static ReadFileInfoFn sReadFileInfo = reinterpret_cast<ReadFileInfoFn>(kmRuntimeAddr(0x8009dff0));
+static ReadFilePosFn sReadFilePos = reinterpret_cast<ReadFilePosFn>(kmRuntimeAddr(0x8009e000));
+static ReadGroupInfoFn sReadGroupInfo = reinterpret_cast<ReadGroupInfoFn>(kmRuntimeAddr(0x8009dfc0));
+static ReadGroupItemInfoFn sReadGroupItemInfo = reinterpret_cast<ReadGroupItemInfoFn>(kmRuntimeAddr(0x8009dfd0));
 static const void* sPatchedFileAddresses[1024] = {};
 static const void* sPatchedWaveAddresses[1024] = {};
 static void* sExternalFileBuffers[1024] = {};
