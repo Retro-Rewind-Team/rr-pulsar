@@ -6,58 +6,12 @@
 
 namespace Pulsar {
 
-// Adds extra archives to Common, UI, and Driver holders for custom Pulsar assets
+// Adds extra archives to Common and UI holders for custom Pulsar assets
 kmWrite32(0x8052a108, 0x38800003);  // Add one archive to CommonArchiveHolder
 kmWrite32(0x8052a188, 0x38800004);  // Add one archive to UIArchiveHolder
-kmWrite32(0x805550a8, 0x80a418d4);  // Load menu Driver.szs from archiveHeaps.heaps[0] (MEM1), matching GlobeScene
-
-extern "C" void __nw__FUl(void*);
-extern "C" void ArchiveHolder(void*);
-extern "C" void DVDCreate(void*);
-asmFunc CreateGenericArchiveHolder() {
-    ASM(
-        nofralloc;
-        cmpwi r3, ARCHIVE_HOLDER_DRIVER;
-        li r31, 0x1;
-        bne + createArchive;
-        li r31, 0x2;
-
-        createArchive:
-        li r3, 0x1c;
-        lis r12, __nw__FUl@h;
-        ori r12, r12, __nw__FUl@l;
-        mtctr r12;
-        bctrl;
-        cmpwi r3, 0x0;
-        beq + done;
-        mr r4, r31;
-        lis r12, ArchiveHolder@h;
-        ori r12, r12, ArchiveHolder@l;
-        mtctr r12;
-        bctrl;
-
-        done:
-        or r31, r3, r3;
-        lis r12, DVDCreate@h;
-        ori r12, r12, DVDCreate@l;
-        mtctr r12;
-        bctr;)
-}
-kmBranch(0x8052a0d4, CreateGenericArchiveHolder);
-
 void LoadAssetsFile(ArchiveFile* file, const char* path, EGG::Heap* decompressedHeap, bool isCompressed, s32 allocDirection,
                     EGG::Heap* archiveHeap, EGG::Archive::FileInfo* info) {
     const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
-    const ArchivesHolder* driverHolder = archiveMgr->archivesHolders[ARCHIVE_HOLDER_DRIVER];
-    if (driverHolder != nullptr && driverHolder->archiveCount > 1 && file == &driverHolder->archives[1]) {
-        path = "/DriverAssets.szs";
-        const GameScene* scene = GameScene::GetCurrent();
-        if (scene != nullptr && (scene->id == SCENE_ID_MENU || scene->id == SCENE_ID_GLOBE)) {
-            decompressedHeap = scene->archiveHeaps.heaps[1];
-            archiveHeap = scene->archiveHeaps.heaps[1];
-        }
-    }
-
     if (file == &archiveMgr->archivesHolders[ARCHIVE_HOLDER_UI]->archives[3]) {
         const char* fileType = "UI";
         Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE));

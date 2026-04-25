@@ -17,6 +17,8 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/Input/Controller.hpp>
+#include <core/egg/DVD/DvdRipper.hpp>
+#include <core/rvl/dvd/dvd.hpp>
 
 namespace Pulsar {
 namespace CustomCharacters {
@@ -133,6 +135,8 @@ static const CharacterOverride skin2CharacterOverrides[] = {
     {PEACH, "pc-2", nullptr},
     {DAISY, "ds-2", nullptr},
     {ROSALINA, "rs-2", nullptr},
+    {BIRDO, "ca-2", nullptr},
+    {DRY_BOWSER, "bk-2", nullptr},
     {PEACH_BIKER, "pc-2", "pc-2_menu"},
     {DAISY_BIKER, "ds-2", "ds-2_menu"},
     {ROSALINA_BIKER, "rs-2", "rs-2_menu"},
@@ -163,6 +167,9 @@ static const CharacterOverride skin4CharacterOverrides[] = {
     {LUIGI, "lg-4", nullptr},
     {DONKEY_KONG, "dk-4", nullptr},
     {BOWSER_JR, "jr-4", nullptr},
+    {BOWSER, "kp-4", nullptr},
+    {FUNKY_KONG, "fk-4", nullptr},
+    {WARIO, "wr-4", nullptr},
 };
 
 static const CharacterOverride skin5CharacterOverrides[] = {
@@ -187,10 +194,14 @@ static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABL
 static u8 selectedCharacterTableByCharacter[CUSTOM_CHARACTER_COUNT];
 static u8 pendingMenuDriverReinitFrames = 0;
 static MenuDriverModelMgr* cachedMenuDriverModels[CUSTOM_CHARACTER_TABLE_COUNT] = {nullptr};
+static EGG::ExpHeap* rawMenuDriverBRRESHeaps[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
+static void* rawMenuDriverBRRESFiles[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static MenuModelMgr* cachedMenuModelMgr = nullptr;
 static u8 cachedMenuDriverModelPlayerCount = 0;
 static u8 currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static u8 buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+static CharacterId currentMenuDriverModelCharacter = CHARACTER_NONE;
+static CharacterId buildingMenuDriverModelCharacter = CHARACTER_NONE;
 static CharacterId hoveredCharacterByHud[4] = {MARIO, MARIO, MARIO, MARIO};
 static u16 heldCustomCharacterToggleButtons = 0;
 static_assert(CUSTOM_CHARACTER_TABLE_COUNT <= CUSTOM_CHARACTER_TABLE_PACKET_COUNT, "character table packet encoding cannot fit every table");
@@ -206,9 +217,13 @@ static bool IsCharacterSelectPageActive();
 static void ReinitializeMenuDriverModels();
 static void ProcessPendingMenuDriverModelReinit();
 static void ResetMenuDriverModelCache();
+static void ClearRawMenuDriverBRRESCachePointers();
 static void SyncMenuDriverModelCache();
 static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount);
 static u8 GetMenuDriverModelTableForCharacter(CharacterId character);
+static CharacterId GetMenuDriverBRRESCharacter(CharacterId character);
+static EGG::Heap* GetRawMenuDriverBRRESParentHeap(GameScene& scene, u32 heapSize);
+static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character);
 static void RefreshCharacterSelectModels();
 static CharacterId GetPreviewCharacterForHud(u8 hudSlotId);
 static CharacterId GetSelectedCharacterForHud(u8 hudSlotId);
@@ -521,9 +536,12 @@ static void ResetMenuDriverModelCache() {
     cachedMenuDriverModelPlayerCount = 0;
     currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
     buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+    currentMenuDriverModelCharacter = CHARACTER_NONE;
+    buildingMenuDriverModelCharacter = CHARACTER_NONE;
     for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
         cachedMenuDriverModels[tableIdx] = nullptr;
     }
+    ClearRawMenuDriverBRRESCachePointers();
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
         const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
@@ -545,9 +563,11 @@ static void SyncMenuDriverModelCache() {
         cachedMenuModelMgr = menuModelMgr;
         cachedMenuDriverModelPlayerCount = menuModelMgr->playerCount;
         currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
+        currentMenuDriverModelCharacter = CHARACTER_NONE;
         for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
             cachedMenuDriverModels[tableIdx] = nullptr;
         }
+        ClearRawMenuDriverBRRESCachePointers();
     }
 
     if (currentMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
@@ -701,6 +721,166 @@ static void StartMenuDriverModelManager(MenuDriverModelMgr& driverModelMgr) {
     original(&driverModelMgr);
 }
 
+static u32 AlignUp(u32 value, u32 alignment) {
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+static CharacterId GetMenuDriverBRRESCharacter(CharacterId character) {
+    switch (character) {
+        case PEACH:
+            return PEACH_BIKER;
+        case DAISY:
+            return DAISY_BIKER;
+        case ROSALINA:
+            return ROSALINA_BIKER;
+        default:
+            return character;
+    }
+}
+
+static u8 GetRawMenuDriverBRRESTable(CharacterId character) {
+    const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(character);
+    const u8 tableIdx = buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT ? buildingMenuDriverModelTable : GetMenuDriverModelTableForCharacter(menuCharacter);
+    if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT || tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) return CUSTOM_CHARACTER_TABLE_INVALID;
+    if (GetCharacterOverride(menuCharacter, tableIdx) == nullptr) return CUSTOM_CHARACTER_TABLE_INVALID;
+    if (buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
+        menuCharacter != GetMenuDriverBRRESCharacter(buildingMenuDriverModelCharacter)) {
+        return CUSTOM_CHARACTER_TABLE_INVALID;
+    }
+    return tableIdx;
+}
+
+static bool GetRawMenuDriverBRRESPath(CharacterId character, u8 tableIdx, char* path, u32 pathSize) {
+    const char* const brresName = GetDriverBRRESName(character, tableIdx);
+    if (brresName == nullptr) return false;
+
+    const int written = snprintf(path, pathSize, "/Scene/Model/Driver/%s.brres", brresName);
+    return written > 0 && static_cast<u32>(written) < pathSize;
+}
+
+static bool GetDiscFileSize(const char* path, u32& size) {
+    DVD::FileInfo fileInfo;
+    if (!DVD::Open(path, &fileInfo)) {
+        size = 0;
+        return false;
+    }
+    size = fileInfo.length;
+    DVD::Close(&fileInfo);
+    return size != 0;
+}
+
+static u32 CalculateRawMenuDriverBRRESHeapSize(u8 tableIdx, CharacterId character) {
+    u32 heapSize = 0x1000;
+    const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(character);
+    if (GetCharacterOverride(menuCharacter, tableIdx) == nullptr) return heapSize;
+
+    char path[0x60];
+    if (!GetRawMenuDriverBRRESPath(menuCharacter, tableIdx, path, sizeof(path))) return heapSize;
+
+    u32 fileSize = 0;
+    if (!GetDiscFileSize(path, fileSize)) return heapSize;
+    heapSize += AlignUp(fileSize, 0x20) + 0x1000;
+    return heapSize;
+}
+
+static EGG::ExpHeap* GetRawMenuDriverBRRESHeap(u8 tableIdx, CharacterId character) {
+    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || character < 0 || character >= CUSTOM_CHARACTER_COUNT) return nullptr;
+    if (rawMenuDriverBRRESHeaps[tableIdx][character] != nullptr) return rawMenuDriverBRRESHeaps[tableIdx][character];
+
+    GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
+    if (currentScene == nullptr) return nullptr;
+
+    const u32 heapSize = CalculateRawMenuDriverBRRESHeapSize(tableIdx, character);
+    EGG::Heap* const parentHeap = GetRawMenuDriverBRRESParentHeap(*currentScene, heapSize);
+    if (parentHeap == nullptr) return nullptr;
+
+    rawMenuDriverBRRESHeaps[tableIdx][character] = EGG::ExpHeap::Create(static_cast<int>(heapSize), parentHeap, 0);
+    return rawMenuDriverBRRESHeaps[tableIdx][character];
+}
+
+static EGG::Heap* GetRawMenuDriverBRRESParentHeap(GameScene& scene, u32 heapSize) {
+    static const u32 PARENT_HEAP_RESERVE = 0x8000;
+    EGG::Heap* candidates[] = {
+        scene.structsHeaps.heaps[1],
+        scene.structsHeaps.heaps[0],
+    };
+
+    EGG::Heap* bestHeap = nullptr;
+    u32 bestSize = 0;
+    for (u32 i = 0; i < ARRAY_COUNT(candidates); ++i) {
+        EGG::Heap* const heap = candidates[i];
+        if (heap == nullptr) continue;
+
+        UnlockHeap(heap);
+        const u32 allocatableSize = heap->getAllocatableSize(0x20);
+        if (allocatableSize >= heapSize + PARENT_HEAP_RESERVE) return heap;
+        if (allocatableSize > bestSize) {
+            bestHeap = heap;
+            bestSize = allocatableSize;
+        }
+    }
+
+    if (bestSize >= heapSize) return bestHeap;
+    return nullptr;
+}
+
+static void ClearRawMenuDriverBRRESCachePointers() {
+    for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
+        for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
+            rawMenuDriverBRRESHeaps[tableIdx][character] = nullptr;
+            rawMenuDriverBRRESFiles[tableIdx][character] = nullptr;
+        }
+    }
+}
+
+kmRuntimeUse(0x8055b7f8);
+static void BindRawMenuDriverBRRES(nw4r::g3d::ResFile& resFile, const char* name) {
+    typedef void (*BindBRRESImplFn)(nw4r::g3d::ResFile*, const char*, const nw4r::g3d::ResFile*, u32);
+    const BindBRRESImplFn bind = reinterpret_cast<BindBRRESImplFn>(kmRuntimeAddr(0x8055b7f8));
+    bind(&resFile, name, nullptr, 0);
+}
+
+static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character) {
+    const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(character);
+    const u8 tableIdx = GetRawMenuDriverBRRESTable(menuCharacter);
+    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || menuCharacter < 0 || menuCharacter >= CUSTOM_CHARACTER_COUNT) return false;
+
+    char path[0x60];
+    if (!GetRawMenuDriverBRRESPath(menuCharacter, tableIdx, path, sizeof(path))) return false;
+
+    void*& rawFile = rawMenuDriverBRRESFiles[tableIdx][menuCharacter];
+    if (rawFile == nullptr) {
+        EGG::ExpHeap* const heap = GetRawMenuDriverBRRESHeap(tableIdx, menuCharacter);
+        if (heap == nullptr) return false;
+
+        u32 fileSize = 0;
+        rawFile = EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &fileSize);
+        if (rawFile == nullptr || fileSize == 0) {
+            rawFile = nullptr;
+            return false;
+        }
+    }
+
+    if ((reinterpret_cast<u32>(rawFile) & 0x1f) != 0) return false;
+
+    nw4r::g3d::ResFile& resFile = *reinterpret_cast<nw4r::g3d::ResFile*>(reinterpret_cast<u8*>(holder) + 4);
+    resFile.data = reinterpret_cast<nw4r::g3d::ResFileData*>(rawFile);
+    BindRawMenuDriverBRRES(resFile, path);
+    return true;
+}
+
+kmRuntimeUse(0x8081e358);
+static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
+    if (LoadRawMenuDriverBRRES(holder, character)) return 1;
+
+    typedef u32 (*LoadMenuDriverBRRESFn)(void*, CharacterId);
+    const LoadMenuDriverBRRESFn original = reinterpret_cast<LoadMenuDriverBRRESFn>(kmRuntimeAddr(0x8081e358));
+    return original(holder, character);
+}
+kmCall(0x80830368, LoadMenuDriverBRRESHook);
+kmCall(0x80831234, LoadMenuDriverBRRESHook);
+kmCall(0x8083183c, LoadMenuDriverBRRESHook);
+
 kmRuntimeUse(0x807dbd80);
 static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriverModel* driverModel, u32 miiId, Mii* mii, u32 r8) {
     const GameScene* const currentScene = GameScene::GetCurrent();
@@ -748,10 +928,16 @@ static void ReinitializeMenuDriverModels() {
     if (playerCount == 0) return;
 
     MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
-    const u8 targetTable = GetMenuDriverModelTableForCharacter(GetPreviewCharacterForHud(0));
-    if (targetTable == currentMenuDriverModelTable && oldDriverModels != nullptr) return;
+    const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
+    const u8 targetTable = GetMenuDriverModelTableForCharacter(targetCharacter);
+    const bool targetUsesRawBRRES = targetTable != CUSTOM_CHARACTER_TABLE_DEFAULT && targetTable < CUSTOM_CHARACTER_TABLE_COUNT;
+    if (targetTable == currentMenuDriverModelTable && (!targetUsesRawBRRES || targetCharacter == currentMenuDriverModelCharacter) &&
+        oldDriverModels != nullptr) {
+        return;
+    }
 
-    MenuDriverModelMgr* newDriverModels = cachedMenuDriverModels[targetTable];
+    MenuDriverModelMgr* newDriverModels = nullptr;
+    if (!targetUsesRawBRRES) newDriverModels = cachedMenuDriverModels[targetTable];
     if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
         cachedMenuDriverModels[targetTable] = nullptr;
         newDriverModels = nullptr;
@@ -760,9 +946,11 @@ static void ReinitializeMenuDriverModels() {
         UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
         currentScene->structsHeaps.SetHeapsGroupId(3);
         buildingMenuDriverModelTable = targetTable;
+        buildingMenuDriverModelCharacter = targetCharacter;
         ApplyMenuDriverModelTablePostfixes(targetTable);
         newDriverModels = CreateMenuDriverModelManager(playerCount);
         buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+        buildingMenuDriverModelCharacter = CHARACTER_NONE;
         ApplyCharacterPostfixes();
         currentScene->structsHeaps.SetHeapsGroupId(0);
         if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
@@ -770,7 +958,9 @@ static void ReinitializeMenuDriverModels() {
             return;
         }
 
-        cachedMenuDriverModels[targetTable] = newDriverModels;
+        if (!targetUsesRawBRRES) {
+            cachedMenuDriverModels[targetTable] = newDriverModels;
+        }
     }
 
     if (oldDriverModels != nullptr && oldDriverModels != newDriverModels) {
@@ -796,6 +986,7 @@ static void ReinitializeMenuDriverModels() {
 
     RefreshCharacterSelectModels();
     currentMenuDriverModelTable = targetTable;
+    currentMenuDriverModelCharacter = targetUsesRawBRRES ? targetCharacter : CHARACTER_NONE;
 }
 
 static void ProcessPendingMenuDriverModelReinit() {
