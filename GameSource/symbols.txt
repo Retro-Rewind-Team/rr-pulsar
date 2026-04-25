@@ -665,6 +665,7 @@ Update__Q23EGG6EffectFv = 0x80223f58
 
 #Heap
 Create__Q23EGG7ExpHeapFiPQ23EGG4HeapUs = 0x80226ac8
+SetHeapsGroupId__12ExpHeapGroupFUi = 0x80009bc0
 getTotalFreeSize__Q23EGG7ExpHeapFv = 0x80226c88
 alloc__Q23EGG4HeapFUiiPQ23EGG4Heap = 0x80229814
 free__Q23EGG4HeapFPvPQ23EGG4Heap = 0x80229b84
@@ -712,6 +713,7 @@ CreatePath__Q23EGG11ScnRendererFUiPQ23EGG9Allocator = 0x8023bd38
 
 #ScnMgr
 AppendScreenSpecificModelDirector__6ScnMgrFP13ModelDirector = 0x805635cc
+RemoveFromGroup__13ModelDirectorFv = 0x8055f2fc
 
 #TaskThread
 Create__Q23EGG10TaskThreadFiiUiPQ23EGG4Heap = 0x802428e8
@@ -751,6 +753,7 @@ sInstance__Q23KMP7Manager = 0x809BD6E8
 
 ##FILE
 #Archive
+ArchiveHolder = 0x8052a538
 Load__11ArchiveFileFPCcPQ23EGG4HeapbiPQ23EGG4HeapPQ33EGG7Archive8FileInfo = 0x80518e10
 MountFromRawArchive__11ArchiveFileFPvUiPQ23EGG4Heapb = 0x80518fbc
 Dump__11ArchiveFileFPCcPQ23EGG4Heapi = 0x805190f0
@@ -767,6 +770,11 @@ RequestLoadCourseAsync__10ArchiveMgrF8CourseId = 0x805419ac
 sInstance__10ArchiveMgr = 0x809bd738
 GetArchive__10ArchiveMgrCF13ArchiveSourceUi = 0x80541614
 GetFile__14ArchivesHolderCFPCcPUi = 0x8052a760
+Unmount__10ArchiveMgrF13ArchiveSource = 0x805411d4
+LoadArchive__10ArchiveMgrF13ArchiveSourcePQ23EGG4HeapPCc = 0x80540450
+WaitForLoad__10ArchiveMgrFv = 0x805400a0
+ResetAllkartArchivesLoaders__10ArchiveMgrFv = 0x805423bc
+InitAllkartArchivesLoaders__10ArchiveMgrFUiUc = 0x805422cc
 
 ##SCENE
 GetCurrent__9GameSceneFv = 0x8051bed0
@@ -956,6 +964,7 @@ __vt__3Mii = 0x808b3148
 
 #MiiHeadsModel
 InitModel__13MiiHeadsModelFP3MiiP14MiiDriverModelUiQ44nw4r3g3d6ScnMdl12BufferOptionUiUi = 0x8055c580
+Draw__15MenuDriverModelFUc = 0x80830a80
 
 #MiiGroup
 __ct__8MiiGroupFv = 0x805f9e78
@@ -1014,6 +1023,23 @@ GetDriftState__Q24Kart6PlayerCFv = 0x805911d8
 
 #Misc
 ComputeStats__4KartF6KartId11CharacterId = 0x80591fa4
+sInstance__12MenuModelMgr = 0x809c1988
+RequestDriverModel__12MenuModelMgrFUc11CharacterId = 0x8059e568
+RequestKartModel__12MenuModelMgrFUc6KartId = 0x8059e580
+RequestModel__18DriverModelControlF11CharacterId = 0x805f3494
+RequestModel__19VehicleModelControlF6KartId = 0x805f3bc4
+RequestCharacterModel__Q25Pages13ModelRendererFUc11CharacterId = 0x805f56e0
+RequestKartModel__Q25Pages13ModelRendererFUc6KartId = 0x805f5958
+getPlayerModels__Q26Pulsar16CustomCharactersFv = 0x80790e30
+SetPlayerCharacter__18MenuDriverModelMgrFUc11CharacterId = 0x80830d00
+__ct__18MenuDriverModelMgrFUc = 0x80830180
+TogglePlayerModel__12MenuModelMgrFUcb = 0x80830c3c
+TogglePlayerModel__18MenuDriverModelMgrFUcb = 0x80830c3c
+PrepareDriverOnKartAnms__18MenuDriverModelMgrFUc = 0x80830c64
+SwitchState__15MenuDriverModelFUcQ215MenuDriverModel5State = 0x8082fb78
+LoadKartModelsByCharacter__Q25Pages13ModelRendererFUc11CharacterId = 0x805f570c
+ResetKartModels__12MenuModelMgrFUc = 0x8059e550
+PlayerModel_init = 0x807c8758
 hardSpeedCap__4Kart = 0x808b59f4
 bulletSpeed__4Kart = 0x808b59f8
 minDriftSpeedRatio__4Kart = 0x808b5b1c
@@ -2440,3 +2466,12 @@ RequestPause__12RacePauseMgrFv = 0x808600dc
 RequestUnpause__12RacePauseMgrFv = 0x80860100
 sInstance__Q25Pages12RacePauseMgr = 0x809c4730
 RequestUnpause__Q25Pages12RacePauseMgrFv = 0x80860100
+Update__12MenuModelMgrFv = 0x8059e4a8
+Update__18MenuDriverModelMgrFv = 0x808307b0
+Load__16MenuKartModelMgrFv = 0x80832d00
+DVDCreate = 0x8052a1b0
+__dt__15MenuDriverModelFv = 0x80830708
+__dt__18ModelTransformatorFv = 0x80556774
+RequestSceneReinit__10SectionMgrFUiUi = 0x80635b2c
+ToadetteFix1 = 0x807c89bc
+ToadetteFix2 = 0x807c8aa8

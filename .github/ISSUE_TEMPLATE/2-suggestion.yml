@@ -1,6 +1,6 @@
 name: "Feature Suggestion"
 description: "Feature suggestion form for team members and contributors only!"
-labels: ["feature", "discussion"]
+labels: ["feature", "discussion", "suggestion"]
 body:
 - type: "markdown"
   attributes:

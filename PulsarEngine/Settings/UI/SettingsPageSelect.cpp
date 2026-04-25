@@ -168,7 +168,7 @@ void SettingsPageSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
     // Get the SettingsPanel and set up the selected page
     const u32 selectedPage = button.buttonId;
 
-    if (selectedPage == 12) {
+    if (selectedPage == Settings::SETTINGSTYPE_ITEMS) {
         this->nextPageId = static_cast<PageId>(CustomItemPage::id);
         this->EndStateAnimated(0, button.GetAnimationFrameSize());
         return;

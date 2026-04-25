@@ -124,6 +124,15 @@
   <data name="Code" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\Code.pul;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="IdentifiersHpp" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\GameSource\MarioKartWii\System\Identifiers.hpp;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="PulsarSystemHpp" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\PulsarEngine\PulsarSystem.hpp;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="PulsarUiHpp" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\PulsarEngine\UI\UI.hpp;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
   <data name="CommonAssets" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\CommonAssets.szs;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>

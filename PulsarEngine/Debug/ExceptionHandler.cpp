@@ -8,9 +8,11 @@
 #include <core/rvl/KPAD.hpp>
 #include <core/egg/Exception.hpp>
 #include <Debug/Debug.hpp>
+#include <Debug/CrashExtra.hpp>
 #include <PulsarSystem.hpp>
 #include <IO/IO.hpp>
 #include <RetroRewindChannel.hpp>
+#include <Dolphin/DolphinIOS.hpp>
 
 namespace Pulsar {
 namespace Debug {
@@ -30,6 +32,12 @@ void FatalError(const char* string) {
 #pragma suppress_warnings on
 void LaunchSoftware() {
     // If dolphin, restarts game, else launches Retro Rewind Channel->HBC->OHBC->WiiMenu
+    bool isDolphin = Dolphin::IsEmulator();
+
+    if (isDolphin) {
+        SystemManager::Shutdown();
+        return;
+    }
 
     s32 result = IO::OpenFix("/title/00010001/57524554/content/title.tmd\0", IOS::MODE_NONE);  // Retro Rewind Channel
     if (result >= 0) {
@@ -47,12 +55,6 @@ void LaunchSoftware() {
     if (result >= 0) {
         ISFS::Close(result);
         OS::__LaunchTitle(0x00010001, 0x48424330);
-        return;
-    }
-    result = IO::OpenFix("/dev/dolphin", IOS::MODE_NONE);
-    if (result >= 0 && !IsNewChannel()) {
-        IOS::Close(result);
-        SystemManager::Shutdown();
         return;
     }
     OS::__LaunchTitle(0x1, 0x2);  // Launch Wii Menu if channel isn't found
@@ -78,7 +80,7 @@ static void SetConsoleParams() {
 }
 BootHook ConsoleParams(SetConsoleParams, 1);
 
-ExceptionFile::ExceptionFile(const OS::Context& context) : magic('PULD'), region(*reinterpret_cast<u32*>(OS::BootInfo::mInstance.diskID.gameName)), reserved(-1) {
+ExceptionFile::ExceptionFile(const OS::Context& context) : magic('PULD'), region(*reinterpret_cast<u32*>(OS::BootInfo::mInstance.diskID.gameName)), version(EXCEPTION_FILE_VERSION) {
     this->srr0.name = 'srr0';
     this->srr0.gpr = context.srr0;
     this->srr1.name = 'srr1';
@@ -116,11 +118,11 @@ static void WriteHeaderCrash(u16 error, const OS::Context* context, u32 dsisr, u
     exception.displayedInfo = 0x23;
     exception.callbackArgs = nullptr;
 
-    if (IsNewChannel()) {
+    if (IsNewChannel() && !Dolphin::IsEmulator()) {
         // just "hide" the console/xfb
         db::DirectPrint_ChangeXfb((void*)0, 0, 0);
         // we just set the flag, generate dump file and return to the channel
-        NewChannel_SetCrashFlag();
+        NewChannel_WriteCrashEphFile();
     } else {
         db::Exception_Printf_("Saving Crash.pul and exiting...\n");
         db::PrintContext_(error, context, dsisr, dar);
@@ -137,6 +139,7 @@ static void CreateCrashFile(s32 channel, KPAD::Status buff[], u32 count) {
     if (io != nullptr) {
         alignas(0x20) ExceptionFile exception(thread->context);
         exception.error = static_cast<OS::Error>(crashError);
+        PopulateCrashExtra(exception);
         char path[IOS::ipcMaxPath];
         const System* system = System::sInstance;
         snprintf(path, IOS::ipcMaxPath, "%s/Crash.pul", system->GetModFolder());
