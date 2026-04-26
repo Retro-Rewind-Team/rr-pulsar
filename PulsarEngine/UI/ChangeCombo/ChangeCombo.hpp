@@ -27,6 +27,8 @@ class ExpVR : public Pages::VR {
     static_assert(voteDuration % 4 == 0, "Vote Duration");
     ExpVR();
     void OnInit() override;
+    void BeforeExitAnimations() override;
+    void OnDeactivate() override;
     void AfterControlUpdate() override;
     void OnResume() override;
     void OnButtonSelect(PushButton& button, u32 hudSlotId);

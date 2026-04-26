@@ -13,6 +13,7 @@
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -140,6 +141,7 @@ static void RandomizeCombo() {
         sectionParams->karts[hudId] = kart;
         sectionParams->combos[hudId].selCharacter = character;
         sectionParams->combos[hudId].selKart = kart;
+        CustomCharacters::RandomizeCustomCharacterTable(character);
 
         ExpCharacterSelect* charSelect = section->Get<ExpCharacterSelect>();  // guaranteed to exist on this page
         charSelect->randomizedCharIdx[hudId] = character;
@@ -254,6 +256,16 @@ void ExpVR::AfterControlUpdate() {
             this->shouldRestoreControls = false;
         }
     }
+}
+
+void ExpVR::BeforeExitAnimations() {
+    CustomCharacters::OnVotingVRPageExit();
+    VR::BeforeExitAnimations();
+}
+
+void ExpVR::OnDeactivate() {
+    CustomCharacters::OnVotingVRPageExit();
+    VR::OnDeactivate();
 }
 
 void ExpVR::OnResume() {

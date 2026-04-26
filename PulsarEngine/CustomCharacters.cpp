@@ -3,13 +3,16 @@
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/UI/Page/Menu/CharacterSelect.hpp>
+#include <MarioKartWii/UI/Page/Other/ModelRenderer.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
+#include <MarioKartWii/3D/Model/Menu/MenuKartModel.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/Driver/Toadette.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/Audio/Actors/RaceActor.hpp>
 #include <MarioKartWii/Mii/MiiHeadsModel.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/System/Random.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
@@ -136,7 +139,6 @@ static const CharacterOverride skin2CharacterOverrides[] = {
     {DAISY, "ds-2", nullptr},
     {ROSALINA, "rs-2", nullptr},
     {BIRDO, "ca-2", nullptr},
-    {DRY_BOWSER, "bk-2", nullptr},
     {PEACH_BIKER, "pc-2", "pc-2_menu"},
     {DAISY_BIKER, "ds-2", "ds-2_menu"},
     {ROSALINA_BIKER, "rs-2", "rs-2_menu"},
@@ -169,7 +171,6 @@ static const CharacterOverride skin4CharacterOverrides[] = {
     {BOWSER_JR, "jr-4", nullptr},
     {BOWSER, "kp-4", nullptr},
     {FUNKY_KONG, "fk-4", nullptr},
-    {WARIO, "wr-4", nullptr},
 };
 
 static const CharacterOverride skin5CharacterOverrides[] = {
@@ -193,8 +194,6 @@ static const u8 CUSTOM_CHARACTER_TABLE_PACKET_MASK = (1 << CUSTOM_CHARACTER_TABL
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS;
 static u8 selectedCharacterTableByCharacter[CUSTOM_CHARACTER_COUNT];
 static u8 pendingMenuDriverReinitFrames = 0;
-static MenuDriverModelMgr* cachedMenuDriverModels[CUSTOM_CHARACTER_TABLE_COUNT] = {nullptr};
-static MenuDriverModelMgr* cachedCMiiDriverModels = nullptr;
 static EGG::ExpHeap* rawMenuDriverBRRESHeaps[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static void* rawMenuDriverBRRESFiles[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static MenuModelMgr* cachedMenuModelMgr = nullptr;
@@ -204,6 +203,14 @@ static u8 buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static CharacterId currentMenuDriverModelCharacter = CHARACTER_NONE;
 static CharacterId buildingMenuDriverModelCharacter = CHARACTER_NONE;
 static CharacterId hoveredCharacterByHud[4] = {MARIO, MARIO, MARIO, MARIO};
+static const MenuDriverModel::State MENUDRIVERMODEL_STATE_VEHICLE_SELECTED = static_cast<MenuDriverModel::State>(3);
+static const Section* votingVRMenuDriverSection = nullptr;
+static bool votingVRMenuDriverSawActive = false;
+static bool votingVRMenuDriverExited = false;
+static bool votingVRMenuDriverReinitialized = false;
+static bool votingVRModelRendererPrimed = false;
+static u8 votingVRMenuDriverReinitFrames = 0;
+static u8 votingVRMenuDriverStateRefreshFrames = 0;
 static u16 heldCustomCharacterToggleButtons = 0;
 static_assert(CUSTOM_CHARACTER_TABLE_COUNT <= CUSTOM_CHARACTER_TABLE_PACKET_COUNT, "character table packet encoding cannot fit every table");
 static_assert(CUSTOM_CHARACTER_TABLE_PACKET_BITS * 2 <= 8, "character table packet field is one byte");
@@ -215,12 +222,10 @@ static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx);
 static const char** GetCharacterPostfixEntry(CharacterId character);
 static bool IsCustomCharacterEnabled(CharacterId character);
 static bool IsCharacterSelectPageActive();
-static void ReinitializeMenuDriverModels();
+static bool ReinitializeMenuDriverModels();
 static void ProcessPendingMenuDriverModelReinit();
 static void ResetMenuDriverModelCache();
 static void ClearRawMenuDriverBRRESCachePointers();
-static bool IsMiiOutfitBChar(CharacterId c);
-static bool IsMiiOutfitCChar(CharacterId c);
 static void SyncMenuDriverModelCache();
 static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount);
 static u8 GetMenuDriverModelTableForCharacter(CharacterId character);
@@ -230,6 +235,13 @@ static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character);
 static void RefreshCharacterSelectModels();
 static CharacterId GetPreviewCharacterForHud(u8 hudSlotId);
 static CharacterId GetSelectedCharacterForHud(u8 hudSlotId);
+static void ResetVotingVRMenuDriverState();
+static bool ShouldHandleVotingVRMenuDriverModels();
+static bool RefreshVotingVRMenuDriverStates();
+static bool IsPageActive(PageId pageId);
+static MenuDriverModel::State GetVotingMenuDriverTargetState(bool isKartVisible);
+static bool PrimeVotingModelRenderer();
+static void SetModelRendererVehicleVisible(Pages::ModelRenderer& modelRenderer, u8 hudSlotId);
 
 kmRuntimeUse(0x808b3a90);
 static const u32 CHARACTER_POSTFIX_TABLE_ADDRESS = kmRuntimeAddr(0x808b3a90);
@@ -262,6 +274,21 @@ static u8 NormalizeCharacterTable(CharacterId character, u8 tableIdx) {
     return CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
+static bool IsLocalMultiplayerActive() {
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
+        return sectionMgr->sectionParams->localPlayerCount > 1;
+    }
+
+    const Racedata* const racedata = Racedata::sInstance;
+    if (racedata != nullptr) {
+        if (racedata->racesScenario.localPlayerCount > 1) return true;
+        if (racedata->menusScenario.localPlayerCount > 1) return true;
+    }
+
+    return GetLocalPlayerCount() > 1;
+}
+
 static CharacterId GetCustomCharacterStateId(CharacterId character) {
     const CharacterAssetNames* assets = GetCharacterAssets(character);
     if (assets == nullptr) return CHARACTER_NONE;
@@ -275,6 +302,7 @@ static bool IsCustomCharacterStateIdValid(CharacterId character) {
 }
 
 static u8 GetSelectedCharacterTable(CharacterId character) {
+    if (IsLocalMultiplayerActive()) return CUSTOM_CHARACTER_TABLE_DEFAULT;
     if (!IsCustomCharacterStateIdValid(character)) return CUSTOM_CHARACTER_TABLE_DEFAULT;
 
     const u8 tableIdx = selectedCharacterTableByCharacter[GetCustomCharacterStateId(character)];
@@ -286,6 +314,7 @@ static bool IsCustomCharacterEnabled(CharacterId character) {
 }
 
 static bool IsAnyCustomCharacterEnabled() {
+    if (IsLocalMultiplayerActive()) return false;
     for (u8 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
         if (selectedCharacterTableByCharacter[character] != CUSTOM_CHARACTER_TABLE_DEFAULT) return true;
     }
@@ -325,6 +354,37 @@ static bool CycleCustomCharacterTable(CharacterId character, int direction) {
         return true;
     }
     return false;
+}
+
+bool RandomizeCustomCharacterTable(CharacterId character) {
+    if (GetLocalPlayerCount() != 1) return false;
+    if (!IsCustomCharacterStateIdValid(character)) return false;
+    if (CUSTOM_CHARACTER_TABLE_COUNT <= 1) return false;
+
+    u8 validTables[CUSTOM_CHARACTER_TABLE_COUNT - 1];
+    u8 validTableCount = 0;
+    const u8 selectedTableIdx = GetSelectedCharacterTable(character);
+    for (u8 tableIdx = 1; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
+        if (tableIdx != selectedTableIdx && IsCharacterTableValidForCharacter(character, tableIdx)) {
+            validTables[validTableCount] = tableIdx;
+            ++validTableCount;
+        }
+    }
+    if (validTableCount == 0 && selectedTableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT) {
+        for (u8 tableIdx = 1; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
+            if (IsCharacterTableValidForCharacter(character, tableIdx)) {
+                validTables[validTableCount] = tableIdx;
+                ++validTableCount;
+            }
+        }
+    }
+    if (validTableCount == 0) return false;
+
+    Random random;
+    const u8 tableIdx = validTables[random.NextLimited<u8>(validTableCount)];
+    if (!SetCustomCharacterTable(character, tableIdx)) return false;
+    pendingMenuDriverReinitFrames = 2;
+    return true;
 }
 
 static const char* GetCharacterPostfix(CharacterId character, u8 tableIdx) {
@@ -376,7 +436,7 @@ bool IsOnlineRoom(const RKNet::Controller* controller) {
 }
 
 bool IsOnlineMultiLocal(const RKNet::Controller* controller) {
-    return IsOnlineRoom(controller) && GetLocalPlayerCount() > 1;
+    return IsOnlineRoom(controller) && IsLocalMultiplayerActive();
 }
 
 bool isDisplayCustomSkinsEnabled() {
@@ -447,9 +507,10 @@ bool IsLocalRacePlayer(u8 playerId) {
 }
 
 bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character) {
+    if (IsLocalMultiplayerActive()) return false;
+
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (IsOnlineRoom(controller)) {
-        if (IsOnlineMultiLocal(controller)) return false;
         if (!isDisplayCustomSkinsEnabled()) return false;
         if (IsLocalRacePlayer(playerId)) return IsCustomCharacterEnabled(character);
         return playerId < 12 && IsCharacterTableValidForCharacter(character, onlineCharacterTables[playerId]) &&
@@ -459,6 +520,8 @@ bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character
 }
 
 static u8 GetRaceCharacterTable(u8 playerId, CharacterId character) {
+    if (IsLocalMultiplayerActive()) return CUSTOM_CHARACTER_TABLE_DEFAULT;
+
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (IsOnlineRoom(controller) && !IsOnlineMultiLocal(controller) && isDisplayCustomSkinsEnabled()) {
         if (IsLocalRacePlayer(playerId)) return GetSelectedCharacterTable(character);
@@ -541,10 +604,7 @@ static void ResetMenuDriverModelCache() {
     buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
     currentMenuDriverModelCharacter = CHARACTER_NONE;
     buildingMenuDriverModelCharacter = CHARACTER_NONE;
-    cachedCMiiDriverModels = nullptr;
-    for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
-        cachedMenuDriverModels[tableIdx] = nullptr;
-    }
+    ResetVotingVRMenuDriverState();
     ClearRawMenuDriverBRRESCachePointers();
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
@@ -568,20 +628,7 @@ static void SyncMenuDriverModelCache() {
         cachedMenuDriverModelPlayerCount = menuModelMgr->playerCount;
         currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
         currentMenuDriverModelCharacter = CHARACTER_NONE;
-        cachedCMiiDriverModels = nullptr;
-        for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
-            cachedMenuDriverModels[tableIdx] = nullptr;
-        }
         ClearRawMenuDriverBRRESCachePointers();
-    }
-
-    // Never cache a C Mii manager into the DEFAULT table slot — it holds a C BRRES in
-    // the B model slot and would corrupt Outfit B display if shared.
-    if (currentMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
-        cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr &&
-        !IsMiiOutfitCChar(currentMenuDriverModelCharacter) &&
-        IsMenuDriverModelManagerUsable(menuModelMgr->driverModels, menuModelMgr->playerCount)) {
-        cachedMenuDriverModels[currentMenuDriverModelTable] = menuModelMgr->driverModels;
     }
 }
 
@@ -720,6 +767,100 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
         if (previousHeap != nullptr) previousHeap->BecomeCurrentHeap();
     }
     return manager;
+}
+
+static bool IsVotingSection() {
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
+
+    switch (sectionMgr->curSection->sectionId) {
+        case SECTION_P1_WIFI_VS_VOTING:
+        case SECTION_P1_WIFI_BATTLE_VOTING:
+        case SECTION_P2_WIFI_VS_VOTING:
+        case SECTION_P2_WIFI_BATTLE_VOTING:
+        case SECTION_P1_WIFI_FROOM_VS_VOTING:
+        case SECTION_P1_WIFI_FROOM_TEAMVS_VOTING:
+        case SECTION_P1_WIFI_FROOM_BALLOON_VOTING:
+        case SECTION_P1_WIFI_FROOM_COIN_VOTING:
+        case SECTION_P2_WIFI_FROOM_VS_VOTING:
+        case SECTION_P2_WIFI_FROOM_TEAMVS_VOTING:
+        case SECTION_P2_WIFI_FROOM_BALLOON_VOTING:
+        case SECTION_P2_WIFI_FROOM_COIN_VOTING:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool IsPageActive(PageId pageId) {
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
+    const Section* const section = sectionMgr->curSection;
+    Page* const page = section->pages[pageId];
+    if (page == nullptr) return false;
+
+    for (u32 layerIdx = 0; layerIdx < section->layerCount; ++layerIdx) {
+        if (section->activePages[layerIdx] == page) return true;
+    }
+    return false;
+}
+
+static bool IsVRPageActive() {
+    return IsPageActive(PAGE_VR);
+}
+
+static MenuDriverModel::State GetVotingMenuDriverTargetState(bool isKartVisible) {
+    if (!isKartVisible) return MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT;
+
+    if (IsPageActive(PAGE_KART_SELECT) ||
+        IsPageActive(PAGE_BATTLE_KART_SELECT) ||
+        IsPageActive(PAGE_MULTIPLAYER_KART_SELECT)) {
+        return MenuDriverModel::MENUDRIVERMODEL_STATE_ONKARTSELECT;
+    }
+
+    return MENUDRIVERMODEL_STATE_VEHICLE_SELECTED;
+}
+
+static void ResetVotingVRMenuDriverState() {
+    votingVRMenuDriverSection = nullptr;
+    votingVRMenuDriverSawActive = false;
+    votingVRMenuDriverExited = false;
+    votingVRMenuDriverReinitialized = false;
+    votingVRModelRendererPrimed = false;
+    votingVRMenuDriverReinitFrames = 0;
+    votingVRMenuDriverStateRefreshFrames = 0;
+}
+
+static bool SyncVotingVRMenuDriverState() {
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || !IsVotingSection()) {
+        ResetVotingVRMenuDriverState();
+        return false;
+    }
+
+    const Section* const section = sectionMgr->curSection;
+    if (votingVRMenuDriverSection != section) {
+        votingVRMenuDriverSection = section;
+        votingVRMenuDriverSawActive = false;
+        votingVRMenuDriverExited = false;
+        votingVRMenuDriverReinitialized = false;
+        votingVRModelRendererPrimed = false;
+        votingVRMenuDriverReinitFrames = 0;
+        votingVRMenuDriverStateRefreshFrames = 0;
+    }
+    return true;
+}
+
+static bool ShouldUseDefaultMenuDriverTableForVotingVR() {
+    if (!SyncVotingVRMenuDriverState()) return false;
+    if (!ShouldHandleVotingVRMenuDriverModels()) return false;
+    if (IsVRPageActive()) votingVRMenuDriverSawActive = true;
+    return !votingVRMenuDriverExited;
+}
+
+static bool ShouldHandleVotingVRMenuDriverModels() {
+    const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
+    return GetSelectedCharacterTable(targetCharacter) != CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
 kmRuntimeUse(0x80830748);
@@ -877,27 +1018,8 @@ static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character) {
     return true;
 }
 
-static bool IsMiiOutfitBChar(CharacterId c) {
-    return c == MII_S_B_MALE || c == MII_S_B_FEMALE ||
-           c == MII_M_B_MALE || c == MII_M_B_FEMALE ||
-           c == MII_L_B_MALE || c == MII_L_B_FEMALE;
-}
-
-static bool IsMiiOutfitCChar(CharacterId c) {
-    return c == MII_S_C_MALE || c == MII_S_C_FEMALE ||
-           c == MII_M_C_MALE || c == MII_M_C_FEMALE ||
-           c == MII_L_C_MALE || c == MII_L_C_FEMALE;
-}
-
 kmRuntimeUse(0x8081e358);
 static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
-    // When building the model manager for a Mii Outfit C character, load the C
-    // BRRES into the B slot (B is always loaded at iteration 1 of FUN_80831100).
-    // This reuses the existing B slot so no structural array changes are needed.
-    if (IsMiiOutfitCChar(buildingMenuDriverModelCharacter) && IsMiiOutfitBChar(character)) {
-        character = static_cast<CharacterId>(character + 2);  // B -> C
-    }
-
     if (LoadRawMenuDriverBRRES(holder, character)) return 1;
 
     typedef u32 (*LoadMenuDriverBRRESFn)(void*, CharacterId);
@@ -911,12 +1033,8 @@ kmCall(0x8083183c, LoadMenuDriverBRRESHook);
 kmRuntimeUse(0x807dbd80);
 static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriverModel* driverModel, u32 miiId, Mii* mii, u32 r8) {
     const GameScene* const currentScene = GameScene::GetCurrent();
-    // Allow head creation for Mii Outfit C builds — the C model uses the B slot
-    // which normally has no head in custom-table builds, but C is at DEFAULT table
-    // and requires a real head like any standard Mii.
     if (currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE || currentScene->id == SCENE_ID_MENU) &&
-        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
-        !IsMiiOutfitCChar(buildingMenuDriverModelCharacter)) {
+        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
         return nullptr;
     }
 
@@ -938,77 +1056,204 @@ static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, Char
 
     typedef void (*SetPlayerCharacterFn)(MenuDriverModelMgr*, u8, CharacterId);
     const SetPlayerCharacterFn original = reinterpret_cast<SetPlayerCharacterFn>(kmRuntimeAddr(0x80830d00));
-    if (IsMiiOutfitCChar(character)) {
-        // Pass the corresponding B outfit so SetPlayerCharacter (FUN_80830d00) selects
-        // the B model slot [playerId*2+0x19], which was loaded with the C BRRES above.
-        original(driverModels, playerId, static_cast<CharacterId>(character - 2));
-        // Restore the correct C character ID so the Mii body animation index (+4 from
-        // the A base) is correct, rather than B's +2.
-        driverModels->players[playerId].id = character;
-    } else {
-        original(driverModels, playerId, character);
-    }
+    original(driverModels, playerId, character);
 }
 kmBranch(0x8059e568, RequestDriverModelHook);
 
 static u8 GetMenuDriverModelTableForCharacter(CharacterId character) {
+    if (ShouldUseDefaultMenuDriverTableForVotingVR()) return CUSTOM_CHARACTER_TABLE_DEFAULT;
     return GetSelectedCharacterTable(character);
 }
 
-static void ReinitializeMenuDriverModels() {
+void OnVotingVRPageExit() {
+    if (!SyncVotingVRMenuDriverState() || votingVRMenuDriverReinitialized) return;
+    if (!ShouldHandleVotingVRMenuDriverModels()) {
+        votingVRMenuDriverReinitialized = true;
+        return;
+    }
+
+    if (votingVRMenuDriverExited) return;
+    votingVRMenuDriverExited = true;
+    votingVRMenuDriverReinitFrames = 1;
+}
+
+static void ReinitializeVotingVRMenuDriverModels() {
+    if (!SyncVotingVRMenuDriverState() || votingVRMenuDriverReinitialized) return;
+    if (!ShouldHandleVotingVRMenuDriverModels()) {
+        votingVRMenuDriverReinitialized = true;
+        return;
+    }
+
+    currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+    currentMenuDriverModelCharacter = CHARACTER_NONE;
+    if (ReinitializeMenuDriverModels()) {
+        votingVRMenuDriverReinitialized = true;
+        PrimeVotingModelRenderer();
+        votingVRMenuDriverStateRefreshFrames = 20;
+    } else {
+        votingVRMenuDriverReinitFrames = 1;
+    }
+}
+
+static void ProcessVotingVRMenuDriverModelReinit() {
+    if (!SyncVotingVRMenuDriverState()) return;
+    if (!ShouldHandleVotingVRMenuDriverModels()) return;
+    if (IsVRPageActive()) {
+        votingVRMenuDriverSawActive = true;
+        return;
+    }
+    if (!votingVRMenuDriverExited && !votingVRMenuDriverSawActive) return;
+    OnVotingVRPageExit();
+    if (votingVRMenuDriverReinitFrames != 0) {
+        --votingVRMenuDriverReinitFrames;
+        return;
+    }
+    ReinitializeVotingVRMenuDriverModels();
+}
+
+static void ProcessVotingVRMenuDriverStateRefresh() {
+    if (votingVRMenuDriverStateRefreshFrames == 0) return;
+    if (!SyncVotingVRMenuDriverState() || IsVRPageActive()) return;
+    if (!ShouldHandleVotingVRMenuDriverModels()) {
+        votingVRMenuDriverStateRefreshFrames = 0;
+        return;
+    }
+
+    if (RefreshVotingVRMenuDriverStates()) {
+        votingVRMenuDriverStateRefreshFrames = 0;
+    } else {
+        --votingVRMenuDriverStateRefreshFrames;
+    }
+}
+
+static bool RefreshVotingVRMenuDriverStates() {
+    MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (menuModelMgr == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return false;
+
+    if (!votingVRModelRendererPrimed && !PrimeVotingModelRenderer()) return false;
+
+    MenuDriverModelMgr* const driverModels = menuModelMgr->driverModels;
+    MenuKartModelMgr* const kartModels = menuModelMgr->kartModels;
+    if (!IsMenuDriverModelManagerUsable(driverModels, menuModelMgr->playerCount) || kartModels == nullptr) return false;
+
+    bool allStatesReady = true;
+    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        if (hudSlotId >= driverModels->playerCount || hudSlotId >= kartModels->playerCount) continue;
+
+        MenuDriverModel* const playerModel = driverModels->players[hudSlotId].playerModel;
+        if (playerModel == nullptr || playerModel->model == nullptr) {
+            allStatesReady = false;
+            continue;
+        }
+
+        const MenuDriverModel::State targetState = GetVotingMenuDriverTargetState(kartModels->players[hudSlotId].isModelVisible);
+        if (targetState != MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT) {
+            if (playerModel->onKartTransformator == nullptr) {
+                menuModelMgr->RequestKartModel(hudSlotId, sectionMgr->sectionParams->karts[hudSlotId]);
+                allStatesReady = false;
+                continue;
+            }
+            if (playerModel->state != targetState) {
+                playerModel->id = sectionMgr->sectionParams->karts[hudSlotId];
+                playerModel->SwitchState(hudSlotId, targetState);
+            }
+        } else {
+            if (playerModel->state != targetState) {
+                playerModel->SwitchState(hudSlotId, targetState);
+            }
+        }
+    }
+    return allStatesReady;
+}
+
+static bool PrimeVotingModelRenderer() {
+    SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || sectionMgr->sectionParams == nullptr) return false;
+
+    Pages::ModelRenderer* const modelRenderer = sectionMgr->curSection->Get<Pages::ModelRenderer>();
+    if (modelRenderer == nullptr) return false;
+
+    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        const CharacterId character = sectionMgr->sectionParams->characters[hudSlotId];
+        const KartId kart = sectionMgr->sectionParams->karts[hudSlotId];
+        modelRenderer->RequestCharacterModel(hudSlotId, character);
+        modelRenderer->LoadKartModelsByCharacter(hudSlotId, character);
+        Pages::ModelRenderer::PrepareParams(hudSlotId);
+        SetModelRendererVehicleVisible(*modelRenderer, hudSlotId);
+        modelRenderer->RequestKartModel(hudSlotId, kart);
+    }
+    votingVRModelRendererPrimed = true;
+    return true;
+}
+
+kmRuntimeUse(0x805f59ac);
+static void SetModelRendererVehicleVisible(Pages::ModelRenderer& modelRenderer, u8 hudSlotId) {
+    typedef void (*SetModelRendererVisibilityFn)(Pages::ModelRenderer*, u8, u32, bool);
+    const SetModelRendererVisibilityFn setModelRendererVisibility =
+        reinterpret_cast<SetModelRendererVisibilityFn>(kmRuntimeAddr(0x805f59ac));
+    setModelRendererVisibility(&modelRenderer, hudSlotId, 1, true);
+}
+
+static bool ReinitializeMenuDriverModels() {
     MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
     GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    if (menuModelMgr == nullptr || currentScene == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return;
-    if (menuModelMgr->heap == nullptr) return;
+    if (menuModelMgr == nullptr || currentScene == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return false;
+    if (menuModelMgr->heap == nullptr) return false;
 
     SyncMenuDriverModelCache();
 
     const u8 playerCount = GetMenuModelPlayerCount();
-    if (playerCount == 0) return;
+    if (playerCount == 0) return false;
 
     MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
+    bool playerWasVisible[4] = {false, false, false, false};
+    MenuDriverModel::State playerState[4] = {
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT
+    };
+    if (oldDriverModels != nullptr) {
+        const u8 snapshotPlayerCount = oldDriverModels->playerCount > 4 ? 4 : oldDriverModels->playerCount;
+        for (u8 playerId = 0; playerId < snapshotPlayerCount; ++playerId) {
+            playerWasVisible[playerId] = oldDriverModels->players[playerId].isVisible;
+            MenuDriverModel* const oldPlayerModel = oldDriverModels->players[playerId].playerModel;
+            if (oldPlayerModel != nullptr) {
+                const MenuDriverModel::State oldState = oldPlayerModel->state;
+                if (oldState == MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT ||
+                    oldState == MenuDriverModel::MENUDRIVERMODEL_STATE_ONKARTSELECT ||
+                    oldState == MENUDRIVERMODEL_STATE_VEHICLE_SELECTED) {
+                    playerState[playerId] = oldState;
+                }
+            }
+        }
+    }
+
     const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
     const u8 targetTable = GetMenuDriverModelTableForCharacter(targetCharacter);
-    // Mii Outfit C characters load C's BRRES into the B model slot, so their manager
-    // must never be shared with (or overwrite the cached manager for) Outfit B.
-    // Treat them like raw-BRRES characters: no cache fetch, no cache store.
-    const bool targetIsCMii = IsMiiOutfitCChar(targetCharacter);
-    const bool targetUsesRawBRRES = (targetTable != CUSTOM_CHARACTER_TABLE_DEFAULT && targetTable < CUSTOM_CHARACTER_TABLE_COUNT) || targetIsCMii;
+    const bool targetUsesRawBRRES = targetTable != CUSTOM_CHARACTER_TABLE_DEFAULT && targetTable < CUSTOM_CHARACTER_TABLE_COUNT;
     if (targetTable == currentMenuDriverModelTable && (!targetUsesRawBRRES || targetCharacter == currentMenuDriverModelCharacter) &&
         oldDriverModels != nullptr) {
-        return;
+        return true;
     }
 
-    MenuDriverModelMgr* newDriverModels = nullptr;
-    if (!targetUsesRawBRRES) newDriverModels = cachedMenuDriverModels[targetTable];
-    else if (targetIsCMii) newDriverModels = cachedCMiiDriverModels;
+    UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
+    currentScene->structsHeaps.SetHeapsGroupId(3);
+    buildingMenuDriverModelTable = targetTable;
+    buildingMenuDriverModelCharacter = targetCharacter;
+    ApplyMenuDriverModelTablePostfixes(targetTable);
+    MenuDriverModelMgr* const newDriverModels = CreateMenuDriverModelManager(playerCount);
+    buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+    buildingMenuDriverModelCharacter = CHARACTER_NONE;
+    ApplyCharacterPostfixes();
+    currentScene->structsHeaps.SetHeapsGroupId(0);
     if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
-        if (!targetIsCMii) cachedMenuDriverModels[targetTable] = nullptr;
-        else cachedCMiiDriverModels = nullptr;
-        newDriverModels = nullptr;
-    }
-    if (newDriverModels == nullptr) {
-        UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
-        currentScene->structsHeaps.SetHeapsGroupId(3);
-        buildingMenuDriverModelTable = targetTable;
-        buildingMenuDriverModelCharacter = targetCharacter;
-        ApplyMenuDriverModelTablePostfixes(targetTable);
-        newDriverModels = CreateMenuDriverModelManager(playerCount);
-        buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
-        buildingMenuDriverModelCharacter = CHARACTER_NONE;
-        ApplyCharacterPostfixes();
-        currentScene->structsHeaps.SetHeapsGroupId(0);
-        if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
-            currentScene->structsHeaps.SetHeapsGroupId(6);
-            return;
-        }
-
-        if (!targetUsesRawBRRES) {
-            cachedMenuDriverModels[targetTable] = newDriverModels;
-        } else if (targetIsCMii) {
-            cachedCMiiDriverModels = newDriverModels;
-        }
+        currentScene->structsHeaps.SetHeapsGroupId(6);
+        return false;
     }
 
     if (oldDriverModels != nullptr && oldDriverModels != newDriverModels) {
@@ -1024,17 +1269,23 @@ static void ReinitializeMenuDriverModels() {
         menuModelMgr->RequestDriverModel(hudSlotId, sectionMgr->sectionParams->characters[hudSlotId]);
     }
 
-    if (oldDriverModels != nullptr && oldDriverModels != newDriverModels) {
-        for (u8 playerId = 0; playerId < playerCount; ++playerId) {
-            const bool isVisible = oldDriverModels->players[playerId].isVisible;
-            newDriverModels->players[playerId].isVisible = isVisible;
-            newDriverModels->TogglePlayerModel(playerId, isVisible);
+    for (u8 playerId = 0; playerId < playerCount && playerId < 4; ++playerId) {
+        MenuDriverModel* const playerModel = newDriverModels->players[playerId].playerModel;
+        if (playerModel != nullptr && playerModel->model != nullptr) {
+            if (playerState[playerId] != MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT) {
+                playerModel->id = sectionMgr->sectionParams->karts[playerId];
+            }
+            playerModel->state = static_cast<MenuDriverModel::State>(0);
+            playerModel->SwitchState(playerId, playerState[playerId]);
         }
+        newDriverModels->players[playerId].isVisible = playerWasVisible[playerId];
+        newDriverModels->TogglePlayerModel(playerId, playerWasVisible[playerId]);
     }
 
     RefreshCharacterSelectModels();
     currentMenuDriverModelTable = targetTable;
     currentMenuDriverModelCharacter = targetUsesRawBRRES ? targetCharacter : CHARACTER_NONE;
+    return true;
 }
 
 static void ProcessPendingMenuDriverModelReinit() {
@@ -1105,7 +1356,10 @@ static bool IsCharacterSelectPageActive() {
 void RefreshLocalOnlineCustomCharacterFlags() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (!IsOnlineRoom(controller)) return;
-    if (IsOnlineMultiLocal(controller)) return;
+    if (IsLocalMultiplayerActive()) {
+        ResetOnlineCustomCharacterFlags();
+        return;
+    }
     if (!isDisplayCustomSkinsEnabled()) return;
 
     const Racedata* racedata = Racedata::sInstance;
@@ -1124,6 +1378,10 @@ void RefreshLocalOnlineCustomCharacterFlags() {
 
 void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 characterTables) {
     if (playerIdToAid == nullptr) return;
+    if (IsLocalMultiplayerActive()) {
+        ResetOnlineCustomCharacterFlags();
+        return;
+    }
 
     u8 hudSlotId = 0;
     for (u8 playerId = 0; playerId < 12; ++playerId) {
@@ -1137,6 +1395,8 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 char
 }
 
 u8 GetLocalOnlineCharacterTables() {
+    if (IsLocalMultiplayerActive()) return 0;
+
     u8 characterTables = 0;
     u8 localPlayerCount = GetLocalPlayerCount();
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
@@ -1156,6 +1416,7 @@ u8 GetLocalOnlineCharacterTables() {
 }
 
 bool ShouldUseCustomCharacterForPlayer(u8 playerId) {
+    if (IsLocalMultiplayerActive()) return false;
     return playerId < 12 && onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
@@ -1271,6 +1532,13 @@ static void UpdateCustomCharacterSelectNamePaneIcons() {
     if (characterSelect == nullptr || characterSelect->names == nullptr) return;
 
     const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    if (IsLocalMultiplayerActive()) {
+        for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+            HideAllCustomCharacterHintPanes(characterSelect->names[hudSlotId]);
+        }
+        return;
+    }
+
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
         const ControllerType type = GetControllerTypeForHudSlot(*sectionMgr, hudSlotId);
         ApplyCustomCharacterHintPanesForType(characterSelect->names[hudSlotId], type);
@@ -1376,6 +1644,8 @@ static void MenuSceneSectionUpdateHook(SectionMgr* sectionMgr) {
     typedef void (*SectionMgrUpdateFn)(SectionMgr*);
     const SectionMgrUpdateFn original = reinterpret_cast<SectionMgrUpdateFn>(kmRuntimeAddr(0x8063583c));
     original(sectionMgr);
+    ProcessVotingVRMenuDriverModelReinit();
+    ProcessVotingVRMenuDriverStateRefresh();
     ProcessPendingMenuDriverModelReinit();
 }
 kmCall(0x805552e8, MenuSceneSectionUpdateHook);

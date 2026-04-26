@@ -2,6 +2,7 @@
 #define _PULSAR_CUSTOM_CHARACTERS_
 
 #include <kamek.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
 
 namespace Kart {
 class Link;
@@ -17,6 +18,8 @@ u8 GetLocalOnlineCharacterTables();
 bool IsCustomCharacterTableActive();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
 bool ShouldMuteCharacterVoice(const Kart::Link* link);
+bool RandomizeCustomCharacterTable(CharacterId character);
+void OnVotingVRPageExit();
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar
