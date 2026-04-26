@@ -274,6 +274,21 @@ static u8 NormalizeCharacterTable(CharacterId character, u8 tableIdx) {
     return CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
+static bool IsLocalMultiplayerActive() {
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
+        return sectionMgr->sectionParams->localPlayerCount > 1;
+    }
+
+    const Racedata* const racedata = Racedata::sInstance;
+    if (racedata != nullptr) {
+        if (racedata->racesScenario.localPlayerCount > 1) return true;
+        if (racedata->menusScenario.localPlayerCount > 1) return true;
+    }
+
+    return GetLocalPlayerCount() > 1;
+}
+
 static CharacterId GetCustomCharacterStateId(CharacterId character) {
     const CharacterAssetNames* assets = GetCharacterAssets(character);
     if (assets == nullptr) return CHARACTER_NONE;
@@ -287,6 +302,7 @@ static bool IsCustomCharacterStateIdValid(CharacterId character) {
 }
 
 static u8 GetSelectedCharacterTable(CharacterId character) {
+    if (IsLocalMultiplayerActive()) return CUSTOM_CHARACTER_TABLE_DEFAULT;
     if (!IsCustomCharacterStateIdValid(character)) return CUSTOM_CHARACTER_TABLE_DEFAULT;
 
     const u8 tableIdx = selectedCharacterTableByCharacter[GetCustomCharacterStateId(character)];
@@ -298,6 +314,7 @@ static bool IsCustomCharacterEnabled(CharacterId character) {
 }
 
 static bool IsAnyCustomCharacterEnabled() {
+    if (IsLocalMultiplayerActive()) return false;
     for (u8 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
         if (selectedCharacterTableByCharacter[character] != CUSTOM_CHARACTER_TABLE_DEFAULT) return true;
     }
@@ -388,7 +405,7 @@ bool IsOnlineRoom(const RKNet::Controller* controller) {
 }
 
 bool IsOnlineMultiLocal(const RKNet::Controller* controller) {
-    return IsOnlineRoom(controller) && GetLocalPlayerCount() > 1;
+    return IsOnlineRoom(controller) && IsLocalMultiplayerActive();
 }
 
 bool isDisplayCustomSkinsEnabled() {
@@ -459,9 +476,10 @@ bool IsLocalRacePlayer(u8 playerId) {
 }
 
 bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character) {
+    if (IsLocalMultiplayerActive()) return false;
+
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (IsOnlineRoom(controller)) {
-        if (IsOnlineMultiLocal(controller)) return false;
         if (!isDisplayCustomSkinsEnabled()) return false;
         if (IsLocalRacePlayer(playerId)) return IsCustomCharacterEnabled(character);
         return playerId < 12 && IsCharacterTableValidForCharacter(character, onlineCharacterTables[playerId]) &&
@@ -471,6 +489,8 @@ bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character
 }
 
 static u8 GetRaceCharacterTable(u8 playerId, CharacterId character) {
+    if (IsLocalMultiplayerActive()) return CUSTOM_CHARACTER_TABLE_DEFAULT;
+
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (IsOnlineRoom(controller) && !IsOnlineMultiLocal(controller) && isDisplayCustomSkinsEnabled()) {
         if (IsLocalRacePlayer(playerId)) return GetSelectedCharacterTable(character);
@@ -1334,7 +1354,10 @@ static bool IsCharacterSelectPageActive() {
 void RefreshLocalOnlineCustomCharacterFlags() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (!IsOnlineRoom(controller)) return;
-    if (IsOnlineMultiLocal(controller)) return;
+    if (IsLocalMultiplayerActive()) {
+        ResetOnlineCustomCharacterFlags();
+        return;
+    }
     if (!isDisplayCustomSkinsEnabled()) return;
 
     const Racedata* racedata = Racedata::sInstance;
@@ -1353,6 +1376,10 @@ void RefreshLocalOnlineCustomCharacterFlags() {
 
 void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 characterTables) {
     if (playerIdToAid == nullptr) return;
+    if (IsLocalMultiplayerActive()) {
+        ResetOnlineCustomCharacterFlags();
+        return;
+    }
 
     u8 hudSlotId = 0;
     for (u8 playerId = 0; playerId < 12; ++playerId) {
@@ -1366,6 +1393,8 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 char
 }
 
 u8 GetLocalOnlineCharacterTables() {
+    if (IsLocalMultiplayerActive()) return 0;
+
     u8 characterTables = 0;
     u8 localPlayerCount = GetLocalPlayerCount();
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
@@ -1385,6 +1414,7 @@ u8 GetLocalOnlineCharacterTables() {
 }
 
 bool ShouldUseCustomCharacterForPlayer(u8 playerId) {
+    if (IsLocalMultiplayerActive()) return false;
     return playerId < 12 && onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
@@ -1500,6 +1530,13 @@ static void UpdateCustomCharacterSelectNamePaneIcons() {
     if (characterSelect == nullptr || characterSelect->names == nullptr) return;
 
     const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    if (IsLocalMultiplayerActive()) {
+        for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+            HideAllCustomCharacterHintPanes(characterSelect->names[hudSlotId]);
+        }
+        return;
+    }
+
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
         const ControllerType type = GetControllerTypeForHudSlot(*sectionMgr, hudSlotId);
         ApplyCustomCharacterHintPanesForType(characterSelect->names[hudSlotId], type);
