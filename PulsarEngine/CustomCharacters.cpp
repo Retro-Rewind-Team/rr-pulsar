@@ -193,7 +193,6 @@ static const u8 CUSTOM_CHARACTER_TABLE_PACKET_MASK = (1 << CUSTOM_CHARACTER_TABL
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS;
 static u8 selectedCharacterTableByCharacter[CUSTOM_CHARACTER_COUNT];
 static u8 pendingMenuDriverReinitFrames = 0;
-static MenuDriverModelMgr* cachedMenuDriverModels[CUSTOM_CHARACTER_TABLE_COUNT] = {nullptr};
 static EGG::ExpHeap* rawMenuDriverBRRESHeaps[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static void* rawMenuDriverBRRESFiles[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static MenuModelMgr* cachedMenuModelMgr = nullptr;
@@ -574,9 +573,6 @@ static void ResetMenuDriverModelCache() {
     currentMenuDriverModelCharacter = CHARACTER_NONE;
     buildingMenuDriverModelCharacter = CHARACTER_NONE;
     ResetVotingVRMenuDriverState();
-    for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
-        cachedMenuDriverModels[tableIdx] = nullptr;
-    }
     ClearRawMenuDriverBRRESCachePointers();
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
@@ -600,16 +596,7 @@ static void SyncMenuDriverModelCache() {
         cachedMenuDriverModelPlayerCount = menuModelMgr->playerCount;
         currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
         currentMenuDriverModelCharacter = CHARACTER_NONE;
-        for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
-            cachedMenuDriverModels[tableIdx] = nullptr;
-        }
         ClearRawMenuDriverBRRESCachePointers();
-    }
-
-    if (currentMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
-        cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr &&
-        IsMenuDriverModelManagerUsable(menuModelMgr->driverModels, menuModelMgr->playerCount)) {
-        cachedMenuDriverModels[currentMenuDriverModelTable] = menuModelMgr->driverModels;
     }
 }
 
@@ -1065,11 +1052,6 @@ static void ReinitializeVotingVRMenuDriverModels() {
         return;
     }
 
-    const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
-    const u8 targetTable = GetSelectedCharacterTable(targetCharacter);
-    if (targetTable < CUSTOM_CHARACTER_TABLE_COUNT) {
-        cachedMenuDriverModels[targetTable] = nullptr;
-    }
     currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
     currentMenuDriverModelCharacter = CHARACTER_NONE;
     if (ReinitializeMenuDriverModels()) {
@@ -1227,31 +1209,19 @@ static bool ReinitializeMenuDriverModels() {
         return true;
     }
 
-    MenuDriverModelMgr* newDriverModels = nullptr;
-    if (!targetUsesRawBRRES) newDriverModels = cachedMenuDriverModels[targetTable];
+    UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
+    currentScene->structsHeaps.SetHeapsGroupId(3);
+    buildingMenuDriverModelTable = targetTable;
+    buildingMenuDriverModelCharacter = targetCharacter;
+    ApplyMenuDriverModelTablePostfixes(targetTable);
+    MenuDriverModelMgr* const newDriverModels = CreateMenuDriverModelManager(playerCount);
+    buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+    buildingMenuDriverModelCharacter = CHARACTER_NONE;
+    ApplyCharacterPostfixes();
+    currentScene->structsHeaps.SetHeapsGroupId(0);
     if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
-        cachedMenuDriverModels[targetTable] = nullptr;
-        newDriverModels = nullptr;
-    }
-    if (newDriverModels == nullptr) {
-        UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
-        currentScene->structsHeaps.SetHeapsGroupId(3);
-        buildingMenuDriverModelTable = targetTable;
-        buildingMenuDriverModelCharacter = targetCharacter;
-        ApplyMenuDriverModelTablePostfixes(targetTable);
-        newDriverModels = CreateMenuDriverModelManager(playerCount);
-        buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
-        buildingMenuDriverModelCharacter = CHARACTER_NONE;
-        ApplyCharacterPostfixes();
-        currentScene->structsHeaps.SetHeapsGroupId(0);
-        if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
-            currentScene->structsHeaps.SetHeapsGroupId(6);
-            return false;
-        }
-
-        if (!targetUsesRawBRRES) {
-            cachedMenuDriverModels[targetTable] = newDriverModels;
-        }
+        currentScene->structsHeaps.SetHeapsGroupId(6);
+        return false;
     }
 
     if (oldDriverModels != nullptr && oldDriverModels != newDriverModels) {
