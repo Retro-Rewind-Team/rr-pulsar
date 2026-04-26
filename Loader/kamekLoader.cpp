@@ -33,6 +33,25 @@ static void DisplayError(const LoaderParams* params, const char* str) {
     params->OSFatal(&fg, &bg, str);
 }
 
+static EGG::ExpHeap* AllocFromBestHeap(LoaderParams* params, u32 size, s32 alignment, void** block) {
+    EGG::ExpHeap* heaps[] = {
+        params->rkSystem->EGGRootMEM2,
+        params->rkSystem->EGGSystem,
+    };
+
+    for (u32 i = 0; i < sizeof(heaps) / sizeof(heaps[0]); ++i) {
+        EGG::ExpHeap* heap = heaps[i];
+        if (!heap) continue;
+
+        params->OSReport("heap %u: allocatable=%u, request=%u\n", i, heap->getAllocatableSize(alignment), size);
+        *block = heap->alloc(size, alignment);
+        if (*block) return heap;
+    }
+
+    *block = nullptr;
+    return nullptr;
+}
+
 static inline u32 resolveAddress(u32 text, u32 address) {
     if (address & 0x80000000)
         return address;
@@ -135,6 +154,8 @@ inline void cacheInvalidateAddress(register u32 address) {
 }
 
 static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binaryLength, bool isDol) {
+    // Todo: Make this prettier
+
     static u32 text = 0;
     const KBHeader* header = (const KBHeader*)binary;
     if (header->magic1 != 'Kame' || header->magic2 != 'k\0')
@@ -151,6 +172,7 @@ static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binary
     u32 textSize = header->codeSize + header->bssSize;
 
     EGG::ExpHeap* heap = params->rkSystem->EGGSystem;
+    params->OSReport("system heap: allocatable=%u, textSize=%u\n", heap->getAllocatableSize(0x20), textSize);
     if (isDol) text = (u32)heap->alloc(textSize, 0x20);
     if (!text) DisplayError(params, "FATAL ERROR: Out of code memory");
 
@@ -169,6 +191,14 @@ static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binary
             cacheInvalidateAddress((u32)(output++));
         }
     }
+    typedef struct {
+        u8 _00[0x60 - 0x00];
+    } NETSHA1CTX;
+    NETSHA1CTX sha1ctx;
+    u8(*digest)[20] = (u8(*)[20])0x800017b0;
+    params->NETSHA1Init(&sha1ctx);
+    params->NETSHA1Update(&sha1ctx, (const void*)text, header->codeSize);
+    params->NETSHA1GetDigest(&sha1ctx, digest);
 
     while (input < inputEnd) {
         u32 cmdHeader = *((u32*)input);
@@ -252,11 +282,11 @@ static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binary
 
 void LoadKamekBinaryFromDisc(LoaderParams* params) {
     static void* codePulBuf = nullptr;
+    static EGG::ExpHeap* codePulHeap = nullptr;
     static u32 sectionLength = 0;
     params->OSReport("{Kamek by Treeki}\nLoading Kamek binary");
 
     bool isDol = false;
-    EGG::ExpHeap* heap = params->rkSystem->EGGSystem;
 
     if (codePulBuf == nullptr) {
         const char* path = "/Binaries/Code.pul";
@@ -279,7 +309,7 @@ void LoadKamekBinaryFromDisc(LoaderParams* params) {
         u32 roundedLength = nw4r::ut::RoundUp(sectionLength, 32);
 
         isDol = true;
-        codePulBuf = heap->alloc(roundedLength, -0x20);
+        codePulHeap = AllocFromBestHeap(params, roundedLength, -0x20, &codePulBuf);
         if (!codePulBuf) DisplayError(params, "FATAL ERROR: Out of file memory");
         u32 offset = sizeof(u32) * 4;
         u32 region = PAL;
@@ -292,5 +322,10 @@ void LoadKamekBinaryFromDisc(LoaderParams* params) {
     }
 
     LoadKamekBinary(params, codePulBuf, sectionLength, isDol);
-    if (!isDol) heap->free(codePulBuf);
+    if (!isDol && codePulHeap) {
+        codePulHeap->free(codePulBuf);
+        codePulBuf = nullptr;
+        codePulHeap = nullptr;
+        sectionLength = 0;
+    }
 }
