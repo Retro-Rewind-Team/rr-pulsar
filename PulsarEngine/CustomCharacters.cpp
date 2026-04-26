@@ -194,6 +194,7 @@ static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABL
 static u8 selectedCharacterTableByCharacter[CUSTOM_CHARACTER_COUNT];
 static u8 pendingMenuDriverReinitFrames = 0;
 static MenuDriverModelMgr* cachedMenuDriverModels[CUSTOM_CHARACTER_TABLE_COUNT] = {nullptr};
+static MenuDriverModelMgr* cachedCMiiDriverModels = nullptr;
 static EGG::ExpHeap* rawMenuDriverBRRESHeaps[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static void* rawMenuDriverBRRESFiles[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static MenuModelMgr* cachedMenuModelMgr = nullptr;
@@ -218,6 +219,8 @@ static void ReinitializeMenuDriverModels();
 static void ProcessPendingMenuDriverModelReinit();
 static void ResetMenuDriverModelCache();
 static void ClearRawMenuDriverBRRESCachePointers();
+static bool IsMiiOutfitBChar(CharacterId c);
+static bool IsMiiOutfitCChar(CharacterId c);
 static void SyncMenuDriverModelCache();
 static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount);
 static u8 GetMenuDriverModelTableForCharacter(CharacterId character);
@@ -538,6 +541,7 @@ static void ResetMenuDriverModelCache() {
     buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
     currentMenuDriverModelCharacter = CHARACTER_NONE;
     buildingMenuDriverModelCharacter = CHARACTER_NONE;
+    cachedCMiiDriverModels = nullptr;
     for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
         cachedMenuDriverModels[tableIdx] = nullptr;
     }
@@ -564,14 +568,18 @@ static void SyncMenuDriverModelCache() {
         cachedMenuDriverModelPlayerCount = menuModelMgr->playerCount;
         currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
         currentMenuDriverModelCharacter = CHARACTER_NONE;
+        cachedCMiiDriverModels = nullptr;
         for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
             cachedMenuDriverModels[tableIdx] = nullptr;
         }
         ClearRawMenuDriverBRRESCachePointers();
     }
 
+    // Never cache a C Mii manager into the DEFAULT table slot — it holds a C BRRES in
+    // the B model slot and would corrupt Outfit B display if shared.
     if (currentMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
         cachedMenuDriverModels[currentMenuDriverModelTable] == nullptr &&
+        !IsMiiOutfitCChar(currentMenuDriverModelCharacter) &&
         IsMenuDriverModelManagerUsable(menuModelMgr->driverModels, menuModelMgr->playerCount)) {
         cachedMenuDriverModels[currentMenuDriverModelTable] = menuModelMgr->driverModels;
     }
@@ -869,8 +877,27 @@ static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character) {
     return true;
 }
 
+static bool IsMiiOutfitBChar(CharacterId c) {
+    return c == MII_S_B_MALE || c == MII_S_B_FEMALE ||
+           c == MII_M_B_MALE || c == MII_M_B_FEMALE ||
+           c == MII_L_B_MALE || c == MII_L_B_FEMALE;
+}
+
+static bool IsMiiOutfitCChar(CharacterId c) {
+    return c == MII_S_C_MALE || c == MII_S_C_FEMALE ||
+           c == MII_M_C_MALE || c == MII_M_C_FEMALE ||
+           c == MII_L_C_MALE || c == MII_L_C_FEMALE;
+}
+
 kmRuntimeUse(0x8081e358);
 static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
+    // When building the model manager for a Mii Outfit C character, load the C
+    // BRRES into the B slot (B is always loaded at iteration 1 of FUN_80831100).
+    // This reuses the existing B slot so no structural array changes are needed.
+    if (IsMiiOutfitCChar(buildingMenuDriverModelCharacter) && IsMiiOutfitBChar(character)) {
+        character = static_cast<CharacterId>(character + 2);  // B -> C
+    }
+
     if (LoadRawMenuDriverBRRES(holder, character)) return 1;
 
     typedef u32 (*LoadMenuDriverBRRESFn)(void*, CharacterId);
@@ -884,8 +911,12 @@ kmCall(0x8083183c, LoadMenuDriverBRRESHook);
 kmRuntimeUse(0x807dbd80);
 static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriverModel* driverModel, u32 miiId, Mii* mii, u32 r8) {
     const GameScene* const currentScene = GameScene::GetCurrent();
+    // Allow head creation for Mii Outfit C builds — the C model uses the B slot
+    // which normally has no head in custom-table builds, but C is at DEFAULT table
+    // and requires a real head like any standard Mii.
     if (currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE || currentScene->id == SCENE_ID_MENU) &&
-        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
+        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
+        !IsMiiOutfitCChar(buildingMenuDriverModelCharacter)) {
         return nullptr;
     }
 
@@ -907,7 +938,16 @@ static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, Char
 
     typedef void (*SetPlayerCharacterFn)(MenuDriverModelMgr*, u8, CharacterId);
     const SetPlayerCharacterFn original = reinterpret_cast<SetPlayerCharacterFn>(kmRuntimeAddr(0x80830d00));
-    original(driverModels, playerId, character);
+    if (IsMiiOutfitCChar(character)) {
+        // Pass the corresponding B outfit so SetPlayerCharacter (FUN_80830d00) selects
+        // the B model slot [playerId*2+0x19], which was loaded with the C BRRES above.
+        original(driverModels, playerId, static_cast<CharacterId>(character - 2));
+        // Restore the correct C character ID so the Mii body animation index (+4 from
+        // the A base) is correct, rather than B's +2.
+        driverModels->players[playerId].id = character;
+    } else {
+        original(driverModels, playerId, character);
+    }
 }
 kmBranch(0x8059e568, RequestDriverModelHook);
 
@@ -930,7 +970,11 @@ static void ReinitializeMenuDriverModels() {
     MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
     const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
     const u8 targetTable = GetMenuDriverModelTableForCharacter(targetCharacter);
-    const bool targetUsesRawBRRES = targetTable != CUSTOM_CHARACTER_TABLE_DEFAULT && targetTable < CUSTOM_CHARACTER_TABLE_COUNT;
+    // Mii Outfit C characters load C's BRRES into the B model slot, so their manager
+    // must never be shared with (or overwrite the cached manager for) Outfit B.
+    // Treat them like raw-BRRES characters: no cache fetch, no cache store.
+    const bool targetIsCMii = IsMiiOutfitCChar(targetCharacter);
+    const bool targetUsesRawBRRES = (targetTable != CUSTOM_CHARACTER_TABLE_DEFAULT && targetTable < CUSTOM_CHARACTER_TABLE_COUNT) || targetIsCMii;
     if (targetTable == currentMenuDriverModelTable && (!targetUsesRawBRRES || targetCharacter == currentMenuDriverModelCharacter) &&
         oldDriverModels != nullptr) {
         return;
@@ -938,8 +982,10 @@ static void ReinitializeMenuDriverModels() {
 
     MenuDriverModelMgr* newDriverModels = nullptr;
     if (!targetUsesRawBRRES) newDriverModels = cachedMenuDriverModels[targetTable];
+    else if (targetIsCMii) newDriverModels = cachedCMiiDriverModels;
     if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
-        cachedMenuDriverModels[targetTable] = nullptr;
+        if (!targetIsCMii) cachedMenuDriverModels[targetTable] = nullptr;
+        else cachedCMiiDriverModels = nullptr;
         newDriverModels = nullptr;
     }
     if (newDriverModels == nullptr) {
@@ -960,6 +1006,8 @@ static void ReinitializeMenuDriverModels() {
 
         if (!targetUsesRawBRRES) {
             cachedMenuDriverModels[targetTable] = newDriverModels;
+        } else if (targetIsCMii) {
+            cachedCMiiDriverModels = newDriverModels;
         }
     }
 

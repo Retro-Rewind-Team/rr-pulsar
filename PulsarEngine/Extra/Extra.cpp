@@ -116,14 +116,6 @@ asmFunc AntiItemColCrash() {
 }
 kmCall(0x807A1A54, AntiItemColCrash);
 
-// Mii Outfit C Anti-Crash
-kmWrite8(0x8089089D, 0x00000062);
-kmWrite8(0x808908A9, 0x00000062);
-kmWrite8(0x808908E5, 0x00000062);
-kmWrite8(0x808908F1, 0x00000062);
-kmWrite8(0x8089092D, 0x00000062);
-kmWrite8(0x80890939, 0x00000062);
-
 // Item Spam Anti-Freeze [???]
 asmFunc ItemSpamAntiFreeze() {
     ASM(
@@ -379,6 +371,19 @@ asmFunc burnoutIconFix() {
         blr;)
 }
 kmCall(0x807EB38C, burnoutIconFix);
+
+// Fix Pokey Not Respawning After Hit by POW While Dead [Ro]
+asmFunc pokeyDeathFix() {
+    ASM(
+        nofralloc;
+        loc_0x0:;
+        cmpwi r0, 0x1;
+        beq- loc_0xC;
+        cmpwi r0, 0x3;
+        loc_0xC:;
+        blr;)
+}
+kmCall(0x8077AC50, pokeyDeathFix);
 
 // Allow Pausing Before Race Starts [Sponge]
 kmWrite32(0x80856a28, 0x40810050);
