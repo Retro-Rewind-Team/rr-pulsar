@@ -12,6 +12,7 @@
 #include <MarioKartWii/Audio/Actors/RaceActor.hpp>
 #include <MarioKartWii/Mii/MiiHeadsModel.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/System/Random.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
@@ -353,6 +354,37 @@ static bool CycleCustomCharacterTable(CharacterId character, int direction) {
         return true;
     }
     return false;
+}
+
+bool RandomizeCustomCharacterTable(CharacterId character) {
+    if (GetLocalPlayerCount() != 1) return false;
+    if (!IsCustomCharacterStateIdValid(character)) return false;
+    if (CUSTOM_CHARACTER_TABLE_COUNT <= 1) return false;
+
+    u8 validTables[CUSTOM_CHARACTER_TABLE_COUNT - 1];
+    u8 validTableCount = 0;
+    const u8 selectedTableIdx = GetSelectedCharacterTable(character);
+    for (u8 tableIdx = 1; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
+        if (tableIdx != selectedTableIdx && IsCharacterTableValidForCharacter(character, tableIdx)) {
+            validTables[validTableCount] = tableIdx;
+            ++validTableCount;
+        }
+    }
+    if (validTableCount == 0 && selectedTableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT) {
+        for (u8 tableIdx = 1; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
+            if (IsCharacterTableValidForCharacter(character, tableIdx)) {
+                validTables[validTableCount] = tableIdx;
+                ++validTableCount;
+            }
+        }
+    }
+    if (validTableCount == 0) return false;
+
+    Random random;
+    const u8 tableIdx = validTables[random.NextLimited<u8>(validTableCount)];
+    if (!SetCustomCharacterTable(character, tableIdx)) return false;
+    pendingMenuDriverReinitFrames = 2;
+    return true;
 }
 
 static const char* GetCharacterPostfix(CharacterId character, u8 tableIdx) {
