@@ -1,10 +1,12 @@
-CC := mwcceppc.exe
-AS := mwasmeppc.exe
+CC := "C:\Program Files (x86)\Freescale\CW for MPC55xx and MPC56xx 2.10\PowerPC_EABI_Tools\Command_Line_Tools\mwcceppc.exe"
+AS := "C:\Program Files (x86)\Freescale\CW for MPC55xx and MPC56xx 2.10\PowerPC_EABI_Tools\Command_Line_Tools\mwasmeppc.exe"
 
 GAMESOURCE := ./GameSource
 PULSAR := ./PulsarEngine
-KAMEK := Kamek.exe
+KAMEK := "C:\Users\TheNi\Downloads\rr-pulsar-main\rr-pulsar-main\KamekLinker\Kamek.exe"
 KAMEK_H := ./KamekInclude
+RR_DEPLOY_DIR := C:/Users/TheNi/OneDrive/Documents/Retro Rewind/RetroRewind6/Binaries
+RR_DEPLOY_PUL := $(RR_DEPLOY_DIR)/code.pul
 
 ifneq ($(filter install%,$(MAKECMDGOALS)),)
 PULSAR_RANDOM_KEY := $(shell python -c "import random; print(hex(random.randint(0, 0xFFFFFFFF)))")
@@ -15,7 +17,7 @@ endif
 
 -include .env
 
-CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) -i $(PULSAR) -opt all -inline auto -enum int -proc gekko -fp hard -sdata 0 -sdata2 0 -maxerrors 1 -func_align 4 -DPULSAR_RANDOM_KEY=$(PULSAR_RANDOM_KEY) $(CFLAGS)
+CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) -i $(PULSAR) -opt all -inline auto -enum int -fp hard -sdata 0 -sdata2 0 -maxerrors 1 -func_align 4 -DPULSAR_RANDOM_KEY=$(PULSAR_RANDOM_KEY) $(CFLAGS)
 ASFLAGS := -proc gekko -c
 
 EXTERNALS := -externals=$(GAMESOURCE)/symbols.txt -externals=$(GAMESOURCE)/anticheat.txt -versions=$(GAMESOURCE)/versions.txt
@@ -69,6 +71,9 @@ build/Network/RoomKey.o: .force
 force_link: build/kamek.o build/RuntimeWrite.o $(OBJS)
 	@echo Linking...
 	@$(KAMEK) $^ -dynamic $(EXTERNALS) -output-combined=build/Code.pul -output-map=build/Code.map
+	@echo Deploying code.pul to $(RR_DEPLOY_DIR)...
+	@mkdir -p "$(RR_DEPLOY_DIR)"
+	@cp -f build/Code.pul "$(RR_DEPLOY_PUL)"
 
 install: force_link
 	@echo Copying binaries to $(RIIVO)/Binaries...
