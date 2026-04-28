@@ -1122,7 +1122,8 @@ kmRuntimeUse(0x807dbd80);
 static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriverModel* driverModel, u32 miiId, Mii* mii, u32 r8) {
     const GameScene* const currentScene = GameScene::GetCurrent();
     if (currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE || currentScene->id == SCENE_ID_MENU) &&
-        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
+        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
+        buildingMenuDriverModelCharacter < MII_S_A_MALE) {
         return nullptr;
     }
 
