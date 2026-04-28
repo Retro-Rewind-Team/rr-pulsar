@@ -58,7 +58,8 @@ void ExpGhostSelect::OnActivate() {
     const System* system = System::sInstance;
     if (system->GetInfo().HasTrophies()) {
         u32 bmgId;
-        const Text::Info text = GetCourseBottomText(CupsConfig::sInstance->GetWinning(), &bmgId);
+        const CupsConfig* cups = CupsConfig::sInstance;
+        const Text::Info text = GetCourseBottomText(cups->GetWinning(), cups->GetCurVariantIdx(), &bmgId);
         this->bottomText.SetMessage(bmgId, &text);
     }
     this->ctrlMenuPageTitleText.SetMessage(BMG_CHOOSE_GHOST_DATA);
@@ -295,9 +296,15 @@ void IndividualTrophyBMG(Pages::CourseSelect& courseSelect, CtrlMenuCourseSelect
     if (Racedata::sInstance->menusScenario.settings.gamemode != MODE_TIME_TRIAL) {
         courseSelect.UpdateBottomText(course, button, hudSlotId);
     } else {
-        u32 bmgId;
+        const System* system = System::sInstance;
+        const Settings::Mgr& settings = Settings::Mgr::Get();
         CupsConfig* cupsConfig = CupsConfig::sInstance;
-        const Text::Info text = GetCourseBottomText(cupsConfig->ConvertTrack_PulsarCupToTrack(cupsConfig->lastSelectedCup, button.buttonId), &bmgId);  // FIX HERE
+        const PulsarId id = cupsConfig->ConvertTrack_PulsarCupToTrack(cupsConfig->lastSelectedCup, button.buttonId);
+        u32 bmgId = settings.GetTotalTrophyCount(system->ttMode) > 0 ? BMG_TT_BOTTOM_COURSE : BMG_TT_BOTTOM_COURSE_NOTROPHY;
+
+        Text::Info text;
+        text.bmgToPass[0] = BMG_TT_MODE_BOTTOM_CUP + system->ttMode;
+        text.bmgToPass[1] = settings.HasTrophyForAllVariants(id, system->ttMode) ? BMG_TROPHY : BMG_NO_TROPHY;
         courseSelect.bottomText->SetMessage(bmgId, &text);
     }
 }
@@ -305,6 +312,10 @@ kmCall(0x807e54ec, IndividualTrophyBMG);
 
 // Global function as it is also used by CourseSelect
 const Text::Info GetCourseBottomText(PulsarId id, u32* bmgId) {
+    return GetCourseBottomText(id, 0, bmgId);
+}
+
+const Text::Info GetCourseBottomText(PulsarId id, u8 variantIdx, u32* bmgId) {
     const System* system = System::sInstance;
     const Settings::Mgr& settings = Settings::Mgr::Get();
     if (settings.GetTotalTrophyCount(system->ttMode) > 0)
@@ -312,7 +323,7 @@ const Text::Info GetCourseBottomText(PulsarId id, u32* bmgId) {
     else
         *bmgId = BMG_TT_BOTTOM_COURSE_NOTROPHY;
 
-    const bool hasTrophy = settings.HasTrophy(id, system->ttMode);
+    const bool hasTrophy = settings.HasTrophy(id, variantIdx, system->ttMode);
     Text::Info text;
     text.bmgToPass[0] = BMG_TT_MODE_BOTTOM_CUP + system->ttMode;
     u32 passedBmgId = BMG_NO_TROPHY;

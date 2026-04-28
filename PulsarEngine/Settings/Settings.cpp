@@ -10,6 +10,10 @@ DoFuncsHook* Hook::settingsHooks = nullptr;
 
 Mgr* Mgr::sInstance = nullptr;
 
+static const char trophyFolderName[] = "Trophies";
+static const char trophyFileName[] = "Trophy.pul";
+static const char migratedLegacySuffix[] = ".migrated";
+
 void Mgr::SaveTask(void* data) {
     if (data == nullptr) sInstance->Save();
     else if (data == reinterpret_cast<void*>(1)) sInstance->SaveTrophies();
@@ -29,19 +33,24 @@ void Mgr::Save() {
 };
 
 void Mgr::SaveTrophies() {
-    IO* io = IO::sInstance;
-    bool ret = io->OpenFile(this->trophiesFilePath, FILE_MODE_WRITE);
-    if (!ret) io->CreateAndOpen(this->trophiesFilePath, FILE_MODE_WRITE);
-    TrophiesHolder& trophies = this->rawBin->GetSection<TrophiesHolder>();
-    io->Overwrite(trophies.header.size, &trophies);
-    io->Close();
+    if (this->trophyEntries == nullptr) return;
+    for (u32 i = 0; i < this->trophyEntryCount; ++i) {
+        TrophyEntry& trophy = this->trophyEntries[i];
+        bool hasAnyTrophy = false;
+        for (int mode = 0; mode < 4; ++mode) {
+            if (trophy.hasTrophy[mode]) {
+                hasAnyTrophy = true;
+                break;
+            }
+        }
+        if (hasAnyTrophy) this->WriteTrophyFile(trophy);
+    }
 }
 
 void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char* trophiesPath) {
     this->pulsarPageCount = Settings::Params::pulsarPageCount;
     this->userPageCount = Settings::Params::userPageCount;
 
-    for (int i = 0; i < 4; ++i) this->totalTrophyCount[i] = totalTrophyCount[i];
     strncpy(this->filePath, settingsPath, IOS::ipcMaxPath);;
     this->filePath[IOS::ipcMaxPath - 1] = '\0';
     strncpy(this->trophiesFilePath, trophiesPath, IOS::ipcMaxPath);
@@ -98,61 +107,254 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         looseOverridesSetting = LOOSEARCHIVEOVERRIDES_ENABLED;
     }
 
-    bool hasTrophies = io->OpenFile(this->trophiesFilePath, FILE_MODE_READ_WRITE);
-    if (hasTrophies) {
-        alignas(0x20) Pulsar::SectionHeader tropHeader;
-        if (io->Read(sizeof(Pulsar::SectionHeader), &tropHeader) == sizeof(Pulsar::SectionHeader) &&
-            tropHeader.magic == TrophiesHolder::tropMagic) {
-            io->Seek(0);
-            TrophiesHolder* tmp = io->Alloc<TrophiesHolder>(tropHeader.size);
-            io->Read(tropHeader.size, tmp);
-            TrophiesHolder& destT = this->rawBin->GetSection<TrophiesHolder>();
-            u32 destSize = destT.header.size;
-            u32 srcSize = tmp->header.size;
-            u32 copySize = srcSize < destSize ? srcSize : destSize;
-            memcpy(&destT, tmp, copySize);
-        }
-        io->Close();
-    } else {
-        io->CreateAndOpen(this->trophiesFilePath, FILE_MODE_WRITE);
-        TrophiesHolder& trophies = this->rawBin->GetSection<TrophiesHolder>();
-        io->Overwrite(trophies.header.size, &trophies);
-        io->Close();
-    }
+    this->InitTrophyEntries(totalTrophyCount);
+    this->LoadTrophiesFromFiles();
+    this->MigrateLegacyTrophies();
 
     io->OpenFile(this->filePath, FILE_MODE_WRITE);
     io->Overwrite(this->rawBin->header.fileSize, this->rawBin);
     io->Close();
 }
 
-TrackTrophy* Mgr::FindTrackTrophy(u32 crc32, TTMode mode) const {
-    u32 trackCount = this->rawBin->GetSection<MiscParams>().trackCount;
-    TrophiesHolder& trophiesHolder = this->rawBin->GetSection<TrophiesHolder>();
+void Mgr::GetTrophyFolder(char* dest, u32 crc32, u8 variantIdx) const {
+    const char* modFolder = System::sInstance->GetModFolder();
+    if (variantIdx == 0)
+        snprintf(dest, IOS::ipcMaxPath, "%s/%s/%08x", modFolder, trophyFolderName, crc32);
+    else
+        snprintf(dest, IOS::ipcMaxPath, "%s/%s/%08x/%u", modFolder, trophyFolderName, crc32, variantIdx);
+}
 
-    for (int i = 0; i < trackCount; ++i)
-        if (trophiesHolder.trophies[i].crc32 == crc32) {
-            return &trophiesHolder.trophies[i];
+void Mgr::GetTrophyFilePath(char* dest, u32 crc32, u8 variantIdx) const {
+    char folder[IOS::ipcMaxPath];
+    this->GetTrophyFolder(folder, crc32, variantIdx);
+    snprintf(dest, IOS::ipcMaxPath, "%s/%s", folder, trophyFileName);
+}
+
+bool Mgr::EnsureTrophyFoldersExist(u32 crc32, u8 variantIdx) const {
+    IO* io = IO::sInstance;
+    char rootFolder[IOS::ipcMaxPath];
+    snprintf(rootFolder, IOS::ipcMaxPath, "%s/%s", System::sInstance->GetModFolder(), trophyFolderName);
+    if (!io->FolderExists(rootFolder) && !io->CreateFolder(rootFolder)) return false;
+
+    char baseFolder[IOS::ipcMaxPath];
+    this->GetTrophyFolder(baseFolder, crc32, 0);
+    if (!io->FolderExists(baseFolder) && !io->CreateFolder(baseFolder)) return false;
+
+    if (variantIdx != 0) {
+        char variantFolder[IOS::ipcMaxPath];
+        this->GetTrophyFolder(variantFolder, crc32, variantIdx);
+        if (!io->FolderExists(variantFolder) && !io->CreateFolder(variantFolder)) return false;
+    }
+    return true;
+}
+
+bool Mgr::WriteTrophyFile(const TrophyEntry& trophy) const {
+    if (!this->EnsureTrophyFoldersExist(trophy.crc32, trophy.variantIdx)) return false;
+
+    TrophyFile file;
+    file.header.magic = TrophyFile::magic;
+    file.header.version = TrophyFile::version;
+    file.header.size = sizeof(TrophyFile);
+    file.crc32 = trophy.crc32;
+    file.variantIdx = trophy.variantIdx;
+    memset(file.hasTrophy, 0, sizeof(file.hasTrophy));
+    memset(file.reserved, 0, sizeof(file.reserved));
+    for (int mode = 0; mode < 4; ++mode) {
+        file.hasTrophy[mode] = trophy.hasTrophy[mode] ? 1 : 0;
+    }
+
+    char path[IOS::ipcMaxPath];
+    this->GetTrophyFilePath(path, trophy.crc32, trophy.variantIdx);
+    IO* io = IO::sInstance;
+    bool ret = io->OpenFile(path, FILE_MODE_WRITE);
+    if (!ret) ret = io->CreateAndOpen(path, FILE_MODE_WRITE);
+    if (!ret) return false;
+    io->Overwrite(sizeof(TrophyFile), &file);
+    io->Close();
+    return true;
+}
+
+bool Mgr::ReadTrophyFile(TrophyEntry& trophy) const {
+    char path[IOS::ipcMaxPath];
+    this->GetTrophyFilePath(path, trophy.crc32, trophy.variantIdx);
+
+    IO* io = IO::sInstance;
+    if (!io->OpenFile(path, FILE_MODE_READ)) return false;
+
+    TrophyFile file;
+    bool ret = io->Read(sizeof(TrophyFile), &file) == sizeof(TrophyFile) &&
+               file.header.magic == TrophyFile::magic &&
+               file.header.version == TrophyFile::version &&
+               file.crc32 == trophy.crc32 &&
+               file.variantIdx == trophy.variantIdx;
+    io->Close();
+
+    if (!ret) return false;
+    for (int mode = 0; mode < 4; ++mode) {
+        trophy.hasTrophy[mode] = file.hasTrophy[mode] != 0;
+    }
+    return true;
+}
+
+void Mgr::InitTrophyEntries(const u16* totalTrophyCount) {
+    const CupsConfig* cups = CupsConfig::sInstance;
+    const u32 regTrackCount = cups->HasRegs() ? 32 : 0;
+    const u32 ctTrackCount = cups->GetRetroTrackCount() + cups->GetCTOnlyTrackCount();
+    const u32 totalRaceTrackCount = regTrackCount + ctTrackCount;
+
+    u32 totalVariantCount = 0;
+    for (u32 i = 0; i < ctTrackCount; ++i) {
+        const PulsarId id = static_cast<PulsarId>(PULSARID_FIRSTCT + i);
+        totalVariantCount += cups->GetTrack(id).variantCount;
+    }
+
+    for (int mode = 0; mode < 4; ++mode) {
+        this->totalTrophyCount[mode] = totalTrophyCount[mode] + totalVariantCount;
+        this->trophyCount[mode] = 0;
+    }
+
+    this->trophyEntryCount = totalRaceTrackCount + totalVariantCount;
+    this->trophyEntries = new (System::sInstance->heap) TrophyEntry[this->trophyEntryCount];
+    memset(this->trophyEntries, 0, sizeof(TrophyEntry) * this->trophyEntryCount);
+
+    u32 entryIdx = 0;
+    for (u32 i = 0; i < regTrackCount; ++i) {
+        this->trophyEntries[entryIdx].crc32 = cups->GetCRC32(static_cast<PulsarId>(i));
+        this->trophyEntries[entryIdx].variantIdx = 0;
+        ++entryIdx;
+    }
+
+    for (u32 i = 0; i < ctTrackCount; ++i) {
+        const PulsarId id = static_cast<PulsarId>(PULSARID_FIRSTCT + i);
+        const Track& track = cups->GetTrack(id);
+
+        this->trophyEntries[entryIdx].crc32 = track.crc32;
+        this->trophyEntries[entryIdx].variantIdx = 0;
+        ++entryIdx;
+
+        for (u32 variantIdx = 1; variantIdx <= track.variantCount; ++variantIdx) {
+            this->trophyEntries[entryIdx].crc32 = track.crc32;
+            this->trophyEntries[entryIdx].variantIdx = static_cast<u8>(variantIdx);
+            ++entryIdx;
         }
+    }
+}
+
+void Mgr::LoadTrophiesFromFiles() {
+    for (u32 i = 0; i < this->trophyEntryCount; ++i) {
+        TrophyEntry& trophy = this->trophyEntries[i];
+        if (!this->ReadTrophyFile(trophy)) continue;
+        for (int mode = 0; mode < 4; ++mode) {
+            if (trophy.hasTrophy[mode]) ++this->trophyCount[mode];
+        }
+    }
+}
+
+bool Mgr::LoadLegacyTrophies(TrophiesHolder*& holder) const {
+    holder = nullptr;
+    IO* io = IO::sInstance;
+    if (!io->OpenFile(this->trophiesFilePath, FILE_MODE_READ)) return false;
+
+    Pulsar::SectionHeader header;
+    const bool ret = io->Read(sizeof(Pulsar::SectionHeader), &header) == sizeof(Pulsar::SectionHeader) &&
+                     header.magic == TrophiesHolder::tropMagic &&
+                     header.size >= sizeof(TrophiesHolder);
+    if (!ret) {
+        io->Close();
+        return false;
+    }
+
+    io->Seek(0);
+    holder = io->Alloc<TrophiesHolder>(header.size);
+    const bool readOk = io->Read(header.size, holder) == static_cast<s32>(header.size);
+    io->Close();
+    if (!readOk) {
+        holder = nullptr;
+        return false;
+    }
+    return true;
+}
+
+void Mgr::MigrateLegacyTrophies() {
+    TrophiesHolder* legacy = nullptr;
+    if (!this->LoadLegacyTrophies(legacy) || legacy == nullptr) return;
+
+    const u32 legacyEntryCount = (legacy->header.size - sizeof(TrophiesHolder)) / sizeof(TrackTrophy) + 1;
+    for (u32 i = 0; i < legacyEntryCount; ++i) {
+        const TrackTrophy& src = legacy->trophies[i];
+        TrophyEntry* dest = this->FindTrackTrophy(src.crc32, 0);
+        if (dest == nullptr) continue;
+
+        bool changed = false;
+        for (int mode = 0; mode < 4; ++mode) {
+            if (src.hastrophy[mode] && !dest->hasTrophy[mode]) {
+                dest->hasTrophy[mode] = true;
+                ++this->trophyCount[mode];
+                changed = true;
+            }
+        }
+        if (changed) {
+            this->WriteTrophyFile(*dest);
+        }
+    }
+
+    char migratedPath[IOS::ipcMaxPath];
+    snprintf(migratedPath, IOS::ipcMaxPath, "%s%s", this->trophiesFilePath, migratedLegacySuffix);
+    IO::sInstance->RenameFile(this->trophiesFilePath, migratedPath);
+}
+
+TrophyEntry* Mgr::FindTrackTrophy(u32 crc32, u8 variantIdx) {
+    for (u32 i = 0; i < this->trophyEntryCount; ++i) {
+        TrophyEntry& trophy = this->trophyEntries[i];
+        if (trophy.crc32 == crc32 && trophy.variantIdx == variantIdx) return &trophy;
+    }
     return nullptr;
 }
 
-void Mgr::AddTrophy(u32 crc32, TTMode mode) {
-    TrackTrophy* trophy = this->FindTrackTrophy(crc32, mode);
-    if (trophy != nullptr && !trophy->hastrophy[mode]) {
-        ++(this->rawBin->GetSection<TrophiesHolder>().trophyCount[mode]);
-        trophy->hastrophy[mode] = true;
+const TrophyEntry* Mgr::FindTrackTrophy(u32 crc32, u8 variantIdx) const {
+    for (u32 i = 0; i < this->trophyEntryCount; ++i) {
+        const TrophyEntry& trophy = this->trophyEntries[i];
+        if (trophy.crc32 == crc32 && trophy.variantIdx == variantIdx) return &trophy;
+    }
+    return nullptr;
+}
+
+void Mgr::AddTrophy(u32 crc32, u8 variantIdx, TTMode mode) {
+    TrophyEntry* trophy = this->FindTrackTrophy(crc32, variantIdx);
+    if (trophy != nullptr && !trophy->hasTrophy[mode]) {
+        ++this->trophyCount[mode];
+        trophy->hasTrophy[mode] = true;
         this->RequestTrophiesSave();
     }
 }
 
-bool Mgr::HasTrophy(u32 crc32, TTMode mode) const {
-    const TrackTrophy* trophy = this->FindTrackTrophy(crc32, mode);
-    if (trophy != nullptr && trophy->hastrophy[mode]) return true;
+bool Mgr::HasTrophy(u32 crc32, u8 variantIdx, TTMode mode) const {
+    const TrophyEntry* trophy = this->FindTrackTrophy(crc32, variantIdx);
+    if (trophy != nullptr && trophy->hasTrophy[mode]) return true;
     return false;
 }
 
+bool Mgr::HasTrophy(u32 crc32, TTMode mode) const {
+    return this->HasTrophy(crc32, 0, mode);
+}
+
+bool Mgr::HasTrophy(PulsarId id, u8 variantIdx, TTMode mode) const {
+    return this->HasTrophy(CupsConfig::sInstance->GetCRC32(id), variantIdx, mode);
+}
+
 bool Mgr::HasTrophy(PulsarId id, TTMode mode) const {
-    return this->HasTrophy(CupsConfig::sInstance->GetCRC32(id), mode);
+    return this->HasTrophy(id, 0, mode);
+}
+
+bool Mgr::HasTrophyForAllVariants(PulsarId id, TTMode mode) const {
+    if (!this->HasTrophy(id, 0, mode)) return false;
+    if (CupsConfig::IsReg(id)) return true;
+
+    const Track& track = CupsConfig::sInstance->GetTrack(id);
+    for (u32 variantIdx = 1; variantIdx <= track.variantCount; ++variantIdx) {
+        if (!this->HasTrophy(id, static_cast<u8>(variantIdx), mode)) return false;
+    }
+    return true;
 }
 
 u8 Mgr::GetSettingValue(Type type, u32 setting) const {

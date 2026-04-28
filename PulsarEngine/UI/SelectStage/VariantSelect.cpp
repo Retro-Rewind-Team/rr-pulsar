@@ -41,9 +41,12 @@ VariantSelect::VariantSelect() {
     this->onBackPressHandler.ptmf = &VariantSelect::OnBackPress;
     this->onBackClickHandler.subject = this;
     this->onBackClickHandler.ptmf = &VariantSelect::OnBackButtonClick;
+    this->onVariantButtonSelectHandler.subject = this;
+    this->onVariantButtonSelectHandler.ptmf = &VariantSelect::OnVariantButtonSelect;
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
     selectedPulsarId = PULSARID_NONE;
     baseRowIdx = 0;
+    highlightedVariantIdx = 0;
     variantButtonsPopulated = false;
     ResetVariantButtonState();
 }
@@ -60,6 +63,7 @@ void VariantSelect::OnDeactivate() {
     variantButtonsPopulated = false;
     ResetVariantButtonState();
     baseRowIdx = 0;
+    highlightedVariantIdx = 0;
     if (CupsConfig::sInstance != nullptr) CupsConfig::sInstance->ClearPendingVariant();
     ToggleCourseSelectDecor(false);
     Pages::CourseSelect::OnDeactivate();
@@ -104,6 +108,9 @@ void VariantSelect::ToggleCourseSelectDecor(bool hidden) {
 void VariantSelect::OnInit() {
     Pages::CourseSelect::OnInit();
     this->backButton.SetOnClickHandler(this->onBackClickHandler, 0);
+    for (u32 i = 0; i < 4; ++i) {
+        this->CtrlMenuCourseSelectCourse.courseButtons[i].SetOnSelectHandler(this->onVariantButtonSelectHandler);
+    }
 }
 
 void VariantSelect::UpdateBottomText() {
@@ -111,7 +118,7 @@ void VariantSelect::UpdateBottomText() {
     if (!IsTimeTrialVariantMenu() || this->selectedPulsarId == PULSARID_NONE) return;
 
     u32 bmgId = 0;
-    const Text::Info text = GetCourseBottomText(this->selectedPulsarId, &bmgId);
+    const Text::Info text = GetCourseBottomText(this->selectedPulsarId, this->highlightedVariantIdx, &bmgId);
     this->bottomText->isHidden = false;
     this->bottomText->SetMessage(bmgId, &text);
 }
@@ -124,6 +131,13 @@ void VariantSelect::OnBackPress(u32 hudSlotId) {
 
 void VariantSelect::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
     OnBackPress(hudSlotId);
+}
+
+void VariantSelect::OnVariantButtonSelect(PushButton& button, u32 hudSlotId) {
+    const u32 variantIdx = this->GetVariantIndexForButton(button);
+    if (variantIdx == 0xFFFFFFFF) return;
+    this->highlightedVariantIdx = static_cast<u8>(variantIdx);
+    this->UpdateBottomText();
 }
 
 void VariantSelect::PopulateVariantButtons() {
@@ -150,6 +164,7 @@ void VariantSelect::PopulateVariantButtons() {
     ApplyVariantButtonState();
     if (variantButtonsPopulated) {
         const u8 desiredVariantIdx = cups->GetLastSelectedVariant(selectedPulsarId);
+        highlightedVariantIdx = desiredVariantIdx;
         u32 desiredButtonIdx = 0;
         for (u32 i = 0; i < 4; ++i) {
             if (variantButtonVariants[i] == desiredVariantIdx) {
@@ -158,6 +173,8 @@ void VariantSelect::PopulateVariantButtons() {
             }
         }
         this->CtrlMenuCourseSelectCourse.courseButtons[desiredButtonIdx].Select(0);
+    } else {
+        highlightedVariantIdx = 0;
     }
 }
 

@@ -18,6 +18,23 @@ class CustomItemPage;
 }
 namespace Settings {
 
+struct TrophyEntry {
+    u32 crc32;
+    u8 variantIdx;
+    bool hasTrophy[4];
+};
+
+struct TrophyFile {
+    static const u32 magic = 'TRPH';
+    static const u32 version = 1;
+
+    Pulsar::SectionHeader header;
+    u32 crc32;
+    u8 variantIdx;
+    u8 hasTrophy[4];
+    u8 reserved[3];
+};
+
 class Hook : public DoFuncsHook {
     static DoFuncsHook* settingsHooks;
 
@@ -36,7 +53,17 @@ class Mgr {
     char trophiesFilePath[IOS::ipcMaxPath];
     Binary* rawBin;
 
-    TrackTrophy* FindTrackTrophy(u32 crc32, TTMode mode) const;
+    TrophyEntry* FindTrackTrophy(u32 crc32, u8 variantIdx);
+    const TrophyEntry* FindTrackTrophy(u32 crc32, u8 variantIdx) const;
+    void InitTrophyEntries(const u16* totalTrophyCount);
+    void LoadTrophiesFromFiles();
+    void MigrateLegacyTrophies();
+    bool LoadLegacyTrophies(TrophiesHolder*& holder) const;
+    bool WriteTrophyFile(const TrophyEntry& trophy) const;
+    bool ReadTrophyFile(TrophyEntry& trophy) const;
+    void GetTrophyFolder(char* dest, u32 crc32, u8 variantIdx) const;
+    void GetTrophyFilePath(char* dest, u32 crc32, u8 variantIdx) const;
+    bool EnsureTrophyFoldersExist(u32 crc32, u8 variantIdx) const;
     void AdjustSections();
     void SetSettingValue(Type type, u32 setting, u8 value);
     void SetUserSettingValue(UserType type, u32 setting, u8 value);
@@ -50,19 +77,24 @@ class Mgr {
     void RequestTrophiesSave() { System::sInstance->taskThread->Request(&Mgr::SaveTask, reinterpret_cast<void*>(1), 0); }
     void Save();
     void SaveTrophies();
-    void AddTrophy(u32 crc32, TTMode mode);
+    void AddTrophy(u32 crc32, u8 variantIdx, TTMode mode);
     void SetLastSelectedCup(PulsarCupId id) { this->rawBin->GetSection<MiscParams>().lastSelectedCup = id; }
 
    public:
-    Mgr() : rawBin(nullptr) {}
+    Mgr() : rawBin(nullptr), trophyEntries(nullptr), trophyEntryCount(0) {
+        for (int i = 0; i < 4; ++i) this->trophyCount[i] = 0;
+    }
     static Mgr& Get() { return *sInstance; }
     static const Mgr& GetConst() { return *sInstance; }
     static bool IsCreated() { return sInstance != nullptr; }
 
+    bool HasTrophy(u32 crc32, u8 variantIdx, TTMode mode) const;
     bool HasTrophy(u32 crc32, TTMode mode) const;
+    bool HasTrophy(PulsarId id, u8 variantIdx, TTMode mode) const;
     bool HasTrophy(PulsarId id, TTMode mode) const;
+    bool HasTrophyForAllVariants(PulsarId id, TTMode mode) const;
     u16 GetTotalTrophyCount(TTMode mode) const { return totalTrophyCount[mode]; }
-    int GetTrophyCount(TTMode mode) const { return this->rawBin->GetSection<TrophiesHolder>().trophyCount[mode]; }
+    int GetTrophyCount(TTMode mode) const { return this->trophyCount[mode]; }
     PulsarCupId GetSavedSelectedCup() const { return this->rawBin->GetSection<MiscParams>().lastSelectedCup; }
     u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
     void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }
@@ -86,6 +118,9 @@ class Mgr {
 
    private:
     u16 totalTrophyCount[4];
+    u16 trophyCount[4];
+    TrophyEntry* trophyEntries;
+    u32 trophyEntryCount;
     u32 pulsarPageCount;
     u32 userPageCount;
 
@@ -94,6 +129,7 @@ class Mgr {
     // Two ghosts functions which save the settings
     friend bool Ghosts::Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool isFlap);
     friend void Ghosts::Mgr::CreateAndSaveFiles(Ghosts::Mgr* manager);
+    friend class UI::ExpGhostSelect;
 };
 }  // namespace Settings
 }  // namespace Pulsar
