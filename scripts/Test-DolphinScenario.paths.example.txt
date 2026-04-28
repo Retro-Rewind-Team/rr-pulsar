@@ -1,0 +1,27 @@
+# Copy to Test-DolphinScenario.paths.txt and edit (same folder as the .ps1).
+# Lines starting with # or ; are comments. Format: Key=value
+# Paths can be absolute or relative to RepoRoot (where useful).
+# Spaces: use the line after = as the full path (unquoted), or wrap in "double" or 'single' quotes.
+# Example: DolphinExe="C:\Program Files\Dolphin\Dolphin.exe"
+# Example: RiivolutionJson='F:\My Roms\Mod Launch\game.json'
+#
+# DolphinUser: same folder as File - Open User Folder. The script updates Config\Logger.ini before launch
+# (WriteToFile + OSREPORT + OSREPORT_HLE) unless you set SkipLoggerIni=true. OS::Report lines go to Logs\dolphin.log;
+# the script copies matching lines from new log bytes into the txt report after the run.
+#
+# For an end-to-end test: fill this file, then run:
+#   .\Test-DolphinScenario.IntegrationTest.ps1
+# Build-only (no emulator):   .\Test-DolphinScenario.IntegrationTest.ps1 -BuildOnly
+
+RepoRoot=
+DolphinExe=C:\Program Files\Dolphin\Dolphin.exe
+RiivolutionJson=C:\path\to\your\riivolution-launch.json
+DolphinUser=C:\Users\You\Documents\Dolphin Emulator
+ModFolderName=RetroRewind6
+CrashPulPath=
+OutFile=
+PollMs=500
+# SkipCodePulDeploy=true
+# SkipLoggerIni=true
+# SkipBuild=true
+# ContinueOnBuildFailure=false
