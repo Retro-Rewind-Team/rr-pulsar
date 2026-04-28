@@ -41,170 +41,90 @@ enum CustomCharacterTable {
 
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
 
-struct CharacterAssetNames {
-    CharacterId character;
-    CharacterId stateCharacter;
-    const char* defaultPostfix;
-    const char* defaultDriverBrresName;
-};
-
 struct CharacterOverride {
     CharacterId character;
+    u8 tableIdx;
     const char* postfix;
     const char* driverBrresName;
 };
 
-struct CharacterTable {
-    const CharacterOverride* overrides;
-    u8 overrideCount;
-};
-
-static const CharacterAssetNames defaultCharacterAssets[] = {
-    {MARIO, MARIO, "mr", nullptr},
-    {BABY_PEACH, BABY_PEACH, "bpc", nullptr},
-    {WALUIGI, WALUIGI, "wl", nullptr},
-    {BOWSER, BOWSER, "kp", nullptr},
-    {BABY_DAISY, BABY_DAISY, "bds", nullptr},
-    {DRY_BONES, DRY_BONES, "ka", nullptr},
-    {BABY_MARIO, BABY_MARIO, "bmr", nullptr},
-    {LUIGI, LUIGI, "lg", nullptr},
-    {TOAD, TOAD, "ko", nullptr},
-    {DONKEY_KONG, DONKEY_KONG, "dk", nullptr},
-    {YOSHI, YOSHI, "ys", nullptr},
-    {WARIO, WARIO, "wr", nullptr},
-    {BABY_LUIGI, BABY_LUIGI, "blg", nullptr},
-    {TOADETTE, TOADETTE, "kk", nullptr},
-    {KOOPA_TROOPA, KOOPA_TROOPA, "nk", nullptr},
-    {DAISY, DAISY, "ds", nullptr},
-    {PEACH, PEACH, "pc", nullptr},
-    {BIRDO, BIRDO, "ca", nullptr},
-    {DIDDY_KONG, DIDDY_KONG, "dd", nullptr},
-    {KING_BOO, KING_BOO, "kt", nullptr},
-    {BOWSER_JR, BOWSER_JR, "jr", nullptr},
-    {DRY_BOWSER, DRY_BOWSER, "bk", nullptr},
-    {FUNKY_KONG, FUNKY_KONG, "fk", nullptr},
-    {ROSALINA, ROSALINA, "rs", nullptr},
-    {PEACH_BIKER, PEACH, "pc", "pc_menu"},
-    {DAISY_BIKER, DAISY, "ds", "ds_menu"},
-    {ROSALINA_BIKER, ROSALINA, "rs", "rs_menu"},
-    {MII_L_C_MALE, MII_L_C_MALE, "lc_mii_m", nullptr},
-    {MII_L_C_FEMALE, MII_L_C_FEMALE, "lc_mii_f", nullptr},
-    {MII_M_C_MALE, MII_M_C_MALE, "mc_mii_m", nullptr},
-    {MII_M_C_FEMALE, MII_M_C_FEMALE, "mc_mii_f", nullptr},
-    {MII_S_C_MALE, MII_S_C_MALE, "sc_mii_m", nullptr},
-    {MII_S_C_FEMALE, MII_S_C_FEMALE, "sc_mii_f", nullptr},
-    {MII_L_B_MALE, MII_L_B_MALE, "lb_mii_m", nullptr},
-    {MII_L_B_FEMALE, MII_L_B_FEMALE, "lb_mii_f", nullptr},
-    {MII_L_A_MALE, MII_L_A_MALE, "la_mii_m", nullptr},
-    {MII_L_A_FEMALE, MII_L_A_FEMALE, "la_mii_f", nullptr},
-    {MII_M_B_MALE, MII_M_B_MALE, "mb_mii_m", nullptr},
-    {MII_M_B_FEMALE, MII_M_B_FEMALE, "mb_mii_f", nullptr},
-    {MII_M_A_MALE, MII_M_A_MALE, "ma_mii_m", nullptr},
-    {MII_M_A_FEMALE, MII_M_A_FEMALE, "ma_mii_f", nullptr},
-    {MII_S_B_MALE, MII_S_B_MALE, "sb_mii_m", nullptr},
-    {MII_S_B_FEMALE, MII_S_B_FEMALE, "sb_mii_f", nullptr},
-    {MII_S_A_MALE, MII_S_A_MALE, "sa_mii_m", nullptr},
-    {MII_S_A_FEMALE, MII_S_A_FEMALE, "sa_mii_f", nullptr},
-};
-
-static const CharacterOverride skin1CharacterOverrides[] = {
-    {MARIO, "mr-1", nullptr},
-    {BABY_PEACH, "bpc-1", nullptr},
-    {WALUIGI, "wl-1", nullptr},
-    {BOWSER, "kp-1", nullptr},
-    {BABY_DAISY, "bds-1", nullptr},
-    {DRY_BONES, "ka-1", nullptr},
-    {BABY_MARIO, "bmr-1", nullptr},
-    {LUIGI, "lg-1", nullptr},
-    {TOAD, "ko-1", nullptr},
-    {DONKEY_KONG, "dk-1", nullptr},
-    {YOSHI, "ys-1", nullptr},
-    {WARIO, "wr-1", nullptr},
-    {BABY_LUIGI, "blg-1", nullptr},
-    {TOADETTE, "kk-1", nullptr},
-    {KOOPA_TROOPA, "nk-1", nullptr},
-    {DAISY, "ds-1", nullptr},
-    {PEACH, "pc-1", nullptr},
-    {BIRDO, "ca-1", nullptr},
-    {DIDDY_KONG, "dd-1", nullptr},
-    {KING_BOO, "kt-1", nullptr},
-    {BOWSER_JR, "jr-1", nullptr},
-    {DRY_BOWSER, "bk-1", nullptr},
-    {FUNKY_KONG, "fk-1", nullptr},
-    {ROSALINA, "rs-1", nullptr},
-    {PEACH_BIKER, "pc-1", "pc-1_menu"},
-    {DAISY_BIKER, "ds-1", "ds-1_menu"},
-    {ROSALINA_BIKER, "rs-1", "rs-1_menu"},
-};
-
-static const CharacterOverride skin2CharacterOverrides[] = {
-    {MARIO, "mr-2", nullptr},
-    {BABY_PEACH, "bpc-2", nullptr},
-    {WALUIGI, "wl-2", nullptr},
-    {BOWSER, "kp-2", nullptr},
-    {BABY_DAISY, "bds-2", nullptr},
-    {DRY_BONES, "ka-2", nullptr},
-    {BABY_MARIO, "bmr-2", nullptr},
-    {LUIGI, "lg-2", nullptr},
-    {TOAD, "ko-2", nullptr},
-    {DONKEY_KONG, "dk-2", nullptr},
-    {YOSHI, "ys-2", nullptr},
-    {WARIO, "wr-2", nullptr},
-    {KOOPA_TROOPA, "nk-2", nullptr},
-    {DIDDY_KONG, "dd-2", nullptr},
-    {BOWSER_JR, "jr-2", nullptr},
-    {FUNKY_KONG, "fk-2", nullptr},
-    {PEACH, "pc-2", nullptr},
-    {DAISY, "ds-2", nullptr},
-    {ROSALINA, "rs-2", nullptr},
-    {BIRDO, "ca-2", nullptr},
-    {PEACH_BIKER, "pc-2", "pc-2_menu"},
-    {DAISY_BIKER, "ds-2", "ds-2_menu"},
-    {ROSALINA_BIKER, "rs-2", "rs-2_menu"},
-};
-
-static const CharacterOverride skin3CharacterOverrides[] = {
-    {BOWSER, "kp-3", nullptr},
-    {DRY_BONES, "ka-3", nullptr},
-    {BABY_MARIO, "bmr-3", nullptr},
-    {LUIGI, "lg-3", nullptr},
-    {TOAD, "ko-3", nullptr},
-    {DONKEY_KONG, "dk-3", nullptr},
-    {YOSHI, "ys-3", nullptr},
-    {WARIO, "wr-3", nullptr},
-    {BOWSER_JR, "jr-3", nullptr},
-    {FUNKY_KONG, "fk-3", nullptr},
-    {PEACH, "pc-3", nullptr},
-    {DAISY, "ds-3", nullptr},
-    {ROSALINA, "rs-3", nullptr},
-    {PEACH_BIKER, "pc-3", "pc-3_menu"},
-    {DAISY_BIKER, "ds-3", "ds-3_menu"},
-    {ROSALINA_BIKER, "rs-3", "rs-3_menu"},
-};
-
-static const CharacterOverride skin4CharacterOverrides[] = {
-    {DRY_BONES, "ka-4", nullptr},
-    {BABY_MARIO, "bmr-4", nullptr},
-    {LUIGI, "lg-4", nullptr},
-    {DONKEY_KONG, "dk-4", nullptr},
-    {BOWSER_JR, "jr-4", nullptr},
-    {BOWSER, "kp-4", nullptr},
-    {FUNKY_KONG, "fk-4", nullptr},
-};
-
-static const CharacterOverride skin5CharacterOverrides[] = {
-    {BOWSER_JR, "jr-5", nullptr},
-};
-
-// To add another table, add an enum value above CUSTOM_CHARACTER_TABLE_COUNT,
-// add a CharacterOverride array, and register it here.
-static const CharacterTable customCharacterTables[CUSTOM_CHARACTER_TABLE_COUNT] = {
-    {nullptr, 0},
-    {skin1CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin1CharacterOverrides))},
-    {skin2CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin2CharacterOverrides))},
-    {skin3CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin3CharacterOverrides))},
-    {skin4CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin4CharacterOverrides))},
-    {skin5CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin5CharacterOverrides))},
+// Custom skin rows are keyed by the stock character id and the selected custom table.
+// The default table is not mirrored here; it comes from the game's stock name table.
+static const CharacterOverride customCharacterAssets[] = {
+    {MARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "mr-1", nullptr},
+    {BABY_PEACH, CUSTOM_CHARACTER_TABLE_SKIN1, "bpc-1", nullptr},
+    {WALUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "wl-1", nullptr},
+    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN1, "kp-1", nullptr},
+    {BABY_DAISY, CUSTOM_CHARACTER_TABLE_SKIN1, "bds-1", nullptr},
+    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN1, "ka-1", nullptr},
+    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "bmr-1", nullptr},
+    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "lg-1", nullptr},
+    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN1, "ko-1", nullptr},
+    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "dk-1", nullptr},
+    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN1, "ys-1", nullptr},
+    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "wr-1", nullptr},
+    {BABY_LUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "blg-1", nullptr},
+    {TOADETTE, CUSTOM_CHARACTER_TABLE_SKIN1, "kk-1", nullptr},
+    {KOOPA_TROOPA, CUSTOM_CHARACTER_TABLE_SKIN1, "nk-1", nullptr},
+    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN1, "ds-1", nullptr},
+    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN1, "pc-1", nullptr},
+    {BIRDO, CUSTOM_CHARACTER_TABLE_SKIN1, "ca-1", nullptr},
+    {DIDDY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "dd-1", nullptr},
+    {KING_BOO, CUSTOM_CHARACTER_TABLE_SKIN1, "kt-1", nullptr},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN1, "jr-1", nullptr},
+    {DRY_BOWSER, CUSTOM_CHARACTER_TABLE_SKIN1, "bk-1", nullptr},
+    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "fk-1", nullptr},
+    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN1, "rs-1", nullptr},
+    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "pc-1", "pc-1_menu"},
+    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "ds-1", "ds-1_menu"},
+    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "rs-1", "rs-1_menu"},
+    {MARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "mr-2", nullptr},
+    {BABY_PEACH, CUSTOM_CHARACTER_TABLE_SKIN2, "bpc-2", nullptr},
+    {WALUIGI, CUSTOM_CHARACTER_TABLE_SKIN2, "wl-2", nullptr},
+    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN2, "kp-2", nullptr},
+    {BABY_DAISY, CUSTOM_CHARACTER_TABLE_SKIN2, "bds-2", nullptr},
+    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN2, "ka-2", nullptr},
+    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "bmr-2", nullptr},
+    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN2, "lg-2", nullptr},
+    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN2, "ko-2", nullptr},
+    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "dk-2", nullptr},
+    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN2, "ys-2", nullptr},
+    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "wr-2", nullptr},
+    {KOOPA_TROOPA, CUSTOM_CHARACTER_TABLE_SKIN2, "nk-2", nullptr},
+    {DIDDY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "dd-2", nullptr},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN2, "jr-2", nullptr},
+    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "fk-2", nullptr},
+    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN2, "pc-2", nullptr},
+    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN2, "ds-2", nullptr},
+    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN2, "rs-2", nullptr},
+    {BIRDO, CUSTOM_CHARACTER_TABLE_SKIN2, "ca-2", nullptr},
+    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "pc-2", "pc-2_menu"},
+    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "ds-2", "ds-2_menu"},
+    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "rs-2", "rs-2_menu"},
+    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN3, "kp-3", nullptr},
+    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN3, "ka-3", nullptr},
+    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN3, "bmr-3", nullptr},
+    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN3, "lg-3", nullptr},
+    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN3, "ko-3", nullptr},
+    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN3, "dk-3", nullptr},
+    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN3, "ys-3", nullptr},
+    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN3, "wr-3", nullptr},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN3, "jr-3", nullptr},
+    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN3, "fk-3", nullptr},
+    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN3, "pc-3", nullptr},
+    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN3, "ds-3", nullptr},
+    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN3, "rs-3", nullptr},
+    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "pc-3", "pc-3_menu"},
+    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "ds-3", "ds-3_menu"},
+    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "rs-3", "rs-3_menu"},
+    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN4, "ka-4", nullptr},
+    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN4, "bmr-4", nullptr},
+    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN4, "lg-4", nullptr},
+    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN4, "dk-4", nullptr},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN4, "jr-4", nullptr},
+    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN4, "kp-4", nullptr},
+    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN4, "fk-4", nullptr},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN5, "jr-5", nullptr},
 };
 
 // Runtime state is split between three jobs:
@@ -253,6 +173,8 @@ static_assert(CUSTOM_CHARACTER_TABLE_PACKET_BITS * 2 <= 8, "character table pack
 
 kmRuntimeUse(0x808b3a90);
 static const u32 CHARACTER_POSTFIX_TABLE_ADDRESS = kmRuntimeAddr(0x808b3a90);
+static const char* defaultCharacterPostfixes[CUSTOM_CHARACTER_COUNT] = {};
+static bool defaultCharacterPostfixesCached = false;
 
 static u8 ClampLocalPlayerCount(u32 playerCount) {
     return playerCount > MAX_LOCAL_PLAYERS ? MAX_LOCAL_PLAYERS : static_cast<u8>(playerCount);
@@ -279,25 +201,71 @@ static void CacheHoveredCharactersFromSection(const SectionMgr& sectionMgr) {
     }
 }
 
-static const CharacterAssetNames* GetCharacterAssets(CharacterId character) {
-    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
-        if (defaultCharacterAssets[i].character == character) return &defaultCharacterAssets[i];
+static const char** GetCharacterPostfixEntry(CharacterId character) {
+    if (!IsCharacterIdInRange(character)) return nullptr;
+
+    const char** table = reinterpret_cast<const char**>(CHARACTER_POSTFIX_TABLE_ADDRESS);
+    return &table[character];
+}
+
+static void CacheDefaultCharacterPostfixes() {
+    if (defaultCharacterPostfixesCached) return;
+
+    for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
+        const char** const entry = GetCharacterPostfixEntry(static_cast<CharacterId>(character));
+        const char* defaultPostfix = nullptr;
+        if (entry != nullptr) defaultPostfix = *entry;
+        defaultCharacterPostfixes[character] = defaultPostfix;
     }
-    return nullptr;
+    defaultCharacterPostfixesCached = true;
+}
+
+static CharacterId GetCustomCharacterStateId(CharacterId character) {
+    switch (character) {
+        case PEACH_BIKER:
+            return PEACH;
+        case DAISY_BIKER:
+            return DAISY;
+        case ROSALINA_BIKER:
+            return ROSALINA;
+        case MII_M:
+        case MII_S:
+        case MII_L:
+            return CHARACTER_NONE;
+        default:
+            return IsCharacterIdInRange(character) ? character : CHARACTER_NONE;
+    }
+}
+
+static bool IsCustomCharacterStateIdValid(CharacterId character) {
+    return IsCharacterIdInRange(GetCustomCharacterStateId(character));
 }
 
 static const CharacterOverride* GetCharacterOverride(CharacterId character, u8 tableIdx) {
     if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT || tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) return nullptr;
 
-    const CharacterTable& table = customCharacterTables[tableIdx];
-    for (u8 i = 0; i < table.overrideCount; ++i) {
-        if (table.overrides[i].character == character) return &table.overrides[i];
+    for (u32 i = 0; i < ARRAY_COUNT(customCharacterAssets); ++i) {
+        const CharacterOverride& characterOverride = customCharacterAssets[i];
+        if (characterOverride.character == character && characterOverride.tableIdx == tableIdx) return &characterOverride;
     }
     return nullptr;
 }
 
+static const char* GetDefaultMenuDriverBRRESName(CharacterId character) {
+    switch (character) {
+        case PEACH_BIKER:
+            return "pc_menu";
+        case DAISY_BIKER:
+            return "ds_menu";
+        case ROSALINA_BIKER:
+            return "rs_menu";
+        default:
+            return nullptr;
+    }
+}
+
 static bool IsCharacterTableValidForCharacter(CharacterId character, u8 tableIdx) {
-    if (GetCharacterAssets(character) == nullptr) return false;
+    if (!IsCustomCharacterStateIdValid(character)) return false;
     if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT) return true;
     return GetCharacterOverride(character, tableIdx) != nullptr;
 }
@@ -324,24 +292,18 @@ static bool IsLocalMultiplayerActive() {
     return GetLocalPlayerCount() > 1;
 }
 
-static CharacterId GetCustomCharacterStateId(CharacterId character) {
-    const CharacterAssetNames* assets = GetCharacterAssets(character);
-    if (assets == nullptr) return CHARACTER_NONE;
-    return assets->stateCharacter;
-}
-
-static bool IsCustomCharacterStateIdValid(CharacterId character) {
-    const CharacterAssetNames* assets = GetCharacterAssets(character);
-    if (assets == nullptr) return false;
-    return IsCharacterIdInRange(assets->stateCharacter);
-}
-
 static u8 GetSelectedCharacterTable(CharacterId character) {
     if (IsLocalMultiplayerActive()) return CUSTOM_CHARACTER_TABLE_DEFAULT;
     if (!IsCustomCharacterStateIdValid(character)) return CUSTOM_CHARACTER_TABLE_DEFAULT;
 
     const u8 tableIdx = selectedCharacterTableByCharacter[GetCustomCharacterStateId(character)];
     return NormalizeCharacterTable(character, tableIdx);
+}
+
+const char* GetDefaultCharacterPostfix(CharacterId character) {
+    if (!IsCharacterIdInRange(character)) return nullptr;
+    CacheDefaultCharacterPostfixes();
+    return defaultCharacterPostfixes[character];
 }
 
 static bool IsCustomCharacterEnabled(CharacterId character) {
@@ -359,10 +321,7 @@ static bool IsAnyCustomCharacterEnabled() {
 static const char* GetCharacterPostfix(CharacterId character, u8 tableIdx) {
     const CharacterOverride* characterOverride = GetCharacterOverride(character, tableIdx);
     if (characterOverride != nullptr && characterOverride->postfix != nullptr) return characterOverride->postfix;
-
-    const CharacterAssetNames* assets = GetCharacterAssets(character);
-    if (assets == nullptr) return nullptr;
-    return assets->defaultPostfix;
+    return GetDefaultCharacterPostfix(character);
 }
 
 static const char* GetDriverBRRESName(CharacterId character, u8 tableIdx) {
@@ -372,21 +331,9 @@ static const char* GetDriverBRRESName(CharacterId character, u8 tableIdx) {
         return characterOverride->postfix;
     }
 
-    const CharacterAssetNames* assets = GetCharacterAssets(character);
-    if (assets == nullptr) return nullptr;
-    if (assets->defaultDriverBrresName != nullptr) return assets->defaultDriverBrresName;
-    return assets->defaultPostfix;
-}
-
-static const char** GetCharacterPostfixEntry(CharacterId character) {
-    if (!IsCharacterIdInRange(character)) return nullptr;
-
-    const char** table = reinterpret_cast<const char**>(CHARACTER_POSTFIX_TABLE_ADDRESS);
-    return &table[character];
-}
-
-const char* GetDefaultCharacterPostfix(CharacterId character) {
-    return GetCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_DEFAULT);
+    const char* const defaultDriverBrresName = GetDefaultMenuDriverBRRESName(character);
+    if (defaultDriverBrresName != nullptr) return defaultDriverBrresName;
+    return GetDefaultCharacterPostfix(character);
 }
 
 static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx) {
@@ -398,9 +345,9 @@ static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx) {
 }
 
 static void ApplyCharacterPostfixes() {
-    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
-        const CharacterId character = defaultCharacterAssets[i].character;
-        ApplyCharacterPostfix(character, GetSelectedCharacterTable(character));
+    CacheDefaultCharacterPostfixes();
+    for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
+        ApplyCharacterPostfix(static_cast<CharacterId>(character), GetSelectedCharacterTable(static_cast<CharacterId>(character)));
     }
 }
 
@@ -522,9 +469,9 @@ static CharacterId GetMenuDriverBRRESCharacter(CharacterId character) {
 static void ApplyMenuDriverModelTablePostfixes(CharacterId targetCharacter, u8 tableIdx) {
     // The menu-driver constructor should see a mostly vanilla postfix table, with only
     // the target preview character temporarily redirected to its custom menu-scene BRRES.
-    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
-        const CharacterId character = defaultCharacterAssets[i].character;
-        ApplyCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_DEFAULT);
+    CacheDefaultCharacterPostfixes();
+    for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
+        ApplyCharacterPostfix(static_cast<CharacterId>(character), CUSTOM_CHARACTER_TABLE_DEFAULT);
     }
     if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT || tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) {
         return;
