@@ -27,8 +27,6 @@ namespace Pulsar {
 namespace CustomCharacters {
 static u8 onlineCharacterTables[12];
 
-#define CC_LOG_PREFIX "[CustomCharacters] "
-
 enum CustomCharacterTable {
     CUSTOM_CHARACTER_TABLE_DEFAULT = 0,
     CUSTOM_CHARACTER_TABLE_SKIN1 = 1,
@@ -348,8 +346,6 @@ static bool SetCustomCharacterTable(CharacterId character, u8 tableIdx) {
     const CharacterId stateCharacter = GetCustomCharacterStateId(character);
     if (selectedCharacterTableByCharacter[stateCharacter] == tableIdx) return false;
 
-    OS::Report(CC_LOG_PREFIX "SetCustomCharacterTable character=%d state=%d oldTable=%u newTable=%u\n",
-               character, stateCharacter, selectedCharacterTableByCharacter[stateCharacter], tableIdx);
     selectedCharacterTableByCharacter[stateCharacter] = tableIdx;
     ApplyCharacterPostfixes();
     RefreshLocalOnlineCustomCharacterFlags();
@@ -385,7 +381,6 @@ void QueueMenuDriverReinitAfterRandomCombo() {
     }
     charSelectHoverExtraSuppressFrames = CHAR_SELECT_HOVER_SUPPRESS_AFTER_RANDOM_SKIN;
     syncHoveredFromSectionForMenuReinit = true;
-    OS::Report(CC_LOG_PREFIX "QueueMenuDriverReinitAfterRandomCombo pendingFrames=%u\n", pendingMenuDriverReinitFrames);
 }
 
 static const char* GetCharacterPostfix(CharacterId character, u8 tableIdx) {
@@ -450,12 +445,9 @@ const char* GetDefaultCharacterPostfix(CharacterId character) {
 
 static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx) {
     const char** entry = GetCharacterPostfixEntry(character);
-    OS::Report(CC_LOG_PREFIX "ApplyCharacterPostfix character=%d table=%u entry=%p\n", character, tableIdx, entry);
     if (entry == nullptr) return;
 
     const char* postfix = GetCharacterPostfix(character, tableIdx);
-    OS::Report(CC_LOG_PREFIX "ApplyCharacterPostfix postfix=%s old=%s\n",
-               postfix != nullptr ? postfix : "(null)", *entry != nullptr ? *entry : "(null)");
     if (postfix != nullptr) *entry = postfix;
 }
 
@@ -477,28 +469,23 @@ void ApplyCharacterTable(u8 tableIdx) {
 }
 
 static void ApplyCharacterPostfixes() {
-    OS::Report(CC_LOG_PREFIX "ApplyCharacterPostfixes begin\n");
     for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
         const CharacterId character = defaultCharacterAssets[i].character;
         ApplyCharacterPostfix(character, GetSelectedCharacterTable(character));
     }
-    OS::Report(CC_LOG_PREFIX "ApplyCharacterPostfixes end\n");
 }
 
 static void ApplyMenuDriverModelTablePostfixes(CharacterId targetCharacter, u8 tableIdx) {
-    OS::Report(CC_LOG_PREFIX "ApplyMenuDriverModelTablePostfixes begin target=%d table=%u\n", targetCharacter, tableIdx);
     for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
         const CharacterId character = defaultCharacterAssets[i].character;
         ApplyCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_DEFAULT);
     }
     if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT || tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) {
-        OS::Report(CC_LOG_PREFIX "ApplyMenuDriverModelTablePostfixes default/invalid table=%u\n", tableIdx);
         return;
     }
 
     const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(targetCharacter);
     ApplyCharacterPostfix(menuCharacter, NormalizeCharacterTable(menuCharacter, tableIdx));
-    OS::Report(CC_LOG_PREFIX "ApplyMenuDriverModelTablePostfixes end menuCharacter=%d\n", menuCharacter);
 }
 
 bool IsRaceSectionActive() {
@@ -567,8 +554,6 @@ class ScopedCharacterPostfixSwap {
    public:
     ScopedCharacterPostfixSwap(u8 playerId, CharacterId character) : entry(nullptr), previousValue(nullptr) {
         this->entry = GetCharacterPostfixEntry(character);
-        OS::Report(CC_LOG_PREFIX "ScopedCharacterPostfixSwap begin player=%u character=%d entry=%p\n",
-                   playerId, character, this->entry);
         if (this->entry == nullptr) return;
 
         this->previousValue = *this->entry;
@@ -585,9 +570,6 @@ class ScopedCharacterPostfixSwap {
         }
 
         const char* postfix = GetCharacterPostfix(character, tableIdx);
-        OS::Report(CC_LOG_PREFIX "ScopedCharacterPostfixSwap table=%u previous=%s postfix=%s\n",
-                   tableIdx, this->previousValue != nullptr ? this->previousValue : "(null)",
-                   postfix != nullptr ? postfix : "(null)");
         if (postfix != nullptr) {
             *this->entry = postfix;
         } else {
@@ -596,8 +578,6 @@ class ScopedCharacterPostfixSwap {
     }
 
     ~ScopedCharacterPostfixSwap() {
-        OS::Report(CC_LOG_PREFIX "ScopedCharacterPostfixSwap end entry=%p restore=%s\n",
-                   this->entry, this->previousValue != nullptr ? this->previousValue : "(null)");
         if (this->entry != nullptr) *this->entry = this->previousValue;
     }
 
@@ -619,9 +599,6 @@ static u8 GetMenuModelPlayerCount() {
 }
 
 static void ResetMenuDriverModelCache() {
-    OS::Report(CC_LOG_PREFIX "ResetMenuDriverModelCache cachedMgr=%p playerCount=%u currentTable=%u currentChar=%d buildingTable=%u buildingChar=%d\n",
-               cachedMenuModelMgr, cachedMenuDriverModelPlayerCount, currentMenuDriverModelTable,
-               currentMenuDriverModelCharacter, buildingMenuDriverModelTable, buildingMenuDriverModelCharacter);
     pendingMenuDriverReinitFrames = 0;
     applyPendingMenuDriverModelReinit = false;
     menuDriverReinitCharSelectWaitAttempts = 0;
@@ -652,16 +629,12 @@ static void ResetMenuDriverModelCache() {
 static void SyncMenuDriverModelCache() {
     MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
     if (menuModelMgr == nullptr) {
-        OS::Report(CC_LOG_PREFIX "SyncMenuDriverModelCache no MenuModelMgr, resetting\n");
         ResetMenuDriverModelCache();
         return;
     }
 
     const bool shouldResetCache = cachedMenuModelMgr != menuModelMgr || cachedMenuDriverModelPlayerCount != menuModelMgr->playerCount;
     if (shouldResetCache) {
-        OS::Report(CC_LOG_PREFIX "SyncMenuDriverModelCache reset cachedMgr=%p newMgr=%p cachedPlayers=%u newPlayers=%u driverModels=%p\n",
-                   cachedMenuModelMgr, menuModelMgr, cachedMenuDriverModelPlayerCount,
-                   menuModelMgr->playerCount, menuModelMgr->driverModels);
         cachedMenuModelMgr = menuModelMgr;
         cachedMenuDriverModelPlayerCount = menuModelMgr->playerCount;
         currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
@@ -673,42 +646,28 @@ static void SyncMenuDriverModelCache() {
 
 static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount) {
     if (driverModelMgr == nullptr) {
-        OS::Report(CC_LOG_PREFIX "IsMenuDriverModelManagerUsable false: mgr=null expectedPlayers=%u\n", playerCount);
         return false;
     }
     if (driverModelMgr->models == nullptr) {
-        OS::Report(CC_LOG_PREFIX "IsMenuDriverModelManagerUsable false: models=null mgr=%p players=%u modelCount=%u expectedPlayers=%u\n",
-                   driverModelMgr, driverModelMgr->playerCount, driverModelMgr->modelCount, playerCount);
         return false;
     }
     if (driverModelMgr->playerCount == 0 || driverModelMgr->playerCount > 4) {
-        OS::Report(CC_LOG_PREFIX "IsMenuDriverModelManagerUsable false: bad playerCount mgr=%p players=%u modelCount=%u expectedPlayers=%u\n",
-                   driverModelMgr, driverModelMgr->playerCount, driverModelMgr->modelCount, playerCount);
         return false;
     }
     if (playerCount != 0 && driverModelMgr->playerCount != playerCount) {
-        OS::Report(CC_LOG_PREFIX "IsMenuDriverModelManagerUsable false: mismatch mgr=%p players=%u expectedPlayers=%u modelCount=%u\n",
-                   driverModelMgr, driverModelMgr->playerCount, playerCount, driverModelMgr->modelCount);
         return false;
     }
     if (driverModelMgr->modelCount != 0x18 + driverModelMgr->playerCount * 2) {
-        OS::Report(CC_LOG_PREFIX "IsMenuDriverModelManagerUsable false: bad modelCount mgr=%p players=%u modelCount=%u expected=%u\n",
-                   driverModelMgr, driverModelMgr->playerCount, driverModelMgr->modelCount,
-                   0x18 + driverModelMgr->playerCount * 2);
         return false;
     }
     return true;
 }
 
 static void UnlockHeap(EGG::Heap* heap) {
-    OS::Report(CC_LOG_PREFIX "UnlockHeap heap=%p\n", heap);
     if (heap != nullptr) heap->dameFlag &= ~0x1;
 }
 
 static void UnlockMenuDriverModelHeaps(GameScene& scene, MenuModelMgr& menuModelMgr) {
-    OS::Report(CC_LOG_PREFIX "UnlockMenuDriverModelHeaps scene=%p menuModelMgr=%p parent=%p other=%p main=%p debug=%p modelHeap=%p driverModels=%p\n",
-               &scene, &menuModelMgr, scene.parentHeap, scene.otherMEMHeap, scene.mainMEMHeap, scene.debugHeap,
-               menuModelMgr.heap, menuModelMgr.driverModels);
     UnlockHeap(scene.parentHeap);
     UnlockHeap(scene.otherMEMHeap);
     UnlockHeap(scene.mainMEMHeap);
@@ -738,9 +697,6 @@ static void DestroyMenuModelManager() {
 }
 
 static void ClearMenuDriverModels(MenuDriverModelMgr& driverModelMgr) {
-    OS::Report(CC_LOG_PREFIX "ClearMenuDriverModels mgr=%p players=%u models=%p bangs=%p miiHeads=%p\n",
-               &driverModelMgr, driverModelMgr.playerCount, driverModelMgr.models,
-               driverModelMgr.bangs, driverModelMgr.miiHeads);
     if (driverModelMgr.bangs != nullptr) {
         driverModelMgr.bangs->ToggleVisible(false);
     }
@@ -752,13 +708,6 @@ static void ClearMenuDriverModels(MenuDriverModelMgr& driverModelMgr) {
         if (miiHeads != nullptr) {
             miiHeadModel = miiHeads[playerId];
         }
-        OS::Report(CC_LOG_PREFIX "ClearMenuDriverModels player=%u playerModel=%p model=%p charSel=%p onKart=%p miiHead=%p miiHeadScn=%p visible=%d state=%d\n",
-                   playerId, playerModel, playerModel != nullptr ? playerModel->model : nullptr,
-                   playerModel != nullptr ? playerModel->charSelTransformator : nullptr,
-                   playerModel != nullptr ? playerModel->onKartTransformator : nullptr,
-                   miiHeadModel, miiHeadModel != nullptr ? miiHeadModel->curScnMdlEx : nullptr,
-                   driverModelMgr.players[playerId].isVisible,
-                   playerModel != nullptr ? playerModel->state : -1);
         driverModelMgr.players[playerId].isVisible = false;
         if (playerModel != nullptr && playerModel->model != nullptr) {
             playerModel->ToggleVisible(false);
@@ -813,19 +762,13 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
             createdMenuDriverModelHeap = EGG::ExpHeap::Create(static_cast<int>(heapSize), parentModelHeap, 0);
             if (createdMenuDriverModelHeap != nullptr) modelHeap = createdMenuDriverModelHeap;
         }
-        OS::Report(CC_LOG_PREFIX "CreateMenuDriverModelManager childHeap parent=%p allocatable=0x%x requested=0x%x heap=%p\n",
-                   parentModelHeap, allocatableSize, heapSize, createdMenuDriverModelHeap);
     }
-    OS::Report(CC_LOG_PREFIX "CreateMenuDriverModelManager begin players=%u scene=%p sceneId=%d modelHeap=%p struct0=%p struct1=%p sceneMem1=%p sceneMem2=%p\n",
-               playerCount, currentScene, currentScene != nullptr ? currentScene->id : -1, modelHeap,
-               originalStructMem1Heap, originalStructMem2Heap, originalSceneMem1Heap, originalSceneMem2Heap);
 
     // The vanilla constructor hardcodes structsHeaps[0] for model/scn allocations.
     if (currentScene != nullptr && modelHeap != nullptr) {
         previousHeap = modelHeap->BecomeCurrentHeap();
         currentScene->structsHeaps.heaps[0] = modelHeap;
         currentScene->structsHeaps.heaps[1] = modelHeap;
-        OS::Report(CC_LOG_PREFIX "CreateMenuDriverModelManager redirected structs heap previousHeap=%p\n", previousHeap);
     }
 
     // Mii body/head setup uses the inherited scene heap group directly. Redirect it as well
@@ -838,8 +781,6 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
     EGG::Heap* allocationHeap = modelHeap;
 
     void* memory = allocationHeap != nullptr ? operator new(sizeof(MenuDriverModelMgr), allocationHeap) : operator new(sizeof(MenuDriverModelMgr));
-    OS::Report(CC_LOG_PREFIX "CreateMenuDriverModelManager allocated memory=%p allocationHeap=%p size=%u\n",
-               memory, allocationHeap, sizeof(MenuDriverModelMgr));
     if (memory == nullptr) {
         if (currentScene != nullptr && modelHeap != nullptr) {
             currentScene->expHeapGroup.heaps[0] = originalSceneMem1Heap;
@@ -856,21 +797,6 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
 
     const CreateMenuDriverModelManagerFn original = reinterpret_cast<CreateMenuDriverModelManagerFn>(kmRuntimeAddr(0x80830180));
     MenuDriverModelMgr* const manager = original(reinterpret_cast<MenuDriverModelMgr*>(memory), playerCount);
-    OS::Report(CC_LOG_PREFIX "CreateMenuDriverModelManager original returned manager=%p models=%p players=%u modelCount=%u\n",
-               manager, manager != nullptr ? manager->models : nullptr,
-               manager != nullptr ? manager->playerCount : 0,
-               manager != nullptr ? manager->modelCount : 0);
-    if (manager != nullptr) {
-        for (u8 playerId = 0; playerId < manager->playerCount && playerId < 4; ++playerId) {
-            MenuDriverModel* const playerModel = manager->players[playerId].playerModel;
-            OS::Report(CC_LOG_PREFIX "CreateMenuDriverModelManager player=%u playerModel=%p model=%p charSel=%p onKart=%p visible=%d state=%d\n",
-                       playerId, playerModel, playerModel != nullptr ? playerModel->model : nullptr,
-                       playerModel != nullptr ? playerModel->charSelTransformator : nullptr,
-                       playerModel != nullptr ? playerModel->onKartTransformator : nullptr,
-                       manager->players[playerId].isVisible,
-                       playerModel != nullptr ? playerModel->state : -1);
-        }
-    }
 
     if (currentScene != nullptr && modelHeap != nullptr) {
         currentScene->expHeapGroup.heaps[0] = originalSceneMem1Heap;
@@ -951,19 +877,12 @@ static void ResetVotingVRMenuDriverState() {
 static bool SyncVotingVRMenuDriverState() {
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || !IsVotingSection()) {
-        if (votingVRMenuDriverSection != nullptr || votingVRMenuDriverSawActive || votingVRMenuDriverExited ||
-            votingVRMenuDriverReinitialized || votingVRModelRendererPrimed) {
-            OS::Report(CC_LOG_PREFIX "SyncVotingVRMenuDriverState leaving voting state sectionMgr=%p curSection=%p\n",
-                       sectionMgr, sectionMgr != nullptr ? sectionMgr->curSection : nullptr);
-        }
         ResetVotingVRMenuDriverState();
         return false;
     }
 
     const Section* const section = sectionMgr->curSection;
     if (votingVRMenuDriverSection != section) {
-        OS::Report(CC_LOG_PREFIX "SyncVotingVRMenuDriverState new voting section old=%p new=%p sectionId=%d\n",
-                   votingVRMenuDriverSection, section, section->sectionId);
         votingVRMenuDriverSection = section;
         votingVRMenuDriverSawActive = false;
         votingVRMenuDriverExited = false;
@@ -1059,8 +978,6 @@ static u32 CalculateRawMenuDriverBRRESHeapSize(u8 tableIdx, CharacterId characte
 static EGG::ExpHeap* GetRawMenuDriverBRRESHeap(u8 tableIdx, CharacterId character) {
     if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || character < 0 || character >= CUSTOM_CHARACTER_COUNT) return nullptr;
     if (rawMenuDriverBRRESHeaps[tableIdx][character] != nullptr) {
-        OS::Report(CC_LOG_PREFIX "GetRawMenuDriverBRRESHeap reuse table=%u character=%d heap=%p\n",
-                   tableIdx, character, rawMenuDriverBRRESHeaps[tableIdx][character]);
         return rawMenuDriverBRRESHeaps[tableIdx][character];
     }
 
@@ -1069,13 +986,9 @@ static EGG::ExpHeap* GetRawMenuDriverBRRESHeap(u8 tableIdx, CharacterId characte
 
     const u32 heapSize = CalculateRawMenuDriverBRRESHeapSize(tableIdx, character);
     EGG::Heap* const parentHeap = GetRawMenuDriverBRRESParentHeap(*currentScene, heapSize);
-    OS::Report(CC_LOG_PREFIX "GetRawMenuDriverBRRESHeap create table=%u character=%d scene=%p sceneId=%d heapSize=0x%x parentHeap=%p\n",
-               tableIdx, character, currentScene, currentScene->id, heapSize, parentHeap);
     if (parentHeap == nullptr) return nullptr;
 
     rawMenuDriverBRRESHeaps[tableIdx][character] = EGG::ExpHeap::Create(static_cast<int>(heapSize), parentHeap, 0);
-    OS::Report(CC_LOG_PREFIX "GetRawMenuDriverBRRESHeap created heap=%p\n",
-               rawMenuDriverBRRESHeaps[tableIdx][character]);
     return rawMenuDriverBRRESHeaps[tableIdx][character];
 }
 
@@ -1094,8 +1007,6 @@ static EGG::Heap* GetRawMenuDriverBRRESParentHeap(GameScene& scene, u32 heapSize
 
         UnlockHeap(heap);
         const u32 allocatableSize = heap->getAllocatableSize(0x20);
-        OS::Report(CC_LOG_PREFIX "GetRawMenuDriverBRRESParentHeap candidate=%u heap=%p allocatable=0x%x required=0x%x reserve=0x%x\n",
-                   i, heap, allocatableSize, heapSize, PARENT_HEAP_RESERVE);
         if (allocatableSize >= heapSize + PARENT_HEAP_RESERVE) return heap;
         if (allocatableSize > bestSize) {
             bestHeap = heap;
@@ -1108,14 +1019,8 @@ static EGG::Heap* GetRawMenuDriverBRRESParentHeap(GameScene& scene, u32 heapSize
 }
 
 static void ClearRawMenuDriverBRRESCachePointers() {
-    OS::Report(CC_LOG_PREFIX "ClearRawMenuDriverBRRESCachePointers\n");
     for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
         for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
-            if (rawMenuDriverBRRESHeaps[tableIdx][character] != nullptr) {
-                OS::Report(CC_LOG_PREFIX "ClearRawMenuDriverBRRESCachePointers clear table=%u character=%u heap=%p file=%p\n",
-                           tableIdx, character, rawMenuDriverBRRESHeaps[tableIdx][character],
-                           rawMenuDriverBRRESFiles[tableIdx][character]);
-            }
             rawMenuDriverBRRESHeaps[tableIdx][character] = nullptr;
             rawMenuDriverBRRESFiles[tableIdx][character] = nullptr;
             rawMenuDriverBRRESLoadFailed[tableIdx][character] = false;
@@ -1125,7 +1030,6 @@ static void ClearRawMenuDriverBRRESCachePointers() {
 
 static void DestroyMenuDriverModelHeap(EGG::ExpHeap*& heap) {
     if (heap == nullptr) return;
-    OS::Report(CC_LOG_PREFIX "DestroyMenuDriverModelHeap heap=%p\n", heap);
     UnlockHeap(heap);
     heap->destroy();
     heap = nullptr;
@@ -1141,16 +1045,12 @@ static void BindRawMenuDriverBRRES(nw4r::g3d::ResFile& resFile, const char* name
 static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character) {
     const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(character);
     const u8 tableIdx = GetRawMenuDriverBRRESTable(menuCharacter);
-    OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES begin holder=%p character=%d menuCharacter=%d table=%u buildingTable=%u buildingCharacter=%d\n",
-               holder, character, menuCharacter, tableIdx, buildingMenuDriverModelTable, buildingMenuDriverModelCharacter);
     if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || menuCharacter < 0 || menuCharacter >= CUSTOM_CHARACTER_COUNT) {
-        OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES skip invalid table/character\n");
         return false;
-    }   
+    }
 
     char path[0x60];
     if (!GetRawMenuDriverBRRESPath(menuCharacter, tableIdx, path, sizeof(path))) {
-        OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES skip path failed table=%u menuCharacter=%d\n", tableIdx, menuCharacter);
         return false;
     }
 
@@ -1158,57 +1058,42 @@ static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character) {
     if (rawFile == nullptr) {
         EGG::ExpHeap* const heap = GetRawMenuDriverBRRESHeap(tableIdx, menuCharacter);
         if (heap == nullptr) {
-            OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES heap missing path=%s table=%u menuCharacter=%d\n",
-                       path, tableIdx, menuCharacter);
             rawMenuDriverBRRESLoadFailed[tableIdx][menuCharacter] = true;
             return false;
         }
 
         u32 fileSize = 0;
-        OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES loading path=%s heap=%p\n", path, heap);
         rawFile = EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &fileSize);
         if (rawFile == nullptr || fileSize == 0) {
-            OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES load failed rawFile=%p fileSize=0x%x path=%s\n",
-                       rawFile, fileSize, path);
             rawFile = nullptr;
             rawMenuDriverBRRESLoadFailed[tableIdx][menuCharacter] = true;
             return false;
         }
         rawMenuDriverBRRESLoadFailed[tableIdx][menuCharacter] = false;
-        OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES loaded rawFile=%p fileSize=0x%x path=%s\n",
-                   rawFile, fileSize, path);
     } else {
-        OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES reuse rawFile=%p table=%u menuCharacter=%d path=%s\n",
-                   rawFile, tableIdx, menuCharacter, path);
         rawMenuDriverBRRESLoadFailed[tableIdx][menuCharacter] = false;
     }
 
     if ((reinterpret_cast<u32>(rawFile) & 0x1f) != 0) {
-        OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES unaligned rawFile=%p path=%s\n", rawFile, path);
         rawMenuDriverBRRESLoadFailed[tableIdx][menuCharacter] = true;
         return false;
     }
 
     nw4r::g3d::ResFile& resFile = *reinterpret_cast<nw4r::g3d::ResFile*>(reinterpret_cast<u8*>(holder) + 4);
     resFile.data = reinterpret_cast<nw4r::g3d::ResFileData*>(rawFile);
-    OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES binding resFile=%p data=%p path=%s\n", &resFile, resFile.data, path);
     BindRawMenuDriverBRRES(resFile, path);
-    OS::Report(CC_LOG_PREFIX "LoadRawMenuDriverBRRES success holder=%p character=%d table=%u\n", holder, character, tableIdx);
     return true;
 }
 
 kmRuntimeUse(0x8081e358);
 static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
-    OS::Report(CC_LOG_PREFIX "LoadMenuDriverBRRESHook holder=%p character=%d\n", holder, character);
     if (LoadRawMenuDriverBRRES(holder, character)) {
-        OS::Report(CC_LOG_PREFIX "LoadMenuDriverBRRESHook used raw holder=%p character=%d\n", holder, character);
         return 1;
     }
 
     typedef u32 (*LoadMenuDriverBRRESFn)(void*, CharacterId);
     const LoadMenuDriverBRRESFn original = reinterpret_cast<LoadMenuDriverBRRESFn>(kmRuntimeAddr(0x8081e358));
     const u32 result = original(holder, character);
-    OS::Report(CC_LOG_PREFIX "LoadMenuDriverBRRESHook original result=%u holder=%p character=%d\n", result, holder, character);
     return result;
 }
 kmCall(0x80830368, LoadMenuDriverBRRESHook);
@@ -1220,24 +1105,18 @@ static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriv
     const GameScene* const currentScene = GameScene::GetCurrent();
     if (currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE || currentScene->id == SCENE_ID_MENU) &&
         buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
-        OS::Report(CC_LOG_PREFIX "CreateMenuMiiHeadModelHook skip sceneId=%d buildingTable=%u memory=%p driverModel=%p\n",
-                   currentScene->id, buildingMenuDriverModelTable, memory, driverModel);
         return nullptr;
     }
 
     typedef MiiHeadsModel* (*CreateMiiHeadModelFn)(void*, u32, MiiDriverModel*, u32, Mii*, u32);
     const CreateMiiHeadModelFn original = reinterpret_cast<CreateMiiHeadModelFn>(kmRuntimeAddr(0x807dbd80));
     MiiHeadsModel* const result = original(memory, type, driverModel, miiId, mii, r8);
-    OS::Report(CC_LOG_PREFIX "CreateMenuMiiHeadModelHook original result=%p memory=%p type=%u driverModel=%p miiId=%u\n",
-               result, memory, type, driverModel, miiId);
     return result;
 }
 kmCall(0x80830540, CreateMenuMiiHeadModelHook);
 
 kmRuntimeUse(0x80830d00);
 static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, CharacterId character) {
-    OS::Report(CC_LOG_PREFIX "RequestDriverModelHook menuModelMgr=%p playerId=%u character=%d\n",
-               menuModelMgr, playerId, character);
     if (menuModelMgr == nullptr || !menuModelMgr->isActive) return;
 
     MenuDriverModelMgr* const driverModels = menuModelMgr->driverModels;
@@ -1246,8 +1125,6 @@ static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, Char
     typedef void (*SetPlayerCharacterFn)(MenuDriverModelMgr*, u8, CharacterId);
     const SetPlayerCharacterFn original = reinterpret_cast<SetPlayerCharacterFn>(kmRuntimeAddr(0x80830d00));
     original(driverModels, playerId, character);
-    OS::Report(CC_LOG_PREFIX "RequestDriverModelHook complete driverModels=%p playerModel=%p\n",
-               driverModels, driverModels->players[playerId].playerModel);
 }
 kmBranch(0x8059e568, RequestDriverModelHook);
 
@@ -1264,16 +1141,11 @@ void OnVotingVRPageExit() {
     }
 
     if (votingVRMenuDriverExited) return;
-    OS::Report(CC_LOG_PREFIX "OnVotingVRPageExit section=%p sawActive=%d reinitFrames=%u\n",
-               votingVRMenuDriverSection, votingVRMenuDriverSawActive, votingVRMenuDriverReinitFrames);
     votingVRMenuDriverExited = true;
     votingVRMenuDriverReinitFrames = 1;
 }
 
 static void ReinitializeVotingVRMenuDriverModels() {
-    OS::Report(CC_LOG_PREFIX "ReinitializeVotingVRMenuDriverModels begin section=%p reinitialized=%d exited=%d sawActive=%d\n",
-               votingVRMenuDriverSection, votingVRMenuDriverReinitialized, votingVRMenuDriverExited,
-               votingVRMenuDriverSawActive);
     if (!SyncVotingVRMenuDriverState() || votingVRMenuDriverReinitialized) return;
     if (!ShouldHandleVotingVRMenuDriverModels()) {
         votingVRMenuDriverReinitialized = true;
@@ -1284,12 +1156,10 @@ static void ReinitializeVotingVRMenuDriverModels() {
     currentMenuDriverModelCharacter = CHARACTER_NONE;
     currentMenuDriverModelHud0Character = CHARACTER_NONE;
     if (ReinitializeMenuDriverModels()) {
-        OS::Report(CC_LOG_PREFIX "ReinitializeVotingVRMenuDriverModels success\n");
         votingVRMenuDriverReinitialized = true;
         PrimeVotingModelRenderer();
         votingVRMenuDriverStateRefreshFrames = 20;
     } else {
-        OS::Report(CC_LOG_PREFIX "ReinitializeVotingVRMenuDriverModels retry\n");
         votingVRMenuDriverReinitFrames = 1;
     }
 }
@@ -1328,16 +1198,12 @@ static void ProcessVotingVRMenuDriverStateRefresh() {
 static bool RefreshVotingVRMenuDriverStates() {
     MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    OS::Report(CC_LOG_PREFIX "RefreshVotingVRMenuDriverStates begin menuModelMgr=%p sectionMgr=%p primed=%d\n",
-               menuModelMgr, sectionMgr, votingVRModelRendererPrimed);
     if (menuModelMgr == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return false;
 
     if (!votingVRModelRendererPrimed && !PrimeVotingModelRenderer()) return false;
 
     MenuDriverModelMgr* const driverModels = menuModelMgr->driverModels;
     MenuKartModelMgr* const kartModels = menuModelMgr->kartModels;
-    OS::Report(CC_LOG_PREFIX "RefreshVotingVRMenuDriverStates models driver=%p kart=%p playerCount=%u\n",
-               driverModels, kartModels, menuModelMgr->playerCount);
     if (!IsMenuDriverModelManagerUsable(driverModels, menuModelMgr->playerCount) || kartModels == nullptr) return false;
 
     bool allStatesReady = true;
@@ -1347,8 +1213,6 @@ static bool RefreshVotingVRMenuDriverStates() {
 
         MenuDriverModel* const playerModel = driverModels->players[hudSlotId].playerModel;
         if (playerModel == nullptr || playerModel->model == nullptr) {
-            OS::Report(CC_LOG_PREFIX "RefreshVotingVRMenuDriverStates waiting player=%u playerModel=%p model=%p\n",
-                       hudSlotId, playerModel, playerModel != nullptr ? playerModel->model : nullptr);
             allStatesReady = false;
             continue;
         }
@@ -1375,20 +1239,15 @@ static bool RefreshVotingVRMenuDriverStates() {
 
 static bool PrimeVotingModelRenderer() {
     SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    OS::Report(CC_LOG_PREFIX "PrimeVotingModelRenderer begin sectionMgr=%p\n", sectionMgr);
     if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || sectionMgr->sectionParams == nullptr) return false;
 
     Pages::ModelRenderer* const modelRenderer = sectionMgr->curSection->Get<Pages::ModelRenderer>();
-    OS::Report(CC_LOG_PREFIX "PrimeVotingModelRenderer modelRenderer=%p section=%p localPlayers=%u\n",
-               modelRenderer, sectionMgr->curSection, sectionMgr->sectionParams->localPlayerCount);
     if (modelRenderer == nullptr) return false;
 
     const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
         const CharacterId character = sectionMgr->sectionParams->characters[hudSlotId];
         const KartId kart = sectionMgr->sectionParams->karts[hudSlotId];
-        OS::Report(CC_LOG_PREFIX "PrimeVotingModelRenderer request hud=%u character=%d kart=%d\n",
-                   hudSlotId, character, kart);
         modelRenderer->RequestCharacterModel(hudSlotId, character);
         modelRenderer->LoadKartModelsByCharacter(hudSlotId, character);
         Pages::ModelRenderer::PrepareParams(hudSlotId);
@@ -1411,15 +1270,10 @@ static bool ReinitializeMenuDriverModels() {
     MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
     GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels begin menuModelMgr=%p scene=%p sectionMgr=%p\n",
-               menuModelMgr, currentScene, sectionMgr);
     if (menuModelMgr == nullptr || currentScene == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) {
-        OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels abort missing context menuModelMgr=%p scene=%p sectionMgr=%p sectionParams=%p\n",
-                   menuModelMgr, currentScene, sectionMgr, sectionMgr != nullptr ? sectionMgr->sectionParams : nullptr);
         return false;
     }
     if (menuModelMgr->heap == nullptr) {
-        OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels abort missing menuModelMgr heap\n");
         return false;
     }
 
@@ -1427,7 +1281,6 @@ static bool ReinitializeMenuDriverModels() {
 
     const u8 playerCount = GetMenuModelPlayerCount();
     if (playerCount == 0) {
-        OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels abort playerCount=0\n");
         return false;
     }
 
@@ -1437,13 +1290,9 @@ static bool ReinitializeMenuDriverModels() {
             hoveredCharacterByHud[i] = sectionMgr->sectionParams->characters[i];
         }
         syncHoveredFromSectionForMenuReinit = false;
-        OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels synced hover from sectionParams localPlayers=%u\n", lc);
     }
 
     MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
-    OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels oldDriverModels=%p menuPlayers=%u driverPlayers=%u sceneId=%d sectionId=%d\n",
-               oldDriverModels, playerCount, oldDriverModels != nullptr ? oldDriverModels->playerCount : 0,
-               currentScene->id, sectionMgr->curSection != nullptr ? sectionMgr->curSection->sectionId : -1);
     bool playerWasVisible[4] = {false, false, false, false};
     MenuDriverModel::State playerState[4] = {
         MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
@@ -1471,13 +1320,9 @@ static bool ReinitializeMenuDriverModels() {
     const u8 targetTable = GetMenuDriverModelTableForCharacter(targetCharacter);
     const bool targetUsesRawBRRES = targetTable != CUSTOM_CHARACTER_TABLE_DEFAULT && targetTable < CUSTOM_CHARACTER_TABLE_COUNT;
     const CharacterId targetCacheCharacter = targetUsesRawBRRES ? GetMenuDriverBRRESCharacter(targetCharacter) : MARIO;
-    OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels target character=%d table=%u usesRaw=%d currentTable=%u currentCharacter=%d\n",
-               targetCharacter, targetTable, targetUsesRawBRRES, currentMenuDriverModelTable,
-               currentMenuDriverModelCharacter);
     if (oldDriverModels != nullptr && targetTable == currentMenuDriverModelTable &&
         targetCharacter == currentMenuDriverModelHud0Character &&
         (!targetUsesRawBRRES || targetCacheCharacter == currentMenuDriverModelCharacter)) {
-        OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels resource unchanged oldDriverModels=%p\n", oldDriverModels);
         return true;
     }
 
@@ -1495,15 +1340,12 @@ static bool ReinitializeMenuDriverModels() {
     buildingMenuDriverModelTable = targetTable;
     buildingMenuDriverModelCharacter = targetCharacter;
     ApplyMenuDriverModelTablePostfixes(targetCharacter, targetTable);
-    OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels creating new driver models group=3 buildingTable=%u buildingCharacter=%d cacheCharacter=%d\n",
-               buildingMenuDriverModelTable, buildingMenuDriverModelCharacter, targetCacheCharacter);
     newDriverModels = CreateMenuDriverModelManager(playerCount);
     buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
     buildingMenuDriverModelCharacter = CHARACTER_NONE;
     ApplyCharacterPostfixes();
     currentScene->structsHeaps.SetHeapsGroupId(0);
     if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
-        OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels new driver models unusable new=%p\n", newDriverModels);
         currentScene->structsHeaps.SetHeapsGroupId(6);
         return false;
     }
@@ -1511,8 +1353,6 @@ static bool ReinitializeMenuDriverModels() {
     menuModelMgr->driverModels = newDriverModels;
     activeMenuDriverModelHeap = createdMenuDriverModelHeap;
     createdMenuDriverModelHeap = nullptr;
-    OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels swapped driverModels old=%p new=%p\n",
-               oldDriverModels, newDriverModels);
     StartMenuDriverModelManager(*newDriverModels);
     currentScene->structsHeaps.SetHeapsGroupId(6);
 
@@ -1523,9 +1363,6 @@ static bool ReinitializeMenuDriverModels() {
 
     for (u8 playerId = 0; playerId < playerCount && playerId < 4; ++playerId) {
         MenuDriverModel* const playerModel = newDriverModels->players[playerId].playerModel;
-        OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels restore player=%u playerModel=%p model=%p state=%d visible=%d\n",
-                   playerId, playerModel, playerModel != nullptr ? playerModel->model : nullptr,
-                   playerState[playerId], playerWasVisible[playerId]);
         if (playerModel != nullptr && playerModel->model != nullptr) {
             if (playerState[playerId] != MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT) {
                 playerModel->id = sectionMgr->sectionParams->karts[playerId];
@@ -1541,18 +1378,14 @@ static bool ReinitializeMenuDriverModels() {
     currentMenuDriverModelTable = targetTable;
     currentMenuDriverModelCharacter = targetUsesRawBRRES ? targetCacheCharacter : CHARACTER_NONE;
     currentMenuDriverModelHud0Character = targetCharacter;
-    OS::Report(CC_LOG_PREFIX "ReinitializeMenuDriverModels success table=%u character=%d\n",
-               currentMenuDriverModelTable, currentMenuDriverModelCharacter);
     return true;
 }
 
 static void ProcessPendingMenuDriverModelReinit() {
     if (pendingMenuDriverReinitFrames == 0) return;
-    OS::Report(CC_LOG_PREFIX "ProcessPendingMenuDriverModelReinit frames=%u\n", pendingMenuDriverReinitFrames);
     if (--pendingMenuDriverReinitFrames != 0) return;
     if (!IsCharacterSelectPageActive()) {
         if (menuDriverReinitCharSelectWaitAttempts >= 120) {
-            OS::Report(CC_LOG_PREFIX "ProcessPendingMenuDriverModelReinit gave up waiting for char select\n");
             menuDriverReinitCharSelectWaitAttempts = 0;
             return;
         }
@@ -1580,13 +1413,9 @@ static void ApplyDeferredMenuDriverReinitsAtFrameStart() {
 
 static void RefreshCharacterSelectModels() {
     SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    OS::Report(CC_LOG_PREFIX "RefreshCharacterSelectModels sectionMgr=%p\n", sectionMgr);
     if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || sectionMgr->curSection == nullptr) return;
 
     Pages::CharacterSelect* const characterSelect = sectionMgr->curSection->Get<Pages::CharacterSelect>();
-    OS::Report(CC_LOG_PREFIX "RefreshCharacterSelectModels characterSelect=%p models=%p localPlayers=%u\n",
-               characterSelect, characterSelect != nullptr ? characterSelect->models : nullptr,
-               sectionMgr->sectionParams->localPlayerCount);
     if (characterSelect == nullptr || characterSelect->models == nullptr) return;
 
     const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
@@ -1710,11 +1539,8 @@ kmRuntimeUse(0x80540e3c);
 static ArchivesHolder* LoadKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type, EGG::Heap* decompressedHeap, EGG::Heap* archiveHeap) {
     typedef ArchivesHolder* (*LoadKartArchiveFn)(ArchiveMgr*, u8, KartId, CharacterId, u32, u32, EGG::Heap*, EGG::Heap*);
     const LoadKartArchiveFn original = reinterpret_cast<LoadKartArchiveFn>(kmRuntimeAddr(0x80540e3c));
-    OS::Report(CC_LOG_PREFIX "LoadKartArchiveHook player=%u kart=%d character=%d table=%u decompressedHeap=%p archiveHeap=%p\n",
-               playerId, kart, character, GetRaceCharacterTable(playerId, character), decompressedHeap, archiveHeap);
     ScopedCharacterPostfixSwap swap(playerId, character);
     ArchivesHolder* const holder = original(archiveMgr, playerId, kart, character, color, type, decompressedHeap, archiveHeap);
-    OS::Report(CC_LOG_PREFIX "LoadKartArchiveHook result=%p player=%u character=%d\n", holder, playerId, character);
     return holder;
 }
 kmCall(0x805540f4, LoadKartArchiveHook);
@@ -1723,11 +1549,8 @@ kmRuntimeUse(0x80540f90);
 static ArchivesHolder* LoadKartArchiveHolder2Hook(ArchiveMgr* archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type, EGG::Heap* decompressedHeap, EGG::Heap* archiveHeap) {
     typedef ArchivesHolder* (*LoadKartArchiveHolder2Fn)(ArchiveMgr*, u8, KartId, CharacterId, u32, u32, EGG::Heap*, EGG::Heap*);
     const LoadKartArchiveHolder2Fn original = reinterpret_cast<LoadKartArchiveHolder2Fn>(kmRuntimeAddr(0x80540f90));
-    OS::Report(CC_LOG_PREFIX "LoadKartArchiveHolder2Hook player=%u kart=%d character=%d table=%u decompressedHeap=%p archiveHeap=%p\n",
-               playerId, kart, character, GetRaceCharacterTable(playerId, character), decompressedHeap, archiveHeap);
     ScopedCharacterPostfixSwap swap(playerId, character);
     ArchivesHolder* const holder = original(archiveMgr, playerId, kart, character, color, type, decompressedHeap, archiveHeap);
-    OS::Report(CC_LOG_PREFIX "LoadKartArchiveHolder2Hook result=%p player=%u character=%d\n", holder, playerId, character);
     return holder;
 }
 kmCall(0x80554198, LoadKartArchiveHolder2Hook);
@@ -1748,19 +1571,13 @@ static const char* GetMenuDriverBRRESNameHook(u32 character) {
     if (tableIdx < CUSTOM_CHARACTER_TABLE_COUNT && characterId >= 0 && characterId < CUSTOM_CHARACTER_COUNT &&
         rawMenuDriverBRRESLoadFailed[tableIdx][characterId]) {
         const char* const name = original(character);
-        OS::Report(CC_LOG_PREFIX "GetMenuDriverBRRESNameHook raw failed fallback character=%u table=%u custom=%s original=%s\n",
-                   character, tableIdx, driverName != nullptr ? driverName : "(null)", name != nullptr ? name : "(null)");
         return name;
     }
     if (driverName != nullptr) {
-        OS::Report(CC_LOG_PREFIX "GetMenuDriverBRRESNameHook mapped character=%u table=%u name=%s buildingTable=%u\n",
-                   character, tableIdx, driverName, buildingMenuDriverModelTable);
         return driverName;
     }
 
     const char* const name = original(character);
-    OS::Report(CC_LOG_PREFIX "GetMenuDriverBRRESNameHook original character=%u table=%u name=%s\n",
-               character, tableIdx, name != nullptr ? name : "(null)");
     return name;
 }
 kmCall(0x8081e4a0, GetMenuDriverBRRESNameHook);
@@ -1785,8 +1602,6 @@ static SectionLoadHook ResetCustomCharacterMenuStateHook(ResetCustomCharacterMen
 
 kmRuntimeUse(0x8083e5f4);
 static void CharacterSelectHoverHook(Pages::CharacterSelect* page, CtrlMenuCharacterSelect::ButtonDriver* button, u32 buttonId, u8 hudSlotId) {
-    OS::Report(CC_LOG_PREFIX "CharacterSelectHoverHook page=%p button=%p buttonId=%u hud=%u active=%d\n",
-               page, button, buttonId, hudSlotId, IsCharacterSelectPageActive());
     if (hudSlotId < 4) {
         hoveredCharacterByHud[hudSlotId] = static_cast<CharacterId>(buttonId);
     }
@@ -1965,16 +1780,12 @@ static bool ShouldProcessCustomCharacterInput() {
     if (isNextHeld) ConsumeCustomCharacterToggleInput(*controllerHolder, nextButton, nextAction);
 
     if ((newToggleButtons & previousButton) != 0) {
-        OS::Report(CC_LOG_PREFIX "ShouldProcessCustomCharacterInput previous previewCharacter=%d selectedTable=%u\n",
-                   GetPreviewCharacterForHud(0), GetSelectedCharacterTable(GetPreviewCharacterForHud(0)));
         if (CycleCustomCharacterTable(GetPreviewCharacterForHud(0), -1)) {
             Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
             return true;
         }
     }
     if ((newToggleButtons & nextButton) != 0) {
-        OS::Report(CC_LOG_PREFIX "ShouldProcessCustomCharacterInput next previewCharacter=%d selectedTable=%u\n",
-                   GetPreviewCharacterForHud(0), GetSelectedCharacterTable(GetPreviewCharacterForHud(0)));
         if (CycleCustomCharacterTable(GetPreviewCharacterForHud(0), 1)) {
             Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
             return true;
