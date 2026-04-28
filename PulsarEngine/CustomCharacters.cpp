@@ -266,6 +266,8 @@ static void SyncMenuDriverModelCache();
 static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount);
 static u8 GetMenuDriverModelTableForCharacter(CharacterId character);
 static CharacterId GetMenuDriverBRRESCharacter(CharacterId character);
+static bool IsMiiCharacter(CharacterId character);
+static bool EnsureMenuMiiHeadModel(MenuDriverModelMgr& driverModelMgr, u8 playerId);
 static EGG::Heap* GetRawMenuDriverBRRESParentHeap(GameScene& scene, u32 heapSize);
 static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character);
 static void RefreshCharacterSelectModels();
@@ -421,6 +423,10 @@ static const char* GetDriverBRRESName(CharacterId character, u8 tableIdx) {
     if (assets == nullptr) return nullptr;
     if (assets->defaultDriverBrresName != nullptr) return assets->defaultDriverBrresName;
     return assets->defaultPostfix;
+}
+
+static bool IsMiiCharacter(CharacterId character) {
+    return character >= MII_S_A_MALE && character <= MII_L_C_FEMALE;
 }
 
 static void EnsureActiveCustomCharacterTable() {
@@ -1134,6 +1140,28 @@ static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriv
 }
 kmCall(0x80830540, CreateMenuMiiHeadModelHook);
 
+static bool EnsureMenuMiiHeadModel(MenuDriverModelMgr& driverModelMgr, u8 playerId) {
+    if (playerId >= driverModelMgr.playerCount) return false;
+
+    MiiHeadsModel** const miiHeads = reinterpret_cast<MiiHeadsModel**>(driverModelMgr.miiHeads);
+    Mii** const miis = reinterpret_cast<Mii**>(driverModelMgr.miis);
+    if (miiHeads == nullptr || miis == nullptr || miiHeads[playerId] != nullptr || miis[playerId] == nullptr) return false;
+
+    MenuDriverModel* const playerModel = driverModelMgr.players[playerId].playerModel;
+    if (playerModel == nullptr || playerModel->model == nullptr) return false;
+
+    const CharacterId miiId = driverModelMgr.players[playerId].id;
+    if (!IsMiiCharacter(miiId)) return false;
+
+    void* const memory = activeMenuDriverModelHeap != nullptr ? operator new(sizeof(MiiHeadsModel), activeMenuDriverModelHeap) : operator new(sizeof(MiiHeadsModel));
+    if (memory == nullptr) return false;
+
+    typedef MiiHeadsModel* (*CreateMiiHeadModelFn)(void*, u32, MiiDriverModel*, u32, Mii*, u32);
+    const CreateMiiHeadModelFn original = reinterpret_cast<CreateMiiHeadModelFn>(kmRuntimeAddr(0x807dbd80));
+    miiHeads[playerId] = original(memory, 5, reinterpret_cast<MiiDriverModel*>(playerModel->model), miiId - MII_S_A_MALE, miis[playerId], 0);
+    return miiHeads[playerId] != nullptr;
+}
+
 kmRuntimeUse(0x80830d00);
 static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, CharacterId character) {
     if (menuModelMgr == nullptr || !menuModelMgr->isActive) return;
@@ -1144,6 +1172,9 @@ static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, Char
     typedef void (*SetPlayerCharacterFn)(MenuDriverModelMgr*, u8, CharacterId);
     const SetPlayerCharacterFn original = reinterpret_cast<SetPlayerCharacterFn>(kmRuntimeAddr(0x80830d00));
     original(driverModels, playerId, character);
+    if (IsMiiCharacter(character) && EnsureMenuMiiHeadModel(*driverModels, playerId)) {
+        original(driverModels, playerId, character);
+    }
 }
 kmBranch(0x8059e568, RequestDriverModelHook);
 
@@ -1627,26 +1658,6 @@ static void CharacterSelectHoverHook(Pages::CharacterSelect* page, CtrlMenuChara
     typedef void (*CharacterSelectHoverFn)(Pages::CharacterSelect*, CtrlMenuCharacterSelect::ButtonDriver*, u32, u8);
     const CharacterSelectHoverFn original = reinterpret_cast<CharacterSelectHoverFn>(kmRuntimeAddr(0x8083e5f4));
     original(page, button, buttonId, hudSlotId);
-
-    // Full mgr uses P1 preview for BRRES/table; sync on hover via deferred reinit (not inline — Gfx safety).
-    if (!IsCharacterSelectPageActive() || GetLocalPlayerCount() != 1) return;
-
-    if (charSelectHoverExtraSuppressFrames > 0) return;
-
-    MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
-    if (menuModelMgr == nullptr || !menuModelMgr->isActive) return;
-
-    if (!MenuDriverModelResourcesMatchP1Preview()) {
-        // Do not reset the countdown every hover — that can defer reinit indefinitely during roulette.
-        if (pendingMenuDriverReinitFrames != 0 || applyPendingMenuDriverModelReinit) return;
-        pendingMenuDriverReinitFrames = 2;
-        return;
-    }
-
-    MenuDriverModelMgr* const driverModels = menuModelMgr->driverModels;
-    if (!IsMenuDriverModelManagerUsable(driverModels, menuModelMgr->playerCount) || hudSlotId >= driverModels->playerCount) return;
-
-    menuModelMgr->RequestDriverModel(hudSlotId, GetPreviewCharacterForHud(hudSlotId));
 }
 kmCall(0x807e2cf0, CharacterSelectHoverHook);
 kmCall(0x807e304c, CharacterSelectHoverHook);
