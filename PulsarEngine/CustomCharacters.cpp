@@ -25,6 +25,7 @@
 
 namespace Pulsar {
 namespace CustomCharacters {
+
 static u8 onlineCharacterTables[12];
 
 enum CustomCharacterTable {
@@ -206,19 +207,18 @@ static const CharacterTable customCharacterTables[CUSTOM_CHARACTER_TABLE_COUNT] 
     {skin5CharacterOverrides, static_cast<u8>(ARRAY_COUNT(skin5CharacterOverrides))},
 };
 
+// Runtime state is split between three jobs:
+// 1. per-character skin table selection,
+// 2. online sync for remote players,
+// 3. menu-driver preview rebuilds for custom menu BRRES files.
 static const u8 CUSTOM_CHARACTER_COUNT = 0x30;
+static const u8 MAX_LOCAL_PLAYERS = 4;
+static const u8 MAX_ONLINE_PLAYERS = 12;
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_BITS = 3;
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_MASK = (1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS) - 1;
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS;
 static u8 selectedCharacterTableByCharacter[CUSTOM_CHARACTER_COUNT];
 static u8 pendingMenuDriverReinitFrames = 0;
-// VR "Random combo" spins roulette ~60f; rapid HandleSelect + hover was queueing endless driver
-// reinits / RequestDriverModel (see OSReport flood). Suppress hover extras until spin settles.
-static u8 charSelectHoverExtraSuppressFrames = 0;
-static const u8 CHAR_SELECT_HOVER_SUPPRESS_AFTER_RANDOM_SKIN = 80;
-// ~randomDuration (60) + margin so Reinitialize runs after final HandleClick with stable params.
-static const u8 PENDING_MENU_DRIVER_REINIT_AFTER_VR_RANDOM = 70;
-static bool syncHoveredFromSectionForMenuReinit = false;
 static u8 menuDriverReinitCharSelectWaitAttempts = 0;
 // Last P1 preview character the menu driver heap was built for (early-out must not skip char changes on same table).
 static CharacterId currentMenuDriverModelHud0Character = CHARACTER_NONE;
@@ -237,7 +237,8 @@ static u8 currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static u8 buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
 static CharacterId currentMenuDriverModelCharacter = CHARACTER_NONE;
 static CharacterId buildingMenuDriverModelCharacter = CHARACTER_NONE;
-static CharacterId hoveredCharacterByHud[4] = {MARIO, MARIO, MARIO, MARIO};
+// Character-select hover state can briefly diverge from the committed section params.
+static CharacterId hoveredCharacterByHud[MAX_LOCAL_PLAYERS] = {MARIO, MARIO, MARIO, MARIO};
 static const MenuDriverModel::State MENUDRIVERMODEL_STATE_VEHICLE_SELECTED = static_cast<MenuDriverModel::State>(3);
 static const Section* votingVRMenuDriverSection = nullptr;
 static bool votingVRMenuDriverSawActive = false;
@@ -250,39 +251,33 @@ static u16 heldCustomCharacterToggleButtons = 0;
 static_assert(CUSTOM_CHARACTER_TABLE_COUNT <= CUSTOM_CHARACTER_TABLE_PACKET_COUNT, "character table packet encoding cannot fit every table");
 static_assert(CUSTOM_CHARACTER_TABLE_PACKET_BITS * 2 <= 8, "character table packet field is one byte");
 
-static void ApplyCharacterPostfixes();
-void RefreshLocalOnlineCustomCharacterFlags();
-const char* GetDefaultCharacterPostfix(CharacterId character);
-static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx);
-static const char** GetCharacterPostfixEntry(CharacterId character);
-static bool IsCustomCharacterEnabled(CharacterId character);
-static bool IsCharacterSelectPageActive();
-static bool ReinitializeMenuDriverModels();
-static void ProcessPendingMenuDriverModelReinit();
-static void ResetMenuDriverModelCache();
-static void ClearRawMenuDriverBRRESCachePointers();
-static void DestroyMenuDriverModelHeap(EGG::ExpHeap*& heap);
-static void SyncMenuDriverModelCache();
-static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount);
-static u8 GetMenuDriverModelTableForCharacter(CharacterId character);
-static CharacterId GetMenuDriverBRRESCharacter(CharacterId character);
-static bool IsMiiCharacter(CharacterId character);
-static bool EnsureMenuMiiHeadModel(MenuDriverModelMgr& driverModelMgr, u8 playerId);
-static EGG::Heap* GetRawMenuDriverBRRESParentHeap(GameScene& scene, u32 heapSize);
-static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character);
-static void RefreshCharacterSelectModels();
-static CharacterId GetPreviewCharacterForHud(u8 hudSlotId);
-static CharacterId GetSelectedCharacterForHud(u8 hudSlotId);
-static void ResetVotingVRMenuDriverState();
-static bool ShouldHandleVotingVRMenuDriverModels();
-static bool RefreshVotingVRMenuDriverStates();
-static bool IsPageActive(PageId pageId);
-static MenuDriverModel::State GetVotingMenuDriverTargetState(bool isKartVisible);
-static bool PrimeVotingModelRenderer();
-static void SetModelRendererVehicleVisible(Pages::ModelRenderer& modelRenderer, u8 hudSlotId);
-
 kmRuntimeUse(0x808b3a90);
 static const u32 CHARACTER_POSTFIX_TABLE_ADDRESS = kmRuntimeAddr(0x808b3a90);
+
+static u8 ClampLocalPlayerCount(u32 playerCount) {
+    return playerCount > MAX_LOCAL_PLAYERS ? MAX_LOCAL_PLAYERS : static_cast<u8>(playerCount);
+}
+
+static bool IsCharacterIdInRange(CharacterId character) {
+    return character >= 0 && character < CUSTOM_CHARACTER_COUNT;
+}
+
+static u8 GetSectionLocalPlayerCount(const SectionMgr& sectionMgr) {
+    if (sectionMgr.sectionParams == nullptr) return 0;
+    return ClampLocalPlayerCount(sectionMgr.sectionParams->localPlayerCount);
+}
+
+static u8 GetRaceLocalPlayerCount(const RacedataScenario& scenario) {
+    return ClampLocalPlayerCount(scenario.localPlayerCount);
+}
+
+static void CacheHoveredCharactersFromSection(const SectionMgr& sectionMgr) {
+    if (sectionMgr.sectionParams == nullptr) return;
+    const u8 localPlayerCount = GetSectionLocalPlayerCount(sectionMgr);
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        hoveredCharacterByHud[hudSlotId] = sectionMgr.sectionParams->characters[hudSlotId];
+    }
+}
 
 static const CharacterAssetNames* GetCharacterAssets(CharacterId character) {
     for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
@@ -307,6 +302,8 @@ static bool IsCharacterTableValidForCharacter(CharacterId character, u8 tableIdx
     return GetCharacterOverride(character, tableIdx) != nullptr;
 }
 
+// Some characters only exist in a subset of the custom tables, so every table read
+// gets normalized back to vanilla unless that character actually has an override there.
 static u8 NormalizeCharacterTable(CharacterId character, u8 tableIdx) {
     if (IsCharacterTableValidForCharacter(character, tableIdx)) return tableIdx;
     return CUSTOM_CHARACTER_TABLE_DEFAULT;
@@ -315,13 +312,13 @@ static u8 NormalizeCharacterTable(CharacterId character, u8 tableIdx) {
 static bool IsLocalMultiplayerActive() {
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
-        return sectionMgr->sectionParams->localPlayerCount > 1;
+        return GetSectionLocalPlayerCount(*sectionMgr) > 1;
     }
 
     const Racedata* const racedata = Racedata::sInstance;
     if (racedata != nullptr) {
-        if (racedata->racesScenario.localPlayerCount > 1) return true;
-        if (racedata->menusScenario.localPlayerCount > 1) return true;
+        if (GetRaceLocalPlayerCount(racedata->racesScenario) > 1) return true;
+        if (GetRaceLocalPlayerCount(racedata->menusScenario) > 1) return true;
     }
 
     return GetLocalPlayerCount() > 1;
@@ -336,7 +333,7 @@ static CharacterId GetCustomCharacterStateId(CharacterId character) {
 static bool IsCustomCharacterStateIdValid(CharacterId character) {
     const CharacterAssetNames* assets = GetCharacterAssets(character);
     if (assets == nullptr) return false;
-    return assets->stateCharacter >= 0 && assets->stateCharacter < CUSTOM_CHARACTER_COUNT;
+    return IsCharacterIdInRange(assets->stateCharacter);
 }
 
 static u8 GetSelectedCharacterTable(CharacterId character) {
@@ -357,6 +354,109 @@ static bool IsAnyCustomCharacterEnabled() {
         if (selectedCharacterTableByCharacter[character] != CUSTOM_CHARACTER_TABLE_DEFAULT) return true;
     }
     return false;
+}
+
+static const char* GetCharacterPostfix(CharacterId character, u8 tableIdx) {
+    const CharacterOverride* characterOverride = GetCharacterOverride(character, tableIdx);
+    if (characterOverride != nullptr && characterOverride->postfix != nullptr) return characterOverride->postfix;
+
+    const CharacterAssetNames* assets = GetCharacterAssets(character);
+    if (assets == nullptr) return nullptr;
+    return assets->defaultPostfix;
+}
+
+static const char* GetDriverBRRESName(CharacterId character, u8 tableIdx) {
+    const CharacterOverride* characterOverride = GetCharacterOverride(character, tableIdx);
+    if (characterOverride != nullptr) {
+        if (characterOverride->driverBrresName != nullptr) return characterOverride->driverBrresName;
+        return characterOverride->postfix;
+    }
+
+    const CharacterAssetNames* assets = GetCharacterAssets(character);
+    if (assets == nullptr) return nullptr;
+    if (assets->defaultDriverBrresName != nullptr) return assets->defaultDriverBrresName;
+    return assets->defaultPostfix;
+}
+
+static const char** GetCharacterPostfixEntry(CharacterId character) {
+    if (!IsCharacterIdInRange(character)) return nullptr;
+
+    const char** table = reinterpret_cast<const char**>(CHARACTER_POSTFIX_TABLE_ADDRESS);
+    return &table[character];
+}
+
+const char* GetDefaultCharacterPostfix(CharacterId character) {
+    return GetCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_DEFAULT);
+}
+
+static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx) {
+    const char** entry = GetCharacterPostfixEntry(character);
+    if (entry == nullptr) return;
+
+    const char* postfix = GetCharacterPostfix(character, tableIdx);
+    if (postfix != nullptr) *entry = postfix;
+}
+
+static void ApplyCharacterPostfixes() {
+    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
+        const CharacterId character = defaultCharacterAssets[i].character;
+        ApplyCharacterPostfix(character, GetSelectedCharacterTable(character));
+    }
+}
+
+void ResetOnlineCustomCharacterFlags() {
+    for (u8 playerId = 0; playerId < MAX_ONLINE_PLAYERS; ++playerId) {
+        onlineCharacterTables[playerId] = CUSTOM_CHARACTER_TABLE_DEFAULT;
+    }
+}
+
+bool IsOnlineRoom(const RKNet::Controller* controller) {
+    if (controller == nullptr) return false;
+
+    switch (controller->roomType) {
+        case RKNet::ROOMTYPE_VS_WW:
+        case RKNet::ROOMTYPE_VS_REGIONAL:
+        case RKNet::ROOMTYPE_BT_WW:
+        case RKNet::ROOMTYPE_BT_REGIONAL:
+        case RKNet::ROOMTYPE_FROOM_HOST:
+        case RKNet::ROOMTYPE_FROOM_NONHOST:
+        case RKNet::ROOMTYPE_JOINING_WW:
+        case RKNet::ROOMTYPE_JOINING_REGIONAL:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool IsOnlineMultiLocal(const RKNet::Controller* controller) {
+    return IsOnlineRoom(controller) && IsLocalMultiplayerActive();
+}
+
+bool isDisplayCustomSkinsEnabled() {
+    return Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_ONLINE, Pulsar::RADIO_DISPLAYCUSTOMSKINS) ==
+           Pulsar::DISPLAYCUSTOMSKINS_ENABLED;
+}
+
+void RefreshLocalOnlineCustomCharacterFlags() {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (!IsOnlineRoom(controller)) return;
+    if (IsLocalMultiplayerActive()) {
+        ResetOnlineCustomCharacterFlags();
+        return;
+    }
+    if (!isDisplayCustomSkinsEnabled()) return;
+
+    const Racedata* racedata = Racedata::sInstance;
+    if (racedata == nullptr) return;
+
+    const RacedataScenario& scenario = racedata->racesScenario;
+    const u8 localPlayerCount = GetRaceLocalPlayerCount(scenario);
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        const u32 playerId = racedata->GetPlayerIdOfLocalPlayer(hudSlotId);
+        if (playerId < MAX_ONLINE_PLAYERS) {
+            onlineCharacterTables[playerId] = GetSelectedCharacterTable(scenario.players[playerId].characterId);
+        }
+    }
 }
 
 static bool SetCustomCharacterTable(CharacterId character, u8 tableIdx) {
@@ -394,37 +494,6 @@ static bool CycleCustomCharacterTable(CharacterId character, int direction) {
     return false;
 }
 
-void QueueMenuDriverReinitAfterRandomCombo() {
-    if (GetLocalPlayerCount() != 1) return;
-    if (pendingMenuDriverReinitFrames < PENDING_MENU_DRIVER_REINIT_AFTER_VR_RANDOM) {
-        pendingMenuDriverReinitFrames = PENDING_MENU_DRIVER_REINIT_AFTER_VR_RANDOM;
-    }
-    charSelectHoverExtraSuppressFrames = CHAR_SELECT_HOVER_SUPPRESS_AFTER_RANDOM_SKIN;
-    syncHoveredFromSectionForMenuReinit = true;
-}
-
-static const char* GetCharacterPostfix(CharacterId character, u8 tableIdx) {
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, tableIdx);
-    if (characterOverride != nullptr && characterOverride->postfix != nullptr) return characterOverride->postfix;
-
-    const CharacterAssetNames* assets = GetCharacterAssets(character);
-    if (assets == nullptr) return nullptr;
-    return assets->defaultPostfix;
-}
-
-static const char* GetDriverBRRESName(CharacterId character, u8 tableIdx) {
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, tableIdx);
-    if (characterOverride != nullptr) {
-        if (characterOverride->driverBrresName != nullptr) return characterOverride->driverBrresName;
-        return characterOverride->postfix;
-    }
-
-    const CharacterAssetNames* assets = GetCharacterAssets(character);
-    if (assets == nullptr) return nullptr;
-    if (assets->defaultDriverBrresName != nullptr) return assets->defaultDriverBrresName;
-    return assets->defaultPostfix;
-}
-
 static bool IsMiiCharacter(CharacterId character) {
     return character >= MII_S_A_MALE && character <= MII_L_C_FEMALE;
 }
@@ -437,69 +506,22 @@ bool IsCustomCharacterTableActive() {
     return IsAnyCustomCharacterEnabled();
 }
 
-bool IsOnlineRoom(const RKNet::Controller* controller) {
-    if (controller == nullptr) return false;
-
-    switch (controller->roomType) {
-        case RKNet::ROOMTYPE_VS_WW:
-        case RKNet::ROOMTYPE_VS_REGIONAL:
-        case RKNet::ROOMTYPE_BT_WW:
-        case RKNet::ROOMTYPE_BT_REGIONAL:
-        case RKNet::ROOMTYPE_FROOM_HOST:
-        case RKNet::ROOMTYPE_FROOM_NONHOST:
-        case RKNet::ROOMTYPE_JOINING_WW:
-        case RKNet::ROOMTYPE_JOINING_REGIONAL:
-            return true;
+static CharacterId GetMenuDriverBRRESCharacter(CharacterId character) {
+    switch (character) {
+        case PEACH:
+            return PEACH_BIKER;
+        case DAISY:
+            return DAISY_BIKER;
+        case ROSALINA:
+            return ROSALINA_BIKER;
         default:
-            return false;
-    }
-}
-
-bool IsOnlineMultiLocal(const RKNet::Controller* controller) {
-    return IsOnlineRoom(controller) && IsLocalMultiplayerActive();
-}
-
-bool isDisplayCustomSkinsEnabled() {
-    return Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_ONLINE, Pulsar::RADIO_DISPLAYCUSTOMSKINS) == Pulsar::DISPLAYCUSTOMSKINS_ENABLED;
-}
-
-const char* GetDefaultCharacterPostfix(CharacterId character) {
-    return GetCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_DEFAULT);
-}
-
-static void ApplyCharacterPostfix(CharacterId character, u8 tableIdx) {
-    const char** entry = GetCharacterPostfixEntry(character);
-    if (entry == nullptr) return;
-
-    const char* postfix = GetCharacterPostfix(character, tableIdx);
-    if (postfix != nullptr) *entry = postfix;
-}
-
-void ApplyCharacterTable(u8 tableIdx) {
-    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) tableIdx = CUSTOM_CHARACTER_TABLE_DEFAULT;
-    for (u8 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
-        selectedCharacterTableByCharacter[character] = CUSTOM_CHARACTER_TABLE_DEFAULT;
-    }
-    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
-        const CharacterId character = defaultCharacterAssets[i].character;
-        const CharacterId stateCharacter = defaultCharacterAssets[i].stateCharacter;
-        if (stateCharacter >= 0 && stateCharacter < CUSTOM_CHARACTER_COUNT) {
-            const u8 normalizedTable = NormalizeCharacterTable(character, tableIdx);
-            if (normalizedTable != CUSTOM_CHARACTER_TABLE_DEFAULT) selectedCharacterTableByCharacter[stateCharacter] = normalizedTable;
-        }
-    }
-    ApplyCharacterPostfixes();
-    RefreshLocalOnlineCustomCharacterFlags();
-}
-
-static void ApplyCharacterPostfixes() {
-    for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
-        const CharacterId character = defaultCharacterAssets[i].character;
-        ApplyCharacterPostfix(character, GetSelectedCharacterTable(character));
+            return character;
     }
 }
 
 static void ApplyMenuDriverModelTablePostfixes(CharacterId targetCharacter, u8 tableIdx) {
+    // The menu-driver constructor should see a mostly vanilla postfix table, with only
+    // the target preview character temporarily redirected to its custom menu-scene BRRES.
     for (u32 i = 0; i < ARRAY_COUNT(defaultCharacterAssets); ++i) {
         const CharacterId character = defaultCharacterAssets[i].character;
         ApplyCharacterPostfix(character, CUSTOM_CHARACTER_TABLE_DEFAULT);
@@ -512,18 +534,12 @@ static void ApplyMenuDriverModelTablePostfixes(CharacterId targetCharacter, u8 t
     ApplyCharacterPostfix(menuCharacter, NormalizeCharacterTable(menuCharacter, tableIdx));
 }
 
-bool IsRaceSectionActive() {
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
-    return IsGameplaySection(sectionMgr->curSection->sectionId) == SCENE_ID_RACE;
-}
-
 bool IsLocalRacePlayer(u8 playerId) {
     const Racedata* racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;
 
     const RacedataScenario& scenario = racedata->racesScenario;
-    const u8 localPlayerCount = scenario.localPlayerCount > 4 ? 4 : scenario.localPlayerCount;
+    const u8 localPlayerCount = GetRaceLocalPlayerCount(scenario);
 
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
         const u32 localPlayerId = racedata->GetPlayerIdOfLocalPlayer(hudSlotId);
@@ -532,17 +548,9 @@ bool IsLocalRacePlayer(u8 playerId) {
     return false;
 }
 
-bool ShouldUseCustomCharacterForArchivePlayer(u8 playerId, CharacterId character) {
-    if (IsLocalMultiplayerActive()) return false;
-
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (IsOnlineRoom(controller)) {
-        if (!isDisplayCustomSkinsEnabled()) return false;
-        if (IsLocalRacePlayer(playerId)) return IsCustomCharacterEnabled(character);
-        return playerId < 12 && IsCharacterTableValidForCharacter(character, onlineCharacterTables[playerId]) &&
-               onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
-    }
-    return IsCustomCharacterEnabled(character) && IsLocalRacePlayer(playerId);
+static u8 ResolveOnlineCharacterTable(u8 playerId, CharacterId character) {
+    if (playerId >= MAX_ONLINE_PLAYERS) return CUSTOM_CHARACTER_TABLE_DEFAULT;
+    return NormalizeCharacterTable(character, onlineCharacterTables[playerId]);
 }
 
 static u8 GetRaceCharacterTable(u8 playerId, CharacterId character) {
@@ -551,7 +559,7 @@ static u8 GetRaceCharacterTable(u8 playerId, CharacterId character) {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (IsOnlineRoom(controller) && !IsOnlineMultiLocal(controller) && isDisplayCustomSkinsEnabled()) {
         if (IsLocalRacePlayer(playerId)) return GetSelectedCharacterTable(character);
-        return playerId < 12 ? NormalizeCharacterTable(character, onlineCharacterTables[playerId]) : CUSTOM_CHARACTER_TABLE_DEFAULT;
+        return ResolveOnlineCharacterTable(playerId, character);
     }
     return IsLocalRacePlayer(playerId) ? GetSelectedCharacterTable(character) : CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
@@ -567,13 +575,6 @@ bool ShouldMuteCharacterVoice(const Kart::Link* link) {
     return GetRaceCharacterTable(playerId, character) >= CUSTOM_CHARACTER_TABLE_SKIN2;
 }
 
-static const char** GetCharacterPostfixEntry(CharacterId character) {
-    if (character >= 0x30) return nullptr;
-
-    const char** table = reinterpret_cast<const char**>(CHARACTER_POSTFIX_TABLE_ADDRESS);
-    return &table[character];
-}
-
 class ScopedCharacterPostfixSwap {
    public:
     ScopedCharacterPostfixSwap(u8 playerId, CharacterId character) : entry(nullptr), previousValue(nullptr) {
@@ -581,18 +582,7 @@ class ScopedCharacterPostfixSwap {
         if (this->entry == nullptr) return;
 
         this->previousValue = *this->entry;
-        const RKNet::Controller* controller = RKNet::Controller::sInstance;
-        u8 tableIdx = CUSTOM_CHARACTER_TABLE_DEFAULT;
-        if (IsOnlineRoom(controller) && !IsOnlineMultiLocal(controller) && isDisplayCustomSkinsEnabled()) {
-            if (IsLocalRacePlayer(playerId)) {
-                tableIdx = GetSelectedCharacterTable(character);
-            } else if (playerId < 12) {
-                tableIdx = NormalizeCharacterTable(character, onlineCharacterTables[playerId]);
-            }
-        } else if (IsLocalRacePlayer(playerId)) {
-            tableIdx = GetSelectedCharacterTable(character);
-        }
-
+        const u8 tableIdx = GetRaceCharacterTable(playerId, character);
         const char* postfix = GetCharacterPostfix(character, tableIdx);
         if (postfix != nullptr) {
             *this->entry = postfix;
@@ -610,23 +600,108 @@ class ScopedCharacterPostfixSwap {
     const char* previousValue;
 };
 
-void ResetOnlineCustomCharacterFlags() {
-    for (int playerId = 0; playerId < 12; ++playerId) {
-        onlineCharacterTables[playerId] = CUSTOM_CHARACTER_TABLE_DEFAULT;
+static void ResetVotingVRMenuDriverFlags() {
+    votingVRMenuDriverSawActive = false;
+    votingVRMenuDriverExited = false;
+    votingVRMenuDriverReinitialized = false;
+    votingVRModelRendererPrimed = false;
+    votingVRMenuDriverReinitFrames = 0;
+    votingVRMenuDriverStateRefreshFrames = 0;
+}
+
+static void ResetVotingVRMenuDriverState() {
+    ResetVotingVRMenuDriverFlags();
+    votingVRMenuDriverSection = nullptr;
+    applyVotingVRMenuDriverReinit = false;
+}
+
+static CharacterId GetPreviewCharacterForHud(u8 hudSlotId) {
+    if (hudSlotId >= MAX_LOCAL_PLAYERS) return MARIO;
+
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) {
+        return hoveredCharacterByHud[hudSlotId];
+    }
+
+    CharacterId previewCharacter = hoveredCharacterByHud[hudSlotId];
+    if (!IsCharacterIdInRange(previewCharacter)) {
+        previewCharacter = sectionMgr->sectionParams->characters[hudSlotId];
+    }
+    return previewCharacter;
+}
+
+static CharacterId GetSelectedCharacterForHud(u8 hudSlotId) {
+    if (hudSlotId >= MAX_LOCAL_PLAYERS) return MARIO;
+
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr &&
+        hudSlotId < sectionMgr->sectionParams->localPlayerCount) {
+        return sectionMgr->sectionParams->characters[hudSlotId];
+    }
+
+    const Racedata* const racedata = Racedata::sInstance;
+    if (racedata != nullptr && hudSlotId < racedata->menusScenario.localPlayerCount) {
+        const u8 playerId = racedata->menusScenario.settings.hudPlayerIds[hudSlotId];
+        if (playerId < MAX_ONLINE_PLAYERS) return racedata->menusScenario.players[playerId].characterId;
+    }
+
+    return hoveredCharacterByHud[hudSlotId];
+}
+
+static bool IsCharacterSelectPageActive() {
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
+
+    const Pages::CharacterSelect* characterSelect = sectionMgr->curSection->Get<Pages::CharacterSelect>();
+    if (characterSelect == nullptr) return false;
+
+    const Page* topPage = sectionMgr->curSection->GetTopLayerPage();
+    return topPage == characterSelect && characterSelect->currentState == STATE_ACTIVE && !characterSelect->updateState;
+}
+
+static void RefreshCharacterSelectModels() {
+    SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || sectionMgr->curSection == nullptr) return;
+
+    Pages::CharacterSelect* const characterSelect = sectionMgr->curSection->Get<Pages::CharacterSelect>();
+    if (characterSelect == nullptr || characterSelect->models == nullptr) return;
+
+    const u8 localPlayerCount = GetSectionLocalPlayerCount(*sectionMgr);
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        characterSelect->models[hudSlotId].RequestModel(GetPreviewCharacterForHud(hudSlotId));
     }
 }
 
-static u8 GetMenuModelPlayerCount() {
-    MenuModelMgr* menuModelMgr = MenuModelMgr::sInstance;
-    if (menuModelMgr == nullptr) return 0;
-    return menuModelMgr->playerCount;
+static void UnlockHeap(EGG::Heap* heap) {
+    if (heap != nullptr) heap->dameFlag &= ~0x1;
+}
+
+static void ResetRawMenuDriverBRRESCacheEntry(u8 tableIdx, CharacterId character) {
+    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || !IsCharacterIdInRange(character)) return;
+    rawMenuDriverBRRESHeaps[tableIdx][character] = nullptr;
+    rawMenuDriverBRRESFiles[tableIdx][character] = nullptr;
+    rawMenuDriverBRRESLoadFailed[tableIdx][character] = false;
+}
+
+static void ClearRawMenuDriverBRRESCachePointers() {
+    for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
+        for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
+            ResetRawMenuDriverBRRESCacheEntry(tableIdx, static_cast<CharacterId>(character));
+        }
+    }
+}
+
+static void DestroyMenuDriverModelHeap(EGG::ExpHeap*& heap) {
+    if (heap == nullptr) return;
+    UnlockHeap(heap);
+    heap->destroy();
+    heap = nullptr;
 }
 
 static void ResetMenuDriverModelCache() {
     pendingMenuDriverReinitFrames = 0;
     applyPendingMenuDriverModelReinit = false;
     menuDriverReinitCharSelectWaitAttempts = 0;
-    syncHoveredFromSectionForMenuReinit = false;
     cachedMenuModelMgr = nullptr;
     cachedMenuDriverModelPlayerCount = 0;
     currentMenuDriverModelTable = IsAnyCustomCharacterEnabled() ? CUSTOM_CHARACTER_TABLE_INVALID : CUSTOM_CHARACTER_TABLE_DEFAULT;
@@ -637,17 +712,12 @@ static void ResetMenuDriverModelCache() {
     ResetVotingVRMenuDriverState();
     // Scene / MenuModelMgr teardown already destroys ExpHeaps we allocated under the old scene.
     // Calling destroy() here races section exit (see ResetCustomCharacterMenuState on load): the
-    // activeMenuDriverModelHeap block is often freed first → double-free style DSI in ExpHeap::destroy.
+    // activeMenuDriverModelHeap is often freed first, so destroying it here can double free.
     activeMenuDriverModelHeap = nullptr;
     createdMenuDriverModelHeap = nullptr;
     ClearRawMenuDriverBRRESCachePointers();
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {
-        const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
-        for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
-            hoveredCharacterByHud[hudSlotId] = sectionMgr->sectionParams->characters[hudSlotId];
-        }
-    }
+    if (sectionMgr != nullptr) CacheHoveredCharactersFromSection(*sectionMgr);
 }
 
 static void SyncMenuDriverModelCache() {
@@ -669,26 +739,12 @@ static void SyncMenuDriverModelCache() {
 }
 
 static bool IsMenuDriverModelManagerUsable(const MenuDriverModelMgr* driverModelMgr, u8 playerCount) {
-    if (driverModelMgr == nullptr) {
-        return false;
-    }
-    if (driverModelMgr->models == nullptr) {
-        return false;
-    }
-    if (driverModelMgr->playerCount == 0 || driverModelMgr->playerCount > 4) {
-        return false;
-    }
-    if (playerCount != 0 && driverModelMgr->playerCount != playerCount) {
-        return false;
-    }
-    if (driverModelMgr->modelCount != 0x18 + driverModelMgr->playerCount * 2) {
-        return false;
-    }
-    return true;
-}
-
-static void UnlockHeap(EGG::Heap* heap) {
-    if (heap != nullptr) heap->dameFlag &= ~0x1;
+    return driverModelMgr != nullptr &&
+           driverModelMgr->models != nullptr &&
+           driverModelMgr->playerCount != 0 &&
+           driverModelMgr->playerCount <= MAX_LOCAL_PLAYERS &&
+           (playerCount == 0 || driverModelMgr->playerCount == playerCount) &&
+           driverModelMgr->modelCount == 0x18 + driverModelMgr->playerCount * 2;
 }
 
 static void UnlockMenuDriverModelHeaps(GameScene& scene, MenuModelMgr& menuModelMgr) {
@@ -704,20 +760,6 @@ static void UnlockMenuDriverModelHeaps(GameScene& scene, MenuModelMgr& menuModel
 
     UnlockHeap(menuModelMgr.heap);
     UnlockHeap(menuModelMgr.otherHeap);
-}
-
-kmRuntimeUse(0x8059dfbc);
-static MenuModelMgr* CreateMenuModelManager() {
-    typedef MenuModelMgr* (*CreateMenuModelManagerFn)();
-    const CreateMenuModelManagerFn original = reinterpret_cast<CreateMenuModelManagerFn>(kmRuntimeAddr(0x8059dfbc));
-    return original();
-}
-
-kmRuntimeUse(0x8059e04c);
-static void DestroyMenuModelManager() {
-    typedef void (*DestroyMenuModelManagerFn)();
-    const DestroyMenuModelManagerFn original = reinterpret_cast<DestroyMenuModelManagerFn>(kmRuntimeAddr(0x8059e04c));
-    original();
 }
 
 static void ClearMenuDriverModels(MenuDriverModelMgr& driverModelMgr) {
@@ -740,21 +782,6 @@ static void ClearMenuDriverModels(MenuDriverModelMgr& driverModelMgr) {
             miiHeadModel->ToggleVisible(false);
         }
     }
-}
-
-kmRuntimeUse(0x8059e250);
-kmRuntimeUse(0x805f5c94);
-static void InitMenuModelManager(MenuModelMgr& menuModelMgr, u8 playerCount) {
-    typedef void (*InitMenuModelManagerFn)(MenuModelMgr*, u8, void*);
-    const InitMenuModelManagerFn original = reinterpret_cast<InitMenuModelManagerFn>(kmRuntimeAddr(0x8059e250));
-    original(&menuModelMgr, playerCount, reinterpret_cast<void*>(kmRuntimeAddr(0x805f5c94)));
-}
-
-kmRuntimeUse(0x8059e1fc);
-static void StartMenuModelManager(MenuModelMgr& menuModelMgr) {
-    typedef void (*StartMenuModelManagerFn)(MenuModelMgr*);
-    const StartMenuModelManagerFn original = reinterpret_cast<StartMenuModelManagerFn>(kmRuntimeAddr(0x8059e1fc));
-    original(&menuModelMgr);
 }
 
 kmRuntimeUse(0x80830180);
@@ -788,6 +815,8 @@ static MenuDriverModelMgr* CreateMenuDriverModelManager(u8 playerCount) {
         }
     }
 
+    // Ghidra confirms the retail constructor allocates shared models first and then per-player
+    // heads/handles from the inherited scene heaps, so both heap families must be redirected.
     // The vanilla constructor hardcodes structsHeaps[0] for model/scn allocations.
     if (currentScene != nullptr && modelHeap != nullptr) {
         previousHeap = modelHeap->BecomeCurrentHeap();
@@ -887,17 +916,6 @@ static MenuDriverModel::State GetVotingMenuDriverTargetState(bool isKartVisible)
     return MENUDRIVERMODEL_STATE_VEHICLE_SELECTED;
 }
 
-static void ResetVotingVRMenuDriverState() {
-    votingVRMenuDriverSection = nullptr;
-    votingVRMenuDriverSawActive = false;
-    votingVRMenuDriverExited = false;
-    votingVRMenuDriverReinitialized = false;
-    votingVRModelRendererPrimed = false;
-    votingVRMenuDriverReinitFrames = 0;
-    votingVRMenuDriverStateRefreshFrames = 0;
-    applyVotingVRMenuDriverReinit = false;
-}
-
 static bool SyncVotingVRMenuDriverState() {
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || !IsVotingSection()) {
@@ -908,14 +926,14 @@ static bool SyncVotingVRMenuDriverState() {
     const Section* const section = sectionMgr->curSection;
     if (votingVRMenuDriverSection != section) {
         votingVRMenuDriverSection = section;
-        votingVRMenuDriverSawActive = false;
-        votingVRMenuDriverExited = false;
-        votingVRMenuDriverReinitialized = false;
-        votingVRModelRendererPrimed = false;
-        votingVRMenuDriverReinitFrames = 0;
-        votingVRMenuDriverStateRefreshFrames = 0;
+        ResetVotingVRMenuDriverFlags();
     }
     return true;
+}
+
+static bool ShouldHandleVotingVRMenuDriverModels() {
+    const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
+    return GetSelectedCharacterTable(targetCharacter) != CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
 static bool ShouldUseDefaultMenuDriverTableForVotingVR() {
@@ -923,11 +941,6 @@ static bool ShouldUseDefaultMenuDriverTableForVotingVR() {
     if (!ShouldHandleVotingVRMenuDriverModels()) return false;
     if (IsVRPageActive()) votingVRMenuDriverSawActive = true;
     return !votingVRMenuDriverExited;
-}
-
-static bool ShouldHandleVotingVRMenuDriverModels() {
-    const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
-    return GetSelectedCharacterTable(targetCharacter) != CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
 kmRuntimeUse(0x80830748);
@@ -941,23 +954,23 @@ static u32 AlignUp(u32 value, u32 alignment) {
     return (value + alignment - 1) & ~(alignment - 1);
 }
 
-static CharacterId GetMenuDriverBRRESCharacter(CharacterId character) {
-    switch (character) {
-        case PEACH:
-            return PEACH_BIKER;
-        case DAISY:
-            return DAISY_BIKER;
-        case ROSALINA:
-            return ROSALINA_BIKER;
-        default:
-            return character;
-    }
+static bool ShouldUseRawMenuDriverBRRES(u8 tableIdx) {
+    return tableIdx != CUSTOM_CHARACTER_TABLE_DEFAULT && tableIdx < CUSTOM_CHARACTER_TABLE_COUNT;
+}
+
+static CharacterId GetMenuDriverCacheCharacter(CharacterId character, u8 tableIdx) {
+    return ShouldUseRawMenuDriverBRRES(tableIdx) ? GetMenuDriverBRRESCharacter(character) : CHARACTER_NONE;
+}
+
+static u8 ResolveMenuDriverModelTable(CharacterId character) {
+    if (ShouldUseDefaultMenuDriverTableForVotingVR()) return CUSTOM_CHARACTER_TABLE_DEFAULT;
+    return GetSelectedCharacterTable(character);
 }
 
 static u8 GetRawMenuDriverBRRESTable(CharacterId character) {
     const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(character);
-    const u8 tableIdx = buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT ? buildingMenuDriverModelTable : GetMenuDriverModelTableForCharacter(menuCharacter);
-    if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT || tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) return CUSTOM_CHARACTER_TABLE_INVALID;
+    const u8 tableIdx = buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT ? buildingMenuDriverModelTable : ResolveMenuDriverModelTable(menuCharacter);
+    if (!ShouldUseRawMenuDriverBRRES(tableIdx)) return CUSTOM_CHARACTER_TABLE_INVALID;
     if (GetCharacterOverride(menuCharacter, tableIdx) == nullptr) return CUSTOM_CHARACTER_TABLE_INVALID;
     if (buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
         menuCharacter != GetMenuDriverBRRESCharacter(buildingMenuDriverModelCharacter)) {
@@ -999,23 +1012,6 @@ static u32 CalculateRawMenuDriverBRRESHeapSize(u8 tableIdx, CharacterId characte
     return heapSize;
 }
 
-static EGG::ExpHeap* GetRawMenuDriverBRRESHeap(u8 tableIdx, CharacterId character) {
-    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || character < 0 || character >= CUSTOM_CHARACTER_COUNT) return nullptr;
-    if (rawMenuDriverBRRESHeaps[tableIdx][character] != nullptr) {
-        return rawMenuDriverBRRESHeaps[tableIdx][character];
-    }
-
-    GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
-    if (currentScene == nullptr) return nullptr;
-
-    const u32 heapSize = CalculateRawMenuDriverBRRESHeapSize(tableIdx, character);
-    EGG::Heap* const parentHeap = GetRawMenuDriverBRRESParentHeap(*currentScene, heapSize);
-    if (parentHeap == nullptr) return nullptr;
-
-    rawMenuDriverBRRESHeaps[tableIdx][character] = EGG::ExpHeap::Create(static_cast<int>(heapSize), parentHeap, 0);
-    return rawMenuDriverBRRESHeaps[tableIdx][character];
-}
-
 static EGG::Heap* GetRawMenuDriverBRRESParentHeap(GameScene& scene, u32 heapSize) {
     static const u32 PARENT_HEAP_RESERVE = 0x200000;
     EGG::Heap* candidates[] = {
@@ -1042,21 +1038,21 @@ static EGG::Heap* GetRawMenuDriverBRRESParentHeap(GameScene& scene, u32 heapSize
     return nullptr;
 }
 
-static void ClearRawMenuDriverBRRESCachePointers() {
-    for (u32 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
-        for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
-            rawMenuDriverBRRESHeaps[tableIdx][character] = nullptr;
-            rawMenuDriverBRRESFiles[tableIdx][character] = nullptr;
-            rawMenuDriverBRRESLoadFailed[tableIdx][character] = false;
-        }
+static EGG::ExpHeap* GetRawMenuDriverBRRESHeap(u8 tableIdx, CharacterId character) {
+    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || !IsCharacterIdInRange(character)) return nullptr;
+    if (rawMenuDriverBRRESHeaps[tableIdx][character] != nullptr) {
+        return rawMenuDriverBRRESHeaps[tableIdx][character];
     }
-}
 
-static void DestroyMenuDriverModelHeap(EGG::ExpHeap*& heap) {
-    if (heap == nullptr) return;
-    UnlockHeap(heap);
-    heap->destroy();
-    heap = nullptr;
+    GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
+    if (currentScene == nullptr) return nullptr;
+
+    const u32 heapSize = CalculateRawMenuDriverBRRESHeapSize(tableIdx, character);
+    EGG::Heap* const parentHeap = GetRawMenuDriverBRRESParentHeap(*currentScene, heapSize);
+    if (parentHeap == nullptr) return nullptr;
+
+    rawMenuDriverBRRESHeaps[tableIdx][character] = EGG::ExpHeap::Create(static_cast<int>(heapSize), parentHeap, 0);
+    return rawMenuDriverBRRESHeaps[tableIdx][character];
 }
 
 kmRuntimeUse(0x8055b7f8);
@@ -1067,9 +1063,11 @@ static void BindRawMenuDriverBRRES(nw4r::g3d::ResFile& resFile, const char* name
 }
 
 static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character) {
+    // Menu-scene custom skins are loaded as raw BRRES blobs so we can swap only the
+    // preview driver model without disturbing the regular archive loader state.
     const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(character);
     const u8 tableIdx = GetRawMenuDriverBRRESTable(menuCharacter);
-    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || menuCharacter < 0 || menuCharacter >= CUSTOM_CHARACTER_COUNT) {
+    if (tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT || !IsCharacterIdInRange(menuCharacter)) {
         return false;
     }
 
@@ -1178,9 +1176,116 @@ static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, Char
 }
 kmBranch(0x8059e568, RequestDriverModelHook);
 
-static u8 GetMenuDriverModelTableForCharacter(CharacterId character) {
-    if (ShouldUseDefaultMenuDriverTableForVotingVR()) return CUSTOM_CHARACTER_TABLE_DEFAULT;
-    return GetSelectedCharacterTable(character);
+static bool ReinitializeMenuDriverModels() {
+    MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
+    GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
+    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (menuModelMgr == nullptr || currentScene == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) {
+        return false;
+    }
+    if (menuModelMgr->heap == nullptr) {
+        return false;
+    }
+
+    SyncMenuDriverModelCache();
+
+    const u8 playerCount = menuModelMgr->playerCount;
+    if (playerCount == 0) {
+        return false;
+    }
+
+    // Snapshot the old manager state before we rebuild the preview driver heap.
+    MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
+    bool playerWasVisible[MAX_LOCAL_PLAYERS] = {false, false, false, false};
+    MenuDriverModel::State playerState[MAX_LOCAL_PLAYERS] = {
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT
+    };
+    if (oldDriverModels != nullptr) {
+        const u8 snapshotPlayerCount = ClampLocalPlayerCount(oldDriverModels->playerCount);
+        for (u8 playerId = 0; playerId < snapshotPlayerCount; ++playerId) {
+            playerWasVisible[playerId] = oldDriverModels->players[playerId].isVisible;
+            MenuDriverModel* const oldPlayerModel = oldDriverModels->players[playerId].playerModel;
+            if (oldPlayerModel != nullptr) {
+                const MenuDriverModel::State oldState = oldPlayerModel->state;
+                if (oldState == MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT ||
+                    oldState == MenuDriverModel::MENUDRIVERMODEL_STATE_ONKARTSELECT ||
+                    oldState == MENUDRIVERMODEL_STATE_VEHICLE_SELECTED) {
+                    playerState[playerId] = oldState;
+                }
+            }
+        }
+    }
+
+    // The raw BRRES cache is only keyed by the menu-scene model, so the rebuild must
+    // track both the selected table and the resolved menu character separately.
+    const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
+    const u8 targetTable = ResolveMenuDriverModelTable(targetCharacter);
+    const bool targetUsesRawBRRES = ShouldUseRawMenuDriverBRRES(targetTable);
+    const CharacterId targetCacheCharacter = GetMenuDriverCacheCharacter(targetCharacter, targetTable);
+    if (oldDriverModels != nullptr && targetTable == currentMenuDriverModelTable &&
+        targetCharacter == currentMenuDriverModelHud0Character &&
+        (!targetUsesRawBRRES || targetCacheCharacter == currentMenuDriverModelCharacter)) {
+        return true;
+    }
+
+    // From this point on we are replacing the preview manager in place while preserving
+    // enough state for the UI to keep the same visible driver/kart selection.
+    EGG::ExpHeap* oldMenuDriverModelHeap = activeMenuDriverModelHeap;
+    MenuDriverModelMgr* newDriverModels = nullptr;
+    menuModelMgr->driverModels = nullptr;
+    if (oldDriverModels != nullptr) {
+        ClearMenuDriverModels(*oldDriverModels);
+    }
+    ClearRawMenuDriverBRRESCachePointers();
+    DestroyMenuDriverModelHeap(oldMenuDriverModelHeap);
+    activeMenuDriverModelHeap = nullptr;
+    UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
+    currentScene->structsHeaps.SetHeapsGroupId(3);
+    buildingMenuDriverModelTable = targetTable;
+    buildingMenuDriverModelCharacter = targetCharacter;
+    ApplyMenuDriverModelTablePostfixes(targetCharacter, targetTable);
+    newDriverModels = CreateMenuDriverModelManager(playerCount);
+    buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
+    buildingMenuDriverModelCharacter = CHARACTER_NONE;
+    ApplyCharacterPostfixes();
+    currentScene->structsHeaps.SetHeapsGroupId(0);
+    if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
+        currentScene->structsHeaps.SetHeapsGroupId(6);
+        return false;
+    }
+
+    menuModelMgr->driverModels = newDriverModels;
+    activeMenuDriverModelHeap = createdMenuDriverModelHeap;
+    createdMenuDriverModelHeap = nullptr;
+    StartMenuDriverModelManager(*newDriverModels);
+    currentScene->structsHeaps.SetHeapsGroupId(6);
+
+    const u8 localPlayerCount = GetSectionLocalPlayerCount(*sectionMgr);
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        menuModelMgr->RequestDriverModel(hudSlotId, sectionMgr->sectionParams->characters[hudSlotId]);
+    }
+
+    for (u8 playerId = 0; playerId < playerCount && playerId < MAX_LOCAL_PLAYERS; ++playerId) {
+        MenuDriverModel* const playerModel = newDriverModels->players[playerId].playerModel;
+        if (playerModel != nullptr && playerModel->model != nullptr) {
+            if (playerState[playerId] != MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT) {
+                playerModel->id = sectionMgr->sectionParams->karts[playerId];
+            }
+            playerModel->state = static_cast<MenuDriverModel::State>(0);
+            playerModel->SwitchState(playerId, playerState[playerId]);
+        }
+        newDriverModels->players[playerId].isVisible = playerWasVisible[playerId];
+        newDriverModels->TogglePlayerModel(playerId, playerWasVisible[playerId]);
+    }
+
+    RefreshCharacterSelectModels();
+    currentMenuDriverModelTable = targetTable;
+    currentMenuDriverModelCharacter = targetCacheCharacter;
+    currentMenuDriverModelHud0Character = targetCharacter;
+    return true;
 }
 
 void OnVotingVRPageExit() {
@@ -1193,6 +1298,35 @@ void OnVotingVRPageExit() {
     if (votingVRMenuDriverExited) return;
     votingVRMenuDriverExited = true;
     votingVRMenuDriverReinitFrames = 1;
+}
+
+kmRuntimeUse(0x805f59ac);
+static void SetModelRendererVehicleVisible(Pages::ModelRenderer& modelRenderer, u8 hudSlotId) {
+    typedef void (*SetModelRendererVisibilityFn)(Pages::ModelRenderer*, u8, u32, bool);
+    const SetModelRendererVisibilityFn setModelRendererVisibility =
+        reinterpret_cast<SetModelRendererVisibilityFn>(kmRuntimeAddr(0x805f59ac));
+    setModelRendererVisibility(&modelRenderer, hudSlotId, 1, true);
+}
+
+static bool PrimeVotingModelRenderer() {
+    SectionMgr* const sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || sectionMgr->sectionParams == nullptr) return false;
+
+    Pages::ModelRenderer* const modelRenderer = sectionMgr->curSection->Get<Pages::ModelRenderer>();
+    if (modelRenderer == nullptr) return false;
+
+    const u8 localPlayerCount = GetSectionLocalPlayerCount(*sectionMgr);
+    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
+        const CharacterId character = sectionMgr->sectionParams->characters[hudSlotId];
+        const KartId kart = sectionMgr->sectionParams->karts[hudSlotId];
+        modelRenderer->RequestCharacterModel(hudSlotId, character);
+        modelRenderer->LoadKartModelsByCharacter(hudSlotId, character);
+        Pages::ModelRenderer::PrepareParams(hudSlotId);
+        SetModelRendererVehicleVisible(*modelRenderer, hudSlotId);
+        modelRenderer->RequestKartModel(hudSlotId, kart);
+    }
+    votingVRModelRendererPrimed = true;
+    return true;
 }
 
 static void ReinitializeVotingVRMenuDriverModels() {
@@ -1230,21 +1364,6 @@ static void ProcessVotingVRMenuDriverModelReinit() {
     applyVotingVRMenuDriverReinit = true;
 }
 
-static void ProcessVotingVRMenuDriverStateRefresh() {
-    if (votingVRMenuDriverStateRefreshFrames == 0) return;
-    if (!SyncVotingVRMenuDriverState() || IsVRPageActive()) return;
-    if (!ShouldHandleVotingVRMenuDriverModels()) {
-        votingVRMenuDriverStateRefreshFrames = 0;
-        return;
-    }
-
-    if (RefreshVotingVRMenuDriverStates()) {
-        votingVRMenuDriverStateRefreshFrames = 0;
-    } else {
-        --votingVRMenuDriverStateRefreshFrames;
-    }
-}
-
 static bool RefreshVotingVRMenuDriverStates() {
     MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
     const SectionMgr* const sectionMgr = SectionMgr::sInstance;
@@ -1257,7 +1376,7 @@ static bool RefreshVotingVRMenuDriverStates() {
     if (!IsMenuDriverModelManagerUsable(driverModels, menuModelMgr->playerCount) || kartModels == nullptr) return false;
 
     bool allStatesReady = true;
-    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    const u8 localPlayerCount = GetSectionLocalPlayerCount(*sectionMgr);
     for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
         if (hudSlotId >= driverModels->playerCount || hudSlotId >= kartModels->playerCount) continue;
 
@@ -1278,157 +1397,26 @@ static bool RefreshVotingVRMenuDriverStates() {
                 playerModel->id = sectionMgr->sectionParams->karts[hudSlotId];
                 playerModel->SwitchState(hudSlotId, targetState);
             }
-        } else {
-            if (playerModel->state != targetState) {
-                playerModel->SwitchState(hudSlotId, targetState);
-            }
+        } else if (playerModel->state != targetState) {
+            playerModel->SwitchState(hudSlotId, targetState);
         }
     }
     return allStatesReady;
 }
 
-static bool PrimeVotingModelRenderer() {
-    SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || sectionMgr->sectionParams == nullptr) return false;
-
-    Pages::ModelRenderer* const modelRenderer = sectionMgr->curSection->Get<Pages::ModelRenderer>();
-    if (modelRenderer == nullptr) return false;
-
-    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
-    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
-        const CharacterId character = sectionMgr->sectionParams->characters[hudSlotId];
-        const KartId kart = sectionMgr->sectionParams->karts[hudSlotId];
-        modelRenderer->RequestCharacterModel(hudSlotId, character);
-        modelRenderer->LoadKartModelsByCharacter(hudSlotId, character);
-        Pages::ModelRenderer::PrepareParams(hudSlotId);
-        SetModelRendererVehicleVisible(*modelRenderer, hudSlotId);
-        modelRenderer->RequestKartModel(hudSlotId, kart);
-    }
-    votingVRModelRendererPrimed = true;
-    return true;
-}
-
-kmRuntimeUse(0x805f59ac);
-static void SetModelRendererVehicleVisible(Pages::ModelRenderer& modelRenderer, u8 hudSlotId) {
-    typedef void (*SetModelRendererVisibilityFn)(Pages::ModelRenderer*, u8, u32, bool);
-    const SetModelRendererVisibilityFn setModelRendererVisibility =
-        reinterpret_cast<SetModelRendererVisibilityFn>(kmRuntimeAddr(0x805f59ac));
-    setModelRendererVisibility(&modelRenderer, hudSlotId, 1, true);
-}
-
-static bool ReinitializeMenuDriverModels() {
-    MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
-    GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
-    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    if (menuModelMgr == nullptr || currentScene == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) {
-        return false;
-    }
-    if (menuModelMgr->heap == nullptr) {
-        return false;
+static void ProcessVotingVRMenuDriverStateRefresh() {
+    if (votingVRMenuDriverStateRefreshFrames == 0) return;
+    if (!SyncVotingVRMenuDriverState() || IsVRPageActive()) return;
+    if (!ShouldHandleVotingVRMenuDriverModels()) {
+        votingVRMenuDriverStateRefreshFrames = 0;
+        return;
     }
 
-    SyncMenuDriverModelCache();
-
-    const u8 playerCount = GetMenuModelPlayerCount();
-    if (playerCount == 0) {
-        return false;
+    if (RefreshVotingVRMenuDriverStates()) {
+        votingVRMenuDriverStateRefreshFrames = 0;
+    } else {
+        --votingVRMenuDriverStateRefreshFrames;
     }
-
-    if (syncHoveredFromSectionForMenuReinit) {
-        const u8 lc = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
-        for (u8 i = 0; i < lc; ++i) {
-            hoveredCharacterByHud[i] = sectionMgr->sectionParams->characters[i];
-        }
-        syncHoveredFromSectionForMenuReinit = false;
-    }
-
-    MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
-    bool playerWasVisible[4] = {false, false, false, false};
-    MenuDriverModel::State playerState[4] = {
-        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
-        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
-        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
-        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT
-    };
-    if (oldDriverModels != nullptr) {
-        const u8 snapshotPlayerCount = oldDriverModels->playerCount > 4 ? 4 : oldDriverModels->playerCount;
-        for (u8 playerId = 0; playerId < snapshotPlayerCount; ++playerId) {
-            playerWasVisible[playerId] = oldDriverModels->players[playerId].isVisible;
-            MenuDriverModel* const oldPlayerModel = oldDriverModels->players[playerId].playerModel;
-            if (oldPlayerModel != nullptr) {
-                const MenuDriverModel::State oldState = oldPlayerModel->state;
-                if (oldState == MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT ||
-                    oldState == MenuDriverModel::MENUDRIVERMODEL_STATE_ONKARTSELECT ||
-                    oldState == MENUDRIVERMODEL_STATE_VEHICLE_SELECTED) {
-                    playerState[playerId] = oldState;
-                }
-            }
-        }
-    }
-
-    const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
-    const u8 targetTable = GetMenuDriverModelTableForCharacter(targetCharacter);
-    const bool targetUsesRawBRRES = targetTable != CUSTOM_CHARACTER_TABLE_DEFAULT && targetTable < CUSTOM_CHARACTER_TABLE_COUNT;
-    const CharacterId targetCacheCharacter = targetUsesRawBRRES ? GetMenuDriverBRRESCharacter(targetCharacter) : MARIO;
-    if (oldDriverModels != nullptr && targetTable == currentMenuDriverModelTable &&
-        targetCharacter == currentMenuDriverModelHud0Character &&
-        (!targetUsesRawBRRES || targetCacheCharacter == currentMenuDriverModelCharacter)) {
-        return true;
-    }
-
-    EGG::ExpHeap* oldMenuDriverModelHeap = activeMenuDriverModelHeap;
-    MenuDriverModelMgr* newDriverModels = nullptr;
-    menuModelMgr->driverModels = nullptr;
-    if (oldDriverModels != nullptr) {
-        ClearMenuDriverModels(*oldDriverModels);
-    }
-    ClearRawMenuDriverBRRESCachePointers();
-    DestroyMenuDriverModelHeap(oldMenuDriverModelHeap);
-    activeMenuDriverModelHeap = nullptr;
-    UnlockMenuDriverModelHeaps(*currentScene, *menuModelMgr);
-    currentScene->structsHeaps.SetHeapsGroupId(3);
-    buildingMenuDriverModelTable = targetTable;
-    buildingMenuDriverModelCharacter = targetCharacter;
-    ApplyMenuDriverModelTablePostfixes(targetCharacter, targetTable);
-    newDriverModels = CreateMenuDriverModelManager(playerCount);
-    buildingMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
-    buildingMenuDriverModelCharacter = CHARACTER_NONE;
-    ApplyCharacterPostfixes();
-    currentScene->structsHeaps.SetHeapsGroupId(0);
-    if (!IsMenuDriverModelManagerUsable(newDriverModels, playerCount)) {
-        currentScene->structsHeaps.SetHeapsGroupId(6);
-        return false;
-    }
-
-    menuModelMgr->driverModels = newDriverModels;
-    activeMenuDriverModelHeap = createdMenuDriverModelHeap;
-    createdMenuDriverModelHeap = nullptr;
-    StartMenuDriverModelManager(*newDriverModels);
-    currentScene->structsHeaps.SetHeapsGroupId(6);
-
-    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
-    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
-        menuModelMgr->RequestDriverModel(hudSlotId, sectionMgr->sectionParams->characters[hudSlotId]);
-    }
-
-    for (u8 playerId = 0; playerId < playerCount && playerId < 4; ++playerId) {
-        MenuDriverModel* const playerModel = newDriverModels->players[playerId].playerModel;
-        if (playerModel != nullptr && playerModel->model != nullptr) {
-            if (playerState[playerId] != MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT) {
-                playerModel->id = sectionMgr->sectionParams->karts[playerId];
-            }
-            playerModel->state = static_cast<MenuDriverModel::State>(0);
-            playerModel->SwitchState(playerId, playerState[playerId]);
-        }
-        newDriverModels->players[playerId].isVisible = playerWasVisible[playerId];
-        newDriverModels->TogglePlayerModel(playerId, playerWasVisible[playerId]);
-    }
-
-    RefreshCharacterSelectModels();
-    currentMenuDriverModelTable = targetTable;
-    currentMenuDriverModelCharacter = targetUsesRawBRRES ? targetCacheCharacter : CHARACTER_NONE;
-    currentMenuDriverModelHud0Character = targetCharacter;
-    return true;
 }
 
 static void ProcessPendingMenuDriverModelReinit() {
@@ -1449,6 +1437,7 @@ static void ProcessPendingMenuDriverModelReinit() {
 }
 
 static void ApplyDeferredMenuDriverReinitsAtFrameStart() {
+    // Rebuild at frame start to avoid mutating nw4r lists while the previous frame is drawing.
     if (applyPendingMenuDriverModelReinit) {
         applyPendingMenuDriverModelReinit = false;
         if (IsCharacterSelectPageActive()) {
@@ -1461,86 +1450,6 @@ static void ApplyDeferredMenuDriverReinitsAtFrameStart() {
     }
 }
 
-static void RefreshCharacterSelectModels() {
-    SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || sectionMgr->curSection == nullptr) return;
-
-    Pages::CharacterSelect* const characterSelect = sectionMgr->curSection->Get<Pages::CharacterSelect>();
-    if (characterSelect == nullptr || characterSelect->models == nullptr) return;
-
-    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
-    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
-        characterSelect->models[hudSlotId].RequestModel(GetPreviewCharacterForHud(hudSlotId));
-    }
-}
-
-static CharacterId GetPreviewCharacterForHud(u8 hudSlotId) {
-    if (hudSlotId >= 4) return MARIO;
-
-    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) {
-        return hoveredCharacterByHud[hudSlotId];
-    }
-
-    CharacterId previewCharacter = hoveredCharacterByHud[hudSlotId];
-    if (previewCharacter >= 0x30) {
-        previewCharacter = sectionMgr->sectionParams->characters[hudSlotId];
-    }
-    return previewCharacter;
-}
-
-static CharacterId GetSelectedCharacterForHud(u8 hudSlotId) {
-    if (hudSlotId >= 4) return MARIO;
-
-    const SectionMgr* const sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr &&
-        hudSlotId < sectionMgr->sectionParams->localPlayerCount) {
-        return sectionMgr->sectionParams->characters[hudSlotId];
-    }
-
-    const Racedata* const racedata = Racedata::sInstance;
-    if (racedata != nullptr && hudSlotId < racedata->menusScenario.localPlayerCount) {
-        const u8 playerId = racedata->menusScenario.settings.hudPlayerIds[hudSlotId];
-        if (playerId < 12) return racedata->menusScenario.players[playerId].characterId;
-    }
-
-    return hoveredCharacterByHud[hudSlotId];
-}
-
-static bool IsCharacterSelectPageActive() {
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
-
-    const Pages::CharacterSelect* characterSelect = sectionMgr->curSection->Get<Pages::CharacterSelect>();
-    if (characterSelect == nullptr) return false;
-
-    const Page* topPage = sectionMgr->curSection->GetTopLayerPage();
-    return topPage == characterSelect && characterSelect->currentState == STATE_ACTIVE && !characterSelect->updateState;
-}
-
-void RefreshLocalOnlineCustomCharacterFlags() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (!IsOnlineRoom(controller)) return;
-    if (IsLocalMultiplayerActive()) {
-        ResetOnlineCustomCharacterFlags();
-        return;
-    }
-    if (!isDisplayCustomSkinsEnabled()) return;
-
-    const Racedata* racedata = Racedata::sInstance;
-    if (racedata == nullptr) return;
-
-    const RacedataScenario& scenario = racedata->racesScenario;
-    const u8 localPlayerCount = scenario.localPlayerCount > 4 ? 4 : scenario.localPlayerCount;
-
-    for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
-        const u32 playerId = racedata->GetPlayerIdOfLocalPlayer(hudSlotId);
-        if (playerId < 12) {
-            onlineCharacterTables[playerId] = GetSelectedCharacterTable(scenario.players[playerId].characterId);
-        }
-    }
-}
-
 void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 characterTables) {
     if (playerIdToAid == nullptr) return;
     if (IsLocalMultiplayerActive()) {
@@ -1549,9 +1458,10 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 char
     }
 
     u8 hudSlotId = 0;
-    for (u8 playerId = 0; playerId < 12; ++playerId) {
+    for (u8 playerId = 0; playerId < MAX_ONLINE_PLAYERS; ++playerId) {
         if (playerIdToAid[playerId] != aid) continue;
 
+        // The SELECT packet only carries two local skin-table slots.
         const u8 shift = static_cast<u8>(hudSlotId * CUSTOM_CHARACTER_TABLE_PACKET_BITS);
         const u8 tableIdx = hudSlotId < 2 ? ((characterTables >> shift) & CUSTOM_CHARACTER_TABLE_PACKET_MASK) : CUSTOM_CHARACTER_TABLE_DEFAULT;
         onlineCharacterTables[playerId] = tableIdx < CUSTOM_CHARACTER_TABLE_COUNT ? tableIdx : CUSTOM_CHARACTER_TABLE_DEFAULT;
@@ -1582,7 +1492,7 @@ u8 GetLocalOnlineCharacterTables() {
 
 bool ShouldUseCustomCharacterForPlayer(u8 playerId) {
     if (IsLocalMultiplayerActive()) return false;
-    return playerId < 12 && onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
+    return playerId < MAX_ONLINE_PLAYERS && onlineCharacterTables[playerId] != CUSTOM_CHARACTER_TABLE_DEFAULT;
 }
 
 kmRuntimeUse(0x80540e3c);
@@ -1608,40 +1518,25 @@ kmCall(0x80554198, LoadKartArchiveHolder2Hook);
 kmRuntimeUse(0x805419c8);
 static const char* GetMenuDriverBRRESNameHook(u32 character) {
     const CharacterId characterId = static_cast<CharacterId>(character);
+    typedef const char* (*GetCharacterNameFn)(u32);
+    const GetCharacterNameFn original = reinterpret_cast<GetCharacterNameFn>(kmRuntimeAddr(0x805419c8));
+
     u8 tableIdx = CUSTOM_CHARACTER_TABLE_DEFAULT;
     if (buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
         const CharacterId buildingMenuCharacter = GetMenuDriverBRRESCharacter(buildingMenuDriverModelCharacter);
         if (characterId == buildingMenuCharacter) tableIdx = buildingMenuDriverModelTable;
     } else {
-        tableIdx = GetMenuDriverModelTableForCharacter(characterId);
+        tableIdx = ResolveMenuDriverModelTable(characterId);
     }
-    typedef const char* (*GetCharacterNameFn)(u32);
-    const GetCharacterNameFn original = reinterpret_cast<GetCharacterNameFn>(kmRuntimeAddr(0x805419c8));
+
     const char* driverName = GetDriverBRRESName(characterId, tableIdx);
     if (tableIdx < CUSTOM_CHARACTER_TABLE_COUNT && characterId >= 0 && characterId < CUSTOM_CHARACTER_COUNT &&
         rawMenuDriverBRRESLoadFailed[tableIdx][characterId]) {
-        const char* const name = original(character);
-        return name;
+        return original(character);
     }
-    if (driverName != nullptr) {
-        return driverName;
-    }
-
-    const char* const name = original(character);
-    return name;
+    return driverName != nullptr ? driverName : original(character);
 }
 kmCall(0x8081e4a0, GetMenuDriverBRRESNameHook);
-
-// Mirrors ReinitializeMenuDriverModels early-out so hover can queue deferred reinit or refresh models.
-static bool MenuDriverModelResourcesMatchP1Preview() {
-    const CharacterId preview0 = GetPreviewCharacterForHud(0);
-    if (currentMenuDriverModelHud0Character != CHARACTER_NONE && preview0 != currentMenuDriverModelHud0Character) return false;
-    const u8 needTable = GetMenuDriverModelTableForCharacter(preview0);
-    if (needTable != currentMenuDriverModelTable) return false;
-    const bool needRaw = needTable != CUSTOM_CHARACTER_TABLE_DEFAULT && needTable < CUSTOM_CHARACTER_TABLE_COUNT;
-    if (needRaw && GetMenuDriverBRRESCharacter(preview0) != currentMenuDriverModelCharacter) return false;
-    return true;
-}
 
 static void ResetCustomCharacterMenuState() {
     if (!IsOnlineRoom(RKNet::Controller::sInstance)) ResetOnlineCustomCharacterFlags();
@@ -1652,7 +1547,7 @@ static SectionLoadHook ResetCustomCharacterMenuStateHook(ResetCustomCharacterMen
 
 kmRuntimeUse(0x8083e5f4);
 static void CharacterSelectHoverHook(Pages::CharacterSelect* page, CtrlMenuCharacterSelect::ButtonDriver* button, u32 buttonId, u8 hudSlotId) {
-    if (hudSlotId < 4) {
+    if (hudSlotId < MAX_LOCAL_PLAYERS) {
         hoveredCharacterByHud[hudSlotId] = static_cast<CharacterId>(buttonId);
     }
     typedef void (*CharacterSelectHoverFn)(Pages::CharacterSelect*, CtrlMenuCharacterSelect::ButtonDriver*, u32, u8);
@@ -1666,7 +1561,7 @@ kmCall(0x807e37b0, CharacterSelectHoverHook);
 kmCall(0x807e3a88, CharacterSelectHoverHook);
 
 static ControllerType GetControllerTypeForHudSlot(const SectionMgr& sectionMgr, u8 hudSlotId) {
-    if (hudSlotId >= 4) return GCN;
+    if (hudSlotId >= MAX_LOCAL_PLAYERS) return GCN;
 
     const Input::RealControllerHolder* holder = sectionMgr.pad.padInfos[hudSlotId].controllerHolder;
     if (holder == nullptr || holder->curController == nullptr) return GCN;
@@ -1719,7 +1614,7 @@ static void UpdateCustomCharacterSelectNamePaneIcons() {
     Pages::CharacterSelect* const characterSelect = sectionMgr->curSection->Get<Pages::CharacterSelect>();
     if (characterSelect == nullptr || characterSelect->names == nullptr) return;
 
-    const u8 localPlayerCount = sectionMgr->sectionParams->localPlayerCount > 4 ? 4 : sectionMgr->sectionParams->localPlayerCount;
+    const u8 localPlayerCount = GetSectionLocalPlayerCount(*sectionMgr);
     if (IsLocalMultiplayerActive()) {
         for (u8 hudSlotId = 0; hudSlotId < localPlayerCount; ++hudSlotId) {
             HideAllCustomCharacterHintPanes(characterSelect->names[hudSlotId]);
@@ -1791,6 +1686,7 @@ static bool ShouldProcessCustomCharacterInput() {
         return false;
     }
 
+    // Eat the toggle press here so it does not also navigate the stock menu.
     const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
 
     u16 previousButton = 0;
@@ -1827,7 +1723,6 @@ static bool ShouldProcessCustomCharacterInput() {
 kmRuntimeUse(0x8063583c);
 // MenuScene_vf30 / GlobeScene_vf30 -> SectionMgr::MenuUpdate call sites
 static void MenuSceneSectionUpdateHook(SectionMgr* sectionMgr) {
-    if (charSelectHoverExtraSuppressFrames > 0) --charSelectHoverExtraSuppressFrames;
     ApplyDeferredMenuDriverReinitsAtFrameStart();
     UpdateCustomCharacterSelectNamePaneIcons();
     ShouldProcessCustomCharacterInput();
