@@ -1125,28 +1125,6 @@ static void StartMenuDriverModelManager(MenuDriverModelMgr& driverModelMgr) {
     original(&driverModelMgr);
 }
 
-kmRuntimeUse(0x80830c64);
-static void PrepareDriverOnKartAnmsHook(MenuDriverModelMgr* driverModelMgr, u8 playerId) {
-    ScnMgr* const* instances = GetScnMgrInstances();
-    ScnMgr* const mainScnMgr = instances != nullptr ? instances[0] : static_cast<ScnMgr*>(nullptr);
-    EGG::Heap* previousHeap = nullptr;
-
-    if (mainScnMgr != nullptr && activeMenuDriverModelHeap != nullptr) {
-        UnlockHeap(activeMenuDriverModelHeap);
-        previousHeap = mainScnMgr->curHeap;
-        mainScnMgr->curHeap = activeMenuDriverModelHeap;
-    }
-
-    typedef void (*PrepareDriverOnKartAnmsFn)(MenuDriverModelMgr*, u8);
-    const PrepareDriverOnKartAnmsFn original = reinterpret_cast<PrepareDriverOnKartAnmsFn>(kmRuntimeAddr(0x80830c64));
-    original(driverModelMgr, playerId);
-
-    if (mainScnMgr != nullptr && activeMenuDriverModelHeap != nullptr) {
-        mainScnMgr->curHeap = previousHeap;
-    }
-}
-kmCall(0x80832ea4, PrepareDriverOnKartAnmsHook);
-
 static u32 AlignUp(u32 value, u32 alignment) {
     return (value + alignment - 1) & ~(alignment - 1);
 }
