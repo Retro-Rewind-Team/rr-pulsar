@@ -151,6 +151,10 @@ static bool applyVotingVRMenuDriverReinit = false;
 static EGG::ExpHeap* rawMenuDriverBRRESHeaps[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static void* rawMenuDriverBRRESFiles[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
 static bool rawMenuDriverBRRESLoadFailed[CUSTOM_CHARACTER_TABLE_COUNT][CUSTOM_CHARACTER_COUNT] = {};
+static const u8 MII_C_BRRES_COUNT = 6;
+static EGG::ExpHeap* looseMiiCBRRESHeaps[MII_C_BRRES_COUNT] = {};
+static void* looseMiiCBRRESFiles[MII_C_BRRES_COUNT] = {};
+static bool looseMiiCBRRESLoadFailed[MII_C_BRRES_COUNT] = {};
 static EGG::ExpHeap* activeMenuDriverModelHeap = nullptr;
 static EGG::ExpHeap* createdMenuDriverModelHeap = nullptr;
 static MenuModelMgr* cachedMenuModelMgr = nullptr;
@@ -446,6 +450,22 @@ static bool IsMiiCharacter(CharacterId character) {
     return character >= MII_S_A_MALE && character <= MII_L_C_FEMALE;
 }
 
+static u8 GetMiiOutfitCIndex(CharacterId character) {
+    switch (character) {
+        case MII_S_C_MALE:   return 0;
+        case MII_S_C_FEMALE: return 1;
+        case MII_M_C_MALE:   return 2;
+        case MII_M_C_FEMALE: return 3;
+        case MII_L_C_MALE:   return 4;
+        case MII_L_C_FEMALE: return 5;
+        default:             return MII_C_BRRES_COUNT;
+    }
+}
+
+static bool IsMiiOutfitCCharacter(CharacterId character) {
+    return GetMiiOutfitCIndex(character) < MII_C_BRRES_COUNT;
+}
+
 static void EnsureActiveCustomCharacterTable() {
     ApplyCharacterPostfixes();
 }
@@ -636,6 +656,12 @@ static void ClearRawMenuDriverBRRESCachePointers() {
         for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
             ResetRawMenuDriverBRRESCacheEntry(tableIdx, static_cast<CharacterId>(character));
         }
+    }
+    // Scene teardown frees the sub-heaps; just null the pointers here.
+    for (u8 i = 0; i < MII_C_BRRES_COUNT; ++i) {
+        looseMiiCBRRESHeaps[i] = nullptr;
+        looseMiiCBRRESFiles[i] = nullptr;
+        looseMiiCBRRESLoadFailed[i] = false;
     }
 }
 
@@ -1055,9 +1081,84 @@ static bool LoadRawMenuDriverBRRES(void* holder, CharacterId character) {
     return true;
 }
 
+static bool TryLoadLooseMiiCBRRES(void* holder, CharacterId character) {
+    const u8 idx = GetMiiOutfitCIndex(character);
+    if (idx >= MII_C_BRRES_COUNT) return false;
+    if (looseMiiCBRRESLoadFailed[idx]) return false;
+
+    const char* const brresName = GetDefaultCharacterPostfix(character);
+    if (brresName == nullptr) {
+        looseMiiCBRRESLoadFailed[idx] = true;
+        return false;
+    }
+
+    char path[0x60];
+    const int written = snprintf(path, sizeof(path), "/Scene/Model/Driver/%s.brres", brresName);
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(path)) {
+        looseMiiCBRRESLoadFailed[idx] = true;
+        return false;
+    }
+
+    void*& rawFile = looseMiiCBRRESFiles[idx];
+    if (rawFile == nullptr) {
+        // Check disc presence before allocating heap memory.
+        u32 fileSize = 0;
+        if (!GetDiscFileSize(path, fileSize)) {
+            looseMiiCBRRESLoadFailed[idx] = true;
+            return false;
+        }
+
+        GameScene* const currentScene = const_cast<GameScene*>(GameScene::GetCurrent());
+        if (currentScene == nullptr) {
+            looseMiiCBRRESLoadFailed[idx] = true;
+            return false;
+        }
+
+        const u32 heapSize = 0x1000 + AlignUp(fileSize, 0x20) + 0x1000;
+        EGG::Heap* const parentHeap = GetRawMenuDriverBRRESParentHeap(*currentScene, heapSize);
+        if (parentHeap == nullptr) {
+            looseMiiCBRRESLoadFailed[idx] = true;
+            return false;
+        }
+
+        looseMiiCBRRESHeaps[idx] = EGG::ExpHeap::Create(static_cast<int>(heapSize), parentHeap, 0);
+        if (looseMiiCBRRESHeaps[idx] == nullptr) {
+            looseMiiCBRRESLoadFailed[idx] = true;
+            return false;
+        }
+
+        u32 loadedSize = 0;
+        rawFile = EGG::DvdRipper::LoadToMainRAM(path, nullptr, looseMiiCBRRESHeaps[idx],
+                                                 EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize);
+        if (rawFile == nullptr || loadedSize == 0) {
+            rawFile = nullptr;
+            DestroyMenuDriverModelHeap(looseMiiCBRRESHeaps[idx]);
+            looseMiiCBRRESLoadFailed[idx] = true;
+            return false;
+        }
+        looseMiiCBRRESLoadFailed[idx] = false;
+    } else {
+        looseMiiCBRRESLoadFailed[idx] = false;
+    }
+
+    if ((reinterpret_cast<u32>(rawFile) & 0x1f) != 0) {
+        looseMiiCBRRESLoadFailed[idx] = true;
+        return false;
+    }
+
+    nw4r::g3d::ResFile& resFile = *reinterpret_cast<nw4r::g3d::ResFile*>(reinterpret_cast<u8*>(holder) + 4);
+    resFile.data = reinterpret_cast<nw4r::g3d::ResFileData*>(rawFile);
+    BindRawMenuDriverBRRES(resFile, path);
+    return true;
+}
+
 kmRuntimeUse(0x8081e358);
 static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
     if (LoadRawMenuDriverBRRES(holder, character)) {
+        return 1;
+    }
+
+    if (TryLoadLooseMiiCBRRES(holder, character)) {
         return 1;
     }
 
