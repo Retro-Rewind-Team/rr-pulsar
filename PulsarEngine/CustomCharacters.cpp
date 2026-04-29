@@ -22,6 +22,9 @@
 #include <MarioKartWii/Input/Controller.hpp>
 #include <core/egg/DVD/DvdRipper.hpp>
 #include <core/rvl/dvd/dvd.hpp>
+#include <core/nw4r/ut/List.hpp>
+#include <MarioKartWii/3D/Scn/ScnMgr.hpp>
+#include <UI/ChangeCombo/ChangeCombo.hpp>
 
 namespace Pulsar {
 namespace CustomCharacters {
@@ -141,7 +144,7 @@ static const u8 CUSTOM_CHARACTER_TABLE_PACKET_MASK = (1 << CUSTOM_CHARACTER_TABL
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS;
 static u8 selectedCharacterTableByCharacter[CUSTOM_CHARACTER_COUNT];
 static u8 pendingMenuDriverReinitFrames = 0;
-static u8 menuDriverReinitCharSelectWaitAttempts = 0;
+static u16 menuDriverReinitCharSelectWaitAttempts = 0;
 // Last P1 preview character the menu driver heap was built for (early-out must not skip char changes on same table).
 static CharacterId currentMenuDriverModelHud0Character = CHARACTER_NONE;
 // Apply after previous frame's draw: FUN_80562888 walks ModelDirector lists; tearing down at the
@@ -424,6 +427,27 @@ static bool SetCustomCharacterTable(CharacterId character, u8 tableIdx) {
     return true;
 }
 
+bool RandomizeSelectedCharacterTable(CharacterId character) {
+    if (IsLocalMultiplayerActive()) return false;
+    if (!IsCustomCharacterStateIdValid(character)) return false;
+
+    u8 validTables[CUSTOM_CHARACTER_TABLE_COUNT];
+    u8 validCount = 0;
+    for (u8 tableIdx = 0; tableIdx < CUSTOM_CHARACTER_TABLE_COUNT; ++tableIdx) {
+        if (IsCharacterTableValidForCharacter(character, tableIdx)) {
+            validTables[validCount++] = tableIdx;
+        }
+    }
+    if (validCount == 0) return false;
+
+    Random random;
+    const u8 chosen = validTables[random.NextLimited<u8>(validCount)];
+    SetCustomCharacterTable(character, chosen);
+    pendingMenuDriverReinitFrames = 2;
+    menuDriverReinitCharSelectWaitAttempts = 0;
+    return true;
+}
+
 static bool CycleCustomCharacterTable(CharacterId character, int direction) {
     if (GetLocalPlayerCount() != 1) return false;
     if (!IsCustomCharacterStateIdValid(character)) return false;
@@ -487,19 +511,28 @@ static CharacterId GetMenuDriverBRRESCharacter(CharacterId character) {
     }
 }
 
+// Forward declaration: defined alongside the rest of the voting-VR menu-driver state.
+static bool ShouldUseDefaultMenuDriverTableForVotingVR();
+
 static void ApplyMenuDriverModelTablePostfixes(CharacterId targetCharacter, u8 tableIdx) {
-    // The menu-driver constructor should see a mostly vanilla postfix table, with only
-    // the target preview character temporarily redirected to its custom menu-scene BRRES.
+    (void)targetCharacter;
+    (void)tableIdx;
+
     CacheDefaultCharacterPostfixes();
     for (u32 character = 0; character < CUSTOM_CHARACTER_COUNT; ++character) {
         ApplyCharacterPostfix(static_cast<CharacterId>(character), CUSTOM_CHARACTER_TABLE_DEFAULT);
     }
-    if (tableIdx == CUSTOM_CHARACTER_TABLE_DEFAULT || tableIdx >= CUSTOM_CHARACTER_TABLE_COUNT) {
-        return;
-    }
 
-    const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(targetCharacter);
-    ApplyCharacterPostfix(menuCharacter, NormalizeCharacterTable(menuCharacter, tableIdx));
+    if (ShouldUseDefaultMenuDriverTableForVotingVR()) return;
+
+    for (u32 ch = 0; ch < CUSTOM_CHARACTER_COUNT; ++ch) {
+        const CharacterId character = static_cast<CharacterId>(ch);
+        const u8 charTable = GetSelectedCharacterTable(character);
+        if (charTable == CUSTOM_CHARACTER_TABLE_DEFAULT || charTable >= CUSTOM_CHARACTER_TABLE_COUNT) continue;
+
+        const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(character);
+        ApplyCharacterPostfix(menuCharacter, NormalizeCharacterTable(menuCharacter, charTable));
+    }
 }
 
 bool IsLocalRacePlayer(u8 playerId) {
@@ -627,6 +660,33 @@ static bool IsCharacterSelectPageActive() {
     return topPage == characterSelect && characterSelect->currentState == STATE_ACTIVE && !characterSelect->updateState;
 }
 
+static bool IsRandomizeComboRouletteActive() {
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
+
+    const UI::ExpCharacterSelect* expCharSelect = sectionMgr->curSection->Get<UI::ExpCharacterSelect>();
+    if (expCharSelect == nullptr) return false;
+    return expCharSelect->rouletteCounter > 0;
+}
+
+static bool IsMenuDriverPagePreviewStable() {
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
+
+    const Section* section = sectionMgr->curSection;
+    const Page* topPage = section->GetTopLayerPage();
+    if (topPage == nullptr) return false;
+    if (topPage->currentState != STATE_ACTIVE || topPage->updateState) return false;
+
+    const Pages::CharacterSelect* characterSelect = section->Get<Pages::CharacterSelect>();
+    if (topPage == characterSelect) {
+        if (IsRandomizeComboRouletteActive()) return false;
+        return true;
+    }
+
+    return false;
+}
+
 static void RefreshCharacterSelectModels() {
     SectionMgr* const sectionMgr = SectionMgr::sInstance;
     if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || sectionMgr->curSection == nullptr) return;
@@ -665,8 +725,59 @@ static void ClearRawMenuDriverBRRESCachePointers() {
     }
 }
 
+static bool IsAddressInHeapRange(const EGG::ExpHeap* heap, const void* addr) {
+    if (heap == nullptr || addr == nullptr || heap->rvlHeap == nullptr) return false;
+    const u8* const start = reinterpret_cast<const u8*>(heap->rvlHeap->startAddr);
+    const u8* const end = reinterpret_cast<const u8*>(heap->rvlHeap->endAddr);
+    if (start == nullptr || end == nullptr || start >= end) return false;
+    const u8* const ptr = reinterpret_cast<const u8*>(addr);
+    return ptr >= start && ptr < end;
+}
+
+static void DetachListNodesInHeap(nw4r::ut::List* list, const EGG::ExpHeap* heap) {
+    if (list == nullptr || heap == nullptr) return;
+
+    void* node = nw4r::ut::List_GetNext(list, nullptr);
+    while (node != nullptr) {
+        void* const next = nw4r::ut::List_GetNext(list, node);
+        if (IsAddressInHeapRange(heap, node)) {
+            nw4r::ut::List_Remove(list, node);
+        }
+        node = next;
+    }
+}
+
+kmRuntimeUse(0x809c1850);
+static const u32 SCNMGR_SINSTANCE_ADDRESS = kmRuntimeAddr(0x809c1850);
+
+static ScnMgr* const* GetScnMgrInstances() {
+    return reinterpret_cast<ScnMgr* const*>(SCNMGR_SINSTANCE_ADDRESS);
+}
+
+static void DetachHeapNodesFromAllScnMgrLists(const EGG::ExpHeap* heap) {
+    if (heap == nullptr) return;
+
+    ScnMgr* const* instances = GetScnMgrInstances();
+    if (instances == nullptr) return;
+
+    for (u32 i = 0; i < 2; ++i) {
+        ScnMgr* const mgr = instances[i];
+        if (mgr == nullptr) continue;
+
+        // The four bookkeeping lists ScnMgr maintains, all of which can host
+        // entries embedded in objects we allocated inside our subheap.
+        DetachListNodesInHeap(&mgr->modelDirectors, heap);
+        DetachListNodesInHeap(&mgr->screenSpecificModelDirectors, heap);
+        DetachListNodesInHeap(&mgr->scnGroupExHolderList, heap);
+        DetachListNodesInHeap(&mgr->hardcodedMatNamesModelDirectors, heap);
+    }
+}
+
 static void DestroyMenuDriverModelHeap(EGG::ExpHeap*& heap) {
     if (heap == nullptr) return;
+    // Strip any scene-graph references into our heap before we free it; see
+    // DetachHeapNodesFromAllScnMgrLists for the underlying crash mode.
+    DetachHeapNodesFromAllScnMgrLists(heap);
     UnlockHeap(heap);
     heap->destroy();
     heap = nullptr;
@@ -943,13 +1054,9 @@ static u8 ResolveMenuDriverModelTable(CharacterId character) {
 
 static u8 GetRawMenuDriverBRRESTable(CharacterId character) {
     const CharacterId menuCharacter = GetMenuDriverBRRESCharacter(character);
-    const u8 tableIdx = buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT ? buildingMenuDriverModelTable : ResolveMenuDriverModelTable(menuCharacter);
+    const u8 tableIdx = ResolveMenuDriverModelTable(menuCharacter);
     if (!ShouldUseRawMenuDriverBRRES(tableIdx)) return CUSTOM_CHARACTER_TABLE_INVALID;
     if (GetCharacterOverride(menuCharacter, tableIdx) == nullptr) return CUSTOM_CHARACTER_TABLE_INVALID;
-    if (buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
-        menuCharacter != GetMenuDriverBRRESCharacter(buildingMenuDriverModelCharacter)) {
-        return CUSTOM_CHARACTER_TABLE_INVALID;
-    }
     return tableIdx;
 }
 
@@ -1471,11 +1578,13 @@ static void ProcessVotingVRMenuDriverStateRefresh() {
     }
 }
 
+static const u16 MENU_DRIVER_REINIT_MAX_WAIT_ATTEMPTS = 600;
+
 static void ProcessPendingMenuDriverModelReinit() {
     if (pendingMenuDriverReinitFrames == 0) return;
     if (--pendingMenuDriverReinitFrames != 0) return;
-    if (!IsCharacterSelectPageActive()) {
-        if (menuDriverReinitCharSelectWaitAttempts >= 120) {
+    if (!IsMenuDriverPagePreviewStable()) {
+        if (menuDriverReinitCharSelectWaitAttempts >= MENU_DRIVER_REINIT_MAX_WAIT_ATTEMPTS) {
             menuDriverReinitCharSelectWaitAttempts = 0;
             return;
         }
@@ -1492,7 +1601,7 @@ static void ApplyDeferredMenuDriverReinitsAtFrameStart() {
     // Rebuild at frame start to avoid mutating nw4r lists while the previous frame is drawing.
     if (applyPendingMenuDriverModelReinit) {
         applyPendingMenuDriverModelReinit = false;
-        if (IsCharacterSelectPageActive()) {
+        if (IsMenuDriverPagePreviewStable()) {
             ReinitializeMenuDriverModels();
         }
     }
@@ -1573,13 +1682,7 @@ static const char* GetMenuDriverBRRESNameHook(u32 character) {
     typedef const char* (*GetCharacterNameFn)(u32);
     const GetCharacterNameFn original = reinterpret_cast<GetCharacterNameFn>(kmRuntimeAddr(0x805419c8));
 
-    u8 tableIdx = CUSTOM_CHARACTER_TABLE_DEFAULT;
-    if (buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
-        const CharacterId buildingMenuCharacter = GetMenuDriverBRRESCharacter(buildingMenuDriverModelCharacter);
-        if (characterId == buildingMenuCharacter) tableIdx = buildingMenuDriverModelTable;
-    } else {
-        tableIdx = ResolveMenuDriverModelTable(characterId);
-    }
+    const u8 tableIdx = ResolveMenuDriverModelTable(characterId);
 
     const char* driverName = GetDriverBRRESName(characterId, tableIdx);
     if (tableIdx < CUSTOM_CHARACTER_TABLE_COUNT && characterId >= 0 && characterId < CUSTOM_CHARACTER_COUNT &&

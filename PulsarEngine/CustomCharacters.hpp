@@ -19,6 +19,7 @@ bool IsCustomCharacterTableActive();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
 bool ShouldMuteCharacterVoice(const Kart::Link* link);
 void OnVotingVRPageExit();
+bool RandomizeSelectedCharacterTable(CharacterId character);
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar

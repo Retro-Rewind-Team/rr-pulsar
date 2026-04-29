@@ -141,6 +141,7 @@ static void RandomizeCombo() {
         sectionParams->karts[hudId] = kart;
         sectionParams->combos[hudId].selCharacter = character;
         sectionParams->combos[hudId].selKart = kart;
+        CustomCharacters::RandomizeSelectedCharacterTable(character);
 
         ExpCharacterSelect* charSelect = section->Get<ExpCharacterSelect>();  // guaranteed to exist on this page
         charSelect->randomizedCharIdx[hudId] = character;
