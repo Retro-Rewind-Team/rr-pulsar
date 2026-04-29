@@ -1,6 +1,7 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Input/InputManager.hpp>
+#include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCup.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <Ghost/UI/ExpGhostSelect.hpp>
 #include <Ghost/GhostManager.hpp>
@@ -277,22 +278,38 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
 }
 kmWritePointer(0x808DA614, BeforeEntranceAnimations);
 
-static void TrophyBMG(CtrlMenuInstructionText& bottomText, u32 bmgId) {
+static void SetTTCupTrophyBMG(CtrlMenuInstructionText& bottomText, PulsarCupId cupId) {
     Text::Info text;
     const System* system = System::sInstance;
     const Settings::Mgr& settings = Settings::Mgr::Get();
     const CupsConfig* cups = CupsConfig::sInstance;
-    const PulsarId selectedId = cups->ConvertTrack_PulsarCupToTrack(cups->lastSelectedCup, 0);
+    const PulsarId selectedId = cups->ConvertTrack_PulsarCupToTrack(cupId, 0);
     u32 trophyCount = settings.GetTrophyCount(selectedId, system->ttMode);
     u32 totalCount = settings.GetTotalTrophyCount(selectedId, system->ttMode);
     text.intToPass[0] = trophyCount;
     text.intToPass[1] = totalCount;
     text.bmgToPass[0] = BMG_TT_MODE_BOTTOM_CUP + system->ttMode;
-    bmgId = BMG_TT_BOTTOM_CUP_NOTROPHY;
+    u32 bmgId = BMG_TT_BOTTOM_CUP_NOTROPHY;
     if (totalCount > 0 && system->GetInfo().HasTrophies()) bmgId = BMG_TT_BOTTOM_CUP;
     bottomText.SetMessage(bmgId, &text);
 }
+
+static void TrophyBMG(CtrlMenuInstructionText& bottomText, u32 bmgId) {
+    const CupsConfig* cups = CupsConfig::sInstance;
+    SetTTCupTrophyBMG(bottomText, cups->lastSelectedCup);
+}
 kmCall(0x8084144c, TrophyBMG);
+
+extern "C" void UpdateText__Q25Pages9CupSelectFP20CtrlMenuCupSelectCup(Page* page, CtrlMenuCupSelectCup* cups);
+static void UpdateCupHoverText(Page* page, CtrlMenuCupSelectCup& cups, PushButton& button, u32 hudSlotId) {
+    UpdateText__Q25Pages9CupSelectFP20CtrlMenuCupSelectCup(page, &cups);
+
+    Pages::Menu* menuPage = reinterpret_cast<Pages::Menu*>(page);
+    if (Racedata::sInstance->menusScenario.settings.gamemode == MODE_TIME_TRIAL && menuPage->bottomText != nullptr) {
+        SetTTCupTrophyBMG(*menuPage->bottomText, static_cast<PulsarCupId>(button.buttonId));
+    }
+}
+kmCall(0x807e5ca4, UpdateCupHoverText);
 
 void IndividualTrophyBMG(Pages::CourseSelect& courseSelect, CtrlMenuCourseSelectCourse& course, PushButton& button, u32 hudSlotId) {
     if (Racedata::sInstance->menusScenario.settings.gamemode != MODE_TIME_TRIAL) {
