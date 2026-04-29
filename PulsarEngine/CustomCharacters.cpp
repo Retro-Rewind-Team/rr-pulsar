@@ -1,4 +1,4 @@
-#include <runtimeWrite.hpp>
+﻿#include <runtimeWrite.hpp>
 #include <CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
@@ -45,86 +45,85 @@ struct CharacterOverride {
     CharacterId character;
     u8 tableIdx;
     const char* postfix;
-    const char* driverBrresName;
 };
 
 // Custom skin rows are keyed by the stock character id and the selected custom table.
 // The default table is not mirrored here; it comes from the game's stock name table.
 static const CharacterOverride customCharacterAssets[] = {
-    {MARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "mr-1", nullptr},
-    {BABY_PEACH, CUSTOM_CHARACTER_TABLE_SKIN1, "bpc-1", nullptr},
-    {WALUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "wl-1", nullptr},
-    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN1, "kp-1", nullptr},
-    {BABY_DAISY, CUSTOM_CHARACTER_TABLE_SKIN1, "bds-1", nullptr},
-    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN1, "ka-1", nullptr},
-    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "bmr-1", nullptr},
-    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "lg-1", nullptr},
-    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN1, "ko-1", nullptr},
-    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "dk-1", nullptr},
-    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN1, "ys-1", nullptr},
-    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "wr-1", nullptr},
-    {BABY_LUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "blg-1", nullptr},
-    {TOADETTE, CUSTOM_CHARACTER_TABLE_SKIN1, "kk-1", nullptr},
-    {KOOPA_TROOPA, CUSTOM_CHARACTER_TABLE_SKIN1, "nk-1", nullptr},
-    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN1, "ds-1", nullptr},
-    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN1, "pc-1", nullptr},
-    {BIRDO, CUSTOM_CHARACTER_TABLE_SKIN1, "ca-1", nullptr},
-    {DIDDY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "dd-1", nullptr},
-    {KING_BOO, CUSTOM_CHARACTER_TABLE_SKIN1, "kt-1", nullptr},
-    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN1, "jr-1", nullptr},
-    {DRY_BOWSER, CUSTOM_CHARACTER_TABLE_SKIN1, "bk-1", nullptr},
-    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "fk-1", nullptr},
-    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN1, "rs-1", nullptr},
-    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "pc-1", "pc-1_menu"},
-    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "ds-1", "ds-1_menu"},
-    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "rs-1", "rs-1_menu"},
-    {MARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "mr-2", nullptr},
-    {BABY_PEACH, CUSTOM_CHARACTER_TABLE_SKIN2, "bpc-2", nullptr},
-    {WALUIGI, CUSTOM_CHARACTER_TABLE_SKIN2, "wl-2", nullptr},
-    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN2, "kp-2", nullptr},
-    {BABY_DAISY, CUSTOM_CHARACTER_TABLE_SKIN2, "bds-2", nullptr},
-    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN2, "ka-2", nullptr},
-    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "bmr-2", nullptr},
-    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN2, "lg-2", nullptr},
-    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN2, "ko-2", nullptr},
-    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "dk-2", nullptr},
-    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN2, "ys-2", nullptr},
-    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "wr-2", nullptr},
-    {KOOPA_TROOPA, CUSTOM_CHARACTER_TABLE_SKIN2, "nk-2", nullptr},
-    {DIDDY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "dd-2", nullptr},
-    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN2, "jr-2", nullptr},
-    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "fk-2", nullptr},
-    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN2, "pc-2", nullptr},
-    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN2, "ds-2", nullptr},
-    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN2, "rs-2", nullptr},
-    {BIRDO, CUSTOM_CHARACTER_TABLE_SKIN2, "ca-2", nullptr},
-    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "pc-2", "pc-2_menu"},
-    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "ds-2", "ds-2_menu"},
-    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "rs-2", "rs-2_menu"},
-    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN3, "kp-3", nullptr},
-    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN3, "ka-3", nullptr},
-    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN3, "bmr-3", nullptr},
-    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN3, "lg-3", nullptr},
-    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN3, "ko-3", nullptr},
-    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN3, "dk-3", nullptr},
-    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN3, "ys-3", nullptr},
-    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN3, "wr-3", nullptr},
-    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN3, "jr-3", nullptr},
-    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN3, "fk-3", nullptr},
-    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN3, "pc-3", nullptr},
-    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN3, "ds-3", nullptr},
-    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN3, "rs-3", nullptr},
-    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "pc-3", "pc-3_menu"},
-    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "ds-3", "ds-3_menu"},
-    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "rs-3", "rs-3_menu"},
-    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN4, "ka-4", nullptr},
-    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN4, "bmr-4", nullptr},
-    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN4, "lg-4", nullptr},
-    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN4, "dk-4", nullptr},
-    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN4, "jr-4", nullptr},
-    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN4, "kp-4", nullptr},
-    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN4, "fk-4", nullptr},
-    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN5, "jr-5", nullptr},
+    {MARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "mr-1"},
+    {BABY_PEACH, CUSTOM_CHARACTER_TABLE_SKIN1, "bpc-1"},
+    {WALUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "wl-1"},
+    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN1, "kp-1"},
+    {BABY_DAISY, CUSTOM_CHARACTER_TABLE_SKIN1, "bds-1"},
+    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN1, "ka-1"},
+    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "bmr-1"},
+    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "lg-1"},
+    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN1, "ko-1"},
+    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "dk-1"},
+    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN1, "ys-1"},
+    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN1, "wr-1"},
+    {BABY_LUIGI, CUSTOM_CHARACTER_TABLE_SKIN1, "blg-1"},
+    {TOADETTE, CUSTOM_CHARACTER_TABLE_SKIN1, "kk-1"},
+    {KOOPA_TROOPA, CUSTOM_CHARACTER_TABLE_SKIN1, "nk-1"},
+    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN1, "ds-1"},
+    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN1, "pc-1"},
+    {BIRDO, CUSTOM_CHARACTER_TABLE_SKIN1, "ca-1"},
+    {DIDDY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "dd-1"},
+    {KING_BOO, CUSTOM_CHARACTER_TABLE_SKIN1, "kt-1"},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN1, "jr-1"},
+    {DRY_BOWSER, CUSTOM_CHARACTER_TABLE_SKIN1, "bk-1"},
+    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN1, "fk-1"},
+    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN1, "rs-1"},
+    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "pc-1"},
+    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "ds-1"},
+    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN1, "rs-1"},
+    {MARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "mr-2"},
+    {BABY_PEACH, CUSTOM_CHARACTER_TABLE_SKIN2, "bpc-2"},
+    {WALUIGI, CUSTOM_CHARACTER_TABLE_SKIN2, "wl-2"},
+    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN2, "kp-2"},
+    {BABY_DAISY, CUSTOM_CHARACTER_TABLE_SKIN2, "bds-2"},
+    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN2, "ka-2"},
+    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "bmr-2"},
+    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN2, "lg-2"},
+    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN2, "ko-2"},
+    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "dk-2"},
+    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN2, "ys-2"},
+    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN2, "wr-2"},
+    {KOOPA_TROOPA, CUSTOM_CHARACTER_TABLE_SKIN2, "nk-2"},
+    {DIDDY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "dd-2"},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN2, "jr-2"},
+    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN2, "fk-2"},
+    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN2, "pc-2"},
+    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN2, "ds-2"},
+    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN2, "rs-2"},
+    {BIRDO, CUSTOM_CHARACTER_TABLE_SKIN2, "ca-2"},
+    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "pc-2"},
+    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "ds-2"},
+    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN2, "rs-2"},
+    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN3, "kp-3"},
+    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN3, "ka-3"},
+    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN3, "bmr-3"},
+    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN3, "lg-3"},
+    {TOAD, CUSTOM_CHARACTER_TABLE_SKIN3, "ko-3"},
+    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN3, "dk-3"},
+    {YOSHI, CUSTOM_CHARACTER_TABLE_SKIN3, "ys-3"},
+    {WARIO, CUSTOM_CHARACTER_TABLE_SKIN3, "wr-3"},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN3, "jr-3"},
+    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN3, "fk-3"},
+    {PEACH, CUSTOM_CHARACTER_TABLE_SKIN3, "pc-3"},
+    {DAISY, CUSTOM_CHARACTER_TABLE_SKIN3, "ds-3"},
+    {ROSALINA, CUSTOM_CHARACTER_TABLE_SKIN3, "rs-3"},
+    {PEACH_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "pc-3"},
+    {DAISY_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "ds-3"},
+    {ROSALINA_BIKER, CUSTOM_CHARACTER_TABLE_SKIN3, "rs-3"},
+    {DRY_BONES, CUSTOM_CHARACTER_TABLE_SKIN4, "ka-4"},
+    {BABY_MARIO, CUSTOM_CHARACTER_TABLE_SKIN4, "bmr-4"},
+    {LUIGI, CUSTOM_CHARACTER_TABLE_SKIN4, "lg-4"},
+    {DONKEY_KONG, CUSTOM_CHARACTER_TABLE_SKIN4, "dk-4"},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN4, "jr-4"},
+    {BOWSER, CUSTOM_CHARACTER_TABLE_SKIN4, "kp-4"},
+    {FUNKY_KONG, CUSTOM_CHARACTER_TABLE_SKIN4, "fk-4"},
+    {BOWSER_JR, CUSTOM_CHARACTER_TABLE_SKIN5, "jr-5"},
 };
 
 // Runtime state is split between three jobs:
@@ -134,6 +133,8 @@ static const CharacterOverride customCharacterAssets[] = {
 static const u8 CUSTOM_CHARACTER_COUNT = 0x30;
 static const u8 MAX_LOCAL_PLAYERS = 4;
 static const u8 MAX_ONLINE_PLAYERS = 12;
+static const u8 MAX_MENU_DRIVER_MODEL_COUNT = 0x18 + MAX_LOCAL_PLAYERS * 2;
+static const u8 MENU_DRIVER_MODEL_SIZE = 0x28;
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_BITS = 3;
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_MASK = (1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS) - 1;
 static const u8 CUSTOM_CHARACTER_TABLE_PACKET_COUNT = 1 << CUSTOM_CHARACTER_TABLE_PACKET_BITS;
@@ -327,7 +328,6 @@ static const char* GetCharacterPostfix(CharacterId character, u8 tableIdx) {
 static const char* GetDriverBRRESName(CharacterId character, u8 tableIdx) {
     const CharacterOverride* characterOverride = GetCharacterOverride(character, tableIdx);
     if (characterOverride != nullptr) {
-        if (characterOverride->driverBrresName != nullptr) return characterOverride->driverBrresName;
         return characterOverride->postfix;
     }
 
@@ -1073,8 +1073,7 @@ kmRuntimeUse(0x807dbd80);
 static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriverModel* driverModel, u32 miiId, Mii* mii, u32 r8) {
     const GameScene* const currentScene = GameScene::GetCurrent();
     if (currentScene != nullptr && (currentScene->id == SCENE_ID_GLOBE || currentScene->id == SCENE_ID_MENU) &&
-        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT &&
-        buildingMenuDriverModelCharacter < MII_S_A_MALE) {
+        buildingMenuDriverModelTable < CUSTOM_CHARACTER_TABLE_COUNT) {
         return nullptr;
     }
 
@@ -1084,28 +1083,6 @@ static MiiHeadsModel* CreateMenuMiiHeadModelHook(void* memory, u32 type, MiiDriv
     return result;
 }
 kmCall(0x80830540, CreateMenuMiiHeadModelHook);
-
-static bool EnsureMenuMiiHeadModel(MenuDriverModelMgr& driverModelMgr, u8 playerId) {
-    if (playerId >= driverModelMgr.playerCount) return false;
-
-    MiiHeadsModel** const miiHeads = reinterpret_cast<MiiHeadsModel**>(driverModelMgr.miiHeads);
-    Mii** const miis = reinterpret_cast<Mii**>(driverModelMgr.miis);
-    if (miiHeads == nullptr || miis == nullptr || miiHeads[playerId] != nullptr || miis[playerId] == nullptr) return false;
-
-    MenuDriverModel* const playerModel = driverModelMgr.players[playerId].playerModel;
-    if (playerModel == nullptr || playerModel->model == nullptr) return false;
-
-    const CharacterId miiId = driverModelMgr.players[playerId].id;
-    if (!IsMiiCharacter(miiId)) return false;
-
-    void* const memory = activeMenuDriverModelHeap != nullptr ? operator new(sizeof(MiiHeadsModel), activeMenuDriverModelHeap) : operator new(sizeof(MiiHeadsModel));
-    if (memory == nullptr) return false;
-
-    typedef MiiHeadsModel* (*CreateMiiHeadModelFn)(void*, u32, MiiDriverModel*, u32, Mii*, u32);
-    const CreateMiiHeadModelFn original = reinterpret_cast<CreateMiiHeadModelFn>(kmRuntimeAddr(0x807dbd80));
-    miiHeads[playerId] = original(memory, 5, reinterpret_cast<MiiDriverModel*>(playerModel->model), miiId - MII_S_A_MALE, miis[playerId], 0);
-    return miiHeads[playerId] != nullptr;
-}
 
 kmRuntimeUse(0x80830d00);
 static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, CharacterId character) {
@@ -1117,11 +1094,34 @@ static void RequestDriverModelHook(MenuModelMgr* menuModelMgr, u8 playerId, Char
     typedef void (*SetPlayerCharacterFn)(MenuDriverModelMgr*, u8, CharacterId);
     const SetPlayerCharacterFn original = reinterpret_cast<SetPlayerCharacterFn>(kmRuntimeAddr(0x80830d00));
     original(driverModels, playerId, character);
-    if (IsMiiCharacter(character) && EnsureMenuMiiHeadModel(*driverModels, playerId)) {
-        original(driverModels, playerId, character);
-    }
 }
 kmBranch(0x8059e568, RequestDriverModelHook);
+
+static void SnapshotMenuMiiHeads(const MenuDriverModelMgr* driverModelMgr, MiiHeadsModel** preservedMiiHeads) {
+    if (driverModelMgr == nullptr || preservedMiiHeads == nullptr) return;
+
+    MiiHeadsModel* const* miiHeads = reinterpret_cast<MiiHeadsModel* const*>(driverModelMgr->miiHeads);
+    if (miiHeads == nullptr) return;
+
+    const u8 playerCount = ClampLocalPlayerCount(driverModelMgr->playerCount);
+    for (u8 playerId = 0; playerId < playerCount; ++playerId) {
+        preservedMiiHeads[playerId] = miiHeads[playerId];
+    }
+}
+
+static void RestoreMenuMiiHeads(MenuDriverModelMgr* driverModelMgr, MiiHeadsModel* const* preservedMiiHeads) {
+    if (driverModelMgr == nullptr || preservedMiiHeads == nullptr) return;
+
+    MiiHeadsModel** const miiHeads = reinterpret_cast<MiiHeadsModel**>(driverModelMgr->miiHeads);
+    if (miiHeads == nullptr) return;
+
+    const u8 playerCount = ClampLocalPlayerCount(driverModelMgr->playerCount);
+    for (u8 playerId = 0; playerId < playerCount; ++playerId) {
+        if (miiHeads[playerId] == nullptr) {
+            miiHeads[playerId] = preservedMiiHeads[playerId];
+        }
+    }
+}
 
 static bool ReinitializeMenuDriverModels() {
     MenuModelMgr* const menuModelMgr = MenuModelMgr::sInstance;
@@ -1144,6 +1144,7 @@ static bool ReinitializeMenuDriverModels() {
     // Snapshot the old manager state before we rebuild the preview driver heap.
     MenuDriverModelMgr* const oldDriverModels = menuModelMgr->driverModels;
     bool playerWasVisible[MAX_LOCAL_PLAYERS] = {false, false, false, false};
+    MiiHeadsModel* preservedMiiHeads[MAX_LOCAL_PLAYERS] = {nullptr, nullptr, nullptr, nullptr};
     MenuDriverModel::State playerState[MAX_LOCAL_PLAYERS] = {
         MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
         MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
@@ -1151,6 +1152,7 @@ static bool ReinitializeMenuDriverModels() {
         MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT
     };
     if (oldDriverModels != nullptr) {
+        SnapshotMenuMiiHeads(oldDriverModels, preservedMiiHeads);
         const u8 snapshotPlayerCount = ClampLocalPlayerCount(oldDriverModels->playerCount);
         for (u8 playerId = 0; playerId < snapshotPlayerCount; ++playerId) {
             playerWasVisible[playerId] = oldDriverModels->players[playerId].isVisible;
@@ -1204,6 +1206,7 @@ static bool ReinitializeMenuDriverModels() {
         return false;
     }
 
+    RestoreMenuMiiHeads(newDriverModels, preservedMiiHeads);
     menuModelMgr->driverModels = newDriverModels;
     activeMenuDriverModelHeap = createdMenuDriverModelHeap;
     createdMenuDriverModelHeap = nullptr;

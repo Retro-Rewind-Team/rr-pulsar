@@ -71,7 +71,6 @@ void LoadAssetsFile(ArchiveFile* file, const char* path, EGG::Heap* decompressed
     else if (file == &archiveMgr->archivesHolders[ARCHIVE_HOLDER_UI]->archives[0])
         path = "/ReplacedAssets.szs";
     file->Load(path, decompressedHeap, isCompressed, allocDirection, archiveHeap, info);
-    OS::Report("Loading archive file %s for archive %p\n", path, file);
 }
 kmCall(0x8052aa2c, LoadAssetsFile);
 
