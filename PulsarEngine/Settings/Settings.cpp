@@ -357,6 +357,59 @@ bool Mgr::HasTrophyForAllVariants(PulsarId id, TTMode mode) const {
     return true;
 }
 
+u32 Mgr::CountVariantsInTrackRange(u32 firstTrackIdx, u32 trackCount) const {
+    const CupsConfig* cups = CupsConfig::sInstance;
+    u32 count = 0;
+    for (u32 i = 0; i < trackCount; ++i) {
+        const PulsarId id = static_cast<PulsarId>(PULSARID_FIRSTCT + firstTrackIdx + i);
+        count += cups->GetTrack(id).variantCount;
+    }
+    return count;
+}
+
+u32 Mgr::CountTrophiesInTrackRange(u32 firstTrackIdx, u32 trackCount, TTMode mode) const {
+    const CupsConfig* cups = CupsConfig::sInstance;
+    u32 count = 0;
+    for (u32 i = 0; i < trackCount; ++i) {
+        const PulsarId id = static_cast<PulsarId>(PULSARID_FIRSTCT + firstTrackIdx + i);
+        const Track& track = cups->GetTrack(id);
+        for (u32 variantIdx = 0; variantIdx <= track.variantCount; ++variantIdx) {
+            if (this->HasTrophy(track.crc32, static_cast<u8>(variantIdx), mode)) ++count;
+        }
+    }
+    return count;
+}
+
+u16 Mgr::GetTotalTrophyCount(PulsarId id, TTMode mode) const {
+    const CupsConfig* cups = CupsConfig::sInstance;
+    if (CupsConfig::IsReg(id)) return this->GetTotalTrophyCount(mode);
+
+    const u32 trackIdx = static_cast<u32>(id) - PULSARID_FIRSTCT;
+    const u32 rtTrackCount = cups->GetRetroTrackCount();
+    const u32 ctTrackCount = cups->GetCTOnlyTrackCount();
+    u32 total = this->GetTotalTrophyCount(mode);
+
+    if (trackIdx < rtTrackCount) {
+        total = cups->retroTrophyCount[mode] + this->CountVariantsInTrackRange(0, rtTrackCount);
+    } else if (trackIdx < rtTrackCount + ctTrackCount) {
+        total = cups->ctOnlyTrophyCount[mode] + this->CountVariantsInTrackRange(rtTrackCount, ctTrackCount);
+    }
+    if (total > 0xFFFF) total = 0xFFFF;
+    return static_cast<u16>(total);
+}
+
+int Mgr::GetTrophyCount(PulsarId id, TTMode mode) const {
+    const CupsConfig* cups = CupsConfig::sInstance;
+    if (CupsConfig::IsReg(id)) return this->GetTrophyCount(mode);
+
+    const u32 trackIdx = static_cast<u32>(id) - PULSARID_FIRSTCT;
+    const u32 rtTrackCount = cups->GetRetroTrackCount();
+    const u32 ctTrackCount = cups->GetCTOnlyTrackCount();
+    if (trackIdx < rtTrackCount) return this->CountTrophiesInTrackRange(0, rtTrackCount, mode);
+    if (trackIdx < rtTrackCount + ctTrackCount) return this->CountTrophiesInTrackRange(rtTrackCount, ctTrackCount, mode);
+    return this->GetTrophyCount(mode);
+}
+
 u8 Mgr::GetSettingValue(Type type, u32 setting) const {
     return this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting];
 }

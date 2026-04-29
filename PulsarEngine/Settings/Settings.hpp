@@ -78,6 +78,8 @@ class Mgr {
     void Save();
     void SaveTrophies();
     void AddTrophy(u32 crc32, u8 variantIdx, TTMode mode);
+    u32 CountTrophiesInTrackRange(u32 firstTrackIdx, u32 trackCount, TTMode mode) const;
+    u32 CountVariantsInTrackRange(u32 firstTrackIdx, u32 trackCount) const;
     void SetLastSelectedCup(PulsarCupId id) { this->rawBin->GetSection<MiscParams>().lastSelectedCup = id; }
 
    public:
@@ -94,7 +96,9 @@ class Mgr {
     bool HasTrophy(PulsarId id, TTMode mode) const;
     bool HasTrophyForAllVariants(PulsarId id, TTMode mode) const;
     u16 GetTotalTrophyCount(TTMode mode) const { return totalTrophyCount[mode]; }
+    u16 GetTotalTrophyCount(PulsarId id, TTMode mode) const;
     int GetTrophyCount(TTMode mode) const { return this->trophyCount[mode]; }
+    int GetTrophyCount(PulsarId id, TTMode mode) const;
     PulsarCupId GetSavedSelectedCup() const { return this->rawBin->GetSection<MiscParams>().lastSelectedCup; }
     u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
     void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }

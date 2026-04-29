@@ -281,8 +281,10 @@ static void TrophyBMG(CtrlMenuInstructionText& bottomText, u32 bmgId) {
     Text::Info text;
     const System* system = System::sInstance;
     const Settings::Mgr& settings = Settings::Mgr::Get();
-    u32 trophyCount = settings.GetTrophyCount(system->ttMode);
-    u32 totalCount = settings.GetTotalTrophyCount(system->ttMode);
+    const CupsConfig* cups = CupsConfig::sInstance;
+    const PulsarId selectedId = cups->ConvertTrack_PulsarCupToTrack(cups->lastSelectedCup, 0);
+    u32 trophyCount = settings.GetTrophyCount(selectedId, system->ttMode);
+    u32 totalCount = settings.GetTotalTrophyCount(selectedId, system->ttMode);
     text.intToPass[0] = trophyCount;
     text.intToPass[1] = totalCount;
     text.bmgToPass[0] = BMG_TT_MODE_BOTTOM_CUP + system->ttMode;
@@ -300,7 +302,7 @@ void IndividualTrophyBMG(Pages::CourseSelect& courseSelect, CtrlMenuCourseSelect
         const Settings::Mgr& settings = Settings::Mgr::Get();
         CupsConfig* cupsConfig = CupsConfig::sInstance;
         const PulsarId id = cupsConfig->ConvertTrack_PulsarCupToTrack(cupsConfig->lastSelectedCup, button.buttonId);
-        u32 bmgId = settings.GetTotalTrophyCount(system->ttMode) > 0 ? BMG_TT_BOTTOM_COURSE : BMG_TT_BOTTOM_COURSE_NOTROPHY;
+        u32 bmgId = settings.GetTotalTrophyCount(id, system->ttMode) > 0 ? BMG_TT_BOTTOM_COURSE : BMG_TT_BOTTOM_COURSE_NOTROPHY;
 
         Text::Info text;
         text.bmgToPass[0] = BMG_TT_MODE_BOTTOM_CUP + system->ttMode;
@@ -318,7 +320,7 @@ const Text::Info GetCourseBottomText(PulsarId id, u32* bmgId) {
 const Text::Info GetCourseBottomText(PulsarId id, u8 variantIdx, u32* bmgId) {
     const System* system = System::sInstance;
     const Settings::Mgr& settings = Settings::Mgr::Get();
-    if (settings.GetTotalTrophyCount(system->ttMode) > 0)
+    if (settings.GetTotalTrophyCount(id, system->ttMode) > 0)
         *bmgId = BMG_TT_BOTTOM_COURSE;
     else
         *bmgId = BMG_TT_BOTTOM_COURSE_NOTROPHY;

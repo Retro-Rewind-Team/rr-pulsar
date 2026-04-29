@@ -131,7 +131,11 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
     }
     definedCTsCupCount = count;
     ctsCupCount = count;
-    for (int i = 0; i < 4; ++i) trophyCount[i] = rawCups.trophyCount[i];
+    for (int i = 0; i < 4; ++i) {
+        trophyCount[i] = rawCups.trophyCount[i];
+        retroTrophyCount[i] = rawCups.trophyCount[i];
+        ctOnlyTrophyCount[i] = 0;
+    }
 
     u16 ctsCount = count * 4;
 
@@ -234,6 +238,8 @@ CupsConfig::CupsConfig(const CupsHolder& rtCups, const CupsHolder& ctCups, const
     definedCTsCupCount = count;
     ctsCupCount = count;
     for (int i = 0; i < 4; ++i) {
+        retroTrophyCount[i] = rtCups.trophyCount[i];
+        ctOnlyTrophyCount[i] = ctCups.trophyCount[i];
         trophyCount[i] = CombineTrophyCount(rtCups.trophyCount[i], ctCups.trophyCount[i]);
     }
 
