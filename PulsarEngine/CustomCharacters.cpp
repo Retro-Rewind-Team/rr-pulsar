@@ -1,4 +1,6 @@
-﻿#include <runtimeWrite.hpp>
+﻿#include <core/rvl/CX/Uncompression.hpp>
+#include <hooks.hpp>
+#include <runtimeWrite.hpp>
 #include <CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
@@ -476,13 +478,20 @@ static bool IsMiiCharacter(CharacterId character) {
 
 static u8 GetMiiOutfitCIndex(CharacterId character) {
     switch (character) {
-        case MII_S_C_MALE:   return 0;
-        case MII_S_C_FEMALE: return 1;
-        case MII_M_C_MALE:   return 2;
-        case MII_M_C_FEMALE: return 3;
-        case MII_L_C_MALE:   return 4;
-        case MII_L_C_FEMALE: return 5;
-        default:             return MII_C_BRRES_COUNT;
+        case MII_S_C_MALE:
+            return 0;
+        case MII_S_C_FEMALE:
+            return 1;
+        case MII_M_C_MALE:
+            return 2;
+        case MII_M_C_FEMALE:
+            return 3;
+        case MII_L_C_MALE:
+            return 4;
+        case MII_L_C_FEMALE:
+            return 5;
+        default:
+            return MII_C_BRRES_COUNT;
     }
 }
 
@@ -1016,14 +1025,8 @@ static bool SyncVotingVRMenuDriverState() {
     return true;
 }
 
-static bool ShouldHandleVotingVRMenuDriverModels() {
-    const CharacterId targetCharacter = GetPreviewCharacterForHud(0);
-    return GetSelectedCharacterTable(targetCharacter) != CUSTOM_CHARACTER_TABLE_DEFAULT;
-}
-
 static bool ShouldUseDefaultMenuDriverTableForVotingVR() {
     if (!SyncVotingVRMenuDriverState()) return false;
-    if (!ShouldHandleVotingVRMenuDriverModels()) return false;
     if (IsVRPageActive()) votingVRMenuDriverSawActive = true;
     return !votingVRMenuDriverExited;
 }
@@ -1236,7 +1239,7 @@ static bool TryLoadLooseMiiCBRRES(void* holder, CharacterId character) {
 
         u32 loadedSize = 0;
         rawFile = EGG::DvdRipper::LoadToMainRAM(path, nullptr, looseMiiCBRRESHeaps[idx],
-                                                 EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize);
+                                                EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize);
         if (rawFile == nullptr || loadedSize == 0) {
             rawFile = nullptr;
             DestroyMenuDriverModelHeap(looseMiiCBRRESHeaps[idx]);
@@ -1358,8 +1361,7 @@ static bool ReinitializeMenuDriverModels() {
         MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
         MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
         MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT,
-        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT
-    };
+        MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT};
     if (oldDriverModels != nullptr) {
         SnapshotMenuMiiHeads(oldDriverModels, preservedMiiHeads);
         const u8 snapshotPlayerCount = ClampLocalPlayerCount(oldDriverModels->playerCount);
@@ -1449,10 +1451,6 @@ static bool ReinitializeMenuDriverModels() {
 
 void OnVotingVRPageExit() {
     if (!SyncVotingVRMenuDriverState() || votingVRMenuDriverReinitialized) return;
-    if (!ShouldHandleVotingVRMenuDriverModels()) {
-        votingVRMenuDriverReinitialized = true;
-        return;
-    }
 
     if (votingVRMenuDriverExited) return;
     votingVRMenuDriverExited = true;
@@ -1490,10 +1488,6 @@ static bool PrimeVotingModelRenderer() {
 
 static void ReinitializeVotingVRMenuDriverModels() {
     if (!SyncVotingVRMenuDriverState() || votingVRMenuDriverReinitialized) return;
-    if (!ShouldHandleVotingVRMenuDriverModels()) {
-        votingVRMenuDriverReinitialized = true;
-        return;
-    }
 
     currentMenuDriverModelTable = CUSTOM_CHARACTER_TABLE_INVALID;
     currentMenuDriverModelCharacter = CHARACTER_NONE;
@@ -1509,7 +1503,6 @@ static void ReinitializeVotingVRMenuDriverModels() {
 
 static void ProcessVotingVRMenuDriverModelReinit() {
     if (!SyncVotingVRMenuDriverState()) return;
-    if (!ShouldHandleVotingVRMenuDriverModels()) return;
     if (IsVRPageActive()) {
         votingVRMenuDriverSawActive = true;
         return;
@@ -1566,10 +1559,6 @@ static bool RefreshVotingVRMenuDriverStates() {
 static void ProcessVotingVRMenuDriverStateRefresh() {
     if (votingVRMenuDriverStateRefreshFrames == 0) return;
     if (!SyncVotingVRMenuDriverState() || IsVRPageActive()) return;
-    if (!ShouldHandleVotingVRMenuDriverModels()) {
-        votingVRMenuDriverStateRefreshFrames = 0;
-        return;
-    }
 
     if (RefreshVotingVRMenuDriverStates()) {
         votingVRMenuDriverStateRefreshFrames = 0;
