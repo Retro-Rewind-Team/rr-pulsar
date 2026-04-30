@@ -2336,6 +2336,7 @@ beginFrame= 0x8020fe24
 sInstance__Q25RKNet11USERHandler = 0x809c2108
 CopySendToPacketHolder__Q25RKNet11USERHandlerFUc = 0x80662abc
 CreateSendPacket__Q25RKNet11USERHandlerFv = 0x8066300c
+Update__Q25RKNet11USERHandlerFv = 0x806629c0
 InitPackets__Q25RKNet13SELECTHandlerFv = 0x8065ffa4
 
 #FriendMgr
