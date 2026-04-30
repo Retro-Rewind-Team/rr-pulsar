@@ -9,14 +9,44 @@
 namespace Pulsar {
 namespace IOOverrides {
 
+static void ClearCompressedArchive(ArchiveFile* file) {
+    if (file->compressedArchive != nullptr && file->dumpHeap != nullptr) {
+        EGG::Heap::free(file->compressedArchive, file->dumpHeap);
+    }
+    file->compressedArchive = nullptr;
+    file->compressedArchiveSize = 0;
+    file->dumpHeap = nullptr;
+}
+
+static void FailDecompress(ArchiveFile* file) {
+    ClearCompressedArchive(file);
+    file->rawArchive = nullptr;
+    file->archiveSize = 0;
+    file->archiveHeap = nullptr;
+    file->status = ARCHIVE_STATUS_NONE;
+}
+
+static u8* AllocDecompressedArchive(u32 allocSize, EGG::Heap* primaryHeap, EGG::Heap* fallbackHeap,
+                                    EGG::Heap*& outHeap) {
+    outHeap = primaryHeap;
+    u8* buffer = static_cast<u8*>(EGG::Heap::alloc(allocSize, 0x20, primaryHeap));
+    if (buffer == nullptr && fallbackHeap != nullptr && fallbackHeap != primaryHeap) {
+        outHeap = fallbackHeap;
+        buffer = static_cast<u8*>(EGG::Heap::alloc(allocSize, 0x20, fallbackHeap));
+    }
+    return buffer;
+}
+
 static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap, EGG::Archive::FileInfo* info) {
     u8* compressedData = static_cast<u8*>(file->compressedArchive);
     if (compressedData == nullptr) {
+        FailDecompress(file);
         return;
     }
 
     u32 expandSize = EGG::Decomp::getExpandSize(compressedData);
     if (expandSize == 0) {
+        FailDecompress(file);
         return;
     }
 
@@ -25,11 +55,12 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     // This gate is cheap on purpose: skip all index work for non-SZS loads before allocating extra scratch logic.
     const bool canApplyOverrides = ShouldApplyLooseOverrides(path, archiveBaseLower, sizeof(archiveBaseLower));
     const u32 allocSize = nw4r::ut::RoundUp(expandSize, 0x20);
-    void* buffer = EGG::Heap::alloc(allocSize, 0x20, heap);
-    u8* decompressedBuffer = static_cast<u8*>(buffer);
+    EGG::Heap* archiveHeap = nullptr;
+    u8* decompressedBuffer = AllocDecompressedArchive(allocSize, heap, file->dumpHeap, archiveHeap);
 
     if (decompressedBuffer == nullptr) {
         OS::Report("[Pulsar] ArchiveFile::Decompress allocation failed! Size: 0x%X\n", allocSize);
+        FailDecompress(file);
         return;
     }
 
@@ -41,19 +72,13 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     u32 finalSize = expandSize;
 
     u8* archiveBase = decompressedBuffer;
-    EGG::Heap* archiveHeap = heap;
     if (canApplyOverrides) {
         // `ApplyLooseOverrides()` may swap `archiveBase` to a repacked buffer on another heap.
-        ApplyLooseOverrides(archiveBaseLower, archiveBase, finalSize, heap, archiveHeap, &appliedOverrides, &patchedNodes,
-                            &missingOverrides, compressedData);
+        ApplyLooseOverrides(archiveBaseLower, archiveBase, finalSize, archiveHeap, archiveHeap, &appliedOverrides,
+                            &patchedNodes, &missingOverrides, compressedData);
     }
 
-    if (file->compressedArchive != nullptr && file->dumpHeap != nullptr) {
-        EGG::Heap::free(file->compressedArchive, file->dumpHeap);
-        file->compressedArchive = nullptr;
-        file->compressedArchiveSize = 0;
-        file->dumpHeap = nullptr;
-    }
+    ClearCompressedArchive(file);
 
     file->archiveSize = finalSize;
     file->rawArchive = archiveBase;
