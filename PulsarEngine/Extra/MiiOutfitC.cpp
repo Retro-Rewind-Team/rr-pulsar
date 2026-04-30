@@ -148,6 +148,11 @@ kmWrite32(0x808312e0, 0x2C1C0002);
 kmWrite32(0x80830d50, 0x1C840003);  // VS liveview / ghost branch
 kmWrite32(0x80830ed4, 0x1C840003);  // Main character-select branch
 
+// Local multiplayer allocates one per-player heap for menu Mii models. Stock size is tuned for
+// two Mii body variants (A/B); Outfit C needs extra room during the ctor-time 0x80831100 loads.
+kmWrite32(0x8059e3bc, 0x3F800002);  // lis r28, 0x2 -> 0x20000 seed
+kmWrite32(0x8059e3cc, 0x7F83E378);  // mr r3, r28 -> 0x20000 bytes
+
 // Main Mii slot selector
 asmFunc MiiOutfitCDriverSlot() {
     ASM(
