@@ -26,6 +26,7 @@
 #include <core/rvl/dvd/dvd.hpp>
 #include <core/nw4r/ut/List.hpp>
 #include <MarioKartWii/3D/Scn/ScnMgr.hpp>
+#include <UI/UI.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
 
 namespace Pulsar {
@@ -60,88 +61,89 @@ struct CharacterOverride {
     u8 tableIdx;
     const char* postfix;
     bool silentVoice;
+    const char* authorText;
 };
 
 static const CharacterOverride customCharacterAssets[] = {
-    {MARIO, TABLE_SKIN1, "mr-1", false},
-    {MARIO, TABLE_SKIN2, "mr-2", false},
-    {MARIO, TABLE_SKIN3, "mr-3", true},
-    {BABY_PEACH, TABLE_SKIN1, "bpc-1", false},
-    {BABY_PEACH, TABLE_SKIN2, "bpc-2", true},
-    {WALUIGI, TABLE_SKIN1, "wl-1", false},
-    {WALUIGI, TABLE_SKIN2, "wl-2", false},
-    {WALUIGI, TABLE_SKIN3, "wl-3", true},
-    {BOWSER, TABLE_SKIN1, "kp-1", false},
-    {BOWSER, TABLE_SKIN2, "kp-2", false},
-    {BOWSER, TABLE_SKIN3, "kp-3", true},
-    {BOWSER, TABLE_SKIN4, "kp-4", true},
-    {BABY_DAISY, TABLE_SKIN1, "bds-1", false},
-    {BABY_DAISY, TABLE_SKIN2, "bds-2", true},
-    {DRY_BONES, TABLE_SKIN1, "ka-1", false},
-    {DRY_BONES, TABLE_SKIN2, "ka-2", false},
-    {DRY_BONES, TABLE_SKIN3, "ka-3", true},
-    {DRY_BONES, TABLE_SKIN4, "ka-4", true},
-    {BABY_MARIO, TABLE_SKIN1, "bmr-1", false},
-    {BABY_MARIO, TABLE_SKIN2, "bmr-2", false},
-    {BABY_MARIO, TABLE_SKIN3, "bmr-3", true},
-    {BABY_MARIO, TABLE_SKIN4, "bmr-4", true},
-    {LUIGI, TABLE_SKIN1, "lg-1", false},
-    {LUIGI, TABLE_SKIN2, "lg-2", false},
-    {LUIGI, TABLE_SKIN3, "lg-3", true},
-    {LUIGI, TABLE_SKIN4, "lg-4", true},
-    {TOAD, TABLE_SKIN1, "ko-1", false},
-    {TOAD, TABLE_SKIN2, "ko-2", false},
-    {TOAD, TABLE_SKIN3, "ko-3", true},
-    {DONKEY_KONG, TABLE_SKIN1, "dk-1", false},
-    {DONKEY_KONG, TABLE_SKIN2, "dk-2", false},
-    {DONKEY_KONG, TABLE_SKIN3, "dk-3", true},
-    {DONKEY_KONG, TABLE_SKIN4, "dk-4", true},
-    {YOSHI, TABLE_SKIN1, "ys-1", false},
-    {YOSHI, TABLE_SKIN2, "ys-2", false},
-    {YOSHI, TABLE_SKIN3, "ys-3", true},
-    {WARIO, TABLE_SKIN1, "wr-1", false},
-    {WARIO, TABLE_SKIN2, "wr-2", false},
-    {WARIO, TABLE_SKIN3, "wr-3", true},
-    {BABY_LUIGI, TABLE_SKIN1, "blg-1", false},
-    {TOADETTE, TABLE_SKIN1, "kk-1", false},
-    {KOOPA_TROOPA, TABLE_SKIN1, "nk-1", false},
-    {KOOPA_TROOPA, TABLE_SKIN2, "nk-2", true},
-    {DAISY, TABLE_SKIN1, "ds-1", false},
-    {DAISY, TABLE_SKIN2, "ds-2", false},
-    {DAISY, TABLE_SKIN3, "ds-3", false},
-    {PEACH, TABLE_SKIN1, "pc-1", false},
-    {PEACH, TABLE_SKIN2, "pc-2", false},
-    {PEACH, TABLE_SKIN3, "pc-3", false},
-    {BIRDO, TABLE_SKIN1, "ca-1", false},
-    {BIRDO, TABLE_SKIN2, "ca-2", true},
-    {DIDDY_KONG, TABLE_SKIN1, "dd-1", false},
-    {DIDDY_KONG, TABLE_SKIN2, "dd-2", true},
-    {DIDDY_KONG, TABLE_SKIN3, "dd-3", true},
-    {KING_BOO, TABLE_SKIN1, "kt-1", false},
-    {BOWSER_JR, TABLE_SKIN1, "jr-1", false},
-    {BOWSER_JR, TABLE_SKIN2, "jr-2", true},
-    {BOWSER_JR, TABLE_SKIN3, "jr-3", true},
-    {BOWSER_JR, TABLE_SKIN4, "jr-4", false},
-    {BOWSER_JR, TABLE_SKIN5, "jr-5", true},
-    {DRY_BOWSER, TABLE_SKIN1, "bk-1", false},
-    {DRY_BOWSER, TABLE_SKIN2, "bk-2", true},
-    {FUNKY_KONG, TABLE_SKIN1, "fk-1", false},
-    {FUNKY_KONG, TABLE_SKIN2, "fk-2", true},
-    {FUNKY_KONG, TABLE_SKIN3, "fk-3", false},
-    {FUNKY_KONG, TABLE_SKIN4, "fk-4", false},
-    {FUNKY_KONG, TABLE_SKIN5, "fk-5", true},
-    {ROSALINA, TABLE_SKIN1, "rs-1", false},
-    {ROSALINA, TABLE_SKIN2, "rs-2", false},
-    {ROSALINA, TABLE_SKIN3, "rs-3", true},
-    {PEACH_BIKER, TABLE_SKIN1, "pc-1", false},
-    {PEACH_BIKER, TABLE_SKIN2, "pc-2", false},
-    {PEACH_BIKER, TABLE_SKIN3, "pc-3", false},
-    {DAISY_BIKER, TABLE_SKIN1, "ds-1", false},
-    {DAISY_BIKER, TABLE_SKIN2, "ds-2", false},
-    {DAISY_BIKER, TABLE_SKIN3, "ds-3", false},
-    {ROSALINA_BIKER, TABLE_SKIN1, "rs-1", false},
-    {ROSALINA_BIKER, TABLE_SKIN2, "rs-2", false},
-    {ROSALINA_BIKER, TABLE_SKIN3, "rs-3", true},
+    {MARIO, TABLE_SKIN1, "mr-1", false, "LTC 91"},
+    {MARIO, TABLE_SKIN2, "mr-2", false, "UltraWario"},
+    {MARIO, TABLE_SKIN3, "mr-3", true, "GioMacGrillin"},
+    {BABY_PEACH, TABLE_SKIN1, "bpc-1", false, "UltraWario"},
+    {BABY_PEACH, TABLE_SKIN2, "bpc-2", true, "ALE XD"},
+    {WALUIGI, TABLE_SKIN1, "wl-1", false, "TheBeefBai"},
+    {WALUIGI, TABLE_SKIN2, "wl-2", false, "UltraWario"},
+    {WALUIGI, TABLE_SKIN3, "wl-3", true, "UltraWario"},
+    {BOWSER, TABLE_SKIN1, "kp-1", false, "UltraWario"},
+    {BOWSER, TABLE_SKIN2, "kp-2", false, "UltraWario"},
+    {BOWSER, TABLE_SKIN3, "kp-3", true, "UltraWario, Porko"},
+    {BOWSER, TABLE_SKIN4, "kp-4", true, "Numerosity"},
+    {BABY_DAISY, TABLE_SKIN1, "bds-1", false, "Poobah"},
+    {BABY_DAISY, TABLE_SKIN2, "bds-2", true, "Porko, UltraWario"},
+    {DRY_BONES, TABLE_SKIN1, "ka-1", false, "Tank2go"},
+    {DRY_BONES, TABLE_SKIN2, "ka-2", false, "LTC 91"},
+    {DRY_BONES, TABLE_SKIN3, "ka-3", true, "UltraWario"},
+    {DRY_BONES, TABLE_SKIN4, "ka-4", true, "GioMacGrillin"},
+    {BABY_MARIO, TABLE_SKIN1, "bmr-1", false, "Whipinsnapper"},
+    {BABY_MARIO, TABLE_SKIN2, "bmr-2", false, "LTC 91"},
+    {BABY_MARIO, TABLE_SKIN3, "bmr-3", true, "GioMacGrillin"},
+    {BABY_MARIO, TABLE_SKIN4, "bmr-4", true, "UltraWario"},
+    {LUIGI, TABLE_SKIN1, "lg-1", false, "UltraWario"},
+    {LUIGI, TABLE_SKIN2, "lg-2", false, "PlayersPurity"},
+    {LUIGI, TABLE_SKIN3, "lg-3", true, "JTG"},
+    {LUIGI, TABLE_SKIN4, "lg-4", true, "ALE XD"},
+    {TOAD, TABLE_SKIN1, "ko-1", false, "UltraWario"},
+    {TOAD, TABLE_SKIN2, "ko-2", false, "UltraWario"},
+    {TOAD, TABLE_SKIN3, "ko-3", true, "Monxy"},
+    {DONKEY_KONG, TABLE_SKIN1, "dk-1", false, "Whipinsnapper"},
+    {DONKEY_KONG, TABLE_SKIN2, "dk-2", false, "LTC 91"},
+    {DONKEY_KONG, TABLE_SKIN3, "dk-3", true, "Monxy"},
+    {DONKEY_KONG, TABLE_SKIN4, "dk-4", true, "Chiller7"},
+    {YOSHI, TABLE_SKIN1, "ys-1", false, "LTC 91"},
+    {YOSHI, TABLE_SKIN2, "ys-2", false, "ordartz"},
+    {YOSHI, TABLE_SKIN3, "ys-3", true, "UltraWario, Porko"},
+    {WARIO, TABLE_SKIN1, "wr-1", false, "UltraWario"},
+    {WARIO, TABLE_SKIN2, "wr-2", false, "UltraWario"},
+    {WARIO, TABLE_SKIN3, "wr-3", true, "UltraWario"},
+    {BABY_LUIGI, TABLE_SKIN1, "blg-1", false, "Tadhger"},
+    {TOADETTE, TABLE_SKIN1, "kk-1", false, "Toadette Hack Fan"},
+    {KOOPA_TROOPA, TABLE_SKIN1, "nk-1", false, "Jordi6304"},
+    {KOOPA_TROOPA, TABLE_SKIN2, "nk-2", true, "UltraWario"},
+    {DAISY, TABLE_SKIN1, "ds-1", false, "TheBeefBai"},
+    {DAISY, TABLE_SKIN2, "ds-2", false, "ALE XD"},
+    {DAISY, TABLE_SKIN3, "ds-3", false, "UltraWario"},
+    {PEACH, TABLE_SKIN1, "pc-1", false, "Whipinsnapper"},
+    {PEACH, TABLE_SKIN2, "pc-2", false, "GVRIMZ"},
+    {PEACH, TABLE_SKIN3, "pc-3", false, "UltraWario"},
+    {BIRDO, TABLE_SKIN1, "ca-1", false, "JTG"},
+    {BIRDO, TABLE_SKIN2, "ca-2", true, "DJ Lowgey"},
+    {DIDDY_KONG, TABLE_SKIN1, "dd-1", false, "Cazzyboy360"},
+    {DIDDY_KONG, TABLE_SKIN2, "dd-2", true, "UltraWario"},
+    {DIDDY_KONG, TABLE_SKIN3, "dd-3", true, "ZoroCarlos"},
+    {KING_BOO, TABLE_SKIN1, "kt-1", false, "UltraWario"},
+    {BOWSER_JR, TABLE_SKIN1, "jr-1", false, "UltraWario"},
+    {BOWSER_JR, TABLE_SKIN2, "jr-2", true, "JuniorMBW"},
+    {BOWSER_JR, TABLE_SKIN3, "jr-3", true, "DJ Lowgey"},
+    {BOWSER_JR, TABLE_SKIN4, "jr-4", false, "Whipinsnapper"},
+    {BOWSER_JR, TABLE_SKIN5, "jr-5", true, "UltraWario"},
+    {DRY_BOWSER, TABLE_SKIN1, "bk-1", false, "Kracken"},
+    {DRY_BOWSER, TABLE_SKIN2, "bk-2", true, "Ricoxemani, Cillow that Willow"},
+    {FUNKY_KONG, TABLE_SKIN1, "fk-1", false, "ZPL"},
+    {FUNKY_KONG, TABLE_SKIN2, "fk-2", true, "UltraWario"},
+    {FUNKY_KONG, TABLE_SKIN3, "fk-3", false, "ordartz"},
+    {FUNKY_KONG, TABLE_SKIN4, "fk-4", false, "Whipinsnapper"},
+    {FUNKY_KONG, TABLE_SKIN5, "fk-5", true, "Cillow that Willow"},
+    {ROSALINA, TABLE_SKIN1, "rs-1", false, "Chiller7"},
+    {ROSALINA, TABLE_SKIN2, "rs-2", false, "Eydra"},
+    {ROSALINA, TABLE_SKIN3, "rs-3", true, "UltraWario"},
+    {PEACH_BIKER, TABLE_SKIN1, "pc-1", false, "TheBeefBai"},
+    {PEACH_BIKER, TABLE_SKIN2, "pc-2", false, "ALE XD"},
+    {PEACH_BIKER, TABLE_SKIN3, "pc-3", false, "UltraWario"},
+    {DAISY_BIKER, TABLE_SKIN1, "ds-1", false, "Whipinsnapper"},
+    {DAISY_BIKER, TABLE_SKIN2, "ds-2", false, "GVRIMZ"},
+    {DAISY_BIKER, TABLE_SKIN3, "ds-3", false, "UltraWario"},
+    {ROSALINA_BIKER, TABLE_SKIN1, "rs-1", false, "Chiller7"},
+    {ROSALINA_BIKER, TABLE_SKIN2, "rs-2", false, "Eydra"},
+    {ROSALINA_BIKER, TABLE_SKIN3, "rs-3", true, "UltraWario"},
 };
 
 struct RawBRRES {
@@ -188,6 +190,14 @@ static u16 pendingReinitWaits;
 static u16 heldToggleButtons;
 static bool applyMenuDriverReinit;
 static bool applyVotingVRReinit;
+enum { AUTHOR_NAME_CONTROL_WORDS = (sizeof(CharaName) + sizeof(u32) - 1) / sizeof(u32) };
+static u32 authorNameControlStorage[LOCAL_PLAYER_COUNT][AUTHOR_NAME_CONTROL_WORDS];
+static bool authorNameControlConstructed[LOCAL_PLAYER_COUNT];
+static bool authorNameControlLoaded[LOCAL_PLAYER_COUNT];
+static bool loadingAuthorNameControl;
+static CharaName* authorTextControl;
+static const char* authorTextValue;
+static wchar_t authorTextBuffer[0x100];
 
 static const MenuDriverModel::State VEHICLE_SELECTED_STATE = static_cast<MenuDriverModel::State>(3);
 static const u16 MENU_REINIT_MAX_WAITS = 600;
@@ -277,6 +287,11 @@ static const char* SkinName(CharacterId character, u8 table) {
     const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
     if (characterOverride != nullptr && characterOverride->postfix != nullptr) return characterOverride->postfix;
     return GetDefaultCharacterPostfix(character);
+}
+
+static const char* SkinAuthorText(CharacterId character, u8 table) {
+    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
+    return characterOverride != nullptr ? characterOverride->authorText : static_cast<const char*>(0);
 }
 
 static const char* DefaultMenuBRRESName(CharacterId character) {
@@ -589,6 +604,128 @@ static void CacheHoveredFromSection() {
     const u8 count = SectionPlayerCount(mgr);
     for (u8 hud = 0; hud < count; ++hud) hoveredCharacters[hud] = mgr->sectionParams->characters[hud];
 }
+
+static const char* PreviewAuthorText(u8 hud) {
+    if (hud >= LOCAL_PLAYER_COUNT || IsLocalMultiplayer()) return static_cast<const char*>(0);
+    const CharacterId character = PreviewCharacter(hud);
+    return SkinAuthorText(character, SelectedTable(character));
+}
+
+static void CopyAsciiToWide(wchar_t* dest, const char* src, u32 maxLen) {
+    if (dest == nullptr || maxLen == 0) return;
+    u32 i = 0;
+    if (src != nullptr) {
+        for (; i + 1 < maxLen && src[i] != '\0'; ++i) dest[i] = static_cast<unsigned char>(src[i]);
+    }
+    dest[i] = 0;
+}
+
+static CharaName* GetAuthorNameControl(u8 hud) {
+    if (hud >= LOCAL_PLAYER_COUNT || !authorNameControlLoaded[hud]) return nullptr;
+    return reinterpret_cast<CharaName*>(&authorNameControlStorage[hud][0]);
+}
+
+static void UpdateCharacterSelectAuthorText(Pages::CharacterSelect* page, u8 hud) {
+    if (page == nullptr || page->names == nullptr) return;
+    CharaName* authorControl = GetAuthorNameControl(hud);
+    if (authorControl == nullptr) return;
+    const char* text = PreviewAuthorText(hud);
+    if (authorTextControl == authorControl && authorTextValue == text) return;
+    if (text == static_cast<const char*>(0)) {
+        authorControl->isHidden = true;
+    } else {
+        CopyAsciiToWide(authorTextBuffer, text, ARRAY_COUNT(authorTextBuffer));
+        Text::Info info;
+        info.strings[0] = authorTextBuffer;
+        authorControl->isHidden = false;
+        authorControl->SetMessage(UI::BMG_TEXT, &info);
+    }
+    authorTextControl = authorControl;
+    authorTextValue = text;
+}
+
+static void UpdateCurrentCharacterSelectAuthorText(u8 hud) {
+    if (!IsCharacterSelectActive()) {
+        authorTextControl = nullptr;
+        authorTextValue = static_cast<const char*>(0);
+        return;
+    }
+    SectionMgr* mgr = SectionMgr::sInstance;
+    if (mgr == nullptr || mgr->curSection == nullptr) return;
+    UpdateCharacterSelectAuthorText(mgr->curSection->Get<Pages::CharacterSelect>(), hud);
+}
+
+static void SetPaneVisibleIfPresent(LayoutUIControl& control, const char* paneName, bool visible) {
+    if (control.layout.GetPaneByName(paneName) != nullptr) control.SetPaneVisibility(paneName, visible);
+}
+
+static void HideAuthorNameDecoration(LayoutUIControl& control) {
+    const char* panes[] = {"Window_00",
+                           "black_parts_t_00",
+                           "black_parts_t_01",
+                           "select_base",
+                           "border",
+                           "cc_prev_wh",
+                           "cc_next_wh",
+                           "cc_prev_nc",
+                           "cc_next_nc",
+                           "cc_prev_cls",
+                           "cc_next_cls",
+                           "cc_prev_gc",
+                           "cc_next_gc"};
+    for (u32 i = 0; i < ARRAY_COUNT(panes); ++i) SetPaneVisibleIfPresent(control, panes[i], false);
+}
+
+static void PositionAuthorNameControl(LayoutUIControl& control) {
+    for (u32 i = 0; i < ARRAY_COUNT(control.positionAndscale); ++i) {
+        control.positionAndscale[i].position.x += 152.5f;
+        control.positionAndscale[i].position.y += 40.0f;
+        control.positionAndscale[i].scale.x *= 1.1f;
+    }
+}
+
+kmRuntimeUse(0x8083d840);
+static CharaName* ConstructCharaName(CharaName* name) {
+    typedef CharaName* (*Fn)(CharaName*);
+    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8083d840))(name);
+}
+
+static void AttachAuthorNameControl(CharaName& name, const char* folderName, const char* ctrName, const char* variant) {
+    const u32 hud = name.unknown_0x178;
+    if (hud >= LOCAL_PLAYER_COUNT) return;
+
+    CharaName* author = reinterpret_cast<CharaName*>(&authorNameControlStorage[hud][0]);
+    if (authorNameControlConstructed[hud]) {
+        authorNameControlLoaded[hud] = false;
+        if (authorTextControl == author) {
+            authorTextControl = nullptr;
+            authorTextValue = static_cast<const char*>(0);
+        }
+    }
+    ConstructCharaName(author);
+    authorNameControlConstructed[hud] = true;
+    author->unknown_0x178 = hud;
+    name.InitControlGroup(1);
+    name.AddControl(0, author);
+    loadingAuthorNameControl = true;
+    ControlLoader loader(author);
+    loader.Load(folderName, ctrName, variant, nullptr);
+    loadingAuthorNameControl = false;
+
+    HideAuthorNameDecoration(*author);
+    PositionAuthorNameControl(*author);
+    author->isHidden = true;
+    authorNameControlLoaded[hud] = true;
+}
+
+kmRuntimeUse(0x805c2c60);
+static void CharacterSelectNameLoadHook(ControlLoader* loader, const char* folderName, const char* ctrName, const char* variant, const char** animNames) {
+    typedef void (*Fn)(ControlLoader*, const char*, const char*, const char*, const char**);
+    reinterpret_cast<Fn>(kmRuntimeAddr(0x805c2c60))(loader, folderName, ctrName, variant, animNames);
+    if (loadingAuthorNameControl || loader == nullptr || loader->layoutUIControl == nullptr) return;
+    AttachAuthorNameControl(*static_cast<CharaName*>(loader->layoutUIControl), folderName, ctrName, variant);
+}
+kmCall(0x8083d9dc, CharacterSelectNameLoadHook);
 
 static void UnlockHeap(EGG::Heap* heap) {
     if (heap != nullptr) heap->dameFlag &= ~0x1;
@@ -1366,6 +1503,7 @@ static void CharacterSelectHoverHook(Pages::CharacterSelect* page, CtrlMenuChara
     if (hud < LOCAL_PLAYER_COUNT) hoveredCharacters[hud] = static_cast<CharacterId>(buttonId);
     typedef void (*Fn)(Pages::CharacterSelect*, CtrlMenuCharacterSelect::ButtonDriver*, u32, u8);
     reinterpret_cast<Fn>(kmRuntimeAddr(0x8083e5f4))(page, button, buttonId, hud);
+    UpdateCharacterSelectAuthorText(page, hud);
 }
 kmCall(0x807e2cf0, CharacterSelectHoverHook);
 kmCall(0x807e304c, CharacterSelectHoverHook);
@@ -1495,6 +1633,7 @@ static void MenuSceneSectionUpdateHook(SectionMgr* mgr) {
     ApplyDeferredReinits();
     UpdateHintPanes();
     ProcessSkinInput();
+    UpdateCurrentCharacterSelectAuthorText(0);
     typedef void (*Fn)(SectionMgr*);
     reinterpret_cast<Fn>(kmRuntimeAddr(0x8063583c))(mgr);
     ProcessVotingReinit();
