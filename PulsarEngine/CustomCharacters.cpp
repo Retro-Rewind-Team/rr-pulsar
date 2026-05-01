@@ -8,6 +8,7 @@
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuKartModel.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
+#include <MarioKartWii/Driver/DriverController.hpp>
 #include <MarioKartWii/Driver/Toadette.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/Audio/Actors/RaceActor.hpp>
@@ -467,6 +468,17 @@ bool ShouldMuteCharacterVoice(const Kart::Link* link) {
     const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
     return characterOverride != nullptr && characterOverride->silentVoice;
 }
+
+kmRuntimeUse(0x807d9b98);
+static TicoModel* CreateTicoModelHook(void* memory, DriverController* controller) {
+    if (controller != nullptr && ShouldMuteCharacterVoice(controller)) {
+        if (memory != nullptr) ::operator delete(memory);
+        return nullptr;
+    }
+    typedef TicoModel* (*Ctor)(void*, DriverController*);
+    return reinterpret_cast<Ctor>(kmRuntimeAddr(0x807d9b98))(memory, controller);
+}
+kmCall(0x807c8994, CreateTicoModelHook);
 
 class ScopedNameSwap {
    public:
