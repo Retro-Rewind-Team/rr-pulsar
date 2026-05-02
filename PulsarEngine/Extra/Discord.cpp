@@ -34,6 +34,27 @@ void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
     }
 }
 
+void ConvertUTF16toUtf8(char* dest, const wchar_t* src, size_t max_len) {
+    size_t destIndex = 0; 
+    for (size_t i = 0; ; i++) {
+        wchar_t c = src[i];
+        if (c == 0) {
+            break;
+        }
+        if (c <= 0x007F) {
+            dest[destIndex++] = (char)c; 
+        } else if (c <= 0x07FF) {
+            dest[destIndex++] = 0xC0 | ((c >> 6) & 0x1F);
+            dest[destIndex++] = 0x80 | (c & 0x3F);
+        } else {
+            dest[destIndex++] = 0xE0 | ((c >> 12) & 0x0F);
+            dest[destIndex++] = 0x80 | ((c >> 6) & 0x3F);
+            dest[destIndex++] = 0x80 | (c & 0x3F);
+        }
+    }
+    dest[destIndex] = '\0'; 
+}
+
 static CharacterId GetFirstLocalRaceCharacter() {
     const GameScene* scene = GameScene::GetCurrent();
     Racedata* raceData = Racedata::sInstance;
@@ -270,7 +291,7 @@ void DiscordRichPresence(Section* _this) {
     const wchar_t* msg = Pulsar::UI::GetCustomMsg(bmgId);
     if (msg && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO)) {
         CleanBMGMessage(trackNameW, msg);
-        wcstombs(trackName, trackNameW, 32);
+        ConvertUTF16toUtf8(trackName, trackNameW, 32);
         state = trackName;
     }
 
