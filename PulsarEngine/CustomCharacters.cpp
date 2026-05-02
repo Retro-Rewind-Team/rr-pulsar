@@ -531,7 +531,7 @@ static u8 RaceSkinTable(u8 playerId, CharacterId character) {
         const GameMode mode = scenario.settings.gamemode;
         const bool offlineCpuSkinMode = mode == MODE_GRAND_PRIX || mode == MODE_VS_RACE || mode == MODE_BATTLE;
         const bool offlineCpu = scenario.players[playerId].playerType == PLAYER_CPU;
-        if (offlineCpuSkinMode && offlineCpu && !IsOnlineRoom(RKNet::Controller::sInstance) && DisplayOnlineSkins()) {
+        if (offlineCpuSkinMode && offlineCpu && !IsOnlineRoom(RKNet::Controller::sInstance) && DisplayOnlineSkins() && !IsLocalMultiplayer()) {
             u32 signature = 0x4343534b;
             signature = signature * 33 + static_cast<u32>(scenario.settings.gamemode);
             signature = signature * 33 + static_cast<u32>(scenario.settings.modeFlags);
