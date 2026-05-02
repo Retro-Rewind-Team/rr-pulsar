@@ -232,6 +232,9 @@ enum BMG {
     BMG_OTT_START_MESSAGE = 0x6924,
     BMG_ITEMRAIN_START_MESSAGE = 0x6925,
 
+    // Custom Characters
+    BMG_CUSTOM_CHARACTER_NAME_START = 0x6a00,
+
     // Language
     BMG_LANGUAGE_RESET_REQUIRED = 0x295f,
 

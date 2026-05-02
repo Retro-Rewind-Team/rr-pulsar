@@ -8,6 +8,8 @@ namespace Kart {
 class Link;
 }
 
+class LayoutUIControl;
+
 namespace Pulsar {
 namespace CustomCharacters {
 
@@ -18,6 +20,7 @@ u8 GetLocalOnlineCharacterTables();
 bool IsCustomCharacterTableActive();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
 bool ShouldMuteCharacterVoice(const Kart::Link* link);
+bool SetRaceNameTextIfCustom(LayoutUIControl& control, const char* paneName, u8 playerId);
 void OnVotingVRPageExit();
 bool RandomizeSelectedCharacterTable(CharacterId character);
 
