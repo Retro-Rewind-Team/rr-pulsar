@@ -56,34 +56,30 @@ kmWrite16(0x807E7E2A, 0x0004);
 kmWrite16(0x807E7E42, 0x0004);
 kmWrite16(0x807E7E4E, 0x0004);
 
-static CharacterId GetMiiOutfitAKartDriverDispCharacter(CharacterId character) {
-    switch (character) {
-        case MII_S_C_MALE:
-            return MII_S_A_MALE;
-        case MII_S_C_FEMALE:
-            return MII_S_A_FEMALE;
-        case MII_M_C_MALE:
-            return MII_M_A_MALE;
-        case MII_M_C_FEMALE:
-            return MII_M_A_FEMALE;
-        case MII_L_C_MALE:
-            return MII_L_A_MALE;
-        case MII_L_C_FEMALE:
-            return MII_L_A_FEMALE;
-        default:
-            return character;
-    }
-}
-
 // kartDriverDispParam.bin has no dedicated Outfit C columns in the stock common bins.
 // Share the matching Outfit A columns so C inherits the same driver/kart display offsets.
-static KartDriverDispParam::Entry* GetKartDriverDispEntryHook(KartId kart, CharacterId character) {
-    if (Kart::paramBins.kartDriverDisp == nullptr) return nullptr;
+asmFunc GetKartDriverDispEntryHook() {
+    ASM(
+        nofralloc;
 
-    const CharacterId dispCharacter = GetMiiOutfitAKartDriverDispCharacter(character);
-    return Kart::paramBins.kartDriverDispEntries + static_cast<u32>(kart) * 0x30 + dispCharacter;
+        subi r11, r4, 0x1C;
+        cmplwi r11, 0xD;
+        bgt - compute;
+
+        li r12, 0x30C3;
+        srw r11, r12, r11;
+        andi.r11, r11, 1;
+        beq - compute;
+
+        subi r4, r4, 2;
+
+        compute :;
+        mulli r3, r4, 0x38;
+        add r0, r5, r0;
+        add r3, r3, r0;
+        blr;);
 }
-kmBranch(0x80592498, GetKartDriverDispEntryHook);
+kmBranch(0x805924b4, GetKartDriverDispEntryHook);
 
 kmRuntimeUse(0x807e3cac);
 static int GetCharacterIdForButtonHook(CtrlMenuCharacterSelect* ctrl, u32 weightClass, u32 buttonIdx) {
@@ -164,6 +160,75 @@ kmCall(0x8083e6b8, GetCharaNameMsgHook);  // OnButtonDriverSelect (Mii with name
 kmCall(0x8083e6e0, GetCharaNameMsgHook);  // OnButtonDriverGetText (Mii generic name)
 kmCall(0x8083e058, GetCharaNameMsgHook);  // OnButtonDriverClick confirm label
 kmCall(0x8083ea60, GetCharaNameMsgHook);  // related character name display
+
+// CtrlMenuCharacterSelect::InitSelf restores focus by comparing the saved character
+// against each button id. Vanilla has A/B equivalence checks for Miis; add the missing
+// C-only comparison so returning from kart select can land back on Outfit C.
+kmRuntimeUse(0x807e2fb0);
+kmRuntimeUse(0x807e3064);
+kmRuntimeUse(0x809c1e38);
+asmFunc MiiOutfitCInitialFocus() {
+    ASM(
+        nofralloc;
+
+        lwz r3, __kAutoMap_0x809c1e38@l(r31);
+        lwz r0, 0x98(r3);
+        add r3, r0, r28;
+        lwz r3, 0x12c(r3);
+
+        lwz r0, 0x1b0(r23);
+        add r4, r29, r0;
+        lwz r4, 0x240(r4);
+
+        // Saved character is Outfit B: only match an Outfit B button.
+        subi r5, r3, 0x1A;
+        cmplwi r5, 0xD;
+        bgt - checkC;
+        li r11, 0x30C3;
+        srw r5, r11, r5;
+        andi.r5, r5, 1;
+        beq - checkC;
+
+        subi r5, r4, 0x1A;
+        cmplwi r5, 0xD;
+        bgt - skip;
+        li r11, 0x30C3;
+        srw r5, r11, r5;
+        andi.r5, r5, 1;
+        bne - select;
+        b skip;
+
+        checkC :;
+        // Saved character is Outfit C: only match an Outfit C button.
+        subi r5, r3, 0x1C;
+        cmplwi r5, 0xD;
+        bgt - skip;
+        li r11, 0x30C3;
+        srw r5, r11, r5;
+        andi.r5, r5, 1;
+        beq - skip;
+
+        subi r5, r4, 0x1C;
+        cmplwi r5, 0xD;
+        bgt - skip;
+        li r11, 0x30C3;
+        srw r5, r11, r5;
+        andi.r5, r5, 1;
+        beq - skip;
+
+        select :;
+        lis r12, __kAutoMap_0x807e2fb0@h;
+        ori r12, r12, __kAutoMap_0x807e2fb0@l;
+        mtctr r12;
+        bctr;
+
+        skip :;
+        lis r12, __kAutoMap_0x807e3064@h;
+        ori r12, r12, __kAutoMap_0x807e3064@l;
+        mtctr r12;
+        bctr;);
+}
+kmBranch(0x807e2f7c, MiiOutfitCInitialFocus);
 
 // Constructor
 kmWrite32(0x8083018c, 0x1CA40003);
