@@ -354,8 +354,11 @@ static SectionLoadHook ResetFrameskipHook(ResetFrameskipState);
 static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr* mgr) {
     const Pulsar::CupsConfig* cupsConfig = Pulsar::CupsConfig::sInstance;
     Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
+    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const GameMode mode = scenario.settings.gamemode;
+    u32 localPlayerCount = scenario.localPlayerCount;
     bool isNoLightningFlashTrack = Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 148 || Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 117;  // SW2 Whistlestop Summit/3DS Rosalina's Ice World
-    if (*(u32*)0x80001638 >= 15 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack) {
+    if (*(u32*)0x80001638 >= 15 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack || localPlayerCount > 1) {
         return;
     }
     mgr->Update();
