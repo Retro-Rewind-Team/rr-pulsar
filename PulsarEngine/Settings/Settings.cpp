@@ -86,6 +86,7 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         memset(buffer, 0, size);
         new (buffer) Binary(this->pulsarPageCount, this->userPageCount, trackCount);
     }
+    io->Close();
 
     TrophiesHolder& trophies = buffer->GetSection<TrophiesHolder>();
     for (int i = 0; i < 4; ++i) {
@@ -151,7 +152,7 @@ bool Mgr::EnsureTrophyFoldersExist(u32 crc32, u8 variantIdx) const {
 bool Mgr::WriteTrophyFile(const TrophyEntry& trophy) const {
     if (!this->EnsureTrophyFoldersExist(trophy.crc32, trophy.variantIdx)) return false;
 
-    TrophyFile file;
+    alignas(0x20) TrophyFile file;
     file.header.magic = TrophyFile::magic;
     file.header.version = TrophyFile::version;
     file.header.size = sizeof(TrophyFile);
@@ -181,7 +182,7 @@ bool Mgr::ReadTrophyFile(TrophyEntry& trophy) const {
     IO* io = IO::sInstance;
     if (!io->OpenFile(path, FILE_MODE_READ)) return false;
 
-    TrophyFile file;
+    alignas(0x20) TrophyFile file;
     bool ret = io->Read(sizeof(TrophyFile), &file) == sizeof(TrophyFile) &&
                file.header.magic == TrophyFile::magic &&
                file.header.version == TrophyFile::version &&
@@ -255,10 +256,15 @@ bool Mgr::LoadLegacyTrophies(TrophiesHolder*& holder) const {
     IO* io = IO::sInstance;
     if (!io->OpenFile(this->trophiesFilePath, FILE_MODE_READ)) return false;
 
-    Pulsar::SectionHeader header;
+    const s32 fileSize = io->GetFileSize();
+    alignas(0x20) Pulsar::SectionHeader header;
     const bool ret = io->Read(sizeof(Pulsar::SectionHeader), &header) == sizeof(Pulsar::SectionHeader) &&
                      header.magic == TrophiesHolder::tropMagic &&
-                     header.size >= sizeof(TrophiesHolder);
+                     header.version == TrophiesHolder::version &&
+                     header.size >= sizeof(TrophiesHolder) &&
+                     fileSize >= 0 &&
+                     header.size <= static_cast<u32>(fileSize) &&
+                     (header.size - sizeof(TrophiesHolder)) % sizeof(TrackTrophy) == 0;
     if (!ret) {
         io->Close();
         return false;
@@ -266,9 +272,14 @@ bool Mgr::LoadLegacyTrophies(TrophiesHolder*& holder) const {
 
     io->Seek(0);
     holder = io->Alloc<TrophiesHolder>(header.size);
+    if (holder == nullptr) {
+        io->Close();
+        return false;
+    }
     const bool readOk = io->Read(header.size, holder) == static_cast<s32>(header.size);
     io->Close();
     if (!readOk) {
+        delete holder;
         holder = nullptr;
         return false;
     }
@@ -276,6 +287,15 @@ bool Mgr::LoadLegacyTrophies(TrophiesHolder*& holder) const {
 }
 
 void Mgr::MigrateLegacyTrophies() {
+    char migratedPath[IOS::ipcMaxPath];
+    snprintf(migratedPath, IOS::ipcMaxPath, "%s%s", this->trophiesFilePath, migratedLegacySuffix);
+
+    IO* io = IO::sInstance;
+    if (io->OpenFile(migratedPath, FILE_MODE_READ)) {
+        io->Close();
+        return;
+    }
+
     TrophiesHolder* legacy = nullptr;
     if (!this->LoadLegacyTrophies(legacy) || legacy == nullptr) return;
 
@@ -298,9 +318,15 @@ void Mgr::MigrateLegacyTrophies() {
         }
     }
 
-    char migratedPath[IOS::ipcMaxPath];
-    snprintf(migratedPath, IOS::ipcMaxPath, "%s%s", this->trophiesFilePath, migratedLegacySuffix);
-    IO::sInstance->RenameFile(this->trophiesFilePath, migratedPath);
+    delete legacy;
+
+    if (!io->RenameFile(this->trophiesFilePath, migratedPath)) {
+        if (io->OpenFile(migratedPath, FILE_MODE_WRITE) || io->CreateAndOpen(migratedPath, FILE_MODE_WRITE)) {
+            alignas(0x20) u32 marker = TrophiesHolder::tropMagic;
+            io->Overwrite(sizeof(marker), &marker);
+            io->Close();
+        }
+    }
 }
 
 TrophyEntry* Mgr::FindTrackTrophy(u32 crc32, u8 variantIdx) {
