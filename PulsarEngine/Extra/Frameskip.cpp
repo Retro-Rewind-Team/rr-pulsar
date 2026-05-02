@@ -358,7 +358,7 @@ static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr* mgr) {
     const GameMode mode = scenario.settings.gamemode;
     u32 localPlayerCount = scenario.localPlayerCount;
     bool isNoLightningFlashTrack = Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 148 || Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 117;  // SW2 Whistlestop Summit/3DS Rosalina's Ice World
-    if (*(u32*)0x80001638 >= 15 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack || localPlayerCount > 1) {
+    if (*(u32*)0x80001638 >= 8 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack || localPlayerCount > 1) {
         return;
     }
     mgr->Update();
