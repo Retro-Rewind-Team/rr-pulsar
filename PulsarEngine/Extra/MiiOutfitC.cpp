@@ -1,6 +1,7 @@
 #include <RetroRewind.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
+#include <MarioKartWii/Kart/KartFunctions.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCharacterSelect.hpp>
 
 namespace Pulsar {
@@ -54,6 +55,35 @@ kmWrite32(0x807E2714, 0x3BC0001B);
 kmWrite16(0x807E7E2A, 0x0004);
 kmWrite16(0x807E7E42, 0x0004);
 kmWrite16(0x807E7E4E, 0x0004);
+
+static CharacterId GetMiiOutfitAKartDriverDispCharacter(CharacterId character) {
+    switch (character) {
+        case MII_S_C_MALE:
+            return MII_S_A_MALE;
+        case MII_S_C_FEMALE:
+            return MII_S_A_FEMALE;
+        case MII_M_C_MALE:
+            return MII_M_A_MALE;
+        case MII_M_C_FEMALE:
+            return MII_M_A_FEMALE;
+        case MII_L_C_MALE:
+            return MII_L_A_MALE;
+        case MII_L_C_FEMALE:
+            return MII_L_A_FEMALE;
+        default:
+            return character;
+    }
+}
+
+// kartDriverDispParam.bin has no dedicated Outfit C columns in the stock common bins.
+// Share the matching Outfit A columns so C inherits the same driver/kart display offsets.
+static KartDriverDispParam::Entry* GetKartDriverDispEntryHook(KartId kart, CharacterId character) {
+    if (Kart::paramBins.kartDriverDisp == nullptr) return nullptr;
+
+    const CharacterId dispCharacter = GetMiiOutfitAKartDriverDispCharacter(character);
+    return Kart::paramBins.kartDriverDispEntries + static_cast<u32>(kart) * 0x30 + dispCharacter;
+}
+kmBranch(0x80592498, GetKartDriverDispEntryHook);
 
 kmRuntimeUse(0x807e3cac);
 static int GetCharacterIdForButtonHook(CtrlMenuCharacterSelect* ctrl, u32 weightClass, u32 buttonIdx) {
