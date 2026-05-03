@@ -259,12 +259,10 @@ void ExpVR::AfterControlUpdate() {
 }
 
 void ExpVR::BeforeExitAnimations() {
-    CustomCharacters::OnVotingVRPageExit();
     VR::BeforeExitAnimations();
 }
 
 void ExpVR::OnDeactivate() {
-    CustomCharacters::OnVotingVRPageExit();
     VR::OnDeactivate();
 }
 

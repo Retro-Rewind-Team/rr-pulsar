@@ -21,7 +21,6 @@ bool IsCustomCharacterTableActive();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
 bool ShouldMuteCharacterVoice(const Kart::Link* link);
 bool SetRaceNameTextIfCustom(LayoutUIControl& control, const char* paneName, u8 playerId);
-void OnVotingVRPageExit();
 bool RandomizeSelectedCharacterTable(CharacterId character);
 
 }  // namespace CustomCharacters
