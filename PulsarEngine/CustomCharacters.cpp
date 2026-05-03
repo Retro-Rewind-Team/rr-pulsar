@@ -20,9 +20,11 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRace2DMap.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceResult.hpp>
 #include <core/egg/DVD/DvdRipper.hpp>
+#include <core/egg/mem/ExpHeap.hpp>
 #include <core/rvl/dvd/dvd.hpp>
 #include <core/nw4r/ut/List.hpp>
 #include <MarioKartWii/3D/Scn/ScnMgr.hpp>
+#include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -148,6 +150,7 @@ struct RawBRRES {
     EGG::ExpHeap* heap;
     void* file;
     bool failed;
+    bool bound;
 };
 
 struct RawTPL {
@@ -163,6 +166,7 @@ static CharacterId hoveredCharacters[LOCAL_PLAYER_COUNT] = {MARIO, MARIO, MARIO,
 static RawBRRES rawBRRES[TABLE_COUNT][CHARACTER_COUNT];
 static RawBRRES looseMiiCBRRES[MII_C_COUNT];
 static RawTPL looseMinimapTPL[TABLE_COUNT][CHARACTER_COUNT];
+static const GameScene* rawCacheSceneOwner;
 static u32 offlineCpuSkinSignature;
 static u8 offlineCpuSkinRaceNumber;
 static bool offlineCpuSkinTablesValid;
@@ -178,6 +182,9 @@ static wchar_t authorTextBuffer[0x100];
 static CharaName* characterNameTextControl[LOCAL_PLAYER_COUNT];
 static u32 characterNameTextValue[LOCAL_PLAYER_COUNT];
 static bool characterNameTextOverridden[LOCAL_PLAYER_COUNT];
+static SectionId votingMenuTableSection = SECTION_NONE;
+static bool votingMenuTablesRestored;
+static bool voteRandomMessageBoxKartStateApplied;
 
 kmRuntimeUse(0x808b3a90);
 static const u32 CHARACTER_NAMES_ADDRESS = kmRuntimeAddr(0x808b3a90);
@@ -314,6 +321,32 @@ static u8 SectionPlayerCount(const SectionMgr* mgr) {
 
 static u8 RacePlayerCount(const RacedataScenario& scenario) {
     return MinLocalPlayers(scenario.localPlayerCount);
+}
+
+static bool IsVotingSection(SectionId section) {
+    return section == SECTION_P1_WIFI_VS_VOTING || section == SECTION_P1_WIFI_BATTLE_VOTING || section == SECTION_P2_WIFI_VS_VOTING ||
+           section == SECTION_P2_WIFI_BATTLE_VOTING ||
+           (section >= SECTION_P1_WIFI_FROOM_VS_VOTING && section <= SECTION_P2_WIFI_FROOM_COIN_VOTING);
+}
+
+static SectionId CurrentSectionId() {
+    const SectionMgr* mgr = SectionMgr::sInstance;
+    if (mgr == nullptr || mgr->curSection == nullptr) return SECTION_NONE;
+    return mgr->curSection->sectionId;
+}
+
+static bool ShouldForceDefaultVotingMenuTable() {
+    const SectionId section = CurrentSectionId();
+    if (!IsVotingSection(section)) {
+        votingMenuTableSection = SECTION_NONE;
+        votingMenuTablesRestored = false;
+        return false;
+    }
+    if (votingMenuTableSection != section) {
+        votingMenuTableSection = section;
+        votingMenuTablesRestored = false;
+    }
+    return !votingMenuTablesRestored;
 }
 
 static bool IsLocalMultiplayer() {
@@ -453,18 +486,6 @@ static bool SetSelectedTable(CharacterId character, u8 table) {
     return true;
 }
 
-bool RandomizeSelectedCharacterTable(CharacterId character) {
-    if (IsLocalMultiplayer() || !IsCharacter(StateCharacter(character))) return false;
-    u8 valid[TABLE_COUNT];
-    u8 count = 0;
-    for (u8 table = 0; table < TABLE_COUNT; ++table) {
-        if (HasSkin(character, table)) valid[count++] = table;
-    }
-    if (count == 0) return false;
-    Random random;
-    return SetSelectedTable(character, valid[random.NextLimited<u8>(count)]);
-}
-
 static bool CycleSkin(CharacterId character, int step) {
     if (GetLocalPlayerCount() != 1 || !IsCharacter(StateCharacter(character))) return false;
     u8 table = SelectedTable(character);
@@ -548,23 +569,16 @@ static TicoModel* CreateTicoModelHook(void* memory, DriverController* controller
 }
 kmCall(0x807c8994, CreateTicoModelHook);
 
-class ScopedNameSwap {
-   public:
-    ScopedNameSwap(u8 playerId, CharacterId character) : entry(CharacterNameEntry(character)), oldName(nullptr) {
-        if (entry == nullptr) return;
-        oldName = *entry;
-        const char* name = SkinName(character, RaceSkinTable(playerId, character));
-        if (name == nullptr) name = GetDefaultCharacterPostfix(character);
-        *entry = name;
-    }
-    ~ScopedNameSwap() {
-        if (entry != nullptr) *entry = oldName;
-    }
-
-   private:
-    const char** entry;
-    const char* oldName;
-};
+static const char** BeginNameSwap(u8 playerId, CharacterId character, const char*& oldName) {
+    const char** entry = CharacterNameEntry(character);
+    oldName = nullptr;
+    if (entry == nullptr) return nullptr;
+    oldName = *entry;
+    const char* name = SkinName(character, RaceSkinTable(playerId, character));
+    if (name == nullptr) name = GetDefaultCharacterPostfix(character);
+    *entry = name;
+    return entry;
+}
 
 static CharacterId PreviewCharacter(u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT) return MARIO;
@@ -904,6 +918,13 @@ static void DestroyHeap(EGG::ExpHeap*& heap) {
     heap = nullptr;
 }
 
+static bool IsGameplaySectionLoading() {
+    const SectionMgr* mgr = SectionMgr::sInstance;
+    if (mgr == nullptr) return false;
+    if (mgr->curSection != nullptr && IsGameplaySection(mgr->curSection->sectionId)) return true;
+    return mgr->nextSectionId != SECTION_NONE && IsGameplaySection(mgr->nextSectionId);
+}
+
 static void ClearRawCache(RawBRRES& cache, bool destroyHeap) {
     if (destroyHeap)
         DestroyHeap(cache.heap);
@@ -911,16 +932,25 @@ static void ClearRawCache(RawBRRES& cache, bool destroyHeap) {
         cache.heap = nullptr;
     cache.file = nullptr;
     cache.failed = false;
+    cache.bound = false;
 }
 
 static void ClearRawCaches(bool destroyHeap) {
+    if (destroyHeap && IsGameplaySectionLoading()) destroyHeap = false;
     for (u32 table = 0; table < TABLE_COUNT; ++table) {
         for (u32 character = 0; character < CHARACTER_COUNT; ++character) ClearRawCache(rawBRRES[table][character], destroyHeap);
     }
     for (u32 i = 0; i < MII_C_COUNT; ++i) ClearRawCache(looseMiiCBRRES[i], destroyHeap);
 }
 
+static void SyncRawCachesToCurrentScene() {
+    const GameScene* const scene = GameScene::GetCurrent();
+    ClearRawCaches(false);
+    rawCacheSceneOwner = scene;
+}
+
 static u8 ResolveMenuTable(CharacterId character) {
+    if (ShouldForceDefaultVotingMenuTable()) return TABLE_DEFAULT;
     return SelectedTable(character);
 }
 
@@ -966,9 +996,15 @@ static EGG::Heap* RawParentHeap(GameScene& scene, u32 heapSize) {
 }
 
 kmRuntimeUse(0x8055b7f8);
-static void BindRawBRRES(nw4r::g3d::ResFile& resFile, const char* path) {
-    typedef void (*Fn)(nw4r::g3d::ResFile*, const char*, const nw4r::g3d::ResFile*, u32);
-    reinterpret_cast<Fn>(kmRuntimeAddr(0x8055b7f8))(&resFile, path, nullptr, 0);
+static bool BindRawBRRES(nw4r::g3d::ResFile& resFile, const char* path) {
+    typedef u32 (*Fn)(nw4r::g3d::ResFile*, const char*, const nw4r::g3d::ResFile*, u32);
+    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8055b7f8))(&resFile, path, nullptr, 0) != 0;
+}
+
+kmRuntimeUse(0x8055ba64);
+static bool RawBRRESHasModel(nw4r::g3d::ResFile& resFile) {
+    typedef u32 (*Fn)(const char*, const nw4r::g3d::ResFile&);
+    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8055ba64))("model", resFile) != 0;
 }
 
 static bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
@@ -1009,7 +1045,10 @@ static bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
     }
     nw4r::g3d::ResFile& resFile = *reinterpret_cast<nw4r::g3d::ResFile*>(reinterpret_cast<u8*>(holder) + 4);
     resFile.data = reinterpret_cast<nw4r::g3d::ResFileData*>(cache.file);
-    BindRawBRRES(resFile, path);
+    if (!cache.bound) {
+        BindRawBRRES(resFile, path);
+        cache.bound = true;
+    }
     return true;
 }
 
@@ -1149,8 +1188,12 @@ kmRuntimeUse(0x80540e3c);
 static ArchivesHolder* LoadKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
                                            EGG::Heap* decompressedHeap, EGG::Heap* archiveHeap) {
     typedef ArchivesHolder* (*Fn)(ArchiveMgr*, u8, KartId, CharacterId, u32, u32, EGG::Heap*, EGG::Heap*);
-    ScopedNameSwap swap(playerId, character);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x80540e3c))(archiveMgr, playerId, kart, character, color, type, decompressedHeap, archiveHeap);
+    const char* oldName;
+    const char** entry = BeginNameSwap(playerId, character, oldName);
+    ArchivesHolder* holder =
+        reinterpret_cast<Fn>(kmRuntimeAddr(0x80540e3c))(archiveMgr, playerId, kart, character, color, type, decompressedHeap, archiveHeap);
+    if (entry != nullptr) *entry = oldName;
+    return holder;
 }
 kmCall(0x805540f4, LoadKartArchiveHook);
 
@@ -1158,8 +1201,12 @@ kmRuntimeUse(0x80540f90);
 static ArchivesHolder* LoadBackupKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
                                                  EGG::Heap* decompressedHeap, EGG::Heap* archiveHeap) {
     typedef ArchivesHolder* (*Fn)(ArchiveMgr*, u8, KartId, CharacterId, u32, u32, EGG::Heap*, EGG::Heap*);
-    ScopedNameSwap swap(playerId, character);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x80540f90))(archiveMgr, playerId, kart, character, color, type, decompressedHeap, archiveHeap);
+    const char* oldName;
+    const char** entry = BeginNameSwap(playerId, character, oldName);
+    ArchivesHolder* holder =
+        reinterpret_cast<Fn>(kmRuntimeAddr(0x80540f90))(archiveMgr, playerId, kart, character, color, type, decompressedHeap, archiveHeap);
+    if (entry != nullptr) *entry = oldName;
+    return holder;
 }
 kmCall(0x80554198, LoadBackupKartArchiveHook);
 
@@ -1175,10 +1222,266 @@ static const char* GetMenuDriverBRRESNameHook(u32 character) {
 }
 kmCall(0x8081e4a0, GetMenuDriverBRRESNameHook);
 
+static void DetachListNodeIfPresent(nw4r::ut::List* list, void* target) {
+    if (list == nullptr || target == nullptr) return;
+    for (void* node = nw4r::ut::List_GetNext(list, nullptr); node != nullptr;) {
+        void* next = nw4r::ut::List_GetNext(list, node);
+        if (node == target) nw4r::ut::List_Remove(list, node);
+        node = next;
+    }
+}
+
+static void DetachModelDirectorFromScnMgrs(ModelDirector* model) {
+    if (model == nullptr) return;
+    ScnMgr* const* mgrs = reinterpret_cast<ScnMgr* const*>(SCNMGR_INSTANCES_ADDRESS);
+    for (u32 i = 0; i < 2; ++i) {
+        ScnMgr* mgr = mgrs[i];
+        if (mgr == nullptr) continue;
+        DetachListNodeIfPresent(&mgr->modelDirectors, model);
+        DetachListNodeIfPresent(&mgr->screenSpecificModelDirectors, model);
+        DetachListNodeIfPresent(&mgr->hardcodedMatNamesModelDirectors, model);
+    }
+}
+
+static void RemoveInitializedModelDirector(ModelDirector* model) {
+    if (model == nullptr) return;
+    if ((model->bitfield & 0x100000) != 0) model->ToggleVisible(false);
+    DetachModelDirectorFromScnMgrs(model);
+}
+
+static void DestroyModelDirector(ModelDirector* model) {
+    if (model == nullptr) return;
+    RemoveInitializedModelDirector(model);
+    delete model;
+}
+
+kmRuntimeUse(0x8020f62c);
+kmRuntimeUse(0x80386e64);
+static EGG::Allocator** MenuAllocatorSlot() { return reinterpret_cast<EGG::Allocator**>(kmRuntimeAddr(0x80386e64)); }
+
+static EGG::Allocator* CreateScnObjAllocator(EGG::Heap* parent) {
+    if (parent == nullptr) return nullptr;
+    void* buf = operator new(0x1c, parent, 4);
+    if (buf == nullptr) return nullptr;
+    typedef EGG::Allocator* (*Ctor)(EGG::Allocator*, EGG::Heap*, s32);
+    return reinterpret_cast<Ctor>(kmRuntimeAddr(0x8020f62c))(reinterpret_cast<EGG::Allocator*>(buf), parent, 0x20);
+}
+
+static void UnlockMenuModelHeaps(MenuModelMgr& modelMgr) {
+    UnlockHeap(modelMgr.otherHeap);
+    UnlockHeap(modelMgr.heap);
+
+    GameScene* scene = const_cast<GameScene*>(GameScene::GetCurrent());
+    if (scene == nullptr) return;
+    for (u32 i = 0; i < ARRAY_COUNT(scene->structsHeaps.heaps); ++i) UnlockHeap(scene->structsHeaps.heaps[i]);
+    UnlockHeap(scene->mainMEMHeap);
+    UnlockHeap(scene->otherMEMHeap);
+}
+
+static ModelDirector** MenuDriverModelDirectorSlot(MenuDriverModel* models, u8 idx) {
+    static const u32 MENU_DRIVER_MODEL_SIZE = 0x28;
+    static const u32 MENU_MODEL_DIRECTOR_OFFSET = 0x4;
+    return reinterpret_cast<ModelDirector**>(reinterpret_cast<u8*>(models) + idx * MENU_DRIVER_MODEL_SIZE + MENU_MODEL_DIRECTOR_OFFSET);
+}
+
+static MenuDriverModel* MenuDriverModelSlot(MenuDriverModel* models, u8 idx) {
+    static const u32 MENU_DRIVER_MODEL_SIZE = 0x28;
+    return reinterpret_cast<MenuDriverModel*>(reinterpret_cast<u8*>(models) + idx * MENU_DRIVER_MODEL_SIZE);
+}
+
+static u32& MenuDriverModelStateSlot(MenuDriverModel& model) {
+    static const u32 MENU_DRIVER_MODEL_STATE_OFFSET = 0x8;
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(&model) + MENU_DRIVER_MODEL_STATE_OFFSET);
+}
+
+static ModelTransformator** MenuDriverModelCharSelTransformatorSlot(MenuDriverModel& model) {
+    static const u32 MENU_DRIVER_MODEL_CHAR_SEL_TRANSFORMATOR_OFFSET = 0xc;
+    return reinterpret_cast<ModelTransformator**>(reinterpret_cast<u8*>(&model) + MENU_DRIVER_MODEL_CHAR_SEL_TRANSFORMATOR_OFFSET);
+}
+
+static ModelTransformator** MenuDriverModelOnKartTransformatorSlot(MenuDriverModel& model) {
+    static const u32 MENU_DRIVER_MODEL_ON_KART_TRANSFORMATOR_OFFSET = 0x10;
+    return reinterpret_cast<ModelTransformator**>(reinterpret_cast<u8*>(&model) + MENU_DRIVER_MODEL_ON_KART_TRANSFORMATOR_OFFSET);
+}
+
+static u32& MenuDriverModelIdSlot(MenuDriverModel& model) {
+    static const u32 MENU_DRIVER_MODEL_ID_OFFSET = 0x18;
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(&model) + MENU_DRIVER_MODEL_ID_OFFSET);
+}
+
+static KartId& MenuDriverModelVehicleSlot(MenuDriverModel& model) {
+    static const u32 MENU_DRIVER_MODEL_VEHICLE_OFFSET = 0x1c;
+    return *reinterpret_cast<KartId*>(reinterpret_cast<u8*>(&model) + MENU_DRIVER_MODEL_VEHICLE_OFFSET);
+}
+
+kmRuntimeUse(0x8081e284);
+static void ConstructMenuModelBRRESHandle(void* handle) {
+    typedef void (*Fn)(void*);
+    reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e284))(handle);
+}
+
+kmRuntimeUse(0x8081e29c);
+static void DestroyMenuModelBRRESHandle(void* handle) {
+    typedef void (*Fn)(void*, s32);
+    reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e29c))(handle, -1);
+}
+
+kmRuntimeUse(0x8081e78c);
+static bool LoadMenuDriverModel(void* handle, ModelDirector* model, CharacterId character) {
+    typedef u32 (*Fn)(void*, ModelDirector*, CharacterId);
+    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e78c))(handle, model, character) != 0;
+}
+
+static void ResetReloadedMenuDriverModel(MenuDriverModel& menuModel, CharacterId character) {
+    *MenuDriverModelCharSelTransformatorSlot(menuModel) = menuModel.model->modelTransformator;
+    *MenuDriverModelOnKartTransformatorSlot(menuModel) = nullptr;
+    MenuDriverModelIdSlot(menuModel) = static_cast<u32>(character);
+}
+
+static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId character) {
+    if (character < 0 || character >= 0x18 || driverMgr.models == nullptr) return false;
+    const u8 idx = static_cast<u8>(character);
+    MenuDriverModel* menuModel = MenuDriverModelSlot(driverMgr.models, idx);
+    ModelDirector** modelSlot = MenuDriverModelDirectorSlot(driverMgr.models, idx);
+
+    GameScene* scene = const_cast<GameScene*>(GameScene::GetCurrent());
+    if (scene == nullptr) return false;
+    EGG::Heap* parentHeap = scene->structsHeaps.heaps[0];
+    EGG::Allocator* freshAllocator = CreateScnObjAllocator(parentHeap);
+    if (freshAllocator == nullptr) return false;
+
+    ScnMgr* const* mgrs = reinterpret_cast<ScnMgr* const*>(SCNMGR_INSTANCES_ADDRESS);
+    ScnMgr* scnMgr = mgrs[0];
+    if (scnMgr == nullptr) return false;
+
+    DestroyModelDirector(*modelSlot);
+    *modelSlot = nullptr;
+
+    EGG::Allocator** menuAllocSlot = MenuAllocatorSlot();
+    EGG::Heap* savedHeap = scnMgr->curHeap;
+    EGG::Allocator* savedAllocator = scnMgr->curAllocator;
+    EGG::Allocator* savedMenuAllocator = *menuAllocSlot;
+    scnMgr->curHeap = parentHeap;
+    scnMgr->curAllocator = freshAllocator;
+    *menuAllocSlot = freshAllocator;
+
+    ModelDirector* newModel = new ModelDirector(2, 0);
+    bool loaded = false;
+    if (newModel != nullptr) {
+        u32 handle[2];
+        ConstructMenuModelBRRESHandle(handle);
+        loaded = LoadMenuDriverBRRESHook(handle, character) != 0 && LoadMenuDriverModel(handle, newModel, character);
+        DestroyMenuModelBRRESHandle(handle);
+    }
+
+    scnMgr->curHeap = savedHeap;
+    scnMgr->curAllocator = savedAllocator;
+    *menuAllocSlot = savedMenuAllocator;
+
+    if (!loaded) {
+        DestroyModelDirector(newModel);
+        return false;
+    }
+
+    *modelSlot = newModel;
+    ResetReloadedMenuDriverModel(*menuModel, character);
+    menuModel->Init();
+    return true;
+}
+
+static void ReinitMenuDriverModelMgr(u8 hud, CharacterId character) {
+    MenuModelMgr* modelMgr = MenuModelMgr::sInstance;
+    if (modelMgr == nullptr || !modelMgr->isActive || modelMgr->driverModels == nullptr) return;
+    if (hud >= LOCAL_PLAYER_COUNT || hud >= modelMgr->playerCount) return;
+
+    UnlockMenuModelHeaps(*modelMgr);
+    if (!ReloadMenuDriverModel(*modelMgr->driverModels, character)) return;
+    modelMgr->driverModels->SetPlayerCharacter(hud, character);
+
+    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+    Pages::CharacterSelect* page = sectionMgr->curSection->Get<Pages::CharacterSelect>();
+    if (page != nullptr && page->models != nullptr) page->models[hud].RequestModel(character);
+}
+
+static KartId SelectedMenuKartForHud(u8 hud) {
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr && hud < sectionMgr->sectionParams->localPlayerCount) {
+        return sectionMgr->sectionParams->karts[hud];
+    }
+    const Racedata* racedata = Racedata::sInstance;
+    if (racedata != nullptr && hud < racedata->menusScenario.localPlayerCount) {
+        const u8 playerId = racedata->menusScenario.settings.hudPlayerIds[hud];
+        if (playerId < ONLINE_PLAYER_COUNT) return racedata->menusScenario.players[playerId].kartId;
+    }
+    return STANDARD_KART_S;
+}
+
+static void ApplyVoteRandomMessageBoxKartState() {
+    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) {
+        voteRandomMessageBoxKartStateApplied = false;
+        return;
+    }
+    const Page* topPage = sectionMgr->curSection->GetTopLayerPage();
+    if (!IsVotingSection(sectionMgr->curSection->sectionId) || topPage == nullptr || topPage->pageId != PAGE_VOTERANDOM_MESSAGE_BOX) {
+        voteRandomMessageBoxKartStateApplied = false;
+        return;
+    }
+    if (voteRandomMessageBoxKartStateApplied) return;
+
+    MenuModelMgr* modelMgr = MenuModelMgr::sInstance;
+    if (modelMgr == nullptr || !modelMgr->isActive || modelMgr->driverModels == nullptr) return;
+    const u8 count = SectionPlayerCount(sectionMgr);
+    for (u8 hud = 0; hud < count && hud < modelMgr->playerCount; ++hud) {
+        MenuDriverModel* model = modelMgr->driverModels->players[hud].playerModel;
+        if (model == nullptr) continue;
+        MenuDriverModelVehicleSlot(*model) = SelectedMenuKartForHud(hud);
+        modelMgr->driverModels->PrepareDriverOnKartAnms(hud);
+        model->SwitchState(hud, static_cast<MenuDriverModel::State>(3));
+    }
+    voteRandomMessageBoxKartStateApplied = true;
+}
+
+void RestoreVotingMenuDriverModels() {
+    const SectionId section = CurrentSectionId();
+    if (!IsVotingSection(section)) return;
+
+    votingMenuTableSection = section;
+    votingMenuTablesRestored = true;
+    ApplySelectedNames();
+    RefreshLocalOnlineCustomCharacterFlags();
+
+    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return;
+    const u8 count = SectionPlayerCount(sectionMgr);
+    for (u8 hud = 0; hud < count; ++hud) {
+        ReinitMenuDriverModelMgr(hud, sectionMgr->sectionParams->characters[hud]);
+    }
+}
+
+bool RandomizeSelectedCharacterTable(CharacterId character) {
+    if (IsLocalMultiplayer() || !IsCharacter(StateCharacter(character))) return false;
+    u8 valid[TABLE_COUNT];
+    u8 count = 0;
+    for (u8 table = 0; table < TABLE_COUNT; ++table) {
+        if (HasSkin(character, table)) valid[count++] = table;
+    }
+    if (count == 0) return false;
+    Random random;
+    const bool changed = SetSelectedTable(character, valid[random.NextLimited<u8>(count)]);
+    if (changed) ReinitMenuDriverModelMgr(0, character);
+    return changed;
+}
+
 static void ResetCustomCharacterMenuState() {
+    if (!IsVotingSection(CurrentSectionId())) {
+        votingMenuTableSection = SECTION_NONE;
+        votingMenuTablesRestored = false;
+    }
     if (!IsOnlineRoom(RKNet::Controller::sInstance)) ResetOnlineCustomCharacterFlags();
     ResetOfflineCpuSkinTablesForSection();
-    ClearRawCaches(true);
+    SyncRawCachesToCurrentScene();
     CacheHoveredFromSection();
     ApplySelectedNames();
 }
@@ -1293,13 +1596,21 @@ static bool ProcessSkinInput() {
     heldToggleButtons = static_cast<u16>(inputs & (prevButton | nextButton));
     if ((inputs & prevButton) != 0) EatButton(*holder, prevButton, prevAction);
     if ((inputs & nextButton) != 0) EatButton(*holder, nextButton, nextAction);
-    if ((pressed & prevButton) != 0 && CycleSkin(PreviewCharacter(0), -1)) {
-        Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
-        return true;
+    if ((pressed & prevButton) != 0) {
+        const CharacterId character = PreviewCharacter(0);
+        if (CycleSkin(character, -1)) {
+            ReinitMenuDriverModelMgr(0, character);
+            Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
+            return true;
+        }
     }
-    if ((pressed & nextButton) != 0 && CycleSkin(PreviewCharacter(0), 1)) {
-        Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
-        return true;
+    if ((pressed & nextButton) != 0) {
+        const CharacterId character = PreviewCharacter(0);
+        if (CycleSkin(character, 1)) {
+            ReinitMenuDriverModelMgr(0, character);
+            Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
+            return true;
+        }
     }
     return false;
 }
@@ -1309,8 +1620,10 @@ static void MenuSceneSectionUpdateHook(SectionMgr* mgr) {
     UpdateHintPanes();
     ProcessSkinInput();
     UpdateCurrentCharacterSelectAuthorText(0);
+    ApplyVoteRandomMessageBoxKartState();
     typedef void (*Fn)(SectionMgr*);
     reinterpret_cast<Fn>(kmRuntimeAddr(0x8063583c))(mgr);
+    ApplyVoteRandomMessageBoxKartState();
 }
 kmCall(0x805552e8, MenuSceneSectionUpdateHook);
 kmCall(0x80553b30, MenuSceneSectionUpdateHook);

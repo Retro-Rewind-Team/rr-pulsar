@@ -264,6 +264,7 @@ void ExpVR::BeforeExitAnimations() {
 
 void ExpVR::OnDeactivate() {
     VR::OnDeactivate();
+    CustomCharacters::RestoreVotingMenuDriverModels();
 }
 
 void ExpVR::OnResume() {

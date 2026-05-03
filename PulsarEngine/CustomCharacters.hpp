@@ -15,6 +15,7 @@ namespace CustomCharacters {
 
 void ResetOnlineCustomCharacterFlags();
 void RefreshLocalOnlineCustomCharacterFlags();
+void RestoreVotingMenuDriverModels();
 void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 characterTables);
 u8 GetLocalOnlineCharacterTables();
 bool IsCustomCharacterTableActive();
