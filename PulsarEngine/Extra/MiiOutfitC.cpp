@@ -52,9 +52,9 @@ kmWrite32(0x805500B8, 0x38600001);
 kmWrite32(0x807E2714, 0x3BC0001B);
 
 // Mii Outfit C Stats Fix [Atlas, gaberboo]
-kmWrite16(0x807E7E2A, 0x0004);
-kmWrite16(0x807E7E42, 0x0004);
-kmWrite16(0x807E7E4E, 0x0004);
+kmWrite8(0x807E7E2A, 0x0004);
+kmWrite8(0x807E7E42, 0x0004);
+kmWrite8(0x807E7E4E, 0x0004);
 
 // kartDriverDispParam.bin has no dedicated Outfit C columns in the stock common bins.
 // Share the matching Outfit A columns so C inherits the same driver/kart display offsets.
