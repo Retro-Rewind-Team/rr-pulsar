@@ -1,10 +1,13 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
+#include <MarioKartWii/Item/Obj/ItemObjVariants.hpp>
+#include <MarioKartWii/KCL/KCLController.hpp>
 #include <MarioKartWii/Kart/KartPhysics.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
 #include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
 #include <core/egg/Math/Math.hpp>
 #include <Race/GravityCamera.hpp>
 #include <Race/GravityFields.hpp>
@@ -29,15 +32,44 @@ const u8 kMaxTrackedPlayers = 12;
 const u8 kGravityVolumeShapeBox = 0;
 const u8 kGravityVolumeShapeCylinder = 1;
 const u8 kGravityVolumeShapeSphere = 2;
+const float kItemSupportDot = 0.35f;
+const float kKartContactUpMinDot = 0.05f;
+const float kShellGravityRedirectLimit = 4.0f;
 const u32 kStatusBitfield0Ground = 0x40000;
 const u32 kStatusBitfield0Hop = 0x80000;
 const u32 kStatusBitfield0JumpPad = 0x40000000;
 const u32 kStatusBitfield1Trick = 0x40;
+const u32 kStatusBitfield1BouncyMushroomVel = 0x10000000;
+const u32 kStatusBitfield2HasJumpPadDir = 0x400000;
 const u32 kPhysicsTopCurrentOffset = 0x158;
 const u32 kPhysicsTopOffset = 0x180;
+const KCLBitfield kItemFloorMask = static_cast<KCLBitfield>(
+    KCL_BITFIELD_ROAD |
+    KCL_BITFIELD_SLIPPERY_ROAD |
+    KCL_BITFIELD_WEAK_OFFROAD |
+    KCL_BITFIELD_NORMAL_OFFROAD |
+    KCL_BITFIELD_HEAVY_OFFROAD |
+    KCL_BITFIELD_ICY_ROAD |
+    KCL_BITFIELD_BOOST_PANEL |
+    KCL_BITFIELD_BOOST_RAMP |
+    KCL_BITFIELD_JUMP_PAD |
+    KCL_BITFIELD_ITEM_ROAD |
+    KCL_BITFIELD_SOLID_FALL |
+    KCL_BITFIELD_MOVING_WATER |
+    KCL_BITFIELD_HALFPIPE |
+    KCL_BITFIELD_MOVING_ROAD |
+    KCL_BITFIELD_STICKY_ROAD |
+    KCL_BITFIELD_ROAD2 |
+    KCL_BITFIELD_ROULETTE_MOVING_ROAD);
 
 kmRuntimeUse(0x8057c69c);
 kmRuntimeUse(0x80579968);
+kmRuntimeUse(0x8057fd18);
+kmRuntimeUse(0x80582530);
+kmRuntimeUse(0x80599690);
+kmRuntimeUse(0x805b6150);
+kmRuntimeUse(0x807b54f4);
+kmRuntimeUse(0x807b7570);
 
 struct GravityState {
     bool isInitialized;
@@ -78,6 +110,10 @@ float MinFloat(float lhs, float rhs) {
     return lhs < rhs ? lhs : rhs;
 }
 
+float MaxFloat(float lhs, float rhs) {
+    return lhs > rhs ? lhs : rhs;
+}
+
 float DotVec(const Vec3& lhs, const Vec3& rhs) {
     return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 }
@@ -101,6 +137,10 @@ Vec3 ScaleVec(const Vec3& vec, float scale) {
     return MakeVec(vec.x * scale, vec.y * scale, vec.z * scale);
 }
 
+Vec3 ProjectOutVec(const Vec3& vec, const Vec3& normal) {
+    return SubVec(vec, ScaleVec(normal, DotVec(vec, normal)));
+}
+
 float VecLength(const Vec3& vec) {
     const float squaredLength = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z;
     return EGG::Math::Sqrt(squaredLength);
@@ -114,6 +154,102 @@ bool NormalizeSafe(Vec3& vec) {
     vec.x *= invLength;
     vec.y *= invLength;
     vec.z *= invLength;
+    return true;
+}
+
+bool IsEffectivelyWorldUp(const Vec3& up) {
+    return DotVec(up, WorldUp()) > 0.9995f;
+}
+
+Vec3 MakeUpRelativeVector(const Vec3& source, const Vec3& gravityUp, float upComponent) {
+    Vec3 up = gravityUp;
+    if (!NormalizeSafe(up)) return source;
+
+    Vec3 planar = ProjectOutVec(source, up);
+    return AddVec(planar, ScaleVec(up, upComponent));
+}
+
+bool TryGetGravityUpAtPosition(const Vec3& position, Vec3& gravityUp, float& gravityStrength) {
+    Vec3 gravityDown;
+    if (!TryGetGravityAtPosition(position, gravityDown, gravityStrength)) return false;
+    gravityUp = ScaleVec(gravityDown, -1.0f);
+    return NormalizeSafe(gravityUp);
+}
+
+bool TryGetLinkGravityUp(const Kart::Link& link, Vec3& gravityUp, float& gravityStrength) {
+    Vec3 gravityVector;
+    UpdateKartGravity(link, gravityVector, gravityStrength);
+    if (gravityStrength <= kVectorEpsilon) return false;
+    gravityUp = ScaleVec(gravityVector, -1.0f / gravityStrength);
+    return NormalizeSafe(gravityUp);
+}
+
+void AlignVectorToGravityUp(Vec3& vec, const Vec3& gravityUp, float upComponent) {
+    vec = MakeUpRelativeVector(vec, gravityUp, upComponent);
+}
+
+bool TryGetKartContactUp(const Kart::Status& status, const Vec3& gravityUp, Vec3& contactUp) {
+    contactUp = status.floorNor;
+    if (NormalizeSafe(contactUp) && DotVec(contactUp, gravityUp) > kKartContactUpMinDot) return true;
+
+    contactUp = gravityUp;
+    return NormalizeSafe(contactUp);
+}
+
+bool TryGetMovementSurfaceUp(const Kart::Movement& movement, const Vec3& gravityUp, Vec3& surfaceUp) {
+    surfaceUp = movement.smoothedUp;
+    if (NormalizeSafe(surfaceUp) && DotVec(surfaceUp, gravityUp) > kKartContactUpMinDot) return true;
+
+    surfaceUp = movement.up;
+    if (NormalizeSafe(surfaceUp) && DotVec(surfaceUp, gravityUp) > kKartContactUpMinDot) return true;
+
+    surfaceUp = gravityUp;
+    return NormalizeSafe(surfaceUp);
+}
+
+float GetItemSupportDot(Item::ObjMiddle& itemObj, const Vec3& gravityUp) {
+    CollisionInfo& collisionInfo = *reinterpret_cast<CollisionInfo*>(&itemObj.collision);
+    float supportDot = DotVec(collisionInfo.dirToClosestFloorTri, gravityUp);
+    supportDot = MaxFloat(supportDot, DotVec(collisionInfo.dirToClosestWallTri, gravityUp));
+    supportDot = MaxFloat(supportDot, DotVec(collisionInfo.dirToClosestTri, gravityUp));
+    return supportDot;
+}
+
+bool IsItemSupportedByGravityFloor(Item::ObjMiddle& itemObj, const Vec3& gravityUp) {
+    if ((itemObj.kclType.bitfield & kItemFloorMask) == 0) return false;
+    return GetItemSupportDot(itemObj, gravityUp) >= kItemSupportDot;
+}
+
+Vec3& ShellMoveDir(Item::ObjMiddle& itemObj) {
+    return *reinterpret_cast<Vec3*>(reinterpret_cast<u8*>(&itemObj) + 0x1a4);
+}
+
+Vec3& ShellSurfaceDir(Item::ObjMiddle& itemObj) {
+    return *reinterpret_cast<Vec3*>(reinterpret_cast<u8*>(&itemObj) + 0x1b0);
+}
+
+void SyncShellDirsToSpeed(Item::ObjMiddle& itemObj, const Vec3& gravityUp) {
+    Vec3 dir = ProjectOutVec(itemObj.speed, gravityUp);
+    if (!NormalizeSafe(dir)) {
+        dir = itemObj.speed;
+        if (!NormalizeSafe(dir)) return;
+    }
+
+    ShellMoveDir(itemObj) = dir;
+    ShellSurfaceDir(itemObj) = dir;
+}
+
+bool ProjectMovementDirToGravityPlane(Kart::Movement& movement, const Vec3& gravityUp) {
+    Vec3 projectedDir = ProjectOutVec(movement.dir, gravityUp);
+    if (!NormalizeSafe(projectedDir)) {
+        projectedDir = ProjectOutVec(movement.lastDir, gravityUp);
+        if (!NormalizeSafe(projectedDir)) return false;
+    }
+
+    const float speedProjection = DotVec(movement.dir, projectedDir);
+    movement.engineSpeed *= speedProjection;
+    movement.dir = projectedDir;
+    movement.vel1Dir = projectedDir;
     return true;
 }
 
@@ -344,22 +480,14 @@ void ComputeKartGravity(const Kart::Link& link, bool snapTransition, Vec3& gravi
     if (resolvedFromOverlap) {
         state.exitGraceCounter = 0;
     } else {
+        // Once the kart leaves a field, stop treating the old field as active.
+        // Keeping old sideways gravity outside the volume can shove players into
+        // normal track geometry during exits and respawns.
         areaId = -1;
-
-        // Border hysteresis: keep the previous area for a short window to avoid rapid
-        // enter/exit oscillation caused by tiny boundary jitters.
-        KMP::Manager* kmpManager = KMP::Manager::sInstance;
-        if (previousAreaId >= 0 && kmpManager != nullptr && kmpManager->areaSection != nullptr) {
-            const KMP::Section<AREA>& areaSection = *kmpManager->areaSection;
-            const u16 graceFrames = state.blendFrames > 0 ? state.blendFrames : kDefaultBlendFrames;
-            if (state.exitGraceCounter < graceFrames &&
-                ResolveGravityFieldByAreaId(areaSection, previousAreaId, gravityDown, strength, blendFrames)) {
-                areaId = previousAreaId;
-                ++state.exitGraceCounter;
-            } else {
-                state.exitGraceCounter = graceFrames;
-            }
-        }
+        gravityDown = WorldDown();
+        strength = kDefaultGravityStrength;
+        blendFrames = state.blendFrames > 0 ? state.blendFrames : kDefaultBlendFrames;
+        state.exitGraceCounter = 0;
     }
 
     state.areaId = areaId;
@@ -395,6 +523,12 @@ MovementUpdateUpsFunc sMovementUpdateUps = GravityFieldsMovementUpdateUps;
 
 typedef void (*MovementUpdateHopPhysicsFunc)(Kart::Movement* movement);
 MovementUpdateHopPhysicsFunc sMovementUpdateHopPhysics = reinterpret_cast<MovementUpdateHopPhysicsFunc>(kmRuntimeAddr(0x80579968));
+typedef void (*MovementTryStartJumpPadFunc)(Kart::Movement* movement, u32 jumpPadType);
+MovementTryStartJumpPadFunc sMovementTryStartJumpPad = reinterpret_cast<MovementTryStartJumpPadFunc>(kmRuntimeAddr(0x8057fd18));
+typedef void (*MovementTryEndJumpPadFunc)(Kart::Movement* movement);
+MovementTryEndJumpPadFunc sMovementTryEndJumpPad = reinterpret_cast<MovementTryEndJumpPadFunc>(kmRuntimeAddr(0x80582530));
+typedef void (*WheelUpdateCollisionFunc)(Kart::WheelPhysics* wheelPhysics, Vec3* bottomDir, Vec3* topmostPosition);
+WheelUpdateCollisionFunc sWheelUpdateCollision = reinterpret_cast<WheelUpdateCollisionFunc>(kmRuntimeAddr(0x80599690));
 
 // Hop physics uses a scalar gravity value along hopUp, so wall/ceiling gravity
 // needs a dedicated magnitude fix instead of relying on physics.gravity.y.
@@ -408,6 +542,76 @@ void UpdateHopPhysicsWithGravity(Kart::Movement& movement) {
     sMovementUpdateHopPhysics(&movement);
 }
 kmCall(0x805976f0, UpdateHopPhysicsWithGravity);
+
+void TryStartJumpPadWithGravity(Kart::Movement& movement, u32 jumpPadType) {
+    Vec3 gravityUp;
+    float gravityStrength = kDefaultGravityStrength;
+    const bool hasCustomGravity =
+        TryGetLinkGravityUp(movement, gravityUp, gravityStrength) &&
+        !IsEffectivelyWorldUp(gravityUp) &&
+        GetActiveAreaId(movement.GetPlayerIdx()) >= 0;
+
+    sMovementTryStartJumpPad(&movement, jumpPadType);
+
+    if (!hasCustomGravity) return;
+    Kart::PhysicsHolder& physicsHolder = movement.GetPhysicsHolder();
+    if (physicsHolder.physics != nullptr) {
+        AlignVectorToGravityUp(physicsHolder.physics->speed0, gravityUp, physicsHolder.physics->speed0.y);
+
+        // Vanilla clears the world-Y force on jump-pad start. Do the same in the
+        // active gravity frame so the launch is not pulled sideways immediately.
+        physicsHolder.physics->normalAcceleration =
+            ProjectOutVec(physicsHolder.physics->normalAcceleration, gravityUp);
+        physicsHolder.physics->gravity = 0.0f;
+    }
+
+    if (movement.pointers != nullptr && movement.pointers->kartStatus != nullptr &&
+        (movement.pointers->kartStatus->bitfield2 & kStatusBitfield2HasJumpPadDir) != 0) {
+        ProjectMovementDirToGravityPlane(movement, gravityUp);
+    }
+}
+kmCall(0x80578d94, TryStartJumpPadWithGravity);
+kmCall(0x80579298, TryStartJumpPadWithGravity);
+kmCall(0x80587914, TryStartJumpPadWithGravity);
+
+void TryEndJumpPadWithGravity(Kart::Movement& movement) {
+    Vec3 gravityUp;
+    float gravityStrength = kDefaultGravityStrength;
+    Kart::Status* status = movement.pointers != nullptr ? movement.pointers->kartStatus : static_cast<Kart::Status*>(0);
+    const bool hasCustomGravity =
+        status != nullptr &&
+        (status->bitfield1 & kStatusBitfield1BouncyMushroomVel) != 0 &&
+        TryGetLinkGravityUp(movement, gravityUp, gravityStrength) &&
+        !IsEffectivelyWorldUp(gravityUp) &&
+        GetActiveAreaId(movement.GetPlayerIdx()) >= 0;
+
+    sMovementTryEndJumpPad(&movement);
+
+    if (!hasCustomGravity) return;
+    Kart::PhysicsHolder& physicsHolder = movement.GetPhysicsHolder();
+    if (physicsHolder.physics != nullptr) {
+        AlignVectorToGravityUp(physicsHolder.physics->speed0, gravityUp, physicsHolder.physics->speed0.y);
+    }
+}
+kmCall(0x80578a3c, TryEndJumpPadWithGravity);
+kmCall(0x80578f38, TryEndJumpPadWithGravity);
+
+void UpdateWheelCollisionWithGravity(Kart::WheelPhysics& wheelPhysics, Vec3& bottomDir, Vec3& topmostPosition) {
+    Vec3 gravityDown;
+    float gravityStrength = kDefaultGravityStrength;
+    if (TryGetGravityAtPosition(topmostPosition, gravityDown, gravityStrength)) {
+        Vec3 gravityUp = ScaleVec(gravityDown, -1.0f);
+        if (NormalizeSafe(gravityDown) && NormalizeSafe(gravityUp) && !IsEffectivelyWorldUp(gravityUp)) {
+            // Vanilla derives wheel cast direction from the current body matrix.
+            // Once a bike rolls off-axis on a wall, that makes the next wheel cast
+            // miss the gravity floor and creates hovering/sideways feedback.
+            bottomDir = gravityDown;
+        }
+    }
+
+    sWheelUpdateCollision(&wheelPhysics, &bottomDir, &topmostPosition);
+}
+kmCall(0x8059a4ac, UpdateWheelCollisionWithGravity);
 
 void UpdateUpsWithGravityField(Kart::Movement& movement) {
     sMovementUpdateUps(&movement);
@@ -452,6 +656,10 @@ Vec3& PhysicsTopCurrent(Kart::Physics& physics) {
 
 typedef void (*MovementUpdateRotationFunc)(Kart::Movement* movement);
 MovementUpdateRotationFunc sMovementUpdateRotation = reinterpret_cast<MovementUpdateRotationFunc>(kmRuntimeAddr(0x8057c69c));
+typedef void (*PhysicsApplyWheelSuspensionFunc)(Kart::Physics* physics, const Vec3* topmostPos, const Vec3* force,
+                                                const Vec3* rawForce, bool disablePitchTorque);
+PhysicsApplyWheelSuspensionFunc sPhysicsApplyWheelSuspension =
+    reinterpret_cast<PhysicsApplyWheelSuspensionFunc>(kmRuntimeAddr(0x805b6150));
 
 void UpdateRotationWithGravity(Kart::Movement& movement) {
     sMovementUpdateRotation(&movement);
@@ -464,13 +672,35 @@ void UpdateRotationWithGravity(Kart::Movement& movement) {
     Kart::PhysicsHolder& physicsHolder = movement.GetPhysicsHolder();
     if (physicsHolder.physics == nullptr) return;
 
-    Vec3 gravityUp = movement.smoothedUp;
+    Vec3 gravityUp;
+    float gravityStrength = kDefaultGravityStrength;
+    if (!TryGetLinkGravityUp(movement, gravityUp, gravityStrength)) gravityUp = movement.smoothedUp;
     if (!NormalizeSafe(gravityUp) && !TryGetStateGravityUp(playerIdx, gravityUp, nullptr)) return;
 
     PhysicsTopCurrent(*physicsHolder.physics) = gravityUp;
     PhysicsTopTarget(*physicsHolder.physics) = gravityUp;
 }
 kmCall(0x8057993c, UpdateRotationWithGravity);
+
+void ApplyWheelSuspensionWithGravity(Kart::Physics& physics, const Vec3& topmostPos, const Vec3& force,
+                                     const Vec3& rawForce, bool disablePitchTorque) {
+    Vec3 gravityUp;
+    float gravityStrength = kDefaultGravityStrength;
+    const bool hasCustomGravity =
+        TryGetGravityUpAtPosition(physics.position, gravityUp, gravityStrength) &&
+        !IsEffectivelyWorldUp(gravityUp);
+
+    sPhysicsApplyWheelSuspension(&physics, &topmostPos, &force, &rawForce, disablePitchTorque);
+
+    if (!hasCustomGravity) return;
+
+    // Vanilla suspension only adds the world-Y component of the wheel support
+    // force to totalForce. Body physics already integrates full vector forces,
+    // so restore the omitted horizontal support under sideways/ceiling gravity.
+    physics.normalAcceleration.x += force.x;
+    physics.normalAcceleration.z += force.z;
+}
+kmCall(0x8059a8c8, ApplyWheelSuspensionWithGravity);
 
 void SyncRespawnGravity(Kart::Link& link) {
     Vec3 gravityVector;
@@ -495,6 +725,90 @@ void SyncRespawnGravity(Kart::Link& link) {
     TempDebug::OnRespawn(link, areaId, gravityDown, gravityStrength);
 }
 kmCall(0x80584418, SyncRespawnGravity);
+
+typedef void (*ItemThrowablePhysicsFunc)(float gravity, float drag, float bounce, Item::ObjMiddle* itemObj);
+ItemThrowablePhysicsFunc sItemThrowablePhysics = reinterpret_cast<ItemThrowablePhysicsFunc>(kmRuntimeAddr(0x807b7570));
+typedef void (*ItemShellPhysicsFunc)(float targetSpeed, Item::ObjMiddle* itemObj);
+ItemShellPhysicsFunc sItemShellPhysics = reinterpret_cast<ItemShellPhysicsFunc>(kmRuntimeAddr(0x807b54f4));
+
+void UpdateThrowableItemWithGravity(float gravity, float drag, float bounce, Item::ObjMiddle* itemObj) {
+    Vec3 gravityUp;
+    float gravityStrength = kDefaultGravityStrength;
+    bool hasCustomGravity = false;
+    if (itemObj != nullptr) {
+        hasCustomGravity =
+            TryGetGravityUpAtPosition(itemObj->position, gravityUp, gravityStrength) &&
+            !IsEffectivelyWorldUp(gravityUp);
+    }
+
+    sItemThrowablePhysics(gravity, drag, bounce, itemObj);
+
+    if (!hasCustomGravity || itemObj == nullptr) return;
+
+    // The vanilla item integrator only subtracts gravity from speed.y. For
+    // airborne shells, bananas and FIBs, redirect that acceleration along the
+    // active field so thrown items fall toward gravity floors and ceilings.
+    if (!IsItemSupportedByGravityFloor(*itemObj, gravityUp)) {
+        itemObj->speed.y += gravity;
+        Vec3 gravityDown = ScaleVec(gravityUp, -1.0f);
+        itemObj->speed.x += gravityDown.x * gravity;
+        itemObj->speed.y += gravityDown.y * gravity;
+        itemObj->speed.z += gravityDown.z * gravity;
+    }
+}
+kmCall(0x807a3ec0, UpdateThrowableItemWithGravity);
+kmCall(0x807a3ed4, UpdateThrowableItemWithGravity);
+kmCall(0x807a4b88, UpdateThrowableItemWithGravity);
+kmCall(0x807a4b9c, UpdateThrowableItemWithGravity);
+kmCall(0x807a7a14, UpdateThrowableItemWithGravity);
+kmCall(0x807a7a28, UpdateThrowableItemWithGravity);
+
+void UpdateShellItemWithGravity(float targetSpeed, Item::ObjMiddle* itemObj) {
+    Vec3 gravityUp;
+    float gravityStrength = kDefaultGravityStrength;
+    bool hasCustomGravity = false;
+    Vec3 previousSpeed = WorldDown();
+    if (itemObj != nullptr) {
+        previousSpeed = itemObj->speed;
+        hasCustomGravity =
+            TryGetGravityUpAtPosition(itemObj->position, gravityUp, gravityStrength) &&
+            !IsEffectivelyWorldUp(gravityUp);
+    }
+
+    sItemShellPhysics(targetSpeed, itemObj);
+
+    if (!hasCustomGravity || itemObj == nullptr) return;
+
+    if (IsItemSupportedByGravityFloor(*itemObj, gravityUp)) {
+        const float speedLength = VecLength(itemObj->speed);
+        Vec3 tangentSpeed = ProjectOutVec(itemObj->speed, gravityUp);
+        if (!NormalizeSafe(tangentSpeed)) tangentSpeed = ProjectOutVec(previousSpeed, gravityUp);
+        if (speedLength > kVectorEpsilon && NormalizeSafe(tangentSpeed)) {
+            itemObj->speed = ScaleVec(tangentSpeed, speedLength);
+            SyncShellDirsToSpeed(*itemObj, gravityUp);
+        }
+        return;
+    }
+
+    // Shell movement has its own hardcoded world-Y falling branch. Use the
+    // observed world-Y loss from vanilla as the gravity magnitude, then replay
+    // that amount in the active gravity frame.
+    const float worldYLoss = previousSpeed.y - itemObj->speed.y;
+    if (worldYLoss > kVectorEpsilon && worldYLoss <= kShellGravityRedirectLimit) {
+        itemObj->speed.y += worldYLoss;
+        Vec3 gravityDown = ScaleVec(gravityUp, -1.0f);
+        itemObj->speed.x += gravityDown.x * worldYLoss;
+        itemObj->speed.y += gravityDown.y * worldYLoss;
+        itemObj->speed.z += gravityDown.z * worldYLoss;
+        SyncShellDirsToSpeed(*itemObj, gravityUp);
+    }
+}
+kmCall(0x807aad94, UpdateShellItemWithGravity);
+kmCall(0x807ad5c0, UpdateShellItemWithGravity);
+kmCall(0x807aecd0, UpdateShellItemWithGravity);
+kmCall(0x807b4b14, UpdateShellItemWithGravity);
+kmBranch(0x807aab90, UpdateShellItemWithGravity);
+kmBranch(0x807ab384, UpdateShellItemWithGravity);
 
 void ResetGravityStateOnRaceLoad() {
     ResetAllGravityStates();
@@ -581,11 +895,14 @@ void ApplyBodyGravityVector(Kart::Physics& physics, const Vec3& gravityVector, c
                 const float horizontalDownSq = gravityDown.x * gravityDown.x + gravityDown.z * gravityDown.z;
                 if (horizontalDownSq > 0.0004f) {
                     const Vec3 gravityUp = ScaleVec(gravityDown, -1.0f);
-                    const float liftSpeed = DotVec(physics.speed0, gravityUp);
+                    Vec3 contactUp = gravityUp;
+                    TryGetKartContactUp(status, gravityUp, contactUp);
+
+                    const float liftSpeed = DotVec(physics.speed0, contactUp);
                     if (liftSpeed > 0.0f) {
-                        physics.speed0.x -= gravityUp.x * liftSpeed;
-                        physics.speed0.y -= gravityUp.y * liftSpeed;
-                        physics.speed0.z -= gravityUp.z * liftSpeed;
+                        physics.speed0.x -= contactUp.x * liftSpeed;
+                        physics.speed0.y -= contactUp.y * liftSpeed;
+                        physics.speed0.z -= contactUp.z * liftSpeed;
                     }
                 }
             }
