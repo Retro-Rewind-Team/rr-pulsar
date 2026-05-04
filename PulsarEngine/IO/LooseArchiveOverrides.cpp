@@ -17,6 +17,9 @@
 #include <IO/LooseArchiveOverrides.hpp>
 #include <IO/SDIO.hpp>
 #include <Settings/Settings.hpp>
+#include <include/c_stdio.h>
+#include <include/c_stdlib.h>
+#include <include/c_string.h>
 #include <MarioKartWii/Archive/ArchiveFile.hpp>
 #include <core/egg/Archive.hpp>
 #include <core/egg/Decomp.hpp>
@@ -243,38 +246,24 @@ static bool IsBlockedLooseRawOverrideExtension(const char* path) {
 
 static bool StartsWith(const char* str, const char* prefix) {
     if (str == nullptr || prefix == nullptr) return false;
-    while (*prefix != '\0') {
-        if (*str != *prefix) return false;
-        ++str;
-        ++prefix;
-    }
-    return true;
-}
-
-static const char* FindBasename(const char* path) {
-    if (path == nullptr) return nullptr;
-    const char* lastSlash = nullptr;
-    for (const char* p = path; *p != '\0'; ++p) {
-        if (*p == '/') lastSlash = p;
-    }
-    return lastSlash ? lastSlash + 1 : path;
+    return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
 static const char* FindLastChar(const char* str, char needle) {
     if (str == nullptr) return nullptr;
     const char* last = nullptr;
-    for (const char* p = str; *p != '\0'; ++p) {
-        if (*p == needle) last = p;
+    const char* cursor = str;
+    while ((cursor = strchr(cursor, needle)) != nullptr) {
+        last = cursor;
+        ++cursor;
     }
     return last;
 }
 
-static const char* FindFirstChar(const char* str, char needle) {
-    if (str == nullptr) return nullptr;
-    for (const char* p = str; *p != '\0'; ++p) {
-        if (*p == needle) return p;
-    }
-    return nullptr;
+static const char* FindBasename(const char* path) {
+    if (path == nullptr) return nullptr;
+    const char* lastSlash = FindLastChar(path, '/');
+    return lastSlash ? lastSlash + 1 : path;
 }
 
 static void ToLowerCopy(char* dest, const char* src, u32 destSize) {
@@ -532,7 +521,7 @@ static bool TryParseBRSAROverride(const char* relativePath, u32& outFileId, u8& 
     u8 type = BRSAROVERRIDE_INVALID;
     if (!IsSupportedBRSAROverrideTypeSuffix(lastDot, type)) return false;
 
-    const char* firstDot = FindFirstChar(lowerName, '.');
+    const char* firstDot = strchr(lowerName, '.');
     if (firstDot == nullptr || firstDot == lowerName) return false;
     if (firstDot != lastDot && firstDot + 1 >= lastDot) {
         // Reject malformed names such as `<fileId>..brwsd`.
@@ -569,27 +558,15 @@ static s32 CompareTaggedOverrideEntries(const TaggedOverrideEntry& lhs, const Ta
     return strcmp(lhsName, rhsName);
 }
 
+static int CompareTaggedOverrideEntriesForQSort(const void* lhs, const void* rhs) {
+    return CompareTaggedOverrideEntries(*static_cast<const TaggedOverrideEntry*>(lhs),
+                                        *static_cast<const TaggedOverrideEntry*>(rhs));
+}
+
 static void SortOverrideEntriesByArchiveTag(TaggedOverrideEntry* entries, u32 count) {
     if (entries == nullptr || count < 2) return;
 
-
-    // The index is ordered with a tiny insertion sort during its one-time build step.
-    // Entries are grouped by interned tag ID first, then by stripped member path so
-    // each tag record can point at one contiguous bucket in the tagged array.
-    // The secondary key keeps the ordering deterministic for debugging and
-    // duplicate-resolution behavior.
-
-    for (u32 i = 1; i < count; ++i) {
-        const TaggedOverrideEntry key = entries[i];
-        u32 insertIdx = i;
-        while (insertIdx > 0) {
-            const TaggedOverrideEntry& prev = entries[insertIdx - 1];
-            if (CompareTaggedOverrideEntries(prev, key) <= 0) break;
-            entries[insertIdx] = prev;
-            --insertIdx;
-        }
-        entries[insertIdx] = key;
-    }
+    qsort(entries, count, sizeof(TaggedOverrideEntry), CompareTaggedOverrideEntriesForQSort);
 }
 
 static void BuildTaggedOverrideRanges(OverrideDatabase& database) {
@@ -701,13 +678,7 @@ static bool StripDeleteSuffixInPlace(char* path) {
     if (len < suffixLen) return false;
 
     char* tail = path + (len - suffixLen);
-    for (size_t i = 0; i < suffixLen; ++i) {
-        char a = tail[i];
-        char b = kDeleteSuffix[i];
-        if (a >= 'A' && a <= 'Z') a = static_cast<char>(a - 'A' + 'a');
-        if (b >= 'A' && b <= 'Z') b = static_cast<char>(b - 'A' + 'a');
-        if (a != b) return false;
-    }
+    if (!EndsWithIgnoreCase(path, kDeleteSuffix)) return false;
 
     tail[0] = '\0';
     return true;
@@ -1715,20 +1686,15 @@ static s32 CompareWholeFileEntries(const WholeFileOverrideEntry& lhs, const Whol
     return strcmp(lhsPath, rhsPath);
 }
 
+static int CompareWholeFileEntriesForQSort(const void* lhs, const void* rhs) {
+    return CompareWholeFileEntries(*static_cast<const WholeFileOverrideEntry*>(lhs),
+                                   *static_cast<const WholeFileOverrideEntry*>(rhs));
+}
+
 static void SortWholeFileOverrideEntries(WholeFileOverrideEntry* entries, u32 count) {
     if (entries == nullptr || count < 2) return;
 
-    for (u32 i = 1; i < count; ++i) {
-        const WholeFileOverrideEntry key = entries[i];
-        u32 insertIdx = i;
-        while (insertIdx > 0) {
-            const WholeFileOverrideEntry& prev = entries[insertIdx - 1];
-            if (CompareWholeFileEntries(prev, key) <= 0) break;
-            entries[insertIdx] = prev;
-            --insertIdx;
-        }
-        entries[insertIdx] = key;
-    }
+    qsort(entries, count, sizeof(WholeFileOverrideEntry), CompareWholeFileEntriesForQSort);
 }
 
 static const WholeFileOverrideEntry* FindWholeFileOverride(const OverrideDatabase& database, const char* basenameLower) {
