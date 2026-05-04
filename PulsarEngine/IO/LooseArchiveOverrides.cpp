@@ -331,12 +331,12 @@ static bool ExtractTaggedOverrideMetadata(const char* relativePath, char* stripp
                                           char* archiveTagLower, u32 archiveTagLowerSize, bool& outIsDelete);
 static bool BuildOverridePathWithRoot(const char* root, const char* name, const char* tag, char* outPath, u32 outSize);
 
-static u32 HashLowerCaseString(const char* name) {
+static u32 HashString(const char* name, bool lowerCase) {
     if (name == nullptr) return 0;
     u32 hash = 2166136261u;
     for (const char* cursor = name; *cursor != '\0'; ++cursor) {
         char c = *cursor;
-        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+        if (lowerCase && c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
         hash ^= static_cast<u8>(c);
         hash *= 16777619u;
     }
@@ -648,16 +648,6 @@ static u32 FSTNameOffset(const FSTEntry& entry) {
     return entry.typeName & 0x00FFFFFF;
 }
 
-static u32 HashArchiveMemberBasename(const char* name) {
-    if (name == nullptr) return 0;
-    u32 hash = 2166136261u;
-    for (const char* cursor = name; *cursor != '\0'; ++cursor) {
-        hash ^= static_cast<u8>(*cursor);
-        hash *= 16777619u;
-    }
-    return hash;
-}
-
 static u32 GetBasenameHashCapacity(u32 nodeCapacity) {
     u32 capacity = 8;
     u32 target = (nodeCapacity > 0x7FFFFFFFu) ? 0xFFFFFFFFu : (nodeCapacity * 2);
@@ -936,7 +926,7 @@ static void BuildArchiveBasenameLookup16(const U8Node* nodes, u32 nodeCount, cha
         const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
         if (nodeName == nullptr || nodeName[0] == '\0') continue;
 
-        const u32 bucket = HashArchiveMemberBasename(nodeName) & (bucketCount - 1);
+        const u32 bucket = HashString(nodeName, false) & (bucketCount - 1);
         nextNode[nodeIdx] = bucketHeads[bucket];
         bucketHeads[bucket] = static_cast<u16>(nodeIdx);
     }
@@ -956,7 +946,7 @@ static void BuildArchiveBasenameLookup32(const U8Node* nodes, u32 nodeCount, cha
         const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
         if (nodeName == nullptr || nodeName[0] == '\0') continue;
 
-        const u32 bucket = HashArchiveMemberBasename(nodeName) & (bucketCount - 1);
+        const u32 bucket = HashString(nodeName, false) & (bucketCount - 1);
         nextNode[nodeIdx] = bucketHeads[bucket];
         bucketHeads[bucket] = static_cast<s32>(nodeIdx);
     }
@@ -970,7 +960,7 @@ static u32 MatchArchiveBasenameOverride16(const U8Node* nodes, char* stringTable
         return 0;
     }
 
-    const u32 bucket = HashArchiveMemberBasename(basename) & (bucketCount - 1);
+    const u32 bucket = HashString(basename, false) & (bucketCount - 1);
     u32 matchCount = 0;
     for (u16 nodeIdx = bucketHeads[bucket]; nodeIdx != kInvalidScratchIndex16; nodeIdx = nextNode[nodeIdx]) {
         const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
@@ -991,7 +981,7 @@ static u32 MatchArchiveBasenameOverride32(const U8Node* nodes, char* stringTable
         return 0;
     }
 
-    const u32 bucket = HashArchiveMemberBasename(basename) & (bucketCount - 1);
+    const u32 bucket = HashString(basename, false) & (bucketCount - 1);
     u32 matchCount = 0;
     for (s32 nodeIdx = bucketHeads[bucket]; nodeIdx >= 0; nodeIdx = nextNode[nodeIdx]) {
         const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
@@ -1193,19 +1183,10 @@ static void InvalidateRange(void* addr, u32 size) {
     OS::DCInvalidateRange(reinterpret_cast<void*>(start), end - start);
 }
 
-static bool ReadDVDFile(const char* path, void* dest, u32 size) {
+static bool ReadDVDFileRange(const char* path, void* dest, u32 size, u32 offset = 0) {
     DVD::FileInfo info;
     if (!DVD::Open(path, &info)) return false;
     // External media reads can bypass the CPU cache; invalidate before the DMA-style read.
-    InvalidateRange(dest, size);
-    const s32 read = DVD::ReadPrio(&info, dest, static_cast<s32>(size), 0, 2);
-    DVD::Close(&info);
-    return read == static_cast<s32>(size);
-}
-
-static bool ReadDVDFileRange(const char* path, void* dest, u32 size, u32 offset) {
-    DVD::FileInfo info;
-    if (!DVD::Open(path, &info)) return false;
     InvalidateRange(dest, size);
     const s32 read = DVD::ReadPrio(&info, dest, static_cast<s32>(size), static_cast<s32>(offset), 2);
     DVD::Close(&info);
@@ -1250,7 +1231,7 @@ static bool ReadOverrideFile(const TaggedOverrideEntry& entry, void* dest) {
     if (!ModsRootExists()) return false;
     char fullPath[OVERRIDE_MAX_PATH];
     if (!BuildStoredOverridePath(entry.sourcePathOffset, fullPath, sizeof(fullPath))) return false;
-    return ReadDVDFile(fullPath, dest, entry.size);
+    return ReadDVDFileRange(fullPath, dest, entry.size);
 }
 
 static bool FillTaggedOverrideEntry(OverrideDatabase& database, TaggedOverrideEntry& entry, const char* relativePath,
@@ -1288,7 +1269,7 @@ static bool FillWholeFileOverrideEntry(OverrideDatabase& database, WholeFileOver
     if (!AddRelativePathToPool(database, relativePath, sourcePathOffset)) return false;
 
     entry.sourcePathOffset = sourcePathOffset;
-    entry.basenameHash = HashLowerCaseString(basename);
+    entry.basenameHash = HashString(basename, true);
     return true;
 }
 
@@ -1641,7 +1622,7 @@ static const WholeFileOverrideEntry* FindWholeFileOverride(const OverrideDatabas
         return nullptr;
     }
 
-    const u32 basenameHash = HashLowerCaseString(basenameLower);
+    const u32 basenameHash = HashString(basenameLower, true);
     u32 low = 0;
     u32 high = database.wholeFileCount;
     while (low < high) {
