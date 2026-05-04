@@ -285,11 +285,6 @@ static EGG::Heap* FindHeapWithSpace(const HeapCandidate* candidates, u32 count, 
 }
 
 static void ToLowerCopy(char* dest, const char* src, u32 destSize) {
-    if (dest == nullptr || destSize == 0) return;
-    if (src == nullptr) {
-        dest[0] = '\0';
-        return;
-    }
     u32 i = 0;
     for (; src[i] != '\0' && i + 1 < destSize; ++i) {
         char c = src[i];
@@ -301,7 +296,6 @@ static void ToLowerCopy(char* dest, const char* src, u32 destSize) {
 }
 
 static void ToLowerInPlace(char* str) {
-    if (str == nullptr) return;
     for (; *str != '\0'; ++str) {
         if (*str >= 'A' && *str <= 'Z') *str = static_cast<char>(*str - 'A' + 'a');
     }
@@ -659,11 +653,6 @@ static u32 GetBasenameHashCapacity(u32 nodeCapacity) {
 }
 
 static void CopyPath(char* dest, u32 destSize, const char* src) {
-    if (dest == nullptr || destSize == 0) return;
-    if (src == nullptr) {
-        dest[0] = '\0';
-        return;
-    }
     strncpy(dest, src, destSize);
     // Downstream path logic assumes explicit NUL termination after every bounded copy.
     dest[destSize - 1] = '\0';
@@ -1048,7 +1037,6 @@ static void InvalidateOverrideIndices() {
 }
 
 static void GetCurrentModFolder(char* outPath, u32 outSize) {
-    if (outPath == nullptr || outSize == 0) return;
     outPath[0] = '\0';
 
     const System* system = System::sInstance;
