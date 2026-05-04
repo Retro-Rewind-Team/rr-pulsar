@@ -179,8 +179,7 @@ struct StructuralChildRef {
     bool isAddedFile;
 };
 
-static OverrideDatabase sOverrideDatabase = {nullptr, 0, nullptr, nullptr, 0, 0, nullptr, 0, 0,
-                                             nullptr, 0, nullptr, 0, nullptr, 0, 0};
+static OverrideDatabase sOverrideDatabase = {};
 static OverrideDatabase* sActiveOverrideDatabase = &sOverrideDatabase;
 static u8 sLoggedBRSARLayoutFailure[1024] = {};
 static bool sOverrideIndicesAttempted = false;
@@ -192,8 +191,7 @@ static bool sOverrideCacheStateInitialized = false;
 static bool sCachedLooseOverridesEnabled = false;
 static char sCachedModFolder[OVERRIDE_MAX_PATH] = "";
 static char sLastUIArchiveBase[32] = "";
-static LooseOverrideScratch sLooseOverrideScratch = {nullptr, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, 0,
-                                                     false, nullptr, nullptr, nullptr, nullptr, 0, nullptr};
+static LooseOverrideScratch sLooseOverrideScratch = {};
 
 static bool AreLooseArchiveOverridesEnabled() {
     if (!Settings::Mgr::IsCreated()) {
@@ -313,6 +311,10 @@ static u32 ReadBE32(const void* data) {
     const u8* bytes = reinterpret_cast<const u8*>(data);
     return (static_cast<u32>(bytes[0]) << 24) | (static_cast<u32>(bytes[1]) << 16) |
            (static_cast<u32>(bytes[2]) << 8) | static_cast<u32>(bytes[3]);
+}
+
+static inline u32 Align32(u32 value) {
+    return nw4r::ut::RoundUp(value, 0x20);
 }
 
 static s32 CompareWholeFileBasenames(const char* lhs, const char* rhs) {
@@ -752,22 +754,7 @@ static void FreeOverrideDatabase(OverrideDatabase& database) {
     if (database.block != nullptr && database.heap != nullptr) {
         EGG::Heap::free(database.block, database.heap);
     }
-    database.block = nullptr;
-    database.blockSize = 0;
-    database.heap = nullptr;
-    database.stringPool = nullptr;
-    database.stringPoolSize = 0;
-    database.stringPoolUsed = 0;
-    database.tags = nullptr;
-    database.tagCount = 0;
-    database.tagCapacity = 0;
-    database.taggedEntries = nullptr;
-    database.taggedCount = 0;
-    database.wholeFileEntries = nullptr;
-    database.wholeFileCount = 0;
-    database.brsarSlots = nullptr;
-    database.brsarSlotCount = 0;
-    database.brsarCount = 0;
+    database = OverrideDatabase();
 }
 
 static u32 GetEntryAppliedWordCount(u32 entryCapacity) {
@@ -800,17 +787,17 @@ static u32 CountAppliedEntries(const u32* entryAppliedBits, u32 entryCapacity) {
 static u32 GetLooseOverrideScratchFootprint(u32 nodeCapacity, u32 entryCapacity, u32 repackCapacity,
                                             u32 basenameHashCapacity, bool useWideBasenameIndices) {
     u32 footprint = 0;
-    footprint += nw4r::ut::RoundUp(sizeof(u16) * nodeCapacity, 0x20);
-    footprint += nw4r::ut::RoundUp(sizeof(u32) * GetEntryAppliedWordCount(entryCapacity), 0x20);
+    footprint += Align32(sizeof(u16) * nodeCapacity);
+    footprint += Align32(sizeof(u32) * GetEntryAppliedWordCount(entryCapacity));
     if (useWideBasenameIndices) {
-        footprint += nw4r::ut::RoundUp(sizeof(s32) * nodeCapacity, 0x20);
-        footprint += nw4r::ut::RoundUp(sizeof(s32) * basenameHashCapacity, 0x20);
+        footprint += Align32(sizeof(s32) * nodeCapacity);
+        footprint += Align32(sizeof(s32) * basenameHashCapacity);
     } else {
-        footprint += nw4r::ut::RoundUp(sizeof(u16) * nodeCapacity, 0x20);
-        footprint += nw4r::ut::RoundUp(sizeof(u16) * basenameHashCapacity, 0x20);
+        footprint += Align32(sizeof(u16) * nodeCapacity);
+        footprint += Align32(sizeof(u16) * basenameHashCapacity);
     }
     if (repackCapacity > 0) {
-        footprint += nw4r::ut::RoundUp(sizeof(u32) * repackCapacity, 0x20) * 4;
+        footprint += Align32(sizeof(u32) * repackCapacity) * 4;
     }
     return footprint;
 }
@@ -834,22 +821,7 @@ static void FreeLooseOverrideScratch(LooseOverrideScratch& scratch) {
         if (scratch.repackOriginalSizes != nullptr) EGG::Heap::free(scratch.repackOriginalSizes, scratch.heap);
         if (scratch.repackOrder != nullptr) EGG::Heap::free(scratch.repackOrder, scratch.heap);
     }
-    scratch.nodeOverrideIndex = nullptr;
-    scratch.nodeOverrideCapacity = 0;
-    scratch.entryAppliedBits = nullptr;
-    scratch.entryAppliedCapacity = 0;
-    scratch.basenameHashHeads16 = nullptr;
-    scratch.basenameHashNext16 = nullptr;
-    scratch.basenameHashHeads32 = nullptr;
-    scratch.basenameHashNext32 = nullptr;
-    scratch.basenameHashCapacity = 0;
-    scratch.useWideBasenameIndices = false;
-    scratch.repackOffsets = nullptr;
-    scratch.repackSizes = nullptr;
-    scratch.repackOriginalSizes = nullptr;
-    scratch.repackOrder = nullptr;
-    scratch.repackCapacity = 0;
-    scratch.heap = nullptr;
+    scratch = LooseOverrideScratch();
 }
 
 static EGG::Heap* GetOverridesHeap();
@@ -1217,7 +1189,7 @@ static bool ResolveFSTDirByPath(const char* path, u32 entryCount, u32& outIndex,
 static void InvalidateRange(void* addr, u32 size) {
     if (addr == nullptr || size == 0) return;
     const u32 start = reinterpret_cast<u32>(addr) & ~0x1F;
-    const u32 end = nw4r::ut::RoundUp(reinterpret_cast<u32>(addr) + size, 0x20);
+    const u32 end = Align32(reinterpret_cast<u32>(addr) + size);
     OS::DCInvalidateRange(reinterpret_cast<void*>(start), end - start);
 }
 
@@ -1739,7 +1711,7 @@ static bool FindEmbeddedRWAROffset(DVD::FileInfo& info, const BRSAROverrideSlot&
 
     enum { kChunkSize = 0x800 };
     u8 chunk[kChunkSize] __attribute__((aligned(32)));
-    u32 offset = nw4r::ut::RoundUp(searchStart + 0x20, 0x20);
+    u32 offset = Align32(searchStart + 0x20);
     while (offset + 0x20 <= entry.size) {
         u32 remaining = entry.size - offset;
         u32 readSize = remaining >= kChunkSize ? kChunkSize : remaining;
@@ -1834,7 +1806,7 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
 
     outLayout.fileSize = fileSize;
 
-    const u32 searchStart = nw4r::ut::RoundUp(fileSize, 0x20);
+    const u32 searchStart = Align32(fileSize);
     u32 waveOffset = 0;
     u32 waveSize = 0;
     if (FindEmbeddedRWAROffset(info, entry, searchStart, waveOffset, waveSize)) {
@@ -1854,13 +1826,13 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
 static u32 GetOverrideDatabaseFootprint(u32 taggedCount, u32 wholeFileCount, u32 brsarCount, u32 tagCapacity,
                                         u32 stringBytes) {
     u32 size = 0;
-    size += nw4r::ut::RoundUp(sizeof(TaggedOverrideEntry) * taggedCount, 0x20);
-    size += nw4r::ut::RoundUp(sizeof(WholeFileOverrideEntry) * wholeFileCount, 0x20);
+    size += Align32(sizeof(TaggedOverrideEntry) * taggedCount);
+    size += Align32(sizeof(WholeFileOverrideEntry) * wholeFileCount);
     if (brsarCount > 0) {
-        size += nw4r::ut::RoundUp(sizeof(BRSAROverrideSlot) * kBRSAROverrideSlotCount, 0x20);
+        size += Align32(sizeof(BRSAROverrideSlot) * kBRSAROverrideSlotCount);
     }
-    size += nw4r::ut::RoundUp(sizeof(OverrideTagEntry) * tagCapacity, 0x20);
-    size += nw4r::ut::RoundUp(stringBytes, 0x20);
+    size += Align32(sizeof(OverrideTagEntry) * tagCapacity);
+    size += Align32(stringBytes);
     return size;
 }
 
@@ -1887,20 +1859,20 @@ static void InitializeOverrideDatabaseViews(OverrideDatabase& database, void* bl
     char* cursor = static_cast<char*>(block);
     if (taggedCount > 0) {
         database.taggedEntries = reinterpret_cast<TaggedOverrideEntry*>(cursor);
-        cursor += nw4r::ut::RoundUp(sizeof(TaggedOverrideEntry) * taggedCount, 0x20);
+        cursor += Align32(sizeof(TaggedOverrideEntry) * taggedCount);
     }
     if (wholeFileCount > 0) {
         database.wholeFileEntries = reinterpret_cast<WholeFileOverrideEntry*>(cursor);
-        cursor += nw4r::ut::RoundUp(sizeof(WholeFileOverrideEntry) * wholeFileCount, 0x20);
+        cursor += Align32(sizeof(WholeFileOverrideEntry) * wholeFileCount);
     }
     if (brsarCount > 0) {
         database.brsarSlots = reinterpret_cast<BRSAROverrideSlot*>(cursor);
         database.brsarSlotCount = kBRSAROverrideSlotCount;
-        cursor += nw4r::ut::RoundUp(sizeof(BRSAROverrideSlot) * kBRSAROverrideSlotCount, 0x20);
+        cursor += Align32(sizeof(BRSAROverrideSlot) * kBRSAROverrideSlotCount);
     }
     if (tagCapacity > 0) {
         database.tags = reinterpret_cast<OverrideTagEntry*>(cursor);
-        cursor += nw4r::ut::RoundUp(sizeof(OverrideTagEntry) * tagCapacity, 0x20);
+        cursor += Align32(sizeof(OverrideTagEntry) * tagCapacity);
     }
     if (stringBytes > 0) {
         database.stringPool = cursor;
@@ -1985,8 +1957,7 @@ static void EnsureOverrideIndicesBuilt() {
         return;
     }
 
-    OverrideDatabase database;
-    memset(&database, 0, sizeof(database));
+    OverrideDatabase database = {};
     InitializeOverrideDatabaseViews(database, databaseBlock, requiredSize, databaseHeap, countState.taggedCount,
                                     countState.wholeFileCount, countState.brsarCount, tagCapacity,
                                     countState.stringBytes + countState.tagStringBytes);
@@ -2058,7 +2029,7 @@ static u32 GetFileDataStart(const ARC::Header* header) {
     const u32 metaEnd = header->nodeOffset + header->combinedNodeSize;
     u32 dataStart = header->fileOffset;
     if (dataStart < metaEnd) dataStart = metaEnd;
-    return nw4r::ut::RoundUp(dataStart, 0x20);
+    return Align32(dataStart);
 }
 
 static bool BuildStructuralAddedFiles(const PendingStructuralAddCandidate* candidates, u32 candidateCount,
@@ -2204,7 +2175,7 @@ static bool AppendStructuralString(StructuralRebuildContext& context, const char
 
 static void ZeroStructuralFilePadding(u8* buffer, u32 offset, u32 size) {
     if (buffer == nullptr) return;
-    const u32 paddedSize = nw4r::ut::RoundUp(size, 0x20);
+    const u32 paddedSize = Align32(size);
     if (paddedSize > size) {
         memset(buffer + offset + size, 0, paddedSize - size);
     }
@@ -2224,7 +2195,7 @@ static bool EmitStructuralExistingFileNode(u32 oldNodeIdx, StructuralRebuildCont
     }
     newNode.typeName = nameOffset;
 
-    const u32 writeOffset = nw4r::ut::RoundUp(context.writeOffset, 0x20);
+    const u32 writeOffset = Align32(context.writeOffset);
     newNode.dataOffset = writeOffset;
     newNode.dataSize = (idx != kInvalidScratchIndex16) ? sOverrideDatabase.taggedEntries[idx].size : oldNode.dataSize;
 
@@ -2239,7 +2210,7 @@ static bool EmitStructuralExistingFileNode(u32 oldNodeIdx, StructuralRebuildCont
         memcpy(context.newBuffer + writeOffset, context.oldArchiveBase + oldNode.dataOffset, oldNode.dataSize);
     }
 
-    const u32 paddedSize = nw4r::ut::RoundUp(newNode.dataSize, 0x20);
+    const u32 paddedSize = Align32(newNode.dataSize);
     ZeroStructuralFilePadding(context.newBuffer, writeOffset, newNode.dataSize);
     context.writeOffset = writeOffset + paddedSize;
     return true;
@@ -2257,7 +2228,7 @@ static bool EmitStructuralAddedFileNode(u32 addedIndex, StructuralRebuildContext
     }
     newNode.typeName = nameOffset;
 
-    const u32 writeOffset = nw4r::ut::RoundUp(context.writeOffset, 0x20);
+    const u32 writeOffset = Align32(context.writeOffset);
     newNode.dataOffset = writeOffset;
     newNode.dataSize = entry.size;
 
@@ -2265,7 +2236,7 @@ static bool EmitStructuralAddedFileNode(u32 addedIndex, StructuralRebuildContext
         return false;
     }
 
-    const u32 paddedSize = nw4r::ut::RoundUp(newNode.dataSize, 0x20);
+    const u32 paddedSize = Align32(newNode.dataSize);
     ZeroStructuralFilePadding(context.newBuffer, writeOffset, newNode.dataSize);
     context.writeOffset = writeOffset + paddedSize;
 
@@ -2608,10 +2579,10 @@ static bool RebuildArchiveWithStructuralOverrides(const char* archiveBaseLower, 
         if (idx != kInvalidScratchIndex16) {
             fileSize = sOverrideDatabase.taggedEntries[idx].size;
         }
-        totalDataSize += nw4r::ut::RoundUp(fileSize, 0x20);
+        totalDataSize += Align32(fileSize);
     }
     for (u32 addedIdx = 0; addedIdx < addCandidateCount; ++addedIdx) {
-        totalDataSize += nw4r::ut::RoundUp(sOverrideDatabase.taggedEntries[addedFiles[addedIdx].overrideIndex].size, 0x20);
+        totalDataSize += Align32(sOverrideDatabase.taggedEntries[addedFiles[addedIdx].overrideIndex].size);
     }
 
     const char* rootName = oldStringTable + NodeNameOffset(nodes[0]);
@@ -2620,8 +2591,8 @@ static bool RebuildArchiveWithStructuralOverrides(const char* archiveBaseLower, 
                                    addedNameBytes;
     const u32 newNodeCount = nodeCount - deletedFileCount - deletedDirCount + addCandidateCount;
     const u32 newCombinedNodeSize = sizeof(U8Node) * newNodeCount + newStringTableSize;
-    const u32 newDataStart = nw4r::ut::RoundUp(nodeOffset + newCombinedNodeSize, 0x20);
-    const u32 newSize = nw4r::ut::RoundUp(newDataStart + totalDataSize, 0x20);
+    const u32 newDataStart = Align32(nodeOffset + newCombinedNodeSize);
+    const u32 newSize = Align32(newDataStart + totalDataSize);
 
     HeapCandidate candidates[4];
     candidates[0].heap = archiveHeap;
@@ -2699,7 +2670,7 @@ static bool RebuildArchiveWithStructuralOverrides(const char* archiveBaseLower, 
                    context.writeOffset, newSize);
     }
     if (success) {
-        const u32 finalSize = nw4r::ut::RoundUp(context.writeOffset, 0x20);
+        const u32 finalSize = Align32(context.writeOffset);
         if (finalSize < newSize) {
             memset(newBuffer + finalSize, 0, newSize - finalSize);
         }
@@ -3120,12 +3091,12 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             // Reserve space for replacement sizes up front so the repack layout is fully known before copying.
             size = sOverrideDatabase.taggedEntries[idx].size;
         }
-        totalDataSize += nw4r::ut::RoundUp(size, 0x20);
+        totalDataSize += Align32(size);
     }
 
     const u32 originalArchiveSize = archiveSize;
     u32 newSize = dataStart + totalDataSize;
-    newSize = nw4r::ut::RoundUp(newSize, 0x20);
+    newSize = Align32(newSize);
 
     const u32 growth = (newSize > archiveSize) ? (newSize - archiveSize) : 0;
     EGG::Heap* repackHeap = archiveHeap;
@@ -3171,7 +3142,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         bool hasShrinkOverride = false;
         for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
             if (NodeIsDir(nodes[nodeIdx])) continue;
-            plannedOffset = nw4r::ut::RoundUp(plannedOffset, 0x20);
+            plannedOffset = Align32(plannedOffset);
             repackOffsets[nodeIdx] = plannedOffset;
             const u16 idx = nodeOverrideIndex[nodeIdx];
             repackOriginalSizes[nodeIdx] = nodes[nodeIdx].dataSize;
@@ -3186,7 +3157,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 // Same-heap repack cannot safely recover from a failed shrink override after later files move.
                 hasShrinkOverride = true;
             }
-            plannedOffset += nw4r::ut::RoundUp(plannedSize, 0x20);
+            plannedOffset += Align32(plannedSize);
         }
         useSameHeapRepack = allOffsetsForward && !hasShrinkOverride;
         if (!useSameHeapRepack) {
@@ -3333,8 +3304,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             bool useOverride = (idx != kInvalidScratchIndex16);
             u32 newFileSize = useOverride ? sOverrideDatabase.taggedEntries[idx].size : oldSize;
 
-            writeOffset = nw4r::ut::RoundUp(writeOffset, 0x20);
-            const u32 alignedSize = nw4r::ut::RoundUp(newFileSize, 0x20);
+            writeOffset = Align32(writeOffset);
+            const u32 alignedSize = Align32(newFileSize);
             if (writeOffset + alignedSize > newSize) {
                 const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[idx];
                 const char* relativePath = GetRelativePath(entry.sourcePathOffset);
@@ -3365,7 +3336,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             }
 
             newNodes[nodeIdx].dataSize = newFileSize;
-            const u32 paddedSize = nw4r::ut::RoundUp(newFileSize, 0x20);
+            const u32 paddedSize = Align32(newFileSize);
             if (paddedSize > newFileSize) {
                 memset(newBuffer + writeOffset + newFileSize, 0, paddedSize - newFileSize);
             }
@@ -3394,7 +3365,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         return false;
     }
 
-    u32 finalSize = nw4r::ut::RoundUp(writeOffset, 0x20);
+    u32 finalSize = Align32(writeOffset);
     // Clamp to the allocated size so bad metadata cannot claim a larger archive than the buffer we own.
     if (finalSize > newSize) finalSize = newSize;
     if (!useSameHeapRepack && finalSize < newSize) {
