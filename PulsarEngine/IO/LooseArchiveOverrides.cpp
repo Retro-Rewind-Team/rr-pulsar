@@ -37,25 +37,8 @@ namespace Pulsar {
 namespace IOOverrides {
 
 namespace {
-/*
- * LooseArchiveOverrides is split into two separate behaviors that share the
- * same `/patches` root:
- *
- * 1. Whole-file redirects:
- *    `ResolveWholeFileOverride()` swaps an original path like
- *    `/Scene/UI/Common.szs` to `/patches/Common.szs` before loading if a loose
- *    replacement exists. This is to mimic the original my-stuff folder behavior
- *
- * 2. Tagged archive-member overrides:
- *    files named `member.ext.ArchiveTag` are indexed once, then matched against
- *    a decompressed archive named `ArchiveTag.szs`.(for example) The filename before the last
- *    dot becomes the target node path inside the archive.
- *
- * The implementation is Wii-safe: fixed-size buffers,
- * one persistent array for the index, and a sorted-by-tag layout so runtime
- * archive loads only touch the slice relevant to the current archive.
- */
-//main patch folder
+// `/patches` supports whole-file redirects and tagged archive-member overrides.
+// Tagged files use `member.ext.ArchiveTag`; the tag maps to `ArchiveTag.szs`.
 const char kModsRoot[] = "/patches";
 const char kModsRootPrefix[] = "/patches/";
 const u32 kMaxOverridesTotal = 4096;
@@ -105,9 +88,7 @@ struct OverrideTagEntry {
     u16 count;
 };
 
-// Cached loose-override index. This is built once on first use and then kept in
-// a persistent heap because archive loads can happen frequently and often on
-// hot paths such as UI transitions. It might be worth figuring out if this is really cheaper though
+// Built on first use and kept persistent because archive loads are a hot path.
 struct OverrideDatabase {
     void* block;
     u32 blockSize;
@@ -266,6 +247,45 @@ static const char* FindBasename(const char* path) {
     return lastSlash ? lastSlash + 1 : path;
 }
 
+static u32 MaxU32(u32 lhs, u32 rhs) {
+    return lhs > rhs ? lhs : rhs;
+}
+
+static void SetOverrideResult(u32* outAppliedOverrides, u32 appliedOverrides, u32* outPatchedNodes,
+                              u32 patchedNodes, u32* outMissingOverrides, u32 missingOverrides) {
+    if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
+    if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
+    if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+}
+
+struct HeapCandidate {
+    EGG::Heap* heap;
+    u32 reclaimedBytes;
+};
+
+static EGG::Heap* FindHeapWithSpace(const HeapCandidate* candidates, u32 count, u32 requiredSize) {
+    if (candidates == nullptr) return nullptr;
+
+    for (u32 i = 0; i < count; ++i) {
+        EGG::Heap* heap = candidates[i].heap;
+        if (heap == nullptr) continue;
+
+        bool alreadyChecked = false;
+        for (u32 j = 0; j < i; ++j) {
+            if (candidates[j].heap == heap && candidates[j].reclaimedBytes >= candidates[i].reclaimedBytes) {
+                alreadyChecked = true;
+                break;
+            }
+        }
+        if (alreadyChecked) continue;
+
+        if (heap->getAllocatableSize(0x20) + candidates[i].reclaimedBytes >= requiredSize) {
+            return heap;
+        }
+    }
+    return nullptr;
+}
+
 static void ToLowerCopy(char* dest, const char* src, u32 destSize) {
     if (dest == nullptr || destSize == 0) return;
     if (src == nullptr) {
@@ -278,7 +298,7 @@ static void ToLowerCopy(char* dest, const char* src, u32 destSize) {
         if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
         dest[i] = c;
     }
-    // Tags are only lookup keys, so truncation is acceptable as long as the string stays terminated.
+    // Tags are lookup keys, so truncation is acceptable if the string stays terminated.
     dest[i] = '\0';
 }
 
@@ -287,11 +307,6 @@ static void ToLowerInPlace(char* str) {
     for (; *str != '\0'; ++str) {
         if (*str >= 'A' && *str <= 'Z') *str = static_cast<char>(*str - 'A' + 'a');
     }
-}
-
-static u16 ReadBE16(const void* data) {
-    const u8* bytes = reinterpret_cast<const u8*>(data);
-    return static_cast<u16>((bytes[0] << 8) | bytes[1]);
 }
 
 static u32 ReadBE32(const void* data) {
@@ -448,13 +463,7 @@ static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32
         if (*p == '.') extDot = p;
     }
 
-    // Loose archive-member overrides intentionally require at least two dots:
-    // `name.ext.Tag`
-
-    // `Tag` is the archive basename, and `name.ext` remains the target node
-    // path once any bracket-prefix path encoding has been expanded. This keeps
-    // ordinary single-extension files such as `Common.szs` in the whole-file
-    // redirect lane instead of accidentally treating `szs` as an archive tag.
+    // Require `name.ext.Tag` so plain files like `Common.szs` stay whole-file redirects.
 
     if (extDot == nullptr || extDot == filename || extDot + 1 >= lastDot) {
         return false;
@@ -535,8 +544,6 @@ static bool TryParseBRSAROverride(const char* relativePath, u32& outFileId, u8& 
     memcpy(fileIdStem, lowerName, idLen);
     fileIdStem[idLen] = '\0';
 
-    // Loose BRSAR overrides use the numeric leading token as the file ID and
-    // infer `revo_kart.brsar` from the file type alone:
     // `<fileId>.<type>` or `<fileId>.<anything>.<type>`
     if (!TryParseExactFileId(fileIdStem, outFileId)) return false;
 
@@ -694,12 +701,7 @@ static bool DecodeOverrideRelativePath(char* dest, u32 destSize, const char* src
     u32 writeIdx = 0;
     const char* cursor = src;
 
-    // Loose files live in a flat directory on disk, so nested archive paths use
-    // a bracket prefix encoding. The decoded form is only used for archive node
-    // matching; the original filename on disk remains untouched.
-
-    // Example:
-    // `[button][timg]icon.tpl.Channel` -> `button/timg/icon.tpl.Channel`
+    // `[button][timg]icon.tpl.Channel` matches `button/timg/icon.tpl.Channel`.
 
     while (*cursor == '[') {
         const char* close = strchr(cursor + 1, ']');
@@ -853,26 +855,20 @@ static void FreeLooseOverrideScratch(LooseOverrideScratch& scratch) {
 static EGG::Heap* GetOverridesHeap();
 
 static EGG::Heap* GetLooseOverrideScratchHeap(u32 requiredSize, EGG::Heap* fallbackHeap) {
-    EGG::Heap* candidates[5];
-    candidates[0] = RKSystem::mInstance.EGGRootMEM2;
-    candidates[1] = sLooseOverrideScratch.heap;
-    candidates[2] = GetOverridesHeap();
-    candidates[3] = RKSystem::mInstance.EGGRootMEM1;
-    candidates[4] = fallbackHeap;
-
     const u32 currentFootprint = GetLooseOverrideScratchFootprint(sLooseOverrideScratch);
-    for (u32 i = 0; i < 5; ++i) {
-        EGG::Heap* heap = candidates[i];
-        if (heap == nullptr) continue;
-
-        u32 available = heap->getAllocatableSize(0x20);
-        if (heap == sLooseOverrideScratch.heap) {
-            // Scratch contents are transient per archive load, so growth can reclaim the old buffers first.
-            available += currentFootprint;
-        }
-        if (available >= requiredSize) return heap;
-    }
-    return nullptr;
+    HeapCandidate candidates[5];
+    candidates[0].heap = RKSystem::mInstance.EGGRootMEM2;
+    candidates[0].reclaimedBytes = 0;
+    candidates[1].heap = sLooseOverrideScratch.heap;
+    // Scratch contents are transient per archive load, so growth can reclaim the old buffers first.
+    candidates[1].reclaimedBytes = currentFootprint;
+    candidates[2].heap = GetOverridesHeap();
+    candidates[2].reclaimedBytes = 0;
+    candidates[3].heap = RKSystem::mInstance.EGGRootMEM1;
+    candidates[3].reclaimedBytes = 0;
+    candidates[4].heap = fallbackHeap;
+    candidates[4].reclaimedBytes = 0;
+    return FindHeapWithSpace(candidates, 5, requiredSize);
 }
 
 static bool EnsureLooseOverrideScratchCapacity(u32 nodeCapacity, u32 entryCapacity, u32 repackCapacity,
@@ -896,16 +892,10 @@ static bool EnsureLooseOverrideScratchCapacity(u32 nodeCapacity, u32 entryCapaci
         return true;
     }
 
-    const u32 targetNodeCapacity =
-        (sLooseOverrideScratch.nodeOverrideCapacity > nodeCapacity) ? sLooseOverrideScratch.nodeOverrideCapacity : nodeCapacity;
-    const u32 targetEntryCapacity = (sLooseOverrideScratch.entryAppliedCapacity > entryCapacity)
-                                        ? sLooseOverrideScratch.entryAppliedCapacity
-                                        : entryCapacity;
-    const u32 targetBasenameHashCapacity = (sLooseOverrideScratch.basenameHashCapacity > basenameHashCapacity)
-                                               ? sLooseOverrideScratch.basenameHashCapacity
-                                               : basenameHashCapacity;
-    const u32 targetRepackCapacity =
-        (sLooseOverrideScratch.repackCapacity > repackCapacity) ? sLooseOverrideScratch.repackCapacity : repackCapacity;
+    const u32 targetNodeCapacity = MaxU32(sLooseOverrideScratch.nodeOverrideCapacity, nodeCapacity);
+    const u32 targetEntryCapacity = MaxU32(sLooseOverrideScratch.entryAppliedCapacity, entryCapacity);
+    const u32 targetBasenameHashCapacity = MaxU32(sLooseOverrideScratch.basenameHashCapacity, basenameHashCapacity);
+    const u32 targetRepackCapacity = MaxU32(sLooseOverrideScratch.repackCapacity, repackCapacity);
     const u32 requiredSize = GetLooseOverrideScratchFootprint(targetNodeCapacity, targetEntryCapacity,
                                                               targetRepackCapacity, targetBasenameHashCapacity,
                                                               useWideBasenameIndices);
@@ -1148,22 +1138,17 @@ static EGG::Heap* GetOverridesHeap() {
 }
 
 static EGG::Heap* GetPersistentOverrideHeap(u32 requiredSize) {
-    EGG::Heap* candidates[3];
-    candidates[0] = RKSystem::mInstance.EGGRootMEM2;
-    candidates[1] = RKSystem::mInstance.EGGRootMEM1;
-    candidates[2] = GetOverridesHeap();
-
     // The index is persistent for the process lifetime, so prefer large root
     // heaps over transient/archive-specific heaps. Falling back to the system
     // heap is still better than rebuilding the index every archive load.
-
-    for (u32 i = 0; i < 3; ++i) {
-        EGG::Heap* heap = candidates[i];
-        if (heap == nullptr) continue;
-        const u32 available = heap->getAllocatableSize(0x20);
-        if (available >= requiredSize) return heap;
-    }
-    return nullptr;
+    HeapCandidate candidates[3];
+    candidates[0].heap = RKSystem::mInstance.EGGRootMEM2;
+    candidates[0].reclaimedBytes = 0;
+    candidates[1].heap = RKSystem::mInstance.EGGRootMEM1;
+    candidates[1].reclaimedBytes = 0;
+    candidates[2].heap = GetOverridesHeap();
+    candidates[2].reclaimedBytes = 0;
+    return FindHeapWithSpace(candidates, 3, requiredSize);
 }
 
 static bool ModsRootExists();
@@ -1276,10 +1261,7 @@ static bool BuildOverridePathWithRoot(const char* root, const char* name, const 
 static bool ModsRootExists() {
     if (sModsRootChecked) return sModsRootPresent;
 
-    // Probe once, then cache both presence and the root path flavor we resolved.
-    // DVD builds use `/patches` directly; SD/Dolphin setups may resolve to the
-    // external mod folder path instead.
-
+    // Probe once; DVD uses `/patches`, SD/Dolphin can resolve to the mod folder.
     sModsRootChecked = true;
     SetModsRootPath(kModsRoot);
     u32 modsIndex = 0;
@@ -1361,12 +1343,8 @@ static bool FillBRSAROverrideEntry(OverrideDatabase& database, BRSAROverrideSlot
     return true;
 }
 
-static bool CanAddEntry(const void* entries, u32 maxCount, u32& count, bool& truncated) {
+static bool CanAddEntry(u32 maxCount, u32& count, bool& truncated) {
     if (count >= maxCount) {
-        truncated = true;
-        return false;
-    }
-    if (entries != nullptr && count >= maxCount) {
         truncated = true;
         return false;
     }
@@ -1384,9 +1362,7 @@ static void AddTaggedEntry(ScanBuildState& state, u32 maxCount, const char* rela
     u8 brsarType = BRSAROVERRIDE_INVALID;
     if (TryParseBRSAROverride(relativePath, brsarFileId, brsarType)) return;
 
-    // The index intentionally contains only tagged archive-member overrides.
-    // Plain loose files like `Common.szs` are served by ResolveWholeFileOverride()
-    // and do not need to consume index slots or per-archive lookup time here.
+    // Plain files are handled by ResolveWholeFileOverride(), not this index.
 
     char strippedName[OVERRIDE_MAX_PATH];
     char archiveTagLower[OVERRIDE_MAX_NAME];
@@ -1397,7 +1373,7 @@ static void AddTaggedEntry(ScanBuildState& state, u32 maxCount, const char* rela
     }
     // Reject loose raw-file overrides for these resource types, even if they target an archive member.
     if (IsBlockedLooseRawOverrideExtension(strippedName)) return;
-    if (!CanAddEntry(state.taggedEntries, maxCount, state.taggedCount, state.taggedTruncated)) return;
+    if (!CanAddEntry(maxCount, state.taggedCount, state.taggedTruncated)) return;
     if (state.taggedEntries != nullptr) {
         if (!FillTaggedOverrideEntry(*state.database, state.taggedEntries[state.taggedCount], relativePath, size)) {
             state.taggedTruncated = true;
@@ -1436,7 +1412,7 @@ static void AddWholeFileEntry(ScanBuildState& state, u32 maxCount, const char* r
     const char* basename = FindBasename(relativePath);
     if (basename == nullptr || basename[0] == '\0') return;
     if (IsBlockedLooseRawOverrideExtension(basename)) return;
-    if (!CanAddEntry(state.wholeFileEntries, maxCount, state.wholeFileCount, state.wholeFileTruncated)) return;
+    if (!CanAddEntry(maxCount, state.wholeFileCount, state.wholeFileTruncated)) return;
 
     if (state.wholeFileEntries != nullptr) {
         if (!FillWholeFileOverrideEntry(*state.database, state.wholeFileEntries[state.wholeFileCount], relativePath)) {
@@ -1463,7 +1439,7 @@ static void AddBRSAROverrideEntry(ScanBuildState& state, u32 maxCount, const cha
     if (state.brsarSlots == nullptr) {
         if (state.brsarSlotOccupied == nullptr) return;
         if (state.brsarSlotOccupied[fileId] == 0) {
-            if (!CanAddEntry(nullptr, maxCount, state.brsarCount, state.brsarTruncated)) return;
+            if (!CanAddEntry(maxCount, state.brsarCount, state.brsarTruncated)) return;
             state.brsarSlotOccupied[fileId] = 1;
             ++state.brsarCount;
         }
@@ -1471,7 +1447,7 @@ static void AddBRSAROverrideEntry(ScanBuildState& state, u32 maxCount, const cha
         BRSAROverrideSlot& slot = state.brsarSlots[fileId];
         isNewSlot = slot.sourcePathOffset == kInvalidPoolOffset;
         if (isNewSlot) {
-            if (!CanAddEntry(state.brsarSlots, maxCount, state.brsarCount, state.brsarTruncated)) return;
+            if (!CanAddEntry(maxCount, state.brsarCount, state.brsarTruncated)) return;
         } else {
             const char* existingPath = GetRelativePath(slot.sourcePathOffset);
             if (CompareBRSAROverrideCandidates(type, relativePath, slot.type, existingPath) >= 0) {
@@ -1491,8 +1467,7 @@ static void AddBRSAROverrideEntry(ScanBuildState& state, u32 maxCount, const cha
 }
 
 static void AddScannedEntry(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount, u32 maxBRSARCount,
-                            const char* fullPath, const char* relativePath, u32 size) {
-    (void)fullPath;
+                            const char* relativePath, u32 size) {
     AddTaggedEntry(state, maxTaggedCount, relativePath, size);
     AddWholeFileEntry(state, maxWholeFileCount, relativePath);
     AddBRSAROverrideEntry(state, maxBRSARCount, relativePath, size);
@@ -1541,10 +1516,7 @@ static void ScanModsDirDVD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWho
     relPath[0] = '\0';
 
 
-    // Walk the disc FST subtree rooted at `/patches` without allocating a
-    // recursive directory structure. The manual stack mirrors the nested FST
-    // directory ranges so we can rebuild relative paths on the fly.
-
+    // Walk the `/patches` FST subtree with a fixed stack and path buffer.
     for (u32 i = modsIndex + 1; i < modsEnd &&
                     !IsScanBuildComplete(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount);
          ++i) {
@@ -1586,12 +1558,7 @@ static void ScanModsDirDVD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWho
             continue;
         }
 
-        char fullPath[OVERRIDE_MAX_PATH];
-        if (!BuildOverridePathWithRoot(kModsRoot, relativePath, nullptr, fullPath, sizeof(fullPath))) {
-            continue;
-        }
-
-        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount, fullPath, relativePath, entry.size);
+        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount, relativePath, entry.size);
     }
 }
 
@@ -1608,7 +1575,7 @@ static void ScanModsDirFromIO(IO& io, ScanBuildState& state, u32 maxTaggedCount,
          ++i) {
         const char* fileName = io.GetFileName(i);
         if (fileName == nullptr || fileName[0] == '\0') continue;
-        // SD scanning is intentionally flat; bracket prefixes encode any desired archive subpath.
+        // SD scanning is flat; bracket prefixes encode archive subpaths.
         if (strlen(fileName) >= OVERRIDE_MAX_PATH) continue;
 
         char sdPath[OVERRIDE_MAX_PATH];
@@ -1620,11 +1587,7 @@ static void ScanModsDirFromIO(IO& io, ScanBuildState& state, u32 maxTaggedCount,
         // Negative sizes indicate an IO failure, not a valid zero-length override.
         if (fileSize < 0) continue;
 
-        char fullPath[OVERRIDE_MAX_PATH];
-        if (!BuildOverridePathWithRoot(kModsRoot, fileName, nullptr, fullPath, sizeof(fullPath))) continue;
-
-        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount, fullPath, fileName,
-                        static_cast<u32>(fileSize));
+        AddScannedEntry(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount, fileName, static_cast<u32>(fileSize));
     }
     io.CloseFolder();
 }
@@ -1747,6 +1710,12 @@ static bool BRSAROverrideMagicMatches(u8 type, const u8* header) {
     return false;
 }
 
+static bool ShouldLogBRSARLayoutFailure(u32 fileId) {
+    if (fileId >= kBRSAROverrideSlotCount || sLoggedBRSARLayoutFailure[fileId] != 0) return false;
+    sLoggedBRSARLayoutFailure[fileId] = 1;
+    return true;
+}
+
 static bool FindEmbeddedRWAROffset(DVD::FileInfo& info, const BRSAROverrideSlot& entry, u32 searchStart, u32& outOffset,
                                    u32& outSize) {
     outOffset = 0;
@@ -1814,8 +1783,7 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
     char fullPath[OVERRIDE_MAX_PATH];
     if (relativePath == nullptr || !BuildStoredOverridePath(entry.sourcePathOffset, fullPath, sizeof(fullPath)) ||
         entry.size < 0x20) {
-        if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
-            sLoggedBRSARLayoutFailure[fileId] = 1;
+        if (ShouldLogBRSARLayoutFailure(fileId)) {
             OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' invalid file metadata size=0x%X\n",
                        fileId, relativePath != nullptr ? relativePath : "<missing>", entry.size);
         }
@@ -1824,8 +1792,7 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
 
     DVD::FileInfo info;
     if (!DVD::Open(fullPath, &info)) {
-        if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
-            sLoggedBRSARLayoutFailure[fileId] = 1;
+        if (ShouldLogBRSARLayoutFailure(fileId)) {
             OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' header read failed\n", fileId,
                        relativePath);
         }
@@ -1836,8 +1803,7 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
     const bool headerReadOk = ReadOpenedDVDFileRange(info, header, sizeof(header), 0);
     if (!headerReadOk) {
         DVD::Close(&info);
-        if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
-            sLoggedBRSARLayoutFailure[fileId] = 1;
+        if (ShouldLogBRSARLayoutFailure(fileId)) {
             OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' header read failed\n", fileId,
                        relativePath);
         }
@@ -1845,8 +1811,7 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
     }
     if (!BRSAROverrideMagicMatches(entry.type, header)) {
         DVD::Close(&info);
-        if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
-            sLoggedBRSARLayoutFailure[fileId] = 1;
+        if (ShouldLogBRSARLayoutFailure(fileId)) {
             OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' magic/type mismatch\n", fileId,
                        relativePath);
         }
@@ -1857,8 +1822,7 @@ static bool TryGetBRSAROverrideLayout(u32 fileId, BRSAROverrideSlot& entry, BRSA
     if (fileSize < 0x20 || fileSize > entry.size) {
         DVD::Close(&info);
         entry.layoutState = 2;
-        if (fileId < kBRSAROverrideSlotCount && sLoggedBRSARLayoutFailure[fileId] == 0) {
-            sLoggedBRSARLayoutFailure[fileId] = 1;
+        if (ShouldLogBRSARLayoutFailure(fileId)) {
             OS::Report("[Pulsar] Loose BRSAR layout failed: fileId=%u path='%s' invalid main size=0x%X entry=0x%X\n",
                        fileId, relativePath, fileSize, entry.size);
         }
@@ -1960,15 +1924,7 @@ static void EnsureOverrideIndicesBuilt() {
     sOverrideIndicesAttempted = true;
 
 
-    // Two-pass build:
-
-    // Pass 1 counts valid tagged overrides so we can allocate a tightly sized
-    // persistent array instead of keeping slack memory around forever.
-
-    // Pass 2 fills and sorts the array by archive tag.
-
-    // This makes archive-time work predictable: one binary lookup and one scan
-    // over the relevant tag bucket.
+    // Count first, then allocate tightly and fill the persistent index.
 
     u8 brsarSlotOccupied[kBRSAROverrideSlotCount];
     memset(brsarSlotOccupied, 0, sizeof(brsarSlotOccupied));
@@ -2061,19 +2017,26 @@ static void EnsureOverrideIndicesBuilt() {
     sHasWholeFileOverrides = (database.wholeFileEntries != nullptr && database.wholeFileCount > 0);
 }
 
+static bool ResolveLooseBRSAROverride(u32 fileId, BRSAROverrideSlot*& outEntry, BRSAROverrideLayout& outLayout) {
+    outEntry = nullptr;
+    outLayout.fileSize = 0;
+    outLayout.waveOffset = 0;
+    outLayout.waveSize = 0;
+
+    RefreshOverrideCacheState();
+    if (!AreLooseArchiveOverridesEnabled()) return false;
+
+    EnsureOverrideIndicesBuilt();
+    outEntry = FindBRSAROverrideSlot(fileId);
+    if (outEntry == nullptr) return false;
+    return TryGetBRSAROverrideLayout(fileId, *outEntry, outLayout);
+}
+
 static bool IsFileExtensionSZS(const char* path) {
     return EndsWithIgnoreCase(path, ".szs");
 }
 
-// Ghidra references for DVDConvertPathToEntrynum (8015df4c) show the path-based DVD
-// loaders that bypass ArchiveFile entirely:
-// - 800910b4: nw4r::snd::DVDSoundArchive::Open
-// - 8009130c: nw4r::snd::DVDSoundArchive::OpenExtStream
-// - 8015e2d8: DVD::Open
-// - 80222500: EGG::DvdFile::open(const char*)
-// - 8052a914: system archive path lookup
-// Redirecting those shared lookup sites makes whole-file loose overrides apply
-// to BRSTM streams and other non-SZS files without changing their loaders.
+// Redirect shared DVD path lookups so whole-file overrides also cover streams and non-SZS files.
 static s32 ConvertPathToEntryNumWithLooseOverride(const char* path) {
     if (path == nullptr) return -1;
 
@@ -2547,6 +2510,12 @@ static void FreeStructuralRebuildTemps(PendingStructuralAdd* addedFiles, char* a
     if (dirKeepFlags != nullptr) EGG::Heap::free(dirKeepFlags, heap);
 }
 
+static void FreeStructuralMatchTemps(u8* nodeDeleteFlags, PendingStructuralAddCandidate* structuralAddCandidates,
+                                     EGG::Heap* heap) {
+    if (nodeDeleteFlags != nullptr) EGG::Heap::free(nodeDeleteFlags, heap);
+    if (structuralAddCandidates != nullptr) EGG::Heap::free(structuralAddCandidates, heap);
+}
+
 static bool RebuildArchiveWithStructuralOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize,
                                                   EGG::Heap* sourceHeap, EGG::Heap*& archiveHeap, ARC::Header* header,
                                                   const U8Node* nodes, u32 nodeCount, const u16* nodeOverrideIndex,
@@ -2566,25 +2535,17 @@ static bool RebuildArchiveWithStructuralOverrides(const char* archiveBaseLower, 
     const u32 estimatedTempBytes =
         (header != nullptr ? header->combinedNodeSize : 0) +
         sizeof(StructuralChildRef) * (nodeCount + addCandidateCount) + 0x10000;
-    EGG::Heap* tempHeap = GetOverridesHeap();
-    EGG::Heap* tempCandidates[4];
-    tempCandidates[0] = RKSystem::mInstance.EGGRootMEM2;
-    tempCandidates[1] = RKSystem::mInstance.EGGRootMEM1;
-    tempCandidates[2] = tempHeap;
-    tempCandidates[3] = sourceHeap;
-    for (u32 i = 0; i < 4; ++i) {
-        EGG::Heap* candidate = tempCandidates[i];
-        if (candidate == nullptr) continue;
-        bool alreadyChecked = false;
-        for (u32 j = 0; j < i; ++j) {
-            if (tempCandidates[j] == candidate) alreadyChecked = true;
-        }
-        if (alreadyChecked) continue;
-        if (candidate->getAllocatableSize(0x20) >= estimatedTempBytes) {
-            tempHeap = candidate;
-            break;
-        }
-    }
+    HeapCandidate tempCandidates[4];
+    tempCandidates[0].heap = RKSystem::mInstance.EGGRootMEM2;
+    tempCandidates[0].reclaimedBytes = 0;
+    tempCandidates[1].heap = RKSystem::mInstance.EGGRootMEM1;
+    tempCandidates[1].reclaimedBytes = 0;
+    tempCandidates[2].heap = GetOverridesHeap();
+    tempCandidates[2].reclaimedBytes = 0;
+    tempCandidates[3].heap = sourceHeap;
+    tempCandidates[3].reclaimedBytes = 0;
+    EGG::Heap* tempHeap = FindHeapWithSpace(tempCandidates, 4, estimatedTempBytes);
+    if (tempHeap == nullptr) tempHeap = tempCandidates[2].heap;
     if (tempHeap == nullptr) tempHeap = sourceHeap;
     if (tempHeap == nullptr) {
         OS::Report("[Pulsar] Structural rebuild early fail '%s': no temp heap\n", archiveBaseLower);
@@ -2659,24 +2620,16 @@ static bool RebuildArchiveWithStructuralOverrides(const char* archiveBaseLower, 
     const u32 newDataStart = nw4r::ut::RoundUp(nodeOffset + newCombinedNodeSize, 0x20);
     const u32 newSize = nw4r::ut::RoundUp(newDataStart + totalDataSize, 0x20);
 
-    EGG::Heap* repackHeap = nullptr;
-    EGG::Heap* candidates[4];
-    candidates[0] = archiveHeap;
-    candidates[1] = RKSystem::mInstance.EGGRootMEM2;
-    candidates[2] = GetOverridesHeap();
-    candidates[3] = RKSystem::mInstance.EGGRootMEM1;
-    for (u32 i = 0; i < 4; ++i) {
-        EGG::Heap* candidate = candidates[i];
-        if (candidate == nullptr) continue;
-        bool alreadyChecked = false;
-        for (u32 j = 0; j < i; ++j) {
-            if (candidates[j] == candidate) alreadyChecked = true;
-        }
-        if (alreadyChecked) continue;
-        if (candidate->getAllocatableSize(0x20) < newSize) continue;
-        repackHeap = candidate;
-        break;
-    }
+    HeapCandidate candidates[4];
+    candidates[0].heap = archiveHeap;
+    candidates[0].reclaimedBytes = 0;
+    candidates[1].heap = RKSystem::mInstance.EGGRootMEM2;
+    candidates[1].reclaimedBytes = 0;
+    candidates[2].heap = GetOverridesHeap();
+    candidates[2].reclaimedBytes = 0;
+    candidates[3].heap = RKSystem::mInstance.EGGRootMEM1;
+    candidates[3].reclaimedBytes = 0;
+    EGG::Heap* repackHeap = FindHeapWithSpace(candidates, 4, newSize);
 
     if (repackHeap == nullptr) {
         OS::Report("[Pulsar] Structural rebuild fail '%s': no separate heap for old=0x%X new=0x%X\n",
@@ -2755,9 +2708,8 @@ static bool RebuildArchiveWithStructuralOverrides(const char* archiveBaseLower, 
         archiveHeap = repackHeap;
 
         const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
-        if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
-        if (outPatchedNodes != nullptr) *outPatchedNodes = context.patchedNodes;
-        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+        SetOverrideResult(outAppliedOverrides, appliedOverrides, outPatchedNodes, context.patchedNodes,
+                          outMissingOverrides, missingOverrides);
         OS::Report("[Pulsar] Structural loose overrides applied for '%s': applied=%u patched=%u missing=%u\n",
                    archiveBaseLower, appliedOverrides, context.patchedNodes, missingOverrides);
     } else {
@@ -2776,9 +2728,7 @@ bool IsModsPath(const char* path) {
     if (StartsWith(path, kModsRootPrefix)) return true;
 
 
-    // The logical `/patches` prefix is always treated as internal to the feature,
-    // but `sModsRootPath` may point at an SD-resolved location instead. Both need
-    // to be recognized so redirected reads do not recursively redirect again.
+    // Also treat the resolved SD root as internal to avoid recursive redirects.
 
     const u32 rootLen = strlen(sModsRootPath);
     if (rootLen == 0) return false;
@@ -2846,9 +2796,7 @@ bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 arc
     if (!IsFileExtensionSZS(path)) return false;
 
 
-    // This is only a cheap gate. It does not inspect the index yet. it simply
-    // answers "is this a non-mods `.szs` request, and if so what bucket key would
-    // its tagged member overrides live under?"
+    // Cheap gate only; index lookup happens after decompression.
 
     const char* base = FindBasename(path);
     if (base == nullptr) return false;
@@ -2866,16 +2814,13 @@ bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 arc
 }
 
 static u32 ApplyInPlaceLooseOverrides(u8* archiveBase, U8Node* nodes, u32 nodeCount, u16* nodeOverrideIndex,
-                                      u32* fileSlotCapacities, u32* entryAppliedBits, u32 rangeStart,
-                                      u32* outOversizedNodes) {
-    if (outOversizedNodes != nullptr) *outOversizedNodes = 0;
+                                      u32* fileSlotCapacities, u32* entryAppliedBits, u32 rangeStart) {
     if (archiveBase == nullptr || nodes == nullptr || nodeOverrideIndex == nullptr || fileSlotCapacities == nullptr ||
         entryAppliedBits == nullptr) {
         return 0;
     }
 
     u32 patchedNodes = 0;
-    u32 oversizedNodes = 0;
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
         const u16 idx = nodeOverrideIndex[nodeIdx];
         if (idx == kInvalidScratchIndex16) continue;
@@ -2883,7 +2828,6 @@ static u32 ApplyInPlaceLooseOverrides(u8* archiveBase, U8Node* nodes, u32 nodeCo
 
         const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[idx];
         if (entry.size > fileSlotCapacities[nodeIdx]) {
-            ++oversizedNodes;
             continue;
         }
 
@@ -2903,7 +2847,6 @@ static u32 ApplyInPlaceLooseOverrides(u8* archiveBase, U8Node* nodes, u32 nodeCo
     if (patchedNodes > 0) {
         OS::DCStoreRange(nodes, nodeCount * sizeof(U8Node));
     }
-    if (outOversizedNodes != nullptr) *outOversizedNodes = oversizedNodes;
     return patchedNodes;
 }
 
@@ -2926,23 +2869,13 @@ static u32 CountInPlaceOversizedOverrides(const U8Node* nodes, u32 nodeCount, co
 bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize, EGG::Heap* sourceHeap,
                          EGG::Heap*& archiveHeap, u32* outAppliedOverrides, u32* outPatchedNodes,
                          u32* outMissingOverrides, const u8* compressedData) {
-    if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
-    if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
-    if (outMissingOverrides != nullptr) *outMissingOverrides = 0;
+    SetOverrideResult(outAppliedOverrides, 0, outPatchedNodes, 0, outMissingOverrides, 0);
     RefreshOverrideCacheState();
     if (!AreLooseArchiveOverridesEnabled()) return false;
 
 
-    // Runtime flow:
-    // 1. Resolve the archive basename to an interned tag ID, then pull that
-    //    tag's prebuilt bucket from the range table.
-    // 2. Resolve each override to concrete U8 node indices.
-    // 3. Patch in place when every replacement fits inside the original node.
-    // 4. Otherwise repack the archive into a larger buffer and rewrite offsets.
-
-    // `outAppliedOverrides` counts unique loose files that were successfully
-    // consumed, while `outPatchedNodes` counts archive nodes rewritten. Those can
-    // differ when one basename-only override matches multiple nodes.
+    // Resolve the tag bucket, match entries to U8 nodes, then patch in place or repack.
+    // Applied override count can differ from patched nodes when a basename fans out.
 
     EnsureOverrideIndicesBuilt();
     if (sOverrideDatabase.taggedEntries == nullptr || sOverrideDatabase.taggedCount == 0) return false;
@@ -3019,8 +2952,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             sizeof(PendingStructuralAddCandidate) * taggedCandidates, 0x20, structuralTempHeap);
     }
     if (nodeDeleteFlags == nullptr || structuralAddCandidates == nullptr) {
-        if (nodeDeleteFlags != nullptr) EGG::Heap::free(nodeDeleteFlags, structuralTempHeap);
-        if (structuralAddCandidates != nullptr) EGG::Heap::free(structuralAddCandidates, structuralTempHeap);
+        FreeStructuralMatchTemps(nodeDeleteFlags, structuralAddCandidates, structuralTempHeap);
         return false;
     }
     memset(nodeDeleteFlags, 0, nodeCount);
@@ -3030,12 +2962,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     u32 missingOverrides = 0;
     u32 structuralAddCandidateCount = 0;
 
-    //Build a node -> override table for this archive.
-
-    //Nested paths (`button/timg/icon.tpl`) resolve directly through ARC path
-    //lookup. Basename-only entries intentionally fan out to every file node with
-    //that name, which is useful for archives that duplicate assets in multiple
-    //folders but still want one shared loose override.
+    // Build the node -> override table. Basename-only entries fan out by design.
     for (u32 i = rangeStart; i < rangeEnd; ++i) {
         const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[i];
         char matchName[OVERRIDE_MAX_PATH];
@@ -3122,13 +3049,12 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
 
     if (!anyOverrides) {
-        EGG::Heap::free(nodeDeleteFlags, structuralTempHeap);
-        EGG::Heap::free(structuralAddCandidates, structuralTempHeap);
+        FreeStructuralMatchTemps(nodeDeleteFlags, structuralAddCandidates, structuralTempHeap);
         if (missingOverrides > 0) {
             OS::Report("[Pulsar] Loose overrides skipped for '%s': %u tagged file(s) did not match archive contents\n",
                        archiveBaseLower, missingOverrides);
         }
-        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+        SetOverrideResult(outAppliedOverrides, 0, outPatchedNodes, 0, outMissingOverrides, missingOverrides);
         return false;
     }
 
@@ -3141,13 +3067,11 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             OS::Report("[Pulsar] Structural loose override rebuild failed for '%s': candidates=%u missing=%u\n",
                        archiveBaseLower, structuralAddCandidateCount, missingOverrides);
         }
-        EGG::Heap::free(nodeDeleteFlags, structuralTempHeap);
-        EGG::Heap::free(structuralAddCandidates, structuralTempHeap);
+        FreeStructuralMatchTemps(nodeDeleteFlags, structuralAddCandidates, structuralTempHeap);
         return rebuilt;
     }
 
-    EGG::Heap::free(nodeDeleteFlags, structuralTempHeap);
-    EGG::Heap::free(structuralAddCandidates, structuralTempHeap);
+    FreeStructuralMatchTemps(nodeDeleteFlags, structuralAddCandidates, structuralTempHeap);
 
     bool needsRepack = false;
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
@@ -3166,28 +3090,20 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     u32 patchedNodes = 0;
     if (!needsRepack) {
 
-        // Fast path: overwrite file payloads in place.
-
-        // Smaller replacements are zero-filled to erase stale bytes from the old
-        // payload, then the node size is updated so consumers see the trimmed file.
-        // This avoids rebuilding the archive metadata when offsets stay valid.
-        // This is also why any documentation should mention that 
-        // replacing files with smaller loose overrides is safer for stability than larger ones, 
-        // which always require repacking.
+        // Fast path: overwrite payloads in place and zero-fill shrink leftovers.
 
         patchedNodes = ApplyInPlaceLooseOverrides(archiveBase, nodes, nodeCount, nodeOverrideIndex, fileSlotCapacities,
-                                                  entryAppliedBits, rangeStart, nullptr);
+                                                  entryAppliedBits, rangeStart);
 
         const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
 
-        if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
-        if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
-        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+        SetOverrideResult(outAppliedOverrides, appliedOverrides, outPatchedNodes, patchedNodes, outMissingOverrides,
+                          missingOverrides);
         return appliedOverrides > 0;
     }
 
     const u32 dataStart = GetFileDataStart(header);
-    // Repacking preserves the metadata prefix and rebuilds only the payload region starting here.
+    // Repack keeps metadata and rewrites the payload region.
     if (dataStart == 0 || dataStart > archiveSize) {
         return false;
     }
@@ -3217,9 +3133,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     candidates[2] = GetOverridesHeap();
 
 
-    // Repack path: prefer moving to a roomier heap first so large overrides do
-    // not starve the original archive heap. Growing the source heap is capped to
-    // keep one oversized override from destabilizing the caller's allocation pool.
+    // Prefer a roomier heap; source-heap growth stays capped.
 
     for (u32 i = 0; i < 3; ++i) {
         EGG::Heap* candidate = candidates[i];
@@ -3337,26 +3251,23 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             if (oversizedNodes > 0) {
                 OS::Report("[Pulsar] Loose override repack fallback rejected for '%s': oversized=%u missing=%u\n",
                            archiveBaseLower, oversizedNodes, missingOverrides);
-                if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
-                if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
-                if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+                SetOverrideResult(outAppliedOverrides, 0, outPatchedNodes, 0, outMissingOverrides, missingOverrides);
                 return false;
             }
             patchedNodes = ApplyInPlaceLooseOverrides(archiveBase, fallbackNodes, nodeCount, nodeOverrideIndex,
-                                                      fileSlotCapacities, entryAppliedBits, rangeStart, nullptr);
+                                                      fileSlotCapacities, entryAppliedBits, rangeStart);
 
             const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
 
             if (patchedNodes > 0) {
                 OS::Report("[Pulsar] Loose override repack fallback used for '%s': applied=%u patched=%u oversized=%u missing=%u\n",
                            archiveBaseLower, appliedOverrides, patchedNodes, oversizedNodes, missingOverrides);
-                if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
-                if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
-                if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+                SetOverrideResult(outAppliedOverrides, appliedOverrides, outPatchedNodes, patchedNodes,
+                                  outMissingOverrides, missingOverrides);
                 return true;
             }
         }
-        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+        SetOverrideResult(outAppliedOverrides, 0, outPatchedNodes, 0, outMissingOverrides, missingOverrides);
         return false;
     }
 
@@ -3475,9 +3386,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         } else {
             EGG::Heap::free(newBuffer, repackHeap);
         }
-        if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
-        if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
-        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+        SetOverrideResult(outAppliedOverrides, appliedOverrides, outPatchedNodes, patchedNodes, outMissingOverrides,
+                          missingOverrides);
         return false;
     }
 
@@ -3496,9 +3406,8 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     archiveSize = finalSize;
     archiveHeap = repackHeap;
 
-    if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
-    if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
-    if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+    SetOverrideResult(outAppliedOverrides, appliedOverrides, outPatchedNodes, patchedNodes, outMissingOverrides,
+                      missingOverrides);
     return appliedOverrides > 0;
 }
 
@@ -3506,22 +3415,8 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
                                     s32 allocDirection, EGG::Heap* dumpHeap, EGG::Archive::FileInfo* info) {
 
 
-    // It first normalizes a quirk of MKW's UI archive naming where a localized
-    // request can be followed by a fallback `.szs` request using only the suffix.
-    // After that, whole-file redirection happens before the game rips/decompresses
-    // the archive, so plain loose replacements bypass the more expensive tagged
-    // member patch pipeline entirely.
-
-    // System::ResourceManager::loadUI at 0x80540680 is the entry point that kicks UI archive loading for scene archive slot 2.
-    // GameSource/MarioKartWii/Archive/ArchiveMgr.hpp:75. <-- this function
-    // System::UIArchivesHolder::Reset at 0x8052a2fc is the part that creates the UI language fallback setup.
-    // it calls the base reset, then writes LOCALIZED_SZS[language] into suffix slot 1. The base reset leaves slot 0 as plain ".szs".
-    // ArchivesHolder::LoadArchives at 0x8052a954 is where the filenames are actually formed.
-    // it effectively does snprintf(fullname, "%s%s", filename, this->suffixes[i]);, 
-    // so the game builds both base + "_E.szs" and base + ".szs" from the same UI base name.
-
-    // ArchivesHolder::GetFile at 0x8052a760 searches mounted archives from the last slot down to the first
-    // so the localized UI archive is checked first and the plain .szs archive is the fallback.
+    // Normalize MKW's UI fallback quirk: a localized UI request can be followed by suffix-only `.szs`.
+    // Whole-file redirects happen before rip/decompress so plain loose replacements skip member patching.
 
     char normalizedPath[OVERRIDE_MAX_PATH];
     const char* requestedPath = path;
@@ -3626,55 +3521,37 @@ bool GetLooseBRSAROverrideSizes(u32 fileId, u32& outFileSize, u32& outWaveDataSi
     outFileSize = 0;
     outWaveDataSize = 0;
 
-    RefreshOverrideCacheState();
-    if (!AreLooseArchiveOverridesEnabled()) return false;
-
-    EnsureOverrideIndicesBuilt();
-    BRSAROverrideSlot* entry = FindBRSAROverrideSlot(fileId);
-    if (entry == nullptr) return false;
-
     BRSAROverrideLayout layout;
-    if (!TryGetBRSAROverrideLayout(fileId, *entry, layout)) return false;
+    BRSAROverrideSlot* entry = nullptr;
+    if (!ResolveLooseBRSAROverride(fileId, entry, layout)) return false;
 
     outFileSize = layout.fileSize;
     outWaveDataSize = layout.waveSize;
     return true;
 }
 
-bool ReadLooseBRSAROverrideFile(u32 fileId, void* dest, u32 size) {
-    RefreshOverrideCacheState();
-    if (!AreLooseArchiveOverridesEnabled()) return false;
+static bool ReadLooseBRSAROverrideRange(u32 fileId, void* dest, u32 size, bool waveData) {
     if (dest == nullptr || size == 0) return false;
 
-    EnsureOverrideIndicesBuilt();
-    BRSAROverrideSlot* entry = FindBRSAROverrideSlot(fileId);
-    if (entry == nullptr) return false;
-
     BRSAROverrideLayout layout;
-    if (!TryGetBRSAROverrideLayout(fileId, *entry, layout)) return false;
-    if (layout.fileSize != size) return false;
+    BRSAROverrideSlot* entry = nullptr;
+    if (!ResolveLooseBRSAROverride(fileId, entry, layout)) return false;
+
+    const u32 readOffset = waveData ? layout.waveOffset : 0;
+    const u32 expectedSize = waveData ? layout.waveSize : layout.fileSize;
+    if (expectedSize != size || (waveData && readOffset == 0)) return false;
 
     char fullPath[OVERRIDE_MAX_PATH];
     if (!BuildStoredOverridePath(entry->sourcePathOffset, fullPath, sizeof(fullPath))) return false;
-    return ReadDVDFileRange(fullPath, dest, size, 0);
+    return ReadDVDFileRange(fullPath, dest, size, readOffset);
+}
+
+bool ReadLooseBRSAROverrideFile(u32 fileId, void* dest, u32 size) {
+    return ReadLooseBRSAROverrideRange(fileId, dest, size, false);
 }
 
 bool ReadLooseBRSAROverrideWaveData(u32 fileId, void* dest, u32 size) {
-    RefreshOverrideCacheState();
-    if (!AreLooseArchiveOverridesEnabled()) return false;
-    if (dest == nullptr || size == 0) return false;
-
-    EnsureOverrideIndicesBuilt();
-    BRSAROverrideSlot* entry = FindBRSAROverrideSlot(fileId);
-    if (entry == nullptr) return false;
-
-    BRSAROverrideLayout layout;
-    if (!TryGetBRSAROverrideLayout(fileId, *entry, layout)) return false;
-    if (layout.waveOffset == 0 || layout.waveSize != size) return false;
-
-    char fullPath[OVERRIDE_MAX_PATH];
-    if (!BuildStoredOverridePath(entry->sourcePathOffset, fullPath, sizeof(fullPath))) return false;
-    return ReadDVDFileRange(fullPath, dest, size, layout.waveOffset);
+    return ReadLooseBRSAROverrideRange(fileId, dest, size, true);
 }
 
 u32 GetLooseArchiveOverrideFileCount() {
