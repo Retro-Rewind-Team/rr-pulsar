@@ -223,6 +223,14 @@ static bool IsBlockedLooseRawOverrideExtension(const char* path) {
     return EndsWithIgnoreCase(path, ".kcl") || EndsWithIgnoreCase(path, ".kmp") || EndsWithIgnoreCase(path, ".slt");
 }
 
+static bool IsEmpty(const char* str) {
+    return str == nullptr || str[0] == '\0';
+}
+
+static bool HasBuffer(char* out, u32 size) {
+    return out != nullptr && size != 0;
+}
+
 static bool StartsWith(const char* str, const char* prefix) {
     if (str == nullptr || prefix == nullptr) return false;
     return strncmp(str, prefix, strlen(prefix)) == 0;
@@ -360,7 +368,7 @@ static bool DecodeStoredOverrideRelativePath(u32 sourcePathOffset, char* decoded
 }
 
 static bool GetTaggedEntryMatchName(const TaggedOverrideEntry& entry, char* outName, u32 outNameSize) {
-    if (outName == nullptr || outNameSize == 0) return false;
+    if (!HasBuffer(outName, outNameSize)) return false;
 
     char decodedPath[OVERRIDE_MAX_PATH];
     char archiveTagLower[OVERRIDE_MAX_NAME];
@@ -374,7 +382,7 @@ static bool GetTaggedEntryMatchName(const TaggedOverrideEntry& entry, char* outN
 }
 
 static bool GetWholeFileEntryBasenameLower(const WholeFileOverrideEntry& entry, char* outBasename, u32 outSize) {
-    if (outBasename == nullptr || outSize == 0) return false;
+    if (!HasBuffer(outBasename, outSize)) return false;
 
     const char* relativePath = GetRelativePath(entry.sourcePathOffset);
     if (relativePath == nullptr) {
@@ -393,7 +401,7 @@ static bool GetWholeFileEntryBasenameLower(const WholeFileOverrideEntry& entry, 
 
 static bool GetTagIdForName(OverrideDatabase& database, const char* tagName, u16& outTagId) {
     outTagId = 0;
-    if (tagName == nullptr || tagName[0] == '\0' || database.tags == nullptr) return false;
+    if (IsEmpty(tagName) || database.tags == nullptr) return false;
 
     for (u32 i = 0; i < database.tagCount; ++i) {
         const char* existing = GetPooledString(database, database.tags[i].nameOffset);
@@ -437,8 +445,8 @@ static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32
                                char* archiveTagLower, u32 archiveTagLowerSize) {
     if (strippedName != nullptr && strippedNameSize > 0) strippedName[0] = '\0';
     if (archiveTagLower != nullptr && archiveTagLowerSize > 0) archiveTagLower[0] = '\0';
-    if (relativePath == nullptr || strippedName == nullptr || strippedNameSize == 0 ||
-        archiveTagLower == nullptr || archiveTagLowerSize == 0) {
+    if (relativePath == nullptr || !HasBuffer(strippedName, strippedNameSize) ||
+        !HasBuffer(archiveTagLower, archiveTagLowerSize)) {
         return false;
     }
 
@@ -494,7 +502,7 @@ static bool IsSupportedBRSAROverrideTypeSuffix(const char* suffix, u8& outType) 
 
 static bool TryParseExactFileId(const char* stem, u32& outFileId) {
     outFileId = 0;
-    if (stem == nullptr || stem[0] == '\0') return false;
+    if (IsEmpty(stem)) return false;
 
     u32 value = 0;
     u32 index = 0;
@@ -515,7 +523,7 @@ static bool TryParseBRSAROverride(const char* relativePath, u32& outFileId, u8& 
     if (relativePath == nullptr) return false;
 
     const char* filename = FindBasename(relativePath);
-    if (filename == nullptr || filename[0] == '\0') return false;
+    if (IsEmpty(filename)) return false;
 
     char lowerName[OVERRIDE_MAX_PATH];
     ToLowerCopy(lowerName, filename, sizeof(lowerName));
@@ -596,7 +604,7 @@ static void BuildTaggedOverrideRanges(OverrideDatabase& database) {
 
 static bool FindArchiveTagId(const OverrideDatabase& database, const char* archiveBaseLower, u16& outTagId) {
     outTagId = 0;
-    if (database.tags == nullptr || database.tagCount == 0 || archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') {
+    if (database.tags == nullptr || database.tagCount == 0 || IsEmpty(archiveBaseLower)) {
         return false;
     }
 
@@ -673,7 +681,7 @@ static bool StripDeleteSuffixInPlace(char* path) {
 }
 
 static bool DecodeOverrideRelativePath(char* dest, u32 destSize, const char* src) {
-    if (dest == nullptr || destSize == 0) return false;
+    if (!HasBuffer(dest, destSize)) return false;
     if (src == nullptr) {
         dest[0] = '\0';
         return true;
@@ -913,7 +921,7 @@ static void BuildArchiveBasenameLookup16(const U8Node* nodes, u32 nodeCount, cha
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
         if (NodeIsDir(nodes[nodeIdx])) continue;
         const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
-        if (nodeName == nullptr || nodeName[0] == '\0') continue;
+        if (IsEmpty(nodeName)) continue;
 
         const u32 bucket = HashString(nodeName, false) & (bucketCount - 1);
         nextNode[nodeIdx] = bucketHeads[bucket];
@@ -933,7 +941,7 @@ static void BuildArchiveBasenameLookup32(const U8Node* nodes, u32 nodeCount, cha
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
         if (NodeIsDir(nodes[nodeIdx])) continue;
         const char* nodeName = stringTable + NodeNameOffset(nodes[nodeIdx]);
-        if (nodeName == nullptr || nodeName[0] == '\0') continue;
+        if (IsEmpty(nodeName)) continue;
 
         const u32 bucket = HashString(nodeName, false) & (bucketCount - 1);
         nextNode[nodeIdx] = bucketHeads[bucket];
@@ -945,7 +953,7 @@ static u32 MatchArchiveBasenameOverride16(const U8Node* nodes, char* stringTable
                                           const u16* nextNode, u32 bucketCount, const char* basename, u16 entryIndex,
                                           u16* nodeOverrideIndex) {
     if (nodes == nullptr || stringTable == nullptr || bucketHeads == nullptr || nextNode == nullptr || bucketCount == 0 ||
-        basename == nullptr || basename[0] == '\0' || nodeOverrideIndex == nullptr) {
+        IsEmpty(basename) || nodeOverrideIndex == nullptr) {
         return 0;
     }
 
@@ -966,7 +974,7 @@ static u32 MatchArchiveBasenameOverride32(const U8Node* nodes, char* stringTable
                                           const s32* nextNode, u32 bucketCount, const char* basename, u16 entryIndex,
                                           u16* nodeOverrideIndex) {
     if (nodes == nullptr || stringTable == nullptr || bucketHeads == nullptr || nextNode == nullptr || bucketCount == 0 ||
-        basename == nullptr || basename[0] == '\0' || nodeOverrideIndex == nullptr) {
+        IsEmpty(basename) || nodeOverrideIndex == nullptr) {
         return 0;
     }
 
@@ -1043,7 +1051,7 @@ static void GetCurrentModFolder(char* outPath, u32 outSize) {
     if (system == nullptr) return;
 
     const char* modFolder = system->GetModFolder();
-    if (modFolder == nullptr || modFolder[0] == '\0') return;
+    if (IsEmpty(modFolder)) return;
     CopyPath(outPath, outSize, modFolder);
 }
 
@@ -1067,7 +1075,7 @@ static void RefreshOverrideCacheState() {
 }
 
 static bool AppendPath(char* path, u32 pathSize, u32& pathLen, const char* name) {
-    if (path == nullptr || name == nullptr || pathSize == 0) return false;
+    if (!HasBuffer(path, pathSize) || name == nullptr) return false;
     int written = 0;
     if (pathLen == 0) {
         written = snprintf(path, pathSize, "%s", name);
@@ -1113,14 +1121,14 @@ static bool ShouldProbeSDModsPath() {
 }
 
 static bool GetSDModsRootPath(char* outPath, u32 outSize) {
-    if (outPath == nullptr || outSize == 0) return false;
+    if (!HasBuffer(outPath, outSize)) return false;
 
     const System* system = System::sInstance;
     if (system == nullptr) return false;
 
     const char* modFolder = system->GetModFolder();
     // No mod folder means there is no external loose-override root to resolve.
-    if (modFolder == nullptr || modFolder[0] == '\0') return false;
+    if (IsEmpty(modFolder)) return false;
 
     const int written = snprintf(outPath, outSize, "%s/Patches", modFolder);
     if (written <= 0 || static_cast<u32>(written) >= outSize) return false;
@@ -1148,7 +1156,7 @@ static bool ModsRootExistsOnSD() {
 }
 
 static bool ResolveFSTDirByPath(const char* path, u32 entryCount, u32& outIndex, u32& outEnd) {
-    if (path == nullptr || path[0] == '\0') return false;
+    if (IsEmpty(path)) return false;
     const s32 entryNum = DVD::ConvertPathToEntryNum(path);
     if (entryNum < 0) return false;
     if (static_cast<u32>(entryNum) >= entryCount) {
@@ -1188,7 +1196,7 @@ static bool ReadOpenedDVDFileRange(DVD::FileInfo& info, void* dest, u32 size, u3
 }
 
 static bool BuildOverridePathWithRoot(const char* root, const char* name, const char* tag, char* outPath, u32 outSize) {
-    if (root == nullptr || name == nullptr || outPath == nullptr || outSize == 0) return false;
+    if (root == nullptr || name == nullptr || !HasBuffer(outPath, outSize)) return false;
     int written = 0;
     if (tag != nullptr && tag[0] != '\0') {
         written = snprintf(outPath, outSize, "%s/%s.%s", root, name, tag);
@@ -1251,7 +1259,7 @@ static bool FillTaggedOverrideEntry(OverrideDatabase& database, TaggedOverrideEn
 static bool FillWholeFileOverrideEntry(OverrideDatabase& database, WholeFileOverrideEntry& entry,
                                        const char* relativePath) {
     const char* basename = FindBasename(relativePath);
-    if (basename == nullptr || basename[0] == '\0') return false;
+    if (IsEmpty(basename)) return false;
 
     u32 sourcePathOffset = 0;
     if (!AddRelativePathToPool(database, relativePath, sourcePathOffset)) return false;
@@ -1310,7 +1318,7 @@ static bool ParseScannedOverride(const char* relativePath, ParsedScannedOverride
     if (strlen(relativePath) >= OVERRIDE_MAX_PATH) return false;
 
     out.basename = FindBasename(relativePath);
-    if (out.basename == nullptr || out.basename[0] == '\0') return false;
+    if (IsEmpty(out.basename)) return false;
 
     if (TryParseBRSAROverride(relativePath, out.brsarFileId, out.brsarType)) {
         if (out.brsarFileId >= kBRSAROverrideSlotCount) return false;
@@ -1472,7 +1480,7 @@ static void ScanModsDirDVD(ScanBuildState& state, u32 maxTaggedCount, u32 maxWho
 
         const FSTEntry& entry = fst[i];
         const char* name = stringTable + FSTNameOffset(entry);
-        if (name == nullptr || name[0] == '\0') continue;
+        if (IsEmpty(name)) continue;
 
         if (FSTEntryIsDir(entry)) {
             if (depth >= 32) {
@@ -1518,7 +1526,7 @@ static void ScanModsDirFromIO(IO& io, ScanBuildState& state, u32 maxTaggedCount,
                     !IsScanBuildComplete(state, maxTaggedCount, maxWholeFileCount, maxBRSARCount);
          ++i) {
         const char* fileName = io.GetFileName(i);
-        if (fileName == nullptr || fileName[0] == '\0') continue;
+        if (IsEmpty(fileName)) continue;
         // SD scanning is flat; bracket prefixes encode archive subpaths.
         if (strlen(fileName) >= OVERRIDE_MAX_PATH) continue;
 
@@ -2025,12 +2033,12 @@ static bool BuildStructuralAddedFiles(const PendingStructuralAddCandidate* candi
         const PendingStructuralAddCandidate& candidate = candidates[i];
         char matchName[OVERRIDE_MAX_PATH];
         if (!GetTaggedEntryMatchName(sOverrideDatabase.taggedEntries[candidate.overrideIndex], matchName, sizeof(matchName)) ||
-            matchName[0] == '\0') {
+            IsEmpty(matchName)) {
             continue;
         }
 
         const char* basename = FindBasename(matchName);
-        if (basename == nullptr || basename[0] == '\0') continue;
+        if (IsEmpty(basename)) continue;
 
         if (hasPrevious && previousParent == candidate.parentDirIndex && strcmp(previousPath, matchName) == 0) {
             continue;
@@ -2066,12 +2074,12 @@ static bool BuildStructuralAddedFiles(const PendingStructuralAddCandidate* candi
         const PendingStructuralAddCandidate& candidate = candidates[i];
         char matchName[OVERRIDE_MAX_PATH];
         if (!GetTaggedEntryMatchName(sOverrideDatabase.taggedEntries[candidate.overrideIndex], matchName, sizeof(matchName)) ||
-            matchName[0] == '\0') {
+            IsEmpty(matchName)) {
             continue;
         }
 
         const char* basename = FindBasename(matchName);
-        if (basename == nullptr || basename[0] == '\0') continue;
+        if (IsEmpty(basename)) continue;
 
         if (hasPrevious && previousParent == candidate.parentDirIndex && strcmp(previousPath, matchName) == 0) {
             addedFiles[uniqueCount - 1].overrideIndex = candidate.overrideIndex;
@@ -2356,7 +2364,7 @@ static bool EmitStructuralDirectoryChildren(u32 oldDirIdx, u32 parentNewIdx, Str
         if (context.addedFiles[addedIdx].parentDirIndex != oldDirIdx) continue;
 
         const char* addedName = GetStructuralAddedBasename(addedIdx, context);
-        if (addedName == nullptr || addedName[0] == '\0') continue;
+        if (IsEmpty(addedName)) continue;
         if (childCount >= context.childScratchCapacity) {
             EGG::Heap::free(children, context.tempHeap);
             return false;
@@ -2681,7 +2689,7 @@ bool IsModsPath(const char* path) {
 
 const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 resolvedSize, bool* outRedirected) {
     if (outRedirected != nullptr) *outRedirected = false;
-    if (path == nullptr || resolvedPath == nullptr || resolvedSize == 0) return path;
+    if (path == nullptr || !HasBuffer(resolvedPath, resolvedSize)) return path;
     RefreshOverrideCacheState();
     if (!AreLooseArchiveOverridesEnabled()) return path;
 
@@ -2693,7 +2701,7 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
     if (!sHasWholeFileOverrides) return path;
 
     const char* base = FindBasename(path);
-    if (base == nullptr || base[0] == '\0') return path;
+    if (IsEmpty(base)) return path;
     if (strlen(base) >= OVERRIDE_MAX_PATH) return path;
 
     char basenameLower[OVERRIDE_MAX_PATH];
@@ -2711,7 +2719,7 @@ bool HasStructuralLooseOverrides(const char* archiveBaseLower) {
 
     EnsureOverrideIndicesBuilt();
     if (sOverrideDatabase.taggedEntries == nullptr || sOverrideDatabase.taggedCount == 0) return false;
-    if (archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') return false;
+    if (IsEmpty(archiveBaseLower)) return false;
 
     u16 tagId = 0;
     if (!FindArchiveTagId(sOverrideDatabase, archiveBaseLower, tagId)) return false;
@@ -2730,7 +2738,7 @@ bool HasStructuralLooseOverrides(const char* archiveBaseLower) {
 }
 
 bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 archiveBaseLowerSize) {
-    if (path == nullptr || archiveBaseLower == nullptr || archiveBaseLowerSize == 0) return false;
+    if (path == nullptr || !HasBuffer(archiveBaseLower, archiveBaseLowerSize)) return false;
     RefreshOverrideCacheState();
     if (!AreLooseArchiveOverridesEnabled()) return false;
     // Loose files under the mods root are already redirected content, so never feed them back into archive patching.
@@ -2822,7 +2830,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
 
     EnsureOverrideIndicesBuilt();
     if (sOverrideDatabase.taggedEntries == nullptr || sOverrideDatabase.taggedCount == 0) return false;
-    if (archiveBase == nullptr || archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') return false;
+    if (archiveBase == nullptr || IsEmpty(archiveBaseLower)) return false;
     if (sourceHeap == nullptr) {
         return false;
     }
@@ -2909,7 +2917,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     for (u32 i = rangeStart; i < rangeEnd; ++i) {
         const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[i];
         char matchName[OVERRIDE_MAX_PATH];
-        if (!GetTaggedEntryMatchName(entry, matchName, sizeof(matchName)) || matchName[0] == '\0') {
+        if (!GetTaggedEntryMatchName(entry, matchName, sizeof(matchName)) || IsEmpty(matchName)) {
             continue;
         }
         const bool isDelete = (entry.flags & OVERRIDEENTRYFLAG_IS_DELETE) != 0;
