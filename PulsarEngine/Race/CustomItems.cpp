@@ -35,6 +35,100 @@ u32 Pulsar::Race::GetEffectiveCustomItemsBitfield() {
 }
 
 static bool sFallbackItemDropFix[12];
+static const u32 PLAYER_OBJ_SLOT_COUNT = 3;
+
+extern "C" void __ptmf_scall(Item::PlayerObj* playerObj, const Ptmf_0A<Item::PlayerObj, void>* ptmf);
+
+static void ClearPlayerObjUse(Item::PlayerObj& playerObj) {
+    playerObj.itemObjId = OBJ_NONE;
+    playerObj.itemId = ITEM_NONE;
+    playerObj.useType = Item::PlayerObj::NO_ITEM;
+    for (u32 i = 0; i < PLAYER_OBJ_SLOT_COUNT; ++i) playerObj.usedObjs[i] = nullptr;
+    playerObj.activeItemCount = 0;
+    playerObj.unknown_0x54 = static_cast<ItemObjId>(0);
+}
+
+static bool HasSpawnedPlayerObjs(const Item::PlayerObj& playerObj) {
+    if (playerObj.useType == Item::PlayerObj::ONLY_USE) return true;
+    if (playerObj.activeItemCount == 0 || playerObj.activeItemCount > PLAYER_OBJ_SLOT_COUNT) return false;
+
+    for (u32 i = 0; i < playerObj.activeItemCount; ++i) {
+        if (playerObj.usedObjs[i] == nullptr) return false;
+    }
+    return true;
+}
+
+static void CallPlayerObjPtmfIfValid(Item::PlayerObj* playerObj, const Ptmf_0A<Item::PlayerObj, void>* ptmf) {
+    if (playerObj == nullptr || ptmf == nullptr) return;
+
+    if (!HasSpawnedPlayerObjs(*playerObj)) {
+        ClearPlayerObjUse(*playerObj);
+        return;
+    }
+
+    __ptmf_scall(playerObj, ptmf);
+}
+
+static void RotateSpawnedObjQueue(Item::ObjHolder& holder) {
+    if (holder.spawnedCount <= 1) return;
+
+    Item::Obj* first = holder.itemObj[0];
+    for (u32 i = 0; i < holder.spawnedCount - 1; ++i) {
+        holder.itemObj[i] = holder.itemObj[i + 1];
+    }
+    holder.itemObj[holder.spawnedCount - 1] = first;
+}
+
+static bool FreeOneSpawnedObj(Item::ObjHolder& holder) {
+    if (holder.itemObj == nullptr || holder.spawnedCount == 0) return false;
+
+    const u32 prevBodyCount = holder.bodyCount;
+    const u32 prevSpawnedCount = holder.spawnedCount;
+    Item::Obj* oldestObj = holder.itemObj[0];
+    if (oldestObj == nullptr) return false;
+
+    holder.OnObjKillFinish(oldestObj);
+    RotateSpawnedObjQueue(holder);
+    return holder.bodyCount < prevBodyCount || holder.spawnedCount < prevSpawnedCount;
+}
+
+static Item::PlayerObj* GetPlayerObjFromUsedObjs(Item::Obj** usedObjs) {
+    // ObjHolder::Spawn receives &PlayerObj::usedObjs[0]; usedObjs starts at 0x20.
+    return reinterpret_cast<Item::PlayerObj*>(reinterpret_cast<u8*>(usedObjs) - 0x20);
+}
+
+static void SafePlayerObjSpawn(Item::ObjHolder* holder, u32 quantity, Item::Obj** usedObjs, u8 playerId, const Vec3& playerPos, bool r8) {
+    if (usedObjs != nullptr) {
+        for (u32 i = 0; i < PLAYER_OBJ_SLOT_COUNT; ++i) usedObjs[i] = nullptr;
+    }
+
+    Item::PlayerObj* playerObj = nullptr;
+    if (usedObjs != nullptr) playerObj = GetPlayerObjFromUsedObjs(usedObjs);
+    if (holder == nullptr || holder->itemObj == nullptr || usedObjs == nullptr || playerObj == nullptr) {
+        if (playerObj != nullptr) ClearPlayerObjUse(*playerObj);
+        return;
+    }
+
+    const u32 requested = quantity > PLAYER_OBJ_SLOT_COUNT ? PLAYER_OBJ_SLOT_COUNT : quantity;
+    u32 spawned = 0;
+    while (spawned < requested) {
+        while (holder->bodyCount >= holder->capacity) {
+            if (!FreeOneSpawnedObj(*holder)) break;
+        }
+        if (holder->bodyCount >= holder->capacity) break;
+
+        Item::Obj* obj = holder->itemObj[holder->bodyCount];
+        if (obj == nullptr) break;
+
+        usedObjs[spawned] = obj;
+        ++holder->bodyCount;
+        obj->Spawn(holder->itemObjId, playerId, playerPos, r8);
+        ++spawned;
+    }
+
+    playerObj->activeItemCount = spawned;
+    if (spawned == 0) ClearPlayerObjUse(*playerObj);
+}
 
 kmRuntimeUse(0x809c3670);  // Item::ItemSlotData
 kmRuntimeUse(0x809c36a0);  // Item::Behavior::behaviourTable
@@ -279,6 +373,9 @@ kmWrite32(0x807bb83c, 0x7ED60214);
 
 // Infinite loop fix for ItemHolderItem_spawn
 kmWrite32(0x80795e4c, 0x408100C8);
+kmCall(0x80791a48, SafePlayerObjSpawn);
+kmCall(0x80791b28, CallPlayerObjPtmfIfValid);
+kmCall(0x807923ac, CallPlayerObjPtmfIfValid);
 
 static void InitItemFallback1() {
     register Item::PlayerRoulette* roulette;

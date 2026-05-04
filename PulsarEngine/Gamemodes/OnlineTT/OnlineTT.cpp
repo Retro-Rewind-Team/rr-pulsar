@@ -23,6 +23,7 @@
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Settings/Settings.hpp>
+#include <CustomCharacters.hpp>
 
 namespace Pulsar {
 
@@ -301,7 +302,7 @@ kmCall(0x80643da0, PreventVoteChangeSection);
 
 static void FixAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {  // menu is either drift or multidrift
     System* system = System::sInstance;
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
+    if (system->IsContext(PULSAR_MODE_OTT) && system->ottMgr.voteState == COMBO_SELECTION) {
         system->ottMgr.voteState = COMBO_SELECTED;
         Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
         handler.toSendPacket.playersData[0].character = SectionMgr::sInstance->sectionParams->characters[0];
@@ -327,6 +328,7 @@ kmCall(0x80707620, MuteKartSounds);
 
 static bool MuteCharSounds(Kart::Link* link) {
     const u32 bitfield = link->pointers->kartStatus->bitfield4;
+    if (CustomCharacters::ShouldMuteCharacterVoice(link)) return true;
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTMUTEPTANDPLAYERS) == false) {
         return !(bitfield & 0x2);  // isLocal
     }

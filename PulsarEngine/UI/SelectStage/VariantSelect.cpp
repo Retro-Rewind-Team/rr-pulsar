@@ -17,8 +17,10 @@
 */
 
 #include <UI/SelectStage/VariantSelect.hpp>
+#include <Ghost/UI/ExpGhostSelect.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCourse.hpp>
@@ -30,14 +32,21 @@
 namespace Pulsar {
 namespace UI {
 
+static bool IsTimeTrialVariantMenu() {
+    return Racedata::sInstance != nullptr && Racedata::sInstance->menusScenario.settings.gamemode == MODE_TIME_TRIAL;
+}
+
 VariantSelect::VariantSelect() {
     this->onBackPressHandler.subject = this;
     this->onBackPressHandler.ptmf = &VariantSelect::OnBackPress;
     this->onBackClickHandler.subject = this;
     this->onBackClickHandler.ptmf = &VariantSelect::OnBackButtonClick;
+    this->onVariantButtonSelectHandler.subject = this;
+    this->onVariantButtonSelectHandler.ptmf = &VariantSelect::OnVariantButtonSelect;
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
     selectedPulsarId = PULSARID_NONE;
     baseRowIdx = 0;
+    highlightedVariantIdx = 0;
     variantButtonsPopulated = false;
     ResetVariantButtonState();
 }
@@ -47,12 +56,14 @@ void VariantSelect::OnActivate() {
     ToggleCourseSelectDecor(true);
     selectedPulsarId = CupsConfig::sInstance->GetSelected();
     PopulateVariantButtons();
+    UpdateBottomText();
 }
 
 void VariantSelect::OnDeactivate() {
     variantButtonsPopulated = false;
     ResetVariantButtonState();
     baseRowIdx = 0;
+    highlightedVariantIdx = 0;
     if (CupsConfig::sInstance != nullptr) CupsConfig::sInstance->ClearPendingVariant();
     ToggleCourseSelectDecor(false);
     Pages::CourseSelect::OnDeactivate();
@@ -97,6 +108,19 @@ void VariantSelect::ToggleCourseSelectDecor(bool hidden) {
 void VariantSelect::OnInit() {
     Pages::CourseSelect::OnInit();
     this->backButton.SetOnClickHandler(this->onBackClickHandler, 0);
+    for (u32 i = 0; i < 4; ++i) {
+        this->CtrlMenuCourseSelectCourse.courseButtons[i].SetOnSelectHandler(this->onVariantButtonSelectHandler);
+    }
+}
+
+void VariantSelect::UpdateBottomText() {
+    if (this->bottomText == nullptr) return;
+    if (!IsTimeTrialVariantMenu() || this->selectedPulsarId == PULSARID_NONE) return;
+
+    u32 bmgId = 0;
+    const Text::Info text = GetCourseBottomText(this->selectedPulsarId, this->highlightedVariantIdx, &bmgId);
+    this->bottomText->isHidden = false;
+    this->bottomText->SetMessage(bmgId, &text);
 }
 
 void VariantSelect::OnBackPress(u32 hudSlotId) {
@@ -107,6 +131,13 @@ void VariantSelect::OnBackPress(u32 hudSlotId) {
 
 void VariantSelect::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
     OnBackPress(hudSlotId);
+}
+
+void VariantSelect::OnVariantButtonSelect(PushButton& button, u32 hudSlotId) {
+    const u32 variantIdx = this->GetVariantIndexForButton(button);
+    if (variantIdx == 0xFFFFFFFF) return;
+    this->highlightedVariantIdx = static_cast<u8>(variantIdx);
+    this->UpdateBottomText();
 }
 
 void VariantSelect::PopulateVariantButtons() {
@@ -133,6 +164,7 @@ void VariantSelect::PopulateVariantButtons() {
     ApplyVariantButtonState();
     if (variantButtonsPopulated) {
         const u8 desiredVariantIdx = cups->GetLastSelectedVariant(selectedPulsarId);
+        highlightedVariantIdx = desiredVariantIdx;
         u32 desiredButtonIdx = 0;
         for (u32 i = 0; i < 4; ++i) {
             if (variantButtonVariants[i] == desiredVariantIdx) {
@@ -141,6 +173,8 @@ void VariantSelect::PopulateVariantButtons() {
             }
         }
         this->CtrlMenuCourseSelectCourse.courseButtons[desiredButtonIdx].Select(0);
+    } else {
+        highlightedVariantIdx = 0;
     }
 }
 

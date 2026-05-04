@@ -9,6 +9,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
@@ -50,7 +51,15 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
         src->playersData[1].character = static_cast<u8>(sectionParams->characters[1]);
         src->playersData[1].kart = static_cast<u8>(sectionParams->karts[1]);
-        src->playersData[1].sumPoints = 50.00f;
+        src->playersData[1].sumPoints = 0;
+        const Racedata* racedata = Racedata::sInstance;
+        if (racedata != nullptr) {
+            const RacedataScenario& menuScenario = racedata->menusScenario;
+            const u8 guestPlayerId = menuScenario.settings.hudPlayerIds[1];
+            if (guestPlayerId < 12) {
+                src->playersData[1].sumPoints = menuScenario.players[guestPlayerId].score;
+            }
+        }
         src->playersData[1].starRank = 0;
     }
 
@@ -84,6 +93,8 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
     } else
         len = sizeof(PulSELECT);
     packetHolder->Copy(src, len);
+
+    packetHolder->packet->characterTables = CustomCharacters::GetLocalOnlineCharacterTables();
 
 #ifdef PROD
     // Encrypt the Pulsar extension portion of the packet after copy
@@ -128,6 +139,9 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     }
 #endif
 
+    const u8 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
+    CustomCharacters::UpdateOnlineCharacterTablesFromAid(aid, src->playerIdToAid, characterTables);
+
     for (int i = 0; i < 2; ++i) {
         PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
     }
@@ -144,6 +158,7 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
         src->blockedTrackCount = 0;
         src->curBlockingArrayIdx = 0;
         src->lastGroupedTrackPlayed = false;
+        src->characterTables = 0;
         for (u32 i = 0; i < MAX_TRACK_BLOCKING; ++i) {
             src->blockedTracks[i] = 0xFFFF;
         }
@@ -271,10 +286,13 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
     RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     const u8 hostAid = controller->subs[controller->currentSub].hostAid;
     const RKNet::OnlineMode mode = self.mode;
+    const RKNet::RoomType roomType = controller->roomType;
+    const bool isFriendRoom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    const bool isFriendRoomVS = isFriendRoom && (mode == RKNet::ONLINEMODE_PRIVATE_VS || mode == RKNet::ONLINEMODE_PUBLIC_VS);
 
     if (mode == RKNet::ONLINEMODE_PRIVATE_VS && system->IsContext(PULSAR_MODE_KO)) system->koMgr->PatchAids(sub);
 
-    if (mode == RKNet::ONLINEMODE_PRIVATE_VS && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS)) {
+    if (isFriendRoomVS && system->IsContext(PULSAR_HAW)) {
         self.toSendPacket.winningVoterAid = hostAid;
         u16 hostVote = self.toSendPacket.pulVote;
         bool hostVotedRandom = (hostVote == 0xFF);

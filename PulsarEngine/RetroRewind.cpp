@@ -9,6 +9,7 @@
 #include <Dolphin/DolphinIOS.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <core/rvl/OS/OS.hpp>
+#include <runtimeWrite.hpp>
 
 namespace RetroRewind {
 Pulsar::System* System::Create() {
@@ -59,14 +60,20 @@ kmWrite32(0x80554224, 0x3C808000);
 kmWrite32(0x80554228, 0x88841204);
 kmWrite32(0x8055422C, 0x48000044);
 
+static bool IsTTMode(const GameMode mode) {
+    return mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE;
+}
+
 void FPSPatch() {
     FPSPatchHook = 0x00;
     const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_RACE2, Pulsar::RADIO_FPS) == Pulsar::FPS_HALF && mode != MODE_TIME_TRIAL) {
+    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_RACE2, Pulsar::RADIO_FPS) == Pulsar::FPS_HALF &&
+        !IsTTMode(mode)) {
         FPSPatchHook = 0x00FF0100;
     }
 }
 static SectionLoadHook PatchFPS(FPSPatch);
+static RaceLoadHook PatchFPSOnRaceLoad(FPSPatch);
 
 void ItemBoxRespawn(Objects::Itembox* itembox) {
     bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
@@ -91,5 +98,35 @@ void PredictionPatch() {
     PredictionHook = *reinterpret_cast<u32*>(&predictionValue);
 }
 static SectionLoadHook PatchPrediction(PredictionPatch);
+
+// Clear contexts from worldwides upon disconnecting from WFC. [Opt]
+static void ClearContextsUponWFCDisconnect() {
+    Pulsar::System* system = Pulsar::System::sInstance;
+    SectionId id = SectionMgr::sInstance->curSection->sectionId;
+
+    // Single-player menu
+    const bool isSinglePlayerMenu = (id == SECTION_SINGLE_P_FROM_MENU);
+
+    // Local splitscreen multiplayer menu
+    const bool isLocalMultiplayerMenu = (id == SECTION_LOCAL_MULTIPLAYER);
+
+    if (isSinglePlayerMenu || isLocalMultiplayerMenu) {
+        // Reset OTT context the same way StartWW does
+        system->context = 0;
+        system->UpdateContext();
+    }
+}
+
+SectionLoadHook clearContext(ClearContextsUponWFCDisconnect);
+
+// Hide the channel button on the title screen [ZPL]
+kmRuntimeUse(0x80625E1C);
+static void HideChannelButton() {
+    kmRuntimeWrite32A(0x80625E1C, 0x38800004);
+    if (Dolphin::IsEmulator()) {
+        kmRuntimeWrite32A(0x80625E1C, 0x38800003);
+    }
+}
+BootHook hideChannelButton(HideChannelButton, 0);
 
 }  // namespace RetroRewind

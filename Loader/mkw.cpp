@@ -12,6 +12,9 @@ LoaderParams paramsPAL = {
     (DVDClose_t)0x8015E568,
     (sprintf_t)0x80011A2C,
     (RKSystem*)0x802A4080,
+    (NETSHA1Init_t)0x801D24F4,
+    (NETSHA1Update_t)0x801D2544,
+    (NETSHA1GetDigest_t)0x801D25F8,
     PAL,
     0x80510238};
 LoaderParams paramsNTSC_U = {
@@ -23,6 +26,9 @@ LoaderParams paramsNTSC_U = {
     (DVDClose_t)0x8015E4C8,
     (sprintf_t)0x80010ECC,
     (RKSystem*)0x8029fd00,
+    (NETSHA1Init_t)0x801D2454,
+    (NETSHA1Update_t)0x801D24A4,
+    (NETSHA1GetDigest_t)0x801D2558,
     NTSC_U,
     0x8050bf50,
 
@@ -36,6 +42,9 @@ LoaderParams paramsNTSC_J = {
     (DVDClose_t)0x8015E488,
     (sprintf_t)0x80011950,
     (RKSystem*)0x802a3a00,
+    (NETSHA1Init_t)0x801D2414,
+    (NETSHA1Update_t)0x801D2464,
+    (NETSHA1GetDigest_t)0x801D2518,
     NTSC_J,
     0x8050fc50,
 };
@@ -48,11 +57,14 @@ LoaderParams paramsNTSC_K = {
     (DVDClose_t)0x8015E5E0,
     (sprintf_t)0x80011A94,
     (RKSystem*)0x80292080,
+    (NETSHA1Init_t)0x801D2850,
+    (NETSHA1Update_t)0x801D28A0,
+    (NETSHA1GetDigest_t)0x801D2954,
     NTSC_K,
     0x804fe2f0};
 
 static void LoadIntoMKW() {
-    const u8 regionMem = OS::BootInfo::mInstance.diskID.gameName[3];
+    const u8 regionMem = *(u8*)(0x80000003);
 
     LoaderParams* params = nullptr;
     switch (regionMem) {
@@ -68,6 +80,14 @@ static void LoadIntoMKW() {
         case 'K':
             params = &paramsNTSC_K;
             break;
+        default:
+            // If we don't have a valid region, draw the color red and hang the game
+            // Dolphin currently ignores this register
+            unsigned int* HW_VISOLID = (unsigned int*)0xcd000024;
+            *HW_VISOLID = 0x5aef5101;
+            for (;;) {
+                continue;
+            }
     }
 
     LoadKamekBinaryFromDisc(params);

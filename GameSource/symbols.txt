@@ -499,6 +499,7 @@ PSVECMag__3MTXFPC3Vec = 0x8019ac68
 #OS
 OSGetArenaLo__Fv = 0x801a10cc
 DCInvalidateRange__FPvUi = 0x801a1600
+DCInvalidateRange__2OSFPvUi = 0x801a1600
 DCFlushRange = 0x801a162c
 DCStoreRange__FPvUi = 0x801a165c
 DCFlushRange__2OSFPvUi = 0x801a162c
@@ -649,6 +650,9 @@ OnEnter__Q23EGG6ThreadFv = 0x80008e80
 #Archive
 Mount__Q23EGG7ArchiveFPvPQ23EGG4Heapi = 0x8020f768
 
+InitHandle__3ARCFPvPQ23ARC6Handle = 0x80124500
+ConvertPathToEntrynum__3ARCFPQ23ARC6HandlePCc = 0x80124894
+
 #DVDRipper
 LoadToMainRAM__Q23EGG9DvdRipperFPCcPvPQ23EGG4HeapQ33EGG9DvdRipper15EAllocDirectionUiPUiPUi = 0x802226d8
 
@@ -661,6 +665,7 @@ Update__Q23EGG6EffectFv = 0x80223f58
 
 #Heap
 Create__Q23EGG7ExpHeapFiPQ23EGG4HeapUs = 0x80226ac8
+SetHeapsGroupId__12ExpHeapGroupFUi = 0x80009bc0
 getTotalFreeSize__Q23EGG7ExpHeapFv = 0x80226c88
 alloc__Q23EGG4HeapFUiiPQ23EGG4Heap = 0x80229814
 free__Q23EGG4HeapFPvPQ23EGG4Heap = 0x80229b84
@@ -711,6 +716,7 @@ CreatePath__Q23EGG11ScnRendererFUiPQ23EGG9Allocator = 0x8023bd38
 
 #ScnMgr
 AppendScreenSpecificModelDirector__6ScnMgrFP13ModelDirector = 0x805635cc
+RemoveFromGroup__13ModelDirectorFv = 0x8055f2fc
 
 #TaskThread
 Create__Q23EGG10TaskThreadFiiUiPQ23EGG4Heap = 0x802428e8
@@ -755,9 +761,11 @@ sInstance__Q23KMP7Manager = 0x809BD6E8
 
 ##FILE
 #Archive
+ArchiveHolder = 0x8052a538
 Load__11ArchiveFileFPCcPQ23EGG4HeapbiPQ23EGG4HeapPQ33EGG7Archive8FileInfo = 0x80518e10
 MountFromRawArchive__11ArchiveFileFPvUiPQ23EGG4Heapb = 0x80518fbc
 Dump__11ArchiveFileFPCcPQ23EGG4Heapi = 0x805190f0
+Decompress__11ArchiveFileFPCcPQ23EGG4HeapPQ33EGG7Archive8FileInfo = 0x80519508
 Unmount__11ArchiveFileFv = 0x805192cc
 Unmount__10ArchiveMgrFP14ArchivesHolder = 0x805411e4
 DumpArchive__14ArchivesHolderFPcPQ23EGG4Heap = 0x8052ab6c
@@ -770,6 +778,11 @@ RequestLoadCourseAsync__10ArchiveMgrF8CourseId = 0x805419ac
 sInstance__10ArchiveMgr = 0x809bd738
 GetArchive__10ArchiveMgrCF13ArchiveSourceUi = 0x80541614
 GetFile__14ArchivesHolderCFPCcPUi = 0x8052a760
+Unmount__10ArchiveMgrF13ArchiveSource = 0x805411d4
+LoadArchive__10ArchiveMgrF13ArchiveSourcePQ23EGG4HeapPCc = 0x80540450
+WaitForLoad__10ArchiveMgrFv = 0x805400a0
+ResetAllkartArchivesLoaders__10ArchiveMgrFv = 0x805423bc
+InitAllkartArchivesLoaders__10ArchiveMgrFUiUc = 0x805422cc
 
 ##SCENE
 GetCurrent__9GameSceneFv = 0x8051bed0
@@ -959,6 +972,7 @@ __vt__3Mii = 0x808b3148
 
 #MiiHeadsModel
 InitModel__13MiiHeadsModelFP3MiiP14MiiDriverModelUiQ44nw4r3g3d6ScnMdl12BufferOptionUiUi = 0x8055c580
+Draw__15MenuDriverModelFUc = 0x80830a80
 
 #MiiGroup
 __ct__8MiiGroupFv = 0x805f9e78
@@ -1018,6 +1032,24 @@ GetDriftState__Q24Kart6PlayerCFv = 0x805911d8
 
 #Misc
 ComputeStats__4KartF6KartId11CharacterId = 0x80591fa4
+sInstance__12MenuModelMgr = 0x809c1988
+RequestDriverModel__12MenuModelMgrFUc11CharacterId = 0x8059e568
+RequestKartModel__12MenuModelMgrFUc6KartId = 0x8059e580
+RequestModel__18DriverModelControlF11CharacterId = 0x805f3494
+RequestModel__19VehicleModelControlF6KartId = 0x805f3bc4
+RequestCharacterModel__Q25Pages13ModelRendererFUc11CharacterId = 0x805f56e0
+RequestKartModel__Q25Pages13ModelRendererFUc6KartId = 0x805f5958
+PrepareParams__Q25Pages13ModelRendererFUc = 0x805f5c94
+getPlayerModels__Q26Pulsar16CustomCharactersFv = 0x80790e30
+SetPlayerCharacter__18MenuDriverModelMgrFUc11CharacterId = 0x80830d00
+__ct__18MenuDriverModelMgrFUc = 0x80830180
+TogglePlayerModel__12MenuModelMgrFUcb = 0x80830c3c
+TogglePlayerModel__18MenuDriverModelMgrFUcb = 0x80830c3c
+PrepareDriverOnKartAnms__18MenuDriverModelMgrFUc = 0x80830c64
+SwitchState__15MenuDriverModelFUcQ215MenuDriverModel5State = 0x8082fb78
+LoadKartModelsByCharacter__Q25Pages13ModelRendererFUc11CharacterId = 0x805f570c
+ResetKartModels__12MenuModelMgrFUc = 0x8059e550
+PlayerModel_init = 0x807c8758
 hardSpeedCap__4Kart = 0x808b59f4
 bulletSpeed__4Kart = 0x808b59f8
 minDriftSpeedRatio__4Kart = 0x808b5b1c
@@ -1093,6 +1125,7 @@ ScheduleDisconnection__7SectionFv = 0x80623054
 CreatePageById__7SectionF6PageId = 0x80623390
 CreateSectionPages__7SectionF9SectionId = 0x8062c3a4
 AddInitialLayers__7SectionF9SectionId = 0x80630094
+IsGameplaySection__F9SectionId = 0x808609fc
 RemoveTopLayerPage__7SectionFv = 0x80623288
 UpdateLayers__7SectionFv = 0x80623068
 Update__7SectionFv = 0x806224f8
@@ -1244,6 +1277,7 @@ vf_0x30__9UIControlFv = 0x8063d608
 PlaySound__9UIControlFUiUi = 0x8063d74c
 __vt__9UIControl = 0x808bf008
 SetSoundIds__9UIControlFUiUi = 0x8063d3a4
+SetPosition__9UIControlFf = 0x8063d0b8
 
 #LayoutUIControl
 GetRuntimeTypeInfo__15LayoutUIControlCFv = 0x80636bd0
@@ -1602,6 +1636,22 @@ OnActivate__Q25Pages7OptionsFv = 0x805fd8e8
 OnButtonClick__Q25Pages7OptionsFR10PushButtonUi = 0x805fd90c
 GetNextPage__Q25Pages7OptionsCFv = 0x80601060
 GetRuntimeTypeInfo__Q25Pages7OptionsCFv = 0x80601068
+
+#MultiPlayer
+__ct__Q25Pages11MultiPlayerFv = 0x8062b240
+__dt__Q25Pages11MultiPlayerFv = 0x8084dc4c
+CreateControl__Q25Pages11MultiPlayerFUi = 0x8084d3a8
+CreateExternalControl__Q25Pages11MultiPlayerFUi = 0x8084d260
+SetButtonHandlers__Q25Pages11MultiPlayerFR10PushButton = 0x8084dbe8
+GetManipulatorManager__Q25Pages11MultiPlayerFv = 0x8084dc44
+GetPlayerBitfield__Q25Pages11MultiPlayerCFv = 0x8084dbd8
+GetActivePlayerBitfield__Q25Pages11MultiPlayerCFv = 0x8084dbe0
+OnExternalButtonSelect__Q25Pages11MultiPlayerFR10PushButtonUi = 0x8084d6fc
+GetRuntimeTypeInfo__Q25Pages11MultiPlayerCFv = 0x8084dccc
+AfterControlUpdate__Q25Pages11MultiPlayerFv = 0x8084d4d8
+OnInit__Q25Pages11MultiPlayerFv = 0x8084d200
+OnActivate__Q25Pages11MultiPlayerFv = 0x8084d3b0
+OnDeactivate__Q25Pages11MultiPlayerFv = 0x8084dbd4
 
 #GhostSelect
 __ct__Q25Pages11GhostSelectFv = 0x806395ec
@@ -2204,6 +2254,9 @@ Init__9ObjectKCLFv = 0x8081a79c
 RegisterEntity__9ObjectKCLFf = 0x8081a85c
 UpdateModel__9ObjectKCLFv = 0x8081a8d0
 
+#ObjectsKCLMgr
+Update__13ObjectsKCLMgrFv = 0x8081b618
+
 #ExternKCL
 GetRawKMP__Q23KMP7ManagerF13ArchiveSourcePCc = 0x80512c10
 CalcCoordinates_0Indexed__Q23KMP13Holder<4KTPT>FR4Vec3R4Vec3UiUi = 0x80514368
@@ -2292,6 +2345,7 @@ beginFrame= 0x8020fe24
 sInstance__Q25RKNet11USERHandler = 0x809c2108
 CopySendToPacketHolder__Q25RKNet11USERHandlerFUc = 0x80662abc
 CreateSendPacket__Q25RKNet11USERHandlerFv = 0x8066300c
+Update__Q25RKNet11USERHandlerFv = 0x806629c0
 InitPackets__Q25RKNet13SELECTHandlerFv = 0x8065ffa4
 
 #FriendMgr
@@ -2421,5 +2475,15 @@ DWCi_QR2ServerKeyCallback = 0x800e4c88
 qr2_init_socketA = 0x8010ecac
 RequestPause__12RacePauseMgrFv = 0x808600dc
 RequestUnpause__12RacePauseMgrFv = 0x80860100
-Sqrt__Q23EGG4MathFf = 0x8022f80c
+sInstance__Q25Pages12RacePauseMgr = 0x809c4730
+RequestUnpause__Q25Pages12RacePauseMgrFv = 0x80860100
+Update__12MenuModelMgrFv = 0x8059e4a8
+Update__18MenuDriverModelMgrFv = 0x808307b0
+Load__16MenuKartModelMgrFv = 0x80832d00
+DVDCreate = 0x8052a1b0
+__dt__15MenuDriverModelFv = 0x80830708
+__dt__18ModelTransformatorFv = 0x80556774
+RequestSceneReinit__10SectionMgrFUiUi = 0x80635b2c
+ToadetteFix1 = 0x807c89bc
+ToadetteFix2 = 0x807c8aa8Sqrt__Q23EGG4MathFf = 0x8022f80c
 Acos__Q23EGG4MathFf = 0x8022f8c0

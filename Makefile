@@ -1,8 +1,9 @@
-CC := G:/Coding/MarioKart/Compilers/Wii/1.7/mwcceppc.exe
-AS := G:/Coding/MarioKart/Compilers/Wii/1.7/mwasmeppc.exe
+CC := mwcceppc.exe
+AS := mwasmeppc.exe
 
 GAMESOURCE := ./GameSource
 PULSAR := ./PulsarEngine
+KAMEK := Kamek.exe
 KAMEK_H := ./KamekInclude
 
 ifneq ($(filter install%,$(MAKECMDGOALS)),)
@@ -19,9 +20,9 @@ ASFLAGS := -proc gekko -c
 
 EXTERNALS := -externals=$(GAMESOURCE)/symbols.txt -externals=$(GAMESOURCE)/anticheat.txt -versions=$(GAMESOURCE)/versions.txt
 
-# Source files (PowerShell-friendly; emit forward-slash paths for make)
-CPP_SRCS := $(shell powershell.exe -NoProfile -Command '$$root = Resolve-Path "$(PULSAR)"; Get-ChildItem -Path $$root -Recurse -Filter "*.cpp" | ForEach-Object { ("$(PULSAR)/" + $$_.FullName.Substring($$root.Path.Length + 1)).Replace("\", "/") }')
-ASM_SRCS := $(shell powershell.exe -NoProfile -Command '$$root = Resolve-Path "$(PULSAR)"; Get-ChildItem -Path $$root -Recurse -Filter "*.S" | ForEach-Object { ("$(PULSAR)/" + $$_.FullName.Substring($$root.Path.Length + 1)).Replace("\", "/") }')
+# Source files
+CPP_SRCS := $(shell find $(PULSAR) -type f -name "*.cpp")
+ASM_SRCS := $(shell find $(PULSAR) -type f -name "*.S")
 
 # Object files
 CPP_OBJS := $(patsubst $(PULSAR)/%.cpp, build/%.o, $(CPP_SRCS))
@@ -40,7 +41,7 @@ test:
 	@echo "$(ASM_SRCS)"
 
 build:
-	@powershell.exe -NoProfile -Command "New-Item -ItemType Directory -Force -Path 'build' | Out-Null"
+	@mkdir -p build
 
 build/kamek.o: $(KAMEK_H)/kamek.cpp | build
 	@$(CC) $(CFLAGS) -c -o $@ $<
@@ -52,13 +53,13 @@ build/RuntimeWrite.o: $(KAMEK_H)/RuntimeWrite.cpp | build
 # C++ compilation
 build/%.o: $(PULSAR)/%.cpp | build
 	@echo Compiling C++ $<...
-	@powershell.exe -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(dir $@)' | Out-Null"
+	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 # Assembly compilation (.S)
 build/%.o: $(PULSAR)/%.S | build
 	@echo Assembling $<...
-	@powershell.exe -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(dir $@)' | Out-Null"
+	@mkdir -p $(dir $@)
 	@$(AS) $(ASFLAGS) -o $@ $<
 
 build/Network/RoomKey.o: .force
@@ -71,14 +72,14 @@ force_link: build/kamek.o build/RuntimeWrite.o $(OBJS)
 
 install: force_link
 	@echo Copying binaries to $(RIIVO)/Binaries...
-	@powershell.exe -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(RIIVO)/Binaries' | Out-Null"
-	@powershell.exe -NoProfile -Command "Copy-Item -Force 'build/Code.pul' '$(RIIVO)/Binaries'"
+	@mkdir -p $(RIIVO)/Binaries
+	@cp build/Code.pul $(RIIVO)/Binaries
 
 installCT: force_link
 	@echo Copying binaries to $(RIIVO)/CT/Binaries...
-	@powershell.exe -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(RIIVO)/CT/Binaries' | Out-Null"
-	@powershell.exe -NoProfile -Command "Copy-Item -Force 'build/Code.pul' '$(RIIVO)/CT/Binaries'"
+	@mkdir -p $(RIIVO)/CT/Binaries
+	@cp build/Code.pul $(RIIVO)/CT/Binaries
 
 clean:
 	@echo Cleaning...
-	@powershell.exe -NoProfile -Command "if (Test-Path 'build') { Remove-Item -Recurse -Force 'build' }"
+	@rm -rf build

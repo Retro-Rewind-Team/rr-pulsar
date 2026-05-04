@@ -5,6 +5,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/rvl/DWC/DWCAccount.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 
@@ -33,6 +34,52 @@ void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
     }
 }
 
+void ConvertUTF16toUtf8(char* dest, const wchar_t* src, size_t max_len) {
+    size_t destIndex = 0; 
+    for (size_t i = 0; ; i++) {
+        wchar_t c = src[i];
+        if (c == 0) {
+            break;
+        }
+        if (c <= 0x007F) {
+            dest[destIndex++] = (char)c; 
+        } else if (c <= 0x07FF) {
+            dest[destIndex++] = 0xC0 | ((c >> 6) & 0x1F);
+            dest[destIndex++] = 0x80 | (c & 0x3F);
+        } else {
+            dest[destIndex++] = 0xE0 | ((c >> 12) & 0x0F);
+            dest[destIndex++] = 0x80 | ((c >> 6) & 0x3F);
+            dest[destIndex++] = 0x80 | (c & 0x3F);
+        }
+    }
+    dest[destIndex] = '\0'; 
+}
+
+static CharacterId GetFirstLocalRaceCharacter() {
+    const GameScene* scene = GameScene::GetCurrent();
+    Racedata* raceData = Racedata::sInstance;
+    Raceinfo* raceInfo = Raceinfo::sInstance;
+    if (scene == nullptr || scene->id != SCENE_ID_RACE || raceData == nullptr || raceInfo == nullptr ||
+        !raceInfo->IsAtLeastStage(RACESTAGE_INTRO)) {
+        return CHARACTER_NONE;
+    }
+
+    const RacedataScenario& scenario = raceData->racesScenario;
+    if (scenario.localPlayerCount > 0) {
+        const u8 playerId = scenario.settings.hudPlayerIds[0];
+        if (playerId < scenario.playerCount && scenario.players[playerId].playerType == PLAYER_REAL_LOCAL) {
+            return scenario.players[playerId].characterId;
+        }
+    }
+
+    for (u32 i = 0; i < scenario.playerCount; ++i) {
+        if (scenario.players[i].playerType == PLAYER_REAL_LOCAL) {
+            return scenario.players[i].characterId;
+        }
+    }
+    return CHARACTER_NONE;
+}
+
 void DiscordRichPresence(Section* _this) {
     _this->Update();
     if (!Dolphin::IsEmulator()) {
@@ -58,10 +105,6 @@ void DiscordRichPresence(Section* _this) {
     float vr = 0, br = 0;
     u64 fc = 0;
 
-    // NULL TERMINATE PROPERLY AFTER EACH REFERENCE
-    // (WIP) THIS REFERENCE EXTENDS TO THE SAME REFERENCE
-    // IN THE BUFFER
-
     smallImageKey[0] = 0;
     smallImageText[0] = 0;
 
@@ -84,20 +127,9 @@ void DiscordRichPresence(Section* _this) {
         largeImageText = fcText;
     }
 
-    // ACCESS THE CURRENT CHARACTER SELECTED
-    // ONLY ASSUME SELECTED ONCE IN A RACE
-    // 
-    // IT IS NOW ASSUMED THAT THE PLAYER IDX
-    // IS MADE AVAILABLE UNDER RACE DATA - NOT INFO
-
-    Racedata* raceData = Racedata::sInstance;
-    if(raceData && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO))
-    {
-        const RacedataPlayer& player = raceData->menusScenario.players[0];
-        charID = player.characterId;
-        
-        switch (charID)
-        {
+    charID = GetFirstLocalRaceCharacter();
+    if (charID != CHARACTER_NONE) {
+        switch (charID) {
             case BABY_MARIO:
                 snprintf(smallImageKey, 32, "bmario");
                 snprintf(smallImageText, 32, "Baby Mario");
@@ -240,7 +272,8 @@ void DiscordRichPresence(Section* _this) {
                 snprintf(smallImageKey, 32, "mii_b");
                 snprintf(smallImageText, 32, "Mii (Outfit B)");
                 break;
-
+            default:
+                break;
         }
     }
 
@@ -258,7 +291,7 @@ void DiscordRichPresence(Section* _this) {
     const wchar_t* msg = Pulsar::UI::GetCustomMsg(bmgId);
     if (msg && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO)) {
         CleanBMGMessage(trackNameW, msg);
-        wcstombs(trackName, trackNameW, 32);
+        ConvertUTF16toUtf8(trackName, trackNameW, 32);
         state = trackName;
     }
 
@@ -323,6 +356,9 @@ void DiscordRichPresence(Section* _this) {
             details = "Watching a GP Replay";
             break;
         case SECTION_TT_REPLAY:
+        case SECTION_WATCH_GHOST_FROM_CHANNEL:
+        case SECTION_WATCH_GHOST_FROM_DOWNLOADS:
+        case SECTION_WATCH_GHOST_FROM_MENU:
             details = "Watching a TT Replay";
             break;
         case SECTION_P1_WIFI:

@@ -116,14 +116,6 @@ asmFunc AntiItemColCrash() {
 }
 kmCall(0x807A1A54, AntiItemColCrash);
 
-// Mii Outfit C Anti-Crash
-kmWrite8(0x8089089D, 0x00000062);
-kmWrite8(0x808908A9, 0x00000062);
-kmWrite8(0x808908E5, 0x00000062);
-kmWrite8(0x808908F1, 0x00000062);
-kmWrite8(0x8089092D, 0x00000062);
-kmWrite8(0x80890939, 0x00000062);
-
 // Item Spam Anti-Freeze [???]
 asmFunc ItemSpamAntiFreeze() {
     ASM(
@@ -163,6 +155,12 @@ kmWrite32(0x805a906c, 0x4E800020);
 // No VR/BR Loss on Disconnect [Bully]
 kmWrite32(0x80856560, 0x60000000);  // Disable VR loss
 kmWrite32(0x808565CC, 0x60000000);  // Disable BR loss
+
+// Remove 99999 Stat Caps for WFC Wins/Losses [Zeraora]
+kmWrite32(0x80545D2C, 0x48000008);
+kmWrite32(0x80545D64, 0x48000008);
+kmWrite32(0x8085C7F0, 0x48000008);
+kmWrite32(0x8085C818, 0x48000008);
 
 // Prevent Race End from Lack of Opponents in Battle [Zeraora, ZPL]
 kmWrite32(0x8053c710, 0x38000000);
@@ -215,6 +213,9 @@ kmCall(0x8057C3F8, StarOffroadFix);
 // Force player to not be penalized [B_squo]
 kmWrite32(0x80549898, 0x38600000);
 kmWrite32(0x8054989c, 0x4E800020);
+
+// Fix Bullet Bill speed dropping to 120 km/h after cannons [ZPL]
+kmWrite32(0x8057BBD4, 0xD3FD002C);
 
 // Deflicker when 480p [MKW-SP]
 asmFunc Deflicker() {
@@ -371,6 +372,19 @@ asmFunc burnoutIconFix() {
 }
 kmCall(0x807EB38C, burnoutIconFix);
 
+// Fix Pokey Not Respawning After Hit by POW While Dead [Ro]
+asmFunc pokeyDeathFix() {
+    ASM(
+        nofralloc;
+        loc_0x0:;
+        cmpwi r0, 0x1;
+        beq- loc_0xC;
+        cmpwi r0, 0x3;
+        loc_0xC:;
+        blr;)
+}
+kmCall(0x8077AC50, pokeyDeathFix);
+
 // Allow Pausing Before Race Starts [Sponge]
 kmWrite32(0x80856a28, 0x40810050);
 
@@ -438,8 +452,15 @@ asmFunc InvalidCameraPointerFix() {
 }
 kmCall(0x805ABE14, InvalidCameraPointerFix);
 
-// Texture Animation Fix in Multiplayer [ZPL]
-kmWrite32(0x80820768, 0x60000000);  // Object::LoadAnimations
-kmWrite32(0x80820ad8, 0x60000000);  // Object::LoadAnimationByType
+// Force Game Language to Default [ZPL]
+kmWrite32(0x8000ad10, 0x38600001);
+
+// Allow Looking Backwards During Respawn & Countdown [Ro & Gaberboo]
+kmWrite32(0x805A228C, 0x60000000);
+kmWrite32(0x805A225C, 0x38800001);
+
+// Rename CharacterSelectName [ZPL]
+kmWrite8(0x808acfdf, 'R');
+kmWrite8(0x808ad02b, 'R');
 
 }  // namespace Codes

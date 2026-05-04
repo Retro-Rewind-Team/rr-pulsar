@@ -84,6 +84,7 @@ enum OnlineSettings {
     RADIO_PREDICTIONREMOVAL = 1,
     RADIO_STREAMERMODE = 2,
     RADIO_INFINITEMATCHMAKINGTIMEOUT = 3,
+    RADIO_DISPLAYCUSTOMSKINS = 4
 };
 
 // 5) Sound
@@ -117,6 +118,7 @@ enum FriendRoom2Settings {
     RADIO_ITEMBOXRESPAWN = 2,
     RADIO_THUNDERCLOUD = 3,
     RADIO_FORCETRANSMISSION = 4,
+    RADIO_ALLITEMSCANLAND = 5,
     SCROLLER_STARTWORLDWIDE = 0 + 8,
     SCROLLER_ITEMMODE = 1 + 8,
     SCROLLER_TRACKSELECTION = 2 + 8,
@@ -147,9 +149,14 @@ enum ExtendedTeamsSettings {
 
 // 12) Misc
 enum MiscSettings {
-    SCROLLER_CUSTOMCHARACTER = 0 + 8,
-    SCROLLER_LANGUAGE = 1 + 8,
+    RADIO_LOOSEARCHIVEOVERRIDES = 0,
+    SCROLLER_LANGUAGE = 0 + 8,
     SCROLLER_WWMODE = 2 + 8,
+};
+
+enum LooseArchiveOverridesSetting {
+    LOOSEARCHIVEOVERRIDES_ENABLED = 0,
+    LOOSEARCHIVEOVERRIDES_DISABLED = 1
 };
 
 // 1) Race 1 values
@@ -270,6 +277,11 @@ enum MatchmakingTimeoutSetting {
     MATCHMAKINGTIMEOUT_INFINITE = 0x1
 };
 
+enum DisplayCustomSkins {
+    DISPLAYCUSTOMSKINS_ENABLED = 0x0,
+    DISPLAYCUSTOMSKINS_DISABLED = 0x1
+};
+
 // 5) Sound values
 enum CTMusic {
     CTMUSIC_ENABLED,
@@ -383,6 +395,11 @@ enum ForceTransmission {
     FORCE_TRANSMISSION_VANILLA
 };
 
+enum AllItemsCanLandSetting {
+    ALLITEMSCANLAND_DISABLED,
+    ALLITEMSCANLAND_ENABLED
+};
+
 // 9) OTT values
 enum OTTSettingOnline {
     OTTSETTING_ONLINE_DISABLED,
@@ -402,8 +419,8 @@ enum OTTSettingCombo {
 };
 
 enum OTTSettingUMTs {
-    OTTSETTING_UMTS_DISABLED,
-    OTTSETTING_UMTS_ENABLED
+    OTTSETTING_UMTS_ENABLED,
+    OTTSETTING_UMTS_DISABLED
 };
 
 // 10) KO values
@@ -444,11 +461,6 @@ enum ExtendedTeamsLine {
 };
 
 // 12) Misc values
-enum MenuSettingCustomCharacter {
-    CUSTOMCHARACTER_DISABLED = 0x0,
-    CUSTOMCHARACTER_ENABLED = 0x1
-};
-
 enum Language {
     LANGUAGE_ENGLISH,
     LANGUAGE_JAPANESE,

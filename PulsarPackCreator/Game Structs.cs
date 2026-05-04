@@ -412,6 +412,29 @@ public class PulsarGame
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    public struct CrashExtra
+    {
+        [Endian(Endianness.BigEndian)]
+        public uint version;
+        [Endian(Endianness.BigEndian)]
+        public int sectionId;
+        [Endian(Endianness.BigEndian)]
+        public int pageId;
+        [Endian(Endianness.BigEndian)]
+        public uint context;
+        [Endian(Endianness.BigEndian)]
+        public uint context2;
+        [Endian(Endianness.BigEndian)]
+        public uint flags;
+        [Endian(Endianness.BigEndian)]
+        public uint looseOverrideFileCount;
+        [Endian(Endianness.BigEndian)]
+        public uint myStuffState;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string lastTrackSzs;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
     public struct ExceptionFile
     {
         [Endian(Endianness.BigEndian)]
@@ -419,7 +442,7 @@ public class PulsarGame
         [Endian(Endianness.BigEndian)]
         public uint region;
         [Endian(Endianness.BigEndian)]
-        public uint reserved;
+        public uint version;
         [Endian(Endianness.BigEndian)]
         public uint error;
         [Endian(Endianness.BigEndian)]
@@ -440,6 +463,8 @@ public class PulsarGame
         public FPR fpscr;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10), Endian(Endianness.BigEndian)]
         public StackFrame[] frames;
+        [Endian(Endianness.BigEndian)]
+        public CrashExtra extra;
     }
 
 

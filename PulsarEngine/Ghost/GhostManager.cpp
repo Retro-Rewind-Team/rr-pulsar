@@ -279,7 +279,7 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
         const Timer& expert = this->GetExpert();
         if (expert.isActive && expert > entry.timer && system->GetInfo().HasTrophies()) {
             gotTrophy = true;
-            Settings::Mgr::sInstance->AddTrophy(CupsConfig::sInstance->GetCRC32(this->GetPulsarId()), system->ttMode);
+            Settings::Mgr::sInstance->AddTrophy(CupsConfig::sInstance->GetCRC32(this->GetPulsarId()), this->GetVariantIdx(), system->ttMode);
             this->leaderboard.AddTrophy();
         }
     }

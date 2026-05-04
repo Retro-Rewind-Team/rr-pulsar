@@ -51,6 +51,7 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         packetHolder.packet->lapKoElimCount = 0;
         memset(packetHolder.packet->lapKoElims, 0xFF, sizeof(packetHolder.packet->lapKoElims));
     }
+
 }
 kmCall(0x80655458, BeforeRH1Send);
 kmCall(0x806550e4, BeforeRH1Send);
@@ -71,7 +72,8 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
     else
         track = static_cast<CourseId>(packet->trackId);
     data->trackId = track;
-    memcpy(aidArrDest, &packet->aidsBelongingToPlayerIds[0], len);
+
+    memcpy(aidArrDest, &packet->aidsBelongingToPlayerIds[0], sizeof(packet->aidsBelongingToPlayerIds));
 }
 kmCall(0x806652d0, AfterRH1Reception);
 

@@ -1,6 +1,7 @@
 #include <kamek.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/Rating/RatingSync.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 
 namespace Pulsar {
@@ -13,7 +14,7 @@ void CheckVRAndLogin(wchar_t* miiName, int unk, void* callback, RKNet::Controlle
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys) {
         float vr = PointRating::GetUserVR(rksys->curLicenseId);
-        if (vr > 2150.67f) {
+        if (vr > 2587.67f) {
             block = true;
         }
     }
@@ -24,6 +25,12 @@ void CheckVRAndLogin(wchar_t* miiName, int unk, void* callback, RKNet::Controlle
         // State 7 is CONNECTIONSTATE_ERROR
         self->connectionState = static_cast<RKNet::ConnectionState>(7);
         return;
+    }
+
+    if (rksys != nullptr && rksys->curLicenseId < 4) {
+        const s32 profileId = rksys->licenses[rksys->curLicenseId].dwcAccUserData.gsProfileId;
+        PointRating::BindLicenseProfileId(rksys->curLicenseId, profileId);
+        PointRating::StartLoginRatingDownload(profileId, rksys->curLicenseId);
     }
 
     // Call original DWC_LoginAsync

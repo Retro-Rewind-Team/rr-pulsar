@@ -53,10 +53,10 @@ kmCall(0x80799808, SetStartingItem);
 static int MiiHeads(Racedata* racedata, u32 unused, u32 unused2, u8 id) {
     CharacterId charId = racedata->racesScenario.players[id].characterId;
     bool miiHeadFroom = ALLOW_MIIHEADS_ENABLED;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    bool isFroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    if (isFroom)
         miiHeadFroom = System::sInstance->IsContext(PULSAR_MIIHEADS) ? ALLOW_MIIHEADS_ENABLED : ALLOW_MIIHEADS_DISABLED;
-    }
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS) == MII_ENABLED) {
+    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS) == MII_ENABLED && isFroom) {
         if (miiHeadFroom == ALLOW_MIIHEADS_ENABLED) {
             if (charId < MII_M) {
                 if (id == 0)

@@ -12,6 +12,7 @@
 #include <UI/SelectStage/ExpVotePage.hpp>
 #include <AutoTrackSelect/ExpFroomMessages.hpp>
 #include <Settings/UI/ExpFroomPage.hpp>
+#include <Settings/UI/ExpMultiPlayer.hpp>
 #include <Settings/UI/ExpOptionsPage.hpp>
 #include <Settings/UI/ExpWFCMainPage.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
@@ -134,6 +135,11 @@ void ExpSection::CreatePulPages() {
             this->CreateAndInitPage(*this, CustomItemPage::id);
             this->CreateAndInitPage(*this, VRLeaderboardPage::id);
             break;
+        case SECTION_LOCAL_MULTIPLAYER:  // 0x54
+            this->CreateAndInitPage(*this, SettingsPanel::id);
+            this->CreateAndInitPage(*this, SettingsPageSelect::id);
+            this->CreateAndInitPage(*this, CustomItemPage::id);
+            break;
     }
     Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
     if (coursePage != nullptr) {
@@ -182,6 +188,9 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
             break;
         case PAGE_WFC_MODE_SELECT:
             page = new ExpWFCModeSel;
+            break;
+        case PAGE_MULTIPLAYER_MENU:
+            page = new ExpMultiPlayer;
             break;
         case PAGE_VR:
             page = new ExpVR;

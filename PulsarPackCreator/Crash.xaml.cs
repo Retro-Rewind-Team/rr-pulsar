@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace Pulsar_Pack_Creator
@@ -34,7 +35,8 @@ namespace Pulsar_Pack_Creator
 
         public void ImportCrash(byte[] raw)
         {
-            PulsarGame.ExceptionFile rawFile = PulsarGame.BytesToStruct<PulsarGame.ExceptionFile>(raw);
+            byte[] rawFileBytes = PadCrashData(raw, Marshal.SizeOf<PulsarGame.ExceptionFile>());
+            PulsarGame.ExceptionFile rawFile = PulsarGame.BytesToStruct<PulsarGame.ExceptionFile>(rawFileBytes);
             region = ((char)(byte)rawFile.region);
 
             PulsarGame.OSError error = (PulsarGame.OSError)rawFile.error;
@@ -44,7 +46,9 @@ namespace Pulsar_Pack_Creator
             else if (error == PulsarGame.OSError.OSERROR_FLOATING_POINT || error == PulsarGame.OSError.OSERROR_FPE) errorString = "Float";
             else errorString = $"{error}";
 
-            string crash = $"Error: {errorString}\nRegion: {region}\nSRR0: 0x{rawFile.srr0.gpr:X8} {CheckSymbols(rawFile.srr0.gpr)}\n" +
+            string crash = $"Error: {errorString}\nRegion: {region}";
+            crash += BuildCrashMetadata(rawFile);
+            crash += $"SRR0: 0x{rawFile.srr0.gpr:X8} {CheckSymbols(rawFile.srr0.gpr)}\n" +
                 $"SRR1: 0x{rawFile.srr1.gpr:X8}\nMSR:  0x{rawFile.msr.gpr:X8}\nCR:   0x{rawFile.cr.gpr:X8}\nLR:   0x{rawFile.lr.gpr:X8} {CheckSymbols(rawFile.lr.gpr)}";
             crash = crash + "\n\nGPRs";
             for (int i = 0; i < 8; i++)
@@ -75,6 +79,44 @@ namespace Pulsar_Pack_Creator
                 crash = crash + $"SP: 0x{rawFile.frames[i].sp:X8} LR: 0x{rawFile.frames[i].lr:X8} {CheckSymbols(rawFile.frames[i].lr)}";
             }
             CrashText.Text = crash;
+        }
+
+        private static byte[] PadCrashData(byte[] raw, int requiredSize)
+        {
+            if (raw.Length >= requiredSize) return (byte[])raw.Clone();
+            byte[] padded = new byte[requiredSize];
+            Buffer.BlockCopy(raw, 0, padded, 0, raw.Length);
+            return padded;
+        }
+
+        private static string BuildCrashMetadata(PulsarGame.ExceptionFile rawFile)
+        {
+            if (rawFile.extra.version < 2) return "\n";
+
+            string section = FormatNamedId(rawFile.extra.sectionId, CrashMetadataResolver.GetSectionName(rawFile.extra.sectionId));
+            string page = FormatNamedId(rawFile.extra.pageId, CrashMetadataResolver.GetPageName(rawFile.extra.pageId));
+            string lastTrackSzs = string.IsNullOrWhiteSpace(rawFile.extra.lastTrackSzs) ? "Unknown" : rawFile.extra.lastTrackSzs;
+            string contexts = CrashMetadataResolver.GetEnabledContexts(rawFile.extra.context, rawFile.extra.context2);
+            bool looseOverridesEnabled = (rawFile.extra.flags & 1u) != 0;
+            bool customCharacterEnabled = (rawFile.extra.flags & 2u) != 0;
+            bool hasPatchFiles = rawFile.extra.looseOverrideFileCount > 0;
+            string myStuff = GetMyStuffState(rawFile.extra.version, rawFile.extra.myStuffState);
+
+            return $"\n\nSection: {section}\nPage: {page}\nLast Track SZS: {lastTrackSzs}\nContexts: {contexts}\nCustom Character Enabled: {customCharacterEnabled}\nMy Stuff: {myStuff}\nPatches Enabled: {looseOverridesEnabled}\nPatches Folder Has Files: {hasPatchFiles} ({rawFile.extra.looseOverrideFileCount})\n\n";
+        }
+
+        private static string GetMyStuffState(uint version, uint myStuffState)
+        {
+            if (version < 3) return "Unknown";
+            if (myStuffState == 1) return "Enabled";
+            if (myStuffState == 2) return "Music Only";
+            return "Disabled";
+        }
+
+        private static string FormatNamedId(int id, string name)
+        {
+            if (id < 0) return "Unknown";
+            return string.IsNullOrWhiteSpace(name) ? $"0x{id:X}" : $"{name} (0x{id:X})";
         }
 
         private void OnDropFile(object sender, DragEventArgs e)

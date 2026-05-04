@@ -1,5 +1,6 @@
 #include <UI/CustomItems/CustomItemPage.hpp>
 #include <Settings/Settings.hpp>
+#include <Settings/SettingsParam.hpp>
 #include <Settings/SettingsBinary.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
@@ -50,7 +51,7 @@ CustomItemPage::CustomItemPage() {
     this->activePlayerBitfield = 1;
     this->controlSources = 2;
     this->prevPageId = static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT);
-    this->titleBmg = BMG_USERSETTINGSOFFSET + BMG_SETTINGS_TITLE + 12;
+    this->titleBmg = BMG_USERSETTINGSOFFSET + BMG_SETTINGS_TITLE + Settings::SETTINGSTYPE_ITEMS;
 
     this->buttons = new (RKSystem::mInstance.EGGSystem) PushButton[20];
 

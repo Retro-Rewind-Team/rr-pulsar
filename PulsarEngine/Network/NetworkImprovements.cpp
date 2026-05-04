@@ -1,11 +1,5 @@
 #include <kamek.hpp>
-#include <MarioKartWii/System/Identifiers.hpp>
-#include <MarioKartWii/Item/ItemManager.hpp>
-#include <MarioKartWii/Item/ItemBehaviour.hpp>
-#include <MarioKartWii/Item/Obj/ItemObjHolder.hpp>
-#include <MarioKartWii/Item/ItemPlayer.hpp>
-#include <MarioKartWii/Item/ItemSlot.hpp>
-#include <MarioKartWii/RKNet/ITEM.hpp>
+#include <MarioKartWii/RKNet/User.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -42,6 +36,26 @@ kmWrite16(0x800D771E, 3000);
 
 // Reduce NATNEG report retry delay from 1000ms to 500ms (addi r0, r3, 0x3e8 -> 0x1f4)
 kmWrite16(0x8011B6F6, 500);
+
+// Fix Ghost Player Bug [ImZeaora]
+kmWrite32(0x80662f5c, 0x60000000);
+
+static u32 sUserPacketRefreshCounter = 0;
+static void UserUpdateWithMiiRefresh(RKNet::USERHandler* handler) {
+    // Call the original Update implementation.
+    handler->Update();
+
+    // Once initialised, rebuild the send packet shortly after to pick up
+    // any Mii data that was not yet ready during Prepare().
+    // 300 frames @ 60 fps ≈ 5 seconds.
+    if (handler->isInitialized) {
+        sUserPacketRefreshCounter++;
+        if (sUserPacketRefreshCounter == 300) {
+            handler->CreateSendPacket();
+        }
+    }
+}
+kmCall(0x806579ac, UserUpdateWithMiiRefresh);
 
 }  // namespace Network
 }  // namespace Pulsar

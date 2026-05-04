@@ -27,6 +27,7 @@ class VRLeaderboardPage : public Page {
     PageId GetNextPage() const override;
     void OnInit() override;
     void OnActivate() override;
+    void OnDeactivate() override;
     void BeforeEntranceAnimations() override;
     void OnUpdate() override;
 
@@ -35,7 +36,7 @@ class VRLeaderboardPage : public Page {
     void OnBackButtonClick(PushButton& button, u32 hudSlotId);
     void ResetRowsToLoading();
     void ApplyResults();
-    void ApplyError(const char* msg);
+    void ApplyError();
 
     enum FetchState {
         FETCH_IDLE = 0,
@@ -60,7 +61,7 @@ class VRLeaderboardPage : public Page {
 
     static FetchState s_fetchState;
     static bool s_hasApplied;
-    static Entry s_entries[kMaxEntries];
+    static Entry* s_entries;
     static const u32 kResponseBufSize = 65536;
 
     CtrlMenuPageTitleText* titleText;

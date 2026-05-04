@@ -121,6 +121,8 @@ class CupsConfig {
     u32 definedCTsCupCount;  // 0x14
     u32 ctsCupCount;  // 0x18
     u16 trophyCount[4];  // 0x1c
+    u16 retroTrophyCount[4];
+    u16 ctOnlyTrophyCount[4];
 
     u32 retroCupCount;
     u32 ctOnlyCupCount;

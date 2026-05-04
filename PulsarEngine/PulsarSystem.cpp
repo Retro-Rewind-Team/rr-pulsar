@@ -93,14 +93,9 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         type = IOType_RIIVO;
         IOS::Close(ret);
     } else if (IsNewChannel() && !isDolphin) {
-        NewChannel_SetLoadedFromRRFlag();
         type = IOType_SD;
-    } else {
-        ret = IO::OpenFix("/dev/dolphin", IOS::MODE_NONE);
-        if (isDolphin) {
-            type = IOType_DOLPHIN;
-            IOS::Close(ret);
-        }
+    } else if (isDolphin) {
+        type = IOType_DOLPHIN;
     }
 
     if (ShouldForceNandIoSaves()) {
@@ -118,7 +113,11 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     CupsConfig::sInstance = new CupsConfig(rtCups, ctCups, btCups);
     this->info.Init(confRT.GetSection<InfoHolder>().info);
     this->InitIO(type);
-    this->InitSettings(&rtCups.trophyCount[0]);
+    this->InitSettings(&CupsConfig::sInstance->trophyCount[0]);
+
+    if(IsNewChannel()) {
+        NewChannel_Init();
+    }
 
     u32 rtTrackCount = rtCups.ctsCupCount * 4;
     u32 ctTrackCount = ctCups.ctsCupCount * 4;
@@ -209,11 +208,7 @@ void System::InitIO(IOType type) const {
         Debug::FatalError(path);
     }
     char ghostPath[IOS::ipcMaxPath];
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsRT");
-    io->CreateFolder(ghostPath);
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsCT");
-    io->CreateFolder(ghostPath);
-    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/GhostsBT");
+    snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/Ghosts");
     io->CreateFolder(ghostPath);
 }
 #pragma suppress_warnings reset
@@ -253,7 +248,7 @@ void System::UpdateContext() {
     bool isKO = false;
     bool isOTT = false;
     bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
-    bool is500 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) == HOSTCC_500;
+    bool is500 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) == HOSTCC_500 && isFroom;
     bool isOTTOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
     bool isMiiHeads = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS);
     bool is200Online = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
@@ -278,6 +273,7 @@ void System::UpdateContext() {
     bool isTransmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE && isFroom;
     bool isTransmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE && isFroom;
     bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && isFroom;
+    bool isAllItemsCanLand = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
@@ -324,6 +320,7 @@ void System::UpdateContext() {
                 isOTTOnline |= newContext & (1 << PULSAR_MODE_OTT);
                 isMiiHeads = newContext2 & (1 << PULSAR_MIIHEADS);
                 isThunderCloud = newContext & (1 << PULSAR_THUNDERCLOUD);
+                isAllItemsCanLand = newContext2 & (1 << PULSAR_ALLITEMSCANLAND);
                 isItemBoxRepsawnFast = newContext2 & (1 << PULSAR_ITEMBOXRESPAWN);
                 isTransmissionInside = newContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
                 isTransmissionOutside = newContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
@@ -354,7 +351,7 @@ void System::UpdateContext() {
         isOTT = (mode == MODE_GRAND_PRIX || mode == MODE_VS_RACE) ? (ottOffline != OTTSETTING_OFFLINE_DISABLED) : false;  // offlineOTT
         if (isOTT) {
             isFeather &= (ottOffline == OTTSETTING_OFFLINE_FEATHER);
-            isUMTs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS);
+            isUMTs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED;
         }
     }
     this->netMgr.hostContext = newContext;
@@ -392,6 +389,7 @@ void System::UpdateContext() {
                             (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
                             (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN |
                             (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
+                            (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND |
                             (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
                             (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR;
     }
@@ -571,7 +569,7 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 69);
+kmWrite32(0x800017D4, 610);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";

@@ -13,6 +13,7 @@
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -32,6 +33,13 @@ ExpVR::ExpVR() : comboButtonState(0) {
 }
 
 kmWrite32(0x8064a61c, 0x60000000);  // nop initControlGroup
+
+static CountDown* GetSelectStageCountdown() {
+    const Section* curSection = SectionMgr::sInstance->curSection;
+    Pages::SELECTStageMgr* selectStageMgr = curSection->Get<Pages::SELECTStageMgr>();
+    if (selectStageMgr == nullptr) return nullptr;
+    return &selectStageMgr->countdown;
+}
 
 kmWrite24(0x808998b3, 'PUL');  // WifiMemberConfirmButton -> PULiMemberConfirmButton
 void ExpVR::OnInit() {
@@ -140,16 +148,20 @@ static void RandomizeCombo() {
         sectionParams->karts[hudId] = kart;
         sectionParams->combos[hudId].selCharacter = character;
         sectionParams->combos[hudId].selKart = kart;
+        CustomCharacters::RandomizeSelectedCharacterTable(character);
 
         ExpCharacterSelect* charSelect = section->Get<ExpCharacterSelect>();  // guaranteed to exist on this page
         charSelect->randomizedCharIdx[hudId] = character;
         charSelect->rolledCharIdx[hudId] = character;
         charSelect->rouletteCounter = ExpVR::randomDuration;
+        charSelect->timer = nullptr;
+        charSelect->ctrlMenuCharSelect.timer = nullptr;
         charSelect->ctrlMenuCharSelect.selectedCharacter = character;
         charSelect->controlsManipulatorManager.inaccessible = true;
         ExpBattleKartSelect* battleKartSelect = section->Get<ExpBattleKartSelect>();
         if (battleKartSelect != nullptr) {
             battleKartSelect->selectedKart = random.NextLimited(2);
+            battleKartSelect->timer = nullptr;
             battleKartSelect->controlsManipulatorManager.inaccessible = true;
         }
 
@@ -158,12 +170,14 @@ static void RandomizeCombo() {
             kartSelect->rouletteCounter = ExpVR::randomDuration;
             kartSelect->randomizedKartPos = randomizedKartPos;
             kartSelect->rolledKartPos = randomizedKartPos;
+            kartSelect->timer = nullptr;
             kartSelect->controlsManipulatorManager.inaccessible = true;
         }
 
         ExpMultiKartSelect* multiKartSelect = section->Get<ExpMultiKartSelect>();
         if (multiKartSelect != nullptr) {
             multiKartSelect->rouletteCounter = ExpVR::randomDuration;
+            multiKartSelect->timer = nullptr;
             multiKartSelect->rolledKartPos[0] = randomizedKartPos;
             u32 options = 12;
             if (kartRest == KART_KARTONLY) {
@@ -256,6 +270,15 @@ void ExpVR::AfterControlUpdate() {
     }
 }
 
+void ExpVR::BeforeExitAnimations() {
+    VR::BeforeExitAnimations();
+}
+
+void ExpVR::OnDeactivate() {
+    VR::OnDeactivate();
+    CustomCharacters::RestoreVotingMenuDriverModels();
+}
+
 void ExpVR::OnResume() {
     if (this->areControlsHidden) this->areControlsHidden = false;
     this->shouldRestoreControls = true;
@@ -317,6 +340,12 @@ void ExpCharacterSelect::BeforeControlUpdate() {
     // CtrlMenuCharacterSelect::ButtonDriver* array = this->ctrlMenuCharSelect.driverButtonsArray;
 
     const s32 roulette = this->rouletteCounter;
+    CountDown* timer = GetSelectStageCountdown();
+    this->timer = timer;
+    if (roulette == -1)
+        this->ctrlMenuCharSelect.timer = timer;
+    else
+        this->ctrlMenuCharSelect.timer = nullptr;
     bool charRestrictLight = Pulsar::CHAR_DEFAULTSELECTION;
     bool charRestrictMid = Pulsar::CHAR_DEFAULTSELECTION;
     bool charRestrictHeavy = Pulsar::CHAR_DEFAULTSELECTION;
@@ -378,6 +407,10 @@ ExpBattleKartSelect::ExpBattleKartSelect() : selectedKart(-1) {}
 
 void ExpBattleKartSelect::BeforeControlUpdate() {
     const s32 kart = this->selectedKart;
+    if (kart >= 0)
+        this->timer = nullptr;
+    else
+        this->timer = GetSelectStageCountdown();
     if (kart >= 0 && this->currentState == 0x4) {
         this->controlsManipulatorManager.inaccessible = true;
         this->selectedKart = -1;
@@ -394,6 +427,10 @@ ExpKartSelect::ExpKartSelect() : randomizedKartPos(-1), rolledKartPos(-1), roule
 
 void ExpKartSelect::BeforeControlUpdate() {
     s32 roulette = this->rouletteCounter;
+    if (roulette == -1)
+        this->timer = GetSelectStageCountdown();
+    else
+        this->timer = nullptr;
     bool kartRest = Pulsar::KART_DEFAULTSELECTION;
     bool bikeRest = Pulsar::KART_DEFAULTSELECTION;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
@@ -459,6 +496,10 @@ ExpMultiKartSelect::ExpMultiKartSelect() : rouletteCounter(-1) {
 void ExpMultiKartSelect::BeforeControlUpdate() {
     Random random;
     const s32 roulette = this->rouletteCounter;
+    if (roulette == -1)
+        this->timer = GetSelectStageCountdown();
+    else
+        this->timer = nullptr;
     if (roulette > 0) {
         this->rouletteCounter--;
         this->controlsManipulatorManager.inaccessible = true;

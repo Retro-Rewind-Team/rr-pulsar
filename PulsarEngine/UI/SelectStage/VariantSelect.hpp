@@ -42,6 +42,7 @@ class VariantSelect : public Pages::CourseSelect {
     void OnInit() override;
     void OnBackPress(u32 hudSlotId);
     void OnBackButtonClick(PushButton& button, u32 hudSlotId);
+    void OnVariantButtonSelect(PushButton& button, u32 hudSlotId);
     u32 GetVariantIndexForButton(const PushButton& button) const;
     void SetBaseRowIdx(u8 rowIdx);
 
@@ -49,13 +50,16 @@ class VariantSelect : public Pages::CourseSelect {
     void PopulateVariantButtons();
     void ApplyVariantButtonState();
     void ResetVariantButtonState();
+    void UpdateBottomText();
     void ToggleCourseSelectDecor(bool hidden);
     PulsarId selectedPulsarId;
     u8 baseRowIdx;
+    u8 highlightedVariantIdx;
     u8 variantButtonVariants[4];
     wchar_t variantButtonNames[4][128];
     bool variantButtonsPopulated;
     PtmfHolder_2A<VariantSelect, void, PushButton&, u32> onBackClickHandler;
+    PtmfHolder_2A<VariantSelect, void, PushButton&, u32> onVariantButtonSelectHandler;
 };
 
 }  // namespace UI

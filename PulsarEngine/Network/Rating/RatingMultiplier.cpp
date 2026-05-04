@@ -96,7 +96,7 @@ float GetMultiplier() {
 
     // Weekend VR multiplier (1.5x) for the active region
     u8 currentRegion = System::sInstance->netMgr.region;
-    if (IsWeekendMultiplierActiveForRegion(currentRegion)) {
+    if (IsWeekendMultiplierActiveForRegion(currentRegion) || (sdt->month == 4 && sdt->day == 1)) {
         base *= 1.5f;
     }
 #ifdef BETA

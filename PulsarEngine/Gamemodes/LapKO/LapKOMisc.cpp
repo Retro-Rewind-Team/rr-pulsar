@@ -161,5 +161,49 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
 }
 kmCall(0x807ba160, DecideItemHook);
 
+// Fix Lap Counter Color in LapKO [Saucy]
+extern "C" void LapCounterColorFixHelper(CtrlRaceBase* self) {
+    System* system = System::sInstance;
+    if (self == nullptr) return;
+    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return;
+
+    const char* leftPane = nullptr;
+    if (self->layout.GetPaneByName("lap_lefft") != nullptr) {
+        leftPane = "lap_lefft";
+    } else if (self->layout.GetPaneByName("lap_left") != nullptr) {
+        leftPane = "lap_left";
+    }
+
+    const char* rightPane = nullptr;
+    if (self->layout.GetPaneByName("lap_riighter") != nullptr) {
+        rightPane = "lap_riighter";
+    } else if (self->layout.GetPaneByName("lap_right") != nullptr) {
+        rightPane = "lap_right";
+    }
+
+    if (leftPane != nullptr) self->HudSlotColorEnable(leftPane, true);
+    if (rightPane != nullptr) self->HudSlotColorEnable(rightPane, true);
+}
+
+asmFunc LapCounterColorFix() {
+    ASM(
+        nofralloc;
+        stwu sp, -0x10(sp);
+        mflr r0;
+        stw r0, 0x14(sp);
+
+        mr r3, r28;
+        bl LapCounterColorFixHelper;
+
+        lwz r0, 0x14(sp);
+        mtlr r0;
+        addi sp, sp, 0x10;
+
+        mr r3, r28;
+        blr;
+    )
+}
+kmCall(0x807EF7E8, LapCounterColorFix);
+
 }  // namespace LapKO
 }  // namespace Pulsar

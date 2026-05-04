@@ -1,4 +1,5 @@
 #include <UI/PlayerCount.hpp>
+#include <Settings/Settings.hpp>
 
 // Callbacks that can occur during server browsing operations
 typedef enum {
@@ -106,6 +107,36 @@ static ServerBrowser playerCntSB = nullptr;
 static bool isHookedRequest = false;
 static float hookLocalTimer = 0.0f;
 static bool hasRKNetRequestFinished = true;
+
+static bool IsCompetitiveMatchmakingEnabled() {
+    const u8 timeoutSetting = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+        Pulsar::Settings::SETTINGSTYPE_ONLINE,
+        Pulsar::RADIO_INFINITEMATCHMAKINGTIMEOUT);
+    return timeoutSetting == Pulsar::MATCHMAKINGTIMEOUT_INFINITE;
+}
+
+static const char* GetCompetitiveServerFilter(const char* serverFilter, char* expandedFilter, u32 filterSize) {
+    if (!IsCompetitiveMatchmakingEnabled() || serverFilter == nullptr) return serverFilter;
+
+    const char* suspendNeedle = "dwc_suspend = 0";
+    const char* suspendPos = strstr(serverFilter, suspendNeedle);
+    if (suspendPos == nullptr || strstr(serverFilter, "dwc_hoststate") == nullptr || strstr(serverFilter, "dwc_pid !=") == nullptr) {
+        return serverFilter;
+    }
+
+    const int prefixLength = suspendPos - serverFilter;
+    const char* suffix = suspendPos + strlen(suspendNeedle);
+    const int written = snprintf(
+        expandedFilter,
+        filterSize,
+        "%.*s(dwc_suspend = 0 or numplayers < 11)%s",
+        prefixLength,
+        serverFilter,
+        suffix);
+    if (written <= 0 || written >= static_cast<int>(filterSize)) return serverFilter;
+
+    return expandedFilter;
+}
 
 static int RR_numPlayers150cc = 0;
 static int RR_numPlayersCT = 0;
@@ -302,13 +333,16 @@ int hook_ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
     if (!hasEV) newFields[newNumFields++] = 0x65;
     if (!hasEB) newFields[newNumFields++] = 0x66;
 
+    char expandedFilter[0x100];
+    const char* updatedServerFilter = GetCompetitiveServerFilter(serverFilter, expandedFilter, sizeof(expandedFilter));
+
     int res = ServerBrowserLimitUpdateA(
         sb,
         async,
         disconnectOnComplete,
         newFields,
         newNumFields,
-        serverFilter,
+        updatedServerFilter,
         maxServers);
 
     return res;

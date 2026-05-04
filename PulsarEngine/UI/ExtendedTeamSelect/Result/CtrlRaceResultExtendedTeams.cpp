@@ -1,4 +1,5 @@
 #include <UI/ExtendedTeamSelect/Result/CtrlRaceResultExtendedTeams.hpp>
+#include <CustomCharacters.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 
@@ -80,8 +81,10 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
                 info.miis[0] = miiGroup.GetMii(playerId);
                 this->items[i].SetTextBoxMessage("mii_name", BMG_MII_NAME, &info);
             } else {
-                u32 characterBmg = GetCharacterBMGId(characterId, true);
-                this->items[i].SetTextBoxMessage("mii_name", characterBmg, nullptr);
+                if (!CustomCharacters::SetRaceNameTextIfCustom(this->items[i], "mii_name", playerId)) {
+                    u32 characterBmg = GetCharacterBMGId(characterId, true);
+                    this->items[i].SetTextBoxMessage("mii_name", characterBmg, nullptr);
+                }
             }
         } else {
             info.miis[0] = miiGroup.GetMii(playerId);

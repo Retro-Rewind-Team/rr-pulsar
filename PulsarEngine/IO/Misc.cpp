@@ -6,7 +6,7 @@
 
 namespace Pulsar {
 
-// Adds a 3rd UI (menu or race) and a 3rd common to the relevant archive holders, which will contain custom pulsar assets
+// Adds extra archives to Common and UI holders for custom Pulsar assets
 kmWrite32(0x8052a108, 0x38800003);  // Add one archive to CommonArchiveHolder
 kmWrite32(0x8052a188, 0x38800004);  // Add one archive to UIArchiveHolder
 void LoadAssetsFile(ArchiveFile* file, const char* path, EGG::Heap* decompressedHeap, bool isCompressed, s32 allocDirection,

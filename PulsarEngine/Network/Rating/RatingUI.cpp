@@ -57,18 +57,25 @@ static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool 
     return (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
 }
 
+static void FormatRatingDigits(float rating, wchar_t* buf) {
+    int rInt = (int)rating;
+    int rDec = (int)((rating - (float)rInt) * 100.0f + 0.5f);
+    if (rDec >= 100) {
+        rInt++;
+        rDec -= 100;
+    }
+    if (rDec < 0) rDec = -rDec;
+    if (rInt == 0) swprintf(buf, 64, L"%d", rDec);
+    else swprintf(buf, 64, L"%d%02d", rInt, rDec);
+}
+
 static void FormatRatingText(float rating, bool hasDecimal, wchar_t* buf, Text::Info* info, u32* valMsg, u32* unitMsg, u32 unitId) {
     if ((u16)rating == 0xffff) {
         *valMsg = 0x25e7;
         return;
     }
     if (hasDecimal) {
-        int rInt = (int)rating;
-        int rDec = (int)((rating - (float)rInt) * 100.0f + 0.5f);
-        if (rDec >= 100) { rInt++; rDec -= 100; }
-        if (rDec < 0) rDec = -rDec;
-        if (rInt == 0) swprintf(buf, 64, L"%d", rDec);
-        else swprintf(buf, 64, L"%d%02d", rInt, rDec);
+        FormatRatingDigits(rating, buf);
         info->strings[0] = buf;
         *valMsg = UI::BMG_TEXT;
     } else {
@@ -132,6 +139,41 @@ static void FillVRControl(Pages::VR* page, u32 idx, u32 playerId, u32 team, u8 t
     sh.PlayAnimationAtFrame(frame, 0.0f);
 }
 kmBranch(0x8064ab08, FillVRControl);
+
+static void FillWFCRecordsControl(Page* /*page*/, int row, LayoutUIControl* control) {
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    RKSYS::LicenseMgr* license = nullptr;
+    if (rksys && rksys->curLicenseId >= 0) {
+        license = &rksys->licenses[rksys->curLicenseId];
+    }
+
+    control->SetTextBoxMessage("menu_text", row + 0x2020);
+
+    if (license && (row == 0 || row == 2)) {
+        const float rating = (row == 0) ? GetUserVR(rksys->curLicenseId) : GetUserBR(rksys->curLicenseId);
+        wchar_t buf[64];
+        Text::Info info;
+        FormatRatingDigits(rating, buf);
+        info.strings[0] = buf;
+        control->SetTextBoxMessage("score", UI::BMG_TEXT, &info);
+        return;
+    }
+
+    Text::Info info;
+    if (row == 0) {
+        info.intToPass[0] = license ? license->vr.points : 0;
+    } else if (row == 1) {
+        info.intToPass[0] = license ? license->wFCVSWins : 0;
+        info.intToPass[1] = license ? license->wFCVSLosses : 0;
+    } else if (row == 2) {
+        info.intToPass[0] = license ? license->br.points : 0;
+    } else if (row == 3) {
+        info.intToPass[0] = license ? license->wFCBattleWins : 0;
+        info.intToPass[1] = license ? license->wFCBattleLosses : 0;
+    }
+    control->SetTextBoxMessage("score", row + 0x2052, &info);
+}
+kmBranch(0x8085fc0c, FillWFCRecordsControl);
 
 }  // namespace PointRating
 }  // namespace Pulsar

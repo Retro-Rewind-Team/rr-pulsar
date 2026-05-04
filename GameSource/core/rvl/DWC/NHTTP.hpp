@@ -1,6 +1,3 @@
-#ifndef _NHTTP_
-#define _NHTTP_
-
 #include <types.hpp>
 
 s32 NHTTPStartup(void* alloc, void* free, u32 param_3);
@@ -17,5 +14,3 @@ s32 NHTTPDestroyResponse(void* response);
 s32 NHTTPSetRootCADefault();
 s32 NHTTPSetClientCertDefault();
 s32 NHTTPSetVerifyOption(u32 option);
-
-#endif
