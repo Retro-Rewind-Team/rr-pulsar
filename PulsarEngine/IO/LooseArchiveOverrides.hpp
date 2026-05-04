@@ -36,6 +36,8 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
 
 bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 archiveBaseLowerSize);
 
+bool HasStructuralLooseOverrides(const char* archiveBaseLower);
+
 bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize, EGG::Heap* sourceHeap,
                          EGG::Heap*& archiveHeap, u32* outAppliedOverrides, u32* outPatchedNodes,
                          u32* outMissingOverrides, const u8* compressedData);
