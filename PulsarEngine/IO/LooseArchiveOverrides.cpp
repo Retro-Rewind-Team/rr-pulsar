@@ -55,8 +55,7 @@ namespace {
 //main patch folder
 const char kModsRoot[] = "/patches";
 const char kModsRootPrefix[] = "/patches/";
-//max mods allowed, can be increased maybe but for now if someone has more than 1024 overrides they deserve to have some not work ;/
-const u32 kMaxOverridesTotal = 1024;
+const u32 kMaxOverridesTotal = 4096;
 const u32 kBRSAROverrideSlotCount = 1024;
 const u32 kOverrideMaxGrowthOnSourceHeap = 0x100000;
 const u32 kInvalidPoolOffset = 0xFFFFFFFFu;
@@ -64,7 +63,8 @@ const u16 kInvalidScratchIndex16 = 0xFFFFu;
 
 enum OverrideEntryFlags {
     OVERRIDEENTRYFLAG_NONE = 0,
-    OVERRIDEENTRYFLAG_HAS_SUBPATH = (1 << 0)
+    OVERRIDEENTRYFLAG_HAS_SUBPATH = (1 << 0),
+    OVERRIDEENTRYFLAG_IS_DELETE = (1 << 1)
 };
 
 struct TaggedOverrideEntry {
@@ -174,6 +174,25 @@ struct FSTEntry {
     u32 typeName;
     u32 offset;
     u32 size;
+};
+
+struct PendingStructuralAddCandidate {
+    u16 parentDirIndex;
+    u16 overrideIndex;
+};
+
+struct PendingStructuralAdd {
+    u16 parentDirIndex;
+    u16 overrideIndex;
+    u32 pathOffset;
+    u32 nameOffset;
+};
+
+struct StructuralChildRef {
+    u32 oldNodeIndex;
+    u32 addedFileIndex;
+    const char* name;
+    bool isAddedFile;
 };
 
 static OverrideDatabase sOverrideDatabase = {nullptr, 0, nullptr, nullptr, 0, 0, nullptr, 0, 0,
@@ -302,6 +321,8 @@ static s32 CompareWholeFileBasenames(const char* lhs, const char* rhs) {
 static bool DecodeOverrideRelativePath(char* dest, u32 destSize, const char* src);
 static bool TryParseArchiveTag(const char* relativePath, char* strippedName, u32 strippedNameSize,
                                char* archiveTagLower, u32 archiveTagLowerSize);
+static bool ExtractTaggedOverrideMetadata(const char* relativePath, char* strippedName, u32 strippedNameSize,
+                                          char* archiveTagLower, u32 archiveTagLowerSize, bool& outIsDelete);
 static bool BuildOverridePathWithRoot(const char* root, const char* name, const char* tag, char* outPath, u32 outSize);
 
 static u32 HashLowerCaseString(const char* name) {
@@ -343,11 +364,13 @@ static bool GetTaggedEntryMatchName(const TaggedOverrideEntry& entry, char* outN
 
     char decodedPath[OVERRIDE_MAX_PATH];
     char archiveTagLower[OVERRIDE_MAX_NAME];
+    bool isDelete = false;
     if (!DecodeStoredOverrideRelativePath(entry.sourcePathOffset, decodedPath, sizeof(decodedPath))) {
         outName[0] = '\0';
         return false;
     }
-    return TryParseArchiveTag(decodedPath, outName, outNameSize, archiveTagLower, sizeof(archiveTagLower));
+    return ExtractTaggedOverrideMetadata(decodedPath, outName, outNameSize, archiveTagLower, sizeof(archiveTagLower),
+                                         isDelete);
 }
 
 static bool GetWholeFileEntryBasenameLower(const WholeFileOverrideEntry& entry, char* outBasename, u32 outSize) {
@@ -670,6 +693,26 @@ static void CopyPath(char* dest, u32 destSize, const char* src) {
     dest[destSize - 1] = '\0';
 }
 
+static bool StripDeleteSuffixInPlace(char* path) {
+    if (path == nullptr) return false;
+    const size_t len = strlen(path);
+    static const char kDeleteSuffix[] = ".delete";
+    const size_t suffixLen = sizeof(kDeleteSuffix) - 1;
+    if (len < suffixLen) return false;
+
+    char* tail = path + (len - suffixLen);
+    for (size_t i = 0; i < suffixLen; ++i) {
+        char a = tail[i];
+        char b = kDeleteSuffix[i];
+        if (a >= 'A' && a <= 'Z') a = static_cast<char>(a - 'A' + 'a');
+        if (b >= 'A' && b <= 'Z') b = static_cast<char>(b - 'A' + 'a');
+        if (a != b) return false;
+    }
+
+    tail[0] = '\0';
+    return true;
+}
+
 static bool DecodeOverrideRelativePath(char* dest, u32 destSize, const char* src) {
     if (dest == nullptr || destSize == 0) return false;
     if (src == nullptr) {
@@ -715,6 +758,17 @@ static bool DecodeOverrideRelativePath(char* dest, u32 destSize, const char* src
 
     dest[writeIdx] = '\0';
     return true;
+}
+
+static bool ExtractTaggedOverrideMetadata(const char* relativePath, char* strippedName, u32 strippedNameSize,
+                                          char* archiveTagLower, u32 archiveTagLowerSize, bool& outIsDelete) {
+    outIsDelete = false;
+    if (!TryParseArchiveTag(relativePath, strippedName, strippedNameSize, archiveTagLower, archiveTagLowerSize)) {
+        return false;
+    }
+
+    outIsDelete = StripDeleteSuffixInPlace(strippedName);
+    return strippedName[0] != '\0';
 }
 
 static void SetModsRootPath(const char* path) {
@@ -1282,8 +1336,10 @@ static bool FillTaggedOverrideEntry(OverrideDatabase& database, TaggedOverrideEn
     char decodedPath[OVERRIDE_MAX_PATH];
     char strippedName[OVERRIDE_MAX_PATH];
     char archiveTagLower[OVERRIDE_MAX_NAME];
+    bool isDelete = false;
     if (!DecodeOverrideRelativePath(decodedPath, sizeof(decodedPath), relativePath) ||
-        !TryParseArchiveTag(decodedPath, strippedName, sizeof(strippedName), archiveTagLower, sizeof(archiveTagLower))) {
+        !ExtractTaggedOverrideMetadata(decodedPath, strippedName, sizeof(strippedName), archiveTagLower,
+                                       sizeof(archiveTagLower), isDelete)) {
         return false;
     }
 
@@ -1294,6 +1350,7 @@ static bool FillTaggedOverrideEntry(OverrideDatabase& database, TaggedOverrideEn
     entry.size = size;
     entry.tagId = tagId;
     entry.flags = (strchr(strippedName, '/') != nullptr) ? OVERRIDEENTRYFLAG_HAS_SUBPATH : OVERRIDEENTRYFLAG_NONE;
+    if (isDelete) entry.flags |= OVERRIDEENTRYFLAG_IS_DELETE;
     return true;
 }
 
@@ -1362,8 +1419,9 @@ static void AddTaggedEntry(ScanBuildState& state, u32 maxCount, const char* rela
 
     char strippedName[OVERRIDE_MAX_PATH];
     char archiveTagLower[OVERRIDE_MAX_NAME];
-    if (!TryParseArchiveTag(relativePath, strippedName, sizeof(strippedName),
-                            archiveTagLower, sizeof(archiveTagLower))) {
+    bool isDelete = false;
+    if (!ExtractTaggedOverrideMetadata(relativePath, strippedName, sizeof(strippedName),
+                                       archiveTagLower, sizeof(archiveTagLower), isDelete)) {
         return;
     }
     // Reject loose raw-file overrides for these resource types, even if they target an archive member.
@@ -2041,7 +2099,6 @@ static bool IsFileExtensionSZS(const char* path) {
     return EndsWithIgnoreCase(path, ".szs");
 }
 
-
 // Ghidra references for DVDConvertPathToEntrynum (8015df4c) show the path-based DVD
 // loaders that bypass ArchiveFile entirely:
 // - 800910b4: nw4r::snd::DVDSoundArchive::Open
@@ -2070,6 +2127,679 @@ static u32 GetFileDataStart(const ARC::Header* header) {
     u32 dataStart = header->fileOffset;
     if (dataStart < metaEnd) dataStart = metaEnd;
     return nw4r::ut::RoundUp(dataStart, 0x20);
+}
+
+static bool BuildStructuralAddedFiles(const PendingStructuralAddCandidate* candidates, u32 candidateCount,
+                                      PendingStructuralAdd*& outAddedFiles, u32& outAddedFileCount,
+                                      char*& outPathPool, u32& outPathPoolSize, u32& outAddedNameBytes,
+                                      u32 oldStringTableSize, EGG::Heap* heap) {
+    outAddedFiles = nullptr;
+    outAddedFileCount = 0;
+    outPathPool = nullptr;
+    outPathPoolSize = 0;
+    outAddedNameBytes = 0;
+    if (candidateCount == 0) return true;
+    if (heap == nullptr) return false;
+
+    u32 uniqueCount = 0;
+    u32 pathBytes = 0;
+    u32 nameBytes = 0;
+    char previousPath[OVERRIDE_MAX_PATH];
+    previousPath[0] = '\0';
+    u16 previousParent = kInvalidScratchIndex16;
+    bool hasPrevious = false;
+
+    for (u32 i = 0; i < candidateCount; ++i) {
+        const PendingStructuralAddCandidate& candidate = candidates[i];
+        char matchName[OVERRIDE_MAX_PATH];
+        if (!GetTaggedEntryMatchName(sOverrideDatabase.taggedEntries[candidate.overrideIndex], matchName, sizeof(matchName)) ||
+            matchName[0] == '\0') {
+            continue;
+        }
+
+        const char* basename = FindBasename(matchName);
+        if (basename == nullptr || basename[0] == '\0') continue;
+
+        if (hasPrevious && previousParent == candidate.parentDirIndex && strcmp(previousPath, matchName) == 0) {
+            continue;
+        }
+
+        pathBytes += static_cast<u32>(strlen(matchName)) + 1;
+        nameBytes += static_cast<u32>(strlen(basename)) + 1;
+        CopyPath(previousPath, sizeof(previousPath), matchName);
+        previousParent = candidate.parentDirIndex;
+        hasPrevious = true;
+        ++uniqueCount;
+    }
+
+    if (uniqueCount == 0) return true;
+
+    PendingStructuralAdd* addedFiles = EGG::Heap::alloc<PendingStructuralAdd>(sizeof(PendingStructuralAdd) * uniqueCount,
+                                                                              0x20, heap);
+    char* pathPool = EGG::Heap::alloc<char>(pathBytes, 0x20, heap);
+    if (addedFiles == nullptr || pathPool == nullptr) {
+        if (addedFiles != nullptr) EGG::Heap::free(addedFiles, heap);
+        if (pathPool != nullptr) EGG::Heap::free(pathPool, heap);
+        return false;
+    }
+
+    uniqueCount = 0;
+    pathBytes = 0;
+    nameBytes = 0;
+    previousPath[0] = '\0';
+    previousParent = kInvalidScratchIndex16;
+    hasPrevious = false;
+
+    for (u32 i = 0; i < candidateCount; ++i) {
+        const PendingStructuralAddCandidate& candidate = candidates[i];
+        char matchName[OVERRIDE_MAX_PATH];
+        if (!GetTaggedEntryMatchName(sOverrideDatabase.taggedEntries[candidate.overrideIndex], matchName, sizeof(matchName)) ||
+            matchName[0] == '\0') {
+            continue;
+        }
+
+        const char* basename = FindBasename(matchName);
+        if (basename == nullptr || basename[0] == '\0') continue;
+
+        if (hasPrevious && previousParent == candidate.parentDirIndex && strcmp(previousPath, matchName) == 0) {
+            addedFiles[uniqueCount - 1].overrideIndex = candidate.overrideIndex;
+            continue;
+        }
+
+        const u32 fullLen = static_cast<u32>(strlen(matchName)) + 1;
+        const u32 nameLen = static_cast<u32>(strlen(basename)) + 1;
+        memcpy(pathPool + pathBytes, matchName, fullLen);
+
+        addedFiles[uniqueCount].parentDirIndex = candidate.parentDirIndex;
+        addedFiles[uniqueCount].overrideIndex = candidate.overrideIndex;
+        addedFiles[uniqueCount].pathOffset = pathBytes;
+        addedFiles[uniqueCount].nameOffset = oldStringTableSize + nameBytes;
+
+        pathBytes += fullLen;
+        nameBytes += nameLen;
+        CopyPath(previousPath, sizeof(previousPath), matchName);
+        previousParent = candidate.parentDirIndex;
+        hasPrevious = true;
+        ++uniqueCount;
+    }
+
+    outAddedFiles = addedFiles;
+    outAddedFileCount = uniqueCount;
+    outPathPool = pathPool;
+    outPathPoolSize = pathBytes;
+    outAddedNameBytes = nameBytes;
+    return true;
+}
+
+struct StructuralRebuildContext {
+    const U8Node* oldNodes;
+    u32 oldNodeCount;
+    const char* oldStringTable;
+    const u16* nodeOverrideIndex;
+    const u8* nodeDeleteFlags;
+    const PendingStructuralAdd* addedFiles;
+    u32 addedFileCount;
+    const char* addedPathPool;
+    u8* addedFileEmitted;
+    const u8* dirKeepFlags;
+    EGG::Heap* tempHeap;
+    u32 childScratchCapacity;
+    u8* oldArchiveBase;
+    u8* newBuffer;
+    U8Node* newNodes;
+    char* newStringTable;
+    u32 newStringTableSize;
+    u32 nextStringOffset;
+    u32 writeOffset;
+    u32 nextNodeIndex;
+    u32 patchedNodes;
+    u32 rangeStart;
+    u32* entryAppliedBits;
+};
+
+static bool AppendStructuralString(StructuralRebuildContext& context, const char* name, u32& outOffset) {
+    if (name == nullptr) name = "";
+    const u32 nameBytes = strlen(name) + 1;
+    if (context.newStringTable == nullptr || context.nextStringOffset + nameBytes > context.newStringTableSize) {
+        return false;
+    }
+
+    outOffset = context.nextStringOffset;
+    memcpy(context.newStringTable + outOffset, name, nameBytes);
+    context.nextStringOffset += nameBytes;
+    return true;
+}
+
+static void ZeroStructuralFilePadding(u8* buffer, u32 offset, u32 size) {
+    if (buffer == nullptr) return;
+    const u32 paddedSize = nw4r::ut::RoundUp(size, 0x20);
+    if (paddedSize > size) {
+        memset(buffer + offset + size, 0, paddedSize - size);
+    }
+}
+
+static const char* GetStructuralAddedBasename(u32 addedIndex, const StructuralRebuildContext& context);
+
+static bool EmitStructuralExistingFileNode(u32 oldNodeIdx, StructuralRebuildContext& context) {
+    const U8Node& oldNode = context.oldNodes[oldNodeIdx];
+    const u16 idx = context.nodeOverrideIndex[oldNodeIdx];
+
+    const u32 newNodeIdx = context.nextNodeIndex++;
+    U8Node& newNode = context.newNodes[newNodeIdx];
+    u32 nameOffset = 0;
+    if (!AppendStructuralString(context, context.oldStringTable + NodeNameOffset(oldNode), nameOffset)) {
+        return false;
+    }
+    newNode.typeName = nameOffset;
+
+    const u32 writeOffset = nw4r::ut::RoundUp(context.writeOffset, 0x20);
+    newNode.dataOffset = writeOffset;
+    newNode.dataSize = (idx != kInvalidScratchIndex16) ? sOverrideDatabase.taggedEntries[idx].size : oldNode.dataSize;
+
+    if (idx != kInvalidScratchIndex16) {
+        const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[idx];
+        if (!ReadOverrideFile(entry, context.newBuffer + writeOffset)) {
+            return false;
+        }
+        MarkEntryApplied(context.entryAppliedBits, idx - context.rangeStart);
+        ++context.patchedNodes;
+    } else {
+        memcpy(context.newBuffer + writeOffset, context.oldArchiveBase + oldNode.dataOffset, oldNode.dataSize);
+    }
+
+    const u32 paddedSize = nw4r::ut::RoundUp(newNode.dataSize, 0x20);
+    ZeroStructuralFilePadding(context.newBuffer, writeOffset, newNode.dataSize);
+    context.writeOffset = writeOffset + paddedSize;
+    return true;
+}
+
+static bool EmitStructuralAddedFileNode(u32 addedIndex, StructuralRebuildContext& context) {
+    const PendingStructuralAdd& added = context.addedFiles[addedIndex];
+    const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[added.overrideIndex];
+
+    const u32 newNodeIdx = context.nextNodeIndex++;
+    U8Node& newNode = context.newNodes[newNodeIdx];
+    u32 nameOffset = 0;
+    if (!AppendStructuralString(context, GetStructuralAddedBasename(addedIndex, context), nameOffset)) {
+        return false;
+    }
+    newNode.typeName = nameOffset;
+
+    const u32 writeOffset = nw4r::ut::RoundUp(context.writeOffset, 0x20);
+    newNode.dataOffset = writeOffset;
+    newNode.dataSize = entry.size;
+
+    if (!ReadOverrideFile(entry, context.newBuffer + writeOffset)) {
+        return false;
+    }
+
+    const u32 paddedSize = nw4r::ut::RoundUp(newNode.dataSize, 0x20);
+    ZeroStructuralFilePadding(context.newBuffer, writeOffset, newNode.dataSize);
+    context.writeOffset = writeOffset + paddedSize;
+
+    MarkEntryApplied(context.entryAppliedBits, added.overrideIndex - context.rangeStart);
+    ++context.patchedNodes;
+    return true;
+}
+
+static const char* GetStructuralAddedPath(u32 addedIndex, const StructuralRebuildContext& context) {
+    if (context.addedFiles == nullptr || context.addedPathPool == nullptr ||
+        addedIndex >= context.addedFileCount) {
+        return nullptr;
+    }
+    return context.addedPathPool + context.addedFiles[addedIndex].pathOffset;
+}
+
+static const char* GetStructuralAddedBasename(u32 addedIndex, const StructuralRebuildContext& context) {
+    const char* path = GetStructuralAddedPath(addedIndex, context);
+    if (path == nullptr) return nullptr;
+    return FindBasename(path);
+}
+
+static bool StructuralDirectoryHasDirectAdditions(u32 oldDirIdx, const PendingStructuralAdd* addedFiles,
+                                                  u32 addedFileCount) {
+    for (u32 addedIdx = 0; addedIdx < addedFileCount; ++addedIdx) {
+        if (addedFiles[addedIdx].parentDirIndex == oldDirIdx) return true;
+    }
+    return false;
+}
+
+static bool MarkStructuralKeptDirectories(u32 oldDirIdx, const U8Node* nodes, const u8* nodeDeleteFlags,
+                                          const PendingStructuralAdd* addedFiles, u32 addedFileCount,
+                                          u8* dirKeepFlags) {
+    bool hasContent = (oldDirIdx == 0) || StructuralDirectoryHasDirectAdditions(oldDirIdx, addedFiles, addedFileCount);
+
+    u32 childIdx = oldDirIdx + 1;
+    const u32 dirEnd = nodes[oldDirIdx].dataSize;
+    while (childIdx < dirEnd) {
+        const U8Node& child = nodes[childIdx];
+        if (NodeIsDir(child)) {
+            if (MarkStructuralKeptDirectories(childIdx, nodes, nodeDeleteFlags, addedFiles, addedFileCount,
+                                              dirKeepFlags)) {
+                hasContent = true;
+            }
+            childIdx = child.dataSize;
+            continue;
+        }
+
+        if (nodeDeleteFlags[childIdx] == 0) {
+            hasContent = true;
+        }
+        ++childIdx;
+    }
+
+    dirKeepFlags[oldDirIdx] = hasContent ? 1 : 0;
+    return hasContent;
+}
+
+static void MarkDeletedOverridesInSubtree(u32 oldDirIdx, StructuralRebuildContext& context) {
+    const u32 dirEnd = context.oldNodes[oldDirIdx].dataSize;
+    for (u32 nodeIdx = oldDirIdx + 1; nodeIdx < dirEnd; ++nodeIdx) {
+        if (NodeIsDir(context.oldNodes[nodeIdx])) continue;
+        if (context.nodeDeleteFlags[nodeIdx] == 0) continue;
+
+        const u16 deleteIdx = context.nodeOverrideIndex[nodeIdx];
+        if (deleteIdx == kInvalidScratchIndex16) continue;
+
+        MarkEntryApplied(context.entryAppliedBits, deleteIdx - context.rangeStart);
+        ++context.patchedNodes;
+    }
+}
+
+static bool EmitStructuralDirectoryChildren(u32 oldDirIdx, u32 parentNewIdx, StructuralRebuildContext& context);
+
+static bool EmitStructuralDirectoryNode(u32 oldDirIdx, u32 parentNewIdx, StructuralRebuildContext& context) {
+    const u32 newDirIdx = context.nextNodeIndex++;
+    U8Node& newDir = context.newNodes[newDirIdx];
+    u32 nameOffset = 0;
+    if (!AppendStructuralString(context, context.oldStringTable + NodeNameOffset(context.oldNodes[oldDirIdx]),
+                                nameOffset)) {
+        return false;
+    }
+    newDir.typeName = 0x01000000u | nameOffset;
+    newDir.dataOffset = parentNewIdx;
+    newDir.dataSize = newDirIdx + 1;
+
+    if (!EmitStructuralDirectoryChildren(oldDirIdx, newDirIdx, context)) return false;
+
+    newDir.dataSize = context.nextNodeIndex;
+    return true;
+}
+
+static bool EmitStructuralDirectoryChildren(u32 oldDirIdx, u32 parentNewIdx, StructuralRebuildContext& context) {
+    if (context.tempHeap == nullptr || context.childScratchCapacity == 0) return false;
+
+    StructuralChildRef* children = EGG::Heap::alloc<StructuralChildRef>(
+        sizeof(StructuralChildRef) * context.childScratchCapacity, 0x20, context.tempHeap);
+    if (children == nullptr) return false;
+
+    u32 childCount = 0;
+    u32 childIdx = oldDirIdx + 1;
+    const u32 dirEnd = context.oldNodes[oldDirIdx].dataSize;
+    while (childIdx < dirEnd) {
+        const U8Node& child = context.oldNodes[childIdx];
+        const char* childName = context.oldStringTable + NodeNameOffset(child);
+        if (NodeIsDir(child)) {
+            if (context.dirKeepFlags != nullptr && context.dirKeepFlags[childIdx] == 0) {
+                MarkDeletedOverridesInSubtree(childIdx, context);
+                childIdx = child.dataSize;
+                continue;
+            }
+
+            if (childCount >= context.childScratchCapacity) {
+                EGG::Heap::free(children, context.tempHeap);
+                return false;
+            }
+            children[childCount].oldNodeIndex = childIdx;
+            children[childCount].addedFileIndex = 0;
+            children[childCount].name = childName;
+            children[childCount].isAddedFile = false;
+            ++childCount;
+            childIdx = child.dataSize;
+            continue;
+        }
+
+        if (context.nodeDeleteFlags[childIdx] != 0) {
+            const u16 deleteIdx = context.nodeOverrideIndex[childIdx];
+            if (deleteIdx != kInvalidScratchIndex16) {
+                MarkEntryApplied(context.entryAppliedBits, deleteIdx - context.rangeStart);
+                ++context.patchedNodes;
+            }
+        } else {
+            if (childCount >= context.childScratchCapacity) {
+                EGG::Heap::free(children, context.tempHeap);
+                return false;
+            }
+            children[childCount].oldNodeIndex = childIdx;
+            children[childCount].addedFileIndex = 0;
+            children[childCount].name = childName;
+            children[childCount].isAddedFile = false;
+            ++childCount;
+        }
+        ++childIdx;
+    }
+
+    for (u32 addedIdx = 0; addedIdx < context.addedFileCount; ++addedIdx) {
+        if (context.addedFileEmitted != nullptr && context.addedFileEmitted[addedIdx] != 0) continue;
+        if (context.addedFiles[addedIdx].parentDirIndex != oldDirIdx) continue;
+
+        const char* addedName = GetStructuralAddedBasename(addedIdx, context);
+        if (addedName == nullptr || addedName[0] == '\0') continue;
+        if (childCount >= context.childScratchCapacity) {
+            EGG::Heap::free(children, context.tempHeap);
+            return false;
+        }
+
+        children[childCount].oldNodeIndex = 0;
+        children[childCount].addedFileIndex = addedIdx;
+        children[childCount].name = addedName;
+        children[childCount].isAddedFile = true;
+        ++childCount;
+    }
+
+    bool success = true;
+    for (u32 sortedIdx = 0; sortedIdx < childCount; ++sortedIdx) {
+        const StructuralChildRef childRef = children[sortedIdx];
+        if (childRef.isAddedFile) {
+            if (context.addedFileEmitted != nullptr) context.addedFileEmitted[childRef.addedFileIndex] = 1;
+            if (!EmitStructuralAddedFileNode(childRef.addedFileIndex, context)) {
+                success = false;
+                break;
+            }
+            continue;
+        }
+
+        const U8Node& child = context.oldNodes[childRef.oldNodeIndex];
+        if (NodeIsDir(child)) {
+            if (!EmitStructuralDirectoryNode(childRef.oldNodeIndex, parentNewIdx, context)) {
+                success = false;
+                break;
+            }
+        } else if (!EmitStructuralExistingFileNode(childRef.oldNodeIndex, context)) {
+            success = false;
+            break;
+        }
+    }
+
+    EGG::Heap::free(children, context.tempHeap);
+    return success;
+}
+
+static bool EmitStructuralRootNode(u32 oldRootIdx, StructuralRebuildContext& context) {
+    const u32 newRootIdx = context.nextNodeIndex++;
+    U8Node& newRoot = context.newNodes[newRootIdx];
+    u32 rootNameOffset = 0;
+    if (!AppendStructuralString(context, context.oldStringTable + NodeNameOffset(context.oldNodes[oldRootIdx]),
+                                rootNameOffset)) {
+        return false;
+    }
+    newRoot.typeName = 0x01000000u | rootNameOffset;
+    newRoot.dataOffset = context.oldNodes[oldRootIdx].dataOffset;
+    newRoot.dataSize = newRootIdx + 1;
+
+    if (!EmitStructuralDirectoryChildren(oldRootIdx, newRootIdx, context)) {
+        return false;
+    }
+
+    newRoot.dataSize = context.nextNodeIndex;
+    return true;
+}
+
+static u32 CountStructuralKeptOldNameBytes(u32 oldDirIdx, const U8Node* nodes, const char* stringTable,
+                                           const u8* nodeDeleteFlags, const u8* dirKeepFlags) {
+    if (nodes == nullptr || stringTable == nullptr) return 0;
+
+    u32 total = 0;
+    u32 childIdx = oldDirIdx + 1;
+    const u32 dirEnd = nodes[oldDirIdx].dataSize;
+    while (childIdx < dirEnd) {
+        const U8Node& child = nodes[childIdx];
+        if (NodeIsDir(child)) {
+            if (dirKeepFlags == nullptr || dirKeepFlags[childIdx] != 0) {
+                const char* name = stringTable + NodeNameOffset(child);
+                total += strlen(name) + 1;
+                total += CountStructuralKeptOldNameBytes(childIdx, nodes, stringTable, nodeDeleteFlags, dirKeepFlags);
+            }
+            childIdx = child.dataSize;
+            continue;
+        }
+
+        if (nodeDeleteFlags == nullptr || nodeDeleteFlags[childIdx] == 0) {
+            const char* name = stringTable + NodeNameOffset(child);
+            total += strlen(name) + 1;
+        }
+        ++childIdx;
+    }
+    return total;
+}
+
+static void FreeStructuralRebuildTemps(PendingStructuralAdd* addedFiles, char* addedPathPool, u8* addedFileEmitted,
+                                       u8* dirKeepFlags, EGG::Heap* heap) {
+    if (addedFiles != nullptr) EGG::Heap::free(addedFiles, heap);
+    if (addedPathPool != nullptr) EGG::Heap::free(addedPathPool, heap);
+    if (addedFileEmitted != nullptr) EGG::Heap::free(addedFileEmitted, heap);
+    if (dirKeepFlags != nullptr) EGG::Heap::free(dirKeepFlags, heap);
+}
+
+static bool RebuildArchiveWithStructuralOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize,
+                                                  EGG::Heap* sourceHeap, EGG::Heap*& archiveHeap, ARC::Header* header,
+                                                  const U8Node* nodes, u32 nodeCount, const u16* nodeOverrideIndex,
+                                                  const u8* nodeDeleteFlags,
+                                                  const PendingStructuralAddCandidate* addCandidates,
+                                                  u32 addCandidateCount, u32 rangeStart, u32 taggedCandidates,
+                                                  u32* entryAppliedBits, u32 missingOverrides, u32* outAppliedOverrides,
+                                                  u32* outPatchedNodes, u32* outMissingOverrides) {
+    PendingStructuralAdd* addedFiles = nullptr;
+    char* addedPathPool = nullptr;
+    u8* addedFileEmitted = nullptr;
+    u8* dirKeepFlags = nullptr;
+    u32 addedPathPoolSize = 0;
+    u32 addedNameBytes = 0;
+    bool success = false;
+
+    const u32 estimatedTempBytes =
+        (header != nullptr ? header->combinedNodeSize : 0) +
+        sizeof(StructuralChildRef) * (nodeCount + addCandidateCount) + 0x10000;
+    EGG::Heap* tempHeap = GetOverridesHeap();
+    EGG::Heap* tempCandidates[4];
+    tempCandidates[0] = RKSystem::mInstance.EGGRootMEM2;
+    tempCandidates[1] = RKSystem::mInstance.EGGRootMEM1;
+    tempCandidates[2] = tempHeap;
+    tempCandidates[3] = sourceHeap;
+    for (u32 i = 0; i < 4; ++i) {
+        EGG::Heap* candidate = tempCandidates[i];
+        if (candidate == nullptr) continue;
+        bool alreadyChecked = false;
+        for (u32 j = 0; j < i; ++j) {
+            if (tempCandidates[j] == candidate) alreadyChecked = true;
+        }
+        if (alreadyChecked) continue;
+        if (candidate->getAllocatableSize(0x20) >= estimatedTempBytes) {
+            tempHeap = candidate;
+            break;
+        }
+    }
+    if (tempHeap == nullptr) tempHeap = sourceHeap;
+    if (tempHeap == nullptr) {
+        OS::Report("[Pulsar] Structural rebuild early fail '%s': no temp heap\n", archiveBaseLower);
+        return false;
+    }
+
+    const u32 oldNodeBytes = sizeof(U8Node) * nodeCount;
+    if (header == nullptr || header->combinedNodeSize < oldNodeBytes) {
+        OS::Report("[Pulsar] Structural rebuild early fail '%s': bad header nodes=%u combined=0x%X\n",
+                   archiveBaseLower, nodeCount, header != nullptr ? header->combinedNodeSize : 0);
+        return false;
+    }
+    const u32 nodeOffset = header->nodeOffset;
+    const u32 oldCombinedNodeSize = header->combinedNodeSize;
+    const u32 oldStringTableSize = oldCombinedNodeSize - oldNodeBytes;
+    const char* oldStringTable = reinterpret_cast<const char*>(nodes + nodeCount);
+    if (!BuildStructuralAddedFiles(addCandidates, addCandidateCount, addedFiles, addCandidateCount, addedPathPool,
+                                    addedPathPoolSize, addedNameBytes, oldStringTableSize, tempHeap)) {
+        OS::Report("[Pulsar] Structural rebuild early fail '%s': added file list\n", archiveBaseLower);
+        return false;
+    }
+    if (addCandidateCount > 0) {
+        addedFileEmitted = EGG::Heap::alloc<u8>(addCandidateCount, 0x20, tempHeap);
+        if (addedFileEmitted == nullptr) {
+            OS::Report("[Pulsar] Structural rebuild early fail '%s': emitted flags count=%u\n", archiveBaseLower,
+                       addCandidateCount);
+            FreeStructuralRebuildTemps(addedFiles, addedPathPool, addedFileEmitted, dirKeepFlags, tempHeap);
+            return false;
+        }
+        memset(addedFileEmitted, 0, addCandidateCount);
+    }
+
+    dirKeepFlags = EGG::Heap::alloc<u8>(nodeCount, 0x20, tempHeap);
+    if (dirKeepFlags == nullptr) {
+        OS::Report("[Pulsar] Structural rebuild early fail '%s': dir flags nodes=%u\n", archiveBaseLower, nodeCount);
+        FreeStructuralRebuildTemps(addedFiles, addedPathPool, addedFileEmitted, dirKeepFlags, tempHeap);
+        return false;
+    }
+    memset(dirKeepFlags, 0, nodeCount);
+    MarkStructuralKeptDirectories(0, nodes, nodeDeleteFlags, addedFiles, addCandidateCount, dirKeepFlags);
+
+    u32 deletedFileCount = 0;
+    u32 deletedDirCount = 0;
+    u32 totalDataSize = 0;
+    for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+        if (NodeIsDir(nodes[nodeIdx])) {
+            if (dirKeepFlags[nodeIdx] == 0) ++deletedDirCount;
+            continue;
+        }
+        if (nodeDeleteFlags[nodeIdx] != 0) {
+            ++deletedFileCount;
+            continue;
+        }
+
+        u32 fileSize = nodes[nodeIdx].dataSize;
+        const u16 idx = nodeOverrideIndex[nodeIdx];
+        if (idx != kInvalidScratchIndex16) {
+            fileSize = sOverrideDatabase.taggedEntries[idx].size;
+        }
+        totalDataSize += nw4r::ut::RoundUp(fileSize, 0x20);
+    }
+    for (u32 addedIdx = 0; addedIdx < addCandidateCount; ++addedIdx) {
+        totalDataSize += nw4r::ut::RoundUp(sOverrideDatabase.taggedEntries[addedFiles[addedIdx].overrideIndex].size, 0x20);
+    }
+
+    const char* rootName = oldStringTable + NodeNameOffset(nodes[0]);
+    const u32 newStringTableSize = strlen(rootName) + 1 +
+                                   CountStructuralKeptOldNameBytes(0, nodes, oldStringTable, nodeDeleteFlags, dirKeepFlags) +
+                                   addedNameBytes;
+    const u32 newNodeCount = nodeCount - deletedFileCount - deletedDirCount + addCandidateCount;
+    const u32 newCombinedNodeSize = sizeof(U8Node) * newNodeCount + newStringTableSize;
+    const u32 newDataStart = nw4r::ut::RoundUp(nodeOffset + newCombinedNodeSize, 0x20);
+    const u32 newSize = nw4r::ut::RoundUp(newDataStart + totalDataSize, 0x20);
+
+    EGG::Heap* repackHeap = nullptr;
+    EGG::Heap* candidates[4];
+    candidates[0] = archiveHeap;
+    candidates[1] = RKSystem::mInstance.EGGRootMEM2;
+    candidates[2] = GetOverridesHeap();
+    candidates[3] = RKSystem::mInstance.EGGRootMEM1;
+    for (u32 i = 0; i < 4; ++i) {
+        EGG::Heap* candidate = candidates[i];
+        if (candidate == nullptr) continue;
+        bool alreadyChecked = false;
+        for (u32 j = 0; j < i; ++j) {
+            if (candidates[j] == candidate) alreadyChecked = true;
+        }
+        if (alreadyChecked) continue;
+        if (candidate->getAllocatableSize(0x20) < newSize) continue;
+        repackHeap = candidate;
+        break;
+    }
+
+    if (repackHeap == nullptr) {
+        OS::Report("[Pulsar] Structural rebuild fail '%s': no separate heap for old=0x%X new=0x%X\n",
+                   archiveBaseLower, archiveSize, newSize);
+        FreeStructuralRebuildTemps(addedFiles, addedPathPool, addedFileEmitted, dirKeepFlags, tempHeap);
+        return false;
+    }
+
+    u8* newBuffer = static_cast<u8*>(EGG::Heap::alloc(newSize, 0x20, repackHeap));
+    if (newBuffer == nullptr) {
+        OS::Report("[Pulsar] Structural loose override rebuild allocation failed for '%s': old=0x%X new=0x%X\n",
+                   archiveBaseLower, archiveSize, newSize);
+        FreeStructuralRebuildTemps(addedFiles, addedPathPool, addedFileEmitted, dirKeepFlags, tempHeap);
+        return false;
+    }
+
+    memcpy(newBuffer, archiveBase, nodeOffset);
+
+    ARC::Header* newHeader = reinterpret_cast<ARC::Header*>(newBuffer);
+    newHeader->combinedNodeSize = newCombinedNodeSize;
+    newHeader->fileOffset = newDataStart;
+    if (nodeOffset > 0x10) {
+        memset(newBuffer + 0x10, 0xCC, nodeOffset - 0x10);
+    }
+
+    U8Node* newNodes = reinterpret_cast<U8Node*>(newBuffer + newHeader->nodeOffset);
+    char* newStringTable = reinterpret_cast<char*>(newNodes + newNodeCount);
+    memset(newStringTable, 0, newStringTableSize);
+    const u32 fstEnd = nodeOffset + newCombinedNodeSize;
+    if (newDataStart > fstEnd) {
+        memset(newBuffer + fstEnd, 0, newDataStart - fstEnd);
+    }
+
+    StructuralRebuildContext context;
+    context.oldNodes = nodes;
+    context.oldNodeCount = nodeCount;
+    context.oldStringTable = oldStringTable;
+    context.nodeOverrideIndex = nodeOverrideIndex;
+    context.nodeDeleteFlags = nodeDeleteFlags;
+    context.addedFiles = addedFiles;
+    context.addedFileCount = addCandidateCount;
+    context.addedPathPool = addedPathPool;
+    context.addedFileEmitted = addedFileEmitted;
+    context.dirKeepFlags = dirKeepFlags;
+    context.tempHeap = tempHeap;
+    context.childScratchCapacity = nodeCount + addCandidateCount;
+    context.oldArchiveBase = archiveBase;
+    context.newBuffer = newBuffer;
+    context.newNodes = newNodes;
+    context.newStringTable = newStringTable;
+    context.newStringTableSize = newStringTableSize;
+    context.nextStringOffset = 0;
+    context.writeOffset = newDataStart;
+    context.nextNodeIndex = 0;
+    context.patchedNodes = 0;
+    context.rangeStart = rangeStart;
+    context.entryAppliedBits = entryAppliedBits;
+
+    success = EmitStructuralRootNode(0, context) && context.nextNodeIndex == newNodeCount &&
+              context.nextStringOffset == newStringTableSize;
+    if (!success) {
+        OS::Report("[Pulsar] Structural rebuild detail '%s': emitted=%u/%u strings=%u/%u write=0x%X/0x%X\n",
+                   archiveBaseLower, context.nextNodeIndex, newNodeCount, context.nextStringOffset, newStringTableSize,
+                   context.writeOffset, newSize);
+    }
+    if (success) {
+        const u32 finalSize = nw4r::ut::RoundUp(context.writeOffset, 0x20);
+        if (finalSize < newSize) {
+            memset(newBuffer + finalSize, 0, newSize - finalSize);
+        }
+        OS::DCStoreRange(newBuffer, finalSize);
+
+        EGG::Heap::free(archiveBase, sourceHeap);
+        archiveBase = newBuffer;
+        archiveSize = finalSize;
+        archiveHeap = repackHeap;
+
+        const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
+        if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
+        if (outPatchedNodes != nullptr) *outPatchedNodes = context.patchedNodes;
+        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+        OS::Report("[Pulsar] Structural loose overrides applied for '%s': applied=%u patched=%u missing=%u\n",
+                   archiveBaseLower, appliedOverrides, context.patchedNodes, missingOverrides);
+    } else {
+        EGG::Heap::free(newBuffer, repackHeap);
+    }
+
+    FreeStructuralRebuildTemps(addedFiles, addedPathPool, addedFileEmitted, dirKeepFlags, tempHeap);
+    return success;
 }
 
 }  // namespace
@@ -2114,6 +2844,30 @@ const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 r
     if (!BuildStoredOverridePath(entry->sourcePathOffset, resolvedPath, resolvedSize)) return path;
     if (outRedirected != nullptr) *outRedirected = true;
     return resolvedPath;
+}
+
+bool HasStructuralLooseOverrides(const char* archiveBaseLower) {
+    RefreshOverrideCacheState();
+    if (!AreLooseArchiveOverridesEnabled()) return false;
+
+    EnsureOverrideIndicesBuilt();
+    if (sOverrideDatabase.taggedEntries == nullptr || sOverrideDatabase.taggedCount == 0) return false;
+    if (archiveBaseLower == nullptr || archiveBaseLower[0] == '\0') return false;
+
+    u16 tagId = 0;
+    if (!FindArchiveTagId(sOverrideDatabase, archiveBaseLower, tagId)) return false;
+
+    u32 rangeStart = 0;
+    u32 rangeEnd = 0;
+    if (!FindArchiveTagRangeById(sOverrideDatabase, tagId, rangeStart, rangeEnd)) return false;
+
+    for (u32 i = rangeStart; i < rangeEnd; ++i) {
+        const u16 flags = sOverrideDatabase.taggedEntries[i].flags;
+        if ((flags & (OVERRIDEENTRYFLAG_IS_DELETE | OVERRIDEENTRYFLAG_HAS_SUBPATH)) != 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 archiveBaseLowerSize) {
@@ -2185,6 +2939,22 @@ static u32 ApplyInPlaceLooseOverrides(u8* archiveBase, U8Node* nodes, u32 nodeCo
     }
     if (outOversizedNodes != nullptr) *outOversizedNodes = oversizedNodes;
     return patchedNodes;
+}
+
+static u32 CountInPlaceOversizedOverrides(const U8Node* nodes, u32 nodeCount, const u16* nodeOverrideIndex,
+                                          const u32* fileSlotCapacities) {
+    if (nodes == nullptr || nodeOverrideIndex == nullptr || fileSlotCapacities == nullptr) return 0;
+
+    u32 oversizedNodes = 0;
+    for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+        const u16 idx = nodeOverrideIndex[nodeIdx];
+        if (idx == kInvalidScratchIndex16) continue;
+        if (NodeIsDir(nodes[nodeIdx])) continue;
+        if (sOverrideDatabase.taggedEntries[idx].size > fileSlotCapacities[nodeIdx]) {
+            ++oversizedNodes;
+        }
+    }
+    return oversizedNodes;
 }
 
 bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize, EGG::Heap* sourceHeap,
@@ -2273,8 +3043,26 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     }
     BuildArchiveFileSlotCapacities(nodes, nodeCount, archiveSize, fileNodeOrder, fileSlotCapacities);
 
+    EGG::Heap* structuralTempHeap = GetOverridesHeap();
+    if (structuralTempHeap == nullptr) structuralTempHeap = sourceHeap;
+    u8* nodeDeleteFlags = nullptr;
+    PendingStructuralAddCandidate* structuralAddCandidates = nullptr;
+    if (structuralTempHeap != nullptr) {
+        nodeDeleteFlags = EGG::Heap::alloc<u8>(nodeCount, 0x20, structuralTempHeap);
+        structuralAddCandidates = EGG::Heap::alloc<PendingStructuralAddCandidate>(
+            sizeof(PendingStructuralAddCandidate) * taggedCandidates, 0x20, structuralTempHeap);
+    }
+    if (nodeDeleteFlags == nullptr || structuralAddCandidates == nullptr) {
+        if (nodeDeleteFlags != nullptr) EGG::Heap::free(nodeDeleteFlags, structuralTempHeap);
+        if (structuralAddCandidates != nullptr) EGG::Heap::free(structuralAddCandidates, structuralTempHeap);
+        return false;
+    }
+    memset(nodeDeleteFlags, 0, nodeCount);
+
     bool anyOverrides = false;
+    bool hasStructuralChanges = false;
     u32 missingOverrides = 0;
+    u32 structuralAddCandidateCount = 0;
 
     //Build a node -> override table for this archive.
 
@@ -2288,10 +3076,42 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         if (!GetTaggedEntryMatchName(entry, matchName, sizeof(matchName)) || matchName[0] == '\0') {
             continue;
         }
+        const bool isDelete = (entry.flags & OVERRIDEENTRYFLAG_IS_DELETE) != 0;
 
         if ((entry.flags & OVERRIDEENTRYFLAG_HAS_SUBPATH) != 0) {
             s32 entryNum = ARC::ConvertPathToEntrynum(&handle, matchName);
             if (entryNum < 0) {
+                if (!isDelete) {
+                    const char* slash = FindLastChar(matchName, '/');
+                    u16 parentDirIndex = 0;
+                    bool canAddStructuralFile = true;
+                    if (slash != nullptr) {
+                        char parentPath[OVERRIDE_MAX_PATH];
+                        const u32 parentLen = static_cast<u32>(slash - matchName);
+                        if (parentLen == 0 || parentLen + 1 > sizeof(parentPath)) {
+                            canAddStructuralFile = false;
+                        } else {
+                            memcpy(parentPath, matchName, parentLen);
+                            parentPath[parentLen] = '\0';
+                            const s32 parentEntryNum = ARC::ConvertPathToEntrynum(&handle, parentPath);
+                            if (parentEntryNum < 0 || NodeIsDir(nodes[parentEntryNum]) == 0) {
+                                canAddStructuralFile = false;
+                            } else {
+                                parentDirIndex = static_cast<u16>(parentEntryNum);
+                            }
+                        }
+                    }
+
+                    if (canAddStructuralFile && structuralAddCandidateCount < taggedCandidates) {
+                        structuralAddCandidates[structuralAddCandidateCount].parentDirIndex = parentDirIndex;
+                        structuralAddCandidates[structuralAddCandidateCount].overrideIndex = static_cast<u16>(i);
+                        ++structuralAddCandidateCount;
+                        anyOverrides = true;
+                        hasStructuralChanges = true;
+                        continue;
+                    }
+                }
+
                 // Count it as missing so logs can tell "override exists on disk" from "archive actually contains that node".
                 ++missingOverrides;
                 continue;
@@ -2302,11 +3122,13 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 continue;
             }
             nodeOverrideIndex[entryNum] = static_cast<u16>(i);
+            nodeDeleteFlags[entryNum] = isDelete ? 1 : 0;
+            if (isDelete) hasStructuralChanges = true;
             anyOverrides = true;
         } else {
             const u32 matchCount = useWideBasenameIndices
                                        ? MatchArchiveBasenameOverride32(nodes, stringTable, basenameHashHeads32,
-                                                                       basenameHashNext32, basenameHashCapacity,
+                                                                        basenameHashNext32, basenameHashCapacity,
                                                                        matchName, static_cast<u16>(i), nodeOverrideIndex)
                                        : MatchArchiveBasenameOverride16(nodes, stringTable, basenameHashHeads16,
                                                                        basenameHashNext16, basenameHashCapacity,
@@ -2315,11 +3137,27 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 ++missingOverrides;
                 continue;
             }
+            if (isDelete) {
+                hasStructuralChanges = true;
+                for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+                    if (nodeOverrideIndex[nodeIdx] == static_cast<u16>(i)) {
+                        nodeDeleteFlags[nodeIdx] = 1;
+                    }
+                }
+            } else {
+                for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
+                    if (nodeOverrideIndex[nodeIdx] == static_cast<u16>(i)) {
+                        nodeDeleteFlags[nodeIdx] = 0;
+                    }
+                }
+            }
             anyOverrides = true;
         }
     }
 
     if (!anyOverrides) {
+        EGG::Heap::free(nodeDeleteFlags, structuralTempHeap);
+        EGG::Heap::free(structuralAddCandidates, structuralTempHeap);
         if (missingOverrides > 0) {
             OS::Report("[Pulsar] Loose overrides skipped for '%s': %u tagged file(s) did not match archive contents\n",
                        archiveBaseLower, missingOverrides);
@@ -2327,6 +3165,23 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
         return false;
     }
+
+    if (hasStructuralChanges) {
+        const bool rebuilt = RebuildArchiveWithStructuralOverrides(
+            archiveBaseLower, archiveBase, archiveSize, sourceHeap, archiveHeap, header, nodes, nodeCount, nodeOverrideIndex,
+            nodeDeleteFlags, structuralAddCandidates, structuralAddCandidateCount, rangeStart, taggedCandidates,
+            entryAppliedBits, missingOverrides, outAppliedOverrides, outPatchedNodes, outMissingOverrides);
+        if (!rebuilt) {
+            OS::Report("[Pulsar] Structural loose override rebuild failed for '%s': candidates=%u missing=%u\n",
+                       archiveBaseLower, structuralAddCandidateCount, missingOverrides);
+        }
+        EGG::Heap::free(nodeDeleteFlags, structuralTempHeap);
+        EGG::Heap::free(structuralAddCandidates, structuralTempHeap);
+        return rebuilt;
+    }
+
+    EGG::Heap::free(nodeDeleteFlags, structuralTempHeap);
+    EGG::Heap::free(structuralAddCandidates, structuralTempHeap);
 
     bool needsRepack = false;
     for (u32 nodeIdx = 1; nodeIdx < nodeCount; ++nodeIdx) {
@@ -2413,6 +3268,7 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     bool triedSourceHeap = false;
     u8* newBuffer = nullptr;
     bool useSameHeapRepack = false;
+    bool repackPartialFailure = false;
     u32 repackOrderCount = 0;
 
     if (repackHeap == archiveHeap && allowSourceHeap && compressedData != nullptr) {
@@ -2510,9 +3366,18 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         if (archiveBase != nullptr) {
             ARC::Header* fallbackHeader = reinterpret_cast<ARC::Header*>(archiveBase);
             U8Node* fallbackNodes = reinterpret_cast<U8Node*>(archiveBase + fallbackHeader->nodeOffset);
-            u32 oversizedNodes = 0;
+            const u32 oversizedNodes =
+                CountInPlaceOversizedOverrides(fallbackNodes, nodeCount, nodeOverrideIndex, fileSlotCapacities);
+            if (oversizedNodes > 0) {
+                OS::Report("[Pulsar] Loose override repack fallback rejected for '%s': oversized=%u missing=%u\n",
+                           archiveBaseLower, oversizedNodes, missingOverrides);
+                if (outAppliedOverrides != nullptr) *outAppliedOverrides = 0;
+                if (outPatchedNodes != nullptr) *outPatchedNodes = 0;
+                if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+                return false;
+            }
             patchedNodes = ApplyInPlaceLooseOverrides(archiveBase, fallbackNodes, nodeCount, nodeOverrideIndex,
-                                                      fileSlotCapacities, entryAppliedBits, rangeStart, &oversizedNodes);
+                                                      fileSlotCapacities, entryAppliedBits, rangeStart, nullptr);
 
             const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
 
@@ -2568,8 +3433,9 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
             const u32 newOffset = repackOffsets[nodeIdx];
 
             if (!ReadOverrideFile(entry, newBuffer + newOffset)) {
-                // If the loose file is unreadable, keep the relocated original payload size for this node.
+                // Keep metadata internally consistent; the partial repack is discarded below.
                 newNodes[nodeIdx].dataSize = oldSize;
+                repackPartialFailure = true;
                 continue;
             }
             MarkEntryApplied(entryAppliedBits, idx - rangeStart);
@@ -2597,15 +3463,17 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
                 // Recover by copying the original member instead of throwing away the entire repack.
                 useOverride = false;
                 newFileSize = oldSize;
+                repackPartialFailure = true;
             }
 
             newNodes[nodeIdx].dataOffset = writeOffset;
             if (useOverride) {
                 const TaggedOverrideEntry& entry = sOverrideDatabase.taggedEntries[idx];
                 if (!ReadOverrideFile(entry, newBuffer + writeOffset)) {
-                    // One broken loose file should not invalidate the rest of the archive rebuild.
+                    // Keep the staging buffer parseable; the partial repack is discarded below.
                     useOverride = false;
                     newFileSize = oldSize;
+                    repackPartialFailure = true;
                 } else {
                     MarkEntryApplied(entryAppliedBits, idx - rangeStart);
                     ++patchedNodes;
@@ -2625,6 +3493,28 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
         }
     }
 
+    const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
+    if (repackPartialFailure) {
+        OS::Report("[Pulsar] Loose override repack incomplete for '%s': applied=%u patched=%u missing=%u\n",
+                   archiveBaseLower, appliedOverrides, patchedNodes, missingOverrides);
+        if (useSameHeapRepack && compressedData != nullptr) {
+            EGG::Decomp::decodeSZS(const_cast<u8*>(compressedData), newBuffer);
+            if (newSize > originalArchiveSize) {
+                memset(newBuffer + originalArchiveSize, 0, newSize - originalArchiveSize);
+            }
+            archiveBase = newBuffer;
+            archiveSize = originalArchiveSize;
+            archiveHeap = repackHeap;
+            OS::DCStoreRange(archiveBase, archiveSize);
+        } else {
+            EGG::Heap::free(newBuffer, repackHeap);
+        }
+        if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
+        if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;
+        if (outMissingOverrides != nullptr) *outMissingOverrides = missingOverrides;
+        return false;
+    }
+
     u32 finalSize = nw4r::ut::RoundUp(writeOffset, 0x20);
     // Clamp to the allocated size so bad metadata cannot claim a larger archive than the buffer we own.
     if (finalSize > newSize) finalSize = newSize;
@@ -2639,8 +3529,6 @@ bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& ar
     archiveBase = newBuffer;
     archiveSize = finalSize;
     archiveHeap = repackHeap;
-
-    const u32 appliedOverrides = CountAppliedEntries(entryAppliedBits, taggedCandidates);
 
     if (outAppliedOverrides != nullptr) *outAppliedOverrides = appliedOverrides;
     if (outPatchedNodes != nullptr) *outPatchedNodes = patchedNodes;

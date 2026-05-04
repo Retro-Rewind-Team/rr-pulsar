@@ -1,6 +1,8 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Archive/ArchiveFile.hpp>
+#include <core/RK/RKSystem.hpp>
 #include <core/egg/Decomp.hpp>
+#include <core/egg/mem/Heap.hpp>
 #include <core/rvl/os/OS.hpp>
 #include <core/rvl/os/OSCache.hpp>
 #include <core/nw4r/ut/Misc.hpp>
@@ -37,6 +39,31 @@ static u8* AllocDecompressedArchive(u32 allocSize, EGG::Heap* primaryHeap, EGG::
     return buffer;
 }
 
+static EGG::Heap* SelectStructuralDecodeScratchHeap(const char* archiveBaseLower, u32 allocSize,
+                                                    EGG::Heap* archiveHeap, EGG::Heap* dumpHeap) {
+    if (!HasStructuralLooseOverrides(archiveBaseLower)) return nullptr;
+
+    EGG::Heap* candidates[3];
+    candidates[0] = dumpHeap;
+    candidates[1] = RKSystem::mInstance.EGGRootMEM2;
+    candidates[2] = RKSystem::mInstance.EGGRootMEM1;
+
+    for (u32 i = 0; i < 3; ++i) {
+        EGG::Heap* candidate = candidates[i];
+        if (candidate == nullptr || candidate == archiveHeap) continue;
+        bool alreadyChecked = false;
+        for (u32 j = 0; j < i; ++j) {
+            if (candidates[j] == candidate) alreadyChecked = true;
+        }
+        if (alreadyChecked) continue;
+
+        const u32 available = candidate->getAllocatableSize(0x20);
+        if (available >= allocSize) return candidate;
+    }
+
+    return nullptr;
+}
+
 static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap, EGG::Archive::FileInfo* info) {
     u8* compressedData = static_cast<u8*>(file->compressedArchive);
     if (compressedData == nullptr) {
@@ -56,7 +83,19 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     const bool canApplyOverrides = ShouldApplyLooseOverrides(path, archiveBaseLower, sizeof(archiveBaseLower));
     const u32 allocSize = nw4r::ut::RoundUp(expandSize, 0x20);
     EGG::Heap* archiveHeap = nullptr;
-    u8* decompressedBuffer = AllocDecompressedArchive(allocSize, heap, file->dumpHeap, archiveHeap);
+    EGG::Heap* sourceArchiveHeap = nullptr;
+    u8* decompressedBuffer = nullptr;
+    if (canApplyOverrides) {
+        sourceArchiveHeap = SelectStructuralDecodeScratchHeap(archiveBaseLower, allocSize, heap, file->dumpHeap);
+    }
+    if (sourceArchiveHeap != nullptr) {
+        archiveHeap = heap;
+        decompressedBuffer = static_cast<u8*>(EGG::Heap::alloc(allocSize, 0x20, sourceArchiveHeap));
+    }
+    if (decompressedBuffer == nullptr) {
+        decompressedBuffer = AllocDecompressedArchive(allocSize, heap, file->dumpHeap, sourceArchiveHeap);
+        archiveHeap = sourceArchiveHeap;
+    }
 
     if (decompressedBuffer == nullptr) {
         OS::Report("[Pulsar] ArchiveFile::Decompress allocation failed! Size: 0x%X\n", allocSize);
@@ -74,8 +113,11 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     u8* archiveBase = decompressedBuffer;
     if (canApplyOverrides) {
         // `ApplyLooseOverrides()` may swap `archiveBase` to a repacked buffer on another heap.
-        ApplyLooseOverrides(archiveBaseLower, archiveBase, finalSize, archiveHeap, archiveHeap, &appliedOverrides,
+        ApplyLooseOverrides(archiveBaseLower, archiveBase, finalSize, sourceArchiveHeap, archiveHeap, &appliedOverrides,
                             &patchedNodes, &missingOverrides, compressedData);
+    }
+    if (archiveBase == decompressedBuffer) {
+        archiveHeap = sourceArchiveHeap;
     }
 
     ClearCompressedArchive(file);
