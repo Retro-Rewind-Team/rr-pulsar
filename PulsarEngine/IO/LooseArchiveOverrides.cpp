@@ -1351,28 +1351,50 @@ static bool CanAddEntry(u32 maxCount, u32& count, bool& truncated) {
     return true;
 }
 
-static void AddTaggedEntry(ScanBuildState& state, u32 maxCount, const char* relativePath, u32 size) {
-    if (relativePath == nullptr) return;
-    // All persistent storage is fixed-size, so oversized filenames are intentionally dropped.
-    if (strlen(relativePath) >= OVERRIDE_MAX_PATH) {
-        return;
-    }
-
-    u32 brsarFileId = 0;
-    u8 brsarType = BRSAROVERRIDE_INVALID;
-    if (TryParseBRSAROverride(relativePath, brsarFileId, brsarType)) return;
-
-    // Plain files are handled by ResolveWholeFileOverride(), not this index.
-
+struct ParsedScannedOverride {
+    bool isTagged;
+    bool isWholeFile;
+    bool isBRSAR;
+    u32 brsarFileId;
+    u8 brsarType;
     char strippedName[OVERRIDE_MAX_PATH];
     char archiveTagLower[OVERRIDE_MAX_NAME];
-    bool isDelete = false;
-    if (!ExtractTaggedOverrideMetadata(relativePath, strippedName, sizeof(strippedName),
-                                       archiveTagLower, sizeof(archiveTagLower), isDelete)) {
-        return;
+    bool isDelete;
+    const char* basename;
+};
+
+static bool ParseScannedOverride(const char* relativePath, ParsedScannedOverride& out) {
+    memset(&out, 0, sizeof(out));
+    if (relativePath == nullptr) return false;
+    if (strlen(relativePath) >= OVERRIDE_MAX_PATH) return false;
+
+    out.basename = FindBasename(relativePath);
+    if (out.basename == nullptr || out.basename[0] == '\0') return false;
+
+    if (TryParseBRSAROverride(relativePath, out.brsarFileId, out.brsarType)) {
+        if (out.brsarFileId >= kBRSAROverrideSlotCount) return false;
+        out.isBRSAR = true;
+        return true;
     }
-    // Reject loose raw-file overrides for these resource types, even if they target an archive member.
-    if (IsBlockedLooseRawOverrideExtension(strippedName)) return;
+
+    out.isTagged = TryParseArchiveTag(relativePath, out.strippedName, sizeof(out.strippedName), out.archiveTagLower,
+                                      sizeof(out.archiveTagLower));
+    if (out.isTagged) {
+        out.isDelete = StripDeleteSuffixInPlace(out.strippedName);
+        if (out.strippedName[0] == '\0') return false;
+        // Reject loose raw-file overrides for these resource types, even if they target an archive member.
+        if (IsBlockedLooseRawOverrideExtension(out.strippedName)) return false;
+        return true;
+    }
+
+    if (IsBlockedLooseRawOverrideExtension(out.basename)) return false;
+
+    out.isWholeFile = true;
+    return true;
+}
+
+static void AddParsedTaggedEntry(ScanBuildState& state, u32 maxCount, const char* relativePath, u32 size,
+                                 const ParsedScannedOverride& parsed) {
     if (!CanAddEntry(maxCount, state.taggedCount, state.taggedTruncated)) return;
     if (state.taggedEntries != nullptr) {
         if (!FillTaggedOverrideEntry(*state.database, state.taggedEntries[state.taggedCount], relativePath, size)) {
@@ -1381,7 +1403,7 @@ static void AddTaggedEntry(ScanBuildState& state, u32 maxCount, const char* rela
         }
     }
     state.stringBytes += static_cast<u32>(strlen(relativePath)) + 1;
-    state.tagStringBytes += static_cast<u32>(strlen(archiveTagLower)) + 1;
+    state.tagStringBytes += static_cast<u32>(strlen(parsed.archiveTagLower)) + 1;
     ++state.taggedCount;
 }
 
@@ -1392,26 +1414,7 @@ static s32 CompareBRSAROverrideCandidates(u8 lhsType, const char* lhsPath, u8 rh
     return strcmp(lhsPath, rhsPath);
 }
 
-static void AddWholeFileEntry(ScanBuildState& state, u32 maxCount, const char* relativePath) {
-    if (relativePath == nullptr) return;
-    if (strlen(relativePath) >= OVERRIDE_MAX_PATH) {
-        return;
-    }
-
-    u32 brsarFileId = 0;
-    u8 brsarType = BRSAROVERRIDE_INVALID;
-    if (TryParseBRSAROverride(relativePath, brsarFileId, brsarType)) return;
-
-    char strippedName[OVERRIDE_MAX_PATH];
-    char archiveTagLower[OVERRIDE_MAX_NAME];
-    if (TryParseArchiveTag(relativePath, strippedName, sizeof(strippedName),
-                           archiveTagLower, sizeof(archiveTagLower))) {
-        return;
-    }
-
-    const char* basename = FindBasename(relativePath);
-    if (basename == nullptr || basename[0] == '\0') return;
-    if (IsBlockedLooseRawOverrideExtension(basename)) return;
+static void AddParsedWholeFileEntry(ScanBuildState& state, u32 maxCount, const char* relativePath) {
     if (!CanAddEntry(maxCount, state.wholeFileCount, state.wholeFileTruncated)) return;
 
     if (state.wholeFileEntries != nullptr) {
@@ -1424,17 +1427,10 @@ static void AddWholeFileEntry(ScanBuildState& state, u32 maxCount, const char* r
     ++state.wholeFileCount;
 }
 
-static void AddBRSAROverrideEntry(ScanBuildState& state, u32 maxCount, const char* relativePath, u32 size) {
-    if (relativePath == nullptr) return;
-    if (strlen(relativePath) >= OVERRIDE_MAX_PATH) {
-        return;
-    }
-
-    u32 fileId = 0;
-    u8 type = BRSAROVERRIDE_INVALID;
-    if (!TryParseBRSAROverride(relativePath, fileId, type)) return;
-    if (fileId >= kBRSAROverrideSlotCount) return;
-
+static void AddParsedBRSAROverrideEntry(ScanBuildState& state, u32 maxCount, const char* relativePath, u32 size,
+                                        const ParsedScannedOverride& parsed) {
+    const u32 fileId = parsed.brsarFileId;
+    const u8 type = parsed.brsarType;
     bool isNewSlot = false;
     if (state.brsarSlots == nullptr) {
         if (state.brsarSlotOccupied == nullptr) return;
@@ -1468,9 +1464,16 @@ static void AddBRSAROverrideEntry(ScanBuildState& state, u32 maxCount, const cha
 
 static void AddScannedEntry(ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount, u32 maxBRSARCount,
                             const char* relativePath, u32 size) {
-    AddTaggedEntry(state, maxTaggedCount, relativePath, size);
-    AddWholeFileEntry(state, maxWholeFileCount, relativePath);
-    AddBRSAROverrideEntry(state, maxBRSARCount, relativePath, size);
+    ParsedScannedOverride parsed;
+    if (!ParseScannedOverride(relativePath, parsed)) return;
+
+    if (parsed.isBRSAR) {
+        AddParsedBRSAROverrideEntry(state, maxBRSARCount, relativePath, size, parsed);
+    } else if (parsed.isTagged) {
+        AddParsedTaggedEntry(state, maxTaggedCount, relativePath, size, parsed);
+    } else if (parsed.isWholeFile) {
+        AddParsedWholeFileEntry(state, maxWholeFileCount, relativePath);
+    }
 }
 
 static bool IsScanBuildComplete(const ScanBuildState& state, u32 maxTaggedCount, u32 maxWholeFileCount,
