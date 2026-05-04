@@ -2485,5 +2485,6 @@ __dt__15MenuDriverModelFv = 0x80830708
 __dt__18ModelTransformatorFv = 0x80556774
 RequestSceneReinit__10SectionMgrFUiUi = 0x80635b2c
 ToadetteFix1 = 0x807c89bc
-ToadetteFix2 = 0x807c8aa8Sqrt__Q23EGG4MathFf = 0x8022f80c
+ToadetteFix2 = 0x807c8aa8
+Sqrt__Q23EGG4MathFf = 0x8022f80c
 Acos__Q23EGG4MathFf = 0x8022f8c0
