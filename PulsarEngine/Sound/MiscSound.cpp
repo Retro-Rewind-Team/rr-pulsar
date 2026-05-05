@@ -79,8 +79,10 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
             customBGPath = titleMusicFile;
         else if (soundId == SOUND_ID_OFFLINE_MENUS)
             customBGPath = offlineMusicFile;
-        else if (soundId == SOUND_ID_WIFI_MUSIC)
-            customBGPath = wifiMusicFile;
+        else if (soundId == SOUND_ID_WIFI_MUSIC) {
+            const SectionId curSection = SectionMgr::sInstance->curSection->sectionId;
+            customBGPath = IsWifiLobbySection(curSection) ? wifilobbyMusicFile : wifiMusicFile;
+        }
         if (customBGPath != nullptr) {
             DVD::FileInfo info;
             BOOL ret = DVD::Open(customBGPath, &info);
@@ -116,8 +118,7 @@ static snd::SoundArchive::SoundType PatchPrepareStreamsBG(snd::SoundArchive& arc
             asm(mr streams, r30;);
             snd::StrmSoundHandle strmHandle(streams->curHandle);
             for (int i = 0; i < 4; ++i) {
-                float volume = 0.0f;
-                if ((type == 2 && (i % 3) != 0) || (type == 1 && i == 0)) volume = 1.0f;
+                float volume = 1.0f;
                 streams->streamsVolume[i].curValue = volume;
                 strmHandle.SetTrackVolume(1 << i, volume);
             }

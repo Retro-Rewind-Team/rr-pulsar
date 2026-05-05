@@ -19,7 +19,10 @@ static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFile
         return true;
     }
     if (section >= SECTION_P1_WIFI && section <= SECTION_P2_WIFI_FROOM_COIN_VOTING) {
-        extFilePath = wifiMusicFile;
+        if (IsWifiLobbySection(section))
+            extFilePath = wifilobbyMusicFile;
+        else
+            extFilePath = wifiMusicFile;
         return true;
     }
     if ((section >= SECTION_SINGLE_P_FROM_MENU && section <= SECTION_SINGLE_P_LIST_RACE_GHOST) || section == SECTION_LOCAL_MULTIPLAYER) {
