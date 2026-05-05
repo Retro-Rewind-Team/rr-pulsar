@@ -154,8 +154,6 @@ static void RandomizeCombo() {
         charSelect->randomizedCharIdx[hudId] = character;
         charSelect->rolledCharIdx[hudId] = character;
         charSelect->rouletteCounter = ExpVR::randomDuration;
-        charSelect->timer = nullptr;
-        charSelect->ctrlMenuCharSelect.timer = nullptr;
         charSelect->ctrlMenuCharSelect.selectedCharacter = character;
         charSelect->controlsManipulatorManager.inaccessible = true;
         ExpBattleKartSelect* battleKartSelect = section->Get<ExpBattleKartSelect>();
@@ -340,12 +338,6 @@ void ExpCharacterSelect::BeforeControlUpdate() {
     // CtrlMenuCharacterSelect::ButtonDriver* array = this->ctrlMenuCharSelect.driverButtonsArray;
 
     const s32 roulette = this->rouletteCounter;
-    CountDown* timer = GetSelectStageCountdown();
-    this->timer = timer;
-    if (roulette == -1)
-        this->ctrlMenuCharSelect.timer = timer;
-    else
-        this->ctrlMenuCharSelect.timer = nullptr;
     bool charRestrictLight = Pulsar::CHAR_DEFAULTSELECTION;
     bool charRestrictMid = Pulsar::CHAR_DEFAULTSELECTION;
     bool charRestrictHeavy = Pulsar::CHAR_DEFAULTSELECTION;
