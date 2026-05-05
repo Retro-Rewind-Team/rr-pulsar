@@ -32,6 +32,7 @@ class ExpVR : public Pages::VR {
     void AfterControlUpdate() override;
     void OnResume() override;
     void OnButtonSelect(PushButton& button, u32 hudSlotId);
+    PushButton& GetRandomComboButton() { return this->randomComboButton; }
     s32 rouletteCounter;
     CountDown countdown;
     CountDownTimerControl countdownControl;

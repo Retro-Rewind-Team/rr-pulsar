@@ -35,6 +35,15 @@ static void WifiEdits() {
     kmRuntimeWrite32A(0x8053F0B4, 0x38030001);
     kmRuntimeWrite32A(0x8053F124, 0x38030001);
 
+    #ifdef RR_TESTS
+    // Disable disconnects from being idle
+    kmRuntimeWrite32A(0x80521408, 0x38000000);
+    kmRuntimeWrite32A(0x8053EC94, 0x38000000);
+    kmRuntimeWrite32A(0x8053EF6C, 0x38000000);
+    kmRuntimeWrite32A(0x8053F0B4, 0x38000000);
+    kmRuntimeWrite32A(0x8053F124, 0x38000000);
+    #endif
+
     System* system = System::sInstance;
     if (system == nullptr) return;
     if (!system->IsContext(PULSAR_MODE_LAPKO)) return;
