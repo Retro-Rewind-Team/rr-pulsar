@@ -186,9 +186,6 @@ static wchar_t authorTextBuffer[0x100];
 static CharaName* characterNameTextControl[LOCAL_PLAYER_COUNT];
 static u32 characterNameTextValue[LOCAL_PLAYER_COUNT];
 static bool characterNameTextOverridden[LOCAL_PLAYER_COUNT];
-static ModelDirector* menuModelCache[TABLE_COUNT][0x18];
-static u8 menuModelActiveTable[0x18];
-static const GameScene* menuModelCacheSceneOwner;
 static SectionId votingMenuTableSection = SECTION_NONE;
 static bool votingMenuTablesRestored;
 static bool voteRandomMessageBoxKartStateApplied;
@@ -197,8 +194,6 @@ kmRuntimeUse(0x808b3a90);
 static const u32 CHARACTER_NAMES_ADDRESS = kmRuntimeAddr(0x808b3a90);
 kmRuntimeUse(0x809c1850);
 static const u32 SCNMGR_INSTANCES_ADDRESS = kmRuntimeAddr(0x809c1850);
-
-static void ClearMenuModelCache();
 
 static u8 MinLocalPlayers(u32 count) {
     return count > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(count);
@@ -1102,11 +1097,7 @@ static bool TryLoadLooseMiiCBRRES(void* holder, CharacterId character) {
 
 kmRuntimeUse(0x8081e358);
 static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
-    if (menuModelCacheSceneOwner != GameScene::GetCurrent()) ClearMenuModelCache();
-    const u8 table = ResolveMenuTable(MenuBRRESCharacter(character));
-    if (character >= 0 && character < 0x18) menuModelActiveTable[character] = table;
     if (TryLoadCustomMenuBRRES(holder, character) || TryLoadLooseMiiCBRRES(holder, character)) return 1;
-    if (character >= 0 && character < 0x18) menuModelActiveTable[character] = TABLE_DEFAULT;
     typedef u32 (*Fn)(void*, CharacterId);
     return reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e358))(holder, character);
 }
@@ -1408,54 +1399,17 @@ static bool LoadMenuDriverModel(void* handle, ModelDirector* model, CharacterId 
     return reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e78c))(handle, model, character) != 0;
 }
 
-static void ClearMenuModelCache() {
-    for (u32 table = 0; table < TABLE_COUNT; ++table) {
-        for (u32 character = 0; character < 0x18; ++character) menuModelCache[table][character] = nullptr;
-    }
-    for (u32 character = 0; character < 0x18; ++character) menuModelActiveTable[character] = TABLE_DEFAULT;
-    menuModelCacheSceneOwner = GameScene::GetCurrent();
-}
-
 static void ResetReloadedMenuDriverModel(MenuDriverModel& menuModel, CharacterId character) {
     *MenuDriverModelCharSelTransformatorSlot(menuModel) = menuModel.model->modelTransformator;
     *MenuDriverModelOnKartTransformatorSlot(menuModel) = nullptr;
     MenuDriverModelIdSlot(menuModel) = static_cast<u32>(character);
 }
 
-static bool IsLoadedMenuModelSafe(const ModelDirector* model) {
-    if (model == nullptr || model->modelTransformator == nullptr) return false;
-    for (u32 i = 0; i < ARRAY_COUNT(model->scnMdlEx); ++i) {
-        if (model->scnMdlEx[i] == nullptr || model->scnMdlEx[i]->scnObj == nullptr) return false;
-    }
-    return true;
-}
-
-static void DeactivateMenuModel(ModelDirector* model) {
-    if (model != nullptr && (model->bitfield & 0x100000) != 0) model->ToggleVisible(false);
-}
-
-static void ActivateMenuModel(ModelDirector* model) {
-    if (model != nullptr && (model->bitfield & 0x100000) != 0) model->ToggleVisible(true);
-}
-
 static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId character) {
     if (character < 0 || character >= 0x18 || driverMgr.models == nullptr) return false;
     const u8 idx = static_cast<u8>(character);
-    if (menuModelCacheSceneOwner != GameScene::GetCurrent()) ClearMenuModelCache();
     MenuDriverModel* menuModel = MenuDriverModelSlot(driverMgr.models, idx);
     ModelDirector** modelSlot = MenuDriverModelDirectorSlot(driverMgr.models, idx);
-    const u8 targetTable = ResolveMenuTable(character);
-    const u8 activeTable = menuModelActiveTable[idx] < TABLE_COUNT ? menuModelActiveTable[idx] : TABLE_DEFAULT;
-    if (menuModelCache[activeTable][idx] == nullptr) menuModelCache[activeTable][idx] = *modelSlot;
-    if (menuModelCache[targetTable][idx] != nullptr) {
-        if (*modelSlot != menuModelCache[targetTable][idx]) DeactivateMenuModel(*modelSlot);
-        *modelSlot = menuModelCache[targetTable][idx];
-        menuModelActiveTable[idx] = targetTable;
-        ResetReloadedMenuDriverModel(*menuModel, character);
-        ActivateMenuModel(*modelSlot);
-        menuModel->Init();
-        return true;
-    }
 
     GameScene* scene = const_cast<GameScene*>(GameScene::GetCurrent());
     if (scene == nullptr) return false;
@@ -1467,6 +1421,9 @@ static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId cha
     ScnMgr* scnMgr = mgrs[0];
     if (scnMgr == nullptr) return false;
 
+    DestroyModelDirector(*modelSlot);
+    *modelSlot = nullptr;
+
     EGG::Allocator** menuAllocSlot = MenuAllocatorSlot();
     EGG::Heap* savedHeap = scnMgr->curHeap;
     EGG::Allocator* savedAllocator = scnMgr->curAllocator;
@@ -1475,8 +1432,7 @@ static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId cha
     scnMgr->curAllocator = freshAllocator;
     *menuAllocSlot = freshAllocator;
 
-    // Delay draw priority setup until both ScnObj pointers are known to be valid.
-    ModelDirector* newModel = new ModelDirector(2, 0x2);
+    ModelDirector* newModel = new ModelDirector(2, 0);
     bool loaded = false;
     if (newModel != nullptr) {
         u32 handle[2];
@@ -1489,18 +1445,12 @@ static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId cha
     scnMgr->curAllocator = savedAllocator;
     *menuAllocSlot = savedMenuAllocator;
 
-    if (!loaded || !IsLoadedMenuModelSafe(newModel)) {
+    if (!loaded) {
         DestroyModelDirector(newModel);
-        menuModelActiveTable[idx] = activeTable;
         return false;
     }
 
-    newModel->bitfield &= ~0x2;
-    scnMgr->SetModelDrawPriority(newModel, newModel->scnObjDrawOptionsIdx);
-    DeactivateMenuModel(*modelSlot);
     *modelSlot = newModel;
-    menuModelCache[targetTable][idx] = newModel;
-    menuModelActiveTable[idx] = targetTable;
     ResetReloadedMenuDriverModel(*menuModel, character);
     menuModel->Init();
     return true;
