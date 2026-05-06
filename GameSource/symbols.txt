@@ -875,6 +875,7 @@ __vt__14RacedataPlayer = 0x808b3294
 
 ##RACEINFO
 #Raceinfo
+CreateInstance__8RaceinfoFv = 0x80532084
 Update__8RaceinfoFv = 0x805331b4
 SetPlayerDisconnected__8RaceinfoFUc = 0x80533d84
 IsAtLeastStage__8RaceinfoCF9RaceStage = 0x80536230

@@ -1105,69 +1105,6 @@ kmCall(0x80830368, LoadMenuDriverBRRESHook);
 kmCall(0x80831234, LoadMenuDriverBRRESHook);
 kmCall(0x8083183c, LoadMenuDriverBRRESHook);
 
-enum {
-    ALLKART_STATE_IDLE = 0,
-    ALLKART_STATE_REQUESTED = 1,
-    ALLKART_STATE_PREPARING = 2,
-    ALLKART_STATE_LOADING = 3,
-    ALLKART_STATE_LOADED = 4,
-    ALLKART_RELOADABLE_STATES = (1 << ALLKART_STATE_IDLE) | (1 << ALLKART_STATE_PREPARING) | (1 << ALLKART_STATE_LOADED)
-};
-
-struct AllkartArchiveLoaderState {
-    void* vtable;
-    EGG::Heap* archiveHeap;
-    EGG::Heap* fileHeap;
-    u32 state;
-    CharacterId character;
-    u32 mode;
-};
-static_assert(sizeof(AllkartArchiveLoaderState) == 0x18, "AllkartArchiveLoaderState size must match the retail loader");
-
-static bool CanRequestAllkartArchive(const AllkartArchiveLoaderState& loader) {
-    if (loader.archiveHeap == nullptr || loader.state >= 5) return false;
-    return ((1 << loader.state) & ALLKART_RELOADABLE_STATES) != 0;
-}
-
-static bool ShouldLoadAllkartArchiveSynchronously(CharacterId character) {
-    return IsCharacter(character) && SelectedTable(character) != TABLE_DEFAULT;
-}
-
-kmRuntimeUse(0x80541e44);
-static EGG::TaskThread::TaskFunction LoadAllkartArchiveTask() {
-    return reinterpret_cast<EGG::TaskThread::TaskFunction>(kmRuntimeAddr(0x80541e44));
-}
-
-kmRuntimeUse(0x80541cbc);
-static bool QueueAllkartArchiveLoad(ArchiveMgr* archiveMgr, u8 hudSlotId) {
-    typedef bool (*Fn)(ArchiveMgr*, EGG::TaskThread::TaskFunction, void*, u32);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x80541cbc))(archiveMgr, LoadAllkartArchiveTask(),
-                                                           reinterpret_cast<void*>(static_cast<u32>(hudSlotId)), 0x10000003);
-}
-
-static void LoadAllkartArchiveSynchronously(u8 hudSlotId) {
-    LoadAllkartArchiveTask()(reinterpret_cast<void*>(static_cast<u32>(hudSlotId)));
-}
-
-static bool RequestLoadKartArchivesHook(ArchiveMgr* archiveMgr, u8 hudSlotId, CharacterId character, u32 mode) {
-    if (archiveMgr == nullptr || hudSlotId >= LOCAL_PLAYER_COUNT) return false;
-
-    AllkartArchiveLoaderState* loaders = reinterpret_cast<AllkartArchiveLoaderState*>(archiveMgr->allkartsModelsLoaders);
-    AllkartArchiveLoaderState& loader = loaders[hudSlotId];
-    if (!CanRequestAllkartArchive(loader)) return false;
-
-    loader.character = character;
-    loader.mode = mode;
-    loader.state = ALLKART_STATE_REQUESTED;
-
-    if (ShouldLoadAllkartArchiveSynchronously(character))
-        LoadAllkartArchiveSynchronously(hudSlotId);
-    else
-        QueueAllkartArchiveLoad(archiveMgr, hudSlotId);
-    return true;
-}
-kmBranch(0x80542210, RequestLoadKartArchivesHook);
-
 static bool BuildMinimapTPLPath(CharacterId character, u8 table, char* path, u32 pathSize) {
     const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
     if (characterOverride == nullptr || characterOverride->postfix == nullptr) return false;
@@ -1263,19 +1200,6 @@ static ArchivesHolder* LoadKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, 
     return holder;
 }
 kmCall(0x805540f4, LoadKartArchiveHook);
-
-kmRuntimeUse(0x80540f90);
-static ArchivesHolder* LoadBackupKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
-                                                 EGG::Heap* decompressedHeap, EGG::Heap* archiveHeap) {
-    typedef ArchivesHolder* (*Fn)(ArchiveMgr*, u8, KartId, CharacterId, u32, u32, EGG::Heap*, EGG::Heap*);
-    const char* oldName;
-    const char** entry = BeginNameSwap(playerId, character, oldName);
-    ArchivesHolder* holder =
-        reinterpret_cast<Fn>(kmRuntimeAddr(0x80540f90))(archiveMgr, playerId, kart, character, color, type, decompressedHeap, archiveHeap);
-    if (entry != nullptr) *entry = oldName;
-    return holder;
-}
-kmCall(0x80554198, LoadBackupKartArchiveHook);
 
 kmRuntimeUse(0x805419c8);
 static const char* GetMenuDriverBRRESNameHook(u32 character) {
