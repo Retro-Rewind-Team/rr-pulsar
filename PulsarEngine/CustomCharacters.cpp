@@ -1201,18 +1201,6 @@ static ArchivesHolder* LoadKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, 
 }
 kmCall(0x805540f4, LoadKartArchiveHook);
 
-kmRuntimeUse(0x805419c8);
-static const char* GetMenuDriverBRRESNameHook(u32 character) {
-    typedef const char* (*Fn)(u32);
-    const CharacterId id = static_cast<CharacterId>(character);
-    const u8 table = ResolveMenuTable(id);
-    if (IsCharacter(id) && table < TABLE_COUNT && rawBRRES[table][id].failed) return reinterpret_cast<Fn>(kmRuntimeAddr(0x805419c8))(character);
-    const char* name = DriverBRRESName(id, table);
-    if (name != nullptr) return name;
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x805419c8))(character);
-}
-kmCall(0x8081e4a0, GetMenuDriverBRRESNameHook);
-
 static void DetachListNodeIfPresent(nw4r::ut::List* list, void* target) {
     if (list == nullptr || target == nullptr) return;
     for (void* node = nw4r::ut::List_GetNext(list, nullptr); node != nullptr;) {
