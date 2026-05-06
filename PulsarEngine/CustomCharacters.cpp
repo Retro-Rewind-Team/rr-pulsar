@@ -43,6 +43,7 @@ enum {
     TABLE_INVALID = TABLE_COUNT,
 
     CHARACTER_COUNT = 0x30,
+    MENU_DRIVER_MODEL_COUNT = 0x18,
     LOCAL_PLAYER_COUNT = 4,
     ONLINE_PLAYER_COUNT = 12,
     MII_C_COUNT = 6,
@@ -189,6 +190,11 @@ static bool characterNameTextOverridden[LOCAL_PLAYER_COUNT];
 static SectionId votingMenuTableSection = SECTION_NONE;
 static bool votingMenuTablesRestored;
 static bool voteRandomMessageBoxKartStateApplied;
+static EGG::ExpHeap* reloadedMenuDriverModelHeaps[MENU_DRIVER_MODEL_COUNT];
+static ModelDirector* reloadedMenuDriverModels[MENU_DRIVER_MODEL_COUNT];
+static const GameScene* reloadedMenuDriverModelSceneOwner;
+static MenuDriverModel* reloadedMenuDriverModelOwner;
+static bool forceDefaultMenuDriverBRRES;
 
 kmRuntimeUse(0x808b3a90);
 static const u32 CHARACTER_NAMES_ADDRESS = kmRuntimeAddr(0x808b3a90);
@@ -954,6 +960,7 @@ static void SyncRawCachesToCurrentScene() {
 }
 
 static u8 ResolveMenuTable(CharacterId character) {
+    if (forceDefaultMenuDriverBRRES) return TABLE_DEFAULT;
     if (ShouldForceDefaultVotingMenuTable()) return TABLE_DEFAULT;
     return SelectedTable(character);
 }
@@ -1056,6 +1063,35 @@ static bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
     return true;
 }
 
+static RawBRRES* RawCacheForModel(const ModelDirector* model) {
+    if (model == nullptr || model->rawMdl.data == nullptr) return nullptr;
+    for (u32 table = 0; table < TABLE_COUNT; ++table) {
+        for (u32 character = 0; character < CHARACTER_COUNT; ++character) {
+            if (IsInHeap(rawBRRES[table][character].heap, model->rawMdl.data)) return &rawBRRES[table][character];
+        }
+    }
+    for (u32 i = 0; i < MII_C_COUNT; ++i) {
+        if (IsInHeap(looseMiiCBRRES[i].heap, model->rawMdl.data)) return &looseMiiCBRRES[i];
+    }
+    return nullptr;
+}
+
+static bool LoadRawBRRESIntoHeap(void* holder, EGG::ExpHeap* heap, const char* path, u32 fileSize) {
+    if (holder == nullptr || heap == nullptr || path == nullptr || fileSize == 0) return false;
+    u32 loadedSize = 0;
+    void* file = EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize);
+    if (file == nullptr || loadedSize == 0) return false;
+    if ((reinterpret_cast<u32>(file) & 0x1f) != 0) {
+        heap->free(file);
+        return false;
+    }
+
+    nw4r::g3d::ResFile& resFile = *reinterpret_cast<nw4r::g3d::ResFile*>(reinterpret_cast<u8*>(holder) + 4);
+    resFile.data = reinterpret_cast<nw4r::g3d::ResFileData*>(file);
+    BindRawBRRES(resFile, path);
+    return true;
+}
+
 static u8 MiiCIndex(CharacterId character) {
     switch (character) {
         case MII_S_C_MALE:
@@ -1095,6 +1131,40 @@ static bool TryLoadLooseMiiCBRRES(void* holder, CharacterId character) {
     return LoadRawBRRES(holder, looseMiiCBRRES[idx], path);
 }
 
+static bool TryLoadCustomMenuBRRESIntoHeap(void* holder, CharacterId character, EGG::ExpHeap* heap, bool& fileExists) {
+    fileExists = false;
+    const CharacterId menuCharacter = MenuBRRESCharacter(character);
+    const u8 table = ResolveMenuTable(menuCharacter);
+    if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !HasSkin(menuCharacter, table)) return false;
+    char path[0x60];
+    if (!BuildDriverPath(menuCharacter, table, path, sizeof(path))) return false;
+    u32 fileSize = 0;
+    if (!DiscFileSize(path, fileSize)) {
+        rawBRRES[table][menuCharacter].failed = true;
+        return false;
+    }
+    fileExists = true;
+    return LoadRawBRRESIntoHeap(holder, heap, path, fileSize);
+}
+
+static bool TryLoadLooseMiiCBRRESIntoHeap(void* holder, CharacterId character, EGG::ExpHeap* heap, bool& fileExists) {
+    fileExists = false;
+    const u8 idx = MiiCIndex(character);
+    if (idx >= MII_C_COUNT) return false;
+    const char* name = GetDefaultCharacterPostfix(character);
+    if (name == nullptr) return false;
+    char path[0x60];
+    const int written = snprintf(path, sizeof(path), "/Scene/Model/Driver/%s.brres", name);
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(path)) return false;
+    u32 fileSize = 0;
+    if (!DiscFileSize(path, fileSize)) {
+        looseMiiCBRRES[idx].failed = true;
+        return false;
+    }
+    fileExists = true;
+    return LoadRawBRRESIntoHeap(holder, heap, path, fileSize);
+}
+
 kmRuntimeUse(0x8081e358);
 static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
     if (TryLoadCustomMenuBRRES(holder, character) || TryLoadLooseMiiCBRRES(holder, character)) return 1;
@@ -1104,6 +1174,16 @@ static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
 kmCall(0x80830368, LoadMenuDriverBRRESHook);
 kmCall(0x80831234, LoadMenuDriverBRRESHook);
 kmCall(0x8083183c, LoadMenuDriverBRRESHook);
+
+static bool LoadMenuDriverBRRESForReload(void* holder, CharacterId character, EGG::ExpHeap* heap) {
+    bool fileExists = false;
+    if (TryLoadCustomMenuBRRESIntoHeap(holder, character, heap, fileExists)) return true;
+    if (fileExists) return false;
+    if (TryLoadLooseMiiCBRRESIntoHeap(holder, character, heap, fileExists)) return true;
+    if (fileExists) return false;
+    typedef u32 (*Fn)(void*, CharacterId);
+    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e358))(holder, character) != 0;
+}
 
 static bool BuildMinimapTPLPath(CharacterId character, u8 table, char* path, u32 pathSize) {
     const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
@@ -1271,6 +1351,69 @@ static void DestroyModelDirector(ModelDirector* model) {
     delete model;
 }
 
+static void ForgetReloadedMenuDriverModelHeaps() {
+    for (u32 i = 0; i < MENU_DRIVER_MODEL_COUNT; ++i) {
+        reloadedMenuDriverModelHeaps[i] = nullptr;
+        reloadedMenuDriverModels[i] = nullptr;
+    }
+    reloadedMenuDriverModelOwner = nullptr;
+}
+
+static void DestroyReloadedMenuDriverModel(u8 idx, ModelDirector** modelSlot) {
+    if (idx >= MENU_DRIVER_MODEL_COUNT) return;
+    EGG::ExpHeap*& heap = reloadedMenuDriverModelHeaps[idx];
+    ModelDirector* model = reloadedMenuDriverModels[idx];
+    if (model == nullptr && modelSlot != nullptr) model = *modelSlot;
+
+    if (heap == nullptr) {
+        DestroyModelDirector(model);
+        if (modelSlot != nullptr && *modelSlot == model) *modelSlot = nullptr;
+        reloadedMenuDriverModels[idx] = nullptr;
+        return;
+    }
+
+    if (model != nullptr && IsInHeap(heap, model)) DestroyModelDirector(model);
+    if (modelSlot != nullptr && *modelSlot == model) *modelSlot = nullptr;
+    reloadedMenuDriverModels[idx] = nullptr;
+    DestroyHeap(heap);
+}
+
+static void DestroyAllReloadedMenuDriverModels() {
+    for (u8 i = 0; i < MENU_DRIVER_MODEL_COUNT; ++i) DestroyReloadedMenuDriverModel(i, nullptr);
+}
+
+static void SyncReloadedMenuDriverModelHeaps(MenuDriverModel* models) {
+    const GameScene* scene = GameScene::GetCurrent();
+    if (reloadedMenuDriverModelSceneOwner != scene) {
+        ForgetReloadedMenuDriverModelHeaps();
+        reloadedMenuDriverModelSceneOwner = scene;
+    }
+
+    if (reloadedMenuDriverModelOwner != models) {
+        if (reloadedMenuDriverModelOwner != nullptr) DestroyAllReloadedMenuDriverModels();
+        ForgetReloadedMenuDriverModelHeaps();
+        reloadedMenuDriverModelOwner = models;
+    }
+}
+
+static void CleanupReloadedMenuDriverModels() {
+    DestroyAllReloadedMenuDriverModels();
+    ForgetReloadedMenuDriverModelHeaps();
+    reloadedMenuDriverModelSceneOwner = nullptr;
+}
+
+static void DestroyMenuModelMgrInstanceHook() {
+    MenuModelMgr* mgr = MenuModelMgr::sInstance;
+    if (mgr == nullptr) return;
+    CleanupReloadedMenuDriverModels();
+    MenuModelMgr::sInstance = nullptr;
+
+    const u32 vtable = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mgr) + 0x10);
+    typedef void (*Dtor)(MenuModelMgr*, s32);
+    reinterpret_cast<Dtor>(*reinterpret_cast<u32*>(vtable + 0x8))(mgr, 1);
+}
+kmBranch(0x8059e04c, DestroyMenuModelMgrInstanceHook);
+
 kmRuntimeUse(0x8020f62c);
 kmRuntimeUse(0x80386e64);
 static EGG::Allocator** MenuAllocatorSlot() { return reinterpret_cast<EGG::Allocator**>(kmRuntimeAddr(0x80386e64)); }
@@ -1281,6 +1424,26 @@ static EGG::Allocator* CreateScnObjAllocator(EGG::Heap* parent) {
     if (buf == nullptr) return nullptr;
     typedef EGG::Allocator* (*Ctor)(EGG::Allocator*, EGG::Heap*, s32);
     return reinterpret_cast<Ctor>(kmRuntimeAddr(0x8020f62c))(reinterpret_cast<EGG::Allocator*>(buf), parent, 0x20);
+}
+
+static EGG::ExpHeap* CreateMenuDriverModelHeap(GameScene& scene) {
+    static const u32 MIN_HEAP_SIZE = 0x60000;
+    static const u32 PARENT_RESERVE = 0x20000;
+    EGG::Heap* parents[] = {scene.structsHeaps.heaps[0], scene.structsHeaps.heaps[1]};
+    EGG::Heap* best = nullptr;
+    u32 bestSize = 0;
+    for (u32 i = 0; i < ARRAY_COUNT(parents); ++i) {
+        EGG::Heap* parent = parents[i];
+        if (parent == nullptr) continue;
+        UnlockHeap(parent);
+        const u32 freeSize = parent->getAllocatableSize(0x20);
+        if (freeSize > bestSize) {
+            best = parent;
+            bestSize = freeSize;
+        }
+    }
+    if (best == nullptr || bestSize <= MIN_HEAP_SIZE + PARENT_RESERVE) return nullptr;
+    return EGG::ExpHeap::Create(static_cast<int>(bestSize - PARENT_RESERVE), best, 0);
 }
 
 static void UnlockMenuModelHeaps(MenuModelMgr& modelMgr) {
@@ -1348,6 +1511,84 @@ static bool LoadMenuDriverModel(void* handle, ModelDirector* model, CharacterId 
     return reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e78c))(handle, model, character) != 0;
 }
 
+static bool IsLoadedMenuDriverModelReady(const ModelDirector* model) {
+    return model != nullptr && (model->bitfield & 0x100000) != 0 && model->scnMdlEx[0] != nullptr &&
+           model->scnMdlEx[0]->scnObj != nullptr && model->scnMdlEx[1] != nullptr && model->scnMdlEx[1]->scnObj != nullptr;
+}
+
+static bool LoadReloadedMenuDriverModel(GameScene& scene, ScnMgr& scnMgr, CharacterId character, ModelDirector*& newModel,
+                                        EGG::ExpHeap*& newHeap) {
+    newModel = nullptr;
+    newHeap = nullptr;
+
+    EGG::ExpHeap* modelHeap = CreateMenuDriverModelHeap(scene);
+    if (modelHeap == nullptr) return false;
+
+    u32 handle[2];
+    ConstructMenuModelBRRESHandle(handle);
+    const bool brresLoaded = LoadMenuDriverBRRESForReload(handle, character, modelHeap);
+    if (!brresLoaded) {
+        DestroyMenuModelBRRESHandle(handle);
+        DestroyHeap(modelHeap);
+        return false;
+    }
+
+    EGG::Allocator* freshAllocator = CreateScnObjAllocator(modelHeap);
+    if (freshAllocator == nullptr) {
+        DestroyMenuModelBRRESHandle(handle);
+        DestroyHeap(modelHeap);
+        return false;
+    }
+
+    EGG::Allocator** menuAllocSlot = MenuAllocatorSlot();
+    EGG::Heap* savedHeap = scnMgr.curHeap;
+    EGG::Allocator* savedAllocator = scnMgr.curAllocator;
+    EGG::Allocator* savedMenuAllocator = *menuAllocSlot;
+    scnMgr.curHeap = modelHeap;
+    scnMgr.curAllocator = freshAllocator;
+    *menuAllocSlot = freshAllocator;
+
+    ModelDirector* model = new (modelHeap, 4) ModelDirector(2, 0);
+    const bool loaded = model != nullptr && LoadMenuDriverModel(handle, model, character) && IsLoadedMenuDriverModelReady(model);
+
+    scnMgr.curHeap = savedHeap;
+    scnMgr.curAllocator = savedAllocator;
+    *menuAllocSlot = savedMenuAllocator;
+    DestroyMenuModelBRRESHandle(handle);
+
+    if (!loaded) {
+        DestroyModelDirector(model);
+        DestroyHeap(modelHeap);
+        return false;
+    }
+
+    UnlockHeap(modelHeap);
+    modelHeap->adjust();
+    newModel = model;
+    newHeap = modelHeap;
+    return true;
+}
+
+static bool LoadDefaultReloadedMenuDriverModel(GameScene& scene, ScnMgr& scnMgr, CharacterId character, ModelDirector*& newModel,
+                                               EGG::ExpHeap*& newHeap) {
+    forceDefaultMenuDriverBRRES = true;
+    const bool loaded = LoadReloadedMenuDriverModel(scene, scnMgr, character, newModel, newHeap);
+    forceDefaultMenuDriverBRRES = false;
+    return loaded;
+}
+
+static void DestroyOldMenuDriverModelForReload(u8 idx, ModelDirector** modelSlot, ModelDirector* oldModel) {
+    if (reloadedMenuDriverModelHeaps[idx] != nullptr) {
+        DestroyReloadedMenuDriverModel(idx, modelSlot);
+        return;
+    }
+
+    RawBRRES* rawCache = RawCacheForModel(oldModel);
+    DestroyModelDirector(oldModel);
+    if (modelSlot != nullptr && *modelSlot == oldModel) *modelSlot = nullptr;
+    if (rawCache != nullptr) ClearRawCache(*rawCache, true);
+}
+
 static void ResetReloadedMenuDriverModel(MenuDriverModel& menuModel, CharacterId character) {
     *MenuDriverModelCharSelTransformatorSlot(menuModel) = menuModel.model->modelTransformator;
     *MenuDriverModelOnKartTransformatorSlot(menuModel) = nullptr;
@@ -1355,51 +1596,39 @@ static void ResetReloadedMenuDriverModel(MenuDriverModel& menuModel, CharacterId
 }
 
 static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId character) {
-    if (character < 0 || character >= 0x18 || driverMgr.models == nullptr) return false;
+    if (character < 0 || character >= MENU_DRIVER_MODEL_COUNT || driverMgr.models == nullptr) return false;
     const u8 idx = static_cast<u8>(character);
     MenuDriverModel* menuModel = MenuDriverModelSlot(driverMgr.models, idx);
     ModelDirector** modelSlot = MenuDriverModelDirectorSlot(driverMgr.models, idx);
 
     GameScene* scene = const_cast<GameScene*>(GameScene::GetCurrent());
     if (scene == nullptr) return false;
-    EGG::Heap* parentHeap = scene->structsHeaps.heaps[0];
-    EGG::Allocator* freshAllocator = CreateScnObjAllocator(parentHeap);
-    if (freshAllocator == nullptr) return false;
+    SyncReloadedMenuDriverModelHeaps(driverMgr.models);
 
     ScnMgr* const* mgrs = reinterpret_cast<ScnMgr* const*>(SCNMGR_INSTANCES_ADDRESS);
     ScnMgr* scnMgr = mgrs[0];
     if (scnMgr == nullptr) return false;
 
-    DestroyModelDirector(*modelSlot);
-    *modelSlot = nullptr;
+    ModelDirector* oldModel = *modelSlot;
+    bool oldModelDestroyed = false;
 
-    EGG::Allocator** menuAllocSlot = MenuAllocatorSlot();
-    EGG::Heap* savedHeap = scnMgr->curHeap;
-    EGG::Allocator* savedAllocator = scnMgr->curAllocator;
-    EGG::Allocator* savedMenuAllocator = *menuAllocSlot;
-    scnMgr->curHeap = parentHeap;
-    scnMgr->curAllocator = freshAllocator;
-    *menuAllocSlot = freshAllocator;
-
-    ModelDirector* newModel = new ModelDirector(2, 0);
-    bool loaded = false;
-    if (newModel != nullptr) {
-        u32 handle[2];
-        ConstructMenuModelBRRESHandle(handle);
-        loaded = LoadMenuDriverBRRESHook(handle, character) != 0 && LoadMenuDriverModel(handle, newModel, character);
-        DestroyMenuModelBRRESHandle(handle);
+    ModelDirector* newModel = nullptr;
+    EGG::ExpHeap* newHeap = nullptr;
+    if (!LoadReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHeap)) {
+        if (reloadedMenuDriverModelHeaps[idx] == nullptr) return false;
+        DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel);
+        oldModelDestroyed = true;
+        if (!LoadReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHeap) &&
+            !LoadDefaultReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHeap)) {
+            return false;
+        }
     }
 
-    scnMgr->curHeap = savedHeap;
-    scnMgr->curAllocator = savedAllocator;
-    *menuAllocSlot = savedMenuAllocator;
-
-    if (!loaded) {
-        DestroyModelDirector(newModel);
-        return false;
-    }
+    if (!oldModelDestroyed) DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel);
 
     *modelSlot = newModel;
+    reloadedMenuDriverModelHeaps[idx] = newHeap;
+    reloadedMenuDriverModels[idx] = newModel;
     ResetReloadedMenuDriverModel(*menuModel, character);
     menuModel->Init();
     return true;
