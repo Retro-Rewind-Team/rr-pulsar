@@ -1201,6 +1201,43 @@ static ArchivesHolder* LoadKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, 
 }
 kmCall(0x805540f4, LoadKartArchiveHook);
 
+struct MenuKartArchiveLoader {
+    void* vtable;
+    EGG::Heap* mountHeap;
+    EGG::Heap* dumpHeap;
+    u32 state;
+    CharacterId character;
+    u32 gamemode;
+};
+
+kmRuntimeUse(0x80541e44);
+static bool RequestLoadKartArchivesImmediate(ArchiveMgr* archiveMgr, u8 hudSlotId, CharacterId character, u32 gamemode) {
+    if (archiveMgr == nullptr || hudSlotId >= LOCAL_PLAYER_COUNT) return false;
+    MenuKartArchiveLoader* loader = reinterpret_cast<MenuKartArchiveLoader*>(&archiveMgr->allkartsModelsLoaders[hudSlotId]);
+    if (loader->mountHeap == nullptr || loader->state == (0 || 2 || 4)) return false;
+    loader->character = character;
+    loader->gamemode = gamemode;
+    loader->state = 1;
+    typedef void (*Fn)(u8);
+    reinterpret_cast<Fn>(kmRuntimeAddr(0x80541e44))(hudSlotId);
+    return true;
+}
+kmCall(0x805f5658, RequestLoadKartArchivesImmediate);
+kmCall(0x805f5798, RequestLoadKartArchivesImmediate);
+kmCall(0x805f592c, RequestLoadKartArchivesImmediate);
+
+kmRuntimeUse(0x805419c8);
+static const char* GetMenuDriverBRRESNameHook(u32 character) {
+    typedef const char* (*Fn)(u32);
+    const CharacterId id = static_cast<CharacterId>(character);
+    const u8 table = ResolveMenuTable(id);
+    if (IsCharacter(id) && table < TABLE_COUNT && rawBRRES[table][id].failed) return reinterpret_cast<Fn>(kmRuntimeAddr(0x805419c8))(character);
+    const char* name = DriverBRRESName(id, table);
+    if (name != nullptr) return name;
+    return reinterpret_cast<Fn>(kmRuntimeAddr(0x805419c8))(character);
+}
+kmCall(0x8081e4a0, GetMenuDriverBRRESNameHook);
+
 static void DetachListNodeIfPresent(nw4r::ut::List* list, void* target) {
     if (list == nullptr || target == nullptr) return;
     for (void* node = nw4r::ut::List_GetNext(list, nullptr); node != nullptr;) {
