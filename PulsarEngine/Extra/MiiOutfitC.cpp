@@ -1,7 +1,9 @@
 #include <RetroRewind.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
+#include <Network/Rating/PlayerRating.hpp>
 #include <MarioKartWii/Kart/KartFunctions.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCharacterSelect.hpp>
 
 namespace Pulsar {
@@ -94,7 +96,10 @@ static int GetCharacterIdForButtonHook(CtrlMenuCharacterSelect* ctrl, u32 weight
             const u32 localIdx = buttonIdx % categorySize;
             const u32 localColumn = localIdx % categoryCount;
             if (localColumn == 2) {
-                switch (static_cast<CharacterId>(character)) {
+                RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+                const CharacterId miiCCharacter = static_cast<CharacterId>(character);
+                if (PointRating::GetUserVR(rksys->curLicenseId) < 300.0f) return CHARACTER_NONE;
+                switch (miiCCharacter) {
                     case MII_S_A_MALE:
                     case MII_S_B_MALE:
                         return MII_S_C_MALE;
