@@ -88,38 +88,42 @@ static void LoadCorrectTrackListBox(ControlLoader& loader, const char* folder, c
 }
 kmCall(0x807e5f24, LoadCorrectTrackListBox);
 
-static u32 GetLanguageTrackBase() {
+static u32 GetLanguageTrackOffset() {
     Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
         static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE));
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:
-            return BMG_TRACKS + 0x1000;
+            return 0x1000;
         case Pulsar::LANGUAGE_FRENCH:
-            return BMG_TRACKS + 0x2000;
+            return 0x2000;
         case Pulsar::LANGUAGE_GERMAN:
-            return BMG_TRACKS + 0x3000;
+            return 0x3000;
         case Pulsar::LANGUAGE_DUTCH:
-            return BMG_TRACKS + 0x4000;
+            return 0x4000;
         case Pulsar::LANGUAGE_SPANISHUS:
-            return BMG_TRACKS + 0x5000;
+            return 0x5000;
         case Pulsar::LANGUAGE_SPANISHEU:
-            return BMG_TRACKS + 0x6000;
+            return 0x6000;
         case Pulsar::LANGUAGE_FINNISH:
-            return BMG_TRACKS + 0x7000;
+            return 0x7000;
         case Pulsar::LANGUAGE_ITALIAN:
-            return BMG_TRACKS + 0x8000;
+            return 0x8000;
         case Pulsar::LANGUAGE_KOREAN:
-            return BMG_TRACKS + 0x9000;
+            return 0x9000;
         case Pulsar::LANGUAGE_RUSSIAN:
-            return BMG_TRACKS + 0xA000;
+            return 0xA000;
         case Pulsar::LANGUAGE_TURKISH:
-            return BMG_TRACKS + 0xB000;
+            return 0xB000;
         case Pulsar::LANGUAGE_CZECH:
-            return BMG_TRACKS + 0xC000;
+            return 0xC000;
         case Pulsar::LANGUAGE_ENGLISH:
         default:
-            return BMG_TRACKS;
+            return 0;
     }
+}
+
+static u32 GetLanguageTrackBase() {
+    return BMG_TRACKS + GetLanguageTrackOffset();
 }
 
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
@@ -235,7 +239,10 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
     const u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(trackId);
 
     if (hasVariants && curVariant > 0 && trackBmgId >= VARIANT_TRACKS_BASE && trackBmgId < VARIANT_AUTHORS_BASE) {
-        return VARIANT_AUTHORS_BASE + (trackBmgId - VARIANT_TRACKS_BASE);
+        u32 variantAuthorOffset = trackBmgId - VARIANT_TRACKS_BASE;
+        const u32 languageOffset = GetLanguageTrackOffset();
+        if (variantAuthorOffset >= languageOffset) variantAuthorOffset -= languageOffset;
+        return VARIANT_AUTHORS_BASE + variantAuthorOffset;
     }
     if (trackBmgId >= VARIANT_TRACKS_BASE && trackBmgId < VARIANT_AUTHORS_BASE) {
         return BMG_AUTHORS + realId;
@@ -244,10 +251,7 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
         return BMG_AUTHORS + realId;
     }
 
-    const u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-                                static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC),
-                                Pulsar::SCROLLER_LANGUAGE)) *
-                            0x1000;
+    const u32 languageFix = GetLanguageTrackOffset();
     return trackBmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
 }
 
