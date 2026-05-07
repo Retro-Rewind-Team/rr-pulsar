@@ -157,8 +157,9 @@ void ChooseNextTrack::UpdateButtonInfo(s32 direction) {
         }
         this->curPageIdx = ret;
         for (int i = 0; i < 4; ++i) {
-            this->buttons[i].buttonId = cupsConfig->ConvertTrack_PulsarCupToTrack(static_cast<PulsarCupId>(this->curPageIdx), i);
-            this->buttons[i].SetMessage(UI::GetTrackBMGId(static_cast<PulsarId>(this->buttons[i].buttonId), true));
+            const PulsarId trackId = cupsConfig->ConvertTrack_PulsarCupToTrack(static_cast<PulsarCupId>(this->curPageIdx), i);
+            this->buttons[i].buttonId = trackId;
+            UI::SetCourseButtonMessage(this->buttons[i], UI::GetTrackBMGId(trackId, true), trackId, i);
         }
     }
     this->buttons[4].buttonId = -1;

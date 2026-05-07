@@ -14,7 +14,7 @@ int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx);
 u32 GetTrackAuthorBMGId(PulsarId pulsarId, u32 trackBmgId);
 bool SetTrackNameAuthorMessage(LayoutUIControl& control, PulsarId pulsarId, u32 trackBmgId);
 bool IsTrackBlocked(PulsarId id);
-void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx);
+void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx, bool showVariantMarker = true);
 void SetVoteControlMessage(VoteControl& vote, u32 bmgId, PulsarId courseVote, u32 playerId);
 void ApplyBlockedColorToString(wchar_t* dest, const wchar_t* src, u32 maxLen);
 

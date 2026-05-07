@@ -205,7 +205,7 @@ void VariantSelect::ApplyVariantButtonState() {
         }
 
         if (bmgId != 0) {
-            UI::SetCourseButtonMessage(btn, bmgId, selectedPulsarId, i);
+            UI::SetCourseButtonMessage(btn, bmgId, selectedPulsarId, i, false);
             continue;
         } else {
             wchar_t* nameBuf = variantButtonNames[i];

@@ -19,6 +19,8 @@ namespace UI {
 static void BuildBlockedTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen);
 static void RemoveAllEscapeSequences(wchar_t* dest, const wchar_t* src);
 static u32 AppendTrackTextPreservingColor(wchar_t* dest, const wchar_t* src, u32 outLen, u32 maxLen);
+static bool IsVariantBaseTrackBMGId(u32 bmgId);
+static void BuildVariantBaseTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen);
 
 static void BuildTrackNameAndAuthor(wchar_t* dest, const wchar_t* trackName, const wchar_t* authorName, u32 maxLen);
 
@@ -167,6 +169,7 @@ kmWrite32(0x807e6088, 0x7F63DB78);
 kmCall(0x807e608c, GetTrackBMGByRowIdx);
 
 static wchar_t s_blockedCupPreviewBuffer[4][0x100];
+static wchar_t s_variantBaseCupPreviewBuffer[4][0x100];
 
 static void SetCupPreviewTrackMessageImpl(LayoutUIControl* control, u32 bmgId, const Text::Info* info, u32 trackIdx) {
     const Pages::CupSelect* cup = SectionMgr::sInstance->curSection->Get<Pages::CupSelect>();
@@ -184,6 +187,18 @@ static void SetCupPreviewTrackMessageImpl(LayoutUIControl* control, u32 bmgId, c
             Text::Info blockedInfo;
             blockedInfo.strings[0] = s_blockedCupPreviewBuffer[trackIdx];
             control->SetMessage(BMG_TEXT, &blockedInfo);
+            return;
+        }
+    }
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (!CupsConfig::IsReg(trackId) && cupsConfig != nullptr && cupsConfig->GetTrack(trackId).variantCount > 0 &&
+        IsVariantBaseTrackBMGId(bmgId) && trackIdx < 4) {
+        const wchar_t* originalText = GetCustomMsg(bmgId);
+        if (originalText != nullptr) {
+            BuildVariantBaseTrackName(s_variantBaseCupPreviewBuffer[trackIdx], originalText, 0x100);
+            Text::Info variantInfo;
+            variantInfo.strings[0] = s_variantBaseCupPreviewBuffer[trackIdx];
+            control->SetMessage(BMG_TEXT, &variantInfo);
             return;
         }
     }
@@ -484,6 +499,26 @@ kmWritePointer(0x808d3190, ExtCourseSelectCupInitSelf);  // 807e45c0
 static const wchar_t COLOR_ESCAPE_RED[] = {0x001A, 0x0800, 0x0001, 0x0017, 0x0000};
 static const wchar_t FONT_SIZE_ESCAPE_SMALL[] = {0x001A, 0x0800, 0x0000, 0x0050, 0x0000};
 
+static const wchar_t* FindFirstColorEscape(const wchar_t* src) {
+    const u8* srcBytes = reinterpret_cast<const u8*>(src);
+    while (*reinterpret_cast<const wchar_t*>(srcBytes) != L'\0') {
+        const wchar_t cur = *reinterpret_cast<const wchar_t*>(srcBytes);
+        if (cur == 0x001A) {
+            const u8 escapeLen = srcBytes[2];
+            if ((escapeLen == 0) || (escapeLen & 1)) break;
+
+            const wchar_t* escapeWchars = reinterpret_cast<const wchar_t*>(srcBytes);
+            const u8 escapeType = srcBytes[3];
+            if (escapeLen >= 8 && escapeType == 0 && escapeWchars[2] == 0x0001) return escapeWchars;
+
+            srcBytes += escapeLen;
+        } else {
+            srcBytes += sizeof(wchar_t);
+        }
+    }
+    return nullptr;
+}
+
 static void RemoveAllEscapeSequences(wchar_t* dest, const wchar_t* src) {
     while (*src != L'\0') {
         if (src[0] == 0x001A) {
@@ -503,6 +538,31 @@ static void BuildBlockedTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen)
         dest[i] = COLOR_ESCAPE_RED[i];
     }
     RemoveAllEscapeSequences(dest + prefixLen, src);
+}
+
+static void BuildVariantBaseTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen) {
+    if (maxLen == 0) return;
+
+    u32 out = AppendTrackTextPreservingColor(dest, src, 0, maxLen);
+    if (out < maxLen - 1) dest[out++] = L' ';
+    const wchar_t* colorEscape = FindFirstColorEscape(src);
+    if (colorEscape != nullptr) {
+        const u8* escapeBytes = reinterpret_cast<const u8*>(colorEscape);
+        const u8 escapeLen = escapeBytes[2];
+        const u32 escapeChars = escapeLen / sizeof(wchar_t);
+        for (u32 i = 0; i < escapeChars && out < maxLen - 1; ++i) {
+            dest[out++] = colorEscape[i];
+        }
+    }
+    if (out < maxLen - 1) dest[out++] = L'*';
+    dest[out] = L'\0';
+}
+
+static bool IsVariantBaseTrackBMGId(u32 bmgId) {
+    const u32 VARIANT_TRACKS_BASE = 0x400000;
+    const u32 VARIANT_AUTHORS_BASE = 0x500000;
+    if (bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE) return (bmgId & 0xF) == 0;
+    return bmgId >= BMG_TRACKS && bmgId < VARIANT_TRACKS_BASE;
 }
 
 static void BuildTrackNameAndAuthor(wchar_t* dest, const wchar_t* trackName, const wchar_t* authorName, u32 maxLen) {
@@ -575,14 +635,27 @@ static u32 AppendTrackTextPreservingColor(wchar_t* dest, const wchar_t* src, u32
 }
 
 static wchar_t s_blockedTrackNameBuffer[4][0x100];
+static wchar_t s_variantBaseTrackNameBuffer[5][0x100];
 
-void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx) {
+void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx, bool showVariantMarker) {
     if (IsTrackBlocked(trackId)) {
         const wchar_t* originalText = GetCustomMsg(bmgId);
         if (originalText != nullptr) {
             BuildBlockedTrackName(s_blockedTrackNameBuffer[buttonIdx], originalText, 0x100);
             Text::Info info;
             info.strings[0] = s_blockedTrackNameBuffer[buttonIdx];
+            button.SetMessage(BMG_TEXT, &info);
+            return;
+        }
+    }
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (showVariantMarker && !CupsConfig::IsReg(trackId) && cupsConfig != nullptr && cupsConfig->GetTrack(trackId).variantCount > 0 &&
+        IsVariantBaseTrackBMGId(bmgId) && buttonIdx < 5) {
+        const wchar_t* originalText = GetCustomMsg(bmgId);
+        if (originalText != nullptr) {
+            BuildVariantBaseTrackName(s_variantBaseTrackNameBuffer[buttonIdx], originalText, 0x100);
+            Text::Info info;
+            info.strings[0] = s_variantBaseTrackNameBuffer[buttonIdx];
             button.SetMessage(BMG_TEXT, &info);
             return;
         }
