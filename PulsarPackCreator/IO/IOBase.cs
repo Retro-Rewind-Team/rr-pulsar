@@ -93,6 +93,27 @@ namespace Pulsar_Pack_Creator.IO
         {
             return value + (aligment - 1) & ~(aligment - 1);
         }
+
+        protected static bool TryParseBMGLine(string line, out uint bmgId, out string content)
+        {
+            bmgId = 0;
+            content = "";
+
+            if (string.IsNullOrWhiteSpace(line))
+                return false;
+
+            string[] parts = line.Split('=');
+            if (parts.Length < 2)
+                return false;
+
+            string idPart = parts[0].Trim();
+            if (!uint.TryParse(idPart, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bmgId))
+                return false;
+
+            content = string.Join("=", parts.Skip(1)).TrimStart(' ');
+            return true;
+        }
+
         public static void OpenDir(string path) => Process.Start("explorer.exe", path);
 
         public static string DisplayTimes(PulsarGame.TimeEntry[] entries, int idx)

@@ -36,6 +36,7 @@ namespace Pulsar_Pack_Creator
 
         //Tracks
         public List<Cup> cups;
+        public Dictionary<uint, string> userBMGs = new Dictionary<uint, string>();
 
         //Regs Ghosts
         public ushort curRegsCup = 0;

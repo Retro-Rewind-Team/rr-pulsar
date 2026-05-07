@@ -16,6 +16,7 @@ namespace Pulsar_Pack_Creator.IO {
             Full
         }
         public Builder(MainWindow window, BuildParams buildParams, bool createXML) : base(window) {
+            this.window = window;
             modFolder = $"output/{parameters.modFolderName}temp";
             cups = window.cups.AsReadOnly();
 
@@ -46,6 +47,8 @@ namespace Pulsar_Pack_Creator.IO {
         readonly string[] inputFiles;
         readonly string modFolder;
         readonly string date;
+        readonly MainWindow window;
+        readonly HashSet<uint> generatedBMGIds = new HashSet<uint>();
 
         PulsarGame.BinaryHeader configHeader = new PulsarGame.BinaryHeader(configMagic, (int)CONFIGVERSION);
         PulsarGame.InfoHolder infoSection = new PulsarGame.InfoHolder(infoMagic, INFOVERSION);
@@ -86,6 +89,11 @@ namespace Pulsar_Pack_Creator.IO {
                     bmgLines[i] = bmgLines[i].Replace("{date}", $"{date}");
                 }
                 File.WriteAllLines("temp/BMG.txt", bmgLines);
+                foreach (string bmgLine in bmgLines) {
+                    if (TryParseBMGLine(bmgLine, out uint bmgId, out _))
+                        generatedBMGIds.Add(bmgId);
+                }
+
                 using (bin = new BigEndianWriter(File.Create("temp/Config.pul"))) using (MemoryStream fileSectStream = new MemoryStream()) {
                     using (bmgSW = new StreamWriter("temp/BMG.txt", true)) using (fileSW = new StreamWriter(fileSectStream)) using (crcToFile = new StreamWriter($"{modFolder}/Ghosts/FolderToTrackName.txt"))
                     // using (textSW = new BigEndianWriter(File.Create("temp/cupText.txt"), Encoding.Unicode))
@@ -100,6 +108,8 @@ namespace Pulsar_Pack_Creator.IO {
                         Result cupRet = WriteCups();
                         if (cupRet != Result.Success)
                             return cupRet;
+
+                        WriteUserBMGs();
                     }
                     Result bmgRet = RequestBMGAction(true);
                     if (bmgRet != Result.Success)
@@ -294,7 +304,7 @@ namespace Pulsar_Pack_Creator.IO {
 
             if (!isFake) {
                 // AppendText(cup.name);
-                bmgSW.WriteLine($"  {BMGIds.BMG_CUPS + cupIdx:X}    = {cup.name}");
+                WriteBMG((uint)BMGIds.BMG_CUPS + cupIdx, cup.name);
 
                 string iconName = cup.iconName;
                 string finalIconName = "";
@@ -318,7 +328,7 @@ namespace Pulsar_Pack_Creator.IO {
             // Write the common name to the base BMG_TRACKS block
             string commonName = string.IsNullOrEmpty(track.commonName) ? track.main.trackName : track.commonName;
             if (!isFake)
-                bmgSW.WriteLine($"  {BMGIds.BMG_TRACKS + idx:X}    = {commonName}");
+                WriteBMG((uint)BMGIds.BMG_TRACKS + idx, commonName);
 
             // If the track has variants, the main track variant should be written into the first variant block (1).
             ret = WriteVariant(track.main, idx, 0, expertFileNames, isFake, track.variants.Count > 0);
@@ -453,23 +463,41 @@ namespace Pulsar_Pack_Creator.IO {
                 if (hasVariants) {
                     uint idxShifted = idx << 4;
                     uint variantBmgId = VARIANT_TRACKS_BASE + idxShifted;
-                    bmgSW.WriteLine($"  {variantBmgId:X}    = {trackName}");
+                    WriteBMG(variantBmgId, trackName);
                 }
 
                 // We skip writing bmgId for BMG_TRACKS here.
-                bmgSW.WriteLine($"  {authorId:X}    = {variant.authorName}");
+                WriteBMG(authorId, variant.authorName);
             } else {
                 uint idxShifted = idx << 4;
                 bmgId = VARIANT_TRACKS_BASE + idxShifted + variantIdx;
                 authorId = VARIANT_AUTHORS_BASE + idxShifted + variantIdx;
 
-                bmgSW.WriteLine($"  {bmgId:X}    = {trackName}");
-                bmgSW.WriteLine($"  {authorId:X}    = {variant.authorName}");
+                WriteBMG(bmgId, trackName);
+                WriteBMG(authorId, variant.authorName);
             }
 
             fileSW.WriteLine($"{(variantIdx << 12) + idx:X}={variant.fileName}|" +
                              $"{expertFileNames[0]}|{expertFileNames[1]}|{expertFileNames[2]}|{expertFileNames[3]}");
             return Result.Success;
+        }
+
+        private void WriteBMG(uint bmgId, string content) {
+            generatedBMGIds.Add(bmgId);
+            bmgSW.WriteLine($"  {bmgId:X}    = {content}");
+        }
+
+        private void WriteUserBMGs() {
+            if (window.userBMGs.Count == 0)
+                return;
+
+            bmgSW.WriteLine(bmgSW.NewLine);
+            foreach (KeyValuePair<uint, string> bmg in window.userBMGs.OrderBy(b => b.Key)) {
+                if (generatedBMGIds.Contains(bmg.Key))
+                    continue;
+
+                bmgSW.WriteLine($"  {bmg.Key:X}    = {bmg.Value}");
+            }
         }
 
         public Result WriteInfo() {
