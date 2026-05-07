@@ -312,6 +312,9 @@ kmWrite32(0x807C7944, 0x38800000);
 // Live View Icon Shadow Bug Fix [B_squo]
 kmWrite32(0x807eb988, 0x807c01c0);
 
+// Always Blank Offline Controller Icon [ZPL]
+kmWrite32(0x807f0644, 0x48000024);
+
 // Fix Mii opponents having silent / Rosalina voice Bug [B_squo]
 kmWrite32(0x8086975C, 0x4082001C);
 
