@@ -20,7 +20,7 @@ void LoadCorrectSectionForBattle() {
         sectionMgr->nextSectionId = SECTION_BALLOON_BATTLE_INTRO;
     } else if (sectionMgr->nextSectionId == SECTION_SINGLE_P_BT_NEXT_BATTLE) {
         sectionMgr->nextSectionId = SECTION_SINGLE_P_VS_NEXT_RACE;
-    } else if (sectionMgr->nextSectionId == SECTION_VS_RACE_AWARD || sectionMgr->nextSectionId == SECTION_AWARD_37 || sectionMgr->nextSectionId == SECTION_AWARD_38) {
+    } else if (sectionMgr->nextSectionId == SECTION_VS_RACE_AWARD || sectionMgr->nextSectionId == SECTION_AWARD_37 || sectionMgr->nextSectionId == SECTION_AWARD_38 || sectionMgr->nextSectionId == SECTION_GP_AWARD) {
         sectionMgr->nextSectionId = SECTION_MAIN_MENU_FROM_BOOT;
     } else if (sectionMgr->nextSectionId == SECTION_P1_WIFI_FROOM_VS_VOTING && racedataSettings.battleType == BATTLE_BALLOON && mode == MODE_PRIVATE_BATTLE) {
         sectionMgr->nextSectionId = SECTION_P1_WIFI_FROOM_BALLOON_VOTING;
