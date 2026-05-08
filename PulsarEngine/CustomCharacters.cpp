@@ -33,22 +33,17 @@ namespace CustomCharacters {
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
 
 enum {
+    PACKET_BITS = 3,
+    PACKET_MASK = (1 << PACKET_BITS) - 1,
     TABLE_DEFAULT = 0,
-    TABLE_SKIN1,
-    TABLE_SKIN2,
-    TABLE_SKIN3,
-    TABLE_SKIN4,
-    TABLE_SKIN5,
-    TABLE_COUNT,
+    TABLE_COUNT = 1 << PACKET_BITS,
     TABLE_INVALID = TABLE_COUNT,
 
     CHARACTER_COUNT = 0x30,
     MENU_DRIVER_MODEL_COUNT = 0x18,
     LOCAL_PLAYER_COUNT = 4,
     ONLINE_PLAYER_COUNT = 12,
-    MII_C_COUNT = 6,
-    PACKET_BITS = 3,
-    PACKET_MASK = (1 << PACKET_BITS) - 1
+    MII_C_COUNT = 6
 };
 
 static_assert(TABLE_COUNT <= (1 << PACKET_BITS), "SELECT packet skin table field is too small");
@@ -56,7 +51,6 @@ static_assert(PACKET_BITS * 2 <= 8, "SELECT packet skin table fields must fit in
 
 struct CharacterOverride {
     CharacterId character;
-    u8 tableIdx;
     const char* postfix;
     bool silentVoice;
     u32 nameBmgId;
@@ -66,91 +60,91 @@ struct CharacterOverride {
 #define CUSTOM_CHARACTER_NAME_BMG(index) (UI::BMG_CUSTOM_CHARACTER_NAME_START + (index))
 
 static const CharacterOverride customCharacterAssets[] = {
-    {MARIO, TABLE_SKIN1, "mr-1", false, CUSTOM_CHARACTER_NAME_BMG(0), "LTC 91"},
-    {MARIO, TABLE_SKIN2, "mr-2", false, CUSTOM_CHARACTER_NAME_BMG(1), "UltraWario"},
-    {MARIO, TABLE_SKIN3, "mr-3", true, CUSTOM_CHARACTER_NAME_BMG(2), "GioMacGrillin"},
-    {BABY_PEACH, TABLE_SKIN1, "bpc-1", false, CUSTOM_CHARACTER_NAME_BMG(3), "UltraWario"},
-    {BABY_PEACH, TABLE_SKIN2, "bpc-2", true, CUSTOM_CHARACTER_NAME_BMG(4), "ALE XD"},
-    {WALUIGI, TABLE_SKIN1, "wl-1", false, CUSTOM_CHARACTER_NAME_BMG(5), "TheBeefBai"},
-    {WALUIGI, TABLE_SKIN2, "wl-2", false, CUSTOM_CHARACTER_NAME_BMG(6), "UltraWario"},
-    {WALUIGI, TABLE_SKIN3, "wl-3", true, CUSTOM_CHARACTER_NAME_BMG(7), "UltraWario"},
-    {BOWSER, TABLE_SKIN1, "kp-1", false, CUSTOM_CHARACTER_NAME_BMG(8), "UltraWario"},
-    {BOWSER, TABLE_SKIN2, "kp-2", false, CUSTOM_CHARACTER_NAME_BMG(9), "UltraWario"},
-    {BOWSER, TABLE_SKIN3, "kp-3", true, CUSTOM_CHARACTER_NAME_BMG(10), "UltraWario, Porko"},
-    {BOWSER, TABLE_SKIN4, "kp-4", true, CUSTOM_CHARACTER_NAME_BMG(11), "Numerosity"},
-    {BABY_DAISY, TABLE_SKIN1, "bds-1", false, CUSTOM_CHARACTER_NAME_BMG(12), "Poobah"},
-    {BABY_DAISY, TABLE_SKIN2, "bds-2", true, CUSTOM_CHARACTER_NAME_BMG(13), "Porko, UltraWario"},
-    {DRY_BONES, TABLE_SKIN1, "ka-1", false, CUSTOM_CHARACTER_NAME_BMG(14), "Tank2go"},
-    {DRY_BONES, TABLE_SKIN2, "ka-2", false, CUSTOM_CHARACTER_NAME_BMG(15), "LTC 91"},
-    {DRY_BONES, TABLE_SKIN3, "ka-3", true, CUSTOM_CHARACTER_NAME_BMG(16), "UltraWario"},
-    {DRY_BONES, TABLE_SKIN4, "ka-4", true, CUSTOM_CHARACTER_NAME_BMG(17), "GioMacGrillin"},
-    {BABY_MARIO, TABLE_SKIN1, "bmr-1", false, CUSTOM_CHARACTER_NAME_BMG(18), "Whipinsnapper"},
-    {BABY_MARIO, TABLE_SKIN2, "bmr-2", false, CUSTOM_CHARACTER_NAME_BMG(19), "LTC 91"},
-    {BABY_MARIO, TABLE_SKIN3, "bmr-3", true, CUSTOM_CHARACTER_NAME_BMG(20), "GioMacGrillin"},
-    {BABY_MARIO, TABLE_SKIN4, "bmr-4", true, CUSTOM_CHARACTER_NAME_BMG(21), "UltraWario"},
-    {BABY_MARIO, TABLE_SKIN5, "bmr-5", true, CUSTOM_CHARACTER_NAME_BMG(84), "dutchmvp26"},
-    {LUIGI, TABLE_SKIN1, "lg-1", false, CUSTOM_CHARACTER_NAME_BMG(22), "UltraWario"},
-    {LUIGI, TABLE_SKIN2, "lg-2", false, CUSTOM_CHARACTER_NAME_BMG(23), "PlayersPurity"},
-    {LUIGI, TABLE_SKIN3, "lg-3", true, CUSTOM_CHARACTER_NAME_BMG(24), "JTG"},
-    {LUIGI, TABLE_SKIN4, "lg-4", true, CUSTOM_CHARACTER_NAME_BMG(25), "ALE XD"},
-    {TOAD, TABLE_SKIN1, "ko-1", false, CUSTOM_CHARACTER_NAME_BMG(26), "UltraWario"},
-    {TOAD, TABLE_SKIN2, "ko-2", false, CUSTOM_CHARACTER_NAME_BMG(27), "UltraWario"},
-    {TOAD, TABLE_SKIN3, "ko-3", true, CUSTOM_CHARACTER_NAME_BMG(28), "Monxy"},
-    {DONKEY_KONG, TABLE_SKIN1, "dk-1", false, CUSTOM_CHARACTER_NAME_BMG(29), "Whipinsnapper"},
-    {DONKEY_KONG, TABLE_SKIN2, "dk-2", false, CUSTOM_CHARACTER_NAME_BMG(30), "LTC 91"},
-    {DONKEY_KONG, TABLE_SKIN3, "dk-3", true, CUSTOM_CHARACTER_NAME_BMG(31), "Monxy"},
-    {DONKEY_KONG, TABLE_SKIN4, "dk-4", true, CUSTOM_CHARACTER_NAME_BMG(32), "Chiller7"},
-    {DONKEY_KONG, TABLE_SKIN5, "dk-5", true, CUSTOM_CHARACTER_NAME_BMG(80), "ordatz"},
-    {YOSHI, TABLE_SKIN1, "ys-1", false, CUSTOM_CHARACTER_NAME_BMG(33), "LTC 91"},
-    {YOSHI, TABLE_SKIN2, "ys-2", false, CUSTOM_CHARACTER_NAME_BMG(34), "ordartz"},
-    {YOSHI, TABLE_SKIN3, "ys-3", true, CUSTOM_CHARACTER_NAME_BMG(35), "UltraWario, Porko"},
-    {WARIO, TABLE_SKIN1, "wr-1", false, CUSTOM_CHARACTER_NAME_BMG(36), "UltraWario"},
-    {WARIO, TABLE_SKIN2, "wr-2", false, CUSTOM_CHARACTER_NAME_BMG(37), "UltraWario"},
-    {WARIO, TABLE_SKIN3, "wr-3", true, CUSTOM_CHARACTER_NAME_BMG(38), "UltraWario"},
-    {BABY_LUIGI, TABLE_SKIN1, "blg-1", false, CUSTOM_CHARACTER_NAME_BMG(39), "Tadhger"},
-    {BABY_LUIGI, TABLE_SKIN2, "blg-2", true, CUSTOM_CHARACTER_NAME_BMG(81), "UltraWario"},
-    {TOADETTE, TABLE_SKIN1, "kk-1", false, CUSTOM_CHARACTER_NAME_BMG(40), "Toadette Hack Fan"},
-    {KOOPA_TROOPA, TABLE_SKIN1, "nk-1", false, CUSTOM_CHARACTER_NAME_BMG(41), "Jordi6304"},
-    {KOOPA_TROOPA, TABLE_SKIN2, "nk-2", true, CUSTOM_CHARACTER_NAME_BMG(42), "UltraWario"},
-    {DAISY, TABLE_SKIN1, "ds-1", false, CUSTOM_CHARACTER_NAME_BMG(43), "TheBeefBai"},
-    {DAISY, TABLE_SKIN2, "ds-2", false, CUSTOM_CHARACTER_NAME_BMG(44), "ALE XD"},
-    {DAISY, TABLE_SKIN3, "ds-3", false, CUSTOM_CHARACTER_NAME_BMG(45), "UltraWario"},
-    {PEACH, TABLE_SKIN1, "pc-1", false, CUSTOM_CHARACTER_NAME_BMG(46), "Whipinsnapper"},
-    {PEACH, TABLE_SKIN2, "pc-2", false, CUSTOM_CHARACTER_NAME_BMG(47), "GVRIMZ"},
-    {PEACH, TABLE_SKIN3, "pc-3", false, CUSTOM_CHARACTER_NAME_BMG(48), "UltraWario"},
-    {BIRDO, TABLE_SKIN1, "ca-1", false, CUSTOM_CHARACTER_NAME_BMG(49), "JTG"},
-    {BIRDO, TABLE_SKIN2, "ca-2", true, CUSTOM_CHARACTER_NAME_BMG(50), "DJ Lowgey"},
-    {DIDDY_KONG, TABLE_SKIN1, "dd-1", false, CUSTOM_CHARACTER_NAME_BMG(51), "Cazzyboy360"},
-    {DIDDY_KONG, TABLE_SKIN2, "dd-2", true, CUSTOM_CHARACTER_NAME_BMG(52), "UltraWario"},
-    {DIDDY_KONG, TABLE_SKIN3, "dd-3", true, CUSTOM_CHARACTER_NAME_BMG(53), "ZoroCarlos"},
-    {KING_BOO, TABLE_SKIN1, "kt-1", false, CUSTOM_CHARACTER_NAME_BMG(54), "UltraWario"},
-    {KING_BOO, TABLE_SKIN2, "kt-2", true, CUSTOM_CHARACTER_NAME_BMG(79), "UltraWario"},
-    {KING_BOO, TABLE_SKIN3, "kt-3", true, CUSTOM_CHARACTER_NAME_BMG(82), "Chiller7"},
-    {BOWSER_JR, TABLE_SKIN1, "jr-1", false, CUSTOM_CHARACTER_NAME_BMG(55), "UltraWario"},
-    {BOWSER_JR, TABLE_SKIN2, "jr-2", true, CUSTOM_CHARACTER_NAME_BMG(56), "JuniorMBW"},
-    {BOWSER_JR, TABLE_SKIN3, "jr-3", true, CUSTOM_CHARACTER_NAME_BMG(57), "DJ Lowgey"},
-    {BOWSER_JR, TABLE_SKIN4, "jr-4", false, CUSTOM_CHARACTER_NAME_BMG(58), "Whipinsnapper"},
-    {BOWSER_JR, TABLE_SKIN5, "jr-5", true, CUSTOM_CHARACTER_NAME_BMG(59), "UltraWario"},
-    {DRY_BOWSER, TABLE_SKIN1, "bk-1", false, CUSTOM_CHARACTER_NAME_BMG(60), "Kracken"},
-    {DRY_BOWSER, TABLE_SKIN2, "bk-2", true, CUSTOM_CHARACTER_NAME_BMG(61), "Ricoxemani, Cillow that Willow"},
-    {DRY_BOWSER, TABLE_SKIN3, "bk-3", true, CUSTOM_CHARACTER_NAME_BMG(83), "RedYoshiKart"},
-    {FUNKY_KONG, TABLE_SKIN1, "fk-1", false, CUSTOM_CHARACTER_NAME_BMG(62), "ZPL"},
-    {FUNKY_KONG, TABLE_SKIN2, "fk-2", true, CUSTOM_CHARACTER_NAME_BMG(63), "UltraWario"},
-    {FUNKY_KONG, TABLE_SKIN3, "fk-3", false, CUSTOM_CHARACTER_NAME_BMG(64), "ordartz"},
-    {FUNKY_KONG, TABLE_SKIN4, "fk-4", false, CUSTOM_CHARACTER_NAME_BMG(65), "Whipinsnapper"},
-    {FUNKY_KONG, TABLE_SKIN5, "fk-5", true, CUSTOM_CHARACTER_NAME_BMG(66), "Cillow that Willow"},
-    {ROSALINA, TABLE_SKIN1, "rs-1", false, CUSTOM_CHARACTER_NAME_BMG(67), "Chiller7"},
-    {ROSALINA, TABLE_SKIN2, "rs-2", false, CUSTOM_CHARACTER_NAME_BMG(68), "Eydra"},
-    {ROSALINA, TABLE_SKIN3, "rs-3", true, CUSTOM_CHARACTER_NAME_BMG(69), "UltraWario"},
-    {PEACH_BIKER, TABLE_SKIN1, "pc-1", false, CUSTOM_CHARACTER_NAME_BMG(70), "TheBeefBai"},
-    {PEACH_BIKER, TABLE_SKIN2, "pc-2", false, CUSTOM_CHARACTER_NAME_BMG(71), "ALE XD"},
-    {PEACH_BIKER, TABLE_SKIN3, "pc-3", false, CUSTOM_CHARACTER_NAME_BMG(72), "UltraWario"},
-    {DAISY_BIKER, TABLE_SKIN1, "ds-1", false, CUSTOM_CHARACTER_NAME_BMG(73), "Whipinsnapper"},
-    {DAISY_BIKER, TABLE_SKIN2, "ds-2", false, CUSTOM_CHARACTER_NAME_BMG(74), "GVRIMZ"},
-    {DAISY_BIKER, TABLE_SKIN3, "ds-3", false, CUSTOM_CHARACTER_NAME_BMG(75), "UltraWario"},
-    {ROSALINA_BIKER, TABLE_SKIN1, "rs-1", false, CUSTOM_CHARACTER_NAME_BMG(76), "Chiller7"},
-    {ROSALINA_BIKER, TABLE_SKIN2, "rs-2", false, CUSTOM_CHARACTER_NAME_BMG(77), "Eydra"},
-    {ROSALINA_BIKER, TABLE_SKIN3, "rs-3", true, CUSTOM_CHARACTER_NAME_BMG(78), "UltraWario"},
+    {MARIO, "mr-1", false, CUSTOM_CHARACTER_NAME_BMG(0), "LTC 91"},
+    {MARIO, "mr-2", false, CUSTOM_CHARACTER_NAME_BMG(1), "UltraWario"},
+    {MARIO, "mr-3", true, CUSTOM_CHARACTER_NAME_BMG(2), "GioMacGrillin"},
+    {BABY_PEACH, "bpc-1", false, CUSTOM_CHARACTER_NAME_BMG(3), "UltraWario"},
+    {BABY_PEACH, "bpc-2", true, CUSTOM_CHARACTER_NAME_BMG(4), "ALE XD"},
+    {WALUIGI, "wl-1", false, CUSTOM_CHARACTER_NAME_BMG(5), "TheBeefBai"},
+    {WALUIGI, "wl-2", false, CUSTOM_CHARACTER_NAME_BMG(6), "UltraWario"},
+    {WALUIGI, "wl-3", true, CUSTOM_CHARACTER_NAME_BMG(7), "UltraWario"},
+    {BOWSER, "kp-1", false, CUSTOM_CHARACTER_NAME_BMG(8), "UltraWario"},
+    {BOWSER, "kp-2", false, CUSTOM_CHARACTER_NAME_BMG(9), "UltraWario"},
+    {BOWSER, "kp-3", true, CUSTOM_CHARACTER_NAME_BMG(10), "UltraWario, Porko"},
+    {BOWSER, "kp-4", true, CUSTOM_CHARACTER_NAME_BMG(11), "Numerosity"},
+    {BABY_DAISY, "bds-1", false, CUSTOM_CHARACTER_NAME_BMG(12), "Poobah"},
+    {BABY_DAISY, "bds-2", true, CUSTOM_CHARACTER_NAME_BMG(13), "Porko, UltraWario"},
+    {DRY_BONES, "ka-1", false, CUSTOM_CHARACTER_NAME_BMG(14), "Tank2go"},
+    {DRY_BONES, "ka-2", false, CUSTOM_CHARACTER_NAME_BMG(15), "LTC 91"},
+    {DRY_BONES, "ka-3", true, CUSTOM_CHARACTER_NAME_BMG(16), "UltraWario"},
+    {DRY_BONES, "ka-4", true, CUSTOM_CHARACTER_NAME_BMG(17), "GioMacGrillin"},
+    {BABY_MARIO, "bmr-1", false, CUSTOM_CHARACTER_NAME_BMG(18), "Whipinsnapper"},
+    {BABY_MARIO, "bmr-2", false, CUSTOM_CHARACTER_NAME_BMG(19), "LTC 91"},
+    {BABY_MARIO, "bmr-3", true, CUSTOM_CHARACTER_NAME_BMG(20), "GioMacGrillin"},
+    {BABY_MARIO, "bmr-4", true, CUSTOM_CHARACTER_NAME_BMG(21), "UltraWario"},
+    {BABY_MARIO, "bmr-5", true, CUSTOM_CHARACTER_NAME_BMG(84), "dutchmvp26"},
+    {LUIGI, "lg-1", false, CUSTOM_CHARACTER_NAME_BMG(22), "UltraWario"},
+    {LUIGI, "lg-2", false, CUSTOM_CHARACTER_NAME_BMG(23), "PlayersPurity"},
+    {LUIGI, "lg-3", true, CUSTOM_CHARACTER_NAME_BMG(24), "JTG"},
+    {LUIGI, "lg-4", true, CUSTOM_CHARACTER_NAME_BMG(25), "ALE XD"},
+    {TOAD, "ko-1", false, CUSTOM_CHARACTER_NAME_BMG(26), "UltraWario"},
+    {TOAD, "ko-2", false, CUSTOM_CHARACTER_NAME_BMG(27), "UltraWario"},
+    {TOAD, "ko-3", true, CUSTOM_CHARACTER_NAME_BMG(28), "Monxy"},
+    {DONKEY_KONG, "dk-1", false, CUSTOM_CHARACTER_NAME_BMG(29), "Whipinsnapper"},
+    {DONKEY_KONG, "dk-2", false, CUSTOM_CHARACTER_NAME_BMG(30), "LTC 91"},
+    {DONKEY_KONG, "dk-3", true, CUSTOM_CHARACTER_NAME_BMG(31), "Monxy"},
+    {DONKEY_KONG, "dk-4", true, CUSTOM_CHARACTER_NAME_BMG(32), "Chiller7"},
+    {DONKEY_KONG, "dk-5", true, CUSTOM_CHARACTER_NAME_BMG(80), "ordatz"},
+    {YOSHI, "ys-1", false, CUSTOM_CHARACTER_NAME_BMG(33), "LTC 91"},
+    {YOSHI, "ys-2", false, CUSTOM_CHARACTER_NAME_BMG(34), "ordartz"},
+    {YOSHI, "ys-3", true, CUSTOM_CHARACTER_NAME_BMG(35), "UltraWario, Porko"},
+    {WARIO, "wr-1", false, CUSTOM_CHARACTER_NAME_BMG(36), "UltraWario"},
+    {WARIO, "wr-2", false, CUSTOM_CHARACTER_NAME_BMG(37), "UltraWario"},
+    {WARIO, "wr-3", true, CUSTOM_CHARACTER_NAME_BMG(38), "UltraWario"},
+    {BABY_LUIGI, "blg-1", false, CUSTOM_CHARACTER_NAME_BMG(39), "Tadhger"},
+    {BABY_LUIGI, "blg-2", true, CUSTOM_CHARACTER_NAME_BMG(81), "UltraWario"},
+    {TOADETTE, "kk-1", false, CUSTOM_CHARACTER_NAME_BMG(40), "Toadette Hack Fan"},
+    {KOOPA_TROOPA, "nk-1", false, CUSTOM_CHARACTER_NAME_BMG(41), "Jordi6304"},
+    {KOOPA_TROOPA, "nk-2", true, CUSTOM_CHARACTER_NAME_BMG(42), "UltraWario"},
+    {DAISY, "ds-1", false, CUSTOM_CHARACTER_NAME_BMG(43), "TheBeefBai"},
+    {DAISY, "ds-2", false, CUSTOM_CHARACTER_NAME_BMG(44), "ALE XD"},
+    {DAISY, "ds-3", false, CUSTOM_CHARACTER_NAME_BMG(45), "UltraWario"},
+    {PEACH, "pc-1", false, CUSTOM_CHARACTER_NAME_BMG(46), "Whipinsnapper"},
+    {PEACH, "pc-2", false, CUSTOM_CHARACTER_NAME_BMG(47), "GVRIMZ"},
+    {PEACH, "pc-3", false, CUSTOM_CHARACTER_NAME_BMG(48), "UltraWario"},
+    {BIRDO, "ca-1", false, CUSTOM_CHARACTER_NAME_BMG(49), "JTG"},
+    {BIRDO, "ca-2", true, CUSTOM_CHARACTER_NAME_BMG(50), "DJ Lowgey"},
+    {DIDDY_KONG, "dd-1", false, CUSTOM_CHARACTER_NAME_BMG(51), "Cazzyboy360"},
+    {DIDDY_KONG, "dd-2", true, CUSTOM_CHARACTER_NAME_BMG(52), "UltraWario"},
+    {DIDDY_KONG, "dd-3", true, CUSTOM_CHARACTER_NAME_BMG(53), "ZoroCarlos"},
+    {KING_BOO, "kt-1", false, CUSTOM_CHARACTER_NAME_BMG(54), "UltraWario"},
+    {KING_BOO, "kt-2", true, CUSTOM_CHARACTER_NAME_BMG(79), "UltraWario"},
+    {KING_BOO, "kt-3", true, CUSTOM_CHARACTER_NAME_BMG(82), "Chiller7"},
+    {BOWSER_JR, "jr-1", false, CUSTOM_CHARACTER_NAME_BMG(55), "UltraWario"},
+    {BOWSER_JR, "jr-2", true, CUSTOM_CHARACTER_NAME_BMG(56), "JuniorMBW"},
+    {BOWSER_JR, "jr-3", true, CUSTOM_CHARACTER_NAME_BMG(57), "DJ Lowgey"},
+    {BOWSER_JR, "jr-4", false, CUSTOM_CHARACTER_NAME_BMG(58), "Whipinsnapper"},
+    {BOWSER_JR, "jr-5", true, CUSTOM_CHARACTER_NAME_BMG(59), "UltraWario"},
+    {DRY_BOWSER, "bk-1", false, CUSTOM_CHARACTER_NAME_BMG(60), "Kracken"},
+    {DRY_BOWSER, "bk-2", true, CUSTOM_CHARACTER_NAME_BMG(61), "Ricoxemani, Cillow that Willow"},
+    {DRY_BOWSER, "bk-3", true, CUSTOM_CHARACTER_NAME_BMG(83), "RedYoshiKart"},
+    {FUNKY_KONG, "fk-1", false, CUSTOM_CHARACTER_NAME_BMG(62), "ZPL"},
+    {FUNKY_KONG, "fk-2", true, CUSTOM_CHARACTER_NAME_BMG(63), "UltraWario"},
+    {FUNKY_KONG, "fk-3", false, CUSTOM_CHARACTER_NAME_BMG(64), "ordartz"},
+    {FUNKY_KONG, "fk-4", false, CUSTOM_CHARACTER_NAME_BMG(65), "Whipinsnapper"},
+    {FUNKY_KONG, "fk-5", true, CUSTOM_CHARACTER_NAME_BMG(66), "Cillow that Willow"},
+    {ROSALINA, "rs-1", false, CUSTOM_CHARACTER_NAME_BMG(67), "Chiller7"},
+    {ROSALINA, "rs-2", false, CUSTOM_CHARACTER_NAME_BMG(68), "Eydra"},
+    {ROSALINA, "rs-3", true, CUSTOM_CHARACTER_NAME_BMG(69), "UltraWario"},
+    {PEACH_BIKER, "pc-1", false, CUSTOM_CHARACTER_NAME_BMG(70), "TheBeefBai"},
+    {PEACH_BIKER, "pc-2", false, CUSTOM_CHARACTER_NAME_BMG(71), "ALE XD"},
+    {PEACH_BIKER, "pc-3", false, CUSTOM_CHARACTER_NAME_BMG(72), "UltraWario"},
+    {DAISY_BIKER, "ds-1", false, CUSTOM_CHARACTER_NAME_BMG(73), "Whipinsnapper"},
+    {DAISY_BIKER, "ds-2", false, CUSTOM_CHARACTER_NAME_BMG(74), "GVRIMZ"},
+    {DAISY_BIKER, "ds-3", false, CUSTOM_CHARACTER_NAME_BMG(75), "UltraWario"},
+    {ROSALINA_BIKER, "rs-1", false, CUSTOM_CHARACTER_NAME_BMG(76), "Chiller7"},
+    {ROSALINA_BIKER, "rs-2", false, CUSTOM_CHARACTER_NAME_BMG(77), "Eydra"},
+    {ROSALINA_BIKER, "rs-3", true, CUSTOM_CHARACTER_NAME_BMG(78), "UltraWario"},
 };
 
 struct RawBRRES {
@@ -268,9 +262,12 @@ static CharacterId MenuBRRESCharacter(CharacterId character) {
 
 static const CharacterOverride* GetCharacterOverride(CharacterId character, u8 table) {
     if (table == TABLE_DEFAULT || table >= TABLE_COUNT) return nullptr;
+    u8 tableIdx = 1;
     for (u32 i = 0; i < ARRAY_COUNT(customCharacterAssets); ++i) {
         const CharacterOverride& characterOverride = customCharacterAssets[i];
-        if (characterOverride.character == character && characterOverride.tableIdx == table) return &characterOverride;
+        if (characterOverride.character != character) continue;
+        if (tableIdx == table) return &characterOverride;
+        ++tableIdx;
     }
     return nullptr;
 }
@@ -1012,12 +1009,6 @@ kmRuntimeUse(0x8055b7f8);
 static bool BindRawBRRES(nw4r::g3d::ResFile& resFile, const char* path) {
     typedef u32 (*Fn)(nw4r::g3d::ResFile*, const char*, const nw4r::g3d::ResFile*, u32);
     return reinterpret_cast<Fn>(kmRuntimeAddr(0x8055b7f8))(&resFile, path, nullptr, 0) != 0;
-}
-
-kmRuntimeUse(0x8055ba64);
-static bool RawBRRESHasModel(nw4r::g3d::ResFile& resFile) {
-    typedef u32 (*Fn)(const char*, const nw4r::g3d::ResFile&);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8055ba64))("model", resFile) != 0;
 }
 
 static bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
