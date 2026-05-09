@@ -129,6 +129,7 @@ class RaceActor : public Actor<4>, public LinkedRaceActor {
     Handle* StartNewSoundLimited(u32 soundId, float volume) override;  // thunk 80702620 func 807013a8
     bool StartSound(u32 soundId, Handle* handle) override;  // thunk 807025f8 func 80701154
     bool StartSound(u32 soundId, Handle* handle, const StartInfo* startInfo) override;  // thunk 80702600 func 807011e0
+    bool StartSound(u32 soundId, const StartInfo* startInfo);  // 807011c8
     bool HoldSound(u32 soundId, Handle* handle) override;  // thunk 807025e8 func 80701274
     bool HoldSound(u32 soundId, Handle* handle, const StartInfo* startInfo) override;  // thunk 807025f0 func 80701300
     void SetupBRASD(snd::detail::AnimSoundFile* rawBRASD) override;  // thunk 807025e0 func 80700728
@@ -158,6 +159,7 @@ class Anim : public snd::detail::AnimSoundImpl {  // BRASD for example penguins
 };  // 0x40
 
 class RaceAnimActor : public RaceActor {
+   public:
     RaceAnimActor();  // 80701018
     // AUDIOACTOR
     // SoundActor vtable 808c7b00

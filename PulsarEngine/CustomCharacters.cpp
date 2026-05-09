@@ -1,13 +1,15 @@
 ﻿#include <hooks.hpp>
 #include <runtimeWrite.hpp>
 #include <CustomCharacters.hpp>
+#include <PulsarSystem.hpp>
 #include <Settings/Settings.hpp>
+#include <include/c_string.h>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/UI/Page/Menu/CharacterSelect.hpp>
 #include <MarioKartWii/Driver/DriverController.hpp>
+#include <MarioKartWii/Driver/Tico.hpp>
 #include <MarioKartWii/Driver/Toadette.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
-#include <MarioKartWii/Audio/Actors/RaceActor.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/System/Random.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
@@ -19,9 +21,11 @@
 #include <MarioKartWii/Input/Controller.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRace2DMap.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceResult.hpp>
+#include <core/RK/RKSystem.hpp>
 #include <core/egg/DVD/DvdRipper.hpp>
 #include <core/egg/mem/ExpHeap.hpp>
 #include <core/rvl/dvd/dvd.hpp>
+#include <core/rvl/os/OS.hpp>
 #include <core/nw4r/ut/List.hpp>
 #include <MarioKartWii/3D/Scn/ScnMgr.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
@@ -626,14 +630,13 @@ bool ShouldMuteCharacterVoice(const Kart::Link* link) {
     return characterOverride != nullptr && characterOverride->silentVoice;
 }
 
-kmRuntimeUse(0x807d9b98);
 static TicoModel* CreateTicoModelHook(void* memory, DriverController* controller) {
     if (controller != nullptr && ShouldMuteCharacterVoice(controller)) {
         if (memory != nullptr) ::operator delete(memory);
         return nullptr;
     }
-    typedef TicoModel* (*Ctor)(void*, DriverController*);
-    return reinterpret_cast<Ctor>(kmRuntimeAddr(0x807d9b98))(memory, controller);
+    if (memory == nullptr) return nullptr;
+    return new (memory) TicoModel(controller);
 }
 kmCall(0x807c8994, CreateTicoModelHook);
 
@@ -898,10 +901,8 @@ static void PositionAuthorNameControl(LayoutUIControl& control) {
     }
 }
 
-kmRuntimeUse(0x8083d840);
 static CharaName* ConstructCharaName(CharaName* name) {
-    typedef CharaName* (*Fn)(CharaName*);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8083d840))(name);
+    return new (name) CharaName;
 }
 
 static void AttachAuthorNameControl(CharaName& name, const char* folderName, const char* ctrName, const char* variant) {
@@ -935,10 +936,8 @@ static void AttachAuthorNameControl(CharaName& name, const char* folderName, con
     authorNameControlLoaded[hud] = true;
 }
 
-kmRuntimeUse(0x805c2c60);
 static void CharacterSelectNameLoadHook(ControlLoader* loader, const char* folderName, const char* ctrName, const char* variant, const char** animNames) {
-    typedef void (*Fn)(ControlLoader*, const char*, const char*, const char*, const char**);
-    reinterpret_cast<Fn>(kmRuntimeAddr(0x805c2c60))(loader, folderName, ctrName, variant, animNames);
+    loader->Load(folderName, ctrName, variant, animNames);
     if (loadingAuthorNameControl || loader == nullptr || loader->layoutUIControl == nullptr) return;
     AttachAuthorNameControl(*static_cast<CharaName*>(loader->layoutUIControl), folderName, ctrName, variant);
 }
@@ -1063,10 +1062,8 @@ static EGG::Heap* RawParentHeap(GameScene& scene, u32 heapSize) {
     return nullptr;
 }
 
-kmRuntimeUse(0x8055b7f8);
 static bool BindRawBRRES(nw4r::g3d::ResFile& resFile, const char* path) {
-    typedef u32 (*Fn)(nw4r::g3d::ResFile*, const char*, const nw4r::g3d::ResFile*, u32);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8055b7f8))(&resFile, path, nullptr, 0) != 0;
+    return ModelDirector::BindBRRESImpl(resFile, path, nullptr, 0);
 }
 
 static bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
@@ -1216,11 +1213,9 @@ static bool TryLoadLooseMiiCBRRESIntoHeap(void* holder, CharacterId character, E
     return LoadRawBRRESIntoHeap(holder, heap, path, fileSize);
 }
 
-kmRuntimeUse(0x8081e358);
 static u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
     if (TryLoadCustomMenuBRRES(holder, character) || TryLoadLooseMiiCBRRES(holder, character)) return 1;
-    typedef u32 (*Fn)(void*, CharacterId);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e358))(holder, character);
+    return static_cast<MenuModelBRRESHandle*>(holder)->BindDriverBRRES(character);
 }
 kmCall(0x80830368, LoadMenuDriverBRRESHook);
 kmCall(0x80831234, LoadMenuDriverBRRESHook);
@@ -1232,8 +1227,7 @@ static bool LoadMenuDriverBRRESForReload(void* holder, CharacterId character, EG
     if (fileExists) return false;
     if (TryLoadLooseMiiCBRRESIntoHeap(holder, character, heap, fileExists)) return true;
     if (fileExists) return false;
-    typedef u32 (*Fn)(void*, CharacterId);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e358))(holder, character) != 0;
+    return static_cast<MenuModelBRRESHandle*>(holder)->BindDriverBRRES(character);
 }
 
 static bool BuildMinimapTPLPath(CharacterId character, u8 table, char* path, u32 pathSize) {
@@ -1311,22 +1305,17 @@ static void ApplyLooseMinimapTPL(CtrlRace2DMapCharacter* control) {
     ReplacePaneTPL(control->charaShadow1Pane, tpl);
 }
 
-kmRuntimeUse(0x807ec6e8);
 static void InitMinimapCharacterHook(CtrlRace2DMapCharacter* control) {
     ApplyLooseMinimapTPL(control);
-    typedef void (*Fn)(CtrlRaceBase*);
-    reinterpret_cast<Fn>(kmRuntimeAddr(0x807ec6e8))(control);
+    control->CtrlRaceBase::InitSelf();
 }
 kmCall(0x807eb22c, InitMinimapCharacterHook);
 
-kmRuntimeUse(0x80540e3c);
 static ArchivesHolder* LoadKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
                                            EGG::Heap* decompressedHeap, EGG::Heap* archiveHeap) {
-    typedef ArchivesHolder* (*Fn)(ArchiveMgr*, u8, KartId, CharacterId, u32, u32, EGG::Heap*, EGG::Heap*);
     const char* oldName;
     const char** entry = BeginNameSwap(playerId, character, oldName);
-    ArchivesHolder* holder =
-        reinterpret_cast<Fn>(kmRuntimeAddr(0x80540e3c))(archiveMgr, playerId, kart, character, color, type, decompressedHeap, archiveHeap);
+    ArchivesHolder* holder = archiveMgr->LoadKartArchive(playerId, kart, character, color, type, decompressedHeap, archiveHeap);
     if (entry != nullptr) *entry = oldName;
     return holder;
 }
@@ -1341,7 +1330,6 @@ struct MenuKartArchiveLoader {
     u32 gamemode;
 };
 
-kmRuntimeUse(0x80541e44);
 static bool RequestLoadKartArchivesImmediate(ArchiveMgr* archiveMgr, u8 hudSlotId, CharacterId character, u32 gamemode) {
     if (archiveMgr == nullptr || hudSlotId >= LOCAL_PLAYER_COUNT) return false;
     MenuKartArchiveLoader* loader = reinterpret_cast<MenuKartArchiveLoader*>(&archiveMgr->allkartsModelsLoaders[hudSlotId]);
@@ -1349,23 +1337,20 @@ static bool RequestLoadKartArchivesImmediate(ArchiveMgr* archiveMgr, u8 hudSlotI
     loader->character = character;
     loader->gamemode = gamemode;
     loader->state = 1;
-    typedef void (*Fn)(u8);
-    reinterpret_cast<Fn>(kmRuntimeAddr(0x80541e44))(hudSlotId);
+    ArchiveMgr::LoadKartArchiveAsync(hudSlotId);
     return true;
 }
 kmCall(0x805f5658, RequestLoadKartArchivesImmediate);
 kmCall(0x805f5798, RequestLoadKartArchivesImmediate);
 kmCall(0x805f592c, RequestLoadKartArchivesImmediate);
 
-kmRuntimeUse(0x805419c8);
 static const char* GetMenuDriverBRRESNameHook(u32 character) {
-    typedef const char* (*Fn)(u32);
     const CharacterId id = static_cast<CharacterId>(character);
     const u8 table = ResolveMenuTable(id);
-    if (IsCharacter(id) && table < TABLE_COUNT && rawBRRES[table][id].failed) return reinterpret_cast<Fn>(kmRuntimeAddr(0x805419c8))(character);
+    if (IsCharacter(id) && table < TABLE_COUNT && rawBRRES[table][id].failed) return ArchiveMgr::GetKartArchivePostfix(id);
     const char* name = DriverBRRESName(id, table);
     if (name != nullptr) return name;
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x805419c8))(character);
+    return ArchiveMgr::GetKartArchivePostfix(id);
 }
 kmCall(0x8081e4a0, GetMenuDriverBRRESNameHook);
 
@@ -1465,16 +1450,13 @@ static void DestroyMenuModelMgrInstanceHook() {
 }
 kmBranch(0x8059e04c, DestroyMenuModelMgrInstanceHook);
 
-kmRuntimeUse(0x8020f62c);
-kmRuntimeUse(0x80386e64);
-static EGG::Allocator** MenuAllocatorSlot() { return reinterpret_cast<EGG::Allocator**>(kmRuntimeAddr(0x80386e64)); }
+static EGG::Allocator** MenuAllocatorSlot() { return &menuAllocator; }
 
 static EGG::Allocator* CreateScnObjAllocator(EGG::Heap* parent) {
     if (parent == nullptr) return nullptr;
     void* buf = operator new(0x1c, parent, 4);
     if (buf == nullptr) return nullptr;
-    typedef EGG::Allocator* (*Ctor)(EGG::Allocator*, EGG::Heap*, s32);
-    return reinterpret_cast<Ctor>(kmRuntimeAddr(0x8020f62c))(reinterpret_cast<EGG::Allocator*>(buf), parent, 0x20);
+    return new (buf) EGG::Allocator(parent, 0x20);
 }
 
 static EGG::ExpHeap* CreateMenuDriverModelHeap(GameScene& scene) {
@@ -1544,22 +1526,16 @@ static KartId& MenuDriverModelVehicleSlot(MenuDriverModel& model) {
     return *reinterpret_cast<KartId*>(reinterpret_cast<u8*>(&model) + MENU_DRIVER_MODEL_VEHICLE_OFFSET);
 }
 
-kmRuntimeUse(0x8081e284);
 static void ConstructMenuModelBRRESHandle(void* handle) {
-    typedef void (*Fn)(void*);
-    reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e284))(handle);
+    new (handle) MenuModelBRRESHandle;
 }
 
-kmRuntimeUse(0x8081e29c);
 static void DestroyMenuModelBRRESHandle(void* handle) {
-    typedef void (*Fn)(void*, s32);
-    reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e29c))(handle, -1);
+    static_cast<MenuModelBRRESHandle*>(handle)->~MenuModelBRRESHandle();
 }
 
-kmRuntimeUse(0x8081e78c);
 static bool LoadMenuDriverModel(void* handle, ModelDirector* model, CharacterId character) {
-    typedef u32 (*Fn)(void*, ModelDirector*, CharacterId);
-    return reinterpret_cast<Fn>(kmRuntimeAddr(0x8081e78c))(handle, model, character) != 0;
+    return static_cast<MenuModelBRRESHandle*>(handle)->LoadDriverModel(*model, character);
 }
 
 static bool IsLoadedMenuDriverModelReady(const ModelDirector* model) {
@@ -1783,11 +1759,9 @@ static void ResetCustomCharacterMenuState() {
 }
 static SectionLoadHook ResetCustomCharacterMenuStateHook(ResetCustomCharacterMenuState);
 
-kmRuntimeUse(0x8083e5f4);
 static void CharacterSelectHoverHook(Pages::CharacterSelect* page, CtrlMenuCharacterSelect::ButtonDriver* button, u32 buttonId, u8 hud) {
     if (hud < LOCAL_PLAYER_COUNT) hoveredCharacters[hud] = static_cast<CharacterId>(buttonId);
-    typedef void (*Fn)(Pages::CharacterSelect*, CtrlMenuCharacterSelect::ButtonDriver*, u32, u8);
-    reinterpret_cast<Fn>(kmRuntimeAddr(0x8083e5f4))(page, button, buttonId, hud);
+    page->OnButtonDriverSelect(button, buttonId, hud);
     if (hud < LOCAL_PLAYER_COUNT) characterNameTextControl[hud] = nullptr;
     UpdateCharacterSelectNameText(page, hud);
     UpdateCharacterSelectAuthorText(page, hud);
@@ -1911,14 +1885,12 @@ static bool ProcessSkinInput() {
     return false;
 }
 
-kmRuntimeUse(0x8063583c);
 static void MenuSceneSectionUpdateHook(SectionMgr* mgr) {
     UpdateHintPanes();
     ProcessSkinInput();
     UpdateCurrentCharacterSelectAuthorText(0);
     ApplyVoteRandomMessageBoxKartState();
-    typedef void (*Fn)(SectionMgr*);
-    reinterpret_cast<Fn>(kmRuntimeAddr(0x8063583c))(mgr);
+    mgr->MenuUpdate();
     ApplyVoteRandomMessageBoxKartState();
 }
 kmCall(0x805552e8, MenuSceneSectionUpdateHook);

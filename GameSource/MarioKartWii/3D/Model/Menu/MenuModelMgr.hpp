@@ -19,6 +19,7 @@ enum BackModelType {
 extern EGG::Allocator* menuAllocator;  // 80386e64, based on the address, probably for something low-level
 
 class MenuModelBRRESHandle {
+   public:
     MenuModelBRRESHandle();  // 8081e284
     virtual ~MenuModelBRRESHandle();  // 8081e29c vtable 808d6dcc
 

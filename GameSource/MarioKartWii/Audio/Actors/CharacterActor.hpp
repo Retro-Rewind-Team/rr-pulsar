@@ -38,6 +38,7 @@ class RandomCharacterActorPicker : public RandomSoundPicker {  // one per type
 };  // 0x30
 
 class CharacterActor : public RaceAnimActor {
+   public:
     CharacterActor();  // 80863928
 
     // AUDIOACTOR
@@ -54,9 +55,10 @@ class CharacterActor : public RaceAnimActor {
     bool HoldSound(u32 soundId) override;  // 44 thunk 80866d1c func 808656c4
     void StopSound(int fadeOutFrames) override;  // 4c thunk 80866d14 func 80855984
 
-    void PlayCharacterActor(CharacterSourceType type);  // 80864914
+    u32 PlayCharacterActor(CharacterSourceType type);  // 80864914
     void PlayCharacterActorConditional(CharacterSourceType type);  // 808646f0, conditional to prevent too much overlapping
     // big switch depending on type to then call PlayCharacterActor
+    u32 PlayGoalSound(u32 type);  // 80864cec
     void PlayCharacterCollisionSound(DamageType type);  // 80865448
     u32 GetCharacterGroupId();  // 80866388
     u32 GetCharacterCannonGroupId();  // 80866404
