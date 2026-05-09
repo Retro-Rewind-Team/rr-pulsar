@@ -136,7 +136,7 @@ static const CharacterOverride customCharacterAssets[] = {
     {BOWSER_JR, "jr-5", true, CUSTOM_CHARACTER_NAME_BMG(59), L"Nabbit", "UltraWario"},
     {DRY_BOWSER, "bk-1", false, CUSTOM_CHARACTER_NAME_BMG(60), L"Dry Bowser (Dark)", "Kracken"},
     {DRY_BOWSER, "bk-2", true, CUSTOM_CHARACTER_NAME_BMG(61), L"Lubba", "Ricoxemani, Cillow that Willow", BRSAR_GROUP_WALUIGI},
-    {DRY_BOWSER, "bk-3", true, CUSTOM_CHARACTER_NAME_BMG(83), L"Petey Piranha", "RedYoshiKart"},
+    {DRY_BOWSER, "bk-3", true, CUSTOM_CHARACTER_NAME_BMG(83), L"Petey Piranha", "RedYoshiKart", BRSAR_GROUP_FUNKY_KONG},
     {FUNKY_KONG, "fk-1", false, CUSTOM_CHARACTER_NAME_BMG(62), L"Zapple Kong", "ZPL"},
     {FUNKY_KONG, "fk-2", true, CUSTOM_CHARACTER_NAME_BMG(63), L"Chain Chomp", "UltraWario"},
     {FUNKY_KONG, "fk-3", false, CUSTOM_CHARACTER_NAME_BMG(64), L"Funky Kong (Link)", "ordartz"},
