@@ -21,6 +21,7 @@
 #include <MarioKartWii/Input/Controller.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRace2DMap.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceResult.hpp>
+#include <MarioKartWii/Audio/Actors/CharacterActor.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/egg/DVD/DvdRipper.hpp>
 #include <core/egg/mem/ExpHeap.hpp>
@@ -50,6 +51,8 @@ enum {
     MII_C_COUNT = 6
 };
 
+extern "C" const char* characterNames[];
+
 static_assert(TABLE_COUNT <= (1 << PACKET_BITS), "SELECT packet skin table field is too small");
 static_assert(PACKET_BITS * 2 <= 8, "SELECT packet skin table fields must fit in one byte");
 
@@ -60,6 +63,7 @@ struct CharacterOverride {
     u32 nameBmgId;
     const wchar_t* fallbackName;
     const char* authorText;
+    u32 voiceBaseGroupId;
 };
 
 #define CUSTOM_CHARACTER_NAME_BMG(index) (UI::BMG_CUSTOM_CHARACTER_NAME_START + (index))
@@ -131,7 +135,7 @@ static const CharacterOverride customCharacterAssets[] = {
     {BOWSER_JR, "jr-4", false, CUSTOM_CHARACTER_NAME_BMG(58), L"Bowser Jr. (Dark)", "Whipinsnapper"},
     {BOWSER_JR, "jr-5", true, CUSTOM_CHARACTER_NAME_BMG(59), L"Nabbit", "UltraWario"},
     {DRY_BOWSER, "bk-1", false, CUSTOM_CHARACTER_NAME_BMG(60), L"Dry Bowser (Dark)", "Kracken"},
-    {DRY_BOWSER, "bk-2", true, CUSTOM_CHARACTER_NAME_BMG(61), L"Lubba", "Ricoxemani, Cillow that Willow"},
+    {DRY_BOWSER, "bk-2", true, CUSTOM_CHARACTER_NAME_BMG(61), L"Lubba", "Ricoxemani, Cillow that Willow", BRSAR_GROUP_WALUIGI},
     {DRY_BOWSER, "bk-3", true, CUSTOM_CHARACTER_NAME_BMG(83), L"Petey Piranha", "RedYoshiKart"},
     {FUNKY_KONG, "fk-1", false, CUSTOM_CHARACTER_NAME_BMG(62), L"Zapple Kong", "ZPL"},
     {FUNKY_KONG, "fk-2", true, CUSTOM_CHARACTER_NAME_BMG(63), L"Chain Chomp", "UltraWario"},
@@ -198,11 +202,6 @@ static const GameScene* reloadedMenuDriverModelSceneOwner;
 static MenuDriverModel* reloadedMenuDriverModelOwner;
 static bool forceDefaultMenuDriverBRRES;
 
-kmRuntimeUse(0x808b3a90);
-static const u32 CHARACTER_NAMES_ADDRESS = kmRuntimeAddr(0x808b3a90);
-kmRuntimeUse(0x809c1850);
-static const u32 SCNMGR_INSTANCES_ADDRESS = kmRuntimeAddr(0x809c1850);
-
 static u8 MinLocalPlayers(u32 count) {
     return count > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(count);
 }
@@ -219,7 +218,7 @@ static bool IsMiiCharacter(CharacterId character) {
 
 static const char** CharacterNameEntry(CharacterId character) {
     if (!IsCharacter(character)) return nullptr;
-    return reinterpret_cast<const char**>(CHARACTER_NAMES_ADDRESS) + character;
+    return characterNames + character;
 }
 
 static void CacheDefaults() {
@@ -968,7 +967,7 @@ static void DetachHeapListNodes(nw4r::ut::List* list, const EGG::ExpHeap* heap) 
 
 static void DetachHeapFromScnMgrs(const EGG::ExpHeap* heap) {
     if (heap == nullptr) return;
-    ScnMgr* const* mgrs = reinterpret_cast<ScnMgr* const*>(SCNMGR_INSTANCES_ADDRESS);
+    ScnMgr* const* mgrs = ScnMgr::sInstance;
     for (u32 i = 0; i < 2; ++i) {
         ScnMgr* mgr = mgrs[i];
         if (mgr == nullptr) continue;
@@ -1149,6 +1148,153 @@ static bool CharacterHasOnlyBaseVoiceGroup(CharacterId character) {
     return character == DRY_BONES || character == KOOPA_TROOPA || character == KING_BOO;
 }
 
+static bool FindVoiceGroupBaseCharacter(u32 groupId, CharacterId& character) {
+    for (u32 i = 0; i < ARRAY_COUNT(voiceGroupBases); ++i) {
+        if (voiceGroupBases[i].groupId != groupId) continue;
+        character = voiceGroupBases[i].character;
+        return true;
+    }
+    return false;
+}
+
+static bool FindVoiceGroupBase(CharacterId character, u32& groupId) {
+    for (u32 i = 0; i < ARRAY_COUNT(voiceGroupBases); ++i) {
+        if (voiceGroupBases[i].character != character) continue;
+        groupId = voiceGroupBases[i].groupId;
+        return true;
+    }
+    return false;
+}
+
+static bool VoiceBaseGroupForTable(CharacterId character, u8 table, u32& groupId) {
+    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
+    if (characterOverride != nullptr && characterOverride->voiceBaseGroupId != 0) {
+        CharacterId groupCharacter = CHARACTER_NONE;
+        if (!FindVoiceGroupBaseCharacter(characterOverride->voiceBaseGroupId, groupCharacter)) return false;
+        groupId = characterOverride->voiceBaseGroupId;
+        return true;
+    }
+    return FindVoiceGroupBase(character, groupId);
+}
+
+static bool ActorRaceCharacter(const Audio::CharacterActor* actor, CharacterId& character) {
+    const Racedata* racedata = Racedata::sInstance;
+    if (actor == nullptr || racedata == nullptr) return false;
+    const u8 playerId = actor->playerId;
+    if (playerId >= racedata->racesScenario.playerCount) return false;
+    character = racedata->racesScenario.players[playerId].characterId;
+    return IsCharacter(character) && !IsMiiCharacter(character);
+}
+
+static bool VoiceBaseGroupForActor(const Audio::CharacterActor* actor, CharacterId& character, u32& groupId, CharacterId& groupCharacter) {
+    if (!ActorRaceCharacter(actor, character)) return false;
+    const u8 table = RaceSkinTable(actor->playerId, character);
+    if (!VoiceBaseGroupForTable(character, table, groupId)) return false;
+    if (!FindVoiceGroupBaseCharacter(groupId, groupCharacter)) return false;
+    return groupCharacter != character;
+}
+
+static CharacterId VoiceBaseCharacterForActor(const Audio::CharacterActor* actor) {
+    CharacterId character = CHARACTER_NONE;
+    CharacterId groupCharacter = CHARACTER_NONE;
+    u32 groupId = 0;
+    return VoiceBaseGroupForActor(actor, character, groupId, groupCharacter) ? groupCharacter : CHARACTER_NONE;
+}
+
+static Audio::CharacterActor* voiceInitActor;
+
+static Audio::CharacterVoiceActionTable VoiceActionTable(CharacterId character) {
+    if (!IsCharacter(character)) return nullptr;
+    return Audio::CharacterActor::voiceActionTables[character];
+}
+
+static Audio::CharacterVoiceActionTable& CharacterActorVoiceActionTableSlot(Audio::CharacterActor& actor) {
+    return *reinterpret_cast<Audio::CharacterVoiceActionTable*>(reinterpret_cast<u8*>(&actor) + 0x134);
+}
+
+static u16& CharacterActorCharacterSlot(Audio::CharacterActor& actor) {
+    return *reinterpret_cast<u16*>(reinterpret_cast<u8*>(&actor) + 0x9c);
+}
+
+static bool ApplyVoiceBaseActionTable(Audio::CharacterActor* actor) {
+    const CharacterId voiceCharacter = VoiceBaseCharacterForActor(actor);
+    Audio::CharacterVoiceActionTable table = VoiceActionTable(voiceCharacter);
+    if (table == nullptr) return false;
+    CharacterActorVoiceActionTableSlot(*actor) = table;
+    return true;
+}
+
+static void InitCharacterVoiceRangesHook(Audio::CharacterActor* actor) {
+    voiceInitActor = actor;
+    const CharacterId voiceCharacter = VoiceBaseCharacterForActor(actor);
+    if (!IsCharacter(voiceCharacter)) {
+        actor->InitVoiceRanges();
+        return;
+    }
+
+    u16& character = CharacterActorCharacterSlot(*actor);
+    const u16 oldCharacter = character;
+    character = static_cast<u16>(voiceCharacter);
+    actor->InitVoiceRanges();
+    character = oldCharacter;
+    ApplyVoiceBaseActionTable(actor);
+}
+kmCall(0x80863ccc, InitCharacterVoiceRangesHook);
+
+static void* DriverSoundSetForLinkHook(void* manager, CharacterId character, u32 type) {
+    ApplyVoiceBaseActionTable(voiceInitActor);
+    const CharacterId voiceCharacter = VoiceBaseCharacterForActor(voiceInitActor);
+    if (IsCharacter(voiceCharacter)) {
+        CharacterId actorCharacter = CHARACTER_NONE;
+        if (ActorRaceCharacter(voiceInitActor, actorCharacter) && character == actorCharacter) character = voiceCharacter;
+    }
+    return static_cast<Audio::DriverSoundManager*>(manager)->GetCharacterVoiceSoundSet(character, type);
+}
+kmCall(0x80863dd8, DriverSoundSetForLinkHook);
+
+static u32 CharacterVoiceGroupHook(Audio::CharacterActor* actor) {
+    ApplyVoiceBaseActionTable(actor);
+    CharacterId character = CHARACTER_NONE;
+    CharacterId groupCharacter = CHARACTER_NONE;
+    u32 groupId = 0;
+    if (VoiceBaseGroupForActor(actor, character, groupId, groupCharacter)) {
+        if (!actor->isLocal && !CharacterHasOnlyBaseVoiceGroup(groupCharacter)) ++groupId;
+        return groupId;
+    }
+    return actor->GetCharacterGroupId();
+}
+kmCall(0x80716224, CharacterVoiceGroupHook);
+
+static u32 CharacterCannonVoiceGroupHook(Audio::CharacterActor* actor) {
+    ApplyVoiceBaseActionTable(actor);
+    CharacterId character = CHARACTER_NONE;
+    CharacterId groupCharacter = CHARACTER_NONE;
+    u32 groupId = 0;
+    if (VoiceBaseGroupForActor(actor, character, groupId, groupCharacter)) {
+        if (CharacterHasOnlyBaseVoiceGroup(groupCharacter)) return 0xffffffff;
+        return groupId + (actor->isLocal ? 2 : 3);
+    }
+    return actor->GetCharacterCannonGroupId();
+}
+kmCall(0x80716280, CharacterCannonVoiceGroupHook);
+
+static u32 CharacterGoalVoiceGroupHook(Audio::CharacterActor* actor, u32 type) {
+    ApplyVoiceBaseActionTable(actor);
+    CharacterId character = CHARACTER_NONE;
+    CharacterId groupCharacter = CHARACTER_NONE;
+    u32 groupId = 0;
+    if (!VoiceBaseGroupForActor(actor, character, groupId, groupCharacter)) {
+        return actor->GetCharacterGoalGroupId(type);
+    }
+    u16& actorCharacter = CharacterActorCharacterSlot(*actor);
+    const u16 oldCharacter = actorCharacter;
+    actorCharacter = static_cast<u16>(groupCharacter);
+    const u32 group = actor->GetCharacterGoalGroupId(type);
+    actorCharacter = oldCharacter;
+    return group;
+}
+kmCall(0x80716254, CharacterGoalVoiceGroupHook);
+
 static bool FindVoiceGroup(u32 groupId, CharacterId& character, u32& offset) {
     for (u32 i = 0; i < ARRAY_COUNT(voiceGroupBases); ++i) {
         if (voiceGroupBases[i].groupId == groupId) {
@@ -1199,12 +1345,16 @@ const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix) 
     const Racedata* racedata = Racedata::sInstance;
     if (racedata == nullptr) return nullptr;
     const RacedataScenario& scenario = racedata->racesScenario;
+    const u32 groupBaseId = groupId - groupOffset;
     for (u8 playerId = 0; playerId < scenario.playerCount && playerId < ONLINE_PLAYER_COUNT; ++playerId) {
         const RacedataPlayer& player = scenario.players[playerId];
-        if (player.characterId != groupCharacter || !PlayerMatchesVoiceGroupOffset(player.playerType, groupOffset)) continue;
-        const u8 table = RaceSkinTable(playerId, groupCharacter);
-        if (!HasLooseCustomVoiceFiles(groupCharacter, table)) continue;
-        const CharacterOverride* characterOverride = GetCharacterOverride(groupCharacter, table);
+        if (!PlayerMatchesVoiceGroupOffset(player.playerType, groupOffset)) continue;
+        const CharacterId character = player.characterId;
+        const u8 table = RaceSkinTable(playerId, character);
+        u32 playerGroupBaseId = 0;
+        if (!VoiceBaseGroupForTable(character, table, playerGroupBaseId) || playerGroupBaseId != groupBaseId) continue;
+        if (!HasLooseCustomVoiceFiles(character, table)) continue;
+        const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
         if (characterOverride != nullptr && characterOverride->postfix != nullptr && LooseVoiceStemExists(characterOverride->postfix, groupSuffix)) {
             return characterOverride->postfix;
         }
@@ -1534,7 +1684,7 @@ static void DetachListNodeIfPresent(nw4r::ut::List* list, void* target) {
 
 static void DetachModelDirectorFromScnMgrs(ModelDirector* model) {
     if (model == nullptr) return;
-    ScnMgr* const* mgrs = reinterpret_cast<ScnMgr* const*>(SCNMGR_INSTANCES_ADDRESS);
+    ScnMgr* const* mgrs = ScnMgr::sInstance;
     for (u32 i = 0; i < 2; ++i) {
         ScnMgr* mgr = mgrs[i];
         if (mgr == nullptr) continue;
@@ -1801,7 +1951,7 @@ static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId cha
     if (scene == nullptr) return false;
     SyncReloadedMenuDriverModelHeaps(driverMgr.models);
 
-    ScnMgr* const* mgrs = reinterpret_cast<ScnMgr* const*>(SCNMGR_INSTANCES_ADDRESS);
+    ScnMgr* const* mgrs = ScnMgr::sInstance;
     ScnMgr* scnMgr = mgrs[0];
     if (scnMgr == nullptr) return false;
 

@@ -31,6 +31,15 @@ enum CharacterSourceType {
 };
 
 class CharacterActor;
+typedef void (*CharacterVoiceActionTable)(s32* type, bool isReal);
+
+class DriverSoundManager {
+   public:
+    RandomSoundPicker* GetCharacterVoiceSoundSet(CharacterId character, u32 type);  // 80868f1c
+
+    static DriverSoundManager sInstance;  // 809c4740
+};
+
 class RandomCharacterActorPicker : public RandomSoundPicker {  // one per type
     RandomCharacterActorPicker();  // 808676e0
     ~RandomCharacterActorPicker() override;  // 808639e8 vtable 808dbe18
@@ -60,8 +69,10 @@ class CharacterActor : public RaceAnimActor {
     // big switch depending on type to then call PlayCharacterActor
     u32 PlayGoalSound(u32 type);  // 80864cec
     void PlayCharacterCollisionSound(DamageType type);  // 80865448
+    void InitVoiceRanges();  // 80863eb8
     u32 GetCharacterGroupId();  // 80866388
     u32 GetCharacterCannonGroupId();  // 80866404
+    u32 GetCharacterGoalGroupId(u32 type);  // 808664c4
 
     CharacterSourceType requestedType;  // 0xFC can be used to request but can also just call 808646f0
     u32 delay;  // 0x100 if request, delay until request is executed
@@ -87,6 +98,7 @@ class CharacterActor : public RaceAnimActor {
     u8 unknown_0x6fe;
     bool unknown_0x6ff;
     u8 unknown_0x700[8];
+    static CharacterVoiceActionTable voiceActionTables[24];  // 808afc18
     static u32 charactersGroupIds[24];  // 808afb58
 };  // 0x708
 // size_assert(CharacterActor, 0x708);
