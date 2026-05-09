@@ -94,7 +94,7 @@ static const CharacterOverride customCharacterAssets[] = {
     {BABY_MARIO, "bmr-5", true, CUSTOM_CHARACTER_NAME_BMG(84), L"Paper Mario", "dutchmvp26"},
     {LUIGI, "lg-1", false, CUSTOM_CHARACTER_NAME_BMG(22), L"Luigi (Classic)", "UltraWario"},
     {LUIGI, "lg-2", false, CUSTOM_CHARACTER_NAME_BMG(23), L"Luigi (Vacation)", "PlayersPurity"},
-    {LUIGI, "lg-3", true, CUSTOM_CHARACTER_NAME_BMG(24), L"Monty Mole", "JTG"},
+    {LUIGI, "lg-3", true, CUSTOM_CHARACTER_NAME_BMG(24), L"Monty Mole", "JTG", BRSAR_GROUP_LUIGI},
     {LUIGI, "lg-4", true, CUSTOM_CHARACTER_NAME_BMG(25), L"Sonic", "ALE XD"},
     {TOAD, "ko-1", false, CUSTOM_CHARACTER_NAME_BMG(26), L"Toad (Captain)", "UltraWario"},
     {TOAD, "ko-2", false, CUSTOM_CHARACTER_NAME_BMG(27), L"Toad (Builder)", "UltraWario"},
@@ -128,7 +128,7 @@ static const CharacterOverride customCharacterAssets[] = {
     {DIDDY_KONG, "dd-3", true, CUSTOM_CHARACTER_NAME_BMG(53), L"The Chimp", "ZoroCarlos"},
     {KING_BOO, "kt-1", false, CUSTOM_CHARACTER_NAME_BMG(54), L"King Boo (LM)", "UltraWario"},
     {KING_BOO, "kt-2", true, CUSTOM_CHARACTER_NAME_BMG(79), L"Gooper Blooper", "UltraWario"},
-    {KING_BOO, "kt-3", true, CUSTOM_CHARACTER_NAME_BMG(82), L"Goku", "Chiller7"},
+    {KING_BOO, "kt-3", true, CUSTOM_CHARACTER_NAME_BMG(82), L"Goku", "Chiller7", BRSAR_GROUP_WALUIGI},
     {BOWSER_JR, "jr-1", false, CUSTOM_CHARACTER_NAME_BMG(55), L"Bowser Jr. (Pirate)", "UltraWario"},
     {BOWSER_JR, "jr-2", true, CUSTOM_CHARACTER_NAME_BMG(56), L"Hammer Bro", "JuniorMBW"},
     {BOWSER_JR, "jr-3", true, CUSTOM_CHARACTER_NAME_BMG(57), L"Kamek", "DJ Lowgey"},
@@ -633,7 +633,12 @@ bool ShouldMuteCharacterVoice(const Kart::Link* link) {
 }
 
 static TicoModel* CreateTicoModelHook(void* memory, DriverController* controller) {
-    if (controller != nullptr && ShouldMuteCharacterVoice(controller)) {
+    const Racedata* racedata = Racedata::sInstance;
+    const u8 playerId = controller->GetPlayerIdx();
+    const CharacterId character = racedata->racesScenario.players[playerId].characterId;
+    const u8 table = RaceSkinTable(playerId, character);
+    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
+    if (controller != nullptr && characterOverride->silentVoice == true) {
         if (memory != nullptr) ::operator delete(memory);
         return nullptr;
     }
