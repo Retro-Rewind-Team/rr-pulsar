@@ -172,6 +172,7 @@ static CharacterId hoveredCharacters[LOCAL_PLAYER_COUNT] = {MARIO, MARIO, MARIO,
 static RawBRRES rawBRRES[TABLE_COUNT][CHARACTER_COUNT];
 static RawBRRES looseMiiCBRRES[MII_C_COUNT];
 static RawTPL looseMinimapTPL[TABLE_COUNT][CHARACTER_COUNT];
+static u8 looseVoiceFiles[TABLE_COUNT][CHARACTER_COUNT];
 static const GameScene* rawCacheSceneOwner;
 static u32 offlineCpuSkinSignature;
 static u8 offlineCpuSkinRaceNumber;
@@ -209,6 +210,8 @@ static u8 MinLocalPlayers(u32 count) {
 static bool IsCharacter(CharacterId character) {
     return character >= 0 && character < CHARACTER_COUNT;
 }
+
+static bool HasLooseCustomVoiceFiles(CharacterId character, u8 table);
 
 static bool IsMiiCharacter(CharacterId character) {
     return (character >= MII_S_A_MALE && character <= MII_L_C_FEMALE) || character == MII_M || character == MII_S || character == MII_L;
@@ -627,7 +630,7 @@ bool ShouldMuteCharacterVoice(const Kart::Link* link) {
     const CharacterId character = racedata->racesScenario.players[playerId].characterId;
     const u8 table = RaceSkinTable(playerId, character);
     const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    return characterOverride != nullptr && characterOverride->silentVoice;
+    return characterOverride != nullptr && characterOverride->silentVoice && !HasLooseCustomVoiceFiles(character, table);
 }
 
 static TicoModel* CreateTicoModelHook(void* memory, DriverController* controller) {
@@ -1041,6 +1044,172 @@ static bool DiscFileSize(const char* path, u32& size) {
     size = info.length;
     DVD::Close(&info);
     return size != 0;
+}
+
+static void CopyUpperPostfix(char* dest, u32 destSize, const char* postfix) {
+    if (dest == nullptr || destSize == 0) return;
+    u32 i = 0;
+    if (postfix != nullptr) {
+        for (; i + 1 < destSize && postfix[i] != '\0'; ++i) {
+            char c = postfix[i];
+            if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
+            dest[i] = c;
+        }
+    }
+    dest[i] = '\0';
+}
+
+static bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* extension, char* path, u32 pathSize) {
+    char upperPostfix[32];
+    CopyUpperPostfix(upperPostfix, sizeof(upperPostfix), postfix);
+    if (upperPostfix[0] == '\0' || suffix == nullptr || extension == nullptr) return false;
+    const int written = snprintf(path, pathSize, "/sound/GRP_VO_%s_%s.%s", upperPostfix, suffix, extension);
+    return written > 0 && static_cast<u32>(written) < pathSize;
+}
+
+static bool LooseVoiceFileExists(const char* postfix, const char* suffix, const char* extension) {
+    char path[0x80];
+    if (!BuildLooseVoicePath(postfix, suffix, extension, path, sizeof(path))) return false;
+    u32 fileSize = 0;
+    return DiscFileSize(path, fileSize);
+}
+
+static bool LooseVoiceStemExists(const char* postfix, const char* suffix) {
+    return LooseVoiceFileExists(postfix, suffix, "brwsd") || LooseVoiceFileExists(postfix, suffix, "brbnk");
+}
+
+static const char* const looseVoiceGroupSuffixes[] = {
+    "PC",      "NPC",      "CAN_PC",  "CAN_NPC", "GOL_TOP", "GOL_TOP2", "GOL_TOP3",
+    "GOL_GOD", "GOL_GOD2", "GOL_GOD3", "GOL_BAD", "GOL_BAD2", "GOL_BAD3",
+};
+
+static const char* const looseVoiceTimeAttackGroupSuffixAliases[] = {
+    "GOL_TOP", "GOL_TOP2", "GOL_TOP3", "GOL_BAD", "GOL_BAD2", "GOL_BAD3", "GOL_BAD3",
+};
+
+static const char* LooseVoiceSuffixForGroupOffset(u32 offset) {
+    if (offset < ARRAY_COUNT(looseVoiceGroupSuffixes)) return looseVoiceGroupSuffixes[offset];
+    const u32 taOffset = offset - ARRAY_COUNT(looseVoiceGroupSuffixes);
+    if (taOffset < ARRAY_COUNT(looseVoiceTimeAttackGroupSuffixAliases)) return looseVoiceTimeAttackGroupSuffixAliases[taOffset];
+    return nullptr;
+}
+
+static bool HasLooseCustomVoiceFiles(CharacterId character, u8 table) {
+    if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return false;
+    u8& cached = looseVoiceFiles[table][character];
+    if (cached != 0) return cached == 2;
+
+    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
+    bool exists = false;
+    if (characterOverride != nullptr && characterOverride->postfix != nullptr) {
+        for (u32 i = 0; i < ARRAY_COUNT(looseVoiceGroupSuffixes); ++i) {
+            if (LooseVoiceStemExists(characterOverride->postfix, looseVoiceGroupSuffixes[i])) {
+                exists = true;
+                break;
+            }
+        }
+    }
+    cached = exists ? 2 : 1;
+    return exists;
+}
+
+struct VoiceGroupBase {
+    CharacterId character;
+    u32 groupId;
+};
+
+static const VoiceGroupBase voiceGroupBases[] = {
+    {MARIO, BRSAR_GROUP_MARIO},
+    {BABY_PEACH, BRSAR_GROUP_BABY_PEACH},
+    {WALUIGI, BRSAR_GROUP_WALUIGI},
+    {BOWSER, BRSAR_GROUP_BOWSER},
+    {BABY_DAISY, BRSAR_GROUP_BABY_DAISY},
+    {DRY_BONES, BRSAR_GROUP_DRY_BONES},
+    {BABY_MARIO, BRSAR_GROUP_BABY_MARIO},
+    {LUIGI, BRSAR_GROUP_LUIGI},
+    {TOAD, BRSAR_GROUP_TOAD},
+    {DONKEY_KONG, BRSAR_GROUP_DONKEY_KONG},
+    {YOSHI, BRSAR_GROUP_YOSHI},
+    {WARIO, BRSAR_GROUP_WARIO},
+    {BABY_LUIGI, BRSAR_GROUP_BABY_LUIGI},
+    {TOADETTE, BRSAR_GROUP_TOADETTE},
+    {KOOPA_TROOPA, BRSAR_GROUP_KOOPA_TROOPA},
+    {DAISY, BRSAR_GROUP_DAISY},
+    {PEACH, BRSAR_GROUP_PEACH},
+    {BIRDO, BRSAR_GROUP_BIRDO},
+    {DIDDY_KONG, BRSAR_GROUP_DIDDY_KONG},
+    {KING_BOO, BRSAR_GROUP_KING_BOO},
+    {BOWSER_JR, BRSAR_GROUP_BOWSER_JR},
+    {DRY_BOWSER, BRSAR_GROUP_DRY_BOWSER},
+    {FUNKY_KONG, BRSAR_GROUP_FUNKY_KONG},
+    {ROSALINA, BRSAR_GROUP_ROSALINA},
+};
+
+static bool CharacterHasOnlyBaseVoiceGroup(CharacterId character) {
+    return character == DRY_BONES || character == KOOPA_TROOPA || character == KING_BOO;
+}
+
+static bool FindVoiceGroup(u32 groupId, CharacterId& character, u32& offset) {
+    for (u32 i = 0; i < ARRAY_COUNT(voiceGroupBases); ++i) {
+        if (voiceGroupBases[i].groupId == groupId) {
+            character = voiceGroupBases[i].character;
+            offset = 0;
+            return true;
+        }
+    }
+    for (u32 i = 0; i < ARRAY_COUNT(voiceGroupBases); ++i) {
+        const u32 base = voiceGroupBases[i].groupId;
+        if (groupId <= base) continue;
+        const u32 candidateOffset = groupId - base;
+        if (candidateOffset >= ARRAY_COUNT(looseVoiceGroupSuffixes)) continue;
+        if (CharacterHasOnlyBaseVoiceGroup(voiceGroupBases[i].character)) continue;
+        character = voiceGroupBases[i].character;
+        offset = candidateOffset;
+        return true;
+    }
+    for (u32 i = 0; i < ARRAY_COUNT(voiceGroupBases); ++i) {
+        const u32 base = voiceGroupBases[i].groupId;
+        if (groupId <= base) continue;
+        const u32 candidateOffset = groupId - base;
+        const u32 taOffset = candidateOffset - ARRAY_COUNT(looseVoiceGroupSuffixes);
+        if (taOffset >= ARRAY_COUNT(looseVoiceTimeAttackGroupSuffixAliases)) continue;
+        if (CharacterHasOnlyBaseVoiceGroup(voiceGroupBases[i].character)) continue;
+        character = voiceGroupBases[i].character;
+        offset = candidateOffset;
+        return true;
+    }
+    return false;
+}
+
+static bool PlayerMatchesVoiceGroupOffset(PlayerType playerType, u32 offset) {
+    if (playerType == PLAYER_GHOST || playerType == PLAYER_NONE) return false;
+    const bool npcGroup = offset == 1 || offset == 3;
+    if (npcGroup) return playerType != PLAYER_REAL_LOCAL;
+    return playerType == PLAYER_REAL_LOCAL;
+}
+
+const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix) {
+    groupSuffix = nullptr;
+    CharacterId groupCharacter = CHARACTER_NONE;
+    u32 groupOffset = 0;
+    if (!FindVoiceGroup(groupId, groupCharacter, groupOffset)) return nullptr;
+    groupSuffix = LooseVoiceSuffixForGroupOffset(groupOffset);
+    if (groupSuffix == nullptr) return nullptr;
+
+    const Racedata* racedata = Racedata::sInstance;
+    if (racedata == nullptr) return nullptr;
+    const RacedataScenario& scenario = racedata->racesScenario;
+    for (u8 playerId = 0; playerId < scenario.playerCount && playerId < ONLINE_PLAYER_COUNT; ++playerId) {
+        const RacedataPlayer& player = scenario.players[playerId];
+        if (player.characterId != groupCharacter || !PlayerMatchesVoiceGroupOffset(player.playerType, groupOffset)) continue;
+        const u8 table = RaceSkinTable(playerId, groupCharacter);
+        if (!HasLooseCustomVoiceFiles(groupCharacter, table)) continue;
+        const CharacterOverride* characterOverride = GetCharacterOverride(groupCharacter, table);
+        if (characterOverride != nullptr && characterOverride->postfix != nullptr && LooseVoiceStemExists(characterOverride->postfix, groupSuffix)) {
+            return characterOverride->postfix;
+        }
+    }
+    return nullptr;
 }
 
 static EGG::Heap* RawParentHeap(GameScene& scene, u32 heapSize) {
