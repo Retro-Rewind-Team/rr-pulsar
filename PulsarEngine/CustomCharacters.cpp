@@ -83,7 +83,7 @@ static const CharacterOverride customCharacterAssets[] = {
     {BOWSER, "kp-4", true, CUSTOM_CHARACTER_NAME_BMG(11), L"Boom Boom", "Numerosity"},
     {BABY_DAISY, "bds-1", false, CUSTOM_CHARACTER_NAME_BMG(12), L"Baby Daisy (Coat)", "Poobah"},
     {BABY_DAISY, "bds-2", true, CUSTOM_CHARACTER_NAME_BMG(13), L"Rocky Wrench", "Porko, UltraWario"},
-    {DRY_BONES, "ka-1", false, CUSTOM_CHARACTER_NAME_BMG(14), L"Dry Bones (Dark)", "Tank2go"},
+    {DRY_BONES, "ka-1", false, CUSTOM_CHARACTER_NAME_BMG(14), L"Dry Bones (Dark)", "MiningBoy"},
     {DRY_BONES, "ka-2", false, CUSTOM_CHARACTER_NAME_BMG(15), L"Dry Bones (Gold)", "LTC 91"},
     {DRY_BONES, "ka-3", true, CUSTOM_CHARACTER_NAME_BMG(16), L"Goomba", "UltraWario"},
     {DRY_BONES, "ka-4", true, CUSTOM_CHARACTER_NAME_BMG(17), L"Peepa", "GioMacGrillin"},
