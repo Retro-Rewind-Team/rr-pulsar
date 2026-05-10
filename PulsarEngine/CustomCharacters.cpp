@@ -198,6 +198,7 @@ static bool votingMenuTablesRestored;
 static bool voteRandomMessageBoxKartStateApplied;
 static EGG::ExpHeap* reloadedMenuDriverModelHeaps[MENU_DRIVER_MODEL_COUNT];
 static ModelDirector* reloadedMenuDriverModels[MENU_DRIVER_MODEL_COUNT];
+static ToadetteHair* reloadedMenuDriverModelHairs[MENU_DRIVER_MODEL_COUNT];
 static const GameScene* reloadedMenuDriverModelSceneOwner;
 static MenuDriverModel* reloadedMenuDriverModelOwner;
 static bool forceDefaultMenuDriverBRRES;
@@ -1715,6 +1716,7 @@ static void ForgetReloadedMenuDriverModelHeaps() {
     for (u32 i = 0; i < MENU_DRIVER_MODEL_COUNT; ++i) {
         reloadedMenuDriverModelHeaps[i] = nullptr;
         reloadedMenuDriverModels[i] = nullptr;
+        reloadedMenuDriverModelHairs[i] = nullptr;
     }
     reloadedMenuDriverModelOwner = nullptr;
 }
@@ -1724,16 +1726,21 @@ static void DestroyReloadedMenuDriverModel(u8 idx, ModelDirector** modelSlot) {
     EGG::ExpHeap*& heap = reloadedMenuDriverModelHeaps[idx];
     ModelDirector* model = reloadedMenuDriverModels[idx];
     if (model == nullptr && modelSlot != nullptr) model = *modelSlot;
+    ToadetteHair* hair = reloadedMenuDriverModelHairs[idx];
 
     if (heap == nullptr) {
+        DestroyModelDirector(hair);
         DestroyModelDirector(model);
         if (modelSlot != nullptr && *modelSlot == model) *modelSlot = nullptr;
+        reloadedMenuDriverModelHairs[idx] = nullptr;
         reloadedMenuDriverModels[idx] = nullptr;
         return;
     }
 
+    if (hair != nullptr && IsInHeap(heap, hair)) DestroyModelDirector(hair);
     if (model != nullptr && IsInHeap(heap, model)) DestroyModelDirector(model);
     if (modelSlot != nullptr && *modelSlot == model) *modelSlot = nullptr;
+    reloadedMenuDriverModelHairs[idx] = nullptr;
     reloadedMenuDriverModels[idx] = nullptr;
     DestroyHeap(heap);
 }
@@ -1862,14 +1869,20 @@ static bool LoadMenuDriverModel(void* handle, ModelDirector* model, CharacterId 
     return static_cast<MenuModelBRRESHandle*>(handle)->LoadDriverModel(*model, character);
 }
 
+static ToadetteHair* LoadMenuDriverToadetteHair(void* handle, EGG::ExpHeap* heap, ModelDirector* model) {
+    if (heap == nullptr || model == nullptr) return nullptr;
+    return new (heap, 4) ToadetteHair(static_cast<MenuModelBRRESHandle*>(handle)->menuModelBRRES, model, 1);
+}
+
 static bool IsLoadedMenuDriverModelReady(const ModelDirector* model) {
     return model != nullptr && (model->bitfield & 0x100000) != 0 && model->scnMdlEx[0] != nullptr &&
            model->scnMdlEx[0]->scnObj != nullptr && model->scnMdlEx[1] != nullptr && model->scnMdlEx[1]->scnObj != nullptr;
 }
 
 static bool LoadReloadedMenuDriverModel(GameScene& scene, ScnMgr& scnMgr, CharacterId character, ModelDirector*& newModel,
-                                        EGG::ExpHeap*& newHeap) {
+                                        ToadetteHair*& newHair, EGG::ExpHeap*& newHeap) {
     newModel = nullptr;
+    newHair = nullptr;
     newHeap = nullptr;
 
     EGG::ExpHeap* modelHeap = CreateMenuDriverModelHeap(scene);
@@ -1901,13 +1914,20 @@ static bool LoadReloadedMenuDriverModel(GameScene& scene, ScnMgr& scnMgr, Charac
 
     ModelDirector* model = new (modelHeap, 4) ModelDirector(2, 0);
     const bool loaded = model != nullptr && LoadMenuDriverModel(handle, model, character) && IsLoadedMenuDriverModelReady(model);
+    ToadetteHair* hair = nullptr;
+    bool hairLoaded = true;
+    if (loaded && character == TOADETTE) {
+        hair = LoadMenuDriverToadetteHair(handle, modelHeap, model);
+        hairLoaded = IsLoadedMenuDriverModelReady(hair);
+    }
 
     scnMgr.curHeap = savedHeap;
     scnMgr.curAllocator = savedAllocator;
     *menuAllocSlot = savedMenuAllocator;
     DestroyMenuModelBRRESHandle(handle);
 
-    if (!loaded) {
+    if (!loaded || !hairLoaded) {
+        DestroyModelDirector(hair);
         DestroyModelDirector(model);
         DestroyHeap(modelHeap);
         return false;
@@ -1916,27 +1936,32 @@ static bool LoadReloadedMenuDriverModel(GameScene& scene, ScnMgr& scnMgr, Charac
     UnlockHeap(modelHeap);
     modelHeap->adjust();
     newModel = model;
+    newHair = hair;
     newHeap = modelHeap;
     return true;
 }
 
 static bool LoadDefaultReloadedMenuDriverModel(GameScene& scene, ScnMgr& scnMgr, CharacterId character, ModelDirector*& newModel,
-                                               EGG::ExpHeap*& newHeap) {
+                                               ToadetteHair*& newHair, EGG::ExpHeap*& newHeap) {
     forceDefaultMenuDriverBRRES = true;
-    const bool loaded = LoadReloadedMenuDriverModel(scene, scnMgr, character, newModel, newHeap);
+    const bool loaded = LoadReloadedMenuDriverModel(scene, scnMgr, character, newModel, newHair, newHeap);
     forceDefaultMenuDriverBRRES = false;
     return loaded;
 }
 
-static void DestroyOldMenuDriverModelForReload(u8 idx, ModelDirector** modelSlot, ModelDirector* oldModel) {
+static void DestroyOldMenuDriverModelForReload(u8 idx, ModelDirector** modelSlot, ModelDirector* oldModel, ToadetteHair** hairSlot,
+                                               ToadetteHair* oldHair) {
     if (reloadedMenuDriverModelHeaps[idx] != nullptr) {
         DestroyReloadedMenuDriverModel(idx, modelSlot);
+        if (hairSlot != nullptr && *hairSlot == oldHair) *hairSlot = nullptr;
         return;
     }
 
     RawBRRES* rawCache = RawCacheForModel(oldModel);
+    DestroyModelDirector(oldHair);
     DestroyModelDirector(oldModel);
     if (modelSlot != nullptr && *modelSlot == oldModel) *modelSlot = nullptr;
+    if (hairSlot != nullptr && *hairSlot == oldHair) *hairSlot = nullptr;
     if (rawCache != nullptr) ClearRawCache(*rawCache, true);
 }
 
@@ -1951,6 +1976,7 @@ static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId cha
     const u8 idx = static_cast<u8>(character);
     MenuDriverModel* menuModel = MenuDriverModelSlot(driverMgr.models, idx);
     ModelDirector** modelSlot = MenuDriverModelDirectorSlot(driverMgr.models, idx);
+    ToadetteHair** hairSlot = character == TOADETTE ? &driverMgr.bangs : static_cast<ToadetteHair**>(nullptr);
 
     GameScene* scene = const_cast<GameScene*>(GameScene::GetCurrent());
     if (scene == nullptr) return false;
@@ -1961,25 +1987,29 @@ static bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId cha
     if (scnMgr == nullptr) return false;
 
     ModelDirector* oldModel = *modelSlot;
+    ToadetteHair* oldHair = hairSlot != nullptr ? *hairSlot : static_cast<ToadetteHair*>(nullptr);
     bool oldModelDestroyed = false;
 
     ModelDirector* newModel = nullptr;
+    ToadetteHair* newHair = nullptr;
     EGG::ExpHeap* newHeap = nullptr;
-    if (!LoadReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHeap)) {
+    if (!LoadReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHair, newHeap)) {
         if (reloadedMenuDriverModelHeaps[idx] == nullptr) return false;
-        DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel);
+        DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel, hairSlot, oldHair);
         oldModelDestroyed = true;
-        if (!LoadReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHeap) &&
-            !LoadDefaultReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHeap)) {
+        if (!LoadReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHair, newHeap) &&
+            !LoadDefaultReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHair, newHeap)) {
             return false;
         }
     }
 
-    if (!oldModelDestroyed) DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel);
+    if (!oldModelDestroyed) DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel, hairSlot, oldHair);
 
     *modelSlot = newModel;
+    if (hairSlot != nullptr) *hairSlot = newHair;
     reloadedMenuDriverModelHeaps[idx] = newHeap;
     reloadedMenuDriverModels[idx] = newModel;
+    reloadedMenuDriverModelHairs[idx] = newHair;
     ResetReloadedMenuDriverModel(*menuModel, character);
     menuModel->Init();
     return true;

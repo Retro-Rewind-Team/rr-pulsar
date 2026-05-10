@@ -2478,6 +2478,7 @@ __dt__18ModelTransformatorFv = 0x80556774
 RequestSceneReinit__10SectionMgrFUiUi = 0x80635b2c
 ToadetteFix1 = 0x807c89bc
 ToadetteFix2 = 0x807c8aa8
+__ct__12ToadetteHairFRQ34nw4r3g3d7ResFileP13ModelDirectorUi = 0x807da5c0
 
 #CustomCharacters
 characterNames = 0x808b3a90
