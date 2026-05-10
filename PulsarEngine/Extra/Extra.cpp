@@ -244,9 +244,6 @@ kmWrite32(0x807a8a5c, 0x60000000);
 // Load Vehicle Arm Parts Online [B_squo]
 kmWrite32(0x80577724, 0x48000024);
 
-// Character LOD Models Appear Farther Away [ZPL]
-kmWrite32(0x808a4b48, 0x45FA0000);  // 4000.0f -> 8000.0f
-
 // Fix Unfocused Small Mii Icon Border [B_squo]
 kmWrite32(0x807eb774, 0x2c000017);
 
