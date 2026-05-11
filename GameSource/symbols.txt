@@ -2075,6 +2075,7 @@ FollowFadeEffectsByIdxVelocity__Q27Effects6PlayerFPPQ23EGG6EffectUiUiUi = 0x806a
 PlaySound__Q25Audio12SinglePlayerFUis = 0x806f8b7c
 PrepareSound__Q25Audio12SinglePlayerFUib = 0x806f8dcc
 StopSound__Q25Audio12SinglePlayerFv = 0x806f90c4
+StopInactiveSounds__Q25Audio12SinglePlayerFv = 0x806f9900
 PlayBGSound__Q25Audio12SinglePlayerFUi = 0x806fa604
 sInstance__Q25Audio12SinglePlayer = 0x809c2328
 

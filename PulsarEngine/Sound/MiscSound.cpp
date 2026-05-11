@@ -90,6 +90,7 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
                 DVD::Close(&info);
                 if (info.length > 0) {
                     soundId = SOUND_ID_KC;
+                    singlePlayer.StopInactiveSounds();
                     if (shouldRefreshWifiMusic) {
                         singlePlayer.StopSound();
                         singlePlayer.PrepareSound(soundId, true);
@@ -100,6 +101,7 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
             }
         }
         singlePlayer.PlaySound(soundId, 0);
+        if (customBGPath != nullptr) singlePlayer.StopInactiveSounds();
     }
 }
 kmCall(0x806fa664, DisableAndChangeBGMusic);
