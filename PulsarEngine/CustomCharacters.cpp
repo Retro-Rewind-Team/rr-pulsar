@@ -639,6 +639,7 @@ static TicoModel* CreateTicoModelHook(void* memory, DriverController* controller
     const CharacterId character = racedata->racesScenario.players[playerId].characterId;
     const u8 table = RaceSkinTable(playerId, character);
     const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
+    if (table == TABLE_DEFAULT) return new (memory) TicoModel(controller);
     if (controller != nullptr && characterOverride->silentVoice == true) {
         if (memory != nullptr) ::operator delete(memory);
         return nullptr;
