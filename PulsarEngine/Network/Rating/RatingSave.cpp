@@ -263,8 +263,8 @@ static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr& lic) {
     if (!e) return;
 
     if (!e->hasData) {
-        e->vr = (float)lic.vr.points / 100.0f;
-        e->br = (float)lic.br.points / 100.0f;
+        e->vr = (float)sBackups[idx].originalVr / 100.0f;
+        e->br = (float)sBackups[idx].originalBr / 100.0f;
         e->hasData = true;
         Save();
     }
@@ -287,8 +287,8 @@ static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr& lic) {
     if (!e) return;
 
     if (!e->hasData) {
-        e->vr = (float)lic.vr.points / 100.0f;
-        e->br = (float)lic.br.points / 100.0f;
+        e->vr = (float)sBackups[idx].originalVr / 100.0f;
+        e->br = (float)sBackups[idx].originalBr / 100.0f;
         e->hasData = true;
         Save();
     }
