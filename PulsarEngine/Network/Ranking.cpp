@@ -375,7 +375,7 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
 
     float vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
     if (vr < 0.0f) vr = 0.0f;
-    u32 vrClamped = (vr > 1000.0f) ? 1000.0f : vr * 100.0f;
+    u32 vrClamped = static_cast<u32>(vr * 100.0f + 0.5f);
 
     u32 times1st = license.GetTimes1stPlaceAchieved();
     float distTravelled = license.GetDistanceTravelled();
