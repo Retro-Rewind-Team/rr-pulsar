@@ -812,6 +812,23 @@ static void FillRaceResultNameHook(CtrlRaceResult* result, u8 playerId) {
 }
 kmBranch(0x807f52f4, FillRaceResultNameHook);
 
+kmRuntimeUse(0x807f4e68);
+static void LoadRaceResultHook(CtrlRaceResult* result) {
+    reinterpret_cast<void (*)(CtrlRaceResult*)>(kmRuntimeAddr(0x807f4e68))(result);
+
+    nw4r::lyt::TextBox* name = static_cast<nw4r::lyt::TextBox*>(result->layout.GetPaneByName("player_name"));
+    if (name == nullptr) return;
+
+    name->AllocStringBuffer(32);
+    Text::PaneHandler* handler = result->layout.GetTextPaneHandlerByName("player_name");
+    if (handler != nullptr) {
+        handler->~PaneHandler();
+        new (handler) Text::PaneHandler;
+        handler->Init(name);
+    }
+}
+kmWritePointer(0x808d3f24, LoadRaceResultHook);
+
 static void ResetCharacterSelectNameTextCache() {
     for (u8 hud = 0; hud < LOCAL_PLAYER_COUNT; ++hud) {
         characterNameTextControl[hud] = nullptr;

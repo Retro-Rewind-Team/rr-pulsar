@@ -1152,6 +1152,9 @@ Load__13ControlLoaderFPCcPCcPCcPPCc = 0x805c2c60
 #Info
 __ct__Q24Text4InfoFv = 0x805cd94c
 GetBMGInfo__Q24Text11PaneHandlerFRC9BMGHolderRC9BMGHolderUiPwPQ24Text9FontIndex = 0x805cef10
+__ct__Q24Text11PaneHandlerFv = 0x805cda34
+__dt__Q24Text11PaneHandlerFv = 0x805cda50
+Init__Q24Text11PaneHandlerFPQ34nw4r3lyt7TextBox = 0x805cdbe4
 
 #Layout
 GetPaneByName__10BaseLayoutCFPCc = 0x805e8368
@@ -1160,6 +1163,7 @@ dtMainLayout = 0x805e8630
 __vt__10MainLayout = 0x808b94c4
 __vt__10BaseLayout = 0x808b950c
 Build__10MainLayoutFPCc = 0x805e889c
+GetTextPaneHandlerByName__10MainLayoutCFPCc = 0x805e9028
 
 #BMGHolder
 __ct__9BMGHolderFv = 0x805f8b34
