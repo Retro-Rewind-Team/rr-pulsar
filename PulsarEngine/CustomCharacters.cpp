@@ -170,7 +170,6 @@ struct RawTPL {
 static u8 selectedTable[CHARACTER_COUNT];
 static u8 onlineCharacterTables[ONLINE_PLAYER_COUNT];
 static u8 offlineCpuCharacterTables[ONLINE_PLAYER_COUNT];
-static CharacterId playerVoiceOverride[ONLINE_PLAYER_COUNT];
 static const char* defaultNames[CHARACTER_COUNT];
 static bool cachedDefaultNames;
 static CharacterId hoveredCharacters[LOCAL_PLAYER_COUNT] = {MARIO, MARIO, MARIO, MARIO};
@@ -1185,98 +1184,6 @@ static bool VoiceBaseGroupForTable(CharacterId character, u8 table, u32& groupId
     return FindVoiceGroupBase(character, groupId);
 }
 
-// Returns the voice group base for the player, applying any runtime conflict-resolution
-// override assigned by ComputePlayerVoiceOverrides. Falls back to the static lookup when no
-// override is present.
-static bool EffectiveVoiceBaseGroupForPlayer(u8 playerId, CharacterId character, u8 table, u32& groupId) {
-    if (playerId < ONLINE_PLAYER_COUNT && IsCharacter(playerVoiceOverride[playerId])) {
-        return FindVoiceGroupBase(playerVoiceOverride[playerId], groupId);
-    }
-    return VoiceBaseGroupForTable(character, table, groupId);
-}
-
-static void ResetPlayerVoiceOverrides() {
-    for (u8 i = 0; i < ONLINE_PLAYER_COUNT; ++i) playerVoiceOverride[i] = CHARACTER_NONE;
-}
-
-// At race start, assign each custom-skin player a non-conflicting BRSAR voice character so
-// multiple custom skins sharing the same base group each get a unique patched voice slot.
-// Players whose skin has no loose voice files keep the default behaviour.
-static void ComputePlayerVoiceOverrides() {
-    ResetPlayerVoiceOverrides();
-
-    const Racedata* racedata = Racedata::sInstance;
-    if (racedata == nullptr) return;
-    const RacedataScenario& scenario = racedata->racesScenario;
-
-    bool localClaimed[CHARACTER_COUNT];
-    bool npcClaimed[CHARACTER_COUNT];
-    for (u32 i = 0; i < CHARACTER_COUNT; ++i) {
-        localClaimed[i] = false;
-        npcClaimed[i] = false;
-    }
-
-    // Vanilla players (default skin) keep their natural voice character; reserve their slot.
-    for (u8 playerId = 0; playerId < scenario.playerCount && playerId < ONLINE_PLAYER_COUNT; ++playerId) {
-        const RacedataPlayer& player = scenario.players[playerId];
-        if (player.playerType == PLAYER_NONE || player.playerType == PLAYER_GHOST) continue;
-        const CharacterId character = player.characterId;
-        if (!IsCharacter(character) || IsMiiCharacter(character)) continue;
-        const u8 table = RaceSkinTable(playerId, character);
-        if (table != TABLE_DEFAULT) continue;
-
-        u32 groupId = 0;
-        if (!FindVoiceGroupBase(character, groupId)) continue;
-        CharacterId voiceChar = CHARACTER_NONE;
-        if (!FindVoiceGroupBaseCharacter(groupId, voiceChar) || !IsCharacter(voiceChar)) continue;
-
-        if (player.playerType == PLAYER_REAL_LOCAL) localClaimed[voiceChar] = true;
-        else npcClaimed[voiceChar] = true;
-    }
-
-    // Custom-skin players: try their preferred voice character first, reassign on conflict.
-    for (u8 playerId = 0; playerId < scenario.playerCount && playerId < ONLINE_PLAYER_COUNT; ++playerId) {
-        const RacedataPlayer& player = scenario.players[playerId];
-        if (player.playerType == PLAYER_NONE || player.playerType == PLAYER_GHOST) continue;
-        const CharacterId character = player.characterId;
-        if (!IsCharacter(character) || IsMiiCharacter(character)) continue;
-        const u8 table = RaceSkinTable(playerId, character);
-        if (table == TABLE_DEFAULT) continue;
-        if (!HasLooseCustomVoiceFiles(character, table)) continue;
-
-        u32 preferredGroupId = 0;
-        if (!VoiceBaseGroupForTable(character, table, preferredGroupId)) continue;
-        CharacterId preferredVoiceChar = CHARACTER_NONE;
-        if (!FindVoiceGroupBaseCharacter(preferredGroupId, preferredVoiceChar) || !IsCharacter(preferredVoiceChar)) continue;
-
-        const bool isLocal = player.playerType == PLAYER_REAL_LOCAL;
-        bool* claimed = isLocal ? localClaimed : npcClaimed;
-
-        if (!claimed[preferredVoiceChar]) {
-            claimed[preferredVoiceChar] = true;
-            playerVoiceOverride[playerId] = preferredVoiceChar;
-            continue;
-        }
-
-        CharacterId alternative = CHARACTER_NONE;
-        for (u32 i = 0; i < ARRAY_COUNT(voiceGroupBases); ++i) {
-            const CharacterId candidate = voiceGroupBases[i].character;
-            if (CharacterHasOnlyBaseVoiceGroup(candidate)) continue;
-            if (claimed[candidate]) continue;
-            alternative = candidate;
-            break;
-        }
-
-        if (IsCharacter(alternative)) {
-            claimed[alternative] = true;
-            playerVoiceOverride[playerId] = alternative;
-        } else {
-            playerVoiceOverride[playerId] = preferredVoiceChar;
-        }
-    }
-}
-static RaceLoadHook ComputePlayerVoiceOverridesOnRaceLoad(ComputePlayerVoiceOverrides);
-
 static bool ActorRaceCharacter(const Audio::CharacterActor* actor, CharacterId& character) {
     const Racedata* racedata = Racedata::sInstance;
     if (actor == nullptr || racedata == nullptr) return false;
@@ -1288,9 +1195,8 @@ static bool ActorRaceCharacter(const Audio::CharacterActor* actor, CharacterId& 
 
 static bool VoiceBaseGroupForActor(const Audio::CharacterActor* actor, CharacterId& character, u32& groupId, CharacterId& groupCharacter) {
     if (!ActorRaceCharacter(actor, character)) return false;
-    const u8 playerId = actor->playerId;
-    const u8 table = RaceSkinTable(playerId, character);
-    if (!EffectiveVoiceBaseGroupForPlayer(playerId, character, table, groupId)) return false;
+    const u8 table = RaceSkinTable(actor->playerId, character);
+    if (!VoiceBaseGroupForTable(character, table, groupId)) return false;
     if (!FindVoiceGroupBaseCharacter(groupId, groupCharacter)) return false;
     return groupCharacter != character;
 }
@@ -1453,7 +1359,7 @@ const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix) 
         const CharacterId character = player.characterId;
         const u8 table = RaceSkinTable(playerId, character);
         u32 playerGroupBaseId = 0;
-        if (!EffectiveVoiceBaseGroupForPlayer(playerId, character, table, playerGroupBaseId) || playerGroupBaseId != groupBaseId) continue;
+        if (!VoiceBaseGroupForTable(character, table, playerGroupBaseId) || playerGroupBaseId != groupBaseId) continue;
         if (!HasLooseCustomVoiceFiles(character, table)) continue;
         const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
         if (characterOverride != nullptr && characterOverride->postfix != nullptr && LooseVoiceStemExists(characterOverride->postfix, groupSuffix)) {
