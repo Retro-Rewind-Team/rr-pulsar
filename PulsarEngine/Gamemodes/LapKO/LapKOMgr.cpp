@@ -760,8 +760,7 @@ void Mgr::HostDistributeEvents(RKNet::Controller& controller, const RKNet::Contr
         if (aid == sub.localAid) continue;
         if ((sub.availableAids & (1 << aid)) == 0) continue;
         RKNet::PacketHolder<Network::PulRH1>* holder = controller.GetSendPacketHolder<Network::PulRH1>(aid);
-        // LapKO only runs in friend rooms, so use full packet size
-        if (holder->packetSize < Network::PulRH1SizeFull) holder->packetSize = Network::PulRH1SizeFull;
+        if (holder->packetSize < Network::PulRH1SizeLapKo) holder->packetSize = Network::PulRH1SizeLapKo;
         Network::PulRH1* packet = holder->packet;
 
         if (this->hasPendingEvent && this->IsFriendRoomOnline()) {
@@ -804,8 +803,7 @@ void Mgr::ClientConsumeHostEvents(RKNet::Controller& controller, const RKNet::Co
     RKNet::SplitRACEPointers* split = controller.splitReceivedRACEPackets[bufferIdx][this->hostAid];
 
     const RKNet::PacketHolder<Network::PulRH1>* holder = split->GetPacketHolder<Network::PulRH1>();
-    // LapKO data is only present in full-size packets (friend rooms)
-    if (holder->packetSize != Network::PulRH1SizeFull) return;
+    if (holder->packetSize < Network::PulRH1SizeLapKo) return;
 
     const Network::PulRH1* packet = holder->packet;
     if (this->IsFriendRoomOnline() && packet->lapKoSeq != 0 && packet->lapKoElimCount != 0) {

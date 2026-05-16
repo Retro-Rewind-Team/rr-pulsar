@@ -4,6 +4,7 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <PulsarSystem.hpp>
+#include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 
@@ -27,8 +28,10 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
     // Determine target packet size based on room type and LapKO mode
     // LapKO fields are only sent in friend rooms when PULSAR_MODE_LAPKO is enabled
     const bool inFriendRoom = IsFriendRoom();
-    const bool lapKoEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_LAPKO);
-    const u32 targetSize = lapKoEnabled ? PulRH1SizeFull : PulRH1SizeBase;
+    const bool battleRoyaleEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_BATTLEROYALE);
+    const bool eliminationSyncEnabled = inFriendRoom && (system->IsContext(PULSAR_MODE_LAPKO) || battleRoyaleEnabled);
+    const u32 targetSize = battleRoyaleEnabled ? PulRH1SizeFull : (eliminationSyncEnabled ? PulRH1SizeLapKo : PulRH1SizeBase);
+    if (eliminationSyncEnabled || battleRoyaleEnabled) packetHolder.packetSize = targetSize;
 
     if (system->IsContext(PULSAR_CT)) {
         packetHolder.packetSize = targetSize;
@@ -43,8 +46,7 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         packetHolder.packet->finalPercentageSum = 0;
     }
 
-    // Clear LapKO fields if LapKO mode is not enabled (they won't be sent anyway due to packet size)
-    if (!lapKoEnabled) {
+    if (!eliminationSyncEnabled) {
         packetHolder.packet->lapKoSeq = 0;
         packetHolder.packet->lapKoRoundIndex = 0;
         packetHolder.packet->lapKoActiveCount = 0;
@@ -52,6 +54,12 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         memset(packetHolder.packet->lapKoElims, 0xFF, sizeof(packetHolder.packet->lapKoElims));
     }
 
+    if (battleRoyaleEnabled) {
+        BattleRoyale::WriteRH1Packet(*packetHolder.packet);
+    } else {
+        packetHolder.packet->battleRoyaleLossSeq = 0;
+        packetHolder.packet->battleRoyaleLossPlayerId = 0xFF;
+    }
 }
 kmCall(0x80655458, BeforeRH1Send);
 kmCall(0x806550e4, BeforeRH1Send);

@@ -50,17 +50,24 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u8 finalPercentageSum;  // to be divided by racecount at the end of the GP
 
     // LapKO - only used when PULSAR_MODE_LAPKO is enabled AND in friend rooms
-    // Must be at the END so we can conditionally expand packet size
     u8 lapKoSeq;
     u8 lapKoRoundIndex;
     u8 lapKoActiveCount;
     u8 lapKoElimCount;
     u8 lapKoElims[12];
+
+    // Battle Royale - only used when PULSAR_MODE_BATTLEROYALE is enabled AND in friend rooms
+    // Must stay at the END so we can conditionally expand packet size
+    u8 battleRoyaleLossSeq;
+    u8 battleRoyaleLossPlayerId;
 };
 
 // Size constants for conditional packet expansion
-static const u32 PulRH1SizeBase = sizeof(PulRH1) - 16;  // Size without LapKO fields (16 bytes)
-static const u32 PulRH1SizeFull = sizeof(PulRH1);  // Full size with LapKO fields
+static const u32 PulRH1BattleRoyaleSize = 2;
+static const u32 PulRH1LapKoSize = 16;
+static const u32 PulRH1SizeBase = sizeof(PulRH1) - PulRH1LapKoSize - PulRH1BattleRoyaleSize;
+static const u32 PulRH1SizeLapKo = PulRH1SizeBase + PulRH1LapKoSize;
+static const u32 PulRH1SizeFull = sizeof(PulRH1);
 
 struct PulRH2 : public RKNet::RACEHEADER2Packet {};
 struct PulROOM : public RKNet::ROOMPacket {
@@ -77,7 +84,7 @@ struct PulROOM : public RKNet::ROOMPacket {
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks (up to MAX_TRACK_BLOCKING)
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
-    u8 padding;
+    u8 battleRoyaleKoPerRace;
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 
     // Anti-cheat verification tag - proves sender has correct encryption key

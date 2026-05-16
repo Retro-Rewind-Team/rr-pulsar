@@ -278,6 +278,7 @@ void System::UpdateContext() {
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
+    bool isBattleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_BATTLEROYALE && isNotPublic && !isBattle && !isTimeTrial;
     bool isStartRetro = false;
     bool isStartCT = false;
     bool isStartRTS = false;
@@ -338,6 +339,7 @@ void System::UpdateContext() {
                 isStartItemRain = newContext & (1 << PULSAR_STARTITEMRAIN);
                 isRanking = newContext2 & (1 << PULSAR_RANKING);
                 isVR = newContext2 & (1 << PULSAR_VR);
+                isBattleRoyale = newContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -392,7 +394,8 @@ void System::UpdateContext() {
                             (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
                             (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND |
                             (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
-                            (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR;
+                            (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR |
+                            (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE;
     }
 
     // Combine the new context with preserved bits
@@ -506,7 +509,7 @@ void System::UpdateContext() {
         this->koMgr = nullptr;
     }
 
-    if (isLapBasedKO) {
+    if (isLapBasedKO || isBattleRoyale) {
         if (this->lapKoMgr == nullptr) {
             this->lapKoMgr = new (this->heap) LapKO::Mgr;
         }

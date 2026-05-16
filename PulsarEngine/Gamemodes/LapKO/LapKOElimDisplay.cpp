@@ -87,7 +87,8 @@ static UI::CustomCtrlBuilder sLapKOElimMessageBuilder(
 
 u32 CtrlRaceLapKOElimMessage::Count() {
     const System* system = System::sInstance;
-    const bool lapKoDisplay = system->IsContext(PULSAR_MODE_LAPKO);
+    const bool lapKoDisplay = system->lapKoMgr != nullptr &&
+                              (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
     const bool battleDisplay = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
     if (!lapKoDisplay && !battleDisplay) return 0;
     const Racedata* racedata = Racedata::sInstance;
@@ -125,7 +126,8 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     const System* system = System::sInstance;
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
-    const bool lapKoContext = system->IsContext(PULSAR_MODE_LAPKO);
+    const bool lapKoContext = system->lapKoMgr != nullptr &&
+                              (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
     const bool battleContext = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
 
     u16 timer = 0;

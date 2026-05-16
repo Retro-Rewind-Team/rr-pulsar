@@ -22,6 +22,7 @@ static void ConvertROOMPacketToData(const PulROOM& packet) {
     system->netMgr.hostContext2 = packet.hostSystemContext2;
     system->netMgr.customItemsBitfield = packet.customItemsBitfield;
     system->netMgr.racesPerGP = packet.raceCount;
+    system->netMgr.battleRoyaleKoPerRace = packet.battleRoyaleKoPerRace;
 }
 
 // Sync blocked tracks from host packet to local netMgr
@@ -185,6 +186,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         const u8 isStartOTT = (originalMessage == 8);
         const u8 isStartItemRain = (originalMessage == 9);
         const u8 Ranking = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_RANKINGS) == RANKINGS_ENABLED;
+        const u8 BattleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_BATTLEROYALE;
 
         if (extendedTeams) {
             koSetting = KOSETTING_DISABLED;
@@ -218,9 +220,10 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                           itemModeRain << PULSAR_ITEMMODERAIN | itemModeStorm << PULSAR_ITEMMODESTORM |
                                           allItemsCanLand << PULSAR_ALLITEMSCANLAND |
                                           settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS) << PULSAR_HAW | itemBoxRepsawnFast << PULSAR_ITEMBOXRESPAWN |
-                                          Ranking << PULSAR_RANKING | vr << PULSAR_VR;
+                                          Ranking << PULSAR_RANKING | vr << PULSAR_VR | BattleRoyale << PULSAR_MODE_BATTLEROYALE;
 
         destPacket->customItemsBitfield = settings.GetCustomItems();
+        destPacket->battleRoyaleKoPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
 
         u8 raceCount;
         if (koSetting == KOSETTING_ENABLED)
