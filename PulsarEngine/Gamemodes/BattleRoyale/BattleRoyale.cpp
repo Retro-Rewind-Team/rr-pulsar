@@ -27,7 +27,7 @@ static u8 sEliminationPlacementOrder[maxPlayers];
 static u8 sEliminationPlacementCount = 0;
 static u8 sLocalBalloonLossSeq = 0;
 static const u8 pendingBalloonEventCount = 4;
-static const u8 balloonEventGainBit = 0x80;
+static const u8 balloonMoveEventBase = 0x10;
 static u8 sPendingBalloonEventSeq[pendingBalloonEventCount];
 static u8 sPendingBalloonEventPlayerId[pendingBalloonEventCount];
 static u8 sPendingBalloonEventTimer[pendingBalloonEventCount];
@@ -130,8 +130,8 @@ static bool IsLocalPlayer(u8 playerId) {
     return IsLocalAid(controller->aidsBelongingToPlayerIds[playerId]);
 }
 
-static void QueueLocalBalloonEvent(u8 playerId, bool gained) {
-    if (!IsOnline() || !IsLocalPlayer(playerId)) return;
+static void QueueBalloonEvent(u8 eventPlayerId) {
+    if (!IsOnline()) return;
 
     ++sLocalBalloonLossSeq;
     if (sLocalBalloonLossSeq == 0) ++sLocalBalloonLossSeq;
@@ -145,16 +145,18 @@ static void QueueLocalBalloonEvent(u8 playerId, bool gained) {
     }
 
     sPendingBalloonEventSeq[writeIdx] = sLocalBalloonLossSeq;
-    sPendingBalloonEventPlayerId[writeIdx] = gained ? static_cast<u8>(playerId | balloonEventGainBit) : playerId;
+    sPendingBalloonEventPlayerId[writeIdx] = eventPlayerId;
     sPendingBalloonEventTimer[writeIdx] = 30;
 }
 
 static void QueueLocalBalloonLoss(u8 playerId) {
-    QueueLocalBalloonEvent(playerId, false);
+    if (!IsLocalPlayer(playerId)) return;
+    QueueBalloonEvent(playerId);
 }
 
-static void QueueLocalBalloonGain(u8 playerId) {
-    QueueLocalBalloonEvent(playerId, true);
+static void QueueBalloonMoveFromLocalLoss(u8 losingPlayerId, u8 gainingPlayerId) {
+    if (losingPlayerId >= maxPlayers || gainingPlayerId >= maxPlayers) return;
+    QueueBalloonEvent(static_cast<u8>(balloonMoveEventBase + losingPlayerId * maxPlayers + gainingPlayerId));
 }
 
 void WriteRH1Packet(Network::PulRH1& packet) {
@@ -260,23 +262,20 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
         return;
     }
 
-    const bool losingPlayerIsLocal = IsLocalPlayer(static_cast<u8>(losingPlayerId));
-    const bool gainingPlayerIsLocal = IsLocalPlayer(static_cast<u8>(gainingPlayerId));
-    if (!losingPlayerIsLocal && !gainingPlayerIsLocal) return;
+    const u8 losingPlayer = static_cast<u8>(losingPlayerId);
+    const u8 gainingPlayer = static_cast<u8>(gainingPlayerId);
+    if (!IsLocalPlayer(losingPlayer)) return;
 
-    if (losingPlayerIsLocal && gainingPlayerIsLocal) {
-        MoveBalloon(balloonMgr, static_cast<u8>(gainingPlayerId), static_cast<u8>(losingPlayerId));
-        QueueLocalBalloonLoss(static_cast<u8>(losingPlayerId));
-        QueueLocalBalloonGain(static_cast<u8>(gainingPlayerId));
-    } else if (losingPlayerIsLocal) {
-        RemoveBalloon(balloonMgr, static_cast<u8>(losingPlayerId));
-        QueueLocalBalloonLoss(static_cast<u8>(losingPlayerId));
-    } else {
-        AddBalloons(balloonMgr, static_cast<u8>(gainingPlayerId), 1);
-        QueueLocalBalloonGain(static_cast<u8>(gainingPlayerId));
-    }
+    const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
+    if (previousBalloonCount == 0) return;
 
-    if (gainingPlayerIsLocal) ClearActiveGoldenMushroom(static_cast<u8>(gainingPlayerId));
+    MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
+
+    if (GetBalloonCount(balloonMgr, losingPlayer) >= previousBalloonCount) return;
+
+    QueueBalloonMoveFromLocalLoss(losingPlayer, gainingPlayer);
+
+    if (IsLocalPlayer(gainingPlayer)) ClearActiveGoldenMushroom(gainingPlayer);
 }
 
 static void FinishPoweredHitAction(void* action) {
@@ -553,15 +552,19 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNe
         const Network::PulRH1* packet = holder->packet;
         const u8 seq = packet->battleRoyaleLossSeq;
         const u8 eventPlayerId = packet->battleRoyaleLossPlayerId;
-        const u8 playerId = eventPlayerId & ~balloonEventGainBit;
-        if (seq == 0 || seq == sLastRemoteBalloonLossSeq[aid] || playerId >= maxPlayers) continue;
-        if (controller.aidsBelongingToPlayerIds[playerId] != aid) continue;
+        if (seq == 0 || seq == sLastRemoteBalloonLossSeq[aid]) continue;
 
         sLastRemoteBalloonLossSeq[aid] = seq;
-        if ((eventPlayerId & balloonEventGainBit) != 0) {
-            AddBalloons(balloonMgr, playerId, 1);
-        } else {
-            RemoveBalloon(balloonMgr, playerId);
+        if (eventPlayerId >= balloonMoveEventBase) {
+            const u8 move = eventPlayerId - balloonMoveEventBase;
+            const u8 losingPlayerId = move / maxPlayers;
+            const u8 gainingPlayerId = move % maxPlayers;
+            if (losingPlayerId >= maxPlayers || gainingPlayerId >= maxPlayers) continue;
+            if (controller.aidsBelongingToPlayerIds[losingPlayerId] != aid) continue;
+            MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId);
+        } else if (eventPlayerId < maxPlayers) {
+            if (controller.aidsBelongingToPlayerIds[eventPlayerId] != aid) continue;
+            RemoveBalloon(balloonMgr, eventPlayerId);
         }
     }
 }
