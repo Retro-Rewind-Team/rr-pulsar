@@ -59,7 +59,7 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     // Battle Royale - only used when PULSAR_MODE_BATTLEROYALE is enabled AND in friend rooms
     // Must stay at the END so we can conditionally expand packet size
     u8 battleRoyaleLossSeq;
-    u8 battleRoyaleLossPlayerId;
+    u8 battleRoyaleLossPlayerId;  // 0x80 set means gained one balloon
 };
 
 // Size constants for conditional packet expansion
