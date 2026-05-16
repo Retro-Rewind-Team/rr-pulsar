@@ -2,6 +2,7 @@
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
+#include <MarioKartWii/Kart/KartStatus.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 
@@ -144,6 +145,15 @@ kmWrite32(0x80655578, 0x60000000);
 
 // Mushroom Glitch Fix [Vabold]
 kmWrite8(0x807BA077, 0x00);
+
+// Slow Ramp Offroad Fix [vabold, ported by ZPL]
+static void ClearSlowRampMushroomRequirement(Kart::Status* status, u32 bitfield0) {
+    status->bitfield0 = bitfield0;
+    status->bitfield2 &= ~0x00100000;
+}
+kmWrite32(0x80582674, 0x80830004);  // lwz r4, 4(r3)
+kmWrite32(0x80582678, 0x54840080);  // rlwinm r4, r4, 0, 2, 0
+kmCall(0x8058267C, ClearSlowRampMushroomRequirement);
 
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);
