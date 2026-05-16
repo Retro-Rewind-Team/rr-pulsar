@@ -544,6 +544,36 @@ static void ProcessBalloonEliminations(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
     }
 }
 
+static u8 GetSoleActiveUnfinishedPlayer(const LapKO::Mgr& lapKoMgr, const Raceinfo& raceinfo) {
+    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
+    u8 remainingPlayerId = 0xff;
+    u8 remainingCount = 0;
+
+    for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers; ++playerId) {
+        if (!lapKoMgr.IsActive(playerId) || IsPlayerFinished(raceinfo, playerId)) continue;
+        remainingPlayerId = playerId;
+        ++remainingCount;
+    }
+
+    return remainingCount == 1 ? remainingPlayerId : 0xff;
+}
+
+static void FinishSoleActiveUnfinishedPlayer(LapKO::Mgr& lapKoMgr, Raceinfo& raceinfo) {
+    const u8 playerId = GetSoleActiveUnfinishedPlayer(lapKoMgr, raceinfo);
+    if (playerId >= maxPlayers) return;
+
+    RaceinfoPlayer* player = raceinfo.players[playerId];
+    if (player == nullptr) return;
+
+    Timer now(false);
+    raceinfo.CloneTimer(&now);
+    now.SetActive(true);
+    player->EndRace(now, false, 0);
+    raceinfo.EndPlayerRace(playerId);
+    if (IsOnline()) raceinfo.CheckEndRaceOnline(playerId);
+    lapKoMgr.raceFinished = true;
+}
+
 static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNet::ControllerSub& sub, void* balloonMgr) {
     if (!IsOnline()) return;
 
@@ -630,6 +660,7 @@ static void FrameUpdate() {
 
     if (!lapKoMgr->raceFinished && IsAuthoritative() && raceinfo->IsAtLeastStage(RACESTAGE_RACE)) {
         ProcessBalloonEliminations(*lapKoMgr, balloonMgr);
+        FinishSoleActiveUnfinishedPlayer(*lapKoMgr, *raceinfo);
     }
 
     UpdateRemainingPlayerPlacements(*lapKoMgr, *raceinfo, false);
