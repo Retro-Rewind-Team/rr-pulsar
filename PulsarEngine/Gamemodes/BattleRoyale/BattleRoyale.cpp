@@ -300,6 +300,7 @@ static void ApplyCollisionPatches(bool active) {
     kmRuntimeWrite32A(0x80570bf4, 0x80a40b70);
 }
 
+kmWrite32(0x808698c8, 0x60000000);  // allocate only the team-0 balloon pool
 static void CreateBalloonManager() {
     CreateBalloonManagerFn create = reinterpret_cast<CreateBalloonManagerFn>(kmRuntimeAddr(0x808697bc));
 
