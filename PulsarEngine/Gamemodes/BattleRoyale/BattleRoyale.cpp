@@ -1,6 +1,7 @@
 #include <PulsarSystem.hpp>
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
+#include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
@@ -172,6 +173,16 @@ static void MoveBalloon(void* mgr, u8 toPlayer, u8 fromPlayer) {
     move(mgr, toPlayer, fromPlayer, 0, 1, 0);
 }
 
+static void ClearActiveGoldenMushroom(u8 playerId) {
+    Item::Manager* itemMgr = Item::Manager::sInstance;
+    if (itemMgr == nullptr || playerId >= itemMgr->playerCount) return;
+
+    Item::PlayerInventory& inventory = itemMgr->players[playerId].inventory;
+    if (inventory.currentItemId == GOLDEN_MUSHROOM && inventory.hasGolden && inventory.goldenTimer != 0) {
+        inventory.ClearAll();
+    }
+}
+
 static void AddStartingBalloons(void* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval) {
     BalloonAddFn add = reinterpret_cast<BalloonAddFn>(kmRuntimeAddr(0x80869df4));
     if (ShouldApplyBattleRoyale()) count = GetStartingBalloonAddCount();
@@ -219,6 +230,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     if (losingPlayerId == gainingPlayerId) return;
     if (HasPoweredHitLossThisFrame(static_cast<u8>(losingPlayerId))) return;
     MoveBalloon(GetBalloonManager(), static_cast<u8>(gainingPlayerId), static_cast<u8>(losingPlayerId));
+    ClearActiveGoldenMushroom(static_cast<u8>(gainingPlayerId));
     QueueLocalBalloonLoss(static_cast<u8>(losingPlayerId));
 }
 
