@@ -233,6 +233,12 @@ static void CallRaceModeHit(void* raceMode, u32 vtableOffset, u32 firstPlayerId,
     fn(raceMode, firstPlayerId, secondPlayerId);
 }
 
+static bool IsPlayerFinished(const Raceinfo& raceinfo, u8 playerId) {
+    RaceinfoPlayer* player = raceinfo.players[playerId];
+    if (player == nullptr) return false;
+    return (player->stateFlags & 0x2) != 0;
+}
+
 static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) {
     if (!ShouldApplyBattleRoyale()) {
         CallRaceModeHit(raceMode, 0x2c, hitterPlayerId, hittedPlayerId);
@@ -242,6 +248,7 @@ static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) 
     if (hitterPlayerId == hittedPlayerId) return;
     if (HasPoweredHitLossThisFrame(static_cast<u8>(hittedPlayerId))) return;
     if (IsOnline() && !IsLocalPlayer(static_cast<u8>(hittedPlayerId))) return;
+    if (IsPlayerFinished(*Raceinfo::sInstance, static_cast<u8>(hittedPlayerId))) return;
     RemoveBalloon(GetBalloonManager(), static_cast<u8>(hittedPlayerId));
     QueueLocalBalloonLoss(static_cast<u8>(hittedPlayerId));
 }
@@ -257,6 +264,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
 
     void* balloonMgr = GetBalloonManager();
     if (!IsOnline()) {
+        if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayerId)) return;
         MoveBalloon(balloonMgr, static_cast<u8>(gainingPlayerId), static_cast<u8>(losingPlayerId));
         ClearActiveGoldenMushroom(static_cast<u8>(gainingPlayerId));
         return;
@@ -268,6 +276,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
 
     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
     if (previousBalloonCount == 0) return;
+    if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
 
     MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
 
