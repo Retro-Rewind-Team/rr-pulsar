@@ -14,9 +14,14 @@ namespace Pulsar {
 namespace BattleRoyale {
 
 static const u8 maxPlayers = 12;
+static const u8 maxBattleRoyaleBalloons = maxPlayers * 5;
+static const u8 preloadedBalloonsPerPlayer = 4;
 static const u8 startingBalloonCount = 1;
+static const u32 balloonPoolOffset = 0x4;
+static const u32 balloonPoolEntrySize = 0x8;
 static const u32 balloonPlayerArrayOffset = 0x3c4;
 static const u32 balloonPlayerSize = 0x18;
+static const u32 balloonMgrTimeOffset = 0x4e4;
 
 static bool sInitialized = false;
 static u16 sLastRaceFrames = 0xffff;
@@ -35,21 +40,33 @@ static u8 sPendingBalloonEventReadIdx = 0;
 static u8 sPendingBalloonEventWriteIdx = 0;
 static u8 sPendingBalloonEventSize = 0;
 static u8 sLastRemoteBalloonLossSeq[maxPlayers];
+static bool sDeferredBalloonManagerCreation = false;
+static bool sLoadedBalloonModels[maxBattleRoyaleBalloons];
 
 bool ShouldApplyBattleRoyale();
+static u8 GetStartingBalloonAddCount();
 
 typedef void (*BalloonAddFn)(void* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval);
 typedef void (*BalloonRemoveFn)(void* mgr, u32 playerId, u32 visible, u32 sound, int delay, u32 count, int interval);
 typedef void (*BalloonMoveFn)(void* mgr, u32 toPlayer, u32 fromPlayer, int delay, u32 count, int interval);
+typedef void (*BalloonOnAddFn)(void* balloon, u32 time, u8 playerId, u8 balloonIndex, u8 isInitial);
 typedef void (*RaceModeHitFn)(void* raceMode, u32 firstPlayerId, u32 secondPlayerId);
 typedef void (*CreateBalloonManagerFn)();
+typedef void* (*AllocateHeapFn)(void* scene, u32 size, u32 parentHeapIdx);
+typedef void (*CreateObjectsFn)(void* objectDirector, bool isInitial);
+typedef void (*DestroyHeapFn)(void* scene, void* heap);
+typedef void (*GeoObjectLoadFn)(void* object);
 typedef void (*KartActionHitFn)(void* action, u32 sourcePlayerObjId);
 
 kmRuntimeUse(0x809c4748);
 kmRuntimeUse(0x80869df4);
 kmRuntimeUse(0x80869fd0);
 kmRuntimeUse(0x8086a0dc);
+kmRuntimeUse(0x8086ec5c);
 kmRuntimeUse(0x808697bc);
+kmRuntimeUse(0x8051b8e4);
+kmRuntimeUse(0x80826e8c);
+kmRuntimeUse(0x8051b988);
 kmRuntimeUse(0x80568718);
 kmRuntimeUse(0x80569024);
 kmRuntimeUse(0x80569818);
@@ -73,12 +90,105 @@ static u8 GetBalloonCount(void* mgr, u8 playerId) {
     return base[balloonPlayerArrayOffset + playerId * balloonPlayerSize];
 }
 
+static u8 GetBalloonPoolCount(void* mgr) {
+    if (mgr == nullptr) return 0;
+    return reinterpret_cast<u8*>(mgr)[2];
+}
+
+static void* GetBalloonFromPool(void* mgr, u8 poolIdx) {
+    u8* entry = reinterpret_cast<u8*>(mgr) + balloonPoolOffset + poolIdx * balloonPoolEntrySize;
+    return *reinterpret_cast<void**>(entry);
+}
+
+static u8& GetBalloonPoolPlayerId(void* mgr, u8 poolIdx) {
+    return *(reinterpret_cast<u8*>(mgr) + balloonPoolOffset + poolIdx * balloonPoolEntrySize + 5);
+}
+
+static u8& GetBalloonPoolIndex(void* mgr, u8 poolIdx) {
+    return *(reinterpret_cast<u8*>(mgr) + balloonPoolOffset + poolIdx * balloonPoolEntrySize + 6);
+}
+
+static u8& GetBalloonPoolTeamId(void* mgr, u8 poolIdx) {
+    return *(reinterpret_cast<u8*>(mgr) + balloonPoolOffset + poolIdx * balloonPoolEntrySize + 4);
+}
+
+static void*& GetPlayerBalloonSlot(void* mgr, u8 playerId, u8 balloonIndex) {
+    u8* player = reinterpret_cast<u8*>(mgr) + balloonPlayerArrayOffset + playerId * balloonPlayerSize;
+    return *reinterpret_cast<void**>(player + 4 + balloonIndex * sizeof(void*));
+}
+
+static u32 GetBalloonMgrTime(void* mgr) {
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mgr) + balloonMgrTimeOffset);
+}
+
+static void LoadBalloonModel(void* mgr, u8 poolIdx) {
+    if (poolIdx >= maxBattleRoyaleBalloons || sLoadedBalloonModels[poolIdx]) return;
+
+    void* balloon = GetBalloonFromPool(mgr, poolIdx);
+    if (balloon == nullptr) return;
+
+    void** vtable = *reinterpret_cast<void***>(balloon);
+    GeoObjectLoadFn load = reinterpret_cast<GeoObjectLoadFn>(vtable[0x20 / sizeof(void*)]);
+    load(balloon);
+    sLoadedBalloonModels[poolIdx] = true;
+}
+
+static void ClearLoadedBalloonModels() {
+    for (u8 i = 0; i < maxBattleRoyaleBalloons; ++i) sLoadedBalloonModels[i] = false;
+}
+
+static void LoadStartingBalloonModels(void* mgr) {
+    if (mgr == nullptr) return;
+
+    const u8 playerCount = reinterpret_cast<u8*>(mgr)[0];
+    u8 modelsToLoad = static_cast<u8>(playerCount * preloadedBalloonsPerPlayer);
+    const u8 poolCount = GetBalloonPoolCount(mgr);
+    if (modelsToLoad > poolCount) modelsToLoad = poolCount;
+
+    for (u8 poolIdx = 0; poolIdx < modelsToLoad; ++poolIdx) LoadBalloonModel(mgr, poolIdx);
+}
+
+static void AddBattleRoyaleBalloons(void* mgr, u8 playerId, u8 teamId, u8 isInitial, int delay, u8 count, int interval) {
+    if (mgr == nullptr || playerId >= maxPlayers || count == 0) return;
+    if (teamId > 1) teamId = 0;
+
+    u8 current = GetBalloonCount(mgr, playerId);
+    if (current >= 5) return;
+    if (count > 5 - current) count = static_cast<u8>(5 - current);
+
+    const u8 poolCount = GetBalloonPoolCount(mgr);
+    const u8 freePlayerId = reinterpret_cast<u8*>(mgr)[0];
+    BalloonOnAddFn onAdd = reinterpret_cast<BalloonOnAddFn>(kmRuntimeAddr(0x8086ec5c));
+    const u32 time = GetBalloonMgrTime(mgr) + delay;
+
+    for (u8 poolIdx = 0, added = 0; poolIdx < poolCount && added < count; ++poolIdx) {
+        if (GetBalloonPoolPlayerId(mgr, poolIdx) != freePlayerId || GetBalloonPoolTeamId(mgr, poolIdx) != teamId) continue;
+
+        if (poolIdx >= maxBattleRoyaleBalloons || !sLoadedBalloonModels[poolIdx]) continue;
+        void* balloon = GetBalloonFromPool(mgr, poolIdx);
+        if (balloon == nullptr) continue;
+
+        const u8 balloonIndex = current++;
+        onAdd(balloon, time + added * interval, playerId, balloonIndex, isInitial);
+        GetBalloonPoolPlayerId(mgr, poolIdx) = playerId;
+        GetBalloonPoolIndex(mgr, poolIdx) = balloonIndex;
+        GetPlayerBalloonSlot(mgr, playerId, balloonIndex) = balloon;
+        reinterpret_cast<u8*>(mgr)[balloonPlayerArrayOffset + playerId * balloonPlayerSize] = current;
+        ++added;
+    }
+}
+
 static void AddBalloons(void* mgr, u8 playerId, u8 count) {
     if (mgr == nullptr || playerId >= maxPlayers || count == 0) return;
 
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     u32 team = static_cast<u32>(scenario.players[playerId].team);
     if (team > 1) team = 0;
+
+    if (ShouldApplyBattleRoyale()) {
+        AddBattleRoyaleBalloons(mgr, playerId, static_cast<u8>(team), 1, 0, count, 0);
+        return;
+    }
 
     BalloonAddFn add = reinterpret_cast<BalloonAddFn>(kmRuntimeAddr(0x80869df4));
     add(mgr, playerId, team, 1, 0, count, 0);
@@ -208,8 +318,13 @@ static void ClearActiveGoldenMushroom(u8 playerId) {
 }
 
 static void AddStartingBalloons(void* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval) {
+    if (ShouldApplyBattleRoyale()) {
+        AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
+                                GetStartingBalloonAddCount(), interval);
+        return;
+    }
+
     BalloonAddFn add = reinterpret_cast<BalloonAddFn>(kmRuntimeAddr(0x80869df4));
-    if (ShouldApplyBattleRoyale()) count = GetStartingBalloonAddCount();
     add(mgr, playerId, teamId, isInitial, delay, count, interval);
 }
 
@@ -366,25 +481,94 @@ static void ApplyCollisionPatches(bool active) {
 }
 
 kmWrite32(0x808698c8, 0x60000000);  // allocate only the team-0 balloon pool
-static void CreateBalloonManager() {
-    CreateBalloonManagerFn create = reinterpret_cast<CreateBalloonManagerFn>(kmRuntimeAddr(0x808697bc));
+kmWrite32(0x808698c0, 0x1c040005);  // allocate five balloons per player
+kmWrite32(0x8086994c, 0x60000000);  // defer balloon model load until a slot is used
+kmWrite32(0x80869950, 0x60000000);
+kmWrite32(0x80869954, 0x60000000);
+kmWrite32(0x80869958, 0x60000000);
 
-    if (!ShouldApplyBattleRoyale()) {
-        create();
-        return;
+kmWrite32(0x8082a554, 0x38600400);  // ObjectDirector arrays: 200 -> 256 pointers
+kmWrite32(0x8082a560, 0x38600400);
+kmWrite32(0x8082a56c, 0x38600400);
+kmWrite32(0x8082a578, 0x38600400);
+kmWrite32(0x8082a584, 0x38600400);
+kmWrite32(0x8082a590, 0x38600400);
+kmWrite32(0x8082a59c, 0x38600c00);  // hit depth vec3 array: 200 -> 256 entries
+kmWrite32(0x8082a5b8, 0x38e00100);
+kmWrite32(0x8082a5c4, 0x38600400);  // collision scenario array: 200 -> 256 entries
+
+static void* AllocateObjectHeap(void* scene, u32 size, u32 parentHeapIdx) {
+    if (ShouldApplyBattleRoyale() && size == 0x80000 && parentHeapIdx == 1) {
+        size = 0x100000;
     }
+
+    AllocateHeapFn allocateHeap = reinterpret_cast<AllocateHeapFn>(kmRuntimeAddr(0x8051b8e4));
+    return allocateHeap(scene, size, parentHeapIdx);
+}
+
+kmCall(0x80554570, AllocateObjectHeap);
+
+static void CreateBattleRoyaleBalloonManager() {
+    CreateBalloonManagerFn create = reinterpret_cast<CreateBalloonManagerFn>(kmRuntimeAddr(0x808697bc));
 
     RacedataSettings& settings = Racedata::sInstance->racesScenario.settings;
     const GameMode prevMode = settings.gamemode;
     const BattleType prevBattleType = settings.battleType;
     settings.gamemode = MODE_BATTLE;
     settings.battleType = BATTLE_BALLOON;
+    ClearLoadedBalloonModels();
     create();
+    LoadStartingBalloonModels(GetBalloonManager());
     settings.gamemode = prevMode;
     settings.battleType = prevBattleType;
 }
 
+static void CreateBalloonManager() {
+    if (!ShouldApplyBattleRoyale()) {
+        CreateBalloonManagerFn create = reinterpret_cast<CreateBalloonManagerFn>(kmRuntimeAddr(0x808697bc));
+        create();
+        return;
+    }
+
+    sDeferredBalloonManagerCreation = true;
+}
+
 kmCall(0x8082a7c4, CreateBalloonManager);
+
+static void* sDeferredDestroyScene = nullptr;
+static void* sDeferredDestroyHeap = nullptr;
+
+static void DestroyHeapAfterDeferredBalloons(void* scene, void* heap) {
+    if (sDeferredBalloonManagerCreation && ShouldApplyBattleRoyale()) {
+        sDeferredDestroyScene = scene;
+        sDeferredDestroyHeap = heap;
+        return;
+    }
+
+    DestroyHeapFn destroyHeap = reinterpret_cast<DestroyHeapFn>(kmRuntimeAddr(0x8051b988));
+    destroyHeap(scene, heap);
+}
+
+kmCall(0x8082a7f4, DestroyHeapAfterDeferredBalloons);
+
+static void CreateObjectsThenCreateDeferredBalloons(void* objectDirector, bool isInitial) {
+    CreateObjectsFn createObjects = reinterpret_cast<CreateObjectsFn>(kmRuntimeAddr(0x80826e8c));
+    createObjects(objectDirector, isInitial);
+
+    if (sDeferredBalloonManagerCreation && ShouldApplyBattleRoyale()) {
+        CreateBattleRoyaleBalloonManager();
+        sDeferredBalloonManagerCreation = false;
+    }
+
+    if (sDeferredDestroyHeap != nullptr) {
+        DestroyHeapFn destroyHeap = reinterpret_cast<DestroyHeapFn>(kmRuntimeAddr(0x8051b988));
+        destroyHeap(sDeferredDestroyScene, sDeferredDestroyHeap);
+        sDeferredDestroyScene = nullptr;
+        sDeferredDestroyHeap = nullptr;
+    }
+}
+
+kmCall(0x8082a800, CreateObjectsThenCreateDeferredBalloons);
 
 static bool IsAuthoritative() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
@@ -396,6 +580,9 @@ static bool IsAuthoritative() {
 static void ResetState() {
     sInitialized = false;
     sLastRaceFrames = 0xffff;
+    sDeferredBalloonManagerCreation = false;
+    sDeferredDestroyScene = nullptr;
+    sDeferredDestroyHeap = nullptr;
     for (u8 playerId = 0; playerId < maxPlayers; ++playerId) {
         sPoweredHitLossFrame[playerId] = 0xffff;
         sPreviousBalloonCount[playerId] = 0;
@@ -403,6 +590,7 @@ static void ResetState() {
         sEliminationPlacementOrder[playerId] = 0xff;
         sLastRemoteBalloonLossSeq[playerId] = 0;
     }
+    ClearLoadedBalloonModels();
     sEliminationPlacementCount = 0;
     sPendingBalloonEventReadIdx = 0;
     sPendingBalloonEventWriteIdx = 0;
