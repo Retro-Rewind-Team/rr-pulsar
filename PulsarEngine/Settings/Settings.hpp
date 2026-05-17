@@ -79,7 +79,6 @@ class Mgr {
     void SaveTrophies();
     void AddTrophy(u32 crc32, u8 variantIdx, TTMode mode);
     u32 CountTrophiesInTrackRange(u32 firstTrackIdx, u32 trackCount, TTMode mode) const;
-    u32 CountVariantsInTrackRange(u32 firstTrackIdx, u32 trackCount) const;
     void SetLastSelectedCup(PulsarCupId id) { this->rawBin->GetSection<MiscParams>().lastSelectedCup = id; }
 
    public:

@@ -203,18 +203,18 @@ void Mgr::InitTrophyEntries(const u16* totalTrophyCount) {
     const u32 ctTrackCount = cups->GetRetroTrackCount() + cups->GetCTOnlyTrackCount();
     const u32 totalRaceTrackCount = regTrackCount + ctTrackCount;
 
-    u32 totalVariantCount = 0;
+    u32 trophyVariantEntryCount = 0;
     for (u32 i = 0; i < ctTrackCount; ++i) {
         const PulsarId id = static_cast<PulsarId>(PULSARID_FIRSTCT + i);
-        totalVariantCount += cups->GetTrack(id).variantCount;
+        trophyVariantEntryCount += cups->GetTrack(id).variantCount;
     }
 
     for (int mode = 0; mode < 4; ++mode) {
-        this->totalTrophyCount[mode] = totalTrophyCount[mode] + totalVariantCount;
+        this->totalTrophyCount[mode] = totalTrophyCount[mode];
         this->trophyCount[mode] = 0;
     }
 
-    this->trophyEntryCount = totalRaceTrackCount + totalVariantCount;
+    this->trophyEntryCount = totalRaceTrackCount + trophyVariantEntryCount;
     this->trophyEntries = new (System::sInstance->heap) TrophyEntry[this->trophyEntryCount];
     memset(this->trophyEntries, 0, sizeof(TrophyEntry) * this->trophyEntryCount);
 
@@ -383,16 +383,6 @@ bool Mgr::HasTrophyForAllVariants(PulsarId id, TTMode mode) const {
     return true;
 }
 
-u32 Mgr::CountVariantsInTrackRange(u32 firstTrackIdx, u32 trackCount) const {
-    const CupsConfig* cups = CupsConfig::sInstance;
-    u32 count = 0;
-    for (u32 i = 0; i < trackCount; ++i) {
-        const PulsarId id = static_cast<PulsarId>(PULSARID_FIRSTCT + firstTrackIdx + i);
-        count += cups->GetTrack(id).variantCount;
-    }
-    return count;
-}
-
 u32 Mgr::CountTrophiesInTrackRange(u32 firstTrackIdx, u32 trackCount, TTMode mode) const {
     const CupsConfig* cups = CupsConfig::sInstance;
     u32 count = 0;
@@ -416,9 +406,9 @@ u16 Mgr::GetTotalTrophyCount(PulsarId id, TTMode mode) const {
     u32 total = this->GetTotalTrophyCount(mode);
 
     if (trackIdx < rtTrackCount) {
-        total = cups->retroTrophyCount[mode] + this->CountVariantsInTrackRange(0, rtTrackCount);
+        total = cups->retroTrophyCount[mode];
     } else if (trackIdx < rtTrackCount + ctTrackCount) {
-        total = cups->ctOnlyTrophyCount[mode] + this->CountVariantsInTrackRange(rtTrackCount, ctTrackCount);
+        total = cups->ctOnlyTrophyCount[mode];
     }
     if (total > 0xFFFF) total = 0xFFFF;
     return static_cast<u16>(total);
