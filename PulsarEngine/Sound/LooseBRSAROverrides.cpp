@@ -1,3 +1,17 @@
+/*
+ * Loose Archive Overrides
+ *
+ * Developed by patchzy as part of the Retro Rewind project.
+ *
+ * Copyright (C) Retro Rewind.
+ * SPDX-License-Identifier: MIT
+ * 
+ * This code is licensed under the MIT License.
+ *
+ * Credit is not legally required, but if you use or adapt this system,
+ * please consider crediting patchzy and/or Retro Rewind team.
+ */
+
 #include <kamek.hpp>
 #include <CustomCharacters.hpp>
 #include <PulsarSystem.hpp>
