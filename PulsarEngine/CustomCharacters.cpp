@@ -919,10 +919,10 @@ static void HideAuthorNameDecoration(LayoutUIControl& control) {
     for (u32 i = 0; i < ARRAY_COUNT(panes); ++i) SetPaneVisibleIfPresent(control, panes[i], false);
 }
 
-static void PositionAuthorNameControl(LayoutUIControl& control) {
+static void PositionAuthorNameControl(LayoutUIControl& control, const LayoutUIControl& characterNameControl) {
     for (u32 i = 0; i < ARRAY_COUNT(control.positionAndscale); ++i) {
-        control.positionAndscale[i].position.x += 152.5f;
-        control.positionAndscale[i].position.y += 40.0f;
+        control.positionAndscale[i].position = characterNameControl.positionAndscale[i].position;
+        control.positionAndscale[i].position.y -= 14.5f;
         control.positionAndscale[i].scale.x *= 1.1f;
     }
 }
@@ -957,7 +957,7 @@ static void AttachAuthorNameControl(CharaName& name, const char* folderName, con
     loadingAuthorNameControl = false;
 
     HideAuthorNameDecoration(*author);
-    PositionAuthorNameControl(*author);
+    PositionAuthorNameControl(*author, name);
     author->isHidden = true;
     authorNameControlLoaded[hud] = true;
 }
