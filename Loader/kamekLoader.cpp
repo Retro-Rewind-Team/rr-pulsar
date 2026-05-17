@@ -175,9 +175,9 @@ static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binary
         u8 _00[0x60 - 0x00];
     } NETSHA1CTX;
     NETSHA1CTX sha1ctx;
-    u8(*digest)[20] = (u8(*)[20])0x800017b0;
+    u8 *digest = (u8*)0x800017b0;
     params->NETSHA1Init(&sha1ctx);
-    params->NETSHA1Update(&sha1ctx, (const void*)output, header->codeSize);
+    params->NETSHA1Update(&sha1ctx, (const void*)(((const u8*)binary) + sizeof(KBHeader)), header->codeSize);
     params->NETSHA1GetDigest(&sha1ctx, digest);
 
     while (input < inputEnd) {
