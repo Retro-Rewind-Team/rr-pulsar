@@ -453,6 +453,20 @@ static bool IsActiveForPlacement(const LapKO::Mgr& lapKoMgr, u8 playerId) {
     return lapKoMgr.IsActive(playerId) && !HasPlacementRecord(playerId);
 }
 
+static u8 GetSoleActivePlayer(const LapKO::Mgr& lapKoMgr) {
+    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
+    u8 remainingPlayerId = 0xff;
+    u8 remainingCount = 0;
+
+    for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers; ++playerId) {
+        if (!lapKoMgr.IsActive(playerId)) continue;
+        remainingPlayerId = playerId;
+        ++remainingCount;
+    }
+
+    return remainingCount == 1 ? remainingPlayerId : 0xff;
+}
+
 static void RecordEliminatedPlacements(const LapKO::Mgr& lapKoMgr) {
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers; ++playerId) {
@@ -473,9 +487,15 @@ static void UpdateRemainingPlayerPlacements(LapKO::Mgr& lapKoMgr, Raceinfo& race
     u8 order[maxPlayers];
     u8 count = 0;
 
+    const u8 soleActivePlayer = GetSoleActivePlayer(lapKoMgr);
+    if (soleActivePlayer < playerCount && !HasPlacementRecord(soleActivePlayer)) {
+        order[count++] = soleActivePlayer;
+    }
+
     for (u8 pos = 0; pos < playerCount && pos < maxPlayers; ++pos) {
         const u8 playerId = raceinfo.playerIdInEachPosition[pos];
         if (playerId >= maxPlayers || !IsActiveForPlacement(lapKoMgr, playerId)) continue;
+        if (playerId == soleActivePlayer) continue;
         order[count++] = playerId;
     }
 
