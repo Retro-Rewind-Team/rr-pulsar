@@ -33,6 +33,7 @@ atoi = 0x8001543c
 wcscpy = 0x800179b4
 strncmp = 0x800133b8
 strtoul = 0x800152a8
+stricmp = 0x8001bbf8
 
 LoadAnimation__10UIAnimatorFUiUiPCcUibf = 0x8063c714
 

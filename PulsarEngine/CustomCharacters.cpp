@@ -51,7 +51,9 @@ enum {
     MENU_DRIVER_MODEL_COUNT = 0x18,
     LOCAL_PLAYER_COUNT = 4,
     ONLINE_PLAYER_COUNT = 12,
-    MII_C_COUNT = 6
+    MII_C_COUNT = 6,
+    SOUND_REMAP_COUNT = 64,
+    SOUND_REMAP_FILE_MAX_SIZE = 4096
 };
 
 extern "C" const char* characterNames[];
@@ -106,6 +108,16 @@ static ToadetteHair* reloadedMenuDriverModelHairs[MENU_DRIVER_MODEL_COUNT];
 static const GameScene* reloadedMenuDriverModelSceneOwner;
 static MenuDriverModel* reloadedMenuDriverModelOwner;
 static bool forceDefaultMenuDriverBRRES;
+static bool soundRemapsLoaded;
+
+struct SoundRemap {
+    char postfix[16];
+    CharacterId character;
+    bool silent;
+};
+
+static SoundRemap soundRemaps[SOUND_REMAP_COUNT];
+static u32 soundRemapCount;
 
 static u8 MinLocalPlayers(u32 count) {
     return count > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(count);
@@ -998,6 +1010,8 @@ struct VoiceGroupBase {
     u32 groupId;
 };
 
+static const u32 SILENT_VOICE_GROUP = 0xffffffff;
+
 static const VoiceGroupBase voiceGroupBases[] = {
     {MARIO, BRSAR_GROUP_MARIO},
     {BABY_PEACH, BRSAR_GROUP_BABY_PEACH},
@@ -1025,6 +1039,137 @@ static const VoiceGroupBase voiceGroupBases[] = {
     {ROSALINA, BRSAR_GROUP_ROSALINA},
 };
 
+struct CharacterNameMap {
+    const char* name;
+    CharacterId character;
+};
+
+static const CharacterNameMap voiceCharacterNames[] = {
+    {"MARIO", MARIO},
+    {"BABY_PEACH", BABY_PEACH},
+    {"WALUIGI", WALUIGI},
+    {"BOWSER", BOWSER},
+    {"BABY_DAISY", BABY_DAISY},
+    {"DRY_BONES", DRY_BONES},
+    {"BABY_MARIO", BABY_MARIO},
+    {"LUIGI", LUIGI},
+    {"TOAD", TOAD},
+    {"DONKEY_KONG", DONKEY_KONG},
+    {"YOSHI", YOSHI},
+    {"WARIO", WARIO},
+    {"BABY_LUIGI", BABY_LUIGI},
+    {"TOADETTE", TOADETTE},
+    {"KOOPA_TROOPA", KOOPA_TROOPA},
+    {"DAISY", DAISY},
+    {"PEACH", PEACH},
+    {"BIRDO", BIRDO},
+    {"DIDDY_KONG", DIDDY_KONG},
+    {"KING_BOO", KING_BOO},
+    {"BOWSER_JR", BOWSER_JR},
+    {"DRY_BOWSER", DRY_BOWSER},
+    {"FUNKY_KONG", FUNKY_KONG},
+    {"ROSALINA", ROSALINA},
+};
+
+static char* SkipTextSpace(char* text) {
+    while (*text == ' ' || *text == '\t' || *text == '\r') ++text;
+    return text;
+}
+
+static void TrimTextEnd(char* text) {
+    u32 length = strlen(text);
+    while (length > 0) {
+        const char c = text[length - 1];
+        if (c != ' ' && c != '\t' && c != '\r') break;
+        text[--length] = '\0';
+    }
+}
+
+static bool FindVoiceCharacterByName(const char* name, CharacterId& character) {
+    for (u32 i = 0; i < ARRAY_COUNT(voiceCharacterNames); ++i) {
+        if (stricmp(name, voiceCharacterNames[i].name) != 0) continue;
+        character = voiceCharacterNames[i].character;
+        return true;
+    }
+    return false;
+}
+
+static void AddSoundRemap(const char* postfix, const char* target) {
+    if (soundRemapCount >= SOUND_REMAP_COUNT || postfix == nullptr || target == nullptr || postfix[0] == '\0') return;
+
+    SoundRemap& remap = soundRemaps[soundRemapCount];
+    if (stricmp(target, "SILENT") == 0) {
+        remap.character = CHARACTER_NONE;
+        remap.silent = true;
+    } else {
+        CharacterId character = CHARACTER_NONE;
+        if (!FindVoiceCharacterByName(target, character)) return;
+        remap.character = character;
+        remap.silent = false;
+    }
+
+    strncpy(remap.postfix, postfix, sizeof(remap.postfix) - 1);
+    remap.postfix[sizeof(remap.postfix) - 1] = '\0';
+    ++soundRemapCount;
+}
+
+static void ParseSoundRemapLine(char* line) {
+    char* text = SkipTextSpace(line);
+    if (*text == '\0' || *text == '\n' || *text == '#') return;
+
+    char* comment = strchr(text, '#');
+    if (comment != nullptr) *comment = '\0';
+
+    char* separator = strchr(text, '|');
+    if (separator == nullptr) return;
+    *separator = '\0';
+
+    char* postfix = SkipTextSpace(text);
+    char* target = SkipTextSpace(separator + 1);
+    TrimTextEnd(postfix);
+    TrimTextEnd(target);
+    AddSoundRemap(postfix, target);
+}
+
+static void LoadSoundRemaps() {
+    if (soundRemapsLoaded) return;
+    soundRemapsLoaded = true;
+    soundRemapCount = 0;
+
+    DVD::FileInfo info;
+    if (!DVD::Open("/sound/sound.txt", &info)) return;
+    const u32 fileSize = static_cast<u32>(info.length);
+    if (fileSize == 0 || fileSize >= SOUND_REMAP_FILE_MAX_SIZE) {
+        DVD::Close(&info);
+        return;
+    }
+
+    char buffer[SOUND_REMAP_FILE_MAX_SIZE] __attribute__((aligned(32)));
+    const s32 read = DVD::ReadPrio(&info, buffer, static_cast<s32>(fileSize), 0, 2);
+    DVD::Close(&info);
+    if (read != static_cast<s32>(fileSize)) return;
+    buffer[fileSize] = '\0';
+
+    char* lineStart = buffer;
+    for (u32 i = 0; i <= fileSize; ++i) {
+        if (buffer[i] != '\n' && buffer[i] != '\0') continue;
+        buffer[i] = '\0';
+        ParseSoundRemapLine(lineStart);
+        lineStart = buffer + i + 1;
+    }
+}
+
+static bool FindSoundRemap(const char* postfix, SoundRemap& outRemap) {
+    LoadSoundRemaps();
+    if (postfix == nullptr) return false;
+    for (u32 i = 0; i < soundRemapCount; ++i) {
+        if (stricmp(postfix, soundRemaps[i].postfix) != 0) continue;
+        outRemap = soundRemaps[i];
+        return true;
+    }
+    return false;
+}
+
 static bool CharacterHasOnlyBaseVoiceGroup(CharacterId character) {
     return character == DRY_BONES || character == KOOPA_TROOPA || character == KING_BOO;
 }
@@ -1047,7 +1192,17 @@ static bool FindVoiceGroupBase(CharacterId character, u32& groupId) {
     return false;
 }
 
-static bool VoiceBaseGroupForTable(CharacterId character, u8, u32& groupId) {
+static bool VoiceBaseGroupForTable(CharacterId character, u8 table, u32& groupId) {
+    if (table != TABLE_DEFAULT) {
+        SoundRemap remap;
+        if (FindSoundRemap(GeneratedCustomPostfix(character, table), remap)) {
+            if (remap.silent) {
+                groupId = SILENT_VOICE_GROUP;
+                return true;
+            }
+            return FindVoiceGroupBase(remap.character, groupId);
+        }
+    }
     return FindVoiceGroupBase(character, groupId);
 }
 
@@ -1064,6 +1219,10 @@ static bool VoiceBaseGroupForActor(const Audio::CharacterActor* actor, Character
     if (!ActorRaceCharacter(actor, character)) return false;
     const u8 table = RaceSkinTable(actor->playerId, character);
     if (!VoiceBaseGroupForTable(character, table, groupId)) return false;
+    if (groupId == SILENT_VOICE_GROUP) {
+        groupCharacter = CHARACTER_NONE;
+        return true;
+    }
     if (!FindVoiceGroupBaseCharacter(groupId, groupCharacter)) return false;
     return groupCharacter != character;
 }
@@ -1132,6 +1291,7 @@ static u32 CharacterVoiceGroupHook(Audio::CharacterActor* actor) {
     CharacterId groupCharacter = CHARACTER_NONE;
     u32 groupId = 0;
     if (VoiceBaseGroupForActor(actor, character, groupId, groupCharacter)) {
+        if (groupId == SILENT_VOICE_GROUP) return SILENT_VOICE_GROUP;
         if (!actor->isLocal && !CharacterHasOnlyBaseVoiceGroup(groupCharacter)) ++groupId;
         return groupId;
     }
@@ -1145,6 +1305,7 @@ static u32 CharacterCannonVoiceGroupHook(Audio::CharacterActor* actor) {
     CharacterId groupCharacter = CHARACTER_NONE;
     u32 groupId = 0;
     if (VoiceBaseGroupForActor(actor, character, groupId, groupCharacter)) {
+        if (groupId == SILENT_VOICE_GROUP) return SILENT_VOICE_GROUP;
         if (CharacterHasOnlyBaseVoiceGroup(groupCharacter)) return 0xffffffff;
         return groupId + (actor->isLocal ? 2 : 3);
     }
@@ -1160,6 +1321,7 @@ static u32 CharacterGoalVoiceGroupHook(Audio::CharacterActor* actor, u32 type) {
     if (!VoiceBaseGroupForActor(actor, character, groupId, groupCharacter)) {
         return actor->GetCharacterGoalGroupId(type);
     }
+    if (groupId == SILENT_VOICE_GROUP) return SILENT_VOICE_GROUP;
     u16& actorCharacter = CharacterActorCharacterSlot(*actor);
     const u16 oldCharacter = actorCharacter;
     actorCharacter = static_cast<u16>(groupCharacter);
