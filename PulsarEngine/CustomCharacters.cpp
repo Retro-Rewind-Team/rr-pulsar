@@ -416,7 +416,7 @@ static BmgTextState GetBmgTextState(const BMGHolder& holder, u32 bmgId) {
     return text[0] == L'\0' ? BMG_TEXT_BLANK : BMG_TEXT_NONBLANK;
 }
 
-static BmgTextState GetCustomCharacterNameBmgTextState(const LayoutUIControl& control, u32 bmgId) {
+static BmgTextState GetCustomCharacterBmgTextState(const LayoutUIControl& control, u32 bmgId) {
     const System* system = System::sInstance;
     if (system != nullptr) {
         BmgTextState state = GetBmgTextState(system->GetBMG(), bmgId);
@@ -432,7 +432,7 @@ static BmgTextState GetCustomCharacterNameBmgTextState(const LayoutUIControl& co
 }
 
 static u32 ResolveCustomCharacterNameBmgId(const LayoutUIControl& control, u32 bmgId, const NameEntry* entry) {
-    if (entry == nullptr && GetCustomCharacterNameBmgTextState(control, bmgId) == BMG_TEXT_NONBLANK) return bmgId;
+    if (entry == nullptr && GetCustomCharacterBmgTextState(control, bmgId) == BMG_TEXT_NONBLANK) return bmgId;
     const u32 defaultBmgId = DefaultNameBmgIdForSkinBmgId(bmgId);
     return defaultBmgId != 0 ? defaultBmgId : bmgId;
 }
@@ -464,7 +464,11 @@ static bool SetCustomCharacterNameMessage(LayoutUIControl& control, u32 bmgId) {
 
 static bool SetCustomCharacterAuthorMessage(LayoutUIControl& control, u32 bmgId) {
     const NameEntry* entry = NameEntryForBmgId(bmgId, true);
-    if (entry != nullptr) return SetNameEntryMessage(control, nullptr, *entry, true);
+    if (entry != nullptr) {
+        if (entry->authorNameWide[0] == L'\0') return false;
+        return SetNameEntryMessage(control, nullptr, *entry, true);
+    }
+    if (GetCustomCharacterBmgTextState(control, bmgId) != BMG_TEXT_NONBLANK) return false;
     control.SetMessage(bmgId, nullptr);
     return true;
 }
@@ -989,8 +993,7 @@ static void UpdateCharacterSelectAuthorText(Pages::CharacterSelect* page, u8 hud
     if (bmgId == 0) {
         authorControl->isHidden = true;
     } else {
-        authorControl->isHidden = false;
-        SetCustomCharacterAuthorMessage(*authorControl, bmgId);
+        authorControl->isHidden = !SetCustomCharacterAuthorMessage(*authorControl, bmgId);
     }
     authorTextControl = authorControl;
     authorTextValue = bmgId;
