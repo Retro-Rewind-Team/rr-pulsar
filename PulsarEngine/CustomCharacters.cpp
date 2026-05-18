@@ -614,7 +614,7 @@ static void ClearCustomCharacterFileCaches() {
     nameEntryCount = 0;
 }
 
-static void ResetAllCharacterTablesToDefault() {
+void ResetAllCharacterTablesToDefault() {
     for (u32 i = 0; i < CHARACTER_COUNT; ++i) selectedTable[i] = TABLE_DEFAULT;
     ResetOnlineCustomCharacterFlags();
     ResetOfflineCpuSkinTables();

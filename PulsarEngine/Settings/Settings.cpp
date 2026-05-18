@@ -1,4 +1,5 @@
 #include <Settings/Settings.hpp>
+#include <CustomCharacters.hpp>
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <IO/IO.hpp>
@@ -437,7 +438,11 @@ void Mgr::SetSettingValue(Type type, u32 setting, u8 value) {
     this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting] = value;
 }
 void Mgr::SetUserSettingValue(UserType type, u32 setting, u8 value) {
-    this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting] = value;
+    u8& currentValue = this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting];
+    if (type == SETTINGSTYPE_MISC && setting == RADIO_LOOSEARCHIVEOVERRIDES && currentValue != value) {
+        CustomCharacters::ResetAllCharacterTablesToDefault();
+    }
+    currentValue = value;
 }
 
 void Mgr::AdjustSections() {

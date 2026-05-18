@@ -14,6 +14,7 @@ namespace Pulsar {
 namespace CustomCharacters {
 
 void ResetOnlineCustomCharacterFlags();
+void ResetAllCharacterTablesToDefault();
 void RefreshLocalOnlineCustomCharacterFlags();
 void RestoreVotingMenuDriverModels();
 void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 characterTables);
