@@ -234,6 +234,7 @@ enum BMG {
 
     // Custom Characters
     BMG_CUSTOM_CHARACTER_NAME_START = 0x6a00,
+    BMG_CUSTOM_CHARACTER_AUTHOR_START = 0x7a00,
 
     // Language
     BMG_LANGUAGE_RESET_REQUIRED = 0x295f,

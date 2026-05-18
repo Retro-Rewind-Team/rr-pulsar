@@ -16,8 +16,8 @@ namespace CustomCharacters {
 void ResetOnlineCustomCharacterFlags();
 void RefreshLocalOnlineCustomCharacterFlags();
 void RestoreVotingMenuDriverModels();
-void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 characterTables);
-u8 GetLocalOnlineCharacterTables();
+void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 characterTables);
+u16 GetLocalOnlineCharacterTables();
 bool IsCustomCharacterTableActive();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
 bool ShouldMuteCharacterVoice(const Kart::Link* link);

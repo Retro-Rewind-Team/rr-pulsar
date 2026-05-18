@@ -38,13 +38,16 @@ namespace CustomCharacters {
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
 
 enum {
-    PACKET_BITS = 3,
+    PACKET_BITS = 6,
     PACKET_MASK = (1 << PACKET_BITS) - 1,
     TABLE_DEFAULT = 0,
-    TABLE_COUNT = 1 << PACKET_BITS,
+    CUSTOM_TABLE_LIMIT = 50,
+    TABLE_COUNT = CUSTOM_TABLE_LIMIT + 1,
     TABLE_INVALID = TABLE_COUNT,
 
     CHARACTER_COUNT = 0x30,
+    CUSTOM_CHARACTER_NAME_BMG_START = UI::BMG_CUSTOM_CHARACTER_NAME_START,
+    CUSTOM_CHARACTER_AUTHOR_BMG_START = UI::BMG_CUSTOM_CHARACTER_AUTHOR_START,
     MENU_DRIVER_MODEL_COUNT = 0x18,
     LOCAL_PLAYER_COUNT = 4,
     ONLINE_PLAYER_COUNT = 12,
@@ -54,107 +57,7 @@ enum {
 extern "C" const char* characterNames[];
 
 static_assert(TABLE_COUNT <= (1 << PACKET_BITS), "SELECT packet skin table field is too small");
-static_assert(PACKET_BITS * 2 <= 8, "SELECT packet skin table fields must fit in one byte");
-
-struct CharacterOverride {
-    CharacterId character;
-    const char* postfix;
-    bool silentVoice;
-    u32 nameBmgId;
-    const wchar_t* fallbackName;
-    const char* authorText;
-    u32 voiceBaseGroupId;
-};
-
-#define CUSTOM_CHARACTER_NAME_BMG(index) (UI::BMG_CUSTOM_CHARACTER_NAME_START + (index))
-
-static const CharacterOverride customCharacterAssets[] = {
-    {MARIO, "mr-1", false, CUSTOM_CHARACTER_NAME_BMG(0), L"Mario (Fire)", "LTC 91"},
-    {MARIO, "mr-2", false, CUSTOM_CHARACTER_NAME_BMG(1), L"Mario (Builder)", "UltraWario"},
-    {MARIO, "mr-3", true, CUSTOM_CHARACTER_NAME_BMG(2), L"Snowman", "GioMacGrillin"},
-    {BABY_PEACH, "bpc-1", false, CUSTOM_CHARACTER_NAME_BMG(3), L"Baby Peach (Cherub)", "UltraWario"},
-    {BABY_PEACH, "bpc-2", true, CUSTOM_CHARACTER_NAME_BMG(4), L"Pikachu", "ALE XD"},
-    {WALUIGI, "wl-1", false, CUSTOM_CHARACTER_NAME_BMG(5), L"Waluigi (Athletic)", "TheBeefBai"},
-    {WALUIGI, "wl-2", false, CUSTOM_CHARACTER_NAME_BMG(6), L"Waluigi (Vampire)", "UltraWario"},
-    {WALUIGI, "wl-3", true, CUSTOM_CHARACTER_NAME_BMG(7), L"Wiggler", "UltraWario"},
-    {BOWSER, "kp-1", false, CUSTOM_CHARACTER_NAME_BMG(8), L"Dark Bowser", "UltraWario"},
-    {BOWSER, "kp-2", false, CUSTOM_CHARACTER_NAME_BMG(9), L"Bowser (Santa)", "UltraWario"},
-    {BOWSER, "kp-3", true, CUSTOM_CHARACTER_NAME_BMG(10), L"Chargin Chuck", "UltraWario, Porko"},
-    {BOWSER, "kp-4", true, CUSTOM_CHARACTER_NAME_BMG(11), L"Boom Boom", "Numerosity"},
-    {BABY_DAISY, "bds-1", false, CUSTOM_CHARACTER_NAME_BMG(12), L"Baby Daisy (Coat)", "Poobah"},
-    {BABY_DAISY, "bds-2", true, CUSTOM_CHARACTER_NAME_BMG(13), L"Rocky Wrench", "Porko, UltraWario"},
-    {DRY_BONES, "ka-1", false, CUSTOM_CHARACTER_NAME_BMG(14), L"Dry Bones (Dark)", "MiningBoy"},
-    {DRY_BONES, "ka-2", false, CUSTOM_CHARACTER_NAME_BMG(15), L"Dry Bones (Gold)", "LTC 91"},
-    {DRY_BONES, "ka-3", true, CUSTOM_CHARACTER_NAME_BMG(16), L"Goomba", "UltraWario"},
-    {DRY_BONES, "ka-4", true, CUSTOM_CHARACTER_NAME_BMG(17), L"Peepa", "GioMacGrillin"},
-    {BABY_MARIO, "bmr-1", false, CUSTOM_CHARACTER_NAME_BMG(18), L"Baby Wario", "Whipinsnapper"},
-    {BABY_MARIO, "bmr-2", false, CUSTOM_CHARACTER_NAME_BMG(19), L"Baby Mario (Koala)", "LTC 91"},
-    {BABY_MARIO, "bmr-3", true, CUSTOM_CHARACTER_NAME_BMG(20), L"Coin Coffer", "GioMacGrillin"},
-    {BABY_MARIO, "bmr-4", true, CUSTOM_CHARACTER_NAME_BMG(21), L"Shy Guy", "UltraWario"},
-    {BABY_MARIO, "bmr-5", true, CUSTOM_CHARACTER_NAME_BMG(84), L"Paper Mario", "dutchmvp26"},
-    {LUIGI, "lg-1", false, CUSTOM_CHARACTER_NAME_BMG(22), L"Luigi (Classic)", "UltraWario"},
-    {LUIGI, "lg-2", false, CUSTOM_CHARACTER_NAME_BMG(23), L"Luigi (Vacation)", "PlayersPurity"},
-    {LUIGI, "lg-3", true, CUSTOM_CHARACTER_NAME_BMG(24), L"Monty Mole", "JTG", BRSAR_GROUP_LUIGI},
-    {LUIGI, "lg-4", true, CUSTOM_CHARACTER_NAME_BMG(25), L"Sonic", "ALE XD"},
-    {TOAD, "ko-1", false, CUSTOM_CHARACTER_NAME_BMG(26), L"Toad (Captain)", "UltraWario"},
-    {TOAD, "ko-2", false, CUSTOM_CHARACTER_NAME_BMG(27), L"Toad (Builder)", "UltraWario"},
-    {TOAD, "ko-3", true, CUSTOM_CHARACTER_NAME_BMG(28), L"Swoop", "Monxy"},
-    {DONKEY_KONG, "dk-1", false, CUSTOM_CHARACTER_NAME_BMG(29), L"DK (White)", "Whipinsnapper"},
-    {DONKEY_KONG, "dk-2", false, CUSTOM_CHARACTER_NAME_BMG(30), L"DK (Gladiator)", "LTC 91"},
-    {DONKEY_KONG, "dk-3", true, CUSTOM_CHARACTER_NAME_BMG(31), L"Kritter", "Monxy"},
-    {DONKEY_KONG, "dk-4", true, CUSTOM_CHARACTER_NAME_BMG(66), L"Pokey", "Cillow that Willow", BRSAR_GROUP_FUNKY_KONG},
-    {DONKEY_KONG, "dk-5", true, CUSTOM_CHARACTER_NAME_BMG(80), L"King K. Rool", "ordatz"},
-    {YOSHI, "ys-1", false, CUSTOM_CHARACTER_NAME_BMG(33), L"Yoshi (Black)", "LTC 91"},
-    {YOSHI, "ys-2", false, CUSTOM_CHARACTER_NAME_BMG(34), L"Yoshi (Kangaroo)", "ordartz"},
-    {YOSHI, "ys-3", true, CUSTOM_CHARACTER_NAME_BMG(35), L"Piranha Plant", "UltraWario, Porko"},
-    {WARIO, "wr-1", false, CUSTOM_CHARACTER_NAME_BMG(36), L"Wario (Cowboy)", "UltraWario"},
-    {WARIO, "wr-2", false, CUSTOM_CHARACTER_NAME_BMG(37), L"Wario (Hiker)", "UltraWario"},
-    {WARIO, "wr-3", true, CUSTOM_CHARACTER_NAME_BMG(38), L"King Bob-omb", "UltraWario"},
-    {BABY_LUIGI, "blg-1", false, CUSTOM_CHARACTER_NAME_BMG(39), L"Baby Waluigi", "Tadhger"},
-    {BABY_LUIGI, "blg-2", true, CUSTOM_CHARACTER_NAME_BMG(81), L"E. Gadd", "UltraWario"},
-    {TOADETTE, "kk-1", false, CUSTOM_CHARACTER_NAME_BMG(40), L"Toadette (Bubble)", "Toadette Hack Fan"},
-    {KOOPA_TROOPA, "nk-1", false, CUSTOM_CHARACTER_NAME_BMG(41), L"Koopa Paratroopa", "UltraWario"},
-    {KOOPA_TROOPA, "nk-2", true, CUSTOM_CHARACTER_NAME_BMG(42), L"Lakitu", "UltraWario"},
-    {DAISY, "ds-1", false, CUSTOM_CHARACTER_NAME_BMG(43), L"Daisy (Black/Teal)", "TheBeefBai"},
-    {DAISY, "ds-2", false, CUSTOM_CHARACTER_NAME_BMG(44), L"Daisy (Farmer)", "ALE XD"},
-    {DAISY, "ds-3", false, CUSTOM_CHARACTER_NAME_BMG(45), L"Daisy (Swimwear)", "UltraWario"},
-    {PEACH, "pc-1", false, CUSTOM_CHARACTER_NAME_BMG(46), L"Peach (Ice)", "Whipinsnapper"},
-    {PEACH, "pc-2", false, CUSTOM_CHARACTER_NAME_BMG(47), L"Peach (Explorer)", "GVRIMZ"},
-    {PEACH, "pc-3", false, CUSTOM_CHARACTER_NAME_BMG(48), L"Peach (Halloween)", "UltraWario"},
-    {BIRDO, "ca-1", false, CUSTOM_CHARACTER_NAME_BMG(49), L"Birdo (Red)", "JTG"},
-    {BIRDO, "ca-2", true, CUSTOM_CHARACTER_NAME_BMG(50), L"Mega Man", "DJ Lowgey"},
-    {DIDDY_KONG, "dd-1", false, CUSTOM_CHARACTER_NAME_BMG(51), L"Diddy Kong (All-Star)", "Cazzyboy360"},
-    {DIDDY_KONG, "dd-2", true, CUSTOM_CHARACTER_NAME_BMG(52), L"Dixie Kong", "UltraWario"},
-    {DIDDY_KONG, "dd-3", true, CUSTOM_CHARACTER_NAME_BMG(53), L"The Chimp", "ZoroCarlos"},
-    {KING_BOO, "kt-1", false, CUSTOM_CHARACTER_NAME_BMG(54), L"King Boo (LM)", "UltraWario"},
-    {KING_BOO, "kt-2", true, CUSTOM_CHARACTER_NAME_BMG(79), L"Gooper Blooper", "UltraWario"},
-    {KING_BOO, "kt-3", true, CUSTOM_CHARACTER_NAME_BMG(82), L"Goku", "Chiller7", BRSAR_GROUP_WALUIGI},
-    {BOWSER_JR, "jr-1", false, CUSTOM_CHARACTER_NAME_BMG(55), L"Bowser Jr. (Pirate)", "UltraWario"},
-    {BOWSER_JR, "jr-2", true, CUSTOM_CHARACTER_NAME_BMG(56), L"Hammer Bro", "UltraWario", BRSAR_GROUP_MARIO},
-    {BOWSER_JR, "jr-3", true, CUSTOM_CHARACTER_NAME_BMG(57), L"Kamek", "DJ Lowgey"},
-    {BOWSER_JR, "jr-4", false, CUSTOM_CHARACTER_NAME_BMG(58), L"Bowser Jr. (Dark)", "Whipinsnapper"},
-    {BOWSER_JR, "jr-5", true, CUSTOM_CHARACTER_NAME_BMG(59), L"Nabbit", "UltraWario"},
-    {DRY_BOWSER, "bk-1", false, CUSTOM_CHARACTER_NAME_BMG(60), L"Dry Bowser (Dark)", "Kracken"},
-    {DRY_BOWSER, "bk-2", true, CUSTOM_CHARACTER_NAME_BMG(61), L"Lubba", "Ricoxemani, Cillow that Willow", BRSAR_GROUP_WALUIGI},
-    {DRY_BOWSER, "bk-3", true, CUSTOM_CHARACTER_NAME_BMG(83), L"Petey Piranha", "UltraWario", BRSAR_GROUP_FUNKY_KONG},
-    {FUNKY_KONG, "fk-1", false, CUSTOM_CHARACTER_NAME_BMG(62), L"Zapple Kong", "ZPL"},
-    {FUNKY_KONG, "fk-2", true, CUSTOM_CHARACTER_NAME_BMG(63), L"Chain Chomp", "UltraWario"},
-    {FUNKY_KONG, "fk-3", false, CUSTOM_CHARACTER_NAME_BMG(64), L"Funky Kong (Link)", "ordartz"},
-    {FUNKY_KONG, "fk-4", false, CUSTOM_CHARACTER_NAME_BMG(65), L"Funky Kong (Dripped Up)", "Whipinsnapper"},
-    {FUNKY_KONG, "fk-5", true, CUSTOM_CHARACTER_NAME_BMG(32), L"R.O.B", "Chiller7", BRSAR_GROUP_DONKEY_KONG},
-    {ROSALINA, "rs-1", false, CUSTOM_CHARACTER_NAME_BMG(67), L"Rosalina (Aurora)", "Chiller7"},
-    {ROSALINA, "rs-2", false, CUSTOM_CHARACTER_NAME_BMG(68), L"Rosalina (Touring)", "Eydra"},
-    {ROSALINA, "rs-3", true, CUSTOM_CHARACTER_NAME_BMG(69), L"Pauline", "UltraWario"},
-    {PEACH_BIKER, "pc-1", false, CUSTOM_CHARACTER_NAME_BMG(70), L"Peach (Ice)", "TheBeefBai"},
-    {PEACH_BIKER, "pc-2", false, CUSTOM_CHARACTER_NAME_BMG(71), L"Peach (Explorer)", "ALE XD"},
-    {PEACH_BIKER, "pc-3", false, CUSTOM_CHARACTER_NAME_BMG(72), L"Peach (Halloween)", "UltraWario"},
-    {DAISY_BIKER, "ds-1", false, CUSTOM_CHARACTER_NAME_BMG(73), L"Daisy (Green/Black)", "Whipinsnapper"},
-    {DAISY_BIKER, "ds-2", false, CUSTOM_CHARACTER_NAME_BMG(74), L"Daisy (Farmer)", "GVRIMZ"},
-    {DAISY_BIKER, "ds-3", false, CUSTOM_CHARACTER_NAME_BMG(75), L"Daisy (Swimwear)", "UltraWario"},
-    {ROSALINA_BIKER, "rs-1", false, CUSTOM_CHARACTER_NAME_BMG(76), L"Rosalina (Aurora)", "Chiller7"},
-    {ROSALINA_BIKER, "rs-2", false, CUSTOM_CHARACTER_NAME_BMG(77), L"Rosalina (Touring)", "Eydra"},
-    {ROSALINA_BIKER, "rs-3", true, CUSTOM_CHARACTER_NAME_BMG(78), L"Pauline", "UltraWario"},
-};
+static_assert(PACKET_BITS * 2 <= 16, "SELECT packet skin table fields must fit in two bytes");
 
 struct RawBRRES {
     EGG::ExpHeap* heap;
@@ -172,6 +75,8 @@ static u8 onlineCharacterTables[ONLINE_PLAYER_COUNT];
 static u8 offlineCpuCharacterTables[ONLINE_PLAYER_COUNT];
 static const char* defaultNames[CHARACTER_COUNT];
 static bool cachedDefaultNames;
+static char customPostfixes[CHARACTER_COUNT][TABLE_COUNT][16];
+static u8 customSkinExists[CHARACTER_COUNT][TABLE_COUNT];
 static CharacterId hoveredCharacters[LOCAL_PLAYER_COUNT] = {MARIO, MARIO, MARIO, MARIO};
 static RawBRRES rawBRRES[TABLE_COUNT][CHARACTER_COUNT];
 static RawBRRES looseMiiCBRRES[MII_C_COUNT];
@@ -188,8 +93,7 @@ static bool authorNameControlConstructed[LOCAL_PLAYER_COUNT];
 static bool authorNameControlLoaded[LOCAL_PLAYER_COUNT];
 static bool loadingAuthorNameControl;
 static CharaName* authorTextControl;
-static const char* authorTextValue;
-static wchar_t authorTextBuffer[0x100];
+static u32 authorTextValue;
 static CharaName* characterNameTextControl[LOCAL_PLAYER_COUNT];
 static u32 characterNameTextValue[LOCAL_PLAYER_COUNT];
 static bool characterNameTextOverridden[LOCAL_PLAYER_COUNT];
@@ -212,6 +116,7 @@ static bool IsCharacter(CharacterId character) {
 }
 
 static bool HasLooseCustomVoiceFiles(CharacterId character, u8 table);
+static bool DiscFileSize(const char* path, u32& size);
 
 static bool IsMiiCharacter(CharacterId character) {
     return (character >= MII_S_A_MALE && character <= MII_L_C_FEMALE) || character == MII_M || character == MII_S || character == MII_L;
@@ -255,6 +160,44 @@ static CharacterId StateCharacter(CharacterId character) {
     }
 }
 
+static const char* CustomPostfixBase(CharacterId character) {
+    const CharacterId stateCharacter = StateCharacter(character);
+    if (!IsCharacter(stateCharacter)) return nullptr;
+    return GetDefaultCharacterPostfix(stateCharacter);
+}
+
+static const char* GeneratedCustomPostfix(CharacterId character, u8 table) {
+    if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT) return nullptr;
+    char* postfix = customPostfixes[character][table];
+    if (postfix[0] != '\0') return postfix;
+    const char* base = CustomPostfixBase(character);
+    if (base == nullptr) return nullptr;
+    const int written = snprintf(postfix, sizeof(customPostfixes[character][table]), "%s-%u", base, table);
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(customPostfixes[character][table])) {
+        postfix[0] = '\0';
+        return nullptr;
+    }
+    return postfix;
+}
+
+static bool CustomDriverFileExists(CharacterId character, u8 table) {
+    if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT) return false;
+    u8& cached = customSkinExists[character][table];
+    if (cached != 0) return cached == 2;
+    const char* postfix = GeneratedCustomPostfix(character, table);
+    bool exists = false;
+    if (postfix != nullptr) {
+        char path[0x60];
+        const int written = snprintf(path, sizeof(path), "/Scene/Model/Driver/%s.brres", postfix);
+        if (written > 0 && static_cast<u32>(written) < sizeof(path)) {
+            u32 fileSize = 0;
+            exists = DiscFileSize(path, fileSize);
+        }
+    }
+    cached = exists ? 2 : 1;
+    return exists;
+}
+
 static CharacterId MenuBRRESCharacter(CharacterId character) {
     switch (character) {
         case PEACH:
@@ -268,20 +211,8 @@ static CharacterId MenuBRRESCharacter(CharacterId character) {
     }
 }
 
-static const CharacterOverride* GetCharacterOverride(CharacterId character, u8 table) {
-    if (table == TABLE_DEFAULT || table >= TABLE_COUNT) return nullptr;
-    u8 tableIdx = 1;
-    for (u32 i = 0; i < ARRAY_COUNT(customCharacterAssets); ++i) {
-        const CharacterOverride& characterOverride = customCharacterAssets[i];
-        if (characterOverride.character != character) continue;
-        if (tableIdx == table) return &characterOverride;
-        ++tableIdx;
-    }
-    return nullptr;
-}
-
 static bool HasSkin(CharacterId character, u8 table) {
-    return table == TABLE_DEFAULT || GetCharacterOverride(character, table) != nullptr;
+    return table == TABLE_DEFAULT || CustomDriverFileExists(character, table);
 }
 
 static u8 NormalizeTable(CharacterId character, u8 table) {
@@ -289,76 +220,31 @@ static u8 NormalizeTable(CharacterId character, u8 table) {
 }
 
 static const char* SkinName(CharacterId character, u8 table) {
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    if (characterOverride != nullptr && characterOverride->postfix != nullptr) return characterOverride->postfix;
+    const char* generatedPostfix = GeneratedCustomPostfix(character, table);
+    if (generatedPostfix != nullptr) return generatedPostfix;
     return GetDefaultCharacterPostfix(character);
 }
 
-static const char* SkinAuthorText(CharacterId character, u8 table) {
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    return characterOverride != nullptr ? characterOverride->authorText : static_cast<const char*>(0);
+static u32 SkinBmgId(u32 start, CharacterId character, u8 table) {
+    if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT || !HasSkin(character, table)) return 0;
+    return (static_cast<u32>(character) << 16) | start | table;
 }
 
 static u32 SkinNameBmgId(CharacterId character, u8 table) {
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    return characterOverride != nullptr ? characterOverride->nameBmgId : 0;
+    return SkinBmgId(CUSTOM_CHARACTER_NAME_BMG_START, character, table);
 }
 
-static const wchar_t* CustomCharacterNameFallback(u32 bmgId) {
-    for (u32 i = 0; i < ARRAY_COUNT(customCharacterAssets); ++i) {
-        const CharacterOverride& characterOverride = customCharacterAssets[i];
-        if (characterOverride.nameBmgId == bmgId) return characterOverride.fallbackName;
-    }
-    return static_cast<const wchar_t*>(0);
-}
-
-static bool HasBmgMessage(const BMGHolder& holder, u32 bmgId) {
-    if (holder.messageIds == nullptr) return false;
-    const BMGMessageIds& msgIds = *holder.messageIds;
-    for (u32 i = 0; i < msgIds.msgCount; ++i) {
-        const u32 curBmgId = msgIds.messageIds[i];
-        if (curBmgId == bmgId) return true;
-        if (curBmgId > bmgId) return false;
-    }
-    return false;
-}
-
-static bool HasCustomCharacterNameMessage(const LayoutUIControl& control, u32 bmgId) {
-    return UI::GetCustomMsg(static_cast<s32>(bmgId)) != nullptr || HasBmgMessage(control.curFileBmgs, bmgId) ||
-           HasBmgMessage(control.commonBmgs, bmgId);
-}
-
-static const wchar_t* MissingCustomCharacterNameFallback(const LayoutUIControl& control, u32 bmgId) {
-    const wchar_t* fallback = CustomCharacterNameFallback(bmgId);
-    if (fallback == nullptr || HasCustomCharacterNameMessage(control, bmgId)) return static_cast<const wchar_t*>(0);
-    return fallback;
-}
-
-static void FillTextInfo(Text::Info& info, const wchar_t* text) {
-    info.strings[0] = const_cast<wchar_t*>(text);
+static u32 SkinAuthorBmgId(CharacterId character, u8 table) {
+    return SkinBmgId(CUSTOM_CHARACTER_AUTHOR_BMG_START, character, table);
 }
 
 static bool SetCustomCharacterNameMessage(LayoutUIControl& control, const char* paneName, u32 bmgId) {
-    const wchar_t* fallback = MissingCustomCharacterNameFallback(control, bmgId);
-    if (fallback == nullptr) {
-        control.SetTextBoxMessage(paneName, bmgId, nullptr);
-    } else {
-        Text::Info info;
-        FillTextInfo(info, fallback);
-        control.SetTextBoxMessage(paneName, UI::BMG_TEXT, &info);
-    }
+    control.SetTextBoxMessage(paneName, bmgId, nullptr);
     return true;
 }
 
 static bool SetCustomCharacterNameMessage(LayoutUIControl& control, u32 bmgId) {
-    const wchar_t* fallback = MissingCustomCharacterNameFallback(control, bmgId);
-    if (fallback == nullptr) {
-        control.SetMessage(bmgId, nullptr);
-    } else {
-        Text::Info info;
-        FillTextInfo(info, fallback);
-        control.SetMessage(UI::BMG_TEXT, &info);
-    }
+    control.SetMessage(bmgId, nullptr);
     return true;
 }
 
@@ -376,8 +262,8 @@ static const char* DefaultMenuBRRESName(CharacterId character) {
 }
 
 static const char* DriverBRRESName(CharacterId character, u8 table) {
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    if (characterOverride != nullptr && characterOverride->postfix != nullptr) return characterOverride->postfix;
+    const char* generatedPostfix = GeneratedCustomPostfix(character, table);
+    if (generatedPostfix != nullptr) return generatedPostfix;
     const char* menuName = DefaultMenuBRRESName(character);
     if (menuName != nullptr) return menuName;
     return GetDefaultCharacterPostfix(character);
@@ -622,28 +508,11 @@ static u8 RaceSkinTable(u8 playerId, CharacterId character) {
     return IsLocalRacePlayer(playerId) ? SelectedTable(character) : TABLE_DEFAULT;
 }
 
-bool ShouldMuteCharacterVoice(const Kart::Link* link) {
-    const Racedata* racedata = Racedata::sInstance;
-    if (link == nullptr || racedata == nullptr) return false;
-    const u8 playerId = link->GetPlayerIdx();
-    if (playerId >= racedata->racesScenario.playerCount) return false;
-    const CharacterId character = racedata->racesScenario.players[playerId].characterId;
-    const u8 table = RaceSkinTable(playerId, character);
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    return characterOverride != nullptr && characterOverride->silentVoice && !HasLooseCustomVoiceFiles(character, table);
+bool ShouldMuteCharacterVoice(const Kart::Link*) {
+    return false;
 }
 
 static TicoModel* CreateTicoModelHook(void* memory, DriverController* controller) {
-    const Racedata* racedata = Racedata::sInstance;
-    const u8 playerId = controller->GetPlayerIdx();
-    const CharacterId character = racedata->racesScenario.players[playerId].characterId;
-    const u8 table = RaceSkinTable(playerId, character);
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    if (table == TABLE_DEFAULT) return new (memory) TicoModel(controller);
-    if (controller != nullptr && characterOverride->silentVoice == true) {
-        if (memory != nullptr) ::operator delete(memory);
-        return nullptr;
-    }
     if (memory == nullptr) return nullptr;
     return new (memory) TicoModel(controller);
 }
@@ -682,7 +551,7 @@ static CharacterId SelectedCharacterForHud(u8 hud) {
     return hoveredCharacters[hud];
 }
 
-void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 characterTables) {
+void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 characterTables) {
     if (playerIdToAid == nullptr) return;
     if (IsLocalMultiplayer()) {
         ResetOnlineCustomCharacterFlags();
@@ -697,7 +566,7 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u8 char
     }
 }
 
-u8 GetLocalOnlineCharacterTables() {
+u16 GetLocalOnlineCharacterTables() {
     if (IsLocalMultiplayer()) return 0;
     u8 localCount = GetLocalPlayerCount();
     const SectionMgr* mgr = SectionMgr::sInstance;
@@ -708,9 +577,9 @@ u8 GetLocalOnlineCharacterTables() {
     }
     if (localCount > 2) localCount = 2;
 
-    u8 packed = 0;
+    u16 packed = 0;
     for (u8 hud = 0; hud < localCount; ++hud) {
-        packed |= static_cast<u8>((SelectedTable(SelectedCharacterForHud(hud)) & PACKET_MASK) << (hud * PACKET_BITS));
+        packed |= static_cast<u16>((SelectedTable(SelectedCharacterForHud(hud)) & PACKET_MASK) << (hud * PACKET_BITS));
     }
     return packed;
 }
@@ -733,25 +602,16 @@ static void CacheHoveredFromSection() {
     for (u8 hud = 0; hud < count; ++hud) hoveredCharacters[hud] = mgr->sectionParams->characters[hud];
 }
 
-static const char* PreviewAuthorText(u8 hud) {
-    if (hud >= LOCAL_PLAYER_COUNT || IsLocalMultiplayer()) return static_cast<const char*>(0);
+static u32 PreviewAuthorBmgId(u8 hud) {
+    if (hud >= LOCAL_PLAYER_COUNT || IsLocalMultiplayer()) return 0;
     const CharacterId character = PreviewCharacter(hud);
-    return SkinAuthorText(character, SelectedTable(character));
+    return SkinAuthorBmgId(character, SelectedTable(character));
 }
 
 static u32 PreviewNameBmgId(u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT || IsLocalMultiplayer()) return 0;
     const CharacterId character = PreviewCharacter(hud);
     return SkinNameBmgId(character, SelectedTable(character));
-}
-
-static void CopyAsciiToWide(wchar_t* dest, const char* src, u32 maxLen) {
-    if (dest == nullptr || maxLen == 0) return;
-    u32 i = 0;
-    if (src != nullptr) {
-        for (; i + 1 < maxLen && src[i] != '\0'; ++i) dest[i] = static_cast<unsigned char>(src[i]);
-    }
-    dest[i] = 0;
 }
 
 static bool IsOnlineRaceMode(GameMode mode) {
@@ -870,25 +730,22 @@ static void UpdateCharacterSelectAuthorText(Pages::CharacterSelect* page, u8 hud
     if (page == nullptr || page->names == nullptr) return;
     CharaName* authorControl = GetAuthorNameControl(hud);
     if (authorControl == nullptr) return;
-    const char* text = PreviewAuthorText(hud);
-    if (authorTextControl == authorControl && authorTextValue == text) return;
-    if (text == static_cast<const char*>(0)) {
+    const u32 bmgId = PreviewAuthorBmgId(hud);
+    if (authorTextControl == authorControl && authorTextValue == bmgId) return;
+    if (bmgId == 0) {
         authorControl->isHidden = true;
     } else {
-        CopyAsciiToWide(authorTextBuffer, text, ARRAY_COUNT(authorTextBuffer));
-        Text::Info info;
-        info.strings[0] = authorTextBuffer;
         authorControl->isHidden = false;
-        authorControl->SetMessage(UI::BMG_TEXT, &info);
+        authorControl->SetMessage(bmgId, nullptr);
     }
     authorTextControl = authorControl;
-    authorTextValue = text;
+    authorTextValue = bmgId;
 }
 
 static void UpdateCurrentCharacterSelectAuthorText(u8 hud) {
     if (!IsCharacterSelectActive()) {
         authorTextControl = nullptr;
-        authorTextValue = static_cast<const char*>(0);
+        authorTextValue = 0;
         ResetCharacterSelectNameTextCache();
         return;
     }
@@ -943,7 +800,7 @@ static void AttachAuthorNameControl(CharaName& name, const char* folderName, con
         authorNameControlLoaded[hud] = false;
         if (authorTextControl == author) {
             authorTextControl = nullptr;
-            authorTextValue = static_cast<const char*>(0);
+            authorTextValue = 0;
         }
     }
     ConstructCharaName(author);
@@ -1122,11 +979,11 @@ static bool HasLooseCustomVoiceFiles(CharacterId character, u8 table) {
     u8& cached = looseVoiceFiles[table][character];
     if (cached != 0) return cached == 2;
 
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
     bool exists = false;
-    if (characterOverride != nullptr && characterOverride->postfix != nullptr) {
+    const char* postfix = GeneratedCustomPostfix(character, table);
+    if (postfix != nullptr) {
         for (u32 i = 0; i < ARRAY_COUNT(looseVoiceGroupSuffixes); ++i) {
-            if (LooseVoiceStemExists(characterOverride->postfix, looseVoiceGroupSuffixes[i])) {
+            if (LooseVoiceStemExists(postfix, looseVoiceGroupSuffixes[i])) {
                 exists = true;
                 break;
             }
@@ -1190,14 +1047,7 @@ static bool FindVoiceGroupBase(CharacterId character, u32& groupId) {
     return false;
 }
 
-static bool VoiceBaseGroupForTable(CharacterId character, u8 table, u32& groupId) {
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    if (characterOverride != nullptr && characterOverride->voiceBaseGroupId != 0) {
-        CharacterId groupCharacter = CHARACTER_NONE;
-        if (!FindVoiceGroupBaseCharacter(characterOverride->voiceBaseGroupId, groupCharacter)) return false;
-        groupId = characterOverride->voiceBaseGroupId;
-        return true;
-    }
+static bool VoiceBaseGroupForTable(CharacterId character, u8, u32& groupId) {
     return FindVoiceGroupBase(character, groupId);
 }
 
@@ -1378,9 +1228,9 @@ const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix) 
         u32 playerGroupBaseId = 0;
         if (!VoiceBaseGroupForTable(character, table, playerGroupBaseId) || playerGroupBaseId != groupBaseId) continue;
         if (!HasLooseCustomVoiceFiles(character, table)) continue;
-        const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-        if (characterOverride != nullptr && characterOverride->postfix != nullptr && LooseVoiceStemExists(characterOverride->postfix, groupSuffix)) {
-            return characterOverride->postfix;
+        const char* postfix = GeneratedCustomPostfix(character, table);
+        if (postfix != nullptr && LooseVoiceStemExists(postfix, groupSuffix)) {
+            return postfix;
         }
     }
     return nullptr;
@@ -1574,9 +1424,9 @@ static bool LoadMenuDriverBRRESForReload(void* holder, CharacterId character, EG
 }
 
 static bool BuildMinimapTPLPath(CharacterId character, u8 table, char* path, u32 pathSize) {
-    const CharacterOverride* characterOverride = GetCharacterOverride(character, table);
-    if (characterOverride == nullptr || characterOverride->postfix == nullptr) return false;
-    const int written = snprintf(path, pathSize, "/Race/Map/%s.tpl", characterOverride->postfix);
+    const char* postfix = GeneratedCustomPostfix(character, table);
+    if (postfix == nullptr) return false;
+    const int written = snprintf(path, pathSize, "/Race/Map/%s.tpl", postfix);
     return written > 0 && static_cast<u32>(written) < pathSize;
 }
 

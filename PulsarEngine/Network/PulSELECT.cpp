@@ -139,7 +139,7 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     }
 #endif
 
-    const u8 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
+    const u16 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
     CustomCharacters::UpdateOnlineCharacterTablesFromAid(aid, src->playerIdToAid, characterTables);
 
     for (int i = 0; i < 2; ++i) {
