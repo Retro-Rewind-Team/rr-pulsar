@@ -282,8 +282,7 @@ static void TrimNameTextEnd(char* text) {
 }
 
 static void AddNameEntry(const char* id, const char* characterName, const char* authorName) {
-    if (nameEntryCount >= NAME_ENTRY_COUNT || id == nullptr || characterName == nullptr || authorName == nullptr || id[0] == '\0' ||
-        characterName[0] == '\0') {
+    if (nameEntryCount >= NAME_ENTRY_COUNT || id == nullptr || characterName == nullptr || authorName == nullptr || id[0] == '\0') {
         return;
     }
 
@@ -394,6 +393,50 @@ static const NameEntry* NameEntryForBmgId(u32 bmgId, bool author) {
     return FindNameEntry(character, table);
 }
 
+static u32 DefaultNameBmgIdForSkinBmgId(u32 bmgId) {
+    CharacterId character = static_cast<CharacterId>(bmgId >> 16);
+    if (!IsCharacter(character) || IsMiiCharacter(character)) return 0;
+    const CharacterId displayCharacter = StateCharacter(character);
+    if (IsCharacter(displayCharacter) && !IsMiiCharacter(displayCharacter)) character = displayCharacter;
+    return GetCharacterBMGId(character, false);
+}
+
+enum BmgTextState {
+    BMG_TEXT_MISSING,
+    BMG_TEXT_BLANK,
+    BMG_TEXT_NONBLANK
+};
+
+static BmgTextState GetBmgTextState(const BMGHolder& holder, u32 bmgId) {
+    if (holder.bmgFile == nullptr) return BMG_TEXT_MISSING;
+    const s32 msgId = holder.GetMsgId(static_cast<s32>(bmgId));
+    if (msgId < 0) return BMG_TEXT_MISSING;
+    const wchar_t* text = holder.GetMsgByMsgId(msgId);
+    if (text == nullptr) return BMG_TEXT_MISSING;
+    return text[0] == L'\0' ? BMG_TEXT_BLANK : BMG_TEXT_NONBLANK;
+}
+
+static BmgTextState GetCustomCharacterNameBmgTextState(const LayoutUIControl& control, u32 bmgId) {
+    const System* system = System::sInstance;
+    if (system != nullptr) {
+        BmgTextState state = GetBmgTextState(system->GetBMG(), bmgId);
+        if (state != BMG_TEXT_MISSING) return state;
+        state = GetBmgTextState(system->GetBMGCT(), bmgId);
+        if (state != BMG_TEXT_MISSING) return state;
+        state = GetBmgTextState(system->GetBMGBT(), bmgId);
+        if (state != BMG_TEXT_MISSING) return state;
+    }
+    BmgTextState state = GetBmgTextState(control.curFileBmgs, bmgId);
+    if (state != BMG_TEXT_MISSING) return state;
+    return GetBmgTextState(control.commonBmgs, bmgId);
+}
+
+static u32 ResolveCustomCharacterNameBmgId(const LayoutUIControl& control, u32 bmgId, const NameEntry* entry) {
+    if (entry == nullptr && GetCustomCharacterNameBmgTextState(control, bmgId) == BMG_TEXT_NONBLANK) return bmgId;
+    const u32 defaultBmgId = DefaultNameBmgIdForSkinBmgId(bmgId);
+    return defaultBmgId != 0 ? defaultBmgId : bmgId;
+}
+
 static bool SetNameEntryMessage(LayoutUIControl& control, const char* paneName, const NameEntry& entry, bool author) {
     Text::Info info;
     info.strings[0] = const_cast<wchar_t*>(author ? entry.authorNameWide : entry.characterNameWide);
@@ -407,15 +450,15 @@ static bool SetNameEntryMessage(LayoutUIControl& control, const char* paneName, 
 
 static bool SetCustomCharacterNameMessage(LayoutUIControl& control, const char* paneName, u32 bmgId) {
     const NameEntry* entry = NameEntryForBmgId(bmgId, false);
-    if (entry != nullptr) return SetNameEntryMessage(control, paneName, *entry, false);
-    control.SetTextBoxMessage(paneName, bmgId, nullptr);
+    if (entry != nullptr && entry->characterNameWide[0] != L'\0') return SetNameEntryMessage(control, paneName, *entry, false);
+    control.SetTextBoxMessage(paneName, ResolveCustomCharacterNameBmgId(control, bmgId, entry), nullptr);
     return true;
 }
 
 static bool SetCustomCharacterNameMessage(LayoutUIControl& control, u32 bmgId) {
     const NameEntry* entry = NameEntryForBmgId(bmgId, false);
-    if (entry != nullptr) return SetNameEntryMessage(control, nullptr, *entry, false);
-    control.SetMessage(bmgId, nullptr);
+    if (entry != nullptr && entry->characterNameWide[0] != L'\0') return SetNameEntryMessage(control, nullptr, *entry, false);
+    control.SetMessage(ResolveCustomCharacterNameBmgId(control, bmgId, entry), nullptr);
     return true;
 }
 
