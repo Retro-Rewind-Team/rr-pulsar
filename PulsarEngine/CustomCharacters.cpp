@@ -394,6 +394,37 @@ static void ResetOfflineCpuSkinTables() {
     for (u8 i = 0; i < ONLINE_PLAYER_COUNT; ++i) offlineCpuCharacterTables[i] = TABLE_DEFAULT;
 }
 
+static void ClearCustomCharacterFileCaches() {
+    memset(customSkinExists, 0, sizeof(customSkinExists));
+    memset(looseVoiceFiles, 0, sizeof(looseVoiceFiles));
+}
+
+static void ResetAllCharacterTablesToDefault() {
+    for (u32 i = 0; i < CHARACTER_COUNT; ++i) selectedTable[i] = TABLE_DEFAULT;
+    ResetOnlineCustomCharacterFlags();
+    ResetOfflineCpuSkinTables();
+    ClearCustomCharacterFileCaches();
+    ApplySelectedNames();
+}
+
+static void ResetCharacterTablesOnLooseArchiveOverrideChange() {
+    static bool initialized;
+    static u8 lastValue;
+    if (!Settings::Mgr::IsCreated()) return;
+
+    const u8 value = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MISC, RADIO_LOOSEARCHIVEOVERRIDES);
+    if (!initialized) {
+        initialized = true;
+        lastValue = value;
+        return;
+    }
+    if (lastValue == value) return;
+
+    lastValue = value;
+    ResetAllCharacterTablesToDefault();
+}
+static Settings::Hook ResetCharacterTablesOnLooseArchiveOverrideChangeHook(ResetCharacterTablesOnLooseArchiveOverrideChange);
+
 static bool IsOfflineCpuSkinResetSection(SectionId section) {
     switch (section) {
         case SECTION_GP_AWARD:
