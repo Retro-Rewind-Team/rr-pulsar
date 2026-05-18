@@ -34,6 +34,21 @@ u8 GetLapKOTargetCount(const System* system, const Racedata* racedata, u8 fallba
     return playerCount;
 }
 
+static u8 GetBattleRoyaleKoPerRace(const System* system) {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE) {
+        return system != nullptr ? system->netMgr.battleRoyaleKoPerRace : 1;
+    }
+    const Settings::Mgr& settings = Settings::Mgr::Get();
+    return static_cast<u8>(settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1);
+}
+
+static u8 GetBattleRoyaleLapCount(u8 baseLapCount, u8 koPerRace) {
+    if (koPerRace == 3) return static_cast<u8>((baseLapCount * 3 + 1) / 2);
+    if (koPerRace == 4) return static_cast<u8>(baseLapCount * 2);
+    return baseLapCount;
+}
+
 kmRuntimeUse(0x808a9cc7);  // lap_number.brctr
 RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
     kmRuntimeWrite16A(0x808a9cc7, 'la');
@@ -63,6 +78,9 @@ RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
         // BuildPlan handles 1-lap tracks and 2-lap pacing adjustments internally
         const u8 totalRounds = LapKO::Mgr::BuildPlan(basePlayers, koPerRace, usualTrackLaps, nullptr, LapKO::Mgr::MaxRounds);
         lapCount = (totalRounds == 0) ? 1 : totalRounds;
+    } else if (system != nullptr && system->IsContext(PULSAR_MODE_BATTLEROYALE)) {
+        lapCount = GetBattleRoyaleLapCount(lapCount, GetBattleRoyaleKoPerRace(system));
+        if (lapCount > 12) lapCount = 12;
     }
 
     if (racedata != nullptr) {
