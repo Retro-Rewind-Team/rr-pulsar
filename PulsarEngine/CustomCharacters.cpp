@@ -53,7 +53,10 @@ enum {
     ONLINE_PLAYER_COUNT = 12,
     MII_C_COUNT = 6,
     SOUND_REMAP_COUNT = 64,
-    SOUND_REMAP_FILE_MAX_SIZE = 4096
+    SOUND_REMAP_FILE_MAX_SIZE = 4096,
+    NAME_ENTRY_COUNT = 64,
+    NAME_TEXT_LENGTH = 32,
+    NAME_FILE_MAX_SIZE = 4096
 };
 
 extern "C" const char* characterNames[];
@@ -118,6 +121,18 @@ struct SoundRemap {
 
 static SoundRemap soundRemaps[SOUND_REMAP_COUNT];
 static u32 soundRemapCount;
+static bool nameEntriesLoaded;
+
+struct NameEntry {
+    char id[16];
+    char characterName[NAME_TEXT_LENGTH];
+    char authorName[NAME_TEXT_LENGTH];
+    wchar_t characterNameWide[NAME_TEXT_LENGTH];
+    wchar_t authorNameWide[NAME_TEXT_LENGTH];
+};
+
+static NameEntry nameEntries[NAME_ENTRY_COUNT];
+static u32 nameEntryCount;
 
 static u8 MinLocalPlayers(u32 count) {
     return count > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(count);
@@ -231,7 +246,128 @@ static u8 NormalizeTable(CharacterId character, u8 table) {
     return HasSkin(character, table) ? table : TABLE_DEFAULT;
 }
 
+static void CopyText(char* dest, u32 destSize, const char* source) {
+    if (dest == nullptr || destSize == 0) return;
+    if (source == nullptr) {
+        dest[0] = '\0';
+        return;
+    }
+    strncpy(dest, source, destSize - 1);
+    dest[destSize - 1] = '\0';
+}
+
+static void CopyTextWide(wchar_t* dest, u32 destCount, const char* source) {
+    if (dest == nullptr || destCount == 0) return;
+    u32 i = 0;
+    if (source != nullptr) {
+        for (; i + 1 < destCount && source[i] != '\0'; ++i) {
+            dest[i] = static_cast<unsigned char>(source[i]);
+        }
+    }
+    dest[i] = L'\0';
+}
+
+static char* SkipNameTextSpace(char* text) {
+    while (*text == ' ' || *text == '\t' || *text == '\r') ++text;
+    return text;
+}
+
+static void TrimNameTextEnd(char* text) {
+    u32 length = strlen(text);
+    while (length > 0) {
+        const char c = text[length - 1];
+        if (c != ' ' && c != '\t' && c != '\r') break;
+        text[--length] = '\0';
+    }
+}
+
+static void AddNameEntry(const char* id, const char* characterName, const char* authorName) {
+    if (nameEntryCount >= NAME_ENTRY_COUNT || id == nullptr || characterName == nullptr || authorName == nullptr || id[0] == '\0' ||
+        characterName[0] == '\0') {
+        return;
+    }
+
+    NameEntry& entry = nameEntries[nameEntryCount++];
+    CopyText(entry.id, sizeof(entry.id), id);
+    CopyText(entry.characterName, sizeof(entry.characterName), characterName);
+    CopyText(entry.authorName, sizeof(entry.authorName), authorName);
+    CopyTextWide(entry.characterNameWide, ARRAY_COUNT(entry.characterNameWide), entry.characterName);
+    CopyTextWide(entry.authorNameWide, ARRAY_COUNT(entry.authorNameWide), entry.authorName);
+}
+
+static void ParseNameEntryLine(char* line) {
+    char* text = SkipNameTextSpace(line);
+    if (*text == '\0' || *text == '\n' || *text == '#') return;
+
+    char* comment = strchr(text, '#');
+    if (comment != nullptr) *comment = '\0';
+
+    char* firstSeparator = strchr(text, '|');
+    if (firstSeparator == nullptr) return;
+    *firstSeparator = '\0';
+    char* secondSeparator = strchr(firstSeparator + 1, '|');
+    if (secondSeparator != nullptr) *secondSeparator = '\0';
+
+    char* id = SkipNameTextSpace(text);
+    char* characterName = SkipNameTextSpace(firstSeparator + 1);
+    char* authorName = secondSeparator != nullptr ? SkipNameTextSpace(secondSeparator + 1) : firstSeparator;
+    TrimNameTextEnd(id);
+    TrimNameTextEnd(characterName);
+    if (secondSeparator != nullptr) TrimNameTextEnd(authorName);
+    else authorName = const_cast<char*>("");
+    AddNameEntry(id, characterName, authorName);
+}
+
+static bool ReadNameEntriesFile(const char* path) {
+    DVD::FileInfo info;
+    if (!DVD::Open(path, &info)) return false;
+    const u32 fileSize = static_cast<u32>(info.length);
+    if (fileSize == 0 || fileSize >= NAME_FILE_MAX_SIZE) {
+        DVD::Close(&info);
+        return true;
+    }
+
+    char buffer[NAME_FILE_MAX_SIZE] __attribute__((aligned(32)));
+    const s32 read = DVD::ReadPrio(&info, buffer, static_cast<s32>(fileSize), 0, 2);
+    DVD::Close(&info);
+    if (read != static_cast<s32>(fileSize)) return true;
+    buffer[fileSize] = '\0';
+
+    char* lineStart = buffer;
+    for (u32 i = 0; i <= fileSize; ++i) {
+        if (buffer[i] != '\n' && buffer[i] != '\0') continue;
+        buffer[i] = '\0';
+        ParseNameEntryLine(lineStart);
+        lineStart = buffer + i + 1;
+    }
+    return true;
+}
+
+static void LoadNameEntries() {
+    if (nameEntriesLoaded) return;
+    nameEntriesLoaded = true;
+    nameEntryCount = 0;
+    if (ReadNameEntriesFile("/Scene/Model/Driver/name.txt")) return;
+    ReadNameEntriesFile("/name.txt");
+}
+
+static const NameEntry* FindNameEntryById(const char* id) {
+    LoadNameEntries();
+    if (id == nullptr) return nullptr;
+    for (u32 i = 0; i < nameEntryCount; ++i) {
+        if (stricmp(id, nameEntries[i].id) != 0) continue;
+        return &nameEntries[i];
+    }
+    return nullptr;
+}
+
+static const NameEntry* FindNameEntry(CharacterId character, u8 table) {
+    return FindNameEntryById(GeneratedCustomPostfix(character, table));
+}
+
 static const char* SkinName(CharacterId character, u8 table) {
+    const NameEntry* entry = FindNameEntry(character, table);
+    if (entry != nullptr) return entry->characterName;
     const char* generatedPostfix = GeneratedCustomPostfix(character, table);
     if (generatedPostfix != nullptr) return generatedPostfix;
     return GetDefaultCharacterPostfix(character);
@@ -250,12 +386,42 @@ static u32 SkinAuthorBmgId(CharacterId character, u8 table) {
     return SkinBmgId(CUSTOM_CHARACTER_AUTHOR_BMG_START, character, table);
 }
 
+static const NameEntry* NameEntryForBmgId(u32 bmgId, bool author) {
+    const u32 start = author ? CUSTOM_CHARACTER_AUTHOR_BMG_START : CUSTOM_CHARACTER_NAME_BMG_START;
+    if ((bmgId & 0xffff) < start || (bmgId & 0xffff) >= start + TABLE_COUNT) return nullptr;
+    const CharacterId character = static_cast<CharacterId>(bmgId >> 16);
+    const u8 table = static_cast<u8>((bmgId & 0xffff) - start);
+    return FindNameEntry(character, table);
+}
+
+static bool SetNameEntryMessage(LayoutUIControl& control, const char* paneName, const NameEntry& entry, bool author) {
+    Text::Info info;
+    info.strings[0] = const_cast<wchar_t*>(author ? entry.authorNameWide : entry.characterNameWide);
+    if (paneName != nullptr) {
+        control.SetTextBoxMessage(paneName, UI::BMG_TEXT, &info);
+    } else {
+        control.SetMessage(UI::BMG_TEXT, &info);
+    }
+    return true;
+}
+
 static bool SetCustomCharacterNameMessage(LayoutUIControl& control, const char* paneName, u32 bmgId) {
+    const NameEntry* entry = NameEntryForBmgId(bmgId, false);
+    if (entry != nullptr) return SetNameEntryMessage(control, paneName, *entry, false);
     control.SetTextBoxMessage(paneName, bmgId, nullptr);
     return true;
 }
 
 static bool SetCustomCharacterNameMessage(LayoutUIControl& control, u32 bmgId) {
+    const NameEntry* entry = NameEntryForBmgId(bmgId, false);
+    if (entry != nullptr) return SetNameEntryMessage(control, nullptr, *entry, false);
+    control.SetMessage(bmgId, nullptr);
+    return true;
+}
+
+static bool SetCustomCharacterAuthorMessage(LayoutUIControl& control, u32 bmgId) {
+    const NameEntry* entry = NameEntryForBmgId(bmgId, true);
+    if (entry != nullptr) return SetNameEntryMessage(control, nullptr, *entry, true);
     control.SetMessage(bmgId, nullptr);
     return true;
 }
@@ -397,6 +563,8 @@ static void ResetOfflineCpuSkinTables() {
 static void ClearCustomCharacterFileCaches() {
     memset(customSkinExists, 0, sizeof(customSkinExists));
     memset(looseVoiceFiles, 0, sizeof(looseVoiceFiles));
+    nameEntriesLoaded = false;
+    nameEntryCount = 0;
 }
 
 static void ResetAllCharacterTablesToDefault() {
@@ -779,7 +947,7 @@ static void UpdateCharacterSelectAuthorText(Pages::CharacterSelect* page, u8 hud
         authorControl->isHidden = true;
     } else {
         authorControl->isHidden = false;
-        authorControl->SetMessage(bmgId, nullptr);
+        SetCustomCharacterAuthorMessage(*authorControl, bmgId);
     }
     authorTextControl = authorControl;
     authorTextValue = bmgId;
