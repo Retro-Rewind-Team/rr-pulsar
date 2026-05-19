@@ -22,7 +22,7 @@ u16 GetLocalOnlineCharacterTables();
 bool IsCustomCharacterTableActive();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
 bool ShouldMuteCharacterVoice(const Kart::Link* link);
-const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix);
+const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName);
 bool SetRaceNameTextIfCustom(LayoutUIControl& control, const char* paneName, u8 playerId);
 bool RandomizeSelectedCharacterTable(CharacterId character);
 

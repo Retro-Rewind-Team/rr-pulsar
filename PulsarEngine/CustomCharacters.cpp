@@ -52,8 +52,6 @@ enum {
     LOCAL_PLAYER_COUNT = 4,
     ONLINE_PLAYER_COUNT = 12,
     MII_C_COUNT = 6,
-    SOUND_REMAP_COUNT = 64,
-    SOUND_REMAP_FILE_MAX_SIZE = 4096,
     NAME_ENTRY_COUNT = 64,
     NAME_TEXT_LENGTH = 32,
     NAME_FILE_MAX_SIZE = 4096
@@ -86,7 +84,6 @@ static CharacterId hoveredCharacters[LOCAL_PLAYER_COUNT] = {MARIO, MARIO, MARIO,
 static RawBRRES rawBRRES[TABLE_COUNT][CHARACTER_COUNT];
 static RawBRRES looseMiiCBRRES[MII_C_COUNT];
 static RawTPL looseMinimapTPL[TABLE_COUNT][CHARACTER_COUNT];
-static u8 looseVoiceFiles[TABLE_COUNT][CHARACTER_COUNT];
 static const GameScene* rawCacheSceneOwner;
 static u32 offlineCpuSkinSignature;
 static u8 offlineCpuSkinRaceNumber;
@@ -111,17 +108,17 @@ static ToadetteHair* reloadedMenuDriverModelHairs[MENU_DRIVER_MODEL_COUNT];
 static const GameScene* reloadedMenuDriverModelSceneOwner;
 static MenuDriverModel* reloadedMenuDriverModelOwner;
 static bool forceDefaultMenuDriverBRRES;
-static bool soundRemapsLoaded;
+static bool nameEntriesLoaded;
 
-struct SoundRemap {
-    char postfix[16];
-    CharacterId character;
+struct LooseVoiceInfo {
+    bool scanned;
+    bool hasFiles;
     bool silent;
+    CharacterId voiceCharacter;
+    u32 suffixMask;
 };
 
-static SoundRemap soundRemaps[SOUND_REMAP_COUNT];
-static u32 soundRemapCount;
-static bool nameEntriesLoaded;
+static LooseVoiceInfo looseVoiceInfo[TABLE_COUNT][CHARACTER_COUNT];
 
 struct NameEntry {
     char id[16];
@@ -142,7 +139,6 @@ static bool IsCharacter(CharacterId character) {
     return character >= 0 && character < CHARACTER_COUNT;
 }
 
-static bool HasLooseCustomVoiceFiles(CharacterId character, u8 table);
 static bool DiscFileSize(const char* path, u32& size);
 
 static bool IsMiiCharacter(CharacterId character) {
@@ -609,7 +605,7 @@ static void ResetOfflineCpuSkinTables() {
 
 static void ClearCustomCharacterFileCaches() {
     memset(customSkinExists, 0, sizeof(customSkinExists));
-    memset(looseVoiceFiles, 0, sizeof(looseVoiceFiles));
+    memset(looseVoiceInfo, 0, sizeof(looseVoiceInfo));
     nameEntriesLoaded = false;
     nameEntryCount = 0;
 }
@@ -1196,23 +1192,22 @@ static void CopyUpperPostfix(char* dest, u32 destSize, const char* postfix) {
     dest[i] = '\0';
 }
 
-static bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* extension, char* path, u32 pathSize) {
+static bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* extension, const char* voiceName, char* path,
+                                u32 pathSize) {
     char upperPostfix[32];
     CopyUpperPostfix(upperPostfix, sizeof(upperPostfix), postfix);
     if (upperPostfix[0] == '\0' || suffix == nullptr || extension == nullptr) return false;
-    const int written = snprintf(path, pathSize, "/sound/GRP_VO_%s_%s.%s", upperPostfix, suffix, extension);
+    const int written = voiceName == nullptr ? snprintf(path, pathSize, "/sound/GRP_VO_%s_%s.%s", upperPostfix, suffix, extension)
+                                             : snprintf(path, pathSize, "/sound/GRP_VO_%s_%s.%s.%s", upperPostfix, suffix,
+                                                        extension, voiceName);
     return written > 0 && static_cast<u32>(written) < pathSize;
 }
 
-static bool LooseVoiceFileExists(const char* postfix, const char* suffix, const char* extension) {
+static bool LooseVoiceFileExists(const char* postfix, const char* suffix, const char* extension, const char* voiceName = nullptr) {
     char path[0x80];
-    if (!BuildLooseVoicePath(postfix, suffix, extension, path, sizeof(path))) return false;
+    if (!BuildLooseVoicePath(postfix, suffix, extension, voiceName, path, sizeof(path))) return false;
     u32 fileSize = 0;
     return DiscFileSize(path, fileSize);
-}
-
-static bool LooseVoiceStemExists(const char* postfix, const char* suffix) {
-    return LooseVoiceFileExists(postfix, suffix, "brwsd") || LooseVoiceFileExists(postfix, suffix, "brbnk");
 }
 
 static const char* const looseVoiceGroupSuffixes[] = {
@@ -1229,25 +1224,6 @@ static const char* LooseVoiceSuffixForGroupOffset(u32 offset) {
     const u32 taOffset = offset - ARRAY_COUNT(looseVoiceGroupSuffixes);
     if (taOffset < ARRAY_COUNT(looseVoiceTimeAttackGroupSuffixAliases)) return looseVoiceTimeAttackGroupSuffixAliases[taOffset];
     return nullptr;
-}
-
-static bool HasLooseCustomVoiceFiles(CharacterId character, u8 table) {
-    if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return false;
-    u8& cached = looseVoiceFiles[table][character];
-    if (cached != 0) return cached == 2;
-
-    bool exists = false;
-    const char* postfix = GeneratedCustomPostfix(character, table);
-    if (postfix != nullptr) {
-        for (u32 i = 0; i < ARRAY_COUNT(looseVoiceGroupSuffixes); ++i) {
-            if (LooseVoiceStemExists(postfix, looseVoiceGroupSuffixes[i])) {
-                exists = true;
-                break;
-            }
-        }
-    }
-    cached = exists ? 2 : 1;
-    return exists;
 }
 
 struct VoiceGroupBase {
@@ -1316,101 +1292,76 @@ static const CharacterNameMap voiceCharacterNames[] = {
     {"ROSALINA", ROSALINA},
 };
 
-static char* SkipTextSpace(char* text) {
-    while (*text == ' ' || *text == '\t' || *text == '\r') ++text;
-    return text;
+static bool LooseVoiceStemExists(const char* postfix, const char* suffix, const char* voiceName = nullptr) {
+    return LooseVoiceFileExists(postfix, suffix, "brwsd", voiceName) || LooseVoiceFileExists(postfix, suffix, "brbnk", voiceName);
 }
 
-static void TrimTextEnd(char* text) {
-    u32 length = strlen(text);
-    while (length > 0) {
-        const char c = text[length - 1];
-        if (c != ' ' && c != '\t' && c != '\r') break;
-        text[--length] = '\0';
-    }
-}
-
-static bool FindVoiceCharacterByName(const char* name, CharacterId& character) {
-    for (u32 i = 0; i < ARRAY_COUNT(voiceCharacterNames); ++i) {
-        if (stricmp(name, voiceCharacterNames[i].name) != 0) continue;
-        character = voiceCharacterNames[i].character;
-        return true;
+static bool SilentVoiceMarkerExists(CharacterId character, u8 table, const char* postfix) {
+    if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return false;
+    if (postfix == nullptr) return false;
+    char path[0x60];
+    const int written = snprintf(path, sizeof(path), "/sound/%s.silent", postfix);
+    if (written > 0 && static_cast<u32>(written) < sizeof(path)) {
+        DVD::FileInfo info;
+        if (DVD::Open(path, &info)) {
+            DVD::Close(&info);
+            return true;
+        }
     }
     return false;
 }
 
-static void AddSoundRemap(const char* postfix, const char* target) {
-    if (soundRemapCount >= SOUND_REMAP_COUNT || postfix == nullptr || target == nullptr || postfix[0] == '\0') return;
-
-    SoundRemap& remap = soundRemaps[soundRemapCount];
-    if (stricmp(target, "SILENT") == 0) {
-        remap.character = CHARACTER_NONE;
-        remap.silent = true;
-    } else {
-        CharacterId character = CHARACTER_NONE;
-        if (!FindVoiceCharacterByName(target, character)) return;
-        remap.character = character;
-        remap.silent = false;
+static const char* VoiceNameForCharacter(CharacterId character) {
+    for (u32 i = 0; i < ARRAY_COUNT(voiceCharacterNames); ++i) {
+        if (voiceCharacterNames[i].character == character) return voiceCharacterNames[i].name;
     }
-
-    strncpy(remap.postfix, postfix, sizeof(remap.postfix) - 1);
-    remap.postfix[sizeof(remap.postfix) - 1] = '\0';
-    ++soundRemapCount;
+    return nullptr;
 }
 
-static void ParseSoundRemapLine(char* line) {
-    char* text = SkipTextSpace(line);
-    if (*text == '\0' || *text == '\n' || *text == '#') return;
+static const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table) {
+    static const LooseVoiceInfo empty = {true, false, false, CHARACTER_NONE, 0};
+    if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return empty;
+    LooseVoiceInfo& info = looseVoiceInfo[table][character];
+    if (info.scanned) return info;
 
-    char* comment = strchr(text, '#');
-    if (comment != nullptr) *comment = '\0';
+    info.scanned = true;
+    info.hasFiles = false;
+    info.silent = false;
+    info.voiceCharacter = CHARACTER_NONE;
+    info.suffixMask = 0;
 
-    char* separator = strchr(text, '|');
-    if (separator == nullptr) return;
-    *separator = '\0';
-
-    char* postfix = SkipTextSpace(text);
-    char* target = SkipTextSpace(separator + 1);
-    TrimTextEnd(postfix);
-    TrimTextEnd(target);
-    AddSoundRemap(postfix, target);
-}
-
-static void LoadSoundRemaps() {
-    if (soundRemapsLoaded) return;
-    soundRemapsLoaded = true;
-    soundRemapCount = 0;
-
-    DVD::FileInfo info;
-    if (!DVD::Open("/sound/sound.txt", &info)) return;
-    const u32 fileSize = static_cast<u32>(info.length);
-    if (fileSize == 0 || fileSize >= SOUND_REMAP_FILE_MAX_SIZE) {
-        DVD::Close(&info);
-        return;
+    const char* postfix = GeneratedCustomPostfix(character, table);
+    if (postfix == nullptr) return info;
+    if (SilentVoiceMarkerExists(character, table, postfix)) {
+        info.silent = true;
+        return info;
     }
 
-    char buffer[SOUND_REMAP_FILE_MAX_SIZE] __attribute__((aligned(32)));
-    const s32 read = DVD::ReadPrio(&info, buffer, static_cast<s32>(fileSize), 0, 2);
-    DVD::Close(&info);
-    if (read != static_cast<s32>(fileSize)) return;
-    buffer[fileSize] = '\0';
-
-    char* lineStart = buffer;
-    for (u32 i = 0; i <= fileSize; ++i) {
-        if (buffer[i] != '\n' && buffer[i] != '\0') continue;
-        buffer[i] = '\0';
-        ParseSoundRemapLine(lineStart);
-        lineStart = buffer + i + 1;
+    for (u32 suffixIndex = 0; suffixIndex < ARRAY_COUNT(looseVoiceGroupSuffixes); ++suffixIndex) {
+        const char* suffix = looseVoiceGroupSuffixes[suffixIndex];
+        if (LooseVoiceStemExists(postfix, suffix)) {
+            info.hasFiles = true;
+            info.suffixMask |= 1 << suffixIndex;
+            continue;
+        }
+        for (u32 characterIndex = 0; characterIndex < ARRAY_COUNT(voiceCharacterNames); ++characterIndex) {
+            const char* voiceName = voiceCharacterNames[characterIndex].name;
+            if (LooseVoiceStemExists(postfix, suffix, voiceName)) {
+                info.hasFiles = true;
+                info.voiceCharacter = voiceCharacterNames[characterIndex].character;
+                info.suffixMask |= 1 << suffixIndex;
+                return info;
+            }
+        }
     }
+    return info;
 }
 
-static bool FindSoundRemap(const char* postfix, SoundRemap& outRemap) {
-    LoadSoundRemaps();
-    if (postfix == nullptr) return false;
-    for (u32 i = 0; i < soundRemapCount; ++i) {
-        if (stricmp(postfix, soundRemaps[i].postfix) != 0) continue;
-        outRemap = soundRemaps[i];
-        return true;
+static bool LooseVoiceInfoHasSuffix(const LooseVoiceInfo& info, const char* suffix) {
+    if (!info.hasFiles || suffix == nullptr) return false;
+    for (u32 i = 0; i < ARRAY_COUNT(looseVoiceGroupSuffixes); ++i) {
+        if ((info.suffixMask & (1 << i)) == 0) continue;
+        if (strcmp(suffix, looseVoiceGroupSuffixes[i]) == 0) return true;
     }
     return false;
 }
@@ -1439,14 +1390,12 @@ static bool FindVoiceGroupBase(CharacterId character, u32& groupId) {
 
 static bool VoiceBaseGroupForTable(CharacterId character, u8 table, u32& groupId) {
     if (table != TABLE_DEFAULT) {
-        SoundRemap remap;
-        if (FindSoundRemap(GeneratedCustomPostfix(character, table), remap)) {
-            if (remap.silent) {
-                groupId = SILENT_VOICE_GROUP;
-                return true;
-            }
-            return FindVoiceGroupBase(remap.character, groupId);
+        const LooseVoiceInfo& info = GetLooseVoiceInfo(character, table);
+        if (info.silent) {
+            groupId = SILENT_VOICE_GROUP;
+            return true;
         }
+        if (IsCharacter(info.voiceCharacter)) return FindVoiceGroupBase(info.voiceCharacter, groupId);
     }
     return FindVoiceGroupBase(character, groupId);
 }
@@ -1615,13 +1564,15 @@ static bool PlayerMatchesVoiceGroupOffset(PlayerType playerType, u32 offset) {
     return playerType == PLAYER_REAL_LOCAL;
 }
 
-const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix) {
+const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName) {
     groupSuffix = nullptr;
+    voiceName = nullptr;
     CharacterId groupCharacter = CHARACTER_NONE;
     u32 groupOffset = 0;
     if (!FindVoiceGroup(groupId, groupCharacter, groupOffset)) return nullptr;
     groupSuffix = LooseVoiceSuffixForGroupOffset(groupOffset);
     if (groupSuffix == nullptr) return nullptr;
+    voiceName = VoiceNameForCharacter(groupCharacter);
 
     const Racedata* racedata = Racedata::sInstance;
     if (racedata == nullptr) return nullptr;
@@ -1634,9 +1585,9 @@ const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix) 
         const u8 table = RaceSkinTable(playerId, character);
         u32 playerGroupBaseId = 0;
         if (!VoiceBaseGroupForTable(character, table, playerGroupBaseId) || playerGroupBaseId != groupBaseId) continue;
-        if (!HasLooseCustomVoiceFiles(character, table)) continue;
+        if (!LooseVoiceInfoHasSuffix(GetLooseVoiceInfo(character, table), groupSuffix)) continue;
         const char* postfix = GeneratedCustomPostfix(character, table);
-        if (postfix != nullptr && LooseVoiceStemExists(postfix, groupSuffix)) {
+        if (postfix != nullptr) {
             return postfix;
         }
     }

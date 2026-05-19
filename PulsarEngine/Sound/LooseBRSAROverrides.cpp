@@ -182,17 +182,23 @@ static void CopyUpperPostfix(char* dest, u32 destSize, const char* postfix) {
     dest[i] = '\0';
 }
 
-static bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* extension, char* path, u32 pathSize) {
+static bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* extension, const char* voiceName, char* path,
+                                u32 pathSize) {
     char upperPostfix[32];
     CopyUpperPostfix(upperPostfix, sizeof(upperPostfix), postfix);
     if (upperPostfix[0] == '\0' || suffix == nullptr || extension == nullptr) return false;
-    const int written = snprintf(path, pathSize, "/sound/GRP_VO_%s_%s.%s", upperPostfix, suffix, extension);
+    const int written = voiceName == nullptr ? snprintf(path, pathSize, "/sound/GRP_VO_%s_%s.%s", upperPostfix, suffix, extension)
+                                             : snprintf(path, pathSize, "/sound/GRP_VO_%s_%s.%s.%s", upperPostfix, suffix,
+                                                        extension, voiceName);
     return written > 0 && static_cast<u32>(written) < pathSize;
 }
 
-static bool OpenLooseVoiceFile(const char* postfix, const char* suffix, const char* extension, DVD::FileInfo& info,
-                               char* path, u32 pathSize) {
-    if (!BuildLooseVoicePath(postfix, suffix, extension, path, pathSize)) return false;
+static bool OpenLooseVoiceFile(const char* postfix, const char* suffix, const char* extension, const char* voiceName,
+                               DVD::FileInfo& info, char* path, u32 pathSize) {
+    if (!BuildLooseVoicePath(postfix, suffix, extension, nullptr, path, pathSize)) return false;
+    if (DVD::Open(path, &info)) return true;
+    if (voiceName == nullptr) return false;
+    if (!BuildLooseVoicePath(postfix, suffix, extension, voiceName, path, pathSize)) return false;
     return DVD::Open(path, &info);
 }
 
@@ -658,7 +664,8 @@ static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive& ar
                                                      const snd::SoundArchive::GroupItemInfo& item, u32 groupSize,
                                                      u32 waveDataSize, void* groupData, void* waveData) {
     const char* groupSuffix = nullptr;
-    const char* postfix = CustomCharacters::GetLooseVoicePostfixForGroup(groupId, groupSuffix);
+    const char* voiceName = nullptr;
+    const char* postfix = CustomCharacters::GetLooseVoicePostfixForGroup(groupId, groupSuffix, voiceName);
     if (postfix == nullptr || groupSuffix == nullptr) return;
 
     const char* magic = nullptr;
@@ -667,7 +674,7 @@ static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive& ar
 
     char path[0x80];
     DVD::FileInfo info;
-    if (!OpenLooseVoiceFile(postfix, groupSuffix, extension, info, path, sizeof(path))) return;
+    if (!OpenLooseVoiceFile(postfix, groupSuffix, extension, voiceName, info, path, sizeof(path))) return;
 
     LooseVoiceLayout layout;
     if (!ReadLooseVoiceLayout(info, magic, layout)) {
