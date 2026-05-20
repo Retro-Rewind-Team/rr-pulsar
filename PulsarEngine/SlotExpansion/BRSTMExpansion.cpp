@@ -4,6 +4,7 @@
 #include <Sound/MiscSound.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
+#include <IO/LooseArchiveOverrides.hpp>
 #include <RetroRewind.hpp>
 
 namespace Pulsar {
@@ -12,6 +13,7 @@ namespace Sound {
 // kmWrite32(0x8009e0dc, 0x7F87E378); //mr r7, r28 to get string length
 
 static char pulPath[0x100];
+static char resolvedPulPath[0x100];
 
 static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
     if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
@@ -33,35 +35,40 @@ static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFile
     return false;
 }
 
-s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id) {
+static bool CheckBRSTMPath(const char* path, bool patchesOnly) {
+    bool redirected = false;
+    const char* resolvedPath = IOOverrides::ResolveWholeFileOverride(path, resolvedPulPath, sizeof(resolvedPulPath), &redirected);
+    if (patchesOnly && !redirected) return false;
+    if (DVD::ConvertPathToEntryNum(resolvedPath) < 0) return false;
+
+    snprintf(pulPath, sizeof(pulPath), "%s", resolvedPath);
+    return true;
+}
+
+s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly) {
     const char* root = archive->extFileRoot;
-    const char* lapSpecifier = "_n";
-    s32 ret = -1;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
     const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
     if (creatorName != nullptr) {
         snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, creatorName, lapSpecifier);
-        ret = DVD::ConvertPathToEntryNum(pulPath);
+        if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
     }
-    if (ret < 0 && variantIdx != 0) {
+    if (variantIdx != 0) {
         creatorName = cupsConfig->GetFileName(id, 0);
         if (creatorName != nullptr) {
             snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, creatorName, lapSpecifier);
-            ret = DVD::ConvertPathToEntryNum(pulPath);
+            if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
         }
     }
-    if (ret < 0) {
-        char trackName[0x100];
-        UI::GetTrackBMG(trackName, id);
-        snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, trackName, lapSpecifier);
-        ret = DVD::ConvertPathToEntryNum(pulPath);
-    }
-    if (ret < 0) {
-        snprintf(pulPath, 0x50, "%sstrm/%d%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier);
-        ret = DVD::ConvertPathToEntryNum(pulPath);
-    }
-    return ret;
+    char trackName[0x100];
+    UI::GetTrackBMG(trackName, id);
+    snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, trackName, lapSpecifier);
+    if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
+
+    snprintf(pulPath, 0x50, "%sstrm/%d%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier);
+    if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
+    return -1;
 }
 
 nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void* buffer, int size,
@@ -86,7 +93,9 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             const char finalChar = extFilePath[strLength];
             const bool isFinalLap = finalChar == 'f' || finalChar == 'F';
 
-            if (CheckBRSTM(archive, track) >= 0) {
+            if (isFinalLap && CheckBRSTM(archive, track, "_f", true) >= 0) {
+                extFilePath = pulPath;
+            } else if (CheckBRSTM(archive, track, "_n", false) >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
                     Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
