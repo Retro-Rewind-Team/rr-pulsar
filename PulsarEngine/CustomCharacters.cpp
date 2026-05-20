@@ -342,8 +342,8 @@ static void LoadNameEntries() {
     if (nameEntriesLoaded) return;
     nameEntriesLoaded = true;
     nameEntryCount = 0;
-    if (ReadNameEntriesFile("/Scene/Model/Driver/name.txt")) return;
-    ReadNameEntriesFile("/name.txt");
+    if (ReadNameEntriesFile("/Scene/Model/Driver/charaname.txt")) return;
+    ReadNameEntriesFile("/charaname.txt");
 }
 
 static const NameEntry* FindNameEntryById(const char* id) {
