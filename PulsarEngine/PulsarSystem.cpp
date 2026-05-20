@@ -264,6 +264,7 @@ void System::UpdateContext() {
     bool isThunderCloud = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
     bool isItemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
     bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
+    bool isItemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
     bool isItemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
     bool isItemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
     bool isTrackSelectionRegs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
@@ -340,6 +341,7 @@ void System::UpdateContext() {
                 isRanking = newContext2 & (1 << PULSAR_RANKING);
                 isVR = newContext2 & (1 << PULSAR_VR);
                 isBattleRoyale = newContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
+                isItemModeNone = newContext2 & (1 << PULSAR_ITEMMODENONE);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -395,7 +397,7 @@ void System::UpdateContext() {
                             (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND |
                             (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
                             (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR |
-                            (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE;
+                            (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE;
     }
 
     // Combine the new context with preserved bits

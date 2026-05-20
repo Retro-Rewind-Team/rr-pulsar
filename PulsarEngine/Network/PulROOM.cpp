@@ -220,7 +220,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                           itemModeRain << PULSAR_ITEMMODERAIN | itemModeStorm << PULSAR_ITEMMODESTORM |
                                           allItemsCanLand << PULSAR_ALLITEMSCANLAND |
                                           settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS) << PULSAR_HAW | itemBoxRepsawnFast << PULSAR_ITEMBOXRESPAWN |
-                                          Ranking << PULSAR_RANKING | vr << PULSAR_VR | BattleRoyale << PULSAR_MODE_BATTLEROYALE;
+                                          Ranking << PULSAR_RANKING | vr << PULSAR_VR | BattleRoyale << PULSAR_MODE_BATTLEROYALE |
+                                          itemModeNone << PULSAR_ITEMMODENONE;
 
         destPacket->customItemsBitfield = settings.GetCustomItems();
         destPacket->battleRoyaleKoPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;

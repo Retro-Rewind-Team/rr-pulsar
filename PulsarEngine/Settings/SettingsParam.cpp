@@ -39,7 +39,7 @@ u8 Params::optionsPerPagePerScroller[Params::pageCount][Params::maxScrollerCount
         {0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0},
-        {7, 5, 4, 0, 0},
+        {7, 6, 4, 0, 0},
         {0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0},
         {4, 4, 0, 0, 0},

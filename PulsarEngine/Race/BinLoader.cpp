@@ -31,6 +31,7 @@ void *GetCustomItemSlot(ArchiveMgr *archive, ArchiveSource type, const char *nam
     const GameMode mode = scenario.settings.gamemode;
     bool itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) ? Pulsar::GAMEMODE_RANDOM : Pulsar::GAMEMODE_DEFAULT;
     bool itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST) ? Pulsar::GAMEMODE_BLAST : Pulsar::GAMEMODE_DEFAULT;
+    bool itemModeNone = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODENONE) ? Pulsar::GAMEMODE_NONE : Pulsar::GAMEMODE_DEFAULT;
     if (itemModeRandom == Pulsar::GAMEMODE_DEFAULT || itemModeBlast == Pulsar::GAMEMODE_DEFAULT) {
         name = "ItemSlotRR.bin";
     }
@@ -39,6 +40,9 @@ void *GetCustomItemSlot(ArchiveMgr *archive, ArchiveSource type, const char *nam
     }
     if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
         name = "ItemSlotBlast.bin";
+    }
+    if (itemModeNone == Pulsar::GAMEMODE_NONE) {
+        name = "ItemSlot.bin";
     }
 
 #ifdef PROD
