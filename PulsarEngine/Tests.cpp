@@ -17,14 +17,19 @@ kmWrite32(0x80533564, 0x38000003);
 
 #endif
 
+#ifdef TIMER
 // Force CountDown::SetInitial(float) to initialize every countdown to 10.0f.
 kmWrite32(0x805c3c2c, 0x3c804080);
 kmWrite32(0x805c3c34, 0x90830000);
+#endif
 
+#ifdef RANDOM
 // Process locally submitted online course votes as Random.
 kmWrite32(0x80643740, 0x38c000ff);
 kmWrite32(0x80643794, 0x38c000ff);
+#endif
 
+#ifdef ONE_LAP
 // Force the loaded track and racedata lap counters to one lap before
 // RaceinfoPlayer objects are initialized.
 static void SetOneLapRace() {
@@ -45,7 +50,9 @@ static Raceinfo* CreateOneLapRaceInfo() {
     return Raceinfo::CreateInstance();
 }
 kmCall(0x805543cc, CreateOneLapRaceInfo);
+#endif
 
+#ifdef RANDOM_COMBO
 // Select ExpVR::randomComboButton as the VR page's default button after it has
 // been added to the control group.
 static void SetVRBottomMessageAndSelectRandom(CtrlMenuInstructionText* bottomMessage, u32 bmgId, const Text::Info* text) {
@@ -61,6 +68,7 @@ static void SetVRBottomMessageAndSelectRandom(CtrlMenuInstructionText* bottomMes
     randomButton.Select(0);
 }
 kmCall(0x8064aaac, SetVRBottomMessageAndSelectRandom);
+#endif
 
 // CPU
 kmWrite32(0x8052F564, 0x60000000);
