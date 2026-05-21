@@ -70,6 +70,12 @@ static void SetVRBottomMessageAndSelectRandom(CtrlMenuInstructionText* bottomMes
 kmCall(0x8064aaac, SetVRBottomMessageAndSelectRandom);
 #endif
 
+#ifdef CPU_COMBO
+
+// Force offline CPU character assignment to Funky Kong.
+kmWrite32(0x8083edc4, 0x38c00016);
+#endif
+
 // CPU
 kmWrite32(0x8052F564, 0x60000000);
 kmWrite32(0x8072627C, 0x38600001);
