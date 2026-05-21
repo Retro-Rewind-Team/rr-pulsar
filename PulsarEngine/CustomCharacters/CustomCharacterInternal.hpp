@@ -219,7 +219,6 @@ void RefreshLocalOnlineCustomCharacterFlags();
 bool SetSelectedTable(CharacterId character, u8 table);
 bool CycleSkin(CharacterId character, int step);
 u8 RaceSkinTable(u8 playerId, CharacterId character);
-bool ShouldMuteCharacterVoice(const Kart::Link*);
 TicoModel* CreateTicoModelHook(void* memory, DriverController* controller);
 const char** BeginNameSwap(u8 playerId, CharacterId character, const char*& oldName);
 CharacterId PreviewCharacter(u8 hud);

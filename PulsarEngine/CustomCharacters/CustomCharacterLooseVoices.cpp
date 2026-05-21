@@ -3,10 +3,6 @@
 namespace Pulsar {
 namespace CustomCharacters {
 
-bool ShouldMuteCharacterVoice(const Kart::Link*) {
-    return false;
-}
-
 void CopyUpperPostfix(char* dest, u32 destSize, const char* postfix) {
     if (dest == nullptr || destSize == 0) return;
     u32 i = 0;
