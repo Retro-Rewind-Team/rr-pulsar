@@ -288,7 +288,7 @@ u32 CharacterVoiceGroupHook(Audio::CharacterActor* actor);
 u32 CharacterCannonVoiceGroupHook(Audio::CharacterActor* actor);
 u32 CharacterGoalVoiceGroupHook(Audio::CharacterActor* actor, u32 type);
 bool FindVoiceGroup(u32 groupId, CharacterId& character, u32& offset);
-bool PlayerMatchesVoiceGroupOffset(PlayerType playerType, u32 offset);
+bool PlayerMatchesVoiceGroupOffset(u8 playerId, u32 offset);
 const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName);
 EGG::Heap* RawParentHeap(GameScene& scene, u32 heapSize);
 bool BindRawBRRES(nw4r::g3d::ResFile& resFile, const char* path);

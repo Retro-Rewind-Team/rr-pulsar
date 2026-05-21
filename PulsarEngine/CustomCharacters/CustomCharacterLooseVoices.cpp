@@ -226,6 +226,11 @@ bool ActorRaceCharacter(const Audio::CharacterActor* actor, CharacterId& charact
 bool VoiceBaseGroupForActor(const Audio::CharacterActor* actor, CharacterId& character, u32& groupId, CharacterId& groupCharacter) {
     if (!ActorRaceCharacter(actor, character)) return false;
     const u8 table = RaceSkinTable(actor->playerId, character);
+    if (!IsLocalRacePlayer(actor->playerId) && GetLooseVoiceInfo(character, table).hasFiles) {
+        groupId = SILENT_VOICE_GROUP;
+        groupCharacter = CHARACTER_NONE;
+        return true;
+    }
     if (!VoiceBaseGroupForTable(character, table, groupId)) return false;
     if (groupId == SILENT_VOICE_GROUP) {
         groupCharacter = CHARACTER_NONE;
@@ -249,6 +254,10 @@ Audio::CharacterVoiceActionTable VoiceActionTable(CharacterId character) {
     return Audio::CharacterActor::voiceActionTables[character];
 }
 
+void SilentVoiceActionTable(s32* type, bool isReal) {
+    if (type != nullptr) *type = -1;
+}
+
 Audio::CharacterVoiceActionTable& CharacterActorVoiceActionTableSlot(Audio::CharacterActor& actor) {
     return *reinterpret_cast<Audio::CharacterVoiceActionTable*>(reinterpret_cast<u8*>(&actor) + 0x134);
 }
@@ -258,8 +267,16 @@ u16& CharacterActorCharacterSlot(Audio::CharacterActor& actor) {
 }
 
 bool ApplyVoiceBaseActionTable(Audio::CharacterActor* actor) {
-    const CharacterId voiceCharacter = VoiceBaseCharacterForActor(actor);
-    Audio::CharacterVoiceActionTable table = VoiceActionTable(voiceCharacter);
+    CharacterId character = CHARACTER_NONE;
+    CharacterId groupCharacter = CHARACTER_NONE;
+    u32 groupId = 0;
+    if (!VoiceBaseGroupForActor(actor, character, groupId, groupCharacter)) return false;
+    if (groupId == SILENT_VOICE_GROUP) {
+        CharacterActorVoiceActionTableSlot(*actor) = SilentVoiceActionTable;
+        return true;
+    }
+
+    Audio::CharacterVoiceActionTable table = VoiceActionTable(groupCharacter);
     if (table == nullptr) return false;
     CharacterActorVoiceActionTableSlot(*actor) = table;
     return true;
@@ -371,11 +388,9 @@ bool FindVoiceGroup(u32 groupId, CharacterId& character, u32& offset) {
     return false;
 }
 
-bool PlayerMatchesVoiceGroupOffset(PlayerType playerType, u32 offset) {
-    if (playerType == PLAYER_GHOST || playerType == PLAYER_NONE) return false;
+bool PlayerMatchesVoiceGroupOffset(u8 playerId, u32 offset) {
     const bool npcGroup = offset == 1 || offset == 3;
-    if (npcGroup) return playerType != PLAYER_REAL_LOCAL;
-    return playerType == PLAYER_REAL_LOCAL;
+    return !npcGroup && IsLocalRacePlayer(playerId);
 }
 
 const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName) {
@@ -394,7 +409,7 @@ const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, 
     const u32 groupBaseId = groupId - groupOffset;
     for (u8 playerId = 0; playerId < scenario.playerCount && playerId < ONLINE_PLAYER_COUNT; ++playerId) {
         const RacedataPlayer& player = scenario.players[playerId];
-        if (!PlayerMatchesVoiceGroupOffset(player.playerType, groupOffset)) continue;
+        if (!PlayerMatchesVoiceGroupOffset(playerId, groupOffset)) continue;
         const CharacterId character = player.characterId;
         const u8 table = RaceSkinTable(playerId, character);
         u32 playerGroupBaseId = 0;
