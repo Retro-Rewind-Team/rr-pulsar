@@ -1,5 +1,5 @@
 #include <UI/ExtendedTeamSelect/Result/CtrlRaceResultExtendedTeams.hpp>
-#include <CustomCharacters.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 

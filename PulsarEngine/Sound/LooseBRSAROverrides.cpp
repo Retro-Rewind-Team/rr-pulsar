@@ -13,7 +13,7 @@
  */
 
 #include <kamek.hpp>
-#include <CustomCharacters.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <PulsarSystem.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
 #include <core/RK/RKSystem.hpp>

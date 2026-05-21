@@ -5,7 +5,7 @@
 #include <PulsarSystem.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
-#include <CustomCharacters.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 
 namespace Pulsar {
