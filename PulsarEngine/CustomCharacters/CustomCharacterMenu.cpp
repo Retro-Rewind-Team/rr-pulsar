@@ -1,4 +1,4 @@
-#include <CustomCharacters/CustomCharacterInternal.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace CustomCharacters {
