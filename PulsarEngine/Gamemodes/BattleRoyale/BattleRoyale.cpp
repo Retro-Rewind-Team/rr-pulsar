@@ -33,6 +33,7 @@ static u8 sEliminationPlacementCount = 0;
 static u8 sLocalBalloonLossSeq = 0;
 static const u8 pendingBalloonEventCount = 4;
 static const u8 balloonMoveEventBase = 0x10;
+static const u8 mushroomStealLockFrames = 120;
 static u8 sPendingBalloonEventSeq[pendingBalloonEventCount];
 static u8 sPendingBalloonEventPlayerId[pendingBalloonEventCount];
 static u8 sPendingBalloonEventTimer[pendingBalloonEventCount];
@@ -42,6 +43,8 @@ static u8 sPendingBalloonEventSize = 0;
 static u8 sLastRemoteBalloonLossSeq[maxPlayers];
 static bool sDeferredBalloonManagerCreation = false;
 static bool sLoadedBalloonModels[maxBattleRoyaleBalloons];
+static u16 sMushroomStealVictimMask[maxPlayers];
+static u8 sMushroomStealVictimTimers[maxPlayers][maxPlayers];
 
 bool ShouldApplyBattleRoyale();
 static u8 GetStartingBalloonAddCount();
@@ -290,6 +293,29 @@ static bool HasPoweredHitLossThisFrame(u8 playerId) {
     return sPoweredHitLossFrame[playerId] == GetCurrentRaceFrames();
 }
 
+static bool HasMushroomStolenFromVictim(u8 gainingPlayerId, u8 losingPlayerId) {
+    if (gainingPlayerId >= maxPlayers || losingPlayerId >= maxPlayers) return true;
+    return (sMushroomStealVictimMask[gainingPlayerId] & (1 << losingPlayerId)) != 0;
+}
+
+static void RecordMushroomStealVictim(u8 gainingPlayerId, u8 losingPlayerId) {
+    if (gainingPlayerId >= maxPlayers || losingPlayerId >= maxPlayers) return;
+    sMushroomStealVictimMask[gainingPlayerId] |= 1 << losingPlayerId;
+    sMushroomStealVictimTimers[gainingPlayerId][losingPlayerId] = mushroomStealLockFrames;
+}
+
+static void UpdateMushroomStealVictimMasks() {
+    for (u8 gainingPlayerId = 0; gainingPlayerId < maxPlayers; ++gainingPlayerId) {
+        for (u8 losingPlayerId = 0; losingPlayerId < maxPlayers; ++losingPlayerId) {
+            u8& timer = sMushroomStealVictimTimers[gainingPlayerId][losingPlayerId];
+            if (timer == 0) continue;
+
+            --timer;
+            if (timer == 0) sMushroomStealVictimMask[gainingPlayerId] &= ~(1 << losingPlayerId);
+        }
+    }
+}
+
 static void RemovePoweredHitBalloon(u8 playerId) {
     if (!ShouldApplyBattleRoyale() || playerId >= maxPlayers) return;
     if (HasPoweredHitLossThisFrame(playerId)) return;
@@ -378,15 +404,21 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     if (HasPoweredHitLossThisFrame(static_cast<u8>(losingPlayerId))) return;
 
     void* balloonMgr = GetBalloonManager();
+    const u8 losingPlayer = static_cast<u8>(losingPlayerId);
+    const u8 gainingPlayer = static_cast<u8>(gainingPlayerId);
+    if (HasMushroomStolenFromVictim(gainingPlayer, losingPlayer)) return;
+
     if (!IsOnline()) {
-        if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayerId)) return;
-        MoveBalloon(balloonMgr, static_cast<u8>(gainingPlayerId), static_cast<u8>(losingPlayerId));
-        ClearActiveGoldenMushroom(static_cast<u8>(gainingPlayerId));
+        const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
+        if (previousBalloonCount == 0) return;
+        if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
+        MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
+        if (GetBalloonCount(balloonMgr, losingPlayer) >= previousBalloonCount) return;
+        RecordMushroomStealVictim(gainingPlayer, losingPlayer);
+        ClearActiveGoldenMushroom(gainingPlayer);
         return;
     }
 
-    const u8 losingPlayer = static_cast<u8>(losingPlayerId);
-    const u8 gainingPlayer = static_cast<u8>(gainingPlayerId);
     if (!IsLocalPlayer(losingPlayer)) return;
 
     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
@@ -397,6 +429,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
 
     if (GetBalloonCount(balloonMgr, losingPlayer) >= previousBalloonCount) return;
 
+    RecordMushroomStealVictim(gainingPlayer, losingPlayer);
     QueueBalloonMoveFromLocalLoss(losingPlayer, gainingPlayer);
 
     if (IsLocalPlayer(gainingPlayer)) ClearActiveGoldenMushroom(gainingPlayer);
@@ -591,6 +624,10 @@ static void ResetState() {
         sWasActive[playerId] = false;
         sEliminationPlacementOrder[playerId] = 0xff;
         sLastRemoteBalloonLossSeq[playerId] = 0;
+        sMushroomStealVictimMask[playerId] = 0;
+        for (u8 otherPlayerId = 0; otherPlayerId < maxPlayers; ++otherPlayerId) {
+            sMushroomStealVictimTimers[playerId][otherPlayerId] = 0;
+        }
     }
     ClearLoadedBalloonModels();
     sEliminationPlacementCount = 0;
@@ -810,7 +847,14 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNe
             const u8 gainingPlayerId = move % maxPlayers;
             if (losingPlayerId >= maxPlayers || gainingPlayerId >= maxPlayers) continue;
             if (controller.aidsBelongingToPlayerIds[losingPlayerId] != aid) continue;
+            if (HasMushroomStolenFromVictim(gainingPlayerId, losingPlayerId)) continue;
+
+            const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayerId);
+            if (previousBalloonCount == 0) continue;
             MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId);
+            if (GetBalloonCount(balloonMgr, losingPlayerId) < previousBalloonCount) {
+                RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
+            }
         } else if (eventPlayerId < maxPlayers) {
             if (controller.aidsBelongingToPlayerIds[eventPlayerId] != aid) continue;
             RemoveBalloon(balloonMgr, eventPlayerId);
@@ -867,6 +911,7 @@ static void FrameUpdate() {
     ConsumeRemoteBalloonLosses(*controller, sub, balloonMgr);
 
     TickLocalBalloonEvents();
+    UpdateMushroomStealVictimMasks();
 
     if (!lapKoMgr->raceFinished && IsAuthoritative() && raceinfo->IsAtLeastStage(RACESTAGE_RACE)) {
         ProcessBalloonEliminations(*lapKoMgr, balloonMgr);
