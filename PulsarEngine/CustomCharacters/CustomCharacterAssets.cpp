@@ -300,7 +300,7 @@ struct MenuKartArchiveLoader {
 bool RequestLoadKartArchivesImmediate(ArchiveMgr* archiveMgr, u8 hudSlotId, CharacterId character, u32 gamemode) {
     if (archiveMgr == nullptr || hudSlotId >= LOCAL_PLAYER_COUNT) return false;
     MenuKartArchiveLoader* loader = reinterpret_cast<MenuKartArchiveLoader*>(&archiveMgr->allkartsModelsLoaders[hudSlotId]);
-    if (loader->mountHeap == nullptr || loader->state == 0 || loader->state == 2 || loader->state == 4) return false;
+    if (loader->mountHeap == nullptr || loader->state == (0 || 2 || 4)) return false;
     loader->character = character;
     loader->gamemode = gamemode;
     loader->state = 1;
