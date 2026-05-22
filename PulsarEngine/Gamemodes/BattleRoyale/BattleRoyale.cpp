@@ -410,7 +410,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
 
     if (!IsOnline()) {
         const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
-        if (previousBalloonCount == 0) return;
+        if (previousBalloonCount <= 1) return;
         if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
         MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
         if (GetBalloonCount(balloonMgr, losingPlayer) >= previousBalloonCount) return;
@@ -422,7 +422,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     if (!IsLocalPlayer(losingPlayer)) return;
 
     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
-    if (previousBalloonCount == 0) return;
+    if (previousBalloonCount <= 1) return;
     if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
 
     MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
@@ -850,7 +850,7 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNe
             if (HasMushroomStolenFromVictim(gainingPlayerId, losingPlayerId)) continue;
 
             const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayerId);
-            if (previousBalloonCount == 0) continue;
+            if (previousBalloonCount <= 1) continue;
             MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId);
             if (GetBalloonCount(balloonMgr, losingPlayerId) < previousBalloonCount) {
                 RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
