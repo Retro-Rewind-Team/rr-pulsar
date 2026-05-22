@@ -3,12 +3,14 @@
 namespace Pulsar {
 namespace CustomCharacters {
 
+// Tico models are placement-new constructed by the vanilla driver model path.
 TicoModel* CreateTicoModelHook(void* memory, DriverController* controller) {
     if (memory == nullptr) return nullptr;
     return new (memory) TicoModel(controller);
 }
 kmCall(0x807c8994, CreateTicoModelHook);
 
+// Temporarily swap the vanilla postfix so archive loads find the selected skin.
 const char** BeginNameSwap(u8 playerId, CharacterId character, const char*& oldName) {
     const char** entry = CharacterNameEntry(character);
     oldName = nullptr;
@@ -20,6 +22,7 @@ const char** BeginNameSwap(u8 playerId, CharacterId character, const char*& oldN
     return entry;
 }
 
+// Character select previews use the hovered button until section params catch up.
 CharacterId PreviewCharacter(u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT) return MARIO;
     const SectionMgr* mgr = SectionMgr::sInstance;
@@ -42,6 +45,7 @@ CharacterId SelectedCharacterForHud(u8 hud) {
     return hoveredCharacters[hud];
 }
 
+// Unpack up to two advertised skin tables from a remote player's SELECT packet.
 void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 characterTables) {
     if (playerIdToAid == nullptr) return;
     if (IsLocalMultiplayer()) {
@@ -57,6 +61,7 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 cha
     }
 }
 
+// Pack local selected skin tables into the SELECT packet extension field.
 u16 GetLocalOnlineCharacterTables() {
     if (IsLocalMultiplayer()) return 0;
     u8 localCount = GetLocalPlayerCount();
@@ -79,6 +84,7 @@ bool ShouldUseCustomCharacterForPlayer(u8 playerId) {
     return !IsLocalMultiplayer() && playerId < ONLINE_PLAYER_COUNT && onlineCharacterTables[playerId] != TABLE_DEFAULT;
 }
 
+// Skin input only runs while the character select page is the active top layer.
 bool IsCharacterSelectActive() {
     const SectionMgr* mgr = SectionMgr::sInstance;
     if (mgr == nullptr || mgr->curSection == nullptr) return false;
@@ -123,6 +129,7 @@ bool SetRaceNameTextIfCustom(LayoutUIControl& control, const char* paneName, u8 
     return SetCustomCharacterNameMessage(control, paneName, bmgId);
 }
 
+// Race name controls store playerId at 0x178 in the vanilla layout control.
 void SetRaceCharacterNameHook(LayoutUIControl* control, const char* paneName, u32 bmgId, const Text::Info* info) {
     if (control == nullptr) return;
     static const u32 PLAYER_ID_OFFSET = 0x178;
@@ -164,6 +171,7 @@ void FillRaceResultNameHook(CtrlRaceResult* result, u8 playerId) {
 kmBranch(0x807f52f4, FillRaceResultNameHook);
 
 kmRuntimeUse(0x807f4e68);
+// Custom race result names need a larger text buffer than the vanilla control.
 void LoadRaceResultHook(CtrlRaceResult* result) {
     reinterpret_cast<void (*)(CtrlRaceResult*)>(kmRuntimeAddr(0x807f4e68))(result);
 
@@ -278,6 +286,7 @@ CharaName* ConstructCharaName(CharaName* name) {
     return new (name) CharaName;
 }
 
+// Author text reuses a CharaName control attached under the vanilla name control.
 void AttachAuthorNameControl(CharaName& name, const char* folderName, const char* ctrName, const char* variant) {
     const u32 hud = name.unknown_0x178;
     if (hud >= LOCAL_PLAYER_COUNT) return;
@@ -316,10 +325,12 @@ void CharacterSelectNameLoadHook(ControlLoader* loader, const char* folderName, 
 }
 kmCall(0x8083d9dc, CharacterSelectNameLoadHook);
 
+// Some vanilla heaps are marked no-alloc after setup; loose assets reopen them.
 void UnlockHeap(EGG::Heap* heap) {
     if (heap != nullptr) heap->dameFlag &= ~0x1;
 }
 
+// Heap ownership checks prevent scene lists from keeping freed model pointers.
 bool IsInHeap(const EGG::ExpHeap* heap, const void* ptr) {
     if (heap == nullptr || ptr == nullptr || heap->rvlHeap == nullptr) return false;
     const u8* start = reinterpret_cast<const u8*>(heap->rvlHeap->startAddr);
@@ -349,6 +360,7 @@ void DetachHeapFromScnMgrs(const EGG::ExpHeap* heap) {
     }
 }
 
+// Destroy loose heaps only after detaching every scene-list node they own.
 void DestroyHeap(EGG::ExpHeap*& heap) {
     if (heap == nullptr) return;
     DetachHeapFromScnMgrs(heap);
@@ -374,6 +386,7 @@ void ClearRawCache(RawBRRES& cache, bool destroyHeap) {
     cache.bound = false;
 }
 
+// Gameplay section transitions may still reference models from the current scene.
 void ClearRawCaches(bool destroyHeap) {
     if (destroyHeap && IsGameplaySectionLoading()) destroyHeap = false;
     for (u32 table = 0; table < TABLE_COUNT; ++table) {
@@ -388,6 +401,7 @@ void SyncRawCachesToCurrentScene() {
     rawCacheSceneOwner = scene;
 }
 
+// Menu BRRES selection can be forced back to vanilla during voting restore.
 u8 ResolveMenuTable(CharacterId character) {
     if (forceDefaultMenuDriverBRRES) return TABLE_DEFAULT;
     if (ShouldForceDefaultVotingMenuTable()) return TABLE_DEFAULT;

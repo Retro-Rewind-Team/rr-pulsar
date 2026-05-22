@@ -3,6 +3,7 @@
 namespace Pulsar {
 namespace CustomCharacters {
 
+// Loose voice files use upper-case character postfixes in GRP_VO filenames.
 void CopyUpperPostfix(char* dest, u32 destSize, const char* postfix) {
     if (dest == nullptr || destSize == 0) return;
     u32 i = 0;
@@ -34,12 +35,12 @@ bool LooseVoiceFileExists(const char* postfix, const char* suffix, const char* e
     return DiscFileSize(path, fileSize);
 }
 
-extern const char* const looseVoiceGroupSuffixes[] = {
+const char* const looseVoiceGroupSuffixes[] = {
     "PC",      "NPC",      "CAN_PC",  "CAN_NPC", "GOL_TOP", "GOL_TOP2", "GOL_TOP3",
     "GOL_GOD", "GOL_GOD2", "GOL_GOD3", "GOL_BAD", "GOL_BAD2", "GOL_BAD3",
 };
 
-extern const char* const looseVoiceTimeAttackGroupSuffixAliases[] = {
+const char* const looseVoiceTimeAttackGroupSuffixAliases[] = {
     "GOL_TOP", "GOL_TOP2", "GOL_TOP3", "GOL_BAD", "GOL_BAD2", "GOL_BAD3", "GOL_BAD3",
 };
 
@@ -52,7 +53,7 @@ const char* LooseVoiceSuffixForGroupOffset(u32 offset) {
 
 const u32 SILENT_VOICE_GROUP = 0xffffffff;
 
-extern const VoiceGroupBase voiceGroupBases[] = {
+const VoiceGroupBase voiceGroupBases[] = {
     {MARIO, BRSAR_GROUP_MARIO},
     {BABY_PEACH, BRSAR_GROUP_BABY_PEACH},
     {WALUIGI, BRSAR_GROUP_WALUIGI},
@@ -79,7 +80,7 @@ extern const VoiceGroupBase voiceGroupBases[] = {
     {ROSALINA, BRSAR_GROUP_ROSALINA},
 };
 
-extern const CharacterNameMap voiceCharacterNames[] = {
+const CharacterNameMap voiceCharacterNames[] = {
     {"MARIO", MARIO},
     {"BABY_PEACH", BABY_PEACH},
     {"WALUIGI", WALUIGI},
@@ -110,6 +111,7 @@ bool LooseVoiceStemExists(const char* postfix, const char* suffix, const char* v
     return LooseVoiceFileExists(postfix, suffix, "brwsd", voiceName) || LooseVoiceFileExists(postfix, suffix, "brbnk", voiceName);
 }
 
+// A .silent marker suppresses all voice groups for a custom skin.
 bool SilentVoiceMarkerExists(CharacterId character, u8 table, const char* postfix) {
     if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return false;
     if (postfix == nullptr) return false;
@@ -132,6 +134,7 @@ const char* VoiceNameForCharacter(CharacterId character) {
     return nullptr;
 }
 
+// Scan once per skin table to discover loose voice stems or aliases.
 const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table) {
     static const LooseVoiceInfo empty = {true, false, false, CHARACTER_NONE, 0};
     if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return empty;
@@ -223,6 +226,7 @@ bool ActorRaceCharacter(const Audio::CharacterActor* actor, CharacterId& charact
     return IsCharacter(character) && !IsMiiCharacter(character);
 }
 
+// Resolve the voice group an actor should use for its selected skin.
 bool VoiceBaseGroupForActor(const Audio::CharacterActor* actor, CharacterId& character, u32& groupId, CharacterId& groupCharacter) {
     if (!ActorRaceCharacter(actor, character)) return false;
     const u8 table = RaceSkinTable(actor->playerId, character);
@@ -282,6 +286,7 @@ bool ApplyVoiceBaseActionTable(Audio::CharacterActor* actor) {
     return true;
 }
 
+// Initialize ranges against the borrowed voice character, then restore actor state.
 void InitCharacterVoiceRangesHook(Audio::CharacterActor* actor) {
     voiceInitActor = actor;
     const CharacterId voiceCharacter = VoiceBaseCharacterForActor(actor);
@@ -310,6 +315,7 @@ void* DriverSoundSetForLinkHook(void* manager, CharacterId character, u32 type) 
 }
 kmCall(0x80863dd8, DriverSoundSetForLinkHook);
 
+// Main race voice groups can borrow a base character or return the silent marker.
 u32 CharacterVoiceGroupHook(Audio::CharacterActor* actor) {
     ApplyVoiceBaseActionTable(actor);
     CharacterId character = CHARACTER_NONE;
@@ -356,6 +362,7 @@ u32 CharacterGoalVoiceGroupHook(Audio::CharacterActor* actor, u32 type) {
 }
 kmCall(0x80716254, CharacterGoalVoiceGroupHook);
 
+// Reverse map a vanilla group id back to base character plus group offset.
 bool FindVoiceGroup(u32 groupId, CharacterId& character, u32& offset) {
     for (u32 i = 0; i < ARRAY_COUNT(voiceGroupBases); ++i) {
         if (voiceGroupBases[i].groupId == groupId) {
@@ -393,6 +400,7 @@ bool PlayerMatchesVoiceGroupOffset(u8 playerId, u32 offset) {
     return !npcGroup && IsLocalRacePlayer(playerId);
 }
 
+// BRSAR load hooks ask for the loose postfix that owns the requested group.
 const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName) {
     groupSuffix = nullptr;
     voiceName = nullptr;

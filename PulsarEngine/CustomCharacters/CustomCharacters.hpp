@@ -39,6 +39,7 @@ namespace CustomCharacters {
 
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
 
+// Shared limits for skin ids, packet packing, local UI slots, and loose metadata.
 enum {
     PACKET_BITS = 6,
     PACKET_MASK = (1 << PACKET_BITS) - 1,
@@ -64,6 +65,7 @@ extern "C" const char* characterNames[];
 static_assert(TABLE_COUNT <= (1 << PACKET_BITS), "SELECT packet skin table field is too small");
 static_assert(PACKET_BITS * 2 <= 16, "SELECT packet skin table fields must fit in two bytes");
 
+// Raw model cache used when a loose BRRES replaces the disc archive model.
 struct RawBRRES {
     EGG::ExpHeap* heap;
     void* file;
@@ -71,10 +73,12 @@ struct RawBRRES {
     bool bound;
 };
 
+// File scan result for loose BRRES minimap icons.
 struct RawTPL {
     bool failed;
 };
 
+// Cached loose voice state for one character/table pair.
 struct LooseVoiceInfo {
     bool scanned;
     bool hasFiles;
@@ -83,6 +87,7 @@ struct LooseVoiceInfo {
     u32 suffixMask;
 };
 
+// One optional charaname.txt row, stored as narrow and wide text for UI paths.
 struct NameEntry {
     char id[16];
     char characterName[NAME_TEXT_LENGTH];
@@ -91,17 +96,20 @@ struct NameEntry {
     wchar_t authorNameWide[NAME_TEXT_LENGTH];
 };
 
+// Distinguishes missing BMG ids from intentional blank text.
 enum BmgTextState {
     BMG_TEXT_MISSING,
     BMG_TEXT_BLANK,
     BMG_TEXT_NONBLANK
 };
 
+// Maps vanilla voice groups back to their owning character.
 struct VoiceGroupBase {
     CharacterId character;
     u32 groupId;
 };
 
+// Maps charaname-style voice suffixes to character ids.
 struct CharacterNameMap {
     const char* name;
     CharacterId character;
@@ -109,6 +117,7 @@ struct CharacterNameMap {
 
 enum { AUTHOR_NAME_CONTROL_WORDS = (sizeof(CharaName) + sizeof(u32) - 1) / sizeof(u32) };
 
+// Shared state owned by the CustomCharacters implementation files.
 extern u8 selectedTable[CHARACTER_COUNT];
 extern u8 onlineCharacterTables[ONLINE_PLAYER_COUNT];
 extern u8 offlineCpuCharacterTables[ONLINE_PLAYER_COUNT];
@@ -153,6 +162,7 @@ extern const char* const looseVoiceTimeAttackGroupSuffixAliases[];
 extern const VoiceGroupBase voiceGroupBases[];
 extern const CharacterNameMap voiceCharacterNames[];
 
+// Character ids and generated file names.
 bool IsCharacter(CharacterId character);
 bool IsMiiCharacter(CharacterId character);
 const char** CharacterNameEntry(CharacterId character);
@@ -168,6 +178,8 @@ bool SetCustomCharacterNameMessage(LayoutUIControl& control, const char* paneNam
 bool SetCustomCharacterNameMessage(LayoutUIControl& control, u32 bmgId);
 bool SetCustomCharacterAuthorMessage(LayoutUIControl& control, u32 bmgId);
 const char* DriverBRRESName(CharacterId character, u8 table);
+
+// Section and selection state.
 u8 SectionPlayerCount(const SectionMgr* mgr);
 bool ShouldForceDefaultVotingMenuTable();
 bool IsLocalMultiplayer();
@@ -187,11 +199,15 @@ CharacterId PreviewCharacter(u8 hud);
 void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 characterTables);
 u16 GetLocalOnlineCharacterTables();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
+
+// Menu, race, and UI text updates.
 void CacheHoveredFromSection();
 bool SetRaceNameTextIfCustom(LayoutUIControl& control, const char* paneName, u8 playerId);
 void UpdateCharacterSelectNameText(Pages::CharacterSelect* page, u8 hud);
 void UpdateCharacterSelectAuthorText(Pages::CharacterSelect* page, u8 hud);
 void UpdateCurrentCharacterSelectAuthorText(u8 hud);
+
+// Heap and loose asset loading helpers.
 void UnlockHeap(EGG::Heap* heap);
 bool IsInHeap(const EGG::ExpHeap* heap, const void* ptr);
 void DestroyHeap(EGG::ExpHeap*& heap);
@@ -201,6 +217,8 @@ u8 ResolveMenuTable(CharacterId character);
 u32 AlignUp(u32 value, u32 alignment);
 bool BuildDriverPath(CharacterId character, u8 table, char* path, u32 pathSize);
 bool DiscFileSize(const char* path, u32& size);
+
+// Loose voices and menu model reloads.
 const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName);
 void ReinitMenuDriverModelMgr(u8 hud, CharacterId character);
 void ApplyVoteRandomMessageBoxKartState();

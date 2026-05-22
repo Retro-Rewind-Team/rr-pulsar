@@ -3,7 +3,7 @@
 namespace Pulsar {
 namespace CustomCharacters {
 
-
+// Process-wide skin, cache, and menu state shared by the custom character hooks.
 u8 selectedTable[CHARACTER_COUNT];
 u8 onlineCharacterTables[ONLINE_PLAYER_COUNT];
 u8 offlineCpuCharacterTables[ONLINE_PLAYER_COUNT];
@@ -40,11 +40,11 @@ MenuDriverModel* reloadedMenuDriverModelOwner;
 bool forceDefaultMenuDriverBRRES;
 bool nameEntriesLoaded;
 
-
 LooseVoiceInfo looseVoiceInfo[TABLE_COUNT][CHARACTER_COUNT];
 NameEntry nameEntries[NAME_ENTRY_COUNT];
 u32 nameEntryCount;
 
+// Clamp game-reported local player counts to the UI arrays this feature owns.
 u8 MinLocalPlayers(u32 count) {
     return count > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(count);
 }
@@ -52,8 +52,6 @@ u8 MinLocalPlayers(u32 count) {
 bool IsCharacter(CharacterId character) {
     return character >= 0 && character < CHARACTER_COUNT;
 }
-
-bool DiscFileSize(const char* path, u32& size);
 
 bool IsMiiCharacter(CharacterId character) {
     return (character >= MII_S_A_MALE && character <= MII_L_C_FEMALE) || character == MII_M || character == MII_S || character == MII_L;
@@ -64,6 +62,7 @@ const char** CharacterNameEntry(CharacterId character) {
     return characterNames + character;
 }
 
+// Cache vanilla postfix pointers before selected skins temporarily replace them.
 void CacheDefaults() {
     if (cachedDefaultNames) return;
     for (u32 i = 0; i < CHARACTER_COUNT; ++i) {
@@ -103,6 +102,7 @@ const char* CustomPostfixBase(CharacterId character) {
     return GetDefaultCharacterPostfix(stateCharacter);
 }
 
+// Generated postfixes use the vanilla name plus a stable table suffix.
 const char* GeneratedCustomPostfix(CharacterId character, u8 table) {
     if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT) return nullptr;
     char* postfix = customPostfixes[character][table];
@@ -117,6 +117,7 @@ const char* GeneratedCustomPostfix(CharacterId character, u8 table) {
     return postfix;
 }
 
+// Driver BRRES existence is cached because menu hooks query it repeatedly.
 bool CustomDriverFileExists(CharacterId character, u8 table) {
     if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT) return false;
     u8& cached = customSkinExists[character][table];
@@ -135,6 +136,7 @@ bool CustomDriverFileExists(CharacterId character, u8 table) {
     return exists;
 }
 
+// Peach/Daisy/Rosalina menu BRRES files use biker ids for their standing models.
 CharacterId MenuBRRESCharacter(CharacterId character) {
     switch (character) {
         case PEACH:
@@ -177,6 +179,7 @@ void CopyTextWide(wchar_t* dest, u32 destCount, const char* source) {
     dest[i] = L'\0';
 }
 
+// charaname.txt uses simple pipe-delimited rows with optional comments.
 char* SkipNameTextSpace(char* text) {
     while (*text == ' ' || *text == '\t' || *text == '\r') ++text;
     return text;
@@ -260,6 +263,7 @@ void LoadNameEntries() {
     ReadNameEntriesFile("/charaname.txt");
 }
 
+// Look up optional loose display names before falling back to generated names.
 const NameEntry* FindNameEntryById(const char* id) {
     LoadNameEntries();
     if (id == nullptr) return nullptr;
@@ -287,6 +291,7 @@ u32 SkinBmgId(u32 start, CharacterId character, u8 table) {
     return (static_cast<u32>(character) << 16) | start | table;
 }
 
+// Custom BMG ids encode the character in the high half and table in the low half.
 u32 SkinNameBmgId(CharacterId character, u8 table) {
     return SkinBmgId(CUSTOM_CHARACTER_NAME_BMG_START, character, table);
 }
@@ -336,6 +341,7 @@ BmgTextState GetCustomCharacterBmgTextState(const LayoutUIControl& control, u32 
     return GetBmgTextState(control.commonBmgs, bmgId);
 }
 
+// Missing custom name text falls back to the vanilla character name.
 u32 ResolveCustomCharacterNameBmgId(const LayoutUIControl& control, u32 bmgId, const NameEntry* entry) {
     if (entry == nullptr && GetCustomCharacterBmgTextState(control, bmgId) == BMG_TEXT_NONBLANK) return bmgId;
     const u32 defaultBmgId = DefaultNameBmgIdForSkinBmgId(bmgId);
@@ -399,6 +405,7 @@ const char* DriverBRRESName(CharacterId character, u8 table) {
     return GetDefaultCharacterPostfix(character);
 }
 
+// Apply selected skin names through the vanilla global character name table.
 void ApplyName(CharacterId character, u8 table) {
     const char** entry = CharacterNameEntry(character);
     const char* name = SkinName(character, table);
@@ -426,6 +433,7 @@ SectionId CurrentSectionId() {
     return mgr->curSection->sectionId;
 }
 
+// Voting menus briefly need vanilla models until custom ones are restored.
 bool ShouldForceDefaultVotingMenuTable() {
     const SectionId section = CurrentSectionId();
     if (!IsVotingSection(section)) {
@@ -451,6 +459,7 @@ bool IsLocalMultiplayer() {
     return GetLocalPlayerCount() > 1;
 }
 
+// Local multiplayer stays on vanilla tables because only one selection table is tracked.
 u8 SelectedTable(CharacterId character) {
     const CharacterId stateCharacter = StateCharacter(character);
     if (IsLocalMultiplayer() || !IsCharacter(stateCharacter)) return TABLE_DEFAULT;
@@ -501,10 +510,6 @@ bool DisplayOnlineSkins() {
     return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_ENABLED;
 }
 
-bool IsOnlineMultiLocal(const RKNet::Controller* controller) {
-    return IsOnlineRoom(controller) && IsLocalMultiplayer();
-}
-
 void ResetOfflineCpuSkinTables() {
     offlineCpuSkinTablesValid = false;
     offlineCpuSkinRaceNumber = 0;
@@ -545,6 +550,7 @@ void ResetCharacterTablesOnLooseArchiveOverrideChange() {
 }
 Settings::Hook ResetCharacterTablesOnLooseArchiveOverrideChangeHook(ResetCharacterTablesOnLooseArchiveOverrideChange);
 
+// Offline CPU skins reset when leaving race flows that preserve CPU assignments.
 bool IsOfflineCpuSkinResetSection(SectionId section) {
     switch (section) {
         case SECTION_GP_AWARD:
@@ -583,6 +589,7 @@ bool IsLocalRacePlayer(u8 playerId) {
     return false;
 }
 
+// Online rooms advertise only the local player's selected table.
 void RefreshLocalOnlineCustomCharacterFlags() {
     if (!IsOnlineRoom(RKNet::Controller::sInstance)) return;
     if (IsLocalMultiplayer()) {
@@ -622,6 +629,41 @@ bool CycleSkin(CharacterId character, int step) {
     return false;
 }
 
+// Pick a stable random CPU skin table for the current offline race series.
+u8 OfflineCpuSkinTable(const RacedataScenario& scenario, u8 playerId, CharacterId character) {
+    u32 signature = 0x4343534b;
+    signature = signature * 33 + static_cast<u32>(scenario.settings.gamemode);
+    signature = signature * 33 + static_cast<u32>(scenario.settings.modeFlags);
+    signature = signature * 33 + scenario.playerCount;
+    for (u8 i = 0; i < scenario.playerCount && i < ONLINE_PLAYER_COUNT; ++i) {
+        signature = signature * 33 + static_cast<u32>(scenario.players[i].characterId);
+        signature = signature * 33 + static_cast<u32>(scenario.players[i].playerType);
+    }
+
+    const bool sameSeries = offlineCpuSkinTablesValid && offlineCpuSkinSignature == signature;
+    const bool newSeriesStart = sameSeries && scenario.settings.raceNumber == 0 && offlineCpuSkinRaceNumber != 0;
+    if (!sameSeries || newSeriesStart) {
+        offlineCpuSkinTablesValid = true;
+        offlineCpuSkinSignature = signature;
+        for (u8 i = 0; i < ONLINE_PLAYER_COUNT; ++i) offlineCpuCharacterTables[i] = TABLE_DEFAULT;
+        for (u8 i = 0; i < scenario.playerCount && i < ONLINE_PLAYER_COUNT; ++i) {
+            if (scenario.players[i].playerType != PLAYER_CPU) continue;
+            const CharacterId cpuCharacter = scenario.players[i].characterId;
+            u8 valid[TABLE_COUNT];
+            u8 count = 0;
+            for (u8 table = 0; table < TABLE_COUNT; ++table) {
+                if (HasSkin(cpuCharacter, table)) valid[count++] = table;
+            }
+            if (count == 0) continue;
+            Random random(static_cast<s32>(signature ^ (static_cast<u32>(i) * 0x1f123bb5)));
+            offlineCpuCharacterTables[i] = valid[random.NextLimited<u8>(count)];
+        }
+    }
+    offlineCpuSkinRaceNumber = scenario.settings.raceNumber;
+    return NormalizeTable(character, offlineCpuCharacterTables[playerId]);
+}
+
+// Race skin selection chooses local, remote, or stable offline CPU tables.
 u8 RaceSkinTable(u8 playerId, CharacterId character) {
     const Racedata* racedata = Racedata::sInstance;
     if (racedata != nullptr && playerId < racedata->racesScenario.playerCount) {
@@ -630,42 +672,13 @@ u8 RaceSkinTable(u8 playerId, CharacterId character) {
         const bool offlineCpuSkinMode = mode == MODE_GRAND_PRIX || mode == MODE_VS_RACE || mode == MODE_BATTLE;
         const bool offlineCpu = scenario.players[playerId].playerType == PLAYER_CPU;
         if (offlineCpuSkinMode && offlineCpu && !IsOnlineRoom(RKNet::Controller::sInstance) && DisplayOnlineSkins() && !IsLocalMultiplayer()) {
-            u32 signature = 0x4343534b;
-            signature = signature * 33 + static_cast<u32>(scenario.settings.gamemode);
-            signature = signature * 33 + static_cast<u32>(scenario.settings.modeFlags);
-            signature = signature * 33 + scenario.playerCount;
-            for (u8 i = 0; i < scenario.playerCount && i < ONLINE_PLAYER_COUNT; ++i) {
-                signature = signature * 33 + static_cast<u32>(scenario.players[i].characterId);
-                signature = signature * 33 + static_cast<u32>(scenario.players[i].playerType);
-            }
-
-            const bool sameSeries = offlineCpuSkinTablesValid && offlineCpuSkinSignature == signature;
-            const bool newSeriesStart = sameSeries && scenario.settings.raceNumber == 0 && offlineCpuSkinRaceNumber != 0;
-            if (!sameSeries || newSeriesStart) {
-                offlineCpuSkinTablesValid = true;
-                offlineCpuSkinSignature = signature;
-                for (u8 i = 0; i < ONLINE_PLAYER_COUNT; ++i) offlineCpuCharacterTables[i] = TABLE_DEFAULT;
-                for (u8 i = 0; i < scenario.playerCount && i < ONLINE_PLAYER_COUNT; ++i) {
-                    if (scenario.players[i].playerType != PLAYER_CPU) continue;
-                    const CharacterId cpuCharacter = scenario.players[i].characterId;
-                    u8 valid[TABLE_COUNT];
-                    u8 count = 0;
-                    for (u8 table = 0; table < TABLE_COUNT; ++table) {
-                        if (HasSkin(cpuCharacter, table)) valid[count++] = table;
-                    }
-                    if (count == 0) continue;
-                    Random random(static_cast<s32>(signature ^ (static_cast<u32>(i) * 0x1f123bb5)));
-                    offlineCpuCharacterTables[i] = valid[random.NextLimited<u8>(count)];
-                }
-            }
-            offlineCpuSkinRaceNumber = scenario.settings.raceNumber;
-            return NormalizeTable(character, offlineCpuCharacterTables[playerId]);
+            return OfflineCpuSkinTable(scenario, playerId, character);
         }
     }
 
     if (IsLocalMultiplayer()) return TABLE_DEFAULT;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (IsOnlineRoom(controller) && !IsOnlineMultiLocal(controller) && DisplayOnlineSkins()) {
+    if (IsOnlineRoom(controller) && DisplayOnlineSkins()) {
         return IsLocalRacePlayer(playerId) ? SelectedTable(character) : NormalizeTable(character, onlineCharacterTables[playerId]);
     }
     return IsLocalRacePlayer(playerId) ? SelectedTable(character) : TABLE_DEFAULT;

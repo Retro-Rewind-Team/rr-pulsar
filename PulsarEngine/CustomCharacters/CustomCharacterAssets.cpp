@@ -3,6 +3,7 @@
 namespace Pulsar {
 namespace CustomCharacters {
 
+// Choose a scene heap that can hold loose raw model data without starving menus.
 EGG::Heap* RawParentHeap(GameScene& scene, u32 heapSize) {
     static const u32 PARENT_RESERVE = 0x200000;
     EGG::Heap* heaps[] = {scene.structsHeaps.heaps[1], scene.structsHeaps.heaps[0]};
@@ -26,6 +27,7 @@ bool BindRawBRRES(nw4r::g3d::ResFile& resFile, const char* path) {
     return ModelDirector::BindBRRESImpl(resFile, path, nullptr, 0);
 }
 
+// Load a loose BRRES once, then bind the cached raw file into each model holder.
 bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
     if (cache.failed) return false;
     if (cache.file == nullptr) {
@@ -71,6 +73,7 @@ bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
     return true;
 }
 
+// Find which loose cache owns a model so old menu models can free it correctly.
 RawBRRES* RawCacheForModel(const ModelDirector* model) {
     if (model == nullptr || model->rawMdl.data == nullptr) return nullptr;
     for (u32 table = 0; table < TABLE_COUNT; ++table) {
@@ -100,6 +103,7 @@ bool LoadRawBRRESIntoHeap(void* holder, EGG::ExpHeap* heap, const char* path, u3
     return true;
 }
 
+// Mii outfit C files are separate loose BRRES overrides.
 u8 MiiCIndex(CharacterId character) {
     switch (character) {
         case MII_S_C_MALE:
@@ -173,6 +177,7 @@ bool TryLoadLooseMiiCBRRESIntoHeap(void* holder, CharacterId character, EGG::Exp
     return LoadRawBRRESIntoHeap(holder, heap, path, fileSize);
 }
 
+// Menu driver BRRES loads prefer selected loose skins, then loose Mii C, then vanilla.
 u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
     if (TryLoadCustomMenuBRRES(holder, character) || TryLoadLooseMiiCBRRES(holder, character)) return 1;
     return static_cast<MenuModelBRRESHandle*>(holder)->BindDriverBRRES(character);
@@ -208,6 +213,7 @@ EGG::Heap* MinimapTPLHeap(GameScene& scene, u32 fileSize) {
     return nullptr;
 }
 
+// Loose minimap icons are optional TPL files matched to the selected skin table.
 TPLPalettePtr LoadLooseMinimapTPL(CharacterId character, u8 table) {
     static const u32 TPL_VERSION_NUMBER = 0x0020af30;
     if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return nullptr;
@@ -271,6 +277,7 @@ void InitMinimapCharacterHook(CtrlRace2DMapCharacter* control) {
 }
 kmCall(0x807eb22c, InitMinimapCharacterHook);
 
+// Kart archive loading reads the temporarily swapped character name postfix.
 ArchivesHolder* LoadKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
                                            EGG::Heap* decompressedHeap, EGG::Heap* archiveHeap) {
     const char* oldName;
@@ -293,7 +300,7 @@ struct MenuKartArchiveLoader {
 bool RequestLoadKartArchivesImmediate(ArchiveMgr* archiveMgr, u8 hudSlotId, CharacterId character, u32 gamemode) {
     if (archiveMgr == nullptr || hudSlotId >= LOCAL_PLAYER_COUNT) return false;
     MenuKartArchiveLoader* loader = reinterpret_cast<MenuKartArchiveLoader*>(&archiveMgr->allkartsModelsLoaders[hudSlotId]);
-    if (loader->mountHeap == nullptr || loader->state == (0 || 2 || 4)) return false;
+    if (loader->mountHeap == nullptr || loader->state == 0 || loader->state == 2 || loader->state == 4) return false;
     loader->character = character;
     loader->gamemode = gamemode;
     loader->state = 1;
@@ -323,6 +330,7 @@ void DetachListNodeIfPresent(nw4r::ut::List* list, void* target) {
     }
 }
 
+// Reloaded menu models must leave all scene lists before their heap is destroyed.
 void DetachModelDirectorFromScnMgrs(ModelDirector* model) {
     if (model == nullptr) return;
     ScnMgr* const* mgrs = ScnMgr::sInstance;
@@ -425,6 +433,7 @@ EGG::Allocator* CreateScnObjAllocator(EGG::Heap* parent) {
     return new (buf) EGG::Allocator(parent, 0x20);
 }
 
+// Menu model reloads use a fresh heap so failed custom loads can be discarded.
 EGG::ExpHeap* CreateMenuDriverModelHeap(GameScene& scene) {
     static const u32 MIN_HEAP_SIZE = 0x60000;
     static const u32 PARENT_RESERVE = 0x20000;
@@ -456,6 +465,7 @@ void UnlockMenuModelHeaps(MenuModelMgr& modelMgr) {
     UnlockHeap(scene->otherMEMHeap);
 }
 
+// These accessors name the vanilla MenuDriverModel fields used by reload hooks.
 ModelDirector** MenuDriverModelDirectorSlot(MenuDriverModel* models, u8 idx) {
     static const u32 MENU_DRIVER_MODEL_SIZE = 0x28;
     static const u32 MENU_MODEL_DIRECTOR_OFFSET = 0x4;
@@ -514,6 +524,7 @@ bool IsLoadedMenuDriverModelReady(const ModelDirector* model) {
            model->scnMdlEx[0]->scnObj != nullptr && model->scnMdlEx[1] != nullptr && model->scnMdlEx[1]->scnObj != nullptr;
 }
 
+// Build a replacement menu model in an isolated heap and restore scene allocators.
 bool LoadReloadedMenuDriverModel(GameScene& scene, ScnMgr& scnMgr, CharacterId character, ModelDirector*& newModel,
                                         ToadetteHair*& newHair, EGG::ExpHeap*& newHeap) {
     newModel = nullptr;
@@ -606,6 +617,7 @@ void ResetReloadedMenuDriverModel(MenuDriverModel& menuModel, CharacterId charac
     MenuDriverModelIdSlot(menuModel) = static_cast<u32>(character);
 }
 
+// Replace one character-select model while preserving the surrounding menu manager.
 bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId character) {
     if (character < 0 || character >= MENU_DRIVER_MODEL_COUNT || driverMgr.models == nullptr) return false;
     const u8 idx = static_cast<u8>(character);
@@ -678,6 +690,7 @@ KartId SelectedMenuKartForHud(u8 hud) {
     return STANDARD_KART_S;
 }
 
+// The random-vote message box shows drivers on the currently selected kart.
 void ApplyVoteRandomMessageBoxKartState() {
     SectionMgr* sectionMgr = SectionMgr::sInstance;
     if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) {
