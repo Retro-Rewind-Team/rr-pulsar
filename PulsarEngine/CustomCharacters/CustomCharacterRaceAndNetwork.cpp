@@ -6,6 +6,11 @@ namespace CustomCharacters {
 // Tico models are placement-new constructed by the vanilla driver model path.
 TicoModel* CreateTicoModelHook(void* memory, DriverController* controller) {
     if (memory == nullptr) return nullptr;
+    const Racedata* racedata = Racedata::sInstance;
+    const u8 playerId = controller->GetPlayerIdx();
+    const CharacterId character = racedata->racesScenario.players[playerId].characterId;
+    const LooseVoiceInfo& info = GetLooseVoiceInfo(character, RaceSkinTable(playerId, character));
+    if (info.hasFiles || info.silent) return nullptr;
     return new (memory) TicoModel(controller);
 }
 kmCall(0x807c8994, CreateTicoModelHook);

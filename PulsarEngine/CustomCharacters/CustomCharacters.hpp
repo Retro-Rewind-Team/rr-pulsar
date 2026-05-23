@@ -220,6 +220,7 @@ bool DiscFileSize(const char* path, u32& size);
 
 // Loose voices and menu model reloads.
 const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName);
+const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table);
 void ReinitMenuDriverModelMgr(u8 hud, CharacterId character);
 void ApplyVoteRandomMessageBoxKartState();
 void RestoreVotingMenuDriverModels();
