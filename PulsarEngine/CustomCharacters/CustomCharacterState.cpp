@@ -19,7 +19,7 @@ const GameScene* rawCacheSceneOwner;
 u32 offlineCpuSkinSignature;
 u8 offlineCpuSkinRaceNumber;
 bool offlineCpuSkinTablesValid;
-u16 heldToggleButtons;
+u16 heldToggleButtons[LOCAL_PLAYER_COUNT];
 u32 authorNameControlStorage[LOCAL_PLAYER_COUNT][AUTHOR_NAME_CONTROL_WORDS];
 bool authorNameControlConstructed[LOCAL_PLAYER_COUNT];
 bool authorNameControlLoaded[LOCAL_PLAYER_COUNT];
@@ -459,10 +459,9 @@ bool IsLocalMultiplayer() {
     return GetLocalPlayerCount() > 1;
 }
 
-// Local multiplayer stays on vanilla tables because only one selection table is tracked.
 u8 SelectedTable(CharacterId character) {
     const CharacterId stateCharacter = StateCharacter(character);
-    if (IsLocalMultiplayer() || !IsCharacter(stateCharacter)) return TABLE_DEFAULT;
+    if (!IsCharacter(stateCharacter)) return TABLE_DEFAULT;
     return NormalizeTable(character, selectedTable[stateCharacter]);
 }
 
@@ -474,7 +473,6 @@ void ApplySelectedNames() {
 }
 
 bool AnyCustomSkin() {
-    if (IsLocalMultiplayer()) return false;
     for (u32 i = 0; i < CHARACTER_COUNT; ++i) {
         if (selectedTable[i] != TABLE_DEFAULT) return true;
     }
@@ -618,7 +616,7 @@ bool SetSelectedTable(CharacterId character, u8 table) {
 }
 
 bool CycleSkin(CharacterId character, int step) {
-    if (GetLocalPlayerCount() != 1 || !IsCharacter(StateCharacter(character))) return false;
+    if (!IsCharacter(StateCharacter(character))) return false;
     u8 table = SelectedTable(character);
     for (u8 i = 1; i < TABLE_COUNT; ++i) {
         table = step < 0 ? (table == 0 ? TABLE_COUNT - 1 : table - 1) : (table + 1 >= TABLE_COUNT ? TABLE_DEFAULT : table + 1);
@@ -676,7 +674,7 @@ u8 RaceSkinTable(u8 playerId, CharacterId character) {
         }
     }
 
-    if (IsLocalMultiplayer()) return TABLE_DEFAULT;
+    if (IsLocalMultiplayer()) return IsLocalRacePlayer(playerId) ? SelectedTable(character) : TABLE_DEFAULT;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (IsOnlineRoom(controller) && DisplayOnlineSkins()) {
         return IsLocalRacePlayer(playerId) ? SelectedTable(character) : NormalizeTable(character, onlineCharacterTables[playerId]);

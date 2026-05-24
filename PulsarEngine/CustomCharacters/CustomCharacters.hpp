@@ -133,7 +133,7 @@ extern const GameScene* rawCacheSceneOwner;
 extern u32 offlineCpuSkinSignature;
 extern u8 offlineCpuSkinRaceNumber;
 extern bool offlineCpuSkinTablesValid;
-extern u16 heldToggleButtons;
+extern u16 heldToggleButtons[LOCAL_PLAYER_COUNT];
 extern u32 authorNameControlStorage[LOCAL_PLAYER_COUNT][AUTHOR_NAME_CONTROL_WORDS];
 extern bool authorNameControlConstructed[LOCAL_PLAYER_COUNT];
 extern bool authorNameControlLoaded[LOCAL_PLAYER_COUNT];

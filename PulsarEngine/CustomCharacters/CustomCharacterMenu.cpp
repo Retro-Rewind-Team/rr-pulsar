@@ -23,7 +23,7 @@ void RestoreVotingMenuDriverModels() {
 
 // Random selection chooses from the vanilla table plus installed custom skins.
 bool RandomizeSelectedCharacterTable(CharacterId character) {
-    if (IsLocalMultiplayer() || !IsCharacter(StateCharacter(character))) return false;
+    if (!IsCharacter(StateCharacter(character))) return false;
     u8 valid[TABLE_COUNT];
     u8 count = 0;
     for (u8 table = 0; table < TABLE_COUNT; ++table) {
@@ -94,9 +94,8 @@ void UpdateHintPanes() {
     if (mgr == nullptr || mgr->sectionParams == nullptr) return;
     Pages::CharacterSelect* page = mgr->curSection->Get<Pages::CharacterSelect>();
     if (page == nullptr || page->names == nullptr) return;
-    const bool visible = !IsLocalMultiplayer();
     const u8 count = SectionPlayerCount(mgr);
-    for (u8 hud = 0; hud < count; ++hud) SetHintPanes(page->names[hud], ControllerForHud(*mgr, hud), visible);
+    for (u8 hud = 0; hud < count; ++hud) SetHintPanes(page->names[hud], ControllerForHud(*mgr, hud), true);
 }
 
 // Map each controller type to previous/next skin buttons and consumed UI actions.
@@ -134,57 +133,63 @@ void EatButton(Input::RealControllerHolder& holder, u16 button, u16 action) {
     holder.uiinputStates[0].buttonActions &= static_cast<u16>(~action);
 }
 
-// Single-player character select allows cycling installed skin tables.
+// Character select allows each local player to cycle installed skin tables.
 bool ProcessSkinInput() {
-    if (GetLocalPlayerCount() != 1 || !IsCharacterSelectActive()) {
-        heldToggleButtons = 0;
+    if (!IsCharacterSelectActive()) {
+        memset(heldToggleButtons, 0, sizeof(heldToggleButtons));
         return false;
     }
     SectionMgr* mgr = SectionMgr::sInstance;
-    if (mgr == nullptr || mgr->pad.padInfos[0].controllerHolder == nullptr) {
-        heldToggleButtons = 0;
-        return false;
-    }
-    Input::RealControllerHolder* holder = mgr->pad.padInfos[0].controllerHolder;
-    if (holder->curController == nullptr) {
-        heldToggleButtons = 0;
+    if (mgr == nullptr || mgr->sectionParams == nullptr) {
+        memset(heldToggleButtons, 0, sizeof(heldToggleButtons));
         return false;
     }
 
-    u16 prevButton = 0;
-    u16 nextButton = 0;
-    u16 prevAction = 0;
-    u16 nextAction = 0;
-    ToggleInputs(ControllerForHud(*mgr, 0), prevButton, nextButton, prevAction, nextAction);
-    const u16 inputs = holder->inputStates[0].buttonRaw;
-    const u16 pressed = static_cast<u16>((inputs & (prevButton | nextButton)) & ~heldToggleButtons);
-    heldToggleButtons = static_cast<u16>(inputs & (prevButton | nextButton));
-    if ((inputs & prevButton) != 0) EatButton(*holder, prevButton, prevAction);
-    if ((inputs & nextButton) != 0) EatButton(*holder, nextButton, nextAction);
-    if ((pressed & prevButton) != 0) {
-        const CharacterId character = PreviewCharacter(0);
-        if (CycleSkin(character, -1)) {
-            ReinitMenuDriverModelMgr(0, character);
-            Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
-            return true;
+    bool changed = false;
+    const u8 count = SectionPlayerCount(mgr);
+    for (u8 hud = 0; hud < count; ++hud) {
+        Input::RealControllerHolder* holder = mgr->pad.padInfos[hud].controllerHolder;
+        if (holder == nullptr || holder->curController == nullptr) {
+            heldToggleButtons[hud] = 0;
+            continue;
+        }
+
+        u16 prevButton = 0;
+        u16 nextButton = 0;
+        u16 prevAction = 0;
+        u16 nextAction = 0;
+        ToggleInputs(ControllerForHud(*mgr, hud), prevButton, nextButton, prevAction, nextAction);
+        const u16 inputs = holder->inputStates[0].buttonRaw;
+        const u16 pressed = static_cast<u16>((inputs & (prevButton | nextButton)) & ~heldToggleButtons[hud]);
+        heldToggleButtons[hud] = static_cast<u16>(inputs & (prevButton | nextButton));
+        if ((inputs & prevButton) != 0) EatButton(*holder, prevButton, prevAction);
+        if ((inputs & nextButton) != 0) EatButton(*holder, nextButton, nextAction);
+        if ((pressed & prevButton) != 0) {
+            const CharacterId character = PreviewCharacter(hud);
+            if (CycleSkin(character, -1)) {
+                ReinitMenuDriverModelMgr(hud, character);
+                Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
+                changed = true;
+            }
+        }
+        if ((pressed & nextButton) != 0) {
+            const CharacterId character = PreviewCharacter(hud);
+            if (CycleSkin(character, 1)) {
+                ReinitMenuDriverModelMgr(hud, character);
+                Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
+                changed = true;
+            }
         }
     }
-    if ((pressed & nextButton) != 0) {
-        const CharacterId character = PreviewCharacter(0);
-        if (CycleSkin(character, 1)) {
-            ReinitMenuDriverModelMgr(0, character);
-            Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
-            return true;
-        }
-    }
-    return false;
+    return changed;
 }
 
 // Menu updates keep hints, labels, and random-vote kart previews in sync.
 void MenuSceneSectionUpdateHook(SectionMgr* mgr) {
     UpdateHintPanes();
     ProcessSkinInput();
-    UpdateCurrentCharacterSelectAuthorText(0);
+    const u8 count = SectionPlayerCount(mgr);
+    for (u8 hud = 0; hud < count; ++hud) UpdateCurrentCharacterSelectAuthorText(hud);
     ApplyVoteRandomMessageBoxKartState();
     mgr->MenuUpdate();
     ApplyVoteRandomMessageBoxKartState();

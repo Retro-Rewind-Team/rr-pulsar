@@ -288,6 +288,29 @@ ArchivesHolder* LoadKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, KartId 
 }
 kmCall(0x805540f4, LoadKartArchiveHook);
 
+ArchivesHolder* LoadBackupKartArchiveHook(ArchiveMgr* archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
+                                          EGG::Heap* decompressedHeap, EGG::Heap* archiveHeap) {
+    const char* oldName;
+    const char** entry = BeginNameSwap(playerId, character, oldName);
+    ArchivesHolder* holder = archiveMgr->LoadKartArchiveHolder2(playerId, kart, character, color, 0, decompressedHeap, archiveHeap);
+    if (entry != nullptr) *entry = oldName;
+    return holder;
+}
+kmCall(0x80554198, LoadBackupKartArchiveHook);
+
+kmRuntimeUse(0x8056be20);
+void SetModelColorsIfReady(void* starAnm, void* drawMdl) {
+    if (drawMdl == nullptr) return;
+    const u8* model = static_cast<const u8*>(drawMdl);
+    if (*reinterpret_cast<void* const*>(model + 0x10) == nullptr) return;
+    for (u32 i = 0; i < 2; ++i) {
+        if (*reinterpret_cast<void* const*>(model + 0x14 + i * sizeof(void*)) == nullptr) return;
+    }
+    reinterpret_cast<void (*)(void*, void*)>(kmRuntimeAddr(0x8056be20))(starAnm, drawMdl);
+}
+kmCall(0x80592e24, SetModelColorsIfReady);
+kmCall(0x80592e40, SetModelColorsIfReady);
+
 struct MenuKartArchiveLoader {
     void* vtable;
     EGG::Heap* mountHeap;

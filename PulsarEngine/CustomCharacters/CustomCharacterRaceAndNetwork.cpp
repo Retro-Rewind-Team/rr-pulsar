@@ -105,13 +105,13 @@ void CacheHoveredFromSection() {
 }
 
 u32 PreviewAuthorBmgId(u8 hud) {
-    if (hud >= LOCAL_PLAYER_COUNT || IsLocalMultiplayer()) return 0;
+    if (hud >= LOCAL_PLAYER_COUNT) return 0;
     const CharacterId character = PreviewCharacter(hud);
     return SkinAuthorBmgId(character, SelectedTable(character));
 }
 
 u32 PreviewNameBmgId(u8 hud) {
-    if (hud >= LOCAL_PLAYER_COUNT || IsLocalMultiplayer()) return 0;
+    if (hud >= LOCAL_PLAYER_COUNT) return 0;
     const CharacterId character = PreviewCharacter(hud);
     return SkinNameBmgId(character, SelectedTable(character));
 }
