@@ -88,6 +88,18 @@ void SetHintPanes(CharaName& name, ControllerType type, bool visible) {
     name.SetPaneVisibility(panes[offset + 1], true);
 }
 
+bool IsHudChoosingCharacter(const Pages::CharacterSelect& page, u8 hud) {
+    if (hud >= LOCAL_PLAYER_COUNT) return false;
+    enum { PLAYER_STATE_SIZE = 0x5c, IS_PER_CONTROL_OFFSET = 0xa4 };
+    const u8* manager = reinterpret_cast<const u8*>(&page.controlsManipulatorManager);
+    return manager[IS_PER_CONTROL_OFFSET + hud * PLAYER_STATE_SIZE] != 0;
+}
+
+bool CanToggleSkin(const Pages::CharacterSelect& page, const SectionMgr& mgr, u8 hud) {
+    const u8 count = SectionPlayerCount(&mgr);
+    return count <= 1 || IsHudChoosingCharacter(page, hud);
+}
+
 void UpdateHintPanes() {
     if (!IsCharacterSelectActive()) return;
     SectionMgr* mgr = SectionMgr::sInstance;
@@ -95,7 +107,7 @@ void UpdateHintPanes() {
     Pages::CharacterSelect* page = mgr->curSection->Get<Pages::CharacterSelect>();
     if (page == nullptr || page->names == nullptr) return;
     const u8 count = SectionPlayerCount(mgr);
-    for (u8 hud = 0; hud < count; ++hud) SetHintPanes(page->names[hud], ControllerForHud(*mgr, hud), true);
+    for (u8 hud = 0; hud < count; ++hud) SetHintPanes(page->names[hud], ControllerForHud(*mgr, hud), CanToggleSkin(*page, *mgr, hud));
 }
 
 // Map each controller type to previous/next skin buttons and consumed UI actions.
@@ -147,9 +159,15 @@ bool ProcessSkinInput() {
 
     bool changed = false;
     const u8 count = SectionPlayerCount(mgr);
+    Pages::CharacterSelect* page = mgr->curSection->Get<Pages::CharacterSelect>();
+    if (page == nullptr) return false;
     for (u8 hud = 0; hud < count; ++hud) {
         Input::RealControllerHolder* holder = mgr->pad.padInfos[hud].controllerHolder;
         if (holder == nullptr || holder->curController == nullptr) {
+            heldToggleButtons[hud] = 0;
+            continue;
+        }
+        if (!CanToggleSkin(*page, *mgr, hud)) {
             heldToggleButtons[hud] = 0;
             continue;
         }
