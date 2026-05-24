@@ -230,10 +230,22 @@ CharaName* GetAuthorNameControl(u8 hud) {
     return reinterpret_cast<CharaName*>(&authorNameControlStorage[hud][0]);
 }
 
+bool ShouldHideCharacterSelectAuthorText() {
+    return SectionPlayerCount(SectionMgr::sInstance) > 1;
+}
+
 void UpdateCharacterSelectAuthorText(Pages::CharacterSelect* page, u8 hud) {
     if (page == nullptr || page->names == nullptr) return;
     CharaName* authorControl = GetAuthorNameControl(hud);
     if (authorControl == nullptr) return;
+    if (ShouldHideCharacterSelectAuthorText()) {
+        authorControl->isHidden = true;
+        if (authorTextControl == authorControl) {
+            authorTextControl = nullptr;
+            authorTextValue = 0;
+        }
+        return;
+    }
     const u32 bmgId = PreviewAuthorBmgId(hud);
     if (authorTextControl == authorControl && authorTextValue == bmgId) return;
     if (bmgId == 0) {
