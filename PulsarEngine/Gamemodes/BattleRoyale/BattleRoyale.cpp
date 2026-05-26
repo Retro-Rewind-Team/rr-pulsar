@@ -3,6 +3,8 @@
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
+#include <MarioKartWii/Kart/KartManager.hpp>
+#include <MarioKartWii/Kart/KartMovement.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -60,8 +62,10 @@ typedef void (*CreateObjectsFn)(void* objectDirector, bool isInitial);
 typedef void (*DestroyHeapFn)(void* scene, void* heap);
 typedef void (*GeoObjectLoadFn)(void* object);
 typedef void (*KartActionHitFn)(void* action, u32 sourcePlayerObjId);
+typedef void (*KartMoveStartBlinkLocalFn)(Kart::Movement* movement);
 
 kmRuntimeUse(0x809c4748);
+kmRuntimeUse(0x805819a8);
 kmRuntimeUse(0x80869df4);
 kmRuntimeUse(0x80869fd0);
 kmRuntimeUse(0x8086a0dc);
@@ -217,11 +221,36 @@ static u8 GetStartingBalloonAddCount() {
     return count;
 }
 
-static void RemoveBalloon(void* mgr, u8 playerId) {
-    if (mgr == nullptr || playerId >= maxPlayers || GetBalloonCount(mgr, playerId) == 0) return;
+static void StartBalloonLossBlink(u8 playerId) {
+    Kart::Manager* kartMgr = Kart::Manager::sInstance;
+    if (kartMgr == nullptr || playerId >= kartMgr->playerCount) return;
 
+    Kart::Player* player = kartMgr->GetKartPlayer(playerId);
+    if (player == nullptr) return;
+
+    RacedataSettings& settings = Racedata::sInstance->racesScenario.settings;
+    const GameMode prevMode = settings.gamemode;
+    const BattleType prevBattleType = settings.battleType;
+    settings.gamemode = MODE_BATTLE;
+    settings.battleType = BATTLE_BALLOON;
+
+    KartMoveStartBlinkLocalFn startBlinkLocal = reinterpret_cast<KartMoveStartBlinkLocalFn>(kmRuntimeAddr(0x805819a8));
+    startBlinkLocal(&player->GetMovement());
+
+    settings.gamemode = prevMode;
+    settings.battleType = prevBattleType;
+}
+
+static bool RemoveBalloon(void* mgr, u8 playerId) {
+    if (mgr == nullptr || playerId >= maxPlayers || GetBalloonCount(mgr, playerId) == 0) return false;
+
+    const u8 previousBalloonCount = GetBalloonCount(mgr, playerId);
     BalloonRemoveFn remove = reinterpret_cast<BalloonRemoveFn>(kmRuntimeAddr(0x80869fd0));
     remove(mgr, playerId, 1, 1, 0, 1, 0);
+    if (GetBalloonCount(mgr, playerId) >= previousBalloonCount) return false;
+
+    StartBalloonLossBlink(playerId);
+    return true;
 }
 
 static bool IsOnline() {
@@ -325,12 +354,17 @@ static void RemovePoweredHitBalloon(u8 playerId) {
     sPoweredHitLossFrame[playerId] = GetCurrentRaceFrames();
 }
 
-static void MoveBalloon(void* mgr, u8 toPlayer, u8 fromPlayer) {
-    if (mgr == nullptr || toPlayer >= maxPlayers || fromPlayer >= maxPlayers) return;
-    if (GetBalloonCount(mgr, fromPlayer) == 0) return;
+static bool MoveBalloon(void* mgr, u8 toPlayer, u8 fromPlayer) {
+    if (mgr == nullptr || toPlayer >= maxPlayers || fromPlayer >= maxPlayers) return false;
+    if (GetBalloonCount(mgr, fromPlayer) == 0) return false;
 
+    const u8 previousBalloonCount = GetBalloonCount(mgr, fromPlayer);
     BalloonMoveFn move = reinterpret_cast<BalloonMoveFn>(kmRuntimeAddr(0x8086a0dc));
     move(mgr, toPlayer, fromPlayer, 0, 1, 0);
+    if (GetBalloonCount(mgr, fromPlayer) >= previousBalloonCount) return false;
+
+    StartBalloonLossBlink(fromPlayer);
+    return true;
 }
 
 static void ClearActiveGoldenMushroom(u8 playerId) {
