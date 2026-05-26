@@ -134,6 +134,34 @@ const char* VoiceNameForCharacter(CharacterId character) {
     return nullptr;
 }
 
+const char* VoicePostfixNameForCharacter(CharacterId character) {
+    const char* postfix = GetDefaultCharacterPostfix(character);
+    return postfix != nullptr ? postfix : VoiceNameForCharacter(character);
+}
+
+bool LooseVoiceStemExistsForCharacter(const char* postfix, const char* suffix, CharacterId character) {
+    const char* voiceName = VoiceNameForCharacter(character);
+    if (LooseVoiceStemExists(postfix, suffix, voiceName)) return true;
+
+    const char* postfixName = VoicePostfixNameForCharacter(character);
+    if (postfixName == nullptr || (voiceName != nullptr && strcmp(postfixName, voiceName) == 0)) return false;
+    return LooseVoiceStemExists(postfix, suffix, postfixName);
+}
+
+const char* ExistingLooseVoiceNameForCharacter(const char* postfix, const char* suffix, CharacterId character) {
+    if (LooseVoiceStemExists(postfix, suffix)) return nullptr;
+
+    const char* voiceName = VoiceNameForCharacter(character);
+    if (LooseVoiceStemExists(postfix, suffix, voiceName)) return voiceName;
+
+    const char* postfixName = VoicePostfixNameForCharacter(character);
+    if (postfixName != nullptr && (voiceName == nullptr || strcmp(postfixName, voiceName) != 0) &&
+        LooseVoiceStemExists(postfix, suffix, postfixName)) {
+        return postfixName;
+    }
+    return voiceName;
+}
+
 // Scan once per skin table to discover loose voice stems or aliases.
 const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table) {
     static const LooseVoiceInfo empty = {true, false, false, CHARACTER_NONE, 0};
@@ -162,12 +190,11 @@ const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table) {
             continue;
         }
         for (u32 characterIndex = 0; characterIndex < ARRAY_COUNT(voiceCharacterNames); ++characterIndex) {
-            const char* voiceName = voiceCharacterNames[characterIndex].name;
-            if (LooseVoiceStemExists(postfix, suffix, voiceName)) {
+            if (LooseVoiceStemExistsForCharacter(postfix, suffix, voiceCharacterNames[characterIndex].character)) {
                 info.hasFiles = true;
-                info.voiceCharacter = voiceCharacterNames[characterIndex].character;
+                if (!IsCharacter(info.voiceCharacter)) info.voiceCharacter = voiceCharacterNames[characterIndex].character;
                 info.suffixMask |= 1 << suffixIndex;
-                return info;
+                break;
             }
         }
     }
@@ -424,7 +451,10 @@ const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, 
         if (!VoiceBaseGroupForTable(character, table, playerGroupBaseId) || playerGroupBaseId != groupBaseId) continue;
         if (!LooseVoiceInfoHasSuffix(GetLooseVoiceInfo(character, table), groupSuffix)) continue;
         const char* postfix = GeneratedCustomPostfix(character, table);
-        if (postfix != nullptr) return postfix;
+        if (postfix != nullptr) {
+            voiceName = ExistingLooseVoiceNameForCharacter(postfix, groupSuffix, groupCharacter);
+            return postfix;
+        }
     }
     return nullptr;
 }
