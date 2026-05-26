@@ -59,6 +59,7 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
     } else {
         packetHolder.packet->battleRoyaleLossSeq = 0;
         packetHolder.packet->battleRoyaleLossPlayerId = 0xFF;
+        packetHolder.packet->battleRoyaleBalloonCounts = 0xFF;
     }
 }
 kmCall(0x80655458, BeforeRH1Send);

@@ -301,7 +301,36 @@ static void QueueBalloonMoveFromLocalLoss(u8 losingPlayerId, u8 gainingPlayerId)
     QueueBalloonEvent(static_cast<u8>(balloonMoveEventBase + losingPlayerId * maxPlayers + gainingPlayerId));
 }
 
+static u8 GetPackedLocalBalloonCounts(void* balloonMgr) {
+    if (balloonMgr == nullptr) return 0xFF;
+
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE) return 0xFF;
+
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    u8 packed = 0xFF;
+    u8 localIdx = 0;
+    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
+
+    for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && localIdx < 2; ++playerId) {
+        if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid) continue;
+
+        u8 count = GetBalloonCount(balloonMgr, playerId);
+        if (count > 5) count = 5;
+        if (localIdx == 0) {
+            packed = static_cast<u8>((packed & 0xF0) | count);
+        } else {
+            packed = static_cast<u8>((packed & 0x0F) | (count << 4));
+        }
+        ++localIdx;
+    }
+
+    return packed;
+}
+
 void WriteRH1Packet(Network::PulRH1& packet) {
+    packet.battleRoyaleBalloonCounts = GetPackedLocalBalloonCounts(GetBalloonManager());
+
     if (!ShouldApplyBattleRoyale() || sPendingBalloonEventSize == 0) {
         packet.battleRoyaleLossSeq = 0;
         packet.battleRoyaleLossPlayerId = 0xFF;
@@ -639,13 +668,6 @@ static void CreateObjectsThenCreateDeferredBalloons(void* objectDirector, bool i
 
 kmCall(0x8082a800, CreateObjectsThenCreateDeferredBalloons);
 
-static bool IsAuthoritative() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE) return true;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    return sub.localAid == sub.hostAid;
-}
-
 static void ResetState() {
     sInitialized = false;
     sLastRaceFrames = 0xffff;
@@ -800,12 +822,6 @@ static void TickLapKoPieces(LapKO::Mgr& lapKoMgr, Raceinfo& raceinfo) {
     }
 
     lapKoMgr.ProcessPendingItemReweight();
-
-    if (lapKoMgr.isHost) {
-        lapKoMgr.HostDistributeEvents(*controller, sub);
-    } else {
-        lapKoMgr.ClientConsumeHostEvents(*controller, sub);
-    }
 }
 
 static void ProcessBalloonEliminations(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
@@ -819,7 +835,7 @@ static void ProcessBalloonEliminations(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
                 const bool finalElimination = lapKoMgr.GetActiveCount() <= 2;
                 UpdateRemainingPlayerPlacements(lapKoMgr, *raceinfo, finalElimination);
             }
-            lapKoMgr.ProcessElimination(playerId, LapKO::Mgr::ELIMINATION_CAUSE_ROUND, false, true);
+            lapKoMgr.ProcessElimination(playerId, LapKO::Mgr::ELIMINATION_CAUSE_ROUND, IsOnline(), true);
         }
         sPreviousBalloonCount[playerId] = current;
     }
@@ -872,27 +888,55 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNe
         const Network::PulRH1* packet = holder->packet;
         const u8 seq = packet->battleRoyaleLossSeq;
         const u8 eventPlayerId = packet->battleRoyaleLossPlayerId;
-        if (seq == 0 || seq == sLastRemoteBalloonLossSeq[aid]) continue;
-
-        sLastRemoteBalloonLossSeq[aid] = seq;
-        if (eventPlayerId >= balloonMoveEventBase) {
-            const u8 move = eventPlayerId - balloonMoveEventBase;
-            const u8 losingPlayerId = move / maxPlayers;
-            const u8 gainingPlayerId = move % maxPlayers;
-            if (losingPlayerId >= maxPlayers || gainingPlayerId >= maxPlayers) continue;
-            if (controller.aidsBelongingToPlayerIds[losingPlayerId] != aid) continue;
-            if (HasMushroomStolenFromVictim(gainingPlayerId, losingPlayerId)) continue;
-
-            const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayerId);
-            if (previousBalloonCount <= 1) continue;
-            MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId);
-            if (GetBalloonCount(balloonMgr, losingPlayerId) < previousBalloonCount) {
-                RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
-                if (IsLocalPlayer(gainingPlayerId)) ClearActiveGoldenMushroom(gainingPlayerId);
+        if (seq != 0 && seq != sLastRemoteBalloonLossSeq[aid]) {
+            sLastRemoteBalloonLossSeq[aid] = seq;
+            if (eventPlayerId >= balloonMoveEventBase) {
+                const u8 move = eventPlayerId - balloonMoveEventBase;
+                const u8 losingPlayerId = move / maxPlayers;
+                const u8 gainingPlayerId = move % maxPlayers;
+                if (losingPlayerId < maxPlayers && gainingPlayerId < maxPlayers &&
+                    controller.aidsBelongingToPlayerIds[losingPlayerId] == aid &&
+                    !HasMushroomStolenFromVictim(gainingPlayerId, losingPlayerId)) {
+                    const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayerId);
+                    if (previousBalloonCount > 1) {
+                        MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId);
+                        if (GetBalloonCount(balloonMgr, losingPlayerId) < previousBalloonCount) {
+                            RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
+                            if (IsLocalPlayer(gainingPlayerId)) ClearActiveGoldenMushroom(gainingPlayerId);
+                        }
+                    }
+                }
+            } else if (eventPlayerId < maxPlayers && controller.aidsBelongingToPlayerIds[eventPlayerId] == aid) {
+                RemoveBalloon(balloonMgr, eventPlayerId);
             }
-        } else if (eventPlayerId < maxPlayers) {
-            if (controller.aidsBelongingToPlayerIds[eventPlayerId] != aid) continue;
-            RemoveBalloon(balloonMgr, eventPlayerId);
+        }
+
+        const u8 packedCounts = packet->battleRoyaleBalloonCounts;
+        if (packedCounts == 0xFF) continue;
+
+        u8 remotePlayerIdx = 0;
+        const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
+        for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && remotePlayerIdx < 2; ++playerId) {
+            if (controller.aidsBelongingToPlayerIds[playerId] != aid) continue;
+
+            const u8 target = (remotePlayerIdx == 0) ? static_cast<u8>(packedCounts & 0x0F) :
+                                                       static_cast<u8>((packedCounts >> 4) & 0x0F);
+            if (target <= 5) {
+                u8 current = GetBalloonCount(balloonMgr, playerId);
+                while (current < target) {
+                    AddBalloons(balloonMgr, playerId, 1);
+                    const u8 next = GetBalloonCount(balloonMgr, playerId);
+                    if (next <= current) break;
+                    current = next;
+                }
+                while (current > target) {
+                    if (!RemoveBalloon(balloonMgr, playerId)) break;
+                    const u8 next = GetBalloonCount(balloonMgr, playerId);
+                    if (next >= current) break;
+                    current = next;
+                }
+            }
+            ++remotePlayerIdx;
         }
     }
 }
@@ -948,7 +992,7 @@ static void FrameUpdate() {
     TickLocalBalloonEvents();
     UpdateMushroomStealVictimMasks();
 
-    if (!lapKoMgr->raceFinished && IsAuthoritative() && raceinfo->IsAtLeastStage(RACESTAGE_RACE)) {
+    if (!lapKoMgr->raceFinished && raceinfo->IsAtLeastStage(RACESTAGE_RACE)) {
         ProcessBalloonEliminations(*lapKoMgr, balloonMgr);
         FinishSoleActiveUnfinishedPlayer(*lapKoMgr, *raceinfo);
     }

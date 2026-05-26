@@ -60,10 +60,11 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     // Must stay at the END so we can conditionally expand packet size
     u8 battleRoyaleLossSeq;
     u8 battleRoyaleLossPlayerId;  // 0..11 loss, 0x10 + losing * 12 + gaining means move
+    u8 battleRoyaleBalloonCounts;  // low/high nibbles are local player balloon counts, up to two players per aid
 };
 
 // Size constants for conditional packet expansion
-static const u32 PulRH1BattleRoyaleSize = 2;
+static const u32 PulRH1BattleRoyaleSize = 3;
 static const u32 PulRH1LapKoSize = 16;
 static const u32 PulRH1SizeBase = sizeof(PulRH1) - PulRH1LapKoSize - PulRH1BattleRoyaleSize;
 static const u32 PulRH1SizeLapKo = PulRH1SizeBase + PulRH1LapKoSize;
