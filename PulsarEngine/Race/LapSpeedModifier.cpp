@@ -44,8 +44,8 @@ static u8 GetBattleRoyaleKoPerRace(const System* system) {
 }
 
 static u8 GetBattleRoyaleLapCount(u8 baseLapCount, u8 koPerRace) {
-    if (koPerRace == 3) return static_cast<u8>((baseLapCount * 3 + 1) / 2);
-    if (koPerRace == 4) return static_cast<u8>(baseLapCount * 2);
+    if (koPerRace == 3 && baseLapCount > 1) return static_cast<u8>((baseLapCount * 3 + 1) / 2);
+    if (koPerRace == 4 && baseLapCount > 1) return static_cast<u8>(baseLapCount * 2);
     return baseLapCount;
 }
 

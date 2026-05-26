@@ -575,7 +575,7 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 610);
+kmWrite32(0x800017D4, 6101);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";
