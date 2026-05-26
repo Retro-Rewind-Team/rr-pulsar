@@ -888,6 +888,7 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNe
             MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId);
             if (GetBalloonCount(balloonMgr, losingPlayerId) < previousBalloonCount) {
                 RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
+                if (IsLocalPlayer(gainingPlayerId)) ClearActiveGoldenMushroom(gainingPlayerId);
             }
         } else if (eventPlayerId < maxPlayers) {
             if (controller.aidsBelongingToPlayerIds[eventPlayerId] != aid) continue;
