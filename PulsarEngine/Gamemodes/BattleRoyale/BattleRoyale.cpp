@@ -32,6 +32,8 @@ static u8 sPreviousBalloonCount[maxPlayers];
 static bool sWasActive[maxPlayers];
 static u8 sEliminationPlacementOrder[maxPlayers];
 static u8 sEliminationPlacementCount = 0;
+static u8 sFinishPlacementOrder[maxPlayers];
+static u8 sFinishPlacementCount = 0;
 static u8 sLocalBalloonLossSeq = 0;
 static const u8 pendingBalloonEventCount = 4;
 static const u8 balloonMoveEventBase = 0x10;
@@ -210,7 +212,7 @@ static u8 GetKoPerRaceSetting() {
         koPerRace = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
     }
 
-    if (koPerRace < 1) return 1;
+    if (koPerRace < 2) return 1;
     if (koPerRace > 4) return 4;
     return koPerRace;
 }
@@ -679,6 +681,7 @@ static void ResetState() {
         sPreviousBalloonCount[playerId] = 0;
         sWasActive[playerId] = false;
         sEliminationPlacementOrder[playerId] = 0xff;
+        sFinishPlacementOrder[playerId] = 0xff;
         sLastRemoteBalloonLossSeq[playerId] = 0;
         sMushroomStealVictimMask[playerId] = 0;
         for (u8 otherPlayerId = 0; otherPlayerId < maxPlayers; ++otherPlayerId) {
@@ -687,6 +690,7 @@ static void ResetState() {
     }
     ClearLoadedBalloonModels();
     sEliminationPlacementCount = 0;
+    sFinishPlacementCount = 0;
     sPendingBalloonEventReadIdx = 0;
     sPendingBalloonEventWriteIdx = 0;
     sPendingBalloonEventSize = 0;
@@ -700,10 +704,12 @@ static void ResetState() {
 static void InitForRace(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
     lapKoMgr.InitForRace();
     sEliminationPlacementCount = 0;
+    sFinishPlacementCount = 0;
 
     for (u8 playerId = 0; playerId < maxPlayers; ++playerId) {
         sPoweredHitLossFrame[playerId] = 0xffff;
         sEliminationPlacementOrder[playerId] = 0xff;
+        sFinishPlacementOrder[playerId] = 0xff;
         sLastRemoteBalloonLossSeq[playerId] = 0;
     }
 
@@ -727,13 +733,32 @@ static bool HasPlacementRecord(u8 playerId) {
     return false;
 }
 
+static bool HasFinishRecord(u8 playerId) {
+    for (u8 i = 0; i < sFinishPlacementCount; ++i) {
+        if (sFinishPlacementOrder[i] == playerId) return true;
+    }
+    return false;
+}
+
+static bool HasOrderEntry(const u8* order, u8 count, u8 playerId) {
+    for (u8 i = 0; i < count; ++i) {
+        if (order[i] == playerId) return true;
+    }
+    return false;
+}
+
 static void RecordPlacementElimination(u8 playerId) {
     if (playerId >= maxPlayers || HasPlacementRecord(playerId) || sEliminationPlacementCount >= maxPlayers) return;
     sEliminationPlacementOrder[sEliminationPlacementCount++] = playerId;
 }
 
+static void RecordFinishPlacement(u8 playerId) {
+    if (playerId >= maxPlayers || HasFinishRecord(playerId) || sFinishPlacementCount >= maxPlayers) return;
+    sFinishPlacementOrder[sFinishPlacementCount++] = playerId;
+}
+
 static bool IsActiveForPlacement(const LapKO::Mgr& lapKoMgr, u8 playerId) {
-    return lapKoMgr.IsActive(playerId) && !HasPlacementRecord(playerId);
+    return lapKoMgr.IsActive(playerId) && !HasPlacementRecord(playerId) && !HasFinishRecord(playerId);
 }
 
 static u8 GetSoleActivePlayer(const LapKO::Mgr& lapKoMgr) {
@@ -761,41 +786,50 @@ static void RecordEliminatedPlacements(const LapKO::Mgr& lapKoMgr) {
     }
 }
 
+static void RecordFinishedPlacements(const LapKO::Mgr& lapKoMgr, const Raceinfo& raceinfo) {
+    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
+    for (u8 pos = 0; pos < playerCount && pos < maxPlayers; ++pos) {
+        const u8 playerId = raceinfo.playerIdInEachPosition[pos];
+        if (playerId >= playerCount || playerId >= maxPlayers) continue;
+        if (!lapKoMgr.IsActive(playerId) || !IsPlayerFinished(raceinfo, playerId)) continue;
+        RecordFinishPlacement(playerId);
+    }
+}
+
 static void UpdateRemainingPlayerPlacements(LapKO::Mgr& lapKoMgr, Raceinfo& raceinfo, bool updateRaceOrder) {
     if (raceinfo.playerIdInEachPosition == nullptr) return;
 
+    RecordFinishedPlacements(lapKoMgr, raceinfo);
     RecordEliminatedPlacements(lapKoMgr);
 
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
     u8 order[maxPlayers];
     u8 count = 0;
 
+    for (u8 i = 0; i < sFinishPlacementCount && count < maxPlayers; ++i) {
+        const u8 playerId = sFinishPlacementOrder[i];
+        if (playerId < playerCount && !HasOrderEntry(order, count, playerId)) order[count++] = playerId;
+    }
+
     const u8 soleActivePlayer = GetSoleActivePlayer(lapKoMgr);
     if (soleActivePlayer < playerCount && !HasPlacementRecord(soleActivePlayer)) {
-        order[count++] = soleActivePlayer;
+        if (!HasOrderEntry(order, count, soleActivePlayer)) order[count++] = soleActivePlayer;
     }
 
     for (u8 pos = 0; pos < playerCount && pos < maxPlayers; ++pos) {
         const u8 playerId = raceinfo.playerIdInEachPosition[pos];
         if (playerId >= maxPlayers || !IsActiveForPlacement(lapKoMgr, playerId)) continue;
         if (playerId == soleActivePlayer) continue;
-        order[count++] = playerId;
+        if (!HasOrderEntry(order, count, playerId)) order[count++] = playerId;
     }
 
     for (s8 idx = static_cast<s8>(sEliminationPlacementCount) - 1; idx >= 0 && count < maxPlayers; --idx) {
         const u8 playerId = sEliminationPlacementOrder[idx];
-        if (playerId < playerCount) order[count++] = playerId;
+        if (playerId < playerCount && !HasOrderEntry(order, count, playerId)) order[count++] = playerId;
     }
 
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && count < playerCount; ++playerId) {
-        bool alreadyAdded = false;
-        for (u8 i = 0; i < count; ++i) {
-            if (order[i] == playerId) {
-                alreadyAdded = true;
-                break;
-            }
-        }
-        if (!alreadyAdded) order[count++] = playerId;
+        if (!HasOrderEntry(order, count, playerId)) order[count++] = playerId;
     }
 
     for (u8 pos = 0; pos < count && pos < playerCount; ++pos) {
