@@ -18,7 +18,6 @@ namespace BattleRoyale {
 static const u8 maxPlayers = 12;
 static const u8 maxBattleRoyaleBalloons = maxPlayers * 5;
 static const u8 preloadedBalloonsPerPlayer = 4;
-static const u8 startingBalloonCount = 1;
 static const u32 balloonPoolOffset = 0x4;
 static const u32 balloonPoolEntrySize = 0x8;
 static const u32 balloonPlayerArrayOffset = 0x3c4;
@@ -206,21 +205,19 @@ static void AddBalloons(void* mgr, u8 playerId, u8 count) {
 static u8 GetKoPerRaceSetting() {
     u8 koPerRace = 1;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE) {
-        koPerRace = System::sInstance->netMgr.battleRoyaleKoPerRace - 1;
+    if (controller->roomType != RKNet::ROOMTYPE_NONE) {
+        koPerRace = System::sInstance->netMgr.battleRoyaleKoPerRace;
     } else {
         koPerRace = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
     }
 
-    if (koPerRace < 2) return 1;
+    if (koPerRace < 1) return 1;
     if (koPerRace > 4) return 4;
     return koPerRace;
 }
 
 static u8 GetStartingBalloonAddCount() {
-    u8 count = GetKoPerRaceSetting();
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    return count;
+    return GetKoPerRaceSetting();
 }
 
 static void StartBalloonLossBlink(u8 playerId) {
@@ -410,8 +407,12 @@ static void ClearActiveGoldenMushroom(u8 playerId) {
 
 static void AddStartingBalloons(void* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval) {
     if (ShouldApplyBattleRoyale()) {
+        const u8 targetCount = GetStartingBalloonAddCount();
+        const u8 currentCount = GetBalloonCount(mgr, static_cast<u8>(playerId));
+        if (currentCount >= targetCount) return;
+
         AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
-                                GetStartingBalloonAddCount(), interval);
+                                static_cast<u8>(targetCount - currentCount), interval);
         return;
     }
 
@@ -714,10 +715,11 @@ static void InitForRace(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
     }
 
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
+    const u8 targetCount = GetStartingBalloonAddCount();
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers; ++playerId) {
         const u8 current = GetBalloonCount(balloonMgr, playerId);
-        if (current < startingBalloonCount) {
-            AddBalloons(balloonMgr, playerId, static_cast<u8>(startingBalloonCount - current));
+        if (current < targetCount) {
+            AddBalloons(balloonMgr, playerId, static_cast<u8>(targetCount - current));
         }
         sPreviousBalloonCount[playerId] = GetBalloonCount(balloonMgr, playerId);
         sWasActive[playerId] = lapKoMgr.IsActive(playerId);

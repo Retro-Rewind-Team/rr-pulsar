@@ -224,7 +224,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                           itemModeNone << PULSAR_ITEMMODENONE;
 
         destPacket->customItemsBitfield = settings.GetCustomItems();
-        destPacket->battleRoyaleKoPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
+        destPacket->battleRoyaleKoPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE);
 
         u8 raceCount;
         if (koSetting == KOSETTING_ENABLED)
