@@ -49,9 +49,6 @@ static bool sLoadedBalloonModels[maxBattleRoyaleBalloons];
 static u16 sMushroomStealVictimMask[maxPlayers];
 static u8 sMushroomStealVictimTimers[maxPlayers][maxPlayers];
 
-bool ShouldApplyBattleRoyale();
-static u8 GetStartingBalloonAddCount();
-
 typedef void (*BalloonAddFn)(void* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval);
 typedef void (*BalloonRemoveFn)(void* mgr, u32 playerId, u32 visible, u32 sound, int delay, u32 count, int interval);
 typedef void (*BalloonMoveFn)(void* mgr, u32 toPlayer, u32 fromPlayer, int delay, u32 count, int interval);
@@ -410,12 +407,14 @@ static void ClearActiveGoldenMushroom(u8 playerId) {
 
 static void AddStartingBalloons(void* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval) {
     if (ShouldApplyBattleRoyale()) {
-        const u8 targetCount = GetStartingBalloonAddCount();
-        const u8 currentCount = GetBalloonCount(mgr, static_cast<u8>(playerId));
-        if (currentCount >= targetCount) return;
-
-        AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
-                                static_cast<u8>(targetCount - currentCount), interval);
+        if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) {
+            AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
+                                    System::sInstance->netMgr.battleRoyaleKoPerRace, interval);
+        } else {
+            AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
+                                    Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1,
+                                    interval);
+        }
         return;
     }
 
@@ -958,8 +957,7 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNe
         for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && remotePlayerIdx < 2; ++playerId) {
             if (controller.aidsBelongingToPlayerIds[playerId] != aid) continue;
 
-            const u8 target = (remotePlayerIdx == 0) ? static_cast<u8>(packedCounts & 0x0F) :
-                                                       static_cast<u8>((packedCounts >> 4) & 0x0F);
+            const u8 target = (remotePlayerIdx == 0) ? static_cast<u8>(packedCounts & 0x0F) : static_cast<u8>((packedCounts >> 4) & 0x0F);
             if (target <= 5) {
                 u8 current = GetBalloonCount(balloonMgr, playerId);
                 while (current < target) {
