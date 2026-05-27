@@ -101,6 +101,15 @@ static bool IsLocalPlayer(s32 idx) {
     return player->IsLocal();
 }
 
+static u8 GetRandomPlayerId(s32 fallbackPlayerId) {
+    Kart::Manager* km = Kart::Manager::sInstance;
+    RaceTimerMgr* tm = nullptr;
+    if (Raceinfo::sInstance) tm = Raceinfo::sInstance->timerMgr;
+    if (!km || !tm || km->playerCount <= 0) return static_cast<u8>(fallbackPlayerId);
+
+    return static_cast<u8>(tm->random.NextLimited(km->playerCount));
+}
+
 static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff, bool isStorm) {
     Kart::Manager* km = Kart::Manager::sInstance;
     Item::Manager* im = Item::Manager::sInstance;
@@ -120,13 +129,14 @@ static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff,
         pos.z + fOff * mtx.mtx[2][2] + rOff * mtx.mtx[2][0]);
 
     Item::Obj* obj = nullptr;
-    holder->Spawn(1u, &obj, static_cast<u8>(playerIdx), spawnPos, false);
+    const u8 ownerPlayerId = GetRandomPlayerId(playerIdx);
+    holder->Spawn(1u, &obj, ownerPlayerId, spawnPos, false);
     if (!obj) return;
 
     if (!obj->entity) LoadEntity__Q24Item3ObjFb(obj, false);
 
     obj->bitfield78 &= ~0x20000;
-    obj->playerUsedItemId = 0;
+    obj->playerUsedItemId = ownerPlayerId;
     obj->bitfield7c &= ~0x20;
 
     SpawnItemInternal__Q24Item9ObjHolderFPQ24Item3Obj(holder, obj);
