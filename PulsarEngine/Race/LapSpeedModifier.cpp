@@ -35,12 +35,12 @@ u8 GetLapKOTargetCount(const System* system, const Racedata* racedata, u8 fallba
 }
 
 static u8 GetBattleRoyaleKoPerRace(const System* system) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE) {
-        return system != nullptr ? system->netMgr.battleRoyaleKoPerRace : 1;
+    if (system != nullptr) {
+        if (system->IsContext(PULSAR_KOPERRACE_4)) return 4;
+        if (system->IsContext(PULSAR_KOPERRACE_3)) return 3;
+        if (system->IsContext(PULSAR_KOPERRACE_2)) return 2;
     }
-    const Settings::Mgr& settings = Settings::Mgr::Get();
-    return static_cast<u8>(settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1);
+    return 1;
 }
 
 static u8 GetBattleRoyaleLapCount(u8 baseLapCount, u8 koPerRace) {

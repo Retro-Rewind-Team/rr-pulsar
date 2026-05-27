@@ -200,17 +200,13 @@ static void AddBalloons(void* mgr, u8 playerId, u8 count) {
 }
 
 static u8 GetKoPerRaceSetting() {
-    u8 koPerRace = 1;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller->roomType != RKNet::ROOMTYPE_NONE) {
-        koPerRace = System::sInstance->netMgr.battleRoyaleKoPerRace;
-    } else {
-        koPerRace = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
+    const System* system = System::sInstance;
+    if (system != nullptr) {
+        if (system->IsContext(PULSAR_KOPERRACE_4)) return 4;
+        if (system->IsContext(PULSAR_KOPERRACE_3)) return 3;
+        if (system->IsContext(PULSAR_KOPERRACE_2)) return 2;
     }
-
-    if (koPerRace < 1) return 1;
-    if (koPerRace > 4) return 4;
-    return koPerRace;
+    return 1;
 }
 
 static u8 GetStartingBalloonAddCount() {
@@ -407,14 +403,12 @@ static void ClearActiveGoldenMushroom(u8 playerId) {
 
 static void AddStartingBalloons(void* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval) {
     if (ShouldApplyBattleRoyale()) {
-        if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) {
-            AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
-                                    System::sInstance->netMgr.battleRoyaleKoPerRace, interval);
-        } else {
-            AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
-                                    Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1,
-                                    interval);
-        }
+        const u8 current = GetBalloonCount(mgr, static_cast<u8>(playerId));
+        const u8 target = GetKoPerRaceSetting();
+        if (current >= target) return;
+
+        AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
+                                static_cast<u8>(target - current), interval);
         return;
     }
 

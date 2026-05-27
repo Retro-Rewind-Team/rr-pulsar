@@ -17,7 +17,7 @@ enum DenyType {
 
 class Mgr {  // Manages network related stuff within Pulsar
    public:
-    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), battleRoyaleKoPerRace(1), region(0x0A), customItemsBitfield(0x7FFFF) {}
+    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A), customItemsBitfield(0x7FFFF) {}
     u32 hostContext;
     u32 hostContext2;
     u32 customItemsBitfield;
@@ -28,7 +28,6 @@ class Mgr {  // Manages network related stuff within Pulsar
     u8 curBlockingArrayIdx;
     u8 racesPerGP;
     bool lastGroupedTrackPlayed;  // Whether the most recent blocked track was a grouped track
-    u8 battleRoyaleKoPerRace;
     u32 region;
     PulsarId* lastTracks;
 };

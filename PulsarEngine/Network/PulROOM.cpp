@@ -22,7 +22,6 @@ static void ConvertROOMPacketToData(const PulROOM& packet) {
     system->netMgr.hostContext2 = packet.hostSystemContext2;
     system->netMgr.customItemsBitfield = packet.customItemsBitfield;
     system->netMgr.racesPerGP = packet.raceCount;
-    system->netMgr.battleRoyaleKoPerRace = packet.battleRoyaleKoPerRace;
 }
 
 // Sync blocked tracks from host packet to local netMgr
@@ -187,6 +186,10 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         const u8 isStartItemRain = (originalMessage == 9);
         const u8 Ranking = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_RANKINGS) == RANKINGS_ENABLED;
         const u8 BattleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_BATTLEROYALE;
+        const u8 koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE);
+        const u8 koPerRace2 = koPerRace == KOSETTING_KOPERRACE_2;
+        const u8 koPerRace3 = koPerRace == KOSETTING_KOPERRACE_3;
+        const u8 koPerRace4 = koPerRace == KOSETTING_KOPERRACE_4;
 
         if (extendedTeams) {
             koSetting = KOSETTING_DISABLED;
@@ -221,10 +224,12 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                           allItemsCanLand << PULSAR_ALLITEMSCANLAND |
                                           settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_HOSTWINS) << PULSAR_HAW | itemBoxRepsawnFast << PULSAR_ITEMBOXRESPAWN |
                                           Ranking << PULSAR_RANKING | vr << PULSAR_VR | BattleRoyale << PULSAR_MODE_BATTLEROYALE |
-                                          itemModeNone << PULSAR_ITEMMODENONE;
+                                          itemModeNone << PULSAR_ITEMMODENONE |
+                                          koPerRace2 << PULSAR_KOPERRACE_2 |
+                                          koPerRace3 << PULSAR_KOPERRACE_3 |
+                                          koPerRace4 << PULSAR_KOPERRACE_4;
 
         destPacket->customItemsBitfield = settings.GetCustomItems();
-        destPacket->battleRoyaleKoPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE);
 
         u8 raceCount;
         if (koSetting == KOSETTING_ENABLED)

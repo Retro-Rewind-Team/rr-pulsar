@@ -85,7 +85,6 @@ struct PulROOM : public RKNet::ROOMPacket {
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks (up to MAX_TRACK_BLOCKING)
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
-    u8 battleRoyaleKoPerRace;
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 
     // Anti-cheat verification tag - proves sender has correct encryption key

@@ -88,7 +88,6 @@ static bool ConvertFriendRoomStateToRegional() {
     netMgr.deniesCount = 0;
     netMgr.ownStatusData = 0;
     netMgr.racesPerGP = 3;
-    netMgr.battleRoyaleKoPerRace = 1;
     netMgr.curBlockingArrayIdx = 0;
     netMgr.region = REGIONID;
 
