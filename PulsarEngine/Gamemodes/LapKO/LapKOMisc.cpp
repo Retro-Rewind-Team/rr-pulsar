@@ -174,7 +174,7 @@ kmCall(0x807ba160, DecideItemHook);
 extern "C" void LapCounterColorFixHelper(CtrlRaceBase* self) {
     System* system = System::sInstance;
     if (self == nullptr) return;
-    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return;
+    if (system == nullptr || (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE))) return;
 
     const char* leftPane = nullptr;
     if (self->layout.GetPaneByName("lap_lefft") != nullptr) {
