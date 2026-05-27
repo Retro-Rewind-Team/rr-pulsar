@@ -221,6 +221,9 @@ static u8 GetStartingBalloonAddCount() {
 }
 
 static void StartBalloonLossBlink(u8 playerId) {
+    Raceinfo* raceinfo = Raceinfo::sInstance;
+    if (raceinfo == nullptr || !raceinfo->IsAtLeastStage(RACESTAGE_RACE)) return;
+
     Kart::Manager* kartMgr = Kart::Manager::sInstance;
     if (kartMgr == nullptr || playerId >= kartMgr->playerCount) return;
 
