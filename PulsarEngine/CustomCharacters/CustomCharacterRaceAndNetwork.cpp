@@ -21,7 +21,7 @@ const char** BeginNameSwap(u8 playerId, CharacterId character, const char*& oldN
     oldName = nullptr;
     if (entry == nullptr) return nullptr;
     oldName = *entry;
-    const char* name = SkinName(character, RaceSkinTable(playerId, character));
+    const char* name = GeneratedCustomPostfix(character, RaceSkinTable(playerId, character));
     if (name == nullptr) name = GetDefaultCharacterPostfix(character);
     *entry = name;
     return entry;

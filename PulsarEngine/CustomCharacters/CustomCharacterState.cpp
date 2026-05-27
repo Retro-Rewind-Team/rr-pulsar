@@ -408,7 +408,8 @@ const char* DriverBRRESName(CharacterId character, u8 table) {
 // Apply selected skin names through the vanilla global character name table.
 void ApplyName(CharacterId character, u8 table) {
     const char** entry = CharacterNameEntry(character);
-    const char* name = SkinName(character, table);
+    const char* name = GeneratedCustomPostfix(character, table);
+    if (name == nullptr) name = GetDefaultCharacterPostfix(character);
     if (entry != nullptr && name != nullptr) *entry = name;
 }
 
