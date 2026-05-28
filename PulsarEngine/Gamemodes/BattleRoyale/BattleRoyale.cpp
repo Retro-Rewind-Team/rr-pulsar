@@ -443,6 +443,9 @@ static bool IsPlayerFinished(const Raceinfo& raceinfo, u8 playerId) {
 }
 
 static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) {
+    register u8* itemObj;
+    asm { mr itemObj, r31 }
+
     if (!ShouldApplyBattleRoyale()) {
         CallRaceModeHit(raceMode, 0x2c, hitterPlayerId, hittedPlayerId);
         return;
@@ -452,6 +455,8 @@ static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) 
     if (HasPoweredHitLossThisFrame(static_cast<u8>(hittedPlayerId))) return;
     if (IsOnline() && !IsLocalPlayer(static_cast<u8>(hittedPlayerId))) return;
     if (IsPlayerFinished(*Raceinfo::sInstance, static_cast<u8>(hittedPlayerId))) return;
+    if (*reinterpret_cast<ItemObjId*>(itemObj + 0x4) == OBJ_BLUE_SHELL &&
+        GetBalloonCount(GetBalloonManager(), static_cast<u8>(hittedPlayerId)) == 1) return;
     RemoveBalloon(GetBalloonManager(), static_cast<u8>(hittedPlayerId));
     QueueLocalBalloonLoss(static_cast<u8>(hittedPlayerId));
 }
