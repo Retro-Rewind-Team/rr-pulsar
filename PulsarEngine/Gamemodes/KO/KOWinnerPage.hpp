@@ -15,7 +15,7 @@ class WinnerPage : public Page {
     };
     static const UI::PulPageId id = UI::PULPAGE_KOWINNER;
     WinnerPage();
-    PageId GetNextPage() const override { return PAGE_NONE; /*PAGE_WWRACEEND_WAIT;*/ }
+    PageId GetNextPage() const override { return PAGE_NONE; }
     void OnInit() override;
     void OnDeactivate() override;
     void AfterControlUpdate();  // auto end via duration

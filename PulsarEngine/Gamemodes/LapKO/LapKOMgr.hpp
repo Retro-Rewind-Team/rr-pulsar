@@ -22,13 +22,11 @@ class Mgr {
     void InitForRace();
     void ResetRound();
     void OnLapComplete(u8 playerId, RaceinfoPlayer& player);
-    void OnPlayerFinished(u8 playerId);
-    void OnPlayerDisconnected(u8 playerId);
     void UpdateFrame();
     void ApplyRemoteEvent(u8 seq, u8 eliminatedId, u8 roundIndex, u8 activeCount);
     void ApplyRemoteBatch(u8 seq, u8 roundIndex, u8 activeCount, const u8* elimIds, u8 elimCount, bool noRoundAdvance);
 
-    bool IsActive(u8 playerId) const { return this->active[playerId]; }
+    bool IsActive(u8 playerId) const { return playerId < 12 && this->active[playerId]; }
     u8 GetActiveCount() const { return this->activeCount; }
     u8 GetRoundIndex() const { return this->roundIndex; }
     u8 GetCurrentRoundEliminationCount() const;
@@ -54,7 +52,6 @@ class Mgr {
     u8 GetBaseEliminationCountForCurrentRound(u8 usualLapCount) const;
     u8 GetRemainingEliminationsForCurrentRound(u8 usualLapCount) const;
     void ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance);
-    void StartNewRound();
     void TryResolveRound();
     void ProcessElimination(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance = false);
     bool EnterSpectateIfLocal(u8 playerId);
@@ -63,7 +60,6 @@ class Mgr {
     void BroadcastEvent(u8 playerId, u8 concludedRound);
     void BroadcastBatch(const u8* elimIds, u8 elimCount, u8 concludedRound);
     void UpdateActivePlayerCounts();
-    void LogState(const char* tag, u8 value) const;
     void RecordEliminationForDisplay(u8 playerId, u8 concludedRound);
     void ResetEliminationDisplay();
     bool IsFriendRoomOnline() const;
@@ -108,7 +104,6 @@ class Mgr {
     u8 pendingActiveCount;
     bool hasPendingEvent;
     bool pendingNoRoundAdvance;
-    // Batch pending (friend rooms)
     u8 pendingBatchCount;
     u8 pendingBatch[12];
     bool isSpectating;
@@ -121,13 +116,10 @@ class Mgr {
     bool raceFinished;
     bool raceInitDone;
     u16 lastRaceFrames;
-    // Increase to 4 to allow elimination display of up to four names
     u8 recentEliminations[4];
     u8 recentEliminationCount;
     u8 recentEliminationRound;
     u16 eliminationDisplayTimer;
-    // Frames to wait before reweighting item probabilities after an active
-    // player count change. Initialized to 0.
     u8 pendingItemReweightFrames;
     u16 disconnectGraceFrames;
 };

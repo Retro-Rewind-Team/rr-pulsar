@@ -289,24 +289,6 @@ static void ResetLooseBRSARExternalBuffers() {
     }
 }
 
-static EGG::Heap* GetPersistentSoundOverrideHeap(u32 requiredSize) {
-    EGG::Heap* candidates[3];
-    candidates[0] = RKSystem::mInstance.EGGRootMEM2;
-    candidates[1] = RKSystem::mInstance.EGGRootMEM1;
-    EGG::Heap* overridesHeap = nullptr;
-    if (Pulsar::System::sInstance != nullptr) {
-        overridesHeap = static_cast<EGG::Heap*>(Pulsar::System::sInstance->heap);
-    }
-    candidates[2] = overridesHeap;
-
-    for (u32 index = 0; index < 3; ++index) {
-        EGG::Heap* heap = candidates[index];
-        if (heap == nullptr) continue;
-        if (heap->getAllocatableSize(0x20) >= requiredSize) return heap;
-    }
-    return nullptr;
-}
-
 static void* AllocAudioHeapOverrideBuffer(u32 allocSize) {
     EGG::ExpAudioMgr* audioMgr = RKSystem::mInstance.audioManager;
     if (audioMgr == nullptr) return nullptr;

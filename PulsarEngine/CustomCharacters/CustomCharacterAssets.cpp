@@ -27,7 +27,7 @@ bool BindRawBRRES(nw4r::g3d::ResFile& resFile, const char* path) {
     return ModelDirector::BindBRRESImpl(resFile, path, nullptr, 0);
 }
 
-// Load a loose BRRES once, then bind the cached raw file into each model holder.
+// Loose BRRES files are loaded once, then bound into each model holder.
 bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
     if (cache.failed) return false;
     if (cache.file == nullptr) {
@@ -135,11 +135,8 @@ bool TryLoadCustomMenuBRRES(void* holder, CharacterId character) {
 bool TryLoadLooseMiiCBRRES(void* holder, CharacterId character) {
     const u8 idx = MiiCIndex(character);
     if (idx >= MII_C_COUNT) return false;
-    const char* name = GetDefaultCharacterPostfix(character);
-    if (name == nullptr) return false;
     char path[0x60];
-    const int written = snprintf(path, sizeof(path), "/Scene/Model/Driver/%s.brres", name);
-    if (written <= 0 || static_cast<u32>(written) >= sizeof(path)) return false;
+    if (!BuildDriverPath(character, TABLE_DEFAULT, path, sizeof(path))) return false;
     return LoadRawBRRES(holder, looseMiiCBRRES[idx], path);
 }
 
@@ -163,11 +160,8 @@ bool TryLoadLooseMiiCBRRESIntoHeap(void* holder, CharacterId character, EGG::Exp
     fileExists = false;
     const u8 idx = MiiCIndex(character);
     if (idx >= MII_C_COUNT) return false;
-    const char* name = GetDefaultCharacterPostfix(character);
-    if (name == nullptr) return false;
     char path[0x60];
-    const int written = snprintf(path, sizeof(path), "/Scene/Model/Driver/%s.brres", name);
-    if (written <= 0 || static_cast<u32>(written) >= sizeof(path)) return false;
+    if (!BuildDriverPath(character, TABLE_DEFAULT, path, sizeof(path))) return false;
     u32 fileSize = 0;
     if (!DiscFileSize(path, fileSize)) {
         looseMiiCBRRES[idx].failed = true;
@@ -323,7 +317,7 @@ struct MenuKartArchiveLoader {
 bool RequestLoadKartArchivesImmediate(ArchiveMgr* archiveMgr, u8 hudSlotId, CharacterId character, u32 gamemode) {
     if (archiveMgr == nullptr || hudSlotId >= LOCAL_PLAYER_COUNT) return false;
     MenuKartArchiveLoader* loader = reinterpret_cast<MenuKartArchiveLoader*>(&archiveMgr->allkartsModelsLoaders[hudSlotId]);
-    if (loader->mountHeap == nullptr || loader->state == (0 || 2 || 4)) return false;
+    if (loader->mountHeap == nullptr || loader->state == 1) return false;
     loader->character = character;
     loader->gamemode = gamemode;
     loader->state = 1;

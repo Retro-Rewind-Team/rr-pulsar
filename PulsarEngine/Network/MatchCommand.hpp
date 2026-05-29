@@ -26,13 +26,13 @@ struct ResvInfo {
     u8 padding[2];
     UserInfo userInfo;
 };
-// size_assert(ResvInfo, 0x24);
+static_assert(sizeof(ResvInfo) == 0x24, "ResvInfo size");
 
 struct ResvPacket : DWC::Reservation {
     ResvPacket(const DWC::Reservation& src);
     ResvInfo pulInfo;
 };
-// size_assert(ResvPacket, 0x48);
+static_assert(sizeof(ResvPacket) == 0x48, "ResvPacket size");
 
 }  // namespace Network
 }  // namespace Pulsar

@@ -8,7 +8,6 @@
 
 namespace Pulsar {
 
-//todo: look into if this can be higher, havent done any research yet
 const int maxFileCount = 100;
 typedef char FileName[255];
 
@@ -62,7 +61,6 @@ class IO {
 
     const int GetFileCount() const { return this->fileCount; }
     const char* GetFolderName() const { return this->folderName; };
-    // void RequestCreateFolder(const char* path); //up to 2 simultaneous
     virtual void CloseFolder() = 0;
     void PrintFullFilePath(char* path, const char* fileName) const {
         snprintf(path, IOS::ipcMaxPath, "%s/%s", &this->folderName, fileName);

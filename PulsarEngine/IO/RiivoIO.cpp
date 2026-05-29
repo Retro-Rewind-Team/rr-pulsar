@@ -75,14 +75,13 @@ void RiivoIO::ReadFolder(const char* path) {
             request[2].size = sizeof(RiivoStats);
             s32 retIOCtlv = IOS::IOCtlv(riivo_fd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_NEXTDIR), 1, 2, request);
             if (retIOCtlv != 0) break;
-            if ((stats.mode & S_IFDIR) == S_IFDIR) continue;  // if the next entry is a directory, skip
+            if ((stats.mode & S_IFDIR) == S_IFDIR) continue;
 
-            // snprintf(tmpArray[count], IPCMAXPATH, "/mnt/identifier/%016llX", stats.identifier);
-            strncpy(tmpArray[count], fileName, IOS::ipcMaxPath);
+            snprintf(tmpArray[count], IOS::ipcMaxPath, "%s", fileName);
             count++;
         }
 
-        IOS::IPCPath* namesArray = new (System::sInstance->heap) IOS::IPCPath[count];  // here
+        IOS::IPCPath* namesArray = new (System::sInstance->heap) IOS::IPCPath[count];
         memcpy(namesArray, tmpArray, sizeof(IOS::IPCPath) * count);
         this->fileCount = count;
         this->fileNames = namesArray;

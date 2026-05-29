@@ -52,8 +52,7 @@ kmCall(0x805dddb0, PrepareOnlinePages);
 // If Extended Teams is enabled, it will send a "Regular VS" message instead of a "Team VS" message
 // Because I only patched the regular VS UIs for this mode
 //
-// The function looks odd because the compiler kept thinking that the packet was a pointer if you try
-// to replace the "u32 pkt" by a "RKNet::ROOMPacket pkt", might be a skill issue on my own though
+// Keep pkt as a raw word here; this hook works on the packed ROOM message value.
 void SetBroadcastROOMPacket(RKNet::ROOMHandler* _this, u32 pkt) {
     u8 messageType = (pkt >> 24) & 0xFF;
     u16 message = (pkt >> 8) & 0xFFFF;
@@ -78,7 +77,6 @@ void SetBroadcastROOMPacket(RKNet::ROOMHandler* _this, u32 pkt) {
     friendRoomBackPage->networkManager.lastSentPacket = *(RKNet::ROOMPacket*)&pkt;
 }
 
-// kmWriteNop(0x805dce38);  // friendRoomBackPage->lastSentPacket = packet;
 kmCall(0x805dce34, SetBroadcastROOMPacket);
 
 void RecvRoomPacket(UnkFriendRoomManager* _this, u8 playerId, u8 myAid, RKNet::ROOMPacket& packet) {
@@ -88,7 +86,6 @@ void RecvRoomPacket(UnkFriendRoomManager* _this, u8 playerId, u8 myAid, RKNet::R
 
     _this->HandleROOMPacket(playerId, myAid, packet);
 }
-// kmCall(0x805db0f8, RecvRoomPacket);
 kmCall(0x805db1dc, RecvRoomPacket);
 
 void VotingVRPage_SetControlState(Pages::VR* _this, u32 idx, u32 playerId, Team team, u32 type, bool isLocalPlayer) {
@@ -136,7 +133,6 @@ void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter* _this, const V
     RacedataScenario& menuScenario = Racedata::sInstance->menusScenario;
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (ExtendedTeamManager::IsActivated()) {
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
         ExtendedTeamID selfTeams[2] = {TEAM_COUNT, TEAM_COUNT};
         for (int i = 0; i < menuScenario.playerCount; i++) {
             if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 0) {
@@ -156,7 +152,6 @@ void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter* _this, const V
 
         ExtendedTeamID playerTeam = ExtendedTeamManager::sInstance->GetPlayerTeam(_this->playerId);
         if (playerTeam == selfTeams[0] || playerTeam == selfTeams[1]) {
-            //_this->animator.GetAnimationGroupById(1).PlayAnimationAtFrameAndDisable(1, 0.0f); // shadow::red
             u8 r, g, b;
             ExtendedTeamSelect::GetTeamColor(ExtendedTeamManager::sInstance->GetPlayerTeam(_this->playerId), r, g, b);
 
@@ -175,9 +170,6 @@ void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter* _this, const V
             _this->charaPane->alpha = 255;
             _this->charaShadow0Pane->alpha = 255;
             _this->charaShadow1Pane->alpha = 255;
-
-            const int playerCount = Racedata::sInstance->racesScenario.playerCount;
-            float z = 10.0 + ((playerCount - Raceinfo::sInstance->players[_this->playerId]->position) * 0.1);
 
             _this->zIdx = 20;
             _this->pane->trans.z = 20.0;
@@ -200,7 +192,6 @@ kmCall(0x807eb9d4, CtrlRace2DMapCharacter_PlayAnimationAtFrameAndDisable);
 void CtrlRaceNameBalloon_refresh(CtrlRaceNameBalloon* _this, u8 playerId) {
     _this->UpdateInfo(playerId);
     if (ExtendedTeamManager::IsActivated()) {
-        //_this->animator.GetAnimationGroupById(1).PlayAnimationAtFrameAndDisable(1, 0.0f); // shadow::red
         u8 r, g, b;
         ExtendedTeamSelect::GetTeamColor(ExtendedTeamManager::sInstance->GetPlayerTeam(playerId), r, g, b);
         nw4r::lyt::TextBox* characterName = (nw4r::lyt::TextBox*)_this->layout.GetPaneByName("chara_name");
@@ -242,7 +233,6 @@ void GPVSLeaderboardUpdate_hookSetupEntries(Pages::GPVSLeaderboardUpdate* _this)
             nw4r::lyt::Material* mat;
             nw4r::lyt::Pane* pane;
             if (Racedata::sInstance->racesScenario.players[playerId].playerType == PLAYER_REAL_LOCAL) {
-                // result->animator.GetAnimationGroupById(4).PlayAnimationAtFrame(4, 0.0f);
                 pane = result->layout.GetPaneByName("select_base");
                 mat = pane->GetMaterial();
                 pane->alpha = 255;
@@ -403,59 +393,6 @@ kmCall(0x80645b0c, WiFiVSResults_CalcSkipAnimation);
 kmCall(0x80645b28, WiFiVSResults_CalcSkipAnimation);
 kmCall(0x80645b74, WiFiVSResults_CalcSkipAnimation);
 kmCall(0x80645bac, WiFiVSResults_CalcSkipAnimation);
-
-// static u8 s_lastExtendedTeamPlayerId = 0;
-
-// u32 patch_GetHudIdFromPlayerId(Racedata* _this, u8 hudSlotId) {
-//     s_lastExtendedTeamPlayerId = _this->GetPlayerIdOfLocalPlayer(hudSlotId);
-//     return _this->GetPlayerIdOfLocalPlayer(hudSlotId);
-// }
-
-// void patch_HUDColor_SetVtxColor(nw4r::lyt::Pane* _this, u32 idx, nw4r::ut::Color color) {
-
-//     if (ExtendedTeamManager::IsActivated()) {
-//         u8 r, g, b;
-//         ExtendedTeamSelect::GetTeamColor(ExtendedTeamManager::sInstance->GetPlayerTeam(s_lastExtendedTeamPlayerId), r, g, b);
-
-//         color.r = r;
-//         color.g = g;
-//         color.b = b;
-
-//         if (idx > 1) {
-//             u32 uVar11 = r + 40;
-//             u32 uVar6 = 0xff;
-//             if (uVar11 < 0xff) {
-//                 uVar6 = uVar11;
-//             }
-
-//             u32 uVar7 = g + 130;
-//             uVar11 = 0xff;
-//             if (uVar7 < 0xff) {
-//                 uVar11 = uVar7;
-//             }
-
-//             u32 uVar8 = 0xff;
-//             uVar7 = b + 130;
-
-//             if (uVar7 < 0xff) {
-//                 uVar8 = uVar7;
-//             }
-
-//             color.rgba = (uVar6 << 24) | (uVar11 << 16) | (uVar8 << 8) | color.a;
-//         }
-//     }
-
-//     return _this->SetVtxColor(idx, color);
-// }
-
-// kmCall(0x807ec1dc, patch_HUDColor_SetVtxColor);
-
-// u8 patch_CtrlRaceRankNum_SetVtxColor(CtrlRaceRankNum* _this) {
-//     _this->HudSlotColorEnable("position", true);
-//     return _this->GetPlayerId();
-// }
-
-// kmCall(0x807f4974, patch_CtrlRaceRankNum_SetVtxColor);
 
 }  // namespace UI
 }  // namespace Pulsar

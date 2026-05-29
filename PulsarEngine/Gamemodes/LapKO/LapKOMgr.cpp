@@ -22,6 +22,10 @@ static const u16 pendingBroadcastFrames = 120;
 static const u16 eliminationDisplayDuration = 180;
 static const u8 lapKoNoRoundAdvanceFlag = 0x80;
 
+static bool IsBattleMode(GameMode mode) {
+    return mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE;
+}
+
 static bool AreAllOfflineLocalPlayersEliminated(const Mgr& mgr, const Racedata& racedata) {
     const RacedataScenario& scenario = racedata.menusScenario;
     const u8 localPlayerCount = scenario.localPlayerCount;
@@ -123,12 +127,10 @@ u8 Mgr::BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8* outPlan, u
 }
 
 void Mgr::InitForRace() {
-    this->raceInitDone = true;
     const System* system = System::sInstance;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
 
     this->playerCount = system->nonTTGhostPlayersCount;
-    Raceinfo* raceinfo = Raceinfo::sInstance;
 
     for (int i = 0; i < 12; ++i) {
         this->active[i] = (i < this->playerCount);
@@ -208,20 +210,6 @@ void Mgr::OnLapComplete(u8 playerId, RaceinfoPlayer& player) {
     }
 }
 
-void Mgr::OnPlayerFinished(u8 playerId) {
-    if (!this->active[playerId]) return;
-    Raceinfo* raceinfo = Raceinfo::sInstance;
-    RaceinfoPlayer* infoPlayer = raceinfo->players[playerId];
-    this->OnLapComplete(playerId, *infoPlayer);
-}
-
-void Mgr::OnPlayerDisconnected(u8 playerId) {
-    if (!this->active[playerId]) return;
-    if (!this->IsFriendRoomOnline() || this->isHost) {
-        this->ProcessElimination(playerId, ELIMINATION_CAUSE_DISCONNECT, false, true);
-    }
-}
-
 void Mgr::TryResolveRound() {
     const u8 usualLaps = this->GetUsualTrackLapCount();
 
@@ -292,6 +280,8 @@ u8 Mgr::GetRemainingEliminationsForCurrentRound(u8 usualLapCount) const {
 }
 
 void Mgr::ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance) {
+    if (playerId >= 12) return;
+
     const u8 concludedRound = this->roundIndex;
     const u8 usualLapCount = this->GetUsualTrackLapCount();
     const bool supportsDisconnectAdjustments = (usualLapCount > 1);
@@ -368,8 +358,10 @@ void Mgr::ConcludeRace(u8 winnerId) {
     if (finishId >= 12) {
         finishId = 0xFF;
         for (u8 i = 0; i < 12; ++i) {
+            if (this->active[i]) {
                 finishId = i;
                 break;
+            }
         }
     }
 
@@ -605,7 +597,8 @@ void Mgr::ResetEliminationDisplay() {
 
 bool Mgr::IsFriendRoomOnline() const {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    return controller != nullptr &&
+           (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
 }
 
 void Mgr::TickEliminationDisplay() {
@@ -660,6 +653,7 @@ void Mgr::UpdateLapProgress(Raceinfo& raceinfo) {
     const u8 maxPlayers = (this->playerCount < 12) ? this->playerCount : 12;
     for (u8 playerId = 0; playerId < maxPlayers; ++playerId) {
         RaceinfoPlayer* infoPlayer = raceinfo.players[playerId];
+        if (infoPlayer == nullptr) continue;
         const u16 lapValue = infoPlayer->currentLap;
         if (lapValue == this->lastLapValue[playerId]) continue;
         if (lapValue > this->lastLapValue[playerId]) {
@@ -899,7 +893,7 @@ void Mgr::EnsureSpectateTargetIsActive(const Raceinfo& raceinfo) {
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
     if (current < 12 && this->active[current]) return;
-    if (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) {
+    if (IsBattleMode(mode)) {
         if (current < 12) {
             RaceinfoPlayer* rifPlayerCur = nullptr;
             if (raceinfo.players != nullptr) rifPlayerCur = raceinfo.players[current];
@@ -930,7 +924,7 @@ u8 Mgr::BuildActiveSpectateOrder(const Raceinfo& raceinfo, u8* outOrder) const {
             RaceinfoPlayer* rifPlayerPos = nullptr;
             if (raceinfo.players != nullptr) rifPlayerPos = raceinfo.players[pid];
             if (!this->active[pid]) continue;
-            if (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) {
+            if (IsBattleMode(mode)) {
                 if (rifPlayerPos != nullptr && rifPlayerPos->battleScore == 0) continue;
             }
 
@@ -951,12 +945,12 @@ u8 Mgr::BuildActiveSpectateOrder(const Raceinfo& raceinfo, u8* outOrder) const {
         RaceinfoPlayer* rifPlayer = nullptr;
         if (raceinfo.players != nullptr) rifPlayer = raceinfo.players[pid];
         if (!this->active[pid]) continue;
-        if (mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) {
+        if (IsBattleMode(mode)) {
             if (rifPlayer != nullptr && rifPlayer->battleScore == 0) continue;
         }
 
         bool already = false;
-        for (u8 i = 0; i < playerCount < count; ++i) {
+        for (u8 i = 0; i < count; ++i) {
             if (outOrder[i] == pid) {
                 already = true;
                 break;

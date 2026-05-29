@@ -6,7 +6,6 @@
 
 namespace Pulsar {
 namespace Ghosts {
-// Implements a leaderboard file; it is divided in one sub leaderboard per TT modes which holds 11 entries (top 10 + flap)
 
 enum EntryLaps {
     ENTRY_1ST,
@@ -40,10 +39,9 @@ struct PULLdbEntry {
     CharacterId character;  // 0x58
     KartId kart;  // 0x5C
     ControllerType controllerType;  // 0x60
-};  // total size 0x64
-// size_assert(PULLdbEntry, 0x64);
+};
+static_assert(sizeof(PULLdbEntry) == 0x64, "PULLdbEntry size");
 
-// Should be fine having "affecting" functions public as this class can only be access through a const getter in manager (or from manager itself)
 class alignas(0x20) Leaderboard {
     static const u32 fileMagic = 'PULL';
     static const u32 curVersion = 1;
@@ -54,7 +52,6 @@ class alignas(0x20) Leaderboard {
     Leaderboard();
     Leaderboard(const char* folderPath, PulsarId id, bool createNew);
     void SetTrack(PulsarId id);
-    // void SwapEntries(LeaderboardEntry *entry1, LeaderboardEntry *entry2);
     s32 GetPosition(const Timer& other) const;
     s8 GetRepeatCount(const RKG& rkg) const;
     void Update(u32 position, const RKSYS::LicenseLdbEntry& entry, u32 rkgCRC32);

@@ -4,10 +4,6 @@
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <UI/UI.hpp>
-
-// Very old code, but still does the job; clicking watch replay will add the TT interface, solidity to the main ghost, the speedometer, etc...
-// Spectating.hpp handles the spectating side of things
-
 kmWrite32(0x80630450, 0x3880000d);  // To use the correct onInit
 kmWrite32(0x80630474, 0x3880000d);
 kmWrite32(0x80630498, 0x3880000d);
@@ -89,16 +85,6 @@ kmWrite32(0x80594448, 0x2c030000);
 kmWrite32(0x80594450, 0x2c030001);
 kmWrite32(0x80594458, 0x2c030003);
 
-/*
-Kart::BRRESHandle* PatchOpacity(Kart::BRRESHandle& handle, Light* light, bool isGhost, u8 playerId) {
-    if(playerId == 0) isGhost = false;
-    return new(&handle) Kart::BRRESHandle(light, isGhost, playerId);
-}
-kmCall(0x8058e2b8, PatchOpacity);
-kmCall(0x807c7870, PatchOpacity);
-
-*/
-
 bool PatchIsLocalCheck(const Kart::Player& kartPlayer) {
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) return false;
@@ -159,10 +145,3 @@ static void ChangeGhostOpacity(u8 focusedPlayerIdx) {
 kmBranch(0x805a9b60, ChangeGhostOpacity);
 
 }  // namespace Pulsar
-
-// kmWrite32(0x805a84d4, 0x38000001);
-
-// subi 50 bgt 2
-
-// 808568cc
-// 80856d78

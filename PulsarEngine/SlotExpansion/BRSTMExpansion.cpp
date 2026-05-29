@@ -9,8 +9,6 @@
 
 namespace Pulsar {
 namespace Sound {
-// Custom implementation of music slot expansion; this would break with regs
-// kmWrite32(0x8009e0dc, 0x7F87E378); //mr r7, r28 to get string length
 
 static char pulPath[0x100];
 static char resolvedPulPath[0x100];

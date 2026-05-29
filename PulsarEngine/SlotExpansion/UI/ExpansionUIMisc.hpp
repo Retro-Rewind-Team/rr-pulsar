@@ -20,21 +20,33 @@ void ApplyBlockedColorToString(wchar_t* dest, const wchar_t* src, u32 maxLen);
 
 inline void GetTrackBMG(char* dest, PulsarId id) {
     const wchar_t* name = UI::GetCustomMsg(GetTrackBMGId(id, false));
+    if (name == nullptr) {
+        dest[0] = '\0';
+        return;
+    }
     wchar_t polish[0x102];
 
     const wchar_t* token = wcschr(name, L'\x1A');
     const wchar_t* finalString = token != nullptr ? polish : name;
 
     wchar_t* cur = polish;
+    wchar_t* end = polish + sizeof(polish) / sizeof(polish[0]) - 1;
     const wchar_t* pos = name;
     while (token != nullptr) {
-        wcsncpy(cur, pos, token - pos);
-        cur = cur + (token - pos);
+        while (pos < token && cur < end) {
+            *cur++ = *pos++;
+        }
         cur[0] = '\0';
         const u8* escapeSequence = reinterpret_cast<const u8*>(token);
         u8 length = escapeSequence[2];
         pos = reinterpret_cast<const wchar_t*>(escapeSequence + length);
         token = wcschr(pos, L'\x1A');
+    }
+    if (finalString == polish) {
+        while (*pos != L'\0' && cur < end) {
+            *cur++ = *pos++;
+        }
+        cur[0] = '\0';
     }
     snprintf(dest, 0x100, "%ls", finalString);
 }

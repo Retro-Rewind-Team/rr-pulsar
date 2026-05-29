@@ -84,7 +84,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
     nw4r::math::VEC3 m_stickOrigin;
 
     DpadState m_dpadState;
-    s8 m_dpadTimer;  // Hold the DPAD press for DPAD_HOLD_FOR_N_FRAMES frames (?????)
+    s8 m_dpadTimer;  // Keeps short D-pad taps visible for a few frames.
     AccelState m_accelState;
     TriggerState m_triggerStates[(int)Trigger_Count];
     Vec2 m_stickState;

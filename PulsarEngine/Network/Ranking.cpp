@@ -69,7 +69,9 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
 
     float racingWinPct = (totalVs > 0) ? (100.0f * (float)vsWins / (float)totalVs) : 45.0f;
 
-    float vrClamped = (float)(PointRating::GetUserVR(RKSYS::Mgr::sInstance->curLicenseId) > 1000.0f ? 1000.0f : PointRating::GetUserVR(RKSYS::Mgr::sInstance->curLicenseId));
+    const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    const float userVr = rksys != nullptr ? PointRating::GetUserVR(rksys->curLicenseId) : static_cast<float>(vr.points);
+    float vrClamped = userVr > 1000.0f ? 1000.0f : userVr;
     if (vrClamped < 0) vrClamped = 0;
     float vrNorm = (vrClamped / 1000.0f) * 100.0f;
 
@@ -110,7 +112,6 @@ static int ScoreToRank(float finalScore) {
     if (finalScore >= 48.0f) return 4;
     if (finalScore >= 36.0f) return 3;
     if (finalScore >= 24.0f) return 2;
-    // if (finalScore >= 12.0f) return 1;
     return 1;
 }
 

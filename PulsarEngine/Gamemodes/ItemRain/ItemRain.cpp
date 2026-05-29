@@ -76,10 +76,12 @@ static float RandomOffset(Random& rng, float range) {
 
 bool IsItemRainEnabled() {
     System* sys = System::sInstance;
+    if (!sys) return false;
     if (!sys->IsContext(PULSAR_ITEMMODERAIN) && !sys->IsContext(PULSAR_ITEMMODESTORM)) return false;
     if (sys->IsContext(PULSAR_MODE_OTT)) return false;
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (!controller || !Racedata::sInstance) return false;
     if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
         controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
         controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
@@ -113,7 +115,7 @@ static u8 GetRandomPlayerId(s32 fallbackPlayerId) {
 static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff, bool isStorm) {
     Kart::Manager* km = Kart::Manager::sInstance;
     Item::Manager* im = Item::Manager::sInstance;
-    if (!km || !im || itemId >= 0xF) return;
+    if (!km || !im || itemId >= 0xF || playerIdx < 0 || playerIdx >= km->playerCount) return;
 
     Kart::Player* player = km->players[playerIdx];
     if (!player) return;
@@ -156,9 +158,10 @@ static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff,
         *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164) = Raceinfo::sInstance->timerMgr->raceFrameCounter;
 }
 
-static bool TryGenerateItemSpawn(s32 idx, RaceTimerMgr* tm, bool isStorm, float* outFOff, float* outROff, ItemObjId* outItemId) {
+static bool TryGenerateItemSpawn(RaceTimerMgr* tm, bool isStorm, float* outFOff, float* outROff, ItemObjId* outItemId) {
     u32 frame = tm->raceFrameCounter;
     Item::Manager* im = Item::Manager::sInstance;
+    if (!im) return false;
     Item::ObjHolder* holder = nullptr;
     ItemObjId itemId;
     bool found = false;
@@ -255,7 +258,7 @@ static void OnTimerUpdate(u32 oldFrame) {
         for (u32 s = 0; s < spawnsPerPlayer; s++) {
             float fOff, rOff;
             ItemObjId itemId;
-            if (TryGenerateItemSpawn(idx, tm, isStorm, &fOff, &rOff, &itemId)) {
+            if (TryGenerateItemSpawn(tm, isStorm, &fOff, &rOff, &itemId)) {
                 DoSpawnItem(itemId, idx, fOff, rOff, isStorm);
             }
         }

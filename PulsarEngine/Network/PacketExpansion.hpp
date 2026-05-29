@@ -11,12 +11,6 @@
 #include <MarioKartWii/RKNet/RH2.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
 
-/*
-Each section has its own way of transmitting the extra data for now:
--SELECT and ROOM use BeforeSend/AfterReception hooks, located at the Export/Import functions of the respective Handlers
--RH1 is done on the fly
-*/
-
 namespace Pulsar {
 namespace Network {
 
@@ -28,8 +22,8 @@ struct PulPlayerData {  // SELECT struct
     u8 kart;  // 0x5
     u8 prevRaceRank;  // 0x6 swapped with coursevote
     u8 starRank;  // 0x8
-};  // total size 0x8
-// size_assert(PulPlayerData, 0x8);
+};
+static_assert(sizeof(PulPlayerData) == 0x8, "PulPlayerData size");
 
 struct PulRH1 : public RKNet::RACEHEADER1Packet {
     // Pulsar data (always sent)
@@ -107,7 +101,6 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u16 pulWinningTrack;  // 0x3a
     u8 variantIdx;  // 0x3c
 
-    /*Sole reason these are here and not in ROOM is for easy additions of these gamemodes to public rooms (regionals) since ROOM does not exist there*/
     // OTT Settings
     u8 allowChangeComboStatus;
 
@@ -141,7 +134,6 @@ static const u32 totalRACESize = sizeof(RKNet::RACEPacketHeader) + sizeof(PulRH1
 
 class CustomRKNetController {  // Exists to make received packets a pointer array so that the size can be variable
    public:
-    // static CustomRKNetController* Get() { return reinterpret_cast<CustomRKNetController*>(RKNet::Controller::sInstance); }
     virtual ~CustomRKNetController();  // 8065741c vtable 808c097c
 
     u32 unkVtable;  // unknown class vtable 808c0988

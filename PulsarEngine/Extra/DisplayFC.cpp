@@ -149,7 +149,7 @@ void displayFcAndCountry(LayoutUIControl* r3, unsigned int r4) {
         country = savedFc.country[index];
     }
 
-    sprintf(flagPaneName, "%03d", country);
+    snprintf(flagPaneName, sizeof(flagPaneName), "%03d", country);
 
     if (r3->PicturePaneExists(flagPaneName) && r3->layout.GetPaneByName("flag")) {
         r3->SetPaneVisibility("flag", 1);

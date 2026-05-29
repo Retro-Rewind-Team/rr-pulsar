@@ -61,9 +61,10 @@ void EnableDelimitersForAllItems() {
     kmRuntimeCallA(0x807A81C0, GetItemDelimiterBlooper);
     kmRuntimeCallA(0x807B1B44, GetItemDelimiterPOW);
 
-    if (RKNet::Controller::sInstance && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-                                         RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) ||
-        Pulsar::ItemRain::IsItemRainEnabled()) {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                                                   controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    if (isFroom || Pulsar::ItemRain::IsItemRainEnabled()) {
         kmRuntimeWrite32A(0x807B7C34, 0x1fa300f0);
         kmRuntimeWrite32A(0x807A81C0, 0x39610050);
         kmRuntimeWrite32A(0x807B1B44, 0x7c7e1b78);
@@ -117,7 +118,7 @@ asmFunc AntiItemColCrash() {
 }
 kmCall(0x807A1A54, AntiItemColCrash);
 
-// Item Spam Anti-Freeze [???]
+// Item Spam Anti-Freeze
 asmFunc ItemSpamAntiFreeze() {
     ASM(
         loc_0x0 : lbz r12, 0x1C(r27);
@@ -251,7 +252,7 @@ kmWrite32(0x807bd4b8, 0x38A00003);
 // Blooper's lighting matches vehicle's lighting [B_squo]
 kmWrite32(0x807a8a5c, 0x60000000);
 
-// Load Vehicle Arm Parts Online [B_squo]
+// Vehicle arm parts load online [B_squo]
 kmWrite32(0x80577724, 0x48000024);
 
 // Fix Unfocused Small Mii Icon Border [B_squo]
@@ -334,7 +335,6 @@ kmWrite32(0x80596770, 0x60000000);
 // Invincibility Period Against Cars/Trucks Objects in All Slots [Ro]
 kmWrite32(0x806D686C, 0x3800000A);
 kmWrite32(0x80827968, 0x38000000);
-// kmWrite32(0x8078E1EC, 0x3800000A);
 
 // Slot Specific Objects Work in All Slots (pylon01, sunDS, FireSnake and begoman_spike) [Ro]
 kmWrite32(0x8082A4F8, 0x3800000A);
@@ -357,19 +357,6 @@ asmFunc friendRoomJoinCancel() {
         blr;)
 }
 kmCall(0x805DD85C, friendRoomJoinCancel);
-
-/*
-// Dead/Inactive Bomb Cars Are Visible [Ro]
-kmWrite32(0x806D7FF8, 0x81830008);
-kmWrite32(0x806D7FFC, 0x38600044);
-kmWrite32(0x806D8000, 0x986C012C);
-kmWrite32(0x806D8E5C, 0x81830008);
-kmWrite32(0x806D8E60, 0x38600054);
-kmWrite32(0x806D8E64, 0x986C012C);
-
-// Dead Goombas Are Visible [Ro]
-kmWrite32(0x806DC810, 0x48000084);
-*/
 
 // Play Character Icon Damage Animation When Burned Out [Ro]
 asmFunc burnoutIconFix() {

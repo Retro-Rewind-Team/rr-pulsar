@@ -18,7 +18,7 @@ struct Variant {
     u8 slot;
     u8 musicSlot;
 };
-// size_assert(Variant, 0x2);
+static_assert(sizeof(Variant) == 0x2, "Variant size");
 
 struct Track {
     u8 slot;
@@ -26,7 +26,7 @@ struct Track {
     u16 variantCount;
     u32 crc32;
 };
-// size_assert(Track, 0x8);
+static_assert(sizeof(Track) == 0x8, "Track size");
 
 enum PulsarId {
     PULSARID_NONE = 0xFFFFFFFF,
@@ -47,21 +47,11 @@ enum TTMode {
     TTMODE_200_FEATHER
 };
 
-/*
-inline PulsarId operator+(PulsarId src, u32 rhs) {
-    PulsarId ret = static_cast<PulsarId>(rhs + src);
-    return ret;
-}
-*/
-
 struct BinaryHeader {
     static const u32 CONFIGVERSION = 3;
     u32 magic;
     s32 version;
     s32 offsets[3];
-    // s32 offsetToInfo; //from start of the header
-    // s32 offsetToCups;
-    // s32 offsetToBMG;
     char modFolderName[IOS::ipcMaxFileName + 1];
 };
 
@@ -91,7 +81,6 @@ struct CupsHolder {
     u32 totalVariantCount;  // 0x24
     Track tracks[1];
     Variant variants[1];
-    // u16 alphabeticalIdx[1]; //slot 0's value = track index of the first track by alphabetical order
 };
 
 struct PulBMG {
@@ -121,9 +110,6 @@ struct ConfigFile {
 
     static const u32 magic = 'PULS';
     BinaryHeader header;
-    // InfoHolder infoHolder;
-    // CupsHolder cupsHolder;
-    // BMGHeader rawBmg;
 };
 
 template <>

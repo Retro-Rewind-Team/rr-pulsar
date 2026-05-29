@@ -68,7 +68,6 @@ class Mgr {
         else
             return IO::sInstance->GetFileName(fileIndex);
     }
-    // u32 GetGhostIndex(const GhostListEntry& entry) const;
     bool LoadGhost(RKG& dest, u32 index) const;
 
    private:

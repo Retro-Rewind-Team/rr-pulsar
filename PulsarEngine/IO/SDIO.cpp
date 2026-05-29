@@ -70,8 +70,7 @@ void SDIO::ReadFolder(const char* path) {
     fileNames = nullptr;
 
     __sd_vtable->diropen(&dirData, path);
-    strncpy(folderName, path, IOS::ipcMaxPath);
-    folderName[IOS::ipcMaxPath - 1] = '\0';
+    snprintf(folderName, IOS::ipcMaxPath, "%s", path);
     char filename[SD_MAX_FILENAME_LENGTH];
 
     fileNames = new (heap) IOS::IPCPath[maxFileCount];
@@ -87,8 +86,7 @@ void SDIO::ReadFolder(const char* path) {
             memset(filename, 0, sizeof(filename));
             continue;
         }
-        strncpy(fileNames[fileCount], filename, IOS::ipcMaxPath);
-        fileNames[fileCount][IOS::ipcMaxPath - 1] = '\0';
+        snprintf(fileNames[fileCount], IOS::ipcMaxPath, "%s", filename);
         fileCount++;
         memset(&stat, 0, sizeof(stat));
         memset(filename, 0, sizeof(filename));

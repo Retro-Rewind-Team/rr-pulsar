@@ -19,7 +19,6 @@
 namespace Pulsar {
 namespace KO {
 
-// Replicate SetModeTypes here: CC not needed,
 void HAWChangeData() {
     const System* system = System::sInstance;
     RKNet::Controller* controller = RKNet::Controller::sInstance;
@@ -28,8 +27,6 @@ void HAWChangeData() {
     if (system->IsContext(PULSAR_MODE_KO)) {
         u8 oldAidsBelonging[12];
         u8 oldPlayerIds[12][2];
-        // u8 oldPlayerIds[12];
-        // memset(oldPlayerIds, 0xFF, sizeof(u8) * 12);
 
         Mgr* mgr = system->koMgr;
         mgr->PatchAids(sub);
@@ -60,10 +57,8 @@ void HAWChangeData() {
         Racedata* racedata = Racedata::sInstance;
         SectionMgr* sectionMgr = SectionMgr::sInstance;
         SectionParams* params = sectionMgr->sectionParams;
-        // Swap guest and main if needed
         if (sub.localPlayerCount == 2 && !mgr->IsKOdAid(localAid, 0) && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();
 
-        // update racedataPlayers and miis
         for (int playerId = 0; playerId < 12; ++playerId) {
             RacedataPlayer& player = racedata->menusScenario.players[playerId];
             const u8 aid = controller->aidsBelongingToPlayerIds[playerId];
@@ -71,7 +66,6 @@ void HAWChangeData() {
             if (aid >= 12) {
                 player.playerType = PLAYER_NONE;
                 params->onlineParams.regionId[playerId] = 0xF;
-                // params->playerMiis.DeleteMii(playerId);
             } else {
                 u8 hudSlotId = 0;
                 if (playerId != 0 && controller->aidsBelongingToPlayerIds[playerId - 1] == aid) hudSlotId = 1;
@@ -88,7 +82,6 @@ void HAWChangeData() {
                     MiiTexObj* tex = playerMiis.texObj[i];
                     if (tex != nullptr) memcpy(&tex[playerId], &tex[oldPlayerId], sizeof(MiiTexObj));
                 }
-                // params->playerMiis.AddMii(playerId, &player.mii);
             }
         }
         const SectionId next = sectionMgr->nextSectionId;

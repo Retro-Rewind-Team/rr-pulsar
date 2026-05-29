@@ -18,14 +18,10 @@ ut::Color GetFriendColor(u32 friendIdx) {
     const ut::Color* color = &colors[0];
 
     // Get the friend's region
-    u8 friendRegion = 0;
     const RKNet::Friend* friendData = &RKNet::Controller::sInstance->friends[friendIdx];
-    if (friendData) {
-        friendRegion = friendData->statusData.regionId;
-    }
+    const u8 friendRegion = friendData->statusData.regionId;
 
-    // Check if friend is in one of the special regions (0x0B, 0x0C, 0x0D)
-    bool isSpecialRegion = (friendRegion == 0x0B || friendRegion == 0x0C || friendRegion == 0x0D);
+    const bool isSpecialRegion = (friendRegion == 0x0B || friendRegion == 0x0C || friendRegion == 0x0D);
 
     switch (type) {
         case RKNet::SEARCH_TYPE_VS_WW:
@@ -92,11 +88,9 @@ kmCall(0x8065a1d4, ReceiveMode);
 
 RKNet::SearchType SetModeOnJoin(const RKNet::Controller& controller, u32 friendIdx) {
     RKNet::SearchType type = controller.GetFriendSearchType(friendIdx);
-    if (RKNet::SEARCH_TYPE_VS_REGIONAL) {
-        bool isOTT = false;
+    if (type == RKNet::SEARCH_TYPE_VS_REGIONAL) {
         Mgr& netMgr = System::sInstance->netMgr;
-        if (netMgr.statusDatas[friendIdx] == true) isOTT = true;
-        netMgr.ownStatusData = isOTT;
+        netMgr.ownStatusData = netMgr.statusDatas[friendIdx];
     }
     return type;
 }
@@ -217,10 +211,6 @@ void SetGlobeMsgColor(Pages::Globe::MessageWindow& msg, ut::Color color) {
         if (color == -1) continue;
         UI::ResetMatColor(picture, 0);
         UI::UnbindRLMC(picture->material);
-        // lyt::Material* mat = picture->material;
-        // mat->tevColours[1].r = color.r;
-        // mat->tevColours[1].g = color.g;
-        // mat->tevColours[1].b = color.b;
     }
 }
 
@@ -229,11 +219,8 @@ void GlobeMsgColor(Pages::Globe::MessageWindow& msg, u32 bmgId, Text::Info* info
     asm(mr globe, r31;);
 
     // Get the friend's region
-    u8 friendRegion = 0;
     const RKNet::Friend* friendData = &RKNet::Controller::sInstance->friends[globe->selFriendIdx];
-    if (friendData) {
-        friendRegion = friendData->statusData.regionId;
-    }
+    const u8 friendRegion = friendData->statusData.regionId;
 
     // Set appropriate BMG based on region
     if (friendRegion == 0xB) {

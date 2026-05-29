@@ -164,8 +164,7 @@ void CopyText(char* dest, u32 destSize, const char* source) {
         dest[0] = '\0';
         return;
     }
-    strncpy(dest, source, destSize - 1);
-    dest[destSize - 1] = '\0';
+    snprintf(dest, destSize, "%s", source);
 }
 
 void CopyTextWide(wchar_t* dest, u32 destCount, const char* source) {
@@ -222,12 +221,12 @@ void ParseNameEntryLine(char* line) {
 
     char* id = SkipNameTextSpace(text);
     char* characterName = SkipNameTextSpace(firstSeparator + 1);
-    char* authorName = secondSeparator != nullptr ? SkipNameTextSpace(secondSeparator + 1) : firstSeparator;
+    char* authorName = nullptr;
+    if (secondSeparator != nullptr) authorName = SkipNameTextSpace(secondSeparator + 1);
     TrimNameTextEnd(id);
     TrimNameTextEnd(characterName);
-    if (secondSeparator != nullptr) TrimNameTextEnd(authorName);
-    else authorName = const_cast<char*>("");
-    AddNameEntry(id, characterName, authorName);
+    if (authorName != nullptr) TrimNameTextEnd(authorName);
+    AddNameEntry(id, characterName, authorName != nullptr ? authorName : "");
 }
 
 bool ReadNameEntriesFile(const char* path) {
@@ -315,7 +314,6 @@ u32 DefaultNameBmgIdForSkinBmgId(u32 bmgId) {
     if (IsCharacter(displayCharacter) && !IsMiiCharacter(displayCharacter)) character = displayCharacter;
     return GetCharacterBMGId(character, false);
 }
-
 
 BmgTextState GetBmgTextState(const BMGHolder& holder, u32 bmgId) {
     if (holder.bmgFile == nullptr) return BMG_TEXT_MISSING;

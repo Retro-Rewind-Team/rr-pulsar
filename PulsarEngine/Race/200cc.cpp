@@ -156,7 +156,7 @@ static Kart::WheelPhysicsHolder& FastFallingWheels(Kart::Sub& sub, u8 wheelIdx, 
     if (is200 || RetroRewind::System::Is500cc()) {
         Kart::Status* status = sub.kartStatus;
         if (status->airtime == 0)
-            status->bool_0x96 = ((status->bitfield0 & 0x80) != 0) ? true : false;
+            status->bool_0x96 = (status->bitfield0 & 0x80) != 0;
         else if ((status->airtime >= 2) && (!status->bool_0x96 || (status->airtime > 19))) {
             Input::ControllerHolder& controllerHolder = sub.GetControllerHolder();
             float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f

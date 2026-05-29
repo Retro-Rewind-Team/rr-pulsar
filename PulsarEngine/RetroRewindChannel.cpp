@@ -21,8 +21,7 @@ void NewChannel_WriteLoadedFromRREphFile() {
 }
 
 void NewChannel_WriteCrashEphFile() {
-    if(IO::sInstance == nullptr) return;
-    OS::Report("* NewChannel: Writing crash eph file\n");
+    if (IO::sInstance == nullptr) return;
     IO::sInstance->CreateAndOpen(RRC_CRASH_EPH_FILE_PATH, IOS::MODE_NONE);
     IO::sInstance->Close();
 }
@@ -39,7 +38,7 @@ void NewChannel_Init() {
         Debug::FatalError(message);
     }
 
-    if(!Dolphin::IsEmulator()) {
+    if (!Dolphin::IsEmulator()) {
         NewChannel_WriteLoadedFromRREphFile();
     }
 }

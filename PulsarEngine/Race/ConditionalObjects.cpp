@@ -637,18 +637,18 @@ static void ConditionalObjectModelUpdate(Object* object) {
 kmCall(0x8082aa20, ConditionalObjectModelUpdate);  // Object::UpdateModel call in ObjectsMgr::Update
 
 static void ConditionalProcessAllAndCalcKCL(ObjectsKCLMgr* kclMgr, ObjectsMgr& objectsMgr) {
-    if (kclMgr != nullptr) {
-        const u16 kclCount = *reinterpret_cast<const u16*>(reinterpret_cast<const u8*>(kclMgr) + 0x4);
-        Object** kclObjects = *reinterpret_cast<Object***>(reinterpret_cast<u8*>(kclMgr) + 0x8);
-        for (u16 i = 0; i < kclCount; ++i) {
-            Object* obj = kclObjects[i];
-            if (obj == nullptr) continue;
-            ConditionalState state;
-            EvaluateConditionalState(*obj, state);
+    if (kclMgr == nullptr) return;
 
-            ApplyKCLConditionalState(*obj, state);
-            ApplyPerScreenVisibility(*obj, state);
-        }
+    const u16 kclCount = *reinterpret_cast<const u16*>(reinterpret_cast<const u8*>(kclMgr) + 0x4);
+    Object** kclObjects = *reinterpret_cast<Object***>(reinterpret_cast<u8*>(kclMgr) + 0x8);
+    for (u16 i = 0; i < kclCount; ++i) {
+        Object* obj = kclObjects[i];
+        if (obj == nullptr) continue;
+        ConditionalState state;
+        EvaluateConditionalState(*obj, state);
+
+        ApplyKCLConditionalState(*obj, state);
+        ApplyPerScreenVisibility(*obj, state);
     }
     kclMgr->Update();
 }

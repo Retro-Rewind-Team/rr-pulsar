@@ -66,16 +66,11 @@ static bool IsValidPlayerId(u32 pid) {
 
 bool ShouldApplyBattleElimination() {
     const System* system = System::sInstance;
-    bool isElim = system->IsContext(PULSAR_ELIMINATION) ? ELIMINATION_ENABLED : ELIMINATION_DISABLED;
-    if (isElim && system->IsContext(PULSAR_FFA)) {
-        return true;
-    }
-    return false;
+    return system->IsContext(PULSAR_ELIMINATION) && system->IsContext(PULSAR_FFA);
 }
 
 static void SetInitialBattleScores(RacedataScenario& scenario, u16 startScore) {
     Raceinfo* raceinfo = Raceinfo::sInstance;
-    Racedata& racedata = *Racedata::sInstance;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     if (!ShouldApplyBattleElimination()) {
         ResetEliminationTracking();
@@ -132,9 +127,7 @@ u8 GetRecentEliminationId(u8 index) {
 }
 
 static void ApplySpectatorToEliminatedPlayersOnly(LapKO::Mgr* lapKOMgr) {
-    System* system = System::sInstance;
     Raceinfo* raceinfo = Raceinfo::sInstance;
-    Racedata& racedata = *Racedata::sInstance;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     const u8 localPlayerCount = Racedata::sInstance->menusScenario.localPlayerCount;
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
@@ -203,7 +196,6 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
             }
         }
     } else {
-        RaceTimerMgr* timerMgr = raceinfo->timerMgr;
         if (eliminatedCount >= (playerCount - 1)) {
             for (u8 idx = 0; idx < playerCount && idx < MAX_BATTLE_PLAYERS; ++idx) {
                 raceinfo->EndPlayerRace(idx);
@@ -279,8 +271,7 @@ void BattleTimer() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     kmRuntimeWrite32A(0x80532BCC, 0x380000B4);
-    bool isElim = Pulsar::System::sInstance->IsContext(PULSAR_ELIMINATION) ? ELIMINATION_ENABLED : ELIMINATION_DISABLED;
-    if (isElim && Pulsar::System::sInstance->IsContext(PULSAR_FFA)) {
+    if (ShouldApplyBattleElimination()) {
         if (sub.playerCount == 12 || sub.playerCount == 11 || sub.playerCount == 10) {
             kmRuntimeWrite32A(0x80532BCC, 0x3800012C);
         } else if (sub.playerCount == 9 || sub.playerCount == 8 || sub.playerCount == 7) {

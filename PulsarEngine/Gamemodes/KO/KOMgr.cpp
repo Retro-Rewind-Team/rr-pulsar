@@ -9,7 +9,7 @@
 namespace Pulsar {
 namespace KO {
 
-Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false) /*, stillInCount(playerCount)*/ {
+Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false) {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     this->baseLocPlayerCount = sub.localPlayerCount;
@@ -26,8 +26,7 @@ Mgr::~Mgr() {
     if (this->GetIsSwapped()) this->SwapControllersAndUI();
 }
 
-void Mgr::AddRaceStats() {  // SHOULD ONLY BE CALLED AFTER PROCESSKOS
-    // CALC THE STATS
+void Mgr::AddRaceStats() {
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     for (int hudSlot = 0; hudSlot < scenario.localPlayerCount; ++hudSlot) {
         Stats& stats = this->stats[hudSlot];
@@ -46,13 +45,11 @@ void Mgr::CalcWouldBeKnockedOut() {
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const u8* pointsArray = &Racedata::pointsRoom[playerCount - 1][0];
 
-    // Initialize player positions array
     PlayerPosition players[12];
     for (u8 curPlayerId = 0; curPlayerId < playerCount; ++curPlayerId) {
         this->wouldBeOut[curPlayerId] = false;
         players[curPlayerId].playerId = curPlayerId;
 
-        // Calculate position/points based on race mode
         if (this->racesPerKO > 1) {
             const u8 wouldBePoints = pointsArray[raceInfo->players[curPlayerId]->position - 1];
             players[curPlayerId].position = scenario.players[curPlayerId].score + wouldBePoints;
@@ -61,7 +58,6 @@ void Mgr::CalcWouldBeKnockedOut() {
         }
     }
 
-    // Special handling for 1v1 finals
     if (playerCount == 2) {
         for (int i = 0; i < playerCount; ++i) {
             this->wouldBeOut[i] = (raceInfo->players[i]->position != 1);
@@ -69,13 +65,11 @@ void Mgr::CalcWouldBeKnockedOut() {
         return;
     }
 
-    // Check if this is a KO race
     const bool force1v1Final = System::sInstance->IsContext(Pulsar::PULSAR_KOFINAL) == KOSETTING_FINAL_ALWAYS;
     const u32 currentRaceCount = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber + 1;
     const bool isKoRace = currentRaceCount % this->racesPerKO == 0;
 
     if (isKoRace) {
-        // Calculate how many players to KO
         s32 roundKOs = this->koPerRace;
         const s32 remainingPlayersAfter = playerCount - roundKOs;
 
@@ -83,11 +77,9 @@ void Mgr::CalcWouldBeKnockedOut() {
             roundKOs = playerCount - 2;
         }
 
-        // Sort players by score/position (ascending)
         qsort(players, playerCount, sizeof(PlayerPosition),
               reinterpret_cast<int (*)(const void*, const void*)>(SortPlayersByPosition));
 
-        // Mark players for KO starting with lowest scores
         s32 assignedKOs = 0;
         if (racesPerKO > 1) {
             for (s32 idx = 0; idx < playerCount && assignedKOs < roundKOs; ++idx) {
@@ -110,10 +102,8 @@ void Mgr::CalcWouldBeKnockedOut() {
 }
 
 void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nitems, size_t size, int (*compar)(const void*, const void*)) {
-    // Sort players by default sorting function
     qsort(playerArr, nitems, size, compar);
 
-    // Only process if we're in KO mode
     const System* system = System::sInstance;
     if (!system->IsContext(PULSAR_MODE_KO)) {
         return;
@@ -130,27 +120,23 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
     const u32 currentRaceNumber = sectionParams->onlineParams.currentRaceNumber + 1;
     bool hasTies = false;
 
-    // Handle disconnected players first
     u8 disconnectedKOs = 0;
     for (int playerId = 0; playerId < playerCount; ++playerId) {
         const u8 aid = controller->aidsBelongingToPlayerIds[playerId];
         if (aid >= 12) continue;
 
-        if ((1 << aid & sub.availableAids) == 0) {
+        if (((1 << aid) & sub.availableAids) == 0) {
             self->SetDisconnected(playerId);
             ++disconnectedKOs;
         }
     }
 
-    // Calculate how many players to eliminate
     u8 koCount = self->koPerRace;
 
-    // Adjust KO count if we'd end up with fewer than 2 players and alwaysFinal is on
     if (playerCount - koCount < 2 && self->alwaysFinal) {
         koCount = playerCount - 2;
     }
 
-    // Special cases for small player counts
     if (self->koPerRace >= 2 && self->alwaysFinal && playerCount > 2) {
         if (playerCount == 3) {
             koCount = 1;
@@ -165,31 +151,23 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
         }
     }
 
-    // Handle 1v1 finals or near-end scenarios
     if (playerCount == 2 || (playerCount - disconnectedKOs) == 1) {
-        // In finals or when only one player remains due to disconnects
         self->winnerPlayerId = raceinfo->playerIdInEachPosition[0];
         self->SetKOd(raceinfo->playerIdInEachPosition[1]);
         self->AddRaceStats();
         return;
     }
 
-    // Check if this is a KO race
     const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
     if (!isKoRace || koCount <= 0) {
         self->AddRaceStats();
         return;
     }
 
-    // Handle KO logic based on race mode
     if (self->racesPerKO > 1) {
-        // Multi-race KO: Eliminate based on total score
-
-        // Check for ties at the KO threshold
         u32 koThresholdPosition = playerCount - koCount;
         u32 tieScore = playerArr[koThresholdPosition].totalScore;
 
-        // Count players involved in the tie
         int tiedPlayersCount = 0;
         int playersInKOPosition = 0;
         int playersNotInKOPosition = 0;
@@ -205,9 +183,7 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
             }
         }
 
-        // Handle tie resolution
         if (playersInKOPosition > 0 && playersNotInKOPosition > 0) {
-            // Tie spans across the KO threshold - no eliminations, repeat race
             for (int position = 0; position < playerCount; ++position) {
                 if (playerArr[position].totalScore == tieScore) {
                     self->SetTie(playerArr[position].playerId, playerArr[koThresholdPosition].playerId);
@@ -215,12 +191,10 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
                 }
             }
             if (hasTies) {
-                // Decrement race number to repeat
                 --sectionParams->onlineParams.currentRaceNumber;
-                koCount = 0;  // Don't eliminate anyone this round
+                koCount = 0;
             }
         } else if (tiedPlayersCount == koCount) {
-            // All tied players would be KO'd - eliminate them all
             for (int position = 0; position < playerCount; ++position) {
                 if (playerArr[position].totalScore == tieScore) {
                     self->SetKOd(playerArr[position].playerId);
@@ -228,7 +202,6 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
             }
         }
 
-        // Reset scores after KO round (if no ties and multi-race KO)
         if (!hasTies && isKoRace) {
             for (int idx = 0; idx < 12; ++idx) {
                 scenario.players[idx].score = 0;
@@ -237,26 +210,21 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
         }
     }
 
-    // Eliminate players based on position or score
     if (koCount > 0) {
         for (int idx = 0; idx < koCount; ++idx) {
             u8 playerId;
             u32 position = (playerCount - 1) - idx;
 
             if (self->racesPerKO == 1) {
-                // Single race KO: Eliminate based on race position
                 playerId = raceinfo->playerIdInEachPosition[position];
             } else {
-                // Multi-race KO: Eliminate based on total score
                 playerId = playerArr[position].playerId;
 
-                // Don't eliminate the winner in multi-race mode with more than 2 players
                 if (playerCount > 2 && playerId == self->winnerPlayerId) {
                     continue;
                 }
             }
 
-            // Skip already KO'd players
             if (self->IsKOdPlayerId(playerId)) {
                 continue;
             }
@@ -265,7 +233,6 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
         }
     }
 
-    // Check for overall winner
     int notKOdCount = 0;
     u8 potentialWinner = 0xFF;
     for (int playerId = 0; playerId < playerCount; ++playerId) {
@@ -295,32 +262,24 @@ void Mgr::Update() {
 
             Stats& stats = self->stats[hudSlot];
             if (wouldBeOut) ++stats.final.timeInDanger;
-            if (stats.isInDangerFrames[idx] == false && wouldBeOut == true)
+            if (!stats.isInDangerFrames[idx] && wouldBeOut)
                 ++stats.boolCountArray;
-            else if (stats.isInDangerFrames[idx] == true && wouldBeOut == false)
+            else if (stats.isInDangerFrames[idx] && !wouldBeOut)
                 --stats.boolCountArray;
             stats.isInDangerFrames[idx] = wouldBeOut;
         }
 
         const u8 winnerPlayerId = self->winnerPlayerId;
-        if (winnerPlayerId != 0xFF) {  // if the if is taken, ProcessKOs and therefore AddRaceStats are guaranteed to have been called
+        if (winnerPlayerId != 0xFF) {
             const RKNet::Controller* controller = RKNet::Controller::sInstance;
             const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-            if (controller->aidsBelongingToPlayerIds[winnerPlayerId] == sub.localAid) {  // only send the data if needed
+            if (controller->aidsBelongingToPlayerIds[winnerPlayerId] == sub.localAid) {
                 for (int aid = 0; aid < 12; ++aid) {
-                    if ((1 << aid & sub.availableAids) == 0 || aid == sub.localAid) continue;
+                    if (((1 << aid) & sub.availableAids) == 0 || aid == sub.localAid) continue;
 
                     Stats& stats = self->stats[0];
                     RKNet::PacketHolder<Network::PulRH1>* holder = controller->GetSendPacketHolder<Network::PulRH1>(aid);
 
-                    /*
-                    this shouldn't be needed because the "ExportRH1ToPulRH1" always does it
-                    const u32 curSize = holder->packetSize;/
-                    u32 addedSize = 0;
-                    if(curSize == sizeof(RKNet::RACEHEADER1Packet)) addedSize = sizeof(Network::PulRH1) - sizeof(RKNet::RACEHEADER1Packet);
-                    else if(holder->packetSize == 0) addedSize = sizeof(Network::PulRH1);
-                    holder->packetSize += addedSize;
-                    */
                     Network::PulRH1* dest = holder->packet;
                     dest->timeInDanger = stats.final.timeInDanger;
                     dest->almostKOdCounter = stats.final.almostKOdCounter;
@@ -331,23 +290,6 @@ void Mgr::Update() {
     }
 }
 RaceFrameHook koUpdate(Mgr::Update);
-
-/*
-void Mgr::UpdateStillInCount() {
-    u32 stillIn = 0;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const u32 availableAids =  controller->subs[controller->currentSub].availableAids;
-    for(int aid = 0; aid < 12; ++aid) {
-        u8 aid = controller->aidsBelongingToPlayerIds[aid];
-        if((1 << aid & availableAids) == 0) { //the playerId is disconnected
-            this->SetMgrd(aid);
-        }
-        if(this->IsMgrd(aid)) continue;
-        ++stillIn;
-    }
-    this->stillInCount = stillIn;
-}
-*/
 
 void Mgr::PatchAids(RKNet::ControllerSub& sub) const {
     u32 availableAids = sub.availableAids;
@@ -450,7 +392,6 @@ PageId Mgr::KickPlayersOut(PageId defaultId) {  // only called if KOMode
 }
 
 void Mgr::SwapControllersAndUI() {
-    // Swap the controllers
     Input::Manager* input = Input::Manager::sInstance;
 
     char mainController[sizeof(Input::RealControllerHolder)];
@@ -469,7 +410,6 @@ void Mgr::SwapControllersAndUI() {
     main.controllerIDActive = main.controllerID;
     guest.controllerIDActive = guest.controllerID;
 
-    // Swap the characters on the UI
     SectionParams* params = sectionMgr->sectionParams;
     CharacterId mainChar = params->characters[0];
     KartId mainKart = params->karts[0];

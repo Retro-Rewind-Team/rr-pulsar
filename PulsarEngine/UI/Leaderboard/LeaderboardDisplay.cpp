@@ -76,8 +76,7 @@ void fillLeaderboardResults(int count, CtrlRaceResult** results) {
                     swprintf(fcText, 16, L"%04d-%04d-%04d", fcParts[2], fcParts[1], fcParts[0]);
 
                     if (wcscmp(fcText, L"0000-0000-0000") == 0) {
-                        wcsncpy(fcText, L"----", 5);
-                        continue;
+                        swprintf(fcText, 16, L"----");
                     }
 
                     Text::Info textInfo;

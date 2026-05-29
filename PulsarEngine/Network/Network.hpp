@@ -28,6 +28,7 @@ class Mgr {  // Manages network related stuff within Pulsar
     u8 curBlockingArrayIdx;
     u8 racesPerGP;
     bool lastGroupedTrackPlayed;  // Whether the most recent blocked track was a grouped track
+    u8 padding[1];
     u32 region;
     PulsarId* lastTracks;
 };

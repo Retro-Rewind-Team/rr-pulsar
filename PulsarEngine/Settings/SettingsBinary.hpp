@@ -81,13 +81,9 @@ struct BinaryHeader {
     u32 fileSize;
     u32 sectionCount;
     u32 offsets[1];  // 0x10
-    // u32 offsetToPages;
-    // u32 offsetToMisc;
-    // u32 offsetToTrophies;
-    // u32 offsetToGP;
 };
 
-/*OLD VERSIONS*/
+// Legacy layout used when migrating version 1 settings files.
 struct BinaryHeaderV1 {
     u32 magic;
     u32 version;
@@ -130,25 +126,10 @@ class alignas(0x20) Binary {
 
     BinaryHeader header;
     PagesHolder pages;
-    // MiscParams misc;
-    // TrophiesHolder trophies;
     friend class Mgr;
 };
 
 }  // namespace Settings
 }  // namespace Pulsar
-
-/*CHANGELOG:
--V1 is defunct and was never used
-
--V2:
-*now uses an offset array with each section having its own index
-*each section has its size included
-*GP section has been added
-
--V3:
-*Pages section now supports user pages
-
-*/
 
 #endif

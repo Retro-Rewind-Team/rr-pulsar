@@ -8,7 +8,7 @@
 namespace Pulsar {
 namespace Race {
 
-static const u64 CreateSwitchFocusPlayerPtmfs(u32 arg) {  // extremely hacky, but it does the job for now
+static const u64 CreateSwitchFocusPlayerPtmfs(u32 arg) {
     static SectionId fakeSection;
 
     SectionId id = SectionMgr::sInstance->curSection->sectionId;

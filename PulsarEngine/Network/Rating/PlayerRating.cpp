@@ -7,6 +7,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Dolphin/DolphinIOS.hpp>
+#include <include/c_wchar.h>
 
 namespace Pulsar {
 namespace PointRating {
@@ -140,6 +141,21 @@ static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
 
 static float TruncateToCentis(float val) {
     return (float)((int)(val * 100.0f)) / 100.0f;
+}
+
+void FormatRatingDigits(float rating, wchar_t* buffer, u32 bufferSize) {
+    int whole = (int)rating;
+    int centis = (int)((rating - (float)whole) * 100.0f + 0.5f);
+    if (centis >= 100) {
+        whole++;
+        centis -= 100;
+    }
+    if (centis < 0) centis = -centis;
+
+    if (whole == 0)
+        swprintf(buffer, bufferSize, L"%d", centis);
+    else
+        swprintf(buffer, bufferSize, L"%d%02d", whole, centis);
 }
 
 static void SaveLocalRating(const RacedataScenario& scenario, int idx, float rating) {

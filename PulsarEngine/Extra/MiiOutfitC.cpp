@@ -97,6 +97,7 @@ static int GetCharacterIdForButtonHook(CtrlMenuCharacterSelect* ctrl, u32 weight
             const u32 localColumn = localIdx % categoryCount;
             if (localColumn == 2) {
                 RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+                if (rksys == nullptr) return character;
                 const CharacterId miiCCharacter = static_cast<CharacterId>(character);
                 if (PointRating::GetUserVR(rksys->curLicenseId) < 300.0f) return CHARACTER_NONE;
                 switch (miiCCharacter) {

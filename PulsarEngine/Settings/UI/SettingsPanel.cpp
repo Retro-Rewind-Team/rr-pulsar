@@ -23,7 +23,6 @@ SettingsPanel::SettingsPanel() {
     internControlCount = Settings::Params::maxRadioCount + Settings::Params::maxScrollerCount;
     hasBackButton = true;
     nextPageId = static_cast<PageId>(id);
-    // titleBmg = BMG_SETTINGS_TITLE;
     activePlayerBitfield = 1;
     movieStartFrame = -1;
     extraControlNumber = 0;
@@ -83,16 +82,9 @@ SettingsPanel::~SettingsPanel() {
     Settings::Mgr* mgr = Settings::Mgr::sInstance;
     mgr->SetLastSelectedCup(CupsConfig::sInstance->lastSelectedCup);
     mgr->RequestSave();
-    // delete[] radioButtonControls;
-    // delete[] upDownControls;
-    // delete[] textUpDown;
 }
 
 void SettingsPanel::OnInit() {
-    // radioButtonControls = new RadioButtonControl[this->radioCount];
-    // upDownControls = new UpDownControl[this->scrollersCount];
-    // textUpDown = new TextUpDownValueControl[this->scrollersCount];
-
     this->backButton.SetOnClickHandler(this->onBackButtonClickHandler, 0);
 
     const Settings::Mgr& settings = Settings::Mgr::Get();
@@ -444,14 +436,6 @@ void SettingsPanel::OnUpDownSelect(UpDownControl& upDownControl, u32 hudSlotId) 
 
 int SettingsPanel::GetNextSheetIdx(s32 direction) {
     return (this->sheetIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
-}
-
-int SettingsPanel::GetNextBMGOffset(s32 direction) {
-    const u32 nextIdx = this->GetNextSheetIdx(direction);
-    if (nextIdx < Settings::Params::pulsarPageCount)
-        return nextIdx;
-    else
-        return BMG_USERSETTINGSOFFSET + nextIdx - Settings::Params::pulsarPageCount;
 }
 
 void SettingsPanel::BeforeControlUpdate() {

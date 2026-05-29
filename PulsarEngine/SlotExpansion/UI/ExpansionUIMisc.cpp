@@ -289,21 +289,23 @@ static void SetVSIntroBmgId(LayoutUIControl* trackName) {
 }
 kmCall(0x808552cc, SetVSIntroBmgId);
 
+static u32 GetCupBmgIdForInfo(PulsarCupId id, wchar_t* fallbackName, u32 fallbackNameLen, Text::Info& info) {
+    const u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
+    const u32 iconCount = CupsConfig::sInstance->definedCTsCupCount;
+    if (realCupId >= iconCount) {
+        swprintf(fallbackName, fallbackNameLen, L"Cup %d", realCupId);
+        info.strings[0] = fallbackName;
+        return BMG_TEXT;
+    }
+    return BMG_CUPS + realCupId;
+}
+
 static void SetAwardsResultCupInfo(LayoutUIControl& awardType, const char* textBoxName, u32 bmgId, Text::Info& info) {
     PulsarCupId id = CupsConfig::sInstance->lastSelectedCup;
     if (!CupsConfig::IsRegCup(id)) {
         awardType.layout.GetPaneByName("cup_icon")->flag &= ~1;
-        u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
-        u32 cupBmgId;
-        u16 iconCount = static_cast<u16>(CupsConfig::sInstance->definedCTsCupCount);
-        if (realCupId > iconCount - 1) {
-            wchar_t cupName[0x20];
-            swprintf(cupName, 0x20, L"Cup %d", realCupId);
-            info.strings[0] = cupName;
-            cupBmgId = BMG_TEXT;
-        } else
-            cupBmgId = BMG_CUPS + realCupId;
-        info.bmgToPass[1] = cupBmgId;
+        wchar_t cupName[0x20];
+        info.bmgToPass[1] = GetCupBmgIdForInfo(id, cupName, sizeof(cupName) / sizeof(cupName[0]), info);
     }
     awardType.SetTextBoxMessage(textBoxName, bmgId, &info);
 }
@@ -313,17 +315,8 @@ static void SetGPIntroInfo(LayoutUIControl& titleText, u32 bmgId, Text::Info& in
     PulsarCupId id = CupsConfig::sInstance->lastSelectedCup;
     if (!CupsConfig::IsRegCup(id)) {
         titleText.layout.GetPaneByName("cup_icon")->flag &= ~1;
-        u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
-        u32 cupBmgId;
-        u16 iconCount = static_cast<u16>(CupsConfig::sInstance->definedCTsCupCount);
-        if (realCupId > iconCount - 1) {
-            wchar_t cupName[0x20];
-            swprintf(cupName, 0x20, L"Cup %d", realCupId);
-            info.strings[0] = cupName;
-            cupBmgId = BMG_TEXT;
-        } else
-            cupBmgId = BMG_CUPS + realCupId;
-        info.bmgToPass[1] = cupBmgId;
+        wchar_t cupName[0x20];
+        info.bmgToPass[1] = GetCupBmgIdForInfo(id, cupName, sizeof(cupName) / sizeof(cupName[0]), info);
     }
     titleText.SetMessage(bmgId, &info);
 }
@@ -397,7 +390,6 @@ static bool BattleArenaBMGFix(SectionId sectionId) {
 }
 kmCall(0x8083d02c, BattleArenaBMGFix);
 
-// kmWrite32(0x80644340, 0x7F64DB78);
 static void WinningTrackBMG(PulsarId winningCourse) {
     register Pages::Vote* vote;
     asm(mr vote, r27;);
@@ -448,7 +440,7 @@ static void ExtCourseSelectCupInitSelf(CtrlMenuCourseSelectCup* courseCups) {
         const PulsarCupId id = cupsConfig->GetNextCupId(cupsConfig->lastSelectedCup, i - cupsConfig->lastSelectedCupButtonIdx);
         ExpCupSelect::UpdateCupData(id, cur);
         cur.animator.GetAnimationGroupById(0).PlayAnimationAtFrame(0, 0.0f);
-        const bool clicked = cupsConfig->lastSelectedCupButtonIdx == i ? true : false;
+        const bool clicked = cupsConfig->lastSelectedCupButtonIdx == i;
         cur.animator.GetAnimationGroupById(1).PlayAnimationAtFrame(!clicked, 0.0f);
         cur.animator.GetAnimationGroupById(2).PlayAnimationAtFrame(!clicked, 0.0f);
         cur.animator.GetAnimationGroupById(3).PlayAnimationAtFrame(clicked, 0.0f);

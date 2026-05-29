@@ -106,9 +106,6 @@ class System {
 
     virtual void SetUserInfo(Network::ResvInfo::UserInfo& userInfo) {};
     virtual bool CheckUserInfo(const Network::ResvInfo::UserInfo& userInfo) { return true; };
-    // Deprecated because you can now freely expand ROOM packets and do what you need to with them
-    // virtual u8 SetPackROOMMsg() { return 0; } //Only called for hosts
-    // virtual void ParsePackROOMMsg(u8 msg) {}  //Only called for non-hosts
     const Info& GetInfo() const { return this->info; }
 
     bool IsContext(Context context) const { return (this->context & (1 << context)) != 0; }
@@ -128,16 +125,7 @@ class System {
     const BMGHolder& GetBMG() const { return customBmgs; }
     const BMGHolder& GetBMGCT() const { return customBmgsCT; }
     const BMGHolder& GetBMGBT() const { return customBmgsBT; }
-    /*
-    #define PatchRegion(addr)\
-        static inline u64 GetWiimmfiRegionStatic##addr(u64 src) {\
-            register const Info *info = &System::sInstance->GetInfo();\
-            asmVolatile(lwz r7, Info.wiimmfiRegion(info););\
-            return src;\
-        };\
-        kmBranch(addr, GetWiimmfiRegionStatic##addr);\
-        kmPatchExitPoint(GetWiimmfiRegionStatic##addr, ##addr + 4);
-    */
+
     // VARIABLES
     EGG::ExpHeap* const heap;  // 0x4
     EGG::TaskThread* const taskThread;  // 0x8
@@ -151,7 +139,7 @@ class System {
     u32 context2;
 
    public:
-    // Network variables only set when reading a ROOM packet that starts the GP; they are only ever used in UpdateState; no need to clear them as ROOM will reupdat ethem
+    // Updated from ROOM packets when the host starts a GP.
     Network::Mgr netMgr;
 
     TTMode ttMode;
@@ -184,10 +172,8 @@ class System {
     static const char* ttModeFolders[];
 
     struct Inherit {
-        // static_assert(is_base_of<System, Child>::value, "Pulsar::System is not a parent of your class");
         typedef System* (*CreateFunc)();
         Inherit(CreateFunc func) {
-            // static_assert(inherit == nullptr, "Can only inherit once from Pulsar::System");
             create = func;
             inherit = this;
         }

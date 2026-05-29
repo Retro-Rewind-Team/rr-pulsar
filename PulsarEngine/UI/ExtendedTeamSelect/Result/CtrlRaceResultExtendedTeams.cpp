@@ -57,7 +57,6 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
 
         const u8 playerId = this->players[i].playerIdx;
 
-        // scenario.players[playerId].gpRank = rank + 1;
         u8 localPlayerCount = scenario.localPlayerCount;
         PlayerType playerType = scenario.players[playerId].playerType;
         CharacterId characterId = scenario.players[playerId].characterId;

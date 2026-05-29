@@ -5,7 +5,6 @@
 #include <UI/UI.hpp>
 #include <Settings/Settings.hpp>
 
-// Create
 namespace Pulsar {
 namespace UI {
 
@@ -132,7 +131,6 @@ void ExpCupSelect::AfterControlUpdate() {
                 CourseButton& courseButton = coursePage->CtrlMenuCourseSelectCourse.courseButtons[this->randomizedId % 4];
                 cupsConfig->SaveSelectedCourse(courseButton);
                 courseButton.Select(0);
-                // coursePage->CtrlMenuCourseSelectCourse.courseButtons[this->randomizedId % 4].HandleClick(0, -1);
                 this->randomizedId = PULSARID_NONE;
                 for (int i = 0; i < 8; ++i) buttons[i]->manipulator.inaccessible = false;
                 this->arrows.leftArrow.manipulator.inaccessible = cupsConfig->GetCtsTrackCount() == 0;  // keep the arrows inaccessible if there are no cts

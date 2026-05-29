@@ -95,13 +95,6 @@ void OTTGhostDiff::OnUpdate() {
     this->curLap = maxLap;
 }
 
-/*
-void MultiGhostDiff::Init() {
-    Racedata* racedata = Racedata::sInstance;
-    for(int i = 0; i < this->diffTimeCount; i++) this->diffTimes[i].ghostData.Init(racedata->ghosts[i + this->isGhostReplay]);
-    UIControl::Init();
-}
-*/
 kmWrite32(0x807ee500, 0x48000010);
 }  // namespace UI
 }  // namespace Pulsar

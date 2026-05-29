@@ -63,14 +63,8 @@ void LaunchSoftware() {
 
 // Credit Star and Riidefi
 
-// Data Shown
-// kmWrite16(0x802A7410, 0x00000023);
-// Show Handler
-// kmWrite32(0x802A7404, 0x00000000);
 // Show StackTrace
 kmWrite32(0x80023948, 0x281e0007);
-// Max number of lines
-// kmWrite32(0x80009324, 0x38800068);
 
 // Lines on the screen and x-pos
 static void SetConsoleParams() {
@@ -150,30 +144,6 @@ static void CreateCrashFile(s32 channel, KPAD::Status buff[], u32 count) {
     LaunchSoftware();
 }
 kmCall(0x80226610, CreateCrashFile);
-
-/*
-static void OnCrashEnd() {
-    IO* io = IO::sInstance;;
-    if(file != nullptr) { //should always exist if the crash is after strap
-        register u32* const addressPtr = (u32*)(crashThread->context.srr0 + 4);
-        const s32 diff = static_cast<int>(reinterpret_cast<u32>(&LaunchSoftware) - reinterpret_cast<u32>(addressPtr));
-        u32 instruction = 0x48000000;
-        if(diff < 0) instruction = 0x4B000000;
-        *addressPtr = instruction + (diff & 0x00FFFFFF) + 1;
-        asm{
-            ASM(
-            dcbst 0, addressPtr;
-            sync;
-            icbi 0, addressPtr;
-            )
-        }
-        OS::Thread::current = crashThread;
-        OS::SelectThread(0);
-
-    }
-    else LaunchSoftware();
-}
-*/
 
 }  // namespace Debug
 }  // namespace Pulsar

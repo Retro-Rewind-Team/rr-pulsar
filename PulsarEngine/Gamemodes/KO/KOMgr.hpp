@@ -10,7 +10,6 @@
 namespace Pulsar {
 namespace KO {
 
-// Player status in KO mode
 enum Status {
     NORMAL,
     TIE,
@@ -20,11 +19,9 @@ enum Status {
 
 class Mgr {
    public:
-    // Constants
     static const u16 spectatorVote = 0x45;
     static const u32 arbitraryAlmostDied = 60;  // 60 frames in danger in the last 5s = almost out
 
-    // Structures for tracking player positions and stats
     struct PlayerPosition {
         u8 position;
         u8 playerId;
@@ -46,7 +43,6 @@ class Mgr {
         Final final;
     };
 
-    // Static methods
     static void Create(Page* froom, u32 director, float length);
     static void Update();  // RaceFrameHook
     static void ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr,
@@ -57,11 +53,9 @@ class Mgr {
         return a->position - b->position;
     }
 
-    // Constructor/Destructor
     Mgr();
     ~Mgr();
 
-    // Race management
     inline void ResetRace() {
         for (int i = 0; i < 2; ++i) {
             Stats& stats = this->stats[i];
@@ -77,7 +71,6 @@ class Mgr {
     void AddRaceStats();
     void CalcWouldBeKnockedOut();  // Checks if player would be KO'd if race ended now
 
-    // Player status management
     Status GetAidStatus(u8 aid, u8 hudslotId) const {
         return static_cast<Status>(this->status[aid][hudslotId]);
     }
@@ -120,13 +113,11 @@ class Mgr {
         return this->wouldBeOut[playerId];
     }
 
-    // Controller and UI management
     bool GetIsSwapped() const { return this->hasSwapped; }
     void SwapControllersAndUI();
     void PatchAids(RKNet::ControllerSub& sub) const;
     PageId KickPlayersOut(PageId defaultId);
 
-    // Utility functions
     SectionId GetSectionAfterKO(SectionId defaultId) const;
     u32 GetAidAndSlotFromPlayerId(u8 playerId) const;
     u8 GetBaseLocalPlayerCount() const { return this->baseLocPlayerCount; }
@@ -137,22 +128,18 @@ class Mgr {
         this->status[aidSlot & 0xFFFF][aidSlot >> 16] = status;
     }
 
-    // Player status tracking
     u8 status[12][2];  // Indexed by [aid][hudslot]
     bool wouldBeOut[12];
 
-    // Player management
     u8 baseLocPlayerCount;  // Player count when GP started
     bool hasSwapped;  // Controller swap status
 
    public:
-    // Game settings
     bool isTiebreakerRace;
     u8 racesPerKO;
     u8 koPerRace;
     bool alwaysFinal;
 
-    // Game state
     u8 winnerPlayerId;
     bool isSpectating;
     Stats stats[2];

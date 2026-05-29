@@ -729,25 +729,19 @@ static void InitForRace(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
     sInitialized = true;
 }
 
-static bool HasPlacementRecord(u8 playerId) {
-    for (u8 i = 0; i < sEliminationPlacementCount; ++i) {
-        if (sEliminationPlacementOrder[i] == playerId) return true;
-    }
-    return false;
-}
-
-static bool HasFinishRecord(u8 playerId) {
-    for (u8 i = 0; i < sFinishPlacementCount; ++i) {
-        if (sFinishPlacementOrder[i] == playerId) return true;
-    }
-    return false;
-}
-
 static bool HasOrderEntry(const u8* order, u8 count, u8 playerId) {
     for (u8 i = 0; i < count; ++i) {
         if (order[i] == playerId) return true;
     }
     return false;
+}
+
+static bool HasPlacementRecord(u8 playerId) {
+    return HasOrderEntry(sEliminationPlacementOrder, sEliminationPlacementCount, playerId);
+}
+
+static bool HasFinishRecord(u8 playerId) {
+    return HasOrderEntry(sFinishPlacementOrder, sFinishPlacementCount, playerId);
 }
 
 static void RecordPlacementElimination(u8 playerId) {

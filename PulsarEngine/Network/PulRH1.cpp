@@ -11,7 +11,6 @@
 namespace Pulsar {
 namespace Network {
 
-// Helper to check if we're in a friend room (where LapKO data should be sent)
 static bool IsFriendRoom() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (!controller) return false;
@@ -25,8 +24,6 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
 
     const System* system = System::sInstance;
 
-    // Determine target packet size based on room type and LapKO mode
-    // LapKO fields are only sent in friend rooms when PULSAR_MODE_LAPKO is enabled
     const bool inFriendRoom = IsFriendRoom();
     const bool battleRoyaleEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_BATTLEROYALE);
     const bool eliminationSyncEnabled = inFriendRoom && (system->IsContext(PULSAR_MODE_LAPKO) || battleRoyaleEnabled);
@@ -39,7 +36,6 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         packetHolder.packet->variantIdx = CupsConfig::sInstance->GetCurVariantIdx();
     }
 
-    // Clear KO Stats fields if KO mode is not enabled
     if (!system->IsContext(PULSAR_MODE_KO)) {
         packetHolder.packet->timeInDanger = 0;
         packetHolder.packet->almostKOdCounter = 0;
@@ -74,8 +70,6 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
     const PulRH1* packet = holder.packet;
     const u32 packetSize = holder.packetSize;
     CourseId track;
-    u8 variantIdx = 0;
-    // Accept both base and full Pulsar packet sizes
     if (packetSize >= PulRH1SizeBase)
         track = static_cast<CourseId>(packet->pulsarTrackId);
     else
@@ -142,7 +136,6 @@ kmCall(0x80664080, IsThereAValidId);
 kmWrite32(0x80664084, 0x2C030000);  // change comparison from r0 to r3
 
 kmWrite32(0x8066529c, 0x60000000);  // preserve packetholder in r4
-// kmWrite32(0x806652b4, 0x60000000); //nop track store
 
 }  // namespace Network
 }  // namespace Pulsar

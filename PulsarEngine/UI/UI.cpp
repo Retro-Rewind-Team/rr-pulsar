@@ -46,9 +46,7 @@ kmWrite32(0x80635058, 0x60000000);
 
 void ExpSection::CreatePages(ExpSection& self, SectionId id) {
     const System* system = System::sInstance;
-    // self.hasAutoVote = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) && system->IsContext(PULSAR_HAW); //can't think of a better way to do this awkward thing, where the usual pages are NOT built
     if (!self.hasAutoVote) self.CreateSectionPages(id);
-    // memset(&self.pulPages, 0, sizeof(Page*) * PULPAGE_MAX);
     self.CreatePulPages();
 }
 kmCall(0x80622088, ExpSection::CreatePages);
@@ -110,9 +108,6 @@ void ExpSection::CreatePulPages() {
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL);
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR);
             }
-            // if(system->IsContext(PULSAR_HAW)) {
-            //     if(SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber != System::sInstance->netMgr.racesPerGP) this->CreateAndInitPage(*this, ChooseNextTrack::id);
-            // }
             break;
         case SECTION_SINGLE_P_FROM_MENU:  // 0x48
         case SECTION_SINGLE_P_TT_CHANGE_CHARA:  // 0x49
@@ -170,19 +165,9 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
         case PAGE_FRIEND_ROOM:
             page = new ExpFroom;
             break;
-            /* not needed since only static vars
-        case PAGE_FRIEND_ROOM_MESSAGES:
-            page = new ExpFroomMessages;
-            break;
-            */
         case PAGE_OPTIONS:
             page = new ExpOptions;
             break;
-            /* not needed since only static vars
-        case PAGE_SINGLE_PLAYER_MENU:
-            page = new ExpSinglePlayer;
-            break;
-            */
         case PAGE_WFC_MAIN:
             page = new ExpWFCMain;
             break;
@@ -346,7 +331,6 @@ void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tpl
 enum BMGType {
     BMG_NORMAL,
     CUSTOM_BMG,
-    // CUP_TEXT
 };
 BMGType isCustom;
 

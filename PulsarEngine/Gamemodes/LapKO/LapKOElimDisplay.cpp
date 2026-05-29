@@ -124,8 +124,6 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     this->UpdatePausePosition();
 
     const System* system = System::sInstance;
-    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
-    const GameMode mode = scenario.settings.gamemode;
     const bool lapKoContext = system->lapKoMgr != nullptr &&
                               (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
     const bool battleContext = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
@@ -261,9 +259,7 @@ const wchar_t* CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar
         }
 
         if (bmgName != nullptr) {
-            ::wcsncpy(scratch, bmgName, length - 1);
-            scratch[length - 1] = L'\0';
-            return scratch;
+            return CopyNameSafe(bmgName, length - 1, scratch, length);
         }
     }
 

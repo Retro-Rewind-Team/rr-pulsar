@@ -8,7 +8,6 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <PulsarSystem.hpp>
-#include <AutoTrackSelect/ChooseNextTrack.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Debug/Debug.hpp>
@@ -36,14 +35,9 @@ static void CenterTopMenuWifiWaku(ControlLoader* loader, const char* folderName,
 kmCall(0x80850604, CenterTopMenuWifiWaku);
 
 static PageId AfterWifiResults(PageId id) {
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
     const System* system = System::sInstance;
 
     if (system->IsContext(PULSAR_MODE_KO)) id = system->koMgr->KickPlayersOut(id);  // return KO::RaceEndPage with the choice to spectate if the local players are out
-    // if (id != static_cast<PageId>(KO::RaceEndPage::id) && system->IsContext(PULSAR_HAW)) {
-    //     ChooseNextTrack* chooseNext = ExpSection::GetSection()->GetPulPage<ChooseNextTrack>();
-    //     if (chooseNext != nullptr) id = chooseNext->GetPageAfterWifiResults(id);
-    // }
     return id;
 }
 kmBranch(0x80646754, AfterWifiResults);
@@ -153,7 +147,6 @@ u8 ModifyCheckRankings() {
     asm(fmr animLength, f31;);
     ttEnd->ChangeSectionBySceneChange(SECTION_P1_WIFI, 0, animLength);
     return 0;
-    // ttEnd->EndStateAnimated(0, animLength);
 }
 kmCall(0x8085b4bc, ModifyCheckRankings);
 kmPatchExitPoint(ModifyCheckRankings, 0x8085bbe0);

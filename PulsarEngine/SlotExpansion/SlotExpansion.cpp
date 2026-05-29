@@ -1,4 +1,3 @@
-
 #include <MarioKartWii/UI/Page/Menu/CupSelect.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Page/Other/YesNo.hpp>
@@ -100,7 +99,6 @@ static void FormatTrackPath(char* path, u32 length, const char* format, const ch
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
     const char* creatorFile = cupsConfig->GetFileName(pulsarId, variantIdx);
     const CourseId realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
-    OS::Report("Formatting track path for pulsarId %d variant %d, creatorFile: %s\n", pulsarId, variantIdx, creatorFile ? creatorFile : "null");
     if (creatorFile != nullptr && (realId > 119 || variantIdx > 0)) {
         snprintf(path, length, "Race/Course/%s", creatorFile);
         return;
@@ -142,8 +140,7 @@ asmFunc UseCorrectCourseWrapper() {
 kmBranch(0x8052f224, UseCorrectCourseWrapper);
 kmPatchExitPoint(UseCorrectCourseWrapper, 0x8052f228);
 
-// Badly written, but does the job even though it can in theory hang forever, as unlikely as it is
-static void VSRaceRandomFix(SectionParams* params) {  // properly randomizes tracks and sets the first one
+static void VSRaceRandomFix(SectionParams* params) {
     params->vsRaceLimit = 32;
     CupsConfig* cupsConfig = CupsConfig::sInstance;
     Random random;
@@ -286,8 +283,8 @@ static EGG::Archive* SafeMount(void* archive, EGG::Heap* heap, int align) {
     return mounted;
 }
 kmCall(0x80518f80, SafeMount);
-kmWrite32(0x80518f84, 0x60000000); // li r0, 4
-kmWrite32(0x80518f88, 0x60000000); // stw r3, 4(r30)
-kmWrite32(0x80518f8c, 0x60000000); // stw r0, 0x20(r30)
+kmWrite32(0x80518f84, 0x60000000);  // li r0, 4
+kmWrite32(0x80518f88, 0x60000000);  // stw r3, 4(r30)
+kmWrite32(0x80518f8c, 0x60000000);  // stw r0, 0x20(r30)
 
 }  // namespace Pulsar

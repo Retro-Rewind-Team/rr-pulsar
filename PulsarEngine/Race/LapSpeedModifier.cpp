@@ -94,7 +94,6 @@ RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
 }
 kmCall(0x805328d4, LoadCustomLapCount);
 
-// kmWrite32(0x80723d64, 0x7FA4EB78);
 void DisplayCorrectLap(AnmTexPatHolder* texPat) {  // This Anm is held by a ModelDirector in a Lakitu::Player
     register u32 maxLap;
     asm(mr maxLap, r29;);

@@ -176,7 +176,7 @@ static void Save() {
         file.e[i].flags = sProfiles[i].hasData ? 1u : 0u;
     }
 
-    if (!io->OpenFile(path, FILE_MODE_WRITE)) io->CreateAndOpen(path, FILE_MODE_WRITE);
+    if (!io->OpenFile(path, FILE_MODE_WRITE) && !io->CreateAndOpen(path, FILE_MODE_WRITE)) return;
     io->Overwrite(sizeof(file), &file);
     io->Close();
 }

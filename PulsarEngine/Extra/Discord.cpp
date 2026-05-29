@@ -20,10 +20,113 @@ static CharacterId charID = CHARACTER_NONE;
 static char smallImageKey[32] = "";
 static char smallImageText[32] = "";
 
+static void SetSmallImage(const char* key, const char* text) {
+    snprintf(smallImageKey, sizeof(smallImageKey), "%s", key);
+    snprintf(smallImageText, sizeof(smallImageText), "%s", text);
+}
+
+static void SetCharacterSmallImage(CharacterId character) {
+    switch (character) {
+        case BABY_MARIO:
+            SetSmallImage("bmario", "Baby Mario");
+            break;
+        case BABY_LUIGI:
+            SetSmallImage("bluigi", "Baby Luigi");
+            break;
+        case BABY_PEACH:
+            SetSmallImage("bpeach", "Baby Peach");
+            break;
+        case BABY_DAISY:
+            SetSmallImage("bdaisy", "Baby Daisy");
+            break;
+        case TOAD:
+            SetSmallImage("toad", "Toad");
+            break;
+        case TOADETTE:
+            SetSmallImage("toadette", "Toadette");
+            break;
+        case KOOPA_TROOPA:
+            SetSmallImage("koopa_troopa", "Koopa Troopa");
+            break;
+        case DRY_BONES:
+            SetSmallImage("dry_bones", "Dry Bones");
+            break;
+        case MARIO:
+            SetSmallImage("mario", "Mario");
+            break;
+        case LUIGI:
+            SetSmallImage("luigi", "Luigi");
+            break;
+        case PEACH:
+        case PEACH_BIKER:
+            SetSmallImage("peach", "Peach");
+            break;
+        case DAISY:
+        case DAISY_BIKER:
+            SetSmallImage("daisy", "Daisy");
+            break;
+        case YOSHI:
+            SetSmallImage("yoshi", "Yoshi");
+            break;
+        case BIRDO:
+            SetSmallImage("birdo", "Birdo");
+            break;
+        case DIDDY_KONG:
+            SetSmallImage("diddy", "Diddy Kong");
+            break;
+        case BOWSER_JR:
+            SetSmallImage("bowser_jr", "Bowser Jr");
+            break;
+        case WARIO:
+            SetSmallImage("wario", "Wario");
+            break;
+        case WALUIGI:
+            SetSmallImage("waluigi", "Waluigi");
+            break;
+        case DONKEY_KONG:
+            SetSmallImage("dk", "Donkey Kong");
+            break;
+        case BOWSER:
+            SetSmallImage("bowser", "Bowser");
+            break;
+        case KING_BOO:
+            SetSmallImage("king_boo", "King Boo");
+            break;
+        case ROSALINA:
+        case ROSALINA_BIKER:
+            SetSmallImage("rosalina", "Rosalina");
+            break;
+        case FUNKY_KONG:
+            SetSmallImage("funky", "Funky Kong");
+            break;
+        case DRY_BOWSER:
+            SetSmallImage("dry_bowser", "Dry Bowser");
+            break;
+        case MII_L_A_MALE:
+        case MII_L_A_FEMALE:
+        case MII_M_A_MALE:
+        case MII_M_A_FEMALE:
+        case MII_S_A_MALE:
+        case MII_S_A_FEMALE:
+            SetSmallImage("mii_a", "Mii (Outfit A)");
+            break;
+        case MII_L_B_MALE:
+        case MII_L_B_FEMALE:
+        case MII_M_B_MALE:
+        case MII_M_B_FEMALE:
+        case MII_S_B_MALE:
+        case MII_S_B_FEMALE:
+            SetSmallImage("mii_b", "Mii (Outfit B)");
+            break;
+        default:
+            break;
+    }
+}
+
 // Removes 00 1A escapes from the BMG text
 void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
     int inc = 0;
-    for (int i = 0; i < 0x100 && src[i]; i++) {
+    for (int i = 0; i < 0x100 && src[i] && inc + 1 < 0x100; i++) {
         if (src[i] == 0x001a) {
             u8 size = *(u8*)(&src[i + 1]);
             i += (size / 2) - 1;
@@ -32,21 +135,27 @@ void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
             inc++;
         }
     }
+    dest[inc] = '\0';
 }
 
 void ConvertUTF16toUtf8(char* dest, const wchar_t* src, size_t max_len) {
-    size_t destIndex = 0; 
+    if (max_len == 0) return;
+
+    size_t destIndex = 0;
     for (size_t i = 0; ; i++) {
         wchar_t c = src[i];
         if (c == 0) {
             break;
         }
         if (c <= 0x007F) {
-            dest[destIndex++] = (char)c; 
+            if (destIndex + 1 >= max_len) break;
+            dest[destIndex++] = (char)c;
         } else if (c <= 0x07FF) {
+            if (destIndex + 2 >= max_len) break;
             dest[destIndex++] = 0xC0 | ((c >> 6) & 0x1F);
             dest[destIndex++] = 0x80 | (c & 0x3F);
         } else {
+            if (destIndex + 3 >= max_len) break;
             dest[destIndex++] = 0xE0 | ((c >> 12) & 0x0F);
             dest[destIndex++] = 0x80 | ((c >> 6) & 0x3F);
             dest[destIndex++] = 0x80 | (c & 0x3F);
@@ -105,8 +214,8 @@ void DiscordRichPresence(Section* _this) {
     float vr = 0, br = 0;
     u64 fc = 0;
 
-    smallImageKey[0] = 0;
-    smallImageText[0] = 0;
+    smallImageKey[0] = '\0';
+    smallImageText[0] = '\0';
 
     if (rksysMgr && rksysMgr->curLicenseId >= 0) {
         RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
@@ -129,152 +238,7 @@ void DiscordRichPresence(Section* _this) {
 
     charID = GetFirstLocalRaceCharacter();
     if (charID != CHARACTER_NONE) {
-        switch (charID) {
-            case BABY_MARIO:
-                snprintf(smallImageKey, 32, "bmario");
-                snprintf(smallImageText, 32, "Baby Mario");
-                break;
-
-            case BABY_LUIGI:
-                snprintf(smallImageKey, 32, "bluigi");
-                snprintf(smallImageText, 32, "Baby Luigi");
-                break;
-
-            case BABY_PEACH:
-                snprintf(smallImageKey, 32, "bpeach");
-                snprintf(smallImageText, 32, "Baby Peach");
-                break;
-
-            case BABY_DAISY:
-                snprintf(smallImageKey, 32, "bdaisy");
-                snprintf(smallImageText, 32, "Baby Daisy");
-                break;
-
-            case TOAD:
-                snprintf(smallImageKey, 32, "toad");
-                snprintf(smallImageText, 32, "Toad");
-                break;
-
-            case TOADETTE:
-                snprintf(smallImageKey, 32, "toadette");
-                snprintf(smallImageText, 32, "Toadette");
-                break;
-
-            case KOOPA_TROOPA:
-                snprintf(smallImageKey, 32, "koopa_troopa");
-                snprintf(smallImageText, 32, "Koopa Troopa");
-                break;
-
-            case DRY_BONES:
-                snprintf(smallImageKey, 32, "dry_bones");
-                snprintf(smallImageText, 32, "Dry Bones");
-                break;
-
-            case MARIO:
-                snprintf(smallImageKey, 32, "mario");
-                snprintf(smallImageText, 32, "Mario");
-                break;
-                
-            case LUIGI:
-                snprintf(smallImageKey, 32, "luigi");
-                snprintf(smallImageText, 32, "Luigi");
-                break;
-
-            case PEACH:
-            case PEACH_BIKER:
-                snprintf(smallImageKey, 32, "peach");
-                snprintf(smallImageText, 32, "Peach");
-                break;
-
-            case DAISY:
-            case DAISY_BIKER:
-                snprintf(smallImageKey, 32, "daisy");
-                snprintf(smallImageText, 32, "Daisy");
-                break;
-
-            case YOSHI:
-                snprintf(smallImageKey, 32, "yoshi");
-                snprintf(smallImageText, 32, "Yoshi");
-                break;
-
-            case BIRDO:
-                snprintf(smallImageKey, 32, "birdo");
-                snprintf(smallImageText, 32, "Birdo");
-                break;
-
-            case DIDDY_KONG:
-                snprintf(smallImageKey, 32, "diddy");
-                snprintf(smallImageText, 32, "Diddy Kong");
-                break;
-
-            case BOWSER_JR:
-                snprintf(smallImageKey, 32, "bowser_jr");
-                snprintf(smallImageText, 32, "Bowser Jr");
-                break;
-
-            case WARIO:
-                snprintf(smallImageKey, 32, "wario");
-                snprintf(smallImageText, 32, "Wario");
-                break;
-
-            case WALUIGI:
-                snprintf(smallImageKey, 32, "waluigi");
-                snprintf(smallImageText, 32, "Waluigi");
-                break;
-
-            case DONKEY_KONG:
-                snprintf(smallImageKey, 32, "dk");
-                snprintf(smallImageText, 32, "Donkey Kong");
-                break;
-
-            case BOWSER:
-                snprintf(smallImageKey, 32, "bowser");
-                snprintf(smallImageText, 32, "Bowser");
-                break;
-
-            case KING_BOO:
-                snprintf(smallImageKey, 32, "king_boo");
-                snprintf(smallImageText, 32, "King Boo");
-                break;
-
-            case ROSALINA:
-            case ROSALINA_BIKER:
-                snprintf(smallImageKey, 32, "rosalina");
-                snprintf(smallImageText, 32, "Rosalina");
-                break;
-
-            case FUNKY_KONG:
-                snprintf(smallImageKey, 32, "funky");
-                snprintf(smallImageText, 32, "Funky Kong");
-                break;
-
-            case DRY_BOWSER:
-                snprintf(smallImageKey, 32, "dry_bowser");
-                snprintf(smallImageText, 32, "Dry Bowser");
-                break;
-
-            case MII_L_A_MALE:
-            case MII_L_A_FEMALE:
-            case MII_M_A_MALE:
-            case MII_M_A_FEMALE:
-            case MII_S_A_MALE:
-            case MII_S_A_FEMALE:
-                snprintf(smallImageKey, 32, "mii_a");
-                snprintf(smallImageText, 32, "Mii (Outfit A)");
-                break;
-
-            case MII_L_B_MALE:
-            case MII_L_B_FEMALE:
-            case MII_M_B_MALE:
-            case MII_M_B_FEMALE:
-            case MII_S_B_MALE:
-            case MII_S_B_FEMALE:
-                snprintf(smallImageKey, 32, "mii_b");
-                snprintf(smallImageText, 32, "Mii (Outfit B)");
-                break;
-            default:
-                break;
-        }
+        SetCharacterSmallImage(charID);
     }
 
     if (_this->sectionId != prevSectionId) {

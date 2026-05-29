@@ -72,10 +72,6 @@ bool GetVersion(char* version, u32 length) {
                &request) >= 0;
 }
 
-// bool GetSpeedLimit(u32& speedLimit);
-// bool SetSpeedLimit(u32& speedLimit);
-// bool GetCPUSpeed(u32& cpuSpeed);
-// bool GetRealProductCode(char* productCode, u32 length);
 bool SetDiscordClient(char* clientID) {
     if (OpenDolphin() < 0) {
         return false;

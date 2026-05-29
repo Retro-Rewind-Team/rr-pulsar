@@ -7,7 +7,6 @@ namespace Pulsar {
 class Info {
    public:
     friend class System;
-    // User Options Getters
 
     inline u32 GetKey() const { return this->roomKey; }
     inline bool HasTrophies() const { return this->hasTTTrophies; }
@@ -43,7 +42,7 @@ class Info {
     u8 chooseNextTrackTimer;  // 0x1b
     u8 reservedSpace[40];
 };
-// size_assert(Info, 0x44);
+static_assert(sizeof(Info) == 0x44, "Info size");
 #pragma pack(pop)
 
 }  // namespace Pulsar

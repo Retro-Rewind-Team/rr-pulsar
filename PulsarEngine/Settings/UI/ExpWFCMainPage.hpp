@@ -8,8 +8,6 @@
 namespace Pulsar {
 namespace UI {
 
-static bool s_displayPlayerCount = true;
-
 class ExpWFCMain : public Pages::WFCMainMenu {
    public:
     ExpWFCMain() {
@@ -32,12 +30,12 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     void BeforeControlUpdate() override;
 
    private:
-    void OnSettingsButtonClick(PushButton& PushButton, u32 r5);
+    void OnSettingsButtonClick(PushButton& pushButton, u32 r5);
     void ExtOnButtonSelect(PushButton& pushButton, u32 hudSlotId);
-    void OnMainButtonClick(PushButton& PushButton, u32 hudSlotId);
-    void OnOtherButtonClick(PushButton& PushButton, u32 hudSlotId);
-    void OnBattleButtonClick(PushButton& PushButton, u32 hudSlotId);
-    void OnLeaderboardButtonClick(PushButton& PushButton, u32 hudSlotId);
+    void OnMainButtonClick(PushButton& pushButton, u32 hudSlotId);
+    void OnOtherButtonClick(PushButton& pushButton, u32 hudSlotId);
+    void OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId);
+    void OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId);
     void ExtOnStartPress(u32 hudSlotId);
 
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onSettingsClick;
@@ -56,7 +54,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
 
    public:
     PulPageId topSettingsPage;
-    static u32 lastClickedMainMenuButton;  // 6 = retros, 7 = customs
+    static u32 lastClickedMainMenuButton;
 };
 
 class ExpWFCModeSel : public Pages::WFCModeSelect {
@@ -64,9 +62,6 @@ class ExpWFCModeSel : public Pages::WFCModeSelect {
     ExpWFCModeSel() : region(0xA) {
         this->onButtonSelectHandler.ptmf = &ExpWFCModeSel::OnModeButtonSelect;
         this->onModeButtonClickHandler.ptmf = &ExpWFCModeSel::OnModeButtonClick;
-
-        // this->onStartPress.subject = this;
-        // this->onStartPress.ptmf = &ExpWFCModeSel::ExtOnStartPress;
     }
     void OnInit() override;
     void BeforeControlUpdate() override;
@@ -76,12 +71,7 @@ class ExpWFCModeSel : public Pages::WFCModeSelect {
 
    public:
     void OnModeButtonSelect(PushButton& modeButton, u32 hudSlotId);  // 8064c718
-    void OnModeButtonClick(PushButton& PushButton, u32 r5);
-    // void ExtOnStartPress(u32 hudSlotId) {
-    //     s_displayPlayerCount = !s_displayPlayerCount;
-    // }
-
-    // PtmfHolder_1A<ExpWFCModeSel, void, u32> onStartPress;
+    void OnModeButtonClick(PushButton& pushButton, u32 r5);
 
     PushButton ctButton;
     PushButton regButton;

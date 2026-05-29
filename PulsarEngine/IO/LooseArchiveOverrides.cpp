@@ -719,9 +719,7 @@ static u32 GetBasenameHashCapacity(u32 nodeCapacity) {
 }
 
 static void CopyPath(char* dest, u32 destSize, const char* src) {
-    strncpy(dest, src, destSize);
-    // Downstream path logic assumes explicit NUL termination after every bounded copy.
-    dest[destSize - 1] = '\0';
+    snprintf(dest, destSize, "%s", src);
 }
 
 static bool StripDeleteSuffixInPlace(char* path) {
@@ -1060,7 +1058,7 @@ static void BuildArchiveFileSlotCapacities(const U8Node* nodes, u32 nodeCount, u
     }
 
     // U8 node order is not guaranteed to follow file payload order, so compute
-    // in-place growth limits from a temporary dataOffset-sorted view.
+    // in-place growth limits from a dataOffset-sorted work view.
     for (u32 i = 1; i < fileCount; ++i) {
         const u32 keyNode = fileOrder[i];
         const u32 keyOffset = nodes[keyNode].dataOffset;
@@ -1206,7 +1204,7 @@ static bool ModsRootExistsOnSD() {
     } else {
         System* system = System::sInstance;
         if (system == nullptr) return false;
-        // Dolphin channel mode is not backed by the main IO object, so probe through a temporary SDIO instance.
+        // Dolphin channel mode is not backed by the main IO object, so probe through a stack SDIO instance.
         SDIO sdIo(IOType_SD, system->heap, system->taskThread);
         exists = sdIo.FolderExists(modsPath);
     }

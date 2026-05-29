@@ -17,19 +17,6 @@ void* CreateSendAndRecvBuffers() {
 }
 kmCall(0x806570b4, CreateSendAndRecvBuffers);
 
-/*
-static const u32 sizeArray[8] = {
-        sizeof(RKNet::RACEPacketHeader),
-        sizeof(PulRH1),
-        sizeof(PulRH2),
-        sizeof(PulSELECT),
-        2 * sizeof(PulRACEDATA),
-        sizeof(PulUSER),
-        2 * sizeof(PulITEM),
-        sizeof(PulEVENT)
-};
-*/
-
 // Buffer size must be the FULL size to accommodate any packet (including LapKO in friend rooms)
 // The actual transmitted packet size is controlled dynamically in BeforeRH1Send based on context
 kmWrite8(0x8089a19b, PulRH1SizeFull);
