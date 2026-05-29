@@ -11,6 +11,7 @@
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/Rating/RatingSync.hpp>
 #include <Network/WiiLink.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -22,6 +23,11 @@ static float s_requestStartVr = 0.0f;
 static float s_requestStartBr = 0.0f;
 static void* s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
+static s32 s_pendingInitialReportProfileId = 0;
+static u32 s_pendingInitialReportLicenseId = 0;
+static bool s_pendingLoginDownload = false;
+static s32 s_pendingProfileId = 0;
+static u32 s_pendingLicenseId = 0;
 
 struct RequestCtx {
     u32 generation;
@@ -159,7 +165,7 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
     SetSyncReportingSuppressed(false);
 }
 
-void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
+void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     if (profileId <= 0) return;
 
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
@@ -199,6 +205,42 @@ void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
     if (sendRet < 0) {
         ++s_requestGeneration;
     }
+}
+
+static bool CanStartLoginRatingDownload() {
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    return controller != nullptr && controller->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
+}
+
+static void TryStartPendingLoginRatingDownload() {
+    if (!s_pendingLoginDownload || !CanStartLoginRatingDownload()) return;
+
+    const s32 profileId = s_pendingProfileId;
+    const u32 licenseId = s_pendingLicenseId;
+    s_pendingLoginDownload = false;
+    s_pendingProfileId = 0;
+    s_pendingLicenseId = 0;
+    BeginLoginRatingDownload(profileId, licenseId);
+}
+
+static FrameLoadHook startPendingLoginRatingDownload(TryStartPendingLoginRatingDownload);
+
+void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
+    if (profileId <= 0) return;
+
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    if (rksys == nullptr || licenseId >= 4) return;
+    BindLicenseProfileId(licenseId, profileId);
+
+    if (!CanStartLoginRatingDownload()) {
+        s_pendingLoginDownload = true;
+        s_pendingProfileId = profileId;
+        s_pendingLicenseId = licenseId;
+        return;
+    }
+
+    s_pendingLoginDownload = false;
+    BeginLoginRatingDownload(profileId, licenseId);
 }
 
 }  // namespace PointRating
