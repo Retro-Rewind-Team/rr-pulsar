@@ -23,6 +23,7 @@ static const u32 balloonPoolEntrySize = 0x8;
 static const u32 balloonPlayerArrayOffset = 0x3c4;
 static const u32 balloonPlayerSize = 0x18;
 static const u32 balloonMgrTimeOffset = 0x4e4;
+static const u32 kartMovementBlinkTimerOffset = 0x1a8;
 
 static bool sInitialized = false;
 static u16 sLastRaceFrames = 0xffff;
@@ -232,7 +233,11 @@ static void StartBalloonLossBlink(u8 playerId) {
     settings.battleType = BATTLE_BALLOON;
 
     KartMoveStartBlinkLocalFn startBlinkLocal = reinterpret_cast<KartMoveStartBlinkLocalFn>(kmRuntimeAddr(0x805819a8));
-    startBlinkLocal(&player->GetMovement());
+    Kart::Movement& movement = player->GetMovement();
+    startBlinkLocal(&movement);
+
+    s16& blinkTimer = *reinterpret_cast<s16*>(reinterpret_cast<u8*>(&movement) + kartMovementBlinkTimerOffset);
+    blinkTimer *= 1.5f;
 
     settings.gamemode = prevMode;
     settings.battleType = prevBattleType;
