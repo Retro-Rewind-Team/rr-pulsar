@@ -14,6 +14,7 @@
 #include <Dolphin/DolphinIOS.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <UI/UI.hpp>
+#include <RetroRewindChannel.hpp>
 
 namespace Pulsar {
 
@@ -45,10 +46,15 @@ kmBranch(0x80646754, AfterWifiResults);
 // Credit to Kazuki for making the original ASM code, and Brawlbox for porting it to C++
 static void LaunchRiivolutionButton(SectionMgr* sectionMgr) {
     const SectionId id = sectionMgr->nextSectionId;
-    if (id == SECTION_CHANNEL_FROM_MENU || id == SECTION_CHANNEL_FROM_CHECK_RANKINGS || id == SECTION_CHANNEL_FROM_DOWNLOADS)
+    if (id == SECTION_CHANNEL_FROM_MENU || id == SECTION_CHANNEL_FROM_CHECK_RANKINGS || id == SECTION_CHANNEL_FROM_DOWNLOADS) {
+        if(!Dolphin::IsEmulator() && IsNewChannel()) {
+            NewChannel_WriteLoadedFromRREphFile();
+        }
+
         Debug::LaunchSoftware();
-    else
+    } else {
         sectionMgr->LoadSection();
+    }
 }
 kmCall(0x80553a60, LaunchRiivolutionButton);
 

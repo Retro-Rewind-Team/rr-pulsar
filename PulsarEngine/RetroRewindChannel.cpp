@@ -16,13 +16,18 @@ bool NewChannel_UseSeparateSavegame() {
 
 void NewChannel_WriteLoadedFromRREphFile() {
     if(IO::sInstance == nullptr) return;
-    IO::sInstance->CreateAndOpen(RRC_LOADED_FROM_RR_EPH_FILE_PATH, IOS::MODE_NONE);
+    IO::sInstance->CreateAndOpen(RRC_LOADED_FROM_RR_EPH_FILE_PATH, IOS::MODE_READ_WRITE);
     IO::sInstance->Close();
+    // Check the file was actually written
+    // Also for some reason without this it doesnt get wrtten. I guess there's some flush/sync issues
+    if (!IO::sInstance->OpenFile(RRC_LOADED_FROM_RR_EPH_FILE_PATH, IOS::MODE_READ)) {
+        Debug::FatalError(RRC_LOADED_FROM_RR_EPH_FILE_PATH " was not written properly.");
+    }
 }
 
 void NewChannel_WriteCrashEphFile() {
     if (IO::sInstance == nullptr) return;
-    IO::sInstance->CreateAndOpen(RRC_CRASH_EPH_FILE_PATH, IOS::MODE_NONE);
+    IO::sInstance->CreateAndOpen(RRC_CRASH_EPH_FILE_PATH, IOS::MODE_READ_WRITE);
     IO::sInstance->Close();
 }
 
@@ -36,10 +41,6 @@ void NewChannel_Init() {
         snprintf(message, sizeof(message), "This version of Retro Rewind is incompatible with the version of the channel (abi%d != abi%d).\n"
             "You can usually fix this by updating both RR and the channel to the latest version.", channelVersion, requiredVersion);
         Debug::FatalError(message);
-    }
-
-    if (!Dolphin::IsEmulator()) {
-        NewChannel_WriteLoadedFromRREphFile();
     }
 }
 
