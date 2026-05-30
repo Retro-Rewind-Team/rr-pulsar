@@ -332,6 +332,7 @@ void System::UpdateContext() {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
                     isChangeCombo = newContext & (1 << PULSAR_CHANGECOMBO);
+                    isBattleRoyale = false;
                 }
                 break;
             default:
@@ -343,6 +344,7 @@ void System::UpdateContext() {
         if (isOTT) {
             isFeather &= (ottOffline == OTTSETTING_OFFLINE_FEATHER);
             isUMTs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED;
+            isBattleRoyale = false;
         }
     }
     this->netMgr.hostContext = newContext;
