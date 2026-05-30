@@ -62,6 +62,8 @@ typedef void (*GeoObjectLoadFn)(void* object);
 typedef void (*KartActionHitFn)(void* action, u32 sourcePlayerObjId);
 typedef void (*KartMoveStartBlinkLocalFn)(Kart::Movement* movement);
 
+void EjectItemsFromItemDamage(u8 playerId);
+
 kmRuntimeUse(0x809c4748);
 kmRuntimeUse(0x805819a8);
 kmRuntimeUse(0x80869df4);
@@ -512,18 +514,21 @@ static void FinishPoweredHitAction(void* action, u32 sourcePlayerObjId) {
 static void OnStarHitAction(void* action, u32 sourcePlayerObjId) {
     KartActionHitFn original = reinterpret_cast<KartActionHitFn>(kmRuntimeAddr(0x80568718));
     original(action, sourcePlayerObjId);
+    EjectItemsFromItemDamage(reinterpret_cast<Kart::Link*>(action)->GetPlayerIdx());
     FinishPoweredHitAction(action, sourcePlayerObjId);
 }
 
 static void OnBulletHitAction(void* action, u32 sourcePlayerObjId) {
     KartActionHitFn original = reinterpret_cast<KartActionHitFn>(kmRuntimeAddr(0x80569024));
     original(action, sourcePlayerObjId);
+    EjectItemsFromItemDamage(reinterpret_cast<Kart::Link*>(action)->GetPlayerIdx());
     FinishPoweredHitAction(action, sourcePlayerObjId);
 }
 
 static void OnMegaHitAction(void* action, u32 sourcePlayerObjId) {
     KartActionHitFn original = reinterpret_cast<KartActionHitFn>(kmRuntimeAddr(0x80569818));
     original(action, sourcePlayerObjId);
+    EjectItemsFromItemDamage(reinterpret_cast<Kart::Link*>(action)->GetPlayerIdx());
     FinishPoweredHitAction(action, sourcePlayerObjId);
 }
 
