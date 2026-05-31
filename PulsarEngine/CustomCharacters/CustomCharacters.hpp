@@ -41,10 +41,10 @@ namespace CustomCharacters {
 
 // Shared limits for skin ids, packet packing, local UI slots, and loose metadata.
 enum {
-    PACKET_BITS = 8,
+    PACKET_BITS = 6,
     PACKET_MASK = (1 << PACKET_BITS) - 1,
     TABLE_DEFAULT = 0,
-    CUSTOM_TABLE_LIMIT = 150,
+    CUSTOM_TABLE_LIMIT = 50,
     TABLE_COUNT = CUSTOM_TABLE_LIMIT + 1,
     TABLE_INVALID = TABLE_COUNT,
 
