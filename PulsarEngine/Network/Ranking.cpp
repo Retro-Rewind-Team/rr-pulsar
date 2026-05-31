@@ -25,7 +25,7 @@ namespace Ranking {
 
 static const char* ANT_BADGE_URL = "http://update.rwfc.net/RetroRewind/badges/ant.txt";
 static const char* DEV_BADGE_URL = "http://update.rwfc.net/RetroRewind/badges/dev.txt";
-static const char* DONO_BADGE_URL = "https://update.rwfc.net/RetroRewind/badges/dono.txt";
+static const char* DONO_BADGE_URL = "http://update.rwfc.net/RetroRewind/badges/dono.txt";
 static const u32 BADGE_REQUEST_WORK_BUF_SIZE = 0x1000;
 
 enum BadgeRequestKind {
@@ -65,13 +65,6 @@ static void NHTTPFreeFromEggHeap(void* ptr) {
     if (ptr == nullptr) return;
     EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
     if (heap != nullptr) EGG::Heap::free(ptr, heap);
-}
-
-static void NHTTPConfigureHttpsForRequest(void* request) {
-    if (request == nullptr) return;
-    typedef s32 (*Fn)(void*, ...);
-    (reinterpret_cast<Fn>(&NHTTPSetRootCADefault))(request);
-    (reinterpret_cast<Fn>(&NHTTPSetVerifyOption))(request, 1);
 }
 
 static bool ParseBadgeFriendCodeList(const char* body, int bodyLen, u64 friendCode) {
@@ -592,10 +585,6 @@ static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode) {
                                        reinterpret_cast<void*>(&OnBadgeListDownloaded),
                                        reinterpret_cast<void*>(&s_badgeRequestCtx));
     if (request == nullptr) return false;
-
-    if (strncmp(url, "https://", 8) == 0) {
-        NHTTPConfigureHttpsForRequest(request);
-    }
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet >= 0) s_badgeRequestActive = true;
