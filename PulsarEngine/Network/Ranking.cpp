@@ -25,12 +25,14 @@ namespace Ranking {
 
 static const char* ANT_BADGE_URL = "http://update.rwfc.net/RetroRewind/badges/ant.txt";
 static const char* DEV_BADGE_URL = "http://update.rwfc.net/RetroRewind/badges/dev.txt";
+static const char* DONO_BADGE_URL = "https://update.rwfc.net/RetroRewind/badges/dono.txt";
 static const u32 BADGE_REQUEST_WORK_BUF_SIZE = 0x1000;
 
 enum BadgeRequestKind {
     BADGE_REQUEST_NONE,
     BADGE_REQUEST_ANT,
-    BADGE_REQUEST_DEV
+    BADGE_REQUEST_DEV,
+    BADGE_REQUEST_DONO
 };
 
 struct BadgeRequestCtx {
@@ -45,6 +47,7 @@ static u32 s_badgeRequestGeneration = 0;
 static u64 s_badgeFriendCode = 0;
 static bool s_antBadgeFC = false;
 static bool s_devBadgeFC = false;
+static bool s_donoBadgeFC = false;
 static bool s_badgeRequestActive = false;
 static bool s_badgeRefreshPending = false;
 static bool s_badgeNHTTPReadyForRefresh = false;
@@ -62,6 +65,13 @@ static void NHTTPFreeFromEggHeap(void* ptr) {
     if (ptr == nullptr) return;
     EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
     if (heap != nullptr) EGG::Heap::free(ptr, heap);
+}
+
+static void NHTTPConfigureHttpsForRequest(void* request) {
+    if (request == nullptr) return;
+    typedef s32 (*Fn)(void*, ...);
+    (reinterpret_cast<Fn>(&NHTTPSetRootCADefault))(request);
+    (reinterpret_cast<Fn>(&NHTTPSetVerifyOption))(request, 1);
 }
 
 static bool ParseBadgeFriendCodeList(const char* body, int bodyLen, u64 friendCode) {
@@ -98,6 +108,10 @@ static bool ParseBadgeFriendCodeList(const char* body, int bodyLen, u64 friendCo
 
 static bool IsDevBadgeFC(u64 fc) {
     return fc != 0 && fc == s_badgeFriendCode && s_devBadgeFC;
+}
+
+static bool IsDonoBadgeFC(u64 fc) {
+    return fc != 0 && fc == s_badgeFriendCode && s_donoBadgeFC;
 }
 
 static bool IsAntBadgeFC(u64 fc) {
@@ -473,6 +487,10 @@ static bool WriteFetchedBadgeForFC(u64 friendCode) {
         kmRuntimeWrite32A(0x806436a0, 0x3860000B);  // li r3,11 -> Developers
         return true;
     }
+    if (IsDonoBadgeFC(friendCode)) {
+        kmRuntimeWrite32A(0x806436a0, 0x3860000C);  // li r3,12 -> Donators
+        return true;
+    }
     return false;
 }
 
@@ -486,7 +504,30 @@ static void TryApplyFetchedBadge() {
 }
 
 static const char* GetBadgeUrl(BadgeRequestKind kind) {
-    return kind == BADGE_REQUEST_ANT ? ANT_BADGE_URL : DEV_BADGE_URL;
+    switch (kind) {
+        case BADGE_REQUEST_ANT:
+            return ANT_BADGE_URL;
+        case BADGE_REQUEST_DEV:
+            return DEV_BADGE_URL;
+        case BADGE_REQUEST_DONO:
+            return DONO_BADGE_URL;
+        case BADGE_REQUEST_NONE:
+        default:
+            return "";
+    }
+}
+
+static BadgeRequestKind GetNextBadgeRequestKind(BadgeRequestKind kind) {
+    switch (kind) {
+        case BADGE_REQUEST_ANT:
+            return BADGE_REQUEST_DEV;
+        case BADGE_REQUEST_DEV:
+            return BADGE_REQUEST_DONO;
+        case BADGE_REQUEST_DONO:
+        case BADGE_REQUEST_NONE:
+        default:
+            return BADGE_REQUEST_NONE;
+    }
 }
 
 static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode);
@@ -494,12 +535,12 @@ static void StartBadgeRefresh(u64 friendCode);
 
 static void OnBadgeListDownloaded(s32 result, void* response, void* userdata) {
     BadgeRequestCtx* ctx = reinterpret_cast<BadgeRequestCtx*>(userdata);
-    const bool shouldFetchDev = ctx != nullptr && ctx->generation == s_badgeRequestGeneration &&
-                                ctx->kind == BADGE_REQUEST_ANT;
+    const BadgeRequestKind nextKind =
+        (ctx != nullptr && ctx->generation == s_badgeRequestGeneration) ? GetNextBadgeRequestKind(ctx->kind) : BADGE_REQUEST_NONE;
     if (ctx == nullptr || ctx->generation != s_badgeRequestGeneration || response == nullptr) {
         if (response != nullptr) NHTTPDestroyResponse(response);
         s_badgeRequestActive = false;
-        if (!s_badgeRefreshPending && response == nullptr && shouldFetchDev) s_nextBadgeRequestKind = BADGE_REQUEST_DEV;
+        if (!s_badgeRefreshPending && response == nullptr && nextKind != BADGE_REQUEST_NONE) s_nextBadgeRequestKind = nextKind;
         return;
     }
 
@@ -511,6 +552,8 @@ static void OnBadgeListDownloaded(s32 result, void* response, void* userdata) {
                 s_antBadgeFC = true;
             } else if (ctx->kind == BADGE_REQUEST_DEV) {
                 s_devBadgeFC = true;
+            } else if (ctx->kind == BADGE_REQUEST_DONO) {
+                s_donoBadgeFC = true;
             }
             TryApplyFetchedBadge();
         }
@@ -519,7 +562,7 @@ static void OnBadgeListDownloaded(s32 result, void* response, void* userdata) {
     NHTTPDestroyResponse(response);
     s_badgeRequestActive = false;
 
-    if (!s_badgeRefreshPending && shouldFetchDev) s_nextBadgeRequestKind = BADGE_REQUEST_DEV;
+    if (!s_badgeRefreshPending && nextKind != BADGE_REQUEST_NONE) s_nextBadgeRequestKind = nextKind;
 }
 
 static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode) {
@@ -544,10 +587,15 @@ static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode) {
     s_badgeRequestCtx.kind = kind;
     s_badgeRequestCtx.friendCode = friendCode;
 
-    void* request = NHTTPCreateRequest(GetBadgeUrl(kind), 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
+    const char* url = GetBadgeUrl(kind);
+    void* request = NHTTPCreateRequest(url, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
                                        reinterpret_cast<void*>(&OnBadgeListDownloaded),
                                        reinterpret_cast<void*>(&s_badgeRequestCtx));
     if (request == nullptr) return false;
+
+    if (strncmp(url, "https://", 8) == 0) {
+        NHTTPConfigureHttpsForRequest(request);
+    }
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet >= 0) s_badgeRequestActive = true;
@@ -564,6 +612,7 @@ static void StartBadgeRefresh(u64 friendCode) {
     s_badgeFriendCode = friendCode;
     s_antBadgeFC = false;
     s_devBadgeFC = false;
+    s_donoBadgeFC = false;
     s_badgeNHTTPReadyForRefresh = false;
     s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
 
