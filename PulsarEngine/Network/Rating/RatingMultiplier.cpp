@@ -21,6 +21,7 @@ static const u32 MULTIPLIER_REQUEST_WORK_BUF_SIZE = 0x1000;
 static void* s_multiplierRequestWorkBuf = nullptr;
 static bool s_multiplierRequestActive = false;
 static bool s_multiplierRequestDone = false;
+static bool s_wasConnectedToWfc = false;
 static bool s_remoteMultiplierValid = false;
 static float s_remoteMultiplier = 1.0f;
 
@@ -136,7 +137,22 @@ static void TryStartMultiplierDownload() {
     s_multiplierRequestActive = true;
 }
 
-static FrameLoadHook remoteMultiplierHook(TryStartMultiplierDownload);
+static void UpdateMultiplierDownloadForWfcConnection() {
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isConnectedToWfc =
+        controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+
+    if (isConnectedToWfc && !s_wasConnectedToWfc) {
+        s_multiplierRequestDone = false;
+        s_remoteMultiplierValid = false;
+        s_remoteMultiplier = 1.0f;
+    }
+    s_wasConnectedToWfc = isConnectedToWfc;
+
+    TryStartMultiplierDownload();
+}
+
+static FrameLoadHook remoteMultiplierHook(UpdateMultiplierDownloadForWfcConnection);
 
 static bool IsEventDay(unsigned m, unsigned d) {
     return (m == 12 && d >= 23) ||  // Christmas
