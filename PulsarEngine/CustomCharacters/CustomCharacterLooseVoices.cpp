@@ -111,7 +111,7 @@ bool LooseVoiceStemExists(const char* postfix, const char* suffix, const char* v
     return LooseVoiceFileExists(postfix, suffix, "brwsd", voiceName) || LooseVoiceFileExists(postfix, suffix, "brbnk", voiceName);
 }
 
-// A .silent marker suppresses all voice groups for a custom skin.
+// A .silent marker suppresses voice groups only when no loose voices exist.
 bool SilentVoiceMarkerExists(CharacterId character, u8 table, const char* postfix) {
     if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return false;
     if (postfix == nullptr) return false;
@@ -149,10 +149,6 @@ const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table) {
 
     const char* postfix = GeneratedCustomPostfix(character, table);
     if (postfix == nullptr) return info;
-    if (SilentVoiceMarkerExists(character, table, postfix)) {
-        info.silent = true;
-        return info;
-    }
 
     for (u32 suffixIndex = 0; suffixIndex < ARRAY_COUNT(looseVoiceGroupSuffixes); ++suffixIndex) {
         const char* suffix = looseVoiceGroupSuffixes[suffixIndex];
@@ -171,6 +167,7 @@ const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table) {
             }
         }
     }
+    if (SilentVoiceMarkerExists(character, table, postfix)) info.silent = true;
     return info;
 }
 
