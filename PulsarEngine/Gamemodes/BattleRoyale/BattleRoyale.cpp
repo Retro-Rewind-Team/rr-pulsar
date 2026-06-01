@@ -303,32 +303,6 @@ static void QueueBalloonMoveFromLocalLoss(u8 losingPlayerId, u8 gainingPlayerId)
     QueueBalloonEvent(static_cast<u8>(balloonMoveEventBase + losingPlayerId * maxPlayers + gainingPlayerId));
 }
 
-static void ClearPlacementPacket(Network::PulRH1& packet) {
-    packet.lapKoSeq = 0;
-    packet.lapKoRoundIndex = 0;
-    packet.lapKoActiveCount = 0;
-    packet.lapKoElimCount = 0;
-    for (u8 i = 0; i < maxPlayers; ++i) packet.lapKoElims[i] = 0xff;
-}
-
-static void WriteHostFinalPlacementPacket(Network::PulRH1& packet) {
-    ClearPlacementPacket(packet);
-    if (!ShouldApplyBattleRoyale() || !IsOnline()) return;
-
-    const Raceinfo* raceinfo = Raceinfo::sInstance;
-    if (raceinfo == nullptr || raceinfo->playerIdInEachPosition == nullptr) return;
-
-    const System* system = System::sInstance;
-    if (system == nullptr || system->lapKoMgr == nullptr || !system->lapKoMgr->isHost) return;
-    if (!system->lapKoMgr->raceFinished && !raceinfo->IsAtLeastStage(RACESTAGE_IS_FINISHING)) return;
-
-    const u8 playerCount = system->nonTTGhostPlayersCount;
-    const u8 count = playerCount < maxPlayers ? playerCount : maxPlayers;
-    packet.lapKoSeq = 1;
-    packet.lapKoElimCount = count;
-    for (u8 pos = 0; pos < count; ++pos) packet.lapKoElims[pos] = raceinfo->playerIdInEachPosition[pos];
-}
-
 static u8 GetPackedLocalBalloonCounts(void* balloonMgr) {
     if (balloonMgr == nullptr) return 0xFF;
 
@@ -357,7 +331,6 @@ static u8 GetPackedLocalBalloonCounts(void* balloonMgr) {
 }
 
 void WriteRH1Packet(Network::PulRH1& packet) {
-    WriteHostFinalPlacementPacket(packet);
     packet.battleRoyaleBalloonCounts = GetPackedLocalBalloonCounts(GetBalloonManager());
 
     if (!ShouldApplyBattleRoyale() || sPendingBalloonEventSize == 0) {
@@ -368,23 +341,6 @@ void WriteRH1Packet(Network::PulRH1& packet) {
 
     packet.battleRoyaleLossSeq = sPendingBalloonEventSeq[sPendingBalloonEventReadIdx];
     packet.battleRoyaleLossPlayerId = sPendingBalloonEventPlayerId[sPendingBalloonEventReadIdx];
-}
-
-static void ApplyFinalPlacementOrder(Raceinfo& raceinfo, const u8* order, u8 count) {
-    if (raceinfo.playerIdInEachPosition == nullptr || order == nullptr) return;
-
-    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
-    if (count > playerCount) count = playerCount;
-    if (count > maxPlayers) count = maxPlayers;
-
-    for (u8 pos = 0; pos < count; ++pos) {
-        const u8 playerId = order[pos];
-        if (playerId >= playerCount || playerId >= maxPlayers) continue;
-
-        raceinfo.playerIdInEachPosition[pos] = playerId;
-        RaceinfoPlayer* player = raceinfo.players[playerId];
-        if (player != nullptr) player->position = static_cast<u8>(pos + 1);
-    }
 }
 
 static u16 GetCurrentRaceFrames() {
@@ -491,6 +447,14 @@ static bool IsPlayerFinished(const Raceinfo& raceinfo, u8 playerId) {
     RaceinfoPlayer* player = raceinfo.players[playerId];
     if (player == nullptr) return false;
     return (player->stateFlags & 0x2) != 0;
+}
+
+static bool IsPlayerOnlineRaceComplete(const Raceinfo& raceinfo, u8 playerId) {
+    if (!IsOnline()) return false;
+
+    RaceinfoPlayer* player = raceinfo.players[playerId];
+    if (player == nullptr) return false;
+    return IsPlayerFinished(raceinfo, playerId) && player->currentLap >= player->maxLap;
 }
 
 static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) {
@@ -916,6 +880,11 @@ static void ProcessBalloonEliminations(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
         if (lapKoMgr.IsActive(playerId) && sPreviousBalloonCount[playerId] != 0 && current == 0) {
             Raceinfo* raceinfo = Raceinfo::sInstance;
             if (raceinfo != nullptr) {
+                if (IsPlayerOnlineRaceComplete(*raceinfo, playerId)) {
+                    sPreviousBalloonCount[playerId] = current;
+                    continue;
+                }
+
                 RecordPlacementElimination(playerId);
                 const bool finalElimination = lapKoMgr.GetActiveCount() <= 2;
                 UpdateRemainingPlayerPlacements(lapKoMgr, *raceinfo, finalElimination);
@@ -1025,27 +994,6 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNe
     }
 }
 
-static bool ConsumeHostFinalPlacements(LapKO::Mgr& lapKoMgr, RKNet::Controller& controller, Raceinfo& raceinfo) {
-    if (!IsOnline() || lapKoMgr.isHost) return false;
-
-    const u8 hostAid = lapKoMgr.hostAid;
-    if (hostAid >= maxPlayers) return false;
-
-    const u32 bufferIdx = controller.lastReceivedBufferUsed[hostAid][RKNet::PACKET_RACEHEADER1];
-    RKNet::SplitRACEPointers* split = controller.splitReceivedRACEPackets[bufferIdx][hostAid];
-    if (split == nullptr) return false;
-
-    const RKNet::PacketHolder<Network::PulRH1>* holder = split->GetPacketHolder<Network::PulRH1>();
-    if (holder == nullptr || holder->packetSize < Network::PulRH1SizeFull) return false;
-
-    const Network::PulRH1* packet = holder->packet;
-    const u8 count = packet->lapKoElimCount;
-    if (packet->lapKoSeq == 0 || count == 0 || count > maxPlayers) return false;
-
-    ApplyFinalPlacementOrder(raceinfo, packet->lapKoElims, count);
-    return true;
-}
-
 static void TickLocalBalloonEvents() {
     if (sPendingBalloonEventSize == 0) return;
 
@@ -1102,11 +1050,7 @@ static void FrameUpdate() {
         FinishSoleActiveUnfinishedPlayer(*lapKoMgr, *raceinfo);
     }
 
-    const bool hostFinalPlacementApplied = ConsumeHostFinalPlacements(*lapKoMgr, *controller, *raceinfo);
-    if (hostFinalPlacementApplied) return;
-
-    const bool commitRaceOrder = lapKoMgr->raceFinished || raceinfo->IsAtLeastStage(RACESTAGE_IS_FINISHING);
-    UpdateRemainingPlayerPlacements(*lapKoMgr, *raceinfo, commitRaceOrder);
+    UpdateRemainingPlayerPlacements(*lapKoMgr, *raceinfo, false);
 }
 
 static RaceFrameHook battleRoyaleFrameHook(FrameUpdate);
