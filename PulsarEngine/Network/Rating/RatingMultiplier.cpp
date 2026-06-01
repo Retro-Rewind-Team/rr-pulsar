@@ -77,8 +77,6 @@ static bool ParseRemoteMultiplier(const char* body, int bodyLen, float& out) {
     p = SkipWhitespace(p);
     if (*p != '\0') return false;
 
-    if (value <= 0.0f) return false;
-
     out = value;
     return true;
 }
