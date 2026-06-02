@@ -1,4 +1,5 @@
 #include <Gamemodes/Battle/BattleElimination.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
 #include <MarioKartWii/UI/Layout/ControlLoader.hpp>
@@ -246,7 +247,10 @@ const wchar_t* CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar
         }
     }
 
-    const u32 characterBmgId = GetCharacterBMGId(player.characterId, true);
+    u32 characterBmgId = CustomCharacters::SkinNameBmgId(
+        player.characterId,
+        CustomCharacters::RaceSkinTable(playerId, player.characterId));
+    if (characterBmgId == 0) characterBmgId = GetCharacterBMGId(player.characterId, true);
     const wchar_t* bmgName = nullptr;
     if (characterBmgId != 0) {
         bmgName = UI::GetCustomMsg(static_cast<s32>(characterBmgId));
