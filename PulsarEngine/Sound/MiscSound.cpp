@@ -1,10 +1,13 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Audio/AudioManager.hpp>
+#include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/Audio/SinglePlayer.hpp>
 #include <MarioKartWii/Audio/Other/AudioStreamsMgr.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <core/nw4r/snd/BasicSound.hpp>
 #include <Sound/MiscSound.hpp>
 #include <Settings/Settings.hpp>
+#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace Sound {
@@ -151,6 +154,7 @@ static float CheckFanfare(const Audio::SinglePlayer& singlePlayer) {
 kmCall(0x80857860, CheckFanfare);
 
 static u8 specialItemReceiveSoundEnabled = 1;
+static u8 specialItemReceiveSoundPitchPending = 0;
 
 static void RefreshSpecialItemReceiveSoundSetting() {
     specialItemReceiveSoundEnabled =
@@ -167,6 +171,10 @@ static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
 
         stwu r1, -0x10(r1);
         stw r11, 0x8(r1);
+        li r0, 0;
+        lis r11, specialItemReceiveSoundPitchPending @ha;
+        stb r0, specialItemReceiveSoundPitchPending @l(r11);
+
         lis r11, specialItemReceiveSoundEnabled @ha;
         lbz r11, specialItemReceiveSoundEnabled @l(r11);
         cmpwi r11, 0;
@@ -181,12 +189,31 @@ static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
         bne - end;
 
         custom :;
-        li r4, 0xE4;
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        li r0, 1;
+        lis r11, specialItemReceiveSoundPitchPending @ha;
+        stb r0, specialItemReceiveSoundPitchPending @l(r11);
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
 
         end :;
         blr;);
 }
 kmCall(0x8079814c, UseThundercloudReceiveSoundForSpecialItems);
+
+kmRuntimeUse(0x8071497c);
+static bool StartItemReceiveSoundWithPitch(Audio::RSARPlayer* rsarPlayer, u32 soundId, u32 localPlayerNum) {
+    typedef bool (*PlaySound)(Audio::RSARPlayer*, u32, u32);
+    const bool ret = reinterpret_cast<PlaySound>(kmRuntimeAddr(0x8071497c))(rsarPlayer, soundId, localPlayerNum);
+
+    if (ret && specialItemReceiveSoundPitchPending != 0 && soundId == 0xE3 && Audio::RSARPlayer::seqSoundHandle.basicSound != nullptr) {
+        Audio::RSARPlayer::seqSoundHandle.basicSound->SetPitch(1.15f);
+    }
+    specialItemReceiveSoundPitchPending = 0;
+    return ret;
+}
+kmCall(0x80798160, StartItemReceiveSoundWithPitch);
 
 snd::SoundStartable::StartResult PlayExtBRSEQ(snd::SoundStartable& startable, Audio::Handle& handle, const char* fileName, const char* labelName, bool hold) {
     snd::SoundStartable::StartInfo startInfo;
