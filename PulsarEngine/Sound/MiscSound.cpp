@@ -154,11 +154,14 @@ static float CheckFanfare(const Audio::SinglePlayer& singlePlayer) {
 kmCall(0x80857860, CheckFanfare);
 
 static u8 specialItemReceiveSoundEnabled = 1;
+static u8 megaThunderCloudEnabled = 1;
 static u8 specialItemReceiveSoundPitchPending = 0;
 
 static void RefreshSpecialItemReceiveSoundSetting() {
     specialItemReceiveSoundEnabled =
         Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_SPECIALITEMRECEIVE) == SPECIALITEMRECEIVE_ENABLED;
+    megaThunderCloudEnabled =
+        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_MEGA;
 }
 Settings::Hook RefreshSpecialItemReceiveSoundSettingHook(RefreshSpecialItemReceiveSoundSetting);
 RaceLoadHook RefreshSpecialItemReceiveSoundSettingRaceHook(RefreshSpecialItemReceiveSoundSetting);
@@ -202,6 +205,38 @@ static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
 }
 kmCall(0x8079814c, UseThundercloudReceiveSoundForSpecialItems);
 
+static asmFunc UseSpecialReceiveSoundForMegaThundercloud() {
+    ASM(
+        nofralloc;
+        li r4, 0xE4;
+
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        li r0, 0;
+        lis r11, specialItemReceiveSoundPitchPending @ha;
+        stb r0, specialItemReceiveSoundPitchPending @l(r11);
+
+        lis r11, specialItemReceiveSoundEnabled @ha;
+        lbz r11, specialItemReceiveSoundEnabled @l(r11);
+        cmpwi r11, 0;
+        beq - restore;
+        lis r11, megaThunderCloudEnabled @ha;
+        lbz r11, megaThunderCloudEnabled @l(r11);
+        cmpwi r11, 0;
+        beq - restore;
+
+        li r4, 0xE3;
+        li r0, 1;
+        lis r11, specialItemReceiveSoundPitchPending @ha;
+        stb r0, specialItemReceiveSoundPitchPending @l(r11);
+
+        restore :;
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
+        blr;);
+}
+kmCall(0x80798028, UseSpecialReceiveSoundForMegaThundercloud);
+
 kmRuntimeUse(0x8071497c);
 static bool StartItemReceiveSoundWithPitch(Audio::RSARPlayer* rsarPlayer, u32 soundId, u32 localPlayerNum) {
     typedef bool (*PlaySound)(Audio::RSARPlayer*, u32, u32);
@@ -214,6 +249,7 @@ static bool StartItemReceiveSoundWithPitch(Audio::RSARPlayer* rsarPlayer, u32 so
     return ret;
 }
 kmCall(0x80798160, StartItemReceiveSoundWithPitch);
+kmCall(0x8079803c, StartItemReceiveSoundWithPitch);
 
 snd::SoundStartable::StartResult PlayExtBRSEQ(snd::SoundStartable& startable, Audio::Handle& handle, const char* fileName, const char* labelName, bool hold) {
     snd::SoundStartable::StartInfo startInfo;
