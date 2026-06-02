@@ -4,6 +4,7 @@
 #include <RetroRewind.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Race/CustomItems.hpp>
+#include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 
 // Original code from VP, adapted to Pulsar 2.0.
 namespace RetroRewind {
@@ -32,7 +33,7 @@ static void ChangeBlueOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
         dest->limit = 5;
     } else {
         u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-        if (bitfield != 0x7FFFF && CountEnabledItems(bitfield) <= 5) {
+        if (Pulsar::BattleRoyale::ShouldApplyBattleRoyale() || (bitfield != 0x7FFFF && CountEnabledItems(bitfield) <= 5)) {
             dest->limit = 12;
         } else {
             dest->limit = 1;
@@ -54,6 +55,8 @@ static void ChangeBillOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
         dest->limit = 25;
     } else if (itemModeBlast) {
         dest->limit = 5;
+    } else if (Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
+        dest->limit = 16;
     } else {
         dest->limit = 1;
     }
@@ -73,6 +76,8 @@ static void ChangeBombOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
         dest->limit = 20;
     } else if (itemModeBlast) {
         dest->limit = 25;
+    } else if (Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
+        dest->limit = 16;
     } else {
         dest->limit = 3;
     }
@@ -82,7 +87,7 @@ kmCall(0x80790bb4, ChangeBombOBJProperties);
 
 static void ChangeItemOBJProperties(Item::ObjProperties* dest, const Item::ObjProperties& rel) {
     new (dest) Item::ObjProperties(rel);
-    if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != 0x7FFFF) {
+    if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != 0x7FFFF || Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
         dest->limit = 16;
     } else {
         dest->limit = 1;
