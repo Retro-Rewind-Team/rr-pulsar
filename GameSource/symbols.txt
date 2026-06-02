@@ -2527,3 +2527,5 @@ GetCharacterVoiceSoundSet__Q25Audio18DriverSoundManagerF11CharacterIdUi = 0x8086
 voiceActionTables__Q25Audio14CharacterActor = 0x808afc18
 sInstance__Q25Audio18DriverSoundManager = 0x809c4740
 detail_GetFileAddress__Q34nw4r3snd18SoundArchivePlayerCFUi = 0x800a1560
+
+GetKartActor__Q24Kart4LinkFv = 0x80590794

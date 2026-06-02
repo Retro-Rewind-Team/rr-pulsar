@@ -92,6 +92,7 @@ enum SoundSettings {
     RADIO_CTMUSIC = 0,
     RADIO_MUSIC = 1,
     RADIO_MUSICSPEEDUP = 2,
+    RADIO_SPECIALITEMRECEIVE = 3,
 };
 
 // 6) Battle
@@ -297,6 +298,11 @@ enum MenuSettingMusic {
 enum RaceSettingSPEEDUP {
     SPEEDUP_DISABLED = 0x0,
     SPEEDUP_ENABLED = 0x1
+};
+
+enum SpecialItemReceive {
+    SPECIALITEMRECEIVE_ENABLED = 0x0,
+    SPECIALITEMRECEIVE_DISABLED = 0x1
 };
 
 // 6) Battle values

@@ -150,6 +150,44 @@ static float CheckFanfare(const Audio::SinglePlayer& singlePlayer) {
 }
 kmCall(0x80857860, CheckFanfare);
 
+static u8 specialItemReceiveSoundEnabled = 1;
+
+static void RefreshSpecialItemReceiveSoundSetting() {
+    specialItemReceiveSoundEnabled =
+        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_SPECIALITEMRECEIVE) == SPECIALITEMRECEIVE_ENABLED;
+}
+Settings::Hook RefreshSpecialItemReceiveSoundSettingHook(RefreshSpecialItemReceiveSoundSetting);
+RaceLoadHook RefreshSpecialItemReceiveSoundSettingRaceHook(RefreshSpecialItemReceiveSoundSetting);
+
+// Play Special Item Recieve Sound [_Ro]
+static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
+    ASM(
+        nofralloc;
+        li r4, 0xE3;
+
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        lis r11, specialItemReceiveSoundEnabled @ha;
+        lbz r11, specialItemReceiveSoundEnabled @l(r11);
+        cmpwi r11, 0;
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
+        beq - end;
+
+        subi r0, r28, 8;
+        cmplwi r0, 3;
+        ble - custom;
+        cmpwi r28, 0xF;
+        bne - end;
+
+        custom :;
+        li r4, 0xE4;
+
+        end :;
+        blr;);
+}
+kmCall(0x8079814c, UseThundercloudReceiveSoundForSpecialItems);
+
 snd::SoundStartable::StartResult PlayExtBRSEQ(snd::SoundStartable& startable, Audio::Handle& handle, const char* fileName, const char* labelName, bool hold) {
     snd::SoundStartable::StartInfo startInfo;
     startInfo.seqSoundInfo.startLocationLabel = labelName;
