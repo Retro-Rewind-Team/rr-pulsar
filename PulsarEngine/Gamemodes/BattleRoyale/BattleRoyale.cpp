@@ -326,8 +326,40 @@ static u8 GetPackedLocalBalloonCounts(void* balloonMgr) {
     return packed;
 }
 
+static void WriteLocalFinishTimes(Network::PulRH1& packet) {
+    packet.battleRoyaleFinishMask = 0;
+    packet.battleRoyaleFinishMinutes[0] = 0;
+    packet.battleRoyaleFinishMinutes[1] = 0;
+    packet.battleRoyaleFinishSeconds[0] = 0;
+    packet.battleRoyaleFinishSeconds[1] = 0;
+    packet.battleRoyaleFinishMilliseconds[0] = 0;
+    packet.battleRoyaleFinishMilliseconds[1] = 0;
+
+    const Raceinfo* raceinfo = Raceinfo::sInstance;
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (raceinfo == nullptr || controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE) return;
+
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    u8 localIdx = 0;
+    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
+
+    for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && localIdx < 2; ++playerId) {
+        if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid) continue;
+
+        const RaceinfoPlayer* player = raceinfo->players[playerId];
+        if (player != nullptr && player->raceFinishTime != nullptr && player->raceFinishTime->isActive) {
+            packet.battleRoyaleFinishMask |= 1 << localIdx;
+            packet.battleRoyaleFinishMinutes[localIdx] = player->raceFinishTime->minutes;
+            packet.battleRoyaleFinishSeconds[localIdx] = player->raceFinishTime->seconds;
+            packet.battleRoyaleFinishMilliseconds[localIdx] = player->raceFinishTime->milliseconds;
+        }
+        ++localIdx;
+    }
+}
+
 void WriteRH1Packet(Network::PulRH1& packet) {
     packet.battleRoyaleBalloonCounts = GetPackedLocalBalloonCounts(GetBalloonManager());
+    WriteLocalFinishTimes(packet);
 
     if (!ShouldApplyBattleRoyale() || sPendingBalloonEventSize == 0) {
         packet.battleRoyaleLossSeq = 0;
@@ -831,6 +863,29 @@ static void FinishSoleActiveUnfinishedPlayer(LapKO::Mgr& lapKoMgr, Raceinfo& rac
     lapKoMgr.raceFinished = true;
 }
 
+static void ApplyRemoteFinishTimes(RKNet::Controller& controller, u8 aid, const Network::PulRH1& packet) {
+    Raceinfo* raceinfo = Raceinfo::sInstance;
+    if (raceinfo == nullptr || packet.battleRoyaleFinishMask == 0) return;
+
+    u8 remotePlayerIdx = 0;
+    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
+    for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && remotePlayerIdx < 2; ++playerId) {
+        if (controller.aidsBelongingToPlayerIds[playerId] != aid) continue;
+
+        if ((packet.battleRoyaleFinishMask & (1 << remotePlayerIdx)) != 0) {
+            RaceinfoPlayer* player = raceinfo->players[playerId];
+            if (player != nullptr && player->raceFinishTime != nullptr && IsPlayerFinished(*raceinfo, playerId)) {
+                player->raceFinishTime->minutes = packet.battleRoyaleFinishMinutes[remotePlayerIdx];
+                player->raceFinishTime->seconds = packet.battleRoyaleFinishSeconds[remotePlayerIdx];
+                player->raceFinishTime->milliseconds = packet.battleRoyaleFinishMilliseconds[remotePlayerIdx];
+                player->raceFinishTime->SetActive(true);
+            }
+        }
+
+        ++remotePlayerIdx;
+    }
+}
+
 static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNet::ControllerSub& sub, void* balloonMgr) {
     if (!IsOnline()) return;
 
@@ -846,6 +901,8 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller& controller, const RKNe
         if (holder == nullptr || holder->packetSize < Network::PulRH1SizeFull) continue;
 
         const Network::PulRH1* packet = holder->packet;
+        ApplyRemoteFinishTimes(controller, aid, *packet);
+
         const u8 seq = packet->battleRoyaleLossSeq;
         const u8 eventPlayerId = packet->battleRoyaleLossPlayerId;
         if (seq != 0 && seq != sLastRemoteBalloonLossSeq[aid]) {

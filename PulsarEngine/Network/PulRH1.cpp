@@ -56,6 +56,13 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         packetHolder.packet->battleRoyaleLossSeq = 0;
         packetHolder.packet->battleRoyaleLossPlayerId = 0xFF;
         packetHolder.packet->battleRoyaleBalloonCounts = 0xFF;
+        packetHolder.packet->battleRoyaleFinishMask = 0;
+        packetHolder.packet->battleRoyaleFinishMinutes[0] = 0;
+        packetHolder.packet->battleRoyaleFinishMinutes[1] = 0;
+        packetHolder.packet->battleRoyaleFinishSeconds[0] = 0;
+        packetHolder.packet->battleRoyaleFinishSeconds[1] = 0;
+        packetHolder.packet->battleRoyaleFinishMilliseconds[0] = 0;
+        packetHolder.packet->battleRoyaleFinishMilliseconds[1] = 0;
     }
 }
 kmCall(0x80655458, BeforeRH1Send);
