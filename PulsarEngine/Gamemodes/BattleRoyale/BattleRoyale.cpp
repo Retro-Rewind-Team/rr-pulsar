@@ -29,11 +29,7 @@ static bool sInitialized = false;
 static u16 sLastRaceFrames = 0xffff;
 static u16 sPoweredHitLossFrame[maxPlayers];
 static u8 sPreviousBalloonCount[maxPlayers];
-static bool sWasActive[maxPlayers];
-static u8 sEliminationPlacementOrder[maxPlayers];
-static u8 sEliminationPlacementCount = 0;
-static u8 sFinishPlacementOrder[maxPlayers];
-static u8 sFinishPlacementCount = 0;
+static u8 sEliminationCount = 0;
 static u8 sLocalBalloonLossSeq = 0;
 static const u8 pendingBalloonEventCount = 4;
 static const u8 balloonMoveEventBase = 0x10;
@@ -699,9 +695,6 @@ static void ResetState() {
     for (u8 playerId = 0; playerId < maxPlayers; ++playerId) {
         sPoweredHitLossFrame[playerId] = 0xffff;
         sPreviousBalloonCount[playerId] = 0;
-        sWasActive[playerId] = false;
-        sEliminationPlacementOrder[playerId] = 0xff;
-        sFinishPlacementOrder[playerId] = 0xff;
         sLastRemoteBalloonLossSeq[playerId] = 0;
         sMushroomStealVictimMask[playerId] = 0;
         for (u8 otherPlayerId = 0; otherPlayerId < maxPlayers; ++otherPlayerId) {
@@ -709,8 +702,7 @@ static void ResetState() {
         }
     }
     ClearLoadedBalloonModels();
-    sEliminationPlacementCount = 0;
-    sFinishPlacementCount = 0;
+    sEliminationCount = 0;
     sPendingBalloonEventReadIdx = 0;
     sPendingBalloonEventWriteIdx = 0;
     sPendingBalloonEventSize = 0;
@@ -723,13 +715,10 @@ static void ResetState() {
 
 static void InitForRace(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
     lapKoMgr.InitForRace();
-    sEliminationPlacementCount = 0;
-    sFinishPlacementCount = 0;
+    sEliminationCount = 0;
 
     for (u8 playerId = 0; playerId < maxPlayers; ++playerId) {
         sPoweredHitLossFrame[playerId] = 0xffff;
-        sEliminationPlacementOrder[playerId] = 0xff;
-        sFinishPlacementOrder[playerId] = 0xff;
         sLastRemoteBalloonLossSeq[playerId] = 0;
     }
 
@@ -741,118 +730,37 @@ static void InitForRace(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
             AddBalloons(balloonMgr, playerId, static_cast<u8>(targetCount - current));
         }
         sPreviousBalloonCount[playerId] = GetBalloonCount(balloonMgr, playerId);
-        sWasActive[playerId] = lapKoMgr.IsActive(playerId);
     }
 
     sInitialized = true;
 }
 
-static bool HasOrderEntry(const u8* order, u8 count, u8 playerId) {
-    for (u8 i = 0; i < count; ++i) {
-        if (order[i] == playerId) return true;
-    }
-    return false;
+static void EndRaceWithEliminationFinishTime(u8 playerId, u8 placement) {
+    Raceinfo* raceinfo = Raceinfo::sInstance;
+    if (raceinfo == nullptr || playerId >= maxPlayers || placement < 2 || placement > maxPlayers) return;
+
+    RaceinfoPlayer* player = raceinfo->players[playerId];
+    if (player == nullptr || IsPlayerFinished(*raceinfo, playerId)) return;
+
+    Timer finishTime(false);
+    finishTime.minutes = 99;
+    finishTime.seconds = 99;
+    finishTime.milliseconds = static_cast<u16>(900 + placement);
+    finishTime.SetActive(true);
+    player->EndRace(finishTime, false, 0);
+    if (IsOnline()) raceinfo->CheckEndRaceOnline(playerId);
 }
 
-static bool HasPlacementRecord(u8 playerId) {
-    return HasOrderEntry(sEliminationPlacementOrder, sEliminationPlacementCount, playerId);
-}
+static void EndRaceForElimination(u8 playerId) {
+    if (playerId >= maxPlayers || sEliminationCount >= maxPlayers) return;
+    ++sEliminationCount;
 
-static bool HasFinishRecord(u8 playerId) {
-    return HasOrderEntry(sFinishPlacementOrder, sFinishPlacementCount, playerId);
-}
+    const System* system = System::sInstance;
+    u8 playerCount = system == nullptr ? maxPlayers : system->nonTTGhostPlayersCount;
+    if (playerCount > maxPlayers) playerCount = maxPlayers;
 
-static void RecordPlacementElimination(u8 playerId) {
-    if (playerId >= maxPlayers || HasPlacementRecord(playerId) || sEliminationPlacementCount >= maxPlayers) return;
-    sEliminationPlacementOrder[sEliminationPlacementCount++] = playerId;
-}
-
-static void RecordFinishPlacement(u8 playerId) {
-    if (playerId >= maxPlayers || HasFinishRecord(playerId) || sFinishPlacementCount >= maxPlayers) return;
-    sFinishPlacementOrder[sFinishPlacementCount++] = playerId;
-}
-
-static bool IsActiveForPlacement(const LapKO::Mgr& lapKoMgr, u8 playerId) {
-    return lapKoMgr.IsActive(playerId) && !HasPlacementRecord(playerId) && !HasFinishRecord(playerId);
-}
-
-static u8 GetSoleActivePlayer(const LapKO::Mgr& lapKoMgr) {
-    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
-    u8 remainingPlayerId = 0xff;
-    u8 remainingCount = 0;
-
-    for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers; ++playerId) {
-        if (!lapKoMgr.IsActive(playerId)) continue;
-        remainingPlayerId = playerId;
-        ++remainingCount;
-    }
-
-    return remainingCount == 1 ? remainingPlayerId : 0xff;
-}
-
-static void RecordEliminatedPlacements(const LapKO::Mgr& lapKoMgr) {
-    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
-    for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers; ++playerId) {
-        const bool active = lapKoMgr.IsActive(playerId);
-        if (sWasActive[playerId] && !active) {
-            RecordPlacementElimination(playerId);
-        }
-        sWasActive[playerId] = active;
-    }
-}
-
-static void RecordFinishedPlacements(const LapKO::Mgr& lapKoMgr, const Raceinfo& raceinfo) {
-    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
-    for (u8 pos = 0; pos < playerCount && pos < maxPlayers; ++pos) {
-        const u8 playerId = raceinfo.playerIdInEachPosition[pos];
-        if (playerId >= playerCount || playerId >= maxPlayers) continue;
-        if (!lapKoMgr.IsActive(playerId) || !IsPlayerFinished(raceinfo, playerId)) continue;
-        RecordFinishPlacement(playerId);
-    }
-}
-
-static void UpdateRemainingPlayerPlacements(LapKO::Mgr& lapKoMgr, Raceinfo& raceinfo, bool updateRaceOrder) {
-    if (raceinfo.playerIdInEachPosition == nullptr) return;
-
-    RecordFinishedPlacements(lapKoMgr, raceinfo);
-    RecordEliminatedPlacements(lapKoMgr);
-
-    const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
-    u8 order[maxPlayers];
-    u8 count = 0;
-
-    for (u8 i = 0; i < sFinishPlacementCount && count < maxPlayers; ++i) {
-        const u8 playerId = sFinishPlacementOrder[i];
-        if (playerId < playerCount && !HasOrderEntry(order, count, playerId)) order[count++] = playerId;
-    }
-
-    const u8 soleActivePlayer = GetSoleActivePlayer(lapKoMgr);
-    if (soleActivePlayer < playerCount && !HasPlacementRecord(soleActivePlayer)) {
-        if (!HasOrderEntry(order, count, soleActivePlayer)) order[count++] = soleActivePlayer;
-    }
-
-    for (u8 pos = 0; pos < playerCount && pos < maxPlayers; ++pos) {
-        const u8 playerId = raceinfo.playerIdInEachPosition[pos];
-        if (playerId >= maxPlayers || !IsActiveForPlacement(lapKoMgr, playerId)) continue;
-        if (playerId == soleActivePlayer) continue;
-        if (!HasOrderEntry(order, count, playerId)) order[count++] = playerId;
-    }
-
-    for (s8 idx = static_cast<s8>(sEliminationPlacementCount) - 1; idx >= 0 && count < maxPlayers; --idx) {
-        const u8 playerId = sEliminationPlacementOrder[idx];
-        if (playerId < playerCount && !HasOrderEntry(order, count, playerId)) order[count++] = playerId;
-    }
-
-    for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && count < playerCount; ++playerId) {
-        if (!HasOrderEntry(order, count, playerId)) order[count++] = playerId;
-    }
-
-    for (u8 pos = 0; pos < count && pos < playerCount; ++pos) {
-        const u8 playerId = order[pos];
-        if (updateRaceOrder) raceinfo.playerIdInEachPosition[pos] = playerId;
-        RaceinfoPlayer* player = raceinfo.players[playerId];
-        if (player != nullptr) player->position = static_cast<u8>(pos + 1);
-    }
+    const u8 placement = static_cast<u8>(playerCount - sEliminationCount + 1);
+    EndRaceWithEliminationFinishTime(playerId, placement);
 }
 
 static void TickLapKoPieces(LapKO::Mgr& lapKoMgr, Raceinfo& raceinfo) {
@@ -885,9 +793,7 @@ static void ProcessBalloonEliminations(LapKO::Mgr& lapKoMgr, void* balloonMgr) {
                     continue;
                 }
 
-                RecordPlacementElimination(playerId);
-                const bool finalElimination = lapKoMgr.GetActiveCount() <= 2;
-                UpdateRemainingPlayerPlacements(lapKoMgr, *raceinfo, finalElimination);
+                EndRaceForElimination(playerId);
             }
             lapKoMgr.ProcessElimination(playerId, LapKO::Mgr::ELIMINATION_CAUSE_ROUND, IsOnline(), true);
         }
@@ -1049,8 +955,6 @@ static void FrameUpdate() {
         ProcessBalloonEliminations(*lapKoMgr, balloonMgr);
         FinishSoleActiveUnfinishedPlayer(*lapKoMgr, *raceinfo);
     }
-
-    UpdateRemainingPlayerPlacements(*lapKoMgr, *raceinfo, false);
 }
 
 static RaceFrameHook battleRoyaleFrameHook(FrameUpdate);
