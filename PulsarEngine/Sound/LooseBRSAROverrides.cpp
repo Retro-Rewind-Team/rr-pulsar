@@ -35,6 +35,8 @@ typedef void* (*LoadWaveDataFileFn)(snd::detail::SoundArchiveLoader* loader, snd
                                     snd::SoundMemoryAllocatable* allocater);
 typedef void* (*LoadGroupFn)(snd::detail::SoundArchiveLoader* loader, u32 groupId, snd::SoundMemoryAllocatable* allocater,
                              void** waveDataAddress, u32 loadBlockSize);
+typedef ut::FileStream* (*OpenFileStreamFn)(const snd::SoundArchive* archive, snd::SoundArchive::FileId fileId, void* buffer,
+                                            int size);
 typedef bool (*ReadFileInfoFn)(const snd::SoundArchive* archive, snd::SoundArchive::FileId fileId,
                                snd::SoundArchive::FileInfo* info);
 typedef bool (*ReadFilePosFn)(const snd::SoundArchive* archive, snd::SoundArchive::FileId fileId, u32 index,
@@ -70,6 +72,7 @@ struct ResolvedBRSARTarget {
 kmRuntimeUse(0x800a0180);
 kmRuntimeUse(0x800a0420);
 kmRuntimeUse(0x8009fa10);
+kmRuntimeUse(0x8009e010);
 kmRuntimeUse(0x8009dff0);
 kmRuntimeUse(0x8009e000);
 kmRuntimeUse(0x8009dfc0);
@@ -77,6 +80,7 @@ kmRuntimeUse(0x8009dfd0);
 static LoadFileFn sOriginalLoadFile = reinterpret_cast<LoadFileFn>(kmRuntimeAddr(0x800a0180));
 static LoadWaveDataFileFn sOriginalLoadWaveDataFile = reinterpret_cast<LoadWaveDataFileFn>(kmRuntimeAddr(0x800a0420));
 static LoadGroupFn sOriginalLoadGroup = reinterpret_cast<LoadGroupFn>(kmRuntimeAddr(0x8009fa10));
+static OpenFileStreamFn sOriginalOpenFileStream = reinterpret_cast<OpenFileStreamFn>(kmRuntimeAddr(0x8009e010));
 static ReadFileInfoFn sReadFileInfo = reinterpret_cast<ReadFileInfoFn>(kmRuntimeAddr(0x8009dff0));
 static ReadFilePosFn sReadFilePos = reinterpret_cast<ReadFilePosFn>(kmRuntimeAddr(0x8009e000));
 static ReadGroupInfoFn sReadGroupInfo = reinterpret_cast<ReadGroupInfoFn>(kmRuntimeAddr(0x8009dfc0));
@@ -91,6 +95,7 @@ static u8 sExternalFileBufferSources[1024] = {};
 static u8 sExternalWaveBufferSources[1024] = {};
 static u8 sExternalFileAttempts[1024] = {};
 static u8 sExternalWaveAttempts[1024] = {};
+static u8 sCustomSoundEffectStreamLogs[1024] = {};
 
 struct LooseVoiceLayout {
     u32 fileSize;
@@ -286,6 +291,7 @@ static void ResetLooseBRSARExternalBuffers() {
         sExternalWaveBufferSources[fileId] = EXTERNALBUFFER_NONE;
         sExternalFileAttempts[fileId] = 0;
         sExternalWaveAttempts[fileId] = 0;
+        sCustomSoundEffectStreamLogs[fileId] = 0;
     }
 }
 
@@ -641,6 +647,97 @@ static const char* LooseVoiceExtensionForGroupItem(const u8* groupData, const sn
     return nullptr;
 }
 
+static bool ReadLooseRSTMLayout(DVD::FileInfo& info, u32& outSize) {
+    outSize = 0;
+    if (info.length < 0x20) return false;
+
+    u8 header[0x20] __attribute__((aligned(32)));
+    if (!ReadOpenedDVDFileRange(info, header, sizeof(header), 0)) return false;
+    if (memcmp(header, "RSTM", 4) != 0) return false;
+
+    const u32 fileSize = ReadBE32(header + 8);
+    if (fileSize < 0x20 || fileSize > static_cast<u32>(info.length)) return false;
+    outSize = fileSize;
+    return true;
+}
+
+static const char* LooseSoundEffectExtensionForGroupItem(const u8* groupData, const snd::SoundArchive::GroupItemInfo& item,
+                                                         const char*& magic) {
+    magic = nullptr;
+    if (groupData == nullptr || item.size < 4) return nullptr;
+    const u8* data = groupData + item.offset;
+    if (memcmp(data, "RSTM", 4) == 0) {
+        magic = "RSTM";
+        return "brstm";
+    }
+    return LooseVoiceExtensionForGroupItem(groupData, item, magic);
+}
+
+static void PatchLoadedGroupItemWithLooseCustomSoundEffect(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId,
+                                                           snd::SoundMemoryAllocatable* allocater, u32 itemCount,
+                                                           const snd::SoundArchive::GroupItemInfo& item, u32 groupSize,
+                                                           void* groupData) {
+    if (groupData == nullptr || item.size < 4) return;
+
+    u8* groupDest = reinterpret_cast<u8*>(groupData) + item.offset;
+    const char* magic = nullptr;
+    const char* extension = LooseSoundEffectExtensionForGroupItem(static_cast<const u8*>(groupData), item, magic);
+    if (extension == nullptr || magic == nullptr) return;
+
+    char path[0x80];
+    if (!CustomCharacters::FindLooseSoundEffectPath(item.fileId, extension, path, sizeof(path))) {
+        return;
+    }
+
+    DVD::FileInfo info;
+    if (!DVD::Open(path, &info)) return;
+
+    LooseVoiceLayout layout;
+    if (memcmp(magic, "RSTM", 4) == 0) {
+        layout.waveOffset = 0;
+        layout.waveSize = 0;
+        if (!ReadLooseRSTMLayout(info, layout.fileSize)) {
+            DVD::Close(&info);
+            OS::Report("[Pulsar] Loose custom sound effect skipped in group %u: invalid '%s'\n", groupId, path);
+            return;
+        }
+    } else if (!ReadLooseVoiceLayout(info, magic, layout)) {
+        DVD::Close(&info);
+        OS::Report("[Pulsar] Loose custom sound effect skipped in group %u: invalid '%s'\n", groupId, path);
+        return;
+    }
+
+    u32 fileCapacity = 0;
+    const bool canPatchFileInGroup =
+        TryGetGroupItemSlotCapacity(archive, groupId, itemCount, item, false, groupSize, fileCapacity) &&
+        fileCapacity >= layout.fileSize;
+
+    if (canPatchFileInGroup) {
+        if (!ReadOpenedDVDFileRange(info, groupDest, layout.fileSize, 0)) {
+            OS::Report("[Pulsar] Loose custom sound effect skipped in group %u: read failed '%s'\n", groupId, path);
+        } else {
+            if (layout.fileSize < item.size) memset(groupDest + layout.fileSize, 0, item.size - layout.fileSize);
+            OS::DCStoreRange(groupDest, item.size);
+            if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
+        }
+    } else {
+        const bool externalReady =
+            PreloadLooseCustomVoiceBufferWithAllocater(allocater, item.fileId, false, info, path, 0, layout.fileSize);
+        OS::Report("[Pulsar] Loose custom sound effect cannot fit in group %u: '%s' needs 0x%X bytes, slot has 0x%X; %s\n",
+                   groupId, path, layout.fileSize, fileCapacity,
+                   externalReady ? "external fallback ready" : "override unavailable");
+    }
+
+    if (layout.waveSize > 0) {
+        const bool externalReady = PreloadLooseCustomVoiceBufferWithAllocater(allocater, item.fileId, true, info, path,
+                                                                              layout.waveOffset, layout.waveSize);
+        OS::Report("[Pulsar] Loose custom sound effect wave data for group %u: '%s' size=0x%X; %s\n", groupId, path,
+                   layout.waveSize, externalReady ? "external fallback ready" : "override unavailable");
+    }
+
+    DVD::Close(&info);
+}
+
 static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId,
                                                      snd::SoundMemoryAllocatable* allocater, u32 itemCount,
                                                      const snd::SoundArchive::GroupItemInfo& item, u32 groupSize,
@@ -770,6 +867,28 @@ static void* LoadWaveDataFileWithLooseBRSAROverride(snd::detail::SoundArchiveLoa
     return sOriginalLoadWaveDataFile(loader, fileId, allocater);
 }
 
+static ut::FileStream* OpenFileStreamWithLooseCustomSoundEffect(const snd::SoundArchive* archive,
+                                                               snd::SoundArchive::FileId fileId, void* buffer, int size) {
+    if (archive != nullptr && buffer != nullptr && size >= 0x78) {
+        char path[0x80];
+        u32 fileSize = 0;
+        const bool found = CustomCharacters::FindLooseSoundEffectPath(fileId, "brstm", path, sizeof(path), &fileSize) &&
+                           fileSize != 0;
+        if (found) {
+            ut::FileStream* stream = archive->OpenExtStream(buffer, size, path, 0, fileSize);
+            if (stream != nullptr) {
+                if (fileId < 1024 && sCustomSoundEffectStreamLogs[fileId] == 0) {
+                    sCustomSoundEffectStreamLogs[fileId] = 1;
+                    OS::Report("[Pulsar] Loose custom sound effect stream: fileId=%u path='%s'\n", fileId, path);
+                }
+                return stream;
+            }
+            OS::Report("[Pulsar] Loose custom sound effect stream open failed: fileId=%u path='%s'\n", fileId, path);
+        }
+    }
+    return sOriginalOpenFileStream(archive, fileId, buffer, size);
+}
+
 static const void* GetFileAddressWithLooseBRSAROverride(const snd::SoundArchivePlayer* player,
                                                         snd::SoundArchive::FileId fileId) {
     if (fileId < 1024 && sExternalFileBuffers[fileId] != nullptr) return sExternalFileBuffers[fileId];
@@ -879,6 +998,8 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
             }
         }
 
+        PatchLoadedGroupItemWithLooseCustomSoundEffect(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size,
+                                                       groupData);
         PatchLoadedGroupItemWithLooseCustomVoice(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size,
                                                  groupInfo.waveDataSize, groupData, waveData);
     }
@@ -909,6 +1030,7 @@ kmCall(0x806ff404, LoadFileWithLooseBRSAROverride);
 kmCall(0x806fee34, LoadWaveDataFileWithLooseBRSAROverride);
 kmCall(0x806fef74, LoadWaveDataFileWithLooseBRSAROverride);
 kmCall(0x806ff0b4, LoadWaveDataFileWithLooseBRSAROverride);
+kmCall(0x800a26c8, OpenFileStreamWithLooseCustomSoundEffect);
 
 kmCall(0x800a2994, LoadGroupWithLooseBRSAROverride);
 kmBranch(0x800a1560, GetFileAddressWithLooseBRSAROverride);

@@ -230,6 +230,7 @@ bool IsVotingSection(SectionId section);
 bool IsCharacterSelectActive();
 bool CycleSkin(CharacterId character, int step);
 bool LooseVoiceStemExists(const char* postfix, const char* suffix, const char* voiceName = nullptr);
+bool FindLooseSoundEffectPath(u32 fileId, const char* extension, char* path, u32 pathSize, u32* outFileSize = nullptr);
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar

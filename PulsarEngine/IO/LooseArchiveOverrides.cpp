@@ -601,6 +601,20 @@ static bool TryParseBRSAROverride(const char* relativePath, u32& outFileId, u8& 
     memcpy(fileIdStem, lowerName, idLen);
     fileIdStem[idLen] = '\0';
 
+    if (firstDot != lastDot) {
+        const char* secondDot = strchr(firstDot + 1, '.');
+        if (secondDot != nullptr && secondDot < lastDot && firstDot[1] >= '0' && firstDot[1] <= '9') {
+            // `<fileId>.<soundId>.<character>.<type>` is resolved by CustomCharacterSoundEffects.
+            return false;
+        }
+        for (const char* c = firstDot + 1; c < lastDot; ++c) {
+            if (*c == '-') {
+                // `<fileId>.<character>.<type>` is resolved by CustomCharacterSoundEffects.
+                return false;
+            }
+        }
+    }
+
     // `<fileId>.<type>` or `<fileId>.<anything>.<type>`
     if (!TryParseExactFileId(fileIdStem, outFileId)) return false;
 
