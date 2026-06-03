@@ -387,6 +387,17 @@ static bool HasMushroomStolenFromVictim(u8 gainingPlayerId, u8 losingPlayerId) {
     return (sMushroomStealVictimMask[gainingPlayerId] & (1 << losingPlayerId)) != 0;
 }
 
+static bool IsMushroomStealVictimProtected(u8 playerId) {
+    Kart::Manager* kartMgr = Kart::Manager::sInstance;
+    if (kartMgr == nullptr || playerId >= kartMgr->playerCount) return true;
+
+    Kart::Player* player = kartMgr->GetKartPlayer(playerId);
+    if (player == nullptr || player->pointers.kartStatus == nullptr) return true;
+
+    const Kart::Status& status = *player->pointers.kartStatus;
+    return (status.bitfield1 & 0x80000000) != 0 || (status.bitfield2 & 0x8000) != 0;
+}
+
 static void RecordMushroomStealVictim(u8 gainingPlayerId, u8 losingPlayerId) {
     if (gainingPlayerId >= maxPlayers || losingPlayerId >= maxPlayers) return;
     sMushroomStealVictimMask[gainingPlayerId] |= 1 << losingPlayerId;
@@ -540,6 +551,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
         const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
         if (previousBalloonCount <= 1) return;
         if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
+        if (IsMushroomStealVictimProtected(losingPlayer)) return;
         MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
         if (GetBalloonCount(balloonMgr, losingPlayer) >= previousBalloonCount) return;
         RecordMushroomStealVictim(gainingPlayer, losingPlayer);
@@ -552,6 +564,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
     if (previousBalloonCount <= 1) return;
     if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
+    if (IsMushroomStealVictimProtected(losingPlayer)) return;
 
     MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
 
