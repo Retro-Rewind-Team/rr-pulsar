@@ -5,6 +5,7 @@
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
+#include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -476,6 +477,23 @@ static bool IsPlayerFinished(const Raceinfo& raceinfo, u8 playerId) {
     if (player == nullptr) return false;
     return (player->stateFlags & 0x2) != 0;
 }
+
+static bool IsPlayerEliminated(u8 playerId) {
+    if (!ShouldApplyBattleRoyale() || playerId >= maxPlayers) return false;
+    const System* system = System::sInstance;
+    if (system != nullptr && system->lapKoMgr != nullptr && !system->lapKoMgr->IsActive(playerId)) return true;
+    const Raceinfo* raceinfo = Raceinfo::sInstance;
+    if (raceinfo != nullptr && IsPlayerFinished(*raceinfo, playerId)) return true;
+    return GetBalloonCount(GetBalloonManager(), playerId) == 0;
+}
+
+static void StartOobWipeWithoutEliminatedPlayers(Kart::Link* link, u32 state) {
+    if (link == nullptr || link->pointers == nullptr || link->pointers->camera == nullptr) return;
+    if (IsPlayerEliminated(link->GetPlayerIdx())) return;
+    link->pointers->kartStatus->StartOobWipe(state);
+}
+
+kmBranch(0x80591784, StartOobWipeWithoutEliminatedPlayers);
 
 static bool IsPlayerOnlineRaceComplete(const Raceinfo& raceinfo, u8 playerId) {
     if (!IsOnline()) return false;

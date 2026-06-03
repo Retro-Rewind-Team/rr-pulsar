@@ -1057,6 +1057,7 @@ unknown_70__4Kart = 0x808cb550
 UpdateFromInput__Q24Kart6StatusFv = 0x8059487c
 ApplyStartBoost__Q24Kart6StatusFi = 0x80595af8
 UpdateCollisions__Q24Kart6StatusFv = 0x80594bd4
+StartOobWipe__Q24Kart6StatusFUi = 0x805946f4
 
 #KartPhyiscsHolder
 Update__Q24Kart18WheelPhysicsHolderFRC4Vec3RC5Mtx34f = 0x8059a278
