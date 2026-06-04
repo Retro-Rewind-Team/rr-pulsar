@@ -779,6 +779,8 @@ InitAllkartArchivesLoaders__10ArchiveMgrFUiUc = 0x805422cc
 
 ##SCENE
 GetCurrent__9GameSceneFv = 0x8051bed0
+CreateHeap__9GameSceneFUiUi = 0x8051b8e4
+DestroyHeap__9GameSceneFPQ23EGG4Heap = 0x8051b988
 
 #RootScene
 sInstance__9RootScene = 0x809bd740
@@ -1501,7 +1503,21 @@ UpdateInfo__19CtrlRaceNameBalloonFUc = 0x807f0044
 #RaceBalloons
 __ct__12RaceBalloons = 0x807f1c58
 __ct__Q26GeoObj10ObjBalloonFUcUc = 0x8086e224
+OnAdd__Q26GeoObj10ObjBalloonFUiUcUcUc = 0x8086ec5c
+CreateInstance__18RaceBalloonManagerFv = 0x808697bc
+Add__18RaceBalloonManagerFiUiUiiUii = 0x80869df4
+Remove__18RaceBalloonManagerFUiUiUiiUii = 0x80869fd0
+Move__18RaceBalloonManagerFUiUiiUii = 0x8086a0dc
+sInstance__18RaceBalloonManager = 0x809c4748
 maxDistanceNames__12RaceBalloons = 0x808d3e14
+
+#KartAction
+StartAction3__Q24Kart6ActionFUi = 0x80568718
+StartAction6__Q24Kart6ActionFUi = 0x80569024
+StartAction13__Q24Kart6ActionFUi = 0x80569818
+
+#KartMove
+StartBlinkLocal__Q24Kart8MovementFv = 0x805819a8
 
 #CtrlRaceRankNum
 IsInactive__15CtrlRaceRankNumFv = 0x807f4d40

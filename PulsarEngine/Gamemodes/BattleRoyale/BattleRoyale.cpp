@@ -3,17 +3,19 @@
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/Obj/ItemObj.hpp>
+#include <MarioKartWii/Kart/KartAction.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
 #include <MarioKartWii/Kart/KartPointers.hpp>
+#include <MarioKartWii/Objects/ObjectsMgr.hpp>
 #include <MarioKartWii/Race/RaceBalloon.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/Scene/GameScene.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Settings/Settings.hpp>
-#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace BattleRoyale {
@@ -45,50 +47,18 @@ static u8 sPendingBalloonEventWriteIdx = 0;
 static u8 sPendingBalloonEventSize = 0;
 static u8 sLastRemoteBalloonLossSeq[maxPlayers];
 static bool sDeferredBalloonManagerCreation = false;
+static bool sCollisionPatchesActive = false;
 static bool sLoadedBalloonModels[maxBattleRoyaleBalloons];
 static u16 sMushroomStealVictimMask[maxPlayers];
 static u8 sMushroomStealVictimTimers[maxPlayers][maxPlayers];
 
-typedef void (*BalloonAddFn)(void* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval);
-typedef void (*BalloonRemoveFn)(void* mgr, u32 playerId, u32 visible, u32 sound, int delay, u32 count, int interval);
-typedef void (*BalloonMoveFn)(void* mgr, u32 toPlayer, u32 fromPlayer, int delay, u32 count, int interval);
-typedef void (*BalloonOnAddFn)(void* balloon, u32 time, u8 playerId, u8 balloonIndex, u8 isInitial);
 typedef void (*RaceModeHitFn)(void* raceMode, u32 firstPlayerId, u32 secondPlayerId);
-typedef void (*CreateBalloonManagerFn)();
-typedef void* (*AllocateHeapFn)(void* scene, u32 size, u32 parentHeapIdx);
-typedef void (*CreateObjectsFn)(void* objectDirector, bool isInitial);
-typedef void (*DestroyHeapFn)(void* scene, void* heap);
 typedef void (*GeoObjectLoadFn)(void* object);
-typedef void (*KartActionHitFn)(void* action, u32 sourcePlayerObjId);
-typedef void (*KartMoveStartBlinkLocalFn)(Kart::Movement* movement);
 
 void EjectItemsFromItemDamage(u8 playerId);
 
-kmRuntimeUse(0x809c4748);
-kmRuntimeUse(0x805819a8);
-kmRuntimeUse(0x80869df4);
-kmRuntimeUse(0x80869fd0);
-kmRuntimeUse(0x8086a0dc);
-kmRuntimeUse(0x8086ec5c);
-kmRuntimeUse(0x808697bc);
-kmRuntimeUse(0x8051b8e4);
-kmRuntimeUse(0x80826e8c);
-kmRuntimeUse(0x8051b988);
-kmRuntimeUse(0x80568718);
-kmRuntimeUse(0x80569024);
-kmRuntimeUse(0x80569818);
-kmRuntimeUse(0x80572814);
-kmRuntimeUse(0x80570100);
-kmRuntimeUse(0x8057012c);
-kmRuntimeUse(0x80570494);
-kmRuntimeUse(0x805704c4);
-kmRuntimeUse(0x805709d4);
-kmRuntimeUse(0x80570a20);
-kmRuntimeUse(0x80570ba8);
-kmRuntimeUse(0x80570bf4);
-
-static void* GetBalloonManager() {
-    return *reinterpret_cast<void**>(kmRuntimeAddr(0x809c4748));
+static RaceBalloonManager* GetBalloonManager() {
+    return RaceBalloonManager::sInstance;
 }
 
 static u8 GetBalloonCount(void* mgr, u8 playerId) {
@@ -179,7 +149,6 @@ static void AddBattleRoyaleBalloons(void* mgr, u8 playerId, u8 teamId, u8 isInit
 
     const u8 poolCount = GetBalloonPoolCount(mgr);
     const u8 freePlayerId = reinterpret_cast<u8*>(mgr)[0];
-    BalloonOnAddFn onAdd = reinterpret_cast<BalloonOnAddFn>(kmRuntimeAddr(0x8086ec5c));
     const u32 time = GetBalloonMgrTime(mgr) + delay;
 
     for (u8 poolIdx = 0, added = 0; poolIdx < poolCount && added < count; ++poolIdx) {
@@ -195,7 +164,7 @@ static void AddBattleRoyaleBalloons(void* mgr, u8 playerId, u8 teamId, u8 isInit
         if (balloon == nullptr) continue;
 
         const u8 balloonIndex = current++;
-        onAdd(balloon, time + added * interval, playerId, balloonIndex, isInitial);
+        reinterpret_cast<GeoObj::ObjBalloon*>(balloon)->OnAdd(time + added * interval, playerId, balloonIndex, isInitial);
         GetBalloonPoolTeamId(mgr, poolIdx) = teamId;
         GetBalloonPoolPlayerId(mgr, poolIdx) = playerId;
         GetBalloonPoolIndex(mgr, poolIdx) = balloonIndex;
@@ -217,8 +186,7 @@ static void AddBalloons(void* mgr, u8 playerId, u8 count) {
         return;
     }
 
-    BalloonAddFn add = reinterpret_cast<BalloonAddFn>(kmRuntimeAddr(0x80869df4));
-    add(mgr, playerId, team, 1, 0, count, 0);
+    reinterpret_cast<RaceBalloonManager*>(mgr)->Add(playerId, team, 1, 0, count, 0);
 }
 
 static u8 GetKoPerRaceSetting() {
@@ -251,9 +219,8 @@ static void StartBalloonLossBlink(u8 playerId) {
     settings.gamemode = MODE_BATTLE;
     settings.battleType = BATTLE_BALLOON;
 
-    KartMoveStartBlinkLocalFn startBlinkLocal = reinterpret_cast<KartMoveStartBlinkLocalFn>(kmRuntimeAddr(0x805819a8));
     Kart::Movement& movement = player->GetMovement();
-    startBlinkLocal(&movement);
+    movement.StartBlinkLocal();
 
     s16& blinkTimer = *reinterpret_cast<s16*>(reinterpret_cast<u8*>(&movement) + kartMovementBlinkTimerOffset);
     blinkTimer *= 1.5f;
@@ -266,8 +233,7 @@ static bool RemoveBalloon(void* mgr, u8 playerId) {
     if (mgr == nullptr || playerId >= maxPlayers || GetBalloonCount(mgr, playerId) == 0) return false;
 
     const u8 previousBalloonCount = GetBalloonCount(mgr, playerId);
-    BalloonRemoveFn remove = reinterpret_cast<BalloonRemoveFn>(kmRuntimeAddr(0x80869fd0));
-    remove(mgr, playerId, 1, 1, 0, 1, 0);
+    reinterpret_cast<RaceBalloonManager*>(mgr)->Remove(playerId, 1, 1, 0, 1, 0);
     if (GetBalloonCount(mgr, playerId) >= previousBalloonCount) return false;
 
     StartBalloonLossBlink(playerId);
@@ -452,8 +418,7 @@ static bool MoveBalloon(void* mgr, u8 toPlayer, u8 fromPlayer) {
     if (GetBalloonCount(mgr, fromPlayer) == 0) return false;
 
     const u8 previousBalloonCount = GetBalloonCount(mgr, fromPlayer);
-    BalloonMoveFn move = reinterpret_cast<BalloonMoveFn>(kmRuntimeAddr(0x8086a0dc));
-    move(mgr, toPlayer, fromPlayer, 0, 1, 0);
+    reinterpret_cast<RaceBalloonManager*>(mgr)->Move(toPlayer, fromPlayer, 0, 1, 0);
     if (GetBalloonCount(mgr, fromPlayer) >= previousBalloonCount) return false;
 
     StartBalloonLossBlink(fromPlayer);
@@ -481,8 +446,7 @@ static void AddStartingBalloons(void* mgr, int playerId, u32 teamId, u32 isIniti
         return;
     }
 
-    BalloonAddFn add = reinterpret_cast<BalloonAddFn>(kmRuntimeAddr(0x80869df4));
-    add(mgr, playerId, teamId, isInitial, delay, count, interval);
+    reinterpret_cast<RaceBalloonManager*>(mgr)->Add(playerId, teamId, isInitial, delay, count, interval);
 }
 kmCall(0x80869ba8, AddStartingBalloons);
 
@@ -524,7 +488,11 @@ static void StartOobWipeWithoutEliminatedPlayers(Kart::Link* link, u32 state) {
     if (IsPlayerEliminated(link->GetPlayerIdx())) return;
     link->pointers->kartStatus->StartOobWipe(state);
 }
-kmBranch(0x80591784, StartOobWipeWithoutEliminatedPlayers);
+kmCall(0x80573f88, StartOobWipeWithoutEliminatedPlayers);
+kmCall(0x80581530, StartOobWipeWithoutEliminatedPlayers);
+kmCall(0x805966b0, StartOobWipeWithoutEliminatedPlayers);
+kmCall(0x80598508, StartOobWipeWithoutEliminatedPlayers);
+kmCall(0x805986cc, StartOobWipeWithoutEliminatedPlayers);
 
 static bool IsPlayerOnlineRaceComplete(const Raceinfo& raceinfo, u8 playerId) {
     if (!IsOnline()) return false;
@@ -604,22 +572,19 @@ static void FinishPoweredHitAction(void* action, u32 sourcePlayerObjId) {
 }
 
 static void OnStarHitAction(void* action, u32 sourcePlayerObjId) {
-    KartActionHitFn original = reinterpret_cast<KartActionHitFn>(kmRuntimeAddr(0x80568718));
-    original(action, sourcePlayerObjId);
+    reinterpret_cast<Kart::Action*>(action)->StartAction3(sourcePlayerObjId);
     EjectItemsFromItemDamage(reinterpret_cast<Kart::Link*>(action)->GetPlayerIdx());
     FinishPoweredHitAction(action, sourcePlayerObjId);
 }
 
 static void OnBulletHitAction(void* action, u32 sourcePlayerObjId) {
-    KartActionHitFn original = reinterpret_cast<KartActionHitFn>(kmRuntimeAddr(0x80569024));
-    original(action, sourcePlayerObjId);
+    reinterpret_cast<Kart::Action*>(action)->StartAction6(sourcePlayerObjId);
     EjectItemsFromItemDamage(reinterpret_cast<Kart::Link*>(action)->GetPlayerIdx());
     FinishPoweredHitAction(action, sourcePlayerObjId);
 }
 
 static void OnMegaHitAction(void* action, u32 sourcePlayerObjId) {
-    KartActionHitFn original = reinterpret_cast<KartActionHitFn>(kmRuntimeAddr(0x80569818));
-    original(action, sourcePlayerObjId);
+    reinterpret_cast<Kart::Action*>(action)->StartAction13(sourcePlayerObjId);
     EjectItemsFromItemDamage(reinterpret_cast<Kart::Link*>(action)->GetPlayerIdx());
     FinishPoweredHitAction(action, sourcePlayerObjId);
 }
@@ -653,30 +618,158 @@ kmCall(0x80570c4c, OnMoveHit);
 kmCall(0x80570c88, OnMoveHit);
 kmCall(0x80570cb0, OnMoveHit);
 
-static void ApplyCollisionPatches(bool active) {
-    if (active) {
-        kmRuntimeWrite32A(0x80572814, 0x38800003);  // li r4, MODE_BATTLE for item balloon branch only
-        kmRuntimeWrite32A(0x80570100, 0x2c1d0001);  // let VS enter kart balloon branches
-        kmRuntimeWrite32A(0x8057012c, 0x38a00003);
-        kmRuntimeWrite32A(0x80570494, 0x2c1d0001);
-        kmRuntimeWrite32A(0x805704c4, 0x38a00003);
-        kmRuntimeWrite32A(0x805709d4, 0x2c1d0001);
-        kmRuntimeWrite32A(0x80570a20, 0x38a00003);
-        kmRuntimeWrite32A(0x80570ba8, 0x2c1d0001);
-        kmRuntimeWrite32A(0x80570bf4, 0x38a00003);
-        return;
-    }
-
-    kmRuntimeWrite32A(0x80572814, 0x80850b70);
-    kmRuntimeWrite32A(0x80570100, 0x2c1d0000);
-    kmRuntimeWrite32A(0x8057012c, 0x80a40b70);
-    kmRuntimeWrite32A(0x80570494, 0x2c1d0000);
-    kmRuntimeWrite32A(0x805704c4, 0x80a40b70);
-    kmRuntimeWrite32A(0x805709d4, 0x2c1d0000);
-    kmRuntimeWrite32A(0x80570a20, 0x80a40b70);
-    kmRuntimeWrite32A(0x80570ba8, 0x2c1d0000);
-    kmRuntimeWrite32A(0x80570bf4, 0x80a40b70);
+static asmFunc ForceItemCollisionModeWhenBattleRoyale() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        li r4, 3;
+        b end;
+    vanilla:
+        lwz r4, 0xb70(r5);
+    end:
+        blr;
+    )
 }
+kmCall(0x80572814, ForceItemCollisionModeWhenBattleRoyale);
+
+static asmFunc CompareKartCollisionMode1() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        cmpwi r29, 1;
+        b end;
+    vanilla:
+        cmpwi r29, 0;
+    end:
+        blr;
+    )
+}
+kmCall(0x80570100, CompareKartCollisionMode1);
+
+static asmFunc ForceKartCollisionBattleType1() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        li r5, 3;
+        b end;
+    vanilla:
+        lwz r5, 0xb70(r4);
+    end:
+        blr;
+    )
+}
+kmCall(0x8057012c, ForceKartCollisionBattleType1);
+
+static asmFunc CompareKartCollisionMode2() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        cmpwi r29, 1;
+        b end;
+    vanilla:
+        cmpwi r29, 0;
+    end:
+        blr;
+    )
+}
+kmCall(0x80570494, CompareKartCollisionMode2);
+
+static asmFunc ForceKartCollisionBattleType2() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        li r5, 3;
+        b end;
+    vanilla:
+        lwz r5, 0xb70(r4);
+    end:
+        blr;
+    )
+}
+kmCall(0x805704c4, ForceKartCollisionBattleType2);
+
+static asmFunc CompareKartCollisionMode3() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        cmpwi r29, 1;
+        b end;
+    vanilla:
+        cmpwi r29, 0;
+    end:
+        blr;
+    )
+}
+kmCall(0x805709d4, CompareKartCollisionMode3);
+
+static asmFunc ForceKartCollisionBattleType3() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        li r5, 3;
+        b end;
+    vanilla:
+        lwz r5, 0xb70(r4);
+    end:
+        blr;
+    )
+}
+kmCall(0x80570a20, ForceKartCollisionBattleType3);
+
+static asmFunc CompareKartCollisionMode4() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        cmpwi r29, 1;
+        b end;
+    vanilla:
+        cmpwi r29, 0;
+    end:
+        blr;
+    )
+}
+kmCall(0x80570ba8, CompareKartCollisionMode4);
+
+static asmFunc ForceKartCollisionBattleType4() {
+    ASM(
+        nofralloc;
+        lis r12, sCollisionPatchesActive @ha;
+        lbz r12, sCollisionPatchesActive @l(r12);
+        cmpwi r12, 0;
+        beq vanilla;
+        li r5, 3;
+        b end;
+    vanilla:
+        lwz r5, 0xb70(r4);
+    end:
+        blr;
+    )
+}
+kmCall(0x80570bf4, ForceKartCollisionBattleType4);
 
 kmWrite32(0x808698c8, 0x60000000);  // allocate only the team-0 balloon pool
 kmWrite32(0x808698c0, 0x1c040005);  // allocate five balloons per player
@@ -700,26 +793,23 @@ static void* ConstructBalloon(void* balloon, u8 poolIdx, u8 teamId) {
 }
 kmCall(0x8086993c, ConstructBalloon);
 
-static void* AllocateObjectHeap(void* scene, u32 size, u32 parentHeapIdx) {
+static void AllocateObjectHeap(GameScene* scene, u32 size, u32 parentHeapIdx) {
     if (ShouldApplyBattleRoyale() && size == 0x80000 && parentHeapIdx == 1) {
         size = 0x100000;
     }
 
-    AllocateHeapFn allocateHeap = reinterpret_cast<AllocateHeapFn>(kmRuntimeAddr(0x8051b8e4));
-    return allocateHeap(scene, size, parentHeapIdx);
+    scene->CreateHeap(size, parentHeapIdx);
 }
 kmCall(0x80554570, AllocateObjectHeap);
 
 static void CreateBattleRoyaleBalloonManager() {
-    CreateBalloonManagerFn create = reinterpret_cast<CreateBalloonManagerFn>(kmRuntimeAddr(0x808697bc));
-
     RacedataSettings& settings = Racedata::sInstance->racesScenario.settings;
     const GameMode prevMode = settings.gamemode;
     const BattleType prevBattleType = settings.battleType;
     settings.gamemode = MODE_BATTLE;
     settings.battleType = BATTLE_BALLOON;
     ClearLoadedBalloonModels();
-    create();
+    RaceBalloonManager::CreateInstance();
     LoadStartingBalloonModels(GetBalloonManager());
     settings.gamemode = prevMode;
     settings.battleType = prevBattleType;
@@ -727,8 +817,7 @@ static void CreateBattleRoyaleBalloonManager() {
 
 static void CreateBalloonManager() {
     if (!ShouldApplyBattleRoyale()) {
-        CreateBalloonManagerFn create = reinterpret_cast<CreateBalloonManagerFn>(kmRuntimeAddr(0x808697bc));
-        create();
+        RaceBalloonManager::CreateInstance();
         return;
     }
 
@@ -736,24 +825,22 @@ static void CreateBalloonManager() {
 }
 kmCall(0x8082a7c4, CreateBalloonManager);
 
-static void* sDeferredDestroyScene = nullptr;
-static void* sDeferredDestroyHeap = nullptr;
+static GameScene* sDeferredDestroyScene = nullptr;
+static EGG::Heap* sDeferredDestroyHeap = nullptr;
 
-static void DestroyHeapAfterDeferredBalloons(void* scene, void* heap) {
+static void DestroyHeapAfterDeferredBalloons(GameScene* scene, EGG::Heap* heap) {
     if (sDeferredBalloonManagerCreation && ShouldApplyBattleRoyale()) {
         sDeferredDestroyScene = scene;
         sDeferredDestroyHeap = heap;
         return;
     }
 
-    DestroyHeapFn destroyHeap = reinterpret_cast<DestroyHeapFn>(kmRuntimeAddr(0x8051b988));
-    destroyHeap(scene, heap);
+    scene->DestroyHeap(heap);
 }
 kmCall(0x8082a7f4, DestroyHeapAfterDeferredBalloons);
 
-static void CreateObjectsThenCreateDeferredBalloons(void* objectDirector, bool isInitial) {
-    CreateObjectsFn createObjects = reinterpret_cast<CreateObjectsFn>(kmRuntimeAddr(0x80826e8c));
-    createObjects(objectDirector, isInitial);
+static void CreateObjectsThenCreateDeferredBalloons(ObjectsMgr* objectDirector, bool isInitial) {
+    objectDirector->CreateAllObjects(isInitial);
 
     if (sDeferredBalloonManagerCreation && ShouldApplyBattleRoyale()) {
         CreateBattleRoyaleBalloonManager();
@@ -761,8 +848,7 @@ static void CreateObjectsThenCreateDeferredBalloons(void* objectDirector, bool i
     }
 
     if (sDeferredDestroyHeap != nullptr) {
-        DestroyHeapFn destroyHeap = reinterpret_cast<DestroyHeapFn>(kmRuntimeAddr(0x8051b988));
-        destroyHeap(sDeferredDestroyScene, sDeferredDestroyHeap);
+        sDeferredDestroyScene->DestroyHeap(sDeferredDestroyHeap);
         sDeferredDestroyScene = nullptr;
         sDeferredDestroyHeap = nullptr;
     }
@@ -1037,11 +1123,11 @@ static void TickLocalBalloonEvents() {
 
 static void FrameUpdate() {
     if (!ShouldApplyBattleRoyale()) {
-        ApplyCollisionPatches(false);
+        sCollisionPatchesActive = false;
         ResetState();
         return;
     }
-    ApplyCollisionPatches(true);
+    sCollisionPatchesActive = true;
 
     System* system = System::sInstance;
     LapKO::Mgr* lapKoMgr = system->lapKoMgr;

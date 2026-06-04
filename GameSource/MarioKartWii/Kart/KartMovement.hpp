@@ -143,6 +143,7 @@ class Movement : public Link {
     void ApplyLightning();  // 80580438
     void ApplyLightningEffect(int frames, int unk0, int unk1);  // 80580778
     void UpdateScale();  // 8058160c
+    void StartBlinkLocal();  // 805819a8
     void ActivateTc();  // 80581a28
     void DeactivateTc();  // 80581a40
     void UpdateCharacterInk();  // 80581b1c
