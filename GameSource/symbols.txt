@@ -2201,6 +2201,7 @@ DecideRouletteItem__Q24Item12ItemSlotDataFUsUc6ItemIdb = 0x807bb8d0
 itemSlotData = 0x809c3670
 
 #Inventory
+EjectItems__Q24Item15PlayerInventoryFv = 0x807bc350
 Update__Q24Item15PlayerInventoryFv = 0x807bc6e8
 SetItem__Q24Item15PlayerInventoryF6ItemIdb = 0x807bc940
 RemoveItems__Q24Item15PlayerInventoryFUi = 0x807bc97c
