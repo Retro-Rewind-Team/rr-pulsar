@@ -23,7 +23,7 @@ kmWrite32(0x805c3c2c, 0x3c804080);
 kmWrite32(0x805c3c34, 0x90830000);
 #endif
 
-#ifdef RANDOM
+#ifdef RANDOM_TRACK
 // Process locally submitted online course votes as Random.
 kmWrite32(0x80643740, 0x38c000ff);
 kmWrite32(0x80643794, 0x38c000ff);
