@@ -1500,6 +1500,7 @@ UpdateInfo__19CtrlRaceNameBalloonFUc = 0x807f0044
 
 #RaceBalloons
 __ct__12RaceBalloons = 0x807f1c58
+__ct__Q26GeoObj10ObjBalloonFUcUc = 0x8086e224
 maxDistanceNames__12RaceBalloons = 0x808d3e14
 
 #CtrlRaceRankNum
