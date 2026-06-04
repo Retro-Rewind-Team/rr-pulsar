@@ -9,16 +9,31 @@
 #include <MarioKartWii/File/RKG.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceItemWindow.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <core/rvl/gx/GX.hpp>
 
 namespace Pulsar {
 namespace TTPractice {
 
 static const u32 ITEM_COUNT = 7;
+static const u16 GOLDEN_MUSHROOM_TIMER_FRAMES = 480;
+static const u16 GOLDEN_MUSHROOM_WARNING_FRAMES = 120;
 static const u16 INPUT_ITEM_USE = 0x4;
 static const float MODE_BUTTON_X_OFFSET = -110.0f;
 static const float STICK_WHEEL_THRESHOLD = 0.5f;
+
+// Golden mushroom timer bar tuning. X/Y offsets are relative to the item window's HUD position.
+static const float GOLDEN_TIMER_BAR_WIDTH_SCALE = 1.0f;
+static const float GOLDEN_TIMER_BAR_HORIZONTAL_PADDING = 0.0f;
+static const float GOLDEN_TIMER_BAR_EDGE_EXTENSION = 4.0f;
+static const float GOLDEN_TIMER_BAR_HEIGHT = 3.0f;
+static const float GOLDEN_TIMER_BAR_X_OFFSET = 0.0f;
+static const float GOLDEN_TIMER_BAR_Y_OFFSET = -20.5f;
+static const u32 GOLDEN_TIMER_BAR_POSITION_INDEX = 1;
+static const u8 GOLDEN_TIMER_BAR_YELLOW_GREEN = 220;
+static const u8 GOLDEN_TIMER_BAR_ALPHA = 220;
 static const u32 TC_TIMER_OFFSET = 0x1d8;
 static const u32 TC_NATURAL_STRIKE_TIMER = 600;
 static const u32 TC_STRIKE_TIMER = 599;
@@ -38,6 +53,17 @@ kmRuntimeUse(0x808d9da0);  // DriftSelect button variant table
 
 static Item::ObjKumo* FindActiveThunderCloud(Item::Player& player);
 
+struct GoldenTimerBar {
+    float x;
+    float y;
+    float width;
+    float height;
+    u8 red;
+    u8 green;
+    u8 blue;
+    u8 alpha;
+};
+
 void SetPracticeMode(bool enabled) {
     isPracticeMode = enabled;
     for (u32 i = 0; i < 4; ++i) {
@@ -50,6 +76,11 @@ void SetPracticeMode(bool enabled) {
 
 bool IsPracticeMode() {
     return isPracticeMode;
+}
+
+ItemId GetStartingItem(u32 hudSlotId) {
+    if (hudSlotId >= 4) hudSlotId = 0;
+    return ITEM_WHEEL_ITEMS[selectedItemIndexes[hudSlotId]];
 }
 
 static bool IsEnabled() {
@@ -219,6 +250,96 @@ static void UpdatePlayerAndPracticeWheel(Item::Player& player) {
     UpdatePracticeWheel(player);
 }
 kmCall(0x8079994c, UpdatePlayerAndPracticeWheel);
+
+static void SetupGoldenTimerGX() {
+    GX::ClearVtxDesc();
+    GX::SetVtxDesc(GX::GX_VA_POS, GX::GX_DIRECT);
+    GX::SetVtxDesc(GX::GX_VA_CLR0, GX::GX_DIRECT);
+    GX::SetVtxAttrFmt(GX::GX_VTXFMT0, GX::GX_VA_POS, GX::GX_POS_XYZ, GX::GX_F32, 0);
+    GX::SetVtxAttrFmt(GX::GX_VTXFMT0, GX::GX_VA_CLR0, GX::GX_CLR_RGBA, GX::GX_RGBA8, 0);
+    GX::SetNumTexGens(0);
+    GX::SetNumChans(1);
+    GX::SetChanCtrl(GX::GX_COLOR0A0, false, GX::GX_SRC_REG, GX::GX_SRC_VTX, GX::GX_LIGHT_NULL, GX::GX_DF_NONE, GX::GX_AF_NONE);
+    GX::SetTevOrder(GX::GX_TEVSTAGE0, GX::GX_TEXCOORD_NULL, GX::GX_TEXMAP_NULL, GX::GX_COLOR0A0);
+    GX::SetTevOp(GX::GX_TEVSTAGE0, GX::GX_PASSCLR);
+    GX::SetNumTevStages(1);
+    GX::SetBlendMode(GX::GX_BM_BLEND, GX::GX_BL_SRCALPHA, GX::GX_BL_INVSRCALPHA, GX::GX_LO_CLEAR);
+    GX::SetZMode(false, GX::GX_ALWAYS, false);
+
+    Mtx identity = {
+        {1.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f},
+    };
+    GX::LoadPosMtxImm(identity, 0);
+    GX::SetCurrentMtx(0);
+}
+
+static void DrawGoldenTimerQuad(const GoldenTimerBar& bar) {
+    SetupGoldenTimerGX();
+
+    GX::Begin(GX::GX_QUADS, GX::GX_VTXFMT0, 4);
+    GX_Position3f32(bar.x, bar.y, 0.0f);
+    GX_Color4u8(bar.red, bar.green, bar.blue, bar.alpha);
+    GX_Position3f32(bar.x + bar.width, bar.y, 0.0f);
+    GX_Color4u8(bar.red, bar.green, bar.blue, bar.alpha);
+    GX_Position3f32(bar.x + bar.width, bar.y - bar.height, 0.0f);
+    GX_Color4u8(bar.red, bar.green, bar.blue, bar.alpha);
+    GX_Position3f32(bar.x, bar.y - bar.height, 0.0f);
+    GX_Color4u8(bar.red, bar.green, bar.blue, bar.alpha);
+    GXEnd();
+}
+
+static bool TryBuildGoldenTimerBar(CtrlRaceItemWindow& itemWindow, GoldenTimerBar& bar) {
+    if (!IsEnabled()) return false;
+
+    Item::Manager* manager = Item::Manager::sInstance;
+    if (manager == nullptr) return false;
+
+    const u8 playerId = itemWindow.GetPlayerId();
+    if (playerId >= 12) return false;
+
+    Item::Player& player = manager->players[playerId];
+    const Item::PlayerInventory& inventory = player.inventory;
+    if (inventory.currentItemId != GOLDEN_MUSHROOM || !inventory.hasGolden || inventory.goldenTimer == 0) return false;
+
+    const float remaining = inventory.goldenTimer > GOLDEN_MUSHROOM_TIMER_FRAMES
+                                ? 1.0f
+                                : static_cast<float>(inventory.goldenTimer) / static_cast<float>(GOLDEN_MUSHROOM_TIMER_FRAMES);
+
+    nw4r::lyt::Pane* itemWindowPane = itemWindow.GetPane();
+    if (itemWindowPane == nullptr) return false;
+
+    const PositionAndScale& itemWindowPosition = itemWindow.positionAndscale[GOLDEN_TIMER_BAR_POSITION_INDEX];
+    const float barScaleX = itemWindowPosition.scale.x;
+    const float barScaleY = itemWindowPosition.scale.z;
+    const float fullWidth =
+        (itemWindowPane->size.x * GOLDEN_TIMER_BAR_WIDTH_SCALE +
+         (GOLDEN_TIMER_BAR_EDGE_EXTENSION - GOLDEN_TIMER_BAR_HORIZONTAL_PADDING) * 2.0f) *
+        barScaleX;
+    if (fullWidth <= 0.0f) return false;
+
+    bar.x = itemWindowPosition.position.x + GOLDEN_TIMER_BAR_X_OFFSET * barScaleX - fullWidth * 0.5f;
+    bar.y = itemWindowPosition.position.y + GOLDEN_TIMER_BAR_Y_OFFSET * barScaleY;
+    bar.width = fullWidth * remaining;
+    bar.height = GOLDEN_TIMER_BAR_HEIGHT * barScaleY;
+    bar.red = 255;
+    bar.green = inventory.goldenTimer <= GOLDEN_MUSHROOM_WARNING_FRAMES ? 0 : GOLDEN_TIMER_BAR_YELLOW_GREEN;
+    bar.blue = 0;
+    bar.alpha = GOLDEN_TIMER_BAR_ALPHA;
+    return true;
+}
+
+static void DrawGoldenMushroomTimer(CtrlRaceItemWindow& itemWindow) {
+    GoldenTimerBar bar;
+    if (TryBuildGoldenTimerBar(itemWindow, bar)) DrawGoldenTimerQuad(bar);
+}
+
+static void DrawItemWindowWithGoldenTimer(CtrlRaceItemWindow& itemWindow, u32 curZIdx) {
+    if (!itemWindow.IsInactive()) DrawGoldenMushroomTimer(itemWindow);
+    itemWindow.LayoutUIControl::Draw(curZIdx);
+}
+kmWritePointer(0x808d3cdc, DrawItemWindowWithGoldenTimer);
 
 static void LoadGhostSelectOrPracticeRace(Pages::Menu& page, PageId id, PushButton& button) {
     Racedata* racedata = Racedata::sInstance;

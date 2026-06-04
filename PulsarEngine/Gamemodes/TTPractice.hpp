@@ -2,6 +2,7 @@
 #define _PULSAR_TTPRACTICE_
 
 #include <kamek.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Page/Menu/Menu.hpp>
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuText.hpp>
@@ -12,6 +13,7 @@ namespace TTPractice {
 
 void SetPracticeMode(bool enabled);
 bool IsPracticeMode();
+ItemId GetStartingItem(u32 hudSlotId);
 
 class SelectPage : public ::Pages::MenuInteractable {
    public:
