@@ -1,7 +1,59 @@
 #include <CustomCharacters/CustomCharacters.hpp>
+#include <core/rvl/OS/OSBootInfo.hpp>
 
 namespace Pulsar {
 namespace CustomCharacters {
+
+struct DiscFSTEntry {
+    u32 typeName;
+    u32 offset;
+    u32 size;
+};
+
+static bool FSTEntryIsDir(const DiscFSTEntry& entry) {
+    return (entry.typeName & 0xff000000) != 0;
+}
+
+static u32 FSTNameOffset(const DiscFSTEntry& entry) {
+    return entry.typeName & 0x00ffffff;
+}
+
+static char ToUpperAscii(char c) {
+    if (c >= 'a' && c <= 'z') return static_cast<char>(c - 'a' + 'A');
+    return c;
+}
+
+static bool EqualIgnoreCase(char left, char right) {
+    return ToUpperAscii(left) == ToUpperAscii(right);
+}
+
+static bool EqualIgnoreCaseN(const char* left, const char* right, u32 count) {
+    if (left == nullptr || right == nullptr) return false;
+    for (u32 i = 0; i < count; ++i) {
+        if (!EqualIgnoreCase(left[i], right[i])) return false;
+    }
+    return true;
+}
+
+static bool EqualIgnoreCaseString(const char* left, const char* right) {
+    if (left == nullptr || right == nullptr) return false;
+    while (*left != '\0' && *right != '\0') {
+        if (!EqualIgnoreCase(*left, *right)) return false;
+        ++left;
+        ++right;
+    }
+    return *left == '\0' && *right == '\0';
+}
+
+static bool StartsWithIgnoreCase(const char* str, const char* prefix) {
+    if (str == nullptr || prefix == nullptr) return false;
+    while (*prefix != '\0') {
+        if (!EqualIgnoreCase(*str, *prefix)) return false;
+        ++str;
+        ++prefix;
+    }
+    return true;
+}
 
 // Loose voice files use upper-case character postfixes in GRP_VO filenames.
 void CopyUpperPostfix(char* dest, u32 destSize, const char* postfix) {
@@ -31,8 +83,14 @@ bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* ex
 bool LooseVoiceFileExists(const char* postfix, const char* suffix, const char* extension, const char* voiceName) {
     char path[0x80];
     if (!BuildLooseVoicePath(postfix, suffix, extension, voiceName, path, sizeof(path))) return false;
-    u32 fileSize = 0;
-    return DiscFileSize(path, fileSize);
+    const s32 entryNum = DVD::ConvertPathToEntryNum(path);
+    if (entryNum < 0) return false;
+
+    DVD::FileInfo info;
+    if (!DVD::FastOpen(entryNum, &info)) return false;
+    const bool exists = info.length != 0;
+    DVD::Close(&info);
+    return exists;
 }
 
 const char* const looseVoiceGroupSuffixes[] = {
@@ -107,26 +165,6 @@ const CharacterNameMap voiceCharacterNames[] = {
     {"ROSALINA", ROSALINA},
 };
 
-bool LooseVoiceStemExists(const char* postfix, const char* suffix, const char* voiceName) {
-    return LooseVoiceFileExists(postfix, suffix, "brwsd", voiceName) || LooseVoiceFileExists(postfix, suffix, "brbnk", voiceName);
-}
-
-// A .silent marker suppresses voice groups only when no loose voices exist.
-bool SilentVoiceMarkerExists(CharacterId character, u8 table, const char* postfix) {
-    if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return false;
-    if (postfix == nullptr) return false;
-    char path[0x60];
-    const int written = snprintf(path, sizeof(path), "/sound/%s.silent", postfix);
-    if (written > 0 && static_cast<u32>(written) < sizeof(path)) {
-        DVD::FileInfo info;
-        if (DVD::Open(path, &info)) {
-            DVD::Close(&info);
-            return true;
-        }
-    }
-    return false;
-}
-
 const char* VoiceNameForCharacter(CharacterId character) {
     for (u32 i = 0; i < ARRAY_COUNT(voiceCharacterNames); ++i) {
         if (voiceCharacterNames[i].character == character) return voiceCharacterNames[i].name;
@@ -137,6 +175,141 @@ const char* VoiceNameForCharacter(CharacterId character) {
 const char* VoicePostfixNameForCharacter(CharacterId character) {
     const char* postfix = GetDefaultCharacterPostfix(character);
     return postfix != nullptr ? postfix : VoiceNameForCharacter(character);
+}
+
+bool LooseVoiceStemExists(const char* postfix, const char* suffix, const char* voiceName) {
+    return LooseVoiceFileExists(postfix, suffix, "brwsd", voiceName) || LooseVoiceFileExists(postfix, suffix, "brbnk", voiceName);
+}
+
+// A .silent marker suppresses voice groups only when no loose voices exist.
+bool SilentVoiceMarkerExists(CharacterId character, u8 table, const char* postfix) {
+    if (table == TABLE_DEFAULT || table >= TABLE_COUNT || !IsCharacter(character)) return false;
+    if (postfix == nullptr) return false;
+    char path[0x60];
+    const int written = snprintf(path, sizeof(path), "/sound/%s.silent", postfix);
+    return written > 0 && static_cast<u32>(written) < sizeof(path) && DVD::ConvertPathToEntryNum(path) >= 0;
+}
+
+static bool MatchLooseVoiceSuffix(const char* suffix, u32 suffixLength, u32& suffixIndex) {
+    for (u32 i = 0; i < ARRAY_COUNT(looseVoiceGroupSuffixes); ++i) {
+        const char* expected = looseVoiceGroupSuffixes[i];
+        if (strlen(expected) != suffixLength) continue;
+        if (!EqualIgnoreCaseN(suffix, expected, suffixLength)) continue;
+        suffixIndex = i;
+        return true;
+    }
+    return false;
+}
+
+static bool IsLooseVoiceExtension(const char* extension) {
+    if (extension == nullptr) return false;
+    for (u32 i = 0; i < 5; ++i) {
+        if (extension[i] == '\0') return false;
+    }
+    return EqualIgnoreCaseN(extension, "brwsd", 5) || EqualIgnoreCaseN(extension, "brbnk", 5);
+}
+
+static bool MatchLooseVoiceAlias(const char* alias, u32& characterIndex) {
+    if (alias == nullptr || alias[0] == '\0') return false;
+    for (u32 i = 0; i < ARRAY_COUNT(voiceCharacterNames); ++i) {
+        const CharacterId character = voiceCharacterNames[i].character;
+        const char* voiceName = voiceCharacterNames[i].name;
+        if (EqualIgnoreCaseString(alias, voiceName)) {
+            characterIndex = i;
+            return true;
+        }
+
+        const char* postfixName = VoicePostfixNameForCharacter(character);
+        if (postfixName == nullptr || EqualIgnoreCaseString(postfixName, voiceName)) continue;
+        if (EqualIgnoreCaseString(alias, postfixName)) {
+            characterIndex = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+static void ApplyLooseVoiceMasks(LooseVoiceInfo& info, u32 directMask, const u32* characterMasks) {
+    for (u32 suffixIndex = 0; suffixIndex < ARRAY_COUNT(looseVoiceGroupSuffixes); ++suffixIndex) {
+        const u32 suffixBit = 1 << suffixIndex;
+        if ((directMask & suffixBit) != 0) {
+            info.hasFiles = true;
+            info.suffixMask |= suffixBit;
+            continue;
+        }
+
+        for (u32 characterIndex = 0; characterIndex < ARRAY_COUNT(voiceCharacterNames); ++characterIndex) {
+            if ((characterMasks[characterIndex] & suffixBit) == 0) continue;
+            info.hasFiles = true;
+            info.suffixMask |= suffixBit;
+            if (!IsCharacter(info.voiceCharacter)) info.voiceCharacter = voiceCharacterNames[characterIndex].character;
+            break;
+        }
+    }
+}
+
+static bool ScanLooseVoiceInfoFromDiscFST(const char* postfix, LooseVoiceInfo& info) {
+    if (postfix == nullptr || OS::BootInfo::mInstance.FSTLocation == nullptr) return false;
+
+    const DiscFSTEntry* fst = static_cast<const DiscFSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
+    const u32 entryCount = fst[0].size;
+    const s32 soundEntryNum = DVD::ConvertPathToEntryNum("/sound");
+    if (soundEntryNum < 0 || static_cast<u32>(soundEntryNum) >= entryCount) return false;
+
+    const DiscFSTEntry& soundEntry = fst[soundEntryNum];
+    if (!FSTEntryIsDir(soundEntry)) return false;
+    const u32 soundEnd = soundEntry.size;
+    if (soundEnd <= static_cast<u32>(soundEntryNum) || soundEnd > entryCount) return false;
+
+    char upperPostfix[32];
+    CopyUpperPostfix(upperPostfix, sizeof(upperPostfix), postfix);
+    if (upperPostfix[0] == '\0') return false;
+
+    char prefix[48];
+    const int written = snprintf(prefix, sizeof(prefix), "GRP_VO_%s_", upperPostfix);
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(prefix)) return false;
+    const u32 prefixLength = static_cast<u32>(written);
+
+    u32 directMask = 0;
+    u32 characterMasks[ARRAY_COUNT(voiceCharacterNames)];
+    for (u32 i = 0; i < ARRAY_COUNT(characterMasks); ++i) characterMasks[i] = 0;
+
+    const char* stringTable = reinterpret_cast<const char*>(fst) + (entryCount * sizeof(DiscFSTEntry));
+    for (u32 entryIndex = static_cast<u32>(soundEntryNum) + 1; entryIndex < soundEnd;) {
+        const DiscFSTEntry& entry = fst[entryIndex];
+        if (FSTEntryIsDir(entry)) {
+            if (entry.size <= entryIndex || entry.size > soundEnd) return false;
+            entryIndex = entry.size;
+            continue;
+        }
+        ++entryIndex;
+
+        const char* fileName = stringTable + FSTNameOffset(entry);
+        if (!StartsWithIgnoreCase(fileName, prefix)) continue;
+
+        const char* suffix = fileName + prefixLength;
+        const char* dot = strchr(suffix, '.');
+        if (dot == nullptr || dot == suffix) continue;
+
+        u32 suffixIndex = 0;
+        if (!MatchLooseVoiceSuffix(suffix, static_cast<u32>(dot - suffix), suffixIndex)) continue;
+
+        const char* extension = dot + 1;
+        if (!IsLooseVoiceExtension(extension)) continue;
+
+        const u32 suffixBit = 1 << suffixIndex;
+        if (extension[5] == '\0') {
+            directMask |= suffixBit;
+            continue;
+        }
+        if (extension[5] != '.') continue;
+
+        u32 characterIndex = 0;
+        if (MatchLooseVoiceAlias(extension + 6, characterIndex)) characterMasks[characterIndex] |= suffixBit;
+    }
+
+    ApplyLooseVoiceMasks(info, directMask, characterMasks);
+    return info.hasFiles;
 }
 
 bool LooseVoiceStemExistsForCharacter(const char* postfix, const char* suffix, CharacterId character) {
@@ -179,22 +352,7 @@ const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table) {
     if (postfix == nullptr) return info;
     const bool silent = SilentVoiceMarkerExists(character, table, postfix);
 
-    for (u32 suffixIndex = 0; suffixIndex < ARRAY_COUNT(looseVoiceGroupSuffixes); ++suffixIndex) {
-        const char* suffix = looseVoiceGroupSuffixes[suffixIndex];
-        if (LooseVoiceStemExists(postfix, suffix)) {
-            info.hasFiles = true;
-            info.suffixMask |= 1 << suffixIndex;
-            continue;
-        }
-        for (u32 characterIndex = 0; characterIndex < ARRAY_COUNT(voiceCharacterNames); ++characterIndex) {
-            if (LooseVoiceStemExistsForCharacter(postfix, suffix, voiceCharacterNames[characterIndex].character)) {
-                info.hasFiles = true;
-                if (!IsCharacter(info.voiceCharacter)) info.voiceCharacter = voiceCharacterNames[characterIndex].character;
-                info.suffixMask |= 1 << suffixIndex;
-                break;
-            }
-        }
-    }
+    ScanLooseVoiceInfoFromDiscFST(postfix, info);
     if (!info.hasFiles && silent) info.silent = true;
     return info;
 }
