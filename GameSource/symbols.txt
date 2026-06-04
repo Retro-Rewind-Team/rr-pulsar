@@ -1118,6 +1118,7 @@ CreateAndInitPage__7SectionF6PageId = 0x80622d08
 AddPageLayer__7SectionF6PageId = 0x80622da0
 GetTopLayerPage__7SectionCFv = 0x80622ea0
 ScheduleDisconnection__7SectionFv = 0x80623054
+RemovePageLayers__7SectionFUi = 0x806232e8
 CreatePageById__7SectionF6PageId = 0x80623390
 CreateSectionPages__7SectionF9SectionId = 0x8062c3a4
 AddInitialLayers__7SectionF9SectionId = 0x80630094
