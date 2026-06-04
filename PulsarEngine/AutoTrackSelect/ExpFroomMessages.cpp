@@ -81,8 +81,9 @@ void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Tex
     Network::SetGlobeMsgColor(control, -1);
     if (bmgId == BMG_PLAY_GP || bmgId == BMG_PLAY_TEAM_GP) {
         const u32 hostContext = System::sInstance->netMgr.hostContext;
+        const u32 hostContext2 = System::sInstance->netMgr.hostContext2;
         const bool isOTT = hostContext & (1 << PULSAR_MODE_OTT);
-        const bool isKO = hostContext & (1 << PULSAR_MODE_KO) || hostContext & (1 << PULSAR_MODE_LAPKO) || hostContext & (1 << PULSAR_MODE_BATTLEROYALE);
+        const bool isKO = hostContext & (1 << PULSAR_MODE_KO) || hostContext & (1 << PULSAR_MODE_LAPKO) || hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
         const bool isExtendedTeam = hostContext & (1 << PULSAR_EXTENDEDTEAMS);
         const bool isStartRetro = hostContext & (1 << PULSAR_STARTRETROS);
         const bool isStartCT = hostContext & (1 << PULSAR_STARTCTS);
