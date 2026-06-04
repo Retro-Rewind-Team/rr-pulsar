@@ -679,15 +679,15 @@ kmWrite32(0x80869950, 0x60000000);
 kmWrite32(0x80869954, 0x60000000);
 kmWrite32(0x80869958, 0x60000000);
 
-kmWrite32(0x8082a554, 0x38600400);  // ObjectDirector arrays: 200 -> 256 pointers
-kmWrite32(0x8082a560, 0x38600400);
-kmWrite32(0x8082a56c, 0x38600400);
-kmWrite32(0x8082a578, 0x38600400);
-kmWrite32(0x8082a584, 0x38600400);
-kmWrite32(0x8082a590, 0x38600400);
-kmWrite32(0x8082a59c, 0x38600c00);  // hit depth vec3 array: 200 -> 256 entries
-kmWrite32(0x8082a5b8, 0x38e00100);
-kmWrite32(0x8082a5c4, 0x38600400);  // collision scenario array: 200 -> 256 entries
+kmWrite32(0x8082a554, 0x38600500);  // ObjectDirector arrays: 200 -> 320 pointers
+kmWrite32(0x8082a560, 0x38600500);
+kmWrite32(0x8082a56c, 0x38600500);
+kmWrite32(0x8082a578, 0x38600500);
+kmWrite32(0x8082a584, 0x38600500);
+kmWrite32(0x8082a590, 0x38600500);
+kmWrite32(0x8082a59c, 0x38600f00);  // hit depth vec3 array: 200 -> 320 entries
+kmWrite32(0x8082a5b8, 0x38e00140);
+kmWrite32(0x8082a5c4, 0x38600500);  // collision scenario array: 200 -> 320 entries
 
 static void* ConstructBalloon(void* balloon, u8 poolIdx, u8 teamId) {
     return new (balloon) GeoObj::ObjBalloon(poolIdx, GetBattleRoyaleBalloonPoolTeam(poolIdx, teamId));
