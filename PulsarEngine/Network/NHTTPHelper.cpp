@@ -35,6 +35,13 @@ bool PrepareNHTTPRequest() {
     return true;
 }
 
+bool PreparePersistentNHTTPRequest(bool& started) {
+    if (started) return true;
+    if (!PrepareNHTTPRequest()) return false;
+    started = true;
+    return true;
+}
+
 void MarkNHTTPRequestActive() {
     ++s_activeRequestCount;
 }

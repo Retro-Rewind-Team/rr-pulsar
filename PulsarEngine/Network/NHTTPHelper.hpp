@@ -9,6 +9,7 @@ namespace Network {
 void* NHTTPAlloc(u32 size, s32 align);
 void NHTTPFree(void* ptr);
 bool PrepareNHTTPRequest();
+bool PreparePersistentNHTTPRequest(bool& started);
 void MarkNHTTPRequestActive();
 void FinishNHTTPRequest();
 

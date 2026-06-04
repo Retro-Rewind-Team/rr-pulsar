@@ -108,6 +108,7 @@ static wchar_t s_rowLabelVR[] = L"VR";
 static wchar_t s_rowBlank[] = L"";
 static wchar_t s_positionText[8];
 static u64 s_requestStartTime = 0;
+static bool s_nhttpStarted = false;
 static const u32 s_nhttpWorkBufSize = 0x20000;
 static u32 s_requestGeneration = 0;
 static u64 s_currentUserFriendCode = 0;
@@ -477,6 +478,7 @@ void VRLeaderboardPage::OnActivate() {
     this->curPage = 0;
     s_hasApplied = false;
     s_fetchState = FETCH_IDLE;
+    s_nhttpStarted = false;
     s_loadedAPIPage = 0;
     s_loadedEntryCount = 0;
     ResetRowsToLoading();
@@ -722,7 +724,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
 
     memset(s_entries, 0, sizeof(Entry) * kMaxEntries);
 
-    if (!Network::PrepareNHTTPRequest()) {
+    if (!Network::PreparePersistentNHTTPRequest(s_nhttpStarted)) {
         s_fetchState = FETCH_ERROR;
         return;
     }
@@ -755,6 +757,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
     }
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet < 0) {
+        s_nhttpStarted = false;
         s_fetchState = FETCH_ERROR;
         return;
     }
