@@ -2,6 +2,7 @@
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
+#include <MarioKartWii/Item/Obj/ItemObj.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
@@ -748,6 +749,13 @@ static void CreateObjectsThenCreateDeferredBalloons(void* objectDirector, bool i
 }
 
 kmCall(0x8082a800, CreateObjectsThenCreateDeferredBalloons);
+
+// Original code by CLF78
+static void DisableItemPoof(Item::Obj* itemObj) {
+    if (ShouldApplyBattleRoyale()) return;
+    itemObj->TryDisappearDueToExcess();
+}
+kmCall(0x807965c0, DisableItemPoof);
 
 static void ResetState() {
     sInitialized = false;
