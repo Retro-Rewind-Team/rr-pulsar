@@ -1,3 +1,4 @@
+#include <PulsarSystem.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/egg/mem/Heap.hpp>
@@ -20,6 +21,8 @@ void NHTTPFree(void* ptr) {
     EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
     if (heap != nullptr) EGG::Heap::free(ptr, heap);
 }
+kmBranch(0x800ed69c, NHTTPAlloc);
+kmBranch(0x800ed6b4, NHTTPFree);
 
 bool PrepareNHTTPRequest() {
     if (s_activeRequestCount != 0) return true;

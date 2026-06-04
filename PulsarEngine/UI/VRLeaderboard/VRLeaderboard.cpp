@@ -97,9 +97,6 @@ static void BMGHolderLoadWithFallback(BMGHolder* self, const char* name) {
 }
 kmBranch(0x805f8b90, BMGHolderLoadWithFallback);
 
-kmBranch(0x800ed69c, Network::NHTTPAlloc);
-kmBranch(0x800ed6b4, Network::NHTTPFree);
-
 VRLeaderboardPage::FetchState VRLeaderboardPage::s_fetchState = VRLeaderboardPage::FETCH_IDLE;
 bool VRLeaderboardPage::s_hasApplied = false;
 VRLeaderboardPage::Entry* VRLeaderboardPage::s_entries = nullptr;
