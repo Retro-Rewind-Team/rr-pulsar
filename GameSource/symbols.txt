@@ -2675,3 +2675,9 @@ Update__Q24Kart6KillerFv = 0x8059bc44
 
 AssignTeams__Q25Pages11VSTeamsViewFv = 0x8084ffc8
 IsMultiplayer__Q25Pages4MenuFv = 0x808388b4
+LoadPrevPageWithDelayById__Q25Pages4MenuF6PageIdf = 0x80837830
+__dt__19CtrlMenuMovieButtonFv = 0x806280d4
+__vt__20CtrlMenuMovieHandler = 0x808d3608
+__vt__19CtrlMenuMovieButton = 0x808d3590
+CropMovie__15LayoutUIControlFPCcffff = 0x8063e5c0
+UnloadMovies__Q25Pages4MenuFv = 0x808388a0

@@ -30,6 +30,7 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
+#include <Gamemodes/TTPractice.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <Settings/UI/CustomEngineClassPage.hpp>
@@ -154,6 +155,7 @@ void ExpSection::CreatePulPages() {
             this->CreateAndInitPage(*this, SettingsPageSelect::id);
             this->CreateAndInitPage(*this, PULPAGE_BADGESELECT);
             this->CreateAndInitPage(*this, VRLeaderboardPage::id);
+            this->CreateAndInitPage(*this, TTPractice::SelectPage::id);
             break;
         case SECTION_LOCAL_MULTIPLAYER:  // 0x54
             this->CreateAndInitPage(*this, SettingsPanel::id);
@@ -324,6 +326,9 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
             break;
         case CustomItemPage::id:
             page = new CustomItemPage;
+            break;
+        case TTPractice::SelectPage::id:
+            page = new TTPractice::SelectPage;
             break;
         default:
             page = self.CreatePageById(initId);
