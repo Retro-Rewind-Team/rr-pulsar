@@ -1,5 +1,6 @@
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
 #include <Network/WiiLink.hpp>
+#include <Network/NHTTPHelper.hpp>
 #include <UI/UI.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
@@ -96,20 +97,8 @@ static void BMGHolderLoadWithFallback(BMGHolder* self, const char* name) {
 }
 kmBranch(0x805f8b90, BMGHolderLoadWithFallback);
 
-static void* NHTTPAllocFromEggHeap(u32 size, s32 align) {
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap == nullptr) return nullptr;
-    if (align < 4) align = 4;
-    return EGG::Heap::alloc(size, align, heap);
-}
-
-static void NHTTPFreeFromEggHeap(void* ptr) {
-    if (ptr == nullptr) return;
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap != nullptr) EGG::Heap::free(ptr, heap);
-}
-kmBranch(0x800ed69c, NHTTPAllocFromEggHeap);
-kmBranch(0x800ed6b4, NHTTPFreeFromEggHeap);
+kmBranch(0x800ed69c, Network::NHTTPAlloc);
+kmBranch(0x800ed6b4, Network::NHTTPFree);
 
 VRLeaderboardPage::FetchState VRLeaderboardPage::s_fetchState = VRLeaderboardPage::FETCH_IDLE;
 bool VRLeaderboardPage::s_hasApplied = false;
@@ -122,7 +111,6 @@ static wchar_t s_rowLabelVR[] = L"VR";
 static wchar_t s_rowBlank[] = L"";
 static wchar_t s_positionText[8];
 static u64 s_requestStartTime = 0;
-static bool s_nhttpStarted = false;
 static const u32 s_nhttpWorkBufSize = 0x20000;
 static u32 s_requestGeneration = 0;
 static u64 s_currentUserFriendCode = 0;
@@ -492,7 +480,6 @@ void VRLeaderboardPage::OnActivate() {
     this->curPage = 0;
     s_hasApplied = false;
     s_fetchState = FETCH_IDLE;
-    s_nhttpStarted = false;
     s_loadedAPIPage = 0;
     s_loadedEntryCount = 0;
     ResetRowsToLoading();
@@ -738,22 +725,16 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
 
     memset(s_entries, 0, sizeof(Entry) * kMaxEntries);
 
-    if (!s_nhttpStarted) {
-        const s32 startupRet = NHTTPStartup(reinterpret_cast<void*>(&NHTTPAllocFromEggHeap),
-                                            reinterpret_cast<void*>(&NHTTPFreeFromEggHeap),
-                                            0x11);
-        if (startupRet < 0) {
-            s_fetchState = FETCH_ERROR;
-            return;
-        }
-        s_nhttpStarted = true;
+    if (!Network::PrepareNHTTPRequest()) {
+        s_fetchState = FETCH_ERROR;
+        return;
     }
 
     NHTTPRequestCtx* ctx = &s_requestCtx;
     ctx->generation = s_requestGeneration;
     ctx->apiPage = apiPage;
     if (s_requestWorkBuf == nullptr) {
-        s_requestWorkBuf = NHTTPAllocFromEggHeap(s_nhttpWorkBufSize, 0x20);
+        s_requestWorkBuf = Network::NHTTPAlloc(s_nhttpWorkBufSize, 0x20);
         if (s_requestWorkBuf == nullptr) {
             s_fetchState = FETCH_ERROR;
             return;
@@ -777,12 +758,14 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
     }
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet < 0) {
-        s_nhttpStarted = false;
         s_fetchState = FETCH_ERROR;
+        return;
     }
+    Network::MarkNHTTPRequestActive();
 }
 
 void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* userdata) {
+    Network::FinishNHTTPRequest();
     NHTTPRequestCtx* ctx = reinterpret_cast<NHTTPRequestCtx*>(userdata);
     if (response == nullptr) {
         s_fetchState = FETCH_ERROR;
@@ -813,7 +796,7 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     }
 
     const u32 responseBufSize = static_cast<u32>(bodyLen) + 1;
-    char* responseBuf = reinterpret_cast<char*>(NHTTPAllocFromEggHeap(responseBufSize, 4));
+    char* responseBuf = reinterpret_cast<char*>(Network::NHTTPAlloc(responseBufSize, 4));
     if (responseBuf == nullptr) {
         NHTTPDestroyResponse(response);
         s_fetchState = FETCH_ERROR;
@@ -827,7 +810,7 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     s_loadedAPIPage = ctx != nullptr ? ctx->apiPage : 0;
 
     int parsed = ParseResponse(responseBuf, s_entries, kMaxEntries);
-    NHTTPFreeFromEggHeap(responseBuf);
+    Network::NHTTPFree(responseBuf);
     if (parsed <= 0) {
         s_fetchState = FETCH_ERROR;
         s_loadedEntryCount = 0;
