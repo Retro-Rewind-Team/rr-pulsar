@@ -811,15 +811,20 @@ static void EndRaceWithEliminationFinishTime(u8 playerId, u8 placement) {
     if (raceinfo == nullptr || playerId >= maxPlayers || placement < 2 || placement > maxPlayers) return;
 
     RaceinfoPlayer* player = raceinfo->players[playerId];
-    if (player == nullptr || IsPlayerFinished(*raceinfo, playerId)) return;
+    if (player == nullptr || player->raceFinishTime == nullptr || IsPlayerFinished(*raceinfo, playerId)) return;
 
     Timer finishTime(false);
     finishTime.minutes = 99;
     finishTime.seconds = 99;
     finishTime.milliseconds = static_cast<u16>(900 + placement);
     finishTime.SetActive(true);
+    if (IsOnline()) {
+        *player->raceFinishTime = finishTime;
+        player->stateFlags |= 0x2;
+        return;
+    }
+
     player->EndRace(finishTime, false, 0);
-    if (IsOnline()) raceinfo->CheckEndRaceOnline(playerId);
 }
 
 static void EndRaceForElimination(u8 playerId) {
