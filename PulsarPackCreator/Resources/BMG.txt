@@ -8,11 +8,10 @@
 6975  = Settings
 6976  = Start Practice on the selected course.
 6977  = Adjust Practice settings before starting.
-6978  = Practice Settings
-6979  = Save and return.
-697a  = Item Boxes
-697b  = Enabled
-697c  = Disabled
-697d  = Item boxes will appear normally.
-697e  = Item boxes will be hidden and disabled.
+62f2d = Practice Settings
+70000 = Item Boxes
+70010 = Enabled
+70011 = Disabled
+70100 = Item boxes will appear normally.
+70101 = Item boxes will be hidden and disabled.
   
