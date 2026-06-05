@@ -15,7 +15,6 @@ void SetPracticeMode(bool enabled);
 bool IsPracticeMode();
 ItemId GetStartingItem(u32 hudSlotId);
 bool AreItemBoxesEnabled();
-void SetItemBoxesEnabled(bool enabled);
 
 class SelectPage : public ::Pages::MenuInteractable {
    public:

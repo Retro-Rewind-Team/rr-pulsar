@@ -1,8 +1,9 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <Gamemodes/TTPractice.hpp>
-#include <Gamemodes/TTPracticeSettings.hpp>
 #include <PulsarSystem.hpp>
+#include <Settings/Settings.hpp>
+#include <Settings/UI/SettingsPanel.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/Obj/Kumo.hpp>
@@ -30,8 +31,6 @@ static const float MODE_BUTTON_X_OFFSET = -110.0f;
 static const float STICK_WHEEL_THRESHOLD = 0.5f;
 static const float RESPAWN_STICK_THRESHOLD = 0.5f;
 static const u16 RESPAWN_HOLD_FRAMES = 30;
-static const u32 PRACTICE_SETTING_ITEMBOXES_ENABLED = 0;
-static const u32 PRACTICE_SETTING_ITEMBOXES_DISABLED = 1;
 
 // Golden mushroom timer bar tuning. X/Y offsets are relative to the item window's HUD position.
 static const float GOLDEN_TIMER_BAR_EDGE_EXTENSION = 4.0f;
@@ -75,7 +74,6 @@ static SavedRaceProgress savedRespawnRaceProgress[4];
 static bool hasSavedRespawn[4] = {false, false, false, false};
 static bool hasGrantedItem[4] = {false, false, false, false};
 static bool canRefillOnUse[4] = {false, false, false, false};
-static u8 itemBoxesSetting = PRACTICE_SETTING_ITEMBOXES_ENABLED;
 
 kmRuntimeUse(0x80590238);  // Kart::Link::SetKartPosition
 kmRuntimeUse(0x80590288);  // Kart::Link::SetKartRotation
@@ -174,11 +172,9 @@ bool IsPracticeMode() {
 }
 
 bool AreItemBoxesEnabled() {
-    return itemBoxesSetting == PRACTICE_SETTING_ITEMBOXES_ENABLED;
-}
-
-void SetItemBoxesEnabled(bool enabled) {
-    itemBoxesSetting = enabled ? PRACTICE_SETTING_ITEMBOXES_ENABLED : PRACTICE_SETTING_ITEMBOXES_DISABLED;
+    if (!Settings::Mgr::IsCreated()) return true;
+    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_TTPRACTICE, RADIO_TTPRACTICE_ITEMBOXES) ==
+           TTPRACTICE_ITEMBOXES_ENABLED;
 }
 
 ItemId GetStartingItem(u32 hudSlotId) {
@@ -953,7 +949,13 @@ void ConfirmPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
         return;
     }
 
-    this->LoadNextPageById(static_cast<PageId>(SettingsPage::id), button);
+    UI::SettingsPanel* settingsPanel = UI::ExpSection::GetSection()->GetPulPage<UI::SettingsPanel>();
+    if (settingsPanel != nullptr) {
+        settingsPanel->sheetIdx = Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_TTPRACTICE;
+        settingsPanel->catIdx = Settings::SETTINGSTYPE_TTPRACTICE;
+        settingsPanel->prevPageId = static_cast<PageId>(ConfirmPage::id);
+    }
+    this->LoadNextPageById(static_cast<PageId>(UI::SettingsPanel::id), button);
 }
 
 void ConfirmPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
