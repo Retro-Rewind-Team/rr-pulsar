@@ -30,6 +30,7 @@
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Gamemodes/TTPractice.hpp>
+#include <Gamemodes/TTPracticeSettings.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
