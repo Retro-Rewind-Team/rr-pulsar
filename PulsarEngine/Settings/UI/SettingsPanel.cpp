@@ -280,8 +280,9 @@ ManipulatorManager& SettingsPanel::GetManipulatorManager() {
 }
 
 void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton& button) {
-    // Navigate back to SettingsPageSelect instead of the original menu
-    this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
+    this->nextPageId = this->prevPageId == static_cast<PageId>(PULPAGE_TTPRACTICECONFIRM)
+                           ? this->prevPageId
+                           : static_cast<PageId>(SettingsPageSelect::id);
     this->EndStateAnimated(0, button.GetAnimationFrameSize());
     this->SaveSettings(true);
 }
@@ -435,7 +436,11 @@ void SettingsPanel::OnUpDownSelect(UpDownControl& upDownControl, u32 hudSlotId) 
 }
 
 int SettingsPanel::GetNextSheetIdx(s32 direction) {
-    return (this->sheetIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
+    int nextIdx = (this->sheetIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
+    if (nextIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_TTPRACTICE) {
+        nextIdx = (nextIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
+    }
+    return nextIdx;
 }
 
 void SettingsPanel::BeforeControlUpdate() {

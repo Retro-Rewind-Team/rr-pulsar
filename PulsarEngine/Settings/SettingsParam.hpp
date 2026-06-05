@@ -14,8 +14,9 @@ namespace Settings {
 class Params {
    public:
     static const int pulsarPageCount = 0;
-    static const int userPageCount = 13;
+    static const int userPageCount = 14;
     static const int pageCount = pulsarPageCount + userPageCount;
+    static const int selectablePageCount = pageCount - 1;
 
     static const int maxRadioCount = 8;  // per page, due to space
     static const int maxScrollerCount = 5;  // per page, due to space
@@ -46,6 +47,7 @@ enum UserType {
     SETTINGSTYPE_EXTENDEDTEAMS,
     SETTINGSTYPE_MISC,
     SETTINGSTYPE_ITEMS,
+    SETTINGSTYPE_TTPRACTICE,
 
 };
 
@@ -153,6 +155,10 @@ enum MiscSettings {
     RADIO_LOOSEARCHIVEOVERRIDES = 0,
     SCROLLER_LANGUAGE = 0 + 8,
     SCROLLER_WWMODE = 2 + 8,
+};
+
+enum PracticeModeSettings {
+    RADIO_TTPRACTICE_ITEMBOXES = 0
 };
 
 enum LooseArchiveOverridesSetting {
@@ -387,6 +393,11 @@ enum HostSettingMiiHeads {
 enum ItemBoxRespawn {
     ITEMBOX_DEFAULTRESPAWN,
     ITEMBOX_FASTRESPAWN
+};
+
+enum TTPracticeItemBoxesSetting {
+    TTPRACTICE_ITEMBOXES_ENABLED,
+    TTPRACTICE_ITEMBOXES_DISABLED
 };
 
 enum ThunderCloud {

@@ -108,6 +108,12 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         looseOverridesSetting = LOOSEARCHIVEOVERRIDES_ENABLED;
     }
 
+    u8& practiceItemBoxesSetting =
+        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_TTPRACTICE].settings[RADIO_TTPRACTICE_ITEMBOXES];
+    if (practiceItemBoxesSetting > TTPRACTICE_ITEMBOXES_DISABLED) {
+        practiceItemBoxesSetting = TTPRACTICE_ITEMBOXES_ENABLED;
+    }
+
     this->InitTrophyEntries(totalTrophyCount);
     this->LoadTrophiesFromFiles();
     this->MigrateLegacyTrophies();
@@ -571,6 +577,10 @@ void Mgr::AdjustSectionsSizes() {
     Page& destUserPages = destPages.pages[destPages.pulsarPageCount];  // start of the user Page array
     Page& srcUserPages = srcPages.pages[srcPages.pulsarPageCount];
     memcpy(&destUserPages, &srcUserPages, srcPages.userPageCount * sizeof(Page));
+    if (this->userPageCount > srcPages.userPageCount) {
+        Page& firstNewUserPage = destPages.pages[destPages.pulsarPageCount + srcPages.userPageCount];
+        memset(&firstNewUserPage, 0, (this->userPageCount - srcPages.userPageCount) * sizeof(Page));
+    }
 
     // MISC, NOT modified for now
     buffer->header.offsets[MiscParams::index] += totalPageDiff;

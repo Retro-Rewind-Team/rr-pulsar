@@ -30,7 +30,6 @@
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Gamemodes/TTPractice.hpp>
-#include <Gamemodes/TTPracticeSettings.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
@@ -133,7 +132,6 @@ void ExpSection::CreatePulPages() {
             this->CreateAndInitPage(*this, VRLeaderboardPage::id);
             this->CreateAndInitPage(*this, TTPractice::SelectPage::id);
             this->CreateAndInitPage(*this, TTPractice::ConfirmPage::id);
-            this->CreateAndInitPage(*this, TTPractice::SettingsPage::id);
             break;
         case SECTION_LOCAL_MULTIPLAYER:  // 0x54
             this->CreateAndInitPage(*this, SettingsPanel::id);
@@ -262,9 +260,6 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
             break;
         case TTPractice::ConfirmPage::id:
             page = new TTPractice::ConfirmPage;
-            break;
-        case TTPractice::SettingsPage::id:
-            page = new TTPractice::SettingsPage;
             break;
         default:
             page = self.CreatePageById(initId);
