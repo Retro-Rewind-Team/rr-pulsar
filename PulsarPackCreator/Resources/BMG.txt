@@ -1,3 +1,18 @@
 #BMG
 2849  = \z{a02,2000000000}
+6970  = Normal
+6971  = Practice
+6972  = Race against your ghosts in regular Time Trials.
+6973  = Practice with the item wheel and saved respawn points.
+6974  = Start Race
+6975  = Settings
+6976  = Start Practice on the selected course.
+6977  = Adjust Practice settings before starting.
+6978  = Practice Settings
+6979  = Save and return.
+697a  = Item Boxes
+697b  = Enabled
+697c  = Disabled
+697d  = Item boxes will appear normally.
+697e  = Item boxes will be hidden and disabled.
   

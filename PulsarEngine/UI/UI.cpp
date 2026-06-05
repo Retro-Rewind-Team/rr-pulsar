@@ -131,6 +131,8 @@ void ExpSection::CreatePulPages() {
             this->CreateAndInitPage(*this, CustomItemPage::id);
             this->CreateAndInitPage(*this, VRLeaderboardPage::id);
             this->CreateAndInitPage(*this, TTPractice::SelectPage::id);
+            this->CreateAndInitPage(*this, TTPractice::ConfirmPage::id);
+            this->CreateAndInitPage(*this, TTPractice::SettingsPage::id);
             break;
         case SECTION_LOCAL_MULTIPLAYER:  // 0x54
             this->CreateAndInitPage(*this, SettingsPanel::id);
@@ -256,6 +258,12 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
             break;
         case TTPractice::SelectPage::id:
             page = new TTPractice::SelectPage;
+            break;
+        case TTPractice::ConfirmPage::id:
+            page = new TTPractice::ConfirmPage;
+            break;
+        case TTPractice::SettingsPage::id:
+            page = new TTPractice::SettingsPage;
             break;
         default:
             page = self.CreatePageById(initId);
