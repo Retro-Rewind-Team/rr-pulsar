@@ -111,6 +111,8 @@ const char* LooseVoiceSuffixForGroupOffset(u32 offset) {
 
 const u32 SILENT_VOICE_GROUP = 0xffffffff;
 
+bool LooseVoiceStemExistsForCharacter(const char* postfix, const char* suffix, CharacterId character);
+
 const VoiceGroupBase voiceGroupBases[] = {
     {MARIO, BRSAR_GROUP_MARIO},
     {BABY_PEACH, BRSAR_GROUP_BABY_PEACH},
@@ -312,6 +314,33 @@ static bool ScanLooseVoiceInfoFromDiscFST(const char* postfix, LooseVoiceInfo& i
     return info.hasFiles;
 }
 
+static bool ScanLooseVoiceInfoFromPaths(const char* postfix, LooseVoiceInfo& info) {
+    if (postfix == nullptr) return false;
+
+    u32 directMask = 0;
+    u32 characterMasks[ARRAY_COUNT(voiceCharacterNames)];
+    for (u32 i = 0; i < ARRAY_COUNT(characterMasks); ++i) characterMasks[i] = 0;
+
+    for (u32 suffixIndex = 0; suffixIndex < ARRAY_COUNT(looseVoiceGroupSuffixes); ++suffixIndex) {
+        const char* suffix = looseVoiceGroupSuffixes[suffixIndex];
+        const u32 suffixBit = 1 << suffixIndex;
+        if (LooseVoiceStemExists(postfix, suffix)) {
+            directMask |= suffixBit;
+            continue;
+        }
+
+        for (u32 characterIndex = 0; characterIndex < ARRAY_COUNT(voiceCharacterNames); ++characterIndex) {
+            const CharacterId character = voiceCharacterNames[characterIndex].character;
+            if (LooseVoiceStemExistsForCharacter(postfix, suffix, character)) {
+                characterMasks[characterIndex] |= suffixBit;
+            }
+        }
+    }
+
+    ApplyLooseVoiceMasks(info, directMask, characterMasks);
+    return info.hasFiles;
+}
+
 bool LooseVoiceStemExistsForCharacter(const char* postfix, const char* suffix, CharacterId character) {
     const char* voiceName = VoiceNameForCharacter(character);
     if (LooseVoiceStemExists(postfix, suffix, voiceName)) return true;
@@ -353,6 +382,7 @@ const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table) {
     const bool silent = SilentVoiceMarkerExists(character, table, postfix);
 
     ScanLooseVoiceInfoFromDiscFST(postfix, info);
+    if (!info.hasFiles) ScanLooseVoiceInfoFromPaths(postfix, info);
     if (!info.hasFiles && silent) info.silent = true;
     return info;
 }
