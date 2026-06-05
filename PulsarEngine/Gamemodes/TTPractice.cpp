@@ -10,10 +10,12 @@
 #include <MarioKartWii/Kart/KartPhysics.hpp>
 #include <MarioKartWii/File/RKG.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceItemWindow.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
 #include <core/rvl/gx/GX.hpp>
 
 namespace Pulsar {
@@ -27,6 +29,8 @@ static const float MODE_BUTTON_X_OFFSET = -110.0f;
 static const float STICK_WHEEL_THRESHOLD = 0.5f;
 static const float RESPAWN_STICK_THRESHOLD = 0.5f;
 static const u16 RESPAWN_HOLD_FRAMES = 30;
+static const u32 PRACTICE_SETTING_ITEMBOXES_ENABLED = 0;
+static const u32 PRACTICE_SETTING_ITEMBOXES_DISABLED = 1;
 
 // Golden mushroom timer bar tuning. X/Y offsets are relative to the item window's HUD position.
 static const float GOLDEN_TIMER_BAR_EDGE_EXTENSION = 4.0f;
@@ -46,6 +50,19 @@ static const ItemId ITEM_WHEEL_ITEMS[ITEM_COUNT] = {
 };
 static const char* const DRIFT_BUTTON_VARIANTS[2] = {"ButtonNormal", "ButtonManual"};
 
+struct SavedRaceProgress {
+    u16 checkpoint;
+    float raceCompletion;
+    float raceCompletionMax;
+    float firstKcpLapCompletion;
+    float nextCheckpointLapCompletion;
+    float nextCheckpointLapCompletionMax;
+    u16 currentLap;
+    u8 maxLap;
+    u8 currentKCP;
+    u8 maxKCP;
+};
+
 static bool isPracticeMode = false;
 static u32 selectedItemIndexes[4] = {0, 0, 0, 0};
 static s8 stickWheelDirections[4] = {0, 0, 0, 0};
@@ -53,14 +70,17 @@ static u16 respawnShortcutTimers[4] = {0, 0, 0, 0};
 static u16 respawnSaveTimers[4] = {0, 0, 0, 0};
 static Vec3 savedRespawnPositions[4];
 static Quat savedRespawnRotations[4];
+static SavedRaceProgress savedRespawnRaceProgress[4];
 static bool hasSavedRespawn[4] = {false, false, false, false};
 static bool hasGrantedItem[4] = {false, false, false, false};
 static bool canRefillOnUse[4] = {false, false, false, false};
+static u8 itemBoxesSetting = PRACTICE_SETTING_ITEMBOXES_ENABLED;
 
 kmRuntimeUse(0x80590238);  // Kart::Link::SetKartPosition
 kmRuntimeUse(0x80590288);  // Kart::Link::SetKartRotation
 kmRuntimeUse(0x80590e28);  // Kart::Link::UpdateCameraOnRespawn
 kmRuntimeUse(0x8059c118);  // Kart::Killer::CancelBullet
+kmRuntimeUse(0x80828860);  // Objects::Itembox::Update
 
 static Item::ObjKumo* FindActiveThunderCloud(Item::Player& player);
 
@@ -68,6 +88,7 @@ typedef void (*SetKartPositionFn)(Kart::Link* link, const Vec3& position);
 typedef void (*SetKartRotationFn)(Kart::Link* link, const Quat& rotation);
 typedef void (*UpdateCameraOnRespawnFn)(const Kart::Link* link);
 typedef void (*CancelBulletFn)(Kart::Killer* killer);
+typedef void (*ItemBoxUpdateFn)(Objects::Itembox* itembox);
 
 static SetKartPositionFn GetSetKartPosition() {
     static const SetKartPositionFn function = reinterpret_cast<SetKartPositionFn>(kmRuntimeAddr(0x80590238));
@@ -86,6 +107,11 @@ static UpdateCameraOnRespawnFn GetUpdateCameraOnRespawn() {
 
 static CancelBulletFn GetCancelBullet() {
     static const CancelBulletFn function = reinterpret_cast<CancelBulletFn>(kmRuntimeAddr(0x8059c118));
+    return function;
+}
+
+static ItemBoxUpdateFn GetItemBoxUpdate() {
+    static const ItemBoxUpdateFn function = reinterpret_cast<ItemBoxUpdateFn>(kmRuntimeAddr(0x80828860));
     return function;
 }
 
@@ -146,6 +172,10 @@ bool IsPracticeMode() {
     return isPracticeMode;
 }
 
+bool AreItemBoxesEnabled() {
+    return itemBoxesSetting == PRACTICE_SETTING_ITEMBOXES_ENABLED;
+}
+
 ItemId GetStartingItem(u32 hudSlotId) {
     if (hudSlotId >= 4) hudSlotId = 0;
     return ITEM_WHEEL_ITEMS[selectedItemIndexes[hudSlotId]];
@@ -155,6 +185,20 @@ static bool IsEnabled() {
     const Racedata* racedata = Racedata::sInstance;
     return isPracticeMode && racedata != nullptr && racedata->racesScenario.settings.gamemode == MODE_TIME_TRIAL;
 }
+
+static void UpdatePracticeItemBox(Objects::Itembox* itembox) {
+    if (itembox != nullptr && IsEnabled() && !AreItemBoxesEnabled()) {
+        itembox->isActive = 0;
+        itembox->timer = 0;
+        itembox->respawnTime = 0x7fffffff;
+        itembox->DisableCollision();
+        itembox->ToggleVisible(false);
+        return;
+    }
+
+    GetItemBoxUpdate()(itembox);
+}
+kmWritePointer(0x808d7bd4, UpdatePracticeItemBox);
 
 static void CycleItem(u32 hudSlotId, s32 direction) {
     u32& selected = selectedItemIndexes[hudSlotId];
@@ -423,13 +467,43 @@ static void CancelBulletIfActive(Kart::Player& kartPlayer) {
     GetCancelBullet()(killer);
 }
 
-static void RestoreSavedKartTransform(Kart::Player& kartPlayer, Kart::Physics& physics, Kart::PhysicsHolder* physicsHolder, u32 hudSlotId) {
+static void SaveRaceProgress(RaceinfoPlayer& player, u32 hudSlotId) {
+    SavedRaceProgress& progress = savedRespawnRaceProgress[hudSlotId];
+    progress.checkpoint = player.checkpoint;
+    progress.raceCompletion = player.raceCompletion;
+    progress.raceCompletionMax = player.raceCompletionMax;
+    progress.firstKcpLapCompletion = player.firstKcpLapCompletion;
+    progress.nextCheckpointLapCompletion = player.nextCheckpointLapCompletion;
+    progress.nextCheckpointLapCompletionMax = player.nextCheckpointLapCompletionMax;
+    progress.currentLap = player.currentLap;
+    progress.maxLap = player.maxLap;
+    progress.currentKCP = player.currentKCP;
+    progress.maxKCP = player.maxKCP;
+}
+
+static void RestoreRaceProgress(RaceinfoPlayer& player, u32 hudSlotId) {
+    const SavedRaceProgress& progress = savedRespawnRaceProgress[hudSlotId];
+    player.checkpoint = progress.checkpoint;
+    player.raceCompletion = progress.raceCompletion;
+    player.raceCompletionMax = progress.raceCompletionMax;
+    player.firstKcpLapCompletion = progress.firstKcpLapCompletion;
+    player.nextCheckpointLapCompletion = progress.nextCheckpointLapCompletion;
+    player.nextCheckpointLapCompletionMax = progress.nextCheckpointLapCompletionMax;
+    player.currentLap = progress.currentLap;
+    player.maxLap = progress.maxLap;
+    player.currentKCP = progress.currentKCP;
+    player.maxKCP = progress.maxKCP;
+}
+
+static void RestoreSavedKartTransform(Kart::Player& kartPlayer, Kart::Physics& physics, Kart::PhysicsHolder* physicsHolder,
+                                      RaceinfoPlayer& raceinfoPlayer, u32 hudSlotId) {
     Vec3 restorePosition = savedRespawnPositions[hudSlotId];
 
     CancelBulletIfActive(kartPlayer);
     GetSetKartPosition()(&kartPlayer, restorePosition);
     GetSetKartRotation()(&kartPlayer, savedRespawnRotations[hudSlotId]);
     physics.position = restorePosition;
+    RestoreRaceProgress(raceinfoPlayer, hudSlotId);
     ClearKartMomentum(kartPlayer, physics, physicsHolder);
     GetUpdateCameraOnRespawn()(&kartPlayer);
 }
@@ -445,6 +519,10 @@ static void UpdateRespawnShortcut(Item::Player& player) {
     const u8 playerId = racedata->racesScenario.settings.hudPlayerIds[player.hudSlotId];
     Kart::Player* kartPlayer = kartManager->GetKartPlayer(playerId);
     if (kartPlayer == nullptr) return;
+    Raceinfo* raceinfo = Raceinfo::sInstance;
+    if (raceinfo == nullptr || raceinfo->players == nullptr) return;
+    RaceinfoPlayer* raceinfoPlayer = raceinfo->players[playerId];
+    if (raceinfoPlayer == nullptr) return;
     Kart::PhysicsHolder* physicsHolder = GetKartPhysicsHolder(*kartPlayer);
     if (physicsHolder == nullptr) return;
     Kart::Physics* physics = physicsHolder->physics;
@@ -466,6 +544,7 @@ static void UpdateRespawnShortcut(Item::Player& player) {
 
         savedRespawnPositions[hudSlotId] = physics->position;
         savedRespawnRotations[hudSlotId] = physics->mainRot;
+        SaveRaceProgress(*raceinfoPlayer, hudSlotId);
         hasSavedRespawn[hudSlotId] = true;
         PlayRespawnSaveSound();
         return;
@@ -484,7 +563,7 @@ static void UpdateRespawnShortcut(Item::Player& player) {
     if (timer < RESPAWN_HOLD_FRAMES) return;
 
     if (!hasSavedRespawn[hudSlotId]) return;
-    RestoreSavedKartTransform(*kartPlayer, *physics, physicsHolder, hudSlotId);
+    RestoreSavedKartTransform(*kartPlayer, *physics, physicsHolder, *raceinfoPlayer, hudSlotId);
 }
 
 static void RequestThunderCloudStrike(Item::Player& player, bool hadThunderCloudBeforeUpdate) {
@@ -683,18 +762,10 @@ static void DrawItemWindowWithGoldenTimer(CtrlRaceItemWindow& itemWindow, u32 cu
 }
 kmWritePointer(0x808d3cdc, DrawItemWindowWithGoldenTimer);
 
-static void LoadGhostSelectOrPracticeRace(Pages::Menu& page, PageId id, PushButton& button) {
+static void StartPracticeRace(Pages::Menu& page, PushButton& button) {
     Racedata* racedata = Racedata::sInstance;
-    if (!isPracticeMode || racedata == nullptr || racedata->menusScenario.settings.gamemode != MODE_TIME_TRIAL) {
-        page.LoadNextPageById(id, button);
-        return;
-    }
-
     SectionMgr* sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || RKSYS::Mgr::sInstance == nullptr) {
-        page.LoadNextPageById(id, button);
-        return;
-    }
+    if (racedata == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || RKSYS::Mgr::sInstance == nullptr) return;
 
     SectionParams* params = sectionMgr->sectionParams;
     const CourseId courseId = racedata->menusScenario.settings.courseId;
@@ -708,7 +779,17 @@ static void LoadGhostSelectOrPracticeRace(Pages::Menu& page, PageId id, PushButt
     racedata->menusScenario.players[3].playerType = PLAYER_NONE;
     page.ChangeSectionById(SECTION_TT, button);
 }
-kmCall(0x80840a00, LoadGhostSelectOrPracticeRace);
+
+static void LoadGhostSelectOrPracticeConfirm(Pages::Menu& page, PageId id, PushButton& button) {
+    Racedata* racedata = Racedata::sInstance;
+    if (!isPracticeMode || racedata == nullptr || racedata->menusScenario.settings.gamemode != MODE_TIME_TRIAL) {
+        page.LoadNextPageById(id, button);
+        return;
+    }
+
+    page.LoadNextPageById(static_cast<PageId>(ConfirmPage::id), button);
+}
+kmCall(0x80840a00, LoadGhostSelectOrPracticeConfirm);
 
 SelectPage::SelectPage() {
     this->onButtonClickHandler.subject = this;
@@ -791,6 +872,226 @@ void SelectPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
 void SelectPage::OnBackPress(u32 hudSlotId) {
     SetPracticeMode(false);
     this->LoadPrevPageWithDelayById(PAGE_SINGLE_PLAYER_MENU, 0.0f);
+}
+
+ConfirmPage::ConfirmPage() {
+    this->onButtonClickHandler.subject = this;
+    this->onButtonClickHandler.ptmf = &ConfirmPage::OnButtonClick;
+    this->onButtonSelectHandler.subject = this;
+    this->onButtonSelectHandler.ptmf = &ConfirmPage::OnButtonSelect;
+    this->onBackPressHandler.subject = this;
+    this->onBackPressHandler.ptmf = &ConfirmPage::OnBackPress;
+
+    this->externControlCount = 2;
+    this->internControlCount = 0;
+    this->hasBackButton = true;
+    this->activePlayerBitfield = 1;
+    this->playerBitfield = 1;
+    this->controlSources = 2;
+    this->prevPageId = PAGE_COURSE_SELECT;
+    this->titleBmg = UI::BMG_TIME_TRIALS;
+
+    this->controlsManipulatorManager.Init(1, false);
+    this->SetManipulatorManager(this->controlsManipulatorManager);
+    this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
+}
+
+ConfirmPage::~ConfirmPage() {}
+
+void ConfirmPage::OnInit() {
+    Pages::Menu::OnInit();
+    this->Pages::Menu::titleText = &this->title;
+    this->Pages::Menu::bottomText = &this->bottom;
+    this->AddControl(2, this->title, 0);
+    this->AddControl(3, this->bottom, 0);
+    this->title.Load(0);
+    this->bottom.Load();
+}
+
+UIControl* ConfirmPage::CreateExternalControl(u32 controlId) {
+    if (controlId >= 2) return nullptr;
+
+    PushButton& button = this->buttons[controlId];
+    this->AddControl(this->controlCount++, button, 0);
+    const u32 layoutId = 1 - controlId;
+    button.Load(UI::buttonFolder, "GlobePadEasy", DRIFT_BUTTON_VARIANTS[layoutId], this->activePlayerBitfield, 0, false);
+    for (int i = 0; i < 4; ++i) {
+        button.positionAndscale[i].position.x += MODE_BUTTON_X_OFFSET;
+    }
+    button.SetPosition(0.0f);
+    button.buttonId = controlId;
+    button.SetOnClickHandler(this->onButtonClickHandler, 0);
+    button.SetOnSelectHandler(this->onButtonSelectHandler);
+    button.SetMessage(controlId == 0 ? UI::BMG_TT_START_RACE_BUTTON : UI::BMG_TT_PRACTICE_SETTINGS_BUTTON);
+    return &button;
+}
+
+UIControl* ConfirmPage::CreateControl(u32 controlId) {
+    return nullptr;
+}
+
+void ConfirmPage::OnActivate() {
+    Pages::Menu::OnActivate();
+    this->title.SetMessage(this->titleBmg);
+    this->SelectButton(this->buttons[0]);
+    this->OnButtonSelect(this->buttons[0], 0);
+}
+
+void ConfirmPage::BeforeEntranceAnimations() {
+    Pages::Menu::BeforeEntranceAnimations();
+    this->OnButtonSelect(this->buttons[0], 0);
+}
+
+void ConfirmPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
+    if (button.buttonId == 0) {
+        StartPracticeRace(*this, button);
+        return;
+    }
+
+    this->LoadNextPageById(static_cast<PageId>(SettingsPage::id), button);
+}
+
+void ConfirmPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+    this->bottom.SetMessage(button.buttonId == 0 ? UI::BMG_TT_START_RACE_BOTTOM : UI::BMG_TT_PRACTICE_SETTINGS_BOTTOM);
+}
+
+void ConfirmPage::OnBackPress(u32 hudSlotId) {
+    this->LoadPrevPageWithDelayById(PAGE_COURSE_SELECT, 0.0f);
+}
+
+SettingsPage::SettingsPage() {
+    this->externControlCount = 1;
+    this->internControlCount = 1;
+    this->hasBackButton = true;
+    this->nextPageId = static_cast<PageId>(SettingsPage::id);
+    this->prevPageId = static_cast<PageId>(ConfirmPage::id);
+    this->titleBmg = UI::BMG_TT_PRACTICE_SETTINGS_TITLE;
+    this->activePlayerBitfield = 1;
+    this->playerBitfield = 1;
+    this->movieStartFrame = -1;
+    this->extraControlNumber = 0;
+    this->isLocked = false;
+    this->controlCount = 0;
+    this->nextSection = SECTION_NONE;
+    this->controlSources = 2;
+    this->itemBoxesSetting = TTPractice::itemBoxesSetting;
+
+    this->onRadioButtonClickHandler.subject = this;
+    this->onRadioButtonClickHandler.ptmf = &SettingsPage::OnRadioButtonClick;
+    this->onRadioButtonChangeHandler.subject = this;
+    this->onRadioButtonChangeHandler.ptmf = &SettingsPage::OnRadioButtonChange;
+    this->onButtonSelectHandler.subject = this;
+    this->onButtonSelectHandler.ptmf = &SettingsPage::OnExternalButtonSelect;
+    this->onButtonDeselectHandler.subject = this;
+    this->onButtonDeselectHandler.ptmf = &Pages::VSSettings::OnButtonDeselect;
+    this->onBackPressHandler.subject = this;
+    this->onBackPressHandler.ptmf = &SettingsPage::OnBackPress;
+    this->onBackButtonClickHandler.subject = this;
+    this->onBackButtonClickHandler.ptmf = &SettingsPage::OnBackButtonClick;
+    this->onStartPressHandler.subject = this;
+    this->onStartPressHandler.ptmf = &MenuInteractable::HandleStartPress;
+    this->onButtonClickHandler.subject = this;
+    this->onButtonClickHandler.ptmf = &SettingsPage::OnSaveButtonClick;
+
+    this->controlsManipulatorManager.Init(1, false);
+    this->SetManipulatorManager(this->controlsManipulatorManager);
+    this->controlsManipulatorManager.SetGlobalHandler(START_PRESS, this->onStartPressHandler, false, false);
+    this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
+}
+
+SettingsPage::~SettingsPage() {}
+
+void SettingsPage::OnInit() {
+    this->backButton.SetOnClickHandler(this->onBackButtonClickHandler, 0);
+    MenuInteractable::OnInit();
+    this->SetTransitionSound(0, 0);
+}
+
+UIControl* SettingsPage::CreateExternalControl(u32 controlId) {
+    if (controlId != 0) return nullptr;
+
+    PushButton* button = new (PushButton);
+    this->AddControl(this->controlCount++, *button, 0);
+    button->Load(UI::buttonFolder, "Settings", "SAVE", this->activePlayerBitfield, 0, false);
+    return button;
+}
+
+UIControl* SettingsPage::CreateControl(u32 controlId) {
+    if (controlId != 0) return nullptr;
+
+    RadioButtonControl& radio = this->radioButtonControl;
+    this->AddControl(this->controlCount++, radio, 0);
+
+    char option0Variant[12];
+    char option1Variant[12];
+    snprintf(option0Variant, 12, "Row0Option0");
+    snprintf(option1Variant, 12, "Row0Option1");
+
+    const char* optionVariants[5] = {option0Variant, option1Variant, nullptr, nullptr, nullptr};
+    radio.Load(2, 0, UI::controlFolder, "RadioBase", "Row0", "RadioOption", optionVariants, 1, 0, 0);
+    radio.SetOnClickHandler(this->onRadioButtonClickHandler);
+    radio.SetOnChangeHandler(this->onRadioButtonChangeHandler);
+    radio.id = 0;
+    return &radio;
+}
+
+void SettingsPage::SetButtonHandlers(PushButton& button) {
+    button.SetOnClickHandler(this->onButtonClickHandler, 0);
+    button.SetOnSelectHandler(this->onButtonSelectHandler);
+    button.SetOnDeselectHandler(this->onButtonDeselectHandler);
+}
+
+void SettingsPage::OnActivate() {
+    this->titleBmg = UI::BMG_TT_PRACTICE_SETTINGS_TITLE;
+    this->externControls[0]->SelectInitial(0);
+    this->bottomText->SetMessage(UI::BMG_TT_PRACTICE_SETTINGS_SAVE_BOTTOM);
+
+    RadioButtonControl& radio = this->radioButtonControl;
+    radio.isHidden = false;
+    radio.manipulator.inaccessible = false;
+    radio.buttonsCount = 2;
+    radio.chosenButtonId = this->itemBoxesSetting;
+    radio.selectedButtonId = this->itemBoxesSetting;
+    radio.SetMessage(UI::BMG_TT_PRACTICE_ITEMBOXES);
+    radio.optionButtonsArray[0].isHidden = false;
+    radio.optionButtonsArray[0].SetMessage(UI::BMG_TT_PRACTICE_ITEMBOXES_ENABLED);
+    radio.optionButtonsArray[1].isHidden = false;
+    radio.optionButtonsArray[1].SetMessage(UI::BMG_TT_PRACTICE_ITEMBOXES_DISABLED);
+    for (int i = 2; i < 4; ++i) radio.optionButtonsArray[i].isHidden = true;
+
+    MenuInteractable::OnActivate();
+}
+
+const ut::detail::RuntimeTypeInfo* SettingsPage::GetRuntimeTypeInfo() const {
+    return Pages::VSSettings::typeInfo;
+}
+
+void SettingsPage::OnExternalButtonSelect(PushButton& button, u32 hudSlotId) {
+    this->bottomText->SetMessage(UI::BMG_TT_PRACTICE_SETTINGS_SAVE_BOTTOM);
+}
+
+void SettingsPage::OnSaveButtonClick(PushButton& button, u32 hudSlotId) {
+    TTPractice::itemBoxesSetting = this->itemBoxesSetting;
+    this->LoadPrevPageById(static_cast<PageId>(ConfirmPage::id), button);
+}
+
+void SettingsPage::OnBackPress(u32 hudSlotId) {
+    TTPractice::itemBoxesSetting = this->itemBoxesSetting;
+    this->backButton.SelectFocus();
+    this->LoadPrevPageById(static_cast<PageId>(ConfirmPage::id), this->backButton);
+}
+
+void SettingsPage::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
+    this->OnBackPress(hudSlotId);
+}
+
+void SettingsPage::OnRadioButtonClick(RadioButtonControl& radioButtonControl, u32 hudSlotId, u32 optionId) {
+    this->itemBoxesSetting = optionId;
+}
+
+void SettingsPage::OnRadioButtonChange(RadioButtonControl& radioButtonControl, u32 hudSlotId, u32 optionId) {
+    this->bottomText->SetMessage(optionId == PRACTICE_SETTING_ITEMBOXES_ENABLED ? UI::BMG_TT_PRACTICE_ITEMBOXES_BOTTOM_ENABLED
+                                                                                : UI::BMG_TT_PRACTICE_ITEMBOXES_BOTTOM_DISABLED);
 }
 
 }  // namespace TTPractice
