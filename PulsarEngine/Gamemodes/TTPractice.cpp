@@ -6,6 +6,8 @@
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/Obj/Kumo.hpp>
 #include <MarioKartWii/Input/ControllerHolder.hpp>
+#include <MarioKartWii/Kart/KartManager.hpp>
+#include <MarioKartWii/Kart/KartPhysics.hpp>
 #include <MarioKartWii/File/RKG.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
@@ -23,13 +25,12 @@ static const u16 GOLDEN_MUSHROOM_WARNING_FRAMES = 120;
 static const u16 INPUT_ITEM_USE = 0x4;
 static const float MODE_BUTTON_X_OFFSET = -110.0f;
 static const float STICK_WHEEL_THRESHOLD = 0.5f;
+static const float RESPAWN_STICK_THRESHOLD = 0.5f;
+static const u16 RESPAWN_HOLD_FRAMES = 30;
 
 // Golden mushroom timer bar tuning. X/Y offsets are relative to the item window's HUD position.
-static const float GOLDEN_TIMER_BAR_WIDTH_SCALE = 1.0f;
-static const float GOLDEN_TIMER_BAR_HORIZONTAL_PADDING = 0.0f;
 static const float GOLDEN_TIMER_BAR_EDGE_EXTENSION = 4.0f;
 static const float GOLDEN_TIMER_BAR_HEIGHT = 3.0f;
-static const float GOLDEN_TIMER_BAR_X_OFFSET = 0.0f;
 static const float GOLDEN_TIMER_BAR_Y_OFFSET = -20.5f;
 static const u32 GOLDEN_TIMER_BAR_POSITION_INDEX = 1;
 static const u8 GOLDEN_TIMER_BAR_YELLOW_GREEN = 220;
@@ -39,19 +40,85 @@ static const u32 TC_NATURAL_STRIKE_TIMER = 600;
 static const u32 TC_STRIKE_TIMER = 599;
 static const u32 ITEM_OBJ_KILLED = 0x1;
 static const u32 ITEM_OBJ_UNAVAILABLE = 0xc0;
+static const u32 KART_STATUS_IN_BULLET = 0x8000000;
 static const ItemId ITEM_WHEEL_ITEMS[ITEM_COUNT] = {
     TRIPLE_MUSHROOM, GOLDEN_MUSHROOM, MEGA_MUSHROOM, STAR, BULLET_BILL, THUNDER_CLOUD, MUSHROOM
 };
+static const char* const DRIFT_BUTTON_VARIANTS[2] = {"ButtonNormal", "ButtonManual"};
 
 static bool isPracticeMode = false;
 static u32 selectedItemIndexes[4] = {0, 0, 0, 0};
 static s8 stickWheelDirections[4] = {0, 0, 0, 0};
+static u16 respawnShortcutTimers[4] = {0, 0, 0, 0};
+static u16 respawnSaveTimers[4] = {0, 0, 0, 0};
+static Vec3 savedRespawnPositions[4];
+static Quat savedRespawnRotations[4];
+static bool hasSavedRespawn[4] = {false, false, false, false};
 static bool hasGrantedItem[4] = {false, false, false, false};
 static bool canRefillOnUse[4] = {false, false, false, false};
 
-kmRuntimeUse(0x808d9da0);  // DriftSelect button variant table
+kmRuntimeUse(0x80590238);  // Kart::Link::SetKartPosition
+kmRuntimeUse(0x80590288);  // Kart::Link::SetKartRotation
+kmRuntimeUse(0x80590e28);  // Kart::Link::UpdateCameraOnRespawn
+kmRuntimeUse(0x8059c118);  // Kart::Killer::CancelBullet
 
 static Item::ObjKumo* FindActiveThunderCloud(Item::Player& player);
+
+typedef void (*SetKartPositionFn)(Kart::Link* link, const Vec3& position);
+typedef void (*SetKartRotationFn)(Kart::Link* link, const Quat& rotation);
+typedef void (*UpdateCameraOnRespawnFn)(const Kart::Link* link);
+typedef void (*CancelBulletFn)(Kart::Killer* killer);
+
+static SetKartPositionFn GetSetKartPosition() {
+    static const SetKartPositionFn function = reinterpret_cast<SetKartPositionFn>(kmRuntimeAddr(0x80590238));
+    return function;
+}
+
+static SetKartRotationFn GetSetKartRotation() {
+    static const SetKartRotationFn function = reinterpret_cast<SetKartRotationFn>(kmRuntimeAddr(0x80590288));
+    return function;
+}
+
+static UpdateCameraOnRespawnFn GetUpdateCameraOnRespawn() {
+    static const UpdateCameraOnRespawnFn function = reinterpret_cast<UpdateCameraOnRespawnFn>(kmRuntimeAddr(0x80590e28));
+    return function;
+}
+
+static CancelBulletFn GetCancelBullet() {
+    static const CancelBulletFn function = reinterpret_cast<CancelBulletFn>(kmRuntimeAddr(0x8059c118));
+    return function;
+}
+
+static void ClearSavedRespawns() {
+    for (u32 i = 0; i < 4; ++i) {
+        respawnShortcutTimers[i] = 0;
+        respawnSaveTimers[i] = 0;
+        hasSavedRespawn[i] = false;
+    }
+}
+
+static SectionLoadHook ClearSavedRespawnsOnSectionLoad(ClearSavedRespawns);
+
+extern "C" void fun_playSound(void*);
+extern "C" void ptr_menuPageOrSomething(void*);
+asmFunc PlayRespawnSaveSound() {
+    ASM(
+        nofralloc;
+        mflr r11;
+        stwu sp, -0x80(sp);
+        stmw r3, 0x8(sp);
+        lis r11, ptr_menuPageOrSomething @ha;
+        lwz r3, ptr_menuPageOrSomething @l(r11);
+        li r4, 0xDD;
+        lis r12, fun_playSound @h;
+        ori r12, r12, fun_playSound @l;
+        mtctr r12;
+        bctrl;
+        lmw r3, 0x8(sp);
+        addi sp, sp, 0x80;
+        mtlr r11;
+        blr;)
+}
 
 struct GoldenTimerBar {
     float x;
@@ -66,6 +133,7 @@ struct GoldenTimerBar {
 
 void SetPracticeMode(bool enabled) {
     isPracticeMode = enabled;
+    ClearSavedRespawns();
     for (u32 i = 0; i < 4; ++i) {
         selectedItemIndexes[i] = 0;
         stickWheelDirections[i] = 0;
@@ -152,6 +220,273 @@ static bool IsItemUseHeld(Item::Player& player) {
     return (player.GetControllerHolder().inputStates[0].buttonActions & INPUT_ITEM_USE) != 0;
 }
 
+static bool IsAnalogRespawnShortcutHeld(float stickX, float stickY) {
+    return stickY >= RESPAWN_STICK_THRESHOLD && stickY >= stickX && stickY >= -stickX;
+}
+
+static bool IsAnalogRespawnSaveHeld(float stickX, float stickY) {
+    const float down = -stickY;
+    return down >= RESPAWN_STICK_THRESHOLD && down >= stickX && down >= -stickX;
+}
+
+static bool IsAnalogRespawnInputHeld(float stickX, float stickY) {
+    return IsAnalogRespawnShortcutHeld(stickX, stickY) || IsAnalogRespawnSaveHeld(stickX, stickY);
+}
+
+static bool IsRespawnShortcutHeld(Item::Player& player) {
+    Input::ControllerHolder& holder = player.GetControllerHolder();
+    if (holder.curController == nullptr) return false;
+
+    const ControllerType type = holder.curController->GetType();
+    switch (type) {
+        case NUNCHUCK:
+            return (holder.uiinputStates[0].rawButtons & WPAD::WPAD_BUTTON_UP) != 0;
+        case CLASSIC: {
+            Input::WiiController* controller = static_cast<Input::WiiController*>(holder.curController);
+            const Vec2D& stickR = controller->kpadStatus[0].extStatus.cl.stickR;
+            return IsAnalogRespawnShortcutHeld(stickR.x, stickR.z);
+        }
+        case GCN: {
+            Input::GCNController* controller = static_cast<Input::GCNController*>(holder.curController);
+            return IsAnalogRespawnShortcutHeld(controller->cStickHorizontal, controller->cStickVertical);
+        }
+        default:
+            return false;
+    }
+}
+
+static bool IsRespawnSaveHeld(Item::Player& player) {
+    Input::ControllerHolder& holder = player.GetControllerHolder();
+    if (holder.curController == nullptr) return false;
+
+    const ControllerType type = holder.curController->GetType();
+    switch (type) {
+        case NUNCHUCK:
+            return (holder.uiinputStates[0].rawButtons & WPAD::WPAD_BUTTON_DOWN) != 0;
+        case CLASSIC: {
+            Input::WiiController* controller = static_cast<Input::WiiController*>(holder.curController);
+            const Vec2D& stickR = controller->kpadStatus[0].extStatus.cl.stickR;
+            return IsAnalogRespawnSaveHeld(stickR.x, stickR.z);
+        }
+        case GCN: {
+            Input::GCNController* controller = static_cast<Input::GCNController*>(holder.curController);
+            return IsAnalogRespawnSaveHeld(controller->cStickHorizontal, controller->cStickVertical);
+        }
+        default:
+            return false;
+    }
+}
+
+static Kart::PhysicsHolder* GetKartPhysicsHolder(Kart::Player& kartPlayer) {
+    if (kartPlayer.pointers.kartBody == nullptr) return nullptr;
+    return kartPlayer.pointers.kartBody->kartPhysicsHolder;
+}
+
+static void ClearHitboxGroupMotion(Kart::HitboxGroup* hitboxGroup) {
+    const Vec3 zero(0.0f, 0.0f, 0.0f);
+    if (hitboxGroup == nullptr) return;
+
+    hitboxGroup->collisionData.vel = zero;
+    hitboxGroup->collisionData.movement = zero;
+    hitboxGroup->collisionData.unknown_0x58 = zero;
+    hitboxGroup->unknown_0x90 = 0;
+    hitboxGroup->unknown_0x94 = 0.0f;
+    hitboxGroup->unknown_0x98 = 0.0f;
+
+    Kart::Hitbox* hitboxes = hitboxGroup->hitboxes;
+    if (hitboxes == nullptr) return;
+
+    for (u16 i = 0; i < hitboxGroup->hitboxCount; ++i) {
+        Kart::Hitbox& hitbox = hitboxes[i];
+        hitbox.lastPosition = hitbox.position;
+        hitbox.unknown_0x24 = zero;
+    }
+}
+
+static void ClearKartMotionHistory(Kart::Player& kartPlayer, Kart::PhysicsHolder* physicsHolder, const Vec3& position) {
+    const Vec3 zero(0.0f, 0.0f, 0.0f);
+
+    if (physicsHolder != nullptr) {
+        physicsHolder->position = position;
+        physicsHolder->unknown_0xcc[0] = zero;
+        physicsHolder->unknown_0xcc[1] = zero;
+        physicsHolder->unknown_0xcc[2] = zero;
+        physicsHolder->speed = zero;
+        physicsHolder->unknown_0xfc = 0.0f;
+        ClearHitboxGroupMotion(physicsHolder->hitboxGroup);
+    }
+
+    Kart::Pointers& pointers = kartPlayer.pointers;
+    if (pointers.values == nullptr || pointers.wheels == nullptr) return;
+
+    for (u16 i = 0; i < pointers.values->wheelCount0; ++i) {
+        Kart::Wheel* wheel = pointers.wheels[i];
+        if (wheel == nullptr || wheel->wheelPhysics == nullptr) continue;
+
+        Kart::WheelPhysics& wheelPhysics = *wheel->wheelPhysics;
+        wheelPhysics.unknown_0x2c = zero;
+        wheelPhysics.lastPosDiff = zero;
+        wheelPhysics.unknown_0x48 = zero;
+        wheelPhysics.speed = zero;
+        wheelPhysics.unknown_0x6c = zero;
+        ClearHitboxGroupMotion(wheelPhysics.hitboxGroup);
+    }
+}
+
+static void ClearKartMomentum(Kart::Player& kartPlayer, Kart::Physics& physics, Kart::PhysicsHolder* physicsHolder) {
+    const Vec3 zero(0.0f, 0.0f, 0.0f);
+
+    physics.ResetSpeed();
+    physics.speed0 = zero;
+    physics.acceleration0 = zero;
+    physics.unknown_0x8c = zero;
+    physics.unknown_0x98 = zero;
+    physics.rotVec0 = zero;
+    physics.speed2 = zero;
+    physics.rotVec1 = zero;
+    physics.speed3 = zero;
+    physics.speed = zero;
+    physics.speedNorm = 0.0f;
+    physics.rotVec2 = zero;
+    physics.normalAcceleration = zero;
+    physics.normalRotVec = zero;
+    physics.engineSpeed = zero;
+    physics.speed1Adj = zero;
+
+    ClearKartMotionHistory(kartPlayer, physicsHolder, physics.position);
+
+    Kart::Status* status = kartPlayer.pointers.kartStatus;
+    if (status != nullptr) {
+        status->bitfield0 &= ~(0x8000u | 0x800000u | 0x100000u | 0x2000000u | 0x8000000u | 0x40000000u |
+                               0x80000000u);
+        status->bitfield1 &= ~(0x200u | 0x800u | 0x2000u | 0x100000u);
+        status->bitfield2 &= ~(0x1u | 0x2u | 0x400000u | KART_STATUS_IN_BULLET);
+        status->airtime = 0;
+        status->boostRampType = 0;
+        status->jumpPadType = 0;
+        status->bool_0x96 = false;
+        status->bool_0x97 = false;
+    }
+
+    Kart::Movement* movement = kartPlayer.pointers.kartMovement;
+    if (movement == nullptr) return;
+
+    movement->engineSpeed = 0.0f;
+    movement->lastSpeed = 0.0f;
+    movement->unknown_0x28 = 0.0f;
+    movement->acceleration = 0.0f;
+    movement->speedRatio = 0.0f;
+    movement->speedRatioCapped = 0.0f;
+    movement->dirDiff = zero;
+    movement->outsideDriftLastDir = zero;
+    movement->slipstreamCharge = 0;
+    movement->unknown_0xf0 = 0.0f;
+    movement->divingRot = 0.0f;
+    movement->boostRot = 0.0f;
+    movement->driftState = 0;
+    movement->mtCharge = 0;
+    movement->smtCharge = 0;
+    movement->mtBoost = 0;
+    movement->outsideDriftBonus = 0.0f;
+    movement->boost.mtFrames = 0;
+    movement->boost.mushroomBoostPanelFrames = 0;
+    movement->boost.bulletFrames = 0;
+    movement->boost.trickZipperFrames = 0;
+    movement->boost.megaFrames = 0;
+    movement->boost.types = 0;
+    movement->boost.multiplier = 1.0f;
+    movement->boost.acceleration = 0.0f;
+    movement->boost.speedLimit = 0.0f;
+    movement->zipperBoost = 0;
+    movement->zipperBoostMax = 0;
+    movement->mushroomBoost2 = 0;
+    movement->jumpPadMinSpeed = 0.0f;
+    movement->jumpPadMaxSpeed = 0.0f;
+    movement->jumpPadProperties.minSpeed = 0.0f;
+    movement->jumpPadProperties.maxSpeed = 0.0f;
+    movement->jumpPadProperties.velY = 0.0f;
+    movement->rampBoost = 0;
+    movement->hopVelY = 0.0f;
+    movement->hopPosY = 0.0f;
+    movement->hopGravity = 0.0f;
+    movement->drivingDirection = 0;
+    movement->backwardsAllowCounter = 0;
+    movement->specialFloor = 0;
+    movement->rawTurn = 0.0f;
+}
+
+static void CancelBulletIfActive(Kart::Player& kartPlayer) {
+    Kart::Status* status = kartPlayer.pointers.kartStatus;
+    Kart::Killer* killer = kartPlayer.pointers.kartKiller;
+    if (status == nullptr || killer == nullptr || (status->bitfield2 & KART_STATUS_IN_BULLET) == 0) return;
+
+    GetCancelBullet()(killer);
+}
+
+static void RestoreSavedKartTransform(Kart::Player& kartPlayer, Kart::Physics& physics, Kart::PhysicsHolder* physicsHolder, u32 hudSlotId) {
+    Vec3 restorePosition = savedRespawnPositions[hudSlotId];
+
+    CancelBulletIfActive(kartPlayer);
+    GetSetKartPosition()(&kartPlayer, restorePosition);
+    GetSetKartRotation()(&kartPlayer, savedRespawnRotations[hudSlotId]);
+    physics.position = restorePosition;
+    ClearKartMomentum(kartPlayer, physics, physicsHolder);
+    GetUpdateCameraOnRespawn()(&kartPlayer);
+}
+
+static void UpdateRespawnShortcut(Item::Player& player) {
+    if (!IsEnabled()) return;
+    if (!player.isHuman || player.isRemote || player.hudSlotId >= 4) return;
+
+    const Racedata* racedata = Racedata::sInstance;
+    Kart::Manager* kartManager = Kart::Manager::sInstance;
+    if (racedata == nullptr || kartManager == nullptr) return;
+
+    const u8 playerId = racedata->racesScenario.settings.hudPlayerIds[player.hudSlotId];
+    Kart::Player* kartPlayer = kartManager->GetKartPlayer(playerId);
+    if (kartPlayer == nullptr) return;
+    Kart::PhysicsHolder* physicsHolder = GetKartPhysicsHolder(*kartPlayer);
+    if (physicsHolder == nullptr) return;
+    Kart::Physics* physics = physicsHolder->physics;
+    if (physics == nullptr) return;
+
+    if (kartPlayer->IsRespawning()) {
+        respawnShortcutTimers[player.hudSlotId] = 0;
+        respawnSaveTimers[player.hudSlotId] = 0;
+        return;
+    }
+
+    const u32 hudSlotId = player.hudSlotId;
+    if (IsRespawnSaveHeld(player)) {
+        respawnShortcutTimers[hudSlotId] = 0;
+        u16& timer = respawnSaveTimers[hudSlotId];
+        if (timer == RESPAWN_HOLD_FRAMES) return;
+        if (timer < RESPAWN_HOLD_FRAMES) ++timer;
+        if (timer < RESPAWN_HOLD_FRAMES) return;
+
+        savedRespawnPositions[hudSlotId] = physics->position;
+        savedRespawnRotations[hudSlotId] = physics->mainRot;
+        hasSavedRespawn[hudSlotId] = true;
+        PlayRespawnSaveSound();
+        return;
+    } else {
+        respawnSaveTimers[hudSlotId] = 0;
+    }
+
+    if (!IsRespawnShortcutHeld(player)) {
+        respawnShortcutTimers[hudSlotId] = 0;
+        return;
+    }
+
+    u16& timer = respawnShortcutTimers[hudSlotId];
+    if (timer == RESPAWN_HOLD_FRAMES) return;
+    if (timer < RESPAWN_HOLD_FRAMES) ++timer;
+    if (timer < RESPAWN_HOLD_FRAMES) return;
+
+    if (!hasSavedRespawn[hudSlotId]) return;
+    RestoreSavedKartTransform(*kartPlayer, *physics, physicsHolder, hudSlotId);
+}
+
 static void RequestThunderCloudStrike(Item::Player& player, bool hadThunderCloudBeforeUpdate) {
     if (!hadThunderCloudBeforeUpdate || !IsEnabled()) return;
     if (!player.isHuman || player.isRemote || player.hudSlotId >= 4) return;
@@ -198,10 +533,19 @@ static s8 GetWheelDirection(Item::Player& player) {
         }
         case CLASSIC: {
             Input::WiiController* controller = static_cast<Input::WiiController*>(holder.curController);
-            return GetAnalogWheelDirection(hudSlotId, controller->kpadStatus[0].extStatus.cl.stickR.x);
+            const Vec2D& stickR = controller->kpadStatus[0].extStatus.cl.stickR;
+            if (IsAnalogRespawnInputHeld(stickR.x, stickR.z)) {
+                stickWheelDirections[hudSlotId] = 0;
+                return 0;
+            }
+            return GetAnalogWheelDirection(hudSlotId, stickR.x);
         }
         case GCN: {
             Input::GCNController* controller = static_cast<Input::GCNController*>(holder.curController);
+            if (IsAnalogRespawnInputHeld(controller->cStickHorizontal, controller->cStickVertical)) {
+                stickWheelDirections[hudSlotId] = 0;
+                return 0;
+            }
             return GetAnalogWheelDirection(hudSlotId, controller->cStickHorizontal);
         }
         default:
@@ -247,6 +591,7 @@ static void UpdatePlayerAndPracticeWheel(Item::Player& player) {
     const bool hadThunderCloudBeforeUpdate = FindActiveThunderCloud(player) != nullptr;
     player.Update();
     RequestThunderCloudStrike(player, hadThunderCloudBeforeUpdate);
+    UpdateRespawnShortcut(player);
     UpdatePracticeWheel(player);
 }
 kmCall(0x8079994c, UpdatePlayerAndPracticeWheel);
@@ -313,13 +658,10 @@ static bool TryBuildGoldenTimerBar(CtrlRaceItemWindow& itemWindow, GoldenTimerBa
     const PositionAndScale& itemWindowPosition = itemWindow.positionAndscale[GOLDEN_TIMER_BAR_POSITION_INDEX];
     const float barScaleX = itemWindowPosition.scale.x;
     const float barScaleY = itemWindowPosition.scale.z;
-    const float fullWidth =
-        (itemWindowPane->size.x * GOLDEN_TIMER_BAR_WIDTH_SCALE +
-         (GOLDEN_TIMER_BAR_EDGE_EXTENSION - GOLDEN_TIMER_BAR_HORIZONTAL_PADDING) * 2.0f) *
-        barScaleX;
+    const float fullWidth = (itemWindowPane->size.x + GOLDEN_TIMER_BAR_EDGE_EXTENSION * 2.0f) * barScaleX;
     if (fullWidth <= 0.0f) return false;
 
-    bar.x = itemWindowPosition.position.x + GOLDEN_TIMER_BAR_X_OFFSET * barScaleX - fullWidth * 0.5f;
+    bar.x = itemWindowPosition.position.x - fullWidth * 0.5f;
     bar.y = itemWindowPosition.position.y + GOLDEN_TIMER_BAR_Y_OFFSET * barScaleY;
     bar.width = fullWidth * remaining;
     bar.height = GOLDEN_TIMER_BAR_HEIGHT * barScaleY;
@@ -373,8 +715,6 @@ SelectPage::SelectPage() {
     this->onButtonClickHandler.ptmf = &SelectPage::OnButtonClick;
     this->onButtonSelectHandler.subject = this;
     this->onButtonSelectHandler.ptmf = &SelectPage::OnButtonSelect;
-    this->onButtonDeselectHandler.subject = this;
-    this->onButtonDeselectHandler.ptmf = &SelectPage::OnButtonDeselect;
     this->onBackPressHandler.subject = this;
     this->onBackPressHandler.ptmf = &SelectPage::OnBackPress;
 
@@ -409,9 +749,8 @@ UIControl* SelectPage::CreateExternalControl(u32 controlId) {
 
     PushButton& button = this->buttons[controlId];
     this->AddControl(this->controlCount++, button, 0);
-    const char** driftButtonVariants = reinterpret_cast<const char**>(kmRuntimeAddr(0x808d9da0));
     const u32 layoutId = 1 - controlId;
-    button.Load(UI::buttonFolder, "GlobePadEasy", driftButtonVariants[layoutId], this->activePlayerBitfield, 0, false);
+    button.Load(UI::buttonFolder, "GlobePadEasy", DRIFT_BUTTON_VARIANTS[layoutId], this->activePlayerBitfield, 0, false);
     for (int i = 0; i < 4; ++i) {
         button.positionAndscale[i].position.x += MODE_BUTTON_X_OFFSET;
     }
@@ -419,7 +758,6 @@ UIControl* SelectPage::CreateExternalControl(u32 controlId) {
     button.buttonId = controlId;
     button.SetOnClickHandler(this->onButtonClickHandler, 0);
     button.SetOnSelectHandler(this->onButtonSelectHandler);
-    button.SetOnDeselectHandler(this->onButtonDeselectHandler);
 
     button.SetMessage(controlId == 0 ? UI::BMG_TT_NORMAL_BUTTON : UI::BMG_TT_PRACTICE_BUTTON);
     return &button;
@@ -436,10 +774,6 @@ void SelectPage::OnActivate() {
     this->OnButtonSelect(this->buttons[0], 0);
 }
 
-void SelectPage::OnDeactivate() {
-    Pages::Menu::OnDeactivate();
-}
-
 void SelectPage::BeforeEntranceAnimations() {
     Pages::Menu::BeforeEntranceAnimations();
     this->OnButtonSelect(this->buttons[0], 0);
@@ -453,8 +787,6 @@ void SelectPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
 void SelectPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
     this->bottom.SetMessage(button.buttonId == 0 ? UI::BMG_TT_NORMAL_BOTTOM : UI::BMG_TT_PRACTICE_BOTTOM);
 }
-
-void SelectPage::OnButtonDeselect(PushButton& button, u32 hudSlotId) {}
 
 void SelectPage::OnBackPress(u32 hudSlotId) {
     SetPracticeMode(false);

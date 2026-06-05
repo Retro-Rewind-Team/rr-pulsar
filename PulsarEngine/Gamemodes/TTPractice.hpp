@@ -24,11 +24,9 @@ class SelectPage : public ::Pages::MenuInteractable {
 
     void OnInit() override;
     void OnActivate() override;
-    void OnDeactivate() override;
     void BeforeEntranceAnimations() override;
     void OnButtonClick(PushButton& button, u32 hudSlotId);
     void OnButtonSelect(PushButton& button, u32 hudSlotId);
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId);
     void OnBackPress(u32 hudSlotId);
 
     int GetActivePlayerBitfield() const override { return this->activePlayerBitfield; }
@@ -43,7 +41,6 @@ class SelectPage : public ::Pages::MenuInteractable {
     PushButton buttons[2];
     PtmfHolder_2A<SelectPage, void, PushButton&, u32> onButtonClickHandler;
     PtmfHolder_2A<SelectPage, void, PushButton&, u32> onButtonSelectHandler;
-    PtmfHolder_2A<SelectPage, void, PushButton&, u32> onButtonDeselectHandler;
     PtmfHolder_1A<SelectPage, void, u32> onBackPressHandler;
 };
 
