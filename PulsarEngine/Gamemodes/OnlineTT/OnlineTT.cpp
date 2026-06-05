@@ -22,6 +22,7 @@
 #include <Network/PulSELECT.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
+#include <Gamemodes/TTPractice.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Settings/Settings.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
@@ -45,6 +46,7 @@ void CondTTObjects(u32 r3, u32 r4, u32 r5, u32 r6, bool isTT) {
     register ObjectsMgr* mgr;
     asm(mr mgr, r31;);
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) isTT = true;
+    if (TTPractice::IsPracticeMode()) isTT = false;
     mgr->isTT = isTT;
 }
 kmCall(0x8082a4ec, CondTTObjects);
