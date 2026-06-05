@@ -1519,6 +1519,9 @@ StartAction13__Q24Kart6ActionFUi = 0x80569818
 #KartMove
 StartBlinkLocal__Q24Kart8MovementFv = 0x805819a8
 
+#KartPhysics
+ResetSpeed__Q24Kart7PhysicsFv = 0x805b4d24
+
 #CtrlRaceRankNum
 IsInactive__15CtrlRaceRankNumFv = 0x807f4d40
 
@@ -2562,3 +2565,4 @@ SetNumChans__2GXFUc = 0x8017054c
 SetNumTevStages__2GXFUc = 0x801722a8
 LoadPosMtxImm__2GXFPA4_CfUi = 0x8017310c
 SetCurrentMtx__2GXFUi = 0x80173214
+IsRespawning__Q24Kart4LinkCFv = 0x80591314
