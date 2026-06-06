@@ -4,7 +4,7 @@
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCup.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <Ghost/UI/ExpGhostSelect.hpp>
-#include <Gamemodes/TTPractice.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
 #include <Ghost/GhostManager.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
