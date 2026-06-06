@@ -11,7 +11,7 @@
 #include <MarioKartWii/RKNet/ITEM.hpp>
 #include <Settings/Settings.hpp>
 #include <RetroRewind.hpp>
-#include <Gamemodes/TTPractice.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
 
 namespace Pulsar {
 namespace Race {

@@ -1,9 +1,8 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
-#include <Gamemodes/TTPractice.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
 #include <PulsarSystem.hpp>
 #include <Settings/Settings.hpp>
-#include <Settings/UI/SettingsPanel.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/Obj/Kumo.hpp>
@@ -13,32 +12,16 @@
 #include <MarioKartWii/File/RKG.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
-#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
-#include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceItemWindow.hpp>
-#include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
-#include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
-#include <core/rvl/gx/GX.hpp>
 
 namespace Pulsar {
 namespace TTPractice {
 
 static const u32 ITEM_COUNT = 7;
-static const u16 GOLDEN_MUSHROOM_TIMER_FRAMES = 480;
-static const u16 GOLDEN_MUSHROOM_WARNING_FRAMES = 120;
 static const u16 INPUT_ITEM_USE = 0x4;
-static const float MODE_BUTTON_X_OFFSET = -110.0f;
 static const float STICK_WHEEL_THRESHOLD = 0.5f;
 static const float RESPAWN_STICK_THRESHOLD = 0.5f;
 static const u16 RESPAWN_HOLD_FRAMES = 30;
-
-// Golden mushroom timer bar tuning. X/Y offsets are relative to the item window's HUD position.
-static const float GOLDEN_TIMER_BAR_EDGE_EXTENSION = 4.0f;
-static const float GOLDEN_TIMER_BAR_HEIGHT = 3.0f;
-static const float GOLDEN_TIMER_BAR_Y_OFFSET = -20.5f;
-static const u32 GOLDEN_TIMER_BAR_POSITION_INDEX = 1;
-static const u8 GOLDEN_TIMER_BAR_YELLOW_GREEN = 220;
-static const u8 GOLDEN_TIMER_BAR_ALPHA = 220;
 static const u32 TC_TIMER_OFFSET = 0x1d8;
 static const u32 TC_NATURAL_STRIKE_TIMER = 600;
 static const u32 TC_STRIKE_TIMER = 599;
@@ -48,7 +31,6 @@ static const u32 KART_STATUS_IN_BULLET = 0x8000000;
 static const ItemId ITEM_WHEEL_ITEMS[ITEM_COUNT] = {
     TRIPLE_MUSHROOM, GOLDEN_MUSHROOM, MEGA_MUSHROOM, STAR, BULLET_BILL, THUNDER_CLOUD, MUSHROOM
 };
-static const char* const DRIFT_BUTTON_VARIANTS[2] = {"ButtonNormal", "ButtonManual"};
 
 struct SavedRaceProgress {
     u16 checkpoint;
@@ -144,17 +126,6 @@ asmFunc PlayRespawnSaveSound() {
         mtlr r11;
         blr;)
 }
-
-struct GoldenTimerBar {
-    float x;
-    float y;
-    float width;
-    float height;
-    u8 red;
-    u8 green;
-    u8 blue;
-    u8 alpha;
-};
 
 void SetPracticeMode(bool enabled) {
     isPracticeMode = enabled;
@@ -675,296 +646,6 @@ static void UpdatePlayerAndPracticeWheel(Item::Player& player) {
     UpdatePracticeWheel(player);
 }
 kmCall(0x8079994c, UpdatePlayerAndPracticeWheel);
-
-static void SetupGoldenTimerGX() {
-    GX::ClearVtxDesc();
-    GX::SetVtxDesc(GX::GX_VA_POS, GX::GX_DIRECT);
-    GX::SetVtxDesc(GX::GX_VA_CLR0, GX::GX_DIRECT);
-    GX::SetVtxAttrFmt(GX::GX_VTXFMT0, GX::GX_VA_POS, GX::GX_POS_XYZ, GX::GX_F32, 0);
-    GX::SetVtxAttrFmt(GX::GX_VTXFMT0, GX::GX_VA_CLR0, GX::GX_CLR_RGBA, GX::GX_RGBA8, 0);
-    GX::SetNumTexGens(0);
-    GX::SetNumChans(1);
-    GX::SetChanCtrl(GX::GX_COLOR0A0, false, GX::GX_SRC_REG, GX::GX_SRC_VTX, GX::GX_LIGHT_NULL, GX::GX_DF_NONE, GX::GX_AF_NONE);
-    GX::SetTevOrder(GX::GX_TEVSTAGE0, GX::GX_TEXCOORD_NULL, GX::GX_TEXMAP_NULL, GX::GX_COLOR0A0);
-    GX::SetTevOp(GX::GX_TEVSTAGE0, GX::GX_PASSCLR);
-    GX::SetNumTevStages(1);
-    GX::SetBlendMode(GX::GX_BM_BLEND, GX::GX_BL_SRCALPHA, GX::GX_BL_INVSRCALPHA, GX::GX_LO_CLEAR);
-    GX::SetZMode(false, GX::GX_ALWAYS, false);
-
-    Mtx identity = {
-        {1.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f, 1.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 1.0f, 0.0f},
-    };
-    GX::LoadPosMtxImm(identity, 0);
-    GX::SetCurrentMtx(0);
-}
-
-static void DrawGoldenTimerQuad(const GoldenTimerBar& bar) {
-    SetupGoldenTimerGX();
-
-    GX::Begin(GX::GX_QUADS, GX::GX_VTXFMT0, 4);
-    GX_Position3f32(bar.x, bar.y, 0.0f);
-    GX_Color4u8(bar.red, bar.green, bar.blue, bar.alpha);
-    GX_Position3f32(bar.x + bar.width, bar.y, 0.0f);
-    GX_Color4u8(bar.red, bar.green, bar.blue, bar.alpha);
-    GX_Position3f32(bar.x + bar.width, bar.y - bar.height, 0.0f);
-    GX_Color4u8(bar.red, bar.green, bar.blue, bar.alpha);
-    GX_Position3f32(bar.x, bar.y - bar.height, 0.0f);
-    GX_Color4u8(bar.red, bar.green, bar.blue, bar.alpha);
-    GXEnd();
-}
-
-static bool TryBuildGoldenTimerBar(CtrlRaceItemWindow& itemWindow, GoldenTimerBar& bar) {
-    if (!IsEnabled()) return false;
-
-    Item::Manager* manager = Item::Manager::sInstance;
-    if (manager == nullptr) return false;
-
-    const u8 playerId = itemWindow.GetPlayerId();
-    if (playerId >= 12) return false;
-
-    Item::Player& player = manager->players[playerId];
-    const Item::PlayerInventory& inventory = player.inventory;
-    if (inventory.currentItemId != GOLDEN_MUSHROOM || !inventory.hasGolden || inventory.goldenTimer == 0) return false;
-
-    const float remaining = inventory.goldenTimer > GOLDEN_MUSHROOM_TIMER_FRAMES
-                                ? 1.0f
-                                : static_cast<float>(inventory.goldenTimer) / static_cast<float>(GOLDEN_MUSHROOM_TIMER_FRAMES);
-
-    nw4r::lyt::Pane* itemWindowPane = itemWindow.GetPane();
-    if (itemWindowPane == nullptr) return false;
-
-    const PositionAndScale& itemWindowPosition = itemWindow.positionAndscale[GOLDEN_TIMER_BAR_POSITION_INDEX];
-    const float barScaleX = itemWindowPosition.scale.x;
-    const float barScaleY = itemWindowPosition.scale.z;
-    const float fullWidth = (itemWindowPane->size.x + GOLDEN_TIMER_BAR_EDGE_EXTENSION * 2.0f) * barScaleX;
-    if (fullWidth <= 0.0f) return false;
-
-    bar.x = itemWindowPosition.position.x - fullWidth * 0.5f;
-    bar.y = itemWindowPosition.position.y + GOLDEN_TIMER_BAR_Y_OFFSET * barScaleY;
-    bar.width = fullWidth * remaining;
-    bar.height = GOLDEN_TIMER_BAR_HEIGHT * barScaleY;
-    bar.red = 255;
-    bar.green = inventory.goldenTimer <= GOLDEN_MUSHROOM_WARNING_FRAMES ? 0 : GOLDEN_TIMER_BAR_YELLOW_GREEN;
-    bar.blue = 0;
-    bar.alpha = GOLDEN_TIMER_BAR_ALPHA;
-    return true;
-}
-
-static void DrawGoldenMushroomTimer(CtrlRaceItemWindow& itemWindow) {
-    GoldenTimerBar bar;
-    if (TryBuildGoldenTimerBar(itemWindow, bar)) DrawGoldenTimerQuad(bar);
-}
-
-static void DrawItemWindowWithGoldenTimer(CtrlRaceItemWindow& itemWindow, u32 curZIdx) {
-    if (!itemWindow.IsInactive()) DrawGoldenMushroomTimer(itemWindow);
-    itemWindow.LayoutUIControl::Draw(curZIdx);
-}
-kmWritePointer(0x808d3cdc, DrawItemWindowWithGoldenTimer);
-
-static void StartPracticeRace(Pages::Menu& page, PushButton& button) {
-    Racedata* racedata = Racedata::sInstance;
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
-    if (racedata == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || RKSYS::Mgr::sInstance == nullptr) return;
-
-    SectionParams* params = sectionMgr->sectionParams;
-    const CourseId courseId = racedata->menusScenario.settings.courseId;
-    params->ghostType = BEST_TIME;
-    params->courseId = courseId;
-    params->licenseId = RKSYS::Mgr::sInstance->curLicenseId;
-    params->lastSelectedCourse = courseId;
-
-    racedata->menusScenario.players[1].playerType = PLAYER_NONE;
-    racedata->menusScenario.players[2].playerType = PLAYER_NONE;
-    racedata->menusScenario.players[3].playerType = PLAYER_NONE;
-    page.ChangeSectionById(SECTION_TT, button);
-}
-
-static void LoadGhostSelectOrPracticeConfirm(Pages::Menu& page, PageId id, PushButton& button) {
-    Racedata* racedata = Racedata::sInstance;
-    if (!isPracticeMode || racedata == nullptr || racedata->menusScenario.settings.gamemode != MODE_TIME_TRIAL) {
-        page.LoadNextPageById(id, button);
-        return;
-    }
-
-    page.LoadNextPageById(static_cast<PageId>(ConfirmPage::id), button);
-}
-kmCall(0x80840a00, LoadGhostSelectOrPracticeConfirm);
-
-SelectPage::SelectPage() {
-    this->onButtonClickHandler.subject = this;
-    this->onButtonClickHandler.ptmf = &SelectPage::OnButtonClick;
-    this->onButtonSelectHandler.subject = this;
-    this->onButtonSelectHandler.ptmf = &SelectPage::OnButtonSelect;
-    this->onBackPressHandler.subject = this;
-    this->onBackPressHandler.ptmf = &SelectPage::OnBackPress;
-
-    this->externControlCount = 2;
-    this->internControlCount = 0;
-    this->hasBackButton = true;
-    this->activePlayerBitfield = 1;
-    this->playerBitfield = 1;
-    this->controlSources = 2;
-    this->prevPageId = PAGE_SINGLE_PLAYER_MENU;
-    this->titleBmg = UI::BMG_TIME_TRIALS;
-
-    this->controlsManipulatorManager.Init(1, false);
-    this->SetManipulatorManager(this->controlsManipulatorManager);
-    this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
-}
-
-SelectPage::~SelectPage() {}
-
-void SelectPage::OnInit() {
-    Pages::Menu::OnInit();
-    this->Pages::Menu::titleText = &this->title;
-    this->Pages::Menu::bottomText = &this->bottom;
-    this->AddControl(2, this->title, 0);
-    this->AddControl(3, this->bottom, 0);
-    this->title.Load(0);
-    this->bottom.Load();
-}
-
-UIControl* SelectPage::CreateExternalControl(u32 controlId) {
-    if (controlId >= 2) return nullptr;
-
-    PushButton& button = this->buttons[controlId];
-    this->AddControl(this->controlCount++, button, 0);
-    const u32 layoutId = 1 - controlId;
-    button.Load(UI::buttonFolder, "GlobePadEasy", DRIFT_BUTTON_VARIANTS[layoutId], this->activePlayerBitfield, 0, false);
-    for (int i = 0; i < 4; ++i) {
-        button.positionAndscale[i].position.x += MODE_BUTTON_X_OFFSET;
-    }
-    button.SetPosition(0.0f);
-    button.buttonId = controlId;
-    button.SetOnClickHandler(this->onButtonClickHandler, 0);
-    button.SetOnSelectHandler(this->onButtonSelectHandler);
-
-    button.SetMessage(controlId == 0 ? UI::BMG_TT_NORMAL_BUTTON : UI::BMG_TT_PRACTICE_BUTTON);
-    return &button;
-}
-
-UIControl* SelectPage::CreateControl(u32 controlId) {
-    return nullptr;
-}
-
-void SelectPage::OnActivate() {
-    Pages::Menu::OnActivate();
-    this->title.SetMessage(this->titleBmg);
-    this->SelectButton(this->buttons[0]);
-    this->OnButtonSelect(this->buttons[0], 0);
-}
-
-void SelectPage::BeforeEntranceAnimations() {
-    Pages::Menu::BeforeEntranceAnimations();
-    this->OnButtonSelect(this->buttons[0], 0);
-}
-
-void SelectPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
-    SetPracticeMode(button.buttonId == 1);
-    this->LoadNextPageById(PAGE_CHARACTER_SELECT, button);
-}
-
-void SelectPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
-    this->bottom.SetMessage(button.buttonId == 0 ? UI::BMG_TT_NORMAL_BOTTOM : UI::BMG_TT_PRACTICE_BOTTOM);
-}
-
-void SelectPage::OnBackPress(u32 hudSlotId) {
-    SetPracticeMode(false);
-    this->LoadPrevPageWithDelayById(PAGE_SINGLE_PLAYER_MENU, 0.0f);
-}
-
-ConfirmPage::ConfirmPage() {
-    this->onButtonClickHandler.subject = this;
-    this->onButtonClickHandler.ptmf = &ConfirmPage::OnButtonClick;
-    this->onButtonSelectHandler.subject = this;
-    this->onButtonSelectHandler.ptmf = &ConfirmPage::OnButtonSelect;
-    this->onBackPressHandler.subject = this;
-    this->onBackPressHandler.ptmf = &ConfirmPage::OnBackPress;
-
-    this->externControlCount = 2;
-    this->internControlCount = 0;
-    this->hasBackButton = true;
-    this->activePlayerBitfield = 1;
-    this->playerBitfield = 1;
-    this->controlSources = 2;
-    this->prevPageId = PAGE_COURSE_SELECT;
-    this->titleBmg = UI::BMG_TIME_TRIALS;
-
-    this->controlsManipulatorManager.Init(1, false);
-    this->SetManipulatorManager(this->controlsManipulatorManager);
-    this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
-}
-
-ConfirmPage::~ConfirmPage() {}
-
-void ConfirmPage::OnInit() {
-    Pages::Menu::OnInit();
-    this->Pages::Menu::titleText = &this->title;
-    this->Pages::Menu::bottomText = &this->bottom;
-    this->AddControl(2, this->title, 0);
-    this->AddControl(3, this->bottom, 0);
-    this->title.Load(0);
-    this->bottom.Load();
-}
-
-UIControl* ConfirmPage::CreateExternalControl(u32 controlId) {
-    if (controlId >= 2) return nullptr;
-
-    PushButton& button = this->buttons[controlId];
-    this->AddControl(this->controlCount++, button, 0);
-    const u32 layoutId = 1 - controlId;
-    button.Load(UI::buttonFolder, "GlobePadEasy", DRIFT_BUTTON_VARIANTS[layoutId], this->activePlayerBitfield, 0, false);
-    for (int i = 0; i < 4; ++i) {
-        button.positionAndscale[i].position.x += MODE_BUTTON_X_OFFSET;
-    }
-    button.SetPosition(0.0f);
-    button.buttonId = controlId;
-    button.SetOnClickHandler(this->onButtonClickHandler, 0);
-    button.SetOnSelectHandler(this->onButtonSelectHandler);
-    button.SetMessage(controlId == 0 ? UI::BMG_TT_START_RACE_BUTTON : UI::BMG_TT_PRACTICE_SETTINGS_BUTTON);
-    return &button;
-}
-
-UIControl* ConfirmPage::CreateControl(u32 controlId) {
-    return nullptr;
-}
-
-void ConfirmPage::OnActivate() {
-    Pages::Menu::OnActivate();
-    this->title.SetMessage(this->titleBmg);
-    this->SelectButton(this->buttons[0]);
-    this->OnButtonSelect(this->buttons[0], 0);
-}
-
-void ConfirmPage::BeforeEntranceAnimations() {
-    Pages::Menu::BeforeEntranceAnimations();
-    this->OnButtonSelect(this->buttons[0], 0);
-}
-
-void ConfirmPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
-    if (button.buttonId == 0) {
-        StartPracticeRace(*this, button);
-        return;
-    }
-
-    UI::SettingsPanel* settingsPanel = UI::ExpSection::GetSection()->GetPulPage<UI::SettingsPanel>();
-    if (settingsPanel != nullptr) {
-        settingsPanel->sheetIdx = Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_TTPRACTICE;
-        settingsPanel->catIdx = Settings::SETTINGSTYPE_TTPRACTICE;
-        settingsPanel->prevPageId = static_cast<PageId>(ConfirmPage::id);
-    }
-    this->LoadNextPageById(static_cast<PageId>(UI::SettingsPanel::id), button);
-}
-
-void ConfirmPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
-    this->bottom.SetMessage(button.buttonId == 0 ? UI::BMG_TT_START_RACE_BOTTOM : UI::BMG_TT_PRACTICE_SETTINGS_BOTTOM);
-}
-
-void ConfirmPage::OnBackPress(u32 hudSlotId) {
-    this->LoadPrevPageWithDelayById(PAGE_COURSE_SELECT, 0.0f);
-}
 
 }  // namespace TTPractice
 }  // namespace Pulsar

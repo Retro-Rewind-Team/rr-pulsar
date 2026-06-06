@@ -1,0 +1,220 @@
+#include <kamek.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
+#include <Settings/Settings.hpp>
+#include <Settings/UI/SettingsPanel.hpp>
+#include <UI/PracticeMode/TTPractice.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/UI/Section/SectionMgr.hpp>
+
+namespace Pulsar {
+namespace TTPractice {
+
+static const float MODE_BUTTON_X_OFFSET = -110.0f;
+static const char* const DRIFT_BUTTON_VARIANTS[2] = {"ButtonNormal", "ButtonManual"};
+
+static void StartPracticeRace(Pages::Menu& page, PushButton& button) {
+    Racedata* racedata = Racedata::sInstance;
+    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (racedata == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || RKSYS::Mgr::sInstance == nullptr) return;
+
+    SectionParams* params = sectionMgr->sectionParams;
+    const CourseId courseId = racedata->menusScenario.settings.courseId;
+    params->ghostType = BEST_TIME;
+    params->courseId = courseId;
+    params->licenseId = RKSYS::Mgr::sInstance->curLicenseId;
+    params->lastSelectedCourse = courseId;
+
+    racedata->menusScenario.players[1].playerType = PLAYER_NONE;
+    racedata->menusScenario.players[2].playerType = PLAYER_NONE;
+    racedata->menusScenario.players[3].playerType = PLAYER_NONE;
+    page.ChangeSectionById(SECTION_TT, button);
+}
+
+static void LoadGhostSelectOrPracticeConfirm(Pages::Menu& page, PageId id, PushButton& button) {
+    Racedata* racedata = Racedata::sInstance;
+    if (!IsPracticeMode() || racedata == nullptr || racedata->menusScenario.settings.gamemode != MODE_TIME_TRIAL) {
+        page.LoadNextPageById(id, button);
+        return;
+    }
+
+    page.LoadNextPageById(static_cast<PageId>(ConfirmPage::id), button);
+}
+kmCall(0x80840a00, LoadGhostSelectOrPracticeConfirm);
+
+SelectPage::SelectPage() {
+    this->onButtonClickHandler.subject = this;
+    this->onButtonClickHandler.ptmf = &SelectPage::OnButtonClick;
+    this->onButtonSelectHandler.subject = this;
+    this->onButtonSelectHandler.ptmf = &SelectPage::OnButtonSelect;
+    this->onBackPressHandler.subject = this;
+    this->onBackPressHandler.ptmf = &SelectPage::OnBackPress;
+
+    this->externControlCount = 2;
+    this->internControlCount = 0;
+    this->hasBackButton = true;
+    this->activePlayerBitfield = 1;
+    this->playerBitfield = 1;
+    this->controlSources = 2;
+    this->prevPageId = PAGE_SINGLE_PLAYER_MENU;
+    this->titleBmg = UI::BMG_TIME_TRIALS;
+
+    this->controlsManipulatorManager.Init(1, false);
+    this->SetManipulatorManager(this->controlsManipulatorManager);
+    this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
+}
+
+SelectPage::~SelectPage() {}
+
+void SelectPage::OnInit() {
+    Pages::Menu::OnInit();
+    this->Pages::Menu::titleText = &this->title;
+    this->Pages::Menu::bottomText = &this->bottom;
+    this->AddControl(2, this->title, 0);
+    this->AddControl(3, this->bottom, 0);
+    this->title.Load(0);
+    this->bottom.Load();
+}
+
+UIControl* SelectPage::CreateExternalControl(u32 controlId) {
+    if (controlId >= 2) return nullptr;
+
+    PushButton& button = this->buttons[controlId];
+    this->AddControl(this->controlCount++, button, 0);
+    const u32 layoutId = 1 - controlId;
+    button.Load(UI::buttonFolder, "GlobePadEasy", DRIFT_BUTTON_VARIANTS[layoutId], this->activePlayerBitfield, 0, false);
+    for (int i = 0; i < 4; ++i) {
+        button.positionAndscale[i].position.x += MODE_BUTTON_X_OFFSET;
+    }
+    button.SetPosition(0.0f);
+    button.buttonId = controlId;
+    button.SetOnClickHandler(this->onButtonClickHandler, 0);
+    button.SetOnSelectHandler(this->onButtonSelectHandler);
+
+    button.SetMessage(controlId == 0 ? UI::BMG_TT_NORMAL_BUTTON : UI::BMG_TT_PRACTICE_BUTTON);
+    return &button;
+}
+
+UIControl* SelectPage::CreateControl(u32 controlId) {
+    return nullptr;
+}
+
+void SelectPage::OnActivate() {
+    Pages::Menu::OnActivate();
+    this->title.SetMessage(this->titleBmg);
+    this->SelectButton(this->buttons[0]);
+    this->OnButtonSelect(this->buttons[0], 0);
+}
+
+void SelectPage::BeforeEntranceAnimations() {
+    Pages::Menu::BeforeEntranceAnimations();
+    this->OnButtonSelect(this->buttons[0], 0);
+}
+
+void SelectPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
+    SetPracticeMode(button.buttonId == 1);
+    this->LoadNextPageById(PAGE_CHARACTER_SELECT, button);
+}
+
+void SelectPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+    this->bottom.SetMessage(button.buttonId == 0 ? UI::BMG_TT_NORMAL_BOTTOM : UI::BMG_TT_PRACTICE_BOTTOM);
+}
+
+void SelectPage::OnBackPress(u32 hudSlotId) {
+    SetPracticeMode(false);
+    this->LoadPrevPageWithDelayById(PAGE_SINGLE_PLAYER_MENU, 0.0f);
+}
+
+ConfirmPage::ConfirmPage() {
+    this->onButtonClickHandler.subject = this;
+    this->onButtonClickHandler.ptmf = &ConfirmPage::OnButtonClick;
+    this->onButtonSelectHandler.subject = this;
+    this->onButtonSelectHandler.ptmf = &ConfirmPage::OnButtonSelect;
+    this->onBackPressHandler.subject = this;
+    this->onBackPressHandler.ptmf = &ConfirmPage::OnBackPress;
+
+    this->externControlCount = 2;
+    this->internControlCount = 0;
+    this->hasBackButton = true;
+    this->activePlayerBitfield = 1;
+    this->playerBitfield = 1;
+    this->controlSources = 2;
+    this->prevPageId = PAGE_COURSE_SELECT;
+    this->titleBmg = UI::BMG_TIME_TRIALS;
+
+    this->controlsManipulatorManager.Init(1, false);
+    this->SetManipulatorManager(this->controlsManipulatorManager);
+    this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
+}
+
+ConfirmPage::~ConfirmPage() {}
+
+void ConfirmPage::OnInit() {
+    Pages::Menu::OnInit();
+    this->Pages::Menu::titleText = &this->title;
+    this->Pages::Menu::bottomText = &this->bottom;
+    this->AddControl(2, this->title, 0);
+    this->AddControl(3, this->bottom, 0);
+    this->title.Load(0);
+    this->bottom.Load();
+}
+
+UIControl* ConfirmPage::CreateExternalControl(u32 controlId) {
+    if (controlId >= 2) return nullptr;
+
+    PushButton& button = this->buttons[controlId];
+    this->AddControl(this->controlCount++, button, 0);
+    const u32 layoutId = 1 - controlId;
+    button.Load(UI::buttonFolder, "GlobePadEasy", DRIFT_BUTTON_VARIANTS[layoutId], this->activePlayerBitfield, 0, false);
+    for (int i = 0; i < 4; ++i) {
+        button.positionAndscale[i].position.x += MODE_BUTTON_X_OFFSET;
+    }
+    button.SetPosition(0.0f);
+    button.buttonId = controlId;
+    button.SetOnClickHandler(this->onButtonClickHandler, 0);
+    button.SetOnSelectHandler(this->onButtonSelectHandler);
+    button.SetMessage(controlId == 0 ? UI::BMG_TT_START_RACE_BUTTON : UI::BMG_TT_PRACTICE_SETTINGS_BUTTON);
+    return &button;
+}
+
+UIControl* ConfirmPage::CreateControl(u32 controlId) {
+    return nullptr;
+}
+
+void ConfirmPage::OnActivate() {
+    Pages::Menu::OnActivate();
+    this->title.SetMessage(this->titleBmg);
+    this->SelectButton(this->buttons[0]);
+    this->OnButtonSelect(this->buttons[0], 0);
+}
+
+void ConfirmPage::BeforeEntranceAnimations() {
+    Pages::Menu::BeforeEntranceAnimations();
+    this->OnButtonSelect(this->buttons[0], 0);
+}
+
+void ConfirmPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
+    if (button.buttonId == 0) {
+        StartPracticeRace(*this, button);
+        return;
+    }
+
+    UI::SettingsPanel* settingsPanel = UI::ExpSection::GetSection()->GetPulPage<UI::SettingsPanel>();
+    if (settingsPanel != nullptr) {
+        settingsPanel->sheetIdx = Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_TTPRACTICE;
+        settingsPanel->catIdx = Settings::SETTINGSTYPE_TTPRACTICE;
+        settingsPanel->prevPageId = static_cast<PageId>(ConfirmPage::id);
+    }
+    this->LoadNextPageById(static_cast<PageId>(UI::SettingsPanel::id), button);
+}
+
+void ConfirmPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+    this->bottom.SetMessage(button.buttonId == 0 ? UI::BMG_TT_START_RACE_BOTTOM : UI::BMG_TT_PRACTICE_SETTINGS_BOTTOM);
+}
+
+void ConfirmPage::OnBackPress(u32 hudSlotId) {
+    this->LoadPrevPageWithDelayById(PAGE_COURSE_SELECT, 0.0f);
+}
+
+}  // namespace TTPractice
+}  // namespace Pulsar

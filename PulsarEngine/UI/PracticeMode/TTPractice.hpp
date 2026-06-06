@@ -1,20 +1,14 @@
-#ifndef _PULSAR_TTPRACTICE_
-#define _PULSAR_TTPRACTICE_
+#ifndef _PULSAR_UI_TTPRACTICE_
+#define _PULSAR_UI_TTPRACTICE_
 
 #include <kamek.hpp>
-#include <MarioKartWii/System/Identifiers.hpp>
-#include <MarioKartWii/UI/Page/Menu/Menu.hpp>
-#include <MarioKartWii/UI/Ctrl/PushButton.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuText.hpp>
+#include <MarioKartWii/UI/Ctrl/PushButton.hpp>
+#include <MarioKartWii/UI/Page/Menu/Menu.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
 namespace TTPractice {
-
-void SetPracticeMode(bool enabled);
-bool IsPracticeMode();
-ItemId GetStartingItem(u32 hudSlotId);
-bool AreItemBoxesEnabled();
 
 class SelectPage : public ::Pages::MenuInteractable {
    public:
@@ -36,7 +30,7 @@ class SelectPage : public ::Pages::MenuInteractable {
     UIControl* CreateExternalControl(u32 controlId) override;
     UIControl* CreateControl(u32 controlId) override;
 
-    private:
+   private:
     CtrlMenuPageTitleText title;
     CtrlMenuInstructionText bottom;
     PushButton buttons[2];
