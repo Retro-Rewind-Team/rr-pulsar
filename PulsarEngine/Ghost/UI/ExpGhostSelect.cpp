@@ -43,9 +43,8 @@ void ExpGhostSelect::OnInit() {
     this->bottomText.Load();
     this->selectGhostButton.buttonId = 0xA;
     this->AddControl(0xA, this->selectGhostButton, 0);
-    this->selectGhostButton.Load(1, UI::buttonFolder, "SelectGhost", "SelectGhost");  // check multighost
+    this->selectGhostButton.Load(1, UI::buttonFolder, "SelectGhost", "SelectGhost");
     this->selectGhostButton.SetOnClickHandler(this->onSelectGhostChangeHandler, 0);
-    // this->manipulatorManager.SetGlobalHandler(START_PRESS, onStartPressHandler, false, false);
     this->AddControl(0xB, this->favGhost, 0);
     this->favGhost.isHidden = true;
     ControlLoader loader(&this->favGhost);
@@ -109,7 +108,7 @@ void ExpGhostSelect::OnSelectGhostChange(ToggleButton& button, u32) {
     Ghosts::Mgr* mgr = Ghosts::Mgr::sInstance;
     const GhostListEntry& entry = this->ghostList->entries[this->page];
 
-    if (button.GetState() == true) {
+    if (button.GetState()) {
         u32 index = mgr->lastUsedSlot;
         if (mgr->EnableGhost(entry, false)) {
             this->selectedGhostsPages[index] = this->page;
@@ -154,23 +153,23 @@ void ExpGhostSelect::OnLeftArrowPress(SheetSelectControl& control, u32 hudSlotId
 void ExpGhostSelect::OnNewPage() {
     ToggleButton& button = this->selectGhostButton;
     if (this->page == this->selectedGhostsPages[0] || this->page == this->selectedGhostsPages[1] || this->page == this->selectedGhostsPages[2]) {
-        if (button.GetState() == false) button.ToggleState(true);
-    } else if (button.GetState() == true)
+        if (!button.GetState()) button.ToggleState(true);
+    } else if (button.GetState())
         button.ToggleState(false);
 
     this->SetToggleBMG();
 
-    bool isStarHidden;
+    bool isStarVisible;
     if (this->page == this->favGhostIndex) {
-        isStarHidden = true;
+        isStarVisible = true;
     } else
-        isStarHidden = false;
-    this->info->SetPaneVisibility("star", isStarHidden);
+        isStarVisible = false;
+    this->info->SetPaneVisibility("star", isStarVisible);
 }
 
 void ExpGhostSelect::SetToggleBMG() {
     ToggleButton& button = this->selectGhostButton;
-    const u32 bmgId = button.GetState() == false ? BMG_SELECT_GHOST : BMG_GHOST_SELECTED;
+    const u32 bmgId = !button.GetState() ? BMG_SELECT_GHOST : BMG_GHOST_SELECTED;
     button.SetMessage(bmgId);
 }
 
@@ -183,10 +182,9 @@ void ExpGhostSelect::Reset() {
     this->favGhostIndex = -1;
 }
 
-// Complete rewrite TTSplits BeforeEntranceAnimations; this will request a RKG if needed (flap or top 10 time)
+// Requests a ghost save when the current run earns a flap or top-10 time.
 void BeforeEntranceAnimations(Pages::TTSplits* page) {
     const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
-    // Init Variables
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
     SectionParams* sectionParams = sectionMgr->sectionParams;
     sectionParams->isNewTime = false;
@@ -349,9 +347,6 @@ const Text::Info GetCourseBottomText(PulsarId id, u8 variantIdx, u32* bmgId) {
     if (hasTrophy) passedBmgId = BMG_TROPHY;
     text.bmgToPass[1] = passedBmgId;
     return text;
-}
-
-void SetRankingsBMG() {
 }
 
 }  // namespace UI

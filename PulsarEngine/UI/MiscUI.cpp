@@ -8,13 +8,13 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <PulsarSystem.hpp>
-#include <AutoTrackSelect/ChooseNextTrack.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Debug/Debug.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <UI/UI.hpp>
+#include <RetroRewindChannel.hpp>
 
 namespace Pulsar {
 
@@ -36,14 +36,9 @@ static void CenterTopMenuWifiWaku(ControlLoader* loader, const char* folderName,
 kmCall(0x80850604, CenterTopMenuWifiWaku);
 
 static PageId AfterWifiResults(PageId id) {
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
     const System* system = System::sInstance;
 
     if (system->IsContext(PULSAR_MODE_KO)) id = system->koMgr->KickPlayersOut(id);  // return KO::RaceEndPage with the choice to spectate if the local players are out
-    // if (id != static_cast<PageId>(KO::RaceEndPage::id) && system->IsContext(PULSAR_HAW)) {
-    //     ChooseNextTrack* chooseNext = ExpSection::GetSection()->GetPulPage<ChooseNextTrack>();
-    //     if (chooseNext != nullptr) id = chooseNext->GetPageAfterWifiResults(id);
-    // }
     return id;
 }
 kmBranch(0x80646754, AfterWifiResults);
@@ -51,10 +46,15 @@ kmBranch(0x80646754, AfterWifiResults);
 // Credit to Kazuki for making the original ASM code, and Brawlbox for porting it to C++
 static void LaunchRiivolutionButton(SectionMgr* sectionMgr) {
     const SectionId id = sectionMgr->nextSectionId;
-    if (id == SECTION_CHANNEL_FROM_MENU || id == SECTION_CHANNEL_FROM_CHECK_RANKINGS || id == SECTION_CHANNEL_FROM_DOWNLOADS)
+    if (id == SECTION_CHANNEL_FROM_MENU || id == SECTION_CHANNEL_FROM_CHECK_RANKINGS || id == SECTION_CHANNEL_FROM_DOWNLOADS) {
+        if(!Dolphin::IsEmulator() && IsNewChannel()) {
+            NewChannel_WriteLoadedFromRREphFile();
+        }
+
         Debug::LaunchSoftware();
-    else
+    } else {
         sectionMgr->LoadSection();
+    }
 }
 kmCall(0x80553a60, LaunchRiivolutionButton);
 
@@ -153,7 +153,6 @@ u8 ModifyCheckRankings() {
     asm(fmr animLength, f31;);
     ttEnd->ChangeSectionBySceneChange(SECTION_P1_WIFI, 0, animLength);
     return 0;
-    // ttEnd->EndStateAnimated(0, animLength);
 }
 kmCall(0x8085b4bc, ModifyCheckRankings);
 kmPatchExitPoint(ModifyCheckRankings, 0x8085bbe0);

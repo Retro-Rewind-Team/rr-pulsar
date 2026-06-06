@@ -11,12 +11,6 @@
 #include <MarioKartWii/RKNet/RH2.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
 
-/*
-Each section has its own way of transmitting the extra data for now:
--SELECT and ROOM use BeforeSend/AfterReception hooks, located at the Export/Import functions of the respective Handlers
--RH1 is done on the fly
-*/
-
 namespace Pulsar {
 namespace Network {
 
@@ -28,8 +22,8 @@ struct PulPlayerData {  // SELECT struct
     u8 kart;  // 0x5
     u8 prevRaceRank;  // 0x6 swapped with coursevote
     u8 starRank;  // 0x8
-};  // total size 0x8
-// size_assert(PulPlayerData, 0x8);
+};
+static_assert(sizeof(PulPlayerData) == 0x8, "PulPlayerData size");
 
 struct PulRH1 : public RKNet::RACEHEADER1Packet {
     // Pulsar data (always sent)
@@ -50,17 +44,29 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u8 finalPercentageSum;  // to be divided by racecount at the end of the GP
 
     // LapKO - only used when PULSAR_MODE_LAPKO is enabled AND in friend rooms
-    // Must be at the END so we can conditionally expand packet size
     u8 lapKoSeq;
     u8 lapKoRoundIndex;
     u8 lapKoActiveCount;
     u8 lapKoElimCount;
     u8 lapKoElims[12];
+
+    // Battle Royale - only used when PULSAR_MODE_BATTLEROYALE is enabled AND in friend rooms
+    // Must stay at the END so we can conditionally expand packet size
+    u8 battleRoyaleLossSeq;
+    u8 battleRoyaleLossPlayerId;  // 0..11 loss, 0x10 + losing * 12 + gaining means move
+    u8 battleRoyaleBalloonCounts;  // low/high nibbles are local player balloon counts, up to two players per aid
+    u8 battleRoyaleFinishMask;  // bits are local players with a synced finish time
+    u16 battleRoyaleFinishMinutes[2];
+    u8 battleRoyaleFinishSeconds[2];
+    u16 battleRoyaleFinishMilliseconds[2];
 };
 
 // Size constants for conditional packet expansion
-static const u32 PulRH1SizeBase = sizeof(PulRH1) - 16;  // Size without LapKO fields (16 bytes)
-static const u32 PulRH1SizeFull = sizeof(PulRH1);  // Full size with LapKO fields
+static const u32 PulRH1BattleRoyaleSize = 14;
+static const u32 PulRH1LapKoSize = 16;
+static const u32 PulRH1SizeBase = sizeof(PulRH1) - PulRH1LapKoSize - PulRH1BattleRoyaleSize;
+static const u32 PulRH1SizeLapKo = PulRH1SizeBase + PulRH1LapKoSize;
+static const u32 PulRH1SizeFull = sizeof(PulRH1);
 
 struct PulRH2 : public RKNet::RACEHEADER2Packet {};
 struct PulROOM : public RKNet::ROOMPacket {
@@ -77,7 +83,6 @@ struct PulROOM : public RKNet::ROOMPacket {
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks (up to MAX_TRACK_BLOCKING)
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
-    u8 padding;
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 
     // Anti-cheat verification tag - proves sender has correct encryption key
@@ -100,7 +105,6 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u16 pulWinningTrack;  // 0x3a
     u8 variantIdx;  // 0x3c
 
-    /*Sole reason these are here and not in ROOM is for easy additions of these gamemodes to public rooms (regionals) since ROOM does not exist there*/
     // OTT Settings
     u8 allowChangeComboStatus;
 
@@ -117,7 +121,7 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
-    u8 characterTables;  // two bits per local hud slot, up to two local slots
+    u16 characterTables;  // six bits per local hud slot, up to two local slots
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 
     // Anti-cheat verification tag - proves sender has correct encryption key
@@ -134,7 +138,6 @@ static const u32 totalRACESize = sizeof(RKNet::RACEPacketHeader) + sizeof(PulRH1
 
 class CustomRKNetController {  // Exists to make received packets a pointer array so that the size can be variable
    public:
-    // static CustomRKNetController* Get() { return reinterpret_cast<CustomRKNetController*>(RKNet::Controller::sInstance); }
     virtual ~CustomRKNetController();  // 8065741c vtable 808c097c
 
     u32 unkVtable;  // unknown class vtable 808c0988

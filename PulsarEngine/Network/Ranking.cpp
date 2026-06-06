@@ -1,23 +1,6 @@
-/*
-    Ranking.cpp
-    Copyright (C) 2025 ZPL
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 #include <RetroRewind.hpp>
 #include <Network/Ranking.hpp>
+#include <Network/NHTTPHelper.hpp>
 #include <MarioKartWii/Race/Racedata.hpp>
 #include <MarioKartWii/Race/Raceinfo/Raceinfo.hpp>
 #include <MarioKartWii/RKSYS/LicenseMgr.hpp>
@@ -26,53 +9,91 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/System/Rating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <core/rvl/DWC/DWCAccount.hpp>
+#include <core/rvl/DWC/NHTTP.hpp>
+#include <core/rvl/NHTTP/NHTTP.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
+#include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <runtimeWrite.hpp>
 #include <core/rvl/OS/OS.hpp>
+#include <include/c_string.h>
 
 namespace Pulsar {
 namespace Ranking {
 
-// Developers
-static const u64 PRIORITY_BADGE_FC_LIST[] = {
-    8906072005ULL,  // ZPL
-    100000011ULL,  // Dynohack
-    348484848484ULL,  // Gab
-    331616161616ULL,  // Noel
-    464666644446ULL,  // Eppe
-    121212121245ULL,  // Bodacious
-    506980546757ULL,  // Cyrus
-    421507127201ULL,  // Jacher
-    417212285076ULL,  // y21
-    800580ULL,  // Rambo
-    81604380197ULL,  // Patchzy
-    400032268799ULL,  // Wrkus
-    0ULL};
+static const char* ANT_BADGE_URL = "http://update.rwfc.net/RetroRewind/badges/ant.txt";
+static const char* DEV_BADGE_URL = "http://update.rwfc.net/RetroRewind/badges/dev.txt";
+static const char* DONO_BADGE_URL = "http://update.rwfc.net/RetroRewind/badges/dono.txt";
+static const u32 BADGE_REQUEST_WORK_BUF_SIZE = 0x1000;
 
-// FOR THE COLONY
-static const u64 ANT_BADGE_FC_LIST[] = {
-    65400900000ULL,  // Fenixien
-    116565656533ULL,  // ImZeraora
-    524266609436ULL,  // TheBeefBai
-    42949793189ULL,  // Mikudayo
-    125154416615ULL,  // Galden
-    0ULL};
+enum BadgeRequestKind {
+    BADGE_REQUEST_NONE,
+    BADGE_REQUEST_ANT,
+    BADGE_REQUEST_DEV,
+    BADGE_REQUEST_DONO
+};
 
-static bool IsPriorityBadgeFC(u64 fc) {
-    if (fc == 0) return false;
-    for (size_t i = 0; PRIORITY_BADGE_FC_LIST[i] != 0ULL; ++i) {
-        if (PRIORITY_BADGE_FC_LIST[i] == fc) return true;
+struct BadgeRequestCtx {
+    u32 generation;
+    BadgeRequestKind kind;
+    u64 friendCode;
+};
+
+static BadgeRequestCtx s_badgeRequestCtx;
+static void* s_badgeRequestWorkBuf = nullptr;
+static u32 s_badgeRequestGeneration = 0;
+static u64 s_badgeFriendCode = 0;
+static bool s_antBadgeFC = false;
+static bool s_devBadgeFC = false;
+static bool s_donoBadgeFC = false;
+static bool s_badgeRequestActive = false;
+static bool s_badgeRefreshPending = false;
+static BadgeRequestKind s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
+static u64 s_pendingBadgeFriendCode = 0;
+
+static bool ParseBadgeFriendCodeList(const char* body, int bodyLen, u64 friendCode) {
+    if (body == nullptr || bodyLen <= 0 || friendCode == 0) return false;
+
+    const char* p = body;
+    const char* end = body + bodyLen;
+    while (p < end) {
+        u64 parsed = 0;
+        u32 digitCount = 0;
+
+        while (p < end && *p != '\n' && *p != '\r') {
+            const char c = *p;
+            if (c == '/' && p + 1 < end && p[1] == '/') {
+                while (p < end && *p != '\n' && *p != '\r') ++p;
+                break;
+            }
+            if (c == '#' || c == ',') {
+                while (p < end && *p != '\n' && *p != '\r') ++p;
+                break;
+            }
+            if (c >= '0' && c <= '9') {
+                parsed = parsed * 10 + static_cast<u64>(c - '0');
+                ++digitCount;
+            }
+            ++p;
+        }
+
+        if (digitCount == 12 && parsed == friendCode) return true;
+        while (p < end && (*p == '\n' || *p == '\r')) ++p;
     }
     return false;
 }
 
+static bool IsDevBadgeFC(u64 fc) {
+    return fc != 0 && fc == s_badgeFriendCode && s_devBadgeFC;
+}
+
+static bool IsDonoBadgeFC(u64 fc) {
+    return fc != 0 && fc == s_badgeFriendCode && s_donoBadgeFC;
+}
+
 static bool IsAntBadgeFC(u64 fc) {
-    if (fc == 0) return false;
-    for (size_t i = 0; ANT_BADGE_FC_LIST[i] != 0ULL; ++i) {
-        if (ANT_BADGE_FC_LIST[i] == fc) return true;
-    }
-    return false;
+    return fc != 0 && fc == s_badgeFriendCode && s_antBadgeFC;
 }
 
 static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
@@ -87,7 +108,9 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
 
     float racingWinPct = (totalVs > 0) ? (100.0f * (float)vsWins / (float)totalVs) : 45.0f;
 
-    float vrClamped = (float)(PointRating::GetUserVR(RKSYS::Mgr::sInstance->curLicenseId) > 1000.0f ? 1000.0f : PointRating::GetUserVR(RKSYS::Mgr::sInstance->curLicenseId));
+    const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    const float userVr = rksys != nullptr ? PointRating::GetUserVR(rksys->curLicenseId) : static_cast<float>(vr.points);
+    float vrClamped = userVr > 1000.0f ? 1000.0f : userVr;
     if (vrClamped < 0) vrClamped = 0;
     float vrNorm = (vrClamped / 1000.0f) * 100.0f;
 
@@ -128,7 +151,6 @@ static int ScoreToRank(float finalScore) {
     if (finalScore >= 48.0f) return 4;
     if (finalScore >= 36.0f) return 3;
     if (finalScore >= 24.0f) return 2;
-    // if (finalScore >= 12.0f) return 1;
     return 1;
 }
 
@@ -393,7 +415,7 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
 
     float vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
     if (vr < 0.0f) vr = 0.0f;
-    u32 vrClamped = (vr > 1000.0f) ? 1000.0f : vr * 100.0f;
+    u32 vrClamped = static_cast<u32>(vr * 100.0f + 0.5f);
 
     u32 times1st = license.GetTimes1stPlaceAchieved();
     float distTravelled = license.GetDistanceTravelled();
@@ -421,20 +443,210 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
 
 // Address found by B_squo, original idea by Zeraora, developed by ZPL
 kmRuntimeUse(0x806436a0);
+static u64 GetCurrentLicenseFriendCode() {
+    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return 0;
+    RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    return DWC::CreateFriendKey(&license.dwcAccUserData);
+}
+
+static bool WriteFetchedBadgeForFC(u64 friendCode) {
+    if (friendCode == 0 || !Settings::Mgr::IsCreated()) return false;
+
+    const Settings::Mgr& settings = Settings::Mgr::Get();
+    if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) != STREAMERMODE_DISABLED) {
+        return false;
+    }
+    if (IsAntBadgeFC(friendCode)) {
+        kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10 -> Ants
+        return true;
+    }
+    if (IsDevBadgeFC(friendCode)) {
+        kmRuntimeWrite32A(0x806436a0, 0x3860000B);  // li r3,11 -> Developers
+        return true;
+    }
+    if (IsDonoBadgeFC(friendCode)) {
+        kmRuntimeWrite32A(0x806436a0, 0x3860000C);  // li r3,12 -> Donators
+        return true;
+    }
+    return false;
+}
+
+static void TryApplyFetchedBadge() {
+    u64 friendCode = s_badgeFriendCode;
+    if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized &&
+        RKNet::USERHandler::sInstance->toSendPacket.fc != 0) {
+        friendCode = RKNet::USERHandler::sInstance->toSendPacket.fc;
+    }
+    WriteFetchedBadgeForFC(friendCode);
+}
+
+static const char* GetBadgeUrl(BadgeRequestKind kind) {
+    switch (kind) {
+        case BADGE_REQUEST_ANT:
+            return ANT_BADGE_URL;
+        case BADGE_REQUEST_DEV:
+            return DEV_BADGE_URL;
+        case BADGE_REQUEST_DONO:
+            return DONO_BADGE_URL;
+        case BADGE_REQUEST_NONE:
+        default:
+            return "";
+    }
+}
+
+static BadgeRequestKind GetNextBadgeRequestKind(BadgeRequestKind kind) {
+    switch (kind) {
+        case BADGE_REQUEST_ANT:
+            return BADGE_REQUEST_DEV;
+        case BADGE_REQUEST_DEV:
+            return BADGE_REQUEST_DONO;
+        case BADGE_REQUEST_DONO:
+        case BADGE_REQUEST_NONE:
+        default:
+            return BADGE_REQUEST_NONE;
+    }
+}
+
+static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode);
+static void StartBadgeRefresh(u64 friendCode);
+
+static void OnBadgeListDownloaded(s32 result, void* response, void* userdata) {
+    Network::FinishNHTTPRequest();
+    BadgeRequestCtx* ctx = reinterpret_cast<BadgeRequestCtx*>(userdata);
+    const BadgeRequestKind nextKind =
+        (ctx != nullptr && ctx->generation == s_badgeRequestGeneration) ? GetNextBadgeRequestKind(ctx->kind) : BADGE_REQUEST_NONE;
+    if (ctx == nullptr || ctx->generation != s_badgeRequestGeneration || response == nullptr) {
+        if (response != nullptr) NHTTPDestroyResponse(response);
+        s_badgeRequestActive = false;
+        if (!s_badgeRefreshPending && response == nullptr && nextKind != BADGE_REQUEST_NONE) s_nextBadgeRequestKind = nextKind;
+        return;
+    }
+
+    if (result == 0) {
+        char* body = nullptr;
+        const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res*>(response), &body);
+        if (body != nullptr && bodyLen > 0 && ParseBadgeFriendCodeList(body, bodyLen, ctx->friendCode)) {
+            if (ctx->kind == BADGE_REQUEST_ANT) {
+                s_antBadgeFC = true;
+            } else if (ctx->kind == BADGE_REQUEST_DEV) {
+                s_devBadgeFC = true;
+            } else if (ctx->kind == BADGE_REQUEST_DONO) {
+                s_donoBadgeFC = true;
+            }
+            TryApplyFetchedBadge();
+        }
+    }
+
+    NHTTPDestroyResponse(response);
+    s_badgeRequestActive = false;
+
+    if (!s_badgeRefreshPending && nextKind != BADGE_REQUEST_NONE) s_nextBadgeRequestKind = nextKind;
+}
+
+static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode) {
+    if (kind == BADGE_REQUEST_NONE || friendCode == 0) return false;
+    if (s_badgeRequestActive) return false;
+
+    if (!Network::PrepareNHTTPRequest()) return false;
+
+    if (s_badgeRequestWorkBuf == nullptr) {
+        s_badgeRequestWorkBuf = Network::NHTTPAlloc(BADGE_REQUEST_WORK_BUF_SIZE, 0x20);
+        if (s_badgeRequestWorkBuf == nullptr) return false;
+    }
+    memset(s_badgeRequestWorkBuf, 0, BADGE_REQUEST_WORK_BUF_SIZE);
+
+    s_badgeRequestCtx.generation = s_badgeRequestGeneration;
+    s_badgeRequestCtx.kind = kind;
+    s_badgeRequestCtx.friendCode = friendCode;
+
+    const char* url = GetBadgeUrl(kind);
+    void* request = NHTTPCreateRequest(url, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
+                                       reinterpret_cast<void*>(&OnBadgeListDownloaded),
+                                       reinterpret_cast<void*>(&s_badgeRequestCtx));
+    if (request == nullptr) return false;
+
+    const s32 sendRet = NHTTPSendRequestAsync(request);
+    if (sendRet >= 0) {
+        Network::MarkNHTTPRequestActive();
+        s_badgeRequestActive = true;
+    }
+    return sendRet >= 0;
+}
+
+static void StartBadgeRefresh(u64 friendCode) {
+    s_badgeRefreshPending = false;
+    s_pendingBadgeFriendCode = 0;
+
+    if (friendCode == 0) return;
+
+    ++s_badgeRequestGeneration;
+    s_badgeFriendCode = friendCode;
+    s_antBadgeFC = false;
+    s_devBadgeFC = false;
+    s_donoBadgeFC = false;
+    s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
+
+    if (!StartBadgeListRequest(BADGE_REQUEST_ANT, s_badgeFriendCode)) {
+        StartBadgeListRequest(BADGE_REQUEST_DEV, s_badgeFriendCode);
+    }
+}
+
+static void BeginBadgeDownloads() {
+    const u64 friendCode = GetCurrentLicenseFriendCode();
+    if (friendCode == 0) return;
+
+    if (s_badgeRequestActive || s_nextBadgeRequestKind != BADGE_REQUEST_NONE) {
+        s_badgeRefreshPending = true;
+        s_pendingBadgeFriendCode = friendCode;
+        return;
+    }
+
+    StartBadgeRefresh(friendCode);
+}
+
+static void ProcessPendingBadgeRequests() {
+    if (s_badgeRequestActive) return;
+
+    if (s_badgeRefreshPending) {
+        StartBadgeRefresh(s_pendingBadgeFriendCode);
+        return;
+    }
+
+    if (s_nextBadgeRequestKind != BADGE_REQUEST_NONE) {
+        BadgeRequestKind kind = s_nextBadgeRequestKind;
+        s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
+        StartBadgeListRequest(kind, s_badgeFriendCode);
+    }
+}
+static FrameLoadHook BadgeRequestFrameHook(ProcessPendingBadgeRequests);
+
+asmFunc AsmHook_WFCMainOnActivateBadgeRefresh() {
+    ASM(
+        nofralloc;
+        stwu r1, -0x20(r1);
+        mflr r0;
+        stw r0, 0x24(r1);
+        stw r31, 0x8(r1);
+
+        bl BeginBadgeDownloads;
+
+        lwz r31, 0x8(r1);
+        li r0, -1;
+        stw r0, 0xf30(r31);
+
+        lwz r0, 0x24(r1);
+        mtlr r0;
+        addi r1, r1, 0x20;
+        blr;);
+}
+kmCall(0x8064bcd0, AsmHook_WFCMainOnActivateBadgeRefresh);
+
 static void DisplayOnlineRanking() {
     kmRuntimeWrite32A(0x806436a0, 0x38600000);  // li r3,0
-    const Settings::Mgr& settings = Settings::Mgr::Get();
     if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
         const u64 myFc = RKNet::USERHandler::sInstance->toSendPacket.fc;
-        // Force "Ant Defined" badge for specific friend codes regardless of other settings
-        if (IsAntBadgeFC(myFc) && settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
-            kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10 -> Ants
-            return;
-        }
-        if (IsPriorityBadgeFC(myFc) && settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
-            kmRuntimeWrite32A(0x806436a0, 0x3860000B);  // li r3,11 -> Developers
-            return;
-        }
+        if (WriteFetchedBadgeForFC(myFc)) return;
     }
 
 #ifdef BETA

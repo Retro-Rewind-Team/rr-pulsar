@@ -67,5 +67,9 @@ static asmFunc FFAResults() {
 }
 kmCall(0x80621e1c, FFAResults);
 
+// Large loose-patched menu archives leave less room for per-section layout data.
+// Globe already uses dynamic heap 0; use the same heap for regular menu sections.
+kmWrite32(0x80621f4c, 0x80840c94);
+
 }  // namespace UI
 }  // namespace Pulsar

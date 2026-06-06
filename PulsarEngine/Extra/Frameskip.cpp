@@ -355,9 +355,9 @@ static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr* mgr) {
     const Pulsar::CupsConfig* cupsConfig = Pulsar::CupsConfig::sInstance;
     Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    const GameMode mode = scenario.settings.gamemode;
-    u32 localPlayerCount = scenario.localPlayerCount;
-    bool isNoLightningFlashTrack = Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 148 || Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId) == 117;  // SW2 Whistlestop Summit/3DS Rosalina's Ice World
+    const u32 localPlayerCount = scenario.localPlayerCount;
+    const CourseId trackId = Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
+    bool isNoLightningFlashTrack = trackId == 152 || trackId == 117;  // SW2 Whistlestop Summit/3DS Rosalina's Ice World
     if (*(u32*)0x80001638 >= 8 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack || localPlayerCount > 1) {
         return;
     }

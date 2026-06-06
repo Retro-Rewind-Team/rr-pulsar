@@ -27,11 +27,6 @@ void Mgr::DestroyInstance() {
     Mgr::sInstance = nullptr;
 }
 
-/*
-Cornerstone function; Creates the folders if they have been deleted somehow,
-reads them, fetches the leaderboard, creates GhostDatas based on the rkgs, sets the expert time
-*/
-
 void Mgr::Init(PulsarId id, u8 variantIdx) {
     this->Reset();
     this->pulsarId = id;
@@ -41,29 +36,27 @@ void Mgr::Init(PulsarId id, u8 variantIdx) {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const TTMode ttMode = system->ttMode;
     
-    // For variants, create parent folder first if needed
     if (variantIdx > 0) {
         char parentPath[IOS::ipcMaxPath];
-        cupsConfig->GetTrackGhostFolder(parentPath, id, 0);  // Get base folder
+        cupsConfig->GetTrackGhostFolder(parentPath, id, 0);
         if (!io->FolderExists(parentPath)) io->CreateFolder(parentPath);
     }
     cupsConfig->GetTrackGhostFolder(folderPath, id, variantIdx);
 
-    bool exists = io->FolderExists(folderPath);  // Create CRC32 folder
+    bool exists = io->FolderExists(folderPath);
     if (!exists) io->CreateFolder(folderPath);
     char folderModePath[IOS::ipcMaxPath];
     snprintf(folderModePath, IOS::ipcMaxPath, "%s/%s", folderPath, System::ttModeFolders[ttMode]);
-    exists = io->FolderExists(folderModePath);  // Create 150/150F etc..
+    exists = io->FolderExists(folderModePath);
     if (!exists)
         io->CreateFolder(folderModePath);
     else
-        io->ReadFolder(folderModePath);  // Reads all files contained in the folder
+        io->ReadFolder(folderModePath);
 
     new (&this->leaderboard) Leaderboard(folderPath, id, true);
     RKG* decompressed = new (system->heap) RKG;
     this->files = new (system->heap) GhostData[1 + io->GetFileCount()];
 
-    // Check if expert exists, read it, insert it at the last position of the array
     s32 expertCRC32 = -1;
     DVD::FileInfo info;
     char expertName[IOS::ipcMaxPath];
@@ -84,7 +77,7 @@ void Mgr::Init(PulsarId id, u8 variantIdx) {
                 this->cb(*decompressed, IS_LOADING_LEADERBOARDS, 0);
             }
             curData.courseId = static_cast<CourseId>(id);
-            if (curData.type == EXPERT_STAFF_GHOST) {  // very easy to fake/manipulate, but 0 security so it doesn't matter
+            if (curData.type == EXPERT_STAFF_GHOST) {
                 this->expertGhost.minutes = rkg.header.minutes;
                 this->expertGhost.seconds = rkg.header.seconds;
                 this->expertGhost.milliseconds = rkg.header.milliseconds;
@@ -145,18 +138,6 @@ void Mgr::SaveLeaderboard() {
     CupsConfig::sInstance->GetTrackGhostFolder(folderPath, this->pulsarId, this->variantIdx);
     this->leaderboard.Save(folderPath);
 }
-/*
-u32 Mgr::GetGhostIndex(const GhostListEntry& entry) const {
-    u32 index = 0xFF;
-    for(int i = 0; i < this->rkgCount; ++i) {
-        if(&this->files[i] == entry.data) {
-            index = i;
-            break;
-        }
-    }
-    return index;
-}
-*/
 
 // Enables ghost for loading when GhostSelect's ToggleButton is pressed to true and when Challenge/Watch is pressed
 bool Mgr::EnableGhost(const GhostListEntry& entry, bool isMain) {
@@ -173,7 +154,6 @@ bool Mgr::EnableGhost(const GhostListEntry& entry, bool isMain) {
     return exists;
 }
 
-// Used when GhostSelect' ToggleButton is pressed to false
 void Mgr::DisableGhost(const GhostListEntry& entry) {
     const u32 index = entry.padding[0];
     for (int i = 0; i < 3; ++i) {
@@ -187,7 +167,7 @@ void Mgr::DisableGhost(const GhostListEntry& entry) {
 // Loads and checks validity of a RKG
 bool Mgr::LoadGhost(RKG& rkg, u32 fileIndex) const {
     rkg.ClearBuffer();
-    if (fileIndex == expertFileIdx && this->HasExpert() == true) {
+    if (fileIndex == expertFileIdx && this->HasExpert()) {
         DVD::FileInfo info;
         DVD::FastOpen(this->expertEntryNum, &info);
         DVD::ReadPrio(&info, &rkg, info.length, 0, 2);
@@ -197,7 +177,6 @@ bool Mgr::LoadGhost(RKG& rkg, u32 fileIndex) const {
     return rkg.CheckValidity();
 }
 
-// Copies ghost from src to racedata's RKG buffers and adds mii if ghost race
 void Mgr::LoadAllGhosts(u32 maxGhosts, bool isGhostRace) {
     u8 position = 1;
     for (int i = 0; i < maxGhosts; ++i) {
@@ -205,9 +184,8 @@ void Mgr::LoadAllGhosts(u32 maxGhosts, bool isGhostRace) {
             if (this->LoadGhost(this->rkg, this->GetGhostData(this->selGhostsIndex[i]).padding)) {
                 Racedata* racedata = Racedata::sInstance;
                 RKG& dest = racedata->ghosts[position];
-                bool isCompressed = false;
                 if (this->rkg.header.compressed) {
-                    this->rkg.DecompressTo(dest);  // 0x2800
+                    this->rkg.DecompressTo(dest);
                 } else
                     memcpy(&dest, &this->rkg, sizeof(RKG));
                 if (this->cb != nullptr) {
@@ -223,7 +201,6 @@ void Mgr::LoadAllGhosts(u32 maxGhosts, bool isGhostRace) {
 }
 
 bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool isFlap) {
-    // Compare against leaderboard and save
     if (!areGhostsSaving) return false;
     if (isFlap) this->leaderboard.Update(ENTRY_FLAP, this->entry, -1);
     GhostData data;
@@ -232,7 +209,7 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
     buffer.ClearBuffer();
 
     bool gotTrophy = false;
-    // if racing a ghost and local player and ghost share same combo, reuse ghost's saved transmission
+    // Ghost races reuse the saved transmission when the local player and ghost share a combo.
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     int localIdx = -1;
     int ghostIdx = -1;
@@ -248,18 +225,15 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
         u8 offset = (scenario.players[0].playerType != PLAYER_GHOST) ? 1 : 0;
         int rkgIndex = ghostIdx - offset;
         if (rkgIndex >= 0) {
-            // reuse ghost's radio setting
             RKG& loaded = Racedata::sInstance->ghosts[rkgIndex];
             buffer.header.unknown_3 = loaded.header.unknown_3;
         } else {
-            // fallback to local setting
             u32 tv = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
                 static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
                 Pulsar::RADIO_TRANSMISSION);
             buffer.header.unknown_3 = tv;
         }
     } else {
-        // default: save local player's radio setting
         u32 transValue = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
             static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
             Pulsar::RADIO_TRANSMISSION);
@@ -271,8 +245,7 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
             this->cb(buffer, IS_SAVING_GHOST, -1);
         }
         u32 crc32 = Mgr::GetRKGcrc32(this->rkg);
-        // Only update leaderboard if position is valid (0-10), not when leaderboard is full (position = -1)
-        if (ldbPosition <= ENTRY_10TH) this->leaderboard.Update(ldbPosition, entry, crc32);  // in this order as save opens files too
+        if (ldbPosition <= ENTRY_10TH) this->leaderboard.Update(ldbPosition, entry, crc32);
         const System* system = System::sInstance;
         system->taskThread->Request(&Mgr::CreateAndSaveFiles, this, 0);
 
@@ -286,7 +259,6 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
     return gotTrophy;
 }
 
-// When a request has been sent, creates and writes to a RKG, updates Settings and updates the leaderboard
 void Mgr::CreateAndSaveFiles(Mgr* self) {
     char path[IOS::ipcMaxPath];
     const RKG& rkg = self->rkg;
@@ -311,7 +283,7 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
     io->Close();
 
     self->SaveLeaderboard();
-    Settings::Mgr::sInstance->SaveTrophies();  // trophies
+    Settings::Mgr::sInstance->SaveTrophies();
 
     char prevGhostFile[IOS::ipcMaxPath];
     prevGhostFile[0] = '\0';
@@ -341,8 +313,7 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
     SectionMgr::sInstance->sectionParams->isNewTime = true;
 }
 
-// Inits MultiGhostMgr and uses it to fill the GhostList
-void Mgr::InsertCustomGroupToList(GhostList* list, CourseId) {  // check id here
+void Mgr::InsertCustomGroupToList(GhostList* list, CourseId) {
     Mgr* self = Mgr::sInstance;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     self->Init(cupsConfig->GetWinning(), cupsConfig->GetCurVariantIdx());
@@ -358,7 +329,7 @@ void Mgr::InsertCustomGroupToList(GhostList* list, CourseId) {  // check id here
             ++index;
         }
     }
-    if (self->expertGhost.isActive == true) {
+    if (self->expertGhost.isActive) {
         const GhostData& data = self->GetGhostData(rkgCount);
         if (data.isValid) {
             list->entries[index].data = &data;
@@ -370,18 +341,14 @@ void Mgr::InsertCustomGroupToList(GhostList* list, CourseId) {  // check id here
     list->count = index;
     for (int i = list->count; i < 38; ++i) list->entries[i].index = 0xFF;
     qsort(list, list->count, sizeof(GhostListEntry), reinterpret_cast<int (*)(const void*, const void*)>(&GhostList::CompareEntries));
-};
+}
 kmCall(0x806394f0, Mgr::InsertCustomGroupToList);
 
-// 80856fec Race get ldr position for animation almost certainly
-// 80855c6c save ghost (get ldr position) r4 timer r5 savedatamanagerlicence
-// 8051ca80 write ghost file
 static s32 PlayCorrectFinishAnim(RKSYS::LicenseMgr*, const Timer& timer, CourseId courseId) {
     return Mgr::GetInstance()->GetLeaderboard().GetPosition(timer);
 }
 kmCall(0x80856fec, PlayCorrectFinishAnim);
 
-// make racedata bigger to have 2 more rkgs
 static int IncreaseRacedataSize() {
     return 0xC3F0;
 }
@@ -404,8 +371,7 @@ static bool RacedataCheckCorrectRKG() {
 }
 kmCall(0x8052f5c8, RacedataCheckCorrectRKG);
 
-// Same as above
-static void GhostHeaderGetCorrectRKG(GhostData& header) {  // id = index of the current local/ghost player
+static void GhostHeaderGetCorrectRKG(GhostData& header) {
     u8 offset = 0;
     Racedata* racedata = Racedata::sInstance;
     RacedataScenario& scenario = racedata->menusScenario;
@@ -425,16 +391,13 @@ static void GhostHeaderGetCorrectRKG(GhostData& header) {  // id = index of the 
 }
 kmCall(0x8052f5e4, GhostHeaderGetCorrectRKG);
 
-// Function name says it all
 void Mgr::LoadCorrectMainGhost(Pages::GhostManager& ghostManager, u8 r4) {
     Mgr* self = Mgr::sInstance;
     self->LoadGhost(*ghostManager.rkgPointer, self->GetGhostData(self->mainGhostIndex).padding);
     if (ghostManager.state == SAVED_GHOST_RACE_FROM_MENU) ghostManager.state = STAFF_GHOST_RACE_FROM_MENU;
-    // faking that it's a staff so it copies from the buffer and not savadatamanager
 }
 kmCall(0x805e158c, Mgr::LoadCorrectMainGhost);
 
-// Loads all the ghosts while setting up the ghost race/replay
 void Mgr::ExtendSetupGhostRace(Pages::GhostManager& ghostManager, bool isStaffGhost, bool replaceGhostMiiByPlayer, bool disablePlayerMii) {
     ghostManager.SetupGhostRace(true, replaceGhostMiiByPlayer, disablePlayerMii);
     Mgr::sInstance->LoadAllGhosts(2, true);
@@ -453,7 +416,6 @@ void Mgr::ExtendSetupGhostReplay(Pages::GhostManager& ghostManager, bool isStaff
 kmCall(0x805e144c, Mgr::ExtendSetupGhostReplay);
 kmCall(0x805e1518, Mgr::ExtendSetupGhostReplay);
 
-// SectionParams slot patch, used for ghost stuff (ghosts check that the rkg has the same trackID as the current for example)
 static void SetCorrectGhostRaceSlot(const GhostList& list, s32 entryIdx) {
     list.SetSectionParamsGhostValues(entryIdx);
     if (entryIdx >= 0 && entryIdx < list.count) {

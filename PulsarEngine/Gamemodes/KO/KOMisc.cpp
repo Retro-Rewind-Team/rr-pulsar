@@ -25,7 +25,6 @@ static void EditLdb(CtrlRaceResult* result, u8 playerId) {
     const System* system = System::sInstance;
 
     if (system->IsContext(PULSAR_MODE_KO)) {
-        const char* pane = "player_name";
         const Status koStatus = system->koMgr->GetPlayerStatus(playerId);
         if (koStatus != NORMAL) {
             u32 bmgId;
@@ -93,66 +92,6 @@ kmCall(0x806537d8, SyncCountdown);
 kmWrite32(0x806537dc, 0x2c030000);
 kmWrite32(0x806537e4, 0x2c030006);
 
-static void VoteCounterPatch(LayoutUIControl& voteCounter, u32 bmgId, Text::Info* info) {
-    register Pages::SELECTStageMgr* mgr;
-    asm(mr mgr, r31;);
-    register Pages::Vote* vote;
-    asm(mr vote, r25;);
-    const System* system = System::sInstance;
-
-    if (system->IsContext(PULSAR_MODE_KO)) {
-        int stillIn = 0;
-        for (int playerId = 0; playerId < mgr->playerCount; ++playerId) {
-            if (!system->koMgr->IsKOdPlayerId(playerId))
-                ++stillIn;
-            else if (vote->order[playerId] != -1) {
-                const AnimationGroup& group = vote->votes[vote->order[playerId]].animator.GetAnimationGroupById(1);
-                if (group.curAnimation == 2) --info->intToPass[0];
-            }
-        }
-        info->intToPass[1] = stillIn;
-    }
-    voteCounter.SetMessage(bmgId, info);
-}
-// kmCall(0x80644590, VoteCounterPatch);
-
-static void SkipVoteControlFill(VoteControl& voteControl, bool isCourseIdInvalid, u32 bmgId, const MiiGroup& miiGroup, u32 playerId, bool isLocalPlayer, u32 team) {
-    register Pages::Vote* vote;
-    asm(mr vote, r24;);
-    vote->order[playerId] = vote->lastHandledVote;
-    const System* system = System::sInstance;
-
-    if (system->IsContext(PULSAR_MODE_KO)) {
-        if (system->koMgr->IsKOdPlayerId(playerId)) {
-            return;
-        }
-    }
-    voteControl.Fill(isCourseIdInvalid, bmgId, miiGroup, playerId, isLocalPlayer, team);
-    ++vote->lastHandledVote;
-}
-// kmCall(0x806441b8, SkipVoteControlFill);
-// kmWrite32(0x806441c4, 0x60000000);
-// kmWrite32(0x806441d0, 0x60000000);
-
-static void SkipVRControlFill(Pages::VR& vr, u32 index, u32 playerId, u32 team, u8 type, bool isLocalPlayer) {  // 1 -> 2, index = 1
-    const System* system = System::sInstance;
-    if (system->IsContext(PULSAR_MODE_KO)) {
-        const RKNet::Controller* controller = RKNet::Controller::sInstance;
-        const Mgr* mgr = system->koMgr;
-        u8 aid = controller->aidsBelongingToPlayerIds[playerId];
-
-        vr.vrControls[index].isHidden = true;
-        if (mgr->IsKOdPlayerId(playerId)) return;
-
-        index = 0;
-        for (int id = 0; id < playerId; ++id)
-            if (!mgr->IsKOdPlayerId(id)) ++index;
-        vr.vrControls[index].isHidden = false;
-    }
-    vr.FillVRControl(index, playerId, team, type, isLocalPlayer);
-}
-// kmCall(0x8064aa78, SkipVRControlFill);
-
 static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) {
     const System* system = System::sInstance;
 
@@ -193,8 +132,7 @@ static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) 
 }
 kmCall(0x80650494, PatchAidsBeforeSELECTStageMgrSetup);
 
-static u8 SwapUISelectInfo() {  // this can only be called if localPlayerCount > 0, ie one of the players is still in
-
+static u8 SwapUISelectInfo() {
     register u8 aid;
     register u8 localPlayerCount;  // obtained from RKNet::Controller, spectators do NOT count
     register u8 curHudSlotId;
@@ -214,13 +152,12 @@ static u8 SwapUISelectInfo() {  // this can only be called if localPlayerCount >
         }
     }
 
-    return curHudSlotId;  // need to return curHudSlotId, it's not used, but it's needed otherwise the function does "nothing" c++ wise and becomes just a blr
+    return curHudSlotId;
 }
 kmCall(0x80651988, SwapUISelectInfo);
 kmWrite32(0x8065198c, 0x5600063f);
 
-static u8 SwapRaceMiis() {  // this can only be called if localPlayerCount > 0, ie one of the players is still in, very hacky function but until a better hook is found, this'll do
-
+static u8 SwapRaceMiis() {
     register u32 aid;
     register u8 curHudSlotId;
     register u32 playerId;
@@ -231,7 +168,7 @@ static u8 SwapRaceMiis() {  // this can only be called if localPlayerCount > 0, 
 
     bool isKO = system->IsContext(PULSAR_MODE_KO);
     if (isKO) {
-        if (aid < 12) curHudSlotId = system->koMgr->IsKOdAid(aid, 0);  // if only one localPlayer but slot 0 is KOd, that guarantees it was initially 2 players and the main is out
+        if (aid < 12) curHudSlotId = system->koMgr->IsKOdAid(aid, 0);
         if (curHudSlotId == 1) {
             RacedataScenario& scenario = Racedata::sInstance->menusScenario;
             char mainPlayer[sizeof(RacedataPlayer)];
@@ -248,27 +185,10 @@ static u8 SwapRaceMiis() {  // this can only be called if localPlayerCount > 0, 
     } else if (!isKO)
         curHudSlotId = 0;  // default
     else
-        curHudSlotId++;  // never actually reached but codegen works with this
-    return curHudSlotId;  // need to return curHudSlotId, it's not used, but it's needed otherwise the function does "nothing" c++ wise and becomes just a blr
+        curHudSlotId++;
+    return curHudSlotId;
 }
 kmCall(0x8065123c, SwapRaceMiis);
-
-static bool CtrlRaceItemWindowIsInactive(const CtrlRaceItemWindow& itemWindow) {
-    const u8 playerId = itemWindow.GetPlayerId();
-    if (SectionMgr::sInstance->curSection->isPaused) return true;
-    const Item::Player& itemPlayer = Item::Manager::sInstance->players[playerId];
-    const Kart::Status* status = itemPlayer.pointers->kartStatus;
-    if (status->bitfield0 & 0x10) return true;
-    if (Racedata::sInstance->racesScenario.players[playerId].playerType == PLAYER_REAL_ONLINE && System::sInstance->IsContext(PULSAR_MODE_KO)) {
-        return RKNet::ITEMHandler::sInstance->GetStoredItem(playerId) != ITEM_NONE;
-    } else {  // default behaviour
-        bool isValid = true;
-        if (itemPlayer.roulette.isTheRouletteSpinning == 0 || itemPlayer.inventory.currentItemId == ITEM_NONE) isValid = false;
-        if (!isValid && itemPlayer.roulette.unknown_0x24 == ITEM_NONE) return true;
-        return false;
-    }
-}
-// kmWritePointer(0x808D3D10, CtrlRaceItemWindowIsInactive);
 
 void StoreItemsForSpectating(RKNet::ITEMHandler& itemHandler) {
     itemHandler.ImportNewPackets();

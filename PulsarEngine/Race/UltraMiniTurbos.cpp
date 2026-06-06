@@ -64,8 +64,7 @@ void SetBikeDriftTiers(Kart::MovementBike& movement, bool charged) {
         movement.driftState = 2;
         KartType type = movement.GetType();
         const s16 mtCharge = movement.mtCharge;
-        const GameMode gameMode = Racedata::sInstance->racesScenario.settings.gamemode;
-        if (type == OUTSIDE_BIKE && isSMT == true) {
+        if (type == OUTSIDE_BIKE && isSMT) {
             if (mtCharge >= 570) movement.driftState = 3;
         }
     }
@@ -78,17 +77,14 @@ int BuffUMT(const Kart::Movement& movement) {
     u32 mtStat = movement.GetStats().mt;
     bool* state = umtState;
     if (movement.driftState == 4) state[idx] = true;
-    if (state[idx] == true) mtStat = 3 * mtStat / 2;  // 50% longer
+    if (state[idx]) mtStat = 3 * mtStat / 2;  // 50% longer
     return mtStat;
 };
 kmCall(0x80582fdc, BuffUMT);
 kmWrite32(0x80582fe0, 0x7C601B78);
 kmWrite32(0x80582fec, 0x4180003C);  // changes !=3 to <3 for UMT
 
-// SpeedMultiplier "perk" implementation
-// kmWrite32(0x80579344, 0x7F83E378); //change r3 to movement
 bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
-    const GameMode gameMode = Racedata::sInstance->racesScenario.settings.gamemode;
     const bool isBoosting = boost.Update(boostEnded);
     register Kart::Movement* movement;
     asm(mr movement, r28;);
@@ -97,10 +93,9 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     const float umtMultiplier = 1.32;  // 10% faster
     const float insideDriftMultiplier = 1.236f;  // 3% faster
     const float defaultMTMultiplier = 1.2f;
-    // determine default inside drift context
-    bool insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE) ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    bool outsideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE) ? Pulsar::FORCE_TRANSMISSION_OUTSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    bool vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA) ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    Pulsar::ForceTransmission insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE) ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    Pulsar::ForceTransmission outsideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE) ? Pulsar::FORCE_TRANSMISSION_OUTSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    Pulsar::ForceTransmission vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA) ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
     
     // check if a matching ghost combo is present (same kart+character)
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
@@ -197,7 +192,7 @@ static void LoadCustomEffects(ExpPlayerEffects& effects) {
 };
 kmCall(0x8068e9c4, LoadCustomEffects);
 
-// Left and Righ sparks when the SMT charge is over 550
+// Left and right sparks when the SMT charge is over 550
 void LoadLeftPurpleSparkEffects(ExpPlayerEffects& effects, EGG::Effect** effectArray, u32 firstEffectIndex, u32 lastEffectIndex, const Mtx34& playerMat2, const Vec3& wheelPos, bool updateScale) {
     const u32 smtCharge = effects.kartPlayer->pointers.kartMovement->smtCharge;
     if (smtCharge >= 550 && System::sInstance->IsContext(PULSAR_UMTS)) {
@@ -221,12 +216,11 @@ kmCall(0x80698af0, LoadRightPurpleSparkEffects);
 void LoadOrangeSparkEffects(ExpPlayerEffects& effects, EGG::Effect** effectArray, u32 firstEffectIndex, u32 lastEffectIndex, const Mtx34& playerMat2, const Vec3& wheelPos, bool updateScale) {
     KartType type = effects.kartPlayer->GetType();
     const u32 mtCharge = effects.kartPlayer->pointers.kartMovement->mtCharge;
-    const GameMode gameMode = Racedata::sInstance->racesScenario.settings.gamemode;
     bool isSMT = true;
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
     if (roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_BT_WW) isSMT = false;
     if (!System::sInstance->IsContext(PULSAR_UMTS)) isSMT = false;
-    if (mtCharge >= 570 && type == OUTSIDE_BIKE && isSMT == true) {
+    if (mtCharge >= 570 && type == OUTSIDE_BIKE && isSMT) {
         effects.CreateAndUpdateEffectsByIdx(effects.rk_orangeMT, 0, 2, playerMat2, wheelPos, updateScale);
         effects.FollowFadeEffectsByIdx(effectArray, firstEffectIndex, lastEffectIndex, playerMat2, wheelPos, updateScale);
     } else
@@ -268,23 +262,18 @@ int PatchDriftStateCheck(const Kart::Player& kartPlayerPlayer) {
 kmCall(0x8069807c, PatchDriftStateCheck);
 
 // Purple boosts
-// kmWrite32(0x806a3d00, 0x7FA4EB78);
-// kmWrite32(0x806a3d04, 0x7FC5F378);
 void PatchBoostOnUMTSpeedBoost(EGG::Effect* boostEffect) {  // have to mod loop index by 4 to get the actual index
     register u8 loopIndex;
     asm(mr loopIndex, r29;);
     register ExpPlayerEffects* effects;
     asm(mr effects, r30;);
 
-    Kart::Movement* movement = effects->kartPlayer->pointers.kartMovement;
     if (umtState[effects->playerId]) boostEffect = effects->rk_purpleMT[rk_purpleBoost + loopIndex % 4];
     boostEffect->Create();
 };
 kmCall(0x806a3d08, PatchBoostOnUMTSpeedBoost);
 
 kmWrite32(0x8069bfa0, 0x60000000);
-// kmWrite32(0x8069bfdc, 0x7FA5EB78);
-// kmWrite32(0x8069bfe4, 0x7FC6F378);
 void PatchBoostMatrix(EGG::Effect* boostEffect, const Mtx34& boostMat) {
     if (boostEffect->effectHandle.GetPtr()) {
         boostEffect->SetMtx(boostMat);
@@ -305,8 +294,6 @@ void PatchBoostMatrix(EGG::Effect* boostEffect, const Mtx34& boostMat) {
 kmCall(0x8069bff0, PatchBoostMatrix);
 kmWrite32(0x8069c004, 0x60000000);
 
-// kmWrite32(0x8069c098, 0x7FC4F378);
-// kmWrite32(0x8069c09c, 0x7FE5FB78);
 void PatchFadeBoost(EGG::Effect* boostEffect) {
     boostEffect->FollowFade();
     register u8 loopIndex;

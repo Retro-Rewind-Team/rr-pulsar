@@ -33,7 +33,6 @@ UIControl* CreateExternalControls(Pages::SinglePlayer* page, u32 id) {
 }
 kmWritePointer(0x808D9F84, CreateExternalControls);
 
-// kmWrite32(0x8084f080, 0x7F89E378); //get idx in r9
 static void LoadCorrectBRCTR(PushButton& button, const char* folder, const char* ctr, const char* variant, u32 localPlayerField) {
     register int idx;
     asm(mr idx, r28;);
@@ -68,11 +67,6 @@ static void LoadCorrectBRCTR(PushButton& button, const char* folder, const char*
 }
 kmCall(0x8084f084, LoadCorrectBRCTR);
 
-// kmWrite32(0x8084f08c, 0x60000000);
-// kmWrite32(0x8084f094, 0x38030001);
-// kmWrite32(0x8084f098, 0x60000000);
-
-// Hacky custom CalcDistance so that the navigating the single player menu is intuitive
 static int FixCalcDistance(const ControlManipulator& subject, const ControlManipulator& other, Directions direction) {
     const s32 subId = static_cast<PushButton*>(subject.actionHandlers[0]->subject)->buttonId;
     const s32 destId = static_cast<PushButton*>(other.actionHandlers[0]->subject)->buttonId;

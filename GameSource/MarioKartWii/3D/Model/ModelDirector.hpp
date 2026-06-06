@@ -29,7 +29,7 @@ class ModelDirector {
     // if brresName does not have MDL0s, it'll fallback on the provided 2nd BRRES and use it for mdl0s
     static void RipAndBindBRRES(g3d::ResFile& file, const char* brresName, EGG::ExpHeap* heap, bool allocFromHead);  // 8055b754
     // Rips the BRRES instead of getting it from ArchiveMgr
-    static void BindBRRESImpl(g3d::ResFile& main, const char* name, const g3d::ResFile& fallback, u32 unused);  // 8055b7f8
+    static bool BindBRRESImpl(g3d::ResFile& main, const char* name, const g3d::ResFile* fallback, u32 unused);  // 8055b7f8
     // the actual binding, the other 2 merely call this 3rd one. both name and unused are...unused
 
     static bool BRRESExists(ArchiveSource type, const char* brresName);  // 8055ba00

@@ -27,7 +27,7 @@ static bool IsOnlinePauseMode() {
 }
 
 static Page* GetActiveOnlinePausePage(Section* section) {
-    if (!section) return 0;
+    if (section == nullptr) return nullptr;
 
     Page* pausePage = section->pages[PAGE_VS_RACE_PAUSE_MENU];
     if (pausePage && pausePage->currentState != STATE_DEACTIVATED) return pausePage;
@@ -35,7 +35,7 @@ static Page* GetActiveOnlinePausePage(Section* section) {
     pausePage = section->pages[PAGE_BATTLE_PAUSE_MENU];
     if (pausePage && pausePage->currentState != STATE_DEACTIVATED) return pausePage;
 
-    return 0;
+    return nullptr;
 }
 
 // Allow pausing online in RaceHUD::initInputs
@@ -43,13 +43,13 @@ kmWrite32(0x808567d4, 0x60000000);
 
 kmRuntimeUse(0x8051e85c);
 void SetInputPaused(bool paused) {
-    Input::Manager* sInstance = Input::Manager::sInstance;
-    if (sInstance) {
-        sInstance->isPaused = paused;
+    Input::Manager* input = Input::Manager::sInstance;
+    if (input) {
+        input->isPaused = paused;
         for (int i = 0; i < 4; i++) {
-            sInstance->realControllerHolders[i].blockInputs = paused;
+            input->realControllerHolders[i].blockInputs = paused;
             if (paused) {
-                reinterpret_cast<void (*)(Input::State*)>(kmRuntimeAddr(0x8051e85c))(&sInstance->realControllerHolders[i].inputStates[0]);
+                reinterpret_cast<void (*)(Input::State*)>(kmRuntimeAddr(0x8051e85c))(&input->realControllerHolders[i].inputStates[0]);
             }
         }
     }

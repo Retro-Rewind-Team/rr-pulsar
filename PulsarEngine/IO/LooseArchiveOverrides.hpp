@@ -1,16 +1,16 @@
 /*
- * This feature was developed by patchzy as part of the Retro Rewind project.
+ * Loose Archive Overrides
+ *
+ * Developed by patchzy as part of the Retro Rewind project.
  *
  * Copyright (C) Retro Rewind.
+ * SPDX-License-Identifier: MIT
+ * 
+ * This code is licensed under the MIT License.
  *
- * Licensed under the GNU General Public License v3.0 only.
- * You may not use, modify, or distribute this code except in compliance with
- * that license.
- *
- * Use of this system in a non-GPLv3 project requires prior permission from
- * the Retro Rewind team and/ or patchzy.
+ * Credit is not legally required, but if you use or adapt this system,
+ * please consider crediting patchzy and/or Retro Rewind team.
  */
-
 
 #ifndef _PULSAR_LOOSE_ARCHIVE_OVERRIDES_
 #define _PULSAR_LOOSE_ARCHIVE_OVERRIDES_
@@ -35,6 +35,8 @@ bool IsModsPath(const char* path);
 const char* ResolveWholeFileOverride(const char* path, char* resolvedPath, u32 resolvedSize, bool* outRedirected);
 
 bool ShouldApplyLooseOverrides(const char* path, char* archiveBaseLower, u32 archiveBaseLowerSize);
+
+bool HasStructuralLooseOverrides(const char* archiveBaseLower);
 
 bool ApplyLooseOverrides(const char* archiveBaseLower, u8*& archiveBase, u32& archiveSize, EGG::Heap* sourceHeap,
                          EGG::Heap*& archiveHeap, u32* outAppliedOverrides, u32* outPatchedNodes,

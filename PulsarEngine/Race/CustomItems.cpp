@@ -13,25 +13,22 @@
 namespace Pulsar {
 namespace Race {
 
+static const u32 ITEM_COUNT = 19;
+static const u32 VANILLA_ITEM_BITFIELD = 0x7FFFF;
+
 u32 Pulsar::Race::GetEffectiveCustomItemsBitfield() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller) {
+    if (controller != nullptr) {
         const RKNet::RoomType roomType = controller->roomType;
         if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-            if (System::sInstance) {
+            if (System::sInstance != nullptr) {
                 return System::sInstance->netMgr.customItemsBitfield;
             }
         } else if (roomType != RKNet::ROOMTYPE_NONE) {
-            // Public lobby - disable everything (force vanilla)
-            return 0x7FFFF;
+            return VANILLA_ITEM_BITFIELD;
         }
     }
-    // Offline or unknown
-    Settings::Mgr* settings = &Settings::Mgr::Get();
-    if (settings) {
-        return settings->GetCustomItems();
-    }
-    return 0x7FFFF;
+    return Settings::Mgr::Get().GetCustomItems();
 }
 
 static bool sFallbackItemDropFix[12];
@@ -134,7 +131,7 @@ kmRuntimeUse(0x809c3670);  // Item::ItemSlotData
 kmRuntimeUse(0x809c36a0);  // Item::Behavior::behaviourTable
 kmRuntimeUse(0x80799be8);  // Item::ItemSlotData::itemSpawnTimers
 static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
-    if (id >= 19) return false;
+    if (id >= ITEM_COUNT) return false;
 
     // Timer checks
     Item::Behavior* behaviourTable = reinterpret_cast<Item::Behavior*>(kmRuntimeAddr(0x809c36a0));
@@ -148,7 +145,7 @@ static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
 
     // Capacity check bypass for custom items
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-    if (bitfield != 0 && bitfield != 0x7FFFF) {
+    if (bitfield != 0 && bitfield != VANILLA_ITEM_BITFIELD) {
         if ((bitfield >> id) & 1) return true;
     }
 
@@ -165,7 +162,7 @@ static ItemId GetVanillaFallback(u8 position) {
 
 static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-    if (bitfield == 0 || bitfield == 0x7FFFF) return GetVanillaFallback(position);  // Safety or Vanilla Fallback
+    if (bitfield == 0 || bitfield == VANILLA_ITEM_BITFIELD) return GetVanillaFallback(position);
 
     Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**>(kmRuntimeAddr(0x809c3670));
     if (!slotData) return GetVanillaFallback(position);
@@ -194,10 +191,10 @@ static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
             int p = checks[i];
             if (i == 1 && high == low) continue;  // Skip redundant check for dist 0
             if (p >= 0 && p < static_cast<int>(rowCount)) {
-                ItemId rowEnabled[19];
+                ItemId rowEnabled[ITEM_COUNT];
                 int count = 0;
-                for (int item = 0; item < 19; ++item) {
-                    if (((bitfield >> item) & 1) && data[p * 19 + item] > 0) {
+                for (int item = 0; item < ITEM_COUNT; ++item) {
+                    if (((bitfield >> item) & 1) && data[p * ITEM_COUNT + item] > 0) {
                         if (IsItemAvailable(static_cast<ItemId>(item), slotData)) {
                             rowEnabled[count++] = static_cast<ItemId>(item);
                         }
@@ -208,25 +205,24 @@ static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
                     if (lcgSeed == 0) lcgSeed = OS::GetTick();
 
                     lcgSeed = lcgSeed * 1103515245 + 12345;
-                    ItemId ret = rowEnabled[(lcgSeed >> 16) % count];
-                    if (ret > 18) ret = GetVanillaFallback(position);  // UI Safety
-                    return ret;
+                    ItemId item = rowEnabled[(lcgSeed >> 16) % count];
+                    if (item >= ITEM_COUNT) item = GetVanillaFallback(position);
+                    return item;
                 }
             }
         }
     }
 
-    // Absolute fallback
-    ItemId anyEnabled[19];
+    ItemId anyEnabled[ITEM_COUNT];
     int anyCount = 0;
-    for (int i = 0; i < 19; i++) {
+    for (int i = 0; i < ITEM_COUNT; i++) {
         if (((bitfield >> i) & 1) && IsItemAvailable(static_cast<ItemId>(i), slotData)) {
             anyEnabled[anyCount++] = static_cast<ItemId>(i);
         }
     }
 
     if (anyCount == 0) {
-        for (int i = 0; i < 19; i++) {
+        for (int i = 0; i < ITEM_COUNT; i++) {
             if ((bitfield >> i) & 1) {
                 anyEnabled[anyCount++] = static_cast<ItemId>(i);
             }
@@ -238,16 +234,16 @@ static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
     static u32 fallbackSeed = 0;
     if (fallbackSeed == 0) fallbackSeed = OS::GetTick();
     fallbackSeed = fallbackSeed * 1103515245 + 12345;
-    ItemId ret = anyEnabled[(fallbackSeed >> 16) % anyCount];
-    if (ret > 18) ret = GetVanillaFallback(position);
-    return ret;
+    ItemId item = anyEnabled[(fallbackSeed >> 16) % anyCount];
+    if (item >= ITEM_COUNT) item = GetVanillaFallback(position);
+    return item;
 }
 
 static u32 GetBestPlacement(const Item::ItemSlotData::Probabilities* probs, u32 currentPlacement) {
     if (probs == nullptr || probs->probabilities == nullptr) return currentPlacement;
 
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-    if (bitfield == 0x7FFFF || bitfield == 0) return currentPlacement;
+    if (bitfield == VANILLA_ITEM_BITFIELD || bitfield == 0) return currentPlacement;
 
     u32 rowCount = probs->rowCount;
     if (currentPlacement >= rowCount) currentPlacement = rowCount - 1;
@@ -263,8 +259,8 @@ static u32 GetBestPlacement(const Item::ItemSlotData::Probabilities* probs, u32 
             int p = checks[i];
             if (i == 1 && high == low) continue;
             if (p >= 0 && p < static_cast<int>(rowCount)) {
-                for (int item = 0; item < 19; ++item) {
-                    if (((bitfield >> item) & 1) && data[p * 19 + item] > 0) {
+                for (int item = 0; item < ITEM_COUNT; ++item) {
+                    if (((bitfield >> item) & 1) && data[p * ITEM_COUNT + item] > 0) {
                         if (IsItemAvailable(static_cast<ItemId>(item), slotData)) {
                             return static_cast<u32>(p);
                         }
@@ -312,13 +308,13 @@ static void CustomLimitCheck() {
     }
 
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-    if (bitfield == 0) bitfield = 0x7FFFF;
+    if (bitfield == 0) bitfield = VANILLA_ITEM_BITFIELD;
 
-    if (itemIdx < 19) {
+    if (itemIdx < ITEM_COUNT) {
         if (!((bitfield >> itemIdx) & 1)) {
             limit = 0;
-        } else if (bitfield != 0x7FFFF) {
-            limit = 100;  // Ignore limit for custom items
+        } else if (bitfield != VANILLA_ITEM_BITFIELD) {
+            limit = 100;
         }
     }
 
@@ -334,7 +330,7 @@ kmPatchExitPoint(CustomLimitCheck, 0x807bb7dc);  // Return to the ble instructio
 static void CalcItemFallback() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r31);
-    if (GetEffectiveCustomItemsBitfield() == 0x7FFFF)
+    if (GetEffectiveCustomItemsBitfield() == VANILLA_ITEM_BITFIELD)
         roulette->nextItemId = GetVanillaFallback(roulette->position);
     else
         roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
@@ -380,10 +376,10 @@ kmCall(0x807923ac, CallPlayerObjPtmfIfValid);
 static void InitItemFallback1() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
-    if (GetEffectiveCustomItemsBitfield() == 0x7FFFF)
+    if (GetEffectiveCustomItemsBitfield() == VANILLA_ITEM_BITFIELD)
         roulette->nextItemId = GetVanillaFallback(roulette->position);
     else
-    roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
+        roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
 kmBranch(0x807ba138, InitItemFallback1);
 kmPatchExitPoint(InitItemFallback1, 0x807ba140);
@@ -391,21 +387,20 @@ kmPatchExitPoint(InitItemFallback1, 0x807ba140);
 static void InitItemFallback2() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
-    if (GetEffectiveCustomItemsBitfield() == 0x7FFFF)
+    if (GetEffectiveCustomItemsBitfield() == VANILLA_ITEM_BITFIELD)
         roulette->nextItemId = GetVanillaFallback(roulette->position);
     else
-    roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
+        roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
 kmBranch(0x807ba194, InitItemFallback2);
 kmPatchExitPoint(InitItemFallback2, 0x807ba19c);
 
 static ItemId DecideRouletteItemFiltered(Item::ItemSlotData* slotData, u16 itemBoxType, u8 position, ItemId prevRandomItem, bool r7) {
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-    if (bitfield == 0x7FFFF) {
+    if (bitfield == VANILLA_ITEM_BITFIELD) {
         return slotData->DecideRouletteItem(itemBoxType, position, prevRandomItem, r7);
     }
 
-    // Use closest logic for visual items too if custom items are enabled
     return GetRandomEnabledItem(position, true, itemBoxType != 0);
 }
 kmCall(0x807ba428, DecideRouletteItemFiltered);
@@ -430,6 +425,16 @@ static void SetItemFix(Item::PlayerInventory& inventory, ItemId id, bool isItemF
     for (u32 i = 0; i < sizeof(inventory.unknown_0x24); ++i) inventory.unknown_0x24[i] = 0;
 }
 kmBranch(0x807bc940, SetItemFix);
+
+static void EjectItemsFromDamageSafely(Item::PlayerInventory& inventory) {
+    if (inventory.currentItemId >= ITEM_COUNT || inventory.currentItemCount == 0 ||
+        !Item::Manager::IsThereCapacityForItem(inventory.currentItemId)) {
+        inventory.ClearAll();
+        return;
+    }
+    inventory.EjectItems();
+}
+kmCall(0x807bc6c4, EjectItemsFromDamageSafely);
 
 }  // namespace Race
 }  // namespace Pulsar

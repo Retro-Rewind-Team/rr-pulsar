@@ -19,7 +19,6 @@ static RaceFrameHook lapKoFrameHook(FrameUpdate);
 kmRuntimeUse(0x8053F3B8);  // Wifi Time Limit Expansion [Chadderz]
 kmRuntimeUse(0x8053F3BC);
 kmRuntimeUse(0x80521408);  // No Disconnect [Bully]
-kmRuntimeUse(0x8053EC94);
 kmRuntimeUse(0x8053EF6C);
 kmRuntimeUse(0x8053F0B4);
 kmRuntimeUse(0x8053F124);
@@ -30,14 +29,21 @@ static void WifiEdits() {
 
     // Default disconnect behavior
     kmRuntimeWrite32A(0x80521408, 0x38030001);
-    kmRuntimeWrite32A(0x8053EC94, 0x38040001);
     kmRuntimeWrite32A(0x8053EF6C, 0x38030001);
     kmRuntimeWrite32A(0x8053F0B4, 0x38030001);
     kmRuntimeWrite32A(0x8053F124, 0x38030001);
 
+    #ifdef RR_TESTS
+    // Disable disconnects from being idle
+    kmRuntimeWrite32A(0x80521408, 0x38000000);
+    kmRuntimeWrite32A(0x8053EF6C, 0x38000000);
+    kmRuntimeWrite32A(0x8053F0B4, 0x38000000);
+    kmRuntimeWrite32A(0x8053F124, 0x38000000);
+    #endif
+
     System* system = System::sInstance;
     if (system == nullptr) return;
-    if (!system->IsContext(PULSAR_MODE_LAPKO)) return;
+    if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)) return;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
 
@@ -47,7 +53,6 @@ static void WifiEdits() {
 
     // Disable disconnects from being idle
     kmRuntimeWrite32A(0x80521408, 0x38000000);
-    kmRuntimeWrite32A(0x8053EC94, 0x38000000);
     kmRuntimeWrite32A(0x8053EF6C, 0x38000000);
     kmRuntimeWrite32A(0x8053F0B4, 0x38000000);
     kmRuntimeWrite32A(0x8053F124, 0x38000000);
@@ -165,7 +170,7 @@ kmCall(0x807ba160, DecideItemHook);
 extern "C" void LapCounterColorFixHelper(CtrlRaceBase* self) {
     System* system = System::sInstance;
     if (self == nullptr) return;
-    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return;
+    if (system == nullptr || (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE))) return;
 
     const char* leftPane = nullptr;
     if (self->layout.GetPaneByName("lap_lefft") != nullptr) {

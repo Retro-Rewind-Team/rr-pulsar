@@ -4,13 +4,13 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <PulsarSystem.hpp>
+#include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 
 namespace Pulsar {
 namespace Network {
 
-// Helper to check if we're in a friend room (where LapKO data should be sent)
 static bool IsFriendRoom() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (!controller) return false;
@@ -24,11 +24,11 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
 
     const System* system = System::sInstance;
 
-    // Determine target packet size based on room type and LapKO mode
-    // LapKO fields are only sent in friend rooms when PULSAR_MODE_LAPKO is enabled
     const bool inFriendRoom = IsFriendRoom();
-    const bool lapKoEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_LAPKO);
-    const u32 targetSize = lapKoEnabled ? PulRH1SizeFull : PulRH1SizeBase;
+    const bool battleRoyaleEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_BATTLEROYALE);
+    const bool eliminationSyncEnabled = inFriendRoom && (system->IsContext(PULSAR_MODE_LAPKO) || battleRoyaleEnabled);
+    const u32 targetSize = battleRoyaleEnabled ? PulRH1SizeFull : (eliminationSyncEnabled ? PulRH1SizeLapKo : PulRH1SizeBase);
+    if (eliminationSyncEnabled || battleRoyaleEnabled) packetHolder.packetSize = targetSize;
 
     if (system->IsContext(PULSAR_CT)) {
         packetHolder.packetSize = targetSize;
@@ -36,15 +36,13 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         packetHolder.packet->variantIdx = CupsConfig::sInstance->GetCurVariantIdx();
     }
 
-    // Clear KO Stats fields if KO mode is not enabled
     if (!system->IsContext(PULSAR_MODE_KO)) {
         packetHolder.packet->timeInDanger = 0;
         packetHolder.packet->almostKOdCounter = 0;
         packetHolder.packet->finalPercentageSum = 0;
     }
 
-    // Clear LapKO fields if LapKO mode is not enabled (they won't be sent anyway due to packet size)
-    if (!lapKoEnabled) {
+    if (!eliminationSyncEnabled) {
         packetHolder.packet->lapKoSeq = 0;
         packetHolder.packet->lapKoRoundIndex = 0;
         packetHolder.packet->lapKoActiveCount = 0;
@@ -52,6 +50,20 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
         memset(packetHolder.packet->lapKoElims, 0xFF, sizeof(packetHolder.packet->lapKoElims));
     }
 
+    if (battleRoyaleEnabled) {
+        BattleRoyale::WriteRH1Packet(*packetHolder.packet);
+    } else {
+        packetHolder.packet->battleRoyaleLossSeq = 0;
+        packetHolder.packet->battleRoyaleLossPlayerId = 0xFF;
+        packetHolder.packet->battleRoyaleBalloonCounts = 0xFF;
+        packetHolder.packet->battleRoyaleFinishMask = 0;
+        packetHolder.packet->battleRoyaleFinishMinutes[0] = 0;
+        packetHolder.packet->battleRoyaleFinishMinutes[1] = 0;
+        packetHolder.packet->battleRoyaleFinishSeconds[0] = 0;
+        packetHolder.packet->battleRoyaleFinishSeconds[1] = 0;
+        packetHolder.packet->battleRoyaleFinishMilliseconds[0] = 0;
+        packetHolder.packet->battleRoyaleFinishMilliseconds[1] = 0;
+    }
 }
 kmCall(0x80655458, BeforeRH1Send);
 kmCall(0x806550e4, BeforeRH1Send);
@@ -65,8 +77,6 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
     const PulRH1* packet = holder.packet;
     const u32 packetSize = holder.packetSize;
     CourseId track;
-    u8 variantIdx = 0;
-    // Accept both base and full Pulsar packet sizes
     if (packetSize >= PulRH1SizeBase)
         track = static_cast<CourseId>(packet->pulsarTrackId);
     else
@@ -133,7 +143,6 @@ kmCall(0x80664080, IsThereAValidId);
 kmWrite32(0x80664084, 0x2C030000);  // change comparison from r0 to r3
 
 kmWrite32(0x8066529c, 0x60000000);  // preserve packetholder in r4
-// kmWrite32(0x806652b4, 0x60000000); //nop track store
 
 }  // namespace Network
 }  // namespace Pulsar

@@ -76,10 +76,12 @@ static float RandomOffset(Random& rng, float range) {
 
 bool IsItemRainEnabled() {
     System* sys = System::sInstance;
+    if (!sys) return false;
     if (!sys->IsContext(PULSAR_ITEMMODERAIN) && !sys->IsContext(PULSAR_ITEMMODESTORM)) return false;
     if (sys->IsContext(PULSAR_MODE_OTT)) return false;
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (!controller || !Racedata::sInstance) return false;
     if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
         controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
         controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
@@ -101,10 +103,19 @@ static bool IsLocalPlayer(s32 idx) {
     return player->IsLocal();
 }
 
+static u8 GetRandomPlayerId(s32 fallbackPlayerId) {
+    Kart::Manager* km = Kart::Manager::sInstance;
+    RaceTimerMgr* tm = nullptr;
+    if (Raceinfo::sInstance) tm = Raceinfo::sInstance->timerMgr;
+    if (!km || !tm || km->playerCount <= 0) return static_cast<u8>(fallbackPlayerId);
+
+    return static_cast<u8>(tm->random.NextLimited(km->playerCount));
+}
+
 static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff, bool isStorm) {
     Kart::Manager* km = Kart::Manager::sInstance;
     Item::Manager* im = Item::Manager::sInstance;
-    if (!km || !im || itemId >= 0xF) return;
+    if (!km || !im || itemId >= 0xF || playerIdx < 0 || playerIdx >= km->playerCount) return;
 
     Kart::Player* player = km->players[playerIdx];
     if (!player) return;
@@ -120,13 +131,14 @@ static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff,
         pos.z + fOff * mtx.mtx[2][2] + rOff * mtx.mtx[2][0]);
 
     Item::Obj* obj = nullptr;
-    holder->Spawn(1u, &obj, static_cast<u8>(playerIdx), spawnPos, false);
+    const u8 ownerPlayerId = GetRandomPlayerId(playerIdx);
+    holder->Spawn(1u, &obj, ownerPlayerId, spawnPos, false);
     if (!obj) return;
 
     if (!obj->entity) LoadEntity__Q24Item3ObjFb(obj, false);
 
     obj->bitfield78 &= ~0x20000;
-    obj->playerUsedItemId = 0;
+    obj->playerUsedItemId = ownerPlayerId;
     obj->bitfield7c &= ~0x20;
 
     SpawnItemInternal__Q24Item9ObjHolderFPQ24Item3Obj(holder, obj);
@@ -146,9 +158,10 @@ static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff,
         *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164) = Raceinfo::sInstance->timerMgr->raceFrameCounter;
 }
 
-static bool TryGenerateItemSpawn(s32 idx, RaceTimerMgr* tm, bool isStorm, float* outFOff, float* outROff, ItemObjId* outItemId) {
+static bool TryGenerateItemSpawn(RaceTimerMgr* tm, bool isStorm, float* outFOff, float* outROff, ItemObjId* outItemId) {
     u32 frame = tm->raceFrameCounter;
     Item::Manager* im = Item::Manager::sInstance;
+    if (!im) return false;
     Item::ObjHolder* holder = nullptr;
     ItemObjId itemId;
     bool found = false;
@@ -245,7 +258,7 @@ static void OnTimerUpdate(u32 oldFrame) {
         for (u32 s = 0; s < spawnsPerPlayer; s++) {
             float fOff, rOff;
             ItemObjId itemId;
-            if (TryGenerateItemSpawn(idx, tm, isStorm, &fOff, &rOff, &itemId)) {
+            if (TryGenerateItemSpawn(tm, isStorm, &fOff, &rOff, &itemId)) {
                 DoSpawnItem(itemId, idx, fOff, rOff, isStorm);
             }
         }

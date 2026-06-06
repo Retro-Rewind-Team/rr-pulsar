@@ -19,6 +19,8 @@ namespace UI {
 static void BuildBlockedTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen);
 static void RemoveAllEscapeSequences(wchar_t* dest, const wchar_t* src);
 static u32 AppendTrackTextPreservingColor(wchar_t* dest, const wchar_t* src, u32 outLen, u32 maxLen);
+static bool IsVariantBaseTrackBMGId(u32 bmgId);
+static void BuildVariantBaseTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen);
 
 static void BuildTrackNameAndAuthor(wchar_t* dest, const wchar_t* trackName, const wchar_t* authorName, u32 maxLen);
 
@@ -86,38 +88,42 @@ static void LoadCorrectTrackListBox(ControlLoader& loader, const char* folder, c
 }
 kmCall(0x807e5f24, LoadCorrectTrackListBox);
 
-static u32 GetLanguageTrackBase() {
+static u32 GetLanguageTrackOffset() {
     Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
         static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE));
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:
-            return BMG_TRACKS + 0x1000;
+            return 0x1000;
         case Pulsar::LANGUAGE_FRENCH:
-            return BMG_TRACKS + 0x2000;
+            return 0x2000;
         case Pulsar::LANGUAGE_GERMAN:
-            return BMG_TRACKS + 0x3000;
+            return 0x3000;
         case Pulsar::LANGUAGE_DUTCH:
-            return BMG_TRACKS + 0x4000;
+            return 0x4000;
         case Pulsar::LANGUAGE_SPANISHUS:
-            return BMG_TRACKS + 0x5000;
+            return 0x5000;
         case Pulsar::LANGUAGE_SPANISHEU:
-            return BMG_TRACKS + 0x6000;
+            return 0x6000;
         case Pulsar::LANGUAGE_FINNISH:
-            return BMG_TRACKS + 0x7000;
+            return 0x7000;
         case Pulsar::LANGUAGE_ITALIAN:
-            return BMG_TRACKS + 0x8000;
+            return 0x8000;
         case Pulsar::LANGUAGE_KOREAN:
-            return BMG_TRACKS + 0x9000;
+            return 0x9000;
         case Pulsar::LANGUAGE_RUSSIAN:
-            return BMG_TRACKS + 0xA000;
+            return 0xA000;
         case Pulsar::LANGUAGE_TURKISH:
-            return BMG_TRACKS + 0xB000;
+            return 0xB000;
         case Pulsar::LANGUAGE_CZECH:
-            return BMG_TRACKS + 0xC000;
+            return 0xC000;
         case Pulsar::LANGUAGE_ENGLISH:
         default:
-            return BMG_TRACKS;
+            return 0;
     }
+}
+
+static u32 GetLanguageTrackBase() {
+    return BMG_TRACKS + GetLanguageTrackOffset();
 }
 
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
@@ -167,6 +173,7 @@ kmWrite32(0x807e6088, 0x7F63DB78);
 kmCall(0x807e608c, GetTrackBMGByRowIdx);
 
 static wchar_t s_blockedCupPreviewBuffer[4][0x100];
+static wchar_t s_variantBaseCupPreviewBuffer[4][0x100];
 
 static void SetCupPreviewTrackMessageImpl(LayoutUIControl* control, u32 bmgId, const Text::Info* info, u32 trackIdx) {
     const Pages::CupSelect* cup = SectionMgr::sInstance->curSection->Get<Pages::CupSelect>();
@@ -184,6 +191,18 @@ static void SetCupPreviewTrackMessageImpl(LayoutUIControl* control, u32 bmgId, c
             Text::Info blockedInfo;
             blockedInfo.strings[0] = s_blockedCupPreviewBuffer[trackIdx];
             control->SetMessage(BMG_TEXT, &blockedInfo);
+            return;
+        }
+    }
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (!CupsConfig::IsReg(trackId) && cupsConfig != nullptr && cupsConfig->GetTrack(trackId).variantCount > 0 &&
+        IsVariantBaseTrackBMGId(bmgId) && trackIdx < 4) {
+        const wchar_t* originalText = GetCustomMsg(bmgId);
+        if (originalText != nullptr) {
+            BuildVariantBaseTrackName(s_variantBaseCupPreviewBuffer[trackIdx], originalText, 0x100);
+            Text::Info variantInfo;
+            variantInfo.strings[0] = s_variantBaseCupPreviewBuffer[trackIdx];
+            control->SetMessage(BMG_TEXT, &variantInfo);
             return;
         }
     }
@@ -220,7 +239,10 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
     const u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(trackId);
 
     if (hasVariants && curVariant > 0 && trackBmgId >= VARIANT_TRACKS_BASE && trackBmgId < VARIANT_AUTHORS_BASE) {
-        return VARIANT_AUTHORS_BASE + (trackBmgId - VARIANT_TRACKS_BASE);
+        u32 variantAuthorOffset = trackBmgId - VARIANT_TRACKS_BASE;
+        const u32 languageOffset = GetLanguageTrackOffset();
+        if (variantAuthorOffset >= languageOffset) variantAuthorOffset -= languageOffset;
+        return VARIANT_AUTHORS_BASE + variantAuthorOffset;
     }
     if (trackBmgId >= VARIANT_TRACKS_BASE && trackBmgId < VARIANT_AUTHORS_BASE) {
         return BMG_AUTHORS + realId;
@@ -229,10 +251,7 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
         return BMG_AUTHORS + realId;
     }
 
-    const u32 languageFix = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-                                static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC),
-                                Pulsar::SCROLLER_LANGUAGE)) *
-                            0x1000;
+    const u32 languageFix = GetLanguageTrackOffset();
     return trackBmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
 }
 
@@ -270,21 +289,23 @@ static void SetVSIntroBmgId(LayoutUIControl* trackName) {
 }
 kmCall(0x808552cc, SetVSIntroBmgId);
 
+static u32 GetCupBmgIdForInfo(PulsarCupId id, wchar_t* fallbackName, u32 fallbackNameLen, Text::Info& info) {
+    const u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
+    const u32 iconCount = CupsConfig::sInstance->definedCTsCupCount;
+    if (realCupId >= iconCount) {
+        swprintf(fallbackName, fallbackNameLen, L"Cup %d", realCupId);
+        info.strings[0] = fallbackName;
+        return BMG_TEXT;
+    }
+    return BMG_CUPS + realCupId;
+}
+
 static void SetAwardsResultCupInfo(LayoutUIControl& awardType, const char* textBoxName, u32 bmgId, Text::Info& info) {
     PulsarCupId id = CupsConfig::sInstance->lastSelectedCup;
     if (!CupsConfig::IsRegCup(id)) {
         awardType.layout.GetPaneByName("cup_icon")->flag &= ~1;
-        u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
-        u32 cupBmgId;
-        u16 iconCount = static_cast<u16>(CupsConfig::sInstance->definedCTsCupCount);
-        if (realCupId > iconCount - 1) {
-            wchar_t cupName[0x20];
-            swprintf(cupName, 0x20, L"Cup %d", realCupId);
-            info.strings[0] = cupName;
-            cupBmgId = BMG_TEXT;
-        } else
-            cupBmgId = BMG_CUPS + realCupId;
-        info.bmgToPass[1] = cupBmgId;
+        wchar_t cupName[0x20];
+        info.bmgToPass[1] = GetCupBmgIdForInfo(id, cupName, sizeof(cupName) / sizeof(cupName[0]), info);
     }
     awardType.SetTextBoxMessage(textBoxName, bmgId, &info);
 }
@@ -294,17 +315,8 @@ static void SetGPIntroInfo(LayoutUIControl& titleText, u32 bmgId, Text::Info& in
     PulsarCupId id = CupsConfig::sInstance->lastSelectedCup;
     if (!CupsConfig::IsRegCup(id)) {
         titleText.layout.GetPaneByName("cup_icon")->flag &= ~1;
-        u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
-        u32 cupBmgId;
-        u16 iconCount = static_cast<u16>(CupsConfig::sInstance->definedCTsCupCount);
-        if (realCupId > iconCount - 1) {
-            wchar_t cupName[0x20];
-            swprintf(cupName, 0x20, L"Cup %d", realCupId);
-            info.strings[0] = cupName;
-            cupBmgId = BMG_TEXT;
-        } else
-            cupBmgId = BMG_CUPS + realCupId;
-        info.bmgToPass[1] = cupBmgId;
+        wchar_t cupName[0x20];
+        info.bmgToPass[1] = GetCupBmgIdForInfo(id, cupName, sizeof(cupName) / sizeof(cupName[0]), info);
     }
     titleText.SetMessage(bmgId, &info);
 }
@@ -378,7 +390,6 @@ static bool BattleArenaBMGFix(SectionId sectionId) {
 }
 kmCall(0x8083d02c, BattleArenaBMGFix);
 
-// kmWrite32(0x80644340, 0x7F64DB78);
 static void WinningTrackBMG(PulsarId winningCourse) {
     register Pages::Vote* vote;
     asm(mr vote, r27;);
@@ -429,7 +440,7 @@ static void ExtCourseSelectCupInitSelf(CtrlMenuCourseSelectCup* courseCups) {
         const PulsarCupId id = cupsConfig->GetNextCupId(cupsConfig->lastSelectedCup, i - cupsConfig->lastSelectedCupButtonIdx);
         ExpCupSelect::UpdateCupData(id, cur);
         cur.animator.GetAnimationGroupById(0).PlayAnimationAtFrame(0, 0.0f);
-        const bool clicked = cupsConfig->lastSelectedCupButtonIdx == i ? true : false;
+        const bool clicked = cupsConfig->lastSelectedCupButtonIdx == i;
         cur.animator.GetAnimationGroupById(1).PlayAnimationAtFrame(!clicked, 0.0f);
         cur.animator.GetAnimationGroupById(2).PlayAnimationAtFrame(!clicked, 0.0f);
         cur.animator.GetAnimationGroupById(3).PlayAnimationAtFrame(clicked, 0.0f);
@@ -484,6 +495,26 @@ kmWritePointer(0x808d3190, ExtCourseSelectCupInitSelf);  // 807e45c0
 static const wchar_t COLOR_ESCAPE_RED[] = {0x001A, 0x0800, 0x0001, 0x0017, 0x0000};
 static const wchar_t FONT_SIZE_ESCAPE_SMALL[] = {0x001A, 0x0800, 0x0000, 0x0050, 0x0000};
 
+static const wchar_t* FindFirstColorEscape(const wchar_t* src) {
+    const u8* srcBytes = reinterpret_cast<const u8*>(src);
+    while (*reinterpret_cast<const wchar_t*>(srcBytes) != L'\0') {
+        const wchar_t cur = *reinterpret_cast<const wchar_t*>(srcBytes);
+        if (cur == 0x001A) {
+            const u8 escapeLen = srcBytes[2];
+            if ((escapeLen == 0) || (escapeLen & 1)) break;
+
+            const wchar_t* escapeWchars = reinterpret_cast<const wchar_t*>(srcBytes);
+            const u8 escapeType = srcBytes[3];
+            if (escapeLen >= 8 && escapeType == 0 && escapeWchars[2] == 0x0001) return escapeWchars;
+
+            srcBytes += escapeLen;
+        } else {
+            srcBytes += sizeof(wchar_t);
+        }
+    }
+    return nullptr;
+}
+
 static void RemoveAllEscapeSequences(wchar_t* dest, const wchar_t* src) {
     while (*src != L'\0') {
         if (src[0] == 0x001A) {
@@ -503,6 +534,31 @@ static void BuildBlockedTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen)
         dest[i] = COLOR_ESCAPE_RED[i];
     }
     RemoveAllEscapeSequences(dest + prefixLen, src);
+}
+
+static void BuildVariantBaseTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen) {
+    if (maxLen == 0) return;
+
+    u32 out = AppendTrackTextPreservingColor(dest, src, 0, maxLen);
+    if (out < maxLen - 1) dest[out++] = L' ';
+    const wchar_t* colorEscape = FindFirstColorEscape(src);
+    if (colorEscape != nullptr) {
+        const u8* escapeBytes = reinterpret_cast<const u8*>(colorEscape);
+        const u8 escapeLen = escapeBytes[2];
+        const u32 escapeChars = escapeLen / sizeof(wchar_t);
+        for (u32 i = 0; i < escapeChars && out < maxLen - 1; ++i) {
+            dest[out++] = colorEscape[i];
+        }
+    }
+    if (out < maxLen - 1) dest[out++] = L'*';
+    dest[out] = L'\0';
+}
+
+static bool IsVariantBaseTrackBMGId(u32 bmgId) {
+    const u32 VARIANT_TRACKS_BASE = 0x400000;
+    const u32 VARIANT_AUTHORS_BASE = 0x500000;
+    if (bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_AUTHORS_BASE) return (bmgId & 0xF) == 0;
+    return bmgId >= BMG_TRACKS && bmgId < VARIANT_TRACKS_BASE;
 }
 
 static void BuildTrackNameAndAuthor(wchar_t* dest, const wchar_t* trackName, const wchar_t* authorName, u32 maxLen) {
@@ -575,14 +631,27 @@ static u32 AppendTrackTextPreservingColor(wchar_t* dest, const wchar_t* src, u32
 }
 
 static wchar_t s_blockedTrackNameBuffer[4][0x100];
+static wchar_t s_variantBaseTrackNameBuffer[5][0x100];
 
-void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx) {
+void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx, bool showVariantMarker) {
     if (IsTrackBlocked(trackId)) {
         const wchar_t* originalText = GetCustomMsg(bmgId);
         if (originalText != nullptr) {
             BuildBlockedTrackName(s_blockedTrackNameBuffer[buttonIdx], originalText, 0x100);
             Text::Info info;
             info.strings[0] = s_blockedTrackNameBuffer[buttonIdx];
+            button.SetMessage(BMG_TEXT, &info);
+            return;
+        }
+    }
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (showVariantMarker && !CupsConfig::IsReg(trackId) && cupsConfig != nullptr && cupsConfig->GetTrack(trackId).variantCount > 0 &&
+        IsVariantBaseTrackBMGId(bmgId) && buttonIdx < 5) {
+        const wchar_t* originalText = GetCustomMsg(bmgId);
+        if (originalText != nullptr) {
+            BuildVariantBaseTrackName(s_variantBaseTrackNameBuffer[buttonIdx], originalText, 0x100);
+            Text::Info info;
+            info.strings[0] = s_variantBaseTrackNameBuffer[buttonIdx];
             button.SetMessage(BMG_TEXT, &info);
             return;
         }

@@ -8,9 +8,11 @@
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
 #include <Network/GPReport.hpp>
+#include <Network/NHTTPHelper.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/Rating/RatingSync.hpp>
 #include <Network/WiiLink.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -22,6 +24,11 @@ static float s_requestStartVr = 0.0f;
 static float s_requestStartBr = 0.0f;
 static void* s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
+static s32 s_pendingInitialReportProfileId = 0;
+static u32 s_pendingInitialReportLicenseId = 0;
+static bool s_pendingLoginDownload = false;
+static s32 s_pendingProfileId = 0;
+static u32 s_pendingLicenseId = 0;
 
 struct RequestCtx {
     u32 generation;
@@ -30,19 +37,6 @@ struct RequestCtx {
 };
 
 static RequestCtx s_requestCtx;
-
-static void* NHTTPAllocFromEggHeap(u32 size, s32 align) {
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap == nullptr) return nullptr;
-    if (align < 4) align = 4;
-    return EGG::Heap::alloc(size, align, heap);
-}
-
-static void NHTTPFreeFromEggHeap(void* ptr) {
-    if (ptr == nullptr) return;
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap != nullptr) EGG::Heap::free(ptr, heap);
-}
 
 static int ClampRatingForSync(float rating) {
     int scaled = (int)(rating * 100.0f + 0.5f);
@@ -118,6 +112,7 @@ static bool IsRequestStillRelevant(const RequestCtx& ctx) {
 }
 
 static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
+    Network::FinishNHTTPRequest();
     RequestCtx* ctx = reinterpret_cast<RequestCtx*>(userdata);
     if (ctx == nullptr || response == nullptr) return;
 
@@ -159,20 +154,17 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
     SetSyncReportingSuppressed(false);
 }
 
-void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
+void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     if (profileId <= 0) return;
 
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
 
-    const s32 startupRet = NHTTPStartup(reinterpret_cast<void*>(&NHTTPAllocFromEggHeap),
-                                        reinterpret_cast<void*>(&NHTTPFreeFromEggHeap),
-                                        0x11);
-    if (startupRet < 0) return;
+    if (!Network::PrepareNHTTPRequest()) return;
 
     if (s_requestWorkBuf == nullptr) {
-        s_requestWorkBuf = NHTTPAllocFromEggHeap(s_nhttpWorkBufSize, 0x20);
+        s_requestWorkBuf = Network::NHTTPAlloc(s_nhttpWorkBufSize, 0x20);
         if (s_requestWorkBuf == nullptr) return;
     }
     memset(s_requestWorkBuf, 0, s_nhttpWorkBufSize);
@@ -198,7 +190,45 @@ void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet < 0) {
         ++s_requestGeneration;
+        return;
     }
+    Network::MarkNHTTPRequestActive();
+}
+
+static bool CanStartLoginRatingDownload() {
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    return controller != nullptr && controller->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
+}
+
+static void TryStartPendingLoginRatingDownload() {
+    if (!s_pendingLoginDownload || !CanStartLoginRatingDownload()) return;
+
+    const s32 profileId = s_pendingProfileId;
+    const u32 licenseId = s_pendingLicenseId;
+    s_pendingLoginDownload = false;
+    s_pendingProfileId = 0;
+    s_pendingLicenseId = 0;
+    BeginLoginRatingDownload(profileId, licenseId);
+}
+
+static FrameLoadHook startPendingLoginRatingDownload(TryStartPendingLoginRatingDownload);
+
+void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
+    if (profileId <= 0) return;
+
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    if (rksys == nullptr || licenseId >= 4) return;
+    BindLicenseProfileId(licenseId, profileId);
+
+    if (!CanStartLoginRatingDownload()) {
+        s_pendingLoginDownload = true;
+        s_pendingProfileId = profileId;
+        s_pendingLicenseId = licenseId;
+        return;
+    }
+
+    s_pendingLoginDownload = false;
+    BeginLoginRatingDownload(profileId, licenseId);
 }
 
 }  // namespace PointRating

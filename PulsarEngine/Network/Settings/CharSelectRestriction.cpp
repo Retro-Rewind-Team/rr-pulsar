@@ -4,10 +4,15 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 
-// Origial code from VP, adapted to Pulsar 2.0
+// Original code from VP, adapted to Pulsar 2.0.
 namespace RetroRewind {
 namespace UI {
-// Uses the global function to get the character ID of the local player's Mii to determine its weight class. Credits to Brawlbox for the code.
+
+static bool IsFriendRoom() {
+    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
+    return roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+}
+
 System::WeightClass GetMiiWeightClass(Mii &mii) {
     CharacterId charId = GetMiiCharacterId(mii);
     if (charId < MII_M_A_MALE) {
@@ -18,7 +23,6 @@ System::WeightClass GetMiiWeightClass(Mii &mii) {
     return System::HEAVYWEIGHT;
 }
 
-// "Enables" all the buttons on the character select screen by setting the images to the character panes and making all the buttons accessible.
 void EnableButtons(CtrlMenuCharacterSelect &charSelect) {
     for (u8 i = 0; i < 42; i++) {
         CtrlMenuCharacterSelect::ButtonDriver *buttonDriver = charSelect.GetButtonDriver(static_cast<CharacterId>(i));
@@ -33,7 +37,6 @@ void EnableButtons(CtrlMenuCharacterSelect &charSelect) {
     }
 }
 
-// Disables a specified button by setting the pane to a question mark and making the button inaccessible.
 void DisableButton(CtrlMenuCharacterSelect::ButtonDriver *button) {
     button->SetPicturePane("chara", "cha_26_hatena");
     button->SetPicturePane("chara_shadow", "cha_26_hatena");
@@ -48,10 +51,10 @@ void RestrictCharacterSelection(PushButton *button, u32 hudSlotId) {
     Pages::CharacterSelect *page = SectionMgr::sInstance->curSection->Get<Pages::CharacterSelect>();
     CtrlMenuCharacterSelect &charSelect = page->ctrlMenuCharSelect;
     SectionId curSection = SectionMgr::sInstance->curSection->sectionId;
-    bool charRestrictLight = Pulsar::CHAR_DEFAULTSELECTION;
-    bool charRestrictMid = Pulsar::CHAR_DEFAULTSELECTION;
-    bool charRestrictHeavy = Pulsar::CHAR_DEFAULTSELECTION;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    Pulsar::CharacterRestriction charRestrictLight = Pulsar::CHAR_DEFAULTSELECTION;
+    Pulsar::CharacterRestriction charRestrictMid = Pulsar::CHAR_DEFAULTSELECTION;
+    Pulsar::CharacterRestriction charRestrictHeavy = Pulsar::CHAR_DEFAULTSELECTION;
+    if (IsFriendRoom()) {
         charRestrictLight = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTLIGHT) ? Pulsar::CHAR_LIGHTONLY : Pulsar::CHAR_DEFAULTSELECTION;
         charRestrictMid = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTMID) ? Pulsar::CHAR_MEDIUMONLY : Pulsar::CHAR_DEFAULTSELECTION;
         charRestrictHeavy = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTHEAVY) ? Pulsar::CHAR_HEAVYONLY : Pulsar::CHAR_DEFAULTSELECTION;
@@ -61,12 +64,10 @@ void RestrictCharacterSelection(PushButton *button, u32 hudSlotId) {
 
     EnableButtons(charSelect);
 
-    // Disables the buttons that are not in the character weight class restriction.
     if (charRestrictLight != Pulsar::CHAR_DEFAULTSELECTION || charRestrictMid != Pulsar::CHAR_DEFAULTSELECTION || charRestrictHeavy != Pulsar::CHAR_DEFAULTSELECTION) {
         for (int i = System::BUTTON_BABY_MARIO; i < System::BUTTON_MII_A; i++) {
             bool restrictButton = false;
 
-            // Determine if the button should be restricted based on weight class
             if (charRestrictLight == Pulsar::CHAR_LIGHTONLY) {
                 restrictButton = (i >= System::BUTTON_MARIO && i < System::BUTTON_MII_A);
             }
@@ -84,7 +85,6 @@ void RestrictCharacterSelection(PushButton *button, u32 hudSlotId) {
         }
     }
 
-    // Disables the Miis in Local 2P.
     if (curSection == SECTION_P2_WIFI ||
         curSection == SECTION_P2_WIFI_FROOM_VS_VOTING ||
         curSection == SECTION_P2_WIFI_FROOM_TEAMVS_VOTING ||
@@ -100,17 +100,15 @@ void RestrictCharacterSelection(PushButton *button, u32 hudSlotId) {
     bool currentAccessible = !button->manipulator.inaccessible;
 
     if (!currentAccessible) {
-        // Find the first available accessible button
         CtrlMenuCharacterSelect::ButtonDriver *newButton = nullptr;
         for (int i = System::BUTTON_BABY_MARIO; i < System::BUTTON_MII_A; i++) {
             if (!driverButtons[i].manipulator.inaccessible) {
                 newButton = &driverButtons[i];
-                break;  // Select the first available character
+                break;
             }
         }
 
         if (newButton) {
-            // Deselect current button and select new button
             button->HandleDeselect(hudSlotId, -1);
             newButton->SelectInitial(hudSlotId);
             newButton->SetButtonColours(hudSlotId);

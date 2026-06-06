@@ -1,21 +1,3 @@
-/*
-    ExpWWLeaderboard.cpp
-    Copyright (C) 2025 ZPL
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -89,20 +71,7 @@ void CtrlRaceResult_calcSelf_Hook(CtrlRaceResult* self) {
             }
 
             wchar_t buffer[64];
-            float val = inputs->current;
-            int iVal = (int)val;
-            int dVal = (int)((val - (float)iVal) * 100.0f + 0.5f);
-            if (dVal >= 100) {
-                iVal++;
-                dVal -= 100;
-            }
-            if (dVal < 0) dVal = -dVal;
-
-            if (iVal == 0)
-                swprintf(buffer, 64, L"%d", dVal);
-            else
-                swprintf(buffer, 64, L"%d%02d", iVal, dVal);
-
+            PointRating::FormatRatingDigits(inputs->current, buffer, sizeof(buffer) / sizeof(buffer[0]));
             Text::Info info;
             info.strings[0] = buffer;
             self->SetTextBoxMessage("total_score", UI::BMG_TEXT, &info);
@@ -124,10 +93,6 @@ struct RatingDisplay {
     bool isFloat;
 };
 
-static float NormalizeRatingDeltaF(float rawDelta) {
-    return rawDelta;
-}
-
 static s32 NormalizeRatingDelta(s32 rawDelta) {
     const s32 HALF_RANGE = 0x8000;
     const s32 FULL_RANGE = 0x10000;
@@ -137,6 +102,37 @@ static s32 NormalizeRatingDelta(s32 rawDelta) {
         rawDelta -= FULL_RANGE;
     }
     return rawDelta;
+}
+
+void FormatRatingDelta(float delta, wchar_t* buffer, u32 bufferSize) {
+    int whole = (int)delta;
+    int centis;
+    if (delta >= 0.0f) {
+        centis = (int)((delta - (float)whole) * 100.0f + 0.5f);
+        if (centis >= 100) {
+            whole++;
+            centis -= 100;
+        }
+    } else {
+        centis = (int)((delta - (float)whole) * 100.0f - 0.5f);
+        if (centis <= -100) {
+            whole--;
+            centis += 100;
+        }
+    }
+    if (centis < 0) centis = -centis;
+
+    if (delta >= 0.0f) {
+        if (whole == 0)
+            swprintf(buffer, bufferSize, L"+%d", centis);
+        else
+            swprintf(buffer, bufferSize, L"+%d%02d", whole, centis);
+    } else {
+        if (whole == 0)
+            swprintf(buffer, bufferSize, L"-%d", centis);
+        else
+            swprintf(buffer, bufferSize, L"%d%02d", whole, centis);
+    }
 }
 
 inline bool IsValidPlayerId(u8 playerId) {
@@ -375,54 +371,14 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
                 inputs->direction = (display.delta != 0.0f);
 
                 wchar_t buffer[64];
-                int tInt = (int)startVal;
-                int tDec = (int)((startVal - (float)tInt) * 100.0f + 0.5f);
-                if (tDec >= 100) {
-                    tInt++;
-                    tDec -= 100;
-                }
-                if (tDec < 0) tDec = -tDec;
-                if (tInt == 0)
-                    swprintf(buffer, 64, L"%d", tDec);
-                else
-                    swprintf(buffer, 64, L"%d%02d", tInt, tDec);
-
+                PointRating::FormatRatingDigits(startVal, buffer, sizeof(buffer) / sizeof(buffer[0]));
                 Text::Info info;
                 info.strings[0] = buffer;
                 result->SetTextBoxMessage("total_score", UI::BMG_TEXT, &info);
                 result->SetTextBoxMessage("total_point", messageId);
 
-                int dInt = (int)display.delta;
-                int dDec;
-                if (display.delta >= 0) {
-                    dDec = (int)((display.delta - (float)dInt) * 100.0f + 0.5f);
-                    if (dDec >= 100) {
-                        dInt++;
-                        dDec -= 100;
-                    }
-                } else {
-                    dDec = (int)((display.delta - (float)dInt) * 100.0f - 0.5f);
-                    if (dDec <= -100) {
-                        dInt--;
-                        dDec += 100;
-                    }
-                }
-                if (dDec < 0) dDec = -dDec;
-
                 wchar_t deltaBuffer[64];
-                if (display.delta >= 0) {
-                    if (dInt == 0)
-                        swprintf(deltaBuffer, 64, L"+%d", dDec);
-                    else
-                        swprintf(deltaBuffer, 64, L"+%d%02d", dInt, dDec);
-                } else {
-                    if (dInt == 0) {
-                        swprintf(deltaBuffer, 64, L"-%d", dDec);
-                    } else {
-                        swprintf(deltaBuffer, 64, L"%d%02d", dInt, dDec);
-                    }
-                }
-
+                FormatRatingDelta(display.delta, deltaBuffer, sizeof(deltaBuffer) / sizeof(deltaBuffer[0]));
                 Text::Info deltaInfo;
                 deltaInfo.strings[0] = deltaBuffer;
                 result->SetTextBoxMessage("get_point", UI::BMG_TEXT, &deltaInfo);

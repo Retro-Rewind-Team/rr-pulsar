@@ -175,9 +175,9 @@ void ExtendedTeamSelect::BeforeControlUpdate() {
     }
 
     for (int i = count; i < 12; i++) {
-        this->teamPlayerControl[count].isHidden = true;
-        this->teamPlayerArrows[count].isHidden = true;
-        this->teamPlayerArrows[count].manipulator.inaccessible = true;
+        this->teamPlayerControl[i].isHidden = true;
+        this->teamPlayerArrows[i].isHidden = true;
+        this->teamPlayerArrows[i].manipulator.inaccessible = true;
     }
 
     this->playerCount = count;
@@ -296,7 +296,6 @@ void ExtendedTeamSelect::OnBackPress(u32 hudSlotId) {
 
 void ExtendedTeamSelect::OnStartRaceClick(PushButton& button, u32 hudSlotId) {
     Pages::FriendRoomWaiting* friendRoomWaiting = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomWaiting>();
-    Pages::FriendRoomManager* friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
 
     if (!this->manager->IsInactiveStatus()) {
         if (this->isHost) {

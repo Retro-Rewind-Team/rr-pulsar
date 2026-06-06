@@ -32,14 +32,13 @@ void AddGhostToVS() {
         u8 localCount;
         racedata->menusScenario.ComputePlayerCounts(&playerCount, &screenCount, &localCount);
         if (racedata->menusScenario.settings.gamemode >= MODE_PRIVATE_VS) {
-            if (playerCount == 12) return;  // we do not want to replace a human player
+            if (playerCount == 12) return;
         }
-        if (playerCount < 12) ++playerCount;  // add a player to be the ghost
+        if (playerCount < 12) ++playerCount;
 
         const EngineClass cc = racedata->menusScenario.settings.engineClass;
-        if (racedata->menusScenario.settings.modeFlags & 0x1 != 0) return;  // mirror
-        if (cc == CC_100 && system->GetInfo().Has200cc() == false) return;  // 100 but the pack does not have 200 so no ghost to be found
-        // only 150 and 200 are possible
+        if ((racedata->menusScenario.settings.modeFlags & 0x1) != 0) return;
+        if (cc == CC_100 && !system->GetInfo().Has200cc()) return;
 
         char folderPath[IOS::ipcMaxPath];
         const PulsarId id = CupsConfig::sInstance->GetWinning();
@@ -48,11 +47,11 @@ void AddGhostToVS() {
         cupsConfig->GetTrackGhostFolder(folderPath, id, variantIdx);
 
         alignas(0x20) Ghosts::Leaderboard leaderboard(folderPath, id, false);
-        const TTMode ttMode = static_cast<TTMode>(racedata->menusScenario.settings.engineClass % 2 + 2 * system->IsContext(PULSAR_FEATHER));  // CC_150 (2) becomes 0 (TT_MODE_150), CC_100 (1) becomes 1 (TT_MODE_100)
+        const TTMode ttMode = static_cast<TTMode>(racedata->menusScenario.settings.engineClass % 2 + 2 * system->IsContext(PULSAR_FEATHER));
         const char* favGhost = leaderboard.GetFavGhost(ttMode);
         char initial = favGhost[0];
 
-        if (initial == '\0') return;  // no fav ghost for this track
+        if (initial == '\0') return;
 
         IO* io = IO::sInstance;
         RKG* rkg = io->Alloc<RKG>(sizeof(RKG));
@@ -104,7 +103,6 @@ bool CPUItemFix(KartAIController& kartAI) {
     if (IsVSGhost(kartAI.pointers->values->playerIdx)) return true;
     return kartAI.IsCPU();
 }
-// kmCall(0x807414d8, CPUItemFix);
 
 u32 LdbRows(u32 def) {
     return System::sInstance->nonTTGhostPlayersCount;
@@ -118,7 +116,6 @@ void FixPositions(RaceinfoPlayer& player) {
         GhostData ghost(Racedata::sInstance->ghosts[0]);
         SectionMgr* sectionMgr = SectionMgr::sInstance;
         sectionMgr->sectionParams->playerMiis.LoadMii(idx, &ghost.miiData);
-        // Racedata::sInstance->racesScenario.players[idx].mii = *sectionMgr->sectionParams->playerMiis.GetMii(idx);
         return;
     }
     player.position = idx + 1;

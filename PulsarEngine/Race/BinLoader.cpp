@@ -17,7 +17,6 @@ void *GetCustomKartParam(ArchiveMgr *archive, ArchiveSource type, const char *na
 kmCall(0x80591a30, GetCustomKartParam);
 
 void *GetCustomKartAIParam(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
-    const GameMode gameMode = Racedata::sInstance->racesScenario.settings.gamemode;
     if (static_cast<Pulsar::HardAI>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_HARDAI)) == Pulsar::HARDAI_ENABLED) {
         name = "kartAISpdParamRR.bin";
     }
@@ -27,18 +26,20 @@ void *GetCustomKartAIParam(ArchiveMgr *archive, ArchiveSource type, const char *
 kmCall(0x8073ae9c, GetCustomKartAIParam);
 
 void *GetCustomItemSlot(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
-    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    const GameMode mode = scenario.settings.gamemode;
-    bool itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) ? Pulsar::GAMEMODE_RANDOM : Pulsar::GAMEMODE_DEFAULT;
-    bool itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST) ? Pulsar::GAMEMODE_BLAST : Pulsar::GAMEMODE_DEFAULT;
-    if (itemModeRandom == Pulsar::GAMEMODE_DEFAULT || itemModeBlast == Pulsar::GAMEMODE_DEFAULT) {
+    const bool itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM);
+    const bool itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST);
+    const bool itemModeNone = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODENONE);
+    if (!itemModeRandom && !itemModeBlast && !itemModeNone) {
         name = "ItemSlotRR.bin";
     }
-    if (itemModeRandom == Pulsar::GAMEMODE_RANDOM) {
+    if (itemModeRandom) {
         name = "ItemSlotRandom.bin";
     }
-    if (itemModeBlast == Pulsar::GAMEMODE_BLAST) {
+    if (itemModeBlast) {
         name = "ItemSlotBlast.bin";
+    }
+    if (itemModeNone) {
+        name = "ItemSlot.bin";
     }
 
 #ifdef PROD

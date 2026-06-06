@@ -36,10 +36,6 @@ u32 RaceEndPage::GetButtonCount() const {
 }
 const u32* RaceEndPage::GetVariantsIdxArray() const {
     static const u32 array[buttonCount] = {0, 1};  // corresponds to 3 buttons centered on the screen
-    /*names:
-    ButtonContinue = Spectate
-    ButtonQuit = Quit
-    */
     return array;
 }
 bool RaceEndPage::IsPausePage() const { return false; }

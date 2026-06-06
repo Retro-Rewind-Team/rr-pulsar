@@ -32,7 +32,6 @@ bool ResolveTrackFromCourseId(CourseId courseId, PulsarId& trackId, CourseId& re
 }
 
 const char Leaderboard::filePathFormat[] = "%s/ldb.pul";
-// CTOR to build a leaderboard from scratch
 Leaderboard::Leaderboard() {
     memset(this, 0, sizeof(Leaderboard));
     this->magic = Leaderboard::fileMagic;
@@ -40,7 +39,6 @@ Leaderboard::Leaderboard() {
     for (int mode = 0; mode < 4; ++mode) this->hasTrophy[mode] = false;
 }
 
-// CTOR to build it from the raw file
 Leaderboard::Leaderboard(const char* folderPath, PulsarId id, bool createNew) {
     char path[IOS::ipcMaxPath];
     snprintf(path, IOS::ipcMaxPath, filePathFormat, folderPath);
@@ -50,7 +48,6 @@ Leaderboard::Leaderboard(const char* folderPath, PulsarId id, bool createNew) {
 
     if (!ret || this->crc32 != crc32 || magic != fileMagic) {
         if (createNew) this->CreateFile(id);
-        // System::sInstance->taskThread->Request(&Leaderboard::CreateFile, id, 0);
         new (this) Leaderboard;
         this->SetTrack(id);
     }
@@ -121,7 +118,6 @@ void Leaderboard::Save(const char* folderPath) {
     char path[IOS::ipcMaxPath];
     snprintf(path, IOS::ipcMaxPath, filePathFormat, folderPath);
     IO* file = IO::sInstance;
-    ;
     file->OpenFile(path, FILE_MODE_WRITE);
     file->Overwrite(sizeof(Leaderboard), this);
     file->Close();
@@ -155,12 +151,10 @@ kmCall(0x8085d5c8, Leaderboard::GetEntry);
 kmWrite32(0x8085d784, 0x3860000b);
 kmWrite32(0x8085d8c8, 0x5743063E);
 kmCall(0x8085d8d0, Leaderboard::GetEntry);  // actual leaderboard
-// kmWrite32(0x8085d8e8, 0x60000000);
 kmWrite32(0x8085da14, 0x281a000a);
 kmWrite32(0x8085da2c, 0x83230028);
 kmWrite32(0x8085da4c, 0x3860000a);
 kmCall(0x8085da54, Leaderboard::GetEntry);
-// kmWrite32(0x8085da6c, 0x60000000);
 
 // Correct BMG if you beat the expert
 kmWrite32(0x8085d744, 0x38805000);

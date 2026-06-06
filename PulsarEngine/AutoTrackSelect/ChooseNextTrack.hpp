@@ -55,11 +55,6 @@ class ChooseNextTrack : public Pages::RaceMenu {  // use page 0x27
     const bool isBattle;
     Status status;
     bool isHost;
-    // u32 lastSentFrames;
-
-    // HOST VARIABLES
-    // s32 maxTimeDiff;
-    // s32 readyWait;
     bool hasReceivedHostTrack[12];  // for the host to send confirmation once everyone has sent their confirmation
 
    private:

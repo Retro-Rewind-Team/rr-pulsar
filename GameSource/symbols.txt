@@ -33,6 +33,7 @@ atoi = 0x8001543c
 wcscpy = 0x800179b4
 strncmp = 0x800133b8
 strtoul = 0x800152a8
+stricmp = 0x8001bbf8
 
 LoadAnimation__10UIAnimatorFUiUiPCcUibf = 0x8063c714
 
@@ -786,6 +787,8 @@ InitAllkartArchivesLoaders__10ArchiveMgrFUiUc = 0x805422cc
 
 ##SCENE
 GetCurrent__9GameSceneFv = 0x8051bed0
+CreateHeap__9GameSceneFUiUi = 0x8051b8e4
+DestroyHeap__9GameSceneFPQ23EGG4Heap = 0x8051b988
 
 #RootScene
 sInstance__9RootScene = 0x809bd740
@@ -883,6 +886,7 @@ __vt__14RacedataPlayer = 0x808b3294
 
 ##RACEINFO
 #Raceinfo
+CreateInstance__8RaceinfoFv = 0x80532084
 Update__8RaceinfoFv = 0x805331b4
 SetPlayerDisconnected__8RaceinfoFUc = 0x80533d84
 IsAtLeastStage__8RaceinfoCF9RaceStage = 0x80536230
@@ -1064,6 +1068,7 @@ unknown_70__4Kart = 0x808cb550
 UpdateFromInput__Q24Kart6StatusFv = 0x8059487c
 ApplyStartBoost__Q24Kart6StatusFi = 0x80595af8
 UpdateCollisions__Q24Kart6StatusFv = 0x80594bd4
+StartOobWipe__Q24Kart6StatusFUi = 0x805946f4
 
 #KartPhyiscsHolder
 Update__Q24Kart18WheelPhysicsHolderFRC4Vec3RC5Mtx34f = 0x8059a278
@@ -1122,6 +1127,7 @@ CreateAndInitPage__7SectionF6PageId = 0x80622d08
 AddPageLayer__7SectionF6PageId = 0x80622da0
 GetTopLayerPage__7SectionCFv = 0x80622ea0
 ScheduleDisconnection__7SectionFv = 0x80623054
+RemovePageLayers__7SectionFUi = 0x806232e8
 CreatePageById__7SectionF6PageId = 0x80623390
 CreateSectionPages__7SectionF9SectionId = 0x8062c3a4
 AddInitialLayers__7SectionF9SectionId = 0x80630094
@@ -1160,6 +1166,9 @@ Load__13ControlLoaderFPCcPCcPCcPPCc = 0x805c2c60
 #Info
 __ct__Q24Text4InfoFv = 0x805cd94c
 GetBMGInfo__Q24Text11PaneHandlerFRC9BMGHolderRC9BMGHolderUiPwPQ24Text9FontIndex = 0x805cef10
+__ct__Q24Text11PaneHandlerFv = 0x805cda34
+__dt__Q24Text11PaneHandlerFv = 0x805cda50
+Init__Q24Text11PaneHandlerFPQ34nw4r3lyt7TextBox = 0x805cdbe4
 
 #Layout
 GetPaneByName__10BaseLayoutCFPCc = 0x805e8368
@@ -1168,6 +1177,7 @@ dtMainLayout = 0x805e8630
 __vt__10MainLayout = 0x808b94c4
 __vt__10BaseLayout = 0x808b950c
 Build__10MainLayoutFPCc = 0x805e889c
+GetTextPaneHandlerByName__10MainLayoutCFPCc = 0x805e9028
 
 #BMGHolder
 __ct__9BMGHolderFv = 0x805f8b34
@@ -1502,7 +1512,22 @@ UpdateInfo__19CtrlRaceNameBalloonFUc = 0x807f0044
 
 #RaceBalloons
 __ct__12RaceBalloons = 0x807f1c58
+__ct__Q26GeoObj10ObjBalloonFUcUc = 0x8086e224
+OnAdd__Q26GeoObj10ObjBalloonFUiUcUcUc = 0x8086ec5c
+CreateInstance__18RaceBalloonManagerFv = 0x808697bc
+Add__18RaceBalloonManagerFiUiUiiUii = 0x80869df4
+Remove__18RaceBalloonManagerFUiUiUiiUii = 0x80869fd0
+Move__18RaceBalloonManagerFUiUiiUii = 0x8086a0dc
+sInstance__18RaceBalloonManager = 0x809c4748
 maxDistanceNames__12RaceBalloons = 0x808d3e14
+
+#KartAction
+StartAction3__Q24Kart6ActionFUi = 0x80568718
+StartAction6__Q24Kart6ActionFUi = 0x80569024
+StartAction13__Q24Kart6ActionFUi = 0x80569818
+
+#KartMove
+StartBlinkLocal__Q24Kart8MovementFv = 0x805819a8
 
 #CtrlRaceRankNum
 IsInactive__15CtrlRaceRankNumFv = 0x807f4d40
@@ -2083,6 +2108,7 @@ FollowFadeEffectsByIdxVelocity__Q27Effects6PlayerFPPQ23EGG6EffectUiUiUi = 0x806a
 PlaySound__Q25Audio12SinglePlayerFUis = 0x806f8b7c
 PrepareSound__Q25Audio12SinglePlayerFUib = 0x806f8dcc
 StopSound__Q25Audio12SinglePlayerFv = 0x806f90c4
+StopInactiveSounds__Q25Audio12SinglePlayerFv = 0x806f9900
 PlayBGSound__Q25Audio12SinglePlayerFUi = 0x806fa604
 sInstance__Q25Audio12SinglePlayer = 0x809c2328
 
@@ -2169,6 +2195,7 @@ LoadGraphicsImplicitBRRES__Q24Item3ObjFPCcPCcUcPQ34Item3Obj8AnmParamQ44nw4r3g3d6
 LoadGraphics__Q24Item3ObjFPCcPCcPCcUcPQ34Item3Obj8AnmParamQ44nw4r3g3d6ScnMdl12BufferOptionPvUi = 0x807a0040
 CreateItemDirect__Q24Item7ManagerF9ItemObjIdPC4Vec3P4Vec3Ui = 0x80799fbc
 DeployBlooper__Q24Item8GessoMgrFUs = 0x807a9128
+TryDisappearDueToExcess__Q24Item3ObjFv = 0x8079fe30
 DisappearDueToExcess__Q24Item3ObjFb = 0x807a6c14
 KillFromPlayerCollision__Q24Item3ObjFbUc = 0x807a6614
 KillFromOtherCollision__Q24Item3ObjFb = 0x807a6560
@@ -2183,6 +2210,7 @@ DecideRouletteItem__Q24Item12ItemSlotDataFUsUc6ItemIdb = 0x807bb8d0
 itemSlotData = 0x809c3670
 
 #Inventory
+EjectItems__Q24Item15PlayerInventoryFv = 0x807bc350
 Update__Q24Item15PlayerInventoryFv = 0x807bc6e8
 SetItem__Q24Item15PlayerInventoryF6ItemIdb = 0x807bc940
 RemoveItems__Q24Item15PlayerInventoryFUi = 0x807bc97c
@@ -2483,8 +2511,56 @@ Load__16MenuKartModelMgrFv = 0x80832d00
 DVDCreate = 0x8052a1b0
 __dt__15MenuDriverModelFv = 0x80830708
 __dt__18ModelTransformatorFv = 0x80556774
+GetAnmHolderByType__18ModelTransformatorCF7AnmType = 0x80557340
+PlayAnmNoBlend__18ModelTransformatorFUiff = 0x805573cc
+Set__Q24Item3ObjF9ItemObjId = 0x8079e5f4
+LoadItemLight__Q24Item3ObjFv = 0x807a0380
 RequestSceneReinit__10SectionMgrFUiUi = 0x80635b2c
 ToadetteFix1 = 0x807c89bc
 ToadetteFix2 = 0x807c8aa8
 Sqrt__Q23EGG4MathFf = 0x8022f80c
 Acos__Q23EGG4MathFf = 0x8022f8c0
+
+__ct__12ToadetteHairFRQ34nw4r3g3d7ResFileP13ModelDirectorUi = 0x807da5c0
+
+#CustomCharacters
+characterNames = 0x808b3a90
+__ct__9TicoModelFP16DriverController = 0x807d9b98
+GetGroupLabelString__Q34nw4r3snd12SoundArchiveCFUi = 0x8009dee0
+detail_ReadFileInfo__Q34nw4r3snd12SoundArchiveCFUiPQ44nw4r3snd12SoundArchive8FileInfo = 0x8009dff0
+detail_ReadFilePos__Q34nw4r3snd12SoundArchiveCFUiUiPQ44nw4r3snd12SoundArchive7FilePos = 0x8009e000
+detail_GetFileWaveDataAddress__Q34nw4r3snd18SoundArchivePlayerCFUi = 0x800a16b0
+__ct__Q44nw4r3snd6detail13WsdFileReaderFPCv = 0x800ad9b0
+ReadWaveSoundInfo__Q44nw4r3snd6detail13WsdFileReaderCFPQ44nw4r3snd6detail13WaveSoundInfoi = 0x800ada40
+ReadWaveSoundNoteInfo__Q44nw4r3snd6detail13WsdFileReaderCFPQ44nw4r3snd6detail17WaveSoundNoteInfoii = 0x800adb60
+ReadWaveInfo__Q44nw4r3snd6detail13WsdFileReaderCFiPQ44nw4r3snd6detail8WaveInfoPCv = 0x800adc80
+__ct__Q23EGG9AllocatorFPQ23EGG4Heapi = 0x8020f62c
+menuAllocator = 0x80386e64
+BindBRRESImpl__13ModelDirectorFRQ34nw4r3g3d7ResFilePCcPCQ34nw4r3g3d7ResFileUi = 0x8055b7f8
+LoadKartArchive__10ArchiveMgrFUc6KartId11CharacterIdUiUiPQ23EGG4HeapPQ23EGG4Heap = 0x80540e3c
+LoadKartArchiveHolder2__10ArchiveMgrFUc6KartId11CharacterIdUiUiPQ23EGG4HeapPQ23EGG4Heap = 0x80540f90
+GetKartArchivePostfix__10ArchiveMgrF11CharacterId = 0x805419c8
+LoadKartArchiveAsync__10ArchiveMgrFUc = 0x80541e44
+sInstance__6ScnMgr = 0x809c1850
+MenuUpdate__10SectionMgrFv = 0x8063583c
+StartSound__Q25Audio13RaceAnimActorFUi = 0x80701140
+StartSound__Q25Audio9RaceActorFUiPCQ44nw4r3snd14SoundStartable9StartInfo = 0x807011c8
+__ct__9CharaNameFv = 0x8083d840
+__ct__20MenuModelBRRESHandleFv = 0x8081e284
+__dt__20MenuModelBRRESHandleFv = 0x8081e29c
+BindDriverBRRES__20MenuModelBRRESHandleF11CharacterId = 0x8081e358
+LoadDriverModel__20MenuModelBRRESHandleFR13ModelDirector11CharacterId = 0x8081e78c
+InitVoiceRanges__Q25Audio14CharacterActorFv = 0x80863eb8
+PlayCharacterActor__Q25Audio14CharacterActorFQ25Audio19CharacterSourceType = 0x80864914
+PlayGoalSound__Q25Audio14CharacterActorFUi = 0x80864cec
+GetCharacterGroupId__Q25Audio14CharacterActorFv = 0x80866388
+GetCharacterCannonGroupId__Q25Audio14CharacterActorFv = 0x80866404
+GetCharacterGoalGroupId__Q25Audio14CharacterActorFUi = 0x808664c4
+GetCharacterVoiceSoundSet__Q25Audio18DriverSoundManagerF11CharacterIdUi = 0x80868f1c
+voiceActionTables__Q25Audio14CharacterActor = 0x808afc18
+sInstance__Q25Audio18DriverSoundManager = 0x809c4740
+detail_GetFileAddress__Q34nw4r3snd18SoundArchivePlayerCFUi = 0x800a1560
+
+seqSoundHandle__Q25Audio10RSARPlayer = 0x809c282c
+SetPitch__Q44nw4r3snd6detail10BasicSoundFf = 0x8008f610
+ReadSoundInfo__Q34nw4r3snd12SoundArchiveCFUiPQ44nw4r3snd12SoundArchive9SoundInfo = 0x8009df40

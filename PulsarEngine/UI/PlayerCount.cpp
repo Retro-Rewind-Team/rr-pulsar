@@ -80,27 +80,35 @@ void SBServerEnumKeys(SBServer server, SBServerKeyEnumFn KeyFn,
     TableMapSafe(*(void**)((u32)server + 0x18), KeyMapF, &ed);
 }
 
-void getRegionParamsFromString(const char* region, char* outputRegion, u32& outputRegionID) {
-    if (strcmp(region, "vs") == 0) {
+void GetRegionParamsFromString(const char* region, char* outputRegion, u32& outputRegionID) {
+    outputRegion[0] = '\0';
+    outputRegionID = 0xffffffff;
+    if (region == nullptr) return;
+
+    char value[32];
+    snprintf(value, sizeof(value), "%s", region);
+
+    if (strcmp(value, "vs") == 0) {
+        snprintf(outputRegion, 16, "%s", value);
         outputRegionID = 0x13371337;
         return;
     }
 
-    char value[32];
-    strncpy(value, region, 32);
-
     char* delimiter = strchr(value, '_');
     if (delimiter) {
         *delimiter = '\0';
-        strncpy(outputRegion, value, 16);
+        snprintf(outputRegion, 16, "%s", value);
 
         char* end = nullptr;
         int regionInt = strtol(delimiter + 1, &end, 10);
 
-        if (end) {
-            outputRegionID = regionInt;
+        if (end != delimiter + 1) {
+            outputRegionID = static_cast<u32>(regionInt);
         }
+        return;
     }
+
+    snprintf(outputRegion, 16, "%s", value);
 }
 
 static ServerBrowser playerCntSB = nullptr;
@@ -198,7 +206,7 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
             u32 regionID = 0xffffffff;
 
             const char* rk = SBServerGetStringValueA(server, "rk", "");
-            getRegionParamsFromString(rk, region, regionID);
+            GetRegionParamsFromString(rk, region, regionID);
 
             int numplayers = SBServerGetIntValueA(server, "numplayers", -1) + 1;
             if (strstr(region, "vs")) {

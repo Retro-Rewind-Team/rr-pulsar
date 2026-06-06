@@ -21,7 +21,6 @@ void CtrlRaceSpeedo::Create(Page& page, u32 index, u32 count) {
         page.AddControl(index + i, *som, 0);
         char variant[0x20];
         int pos = 1;
-        // if (count == 1 && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_SOM) == SOM_RIGHT) pos = 1;
         snprintf(variant, 0x20, "Speedo_%1d_%1d", speedoType, pos);
         som->Load(variant, i);
     }

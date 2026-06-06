@@ -7,6 +7,16 @@ namespace UI {
 
 ExtendedTeamManager* ExtendedTeamManager::sInstance = nullptr;
 
+static void ResetTeamPlayer(ExtendedTeamPlayer& player, u32 index) {
+    player.playerIdx = 0xFF;
+    player.miiIdx = 0xFF;
+    player.aid = 0xFF;
+    player.playerIdOnConsole = 0xFF;
+    player.active = 0;
+    player.done = 0;
+    player.team = static_cast<ExtendedTeamID>(index % TEAM_COUNT);
+}
+
 ExtendedTeamManager::ExtendedTeamManager() {
     this->ResetPlayers();
     this->isHost = false;
@@ -201,11 +211,7 @@ void ExtendedTeamManager::Update() {
 void ExtendedTeamManager::VotePageSync() {
     ExtendedTeamPlayer newPlayers[12];
     for (int i = 0; i < 12; i++) {
-        newPlayers[i].playerIdx = 0xFF;
-        newPlayers[i].miiIdx = 0xFF;
-        newPlayers[i].aid = 0xFF;
-        newPlayers[i].playerIdOnConsole = 0xFF;
-        newPlayers[i].team = static_cast<ExtendedTeamID>(i % TEAM_COUNT);
+        ResetTeamPlayer(newPlayers[i], i);
     }
 
     Pages::SELECTStageMgr* voteMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
@@ -254,11 +260,7 @@ void ExtendedTeamManager::Reset() {
 
 void ExtendedTeamManager::ResetPlayers() {
     for (int i = 0; i < 12; i++) {
-        this->players[i].playerIdx = 0xFF;
-        this->players[i].miiIdx = 0xFF;
-        this->players[i].aid = 0xFF;
-        this->players[i].playerIdOnConsole = 0xFF;
-        this->players[i].team = static_cast<ExtendedTeamID>(i % TEAM_COUNT);
+        ResetTeamPlayer(this->players[i], i);
     }
 }
 

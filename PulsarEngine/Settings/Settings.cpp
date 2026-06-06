@@ -1,4 +1,5 @@
 #include <Settings/Settings.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <IO/IO.hpp>
@@ -27,10 +28,11 @@ int Mgr::GetSettingsBinSize(u32 trackCount) const {
 
 void Mgr::Save() {
     IO* io = IO::sInstance;
-    io->OpenFile(this->filePath, FILE_MODE_WRITE);
+    if (io == nullptr || this->rawBin == nullptr) return;
+    if (!io->OpenFile(this->filePath, FILE_MODE_WRITE) && !io->CreateAndOpen(this->filePath, FILE_MODE_WRITE)) return;
     io->Overwrite(this->rawBin->header.fileSize, this->rawBin);
     io->Close();
-};
+}
 
 void Mgr::SaveTrophies() {
     if (this->trophyEntries == nullptr) return;
@@ -51,10 +53,8 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
     this->pulsarPageCount = Settings::Params::pulsarPageCount;
     this->userPageCount = Settings::Params::userPageCount;
 
-    strncpy(this->filePath, settingsPath, IOS::ipcMaxPath);;
-    this->filePath[IOS::ipcMaxPath - 1] = '\0';
-    strncpy(this->trophiesFilePath, trophiesPath, IOS::ipcMaxPath);
-    this->trophiesFilePath[IOS::ipcMaxPath - 1] = '\0';
+    snprintf(this->filePath, IOS::ipcMaxPath, "%s", settingsPath);
+    snprintf(this->trophiesFilePath, IOS::ipcMaxPath, "%s", trophiesPath);
 
     const u32 trackCount = CupsConfig::sInstance->GetEffectiveTrackCount();
     const u32 size = this->GetSettingsBinSize(trackCount);
@@ -112,9 +112,10 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
     this->LoadTrophiesFromFiles();
     this->MigrateLegacyTrophies();
 
-    io->OpenFile(this->filePath, FILE_MODE_WRITE);
-    io->Overwrite(this->rawBin->header.fileSize, this->rawBin);
-    io->Close();
+    if (io->OpenFile(this->filePath, FILE_MODE_WRITE) || io->CreateAndOpen(this->filePath, FILE_MODE_WRITE)) {
+        io->Overwrite(this->rawBin->header.fileSize, this->rawBin);
+        io->Close();
+    }
 }
 
 void Mgr::GetTrophyFolder(char* dest, u32 crc32, u8 variantIdx) const {
@@ -203,18 +204,18 @@ void Mgr::InitTrophyEntries(const u16* totalTrophyCount) {
     const u32 ctTrackCount = cups->GetRetroTrackCount() + cups->GetCTOnlyTrackCount();
     const u32 totalRaceTrackCount = regTrackCount + ctTrackCount;
 
-    u32 totalVariantCount = 0;
+    u32 trophyVariantEntryCount = 0;
     for (u32 i = 0; i < ctTrackCount; ++i) {
         const PulsarId id = static_cast<PulsarId>(PULSARID_FIRSTCT + i);
-        totalVariantCount += cups->GetTrack(id).variantCount;
+        trophyVariantEntryCount += cups->GetTrack(id).variantCount;
     }
 
     for (int mode = 0; mode < 4; ++mode) {
-        this->totalTrophyCount[mode] = totalTrophyCount[mode] + totalVariantCount;
+        this->totalTrophyCount[mode] = totalTrophyCount[mode];
         this->trophyCount[mode] = 0;
     }
 
-    this->trophyEntryCount = totalRaceTrackCount + totalVariantCount;
+    this->trophyEntryCount = totalRaceTrackCount + trophyVariantEntryCount;
     this->trophyEntries = new (System::sInstance->heap) TrophyEntry[this->trophyEntryCount];
     memset(this->trophyEntries, 0, sizeof(TrophyEntry) * this->trophyEntryCount);
 
@@ -383,16 +384,6 @@ bool Mgr::HasTrophyForAllVariants(PulsarId id, TTMode mode) const {
     return true;
 }
 
-u32 Mgr::CountVariantsInTrackRange(u32 firstTrackIdx, u32 trackCount) const {
-    const CupsConfig* cups = CupsConfig::sInstance;
-    u32 count = 0;
-    for (u32 i = 0; i < trackCount; ++i) {
-        const PulsarId id = static_cast<PulsarId>(PULSARID_FIRSTCT + firstTrackIdx + i);
-        count += cups->GetTrack(id).variantCount;
-    }
-    return count;
-}
-
 u32 Mgr::CountTrophiesInTrackRange(u32 firstTrackIdx, u32 trackCount, TTMode mode) const {
     const CupsConfig* cups = CupsConfig::sInstance;
     u32 count = 0;
@@ -416,9 +407,9 @@ u16 Mgr::GetTotalTrophyCount(PulsarId id, TTMode mode) const {
     u32 total = this->GetTotalTrophyCount(mode);
 
     if (trackIdx < rtTrackCount) {
-        total = cups->retroTrophyCount[mode] + this->CountVariantsInTrackRange(0, rtTrackCount);
+        total = cups->retroTrophyCount[mode];
     } else if (trackIdx < rtTrackCount + ctTrackCount) {
-        total = cups->ctOnlyTrophyCount[mode] + this->CountVariantsInTrackRange(rtTrackCount, ctTrackCount);
+        total = cups->ctOnlyTrophyCount[mode];
     }
     if (total > 0xFFFF) total = 0xFFFF;
     return static_cast<u16>(total);
@@ -447,7 +438,11 @@ void Mgr::SetSettingValue(Type type, u32 setting, u8 value) {
     this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting] = value;
 }
 void Mgr::SetUserSettingValue(UserType type, u32 setting, u8 value) {
-    this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting] = value;
+    u8& currentValue = this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting];
+    if (type == SETTINGSTYPE_MISC && setting == RADIO_LOOSEARCHIVEOVERRIDES && currentValue != value) {
+        CustomCharacters::ResetAllCharacterTablesToDefault();
+    }
+    currentValue = value;
 }
 
 void Mgr::AdjustSections() {
@@ -477,7 +472,7 @@ void Mgr::AdjustSections() {
     for (int curOld = 0; curOld < oldTrackCount; ++curOld) {
         for (int curNew = 0; curNew < trackCount; ++curNew) {
             if (trophies[curOld].crc32 == cupsConfig->GetCRC32(cupsConfig->ConvertTrack_IdxToPulsarId(curNew))) {
-                toberemovedCRCIndex[curOld] = curNew;  // this old track still exists
+                toberemovedCRCIndex[curOld] = curNew;
                 break;
             }
         }
@@ -487,11 +482,11 @@ void Mgr::AdjustSections() {
         if (missingCRCIndex[curNew] == 0xFFFF) {
             for (int curOld = 0; curOld < oldTrackCount; ++curOld) {
                 if (toberemovedCRCIndex[curOld] == 0xFFFF) {
-                    missingCRCIndex[curNew] = curOld;  // found a spot to put the missing track in, reset that spot and use it for the new track
+                    missingCRCIndex[curNew] = curOld;
                     toberemovedCRCIndex[curOld] = 0;
                     trophies[curOld].crc32 = cupsConfig->GetCRC32(cupsConfig->ConvertTrack_IdxToPulsarId(curNew));
                     for (int mode = 0; mode < 4; ++mode) {
-                        if (trophies[curOld].hastrophy[mode] == true) {
+                        if (trophies[curOld].hastrophy[mode]) {
                             trophies[curOld].hastrophy[mode] = false;
                             trophiesHolder.trophyCount[mode]--;
                         }
@@ -503,10 +498,10 @@ void Mgr::AdjustSections() {
         }
     }
     this->AdjustSectionsSizes();
-    if (oldTrackCount < trackCount) {  // the surplus of tracks is simply put continuously at the end of the file, which has been resized to fit the additional tracks
+    if (oldTrackCount < trackCount) {
         trophies = this->rawBin->GetSection<TrophiesHolder>().trophies;
         u32 idx = oldTrackCount;
-        for (int curNew = 0; curNew < trackCount; ++curNew) {  // 4032 4132
+        for (int curNew = 0; curNew < trackCount; ++curNew) {
             if (missingCRCIndex[curNew] == 0xFFFF) {
                 trophies[idx].crc32 = cupsConfig->GetCRC32(cupsConfig->ConvertTrack_IdxToPulsarId(curNew));
                 for (int mode = 0; mode < 4; ++mode) trophies[idx].hastrophy[mode] = false;
@@ -516,10 +511,10 @@ void Mgr::AdjustSections() {
         }
         this->SaveTrophies();
     } else if (oldTrackCount > trackCount) {
-        for (int curOld = 0; curOld < oldTrackCount; ++curOld) {  // 4032 4132
+        for (int curOld = 0; curOld < oldTrackCount; ++curOld) {
             if (toberemovedCRCIndex[curOld] == 0xFFFF) {
                 for (int mode = 0; mode < 4; ++mode) {
-                    if (trophies[curOld].hastrophy[mode] == true) {
+                    if (trophies[curOld].hastrophy[mode]) {
                         trophies[curOld].hastrophy[mode] = false;
                         trophiesHolder.trophyCount[mode]--;
                     }
@@ -548,7 +543,7 @@ void Mgr::AdjustSectionsSizes() {
     s32 gpSizeDiff = sizeof(GPCupStatus) * (trackDiff / 4);
 
     if (trophySizeDiff <= 0 && pulsarPageDiff <= 0 && userPageDiff <= 0) return;  // no modifications necessary
-    if (pulsarPageDiff < 0) pulsarPageDiff = 0;  // if only one is negative (both would take the return above) then avoid a sum that is negative using this hacky trick
+    if (pulsarPageDiff < 0) pulsarPageDiff = 0;
     if (userPageDiff < 0) userPageDiff = 0;
 
     s32 totalPageDiff = sizeof(Page) * (pulsarPageDiff + userPageDiff);
@@ -591,7 +586,6 @@ void Mgr::AdjustSectionsSizes() {
 
     // SIZES:
     buffer->GetSection<PagesHolder>().header.size += totalPageDiff;
-    // buffer->GetSection<MiscParams>().header.size;
     buffer->GetSection<TrophiesHolder>().header.size += trophySizeDiff;
     buffer->GetSection<GPSection>().header.size += gpSizeDiff;
 

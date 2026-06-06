@@ -1,10 +1,13 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Audio/AudioManager.hpp>
+#include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/Audio/SinglePlayer.hpp>
 #include <MarioKartWii/Audio/Other/AudioStreamsMgr.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <core/nw4r/snd/BasicSound.hpp>
 #include <Sound/MiscSound.hpp>
 #include <Settings/Settings.hpp>
+#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace Sound {
@@ -79,8 +82,10 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
             customBGPath = titleMusicFile;
         else if (soundId == SOUND_ID_OFFLINE_MENUS)
             customBGPath = offlineMusicFile;
-        else if (soundId == SOUND_ID_WIFI_MUSIC)
-            customBGPath = wifiMusicFile;
+        else if (soundId == SOUND_ID_WIFI_MUSIC) {
+            const SectionId curSection = SectionMgr::sInstance->curSection->sectionId;
+            customBGPath = IsWifiLobbySection(curSection) ? wifilobbyMusicFile : wifiMusicFile;
+        }
         if (customBGPath != nullptr) {
             DVD::FileInfo info;
             BOOL ret = DVD::Open(customBGPath, &info);
@@ -88,6 +93,7 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
                 DVD::Close(&info);
                 if (info.length > 0) {
                     soundId = SOUND_ID_KC;
+                    singlePlayer.StopInactiveSounds();
                     if (shouldRefreshWifiMusic) {
                         singlePlayer.StopSound();
                         singlePlayer.PrepareSound(soundId, true);
@@ -98,6 +104,7 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
             }
         }
         singlePlayer.PlaySound(soundId, 0);
+        if (customBGPath != nullptr) singlePlayer.StopInactiveSounds();
     }
 }
 kmCall(0x806fa664, DisableAndChangeBGMusic);
@@ -116,8 +123,7 @@ static snd::SoundArchive::SoundType PatchPrepareStreamsBG(snd::SoundArchive& arc
             asm(mr streams, r30;);
             snd::StrmSoundHandle strmHandle(streams->curHandle);
             for (int i = 0; i < 4; ++i) {
-                float volume = 0.0f;
-                if ((type == 2 && (i % 3) != 0) || (type == 1 && i == 0)) volume = 1.0f;
+                float volume = 1.0f;
                 streams->streamsVolume[i].curValue = volume;
                 strmHandle.SetTrackVolume(1 << i, volume);
             }
@@ -146,6 +152,104 @@ static float CheckFanfare(const Audio::SinglePlayer& singlePlayer) {
         return -1.0f;
 }
 kmCall(0x80857860, CheckFanfare);
+
+static u8 specialItemReceiveSoundEnabled = 1;
+static u8 megaThunderCloudEnabled = 1;
+static u8 specialItemReceiveSoundPitchPending = 0;
+
+static void RefreshSpecialItemReceiveSoundSetting() {
+    specialItemReceiveSoundEnabled =
+        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_SPECIALITEMRECEIVE) == SPECIALITEMRECEIVE_ENABLED;
+    megaThunderCloudEnabled =
+        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_MEGA;
+}
+Settings::Hook RefreshSpecialItemReceiveSoundSettingHook(RefreshSpecialItemReceiveSoundSetting);
+RaceLoadHook RefreshSpecialItemReceiveSoundSettingRaceHook(RefreshSpecialItemReceiveSoundSetting);
+
+// Play Special Item Recieve Sound [_Ro]
+static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
+    ASM(
+        nofralloc;
+        li r4, 0xE3;
+
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        li r0, 0;
+        lis r11, specialItemReceiveSoundPitchPending @ha;
+        stb r0, specialItemReceiveSoundPitchPending @l(r11);
+
+        lis r11, specialItemReceiveSoundEnabled @ha;
+        lbz r11, specialItemReceiveSoundEnabled @l(r11);
+        cmpwi r11, 0;
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
+        beq - end;
+
+        subi r0, r28, 8;
+        cmplwi r0, 3;
+        ble - custom;
+        cmpwi r28, 0xF;
+        bne - end;
+
+        custom :;
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        li r0, 1;
+        lis r11, specialItemReceiveSoundPitchPending @ha;
+        stb r0, specialItemReceiveSoundPitchPending @l(r11);
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
+
+        end :;
+        blr;);
+}
+kmCall(0x8079814c, UseThundercloudReceiveSoundForSpecialItems);
+
+static asmFunc UseSpecialReceiveSoundForMegaThundercloud() {
+    ASM(
+        nofralloc;
+        li r4, 0xE4;
+
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        li r0, 0;
+        lis r11, specialItemReceiveSoundPitchPending @ha;
+        stb r0, specialItemReceiveSoundPitchPending @l(r11);
+
+        lis r11, specialItemReceiveSoundEnabled @ha;
+        lbz r11, specialItemReceiveSoundEnabled @l(r11);
+        cmpwi r11, 0;
+        beq - restore;
+        lis r11, megaThunderCloudEnabled @ha;
+        lbz r11, megaThunderCloudEnabled @l(r11);
+        cmpwi r11, 0;
+        beq - restore;
+
+        li r4, 0xE3;
+        li r0, 1;
+        lis r11, specialItemReceiveSoundPitchPending @ha;
+        stb r0, specialItemReceiveSoundPitchPending @l(r11);
+
+        restore :;
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
+        blr;);
+}
+kmCall(0x80798028, UseSpecialReceiveSoundForMegaThundercloud);
+
+kmRuntimeUse(0x8071497c);
+static bool StartItemReceiveSoundWithPitch(Audio::RSARPlayer* rsarPlayer, u32 soundId, u32 localPlayerNum) {
+    typedef bool (*PlaySound)(Audio::RSARPlayer*, u32, u32);
+    const bool ret = reinterpret_cast<PlaySound>(kmRuntimeAddr(0x8071497c))(rsarPlayer, soundId, localPlayerNum);
+
+    if (ret && specialItemReceiveSoundPitchPending != 0 && soundId == 0xE3 && Audio::RSARPlayer::seqSoundHandle.basicSound != nullptr) {
+        Audio::RSARPlayer::seqSoundHandle.basicSound->SetPitch(1.15f);
+    }
+    specialItemReceiveSoundPitchPending = 0;
+    return ret;
+}
+kmCall(0x80798160, StartItemReceiveSoundWithPitch);
+kmCall(0x8079803c, StartItemReceiveSoundWithPitch);
 
 snd::SoundStartable::StartResult PlayExtBRSEQ(snd::SoundStartable& startable, Audio::Handle& handle, const char* fileName, const char* labelName, bool hold) {
     snd::SoundStartable::StartInfo startInfo;

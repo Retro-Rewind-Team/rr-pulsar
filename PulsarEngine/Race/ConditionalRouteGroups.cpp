@@ -326,49 +326,41 @@ static u8 GetITPTLink(const KMP::Manager* kmpMgr, const u8& curITPT, u8 linkIdx,
 }
 
 static s8 ConditionalGetNextENPT(KMP::Manager* kmpMgr, const u8& curENPT, u8 linkIdx) {
-    // OS::Report("ConditionalGetNextENPT: curENPT=%u, linkIdx=%u\n", curENPT, linkIdx);
     return GetENPTLink(kmpMgr, curENPT, linkIdx, true);
 }
 kmBranch(0x80517590, ConditionalGetNextENPT);
 
 static s8 ConditionalGetNextENPTCount(KMP::Manager* kmpMgr, const u8& curENPT) {
-    // OS::Report("ConditionalGetNextENPTCount: curENPT=%u\n", curENPT);
     return GetENPTCount(kmpMgr, curENPT, true);
 }
 kmBranch(0x8051760c, ConditionalGetNextENPTCount);
 
 static s8 ConditionalGetPrevENPT(KMP::Manager* kmpMgr, const u8& curENPT, u8 linkIdx) {
-    // OS::Report("ConditionalGetPrevENPT: curENPT=%u, linkIdx=%u\n", curENPT, linkIdx);
     return GetENPTLink(kmpMgr, curENPT, linkIdx, false);
 }
 kmBranch(0x80517670, ConditionalGetPrevENPT);
 
 static s8 ConditionalGetPrevENPTCount(KMP::Manager* kmpMgr, const u8& curENPT) {
-    // OS::Report("ConditionalGetPrevENPTCount: curENPT=%u\n", curENPT);
     return GetENPTCount(kmpMgr, curENPT, false);
 }
 kmBranch(0x805176ec, ConditionalGetPrevENPTCount);
 
 static u8 ConditionalGetNextITPT(KMP::Manager* kmpMgr, const u8& curITPT, u8 linkIdx) {
-    // OS::Report("ConditionalGetNextITPT: curITPT=%u, linkIdx=%u\n", curITPT, linkIdx);
     return GetITPTLink(kmpMgr, curITPT, linkIdx, true);
 }
 kmBranch(0x805181f0, ConditionalGetNextITPT);
 
 static u8 ConditionalGetITPTNextCount(KMP::Manager* kmpMgr, const u8& itpt) {
-    // OS::Report("ConditionalGetITPTNextCount: itpt=%u\n", itpt);
     return GetITPTCount(kmpMgr, itpt, true);
 }
 kmBranch(0x80518268, ConditionalGetITPTNextCount);
 
 static u8 ConditionalGetPrevITPT(KMP::Manager* kmpMgr, const u8& curITPT, u8 linkIdx) {
-    // OS::Report("ConditionalGetPrevITPT: curITPT=%u, linkIdx=%u\n", curITPT, linkIdx);
     return GetITPTLink(kmpMgr, curITPT, linkIdx, false);
 }
 kmBranch(0x805182cc, ConditionalGetPrevITPT);
 
 static u8 ConditionalGetITPTPrevCount(KMP::Manager* kmpMgr, const u8& itpt) {
-    // OS::Report("ConditionalGetITPTPrevCount: itpt=%u\n", itpt);
     return GetITPTCount(kmpMgr, itpt, false);
 }
 kmBranch(0x80518344, ConditionalGetITPTPrevCount);

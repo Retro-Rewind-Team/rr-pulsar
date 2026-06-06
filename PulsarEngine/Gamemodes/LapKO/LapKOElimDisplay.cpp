@@ -1,4 +1,5 @@
 #include <Gamemodes/Battle/BattleElimination.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
 #include <MarioKartWii/UI/Layout/ControlLoader.hpp>
@@ -87,7 +88,8 @@ static UI::CustomCtrlBuilder sLapKOElimMessageBuilder(
 
 u32 CtrlRaceLapKOElimMessage::Count() {
     const System* system = System::sInstance;
-    const bool lapKoDisplay = system->IsContext(PULSAR_MODE_LAPKO);
+    const bool lapKoDisplay = system->lapKoMgr != nullptr &&
+                              (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
     const bool battleDisplay = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
     if (!lapKoDisplay && !battleDisplay) return 0;
     const Racedata* racedata = Racedata::sInstance;
@@ -123,9 +125,8 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     this->UpdatePausePosition();
 
     const System* system = System::sInstance;
-    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
-    const GameMode mode = scenario.settings.gamemode;
-    const bool lapKoContext = system->IsContext(PULSAR_MODE_LAPKO);
+    const bool lapKoContext = system->lapKoMgr != nullptr &&
+                              (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
     const bool battleContext = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
 
     u16 timer = 0;
@@ -246,7 +247,10 @@ const wchar_t* CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar
         }
     }
 
-    const u32 characterBmgId = GetCharacterBMGId(player.characterId, true);
+    u32 characterBmgId = CustomCharacters::SkinNameBmgId(
+        player.characterId,
+        CustomCharacters::RaceSkinTable(playerId, player.characterId));
+    if (characterBmgId == 0) characterBmgId = GetCharacterBMGId(player.characterId, true);
     const wchar_t* bmgName = nullptr;
     if (characterBmgId != 0) {
         bmgName = UI::GetCustomMsg(static_cast<s32>(characterBmgId));
@@ -259,9 +263,7 @@ const wchar_t* CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar
         }
 
         if (bmgName != nullptr) {
-            ::wcsncpy(scratch, bmgName, length - 1);
-            scratch[length - 1] = L'\0';
-            return scratch;
+            return CopyNameSafe(bmgName, length - 1, scratch, length);
         }
     }
 

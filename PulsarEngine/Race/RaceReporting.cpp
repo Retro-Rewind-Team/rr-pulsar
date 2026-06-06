@@ -19,9 +19,6 @@ void UpdateRaceInstances() {
 
     if (raceInfo->stage != sLastRaceStage) {
         sLastRaceStage = raceInfo->stage;
-        // OS::Report("================================\n");
-        // OS::Report("Race stage: %d\n", sLastRaceStage);
-        // OS::Report("================================\n");
         if (sLastRaceStage == RACESTAGE_FINISHED) {
             Network::ReportU32("wl:mkw_race_stage", sLastRaceStage);
         }
@@ -97,21 +94,5 @@ void EndPlayerRaceHook(Raceinfo* _this, u8 playerIdx) {
 
 kmCall(0x80554eec, UpdateRaceInstances);
 kmCall(0x8053491c, EndPlayerRaceHook);
-
-// No sit DC [Bully]
-//
-// For testing purposes
-/*
-04521408 38000000
-0453EC94 38000000
-0453EF6C 38000000
-0453F0B4 38000000
-0453F124 38000000
-*/
-// kmWrite32(0x80521408, 0x38000000);
-// kmWrite32(0x8053ec94, 0x38000000);
-// kmWrite32(0x8053ef6c, 0x38000000);
-// kmWrite32(0x8053f0b4, 0x38000000);
-// kmWrite32(0x8053f124, 0x38000000);
 
 }  // namespace Pulsar

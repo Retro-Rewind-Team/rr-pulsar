@@ -23,7 +23,7 @@
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Settings/Settings.hpp>
-#include <CustomCharacters.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 
 namespace Pulsar {
 
@@ -68,14 +68,6 @@ bool CondAIRelatedTTCheck(bool, const Racedata& racedata) {  // most notably the
     return isTT;
 }
 kmBranch(0x807396b0, CondAIRelatedTTCheck);
-
-/*
-static const RaceinfoPlayer* GetCorrectRaceinfoPlayer(const Raceinfo& raceInfo) { //TTSplits::BeforeEntranceAnimations
-    return raceInfo.players[Racedata::sInstance->racesScenario.settings.hudPlayerIds[0]];
-}
-kmCall(0x80855b90, GetCorrectRaceinfoPlayer);
-kmWrite32(0x80855b98, 0x60000000);
-*/
 
 static bool CondTTCycles(const Raceinfo& raceInfo) {  // this function is only called for onlineModes, true = objects and entity get updated this frame
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
@@ -139,7 +131,6 @@ void CondOpacity() {
         Kart::Pointers& pointers = kartMgr->players[i]->pointers;
         u32 scnObjDrawOptionsIdx = (pointers.kartStatus->bitfield4 & 0x2) ? 0xA : 1;  // is the player local?
 
-        // MAKE SHARED FUNC WITH ENHANCED REPLAY with bool istransparent and driver as args
         DriverController* driver = pointers.driverController;
         pointers.kartBody->UpdateModelDrawPriority(scnObjDrawOptionsIdx);
         if (driver->driverModel != nullptr) driver->driverModel->UpdateDrawPriority(scnObjDrawOptionsIdx);
@@ -161,17 +152,8 @@ static void EnableOpacityFunctionality(EGG::ScnRenderer& renderer, u32 enabledEf
 }
 kmCall(0x805b15e0, EnableOpacityFunctionality);
 
-// static UnkType PreventBurnOuts(Kart::Status& status, s32 startBoostIdx) {
-//     if(startBoostIdx == -1 && System::sInstance->IsContext(PULSAR_MODE_OTT)) {
-//         startBoostIdx = 1;
-//         status.startBoostIdx = 1;
-//     }
-//     return status.ApplyStartBoost(startBoostIdx);
-// }
-// kmCall(0x80595ad4, PreventBurnOuts);
-
 static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
-    static int waitFrames = 0;  // ← Add a static counter so we can perform a fallback
+    static int waitFrames = 0;
 
     System* system = System::sInstance;
     const Pages::SELECTStageMgr::Status old = stageMgr->status;
@@ -198,7 +180,6 @@ static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
         if (hostSelect->allowChangeComboStatus > 0) {
             bool hasReceivedEveryone = true;
             bool isEveryoneWaiting = true;
-            // bool isEveryoneInRace = true;
 
             for (int aid = 0; aid < 12; ++aid) {
                 u32 bit = 1 << aid;
@@ -212,11 +193,6 @@ static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
                     if (system->ottMgr.voteState == WAITING_FOR_START) {
                         if (handler.receivedPackets[aid].allowChangeComboStatus < Network::SELECT_COMBO_WAITING_FOR_START) isEveryoneWaiting = false;
                     }
-                    /*
-                    else if(system->ottMgr.voteState == HOST_START) {
-                        if(Network::GetLastRecvSECTIONSize(aid, Network::PulRH1::idx) == 0) isEveryoneInRace = false;
-                    }
-                    */
                 }
             }
 
@@ -227,14 +203,12 @@ static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
             if (hostAid == sub.localAid) {
                 if (system->ottMgr.voteState == WAITING_FOR_START) {
                     if (isEveryoneWaiting) {
-                        waitFrames = 0;  // Reset our fallback counter if all players appear ready
+                        waitFrames = 0;
                         system->ottMgr.voteState = HOST_START;
                         handler.toSendPacket.allowChangeComboStatus = Network::SELECT_COMBO_HOST_START;
                     } else {
-                        // Not everyone is done. Increment & check our fallback timer.
                         ++waitFrames;
-                        if (waitFrames > 600) {  // ~10 seconds at 60fps
-                            // Force the next state to avoid getting stuck forever.
+                        if (waitFrames > 600) {
                             system->ottMgr.voteState = HOST_START;
                             handler.toSendPacket.allowChangeComboStatus = Network::SELECT_COMBO_HOST_START;
                         }
@@ -256,14 +230,14 @@ static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
 kmWritePointer(0x808C06E4, SELECTStageMgrBeforeControlUpdate);
 
 static void PreventVoteChangeSection(Pages::Vote& vote, SectionId id, float delay) {
-    static int frameCounter = 0;  // Added frame counter
-    frameCounter++;  // Increment frame counter
+    static int frameCounter = 0;
+    frameCounter++;
 
-    if (frameCounter >= 600) {  // Check if 600 frames have passed
+    if (frameCounter >= 600) {
         System* system = System::sInstance;
-        system->ottMgr.voteState = COMBO_SELECTED;  // Trigger combo selection automatically
+        system->ottMgr.voteState = COMBO_SELECTED;
         vote.EndStateAnimated(0, delay);
-        frameCounter = 0;  // Reset frame counter
+        frameCounter = 0;
         return;
     }
 
@@ -315,12 +289,10 @@ static void FixAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {  /
     menu.LoadNextPageById(id, button);
 }
 kmCall(0x8084e698, FixAfterDrift);
-// kmCall(0x8084b7d4, FixAfterDrift);
 
-// OPTIONS
 static void MuteKartSounds(Audio::EngineMgr* mgr, Audio::KartActor* actor) {
     mgr->Init(actor);
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT) && !actor->isLocal && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTMUTEPTANDPLAYERS) == false) {
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT) && !actor->isLocal && !Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTMUTEPTANDPLAYERS)) {
         actor->isGhost = true;
     }
 }
@@ -328,8 +300,7 @@ kmCall(0x80707620, MuteKartSounds);
 
 static bool MuteCharSounds(Kart::Link* link) {
     const u32 bitfield = link->pointers->kartStatus->bitfield4;
-    if (CustomCharacters::ShouldMuteCharacterVoice(link)) return true;
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT) && Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTMUTEPTANDPLAYERS) == false) {
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT) && !Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTMUTEPTANDPLAYERS)) {
         return !(bitfield & 0x2);  // isLocal
     }
     return bitfield & 0x40;  // isGhost
@@ -360,8 +331,3 @@ kmCall(0x8079F748, ItemVanish);
 
 }  // namespace OTT
 }  // namespace Pulsar
-// TO DO:
-// time diff
-
-// OPTIONS:
-// Mute position tracker, mute other players, allow change combo after vote (host only)

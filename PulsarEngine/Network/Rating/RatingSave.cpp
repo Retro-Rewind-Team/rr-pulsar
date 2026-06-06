@@ -1,21 +1,3 @@
-/*
-    RatingSave.cpp
-    Copyright (C) 2025 ZPL
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 #include <kamek.hpp>
 #include <IO/IO.hpp>
 #include <PulsarSystem.hpp>
@@ -194,7 +176,7 @@ static void Save() {
         file.e[i].flags = sProfiles[i].hasData ? 1u : 0u;
     }
 
-    if (!io->OpenFile(path, FILE_MODE_WRITE)) io->CreateAndOpen(path, FILE_MODE_WRITE);
+    if (!io->OpenFile(path, FILE_MODE_WRITE) && !io->CreateAndOpen(path, FILE_MODE_WRITE)) return;
     io->Overwrite(sizeof(file), &file);
     io->Close();
 }
@@ -281,8 +263,8 @@ static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr& lic) {
     if (!e) return;
 
     if (!e->hasData) {
-        e->vr = (float)lic.vr.points / 100.0f;
-        e->br = (float)lic.br.points / 100.0f;
+        e->vr = (float)sBackups[idx].originalVr / 100.0f;
+        e->br = (float)sBackups[idx].originalBr / 100.0f;
         e->hasData = true;
         Save();
     }
@@ -305,8 +287,8 @@ static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr& lic) {
     if (!e) return;
 
     if (!e->hasData) {
-        e->vr = (float)lic.vr.points / 100.0f;
-        e->br = (float)lic.br.points / 100.0f;
+        e->vr = (float)sBackups[idx].originalVr / 100.0f;
+        e->br = (float)sBackups[idx].originalBr / 100.0f;
         e->hasData = true;
         Save();
     }

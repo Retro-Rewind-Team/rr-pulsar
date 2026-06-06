@@ -34,6 +34,21 @@ u8 GetLapKOTargetCount(const System* system, const Racedata* racedata, u8 fallba
     return playerCount;
 }
 
+static u8 GetBattleRoyaleKoPerRace(const System* system) {
+    if (system != nullptr) {
+        if (system->IsContext(PULSAR_KOPERRACE_4)) return 4;
+        if (system->IsContext(PULSAR_KOPERRACE_3)) return 3;
+        if (system->IsContext(PULSAR_KOPERRACE_2)) return 2;
+    }
+    return 1;
+}
+
+static u8 GetBattleRoyaleLapCount(u8 baseLapCount, u8 koPerRace) {
+    if (koPerRace == 3 && baseLapCount > 1) return static_cast<u8>((baseLapCount * 3 + 1) / 2);
+    if (koPerRace == 4 && baseLapCount > 1) return static_cast<u8>(baseLapCount * 2);
+    return baseLapCount;
+}
+
 kmRuntimeUse(0x808a9cc7);  // lap_number.brctr
 RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
     kmRuntimeWrite16A(0x808a9cc7, 'la');
@@ -63,6 +78,9 @@ RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
         // BuildPlan handles 1-lap tracks and 2-lap pacing adjustments internally
         const u8 totalRounds = LapKO::Mgr::BuildPlan(basePlayers, koPerRace, usualTrackLaps, nullptr, LapKO::Mgr::MaxRounds);
         lapCount = (totalRounds == 0) ? 1 : totalRounds;
+    } else if (system != nullptr && system->IsContext(PULSAR_MODE_BATTLEROYALE)) {
+        lapCount = GetBattleRoyaleLapCount(lapCount, GetBattleRoyaleKoPerRace(system));
+        if (lapCount > 12) lapCount = 12;
     }
 
     if (racedata != nullptr) {
@@ -76,7 +94,6 @@ RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
 }
 kmCall(0x805328d4, LoadCustomLapCount);
 
-// kmWrite32(0x80723d64, 0x7FA4EB78);
 void DisplayCorrectLap(AnmTexPatHolder* texPat) {  // This Anm is held by a ModelDirector in a Lakitu::Player
     register u32 maxLap;
     asm(mr maxLap, r29;);

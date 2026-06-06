@@ -9,7 +9,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
 #include <Network/Rating/PlayerRating.hpp>
-#include <CustomCharacters.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
@@ -20,6 +20,10 @@
 
 namespace Pulsar {
 namespace Network {
+
+static bool IsRegionalRoom(RKNet::RoomType roomType) {
+    return roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
+}
 
 void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* src, u32 len) {  // len is sizeof(RKNet::SELECTPacket) by default
     const System* system = System::sInstance;
@@ -77,8 +81,6 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
     }
 
 #ifdef PROD
-    // Set anti-cheat verification tag before encryption
-    // This tag proves the sender has the correct encryption key
     const RKNet::Controller* ctrlForTag = RKNet::Controller::sInstance;
     u8 localAid = (ctrlForTag != nullptr) ? ctrlForTag->subs[ctrlForTag->currentSub].localAid : 0;
     src->acVerifyTag = Security::g_antiCheatKey.ComputePacketTag(localAid);
@@ -97,7 +99,6 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
     packetHolder->packet->characterTables = CustomCharacters::GetLocalOnlineCharacterTables();
 
 #ifdef PROD
-    // Encrypt the Pulsar extension portion of the packet after copy
     if (len == sizeof(PulSELECT) && Security::g_antiCheatKey.initialized) {
         u8* pulsarData = ((u8*)packetHolder->packet) + sizeof(RKNet::SELECTPacket);
         const u32 extSize = sizeof(PulSELECT) - sizeof(RKNet::SELECTPacket);
@@ -119,7 +120,6 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     asm(mr holder, r27);
 
 #ifdef PROD
-    // Decrypt the Pulsar extension before any field access
     if (holder != nullptr && holder->packetSize == sizeof(PulSELECT) && Security::g_antiCheatKey.initialized) {
         u8* pulsarData = ((u8*)src) + sizeof(RKNet::SELECTPacket);
         const u32 extSize = sizeof(PulSELECT) - sizeof(RKNet::SELECTPacket);
@@ -128,10 +128,7 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
             Security::AES128_DecryptCBC(&Security::g_antiCheatKey.aesCtx, pulsarData, pulsarData, encSize, Security::g_antiCheatKey.baseIV);
         }
 
-        // Verify the sender has the correct key by checking verification tag
         if (!Security::g_antiCheatKey.VerifyPacketTag(src->acVerifyTag, aid)) {
-            // Tag mismatch - sender doesn't have valid anti-cheat key
-            // Mark this AID for disconnection and skip processing
             RKNet::Controller* controller = RKNet::Controller::sInstance;
             reinterpret_cast<CustomRKNetController*>(controller)->toDisconnectAids |= (1 << aid);
             return;
@@ -139,7 +136,7 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     }
 #endif
 
-    const u8 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
+    const u16 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
     CustomCharacters::UpdateOnlineCharacterTablesFromAid(aid, src->playerIdToAid, characterTables);
 
     for (int i = 0; i < 2; ++i) {
@@ -152,7 +149,6 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
         src->pulWinningTrack = pulWinning;  // this is safe because src is a ptr to the buffer of holder which is always big enough
         const u16 pulVote = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->playersData[0].courseVote));
         src->pulVote = pulVote;
-        // Non-CT players won't have voteVariantIdx, default to 0
         src->voteVariantIdx[0] = 0;
         src->voteVariantIdx[1] = 0;
         src->blockedTrackCount = 0;
@@ -186,15 +182,11 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
             if (controller != nullptr) {
                 const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
                 if (sub.localAid == sub.hostAid) {
-                    // I am host, sync if client has more info
                     if (srcCount > localCount) shouldSync = true;
                 } else {
-                    // I am client
                     if (aid == sub.hostAid) {
-                        // Sync from host if they have at least as much info as me
                         if (srcCount >= localCount) shouldSync = true;
                     } else {
-                        // Sync from other clients only if I am empty
                         if (localCount == 0 && srcCount > 0) shouldSync = true;
                     }
                 }
@@ -215,7 +207,6 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
 }
 kmCall(0x80661130, AfterSELECTReception);
 
-// Get vote variant index for a specific aid and hudSlotId
 u8 ExpSELECTHandler::GetVoteVariantIdx(u8 aid, u8 hudSlotId) const {
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
@@ -240,11 +231,6 @@ static u16 GetWinningCourse(const ExpSELECTHandler& select) {
         return 0xFF;
 }
 kmBranch(0x80660450, GetWinningCourse);
-
-static bool IsTrackDecided(const ExpSELECTHandler& select) {
-    return select.toSendPacket.pulWinningTrack != 0xFF;
-}
-// kmBranch(0x80660d40, IsTrackDecided); never called
 
 PulsarId FixRandom(Random& random) {
     return CupsConfig::sInstance->RandomizeTrack();
@@ -313,7 +299,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         int playerCount = 0;
         int newVoters = 0;
         for (u8 aid = 0; aid < 12; ++aid) {
-            if ((1 << aid & availableAids) == 0) continue;
+            if (((1 << aid) & availableAids) == 0) continue;
             aids[playerCount] = aid;
             ++playerCount;
 
@@ -347,7 +333,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
                         break;
                     }
                 }
-                if (!isRepeatVote && blockingCount > 0 && IsGroupedTrack(aidVote) && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
+                if (!isRepeatVote && blockingCount > 0 && IsGroupedTrack(aidVote) && IsRegionalRoom(RKNet::Controller::sInstance->roomType)) {
                     const u32 lastIdx = (system->netMgr.curBlockingArrayIdx + blockingCount - 1) % blockingCount;
                     if (IsGroupedTrack(system->netMgr.lastTracks[lastIdx])) {
                         isRepeatVote = true;
@@ -368,11 +354,8 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         self.toSendPacket.winningVoterAid = winner;
         self.toSendPacket.pulWinningTrack = vote;
 
-        // Use the winner's variant selection, or randomize if they voted random
-        // The winner's variant is stored in voteVariantIdx[0] (hudSlotId 0 is P1 on their console)
         u8 winnerVariant = 0;
         if (votedRandom[winner]) {
-            // Winner voted random, so also randomize the variant
             winnerVariant = cupsConfig->RandomizeVariant(vote);
         } else if (winner == sub.localAid) {
             winnerVariant = self.toSendPacket.voteVariantIdx[0];
@@ -441,16 +424,15 @@ kmCall(0x80644414, SetCorrectTrack);
 
 // Overwrites CC rules -> 10% 100, 65% 150, 25% mirror and/or in frooms, overwritten by host setting
 static void DecideCC(ExpSELECTHandler& handler) {
-    System* system = System::sInstance;
     const u8 ccSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC);
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::RoomType roomType = controller->roomType;
     u8 ccClass = 1;  // 1 100, 2 150, 3 mirror
-    bool is200 = (roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && System::sInstance->IsContext(PULSAR_200_WW) ? WWMODE_200 : WWMODE_DEFAULT;
-    bool isOTT = (roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && System::sInstance->IsContext(PULSAR_MODE_OTT) ? WWMODE_OTT : WWMODE_DEFAULT;
-    if (roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
-        roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_JOINING_WW ||
-        isOTT || (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_NORMAL)) {
+    const bool isRegional = IsRegionalRoom(roomType);
+    const bool isWorldWide = roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_JOINING_WW;
+    const bool force200 = isRegional && System::sInstance->IsContext(PULSAR_200_WW);
+    const bool forceOtt = isRegional && System::sInstance->IsContext(PULSAR_MODE_OTT);
+    if (isRegional || isWorldWide || forceOtt || (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_NORMAL)) {
         Random random;
         const u32 result = random.NextLimited(100);  // 25
         System* system = System::sInstance;
@@ -461,11 +443,11 @@ static void DecideCC(ExpSELECTHandler& handler) {
         else if (result < 100 - prob100)
             ccClass = 2;
     }
-    if (is200 == Pulsar::WWMODE_200)
+    if (force200)
         ccClass = 1;
     else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_150)
         ccClass = 2;
-    else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_500 || roomType == RKNet::ROOMTYPE_FROOM_HOST && ccSetting == HOSTCC_100)
+    else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && (ccSetting == HOSTCC_500 || ccSetting == HOSTCC_100))
         ccClass = 1;
     handler.toSendPacket.engineClass = ccClass;
 }
@@ -480,39 +462,6 @@ void* Get() {
     return reinterpret_cast<u8*>(&select->receivedPackets[aid]) - 0x40;
 }
 kmCall(0x80661340, Get);
-
-/*
-void ProperCopyIdToAid(void* dest, u8 winningAid, u32 availableAids) {
-    register ExpSELECTHandler* select;
-    asm(mr select, r24;);
-    register PulSELECT* recvPacket;
-
-    u16 winningCourse = recvPacket->winningCourse;
-
-    select->toSendPacket.winningCourse = winningCourse;
-    select->toSendPacket.winningVoterAid = winningAid;
-
-    register u8 aid;
-    asm(mr aid, r25;);
-    memcpy(dest, &recvPacket->playerIdToAid, 12);
-
-}
-//kmCall(0x8066187c, ProperCopyIdToAid);
-*/
-
-/*
-asmFunc PatchProcess() { //r24 = handler
-    ASM(
-        nofralloc;
-    lwz r27, ExpSELECTHandler.receivedPackets(r24);
-    subi r28, r27, 0x40;
-    blr;
-        )
-}
-kmCall(0x80661524, PatchProcess);
-*/
-// kmWrite8(0x80661913, sizeof(PulSELECT));
-// kmWrite8(0x8066191b, sizeof(PulSELECT));
 
 asmFunc PatchImport() {  // r18 = handler
     ASM(
@@ -530,10 +479,6 @@ GetRecvPulSELECTPacket(0x80660558);
 GetRecvPulSELECTPacket(0x806605f4);
 GetRecvPulSELECTPacket(0x8066063c);
 
-// u8 -> u16 expansion; if the line is commented out, the function is never called/if you want to call it yourself, make sure to uncomment the line
-// CourseVote u8 -> u16 different location
-// Get
-// GetCourseVote
 u16 GetTrack(const ExpSELECTHandler& handler, u8 aid, u8 hudSlotId, register void* subR6) {
     register RKNet::ControllerSub* sub;
     asm(addi sub, subR6, 0x38);
@@ -544,15 +489,8 @@ u16 GetTrack(const ExpSELECTHandler& handler, u8 aid, u8 hudSlotId, register voi
 }
 kmBranch(0x80660574, GetTrack);
 
-// EveryoneHasVoted
-// kmWrite32(0x80660de0, 0xA0030000 + offsetof(PulSELECT, pulLocalVotes));
-// PrepareAndExportPacket
 kmWrite32(0x8066141c, 0xA01C0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulVote));
-// ProcessNewPacketVoting
-// kmWrite32(0x80661810, 0xA0180000 + offsetof(PulSELECT, pulVote));
-// kmWrite32(0x806618e4, 0xA01C0000 + offsetof(PulSELECT, pulVote) + 0x40);
 
-// Decide Track
 kmWrite32(0x80661e90, 0xA01F0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulVote));  // extsb -> lhz
 asmFunc PatchDecide() {  // r31 = handler
     ASM(
@@ -563,8 +501,6 @@ asmFunc PatchDecide() {  // r31 = handler
 }
 kmCall(0x80661ef0, PatchDecide);
 
-// Set
-// InitPackets
 void InitPatch() {
     register ExpSELECTHandler* select;
     asm(mr select, r31;);
@@ -608,10 +544,6 @@ asmFunc SetPlayerDataPatch() {
 kmBranch(0x80660750, SetPlayerDataPatch);
 kmPatchExitPoint(SetPlayerDataPatch, 0x80660754);
 
-// Store voteVariantIdx when SetPlayerData is called - hook after the bl call
-// The kmCall replaces "addi r28, r28, 0xc" at 0x80643758 and 0x806437ac
-// We need to execute that instruction's effect by returning the right value
-// r27 = hudSlotId (loop index), r28 = offset (needs += 0xc)
 static void StoreVoteVariantAfterSetPlayerData() {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     u8 variantIdx = cupsConfig ? cupsConfig->GetCurVariantIdx() : 0;
@@ -631,13 +563,8 @@ static void StoreVoteVariantAfterSetPlayerData() {
     r28_val += 0xc;
     asm(mr r28, r28_val;);
 }
-// Hook after the first SetPlayerData call (VS mode) - replaces "addi r28, r28, 0xc"
 kmCall(0x80643758, StoreVoteVariantAfterSetPlayerData);
-// Hook after the second SetPlayerData call (Battle mode) - replaces "addi r28, r28, 0xc"
 kmCall(0x806437ac, StoreVoteVariantAfterSetPlayerData);
-
-// ResetSendPacket
-// kmWrite32(0x80660908, 0xB3B80000 + offsetof(PulSELECT, pulLocalVotes));
 
 // Fixes
 kmWrite32(0x806440c0, 0x2c030100);  // if id >= 0x100 or id <= 31 -> correct courseId
@@ -649,73 +576,21 @@ kmWrite32(0x80644338, 0x2C0300FF);  // cmpwi 0xFFFF -> 0xFF
 kmWrite32(0x8064433c, 0x418200dc);
 
 // Winning course u8->u16
-// Get
-// EveryoneHasAccurateAidPidMap
-// kmWrite32(0x80660e54, 0xA003003C); //extsb -> lhz
-// kmWrite32(0x80660e58, 0x2c0000ff); //cmpwi 0xFFFF -> 0xFF
-// PrepareAndExportPacket
 kmWrite32(0x80661480, 0xA01C0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack));  // extsb -> lhz
 kmWrite32(0x80661484, 0x2c0000ff);  // cmpwi 0xFFFF -> 0xFF
 
-// ProcessNewPacketVoting
-// kmWrite32(0x80661648, 0xa0780000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack)); //extsb -> lhz
-// kmWrite32(0x8066164c, 0x2c0300ff); //cmpwi 0xFFFF -> 0xFF
-// kmWrite32(0x80661658, 0xA01C0000 + offsetof(PulSELECT, pulWinningTrack) + 0x40); //extsb -> lhz
-// kmWrite32(0x80661754, 0xA0180000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack)); //extsb -> lhz
-// kmWrite32(0x80661758, 0x2c0000ff); //cmpwi 0xFFFF -> 0xFF
-
-// DecideTrack
 kmWrite32(0x80661f0c, 0xA01F0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack));  // extsb -> lhz
 kmWrite32(0x80661f10, 0x2c0000ff);  // cmpwi 0xFFFF -> 0xFF
 
-// Store
-// InitPackets
 kmWrite32(0x80660018, 0x386000ff);
 kmWrite32(0x80660020, 0xB07F0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack));
-// kmWrite32(0x80660150, 0xB3D50000 + offsetof(PulSELECT, pulWinningTrack) + 0x40);
-
-// ResetSendPacket
-// kmWrite32(0x80660924, 0xB07F003C);
-// ProcessNewPacketVoting
-// kmWrite32(0x80661878, 0xB0D80000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack));
-// DecideTrack
 kmWrite32(0x80661e94, 0xB01F0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack));
 kmWrite32(0x80661ef4, 0xB01F0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack));
 kmWrite32(0x80661f94, 0xB3DF0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack));
 kmWrite32(0x8066200c, 0xB01F0000 + offsetof(ExpSELECTHandler, toSendPacket) + offsetof(PulSELECT, pulWinningTrack));
 
-/*
-If HOST:
-Phase 0:
-->Check that each aid has the same settings (battleType and teams, engineClass, selectId),
-and whenever that's the case, add the aid to the AccurateRaceSettings bitfield
-
-->If that's the case for every aid, the bitfield should be equal to the availableAids bitfield,
-in which case set the phase to 1 (everyone is ready)
-
-Phase 1:
-->Check that the winning track has been calculated
-->Check that each aid has the correct race settings (winning track, winner aid, playerIdToAid arr)
-and whenever that's the case, add the aid to the AccuratePidMap bitfield
-->If that's the case for every aid, the bitfield should be equal to the availableAids bitfield,
-in which case set the phase to 2 (everyone has the vote and the winner)
-
-If NON-HOST: only do stuff if the loop is at the host
-Phase 0:
-->Copy the settings (battleType and teams, engineClass, selectId) from the host packet
-
-Phase 1:
-->Check that I have voted
-->Check that everyone has voted (by comparing aidsThatHaveVoted to availableAids)
-->Copy the race settings from the host packet
-->If the host packet's phase is 2 or more, set own's send to 2
-
-In every case:
-->Check if I'm connected to anyone
-->Check that the curRecv packet has a valid vote
-->If both are the case, add the curAid to aidsThatHaveVoted
-->If I have received RH1 packets, set own phase to 2 as some people are already in the race  -idk when that can occur-
-*/
+// Replaces the vanilla SELECT vote processing so extended votes and room settings
+// progress through the same host/non-host phase checks.
 void ProcessNewPacketVoting() {
     register ExpSELECTHandler* handler;
     asm(mr handler, r24;);
@@ -747,7 +622,6 @@ void ProcessNewPacketVoting() {
                     }
                 }
                 u32 accField = handler->aidsWithAccurateRaceSettings;
-                u32 r0 = 0;
                 if (accField != 0) {
                     if (battleType != 0) accField |= localAidBit;
                     if ((availableAids & accField) == availableAids) send.phase = 1;
@@ -780,10 +654,9 @@ void ProcessNewPacketVoting() {
                     if ((availableAids & accField) == availableAids) {
                         const u8 winningAid = curRecv.winningVoterAid;
                         const u16 winningTrack = curRecv.pulWinningTrack;
-                        if ((1 << winningAid) & availableAids == 0) {
+                        if (((1 << winningAid) & availableAids) == 0) {
                             handler->receivedPackets[winningAid].pulVote = winningTrack;  // if the winner is dcd, fallback
                         }
-                        // Copy the race settings
                         send.winningVoterAid = winningAid;
                         send.pulWinningTrack = winningTrack;
                         for (int i = 0; i < 12; ++i) {

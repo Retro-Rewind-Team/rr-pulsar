@@ -4,6 +4,7 @@
 #include <MarioKartWii/UI/Page/Menu/Menu.hpp>
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuText.hpp>
+#include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -23,6 +24,7 @@ public:
     void OnButtonDeselect(PushButton& button, u32 hudSlotId);
     void OnBackPress(u32 hudSlotId);
     void AfterControlUpdate() override;
+    void StartFriendRoomPreview(PageId nextPageId);
     
     // Menu virtuals
     int GetActivePlayerBitfield() const override { return this->activePlayerBitfield; }
@@ -33,11 +35,15 @@ public:
     static const PulPageId id = PULPAGE_CUSTOMITEMS;
 
 private:
+    u32 GetDisplayBitfield() const;
     void UpdateButtonVisuals();
     void SetButtonIcon(PushButton& button, u32 itemId);
 
     CtrlMenuPageTitleText titleText;
+    CountDown previewTimer;
     PushButton* buttons; // 19 items + 1 randomize
+    PageId friendRoomPreviewNextPageId;
+    bool isFriendRoomPreview;
     PtmfHolder_2A<CustomItemPage, void, PushButton&, u32> onButtonClickHandler;
     PtmfHolder_2A<CustomItemPage, void, PushButton&, u32> onButtonSelectHandler;
     PtmfHolder_2A<CustomItemPage, void, PushButton&, u32> onButtonDeselectHandler;

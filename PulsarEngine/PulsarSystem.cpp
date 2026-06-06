@@ -60,7 +60,6 @@ void System::CreateSystem() {
     ConfigFile::readBytes = rtReadBytes;
     confRT->Destroy();
 }
-// kmCall(0x80543bb4, System::CreateSystem);
 BootHook CreateSystem(System::CreateSystem, 0);
 
 System::System() : heap(RKSystem::mInstance.EGGSystem), taskThread(EGG::TaskThread::Create(8, 0, 0x4000, this->heap)),
@@ -81,6 +80,16 @@ static void PatchBMGOffsets(BMGHolder& holder, u32 cupOffset, u32 trackOffset) {
         else if (mid >= 0x20000) mid += trackOffset;
         else if (mid >= 0x10000) mid += cupOffset;
     }
+}
+
+static void LoadConfigFileNames(const ConfigFile& config, u32 readBytes, u32 firstTrack, u32 trackCount) {
+    const PulBMG& bmgSection = config.GetSection<PulBMG>();
+    const u8* configStart = reinterpret_cast<const u8*>(&config);
+    const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
+    const u32 offset = static_cast<u32>(fileSection - configStart);
+    if (offset >= readBytes) return;
+
+    CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), readBytes - offset, firstTrack, trackCount);
 }
 
 void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const ConfigFile& confBT,
@@ -115,46 +124,17 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     this->InitIO(type);
     this->InitSettings(&CupsConfig::sInstance->trophyCount[0]);
 
-    if(IsNewChannel()) {
+    if (IsNewChannel()) {
         NewChannel_Init();
     }
 
     u32 rtTrackCount = rtCups.ctsCupCount * 4;
     u32 ctTrackCount = ctCups.ctsCupCount * 4;
+    const u32 btTrackCount = btCups.ctsCupCount * 4;
+    LoadConfigFileNames(confRT, rtReadBytes, 0, rtTrackCount);
+    LoadConfigFileNames(confCT, ctReadBytes, rtTrackCount, ctTrackCount);
+    LoadConfigFileNames(confBT, btReadBytes, rtTrackCount + ctTrackCount, btTrackCount);
 
-    {
-        const PulBMG& bmgSection = confRT.GetSection<PulBMG>();
-        const u8* confStart = reinterpret_cast<const u8*>(&confRT);
-        const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
-        const u32 offset = static_cast<u32>(fileSection - confStart);
-        if (offset < rtReadBytes) {
-            const u32 remaining = rtReadBytes - offset;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, 0, rtTrackCount);
-        }
-    }
-    {
-        const PulBMG& bmgSection = confCT.GetSection<PulBMG>();
-        const u8* confStart = reinterpret_cast<const u8*>(&confCT);
-        const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
-        const u32 offset = static_cast<u32>(fileSection - confStart);
-        if (offset < ctReadBytes) {
-            const u32 remaining = ctReadBytes - offset;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount, ctTrackCount);
-        }
-    }
-    {
-        const PulBMG& bmgSection = confBT.GetSection<PulBMG>();
-        const u8* confStart = reinterpret_cast<const u8*>(&confBT);
-        const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
-        const u32 offset = static_cast<u32>(fileSection - confStart);
-        if (offset < btReadBytes) {
-            const u32 remaining = btReadBytes - offset;
-            const u32 btTrackCount = btCups.ctsCupCount * 4;
-            CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), remaining, rtTrackCount + ctTrackCount, btTrackCount);
-        }
-    }
-
-    // Initialize last selected cup and courses
     const PulsarCupId last = Settings::Mgr::sInstance->GetSavedSelectedCup();
     CupsConfig* cupsConfig = CupsConfig::sInstance;
     cupsConfig->SetLayout();
@@ -164,7 +144,6 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         cupsConfig->lastSelectedCupButtonIdx = last & 1;
     }
 
-    // Track blocking
     u32 trackBlocking = this->info.GetTrackBlocking();
     this->netMgr.lastTracks = new PulsarId[trackBlocking];
     for (int i = 0; i < trackBlocking; ++i) {
@@ -204,7 +183,7 @@ void System::InitIO(IOType type) const {
     ret = io->CreateFolder(modFolder);
     if (!ret && io->type == IOType_DOLPHIN) {
         char path[0x100];
-        snprintf(path, 0x100, "Unable to automatically create a folder for this CT distribution\nPlease create a Pulsar folder in Dolphin Emulator/Wii/shared2", modFolder);
+        snprintf(path, 0x100, "Unable to automatically create a folder for this CT distribution\nPlease create a Pulsar folder in Dolphin Emulator/Wii/shared2");
         Debug::FatalError(path);
     }
     char ghostPath[IOS::ipcMaxPath];
@@ -235,9 +214,10 @@ void System::UpdateContext() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     Network::Mgr& netMgr = this->netMgr;
     const u32 sceneId = GameScene::GetCurrent()->id;
+    const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
 
     bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
-    bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
+    bool isRegionalRoom = isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
     bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
     bool isBalloonBattle = isBattle && racedataSettings.battleType == BATTLE_BALLOON;
     bool isNotPublic = isFroom || controller->roomType == RKNet::ROOMTYPE_NONE;
@@ -263,13 +243,14 @@ void System::UpdateContext() {
     bool isThunderCloud = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
     bool isItemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
     bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
+    bool isItemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
     bool isItemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
     bool isItemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
     bool isTrackSelectionRegs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
     bool isTrackSelectionRetros = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
     bool isTrackSelectionCts = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
     bool isChangeCombo = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWCHANGECOMBO) == OTTSETTING_COMBO_ENABLED;
-    bool isItemBoxRepsawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
+    bool isItemBoxRespawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
     bool isTransmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE && isFroom;
     bool isTransmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE && isFroom;
     bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && isFroom;
@@ -277,6 +258,11 @@ void System::UpdateContext() {
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
+    bool isBattleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_BATTLEROYALE && isNotPublic && !isBattle && !isTimeTrial;
+    const u8 koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE);
+    bool isKoPerRace2 = koPerRace == KOSETTING_KOPERRACE_2;
+    bool isKoPerRace3 = koPerRace == KOSETTING_KOPERRACE_3;
+    bool isKoPerRace4 = koPerRace == KOSETTING_KOPERRACE_4;
     bool isStartRetro = false;
     bool isStartCT = false;
     bool isStartRTS = false;
@@ -288,11 +274,11 @@ void System::UpdateContext() {
     bool isUMTs = this->info.HasUMTs();
     u32 newContext = 0;
     u32 newContext2 = 0;
-    if (sceneId != SCENE_ID_GLOBE && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN) {
+    if (sceneId != SCENE_ID_GLOBE && isOnlineRoomActive) {
         switch (controller->roomType) {
             case (RKNet::ROOMTYPE_VS_REGIONAL):
             case (RKNet::ROOMTYPE_JOINING_REGIONAL):
-                isOTT = netMgr.ownStatusData == true;
+                isOTT = netMgr.ownStatusData;
                 break;
             case (RKNet::ROOMTYPE_FROOM_HOST):
             case (RKNet::ROOMTYPE_FROOM_NONHOST):
@@ -321,7 +307,7 @@ void System::UpdateContext() {
                 isMiiHeads = newContext2 & (1 << PULSAR_MIIHEADS);
                 isThunderCloud = newContext & (1 << PULSAR_THUNDERCLOUD);
                 isAllItemsCanLand = newContext2 & (1 << PULSAR_ALLITEMSCANLAND);
-                isItemBoxRepsawnFast = newContext2 & (1 << PULSAR_ITEMBOXRESPAWN);
+                isItemBoxRespawnFast = newContext2 & (1 << PULSAR_ITEMBOXRESPAWN);
                 isTransmissionInside = newContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
                 isTransmissionOutside = newContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
                 isTransmissionVanilla = newContext2 & (1 << PULSAR_TRANSMISSIONVANILLA);
@@ -337,10 +323,16 @@ void System::UpdateContext() {
                 isStartItemRain = newContext & (1 << PULSAR_STARTITEMRAIN);
                 isRanking = newContext2 & (1 << PULSAR_RANKING);
                 isVR = newContext2 & (1 << PULSAR_VR);
+                isBattleRoyale = newContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
+                isItemModeNone = newContext2 & (1 << PULSAR_ITEMMODENONE);
+                isKoPerRace2 = newContext2 & (1 << PULSAR_KOPERRACE_2);
+                isKoPerRace3 = newContext2 & (1 << PULSAR_KOPERRACE_3);
+                isKoPerRace4 = newContext2 & (1 << PULSAR_KOPERRACE_4);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
                     isChangeCombo = newContext & (1 << PULSAR_CHANGECOMBO);
+                    isBattleRoyale = false;
                 }
                 break;
             default:
@@ -352,6 +344,7 @@ void System::UpdateContext() {
         if (isOTT) {
             isFeather &= (ottOffline == OTTSETTING_OFFLINE_FEATHER);
             isUMTs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED;
+            isBattleRoyale = false;
         }
     }
     this->netMgr.hostContext = newContext;
@@ -360,8 +353,8 @@ void System::UpdateContext() {
     u32 preserved = this->context & ((1 << PULSAR_200_WW) | (1 << PULSAR_MODE_OTT) | (1 << PULSAR_ELIMINATION));
     u32 preserved2 = this->context2 & (1 << PULSAR_ITEMMODERAIN);
 
-    // When entering a friend room (host/nonhost), clear any region-preserved bits
-    if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) {
+    // When leaving public rooms, clear any region-preserved bits.
+    if (!isOnlineRoomActive || controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) {
         preserved &= ~((1 << PULSAR_200_WW) | (1 << PULSAR_MODE_OTT) | (1 << PULSAR_ELIMINATION));
         preserved2 &= ~((1 << PULSAR_ITEMMODERAIN) | (1 << PULSAR_ITEMMODESTORM));
     }
@@ -390,8 +383,12 @@ void System::UpdateContext() {
                             (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN |
                             (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
                             (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND |
-                            (isHAW) << PULSAR_HAW | (isItemBoxRepsawnFast) << PULSAR_ITEMBOXRESPAWN |
-                            (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR;
+                            (isHAW) << PULSAR_HAW | (isItemBoxRespawnFast) << PULSAR_ITEMBOXRESPAWN |
+                            (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR |
+                            (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE |
+                            (isKoPerRace2) << PULSAR_KOPERRACE_2 |
+                            (isKoPerRace3) << PULSAR_KOPERRACE_3 |
+                            (isKoPerRace4) << PULSAR_KOPERRACE_4;
     }
 
     // Combine the new context with preserved bits
@@ -486,17 +483,6 @@ void System::UpdateContext() {
         sInstance->context &= ~(1 << PULSAR_ELIMINATION);
     }
 
-    // Create temp instances if needed:
-    /*
-    if(sceneId == SCENE_ID_RACE) {
-        if(this->lecodeMgr == nullptr) this->lecodeMgr = new (this->heap) LECODE::Mgr;
-    }
-    else if(this->lecodeMgr != nullptr) {
-        delete this->lecodeMgr;
-        this->lecodeMgr = nullptr;
-    }
-    */
-
     if (isKO) {
         if (sceneId == SCENE_ID_MENU && SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber == -1) this->koMgr = new (this->heap) KO::Mgr;  // create komgr when loading the select phase of the 1st race of a froom
     }
@@ -505,7 +491,7 @@ void System::UpdateContext() {
         this->koMgr = nullptr;
     }
 
-    if (isLapBasedKO) {
+    if (isLapBasedKO || isBattleRoyale) {
         if (this->lapKoMgr == nullptr) {
             this->lapKoMgr = new (this->heap) LapKO::Mgr;
         }
@@ -569,7 +555,7 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 610);
+kmWrite32(0x800017D4, 611);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";

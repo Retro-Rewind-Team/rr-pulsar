@@ -102,7 +102,6 @@ static u32 CountSourceVariants(const Track* tracks, u32 trackCount) {
 CupsConfig* CupsConfig::sInstance = nullptr;
 
 CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
-                                                    // Cup actions initialization
                                                     hasRegs(false),
                                                     hasOddCups(false),
                                                     winningCourse(PULSARID_NONE),
@@ -531,20 +530,22 @@ void CupsConfig::SetWinning(PulsarId id, u32 variantIdx) {
 
 void CupsConfig::ToggleCTs(bool enabled) {
     u32 count;
-    bool isRegs = false;
+    bool isRegsOnly = false;
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    u32 isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
-    if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) && !isBattle) {
-        if (System::sInstance->IsContext(PULSAR_REGS)) isRegs = TRACKSELECTION_REGS;
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+    const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
+    if ((controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) && !isBattle) {
+        if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = true;
     }
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_WW || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_WW || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_WW) {
-        isRegs = TRACKSELECTION_REGS;
+    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_WW || controller->roomType == RKNet::ROOMTYPE_BT_WW || controller->roomType == RKNet::ROOMTYPE_JOINING_WW)) {
+        isRegsOnly = true;
     }
-    if ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && System::sInstance->netMgr.region == 0x15) {
-        isRegs = TRACKSELECTION_REGS;
+    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && System::sInstance->netMgr.region == 0x15) {
+        isRegsOnly = true;
     }
-    if (isRegs == TRACKSELECTION_REGS) {
+    if (isRegsOnly) {
         if (lastSelectedCup > 7) {
             hasRegs = true;
             selectedCourse = PULSARID_FIRSTREG;
@@ -552,13 +553,9 @@ void CupsConfig::ToggleCTs(bool enabled) {
             lastSelectedCupButtonIdx = 0;
         }
         count = 0;
-    } else if (isRegs == false) {
-        count = definedCTsCupCount;
-        hasRegs = false;
     } else {
         count = definedCTsCupCount;
-        hasRegs = (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL) &&
-                  (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_JOINING_REGIONAL);
+        hasRegs = false;
     }
     ctsCupCount = count;
 }
@@ -599,26 +596,28 @@ PulsarId CupsConfig::RandomizeTrack() const {
     const Settings::Mgr& settings = Settings::Mgr::Get();
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    u32 isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+    const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
     Random random;
     u32 pulsarId;
-    u32 isRetroOnly = TRACKSELECTION_ALL;
-    u32 isCTOnly = TRACKSELECTION_ALL;
-    u32 isRegsOnly = TRACKSELECTION_ALL;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
-        if (System::sInstance->IsContext(PULSAR_RETROS)) isRetroOnly = TRACKSELECTION_RETROS;
-        if (System::sInstance->IsContext(PULSAR_CTS)) isCTOnly = TRACKSELECTION_CTS;
-        if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = TRACKSELECTION_REGS;
+    TrackSelection retroSelection = TRACKSELECTION_ALL;
+    TrackSelection ctSelection = TRACKSELECTION_ALL;
+    TrackSelection regsSelection = TRACKSELECTION_ALL;
+    if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) {
+        if (System::sInstance->IsContext(PULSAR_RETROS)) retroSelection = TRACKSELECTION_RETROS;
+        if (System::sInstance->IsContext(PULSAR_CTS)) ctSelection = TRACKSELECTION_CTS;
+        if (System::sInstance->IsContext(PULSAR_REGS)) regsSelection = TRACKSELECTION_REGS;
     }
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
-        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D) isRetroOnly = TRACKSELECTION_RETROS;
-        if (System::sInstance->netMgr.region == 0x14) isCTOnly = TRACKSELECTION_CTS;
+    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
+        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D) retroSelection = TRACKSELECTION_RETROS;
+        if (System::sInstance->netMgr.region == 0x14) ctSelection = TRACKSELECTION_CTS;
     }
-    if (isRetroOnly == TRACKSELECTION_RETROS && isRegsOnly != TRACKSELECTION_REGS && !isBattle)
+    if (retroSelection == TRACKSELECTION_RETROS && regsSelection != TRACKSELECTION_REGS && !isBattle)
         pulsarId = random.NextLimited(this->GetRetroTrackCount()) + 0x100;
-    else if (isCTOnly == TRACKSELECTION_CTS && isRegsOnly != TRACKSELECTION_REGS && !isBattle)
+    else if (ctSelection == TRACKSELECTION_CTS && regsSelection != TRACKSELECTION_REGS && !isBattle)
         pulsarId = random.NextLimited(this->GetCTOnlyTrackCount()) + 0x100 + this->GetRetroTrackCount();
-    else if (isRegsOnly == TRACKSELECTION_REGS && !isBattle)
+    else if (regsSelection == TRACKSELECTION_REGS && !isBattle)
         pulsarId = random.NextLimited(32);
     else if (isBattle)
         pulsarId = random.NextLimited(this->GetBattleTrackCount()) + 0x100 + this->GetRetroTrackCount() + this->GetCTOnlyTrackCount();
@@ -630,49 +629,38 @@ PulsarId CupsConfig::RandomizeTrack() const {
     return static_cast<PulsarId>(pulsarId);
 }
 
-/*
-PulsarCupId CupsDef::GetNextCupId(PulsarCupId pulsarId, s32 direction) const {
-    const u32 idx = ConvertCup_PulsarIdToIdx(pulsarId); //40 -> 8
-    const u32 count = this->GetTotalCupCount(); //0xa
-    const u32 min = count < 8 ? 8 : 0; //0
-    const u32 nextIdx = ((idx + direction + count) % count) + min; //6
-    if(this->hasRegs && nextIdx < 8) return static_cast<PulsarCupId>(nextIdx);
-    else return
-        if(IsRegCup(pulsarId) && nextIdx >= 8) return static_cast<PulsarCupId>(nextIdx + 0x38 + count);
-    return ConvertCup_IdxToPulsarId(nextIdx);
-}
-*/
-
 PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const {
     const Settings::Mgr& settings = Settings::Mgr::Get();
     const u32 idx = ConvertCup_PulsarIdToIdx(pulsarId);
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    u32 isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
-    u32 isRetroOnly = TRACKSELECTION_ALL;
-    u32 isCTOnly = TRACKSELECTION_ALL;
-    u32 isRegsOnly = TRACKSELECTION_ALL;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-        if (System::sInstance->IsContext(PULSAR_RETROS)) isRetroOnly = TRACKSELECTION_RETROS;
-        if (System::sInstance->IsContext(PULSAR_CTS)) isCTOnly = TRACKSELECTION_CTS;
-        if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = TRACKSELECTION_REGS;
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+    const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
+    TrackSelection retroSelection = TRACKSELECTION_ALL;
+    TrackSelection ctSelection = TRACKSELECTION_ALL;
+    TrackSelection regsSelection = TRACKSELECTION_ALL;
+    if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+        if (System::sInstance->IsContext(PULSAR_RETROS)) retroSelection = TRACKSELECTION_RETROS;
+        if (System::sInstance->IsContext(PULSAR_CTS)) ctSelection = TRACKSELECTION_CTS;
+        if (System::sInstance->IsContext(PULSAR_REGS)) regsSelection = TRACKSELECTION_REGS;
     }
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
-        if (System::sInstance->IsContext(PULSAR_RETROS)) isRetroOnly = TRACKSELECTION_ALL;
-        if (System::sInstance->IsContext(PULSAR_CTS)) isCTOnly = TRACKSELECTION_ALL;
-        if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = TRACKSELECTION_REGS;
+    if (controller->roomType == RKNet::ROOMTYPE_NONE) {
+        if (System::sInstance->IsContext(PULSAR_RETROS)) retroSelection = TRACKSELECTION_ALL;
+        if (System::sInstance->IsContext(PULSAR_CTS)) ctSelection = TRACKSELECTION_ALL;
+        if (System::sInstance->IsContext(PULSAR_REGS)) regsSelection = TRACKSELECTION_REGS;
     }
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
-        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D) isRetroOnly = TRACKSELECTION_RETROS;
-        if (System::sInstance->netMgr.region == 0x14) isCTOnly = TRACKSELECTION_CTS;
+    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
+        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D) retroSelection = TRACKSELECTION_RETROS;
+        if (System::sInstance->netMgr.region == 0x14) ctSelection = TRACKSELECTION_CTS;
     }
-    if (isRetroOnly == TRACKSELECTION_RETROS && isRegsOnly != TRACKSELECTION_REGS && !isBattle) {
+    if (retroSelection == TRACKSELECTION_RETROS && regsSelection != TRACKSELECTION_REGS && !isBattle) {
         const u32 countRetro = this->retroCupCount;
         const u32 minRetro = countRetro < 8 ? 8 : 0;
         const u32 nextIdxRetro = ((idx + direction + countRetro) % countRetro) + minRetro;
         if (!this->hasRegs && nextIdxRetro < 8) return static_cast<PulsarCupId>(nextIdxRetro + countRetro + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxRetro);
-    } else if (isCTOnly == TRACKSELECTION_CTS && isRegsOnly != TRACKSELECTION_REGS && !isBattle) {
+    } else if (ctSelection == TRACKSELECTION_CTS && regsSelection != TRACKSELECTION_REGS && !isBattle) {
         const u32 countCT = this->ctOnlyCupCount;
         const u32 lastCupIndex = this->GetTotalCupCount() - 1;
         const u32 startIdx = 8 + this->retroCupCount;
@@ -686,7 +674,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         const u32 nextIdxBT = startIdx + ((idx - startIdx + direction + countBT) % countBT);
         if (!this->hasRegs && nextIdxBT < 8) return static_cast<PulsarCupId>(nextIdxBT + countBT + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxBT);
-    } else if (isRegsOnly == TRACKSELECTION_REGS) {
+    } else if (regsSelection == TRACKSELECTION_REGS) {
         const u32 count = 8;
         const u32 nextIdx = ((idx + direction + count) % count);
         return ConvertCup_IdxToPulsarId(nextIdx);
@@ -700,7 +688,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
 }
 
 void CupsConfig::SaveSelectedCourse(const PushButton& courseButton) {
-    this->selectedCourse = ConvertTrack_PulsarCupToTrack(this->lastSelectedCup, courseButton.buttonId);  // FIX HERE
+    this->selectedCourse = ConvertTrack_PulsarCupToTrack(this->lastSelectedCup, courseButton.buttonId);
     u32 variantIdx = 0;
     if (this->hasPendingVariant) {
         variantIdx = this->pendingVariantIdx;

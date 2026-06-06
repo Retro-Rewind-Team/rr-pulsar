@@ -53,22 +53,13 @@ TeamSelect::TeamSelect() {
 void TeamSelect::OnInit() {
     this->miiGroup = &SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>()->miiGroup;
     Menu::OnInit();
-    /*
-    for(u8 aid = 0; aid < 12; aid++) {
-        u32 idx = this->CalcIdx(aid);
-        if(idx != 0xFF && this->teams[aid] == 1) {
-            this->RotateArrow(this->arrows[idx], 1);
-        }
-
-    }
-    */
 }
 
 void TeamSelect::BeforeEntranceAnimations() {
     Pages::Menu::BeforeEntranceAnimations();
     if (this->toggle.GetState() != this->isEnabled) this->toggle.ToggleState(this->isEnabled);
     this->toggle.SelectInitial(0);
-    const u32 bmgId = this->toggle.GetState() == false ? BMG_TEAMS_DISABLED : BMG_TEAMS_ENABLED;
+    const u32 bmgId = this->toggle.GetState() ? BMG_TEAMS_ENABLED : BMG_TEAMS_DISABLED;
     this->toggle.SetMessage(bmgId);
     this->isLocked = false;
 
@@ -77,9 +68,8 @@ void TeamSelect::BeforeEntranceAnimations() {
     }
     for (u8 teamsArrayIdx = 0; teamsArrayIdx < 24; ++teamsArrayIdx) {
         u32 idx = this->CalcIdx(teamsArrayIdx);
-        u8 curTeam = 0;
         if (idx != 0xFF) {
-            u8 curTeam = this->teams[teamsArrayIdx];
+            const u8 curTeam = this->teams[teamsArrayIdx];
             if (curTeam == 1) this->RotateArrow(this->arrows[idx], 1);
             this->SetColours(idx, curTeam);
             this->miis[idx].animator.GetAnimationGroupById(0).PlayAnimationAtFrameAndDisable(!curTeam, 0.0f);
@@ -152,7 +142,7 @@ UIControl* TeamSelect::CreateControl(u32 id) {
         loader.Load(UI::controlFolder, brctr, brctr, nullptr);
         return &this->name;
 
-    } else /*if(id == 25)*/ {
+    } else {
         this->AddControl(count, this->toggle, 0);
         this->toggle.Load(1, UI::buttonFolder, "TeamSelectEnable", "Enable");
         this->toggle.SetOnClickHandler(this->onToggleButtonClick, 0);
@@ -178,7 +168,7 @@ void TeamSelect::OnArrowSelect(PushButton& button, u32 hudSlotId) {
 }
 
 void TeamSelect::OnToggleButtonClick(ToggleButton& button, u32) {
-    const u32 bmgId = button.GetState() == false ? BMG_TEAMS_DISABLED : BMG_TEAMS_ENABLED;
+    const u32 bmgId = button.GetState() ? BMG_TEAMS_ENABLED : BMG_TEAMS_DISABLED;
     this->isEnabled = button.GetState();
     button.SetMessage(bmgId);
 }
@@ -239,7 +229,6 @@ u32 TeamSelect::CalcIdx(u8 teamsArrayIdx) {
     u8 aid = isGuest ? teamsArrayIdx - 12 : teamsArrayIdx;
     if (!(sub->availableAids & (1 << aid)) || isGuest && sub->connectionUserDatas[aid].playersAtConsole < 2) return 0xFF;
 
-    // the aid is valid, therefore it has an idx
     u32 idx = 0;
     for (u8 curAid = 0; curAid < aid; ++curAid) {
         if (sub->availableAids & (1 << curAid)) {

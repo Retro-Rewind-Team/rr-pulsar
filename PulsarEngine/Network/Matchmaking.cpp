@@ -1,21 +1,3 @@
-/*
-    Matchmaking.cpp
-    Copyright (C) 2025 ZPL
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -34,8 +16,8 @@ kmRuntimeUse(0x8011e480);
 kmRuntimeUse(0x8011e490);
 kmRuntimeUse(0x800d6c94);
 kmRuntimeUse(0x800d6ee4);
-static u32 joinAttempts = 0;
-static u32 previousRoomGroupId = 0;
+static u32 sJoinAttempts = 0;
+static u32 sPreviousRoomGroupId = 0;
 
 static bool IsPublicMatchmakingRoomType(const RKNet::RoomType roomType) {
     switch (roomType) {
@@ -65,7 +47,7 @@ static void RememberPreviousPublicRoomGroupId(const RKNet::Controller* controlle
     if (controller == nullptr || !IsPublicMatchmakingRoomType(controller->roomType)) return;
 
     const u32 activeGroupId = GetTrackedRoomGroupId(controller);
-    if (activeGroupId != 0) previousRoomGroupId = activeGroupId;
+    if (activeGroupId != 0) sPreviousRoomGroupId = activeGroupId;
 }
 
 static void ApplyMatchmakingTimeoutPatch() {
@@ -81,21 +63,18 @@ static void ApplyMatchmakingTimeoutPatch() {
     kmRuntimeWrite32A(0x800d6ee4, liR6TimeoutMs);
 }
 
-// SBServerGetIntValueA
 typedef int (*SBServerGetIntValueA_t)(void* server, const char* key, int defaultValue);
 static const SBServerGetIntValueA_t SBServerGetIntValueA = (SBServerGetIntValueA_t)kmRuntimeAddr(0x8011d2b0);
 
-// SBServerSetIntValueA
 typedef void (*SBServerSetIntValueA_t)(void* server, const char* key, int value);
 static const SBServerSetIntValueA_t SBServerSetIntValueA = (SBServerSetIntValueA_t)kmRuntimeAddr(0x8011d1e4);
-// ServerBrowserCountA
+
 typedef int (*ServerBrowserCountA_t)(void* sb);
 static const ServerBrowserCountA_t ServerBrowserCountA = (ServerBrowserCountA_t)kmRuntimeAddr(0x8011e488);
 
-// ServerBrowserGetServerAtIndexA
 typedef void* (*ServerBrowserGetServerAtIndexA_t)(void* sb, int index);
 static const ServerBrowserGetServerAtIndexA_t ServerBrowserGetServerAtIndexA = (ServerBrowserGetServerAtIndexA_t)kmRuntimeAddr(0x8011e480);
-// ServerBrowserSortA
+
 typedef void (*ServerBrowserSortA_t)(void* sb, bool ascending, const char* sortKey, int sortType);
 static const ServerBrowserSortA_t ServerBrowserSortA = (ServerBrowserSortA_t)kmRuntimeAddr(0x8011e490);
 
@@ -116,7 +95,7 @@ static bool HasAlternativeRoomOption(void* sb, int count, bool blockSmallRooms) 
         if (!server) continue;
 
         const int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
-        if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) continue;
+        if (sPreviousRoomGroupId != 0 && serverGroupId == (int)sPreviousRoomGroupId) continue;
 
         const int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
         const bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
@@ -130,7 +109,7 @@ static bool HasAlternativeRoomOption(void* sb, int count, bool blockSmallRooms) 
 // Hook DWCi_RandomizeServers to sort by VR proximity
 kmRuntimeUse(0x8038630C);
 void CustomRandomizeServers() {
-    // Load dwcControl from r13 - 0x68f4
+    // dwcControl lives at r13 - 0x68f4.
     void* dwcControl = *(void**)kmRuntimeAddr(0x8038630C);
     if (!dwcControl) return;
 
@@ -148,10 +127,11 @@ void CustomRandomizeServers() {
     const bool blockSmallRooms = isCompetitiveMatchmakingEnabled && HasNonSmallRoomOption(sb, count);
     const bool hasAlternativeRoomOption = HasAlternativeRoomOption(sb, count, blockSmallRooms);
     const int previousRoomPenalty = hasAlternativeRoomOption ? 2000000000 : 0;
+    const int ratingMismatchEval = 999999;
     const int blockedSmallRoomEval = 0x50000000;
     const int fullRoomEval = 0x60000000;
 
-    if (joinAttempts < 3) {
+    if (sJoinAttempts < 3) {
         u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
 
         RKNet::Controller* net = RKNet::Controller::sInstance;
@@ -189,7 +169,7 @@ void CustomRandomizeServers() {
             }
 
             int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
-            if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) {
+            if (sPreviousRoomGroupId != 0 && serverGroupId == (int)sPreviousRoomGroupId) {
                 SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
                 continue;
             }
@@ -208,9 +188,9 @@ void CustomRandomizeServers() {
 
             // If player is low VR and room is above the threshold, mark it with very high eval
             if (isLowVR && serverRating > maxRoomRating) {
-                eval = 999999;
+                eval = ratingMismatchEval;
             } else if (isHighVR && serverRating > 0 && serverRating < lowRoomThreshold) {
-                eval = 999999;
+                eval = ratingMismatchEval;
             } else {
                 eval = diff;
             }
@@ -232,7 +212,7 @@ void CustomRandomizeServers() {
 
             int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
             bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
-            if (previousRoomGroupId != 0 && serverGroupId == (int)previousRoomGroupId) {
+            if (sPreviousRoomGroupId != 0 && serverGroupId == (int)sPreviousRoomGroupId) {
                 SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
             } else if (blockSmallRooms && isSmallRoom) {
                 SBServerSetIntValueA(server, "dwc_eval", blockedSmallRoomEval);
@@ -255,7 +235,7 @@ kmCall(0x80657990, UpdateMatchmakingInfosAndRememberGroupId);
 // Reset when starting ConnectToAnyoneAsync
 static void OnConnectToAnyoneAsync(RKNet::Controller* self) {
     ApplyMatchmakingTimeoutPatch();
-    joinAttempts = 0;
+    sJoinAttempts = 0;
     RememberPreviousPublicRoomGroupId(self);
     self->ConnectToAnybodyAsync();
 }
@@ -265,7 +245,7 @@ kmCall(0x806590b4, OnConnectToAnyoneAsync);
 kmRuntimeUse(0x800df094);
 typedef void (*DWCi_RetryReserving_t)(int);
 static void OnRetryReserving(int r3) {
-    joinAttempts++;
+    ++sJoinAttempts;
     ((DWCi_RetryReserving_t)kmRuntimeAddr(0x800df094))(r3);
 }
 kmCall(0x800d66ac, OnRetryReserving);

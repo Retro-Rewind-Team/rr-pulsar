@@ -12,9 +12,7 @@ namespace UI {
 void RaceControlButtonInfo::Update(const Input::ControllerHolder* controllerHolder) {
     Input::ControllerHolder* modHolder = const_cast<Input::ControllerHolder*>(controllerHolder);
     bool isMirror = false;
-    // u16 oldActions;
     if (modHolder != nullptr) {
-        // oldActions = modHolder->uiinputStates[0].buttonActions;
         isMirror = Racedata::sInstance->racesScenario.settings.modeFlags & 1;
         if (isMirror) {
             modHolder->uiinputStates[0].stickX = -modHolder->uiinputStates[0].stickX;
@@ -22,36 +20,15 @@ void RaceControlButtonInfo::Update(const Input::ControllerHolder* controllerHold
     }
     ControlButtonInfo::Update(modHolder);
     if (isMirror) {
-        // modHolder->uiinputStates[0].buttonActions = oldActions;
         modHolder->uiinputStates[0].stickX = -modHolder->uiinputStates[0].stickX;
     }
 }
-/*
-static void BuildChooseNextTrack(Section& section, PageId id) {
-    section.CreateAndInitPage(id);
-    if(Info::IsHAW(false)) {
-        ChooseNextTrack* choose = new(ChooseNextTrack);
-        section.Set(choose, ChooseNextTrack::fakeId);
-        choose->Init(ChooseNextTrack::fakeId);
-    }
-}
-kmCall(0x8062f020, BuildChooseNextTrack); //0x70
-kmCall(0x8062f08c, BuildChooseNextTrack); //0x71
-kmCall(0x8062f0f8, BuildChooseNextTrack); //0x72
-kmCall(0x8062f164, BuildChooseNextTrack); //0x73
-kmCall(0x8062f1d0, BuildChooseNextTrack); //0x74
-kmCall(0x8062f23c, BuildChooseNextTrack); //0x75
-kmCall(0x8062f2a8, BuildChooseNextTrack); //0x76
-kmCall(0x8062f314, BuildChooseNextTrack); //0x77
-*/
 
 ChooseNextTrack::ChooseNextTrack() : isBattle(Racedata::sInstance->racesScenario.settings.gamemode == MODE_PRIVATE_BATTLE) {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     this->isHost = sub.hostAid == sub.localAid;
     this->status = STATUS_NOTRACK;
-    // if(this->isHost) this->status = STATUS_NOTRACK;
-    // else this->status = STATUS_TRACK_SELECTED; //non-hosts never send a track
 
     messageBMGId = BMG_CHOOSE_NEXT;
     nextPage = PAGE_WWRACEEND_WAIT;
@@ -73,7 +50,6 @@ void ChooseNextTrack::OnActivate() {
     this->pageId = PAGE_TT_PAUSE_MENU;
     RaceMenu::OnActivate();
     this->pageId = ChooseNextTrack::fakeId;
-    // this->buttons[3].SetMessage(BMG_RANDOM_TRACK);
     this->UpdateButtonInfo(0);  // to fix the bad IDs from the array
     this->message->positionAndscale[1].position.y = 180.0f;
     this->countdown.SetInitial(static_cast<float>(System::sInstance->GetInfo().GetChooseNextTrackTimer()));
@@ -157,8 +133,9 @@ void ChooseNextTrack::UpdateButtonInfo(s32 direction) {
         }
         this->curPageIdx = ret;
         for (int i = 0; i < 4; ++i) {
-            this->buttons[i].buttonId = cupsConfig->ConvertTrack_PulsarCupToTrack(static_cast<PulsarCupId>(this->curPageIdx), i);
-            this->buttons[i].SetMessage(UI::GetTrackBMGId(static_cast<PulsarId>(this->buttons[i].buttonId), true));
+            const PulsarId trackId = cupsConfig->ConvertTrack_PulsarCupToTrack(static_cast<PulsarCupId>(this->curPageIdx), i);
+            this->buttons[i].buttonId = trackId;
+            UI::SetCourseButtonMessage(this->buttons[i], UI::GetTrackBMGId(trackId, true), trackId, i);
         }
     }
     this->buttons[4].buttonId = -1;
@@ -197,18 +174,10 @@ void ChooseNextTrack::UpdateRH1() {
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     for (int aid = 0; aid < 12; ++aid) {
-        if ((1 << aid & sub.availableAids) == 0) continue;
+        if (((1 << aid) & sub.availableAids) == 0) continue;
         if (aid == sub.localAid) continue;
         for (int i = 0; i < 2; ++i) {
             RKNet::PacketHolder<Network::PulRH1>* holder = controller->splitToSendRACEPackets[i][aid]->GetPacketHolder<Network::PulRH1>();
-            /*
-            this shouldn't be needed because the "ExportRH1ToPulRH1" always does it
-            const u32 curSize = holder->packetSize;/
-            u32 addedSize = 0;
-            if(curSize == sizeof(RKNet::RACEHEADER1Packet)) addedSize = sizeof(Network::PulRH1) - sizeof(RKNet::RACEHEADER1Packet);
-            else if(holder->packetSize == 0) addedSize = sizeof(Network::PulRH1);
-            holder->packetSize += addedSize;
-            */
             Network::PulRH1* sendPacket = holder->packet;
             sendPacket->chooseNextStatus = this->status;
             const CupsConfig* cupsConfig = CupsConfig::sInstance;
@@ -232,7 +201,7 @@ SectionId ChooseNextTrack::ProcessHAW(SectionId defaultId) {
     bool isEveryoneInRace = true;
 
     for (int aid = 0; aid < 12; ++aid) {
-        if ((1 << aid & sub.availableAids) == 0) continue;
+        if (((1 << aid) & sub.availableAids) == 0) continue;
         if (aid == sub.localAid) continue;
         const u32 lastBufferUsed = controller->lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
         const RKNet::PacketHolder<Network::PulRH1>* holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
@@ -245,7 +214,6 @@ SectionId ChooseNextTrack::ProcessHAW(SectionId defaultId) {
                     this->status = STATUS_TRACK;
                     CupsConfig* cupsConfig = CupsConfig::sInstance;
                     cupsConfig->SetWinning(static_cast<PulsarId>(rh1->nextTrack), rh1->variantIdx);
-                    // cupsConfig->selectedCourse = cupsConfig->winningCourse;
                     Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
                 } else if (rh1->chooseNextStatus == STATUS_HOST_START) {
                     this->status = STATUS_RH1_READY;

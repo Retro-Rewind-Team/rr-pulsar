@@ -26,7 +26,19 @@ static void ApplyVRMultiplierHighlight(PushButton& button, bool hasMultiplier) {
     }
 }
 
-// EXPANDED WFC, keeping WW button and just hiding it in case it is ever needed...
+static void FormatRatingLabel(float rating, const wchar_t* suffix, wchar_t* buffer, u32 bufferSize) {
+    wchar_t digits[32];
+    PointRating::FormatRatingDigits(rating, digits, sizeof(digits) / sizeof(digits[0]));
+    swprintf(buffer, bufferSize, (rating >= 1000.0f) ? L"%ls%ls\uF06D" : L"%ls%ls", digits, suffix);
+}
+
+static void SetButtonHidden(PushButton& button, bool hidden) {
+    button.isHidden = hidden;
+    button.manipulator.inaccessible = hidden;
+}
+
+// Expanded WFC main menu. The vanilla worldwide/regional buttons stay loaded because
+// the original menu code still expects them to exist.
 
 kmWrite32(0x8064b984, 0x60000000);  // nop the InitControl call in the init func
 kmWrite24(0x80899a36, 'PUL');  // 8064ba38
@@ -78,16 +90,13 @@ void ExpWFCMain::OnInit() {
     this->leaderboardButton.SetOnClickHandler(this->onLeaderboardClick, 0);
     this->leaderboardButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
-    this->regionalButton.manipulator.inaccessible = true;
-    this->worldwideButton.manipulator.inaccessible = true;
-    this->regionalButton.isHidden = true;
-    this->worldwideButton.isHidden = true;
+    SetButtonHidden(this->regionalButton, true);
+    SetButtonHidden(this->worldwideButton, true);
 
-    this->topSettingsPage = SettingsPageSelect::id;  // Navigate to page selection first
+    this->topSettingsPage = SettingsPageSelect::id;
 
-    // Set retro button as default selected
     this->mainButton.Select(0);
-    
+
     this->manipulatorManager.SetGlobalHandler(START_PRESS, this->onStartPress, false, false);
 }
 
@@ -108,7 +117,6 @@ void ExpWFCMain::OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId) {
 }
 
 void ExpWFCMain::OnSettingsButtonClick(PushButton& pushButton, u32 r5) {
-    // Set up SettingsPageSelect's and SettingsPanel's previous page
     ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_WFC_MAIN;
     ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_WFC_MAIN;
     this->nextPageId = static_cast<PageId>(this->topSettingsPage);
@@ -135,16 +143,10 @@ void ExpWFCMain::ExtOnStartPress(u32) {
 }
 
 void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
-    if (button.buttonId == 5) {
-        u32 bmgId = BMG_SETTINGS_BOTTOM + 1;
-        if (this->topSettingsPage == PAGE_VS_TEAMS_VIEW)
-            bmgId += 1;
-        else if (this->topSettingsPage == PAGE_BATTLE_MODE_SELECT)
-            bmgId += 2;
-        this->bottomText.SetMessage(bmgId, 0);
-    } else
+    if (button.buttonId != 5) {
         this->OnButtonSelect(button, hudSlotId);
-        this->bottomText.SetMessage(BMG_RANKING_TEXT, 0);
+    }
+    this->bottomText.SetMessage(BMG_RANKING_TEXT, 0);
 }
 
 void ExpWFCMain::BeforeControlUpdate() {
@@ -178,7 +180,6 @@ kmWrite32(0x8064c284, 0x38800001);  // distance func
 
 void ExpWFCModeSel::OnInit() {
     WFCModeSelect::OnInit();
-    // this->manipulatorManager.SetGlobalHandler(START_PRESS, this->onStartPress, false, false);
 }
 
 u32 Pulsar::UI::ExpWFCModeSel::lastClickedButton = 0;
@@ -249,17 +250,7 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
     }
 
     wchar_t buffer[64];
-    int vrInt = (int)vr;
-    int vrDec = (int)((vr - (float)vrInt) * 100.0f + 0.5f);
-    if (vrDec >= 100) {
-        vrInt++;
-        vrDec -= 100;
-    }
-    if (vrDec < 0) vrDec = -vrDec;
-    if (vrInt == 0)
-        swprintf(buffer, 64, (vr >= 1000.0f) ? L"%dVR\uF06D" : L"%dVR", vrDec);
-    else
-        swprintf(buffer, 64, (vr >= 1000.0f) ? L"%d%02dVR\uF06D" : L"%d%02dVR", vrInt, vrDec);
+    FormatRatingLabel(vr, L"VR", buffer, sizeof(buffer) / sizeof(buffer[0]));
     info.strings[0] = buffer;
 
     self.ctButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
@@ -269,17 +260,7 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
     self.itemRainButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
 
     if (ExpWFCMain::lastClickedMainMenuButton == 8) {
-        int brInt = (int)br;
-        int brDec = (int)((br - (float)brInt) * 100.0f + 0.5f);
-        if (brDec >= 100) {
-            brInt++;
-            brDec -= 100;
-        }
-        if (brDec < 0) brDec = -brDec;
-        if (brInt == 0)
-            swprintf(buffer, 64, (br >= 1000.0f) ? L"%dBR\uF06D" : L"%dBR", brDec);
-        else
-            swprintf(buffer, 64, (br >= 1000.0f) ? L"%d%02dBR\uF06D" : L"%d%02dBR", brInt, brDec);
+        FormatRatingLabel(br, L"BR", buffer, sizeof(buffer) / sizeof(buffer[0]));
         info.strings[0] = buffer;
         self.RRbattleButton.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
         self.RRbattleButtonElim.SetTextBoxMessage("go", UI::BMG_TEXT, &info);
@@ -342,64 +323,43 @@ void ExpWFCModeSel::OnActivatePatch() {
     asm(mr page, r29;);
     register Pages::GlobeSearch* search;
     asm(mr search, r30;);
-    const bool isHidden = search->searchType == 1 ? false : true;  // make the button visible if continental was clicked
+    const bool isHidden = search->searchType != 1;
 
-    // Reset game mode if worldwide is selected
     if (isHidden) {
         ClearModeContexts();
         System::sInstance->netMgr.region = 0x0A;
-        page->lastClickedButton = 0;  // Reset to VS button
+        page->lastClickedButton = 0;
     }
 
-    page->vsButton.isHidden = isHidden;
-    page->vsButton.manipulator.inaccessible = isHidden;
-    page->ctButton.isHidden = isHidden;
-    page->ctButton.manipulator.inaccessible = isHidden;
-    page->regButton.isHidden = isHidden;
-    page->regButton.manipulator.inaccessible = isHidden;
-    page->twoHundredButton.isHidden = isHidden;
-    page->twoHundredButton.manipulator.inaccessible = isHidden;
-    page->ottButton.isHidden = isHidden;
-    page->ottButton.manipulator.inaccessible = isHidden;
-    page->itemRainButton.isHidden = isHidden;
-    page->itemRainButton.manipulator.inaccessible = isHidden;
-    page->RRbattleButton.isHidden = isHidden;
-    page->RRbattleButton.manipulator.inaccessible = isHidden;
-    page->RRbattleButtonElim.isHidden = isHidden;
-    page->RRbattleButtonElim.manipulator.inaccessible = isHidden;
+    SetButtonHidden(page->vsButton, isHidden);
+    SetButtonHidden(page->ctButton, isHidden);
+    SetButtonHidden(page->regButton, isHidden);
+    SetButtonHidden(page->twoHundredButton, isHidden);
+    SetButtonHidden(page->ottButton, isHidden);
+    SetButtonHidden(page->itemRainButton, isHidden);
+    SetButtonHidden(page->RRbattleButton, isHidden);
+    SetButtonHidden(page->RRbattleButtonElim, isHidden);
 
     page->vsButton.SetMessage(BMG_VS_BUTTON);
 
     if (!isHidden) {
-        bool isMainMode = (ExpWFCMain::lastClickedMainMenuButton == 6);
-        bool isBattleMode = (ExpWFCMain::lastClickedMainMenuButton == 8);
-        bool isOtherMode = (ExpWFCMain::lastClickedMainMenuButton == 7);
+        const bool isMainMode = ExpWFCMain::lastClickedMainMenuButton == 6;
+        const bool isBattleMode = ExpWFCMain::lastClickedMainMenuButton == 8;
+        const bool isOtherMode = ExpWFCMain::lastClickedMainMenuButton == 7;
 
-        // Show retro buttons only in main mode
-        page->vsButton.isHidden = isOtherMode || isBattleMode;
-        page->vsButton.manipulator.inaccessible = isOtherMode || isBattleMode;
-        page->ctButton.isHidden = isOtherMode || isBattleMode;
-        page->ctButton.manipulator.inaccessible = isOtherMode || isBattleMode;
-        page->regButton.isHidden = isOtherMode || isBattleMode;
-        page->regButton.manipulator.inaccessible = isOtherMode || isBattleMode;
+        SetButtonHidden(page->vsButton, isOtherMode || isBattleMode);
+        SetButtonHidden(page->ctButton, isOtherMode || isBattleMode);
+        SetButtonHidden(page->regButton, isOtherMode || isBattleMode);
 
-        // Show custom buttons only in other mode
-        page->ottButton.isHidden = isMainMode || isBattleMode;
-        page->ottButton.manipulator.inaccessible = isMainMode || isBattleMode;
-        page->twoHundredButton.isHidden = isMainMode || isBattleMode;
-        page->twoHundredButton.manipulator.inaccessible = isMainMode || isBattleMode;
-        page->itemRainButton.isHidden = isMainMode || isBattleMode;
-        page->itemRainButton.manipulator.inaccessible = isMainMode || isBattleMode;
+        SetButtonHidden(page->ottButton, isMainMode || isBattleMode);
+        SetButtonHidden(page->twoHundredButton, isMainMode || isBattleMode);
+        SetButtonHidden(page->itemRainButton, isMainMode || isBattleMode);
 
-        // Show battle buttons only in battle mode
-        page->RRbattleButton.isHidden = isOtherMode || isMainMode;
-        page->RRbattleButton.manipulator.inaccessible = isOtherMode || isMainMode;
-        page->RRbattleButtonElim.isHidden = isOtherMode || isMainMode;
-        page->RRbattleButtonElim.manipulator.inaccessible = isOtherMode || isMainMode;
+        SetButtonHidden(page->RRbattleButton, isOtherMode || isMainMode);
+        SetButtonHidden(page->RRbattleButtonElim, isOtherMode || isMainMode);
     }
 
-    page->battleButton.isHidden = true;
-    page->battleButton.manipulator.inaccessible = true;
+    SetButtonHidden(page->battleButton, true);
 
     Text::Info info;
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
@@ -544,37 +504,16 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     }
 
     wchar_t buffer[64];
-    int vrInt = (int)vr;
-    int vrDec = (int)((vr - (float)vrInt) * 100.0f + 0.5f);
-    if (vrDec >= 100) {
-        vrInt++;
-        vrDec -= 100;
-    }
-    if (vrDec < 0) vrDec = -vrDec;
-    if (vrInt == 0)
-        swprintf(buffer, 64, (vr >= 1000.0f) ? L"%dVR\uF06D" : L"%dVR", vrDec);
-    else
-        swprintf(buffer, 64, (vr >= 1000.0f) ? L"%d%02dVR\uF06D" : L"%d%02dVR", vrInt, vrDec);
+    FormatRatingLabel(vr, L"VR", buffer, sizeof(buffer) / sizeof(buffer[0]));
     info.strings[0] = buffer;
 
     this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     if (ExpWFCMain::lastClickedMainMenuButton == 8) {
-        int brInt = (int)br;
-        int brDec = (int)((br - (float)brInt) * 100.0f + 0.5f);
-        if (brDec >= 100) {
-            brInt++;
-            brDec -= 100;
-        }
-        if (brDec < 0) brDec = -brDec;
-        if (brInt == 0)
-            swprintf(buffer, 64, (br >= 1000.0f) ? L"%dBR\uF06D" : L"%dBR", brDec);
-        else
-            swprintf(buffer, 64, (br >= 1000.0f) ? L"%d%02dBR\uF06D" : L"%d%02dBR", brInt, brDec);
+        FormatRatingLabel(br, L"BR", buffer, sizeof(buffer) / sizeof(buffer[0]));
         info.strings[0] = buffer;
         this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     }
 
-    // Apply green highlight to buttons with active VR multiplier
     ApplyVRMultiplierHighlight(this->twoHundredButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0C));
     ApplyVRMultiplierHighlight(this->ottButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0B));
     ApplyVRMultiplierHighlight(this->itemRainButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0D) || PointRating::IsItemRainEventActive());
@@ -582,19 +521,3 @@ void ExpWFCModeSel::BeforeControlUpdate() {
 
 }  // namespace UI
 }  // namespace Pulsar
-
-// void PatchWFCMenu_LoadButton(PushButton* _this, const char* folderName, const char* ctrName, const char* variant, u32 localPlayerBitfield, u32 r8, bool inaccessible) {
-//     _this->Load(folderName, "NewWifiMenuButton", variant, localPlayerBitfield, r8, inaccessible);
-// }
-
-// void PatchWFCMenu_AddCapsule(CtrlMenuInstructionText* _this, u32 bmgId, const Text::Info* info) {
-//     Pages::WFCMainMenu* wfcMenu = SectionMgr::sInstance->curSection->Get<Pages::WFCMainMenu>();
-
-//     Text::Info ninfo;
-//     wfcMenu->regionalButton.SetPaneVisibility("capsul_null", true);
-
-//     _this->SetMessage(bmgId, info);
-// }
-
-// kmCall(0x8064bc54, PatchWFCMenu_AddCapsule);
-// kmCall(0x8064ba90, PatchWFCMenu_LoadButton);

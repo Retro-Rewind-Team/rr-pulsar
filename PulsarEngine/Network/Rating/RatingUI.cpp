@@ -1,21 +1,3 @@
-/*
-    RatingUI.cpp
-    Copyright (C) 2025 ZPL
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 #include <kamek.hpp>
 #include <MarioKartWii/Mii/MiiGroup.hpp>
 #include <MarioKartWii/UI/Ctrl/Animation.hpp>
@@ -57,25 +39,13 @@ static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool 
     return (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
 }
 
-static void FormatRatingDigits(float rating, wchar_t* buf) {
-    int rInt = (int)rating;
-    int rDec = (int)((rating - (float)rInt) * 100.0f + 0.5f);
-    if (rDec >= 100) {
-        rInt++;
-        rDec -= 100;
-    }
-    if (rDec < 0) rDec = -rDec;
-    if (rInt == 0) swprintf(buf, 64, L"%d", rDec);
-    else swprintf(buf, 64, L"%d%02d", rInt, rDec);
-}
-
 static void FormatRatingText(float rating, bool hasDecimal, wchar_t* buf, Text::Info* info, u32* valMsg, u32* unitMsg, u32 unitId) {
     if ((u16)rating == 0xffff) {
         *valMsg = 0x25e7;
         return;
     }
     if (hasDecimal) {
-        FormatRatingDigits(rating, buf);
+        FormatRatingDigits(rating, buf, 64);
         info->strings[0] = buf;
         *valMsg = UI::BMG_TEXT;
     } else {
@@ -153,7 +123,7 @@ static void FillWFCRecordsControl(Page* /*page*/, int row, LayoutUIControl* cont
         const float rating = (row == 0) ? GetUserVR(rksys->curLicenseId) : GetUserBR(rksys->curLicenseId);
         wchar_t buf[64];
         Text::Info info;
-        FormatRatingDigits(rating, buf);
+        FormatRatingDigits(rating, buf, 64);
         info.strings[0] = buf;
         control->SetTextBoxMessage("score", UI::BMG_TEXT, &info);
         return;

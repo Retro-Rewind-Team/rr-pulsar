@@ -11,9 +11,6 @@ kmWrite16(0x8011B47A, 80);
 // Do not wait the retry time in case of successful NATNEG [Wiimmfi]
 kmWrite32(0x8011B4B0, 0x60000000);
 
-// Do not wait the idle time after a successful NATNEG [WiiLink24]
-kmWrite16(0x8011BC3A, 0);
-
 // Change the SYN-ACK timeout to 7 seconds instead of 5 seconds per node [Wiimmfi]
 kmWrite32(0x800E1A58, 0x38C00000 | 7000);
 
@@ -23,19 +20,6 @@ kmWrite32(0x800E77FC, 0x60000000);
 
 // Slower High Data Rate [MrBean35000vr, Chadderz]
 kmWrite32(0x80657EA8, 0x2804000C);
-
-// Pulsar Network Optimizations [ZPL]
-// Reduce server polling interval from 15000ms to 10000ms (li r6, 0x3a98 -> 0x2710)
-kmWrite16(0x800E6E1E, 10000);
-
-// Reduce match state 1 timeout from 3000ms to 2000ms (li r6, 0xbb8 -> 0x7d0)
-kmWrite16(0x800D69AA, 2000);
-
-// Reduce connection check delay from 5000ms to 3000ms (li r6, 0x1388 -> 0xbb8)
-kmWrite16(0x800D771E, 3000);
-
-// Reduce NATNEG report retry delay from 1000ms to 500ms (addi r0, r3, 0x3e8 -> 0x1f4)
-kmWrite16(0x8011B6F6, 500);
 
 // Fix Ghost Player Bug [ImZeaora]
 kmWrite32(0x80662f5c, 0x60000000);

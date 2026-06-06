@@ -12,11 +12,13 @@ namespace Pulsar_Pack_Creator.IO
     {
         public Importer(MainWindow window, in byte[] raw) : base(window)
         {
+            this.window = window;
             cups = window.cups;
             this.raw = raw;
             regsExperts = window.regsExperts;
         }
 
+        readonly MainWindow window;
         readonly byte[] raw;
         List<MainWindow.Cup> cups;
         public new ushort ctsCupCount { get; private set; }
@@ -24,6 +26,7 @@ namespace Pulsar_Pack_Creator.IO
         uint cupVersion;
         public string date { get; private set; }
         public string[,,] regsExperts { get; private set; }
+        readonly HashSet<uint> packCreatorBMGIds = new HashSet<uint>();
 
         public Result ImportV3()
         {
@@ -234,6 +237,9 @@ namespace Pulsar_Pack_Creator.IO
 
         private void ParseBMGAndFILE(StreamReader bmgSR, StreamReader fileSR)
         {
+            window.userBMGs.Clear();
+            BuildPackCreatorBMGIds();
+
             bmgSR.ReadLine(); //#BMG
             string curLine = bmgSR.ReadLine();
 
@@ -243,28 +249,21 @@ namespace Pulsar_Pack_Creator.IO
                 {
                     uint bmgId = 0;
                     bool ret = false;
-                    string[] parts = curLine.Split('=');
-                    if (parts.Length >= 2)
-                    {
-                        string idPart = parts[0].Trim();
-                        ret = uint.TryParse(idPart, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bmgId);
-                    }
+                    string content = "";
+                    ret = TryParseBMGLine(curLine, out bmgId, out content);
 
                     if (ret)
                     {
+                        if (!IsPackCreatorOwnedBMGId(bmgId))
+                        {
+                            window.userBMGs[bmgId] = content;
+                            curLine = bmgSR.ReadLine();
+                            continue;
+                        }
+
                         if (bmgId == 0x2847) date = curLine.Split(' ')[curLine.Split(' ').Length - 1];
                         else if (bmgId >= 0x10000 && bmgId < 0x600000)
                         {
-                            string content = "";
-                            try
-                            {
-                                // Re-join parts in case content contained '='
-                                content = string.Join("=", parts.Skip(1)).TrimStart(' ');
-                            }
-                            catch
-                            {
-                                ret = false;
-                            }
                             if (ret)
                             {
                                 const uint VARIANT_TRACKS_BASE = 0x420000u;
@@ -357,19 +356,9 @@ namespace Pulsar_Pack_Creator.IO
                                                 MainWindow.Cup.Track.Variant variant;
 	                                                if (parsedVariantIdx == -1)
 	                                                {
-	                                                    // Base BMG_TRACKS block (0x20000 + trackIdx): import as the common (BMG_TRACKS) name.
-	                                                    // Always set the track.commonName from this base entry. Only overwrite the
-	                                                    // main track name when there are no variants configured for the track.
 	                                                    if (type == (uint)BMGIds.BMG_TRACKS)
 	                                                    {
-	                                                        bool hadVariantMarker;
-	                                                        string sanitizedContent = StripCommonNameVisualMarker(content, out hadVariantMarker);
-	                                                        // Use the base entry as the common name unconditionally
-	                                                        track.commonName = sanitizedContent;
-	                                                        // Preserve per-variant/main names when variants exist; if there are no variants,
-	                                                        // populate the main track name from the common name for compatibility.
-	                                                        if (track.variants.Count == 0)
-	                                                            track.main.trackName = sanitizedContent;
+	                                                        track.commonName = content;
 	                                                    }
 	                                                    break;
 	                                                }
@@ -496,6 +485,8 @@ namespace Pulsar_Pack_Creator.IO
                 }
                 curLine = fileSR.ReadLine();
             }
+
+            WriteImportedUserBMGs();
         }
 
         private static string StripCommonNameVisualMarker(string content, out bool hadVariantMarker)
@@ -560,6 +551,94 @@ namespace Pulsar_Pack_Creator.IO
 
             int closeBraceIndex = value.IndexOf('}', openBraceIndex + 1);
             return closeBraceIndex == value.Length - 1;
+        }
+
+        private void BuildPackCreatorBMGIds()
+        {
+            packCreatorBMGIds.Clear();
+            AddPulsarTemplateBMGIds();
+
+            packCreatorBMGIds.Add(0x2847);
+
+            const uint VARIANT_TRACKS_BASE = 0x420000u;
+            const uint VARIANT_AUTHORS_BASE = 0x520000u;
+
+            for (uint cupIdx = 0; cupIdx < ctsCupCount; cupIdx++)
+            {
+                packCreatorBMGIds.Add((uint)BMGIds.BMG_CUPS + cupIdx);
+
+                for (uint trackInCup = 0; trackInCup < 4; trackInCup++)
+                {
+                    uint trackIdx = cupIdx * 4 + trackInCup;
+                    packCreatorBMGIds.Add((uint)BMGIds.BMG_TRACKS + trackIdx);
+                    packCreatorBMGIds.Add((uint)BMGIds.BMG_AUTHORS + trackIdx);
+
+                    MainWindow.Cup.Track track = cups[(int)cupIdx].tracks[(int)trackInCup];
+                    uint idxShifted = trackIdx << 4;
+                    if (track.variants.Count > 0)
+                        packCreatorBMGIds.Add(VARIANT_TRACKS_BASE + idxShifted);
+
+                    for (uint variantIdx = 1; variantIdx <= track.variants.Count; variantIdx++)
+                    {
+                        packCreatorBMGIds.Add(VARIANT_TRACKS_BASE + idxShifted + variantIdx);
+                        packCreatorBMGIds.Add(VARIANT_AUTHORS_BASE + idxShifted + variantIdx);
+                    }
+                }
+            }
+        }
+
+        private bool IsPackCreatorOwnedBMGId(uint bmgId)
+        {
+            if (packCreatorBMGIds.Contains(bmgId))
+                return true;
+
+            // These ranges are generated from the pack creator's cup/track/variant model.
+            // Preserve 0x2X000 and 0x42X000 user BMGs when X is not 0.
+            if (bmgId >= (uint)BMGIds.BMG_TRACKS && bmgId < (uint)BMGIds.BMG_TRACKS + 0x1000u)
+                return true;
+
+            if (bmgId >= (uint)BMGIds.BMG_AUTHORS && bmgId < (uint)BMGIds.BMG_AUTHORS + 0x10000u)
+                return true;
+
+            const uint VARIANT_TRACKS_BASE = 0x420000u;
+            const uint VARIANT_AUTHORS_BASE = 0x520000u;
+            if (bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_TRACKS_BASE + 0x1000u)
+                return true;
+
+            if (bmgId >= VARIANT_AUTHORS_BASE && bmgId < VARIANT_AUTHORS_BASE + 0x100000u)
+                return true;
+
+            return false;
+        }
+
+        private void AddPulsarTemplateBMGIds()
+        {
+            string[] bmgLines = PulsarRes.BMG.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string line in bmgLines)
+            {
+                if (TryParseBMGLine(line, out uint bmgId, out _))
+                    packCreatorBMGIds.Add(bmgId);
+            }
+        }
+
+        private void WriteImportedUserBMGs()
+        {
+            string[] bmgLines = PulsarRes.BMG.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            using StreamWriter writer = new StreamWriter("temp/PulsarBMG.txt");
+            foreach (string line in bmgLines)
+            {
+                writer.WriteLine(line);
+            }
+
+            if (window.userBMGs.Count == 0)
+                return;
+
+            writer.WriteLine();
+            foreach (KeyValuePair<uint, string> bmg in window.userBMGs.OrderBy(b => b.Key))
+            {
+                writer.WriteLine($"{bmg.Key:X}  = {bmg.Value}");
+            }
         }
 
         public Result ImportV2()

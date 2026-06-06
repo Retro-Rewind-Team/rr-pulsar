@@ -65,7 +65,6 @@ kmCall(0x8084b68c, LoadCorrectPageAfterMultiDrift);
 // In 2P online this can leave both locals in manual before voting starts.
 kmWrite32(0x8084b120, 0x60000000);
 
-// if more custom racemenus added in pulsar, make the func virtual
 void RaceMenuExtraControls(Pages::RaceMenu& page, u32 gameControlCount) {
     const SectionId curSectionId = SectionMgr::sInstance->curSection->sectionId;
     if (curSectionId >= SECTION_P1_WIFI_FRIEND_VS || curSectionId >= SECTION_P2_WIFI_FRIEND_COIN) {

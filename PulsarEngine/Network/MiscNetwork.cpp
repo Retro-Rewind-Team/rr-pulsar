@@ -3,12 +3,12 @@
 #include <MarioKartWii/RKNet/Select.hpp>
 #include <MarioKartWii/System/random.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/UI/Page/Other/WWRaceSupporting.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Settings/Settings.hpp>
 #include <Network/Network.hpp>
 #include <Network/PulSELECT.hpp>
 #include <PulsarSystem.hpp>
-#include <AutoTrackSelect/ChooseNextTrack.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 
 namespace Pulsar {
@@ -64,9 +64,7 @@ static void ResetTrackBlockingOnRoomEnd() {
 static SectionLoadHook resetTrackBlockingHook(ResetTrackBlockingOnRoomEnd);
 
 static void CalcSectionAfterRace(SectionMgr* sectionMgr, SectionId id) {
-    UI::ChooseNextTrack* choosePage = reinterpret_cast<UI::ExpSection*>(sectionMgr->curSection)->GetPulPage<UI::ChooseNextTrack>();
     const System* system = System::sInstance;
-    // if(choosePage != nullptr) id = choosePage->ProcessHAW(id);
     if (id != SECTION_NONE) {
         if (system->IsContext(PULSAR_MODE_KO)) id = system->koMgr->GetSectionAfterKO(id);
         sectionMgr->SetNextSection(id, 0);

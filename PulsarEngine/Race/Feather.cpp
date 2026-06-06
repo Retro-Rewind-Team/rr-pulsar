@@ -45,7 +45,6 @@ void ReplaceBlooperUseOtherPlayers(Item::GessoMgr& gessoMgr, u8 id) {
 }
 kmCall(0x80796d8c, ReplaceBlooperUseOtherPlayers);  // replaces the small blooper model when someone uses a blooper with a feather use
 
-// kmWrite32(0x805b68d8, 0x7DE97B78); //mr r9, r15 to get playercollision
 static bool ConditionalIgnoreInvisibleWalls(float radius, CourseMgr& mgr, const Vec3& position, const Vec3& prevPosition,
                                             KCLBitfield acceptedFlags, CollisionInfo* info, KCLTypeHolder& kclFlags) {
     register u32 playerIdRaw;
@@ -96,7 +95,7 @@ void ConditionalFastFallingWheels(float unk_float, Kart::WheelPhysicsHolder* whe
         Kart::Status* status = wheelPhysicsHolder->pointers->kartStatus;
         if (status->bitfield0 & 0x40000000 && status->jumpPadType == 0x7) {
             if (status->airtime == 0)
-                status->bool_0x97 = ((status->bitfield0 & 0x80) != 0) ? true : false;
+                status->bool_0x97 = (status->bitfield0 & 0x80) != 0;
             else if (status->airtime >= 2 && (!status->bool_0x97 || status->airtime > 19)) {
                 const Input::ControllerHolder& controllerHolder = wheelPhysicsHolder->GetControllerHolder();
                 float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
@@ -125,7 +124,6 @@ s32 HandleGroundFeatherCollision(const Kart::Collision& collision) {
     }
     return -1;
 }
-// kmWritePointer(0x808b54e8, HandleGroundFeatherCollision);
 
 static u32 ConditionalBlooperTimer(u32 timer) {
     if (System::sInstance->IsContext(PULSAR_FEATHER))
@@ -136,13 +134,6 @@ static u32 ConditionalBlooperTimer(u32 timer) {
 }
 kmCall(0x807bba64, ConditionalBlooperTimer);
 kmWrite32(0x807bba68, 0x907f003c);  // store r3, the return value of the function
-/* for spraying, useless
-void ConditionalFeatherBRRES(g3d::ResFile& file, ArchiveSource type, const char* brresName) {
-    if(System::sInstance->IsContext(PULSAR_FEATHER)) brresName = "feather.brres";
-    ModelDirector::BindBRRES(file, type, brresName);
-}
-kmCall(0x807a84c8, ConditionalFeatherBRRES);
-*/
 
 void LoadCorrectFeatherBRRES(Item::ObjGesso& objKumo, const char* mdlName, const char* shadowSrc, u8 whichShadowListToUse,
                              Item::Obj::AnmParam* anmParam) {
@@ -172,7 +163,6 @@ void ConditionalObjProperties(Item::ObjProperties* dest, const Item::ObjProperti
         dest->canFallOnTheGround2 = true;
     }
 }
-// kmCall(0x80790bc4, ConditionalObjProperties);
 
 // Kept as is because it's almost never used and that guarantees ghost sync
 kmWrite32(0x808b5c24, 0x42AA0000);  // increases min, max speed of jump pad type 0x7 as well as its vertical velocity
