@@ -5,7 +5,8 @@
 #include <UI/UI.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
-#include <Gamemodes/TTPractice.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
+#include <UI/PracticeMode/TTPractice.hpp>
 // Implements 4 TT modes by splitting the "Time Trials" button
 
 namespace Pulsar {

@@ -10,7 +10,7 @@
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <runtimeWrite.hpp>
-#include <Gamemodes/TTPractice.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
 
 namespace RetroRewind {
 Pulsar::System* System::Create() {

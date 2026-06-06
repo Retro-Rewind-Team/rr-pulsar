@@ -30,11 +30,11 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
-#include <Gamemodes/TTPractice.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
+#include <UI/PracticeMode/TTPractice.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
 
 namespace Pulsar {
