@@ -234,18 +234,18 @@ static bool MatchLooseVoiceAlias(const char* alias, u32& characterIndex) {
 static void ApplyLooseVoiceMasks(LooseVoiceInfo& info, u32 directMask, const u32* characterMasks) {
     for (u32 suffixIndex = 0; suffixIndex < ARRAY_COUNT(looseVoiceGroupSuffixes); ++suffixIndex) {
         const u32 suffixBit = 1 << suffixIndex;
-        if ((directMask & suffixBit) != 0) {
-            info.hasFiles = true;
-            info.suffixMask |= suffixBit;
-            continue;
-        }
-
         for (u32 characterIndex = 0; characterIndex < ARRAY_COUNT(voiceCharacterNames); ++characterIndex) {
             if ((characterMasks[characterIndex] & suffixBit) == 0) continue;
             info.hasFiles = true;
             info.suffixMask |= suffixBit;
             if (!IsCharacter(info.voiceCharacter)) info.voiceCharacter = voiceCharacterNames[characterIndex].character;
             break;
+        }
+        if ((info.suffixMask & suffixBit) != 0) continue;
+
+        if ((directMask & suffixBit) != 0) {
+            info.hasFiles = true;
+            info.suffixMask |= suffixBit;
         }
     }
 }
@@ -324,17 +324,14 @@ static bool ScanLooseVoiceInfoFromPaths(const char* postfix, LooseVoiceInfo& inf
     for (u32 suffixIndex = 0; suffixIndex < ARRAY_COUNT(looseVoiceGroupSuffixes); ++suffixIndex) {
         const char* suffix = looseVoiceGroupSuffixes[suffixIndex];
         const u32 suffixBit = 1 << suffixIndex;
-        if (LooseVoiceStemExists(postfix, suffix)) {
-            directMask |= suffixBit;
-            continue;
-        }
-
         for (u32 characterIndex = 0; characterIndex < ARRAY_COUNT(voiceCharacterNames); ++characterIndex) {
             const CharacterId character = voiceCharacterNames[characterIndex].character;
             if (LooseVoiceStemExistsForCharacter(postfix, suffix, character)) {
                 characterMasks[characterIndex] |= suffixBit;
             }
         }
+
+        if (LooseVoiceStemExists(postfix, suffix)) directMask |= suffixBit;
     }
 
     ApplyLooseVoiceMasks(info, directMask, characterMasks);
@@ -351,8 +348,6 @@ bool LooseVoiceStemExistsForCharacter(const char* postfix, const char* suffix, C
 }
 
 const char* ExistingLooseVoiceNameForCharacter(const char* postfix, const char* suffix, CharacterId character) {
-    if (LooseVoiceStemExists(postfix, suffix)) return nullptr;
-
     const char* voiceName = VoiceNameForCharacter(character);
     if (LooseVoiceStemExists(postfix, suffix, voiceName)) return voiceName;
 
@@ -361,6 +356,7 @@ const char* ExistingLooseVoiceNameForCharacter(const char* postfix, const char* 
         LooseVoiceStemExists(postfix, suffix, postfixName)) {
         return postfixName;
     }
+    if (LooseVoiceStemExists(postfix, suffix)) return nullptr;
     return voiceName;
 }
 
