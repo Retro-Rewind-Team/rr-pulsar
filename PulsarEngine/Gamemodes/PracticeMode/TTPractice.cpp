@@ -62,6 +62,36 @@ kmRuntimeUse(0x80590288);  // Kart::Link::SetKartRotation
 kmRuntimeUse(0x80590e28);  // Kart::Link::UpdateCameraOnRespawn
 kmRuntimeUse(0x8059c118);  // Kart::Killer::CancelBullet
 kmRuntimeUse(0x80828860);  // Objects::Itembox::Update
+kmRuntimeUse(0x80819430);  // VolcanoPiece::Update timer read
+kmRuntimeUse(0x80819de0);  // VolcanoPiece::IsCollidingImpl age calculation
+kmRuntimeUse(0x80819e64);  // VolcanoPiece::IsCollidingImpl collision transform timer
+kmRuntimeUse(0x808199dc);  // VolcanoPiece::IsCollidingNoTriangleCheckImpl timer read
+kmRuntimeUse(0x808199e8);  // VolcanoPiece::IsCollidingNoTriangleCheckImpl age calculation
+kmRuntimeUse(0x80819dd4);  // VolcanoPiece::IsCollidingImpl timer read
+kmRuntimeUse(0x8081b020);  // ObjectExternKCL::IsCollidingNoTriangleCheckImpl collision transform timer
+kmRuntimeUse(0x8081b03c);  // ObjectExternKCL::IsCollidingNoTriangleCheckImpl y-scale timer
+kmRuntimeUse(0x8081b1d8);  // ObjectExternKCL::IsCollidingImpl collision transform timer
+kmRuntimeUse(0x8081b1f4);  // ObjectExternKCL::IsCollidingImpl y-scale timer
+kmRuntimeUse(0x80680854);  // ObjectExternKCL::IsCollidingNoTerrainInfo collision transform timer
+kmRuntimeUse(0x8068086c);  // ObjectExternKCL::IsCollidingNoTerrainInfo y-scale timer
+kmRuntimeUse(0x80680960);  // ObjectExternKCL::IsCollidingAddEntryNoTerrainInfo collision transform timer
+kmRuntimeUse(0x80680978);  // ObjectExternKCL::IsCollidingAddEntryNoTerrainInfo y-scale timer
+kmRuntimeUse(0x80680a6c);  // ObjectExternKCL::vf_0xfc collision transform timer
+kmRuntimeUse(0x80680a84);  // ObjectExternKCL::vf_0xfc y-scale timer
+kmRuntimeUse(0x80680e58);  // ObjectExternKCL::IsCollidingNoTerrainInfoNoTriangleCheck y-scale timer
+kmRuntimeUse(0x80680e70);  // ObjectExternKCL::IsCollidingNoTerrainInfoNoTriangleCheck collision transform timer
+kmRuntimeUse(0x80680f54);  // ObjectExternKCL::IsCollidingAddEntryNoTerrainInfoNoTriangleCheck y-scale timer
+kmRuntimeUse(0x80680f6c);  // ObjectExternKCL::IsCollidingAddEntryNoTerrainInfoNoTriangleCheck collision transform timer
+kmRuntimeUse(0x80681050);  // ObjectExternKCL::IsColliding y-scale timer
+kmRuntimeUse(0x80681068);  // ObjectExternKCL::IsColliding collision transform timer
+kmRuntimeUse(0x8081ad80);  // ObjectExternKCL::UpdateCollisionPosition saved timer
+kmRuntimeUse(0x8081ad98);  // ObjectExternKCL::UpdateCollisionPosition cache comparison timer
+kmRuntimeUse(0x8081ada4);  // ObjectExternKCL::UpdateCollisionPosition current/future matrix branch
+kmRuntimeUse(0x80818358);  // VolcanoPiece::UpdateCollisionPosition saved timer
+kmRuntimeUse(0x80818370);  // VolcanoPiece::UpdateCollisionPosition age calculation
+kmRuntimeUse(0x80818698);  // VolcanoPiece::SetYScale saved timer
+kmRuntimeUse(0x808186b0);  // VolcanoPiece::SetYScale age calculation
+kmRuntimeUse(0x808187e4);  // VolcanoPiece::UpdateTransformationMtxImpl age calculation
 
 static Item::ObjKumo* FindActiveThunderCloud(Item::Player& player);
 
@@ -106,6 +136,46 @@ static void ClearSavedRespawns() {
 
 static SectionLoadHook ClearSavedRespawnsOnSectionLoad(ClearSavedRespawns);
 
+static void ApplyTimedKCLFreeze(bool enabled) {
+    kmRuntimeWrite32A(0x80819430, enabled ? 0x38000000 : 0x80050020);  // li r0, 0 / lwz r0, 0x20(r5)
+    kmRuntimeWrite32A(0x80819de0, enabled ? 0x38800000 : 0x7c892050);  // li r4, 0 / subf r4, r9, r4
+    kmRuntimeWrite32A(0x80819e64, enabled ? 0x38800000 : 0x7ec4b378);  // li r4, 0 / mr r4, r22
+    kmRuntimeWrite32A(0x808199dc, enabled ? 0x38800000 : 0x808a0020);  // li r4, 0 / lwz r4, 0x20(r10)
+    kmRuntimeWrite32A(0x808199e8, enabled ? 0x38800000 : 0x7c892050);  // li r4, 0 / subf r4, r9, r4
+    kmRuntimeWrite32A(0x80819dd4, enabled ? 0x38800000 : 0x808a0020);  // li r4, 0 / lwz r4, 0x20(r10)
+    kmRuntimeWrite32A(0x8081b020, enabled ? 0x38800000 : 0x7fc4f378);  // li r4, 0 / mr r4, r30
+    kmRuntimeWrite32A(0x8081b03c, enabled ? 0x38800000 : 0x7fc4f378);  // li r4, 0 / mr r4, r30
+    kmRuntimeWrite32A(0x8081b1d8, enabled ? 0x38800000 : 0x7fc4f378);  // li r4, 0 / mr r4, r30
+    kmRuntimeWrite32A(0x8081b1f4, enabled ? 0x38800000 : 0x7fc4f378);  // li r4, 0 / mr r4, r30
+    kmRuntimeWrite32A(0x80680854, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x8068086c, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80680960, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80680978, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80680a6c, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80680a84, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80680e58, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80680e70, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80680f54, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80680f6c, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80681050, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x80681068, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
+    kmRuntimeWrite32A(0x8081ad80, enabled ? 0x3be00000 : 0x7c9f2378);  // li r31, 0 / mr r31, r4
+    kmRuntimeWrite32A(0x8081ad98, enabled ? 0x7c1f0050 : 0x7c040050);  // subf r0, r31, r0 / subf r0, r4, r0
+    kmRuntimeWrite32A(0x8081ada4, enabled ? 0x2c1f0000 : 0x2c040000);  // cmpwi r31, 0 / cmpwi r4, 0
+    kmRuntimeWrite32A(0x80818358, enabled ? 0x3ba00000 : 0x7c9d2378);  // li r29, 0 / mr r29, r4
+    kmRuntimeWrite32A(0x80818370, enabled ? 0x38000000 : 0x7c040050);  // li r0, 0 / subf r0, r4, r0
+    kmRuntimeWrite32A(0x80818698, enabled ? 0x3ba00000 : 0x7c9d2378);  // li r29, 0 / mr r29, r4
+    kmRuntimeWrite32A(0x808186b0, enabled ? 0x38000000 : 0x7c040050);  // li r0, 0 / subf r0, r4, r0
+    kmRuntimeWrite32A(0x808187e4, enabled ? 0x38000000 : 0x7c050050);  // li r0, 0 / subf r0, r5, r0
+}
+
+static void RefreshTimedKCLFreeze() {
+    ApplyTimedKCLFreeze(isPracticeMode);
+}
+
+static RaceLoadHook RefreshTimedKCLFreezeOnRaceLoad(RefreshTimedKCLFreeze);
+static FrameLoadHook RefreshTimedKCLFreezeOnFrameLoad(RefreshTimedKCLFreeze);
+
 extern "C" void fun_playSound(void*);
 extern "C" void ptr_menuPageOrSomething(void*);
 asmFunc PlayRespawnSaveSound() {
@@ -129,6 +199,7 @@ asmFunc PlayRespawnSaveSound() {
 
 void SetPracticeMode(bool enabled) {
     isPracticeMode = enabled;
+    ApplyTimedKCLFreeze(enabled);
     ClearSavedRespawns();
     for (u32 i = 0; i < 4; ++i) {
         selectedItemIndexes[i] = 0;
