@@ -11,6 +11,7 @@ void SetPracticeMode(bool enabled);
 bool IsPracticeMode();
 ItemId GetStartingItem(u32 hudSlotId);
 bool AreItemBoxesEnabled();
+bool IsObjectFreezeEnabled();
 
 }  // namespace TTPractice
 }  // namespace Pulsar

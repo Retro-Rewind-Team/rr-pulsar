@@ -13,6 +13,8 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
+#include <MarioKartWii/Objects/KCL/ExternalKCL/VolcanoPiece.hpp>
+#include <MarioKartWii/Objects/KCL/ExternalKCL/VolcanoRock1.hpp>
 
 namespace Pulsar {
 namespace TTPractice {
@@ -62,36 +64,13 @@ kmRuntimeUse(0x80590288);  // Kart::Link::SetKartRotation
 kmRuntimeUse(0x80590e28);  // Kart::Link::UpdateCameraOnRespawn
 kmRuntimeUse(0x8059c118);  // Kart::Killer::CancelBullet
 kmRuntimeUse(0x80828860);  // Objects::Itembox::Update
-kmRuntimeUse(0x80819430);  // VolcanoPiece::Update timer read
-kmRuntimeUse(0x80819de0);  // VolcanoPiece::IsCollidingImpl age calculation
-kmRuntimeUse(0x80819e64);  // VolcanoPiece::IsCollidingImpl collision transform timer
-kmRuntimeUse(0x808199dc);  // VolcanoPiece::IsCollidingNoTriangleCheckImpl timer read
-kmRuntimeUse(0x808199e8);  // VolcanoPiece::IsCollidingNoTriangleCheckImpl age calculation
-kmRuntimeUse(0x80819dd4);  // VolcanoPiece::IsCollidingImpl timer read
-kmRuntimeUse(0x8081b020);  // ObjectExternKCL::IsCollidingNoTriangleCheckImpl collision transform timer
-kmRuntimeUse(0x8081b03c);  // ObjectExternKCL::IsCollidingNoTriangleCheckImpl y-scale timer
-kmRuntimeUse(0x8081b1d8);  // ObjectExternKCL::IsCollidingImpl collision transform timer
-kmRuntimeUse(0x8081b1f4);  // ObjectExternKCL::IsCollidingImpl y-scale timer
-kmRuntimeUse(0x80680854);  // ObjectExternKCL::IsCollidingNoTerrainInfo collision transform timer
-kmRuntimeUse(0x8068086c);  // ObjectExternKCL::IsCollidingNoTerrainInfo y-scale timer
-kmRuntimeUse(0x80680960);  // ObjectExternKCL::IsCollidingAddEntryNoTerrainInfo collision transform timer
-kmRuntimeUse(0x80680978);  // ObjectExternKCL::IsCollidingAddEntryNoTerrainInfo y-scale timer
-kmRuntimeUse(0x80680a6c);  // ObjectExternKCL::vf_0xfc collision transform timer
-kmRuntimeUse(0x80680a84);  // ObjectExternKCL::vf_0xfc y-scale timer
-kmRuntimeUse(0x80680e58);  // ObjectExternKCL::IsCollidingNoTerrainInfoNoTriangleCheck y-scale timer
-kmRuntimeUse(0x80680e70);  // ObjectExternKCL::IsCollidingNoTerrainInfoNoTriangleCheck collision transform timer
-kmRuntimeUse(0x80680f54);  // ObjectExternKCL::IsCollidingAddEntryNoTerrainInfoNoTriangleCheck y-scale timer
-kmRuntimeUse(0x80680f6c);  // ObjectExternKCL::IsCollidingAddEntryNoTerrainInfoNoTriangleCheck collision transform timer
-kmRuntimeUse(0x80681050);  // ObjectExternKCL::IsColliding y-scale timer
-kmRuntimeUse(0x80681068);  // ObjectExternKCL::IsColliding collision transform timer
-kmRuntimeUse(0x8081ad80);  // ObjectExternKCL::UpdateCollisionPosition saved timer
-kmRuntimeUse(0x8081ad98);  // ObjectExternKCL::UpdateCollisionPosition cache comparison timer
-kmRuntimeUse(0x8081ada4);  // ObjectExternKCL::UpdateCollisionPosition current/future matrix branch
-kmRuntimeUse(0x80818358);  // VolcanoPiece::UpdateCollisionPosition saved timer
-kmRuntimeUse(0x80818370);  // VolcanoPiece::UpdateCollisionPosition age calculation
-kmRuntimeUse(0x80818698);  // VolcanoPiece::SetYScale saved timer
-kmRuntimeUse(0x808186b0);  // VolcanoPiece::SetYScale age calculation
-kmRuntimeUse(0x808187e4);  // VolcanoPiece::UpdateTransformationMtxImpl age calculation
+kmRuntimeUse(0x80818334);  // Objects::VolcanoPiece::UpdateCollisionPosition
+kmRuntimeUse(0x80818674);  // Objects::VolcanoPiece::SetYScale
+kmRuntimeUse(0x80819400);  // Objects::VolcanoPiece::Update
+kmRuntimeUse(0x808199a8);  // Objects::VolcanoPiece::IsCollidingNoTriangleCheckImpl
+kmRuntimeUse(0x80819da0);  // Objects::VolcanoPiece::IsCollidingImpl
+kmRuntimeUse(0x8081a370);  // Objects::VolcanoRock1::Update
+kmRuntimeUse(0x8081a60c);  // Objects::VolcanoRock1::GetTransformationMatrix
 
 static Item::ObjKumo* FindActiveThunderCloud(Item::Player& player);
 
@@ -100,6 +79,13 @@ typedef void (*SetKartRotationFn)(Kart::Link* link, const Quat& rotation);
 typedef void (*UpdateCameraOnRespawnFn)(const Kart::Link* link);
 typedef void (*CancelBulletFn)(Kart::Killer* killer);
 typedef void (*ItemBoxUpdateFn)(Objects::Itembox* itembox);
+typedef void (*VolcanoPieceUpdateCollisionPositionFn)(Objects::VolcanoPiece* piece, u32 timeOffset);
+typedef void (*VolcanoPieceSetYScaleFn)(Objects::VolcanoPiece* piece, u32 timeOffset);
+typedef void (*VolcanoPieceUpdateFn)(Objects::VolcanoPiece* piece);
+typedef bool (*VolcanoPieceCollisionFn)(Objects::VolcanoPiece* piece, const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted,
+                                        CollisionInfo* info, KCLTypeHolder* ret, u32 timeOffset, float radius);
+typedef void (*VolcanoRockUpdateFn)(Objects::VolcanoRock1* rock);
+typedef const Mtx34& (*VolcanoRockGetTransformationMatrixFn)(Objects::VolcanoRock1* rock, u32 framesOffset);
 
 static SetKartPositionFn GetSetKartPosition() {
     static const SetKartPositionFn function = reinterpret_cast<SetKartPositionFn>(kmRuntimeAddr(0x80590238));
@@ -126,6 +112,43 @@ static ItemBoxUpdateFn GetItemBoxUpdate() {
     return function;
 }
 
+static VolcanoPieceUpdateCollisionPositionFn GetVolcanoPieceUpdateCollisionPosition() {
+    static const VolcanoPieceUpdateCollisionPositionFn function =
+        reinterpret_cast<VolcanoPieceUpdateCollisionPositionFn>(kmRuntimeAddr(0x80818334));
+    return function;
+}
+
+static VolcanoPieceSetYScaleFn GetVolcanoPieceSetYScale() {
+    static const VolcanoPieceSetYScaleFn function = reinterpret_cast<VolcanoPieceSetYScaleFn>(kmRuntimeAddr(0x80818674));
+    return function;
+}
+
+static VolcanoPieceUpdateFn GetVolcanoPieceUpdate() {
+    static const VolcanoPieceUpdateFn function = reinterpret_cast<VolcanoPieceUpdateFn>(kmRuntimeAddr(0x80819400));
+    return function;
+}
+
+static VolcanoPieceCollisionFn GetVolcanoPieceIsCollidingNoTriangleCheckImpl() {
+    static const VolcanoPieceCollisionFn function = reinterpret_cast<VolcanoPieceCollisionFn>(kmRuntimeAddr(0x808199a8));
+    return function;
+}
+
+static VolcanoPieceCollisionFn GetVolcanoPieceIsCollidingImpl() {
+    static const VolcanoPieceCollisionFn function = reinterpret_cast<VolcanoPieceCollisionFn>(kmRuntimeAddr(0x80819da0));
+    return function;
+}
+
+static VolcanoRockUpdateFn GetVolcanoRockUpdate() {
+    static const VolcanoRockUpdateFn function = reinterpret_cast<VolcanoRockUpdateFn>(kmRuntimeAddr(0x8081a370));
+    return function;
+}
+
+static VolcanoRockGetTransformationMatrixFn GetVolcanoRockTransformationMatrix() {
+    static const VolcanoRockGetTransformationMatrixFn function =
+        reinterpret_cast<VolcanoRockGetTransformationMatrixFn>(kmRuntimeAddr(0x8081a60c));
+    return function;
+}
+
 static void ClearSavedRespawns() {
     for (u32 i = 0; i < 4; ++i) {
         respawnShortcutTimers[i] = 0;
@@ -135,46 +158,6 @@ static void ClearSavedRespawns() {
 }
 
 static SectionLoadHook ClearSavedRespawnsOnSectionLoad(ClearSavedRespawns);
-
-static void ApplyTimedKCLFreeze(bool enabled) {
-    kmRuntimeWrite32A(0x80819430, enabled ? 0x38000000 : 0x80050020);  // li r0, 0 / lwz r0, 0x20(r5)
-    kmRuntimeWrite32A(0x80819de0, enabled ? 0x38800000 : 0x7c892050);  // li r4, 0 / subf r4, r9, r4
-    kmRuntimeWrite32A(0x80819e64, enabled ? 0x38800000 : 0x7ec4b378);  // li r4, 0 / mr r4, r22
-    kmRuntimeWrite32A(0x808199dc, enabled ? 0x38800000 : 0x808a0020);  // li r4, 0 / lwz r4, 0x20(r10)
-    kmRuntimeWrite32A(0x808199e8, enabled ? 0x38800000 : 0x7c892050);  // li r4, 0 / subf r4, r9, r4
-    kmRuntimeWrite32A(0x80819dd4, enabled ? 0x38800000 : 0x808a0020);  // li r4, 0 / lwz r4, 0x20(r10)
-    kmRuntimeWrite32A(0x8081b020, enabled ? 0x38800000 : 0x7fc4f378);  // li r4, 0 / mr r4, r30
-    kmRuntimeWrite32A(0x8081b03c, enabled ? 0x38800000 : 0x7fc4f378);  // li r4, 0 / mr r4, r30
-    kmRuntimeWrite32A(0x8081b1d8, enabled ? 0x38800000 : 0x7fc4f378);  // li r4, 0 / mr r4, r30
-    kmRuntimeWrite32A(0x8081b1f4, enabled ? 0x38800000 : 0x7fc4f378);  // li r4, 0 / mr r4, r30
-    kmRuntimeWrite32A(0x80680854, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x8068086c, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80680960, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80680978, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80680a6c, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80680a84, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80680e58, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80680e70, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80680f54, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80680f6c, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80681050, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x80681068, enabled ? 0x38800000 : 0x7fe4fb78);  // li r4, 0 / mr r4, r31
-    kmRuntimeWrite32A(0x8081ad80, enabled ? 0x3be00000 : 0x7c9f2378);  // li r31, 0 / mr r31, r4
-    kmRuntimeWrite32A(0x8081ad98, enabled ? 0x7c1f0050 : 0x7c040050);  // subf r0, r31, r0 / subf r0, r4, r0
-    kmRuntimeWrite32A(0x8081ada4, enabled ? 0x2c1f0000 : 0x2c040000);  // cmpwi r31, 0 / cmpwi r4, 0
-    kmRuntimeWrite32A(0x80818358, enabled ? 0x3ba00000 : 0x7c9d2378);  // li r29, 0 / mr r29, r4
-    kmRuntimeWrite32A(0x80818370, enabled ? 0x38000000 : 0x7c040050);  // li r0, 0 / subf r0, r4, r0
-    kmRuntimeWrite32A(0x80818698, enabled ? 0x3ba00000 : 0x7c9d2378);  // li r29, 0 / mr r29, r4
-    kmRuntimeWrite32A(0x808186b0, enabled ? 0x38000000 : 0x7c040050);  // li r0, 0 / subf r0, r4, r0
-    kmRuntimeWrite32A(0x808187e4, enabled ? 0x38000000 : 0x7c050050);  // li r0, 0 / subf r0, r5, r0
-}
-
-static void RefreshTimedKCLFreeze() {
-    ApplyTimedKCLFreeze(isPracticeMode);
-}
-
-static RaceLoadHook RefreshTimedKCLFreezeOnRaceLoad(RefreshTimedKCLFreeze);
-static FrameLoadHook RefreshTimedKCLFreezeOnFrameLoad(RefreshTimedKCLFreeze);
 
 extern "C" void fun_playSound(void*);
 extern "C" void ptr_menuPageOrSomething(void*);
@@ -199,7 +182,6 @@ asmFunc PlayRespawnSaveSound() {
 
 void SetPracticeMode(bool enabled) {
     isPracticeMode = enabled;
-    ApplyTimedKCLFreeze(enabled);
     ClearSavedRespawns();
     for (u32 i = 0; i < 4; ++i) {
         selectedItemIndexes[i] = 0;
@@ -217,6 +199,12 @@ bool AreItemBoxesEnabled() {
     if (!Settings::Mgr::IsCreated()) return true;
     return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_TTPRACTICE, RADIO_TTPRACTICE_ITEMBOXES) ==
            TTPRACTICE_ITEMBOXES_ENABLED;
+}
+
+bool IsObjectFreezeEnabled() {
+    if (!Settings::Mgr::IsCreated()) return true;
+    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_TTPRACTICE, RADIO_TTPRACTICE_OBJECTFREEZE) ==
+           TTPRACTICE_OBJECTFREEZE_ENABLED;
 }
 
 ItemId GetStartingItem(u32 hudSlotId) {
@@ -242,6 +230,63 @@ static void UpdatePracticeItemBox(Objects::Itembox* itembox) {
     GetItemBoxUpdate()(itembox);
 }
 kmWritePointer(0x808d7bd4, UpdatePracticeItemBox);
+
+static bool ShouldFreezePracticeObjects() {
+    return IsEnabled() && IsObjectFreezeEnabled();
+}
+
+static u32 GetFrozenObjectTimeOffset(u32 fallback) {
+    const Raceinfo* raceinfo = Raceinfo::sInstance;
+    if (raceinfo == nullptr) return fallback;
+    if (raceinfo->timerMgr == nullptr) return raceinfo->raceFrames;
+    return raceinfo->timerMgr->raceFrameCounter;
+}
+
+static u32 GetPracticeObjectTimeOffset(u32 timeOffset) {
+    return ShouldFreezePracticeObjects() ? GetFrozenObjectTimeOffset(timeOffset) : timeOffset;
+}
+
+static void UpdatePracticeVolcanoPieceCollisionPosition(Objects::VolcanoPiece* piece, u32 timeOffset) {
+    GetVolcanoPieceUpdateCollisionPosition()(piece, GetPracticeObjectTimeOffset(timeOffset));
+}
+kmWritePointer(0x808d682c, UpdatePracticeVolcanoPieceCollisionPosition);
+
+static void SetPracticeVolcanoPieceYScale(Objects::VolcanoPiece* piece, u32 timeOffset) {
+    GetVolcanoPieceSetYScale()(piece, GetPracticeObjectTimeOffset(timeOffset));
+}
+kmWritePointer(0x808d6830, SetPracticeVolcanoPieceYScale);
+
+static void UpdatePracticeVolcanoPiece(Objects::VolcanoPiece* piece) {
+    if (piece != nullptr && ShouldFreezePracticeObjects()) return;
+    GetVolcanoPieceUpdate()(piece);
+}
+kmWritePointer(0x808d6720, UpdatePracticeVolcanoPiece);
+
+static bool IsPracticeVolcanoPieceCollidingNoTriangleCheckImpl(Objects::VolcanoPiece* piece, const Vec3& pos, const Vec3& prevPos,
+                                                               KCLBitfield accepted, CollisionInfo* info, KCLTypeHolder* ret,
+                                                               u32 timeOffset, float radius) {
+    return GetVolcanoPieceIsCollidingNoTriangleCheckImpl()(piece, pos, prevPos, accepted, info, ret,
+                                                           GetPracticeObjectTimeOffset(timeOffset), radius);
+}
+kmWritePointer(0x808d6854, IsPracticeVolcanoPieceCollidingNoTriangleCheckImpl);
+
+static bool IsPracticeVolcanoPieceCollidingImpl(Objects::VolcanoPiece* piece, const Vec3& pos, const Vec3& prevPos,
+                                                KCLBitfield accepted, CollisionInfo* info, KCLTypeHolder* ret, u32 timeOffset,
+                                                float radius) {
+    return GetVolcanoPieceIsCollidingImpl()(piece, pos, prevPos, accepted, info, ret, GetPracticeObjectTimeOffset(timeOffset), radius);
+}
+kmWritePointer(0x808d6858, IsPracticeVolcanoPieceCollidingImpl);
+
+static void UpdatePracticeVolcanoRock(Objects::VolcanoRock1* rock) {
+    if (rock != nullptr && ShouldFreezePracticeObjects()) return;
+    GetVolcanoRockUpdate()(rock);
+}
+kmWritePointer(0x808d687c, UpdatePracticeVolcanoRock);
+
+static const Mtx34& GetPracticeVolcanoRockTransformationMatrix(Objects::VolcanoRock1* rock, u32 framesOffset) {
+    return GetVolcanoRockTransformationMatrix()(rock, GetPracticeObjectTimeOffset(framesOffset));
+}
+kmWritePointer(0x808d6994, GetPracticeVolcanoRockTransformationMatrix);
 
 static void CycleItem(u32 hudSlotId, s32 direction) {
     u32& selected = selectedItemIndexes[hudSlotId];
