@@ -158,7 +158,8 @@ enum MiscSettings {
 };
 
 enum PracticeModeSettings {
-    RADIO_TTPRACTICE_ITEMBOXES = 0
+    RADIO_TTPRACTICE_ITEMBOXES = 0,
+    RADIO_TTPRACTICE_OBJECTFREEZE = 1
 };
 
 enum LooseArchiveOverridesSetting {
@@ -398,6 +399,11 @@ enum ItemBoxRespawn {
 enum TTPracticeItemBoxesSetting {
     TTPRACTICE_ITEMBOXES_ENABLED,
     TTPRACTICE_ITEMBOXES_DISABLED
+};
+
+enum TTPracticeObjectFreezeSetting {
+    TTPRACTICE_OBJECTFREEZE_ENABLED,
+    TTPRACTICE_OBJECTFREEZE_DISABLED
 };
 
 enum ThunderCloud {

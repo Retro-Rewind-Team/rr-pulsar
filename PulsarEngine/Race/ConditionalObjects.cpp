@@ -14,7 +14,6 @@
 #include <MarioKartWii/Objects/KCL/ObjectKCLManager.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
-#include <Gamemodes/PracticeMode/TTPractice.hpp>
 #include <Race/ConditionalTrackState.hpp>
 
 namespace Pulsar {
@@ -661,7 +660,6 @@ static void ConditionalKCLObjectUpdate(Object* object) {
     ConditionalState state;
     EvaluateConditionalState(*object, state);
     ApplyKCLConditionalState(*object, state);
-    if (TTPractice::IsPracticeMode()) return;
     if (state.isActive || state.isCollisionActive) object->Update();
 }
 kmCall(0x8081b658, ConditionalKCLObjectUpdate);  // ObjectKCL::Update call in ObjectDriveableDirector::calc

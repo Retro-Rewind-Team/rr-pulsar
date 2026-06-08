@@ -114,6 +114,12 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         practiceItemBoxesSetting = TTPRACTICE_ITEMBOXES_ENABLED;
     }
 
+    u8& practiceObjectFreezeSetting =
+        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_TTPRACTICE].settings[RADIO_TTPRACTICE_OBJECTFREEZE];
+    if (practiceObjectFreezeSetting > TTPRACTICE_OBJECTFREEZE_DISABLED) {
+        practiceObjectFreezeSetting = TTPRACTICE_OBJECTFREEZE_ENABLED;
+    }
+
     this->InitTrophyEntries(totalTrophyCount);
     this->LoadTrophiesFromFiles();
     this->MigrateLegacyTrophies();
