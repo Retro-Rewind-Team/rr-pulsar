@@ -2604,6 +2604,8 @@ Update__Q24Item5PointFRC4Vec3 = 0x807b8a9c
 Update2__Q24Item5PointFRC4Vec3 = 0x807b8f30
 CalcNextPoint__4ItemFRCQ24Item5PointRQ24Item5PointUcb = 0x807b91e4
 Update__Q24Kart6KillerFv = 0x8059bc44
+
+#PracticeMode
 LoadPrevPageWithDelayById__Q25Pages4MenuF6PageIdf = 0x80837830
 __dt__19CtrlMenuMovieButtonFv = 0x806280d4
 __vt__20CtrlMenuMovieHandler = 0x808d3608
