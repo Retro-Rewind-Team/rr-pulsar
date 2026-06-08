@@ -2553,6 +2553,8 @@ detail_GetFileAddress__Q34nw4r3snd18SoundArchivePlayerCFUi = 0x800a1560
 seqSoundHandle__Q25Audio10RSARPlayer = 0x809c282c
 SetPitch__Q44nw4r3snd6detail10BasicSoundFf = 0x8008f610
 ReadSoundInfo__Q34nw4r3snd12SoundArchiveCFUiPQ44nw4r3snd12SoundArchive9SoundInfo = 0x8009df40
+
+#PracticeMode
 LoadPrevPageWithDelayById__Q25Pages4MenuF6PageIdf = 0x80837830
 __dt__19CtrlMenuMovieButtonFv = 0x806280d4
 __vt__20CtrlMenuMovieHandler = 0x808d3608
