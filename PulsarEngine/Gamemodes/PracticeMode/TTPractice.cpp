@@ -14,7 +14,6 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
 #include <MarioKartWii/Objects/KCL/ExternalKCL/VolcanoPiece.hpp>
-#include <MarioKartWii/Objects/KCL/ExternalKCL/VolcanoRock1.hpp>
 
 namespace Pulsar {
 namespace TTPractice {
@@ -64,13 +63,14 @@ kmRuntimeUse(0x80590288);  // Kart::Link::SetKartRotation
 kmRuntimeUse(0x80590e28);  // Kart::Link::UpdateCameraOnRespawn
 kmRuntimeUse(0x8059c118);  // Kart::Killer::CancelBullet
 kmRuntimeUse(0x80828860);  // Objects::Itembox::Update
+kmRuntimeUse(0x806807e8);  // Objects::ObjectExternKCL::UpdateKCL
+kmRuntimeUse(0x808044c0);  // Objects::VolcanoPiece::UpdateKCL
+kmRuntimeUse(0x80805924);  // Objects::VolcanoPiece::UpdateDiffPosVector
 kmRuntimeUse(0x80818334);  // Objects::VolcanoPiece::UpdateCollisionPosition
 kmRuntimeUse(0x80818674);  // Objects::VolcanoPiece::SetYScale
 kmRuntimeUse(0x80819400);  // Objects::VolcanoPiece::Update
 kmRuntimeUse(0x808199a8);  // Objects::VolcanoPiece::IsCollidingNoTriangleCheckImpl
 kmRuntimeUse(0x80819da0);  // Objects::VolcanoPiece::IsCollidingImpl
-kmRuntimeUse(0x8081a370);  // Objects::VolcanoRock1::Update
-kmRuntimeUse(0x8081a60c);  // Objects::VolcanoRock1::GetTransformationMatrix
 
 static Item::ObjKumo* FindActiveThunderCloud(Item::Player& player);
 
@@ -79,13 +79,16 @@ typedef void (*SetKartRotationFn)(Kart::Link* link, const Quat& rotation);
 typedef void (*UpdateCameraOnRespawnFn)(const Kart::Link* link);
 typedef void (*CancelBulletFn)(Kart::Killer* killer);
 typedef void (*ItemBoxUpdateFn)(Objects::Itembox* itembox);
+typedef void (*ObjectExternKCLUpdateKCLFn)(Objects::VolcanoPiece* piece, const Vec3& position, KCLBitfield accepted,
+                                           bool isBiggerThanDefaultScale, float radius);
+typedef void (*VolcanoPieceUpdateKCLFn)(Objects::VolcanoPiece* piece, const Vec3& position, KCLBitfield accepted,
+                                        bool isBiggerThanDefaultScale, float radius);
+typedef void (*VolcanoPieceUpdateDiffPosVectorFn)(Objects::VolcanoPiece* piece, const Vec3& src);
 typedef void (*VolcanoPieceUpdateCollisionPositionFn)(Objects::VolcanoPiece* piece, u32 timeOffset);
 typedef void (*VolcanoPieceSetYScaleFn)(Objects::VolcanoPiece* piece, u32 timeOffset);
 typedef void (*VolcanoPieceUpdateFn)(Objects::VolcanoPiece* piece);
 typedef bool (*VolcanoPieceCollisionFn)(Objects::VolcanoPiece* piece, const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted,
                                         CollisionInfo* info, KCLTypeHolder* ret, u32 timeOffset, float radius);
-typedef void (*VolcanoRockUpdateFn)(Objects::VolcanoRock1* rock);
-typedef const Mtx34& (*VolcanoRockGetTransformationMatrixFn)(Objects::VolcanoRock1* rock, u32 framesOffset);
 
 static SetKartPositionFn GetSetKartPosition() {
     static const SetKartPositionFn function = reinterpret_cast<SetKartPositionFn>(kmRuntimeAddr(0x80590238));
@@ -112,6 +115,22 @@ static ItemBoxUpdateFn GetItemBoxUpdate() {
     return function;
 }
 
+static ObjectExternKCLUpdateKCLFn GetObjectExternKCLUpdateKCL() {
+    static const ObjectExternKCLUpdateKCLFn function = reinterpret_cast<ObjectExternKCLUpdateKCLFn>(kmRuntimeAddr(0x806807e8));
+    return function;
+}
+
+static VolcanoPieceUpdateKCLFn GetVolcanoPieceUpdateKCL() {
+    static const VolcanoPieceUpdateKCLFn function = reinterpret_cast<VolcanoPieceUpdateKCLFn>(kmRuntimeAddr(0x808044c0));
+    return function;
+}
+
+static VolcanoPieceUpdateDiffPosVectorFn GetVolcanoPieceUpdateDiffPosVector() {
+    static const VolcanoPieceUpdateDiffPosVectorFn function =
+        reinterpret_cast<VolcanoPieceUpdateDiffPosVectorFn>(kmRuntimeAddr(0x80805924));
+    return function;
+}
+
 static VolcanoPieceUpdateCollisionPositionFn GetVolcanoPieceUpdateCollisionPosition() {
     static const VolcanoPieceUpdateCollisionPositionFn function =
         reinterpret_cast<VolcanoPieceUpdateCollisionPositionFn>(kmRuntimeAddr(0x80818334));
@@ -135,17 +154,6 @@ static VolcanoPieceCollisionFn GetVolcanoPieceIsCollidingNoTriangleCheckImpl() {
 
 static VolcanoPieceCollisionFn GetVolcanoPieceIsCollidingImpl() {
     static const VolcanoPieceCollisionFn function = reinterpret_cast<VolcanoPieceCollisionFn>(kmRuntimeAddr(0x80819da0));
-    return function;
-}
-
-static VolcanoRockUpdateFn GetVolcanoRockUpdate() {
-    static const VolcanoRockUpdateFn function = reinterpret_cast<VolcanoRockUpdateFn>(kmRuntimeAddr(0x8081a370));
-    return function;
-}
-
-static VolcanoRockGetTransformationMatrixFn GetVolcanoRockTransformationMatrix() {
-    static const VolcanoRockGetTransformationMatrixFn function =
-        reinterpret_cast<VolcanoRockGetTransformationMatrixFn>(kmRuntimeAddr(0x8081a60c));
     return function;
 }
 
@@ -238,13 +246,34 @@ static bool ShouldFreezePracticeObjects() {
 static u32 GetFrozenObjectTimeOffset(u32 fallback) {
     const Raceinfo* raceinfo = Raceinfo::sInstance;
     if (raceinfo == nullptr) return fallback;
-    if (raceinfo->timerMgr == nullptr) return raceinfo->raceFrames;
-    return raceinfo->timerMgr->raceFrameCounter;
+    return raceinfo->raceFrames;
 }
 
 static u32 GetPracticeObjectTimeOffset(u32 timeOffset) {
     return ShouldFreezePracticeObjects() ? GetFrozenObjectTimeOffset(timeOffset) : timeOffset;
 }
+
+static void UpdatePracticeVolcanoPieceKCL(Objects::VolcanoPiece* piece, const Vec3& position, KCLBitfield accepted,
+                                          bool isBiggerThanDefaultScale, float radius) {
+    if (piece != nullptr && ShouldFreezePracticeObjects()) {
+        GetObjectExternKCLUpdateKCL()(piece, position, accepted, isBiggerThanDefaultScale, radius);
+        return;
+    }
+
+    GetVolcanoPieceUpdateKCL()(piece, position, accepted, isBiggerThanDefaultScale, radius);
+}
+kmWritePointer(0x808d67ec, UpdatePracticeVolcanoPieceKCL);
+
+static void UpdatePracticeVolcanoPieceDiffPosVector(Objects::VolcanoPiece* piece, const Vec3& src) {
+    if (piece != nullptr && ShouldFreezePracticeObjects()) {
+        static const Vec3 zero(0.0f, 0.0f, 0.0f);
+        GetVolcanoPieceUpdateDiffPosVector()(piece, zero);
+        return;
+    }
+
+    GetVolcanoPieceUpdateDiffPosVector()(piece, src);
+}
+kmWritePointer(0x808d6834, UpdatePracticeVolcanoPieceDiffPosVector);
 
 static void UpdatePracticeVolcanoPieceCollisionPosition(Objects::VolcanoPiece* piece, u32 timeOffset) {
     GetVolcanoPieceUpdateCollisionPosition()(piece, GetPracticeObjectTimeOffset(timeOffset));
@@ -276,17 +305,6 @@ static bool IsPracticeVolcanoPieceCollidingImpl(Objects::VolcanoPiece* piece, co
     return GetVolcanoPieceIsCollidingImpl()(piece, pos, prevPos, accepted, info, ret, GetPracticeObjectTimeOffset(timeOffset), radius);
 }
 kmWritePointer(0x808d6858, IsPracticeVolcanoPieceCollidingImpl);
-
-static void UpdatePracticeVolcanoRock(Objects::VolcanoRock1* rock) {
-    if (rock != nullptr && ShouldFreezePracticeObjects()) return;
-    GetVolcanoRockUpdate()(rock);
-}
-kmWritePointer(0x808d687c, UpdatePracticeVolcanoRock);
-
-static const Mtx34& GetPracticeVolcanoRockTransformationMatrix(Objects::VolcanoRock1* rock, u32 framesOffset) {
-    return GetVolcanoRockTransformationMatrix()(rock, GetPracticeObjectTimeOffset(framesOffset));
-}
-kmWritePointer(0x808d6994, GetPracticeVolcanoRockTransformationMatrix);
 
 static void CycleItem(u32 hudSlotId, s32 direction) {
     u32& selected = selectedItemIndexes[hudSlotId];
