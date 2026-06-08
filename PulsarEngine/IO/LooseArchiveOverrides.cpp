@@ -2535,9 +2535,18 @@ static s32 ConvertPathToEntryNumWithLooseOverride(const char* path) {
 }
 kmCall(0x800910b4, ConvertPathToEntryNumWithLooseOverride);
 kmCall(0x8009130c, ConvertPathToEntryNumWithLooseOverride);
-kmCall(0x8015e2d8, ConvertPathToEntryNumWithLooseOverride);
 kmCall(0x80222500, ConvertPathToEntryNumWithLooseOverride);
 kmCall(0x8052a914, ConvertPathToEntryNumWithLooseOverride);
+
+static BOOL DVDOpenWithLooseOverride(const char* path, DVD::FileInfo* info) {
+    if (path == nullptr || info == nullptr) return false;
+
+    const s32 entryNum = ConvertPathToEntryNumWithLooseOverride(path);
+    if (entryNum < 0) return false;
+
+    return DVD::FastOpen(entryNum, info);
+}
+kmBranch(0x8015e2bc, DVDOpenWithLooseOverride);
 
 static u32 GetFileDataStart(const ARC::Header* header) {
     if (header == nullptr) return 0;
@@ -3940,7 +3949,8 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
         }
     }
     char resolvedPath[OVERRIDE_MAX_PATH];
-    const char* finalPath = ResolveWholeFileOverride(requestedPath, resolvedPath, sizeof(resolvedPath), nullptr);
+    bool redirected = false;
+    const char* finalPath = ResolveWholeFileOverride(requestedPath, resolvedPath, sizeof(resolvedPath), &redirected);
 
 
     if ((isCompressed == 0) || (dumpHeap == nullptr)) {
@@ -3960,6 +3970,11 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
 
         void* rippedData = EGG::DvdRipper::LoadToMainRAM(finalPath, nullptr, dumpHeap, ripAlloc, 0, nullptr,
                                                          &file->compressedArchiveSize);
+        if (rippedData == nullptr && redirected && requestedPath != nullptr) {
+            file->compressedArchiveSize = 0;
+            rippedData = EGG::DvdRipper::LoadToMainRAM(requestedPath, nullptr, dumpHeap, ripAlloc, 0, nullptr,
+                                                       &file->compressedArchiveSize);
+        }
         file->compressedArchive = rippedData;
 
         if (file->compressedArchiveSize == 0 || rippedData == nullptr) {
@@ -3982,7 +3997,11 @@ static void ArchiveFileLoadOverride(ArchiveFile* file, const char* path, EGG::He
             file->dumpHeap = nullptr;
             file->status = ARCHIVE_STATUS_DECOMPRESSED;
         } else {
-            file->Decompress(requestedPath, mountHeap, info);
+            if (file->compressedArchive == nullptr || file->compressedArchiveSize == 0) {
+                file->status = ARCHIVE_STATUS_NONE;
+            } else {
+                file->Decompress(requestedPath, mountHeap, info);
+            }
             if (file->compressedArchive != nullptr && file->dumpHeap != nullptr) {
                 EGG::Heap::free(file->compressedArchive, file->dumpHeap);
                 file->compressedArchive = nullptr;
