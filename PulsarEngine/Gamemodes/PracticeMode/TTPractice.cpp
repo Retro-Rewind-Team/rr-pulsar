@@ -220,7 +220,7 @@ ItemId GetStartingItem(u32 hudSlotId) {
     return ITEM_WHEEL_ITEMS[selectedItemIndexes[hudSlotId]];
 }
 
-static bool IsEnabled() {
+bool IsEnabled() {
     const Racedata* racedata = Racedata::sInstance;
     return isPracticeMode && racedata != nullptr && racedata->racesScenario.settings.gamemode == MODE_TIME_TRIAL;
 }
