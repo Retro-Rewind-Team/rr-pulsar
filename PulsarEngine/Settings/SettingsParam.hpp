@@ -159,7 +159,8 @@ enum MiscSettings {
 
 enum PracticeModeSettings {
     RADIO_TTPRACTICE_ITEMBOXES = 0,
-    RADIO_TTPRACTICE_OBJECTFREEZE = 1
+    RADIO_TTPRACTICE_OBJECTFREEZE = 1,
+    RADIO_TTPRACTICE_CHECKPOINTDISPLAY = 2
 };
 
 enum LooseArchiveOverridesSetting {
@@ -404,6 +405,12 @@ enum TTPracticeItemBoxesSetting {
 enum TTPracticeObjectFreezeSetting {
     TTPRACTICE_OBJECTFREEZE_ENABLED,
     TTPRACTICE_OBJECTFREEZE_DISABLED
+};
+
+enum TTPracticeCheckpointDisplaySetting {
+    TTPRACTICE_CHECKPOINTDISPLAY_DISABLED,
+    TTPRACTICE_CHECKPOINTDISPLAY_KEY_ONLY,
+    TTPRACTICE_CHECKPOINTDISPLAY_ALL
 };
 
 enum ThunderCloud {
