@@ -12,6 +12,7 @@ namespace Sound {
 
 static char pulPath[0x100];
 static char resolvedPulPath[0x100];
+static char normalLapExtFilePath[0x100];
 
 static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
     if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
@@ -41,6 +42,15 @@ static bool CheckBRSTMPath(const char* path, bool patchesOnly) {
 
     snprintf(pulPath, sizeof(pulPath), "%s", resolvedPath);
     return true;
+}
+
+static const char* GetNormalLapExtFilePath(const char* extFilePath, u32 lapSpecifierIdx, char finalChar) {
+    const int written = snprintf(normalLapExtFilePath, sizeof(normalLapExtFilePath), "%s", extFilePath);
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(normalLapExtFilePath)) return extFilePath;
+    if (lapSpecifierIdx >= static_cast<u32>(written)) return extFilePath;
+
+    normalLapExtFilePath[lapSpecifierIdx] = (finalChar == 'F') ? 'N' : 'n';
+    return normalLapExtFilePath;
 }
 
 s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly) {
@@ -98,6 +108,9 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
                 if (isFinalLap) {
                     Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
                 }
+            } else if (isFinalLap) {
+                extFilePath = GetNormalLapExtFilePath(extFilePath, strLength, finalChar);
+                Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
             }
         }
     }
