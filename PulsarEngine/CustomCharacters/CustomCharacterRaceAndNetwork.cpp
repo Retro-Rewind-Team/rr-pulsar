@@ -415,13 +415,10 @@ bool ClearRawCaches(bool destroyHeap) {
 }
 
 void SyncRawCachesToCurrentScene() {
-    static SectionId rawCacheSectionOwner = SECTION_NONE;
     const GameScene* const scene = GameScene::GetCurrent();
-    const SectionId section = CurrentSectionId();
-    if (rawCacheSceneOwner == scene && rawCacheSectionOwner == section) return;
+    if (rawCacheSceneOwner == scene) return;
     if (ClearRawCaches(true)) {
         rawCacheSceneOwner = scene;
-        rawCacheSectionOwner = section;
     }
 }
 

@@ -73,20 +73,6 @@ bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
     return true;
 }
 
-// Find which loose cache owns a model so old menu models can free it correctly.
-RawBRRES* RawCacheForModel(const ModelDirector* model) {
-    if (model == nullptr || model->rawMdl.data == nullptr) return nullptr;
-    for (u32 table = 0; table < TABLE_COUNT; ++table) {
-        for (u32 character = 0; character < CHARACTER_COUNT; ++character) {
-            if (IsInHeap(rawBRRES[table][character].heap, model->rawMdl.data)) return &rawBRRES[table][character];
-        }
-    }
-    for (u32 i = 0; i < MII_C_COUNT; ++i) {
-        if (IsInHeap(looseMiiCBRRES[i].heap, model->rawMdl.data)) return &looseMiiCBRRES[i];
-    }
-    return nullptr;
-}
-
 bool LoadRawBRRESIntoHeap(void* holder, EGG::ExpHeap* heap, const char* path, u32 fileSize) {
     if (holder == nullptr || heap == nullptr || path == nullptr || fileSize == 0) return false;
     u32 loadedSize = 0;
@@ -619,12 +605,10 @@ void DestroyOldMenuDriverModelForReload(u8 idx, ModelDirector** modelSlot, Model
         return;
     }
 
-    RawBRRES* rawCache = RawCacheForModel(oldModel);
     DestroyModelDirector(oldHair);
     DestroyModelDirector(oldModel);
     if (modelSlot != nullptr && *modelSlot == oldModel) *modelSlot = nullptr;
     if (hairSlot != nullptr && *hairSlot == oldHair) *hairSlot = nullptr;
-    if (rawCache != nullptr) ClearRawCache(*rawCache, true);
 }
 
 void ResetReloadedMenuDriverModel(MenuDriverModel& menuModel, CharacterId character) {
