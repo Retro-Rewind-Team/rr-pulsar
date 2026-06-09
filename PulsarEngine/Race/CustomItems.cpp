@@ -426,5 +426,15 @@ static void SetItemFix(Item::PlayerInventory& inventory, ItemId id, bool isItemF
 }
 kmBranch(0x807bc940, SetItemFix);
 
+static void EjectItemsFromDamageSafely(Item::PlayerInventory& inventory) {
+    if (inventory.currentItemId >= ITEM_COUNT || inventory.currentItemCount == 0 ||
+        !Item::Manager::IsThereCapacityForItem(inventory.currentItemId)) {
+        inventory.ClearAll();
+        return;
+    }
+    inventory.EjectItems();
+}
+kmCall(0x807bc6c4, EjectItemsFromDamageSafely);
+
 }  // namespace Race
 }  // namespace Pulsar

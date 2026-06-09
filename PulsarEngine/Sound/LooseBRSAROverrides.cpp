@@ -200,10 +200,11 @@ static bool BuildLooseVoicePath(const char* postfix, const char* suffix, const c
 
 static bool OpenLooseVoiceFile(const char* postfix, const char* suffix, const char* extension, const char* voiceName,
                                DVD::FileInfo& info, char* path, u32 pathSize) {
+    if (voiceName != nullptr && BuildLooseVoicePath(postfix, suffix, extension, voiceName, path, pathSize) &&
+        DVD::Open(path, &info)) {
+        return true;
+    }
     if (!BuildLooseVoicePath(postfix, suffix, extension, nullptr, path, pathSize)) return false;
-    if (DVD::Open(path, &info)) return true;
-    if (voiceName == nullptr) return false;
-    if (!BuildLooseVoicePath(postfix, suffix, extension, voiceName, path, pathSize)) return false;
     return DVD::Open(path, &info);
 }
 

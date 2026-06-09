@@ -1,5 +1,6 @@
 #include <RetroRewind.hpp>
 #include <Network/Ranking.hpp>
+#include <Network/NHTTPHelper.hpp>
 #include <MarioKartWii/Race/Racedata.hpp>
 #include <MarioKartWii/Race/Raceinfo/Raceinfo.hpp>
 #include <MarioKartWii/RKSYS/LicenseMgr.hpp>
@@ -8,8 +9,6 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/System/Rating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
-#include <core/RK/RKSystem.hpp>
-#include <core/egg/mem/Heap.hpp>
 #include <core/rvl/DWC/DWCAccount.hpp>
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
@@ -50,22 +49,8 @@ static bool s_devBadgeFC = false;
 static bool s_donoBadgeFC = false;
 static bool s_badgeRequestActive = false;
 static bool s_badgeRefreshPending = false;
-static bool s_badgeNHTTPReadyForRefresh = false;
 static BadgeRequestKind s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
 static u64 s_pendingBadgeFriendCode = 0;
-
-static void* NHTTPAllocFromEggHeap(u32 size, s32 align) {
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap == nullptr) return nullptr;
-    if (align < 4) align = 4;
-    return EGG::Heap::alloc(size, align, heap);
-}
-
-static void NHTTPFreeFromEggHeap(void* ptr) {
-    if (ptr == nullptr) return;
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap != nullptr) EGG::Heap::free(ptr, heap);
-}
 
 static bool ParseBadgeFriendCodeList(const char* body, int bodyLen, u64 friendCode) {
     if (body == nullptr || bodyLen <= 0 || friendCode == 0) return false;
@@ -527,6 +512,7 @@ static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode);
 static void StartBadgeRefresh(u64 friendCode);
 
 static void OnBadgeListDownloaded(s32 result, void* response, void* userdata) {
+    Network::FinishNHTTPRequest();
     BadgeRequestCtx* ctx = reinterpret_cast<BadgeRequestCtx*>(userdata);
     const BadgeRequestKind nextKind =
         (ctx != nullptr && ctx->generation == s_badgeRequestGeneration) ? GetNextBadgeRequestKind(ctx->kind) : BADGE_REQUEST_NONE;
@@ -562,16 +548,10 @@ static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode) {
     if (kind == BADGE_REQUEST_NONE || friendCode == 0) return false;
     if (s_badgeRequestActive) return false;
 
-    if (!s_badgeNHTTPReadyForRefresh) {
-        const s32 startupRet = NHTTPStartup(reinterpret_cast<void*>(&NHTTPAllocFromEggHeap),
-                                            reinterpret_cast<void*>(&NHTTPFreeFromEggHeap),
-                                            0x11);
-        if (startupRet < 0) return false;
-        s_badgeNHTTPReadyForRefresh = true;
-    }
+    if (!Network::PrepareNHTTPRequest()) return false;
 
     if (s_badgeRequestWorkBuf == nullptr) {
-        s_badgeRequestWorkBuf = NHTTPAllocFromEggHeap(BADGE_REQUEST_WORK_BUF_SIZE, 0x20);
+        s_badgeRequestWorkBuf = Network::NHTTPAlloc(BADGE_REQUEST_WORK_BUF_SIZE, 0x20);
         if (s_badgeRequestWorkBuf == nullptr) return false;
     }
     memset(s_badgeRequestWorkBuf, 0, BADGE_REQUEST_WORK_BUF_SIZE);
@@ -587,7 +567,10 @@ static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode) {
     if (request == nullptr) return false;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
-    if (sendRet >= 0) s_badgeRequestActive = true;
+    if (sendRet >= 0) {
+        Network::MarkNHTTPRequestActive();
+        s_badgeRequestActive = true;
+    }
     return sendRet >= 0;
 }
 
@@ -602,7 +585,6 @@ static void StartBadgeRefresh(u64 friendCode) {
     s_antBadgeFC = false;
     s_devBadgeFC = false;
     s_donoBadgeFC = false;
-    s_badgeNHTTPReadyForRefresh = false;
     s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
 
     if (!StartBadgeListRequest(BADGE_REQUEST_ANT, s_badgeFriendCode)) {

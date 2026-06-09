@@ -2,6 +2,7 @@
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <Settings/SettingsBinary.hpp>
+#include <Race/CustomItems.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -34,6 +35,7 @@ static const char* itemTpls[] = {
     "item_banana_3.tpl",  // 18: TRIPLE_BANANA
     "tt_item_random.tpl"  // 19: RANDOMIZE
 };
+static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
 CustomItemPage::CustomItemPage() {
     this->onButtonClickHandler.subject = this;
@@ -52,6 +54,8 @@ CustomItemPage::CustomItemPage() {
     this->controlSources = 2;
     this->prevPageId = static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT);
     this->titleBmg = BMG_USERSETTINGSOFFSET + BMG_SETTINGS_TITLE + Settings::SETTINGSTYPE_ITEMS;
+    this->friendRoomPreviewNextPageId = PAGE_CHARACTER_SELECT;
+    this->isFriendRoomPreview = false;
 
     this->buttons = new (RKSystem::mInstance.EGGSystem) PushButton[20];
 
@@ -101,12 +105,35 @@ void CustomItemPage::OnActivate() {
     ::Pages::Menu::OnActivate();
     this->titleText.SetMessage(this->titleBmg);
     this->UpdateButtonVisuals();
-    this->SelectButton(buttons[0]);
-    this->OnButtonSelect(buttons[0], 0);
+    this->backButton.isHidden = this->isFriendRoomPreview;
+    this->backButton.manipulator.inaccessible = this->isFriendRoomPreview;
+    buttons[19].isHidden = this->isFriendRoomPreview;
+    buttons[19].manipulator.inaccessible = this->isFriendRoomPreview;
+    if (this->isFriendRoomPreview) {
+        for (int i = 0; i < 20; ++i) {
+            buttons[i].manipulator.inaccessible = true;
+            buttons[i].SetPaneVisibility("hilight_curr", false);
+        }
+    } else {
+        for (int i = 0; i < 20; ++i) buttons[i].manipulator.inaccessible = false;
+        this->SelectButton(buttons[0]);
+        this->OnButtonSelect(buttons[0], 0);
+    }
 }
 
 void CustomItemPage::AfterControlUpdate() {
     Pages::MenuInteractable::AfterControlUpdate();
+    if (this->isFriendRoomPreview) {
+        this->previewTimer.Update();
+        if (this->previewTimer.countdown <= 0.0f) {
+            this->isFriendRoomPreview = false;
+            ExpSection* section = ExpSection::GetSection();
+            section->RemovePageLayers(section->layerCount - 1);
+            ExpSection::AddPageLayer(*section, this->friendRoomPreviewNextPageId);
+        }
+        return;
+    }
+
     const Pages::FriendRoomManager* mgr = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
     if (mgr && mgr->startedGameMode < 4 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
         this->LoadPrevPageById(static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT), buttons[0]);
@@ -122,10 +149,12 @@ void CustomItemPage::OnDeactivate() {
 
 void CustomItemPage::BeforeEntranceAnimations() {
     ::Pages::Menu::BeforeEntranceAnimations();
-    this->OnButtonSelect(buttons[0], 0);
+    if (!this->isFriendRoomPreview) this->OnButtonSelect(buttons[0], 0);
 }
 
 void CustomItemPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
+    if (this->isFriendRoomPreview) return;
+
     u32 bitfield = Settings::Mgr::Get().GetCustomItems();
     if (button.buttonId == 19) {
         // Randomize - using a LCG
@@ -144,6 +173,8 @@ void CustomItemPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
 }
 
 void CustomItemPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+    if (this->isFriendRoomPreview) return;
+
     button.SetPaneVisibility("hilight_curr", true);
 }
 
@@ -152,13 +183,27 @@ void CustomItemPage::OnButtonDeselect(PushButton& button, u32 hudSlotId) {
 }
 
 void CustomItemPage::OnBackPress(u32 hudSlotId) {
+    if (this->isFriendRoomPreview) return;
+
     this->nextPageId = static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT);
     this->EndStateAnimated(0, 0.0f);
 }
 
+void CustomItemPage::StartFriendRoomPreview(PageId nextPageId) {
+    this->friendRoomPreviewNextPageId = nextPageId;
+    this->isFriendRoomPreview = true;
+    this->previewTimer.SetInitial(4.0f);
+    this->previewTimer.isActive = true;
+}
+
+u32 CustomItemPage::GetDisplayBitfield() const {
+    if (this->isFriendRoomPreview) return Race::GetEffectiveCustomItemsBitfield();
+    return Settings::Mgr::Get().GetCustomItems();
+}
+
 void CustomItemPage::UpdateButtonVisuals() {
-    u32 bitfield = Settings::Mgr::Get().GetCustomItems();
-    if (bitfield == 0) bitfield = 0x7FFFF;  // Should have been handled but just in case
+    u32 bitfield = this->GetDisplayBitfield();
+    if (bitfield == 0) bitfield = ALL_CUSTOM_ITEMS;  // Should have been handled but just in case
 
     for (int i = 0; i < 19; ++i) {
         bool enabled = (bitfield >> i) & 1;

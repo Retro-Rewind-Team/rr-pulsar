@@ -141,6 +141,14 @@ kmWrite32(0x80860A90, 0x38600000);
 kmWrite32(0x80643BC4, 0x60000000);
 kmWrite32(0x80643C2C, 0x60000000);
 
+// Skip Credits Launch [ZPL]
+kmWrite32(0x805BC85C, 0x60000000);  // Skip setting game mode to CREDITS for normal credits
+kmWrite32(0x805BC864, 0x3880003D);  // Go straight to congratulations
+kmWrite32(0x805BC870, 0x60000000);  // Skip setting credits course for normal credits
+kmWrite32(0x805BC8A0, 0x60000000);  // Skip setting game mode to CREDITS for true credits
+kmWrite32(0x805BC8A8, 0x3880003E);  // Go straight to congratulations complete
+kmWrite32(0x805BC8B4, 0x60000000);  // Skip setting credits course for true credits
+
 // No Disconnect on Countdown [_tZ]
 kmWrite32(0x80655578, 0x60000000);
 

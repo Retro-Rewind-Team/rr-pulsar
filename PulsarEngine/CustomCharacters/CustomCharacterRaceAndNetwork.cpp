@@ -1,4 +1,5 @@
 #include <CustomCharacters/CustomCharacters.hpp>
+#include <IO/SDIO.hpp>
 
 namespace Pulsar {
 namespace CustomCharacters {
@@ -404,18 +405,21 @@ void ClearRawCache(RawBRRES& cache, bool destroyHeap) {
 }
 
 // Gameplay section transitions may still reference models from the current scene.
-void ClearRawCaches(bool destroyHeap) {
-    if (destroyHeap && IsGameplaySectionLoading()) destroyHeap = false;
+bool ClearRawCaches(bool destroyHeap) {
+    if (destroyHeap && IsGameplaySectionLoading()) return false;
     for (u32 table = 0; table < TABLE_COUNT; ++table) {
         for (u32 character = 0; character < CHARACTER_COUNT; ++character) ClearRawCache(rawBRRES[table][character], destroyHeap);
     }
     for (u32 i = 0; i < MII_C_COUNT; ++i) ClearRawCache(looseMiiCBRRES[i], destroyHeap);
+    return true;
 }
 
 void SyncRawCachesToCurrentScene() {
     const GameScene* const scene = GameScene::GetCurrent();
-    ClearRawCaches(false);
-    rawCacheSceneOwner = scene;
+    if (rawCacheSceneOwner == scene) return;
+    if (ClearRawCaches(true)) {
+        rawCacheSceneOwner = scene;
+    }
 }
 
 // Menu BRRES selection can be forced back to vanilla during voting restore.
@@ -436,15 +440,130 @@ bool BuildDriverPath(CharacterId character, u8 table, char* path, u32 pathSize) 
     return written > 0 && static_cast<u32>(written) < pathSize;
 }
 
+const char* PathBasename(const char* path) {
+    if (path == nullptr) return nullptr;
+    const char* basename = path;
+    for (const char* cursor = path; *cursor != '\0'; ++cursor) {
+        if (*cursor == '/') basename = cursor + 1;
+    }
+    return basename;
+}
+
+bool BuildChannelSdPath(const char* discPath, u32 candidate, char* outPath, u32 outSize) {
+    if (discPath == nullptr || outPath == nullptr || outSize == 0) return false;
+    while (*discPath == '/') ++discPath;
+    const char* basename = PathBasename(discPath);
+
+    int written = -1;
+    switch (candidate) {
+        case 0:
+            if (strncmp(discPath, "Scene/Model/Driver/", 19) == 0) {
+                written = snprintf(outPath, outSize, "/RetroRewind6/Character/Driver/%s", discPath + 19);
+            }
+            break;
+        case 1:
+            if (strncmp(discPath, "Race/Map/", 9) == 0) {
+                written = snprintf(outPath, outSize, "/RetroRewind6/Character/Map/%s", discPath + 9);
+            }
+            break;
+        case 2:
+            if (strncmp(discPath, "sound/", 6) == 0) {
+                written = snprintf(outPath, outSize, "/RetroRewind6/Character/Sound/%s", discPath + 6);
+            }
+            break;
+        case 3:
+            if (strncmp(discPath, "Scene/Model/Kart/", 17) == 0) {
+                written = snprintf(outPath, outSize, "/RetroRewind6/Character/Allkart/%s", discPath + 17);
+            }
+            break;
+        case 4:
+            written = snprintf(outPath, outSize, "/RetroRewind6/Patches/%s", discPath);
+            break;
+        case 5:
+            if (basename != nullptr) written = snprintf(outPath, outSize, "/RetroRewind6/Patches/%s", basename);
+            break;
+        default:
+            return false;
+    }
+    return written > 0 && static_cast<u32>(written) < outSize;
+}
+
+bool OpenChannelCharacterFile(SDIO& sd, const char* discPath, char* resolvedPath, u32 resolvedPathSize) {
+    if (!IsNewChannel()) return false;
+
+    char path[0x80];
+    for (u32 i = 0; i < 6; ++i) {
+        if (!BuildChannelSdPath(discPath, i, path, sizeof(path))) continue;
+        if (!sd.OpenFile(path, FILE_MODE_READ)) continue;
+        if (resolvedPath != nullptr && resolvedPathSize > 0) snprintf(resolvedPath, resolvedPathSize, "%s", path);
+        return true;
+    }
+    return false;
+}
+
 bool DiscFileSize(const char* path, u32& size) {
-    DVD::FileInfo info;
-    if (!DVD::Open(path, &info)) {
+    if (!IsNewChannel()) {
+        DVD::FileInfo info;
+        if (!DVD::Open(path, &info)) {
+            size = 0;
+            return false;
+        }
+        size = info.length;
+        DVD::Close(&info);
+        return size != 0;
+    }
+
+    SDIO sd(IOType_SD, nullptr, nullptr);
+    if (!OpenChannelCharacterFile(sd, path, nullptr, 0)) {
         size = 0;
         return false;
     }
-    size = info.length;
-    DVD::Close(&info);
+    const s32 fileSize = sd.GetFileSize();
+    sd.Close();
+    if (fileSize <= 0) {
+        size = 0;
+        return false;
+    }
+    size = static_cast<u32>(fileSize);
     return size != 0;
+}
+
+void* LoadChannelFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper::EAllocDirection allocDirection, u32* outSize) {
+    if (outSize != nullptr) *outSize = 0;
+    SDIO sd(IOType_SD, nullptr, nullptr);
+    char resolvedPath[0x80];
+    if (!OpenChannelCharacterFile(sd, path, resolvedPath, sizeof(resolvedPath))) return nullptr;
+
+    const s32 signedFileSize = sd.GetFileSize();
+    if (signedFileSize <= 0 || static_cast<u32>(signedFileSize) > 0x7fffffe0) {
+        sd.Close();
+        return nullptr;
+    }
+    const u32 fileSize = static_cast<u32>(signedFileSize);
+    if (outSize != nullptr) *outSize = fileSize;
+
+    const u32 allocSize = AlignUp(fileSize + 1, 0x20);
+    void* buffer = EGG::Heap::alloc(allocSize, allocDirection == EGG::DvdRipper::ALLOC_FROM_TAIL ? -0x20 : 0x20, heap);
+    if (buffer == nullptr) {
+        sd.Close();
+        return nullptr;
+    }
+
+    const s32 read = sd.Read(fileSize, buffer);
+    sd.Close();
+    if (read != static_cast<s32>(fileSize)) {
+        EGG::Heap::free(buffer, heap);
+        return nullptr;
+    }
+    if (allocSize > fileSize) memset(static_cast<u8*>(buffer) + fileSize, 0, allocSize - fileSize);
+    return buffer;
+}
+
+void* LoadFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper::EAllocDirection allocDirection, u32* outSize) {
+    if (!IsNewChannel()) {
+        return EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, allocDirection, 0, nullptr, outSize);
+    }
+    return LoadChannelFileToMainRAM(path, heap, allocDirection, outSize);
 }
 
 }  // namespace CustomCharacters

@@ -48,6 +48,7 @@ static u8 sPendingBalloonEventSize = 0;
 static u8 sLastRemoteBalloonLossSeq[maxPlayers];
 static bool sDeferredBalloonManagerCreation = false;
 static bool sCollisionPatchesActive = false;
+static bool sCreatingBattleRoyaleBalloonManager = false;
 static bool sLoadedBalloonModels[maxBattleRoyaleBalloons];
 static u16 sMushroomStealVictimMask[maxPlayers];
 static u8 sMushroomStealVictimTimers[maxPlayers][maxPlayers];
@@ -672,22 +673,42 @@ kmCall(0x805704c4, ForceKartCollisionBattleTypeWhenBattleRoyale);
 kmCall(0x80570a20, ForceKartCollisionBattleTypeWhenBattleRoyale);
 kmCall(0x80570bf4, ForceKartCollisionBattleTypeWhenBattleRoyale);
 
-kmWrite32(0x808698c8, 0x60000000);  // allocate only the team-0 balloon pool
 kmWrite32(0x808698c0, 0x1c040005);  // allocate five balloons per player
-kmWrite32(0x8086994c, 0x60000000);  // defer balloon model load until a slot is used
+
+static asmFunc SetBalloonPoolCount() {
+    ASM(
+        nofralloc;
+        lis r12, sCreatingBattleRoyaleBalloonManager @ha;
+        lbz r12, sCreatingBattleRoyaleBalloonManager @l(r12);
+        cmpwi r12, 0;
+        bnelr;
+        rlwinm r0, r0, 1, 24, 30;
+        blr;
+    )
+}
+kmCall(0x808698c8, SetBalloonPoolCount);
+
+static void LoadConstructedBalloonModel(GeoObj::ObjBalloon* balloon) {
+    if (sCreatingBattleRoyaleBalloonManager) return;
+
+    void** vtable = *reinterpret_cast<void***>(balloon);
+    GeoObjectLoadFn load = reinterpret_cast<GeoObjectLoadFn>(vtable[0x20 / sizeof(void*)]);
+    load(balloon);
+}
+kmCall(0x8086994c, LoadConstructedBalloonModel);  // defer balloon model load until a slot is used in Battle Royale
 kmWrite32(0x80869950, 0x60000000);
 kmWrite32(0x80869954, 0x60000000);
 kmWrite32(0x80869958, 0x60000000);
 
-kmWrite32(0x8082a554, 0x38600400);  // ObjectDirector arrays: 200 -> 256 pointers
-kmWrite32(0x8082a560, 0x38600400);
-kmWrite32(0x8082a56c, 0x38600400);
-kmWrite32(0x8082a578, 0x38600400);
-kmWrite32(0x8082a584, 0x38600400);
-kmWrite32(0x8082a590, 0x38600400);
-kmWrite32(0x8082a59c, 0x38600c00);  // hit depth vec3 array: 200 -> 256 entries
-kmWrite32(0x8082a5b8, 0x38e00100);
-kmWrite32(0x8082a5c4, 0x38600400);  // collision scenario array: 200 -> 256 entries
+kmWrite32(0x8082a554, 0x38600500);  // ObjectDirector arrays: 200 -> 320 pointers
+kmWrite32(0x8082a560, 0x38600500);
+kmWrite32(0x8082a56c, 0x38600500);
+kmWrite32(0x8082a578, 0x38600500);
+kmWrite32(0x8082a584, 0x38600500);
+kmWrite32(0x8082a590, 0x38600500);
+kmWrite32(0x8082a59c, 0x38600f00);  // hit depth vec3 array: 200 -> 320 entries
+kmWrite32(0x8082a5b8, 0x38e00140);
+kmWrite32(0x8082a5c4, 0x38600500);  // collision scenario array: 200 -> 320 entries
 
 static void* ConstructBalloon(void* balloon, u8 poolIdx, u8 teamId) {
     return new (balloon) GeoObj::ObjBalloon(poolIdx, GetBattleRoyaleBalloonPoolTeam(poolIdx, teamId));
@@ -710,7 +731,9 @@ static void CreateBattleRoyaleBalloonManager() {
     settings.gamemode = MODE_BATTLE;
     settings.battleType = BATTLE_BALLOON;
     ClearLoadedBalloonModels();
+    sCreatingBattleRoyaleBalloonManager = true;
     RaceBalloonManager::CreateInstance();
+    sCreatingBattleRoyaleBalloonManager = false;
     LoadStartingBalloonModels(GetBalloonManager());
     settings.gamemode = prevMode;
     settings.battleType = prevBattleType;
@@ -767,6 +790,7 @@ static void ResetState() {
     sInitialized = false;
     sLastRaceFrames = 0xffff;
     sDeferredBalloonManagerCreation = false;
+    sCreatingBattleRoyaleBalloonManager = false;
     sDeferredDestroyScene = nullptr;
     sDeferredDestroyHeap = nullptr;
     for (u8 playerId = 0; playerId < maxPlayers; ++playerId) {

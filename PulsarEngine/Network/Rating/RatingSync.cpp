@@ -8,6 +8,7 @@
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
 #include <Network/GPReport.hpp>
+#include <Network/NHTTPHelper.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/Rating/RatingSync.hpp>
 #include <Network/WiiLink.hpp>
@@ -36,19 +37,6 @@ struct RequestCtx {
 };
 
 static RequestCtx s_requestCtx;
-
-static void* NHTTPAllocFromEggHeap(u32 size, s32 align) {
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap == nullptr) return nullptr;
-    if (align < 4) align = 4;
-    return EGG::Heap::alloc(size, align, heap);
-}
-
-static void NHTTPFreeFromEggHeap(void* ptr) {
-    if (ptr == nullptr) return;
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap != nullptr) EGG::Heap::free(ptr, heap);
-}
 
 static int ClampRatingForSync(float rating) {
     int scaled = (int)(rating * 100.0f + 0.5f);
@@ -124,6 +112,7 @@ static bool IsRequestStillRelevant(const RequestCtx& ctx) {
 }
 
 static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
+    Network::FinishNHTTPRequest();
     RequestCtx* ctx = reinterpret_cast<RequestCtx*>(userdata);
     if (ctx == nullptr || response == nullptr) return;
 
@@ -172,13 +161,10 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
 
-    const s32 startupRet = NHTTPStartup(reinterpret_cast<void*>(&NHTTPAllocFromEggHeap),
-                                        reinterpret_cast<void*>(&NHTTPFreeFromEggHeap),
-                                        0x11);
-    if (startupRet < 0) return;
+    if (!Network::PrepareNHTTPRequest()) return;
 
     if (s_requestWorkBuf == nullptr) {
-        s_requestWorkBuf = NHTTPAllocFromEggHeap(s_nhttpWorkBufSize, 0x20);
+        s_requestWorkBuf = Network::NHTTPAlloc(s_nhttpWorkBufSize, 0x20);
         if (s_requestWorkBuf == nullptr) return;
     }
     memset(s_requestWorkBuf, 0, s_nhttpWorkBufSize);
@@ -204,7 +190,9 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet < 0) {
         ++s_requestGeneration;
+        return;
     }
+    Network::MarkNHTTPRequestActive();
 }
 
 static bool CanStartLoginRatingDownload() {

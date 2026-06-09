@@ -5,6 +5,8 @@ wcstombs = 0x8000f138
 memmove = 0x8000f1f0
 memcmp = 0x8000f314
 snprintf = 0x80011938
+vprintf = 0x800117b0
+vsnprintf = 0x8001182c
 qsort = 0x80011b00
 rand = 0x80011c70
 srand = 0x80011c90
@@ -1118,6 +1120,7 @@ CreateAndInitPage__7SectionF6PageId = 0x80622d08
 AddPageLayer__7SectionF6PageId = 0x80622da0
 GetTopLayerPage__7SectionCFv = 0x80622ea0
 ScheduleDisconnection__7SectionFv = 0x80623054
+RemovePageLayers__7SectionFUi = 0x806232e8
 CreatePageById__7SectionF6PageId = 0x80623390
 CreateSectionPages__7SectionF9SectionId = 0x8062c3a4
 AddInitialLayers__7SectionF9SectionId = 0x80630094
@@ -2203,6 +2206,7 @@ DecideRouletteItem__Q24Item12ItemSlotDataFUsUc6ItemIdb = 0x807bb8d0
 itemSlotData = 0x809c3670
 
 #Inventory
+EjectItems__Q24Item15PlayerInventoryFv = 0x807bc350
 Update__Q24Item15PlayerInventoryFv = 0x807bc6e8
 SetItem__Q24Item15PlayerInventoryF6ItemIdb = 0x807bc940
 RemoveItems__Q24Item15PlayerInventoryFUi = 0x807bc97c

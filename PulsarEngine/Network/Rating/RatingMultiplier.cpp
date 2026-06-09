@@ -6,6 +6,7 @@
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <Network/NHTTPHelper.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/ServerDateTime.hpp>
 #include <PulsarSystem.hpp>
@@ -24,19 +25,6 @@ static bool s_multiplierRequestDone = false;
 static bool s_wasConnectedToWfc = false;
 static bool s_remoteMultiplierValid = false;
 static float s_remoteMultiplier = 1.0f;
-
-static void* NHTTPAllocFromEggHeap(u32 size, s32 align) {
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap == nullptr) return nullptr;
-    if (align < 4) align = 4;
-    return EGG::Heap::alloc(size, align, heap);
-}
-
-static void NHTTPFreeFromEggHeap(void* ptr) {
-    if (ptr == nullptr) return;
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    if (heap != nullptr) EGG::Heap::free(ptr, heap);
-}
 
 static const char* SkipWhitespace(const char* p) {
     while (p != nullptr && (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')) ++p;
@@ -87,6 +75,7 @@ static bool CanStartMultiplierDownload() {
 }
 
 static void OnMultiplierDownloaded(s32 result, void* response, void* /*userdata*/) {
+    Network::FinishNHTTPRequest();
     s_multiplierRequestActive = false;
     s_multiplierRequestDone = true;
 
@@ -108,13 +97,10 @@ static void OnMultiplierDownloaded(s32 result, void* response, void* /*userdata*
 static void TryStartMultiplierDownload() {
     if (s_multiplierRequestActive || s_multiplierRequestDone || !CanStartMultiplierDownload()) return;
 
-    const s32 startupRet = NHTTPStartup(reinterpret_cast<void*>(&NHTTPAllocFromEggHeap),
-                                        reinterpret_cast<void*>(&NHTTPFreeFromEggHeap),
-                                        0x11);
-    if (startupRet < 0) return;
+    if (!Network::PrepareNHTTPRequest()) return;
 
     if (s_multiplierRequestWorkBuf == nullptr) {
-        s_multiplierRequestWorkBuf = NHTTPAllocFromEggHeap(MULTIPLIER_REQUEST_WORK_BUF_SIZE, 0x20);
+        s_multiplierRequestWorkBuf = Network::NHTTPAlloc(MULTIPLIER_REQUEST_WORK_BUF_SIZE, 0x20);
         if (s_multiplierRequestWorkBuf == nullptr) return;
     }
     memset(s_multiplierRequestWorkBuf, 0, MULTIPLIER_REQUEST_WORK_BUF_SIZE);
@@ -132,6 +118,7 @@ static void TryStartMultiplierDownload() {
         s_multiplierRequestDone = true;
         return;
     }
+    Network::MarkNHTTPRequestActive();
     s_multiplierRequestActive = true;
 }
 

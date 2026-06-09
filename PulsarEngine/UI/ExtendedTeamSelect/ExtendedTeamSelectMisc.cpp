@@ -1,4 +1,6 @@
 #include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
+#include <UI/CustomItems/CustomItemPage.hpp>
+#include <Race/CustomItems.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <RetroRewind.hpp>
 #include <core/nw4r/lyt/ArcResourceAccessor.hpp>
@@ -16,6 +18,8 @@
 
 namespace Pulsar {
 namespace UI {
+
+static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
 void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
     _this->StartRoom();
@@ -38,12 +42,20 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
             controller->UpdateStatusDatas();
         }
     }
+    PageId nextPageId = PAGE_CHARACTER_SELECT;
     if (System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && (friendRoomManager->startedGameMode == 0 || friendRoomManager->startedGameMode == 2 || friendRoomManager->startedGameMode == 3)) {
         _this->countdown.SetInitial(86400.0f);
-        _this->AddPageLayer(static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT), 0);
-    } else {
-        _this->AddPageLayer(PAGE_CHARACTER_SELECT, 0);
+        nextPageId = static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT);
     }
+
+    if (Race::GetEffectiveCustomItemsBitfield() != ALL_CUSTOM_ITEMS) {
+        CustomItemPage* page = ExpSection::GetSection()->GetPulPage<CustomItemPage>();
+        page->StartFriendRoomPreview(nextPageId);
+        _this->AddPageLayer(static_cast<PageId>(CustomItemPage::id), 0);
+        return;
+    }
+
+    _this->AddPageLayer(nextPageId, 0);
 }
 kmWriteNop(0x805de76c);  // Remove the call that opens the character selection screen
 kmCall(0x805dddb0, PrepareOnlinePages);
