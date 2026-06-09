@@ -16,7 +16,11 @@
 namespace Pulsar {
 namespace PointRating {
 
-static const char* MULTIPLIER_URL = "http://update.rwfc.net/RetroRewind/multiplier.txt";
+#ifdef BETA
+static const char* MULTIPLIER_URL = "http://update.rwfc.net/RetroRewind/multiplierBeta.txt";
+#else
+static const char* MULTIPLIER_URL = "https://update.rwfc.net/RetroRewind/multiplier.txt";
+#endif
 static const u32 MULTIPLIER_REQUEST_WORK_BUF_SIZE = 0x1000;
 
 static void* s_multiplierRequestWorkBuf = nullptr;
