@@ -26,7 +26,7 @@ static const u32 MULTIPLIER_REQUEST_WORK_BUF_SIZE = 0x1000;
 static void* s_multiplierRequestWorkBuf = nullptr;
 static bool s_multiplierRequestActive = false;
 static bool s_multiplierRequestDone = false;
-static bool s_wasConnectedToWfc = false;
+static bool s_multiplierRequestPending = false;
 static bool s_remoteMultiplierValid = false;
 static float s_remoteMultiplier = 1.0f;
 
@@ -75,7 +75,10 @@ static bool ParseRemoteMultiplier(const char* body, int bodyLen, float& out) {
 
 static bool CanStartMultiplierDownload() {
     RKNet::Controller* controller = RKNet::Controller::sInstance;
-    return controller != nullptr && controller->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
+    if (controller == nullptr) return false;
+
+    const RKNet::ConnectionState state = controller->GetConnectionState();
+    return state == RKNet::CONNECTIONSTATE_IDLE || state == RKNet::CONNECTIONSTATE_ROOM;
 }
 
 static void OnMultiplierDownloaded(s32 result, void* response, void* /*userdata*/) {
@@ -99,7 +102,7 @@ static void OnMultiplierDownloaded(s32 result, void* response, void* /*userdata*
 }
 
 static void TryStartMultiplierDownload() {
-    if (s_multiplierRequestActive || s_multiplierRequestDone || !CanStartMultiplierDownload()) return;
+    if (!s_multiplierRequestPending || s_multiplierRequestActive || s_multiplierRequestDone || !CanStartMultiplierDownload()) return;
 
     if (!Network::PrepareNHTTPRequest()) return;
 
@@ -124,24 +127,20 @@ static void TryStartMultiplierDownload() {
     }
     Network::MarkNHTTPRequestActive();
     s_multiplierRequestActive = true;
+    s_multiplierRequestPending = false;
 }
 
-static void UpdateMultiplierDownloadForWfcConnection() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const bool isConnectedToWfc =
-        controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-
-    if (isConnectedToWfc && !s_wasConnectedToWfc) {
-        s_multiplierRequestDone = false;
-        s_remoteMultiplierValid = false;
-        s_remoteMultiplier = 1.0f;
-    }
-    s_wasConnectedToWfc = isConnectedToWfc;
+static void StartMultiplierDownloadForRace() {
+    s_multiplierRequestDone = false;
+    s_multiplierRequestPending = true;
+    s_remoteMultiplierValid = false;
+    s_remoteMultiplier = 1.0f;
 
     TryStartMultiplierDownload();
 }
 
-static FrameLoadHook remoteMultiplierHook(UpdateMultiplierDownloadForWfcConnection);
+static RaceLoadHook raceMultiplierHook(StartMultiplierDownloadForRace);
+static FrameLoadHook remoteMultiplierHook(TryStartMultiplierDownload);
 
 static bool IsEventDay(unsigned m, unsigned d) {
     return (m == 12 && d >= 23) ||  // Christmas
