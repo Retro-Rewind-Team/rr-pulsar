@@ -449,6 +449,12 @@ const char* PathBasename(const char* path) {
     return basename;
 }
 
+bool ShouldUsePatchCharacterFiles() {
+    if (!Settings::Mgr::IsCreated()) return false;
+    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MISC, RADIO_LOOSEARCHIVEOVERRIDES) ==
+           LOOSEARCHIVEOVERRIDES_ENABLED;
+}
+
 bool BuildChannelSdPath(const char* discPath, u32 candidate, char* outPath, u32 outSize) {
     if (discPath == nullptr || outPath == nullptr || outSize == 0) return false;
     while (*discPath == '/') ++discPath;
@@ -477,9 +483,11 @@ bool BuildChannelSdPath(const char* discPath, u32 candidate, char* outPath, u32 
             }
             break;
         case 4:
+            if (!ShouldUsePatchCharacterFiles()) return false;
             written = snprintf(outPath, outSize, "/RetroRewind6/Patches/%s", discPath);
             break;
         case 5:
+            if (!ShouldUsePatchCharacterFiles()) return false;
             if (basename != nullptr) written = snprintf(outPath, outSize, "/RetroRewind6/Patches/%s", basename);
             break;
         default:
