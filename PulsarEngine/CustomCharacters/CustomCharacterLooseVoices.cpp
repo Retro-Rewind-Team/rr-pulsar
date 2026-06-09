@@ -83,14 +83,8 @@ bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* ex
 bool LooseVoiceFileExists(const char* postfix, const char* suffix, const char* extension, const char* voiceName) {
     char path[0x80];
     if (!BuildLooseVoicePath(postfix, suffix, extension, voiceName, path, sizeof(path))) return false;
-    const s32 entryNum = DVD::ConvertPathToEntryNum(path);
-    if (entryNum < 0) return false;
-
-    DVD::FileInfo info;
-    if (!DVD::FastOpen(entryNum, &info)) return false;
-    const bool exists = info.length != 0;
-    DVD::Close(&info);
-    return exists;
+    u32 size = 0;
+    return DiscFileSize(path, size);
 }
 
 const char* const looseVoiceGroupSuffixes[] = {
@@ -189,7 +183,8 @@ bool SilentVoiceMarkerExists(CharacterId character, u8 table, const char* postfi
     if (postfix == nullptr) return false;
     char path[0x60];
     const int written = snprintf(path, sizeof(path), "/sound/%s.silent", postfix);
-    return written > 0 && static_cast<u32>(written) < sizeof(path) && DVD::ConvertPathToEntryNum(path) >= 0;
+    u32 size = 0;
+    return written > 0 && static_cast<u32>(written) < sizeof(path) && DiscFileSize(path, size);
 }
 
 static bool MatchLooseVoiceSuffix(const char* suffix, u32 suffixLength, u32& suffixIndex) {
@@ -251,67 +246,7 @@ static void ApplyLooseVoiceMasks(LooseVoiceInfo& info, u32 directMask, const u32
 }
 
 static bool ScanLooseVoiceInfoFromDiscFST(const char* postfix, LooseVoiceInfo& info) {
-    if (postfix == nullptr || OS::BootInfo::mInstance.FSTLocation == nullptr) return false;
-
-    const DiscFSTEntry* fst = static_cast<const DiscFSTEntry*>(OS::BootInfo::mInstance.FSTLocation);
-    const u32 entryCount = fst[0].size;
-    const s32 soundEntryNum = DVD::ConvertPathToEntryNum("/sound");
-    if (soundEntryNum < 0 || static_cast<u32>(soundEntryNum) >= entryCount) return false;
-
-    const DiscFSTEntry& soundEntry = fst[soundEntryNum];
-    if (!FSTEntryIsDir(soundEntry)) return false;
-    const u32 soundEnd = soundEntry.size;
-    if (soundEnd <= static_cast<u32>(soundEntryNum) || soundEnd > entryCount) return false;
-
-    char upperPostfix[32];
-    CopyUpperPostfix(upperPostfix, sizeof(upperPostfix), postfix);
-    if (upperPostfix[0] == '\0') return false;
-
-    char prefix[48];
-    const int written = snprintf(prefix, sizeof(prefix), "GRP_VO_%s_", upperPostfix);
-    if (written <= 0 || static_cast<u32>(written) >= sizeof(prefix)) return false;
-    const u32 prefixLength = static_cast<u32>(written);
-
-    u32 directMask = 0;
-    u32 characterMasks[ARRAY_COUNT(voiceCharacterNames)];
-    for (u32 i = 0; i < ARRAY_COUNT(characterMasks); ++i) characterMasks[i] = 0;
-
-    const char* stringTable = reinterpret_cast<const char*>(fst) + (entryCount * sizeof(DiscFSTEntry));
-    for (u32 entryIndex = static_cast<u32>(soundEntryNum) + 1; entryIndex < soundEnd;) {
-        const DiscFSTEntry& entry = fst[entryIndex];
-        if (FSTEntryIsDir(entry)) {
-            if (entry.size <= entryIndex || entry.size > soundEnd) return false;
-            entryIndex = entry.size;
-            continue;
-        }
-        ++entryIndex;
-
-        const char* fileName = stringTable + FSTNameOffset(entry);
-        if (!StartsWithIgnoreCase(fileName, prefix)) continue;
-
-        const char* suffix = fileName + prefixLength;
-        const char* dot = strchr(suffix, '.');
-        if (dot == nullptr || dot == suffix) continue;
-
-        u32 suffixIndex = 0;
-        if (!MatchLooseVoiceSuffix(suffix, static_cast<u32>(dot - suffix), suffixIndex)) continue;
-
-        const char* extension = dot + 1;
-        if (!IsLooseVoiceExtension(extension)) continue;
-
-        const u32 suffixBit = 1 << suffixIndex;
-        if (extension[5] == '\0') {
-            directMask |= suffixBit;
-            continue;
-        }
-        if (extension[5] != '.') continue;
-
-        u32 characterIndex = 0;
-        if (MatchLooseVoiceAlias(extension + 6, characterIndex)) characterMasks[characterIndex] |= suffixBit;
-    }
-
-    ApplyLooseVoiceMasks(info, directMask, characterMasks);
-    return info.hasFiles;
+    return false;
 }
 
 static bool ScanLooseVoiceInfoFromPaths(const char* postfix, LooseVoiceInfo& info) {

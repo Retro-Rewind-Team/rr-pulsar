@@ -53,7 +53,7 @@ bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
             return false;
         }
         u32 loadedSize = 0;
-        cache.file = EGG::DvdRipper::LoadToMainRAM(path, nullptr, cache.heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize);
+        cache.file = LoadFileToMainRAM(path, cache.heap, EGG::DvdRipper::ALLOC_FROM_HEAD, &loadedSize);
         if (cache.file == nullptr || loadedSize == 0) {
             ClearRawCache(cache, true);
             cache.failed = true;
@@ -90,7 +90,7 @@ RawBRRES* RawCacheForModel(const ModelDirector* model) {
 bool LoadRawBRRESIntoHeap(void* holder, EGG::ExpHeap* heap, const char* path, u32 fileSize) {
     if (holder == nullptr || heap == nullptr || path == nullptr || fileSize == 0) return false;
     u32 loadedSize = 0;
-    void* file = EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize);
+    void* file = LoadFileToMainRAM(path, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, &loadedSize);
     if (file == nullptr || loadedSize == 0) return false;
     if ((reinterpret_cast<u32>(file) & 0x1f) != 0) {
         heap->free(file);
@@ -235,8 +235,7 @@ TPLPalettePtr LoadLooseMinimapTPL(CharacterId character, u8 table) {
         return nullptr;
     }
     u32 loadedSize = 0;
-    TPLPalettePtr palette = static_cast<TPLPalettePtr>(
-        EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize));
+    TPLPalettePtr palette = static_cast<TPLPalettePtr>(LoadFileToMainRAM(path, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, &loadedSize));
     if (palette == nullptr || loadedSize == 0 || palette->versionNumber != TPL_VERSION_NUMBER) {
         cache.failed = true;
         return nullptr;

@@ -32,6 +32,7 @@
 #include <core/nw4r/ut/List.hpp>
 #include <MarioKartWii/3D/Scn/ScnMgr.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
+#include <RetroRewindChannel.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -217,6 +218,7 @@ u8 ResolveMenuTable(CharacterId character);
 u32 AlignUp(u32 value, u32 alignment);
 bool BuildDriverPath(CharacterId character, u8 table, char* path, u32 pathSize);
 bool DiscFileSize(const char* path, u32& size);
+void* LoadFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper::EAllocDirection allocDirection, u32* outSize);
 
 // Loose voices and menu model reloads.
 const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName);
