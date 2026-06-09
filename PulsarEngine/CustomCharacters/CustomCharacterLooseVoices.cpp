@@ -83,8 +83,14 @@ bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* ex
 bool LooseVoiceFileExists(const char* postfix, const char* suffix, const char* extension, const char* voiceName) {
     char path[0x80];
     if (!BuildLooseVoicePath(postfix, suffix, extension, voiceName, path, sizeof(path))) return false;
-    u32 size = 0;
-    return DiscFileSize(path, size);
+    const s32 entryNum = DVD::ConvertPathToEntryNum(path);
+    if (entryNum < 0) return false;
+
+    DVD::FileInfo info;
+    if (!DVD::FastOpen(entryNum, &info)) return false;
+    const bool exists = info.length != 0;
+    DVD::Close(&info);
+    return exists;
 }
 
 const char* const looseVoiceGroupSuffixes[] = {
@@ -183,8 +189,7 @@ bool SilentVoiceMarkerExists(CharacterId character, u8 table, const char* postfi
     if (postfix == nullptr) return false;
     char path[0x60];
     const int written = snprintf(path, sizeof(path), "/sound/%s.silent", postfix);
-    u32 size = 0;
-    return written > 0 && static_cast<u32>(written) < sizeof(path) && DiscFileSize(path, size);
+    return written > 0 && static_cast<u32>(written) < sizeof(path) && DVD::ConvertPathToEntryNum(path) >= 0;
 }
 
 static bool MatchLooseVoiceSuffix(const char* suffix, u32 suffixLength, u32& suffixIndex) {
