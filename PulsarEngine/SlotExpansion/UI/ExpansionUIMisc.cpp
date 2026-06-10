@@ -663,7 +663,7 @@ static wchar_t s_blockedVoteNameBuffer[12][0x100];
 
 static bool IsVoteTrackBlocked(PulsarId courseVote) {
     const Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
-    if (handler.toSendPacket.phase >= 2 && handler.toSendPacket.pulWinningTrack == courseVote) return false;
+    if (handler.toSendPacket.pulWinningTrack != 0xFF && handler.toSendPacket.pulWinningTrack == courseVote) return false;
     return IsTrackBlocked(courseVote);
 }
 
