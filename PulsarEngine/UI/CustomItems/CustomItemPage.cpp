@@ -3,6 +3,7 @@
 #include <Settings/SettingsParam.hpp>
 #include <Settings/SettingsBinary.hpp>
 #include <Race/CustomItems.hpp>
+#include <PulsarSystem.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -36,6 +37,14 @@ static const char* itemTpls[] = {
     "tt_item_random.tpl"  // 19: RANDOMIZE
 };
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
+
+static bool IsStartRegionalContext() {
+    const System* system = System::sInstance;
+    if (system == nullptr) return false;
+
+    return system->IsContext(PULSAR_STARTRETROS) || system->IsContext(PULSAR_STARTCTS) || system->IsContext(PULSAR_STARTREGS) ||
+           system->IsContext(PULSAR_START200) || system->IsContext(PULSAR_STARTOTT) || system->IsContext(PULSAR_STARTITEMRAIN);
+}
 
 CustomItemPage::CustomItemPage() {
     this->onButtonClickHandler.subject = this;
@@ -102,6 +111,14 @@ UIControl* CustomItemPage::CreateControl(u32 controlId) {
 }
 
 void CustomItemPage::OnActivate() {
+    if (this->isFriendRoomPreview && IsStartRegionalContext()) {
+        this->isFriendRoomPreview = false;
+        ExpSection* section = ExpSection::GetSection();
+        section->RemovePageLayers(section->layerCount - 1);
+        ExpSection::AddPageLayer(*section, this->friendRoomPreviewNextPageId);
+        return;
+    }
+
     ::Pages::Menu::OnActivate();
     this->titleText.SetMessage(this->titleBmg);
     this->UpdateButtonVisuals();
