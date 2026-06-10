@@ -39,9 +39,8 @@ private:
     void UpdateButtonVisuals();
     void SetButtonIcon(PushButton& button, u32 itemId);
 
-    CtrlMenuPageTitleText titleText;
     CountDown previewTimer;
-    PushButton* buttons; // 19 items + 1 randomize
+    PushButton buttons[20]; // 19 items + 1 randomize
     PageId friendRoomPreviewNextPageId;
     bool isFriendRoomPreview;
     PtmfHolder_2A<CustomItemPage, void, PushButton&, u32> onButtonClickHandler;

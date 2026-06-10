@@ -8,7 +8,6 @@
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
-#include <core/RK/RKSystem.hpp>
 #include <core/rvl/OS/OS.hpp>
 
 namespace Pulsar {
@@ -66,26 +65,19 @@ CustomItemPage::CustomItemPage() {
     this->friendRoomPreviewNextPageId = PAGE_CHARACTER_SELECT;
     this->isFriendRoomPreview = false;
 
-    this->buttons = new (RKSystem::mInstance.EGGSystem) PushButton[20];
-
     this->controlsManipulatorManager.Init(1, false);
     this->SetManipulatorManager(controlsManipulatorManager);
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, onBackPressHandler, false, false);
 }
 
-CustomItemPage::~CustomItemPage() {
-    delete[] buttons;
-}
+CustomItemPage::~CustomItemPage() {}
 
 void CustomItemPage::OnInit() {
     ::Pages::Menu::OnInit();
-    this->Pages::Menu::titleText = &this->titleText;
-    this->AddControl(21, this->titleText, 0);
-    this->titleText.Load(0);
 }
 
 UIControl* CustomItemPage::CreateControl(u32 controlId) {
-    if (controlId < 20 && buttons != nullptr) {
+    if (controlId < 20) {
         this->AddControl(controlId, buttons[controlId], 0);
         char variant[32];
         snprintf(variant, 32, "CustomItem_%d", controlId);
@@ -120,7 +112,7 @@ void CustomItemPage::OnActivate() {
     }
 
     ::Pages::Menu::OnActivate();
-    this->titleText.SetMessage(this->titleBmg);
+    if (this->Pages::Menu::titleText != nullptr) this->Pages::Menu::titleText->SetMessage(this->titleBmg);
     this->UpdateButtonVisuals();
     this->backButton.isHidden = this->isFriendRoomPreview;
     this->backButton.manipulator.inaccessible = this->isFriendRoomPreview;
