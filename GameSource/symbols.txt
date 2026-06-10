@@ -207,6 +207,7 @@ CreateFriendKey__3DWCFPCQ23DWC11AccUserData = 0x800ec6bc
 gt2Listen = 0x8010a9b0
 UpdateSubsAndVR__Q25RKNet10ControllerFv = 0x80658de0
 TrySendNextRACEPacket__Q25RKNet10ControllerFv = 0x80657e30
+SendAidNextRACEPacket__Q25RKNet10ControllerCFUi = 0x80657fe4
 
 #MatchControl
 sInstance__Q23DWC19FriendsMatchControl = 0x803862F0
