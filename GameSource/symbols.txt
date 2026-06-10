@@ -528,6 +528,7 @@ GetTime__2OSFv = 0x801aad5c
 OSGetTime = 0x801aad5c
 GetTick__2OSFv = 0x801aad74
 TicksToCalendarTime__2OSFUxPQ22OS12CalendarTime = 0x801aafa8
+CalendarTimeToTicks__2OSFPQ22OS12CalendarTime = 0x801ab170
 __LaunchTitle__2OSFUiUi = 0x801ada00
 CalcCRC32__2OSFPvUi = 0x801d1ca0
 

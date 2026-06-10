@@ -162,8 +162,8 @@ static float GetBattleBonus() {
 bool IsWeekendMultiplierActive() {
     ServerDateTime* sdt = ServerDateTime::sInstance;
     if (sdt == nullptr || !sdt->isValid) return false;
+    sdt->Update();
 
-    // Use SERVER time for the actual check (this is the authoritative time from login)
     u8 dow = ServerDateTime::GetDayOfWeek(sdt->year, sdt->month, sdt->day);
     bool isWeekend = (dow == 0 || dow == 6);  // Sunday or Saturday
     if (!isWeekend) return false;
@@ -184,6 +184,7 @@ bool IsItemRainEventActive() {
 
     ServerDateTime* sdt = ServerDateTime::sInstance;
     if (sdt && sdt->isValid) {
+        sdt->Update();
         year = sdt->year;
         month = sdt->month;
         day = sdt->day;
@@ -212,6 +213,7 @@ float GetMultiplier() {
 
     ServerDateTime* sdt = ServerDateTime::sInstance;
     if (sdt && sdt->isValid) {
+        sdt->Update();
         month = sdt->month;
         day = sdt->day;
         valid = true;

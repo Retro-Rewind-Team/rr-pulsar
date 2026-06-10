@@ -1,6 +1,7 @@
 #ifndef _SERVER_DATE_TIME_HPP_
 #define _SERVER_DATE_TIME_HPP_
 #include <types.hpp>
+#include <core/rvl/OS/OS.hpp>
 
 namespace Pulsar {
 
@@ -14,8 +15,19 @@ struct ServerDateTime {
     u8 minute;  // 0-59
     u8 second;  // 0-59
     bool isValid;  // True if we successfully parsed server datetime
+    u64 serverTicks;
+    u64 gameTicksAtSync;
 
-    ServerDateTime() : year(0), month(0), day(0), hour(0), minute(0), second(0), isValid(false) {}
+    ServerDateTime() :
+        year(0),
+        month(0),
+        day(0),
+        hour(0),
+        minute(0),
+        second(0),
+        isValid(false),
+        serverTicks(0),
+        gameTicksAtSync(0) {}
 
     void SetDateTime(u16 y, u8 mo, u8 d, u8 h, u8 mi, u8 s) {
         year = y;
@@ -27,6 +39,21 @@ struct ServerDateTime {
         isValid = true;
     }
 
+    void SetDateTime(const OS::CalendarTime& time, u64 ticks, u64 gameTicks) {
+        serverTicks = ticks;
+        gameTicksAtSync = gameTicks;
+        SetDateTime((u16)time.year, (u8)(time.mon + 1), (u8)time.mday, (u8)time.hour, (u8)time.min, (u8)time.sec);
+    }
+
+    bool Update() {
+        if (!isValid) return false;
+
+        OS::CalendarTime time;
+        OS::TicksToCalendarTime(serverTicks + (OS::GetTime() - gameTicksAtSync), &time);
+        SetDateTime((u16)time.year, (u8)(time.mon + 1), (u8)time.mday, (u8)time.hour, (u8)time.min, (u8)time.sec);
+        return true;
+    }
+
     void Reset() {
         year = 0;
         month = 0;
@@ -34,6 +61,8 @@ struct ServerDateTime {
         hour = 0;
         minute = 0;
         second = 0;
+        serverTicks = 0;
+        gameTicksAtSync = 0;
         isValid = false;
     }
 
