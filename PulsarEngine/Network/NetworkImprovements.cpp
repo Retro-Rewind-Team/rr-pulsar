@@ -1,4 +1,5 @@
 #include <kamek.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/User.hpp>
 #include <runtimeWrite.hpp>
 
@@ -20,6 +21,16 @@ kmWrite32(0x800E77FC, 0x60000000);
 
 // Slower High Data Rate [MrBean35000vr, Chadderz]
 kmWrite32(0x80657EA8, 0x2804000C);
+
+static void TrySendAllRACEPackets(RKNet::Controller* controller) {
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    for (u8 aid = 0; aid < 12; ++aid) {
+        if (aid == sub.localAid) continue;
+        if ((sub.availableAids & (1 << aid)) == 0) continue;
+        controller->SendAidNextRACEPacket(aid);
+    }
+}
+kmBranch(0x80657e30, TrySendAllRACEPackets);
 
 // Fix Ghost Player Bug [ImZeaora]
 kmWrite32(0x80662f5c, 0x60000000);
