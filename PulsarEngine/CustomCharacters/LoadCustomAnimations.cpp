@@ -1,90 +1,28 @@
 #include <CustomCharacters/CustomCharacters.hpp>
+#include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 
 /*
-    When a driver BRRES contains a CHR animation named "shockHit", it is linked
-    at runtime and played in place of the vanilla "damage" animation whenever the
-    player is struck by lightning (the Shock item).  If the animation is absent the
-    vanilla "damage" animation is used as a fallback, so the feature is opt-in per
-    character skin.  Additionally, when the animation IS present, the physical
-    spinout rotation is suppressed while all other shock effects — SHOCKED state,
-    speed reduction, kart shrinking, item loss — are kept unchanged.
-
-    When a driver BRRES contains a CHR animation named "starUse", it is linked the
-    same way and used as the selected body animation while the player is actively
-    in Star state.  If absent, the vanilla selected animation is used as normal.
-
-    "megaUse" follows the same behavior while the player is actively in Mega
-    Mushroom state.
-
-    "waitBeforeStart" is linked the same way and plays instead of vanilla "wait"
-    only before Raceinfo's race-start timer says the race has started.  Once the
-    race starts, vanilla "wait" is used again.
-
-    Hook summary
-    ────────────
-    LinkCustomCharacterAnimations
-                            –  hooked at 0x807c7894 (call to FUN_805778ac inside
-                               DriverController::LoadModels).  After the original
-                               model-setup runs, it scans the driver BRRES for the
-                               optional custom animations, links them at the next
-                               free animation slots, and records their slot indices.
-
-    PlayShockHitOnShockDamage  –  hooked at both known DAMAGE_ call-sites:
-                               0x807cb774  (FUN_807cb530 – main local-player update)
-                               0x807d07c0  (FUN_807d0744 – kart/bike vtable handler)
-                               When animation == DAMAGE_ (0x1a) and the player is in
-                               the SHOCKED state (KartStatus::bitfield2 bit 7), it
-                               redirects to the "shockHit" slot.  currentAnimation is
-                               then reset to DAMAGE_ so the rest of the state machine
-                               (end-state, re-queue logic, etc.) behaves identically
-                               to the vanilla path.
-
-    AddSpinRotationUnlessShockHit
-                            –  hooked at 0x8056835c (the extra-rotation apply call
-                               inside the spin damage update).  For shock actions
-                               only, if "shockHit" is present for the player, it skips
-                               applying the visual extra rotation to the kart/bike.
-                               The action counters and completion logic still run
-                               unchanged.
-
-    SelectPowerUseAnimation –  hooked at 0x807cd2dc (late in FUN_807cc174, where
-                               the selected body animation at DriverController+0xf6
-                               is loaded into r0 before deciding whether to play it).
-                               When the player is actively in Star or Mega state, it
-                               returns vanilla slot 0x8 as a safe state-machine
-                               sentinel and writes that sentinel back to
-                               DriverController+0xf6, matching the proven hardcoded
-                               hook.
-
-    PlayCustomSelectedAnimation
-                            –  hooked at 0x807d1ba4 (the selected-animation
-                               PlayerModel_setAnimation call in FUN_807d1a60).
-                               When that sentinel animation is requested while in
-                               Star or Mega state, it plays the linked custom slot
-                               ("starUse" or "megaUse") and restores currentAnimation
-                               to 0x8 so vanilla animation metadata lookups remain
-                               in range.  Before the race-start timer has fired,
-                               vanilla WAIT (0x7) is similarly redirected to
-                               "waitBeforeStart" and then restored to WAIT for
-                               state-machine bookkeeping.
+    Optional driver CHR animations:
+    - shockHit: replaces shock damage animation and hides the visible spin.
+    - starUse / megaUse: replace the selected animation while active.
+    - waitBeforeStart: replaces wait before the race starts.
+    - shockDodgeStar: plays when shock is dodged by Star.
 */
 
 namespace Pulsar {
 namespace CustomCharacters {
 
 kmRuntimeUse(0x8059fd0c);
+kmRuntimeUse(0x80798728);
 
-// CharacterAnimationId value for the vanilla body "damage" animation.
 static const u32 DAMAGE_ANIM_ID = 0x1a;
-// CharacterAnimationId value for the vanilla body "wait" animation.
 static const u32 WAIT_ANIM_ID = 0x7;
-// Safe vanilla animation id used by the proven Star-state hook.
 static const u32 STAR_USE_SENTINEL_ANIM_ID = 0x8;
+static const u16 WAIT_BEFORE_START_FALLBACK_FRAMES = 45;
+static const u16 SHOCK_DODGE_STAR_FALLBACK_FRAMES = 45;
 
-// Per-player slot index of the linked "shockHit" animation.
-// Initialised to -1 (= not present) for every slot.
 static s16 shockHitAnimId[ONLINE_PLAYER_COUNT] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 };
@@ -96,6 +34,52 @@ static s16 megaUseAnimId[ONLINE_PLAYER_COUNT] = {
 };
 static s16 waitBeforeStartAnimId[ONLINE_PLAYER_COUNT] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};
+static s16 shockDodgeStarAnimId[ONLINE_PLAYER_COUNT] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};
+static u16 waitBeforeStartFrames[ONLINE_PLAYER_COUNT] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+static u16 waitBeforeStartFrameCount[ONLINE_PLAYER_COUNT] = {
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES,
+    WAIT_BEFORE_START_FALLBACK_FRAMES
+};
+static bool waitBeforeStartIsLooped[ONLINE_PLAYER_COUNT] = {
+    true, true, true, true, true, true, true, true, true, true, true, true
+};
+static bool waitBeforeStartPlayed[ONLINE_PLAYER_COUNT] = {
+    false, false, false, false, false, false, false, false, false, false, false, false
+};
+static u16 shockDodgeStarFrames[ONLINE_PLAYER_COUNT] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+static u16 shockDodgeStarFrameCount[ONLINE_PLAYER_COUNT] = {
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES,
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES
+};
+static bool shockDodgeStarActive[ONLINE_PLAYER_COUNT] = {
+    false, false, false, false, false, false, false, false, false, false, false, false
 };
 static bool waitBeforeStartActive[ONLINE_PLAYER_COUNT] = {
     false, false, false, false, false, false, false, false, false, false, false, false
@@ -109,16 +93,20 @@ static u8 waitBeforeStartArmFlags[ONLINE_PLAYER_COUNT] = {
 static u8 waitBeforeStartLegFlags[ONLINE_PLAYER_COUNT] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
+static bool shockDodgeStarLimbFlagsSaved[ONLINE_PLAYER_COUNT] = {
+    false, false, false, false, false, false, false, false, false, false, false, false
+};
+static u8 shockDodgeStarArmFlags[ONLINE_PLAYER_COUNT] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+static u8 shockDodgeStarLegFlags[ONLINE_PLAYER_COUNT] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
 
-// ── Game-function declarations resolved by symbols.txt ────────────────────────
-
-// FUN_805778ac: sets up the ModelDirectors for a DriverController and links all
-// standard animations.  Called inside DriverController::LoadModels (807c7828).
 extern "C" void DriverController_SetupModelAnims(
     g3d::ResFile* brresArray, ModelDirector** pDriver,
     ModelDirector** pDriverLod, DriverController* controller);
 
-// 807cc018: plays animation <animation> on the driver model with optional blending.
 extern "C" bool PlayerModel_setAnimation(
     float blendRate, DriverController* controller, u32 animation, int param4);
 
@@ -127,19 +115,13 @@ static s16 LinkOptionalChrAnimation(
 {
     if (controller->driverModelBRRES.GetResAnmChr(animationName).data == nullptr) return -1;
 
-    // The ModelTransformator is stored as a pointer at driverModel + 0x28.
-    // Confirmed from game disassembly (see e.g. 807c7c54–807c7c60).
     ModelTransformator* transformator =
         *reinterpret_cast<ModelTransformator**>(
             reinterpret_cast<u8*>(driverModel) + 0x28);
     if (transformator == nullptr) return -1;
 
-    // anmHolderList.count equals the number of animations already linked,
-    // which is the index of the next free slot.
     const u16 nextSlot = transformator->anmHolderList.count;
 
-    // Link the custom animation as a CHR animation at the next consecutive slot.
-    // Parameters mirror what CreateModelDirectors uses for standard CHR anims.
     driverModel->LinkAnimation(
         nextSlot,
         controller->driverModelBRRES,
@@ -153,31 +135,48 @@ static s16 LinkOptionalChrAnimation(
     return static_cast<s16>(nextSlot);
 }
 
-// ── Hook 1: link optional custom CHR animations after standard animations ──────
+static u16 GetOptionalChrFrameCount(DriverController* controller, const char* animationName)
+{
+    g3d::ResAnmChr animation = controller->driverModelBRRES.GetResAnmChr(animationName);
+    if (animation.data == nullptr || animation.data->fileInfo.frameCount == 0) {
+        return 0;
+    }
+    return animation.data->fileInfo.frameCount;
+}
+
+static bool IsOptionalChrLooped(DriverController* controller, const char* animationName)
+{
+    g3d::ResAnmChr animation = controller->driverModelBRRES.GetResAnmChr(animationName);
+    return animation.data == nullptr || animation.data->fileInfo.isLooped != 0;
+}
 
 static void LinkCustomCharacterAnimations(
     g3d::ResFile* brresArray, ModelDirector** pDriver,
     ModelDirector** pDriverLod, DriverController* controller)
 {
-    // Always run the original model-setup first.
     DriverController_SetupModelAnims(brresArray, pDriver, pDriverLod, controller);
 
     const u8 playerIdx = controller->GetPlayerIdx();
     if (playerIdx >= ONLINE_PLAYER_COUNT) return;
 
-    // Reset for this player; will be filled in below if found.
     shockHitAnimId[playerIdx] = -1;
     starUseAnimId[playerIdx] = -1;
     megaUseAnimId[playerIdx] = -1;
     waitBeforeStartAnimId[playerIdx] = -1;
+    shockDodgeStarAnimId[playerIdx] = -1;
+    waitBeforeStartFrames[playerIdx] = 0;
+    waitBeforeStartFrameCount[playerIdx] = WAIT_BEFORE_START_FALLBACK_FRAMES;
+    waitBeforeStartIsLooped[playerIdx] = true;
+    waitBeforeStartPlayed[playerIdx] = false;
+    shockDodgeStarFrames[playerIdx] = 0;
+    shockDodgeStarFrameCount[playerIdx] = SHOCK_DODGE_STAR_FALLBACK_FRAMES;
+    shockDodgeStarActive[playerIdx] = false;
     waitBeforeStartActive[playerIdx] = false;
     waitBeforeStartLimbFlagsSaved[playerIdx] = false;
+    shockDodgeStarLimbFlagsSaved[playerIdx] = false;
 
-    // CPU players use a stripped model without the full animation set; skip.
     if (controller->isCpu) return;
 
-    // driverModelBRRES.data is set by CreateModelDirectors to point at the
-    // raw BRRES data (same pointer as brresArray[0].data).
     ModelDirector* driverModel = controller->driverModel;
     if (driverModel == nullptr) return;
 
@@ -186,8 +185,20 @@ static void LinkCustomCharacterAnimations(
     megaUseAnimId[playerIdx] = LinkOptionalChrAnimation(controller, driverModel, "megaUse");
     waitBeforeStartAnimId[playerIdx] =
         LinkOptionalChrAnimation(controller, driverModel, "waitBeforeStart");
+    if (waitBeforeStartAnimId[playerIdx] >= 0) {
+        const u16 frameCount = GetOptionalChrFrameCount(controller, "waitBeforeStart");
+        waitBeforeStartFrameCount[playerIdx] =
+            frameCount == 0 ? WAIT_BEFORE_START_FALLBACK_FRAMES : frameCount;
+        waitBeforeStartIsLooped[playerIdx] = IsOptionalChrLooped(controller, "waitBeforeStart");
+    }
+    shockDodgeStarAnimId[playerIdx] =
+        LinkOptionalChrAnimation(controller, driverModel, "shockDodgeStar");
+    if (shockDodgeStarAnimId[playerIdx] >= 0) {
+        const u16 frameCount = GetOptionalChrFrameCount(controller, "shockDodgeStar");
+        shockDodgeStarFrameCount[playerIdx] =
+            frameCount == 0 ? SHOCK_DODGE_STAR_FALLBACK_FRAMES : frameCount;
+    }
 }
-// Replace the call to FUN_805778ac inside DriverController::LoadModels.
 kmCall(0x807c7894, LinkCustomCharacterAnimations);
 
 static bool PlayCustomAnimationIfPresent(
@@ -212,52 +223,128 @@ static bool IsBeforeRaceStart()
 
 static s16 GetPowerUseAnimId(DriverController* controller, u8 playerIdx);
 
-static void SetWaitBeforeStartLimbLock(DriverController* controller, u8 playerIdx, bool locked)
+static bool IsInStar(DriverController* controller)
+{
+    return controller != nullptr && controller->pointers != nullptr &&
+        controller->pointers->kartStatus != nullptr &&
+        (controller->pointers->kartStatus->bitfield1 & 0x80000000) != 0;
+}
+
+static bool IsActivelyStar(DriverController* controller)
+{
+    if (controller == nullptr || controller->pointers == nullptr) return false;
+
+    Kart::Movement* movement = controller->pointers->kartMovement;
+    if (movement != nullptr) {
+        return movement->starTimer > 0;
+    }
+
+    return IsInStar(controller);
+}
+
+static bool IsActivelyMega(DriverController* controller)
+{
+    if (controller == nullptr || controller->pointers == nullptr) return false;
+
+    Kart::Movement* movement = controller->pointers->kartMovement;
+    if (movement != nullptr) {
+        return movement->megaTimer > 0;
+    }
+
+    return controller->pointers->kartStatus != nullptr &&
+        (controller->pointers->kartStatus->bitfield2 & 0x8000) != 0;
+}
+
+static void PlayShockDodgeStarNow(DriverController* controller, u8 playerIdx)
+{
+    if (controller == nullptr || playerIdx >= ONLINE_PLAYER_COUNT ||
+        shockDodgeStarAnimId[playerIdx] < 0) {
+        return;
+    }
+
+    u16* selectedAnimationPtr =
+        reinterpret_cast<u16*>(reinterpret_cast<u8*>(controller) + 0xf6);
+    *selectedAnimationPtr = static_cast<u16>(STAR_USE_SENTINEL_ANIM_ID);
+    PlayCustomAnimationIfPresent(
+        1.0f, controller, shockDodgeStarAnimId[playerIdx], STAR_USE_SENTINEL_ANIM_ID, 1);
+}
+
+static void SetTemporaryLimbLock(
+    DriverController* controller, u8 playerIdx, bool locked, bool* flagsSaved,
+    u8* savedArmFlags, u8* savedLegFlags)
 {
     u8* const armFlag = reinterpret_cast<u8*>(controller) + 0x14a;
     u8* const legFlag = reinterpret_cast<u8*>(controller) + 0x14b;
 
     if (locked) {
-        if (!waitBeforeStartLimbFlagsSaved[playerIdx]) {
-            waitBeforeStartArmFlags[playerIdx] = *armFlag;
-            waitBeforeStartLegFlags[playerIdx] = *legFlag;
-            waitBeforeStartLimbFlagsSaved[playerIdx] = true;
+        if (!flagsSaved[playerIdx]) {
+            savedArmFlags[playerIdx] = *armFlag;
+            savedLegFlags[playerIdx] = *legFlag;
+            flagsSaved[playerIdx] = true;
         }
         *armFlag = 0;
         *legFlag = 0;
         return;
     }
 
-    if (waitBeforeStartLimbFlagsSaved[playerIdx]) {
-        *armFlag = waitBeforeStartArmFlags[playerIdx];
-        *legFlag = waitBeforeStartLegFlags[playerIdx];
-        waitBeforeStartLimbFlagsSaved[playerIdx] = false;
+    if (flagsSaved[playerIdx]) {
+        *armFlag = savedArmFlags[playerIdx];
+        *legFlag = savedLegFlags[playerIdx];
+        flagsSaved[playerIdx] = false;
     }
 }
 
-// ── Hook 2: redirect DAMAGE_ → "shockHit" when the player is shocked ──────────
+static void SetWaitBeforeStartLimbLock(DriverController* controller, u8 playerIdx, bool locked)
+{
+    SetTemporaryLimbLock(
+        controller,
+        playerIdx,
+        locked,
+        waitBeforeStartLimbFlagsSaved,
+        waitBeforeStartArmFlags,
+        waitBeforeStartLegFlags);
+}
+
+static void SetShockDodgeStarLimbLock(DriverController* controller, u8 playerIdx, bool locked)
+{
+    SetTemporaryLimbLock(
+        controller,
+        playerIdx,
+        locked,
+        shockDodgeStarLimbFlagsSaved,
+        shockDodgeStarArmFlags,
+        shockDodgeStarLegFlags);
+}
 
 static bool PlayCustomDriverAnimation(
     float blendRate, DriverController* controller, u32 animation, int param4)
 {
+    const u8 playerIdx = controller->GetPlayerIdx();
+
+    if (playerIdx < ONLINE_PLAYER_COUNT && waitBeforeStartActive[playerIdx] &&
+        IsBeforeRaceStart() && animation != WAIT_ANIM_ID &&
+        animation != static_cast<u32>(static_cast<u16>(waitBeforeStartAnimId[playerIdx]))) {
+        SetWaitBeforeStartLimbLock(controller, playerIdx, false);
+        waitBeforeStartActive[playerIdx] = false;
+        waitBeforeStartFrames[playerIdx] = 0;
+        waitBeforeStartPlayed[playerIdx] = true;
+    }
+
+    if (playerIdx < ONLINE_PLAYER_COUNT && shockDodgeStarActive[playerIdx] &&
+        shockDodgeStarFrames[playerIdx] > 0) {
+        return true;
+    }
+
     if (animation == DAMAGE_ANIM_ID) {
-        const u8 playerIdx = controller->GetPlayerIdx();
         if (playerIdx < ONLINE_PLAYER_COUNT && shockHitAnimId[playerIdx] >= 0) {
-            // KartStatus::bitfield2 bit 7 (0x80) = SHOCKED
             if ((controller->pointers->kartStatus->bitfield2 & 0x80) != 0) {
                 if (PlayCustomAnimationIfPresent(
                         blendRate, controller, shockHitAnimId[playerIdx], DAMAGE_ANIM_ID, param4)) {
-                    // Restore currentAnimation to DAMAGE_ so the rest of the
-                    // animation state machine (end-state detection, transition
-                    // back to DRIVE, etc.) continues to work correctly.
                     return true;
                 }
-                // Fallthrough: "shockHit" slot was empty/invalid; use vanilla.
             }
         }
     }
-
-    const u8 playerIdx = controller->GetPlayerIdx();
 
     if (animation == STAR_USE_SENTINEL_ANIM_ID) {
         if (playerIdx < ONLINE_PLAYER_COUNT) {
@@ -271,14 +358,13 @@ static bool PlayCustomDriverAnimation(
                         param4)) {
                     return true;
                 }
-                // Fallthrough: custom slot was empty/invalid; use vanilla.
             }
         }
     }
 
     if (animation == WAIT_ANIM_ID && playerIdx < ONLINE_PLAYER_COUNT &&
         waitBeforeStartAnimId[playerIdx] >= 0) {
-        if (IsBeforeRaceStart()) {
+        if (IsBeforeRaceStart() && !waitBeforeStartPlayed[playerIdx]) {
             if (PlayCustomAnimationIfPresent(
                     blendRate,
                     controller,
@@ -286,21 +372,19 @@ static bool PlayCustomDriverAnimation(
                     WAIT_ANIM_ID,
                     param4)) {
                 waitBeforeStartActive[playerIdx] = true;
+                if (!waitBeforeStartIsLooped[playerIdx]) {
+                    waitBeforeStartFrames[playerIdx] = waitBeforeStartFrameCount[playerIdx];
+                }
                 SetWaitBeforeStartLimbLock(controller, playerIdx, true);
                 return true;
             }
-            // Fallthrough: custom slot was empty/invalid; use vanilla.
         }
     }
 
     return PlayerModel_setAnimation(blendRate, controller, animation, param4);
 }
-// FUN_807cb530 (main local-player model update): DAMAGE_ play-call @ 807cb774
 kmCall(0x807cb774, PlayCustomDriverAnimation);
-// FUN_807d0744 (kart/bike vtable animation handler): DAMAGE_ play-call @ 807d07c0
 kmCall(0x807d07c0, PlayCustomDriverAnimation);
-
-// ── Hook 2b: suppress visible Shock spin when "shockHit" exists ──────────────
 
 static bool ShouldSuppressShockRotation(Kart::Damage* damage)
 {
@@ -331,36 +415,75 @@ static asmFunc AddSpinRotationUnlessShockHitWrapper() {
         b AddSpinRotationUnlessShockHit;
     )
 }
-// Kart::Damage spin update: KartPhysicsHolder::addInstantaneousExtraRot call
 kmCall(0x8056835c, AddSpinRotationUnlessShockHitWrapper);
+
+static bool ShouldLightningAffectPlayerWithStarDodge(Item::Player* itemPlayer)
+{
+    typedef bool (*ShouldLightningAffectPlayerFn)(Item::Player*);
+    ShouldLightningAffectPlayerFn shouldLightningAffectPlayer =
+        reinterpret_cast<ShouldLightningAffectPlayerFn>(kmRuntimeAddr(0x80798728));
+
+    const bool affected = shouldLightningAffectPlayer(itemPlayer);
+    if (!affected && itemPlayer != nullptr) {
+        DriverController* controller = itemPlayer->model2;
+        const u8 playerIdx = itemPlayer->id;
+        if (playerIdx < ONLINE_PLAYER_COUNT && shockDodgeStarAnimId[playerIdx] >= 0 &&
+            IsInStar(controller)) {
+            shockDodgeStarFrames[playerIdx] = shockDodgeStarFrameCount[playerIdx];
+            shockDodgeStarActive[playerIdx] = true;
+            SetShockDodgeStarLimbLock(controller, playerIdx, true);
+            PlayShockDodgeStarNow(controller, playerIdx);
+        }
+    }
+    return affected;
+}
+kmCall(0x807b7cd0, ShouldLightningAffectPlayerWithStarDodge);
 
 static s16 GetPowerUseAnimId(DriverController* controller, u8 playerIdx)
 {
-    // KartStatus::bitfield1 bit 31 (0x80000000) = in a star.
-    if ((controller->pointers->kartStatus->bitfield1 & 0x80000000) != 0 &&
-        starUseAnimId[playerIdx] >= 0) {
-        return starUseAnimId[playerIdx];
+    if (IsActivelyMega(controller) && megaUseAnimId[playerIdx] >= 0) {
+        return megaUseAnimId[playerIdx];
     }
 
-    // KartStatus::bitfield2 bit 15 (0x8000) = in a mega.
-    if ((controller->pointers->kartStatus->bitfield2 & 0x8000) != 0 &&
-        megaUseAnimId[playerIdx] >= 0) {
-        return megaUseAnimId[playerIdx];
+    if (IsActivelyStar(controller) && starUseAnimId[playerIdx] >= 0) {
+        return starUseAnimId[playerIdx];
     }
 
     return -1;
 }
 
-// ── Hook 3: use custom selected animations in active special states ─────────
-
 u32 GetPowerUseOrSelectedAnimation(DriverController* controller)
 {
     u16* selectedAnimationPtr =
         reinterpret_cast<u16*>(reinterpret_cast<u8*>(controller) + 0xf6);
-    const u32 selectedAnimation = *selectedAnimationPtr;
+    u32 selectedAnimation = *selectedAnimationPtr;
 
     const u8 playerIdx = controller->GetPlayerIdx();
     if (playerIdx >= ONLINE_PLAYER_COUNT) return selectedAnimation;
+
+    if (shockDodgeStarFrames[playerIdx] > 0) {
+        if (IsInStar(controller)) {
+            SetShockDodgeStarLimbLock(controller, playerIdx, true);
+            shockDodgeStarFrames[playerIdx]--;
+            if (shockDodgeStarFrames[playerIdx] == 0) {
+                shockDodgeStarActive[playerIdx] = false;
+                SetShockDodgeStarLimbLock(controller, playerIdx, false);
+                if (starUseAnimId[playerIdx] >= 0) {
+                    PlayCustomAnimationIfPresent(
+                        1.0f,
+                        controller,
+                        starUseAnimId[playerIdx],
+                        STAR_USE_SENTINEL_ANIM_ID,
+                        1);
+                }
+            }
+            *selectedAnimationPtr = static_cast<u16>(STAR_USE_SENTINEL_ANIM_ID);
+            return STAR_USE_SENTINEL_ANIM_ID;
+        }
+        shockDodgeStarFrames[playerIdx] = 0;
+        shockDodgeStarActive[playerIdx] = false;
+        SetShockDodgeStarLimbLock(controller, playerIdx, false);
+    }
 
     if (GetPowerUseAnimId(controller, playerIdx) >= 0) {
         *selectedAnimationPtr = static_cast<u16>(STAR_USE_SENTINEL_ANIM_ID);
@@ -369,10 +492,29 @@ u32 GetPowerUseOrSelectedAnimation(DriverController* controller)
 
     if (selectedAnimation == WAIT_ANIM_ID && waitBeforeStartAnimId[playerIdx] >= 0) {
         if (IsBeforeRaceStart()) {
+            if (waitBeforeStartActive[playerIdx] && !waitBeforeStartIsLooped[playerIdx]) {
+                if (waitBeforeStartFrames[playerIdx] > 0) {
+                    waitBeforeStartFrames[playerIdx]--;
+                }
+                if (waitBeforeStartFrames[playerIdx] == 0) {
+                    controller->currentAnimation =
+                        static_cast<u16>(waitBeforeStartAnimId[playerIdx]);
+                    PlayerModel_setAnimation(1.0f, controller, WAIT_ANIM_ID, 1);
+                    controller->currentAnimation = static_cast<u16>(WAIT_ANIM_ID);
+                    SetWaitBeforeStartLimbLock(controller, playerIdx, false);
+                    waitBeforeStartActive[playerIdx] = false;
+                    waitBeforeStartPlayed[playerIdx] = true;
+                    return selectedAnimation;
+                }
+            }
             if (!waitBeforeStartActive[playerIdx] &&
+                !waitBeforeStartPlayed[playerIdx] &&
                 PlayCustomAnimationIfPresent(
                     1.0f, controller, waitBeforeStartAnimId[playerIdx], WAIT_ANIM_ID, 1)) {
                 waitBeforeStartActive[playerIdx] = true;
+                if (!waitBeforeStartIsLooped[playerIdx]) {
+                    waitBeforeStartFrames[playerIdx] = waitBeforeStartFrameCount[playerIdx];
+                }
             }
             if (waitBeforeStartActive[playerIdx]) {
                 SetWaitBeforeStartLimbLock(controller, playerIdx, true);
@@ -383,10 +525,15 @@ u32 GetPowerUseOrSelectedAnimation(DriverController* controller)
             controller->currentAnimation = static_cast<u16>(WAIT_ANIM_ID);
             SetWaitBeforeStartLimbLock(controller, playerIdx, false);
             waitBeforeStartActive[playerIdx] = false;
+            waitBeforeStartFrames[playerIdx] = 0;
         }
     } else {
+        if (waitBeforeStartActive[playerIdx] && IsBeforeRaceStart()) {
+            waitBeforeStartPlayed[playerIdx] = true;
+        }
         SetWaitBeforeStartLimbLock(controller, playerIdx, false);
         waitBeforeStartActive[playerIdx] = false;
+        waitBeforeStartFrames[playerIdx] = 0;
     }
     return selectedAnimation;
 }
@@ -428,10 +575,8 @@ static asmFunc SelectPowerUseAnimation() {
         blr;
     )
 }
-// FUN_807cc174: replaces "lhz r0, 0xf6(r31)" before the selected-animation check.
 kmCall(0x807cd2dc, SelectPowerUseAnimation);
 
-// FUN_807d1a60: selected-animation PlayerModel_setAnimation call @ 807d1ba4
 kmCall(0x807d1ba4, PlayCustomDriverAnimation);
 kmCall(0x807cc4e0, PlayCustomDriverAnimation);
 kmCall(0x807cf784, PlayCustomDriverAnimation);
@@ -439,6 +584,7 @@ kmCall(0x807cfbd4, PlayCustomDriverAnimation);
 kmCall(0x807cfd40, PlayCustomDriverAnimation);
 kmCall(0x807cffd8, PlayCustomDriverAnimation);
 kmCall(0x807d02f8, PlayCustomDriverAnimation);
+kmCall(0x807d1a48, PlayCustomDriverAnimation);
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar
