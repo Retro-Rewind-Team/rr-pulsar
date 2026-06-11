@@ -45,9 +45,12 @@ static void UserUpdateWithMiiRefresh(RKNet::USERHandler* handler) {
     // 300 frames @ 60 fps ≈ 5 seconds.
     if (handler->isInitialized) {
         sUserPacketRefreshCounter++;
-        if (sUserPacketRefreshCounter == 300) {
+        if (sUserPacketRefreshCounter >= 300) {
             handler->CreateSendPacket();
+            sUserPacketRefreshCounter = 0;
         }
+    } else {
+        sUserPacketRefreshCounter = 0;
     }
 }
 kmCall(0x806579ac, UserUpdateWithMiiRefresh);
