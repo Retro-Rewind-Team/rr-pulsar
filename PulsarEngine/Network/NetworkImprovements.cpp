@@ -6,8 +6,8 @@
 namespace Pulsar {
 namespace Network {
 
-// Reduce PING retry time from 700 to 80 [Wiimmfi]
-kmWrite16(0x8011B47A, 80);
+// Reduce PING retry time from 700 to 120 [Wiimmfi]
+kmWrite16(0x8011B47A, 120);
 
 // Do not wait the retry time in case of successful NATNEG [Wiimmfi]
 kmWrite32(0x8011B4B0, 0x60000000);
@@ -24,11 +24,17 @@ kmWrite32(0x80657EA8, 0x2804000C);
 
 static void TrySendAllRACEPackets(RKNet::Controller* controller) {
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    for (u8 aid = 0; aid < 12; ++aid) {
+    static u8 nextAid = 0;
+    for (u8 i = 0; i < 12; ++i) {
+        const u8 aid = (nextAid + i) % 12;
         if (aid == sub.localAid) continue;
         if ((sub.availableAids & (1 << aid)) == 0) continue;
-        controller->SendAidNextRACEPacket(aid);
+        if (!controller->SendAidNextRACEPacket(aid)) {
+            nextAid = (aid + 1) % 12;
+            return;
+        }
     }
+    nextAid = (nextAid + 1) % 12;
 }
 kmBranch(0x80657e30, TrySendAllRACEPackets);
 
