@@ -12,6 +12,7 @@ namespace Sound {
 
 static char pulPath[0x100];
 static char resolvedPulPath[0x100];
+u8 GetSW2RRRacePercentageMusicTier();
 
 static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
     if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
@@ -43,30 +44,60 @@ static bool CheckBRSTMPath(const char* path, bool patchesOnly) {
     return true;
 }
 
-s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly) {
-    const char* root = archive->extFileRoot;
+s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier, bool patchesOnly, const char* racePercentageSpecifier = "") {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
     const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
     if (creatorName != nullptr) {
-        snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, creatorName, lapSpecifier);
+        snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, creatorName, lapSpecifier, racePercentageSpecifier);
         if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
     }
     if (variantIdx != 0) {
         creatorName = cupsConfig->GetFileName(id, 0);
         if (creatorName != nullptr) {
-            snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, creatorName, lapSpecifier);
+            snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, creatorName, lapSpecifier, racePercentageSpecifier);
             if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
         }
     }
     char trackName[0x100];
     UI::GetTrackBMG(trackName, id);
-    snprintf(pulPath, 0x100, "%sstrm/%s%s.brstm", root, trackName, lapSpecifier);
+    snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, trackName, lapSpecifier, racePercentageSpecifier);
     if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
 
-    snprintf(pulPath, 0x50, "%sstrm/%d%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier);
+    snprintf(pulPath, 0x50, "%sstrm/%d%s%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier, racePercentageSpecifier);
     if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
     return -1;
+}
+
+s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly, const char* racePercentageSpecifier = "") {
+    return CheckBRSTMRoot(archive->extFileRoot, id, lapSpecifier, patchesOnly, racePercentageSpecifier);
+}
+
+static const char* GetSW2RRRacePercentageSpecifier() {
+    switch (GetSW2RRRacePercentageMusicTier()) {
+        case 1: return "-1";
+        case 2: return "-2";
+        case 3: return "-3";
+        default: return "";
+    }
+}
+
+bool HasSW2RRTieredBRSTM(u8 tier) {
+    if (tier == 0 || tier > 3) return true;
+
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (cupsConfig == nullptr) return false;
+
+    const PulsarId track = cupsConfig->GetWinning();
+    if (CupsConfig::IsReg(track)) return false;
+
+    char racePercentageSpecifier[3];
+    snprintf(racePercentageSpecifier, sizeof(racePercentageSpecifier), "-%u", tier);
+
+    if (tier == 3 && CheckBRSTMRoot("/sound/", track, "_f", true, racePercentageSpecifier) >= 0) {
+        return true;
+    }
+    return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0;
 }
 
 nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void* buffer, int size,
@@ -91,7 +122,14 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             const char finalChar = extFilePath[strLength];
             const bool isFinalLap = finalChar == 'f' || finalChar == 'F';
 
-            if (isFinalLap && CheckBRSTM(archive, track, "_f", true) >= 0) {
+            const char* racePercentageSpecifier = GetSW2RRRacePercentageSpecifier();
+            const bool hasRacePercentageSpecifier = racePercentageSpecifier[0] != '\0';
+
+            if (isFinalLap && hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_f", true, racePercentageSpecifier) >= 0) {
+                extFilePath = pulPath;
+            } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", false, racePercentageSpecifier) >= 0) {
+                extFilePath = pulPath;
+            } else if (isFinalLap && CheckBRSTM(archive, track, "_f", true) >= 0) {
                 extFilePath = pulPath;
             } else if (CheckBRSTM(archive, track, "_n", false) >= 0) {
                 extFilePath = pulPath;
