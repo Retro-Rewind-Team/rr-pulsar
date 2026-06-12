@@ -10,13 +10,25 @@
 namespace Pulsar {
 namespace Sound {
 
-static const float SW2RR_NORMAL_THRESHOLD = 1.090f;
-static const float SW2RR_TIER_1_THRESHOLD = 1.168f;
+static const float SW2RR_NORMAL_THRESHOLD = 1.08975f;
+static const float SW2RR_TIER_1_THRESHOLD = 1.16675f;
 static const float SW2RR_TIER_2_THRESHOLD = 1.480f;
 
 static u8 sw2rrMusicTier = 0;
+static bool sw2rrFanfarePending = false;
+static bool sw2rrFanfareBRSTMActive = false;
+static u32 sw2rrFanfareNextSoundId = 0;
 
 bool HasSW2RRTieredBRSTM(u8 tier);
+bool HasSW2RRFanfareBRSTM();
+
+bool ShouldUseSW2RRFanfareBRSTM() {
+    return sw2rrFanfareBRSTMActive;
+}
+
+u32 GetSW2RRFanfareSoundId() {
+    return sw2rrFanfareNextSoundId;
+}
 
 static bool StringsEqual(const char* lhs, const char* rhs) {
     if (lhs == nullptr || rhs == nullptr) return false;
@@ -59,15 +71,20 @@ u8 GetSW2RRRacePercentageMusicTier() {
     return IsSW2RRLoaded() ? sw2rrMusicTier : 0;
 }
 
-static void ReloadMainRaceMusic() {
+static u32 GetActiveSinglePlayerSoundId() {
+    Audio::SinglePlayer* singlePlayer = Audio::SinglePlayer::sInstance;
+    if (singlePlayer == nullptr || singlePlayer->activeHandle == nullptr ||
+        singlePlayer->activeHandle->basicSound == nullptr) {
+        return 0;
+    }
+    return singlePlayer->activeHandle->basicSound->soundId;
+}
+
+static void ReloadMainRaceMusic(u32 soundId) {
+    if (soundId == 0) return;
+
     Audio::SinglePlayer* singlePlayer = Audio::SinglePlayer::sInstance;
     if (singlePlayer == nullptr) return;
-
-    u32 soundId = 0;
-    if (singlePlayer->activeHandle != nullptr && singlePlayer->activeHandle->basicSound != nullptr) {
-        soundId = singlePlayer->activeHandle->basicSound->soundId;
-    }
-    if (soundId == 0) return;
 
     singlePlayer->canNotCancel = false;
     singlePlayer->canNotPrepareOther = false;
@@ -76,6 +93,62 @@ static void ReloadMainRaceMusic() {
     singlePlayer->PlayPreparedSound(0);
     singlePlayer->StopInactiveSounds();
 
+}
+
+static void ReloadActiveRaceMusic() {
+    ReloadMainRaceMusic(GetActiveSinglePlayerSoundId());
+}
+
+static bool StartSW2RRFanfareBRSTM() {
+    const u32 activeSoundId = GetActiveSinglePlayerSoundId();
+    if (activeSoundId == 0) return false;
+
+    sw2rrFanfareNextSoundId = activeSoundId + 1;
+    sw2rrFanfareBRSTMActive = true;
+
+    Audio::SinglePlayer* singlePlayer = Audio::SinglePlayer::sInstance;
+    if (singlePlayer == nullptr) {
+        sw2rrFanfareBRSTMActive = false;
+        sw2rrFanfareNextSoundId = 0;
+        return false;
+    }
+
+    singlePlayer->canNotCancel = false;
+    singlePlayer->canNotPrepareOther = false;
+    Audio::Handle* fanfareHandle = singlePlayer->PrepareSound(sw2rrFanfareNextSoundId, false);
+    if (fanfareHandle == nullptr) {
+        sw2rrFanfareBRSTMActive = false;
+        sw2rrFanfareNextSoundId = 0;
+        return false;
+    }
+    singlePlayer->StopSound();
+    fanfareHandle = singlePlayer->PlayPreparedSound(0);
+    singlePlayer->StopInactiveSounds();
+    if (fanfareHandle == nullptr) {
+        sw2rrFanfareBRSTMActive = false;
+        sw2rrFanfareNextSoundId = 0;
+        return false;
+    }
+    return true;
+}
+
+static void FinishSW2RRFanfareBRSTM() {
+    sw2rrFanfarePending = false;
+    sw2rrFanfareBRSTMActive = false;
+    sw2rrMusicTier = 3;
+    ReloadMainRaceMusic(sw2rrFanfareNextSoundId);
+    sw2rrFanfareNextSoundId = 0;
+}
+
+static void UpdateSW2RRFanfareBRSTM() {
+    if (!sw2rrFanfarePending) return;
+
+    Audio::SinglePlayer* singlePlayer = Audio::SinglePlayer::sInstance;
+    if (singlePlayer == nullptr || singlePlayer->activeHandle == nullptr ||
+        singlePlayer->activeHandle->basicSound == nullptr ||
+        singlePlayer->activeHandle->basicSound->soundId != sw2rrFanfareNextSoundId) {
+        FinishSW2RRFanfareBRSTM();
+    }
 }
 
 static u8 GetHudSlotIdForPlayer(u8 playerId) {
@@ -100,8 +173,13 @@ static void PlaySW2RRTierChangeJingle(Audio::RaceMgr& raceAudioMgr, u8 tier, u8 
 void UpdateSW2RRRacePercentageMusic() {
     if (!IsSW2RRLoaded()) {
         sw2rrMusicTier = 0;
+        sw2rrFanfarePending = false;
+        sw2rrFanfareBRSTMActive = false;
+        sw2rrFanfareNextSoundId = 0;
         return;
     }
+
+    UpdateSW2RRFanfareBRSTM();
 
     Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
     const Raceinfo* raceInfo = Raceinfo::sInstance;
@@ -113,6 +191,7 @@ void UpdateSW2RRRacePercentageMusic() {
 
     const u8 nextTier = GetSW2RRMusicTier(raceInfo->players[playerId]->raceCompletion);
     if (nextTier == sw2rrMusicTier) return;
+    if (sw2rrFanfarePending) return;
 
     if (nextTier != 0 && !HasSW2RRTieredBRSTM(nextTier)) {
         return;
@@ -120,10 +199,17 @@ void UpdateSW2RRRacePercentageMusic() {
 
     sw2rrMusicTier = nextTier;
     if (nextTier == 0) {
-        ReloadMainRaceMusic();
+        ReloadActiveRaceMusic();
     } else if (nextTier < 3) {
         PlaySW2RRTierChangeJingle(*raceAudioMgr, nextTier, playerId);
-        ReloadMainRaceMusic();
+        ReloadActiveRaceMusic();
+    } else if (HasSW2RRFanfareBRSTM()) {
+        sw2rrMusicTier = 2;
+        sw2rrFanfarePending = StartSW2RRFanfareBRSTM();
+        if (!sw2rrFanfarePending) {
+            sw2rrMusicTier = nextTier;
+            PlaySW2RRTierChangeJingle(*raceAudioMgr, nextTier, playerId);
+        }
     } else {
         PlaySW2RRTierChangeJingle(*raceAudioMgr, nextTier, playerId);
     }
