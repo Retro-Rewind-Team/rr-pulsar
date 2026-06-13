@@ -2564,3 +2564,6 @@ Pause__Q44nw4r3snd6detail10BasicSoundFbi = 0x8008e520
 SetVolume__Q44nw4r3snd6detail10BasicSoundFif = 0x8008f560
 IsAPlayerInStar__Q25Audio7RaceMgrCFv = 0x8071172c
 IsAPlayerInMega__Q25Audio7RaceMgrCFv = 0x807117a0
+GetEndFanfareId__Q25Audio7RaceMgrCFv = 0x807121c0
+localFinishType__9DriverMgr = 0x808d1818
+sInstance__Q25Audio17ItemAlterationMgr = 0x809c27f0

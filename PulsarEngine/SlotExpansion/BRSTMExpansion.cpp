@@ -13,8 +13,7 @@ namespace Sound {
 static char pulPath[0x100];
 static char resolvedPulPath[0x100];
 u8 GetSW2RRRacePercentageMusicTier();
-bool ShouldUseSW2RRFanfareBRSTM();
-u32 GetSW2RRFanfareSoundId();
+bool IsSW2RRLoaded();
 
 static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
     if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
@@ -43,6 +42,34 @@ static bool CheckBRSTMPath(const char* path, bool patchesOnly) {
     if (DVD::ConvertPathToEntryNum(resolvedPath) < 0) return false;
 
     snprintf(pulPath, sizeof(pulPath), "%s", resolvedPath);
+    return true;
+}
+
+static bool StringEndsWith(const char* str, const char* suffix) {
+    if (str == nullptr || suffix == nullptr) return false;
+
+    const char* strEnd = str;
+    while (*strEnd != '\0') ++strEnd;
+
+    const char* suffixEnd = suffix;
+    while (*suffixEnd != '\0') ++suffixEnd;
+
+    while (suffixEnd != suffix) {
+        if (strEnd == str) return false;
+        --strEnd;
+        --suffixEnd;
+        if (*strEnd != *suffixEnd) return false;
+    }
+    return true;
+}
+
+static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath) {
+    if (archive == nullptr || !IsSW2RRLoaded() || !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) return false;
+
+    snprintf(pulPath, sizeof(pulPath), "%sstrm/o_FanfareRRGP1_32.brstm", archive->extFileRoot);
+    if (!CheckBRSTMPath(pulPath, false)) return false;
+
+    extFilePath = pulPath;
     return true;
 }
 
@@ -102,10 +129,6 @@ bool HasSW2RRTieredBRSTM(u8 tier) {
     return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0;
 }
 
-bool HasSW2RRFanfareBRSTM() {
-    return CheckBRSTMPath("/sound/strm/sw2RRFanfare.brstm", false);
-}
-
 nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void* buffer, int size,
                                        const char* extFilePath, u32 r7, u32 length) {
     u8 isBRSTMOn = (static_cast<Pulsar::CTMusic>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_SOUND), Pulsar::RADIO_CTMUSIC)));
@@ -115,14 +138,13 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
     register SoundIDs toPlayId;
     asm(mr toPlayId, r20;);
 
+    ResolveSW2RRFanfareGP1Path(archive, extFilePath);
+
     if (toPlayId == SOUND_ID_KC) {
         const SectionId section = SectionMgr::sInstance->curSection->sectionId;
         if (ResolveKCMenuMusicPath(section, extFilePath)) {
             return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
         }
-    }
-    if (toPlayId == GetSW2RRFanfareSoundId() && ShouldUseSW2RRFanfareBRSTM() && HasSW2RRFanfareBRSTM()) {
-        return archive->OpenExtStream(buffer, size, pulPath, 0, length);
     }
     if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
         if (!CupsConfig::IsReg(track)) {
