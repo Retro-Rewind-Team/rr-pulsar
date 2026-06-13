@@ -80,7 +80,6 @@ static void ReloadMainRaceMusic(u32 soundId) {
     singlePlayer->StopSound();
     singlePlayer->PlayPreparedSound(0);
     singlePlayer->StopInactiveSounds();
-
 }
 
 static void ReloadActiveRaceMusic() {
@@ -138,5 +137,5 @@ void UpdateSW2RRRacePercentageMusic() {
     }
 }
 
-}  // namespace Sound
-}  // namespace Pulsar
+}
+}

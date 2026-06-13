@@ -771,11 +771,11 @@ static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive& archi
         if (!ReadOpenedDVDFileRange(info, groupDest, layout.fileSize, 0)) {
             DVD::Close(&info);
             return;
-        } else {
-            if (layout.fileSize < item.size) memset(groupDest + layout.fileSize, 0, item.size - layout.fileSize);
-            OS::DCStoreRange(groupDest, item.size);
-            if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
         }
+
+        if (layout.fileSize < item.size) memset(groupDest + layout.fileSize, 0, item.size - layout.fileSize);
+        OS::DCStoreRange(groupDest, item.size);
+        if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
     } else {
         PreloadLooseCustomVoiceBufferWithAllocater(allocater, item.fileId, false, info, path, 0, layout.fileSize);
     }

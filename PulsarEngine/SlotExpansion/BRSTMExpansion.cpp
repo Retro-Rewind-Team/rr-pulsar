@@ -12,6 +12,7 @@ namespace Sound {
 
 static char pulPath[0x100];
 static char resolvedPulPath[0x100];
+
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
 
@@ -73,7 +74,8 @@ static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive
     return true;
 }
 
-s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier, bool patchesOnly, const char* racePercentageSpecifier = "") {
+s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier, bool patchesOnly,
+                   const char* racePercentageSpecifier = "") {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
     const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
@@ -93,12 +95,14 @@ s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier, bool
     snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, trackName, lapSpecifier, racePercentageSpecifier);
     if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
 
-    snprintf(pulPath, 0x50, "%sstrm/%d%s%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier, racePercentageSpecifier);
+    snprintf(pulPath, 0x50, "%sstrm/%d%s%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier,
+             racePercentageSpecifier);
     if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
     return -1;
 }
 
-s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly, const char* racePercentageSpecifier = "") {
+s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly,
+               const char* racePercentageSpecifier = "") {
     return CheckBRSTMRoot(archive->extFileRoot, id, lapSpecifier, patchesOnly, racePercentageSpecifier);
 }
 
@@ -131,7 +135,8 @@ bool HasSW2RRTieredBRSTM(u8 tier) {
 
 nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void* buffer, int size,
                                        const char* extFilePath, u32 r7, u32 length) {
-    u8 isBRSTMOn = (static_cast<Pulsar::CTMusic>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_SOUND), Pulsar::RADIO_CTMUSIC)));
+    const Pulsar::CTMusic isBRSTMOn = static_cast<Pulsar::CTMusic>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_SOUND), Pulsar::RADIO_CTMUSIC));
     const char firstChar = extFilePath[0xC];
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const PulsarId track = cupsConfig->GetWinning();
@@ -174,5 +179,5 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
 }
 kmCall(0x8009e0e4, MusicSlotsExpand);
 
-}  // namespace Sound
-}  // namespace Pulsar
+}
+}
