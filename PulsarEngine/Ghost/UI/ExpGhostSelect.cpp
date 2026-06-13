@@ -4,6 +4,7 @@
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCup.hpp>
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <Ghost/UI/ExpGhostSelect.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
 #include <Ghost/GhostManager.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
@@ -223,8 +224,8 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
         curRaceTime->OnFocus();
     }
 
-    // No saving and no new record in OTT for now
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
+    // No saving and no new record in OTT or TT Practice.
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT) || (TTPractice::IsPracticeMode() && gamemode == MODE_TIME_TRIAL)) return;
 
     // enhanced replay
     if (sectionMgr->curSection->sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionMgr->curSection->sectionId <= SECTION_WATCH_GHOST_FROM_MENU) {

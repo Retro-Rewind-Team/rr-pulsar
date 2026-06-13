@@ -11,7 +11,7 @@ namespace UI {
 
 SettingsPageSelect::SettingsPageSelect() {
     externControlCount = 0;
-    internControlCount = Settings::Params::pageCount;
+    internControlCount = Settings::Params::selectablePageCount;
     hasBackButton = true;
     nextPageId = PAGE_NONE;
     titleBmg = BMG_SETTINGS_TITLE;  // "Settings" title
@@ -59,7 +59,7 @@ void SettingsPageSelect::OnInit() {
 }
 
 UIControl* SettingsPageSelect::CreateControl(u32 id) {
-    if (id < Settings::Params::pageCount) {
+    if (id < Settings::Params::selectablePageCount) {
         PushButton& button = this->pageButtons[id];
         this->AddControl(this->controlCount++, button, 0);
 
@@ -94,7 +94,7 @@ void SettingsPageSelect::SetButtonHandlers(PushButton& button) {
 
 void SettingsPageSelect::OnActivate() {
     // Select the first button by default
-    if (Settings::Params::pageCount > 0) {
+    if (Settings::Params::selectablePageCount > 0) {
         this->pageButtons[0].Select(0);
     }
 
@@ -108,7 +108,7 @@ void SettingsPageSelect::OnActivate() {
                             sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE || sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE ||
                             sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || sectionId == SECTION_P2_WIFI_FROM_FIND_FRIEND);
 
-    for (int i = 0; i < Settings::Params::pageCount; ++i) {
+    for (int i = 0; i < Settings::Params::selectablePageCount; ++i) {
         bool isHidden = false;
 
         if (isVotingSection) {

@@ -43,8 +43,7 @@ class SettingsPageSelect : public Pages::MenuInteractable {
 
     PtmfHolder_2A<SettingsPageSelect, void, PushButton&, u32> onBackButtonClickHandler;
 
-    // Buttons for each settings page - max 12 pages
-    PushButton pageButtons[Settings::Params::pageCount];
+    PushButton pageButtons[Settings::Params::selectablePageCount];
 };
 
 }  // namespace UI

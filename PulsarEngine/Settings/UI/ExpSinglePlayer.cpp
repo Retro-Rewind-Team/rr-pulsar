@@ -5,6 +5,8 @@
 #include <UI/UI.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
+#include <UI/PracticeMode/TTPractice.hpp>
 // Implements 4 TT modes by splitting the "Time Trials" button
 
 namespace Pulsar {
@@ -127,6 +129,7 @@ kmWritePointer(0x808D9F64, &OnButtonSelect);
 // Sets the ttMode based on which button was clicked
 void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
     const u32 id = button.buttonId;
+    TTPractice::SetPracticeMode(false);
     if (page->externControlCount > 4 && id == page->externControlCount - 1) {
         // Navigate to page selection first
         ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
@@ -136,11 +139,12 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
         return;
     }
 
-    if (id == 1 || id > 3) button.buttonId = 1;
+    const bool isTTButton = id == 1 || id > 3;
+    if (isTTButton) button.buttonId = 1;
     page->Pages::SinglePlayer::OnButtonClick(button, hudSlotId);
     button.buttonId = id;
     System* system = System::sInstance;
-    if (id == 1 || id > 3) {
+    if (isTTButton) {
         TTMode mode = TTMODE_150;
         switch (page->externControlCount) {
             case (6):
@@ -157,6 +161,7 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
         }
         system->ttMode = mode;
         SetCC();
+        page->nextPageId = static_cast<PageId>(TTPractice::SelectPage::id);
     }
 }
 kmWritePointer(0x808BBED0, OnButtonClick);
