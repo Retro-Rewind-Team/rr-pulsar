@@ -43,6 +43,7 @@ bool nameEntriesLoaded;
 LooseVoiceInfo looseVoiceInfo[TABLE_COUNT][CHARACTER_COUNT];
 NameEntry nameEntries[NAME_ENTRY_COUNT];
 u32 nameEntryCount;
+char nameFileBuffer[NAME_FILE_MAX_SIZE] __attribute__((aligned(32)));
 
 // Clamp game-reported local player counts to the UI arrays this feature owns.
 u8 MinLocalPlayers(u32 count) {
@@ -238,7 +239,7 @@ bool ReadNameEntriesFile(const char* path) {
         return true;
     }
 
-    char buffer[NAME_FILE_MAX_SIZE] __attribute__((aligned(32)));
+    char* buffer = nameFileBuffer;
     const s32 read = DVD::ReadPrio(&info, buffer, static_cast<s32>(fileSize), 0, 2);
     DVD::Close(&info);
     if (read != static_cast<s32>(fileSize)) return true;
