@@ -22,6 +22,7 @@ struct CalendarTime {
     int sec, min, hour, mday, mon, year, wday, yday, msec, usec;
 };
 void TicksToCalendarTime(u64 time, CalendarTime* result);
+s64 CalendarTimeToTicks(CalendarTime* time);
 
 void Report(const char* format, ...);
 u64 GetTime();

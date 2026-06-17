@@ -53,7 +53,7 @@ bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
             return false;
         }
         u32 loadedSize = 0;
-        cache.file = EGG::DvdRipper::LoadToMainRAM(path, nullptr, cache.heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize);
+        cache.file = LoadFileToMainRAM(path, cache.heap, EGG::DvdRipper::ALLOC_FROM_HEAD, &loadedSize);
         if (cache.file == nullptr || loadedSize == 0) {
             ClearRawCache(cache, true);
             cache.failed = true;
@@ -73,24 +73,10 @@ bool LoadRawBRRES(void* holder, RawBRRES& cache, const char* path) {
     return true;
 }
 
-// Find which loose cache owns a model so old menu models can free it correctly.
-RawBRRES* RawCacheForModel(const ModelDirector* model) {
-    if (model == nullptr || model->rawMdl.data == nullptr) return nullptr;
-    for (u32 table = 0; table < TABLE_COUNT; ++table) {
-        for (u32 character = 0; character < CHARACTER_COUNT; ++character) {
-            if (IsInHeap(rawBRRES[table][character].heap, model->rawMdl.data)) return &rawBRRES[table][character];
-        }
-    }
-    for (u32 i = 0; i < MII_C_COUNT; ++i) {
-        if (IsInHeap(looseMiiCBRRES[i].heap, model->rawMdl.data)) return &looseMiiCBRRES[i];
-    }
-    return nullptr;
-}
-
-bool LoadRawBRRESIntoHeap(void* holder, EGG::ExpHeap* heap, const char* path, u32 fileSize) {
+bool LoadRawBRRESIntoHeap(void* holder, EGG::Heap* heap, const char* path, u32 fileSize) {
     if (holder == nullptr || heap == nullptr || path == nullptr || fileSize == 0) return false;
     u32 loadedSize = 0;
-    void* file = EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize);
+    void* file = LoadFileToMainRAM(path, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, &loadedSize);
     if (file == nullptr || loadedSize == 0) return false;
     if ((reinterpret_cast<u32>(file) & 0x1f) != 0) {
         heap->free(file);
@@ -140,7 +126,7 @@ bool TryLoadLooseMiiCBRRES(void* holder, CharacterId character) {
     return LoadRawBRRES(holder, looseMiiCBRRES[idx], path);
 }
 
-bool TryLoadCustomMenuBRRESIntoHeap(void* holder, CharacterId character, EGG::ExpHeap* heap, bool& fileExists) {
+bool TryLoadCustomMenuBRRESIntoHeap(void* holder, CharacterId character, EGG::Heap* heap, bool& fileExists) {
     fileExists = false;
     const CharacterId menuCharacter = MenuBRRESCharacter(character);
     const u8 table = ResolveMenuTable(menuCharacter);
@@ -156,7 +142,7 @@ bool TryLoadCustomMenuBRRESIntoHeap(void* holder, CharacterId character, EGG::Ex
     return LoadRawBRRESIntoHeap(holder, heap, path, fileSize);
 }
 
-bool TryLoadLooseMiiCBRRESIntoHeap(void* holder, CharacterId character, EGG::ExpHeap* heap, bool& fileExists) {
+bool TryLoadLooseMiiCBRRESIntoHeap(void* holder, CharacterId character, EGG::Heap* heap, bool& fileExists) {
     fileExists = false;
     const u8 idx = MiiCIndex(character);
     if (idx >= MII_C_COUNT) return false;
@@ -173,6 +159,15 @@ bool TryLoadLooseMiiCBRRESIntoHeap(void* holder, CharacterId character, EGG::Exp
 
 // Menu driver BRRES loads prefer selected loose skins, then loose Mii C, then vanilla.
 u32 LoadMenuDriverBRRESHook(void* holder, CharacterId character) {
+    SyncRawCachesToCurrentScene();
+    ScnMgr* const* mgrs = ScnMgr::sInstance;
+    ScnMgr* scnMgr = mgrs[0];
+    EGG::Heap* heap = scnMgr != nullptr ? scnMgr->curHeap : static_cast<EGG::Heap*>(nullptr);
+    bool fileExists = false;
+    if (TryLoadCustomMenuBRRESIntoHeap(holder, character, heap, fileExists)) return 1;
+    if (fileExists) return 0;
+    if (TryLoadLooseMiiCBRRESIntoHeap(holder, character, heap, fileExists)) return 1;
+    if (fileExists) return 0;
     if (TryLoadCustomMenuBRRES(holder, character) || TryLoadLooseMiiCBRRES(holder, character)) return 1;
     return static_cast<MenuModelBRRESHandle*>(holder)->BindDriverBRRES(character);
 }
@@ -235,8 +230,7 @@ TPLPalettePtr LoadLooseMinimapTPL(CharacterId character, u8 table) {
         return nullptr;
     }
     u32 loadedSize = 0;
-    TPLPalettePtr palette = static_cast<TPLPalettePtr>(
-        EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &loadedSize));
+    TPLPalettePtr palette = static_cast<TPLPalettePtr>(LoadFileToMainRAM(path, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, &loadedSize));
     if (palette == nullptr || loadedSize == 0 || palette->versionNumber != TPL_VERSION_NUMBER) {
         cache.failed = true;
         return nullptr;
@@ -620,12 +614,10 @@ void DestroyOldMenuDriverModelForReload(u8 idx, ModelDirector** modelSlot, Model
         return;
     }
 
-    RawBRRES* rawCache = RawCacheForModel(oldModel);
     DestroyModelDirector(oldHair);
     DestroyModelDirector(oldModel);
     if (modelSlot != nullptr && *modelSlot == oldModel) *modelSlot = nullptr;
     if (hairSlot != nullptr && *hairSlot == oldHair) *hairSlot = nullptr;
-    if (rawCache != nullptr) ClearRawCache(*rawCache, true);
 }
 
 void ResetReloadedMenuDriverModel(MenuDriverModel& menuModel, CharacterId character) {
@@ -652,22 +644,17 @@ bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId character)
 
     ModelDirector* oldModel = *modelSlot;
     ToadetteHair* oldHair = hairSlot != nullptr ? *hairSlot : static_cast<ToadetteHair*>(nullptr);
-    bool oldModelDestroyed = false;
 
     ModelDirector* newModel = nullptr;
     ToadetteHair* newHair = nullptr;
     EGG::ExpHeap* newHeap = nullptr;
     if (!LoadReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHair, newHeap)) {
-        if (reloadedMenuDriverModelHeaps[idx] == nullptr) return false;
-        DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel, hairSlot, oldHair);
-        oldModelDestroyed = true;
-        if (!LoadReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHair, newHeap) &&
-            !LoadDefaultReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHair, newHeap)) {
+        if (!LoadDefaultReloadedMenuDriverModel(*scene, *scnMgr, character, newModel, newHair, newHeap)) {
             return false;
         }
     }
 
-    if (!oldModelDestroyed) DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel, hairSlot, oldHair);
+    DestroyOldMenuDriverModelForReload(idx, modelSlot, oldModel, hairSlot, oldHair);
 
     *modelSlot = newModel;
     if (hairSlot != nullptr) *hairSlot = newHair;

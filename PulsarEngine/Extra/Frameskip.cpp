@@ -1,4 +1,5 @@
 ﻿#include <RetroRewind.hpp>
+#include <include/c_string.h>
 #include <MarioKartWii/3D/GameScreenEffects/GameScreenEffects.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
@@ -351,13 +352,23 @@ static void ResetFrameskipState() {
 }
 static SectionLoadHook ResetFrameskipHook(ResetFrameskipState);
 
+static bool IsNoLightningFlashTrack(const Pulsar::CupsConfig& cupsConfig) {
+    const Pulsar::PulsarId pulsarId = cupsConfig.GetWinning();
+    if (Pulsar::CupsConfig::IsReg(pulsarId)) return false;
+
+    const u8 variantIdx = cupsConfig.GetCurVariantIdx();
+    const char* fileName = cupsConfig.GetFileName(pulsarId, variantIdx);
+    if (fileName == nullptr || fileName[0] == '\0') fileName = cupsConfig.GetFileName(pulsarId, 0);
+    if (fileName == nullptr) return false;
+
+    return strcmp(fileName, "sw2WS") == 0 || strcmp(fileName, "117") == 0;
+}
+
 static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr* mgr) {
     const Pulsar::CupsConfig* cupsConfig = Pulsar::CupsConfig::sInstance;
-    Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     const u32 localPlayerCount = scenario.localPlayerCount;
-    const CourseId trackId = Pulsar::CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
-    bool isNoLightningFlashTrack = trackId == 152 || trackId == 117;  // SW2 Whistlestop Summit/3DS Rosalina's Ice World
+    const bool isNoLightningFlashTrack = IsNoLightningFlashTrack(*cupsConfig);
     if (*(u32*)0x80001638 >= 8 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack || localPlayerCount > 1) {
         return;
     }

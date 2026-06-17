@@ -17,6 +17,13 @@ kmWrite32(0x80533564, 0x38000003);
 
 #endif
 
+#ifdef FK
+
+kmWrite32(0x8083DFD8, 0x3BA00016);  // li r29, 0x16 -> Funky Kong
+kmWrite32(0x80846C38, 0x3BE00017);  // li r31, 0x17 -> Flame Runner
+
+#endif
+
 #ifdef TIMER
 // Force CountDown::SetInitial(float) to initialize every countdown to 10.0f.
 kmWrite32(0x805c3c2c, 0x3c804080);
