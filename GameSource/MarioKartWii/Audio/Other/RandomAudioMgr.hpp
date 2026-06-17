@@ -16,13 +16,16 @@ class RandomMgr : public Random {  // is used to get 12 seeds 809c4740 + 4728[id
 };  // 0x28
 
 class RandomSoundPicker : public Random {  // one per type
+   public:
     RandomSoundPicker();  // 8086708c
     ~RandomSoundPicker() override;  // 80863a44 vtable 808dbe08
     u32 initialSoundId;  // depends on character/object Id
     u32 prevSoundId;  // adds 1 to 0x18 modulo number of sounds
-    u8 unknown_0x20[6];
+    u32 usedSoundMask;
+    s16 usedSoundCount;
     u8 soundCount;  // 0x26
-    u8 unknown_0x27[0x2c - 0x27];
+    u8 playChancePercent;
+    u8 unknown_0x28[0x2c - 0x28];
 };  // 0x30
 }  // namespace Audio
 #endif

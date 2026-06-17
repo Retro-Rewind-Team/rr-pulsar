@@ -4,6 +4,60 @@
 namespace Pulsar {
 namespace CustomCharacters {
 
+kmRuntimeUse(0x80866fc0);
+kmRuntimeUse(0x809c4738);
+
+typedef bool (*ShouldPlayRandomSoundFn)(void* randomMgr, u8 chancePercent);
+
+static bool ShouldPlayRandomSound(u8 chancePercent) {
+    void* randomMgr = *reinterpret_cast<void**>(kmRuntimeAddr(0x809c4738));
+    if (randomMgr == nullptr) return false;
+    return reinterpret_cast<ShouldPlayRandomSoundFn>(kmRuntimeAddr(0x80866fc0))(randomMgr, chancePercent);
+}
+
+// The vanilla picker can spin forever if the used mask/count become inconsistent
+// and every selectable sound resolves back to prevSoundId.
+static s32 PickRandomSoundSafe(Audio::RandomSoundPicker* picker) {
+    if (picker == nullptr) return -1;
+    if (picker->usedSoundCount >= static_cast<s16>(picker->soundCount)) return -1;
+    if (!ShouldPlayRandomSound(picker->playChancePercent)) return -1;
+
+    const u32 soundCount = picker->soundCount > 32 ? 32 : picker->soundCount;
+    if (soundCount == 0) return -1;
+
+    u32 availableCount = 0;
+    u32 nonPreviousCount = 0;
+    s32 onlyAvailable = -1;
+    s32 onlyNonPrevious = -1;
+
+    for (u32 i = 0; i < soundCount; ++i) {
+        if ((picker->usedSoundMask & (1u << i)) != 0) continue;
+        const s32 soundId = static_cast<s32>(picker->initialSoundId + i);
+        onlyAvailable = soundId;
+        ++availableCount;
+        if (soundId == static_cast<s32>(picker->prevSoundId)) continue;
+        onlyNonPrevious = soundId;
+        ++nonPreviousCount;
+    }
+
+    if (availableCount == 0) return -1;
+    if (availableCount == 1 || nonPreviousCount == 0) return onlyAvailable;
+    if (nonPreviousCount == 1) return onlyNonPrevious;
+
+    const s32 selected = picker->NextLimited(static_cast<int>(nonPreviousCount));
+    u32 index = 0;
+    for (u32 i = 0; i < soundCount; ++i) {
+        if ((picker->usedSoundMask & (1u << i)) != 0) continue;
+        const s32 soundId = static_cast<s32>(picker->initialSoundId + i);
+        if (soundId == static_cast<s32>(picker->prevSoundId)) continue;
+        if (index == static_cast<u32>(selected)) return soundId;
+        ++index;
+    }
+
+    return onlyNonPrevious;
+}
+kmBranch(0x80867194, PickRandomSoundSafe);
+
 struct DiscFSTEntry {
     u32 typeName;
     u32 offset;
