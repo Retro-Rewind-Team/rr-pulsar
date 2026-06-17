@@ -661,8 +661,14 @@ void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32
 
 static wchar_t s_blockedVoteNameBuffer[12][0x100];
 
+static bool IsVoteTrackBlocked(PulsarId courseVote) {
+    const Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
+    if (handler.toSendPacket.pulWinningTrack != 0xFF && handler.toSendPacket.pulWinningTrack == courseVote) return false;
+    return IsTrackBlocked(courseVote);
+}
+
 void SetVoteControlMessage(VoteControl& vote, u32 bmgId, PulsarId courseVote, u32 playerId) {
-    if (IsTrackBlocked(courseVote) && playerId < 12) {
+    if (IsVoteTrackBlocked(courseVote) && playerId < 12) {
         const wchar_t* originalText = GetCustomMsg(bmgId);
         if (originalText != nullptr) {
             BuildBlockedTrackName(s_blockedVoteNameBuffer[playerId], originalText, 0x100);

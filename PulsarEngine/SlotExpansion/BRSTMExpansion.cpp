@@ -12,6 +12,7 @@ namespace Sound {
 
 static char pulPath[0x100];
 static char resolvedPulPath[0x100];
+static char normalLapExtFilePath[0x100];
 
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
@@ -76,6 +77,17 @@ static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive
 
 s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier, bool patchesOnly,
                    const char* racePercentageSpecifier = "") {
+static const char* GetNormalLapExtFilePath(const char* extFilePath, u32 lapSpecifierIdx, char finalChar) {
+    const int written = snprintf(normalLapExtFilePath, sizeof(normalLapExtFilePath), "%s", extFilePath);
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(normalLapExtFilePath)) return extFilePath;
+    if (lapSpecifierIdx >= static_cast<u32>(written)) return extFilePath;
+
+    normalLapExtFilePath[lapSpecifierIdx] = (finalChar == 'F') ? 'N' : 'n';
+    return normalLapExtFilePath;
+}
+
+s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly) {
+    const char* root = archive->extFileRoot;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
     const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
@@ -172,6 +184,9 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
                 if (isFinalLap) {
                     Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
                 }
+            } else if (isFinalLap) {
+                extFilePath = GetNormalLapExtFilePath(extFilePath, strLength, finalChar);
+                Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
             }
         }
     }

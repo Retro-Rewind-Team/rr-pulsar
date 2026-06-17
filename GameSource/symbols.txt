@@ -5,6 +5,8 @@ wcstombs = 0x8000f138
 memmove = 0x8000f1f0
 memcmp = 0x8000f314
 snprintf = 0x80011938
+vprintf = 0x800117b0
+vsnprintf = 0x8001182c
 qsort = 0x80011b00
 rand = 0x80011c70
 srand = 0x80011c90
@@ -205,6 +207,7 @@ CreateFriendKey__3DWCFPCQ23DWC11AccUserData = 0x800ec6bc
 gt2Listen = 0x8010a9b0
 UpdateSubsAndVR__Q25RKNet10ControllerFv = 0x80658de0
 TrySendNextRACEPacket__Q25RKNet10ControllerFv = 0x80657e30
+SendAidNextRACEPacket__Q25RKNet10ControllerCFUi = 0x80657fe4
 
 #MatchControl
 sInstance__Q23DWC19FriendsMatchControl = 0x803862F0
@@ -526,6 +529,7 @@ GetTime__2OSFv = 0x801aad5c
 OSGetTime = 0x801aad5c
 GetTick__2OSFv = 0x801aad74
 TicksToCalendarTime__2OSFUxPQ22OS12CalendarTime = 0x801aafa8
+CalendarTimeToTicks__2OSFPQ22OS12CalendarTime = 0x801ab170
 __LaunchTitle__2OSFUiUi = 0x801ada00
 CalcCRC32__2OSFPvUi = 0x801d1ca0
 

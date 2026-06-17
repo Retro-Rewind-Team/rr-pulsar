@@ -1,36 +1,44 @@
 #include <Network/ServerDateTime.hpp>
-#include <runtimeWrite.hpp>
 #include <kamek.hpp>
+#include <core/System/SystemManager.hpp>
 
 namespace Pulsar {
 
 ServerDateTime serverDateTimeInstance;
 ServerDateTime* ServerDateTime::sInstance = &serverDateTimeInstance;
 
-typedef s64 (*OSCalendarTimeToTicks_t)(void*);
+static void SyncGameDate(const ServerDateTime& sdt) {
+    SystemManager* systemManager = SystemManager::sInstance;
+    if (systemManager == nullptr || !sdt.isValid) return;
 
-static void StoreDateTimeFromStack(s32* calendarTime) {
+    systemManager->year = (u8)(sdt.year - 2000);
+    systemManager->month = sdt.month;
+    systemManager->day = sdt.day;
+    systemManager->isValidDate = true;
+}
+
+static void StoreDateTime(const OS::CalendarTime& calendarTime, u64 serverTicks) {
     ServerDateTime* sdt = ServerDateTime::sInstance;
     if (sdt != nullptr) {
-        u8 second = (u8)calendarTime[0];
-        u8 minute = (u8)(calendarTime[1] + 1);
-        u8 hour = (u8)calendarTime[2];
-        u8 day = (u8)calendarTime[3];
-        u8 month = (u8)calendarTime[4] + 1;
-        u16 year = (u16)calendarTime[5];
-
-        OS::Report("ServerDateTime: %d/%d/%d %d:%d:%d\n", year, month, day, hour, minute, second);
-
-        sdt->SetDateTime(year, month, day, hour, minute, second);
+        sdt->SetDateTime(calendarTime, serverTicks, OS::GetTime());
+        SyncGameDate(*sdt);
+        OS::Report("ServerDateTime: %d/%d/%d %d:%d:%d\n", sdt->year, sdt->month, sdt->day, sdt->hour, sdt->minute,
+                   sdt->second);
     }
 }
 
-kmRuntimeUse(0x801ab170);
-extern "C" s64 HookOSCalendarTimeToTicks(void* calendarTime) {
-    StoreDateTimeFromStack((s32*)calendarTime);
-    OSCalendarTimeToTicks_t original = (OSCalendarTimeToTicks_t)kmRuntimeAddr(0x801ab170);
-    return original(calendarTime);
+extern "C" s64 HookOSCalendarTimeToTicks(OS::CalendarTime* calendarTime) {
+    const s64 ticks = OS::CalendarTimeToTicks(calendarTime);
+    StoreDateTime(*calendarTime, ticks);
+    return ticks;
 }
 kmCall(0x800ee5a4, HookOSCalendarTimeToTicks);
+
+static void UpdateServerDateTime() {
+    ServerDateTime* sdt = ServerDateTime::sInstance;
+    if (sdt == nullptr || !sdt->Update()) return;
+    SyncGameDate(*sdt);
+}
+static FrameLoadHook serverDateTimeHook(UpdateServerDateTime);
 
 }  // namespace Pulsar

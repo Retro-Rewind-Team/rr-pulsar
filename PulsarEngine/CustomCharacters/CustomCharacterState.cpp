@@ -231,11 +231,11 @@ void ParseNameEntryLine(char* line) {
 }
 
 bool ReadNameEntriesFile(const char* path) {
-    DVD::FileInfo info;
-    if (!DVD::Open(path, &info)) return false;
-    const u32 fileSize = static_cast<u32>(info.length);
+    u32 fileSize = 0;
+    char* buffer = static_cast<char*>(LoadFileToMainRAM(path, nullptr, EGG::DvdRipper::ALLOC_FROM_HEAD, &fileSize));
+    if (buffer == nullptr) return false;
     if (fileSize == 0 || fileSize >= NAME_FILE_MAX_SIZE) {
-        DVD::Close(&info);
+        EGG::Heap::free(buffer, nullptr);
         return true;
     }
 
@@ -252,6 +252,7 @@ bool ReadNameEntriesFile(const char* path) {
         ParseNameEntryLine(lineStart);
         lineStart = buffer + i + 1;
     }
+    EGG::Heap::free(buffer, nullptr);
     return true;
 }
 

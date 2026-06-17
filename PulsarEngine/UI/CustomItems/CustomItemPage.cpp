@@ -3,11 +3,11 @@
 #include <Settings/SettingsParam.hpp>
 #include <Settings/SettingsBinary.hpp>
 #include <Race/CustomItems.hpp>
+#include <PulsarSystem.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
-#include <core/RK/RKSystem.hpp>
 #include <core/rvl/OS/OS.hpp>
 
 namespace Pulsar {
@@ -37,6 +37,14 @@ static const char* itemTpls[] = {
 };
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
+static bool IsStartRegionalContext() {
+    const System* system = System::sInstance;
+    if (system == nullptr) return false;
+
+    return system->IsContext(PULSAR_STARTRETROS) || system->IsContext(PULSAR_STARTCTS) || system->IsContext(PULSAR_STARTREGS) ||
+           system->IsContext(PULSAR_START200) || system->IsContext(PULSAR_STARTOTT) || system->IsContext(PULSAR_STARTITEMRAIN);
+}
+
 CustomItemPage::CustomItemPage() {
     this->onButtonClickHandler.subject = this;
     this->onButtonClickHandler.ptmf = &CustomItemPage::OnButtonClick;
@@ -57,26 +65,19 @@ CustomItemPage::CustomItemPage() {
     this->friendRoomPreviewNextPageId = PAGE_CHARACTER_SELECT;
     this->isFriendRoomPreview = false;
 
-    this->buttons = new (RKSystem::mInstance.EGGSystem) PushButton[20];
-
     this->controlsManipulatorManager.Init(1, false);
     this->SetManipulatorManager(controlsManipulatorManager);
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, onBackPressHandler, false, false);
 }
 
-CustomItemPage::~CustomItemPage() {
-    delete[] buttons;
-}
+CustomItemPage::~CustomItemPage() {}
 
 void CustomItemPage::OnInit() {
     ::Pages::Menu::OnInit();
-    this->Pages::Menu::titleText = &this->titleText;
-    this->AddControl(21, this->titleText, 0);
-    this->titleText.Load(0);
 }
 
 UIControl* CustomItemPage::CreateControl(u32 controlId) {
-    if (controlId < 20 && buttons != nullptr) {
+    if (controlId < 20) {
         this->AddControl(controlId, buttons[controlId], 0);
         char variant[32];
         snprintf(variant, 32, "CustomItem_%d", controlId);
@@ -102,8 +103,16 @@ UIControl* CustomItemPage::CreateControl(u32 controlId) {
 }
 
 void CustomItemPage::OnActivate() {
+    if (this->isFriendRoomPreview && IsStartRegionalContext()) {
+        this->isFriendRoomPreview = false;
+        ExpSection* section = ExpSection::GetSection();
+        section->RemovePageLayers(section->layerCount - 1);
+        ExpSection::AddPageLayer(*section, this->friendRoomPreviewNextPageId);
+        return;
+    }
+
     ::Pages::Menu::OnActivate();
-    this->titleText.SetMessage(this->titleBmg);
+    if (this->Pages::Menu::titleText != nullptr) this->Pages::Menu::titleText->SetMessage(this->titleBmg);
     this->UpdateButtonVisuals();
     this->backButton.isHidden = this->isFriendRoomPreview;
     this->backButton.manipulator.inaccessible = this->isFriendRoomPreview;
