@@ -16,6 +16,7 @@
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <PulsarSystem.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/nw4r/snd.hpp>
 #include <core/rvl/OS/OSCache.hpp>
@@ -27,6 +28,8 @@
 namespace Pulsar {
 namespace Sound {
 using namespace nw4r;
+
+bool IsSW2RRLoaded();
 
 namespace {
 typedef void* (*LoadFileFn)(snd::detail::SoundArchiveLoader* loader, snd::SoundArchive::FileId fileId,
@@ -739,6 +742,67 @@ static void PatchLoadedGroupItemWithLooseCustomSoundEffect(const snd::SoundArchi
     DVD::Close(&info);
 }
 
+static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId,
+                                                  snd::SoundMemoryAllocatable* allocater, u32 itemCount,
+                                                  const snd::SoundArchive::GroupItemInfo& item, u32 groupSize,
+                                                  u32 waveDataSize, void* groupData, void* waveData) {
+    if (groupId != BRSAR_GROUP_RACE || !IsSW2RRLoaded() || groupData == nullptr || item.size < 4) return;
+
+    const u8* itemData = static_cast<const u8*>(groupData) + item.offset;
+    if (memcmp(itemData, "RWSD", 4) != 0) return;
+
+    const char path[] = "/sound/strm/RRGRP_RACE.brwsd";
+    DVD::FileInfo info;
+    if (!DVD::Open(path, &info)) return;
+
+    LooseVoiceLayout layout;
+    if (!ReadLooseVoiceLayout(info, "RWSD", layout)) {
+        DVD::Close(&info);
+        return;
+    }
+
+    u32 fileCapacity = 0;
+    const bool canPatchFileInGroup =
+        TryGetGroupItemSlotCapacity(archive, groupId, itemCount, item, false, groupSize, fileCapacity) &&
+        fileCapacity >= layout.fileSize;
+
+    if (canPatchFileInGroup) {
+        u8* groupDest = static_cast<u8*>(groupData) + item.offset;
+        if (!ReadOpenedDVDFileRange(info, groupDest, layout.fileSize, 0)) {
+            DVD::Close(&info);
+            return;
+        }
+
+        if (layout.fileSize < item.size) memset(groupDest + layout.fileSize, 0, item.size - layout.fileSize);
+        OS::DCStoreRange(groupDest, item.size);
+        if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
+    } else {
+        PreloadLooseCustomVoiceBufferWithAllocater(allocater, item.fileId, false, info, path, 0, layout.fileSize);
+    }
+
+    if (layout.waveSize > 0) {
+        u32 waveCapacity = 0;
+        const bool canPatchWaveInGroup =
+            waveData != nullptr && item.waveDataSize != 0 &&
+            TryGetGroupItemSlotCapacity(archive, groupId, itemCount, item, true, waveDataSize, waveCapacity) &&
+            waveCapacity >= layout.waveSize;
+
+        if (canPatchWaveInGroup) {
+            u8* waveDest = static_cast<u8*>(waveData) + item.waveDataOffset;
+            if (ReadOpenedDVDFileRange(info, waveDest, layout.waveSize, layout.waveOffset)) {
+                if (layout.waveSize < item.waveDataSize) memset(waveDest + layout.waveSize, 0, item.waveDataSize - layout.waveSize);
+                OS::DCStoreRange(waveDest, item.waveDataSize);
+                if (item.fileId < 1024) sPatchedWaveAddresses[item.fileId] = waveDest;
+            }
+        } else {
+            PreloadLooseCustomVoiceBufferWithAllocater(allocater, item.fileId, true, info, path, layout.waveOffset,
+                                                       layout.waveSize);
+        }
+    }
+
+    DVD::Close(&info);
+}
+
 static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId,
                                                      snd::SoundMemoryAllocatable* allocater, u32 itemCount,
                                                      const snd::SoundArchive::GroupItemInfo& item, u32 groupSize,
@@ -1001,6 +1065,8 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
 
         PatchLoadedGroupItemWithLooseCustomSoundEffect(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size,
                                                        groupData);
+        PatchLoadedRaceGroupItemWithSW2RRBank(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size,
+                                              groupInfo.waveDataSize, groupData, waveData);
         PatchLoadedGroupItemWithLooseCustomVoice(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size,
                                                  groupInfo.waveDataSize, groupData, waveData);
     }
