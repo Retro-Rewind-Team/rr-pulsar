@@ -47,6 +47,15 @@ static bool CheckBRSTMPath(const char* path, bool patchesOnly) {
     return true;
 }
 
+static const char* GetNormalLapExtFilePath(const char* extFilePath, u32 lapSpecifierIdx, char finalChar) {
+    const int written = snprintf(normalLapExtFilePath, sizeof(normalLapExtFilePath), "%s", extFilePath);
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(normalLapExtFilePath)) return extFilePath;
+    if (lapSpecifierIdx >= static_cast<u32>(written)) return extFilePath;
+
+    normalLapExtFilePath[lapSpecifierIdx] = (finalChar == 'F') ? 'N' : 'n';
+    return normalLapExtFilePath;
+}
+
 static bool StringEndsWith(const char* str, const char* suffix) {
     if (str == nullptr || suffix == nullptr) return false;
 
@@ -77,17 +86,6 @@ static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive
 
 s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier, bool patchesOnly,
                    const char* racePercentageSpecifier = "") {
-static const char* GetNormalLapExtFilePath(const char* extFilePath, u32 lapSpecifierIdx, char finalChar) {
-    const int written = snprintf(normalLapExtFilePath, sizeof(normalLapExtFilePath), "%s", extFilePath);
-    if (written <= 0 || static_cast<u32>(written) >= sizeof(normalLapExtFilePath)) return extFilePath;
-    if (lapSpecifierIdx >= static_cast<u32>(written)) return extFilePath;
-
-    normalLapExtFilePath[lapSpecifierIdx] = (finalChar == 'F') ? 'N' : 'n';
-    return normalLapExtFilePath;
-}
-
-s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly) {
-    const char* root = archive->extFileRoot;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
     const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
