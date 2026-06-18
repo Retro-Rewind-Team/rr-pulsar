@@ -1,6 +1,7 @@
 #include <kamek.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/User.hpp>
+#include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -19,19 +20,26 @@ kmWrite32(0x800E1A58, 0x38C00000 | 7000);
 kmWrite32(0x800E77F8, 0x60000000);
 kmWrite32(0x800E77FC, 0x60000000);
 
-// Slower High Data Rate [MrBean35000vr, Chadderz]
-kmWrite32(0x80657EA8, 0x2804000C);
-
 static void TrySendAllRACEPackets(RKNet::Controller* controller) {
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     static u8 nextAid = 0;
+    const Raceinfo* raceInfo = Raceinfo::sInstance;
+    const bool hasRaceStarted = raceInfo != nullptr && raceInfo->timerMgr != nullptr && raceInfo->timerMgr->hasRaceStarted;
+    const u8 maxAttempts = hasRaceStarted ? 12 : 1;
+    u8 attempts = 0;
+    u8 failedAttempts = 0;
+
     for (u8 i = 0; i < 12; ++i) {
         const u8 aid = (nextAid + i) % 12;
         if (aid == sub.localAid) continue;
         if ((sub.availableAids & (1 << aid)) == 0) continue;
+        if (attempts >= maxAttempts) break;
+        ++attempts;
         if (!controller->SendAidNextRACEPacket(aid)) {
-            nextAid = (aid + 1) % 12;
-            return;
+            if (++failedAttempts >= 2) {
+                nextAid = (aid + 1) % 12;
+                return;
+            }
         }
     }
     nextAid = (nextAid + 1) % 12;
