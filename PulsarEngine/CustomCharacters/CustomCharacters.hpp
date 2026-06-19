@@ -56,9 +56,9 @@ enum {
     LOCAL_PLAYER_COUNT = 4,
     ONLINE_PLAYER_COUNT = 12,
     MII_C_COUNT = 6,
-    NAME_ENTRY_COUNT = 128,
+    NAME_ENTRY_COUNT = 64,
     NAME_TEXT_LENGTH = 32,
-    NAME_FILE_MAX_SIZE = 8192
+    NAME_FILE_MAX_SIZE = 4096
 };
 
 extern "C" const char* characterNames[];
