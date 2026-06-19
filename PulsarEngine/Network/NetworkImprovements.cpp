@@ -20,6 +20,9 @@ kmWrite32(0x800E1A58, 0x38C00000 | 7000);
 kmWrite32(0x800E77F8, 0x60000000);
 kmWrite32(0x800E77FC, 0x60000000);
 
+// Slower High Data Rate [MrBean35000vr, Chadderz]
+kmWrite32(0x80657EA8, 0x2804000C);
+
 // Fix Ghost Player Bug [ImZeaora]
 kmWrite32(0x80662f5c, 0x60000000);
 
