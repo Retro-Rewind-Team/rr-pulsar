@@ -55,10 +55,7 @@ enum {
     MENU_DRIVER_MODEL_COUNT = 0x18,
     LOCAL_PLAYER_COUNT = 4,
     ONLINE_PLAYER_COUNT = 12,
-    MII_C_COUNT = 6,
-    NAME_ENTRY_COUNT = 64,
-    NAME_TEXT_LENGTH = 32,
-    NAME_FILE_MAX_SIZE = 4096
+    MII_C_COUNT = 6
 };
 
 extern "C" const char* characterNames[];
@@ -88,15 +85,6 @@ struct LooseVoiceInfo {
     u32 suffixMask;
 };
 
-// One optional charaname.txt row, stored as narrow and wide text for UI paths.
-struct NameEntry {
-    char id[16];
-    char characterName[NAME_TEXT_LENGTH];
-    char authorName[NAME_TEXT_LENGTH];
-    wchar_t characterNameWide[NAME_TEXT_LENGTH];
-    wchar_t authorNameWide[NAME_TEXT_LENGTH];
-};
-
 // Distinguishes missing BMG ids from intentional blank text.
 enum BmgTextState {
     BMG_TEXT_MISSING,
@@ -110,7 +98,7 @@ struct VoiceGroupBase {
     u32 groupId;
 };
 
-// Maps charaname-style voice suffixes to character ids.
+// Maps voice suffixes to character ids.
 struct CharacterNameMap {
     const char* name;
     CharacterId character;
@@ -153,10 +141,7 @@ extern ToadetteHair* reloadedMenuDriverModelHairs[MENU_DRIVER_MODEL_COUNT];
 extern const GameScene* reloadedMenuDriverModelSceneOwner;
 extern MenuDriverModel* reloadedMenuDriverModelOwner;
 extern bool forceDefaultMenuDriverBRRES;
-extern bool nameEntriesLoaded;
 extern LooseVoiceInfo looseVoiceInfo[TABLE_COUNT][CHARACTER_COUNT];
-extern NameEntry nameEntries[NAME_ENTRY_COUNT];
-extern u32 nameEntryCount;
 extern Audio::CharacterActor* voiceInitActor;
 extern const char* const looseVoiceGroupSuffixes[];
 extern const char* const looseVoiceTimeAttackGroupSuffixAliases[];
@@ -172,7 +157,6 @@ CharacterId StateCharacter(CharacterId character);
 const char* GeneratedCustomPostfix(CharacterId character, u8 table);
 CharacterId MenuBRRESCharacter(CharacterId character);
 bool HasSkin(CharacterId character, u8 table);
-const char* SkinName(CharacterId character, u8 table);
 u32 SkinNameBmgId(CharacterId character, u8 table);
 u32 SkinAuthorBmgId(CharacterId character, u8 table);
 bool SetCustomCharacterNameMessage(LayoutUIControl& control, const char* paneName, u32 bmgId);
