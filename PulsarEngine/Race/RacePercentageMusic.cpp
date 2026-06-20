@@ -13,8 +13,12 @@ namespace Sound {
 static const float SW2RR_NORMAL_THRESHOLD = 1.08975f;
 static const float SW2RR_TIER_1_THRESHOLD = 1.16675f;
 static const float SW2RR_TIER_2_THRESHOLD = 1.480f;
+static const Audio::RaceState RACE_STATE_FINAL_LAP_MUSIC = static_cast<Audio::RaceState>(0x6);
 
 static u8 sw2rrMusicTier = 0;
+static bool sw2rrLoaded = false;
+static bool sw2rrLoadedInitialized = false;
+static bool sw2rrTier3ReloadPending = false;
 
 bool HasSW2RRTieredBRSTM(u8 tier);
 
@@ -56,7 +60,14 @@ static u8 GetSW2RRMusicTier(float raceCompletion) {
 }
 
 u8 GetSW2RRRacePercentageMusicTier() {
-    return IsSW2RRLoaded() ? sw2rrMusicTier : 0;
+    return sw2rrLoaded ? sw2rrMusicTier : 0;
+}
+
+static void ResetSW2RRMusicState() {
+    sw2rrMusicTier = 0;
+    sw2rrLoaded = false;
+    sw2rrLoadedInitialized = false;
+    sw2rrTier3ReloadPending = false;
 }
 
 static u32 GetActiveSinglePlayerSoundId() {
@@ -86,6 +97,14 @@ static void ReloadActiveRaceMusic() {
     ReloadMainRaceMusic(GetActiveSinglePlayerSoundId());
 }
 
+static bool UpdatePendingTier3Reload(const Audio::RaceMgr& raceAudioMgr) {
+    if (!sw2rrTier3ReloadPending || raceAudioMgr.raceState != RACE_STATE_FINAL_LAP_MUSIC) return false;
+
+    sw2rrTier3ReloadPending = false;
+    ReloadActiveRaceMusic();
+    return true;
+}
+
 static u8 GetHudSlotIdForPlayer(u8 playerId) {
     const Racedata* racedata = Racedata::sInstance;
     if (racedata == nullptr) return 0;
@@ -94,6 +113,9 @@ static u8 GetHudSlotIdForPlayer(u8 playerId) {
 
 static void PlaySW2RRTierChangeJingle(Audio::RaceMgr& raceAudioMgr, u8 tier, u8 playerId) {
     if (tier >= 3) {
+        if (raceAudioMgr.raceState == RACE_STATE_FINAL_LAP_MUSIC) {
+            raceAudioMgr.raceState = Audio::RACE_STATE_NORMAL;
+        }
         raceAudioMgr.SetRaceState(Audio::RACE_STATE_FAST);
         return;
     }
@@ -106,33 +128,43 @@ static void PlaySW2RRTierChangeJingle(Audio::RaceMgr& raceAudioMgr, u8 tier, u8 
 }
 
 void UpdateSW2RRRacePercentageMusic() {
-    if (!IsSW2RRLoaded()) {
+    Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
+    const Raceinfo* raceInfo = Raceinfo::sInstance;
+    if (raceAudioMgr == nullptr || raceInfo == nullptr || raceInfo->players == nullptr) return;
+    if (raceInfo->timerMgr == nullptr || !raceInfo->timerMgr->hasRaceStarted) {
+        ResetSW2RRMusicState();
+        return;
+    }
+
+    if (!sw2rrLoadedInitialized) {
+        sw2rrLoaded = IsSW2RRLoaded();
+        sw2rrLoadedInitialized = true;
+    }
+    if (!sw2rrLoaded) {
         sw2rrMusicTier = 0;
         return;
     }
 
-    Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
-    if (raceAudioMgr == nullptr || raceInfo == nullptr || raceInfo->players == nullptr) return;
-    if (raceInfo->timerMgr == nullptr || !raceInfo->timerMgr->hasRaceStarted) return;
+    if (UpdatePendingTier3Reload(*raceAudioMgr)) return;
 
     const u8 playerId = raceAudioMgr->playerIdFirstLocalPlayer;
     if (playerId >= 12 || raceInfo->players[playerId] == nullptr) return;
 
-    const u8 nextTier = GetSW2RRMusicTier(raceInfo->players[playerId]->raceCompletion);
+    u8 nextTier = GetSW2RRMusicTier(raceInfo->players[playerId]->raceCompletion);
+    if (nextTier < sw2rrMusicTier) nextTier = sw2rrMusicTier;
     if (nextTier == sw2rrMusicTier) return;
 
-    if (nextTier != 0 && !HasSW2RRTieredBRSTM(nextTier)) {
-        return;
-    }
+    if (nextTier != 0 && !HasSW2RRTieredBRSTM(nextTier)) return;
 
     sw2rrMusicTier = nextTier;
+    sw2rrTier3ReloadPending = false;
     if (nextTier == 0) {
         ReloadActiveRaceMusic();
     } else if (nextTier < 3) {
         PlaySW2RRTierChangeJingle(*raceAudioMgr, nextTier, playerId);
         ReloadActiveRaceMusic();
     } else {
+        sw2rrTier3ReloadPending = true;
         PlaySW2RRTierChangeJingle(*raceAudioMgr, nextTier, playerId);
     }
 }
