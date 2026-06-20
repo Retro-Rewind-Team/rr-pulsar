@@ -1,5 +1,6 @@
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
 #include <MarioKartWii/UI/Layout/Layout.hpp>
+#include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <UI/UI.hpp>
 #include <PulsarSystem.hpp>
 
@@ -334,6 +335,7 @@ enum BMGType {
 BMGType isCustom;
 
 static int GetMsgIdxByBmgId(const BMGHolder& bmg, s32 bmgId) {
+    if (bmg.bmgFile == nullptr || bmg.messageIds == nullptr) return -1;
     const BMGMessageIds& msgIds = *bmg.messageIds;
     int ret = -1;
     for (int i = 0; i < msgIds.msgCount; ++i) {
@@ -348,6 +350,27 @@ static int GetMsgIdxByBmgId(const BMGHolder& bmg, s32 bmgId) {
 }
 
 static const BMGHolder* matchedCustomBmg = nullptr;
+
+static const BMGHolder* GetCharaNameBmg() {
+    static BMGHolder charaNameBmg;
+    static const void* loadedFile = nullptr;
+
+    ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+    if (archiveMgr == nullptr) return nullptr;
+
+    void* file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/CharaName.bmg", nullptr);
+    if (file == nullptr) {
+        loadedFile = nullptr;
+        charaNameBmg.bmgFile = nullptr;
+        return nullptr;
+    }
+
+    if (file != loadedFile) {
+        charaNameBmg.Init(*reinterpret_cast<const BMGHeader*>(file));
+        loadedFile = file;
+    }
+    return &charaNameBmg;
+}
 
 static int GetMsgIdxById(const BMGHolder& normalHolder, s32 bmgId) {
     int ret = GetMsgIdxByBmgId(System::sInstance->GetBMG(), bmgId);
@@ -367,6 +390,15 @@ static int GetMsgIdxById(const BMGHolder& normalHolder, s32 bmgId) {
         isCustom = CUSTOM_BMG;
         matchedCustomBmg = &System::sInstance->GetBMGBT();
         return ret;
+    }
+    const BMGHolder* charaNameBmg = GetCharaNameBmg();
+    if (charaNameBmg != nullptr) {
+        ret = GetMsgIdxByBmgId(*charaNameBmg, bmgId);
+        if (ret >= 0) {
+            isCustom = CUSTOM_BMG;
+            matchedCustomBmg = charaNameBmg;
+            return ret;
+        }
     }
     isCustom = BMG_NORMAL;
     matchedCustomBmg = nullptr;
