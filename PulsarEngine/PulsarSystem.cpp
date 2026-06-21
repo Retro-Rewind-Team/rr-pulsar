@@ -259,6 +259,7 @@ void System::UpdateContext() {
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
     bool isBattleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_BATTLEROYALE && isNotPublic && !isBattle && !isTimeTrial;
+    bool isItemsOnMinimap = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMSONMINIMAP) == ITEMSONMINIMAP_ENABLED && isFroom;
     const u8 koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE);
     bool isKoPerRace2 = koPerRace == KOSETTING_KOPERRACE_2;
     bool isKoPerRace3 = koPerRace == KOSETTING_KOPERRACE_3;
@@ -328,6 +329,7 @@ void System::UpdateContext() {
                 isKoPerRace2 = newContext2 & (1 << PULSAR_KOPERRACE_2);
                 isKoPerRace3 = newContext2 & (1 << PULSAR_KOPERRACE_3);
                 isKoPerRace4 = newContext2 & (1 << PULSAR_KOPERRACE_4);
+                isItemsOnMinimap = newContext2 & (1 << PULSAR_ITEMSONMINIMAP);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -388,7 +390,8 @@ void System::UpdateContext() {
                             (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE |
                             (isKoPerRace2) << PULSAR_KOPERRACE_2 |
                             (isKoPerRace3) << PULSAR_KOPERRACE_3 |
-                            (isKoPerRace4) << PULSAR_KOPERRACE_4;
+                            (isKoPerRace4) << PULSAR_KOPERRACE_4 |
+                            (isItemsOnMinimap) << PULSAR_ITEMSONMINIMAP;
     }
 
     // Combine the new context with preserved bits
