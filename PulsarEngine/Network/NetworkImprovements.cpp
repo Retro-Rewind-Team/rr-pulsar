@@ -22,25 +22,5 @@ kmWrite32(0x800E77FC, 0x60000000);
 kmWrite32(0x80657EA8, 0x2804000C);
 kmWrite32(0x80657F5C, 0x3B400000);
 
-// Fix Ghost Player Bug [ImZeaora]
-kmWrite32(0x80662f5c, 0x60000000);
-
-static u32 sUserPacketRefreshCounter = 0;
-static void UserUpdateWithMiiRefresh(RKNet::USERHandler* handler) {
-    // Call the original Update implementation.
-    handler->Update();
-
-    // Once initialised, rebuild the send packet shortly after to pick up
-    // any Mii data that was not yet ready during Prepare().
-    // 300 frames @ 60 fps ≈ 5 seconds.
-    if (handler->isInitialized) {
-        sUserPacketRefreshCounter++;
-        if (sUserPacketRefreshCounter == 300) {
-            handler->CreateSendPacket();
-        }
-    }
-}
-kmCall(0x806579ac, UserUpdateWithMiiRefresh);
-
 }  // namespace Network
 }  // namespace Pulsar
