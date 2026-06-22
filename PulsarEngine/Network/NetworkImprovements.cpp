@@ -1,4 +1,5 @@
 #include <kamek.hpp>
+#include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/RKNet/User.hpp>
 #include <runtimeWrite.hpp>
 
@@ -25,6 +26,12 @@ kmWrite32(0x80657EA8, 0x2804000C);
 kmWrite32(0x80657F5C, 0x7F9C1A14);  // add r28, r28, r3
 kmWrite32(0x80657FB4, 0x93590008);  // stw r26, 0x8(r25)
 kmWrite32(0x80657FB8, 0x2C1C0002);  // cmpwi r28, 2
+
+// Reduce remote kart forward prediction from received RACE packets to 0.1x [ZPL]
+static float GetReducedRemotePredictionSpeed(const Kart::Link* kartLink) {
+    return kartLink->GetEngineSpeed() * 0.1f;
+}
+kmCall(0x8058B5E8, GetReducedRemotePredictionSpeed);
 
 }  // namespace Network
 }  // namespace Pulsar
