@@ -1,14 +1,12 @@
 #include <kamek.hpp>
-#include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/User.hpp>
-#include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace Network {
 
-// Reduce PING retry time from 700 to 120 [Wiimmfi]
-kmWrite16(0x8011B47A, 120);
+// Reduce PING retry time from 700 to 80 [Wiimmfi]
+kmWrite16(0x8011B47A, 80);
 
 // Do not wait the retry time in case of successful NATNEG [Wiimmfi]
 kmWrite32(0x8011B4B0, 0x60000000);
@@ -22,6 +20,7 @@ kmWrite32(0x800E77FC, 0x60000000);
 
 // Slower High Data Rate [MrBean35000vr, Chadderz]
 kmWrite32(0x80657EA8, 0x2804000C);
+kmWrite32(0x80657F5C, 0x3B400000);
 
 // Fix Ghost Player Bug [ImZeaora]
 kmWrite32(0x80662f5c, 0x60000000);
@@ -36,12 +35,9 @@ static void UserUpdateWithMiiRefresh(RKNet::USERHandler* handler) {
     // 300 frames @ 60 fps ≈ 5 seconds.
     if (handler->isInitialized) {
         sUserPacketRefreshCounter++;
-        if (sUserPacketRefreshCounter >= 300) {
+        if (sUserPacketRefreshCounter == 300) {
             handler->CreateSendPacket();
-            sUserPacketRefreshCounter = 0;
         }
-    } else {
-        sUserPacketRefreshCounter = 0;
     }
 }
 kmCall(0x806579ac, UserUpdateWithMiiRefresh);
