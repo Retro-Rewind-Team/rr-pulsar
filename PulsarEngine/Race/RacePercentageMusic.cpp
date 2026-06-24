@@ -169,5 +169,7 @@ void UpdateSW2RRRacePercentageMusic() {
     }
 }
 
+static RaceLoadHook ResetSW2RRMusicStateOnRaceLoad(ResetSW2RRMusicState);
+
 }
 }

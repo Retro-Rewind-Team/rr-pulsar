@@ -1023,6 +1023,7 @@ GetWheelPhysicsHolder__Q24Kart4LinkFUi = 0x80590704
 GetStats__Q24Kart4LinkCFv = 0x80590874
 GetType__Q24Kart4LinkCFv = 0x80590a10
 GetPlayerIdx__Q24Kart4LinkCFv = 0x80590a5c
+GetEngineSpeed__Q24Kart4LinkCFv = 0x80590cf8
 GetPosition__Q24Kart4LinkCFv = 0x8059020c
 GetMovement__Q24Kart4LinkFv = 0x8059077c
 IsLocal__Q24Kart4LinkCFv = 0x80590650

@@ -128,30 +128,27 @@ void CustomRandomizeServers() {
     const bool hasAlternativeRoomOption = HasAlternativeRoomOption(sb, count, blockSmallRooms);
     const int previousRoomPenalty = hasAlternativeRoomOption ? 2000000000 : 0;
     const int ratingMismatchEval = 999999;
-    const int blockedRatingEval = 0x40000000;
-    const int joinRatingFloor = 40000;  // 400.00 VR/BR * 100
     const int blockedSmallRoomEval = 0x50000000;
     const int fullRoomEval = 0x60000000;
 
-    u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
-
-    RKNet::Controller* net = RKNet::Controller::sInstance;
-    bool isBattle = false;
-    if (net) {
-        isBattle = (net->roomType == RKNet::ROOMTYPE_BT_WW || net->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
-    }
-
-    int playerRating;
-    const char* key;
-    if (isBattle) {
-        playerRating = (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f);
-        key = "eb";
-    } else {
-        playerRating = (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
-        key = "ev";
-    }
-
     if (sJoinAttempts < 3) {
+        u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
+
+        RKNet::Controller* net = RKNet::Controller::sInstance;
+        bool isBattle = false;
+        if (net) {
+            isBattle = (net->roomType == RKNet::ROOMTYPE_BT_WW || net->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
+        }
+
+        int playerRating;
+        const char* key;
+        if (isBattle) {
+            playerRating = (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f);
+            key = "eb";
+        } else {
+            playerRating = (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
+            key = "ev";
+        }
 
         // For players below 150 VR, filter out rooms above their VR + 200
         bool isLowVR = !isBattle && playerRating < 15000;  // 150 VR * 100
@@ -189,9 +186,8 @@ void CustomRandomizeServers() {
 
             int eval;
 
-            if (serverRating > 0 && playerRating + joinRatingFloor < serverRating) {
-                eval = blockedRatingEval;
-            } else if (isLowVR && serverRating > maxRoomRating) {
+            // If player is low VR and room is above the threshold, mark it with very high eval
+            if (isLowVR && serverRating > maxRoomRating) {
                 eval = ratingMismatchEval;
             } else if (isHighVR && serverRating > 0 && serverRating < lowRoomThreshold) {
                 eval = ratingMismatchEval;
@@ -221,10 +217,7 @@ void CustomRandomizeServers() {
             } else if (blockSmallRooms && isSmallRoom) {
                 SBServerSetIntValueA(server, "dwc_eval", blockedSmallRoomEval);
             } else {
-                int serverRating = SBServerGetIntValueA(server, key, 0);
-                int eval = (serverRating > 0 && playerRating + joinRatingFloor < serverRating) ?
-                    blockedRatingEval :
-                    (blockSmallRooms ? (rand() & 0x3fffffff) : rand());
+                int eval = blockSmallRooms ? (rand() & 0x3fffffff) : rand();
                 SBServerSetIntValueA(server, "dwc_eval", eval);
             }
         }

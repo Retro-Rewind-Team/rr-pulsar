@@ -232,15 +232,6 @@ static u16 GetWinningCourse(const ExpSELECTHandler& select) {
 }
 kmBranch(0x80660450, GetWinningCourse);
 
-static bool HasRequiredUSERPackets(const RKNet::ControllerSub& sub) {
-    const RKNet::USERHandler* userHandler = RKNet::USERHandler::sInstance;
-    if (userHandler == nullptr || !userHandler->isInitialized) return false;
-
-    const u32 localAidBit = 1 << sub.localAid;
-    const u32 requiredAids = sub.availableAids & ~localAidBit;
-    return (userHandler->aidsThatHaveGivenMiis & requiredAids) == requiredAids;
-}
-
 PulsarId FixRandom(Random& random) {
     return CupsConfig::sInstance->RandomizeTrack();
 }
@@ -284,8 +275,6 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
     const RKNet::RoomType roomType = controller->roomType;
     const bool isFriendRoom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
     const bool isFriendRoomVS = isFriendRoom && (mode == RKNet::ONLINEMODE_PRIVATE_VS || mode == RKNet::ONLINEMODE_PUBLIC_VS);
-
-    if (!HasRequiredUSERPackets(sub)) return;
 
     if (mode == RKNet::ONLINEMODE_PRIVATE_VS && system->IsContext(PULSAR_MODE_KO)) system->koMgr->PatchAids(sub);
 
@@ -607,8 +596,6 @@ void ProcessNewPacketVoting() {
     asm(mr handler, r24;);
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-
-    if (!HasRequiredUSERPackets(sub)) return;
 
     for (int aid = 0; aid < 12; ++aid) {
         const u8 localAid = sub.localAid;

@@ -17,16 +17,16 @@ namespace Pulsar {
 namespace PointRating {
 
 #ifdef BETA
-static const char* MULTIPLIER_URL = "http://update.rwfc.net/RetroRewind/multiplierBeta.txt";
+static const char* MULTIPLIER_URL = "http://rwfc.net:8000/RetroRewind/multiplierBeta.txt";
 #else
-static const char* MULTIPLIER_URL = "http://update.rwfc.net/RetroRewind/multiplier.txt";
+static const char* MULTIPLIER_URL = "http://rwfc.net:8000/RetroRewind/multiplier.txt";
 #endif
 static const u32 MULTIPLIER_REQUEST_WORK_BUF_SIZE = 0x1000;
 
 static void* s_multiplierRequestWorkBuf = nullptr;
 static bool s_multiplierRequestActive = false;
 static bool s_multiplierRequestDone = false;
-static bool s_multiplierRequestPending = false;
+static bool s_wasConnectedToWfc = false;
 static bool s_remoteMultiplierValid = false;
 static float s_remoteMultiplier = 1.0f;
 
@@ -75,10 +75,7 @@ static bool ParseRemoteMultiplier(const char* body, int bodyLen, float& out) {
 
 static bool CanStartMultiplierDownload() {
     RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return false;
-
-    const RKNet::ConnectionState state = controller->GetConnectionState();
-    return state == RKNet::CONNECTIONSTATE_IDLE || state == RKNet::CONNECTIONSTATE_ROOM;
+    return controller != nullptr && controller->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
 }
 
 static void OnMultiplierDownloaded(s32 result, void* response, void* /*userdata*/) {
@@ -102,7 +99,7 @@ static void OnMultiplierDownloaded(s32 result, void* response, void* /*userdata*
 }
 
 static void TryStartMultiplierDownload() {
-    if (!s_multiplierRequestPending || s_multiplierRequestActive || s_multiplierRequestDone || !CanStartMultiplierDownload()) return;
+    if (s_multiplierRequestActive || s_multiplierRequestDone || !CanStartMultiplierDownload()) return;
 
     if (!Network::PrepareNHTTPRequest()) return;
 
@@ -127,18 +124,24 @@ static void TryStartMultiplierDownload() {
     }
     Network::MarkNHTTPRequestActive();
     s_multiplierRequestActive = true;
-    s_multiplierRequestPending = false;
 }
 
-static void StartMultiplierDownloadForRace() {
-    s_multiplierRequestDone = false;
-    s_multiplierRequestPending = true;
+static void UpdateMultiplierDownloadForWfcConnection() {
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isConnectedToWfc =
+        controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+
+    if (isConnectedToWfc && !s_wasConnectedToWfc) {
+        s_multiplierRequestDone = false;
+        s_remoteMultiplierValid = false;
+        s_remoteMultiplier = 1.0f;
+    }
+    s_wasConnectedToWfc = isConnectedToWfc;
 
     TryStartMultiplierDownload();
 }
 
-static RaceLoadHook raceMultiplierHook(StartMultiplierDownloadForRace);
-static FrameLoadHook remoteMultiplierHook(TryStartMultiplierDownload);
+static FrameLoadHook remoteMultiplierHook(UpdateMultiplierDownloadForWfcConnection);
 
 static bool IsEventDay(unsigned m, unsigned d) {
     return (m == 12 && d >= 23) ||  // Christmas
