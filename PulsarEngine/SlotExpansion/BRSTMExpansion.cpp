@@ -5,6 +5,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
+#include <Settings/Settings.hpp>
 #include <RetroRewind.hpp>
 
 namespace Pulsar {
@@ -16,6 +17,10 @@ static char normalLapExtFilePath[0x100];
 
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
+
+static bool IsCTMusicEnabled() {
+    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CTMUSIC) == CTMUSIC_ENABLED;
+}
 
 static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
     if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
@@ -75,7 +80,10 @@ static bool StringEndsWith(const char* str, const char* suffix) {
 }
 
 static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath) {
-    if (archive == nullptr || !IsSW2RRLoaded() || !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) return false;
+    if (archive == nullptr || !IsCTMusicEnabled() || !IsSW2RRLoaded() ||
+        !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) {
+        return false;
+    }
 
     snprintf(pulPath, sizeof(pulPath), "%sstrm/o_FanfareRRGP1_32.brstm", archive->extFileRoot);
     if (!CheckBRSTMPath(pulPath, false)) return false;
@@ -145,8 +153,7 @@ bool HasSW2RRTieredBRSTM(u8 tier) {
 
 nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void* buffer, int size,
                                        const char* extFilePath, u32 r7, u32 length) {
-    const Pulsar::CTMusic isBRSTMOn = static_cast<Pulsar::CTMusic>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_SOUND), Pulsar::RADIO_CTMUSIC));
+    const bool isBRSTMOn = IsCTMusicEnabled();
     const char firstChar = extFilePath[0xC];
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const PulsarId track = cupsConfig->GetWinning();
@@ -161,7 +168,7 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
         }
     }
-    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
+    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn) {
         if (!CupsConfig::IsReg(track)) {
             register u32 strLength;
             asm(mr strLength, r28;);
