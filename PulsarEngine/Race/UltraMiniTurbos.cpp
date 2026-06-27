@@ -94,8 +94,8 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     const float umtMultiplier = 1.32;  // 10% faster
     const float insideDriftMultiplier = 1.236f;  // 3% faster
     const float defaultMTMultiplier = 1.2f;
-    Pulsar::ForceTransmission insideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE) ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
-    Pulsar::ForceTransmission outsideAll = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE) ? Pulsar::FORCE_TRANSMISSION_OUTSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    Pulsar::ForceTransmission inside = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONINSIDE) ? Pulsar::FORCE_TRANSMISSION_INSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
+    Pulsar::ForceTransmission outside = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONOUTSIDE) ? Pulsar::FORCE_TRANSMISSION_OUTSIDE : Pulsar::FORCE_TRANSMISSION_DEFAULT;
     Pulsar::ForceTransmission vanilla = System::sInstance->IsContext(Pulsar::PULSAR_TRANSMISSIONVANILLA) ? Pulsar::FORCE_TRANSMISSION_VANILLA : Pulsar::FORCE_TRANSMISSION_DEFAULT;
     
     // check if a matching ghost combo is present (same kart+character)
@@ -123,12 +123,12 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     // determine whether to use inside drift multiplier (respect ghost combo override if present)
     bool useInside;
     if (ghostCombo) {
-        useInside = (savedTrans == Pulsar::TRANSMISSION_INSIDEALL);
+        useInside = (savedTrans == Pulsar::TRANSMISSION_INSIDE);
     } else if (scenario.localPlayerCount > 1) {
         useInside = movement->GetStats().type == INSIDE_BIKE;
     } else {
         u32 userTrans = Pulsar::UI::GetSelectedTransmission(id);
-        useInside = ((static_cast<Pulsar::Transmission>(userTrans) == Pulsar::TRANSMISSION_INSIDEALL) || (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE)) && vanilla != Pulsar::FORCE_TRANSMISSION_VANILLA && outsideAll != Pulsar::FORCE_TRANSMISSION_OUTSIDE;
+        useInside = ((static_cast<Pulsar::Transmission>(userTrans) == Pulsar::TRANSMISSION_INSIDE) || (inside == Pulsar::FORCE_TRANSMISSION_INSIDE)) && vanilla != Pulsar::FORCE_TRANSMISSION_VANILLA && outside != Pulsar::FORCE_TRANSMISSION_OUTSIDE;
     }
     if (useInside) {
         if (!isBoosting) state[id] = false;

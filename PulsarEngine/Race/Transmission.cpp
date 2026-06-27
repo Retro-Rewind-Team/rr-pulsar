@@ -12,21 +12,12 @@ static Kart::Stats playerStats[12];
 
 Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType kartType);
 
-static void ApplyInsideAll(Kart::Stats& stats) {
+static void ApplyInside(Kart::Stats& stats) {
     if (stats.type == INSIDE_BIKE) {
         stats.targetAngle = 0.0f;
     } else if (stats.type == KART) {
         stats.type = INSIDE_BIKE;
         stats.mt += 20.0f;
-    } else if (stats.type == OUTSIDE_BIKE) {
-        stats.type = INSIDE_BIKE;
-        stats.targetAngle = 0.0f;
-    }
-}
-
-static void ApplyInsideBike(Kart::Stats& stats) {
-    if (stats.type == INSIDE_BIKE) {
-        stats.targetAngle = 0.0f;
     } else if (stats.type == OUTSIDE_BIKE) {
         stats.type = INSIDE_BIKE;
         stats.targetAngle = 0.0f;
@@ -54,7 +45,10 @@ static Transmission GetPlayerTransmission(u32 playerId) {
     const RacedataPlayer& player = scenario.players[playerId];
     if (player.playerType == PLAYER_GHOST) {
         const int rkgIndex = GetGhostRkgIndex(playerId);
-        if (rkgIndex >= 0) return static_cast<Transmission>(Racedata::sInstance->ghosts[rkgIndex].header.unknown_3);
+        if (rkgIndex >= 0) {
+            const u32 savedTransmission = Racedata::sInstance->ghosts[rkgIndex].header.unknown_3;
+            return static_cast<Transmission>(savedTransmission);
+        }
         return TRANSMISSION_DEFAULT;
     }
 
@@ -80,7 +74,7 @@ static void ApplyTransmission(Kart::Stats& stats, u32 playerId) {
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
     const bool isFroom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
     if (isFroom && System::sInstance->IsContext(PULSAR_TRANSMISSIONINSIDE)) {
-        ApplyInsideAll(stats);
+        ApplyInside(stats);
         return;
     }
     if (isFroom && System::sInstance->IsContext(PULSAR_TRANSMISSIONOUTSIDE)) {
@@ -90,10 +84,8 @@ static void ApplyTransmission(Kart::Stats& stats, u32 playerId) {
     if (isFroom && System::sInstance->IsContext(PULSAR_TRANSMISSIONVANILLA)) return;
 
     const Transmission transmission = GetPlayerTransmission(playerId);
-    if (transmission == TRANSMISSION_INSIDEALL) {
-        ApplyInsideAll(stats);
-    } else if (transmission == TRANSMISSION_INSIDEBIKE) {
-        ApplyInsideBike(stats);
+    if (transmission == TRANSMISSION_INSIDE) {
+        ApplyInside(stats);
     } else if (transmission == TRANSMISSION_OUTSIDE) {
         ApplyOutside(stats);
     }

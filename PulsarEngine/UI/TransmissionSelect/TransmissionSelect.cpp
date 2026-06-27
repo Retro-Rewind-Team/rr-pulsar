@@ -6,20 +6,20 @@ namespace Pulsar {
 namespace UI {
 
 static Transmission selectedTransmission[4] = {
-    TRANSMISSION_INSIDEALL,
-    TRANSMISSION_INSIDEALL,
-    TRANSMISSION_INSIDEALL,
-    TRANSMISSION_INSIDEALL,
+    TRANSMISSION_INSIDE,
+    TRANSMISSION_INSIDE,
+    TRANSMISSION_INSIDE,
+    TRANSMISSION_INSIDE,
 };
 
 static PageId nextPageAfterTransmission = PAGE_NONE;
 
 static Transmission GetTransmissionFromButton(const PushButton& button) {
-    return button.buttonId == 0 ? TRANSMISSION_OUTSIDE : TRANSMISSION_INSIDEALL;
+    return button.buttonId == 0 ? TRANSMISSION_OUTSIDE : TRANSMISSION_INSIDE;
 }
 
 Transmission GetSelectedTransmission(u32 hudSlotId) {
-    if (hudSlotId >= 4) return TRANSMISSION_INSIDEALL;
+    if (hudSlotId >= 4) return TRANSMISSION_INSIDE;
     return selectedTransmission[hudSlotId];
 }
 

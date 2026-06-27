@@ -162,9 +162,8 @@ enum LooseArchiveOverridesSetting {
 // 1) Race 1 values
 enum Transmission {
     TRANSMISSION_DEFAULT,
-    TRANSMISSION_INSIDEALL,
-    TRANSMISSION_INSIDEBIKE,
-    TRANSMISSION_OUTSIDE
+    TRANSMISSION_INSIDE,
+    TRANSMISSION_OUTSIDE = 3
 };
 
 enum BrakeDrift {
