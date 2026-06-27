@@ -53,12 +53,11 @@ enum UserType {
 
 // 1) Race 1
 enum Race1Settings {
-    RADIO_TRANSMISSION = 0,
-    RADIO_BRAKEDRIFT = 1,
-    RADIO_HARDAI = 2,
-    RADIO_INPUTDISPLAY = 3,
-    RADIO_MIIHEADS = 4,
-    RADIO_SPEEDOMETER = 5,
+    RADIO_BRAKEDRIFT = 0,
+    RADIO_HARDAI = 1,
+    RADIO_INPUTDISPLAY = 2,
+    RADIO_MIIHEADS = 3,
+    RADIO_SPEEDOMETER = 4,
 };
 
 // 2) Race 2

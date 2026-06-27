@@ -6,6 +6,7 @@
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
 #include <MarioKartWii/File/RKG.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -124,9 +125,7 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     if (ghostCombo) {
         useInside = (savedTrans == Pulsar::TRANSMISSION_INSIDEALL);
     } else {
-        u32 userTrans = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
-            Pulsar::RADIO_TRANSMISSION);
+        u32 userTrans = Pulsar::UI::GetSelectedTransmission(id);
         useInside = ((static_cast<Pulsar::Transmission>(userTrans) == Pulsar::TRANSMISSION_INSIDEALL) || (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE)) && vanilla != Pulsar::FORCE_TRANSMISSION_VANILLA && outsideAll != Pulsar::FORCE_TRANSMISSION_OUTSIDE;
     }
     if (useInside) {

@@ -3,6 +3,7 @@
 #include <IO/IO.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 
 namespace Pulsar {
 namespace Ghosts {
@@ -228,16 +229,10 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
             RKG& loaded = Racedata::sInstance->ghosts[rkgIndex];
             buffer.header.unknown_3 = loaded.header.unknown_3;
         } else {
-            u32 tv = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-                static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
-                Pulsar::RADIO_TRANSMISSION);
-            buffer.header.unknown_3 = tv;
+            buffer.header.unknown_3 = Pulsar::UI::GetSelectedTransmission(0);
         }
     } else {
-        u32 transValue = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
-            Pulsar::RADIO_TRANSMISSION);
-        buffer.header.unknown_3 = transValue;
+        buffer.header.unknown_3 = Pulsar::UI::GetSelectedTransmission(0);
     }
 
     if (data.CreateRKG(buffer) && buffer.CompressTo(this->rkg)) {
