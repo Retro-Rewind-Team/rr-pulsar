@@ -137,12 +137,14 @@ s32 HandleResponse(u8 *block) {
 
 void OnPayloadReceived(s32 result, void *response, void *userdata) {
     if (response == nullptr) {
+        s_auth_error = WL_ERROR_PAYLOAD_STAGE1_RESPONSE;
         return;
     }
 
     NHTTPDestroyResponse(response);
 
     if (result != 0) {
+        s_auth_error = WL_ERROR_PAYLOAD_STAGE1_RESPONSE;
         return;
     }
 
@@ -175,6 +177,7 @@ kmBranchDefCpp(
     u8 salt[SHA256_DIGEST_SIZE];
     if (!GenerateRandomSalt(salt)) {
         s_auth_error = WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;
+        return;
     }
 
     static const char *hexConv = "0123456789abcdef";
