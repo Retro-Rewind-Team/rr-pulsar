@@ -17,6 +17,7 @@ class TransmissionSelect : public Pages::DriftSelect {
 
     void OnInit() override;
     void OnActivate() override;
+    void AfterControlUpdate() override;
     void OnExternalButtonSelect(PushButton& button, u32 hudSlotId) override;
     void OnButtonClick(PushButton& button, u32 hudSlotId);
 };

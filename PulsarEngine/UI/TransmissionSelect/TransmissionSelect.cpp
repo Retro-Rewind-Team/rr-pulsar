@@ -50,6 +50,12 @@ static void HideTransmissionExtras(Pages::Menu& menu) {
     }
 }
 
+static void CopyDriftTimerToTransmission(Pages::Menu& menu) {
+    TransmissionSelect* transmissionPage = ExpSection::GetSection()->GetPulPage<TransmissionSelect>();
+    if (transmissionPage == nullptr) return;
+    transmissionPage->timer = static_cast<Pages::DriftSelect&>(menu).timer;
+}
+
 void TransmissionSelect::OnInit() {
     Pages::DriftSelect::OnInit();
     SetTransmissionMessages(*this);
@@ -63,6 +69,25 @@ void TransmissionSelect::OnActivate() {
     SetTransmissionMessages(*this);
     HideTransmissionExtras(*this);
     SelectCurrentTransmission(*this, 0);
+}
+
+void TransmissionSelect::AfterControlUpdate() {
+    if (this->currentState != STATE_ACTIVE || this->timer == nullptr) return;
+    if (this->timer->countdown > 0.0f) return;
+
+    PushButton* button;
+    if (this->externControls[0]->IsSelected()) {
+        button = this->externControls[0];
+    } else if (this->externControls[1]->IsSelected()) {
+        button = this->externControls[1];
+    } else {
+        const u32 buttonId = GetSelectedTransmission(0) == TRANSMISSION_OUTSIDE ? 0 : 1;
+        button = this->externControls[buttonId];
+    }
+
+    this->OnExternalButtonSelect(*button, 0);
+    button->SelectFocus();
+    this->OnButtonClick(*button, 0);
 }
 
 void TransmissionSelect::OnExternalButtonSelect(PushButton& button, u32) {
@@ -115,6 +140,7 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
     returnToGlobeAfterTransmission = false;
     nextSectionAfterTransmission = SECTION_NONE;
     nextPageAfterTransmission = id;
+    CopyDriftTimerToTransmission(menu);
     menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
 }
 
@@ -127,6 +153,7 @@ static void LoadTransmissionSelectBeforeSectionChange(Pages::Menu& menu, Section
     returnToGlobeAfterTransmission = false;
     nextPageAfterTransmission = PAGE_NONE;
     nextSectionAfterTransmission = id;
+    CopyDriftTimerToTransmission(menu);
     menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
 }
 kmCall(0x8084e4c8, LoadTransmissionSelectBeforeSectionChange);
@@ -140,6 +167,7 @@ void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection,
     returnToGlobeAfterTransmission = true;
     nextPageAfterTransmission = PAGE_NONE;
     nextSectionAfterTransmission = SECTION_NONE;
+    CopyDriftTimerToTransmission(menu);
     menu.LoadNextPageWithDelayById(static_cast<PageId>(TransmissionSelect::id), animLength);
 }
 kmCall(0x8084e4b8, LoadTransmissionSelectAfterGlobeDrift);
