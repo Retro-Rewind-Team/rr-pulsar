@@ -1776,6 +1776,7 @@ SelectButton__Q25Pages4MenuFR10PushButton = 0x8083752c
 OnExternalButtonSelect__Q25Pages4MenuFR10PushButtonUi = 0x808375ec
 SelectExternObject__Q25Pages4MenuFUi = 0x808375f0
 LoadNextPageById__Q25Pages4MenuF6PageIdR10PushButton = 0x80837720
+LoadNextPageWithDelayById__Q25Pages4MenuF6PageIdf = 0x8083761c
 LoadPrevPageById__Q25Pages4MenuF6PageIdR10PushButton = 0x80837934
 LoadPrevPageWithDelay__Q25Pages4MenuFf = 0x80837a44
 LoadPrevPage__Q25Pages4MenuFR10PushButton = 0x80837b4c

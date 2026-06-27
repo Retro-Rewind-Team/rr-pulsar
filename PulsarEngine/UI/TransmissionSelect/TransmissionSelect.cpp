@@ -13,6 +13,7 @@ static Transmission selectedTransmission[4] = {
 };
 
 static PageId nextPageAfterTransmission = PAGE_NONE;
+static bool returnToGlobeAfterTransmission = false;
 
 static Transmission GetTransmissionFromButton(const PushButton& button) {
     return button.buttonId == 0 ? TRANSMISSION_OUTSIDE : TRANSMISSION_INSIDE;
@@ -77,6 +78,12 @@ void TransmissionSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
         return;
     }
     SetSelectedTransmission(hudSlotId, GetTransmissionFromButton(button));
+    if (returnToGlobeAfterTransmission) {
+        returnToGlobeAfterTransmission = false;
+        this->nextPageId = PAGE_NONE;
+        this->EndStateAnimated(0, button.GetAnimationFrameSize());
+        return;
+    }
     PageId next = nextPageAfterTransmission;
     if (next == PAGE_NONE) next = PAGE_CUP_SELECT;
     this->LoadNextPageById(next, button);
@@ -98,9 +105,22 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
         menu.LoadNextPageById(id, button);
         return;
     }
+    returnToGlobeAfterTransmission = false;
     nextPageAfterTransmission = id;
     menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
 }
+
+void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection, float animLength) {
+    System* system = System::sInstance;
+    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
+        menu.EndStateAnimated(animDirection, animLength);
+        return;
+    }
+    returnToGlobeAfterTransmission = true;
+    nextPageAfterTransmission = PAGE_NONE;
+    menu.LoadNextPageWithDelayById(static_cast<PageId>(TransmissionSelect::id), animLength);
+}
+kmCall(0x8084e4b8, LoadTransmissionSelectAfterGlobeDrift);
 
 }  // namespace UI
 }  // namespace Pulsar

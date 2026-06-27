@@ -22,6 +22,7 @@ class TransmissionSelect : public Pages::DriftSelect {
 };
 
 void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& button);
+void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection, float animLength);
 
 }  // namespace UI
 }  // namespace Pulsar
