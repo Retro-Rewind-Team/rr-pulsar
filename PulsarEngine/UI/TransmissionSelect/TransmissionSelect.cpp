@@ -15,7 +15,7 @@ static Transmission selectedTransmission[4] = {
 static PageId nextPageAfterTransmission = PAGE_NONE;
 
 static Transmission GetTransmissionFromButton(const PushButton& button) {
-    return button.buttonId == 0 ? TRANSMISSION_INSIDEALL : TRANSMISSION_OUTSIDE;
+    return button.buttonId == 0 ? TRANSMISSION_OUTSIDE : TRANSMISSION_INSIDEALL;
 }
 
 Transmission GetSelectedTransmission(u32 hudSlotId) {
@@ -29,18 +29,29 @@ void SetSelectedTransmission(u32 hudSlotId, Transmission transmission) {
 
 static void SetTransmissionMessages(Pages::Menu& menu) {
     menu.titleText->SetMessage(BMG_TRANSMISSION_SELECT);
-    menu.externControls[0]->SetMessage(BMG_INSIDE_TRANSMISSION);
-    menu.externControls[1]->SetMessage(BMG_OUTSIDE_TRANSMISSION);
+    menu.externControls[0]->SetMessage(BMG_OUTSIDE_TRANSMISSION);
+    menu.externControls[1]->SetMessage(BMG_INSIDE_TRANSMISSION);
 }
 
 static void SelectCurrentTransmission(Pages::Menu& menu, u32 hudSlotId) {
-    const u32 buttonId = GetSelectedTransmission(hudSlotId) == TRANSMISSION_OUTSIDE ? 1 : 0;
+    const u32 buttonId = GetSelectedTransmission(hudSlotId) == TRANSMISSION_OUTSIDE ? 0 : 1;
     menu.SelectButton(*menu.externControls[buttonId]);
+}
+
+static void HideTransmissionExtras(Pages::Menu& menu) {
+    for (u32 i = 0; i < menu.curMovieCount; ++i) {
+        menu.movies[i]->CtrlMenuMovieHandler::isHidden = true;
+    }
+    if (menu.externControlCount > 2) {
+        menu.externControls[2]->isHidden = true;
+        menu.externControls[2]->manipulator.inaccessible = true;
+    }
 }
 
 void TransmissionSelect::OnInit() {
     Pages::DriftSelect::OnInit();
     SetTransmissionMessages(*this);
+    HideTransmissionExtras(*this);
     this->onButtonClickHandler.subject = this;
     this->onButtonClickHandler.ptmf = static_cast<void (Pages::MenuInteractable::*)(PushButton&, u32)>(&TransmissionSelect::OnButtonClick);
 }
@@ -48,6 +59,7 @@ void TransmissionSelect::OnInit() {
 void TransmissionSelect::OnActivate() {
     Pages::DriftSelect::OnActivate();
     SetTransmissionMessages(*this);
+    HideTransmissionExtras(*this);
     SelectCurrentTransmission(*this, 0);
 }
 
@@ -56,7 +68,7 @@ void TransmissionSelect::OnExternalButtonSelect(PushButton& button, u32) {
         this->bottomText->SetMessage(0);
         return;
     }
-    this->bottomText->SetMessage(button.buttonId == 0 ? BMG_INSIDE_TRANSMISSION_BOTTOM : BMG_OUTSIDE_TRANSMISSION_BOTTOM);
+    this->bottomText->SetMessage(button.buttonId == 0 ? BMG_OUTSIDE_TRANSMISSION_BOTTOM : BMG_INSIDE_TRANSMISSION_BOTTOM);
 }
 
 void TransmissionSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
@@ -80,6 +92,10 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
         handler.toSendPacket.allowChangeComboStatus = Network::SELECT_COMBO_SELECTED;
         menu.EndStateAnimated(0, 0.0f);
         menu.LoadNextPageById(PAGE_SELECT_STAGE_MGR, button);
+        return;
+    }
+    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
+        menu.LoadNextPageById(id, button);
         return;
     }
     nextPageAfterTransmission = id;
