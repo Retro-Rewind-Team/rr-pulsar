@@ -51,7 +51,7 @@ static void HandleExtendedTeamUpdates(const PulROOM& packet) {
     }
 }
 
-static bool ApplyHostContextLocally(u32 hostContext) {
+static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     System* system = System::sInstance;
 
     const bool isCharRestrictLight = hostContext & (1 << PULSAR_CHARRESTRICTLIGHT);
@@ -59,6 +59,8 @@ static bool ApplyHostContextLocally(u32 hostContext) {
     const bool isCharRestrictHeavy = hostContext & (1 << PULSAR_CHARRESTRICTHEAVY);
     const bool isKartRestrictKart = hostContext & (1 << PULSAR_KARTRESTRICT);
     const bool isKartRestrictBike = hostContext & (1 << PULSAR_BIKERESTRICT);
+    const bool isInsideForced = hostContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
+    const bool isOutsideForced = hostContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
     const bool isExtendedTeams = hostContext & (1 << PULSAR_EXTENDEDTEAMS);
     const bool isStartRetro = hostContext & (1 << PULSAR_STARTRETROS);
     const bool isStartCT = hostContext & (1 << PULSAR_STARTCTS);
@@ -73,7 +75,9 @@ static bool ApplyHostContextLocally(u32 hostContext) {
                   (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) |
                   (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) |
                   (isKartRestrictBike << PULSAR_BIKERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
+    u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE);
     system->context = context;
+    system->context2 = context2;
 
     if (isStartCT || isStartRetro || isStartRTS || isStart200 || isStartOTT || isStartItemRain) {
         system->context &= ~(1 << PULSAR_EXTENDEDTEAMS);
@@ -227,7 +231,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         WriteBlockedTracksToPacket(destPacket);
 
         ConvertROOMPacketToData(*destPacket);
-        (void)ApplyHostContextLocally(destPacket->hostSystemContext);
+        (void)ApplyHostContextLocally(destPacket->hostSystemContext, destPacket->hostSystemContext2);
 
         if (extendedTeams) {
             UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
@@ -274,7 +278,7 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
 
         // Get context from host packet (no need to read local settings - host values take precedence)
         Network::Mgr& netMgr = Pulsar::System::sInstance->netMgr;
-        const bool isExtendedTeams = ApplyHostContextLocally(netMgr.hostContext);
+        const bool isExtendedTeams = ApplyHostContextLocally(netMgr.hostContext, netMgr.hostContext2);
 
         // Also exit the settings page to prevent weird graphical artefacts
         Page* topPage = SectionMgr::sInstance->curSection->GetTopLayerPage();
