@@ -13,6 +13,7 @@ static Transmission selectedTransmission[4] = {
 };
 
 static PageId nextPageAfterTransmission = PAGE_NONE;
+static SectionId nextSectionAfterTransmission = SECTION_NONE;
 static bool returnToGlobeAfterTransmission = false;
 
 static Transmission GetTransmissionFromButton(const PushButton& button) {
@@ -84,6 +85,12 @@ void TransmissionSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
         this->EndStateAnimated(0, button.GetAnimationFrameSize());
         return;
     }
+    if (nextSectionAfterTransmission != SECTION_NONE) {
+        SectionId next = nextSectionAfterTransmission;
+        nextSectionAfterTransmission = SECTION_NONE;
+        this->ChangeSectionById(next, button);
+        return;
+    }
     PageId next = nextPageAfterTransmission;
     if (next == PAGE_NONE) next = PAGE_CUP_SELECT;
     this->LoadNextPageById(next, button);
@@ -106,9 +113,23 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
         return;
     }
     returnToGlobeAfterTransmission = false;
+    nextSectionAfterTransmission = SECTION_NONE;
     nextPageAfterTransmission = id;
     menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
 }
+
+static void LoadTransmissionSelectBeforeSectionChange(Pages::Menu& menu, SectionId id, PushButton& button) {
+    System* system = System::sInstance;
+    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
+        menu.ChangeSectionById(id, button);
+        return;
+    }
+    returnToGlobeAfterTransmission = false;
+    nextPageAfterTransmission = PAGE_NONE;
+    nextSectionAfterTransmission = id;
+    menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
+}
+kmCall(0x8084e4c8, LoadTransmissionSelectBeforeSectionChange);
 
 void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection, float animLength) {
     System* system = System::sInstance;
@@ -118,6 +139,7 @@ void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection,
     }
     returnToGlobeAfterTransmission = true;
     nextPageAfterTransmission = PAGE_NONE;
+    nextSectionAfterTransmission = SECTION_NONE;
     menu.LoadNextPageWithDelayById(static_cast<PageId>(TransmissionSelect::id), animLength);
 }
 kmCall(0x8084e4b8, LoadTransmissionSelectAfterGlobeDrift);
