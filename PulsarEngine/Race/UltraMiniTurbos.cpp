@@ -124,6 +124,8 @@ bool UpdateSpeedMultiplier(Kart::Boost& boost, bool* boostEnded) {
     bool useInside;
     if (ghostCombo) {
         useInside = (savedTrans == Pulsar::TRANSMISSION_INSIDEALL);
+    } else if (scenario.localPlayerCount > 1) {
+        useInside = movement->GetStats().type == INSIDE_BIKE;
     } else {
         u32 userTrans = Pulsar::UI::GetSelectedTransmission(id);
         useInside = ((static_cast<Pulsar::Transmission>(userTrans) == Pulsar::TRANSMISSION_INSIDEALL) || (insideAll == Pulsar::FORCE_TRANSMISSION_INSIDE)) && vanilla != Pulsar::FORCE_TRANSMISSION_VANILLA && outsideAll != Pulsar::FORCE_TRANSMISSION_OUTSIDE;

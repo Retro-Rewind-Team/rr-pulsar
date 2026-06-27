@@ -114,6 +114,11 @@ Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         }
     }
 
+    if (scenario.localPlayerCount > 1) {
+        insideAll = outsideAll = vanilla = Pulsar::FORCE_TRANSMISSION_DEFAULT;
+        transmission = Pulsar::TRANSMISSION_DEFAULT;
+    }
+
     if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW &&
         RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_BT_WW &&
         (isLocalPlayer || ghostPlayerIdx >= 0)) {
