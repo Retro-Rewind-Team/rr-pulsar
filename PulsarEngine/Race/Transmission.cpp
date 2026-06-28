@@ -8,8 +8,6 @@
 namespace Pulsar {
 namespace Race {
 
-static Kart::Stats playerStats[12];
-
 Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType kartType);
 
 static void ApplyInside(Kart::Stats& stats) {
@@ -91,18 +89,17 @@ static void ApplyTransmission(Kart::Stats& stats, u32 playerId) {
     }
 }
 
-static Kart::Stats* CopyAndApplyPlayerTransmission(Kart::Stats* stats, u32 playerId) {
+static Kart::Stats* ApplyPlayerTransmission(Kart::Stats* stats, u32 playerId) {
     if (playerId >= 12 || stats == nullptr) return stats;
 
-    playerStats[playerId] = *stats;
-    ApplyTransmission(playerStats[playerId], playerId);
-    return &playerStats[playerId];
+    ApplyTransmission(*stats, playerId);
+    return stats;
 }
 
 static Kart::Stats* ApplyPlayerStatChanges(KartId kartId, CharacterId characterId, KartType kartType) {
     register u32 playerId;
     asm(mr playerId, r28;);
-    return CopyAndApplyPlayerTransmission(ApplyStatChanges(kartId, characterId, kartType), playerId);
+    return ApplyPlayerTransmission(ApplyStatChanges(kartId, characterId, kartType), playerId);
 }
 kmCall(0x8058f670, ApplyPlayerStatChanges);
 
