@@ -2,7 +2,7 @@
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
-#include <runtimeWrite.hpp>
+#include <Patching/RuntimeChoice.hpp>
 
 namespace Pulsar {
 namespace LapKO {
@@ -16,48 +16,57 @@ static void FrameUpdate() {
 }
 static RaceFrameHook lapKoFrameHook(FrameUpdate);
 
-kmRuntimeUse(0x8053F3B8);  // Wifi Time Limit Expansion [Chadderz]
-kmRuntimeUse(0x8053F3BC);
-kmRuntimeUse(0x80521408);  // No Disconnect [Bully]
-kmRuntimeUse(0x8053EF6C);
-kmRuntimeUse(0x8053F0B4);
-kmRuntimeUse(0x8053F124);
-static void WifiEdits() {
-    // Default is 5 minutes (300k Milliseconds)
-    kmRuntimeWrite32A(0x8053F3B8, 0x3C600005);
-    kmRuntimeWrite32A(0x8053F3BC, 0x388393E0);
-
-    // Default disconnect behavior
-    kmRuntimeWrite32A(0x80521408, 0x38030001);
-    kmRuntimeWrite32A(0x8053EF6C, 0x38030001);
-    kmRuntimeWrite32A(0x8053F0B4, 0x38030001);
-    kmRuntimeWrite32A(0x8053F124, 0x38030001);
-
-    #ifdef RR_TESTS
-    // Disable disconnects from being idle
-    kmRuntimeWrite32A(0x80521408, 0x38000000);
-    kmRuntimeWrite32A(0x8053EF6C, 0x38000000);
-    kmRuntimeWrite32A(0x8053F0B4, 0x38000000);
-    kmRuntimeWrite32A(0x8053F124, 0x38000000);
-    #endif
-
+static bool ShouldUseExtendedWifiRules() {
     System* system = System::sInstance;
-    if (system == nullptr) return;
-    if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)) return;
+    if (system == nullptr) return false;
+    if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)) return false;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
-
-    // 15 minutes if LapKO is enabled (900k Milliseconds)
-    kmRuntimeWrite32A(0x8053F3B8, 0x3C60000D);
-    kmRuntimeWrite32A(0x8053F3BC, 0x6064BBA0);
-
-    // Disable disconnects from being idle
-    kmRuntimeWrite32A(0x80521408, 0x38000000);
-    kmRuntimeWrite32A(0x8053EF6C, 0x38000000);
-    kmRuntimeWrite32A(0x8053F0B4, 0x38000000);
-    kmRuntimeWrite32A(0x8053F124, 0x38000000);
+    if (controller == nullptr) return false;
+    return controller->roomType == RKNet::ROOMTYPE_NONE ||
+           controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
+           controller->roomType == RKNet::ROOMTYPE_FROOM_HOST;
 }
-static SectionLoadHook WifiEditsHook(WifiEdits);
+
+static bool ShouldDisableIdleDisconnect() {
+#ifdef RR_TESTS
+    return true;
+#else
+    return ShouldUseExtendedWifiRules();
+#endif
+}
+
+static u32 sWifiTimeLimitHigh = 0x00050000;
+static u32 sWifiTimeLimitMs = 300000;
+static u32 sDisableIdleDisconnect = 0;
+static u32 sUseAttachedCameraHud = 0;
+
+static void UpdateRuntimePatchState() {
+    if (ShouldUseExtendedWifiRules()) {
+        sWifiTimeLimitHigh = 0x000D0000;
+        sWifiTimeLimitMs = 900000;
+    } else {
+        sWifiTimeLimitHigh = 0x00050000;
+        sWifiTimeLimitMs = 300000;
+    }
+
+    sDisableIdleDisconnect = ShouldDisableIdleDisconnect() ? 1 : 0;
+
+    if (Racedata::sInstance == nullptr) {
+        sUseAttachedCameraHud = 0;
+    } else {
+        const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+        sUseAttachedCameraHud = scenario.localPlayerCount <= 1 ? 1 : 0;
+    }
+}
+static SectionLoadHook UpdateRuntimePatchStateHook(UpdateRuntimePatchState);
+
+RuntimeChoice_CachedInstruction2(LoadWifiTimeLimit, 0x8053F3B8, r3, sWifiTimeLimitHigh, r4, sWifiTimeLimitMs);
+kmWriteNop(0x8053F3BC);
+
+RuntimeChoice_ConditionalAddOrZero(LoadIdleDisconnectResultA, 0x80521408, sDisableIdleDisconnect, r0, r3, 1);
+RuntimeChoice_ConditionalAddOrZero(LoadIdleDisconnectResultB, 0x8053EF6C, sDisableIdleDisconnect, r0, r3, 1);
+RuntimeChoice_ConditionalAddOrZero(LoadIdleDisconnectResultC, 0x8053F0B4, sDisableIdleDisconnect, r0, r3, 1);
+RuntimeChoice_ConditionalAddOrZero(LoadIdleDisconnectResultD, 0x8053F124, sDisableIdleDisconnect, r0, r3, 1);
 
 // Change HUD Elements to Attached PlayerID [Ro]
 kmWrite32(0x807EB500, 0x3800006A);
@@ -65,9 +74,31 @@ kmWrite32(0x807EB550, 0x38000001);
 kmWrite32(0x807E20B4, 0x38000001);
 
 extern "C" void exhaustPipeboost(void*);
-asmFunc cameraIDHUD() {
+asmFunc cameraIDHUDLocal() {
     ASM(
         nofralloc;
+        stwu sp, -0x20(sp);
+        stw r12, 0x8(sp);
+        mfcr r12;
+        stw r12, 0xC(sp);
+
+        lis r12, sUseAttachedCameraHud @ha;
+        lwz r12, sUseAttachedCameraHud @l(r12);
+        cmpwi r12, 0;
+        bne useAttached;
+
+        lwz r12, 0xC(sp);
+        mtcrf 0xff, r12;
+        lwz r12, 0x8(sp);
+        addi sp, sp, 0x20;
+        lwz r0, 0x14(sp);
+        blr;
+
+        useAttached:;
+        lwz r12, 0xC(sp);
+        mtcrf 0xff, r12;
+        lwz r12, 0x8(sp);
+        addi sp, sp, 0x20;
         lis r3, exhaustPipeboost @h;
         lwz r3, exhaustPipeboost @l(r3);
         lwz r3, 0x9D8(r3);
@@ -77,17 +108,7 @@ asmFunc cameraIDHUD() {
         lwz r0, 0x14(sp);
         blr;)
 }
-
-kmRuntimeUse(0x807EC8D4);
-static void camerIDHUDLocal() {
-    kmRuntimeWrite32A(0x807EC8D4, 0x80010014);
-    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
-    const u8 localPlayerCount = scenario.localPlayerCount;
-    if (localPlayerCount <= 1) {
-        kmRuntimeCallA(0x807EC8D4, cameraIDHUD);
-    }
-}
-static SectionLoadHook cameraIDHUDHook(camerIDHUDLocal);
+kmCall(0x807EC8D4, cameraIDHUDLocal);
 
 extern "C" void ptr_playerBase(void*);
 asmFunc HideMapIcon() {

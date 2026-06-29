@@ -1,5 +1,5 @@
 #include <kamek.hpp>
-#include <runtimeWrite.hpp>
+#include <Patching/RuntimeChoice.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
@@ -14,10 +14,9 @@ kmRuntimeUse(0x8011d1e4);
 kmRuntimeUse(0x8011e488);
 kmRuntimeUse(0x8011e480);
 kmRuntimeUse(0x8011e490);
-kmRuntimeUse(0x800d6c94);
-kmRuntimeUse(0x800d6ee4);
 static u32 sJoinAttempts = 0;
 static u32 sPreviousRoomGroupId = 0;
+static u32 sMatchmakingTimeoutMs = 0x4e20;
 
 static bool IsPublicMatchmakingRoomType(const RKNet::RoomType roomType) {
     switch (roomType) {
@@ -50,17 +49,16 @@ static void RememberPreviousPublicRoomGroupId(const RKNet::Controller* controlle
     if (activeGroupId != 0) sPreviousRoomGroupId = activeGroupId;
 }
 
-static void ApplyMatchmakingTimeoutPatch() {
+static u32 GetMatchmakingTimeoutMs() {
     const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
         Settings::SETTINGSTYPE_ONLINE,
         RADIO_INFINITEMATCHMAKINGTIMEOUT);
 
-    const u32 timeoutMs =
-        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
-    const u32 liR6TimeoutMs = 0x38c00000 | timeoutMs;
+    return (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
+}
 
-    kmRuntimeWrite32A(0x800d6c94, liR6TimeoutMs);
-    kmRuntimeWrite32A(0x800d6ee4, liR6TimeoutMs);
+static void UpdateMatchmakingTimeout() {
+    sMatchmakingTimeoutMs = GetMatchmakingTimeoutMs();
 }
 
 typedef int (*SBServerGetIntValueA_t)(void* server, const char* key, int defaultValue);
@@ -237,7 +235,7 @@ kmCall(0x80657990, UpdateMatchmakingInfosAndRememberGroupId);
 
 // Reset when starting ConnectToAnyoneAsync
 static void OnConnectToAnyoneAsync(RKNet::Controller* self) {
-    ApplyMatchmakingTimeoutPatch();
+    UpdateMatchmakingTimeout();
     sJoinAttempts = 0;
     RememberPreviousPublicRoomGroupId(self);
     self->ConnectToAnybodyAsync();
@@ -254,9 +252,8 @@ static void OnRetryReserving(int r3) {
 kmCall(0x800d66ac, OnRetryReserving);
 kmCall(0x800d6950, OnRetryReserving);
 
-// Patch timeouts to 20s (20000ms = 0x4e20)
-kmWrite32(0x800d6c94, 0x38c04e20);  // li r6, 20000 (default)
-kmWrite32(0x800d6ee4, 0x38c04e20);  // li r6, 20000 (default)
+RuntimeChoice_CachedInstruction(LoadMatchmakingTimeoutA, 0x800d6c94, r6, sMatchmakingTimeoutMs);
+RuntimeChoice_CachedInstruction(LoadMatchmakingTimeoutB, 0x800d6ee4, r6, sMatchmakingTimeoutMs);
 
 }  // namespace Network
 }  // namespace Pulsar

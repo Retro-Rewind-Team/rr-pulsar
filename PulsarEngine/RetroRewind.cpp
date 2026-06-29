@@ -9,7 +9,7 @@
 #include <Dolphin/DolphinIOS.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <core/rvl/OS/OS.hpp>
-#include <runtimeWrite.hpp>
+#include <Patching/RuntimeChoice.hpp>
 
 namespace RetroRewind {
 Pulsar::System* System::Create() {
@@ -120,13 +120,13 @@ static void ClearContextsUponWFCDisconnect() {
 SectionLoadHook clearContext(ClearContextsUponWFCDisconnect);
 
 // Hide the channel button on the title screen [ZPL]
-kmRuntimeUse(0x80625E1C);
-static void HideChannelButton() {
-    kmRuntimeWrite32A(0x80625E1C, 0x38800004);
-    if (Dolphin::IsEmulator()) {
-        kmRuntimeWrite32A(0x80625E1C, 0x38800003);
-    }
+static u32 sChannelButtonCount = 4;
+
+static void UpdateChannelButtonCount() {
+    sChannelButtonCount = Dolphin::IsEmulator() ? 3 : 4;
 }
-BootHook hideChannelButton(HideChannelButton, 0);
+
+RuntimeChoice_CachedInstruction(LoadChannelButtonCount, 0x80625E1C, r4, sChannelButtonCount);
+BootHook updateChannelButtonCount(UpdateChannelButtonCount, 0);
 
 }  // namespace RetroRewind
