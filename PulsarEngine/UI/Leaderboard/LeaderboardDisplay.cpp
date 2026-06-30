@@ -11,9 +11,11 @@ namespace Pulsar {
 namespace UI {
 
 static LeaderboardDisplayType displayLeaderboardType = LEADERBOARD_DISPLAY_NAMES;
+static bool hasLeaderboardDisplayToggled = false;
 
 void setLeaderboardDisplayType(LeaderboardDisplayType type) {
     displayLeaderboardType = type;
+    hasLeaderboardDisplayToggled = false;
 }
 
 LeaderboardDisplayType getLeaderboardDisplayType() {
@@ -22,6 +24,7 @@ LeaderboardDisplayType getLeaderboardDisplayType() {
 
 // In case we want to add more display types (FC, flags, whatever..)
 void nextLeaderboardDisplayType() {
+    hasLeaderboardDisplayToggled = true;
     if (displayLeaderboardType == LEADERBOARD_DISPLAY_NAMES) {
         displayLeaderboardType = LEADERBOARD_DISPLAY_TIMES;
     } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_TIMES) {
@@ -45,7 +48,12 @@ void fillLeaderboardResult(CtrlRaceResult& result, u8 playerId) {
     KO::Status koStatus = KO::NORMAL;
     if (isKO) koStatus = system->koMgr->GetPlayerStatus(playerId);
 
-    if (displayLeaderboardType == LEADERBOARD_DISPLAY_TIMES) {
+    if (koStatus != KO::NORMAL && !hasLeaderboardDisplayToggled) {
+        u32 bmgId = UI::BMG_KO_TIE;
+        if (koStatus == KO::KOD) bmgId = UI::BMG_KO_OUT;
+        result.SetTextBoxMessage("player_name", bmgId);
+        result.ResetTextBoxMessage("time");
+    } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_TIMES) {
         result.FillFinishTime(playerId);
     } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_NAMES) {
         result.FillName(playerId);
