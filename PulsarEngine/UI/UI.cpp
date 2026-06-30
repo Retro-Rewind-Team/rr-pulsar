@@ -33,6 +33,7 @@
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
 
 namespace Pulsar {
@@ -150,6 +151,9 @@ void ExpSection::CreatePulPages() {
         this->CreateAndInitPage(*this, PULPAGE_TEAMSELECT);
         this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMSELECT);
     }
+    if (this->Get<Pages::DriftSelect>() != nullptr) {
+        this->CreateAndInitPage(*this, TransmissionSelect::id);
+    }
 }
 
 void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
@@ -248,6 +252,9 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
             break;
         case VRLeaderboardPage::id:
             page = new VRLeaderboardPage;
+            break;
+        case TransmissionSelect::id:
+            page = new TransmissionSelect;
             break;
         case CustomItemPage::id:
             page = new CustomItemPage;

@@ -157,6 +157,7 @@ void CustomRandomizeServers() {
         // For players above 600 VR, heavily deprioritize rooms below 300 VR
         bool isHighVR = !isBattle && playerRating > 60000;  // 600 VR * 100
         int lowRoomThreshold = 30000;  // 300 VR * 100
+        int highRoomThreshold = playerRating + 40000;  // Player VR + 400 VR * 100
 
         for (int i = 0; i < count; ++i) {
             void* server = ServerBrowserGetServerAtIndexA(sb, i);
@@ -188,6 +189,8 @@ void CustomRandomizeServers() {
 
             // If player is low VR and room is above the threshold, mark it with very high eval
             if (isLowVR && serverRating > maxRoomRating) {
+                eval = ratingMismatchEval;
+            } else if (!isBattle && serverRating > highRoomThreshold) {
                 eval = ratingMismatchEval;
             } else if (isHighVR && serverRating > 0 && serverRating < lowRoomThreshold) {
                 eval = ratingMismatchEval;

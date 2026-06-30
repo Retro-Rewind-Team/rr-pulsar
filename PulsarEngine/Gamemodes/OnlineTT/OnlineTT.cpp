@@ -11,6 +11,7 @@
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Page/Menu/DriftSelect.hpp>
 #include <MarioKartWii/UI/Page/Menu/MultiDriftSelect.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceRankNum.hpp>
 #include <MarioKartWii/Audio/Actors/KartActor.hpp>
 #include <MarioKartWii/AI/AIManager.hpp>
@@ -275,18 +276,7 @@ static void PreventVoteChangeSection(Pages::Vote& vote, SectionId id, float dela
 kmCall(0x80643da0, PreventVoteChangeSection);
 
 static void FixAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {  // menu is either drift or multidrift
-    System* system = System::sInstance;
-    if (system->IsContext(PULSAR_MODE_OTT) && system->ottMgr.voteState == COMBO_SELECTION) {
-        system->ottMgr.voteState = COMBO_SELECTED;
-        Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
-        handler.toSendPacket.playersData[0].character = SectionMgr::sInstance->sectionParams->characters[0];
-        handler.toSendPacket.playersData[0].kart = SectionMgr::sInstance->sectionParams->karts[0];
-        handler.toSendPacket.allowChangeComboStatus = Network::SELECT_COMBO_SELECTED;
-        menu.EndStateAnimated(0, 0.0f);
-        menu.LoadNextPageById(PAGE_SELECT_STAGE_MGR, button);
-        return;
-    }
-    menu.LoadNextPageById(id, button);
+    UI::LoadTransmissionSelectAfterDrift(menu, id, button);
 }
 kmCall(0x8084e698, FixAfterDrift);
 

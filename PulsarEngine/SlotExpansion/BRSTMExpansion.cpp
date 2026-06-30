@@ -13,7 +13,6 @@ namespace Sound {
 
 static char pulPath[0x100];
 static char resolvedPulPath[0x100];
-static char normalLapExtFilePath[0x100];
 
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
@@ -54,15 +53,6 @@ static bool CheckBRSTMPath(const char* path, bool patchesOnly) {
 
     snprintf(pulPath, sizeof(pulPath), "%s", resolvedPath);
     return true;
-}
-
-static const char* GetNormalLapExtFilePath(const char* extFilePath, u32 lapSpecifierIdx, char finalChar) {
-    const int written = snprintf(normalLapExtFilePath, sizeof(normalLapExtFilePath), "%s", extFilePath);
-    if (written <= 0 || static_cast<u32>(written) >= sizeof(normalLapExtFilePath)) return extFilePath;
-    if (lapSpecifierIdx >= static_cast<u32>(written)) return extFilePath;
-
-    normalLapExtFilePath[lapSpecifierIdx] = (finalChar == 'F') ? 'N' : 'n';
-    return normalLapExtFilePath;
 }
 
 static bool StringEndsWith(const char* str, const char* suffix) {
@@ -175,9 +165,6 @@ bool HasSW2RRTieredBRSTM(u8 tier) {
     char racePercentageSpecifier[3];
     snprintf(racePercentageSpecifier, sizeof(racePercentageSpecifier), "-%u", tier);
 
-    if (tier == 3 && CheckBRSTMRoot("/sound/", track, "_f", true, racePercentageSpecifier) >= 0) {
-        return true;
-    }
     return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0;
 }
 
@@ -256,14 +243,14 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
                 extFilePath = pulPath;
             } else if (isFinalLap && CheckBRSTM(archive, track, "_f", true) >= 0) {
                 extFilePath = pulPath;
+                if (isFinalLap) {
+                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
+                }
             } else if (CheckBRSTM(archive, track, "_n", false) >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
                     Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
                 }
-            } else if (isFinalLap) {
-                extFilePath = GetNormalLapExtFilePath(extFilePath, strLength, finalChar);
-                Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
             }
         }
     }

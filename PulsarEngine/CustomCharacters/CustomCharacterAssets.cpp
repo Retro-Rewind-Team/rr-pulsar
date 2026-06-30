@@ -308,6 +308,33 @@ struct MenuKartArchiveLoader {
     u32 gamemode;
 };
 
+bool MenuKartArchiveExists(const char* postfix, u32 gamemode) {
+    if (postfix == nullptr) return false;
+    char path[0x60];
+    const char* suffix = gamemode == 2 ? "" : "_BT";
+    const int written = snprintf(path, sizeof(path), "/Scene/Model/Kart/%s-allkart%s.szs", postfix, suffix);
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(path)) return false;
+    u32 fileSize = 0;
+    return DiscFileSize(path, fileSize);
+}
+
+const char* MenuKartArchivePostfix(CharacterId character, u32 gamemode) {
+    const char* customPostfix = GeneratedCustomPostfix(character, SelectedTable(character));
+    if (customPostfix != nullptr && MenuKartArchiveExists(customPostfix, gamemode)) return customPostfix;
+    return GetDefaultCharacterPostfix(character);
+}
+
+const char** BeginMenuKartNameSwap(CharacterId character, u32 gamemode, const char*& oldName) {
+    const char** entry = CharacterNameEntry(character);
+    oldName = nullptr;
+    if (entry == nullptr) return nullptr;
+    const char* postfix = MenuKartArchivePostfix(character, gamemode);
+    if (postfix == nullptr) return nullptr;
+    oldName = *entry;
+    *entry = postfix;
+    return entry;
+}
+
 bool RequestLoadKartArchivesImmediate(ArchiveMgr* archiveMgr, u8 hudSlotId, CharacterId character, u32 gamemode) {
     if (archiveMgr == nullptr || hudSlotId >= LOCAL_PLAYER_COUNT) return false;
     MenuKartArchiveLoader* loader = reinterpret_cast<MenuKartArchiveLoader*>(&archiveMgr->allkartsModelsLoaders[hudSlotId]);
@@ -315,7 +342,11 @@ bool RequestLoadKartArchivesImmediate(ArchiveMgr* archiveMgr, u8 hudSlotId, Char
     loader->character = character;
     loader->gamemode = gamemode;
     loader->state = 1;
+
+    const char* oldName;
+    const char** entry = BeginMenuKartNameSwap(character, gamemode, oldName);
     ArchiveMgr::LoadKartArchiveAsync(hudSlotId);
+    if (entry != nullptr) *entry = oldName;
     return true;
 }
 kmCall(0x805f5658, RequestLoadKartArchivesImmediate);

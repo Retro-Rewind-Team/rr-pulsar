@@ -3,6 +3,7 @@
 #include <IO/IO.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 
 namespace Pulsar {
 namespace Ghosts {
@@ -209,36 +210,7 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool i
     buffer.ClearBuffer();
 
     bool gotTrophy = false;
-    // Ghost races reuse the saved transmission when the local player and ghost share a combo.
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    int localIdx = -1;
-    int ghostIdx = -1;
-    for (int pid = 0; pid < scenario.playerCount; ++pid) {
-        if (scenario.players[pid].playerType == PLAYER_REAL_LOCAL)
-            localIdx = pid;
-        else if (scenario.players[pid].playerType == PLAYER_GHOST)
-            ghostIdx = pid;
-    }
-    if (localIdx >= 0 && ghostIdx >= 0 &&
-        scenario.players[localIdx].kartId == scenario.players[ghostIdx].kartId &&
-        scenario.players[localIdx].characterId == scenario.players[ghostIdx].characterId) {
-        u8 offset = (scenario.players[0].playerType != PLAYER_GHOST) ? 1 : 0;
-        int rkgIndex = ghostIdx - offset;
-        if (rkgIndex >= 0) {
-            RKG& loaded = Racedata::sInstance->ghosts[rkgIndex];
-            buffer.header.unknown_3 = loaded.header.unknown_3;
-        } else {
-            u32 tv = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-                static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
-                Pulsar::RADIO_TRANSMISSION);
-            buffer.header.unknown_3 = tv;
-        }
-    } else {
-        u32 transValue = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1),
-            Pulsar::RADIO_TRANSMISSION);
-        buffer.header.unknown_3 = transValue;
-    }
+    buffer.header.unknown_3 = Pulsar::UI::GetSelectedTransmission(0);
 
     if (data.CreateRKG(buffer) && buffer.CompressTo(this->rkg)) {
         if (this->cb != nullptr) {
