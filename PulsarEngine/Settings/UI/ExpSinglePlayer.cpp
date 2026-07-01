@@ -154,7 +154,6 @@ kmWritePointer(0x808D9F64, &OnButtonSelect);
 void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
     const u32 id = button.buttonId;
     if (MissionMode::OnButtonClick(page, button, hudSlotId)) return;
-
     if (IsSettingsButton(page, id)) {
         // Navigate to page selection first
         ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_SINGLE_PLAYER_MENU);
