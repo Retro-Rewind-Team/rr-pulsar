@@ -58,7 +58,12 @@ void Mgr::CalcWouldBeKnockedOut() {
         }
     }
 
+    const u32 currentRaceCount = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber + 1;
+    const bool isKoRace = currentRaceCount % this->racesPerKO == 0;
+
     if (playerCount == 2) {
+        if (!isKoRace) return;
+
         for (int i = 0; i < playerCount; ++i) {
             this->wouldBeOut[i] = (raceInfo->players[i]->position != 1);
         }
@@ -66,8 +71,6 @@ void Mgr::CalcWouldBeKnockedOut() {
     }
 
     const bool force1v1Final = System::sInstance->IsContext(Pulsar::PULSAR_KOFINAL) == KOSETTING_FINAL_ALWAYS;
-    const u32 currentRaceCount = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber + 1;
-    const bool isKoRace = currentRaceCount % this->racesPerKO == 0;
 
     if (isKoRace) {
         s32 roundKOs = this->koPerRace;
@@ -151,14 +154,14 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
         }
     }
 
-    if (playerCount == 2 || (playerCount - disconnectedKOs) == 1) {
+    const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
+    if ((playerCount == 2 && isKoRace) || (playerCount - disconnectedKOs) == 1) {
         self->winnerPlayerId = raceinfo->playerIdInEachPosition[0];
         self->SetKOd(raceinfo->playerIdInEachPosition[1]);
         self->AddRaceStats();
         return;
     }
 
-    const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
     if (!isKoRace || koCount <= 0) {
         self->AddRaceStats();
         return;
