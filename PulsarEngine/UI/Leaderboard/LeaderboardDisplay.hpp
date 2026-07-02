@@ -17,6 +17,7 @@ void setLeaderboardDisplayType(LeaderboardDisplayType type);
 LeaderboardDisplayType getLeaderboardDisplayType();
 
 void nextLeaderboardDisplayType();
+void fillLeaderboardResult(CtrlRaceResult& result, u8 playerId);
 void fillLeaderboardResults(int count, CtrlRaceResult** results);
 
 bool checkLeaderboardDisplaySwapInputs();

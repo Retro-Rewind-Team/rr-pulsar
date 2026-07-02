@@ -70,7 +70,7 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage* startMsg, u32 bmgId, 
             const KO::Mgr* koMgr = system->koMgr;
             const u32 playerCount = system->nonTTGhostPlayersCount;
             u32 koCount = 0;
-            if (playerCount == 2)
+            if (playerCount == 2 && raceNumber % koMgr->racesPerKO == 0)
                 koCount = 1;
             else if (raceNumber % koMgr->racesPerKO == 0) {
                 const u32 koPerRace = koMgr->koPerRace;

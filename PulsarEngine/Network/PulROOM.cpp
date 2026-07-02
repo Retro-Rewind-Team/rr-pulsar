@@ -61,6 +61,7 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     const bool isKartRestrictBike = hostContext & (1 << PULSAR_BIKERESTRICT);
     const bool isInsideForced = hostContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
     const bool isOutsideForced = hostContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
+    const bool isVanillaForced = hostContext2 & (1 << PULSAR_TRANSMISSIONVANILLA);
     const bool isExtendedTeams = hostContext & (1 << PULSAR_EXTENDEDTEAMS);
     const bool isStartRetro = hostContext & (1 << PULSAR_STARTRETROS);
     const bool isStartCT = hostContext & (1 << PULSAR_STARTCTS);
@@ -75,7 +76,7 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
                   (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) |
                   (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) |
                   (isKartRestrictBike << PULSAR_BIKERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
-    u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE);
+    u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE) | (isVanillaForced << PULSAR_TRANSMISSIONVANILLA);
     system->context = context;
     system->context2 = context2;
 
