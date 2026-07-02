@@ -36,7 +36,7 @@ class ExpPlayerEffects : public Effects::Player {
    public:
     static const int SmtEffectsCount = 8;
     static const int UmtEffectsCount = 8;
-    explicit ExpPlayerEffects(Kart::Player* kartPlayer) : Effects::Player(kartPlayer) {};
+    explicit ExpPlayerEffects(Kart::Player* kartPlayer) : Effects::Player(kartPlayer), rk_purpleMT(nullptr), rk_orangeMT(nullptr) {};
     ~ExpPlayerEffects() override {
         if (isBike) {
             EGG::Effect** array = rk_orangeMT;

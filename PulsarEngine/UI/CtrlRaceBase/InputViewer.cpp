@@ -27,11 +27,20 @@ namespace UI {
 
 const s8 CtrlRaceInputViewer::DPAD_HOLD_FOR_N_FRAMES = 10;
 
-void CtrlRaceInputViewer::Init() {
-    char name[32];
+static bool IsBrakeDriftingEnabled() {
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
-    bool isBrakedriftToggled = (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) || (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+    if (isOnlineRoomActive && System::sInstance->netMgr.region == 0x15) return false;
+    return (scenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) ||
+           (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
+            mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
+}
+
+void CtrlRaceInputViewer::Init() {
+    char name[32];
+    bool isBrakedriftToggled = IsBrakeDriftingEnabled();
     bool isNunchuk = (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_INPUTDISPLAY)) == Pulsar::INPUTDISPLAY_CHUK);
     RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
 
@@ -143,9 +152,7 @@ void CtrlRaceInputViewer::OnUpdate() {
             setTrigger(Trigger_R, R ? TriggerState_Pressed : TriggerState_Off);
             setStick(stick);
 
-            const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-            const GameMode mode = scenario.settings.gamemode;
-            bool isBrakedriftToggled = (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) || (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
+            bool isBrakedriftToggled = IsBrakeDriftingEnabled();
             if (isBrakedriftToggled) {
                 bool BD = input->buttonActions & 0x10;
                 setTrigger(Trigger_BD, BD ? TriggerState_Pressed : TriggerState_Off);

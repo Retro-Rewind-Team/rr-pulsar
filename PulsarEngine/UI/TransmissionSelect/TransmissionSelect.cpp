@@ -1,6 +1,7 @@
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -15,6 +16,12 @@ static Transmission selectedTransmission[4] = {
 static PageId nextPageAfterTransmission = PAGE_NONE;
 static SectionId nextSectionAfterTransmission = SECTION_NONE;
 static bool returnToGlobeAfterTransmission = false;
+
+static bool IsRegion15Online() {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    return controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
+           System::sInstance->netMgr.region == 0x15;
+}
 
 static Transmission GetTransmissionFromButton(const PushButton& button) {
     return button.buttonId == 0 ? TRANSMISSION_OUTSIDE : TRANSMISSION_INSIDE;
@@ -123,6 +130,10 @@ void TransmissionSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
 
 void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {
     System* system = System::sInstance;
+    if (IsRegion15Online()) {
+        menu.LoadNextPageById(id, button);
+        return;
+    }
     if (system->IsContext(PULSAR_MODE_OTT) && system->ottMgr.voteState == OTT::COMBO_SELECTION) {
         system->ottMgr.voteState = OTT::COMBO_SELECTED;
         Pulsar::Network::ExpSELECTHandler& handler = Pulsar::Network::ExpSELECTHandler::Get();
@@ -146,6 +157,10 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
 
 static void LoadTransmissionSelectBeforeSectionChange(Pages::Menu& menu, SectionId id, PushButton& button) {
     System* system = System::sInstance;
+    if (IsRegion15Online()) {
+        menu.ChangeSectionById(id, button);
+        return;
+    }
     if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
         menu.ChangeSectionById(id, button);
         return;
@@ -160,6 +175,10 @@ kmCall(0x8084e4c8, LoadTransmissionSelectBeforeSectionChange);
 
 void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection, float animLength) {
     System* system = System::sInstance;
+    if (IsRegion15Online()) {
+        menu.EndStateAnimated(animDirection, animLength);
+        return;
+    }
     if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
         menu.EndStateAnimated(animDirection, animLength);
         return;
