@@ -145,6 +145,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         const u8 itemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
         const u8 itemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
         const u8 allItemsCanLand = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
+        const u8 itemsOnMinimap = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMSONMINIMAP) == ITEMSONMINIMAP_ENABLED;
         const u8 extendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
         const u8 normalTC = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
         u8 vr = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
@@ -197,7 +198,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                           itemModeNone << PULSAR_ITEMMODENONE |
                                           koPerRace2 << PULSAR_KOPERRACE_2 |
                                           koPerRace3 << PULSAR_KOPERRACE_3 |
-                                          koPerRace4 << PULSAR_KOPERRACE_4;
+                                          koPerRace4 << PULSAR_KOPERRACE_4 |
+                                          itemsOnMinimap << PULSAR_ITEMSONMINIMAP;
 
         destPacket->customItemsBitfield = settings.GetCustomItems();
 

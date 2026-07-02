@@ -5,6 +5,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
+#include <Settings/Settings.hpp>
 #include <RetroRewind.hpp>
 
 namespace Pulsar {
@@ -15,6 +16,14 @@ static char resolvedPulPath[0x100];
 
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
+u8 Get119RacePercentageMusicTier();
+bool Is119Loaded();
+u8 GetSW2DKSRacePercentageMusicTier();
+bool IsSW2DKSLoaded();
+
+static bool IsCTMusicEnabled() {
+    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CTMUSIC) == CTMUSIC_ENABLED;
+}
 
 static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
     if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
@@ -65,7 +74,10 @@ static bool StringEndsWith(const char* str, const char* suffix) {
 }
 
 static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath) {
-    if (archive == nullptr || !IsSW2RRLoaded() || !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) return false;
+    if (archive == nullptr || !IsCTMusicEnabled() || !IsSW2RRLoaded() ||
+        !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) {
+        return false;
+    }
 
     snprintf(pulPath, sizeof(pulPath), "%sstrm/o_FanfareRRGP1_32.brstm", archive->extFileRoot);
     if (!CheckBRSTMPath(pulPath, false)) return false;
@@ -115,6 +127,32 @@ static const char* GetSW2RRRacePercentageSpecifier() {
     }
 }
 
+static const char* Get119RacePercentageSpecifier() {
+    switch (Get119RacePercentageMusicTier()) {
+        case 1: return "-1";
+        case 2: return "-2";
+        default: return "";
+    }
+}
+
+static const char* GetSW2DKSRacePercentageSpecifier() {
+    switch (GetSW2DKSRacePercentageMusicTier()) {
+        case 1: return "-1";
+        case 2: return "-2";
+        case 3: return "-3";
+        case 4: return "-4";
+        case 5: return "-5";
+        default: return "";
+    }
+}
+
+static const char* GetRacePercentageSpecifier() {
+    if (IsSW2RRLoaded()) return GetSW2RRRacePercentageSpecifier();
+    if (Is119Loaded()) return Get119RacePercentageSpecifier();
+    if (IsSW2DKSLoaded()) return GetSW2DKSRacePercentageSpecifier();
+    return "";
+}
+
 bool HasSW2RRTieredBRSTM(u8 tier) {
     if (tier == 0 || tier > 3) return true;
 
@@ -130,10 +168,44 @@ bool HasSW2RRTieredBRSTM(u8 tier) {
     return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0;
 }
 
+bool Has119TieredBRSTM(u8 tier) {
+    if (tier == 0 || tier > 2) return true;
+
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (cupsConfig == nullptr) return false;
+
+    const PulsarId track = cupsConfig->GetWinning();
+    if (CupsConfig::IsReg(track)) return false;
+
+    char racePercentageSpecifier[3];
+    snprintf(racePercentageSpecifier, sizeof(racePercentageSpecifier), "-%u", tier);
+
+    return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0 ||
+        CheckBRSTMRoot("/sound/", track, "_N", false, racePercentageSpecifier) >= 0;
+}
+
+bool HasSW2DKSTieredBRSTM(u8 tier) {
+    if (tier == 0 || tier > 5) return true;
+
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (cupsConfig == nullptr) return false;
+
+    const PulsarId track = cupsConfig->GetWinning();
+    if (CupsConfig::IsReg(track)) return false;
+
+    char racePercentageSpecifier[3];
+    snprintf(racePercentageSpecifier, sizeof(racePercentageSpecifier), "-%u", tier);
+
+    if (tier == 5 && CheckBRSTMRoot("/sound/", track, "_f", true, racePercentageSpecifier) >= 0) {
+        return true;
+    }
+    return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0 ||
+        CheckBRSTMRoot("/sound/", track, "_N", false, racePercentageSpecifier) >= 0;
+}
+
 nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void* buffer, int size,
                                        const char* extFilePath, u32 r7, u32 length) {
-    const Pulsar::CTMusic isBRSTMOn = static_cast<Pulsar::CTMusic>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_SOUND), Pulsar::RADIO_CTMUSIC));
+    const bool isBRSTMOn = IsCTMusicEnabled();
     const char firstChar = extFilePath[0xC];
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const PulsarId track = cupsConfig->GetWinning();
@@ -148,17 +220,28 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
         }
     }
-    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
+    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn) {
         if (!CupsConfig::IsReg(track)) {
             register u32 strLength;
             asm(mr strLength, r28;);
             const char finalChar = extFilePath[strLength];
             const bool isFinalLap = finalChar == 'f' || finalChar == 'F';
 
-            const char* racePercentageSpecifier = GetSW2RRRacePercentageSpecifier();
+            const char* racePercentageSpecifier = GetRacePercentageSpecifier();
             const bool hasRacePercentageSpecifier = racePercentageSpecifier[0] != '\0';
+            const bool is119RacePercentageSpecifier = hasRacePercentageSpecifier && Is119Loaded();
 
-            if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", false, racePercentageSpecifier) >= 0) {
+            if (is119RacePercentageSpecifier && CheckBRSTM(archive, track, "_N", false, racePercentageSpecifier) >= 0) {
+                extFilePath = pulPath;
+            } else if (is119RacePercentageSpecifier && CheckBRSTM(archive, track, "_n", false, racePercentageSpecifier) >= 0) {
+                extFilePath = pulPath;
+            } else if (isFinalLap && hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_f", true, racePercentageSpecifier) >= 0) {
+                extFilePath = pulPath;
+            } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", false, racePercentageSpecifier) >= 0) {
+                extFilePath = pulPath;
+            } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_N", false, racePercentageSpecifier) >= 0) {
+                extFilePath = pulPath;
+            } else if (isFinalLap && CheckBRSTM(archive, track, "_f", true) >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
                     Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;

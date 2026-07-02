@@ -4,6 +4,7 @@
 #include <MarioKartWii/Audio/SinglePlayer.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <core/nw4r/snd/BasicSound.hpp>
 
@@ -21,6 +22,10 @@ static bool sw2rrLoadedInitialized = false;
 static bool sw2rrTier3ReloadPending = false;
 
 bool HasSW2RRTieredBRSTM(u8 tier);
+
+static bool IsCTMusicEnabled() {
+    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CTMUSIC) == CTMUSIC_ENABLED;
+}
 
 static bool StringsEqual(const char* lhs, const char* rhs) {
     if (lhs == nullptr || rhs == nullptr) return false;
@@ -128,6 +133,11 @@ static void PlaySW2RRTierChangeJingle(Audio::RaceMgr& raceAudioMgr, u8 tier, u8 
 }
 
 void UpdateSW2RRRacePercentageMusic() {
+    if (!IsCTMusicEnabled()) {
+        ResetSW2RRMusicState();
+        return;
+    }
+
     Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
     const Raceinfo* raceInfo = Raceinfo::sInstance;
     if (raceAudioMgr == nullptr || raceInfo == nullptr || raceInfo->players == nullptr) return;
