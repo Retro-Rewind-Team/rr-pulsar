@@ -240,7 +240,7 @@ void System::UpdateContext() {
     bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_HEAVYONLY;
     bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_KARTONLY;
     bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_BIKEONLY;
-    bool isThunderCloud = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
+    bool isThunderCloud = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && (isNotPublic || (isRegionalRoom && netMgr.region == 0x15));
     bool isItemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
     bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
     bool isItemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
@@ -458,7 +458,7 @@ void System::UpdateContext() {
                 sInstance->context &= ~(1 << PULSAR_ELIMINATION);
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
 
-                sInstance->context &= ~(1 << PULSAR_THUNDERCLOUD);
+                sInstance->context |= (1 << PULSAR_THUNDERCLOUD);
                 sInstance->context2 |= (1 << PULSAR_TRANSMISSIONVANILLA);
                 sInstance->context2 |= (1 << PULSAR_ITEMMODENONE);
                 break;
