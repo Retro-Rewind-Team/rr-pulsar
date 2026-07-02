@@ -1,10 +1,29 @@
 #include <RetroRewind.hpp>
+#include <runtimeWrite.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 
 namespace HybridDrift {
+
+static bool isRegion15Online = false;
+
+static void UpdateRegion15Online() {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    isRegion15Online = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
+                       Pulsar::System::sInstance->netMgr.region == 0x15;
+}
+static SectionLoadHook Region15OnlineHook(UpdateRegion15Online);
 
 // original code by Ismy and CLF78, with fixes by Ro.
 asmFunc GetHybridDrift1() {
     ASM(
+        lis r12, isRegion15Online @ha;
+        lbz r12, isRegion15Online @l(r12);
+        cmpwi r12, 0;
+        beq + hybrid;
+        lwz r0, 0x14(r3);
+        blr;
+
+        hybrid:
         lwz r0, 0x14(r3);
 
         // Check if we're an inside drifting, if we are, end the code (Bug is only for outside drift bikes)
@@ -34,6 +53,14 @@ kmCall(0x80578DCC, GetHybridDrift1);
 
 asmFunc GetHybridDrift3() {
     ASM(
+        lis r12, isRegion15Online @ha;
+        lbz r12, isRegion15Online @l(r12);
+        cmpwi r12, 0;
+        beq + hybrid;
+        lwz r0, 0x4(r3);
+        blr;
+
+        hybrid:
         lwz r0, 0x14(r3);
         rlwinm.r12, r0, 0, 18, 18;
         beq end2;
@@ -46,6 +73,14 @@ kmCall(0x8057DFA8, GetHybridDrift3);
 
 asmFunc GetHybridDrift4() {
     ASM(
+        lis r12, isRegion15Online @ha;
+        lbz r12, isRegion15Online @l(r12);
+        cmpwi r12, 0;
+        beq + hybrid;
+        lwz r0, 0x4(r4);
+        blr;
+
+        hybrid:
         lwz r0, 0x14(r4);
         rlwinm.r12, r0, 0, 18, 18;
         beq end2;
@@ -58,6 +93,14 @@ kmCall(0x8057E018, GetHybridDrift4);
 
 asmFunc GetHybridDrift6() {
     ASM(
+        lis r12, isRegion15Online @ha;
+        lbz r12, isRegion15Online @l(r12);
+        cmpwi r12, 0;
+        beq + hybrid;
+        rlwinm.r0, r0, 0, 27, 27;
+        blr;
+
+        hybrid:
         rlwinm.r0, r0, 0, 27, 27;
         li r0, 0;
         stw r0, 0x1C8(r3);)
@@ -66,6 +109,14 @@ kmCall(0x8057E108, GetHybridDrift6);
 
 asmFunc GetHybridDrift7() {
     ASM(
+        lis r12, isRegion15Online @ha;
+        lbz r12, isRegion15Online @l(r12);
+        cmpwi r12, 0;
+        beq + hybrid;
+        mr r3, r30;
+        blr;
+
+        hybrid:
         lwz r3, 0x4(r30);
         andi.r4, r3, 0x84;
         beq end;
