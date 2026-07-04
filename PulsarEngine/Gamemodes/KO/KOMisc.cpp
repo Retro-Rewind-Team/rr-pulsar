@@ -87,6 +87,9 @@ static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) 
                 mgr->koPerRace = select->koPerRace;
                 mgr->racesPerKO = select->racesPerKO;
                 mgr->alwaysFinal = select->alwaysFinal;
+                mgr->singleRace1v1Final = select->singleRace1v1Final;
+                mgr->elimThresholdPlayers = select->elimThresholdPlayers;
+                mgr->elimChangeCount = select->elimChangeCount;
                 mgr->PatchAids(sub);
                 reinterpret_cast<RKNet::SELECTHandler&>(handler).AllocatePlayerIdsToAids();
                 controller->UpdateAidsBelongingToPlayerIds();

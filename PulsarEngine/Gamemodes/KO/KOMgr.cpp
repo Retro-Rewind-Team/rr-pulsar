@@ -26,6 +26,39 @@ Mgr::~Mgr() {
     if (this->GetIsSwapped()) this->SwapControllersAndUI();
 }
 
+bool Mgr::Is1v1KoRace(u32 currentRaceNumber) const {
+    if (this->singleRace1v1Final) return true;
+    return currentRaceNumber % this->racesPerKO == 0;
+}
+
+u8 Mgr::GetRoundKoCount(u8 playerCount) const {
+    u8 koCount = this->koPerRace;
+
+    if (this->elimThresholdPlayers != 0 && playerCount == this->elimThresholdPlayers) {
+        koCount = this->elimChangeCount;
+    }
+
+    if (playerCount - koCount < 2 && this->alwaysFinal) {
+        koCount = playerCount - 2;
+    }
+
+    if (this->koPerRace >= 2 && this->alwaysFinal && playerCount > 2) {
+        if (playerCount == 3) {
+            koCount = 1;
+        } else if (playerCount == 4 && this->koPerRace >= 2) {
+            koCount = 2;
+        }
+    } else {
+        if (playerCount == 3 && this->koPerRace >= 3) {
+            koCount = 2;
+        } else if (playerCount == 4 && this->koPerRace >= 4) {
+            koCount = 3;
+        }
+    }
+
+    return koCount;
+}
+
 void Mgr::AddRaceStats() {
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     for (int hudSlot = 0; hudSlot < scenario.localPlayerCount; ++hudSlot) {
@@ -59,10 +92,9 @@ void Mgr::CalcWouldBeKnockedOut() {
     }
 
     const u32 currentRaceCount = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber + 1;
-    const bool isKoRace = currentRaceCount % this->racesPerKO == 0;
 
     if (playerCount == 2) {
-        if (!isKoRace) return;
+        if (!this->Is1v1KoRace(currentRaceCount)) return;
 
         for (int i = 0; i < playerCount; ++i) {
             this->wouldBeOut[i] = (raceInfo->players[i]->position != 1);
@@ -70,36 +102,30 @@ void Mgr::CalcWouldBeKnockedOut() {
         return;
     }
 
-    const bool force1v1Final = System::sInstance->IsContext(Pulsar::PULSAR_KOFINAL) == KOSETTING_FINAL_ALWAYS;
+    const bool isKoRace = currentRaceCount % this->racesPerKO == 0;
+    if (!isKoRace) return;
 
-    if (isKoRace) {
-        s32 roundKOs = this->koPerRace;
-        const s32 remainingPlayersAfter = playerCount - roundKOs;
+    s32 roundKOs = this->GetRoundKoCount(playerCount);
 
-        if (remainingPlayersAfter < 2 && force1v1Final) {
-            roundKOs = playerCount - 2;
+    qsort(players, playerCount, sizeof(PlayerPosition),
+          reinterpret_cast<int (*)(const void*, const void*)>(SortPlayersByPosition));
+
+    s32 assignedKOs = 0;
+    if (racesPerKO > 1) {
+        for (s32 idx = 0; idx < playerCount && assignedKOs < roundKOs; ++idx) {
+            if (this->racesPerKO > 1 && idx == playerCount - 1) {
+                continue;
+            }
+            this->wouldBeOut[players[idx].playerId] = true;
+            ++assignedKOs;
         }
-
-        qsort(players, playerCount, sizeof(PlayerPosition),
-              reinterpret_cast<int (*)(const void*, const void*)>(SortPlayersByPosition));
-
-        s32 assignedKOs = 0;
-        if (racesPerKO > 1) {
-            for (s32 idx = 0; idx < playerCount && assignedKOs < roundKOs; ++idx) {
-                if (this->racesPerKO > 1 && idx == playerCount - 1) {
-                    continue;
-                }
-                this->wouldBeOut[players[idx].playerId] = true;
-                ++assignedKOs;
+    } else if (racesPerKO == 1) {
+        for (s32 idx = playerCount - 1; idx >= 0 && assignedKOs < roundKOs; --idx) {
+            if (this->racesPerKO == 1 && raceInfo->players[players[idx].playerId]->position == 1) {
+                continue;
             }
-        } else if (racesPerKO == 1) {
-            for (s32 idx = playerCount - 1; idx >= 0 && assignedKOs < roundKOs; --idx) {
-                if (this->racesPerKO == 1 && raceInfo->players[players[idx].playerId]->position == 1) {
-                    continue;
-                }
-                this->wouldBeOut[players[idx].playerId] = true;
-                ++assignedKOs;
-            }
+            this->wouldBeOut[players[idx].playerId] = true;
+            ++assignedKOs;
         }
     }
 }
@@ -134,28 +160,11 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
         }
     }
 
-    u8 koCount = self->koPerRace;
-
-    if (playerCount - koCount < 2 && self->alwaysFinal) {
-        koCount = playerCount - 2;
-    }
-
-    if (self->koPerRace >= 2 && self->alwaysFinal && playerCount > 2) {
-        if (playerCount == 3) {
-            koCount = 1;
-        } else if (playerCount == 4 && self->koPerRace >= 2) {
-            koCount = 2;
-        }
-    } else {
-        if (playerCount == 3 && self->koPerRace >= 3) {
-            koCount = 2;
-        } else if (playerCount == 4 && self->koPerRace >= 4) {
-            koCount = 3;
-        }
-    }
+    u8 koCount = self->GetRoundKoCount(playerCount);
 
     const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
-    if ((playerCount == 2 && isKoRace) || (playerCount - disconnectedKOs) == 1) {
+    const bool is1v1KoRace = playerCount == 2 && self->Is1v1KoRace(currentRaceNumber);
+    if (is1v1KoRace || (playerCount - disconnectedKOs) == 1) {
         self->winnerPlayerId = raceinfo->playerIdInEachPosition[0];
         self->SetKOd(raceinfo->playerIdInEachPosition[1]);
         self->AddRaceStats();

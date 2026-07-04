@@ -122,6 +122,9 @@ class Mgr {
     u32 GetAidAndSlotFromPlayerId(u8 playerId) const;
     u8 GetBaseLocalPlayerCount() const { return this->baseLocPlayerCount; }
 
+    u8 GetRoundKoCount(u8 playerCount) const;
+    bool Is1v1KoRace(u32 currentRaceNumber) const;
+
    private:
     void SetStatus(u8 playerId, Status status) {
         u32 aidSlot = this->GetAidAndSlotFromPlayerId(playerId);
@@ -139,6 +142,9 @@ class Mgr {
     u8 racesPerKO;
     u8 koPerRace;
     bool alwaysFinal;
+    bool singleRace1v1Final;
+    u8 elimThresholdPlayers;
+    u8 elimChangeCount;
 
     u8 winnerPlayerId;
     bool isSpectating;

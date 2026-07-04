@@ -112,6 +112,9 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 koPerRace;
     u8 racesPerKO;
     bool alwaysFinal;
+    bool singleRace1v1Final;
+    u8 elimThresholdPlayers;
+    u8 elimChangeCount;
 
     u8 decimalVR[2];
 
