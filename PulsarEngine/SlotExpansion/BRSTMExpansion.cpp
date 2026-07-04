@@ -20,9 +20,27 @@ u8 Get119RacePercentageMusicTier();
 bool Is119Loaded();
 u8 GetSW2DKSRacePercentageMusicTier();
 bool IsSW2DKSLoaded();
+bool ResolveArcadeFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool Resolve3DSFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveDSFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveGBAFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveGCNFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveN64FanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveSNESFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveSW2FanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveSW2RRFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveTourFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveWiiACFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveWiiUBBFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
+bool ResolveWiiUFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
 
 static bool IsCTMusicEnabled() {
     return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CTMUSIC) == CTMUSIC_ENABLED;
+}
+
+static bool AreCustomEndingFanfaresEnabled() {
+    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CUSTOMENDINGFANFARES) ==
+        CUSTOMENDINGFANFARES_ENABLED;
 }
 
 static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
@@ -52,37 +70,6 @@ static bool CheckBRSTMPath(const char* path, bool patchesOnly) {
     if (DVD::ConvertPathToEntryNum(resolvedPath) < 0) return false;
 
     snprintf(pulPath, sizeof(pulPath), "%s", resolvedPath);
-    return true;
-}
-
-static bool StringEndsWith(const char* str, const char* suffix) {
-    if (str == nullptr || suffix == nullptr) return false;
-
-    const char* strEnd = str;
-    while (*strEnd != '\0') ++strEnd;
-
-    const char* suffixEnd = suffix;
-    while (*suffixEnd != '\0') ++suffixEnd;
-
-    while (suffixEnd != suffix) {
-        if (strEnd == str) return false;
-        --strEnd;
-        --suffixEnd;
-        if (*strEnd != *suffixEnd) return false;
-    }
-    return true;
-}
-
-static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath) {
-    if (archive == nullptr || !IsCTMusicEnabled() || !IsSW2RRLoaded() ||
-        !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) {
-        return false;
-    }
-
-    snprintf(pulPath, sizeof(pulPath), "%sstrm/o_FanfareRRGP1_32.brstm", archive->extFileRoot);
-    if (!CheckBRSTMPath(pulPath, false)) return false;
-
-    extFilePath = pulPath;
     return true;
 }
 
@@ -212,8 +199,21 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
     register SoundIDs toPlayId;
     asm(mr toPlayId, r20;);
 
-    ResolveSW2RRFanfareGP1Path(archive, extFilePath);
-
+    if (AreCustomEndingFanfaresEnabled()) {
+        ResolveSW2RRFanfarePath(archive, extFilePath);
+        ResolveSW2FanfarePath(archive, extFilePath);
+        ResolveTourFanfarePath(archive, extFilePath);
+        ResolveArcadeFanfarePath(archive, extFilePath);
+        ResolveWiiUBBFanfarePath(archive, extFilePath);
+        ResolveWiiACFanfarePath(archive, extFilePath);
+        ResolveWiiUFanfarePath(archive, extFilePath);
+        Resolve3DSFanfarePath(archive, extFilePath);
+        ResolveDSFanfarePath(archive, extFilePath);
+        ResolveGCNFanfarePath(archive, extFilePath);
+        ResolveGBAFanfarePath(archive, extFilePath);
+        ResolveN64FanfarePath(archive, extFilePath);
+        ResolveSNESFanfarePath(archive, extFilePath);
+    }
     if (toPlayId == SOUND_ID_KC) {
         const SectionId section = SectionMgr::sInstance->curSection->sectionId;
         if (ResolveKCMenuMusicPath(section, extFilePath)) {

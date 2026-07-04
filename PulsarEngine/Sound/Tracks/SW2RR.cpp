@@ -6,6 +6,8 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <core/nw4r/ut/BinaryFileFormat.hpp>
+#include <core/nw4r/snd/DVDSoundArchive.hpp>
 #include <core/nw4r/snd/BasicSound.hpp>
 
 namespace Pulsar {
@@ -20,6 +22,7 @@ static u8 sw2rrMusicTier = 0;
 static bool sw2rrLoaded = false;
 static bool sw2rrLoadedInitialized = false;
 static bool sw2rrTier3ReloadPending = false;
+static char sw2rrFanfarePath[0x100];
 
 bool HasSW2RRTieredBRSTM(u8 tier);
 
@@ -55,6 +58,29 @@ bool IsSW2RRLoaded() {
         fileName = cupsConfig->GetFileName(track, 0);
     }
     return IsSW2RRFileName(fileName);
+}
+
+static const char* GetSW2RRFanfareName(const char* extFilePath) {
+    if (extFilePath == nullptr) return nullptr;
+
+    const char* fileName = extFilePath;
+    for (const char* cursor = extFilePath; *cursor != '\0'; ++cursor) {
+        if (*cursor == '/') fileName = cursor + 1;
+    }
+
+    if (StringsEqual(fileName, "o_FanfareGP1_32.brstm")) return "o_FanfareSW2RRGP1_32.brstm";
+    if (StringsEqual(fileName, "o_FanfareGP2_32.brstm")) return "o_FanfareSW2RRGP2_32.brstm";
+    if (StringsEqual(fileName, "o_FanfareGPdame_32.brstm")) return "o_FanfareSW2RRGPdame_32.brstm";
+    return nullptr;
+}
+
+bool ResolveSW2RRFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath) {
+    const char* sw2rrFanfare = GetSW2RRFanfareName(extFilePath);
+    if (archive == nullptr || sw2rrFanfare == nullptr || !IsSW2RRLoaded()) return false;
+
+    snprintf(sw2rrFanfarePath, sizeof(sw2rrFanfarePath), "%sstrm/%s", archive->extFileRoot, sw2rrFanfare);
+    extFilePath = sw2rrFanfarePath;
+    return true;
 }
 
 static u8 GetSW2RRMusicTier(float raceCompletion) {
