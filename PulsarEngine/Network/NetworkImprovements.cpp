@@ -29,11 +29,5 @@ kmWrite32(0x80657F5C, 0x7F9C1A14);  // add r28, r28, r3
 kmWrite32(0x80657FB4, 0x93590008);  // stw r26, 0x8(r25)
 kmWrite32(0x80657FB8, 0x2C1C0002);  // cmpwi r28, 2
 
-// Remove remote kart forward prediction from received RACE packets [ZPL]
-static float GetReducedRemotePredictionSpeed(const Kart::Link* kartLink) {
-    return 0.0f;
-}
-kmCall(0x8058B5E8, GetReducedRemotePredictionSpeed);
-
 }  // namespace Network
 }  // namespace Pulsar
