@@ -16,6 +16,7 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Settings/Settings.hpp>
+#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace BattleRoyale {
@@ -55,8 +56,11 @@ static u8 sMushroomStealVictimTimers[maxPlayers][maxPlayers];
 
 typedef void (*RaceModeHitFn)(void* raceMode, u32 firstPlayerId, u32 secondPlayerId);
 typedef void (*GeoObjectLoadFn)(void* object);
+typedef void (*ItemCollisionUpdateFn)(Item::Obj* itemObj);
 
 void EjectItemsFromItemDamage(u8 playerId);
+
+kmRuntimeUse(0x807a1ed8);
 
 static RaceBalloonManager* GetBalloonManager() {
     return RaceBalloonManager::sInstance;
@@ -779,9 +783,25 @@ static void CreateObjectsThenCreateDeferredBalloons(ObjectsMgr* objectDirector, 
 }
 kmCall(0x8082a800, CreateObjectsThenCreateDeferredBalloons);
 
+static bool IsTouchingFallBoundary(const Item::Obj& itemObj) {
+    return (itemObj.kclType.bitfield & KCL_BITFIELD_FALL_BOUNDARY) != 0;
+}
+
+static void DestroyBattleRoyaleItemOnFallBoundary(Item::Obj* itemObj) {
+    ItemCollisionUpdateFn original = reinterpret_cast<ItemCollisionUpdateFn>(kmRuntimeAddr(0x807a1ed8));
+    original(itemObj);
+
+    if (!ShouldApplyBattleRoyale() || itemObj->itemObjId == OBJ_BLUE_SHELL || !IsTouchingFallBoundary(*itemObj) ||
+        (itemObj->bitfield74 & 1) != 0)
+        return;
+    itemObj->DisappearDueToExcess(true);
+}
+kmCall(0x8079f52c, DestroyBattleRoyaleItemOnFallBoundary);
+kmCall(0x8079f560, DestroyBattleRoyaleItemOnFallBoundary);
+
 // Original code by CLF78
 static void DisableItemPoof(Item::Obj* itemObj) {
-    if (ShouldApplyBattleRoyale()) return;
+    if (ShouldApplyBattleRoyale() && !IsTouchingFallBoundary(*itemObj)) return;
     itemObj->TryDisappearDueToExcess();
 }
 kmCall(0x807965c0, DisableItemPoof);
