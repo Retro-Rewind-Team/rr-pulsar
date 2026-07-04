@@ -17,14 +17,14 @@ static PageId nextPageAfterTransmission = PAGE_NONE;
 static SectionId nextSectionAfterTransmission = SECTION_NONE;
 static bool returnToGlobeAfterTransmission = false;
 
-static bool IsRegion15Online() {
+static bool IsVanillaModeOnline() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     return controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
-           System::sInstance->netMgr.region == 0x15;
+           System::sInstance->IsVanillaMode();
 }
 
 static bool ShouldSkipTransmissionSelect(const System* system) {
-    if (IsRegion15Online()) return true;
+    if (IsVanillaModeOnline()) return true;
     if (system->IsContext(PULSAR_STARTREGS)) return true;
     return system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) ||
            system->IsContext(PULSAR_TRANSMISSIONVANILLA);

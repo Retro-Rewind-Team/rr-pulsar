@@ -38,7 +38,7 @@ static bool IsUMTEnabled() {
     const System* system = System::sInstance;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    return system->IsContext(PULSAR_UMTS) && (!isOnlineRoomActive || system->netMgr.region != 0x15);
+    return system->IsContext(PULSAR_UMTS) && (!isOnlineRoomActive || !system->IsVanillaMode());
 }
 
 kmWrite32(0x8057ee5c, 0x2c050004);  // changes >= 3 to >= 4 for UMT

@@ -119,6 +119,7 @@ enum FriendRoom2Settings {
     RADIO_THUNDERCLOUD = 3,
     RADIO_FORCETRANSMISSION = 4,
     RADIO_ALLITEMSCANLAND = 5,
+    RADIO_VANILLAMODE = 6,
     SCROLLER_STARTWORLDWIDE = 0 + 8,
     SCROLLER_ITEMMODE = 1 + 8,
     SCROLLER_TRACKSELECTION = 2 + 8,
@@ -405,6 +406,11 @@ enum ForceTransmission {
 enum AllItemsCanLandSetting {
     ALLITEMSCANLAND_DISABLED,
     ALLITEMSCANLAND_ENABLED
+};
+
+enum VanillaModeSetting {
+    VANILLAMODE_DISABLED,
+    VANILLAMODE_ENABLED
 };
 
 // 9) OTT values

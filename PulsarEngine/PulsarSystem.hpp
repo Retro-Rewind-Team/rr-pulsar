@@ -78,7 +78,8 @@ enum Context2 {
     PULSAR_MODE_BATTLEROYALE,
     PULSAR_KOPERRACE_2,
     PULSAR_KOPERRACE_3,
-    PULSAR_KOPERRACE_4
+    PULSAR_KOPERRACE_4,
+    PULSAR_VANILLAMODE
 };
 
 class System {
@@ -110,6 +111,7 @@ class System {
 
     bool IsContext(Context context) const { return (this->context & (1 << context)) != 0; }
     bool IsContext(Context2 context2) const { return (this->context2 & (1 << context2)) != 0; }
+    bool IsVanillaMode() const;
     static s32 OnSceneEnter(Random& random);
 
     const char* GetModFolder() const { return modFolderName; }

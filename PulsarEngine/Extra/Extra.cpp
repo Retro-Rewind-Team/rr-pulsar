@@ -157,7 +157,7 @@ kmWrite32(0x80655578, 0x60000000);
 // Mushroom Glitch Fix [Vabold]
 static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulette) {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && Pulsar::System::sInstance->netMgr.region == 0x15) ++roulette->itemNum;
+    if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
     return roulette;
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);

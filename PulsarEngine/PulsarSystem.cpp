@@ -26,6 +26,46 @@ namespace Pulsar {
 System* System::sInstance = nullptr;
 System::Inherit* System::inherit = nullptr;
 
+static void ApplyVanillaModeRestrictions(System* system, bool clearOttAndItemModes) {
+    system->context |= (1 << PULSAR_REGS) | (1 << PULSAR_THUNDERCLOUD);
+    system->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_CTS) | (1 << PULSAR_200_WW) |
+                         (1 << PULSAR_ELIMINATION) | (1 << PULSAR_FFA));
+    system->context2 &= ~((1 << PULSAR_ITEMMODERANDOM) | (1 << PULSAR_ITEMMODEBLAST) |
+                         (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) |
+                         (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
+    system->context2 |= (1 << PULSAR_TRANSMISSIONVANILLA);
+    if (clearOttAndItemModes) {
+        system->context &= ~(1 << PULSAR_MODE_OTT);
+        system->context2 &= ~((1 << PULSAR_ITEMMODERAIN) | (1 << PULSAR_ITEMMODESTORM));
+        system->context2 |= (1 << PULSAR_ITEMMODENONE);
+    }
+}
+
+static void OverrideFroomVanillaModeSettings(bool& isTrackSelectionRegs, bool& isTrackSelectionRetros, bool& isTrackSelectionCts,
+                                             bool& isTransmissionInside, bool& isTransmissionOutside, bool& isTransmissionVanilla,
+                                             bool& isThunderCloud, bool& isAllItemsCanLand, bool& isItemBoxRespawnFast) {
+    isTrackSelectionRegs = true;
+    isTrackSelectionRetros = false;
+    isTrackSelectionCts = false;
+    isTransmissionVanilla = true;
+    isTransmissionInside = false;
+    isTransmissionOutside = false;
+    isThunderCloud = true;
+    isAllItemsCanLand = false;
+    isItemBoxRespawnFast = false;
+}
+
+bool System::IsVanillaMode() const {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN) return false;
+
+    const bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    if (isFroom) return this->IsContext(PULSAR_VANILLAMODE);
+
+    const bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
+    return isRegionalRoom && this->netMgr.region == 0x15;
+}
+
 static inline bool ShouldForceNandIoSaves() {
     return *reinterpret_cast<volatile u32*>(0x800017D8) == 0x01;
 }
@@ -255,6 +295,7 @@ void System::UpdateContext() {
     bool isTransmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE && (isFroom || (isRegionalRoom && netMgr.region == 0x15));
     bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && (isFroom || (isRegionalRoom && netMgr.region == 0x15));
     bool isAllItemsCanLand = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
+    bool isVanillaMode = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_VANILLAMODE) == VANILLAMODE_ENABLED && isFroom;
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
@@ -328,6 +369,7 @@ void System::UpdateContext() {
                 isKoPerRace2 = newContext2 & (1 << PULSAR_KOPERRACE_2);
                 isKoPerRace3 = newContext2 & (1 << PULSAR_KOPERRACE_3);
                 isKoPerRace4 = newContext2 & (1 << PULSAR_KOPERRACE_4);
+                isVanillaMode = newContext2 & (1 << PULSAR_VANILLAMODE);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -347,6 +389,17 @@ void System::UpdateContext() {
             isBattleRoyale = false;
         }
     }
+
+    if (isFroom && controller->roomType == RKNet::ROOMTYPE_FROOM_HOST) {
+        isVanillaMode = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_VANILLAMODE) == VANILLAMODE_ENABLED;
+    }
+
+    if (isVanillaMode && isFroom) {
+        OverrideFroomVanillaModeSettings(isTrackSelectionRegs, isTrackSelectionRetros, isTrackSelectionCts, isTransmissionInside,
+                                         isTransmissionOutside, isTransmissionVanilla, isThunderCloud, isAllItemsCanLand,
+                                         isItemBoxRespawnFast);
+    }
+
     this->netMgr.hostContext = newContext;
     this->netMgr.hostContext2 = newContext2;
 
@@ -388,7 +441,8 @@ void System::UpdateContext() {
                             (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE |
                             (isKoPerRace2) << PULSAR_KOPERRACE_2 |
                             (isKoPerRace3) << PULSAR_KOPERRACE_3 |
-                            (isKoPerRace4) << PULSAR_KOPERRACE_4;
+                            (isKoPerRace4) << PULSAR_KOPERRACE_4 |
+                            (isVanillaMode) << PULSAR_VANILLAMODE;
     }
 
     // Combine the new context with preserved bits
@@ -450,17 +504,7 @@ void System::UpdateContext() {
                 break;
 
             case 0x15:  // RT (Regular Tracks)
-                this->context |= (1 << PULSAR_REGS);
-                sInstance->context &= ~(1 << PULSAR_200_WW);
-                sInstance->context &= ~(1 << PULSAR_MODE_OTT);
-                sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
-                sInstance->context2 &= ~(1 << PULSAR_FFA);
-                sInstance->context &= ~(1 << PULSAR_ELIMINATION);
-                sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
-
-                sInstance->context |= (1 << PULSAR_THUNDERCLOUD);
-                sInstance->context2 |= (1 << PULSAR_TRANSMISSIONVANILLA);
-                sInstance->context2 |= (1 << PULSAR_ITEMMODENONE);
+                ApplyVanillaModeRestrictions(this, true);
                 break;
 
             case 0x0E:  // Battle
@@ -481,6 +525,10 @@ void System::UpdateContext() {
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
                 break;
         }
+    }
+
+    if (isFroom && isVanillaMode) {
+        ApplyVanillaModeRestrictions(this, false);
     }
 
     if (!isTeamBattle) {

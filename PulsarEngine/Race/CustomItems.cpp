@@ -22,6 +22,7 @@ u32 Pulsar::Race::GetEffectiveCustomItemsBitfield() {
         const RKNet::RoomType roomType = controller->roomType;
         if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
             if (System::sInstance != nullptr) {
+                if (System::sInstance->IsVanillaMode()) return VANILLA_ITEM_BITFIELD;
                 return System::sInstance->netMgr.customItemsBitfield;
             }
         } else if (roomType != RKNet::ROOMTYPE_NONE) {
