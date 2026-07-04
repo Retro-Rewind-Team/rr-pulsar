@@ -210,7 +210,7 @@ void CustomItemPage::OnBackPress(u32 hudSlotId) {
 void CustomItemPage::StartFriendRoomPreview(PageId nextPageId) {
     this->friendRoomPreviewNextPageId = nextPageId;
     this->isFriendRoomPreview = true;
-    this->previewTimer.SetInitial(4.0f);
+    this->previewTimer.SetInitial(3.0f);
     this->previewTimer.isActive = true;
 }
 
