@@ -48,7 +48,7 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
         nextPageId = static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT);
     }
 
-    if (Race::GetEffectiveCustomItemsBitfield() != ALL_CUSTOM_ITEMS) {
+    if (Race::GetEffectiveCustomItemsBitfield() != ALL_CUSTOM_ITEMS && !CustomItemPage::ShouldSkipFriendRoomPreview()) {
         CustomItemPage* page = ExpSection::GetSection()->GetPulPage<CustomItemPage>();
         page->StartFriendRoomPreview(nextPageId);
         _this->AddPageLayer(static_cast<PageId>(CustomItemPage::id), 0);
