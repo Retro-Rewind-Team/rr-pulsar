@@ -23,6 +23,13 @@ static bool IsRegion15Online() {
            System::sInstance->netMgr.region == 0x15;
 }
 
+static bool ShouldSkipTransmissionSelect(const System* system) {
+    if (IsRegion15Online()) return true;
+    if (system->IsContext(PULSAR_STARTREGS)) return true;
+    return system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) ||
+           system->IsContext(PULSAR_TRANSMISSIONVANILLA);
+}
+
 static Transmission GetTransmissionFromButton(const PushButton& button) {
     return button.buttonId == 0 ? TRANSMISSION_OUTSIDE : TRANSMISSION_INSIDE;
 }
@@ -130,7 +137,7 @@ void TransmissionSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
 
 void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {
     System* system = System::sInstance;
-    if (IsRegion15Online()) {
+    if (ShouldSkipTransmissionSelect(system)) {
         menu.LoadNextPageById(id, button);
         return;
     }
@@ -144,10 +151,6 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
         menu.LoadNextPageById(PAGE_SELECT_STAGE_MGR, button);
         return;
     }
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
-        menu.LoadNextPageById(id, button);
-        return;
-    }
     returnToGlobeAfterTransmission = false;
     nextSectionAfterTransmission = SECTION_NONE;
     nextPageAfterTransmission = id;
@@ -157,11 +160,7 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
 
 static void LoadTransmissionSelectBeforeSectionChange(Pages::Menu& menu, SectionId id, PushButton& button) {
     System* system = System::sInstance;
-    if (IsRegion15Online()) {
-        menu.ChangeSectionById(id, button);
-        return;
-    }
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
+    if (ShouldSkipTransmissionSelect(system)) {
         menu.ChangeSectionById(id, button);
         return;
     }
@@ -175,11 +174,7 @@ kmCall(0x8084e4c8, LoadTransmissionSelectBeforeSectionChange);
 
 void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection, float animLength) {
     System* system = System::sInstance;
-    if (IsRegion15Online()) {
-        menu.EndStateAnimated(animDirection, animLength);
-        return;
-    }
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
+    if (ShouldSkipTransmissionSelect(system)) {
         menu.EndStateAnimated(animDirection, animLength);
         return;
     }
