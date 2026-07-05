@@ -10,6 +10,8 @@ void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tpl
 const wchar_t* GetCustomMsg(s32 bmgId);
 void UnbindRLMC(lyt::Material* mat);
 void ResetMatColor(lyt::Pane* pane, u32 color);
+void ResetFroomSettingsPreviewShown();
+bool AdvanceFroomSettingsPreview(u32& sheetIdx);
 /*Expanded pages: (do not necessitate a PulPageId)
 -ExpGhostSelect
 -ExpFroom

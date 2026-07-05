@@ -61,6 +61,7 @@ void ExpFroom::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
 }
 
 void ExpFroom::OnActivate() {
+    ResetFroomSettingsPreviewShown();
     ExpWFCModeSel::ClearModeContexts();
     System::sInstance->netMgr.region = 0x0A;
     FriendRoom::OnActivate();

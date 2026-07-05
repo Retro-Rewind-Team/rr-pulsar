@@ -17,6 +17,35 @@ static void ConvertROOMPacketToData(const PulROOM& packet) {
     system->netMgr.hostContext2 = packet.hostSystemContext2;
     system->netMgr.customItemsBitfield = packet.customItemsBitfield;
     system->netMgr.racesPerGP = packet.raceCount;
+    memcpy(system->netMgr.hostSettingsPreview, packet.hostSettingsPreview, sizeof(system->netMgr.hostSettingsPreview));
+    system->netMgr.hasHostSettingsPreview = true;
+}
+
+static void WriteHostSettingsPreviewToPacket(PulROOM* packet, const Settings::Mgr& settings) {
+    static const Settings::UserType pages[] = {
+        Settings::SETTINGSTYPE_FROOM1,
+        Settings::SETTINGSTYPE_FROOM2,
+        Settings::SETTINGSTYPE_KO,
+        Settings::SETTINGSTYPE_OTT,
+    };
+
+    memset(packet->hostSettingsPreview, 0, sizeof(packet->hostSettingsPreview));
+    u32 offset = 0;
+    for (u32 page = 0; page < sizeof(pages) / sizeof(pages[0]); ++page) {
+        const Settings::UserType type = pages[page];
+        const u32 valueCount = Settings::Params::radioCount[type] + Settings::Params::scrollerCount[type];
+        if (offset + valueCount > HOST_SETTINGS_PREVIEW_COUNT) break;
+        u8* dest = packet->hostSettingsPreview + offset;
+
+        for (u32 setting = 0; setting < Settings::Params::radioCount[type]; ++setting) {
+            dest[setting] = settings.GetUserSettingValue(type, setting);
+        }
+        for (u32 setting = 0; setting < Settings::Params::scrollerCount[type]; ++setting) {
+            dest[Settings::Params::radioCount[type] + setting] =
+                settings.GetUserSettingValue(type, Settings::Params::maxRadioCount + setting);
+        }
+        offset += valueCount;
+    }
 }
 
 static void WriteBlockedTracksToPacket(PulROOM* packet) {
@@ -110,6 +139,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         }
 
         const Settings::Mgr& settings = Settings::Mgr::Get();
+        WriteHostSettingsPreviewToPacket(destPacket, settings);
         const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
 

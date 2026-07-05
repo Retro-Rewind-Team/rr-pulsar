@@ -1754,6 +1754,7 @@ OnActivate__Q25Pages14SELECTStageMgrFv = 0x8064fe34
 OnDeactivate__Q25Pages14SELECTStageMgrFv = 0x80650214
 BeforeControlUpdate__Q25Pages14SELECTStageMgrFv = 0x80650218
 AfterControlUpdate__Q25Pages14SELECTStageMgrFv = 0x80650274
+OnResume__Q25Pages14SELECTStageMgrFv = 0x806507a0
 PrepareRace__Q25Pages14SELECTStageMgrFv = 0x80650e24
 UpdateOnlineParams__Q25Pages14SELECTStageMgrFv = 0x806515cc
 SetModeTypes__Q25Pages14SELECTStageMgrFv = 0x80651854
