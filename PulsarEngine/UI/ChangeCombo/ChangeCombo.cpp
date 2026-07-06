@@ -553,11 +553,18 @@ void ExpMultiKartSelect::BeforeControlUpdate() {
     }
 }
 
+void StopRandomComboRoulette() {
+    ExpCharacterSelect* charSelect = SectionMgr::sInstance->curSection->Get<ExpCharacterSelect>();
+    if (charSelect != nullptr && charSelect->rouletteCounter != -1) {
+        charSelect->rouletteCounter = -1;
+    }
+}
+
 void DriftSelectBeforeControlUpdate(Pages::DriftSelect* driftSelect) {
     ExpCharacterSelect* charSelect = SectionMgr::sInstance->curSection->Get<ExpCharacterSelect>();
     if (charSelect->rouletteCounter != -1 && driftSelect->currentState == 0x4) {
         driftSelect->controlsManipulatorManager.inaccessible = false;
-        charSelect->rouletteCounter = -1;
+        StopRandomComboRoulette();
     }
 }
 kmWritePointer(0x808D9DF8, DriftSelectBeforeControlUpdate);
@@ -567,7 +574,7 @@ void MultiDriftSelectBeforeControlUpdate(Pages::MultiDriftSelect* multiDriftSele
     ExpCharacterSelect* charSelect = sectionMgr->curSection->Get<ExpCharacterSelect>();
     if (charSelect->rouletteCounter != -1 && multiDriftSelect->currentState == 0x4) {
         multiDriftSelect->controlsManipulatorManager.inaccessible = false;
-        charSelect->rouletteCounter = -1;
+        StopRandomComboRoulette();
     }
 }
 kmWritePointer(0x808D9C10, MultiDriftSelectBeforeControlUpdate);

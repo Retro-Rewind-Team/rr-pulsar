@@ -19,6 +19,7 @@
 namespace Pulsar {
 namespace UI {
 static void RandomizeCombo();
+void StopRandomComboRoulette();
 class ExpVR : public Pages::VR {
    public:
     static const int randomDuration = 60;  // 1s

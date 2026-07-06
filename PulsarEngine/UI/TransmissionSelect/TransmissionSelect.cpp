@@ -3,6 +3,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
+#include <UI/ChangeCombo/ChangeCombo.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -77,6 +78,7 @@ void TransmissionSelect::OnInit() {
 
 void TransmissionSelect::OnActivate() {
     Pages::DriftSelect::OnActivate();
+    StopRandomComboRoulette();
     SetTransmissionMessages(*this);
     HideTransmissionExtras(*this);
     SelectCurrentTransmission(*this, 0);
