@@ -35,6 +35,7 @@
 #include <Settings/UI/CustomEngineClassPage.hpp>
 #include <Settings/UI/RegionPage.hpp>
 #include <Settings/UI/RestrictionPages.hpp>
+#include <UI/MissionMode/MissionMode.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
@@ -134,6 +135,8 @@ void ExpSection::CreatePulPages() {
             }
             break;
         case SECTION_SINGLE_P_FROM_MENU:  // 0x48
+            MissionMode::CreateSinglePlayerPages(*this);
+            // fall through
         case SECTION_SINGLE_P_TT_CHANGE_CHARA:  // 0x49
         case SECTION_SINGLE_P_TT_CHANGE_COURSE:  // 0x4a
         case SECTION_SINGLE_P_VS_NEXT_RACE:  // 0x4b
