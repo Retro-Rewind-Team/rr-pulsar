@@ -1790,7 +1790,6 @@ BeforeEntranceAnimations__Q25Pages4MenuFv = 0x808389d4
 GetNextPage__Q25Pages4MenuCFv = 0x80838a70
 BeforeExitAnimations__Q25Pages4MenuFv = 0x80838a78
 HandleStartPress__Q25Pages4MenuFUi = 0x80838b14
-LoadMovies__Q25Pages4MenuFPPcb = 0x80838884
 __vt__Q25Pages4Menu = 0x808d8d78
 
 #BattleKartSelect
