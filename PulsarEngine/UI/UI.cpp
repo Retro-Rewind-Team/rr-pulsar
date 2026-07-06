@@ -76,6 +76,9 @@ void ExpSection::CreatePulPages() {
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR);
             }
             break;
+        case SECTION_MISSION_MODE:
+            MissionMode::CreateRacePages(*this);
+            break;
         case SECTION_P1_WIFI_FROOM_VS_VOTING:  // 0x60
         case SECTION_P1_WIFI_FROOM_TEAMVS_VOTING:  // 0x61
         case SECTION_P1_WIFI_FROOM_BALLOON_VOTING:  // 0x62
