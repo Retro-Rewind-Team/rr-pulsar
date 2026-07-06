@@ -57,6 +57,10 @@ static bool EnsurePayloadBuffer() {
     s_payload = reinterpret_cast<void*>((u32(s_payloadStorage) + 31) & ~31);
     return true;
 }
+//todo: check better way
+static bool IsSecretRuntime() {
+    return *reinterpret_cast<volatile u32*>(0x800017D8) == 0x01;
+}
 
 bool GenerateRandomSalt(u8 *out) {
     // Generate cryptographic random with ES_Sign
@@ -161,6 +165,14 @@ void OnPayloadReceived(s32 result, void *response, void *userdata) {
 kmBranchDefCpp(
     0x800ed6e8, 0, void, int param_1, int param_2, int param_3, int param_4,
     int param_5, int param_6) {
+    if (IsSecretRuntime()) {
+        // The secret runtime consumes the WFC changes from Code.pul directly, so it
+        // must not download or execute stage2 at runtime.
+        DWCi_Auth_SendRequest(
+            param_1, param_2, param_3, param_4, param_5, param_6);
+        return;
+    }
+
     if (s_payloadReady) {
         DWCi_Auth_SendRequest(
             param_1, param_2, param_3, param_4, param_5, param_6);

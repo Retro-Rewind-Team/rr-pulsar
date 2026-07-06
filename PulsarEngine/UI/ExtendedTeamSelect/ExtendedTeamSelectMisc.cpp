@@ -92,11 +92,20 @@ void SetBroadcastROOMPacket(RKNet::ROOMHandler* _this, u32 pkt) {
 kmCall(0x805dce34, SetBroadcastROOMPacket);
 
 void RecvRoomPacket(UnkFriendRoomManager* _this, u8 playerId, u8 myAid, RKNet::ROOMPacket& packet) {
+    const bool isRoomStart = packet.messageType == RKNet::ROOM_START && packet.message <= 3;
+
     if (packet.messageType == ExtendedTeamManager::MSG_TYPE_START_RACE) {
         UI::ExtendedTeamManager::sInstance->SetStatusExternal(ExtendedTeamManager::STATUS_DONE);
     }
 
     _this->HandleROOMPacket(playerId, myAid, packet);
+
+    if (isRoomStart) {
+        Pages::FriendRoom* friendRoom = SectionMgr::sInstance->curSection->Get<Pages::FriendRoom>();
+        if (friendRoom) {
+            friendRoom->unknown_0xDBC = 0;
+        }
+    }
 }
 kmCall(0x805db1dc, RecvRoomPacket);
 

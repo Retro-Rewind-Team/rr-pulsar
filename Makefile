@@ -73,7 +73,8 @@ force_link: build/kamek.o build/RuntimeWrite.o $(OBJS)
 install: force_link
 	@echo Copying binaries to $(RIIVO)/Binaries...
 	@mkdir -p $(RIIVO)/Binaries
-	@cp build/Code.pul $(RIIVO)/Binaries
+	@cp build/Code.pul $(RIIVO)/Binaries/Code.pul
+	@cp build/Code.map $(RIIVO)/Binaries/Code.map
 
 installCT: force_link
 	@echo Copying binaries to $(RIIVO)/CT/Binaries...

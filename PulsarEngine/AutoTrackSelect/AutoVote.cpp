@@ -54,10 +54,18 @@ void AutoVote::OnUpdate() {
             select.toSendPacket.pulWinningTrack = vote;
             select.toSendPacket.winningVoterAid = hostAid;
         } else {
-            const PulsarId hostVote = static_cast<PulsarId>(select.receivedPackets[hostAid].pulVote);
-            if (hostVote != 0x43) {
+            const Network::PulSELECT& hostPacket = select.receivedPackets[hostAid];
+            const PulsarId hostWinning = static_cast<PulsarId>(hostPacket.pulWinningTrack);
+            const PulsarId hostVote = static_cast<PulsarId>(hostPacket.pulVote);
+            if (hostPacket.phase == 2 && hostWinning != 0xFF) {
+                vote = hostWinning;
+                cupsConfig->SetWinning(hostWinning, hostPacket.variantIdx);
+                select.toSendPacket.pulWinningTrack = vote;
+                select.toSendPacket.winningVoterAid = hostAid;
+                select.toSendPacket.phase = 2;
+            } else if (hostVote != 0x43) {
                 vote = hostVote;
-                cupsConfig->SetWinning(hostVote, select.receivedPackets[hostAid].variantIdx);
+                cupsConfig->SetWinning(hostVote, hostPacket.variantIdx);
                 select.toSendPacket.pulWinningTrack = vote;
                 select.toSendPacket.winningVoterAid = hostAid;
                 select.toSendPacket.phase = 2;
@@ -91,6 +99,10 @@ void AutoVote::OnUpdate() {
         if (readyDuration > 180) {
             reinterpret_cast<RKNet::SELECTHandler&>(select).AllocatePlayerIdsToAids();
             this->status = STATUS_VOTES_PAGE;
+            if (cupsConfig->GetWinning() == PULSARID_NONE) {
+                readyDuration = 0;
+                return;
+            }
             ArchiveMgr::sInstance->RequestLoadCourseAsync(static_cast<CourseId>(cupsConfig->GetWinning()));
             this->SetModeTypes();
             this->PrepareRace();

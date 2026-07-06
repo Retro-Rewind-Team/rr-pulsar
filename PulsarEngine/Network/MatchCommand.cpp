@@ -40,7 +40,7 @@ DWC::MatchCommand Process(DWC::MatchCommand type, const void* data, u32 dataSize
     if (type == DWC::MATCH_COMMAND_RESV_OK && isCustom) {
         const ResvPacket* packet = reinterpret_cast<const ResvPacket*>(data);
         if (dataSize != (sizeof(ResvPacket) / sizeof(u32)) || packet->pulInfo.roomKey != HARD_CODED_ROOM_KEY  // Compare with hardcoded key
-            || strcmp(packet->pulInfo.modFolderName, system->GetModFolder()) != 0 || !system->CheckUserInfo(packet->pulInfo.userInfo)) {
+            || strncmp(packet->pulInfo.modFolderName, system->GetModFolder(), IOS::ipcMaxFileName) != 0 || !system->CheckUserInfo(packet->pulInfo.userInfo)) {
             denyType = DENY_TYPE_BAD_PACK;
             if (roomType == RKNet::ROOMTYPE_VS_REGIONAL) mgr.deniesCount++;
             type = DWC::MATCH_COMMAND_RESV_DENY;
