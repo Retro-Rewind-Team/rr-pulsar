@@ -53,13 +53,17 @@ static void SelectCurrentTransmission(Pages::Menu& menu, u32 hudSlotId) {
 }
 
 static void HideTransmissionExtras(Pages::Menu& menu) {
-    for (u32 i = 0; i < menu.curMovieCount; ++i) {
-        menu.movies[i]->CtrlMenuMovieHandler::isHidden = true;
-    }
     if (menu.externControlCount > 2) {
         menu.externControls[2]->isHidden = true;
         menu.externControls[2]->manipulator.inaccessible = true;
     }
+}
+
+static void LoadTransmissionMovies(Pages::Menu& menu) {
+    char* thpNames[] = {
+        "thp/button/transmissionType.thp",
+    };
+    menu.LoadMovies(thpNames, true);
 }
 
 static void CopyKartTimerToTransmission(Pages::Menu& menu) {
@@ -79,6 +83,7 @@ void TransmissionSelect::OnInit() {
 void TransmissionSelect::OnActivate() {
     Pages::DriftSelect::OnActivate();
     StopRandomComboRoulette();
+    LoadTransmissionMovies(*this);
     SetTransmissionMessages(*this);
     HideTransmissionExtras(*this);
     SelectCurrentTransmission(*this, 0);
