@@ -1,8 +1,10 @@
 #include <kamek.hpp>
 #include <MarioKartWii/UI/Page/Menu/SinglePlayer.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <PulsarSystem.hpp>
 #include <UI/UI.hpp>
+#include <UI/MissionMode/MissionMode.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 // Implements 4 TT modes by splitting the "Time Trials" button
@@ -10,12 +12,6 @@
 namespace Pulsar {
 static void SetCC();
 namespace UI {
-
-static const u32 missionButtonVanillaId = 4;
-
-static inline u32 GetMissionButtonId(const Pages::SinglePlayer* page) {
-    return page->externControlCount - 2;
-}
 
 static inline u32 GetSettingsButtonId(const Pages::SinglePlayer* page) {
     return page->externControlCount - 1;
@@ -25,12 +21,8 @@ static inline u32 GetTTExtraButtonCount(const Pages::SinglePlayer* page) {
     return page->externControlCount - 6;
 }
 
-static inline bool IsMissionButton(const Pages::SinglePlayer* page, u32 id) {
-    return id == GetMissionButtonId(page);
-}
-
 static inline bool IsBTMRModeButton(const Pages::SinglePlayer* page, u32 id) {
-    return id == 3 || IsMissionButton(page, id);
+    return MissionMode::IsBTMRModeButton(page, id);
 }
 
 static inline bool IsSettingsButton(const Pages::SinglePlayer* page, u32 id) {
@@ -38,11 +30,7 @@ static inline bool IsSettingsButton(const Pages::SinglePlayer* page, u32 id) {
 }
 
 static inline bool IsTTModeButton(const Pages::SinglePlayer* page, u32 id) {
-    return id == 1 || (id > 3 && id < GetMissionButtonId(page));
-}
-
-static inline u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer* page, u32 id) {
-    return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON;
+    return id == 1 || (id > 3 && id < MissionMode::GetMissionButtonId(page));
 }
 
 void CorrectButtonCount(Pages::SinglePlayer* page) {
@@ -103,7 +91,7 @@ static void LoadCorrectBRCTR(PushButton& button, const char* folder, const char*
     }
 
     button.Load(folder, ctr, variant, localPlayerField, 0, false);
-    if (IsBTMRModeButton(page, idx)) button.SetMessage(GetBTMRModeButtonBMG(page, idx));
+    if (IsBTMRModeButton(page, idx)) button.SetMessage(MissionMode::GetBTMRModeButtonBMG(page, idx));
     page->curMovieCount = 0;
 }
 kmCall(0x8084f084, LoadCorrectBRCTR);
@@ -132,11 +120,8 @@ kmCall(0x8084ef68, SetDistanceFunc);
 
 void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
     const s32 id = button.buttonId;
-    if (IsMissionButton(page, id)) {
-        button.buttonId = missionButtonVanillaId;
-        page->Pages::SinglePlayer::OnExternalButtonSelect(button, hudSlotId);
-        button.buttonId = id;
-        page->bottomText->SetMessage(BMG_MISSION_MODE_BOTTOM);
+    if (MissionMode::IsMissionButton(page, id)) {
+        MissionMode::OnButtonSelect(page, button, hudSlotId);
     } else if (IsSettingsButton(page, id)) {
         page->bottomText->SetMessage(BMG_SETTINGSBUTTON_BOTTOM);
     } else if (GetTTExtraButtonCount(page) > 0 && IsTTModeButton(page, id)) {
@@ -167,6 +152,8 @@ kmWritePointer(0x808D9F64, &OnButtonSelect);
 // Sets the ttMode based on which button was clicked
 void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
     const u32 id = button.buttonId;
+    if (MissionMode::OnButtonClick(page, button, hudSlotId)) return;
+
     if (IsSettingsButton(page, id)) {
         // Navigate to page selection first
         ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
@@ -176,9 +163,7 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
         return;
     }
 
-    if (IsMissionButton(page, id))
-        button.buttonId = missionButtonVanillaId;
-    else if (IsTTModeButton(page, id))
+    if (IsTTModeButton(page, id))
         button.buttonId = 1;
     page->Pages::SinglePlayer::OnButtonClick(button, hudSlotId);
     button.buttonId = id;
@@ -202,7 +187,17 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
         SetCC();
     }
 }
-kmWritePointer(0x808BBED0, OnButtonClick);
+
+static void TriggerClickHandler(PtmfHolder_2A<Page, void, PushButton&, u32>& handler, PushButton& button, u32 hudSlotId) {
+    Page* page = handler.subject;
+    if (page != nullptr && page->pageId == PAGE_SINGLE_PLAYER_MENU) {
+        OnButtonClick(static_cast<Pages::SinglePlayer*>(page), button, hudSlotId);
+        return;
+    }
+    if (page == nullptr) return;
+    (page->*handler.ptmf.ptr)(button, hudSlotId);
+}
+kmCall(0x805be3f0, TriggerClickHandler);
 }  // namespace UI
 
 // Sets the CC (based on the mode) when retrying after setting a time, as racedata's CC is overwritten usually
