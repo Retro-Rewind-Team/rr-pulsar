@@ -34,7 +34,7 @@ bool Mgr::Is1v1KoRace(u32 currentRaceNumber) const {
 u8 Mgr::GetRoundKoCount(u8 playerCount) const {
     u8 koCount = this->koPerRace;
 
-    if (this->elimThresholdPlayers != 0 && playerCount == this->elimThresholdPlayers) {
+    if (this->elimThresholdPlayers != 0 && playerCount <= this->elimThresholdPlayers) {
         koCount = this->elimChangeCount;
     }
 
