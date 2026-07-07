@@ -20,6 +20,10 @@
 #include <UI/Leaderboard/LeaderboardDisplay.hpp>
 
 namespace Pulsar {
+namespace Network {
+void AppendPhantomSelectInfos(Pages::SELECTStageMgr& stageMgr);
+}
+
 namespace KO {
 
 static void EditLdb(CtrlRaceResult* result, u8 playerId) {
@@ -102,6 +106,7 @@ static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) 
     }
 
     stageMgr.SetModeTypes();
+    Network::AppendPhantomSelectInfos(stageMgr);
 }
 kmCall(0x80650494, PatchAidsBeforeSELECTStageMgrSetup);
 
