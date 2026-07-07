@@ -165,23 +165,20 @@ static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulet
 kmCall(0x807BA078, ApplyMushroomGlitchFix);
 
 // Blue Shell Cooldown [ZPL]
-extern "C" u32 raceFrames;
-static void AddUseEVENTEntryWithBlueShellCooldown(ItemObjId itemObjId, u8 playerId) {
-    struct UseEventData {
-        u16 frame;
-        u8 playerId;
-    } eventData = {static_cast<u16>(raceFrames), playerId};
+static void* SendOrExtractShootEVENTWithBlueShellCooldown(void* packet, Item::Obj* obj, bool extractOrSend) {
+    void* nextPacket = Item::EVENTBuffer::FillOrExtractShoot(static_cast<Item::ShootEntry*>(packet), obj, extractOrSend);
 
-    if (itemObjId == OBJ_BLUE_SHELL) Item::ItemSlotData::sInstance()->itemSpawnTimers[1] = 600;
+    if (obj != nullptr && extractOrSend) {
+        if (obj->itemObjId == OBJ_BLUE_SHELL && !Pulsar::System::sInstance->IsVanillaMode()) Item::ItemSlotData::sInstance()->itemSpawnTimers[1] = 600;
 
-    RKNet::EVENTHandler* eventHandler = RKNet::EVENTHandler::sInstance;
-    if (eventHandler != nullptr && eventHandler->freeDataInSendBuffer >= sizeof(eventData) && eventHandler->HasFreeEntries()) {
-        eventHandler->AddEntry(itemObjId, RKNet::EVENTACTION_USE, &eventData, sizeof(eventData));
-    } else if (Item::EVENTBuffer::sInstance != nullptr) {
-        Item::EVENTBuffer::sInstance->QueueSendEntry(itemObjId, RKNet::EVENTACTION_USE, &eventData, sizeof(eventData));
+        if ((obj->bitfield78 & 0x8000) != 0)
+            Item::Obj::AddDropEVENTEntry(obj->itemObjId);
+        else
+            Item::Obj::AddShootEVENTEntry(obj->itemObjId);
     }
+    return nextPacket;
 }
-kmBranch(0x8079c220, AddUseEVENTEntryWithBlueShellCooldown);
+kmBranch(0x807a3370, SendOrExtractShootEVENTWithBlueShellCooldown);
 
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);
