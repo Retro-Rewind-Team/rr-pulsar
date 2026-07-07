@@ -197,6 +197,7 @@ DWC_IsServerMyself = 0x800d2760
 DWC_GetMyAid = 0x800d2170
 DWC_GetServerAid = 0x800d26e8
 DWC_GetAidBitmap = 0x800d24b4
+DWC_IsValidAid = 0x800d2644
 DWC_CloseConnectionHard = 0x800d2000
 DWC_CloseAllConnectionsHard = 0x800d2040
 sMatchStateTick__Q36Pulsar7Network10FastNATNEG = 0x80386310

@@ -9,6 +9,9 @@ namespace Network {
 
 static const s32 HOST_DISCONNECT_ERROR_CODE = 69650;  // Custom error code for host disconnect
 
+void MarkPhantomAid(u32 aid);
+void ClearPhantomAid(u32 aid);
+
 typedef void (*SetDisconnectInfoFn)(RKNet::Controller*, s32, s32);
 kmRuntimeUse(0x80656920);
 
@@ -20,15 +23,20 @@ static bool IsInFriendRoom() {
 }
 
 static void OnConnectionClosed(RKNet::Controller* controller, u32 aid) {
-    // 1. Call original ProcessPlayerDisconnect
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const u8 hostAid = sub.hostAid;
+    const bool isLocalHost = sub.localAid == hostAid;
+
+    if (!isLocalHost && aid != hostAid) {
+        MarkPhantomAid(aid);
+        return;
+    }
+
+    ClearPhantomAid(aid);
     controller->ProcessPlayerDisconnect(aid);
 
     // 2. Check for host disconnect in friend room
     if (IsInFriendRoom() && Pulsar::System::sInstance->IsContext(PULSAR_VR)) {
-        const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-        const u8 hostAid = sub.hostAid;
-        const bool isLocalHost = sub.localAid == hostAid;
-
         if (!isLocalHost && aid == hostAid) {
             // Host disconnected, trigger local disconnect for everyone else
             const SetDisconnectInfoFn setDisconnectInfo = reinterpret_cast<SetDisconnectInfoFn>(kmRuntimeAddr(0x80656920));
