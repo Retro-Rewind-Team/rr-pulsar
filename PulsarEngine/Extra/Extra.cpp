@@ -4,8 +4,6 @@
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
-#include <MarioKartWii/Item/ItemSlot.hpp>
-#include <MarioKartWii/Item/Obj/ItemObj.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <PulsarSystem.hpp>
@@ -163,25 +161,6 @@ static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulet
     return roulette;
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);
-
-// Blue Shell Cooldown [ZPL]
-extern "C" u32 raceFrames;
-static void AddUseEVENTEntryWithBlueShellCooldown(ItemObjId itemObjId, u8 playerId) {
-    struct UseEventData {
-        u16 frame;
-        u8 playerId;
-    } eventData = {static_cast<u16>(raceFrames), playerId};
-
-    if (itemObjId == OBJ_BLUE_SHELL) Item::ItemSlotData::sInstance()->itemSpawnTimers[1] = 600;
-
-    RKNet::EVENTHandler* eventHandler = RKNet::EVENTHandler::sInstance;
-    if (eventHandler != nullptr && eventHandler->freeDataInSendBuffer >= sizeof(eventData) && eventHandler->HasFreeEntries()) {
-        eventHandler->AddEntry(itemObjId, RKNet::EVENTACTION_USE, &eventData, sizeof(eventData));
-    } else if (Item::EVENTBuffer::sInstance != nullptr) {
-        Item::EVENTBuffer::sInstance->QueueSendEntry(itemObjId, RKNet::EVENTACTION_USE, &eventData, sizeof(eventData));
-    }
-}
-kmBranch(0x8079c220, AddUseEVENTEntryWithBlueShellCooldown);
 
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);

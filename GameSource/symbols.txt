@@ -2190,8 +2190,6 @@ sInstance__Q24Item7Manager = 0x809c3618
 IsThereCapacityForItem__Q24Item7ManagerF6ItemId = 0x80799be8
 
 #ItemEVENT
-sInstance__Q24Item11EVENTBuffer = 0x809c3620
-QueueSendEntry__Q24Item11EVENTBufferF9ItemObjIdQ25RKNet11EVENTActionPvUi = 0x8079bfec
 FillOrExtractShootPos__Q24Item11EVENTBufferFPsP4Vec3b = 0x8079ad38
 FillOrExtractShoot__Q24Item11EVENTBufferFPQ24Item10ShootEntryPQ24Item3Objb = 0x8079b4ac
 
@@ -2236,7 +2234,6 @@ blueShellMinimumDiveDistance__4Item = 0x808a5c34
 #DriverMgr
 GetRaceinfoRandom__9DriverMgrFv = 0x807bd718
 sInstance__9DriverMgr = 0x809c23f8
-raceFrames = 0x809c38c0
 isOnlineRace__9DriverMgr = 0x809c38b9
 isTT__9DriverMgr = 0x809c38bc
 ChangeFocusedPlayer__9DriverMgrFUc = 0x8078dde4
