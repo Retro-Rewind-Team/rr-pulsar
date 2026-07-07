@@ -3,14 +3,12 @@
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <core/rvl/DWC/DWCCore.hpp>
+#include <Network/PhantomRacer.hpp>
 
 namespace Pulsar {
 namespace Network {
 
 static const s32 HOST_DISCONNECT_ERROR_CODE = 69650;  // Custom error code for host disconnect
-
-void MarkPhantomAid(u32 aid);
-void ClearPhantomAid(u32 aid);
 
 typedef void (*SetDisconnectInfoFn)(RKNet::Controller*, s32, s32);
 kmRuntimeUse(0x80656920);

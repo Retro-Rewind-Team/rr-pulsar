@@ -17,13 +17,10 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Gamemodes/PositionCounter.hpp>
+#include <Network/PhantomRacer.hpp>
 #include <UI/Leaderboard/LeaderboardDisplay.hpp>
 
 namespace Pulsar {
-namespace Network {
-void AppendPhantomSelectInfos(Pages::SELECTStageMgr& stageMgr);
-}
-
 namespace KO {
 
 static void EditLdb(CtrlRaceResult* result, u8 playerId) {
