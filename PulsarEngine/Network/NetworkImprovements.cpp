@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/User.hpp>
 #include <core/rvl/DWC/DWCCore.hpp>
+#include <core/rvl/OS/OS.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <runtimeWrite.hpp>
 
@@ -13,6 +14,7 @@ extern "C" BOOL DWC_IsValidAid(u8 aid);
 namespace Pulsar {
 namespace Network {
 
+static const u32 PHANTOM_AID_TIMEOUT_SECONDS = 2;
 static u32 s_phantomAids = 0;
 
 void MarkPhantomAid(u32 aid) {
@@ -37,10 +39,28 @@ bool ShouldPreservePhantomAid(u32 aid) {
     return (s_phantomAids & (1 << aid)) != 0;
 }
 
+static void ExpireStalePhantomAids(RKNet::Controller* controller) {
+    const u32 phantomAids = s_phantomAids;
+    if (phantomAids == 0) return;
+
+    const u64 now = OS::GetTime();
+    const u64 timeout = static_cast<u64>(OS::GetTimerClock()) * PHANTOM_AID_TIMEOUT_SECONDS;
+    for (u32 aid = 0; aid < 12; ++aid) {
+        const u32 aidBit = 1 << aid;
+        if ((phantomAids & aidBit) == 0) continue;
+
+        const u64 lastReceived = controller->lastRACERecivedTimes[aid];
+        if (lastReceived != 0 && now - lastReceived <= timeout) continue;
+
+        s_phantomAids &= ~aidBit;
+        controller->ProcessPlayerDisconnect(aid);
+    }
+}
+
 static u32 GetAidBitmapWithPhantomAids() {
     u32 aidBitmap = DWC_GetAidBitmap();
 
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller == nullptr) {
         s_phantomAids = 0;
         return aidBitmap;
@@ -55,6 +75,7 @@ static u32 GetAidBitmapWithPhantomAids() {
     }
 
     s_phantomAids &= ~(localAidBit | hostAidBit);
+    ExpireStalePhantomAids(controller);
     return aidBitmap | s_phantomAids;
 }
 kmCall(0x80658e10, GetAidBitmapWithPhantomAids);
