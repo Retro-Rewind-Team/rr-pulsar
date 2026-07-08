@@ -712,6 +712,14 @@ void ReinitMenuDriverModelMgr(u8 hud, CharacterId character) {
     if (page != nullptr && page->models != nullptr) page->models[hud].RequestModel(character);
 }
 
+void RefreshMenuDriverModel(CharacterId character) {
+    MenuModelMgr* modelMgr = MenuModelMgr::sInstance;
+    if (modelMgr == nullptr || !modelMgr->isActive || modelMgr->driverModels == nullptr) return;
+
+    UnlockMenuModelHeaps(*modelMgr);
+    ReloadMenuDriverModel(*modelMgr->driverModels, character);
+}
+
 KartId SelectedMenuKartForHud(u8 hud) {
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr && hud < sectionMgr->sectionParams->localPlayerCount) {
