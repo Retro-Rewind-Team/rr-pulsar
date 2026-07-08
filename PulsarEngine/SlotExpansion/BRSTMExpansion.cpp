@@ -150,11 +150,15 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             const char* racePercentageSpecifier = GetSW2RRRacePercentageSpecifier();
             const bool hasRacePercentageSpecifier = racePercentageSpecifier[0] != '\0';
 
-            if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", racePercentageSpecifier) >= 0) {
+            if (isFinalLap && hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_final", racePercentageSpecifier) >= 0) {
+                extFilePath = pulPath;
+            } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", racePercentageSpecifier) >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
                     Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
                 }
+            } else if (isFinalLap && CheckBRSTM(archive, track, "_final") >= 0) {
+                extFilePath = pulPath;
             } else if (CheckBRSTM(archive, track, "_n") >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
