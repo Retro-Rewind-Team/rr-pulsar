@@ -163,48 +163,6 @@ static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulet
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);
 
-// Blue Shell Cooldown [Seeky, ZPL]
-extern "C" Item::ItemSlotData* itemSlotData;
-static u8 blueShellCooldownEnabled = 0;
-
-static void RefreshBlueShellCooldownEnabled() {
-    const Pulsar::System* system = Pulsar::System::sInstance;
-    blueShellCooldownEnabled = system != nullptr && !system->IsVanillaMode() &&
-                               !system->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) &&
-                               !system->IsContext(Pulsar::PULSAR_ITEMMODEBLAST);
-}
-static RaceLoadHook RefreshBlueShellCooldownEnabledHook(RefreshBlueShellCooldownEnabled);
-
-asmFunc UseBlueShellWithCooldown() {
-    ASM(
-        nofralloc;
-        stwu r1, -0x10(r1);
-        stw r11, 0x8(r1);
-        stw r12, 0xC(r1);
-
-        stb r0, 0x208(r3);
-
-        lis r11, blueShellCooldownEnabled @ha;
-        lbz r11, blueShellCooldownEnabled @l(r11);
-        cmpwi r11, 0;
-        beq end;
-
-        lis r11, itemSlotData @ha;
-        lwz r11, itemSlotData @l(r11);
-        cmpwi r11, 0;
-        beq end;
-
-        li r12, 1200;  // 20 seconds
-        stw r12, 0x38(r11);
-
-        end :;
-        lwz r11, 0x8(r1);
-        lwz r12, 0xC(r1);
-        addi r1, r1, 0x10;
-        blr;)
-}
-kmBranch(0x807ae8ac, UseBlueShellWithCooldown);
-
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);
 kmWrite32(0x800ECAAC, 0x7C7E1B78);
