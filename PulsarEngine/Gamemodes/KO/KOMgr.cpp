@@ -96,8 +96,13 @@ void Mgr::CalcWouldBeKnockedOut() {
     if (playerCount == 2) {
         if (!this->Is1v1KoRace(currentRaceCount)) return;
 
-        for (int i = 0; i < playerCount; ++i) {
-            this->wouldBeOut[i] = (raceInfo->players[i]->position != 1);
+        if (this->racesPerKO > 1) {
+            this->wouldBeOut[players[0].playerId] = players[0].position < players[1].position;
+            this->wouldBeOut[players[1].playerId] = players[1].position < players[0].position;
+        } else {
+            for (int i = 0; i < playerCount; ++i) {
+                this->wouldBeOut[i] = (raceInfo->players[i]->position != 1);
+            }
         }
         return;
     }
@@ -165,8 +170,13 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
     const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
     const bool is1v1KoRace = playerCount == 2 && self->Is1v1KoRace(currentRaceNumber);
     if (is1v1KoRace || (playerCount - disconnectedKOs) == 1) {
-        self->winnerPlayerId = raceinfo->playerIdInEachPosition[0];
-        self->SetKOd(raceinfo->playerIdInEachPosition[1]);
+        if (is1v1KoRace && self->racesPerKO > 1) {
+            self->winnerPlayerId = playerArr[0].playerId;
+            self->SetKOd(playerArr[1].playerId);
+        } else {
+            self->winnerPlayerId = raceinfo->playerIdInEachPosition[0];
+            self->SetKOd(raceinfo->playerIdInEachPosition[1]);
+        }
         self->AddRaceStats();
         return;
     }
