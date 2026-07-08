@@ -160,7 +160,9 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
         if (aid >= 12) continue;
 
         if (((1 << aid) & sub.availableAids) == 0) {
-            self->SetDisconnected(playerId);
+            if (!self->IsDisconnectedPlayerId(playerId)) {
+                self->SetDisconnected(playerId);
+            }
             ++disconnectedKOs;
         }
     }
@@ -169,6 +171,14 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
 
     const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
     const bool is1v1KoRace = playerCount == 2 && self->Is1v1KoRace(currentRaceNumber);
+    const bool isCompletedKoRace = isKoRace && koCount > 0;
+    if (isKoRace) {
+        if (disconnectedKOs >= koCount)
+            koCount = 0;
+        else
+            koCount -= disconnectedKOs;
+    }
+
     if (is1v1KoRace || (playerCount - disconnectedKOs) == 1) {
         if (is1v1KoRace && self->racesPerKO > 1) {
             self->winnerPlayerId = playerArr[0].playerId;
@@ -181,7 +191,7 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
         return;
     }
 
-    if (!isKoRace || koCount <= 0) {
+    if (!isCompletedKoRace) {
         self->AddRaceStats();
         return;
     }
@@ -247,7 +257,7 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
                 }
             }
 
-            if (self->IsKOdPlayerId(playerId)) {
+            if (self->IsKOdPlayerId(playerId) || self->IsDisconnectedPlayerId(playerId)) {
                 continue;
             }
 
@@ -258,7 +268,7 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
     int notKOdCount = 0;
     u8 potentialWinner = 0xFF;
     for (int playerId = 0; playerId < playerCount; ++playerId) {
-        if (!self->IsKOdPlayerId(playerId)) {
+        if (!self->IsKOdPlayerId(playerId) && !self->IsDisconnectedPlayerId(playerId)) {
             ++notKOdCount;
             potentialWinner = playerId;
         }
