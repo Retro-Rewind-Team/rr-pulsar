@@ -26,6 +26,7 @@ static void WriteHostSettingsPreviewToPacket(PulROOM* packet, const Settings::Mg
         Settings::SETTINGSTYPE_FROOM1,
         Settings::SETTINGSTYPE_FROOM2,
         Settings::SETTINGSTYPE_KO,
+        Settings::SETTINGSTYPE_KOROYALE,
         Settings::SETTINGSTYPE_OTT,
     };
 

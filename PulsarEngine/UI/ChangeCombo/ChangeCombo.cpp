@@ -70,6 +70,9 @@ static void BuildSettingsPreviewSheets() {
     if (system->IsContext(PULSAR_MODE_OTT)) {
         s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_OTT;
     }
+    if (system->IsContext(PULSAR_MODE_BATTLEROYALE) && !system->IsContext(PULSAR_MODE_OTT)) {
+        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_KOROYALE;
+    }
 }
 
 static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr& page) {

@@ -17,7 +17,7 @@ namespace UI {
 
 static bool s_votingSettingsPreviewActive = false;
 static u32 s_votingSettingsPreviewFrame = 0;
-static const u32 votingSettingsPreviewDuration = 300;
+static const u32 votingSettingsPreviewDuration = 240;
 
 // SETTINGS PANEL
 SettingsPanel::SettingsPanel() {
@@ -119,6 +119,7 @@ void SettingsPanel::ApplyVotingPreviewHostSettings() {
         Settings::SETTINGSTYPE_FROOM1,
         Settings::SETTINGSTYPE_FROOM2,
         Settings::SETTINGSTYPE_KO,
+        Settings::SETTINGSTYPE_KOROYALE,
         Settings::SETTINGSTYPE_OTT,
     };
 
