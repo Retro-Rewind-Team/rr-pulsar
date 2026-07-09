@@ -257,7 +257,6 @@ void SettingsPanel::OnActivate() {
         radio.manipulator.inaccessible = isDisabled;
 
         if (!isDisabled) {
-            const u32 previousSetting = radio.chosenButtonId;
             radio.buttonsCount = Settings::Params::buttonsPerPagePerRow[this->sheetIdx][radio.id];
             const u8 setting = this->radioSettings[this->sheetIdx][radio.id];
             radio.chosenButtonId = setting;
@@ -270,10 +269,6 @@ void SettingsPanel::OnActivate() {
                 if (j >= Settings::Params::buttonsPerPagePerRow[this->sheetIdx][radio.id]) isHidden = true;
                 radio.optionButtonsArray[j].isHidden = isHidden;
                 if (!isHidden) radio.optionButtonsArray[j].SetMessage((radio.id + 1 << 4) + j + bmgCategory);
-            }
-            if (s_votingSettingsPreviewActive && previousSetting != setting) {
-                radio.chosenButtonId = previousSetting;
-                radio.HandleClick(0, setting);
             }
         }
     }
