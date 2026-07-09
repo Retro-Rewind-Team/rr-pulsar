@@ -542,7 +542,7 @@ void CupsConfig::ToggleCTs(bool enabled) {
     if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_WW || controller->roomType == RKNet::ROOMTYPE_BT_WW || controller->roomType == RKNet::ROOMTYPE_JOINING_WW)) {
         isRegsOnly = true;
     }
-    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && System::sInstance->netMgr.region == 0x15) {
+    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && System::sInstance->IsVanillaMode()) {
         isRegsOnly = true;
     }
     if (isRegsOnly) {

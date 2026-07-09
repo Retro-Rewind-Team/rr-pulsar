@@ -4,20 +4,20 @@
 
 namespace HybridDrift {
 
-static bool isRegion15Online = false;
+static bool isVanillaModeOnline = false;
 
-static void UpdateRegion15Online() {
+static void UpdateVanillaModeOnline() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    isRegion15Online = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
-                       Pulsar::System::sInstance->netMgr.region == 0x15;
+    isVanillaModeOnline = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
+                          Pulsar::System::sInstance->IsVanillaMode();
 }
-static SectionLoadHook Region15OnlineHook(UpdateRegion15Online);
+static SectionLoadHook VanillaModeOnlineHook(UpdateVanillaModeOnline);
 
 // original code by Ismy and CLF78, with fixes by Ro.
 asmFunc GetHybridDrift1() {
     ASM(
-        lis r12, isRegion15Online @ha;
-        lbz r12, isRegion15Online @l(r12);
+        lis r12, isVanillaModeOnline @ha;
+        lbz r12, isVanillaModeOnline @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         lwz r0, 0x14(r3);
@@ -53,8 +53,8 @@ kmCall(0x80578DCC, GetHybridDrift1);
 
 asmFunc GetHybridDrift3() {
     ASM(
-        lis r12, isRegion15Online @ha;
-        lbz r12, isRegion15Online @l(r12);
+        lis r12, isVanillaModeOnline @ha;
+        lbz r12, isVanillaModeOnline @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         lwz r0, 0x4(r3);
@@ -73,8 +73,8 @@ kmCall(0x8057DFA8, GetHybridDrift3);
 
 asmFunc GetHybridDrift4() {
     ASM(
-        lis r12, isRegion15Online @ha;
-        lbz r12, isRegion15Online @l(r12);
+        lis r12, isVanillaModeOnline @ha;
+        lbz r12, isVanillaModeOnline @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         lwz r0, 0x4(r4);
@@ -93,8 +93,8 @@ kmCall(0x8057E018, GetHybridDrift4);
 
 asmFunc GetHybridDrift6() {
     ASM(
-        lis r12, isRegion15Online @ha;
-        lbz r12, isRegion15Online @l(r12);
+        lis r12, isVanillaModeOnline @ha;
+        lbz r12, isVanillaModeOnline @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         rlwinm.r0, r0, 0, 27, 27;
@@ -109,8 +109,8 @@ kmCall(0x8057E108, GetHybridDrift6);
 
 asmFunc GetHybridDrift7() {
     ASM(
-        lis r12, isRegion15Online @ha;
-        lbz r12, isRegion15Online @l(r12);
+        lis r12, isVanillaModeOnline @ha;
+        lbz r12, isVanillaModeOnline @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         mr r3, r30;

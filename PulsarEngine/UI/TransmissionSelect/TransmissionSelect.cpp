@@ -2,6 +2,9 @@
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
+#include <RetroRewindChannel.hpp>
+#include <UI/ChangeCombo/ChangeCombo.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -13,14 +16,17 @@ static Transmission selectedTransmission[4] = {
     TRANSMISSION_INSIDE,
 };
 
-static PageId nextPageAfterTransmission = PAGE_NONE;
-static SectionId nextSectionAfterTransmission = SECTION_NONE;
-static bool returnToGlobeAfterTransmission = false;
-
-static bool IsRegion15Online() {
+static bool IsVanillaModeOnline() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     return controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
-           System::sInstance->netMgr.region == 0x15;
+           System::sInstance->IsVanillaMode();
+}
+
+static bool ShouldSkipTransmissionSelect(const System* system) {
+    if (IsVanillaModeOnline()) return true;
+    if (system->IsContext(PULSAR_STARTREGS)) return true;
+    return system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) ||
+           system->IsContext(PULSAR_TRANSMISSIONVANILLA);
 }
 
 static Transmission GetTransmissionFromButton(const PushButton& button) {
@@ -48,19 +54,23 @@ static void SelectCurrentTransmission(Pages::Menu& menu, u32 hudSlotId) {
 }
 
 static void HideTransmissionExtras(Pages::Menu& menu) {
-    for (u32 i = 0; i < menu.curMovieCount; ++i) {
-        menu.movies[i]->CtrlMenuMovieHandler::isHidden = true;
-    }
     if (menu.externControlCount > 2) {
         menu.externControls[2]->isHidden = true;
         menu.externControls[2]->manipulator.inaccessible = true;
     }
 }
 
-static void CopyDriftTimerToTransmission(Pages::Menu& menu) {
+static void LoadTransmissionMovies(Pages::Menu& menu) {
+    if (IsNewChannel()) return;
+    if (Section::GetSceneId(SectionMgr::sInstance->curSection->sectionId) == SCENE_ID_GLOBE) return;
+    char* thpNames[] = {"thp/button/transmissionType.thp"};
+    menu.LoadMovies(thpNames, true);
+}
+
+static void CopyKartTimerToTransmission(Pages::Menu& menu) {
     TransmissionSelect* transmissionPage = ExpSection::GetSection()->GetPulPage<TransmissionSelect>();
     if (transmissionPage == nullptr) return;
-    transmissionPage->timer = static_cast<Pages::DriftSelect&>(menu).timer;
+    transmissionPage->timer = static_cast<Pages::KartSelect&>(menu).timer;
 }
 
 void TransmissionSelect::OnInit() {
@@ -72,7 +82,9 @@ void TransmissionSelect::OnInit() {
 }
 
 void TransmissionSelect::OnActivate() {
-    Pages::DriftSelect::OnActivate();
+    this->Pages::Menu::OnActivate();
+    StopRandomComboRoulette();
+    LoadTransmissionMovies(*this);
     SetTransmissionMessages(*this);
     HideTransmissionExtras(*this);
     SelectCurrentTransmission(*this, 0);
@@ -111,29 +123,25 @@ void TransmissionSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
         return;
     }
     SetSelectedTransmission(hudSlotId, GetTransmissionFromButton(button));
-    if (returnToGlobeAfterTransmission) {
-        returnToGlobeAfterTransmission = false;
-        this->nextPageId = PAGE_NONE;
-        this->EndStateAnimated(0, button.GetAnimationFrameSize());
-        return;
-    }
-    if (nextSectionAfterTransmission != SECTION_NONE) {
-        SectionId next = nextSectionAfterTransmission;
-        nextSectionAfterTransmission = SECTION_NONE;
-        this->ChangeSectionById(next, button);
-        return;
-    }
-    PageId next = nextPageAfterTransmission;
-    if (next == PAGE_NONE) next = PAGE_CUP_SELECT;
-    this->LoadNextPageById(next, button);
+    this->LoadNextPageById(PAGE_DRIFT_SELECT, button);
 }
 
-void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {
+void LoadTransmissionSelectBeforeDrift(Pages::Menu& menu, PageId id, PushButton& button) {
     System* system = System::sInstance;
-    if (IsRegion15Online()) {
+    if (ShouldSkipTransmissionSelect(system)) {
         menu.LoadNextPageById(id, button);
         return;
     }
+    CopyKartTimerToTransmission(menu);
+    menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
+}
+kmCall(0x80846d2c, LoadTransmissionSelectBeforeDrift);
+kmCall(0x80846d64, LoadTransmissionSelectBeforeDrift);
+kmCall(0x80846e1c, LoadTransmissionSelectBeforeDrift);
+kmCall(0x80846e40, LoadTransmissionSelectBeforeDrift);
+
+void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {
+    System* system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_OTT) && system->ottMgr.voteState == OTT::COMBO_SELECTION) {
         system->ottMgr.voteState = OTT::COMBO_SELECTED;
         Pulsar::Network::ExpSELECTHandler& handler = Pulsar::Network::ExpSELECTHandler::Get();
@@ -144,52 +152,8 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
         menu.LoadNextPageById(PAGE_SELECT_STAGE_MGR, button);
         return;
     }
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
-        menu.LoadNextPageById(id, button);
-        return;
-    }
-    returnToGlobeAfterTransmission = false;
-    nextSectionAfterTransmission = SECTION_NONE;
-    nextPageAfterTransmission = id;
-    CopyDriftTimerToTransmission(menu);
-    menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
+    menu.LoadNextPageById(id, button);
 }
-
-static void LoadTransmissionSelectBeforeSectionChange(Pages::Menu& menu, SectionId id, PushButton& button) {
-    System* system = System::sInstance;
-    if (IsRegion15Online()) {
-        menu.ChangeSectionById(id, button);
-        return;
-    }
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
-        menu.ChangeSectionById(id, button);
-        return;
-    }
-    returnToGlobeAfterTransmission = false;
-    nextPageAfterTransmission = PAGE_NONE;
-    nextSectionAfterTransmission = id;
-    CopyDriftTimerToTransmission(menu);
-    menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
-}
-kmCall(0x8084e4c8, LoadTransmissionSelectBeforeSectionChange);
-
-void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection, float animLength) {
-    System* system = System::sInstance;
-    if (IsRegion15Online()) {
-        menu.EndStateAnimated(animDirection, animLength);
-        return;
-    }
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
-        menu.EndStateAnimated(animDirection, animLength);
-        return;
-    }
-    returnToGlobeAfterTransmission = true;
-    nextPageAfterTransmission = PAGE_NONE;
-    nextSectionAfterTransmission = SECTION_NONE;
-    CopyDriftTimerToTransmission(menu);
-    menu.LoadNextPageWithDelayById(static_cast<PageId>(TransmissionSelect::id), animLength);
-}
-kmCall(0x8084e4b8, LoadTransmissionSelectAfterGlobeDrift);
 
 }  // namespace UI
 }  // namespace Pulsar

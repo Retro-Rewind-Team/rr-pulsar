@@ -12,6 +12,10 @@ void RestoreVotingMenuDriverModels() {
     votingMenuTablesRestored = true;
     ApplySelectedNames();
     RefreshLocalOnlineCustomCharacterFlags();
+    for (u8 character = 0; character < MENU_DRIVER_MODEL_COUNT; ++character) {
+        const CharacterId characterId = static_cast<CharacterId>(character);
+        if (SelectedTable(characterId) != TABLE_DEFAULT) RefreshMenuDriverModel(characterId);
+    }
 
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
     if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return;

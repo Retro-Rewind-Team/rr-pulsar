@@ -14,7 +14,7 @@ namespace Settings {
 class Params {
    public:
     static const int pulsarPageCount = 0;
-    static const int userPageCount = 13;
+    static const int userPageCount = 14;
     static const int pageCount = pulsarPageCount + userPageCount;
 
     static const int maxRadioCount = 8;  // per page, due to space
@@ -46,6 +46,7 @@ enum UserType {
     SETTINGSTYPE_EXTENDEDTEAMS,
     SETTINGSTYPE_MISC,
     SETTINGSTYPE_ITEMS,
+    SETTINGSTYPE_KOROYALE,
 
 };
 
@@ -120,7 +121,7 @@ enum FriendRoom2Settings {
     RADIO_THUNDERCLOUD = 3,
     RADIO_FORCETRANSMISSION = 4,
     RADIO_ALLITEMSCANLAND = 5,
-    RADIO_ITEMSONMINIMAP = 6,
+    RADIO_VANILLAMODE = 6,
     SCROLLER_STARTWORLDWIDE = 0 + 8,
     SCROLLER_ITEMMODE = 1 + 8,
     SCROLLER_TRACKSELECTION = 2 + 8,
@@ -139,8 +140,18 @@ enum OTTSettings {
 enum KOSettings {
     RADIO_KOENABLED = 0,
     RADIO_KOFINAL = 1,
+    RADIO_KO1V1FINALE = 2,
     SCROLLER_KOPERRACE = 0 + 8,
-    SCROLLER_RACESPERKO = 1 + 8
+    SCROLLER_RACESPERKO = 1 + 8,
+    SCROLLER_KOELIMTHRESHOLD = 2 + 8,
+    SCROLLER_KOELIMCHANGE = 3 + 8
+};
+
+// 11) KO Royale
+enum KORoyaleSettings {
+    RADIO_KOROYALEENABLED = 0,
+    SCROLLER_KOROYALEBALLOONS = 0 + 8,
+    SCROLLER_KOROYALELAPMULTIPLIER = 1 + 8
 };
 
 // 11) Extended Teams
@@ -411,9 +422,9 @@ enum AllItemsCanLandSetting {
     ALLITEMSCANLAND_ENABLED
 };
 
-enum ItemsOnMinimapSetting {
-    ITEMSONMINIMAP_DISABLED,
-    ITEMSONMINIMAP_ENABLED
+enum VanillaModeSetting {
+    VANILLAMODE_DISABLED,
+    VANILLAMODE_ENABLED
 };
 
 // 9) OTT values
@@ -443,8 +454,7 @@ enum OTTSettingUMTs {
 enum KOSettingEnabled {
     KOSETTING_DISABLED,
     KOSETTING_ENABLED,
-    KOSETTING_LAPBASED,
-    KOSETTING_BATTLEROYALE
+    KOSETTING_LAPBASED
 };
 
 enum KOSettingFINAL {
@@ -465,6 +475,47 @@ enum KOSettingRacesPerKO {
     KOSETTING_RACESPERKO_3,
     KOSETTING_RACESPERKO_4,
     KOSETTING_RACESPERKO_5
+};
+
+enum KOSetting1v1Finale {
+    KOSETTING_1V1FINALE_SINGLE,
+    KOSETTING_1V1FINALE_MULTIPLE
+};
+
+enum KOSettingElimThreshold {
+    KOSETTING_ELIMTHRESHOLD_DISABLED,
+    KOSETTING_ELIMTHRESHOLD_3,
+    KOSETTING_ELIMTHRESHOLD_4,
+    KOSETTING_ELIMTHRESHOLD_5,
+    KOSETTING_ELIMTHRESHOLD_6,
+    KOSETTING_ELIMTHRESHOLD_7,
+    KOSETTING_ELIMTHRESHOLD_8
+};
+
+enum KOSettingElimChange {
+    KOSETTING_ELIMCHANGE_1,
+    KOSETTING_ELIMCHANGE_2,
+    KOSETTING_ELIMCHANGE_3,
+    KOSETTING_ELIMCHANGE_4
+};
+
+// 11) KO Royale values
+enum KORoyaleSettingEnabled {
+    KOROYALESETTING_DISABLED,
+    KOROYALESETTING_ENABLED
+};
+
+enum KORoyaleSettingBalloons {
+    KOROYALESETTING_BALLOONS_1,
+    KOROYALESETTING_BALLOONS_2,
+    KOROYALESETTING_BALLOONS_3,
+    KOROYALESETTING_BALLOONS_4
+};
+
+enum KORoyaleSettingLapMultiplier {
+    KOROYALESETTING_LAPS_DEFAULT,
+    KOROYALESETTING_LAPS_1_5X,
+    KOROYALESETTING_LAPS_2_0X
 };
 
 // 11) Extended Teams values

@@ -23,6 +23,10 @@ class SettingsPanel : public Pages::MenuInteractable {
     static inline void CreatePanels(Section* section);
     SettingsPanel();  // max 8 radios and 8 scrollers per instance
     ~SettingsPanel() override;
+    static void StartVotingPreview(u32 firstSheetIdx);
+    static bool IsVotingPreviewActive();
+    static void SetVotingPreviewSheet(u32 sheetIdx);
+    static void ApplyVotingPreviewHostSettings();
     void OnInit() override;
     void OnActivate() override;
     const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 80853bd8

@@ -7,6 +7,7 @@
 #include <core/nw4r/snd/BasicSound.hpp>
 #include <Sound/MiscSound.hpp>
 #include <Settings/Settings.hpp>
+#include <PulsarSystem.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -161,7 +162,8 @@ static void RefreshSpecialItemReceiveSoundSetting() {
     specialItemReceiveSoundEnabled =
         Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_SPECIALITEMRECEIVE) == SPECIALITEMRECEIVE_ENABLED;
     megaThunderCloudEnabled =
-        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_MEGA;
+        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_MEGA &&
+        (System::sInstance == nullptr || !System::sInstance->IsContext(PULSAR_THUNDERCLOUD));
 }
 Settings::Hook RefreshSpecialItemReceiveSoundSettingHook(RefreshSpecialItemReceiveSoundSetting);
 RaceLoadHook RefreshSpecialItemReceiveSoundSettingRaceHook(RefreshSpecialItemReceiveSoundSetting);

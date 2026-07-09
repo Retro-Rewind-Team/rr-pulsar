@@ -32,7 +32,7 @@ static bool IsBrakeDriftingEnabled() {
     const GameMode mode = scenario.settings.gamemode;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    if (isOnlineRoomActive && System::sInstance->netMgr.region == 0x15) return false;
+    if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
     return (scenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) ||
            (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
             mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));

@@ -10,6 +10,8 @@ void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tpl
 const wchar_t* GetCustomMsg(s32 bmgId);
 void UnbindRLMC(lyt::Material* mat);
 void ResetMatColor(lyt::Pane* pane, u32 color);
+void ResetFroomSettingsPreviewShown();
+bool AdvanceFroomSettingsPreview(u32& sheetIdx);
 /*Expanded pages: (do not necessitate a PulPageId)
 -ExpGhostSelect
 -ExpFroom
@@ -270,7 +272,9 @@ enum BMG {
     // froom
     BMG_PLAY_OTT = 0x2914,
     BMG_PLAY_KO = 0x2915,
+    BMG_PLAY_ROYALE = 0x291A,
     BMG_PLAY_OTTKO = 0x2916,
+    BMG_PLAY_KOROYALE = 0x291B,
     BMG_PLAY_TEAM_OTT = 0x2917,
     BMG_PLAY_TEAM_KO = 0x2918,
     BMG_PLAY_TEAM_OTTKO = 0x2919,

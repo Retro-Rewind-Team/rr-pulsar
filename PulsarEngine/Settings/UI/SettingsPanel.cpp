@@ -10,9 +10,14 @@
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <core/System/SystemManager.hpp>
+#include <Network/Network.hpp>
 
 namespace Pulsar {
 namespace UI {
+
+static bool s_votingSettingsPreviewActive = false;
+static u32 s_votingSettingsPreviewFrame = 0;
+static const u32 votingSettingsPreviewDuration = 240;
 
 // SETTINGS PANEL
 SettingsPanel::SettingsPanel() {
@@ -77,6 +82,68 @@ SettingsPanel::SettingsPanel() {
     this->controlsManipulatorManager.SetGlobalHandler(START_PRESS, onStartPressHandler, false, false);
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, onBackPressHandler, false, false);
 };
+
+void SettingsPanel::StartVotingPreview(u32 firstSheetIdx) {
+    s_votingSettingsPreviewActive = true;
+    s_votingSettingsPreviewFrame = 0;
+    ApplyVotingPreviewHostSettings();
+    SetVotingPreviewSheet(firstSheetIdx);
+}
+
+bool SettingsPanel::IsVotingPreviewActive() {
+    return s_votingSettingsPreviewActive;
+}
+
+void SettingsPanel::SetVotingPreviewSheet(u32 sheetIdx) {
+    SettingsPanel* panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
+    if (panel == nullptr) return;
+
+    panel->sheetIdx = sheetIdx;
+    if (sheetIdx < Settings::Params::pulsarPageCount) {
+        panel->catIdx = sheetIdx;
+        panel->bmgOffset = 0;
+    } else {
+        panel->catIdx = sheetIdx - Settings::Params::pulsarPageCount;
+        panel->bmgOffset = BMG_USERSETTINGSOFFSET;
+    }
+}
+
+void SettingsPanel::ApplyVotingPreviewHostSettings() {
+    SettingsPanel* panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
+    if (panel == nullptr) return;
+
+    const Network::Mgr& netMgr = System::sInstance->netMgr;
+    if (!netMgr.hasHostSettingsPreview) return;
+
+    Settings::UserType pages[4];
+    u32 pageCount = 0;
+    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM1;
+    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM2;
+    if ((netMgr.hostContext & (1 << PULSAR_MODE_KO)) || (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO))) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_KO;
+    }
+    if (netMgr.hostContext & (1 << PULSAR_MODE_OTT)) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_OTT;
+    } else if (netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE)) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_KOROYALE;
+    }
+
+    u32 offset = 0;
+    for (u32 page = 0; page < pageCount; ++page) {
+        const Settings::UserType type = pages[page];
+        const u32 valueCount = Settings::Params::radioCount[type] + Settings::Params::scrollerCount[type];
+        if (offset + valueCount > Network::HOST_SETTINGS_PREVIEW_COUNT) break;
+        const u8* src = netMgr.hostSettingsPreview + offset;
+
+        for (u32 setting = 0; setting < Settings::Params::radioCount[type]; ++setting) {
+            panel->radioSettings[type][setting] = src[setting];
+        }
+        for (u32 setting = 0; setting < Settings::Params::scrollerCount[type]; ++setting) {
+            panel->scrollerSettings[type][setting] = src[Settings::Params::radioCount[type] + setting];
+        }
+        offset += valueCount;
+    }
+}
 
 SettingsPanel::~SettingsPanel() {
     Settings::Mgr* mgr = Settings::Mgr::sInstance;
@@ -170,7 +237,17 @@ void SettingsPanel::SetButtonHandlers(PushButton& button) {
 
 void SettingsPanel::OnActivate() {
     this->titleBmg = this->bmgOffset + BMG_SETTINGS_TITLE + this->catIdx;
-    this->externControls[0]->SelectInitial(0);
+    if (s_votingSettingsPreviewActive) {
+        this->externControls[0]->isHidden = true;
+        this->backButton.isHidden = true;
+    } else {
+        this->externControls[0]->isHidden = false;
+        this->externControls[0]->manipulator.inaccessible = false;
+        this->backButton.isHidden = false;
+        this->backButton.manipulator.inaccessible = false;
+        this->controlsManipulatorManager.inaccessible = false;
+        this->externControls[0]->SelectInitial(0);
+    }
     this->bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
 
     // Check if we're in any of the voting sections
@@ -213,15 +290,38 @@ void SettingsPanel::OnActivate() {
             scroller.curSelectedOption = this->scrollerSettings[this->sheetIdx][i];
             u32 bmgCategory = this->bmgOffset + BMG_SCROLLER_SETTINGS + (this->catIdx << 12);
             scroller.SetMessage(scroller.id + bmgCategory);
-            valueControl.activeTextValueControl->SetMessage((scroller.id + 1 << 4) + bmgCategory);
+            valueControl.activeTextValueControl->SetMessage((scroller.id + 1 << 4) + bmgCategory + scroller.curSelectedOption);
         }
     }
 
     MenuInteractable::OnActivate();
 
+    if (s_votingSettingsPreviewActive) {
+        this->externControls[0]->isHidden = true;
+        this->externControls[0]->manipulator.inaccessible = true;
+        this->backButton.isHidden = true;
+        this->backButton.manipulator.inaccessible = true;
+        this->controlsManipulatorManager.inaccessible = true;
+
+        for (int i = 0; i < Settings::Params::maxRadioCount; ++i) {
+            RadioButtonControl& radio = this->radioButtonControls[i];
+            radio.isHidden = i >= Settings::Params::radioCount[this->sheetIdx];
+            radio.manipulator.inaccessible = true;
+            if (!radio.isHidden) radio.Init();
+        }
+        for (int i = 0; i < Settings::Params::maxScrollerCount; ++i) {
+            const bool isDisabled = i >= Settings::Params::scrollerCount[this->sheetIdx];
+            this->upDownControls[i].isHidden = isDisabled;
+            this->upDownControls[i].manipulator.inaccessible = true;
+            this->textUpDown[i].isHidden = isDisabled;
+        }
+        return;
+    }
+
     // Hide specific settings pages in voting sections
     if (isVotingSection) {
         if (this->sheetIdx == Settings::SETTINGSTYPE_KO ||
+            this->sheetIdx == Settings::SETTINGSTYPE_KOROYALE ||
             this->sheetIdx == Settings::SETTINGSTYPE_OTT ||
             this->sheetIdx == Settings::SETTINGSTYPE_FROOM1 ||
             this->sheetIdx == Settings::SETTINGSTYPE_FROOM2 ||
@@ -256,6 +356,7 @@ void SettingsPanel::OnActivate() {
         radio.isHidden = isDisabled;
         radio.manipulator.inaccessible = isDisabled;
     }
+
 }
 
 const ut::detail::RuntimeTypeInfo* SettingsPanel::GetRuntimeTypeInfo() const {
@@ -375,6 +476,7 @@ void SettingsPanel::OnButtonClick(PushButton& button, u32 direction) {
     // Skip restricted pages in voting sections
     if (isVotingSection) {
         while (nextIdx == Settings::SETTINGSTYPE_KO ||
+               nextIdx == Settings::SETTINGSTYPE_KOROYALE ||
                nextIdx == Settings::SETTINGSTYPE_OTT ||
                nextIdx == Settings::SETTINGSTYPE_FROOM1 ||
                nextIdx == (Settings::SETTINGSTYPE_EXTENDEDTEAMS + Settings::Params::pulsarPageCount) ||
@@ -439,6 +541,29 @@ int SettingsPanel::GetNextSheetIdx(s32 direction) {
 }
 
 void SettingsPanel::BeforeControlUpdate() {
+    if (s_votingSettingsPreviewActive) {
+        ++s_votingSettingsPreviewFrame;
+        if (s_votingSettingsPreviewFrame >= votingSettingsPreviewDuration) {
+            u32 nextSheetIdx = 0;
+            if (AdvanceFroomSettingsPreview(nextSheetIdx)) {
+                s_votingSettingsPreviewFrame = 0;
+                SetVotingPreviewSheet(nextSheetIdx);
+                this->OnActivate();
+            } else {
+                s_votingSettingsPreviewActive = false;
+                Section* section = SectionMgr::sInstance->curSection;
+                if (section != nullptr && section->layerCount > 1) {
+                    section->RemovePageLayers(section->layerCount - 1);
+                    Pages::SELECTStageMgr* selectStageMgr = section->Get<Pages::SELECTStageMgr>();
+                    if (selectStageMgr != nullptr) {
+                        selectStageMgr->Pages::SELECTStageMgr::OnResume();
+                    }
+                }
+            }
+        }
+        return;
+    }
+
     SectionId id = SectionMgr::sInstance->curSection->sectionId;
     bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING);
     if (isVotingSection) {

@@ -17,6 +17,7 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Gamemodes/PositionCounter.hpp>
+#include <Network/PhantomRacer.hpp>
 #include <UI/Leaderboard/LeaderboardDisplay.hpp>
 
 namespace Pulsar {
@@ -87,6 +88,9 @@ static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) 
                 mgr->koPerRace = select->koPerRace;
                 mgr->racesPerKO = select->racesPerKO;
                 mgr->alwaysFinal = select->alwaysFinal;
+                mgr->singleRace1v1Final = select->singleRace1v1Final;
+                mgr->elimThresholdPlayers = select->elimThresholdPlayers;
+                mgr->elimChangeCount = select->elimChangeCount;
                 mgr->PatchAids(sub);
                 reinterpret_cast<RKNet::SELECTHandler&>(handler).AllocatePlayerIdsToAids();
                 controller->UpdateAidsBelongingToPlayerIds();
@@ -99,6 +103,7 @@ static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) 
     }
 
     stageMgr.SetModeTypes();
+    Network::AppendPhantomSelectInfos(stageMgr);
 }
 kmCall(0x80650494, PatchAidsBeforeSELECTStageMgrSetup);
 

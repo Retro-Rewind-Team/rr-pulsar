@@ -194,7 +194,7 @@ static void AddBalloons(RaceBalloonManager* mgr, u8 playerId, u8 count) {
     mgr->Add(playerId, team, 1, 0, count, 0);
 }
 
-static u8 GetKoPerRaceSetting() {
+static u8 GetStartingBalloonCountSetting() {
     const System* system = System::sInstance;
     if (system != nullptr) {
         if (system->IsContext(PULSAR_KOPERRACE_4)) return 4;
@@ -205,7 +205,7 @@ static u8 GetKoPerRaceSetting() {
 }
 
 static u8 GetStartingBalloonAddCount() {
-    return GetKoPerRaceSetting();
+    return GetStartingBalloonCountSetting();
 }
 
 static void StartBalloonLossBlink(u8 playerId) {
@@ -443,7 +443,7 @@ static void ClearActiveGoldenMushroom(u8 playerId) {
 static void AddStartingBalloons(RaceBalloonManager* mgr, int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval) {
     if (ShouldApplyBattleRoyale()) {
         const u8 current = GetBalloonCount(mgr, static_cast<u8>(playerId));
-        const u8 target = GetKoPerRaceSetting();
+        const u8 target = GetStartingBalloonCountSetting();
         if (current >= target) return;
 
         AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,

@@ -4,15 +4,12 @@
 #include <Sound/MiscSound.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
-#include <IO/LooseArchiveOverrides.hpp>
-#include <Settings/Settings.hpp>
 #include <RetroRewind.hpp>
 
 namespace Pulsar {
 namespace Sound {
 
 static char pulPath[0x100];
-static char resolvedPulPath[0x100];
 
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
@@ -63,46 +60,68 @@ static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFile
     return false;
 }
 
-static bool CheckBRSTMPath(const char* path, bool patchesOnly) {
-    bool redirected = false;
-    const char* resolvedPath = IOOverrides::ResolveWholeFileOverride(path, resolvedPulPath, sizeof(resolvedPulPath), &redirected);
-    if (patchesOnly && !redirected) return false;
-    if (DVD::ConvertPathToEntryNum(resolvedPath) < 0) return false;
+static bool CheckBRSTMPath(const char* path) {
+    return DVD::ConvertPathToEntryNum(path) >= 0;
+}
 
-    snprintf(pulPath, sizeof(pulPath), "%s", resolvedPath);
+static bool StringEndsWith(const char* str, const char* suffix) {
+    if (str == nullptr || suffix == nullptr) return false;
+
+    const char* strEnd = str;
+    while (*strEnd != '\0') ++strEnd;
+
+    const char* suffixEnd = suffix;
+    while (*suffixEnd != '\0') ++suffixEnd;
+
+    while (suffixEnd != suffix) {
+        if (strEnd == str) return false;
+        --strEnd;
+        --suffixEnd;
+        if (*strEnd != *suffixEnd) return false;
+    }
     return true;
 }
 
-s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier, bool patchesOnly,
+static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath) {
+    if (archive == nullptr || !IsSW2RRLoaded() || !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) return false;
+
+    snprintf(pulPath, sizeof(pulPath), "%sstrm/o_FanfareRRGP1_32.brstm", archive->extFileRoot);
+    if (!CheckBRSTMPath(pulPath)) return false;
+
+    extFilePath = pulPath;
+    return true;
+}
+
+s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier,
                    const char* racePercentageSpecifier = "") {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
     const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
     if (creatorName != nullptr) {
         snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, creatorName, lapSpecifier, racePercentageSpecifier);
-        if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
+        if (CheckBRSTMPath(pulPath)) return 0;
     }
     if (variantIdx != 0) {
         creatorName = cupsConfig->GetFileName(id, 0);
         if (creatorName != nullptr) {
             snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, creatorName, lapSpecifier, racePercentageSpecifier);
-            if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
+            if (CheckBRSTMPath(pulPath)) return 0;
         }
     }
     char trackName[0x100];
     UI::GetTrackBMG(trackName, id);
     snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, trackName, lapSpecifier, racePercentageSpecifier);
-    if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
+    if (CheckBRSTMPath(pulPath)) return 0;
 
     snprintf(pulPath, 0x50, "%sstrm/%d%s%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier,
              racePercentageSpecifier);
-    if (CheckBRSTMPath(pulPath, patchesOnly)) return 0;
+    if (CheckBRSTMPath(pulPath)) return 0;
     return -1;
 }
 
-s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier, bool patchesOnly,
+s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier,
                const char* racePercentageSpecifier = "") {
-    return CheckBRSTMRoot(archive->extFileRoot, id, lapSpecifier, patchesOnly, racePercentageSpecifier);
+    return CheckBRSTMRoot(archive->extFileRoot, id, lapSpecifier, racePercentageSpecifier);
 }
 
 static const char* GetSW2RRRacePercentageSpecifier() {
@@ -152,7 +171,7 @@ bool HasSW2RRTieredBRSTM(u8 tier) {
     char racePercentageSpecifier[3];
     snprintf(racePercentageSpecifier, sizeof(racePercentageSpecifier), "-%u", tier);
 
-    return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0;
+    return CheckBRSTMRoot("/sound/", track, "_n", racePercentageSpecifier) >= 0;
 }
 
 bool Has119TieredBRSTM(u8 tier) {
@@ -231,22 +250,16 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             const bool hasRacePercentageSpecifier = racePercentageSpecifier[0] != '\0';
             const bool is119RacePercentageSpecifier = hasRacePercentageSpecifier && Is119Loaded();
 
-            if (is119RacePercentageSpecifier && CheckBRSTM(archive, track, "_N", false, racePercentageSpecifier) >= 0) {
+            if (isFinalLap && hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_final", racePercentageSpecifier) >= 0) {
                 extFilePath = pulPath;
-            } else if (is119RacePercentageSpecifier && CheckBRSTM(archive, track, "_n", false, racePercentageSpecifier) >= 0) {
-                extFilePath = pulPath;
-            } else if (isFinalLap && hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_f", true, racePercentageSpecifier) >= 0) {
-                extFilePath = pulPath;
-            } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", false, racePercentageSpecifier) >= 0) {
-                extFilePath = pulPath;
-            } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_N", false, racePercentageSpecifier) >= 0) {
-                extFilePath = pulPath;
-            } else if (isFinalLap && CheckBRSTM(archive, track, "_f", true) >= 0) {
+            } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", racePercentageSpecifier) >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
                     Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
                 }
-            } else if (CheckBRSTM(archive, track, "_n", false) >= 0) {
+            } else if (isFinalLap && CheckBRSTM(archive, track, "_final") >= 0) {
+                extFilePath = pulPath;
+            } else if (CheckBRSTM(archive, track, "_n") >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
                     Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;

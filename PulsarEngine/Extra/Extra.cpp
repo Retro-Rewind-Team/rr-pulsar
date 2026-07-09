@@ -3,8 +3,11 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
+#include <MarioKartWii/Item/ItemPlayer.hpp>
+#include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Dolphin/DolphinIOS.hpp>
+#include <PulsarSystem.hpp>
 
 namespace Codes {
 
@@ -153,16 +156,12 @@ kmWrite32(0x805BC8B4, 0x60000000);  // Skip setting credits course for true cred
 kmWrite32(0x80655578, 0x60000000);
 
 // Mushroom Glitch Fix [Vabold]
-kmWrite8(0x807BA077, 0x00);
-
-// Slow Ramp Offroad Fix [vabold, ported by ZPL]
-static void ClearSlowRampMushroomRequirement(Kart::Status* status, u32 bitfield0) {
-    status->bitfield0 = bitfield0;
-    status->bitfield2 &= ~0x00100000;
+static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulette) {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
+    return roulette;
 }
-kmWrite32(0x80582674, 0x80830004);  // lwz r4, 4(r3)
-kmWrite32(0x80582678, 0x54840080);  // rlwinm r4, r4, 0, 2, 0
-kmCall(0x8058267C, ClearSlowRampMushroomRequirement);
+kmCall(0x807BA078, ApplyMushroomGlitchFix);
 
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);

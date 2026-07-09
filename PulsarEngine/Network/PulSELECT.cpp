@@ -517,6 +517,11 @@ void InitPatch() {
     select->toSendPacket.allowChangeComboStatus = allowChangeCombo;
     select->toSendPacket.koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
     select->toSendPacket.racesPerKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_RACESPERKO) + 1;
+    select->toSendPacket.alwaysFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
+    select->toSendPacket.singleRace1v1Final = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KO1V1FINALE) == KOSETTING_1V1FINALE_SINGLE;
+    const u8 elimThreshold = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMTHRESHOLD);
+    select->toSendPacket.elimThresholdPlayers = elimThreshold == KOSETTING_ELIMTHRESHOLD_DISABLED ? 0 : static_cast<u8>(elimThreshold + 2);
+    select->toSendPacket.elimChangeCount = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMCHANGE) + 1;
     for (int aid = 0; aid < 12; ++aid) {
         PulSELECT& cur = select->receivedPackets[aid];
         cur.pulVote = 0x43;
