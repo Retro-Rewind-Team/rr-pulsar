@@ -22,17 +22,23 @@ static void ConvertROOMPacketToData(const PulROOM& packet) {
 }
 
 static void WriteHostSettingsPreviewToPacket(PulROOM* packet, const Settings::Mgr& settings) {
-    static const Settings::UserType pages[] = {
-        Settings::SETTINGSTYPE_FROOM1,
-        Settings::SETTINGSTYPE_FROOM2,
-        Settings::SETTINGSTYPE_KO,
-        Settings::SETTINGSTYPE_KOROYALE,
-        Settings::SETTINGSTYPE_OTT,
-    };
+    Settings::UserType pages[4];
+    u32 pageCount = 0;
+    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM1;
+    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM2;
+    const bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+    if (!isExtendedTeams && settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) != KOSETTING_DISABLED) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_KO;
+    }
+    if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) != OTTSETTING_ONLINE_DISABLED) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_OTT;
+    } else if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_KOROYALE;
+    }
 
     memset(packet->hostSettingsPreview, 0, sizeof(packet->hostSettingsPreview));
     u32 offset = 0;
-    for (u32 page = 0; page < sizeof(pages) / sizeof(pages[0]); ++page) {
+    for (u32 page = 0; page < pageCount; ++page) {
         const Settings::UserType type = pages[page];
         const u32 valueCount = Settings::Params::radioCount[type] + Settings::Params::scrollerCount[type];
         if (offset + valueCount > HOST_SETTINGS_PREVIEW_COUNT) break;

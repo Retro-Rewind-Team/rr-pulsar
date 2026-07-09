@@ -115,16 +115,21 @@ void SettingsPanel::ApplyVotingPreviewHostSettings() {
     const Network::Mgr& netMgr = System::sInstance->netMgr;
     if (!netMgr.hasHostSettingsPreview) return;
 
-    static const Settings::UserType pages[] = {
-        Settings::SETTINGSTYPE_FROOM1,
-        Settings::SETTINGSTYPE_FROOM2,
-        Settings::SETTINGSTYPE_KO,
-        Settings::SETTINGSTYPE_KOROYALE,
-        Settings::SETTINGSTYPE_OTT,
-    };
+    Settings::UserType pages[4];
+    u32 pageCount = 0;
+    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM1;
+    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM2;
+    if ((netMgr.hostContext & (1 << PULSAR_MODE_KO)) || (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO))) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_KO;
+    }
+    if (netMgr.hostContext & (1 << PULSAR_MODE_OTT)) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_OTT;
+    } else if (netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE)) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_KOROYALE;
+    }
 
     u32 offset = 0;
-    for (u32 page = 0; page < sizeof(pages) / sizeof(pages[0]); ++page) {
+    for (u32 page = 0; page < pageCount; ++page) {
         const Settings::UserType type = pages[page];
         const u32 valueCount = Settings::Params::radioCount[type] + Settings::Params::scrollerCount[type];
         if (offset + valueCount > Network::HOST_SETTINGS_PREVIEW_COUNT) break;
