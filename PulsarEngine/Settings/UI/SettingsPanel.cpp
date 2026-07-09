@@ -302,6 +302,7 @@ void SettingsPanel::OnActivate() {
             RadioButtonControl& radio = this->radioButtonControls[i];
             radio.isHidden = i >= Settings::Params::radioCount[this->sheetIdx];
             radio.manipulator.inaccessible = true;
+            if (!radio.isHidden) radio.Init();
         }
         for (int i = 0; i < Settings::Params::maxScrollerCount; ++i) {
             const bool isDisabled = i >= Settings::Params::scrollerCount[this->sheetIdx];
