@@ -14,7 +14,7 @@ namespace Settings {
 class Params {
    public:
     static const int pulsarPageCount = 0;
-    static const int userPageCount = 13;
+    static const int userPageCount = 14;
     static const int pageCount = pulsarPageCount + userPageCount;
 
     static const int maxRadioCount = 8;  // per page, due to space
@@ -46,6 +46,7 @@ enum UserType {
     SETTINGSTYPE_EXTENDEDTEAMS,
     SETTINGSTYPE_MISC,
     SETTINGSTYPE_ITEMS,
+    SETTINGSTYPE_KOROYALE,
 
 };
 
@@ -143,6 +144,13 @@ enum KOSettings {
     SCROLLER_RACESPERKO = 1 + 8,
     SCROLLER_KOELIMTHRESHOLD = 2 + 8,
     SCROLLER_KOELIMCHANGE = 3 + 8
+};
+
+// 11) KO Royale
+enum KORoyaleSettings {
+    RADIO_KOROYALEENABLED = 0,
+    SCROLLER_KOROYALEBALLOONS = 0 + 8,
+    SCROLLER_KOROYALELAPMULTIPLIER = 1 + 8
 };
 
 // 11) Extended Teams
@@ -440,8 +448,7 @@ enum OTTSettingUMTs {
 enum KOSettingEnabled {
     KOSETTING_DISABLED,
     KOSETTING_ENABLED,
-    KOSETTING_LAPBASED,
-    KOSETTING_BATTLEROYALE
+    KOSETTING_LAPBASED
 };
 
 enum KOSettingFINAL {
@@ -484,6 +491,25 @@ enum KOSettingElimChange {
     KOSETTING_ELIMCHANGE_2,
     KOSETTING_ELIMCHANGE_3,
     KOSETTING_ELIMCHANGE_4
+};
+
+// 11) KO Royale values
+enum KORoyaleSettingEnabled {
+    KOROYALESETTING_DISABLED,
+    KOROYALESETTING_ENABLED
+};
+
+enum KORoyaleSettingBalloons {
+    KOROYALESETTING_BALLOONS_1,
+    KOROYALESETTING_BALLOONS_2,
+    KOROYALESETTING_BALLOONS_3,
+    KOROYALESETTING_BALLOONS_4
+};
+
+enum KORoyaleSettingLapMultiplier {
+    KOROYALESETTING_LAPS_DEFAULT,
+    KOROYALESETTING_LAPS_1_5X,
+    KOROYALESETTING_LAPS_2_0X
 };
 
 // 11) Extended Teams values

@@ -299,11 +299,14 @@ void System::UpdateContext() {
     bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
-    bool isBattleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_BATTLEROYALE && isNotPublic && !isBattle && !isTimeTrial;
-    const u8 koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE);
-    bool isKoPerRace2 = koPerRace == KOSETTING_KOPERRACE_2;
-    bool isKoPerRace3 = koPerRace == KOSETTING_KOPERRACE_3;
-    bool isKoPerRace4 = koPerRace == KOSETTING_KOPERRACE_4;
+    bool isBattleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED && isNotPublic && !isBattle && !isTimeTrial;
+    const u8 koRoyaleBalloons = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, SCROLLER_KOROYALEBALLOONS);
+    bool isKoPerRace2 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_2;
+    bool isKoPerRace3 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_3;
+    bool isKoPerRace4 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_4;
+    const u8 koRoyaleLapMultiplier = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, SCROLLER_KOROYALELAPMULTIPLIER);
+    bool isKoRoyaleLaps1_5x = koRoyaleLapMultiplier == KOROYALESETTING_LAPS_1_5X;
+    bool isKoRoyaleLaps2_0x = koRoyaleLapMultiplier == KOROYALESETTING_LAPS_2_0X;
     bool isStartRetro = false;
     bool isStartCT = false;
     bool isStartRTS = false;
@@ -369,6 +372,8 @@ void System::UpdateContext() {
                 isKoPerRace2 = newContext2 & (1 << PULSAR_KOPERRACE_2);
                 isKoPerRace3 = newContext2 & (1 << PULSAR_KOPERRACE_3);
                 isKoPerRace4 = newContext2 & (1 << PULSAR_KOPERRACE_4);
+                isKoRoyaleLaps1_5x = newContext2 & (1 << PULSAR_KOROYALE_LAPS_1_5X);
+                isKoRoyaleLaps2_0x = newContext2 & (1 << PULSAR_KOROYALE_LAPS_2_0X);
                 isVanillaMode = newContext2 & (1 << PULSAR_VANILLAMODE);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
@@ -442,6 +447,8 @@ void System::UpdateContext() {
                             (isKoPerRace2) << PULSAR_KOPERRACE_2 |
                             (isKoPerRace3) << PULSAR_KOPERRACE_3 |
                             (isKoPerRace4) << PULSAR_KOPERRACE_4 |
+                            (isKoRoyaleLaps1_5x) << PULSAR_KOROYALE_LAPS_1_5X |
+                            (isKoRoyaleLaps2_0x) << PULSAR_KOROYALE_LAPS_2_0X |
                             (isVanillaMode) << PULSAR_VANILLAMODE;
     }
 

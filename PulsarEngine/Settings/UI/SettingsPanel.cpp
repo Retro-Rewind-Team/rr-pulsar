@@ -319,6 +319,7 @@ void SettingsPanel::OnActivate() {
     // Hide specific settings pages in voting sections
     if (isVotingSection) {
         if (this->sheetIdx == Settings::SETTINGSTYPE_KO ||
+            this->sheetIdx == Settings::SETTINGSTYPE_KOROYALE ||
             this->sheetIdx == Settings::SETTINGSTYPE_OTT ||
             this->sheetIdx == Settings::SETTINGSTYPE_FROOM1 ||
             this->sheetIdx == Settings::SETTINGSTYPE_FROOM2 ||
@@ -473,6 +474,7 @@ void SettingsPanel::OnButtonClick(PushButton& button, u32 direction) {
     // Skip restricted pages in voting sections
     if (isVotingSection) {
         while (nextIdx == Settings::SETTINGSTYPE_KO ||
+               nextIdx == Settings::SETTINGSTYPE_KOROYALE ||
                nextIdx == Settings::SETTINGSTYPE_OTT ||
                nextIdx == Settings::SETTINGSTYPE_FROOM1 ||
                nextIdx == (Settings::SETTINGSTYPE_EXTENDEDTEAMS + Settings::Params::pulsarPageCount) ||

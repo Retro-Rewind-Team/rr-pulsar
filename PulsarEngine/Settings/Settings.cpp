@@ -108,6 +108,12 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         looseOverridesSetting = LOOSEARCHIVEOVERRIDES_ENABLED;
     }
 
+    u8& koEnabledSetting =
+        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_KO].settings[RADIO_KOENABLED];
+    if (koEnabledSetting > KOSETTING_LAPBASED) {
+        koEnabledSetting = KOSETTING_DISABLED;
+    }
+
     this->InitTrophyEntries(totalTrophyCount);
     this->LoadTrophiesFromFiles();
     this->MigrateLegacyTrophies();

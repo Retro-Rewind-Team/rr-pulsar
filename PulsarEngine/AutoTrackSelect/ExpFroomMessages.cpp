@@ -45,11 +45,16 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
         const bool isOTT = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
         const bool isKO = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) != KOSETTING_DISABLED;
         const bool isExtendedTeam = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+        const bool isRoyale = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
 
         if (isOTT && isKO) {
             bmgId = BMG_PLAY_OTTKO;
+        } else if (isKO && isRoyale && !isOTT) {
+            bmgId = BMG_PLAY_KOROYALE;
         } else if (isOTT) {
             bmgId = BMG_PLAY_OTT;
+        } else if (isRoyale) {
+            bmgId = BMG_PLAY_ROYALE;
         } else if (isKO) {
             bmgId = BMG_PLAY_KO;
         } else if (isExtendedTeam) {
@@ -91,12 +96,17 @@ void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Tex
         const bool isStart200 = hostContext & (1 << PULSAR_START200);
         const bool isStartOTT = hostContext & (1 << PULSAR_STARTOTT);
         const bool isStartItemRain = hostContext & (1 << PULSAR_STARTITEMRAIN);
+        const bool isRoyale = hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
         if (isOTT || isKO) {
             const bool isTeam = bmgId == BMG_PLAY_TEAM_GP;
             bmgId = (BMG_PLAY_OTT - 1) + isOTT + isKO * 2 + isTeam * 3;
         }
 
-        if (isExtendedTeam && !isStartCT && !isStartRetro && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
+        if (isRoyale) {
+            bmgId = BMG_PLAY_ROYALE;
+        } else if (isRoyale && isKO && !isOTT) {
+            bmgId = BMG_PLAY_KOROYALE;
+        } else if (isExtendedTeam) {
             bmgId = BMG_EXTENDEDTEAMS_PLAY;
         } else if (isStartRetro) {
             bmgId = BMG_RETRO_START_MESSAGE;

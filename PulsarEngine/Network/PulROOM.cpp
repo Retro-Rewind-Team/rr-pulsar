@@ -187,11 +187,14 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         const u8 isStartOTT = (originalMessage == 8);
         const u8 isStartItemRain = (originalMessage == 9);
         const u8 rankings = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_RANKINGS) == RANKINGS_ENABLED;
-        const u8 battleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_BATTLEROYALE;
-        const u8 koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE);
-        const u8 koPerRace2 = koPerRace == KOSETTING_KOPERRACE_2;
-        const u8 koPerRace3 = koPerRace == KOSETTING_KOPERRACE_3;
-        const u8 koPerRace4 = koPerRace == KOSETTING_KOPERRACE_4;
+        const u8 battleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
+        const u8 koRoyaleBalloons = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, SCROLLER_KOROYALEBALLOONS);
+        const u8 koPerRace2 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_2;
+        const u8 koPerRace3 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_3;
+        const u8 koPerRace4 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_4;
+        const u8 koRoyaleLapMultiplier = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, SCROLLER_KOROYALELAPMULTIPLIER);
+        const u8 koRoyaleLaps1_5x = koRoyaleLapMultiplier == KOROYALESETTING_LAPS_1_5X;
+        const u8 koRoyaleLaps2_0x = koRoyaleLapMultiplier == KOROYALESETTING_LAPS_2_0X;
 
         if (extendedTeams) {
             koSetting = KOSETTING_DISABLED;
@@ -243,6 +246,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                           koPerRace2 << PULSAR_KOPERRACE_2 |
                                           koPerRace3 << PULSAR_KOPERRACE_3 |
                                           koPerRace4 << PULSAR_KOPERRACE_4 |
+                                          koRoyaleLaps1_5x << PULSAR_KOROYALE_LAPS_1_5X |
+                                          koRoyaleLaps2_0x << PULSAR_KOROYALE_LAPS_2_0X |
                                           vanillaMode << PULSAR_VANILLAMODE;
 
         if (!vanillaMode) {
