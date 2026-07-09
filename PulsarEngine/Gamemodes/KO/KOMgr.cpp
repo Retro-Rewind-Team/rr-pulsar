@@ -181,6 +181,12 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
 
     if (is1v1KoRace || (playerCount - disconnectedKOs) == 1) {
         if (is1v1KoRace && self->racesPerKO > 1) {
+            if (playerArr[0].totalScore == playerArr[1].totalScore) {
+                self->SetTie(playerArr[0].playerId, playerArr[1].playerId);
+                --sectionParams->onlineParams.currentRaceNumber;
+                self->AddRaceStats();
+                return;
+            }
             self->winnerPlayerId = playerArr[0].playerId;
             self->SetKOd(playerArr[1].playerId);
         } else {
