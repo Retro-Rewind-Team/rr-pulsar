@@ -3,6 +3,7 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
+#include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -81,6 +82,22 @@ void EnableDelimitersForAllItems() {
     }
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
+
+// Blue Shell Cooldown [ZPL]
+extern "C" Item::ItemSlotData* itemSlotData;
+static void UpdateBlueShellCooldown() {
+    const Pulsar::System* system = Pulsar::System::sInstance;
+    if (system->IsVanillaMode() || system->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) || system->IsContext(Pulsar::PULSAR_ITEMMODEBLAST)) return;
+
+    const Item::Manager* manager = Item::Manager::sInstance;
+    if (manager == nullptr || itemSlotData == nullptr) return;
+
+    static u16 previousSpawnCount = 0;
+    const u16 totalSpawnedCount = manager->itemObjHolders[OBJ_BLUE_SHELL].totalSpawnedCount;
+    if (totalSpawnedCount > previousSpawnCount) itemSlotData->itemSpawnTimers[1] = 1200;  // 15 seconds
+    previousSpawnCount = totalSpawnedCount;
+}
+static RaceFrameHook UpdateBlueShellCooldownHook(UpdateBlueShellCooldown);
 
 // Anti Mii Crash
 asmFunc AntiWiper() {
