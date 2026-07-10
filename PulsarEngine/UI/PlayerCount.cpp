@@ -362,7 +362,7 @@ void hook_ServerBrowserFree(ServerBrowser sb) {
 }
 
 void hook_DWC_SetReportLevel(u32 level) {
-#ifndef PROD
+#if defined(TEST) || defined(PROD)
     DWC_SetReportLevel(0xffffffff);
 #else
     DWC_SetReportLevel(level);

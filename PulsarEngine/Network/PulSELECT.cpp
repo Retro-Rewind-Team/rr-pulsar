@@ -14,9 +14,6 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
-#ifdef PROD
-#include <Security/IntegrityCheck.hpp>
-#endif
 
 namespace Pulsar {
 namespace Network {
@@ -79,13 +76,6 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
     for (u32 i = writeCount; i < MAX_TRACK_BLOCKING; ++i) {
         src->blockedTracks[i] = 0xFFFF;
     }
-
-#ifdef PROD
-    const RKNet::Controller* ctrlForTag = RKNet::Controller::sInstance;
-    u8 localAid = (ctrlForTag != nullptr) ? ctrlForTag->subs[ctrlForTag->currentSub].localAid : 0;
-    src->acVerifyTag = Security::g_antiCheatKey.ComputePacketTag(localAid);
-#endif
-
     if (!system->IsContext(PULSAR_CT)) {
         const u8 vanillaWinning = CupsConfig::ConvertTrack_PulsarIdToRealId(static_cast<PulsarId>(src->pulWinningTrack));
         src->winningCourse = vanillaWinning;
@@ -97,17 +87,6 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
     packetHolder->Copy(src, len);
 
     packetHolder->packet->characterTables = CustomCharacters::GetLocalOnlineCharacterTables();
-
-#ifdef PROD
-    if (len == sizeof(PulSELECT) && Security::g_antiCheatKey.initialized) {
-        u8* pulsarData = ((u8*)packetHolder->packet) + sizeof(RKNet::SELECTPacket);
-        const u32 extSize = sizeof(PulSELECT) - sizeof(RKNet::SELECTPacket);
-        const u32 encSize = (extSize / 16) * 16;  // Only encrypt complete AES blocks
-        if (encSize > 0) {
-            Security::AES128_EncryptCBC(&Security::g_antiCheatKey.aesCtx, pulsarData, pulsarData, encSize, Security::g_antiCheatKey.baseIV);
-        }
-    }
-#endif
 }
 kmCall(0x80661040, BeforeSELECTSend);
 
@@ -118,23 +97,6 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     asm(mr aid, r19;);
     register RKNet::PacketHolder<PulSELECT>* holder;
     asm(mr holder, r27);
-
-#ifdef PROD
-    if (holder != nullptr && holder->packetSize == sizeof(PulSELECT) && Security::g_antiCheatKey.initialized) {
-        u8* pulsarData = ((u8*)src) + sizeof(RKNet::SELECTPacket);
-        const u32 extSize = sizeof(PulSELECT) - sizeof(RKNet::SELECTPacket);
-        const u32 encSize = (extSize / 16) * 16;
-        if (encSize > 0) {
-            Security::AES128_DecryptCBC(&Security::g_antiCheatKey.aesCtx, pulsarData, pulsarData, encSize, Security::g_antiCheatKey.baseIV);
-        }
-
-        if (!Security::g_antiCheatKey.VerifyPacketTag(src->acVerifyTag, aid)) {
-            RKNet::Controller* controller = RKNet::Controller::sInstance;
-            reinterpret_cast<CustomRKNetController*>(controller)->toDisconnectAids |= (1 << aid);
-            return;
-        }
-    }
-#endif
 
     const u16 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
     CustomCharacters::UpdateOnlineCharacterTablesFromAid(aid, src->playerIdToAid, characterTables);
