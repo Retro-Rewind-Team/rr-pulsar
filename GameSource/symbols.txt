@@ -878,6 +878,7 @@ InitRNG__16RacedataScenarioFv = 0x8052f924
 UpdatePoints__16RacedataScenarioFv = 0x8052e950
 #RacedataPlayer
 ComputeGPRank__14RacedataPlayerFv = 0x8052daf0
+SetPrevFinishPos__14RacedataPlayerFUc = 0x8052e658
 __dt__14RacedataPlayerFv = 0x8052DC68
 __vt__14RacedataPlayer = 0x808b3294
 

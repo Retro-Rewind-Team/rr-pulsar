@@ -265,7 +265,8 @@ void System::UpdateContext() {
 
     bool isCT = true;
     bool isHAW = false;
-    bool isKO = false;
+    const bool isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && mode == MODE_VS_RACE;
+    bool isKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_ENABLED && isOfflineVS;
     bool isOTT = false;
     bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
     bool is500 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) == HOSTCC_500 && isFroom;
@@ -543,7 +544,7 @@ void System::UpdateContext() {
     }
 
     if (isKO) {
-        if (sceneId == SCENE_ID_MENU && SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber == -1) this->koMgr = new (this->heap) KO::Mgr;  // create komgr when loading the select phase of the 1st race of a froom
+        if (this->koMgr == nullptr && sceneId != SCENE_ID_GLOBE) this->koMgr = new (this->heap) KO::Mgr;
     }
     if (!isKO && this->koMgr != nullptr || isKO && sceneId == SCENE_ID_GLOBE) {
         delete this->koMgr;
@@ -579,6 +580,9 @@ s32 System::OnSceneEnter(Random& random) {
     System* self = System::sInstance;
     self->UpdateContext();
     if (self->IsContext(PULSAR_MODE_OTT)) OTT::AddGhostToVS();
+    if (self->IsContext(PULSAR_MODE_KO) && self->koMgr != nullptr && self->koMgr->IsOfflineVS() && GameScene::GetCurrent()->id == SCENE_ID_RACE) {
+        self->koMgr->PrepareOfflineVSNextRace();
+    }
     if (self->IsContext(PULSAR_HAW) && self->IsContext(PULSAR_MODE_KO) && GameScene::GetCurrent()->id == SCENE_ID_RACE && SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber > 0) {
         KO::HAWChangeData();
     }
