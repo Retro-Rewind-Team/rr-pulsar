@@ -27,6 +27,7 @@ static char s_requestUrl[160];
 static s32 s_pendingInitialReportProfileId = 0;
 static u32 s_pendingInitialReportLicenseId = 0;
 static bool s_pendingLoginDownload = false;
+static bool s_pendingLoginEstablished = false;
 static s32 s_pendingProfileId = 0;
 static u32 s_pendingLicenseId = 0;
 
@@ -201,11 +202,34 @@ static bool CanStartLoginRatingDownload() {
 }
 
 static void TryStartPendingLoginRatingDownload() {
-    if (!s_pendingLoginDownload || !CanStartLoginRatingDownload()) return;
+    if (!s_pendingLoginDownload) return;
+
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return;
+
+    const RKNet::ConnectionState state = controller->GetConnectionState();
+    if (state == RKNet::CONNECTIONSTATE_LOGIN_AUTHORISED ||
+        state == RKNet::CONNECTIONSTATE_LOGIN_FRIENDS_SYNCED) {
+        s_pendingLoginEstablished = true;
+        return;
+    }
+
+    if (state != RKNet::CONNECTIONSTATE_IDLE) return;
+
+    // Both a completed login and a cancelled login end in IDLE. Only launch the
+    // deferred request if this login progressed far enough to be established.
+    // Otherwise the request would start while the WFC section is being torn down.
+    if (!s_pendingLoginEstablished) {
+        s_pendingLoginDownload = false;
+        s_pendingProfileId = 0;
+        s_pendingLicenseId = 0;
+        return;
+    }
 
     const s32 profileId = s_pendingProfileId;
     const u32 licenseId = s_pendingLicenseId;
     s_pendingLoginDownload = false;
+    s_pendingLoginEstablished = false;
     s_pendingProfileId = 0;
     s_pendingLicenseId = 0;
     BeginLoginRatingDownload(profileId, licenseId);
@@ -222,12 +246,14 @@ void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
 
     if (!CanStartLoginRatingDownload()) {
         s_pendingLoginDownload = true;
+        s_pendingLoginEstablished = false;
         s_pendingProfileId = profileId;
         s_pendingLicenseId = licenseId;
         return;
     }
 
     s_pendingLoginDownload = false;
+    s_pendingLoginEstablished = false;
     BeginLoginRatingDownload(profileId, licenseId);
 }
 
