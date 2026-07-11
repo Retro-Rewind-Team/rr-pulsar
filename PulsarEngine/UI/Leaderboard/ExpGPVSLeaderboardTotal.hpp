@@ -11,6 +11,7 @@ namespace UI {
 class ExpGPVSLeaderboardTotal : public Pages::GPVSLeaderboardTotal {
    public:
     void OnUpdate() override;
+    void BeforeEntranceAnimations() override;
 };
 
 }  // namespace UI

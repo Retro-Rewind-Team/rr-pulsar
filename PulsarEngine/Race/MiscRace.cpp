@@ -110,12 +110,6 @@ kmCall(0x8085d460, DisplayTimesInsteadOfNames);  // for WWs
 // don't hide position tracker (MrBean35000vr)
 kmWrite32(0x807F4DB8, 0x38000001);
 
-// Draggable blue shells
-static void DraggableBlueShells(Item::PlayerObj& sub) {
-    sub.isNotDragged = false;
-}
-kmBranch(0x807ae8ac, DraggableBlueShells);
-
 void SafeResizeSphere(float radius, float maxSpeed, Entity* entity) {
     if (entity != nullptr) {
         entity->Resize(radius, maxSpeed);

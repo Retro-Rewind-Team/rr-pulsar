@@ -25,7 +25,8 @@ public:
     void OnBackPress(u32 hudSlotId);
     void AfterControlUpdate() override;
     void StartFriendRoomPreview(PageId nextPageId);
-    
+    static bool ShouldSkipFriendRoomPreview();
+
     // Menu virtuals
     int GetActivePlayerBitfield() const override { return this->activePlayerBitfield; }
     int GetPlayerBitfield() const override { return this->playerBitfield; }

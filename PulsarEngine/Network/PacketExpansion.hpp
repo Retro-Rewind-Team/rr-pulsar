@@ -10,6 +10,7 @@
 #include <MarioKartWii/RKNet/RH1.hpp>
 #include <MarioKartWii/RKNet/RH2.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
+#include <Network/Network.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -84,6 +85,7 @@ struct PulROOM : public RKNet::ROOMPacket {
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+    u8 hostSettingsPreview[HOST_SETTINGS_PREVIEW_COUNT];
 
     // Anti-cheat verification tag - proves sender has correct encryption key
     u32 acVerifyTag;
@@ -112,6 +114,9 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 koPerRace;
     u8 racesPerKO;
     bool alwaysFinal;
+    bool singleRace1v1Final;
+    u8 elimThresholdPlayers;
+    u8 elimChangeCount;
 
     u8 decimalVR[2];
 

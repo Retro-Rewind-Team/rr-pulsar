@@ -17,43 +17,14 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Gamemodes/PositionCounter.hpp>
+#include <Network/PhantomRacer.hpp>
+#include <UI/Leaderboard/LeaderboardDisplay.hpp>
 
 namespace Pulsar {
 namespace KO {
 
 static void EditLdb(CtrlRaceResult* result, u8 playerId) {
-    const System* system = System::sInstance;
-
-    if (system->IsContext(PULSAR_MODE_KO)) {
-        const Status koStatus = system->koMgr->GetPlayerStatus(playerId);
-        if (koStatus != NORMAL) {
-            u32 bmgId;
-            ut::Color color;
-            if (koStatus == KOD) {
-                bmgId = UI::BMG_KO_OUT;
-                color = 0xff0000c0;
-            }
-            if (koStatus == DISCONNECTED) {
-                bmgId = UI::BMG_KO_TIE;
-                color = 0xff0f00c0;
-            }
-            if (koStatus == TIE) {
-                bmgId = UI::BMG_KO_TIE;
-                color = 0xff00f0c0;
-            }
-            result->SetTextBoxMessage("player_name", bmgId);
-            result->animator.GetAnimationGroupById(4).PlayAnimationAtFrame(6, 0.0f);
-            lyt::Picture* selectBase = static_cast<nw4r::lyt::Picture*>(result->layout.GetPaneByName("select_base"));
-            UI::ResetMatColor(selectBase, color);
-            UI::UnbindRLMC(selectBase->material);
-            selectBase->vertexColours[0] = color;
-            selectBase->vertexColours[1] = color;
-            selectBase->vertexColours[2] = color;
-            selectBase->vertexColours[3] = color;
-            return;
-        }
-    }
-    result->FillName(playerId);
+    UI::fillLeaderboardResult(*result, playerId);
 }
 kmCall(0x8085cc04, EditLdb);
 
@@ -117,6 +88,9 @@ static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) 
                 mgr->koPerRace = select->koPerRace;
                 mgr->racesPerKO = select->racesPerKO;
                 mgr->alwaysFinal = select->alwaysFinal;
+                mgr->singleRace1v1Final = select->singleRace1v1Final;
+                mgr->elimThresholdPlayers = select->elimThresholdPlayers;
+                mgr->elimChangeCount = select->elimChangeCount;
                 mgr->PatchAids(sub);
                 reinterpret_cast<RKNet::SELECTHandler&>(handler).AllocatePlayerIdsToAids();
                 controller->UpdateAidsBelongingToPlayerIds();
@@ -129,6 +103,7 @@ static void PatchAidsBeforeSELECTStageMgrSetup(Pages::SELECTStageMgr& stageMgr) 
     }
 
     stageMgr.SetModeTypes();
+    Network::AppendPhantomSelectInfos(stageMgr);
 }
 kmCall(0x80650494, PatchAidsBeforeSELECTStageMgrSetup);
 
