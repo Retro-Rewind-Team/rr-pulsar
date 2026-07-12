@@ -22,11 +22,24 @@ namespace UI {
 
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
+static void ApplyMogiRaceTeams(RacedataScenario& scenario) {
+    if (!Mogi::IsTeamFormat()) return;
+
+    scenario.settings.modeFlags |= ExtendedTeamManager::TEAM_MODE_FLAG;
+    const u8 playerCount = scenario.playerCount < 12 ? scenario.playerCount : 12;
+    for (u8 i = 0; i < playerCount; ++i) {
+        scenario.players[i].team = static_cast<Team>(Mogi::GetTeamForPlayer(i));
+    }
+}
+
 void Racedata_InitRace(Racedata* racedata) {
     racedata->InitRace();
 
+    ApplyMogiRaceTeams(racedata->racesScenario);
+
     const RacedataSettings& settings = racedata->menusScenario.settings;
-    if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
+    if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) &&
+        ExtendedTeamManager::IsActivated() && !Mogi::IsActive()) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
     }
 }
@@ -147,14 +160,8 @@ bool PageVote_FillVoteControl(Pages::Vote* _this, u32 playerId) {
 kmCall(0x80643b3c, PageVote_FillVoteControl);
 
 void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr* _this) {
-    if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
-        ExtendedTeamManager::sInstance->ConfigureMogiTeams();
-        for (u8 i = 0; i < _this->playerCount; ++i) {
-            const ExtendedTeamID team = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(_this->infos[i].aid, _this->infos[i].hudSlotid);
-            if (team != TEAM_COUNT) _this->infos[i].team = static_cast<Team>(team);
-        }
-    }
     _this->PrepareRace();
+    ApplyMogiRaceTeams(Racedata::sInstance->menusScenario);
     if (ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->VotePageSync();
     }

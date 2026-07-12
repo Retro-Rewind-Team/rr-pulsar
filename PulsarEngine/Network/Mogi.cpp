@@ -28,11 +28,26 @@ static u8 sPlayersPerTeam = 2;
 static u8 sTeamByPlayer[12] = {};
 static u32 sLobbyGroupId = 0;
 static u32 sLobbySeed = 0;
+static u16 sRemoteMMR[12][2];
 static bool sMMRFinalized = false;
 static bool sPendingDisconnect = false;
 static bool sStartReported = false;
 
 static void SelectHostFormat(u32 groupId);
+
+static void ResetRemoteMMR() {
+    for (u8 aid = 0; aid < 12; ++aid) {
+        sRemoteMMR[aid][0] = 0xFFFF;
+        sRemoteMMR[aid][1] = 0xFFFF;
+    }
+}
+
+static u16 EncodeMMR(float mmr) {
+    int encoded = static_cast<int>(mmr * 100.0f + 0.5f);
+    if (encoded < 1000) encoded = 1000;
+    if (encoded > 30000) encoded = 30000;
+    return static_cast<u16>(encoded);
+}
 
 bool IsEnabled() {
     return sEnabled;
@@ -45,6 +60,7 @@ void SetEnabled(bool enabled) {
         sTeamFormat = false;
         sLobbyGroupId = 0;
         sLobbySeed = 0;
+        ResetRemoteMMR();
         sMMRFinalized = false;
         sPendingDisconnect = false;
         sStartReported = false;
@@ -81,10 +97,12 @@ static void UpdateActiveFromRoom() {
         sLobbyGroupId = sub.groupId;
         SelectHostFormat(sub.groupId);
         sActive = true;
+        ResetRemoteMMR();
         sMMRFinalized = false;
         sPendingDisconnect = false;
         sStartReported = false;
     }
+    System::sInstance->netMgr.racesPerGP = 11;
 }
 
 bool IsActive() {
@@ -109,8 +127,35 @@ u8 GetTeamForPlayer(u8 playerIdx) {
     return sTeamByPlayer[playerIdx < 12 ? playerIdx : 0];
 }
 
+void SetTeamForPlayer(u8 playerIdx, u8 team) {
+    if (playerIdx < 12 && team < 6) sTeamByPlayer[playerIdx] = team;
+}
+
 u32 GetLobbySeed() {
     return sLobbySeed;
+}
+
+u8 GetRaceCount() {
+    return MOGI_RACE_COUNT - 1;
+}
+
+void FillMMRPacket(u16& player0, u16& player1) {
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    const u16 mmr = rksys != nullptr ? EncodeMMR(MogiRating::GetUserMMR(rksys->curLicenseId)) : 1000;
+    player0 = mmr;
+    player1 = mmr;
+}
+
+void ReceiveMMRPacket(u8 aid, u16 player0, u16 player1) {
+    if (aid >= 12) return;
+    if (player0 < 1000 || player0 > 30000 || player1 < 1000 || player1 > 30000) return;
+    sRemoteMMR[aid][0] = player0;
+    sRemoteMMR[aid][1] = player1;
+}
+
+u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole) {
+    if (aid >= 12 || playerIdOnConsole >= 2) return 0xFFFF;
+    return sRemoteMMR[aid][playerIdOnConsole];
 }
 
 static void SelectHostFormat(u32 groupId) {
@@ -168,6 +213,7 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
         hostContext2 |= MOGI_TEAM_SIZE_6;
     // ROOM stores the zero-based final race index: 11 represents 12 races.
     raceCount = MOGI_RACE_COUNT - 1;
+    System::sInstance->netMgr.racesPerGP = raceCount;
 }
 
 void ApplyHostRoom(u32 hostContext2) {
@@ -196,6 +242,7 @@ void ApplyHostRoom(u32 hostContext2) {
     }
     sMMRFinalized = false;
     sPendingDisconnect = false;
+    System::sInstance->netMgr.racesPerGP = GetRaceCount();
 }
 
 static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {

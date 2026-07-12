@@ -70,6 +70,12 @@ static const u32 PulRH1SizeLapKo = PulRH1SizeBase + PulRH1LapKoSize;
 static const u32 PulRH1SizeFull = sizeof(PulRH1);
 
 struct PulRH2 : public RKNet::RACEHEADER2Packet {};
+struct MogiMMRPacket {
+    u16 magic;
+    u16 mmr[2];
+};
+static_assert(sizeof(MogiMMRPacket) == 0x6, "MogiMMRPacket size");
+
 struct PulROOM : public RKNet::ROOMPacket {
     // Generic ROOM settings
     u64 hostSystemContext;  // System's context but with just gamemodes taken from the settings
@@ -128,6 +134,8 @@ struct PulSELECT : public RKNet::SELECTPacket {
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
     u16 characterTables;  // six bits per local hud slot, up to two local slots
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+
+    MogiMMRPacket mogiMMR;
 
     // Anti-cheat verification tag - proves sender has correct encryption key
     u32 acVerifyTag;  // Must be last encrypted field for alignment

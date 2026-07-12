@@ -84,6 +84,7 @@ static void HandleExtendedTeamUpdates(const PulROOM& packet) {
         const u8 shift = (id % 2) * 4;
         UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F);
         if (team != 0x0F) {
+            if (Mogi::IsTeamFormat()) Mogi::SetTeamForPlayer(id, team);
             manager->SetPlayerTeam(id, team);
             if (ets != nullptr) ets->UpdatePlayerTeam(id, team);
         }
@@ -371,11 +372,12 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
             pageSelect->OnBackPress(0);
         }
 
+        const bool isMogiTeamRoom = Mogi::IsActive() && Mogi::IsTeamFormat();
+        if (isMogiTeamRoom) {
+            UI::ExtendedTeamManager::sInstance->ConfigureMogiTeams();
+        }
         // Extended Team VS start
-        if (isExtendedTeams) {
-            if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
-                UI::ExtendedTeamManager::sInstance->ConfigureMogiTeams();
-            }
+        if (isExtendedTeams || isMogiTeamRoom) {
             HandleExtendedTeamUpdates(src);
             UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
         }

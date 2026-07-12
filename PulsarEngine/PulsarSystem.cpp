@@ -19,6 +19,7 @@
 #include <RetroRewindChannel.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <Network/Mogi.hpp>
 #include <hooks.hpp>
 
 namespace Pulsar {
@@ -590,12 +591,15 @@ s32 System::OnSceneEnter(Random& random) {
 }
 kmCall(0x8051ac40, System::OnSceneEnter);
 
+static u8 GetMogiAwareRaceCount() {
+    return Mogi::IsActive() ? Mogi::GetRaceCount() : System::sInstance->netMgr.racesPerGP;
+}
+
 asmFunc System::GetRaceCount() {
     ASM(
         nofralloc;
-        lis r5, sInstance @ha;
-        lwz r5, sInstance @l(r5);
-        lbz r0, System.netMgr.racesPerGP(r5);
+        bl GetMogiAwareRaceCount;
+        mr r0, r3;
         blr;)
 }
 

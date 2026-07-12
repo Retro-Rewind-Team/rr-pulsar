@@ -9,7 +9,6 @@
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
 #include <Network/Mogi.hpp>
-#include <Network/Rating/MogiRating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
@@ -29,22 +28,19 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
 
     const ExpSELECTHandler& handler = ExpSELECTHandler::Get();
     const bool isBattle = (handler.mode == RKNet::ONLINEMODE_PUBLIC_BATTLE || handler.mode == RKNet::ONLINEMODE_PRIVATE_BATTLE);
-    const bool isMogi = Mogi::IsActive();
+    const bool isMogi = Mogi::IsEnabled();
     const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
 
     float rating;
     if (rksys) {
         u32 licenseId = rksys->curLicenseId;
-        if (isMogi)
-            rating = MogiRating::GetUserMMR(licenseId);
-        else if (isBattle)
+        if (isBattle)
             rating = PointRating::GetUserBR(licenseId);
         else
             rating = PointRating::GetUserVR(licenseId);
 
-        float decimal = rating - (int)rating;
-        src->decimalVR[0] = (u8)(decimal * 100.0f + 0.5f);
-        if (isMogi || (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO))) {
+        src->decimalVR[0] = isMogi ? 0 : static_cast<u8>((rating - (int)rating) * 100.0f + 0.5f);
+        if (!isMogi && System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
             src->playersData[0].sumPoints = static_cast<u16>(rating);
         }
     } else {
@@ -57,7 +53,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
         src->playersData[1].character = static_cast<u8>(sectionParams->characters[1]);
         src->playersData[1].kart = static_cast<u8>(sectionParams->karts[1]);
-        src->playersData[1].sumPoints = isMogi ? static_cast<u16>(rating) : 0;
+        src->playersData[1].sumPoints = 0;
         const Racedata* racedata = Racedata::sInstance;
         if (!isMogi && racedata != nullptr) {
             const RacedataScenario& menuScenario = racedata->menusScenario;
@@ -67,7 +63,14 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
             }
         }
         src->playersData[1].starRank = 0;
-        if (isMogi) src->decimalVR[1] = static_cast<u8>((rating - (int)rating) * 100.0f + 0.5f);
+    }
+
+    src->mogiMMR.magic = 0;
+    src->mogiMMR.mmr[0] = 0xFFFF;
+    src->mogiMMR.mmr[1] = 0xFFFF;
+    if (isMogi) {
+        src->mogiMMR.magic = Mogi::MMR_PACKET_MAGIC;
+        Mogi::FillMMRPacket(src->mogiMMR.mmr[0], src->mogiMMR.mmr[1]);
     }
 
     const Network::Mgr& netMgr = system->netMgr;
@@ -88,7 +91,8 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const u8 vanillaVote = CupsConfig::ConvertTrack_PulsarIdToRealId(static_cast<PulsarId>(src->pulVote));
         src->playersData[0].courseVote = vanillaVote;
         src->playersData[1].courseVote = vanillaVote;
-    } else
+    }
+    if (isMogi || system->IsContext(PULSAR_CT))
         len = sizeof(PulSELECT);
     packetHolder->Copy(src, len);
 
@@ -106,6 +110,10 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
 
     const u16 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
     CustomCharacters::UpdateOnlineCharacterTablesFromAid(aid, src->playerIdToAid, characterTables);
+
+    if (holder != nullptr && holder->packetSize == sizeof(PulSELECT) && src->mogiMMR.magic == Mogi::MMR_PACKET_MAGIC) {
+        Mogi::ReceiveMMRPacket(aid, src->mogiMMR.mmr[0], src->mogiMMR.mmr[1]);
+    }
 
     for (int i = 0; i < 2; ++i) {
         PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];

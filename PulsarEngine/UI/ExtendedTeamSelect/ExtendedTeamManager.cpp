@@ -245,7 +245,8 @@ void ExtendedTeamManager::VotePageSync() {
                 newPlayers[i].miiIdx = aid * 2 + localPlayerId;
                 newPlayers[i].aid = aid;
                 newPlayers[i].playerIdOnConsole = localPlayerId;
-                newPlayers[i].team = this->GetPlayerTeamByAID(aid, localPlayerId);
+                newPlayers[i].team = Mogi::IsTeamFormat() ? static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(i)) :
+                                                            this->GetPlayerTeamByAID(aid, localPlayerId);
                 break;
             }
         }
@@ -260,8 +261,6 @@ void ExtendedTeamManager::ConfigureMogiTeams() {
 
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     const u8 playerCount = sub.playerCount < 12 ? sub.playerCount : 12;
-    if (playerCount == 0) return;
-
     this->ResetPlayers();
     for (u8 i = 0; i < playerCount; ++i) {
         const u8 aid = controller->aidsBelongingToPlayerIds[i];

@@ -32,17 +32,21 @@ static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool 
                 *hasDecimal = true;
                 return MogiRating::GetUserMMR(rksys->curLicenseId);
             }
-            return static_cast<float>(mgr->infos[playerId].vr);
+            if (rksys && rksys->curLicenseId >= 0) {
+                *hasDecimal = true;
+                return MogiRating::GetUserMMR(rksys->curLicenseId);
+            }
+            return 65535.0f;
         }
 
         const u8 aid = mgr->infos[playerId].aid;
         const u8 slot = mgr->infos[playerId].hudSlotid;
-        if (aid < 12 && slot < 2) {
+        const u16 mmr = Mogi::GetRemoteMMR(aid, slot);
+        if (mmr != 0xFFFF) {
             *hasDecimal = true;
-            return static_cast<float>(mgr->infos[playerId].vr) +
-                   static_cast<float>(remoteDecimalVR[aid][slot]) / 100.0f;
+            return static_cast<float>(mmr) / 100.0f;
         }
-        return static_cast<float>(mgr->infos[playerId].vr);
+        return 65535.0f;
     }
 
     if (isLocal) {
