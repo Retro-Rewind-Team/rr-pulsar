@@ -24,6 +24,7 @@ u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole);
 void PrepareHostRoom(u32& hostContext2, u8& raceCount);
 void ApplyHostRoom(u32 hostContext2);
 void OnFinalResults();
+void OnResultsDisplayed();
 void ProcessPendingDisconnect();
 
 }  // namespace Mogi

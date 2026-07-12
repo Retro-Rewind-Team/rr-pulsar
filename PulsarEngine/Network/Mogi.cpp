@@ -19,7 +19,10 @@ static const u32 MOGI_TEAM_SIZE_MASK = 0x30000000;
 static const u32 MOGI_TEAM_SIZE_2 = 0x10000000;
 static const u32 MOGI_TEAM_SIZE_3 = 0x20000000;
 static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
-static const u8 MOGI_RACE_COUNT = 12;
+static const u8 MOGI_RACE_COUNT = 1;
+static const float MOGI_EXPECTATION_RANGE = 100.0f;
+static const float MOGI_MAX_GAIN_MMR = 250.0f;
+static const float MOGI_MAX_GAIN_AT_TARGET = 0.10f;
 
 static bool sActive = false;
 static bool sEnabled = false;
@@ -257,25 +260,78 @@ static u8 GetTeamRank(const RacedataScenario& scenario, u8 playerIdx) {
     return rank;
 }
 
+static float GetPlayerMMR(const RacedataScenario& scenario, u8 playerIdx, float fallbackMMR) {
+    if (playerIdx >= 12) return fallbackMMR;
+    if (scenario.players[playerIdx].playerType == PLAYER_REAL_LOCAL) return fallbackMMR;
+
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return fallbackMMR;
+
+    const u8 aid = controller->aidsBelongingToPlayerIds[playerIdx];
+    if (aid >= 12) return fallbackMMR;
+
+    u8 playerOnConsole = 0;
+    for (u8 i = 0; i < playerIdx; ++i) {
+        if (controller->aidsBelongingToPlayerIds[i] == aid) ++playerOnConsole;
+    }
+
+    const u16 encodedMMR = GetRemoteMMR(aid, playerOnConsole);
+    return encodedMMR == 0xFFFF ? fallbackMMR : static_cast<float>(encodedMMR) / 100.0f;
+}
+
+static float GetTeamMMR(const RacedataScenario& scenario, const float* playerMMRs, u8 team) {
+    float totalMMR = 0.0f;
+    u8 playerCount = 0;
+    for (u8 i = 0; i < scenario.playerCount; ++i) {
+        if (GetTeamForPlayer(i) != team) continue;
+        totalMMR += playerMMRs[i];
+        ++playerCount;
+    }
+    return playerCount > 0 ? totalMMR / static_cast<float>(playerCount) : MogiRating::DEFAULT_MMR;
+}
+
+static float GetPairExpectedPerformance(float playerMMR, float opponentMMR) {
+    float expected = 0.5f + (playerMMR - opponentMMR) / (2.0f * MOGI_EXPECTATION_RANGE);
+    if (expected < 0.05f) expected = 0.05f;
+    if (expected > 0.95f) expected = 0.95f;
+    return expected;
+}
+
+static float GetExpectedPerformance(float playerMMR, const float* opponentMMRs, u8 opponentCount) {
+    if (opponentCount == 0) return 0.5f;
+
+    float expected = 0.0f;
+    for (u8 i = 0; i < opponentCount; ++i) {
+        expected += GetPairExpectedPerformance(playerMMR, opponentMMRs[i]);
+    }
+    return expected / static_cast<float>(opponentCount);
+}
+
 static float GetPerformance(u8 rank, u8 count) {
     if (count <= 1) return 0.5f;
     return 1.0f - ((float)rank / (float)(count - 1));
 }
 
-static float GetMMRDelta(float mmr, float performance) {
-    // A deliberately small Elo-like step. The soft ceiling keeps 300.00 a practical
-    // upper bound without making it reachable through ordinary event wins.
-    const float expected = 0.5f;
-    float delta = (performance - expected) * 2.0f;
+static float GetMaximumGain(float mmr) {
+    if (mmr <= MogiRating::MIN_MMR) return 1.0f;
+    if (mmr >= MOGI_MAX_GAIN_MMR) return MOGI_MAX_GAIN_AT_TARGET;
+
+    const float progress = (mmr - MogiRating::MIN_MMR) /
+                           (MOGI_MAX_GAIN_MMR - MogiRating::MIN_MMR);
+    const float remaining = 1.0f - progress;
+    return MOGI_MAX_GAIN_AT_TARGET + (1.0f - MOGI_MAX_GAIN_AT_TARGET) * remaining * remaining;
+}
+
+static float GetMMRDelta(float mmr, float performance, float expectedPerformance) {
+    float delta = (performance - expectedPerformance) * 2.0f;
     const float distance = (mmr - MogiRating::MIN_MMR) /
                            (MogiRating::MAX_MMR - MogiRating::MIN_MMR);
     const float ceilingFactor = 0.25f + (1.0f - distance) * 0.75f;
     const float floorFactor = 0.25f + distance * 0.75f;
     delta *= delta >= 0.0f ? ceilingFactor : floorFactor;
     if (delta > 0.0f) {
-        const float remaining = MogiRating::MAX_MMR - mmr;
-        const float softGainCap = remaining * 0.005f;
-        if (delta > softGainCap) delta = softGainCap;
+        const float maximumGain = GetMaximumGain(mmr);
+        if (delta > maximumGain) delta = maximumGain;
     }
     return delta;
 }
@@ -320,13 +376,39 @@ void OnFinalResults() {
         const u8 rank = IsTeamFormat() ? GetTeamRank(scenario, i) : GetPlayerRank(scenario, i);
         const float performance = GetPerformance(rank, count);
         const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
-        MogiRating::SetUserMMR(rksys->curLicenseId, currentMMR + GetMMRDelta(currentMMR, performance));
+        float playerMMRs[12];
+        for (u8 player = 0; player < scenario.playerCount; ++player) {
+            playerMMRs[player] = GetPlayerMMR(scenario, player, currentMMR);
+        }
+
+        float opponentMMRs[12];
+        u8 opponentCount = 0;
+        float expectedPerformance;
+        if (IsTeamFormat()) {
+            const u8 ownTeam = GetTeamForPlayer(i);
+            const u8 teamCount = 12 / sPlayersPerTeam;
+            const float ownTeamMMR = GetTeamMMR(scenario, playerMMRs, ownTeam);
+            for (u8 team = 0; team < teamCount; ++team) {
+                if (team != ownTeam) opponentMMRs[opponentCount++] = GetTeamMMR(scenario, playerMMRs, team);
+            }
+            expectedPerformance = GetExpectedPerformance(ownTeamMMR, opponentMMRs, opponentCount);
+        } else {
+            for (u8 player = 0; player < scenario.playerCount; ++player) {
+                if (player != i) opponentMMRs[opponentCount++] = playerMMRs[player];
+            }
+            expectedPerformance = GetExpectedPerformance(currentMMR, opponentMMRs, opponentCount);
+        }
+        MogiRating::SetUserMMR(rksys->curLicenseId,
+                               currentMMR + GetMMRDelta(currentMMR, performance, expectedPerformance));
         updated = true;
     }
     if (updated) {
         sMMRFinalized = true;
-        sPendingDisconnect = true;
     }
+}
+
+void OnResultsDisplayed() {
+    if (sMMRFinalized) sPendingDisconnect = true;
 }
 
 void ProcessPendingDisconnect() {

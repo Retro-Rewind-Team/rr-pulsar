@@ -19,7 +19,7 @@ PageId ExtendedTeamResultTotal::GetNextPage() const {
 
 void ExtendedTeamResultTotal::OnInit() {
     RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    Mogi::OnFinalResults();
+    Mogi::OnResultsDisplayed();
 
     int teamCount = 0;
     bool teamPresent[TEAM_COUNT];

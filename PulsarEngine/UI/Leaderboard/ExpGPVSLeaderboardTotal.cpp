@@ -16,7 +16,7 @@ static void fillTotalLeaderboardResults(Pages::GPVSLeaderboardTotal& page) {
 
 void ExpGPVSLeaderboardTotal::OnInit() {
     Pages::GPVSLeaderboardTotal::OnInit();
-    Mogi::OnFinalResults();
+    Mogi::OnResultsDisplayed();
 }
 
 void ExpGPVSLeaderboardTotal::OnUpdate() {

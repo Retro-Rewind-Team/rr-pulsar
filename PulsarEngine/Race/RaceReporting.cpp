@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/GPReport.hpp>
+#include <Network/Mogi.hpp>
 #include <Network/Rating/RatingSync.hpp>
 
 namespace Pulsar {
@@ -27,6 +28,7 @@ void UpdateRaceInstances() {
     if (raceInfo->stage != sLastRaceStage) {
         sLastRaceStage = raceInfo->stage;
         if (sLastRaceStage == RACESTAGE_FINISHED) {
+            Mogi::OnFinalResults();
             Network::ReportU32("wl:mkw_race_stage", sLastRaceStage);
 
             RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;

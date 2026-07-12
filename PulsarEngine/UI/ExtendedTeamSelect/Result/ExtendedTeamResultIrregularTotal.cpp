@@ -18,7 +18,7 @@ PageId ExtendedTeamResultIrregularTotal::GetNextPage() const {
 
 void ExtendedTeamResultIrregularTotal::OnInit() {
     Pages::GPVSLeaderboardTotal::OnInit();
-    Mogi::OnFinalResults();
+    Mogi::OnResultsDisplayed();
 
     this->AddControl(this->GetRowCount(), this->textMessage, 0);
 
