@@ -595,15 +595,12 @@ s32 System::OnSceneEnter(Random& random) {
 }
 kmCall(0x8051ac40, System::OnSceneEnter);
 
-static u8 GetMogiAwareRaceCount() {
-    return Mogi::IsActive() ? Mogi::GetRaceCount() : System::sInstance->netMgr.racesPerGP;
-}
-
 asmFunc System::GetRaceCount() {
     ASM(
         nofralloc;
-        bl GetMogiAwareRaceCount;
-        mr r0, r3;
+        lis r5, sInstance @ha;
+        lwz r5, sInstance @l(r5);
+        lbz r0, System.netMgr.racesPerGP(r5);
         blr;)
 }
 

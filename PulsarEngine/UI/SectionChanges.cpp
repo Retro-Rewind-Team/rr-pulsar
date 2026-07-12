@@ -6,23 +6,17 @@
 namespace Pulsar {
 namespace UI {
 
-static SectionId ReportMogiSection(SectionId from, SectionId to) {
-    OS::Report("[Mogi] section rewrite from=0x%02X to=0x%02X enabled=%u active=%u team=%u\n", from, to,
-               Mogi::IsEnabled(), Mogi::IsActive(), Mogi::IsTeamFormat());
-    return to;
-}
-
 static SectionId GetFFASectionId(SectionId id) {
     if (Mogi::IsActive()) {
         switch (id) {
             case SECTION_P1_WIFI_VS_VOTING:
-                return ReportMogiSection(id, SECTION_P1_WIFI_FROOM_VS_VOTING);
+                return SECTION_P1_WIFI_FROOM_VS_VOTING;
             case SECTION_P2_WIFI_VS_VOTING:
-                return ReportMogiSection(id, SECTION_P2_WIFI_FROOM_VS_VOTING);
+                return SECTION_P2_WIFI_FROOM_VS_VOTING;
             case SECTION_P1_WIFI_VS:
-                return ReportMogiSection(id, SECTION_P1_WIFI_FRIEND_VS);
+                return SECTION_P1_WIFI_FRIEND_VS;
             case SECTION_P2_WIFI_VS:
-                return ReportMogiSection(id, SECTION_P2_WIFI_FRIEND_VS);
+                return SECTION_P2_WIFI_FRIEND_VS;
             default:
                 return id;
         }

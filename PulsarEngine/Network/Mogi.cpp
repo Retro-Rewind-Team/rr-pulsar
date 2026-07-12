@@ -37,13 +37,6 @@ static bool sPendingDisconnect = false;
 static bool sResultsSectionSeen = false;
 static bool sStartReported = false;
 
-static void ReportTeamMap(const char* label) {
-    OS::Report("[Mogi] %s active=%u teamFormat=%u playersPerTeam=%u map=%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
-               label, sActive, sTeamFormat, sPlayersPerTeam, sTeamByPlayer[0], sTeamByPlayer[1],
-               sTeamByPlayer[2], sTeamByPlayer[3], sTeamByPlayer[4], sTeamByPlayer[5], sTeamByPlayer[6],
-               sTeamByPlayer[7], sTeamByPlayer[8], sTeamByPlayer[9], sTeamByPlayer[10], sTeamByPlayer[11]);
-}
-
 static void SelectLobbyFormat(u32 groupId);
 
 static void ResetRemoteMMR() {
@@ -112,8 +105,6 @@ static void UpdateActiveFromRoom() {
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     if (sub.groupId == 0) return;
     if (!sActive || sLobbyGroupId != sub.groupId) {
-        OS::Report("[Mogi] new room group=%u oldGroup=%u roomType=%u players=%u\n", sub.groupId, sLobbyGroupId,
-                   controller->roomType, sub.playerCount);
         sLobbyGroupId = sub.groupId;
         sForceTwoVsTwo = false;
         SelectLobbyFormat(sub.groupId);
@@ -166,13 +157,10 @@ void FillRoomData(::Pulsar::Network::MogiRoomData& roomData) {
 
 bool ApplyRoomData(const ::Pulsar::Network::MogiRoomData& roomData) {
     if (roomData.magic != ROOM_PACKET_MAGIC || roomData.teamFormat > 1) {
-        OS::Report("[Mogi] room data rejected magic=0x%04X expected=0x%04X teamFormat=%u\n", roomData.magic,
-                   ROOM_PACKET_MAGIC, roomData.teamFormat);
         return false;
     }
     if (roomData.playersPerTeam != 2 && roomData.playersPerTeam != 3 &&
         roomData.playersPerTeam != 4 && roomData.playersPerTeam != 6) {
-        OS::Report("[Mogi] room data rejected playersPerTeam=%u\n", roomData.playersPerTeam);
         return false;
     }
 
@@ -181,7 +169,6 @@ bool ApplyRoomData(const ::Pulsar::Network::MogiRoomData& roomData) {
         SelectLobbyFormat(controller->subs[controller->currentSub].groupId);
     }
     sActive = true;
-    ReportTeamMap("seed format applied");
     return true;
 }
 
@@ -250,7 +237,6 @@ static void SelectLobbyFormat(u32 groupId) {
         sTeamByPlayer[swapIdx] = team;
     }
     UI::ExtendedTeamSelect::RandomizeTeamColors(sLobbySeed);
-    ReportTeamMap("seed format selected");
 }
 
 void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
@@ -281,8 +267,6 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
     // ROOM stores the zero-based final race index: 11 represents 12 races.
     raceCount = MOGI_RACE_COUNT - 1;
     System::sInstance->netMgr.racesPerGP = raceCount;
-    OS::Report("[Mogi] host room prepared group=%u context2=0x%08X raceCount=%u\n", sub.groupId, hostContext2,
-               raceCount);
 }
 
 void ApplyHostRoom(u32 hostContext2) {
@@ -298,8 +282,6 @@ void ApplyHostRoom(u32 hostContext2) {
     sPendingDisconnect = false;
     sResultsSectionSeen = false;
     System::sInstance->netMgr.racesPerGP = GetRaceCount();
-    OS::Report("[Mogi] host room applied context2=0x%08X group=%u\n", hostContext2, sLobbyGroupId);
-    ReportTeamMap("host room state");
 }
 
 static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {
@@ -383,7 +365,6 @@ void ProcessPendingDisconnect() {
                                sectionId == SECTION_P2_WIFI_FRIEND_VS ||
                                sectionId == SECTION_P2_WIFI_FRIEND_TEAMVS;
     if (isMogiResults) {
-        OS::Report("[Mogi] result section reached id=0x%02X\n", sectionId);
         sResultsSectionSeen = true;
         return;
     }
@@ -396,7 +377,6 @@ void ProcessPendingDisconnect() {
         sActive = false;
         sResultsSectionSeen = false;
         sStartReported = false;
-        OS::Report("[Mogi] disconnect scheduled after section=0x%02X\n", sectionId);
     }
 }
 

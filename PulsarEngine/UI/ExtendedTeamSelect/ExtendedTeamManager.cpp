@@ -298,11 +298,6 @@ void ExtendedTeamManager::ConfigureMogiTeams() {
     }
     ExtendedTeamSelect::RandomizeTeamColors(Mogi::GetLobbySeed());
     this->hasFriendRoomStarted = true;
-    OS::Report("[MogiTeams] ConfigureMogiTeams players=%u mapped=%u active=%u teamFormat=%u teams=%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
-               playerCount, hasPlayerIdMapping, Mogi::IsActive(), Mogi::IsTeamFormat(), this->players[0].team, this->players[1].team,
-               this->players[2].team, this->players[3].team, this->players[4].team, this->players[5].team,
-               this->players[6].team, this->players[7].team, this->players[8].team, this->players[9].team,
-               this->players[10].team, this->players[11].team);
 }
 
 void ExtendedTeamManager::ConfigureOfflineTeams() {

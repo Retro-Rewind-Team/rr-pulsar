@@ -22,32 +22,23 @@ namespace UI {
 
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
-static void ApplyMogiRaceTeams(RacedataScenario& scenario, const char* source) {
+static void ApplyMogiRaceTeams(RacedataScenario& scenario) {
     if (!Mogi::IsEnabled()) return;
 
     const bool active = Mogi::IsActive();
     const bool teamFormat = Mogi::IsTeamFormat();
-    if (!active || !teamFormat) {
-        OS::Report("[MogiTeams] %s skipped active=%u teamFormat=%u gameMode=%u flags=0x%08X players=%u\n", source,
-                   active, teamFormat, scenario.settings.gamemode, scenario.settings.modeFlags, scenario.playerCount);
-        return;
-    }
+    if (!active || !teamFormat) return;
 
     const u8 playerCount = scenario.playerCount < 12 ? scenario.playerCount : 12;
     for (u8 i = 0; i < playerCount; ++i) {
         scenario.players[i].team = static_cast<Team>(Mogi::GetTeamForPlayer(i));
     }
-    OS::Report("[MogiTeams] %s applied vanillaTeamFlag=0 flags=0x%08X players=%u teams=%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
-               source, scenario.settings.modeFlags, playerCount, scenario.players[0].team,
-               scenario.players[1].team, scenario.players[2].team, scenario.players[3].team, scenario.players[4].team,
-               scenario.players[5].team, scenario.players[6].team, scenario.players[7].team, scenario.players[8].team,
-               scenario.players[9].team, scenario.players[10].team, scenario.players[11].team);
 }
 
 void Racedata_InitRace(Racedata* racedata) {
     racedata->InitRace();
 
-    ApplyMogiRaceTeams(racedata->racesScenario, "Racedata_InitRace");
+    ApplyMogiRaceTeams(racedata->racesScenario);
 
     const RacedataSettings& settings = racedata->menusScenario.settings;
     if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) &&
@@ -191,12 +182,8 @@ void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr* _this) {
             if (team != TEAM_COUNT) _this->infos[i].team = static_cast<Team>(team);
         }
     }
-    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    const u32 flagsBefore = Racedata::sInstance->menusScenario.settings.modeFlags;
     _this->PrepareRace();
-    OS::Report("[MogiTeams] PrepareRace section=0x%02X flags=0x%08X->0x%08X gameMode=%u\n", sectionId, flagsBefore,
-               Racedata::sInstance->menusScenario.settings.modeFlags, Racedata::sInstance->menusScenario.settings.gamemode);
-    ApplyMogiRaceTeams(Racedata::sInstance->menusScenario, "SELECTStageMgr_PrepareRace");
+    ApplyMogiRaceTeams(Racedata::sInstance->menusScenario);
     if (ExtendedTeamManager::IsActivated()) {
         if (Mogi::IsActive()) {
             ExtendedTeamManager::sInstance->ConfigureMogiTeams();
