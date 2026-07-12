@@ -36,7 +36,10 @@ static void FormatMMRDelta(float delta, wchar_t* buffer, u32 bufferSize) {
 }
 
 static void ShowPendingLoginMMRChange(ExpWFCMain& page) {
-    Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
+    Section* section = SectionMgr::sInstance->curSection;
+    if (section == nullptr || section->GetTopLayerPage() != &page) return;
+
+    Pages::MessageBoxTransparent* messageBox = section->Get<Pages::MessageBoxTransparent>();
     if (messageBox == nullptr) return;
 
     float oldMMR;
@@ -194,6 +197,10 @@ void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
 
 void ExpWFCMain::BeforeControlUpdate() {
     WFCMainMenu::BeforeControlUpdate();
+    if (this->selectMainButtonOnResume) {
+        this->selectMainButtonOnResume = false;
+        this->mainButton.Select(0);
+    }
     ShowPendingLoginMMRChange(*this);
 
     int RR_numRetro, RR_numCT, RR_numRT;
@@ -222,7 +229,7 @@ void ExpWFCMain::BeforeControlUpdate() {
 }
 
 void ExpWFCMain::OnResume() {
-    this->mainButton.Select(0);
+    this->selectMainButtonOnResume = true;
 }
 
 // ExpWFCModeSel

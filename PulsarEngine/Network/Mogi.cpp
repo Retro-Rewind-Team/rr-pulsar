@@ -23,7 +23,9 @@ static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
 static const u8 MOGI_RACE_COUNT = 1;
 static const float MOGI_EXPECTATION_RANGE = 100.0f;
 static const float MOGI_MAX_GAIN_MMR = 250.0f;
+static const float MOGI_MAX_GAIN_AT_START = 3.50f;
 static const float MOGI_MAX_GAIN_AT_TARGET = 0.10f;
+static const float MOGI_MAX_LOSS = -2.50f;
 static const float MOGI_DISCONNECT_PENALTY = 1.0f;
 
 static bool sActive = false;
@@ -354,17 +356,19 @@ static float GetPerformance(float rank, u8 count) {
 }
 
 static float GetMaximumGain(float mmr) {
-    if (mmr <= MogiRating::MIN_MMR) return 1.0f;
+    if (mmr <= MogiRating::MIN_MMR) return MOGI_MAX_GAIN_AT_START;
     if (mmr >= MOGI_MAX_GAIN_MMR) return MOGI_MAX_GAIN_AT_TARGET;
 
     const float progress = (mmr - MogiRating::MIN_MMR) /
                            (MOGI_MAX_GAIN_MMR - MogiRating::MIN_MMR);
     const float remaining = 1.0f - progress;
-    return MOGI_MAX_GAIN_AT_TARGET + (1.0f - MOGI_MAX_GAIN_AT_TARGET) * remaining * remaining;
+    return MOGI_MAX_GAIN_AT_TARGET +
+           (MOGI_MAX_GAIN_AT_START - MOGI_MAX_GAIN_AT_TARGET) * remaining * remaining;
 }
 
 static float GetMMRDelta(float mmr, float performance, float expectedPerformance) {
-    float delta = (performance - expectedPerformance) * 2.0f;
+    const float performanceDifference = performance - expectedPerformance;
+    float delta = performanceDifference * (performanceDifference >= 0.0f ? MOGI_MAX_GAIN_AT_START : -MOGI_MAX_LOSS);
     const float distance = (mmr - MogiRating::MIN_MMR) /
                            (MogiRating::MAX_MMR - MogiRating::MIN_MMR);
     const float ceilingFactor = 0.25f + (1.0f - distance) * 0.75f;
@@ -373,6 +377,8 @@ static float GetMMRDelta(float mmr, float performance, float expectedPerformance
     if (delta > 0.0f) {
         const float maximumGain = GetMaximumGain(mmr);
         if (delta > maximumGain) delta = maximumGain;
+    } else if (delta < MOGI_MAX_LOSS) {
+        delta = MOGI_MAX_LOSS;
     }
     return delta;
 }

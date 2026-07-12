@@ -10,7 +10,7 @@ namespace UI {
 
 class ExpWFCMain : public Pages::WFCMainMenu {
    public:
-    ExpWFCMain() {
+    ExpWFCMain() : selectMainButtonOnResume(false) {
         this->onSettingsClick.subject = this;
         this->onSettingsClick.ptmf = &ExpWFCMain::OnSettingsButtonClick;
         this->onMainClick.subject = this;
@@ -55,6 +55,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
 
    public:
     PulPageId topSettingsPage;
+    bool selectMainButtonOnResume;
     static u32 lastClickedMainMenuButton;
 };
 

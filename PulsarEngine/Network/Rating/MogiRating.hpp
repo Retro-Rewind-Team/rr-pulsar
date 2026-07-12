@@ -11,8 +11,9 @@ static const float MAX_MMR = 300.0f;
 static const float DEFAULT_MMR = 10.0f;
 
 float GetUserMMR(u32 licenseId);
+float GetStoredMMR(s32 profileId);
 void SetUserMMR(u32 licenseId, float mmr);
-void SaveProfileMMR(s32 profileId, float mmr);
+void SetProfileMMR(s32 profileId, float mmr);
 void BindLicenseProfileId(u32 licenseId, s32 profileId);
 void ReportCurrentMMR(u32 licenseId);
 

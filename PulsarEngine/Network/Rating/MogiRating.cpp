@@ -23,6 +23,8 @@ struct ProfileEntry {
     s32 profileId;
     float mmr;
     bool hasData;
+    float storedMMR;
+    bool hasStoredData;
 };
 
 struct PackedHeader {
@@ -73,6 +75,8 @@ static ProfileEntry* GetProfile(s32 profileId, bool create) {
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         if (!sProfiles[i].hasData) {
             sProfiles[i].profileId = profileId;
+            sProfiles[i].storedMMR = DEFAULT_MMR;
+            sProfiles[i].hasStoredData = false;
             return &sProfiles[i];
         }
     }
@@ -82,6 +86,8 @@ static ProfileEntry* GetProfile(s32 profileId, bool create) {
     replacement.profileId = profileId;
     replacement.mmr = DEFAULT_MMR;
     replacement.hasData = false;
+    replacement.storedMMR = DEFAULT_MMR;
+    replacement.hasStoredData = false;
     return &replacement;
 }
 
@@ -128,6 +134,8 @@ static void Load() {
             sProfiles[i].profileId = entry.profileId;
             sProfiles[i].mmr = ClampMMR(entry.mmr);
             sProfiles[i].hasData = true;
+            sProfiles[i].storedMMR = sProfiles[i].mmr;
+            sProfiles[i].hasStoredData = true;
         }
     }
     io->Close();
@@ -148,8 +156,8 @@ static void Save() {
 
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         file.entries[i].profileId = sProfiles[i].profileId;
-        file.entries[i].mmr = sProfiles[i].mmr;
-        file.entries[i].flags = sProfiles[i].hasData ? 1u : 0u;
+        file.entries[i].mmr = sProfiles[i].storedMMR;
+        file.entries[i].flags = sProfiles[i].hasStoredData ? 1u : 0u;
     }
 
     if (!io->OpenFile(path, FILE_MODE_WRITE) && !io->CreateAndOpen(path, FILE_MODE_WRITE)) return;
@@ -157,13 +165,15 @@ static void Save() {
     io->Close();
 }
 
-void SaveProfileMMR(s32 profileId, float mmr) {
+void SetProfileMMR(s32 profileId, float mmr) {
     Load();
     ProfileEntry* profile = GetProfile(profileId, true);
     if (!profile) return;
 
     profile->mmr = ClampMMR(mmr);
     profile->hasData = true;
+    profile->storedMMR = profile->mmr;
+    profile->hasStoredData = true;
     Save();
 }
 
@@ -173,6 +183,12 @@ float GetUserMMR(u32 licenseId) {
     return profile && profile->hasData ? ClampMMR(profile->mmr) : DEFAULT_MMR;
 }
 
+float GetStoredMMR(s32 profileId) {
+    Load();
+    ProfileEntry* profile = GetProfile(profileId, false);
+    return profile && profile->hasStoredData ? ClampMMR(profile->storedMMR) : DEFAULT_MMR;
+}
+
 void SetUserMMR(u32 licenseId, float mmr) {
     Load();
     ProfileEntry* profile = GetProfile(ResolveProfileId(licenseId), true);
@@ -180,7 +196,6 @@ void SetUserMMR(u32 licenseId, float mmr) {
 
     profile->mmr = ClampMMR(mmr);
     profile->hasData = true;
-    Save();
     ReportCurrentMMR(licenseId);
 }
 

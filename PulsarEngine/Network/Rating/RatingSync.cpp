@@ -24,6 +24,7 @@ static u32 s_requestGeneration = 0;
 static float s_requestStartVr = 0.0f;
 static float s_requestStartBr = 0.0f;
 static float s_requestStartMMR = 0.0f;
+static float s_requestStartStoredMMR = 0.0f;
 static void* s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
 static s32 s_pendingInitialReportProfileId = 0;
@@ -183,13 +184,13 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
     }
     if (hasMMR && mmrScaled >= (int)(MogiRating::MIN_MMR * 100.0f) &&
         mmrScaled <= (int)(MogiRating::MAX_MMR * 100.0f)) {
-        const int oldMMRScaled = (int)(s_requestStartMMR * 100.0f + 0.5f);
+        const int oldMMRScaled = (int)(s_requestStartStoredMMR * 100.0f + 0.5f);
         if (mmrScaled != oldMMRScaled) {
-            s_pendingLoginOldMMR = s_requestStartMMR;
+            s_pendingLoginOldMMR = s_requestStartStoredMMR;
             s_pendingLoginNewMMR = (float)mmrScaled / 100.0f;
             s_pendingLoginMMRChange = true;
         }
-        MogiRating::SaveProfileMMR(ctx->profileId, (float)mmrScaled / 100.0f);
+        MogiRating::SetProfileMMR(ctx->profileId, (float)mmrScaled / 100.0f);
     }
     SetSyncReportingSuppressed(false);
 }
@@ -214,6 +215,7 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     s_requestStartVr = GetUserVR(licenseId);
     s_requestStartBr = GetUserBR(licenseId);
     s_requestStartMMR = MogiRating::GetUserMMR(licenseId);
+    s_requestStartStoredMMR = MogiRating::GetStoredMMR(profileId);
 
     s_requestCtx.generation = s_requestGeneration;
     s_requestCtx.profileId = profileId;
