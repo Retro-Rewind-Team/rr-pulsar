@@ -109,7 +109,7 @@ static void UpdateActiveFromRoom() {
         sPendingDisconnect = false;
         sStartReported = false;
     }
-    System::sInstance->netMgr.racesPerGP = 11;
+    System::sInstance->netMgr.racesPerGP = MOGI_RACE_COUNT - 1;
 }
 
 void UpdateRoomState() {
