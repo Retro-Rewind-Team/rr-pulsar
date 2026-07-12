@@ -298,8 +298,6 @@ static void BeforeROOMSend(RKNet::PacketHolder<void>* packetHolder, const void* 
         destPacket->raceCount = raceCount;
 
         Mogi::PrepareHostRoom(destPacket->hostSystemContext2, destPacket->raceCount);
-        memset(&destPacket->mogiRoom, 0, sizeof(destPacket->mogiRoom));
-        if (Mogi::IsActive()) Mogi::FillRoomData(destPacket->mogiRoom);
         if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
             destPacket->hostSystemContext |= 1 << PULSAR_EXTENDEDTEAMS;
             UI::ExtendedTeamManager::sInstance->ConfigureMogiTeams();
@@ -376,7 +374,6 @@ static void AfterROOMReception(void* dest, const void* src, u32 len) {
     if (expandedPacket != 0 && expandedPacket->messageType == 1 && isHostPacket) {
         ConvertROOMPacketToData(*expandedPacket);
         Mogi::ApplyHostRoom(expandedPacket->hostSystemContext2);
-        (void)Mogi::ApplyRoomData(expandedPacket->mogiRoom);
 
         // Get context from host packet (no need to read local settings - host values take precedence)
         Network::Mgr& netMgr = Pulsar::System::sInstance->netMgr;

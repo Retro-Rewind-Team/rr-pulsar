@@ -5,15 +5,10 @@
 #include <MarioKartWii/Race/Racedata.hpp>
 
 namespace Pulsar {
-namespace Network {
-struct MogiRoomData;
-}
-
 namespace Mogi {
 
 static const u8 REGION = 0x16;
 static const u16 MMR_PACKET_MAGIC = 0x4D4D;
-static const u16 ROOM_PACKET_MAGIC = 0x4D52;
 
 bool IsEnabled();
 void SetEnabled(bool enabled);
@@ -21,13 +16,8 @@ void UpdateRoomState();
 bool IsActive();
 bool IsTeamFormat();
 bool IsPublicRoom();
-bool CanStartRace();
 u32 GetLobbySeed();
 u8 GetTeamForPlayer(u8 playerIdx);
-void SetTeamForPlayer(u8 playerIdx, u8 team);
-void FillRoomData(::Pulsar::Network::MogiRoomData& roomData);
-bool ApplyRoomData(const ::Pulsar::Network::MogiRoomData& roomData);
-u8 GetRaceCount();
 void FillMMRPacket(u16& player0, u16& player1);
 void ReceiveMMRPacket(u8 aid, u16 player0, u16 player1);
 u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole);

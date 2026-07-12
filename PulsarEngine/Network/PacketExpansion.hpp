@@ -76,15 +76,6 @@ struct MogiMMRPacket {
 };
 static_assert(sizeof(MogiMMRPacket) == 0x6, "MogiMMRPacket size");
 
-struct MogiRoomData {
-    u16 magic;
-    u8 teamFormat;
-    u8 playersPerTeam;
-    u8 teamByPlayer[12];
-    u8 teamColors[6];
-};
-static_assert(sizeof(MogiRoomData) == 0x16, "MogiRoomData size");
-
 struct PulROOM : public RKNet::ROOMPacket {
     // Generic ROOM settings
     u64 hostSystemContext;  // System's context but with just gamemodes taken from the settings
@@ -94,7 +85,6 @@ struct PulROOM : public RKNet::ROOMPacket {
 
     // Extended Team settings
     u8 extendedTeams[6];  // 4 bits per PlayerIDX, they encode the team ID (4 * 12 = 48 bits = 6 bytes)
-    MogiRoomData mogiRoom;
 
     // Track blocking
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks (up to MAX_TRACK_BLOCKING)

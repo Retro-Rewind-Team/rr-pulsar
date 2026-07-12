@@ -5,7 +5,6 @@
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Network/Mogi.hpp>
-#include <Network/PacketExpansion.hpp>
 #include <Network/GPReport.hpp>
 #include <Network/Rating/MogiRating.hpp>
 #include <Settings/Settings.hpp>
@@ -19,14 +18,12 @@ static const u32 MOGI_TEAM_FLAG = 0x40000000;
 static const u32 MOGI_TEAM_SIZE_MASK = 0x30000000;
 static const u32 MOGI_TEAM_SIZE_2 = 0x10000000;
 static const u32 MOGI_TEAM_SIZE_3 = 0x20000000;
-static const u32 MOGI_TEAM_SIZE_4 = 0x00000000;
 static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
 static const u8 MOGI_RACE_COUNT = 12;
 
 static bool sActive = false;
 static bool sEnabled = false;
 static bool sTeamFormat = false;
-static bool sForceTwoVsTwo = false;
 static u8 sPlayersPerTeam = 2;
 static u8 sTeamByPlayer[12] = {};
 static u32 sLobbyGroupId = 0;
@@ -62,7 +59,6 @@ void SetEnabled(bool enabled) {
     if (!enabled) {
         sActive = false;
         sTeamFormat = false;
-        sForceTwoVsTwo = false;
         sLobbyGroupId = 0;
         sLobbySeed = 0;
         ResetRemoteMMR();
@@ -106,7 +102,6 @@ static void UpdateActiveFromRoom() {
     if (sub.groupId == 0) return;
     if (!sActive || sLobbyGroupId != sub.groupId) {
         sLobbyGroupId = sub.groupId;
-        sForceTwoVsTwo = false;
         SelectLobbyFormat(sub.groupId);
         sActive = true;
         ResetRemoteMMR();
@@ -130,54 +125,13 @@ bool IsTeamFormat() {
     return sActive && sTeamFormat;
 }
 
-bool CanStartRace() {
-    UpdateActiveFromRoom();
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (!controller) return false;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    return sub.playerCount == 12;
-}
-
 u8 GetTeamForPlayer(u8 playerIdx) {
     if (!IsTeamFormat()) return playerIdx;
     return sTeamByPlayer[playerIdx < 12 ? playerIdx : 0];
 }
 
-void SetTeamForPlayer(u8 playerIdx, u8 team) {
-    if (playerIdx < 12 && team < 6) sTeamByPlayer[playerIdx] = team;
-}
-
-void FillRoomData(::Pulsar::Network::MogiRoomData& roomData) {
-    roomData.magic = ROOM_PACKET_MAGIC;
-    roomData.teamFormat = sTeamFormat ? 1 : 0;
-    roomData.playersPerTeam = sPlayersPerTeam;
-    for (u8 i = 0; i < 12; ++i) roomData.teamByPlayer[i] = sTeamByPlayer[i];
-    UI::ExtendedTeamSelect::GetTeamColorOrder(roomData.teamColors);
-}
-
-bool ApplyRoomData(const ::Pulsar::Network::MogiRoomData& roomData) {
-    if (roomData.magic != ROOM_PACKET_MAGIC || roomData.teamFormat > 1) {
-        return false;
-    }
-    if (roomData.playersPerTeam != 2 && roomData.playersPerTeam != 3 &&
-        roomData.playersPerTeam != 4 && roomData.playersPerTeam != 6) {
-        return false;
-    }
-
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller != nullptr) {
-        SelectLobbyFormat(controller->subs[controller->currentSub].groupId);
-    }
-    sActive = true;
-    return true;
-}
-
 u32 GetLobbySeed() {
     return sLobbySeed;
-}
-
-u8 GetRaceCount() {
-    return MOGI_RACE_COUNT - 1;
 }
 
 void FillMMRPacket(u16& player0, u16& player1) {
@@ -217,15 +171,6 @@ static void SelectLobbyFormat(u32 groupId) {
         default:
             sPlayersPerTeam = 6;
             break;
-    }
-
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && controller->subs[controller->currentSub].playerCount == 4) {
-        sForceTwoVsTwo = true;
-    }
-    if (sForceTwoVsTwo) {
-        sTeamFormat = true;
-        sPlayersPerTeam = 2;
     }
 
     for (u8 i = 0; i < 12; ++i) sTeamByPlayer[i] = i / sPlayersPerTeam;
@@ -279,9 +224,10 @@ void ApplyHostRoom(u32 hostContext2) {
     }
     sActive = true;
     sMMRFinalized = false;
-    sPendingDisconnect = false;
-    sResultsSectionSeen = false;
-    System::sInstance->netMgr.racesPerGP = GetRaceCount();
+        sPendingDisconnect = false;
+        sResultsSectionSeen = false;
+        sStartReported = false;
+    System::sInstance->netMgr.racesPerGP = MOGI_RACE_COUNT - 1;
 }
 
 static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {
@@ -376,7 +322,6 @@ void ProcessPendingDisconnect() {
         sPendingDisconnect = false;
         sActive = false;
         sResultsSectionSeen = false;
-        sStartReported = false;
     }
 }
 
