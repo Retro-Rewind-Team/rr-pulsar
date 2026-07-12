@@ -23,6 +23,7 @@ void ReceiveMMRPacket(u8 aid, u16 player0, u16 player1);
 u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole);
 void PrepareHostRoom(u32& hostContext2, u8& raceCount);
 void ApplyHostRoom(u32 hostContext2);
+void OnDisconnect();
 void OnFinalResults();
 void OnResultsDisplayed();
 void ProcessPendingDisconnect();

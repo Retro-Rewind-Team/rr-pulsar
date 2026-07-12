@@ -10,6 +10,7 @@
 #include <PulsarSystem.hpp>
 #include <Network/Mogi.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/Rating/RatingSync.hpp>
 #include <Network/ServerDateTime.hpp>
 #include <include/c_wchar.h>
 
@@ -17,8 +18,48 @@ namespace Pulsar {
 namespace UI {
 
 static wchar_t s_rankDetailsBuffer[512];
+static wchar_t s_mmrChangeMessage[192];
 static wchar_t s_mogiButtonText[] = L"Mogi";
 static wchar_t s_mogiBottomText[] = L"Mogi matchmaking: 12 players, 12 races";
+
+static void FormatMMRValue(float mmr, wchar_t* buffer, u32 bufferSize) {
+    int scaled = (int)(mmr * 100.0f + 0.5f);
+    swprintf(buffer, bufferSize, L"%d.%02d", scaled / 100, scaled % 100);
+}
+
+static void FormatMMRDelta(float delta, wchar_t* buffer, u32 bufferSize) {
+    int scaled = (int)(delta * 100.0f + (delta >= 0.0f ? 0.5f : -0.5f));
+    const int magnitude = scaled < 0 ? -scaled : scaled;
+    if (scaled < 0)
+        swprintf(buffer, bufferSize, L"-%d.%02d", magnitude / 100, magnitude % 100);
+    else
+        swprintf(buffer, bufferSize, L"+%d.%02d", magnitude / 100, magnitude % 100);
+}
+
+static void ShowPendingLoginMMRChange(ExpWFCMain& page) {
+    Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
+    if (messageBox == nullptr) return;
+
+    float oldMMR;
+    float newMMR;
+    if (!PointRating::GetPendingLoginMMRChange(oldMMR, newMMR)) return;
+
+    wchar_t oldText[32];
+    wchar_t deltaText[32];
+    wchar_t newText[32];
+    FormatMMRValue(oldMMR, oldText, sizeof(oldText) / sizeof(oldText[0]));
+    FormatMMRDelta(newMMR - oldMMR, deltaText, sizeof(deltaText) / sizeof(deltaText[0]));
+    FormatMMRValue(newMMR, newText, sizeof(newText) / sizeof(newText[0]));
+    swprintf(s_mmrChangeMessage, sizeof(s_mmrChangeMessage) / sizeof(s_mmrChangeMessage[0]),
+             L"Old MMR: %ls\nChange: %ls\nNew MMR: %ls", oldText, deltaText, newText);
+
+    Text::Info info;
+    info.strings[0] = s_mmrChangeMessage;
+    messageBox->Reset();
+    messageBox->SetMessageWindowText(UI::BMG_TEXT, &info);
+    page.AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
+    PointRating::ClearPendingLoginMMRChange();
+}
 
 static void ApplyVRMultiplierHighlight(PushButton& button, bool hasMultiplier) {
     nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(button.layout.GetPaneByName("go"));
@@ -154,6 +195,7 @@ void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
 
 void ExpWFCMain::BeforeControlUpdate() {
     WFCMainMenu::BeforeControlUpdate();
+    ShowPendingLoginMMRChange(*this);
 
     int RR_numRetro, RR_numCT, RR_numRT;
     int RR_num200cc, RR_numOTT, RR_numIR;

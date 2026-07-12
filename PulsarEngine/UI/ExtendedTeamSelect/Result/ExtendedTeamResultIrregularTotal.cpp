@@ -74,6 +74,9 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
 
     qsort(scores, TEAM_COUNT, sizeof(TeamScore), sort_by_score);
 
+    u8 teamColorOrder[TEAM_COUNT];
+    ExtendedTeamSelect::GetTeamColorOrder(teamColorOrder);
+
     for (int i = teamCount; i < this->GetRowCount(); i++) {
         this->results[i]->isHidden = true;
     }
@@ -107,7 +110,7 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
         this->results[i]->SetPaneVisibility("chara_icon", false);
         this->results[i]->SetPaneVisibility("chara_icon_sha", false);
 
-        this->results[i]->SetTextBoxMessage("player_name", BMG_EXTENDEDTEAMS_TEAM_NAME + scores[i].team, nullptr);
+        this->results[i]->SetTextBoxMessage("player_name", BMG_EXTENDEDTEAMS_TEAM_NAME + teamColorOrder[scores[i].team], nullptr);
 
         pane->flag |= 1;
 

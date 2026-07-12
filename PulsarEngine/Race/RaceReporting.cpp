@@ -28,7 +28,6 @@ void UpdateRaceInstances() {
     if (raceInfo->stage != sLastRaceStage) {
         sLastRaceStage = raceInfo->stage;
         if (sLastRaceStage == RACESTAGE_FINISHED) {
-            Mogi::OnFinalResults();
             Network::ReportU32("wl:mkw_race_stage", sLastRaceStage);
 
             RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;

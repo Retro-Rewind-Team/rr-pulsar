@@ -31,6 +31,9 @@ static u32 s_pendingInitialReportLicenseId = 0;
 static bool s_pendingLoginDownload = false;
 static s32 s_pendingProfileId = 0;
 static u32 s_pendingLicenseId = 0;
+static bool s_pendingLoginMMRChange = false;
+static float s_pendingLoginOldMMR = 0.0f;
+static float s_pendingLoginNewMMR = 0.0f;
 
 struct RequestCtx {
     u32 generation;
@@ -103,6 +106,18 @@ void ReportCurrentVRBR(u32 licenseId) {
     Network::Report("wl:mkw_vrbr", buffer);
 }
 
+bool GetPendingLoginMMRChange(float& oldMMR, float& newMMR) {
+    if (!s_pendingLoginMMRChange) return false;
+
+    oldMMR = s_pendingLoginOldMMR;
+    newMMR = s_pendingLoginNewMMR;
+    return true;
+}
+
+void ClearPendingLoginMMRChange() {
+    s_pendingLoginMMRChange = false;
+}
+
 static bool IsRequestStillRelevant(const RequestCtx& ctx) {
     if (ctx.generation != s_requestGeneration) return false;
     if (ctx.profileId <= 0) return false;
@@ -168,6 +183,12 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
     }
     if (hasMMR && mmrScaled >= (int)(MogiRating::MIN_MMR * 100.0f) &&
         mmrScaled <= (int)(MogiRating::MAX_MMR * 100.0f)) {
+        const int oldMMRScaled = (int)(s_requestStartMMR * 100.0f + 0.5f);
+        if (mmrScaled != oldMMRScaled) {
+            s_pendingLoginOldMMR = s_requestStartMMR;
+            s_pendingLoginNewMMR = (float)mmrScaled / 100.0f;
+            s_pendingLoginMMRChange = true;
+        }
         MogiRating::SaveProfileMMR(ctx->profileId, (float)mmrScaled / 100.0f);
     }
     SetSyncReportingSuppressed(false);
@@ -179,6 +200,7 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
+    s_pendingLoginMMRChange = false;
 
     if (!Network::PrepareNHTTPRequest()) return;
 

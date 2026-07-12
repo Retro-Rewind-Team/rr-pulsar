@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <runtimeWrite.hpp>
 #include <Network/Mogi.hpp>
 #include <Network/GPReport.hpp>
 #include <Network/Rating/MogiRating.hpp>
@@ -23,6 +24,7 @@ static const u8 MOGI_RACE_COUNT = 1;
 static const float MOGI_EXPECTATION_RANGE = 100.0f;
 static const float MOGI_MAX_GAIN_MMR = 250.0f;
 static const float MOGI_MAX_GAIN_AT_TARGET = 0.10f;
+static const float MOGI_DISCONNECT_PENALTY = 1.0f;
 
 static bool sActive = false;
 static bool sEnabled = false;
@@ -33,6 +35,7 @@ static u32 sLobbyGroupId = 0;
 static u32 sLobbySeed = 0;
 static u16 sRemoteMMR[12][2];
 static bool sMMRFinalized = false;
+static bool sSessionActive = false;
 static bool sPendingDisconnect = false;
 static bool sResultsSectionSeen = false;
 static bool sStartReported = false;
@@ -44,6 +47,20 @@ static void ResetRemoteMMR() {
         sRemoteMMR[aid][0] = 0xFFFF;
         sRemoteMMR[aid][1] = 0xFFFF;
     }
+}
+
+void OnDisconnect() {
+    if (!sSessionActive) return;
+
+    sSessionActive = false;
+    if (sMMRFinalized) return;
+
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    if (rksys != nullptr && rksys->curLicenseId < 4) {
+        const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
+        MogiRating::SetUserMMR(rksys->curLicenseId, currentMMR - MOGI_DISCONNECT_PENALTY);
+    }
+    sMMRFinalized = true;
 }
 
 static u16 EncodeMMR(float mmr) {
@@ -58,6 +75,7 @@ bool IsEnabled() {
 }
 
 void SetEnabled(bool enabled) {
+    if (!enabled && sEnabled) OnDisconnect();
     sEnabled = enabled;
     if (!enabled) {
         sActive = false;
@@ -66,6 +84,7 @@ void SetEnabled(bool enabled) {
         sLobbySeed = 0;
         ResetRemoteMMR();
         sMMRFinalized = false;
+        sSessionActive = false;
         sPendingDisconnect = false;
         sResultsSectionSeen = false;
         sStartReported = false;
@@ -88,8 +107,14 @@ bool IsPublicRoom() {
 }
 
 static void UpdateActiveFromRoom() {
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool connectionLost = controller == nullptr ||
+                                controller->roomType == RKNet::ROOMTYPE_NONE ||
+                                controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN ||
+                                static_cast<u32>(controller->connectionState) > static_cast<u32>(RKNet::CONNECTIONSTATE_ROOM);
+    if (sSessionActive && connectionLost) OnDisconnect();
+
     if (!IsEnabled() || !IsPublicRoom()) {
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
         const bool isConvertedFriendRoom = controller != nullptr &&
                                            (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
                                             controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
@@ -100,15 +125,17 @@ static void UpdateActiveFromRoom() {
         return;
     }
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     if (sub.groupId == 0) return;
     if (!sActive || sLobbyGroupId != sub.groupId) {
+        if (sSessionActive && sLobbyGroupId != 0 && sLobbyGroupId != sub.groupId) OnDisconnect();
         sLobbyGroupId = sub.groupId;
         SelectLobbyFormat(sub.groupId);
         sActive = true;
         ResetRemoteMMR();
         sMMRFinalized = false;
+        sSessionActive = true;
         sPendingDisconnect = false;
         sStartReported = false;
     }
@@ -195,6 +222,7 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
     SelectLobbyFormat(sub.groupId);
     sActive = true;
     sMMRFinalized = false;
+    sSessionActive = true;
     sPendingDisconnect = false;
     sResultsSectionSeen = false;
 
@@ -227,6 +255,7 @@ void ApplyHostRoom(u32 hostContext2) {
     }
     sActive = true;
     sMMRFinalized = false;
+    sSessionActive = true;
         sPendingDisconnect = false;
         sResultsSectionSeen = false;
         sStartReported = false;
@@ -241,23 +270,35 @@ static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {
     return score;
 }
 
-static u8 GetPlayerRank(const RacedataScenario& scenario, u8 playerIdx) {
-    u8 rank = 0;
+static float GetPlayerRank(const RacedataScenario& scenario, u8 playerIdx) {
+    u8 betterCount = 0;
+    u8 tiedCount = 0;
     for (u8 i = 0; i < scenario.playerCount; ++i) {
-        if (scenario.players[i].score > scenario.players[playerIdx].score) ++rank;
+        if (scenario.players[i].score > scenario.players[playerIdx].score) {
+            ++betterCount;
+        } else if (scenario.players[i].score == scenario.players[playerIdx].score) {
+            ++tiedCount;
+        }
     }
-    return rank;
+    return static_cast<float>(betterCount) + (static_cast<float>(tiedCount) - 1.0f) * 0.5f;
 }
 
-static u8 GetTeamRank(const RacedataScenario& scenario, u8 playerIdx) {
+static float GetTeamRank(const RacedataScenario& scenario, u8 playerIdx) {
     const u8 ownTeam = GetTeamForPlayer(playerIdx);
     const u16 ownScore = GetTeamScore(scenario, ownTeam);
-    u8 rank = 0;
+    u8 betterCount = 0;
+    u8 tiedCount = 0;
     const u8 teamCount = 12 / sPlayersPerTeam;
     for (u8 team = 0; team < teamCount; ++team) {
-        if (team != ownTeam && GetTeamScore(scenario, team) > ownScore) ++rank;
+        if (team == ownTeam) continue;
+        const u16 teamScore = GetTeamScore(scenario, team);
+        if (teamScore > ownScore) {
+            ++betterCount;
+        } else if (teamScore == ownScore) {
+            ++tiedCount;
+        }
     }
-    return rank;
+    return static_cast<float>(betterCount) + static_cast<float>(tiedCount) * 0.5f;
 }
 
 static float GetPlayerMMR(const RacedataScenario& scenario, u8 playerIdx, float fallbackMMR) {
@@ -307,7 +348,7 @@ static float GetExpectedPerformance(float playerMMR, const float* opponentMMRs, 
     return expected / static_cast<float>(opponentCount);
 }
 
-static float GetPerformance(u8 rank, u8 count) {
+static float GetPerformance(float rank, u8 count) {
     if (count <= 1) return 0.5f;
     return 1.0f - ((float)rank / (float)(count - 1));
 }
@@ -344,10 +385,11 @@ static u8 GetFinalRaceNumber() {
 void OnFinalResults() {
     if (Racedata::sInstance == nullptr) return;
 
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     if (!IsActive() || sMMRFinalized) return;
 
-    u8 currentRaceNumber = scenario.settings.raceNumber;
+    u8 currentRaceNumber = raceScenario.settings.raceNumber;
     if (SectionMgr::sInstance != nullptr && SectionMgr::sInstance->sectionParams != nullptr) {
         const s32 onlineRaceNumber = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber;
         if (onlineRaceNumber > currentRaceNumber) currentRaceNumber = static_cast<u8>(onlineRaceNumber);
@@ -373,7 +415,7 @@ void OnFinalResults() {
         const u8 i = static_cast<u8>(localPlayerId);
 
         const u8 count = IsTeamFormat() ? 12 / sPlayersPerTeam : scenario.playerCount;
-        const u8 rank = IsTeamFormat() ? GetTeamRank(scenario, i) : GetPlayerRank(scenario, i);
+        const float rank = IsTeamFormat() ? GetTeamRank(scenario, i) : GetPlayerRank(scenario, i);
         const float performance = GetPerformance(rank, count);
         const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
         float playerMMRs[12];
@@ -404,6 +446,8 @@ void OnFinalResults() {
     }
     if (updated) {
         sMMRFinalized = true;
+        sSessionActive = false;
+        sPendingDisconnect = true;
     }
 }
 
@@ -411,7 +455,19 @@ void OnResultsDisplayed() {
     if (sMMRFinalized) sPendingDisconnect = true;
 }
 
+static void MonitorDisconnect() {
+    if (!sSessionActive) return;
+
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE ||
+        controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN ||
+        static_cast<u32>(controller->connectionState) > static_cast<u32>(RKNet::CONNECTIONSTATE_ROOM)) {
+        OnDisconnect();
+    }
+}
+
 void ProcessPendingDisconnect() {
+    MonitorDisconnect();
     if (!sPendingDisconnect || SectionMgr::sInstance == nullptr || SectionMgr::sInstance->curSection == nullptr) return;
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
@@ -440,6 +496,38 @@ void ProcessPendingDisconnect() {
 }
 
 static FrameLoadHook mogiDisconnectHook(ProcessPendingDisconnect);
+
+typedef void (*SystemExitFn)();
+typedef void (*SystemRestartFn)(u32 resetCode);
+
+kmRuntimeUse(0x801a856c);
+kmRuntimeUse(0x801a8688);
+kmRuntimeUse(0x801a8858);
+
+static void ShutdownSystemWithMogiPenalty() {
+    OnDisconnect();
+    reinterpret_cast<SystemExitFn>(kmRuntimeAddr(0x801a856c))();
+}
+
+static void RestartSystemWithMogiPenalty(u32 resetCode) {
+    OnDisconnect();
+    reinterpret_cast<SystemRestartFn>(kmRuntimeAddr(0x801a8688))(resetCode);
+}
+
+static void ReturnToMenuWithMogiPenalty() {
+    OnDisconnect();
+    reinterpret_cast<SystemExitFn>(kmRuntimeAddr(0x801a8858))();
+}
+
+kmCall(0x8000b174, ShutdownSystemWithMogiPenalty);
+kmCall(0x8000b298, ShutdownSystemWithMogiPenalty);
+kmCall(0x8000b488, ShutdownSystemWithMogiPenalty);
+kmCall(0x8000b1e0, RestartSystemWithMogiPenalty);
+kmCall(0x8000b2c4, RestartSystemWithMogiPenalty);
+kmCall(0x8000b4b4, RestartSystemWithMogiPenalty);
+kmCall(0x8000b1a8, ReturnToMenuWithMogiPenalty);
+kmCall(0x801a0080, ReturnToMenuWithMogiPenalty);
+kmCall(0x801acd70, ReturnToMenuWithMogiPenalty);
 
 }  // namespace Mogi
 }  // namespace Pulsar

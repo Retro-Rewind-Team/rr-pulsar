@@ -448,8 +448,11 @@ void WiFiVSResults_setCongratulationText(Pages::WiFiVSResults* _this) {
 
         qsort(scores, TEAM_COUNT, sizeof(TeamScore), sort_by_score);
 
+        u8 teamColorOrder[TEAM_COUNT];
+        ExtendedTeamSelect::GetTeamColorOrder(teamColorOrder);
+
         Text::Info info;
-        info.bmgToPass[0] = BMG_EXTENDEDTEAMS_TEAM_NAME + scores[0].team;
+        info.bmgToPass[0] = BMG_EXTENDEDTEAMS_TEAM_NAME + teamColorOrder[scores[0].team];
 
         _this->congratulations.SetMessage(BMG_EXTENDEDTEAMS_WINNER + (scores[0].score == scores[1].score), &info);
     }

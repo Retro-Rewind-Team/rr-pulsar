@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <core/rvl/DWC/DWCCore.hpp>
 #include <Network/PhantomRacer.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -24,6 +25,8 @@ static void OnConnectionClosed(RKNet::Controller* controller, u32 aid) {
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     const u8 hostAid = sub.hostAid;
     const bool isLocalHost = sub.localAid == hostAid;
+
+    if (!isLocalHost && aid == hostAid) Mogi::OnDisconnect();
 
     if (!isLocalHost && aid != hostAid) {
         MarkPhantomAid(aid);
