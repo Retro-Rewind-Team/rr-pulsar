@@ -1,0 +1,268 @@
+#include <kamek.hpp>
+#include <PulsarSystem.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <Network/Mogi.hpp>
+#include <Network/GPReport.hpp>
+#include <Network/Rating/MogiRating.hpp>
+#include <Settings/Settings.hpp>
+
+namespace Pulsar {
+namespace Mogi {
+
+static const u32 MOGI_HOST_FLAG = 0x80000000;
+static const u32 MOGI_TEAM_FLAG = 0x40000000;
+static const u32 MOGI_TEAM_SIZE_MASK = 0x30000000;
+static const u32 MOGI_TEAM_SIZE_2 = 0x10000000;
+static const u32 MOGI_TEAM_SIZE_3 = 0x20000000;
+static const u32 MOGI_TEAM_SIZE_4 = 0x00000000;
+static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
+
+static bool sActive = false;
+static bool sEnabled = false;
+static bool sTeamFormat = false;
+static u8 sPlayersPerTeam = 2;
+static u8 sTeamByPlayer[12] = {};
+static bool sMMRFinalized = false;
+static bool sPendingDisconnect = false;
+static bool sStartReported = false;
+
+static void SelectHostFormat(u32 groupId);
+
+bool IsEnabled() {
+    return sEnabled;
+}
+
+void SetEnabled(bool enabled) {
+    sEnabled = enabled;
+}
+
+bool IsPublicRoom() {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (!controller) return false;
+
+    switch (controller->roomType) {
+        case RKNet::ROOMTYPE_VS_WW:
+        case RKNet::ROOMTYPE_VS_REGIONAL:
+        case RKNet::ROOMTYPE_JOINING_WW:
+        case RKNet::ROOMTYPE_JOINING_REGIONAL:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static void UpdateActiveFromRoom() {
+    if (!IsEnabled() || !IsPublicRoom()) {
+        if (!sPendingDisconnect) {
+            sActive = false;
+            sStartReported = false;
+        }
+        return;
+    }
+
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    if (!sActive) {
+        SelectHostFormat(sub.groupId);
+        sActive = true;
+        sMMRFinalized = false;
+    }
+}
+
+bool IsActive() {
+    UpdateActiveFromRoom();
+    return sActive;
+}
+
+bool IsTeamFormat() {
+    return sActive && sTeamFormat;
+}
+
+bool CanStartRace() {
+    UpdateActiveFromRoom();
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (!controller) return false;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    return sub.playerCount == 12;
+}
+
+u8 GetTeamForPlayer(u8 playerIdx) {
+    if (!IsTeamFormat()) return playerIdx;
+    return sTeamByPlayer[playerIdx < 12 ? playerIdx : 0];
+}
+
+static void SelectHostFormat(u32 groupId) {
+    u32 seed = groupId ^ 0x4D4F4749;
+    sTeamFormat = (seed & 1) != 0;
+    switch ((seed >> 1) & 3) {
+        case 0:
+            sPlayersPerTeam = 2;
+            break;
+        case 1:
+            sPlayersPerTeam = 3;
+            break;
+        case 2:
+            sPlayersPerTeam = 4;
+            break;
+        default:
+            sPlayersPerTeam = 6;
+            break;
+    }
+
+    for (u8 i = 0; i < 12; ++i) sTeamByPlayer[i] = i / sPlayersPerTeam;
+    for (s32 i = 11; i > 0; --i) {
+        seed = seed * 1664525 + 1013904223;
+        const u8 swapIdx = (u8)(seed % (u32)(i + 1));
+        const u8 team = sTeamByPlayer[i];
+        sTeamByPlayer[i] = sTeamByPlayer[swapIdx];
+        sTeamByPlayer[swapIdx] = team;
+    }
+}
+
+void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
+    if (!IsEnabled() || !IsPublicRoom() || !CanStartRace()) return;
+
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    SelectHostFormat(sub.groupId);
+    sActive = true;
+    sMMRFinalized = false;
+    sPendingDisconnect = false;
+
+    if (!sStartReported) {
+        Network::Report("wl:mkw_mogi_start", "1");
+        sStartReported = true;
+    }
+
+    hostContext2 |= MOGI_HOST_FLAG;
+    if (sTeamFormat) hostContext2 |= MOGI_TEAM_FLAG;
+    hostContext2 &= ~MOGI_TEAM_SIZE_MASK;
+    if (sPlayersPerTeam == 2)
+        hostContext2 |= MOGI_TEAM_SIZE_2;
+    else if (sPlayersPerTeam == 3)
+        hostContext2 |= MOGI_TEAM_SIZE_3;
+    else if (sPlayersPerTeam == 6)
+        hostContext2 |= MOGI_TEAM_SIZE_6;
+    raceCount = 11;
+}
+
+void ApplyHostRoom(u32 hostContext2) {
+    if ((hostContext2 & MOGI_HOST_FLAG) == 0) return;
+
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller != nullptr) {
+        const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+        SelectHostFormat(sub.groupId);
+    }
+    sActive = true;
+    sTeamFormat = (hostContext2 & MOGI_TEAM_FLAG) != 0;
+    switch (hostContext2 & MOGI_TEAM_SIZE_MASK) {
+        case MOGI_TEAM_SIZE_2:
+            sPlayersPerTeam = 2;
+            break;
+        case MOGI_TEAM_SIZE_3:
+            sPlayersPerTeam = 3;
+            break;
+        case MOGI_TEAM_SIZE_6:
+            sPlayersPerTeam = 6;
+            break;
+        default:
+            sPlayersPerTeam = 4;
+            break;
+    }
+    sMMRFinalized = false;
+    sPendingDisconnect = false;
+}
+
+static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {
+    u16 score = 0;
+    for (u8 i = 0; i < scenario.playerCount; ++i) {
+        if (GetTeamForPlayer(i) == team) score += scenario.players[i].score;
+    }
+    return score;
+}
+
+static u8 GetPlayerRank(const RacedataScenario& scenario, u8 playerIdx) {
+    u8 rank = 0;
+    for (u8 i = 0; i < scenario.playerCount; ++i) {
+        if (scenario.players[i].score > scenario.players[playerIdx].score) ++rank;
+    }
+    return rank;
+}
+
+static u8 GetTeamRank(const RacedataScenario& scenario, u8 playerIdx) {
+    const u8 ownTeam = GetTeamForPlayer(playerIdx);
+    const u16 ownScore = GetTeamScore(scenario, ownTeam);
+    u8 rank = 0;
+    const u8 teamCount = 12 / sPlayersPerTeam;
+    for (u8 team = 0; team < teamCount; ++team) {
+        if (team != ownTeam && GetTeamScore(scenario, team) > ownScore) ++rank;
+    }
+    return rank;
+}
+
+static float GetPerformance(u8 rank, u8 count) {
+    if (count <= 1) return 0.5f;
+    return 1.0f - ((float)rank / (float)(count - 1));
+}
+
+static float GetMMRDelta(float mmr, float performance) {
+    // A deliberately small Elo-like step. The soft ceiling keeps 300.00 a practical
+    // upper bound without making it reachable through ordinary event wins.
+    const float expected = 0.5f;
+    float delta = (performance - expected) * 2.0f;
+    const float distance = (mmr - MogiRating::MIN_MMR) /
+                           (MogiRating::MAX_MMR - MogiRating::MIN_MMR);
+    const float ceilingFactor = 0.25f + (1.0f - distance) * 0.75f;
+    const float floorFactor = 0.25f + distance * 0.75f;
+    delta *= delta >= 0.0f ? ceilingFactor : floorFactor;
+    if (delta > 0.0f) {
+        const float remaining = MogiRating::MAX_MMR - mmr;
+        const float softGainCap = remaining * 0.005f;
+        if (delta > softGainCap) delta = softGainCap;
+    }
+    return delta;
+}
+
+void OnFinalRace(const RacedataScenario& scenario) {
+    if (!sActive || sMMRFinalized || scenario.settings.raceNumber < 11) return;
+    sMMRFinalized = true;
+
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    if (rksys == nullptr) return;
+
+    u8 localPlayersSeen = 0;
+    for (u8 i = 0; i < scenario.playerCount; ++i) {
+        if (scenario.players[i].playerType != PLAYER_REAL_LOCAL) continue;
+        if (localPlayersSeen++ != 0) continue;
+
+        const u8 count = IsTeamFormat() ? 12 / sPlayersPerTeam : scenario.playerCount;
+        const u8 rank = IsTeamFormat() ? GetTeamRank(scenario, i) : GetPlayerRank(scenario, i);
+        const float performance = GetPerformance(rank, count);
+        const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
+        MogiRating::SetUserMMR(rksys->curLicenseId, currentMMR + GetMMRDelta(currentMMR, performance));
+        break;
+    }
+    sPendingDisconnect = true;
+}
+
+void ProcessPendingDisconnect() {
+    if (!sPendingDisconnect || SectionMgr::sInstance == nullptr || SectionMgr::sInstance->curSection == nullptr) return;
+
+    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
+    if (sectionId == SECTION_VS_RACE_AWARD || sectionId == SECTION_GP_AWARD) {
+        RKNet::Controller* controller = RKNet::Controller::sInstance;
+        if (controller != nullptr) controller->ScheduleShutdown();
+        sPendingDisconnect = false;
+        sActive = false;
+        sStartReported = false;
+    }
+}
+
+static FrameLoadHook mogiDisconnectHook(ProcessPendingDisconnect);
+
+}  // namespace Mogi
+}  // namespace Pulsar

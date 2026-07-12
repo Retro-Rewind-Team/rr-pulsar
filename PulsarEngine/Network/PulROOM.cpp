@@ -6,6 +6,7 @@
 #include <Settings/Settings.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <Network/Mogi.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
 
 namespace Pulsar {
@@ -136,6 +137,10 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     Pulsar::System* system = Pulsar::System::sInstance;
     PulROOM* destPacket = packetHolder->packet;
+    if (destPacket->messageType == 1 && destPacket->message == 0 && Mogi::IsEnabled() &&
+        Mogi::IsPublicRoom() && sub.playerCount < 12) {
+        destPacket->messageType = 0;
+    }
     if (destPacket->messageType == 1 && sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);  // this has been changed by copy so it's safe to do this
 
@@ -289,12 +294,17 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
             }
         destPacket->raceCount = raceCount;
 
+        Mogi::PrepareHostRoom(destPacket->hostSystemContext2, destPacket->raceCount);
+        if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
+            destPacket->hostSystemContext |= 1 << PULSAR_EXTENDEDTEAMS;
+        }
+
         WriteBlockedTracksToPacket(destPacket);
 
         ConvertROOMPacketToData(*destPacket);
         (void)ApplyHostContextLocally(destPacket->hostSystemContext, destPacket->hostSystemContext2);
 
-        if (extendedTeams) {
+        if (extendedTeams || (Mogi::IsActive() && Mogi::IsTeamFormat())) {
             UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
         }
     }
@@ -302,20 +312,29 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
     const bool isExtendedTeams = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
     const bool isUpdateTeamMessage = destPacket->messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS;
     const bool isStartVSRaceMessage = destPacket->messageType == 1 && (destPacket->message == 0 || destPacket->message == 2 || destPacket->message == 3);
-    if ((isUpdateTeamMessage || (isStartVSRaceMessage && isExtendedTeams)) && sub.localAid == sub.hostAid) {
+    const bool isMogiTeamStart = Mogi::IsActive() && Mogi::IsTeamFormat() && isStartVSRaceMessage;
+    if ((isUpdateTeamMessage || (isStartVSRaceMessage && isExtendedTeams) || isMogiTeamStart) &&
+        sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);
-        const UI::ExtendedTeamPlayer* playerInfo = UI::ExtendedTeamManager::sInstance->GetPlayerInfo();
 
         memset(destPacket->extendedTeams, 0xff, sizeof(destPacket->extendedTeams));
-        for (int i = 0; i < 12; ++i) {
-            if (playerInfo[i].playerIdx >= 12)
-                continue;
+        if (isMogiTeamStart) {
+            for (int i = 0; i < 12; ++i) {
+                const u8 byte = i / 2;
+                const u8 shift = (i % 2) * 4;
+                destPacket->extendedTeams[byte] &= ~(0x0F << shift);
+                destPacket->extendedTeams[byte] |= (Mogi::GetTeamForPlayer(i) & 0x0F) << shift;
+            }
+        } else {
+            const UI::ExtendedTeamPlayer* playerInfo = UI::ExtendedTeamManager::sInstance->GetPlayerInfo();
+            for (int i = 0; i < 12; ++i) {
+                if (playerInfo[i].playerIdx >= 12) continue;
 
-            const u8 byte = i / 2;
-            const u8 shift = (i % 2) * 4;
-
-            destPacket->extendedTeams[byte] &= ~(0x0F << shift);
-            destPacket->extendedTeams[byte] |= (playerInfo[i].team & 0x0F) << shift;
+                const u8 byte = i / 2;
+                const u8 shift = (i % 2) * 4;
+                destPacket->extendedTeams[byte] &= ~(0x0F << shift);
+                destPacket->extendedTeams[byte] |= (playerInfo[i].team & 0x0F) << shift;
+            }
         }
     }
 }
@@ -336,6 +355,7 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
     // START msg sent by the host, size check should always be guaranteed in theory
     if (src.messageType == 1 && !isHost && packetHolder->packetSize == sizeof(PulROOM)) {
         ConvertROOMPacketToData(src);
+        Mogi::ApplyHostRoom(src.hostSystemContext2);
 
         // Get context from host packet (no need to read local settings - host values take precedence)
         Network::Mgr& netMgr = Pulsar::System::sInstance->netMgr;

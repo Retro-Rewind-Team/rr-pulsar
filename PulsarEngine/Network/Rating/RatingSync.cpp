@@ -10,6 +10,7 @@
 #include <Network/GPReport.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/Rating/MogiRating.hpp>
 #include <Network/Rating/RatingSync.hpp>
 #include <Network/WiiLink.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -22,6 +23,7 @@ static const u32 s_nhttpWorkBufSize = 0x1000;
 static u32 s_requestGeneration = 0;
 static float s_requestStartVr = 0.0f;
 static float s_requestStartBr = 0.0f;
+static float s_requestStartMMR = 0.0f;
 static void* s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
 static s32 s_pendingInitialReportProfileId = 0;
@@ -92,6 +94,7 @@ void ReportCurrentRatings(u32 licenseId) {
     char buffer[64];
     if (snprintf(buffer, sizeof(buffer), "vr=%d|br=%d", vrScaled, brScaled) < 0) return;
     Network::Report("wl:mkw_vrbr", buffer);
+    MogiRating::ReportCurrentMMR(licenseId);
 }
 
 static bool IsRequestStillRelevant(const RequestCtx& ctx) {
@@ -106,7 +109,8 @@ static bool IsRequestStillRelevant(const RequestCtx& ctx) {
 
     const float currentVr = GetUserVR(ctx.licenseId);
     const float currentBr = GetUserBR(ctx.licenseId);
-    if (currentVr != s_requestStartVr || currentBr != s_requestStartBr) return false;
+    const float currentMMR = MogiRating::GetUserMMR(ctx.licenseId);
+    if (currentVr != s_requestStartVr || currentBr != s_requestStartBr || currentMMR != s_requestStartMMR) return false;
 
     return true;
 }
@@ -145,12 +149,21 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
 
     int vrScaled = 0;
     int brScaled = 0;
-    if (!ParseJsonScaledValue(json, "\"vr\"", vrScaled)) return;
-    if (!ParseJsonScaledValue(json, "\"br\"", brScaled)) return;
+    int mmrScaled = 0;
+    const bool hasVR = ParseJsonScaledValue(json, "\"vr\"", vrScaled);
+    const bool hasBR = ParseJsonScaledValue(json, "\"br\"", brScaled);
+    const bool hasMMR = ParseJsonScaledValue(json, "\"mmr\"", mmrScaled);
+    if (!hasVR && !hasBR && !hasMMR) return;
 
     SetSyncReportingSuppressed(true);
-    SaveProfileVR(ctx->profileId, (float)vrScaled / 100.0f);
-    SaveProfileBR(ctx->profileId, (float)brScaled / 100.0f);
+    if (hasVR && hasBR && vrScaled >= 1 && brScaled >= 1) {
+        SaveProfileVR(ctx->profileId, (float)vrScaled / 100.0f);
+        SaveProfileBR(ctx->profileId, (float)brScaled / 100.0f);
+    }
+    if (hasMMR && mmrScaled >= (int)(MogiRating::MIN_MMR * 100.0f) &&
+        mmrScaled <= (int)(MogiRating::MAX_MMR * 100.0f)) {
+        MogiRating::SaveProfileMMR(ctx->profileId, (float)mmrScaled / 100.0f);
+    }
     SetSyncReportingSuppressed(false);
 }
 
@@ -172,6 +185,7 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     ++s_requestGeneration;
     s_requestStartVr = GetUserVR(licenseId);
     s_requestStartBr = GetUserBR(licenseId);
+    s_requestStartMMR = MogiRating::GetUserMMR(licenseId);
 
     s_requestCtx.generation = s_requestGeneration;
     s_requestCtx.profileId = profileId;

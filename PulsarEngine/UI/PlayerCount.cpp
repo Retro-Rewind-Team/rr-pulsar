@@ -1,5 +1,6 @@
 #include <UI/PlayerCount.hpp>
 #include <Settings/Settings.hpp>
+#include <Network/Mogi.hpp>
 
 // Callbacks that can occur during server browsing operations
 typedef enum {
@@ -120,7 +121,7 @@ static bool IsCompetitiveMatchmakingEnabled() {
     const u8 timeoutSetting = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
         Pulsar::Settings::SETTINGSTYPE_ONLINE,
         Pulsar::RADIO_INFINITEMATCHMAKINGTIMEOUT);
-    return timeoutSetting == Pulsar::MATCHMAKINGTIMEOUT_INFINITE;
+    return timeoutSetting == Pulsar::MATCHMAKINGTIMEOUT_INFINITE || Pulsar::Mogi::IsEnabled();
 }
 
 static const char* GetCompetitiveServerFilter(const char* serverFilter, char* expandedFilter, u32 filterSize) {
@@ -134,12 +135,16 @@ static const char* GetCompetitiveServerFilter(const char* serverFilter, char* ex
 
     const int prefixLength = suspendPos - serverFilter;
     const char* suffix = suspendPos + strlen(suspendNeedle);
+    const char* roomFilter = Pulsar::Mogi::IsEnabled() ?
+        "((dwc_suspend = 0 or numplayers < 11) and em > 0)" :
+        "(dwc_suspend = 0 or numplayers < 11)";
     const int written = snprintf(
         expandedFilter,
         filterSize,
-        "%.*s(dwc_suspend = 0 or numplayers < 11)%s",
+        "%.*s%s%s",
         prefixLength,
         serverFilter,
+        roomFilter,
         suffix);
     if (written <= 0 || written >= static_cast<int>(filterSize)) return serverFilter;
 
@@ -149,6 +154,7 @@ static const char* GetCompetitiveServerFilter(const char* serverFilter, char* ex
 static int RR_numPlayers150cc = 0;
 static int RR_numPlayersCT = 0;
 static int RR_numPlayersRT = 0;
+static int RR_numPlayersMogi = 0;
 
 static int RR_numPlayers200cc = 0;
 static int RR_numPlayersOTT = 0;
@@ -165,6 +171,10 @@ void PlayerCount::GetNumbersMain(int& nRetro, int& nCT, int& nRT) {
     nRetro = RR_numPlayers150cc;
     nCT = RR_numPlayersCT;
     nRT = RR_numPlayersRT;
+}
+
+void PlayerCount::GetNumbersMogi(int& nMogi) {
+    nMogi = RR_numPlayersMogi;
 }
 
 void PlayerCount::GetNumbersOther(int& n200, int& nOtt, int& nIR) {
@@ -197,6 +207,7 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
         int numElse = 0;
         int numRegs = 0;
         int RR_localRetro = 0, RR_localCT = 0, RR_localRT = 0;
+        int RR_localMogi = 0;
         int RR_local200cc = 0, RR_localOTT = 0, RR_localIR = 0;
         int BT_localRegular = 0, BT_localRegularELIM = 0;
         for (int i = 0; i < ServerBrowserCount(sb); i++) {
@@ -210,7 +221,9 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
 
             int numplayers = SBServerGetIntValueA(server, "numplayers", -1) + 1;
             if (strstr(region, "vs")) {
-                if (regionID == 0x0A) {
+                if (regionID == Pulsar::Mogi::REGION) {
+                    RR_localMogi += numplayers;
+                } else if (regionID == 0x0A) {
                     RR_localRetro += numplayers;
                 } else if (regionID == 0x0C) {
                     RR_local200cc += numplayers;
@@ -240,6 +253,7 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
         RR_numPlayers150cc = RR_localRetro;
         RR_numPlayersCT = RR_localCT;
         RR_numPlayersRT = RR_localRT;
+        RR_numPlayersMogi = RR_localMogi;
 
         RR_numPlayers200cc = RR_local200cc;
         RR_numPlayersOTT = RR_localOTT;
@@ -270,7 +284,8 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
 // 0x65 == ev
 // 0x66 == eb
 // 0x67 == p
-static const u8 basicFields[] = {0x08, 0x0a, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x64, 0x65, 0x66, 0x67};
+// 0x68 == em
+static const u8 basicFields[] = {0x08, 0x0a, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x64, 0x65, 0x66, 0x67, 0x68};
 
 bool hasQR2Initialized = false;
 int hook_QR2Startup(u32 id) {
@@ -287,6 +302,7 @@ int hook_QR2Startup(u32 id) {
     qr2_register_keyA(0x65, "ev");
     qr2_register_keyA(0x66, "eb");
     qr2_register_keyA(0x67, "p");
+    qr2_register_keyA(0x68, "em");
 
     hasQR2Initialized = true;
 

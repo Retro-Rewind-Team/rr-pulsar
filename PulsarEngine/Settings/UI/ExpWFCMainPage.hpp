@@ -75,6 +75,7 @@ class ExpWFCModeSel : public Pages::WFCModeSelect {
 
     PushButton ctButton;
     PushButton regButton;
+    PushButton mogiButton;
     PushButton twoHundredButton;
     PushButton ottButton;
     PushButton itemRainButton;
@@ -85,6 +86,7 @@ class ExpWFCModeSel : public Pages::WFCModeSelect {
     u32 region;
     static const u32 ctButtonId = 4;
     static const u32 regButtonId = 5;
+    static const u32 mogiButtonId = 13;
     static const u32 twoHundredButtonId = 7;
     static const u32 ottButtonId = 6;
     static const u32 itemRainButtonId = 9;

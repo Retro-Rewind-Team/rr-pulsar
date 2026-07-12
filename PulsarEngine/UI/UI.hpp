@@ -182,6 +182,9 @@ enum BMG {
     // Regular Track
     BMG_REGULAR_BUTTON = 0x6907,
 
+    // Mogi
+    BMG_MOGI_BUTTON = 0x691f,
+
     // OTT
     BMG_OTT_WW_BOTTOM = 0x6903,
     BMG_OTT_BUTTON = 0x6904,
