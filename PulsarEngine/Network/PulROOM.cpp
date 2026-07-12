@@ -77,13 +77,15 @@ static void WriteBlockedTracksToPacket(PulROOM* packet) {
 }
 
 static void HandleExtendedTeamUpdates(const PulROOM& packet) {
+    UI::ExtendedTeamManager* manager = UI::ExtendedTeamManager::sInstance;
     UI::ExtendedTeamSelect* ets = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
     for (int id = 0; id < 12; ++id) {
         const u8 byte = id / 2;
         const u8 shift = (id % 2) * 4;
         UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F);
         if (team != 0x0F) {
-            ets->UpdatePlayerTeam(id, static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F));
+            manager->SetPlayerTeam(id, team);
+            if (ets != nullptr) ets->UpdatePlayerTeam(id, team);
         }
     }
 }
@@ -137,10 +139,6 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     Pulsar::System* system = Pulsar::System::sInstance;
     PulROOM* destPacket = packetHolder->packet;
-    if (destPacket->messageType == 1 && destPacket->message == 0 && Mogi::IsEnabled() &&
-        Mogi::IsPublicRoom() && sub.playerCount < 12) {
-        destPacket->messageType = 0;
-    }
     if (destPacket->messageType == 1 && sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);  // this has been changed by copy so it's safe to do this
 
@@ -297,6 +295,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         Mogi::PrepareHostRoom(destPacket->hostSystemContext2, destPacket->raceCount);
         if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
             destPacket->hostSystemContext |= 1 << PULSAR_EXTENDEDTEAMS;
+            UI::ExtendedTeamManager::sInstance->ConfigureMogiTeams();
         }
 
         WriteBlockedTracksToPacket(destPacket);
@@ -374,6 +373,9 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
 
         // Extended Team VS start
         if (isExtendedTeams) {
+            if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
+                UI::ExtendedTeamManager::sInstance->ConfigureMogiTeams();
+            }
             HandleExtendedTeamUpdates(src);
             UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
         }

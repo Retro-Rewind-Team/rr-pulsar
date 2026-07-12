@@ -15,6 +15,7 @@ bool IsActive();
 bool IsTeamFormat();
 bool IsPublicRoom();
 bool CanStartRace();
+u32 GetLobbySeed();
 u8 GetTeamForPlayer(u8 playerIdx);
 void PrepareHostRoom(u32& hostContext2, u8& raceCount);
 void ApplyHostRoom(u32 hostContext2);

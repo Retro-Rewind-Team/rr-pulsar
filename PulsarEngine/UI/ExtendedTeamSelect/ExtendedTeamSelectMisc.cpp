@@ -15,6 +15,7 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBalloon.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceRankNum.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -146,6 +147,13 @@ bool PageVote_FillVoteControl(Pages::Vote* _this, u32 playerId) {
 kmCall(0x80643b3c, PageVote_FillVoteControl);
 
 void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr* _this) {
+    if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
+        ExtendedTeamManager::sInstance->ConfigureMogiTeams();
+        for (u8 i = 0; i < _this->playerCount; ++i) {
+            const ExtendedTeamID team = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(_this->infos[i].aid, _this->infos[i].hudSlotid);
+            if (team != TEAM_COUNT) _this->infos[i].team = static_cast<Team>(team);
+        }
+    }
     _this->PrepareRace();
     if (ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->VotePageSync();

@@ -10,6 +10,7 @@
 #include <MarioKartWii/Mii/Mii.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/Rating/MogiRating.hpp>
+#include <Network/Mogi.hpp>
 #include <Settings/Settings.hpp>
 
 namespace Pulsar {
@@ -138,6 +139,15 @@ bool HasOriginalMiisStored() {
 }
 
 static void ReplaceUserPacketMiiForServer(RKNet::USERHandler* handler) {
+    if (Mogi::IsEnabled()) {
+        RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+        if (rksys != nullptr) {
+            const u16 mmr = static_cast<u16>(MogiRating::GetUserMMR(rksys->curLicenseId));
+            handler->toSendPacket.vr = mmr;
+            handler->toSendPacket.br = mmr;
+        }
+    }
+
     if (!IsStreamerModeActiveForServer()) {
         s_originalMiisStored = false;
         return;
@@ -177,13 +187,13 @@ asm void AsmHook_AfterMiiCopyLoop() {
     addi    r1, r1, 0x20
     mtlr    r12
 
-    // Execute the replaced instruction: lis r4, -0x7f64 (0x80a0)
-    lis     r4, -0x7f64
+    // Execute the replaced instruction: lwz r3, 0x6000(r30)
+    lwz     r3, 0x6000(r30)
 
     // Return
     blr
 }
-kmCall(0x80663088, AsmHook_AfterMiiCopyLoop);
+kmCall(0x8066315c, AsmHook_AfterMiiCopyLoop);
 
 static wchar_t* GetLoginMiiName(Mii* mii) {
     if (IsStreamerModeActiveForServer()) {

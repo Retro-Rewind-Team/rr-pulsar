@@ -8,11 +8,15 @@
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/UI/Text/Text.hpp>
 #include <UI/UI.hpp>
+#include <Network/Mogi.hpp>
+#include <Network/Rating/MogiRating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 
 namespace Pulsar {
 namespace PointRating {
+
+static wchar_t s_mogiRatingLabel[] = L"MMR";
 
 static u8 GetNameRatingIcon(u8 wheelType, u8 starRating) {
     return wheelType * 4 + starRating;
@@ -21,6 +25,26 @@ kmBranch(0x805e3d38, GetNameRatingIcon);
 
 static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool isLocal, bool isBR, bool* hasDecimal) {
     *hasDecimal = false;
+    if (Mogi::IsActive()) {
+        if (isLocal) {
+            RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+            if (mgr->infos[playerId].hudSlotid == 0 && rksys && rksys->curLicenseId >= 0) {
+                *hasDecimal = true;
+                return MogiRating::GetUserMMR(rksys->curLicenseId);
+            }
+            return static_cast<float>(mgr->infos[playerId].vr);
+        }
+
+        const u8 aid = mgr->infos[playerId].aid;
+        const u8 slot = mgr->infos[playerId].hudSlotid;
+        if (aid < 12 && slot < 2) {
+            *hasDecimal = true;
+            return static_cast<float>(mgr->infos[playerId].vr) +
+                   static_cast<float>(remoteDecimalVR[aid][slot]) / 100.0f;
+        }
+        return static_cast<float>(mgr->infos[playerId].vr);
+    }
+
     if (isLocal) {
         RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
         if (mgr->infos[playerId].hudSlotid == 0 && rksys && rksys->curLicenseId >= 0) {
@@ -89,8 +113,15 @@ static void FillVRControl(Pages::VR* page, u32 idx, u32 playerId, u32 team, u8 t
             ctrl.SetTextBoxMessage("point_2", valMsg, &ptsInfo);
             ctrl.SetTextBoxMessage("point_sha_2", valMsg, &ptsInfo);
             if (unitMsg) {
-                ctrl.SetTextBoxMessage("pts_2", unitMsg);
-                ctrl.SetTextBoxMessage("pts_sha_2", unitMsg);
+                if (Mogi::IsActive()) {
+                    Text::Info unitInfo;
+                    unitInfo.strings[0] = s_mogiRatingLabel;
+                    ctrl.SetTextBoxMessage("pts_2", UI::BMG_TEXT, &unitInfo);
+                    ctrl.SetTextBoxMessage("pts_sha_2", UI::BMG_TEXT, &unitInfo);
+                } else {
+                    ctrl.SetTextBoxMessage("pts_2", unitMsg);
+                    ctrl.SetTextBoxMessage("pts_sha_2", unitMsg);
+                }
             }
         }
     } else {

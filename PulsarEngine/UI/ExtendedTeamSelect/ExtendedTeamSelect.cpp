@@ -428,6 +428,18 @@ void ExtendedTeamSelect::RandomizeTeamColors() {
     }
 }
 
+void ExtendedTeamSelect::RandomizeTeamColors(u32 seed) {
+    ExtendedTeamSelect::ResetTeamColors();
+
+    for (u32 i = TEAM_COUNT; i > 1; --i) {
+        seed = seed * 1664525 + 1013904223;
+        const u32 other = seed % i;
+        const ExtendedTeamID color = teamColors[i - 1];
+        teamColors[i - 1] = teamColors[other];
+        teamColors[other] = color;
+    }
+}
+
 void ExtendedTeamSelect::GetTeamColor(ExtendedTeamID team, u8& r, u8& g, u8& b) {
     if (team >= TEAM_COUNT) {
         r = 0;

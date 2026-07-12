@@ -8,6 +8,8 @@
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
+#include <Network/Mogi.hpp>
+#include <Network/Rating/MogiRating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
@@ -27,19 +29,22 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
 
     const ExpSELECTHandler& handler = ExpSELECTHandler::Get();
     const bool isBattle = (handler.mode == RKNet::ONLINEMODE_PUBLIC_BATTLE || handler.mode == RKNet::ONLINEMODE_PRIVATE_BATTLE);
+    const bool isMogi = Mogi::IsActive();
     const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
 
     float rating;
     if (rksys) {
         u32 licenseId = rksys->curLicenseId;
-        if (isBattle)
+        if (isMogi)
+            rating = MogiRating::GetUserMMR(licenseId);
+        else if (isBattle)
             rating = PointRating::GetUserBR(licenseId);
         else
             rating = PointRating::GetUserVR(licenseId);
 
         float decimal = rating - (int)rating;
         src->decimalVR[0] = (u8)(decimal * 100.0f + 0.5f);
-        if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
+        if (isMogi || (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO))) {
             src->playersData[0].sumPoints = static_cast<u16>(rating);
         }
     } else {
@@ -52,9 +57,9 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
         src->playersData[1].character = static_cast<u8>(sectionParams->characters[1]);
         src->playersData[1].kart = static_cast<u8>(sectionParams->karts[1]);
-        src->playersData[1].sumPoints = 0;
+        src->playersData[1].sumPoints = isMogi ? static_cast<u16>(rating) : 0;
         const Racedata* racedata = Racedata::sInstance;
-        if (racedata != nullptr) {
+        if (!isMogi && racedata != nullptr) {
             const RacedataScenario& menuScenario = racedata->menusScenario;
             const u8 guestPlayerId = menuScenario.settings.hudPlayerIds[1];
             if (guestPlayerId < 12) {
@@ -62,6 +67,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
             }
         }
         src->playersData[1].starRank = 0;
+        if (isMogi) src->decimalVR[1] = static_cast<u8>((rating - (int)rating) * 100.0f + 0.5f);
     }
 
     const Network::Mgr& netMgr = system->netMgr;

@@ -4,6 +4,7 @@
 #include <MarioKartWii/System/random.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -251,6 +252,27 @@ void ExtendedTeamManager::VotePageSync() {
     }
 
     memcpy(this->players, newPlayers, sizeof(ExtendedTeamPlayer) * 12);
+}
+
+void ExtendedTeamManager::ConfigureMogiTeams() {
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return;
+
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const u8 playerCount = sub.playerCount < 12 ? sub.playerCount : 12;
+    if (playerCount == 0) return;
+
+    this->ResetPlayers();
+    for (u8 i = 0; i < playerCount; ++i) {
+        const u8 aid = controller->aidsBelongingToPlayerIds[i];
+        if (aid == 0xFF) continue;
+
+        const u8 playerIdOnConsole = i > 0 && controller->aidsBelongingToPlayerIds[i - 1] == aid ? 1 : 0;
+        this->SetPlayerIndexes(i, aid * 2 + playerIdOnConsole, aid, playerIdOnConsole);
+        this->SetPlayerTeam(i, static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(i)));
+    }
+    ExtendedTeamSelect::RandomizeTeamColors(Mogi::GetLobbySeed());
+    this->hasFriendRoomStarted = true;
 }
 
 void ExtendedTeamManager::ConfigureOfflineTeams() {

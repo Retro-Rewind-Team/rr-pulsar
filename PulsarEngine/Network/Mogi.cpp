@@ -19,12 +19,15 @@ static const u32 MOGI_TEAM_SIZE_2 = 0x10000000;
 static const u32 MOGI_TEAM_SIZE_3 = 0x20000000;
 static const u32 MOGI_TEAM_SIZE_4 = 0x00000000;
 static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
+static const u8 MOGI_RACE_COUNT = 12;
 
 static bool sActive = false;
 static bool sEnabled = false;
 static bool sTeamFormat = false;
 static u8 sPlayersPerTeam = 2;
 static u8 sTeamByPlayer[12] = {};
+static u32 sLobbyGroupId = 0;
+static u32 sLobbySeed = 0;
 static bool sMMRFinalized = false;
 static bool sPendingDisconnect = false;
 static bool sStartReported = false;
@@ -37,6 +40,15 @@ bool IsEnabled() {
 
 void SetEnabled(bool enabled) {
     sEnabled = enabled;
+    if (!enabled) {
+        sActive = false;
+        sTeamFormat = false;
+        sLobbyGroupId = 0;
+        sLobbySeed = 0;
+        sMMRFinalized = false;
+        sPendingDisconnect = false;
+        sStartReported = false;
+    }
 }
 
 bool IsPublicRoom() {
@@ -65,10 +77,13 @@ static void UpdateActiveFromRoom() {
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    if (!sActive) {
+    if (!sActive || sLobbyGroupId != sub.groupId) {
+        sLobbyGroupId = sub.groupId;
         SelectHostFormat(sub.groupId);
         sActive = true;
         sMMRFinalized = false;
+        sPendingDisconnect = false;
+        sStartReported = false;
     }
 }
 
@@ -94,8 +109,13 @@ u8 GetTeamForPlayer(u8 playerIdx) {
     return sTeamByPlayer[playerIdx < 12 ? playerIdx : 0];
 }
 
+u32 GetLobbySeed() {
+    return sLobbySeed;
+}
+
 static void SelectHostFormat(u32 groupId) {
-    u32 seed = groupId ^ 0x4D4F4749;
+    sLobbySeed = groupId ^ 0x4D4F4749;
+    u32 seed = sLobbySeed;
     sTeamFormat = (seed & 1) != 0;
     switch ((seed >> 1) & 3) {
         case 0:
@@ -123,7 +143,7 @@ static void SelectHostFormat(u32 groupId) {
 }
 
 void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
-    if (!IsEnabled() || !IsPublicRoom() || !CanStartRace()) return;
+    if (!IsEnabled() || !IsPublicRoom()) return;
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
@@ -146,7 +166,8 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
         hostContext2 |= MOGI_TEAM_SIZE_3;
     else if (sPlayersPerTeam == 6)
         hostContext2 |= MOGI_TEAM_SIZE_6;
-    raceCount = 11;
+    // ROOM stores the zero-based final race index: 11 represents 12 races.
+    raceCount = MOGI_RACE_COUNT - 1;
 }
 
 void ApplyHostRoom(u32 hostContext2) {
@@ -228,7 +249,7 @@ static float GetMMRDelta(float mmr, float performance) {
 }
 
 void OnFinalRace(const RacedataScenario& scenario) {
-    if (!sActive || sMMRFinalized || scenario.settings.raceNumber < 11) return;
+    if (!sActive || sMMRFinalized || scenario.settings.raceNumber < MOGI_RACE_COUNT - 1) return;
     sMMRFinalized = true;
 
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;

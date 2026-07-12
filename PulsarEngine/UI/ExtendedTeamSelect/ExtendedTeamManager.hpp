@@ -110,6 +110,7 @@ class ExtendedTeamManager {
     void ResetPlayers();
 
     void VotePageSync();
+    void ConfigureMogiTeams();
     void ConfigureOfflineTeams();
 
     Status GetStatus() {
