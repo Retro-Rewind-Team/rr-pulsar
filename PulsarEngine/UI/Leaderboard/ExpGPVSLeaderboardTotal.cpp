@@ -2,6 +2,7 @@
 #include <UI/Leaderboard/LeaderboardDisplay.hpp>
 #include <Settings/Settings.hpp>
 #include <PulsarSystem.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -22,6 +23,7 @@ void ExpGPVSLeaderboardTotal::OnUpdate() {
 
 void ExpGPVSLeaderboardTotal::BeforeEntranceAnimations() {
     fillTotalLeaderboardResults(*this);
+    Mogi::OnFinalResults();
 }
 
 }  // namespace UI

@@ -8,7 +8,7 @@ namespace MogiRating {
 
 static const float MIN_MMR = 1.0f;
 static const float MAX_MMR = 300.0f;
-static const float DEFAULT_MMR = 100.0f;
+static const float DEFAULT_MMR = 10.0f;
 
 float GetUserMMR(u32 licenseId);
 void SetUserMMR(u32 licenseId, float mmr);

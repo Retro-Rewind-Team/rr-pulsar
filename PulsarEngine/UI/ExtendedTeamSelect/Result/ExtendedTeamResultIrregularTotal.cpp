@@ -1,4 +1,5 @@
 #include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultIrregularTotal.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -17,6 +18,7 @@ PageId ExtendedTeamResultIrregularTotal::GetNextPage() const {
 
 void ExtendedTeamResultIrregularTotal::OnInit() {
     Pages::GPVSLeaderboardTotal::OnInit();
+    Mogi::OnFinalResults();
 
     this->AddControl(this->GetRowCount(), this->textMessage, 0);
 

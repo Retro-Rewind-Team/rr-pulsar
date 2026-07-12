@@ -109,7 +109,7 @@ static void UpdateActiveFromRoom() {
         sPendingDisconnect = false;
         sStartReported = false;
     }
-    System::sInstance->netMgr.racesPerGP = 11;
+    System::sInstance->netMgr.racesPerGP = 0;
 }
 
 void UpdateRoomState() {
@@ -280,14 +280,29 @@ static float GetMMRDelta(float mmr, float performance) {
     return delta;
 }
 
-void OnFinalRace(const RacedataScenario& scenario) {
-    if (!sActive || sMMRFinalized || scenario.settings.raceNumber < MOGI_RACE_COUNT - 1) return;
-    sMMRFinalized = true;
+static u8 GetFinalRaceNumber() {
+    if (System::sInstance == nullptr) return MOGI_RACE_COUNT - 1;
+    return System::sInstance->netMgr.racesPerGP;
+}
+
+void OnFinalResults() {
+    if (Racedata::sInstance == nullptr) return;
+
+    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    if (!sActive || sMMRFinalized) return;
+
+    u8 currentRaceNumber = scenario.settings.raceNumber;
+    if (SectionMgr::sInstance != nullptr && SectionMgr::sInstance->sectionParams != nullptr) {
+        const s32 onlineRaceNumber = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber;
+        if (onlineRaceNumber > currentRaceNumber) currentRaceNumber = static_cast<u8>(onlineRaceNumber);
+    }
+    if (currentRaceNumber < GetFinalRaceNumber()) return;
 
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr) return;
 
     u8 localPlayersSeen = 0;
+    bool updated = false;
     for (u8 i = 0; i < scenario.playerCount; ++i) {
         if (scenario.players[i].playerType != PLAYER_REAL_LOCAL) continue;
         if (localPlayersSeen++ != 0) continue;
@@ -297,9 +312,13 @@ void OnFinalRace(const RacedataScenario& scenario) {
         const float performance = GetPerformance(rank, count);
         const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
         MogiRating::SetUserMMR(rksys->curLicenseId, currentMMR + GetMMRDelta(currentMMR, performance));
+        updated = true;
         break;
     }
-    sPendingDisconnect = true;
+    if (updated) {
+        sMMRFinalized = true;
+        sPendingDisconnect = true;
+    }
 }
 
 void ProcessPendingDisconnect() {
@@ -309,9 +328,14 @@ void ProcessPendingDisconnect() {
     const bool isMogiResults = sectionId == SECTION_P1_WIFI_FRIEND_VS ||
                                sectionId == SECTION_P1_WIFI_FRIEND_TEAMVS ||
                                sectionId == SECTION_P2_WIFI_FRIEND_VS ||
-                               sectionId == SECTION_P2_WIFI_FRIEND_TEAMVS;
+                               sectionId == SECTION_P2_WIFI_FRIEND_TEAMVS ||
+                               sectionId == SECTION_P1_WIFI_VS ||
+                               sectionId == SECTION_P2_WIFI_VS ||
+                               sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE ||
+                               sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE;
     if (isMogiResults) {
         sResultsSectionSeen = true;
+        SectionMgr::sInstance->SetNextSection(SECTION_MAIN_MENU_FROM_MENU, 0);
         return;
     }
 

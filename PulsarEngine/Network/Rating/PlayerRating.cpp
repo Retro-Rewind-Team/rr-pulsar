@@ -6,7 +6,6 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Network/PacketExpansion.hpp>
-#include <Network/Mogi.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <include/c_wchar.h>
 
@@ -261,7 +260,6 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
         lastRaceDeltas[i] = next - oldRating;
     }
 
-    Mogi::OnFinalRace(*scenario);
 }
 kmRuntimeUse(0x8052e950);
 static void ApplyRatingPatch() {
