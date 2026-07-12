@@ -234,6 +234,12 @@ static void BeforeROOMSend(RKNet::PacketHolder<void>* packetHolder, const void* 
             destPacket->customItemsBitfield = 0x7FFFF;
         }
 
+        if (Mogi::IsEnabled()) {
+            regsOnly = 0;
+            retrosOnly = 1;
+            ctsOnly = 0;
+        }
+
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT |  // ott
                                          (ottOnline == OTTSETTING_ONLINE_FEATHER) << PULSAR_FEATHER |  // ott feather
                                          (settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED) << PULSAR_UMTS |  // ott umts

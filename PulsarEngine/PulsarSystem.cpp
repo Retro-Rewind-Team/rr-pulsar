@@ -407,6 +407,12 @@ void System::UpdateContext() {
                                          isItemBoxRespawnFast);
     }
 
+    if (Mogi::IsEnabled()) {
+        isTrackSelectionRegs = false;
+        isTrackSelectionRetros = true;
+        isTrackSelectionCts = false;
+    }
+
     this->netMgr.hostContext = newContext;
     this->netMgr.hostContext2 = newContext2;
 
