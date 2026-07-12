@@ -49,6 +49,8 @@ class ExtendedTeamSelect : public Pages::MenuInteractable {
     static void RandomizeTeamColors();
     static void RandomizeTeamColors(u32 seed);
     static void ResetTeamColors();
+    static void GetTeamColorOrder(u8* colors);
+    static void SetTeamColorOrder(const u8* colors);
     static void GetTeamColor(ExtendedTeamID team, u8& r, u8& g, u8& b);
 
    private:

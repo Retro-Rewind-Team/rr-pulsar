@@ -23,7 +23,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         if (playerCount >= 6)
             break;
 
-        if (ExtendedTeamManager::sInstance->GetPlayerTeam(i) == this->teamId) {
+        if (static_cast<ExtendedTeamID>(scenario.players[i].team) == this->teamId) {
             this->players[playerCount].playerIdx = i;
             PageId pageId = this->parentGroup->parentPage->pageId;
             if (pageId == (PageId)PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL) {

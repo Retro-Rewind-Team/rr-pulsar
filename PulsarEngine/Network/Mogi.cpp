@@ -5,9 +5,11 @@
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Network/Mogi.hpp>
+#include <Network/PacketExpansion.hpp>
 #include <Network/GPReport.hpp>
 #include <Network/Rating/MogiRating.hpp>
 #include <Settings/Settings.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
 
 namespace Pulsar {
 namespace Mogi {
@@ -24,6 +26,7 @@ static const u8 MOGI_RACE_COUNT = 12;
 static bool sActive = false;
 static bool sEnabled = false;
 static bool sTeamFormat = false;
+static bool sForceTwoVsTwo = false;
 static u8 sPlayersPerTeam = 2;
 static u8 sTeamByPlayer[12] = {};
 static u32 sLobbyGroupId = 0;
@@ -31,9 +34,17 @@ static u32 sLobbySeed = 0;
 static u16 sRemoteMMR[12][2];
 static bool sMMRFinalized = false;
 static bool sPendingDisconnect = false;
+static bool sResultsSectionSeen = false;
 static bool sStartReported = false;
 
-static void SelectHostFormat(u32 groupId);
+static void ReportTeamMap(const char* label) {
+    OS::Report("[Mogi] %s active=%u teamFormat=%u playersPerTeam=%u map=%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
+               label, sActive, sTeamFormat, sPlayersPerTeam, sTeamByPlayer[0], sTeamByPlayer[1],
+               sTeamByPlayer[2], sTeamByPlayer[3], sTeamByPlayer[4], sTeamByPlayer[5], sTeamByPlayer[6],
+               sTeamByPlayer[7], sTeamByPlayer[8], sTeamByPlayer[9], sTeamByPlayer[10], sTeamByPlayer[11]);
+}
+
+static void SelectLobbyFormat(u32 groupId);
 
 static void ResetRemoteMMR() {
     for (u8 aid = 0; aid < 12; ++aid) {
@@ -58,11 +69,13 @@ void SetEnabled(bool enabled) {
     if (!enabled) {
         sActive = false;
         sTeamFormat = false;
+        sForceTwoVsTwo = false;
         sLobbyGroupId = 0;
         sLobbySeed = 0;
         ResetRemoteMMR();
         sMMRFinalized = false;
         sPendingDisconnect = false;
+        sResultsSectionSeen = false;
         sStartReported = false;
     }
 }
@@ -84,7 +97,11 @@ bool IsPublicRoom() {
 
 static void UpdateActiveFromRoom() {
     if (!IsEnabled() || !IsPublicRoom()) {
-        if (!sPendingDisconnect) {
+        RKNet::Controller* controller = RKNet::Controller::sInstance;
+        const bool isConvertedFriendRoom = controller != nullptr &&
+                                           (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                                            controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+        if (!sPendingDisconnect && !(sActive && isConvertedFriendRoom)) {
             sActive = false;
             sStartReported = false;
         }
@@ -93,9 +110,13 @@ static void UpdateActiveFromRoom() {
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    if (sub.groupId == 0) return;
     if (!sActive || sLobbyGroupId != sub.groupId) {
+        OS::Report("[Mogi] new room group=%u oldGroup=%u roomType=%u players=%u\n", sub.groupId, sLobbyGroupId,
+                   controller->roomType, sub.playerCount);
         sLobbyGroupId = sub.groupId;
-        SelectHostFormat(sub.groupId);
+        sForceTwoVsTwo = false;
+        SelectLobbyFormat(sub.groupId);
         sActive = true;
         ResetRemoteMMR();
         sMMRFinalized = false;
@@ -103,6 +124,10 @@ static void UpdateActiveFromRoom() {
         sStartReported = false;
     }
     System::sInstance->netMgr.racesPerGP = 11;
+}
+
+void UpdateRoomState() {
+    UpdateActiveFromRoom();
 }
 
 bool IsActive() {
@@ -129,6 +154,35 @@ u8 GetTeamForPlayer(u8 playerIdx) {
 
 void SetTeamForPlayer(u8 playerIdx, u8 team) {
     if (playerIdx < 12 && team < 6) sTeamByPlayer[playerIdx] = team;
+}
+
+void FillRoomData(::Pulsar::Network::MogiRoomData& roomData) {
+    roomData.magic = ROOM_PACKET_MAGIC;
+    roomData.teamFormat = sTeamFormat ? 1 : 0;
+    roomData.playersPerTeam = sPlayersPerTeam;
+    for (u8 i = 0; i < 12; ++i) roomData.teamByPlayer[i] = sTeamByPlayer[i];
+    UI::ExtendedTeamSelect::GetTeamColorOrder(roomData.teamColors);
+}
+
+bool ApplyRoomData(const ::Pulsar::Network::MogiRoomData& roomData) {
+    if (roomData.magic != ROOM_PACKET_MAGIC || roomData.teamFormat > 1) {
+        OS::Report("[Mogi] room data rejected magic=0x%04X expected=0x%04X teamFormat=%u\n", roomData.magic,
+                   ROOM_PACKET_MAGIC, roomData.teamFormat);
+        return false;
+    }
+    if (roomData.playersPerTeam != 2 && roomData.playersPerTeam != 3 &&
+        roomData.playersPerTeam != 4 && roomData.playersPerTeam != 6) {
+        OS::Report("[Mogi] room data rejected playersPerTeam=%u\n", roomData.playersPerTeam);
+        return false;
+    }
+
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller != nullptr) {
+        SelectLobbyFormat(controller->subs[controller->currentSub].groupId);
+    }
+    sActive = true;
+    ReportTeamMap("seed format applied");
+    return true;
 }
 
 u32 GetLobbySeed() {
@@ -158,7 +212,8 @@ u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole) {
     return sRemoteMMR[aid][playerIdOnConsole];
 }
 
-static void SelectHostFormat(u32 groupId) {
+static void SelectLobbyFormat(u32 groupId) {
+    sLobbyGroupId = groupId;
     sLobbySeed = groupId ^ 0x4D4F4749;
     u32 seed = sLobbySeed;
     sTeamFormat = (seed & 1) != 0;
@@ -177,6 +232,15 @@ static void SelectHostFormat(u32 groupId) {
             break;
     }
 
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller != nullptr && controller->subs[controller->currentSub].playerCount == 4) {
+        sForceTwoVsTwo = true;
+    }
+    if (sForceTwoVsTwo) {
+        sTeamFormat = true;
+        sPlayersPerTeam = 2;
+    }
+
     for (u8 i = 0; i < 12; ++i) sTeamByPlayer[i] = i / sPlayersPerTeam;
     for (s32 i = 11; i > 0; --i) {
         seed = seed * 1664525 + 1013904223;
@@ -185,6 +249,8 @@ static void SelectHostFormat(u32 groupId) {
         sTeamByPlayer[i] = sTeamByPlayer[swapIdx];
         sTeamByPlayer[swapIdx] = team;
     }
+    UI::ExtendedTeamSelect::RandomizeTeamColors(sLobbySeed);
+    ReportTeamMap("seed format selected");
 }
 
 void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
@@ -192,10 +258,11 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
 
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    SelectHostFormat(sub.groupId);
+    SelectLobbyFormat(sub.groupId);
     sActive = true;
     sMMRFinalized = false;
     sPendingDisconnect = false;
+    sResultsSectionSeen = false;
 
     if (!sStartReported) {
         Network::Report("wl:mkw_mogi_start", "1");
@@ -214,6 +281,8 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
     // ROOM stores the zero-based final race index: 11 represents 12 races.
     raceCount = MOGI_RACE_COUNT - 1;
     System::sInstance->netMgr.racesPerGP = raceCount;
+    OS::Report("[Mogi] host room prepared group=%u context2=0x%08X raceCount=%u\n", sub.groupId, hostContext2,
+               raceCount);
 }
 
 void ApplyHostRoom(u32 hostContext2) {
@@ -222,27 +291,15 @@ void ApplyHostRoom(u32 hostContext2) {
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller != nullptr) {
         const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-        SelectHostFormat(sub.groupId);
+        SelectLobbyFormat(sub.groupId);
     }
     sActive = true;
-    sTeamFormat = (hostContext2 & MOGI_TEAM_FLAG) != 0;
-    switch (hostContext2 & MOGI_TEAM_SIZE_MASK) {
-        case MOGI_TEAM_SIZE_2:
-            sPlayersPerTeam = 2;
-            break;
-        case MOGI_TEAM_SIZE_3:
-            sPlayersPerTeam = 3;
-            break;
-        case MOGI_TEAM_SIZE_6:
-            sPlayersPerTeam = 6;
-            break;
-        default:
-            sPlayersPerTeam = 4;
-            break;
-    }
     sMMRFinalized = false;
     sPendingDisconnect = false;
+    sResultsSectionSeen = false;
     System::sInstance->netMgr.racesPerGP = GetRaceCount();
+    OS::Report("[Mogi] host room applied context2=0x%08X group=%u\n", hostContext2, sLobbyGroupId);
+    ReportTeamMap("host room state");
 }
 
 static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {
@@ -321,12 +378,25 @@ void ProcessPendingDisconnect() {
     if (!sPendingDisconnect || SectionMgr::sInstance == nullptr || SectionMgr::sInstance->curSection == nullptr) return;
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (sectionId == SECTION_VS_RACE_AWARD || sectionId == SECTION_GP_AWARD) {
+    const bool isMogiResults = sectionId == SECTION_P1_WIFI_FRIEND_VS ||
+                               sectionId == SECTION_P1_WIFI_FRIEND_TEAMVS ||
+                               sectionId == SECTION_P2_WIFI_FRIEND_VS ||
+                               sectionId == SECTION_P2_WIFI_FRIEND_TEAMVS;
+    if (isMogiResults) {
+        OS::Report("[Mogi] result section reached id=0x%02X\n", sectionId);
+        sResultsSectionSeen = true;
+        return;
+    }
+
+    const bool isOfflineResults = sectionId == SECTION_VS_RACE_AWARD || sectionId == SECTION_GP_AWARD;
+    if (isOfflineResults || sResultsSectionSeen) {
         RKNet::Controller* controller = RKNet::Controller::sInstance;
         if (controller != nullptr) controller->ScheduleShutdown();
         sPendingDisconnect = false;
         sActive = false;
+        sResultsSectionSeen = false;
         sStartReported = false;
+        OS::Report("[Mogi] disconnect scheduled after section=0x%02X\n", sectionId);
     }
 }
 

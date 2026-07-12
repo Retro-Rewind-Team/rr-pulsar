@@ -241,6 +241,7 @@ kmBranch(0x800e4ad0, CustomRandomizeServers);
 
 static void UpdateMatchmakingInfosAndRememberGroupId(RKNet::Controller* self) {
     self->UpdateSubsAndVR();
+    Mogi::UpdateRoomState();
     RememberPreviousPublicRoomGroupId(self);
 }
 kmCall(0x80657990, UpdateMatchmakingInfosAndRememberGroupId);

@@ -540,6 +540,10 @@ void System::UpdateContext() {
         ApplyVanillaModeRestrictions(this, false);
     }
 
+    if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
+        this->context |= (1 << PULSAR_EXTENDEDTEAMS);
+    }
+
     if (!isTeamBattle) {
         sInstance->context &= ~(1 << PULSAR_ELIMINATION);
     }

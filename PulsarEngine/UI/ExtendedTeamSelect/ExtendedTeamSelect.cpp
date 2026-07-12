@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/System/random.hpp>
 #include <Network/GPReport.hpp>
+#include <Network/Mogi.hpp>
 #include <core/nw4r/ut/Misc.hpp>
 
 namespace Pulsar {
@@ -66,7 +67,10 @@ void ExtendedTeamSelect::BeforeEntranceAnimations() {
 
     Pages::FriendRoomManager* friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
 
-    this->isHost = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST;
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    this->isHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                   (Mogi::IsActive() && sub.localAid == sub.hostAid);
     this->instructionText.SetMessage(this->isHost ? BMG_TEAM_SELECT : BMG_EXTENDEDTEAMS_NONHOST_TITLE);
 
     this->backButton.isHidden = this->manager->hasFriendRoomStarted;
@@ -437,6 +441,16 @@ void ExtendedTeamSelect::RandomizeTeamColors(u32 seed) {
         const ExtendedTeamID color = teamColors[i - 1];
         teamColors[i - 1] = teamColors[other];
         teamColors[other] = color;
+    }
+}
+
+void ExtendedTeamSelect::GetTeamColorOrder(u8* colors) {
+    for (u32 i = 0; i < TEAM_COUNT; ++i) colors[i] = static_cast<u8>(teamColors[i]);
+}
+
+void ExtendedTeamSelect::SetTeamColorOrder(const u8* colors) {
+    for (u32 i = 0; i < TEAM_COUNT; ++i) {
+        teamColors[i] = colors[i] < TEAM_COUNT ? static_cast<ExtendedTeamID>(colors[i]) : static_cast<ExtendedTeamID>(i);
     }
 }
 

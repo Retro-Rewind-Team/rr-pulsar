@@ -26,7 +26,8 @@ void ExtendedTeamResultTotal::OnInit() {
     }
 
     for (int i = 0; i < scenario.playerCount; i++) {
-        ExtendedTeamID team = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
+        ExtendedTeamID team = static_cast<ExtendedTeamID>(scenario.players[i].team);
+        if (team >= TEAM_COUNT) continue;
         if (!teamPresent[team]) {
             teamCount++;
             teamPresent[team] = true;

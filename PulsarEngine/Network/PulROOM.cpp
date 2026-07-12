@@ -79,12 +79,19 @@ static void WriteBlockedTracksToPacket(PulROOM* packet) {
 static void HandleExtendedTeamUpdates(const PulROOM& packet) {
     UI::ExtendedTeamManager* manager = UI::ExtendedTeamManager::sInstance;
     UI::ExtendedTeamSelect* ets = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
+    const bool isSeededMogi = Mogi::IsActive() && Mogi::IsTeamFormat();
+    OS::Report("[MogiTeams] ROOM team bytes=%02X,%02X,%02X,%02X,%02X,%02X\n", packet.extendedTeams[0],
+               packet.extendedTeams[1], packet.extendedTeams[2], packet.extendedTeams[3], packet.extendedTeams[4],
+               packet.extendedTeams[5]);
     for (int id = 0; id < 12; ++id) {
         const u8 byte = id / 2;
         const u8 shift = (id % 2) * 4;
         UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F);
-        if (team != 0x0F) {
-            if (Mogi::IsTeamFormat()) Mogi::SetTeamForPlayer(id, team);
+        if (isSeededMogi) {
+            team = static_cast<UI::ExtendedTeamID>(Mogi::GetTeamForPlayer(id));
+            manager->SetPlayerTeam(id, team);
+            if (ets != nullptr) ets->UpdatePlayerTeam(id, team);
+        } else if (team != 0x0F) {
             manager->SetPlayerTeam(id, team);
             if (ets != nullptr) ets->UpdatePlayerTeam(id, team);
         }
@@ -130,16 +137,25 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
         system->context &= ~(1 << PULSAR_BIKERESTRICT);
     }
 
+    if (isExtendedTeams || Mogi::IsEnabled()) {
+        OS::Report("[Mogi] host context applied host=0x%08X host2=0x%08X ext=%u context=0x%08X context2=0x%08X\n",
+                   hostContext, hostContext2, isExtendedTeams, system->context, system->context2);
+    }
+
     return isExtendedTeams;
 }
 
-static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* src, u32 len) {
-    packetHolder->Copy(src, len);  // default
+static void BeforeROOMSend(RKNet::PacketHolder<void>* packetHolder, const void* src, u32 len) {
+    packetHolder->Copy(src, len);  // vanilla ROOM records are four bytes
 
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     Pulsar::System* system = Pulsar::System::sInstance;
-    PulROOM* destPacket = packetHolder->packet;
+    PulROOM* destPacket = reinterpret_cast<PulROOM*>(packetHolder->packet);
+    if (Mogi::IsEnabled() && destPacket->messageType == 1) {
+        OS::Report("[Mogi] ROOM raw send msg=%u localAid=%u hostAid=%u roomType=%u size=%u\n", destPacket->message,
+                   sub.localAid, sub.hostAid, controller->roomType, packetHolder->packetSize);
+    }
     if (destPacket->messageType == 1 && sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);  // this has been changed by copy so it's safe to do this
 
@@ -294,9 +310,19 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         destPacket->raceCount = raceCount;
 
         Mogi::PrepareHostRoom(destPacket->hostSystemContext2, destPacket->raceCount);
+        memset(&destPacket->mogiRoom, 0, sizeof(destPacket->mogiRoom));
+        if (Mogi::IsActive()) Mogi::FillRoomData(destPacket->mogiRoom);
         if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
             destPacket->hostSystemContext |= 1 << PULSAR_EXTENDEDTEAMS;
             UI::ExtendedTeamManager::sInstance->ConfigureMogiTeams();
+        }
+
+        if (Mogi::IsEnabled()) {
+            OS::Report("[Mogi] ROOM send msg=%u size=%u host=0x%08X%08X host2=0x%08X raceCount=%u magic=0x%04X teamFormat=%u playersPerTeam=%u\n",
+                       destPacket->message, packetHolder->packetSize, static_cast<u32>(destPacket->hostSystemContext >> 32),
+                       static_cast<u32>(destPacket->hostSystemContext), destPacket->hostSystemContext2,
+                       destPacket->raceCount, destPacket->mogiRoom.magic, destPacket->mogiRoom.teamFormat,
+                       destPacket->mogiRoom.playersPerTeam);
         }
 
         WriteBlockedTracksToPacket(destPacket);
@@ -336,30 +362,65 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                 destPacket->extendedTeams[byte] |= (playerInfo[i].team & 0x0F) << shift;
             }
         }
+        if (isMogiTeamStart) {
+            OS::Report("[MogiTeams] ROOM start team packet bytes=%02X,%02X,%02X,%02X,%02X,%02X\n",
+                       destPacket->extendedTeams[0], destPacket->extendedTeams[1], destPacket->extendedTeams[2],
+                       destPacket->extendedTeams[3], destPacket->extendedTeams[4], destPacket->extendedTeams[5]);
+        }
     }
 }
 kmCall(0x8065b15c, BeforeROOMSend);
 
-kmWrite32(0x8065add0, 0x60000000);
-static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder, const PulROOM& src, u32 len) {
-    register RKNet::ROOMPacket* packet;
+static void AfterROOMReception(void* dest, const void* src, u32 len) {
     register u32 aid;
-    asm(mr packet, r28;);
     asm(mr aid, r29;);
 
+    // Preserve the vanilla RoomHandler record. The expanded data lives only in
+    // the receive packet holder and must not be copied into receivedRecords[].
+    memcpy(dest, src, len);
+
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || aid >= 12) return;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
 
-    const bool isHost = sub.localAid == sub.hostAid;
+    const u32 bufferIdx = controller->lastReceivedBufferUsed[aid][RKNet::ROOMPacket::idx];
+    const RKNet::PacketHolder<void>* packetHolder =
+        controller->splitReceivedRACEPackets[bufferIdx][aid]->packetHolders[RKNet::ROOMPacket::idx];
+    if (packetHolder == nullptr) return;
 
-    // START msg sent by the host, size check should always be guaranteed in theory
-    if (src.messageType == 1 && !isHost && packetHolder->packetSize == sizeof(PulROOM)) {
-        ConvertROOMPacketToData(src);
-        Mogi::ApplyHostRoom(src.hostSystemContext2);
+    const RKNet::ROOMPacket& roomPacket = *reinterpret_cast<const RKNet::ROOMPacket*>(packetHolder->packet);
+    const PulROOM* expandedPacket = 0;
+    if (packetHolder->packetSize >= sizeof(PulROOM)) {
+        expandedPacket = reinterpret_cast<const PulROOM*>(packetHolder->packet);
+    }
+
+    const bool isLocalHost = sub.localAid == sub.hostAid;
+    const bool isHostPacket = aid == sub.hostAid;
+
+    if (expandedPacket != 0 && Mogi::IsEnabled() && expandedPacket->messageType == 1) {
+        OS::Report("[Mogi] ROOM raw recv msg=%u localAid=%u hostAid=%u roomType=%u size=%u expected=%u\n",
+                   expandedPacket->message, sub.localAid, sub.hostAid, controller->roomType, packetHolder->packetSize,
+                   sizeof(PulROOM));
+    }
+
+    if (expandedPacket != 0 && expandedPacket->messageType == 1 && isHostPacket) {
+        OS::Report("[Mogi] ROOM recv size=%u expected=%u host=0x%08X%08X host2=0x%08X raceCount=%u magic=0x%04X\n",
+                   packetHolder->packetSize, sizeof(PulROOM), static_cast<u32>(expandedPacket->hostSystemContext >> 32),
+                   static_cast<u32>(expandedPacket->hostSystemContext), expandedPacket->hostSystemContext2,
+                   expandedPacket->raceCount, expandedPacket->mogiRoom.magic);
+    }
+
+    // START data is authoritative only when it came from the host.
+    if (expandedPacket != 0 && expandedPacket->messageType == 1 && isHostPacket) {
+        ConvertROOMPacketToData(*expandedPacket);
+        Mogi::ApplyHostRoom(expandedPacket->hostSystemContext2);
+        const bool roomDataApplied = Mogi::ApplyRoomData(expandedPacket->mogiRoom);
 
         // Get context from host packet (no need to read local settings - host values take precedence)
         Network::Mgr& netMgr = Pulsar::System::sInstance->netMgr;
         const bool isExtendedTeams = ApplyHostContextLocally(netMgr.hostContext, netMgr.hostContext2);
+        OS::Report("[Mogi] ROOM recv applied roomData=%u extContext=%u active=%u teamFormat=%u\n", roomDataApplied,
+                   isExtendedTeams, Mogi::IsActive(), Mogi::IsTeamFormat());
 
         // Also exit the settings page to prevent weird graphical artefacts
         Page* topPage = SectionMgr::sInstance->curSection->GetTopLayerPage();
@@ -378,24 +439,21 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
         }
         // Extended Team VS start
         if (isExtendedTeams || isMogiTeamRoom) {
-            HandleExtendedTeamUpdates(src);
+            HandleExtendedTeamUpdates(*expandedPacket);
             UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
         }
     }
 
-    if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS &&
-        !isHost &&
-        packetHolder->packetSize == sizeof(PulROOM)) {
-        HandleExtendedTeamUpdates(src);
+    if (expandedPacket != 0 && expandedPacket->messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS &&
+        isHostPacket) {
+        HandleExtendedTeamUpdates(*expandedPacket);
     }
 
-    if (isHost && src.messageType == UI::ExtendedTeamManager::MSG_TYPE_PING) {
+    if (isLocalHost && roomPacket.messageType == UI::ExtendedTeamManager::MSG_TYPE_PING) {
         UI::ExtendedTeamManager::sInstance->SetActiveStatusForAID(aid);
-    } else if (!isHost && src.messageType == UI::ExtendedTeamManager::MSG_TYPE_ACK_START_RACE) {
+    } else if (!isLocalHost && roomPacket.messageType == UI::ExtendedTeamManager::MSG_TYPE_ACK_START_RACE) {
         UI::ExtendedTeamManager::sInstance->SetDoneStatusForAID(aid);
     }
-
-    memcpy(packet, &src, sizeof(RKNet::ROOMPacket));  // default
 }
 kmCall(0x8065add8, AfterROOMReception);
 
