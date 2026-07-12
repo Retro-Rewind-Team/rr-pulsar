@@ -14,6 +14,11 @@ static void fillTotalLeaderboardResults(Pages::GPVSLeaderboardTotal& page) {
     }
 }
 
+void ExpGPVSLeaderboardTotal::OnInit() {
+    Pages::GPVSLeaderboardTotal::OnInit();
+    Mogi::OnFinalResults();
+}
+
 void ExpGPVSLeaderboardTotal::OnUpdate() {
     if (checkLeaderboardDisplaySwapInputs()) {
         nextLeaderboardDisplayType();
@@ -23,7 +28,6 @@ void ExpGPVSLeaderboardTotal::OnUpdate() {
 
 void ExpGPVSLeaderboardTotal::BeforeEntranceAnimations() {
     fillTotalLeaderboardResults(*this);
-    Mogi::OnFinalResults();
 }
 
 }  // namespace UI

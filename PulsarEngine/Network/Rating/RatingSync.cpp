@@ -88,13 +88,19 @@ void SetSyncReportingSuppressed(bool suppress) {
 void ReportCurrentRatings(u32 licenseId) {
     if (s_syncReportingSuppressed) return;
 
+    ReportCurrentVRBR(licenseId);
+    MogiRating::ReportCurrentMMR(licenseId);
+}
+
+void ReportCurrentVRBR(u32 licenseId) {
+    if (s_syncReportingSuppressed) return;
+
     const int vrScaled = ClampRatingForSync(GetUserVR(licenseId));
     const int brScaled = ClampRatingForSync(GetUserBR(licenseId));
 
     char buffer[64];
     if (snprintf(buffer, sizeof(buffer), "vr=%d|br=%d", vrScaled, brScaled) < 0) return;
     Network::Report("wl:mkw_vrbr", buffer);
-    MogiRating::ReportCurrentMMR(licenseId);
 }
 
 static bool IsRequestStillRelevant(const RequestCtx& ctx) {

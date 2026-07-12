@@ -2,15 +2,22 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Driver/DriverManager.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/GPReport.hpp>
+#include <Network/Rating/RatingSync.hpp>
 
 namespace Pulsar {
 
 RaceStage sLastRaceStage = RACESTAGE_RACE;
 
+static bool HasOnlineControllerRoom() {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    return controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE;
+}
+
 void UpdateRaceInstances() {
     RaceScene::UpdateRaceInstances();
-    if (!DriverMgr::isOnlineRace)
+    if (!DriverMgr::isOnlineRace && !HasOnlineControllerRoom())
         return;
 
     Raceinfo* raceInfo = Raceinfo::sInstance;
@@ -21,6 +28,11 @@ void UpdateRaceInstances() {
         sLastRaceStage = raceInfo->stage;
         if (sLastRaceStage == RACESTAGE_FINISHED) {
             Network::ReportU32("wl:mkw_race_stage", sLastRaceStage);
+
+            RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+            if (rksys != nullptr && rksys->curLicenseId < 4) {
+                PointRating::ReportCurrentRatings(rksys->curLicenseId);
+            }
         }
     }
 }

@@ -109,7 +109,7 @@ static void UpdateActiveFromRoom() {
         sPendingDisconnect = false;
         sStartReported = false;
     }
-    System::sInstance->netMgr.racesPerGP = 0;
+    System::sInstance->netMgr.racesPerGP = 11;
 }
 
 void UpdateRoomState() {
@@ -289,7 +289,7 @@ void OnFinalResults() {
     if (Racedata::sInstance == nullptr) return;
 
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    if (!sActive || sMMRFinalized) return;
+    if (!IsActive() || sMMRFinalized) return;
 
     u8 currentRaceNumber = scenario.settings.raceNumber;
     if (SectionMgr::sInstance != nullptr && SectionMgr::sInstance->sectionParams != nullptr) {
@@ -299,13 +299,22 @@ void OnFinalResults() {
     if (currentRaceNumber < GetFinalRaceNumber()) return;
 
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
-    if (rksys == nullptr) return;
+    if (rksys == nullptr || rksys->curLicenseId >= 4) return;
 
-    u8 localPlayersSeen = 0;
+    s32 localPlayerId = -1;
     bool updated = false;
     for (u8 i = 0; i < scenario.playerCount; ++i) {
-        if (scenario.players[i].playerType != PLAYER_REAL_LOCAL) continue;
-        if (localPlayersSeen++ != 0) continue;
+        if (scenario.players[i].playerType == PLAYER_REAL_LOCAL) {
+            localPlayerId = i;
+            break;
+        }
+    }
+    if (localPlayerId < 0 && scenario.localPlayerCount > 0) {
+        const u8 hudPlayerId = scenario.settings.hudPlayerIds[0];
+        if (hudPlayerId < scenario.playerCount) localPlayerId = hudPlayerId;
+    }
+    if (localPlayerId >= 0) {
+        const u8 i = static_cast<u8>(localPlayerId);
 
         const u8 count = IsTeamFormat() ? 12 / sPlayersPerTeam : scenario.playerCount;
         const u8 rank = IsTeamFormat() ? GetTeamRank(scenario, i) : GetPlayerRank(scenario, i);
@@ -313,7 +322,6 @@ void OnFinalResults() {
         const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
         MogiRating::SetUserMMR(rksys->curLicenseId, currentMMR + GetMMRDelta(currentMMR, performance));
         updated = true;
-        break;
     }
     if (updated) {
         sMMRFinalized = true;
