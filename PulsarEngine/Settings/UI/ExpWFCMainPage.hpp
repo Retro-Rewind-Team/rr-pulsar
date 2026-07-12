@@ -27,6 +27,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
         this->onStartPress.ptmf = &ExpWFCMain::ExtOnStartPress;
     }
     void OnInit() override;
+    void OnResume() override;
     void BeforeControlUpdate() override;
 
    private:

@@ -24,16 +24,15 @@ static wchar_t s_mogiBottomText[] = L"Mogi matchmaking: 12 players, 12 races";
 
 static void FormatMMRValue(float mmr, wchar_t* buffer, u32 bufferSize) {
     int scaled = (int)(mmr * 100.0f + 0.5f);
-    swprintf(buffer, bufferSize, L"%d.%02d", scaled / 100, scaled % 100);
+    swprintf(buffer, bufferSize, L"%d", scaled);
 }
 
 static void FormatMMRDelta(float delta, wchar_t* buffer, u32 bufferSize) {
     int scaled = (int)(delta * 100.0f + (delta >= 0.0f ? 0.5f : -0.5f));
-    const int magnitude = scaled < 0 ? -scaled : scaled;
     if (scaled < 0)
-        swprintf(buffer, bufferSize, L"-%d.%02d", magnitude / 100, magnitude % 100);
+        swprintf(buffer, bufferSize, L"%d", scaled);
     else
-        swprintf(buffer, bufferSize, L"+%d.%02d", magnitude / 100, magnitude % 100);
+        swprintf(buffer, bufferSize, L"+%d", scaled);
 }
 
 static void ShowPendingLoginMMRChange(ExpWFCMain& page) {
@@ -220,6 +219,10 @@ void ExpWFCMain::BeforeControlUpdate() {
     rankInfoTxt.strings[0] = rankBuf;
     this->rankInfo.SetTextBoxMessage("go", UI::BMG_TEXT, &rankInfoTxt);
     this->rankInfo.SetPaneVisibility("capsul_null", true);
+}
+
+void ExpWFCMain::OnResume() {
+    this->mainButton.Select(0);
 }
 
 // ExpWFCModeSel
