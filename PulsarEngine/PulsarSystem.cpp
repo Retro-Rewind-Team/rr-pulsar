@@ -522,6 +522,16 @@ void System::UpdateContext() {
                 ApplyVanillaModeRestrictions(this, true);
                 break;
 
+            case 0x16:  // Retro Track Mogi
+                this->context |= (1 << PULSAR_RETROS);
+                sInstance->context &= ~(1 << PULSAR_200_WW);
+                sInstance->context &= ~(1 << PULSAR_MODE_OTT);
+                sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
+                sInstance->context2 &= ~(1 << PULSAR_FFA);
+                sInstance->context &= ~(1 << PULSAR_ELIMINATION);
+                sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
+                break;
+
             case 0x0E:  // Battle
                 this->context |= (1 << PULSAR_FFA);
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
