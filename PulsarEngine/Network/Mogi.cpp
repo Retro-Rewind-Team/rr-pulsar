@@ -603,6 +603,10 @@ void ProcessPendingDisconnect() {
                                sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE ||
                                sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE;
     if (isMogiResults) {
+        if (Racedata::sInstance == nullptr ||
+            Racedata::sInstance->racesScenario.settings.raceNumber < GetFinalRaceNumber()) {
+            return;
+        }
         sResultsSectionSeen = true;
         SectionMgr::sInstance->SetNextSection(SECTION_MAIN_MENU_FROM_MENU, 0);
         return;
