@@ -511,6 +511,14 @@ static u8 GetFinalRaceNumber() {
     return System::sInstance->netMgr.racesPerGP;
 }
 
+static bool IsFinalRace() {
+    if (SectionMgr::sInstance == nullptr || SectionMgr::sInstance->sectionParams == nullptr) return false;
+
+    // The online race counter is advanced by the online track-selection flow. The race scenario's
+    // race number can still contain the value from a previous GP when the next race is prepared.
+    return SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber >= GetFinalRaceNumber();
+}
+
 void OnFinalResults() {
     if (Racedata::sInstance == nullptr) return;
 
@@ -522,7 +530,7 @@ void OnFinalResults() {
     raceScenario.settings.gamemode = MODE_PRIVATE_VS;
     if (sMMRFinalized) return;
 
-    if (raceScenario.settings.raceNumber < GetFinalRaceNumber()) return;
+    if (!IsFinalRace()) return;
 
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || rksys->curLicenseId >= 4) return;
@@ -610,10 +618,7 @@ void ProcessPendingDisconnect() {
                                sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE ||
                                sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE;
     if (isMogiResults) {
-        if (Racedata::sInstance == nullptr ||
-            Racedata::sInstance->racesScenario.settings.raceNumber < GetFinalRaceNumber()) {
-            return;
-        }
+        if (!IsFinalRace()) return;
         sResultsSectionSeen = true;
         SectionMgr::sInstance->SetNextSection(SECTION_MAIN_MENU_FROM_MENU, 0);
         return;
