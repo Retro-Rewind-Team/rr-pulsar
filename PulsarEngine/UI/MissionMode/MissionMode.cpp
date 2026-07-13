@@ -13,10 +13,7 @@ namespace UI {
 namespace MissionMode {
 
 static const char* GetMissionLevelLabelLayout(const char* lytName) {
-    if (strcmp(lytName, "common_w092_mission_level_label") == 0) {
-        return "zommon_w092_mission_level_label";
-    }
-    return lytName;
+    return strcmp(lytName, "common_w092_mission_level_label") == 0 ? "zommon_w092_mission_level_label" : lytName;
 }
 
 kmRuntimeUse(0x805e9f80);
@@ -28,15 +25,12 @@ static void LoadPictureLayout(LayoutUIControl& control, const char* folderName, 
 }
 kmBranch(0x8063d9c0, LoadPictureLayout);
 
-static bool IsMissionRace() {
-    return Racedata::sInstance != nullptr &&
-           Racedata::sInstance->racesScenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
+static bool IsMissionScenario(const RacedataScenario& scenario) {
+    return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
 }
 
-static bool IsMissionMenuScenario() {
-    return Racedata::sInstance != nullptr &&
-           Racedata::sInstance->menusScenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
-}
+static bool IsMissionRace() { return Racedata::sInstance != nullptr && IsMissionScenario(Racedata::sInstance->racesScenario); }
+static bool IsMissionMenuScenario() { return Racedata::sInstance != nullptr && IsMissionScenario(Racedata::sInstance->menusScenario); }
 
 static Pages::RaceHUD* SetMissionHudNextPage(Pages::RaceHUD* hud) {
     hud->nextPageId = IsMissionMenuScenario() ? PAGE_TT_LEADERBOARDS : PAGE_COMPETITION_LEADERBOARD;
@@ -76,38 +70,27 @@ static void FillMissionTTLeaderboardRows(Pages::TTLeaderboard* page) {
         result->SetTextBoxMessage("position", getPositionBmg(i + 1));
         result->SetTextBoxMessage("time", BMG_DISPLAY_TIME, &timeInfo);
         result->SetTextBoxMessage("player_name", BMG_MISSION_MODE_BUTTON);
-        result->ResetTextBoxMessage("handle_text");
-        result->ResetTextBoxMessage("total_point");
-        result->ResetTextBoxMessage("total_score");
-        result->ResetTextBoxMessage("get_point");
+        static const char* const unusedFields[] = {"handle_text", "total_point", "total_score", "get_point"};
+        for (u32 j = 0; j < sizeof(unusedFields) / sizeof(unusedFields[0]); ++j)
+            result->ResetTextBoxMessage(unusedFields[j]);
     }
 
     page->ghostMessage.isHidden = true;
 }
 kmWritePointer(0x808dab30, FillMissionTTLeaderboardRows);
 
-u32 GetMissionButtonId(const Pages::SinglePlayer* page) {
-    return page->externControlCount - 2;
-}
+u32 GetMissionButtonId(const Pages::SinglePlayer* page) { return page->externControlCount - 2; }
 
-bool IsMissionButton(const Pages::SinglePlayer* page, u32 id) {
-    return id == GetMissionButtonId(page);
-}
+bool IsMissionButton(const Pages::SinglePlayer* page, u32 id) { return id == GetMissionButtonId(page); }
 
-bool IsBTMRModeButton(const Pages::SinglePlayer* page, u32 id) {
-    return id == 3 || IsMissionButton(page, id);
-}
+bool IsBTMRModeButton(const Pages::SinglePlayer* page, u32 id) { return id == 3 || IsMissionButton(page, id); }
 
-u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer* page, u32 id) {
-    return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON;
-}
+u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer* page, u32 id) { return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON; }
 
 void CreateSinglePlayerPages(ExpSection& section) {
-    section.CreateAndInitPage(section, PAGE_MISSION_LEVEL_SELECT_UNUSED);
-    section.CreateAndInitPage(section, PAGE_MISSION_SELECT_SUB);
-    section.CreateAndInitPage(section, PAGE_MISSION_INFORMATION_PROMPT);
-    section.CreateAndInitPage(section, PAGE_DRIFT_SELECT_WITH_ONE_OPTION);
-    section.CreateAndInitPage(section, PAGE_MISSION_TUTORIAL);
+    const u32 pages[] = {PAGE_MISSION_LEVEL_SELECT_UNUSED, PAGE_MISSION_SELECT_SUB,
+        PAGE_MISSION_INFORMATION_PROMPT, PAGE_DRIFT_SELECT_WITH_ONE_OPTION, PAGE_MISSION_TUTORIAL};
+    for (u32 i = 0; i < sizeof(pages) / sizeof(pages[0]); ++i) section.CreateAndInitPage(section, pages[i]);
 }
 
 void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
