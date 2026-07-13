@@ -2606,3 +2606,6 @@ Update__Q24Kart6KillerFv = 0x8059bc44
 
 AssignTeams__Q25Pages11VSTeamsViewFv = 0x8084ffc8
 IsMultiplayer__Q25Pages4MenuFv = 0x808388b4
+
+#MissionMode
+ChangeSectionWithDelayById__Q25Pages4MenuF9SectionIdf = 0x80837c5c
