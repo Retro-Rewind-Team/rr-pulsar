@@ -88,8 +88,17 @@ kmWrite24(0x80899a36, 'PUL');  // 8064ba38
 kmWrite24(0x80899a5B, 'PUL');  // 8064ba90
 
 void ExpWFCMain::OnInit() {
-    this->InitControlGroup(14);
+    this->InitControlGroup(13);
     WFCMainMenu::OnInit();
+
+    this->worldwideButton.SetMessage(BMG_PUBLIC_MODES);
+    this->worldwideButton.SetOnClickHandler(this->onMainClick, 0);
+    this->worldwideButton.SetOnSelectHandler(this->onButtonSelectHandler);
+
+    this->regionalButton.SetMessage(BMG_COMPETITIVE_MODES);
+    this->regionalButton.SetOnClickHandler(this->onCompetitiveClick, 0);
+    this->regionalButton.SetOnSelectHandler(this->onButtonSelectHandler);
+
     this->AddControl(6, settingsButton, 0);
 
     this->settingsButton.Load(UI::buttonFolder, "Settings1P", "Settings", 1, 0, false);
@@ -133,41 +142,71 @@ void ExpWFCMain::OnInit() {
     this->leaderboardButton.SetOnClickHandler(this->onLeaderboardClick, 0);
     this->leaderboardButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
-    this->AddControl(13, this->competitiveButton, 0);
-    this->competitiveButton.Load(UI::buttonFolder, "MainButton", "ButtonComp", 1, 0, 0);
-    this->competitiveButton.buttonId = 10;
-    this->competitiveButton.SetMessage(BMG_COMPETITIVE_MODES);
-    this->competitiveButton.SetOnClickHandler(this->onCompetitiveClick, 0);
-    this->competitiveButton.SetOnSelectHandler(this->onButtonSelectHandler);
-
-    SetButtonHidden(this->regionalButton, true);
-    SetButtonHidden(this->worldwideButton, true);
+    this->backButton.SetOnClickHandler(this->onBackButtonClickHandler, 0);
+    this->manipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
 
     this->topSettingsPage = SettingsPageSelect::id;
 
-    this->mainButton.Select(0);
+    this->SetMenuLevel(false);
 
     this->manipulatorManager.SetGlobalHandler(START_PRESS, this->onStartPress, false, false);
 }
 
+void ExpWFCMain::OnActivate() {
+    const bool restoreWorldwideMenu = this->restoreWorldwideMenuOnActivate;
+    this->restoreWorldwideMenuOnActivate = false;
+    WFCMainMenu::OnActivate();
+    this->SetMenuLevel(restoreWorldwideMenu);
+}
+
+void ExpWFCMain::SetMenuLevel(bool showWorldwideCategories) {
+    this->showWorldwideCategories = showWorldwideCategories;
+
+    if (showWorldwideCategories) {
+        this->mainButton.SetMessage(BMG_MAIN_MODES);
+        this->otherButton.SetMessage(BMG_OTHER_MODES);
+        this->battleButton.SetMessage(BMG_BATTLE_MODES);
+    } else {
+        this->mainButton.SetMessage(BMG_MAIN_MODES);
+    }
+
+    SetButtonHidden(this->worldwideButton, showWorldwideCategories);
+    SetButtonHidden(this->regionalButton, showWorldwideCategories);
+    SetButtonHidden(this->friendsButton, showWorldwideCategories);
+    SetButtonHidden(this->mainButton, !showWorldwideCategories);
+    SetButtonHidden(this->otherButton, !showWorldwideCategories);
+    SetButtonHidden(this->battleButton, !showWorldwideCategories);
+}
+
 u32 Pulsar::UI::ExpWFCMain::lastClickedMainMenuButton = 6;
 void ExpWFCMain::OnMainButtonClick(PushButton& pushButton, u32 hudSlotId) {
+    if (!this->showWorldwideCategories) {
+        this->SetMenuLevel(true);
+        this->mainButton.Select(0);
+        return;
+    }
+
     ExpWFCMain::lastClickedMainMenuButton = 6;  // retros
+    this->restoreWorldwideMenuOnActivate = true;
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
 void ExpWFCMain::OnOtherButtonClick(PushButton& pushButton, u32 hudSlotId) {
     ExpWFCMain::lastClickedMainMenuButton = 7;  // customs
+    this->restoreWorldwideMenuOnActivate = true;
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
 void ExpWFCMain::OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId) {
     ExpWFCMain::lastClickedMainMenuButton = 8;  // battle
+    this->restoreWorldwideMenuOnActivate = true;
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
 void ExpWFCMain::OnCompetitiveButtonClick(PushButton& pushButton, u32 hudSlotId) {
     ExpWFCMain::lastClickedMainMenuButton = 9;  // competitive
+    this->restoreWorldwideMenuOnActivate = false;
+    this->SetMenuLevel(false);
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
@@ -181,6 +220,20 @@ void ExpWFCMain::OnSettingsButtonClick(PushButton& pushButton, u32 r5) {
 void ExpWFCMain::OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId) {
     this->nextPageId = static_cast<PageId>(PULPAGE_VRLEADERBOARD);
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
+}
+
+void ExpWFCMain::OnBackButtonClick(PushButton& pushButton, u32 hudSlotId) {
+    this->OnBackPress(hudSlotId);
+}
+
+void ExpWFCMain::OnBackPress(u32 hudSlotId) {
+    if (this->showWorldwideCategories) {
+        this->SetMenuLevel(false);
+        this->worldwideButton.Select(0);
+        return;
+    }
+
+    WFCMainMenu::OnBackPress(hudSlotId);
 }
 
 void ExpWFCMain::ExtOnStartPress(u32) {
@@ -208,10 +261,12 @@ void ExpWFCMain::BeforeControlUpdate() {
     WFCMainMenu::BeforeControlUpdate();
     if (this->selectMainButtonOnResume) {
         this->selectMainButtonOnResume = false;
-        if (ExpWFCMain::lastClickedMainMenuButton == 9)
-            this->competitiveButton.Select(0);
-        else
+        if (this->showWorldwideCategories)
             this->mainButton.Select(0);
+        else if (ExpWFCMain::lastClickedMainMenuButton == 9)
+            this->regionalButton.Select(0);
+        else
+            this->worldwideButton.Select(0);
     }
     ShowPendingLoginMMRChange(*this);
 

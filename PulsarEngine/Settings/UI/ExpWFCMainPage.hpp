@@ -10,7 +10,7 @@ namespace UI {
 
 class ExpWFCMain : public Pages::WFCMainMenu {
    public:
-    ExpWFCMain() : selectMainButtonOnResume(false) {
+    ExpWFCMain() : selectMainButtonOnResume(false), showWorldwideCategories(false), restoreWorldwideMenuOnActivate(false) {
         this->onSettingsClick.subject = this;
         this->onSettingsClick.ptmf = &ExpWFCMain::OnSettingsButtonClick;
         this->onMainClick.subject = this;
@@ -23,12 +23,17 @@ class ExpWFCMain : public Pages::WFCMainMenu {
         this->onCompetitiveClick.ptmf = &ExpWFCMain::OnCompetitiveButtonClick;
         this->onLeaderboardClick.subject = this;
         this->onLeaderboardClick.ptmf = &ExpWFCMain::OnLeaderboardButtonClick;
+        this->onBackButtonClickHandler.subject = this;
+        this->onBackButtonClickHandler.ptmf = &ExpWFCMain::OnBackButtonClick;
+        this->onBackPressHandler.subject = this;
+        this->onBackPressHandler.ptmf = &ExpWFCMain::OnBackPress;
         this->onButtonSelectHandler.ptmf = &ExpWFCMain::ExtOnButtonSelect;
 
         this->onStartPress.subject = this;
         this->onStartPress.ptmf = &ExpWFCMain::ExtOnStartPress;
     }
     void OnInit() override;
+    void OnActivate() override;
     void OnResume() override;
     void BeforeControlUpdate() override;
 
@@ -40,7 +45,10 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     void OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId);
     void OnCompetitiveButtonClick(PushButton& pushButton, u32 hudSlotId);
     void OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId);
+    void OnBackButtonClick(PushButton& pushButton, u32 hudSlotId);
+    void OnBackPress(u32 hudSlotId);
     void ExtOnStartPress(u32 hudSlotId);
+    void SetMenuLevel(bool showWorldwideCategories);
 
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onSettingsClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onMainClick;
@@ -48,6 +56,8 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onBattleClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onCompetitiveClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onLeaderboardClick;
+    PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onBackButtonClickHandler;
+    PtmfHolder_1A<ExpWFCMain, void, u32> onBackPressHandler;
     PtmfHolder_1A<ExpWFCMain, void, u32> onStartPress;
     PushButton settingsButton;
     PushButton mainButton;
@@ -56,11 +66,12 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     PushButton leaderboardButton;
     LayoutUIControl playerCount;
     LayoutUIControl rankInfo;
-    PushButton competitiveButton;
 
    public:
     PulPageId topSettingsPage;
     bool selectMainButtonOnResume;
+    bool showWorldwideCategories;
+    bool restoreWorldwideMenuOnActivate;
     static u32 lastClickedMainMenuButton;
 };
 

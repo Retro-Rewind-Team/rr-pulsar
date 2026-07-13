@@ -1716,6 +1716,7 @@ __ct__Q25Pages11WFCMainMenuFv = 0x8064b640
 __dt__Q25Pages11WFCMainMenuFv = 0x8064b850
 OnInit__Q25Pages11WFCMainMenuFv = 0x8064b910
 OnActivate__Q25Pages11WFCMainMenuFv = 0x8064bc90
+OnBackPress__Q25Pages11WFCMainMenuFUi = 0x8064bfb8
 OnButtonSelect__Q25Pages11WFCMainMenuFR10PushButtonUi = 0x8064bf4c
 GetNextPage__Q25Pages11WFCMainMenuCFv = 0x8064d688
 GetRuntimeTypeInfo__Q25Pages11WFCMainMenuCFv = 0x8064d690
