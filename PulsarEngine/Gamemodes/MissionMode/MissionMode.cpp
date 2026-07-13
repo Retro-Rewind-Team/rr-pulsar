@@ -1,6 +1,7 @@
 #include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <MarioKartWii/KMP/KMPManager.hpp>
 
 namespace Pulsar {
 namespace MissionMode {
@@ -27,6 +28,40 @@ void PopulateMissionCPUs(RacedataScenario& scenario) {
         player.playerType = PLAYER_CPU;
     }
 }
+
+typedef void (*GetInitialPhysicsValuesFn)(Raceinfo*, Vec3*, Vec3*, u8);
+static const GetInitialPhysicsValuesFn sGetInitialPhysicsValues =
+    reinterpret_cast<GetInitialPhysicsValuesFn>(0x805362dc);
+
+static bool HasMissionCPUs(const RacedataScenario& scenario) {
+    for (u32 i = 1; i < 12; ++i)
+        if (scenario.players[i].playerType == PLAYER_CPU) return true;
+    return false;
+}
+
+static void SetMissionStartPosition(Raceinfo* raceinfo, Vec3* position, Vec3* angles, u8 playerId) {
+    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT || !HasMissionCPUs(scenario) ||
+        playerId >= scenario.playerCount) {
+        sGetInitialPhysicsValues(raceinfo, position, angles, playerId);
+        return;
+    }
+
+    // Mission mode normally selects a KTPT by mission player ID and uses a
+    // one-player grid. Use the first KTPT as the shared grid origin instead,
+    // with player 0 assigned the rearmost position like GP/VS.
+    const KMP::Holder<KTPT>* holder = raceinfo->GetKTPTHolder(0);
+    if (holder == nullptr) {
+        sGetInitialPhysicsValues(raceinfo, position, angles, playerId);
+        return;
+    }
+
+    const u32 playerPosition = scenario.playerCount - playerId;
+    const_cast<KMP::Holder<KTPT>*>(holder)->CalcCoordinates(*position, *angles, playerPosition, scenario.playerCount);
+}
+
+kmCall(0x8058ee78, SetMissionStartPosition);
+kmCall(0x805a70e8, SetMissionStartPosition);
 
 static u32 GetMissionValue(const void* mission, u32 offset) {
     return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + offset);

@@ -2585,3 +2585,7 @@ StopAnmType__18ModelTransformatorF7AnmType = 0x80557830
 GetAnmHolderByIdx__18ModelTransformatorCFUi = 0x80557234
 NormalizeAndGetNorm__Q23EGG8Vector3fFv = 0x80243adc
 detail_PrepareSound__Q34nw4r3snd14SoundStartableFPQ34nw4r3snd11SoundHandleUiPCQ44nw4r3snd14SoundStartable9StartInfo = 0x800a4130
+
+#MissionMode
+GetKTPTHolder__8RaceinfoFUc = 0x805365c8
+CalcCoordinates__Q23KMP13Holder<4KTPT>FR4Vec3R4Vec3UiUi = 0x80514b24
