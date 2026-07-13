@@ -29,6 +29,9 @@ static const float MOGI_MAX_LOSS = -2.50f;
 static const float MOGI_MAX_LOSS_AT_FLOOR = -0.10f;
 static const float MOGI_LOSS_TAPER_START = 25.0f;
 static const float MOGI_LOSS_TAPER_END = 5.0f;
+static const u16 MOGI_REDUCED_LOSS_MIN_SCORE = 85;
+static const u16 MOGI_REDUCED_LOSS_SCORE_RATIO = 3;
+static const float MOGI_REDUCED_LOSS_FACTOR = 0.50f;
 static const float MOGI_DISCONNECT_PENALTY = 1.0f;
 
 static bool sActive = false;
@@ -36,6 +39,8 @@ static bool sEnabled = false;
 static bool sTeamFormat = false;
 static u8 sPlayersPerTeam = 2;
 static u8 sTeamByPlayer[12] = {};
+static u8 sTeamByAid[12][2];
+static bool sTeamAssignmentsCaptured = false;
 static u32 sLobbyGroupId = 0;
 static u32 sLobbySeed = 0;
 static u16 sRemoteMMR[12][2];
@@ -58,6 +63,57 @@ static void ResetRemoteMMR() {
         sRemoteMMR[aid][0] = 0xFFFF;
         sRemoteMMR[aid][1] = 0xFFFF;
     }
+}
+
+static void ResetTeamAssignments() {
+    for (u8 aid = 0; aid < 12; ++aid) {
+        sTeamByAid[aid][0] = 0xFF;
+        sTeamByAid[aid][1] = 0xFF;
+    }
+    sTeamAssignmentsCaptured = false;
+}
+
+static bool GetPlayerIdentity(u8 playerIdx, u8& aid, u8& playerOnConsole) {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || playerIdx >= 12) return false;
+
+    aid = controller->aidsBelongingToPlayerIds[playerIdx];
+    if (aid >= 12) return false;
+
+    playerOnConsole = 0;
+    for (u8 i = 0; i < playerIdx; ++i) {
+        if (controller->aidsBelongingToPlayerIds[i] == aid) ++playerOnConsole;
+    }
+    return playerOnConsole < 2;
+}
+
+static void CaptureTeamAssignments() {
+    if (!sActive || !sTeamFormat || sTeamAssignmentsCaptured) return;
+
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return;
+
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const u8 playerCount = sub.playerCount < 12 ? sub.playerCount : 12;
+    if (playerCount == 0) return;
+
+    u8 teamByAid[12][2];
+    for (u8 aid = 0; aid < 12; ++aid) {
+        teamByAid[aid][0] = 0xFF;
+        teamByAid[aid][1] = 0xFF;
+    }
+    for (u8 playerIdx = 0; playerIdx < playerCount; ++playerIdx) {
+        u8 aid;
+        u8 playerOnConsole;
+        if (!GetPlayerIdentity(playerIdx, aid, playerOnConsole)) return;
+        teamByAid[aid][playerOnConsole] = sTeamByPlayer[playerIdx];
+    }
+
+    for (u8 aid = 0; aid < 12; ++aid) {
+        sTeamByAid[aid][0] = teamByAid[aid][0];
+        sTeamByAid[aid][1] = teamByAid[aid][1];
+    }
+    sTeamAssignmentsCaptured = true;
 }
 
 static float GetMaximumLoss(float mmr) {
@@ -184,7 +240,17 @@ bool IsTeamFormat() {
 
 u8 GetTeamForPlayer(u8 playerIdx) {
     if (!IsTeamFormat()) return playerIdx;
-    return sTeamByPlayer[playerIdx < 12 ? playerIdx : 0];
+
+    const u8 currentPlayerIdx = playerIdx < 12 ? playerIdx : 0;
+    CaptureTeamAssignments();
+
+    u8 aid;
+    u8 playerOnConsole;
+    if (sTeamAssignmentsCaptured && GetPlayerIdentity(currentPlayerIdx, aid, playerOnConsole) &&
+        sTeamByAid[aid][playerOnConsole] != 0xFF) {
+        return sTeamByAid[aid][playerOnConsole];
+    }
+    return sTeamByPlayer[currentPlayerIdx];
 }
 
 u32 GetLobbySeed() {
@@ -214,6 +280,7 @@ u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole) {
 static void SelectLobbyFormat(u32 groupId) {
     if (sActive) return;
 
+    ResetTeamAssignments();
     sLobbyGroupId = groupId;
     sLobbySeed = groupId ^ 0x4D4F4749;
     u32 seed = sLobbySeed;
@@ -254,6 +321,7 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
     sActive = true;
     sMMRFinalized = false;
     sSessionActive = true;
+    CaptureTeamAssignments();
     sPendingDisconnect = false;
     sResultsSectionSeen = false;
 
@@ -287,9 +355,10 @@ void ApplyHostRoom(u32 hostContext2) {
     sActive = true;
     sMMRFinalized = false;
     sSessionActive = true;
-        sPendingDisconnect = false;
-        sResultsSectionSeen = false;
-        sStartReported = false;
+    CaptureTeamAssignments();
+    sPendingDisconnect = false;
+    sResultsSectionSeen = false;
+    sStartReported = false;
     System::sInstance->netMgr.racesPerGP = MOGI_RACE_COUNT - 1;
 }
 
@@ -330,6 +399,22 @@ static float GetTeamRank(const RacedataScenario& scenario, u8 playerIdx) {
         }
     }
     return static_cast<float>(betterCount) + static_cast<float>(tiedCount) * 0.5f;
+}
+
+static bool IsReducedLossEligible(const RacedataScenario& scenario, u8 playerIdx) {
+    if (!IsTeamFormat() || playerIdx >= scenario.playerCount) return false;
+
+    const u16 playerScore = scenario.players[playerIdx].score;
+    if (playerScore < MOGI_REDUCED_LOSS_MIN_SCORE) return false;
+
+    const u8 playerTeam = GetTeamForPlayer(playerIdx);
+    for (u8 teammateIdx = 0; teammateIdx < scenario.playerCount; ++teammateIdx) {
+        if (teammateIdx == playerIdx || GetTeamForPlayer(teammateIdx) != playerTeam) continue;
+
+        const u16 teammateScore = scenario.players[teammateIdx].score;
+        if (static_cast<u32>(teammateScore) * MOGI_REDUCED_LOSS_SCORE_RATIO <= playerScore) return true;
+    }
+    return false;
 }
 
 static float GetPlayerMMR(const RacedataScenario& scenario, u8 playerIdx, float fallbackMMR) {
@@ -395,7 +480,7 @@ static float GetMaximumGain(float mmr) {
            (MOGI_MAX_GAIN_AT_START - MOGI_MAX_GAIN_AT_TARGET) * remaining * remaining;
 }
 
-static float GetMMRDelta(float mmr, float performance, float expectedPerformance) {
+static float GetMMRDelta(float mmr, float performance, float expectedPerformance, bool reducedLossEligible) {
     const float performanceDifference = performance - expectedPerformance;
     float delta = performanceDifference * (performanceDifference >= 0.0f ? MOGI_MAX_GAIN_AT_START : -MOGI_MAX_LOSS);
     const float distance = (mmr - MogiRating::MIN_MMR) /
@@ -409,6 +494,7 @@ static float GetMMRDelta(float mmr, float performance, float expectedPerformance
     } else {
         const float maximumLoss = GetMaximumLoss(mmr);
         if (delta < maximumLoss) delta = maximumLoss;
+        if (reducedLossEligible) delta *= MOGI_REDUCED_LOSS_FACTOR;
     }
     return delta;
 }
@@ -425,12 +511,7 @@ void OnFinalResults() {
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     if (!IsActive() || sMMRFinalized) return;
 
-    u8 currentRaceNumber = raceScenario.settings.raceNumber;
-    if (SectionMgr::sInstance != nullptr && SectionMgr::sInstance->sectionParams != nullptr) {
-        const s32 onlineRaceNumber = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber;
-        if (onlineRaceNumber > currentRaceNumber) currentRaceNumber = static_cast<u8>(onlineRaceNumber);
-    }
-    if (currentRaceNumber < GetFinalRaceNumber()) return;
+    if (raceScenario.settings.raceNumber < GetFinalRaceNumber()) return;
 
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || rksys->curLicenseId >= 4) return;
@@ -453,6 +534,7 @@ void OnFinalResults() {
         const u8 count = IsTeamFormat() ? 12 / sPlayersPerTeam : scenario.playerCount;
         const float rank = IsTeamFormat() ? GetTeamRank(scenario, i) : GetPlayerRank(scenario, i);
         const float performance = GetPerformance(rank, count);
+        const bool reducedLossEligible = IsReducedLossEligible(scenario, i);
         const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
         float playerMMRs[12];
         for (u8 player = 0; player < scenario.playerCount; ++player) {
@@ -477,7 +559,8 @@ void OnFinalResults() {
             expectedPerformance = GetExpectedPerformance(currentMMR, opponentMMRs, opponentCount);
         }
         MogiRating::SetUserMMR(rksys->curLicenseId,
-                               currentMMR + GetMMRDelta(currentMMR, performance, expectedPerformance));
+                               currentMMR + GetMMRDelta(currentMMR, performance, expectedPerformance,
+                                                        reducedLossEligible));
         updated = true;
     }
     if (updated) {
