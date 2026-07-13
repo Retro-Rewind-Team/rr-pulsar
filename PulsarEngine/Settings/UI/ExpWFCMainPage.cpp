@@ -75,29 +75,6 @@ static void FormatRatingLabel(float rating, const wchar_t* suffix, wchar_t* buff
     swprintf(buffer, bufferSize, (rating >= 1000.0f) ? L"%ls%ls\uF06D" : L"%ls%ls", digits, suffix);
 }
 
-static void UpdateRatingControlLayout(ExpWFCModeSel& page, bool showMmr) {
-    page.mmrButton.isHidden = !showMmr;
-    if (page.ratingControlsSideBySide == showMmr) return;
-
-    nw4r::lyt::Pane* ratingText = page.vrButton.layout.GetPaneByName("go");
-    if (ratingText == nullptr) return;
-
-    const float ratingControlGap = 8.0f;
-    const float ratingControlOffset = (ratingText->size.x * ratingText->scale.x + ratingControlGap) * 0.5f;
-    for (u32 hudSlotId = 0; hudSlotId < 4; ++hudSlotId) {
-        if (showMmr) {
-            page.vrButton.positionAndscale[hudSlotId].position.x -= ratingControlOffset;
-            page.mmrButton.positionAndscale[hudSlotId].position.x += ratingControlOffset;
-        } else {
-            page.vrButton.positionAndscale[hudSlotId].position.x += ratingControlOffset;
-            page.mmrButton.positionAndscale[hudSlotId].position.x -= ratingControlOffset;
-        }
-    }
-    page.vrButton.SetPosition(0.0f);
-    page.mmrButton.SetPosition(0.0f);
-    page.ratingControlsSideBySide = showMmr;
-}
-
 static void SetButtonHidden(PushButton& button, bool hidden) {
     button.isHidden = hidden;
     button.manipulator.inaccessible = hidden;
@@ -111,7 +88,7 @@ kmWrite24(0x80899a36, 'PUL');  // 8064ba38
 kmWrite24(0x80899a5B, 'PUL');  // 8064ba90
 
 void ExpWFCMain::OnInit() {
-    this->InitControlGroup(13);
+    this->InitControlGroup(14);
     WFCMainMenu::OnInit();
     this->AddControl(6, settingsButton, 0);
 
@@ -136,14 +113,14 @@ void ExpWFCMain::OnInit() {
     this->mainButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
     this->AddControl(10, otherButton, 0);
-    this->otherButton.Load(UI::buttonFolder, "OtherButton", "ButtonOther", 1, 0, 0);
+    this->otherButton.Load(UI::buttonFolder, "MainButton", "ButtonOther", 1, 0, 0);
     this->otherButton.buttonId = 7;
     this->otherButton.SetMessage(BMG_OTHER_MODES);
     this->otherButton.SetOnClickHandler(this->onOtherClick, 0);
     this->otherButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
     this->AddControl(11, battleButton, 0);
-    this->battleButton.Load(UI::buttonFolder, "BattleButton", "ButtonBattle", 1, 0, 0);
+    this->battleButton.Load(UI::buttonFolder, "MainButton", "ButtonBattle", 1, 0, 0);
     this->battleButton.buttonId = 8;
     this->battleButton.SetMessage(BMG_BATTLE_MODES);
     this->battleButton.SetOnClickHandler(this->onBattleClick, 0);
@@ -155,6 +132,13 @@ void ExpWFCMain::OnInit() {
     this->leaderboardButton.SetMessage(BMG_VR_LEADERBOARD_BUTTON);
     this->leaderboardButton.SetOnClickHandler(this->onLeaderboardClick, 0);
     this->leaderboardButton.SetOnSelectHandler(this->onButtonSelectHandler);
+
+    this->AddControl(13, this->competitiveButton, 0);
+    this->competitiveButton.Load(UI::buttonFolder, "MainButton", "ButtonComp", 1, 0, 0);
+    this->competitiveButton.buttonId = 10;
+    this->competitiveButton.SetMessage(BMG_COMPETITIVE_MODES);
+    this->competitiveButton.SetOnClickHandler(this->onCompetitiveClick, 0);
+    this->competitiveButton.SetOnSelectHandler(this->onButtonSelectHandler);
 
     SetButtonHidden(this->regionalButton, true);
     SetButtonHidden(this->worldwideButton, true);
@@ -179,6 +163,11 @@ void ExpWFCMain::OnOtherButtonClick(PushButton& pushButton, u32 hudSlotId) {
 
 void ExpWFCMain::OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId) {
     ExpWFCMain::lastClickedMainMenuButton = 8;  // battle
+    this->OnRegionalButtonClick(pushButton, hudSlotId);
+}
+
+void ExpWFCMain::OnCompetitiveButtonClick(PushButton& pushButton, u32 hudSlotId) {
+    ExpWFCMain::lastClickedMainMenuButton = 9;  // competitive
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
@@ -219,7 +208,10 @@ void ExpWFCMain::BeforeControlUpdate() {
     WFCMainMenu::BeforeControlUpdate();
     if (this->selectMainButtonOnResume) {
         this->selectMainButtonOnResume = false;
-        this->mainButton.Select(0);
+        if (ExpWFCMain::lastClickedMainMenuButton == 9)
+            this->competitiveButton.Select(0);
+        else
+            this->mainButton.Select(0);
     }
     ShowPendingLoginMMRChange(*this);
 
@@ -279,7 +271,7 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
     self.regButton.SetOnSelectHandler(self.onButtonSelectHandler);
 
     self.AddControl(13, self.mogiButton, 0);
-    self.mogiButton.Load(UI::buttonFolder, "WifiMenuModeSelect", "CompButton", 1, 0, 0);
+    self.mogiButton.Load(UI::buttonFolder, "WifiMenuModeSelect", "CompRetroButton", 1, 0, 0);
     self.mogiButton.buttonId = mogiButtonId;
     self.mogiButton.SetMessage(UI::BMG_MOGI_BUTTON);
     self.mogiButton.SetOnClickHandler(self.onModeButtonClickHandler, 0);
@@ -327,7 +319,7 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
     self.AddControl(14, self.mmrButton, 0);
     ControlLoader mmrLoader(&self.mmrButton);
     mmrLoader.Load(UI::buttonFolder, "VRButton", "VRButton", nullptr);
-    UpdateRatingControlLayout(self, ExpWFCMain::lastClickedMainMenuButton == 6);
+    self.mmrButton.isHidden = true;
 
     Text::Info info;
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
@@ -416,9 +408,13 @@ void ExpWFCModeSel::OnActivatePatch() {
     register Pages::GlobeSearch* search;
     asm(mr search, r30;);
     const bool isHidden = search->searchType != 1;
+    const bool isMainMode = ExpWFCMain::lastClickedMainMenuButton == 6;
+    const bool isOtherMode = ExpWFCMain::lastClickedMainMenuButton == 7;
+    const bool isBattleMode = ExpWFCMain::lastClickedMainMenuButton == 8;
+    const bool isCompetitiveMode = ExpWFCMain::lastClickedMainMenuButton == 9;
 
-    UpdateRatingControlLayout(*page, ExpWFCMain::lastClickedMainMenuButton == 6);
-    page->mmrButton.isHidden = isHidden || ExpWFCMain::lastClickedMainMenuButton != 6;
+    page->vrButton.isHidden = isHidden || isCompetitiveMode;
+    page->mmrButton.isHidden = isHidden || !isCompetitiveMode;
 
     if (isHidden) {
         ClearModeContexts();
@@ -439,21 +435,17 @@ void ExpWFCModeSel::OnActivatePatch() {
     page->vsButton.SetMessage(BMG_VS_BUTTON);
 
     if (!isHidden) {
-        const bool isMainMode = ExpWFCMain::lastClickedMainMenuButton == 6;
-        const bool isBattleMode = ExpWFCMain::lastClickedMainMenuButton == 8;
-        const bool isOtherMode = ExpWFCMain::lastClickedMainMenuButton == 7;
+        SetButtonHidden(page->vsButton, !isMainMode);
+        SetButtonHidden(page->ctButton, !isMainMode);
+        SetButtonHidden(page->regButton, !isMainMode);
+        SetButtonHidden(page->mogiButton, !isCompetitiveMode);
 
-        SetButtonHidden(page->vsButton, isOtherMode || isBattleMode);
-        SetButtonHidden(page->ctButton, isOtherMode || isBattleMode);
-        SetButtonHidden(page->regButton, isOtherMode || isBattleMode);
-        SetButtonHidden(page->mogiButton, isOtherMode || isBattleMode);
+        SetButtonHidden(page->ottButton, !isOtherMode);
+        SetButtonHidden(page->twoHundredButton, !isOtherMode);
+        SetButtonHidden(page->itemRainButton, !isOtherMode);
 
-        SetButtonHidden(page->ottButton, isMainMode || isBattleMode);
-        SetButtonHidden(page->twoHundredButton, isMainMode || isBattleMode);
-        SetButtonHidden(page->itemRainButton, isMainMode || isBattleMode);
-
-        SetButtonHidden(page->RRbattleButton, isOtherMode || isMainMode);
-        SetButtonHidden(page->RRbattleButtonElim, isOtherMode || isMainMode);
+        SetButtonHidden(page->RRbattleButton, !isBattleMode);
+        SetButtonHidden(page->RRbattleButtonElim, !isBattleMode);
     }
 
     SetButtonHidden(page->battleButton, true);
@@ -482,7 +474,7 @@ void ExpWFCModeSel::OnActivatePatch() {
     const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
 
     // Determine which button should be selected based on current context
-    if (Mogi::IsEnabled()) {
+    if (isCompetitiveMode) {
         page->lastClickedButton = mogiButtonId;
         button = &page->mogiButton;
         bmgId = BMG_MOGI_BOTTOM;
@@ -526,10 +518,9 @@ void ExpWFCModeSel::OnActivatePatch() {
     } else if (ExpWFCMain::lastClickedMainMenuButton == 7) {
         TWObutton->Select(0);
     } else if (ExpWFCMain::lastClickedMainMenuButton == 6) {
-        if (Mogi::IsEnabled())
-            page->mogiButton.Select(0);
-        else
-            page->vsButton.Select(0);
+        page->vsButton.Select(0);
+    } else if (ExpWFCMain::lastClickedMainMenuButton == 9) {
+        page->mogiButton.Select(0);
     }
 }
 kmCall(0x8064c5f0, ExpWFCModeSel::OnActivatePatch);
@@ -615,25 +606,28 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     }
 
     wchar_t buffer[64];
-    FormatRatingLabel(vr, L"VR", buffer, sizeof(buffer) / sizeof(buffer[0]));
-    info.strings[0] = buffer;
-
-    this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
-    if (ExpWFCMain::lastClickedMainMenuButton == 8) {
-        FormatRatingLabel(br, L"BR", buffer, sizeof(buffer) / sizeof(buffer[0]));
+    if (ExpWFCMain::lastClickedMainMenuButton != 9) {
+        FormatRatingLabel(vr, L"VR", buffer, sizeof(buffer) / sizeof(buffer[0]));
         info.strings[0] = buffer;
         this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
+        if (ExpWFCMain::lastClickedMainMenuButton == 8) {
+            FormatRatingLabel(br, L"BR", buffer, sizeof(buffer) / sizeof(buffer[0]));
+            info.strings[0] = buffer;
+            this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
+        }
     }
 
-    float mmr = MogiRating::DEFAULT_MMR;
-    if (rksysMgr->curLicenseId >= 0) {
-        mmr = MogiRating::GetUserMMR(rksysMgr->curLicenseId);
+    if (ExpWFCMain::lastClickedMainMenuButton == 9) {
+        float mmr = MogiRating::DEFAULT_MMR;
+        if (rksysMgr->curLicenseId >= 0) {
+            mmr = MogiRating::GetUserMMR(rksysMgr->curLicenseId);
+        }
+        wchar_t mmrBuffer[64];
+        Text::Info mmrInfo;
+        PointRating::FormatRatingDigits(mmr, mmrBuffer, sizeof(mmrBuffer) / sizeof(mmrBuffer[0]));
+        mmrInfo.strings[0] = mmrBuffer;
+        this->mmrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_MOGI_MMR_VALUE, &mmrInfo);
     }
-    wchar_t mmrBuffer[64];
-    Text::Info mmrInfo;
-    PointRating::FormatRatingDigits(mmr, mmrBuffer, sizeof(mmrBuffer) / sizeof(mmrBuffer[0]));
-    mmrInfo.strings[0] = mmrBuffer;
-    this->mmrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_MOGI_MMR_VALUE, &mmrInfo);
 
     ApplyVRMultiplierHighlight(this->twoHundredButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0C));
     ApplyVRMultiplierHighlight(this->ottButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0B));

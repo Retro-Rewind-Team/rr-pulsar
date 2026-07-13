@@ -19,6 +19,8 @@ class ExpWFCMain : public Pages::WFCMainMenu {
         this->onOtherClick.ptmf = &ExpWFCMain::OnOtherButtonClick;
         this->onBattleClick.subject = this;
         this->onBattleClick.ptmf = &ExpWFCMain::OnBattleButtonClick;
+        this->onCompetitiveClick.subject = this;
+        this->onCompetitiveClick.ptmf = &ExpWFCMain::OnCompetitiveButtonClick;
         this->onLeaderboardClick.subject = this;
         this->onLeaderboardClick.ptmf = &ExpWFCMain::OnLeaderboardButtonClick;
         this->onButtonSelectHandler.ptmf = &ExpWFCMain::ExtOnButtonSelect;
@@ -36,6 +38,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     void OnMainButtonClick(PushButton& pushButton, u32 hudSlotId);
     void OnOtherButtonClick(PushButton& pushButton, u32 hudSlotId);
     void OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId);
+    void OnCompetitiveButtonClick(PushButton& pushButton, u32 hudSlotId);
     void OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId);
     void ExtOnStartPress(u32 hudSlotId);
 
@@ -43,6 +46,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onMainClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onOtherClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onBattleClick;
+    PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onCompetitiveClick;
     PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onLeaderboardClick;
     PtmfHolder_1A<ExpWFCMain, void, u32> onStartPress;
     PushButton settingsButton;
@@ -52,6 +56,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     PushButton leaderboardButton;
     LayoutUIControl playerCount;
     LayoutUIControl rankInfo;
+    PushButton competitiveButton;
 
    public:
     PulPageId topSettingsPage;
@@ -61,7 +66,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
 
 class ExpWFCModeSel : public Pages::WFCModeSelect {
    public:
-    ExpWFCModeSel() : region(0xA), ratingControlsSideBySide(false) {
+    ExpWFCModeSel() : region(0xA) {
         this->onButtonSelectHandler.ptmf = &ExpWFCModeSel::OnModeButtonSelect;
         this->onModeButtonClickHandler.ptmf = &ExpWFCModeSel::OnModeButtonClick;
     }
@@ -87,7 +92,6 @@ class ExpWFCModeSel : public Pages::WFCModeSelect {
     LayoutUIControl mmrButton;
     static u32 lastClickedButton;
     u32 region;
-    bool ratingControlsSideBySide;
     static const u32 ctButtonId = 4;
     static const u32 regButtonId = 5;
     static const u32 mogiButtonId = 13;

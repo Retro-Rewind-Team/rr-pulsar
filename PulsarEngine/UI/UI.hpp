@@ -175,6 +175,7 @@ enum BMG {
     BMG_MAIN_MODES = 0x6901,
     BMG_OTHER_MODES = 0x6902,
     BMG_BATTLE_MODES = 0x6914,
+    BMG_COMPETITIVE_MODES = 0x6929,
 
     // Custom Track
     BMG_CT_BUTTON = 0x690c,
