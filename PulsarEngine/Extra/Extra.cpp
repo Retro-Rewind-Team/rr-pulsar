@@ -8,16 +8,9 @@
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Dolphin/DolphinIOS.hpp>
-#include <Network/Mogi.hpp>
 #include <PulsarSystem.hpp>
 
 namespace Codes {
-
-static void SetMogiMatchmakingSuspend(RKNet::Controller* controller) {
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    if (!Pulsar::Mogi::IsEnabled() || sub.playerCount >= 12) controller->SetVoteMatchmakingSuspend();
-}
-kmCall(0x80663e64, SetMogiMatchmakingSuspend);
 
 // Remove Background Blur [Davidevgen]
 kmWrite32(0x80258184, 0x30);

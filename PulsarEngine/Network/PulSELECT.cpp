@@ -9,6 +9,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
 #include <Network/Mogi.hpp>
+#include <Network/Rating/MogiRating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
@@ -32,16 +33,27 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
     const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
 
     float rating;
+    u16 ratingWhole = 0;
+    u8 ratingDecimal = 0;
     if (rksys) {
         u32 licenseId = rksys->curLicenseId;
-        if (isBattle)
+        if (isMogi)
+            rating = MogiRating::GetUserMMR(licenseId);
+        else if (isBattle)
             rating = PointRating::GetUserBR(licenseId);
         else
             rating = PointRating::GetUserVR(licenseId);
 
-        src->decimalVR[0] = isMogi ? 0 : static_cast<u8>((rating - (int)rating) * 100.0f + 0.5f);
-        if (!isMogi && System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
-            src->playersData[0].sumPoints = static_cast<u16>(rating);
+        ratingWhole = static_cast<u16>(rating);
+        ratingDecimal = static_cast<u8>((rating - (int)rating) * 100.0f + 0.5f);
+        if (isMogi) {
+            const u32 encodedRating = static_cast<u32>(rating * 100.0f + 0.5f);
+            ratingWhole = static_cast<u16>(encodedRating / 100);
+            ratingDecimal = static_cast<u8>(encodedRating % 100);
+        }
+        src->decimalVR[0] = ratingDecimal;
+        if (isMogi || (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO))) {
+            src->playersData[0].sumPoints = ratingWhole;
         }
     } else {
         src->decimalVR[0] = 0;
@@ -53,7 +65,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
         src->playersData[1].character = static_cast<u8>(sectionParams->characters[1]);
         src->playersData[1].kart = static_cast<u8>(sectionParams->karts[1]);
-        src->playersData[1].sumPoints = 0;
+        src->playersData[1].sumPoints = isMogi ? ratingWhole : 0;
         const Racedata* racedata = Racedata::sInstance;
         if (!isMogi && racedata != nullptr) {
             const RacedataScenario& menuScenario = racedata->menusScenario;
@@ -63,6 +75,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
             }
         }
         src->playersData[1].starRank = 0;
+        if (isMogi) src->decimalVR[1] = ratingDecimal;
     }
 
     src->mogiMMR.magic = 0;

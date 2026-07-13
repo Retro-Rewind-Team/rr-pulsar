@@ -44,6 +44,12 @@ static bool sStartReported = false;
 
 static void SelectLobbyFormat(u32 groupId);
 
+static bool IsFriendRoom(const RKNet::Controller* controller) {
+    return controller != nullptr &&
+           (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+            controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+}
+
 static void ResetRemoteMMR() {
     for (u8 aid = 0; aid < 12; ++aid) {
         sRemoteMMR[aid][0] = 0xFFFF;
@@ -67,7 +73,8 @@ void OnDisconnect() {
 
 static u16 EncodeMMR(float mmr) {
     int encoded = static_cast<int>(mmr * 100.0f + 0.5f);
-    if (encoded < 1000) encoded = 1000;
+    const int minimumEncodedMMR = static_cast<int>(MogiRating::MIN_MMR * 100.0f + 0.5f);
+    if (encoded < minimumEncodedMMR) encoded = minimumEncodedMMR;
     if (encoded > 30000) encoded = 30000;
     return static_cast<u16>(encoded);
 }
@@ -130,8 +137,7 @@ static void UpdateActiveFromRoom() {
     controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     if (sub.groupId == 0) return;
-    if (!sActive || sLobbyGroupId != sub.groupId) {
-        if (sSessionActive && sLobbyGroupId != 0 && sLobbyGroupId != sub.groupId) OnDisconnect();
+    if (!sActive) {
         sLobbyGroupId = sub.groupId;
         SelectLobbyFormat(sub.groupId);
         sActive = true;
@@ -140,6 +146,9 @@ static void UpdateActiveFromRoom() {
         sSessionActive = true;
         sPendingDisconnect = false;
         sStartReported = false;
+    } else if (sLobbyGroupId != sub.groupId) {
+        // Host migration can replace the network group without starting a new Mogi session.
+        sLobbyGroupId = sub.groupId;
     }
     System::sInstance->netMgr.racesPerGP = MOGI_RACE_COUNT - 1;
 }
@@ -175,7 +184,8 @@ void FillMMRPacket(u16& player0, u16& player1) {
 
 void ReceiveMMRPacket(u8 aid, u16 player0, u16 player1) {
     if (aid >= 12) return;
-    if (player0 < 1000 || player0 > 30000 || player1 < 1000 || player1 > 30000) return;
+    const u16 minimumEncodedMMR = static_cast<u16>(MogiRating::MIN_MMR * 100.0f + 0.5f);
+    if (player0 < minimumEncodedMMR || player0 > 30000 || player1 < minimumEncodedMMR || player1 > 30000) return;
     sRemoteMMR[aid][0] = player0;
     sRemoteMMR[aid][1] = player1;
 }
@@ -186,6 +196,8 @@ u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole) {
 }
 
 static void SelectLobbyFormat(u32 groupId) {
+    if (sActive) return;
+
     sLobbyGroupId = groupId;
     sLobbySeed = groupId ^ 0x4D4F4749;
     u32 seed = sLobbySeed;
@@ -217,9 +229,10 @@ static void SelectLobbyFormat(u32 groupId) {
 }
 
 void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
-    if (!IsEnabled() || !IsPublicRoom()) return;
-
     RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isMigratedFriendRoom = sActive && IsFriendRoom(controller);
+    if (!IsEnabled() || (!IsPublicRoom() && !isMigratedFriendRoom)) return;
+
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     SelectLobbyFormat(sub.groupId);
     sActive = true;
