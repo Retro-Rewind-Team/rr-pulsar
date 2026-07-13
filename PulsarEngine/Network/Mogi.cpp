@@ -20,6 +20,9 @@ static const u32 MOGI_TEAM_SIZE_MASK = 0x30000000;
 static const u32 MOGI_TEAM_SIZE_2 = 0x10000000;
 static const u32 MOGI_TEAM_SIZE_3 = 0x20000000;
 static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
+static const u8 MOGI_FORMAT_ROLL_COUNT = 7;
+static const u8 MOGI_FFA_ROLL_COUNT = 2;
+static const u8 MOGI_2V2_ROLL_COUNT = 2;
 static const u8 MOGI_RACE_COUNT = 12;
 static const float MOGI_EXPECTATION_RANGE = 100.0f;
 static const float MOGI_MAX_GAIN_MMR = 250.0f;
@@ -284,20 +287,24 @@ static void SelectLobbyFormat(u32 groupId) {
     sLobbyGroupId = groupId;
     sLobbySeed = groupId ^ 0x4D4F4749;
     u32 seed = sLobbySeed;
-    sTeamFormat = (seed & 1) != 0;
-    switch ((seed >> 1) & 3) {
-        case 0:
-            sPlayersPerTeam = 2;
-            break;
-        case 1:
-            sPlayersPerTeam = 3;
-            break;
-        case 2:
-            sPlayersPerTeam = 4;
-            break;
-        default:
-            sPlayersPerTeam = 6;
-            break;
+    const u8 formatRoll = static_cast<u8>(seed % MOGI_FORMAT_ROLL_COUNT);
+    sTeamFormat = formatRoll >= MOGI_FFA_ROLL_COUNT;
+    if (formatRoll < MOGI_FFA_ROLL_COUNT) {
+        sPlayersPerTeam = 2;
+    } else if (formatRoll < MOGI_FFA_ROLL_COUNT + MOGI_2V2_ROLL_COUNT) {
+        sPlayersPerTeam = 2;
+    } else {
+        switch (formatRoll) {
+            case 4:
+                sPlayersPerTeam = 3;
+                break;
+            case 5:
+                sPlayersPerTeam = 4;
+                break;
+            default:
+                sPlayersPerTeam = 6;
+                break;
+        }
     }
 
     for (u8 i = 0; i < 12; ++i) sTeamByPlayer[i] = i / sPlayersPerTeam;

@@ -16,8 +16,6 @@
 namespace Pulsar {
 namespace PointRating {
 
-static wchar_t s_mogiRatingLabel[] = L"MMR";
-
 static u8 GetNameRatingIcon(u8 wheelType, u8 starRating) {
     return wheelType * 4 + starRating;
 }
@@ -118,10 +116,8 @@ static void FillVRControl(Pages::VR* page, u32 idx, u32 playerId, u32 team, u8 t
             ctrl.SetTextBoxMessage("point_sha_2", valMsg, &ptsInfo);
             if (unitMsg) {
                 if (Mogi::IsActive()) {
-                    Text::Info unitInfo;
-                    unitInfo.strings[0] = s_mogiRatingLabel;
-                    ctrl.SetTextBoxMessage("pts_2", UI::BMG_TEXT, &unitInfo);
-                    ctrl.SetTextBoxMessage("pts_sha_2", UI::BMG_TEXT, &unitInfo);
+                    ctrl.SetTextBoxMessage("pts_2", UI::BMG_MOGI_MMR);
+                    ctrl.SetTextBoxMessage("pts_sha_2", UI::BMG_MOGI_MMR);
                 } else {
                     ctrl.SetTextBoxMessage("pts_2", unitMsg);
                     ctrl.SetTextBoxMessage("pts_sha_2", unitMsg);

@@ -18,9 +18,6 @@ namespace Pulsar {
 namespace UI {
 
 static wchar_t s_rankDetailsBuffer[512];
-static wchar_t s_mmrChangeMessage[192];
-static wchar_t s_mogiButtonText[] = L"Mogi";
-static wchar_t s_mogiBottomText[] = L"Mogi matchmaking: 12 players, 12 races";
 
 static void FormatMMRValue(float mmr, wchar_t* buffer, u32 bufferSize) {
     int scaled = (int)(mmr * 100.0f + 0.5f);
@@ -52,13 +49,12 @@ static void ShowPendingLoginMMRChange(ExpWFCMain& page) {
     FormatMMRValue(oldMMR, oldText, sizeof(oldText) / sizeof(oldText[0]));
     FormatMMRDelta(newMMR - oldMMR, deltaText, sizeof(deltaText) / sizeof(deltaText[0]));
     FormatMMRValue(newMMR, newText, sizeof(newText) / sizeof(newText[0]));
-    swprintf(s_mmrChangeMessage, sizeof(s_mmrChangeMessage) / sizeof(s_mmrChangeMessage[0]),
-             L"Old MMR: %ls\nChange: %ls\nNew MMR: %ls", oldText, deltaText, newText);
-
     Text::Info info;
-    info.strings[0] = s_mmrChangeMessage;
+    info.strings[0] = oldText;
+    info.strings[1] = deltaText;
+    info.strings[2] = newText;
     messageBox->Reset();
-    messageBox->SetMessageWindowText(UI::BMG_TEXT, &info);
+    messageBox->SetMessageWindowText(UI::BMG_MOGI_MMR_CHANGE, &info);
     page.AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
     PointRating::ClearPendingLoginMMRChange();
 }
@@ -457,7 +453,7 @@ void ExpWFCModeSel::OnActivatePatch() {
     if (Mogi::IsEnabled()) {
         page->lastClickedButton = mogiButtonId;
         button = &page->mogiButton;
-        bmgId = BMG_TEXT;
+        bmgId = BMG_MOGI_BOTTOM;
     } else if (System::sInstance->IsContext(PULSAR_MODE_OTT) && System::sInstance->IsContext(PULSAR_RETROS)) {
         page->lastClickedButton = ottButtonId;
         button = &page->ottButton;
@@ -492,11 +488,6 @@ void ExpWFCModeSel::OnActivatePatch() {
     }
 
     page->bottomText.SetMessage(bmgId);
-    if (Mogi::IsEnabled()) {
-        Text::Info mogiInfo;
-        mogiInfo.strings[0] = s_mogiBottomText;
-        page->bottomText.SetMessage(UI::BMG_TEXT, &mogiInfo);
-    }
     button->Select(0);
     if (ExpWFCMain::lastClickedMainMenuButton == 8) {
         BTbutton->Select(0);
@@ -527,9 +518,7 @@ void ExpWFCModeSel::OnModeButtonSelect(PushButton& modeButton, u32 hudSlotId) {
     } else if (modeButton.buttonId == RRbattleButtonIdElim) {
         this->bottomText.SetMessage(BMG_BATTLE_WW_BOTTOM_ELIM);
     } else if (modeButton.buttonId == mogiButtonId) {
-        Text::Info info;
-        info.strings[0] = s_mogiBottomText;
-        this->bottomText.SetMessage(UI::BMG_TEXT, &info);
+        this->bottomText.SetMessage(BMG_MOGI_BOTTOM);
     }
 
     else
