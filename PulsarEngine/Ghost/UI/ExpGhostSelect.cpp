@@ -224,6 +224,9 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
     }
 
     // No saving and no new record in OTT for now
+    if (gamemode == MODE_MISSION_TOURNAMENT) {
+        return;
+    }
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
 
     // enhanced replay
