@@ -155,5 +155,48 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
     menu.LoadNextPageById(id, button);
 }
 
+static void LoadTransmissionSelectBeforeSectionChange(Pages::Menu& menu, SectionId id, PushButton& button) {
+    System* system = System::sInstance;
+    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
+        menu.ChangeSectionById(id, button);
+        return;
+    }
+    returnToGlobeAfterTransmission = false;
+    nextPageAfterTransmission = PAGE_NONE;
+    nextSectionAfterTransmission = id;
+    CopyDriftTimerToTransmission(menu);
+    menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
+}
+kmCall(0x8084e4c8, LoadTransmissionSelectBeforeSectionChange);
+kmCall(0x8084e650, LoadTransmissionSelectBeforeSectionChange);
+
+static void LoadTransmissionSelectAfterMissionDrift(Pages::Menu& menu, SectionId id, float delay) {
+    System* system = System::sInstance;
+    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
+        menu.ChangeSectionWithDelayById(id, delay);
+        return;
+    }
+    returnToGlobeAfterTransmission = false;
+    nextPageAfterTransmission = PAGE_NONE;
+    nextSectionAfterTransmission = id;
+    CopyDriftTimerToTransmission(menu);
+    menu.LoadNextPageWithDelayById(static_cast<PageId>(TransmissionSelect::id), delay);
+}
+kmCall(0x8084e668, LoadTransmissionSelectAfterMissionDrift);
+
+void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection, float animLength) {
+    System* system = System::sInstance;
+    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
+        menu.EndStateAnimated(animDirection, animLength);
+        return;
+    }
+    returnToGlobeAfterTransmission = true;
+    nextPageAfterTransmission = PAGE_NONE;
+    nextSectionAfterTransmission = SECTION_NONE;
+    CopyDriftTimerToTransmission(menu);
+    menu.LoadNextPageWithDelayById(static_cast<PageId>(TransmissionSelect::id), animLength);
+}
+kmCall(0x8084e4b8, LoadTransmissionSelectAfterGlobeDrift);
+
 }  // namespace UI
 }  // namespace Pulsar
