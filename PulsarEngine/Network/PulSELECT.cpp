@@ -24,6 +24,16 @@ static bool IsRegionalRoom(RKNet::RoomType roomType) {
     return roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
 }
 
+static u16 GetLocalMogiGPScore(u8 hudSlotId) {
+    const Racedata* racedata = Racedata::sInstance;
+    if (racedata == nullptr || hudSlotId >= 2) return 0;
+
+    const RacedataScenario& menuScenario = racedata->menusScenario;
+    const u8 playerId = menuScenario.settings.hudPlayerIds[hudSlotId];
+    if (playerId >= menuScenario.playerCount) return 0;
+    return menuScenario.players[playerId].score;
+}
+
 void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* src, u32 len) {  // len is sizeof(RKNet::SELECTPacket) by default
     const System* system = System::sInstance;
 
@@ -52,7 +62,9 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
             ratingDecimal = static_cast<u8>(encodedRating % 100);
         }
         src->decimalVR[0] = ratingDecimal;
-        if (isMogi || (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO))) {
+        if (isMogi) {
+            src->playersData[0].sumPoints = GetLocalMogiGPScore(0);
+        } else if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
             src->playersData[0].sumPoints = ratingWhole;
         }
     } else {
@@ -65,7 +77,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
         src->playersData[1].character = static_cast<u8>(sectionParams->characters[1]);
         src->playersData[1].kart = static_cast<u8>(sectionParams->karts[1]);
-        src->playersData[1].sumPoints = isMogi ? ratingWhole : 0;
+        src->playersData[1].sumPoints = isMogi ? GetLocalMogiGPScore(1) : 0;
         const Racedata* racedata = Racedata::sInstance;
         if (!isMogi && racedata != nullptr) {
             const RacedataScenario& menuScenario = racedata->menusScenario;
