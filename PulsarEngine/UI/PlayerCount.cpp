@@ -155,6 +155,8 @@ static int RR_numPlayers150cc = 0;
 static int RR_numPlayersCT = 0;
 static int RR_numPlayersRT = 0;
 static int RR_numPlayersMogi = 0;
+static int RR_numPlayersMogiCT = 0;
+static int RR_numPlayersMogiRT = 0;
 
 static int RR_numPlayers200cc = 0;
 static int RR_numPlayersOTT = 0;
@@ -174,7 +176,13 @@ void PlayerCount::GetNumbersMain(int& nRetro, int& nCT, int& nRT) {
 }
 
 void PlayerCount::GetNumbersMogi(int& nMogi) {
-    nMogi = RR_numPlayersMogi;
+    nMogi = RR_numPlayersMogi + RR_numPlayersMogiCT + RR_numPlayersMogiRT;
+}
+
+void PlayerCount::GetNumbersMogiModes(int& nRetro, int& nCT, int& nRT) {
+    nRetro = RR_numPlayersMogi;
+    nCT = RR_numPlayersMogiCT;
+    nRT = RR_numPlayersMogiRT;
 }
 
 void PlayerCount::GetNumbersOther(int& n200, int& nOtt, int& nIR) {
@@ -208,6 +216,7 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
         int numRegs = 0;
         int RR_localRetro = 0, RR_localCT = 0, RR_localRT = 0;
         int RR_localMogi = 0;
+        int RR_localMogiCT = 0, RR_localMogiRT = 0;
         int RR_local200cc = 0, RR_localOTT = 0, RR_localIR = 0;
         int BT_localRegular = 0, BT_localRegularELIM = 0;
         for (int i = 0; i < ServerBrowserCount(sb); i++) {
@@ -223,6 +232,10 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
             if (strstr(region, "vs")) {
                 if (regionID == Pulsar::Mogi::REGION) {
                     RR_localMogi += numplayers;
+                } else if (regionID == Pulsar::Mogi::REGION_CT) {
+                    RR_localMogiCT += numplayers;
+                } else if (regionID == Pulsar::Mogi::REGION_REG) {
+                    RR_localMogiRT += numplayers;
                 } else if (regionID == 0x0A) {
                     RR_localRetro += numplayers;
                 } else if (regionID == 0x0C) {
@@ -254,6 +267,8 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
         RR_numPlayersCT = RR_localCT;
         RR_numPlayersRT = RR_localRT;
         RR_numPlayersMogi = RR_localMogi;
+        RR_numPlayersMogiCT = RR_localMogiCT;
+        RR_numPlayersMogiRT = RR_localMogiRT;
 
         RR_numPlayers200cc = RR_local200cc;
         RR_numPlayersOTT = RR_localOTT;

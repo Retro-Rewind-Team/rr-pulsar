@@ -254,7 +254,7 @@ void ExpWFCModeSel::OnInit() {
 u32 Pulsar::UI::ExpWFCModeSel::lastClickedButton = 0;
 
 void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
-    self.InitControlGroup(15);
+    self.InitControlGroup(17);
 
     self.AddControl(5, self.ctButton, 0);
     self.ctButton.Load(UI::buttonFolder, "WifiMenuModeSelect", "CTButton", 1, 0, 0);
@@ -273,9 +273,23 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
     self.AddControl(13, self.mogiButton, 0);
     self.mogiButton.Load(UI::buttonFolder, "WifiMenuModeSelect", "CompRetroButton", 1, 0, 0);
     self.mogiButton.buttonId = mogiButtonId;
-    self.mogiButton.SetMessage(UI::BMG_MOGI_BUTTON);
+    self.mogiButton.SetMessage(UI::BMG_MOGI_RETRO_BUTTON);
     self.mogiButton.SetOnClickHandler(self.onModeButtonClickHandler, 0);
     self.mogiButton.SetOnSelectHandler(self.onButtonSelectHandler);
+
+    self.AddControl(15, self.compCTButton, 0);
+    self.compCTButton.Load(UI::buttonFolder, "WifiMenuModeSelect", "CompCTButton", 1, 0, 0);
+    self.compCTButton.buttonId = compCTButtonId;
+    self.compCTButton.SetMessage(BMG_MOGI_CT_BUTTON);
+    self.compCTButton.SetOnClickHandler(self.onModeButtonClickHandler, 0);
+    self.compCTButton.SetOnSelectHandler(self.onButtonSelectHandler);
+
+    self.AddControl(16, self.compRegButton, 0);
+    self.compRegButton.Load(UI::buttonFolder, "WifiMenuModeSelect", "CompRegButton", 1, 0, 0);
+    self.compRegButton.buttonId = compRegButtonId;
+    self.compRegButton.SetMessage(BMG_MOGI_REGULAR_BUTTON);
+    self.compRegButton.SetOnClickHandler(self.onModeButtonClickHandler, 0);
+    self.compRegButton.SetOnSelectHandler(self.onButtonSelectHandler);
 
     self.AddControl(7, self.twoHundredButton, 0);
     self.twoHundredButton.Load(UI::buttonFolder, "WifiMenuModeSelect", "200Button", 1, 0, 0);
@@ -356,6 +370,7 @@ void ExpWFCModeSel::ClearModeContexts() {
     const u32 modeContexts[] = {
         PULSAR_RETROS,
         PULSAR_CTS,
+        PULSAR_REGS,
         PULSAR_MODE_OTT,
         PULSAR_200_WW,
         PULSAR_ITEMMODERAIN,
@@ -370,11 +385,17 @@ void ExpWFCModeSel::ClearModeContexts() {
 
 void ExpWFCModeSel::OnModeButtonClick(PushButton& modeButton, u32 hudSlotId) {
     const u32 id = modeButton.buttonId;
-    Mogi::SetEnabled(id == mogiButtonId);
+    const bool isMogiMode = id == mogiButtonId || id == compCTButtonId || id == compRegButtonId;
+    Mogi::SetEnabled(isMogiMode);
     ClearModeContexts();
 
-    if (Mogi::IsEnabled()) {
-        System::sInstance->netMgr.region = Mogi::REGION;
+    if (isMogiMode) {
+        if (id == compCTButtonId)
+            System::sInstance->netMgr.region = Mogi::REGION_CT;
+        else if (id == compRegButtonId)
+            System::sInstance->netMgr.region = Mogi::REGION_REG;
+        else
+            System::sInstance->netMgr.region = Mogi::REGION;
     } else if (id == ottButtonId) {
         System::sInstance->netMgr.region = 0x0B;
     } else if (id == twoHundredButtonId) {
@@ -431,6 +452,8 @@ void ExpWFCModeSel::OnActivatePatch() {
     SetButtonHidden(page->RRbattleButton, isHidden);
     SetButtonHidden(page->RRbattleButtonElim, isHidden);
     SetButtonHidden(page->mogiButton, isHidden);
+    SetButtonHidden(page->compCTButton, isHidden);
+    SetButtonHidden(page->compRegButton, isHidden);
 
     page->vsButton.SetMessage(BMG_VS_BUTTON);
 
@@ -439,6 +462,8 @@ void ExpWFCModeSel::OnActivatePatch() {
         SetButtonHidden(page->ctButton, !isMainMode);
         SetButtonHidden(page->regButton, !isMainMode);
         SetButtonHidden(page->mogiButton, !isCompetitiveMode);
+        SetButtonHidden(page->compCTButton, !isCompetitiveMode);
+        SetButtonHidden(page->compRegButton, !isCompetitiveMode);
 
         SetButtonHidden(page->ottButton, !isOtherMode);
         SetButtonHidden(page->twoHundredButton, !isOtherMode);
@@ -475,8 +500,16 @@ void ExpWFCModeSel::OnActivatePatch() {
 
     // Determine which button should be selected based on current context
     if (isCompetitiveMode) {
-        page->lastClickedButton = mogiButtonId;
-        button = &page->mogiButton;
+        if (System::sInstance->netMgr.region == Mogi::REGION_CT) {
+            page->lastClickedButton = compCTButtonId;
+            button = &page->compCTButton;
+        } else if (System::sInstance->netMgr.region == Mogi::REGION_REG) {
+            page->lastClickedButton = compRegButtonId;
+            button = &page->compRegButton;
+        } else {
+            page->lastClickedButton = mogiButtonId;
+            button = &page->mogiButton;
+        }
         bmgId = BMG_MOGI_BOTTOM;
     } else if (System::sInstance->IsContext(PULSAR_MODE_OTT) && System::sInstance->IsContext(PULSAR_RETROS)) {
         page->lastClickedButton = ottButtonId;
@@ -520,7 +553,7 @@ void ExpWFCModeSel::OnActivatePatch() {
     } else if (ExpWFCMain::lastClickedMainMenuButton == 6) {
         page->vsButton.Select(0);
     } else if (ExpWFCMain::lastClickedMainMenuButton == 9) {
-        page->mogiButton.Select(0);
+        button->Select(0);
     }
 }
 kmCall(0x8064c5f0, ExpWFCModeSel::OnActivatePatch);
@@ -542,6 +575,10 @@ void ExpWFCModeSel::OnModeButtonSelect(PushButton& modeButton, u32 hudSlotId) {
         this->bottomText.SetMessage(BMG_BATTLE_WW_BOTTOM_ELIM);
     } else if (modeButton.buttonId == mogiButtonId) {
         this->bottomText.SetMessage(BMG_MOGI_BOTTOM);
+    } else if (modeButton.buttonId == compCTButtonId) {
+        this->bottomText.SetMessage(BMG_MOGI_BOTTOM);
+    } else if (modeButton.buttonId == compRegButtonId) {
+        this->bottomText.SetMessage(BMG_MOGI_BOTTOM);
     }
 
     else
@@ -553,6 +590,8 @@ void ExpWFCModeSel::BeforeControlUpdate() {
 
     int numRegulars;
     int numMogi;
+    int numMogiCT;
+    int numMogiReg;
     int RR_numRetro, RR_numCT, RR_numRT;
     int RR_num200cc, RR_numOTT, RR_numIR;
     int BT_numRegulars, BT_numELIM;
@@ -560,7 +599,7 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     PlayerCount::GetNumbersOther(RR_num200cc, RR_numOTT, RR_numIR);
     PlayerCount::GetNumbersBT(BT_numRegulars, BT_numELIM);
     PlayerCount::GetNumbersRegular(numRegulars);
-    PlayerCount::GetNumbersMogi(numMogi);
+    PlayerCount::GetNumbersMogiModes(numMogi, numMogiCT, numMogiReg);
 
     Pages::GlobeSearch* globeSearch = SectionMgr::sInstance->curSection->Get<Pages::GlobeSearch>();
 
@@ -586,6 +625,12 @@ void ExpWFCModeSel::BeforeControlUpdate() {
 
         info.intToPass[0] = numMogi;
         this->mogiButton.SetTextBoxMessage("go", Pulsar::UI::BMG_PLAYER_COUNT, &info);
+
+        info.intToPass[0] = numMogiCT;
+        this->compCTButton.SetTextBoxMessage("go", Pulsar::UI::BMG_PLAYER_COUNT, &info);
+
+        info.intToPass[0] = numMogiReg;
+        this->compRegButton.SetTextBoxMessage("go", Pulsar::UI::BMG_PLAYER_COUNT, &info);
 
         info.intToPass[0] = BT_numRegulars;
         this->RRbattleButton.SetTextBoxMessage("go", Pulsar::UI::BMG_PLAYER_COUNT, &info);

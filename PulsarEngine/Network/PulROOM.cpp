@@ -237,9 +237,9 @@ static void BeforeROOMSend(RKNet::PacketHolder<void>* packetHolder, const void* 
         }
 
         if (Mogi::IsEnabled()) {
-            regsOnly = 0;
-            retrosOnly = 1;
-            ctsOnly = 0;
+            regsOnly = Mogi::REGION_REG == system->netMgr.region;
+            retrosOnly = Mogi::REGION == system->netMgr.region;
+            ctsOnly = Mogi::REGION_CT == system->netMgr.region;
         }
 
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT |  // ott

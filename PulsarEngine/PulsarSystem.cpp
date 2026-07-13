@@ -409,9 +409,9 @@ void System::UpdateContext() {
     }
 
     if (Mogi::IsEnabled()) {
-        isTrackSelectionRegs = false;
-        isTrackSelectionRetros = true;
-        isTrackSelectionCts = false;
+        isTrackSelectionRegs = netMgr.region == Mogi::REGION_REG;
+        isTrackSelectionRetros = netMgr.region == Mogi::REGION;
+        isTrackSelectionCts = netMgr.region == Mogi::REGION_CT;
     }
 
     this->netMgr.hostContext = newContext;
@@ -470,8 +470,9 @@ void System::UpdateContext() {
     if (isRegionalRoom) {
         switch (region) {
             case 0x0A:  // Regular retro tracks
-            case 0x16:  // Retro Track Mogi
+            case Mogi::REGION:  // Retro Track Mogi
                 this->context |= (1 << PULSAR_RETROS);
+                this->context &= ~((1 << PULSAR_CTS) | (1 << PULSAR_REGS));
                 sInstance->context &= ~(1 << PULSAR_200_WW);
                 sInstance->context &= ~(1 << PULSAR_MODE_OTT);
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
@@ -512,6 +513,29 @@ void System::UpdateContext() {
 
             case 0x14:  // CT (Custom Tracks)
                 this->context |= (1 << PULSAR_CTS);
+                this->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_REGS));
+                sInstance->context &= ~(1 << PULSAR_200_WW);
+                sInstance->context &= ~(1 << PULSAR_MODE_OTT);
+                sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
+                sInstance->context2 &= ~(1 << PULSAR_FFA);
+                sInstance->context &= ~(1 << PULSAR_ELIMINATION);
+                sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
+                break;
+
+            case Mogi::REGION_CT:  // Custom Track Mogi
+                this->context |= (1 << PULSAR_CTS);
+                this->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_REGS));
+                sInstance->context &= ~(1 << PULSAR_200_WW);
+                sInstance->context &= ~(1 << PULSAR_MODE_OTT);
+                sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
+                sInstance->context2 &= ~(1 << PULSAR_FFA);
+                sInstance->context &= ~(1 << PULSAR_ELIMINATION);
+                sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
+                break;
+
+            case Mogi::REGION_REG:  // Regular Track Mogi
+                this->context |= (1 << PULSAR_REGS);
+                this->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_CTS));
                 sInstance->context &= ~(1 << PULSAR_200_WW);
                 sInstance->context &= ~(1 << PULSAR_MODE_OTT);
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);

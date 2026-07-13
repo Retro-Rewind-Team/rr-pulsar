@@ -8,6 +8,8 @@ namespace Pulsar {
 namespace Mogi {
 
 static const u8 REGION = 0x16;
+static const u8 REGION_CT = 0x17;
+static const u8 REGION_REG = 0x18;
 static const u16 MMR_PACKET_MAGIC = 0x4D4D;
 
 bool IsEnabled();

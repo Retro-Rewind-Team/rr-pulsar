@@ -31,9 +31,9 @@ kmCall(0x80659788, PatchRegion);
 static int GetFriendsSearchType(int curType, u32 regionId) {
     register u8 friendRegionId;
     asm(mr friendRegionId, r0;);
-    if ((System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D || System::sInstance->netMgr.region == 0x0E || System::sInstance->netMgr.region == 0x0F || System::sInstance->netMgr.region == Mogi::REGION ||
+    if ((System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D || System::sInstance->netMgr.region == 0x0E || System::sInstance->netMgr.region == 0x0F || System::sInstance->netMgr.region == Mogi::REGION || System::sInstance->netMgr.region == Mogi::REGION_CT || System::sInstance->netMgr.region == Mogi::REGION_REG ||
          System::sInstance->netMgr.region == 0x14 || System::sInstance->netMgr.region == 0x15) ||
-        (friendRegionId == 0x0A || friendRegionId == 0x0B || friendRegionId == 0x0C || friendRegionId == 0x0D || friendRegionId == 0x0E || friendRegionId == 0x0F || friendRegionId == Mogi::REGION ||
+        (friendRegionId == 0x0A || friendRegionId == 0x0B || friendRegionId == 0x0C || friendRegionId == 0x0D || friendRegionId == 0x0E || friendRegionId == 0x0F || friendRegionId == Mogi::REGION || friendRegionId == Mogi::REGION_CT || friendRegionId == Mogi::REGION_REG ||
          friendRegionId == 0x14 || friendRegionId == 0x15)) {
         if (curType == 7) return 6;
         return 9;
