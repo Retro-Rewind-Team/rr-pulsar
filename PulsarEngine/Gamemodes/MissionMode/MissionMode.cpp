@@ -237,6 +237,80 @@ kmCall(0x807f773c, GetMissionScoreDisplayTarget);
 kmWrite32(0x807f7740, 0x907f01a0);
 kmWrite32(0x807f7744, 0x2c030000);
 
+static void* sMissionState = nullptr;
+
+static u32 GetMissionScore(void* mission) {
+    return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + 8);
+}
+
+static u32 GetMissionRequiredScore() {
+    return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(Racedata::sInstance) + 0xbcc);
+}
+
+static bool HasMissionScoreRequirement(void* mission) {
+    return GetMissionScore(mission) >= GetMissionRequiredScore();
+}
+
+static bool IsMissionPresentationFailure() {
+    if (Racedata::sInstance == nullptr || sMissionState == nullptr ||
+        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
+        return false;
+    return !HasMissionScoreRequirement(sMissionState) &&
+           *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(sMissionState) + 0xc) == 2;
+}
+
+static void FixMissionTimeout(void* mission) {
+    sMissionState = mission;
+    typedef void (*MissionFinishFn)(void*);
+    const u32* const vtable = *reinterpret_cast<const u32* const*>(mission);
+    reinterpret_cast<MissionFinishFn>(vtable[0x34 / 4])(mission);
+    if (!HasMissionScoreRequirement(mission))
+        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mission) + 0xc) = 2;
+}
+
+static void FixMissionTimeoutEnd(void* mission) {
+    sMissionState = mission;
+    typedef void (*MissionEndFn)(void*);
+    const u32* const vtable = *reinterpret_cast<const u32* const*>(mission);
+    reinterpret_cast<MissionEndFn>(vtable[0xc / 4])(mission);
+    if (!HasMissionScoreRequirement(mission) && Raceinfo::sInstance != nullptr &&
+        Raceinfo::sInstance->stage == RACESTAGE_IS_FINISHING)
+        Raceinfo::sInstance->stage = RACESTAGE_FINISHED;
+}
+
+static u32 FixMissionCanEnd(void* mission) {
+    sMissionState = mission;
+    const bool timerExpired = Raceinfo::sInstance != nullptr && Raceinfo::sInstance->timerMgr != nullptr &&
+                               Raceinfo::sInstance->timerMgr->hasRaceTimeRanOut;
+    const u32 status = *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + 0xc);
+    if (timerExpired && status == 1 && !HasMissionScoreRequirement(mission)) {
+        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mission) + 0xc) = 2;
+        return 1;
+    }
+    return status != 0;
+}
+
+static u32 GetMissionPresentationStatus(u32 playerId) {
+    typedef u32 (*GetStatusFn)(u32);
+    const u32 status = reinterpret_cast<GetStatusFn>(0x8078cfa4)(playerId);
+    return IsMissionPresentationFailure() ? 2 : status;
+}
+
+kmCall(0x807121fc, GetMissionPresentationStatus);
+kmCall(0x8071223c, GetMissionPresentationStatus);
+kmCall(0x80712250, GetMissionPresentationStatus);
+kmCall(0x80712270, GetMissionPresentationStatus);
+kmCall(0x807122c4, GetMissionPresentationStatus);
+kmCall(0x80712364, GetMissionPresentationStatus);
+kmCall(0x80712390, GetMissionPresentationStatus);
+kmCall(0x807123b0, GetMissionPresentationStatus);
+kmCall(0x807cc7f0, GetMissionPresentationStatus);
+kmCall(0x807cc880, GetMissionPresentationStatus);
+kmCall(0x808644b0, GetMissionPresentationStatus);
+kmCall(0x8053dacc, FixMissionTimeout);
+kmCall(0x8053dae0, FixMissionTimeoutEnd);
+kmBranch(0x8053dafc, FixMissionCanEnd);
+
 void PrepareMenuScenario() {
     RacedataScenario& scenario = Racedata::sInstance->menusScenario;
 
