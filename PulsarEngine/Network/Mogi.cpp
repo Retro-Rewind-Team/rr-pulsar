@@ -507,9 +507,13 @@ static u8 GetFinalRaceNumber() {
 void OnFinalResults() {
     if (Racedata::sInstance == nullptr) return;
 
-    const RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
+    RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
-    if (!IsActive() || sMMRFinalized) return;
+    if (!IsActive()) return;
+
+    // WiFiVSResults::SetCupPanes only handles private VS/private battle modes.
+    raceScenario.settings.gamemode = MODE_PRIVATE_VS;
+    if (sMMRFinalized) return;
 
     if (raceScenario.settings.raceNumber < GetFinalRaceNumber()) return;
 
