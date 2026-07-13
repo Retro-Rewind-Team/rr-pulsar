@@ -9,6 +9,7 @@
 #include <UI/PlayerCount.hpp>
 #include <PulsarSystem.hpp>
 #include <Network/Mogi.hpp>
+#include <Network/Rating/MogiRating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/Rating/RatingSync.hpp>
 #include <Network/ServerDateTime.hpp>
@@ -72,6 +73,29 @@ static void FormatRatingLabel(float rating, const wchar_t* suffix, wchar_t* buff
     wchar_t digits[32];
     PointRating::FormatRatingDigits(rating, digits, sizeof(digits) / sizeof(digits[0]));
     swprintf(buffer, bufferSize, (rating >= 1000.0f) ? L"%ls%ls\uF06D" : L"%ls%ls", digits, suffix);
+}
+
+static void UpdateRatingControlLayout(ExpWFCModeSel& page, bool showMmr) {
+    page.mmrButton.isHidden = !showMmr;
+    if (page.ratingControlsSideBySide == showMmr) return;
+
+    nw4r::lyt::Pane* ratingText = page.vrButton.layout.GetPaneByName("go");
+    if (ratingText == nullptr) return;
+
+    const float ratingControlGap = 8.0f;
+    const float ratingControlOffset = (ratingText->size.x * ratingText->scale.x + ratingControlGap) * 0.5f;
+    for (u32 hudSlotId = 0; hudSlotId < 4; ++hudSlotId) {
+        if (showMmr) {
+            page.vrButton.positionAndscale[hudSlotId].position.x -= ratingControlOffset;
+            page.mmrButton.positionAndscale[hudSlotId].position.x += ratingControlOffset;
+        } else {
+            page.vrButton.positionAndscale[hudSlotId].position.x += ratingControlOffset;
+            page.mmrButton.positionAndscale[hudSlotId].position.x -= ratingControlOffset;
+        }
+    }
+    page.vrButton.SetPosition(0.0f);
+    page.mmrButton.SetPosition(0.0f);
+    page.ratingControlsSideBySide = showMmr;
 }
 
 static void SetButtonHidden(PushButton& button, bool hidden) {
@@ -238,7 +262,7 @@ void ExpWFCModeSel::OnInit() {
 u32 Pulsar::UI::ExpWFCModeSel::lastClickedButton = 0;
 
 void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
-    self.InitControlGroup(14);
+    self.InitControlGroup(15);
 
     self.AddControl(5, self.ctButton, 0);
     self.ctButton.Load(UI::buttonFolder, "WifiMenuModeSelect", "CTButton", 1, 0, 0);
@@ -299,6 +323,11 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
     self.AddControl(10, self.vrButton, 0);
     ControlLoader loader(&self.vrButton);
     loader.Load(UI::buttonFolder, "VRButton", "VRButton", nullptr);
+
+    self.AddControl(14, self.mmrButton, 0);
+    ControlLoader mmrLoader(&self.mmrButton);
+    mmrLoader.Load(UI::buttonFolder, "VRButton", "VRButton", nullptr);
+    UpdateRatingControlLayout(self, ExpWFCMain::lastClickedMainMenuButton == 6);
 
     Text::Info info;
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
@@ -387,6 +416,9 @@ void ExpWFCModeSel::OnActivatePatch() {
     register Pages::GlobeSearch* search;
     asm(mr search, r30;);
     const bool isHidden = search->searchType != 1;
+
+    UpdateRatingControlLayout(*page, ExpWFCMain::lastClickedMainMenuButton == 6);
+    page->mmrButton.isHidden = isHidden || ExpWFCMain::lastClickedMainMenuButton != 6;
 
     if (isHidden) {
         ClearModeContexts();
@@ -592,6 +624,16 @@ void ExpWFCModeSel::BeforeControlUpdate() {
         info.strings[0] = buffer;
         this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     }
+
+    float mmr = MogiRating::DEFAULT_MMR;
+    if (rksysMgr->curLicenseId >= 0) {
+        mmr = MogiRating::GetUserMMR(rksysMgr->curLicenseId);
+    }
+    wchar_t mmrBuffer[64];
+    Text::Info mmrInfo;
+    PointRating::FormatRatingDigits(mmr, mmrBuffer, sizeof(mmrBuffer) / sizeof(mmrBuffer[0]));
+    mmrInfo.strings[0] = mmrBuffer;
+    this->mmrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_MOGI_MMR_VALUE, &mmrInfo);
 
     ApplyVRMultiplierHighlight(this->twoHundredButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0C));
     ApplyVRMultiplierHighlight(this->ottButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0B));

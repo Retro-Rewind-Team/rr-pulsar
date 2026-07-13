@@ -61,7 +61,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
 
 class ExpWFCModeSel : public Pages::WFCModeSelect {
    public:
-    ExpWFCModeSel() : region(0xA) {
+    ExpWFCModeSel() : region(0xA), ratingControlsSideBySide(false) {
         this->onButtonSelectHandler.ptmf = &ExpWFCModeSel::OnModeButtonSelect;
         this->onModeButtonClickHandler.ptmf = &ExpWFCModeSel::OnModeButtonClick;
     }
@@ -84,8 +84,10 @@ class ExpWFCModeSel : public Pages::WFCModeSelect {
     PushButton RRbattleButton;
     PushButton RRbattleButtonElim;
     LayoutUIControl vrButton;
+    LayoutUIControl mmrButton;
     static u32 lastClickedButton;
     u32 region;
+    bool ratingControlsSideBySide;
     static const u32 ctButtonId = 4;
     static const u32 regButtonId = 5;
     static const u32 mogiButtonId = 13;
