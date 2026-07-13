@@ -2609,3 +2609,7 @@ IsMultiplayer__Q25Pages4MenuFv = 0x808388b4
 
 #MissionMode
 ChangeSectionWithDelayById__Q25Pages4MenuF9SectionIdf = 0x80837c5c
+
+#MissionMode
+GetKTPTHolder__8RaceinfoFUc = 0x805365c8
+CalcCoordinates__Q23KMP13Holder<4KTPT>FR4Vec3R4Vec3UiUi = 0x80514b24
