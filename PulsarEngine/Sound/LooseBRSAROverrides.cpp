@@ -932,28 +932,6 @@ static void* LoadWaveDataFileWithLooseBRSAROverride(snd::detail::SoundArchiveLoa
     return sOriginalLoadWaveDataFile(loader, fileId, allocater);
 }
 
-static ut::FileStream* OpenFileStreamWithLooseCustomSoundEffect(const snd::SoundArchive* archive,
-                                                               snd::SoundArchive::FileId fileId, void* buffer, int size) {
-    if (archive != nullptr && buffer != nullptr && size >= 0x78) {
-        char path[0x80];
-        u32 fileSize = 0;
-        const bool found = CustomCharacters::FindLooseSoundEffectPath(fileId, "brstm", path, sizeof(path), &fileSize) &&
-                           fileSize != 0;
-        if (found) {
-            ut::FileStream* stream = archive->OpenExtStream(buffer, size, path, 0, fileSize);
-            if (stream != nullptr) {
-                if (fileId < 1024 && sCustomSoundEffectStreamLogs[fileId] == 0) {
-                    sCustomSoundEffectStreamLogs[fileId] = 1;
-                    OS::Report("[Pulsar] Loose custom sound effect stream: fileId=%u path='%s'\n", fileId, path);
-                }
-                return stream;
-            }
-            OS::Report("[Pulsar] Loose custom sound effect stream open failed: fileId=%u path='%s'\n", fileId, path);
-        }
-    }
-    return sOriginalOpenFileStream(archive, fileId, buffer, size);
-}
-
 static const void* GetFileAddressWithLooseBRSAROverride(const snd::SoundArchivePlayer* player,
                                                         snd::SoundArchive::FileId fileId) {
     if (fileId < 1024 && sExternalFileBuffers[fileId] != nullptr) return sExternalFileBuffers[fileId];
@@ -1097,7 +1075,6 @@ kmCall(0x806ff404, LoadFileWithLooseBRSAROverride);
 kmCall(0x806fee34, LoadWaveDataFileWithLooseBRSAROverride);
 kmCall(0x806fef74, LoadWaveDataFileWithLooseBRSAROverride);
 kmCall(0x806ff0b4, LoadWaveDataFileWithLooseBRSAROverride);
-kmCall(0x800a26c8, OpenFileStreamWithLooseCustomSoundEffect);
 
 kmCall(0x800a2994, LoadGroupWithLooseBRSAROverride);
 kmBranch(0x800a1560, GetFileAddressWithLooseBRSAROverride);

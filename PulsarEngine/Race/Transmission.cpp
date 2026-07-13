@@ -70,16 +70,15 @@ static void ApplyTransmission(Kart::Stats& stats, u32 playerId) {
     if (!CanApplyTransmission(playerId)) return;
 
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    const bool isFroom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
-    if (isFroom && System::sInstance->IsContext(PULSAR_TRANSMISSIONINSIDE)) {
+    if (System::sInstance->IsContext(PULSAR_TRANSMISSIONINSIDE)) {
         ApplyInside(stats);
         return;
     }
-    if (isFroom && System::sInstance->IsContext(PULSAR_TRANSMISSIONOUTSIDE)) {
+    if (System::sInstance->IsContext(PULSAR_TRANSMISSIONOUTSIDE)) {
         ApplyOutside(stats);
         return;
     }
-    if (isFroom && System::sInstance->IsContext(PULSAR_TRANSMISSIONVANILLA)) return;
+    if (System::sInstance->IsContext(PULSAR_TRANSMISSIONVANILLA)) return;
 
     const Transmission transmission = GetPlayerTransmission(playerId);
     if (transmission == TRANSMISSION_INSIDE) {

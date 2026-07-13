@@ -21,6 +21,20 @@ namespace UI {
 
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
+void Racedata_InitRace(Racedata* racedata) {
+    racedata->InitRace();
+
+    const RacedataSettings& settings = racedata->menusScenario.settings;
+    if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
+        ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
+    }
+}
+
+kmCall(0x80530878, Racedata_InitRace);
+kmCall(0x80530ef4, Racedata_InitRace);
+kmCall(0x80553c90, Racedata_InitRace);
+kmCall(0x80554ab0, Racedata_InitRace);
+
 void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
     _this->StartRoom();
 
@@ -48,7 +62,7 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
         nextPageId = static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT);
     }
 
-    if (Race::GetEffectiveCustomItemsBitfield() != ALL_CUSTOM_ITEMS) {
+    if (Race::GetEffectiveCustomItemsBitfield() != ALL_CUSTOM_ITEMS && !CustomItemPage::ShouldSkipFriendRoomPreview()) {
         CustomItemPage* page = ExpSection::GetSection()->GetPulPage<CustomItemPage>();
         page->StartFriendRoomPreview(nextPageId);
         _this->AddPageLayer(static_cast<PageId>(CustomItemPage::id), 0);
@@ -149,13 +163,13 @@ void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter* _this, const V
         for (int i = 0; i < menuScenario.playerCount; i++) {
             if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 0) {
                 selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-                if (controller) {
+                if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
                     RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
                     selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 0);
                 }
             } else if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 1) {
                 selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-                if (controller) {
+                if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
                     RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
                     selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 1);
                 }

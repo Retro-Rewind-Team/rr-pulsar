@@ -2,14 +2,14 @@
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <core/rvl/OS/OS.hpp>
-#ifdef PROD
+#if defined(TEST) || defined(PROD)
 #include <Security/BinVerifier.hpp>
 #endif
 
 namespace RetroRewind {
 
 void *GetCustomKartParam(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
-#ifdef PROD
+#if defined(TEST) || defined(PROD)
     AntiCheat::VerifyBinFile(name);
 #endif
     return archive->GetFile(type, name, length);
@@ -42,7 +42,7 @@ void *GetCustomItemSlot(ArchiveMgr *archive, ArchiveSource type, const char *nam
         name = "ItemSlot.bin";
     }
 
-#ifdef PROD
+#if defined(TEST) || defined(PROD)
     AntiCheat::VerifyBinFile(name);
 #endif
 

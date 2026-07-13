@@ -208,6 +208,7 @@ void* LoadFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper::EAllo
 const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName);
 const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table);
 void ReinitMenuDriverModelMgr(u8 hud, CharacterId character);
+void RefreshMenuDriverModel(CharacterId character);
 void ApplyVoteRandomMessageBoxKartState();
 void RestoreVotingMenuDriverModels();
 bool RandomizeSelectedCharacterTable(CharacterId character);

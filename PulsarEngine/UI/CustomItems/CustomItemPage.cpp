@@ -45,6 +45,15 @@ static bool IsStartRegionalContext() {
            system->IsContext(PULSAR_START200) || system->IsContext(PULSAR_STARTOTT) || system->IsContext(PULSAR_STARTITEMRAIN);
 }
 
+bool CustomItemPage::ShouldSkipFriendRoomPreview() {
+    const System* system = System::sInstance;
+    if (system == nullptr) return false;
+
+    if (IsStartRegionalContext()) return true;
+    if (system->IsContext(PULSAR_MODE_OTT)) return true;
+    return (system->netMgr.hostContext & (1 << PULSAR_MODE_OTT)) != 0;
+}
+
 CustomItemPage::CustomItemPage() {
     this->onButtonClickHandler.subject = this;
     this->onButtonClickHandler.ptmf = &CustomItemPage::OnButtonClick;
@@ -103,7 +112,7 @@ UIControl* CustomItemPage::CreateControl(u32 controlId) {
 }
 
 void CustomItemPage::OnActivate() {
-    if (this->isFriendRoomPreview && IsStartRegionalContext()) {
+    if (this->isFriendRoomPreview && ShouldSkipFriendRoomPreview()) {
         this->isFriendRoomPreview = false;
         ExpSection* section = ExpSection::GetSection();
         section->RemovePageLayers(section->layerCount - 1);
@@ -201,7 +210,7 @@ void CustomItemPage::OnBackPress(u32 hudSlotId) {
 void CustomItemPage::StartFriendRoomPreview(PageId nextPageId) {
     this->friendRoomPreviewNextPageId = nextPageId;
     this->isFriendRoomPreview = true;
-    this->previewTimer.SetInitial(4.0f);
+    this->previewTimer.SetInitial(3.0f);
     this->previewTimer.isActive = true;
 }
 

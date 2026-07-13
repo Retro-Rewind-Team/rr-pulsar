@@ -108,6 +108,18 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         looseOverridesSetting = LOOSEARCHIVEOVERRIDES_ENABLED;
     }
 
+    u8& koEnabledSetting =
+        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_KO].settings[RADIO_KOENABLED];
+    if (koEnabledSetting > KOSETTING_LAPBASED) {
+        koEnabledSetting = KOSETTING_DISABLED;
+    }
+
+    u8& extendedTeamsPlayers =
+        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_EXTENDEDTEAMS].settings[SCROLLER_EXTENDEDTEAMSPLAYERS];
+    if (extendedTeamsPlayers > EXTENDEDTEAMS_PLAYERS_6) {
+        extendedTeamsPlayers = EXTENDEDTEAMS_PLAYERS_2;
+    }
+
     this->InitTrophyEntries(totalTrophyCount);
     this->LoadTrophiesFromFiles();
     this->MigrateLegacyTrophies();

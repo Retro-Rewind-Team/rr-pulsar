@@ -114,6 +114,7 @@ void SettingsPageSelect::OnActivate() {
         if (isVotingSection) {
             // Hide restricted pages in voting sections
             if (i == Settings::SETTINGSTYPE_KO ||
+                i == Settings::SETTINGSTYPE_KOROYALE ||
                 i == Settings::SETTINGSTYPE_OTT ||
                 i == Settings::SETTINGSTYPE_FROOM1 ||
                 i == Settings::SETTINGSTYPE_BATTLE ||

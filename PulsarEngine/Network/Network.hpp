@@ -8,6 +8,8 @@ namespace Network {
 
 static const u32 MAX_TRACK_BLOCKING = 12;  // Maximum number of blocked tracks synced via packets
 
+static const u32 HOST_SETTINGS_PREVIEW_COUNT = 27;
+
 enum DenyType {
     DENY_TYPE_NORMAL,
     DENY_TYPE_BAD_PACK,
@@ -17,7 +19,7 @@ enum DenyType {
 
 class Mgr {  // Manages network related stuff within Pulsar
    public:
-    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A), customItemsBitfield(0x7FFFF) {}
+    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A), customItemsBitfield(0x7FFFF), hasHostSettingsPreview(false) {}
     u32 hostContext;
     u32 hostContext2;
     u32 customItemsBitfield;
@@ -31,6 +33,8 @@ class Mgr {  // Manages network related stuff within Pulsar
     u8 padding[1];
     u32 region;
     PulsarId* lastTracks;
+    u8 hostSettingsPreview[HOST_SETTINGS_PREVIEW_COUNT];
+    bool hasHostSettingsPreview;
 };
 
 }  // namespace Network

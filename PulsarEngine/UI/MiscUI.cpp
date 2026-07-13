@@ -70,15 +70,10 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage* startMsg, u32 bmgId, 
             const KO::Mgr* koMgr = system->koMgr;
             const u32 playerCount = system->nonTTGhostPlayersCount;
             u32 koCount = 0;
-            if (playerCount == 2)
+            if (playerCount == 2 && koMgr->Is1v1KoRace(raceNumber))
                 koCount = 1;
-            else if (raceNumber % koMgr->racesPerKO == 0) {
-                const u32 koPerRace = koMgr->koPerRace;
-                if (playerCount - koPerRace > 1)
-                    koCount = koPerRace;  // eliminating the setting's amount of players, does not lead in a potential final
-                else
-                    koCount = playerCount - (1 + koMgr->alwaysFinal);  // check if the setting is on, if it is, leave 2 players, otherwise, leave 1 player/the ko count is the complement
-            }
+            else if (raceNumber % koMgr->racesPerKO == 0)
+                koCount = koMgr->GetRoundKoCount(static_cast<u8>(playerCount));
             bmgId = BMG_KO_ELIM_START_NONE + koCount;
         } else if (system->IsContext(PULSAR_MODE_LAPKO)) {
             const LapKO::Mgr* lapKoMgr = system->lapKoMgr;
