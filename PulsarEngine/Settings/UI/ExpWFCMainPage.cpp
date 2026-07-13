@@ -157,6 +157,9 @@ void ExpWFCMain::OnActivate() {
     this->restoreWorldwideMenuOnActivate = false;
     WFCMainMenu::OnActivate();
     this->SetMenuLevel(restoreWorldwideMenu);
+    if (restoreWorldwideMenu) {
+        this->mainButton.Select(0);
+    }
 }
 
 void ExpWFCMain::SetMenuLevel(bool showWorldwideCategories) {
@@ -173,16 +176,19 @@ void ExpWFCMain::SetMenuLevel(bool showWorldwideCategories) {
     SetButtonHidden(this->worldwideButton, showWorldwideCategories);
     SetButtonHidden(this->regionalButton, showWorldwideCategories);
     SetButtonHidden(this->friendsButton, showWorldwideCategories);
+    SetButtonHidden(this->settingsButton, showWorldwideCategories);
     SetButtonHidden(this->mainButton, !showWorldwideCategories);
     SetButtonHidden(this->otherButton, !showWorldwideCategories);
     SetButtonHidden(this->battleButton, !showWorldwideCategories);
+    SetButtonHidden(this->leaderboardButton, !showWorldwideCategories);
 }
 
 u32 Pulsar::UI::ExpWFCMain::lastClickedMainMenuButton = 6;
 void ExpWFCMain::OnMainButtonClick(PushButton& pushButton, u32 hudSlotId) {
     if (!this->showWorldwideCategories) {
-        this->SetMenuLevel(true);
-        this->mainButton.Select(0);
+        this->restoreWorldwideMenuOnActivate = true;
+        this->nextPageId = PAGE_WFC_MAIN;
+        this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
         return;
     }
 
@@ -218,6 +224,7 @@ void ExpWFCMain::OnSettingsButtonClick(PushButton& pushButton, u32 r5) {
 }
 
 void ExpWFCMain::OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId) {
+    this->restoreWorldwideMenuOnActivate = true;
     this->nextPageId = static_cast<PageId>(PULPAGE_VRLEADERBOARD);
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
 }
@@ -283,7 +290,14 @@ void ExpWFCMain::BeforeControlUpdate() {
     PlayerCount::GetNumbersMogi(numMogi);
 
     Text::Info info;
-    info.intToPass[0] = RR_numRetro + RR_numCT + RR_numRT + RR_num200cc + RR_numOTT + RR_numIR + BT_numRegulars + BT_numElim + numRegulars + numMogi;
+    const int mainPlayerCount = RR_numRetro + RR_numCT + RR_numRT;
+    const int otherPlayerCount = RR_num200cc + RR_numOTT + RR_numIR;
+    const int battlePlayerCount = BT_numRegulars + BT_numElim;
+    if (this->showWorldwideCategories) {
+        info.intToPass[0] = mainPlayerCount + otherPlayerCount + battlePlayerCount;
+    } else {
+        info.intToPass[0] = mainPlayerCount + otherPlayerCount + battlePlayerCount + numRegulars + numMogi;
+    }
     this->playerCount.SetTextBoxMessage("go", BMG_PLAYER_COUNT, &info);
 
     wchar_t rankBuf[48];
