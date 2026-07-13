@@ -26,6 +26,9 @@ static const float MOGI_MAX_GAIN_MMR = 250.0f;
 static const float MOGI_MAX_GAIN_AT_START = 3.50f;
 static const float MOGI_MAX_GAIN_AT_TARGET = 0.10f;
 static const float MOGI_MAX_LOSS = -2.50f;
+static const float MOGI_MAX_LOSS_AT_FLOOR = -0.10f;
+static const float MOGI_LOSS_TAPER_START = 25.0f;
+static const float MOGI_LOSS_TAPER_END = 5.0f;
 static const float MOGI_DISCONNECT_PENALTY = 1.0f;
 
 static bool sActive = false;
@@ -57,6 +60,16 @@ static void ResetRemoteMMR() {
     }
 }
 
+static float GetMaximumLoss(float mmr) {
+    if (mmr <= MOGI_LOSS_TAPER_END) return MOGI_MAX_LOSS_AT_FLOOR;
+    if (mmr >= MOGI_LOSS_TAPER_START) return MOGI_MAX_LOSS;
+
+    const float progress = (mmr - MOGI_LOSS_TAPER_END) /
+                           (MOGI_LOSS_TAPER_START - MOGI_LOSS_TAPER_END);
+    return MOGI_MAX_LOSS_AT_FLOOR +
+           (MOGI_MAX_LOSS - MOGI_MAX_LOSS_AT_FLOOR) * progress;
+}
+
 void OnDisconnect() {
     if (!sSessionActive) return;
 
@@ -66,7 +79,10 @@ void OnDisconnect() {
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys != nullptr && rksys->curLicenseId < 4) {
         const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
-        MogiRating::SetUserMMR(rksys->curLicenseId, currentMMR - MOGI_DISCONNECT_PENALTY);
+        const float maximumLoss = -GetMaximumLoss(currentMMR);
+        const float penalty = MOGI_DISCONNECT_PENALTY < maximumLoss ?
+                                  MOGI_DISCONNECT_PENALTY : maximumLoss;
+        MogiRating::SetUserMMR(rksys->curLicenseId, currentMMR - penalty);
     }
     sMMRFinalized = true;
 }
@@ -390,8 +406,9 @@ static float GetMMRDelta(float mmr, float performance, float expectedPerformance
     if (delta > 0.0f) {
         const float maximumGain = GetMaximumGain(mmr);
         if (delta > maximumGain) delta = maximumGain;
-    } else if (delta < MOGI_MAX_LOSS) {
-        delta = MOGI_MAX_LOSS;
+    } else {
+        const float maximumLoss = GetMaximumLoss(mmr);
+        if (delta < maximumLoss) delta = maximumLoss;
     }
     return delta;
 }
