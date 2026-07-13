@@ -140,6 +140,12 @@ kmCall(0x80846d64, LoadTransmissionSelectBeforeDrift);
 kmCall(0x80846e1c, LoadTransmissionSelectBeforeDrift);
 kmCall(0x80846e40, LoadTransmissionSelectBeforeDrift);
 
+void LoadMissionTransmissionSelectBeforeDrift(Pages::Menu& menu, PageId, PushButton& button) {
+    menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
+}
+kmCall(0x8084333c, LoadMissionTransmissionSelectBeforeDrift);
+kmWrite32(0x80843300, 0x48000030);
+
 void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {
     System* system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_OTT) && system->ottMgr.voteState == OTT::COMBO_SELECTION) {
