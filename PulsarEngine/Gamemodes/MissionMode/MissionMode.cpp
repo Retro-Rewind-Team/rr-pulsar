@@ -7,6 +7,27 @@ namespace MissionMode {
 
 static void* sMissionState = 0;
 
+static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
+    return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) |
+                             static_cast<u16>(scenario.mission[0x59]));
+}
+
+void PopulateMissionCPUs(RacedataScenario& scenario) {
+    if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT) return;
+
+    u16 cpuCount = GetMissionCPUCount(scenario);
+    if (cpuCount > 11) cpuCount = 11;
+
+    for (u32 i = 1; i < 12; ++i) scenario.players[i].playerType = PLAYER_NONE;
+    for (u32 i = 0; i < cpuCount; ++i) {
+        RacedataPlayer& player = scenario.players[i + 1];
+        const u32 kmtOffset = 0x5A + i * 2;
+        player.characterId = static_cast<CharacterId>(scenario.mission[kmtOffset]);
+        player.kartId = static_cast<KartId>(scenario.mission[kmtOffset + 1]);
+        player.playerType = PLAYER_CPU;
+    }
+}
+
 static u32 GetMissionValue(const void* mission, u32 offset) {
     return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + offset);
 }
