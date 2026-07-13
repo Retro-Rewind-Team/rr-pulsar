@@ -1,4 +1,7 @@
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
+#include <Settings/Settings.hpp>
+#include <MarioKartWii/System/random.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 
@@ -250,12 +253,52 @@ void ExtendedTeamManager::VotePageSync() {
     memcpy(this->players, newPlayers, sizeof(ExtendedTeamPlayer) * 12);
 }
 
+void ExtendedTeamManager::ConfigureOfflineTeams() {
+    RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const u8 playersSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, SCROLLER_EXTENDEDTEAMSPLAYERS);
+    u32 playersPerTeam = 2;
+    switch (playersSetting) {
+        case EXTENDEDTEAMS_PLAYERS_3:
+            playersPerTeam = 3;
+            break;
+        case EXTENDEDTEAMS_PLAYERS_4:
+            playersPerTeam = 4;
+            break;
+        case EXTENDEDTEAMS_PLAYERS_6:
+            playersPerTeam = 6;
+            break;
+    }
+
+    this->ResetPlayers();
+
+    u32 playerOrder[12];
+    for (u32 i = 0; i < scenario.playerCount; ++i) {
+        playerOrder[i] = i;
+    }
+
+    Random random;
+    for (u32 i = scenario.playerCount; i > 1; --i) {
+        const u32 other = random.NextLimited(i);
+        const u32 player = playerOrder[i - 1];
+        playerOrder[i - 1] = playerOrder[other];
+        playerOrder[other] = player;
+    }
+
+    for (u32 i = 0; i < scenario.playerCount; ++i) {
+        this->SetPlayerIndexes(i, playerOrder[i], 0xFF, 0xFF);
+        this->SetPlayerTeam(i, static_cast<ExtendedTeamID>(i / playersPerTeam));
+    }
+
+    ExtendedTeamSelect::RandomizeTeamColors();
+}
+
 void ExtendedTeamManager::Reset() {
     this->status = STATUS_NONE;
     this->isHost = false;
     this->lastUpdateTimer.isActive = false;
     this->waitingTimer.isActive = false;
     this->hasFriendRoomStarted = false;
+    ExtendedTeamSelect::ResetTeamColors();
 }
 
 void ExtendedTeamManager::ResetPlayers() {

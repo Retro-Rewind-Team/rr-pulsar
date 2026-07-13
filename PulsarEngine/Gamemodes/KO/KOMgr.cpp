@@ -4,20 +4,91 @@
 #include <GameModes/KO/KOMgr.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Gamemodes/KO/KORaceEndPage.hpp>
+#include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
 
 namespace Pulsar {
 namespace KO {
 
-Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false) {
+static const u8 offlineVSRaceCount = 255;
+
+Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false), isOfflineVS(false), offlineRaceNumber(0) {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     this->baseLocPlayerCount = sub.localPlayerCount;
+    this->isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
+    if (this->isOfflineVS) {
+        const Settings::Mgr& settings = Settings::Mgr::Get();
+        this->koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
+        this->racesPerKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_RACESPERKO) + 1;
+        this->alwaysFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
+        this->singleRace1v1Final = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KO1V1FINALE) == KOSETTING_1V1FINALE_SINGLE;
+        const u8 elimThreshold = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMTHRESHOLD);
+        this->elimThresholdPlayers = elimThreshold == KOSETTING_ELIMTHRESHOLD_DISABLED ? 0 : elimThreshold + 2;
+        this->elimChangeCount = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMCHANGE) + 1;
+        this->baseLocPlayerCount = Racedata::sInstance->menusScenario.localPlayerCount;
+        SectionMgr::sInstance->sectionParams->vsRaceCount = offlineVSRaceCount;
+    }
     for (int aid = 0; aid < 12; ++aid) {
         this->status[aid][0] = NORMAL;
         this->status[aid][1] = NORMAL;
     }
     this->ResetRace();
+}
+
+bool Mgr::IsOfflineVS() const {
+    return this->isOfflineVS;
+}
+
+u32 Mgr::GetCurrentRaceNumber() const {
+    const SectionParams* params = SectionMgr::sInstance->sectionParams;
+    return this->isOfflineVS ? this->offlineRaceNumber + 1 : params->onlineParams.currentRaceNumber + 1;
+}
+
+void Mgr::AdvanceOfflineRaceNumber() {
+    if (this->isOfflineVS) ++this->offlineRaceNumber;
+}
+
+void Mgr::FinishOfflineVSIfAllLocalPlayersAreOut() {
+    if (!this->isOfflineVS) return;
+
+    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    bool hasLocalPlayer = false;
+    for (u8 playerId = 0; playerId < scenario.playerCount; ++playerId) {
+        if (scenario.players[playerId].playerType != PLAYER_REAL_LOCAL) continue;
+        hasLocalPlayer = true;
+        if (!this->IsKOdPlayerId(playerId)) return;
+    }
+
+    if (hasLocalPlayer) {
+        SectionParams* params = SectionMgr::sInstance->sectionParams;
+        params->vsRaceNumber = params->vsRaceCount;
+    }
+}
+
+void Mgr::PrepareOfflineVSNextRace() {
+    if (!this->isOfflineVS || this->winnerPlayerId != 0xFF) return;
+
+    RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    u8 remainingCount = 0;
+    for (u8 playerId = 0; playerId < scenario.playerCount; ++playerId) {
+        if (!this->IsKOdPlayerId(playerId)) {
+            if (remainingCount != playerId) memcpy(&scenario.players[remainingCount], &scenario.players[playerId], sizeof(RacedataPlayer));
+            ++remainingCount;
+        }
+    }
+    if (remainingCount == scenario.playerCount) return;
+    for (u8 playerId = remainingCount; playerId < 12; ++playerId) {
+        scenario.players[playerId].playerType = PLAYER_NONE;
+    }
+    for (u8 playerId = 0; playerId < remainingCount; ++playerId) {
+        scenario.players[playerId].SetPrevFinishPos(playerId + 1);
+    }
+    scenario.ComputePlayerCounts(&scenario.playerCount, &scenario.screenCount, &scenario.localPlayerCount);
+    for (u8 playerId = 0; playerId < 12; ++playerId) {
+        this->status[playerId][0] = NORMAL;
+        this->status[playerId][1] = NORMAL;
+    }
 }
 Mgr::~Mgr() {
     RKNet::Controller* controller = RKNet::Controller::sInstance;
@@ -26,9 +97,43 @@ Mgr::~Mgr() {
     if (this->GetIsSwapped()) this->SwapControllersAndUI();
 }
 
+bool Mgr::Is1v1KoRace(u32 currentRaceNumber) const {
+    if (this->singleRace1v1Final) return true;
+    return currentRaceNumber % this->racesPerKO == 0;
+}
+
+u8 Mgr::GetRoundKoCount(u8 playerCount) const {
+    u8 koCount = this->koPerRace;
+
+    if (this->elimThresholdPlayers != 0 && playerCount <= this->elimThresholdPlayers) {
+        koCount = this->elimChangeCount;
+    }
+
+    if (playerCount - koCount < 2 && this->alwaysFinal) {
+        koCount = playerCount - 2;
+    }
+
+    if (this->koPerRace >= 2 && this->alwaysFinal && playerCount > 2) {
+        if (playerCount == 3) {
+            koCount = 1;
+        } else if (playerCount == 4 && this->koPerRace >= 2) {
+            koCount = 2;
+        }
+    } else {
+        if (playerCount == 3 && this->koPerRace >= 3) {
+            koCount = 2;
+        } else if (playerCount == 4 && this->koPerRace >= 4) {
+            koCount = 3;
+        }
+    }
+
+    return koCount;
+}
+
 void Mgr::AddRaceStats() {
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    for (int hudSlot = 0; hudSlot < scenario.localPlayerCount; ++hudSlot) {
+    const u8 localPlayerCount = this->isOfflineVS ? 0 : scenario.localPlayerCount;
+    for (int hudSlot = 0; hudSlot < localPlayerCount; ++hudSlot) {
         Stats& stats = this->stats[hudSlot];
         if (stats.boolCountArray >= arbitraryAlmostDied) ++stats.final.almostKOdCounter;
         const u8 pos = Raceinfo::sInstance->players[scenario.settings.hudPlayerIds[hudSlot]]->position;
@@ -58,45 +163,46 @@ void Mgr::CalcWouldBeKnockedOut() {
         }
     }
 
+    const u32 currentRaceCount = this->GetCurrentRaceNumber();
+
     if (playerCount == 2) {
-        for (int i = 0; i < playerCount; ++i) {
-            this->wouldBeOut[i] = (raceInfo->players[i]->position != 1);
+        if (!this->Is1v1KoRace(currentRaceCount)) return;
+
+        if (this->racesPerKO > 1) {
+            this->wouldBeOut[players[0].playerId] = players[0].position < players[1].position;
+            this->wouldBeOut[players[1].playerId] = players[1].position < players[0].position;
+        } else {
+            for (int i = 0; i < playerCount; ++i) {
+                this->wouldBeOut[i] = (raceInfo->players[i]->position != 1);
+            }
         }
         return;
     }
 
-    const bool force1v1Final = System::sInstance->IsContext(Pulsar::PULSAR_KOFINAL) == KOSETTING_FINAL_ALWAYS;
-    const u32 currentRaceCount = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber + 1;
     const bool isKoRace = currentRaceCount % this->racesPerKO == 0;
+    if (!isKoRace) return;
 
-    if (isKoRace) {
-        s32 roundKOs = this->koPerRace;
-        const s32 remainingPlayersAfter = playerCount - roundKOs;
+    s32 roundKOs = this->GetRoundKoCount(playerCount);
 
-        if (remainingPlayersAfter < 2 && force1v1Final) {
-            roundKOs = playerCount - 2;
+    qsort(players, playerCount, sizeof(PlayerPosition),
+          reinterpret_cast<int (*)(const void*, const void*)>(SortPlayersByPosition));
+
+    s32 assignedKOs = 0;
+    if (racesPerKO > 1) {
+        for (s32 idx = 0; idx < playerCount && assignedKOs < roundKOs; ++idx) {
+            if (this->racesPerKO > 1 && idx == playerCount - 1) {
+                continue;
+            }
+            this->wouldBeOut[players[idx].playerId] = true;
+            ++assignedKOs;
         }
-
-        qsort(players, playerCount, sizeof(PlayerPosition),
-              reinterpret_cast<int (*)(const void*, const void*)>(SortPlayersByPosition));
-
-        s32 assignedKOs = 0;
-        if (racesPerKO > 1) {
-            for (s32 idx = 0; idx < playerCount && assignedKOs < roundKOs; ++idx) {
-                if (this->racesPerKO > 1 && idx == playerCount - 1) {
-                    continue;
-                }
-                this->wouldBeOut[players[idx].playerId] = true;
-                ++assignedKOs;
+    } else if (racesPerKO == 1) {
+        for (s32 idx = playerCount - 1; idx >= 0 && assignedKOs < roundKOs; --idx) {
+            if (this->racesPerKO == 1 && raceInfo->players[players[idx].playerId]->position == 1) {
+                continue;
             }
-        } else if (racesPerKO == 1) {
-            for (s32 idx = playerCount - 1; idx >= 0 && assignedKOs < roundKOs; --idx) {
-                if (this->racesPerKO == 1 && raceInfo->players[players[idx].playerId]->position == 1) {
-                    continue;
-                }
-                this->wouldBeOut[players[idx].playerId] = true;
-                ++assignedKOs;
-            }
+            this->wouldBeOut[players[idx].playerId] = true;
+            ++assignedKOs;
         }
     }
 }
@@ -117,50 +223,61 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
     const u8 playerCount = system->nonTTGhostPlayersCount;
     self->alwaysFinal = System::sInstance->IsContext(PULSAR_KOFINAL);
     SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
-    const u32 currentRaceNumber = sectionParams->onlineParams.currentRaceNumber + 1;
+    const u32 currentRaceNumber = self->GetCurrentRaceNumber();
     bool hasTies = false;
 
     u8 disconnectedKOs = 0;
-    for (int playerId = 0; playerId < playerCount; ++playerId) {
+    for (int playerId = 0; !self->IsOfflineVS() && playerId < playerCount; ++playerId) {
         const u8 aid = controller->aidsBelongingToPlayerIds[playerId];
         if (aid >= 12) continue;
 
         if (((1 << aid) & sub.availableAids) == 0) {
-            self->SetDisconnected(playerId);
+            if (!self->IsDisconnectedPlayerId(playerId)) {
+                self->SetDisconnected(playerId);
+            }
             ++disconnectedKOs;
         }
     }
 
-    u8 koCount = self->koPerRace;
+    u8 koCount = self->GetRoundKoCount(playerCount);
 
-    if (playerCount - koCount < 2 && self->alwaysFinal) {
-        koCount = playerCount - 2;
+    const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
+    const bool is1v1KoRace = playerCount == 2 && self->Is1v1KoRace(currentRaceNumber);
+    const bool isCompletedKoRace = isKoRace && koCount > 0;
+    if (isKoRace) {
+        if (disconnectedKOs >= koCount)
+            koCount = 0;
+        else
+            koCount -= disconnectedKOs;
     }
 
-    if (self->koPerRace >= 2 && self->alwaysFinal && playerCount > 2) {
-        if (playerCount == 3) {
-            koCount = 1;
-        } else if (playerCount == 4 && self->koPerRace >= 2) {
-            koCount = 2;
+    if (is1v1KoRace || (playerCount - disconnectedKOs) == 1) {
+        if (is1v1KoRace && self->racesPerKO > 1) {
+            if (playerArr[0].totalScore == playerArr[1].totalScore) {
+                self->SetTie(playerArr[0].playerId, playerArr[1].playerId);
+                if (self->IsOfflineVS())
+                    --sectionParams->vsRaceNumber;
+                else
+                    --sectionParams->onlineParams.currentRaceNumber;
+                self->AddRaceStats();
+                return;
+            }
+            self->winnerPlayerId = playerArr[0].playerId;
+            self->SetKOd(playerArr[1].playerId);
+        } else {
+            self->winnerPlayerId = raceinfo->playerIdInEachPosition[0];
+            self->SetKOd(raceinfo->playerIdInEachPosition[1]);
         }
-    } else {
-        if (playerCount == 3 && self->koPerRace >= 3) {
-            koCount = 2;
-        } else if (playerCount == 4 && self->koPerRace >= 4) {
-            koCount = 3;
-        }
-    }
-
-    if (playerCount == 2 || (playerCount - disconnectedKOs) == 1) {
-        self->winnerPlayerId = raceinfo->playerIdInEachPosition[0];
-        self->SetKOd(raceinfo->playerIdInEachPosition[1]);
         self->AddRaceStats();
+        self->FinishOfflineVSIfAllLocalPlayersAreOut();
+        if (self->winnerPlayerId != 0xFF && self->IsOfflineVS()) sectionParams->vsRaceNumber = sectionParams->vsRaceCount;
+        self->AdvanceOfflineRaceNumber();
         return;
     }
 
-    const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
-    if (!isKoRace || koCount <= 0) {
+    if (!isCompletedKoRace) {
         self->AddRaceStats();
+        self->AdvanceOfflineRaceNumber();
         return;
     }
 
@@ -191,7 +308,10 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
                 }
             }
             if (hasTies) {
-                --sectionParams->onlineParams.currentRaceNumber;
+                if (self->IsOfflineVS())
+                    --sectionParams->vsRaceNumber;
+                else
+                    --sectionParams->onlineParams.currentRaceNumber;
                 koCount = 0;
             }
         } else if (tiedPlayersCount == koCount) {
@@ -225,7 +345,7 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
                 }
             }
 
-            if (self->IsKOdPlayerId(playerId)) {
+            if (self->IsKOdPlayerId(playerId) || self->IsDisconnectedPlayerId(playerId)) {
                 continue;
             }
 
@@ -236,7 +356,7 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
     int notKOdCount = 0;
     u8 potentialWinner = 0xFF;
     for (int playerId = 0; playerId < playerCount; ++playerId) {
-        if (!self->IsKOdPlayerId(playerId)) {
+        if (!self->IsKOdPlayerId(playerId) && !self->IsDisconnectedPlayerId(playerId)) {
             ++notKOdCount;
             potentialWinner = playerId;
         }
@@ -247,6 +367,9 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
     }
 
     self->AddRaceStats();
+    self->FinishOfflineVSIfAllLocalPlayersAreOut();
+    if (self->winnerPlayerId != 0xFF && self->IsOfflineVS()) sectionParams->vsRaceNumber = sectionParams->vsRaceCount;
+    if (!hasTies) self->AdvanceOfflineRaceNumber();
 }
 kmCall(0x8085cb94, Mgr::ProcessKOs);
 
@@ -256,7 +379,8 @@ void Mgr::Update() {
         Mgr* self = System::sInstance->koMgr;
         self->CalcWouldBeKnockedOut();
         const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-        for (int hudSlot = 0; hudSlot < scenario.localPlayerCount; ++hudSlot) {
+        const u8 localPlayerCount = self->IsOfflineVS() ? 0 : scenario.localPlayerCount;
+        for (int hudSlot = 0; hudSlot < localPlayerCount; ++hudSlot) {
             const bool wouldBeOut = self->GetWouldBeKnockedOut(scenario.settings.hudPlayerIds[hudSlot]);
             const u32 idx = Raceinfo::sInstance->raceFrames % 300;
 
@@ -270,7 +394,7 @@ void Mgr::Update() {
         }
 
         const u8 winnerPlayerId = self->winnerPlayerId;
-        if (winnerPlayerId != 0xFF) {
+        if (winnerPlayerId != 0xFF && !self->IsOfflineVS()) {
             const RKNet::Controller* controller = RKNet::Controller::sInstance;
             const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
             if (controller->aidsBelongingToPlayerIds[winnerPlayerId] == sub.localAid) {
@@ -323,6 +447,7 @@ void Mgr::PatchAids(RKNet::ControllerSub& sub) const {
 }
 
 u32 Mgr::GetAidAndSlotFromPlayerId(u8 playerId) const {
+    if (this->isOfflineVS) return playerId;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     const u8 aid = controller->aidsBelongingToPlayerIds[playerId];

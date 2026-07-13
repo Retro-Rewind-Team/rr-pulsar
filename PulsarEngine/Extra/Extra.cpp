@@ -3,8 +3,12 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
+#include <MarioKartWii/Item/ItemManager.hpp>
+#include <MarioKartWii/Item/ItemPlayer.hpp>
+#include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Dolphin/DolphinIOS.hpp>
+#include <PulsarSystem.hpp>
 
 namespace Codes {
 
@@ -78,6 +82,22 @@ void EnableDelimitersForAllItems() {
     }
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
+
+// Blue Shell Cooldown [ZPL]
+extern "C" Item::ItemSlotData* itemSlotData;
+static void UpdateBlueShellCooldown() {
+    const Pulsar::System* system = Pulsar::System::sInstance;
+    if (system->IsVanillaMode() || system->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) || system->IsContext(Pulsar::PULSAR_ITEMMODEBLAST)) return;
+
+    const Item::Manager* manager = Item::Manager::sInstance;
+    if (manager == nullptr || itemSlotData == nullptr) return;
+
+    static u16 previousSpawnCount = 0;
+    const u16 totalSpawnedCount = manager->itemObjHolders[OBJ_BLUE_SHELL].totalSpawnedCount;
+    if (totalSpawnedCount > previousSpawnCount) itemSlotData->itemSpawnTimers[1] = 1200;  // 15 seconds
+    previousSpawnCount = totalSpawnedCount;
+}
+static RaceFrameHook UpdateBlueShellCooldownHook(UpdateBlueShellCooldown);
 
 // Anti Mii Crash
 asmFunc AntiWiper() {
@@ -153,16 +173,12 @@ kmWrite32(0x805BC8B4, 0x60000000);  // Skip setting credits course for true cred
 kmWrite32(0x80655578, 0x60000000);
 
 // Mushroom Glitch Fix [Vabold]
-kmWrite8(0x807BA077, 0x00);
-
-// Slow Ramp Offroad Fix [vabold, ported by ZPL]
-static void ClearSlowRampMushroomRequirement(Kart::Status* status, u32 bitfield0) {
-    status->bitfield0 = bitfield0;
-    status->bitfield2 &= ~0x00100000;
+static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulette) {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
+    return roulette;
 }
-kmWrite32(0x80582674, 0x80830004);  // lwz r4, 4(r3)
-kmWrite32(0x80582678, 0x54840080);  // rlwinm r4, r4, 0, 2, 0
-kmCall(0x8058267C, ClearSlowRampMushroomRequirement);
+kmCall(0x807BA078, ApplyMushroomGlitchFix);
 
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);

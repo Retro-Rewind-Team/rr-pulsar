@@ -2,6 +2,7 @@
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <MarioKartWii/UI/Page/Other/Message.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/System/random.hpp>
 #include <Network/GPReport.hpp>
 #include <core/nw4r/ut/Misc.hpp>
 
@@ -401,15 +402,41 @@ static const InternalTeamColor TEAM_COLORS[TEAM_COUNT] = {
 
     }};
 
+static ExtendedTeamID teamColors[TEAM_COUNT] = {
+    TEAM_RED,
+    TEAM_ORANGE,
+    TEAM_YELLOW,
+    TEAM_GREEN,
+    TEAM_BLUE,
+    TEAM_PURPLE};
+
+void ExtendedTeamSelect::ResetTeamColors() {
+    for (u32 i = 0; i < TEAM_COUNT; ++i) {
+        teamColors[i] = static_cast<ExtendedTeamID>(i);
+    }
+}
+
+void ExtendedTeamSelect::RandomizeTeamColors() {
+    ExtendedTeamSelect::ResetTeamColors();
+
+    Random random;
+    for (u32 i = TEAM_COUNT; i > 1; --i) {
+        const u32 other = random.NextLimited(i);
+        const ExtendedTeamID color = teamColors[i - 1];
+        teamColors[i - 1] = teamColors[other];
+        teamColors[other] = color;
+    }
+}
+
 void ExtendedTeamSelect::GetTeamColor(ExtendedTeamID team, u8& r, u8& g, u8& b) {
     if (team >= TEAM_COUNT) {
         r = 0;
         g = 0;
         b = 0;
     } else {
-        r = TEAM_COLORS[team].color[0];
-        g = TEAM_COLORS[team].color[1];
-        b = TEAM_COLORS[team].color[2];
+        r = TEAM_COLORS[teamColors[team]].color[0];
+        g = TEAM_COLORS[teamColors[team]].color[1];
+        b = TEAM_COLORS[teamColors[team]].color[2];
     }
 }
 

@@ -80,13 +80,13 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
     for (int i = 0; i < menuScenario.playerCount; i++) {
         if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 0) {
             selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-            if (controller) {
+            if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
                 RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
                 selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 0);
             }
         } else if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 1) {
             selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-            if (controller) {
+            if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
                 RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
                 selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 1);
             }

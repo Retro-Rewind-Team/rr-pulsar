@@ -17,6 +17,42 @@ static void ConvertROOMPacketToData(const PulROOM& packet) {
     system->netMgr.hostContext2 = packet.hostSystemContext2;
     system->netMgr.customItemsBitfield = packet.customItemsBitfield;
     system->netMgr.racesPerGP = packet.raceCount;
+    memcpy(system->netMgr.hostSettingsPreview, packet.hostSettingsPreview, sizeof(system->netMgr.hostSettingsPreview));
+    system->netMgr.hasHostSettingsPreview = true;
+}
+
+static void WriteHostSettingsPreviewToPacket(PulROOM* packet, const Settings::Mgr& settings) {
+    Settings::UserType pages[4];
+    u32 pageCount = 0;
+    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM1;
+    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM2;
+    const bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+    if (!isExtendedTeams && settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) != KOSETTING_DISABLED) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_KO;
+    }
+    if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) != OTTSETTING_ONLINE_DISABLED) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_OTT;
+    } else if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED) {
+        pages[pageCount++] = Settings::SETTINGSTYPE_KOROYALE;
+    }
+
+    memset(packet->hostSettingsPreview, 0, sizeof(packet->hostSettingsPreview));
+    u32 offset = 0;
+    for (u32 page = 0; page < pageCount; ++page) {
+        const Settings::UserType type = pages[page];
+        const u32 valueCount = Settings::Params::radioCount[type] + Settings::Params::scrollerCount[type];
+        if (offset + valueCount > HOST_SETTINGS_PREVIEW_COUNT) break;
+        u8* dest = packet->hostSettingsPreview + offset;
+
+        for (u32 setting = 0; setting < Settings::Params::radioCount[type]; ++setting) {
+            dest[setting] = settings.GetUserSettingValue(type, setting);
+        }
+        for (u32 setting = 0; setting < Settings::Params::scrollerCount[type]; ++setting) {
+            dest[Settings::Params::radioCount[type] + setting] =
+                settings.GetUserSettingValue(type, Settings::Params::maxRadioCount + setting);
+        }
+        offset += valueCount;
+    }
 }
 
 static void WriteBlockedTracksToPacket(PulROOM* packet) {
@@ -61,6 +97,7 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     const bool isKartRestrictBike = hostContext & (1 << PULSAR_BIKERESTRICT);
     const bool isInsideForced = hostContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
     const bool isOutsideForced = hostContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
+    const bool isVanillaForced = hostContext2 & (1 << PULSAR_TRANSMISSIONVANILLA);
     const bool isExtendedTeams = hostContext & (1 << PULSAR_EXTENDEDTEAMS);
     const bool isStartRetro = hostContext & (1 << PULSAR_STARTRETROS);
     const bool isStartCT = hostContext & (1 << PULSAR_STARTCTS);
@@ -68,6 +105,7 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     const bool isStart200 = hostContext & (1 << PULSAR_START200);
     const bool isStartOTT = hostContext & (1 << PULSAR_STARTOTT);
     const bool isStartItemRain = hostContext & (1 << PULSAR_STARTITEMRAIN);
+    const bool isVanillaMode = hostContext2 & (1 << PULSAR_VANILLAMODE);
 
     u32 context = (isStartRetro << PULSAR_STARTRETROS) | (isStartCT << PULSAR_STARTCTS) |
                   (isStartRTS << PULSAR_STARTREGS) | (isStart200 << PULSAR_START200) |
@@ -75,7 +113,7 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
                   (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) |
                   (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) |
                   (isKartRestrictBike << PULSAR_BIKERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
-    u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE);
+    u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE) | (isVanillaForced << PULSAR_TRANSMISSIONVANILLA) | (isVanillaMode << PULSAR_VANILLAMODE);
     system->context = context;
     system->context2 = context2;
 
@@ -108,6 +146,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         }
 
         const Settings::Mgr& settings = Settings::Mgr::Get();
+        WriteHostSettingsPreviewToPacket(destPacket, settings);
         const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
 
@@ -122,30 +161,31 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         u8 lapKoSetting = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_LAPBASED && isNotPublic && !isBattle && !isTimeTrial;
         u8 battleTeam = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
         u8 battleElim = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
-        const u8 ottOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE);
+        u8 ottOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE);
         const u8 miiHeads = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLOWMIIHEADS) == ALLOW_MIIHEADS_ENABLED;
         u8 charRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_LIGHTONLY;
         u8 charRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
         u8 charRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_HEAVYONLY;
         u8 kartRestrict = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_KARTONLY;
         u8 bikeRestrict = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_BIKEONLY;
-        const u8 itemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
-        const u8 itemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
-        const u8 itemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
-        const u8 regsOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
-        const u8 retrosOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
-        const u8 ctsOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
+        u8 itemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
+        u8 itemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
+        u8 itemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
+        u8 regsOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
+        u8 retrosOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
+        u8 ctsOnly = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
         const u8 koFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
         const u8 changeCombo = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWCHANGECOMBO) == OTTSETTING_COMBO_ENABLED;
-        const u8 itemBoxRespawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
-        const u8 transmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE;
-        const u8 transmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE;
-        const u8 transmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA;
-        const u8 itemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
-        const u8 itemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
-        const u8 allItemsCanLand = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
+        u8 itemBoxRespawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
+        u8 transmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE;
+        u8 transmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE;
+        u8 transmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA;
+        u8 itemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
+        u8 itemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
+        u8 allItemsCanLand = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
+        const u8 vanillaMode = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_VANILLAMODE) == VANILLAMODE_ENABLED;
         const u8 extendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
-        const u8 normalTC = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
+        u8 normalTC = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
         u8 vr = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
         const u8 isStartRetro = (originalMessage == 4);
         const u8 isStartCT = (originalMessage == 5);
@@ -154,11 +194,14 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         const u8 isStartOTT = (originalMessage == 8);
         const u8 isStartItemRain = (originalMessage == 9);
         const u8 rankings = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_RANKINGS) == RANKINGS_ENABLED;
-        const u8 battleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_BATTLEROYALE;
-        const u8 koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE);
-        const u8 koPerRace2 = koPerRace == KOSETTING_KOPERRACE_2;
-        const u8 koPerRace3 = koPerRace == KOSETTING_KOPERRACE_3;
-        const u8 koPerRace4 = koPerRace == KOSETTING_KOPERRACE_4;
+        const u8 battleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
+        const u8 koRoyaleBalloons = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, SCROLLER_KOROYALEBALLOONS);
+        const u8 koPerRace2 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_2;
+        const u8 koPerRace3 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_3;
+        const u8 koPerRace4 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_4;
+        const u8 koRoyaleLapMultiplier = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, SCROLLER_KOROYALELAPMULTIPLIER);
+        const u8 koRoyaleLaps1_5x = koRoyaleLapMultiplier == KOROYALESETTING_LAPS_1_5X;
+        const u8 koRoyaleLaps2_0x = koRoyaleLapMultiplier == KOROYALESETTING_LAPS_2_0X;
 
         if (extendedTeams) {
             koSetting = KOSETTING_DISABLED;
@@ -168,6 +211,19 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
             } else {
                 battleTeam = BATTLE_FFA_DISABLED;
             }
+        }
+
+        if (vanillaMode) {
+            regsOnly = 1;
+            retrosOnly = 0;
+            ctsOnly = 0;
+            transmissionInside = 0;
+            transmissionOutside = 0;
+            transmissionVanilla = 1;
+            normalTC = 1;
+            allItemsCanLand = 0;
+            itemBoxRespawnFast = 0;
+            destPacket->customItemsBitfield = 0x7FFFF;
         }
 
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT |  // ott
@@ -196,9 +252,14 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
                                           itemModeNone << PULSAR_ITEMMODENONE |
                                           koPerRace2 << PULSAR_KOPERRACE_2 |
                                           koPerRace3 << PULSAR_KOPERRACE_3 |
-                                          koPerRace4 << PULSAR_KOPERRACE_4;
+                                          koPerRace4 << PULSAR_KOPERRACE_4 |
+                                          koRoyaleLaps1_5x << PULSAR_KOROYALE_LAPS_1_5X |
+                                          koRoyaleLaps2_0x << PULSAR_KOROYALE_LAPS_2_0X |
+                                          vanillaMode << PULSAR_VANILLAMODE;
 
-        destPacket->customItemsBitfield = settings.GetCustomItems();
+        if (!vanillaMode) {
+            destPacket->customItemsBitfield = settings.GetCustomItems();
+        }
 
         u8 raceCount;
         if (koSetting == KOSETTING_ENABLED)

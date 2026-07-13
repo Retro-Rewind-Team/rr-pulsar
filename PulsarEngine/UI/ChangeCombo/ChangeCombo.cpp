@@ -36,6 +36,92 @@ static u8 GetKartOptionCount(Pulsar::KartRestriction kartRest, Pulsar::KartRestr
     return (kartRest == KART_KARTONLY || bikeRest == KART_BIKEONLY) ? 6 : 12;
 }
 
+static const u32 settingsPreviewSheetCount = 4;
+static u32 s_settingsPreviewSheets[settingsPreviewSheetCount];
+static u32 s_settingsPreviewSheetCount = 0;
+static u32 s_settingsPreviewSheetIdx = 0;
+static bool s_settingsPreviewComplete = false;
+static bool s_settingsPreviewShownThisRoom = false;
+
+static bool IsFroomVotingSection(SectionId sectionId) {
+    return sectionId >= SECTION_P1_WIFI_FROOM_VS_VOTING && sectionId <= SECTION_P2_WIFI_FROOM_COIN_VOTING;
+}
+
+static void ResetSettingsPreview() {
+    s_settingsPreviewSheetCount = 0;
+    s_settingsPreviewSheetIdx = 0;
+    s_settingsPreviewComplete = false;
+}
+
+void ResetFroomSettingsPreviewShown() {
+    s_settingsPreviewShownThisRoom = false;
+    ResetSettingsPreview();
+}
+
+static void BuildSettingsPreviewSheets() {
+    s_settingsPreviewSheetCount = 0;
+    s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_FROOM1;
+    s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_FROOM2;
+
+    const System* system = System::sInstance;
+    if (system->IsContext(PULSAR_MODE_KO)) {
+        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_KO;
+    }
+    if (system->IsContext(PULSAR_MODE_OTT)) {
+        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_OTT;
+    }
+    if (system->IsContext(PULSAR_MODE_BATTLEROYALE) && !system->IsContext(PULSAR_MODE_OTT)) {
+        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_KOROYALE;
+    }
+}
+
+static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr& page) {
+    if (s_settingsPreviewShownThisRoom) return false;
+    if (s_settingsPreviewComplete) return false;
+    if (s_settingsPreviewSheetCount == 0) BuildSettingsPreviewSheets();
+
+    if (s_settingsPreviewSheetIdx >= s_settingsPreviewSheetCount) {
+        s_settingsPreviewComplete = true;
+        s_settingsPreviewShownThisRoom = true;
+        return false;
+    }
+
+    const u32 sheetIdx = s_settingsPreviewSheets[s_settingsPreviewSheetIdx++];
+    SettingsPanel::StartVotingPreview(sheetIdx);
+    page.AddPageLayer(static_cast<PageId>(SettingsPanel::id), 0);
+    return true;
+}
+
+bool AdvanceFroomSettingsPreview(u32& sheetIdx) {
+    if (s_settingsPreviewShownThisRoom) return false;
+    if (s_settingsPreviewComplete) return false;
+    if (s_settingsPreviewSheetCount == 0) BuildSettingsPreviewSheets();
+
+    if (s_settingsPreviewSheetIdx >= s_settingsPreviewSheetCount) {
+        s_settingsPreviewComplete = true;
+        s_settingsPreviewShownThisRoom = true;
+        return false;
+    }
+
+    sheetIdx = s_settingsPreviewSheets[s_settingsPreviewSheetIdx++];
+    return true;
+}
+
+static void SELECTStageMgrOnActivate(Pages::SELECTStageMgr* page) {
+    ResetSettingsPreview();
+    page->Pages::SELECTStageMgr::OnActivate();
+}
+kmWritePointer(0x808C06CC, SELECTStageMgrOnActivate);
+
+static void SELECTStageMgrOnResume(Pages::SELECTStageMgr* page) {
+    if (page->status == Pages::SELECTStageMgr::STATUS_WAITING && IsFroomVotingSection(SectionMgr::sInstance->curSection->sectionId)) {
+        if (TryPushNextSettingsPreview(*page)) return;
+    }
+
+    page->Pages::SELECTStageMgr::OnResume();
+}
+kmWritePointer(0x808C06F0, SELECTStageMgrOnResume);
+
 kmWrite32(0x806508d4, 0x60000000);  // Add VR screen outside of 1st race in frooms
 
 ExpVR::ExpVR() : comboButtonState(0) {
@@ -470,11 +556,18 @@ void ExpMultiKartSelect::BeforeControlUpdate() {
     }
 }
 
+void StopRandomComboRoulette() {
+    ExpCharacterSelect* charSelect = SectionMgr::sInstance->curSection->Get<ExpCharacterSelect>();
+    if (charSelect != nullptr && charSelect->rouletteCounter != -1) {
+        charSelect->rouletteCounter = -1;
+    }
+}
+
 void DriftSelectBeforeControlUpdate(Pages::DriftSelect* driftSelect) {
     ExpCharacterSelect* charSelect = SectionMgr::sInstance->curSection->Get<ExpCharacterSelect>();
     if (charSelect->rouletteCounter != -1 && driftSelect->currentState == 0x4) {
         driftSelect->controlsManipulatorManager.inaccessible = false;
-        charSelect->rouletteCounter = -1;
+        StopRandomComboRoulette();
     }
 }
 kmWritePointer(0x808D9DF8, DriftSelectBeforeControlUpdate);
@@ -484,7 +577,7 @@ void MultiDriftSelectBeforeControlUpdate(Pages::MultiDriftSelect* multiDriftSele
     ExpCharacterSelect* charSelect = sectionMgr->curSection->Get<ExpCharacterSelect>();
     if (charSelect->rouletteCounter != -1 && multiDriftSelect->currentState == 0x4) {
         multiDriftSelect->controlsManipulatorManager.inaccessible = false;
-        charSelect->rouletteCounter = -1;
+        StopRandomComboRoulette();
     }
 }
 kmWritePointer(0x808D9C10, MultiDriftSelectBeforeControlUpdate);

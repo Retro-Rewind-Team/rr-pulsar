@@ -49,7 +49,7 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum& posTracker) {
             playerId = cameraMgr->focusedPlayerIdx;
         }
     } else {
-        playerId = racedata->racesScenario.settings.hudPlayerIds[hudSlotId];
+        playerId = posTracker.GetPlayerId();
     }
 
     if (playerId >= 12) {
