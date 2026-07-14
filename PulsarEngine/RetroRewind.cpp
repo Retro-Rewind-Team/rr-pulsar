@@ -134,5 +134,4 @@ asmFunc LoadMainMenuControlCount() {
     )
 }
 kmCall(0x80625E1C, LoadMainMenuControlCount);
-
 }  // namespace RetroRewind

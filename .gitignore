@@ -24,10 +24,4 @@ AGENTS.md
 .DS_Store
 scripts/Test-DolphinScenario.paths.txt
 crash.txt
-!/KMTTool/
-!/KMTTool/**
-/KMTTool/.vs/
-/KMTTool/bin/
-/KMTTool/obj/
-/KMTTool/*.csproj.user
 /KMTTool
