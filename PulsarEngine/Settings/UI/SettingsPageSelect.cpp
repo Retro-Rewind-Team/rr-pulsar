@@ -107,9 +107,12 @@ void SettingsPageSelect::OnActivate() {
     this->isFormatVoteEnding = false;
     this->isFormatVoteSubmitted = false;
     this->formatVoteResolvedFrames = 0;
+    this->controlsManipulatorManager.inaccessible = false;
+    this->titleText->isHidden = false;
+    this->bottomText->isHidden = false;
     if (this->isFormatVotePage) {
         this->SetPreparingRaceVisible(false);
-        this->titleText->SetMessage(BMG_MOGI_FORMAT_TITLE);
+        this->titleBmg = BMG_MOGI_FORMAT_TITLE;
         this->bottomText->SetMessage(BMG_MOGI_FORMAT_BOTTOM);
         this->backButton.isHidden = true;
         this->backButton.manipulator.inaccessible = true;
@@ -132,6 +135,7 @@ void SettingsPageSelect::OnActivate() {
         MenuInteractable::OnActivate();
         return;
     }
+    this->titleBmg = BMG_SETTINGS_TITLE;
     this->backButton.isHidden = false;
     this->backButton.manipulator.inaccessible = false;
     // Select the first button by default
