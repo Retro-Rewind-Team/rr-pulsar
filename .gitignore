@@ -22,4 +22,10 @@ AGENTS.md
 .agent
 .claude
 .DS_Store
+scripts/Test-DolphinScenario.paths.txt
+crash.txt
+/KMTTool/.vs/
+/KMTTool/bin/
+/KMTTool/obj/
+/KMTTool/*.csproj.user
 /KMTTool
