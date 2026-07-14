@@ -40,6 +40,7 @@ void ApplyMissionScenarioSettings(RacedataScenario& scenario) {
 
     const u8 flags = scenario.mission[MISSION_FEATURE_FLAGS_OFFSET];
     const u8 engine = scenario.mission[MISSION_ENGINE_OFFSET];
+    
     if ((flags & ENGINE_500CC) != 0) {
         scenario.settings.engineClass = CC_50;
     } else if (engine == 2) {
