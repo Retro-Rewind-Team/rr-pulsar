@@ -15,7 +15,7 @@ namespace Mogi {
 
 static void SetMogiMatchmakingSuspend(RKNet::Controller* controller) {
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    if (!IsEnabled() || sub.playerCount >= 6) controller->SetVoteMatchmakingSuspend();
+    if (!IsEnabled() || sub.playerCount >= 12) controller->SetVoteMatchmakingSuspend();
 }
 kmCall(0x80663e64, SetMogiMatchmakingSuspend);
 
