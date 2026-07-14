@@ -115,9 +115,10 @@ void SettingsPageSelect::OnActivate() {
         this->backButton.manipulator.inaccessible = true;
         Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         if (selectStageMgr != nullptr) {
-            this->formatVotePreviousCountdown = selectStageMgr->countdown.countdown;
-            selectStageMgr->countdown.SetInitial(MOGI_FORMAT_VOTE_SECONDS);
-            selectStageMgr->countdown.isActive = true;
+            CountDown* timer = &selectStageMgr->countdown;
+            this->formatVotePreviousCountdown = timer->countdown;
+            timer->SetInitial(MOGI_FORMAT_VOTE_SECONDS);
+            timer->isActive = true;
             selectStageMgr->timerControl.isHidden = false;
             selectStageMgr->timerControl.AnimateCurrentCountDown();
         }
@@ -208,8 +209,10 @@ void SettingsPageSelect::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
 
 void SettingsPageSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
     if (this->isFormatVotePage) {
-        Mogi::CastFormatVote(static_cast<u8>(button.buttonId));
-        this->ShowFormatVoteWaiting();
+        if (!this->isFormatVoteSubmitted &&
+            Mogi::CastFormatVote(static_cast<u8>(button.buttonId))) {
+            this->ShowFormatVoteWaiting();
+        }
         return;
     }
     // Get the SettingsPanel and set up the selected page
@@ -279,9 +282,14 @@ void SettingsPageSelect::SetPreparingRaceVisible(bool visible) {
 void SettingsPageSelect::BeforeControlUpdate() {
     if (this->isFormatVotePage) {
         Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
-        if (selectStageMgr != nullptr && selectStageMgr->countdown.countdown <= 0.0f) {
-            Mogi::OnFormatVoteTimeout();
-            this->ShowFormatVoteWaiting();
+        if (selectStageMgr != nullptr && !this->isFormatVoteSubmitted) {
+            CountDown* timer = &selectStageMgr->countdown;
+            timer->Update();
+            selectStageMgr->timerControl.AnimateCurrentCountDown();
+            if (timer->countdown <= 0.0f) {
+                Mogi::OnFormatVoteTimeout();
+                this->ShowFormatVoteWaiting();
+            }
         }
         if (Mogi::IsFormatVoteResolved()) {
             this->ShowFormatVoteWaiting();

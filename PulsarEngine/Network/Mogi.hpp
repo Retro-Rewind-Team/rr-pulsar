@@ -28,7 +28,7 @@ void ReceiveMMRPacket(u8 aid, u16 player0, u16 player1);
 u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole);
 void FillFormatVotePacket(u8& state, u8& format);
 void ReceiveFormatVotePacket(u8 aid, u8 state, u8 format);
-void CastFormatVote(u8 format);
+bool CastFormatVote(u8 format);
 void OnFormatVoteTimeout();
 void OnPlayerDisconnect(u8 aid);
 void ReceivePlayerScores(u8 aid, u16 player0, u16 player1);

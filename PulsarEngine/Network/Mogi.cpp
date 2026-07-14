@@ -552,12 +552,13 @@ void ReceiveFormatVotePacket(u8 aid, u8 state, u8 format) {
     TryResolveFormatVote();
 }
 
-void CastFormatVote(u8 format) {
+bool CastFormatVote(u8 format) {
     if (!sFormatVoteActive || sFormatVoteResolved || format >= MOGI_FORMAT_COUNT ||
-        sLocalFormatVoteState != MOGI_FORMAT_VOTE_PENDING) return;
+        sLocalFormatVoteState != MOGI_FORMAT_VOTE_PENDING) return false;
     sLocalFormatVote = format;
     sLocalFormatVoteState = MOGI_FORMAT_VOTE_CAST;
     TryResolveFormatVote();
+    return true;
 }
 
 void OnFormatVoteTimeout() {
