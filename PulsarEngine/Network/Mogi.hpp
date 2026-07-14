@@ -23,6 +23,7 @@ void FinishFormatVote();
 bool IsPublicRoom();
 u32 GetLobbySeed();
 u8 GetTeamForPlayer(u8 playerIdx);
+void ApplyHostTeamAssignments(const u8* teams);
 void FillMMRPacket(u16& player0, u16& player1);
 void ReceiveMMRPacket(u8 aid, u16 player0, u16 player1);
 u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole);

@@ -80,16 +80,17 @@ static void WriteBlockedTracksToPacket(PulROOM* packet) {
 static void HandleExtendedTeamUpdates(const PulROOM& packet) {
     UI::ExtendedTeamManager* manager = UI::ExtendedTeamManager::sInstance;
     UI::ExtendedTeamSelect* ets = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
-    const bool isSeededMogi = Mogi::IsActive() && Mogi::IsTeamFormat();
+    u8 teams[12];
     for (int id = 0; id < 12; ++id) {
         const u8 byte = id / 2;
         const u8 shift = (id % 2) * 4;
-        UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F);
-        if (isSeededMogi) {
-            team = static_cast<UI::ExtendedTeamID>(Mogi::GetTeamForPlayer(id));
-            manager->SetPlayerTeam(id, team);
-            if (ets != nullptr) ets->UpdatePlayerTeam(id, team);
-        } else if (team != 0x0F) {
+        teams[id] = packet.extendedTeams[byte] >> shift & 0x0F;
+    }
+    if (Mogi::IsActive() && Mogi::IsTeamFormat()) Mogi::ApplyHostTeamAssignments(teams);
+
+    for (int id = 0; id < 12; ++id) {
+        const UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(teams[id]);
+        if (team != 0x0F) {
             manager->SetPlayerTeam(id, team);
             if (ets != nullptr) ets->UpdatePlayerTeam(id, team);
         }

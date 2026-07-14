@@ -72,6 +72,7 @@ struct MogiParticipant {
     bool activeInGP;
     bool disconnected;
     bool fixedDisconnectScore;
+    bool presentOnResults;
     u8 aid;
     u8 playerOnConsole;
     u8 team;
@@ -320,6 +321,7 @@ static MogiParticipant* AddParticipant(u8 aid, u8 playerOnConsole, u8 team, u16 
     participant->activeInGP = true;
     participant->disconnected = false;
     participant->fixedDisconnectScore = false;
+    participant->presentOnResults = true;
     participant->aid = aid;
     participant->playerOnConsole = playerOnConsole;
     participant->team = team;
@@ -348,9 +350,18 @@ static void EnsureParticipants() {
 
 void ReceivePlayerScores(u8 aid, u16 player0, u16 player1) {
     if (!sActive || !sTeamFormat || aid >= 12) return;
+    CaptureTeamAssignments();
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const u8 playerCount = sub.connectionUserDatas[aid].playersAtConsole;
     const u16 scores[2] = {player0, player1};
     for (u8 slot = 0; slot < 2; ++slot) {
         MogiParticipant* participant = FindParticipant(aid, slot);
+        if (participant == nullptr && sTeamAssignmentsCaptured && slot < playerCount &&
+            sTeamByAid[aid][slot] != 0xFF) {
+            participant = AddParticipant(aid, slot, sTeamByAid[aid][slot], scores[slot]);
+        }
         if (participant != nullptr && !participant->disconnected) participant->score = scores[slot];
     }
 }
@@ -375,25 +386,11 @@ void OnPlayerDisconnect(u8 aid) {
 u16 GetMissingTeamScore(u8 team, bool previous) {
     if (!sActive || !sTeamFormat) return 0;
     u16 score = 0;
-    const RacedataScenario* scenario = Racedata::sInstance != nullptr ?
-                                               &Racedata::sInstance->menusScenario :
-                                               static_cast<const RacedataScenario*>(nullptr);
     for (u8 i = 0; i < 12; ++i) {
         const MogiParticipant& participant = sParticipants[i];
-        if (!participant.valid || participant.team != team) continue;
-        bool present = false;
-        if (scenario != nullptr) {
-            for (u8 playerIdx = 0; playerIdx < scenario->playerCount; ++playerIdx) {
-                u8 aid;
-                u8 playerOnConsole;
-                if (GetPlayerIdentity(playerIdx, aid, playerOnConsole) && aid == participant.aid &&
-                    playerOnConsole == participant.playerOnConsole) {
-                    present = true;
-                    break;
-                }
-            }
-        }
-        if (!present) score += previous ? participant.previousScore : participant.score;
+        if (!participant.valid || !participant.disconnected || participant.team != team ||
+            participant.presentOnResults) continue;
+        score += previous ? participant.previousScore : participant.score;
     }
     return score;
 }
@@ -424,6 +421,27 @@ u8 GetTeamForPlayer(u8 playerIdx) {
         return sTeamByAid[aid][playerOnConsole];
     }
     return sTeamByPlayer[currentPlayerIdx];
+}
+
+void ApplyHostTeamAssignments(const u8* teams) {
+    if (!IsTeamFormat() || teams == nullptr) return;
+
+    const u8 teamCount = 12 / sPlayersPerTeam;
+    for (u8 playerIdx = 0; playerIdx < 12; ++playerIdx) {
+        if (teams[playerIdx] < teamCount) sTeamByPlayer[playerIdx] = teams[playerIdx];
+    }
+
+    ResetTeamAssignments();
+    CaptureTeamAssignments();
+    if (sTeamAssignmentsCaptured) {
+        for (u8 i = 0; i < 12; ++i) {
+            MogiParticipant& participant = sParticipants[i];
+            if (!participant.valid || participant.aid >= 12 || participant.playerOnConsole >= 2) continue;
+            const u8 team = sTeamByAid[participant.aid][participant.playerOnConsole];
+            if (team != 0xFF) participant.team = team;
+        }
+    }
+    EnsureParticipants();
 }
 
 u32 GetLobbySeed() {
@@ -591,6 +609,7 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
     sMMRFinalized = false;
     sSessionActive = true;
     CaptureTeamAssignments();
+    EnsureParticipants();
     sPendingDisconnect = false;
     sResultsSectionSeen = false;
 
@@ -625,6 +644,7 @@ void ApplyHostRoom(u32 hostContext2) {
     sMMRFinalized = false;
     sSessionActive = true;
     CaptureTeamAssignments();
+    EnsureParticipants();
     sPendingDisconnect = false;
     sResultsSectionSeen = false;
     sStartReported = false;
@@ -788,7 +808,11 @@ static void UpdateDisconnectScores(const RacedataScenario& scenario) {
 
     for (u8 i = 0; i < 12; ++i) {
         MogiParticipant& participant = sParticipants[i];
-        if (!participant.valid || !participant.activeInGP) continue;
+        if (!participant.valid) continue;
+        if (!participant.activeInGP) {
+            participant.presentOnResults = false;
+            continue;
+        }
         bool present = false;
         u16 resultScore = participant.score;
         u16 resultPreviousScore = participant.score;
@@ -804,6 +828,7 @@ static void UpdateDisconnectScores(const RacedataScenario& scenario) {
             resultPreviousScore = scenario.players[playerIdx].previousScore;
             break;
         }
+        participant.presentOnResults = present;
 
         participant.previousScore = participant.score;
         if (!participant.disconnected) {
