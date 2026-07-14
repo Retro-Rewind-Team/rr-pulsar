@@ -3,9 +3,11 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/System/Random.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <runtimeWrite.hpp>
 #include <Network/Mogi.hpp>
+#include <Network/PacketExpansion.hpp>
 #include <Network/GPReport.hpp>
 #include <Network/Rating/MogiRating.hpp>
 #include <Settings/Settings.hpp>
@@ -20,10 +22,14 @@ static const u32 MOGI_TEAM_SIZE_MASK = 0x30000000;
 static const u32 MOGI_TEAM_SIZE_2 = 0x10000000;
 static const u32 MOGI_TEAM_SIZE_3 = 0x20000000;
 static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
-static const u8 MOGI_FORMAT_ROLL_COUNT = 7;
-static const u8 MOGI_FFA_ROLL_COUNT = 2;
-static const u8 MOGI_2V2_ROLL_COUNT = 2;
 static const u8 MOGI_RACE_COUNT = 12;
+static const u8 MOGI_GP_RACE_COUNT = 4;
+static const u8 MOGI_FORMAT_COUNT = 5;
+static const u8 MOGI_FORMAT_NONE = 0xFF;
+static const u8 MOGI_FORMAT_VOTE_PENDING = 0;
+static const u8 MOGI_FORMAT_VOTE_CAST = 1;
+static const u8 MOGI_FORMAT_VOTE_TIMED_OUT = 2;
+static const u8 MOGI_FORMAT_VOTE_RESOLVED = 3;
 static const float MOGI_EXPECTATION_RANGE = 100.0f;
 static const float MOGI_MAX_GAIN_MMR = 250.0f;
 static const float MOGI_MAX_GAIN_AT_START = 3.50f;
@@ -52,8 +58,53 @@ static bool sSessionActive = false;
 static bool sPendingDisconnect = false;
 static bool sResultsSectionSeen = false;
 static bool sStartReported = false;
+static bool sFormatVoteActive = false;
+static bool sFormatVoteResolved = false;
+static u8 sLocalFormatVoteState = MOGI_FORMAT_VOTE_PENDING;
+static u8 sLocalFormatVote = MOGI_FORMAT_NONE;
+static u8 sFormatVoteStates[12];
+static u8 sFormatVotes[12];
+static u8 sDisconnectCountInGP = 0;
+static bool sResetRoomAfterGP = false;
+
+struct MogiParticipant {
+    bool valid;
+    bool activeInGP;
+    bool disconnected;
+    bool fixedDisconnectScore;
+    u8 aid;
+    u8 playerOnConsole;
+    u8 team;
+    u8 disconnectRaceInGP;
+    u16 score;
+    u16 previousScore;
+    u16 gpStartScore;
+};
+
+static MogiParticipant sParticipants[12];
 
 static void SelectLobbyFormat(u32 groupId);
+
+static void ResetFormatVotes() {
+    sFormatVoteActive = true;
+    sFormatVoteResolved = false;
+    sLocalFormatVoteState = MOGI_FORMAT_VOTE_PENDING;
+    sLocalFormatVote = MOGI_FORMAT_NONE;
+    for (u8 aid = 0; aid < 12; ++aid) {
+        sFormatVoteStates[aid] = MOGI_FORMAT_VOTE_PENDING;
+        sFormatVotes[aid] = MOGI_FORMAT_NONE;
+    }
+}
+
+static void ResetParticipants() {
+    for (u8 i = 0; i < 12; ++i) {
+        memset(&sParticipants[i], 0, sizeof(sParticipants[i]));
+        sParticipants[i].aid = 0xFF;
+        sParticipants[i].playerOnConsole = 0xFF;
+    }
+    sDisconnectCountInGP = 0;
+    sResetRoomAfterGP = false;
+}
 
 static bool IsFriendRoom(const RKNet::Controller* controller) {
     return controller != nullptr &&
@@ -172,6 +223,9 @@ void SetEnabled(bool enabled) {
         sPendingDisconnect = false;
         sResultsSectionSeen = false;
         sStartReported = false;
+        sFormatVoteActive = false;
+        sFormatVoteResolved = false;
+        ResetParticipants();
     }
 }
 
@@ -241,6 +295,122 @@ bool IsTeamFormat() {
     return sActive && sTeamFormat;
 }
 
+static MogiParticipant* FindParticipant(u8 aid, u8 playerOnConsole) {
+    for (u8 i = 0; i < 12; ++i) {
+        if (sParticipants[i].valid && sParticipants[i].aid == aid &&
+            sParticipants[i].playerOnConsole == playerOnConsole) {
+            return &sParticipants[i];
+        }
+    }
+    return nullptr;
+}
+
+static MogiParticipant* AddParticipant(u8 aid, u8 playerOnConsole, u8 team, u16 score) {
+    MogiParticipant* participant = FindParticipant(aid, playerOnConsole);
+    if (participant == nullptr) {
+        for (u8 i = 0; i < 12; ++i) {
+            if (!sParticipants[i].valid) {
+                participant = &sParticipants[i];
+                break;
+            }
+        }
+    }
+    if (participant == nullptr) return nullptr;
+    participant->valid = true;
+    participant->activeInGP = true;
+    participant->disconnected = false;
+    participant->fixedDisconnectScore = false;
+    participant->aid = aid;
+    participant->playerOnConsole = playerOnConsole;
+    participant->team = team;
+    participant->disconnectRaceInGP = 0xFF;
+    participant->score = score;
+    participant->previousScore = score;
+    participant->gpStartScore = score;
+    return participant;
+}
+
+static void EnsureParticipants() {
+    if (!sActive || !sTeamFormat) return;
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || RKNet::SELECTHandler::sInstance == nullptr) return;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const Network::ExpSELECTHandler& select = Network::ExpSELECTHandler::Get();
+    const u8 playerCount = sub.playerCount < 12 ? sub.playerCount : 12;
+    for (u8 playerIdx = 0; playerIdx < playerCount; ++playerIdx) {
+        u8 aid;
+        u8 playerOnConsole;
+        if (!GetPlayerIdentity(playerIdx, aid, playerOnConsole) || FindParticipant(aid, playerOnConsole) != nullptr) continue;
+        const Network::PulSELECT& packet = aid == sub.localAid ? select.toSendPacket : select.receivedPackets[aid];
+        AddParticipant(aid, playerOnConsole, sTeamByPlayer[playerIdx], packet.playersData[playerOnConsole].sumPoints);
+    }
+}
+
+void ReceivePlayerScores(u8 aid, u16 player0, u16 player1) {
+    if (!sActive || !sTeamFormat || aid >= 12) return;
+    const u16 scores[2] = {player0, player1};
+    for (u8 slot = 0; slot < 2; ++slot) {
+        MogiParticipant* participant = FindParticipant(aid, slot);
+        if (participant != nullptr && !participant->disconnected) participant->score = scores[slot];
+    }
+}
+
+void OnPlayerDisconnect(u8 aid) {
+    if (!sActive || !sTeamFormat || aid >= 12 || SectionMgr::sInstance == nullptr ||
+        SectionMgr::sInstance->sectionParams == nullptr) {
+        return;
+    }
+    EnsureParticipants();
+    const u8 raceInGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber % MOGI_GP_RACE_COUNT;
+    for (u8 slot = 0; slot < 2; ++slot) {
+        MogiParticipant* participant = FindParticipant(aid, slot);
+        if (participant == nullptr || participant->disconnected || !participant->activeInGP) continue;
+        participant->disconnected = true;
+        participant->disconnectRaceInGP = raceInGP;
+        ++sDisconnectCountInGP;
+    }
+    if (sDisconnectCountInGP >= 3) sResetRoomAfterGP = true;
+}
+
+u16 GetMissingTeamScore(u8 team, bool previous) {
+    if (!sActive || !sTeamFormat) return 0;
+    u16 score = 0;
+    const RacedataScenario* scenario = Racedata::sInstance != nullptr ?
+                                               &Racedata::sInstance->menusScenario :
+                                               static_cast<const RacedataScenario*>(nullptr);
+    for (u8 i = 0; i < 12; ++i) {
+        const MogiParticipant& participant = sParticipants[i];
+        if (!participant.valid || participant.team != team) continue;
+        bool present = false;
+        if (scenario != nullptr) {
+            for (u8 playerIdx = 0; playerIdx < scenario->playerCount; ++playerIdx) {
+                u8 aid;
+                u8 playerOnConsole;
+                if (GetPlayerIdentity(playerIdx, aid, playerOnConsole) && aid == participant.aid &&
+                    playerOnConsole == participant.playerOnConsole) {
+                    present = true;
+                    break;
+                }
+            }
+        }
+        if (!present) score += previous ? participant.previousScore : participant.score;
+    }
+    return score;
+}
+
+bool IsFormatVoteActive() {
+    return sActive && sFormatVoteActive;
+}
+
+bool IsFormatVoteResolved() {
+    return sActive && sFormatVoteResolved;
+}
+
+void FinishFormatVote() {
+    if (!sFormatVoteResolved) return;
+    sFormatVoteActive = false;
+}
+
 u8 GetTeamForPlayer(u8 playerIdx) {
     if (!IsTeamFormat()) return playerIdx;
 
@@ -280,42 +450,133 @@ u16 GetRemoteMMR(u8 aid, u8 playerIdOnConsole) {
     return sRemoteMMR[aid][playerIdOnConsole];
 }
 
+static void ApplyFormat(u8 format) {
+    if (format >= MOGI_FORMAT_COUNT) format = 0;
+    sTeamFormat = format != 0;
+    switch (format) {
+        case 2:
+            sPlayersPerTeam = 3;
+            break;
+        case 3:
+            sPlayersPerTeam = 4;
+            break;
+        case 4:
+            sPlayersPerTeam = 6;
+            break;
+        default:
+            sPlayersPerTeam = 2;
+            break;
+    }
+
+    u32 seed = sLobbySeed;
+    for (u8 i = 0; i < 12; ++i) sTeamByPlayer[i] = i / sPlayersPerTeam;
+    for (s32 i = 11; i > 0; --i) {
+        seed = seed * 1664525 + 1013904223;
+        const u8 swapIdx = static_cast<u8>(seed % static_cast<u32>(i + 1));
+        const u8 team = sTeamByPlayer[i];
+        sTeamByPlayer[i] = sTeamByPlayer[swapIdx];
+        sTeamByPlayer[swapIdx] = team;
+    }
+    ResetTeamAssignments();
+    UI::ExtendedTeamSelect::RandomizeTeamColors(sLobbySeed);
+    sFormatVoteResolved = true;
+    EnsureParticipants();
+}
+
+static void ResolveFormatVote() {
+    if (!sFormatVoteActive || sFormatVoteResolved) return;
+
+    u8 counts[MOGI_FORMAT_COUNT] = {};
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    for (u8 aid = 0; aid < 12; ++aid) {
+        if ((sub.availableAids & (1 << aid)) == 0) continue;
+        const u8 state = aid == sub.localAid ? sLocalFormatVoteState : sFormatVoteStates[aid];
+        const u8 format = aid == sub.localAid ? sLocalFormatVote : sFormatVotes[aid];
+        if (state == MOGI_FORMAT_VOTE_CAST && format < MOGI_FORMAT_COUNT) ++counts[format];
+    }
+
+    u8 tiedFormats[MOGI_FORMAT_COUNT];
+    u8 tiedCount = 0;
+    u8 highestCount = 0;
+    for (u8 format = 0; format < MOGI_FORMAT_COUNT; ++format) {
+        if (counts[format] > highestCount) {
+            highestCount = counts[format];
+            tiedCount = 0;
+            tiedFormats[tiedCount++] = format;
+        } else if (counts[format] == highestCount) {
+            tiedFormats[tiedCount++] = format;
+        }
+    }
+    Random random;
+    const u8 result = tiedFormats[random.NextLimited(tiedCount)];
+    ApplyFormat(result);
+    sLocalFormatVoteState = MOGI_FORMAT_VOTE_RESOLVED;
+    sLocalFormatVote = result;
+}
+
+static void TryResolveFormatVote() {
+    if (!sFormatVoteActive || sFormatVoteResolved) return;
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    if (sub.localAid != sub.hostAid) return;
+
+    for (u8 aid = 0; aid < 12; ++aid) {
+        if ((sub.availableAids & (1 << aid)) == 0) continue;
+        const u8 state = aid == sub.localAid ? sLocalFormatVoteState : sFormatVoteStates[aid];
+        if (state == MOGI_FORMAT_VOTE_PENDING) return;
+    }
+    ResolveFormatVote();
+}
+
+void FillFormatVotePacket(u8& state, u8& format) {
+    state = sLocalFormatVoteState;
+    format = sLocalFormatVote;
+}
+
+void ReceiveFormatVotePacket(u8 aid, u8 state, u8 format) {
+    if (!sActive || aid >= 12 || state > MOGI_FORMAT_VOTE_RESOLVED) return;
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    if (aid == sub.hostAid && state == MOGI_FORMAT_VOTE_RESOLVED &&
+        format < MOGI_FORMAT_COUNT && !sFormatVoteResolved) {
+        ApplyFormat(format);
+        return;
+    }
+    if (!sFormatVoteActive) return;
+    sFormatVoteStates[aid] = state;
+    sFormatVotes[aid] = format;
+    TryResolveFormatVote();
+}
+
+void CastFormatVote(u8 format) {
+    if (!sFormatVoteActive || sFormatVoteResolved || format >= MOGI_FORMAT_COUNT ||
+        sLocalFormatVoteState != MOGI_FORMAT_VOTE_PENDING) return;
+    sLocalFormatVote = format;
+    sLocalFormatVoteState = MOGI_FORMAT_VOTE_CAST;
+    TryResolveFormatVote();
+}
+
+void OnFormatVoteTimeout() {
+    if (!sFormatVoteActive || sFormatVoteResolved ||
+        sLocalFormatVoteState != MOGI_FORMAT_VOTE_PENDING) return;
+    sLocalFormatVoteState = MOGI_FORMAT_VOTE_TIMED_OUT;
+    TryResolveFormatVote();
+}
+
 static void SelectLobbyFormat(u32 groupId) {
     if (sActive) return;
 
     ResetTeamAssignments();
     sLobbyGroupId = groupId;
     sLobbySeed = groupId ^ 0x4D4F4749;
-    u32 seed = sLobbySeed;
-    const u8 formatRoll = static_cast<u8>(seed % MOGI_FORMAT_ROLL_COUNT);
-    sTeamFormat = formatRoll >= MOGI_FFA_ROLL_COUNT;
-    if (formatRoll < MOGI_FFA_ROLL_COUNT) {
-        sPlayersPerTeam = 2;
-    } else if (formatRoll < MOGI_FFA_ROLL_COUNT + MOGI_2V2_ROLL_COUNT) {
-        sPlayersPerTeam = 2;
-    } else {
-        switch (formatRoll) {
-            case 4:
-                sPlayersPerTeam = 3;
-                break;
-            case 5:
-                sPlayersPerTeam = 4;
-                break;
-            default:
-                sPlayersPerTeam = 6;
-                break;
-        }
-    }
-
-    for (u8 i = 0; i < 12; ++i) sTeamByPlayer[i] = i / sPlayersPerTeam;
-    for (s32 i = 11; i > 0; --i) {
-        seed = seed * 1664525 + 1013904223;
-        const u8 swapIdx = (u8)(seed % (u32)(i + 1));
-        const u8 team = sTeamByPlayer[i];
-        sTeamByPlayer[i] = sTeamByPlayer[swapIdx];
-        sTeamByPlayer[swapIdx] = team;
-    }
-    UI::ExtendedTeamSelect::RandomizeTeamColors(sLobbySeed);
+    sTeamFormat = false;
+    sPlayersPerTeam = 2;
+    ResetFormatVotes();
+    ResetParticipants();
 }
 
 void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
@@ -370,7 +631,7 @@ void ApplyHostRoom(u32 hostContext2) {
 }
 
 static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {
-    u16 score = 0;
+    u16 score = GetMissingTeamScore(team, false);
     for (u8 i = 0; i < scenario.playerCount; ++i) {
         if (GetTeamForPlayer(i) == team) score += scenario.players[i].score;
     }
@@ -519,12 +780,75 @@ static bool IsFinalRace() {
     return SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber >= GetFinalRaceNumber();
 }
 
+static void UpdateDisconnectScores(const RacedataScenario& scenario) {
+    if (!IsTeamFormat() || SectionMgr::sInstance == nullptr || SectionMgr::sInstance->sectionParams == nullptr) return;
+    EnsureParticipants();
+    const u8 raceInGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber % MOGI_GP_RACE_COUNT;
+
+    for (u8 i = 0; i < 12; ++i) {
+        MogiParticipant& participant = sParticipants[i];
+        if (!participant.valid || !participant.activeInGP) continue;
+        bool present = false;
+        u16 resultScore = participant.score;
+        u16 resultPreviousScore = participant.score;
+        for (u8 playerIdx = 0; playerIdx < scenario.playerCount; ++playerIdx) {
+            u8 aid;
+            u8 playerOnConsole;
+            if (!GetPlayerIdentity(playerIdx, aid, playerOnConsole) || aid != participant.aid ||
+                playerOnConsole != participant.playerOnConsole) {
+                continue;
+            }
+            present = true;
+            resultScore = scenario.players[playerIdx].score;
+            resultPreviousScore = scenario.players[playerIdx].previousScore;
+            break;
+        }
+
+        participant.previousScore = participant.score;
+        if (!participant.disconnected) {
+            if (present) {
+                participant.previousScore = resultPreviousScore;
+                participant.score = resultScore;
+            }
+            continue;
+        }
+
+        if (participant.disconnectRaceInGP == 0) {
+            if (!participant.fixedDisconnectScore) {
+                participant.score = participant.gpStartScore + (present ? 15 : 18);
+                participant.fixedDisconnectScore = true;
+            }
+        } else if (present) {
+            participant.previousScore = resultPreviousScore;
+            participant.score = resultScore;
+        } else {
+            participant.score += 3;
+        }
+    }
+
+    if (raceInGP != MOGI_GP_RACE_COUNT - 1) return;
+    if (sResetRoomAfterGP && RKNet::Controller::sInstance != nullptr) RKNet::Controller::sInstance->ResetRH1andROOM();
+    for (u8 i = 0; i < 12; ++i) {
+        MogiParticipant& participant = sParticipants[i];
+        if (!participant.valid) continue;
+        if (participant.disconnected) {
+            participant.activeInGP = false;
+        } else {
+            participant.gpStartScore = participant.score;
+            participant.previousScore = participant.score;
+        }
+    }
+    sDisconnectCountInGP = 0;
+    sResetRoomAfterGP = false;
+}
+
 void OnFinalResults() {
     if (Racedata::sInstance == nullptr) return;
 
     RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
     const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     if (!IsActive()) return;
+    UpdateDisconnectScores(scenario);
 
     // WiFiVSResults::SetCupPanes only handles private VS/private battle modes.
     raceScenario.settings.gamemode = MODE_PRIVATE_VS;

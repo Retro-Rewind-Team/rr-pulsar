@@ -6,6 +6,7 @@
 #include <core/nw4r/lyt/ArcResourceAccessor.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/ROOM.hpp>
+#include <Network/Mogi.hpp>
 #include <MarioKartWii/UI/Page/Leaderboard/GPVSLeaderboardUpdate.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Page/Other/VR.hpp>
@@ -444,6 +445,15 @@ void WiFiVSResults_setCongratulationText(Pages::WiFiVSResults* _this) {
             }
 
             scores[team].score += scenario.players[i].score;
+        }
+        for (int team = 0; team < TEAM_COUNT; ++team) {
+            const u16 missingScore = Mogi::GetMissingTeamScore(team, false);
+            if (missingScore == 0) continue;
+            if (!scores[team].present) {
+                scores[team].present = true;
+                ++teamCount;
+            }
+            scores[team].score += missingScore;
         }
 
         qsort(scores, TEAM_COUNT, sizeof(TeamScore), sort_by_score);

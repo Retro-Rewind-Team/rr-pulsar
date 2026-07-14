@@ -25,6 +25,7 @@ static void OnConnectionClosed(RKNet::Controller* controller, u32 aid) {
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     const u8 hostAid = sub.hostAid;
     const bool isLocalHost = sub.localAid == hostAid;
+    Mogi::OnPlayerDisconnect(static_cast<u8>(aid));
 
     if (!isLocalHost && aid != hostAid) {
         MarkPhantomAid(aid);

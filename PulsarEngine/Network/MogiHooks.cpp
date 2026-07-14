@@ -2,17 +2,20 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/RKNet/SELECT.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <Network/Mogi.hpp>
 #include <PulsarSystem.hpp>
+#include <Settings/UI/SettingsPageSelect.hpp>
+#include <UI/UI.hpp>
 
 namespace Pulsar {
 namespace Mogi {
 
 static void SetMogiMatchmakingSuspend(RKNet::Controller* controller) {
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    if (!IsEnabled() || sub.playerCount >= 12) controller->SetVoteMatchmakingSuspend();
+    if (!IsEnabled() || sub.playerCount >= 6) controller->SetVoteMatchmakingSuspend();
 }
 kmCall(0x80663e64, SetMogiMatchmakingSuspend);
 
@@ -111,6 +114,32 @@ static void UpdateMogiVotingOnlineParams(Pages::SELECTStageMgr* page) {
     if (IsActive()) Racedata::sInstance->menusScenario.settings.gamemode = MODE_PUBLIC_VS;
 }
 kmCall(0x80643cf0, UpdateMogiVotingOnlineParams);
+
+static void OpenMogiFormatVotePage() {
+    if (!IsFormatVoteActive()) return;
+    UI::ExpSection* section = UI::ExpSection::GetSection();
+    if (section == nullptr || section->GetPulPage<UI::SettingsPageSelect>() == nullptr) return;
+    UI::ExpSection::AddPageLayer(*section, UI::SettingsPageSelect::id);
+}
+
+asmFunc OpenMogiFormatVotePageHook() {
+    ASM(
+        nofralloc;
+        mflr r0;
+        stw r0, 0x8(r1);
+        bl OpenMogiFormatVotePage;
+        lwz r0, 0x8(r1);
+        mtlr r0;
+        lwz r0, 0x24(r1);
+        blr;);
+}
+kmCall(0x806501f8, OpenMogiFormatVotePageHook);
+
+static bool IsMogiSelectPrepared(RKNet::SELECTHandler* handler) {
+    if (IsFormatVoteActive()) return false;
+    return handler->IsPrepared();
+}
+kmCall(0x80650484, IsMogiSelectPrepared);
 
 }  // namespace Mogi
 }  // namespace Pulsar

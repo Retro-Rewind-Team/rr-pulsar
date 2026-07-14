@@ -40,11 +40,18 @@ class SettingsPageSelect : public Pages::MenuInteractable {
     void OnButtonClick(PushButton& button, u32 hudSlotId);
     void OnButtonSelect(PushButton& button, u32 hudSlotId);
     void OnButtonDeselect(PushButton& button, u32 hudSlotId) {}
+    void ShowFormatVoteWaiting();
+    void SetPreparingRaceVisible(bool visible);
 
     PtmfHolder_2A<SettingsPageSelect, void, PushButton&, u32> onBackButtonClickHandler;
 
     // Buttons for each settings page - max 12 pages
     PushButton pageButtons[Settings::Params::pageCount];
+    bool isFormatVotePage;
+    bool isFormatVoteEnding;
+    bool isFormatVoteSubmitted;
+    u16 formatVoteResolvedFrames;
+    float formatVotePreviousCountdown;
 };
 
 }  // namespace UI

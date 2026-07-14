@@ -97,6 +97,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         src->mogiMMR.magic = Mogi::MMR_PACKET_MAGIC;
         Mogi::FillMMRPacket(src->mogiMMR.mmr[0], src->mogiMMR.mmr[1]);
     }
+    Mogi::FillFormatVotePacket(src->mogiFormatVote.state, src->mogiFormatVote.format);
 
     const Network::Mgr& netMgr = system->netMgr;
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();
@@ -138,6 +139,8 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
 
     if (holder != nullptr && holder->packetSize == sizeof(PulSELECT) && src->mogiMMR.magic == Mogi::MMR_PACKET_MAGIC) {
         Mogi::ReceiveMMRPacket(aid, src->mogiMMR.mmr[0], src->mogiMMR.mmr[1]);
+        Mogi::ReceivePlayerScores(aid, src->playersData[0].sumPoints, src->playersData[1].sumPoints);
+        Mogi::ReceiveFormatVotePacket(aid, src->mogiFormatVote.state, src->mogiFormatVote.format);
     }
 
     for (int i = 0; i < 2; ++i) {
@@ -644,7 +647,7 @@ void ProcessNewPacketVoting() {
                 u32 accField = handler->aidsWithAccurateAidPidMap;
                 if (accField != 0) {
                     if (winningTrack != 0xff) accField |= localAidBit;
-                    if ((availableAids & accField) == availableAids) send.phase = 2;
+                    if ((availableAids & accField) == availableAids && !Mogi::IsFormatVoteActive()) send.phase = 2;
                 }
             }
         } else if (hostAid == aid) {  // I'm not the host and the loop is at the hostAid
@@ -670,7 +673,7 @@ void ProcessNewPacketVoting() {
                         }
                     }
                 }
-                if (curRecv.phase > 1) send.phase = 2;
+                if (curRecv.phase > 1 && !Mogi::IsFormatVoteActive()) send.phase = 2;
             }
         }
 
@@ -683,7 +686,8 @@ void ProcessNewPacketVoting() {
             if ((availableAids & accField) != availableAids) isConnectedToAnyone = false;
         }
         if (isConnectedToAnyone && curRecv.pulVote != 0x43) handler->aidsThatHaveVoted |= aidBit;
-        if (handler->hasNewRACEHEADER_1 != 0 && send.phase >= 1) send.phase = 2;  // people have already progressed?
+        if (handler->hasNewRACEHEADER_1 != 0 && send.phase >= 1 && !Mogi::IsFormatVoteActive())
+            send.phase = 2;  // people have already progressed?
     }
 }
 kmCall(0x80661520, ProcessNewPacketVoting);

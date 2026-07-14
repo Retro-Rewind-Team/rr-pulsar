@@ -127,6 +127,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_OPTIONS:  // 0x8c
             this->CreateAndInitPage(*this, CustomItemPage::id);
         case SECTION_P1_WIFI_VS_VOTING:  // 0x60
+        case SECTION_P2_WIFI_VS_VOTING:
         case SECTION_P1_WIFI_BATTLE_VOTING:
             this->CreateAndInitPage(*this, SettingsPanel::id);
             this->CreateAndInitPage(*this, SettingsPageSelect::id);

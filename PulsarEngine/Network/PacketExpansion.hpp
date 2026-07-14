@@ -76,6 +76,12 @@ struct MogiMMRPacket {
 };
 static_assert(sizeof(MogiMMRPacket) == 0x6, "MogiMMRPacket size");
 
+struct MogiFormatVotePacket {
+    u8 state;
+    u8 format;
+};
+static_assert(sizeof(MogiFormatVotePacket) == 0x2, "MogiFormatVotePacket size");
+
 struct PulROOM : public RKNet::ROOMPacket {
     // Generic ROOM settings
     u64 hostSystemContext;  // System's context but with just gamemodes taken from the settings
@@ -136,6 +142,7 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 
     MogiMMRPacket mogiMMR;
+    MogiFormatVotePacket mogiFormatVote;
 
     // Anti-cheat verification tag - proves sender has correct encryption key
     u32 acVerifyTag;  // Must be last encrypted field for alignment

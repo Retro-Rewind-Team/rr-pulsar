@@ -35,6 +35,12 @@ void ExtendedTeamResultTotal::OnInit() {
             teamPresent[team] = true;
         }
     }
+    for (int team = 0; team < TEAM_COUNT; ++team) {
+        if (!teamPresent[team] && Mogi::GetMissingTeamScore(team, false) != 0) {
+            teamPresent[team] = true;
+            ++teamCount;
+        }
+    }
 
     int controlLoadedCount = 0;
     this->InitControlGroup(teamCount);
