@@ -59,8 +59,10 @@ void ExpSection::CreatePages(ExpSection &self, SectionId id) {
     if (RegionPage::CreatePages(self))
         return;
     const System *system = System::sInstance;
-    if (!self.hasAutoVote)
-        self.CreateSectionPages(id);
+    if (id == SECTION_SINGLE_P_MR_CHOOSE_MISSION && Racedata::sInstance != nullptr) {
+        Pulsar::MissionMode::PrepareMenuScenario();
+    }
+    if (!self.hasAutoVote) self.CreateSectionPages(id);
     self.CreatePulPages();
 }
 kmCall(0x80622088, ExpSection::CreatePages);
@@ -138,13 +140,13 @@ void ExpSection::CreatePulPages() {
             }
             break;
         case SECTION_SINGLE_P_FROM_MENU:  // 0x48
+        case SECTION_SINGLE_P_MR_CHOOSE_MISSION:  // 0x4d
             MissionMode::CreateSinglePlayerPages(*this);
             // fall through
         case SECTION_SINGLE_P_TT_CHANGE_CHARA:  // 0x49
         case SECTION_SINGLE_P_TT_CHANGE_COURSE:  // 0x4a
         case SECTION_SINGLE_P_VS_NEXT_RACE:  // 0x4b
         case SECTION_SINGLE_P_BT_NEXT_BATTLE:  // 0x4c
-        case SECTION_SINGLE_P_MR_CHOOSE_MISSION:  // 0x4d
         case SECTION_SINGLE_P_CHAN_RACE_GHOST:  // 0x4e
         case SECTION_SINGLE_P_LIST_RACE_GHOST:  // 0x50
         case SECTION_P1_WIFI:  // 0x55
@@ -380,9 +382,20 @@ Page *ExpSection::AddPageLayerAnimatedReturnTopLayer(ExpSection &self, u32 id, u
 }
 kmBranch(0x80622e00, ExpSection::AddPageLayerAnimatedReturnTopLayer);
 
-kmWrite32(0x80623128, 0x48000020);  // skip the usual activate
-kmWrite32(0x80623140, 0x60000000);  // nop layerCount increase, as AddPageLayer will do it for us
-kmWrite32(0x80623144, 0x60000000);  // nop setanimdirection as r29 is faulty
+kmBranchDefCpp(0x80630818, 0x80631574, void) {
+    ExpSection* section = ExpSection::GetSection();
+    Pages::Menu* levelPage = static_cast<Pages::Menu*>(section->pages[PAGE_MISSION_LEVEL_SELECT_UNUSED]);
+    Pages::Menu* sublevelPage = static_cast<Pages::Menu*>(section->pages[PAGE_MISSION_SELECT_SUB]);
+    levelPage->prevPageId = PAGE_SINGLE_PLAYER_MENU;
+    sublevelPage->prevPageId = PAGE_MISSION_LEVEL_SELECT_UNUSED;
+    Page* volatile addedPage =
+        ExpSection::AddPageLayerAnimatedReturnTopLayer(*section, PAGE_MISSION_SELECT_SUB, 0xff);
+    (void)addedPage;
+}
+
+kmWrite32(0x80623128, 0x48000020);
+kmWrite32(0x80623140, 0x60000000);
+kmWrite32(0x80623144, 0x60000000);
 
 void ExpSection::SetNextPage(u32 id, u32 animDirection) {
     register ExpSection *self;
