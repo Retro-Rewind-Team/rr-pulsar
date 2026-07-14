@@ -23,7 +23,6 @@ static const u32 MOGI_TEAM_SIZE_2 = 0x10000000;
 static const u32 MOGI_TEAM_SIZE_3 = 0x20000000;
 static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
 static const u8 MOGI_RACE_COUNT = 12;
-static const u8 MOGI_GP_RACE_COUNT = 4;
 static const u8 MOGI_FORMAT_COUNT = 5;
 static const u8 MOGI_FORMAT_NONE = 0xFF;
 static const u8 MOGI_FORMAT_VOTE_PENDING = 0;
@@ -348,6 +347,30 @@ static void EnsureParticipants() {
     }
 }
 
+static void CaptureRaceParticipants() {
+    if (!sActive || !sTeamFormat || Racedata::sInstance == nullptr) return;
+
+    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const u8 playerCount = scenario.playerCount < 12 ? scenario.playerCount : 12;
+    for (u8 playerIdx = 0; playerIdx < playerCount; ++playerIdx) {
+        u8 aid;
+        u8 playerOnConsole;
+        if (!GetPlayerIdentity(playerIdx, aid, playerOnConsole)) continue;
+
+        MogiParticipant* participant = FindParticipant(aid, playerOnConsole);
+        if (participant == nullptr) {
+            AddParticipant(aid, playerOnConsole, static_cast<u8>(scenario.players[playerIdx].team),
+                           scenario.players[playerIdx].score);
+        } else if (!participant->disconnected) {
+            participant->team = static_cast<u8>(scenario.players[playerIdx].team);
+            participant->score = scenario.players[playerIdx].score;
+            participant->previousScore = scenario.players[playerIdx].previousScore;
+        }
+    }
+}
+
+static RaceLoadHook captureMogiRaceParticipants(CaptureRaceParticipants);
+
 void ReceivePlayerScores(u8 aid, u16 player0, u16 player1) {
     if (!sActive || !sTeamFormat || aid >= 12) return;
     CaptureTeamAssignments();
@@ -371,8 +394,9 @@ void OnPlayerDisconnect(u8 aid) {
         SectionMgr::sInstance->sectionParams == nullptr) {
         return;
     }
+    CaptureRaceParticipants();
     EnsureParticipants();
-    const u8 raceInGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber % MOGI_GP_RACE_COUNT;
+    const u8 raceInGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber % MOGI_RACE_COUNT;
     for (u8 slot = 0; slot < 2; ++slot) {
         MogiParticipant* participant = FindParticipant(aid, slot);
         if (participant == nullptr || participant->disconnected || !participant->activeInGP) continue;
@@ -804,7 +828,7 @@ static bool IsFinalRace() {
 static void UpdateDisconnectScores(const RacedataScenario& scenario) {
     if (!IsTeamFormat() || SectionMgr::sInstance == nullptr || SectionMgr::sInstance->sectionParams == nullptr) return;
     EnsureParticipants();
-    const u8 raceInGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber % MOGI_GP_RACE_COUNT;
+    const u8 raceInGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber % MOGI_RACE_COUNT;
 
     for (u8 i = 0; i < 12; ++i) {
         MogiParticipant& participant = sParticipants[i];
@@ -841,7 +865,7 @@ static void UpdateDisconnectScores(const RacedataScenario& scenario) {
 
         if (participant.disconnectRaceInGP == 0) {
             if (!participant.fixedDisconnectScore) {
-                participant.score = participant.gpStartScore + (present ? 15 : 18);
+                participant.score = participant.gpStartScore + (present ? 39 :42);
                 participant.fixedDisconnectScore = true;
             }
         } else if (present) {
@@ -852,7 +876,7 @@ static void UpdateDisconnectScores(const RacedataScenario& scenario) {
         }
     }
 
-    if (raceInGP != MOGI_GP_RACE_COUNT - 1) return;
+    if (raceInGP != MOGI_RACE_COUNT - 1) return;
     if (sResetRoomAfterGP && RKNet::Controller::sInstance != nullptr) RKNet::Controller::sInstance->ResetRH1andROOM();
     for (u8 i = 0; i < 12; ++i) {
         MogiParticipant& participant = sParticipants[i];
