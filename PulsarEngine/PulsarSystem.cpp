@@ -64,7 +64,7 @@ bool System::IsVanillaMode() const {
     if (isFroom) return this->IsContext(PULSAR_VANILLAMODE);
 
     const bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
-    return isRegionalRoom && this->netMgr.region == 0x15;
+    return isRegionalRoom && (this->netMgr.region == 0x15 || this->netMgr.region == 0x0B || this->netMgr.region == Mogi::REGION_REG);
 }
 
 static inline bool ShouldForceNandIoSaves() {
@@ -482,8 +482,7 @@ void System::UpdateContext() {
                 break;
 
             case 0x0B:  // OTT with retro tracks
-                this->context |= (1 << PULSAR_RETROS);
-                sInstance->context &= ~(1 << PULSAR_200_WW);
+                ApplyVanillaModeRestrictions(this, false);
                 this->context |= (1 << PULSAR_MODE_OTT);
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
                 sInstance->context2 &= ~(1 << PULSAR_FFA);
@@ -534,14 +533,7 @@ void System::UpdateContext() {
                 break;
 
             case Mogi::REGION_REG:  // Regular Track Mogi
-                this->context |= (1 << PULSAR_REGS);
-                this->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_CTS));
-                sInstance->context &= ~(1 << PULSAR_200_WW);
-                sInstance->context &= ~(1 << PULSAR_MODE_OTT);
-                sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
-                sInstance->context2 &= ~(1 << PULSAR_FFA);
-                sInstance->context &= ~(1 << PULSAR_ELIMINATION);
-                sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
+                ApplyVanillaModeRestrictions(this, true);
                 break;
 
             case 0x15:  // RT (Regular Tracks)
