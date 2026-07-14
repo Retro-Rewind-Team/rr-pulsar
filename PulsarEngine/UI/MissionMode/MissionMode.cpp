@@ -3,9 +3,7 @@
 #include <UI/MissionMode/MissionMode.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <MarioKartWii/UI/Layout/Layout.hpp>
-#include <MarioKartWii/UI/Page/Leaderboard/TTLeaderboard.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
-#include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 
 namespace Pulsar {
@@ -25,59 +23,19 @@ static void LoadPictureLayout(LayoutUIControl& control, const char* folderName, 
 }
 kmBranch(0x8063d9c0, LoadPictureLayout);
 
-static bool IsMissionScenario(const RacedataScenario& scenario) {
-    return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
-}
-
-static bool IsMissionRace() { return Racedata::sInstance != nullptr && IsMissionScenario(Racedata::sInstance->racesScenario); }
-static bool IsMissionMenuScenario() { return Racedata::sInstance != nullptr && IsMissionScenario(Racedata::sInstance->menusScenario); }
-
 static Pages::RaceHUD* SetMissionHudNextPage(Pages::RaceHUD* hud) {
-    hud->nextPageId = IsMissionMenuScenario() ? PAGE_TT_LEADERBOARDS : PAGE_COMPETITION_LEADERBOARD;
+    hud->nextPageId = PAGE_TT_SPLITS;
     return hud;
 }
 kmCall(0x80624adc, SetMissionHudNextPage);
 
 void CreateRacePages(ExpSection& section) {
-    section.CreateAndInitPage(section, PAGE_TT_LEADERBOARDS);
-    section.CreateAndInitPage(section, PAGE_TT_ENDMENU);
+    section.CreateAndInitPage(section, PAGE_TT_SPLITS);
+    section.CreateAndInitPage(section, PAGE_MISSION_ENDMENU);
     if (Pages::RaceHUD::sInstance != nullptr) {
-        Pages::RaceHUD::sInstance->nextPageId = PAGE_TT_LEADERBOARDS;
+        Pages::RaceHUD::sInstance->nextPageId = PAGE_TT_SPLITS;
     }
 }
-
-kmRuntimeUse(0x80833764);
-kmRuntimeUse(0x8085d78c);
-static void FillMissionTTLeaderboardRows(Pages::TTLeaderboard* page) {
-    if (!IsMissionRace()) {
-        typedef void (*FillRowsFn)(Pages::TTLeaderboard*);
-        reinterpret_cast<FillRowsFn>(kmRuntimeAddr(0x8085d78c))(page);
-        return;
-    }
-
-    typedef u32 (*GetPositionBmgFn)(u32);
-    const GetPositionBmgFn getPositionBmg = reinterpret_cast<GetPositionBmgFn>(kmRuntimeAddr(0x80833764));
-    Text::Info timeInfo;
-    timeInfo.intToPass[0] = 9;
-    timeInfo.intToPass[1] = 59;
-    timeInfo.intToPass[2] = 999;
-
-    const int rowCount = page->GetRowCount() & 0xff;
-    for (int i = 0; i < rowCount; ++i) {
-        CtrlRaceResult* result = page->results[i];
-        if (result == nullptr) continue;
-
-        result->SetTextBoxMessage("position", getPositionBmg(i + 1));
-        result->SetTextBoxMessage("time", BMG_DISPLAY_TIME, &timeInfo);
-        result->SetTextBoxMessage("player_name", BMG_MISSION_MODE_BUTTON);
-        static const char* const unusedFields[] = {"handle_text", "total_point", "total_score", "get_point"};
-        for (u32 j = 0; j < sizeof(unusedFields) / sizeof(unusedFields[0]); ++j)
-            result->ResetTextBoxMessage(unusedFields[j]);
-    }
-
-    page->ghostMessage.isHidden = true;
-}
-kmWritePointer(0x808dab30, FillMissionTTLeaderboardRows);
 
 u32 GetMissionButtonId(const Pages::SinglePlayer* page) { return page->externControlCount - 2; }
 
@@ -88,6 +46,9 @@ bool IsBTMRModeButton(const Pages::SinglePlayer* page, u32 id) { return id == 3 
 u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer* page, u32 id) { return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON; }
 
 void CreateSinglePlayerPages(ExpSection& section) {
+    if (section.pages[PAGE_SINGLE_PLAYER_MENU] == nullptr)
+        section.CreateAndInitPage(section, PAGE_SINGLE_PLAYER_MENU);
+
     const u32 pages[] = {PAGE_MISSION_LEVEL_SELECT_UNUSED, PAGE_MISSION_SELECT_SUB,
         PAGE_MISSION_INFORMATION_PROMPT, PAGE_DRIFT_SELECT_WITH_ONE_OPTION, PAGE_MISSION_TUTORIAL};
     for (u32 i = 0; i < sizeof(pages) / sizeof(pages[0]); ++i) section.CreateAndInitPage(section, pages[i]);
