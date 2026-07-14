@@ -13,11 +13,21 @@
 namespace Pulsar {
 namespace Mogi {
 
-static void SetMogiMatchmakingSuspend(RKNet::Controller* controller) {
+static void ConvertMogiPublicRoomToPrivate(RKNet::Controller* controller) {
+    if (!IsEnabled()) {
+        controller->SetVoteMatchmakingSuspend();
+        return;
+    }
+    if (!IsPublicRoom()) return;
+
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    if (!IsEnabled() || sub.playerCount >= 12) controller->SetVoteMatchmakingSuspend();
+    const bool isHost = sub.localAid == sub.hostAid;
+    controller->roomType = isHost ? RKNet::ROOMTYPE_FROOM_HOST : RKNet::ROOMTYPE_FROOM_NONHOST;
+    controller->localStatusData.status = isHost ? RKNet::FRIEND_STATUS_FROOM_VS_HOST : RKNet::FRIEND_STATUS_FROOM_VS_NON_HOST;
+    controller->UpdateStatusDatas();
+    if (sub.playerCount >= 12) controller->SetVoteMatchmakingSuspend();
 }
-kmCall(0x80663e64, SetMogiMatchmakingSuspend);
+kmCall(0x80663e64, ConvertMogiPublicRoomToPrivate);
 
 static SectionId GetMogiPublicSectionId(SectionId sectionId) {
     if (!IsActive()) return sectionId;

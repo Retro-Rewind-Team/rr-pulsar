@@ -228,6 +228,12 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
             const char* rk = SBServerGetStringValueA(server, "rk", "");
             GetRegionParamsFromString(rk, region, regionID);
 
+            const bool isMogiRegion = regionID == Pulsar::Mogi::REGION ||
+                                      regionID == Pulsar::Mogi::REGION_CT ||
+                                      regionID == Pulsar::Mogi::REGION_REG;
+            const bool isMogiRoomStarted = SBServerGetIntValueA(server, "dwc_suspend", 0) != 0;
+            if (isMogiRegion && isMogiRoomStarted) continue;
+
             int numplayers = SBServerGetIntValueA(server, "numplayers", -1) + 1;
             if (strstr(region, "vs")) {
                 if (regionID == Pulsar::Mogi::REGION) {
