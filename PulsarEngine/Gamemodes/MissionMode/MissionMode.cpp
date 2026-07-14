@@ -2,11 +2,55 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
+#include <Settings/SettingsParam.hpp>
 
 namespace Pulsar {
 namespace MissionMode {
 
 static void* sMissionState = 0;
+
+static const u32 MISSION_ITEM_MODE_OFFSET = 0x2E;
+static const u32 MISSION_FEATURE_FLAGS_OFFSET = 0x2F;
+static const u32 MISSION_CUSTOM_ITEMS_OFFSET = 0x54;
+static const u32 MISSION_ENGINE_OFFSET = 0x07;
+
+bool IsMissionScenario(const RacedataScenario& scenario) {
+    return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
+}
+
+bool HasMissionFeature(const RacedataScenario& scenario, MissionFeatureFlag feature) {
+    return IsMissionScenario(scenario) &&
+           (scenario.mission[MISSION_FEATURE_FLAGS_OFFSET] & static_cast<u8>(feature)) != 0;
+}
+
+u8 GetMissionItemMode(const RacedataScenario& scenario) {
+    return scenario.mission[MISSION_ITEM_MODE_OFFSET];
+}
+
+u32 GetMissionCustomItems(const RacedataScenario& scenario) {
+    const u8* bytes = &scenario.mission[MISSION_CUSTOM_ITEMS_OFFSET];
+    return (static_cast<u32>(bytes[0]) << 24) |
+           (static_cast<u32>(bytes[1]) << 16) |
+           (static_cast<u32>(bytes[2]) << 8) |
+           static_cast<u32>(bytes[3]);
+}
+
+void ApplyMissionScenarioSettings(RacedataScenario& scenario) {
+    if (!IsMissionScenario(scenario)) return;
+
+    const u8 flags = scenario.mission[MISSION_FEATURE_FLAGS_OFFSET];
+    const u8 engine = scenario.mission[MISSION_ENGINE_OFFSET];
+    if ((flags & ENGINE_500CC) != 0) {
+        scenario.settings.engineClass = CC_50;
+    } else if (engine == 2) {
+        scenario.settings.engineClass = CC_150;
+    } else {
+        scenario.settings.engineClass = CC_100;
+    }
+
+    if ((flags & ITEM_MODE_OVERRIDE) == 0 || GetMissionItemMode(scenario) == GAMEMODE_DEFAULT)
+        scenario.settings.itemMode = ITEMS_BALANCED;
+}
 
 static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
     return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) |
@@ -15,6 +59,8 @@ static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
 
 void PopulateMissionCPUs(RacedataScenario& scenario) {
     if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT) return;
+
+    ApplyMissionScenarioSettings(scenario);
 
     u16 cpuCount = GetMissionCPUCount(scenario);
     if (cpuCount > 11) cpuCount = 11;

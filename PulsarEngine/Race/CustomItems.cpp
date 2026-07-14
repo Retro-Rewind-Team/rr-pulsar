@@ -5,6 +5,7 @@
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/ItemBehaviour.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <Settings/Settings.hpp>
@@ -19,6 +20,18 @@ static const u32 ALL_ITEMS_BITFIELD = 0x7FFFF;
 static const u32 PLAYER_OBJ_SLOT_COUNT = 3;
 
 u32 GetEffectiveCustomItemsBitfield() {
+    if (Racedata::sInstance != nullptr) {
+        const RacedataScenario &raceScenario = Racedata::sInstance->racesScenario;
+        const RacedataScenario &menuScenario = Racedata::sInstance->menusScenario;
+        const RacedataScenario *mission = nullptr;
+        if (MissionMode::IsMissionScenario(raceScenario)) mission = &raceScenario;
+        else if (MissionMode::IsMissionScenario(menuScenario)) mission = &menuScenario;
+        if (mission != nullptr) {
+            if (MissionMode::HasMissionFeature(*mission, MissionMode::CUSTOM_ITEMS_OVERRIDE))
+                return MissionMode::GetMissionCustomItems(*mission) & ALL_ITEMS_BITFIELD;
+            return ALL_ITEMS_BITFIELD;
+        }
+    }
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return Settings::Mgr::Get().GetCustomItems();
 
