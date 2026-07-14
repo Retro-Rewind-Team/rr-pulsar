@@ -23,6 +23,8 @@ AGENTS.md
 .claude
 scripts/Test-DolphinScenario.paths.txt
 crash.txt
+!/KMTTool/
+!/KMTTool/**
 /KMTTool/.vs/
 /KMTTool/bin/
 /KMTTool/obj/
