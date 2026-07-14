@@ -21,4 +21,10 @@ PulsarEngine/Version.cpp
 AGENTS.md
 .agent
 .claude
+scripts/Test-DolphinScenario.paths.txt
+crash.txt
+/KMTTool/.vs/
+/KMTTool/bin/
+/KMTTool/obj/
+/KMTTool/*.csproj.user
 /KMTTool
