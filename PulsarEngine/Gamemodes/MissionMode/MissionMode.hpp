@@ -16,6 +16,8 @@ enum MissionFeatureFlag {
 
 bool IsMissionScenario(const RacedataScenario& scenario);
 bool HasMissionFeature(const RacedataScenario& scenario, MissionFeatureFlag feature);
+bool IsMissionScoreObjective(const RacedataScenario& scenario);
+bool IsMissionBossObjective(const RacedataScenario& scenario);
 u8 GetMissionItemMode(const RacedataScenario& scenario);
 u32 GetMissionCustomItems(const RacedataScenario& scenario);
 void ApplyMissionScenarioSettings(RacedataScenario& scenario);
