@@ -1,5 +1,5 @@
 #include <kamek.hpp>
-#include <runtimeWrite.hpp>
+#include <Patching/RuntimeChoice.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
@@ -260,15 +260,43 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
         lastRaceDeltas[i] = next - oldRating;
     }
 }
-kmRuntimeUse(0x8052e950);
-static void ApplyRatingPatch() {
-    kmRuntimeBranchA(0x8052e950, RR_UpdatePoints);
+static bool ShouldUseCustomPointRating() {
     RKNet::Controller* ctrl = RKNet::Controller::sInstance;
-    if (((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && !System::sInstance->IsContext(PULSAR_VR)) || ctrl->roomType == RKNet::ROOMTYPE_NONE) {
-        kmRuntimeWrite32A(0x8052e950, 0x9421ff70);
-    }
+    if (ctrl == nullptr || ctrl->roomType == RKNet::ROOMTYPE_NONE) return false;
+    System* system = System::sInstance;
+    if (system == nullptr) return false;
+    const bool isFriendRoom = ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    return !isFriendRoom || system->IsContext(PULSAR_VR);
 }
-static SectionLoadHook ratingHook(ApplyRatingPatch);
+
+RuntimeChoice_Continuation(0x8052e954);
+asmFunc UpdatePointsDispatch() {
+    ASM(
+        nofralloc;
+        stwu r1, -0x20(r1);
+        mflr r12;
+        stw r12, 0x24(r1);
+        stw r3, 0x8(r1);
+
+        bl ShouldUseCustomPointRating;
+        cmpwi r3, 0;
+
+        lwz r3, 0x8(r1);
+        lwz r12, 0x24(r1);
+        mtlr r12;
+        addi r1, r1, 0x20;
+
+        beq useOriginal;
+        b RR_UpdatePoints;
+
+        useOriginal:;
+        stwu r1, -0x90(r1);
+        lis r12, __kAutoMap_0x8052e954 @ha;
+        addi r12, r12, __kAutoMap_0x8052e954 @l;
+        mtctr r12;
+        bctr;)
+}
+RuntimeChoice_FunctionDispatch(0x8052e950, UpdatePointsDispatch);
 
 kmWrite16(0x8064F6DA, 30000);
 kmWrite16(0x8064F6E6, 30000);

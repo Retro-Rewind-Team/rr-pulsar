@@ -1,6 +1,6 @@
 #include <RetroRewind.hpp>
 #include <Gamemodes/Battle/BattleElimination.hpp>
-#include <runtimeWrite.hpp>
+#include <Patching/RuntimeChoice.hpp>
 #include <MarioKartWii/Race/Racedata.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
@@ -206,57 +206,123 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
 }
 static RaceFrameHook BattleElimTimerHook(SetTimerToZeroWhenAllPlayersEliminated);
 
-asmFunc ForceBalloonBattle() {
+static u32 sBattleEliminationActive = 0;
+static u32 sFanfareMode = 0;
+static u32 sBattleTimeDuration = 180;
+
+static u32 GetFanfareMode() {
+    System* system = System::sInstance;
+    if (system == nullptr) return 0;
+    if (ShouldApplyBattleElimination()) return 1;
+    if (system->IsContext(PULSAR_MODE_LAPKO)) return 2;
+    return 0;
+}
+
+static u32 GetBattleTimeDuration() {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return 180;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    if (ShouldApplyBattleElimination()) {
+        if (sub.playerCount == 12 || sub.playerCount == 11 || sub.playerCount == 10) {
+            return 300;
+        } else if (sub.playerCount == 9 || sub.playerCount == 8 || sub.playerCount == 7) {
+            return 240;
+        } else if (sub.playerCount == 6 || sub.playerCount == 5 || sub.playerCount == 4) {
+            return 180;
+        } else if (sub.playerCount == 3 || sub.playerCount == 2 || sub.playerCount == 1) {
+            return 120;
+        }
+    }
+    return 180;
+}
+
+static void UpdateBattleEliminationPatchState() {
+    sBattleEliminationActive = ShouldApplyBattleElimination() ? 1 : 0;
+    sFanfareMode = GetFanfareMode();
+    sBattleTimeDuration = GetBattleTimeDuration();
+}
+static FrameLoadHook UpdateBattleEliminationPatchStateHook(UpdateBattleEliminationPatchState);
+
+asmFunc ForceBalloonBattleDispatch() {
     ASM(
+        nofralloc;
+        stwu r1, -0x20(r1);
+        stw r12, 0x8(r1);
+        mfcr r12;
+        stw r12, 0xC(r1);
+
+        lis r12, sBattleEliminationActive @ha;
+        lwz r12, sBattleEliminationActive @l(r12);
+        cmpwi r12, 0;
+        bne useElimination;
+
+        RuntimeChoice_RestoreScratchAndCR();
+        lwz r3, 0(r31);
+        blr;
+
+        useElimination:;
+        RuntimeChoice_RestoreScratchAndCR();
         oris r0, r0, 0x8000;
         xoris r0, r0, 0;
         stw r0, 0x8(r1);
-        lwz r3, 0x0(r31);)
+        lwz r3, 0x0(r31);
+        blr;)
 }
+kmCall(0x806619AC, ForceBalloonBattleDispatch);
 
-asmFunc GetFanfare() {
+asmFunc GetFanfareDispatch() {
     ASM(
         nofralloc;
+        stwu r1, -0x20(r1);
+        stw r11, 0x8(r1);
+        stw r12, 0xC(r1);
+        mfcr r12;
+        stw r12, 0x10(r1);
+
+        lis r11, sFanfareMode @ha;
+        lwz r11, sFanfareMode @l(r11);
+        cmpwi r11, 1;
+        beq useElimination;
+        cmpwi r11, 2;
+        beq useKo;
+
+        lwz r12, 0x10(r1);
+        mtcrf 0xff, r12;
+        lwz r11, 0x8(r1);
+        lwz r12, 0xC(r1);
+        addi r1, r1, 0x20;
+        lwzx r3, r3, r0;
+        blr;
+
+        useElimination:;
+        lwz r12, 0x10(r1);
+        mtcrf 0xff, r12;
+        lwz r11, 0x8(r1);
+        lwz r12, 0xC(r1);
+        addi r1, r1, 0x20;
         lwzx r3, r3, r0;
         cmpwi r3, 0x6b;
-        beq - UnusedFanFareID;
+        beq unusedElimFanfare;
         li r3, 0x6D;
-        b end;
-        UnusedFanFareID :;
+        blr;
+        unusedElimFanfare:;
         li r3, 0x6f;
-        end : blr;)
-}
+        blr;
 
-asmFunc GetFanfareKO() {
-    ASM(
-        nofralloc;
+        useKo:;
+        lwz r12, 0x10(r1);
+        mtcrf 0xff, r12;
+        lwz r11, 0x8(r1);
+        lwz r12, 0xC(r1);
+        addi r1, r1, 0x20;
         lwzx r3, r3, r0;
         cmpwi r3, 0x68;
-        beq - UnusedFanFareID;
-        b end;
-        UnusedFanFareID :;
+        bne endKo;
         li r3, 0x6f;
-        end : blr;)
+        endKo:;
+        blr;)
 }
-
-kmRuntimeUse(0x806619AC);  // ForceBalloonBattle [Ro]
-kmRuntimeUse(0x807123e8);  // GetFanfare [Zeraora]
-void BattleElim() {
-    kmRuntimeWrite32A(0x806619AC, 0x807f0000);
-    kmRuntimeWrite32A(0x807123e8, 0x7c63002e);
-    System* system = System::sInstance;
-    if (!Racedata::sInstance) return;
-    RacedataScenario& scenario = Racedata::sInstance->menusScenario;
-    const bool eliminationActive = ShouldApplyBattleElimination();
-    const GameMode mode = scenario.settings.gamemode;
-    if (eliminationActive) {
-        kmRuntimeCallA(0x806619AC, ForceBalloonBattle);
-        kmRuntimeCallA(0x807123e8, GetFanfare);
-    } else if (system->IsContext(PULSAR_MODE_LAPKO)) {
-        kmRuntimeCallA(0x807123e8, GetFanfareKO);
-    }
-}
-static FrameLoadHook BattleElimHook(BattleElim);
+kmCall(0x807123e8, GetFanfareDispatch);
 
 // Fix Balloon Stealing [Gaberboo]
 kmWrite32(0x80538a28, 0x38000002);
@@ -266,24 +332,7 @@ kmWrite32(0x8053cec8, 0x38000002);
 kmWrite32(0x8053b618, 0x38800002);
 kmWrite32(0x80538a74, 0x60000000);
 
-kmRuntimeUse(0x80532BCC);  // Battle Time Duration [Ro]
-void BattleTimer() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    kmRuntimeWrite32A(0x80532BCC, 0x380000B4);
-    if (ShouldApplyBattleElimination()) {
-        if (sub.playerCount == 12 || sub.playerCount == 11 || sub.playerCount == 10) {
-            kmRuntimeWrite32A(0x80532BCC, 0x3800012C);
-        } else if (sub.playerCount == 9 || sub.playerCount == 8 || sub.playerCount == 7) {
-            kmRuntimeWrite32A(0x80532BCC, 0x380000F0);
-        } else if (sub.playerCount == 6 || sub.playerCount == 5 || sub.playerCount == 4) {
-            kmRuntimeWrite32A(0x80532BCC, 0x380000B4);
-        } else if (sub.playerCount == 3 || sub.playerCount == 2 || sub.playerCount == 1) {
-            kmRuntimeWrite32A(0x80532BCC, 0x38000078);
-        }
-    }
-}
-static FrameLoadHook BattleTimerHook(BattleTimer);
+RuntimeChoice_CachedInstruction(LoadBattleTimeDuration, 0x80532BCC, r0, sBattleTimeDuration);
 
 }  // namespace BattleElim
 }  // namespace Pulsar

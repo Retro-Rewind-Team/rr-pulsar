@@ -1,7 +1,7 @@
 #include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <hooks.hpp>
 #include <kamek.hpp>
-#include <runtimeWrite.hpp>
+#include <Patching/RuntimeChoice.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
@@ -16,9 +16,34 @@ namespace Codes {
 kmWrite32(0x80258184, 0x30);
 
 // Anti Online Item Delimiters [Ro]
+static u32 sUseVanillaItemDelimiters = 0;
+
+static bool ShouldUseVanillaItemDelimiters() {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                                                   controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    return isFroom || Pulsar::ItemRain::IsItemRainEnabled();
+}
+
+static void UpdateItemDelimiterMode() {
+    sUseVanillaItemDelimiters = ShouldUseVanillaItemDelimiters() ? 1 : 0;
+}
+static SectionLoadHook UpdateItemDelimiterModeHook(UpdateItemDelimiterMode);
+
 asmFunc GetItemDelimiterShock() {
     ASM(
         nofralloc;
+        stwu r1, -0x20(r1);
+        stw r12, 0x8(r1);
+        mfcr r12;
+        stw r12, 0xC(r1);
+
+        lis r12, sUseVanillaItemDelimiters @ha;
+        lwz r12, sUseVanillaItemDelimiters @l(r12);
+        cmpwi r12, 0;
+        bne validLightningRestore;
+
+        RuntimeChoice_RestoreScratchAndCR();
         loc_0x0 : mflr r12;
         cmpwi r7, 0x1;
         bne + validLightning;
@@ -26,12 +51,28 @@ asmFunc GetItemDelimiterShock() {
         mtlr r12;
         blr;
         validLightning : mulli r29, r3, 0xF0;
+        blr;
+
+        validLightningRestore:;
+        RuntimeChoice_RestoreScratchAndCR();
+        mulli r29, r3, 0xF0;
         blr;)
 }
 
 asmFunc GetItemDelimiterBlooper() {
     ASM(
         nofralloc;
+        stwu r1, -0x20(r1);
+        stw r12, 0x8(r1);
+        mfcr r12;
+        stw r12, 0xC(r1);
+
+        lis r12, sUseVanillaItemDelimiters @ha;
+        lwz r12, sUseVanillaItemDelimiters @l(r12);
+        cmpwi r12, 0;
+        bne validBlooperRestore;
+
+        RuntimeChoice_RestoreScratchAndCR();
         loc_0x0 : mflr r12;
         cmpwi r7, 0x1;
         bne + validBlooper;
@@ -39,12 +80,28 @@ asmFunc GetItemDelimiterBlooper() {
         mtlr r12;
         blr;
         validBlooper : addi r11, r1, 0x50;
+        blr;
+
+        validBlooperRestore:;
+        RuntimeChoice_RestoreScratchAndCR();
+        addi r11, r1, 0x50;
         blr;)
 }
 
 asmFunc GetItemDelimiterPOW() {
     ASM(
         nofralloc;
+        stwu r1, -0x20(r1);
+        stw r12, 0x8(r1);
+        mfcr r12;
+        stw r12, 0xC(r1);
+
+        lis r12, sUseVanillaItemDelimiters @ha;
+        lwz r12, sUseVanillaItemDelimiters @l(r12);
+        cmpwi r12, 0;
+        bne validPOWRestore;
+
+        RuntimeChoice_RestoreScratchAndCR();
         loc_0x0 : mflr r12;
         cmpwi r7, 0x1;
         bne + validPOW;
@@ -52,36 +109,45 @@ asmFunc GetItemDelimiterPOW() {
         mtlr r12;
         blr;
         validPOW : mr r30, r3;
+        blr;
+
+        validPOWRestore:;
+        RuntimeChoice_RestoreScratchAndCR();
+        mr r30, r3;
         blr;)
 }
+kmCall(0x807B7C34, GetItemDelimiterShock);
+kmCall(0x807A81C0, GetItemDelimiterBlooper);
+kmCall(0x807B1B44, GetItemDelimiterPOW);
 
-kmRuntimeUse(0x807B7C34);
-kmRuntimeUse(0x807A81C0);
-kmRuntimeUse(0x807B1B44);
-kmRuntimeUse(0x807BB380);
-kmRuntimeUse(0x807BB384);
-void EnableDelimitersForAllItems() {
-    kmRuntimeCallA(0x807B7C34, GetItemDelimiterShock);
-    kmRuntimeCallA(0x807A81C0, GetItemDelimiterBlooper);
-    kmRuntimeCallA(0x807B1B44, GetItemDelimiterPOW);
+RuntimeChoice_Continuation(0x807BB388);
+asmFunc ItemDelimiterUsageDispatch() {
+    ASM(
+        nofralloc;
+        stwu r1, -0x20(r1);
+        stw r12, 0x8(r1);
+        mfcr r12;
+        stw r12, 0xC(r1);
 
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-                                                   controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-    if (isFroom || Pulsar::ItemRain::IsItemRainEnabled()) {
-        kmRuntimeWrite32A(0x807B7C34, 0x1fa300f0);
-        kmRuntimeWrite32A(0x807A81C0, 0x39610050);
-        kmRuntimeWrite32A(0x807B1B44, 0x7c7e1b78);
+        lis r12, sUseVanillaItemDelimiters @ha;
+        lwz r12, sUseVanillaItemDelimiters @l(r12);
+        cmpwi r12, 0;
+        bne disableUsageCheck;
 
-        // Anti Online Item Delimiter check (Usage)
-        kmRuntimeWrite32A(0x807BB380, 0x38600000);  // li r3, 0
-        kmRuntimeWrite32A(0x807BB384, 0x4E800020);  // blr
-    } else {
-        kmRuntimeWrite32A(0x807BB380, 0x7C0500D0);  // neg r0, r5
-        kmRuntimeWrite32A(0x807BB384, 0x2C840006);  // cmpwi cr1, r4, 6
-    }
+        RuntimeChoice_RestoreScratchAndCR();
+        neg r0, r5;
+        cmpwi cr1, r4, 6;
+        lis r12, __kAutoMap_0x807BB388 @ha;
+        addi r12, r12, __kAutoMap_0x807BB388 @l;
+        mtctr r12;
+        bctr;
+
+        disableUsageCheck:;
+        RuntimeChoice_RestoreScratchAndCR();
+        li r3, 0;
+        blr;)
 }
-static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
+RuntimeChoice_BranchBack(0x807BB380, ItemDelimiterUsageDispatch);
 
 // Blue Shell Cooldown [ZPL]
 extern "C" Item::ItemSlotData* itemSlotData;

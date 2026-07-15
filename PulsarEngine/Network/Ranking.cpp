@@ -15,7 +15,7 @@
 #include <MarioKartWii/RKNet/USER.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
-#include <runtimeWrite.hpp>
+#include <Patching/RuntimeChoice.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <include/c_string.h>
 
@@ -51,6 +51,7 @@ static bool s_badgeRequestActive = false;
 static bool s_badgeRefreshPending = false;
 static BadgeRequestKind s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
 static u64 s_pendingBadgeFriendCode = 0;
+static u32 s_onlineRankingIcon = 0;
 
 static bool ParseBadgeFriendCodeList(const char* body, int bodyLen, u64 friendCode) {
     if (body == nullptr || bodyLen <= 0 || friendCode == 0) return false;
@@ -441,8 +442,6 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
         vrClamped, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
 }
 
-// Address found by B_squo, original idea by Zeraora, developed by ZPL
-kmRuntimeUse(0x806436a0);
 static u64 GetCurrentLicenseFriendCode() {
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return 0;
@@ -450,36 +449,26 @@ static u64 GetCurrentLicenseFriendCode() {
     return DWC::CreateFriendKey(&license.dwcAccUserData);
 }
 
-static bool WriteFetchedBadgeForFC(u64 friendCode) {
-    if (friendCode == 0 || !Settings::Mgr::IsCreated()) return false;
+static int GetFetchedBadgeIconForFC(u64 friendCode) {
+    if (friendCode == 0 || !Settings::Mgr::IsCreated()) return -1;
 
     const Settings::Mgr& settings = Settings::Mgr::Get();
     if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) != STREAMERMODE_DISABLED) {
-        return false;
+        return -1;
     }
     if (IsAntBadgeFC(friendCode)) {
-        kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10 -> Ants
-        return true;
+        return 10;
     }
     if (IsDevBadgeFC(friendCode)) {
-        kmRuntimeWrite32A(0x806436a0, 0x3860000B);  // li r3,11 -> Developers
-        return true;
+        return 11;
     }
     if (IsDonoBadgeFC(friendCode)) {
-        kmRuntimeWrite32A(0x806436a0, 0x3860000C);  // li r3,12 -> Donators
-        return true;
+        return 12;
     }
-    return false;
+    return -1;
 }
 
-static void TryApplyFetchedBadge() {
-    u64 friendCode = s_badgeFriendCode;
-    if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized &&
-        RKNet::USERHandler::sInstance->toSendPacket.fc != 0) {
-        friendCode = RKNet::USERHandler::sInstance->toSendPacket.fc;
-    }
-    WriteFetchedBadgeForFC(friendCode);
-}
+static void UpdateOnlineRankingIcon();
 
 static const char* GetBadgeUrl(BadgeRequestKind kind) {
     switch (kind) {
@@ -534,7 +523,7 @@ static void OnBadgeListDownloaded(s32 result, void* response, void* userdata) {
             } else if (ctx->kind == BADGE_REQUEST_DONO) {
                 s_donoBadgeFC = true;
             }
-            TryApplyFetchedBadge();
+            UpdateOnlineRankingIcon();
         }
     }
 
@@ -642,21 +631,22 @@ asmFunc AsmHook_WFCMainOnActivateBadgeRefresh() {
 }
 kmCall(0x8064bcd0, AsmHook_WFCMainOnActivateBadgeRefresh);
 
-static void DisplayOnlineRanking() {
-    kmRuntimeWrite32A(0x806436a0, 0x38600000);  // li r3,0
+static u32 ComputeOnlineRankingIcon() {
+    if (Racedata::sInstance == nullptr || System::sInstance == nullptr) return 0;
+
     if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
         const u64 myFc = RKNet::USERHandler::sInstance->toSendPacket.fc;
-        if (WriteFetchedBadgeForFC(myFc)) return;
+        const int badgeIcon = GetFetchedBadgeIconForFC(myFc);
+        if (badgeIcon >= 0) return static_cast<u32>(badgeIcon);
     }
 
 #ifdef BETA
-    kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10
-    return;
+    return 10;
 #endif
 
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING)) return;
+    if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING)) return 0;
     int rank = GetCurrentLicenseRankVS();
     if (rank < 0) rank = 0;
     const RKSYS::LicenseMgr& license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
@@ -666,10 +656,15 @@ static void DisplayOnlineRanking() {
         rank = 0;
     }
 
-    u32 opcode = 0x38600000 | (rank & 0xFFFF);
-    kmRuntimeWrite32A(0x806436a0, opcode);
+    return static_cast<u32>(rank);
 }
-static SectionLoadHook HookRankIcon(DisplayOnlineRanking);
+
+static void UpdateOnlineRankingIcon() {
+    s_onlineRankingIcon = ComputeOnlineRankingIcon();
+}
+static SectionLoadHook HookRankIcon(UpdateOnlineRankingIcon);
+
+RuntimeChoice_CachedInstruction(LoadOnlineRankingIcon, 0x806436a0, r3, s_onlineRankingIcon);
 
 }  // namespace Ranking
 }  // namespace Pulsar
