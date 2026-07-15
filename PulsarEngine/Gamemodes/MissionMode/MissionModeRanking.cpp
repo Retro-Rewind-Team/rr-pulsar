@@ -1,8 +1,6 @@
 #include <Gamemodes/MissionMode/MissionModeRanking.hpp>
-#include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
-#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace MissionMode {
@@ -11,7 +9,6 @@ namespace Ranking {
 static void* sMissionState = 0;
 static bool sMissionTimeRankFailure = false;
 static bool sMissionRankReported = false;
-static u32 sMissionRankValue = 0;
 
 static const u32 MISSION_SCORE_REQUIRED_OFFSET = 0x08;
 static const u32 MISSION_STATUS_OFFSET = 0x0c;
@@ -19,11 +16,6 @@ static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
 static const u32 MISSION_RANK_THRESHOLDS_OFFSET = 0x30;
 static const u32 MISSION_RANK_COUNT = 6;
 static const u32 MISSION_RANK_FIELD_OFFSET = 0x10;
-
-static void SetMissionState(void* mission);
-static bool IsRankReported();
-static void SetMissionValue(void* mission, u32 offset, u32 value);
-static bool SetRankFromTime(void* mission);
 
 static u32 GetMissionValue(const void* mission, u32 offset) {
     return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + offset);
@@ -34,59 +26,18 @@ static u16 GetMissionU16(const void* mission, u32 offset) {
     return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
 }
 
-static bool IsMissionVSObjective() {
-    if (Racedata::sInstance == 0 ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
-        return false;
-
-    const u16 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission,
-                                        MISSION_OBJECTIVE_OFFSET);
-    return objective == 1 || objective == 2;
-}
-
-typedef void (*MissionEndRaceFn)(void*);
-kmRuntimeUse(0x80535de8);
-
-static void FixMissionEndRace(void* raceMode) {
-    if (IsMissionVSObjective() && Raceinfo::sInstance != 0 &&
-        Raceinfo::sInstance->players != 0 && Raceinfo::sInstance->players[0] != 0 &&
-        Raceinfo::sInstance->players[0]->position != 1) {
-        SetMissionState(raceMode);
-        sMissionTimeRankFailure = true;
-        SetMissionValue(raceMode, MISSION_STATUS_OFFSET, 2);
-    }
-
-    static const MissionEndRaceFn endRace =
-        reinterpret_cast<MissionEndRaceFn>(kmRuntimeAddr(0x80535de8));
-    endRace(raceMode);
-}
-
-kmCall(0x8053e118, FixMissionEndRace);
-
-typedef void (*LapRunCalcMissionFn)(void*);
-kmRuntimeUse(0x8053e018);
-
-static void FixLapRunCalcMission(void* mission) {
-    static const LapRunCalcMissionFn calc =
-        reinterpret_cast<LapRunCalcMissionFn>(kmRuntimeAddr(0x8053e018));
-    calc(mission);
-    if (!IsMissionVSObjective() || GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1) return;
-    SetMissionState(mission);
-    if (!IsRankReported()) SetRankFromTime(mission);
-    else SetMissionValue(mission, MISSION_RANK_FIELD_OFFSET, sMissionRankValue);
-}
-
-kmWritePointer(0x808b3850, FixLapRunCalcMission);
-
 static void SetMissionValue(void* mission, u32 offset, u32 value) {
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mission) + offset) = value;
 }
 
-kmRuntimeUse(0x8053e194);
 typedef void (*SetMissionObjectiveCompleteFn)(void*, u32, u32);
 static const SetMissionObjectiveCompleteFn sSetMissionObjectiveComplete =
-    reinterpret_cast<SetMissionObjectiveCompleteFn>(kmRuntimeAddr(0x8053e194));
+    reinterpret_cast<SetMissionObjectiveCompleteFn>(0x8053e194);
+
+static void SetMissionState(void* mission);
+static bool IsRankReported();
 static u32 GetRank(const void* mission);
+static bool SetRankFromTime(void* mission);
 
 static bool HasMissionScoreRequirement(void* mission) {
     return GetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET) >=
@@ -108,6 +59,8 @@ static void FixMissionScoreCalcRank(void* mission) {
     const u32 raceManager = GetMissionValue(mission, 4);
     const u32 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission,
                                         MISSION_OBJECTIVE_OFFSET);
+    // The native completion call needs a rank value, but the final rank is
+    // based on finish time and is assigned once the finish timer is available.
     const u32 rank = IsRankReported() ? GetRank(mission) : 0;
     sSetMissionObjectiveComplete(reinterpret_cast<void*>(raceManager), objective, rank);
     if (!IsRankReported()) SetRankFromTime(mission);
@@ -135,7 +88,6 @@ static void SetMissionState(void* mission) {
     if (sMissionState != mission || GetMissionValue(mission, MISSION_STATUS_OFFSET) == 0) {
         sMissionTimeRankFailure = false;
         sMissionRankReported = false;
-        sMissionRankValue = 0;
     }
     sMissionState = mission;
 }
@@ -164,9 +116,7 @@ static bool SetRankFromTime(void* mission) {
         if (thresholdSeconds != 0 && finishTimeMillis < thresholdSeconds * 1000) {
             sMissionTimeRankFailure = false;
             sMissionRankReported = true;
-            sMissionRankValue = rank;
             SetMissionValue(mission, MISSION_RANK_FIELD_OFFSET, rank);
-            SaveMissionResult(finishTimeMillis, rank);
             return true;
         }
     }
@@ -203,6 +153,7 @@ static bool GetResultRank(u32& rank) {
     const u32 status = GetMissionValue(sMissionState, MISSION_STATUS_OFFSET);
     if (status == 1 && !sMissionRankReported)
         SetRankFromTime(sMissionState);
+
     if (IsPresentationFailure() || GetMissionValue(sMissionState, MISSION_STATUS_OFFSET) != 1)
         return false;
 
@@ -252,10 +203,9 @@ static u32 FixMissionCanEnd(void* mission) {
     return status != 0;
 }
 
-kmRuntimeUse(0x8078cfa4);
 static u32 GetMissionPresentationStatus(u32 playerId) {
     typedef u32 (*GetStatusFn)(u32);
-    const GetStatusFn getStatus = reinterpret_cast<GetStatusFn>(kmRuntimeAddr(0x8078cfa4));
+    const GetStatusFn getStatus = reinterpret_cast<GetStatusFn>(0x8078cfa4);
     const u32 status = getStatus(playerId);
 
     UpdateRankFromCurrentMission();
@@ -263,7 +213,7 @@ static u32 GetMissionPresentationStatus(u32 playerId) {
     return status;
 }
 
-}
+}  // namespace Ranking
 
 kmCall(0x807121fc, Ranking::GetMissionPresentationStatus);
 kmCall(0x8071223c, Ranking::GetMissionPresentationStatus);
@@ -285,5 +235,5 @@ bool GetMissionResultRank(u32& rank) {
     return Ranking::GetResultRank(rank);
 }
 
-}
-}
+}  // namespace MissionMode
+}  // namespace Pulsar
