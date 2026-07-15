@@ -1,5 +1,8 @@
 #include <kamek.hpp>
+#include <MarioKartWii/AI/CPUDriving.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/Item/ItemPlayer.hpp>
+#include <MarioKartWii/Kart/KartKiller.hpp>
 #include <MarioKartWii/KMP/ENPH.hpp>
 #include <MarioKartWii/KMP/ITPH.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
@@ -32,9 +35,7 @@ static u16 sEnemyGroupByPoint[256];
 static u16 sItemGroupByPoint[256];
 static u16 sEnemyGroupRules[256];
 static u16 sItemGroupRules[256];
-static u32 sLapCacheRaceFrame = 0xFFFFFFFF;
-static bool sLapCacheValid = false;
-static u8 sLapCacheIdx = 0;
+static u8 sRoutePlayerId = 0xFF;
 
 static void ResetRouteGroupCache() {
     for (u16 i = 0; i < 256; ++i) {
@@ -49,8 +50,7 @@ static void ResetRouteGroupCache() {
 void ResetConditionalRouteGroupsState() {
     sCachedCourseArchive = nullptr;
     sConditionalRouteTrackFileState = CONDITIONAL_ROUTE_TRACK_FILE_UNKNOWN;
-    sLapCacheRaceFrame = 0xFFFFFFFF;
-    sLapCacheValid = false;
+    sRoutePlayerId = 0xFF;
     ResetRouteGroupCache();
 }
 
@@ -91,12 +91,13 @@ static bool TryGetTrackDefinedLapCount(u8& lapCount) {
     return true;
 }
 
-static bool TryGetCurrentLapIdxFromLeader(u8& lapIdx) {
+static bool TryGetCurrentLapIdx(u8 playerId, u8& lapIdx) {
     const Raceinfo* raceInfo = Raceinfo::sInstance;
     if (raceInfo == nullptr || raceInfo->players == nullptr) return false;
 
     const RaceinfoPlayer* raceInfoPlayer = nullptr;
-    if (raceInfo->playerIdInEachPosition != nullptr) {
+    if (playerId < 12) raceInfoPlayer = raceInfo->players[playerId];
+    if (raceInfoPlayer == nullptr && raceInfo->playerIdInEachPosition != nullptr) {
         const u8 leaderId = raceInfo->playerIdInEachPosition[0];
         if (leaderId < 12) raceInfoPlayer = raceInfo->players[leaderId];
     }
@@ -119,22 +120,10 @@ static bool TryGetCurrentLapIdxFromLeader(u8& lapIdx) {
     return true;
 }
 
-static bool TryGetCurrentLapIdx(u8& lapIdx) {
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
-    if (raceInfo == nullptr) {
-        sLapCacheRaceFrame = 0xFFFFFFFF;
-        sLapCacheValid = false;
-        return false;
-    }
-
-    if (raceInfo->raceFrames != sLapCacheRaceFrame) {
-        sLapCacheRaceFrame = raceInfo->raceFrames;
-        sLapCacheValid = TryGetCurrentLapIdxFromLeader(sLapCacheIdx);
-    }
-
-    if (!sLapCacheValid) return false;
-    lapIdx = sLapCacheIdx;
-    return true;
+static u8 SetRoutePlayerId(u8 playerId) {
+    const u8 previousPlayerId = sRoutePlayerId;
+    sRoutePlayerId = playerId;
+    return previousPlayerId;
 }
 
 static void BuildRouteGroupCache(const KMP::Manager& kmpMgr) {
@@ -208,7 +197,7 @@ static bool IsItemPointDisabled(u8 itptId, u8 lapIdx) {
 static bool ShouldFilterRouteGroups(const KMP::Manager* kmpMgr, u8& lapIdx) {
     if (!IsTrackConditionalRouteGroupsEnabled()) return false;
     if (kmpMgr == nullptr) return false;
-    if (!TryGetCurrentLapIdx(lapIdx)) return false;
+    if (!TryGetCurrentLapIdx(sRoutePlayerId, lapIdx)) return false;
     EnsureRouteGroupCache(kmpMgr);
     return true;
 }
@@ -364,6 +353,53 @@ static u8 ConditionalGetITPTPrevCount(KMP::Manager* kmpMgr, const u8& itpt) {
     return GetITPTCount(kmpMgr, itpt, false);
 }
 kmBranch(0x80518344, ConditionalGetITPTPrevCount);
+
+static void ConditionalEnemyRouteUpdate(AI::EnemyRouteController* routeController, const KartAIController& controller) {
+    const u8 previousPlayerId = SetRoutePlayerId(controller.GetPlayerIdx());
+    routeController->AI::EnemyRouteController::Update(controller);
+    sRoutePlayerId = previousPlayerId;
+}
+kmWritePointer(0x808cb02c, ConditionalEnemyRouteUpdate);  // EnemyRouteController::Update vtable entry
+
+static bool ConditionalItemPointUpdate(Item::Point* point, const Vec3& playerPosition) {
+    Item::Player* player = reinterpret_cast<Item::Player*>(reinterpret_cast<u8*>(point) - offsetof(Item::Player, itemPoint));
+    const u8 previousPlayerId = SetRoutePlayerId(player->id);
+    const bool updated = point->Update(playerPosition);
+    sRoutePlayerId = previousPlayerId;
+    return updated;
+}
+kmCall(0x80798184, ConditionalItemPointUpdate);  // Item::Player::Update
+kmCall(0x807989c0, ConditionalItemPointUpdate);  // Item::Player route refresh
+kmCall(0x80798d68, ConditionalItemPointUpdate);  // Item::Player trigger route refresh
+
+static bool ConditionalItemPointUpdate2(Item::Point* point, const Vec3& playerPosition) {
+    Item::Player* player = reinterpret_cast<Item::Player*>(reinterpret_cast<u8*>(point) - offsetof(Item::Player, itemPoint));
+    const u8 previousPlayerId = SetRoutePlayerId(player->id);
+    const bool updated = point->Update2(playerPosition);
+    sRoutePlayerId = previousPlayerId;
+    return updated;
+}
+kmCall(0x807981b0, ConditionalItemPointUpdate2);  // Item::Player::Update
+kmCall(0x807989f0, ConditionalItemPointUpdate2);  // Item::Player route refresh
+kmCall(0x80798d98, ConditionalItemPointUpdate2);  // Item::Player trigger route refresh
+
+static void ConditionalCalcNextItemPoint(const Item::Point& currentPoint, Item::Point& nextPoint, u8 playerId, bool usePlayerPath) {
+    const u8 previousPlayerId = SetRoutePlayerId(playerId);
+    Item::CalcNextPoint(currentPoint, nextPoint, playerId, usePlayerPath);
+    sRoutePlayerId = previousPlayerId;
+}
+kmCall(0x807b4920, ConditionalCalcNextItemPoint);  // Item route initialization
+kmCall(0x807b4bb8, ConditionalCalcNextItemPoint);  // Item route update
+kmCall(0x807b4dc4, ConditionalCalcNextItemPoint);  // Item route point advance
+kmCall(0x807b514c, ConditionalCalcNextItemPoint);  // Item route initialization
+
+static void ConditionalKillerUpdate(Kart::Killer* killer) {
+    const u8 previousPlayerId = SetRoutePlayerId(killer->GetPlayerIdx());
+    killer->Update();
+    sRoutePlayerId = previousPlayerId;
+}
+kmCall(0x80578db0, ConditionalKillerUpdate);  // Kart::Killer::Update
+kmCall(0x80585a14, ConditionalKillerUpdate);  // Kart::Killer::Update
 
 }  // namespace Race
 }  // namespace Pulsar
