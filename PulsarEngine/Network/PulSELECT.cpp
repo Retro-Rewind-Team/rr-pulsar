@@ -226,6 +226,39 @@ static bool IsGroupedTrack(PulsarId id) {
     }
 }
 
+static bool IsTrackBlocked(const System& system, PulsarId trackId) {
+    const u32 blockingCount = system.GetInfo().GetTrackBlocking();
+    if (blockingCount == 0 || system.netMgr.lastTracks == nullptr) return false;
+
+    for (u32 i = 0; i < blockingCount; ++i) {
+        if (system.netMgr.lastTracks[i] == trackId) return true;
+    }
+
+    if (IsGroupedTrack(trackId) && IsRegionalRoom(RKNet::Controller::sInstance->roomType)) {
+        const u32 lastIdx = (system.netMgr.curBlockingArrayIdx + blockingCount - 1) % blockingCount;
+        if (IsGroupedTrack(system.netMgr.lastTracks[lastIdx])) return true;
+    }
+
+    return false;
+}
+
+PulsarId RandomizeHAWTrack(const System& system, const CupsConfig& cupsConfig) {
+    PulsarId trackId;
+    do {
+        trackId = cupsConfig.RandomizeTrack();
+    } while (IsTrackBlocked(system, trackId));
+    return trackId;
+}
+
+void StoreBlockedTrack(System& system, PulsarId trackId) {
+    const u32 blockingCount = system.GetInfo().GetTrackBlocking();
+    if (blockingCount == 0 || system.netMgr.lastTracks == nullptr) return;
+
+    system.netMgr.lastTracks[system.netMgr.curBlockingArrayIdx] = trackId;
+    system.netMgr.curBlockingArrayIdx = (system.netMgr.curBlockingArrayIdx + 1) % blockingCount;
+    system.netMgr.lastGroupedTrackPlayed = IsGroupedTrack(trackId);
+}
+
 void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
     Random random;
     System* system = System::sInstance;
@@ -244,13 +277,14 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         self.toSendPacket.winningVoterAid = hostAid;
         u16 hostVote = self.toSendPacket.pulVote;
         bool hostVotedRandom = (hostVote == 0xFF);
-        if (hostVotedRandom) hostVote = cupsConfig->RandomizeTrack();
+        if (hostVotedRandom) hostVote = RandomizeHAWTrack(*system, *cupsConfig);
         self.toSendPacket.pulWinningTrack = hostVote;  // If host voted random, also randomize the variant
         if (hostVotedRandom) {
             self.toSendPacket.variantIdx = cupsConfig->RandomizeVariant(static_cast<PulsarId>(hostVote));
         } else {
             self.toSendPacket.variantIdx = cupsConfig->GetCurVariantIdx();
         }
+        if (sub.localAid == hostAid) StoreBlockedTrack(*system, static_cast<PulsarId>(hostVote));
     } else {
         const bool isCT = system->IsContext(PULSAR_CT);
         const u32 availableAids = sub.availableAids;  // has been modified to remove KO'd player if KO is on
@@ -286,25 +320,9 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
                 }
             }
             votes[aid] = aidVote;
-            if (isCT) {
-                bool isRepeatVote = false;
-                const u32 blockingCount = system->GetInfo().GetTrackBlocking();
-                for (int i = 0; i < blockingCount; ++i) {
-                    if (system->netMgr.lastTracks[i] == aidVote) {
-                        isRepeatVote = true;
-                        break;
-                    }
-                }
-                if (!isRepeatVote && blockingCount > 0 && IsGroupedTrack(aidVote) && IsRegionalRoom(RKNet::Controller::sInstance->roomType)) {
-                    const u32 lastIdx = (system->netMgr.curBlockingArrayIdx + blockingCount - 1) % blockingCount;
-                    if (IsGroupedTrack(system->netMgr.lastTracks[lastIdx])) {
-                        isRepeatVote = true;
-                    }
-                }
-                if (!isRepeatVote) {
-                    newVotesAids[newVoters] = aid;
-                    ++newVoters;
-                }
+            if (!IsTrackBlocked(*system, aidVote)) {
+                newVotesAids[newVoters] = aid;
+                ++newVoters;
             }
         }
         u8 winner;
@@ -326,14 +344,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         }
         self.toSendPacket.variantIdx = winnerVariant;
 
-        if (isCT) {
-            const u32 blockingCount = system->GetInfo().GetTrackBlocking();
-            if (blockingCount != 0 && system->netMgr.lastTracks != nullptr) {
-                system->netMgr.lastTracks[system->netMgr.curBlockingArrayIdx] = vote;
-                system->netMgr.curBlockingArrayIdx = (system->netMgr.curBlockingArrayIdx + 1) % blockingCount;
-                system->netMgr.lastGroupedTrackPlayed = IsGroupedTrack(vote);
-            }
-        }
+        StoreBlockedTrack(*system, vote);
 
         ReportU32(
             "wl:mkw_select_course", static_cast<u32>(vote));
@@ -366,7 +377,7 @@ static void SetCorrectTrack(ArchiveMgr* root, PulsarId winningCourse) {
     else
         select = &handler.receivedPackets[hostAid];
 
-    if (!isHost && system->IsContext(PULSAR_CT)) {
+    if (!isHost) {
         const u32 blockingCount = system->GetInfo().GetTrackBlocking();
         if (blockingCount != 0 && system->netMgr.lastTracks != nullptr) {
             const u32 writeIdx = system->netMgr.curBlockingArrayIdx;
