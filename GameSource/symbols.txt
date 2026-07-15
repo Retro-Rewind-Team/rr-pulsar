@@ -1710,6 +1710,10 @@ AfterControlUpdate__Q25Pages2VRFv = 0x8064aac4
 FillVRControl__Q25Pages2VRFUiUiUiUcb = 0x8064ab08
 GetRuntimeTypeInfo__Q25Pages2VRCFv = 0x8064aea8
 
+#WFCConnect
+AfterControlUpdate__Q25Pages10WFCConnectFv = 0x80646eb0
+OnDisconnect__Q25Pages10WFCConnectFv = 0x80647db8
+
 #WFCMain
 __ct__Q25Pages11WFCMainMenuFv = 0x8064b640
 __dt__Q25Pages11WFCMainMenuFv = 0x8064b850
