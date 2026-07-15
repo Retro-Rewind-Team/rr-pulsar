@@ -7,6 +7,7 @@
 #include <Ghost/GhostManager.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Gamemodes/MissionMode/MissionModeRanking.hpp>
 
 namespace Pulsar {
@@ -213,6 +214,7 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
     page->ctrlRaceTimeArray[0]->OnFocus();
     Timer* bestLap = &page->timers[0];
     u32 bestLapId = 1;
+    const bool hideLapSplits = MissionMode::IsMissionScoreObjective(scenario);
     for (int i = 1; i < page->splitsRowCount; ++i) {
         raceInfoPlayer->FillTimerWithSplits(i, &page->timers[i]);
         if ((*bestLap) > page->timers[i]) {
@@ -221,6 +223,7 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
         }
         CtrlRaceTime* curRaceTime = page->ctrlRaceTimeArray[i];
         curRaceTime->SetTimer(&page->timers[i]);
+        curRaceTime->isHidden = hideLapSplits;
         curRaceTime->OnFocus();
     }
 
