@@ -259,7 +259,6 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
         UpdatePlayerRating(*scenario, i, deltas[i]);
         lastRaceDeltas[i] = next - oldRating;
     }
-
 }
 kmRuntimeUse(0x8052e950);
 static void ApplyRatingPatch() {

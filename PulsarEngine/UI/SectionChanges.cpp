@@ -1,26 +1,12 @@
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
-#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
 
 static SectionId GetFFASectionId(SectionId id) {
-    if (Mogi::IsActive()) {
-        switch (id) {
-            case SECTION_P1_WIFI_VS_VOTING:
-                return SECTION_P1_WIFI_FROOM_VS_VOTING;
-            case SECTION_P2_WIFI_VS_VOTING:
-                return SECTION_P2_WIFI_FROOM_VS_VOTING;
-            case SECTION_P1_WIFI_VS:
-                return SECTION_P1_WIFI_FRIEND_VS;
-            case SECTION_P2_WIFI_VS:
-                return SECTION_P2_WIFI_FRIEND_VS;
-            default:
-                return id;
-        }
-    } else if (System::sInstance->IsContext(PULSAR_FFA)) {
+    if (System::sInstance->IsContext(PULSAR_FFA)) {
         switch (id) {
             case SECTION_P1BATTLE:
                 return SECTION_P1VS;
@@ -60,14 +46,11 @@ static asmFunc FFAResults() {
     ASM(
         nofralloc;
         stwu r1, -0x20(r1);
-        stw r0, 0x8(r1);
+        stw r0, 0x10(r1);
         mflr r0;
         stw r0, 0x24(r1);
-        stw r3, 0xC(r1);
-        stw r4, 0x10(r1);
-        stw r5, 0x14(r1);
-        stw r6, 0x18(r1);
-        stw r7, 0x1C(r1);
+        stw r3, 0x8(r1);
+        stw r4, 0xC(r1);
 
         mr r3, r4;
         bl GetFFASectionId;
@@ -75,13 +58,10 @@ static asmFunc FFAResults() {
         mr r31, r3;
         mr r4, r3;
 
-        lwz r3, 0xC(r1);
-        lwz r5, 0x14(r1);
-        lwz r6, 0x18(r1);
-        lwz r7, 0x1C(r1);
+        lwz r3, 0x8(r1);
         lwz r0, 0x24(r1);
         mtlr r0;
-        lwz r0, 0x8(r1);
+        lwz r0, 0x10(r1);
         addi r1, r1, 0x20;
         blr;);
 }

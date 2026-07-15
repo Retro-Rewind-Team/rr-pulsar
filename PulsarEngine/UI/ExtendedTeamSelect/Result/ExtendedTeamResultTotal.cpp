@@ -1,6 +1,5 @@
 #include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultTotal.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
-#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -19,7 +18,6 @@ PageId ExtendedTeamResultTotal::GetNextPage() const {
 
 void ExtendedTeamResultTotal::OnInit() {
     RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    Mogi::OnResultsDisplayed();
 
     int teamCount = 0;
     bool teamPresent[TEAM_COUNT];
@@ -28,17 +26,10 @@ void ExtendedTeamResultTotal::OnInit() {
     }
 
     for (int i = 0; i < scenario.playerCount; i++) {
-        ExtendedTeamID team = static_cast<ExtendedTeamID>(scenario.players[i].team);
-        if (team >= TEAM_COUNT) continue;
+        ExtendedTeamID team = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
         if (!teamPresent[team]) {
             teamCount++;
             teamPresent[team] = true;
-        }
-    }
-    for (int team = 0; team < TEAM_COUNT; ++team) {
-        if (!teamPresent[team] && Mogi::GetMissingTeamScore(team, false) != 0) {
-            teamPresent[team] = true;
-            ++teamCount;
         }
     }
 

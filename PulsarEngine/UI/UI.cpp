@@ -25,7 +25,6 @@
 #include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
 #include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultTotal.hpp>
 #include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultIrregularTotal.hpp>
-#include <Network/Mogi.hpp>
 #include <AutoTrackSelect/AutoVote.hpp>
 #include <AutoTrackSelect/ChooseNextTrack.hpp>
 #include <Gamemodes/KO/KORaceEndPage.hpp>
@@ -71,7 +70,7 @@ void ExpSection::CreatePulPages() {
                 this->CreateAndInitPage(*this, PAGE_TT_SPLITS);
                 Pages::RaceHUD::sInstance->nextPageId = PAGE_TT_SPLITS;
             }
-            if (system->IsContext(PULSAR_EXTENDEDTEAMS) || (Mogi::IsActive() && Mogi::IsTeamFormat())) {
+            if (system->IsContext(PULSAR_EXTENDEDTEAMS)) {
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL);
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR);
             }
@@ -106,7 +105,7 @@ void ExpSection::CreatePulPages() {
                 this->CreateAndInitPage(*this, KO::RaceEndPage::id);
                 this->CreateAndInitPage(*this, KO::WinnerPage::id);
             }
-            if (system->IsContext(PULSAR_EXTENDEDTEAMS) || (Mogi::IsActive() && Mogi::IsTeamFormat())) {
+            if (system->IsContext(PULSAR_EXTENDEDTEAMS)) {
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL);
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR);
             }
@@ -127,7 +126,6 @@ void ExpSection::CreatePulPages() {
         case SECTION_OPTIONS:  // 0x8c
             this->CreateAndInitPage(*this, CustomItemPage::id);
         case SECTION_P1_WIFI_VS_VOTING:  // 0x60
-        case SECTION_P2_WIFI_VS_VOTING:
         case SECTION_P1_WIFI_BATTLE_VOTING:
             this->CreateAndInitPage(*this, SettingsPanel::id);
             this->CreateAndInitPage(*this, SettingsPageSelect::id);

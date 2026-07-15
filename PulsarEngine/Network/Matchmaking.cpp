@@ -3,8 +3,6 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
-#include <Network/Rating/MogiRating.hpp>
-#include <Network/Mogi.hpp>
 #include <Settings/Settings.hpp>
 #include <include/c_stdlib.h>
 
@@ -58,7 +56,7 @@ static void ApplyMatchmakingTimeoutPatch() {
         RADIO_INFINITEMATCHMAKINGTIMEOUT);
 
     const u32 timeoutMs =
-        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE || Mogi::IsEnabled()) ? 0x7fff : 0x4e20;
+        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
     const u32 liR6TimeoutMs = 0x38c00000 | timeoutMs;
 
     kmRuntimeWrite32A(0x800d6c94, liR6TimeoutMs);
@@ -125,7 +123,7 @@ void CustomRandomizeServers() {
         Settings::SETTINGSTYPE_ONLINE,
         RADIO_INFINITEMATCHMAKINGTIMEOUT);
     const bool isCompetitiveMatchmakingEnabled =
-        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE || Mogi::IsEnabled());
+        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE);
     const bool blockSmallRooms = isCompetitiveMatchmakingEnabled && HasNonSmallRoomOption(sb, count);
     const bool hasAlternativeRoomOption = HasAlternativeRoomOption(sb, count, blockSmallRooms);
     const int previousRoomPenalty = hasAlternativeRoomOption ? 2000000000 : 0;
@@ -144,11 +142,7 @@ void CustomRandomizeServers() {
 
         int playerRating;
         const char* key;
-        const bool isMogi = Mogi::IsEnabled() && !isBattle;
-        if (isMogi) {
-            playerRating = (int)(MogiRating::GetUserMMR(licenseId) * 100.0f + 0.5f);
-            key = "em";
-        } else if (isBattle) {
+        if (isBattle) {
             playerRating = (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f);
             key = "eb";
         } else {
@@ -157,11 +151,11 @@ void CustomRandomizeServers() {
         }
 
         // For players below 150 VR, filter out rooms above their VR + 200
-        bool isLowVR = !isBattle && !isMogi && playerRating < 15000;  // 150 VR * 100
+        bool isLowVR = !isBattle && playerRating < 15000;  // 150 VR * 100
         int maxRoomRating = playerRating + 20000;  // Player VR + 200 VR * 100
 
         // For players above 600 VR, heavily deprioritize rooms below 300 VR
-        bool isHighVR = !isBattle && !isMogi && playerRating > 60000;  // 600 VR * 100
+        bool isHighVR = !isBattle && playerRating > 60000;  // 600 VR * 100
         int lowRoomThreshold = 30000;  // 300 VR * 100
         int highRoomThreshold = playerRating + 40000;  // Player VR + 400 VR * 100
 
@@ -188,10 +182,6 @@ void CustomRandomizeServers() {
             }
 
             int serverRating = SBServerGetIntValueA(server, key, 0);
-            if (isMogi && serverRating == 0) {
-                SBServerSetIntValueA(server, "dwc_eval", ratingMismatchEval);
-                continue;
-            }
             int diff = playerRating - serverRating;
             if (diff < 0) diff = -diff;
 
@@ -241,7 +231,6 @@ kmBranch(0x800e4ad0, CustomRandomizeServers);
 
 static void UpdateMatchmakingInfosAndRememberGroupId(RKNet::Controller* self) {
     self->UpdateSubsAndVR();
-    Mogi::UpdateRoomState();
     RememberPreviousPublicRoomGroupId(self);
 }
 kmCall(0x80657990, UpdateMatchmakingInfosAndRememberGroupId);

@@ -8,11 +8,6 @@
 #include <MarioKartWii/RKNet/ROOM.hpp>
 
 namespace Pulsar {
-namespace Mogi {
-bool IsActive();
-bool IsTeamFormat();
-}
-
 namespace UI {
 
 enum ExtendedTeamID {
@@ -110,7 +105,6 @@ class ExtendedTeamManager {
     void ResetPlayers();
 
     void VotePageSync();
-    void ConfigureMogiTeams();
     void ConfigureOfflineTeams();
 
     Status GetStatus() {
@@ -154,7 +148,6 @@ class ExtendedTeamManager {
     }
 
     static bool IsActivated() {
-        if (Mogi::IsActive() && Mogi::IsTeamFormat()) return true;
         const RacedataSettings& settings = Racedata::sInstance->menusScenario.settings;
         if (!System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS)) return false;
 

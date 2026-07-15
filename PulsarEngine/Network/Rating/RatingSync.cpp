@@ -10,7 +10,6 @@
 #include <Network/GPReport.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <Network/Rating/PlayerRating.hpp>
-#include <Network/Rating/MogiRating.hpp>
 #include <Network/Rating/RatingSync.hpp>
 #include <Network/WiiLink.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -23,8 +22,6 @@ static const u32 s_nhttpWorkBufSize = 0x1000;
 static u32 s_requestGeneration = 0;
 static float s_requestStartVr = 0.0f;
 static float s_requestStartBr = 0.0f;
-static float s_requestStartMMR = 0.0f;
-static float s_requestStartStoredMMR = 0.0f;
 static void* s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
 static s32 s_pendingInitialReportProfileId = 0;
@@ -32,9 +29,6 @@ static u32 s_pendingInitialReportLicenseId = 0;
 static bool s_pendingLoginDownload = false;
 static s32 s_pendingProfileId = 0;
 static u32 s_pendingLicenseId = 0;
-static bool s_pendingLoginMMRChange = false;
-static float s_pendingLoginOldMMR = 0.0f;
-static float s_pendingLoginNewMMR = 0.0f;
 
 struct RequestCtx {
     u32 generation;
@@ -92,31 +86,12 @@ void SetSyncReportingSuppressed(bool suppress) {
 void ReportCurrentRatings(u32 licenseId) {
     if (s_syncReportingSuppressed) return;
 
-    ReportCurrentVRBR(licenseId);
-    MogiRating::ReportCurrentMMR(licenseId);
-}
-
-void ReportCurrentVRBR(u32 licenseId) {
-    if (s_syncReportingSuppressed) return;
-
     const int vrScaled = ClampRatingForSync(GetUserVR(licenseId));
     const int brScaled = ClampRatingForSync(GetUserBR(licenseId));
 
     char buffer[64];
     if (snprintf(buffer, sizeof(buffer), "vr=%d|br=%d", vrScaled, brScaled) < 0) return;
     Network::Report("wl:mkw_vrbr", buffer);
-}
-
-bool GetPendingLoginMMRChange(float& oldMMR, float& newMMR) {
-    if (!s_pendingLoginMMRChange) return false;
-
-    oldMMR = s_pendingLoginOldMMR;
-    newMMR = s_pendingLoginNewMMR;
-    return true;
-}
-
-void ClearPendingLoginMMRChange() {
-    s_pendingLoginMMRChange = false;
 }
 
 static bool IsRequestStillRelevant(const RequestCtx& ctx) {
@@ -131,8 +106,7 @@ static bool IsRequestStillRelevant(const RequestCtx& ctx) {
 
     const float currentVr = GetUserVR(ctx.licenseId);
     const float currentBr = GetUserBR(ctx.licenseId);
-    const float currentMMR = MogiRating::GetUserMMR(ctx.licenseId);
-    if (currentVr != s_requestStartVr || currentBr != s_requestStartBr || currentMMR != s_requestStartMMR) return false;
+    if (currentVr != s_requestStartVr || currentBr != s_requestStartBr) return false;
 
     return true;
 }
@@ -171,27 +145,12 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
 
     int vrScaled = 0;
     int brScaled = 0;
-    int mmrScaled = 0;
-    const bool hasVR = ParseJsonScaledValue(json, "\"vr\"", vrScaled);
-    const bool hasBR = ParseJsonScaledValue(json, "\"br\"", brScaled);
-    const bool hasMMR = ParseJsonScaledValue(json, "\"mmr\"", mmrScaled);
-    if (!hasVR && !hasBR && !hasMMR) return;
+    if (!ParseJsonScaledValue(json, "\"vr\"", vrScaled)) return;
+    if (!ParseJsonScaledValue(json, "\"br\"", brScaled)) return;
 
     SetSyncReportingSuppressed(true);
-    if (hasVR && hasBR && vrScaled >= 1 && brScaled >= 1) {
-        SaveProfileVR(ctx->profileId, (float)vrScaled / 100.0f);
-        SaveProfileBR(ctx->profileId, (float)brScaled / 100.0f);
-    }
-    if (hasMMR && mmrScaled >= (int)(MogiRating::MIN_MMR * 100.0f) &&
-        mmrScaled <= (int)(MogiRating::MAX_MMR * 100.0f)) {
-        const int oldMMRScaled = (int)(s_requestStartStoredMMR * 100.0f + 0.5f);
-        if (mmrScaled != oldMMRScaled) {
-            s_pendingLoginOldMMR = s_requestStartStoredMMR;
-            s_pendingLoginNewMMR = (float)mmrScaled / 100.0f;
-            s_pendingLoginMMRChange = true;
-        }
-        MogiRating::SetProfileMMR(ctx->profileId, (float)mmrScaled / 100.0f);
-    }
+    SaveProfileVR(ctx->profileId, (float)vrScaled / 100.0f);
+    SaveProfileBR(ctx->profileId, (float)brScaled / 100.0f);
     SetSyncReportingSuppressed(false);
 }
 
@@ -201,7 +160,6 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
-    s_pendingLoginMMRChange = false;
 
     if (!Network::PrepareNHTTPRequest()) return;
 
@@ -214,8 +172,6 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     ++s_requestGeneration;
     s_requestStartVr = GetUserVR(licenseId);
     s_requestStartBr = GetUserBR(licenseId);
-    s_requestStartMMR = MogiRating::GetUserMMR(licenseId);
-    s_requestStartStoredMMR = MogiRating::GetStoredMMR(profileId);
 
     s_requestCtx.generation = s_requestGeneration;
     s_requestCtx.profileId = profileId;

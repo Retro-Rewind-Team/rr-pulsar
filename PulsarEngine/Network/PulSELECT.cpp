@@ -8,8 +8,6 @@
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
-#include <Network/Mogi.hpp>
-#include <Network/Rating/MogiRating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
@@ -24,48 +22,25 @@ static bool IsRegionalRoom(RKNet::RoomType roomType) {
     return roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
 }
 
-static u16 GetLocalMogiGPScore(u8 hudSlotId) {
-    const Racedata* racedata = Racedata::sInstance;
-    if (racedata == nullptr || hudSlotId >= 2) return 0;
-
-    const RacedataScenario& menuScenario = racedata->menusScenario;
-    const u8 playerId = menuScenario.settings.hudPlayerIds[hudSlotId];
-    if (playerId >= menuScenario.playerCount) return 0;
-    return menuScenario.players[playerId].score;
-}
-
 void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* src, u32 len) {  // len is sizeof(RKNet::SELECTPacket) by default
     const System* system = System::sInstance;
 
     const ExpSELECTHandler& handler = ExpSELECTHandler::Get();
     const bool isBattle = (handler.mode == RKNet::ONLINEMODE_PUBLIC_BATTLE || handler.mode == RKNet::ONLINEMODE_PRIVATE_BATTLE);
-    const bool isMogi = Mogi::IsEnabled();
     const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
 
     float rating;
-    u16 ratingWhole = 0;
-    u8 ratingDecimal = 0;
     if (rksys) {
         u32 licenseId = rksys->curLicenseId;
-        if (isMogi)
-            rating = MogiRating::GetUserMMR(licenseId);
-        else if (isBattle)
+        if (isBattle)
             rating = PointRating::GetUserBR(licenseId);
         else
             rating = PointRating::GetUserVR(licenseId);
 
-        ratingWhole = static_cast<u16>(rating);
-        ratingDecimal = static_cast<u8>((rating - (int)rating) * 100.0f + 0.5f);
-        if (isMogi) {
-            const u32 encodedRating = static_cast<u32>(rating * 100.0f + 0.5f);
-            ratingWhole = static_cast<u16>(encodedRating / 100);
-            ratingDecimal = static_cast<u8>(encodedRating % 100);
-        }
-        src->decimalVR[0] = ratingDecimal;
-        if (isMogi) {
-            src->playersData[0].sumPoints = GetLocalMogiGPScore(0);
-        } else if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
-            src->playersData[0].sumPoints = ratingWhole;
+        float decimal = rating - (int)rating;
+        src->decimalVR[0] = (u8)(decimal * 100.0f + 0.5f);
+        if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
+            src->playersData[0].sumPoints = static_cast<u16>(rating);
         }
     } else {
         src->decimalVR[0] = 0;
@@ -77,9 +52,9 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
         src->playersData[1].character = static_cast<u8>(sectionParams->characters[1]);
         src->playersData[1].kart = static_cast<u8>(sectionParams->karts[1]);
-        src->playersData[1].sumPoints = isMogi ? GetLocalMogiGPScore(1) : 0;
+        src->playersData[1].sumPoints = 0;
         const Racedata* racedata = Racedata::sInstance;
-        if (!isMogi && racedata != nullptr) {
+        if (racedata != nullptr) {
             const RacedataScenario& menuScenario = racedata->menusScenario;
             const u8 guestPlayerId = menuScenario.settings.hudPlayerIds[1];
             if (guestPlayerId < 12) {
@@ -87,17 +62,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
             }
         }
         src->playersData[1].starRank = 0;
-        if (isMogi) src->decimalVR[1] = ratingDecimal;
     }
-
-    src->mogiMMR.magic = 0;
-    src->mogiMMR.mmr[0] = 0xFFFF;
-    src->mogiMMR.mmr[1] = 0xFFFF;
-    if (isMogi) {
-        src->mogiMMR.magic = Mogi::MMR_PACKET_MAGIC;
-        Mogi::FillMMRPacket(src->mogiMMR.mmr[0], src->mogiMMR.mmr[1]);
-    }
-    Mogi::FillFormatVotePacket(src->mogiFormatVote.state, src->mogiFormatVote.format);
 
     const Network::Mgr& netMgr = system->netMgr;
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();
@@ -117,8 +82,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT>* packetHolder, PulSELECT* s
         const u8 vanillaVote = CupsConfig::ConvertTrack_PulsarIdToRealId(static_cast<PulsarId>(src->pulVote));
         src->playersData[0].courseVote = vanillaVote;
         src->playersData[1].courseVote = vanillaVote;
-    }
-    if (isMogi || system->IsContext(PULSAR_CT))
+    } else
         len = sizeof(PulSELECT);
     packetHolder->Copy(src, len);
 
@@ -136,12 +100,6 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
 
     const u16 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
     CustomCharacters::UpdateOnlineCharacterTablesFromAid(aid, src->playerIdToAid, characterTables);
-
-    if (holder != nullptr && holder->packetSize == sizeof(PulSELECT) && src->mogiMMR.magic == Mogi::MMR_PACKET_MAGIC) {
-        Mogi::ReceiveMMRPacket(aid, src->mogiMMR.mmr[0], src->mogiMMR.mmr[1]);
-        Mogi::ReceivePlayerScores(aid, src->playersData[0].sumPoints, src->playersData[1].sumPoints);
-        Mogi::ReceiveFormatVotePacket(aid, src->mogiFormatVote.state, src->mogiFormatVote.format);
-    }
 
     for (int i = 0; i < 2; ++i) {
         PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
@@ -658,7 +616,7 @@ void ProcessNewPacketVoting() {
                 u32 accField = handler->aidsWithAccurateAidPidMap;
                 if (accField != 0) {
                     if (winningTrack != 0xff) accField |= localAidBit;
-                    if ((availableAids & accField) == availableAids && !Mogi::IsFormatVoteActive()) send.phase = 2;
+                    if ((availableAids & accField) == availableAids) send.phase = 2;
                 }
             }
         } else if (hostAid == aid) {  // I'm not the host and the loop is at the hostAid
@@ -684,7 +642,7 @@ void ProcessNewPacketVoting() {
                         }
                     }
                 }
-                if (curRecv.phase > 1 && !Mogi::IsFormatVoteActive()) send.phase = 2;
+                if (curRecv.phase > 1) send.phase = 2;
             }
         }
 
@@ -697,8 +655,7 @@ void ProcessNewPacketVoting() {
             if ((availableAids & accField) != availableAids) isConnectedToAnyone = false;
         }
         if (isConnectedToAnyone && curRecv.pulVote != 0x43) handler->aidsThatHaveVoted |= aidBit;
-        if (handler->hasNewRACEHEADER_1 != 0 && send.phase >= 1 && !Mogi::IsFormatVoteActive())
-            send.phase = 2;  // people have already progressed?
+        if (handler->hasNewRACEHEADER_1 != 0 && send.phase >= 1) send.phase = 2;  // people have already progressed?
     }
 }
 kmCall(0x80661520, ProcessNewPacketVoting);

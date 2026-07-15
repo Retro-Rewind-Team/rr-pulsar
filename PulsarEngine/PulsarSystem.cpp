@@ -19,7 +19,6 @@
 #include <RetroRewindChannel.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <Network/PacketExpansion.hpp>
-#include <Network/Mogi.hpp>
 #include <hooks.hpp>
 
 namespace Pulsar {
@@ -64,7 +63,7 @@ bool System::IsVanillaMode() const {
     if (isFroom) return this->IsContext(PULSAR_VANILLAMODE);
 
     const bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
-    return isRegionalRoom && (this->netMgr.region == 0x15 || this->netMgr.region == 0x0B || this->netMgr.region == Mogi::REGION_REG);
+    return isRegionalRoom && (this->netMgr.region == 0x15 || this->netMgr.region == 0x0B);
 }
 
 static inline bool ShouldForceNandIoSaves() {
@@ -274,8 +273,7 @@ void System::UpdateContext() {
     bool isOTTOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
     bool isMiiHeads = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS);
     bool is200Online = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
-    bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED ||
-                           (Mogi::IsActive() && Mogi::IsTeamFormat());
+    bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
     bool isLapBasedKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_LAPBASED && isNotPublic && !isBattle && !isTimeTrial;
     bool isKOFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
     bool isCharRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_LIGHTONLY;
@@ -408,12 +406,6 @@ void System::UpdateContext() {
                                          isItemBoxRespawnFast);
     }
 
-    if (Mogi::IsEnabled()) {
-        isTrackSelectionRegs = netMgr.region == Mogi::REGION_REG;
-        isTrackSelectionRetros = netMgr.region == Mogi::REGION;
-        isTrackSelectionCts = netMgr.region == Mogi::REGION_CT;
-    }
-
     this->netMgr.hostContext = newContext;
     this->netMgr.hostContext2 = newContext2;
 
@@ -470,9 +462,7 @@ void System::UpdateContext() {
     if (isRegionalRoom) {
         switch (region) {
             case 0x0A:  // Regular retro tracks
-            case Mogi::REGION:  // Retro Track Mogi
                 this->context |= (1 << PULSAR_RETROS);
-                this->context &= ~((1 << PULSAR_CTS) | (1 << PULSAR_REGS));
                 sInstance->context &= ~(1 << PULSAR_200_WW);
                 sInstance->context &= ~(1 << PULSAR_MODE_OTT);
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
@@ -512,28 +502,12 @@ void System::UpdateContext() {
 
             case 0x14:  // CT (Custom Tracks)
                 this->context |= (1 << PULSAR_CTS);
-                this->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_REGS));
                 sInstance->context &= ~(1 << PULSAR_200_WW);
                 sInstance->context &= ~(1 << PULSAR_MODE_OTT);
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
                 sInstance->context2 &= ~(1 << PULSAR_FFA);
                 sInstance->context &= ~(1 << PULSAR_ELIMINATION);
                 sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
-                break;
-
-            case Mogi::REGION_CT:  // Custom Track Mogi
-                this->context |= (1 << PULSAR_CTS);
-                this->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_REGS));
-                sInstance->context &= ~(1 << PULSAR_200_WW);
-                sInstance->context &= ~(1 << PULSAR_MODE_OTT);
-                sInstance->context2 &= ~(1 << PULSAR_ITEMMODERAIN);
-                sInstance->context2 &= ~(1 << PULSAR_FFA);
-                sInstance->context &= ~(1 << PULSAR_ELIMINATION);
-                sInstance->context2 &= ~(1 << PULSAR_ITEMMODESTORM);
-                break;
-
-            case Mogi::REGION_REG:  // Regular Track Mogi
-                ApplyVanillaModeRestrictions(this, true);
                 break;
 
             case 0x15:  // RT (Regular Tracks)
@@ -562,10 +536,6 @@ void System::UpdateContext() {
 
     if (isFroom && isVanillaMode) {
         ApplyVanillaModeRestrictions(this, false);
-    }
-
-    if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
-        this->context |= (1 << PULSAR_EXTENDEDTEAMS);
     }
 
     if (!isTeamBattle) {

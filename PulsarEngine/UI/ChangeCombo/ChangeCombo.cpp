@@ -12,7 +12,6 @@
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
-#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -77,7 +76,6 @@ static void BuildSettingsPreviewSheets() {
 }
 
 static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr& page) {
-    if (Mogi::IsActive()) return false;
     if (s_settingsPreviewShownThisRoom) return false;
     if (s_settingsPreviewComplete) return false;
     if (s_settingsPreviewSheetCount == 0) BuildSettingsPreviewSheets();
@@ -95,7 +93,6 @@ static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr& page) {
 }
 
 bool AdvanceFroomSettingsPreview(u32& sheetIdx) {
-    if (Mogi::IsActive()) return false;
     if (s_settingsPreviewShownThisRoom) return false;
     if (s_settingsPreviewComplete) return false;
     if (s_settingsPreviewSheetCount == 0) BuildSettingsPreviewSheets();

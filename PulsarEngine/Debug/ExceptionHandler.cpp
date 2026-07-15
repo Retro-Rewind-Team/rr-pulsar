@@ -13,7 +13,6 @@
 #include <IO/IO.hpp>
 #include <RetroRewindChannel.hpp>
 #include <Dolphin/DolphinIOS.hpp>
-#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace Debug {
@@ -32,7 +31,6 @@ void FatalError(const char* string) {
 
 #pragma suppress_warnings on
 void LaunchSoftware() {
-    Mogi::OnDisconnect();
     // If dolphin, restarts game, else launches Retro Rewind Channel->HBC->OHBC->WiiMenu
     bool isDolphin = Dolphin::IsEmulator();
 

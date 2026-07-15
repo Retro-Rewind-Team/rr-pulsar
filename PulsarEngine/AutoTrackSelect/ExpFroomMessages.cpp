@@ -4,7 +4,6 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <Gamemodes/OnlineTT/OTTRegional.hpp>
-#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -45,8 +44,7 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
     if (rowIdx == 0) {
         const bool isOTT = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
         const bool isKO = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) != KOSETTING_DISABLED;
-        const bool isExtendedTeam = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED ||
-                                     (Mogi::IsActive() && Mogi::IsTeamFormat());
+        const bool isExtendedTeam = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
         const bool isRoyale = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
 
         if (isOTT && isKO) {
@@ -91,7 +89,7 @@ void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Tex
         const u32 hostContext2 = System::sInstance->netMgr.hostContext2;
         const bool isOTT = hostContext & (1 << PULSAR_MODE_OTT);
         const bool isKO = hostContext & (1 << PULSAR_MODE_KO) || hostContext & (1 << PULSAR_MODE_LAPKO) || hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
-        const bool isExtendedTeam = (hostContext & (1 << PULSAR_EXTENDEDTEAMS)) || (Mogi::IsActive() && Mogi::IsTeamFormat());
+        const bool isExtendedTeam = hostContext & (1 << PULSAR_EXTENDEDTEAMS);
         const bool isStartRetro = hostContext & (1 << PULSAR_STARTRETROS);
         const bool isStartCT = hostContext & (1 << PULSAR_STARTCTS);
         const bool isStartRTS = hostContext & (1 << PULSAR_STARTREGS);
