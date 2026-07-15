@@ -13,6 +13,7 @@ static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
 static const u32 MISSION_SCORE_REQUIRED_OFFSET = 0x08;
 static const u32 MISSION_CUSTOM_ITEMS_OFFSET = 0x54;
 static const u32 MISSION_ENGINE_OFFSET = 0x07;
+static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
 bool IsMissionScenario(const RacedataScenario& scenario) {
     return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
 }
@@ -115,10 +116,10 @@ static u16 GetMissionU16(const void* mission, u32 offset) {
     return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
 }
 
-static bool IsMissionScoreObjective() {
-    if (Racedata::sInstance == 0) return false;
+bool IsMissionScoreObjective(const RacedataScenario& scenario) {
+    if (!IsMissionScenario(scenario)) return false;
 
-    switch (GetMissionU16(Racedata::sInstance->racesScenario.mission, MISSION_OBJECTIVE_OFFSET)) {
+    switch (GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET)) {
         case 0:
         case 3:
         case 4:
@@ -134,8 +135,13 @@ static bool IsMissionScoreObjective() {
     }
 }
 
+bool IsMissionBossObjective(const RacedataScenario& scenario) {
+    return IsMissionScenario(scenario) &&
+           GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_ENEMY_DOWN_02;
+}
+
 static u32 GetMissionScoreDisplayTarget(const void* raceConfig) {
-    if (IsMissionScoreObjective())
+    if (Racedata::sInstance != 0 && IsMissionScoreObjective(Racedata::sInstance->racesScenario))
         return GetMissionValue(Racedata::sInstance->racesScenario.mission,
                                MISSION_SCORE_REQUIRED_OFFSET);
     return GetMissionValue(raceConfig, 0xBCC);
