@@ -7,6 +7,7 @@
 #include <Ghost/GhostManager.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <Gamemodes/MissionMode/MissionModeRanking.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -225,6 +226,14 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
 
     // No saving and no new record in OTT for now
     if (gamemode == MODE_MISSION_TOURNAMENT) {
+        Text::Info resultInfo;
+        u32 rank;
+        if (MissionMode::GetMissionResultRank(rank)) {
+            resultInfo.bmgToPass[0] = UI::BMG_GP_RANK_3STARS + rank;
+            page->savedGhostMessage.SetMessage(UI::BMG_MISSION_RANK, &resultInfo);
+        } else {
+            page->savedGhostMessage.SetMessage(UI::BMG_MISSION_FAILED);
+        }
         return;
     }
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
