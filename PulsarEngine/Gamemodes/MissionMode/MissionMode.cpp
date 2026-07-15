@@ -3,9 +3,12 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <Settings/SettingsParam.hpp>
+<<<<<<< HEAD
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceScore.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <runtimeWrite.hpp>
+=======
+>>>>>>> 583bc8f6 (Add ranking display to mission end screen)
 
 namespace Pulsar {
 namespace MissionMode {
@@ -19,7 +22,10 @@ static const u32 MISSION_LAP_COUNT_MAX = 9;
 static const u32 MISSION_COMPETITION_MODE_FLAG = 1 << 2;
 static const u32 MISSION_CUSTOM_ITEMS_OFFSET = 0x54;
 static const u32 MISSION_ENGINE_OFFSET = 0x07;
+<<<<<<< HEAD
 static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
+=======
+>>>>>>> 583bc8f6 (Add ranking display to mission end screen)
 bool IsMissionScenario(const RacedataScenario& scenario) {
     return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
 }
@@ -190,7 +196,19 @@ kmCall(0x805a70e8, SetMissionStartPosition);
 bool IsMissionScoreObjective(const RacedataScenario& scenario) {
     if (!IsMissionScenario(scenario)) return false;
 
+<<<<<<< HEAD
     switch (GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET)) {
+=======
+static u16 GetMissionU16(const void* mission, u32 offset) {
+    const u8* const bytes = reinterpret_cast<const u8*>(mission) + offset;
+    return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
+}
+
+static bool IsMissionScoreObjective() {
+    if (Racedata::sInstance == 0) return false;
+
+    switch (GetMissionU16(Racedata::sInstance->racesScenario.mission, MISSION_OBJECTIVE_OFFSET)) {
+>>>>>>> 583bc8f6 (Add ranking display to mission end screen)
         case 0:
         case 3:
         case 4:
@@ -218,6 +236,7 @@ static u32 GetMissionScoreDisplayTarget(const void* raceConfig) {
     return GetMissionValue(raceConfig, 0xBCC);
 }
 
+<<<<<<< HEAD
 kmRuntimeUse(0x807f784c);
 static void FixMissionScoreLayout(CtrlRaceScore* self) {
     typedef void (*CtrlRaceScoreOnUpdateFn)(CtrlRaceScore*);
@@ -384,21 +403,7 @@ static u32 GetMissionPresentationStatus(u32 playerId) {
     return IsMissionPresentationFailure() ? 2 : status;
 }
 
-kmCall(0x807121fc, GetMissionPresentationStatus);
-kmCall(0x8071223c, GetMissionPresentationStatus);
-kmCall(0x80712250, GetMissionPresentationStatus);
-kmCall(0x80712270, GetMissionPresentationStatus);
-kmCall(0x807122c4, GetMissionPresentationStatus);
-kmCall(0x80712364, GetMissionPresentationStatus);
-kmCall(0x80712390, GetMissionPresentationStatus);
-kmCall(0x807123b0, GetMissionPresentationStatus);
-kmCall(0x807cc7f0, GetMissionPresentationStatus);
-kmCall(0x807cc880, GetMissionPresentationStatus);
-kmCall(0x808644b0, GetMissionPresentationStatus);
-kmCall(0x8053dacc, FixMissionTimeout);
-kmCall(0x8053dae0, FixMissionTimeoutEnd);
-kmBranch(0x8053dff8, FixMissionScoreCalcRank);
-kmBranch(0x8053dafc, FixMissionCanEnd);
+// Ranking hooks are implemented by MissionModeRanking.cpp.
 
 void PrepareMenuScenario() {
     RacedataScenario& scenario = Racedata::sInstance->menusScenario;
