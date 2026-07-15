@@ -1,27 +1,11 @@
 #include <kamek.hpp>
-#include <runtimeWrite.hpp>
 #include <UI/MissionMode/MissionMode.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
-#include <MarioKartWii/UI/Layout/Layout.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
-#include <MarioKartWii/UI/Section/SectionMgr.hpp>
 
 namespace Pulsar {
 namespace UI {
 namespace MissionMode {
-
-static const char* GetMissionLevelLabelLayout(const char* lytName) {
-    return strcmp(lytName, "common_w092_mission_level_label") == 0 ? "zommon_w092_mission_level_label" : lytName;
-}
-
-kmRuntimeUse(0x805e9f80);
-static void LoadPictureLayout(LayoutUIControl& control, const char* folderName, const char* lytName) {
-    typedef PictureLayout* (*AttachPictureLayout)(PictureLayoutList*, const char*, const char*);
-    const AttachPictureLayout attachPictureLayout = reinterpret_cast<AttachPictureLayout>(kmRuntimeAddr(0x805e9f80));
-    control.pictureLayout = attachPictureLayout(SectionMgr::sInstance->curSection->pictureLayoutList, folderName,
-            GetMissionLevelLabelLayout(lytName));
-}
-kmBranch(0x8063d9c0, LoadPictureLayout);
 
 static Pages::RaceHUD* SetMissionHudNextPage(Pages::RaceHUD* hud) {
     hud->nextPageId = PAGE_TT_SPLITS;
