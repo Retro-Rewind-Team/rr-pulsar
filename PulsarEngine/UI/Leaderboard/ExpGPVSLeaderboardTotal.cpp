@@ -2,6 +2,7 @@
 #include <UI/Leaderboard/LeaderboardDisplay.hpp>
 #include <Settings/Settings.hpp>
 #include <PulsarSystem.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -11,6 +12,11 @@ static void fillTotalLeaderboardResults(Pages::GPVSLeaderboardTotal& page) {
     for (int i = 0; i < count; ++i) {
         fillLeaderboardResult(*page.results[i], page.sortedArray[i].playerId);
     }
+}
+
+void ExpGPVSLeaderboardTotal::OnInit() {
+    Pages::GPVSLeaderboardTotal::OnInit();
+    Mogi::OnResultsDisplayed();
 }
 
 void ExpGPVSLeaderboardTotal::OnUpdate() {

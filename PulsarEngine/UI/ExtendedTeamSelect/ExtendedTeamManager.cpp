@@ -4,6 +4,7 @@
 #include <MarioKartWii/System/random.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -148,8 +149,11 @@ bool ExtendedTeamManager::AreAllOtherPlayersDone(u8 localAid) {
 
 void ExtendedTeamManager::Update() {
     Pages::FriendRoomManager* friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
-    this->isHost = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST;
-    u8 localAid = RKNet::Controller::sInstance->subs[RKNet::Controller::sInstance->currentSub].localAid;
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    this->isHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                   (Mogi::IsActive() && Mogi::IsTeamFormat() && sub.localAid == sub.hostAid);
+    u8 localAid = sub.localAid;
     if (!this->isHost) {
         if (this->status == STATUS_NONE) {
             if (this->hasFriendRoomStarted) {
@@ -244,13 +248,56 @@ void ExtendedTeamManager::VotePageSync() {
                 newPlayers[i].miiIdx = aid * 2 + localPlayerId;
                 newPlayers[i].aid = aid;
                 newPlayers[i].playerIdOnConsole = localPlayerId;
-                newPlayers[i].team = this->GetPlayerTeamByAID(aid, localPlayerId);
+                newPlayers[i].team = Mogi::IsTeamFormat() ? static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(i)) :
+                                                            this->GetPlayerTeamByAID(aid, localPlayerId);
                 break;
             }
         }
     }
 
     memcpy(this->players, newPlayers, sizeof(ExtendedTeamPlayer) * 12);
+}
+
+void ExtendedTeamManager::ConfigureMogiTeams() {
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr) return;
+
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const u8 playerCount = sub.playerCount < 12 ? sub.playerCount : 12;
+    bool hasPlayerIdMapping = true;
+    for (u8 i = 0; i < playerCount; ++i) {
+        if (controller->aidsBelongingToPlayerIds[i] == 0xFF) {
+            hasPlayerIdMapping = false;
+            break;
+        }
+    }
+
+    this->ResetPlayers();
+    if (hasPlayerIdMapping) {
+        for (u8 i = 0; i < playerCount; ++i) {
+            const u8 aid = controller->aidsBelongingToPlayerIds[i];
+            const u8 playerIdOnConsole = i > 0 && controller->aidsBelongingToPlayerIds[i - 1] == aid ? 1 : 0;
+            this->SetPlayerIndexes(i, aid * 2 + playerIdOnConsole, aid, playerIdOnConsole);
+            this->SetPlayerTeam(i, static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(i)));
+        }
+    } else {
+        u8 playerIdx = 0;
+        for (u8 aid = 0; aid < 12 && playerIdx < playerCount; ++aid) {
+            if ((sub.availableAids & (1 << aid)) == 0) continue;
+
+            u8 playersOnAid = sub.connectionUserDatas[aid].playersAtConsole;
+            if (aid == sub.localAid && playersOnAid == 0) playersOnAid = sub.localPlayerCount;
+            if (playersOnAid == 0) playersOnAid = 1;
+
+            for (u8 playerIdOnConsole = 0; playerIdOnConsole < playersOnAid && playerIdx < playerCount;
+                 ++playerIdOnConsole, ++playerIdx) {
+                this->SetPlayerIndexes(playerIdx, aid * 2 + playerIdOnConsole, aid, playerIdOnConsole);
+                this->SetPlayerTeam(playerIdx, static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(playerIdx)));
+            }
+        }
+    }
+    ExtendedTeamSelect::RandomizeTeamColors(Mogi::GetLobbySeed());
+    this->hasFriendRoomStarted = true;
 }
 
 void ExtendedTeamManager::ConfigureOfflineTeams() {

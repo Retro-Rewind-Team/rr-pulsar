@@ -2,6 +2,7 @@
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -23,7 +24,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         if (playerCount >= 6)
             break;
 
-        if (ExtendedTeamManager::sInstance->GetPlayerTeam(i) == this->teamId) {
+        if (static_cast<ExtendedTeamID>(scenario.players[i].team) == this->teamId) {
             this->players[playerCount].playerIdx = i;
             PageId pageId = this->parentGroup->parentPage->pageId;
             if (pageId == (PageId)PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL) {
@@ -38,6 +39,8 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
             playerCount++;
         }
     }
+    this->currentScore += Mogi::GetMissingTeamScore(this->teamId, true);
+    this->teamScore += Mogi::GetMissingTeamScore(this->teamId, false);
 
     qsort(this->players, playerCount, sizeof(CtrlRaceResultTeam::Player), (int (*)(const void*, const void*))CtrlRaceResultTeam::ComparePlayers);
     for (int i = playerCount; i < 6; i++) {

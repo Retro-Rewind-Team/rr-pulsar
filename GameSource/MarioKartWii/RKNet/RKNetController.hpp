@@ -223,6 +223,7 @@ class Controller {
     void ResetFriendArray();  // 80658f80
     void StartMatching();  // 80659044
     void ConnectToAnybodyAsync();  // 80659170
+    void SetVoteMatchmakingSuspend();  // 806568f0
     void SetupGameServer();  // 806595b8
     void ConnectToGameServerFromGroupId();  // 80659680
     void CalcRACEPacketCRC32(u32 aid);  // 80659a3c

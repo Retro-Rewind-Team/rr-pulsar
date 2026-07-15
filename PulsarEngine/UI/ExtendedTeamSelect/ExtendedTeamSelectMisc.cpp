@@ -6,6 +6,7 @@
 #include <core/nw4r/lyt/ArcResourceAccessor.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/ROOM.hpp>
+#include <Network/Mogi.hpp>
 #include <MarioKartWii/UI/Page/Leaderboard/GPVSLeaderboardUpdate.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Page/Other/VR.hpp>
@@ -15,17 +16,34 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBalloon.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceRankNum.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
 
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
+static void ApplyMogiRaceTeams(RacedataScenario& scenario) {
+    if (!Mogi::IsEnabled()) return;
+
+    const bool active = Mogi::IsActive();
+    const bool teamFormat = Mogi::IsTeamFormat();
+    if (!active || !teamFormat) return;
+
+    const u8 playerCount = scenario.playerCount < 12 ? scenario.playerCount : 12;
+    for (u8 i = 0; i < playerCount; ++i) {
+        scenario.players[i].team = static_cast<Team>(Mogi::GetTeamForPlayer(i));
+    }
+}
+
 void Racedata_InitRace(Racedata* racedata) {
     racedata->InitRace();
 
+    ApplyMogiRaceTeams(racedata->racesScenario);
+
     const RacedataSettings& settings = racedata->menusScenario.settings;
-    if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
+    if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) &&
+        ExtendedTeamManager::IsActivated() && !Mogi::IsActive()) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
     }
 }
@@ -44,7 +62,9 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
         RKNet::Controller* controller = RKNet::Controller::sInstance;
         if (controller) {
             RKNet::StatusData& status = controller->localStatusData;
-            const bool isHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST;
+            const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+            const bool isHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                                (Mogi::IsActive() && sub.localAid == sub.hostAid);
             const u32 mode = friendRoomManager->startedGameMode;
             const bool isBattle = mode >= 2;
 
@@ -57,7 +77,8 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
         }
     }
     PageId nextPageId = PAGE_CHARACTER_SELECT;
-    if (System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && (friendRoomManager->startedGameMode == 0 || friendRoomManager->startedGameMode == 2 || friendRoomManager->startedGameMode == 3)) {
+    if (ExtendedTeamManager::IsActivated() &&
+        (friendRoomManager->startedGameMode == 0 || friendRoomManager->startedGameMode == 2 || friendRoomManager->startedGameMode == 3)) {
         _this->countdown.SetInitial(86400.0f);
         nextPageId = static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT);
     }
@@ -89,7 +110,7 @@ void SetBroadcastROOMPacket(RKNet::ROOMHandler* _this, u32 pkt) {
 
     UI::ExtendedTeamSelect* extendedTeamSelect = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
     Pages::FriendRoomManager* friendRoomBackPage = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
-    if (System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && messageType == 1 && message == 1) {
+    if (ExtendedTeamManager::IsActivated() && messageType == 1 && message == 1) {
         message = 0;
     }
 
@@ -116,12 +137,16 @@ kmCall(0x805db1dc, RecvRoomPacket);
 
 void VotingVRPage_SetControlState(Pages::VR* _this, u32 idx, u32 playerId, Team team, u32 type, bool isLocalPlayer) {
     _this->FillVRControl(idx, playerId, team, type, isLocalPlayer);
-    if (ExtendedTeamManager::IsActivated()) {
+    const bool isMogiTeamRoom = Mogi::IsActive() && Mogi::IsTeamFormat();
+    if (isMogiTeamRoom || ExtendedTeamManager::IsActivated()) {
         Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         u8 aid = selectStageMgr->infos[idx].aid;
         u8 playerIdOnConsole = selectStageMgr->infos[idx].hudSlotid;
+        const ExtendedTeamID playerTeam = isMogiTeamRoom
+                                              ? static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(idx))
+                                              : ExtendedTeamManager::sInstance->GetPlayerTeamByAID(aid, playerIdOnConsole);
 
-        ExtendedTeamSelect::ChangeVRButtonColors(_this->vrControls[idx], ExtendedTeamManager::sInstance->GetPlayerTeamByAID(aid, playerIdOnConsole));
+        ExtendedTeamSelect::ChangeVRButtonColors(_this->vrControls[idx], playerTeam);
     }
 }
 
@@ -130,14 +155,18 @@ kmCall(0x8064a9f0, VotingVRPage_SetControlState);
 
 bool PageVote_FillVoteControl(Pages::Vote* _this, u32 playerId) {
     bool res = _this->FillVoteControl(playerId);
-    if (ExtendedTeamManager::IsActivated() && res) {
+    const bool isMogiTeamRoom = Mogi::IsActive() && Mogi::IsTeamFormat();
+    if ((isMogiTeamRoom || ExtendedTeamManager::IsActivated()) && res) {
         Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         u8 aid = selectStageMgr->infos[playerId].aid;
         u8 playerIdOnConsole = selectStageMgr->infos[playerId].hudSlotid;
+        const ExtendedTeamID team = isMogiTeamRoom
+                                        ? static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(playerId))
+                                        : ExtendedTeamManager::sInstance->GetPlayerTeamByAID(aid, playerIdOnConsole);
 
         VoteControl& control = _this->votes[_this->lastHandledVote - 1];
         control.animator.GetAnimationGroupById(3).PlayAnimationAtFrame(2, 0.0f);
-        ExtendedTeamSelect::ChangeVRButtonColors(control, ExtendedTeamManager::sInstance->GetPlayerTeamByAID(aid, playerIdOnConsole));
+        ExtendedTeamSelect::ChangeVRButtonColors(control, team);
     }
 
     return res;
@@ -146,9 +175,22 @@ bool PageVote_FillVoteControl(Pages::Vote* _this, u32 playerId) {
 kmCall(0x80643b3c, PageVote_FillVoteControl);
 
 void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr* _this) {
+    if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
+        ExtendedTeamManager::sInstance->ConfigureMogiTeams();
+        for (u8 i = 0; i < _this->playerCount; ++i) {
+            const ExtendedTeamID team =
+                ExtendedTeamManager::sInstance->GetPlayerTeamByAID(_this->infos[i].aid, _this->infos[i].hudSlotid);
+            if (team != TEAM_COUNT) _this->infos[i].team = static_cast<Team>(team);
+        }
+    }
     _this->PrepareRace();
+    ApplyMogiRaceTeams(Racedata::sInstance->menusScenario);
     if (ExtendedTeamManager::IsActivated()) {
-        ExtendedTeamManager::sInstance->VotePageSync();
+        if (Mogi::IsActive()) {
+            ExtendedTeamManager::sInstance->ConfigureMogiTeams();
+        } else {
+            ExtendedTeamManager::sInstance->VotePageSync();
+        }
     }
 }
 
@@ -163,20 +205,24 @@ void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter* _this, const V
         for (int i = 0; i < menuScenario.playerCount; i++) {
             if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 0) {
                 selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-                if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
+                if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                                   controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
+                                   (Mogi::IsActive() && Mogi::IsTeamFormat()))) {
                     RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
                     selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 0);
                 }
             } else if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 1) {
                 selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-                if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
+                if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                                   controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
+                                   (Mogi::IsActive() && Mogi::IsTeamFormat()))) {
                     RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
                     selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 1);
                 }
             }
         }
 
-        ExtendedTeamID playerTeam = ExtendedTeamManager::sInstance->GetPlayerTeam(_this->playerId);
+        const ExtendedTeamID playerTeam = ExtendedTeamManager::sInstance->GetPlayerTeam(_this->playerId);
         if (playerTeam == selfTeams[0] || playerTeam == selfTeams[1]) {
             u8 r, g, b;
             ExtendedTeamSelect::GetTeamColor(ExtendedTeamManager::sInstance->GetPlayerTeam(_this->playerId), r, g, b);
@@ -229,7 +275,11 @@ void CtrlRaceNameBalloon_refresh(CtrlRaceNameBalloon* _this, u8 playerId) {
         mat->tevColours[1].g = 255;
         mat->tevColours[1].b = 255;
 
-        if (static_cast<Pulsar::ExtendedTeamsLine>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_EXTENDEDTEAMS), Pulsar::RADIO_EXTENDEDTEAMSLINE)) == Pulsar::EXTENDEDTEAMS_LINE_TEAM) {
+        const bool isMogiTeamRoom = Mogi::IsActive() && Mogi::IsTeamFormat();
+        const bool isTeamLine = static_cast<Pulsar::ExtendedTeamsLine>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
+                                   static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_EXTENDEDTEAMS), Pulsar::RADIO_EXTENDEDTEAMSLINE)) ==
+                                 Pulsar::EXTENDEDTEAMS_LINE_TEAM;
+        if (isMogiTeamRoom || isTeamLine) {
             for (int i = 0; i < 4; i++) {
                 _this->layout.GetPaneByName("line")->SetVtxColor(i, nw4r::ut::Color(r, g, b, 255));
             }
@@ -396,11 +446,23 @@ void WiFiVSResults_setCongratulationText(Pages::WiFiVSResults* _this) {
 
             scores[team].score += scenario.players[i].score;
         }
+        for (int team = 0; team < TEAM_COUNT; ++team) {
+            const u16 missingScore = Mogi::GetMissingTeamScore(team, false);
+            if (missingScore == 0) continue;
+            if (!scores[team].present) {
+                scores[team].present = true;
+                ++teamCount;
+            }
+            scores[team].score += missingScore;
+        }
 
         qsort(scores, TEAM_COUNT, sizeof(TeamScore), sort_by_score);
 
+        u8 teamColorOrder[TEAM_COUNT];
+        ExtendedTeamSelect::GetTeamColorOrder(teamColorOrder);
+
         Text::Info info;
-        info.bmgToPass[0] = BMG_EXTENDEDTEAMS_TEAM_NAME + scores[0].team;
+        info.bmgToPass[0] = BMG_EXTENDEDTEAMS_TEAM_NAME + teamColorOrder[scores[0].team];
 
         _this->congratulations.SetMessage(BMG_EXTENDEDTEAMS_WINNER + (scores[0].score == scores[1].score), &info);
     }
