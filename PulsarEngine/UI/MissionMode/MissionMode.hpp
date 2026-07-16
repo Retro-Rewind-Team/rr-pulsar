@@ -12,6 +12,7 @@ namespace MissionMode {
     bool IsMissionButton(const Pages::SinglePlayer* page, u32 id);
     bool IsBTMRModeButton(const Pages::SinglePlayer* page, u32 id);
     u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer* page, u32 id);
+    void PrepareMissionStageSelectReturn();
     void CreateSinglePlayerPages(ExpSection& section);
     void CreateRacePages(ExpSection& section);
     void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId);
