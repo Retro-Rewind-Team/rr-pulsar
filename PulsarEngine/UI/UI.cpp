@@ -319,11 +319,10 @@ kmBranch(0x80622e00, ExpSection::AddPageLayerAnimatedReturnTopLayer);
 kmBranchDefCpp(0x80630818, 0x80631574, void) {
     ExpSection* section = ExpSection::GetSection();
     Pages::Menu* levelPage = static_cast<Pages::Menu*>(section->pages[PAGE_MISSION_LEVEL_SELECT_UNUSED]);
-    Pages::Menu* sublevelPage = static_cast<Pages::Menu*>(section->pages[PAGE_MISSION_SELECT_SUB]);
     levelPage->prevPageId = PAGE_SINGLE_PLAYER_MENU;
-    sublevelPage->prevPageId = PAGE_MISSION_LEVEL_SELECT_UNUSED;
+    Pulsar::UI::MissionMode::PrepareMissionStageSelectReturn();
     Page* volatile addedPage =
-        ExpSection::AddPageLayerAnimatedReturnTopLayer(*section, PAGE_MISSION_SELECT_SUB, 0xff);
+        ExpSection::AddPageLayerAnimatedReturnTopLayer(*section, PAGE_MISSION_LEVEL_SELECT_UNUSED, 0xff);
     (void)addedPage;
 }
 

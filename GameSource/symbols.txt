@@ -2589,3 +2589,5 @@ detail_PrepareSound__Q34nw4r3snd14SoundStartableFPQ34nw4r3snd11SoundHandleUiPCQ4
 #MissionMode
 GetKTPTHolder__8RaceinfoFUc = 0x805365c8
 CalcCoordinates__Q23KMP13Holder<4KTPT>FR4Vec3R4Vec3UiUi = 0x80514b24
+RipFromDisc__13SystemManagerFPCcPQ23EGG4HeapbPUi = 0x8000b5c8
+RequestBackModel__12MenuModelMgrF13BackModelType = 0x8059e598
