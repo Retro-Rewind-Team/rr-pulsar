@@ -1,12 +1,14 @@
 #include <kamek.hpp>
 #include <UI/MissionMode/MissionMode.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
+#include <core/rvl/OS/OS.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -26,6 +28,22 @@ static const u32 MISSION_KMT_ENTRY_SIZE = 0x70;
 static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
 static const u32 BACK_MODEL_CONTROL_OFFSET = 0x1C8;
+static const char* const MISSION_STAGE_RANK_PANE = "mission_rank";
+static bool reportedMissionRankPaneStatus;
+static bool reportedMissionLevelRankPaneStatus;
+
+// These are the private-font glyphs used by Common.bmg for the GP ranks.
+// The BMG rank messages wrap these as a "1 char" escape, but passing the
+// character directly avoids the rank-message lookup path for this textbox.
+static const wchar_t MISSION_RANK_GLYPHS[7][2] = {
+    {0, 0},
+    {0xF07A, 0},  // C
+    {0xF079, 0},  // B
+    {0xF078, 0},  // A
+    {0xF061, 0},  // 1 star
+    {0xF062, 0},  // 2 stars
+    {0xF063, 0},  // 3 stars
+};
 
 static const char* const MISSION_LEVEL_BUTTON_VARIANTS[8] = {
     "Button0", "Button1", "Button2", "Button3", "Button4", "Button5", "Button6", "Button7",
@@ -67,6 +85,63 @@ static void ResetMissionButtonFreeText(PushButton& button) {
     material->tevColours[1].g = 140;
     material->tevColours[1].b = 128;
     material->tevColours[1].a = 255;
+}
+
+static void SetMissionStageRank(PushButton& button, u8 rating) {
+    // The rank glyphs are already present in the game's BMG resources. The
+    // BRLYT text pane uses the normal menu font to render the complete icon.
+    nw4r::lyt::Pane* oldIcon = button.layout.GetPaneByName("level_icon");
+    if (oldIcon != nullptr) button.SetPaneVisibility("level_icon", false);
+
+    nw4r::lyt::Pane* rankPane = button.layout.GetPaneByName(MISSION_STAGE_RANK_PANE);
+    if (rankPane == nullptr) {
+        if (!reportedMissionRankPaneStatus) {
+            OS::Report("[MissionMode] MissionStage layout has no '%s' pane; rank layout override is not loaded\n",
+                       MISSION_STAGE_RANK_PANE);
+            reportedMissionRankPaneStatus = true;
+        }
+        return;
+    }
+
+    const bool hasRank = rating >= 1 && rating <= 6;
+    button.SetPaneVisibility(MISSION_STAGE_RANK_PANE, hasRank);
+    if (hasRank) {
+        Text::Info rankInfo;
+        memset(&rankInfo, 0, sizeof(rankInfo));
+        rankInfo.strings[0] = const_cast<wchar_t*>(MISSION_RANK_GLYPHS[rating]);
+        button.SetTextBoxMessage(MISSION_STAGE_RANK_PANE, BMG_TEXT, &rankInfo);
+        if (!reportedMissionRankPaneStatus) {
+            OS::Report("[MissionMode] MissionStage rank pane loaded; rating=%u glyph=0x%04x\n", rating,
+                       MISSION_RANK_GLYPHS[rating][0]);
+            reportedMissionRankPaneStatus = true;
+        }
+    }
+}
+
+static void SetMissionLevelRank(PushButton& button, u8 rating) {
+    nw4r::lyt::Pane* rankPane = button.layout.GetPaneByName(MISSION_STAGE_RANK_PANE);
+    if (rankPane == nullptr) {
+        if (!reportedMissionLevelRankPaneStatus) {
+            OS::Report("[MissionMode] MissionLevel layout has no '%s' pane; rank layout override is not loaded\n",
+                       MISSION_STAGE_RANK_PANE);
+            reportedMissionLevelRankPaneStatus = true;
+        }
+        return;
+    }
+
+    const bool hasRank = rating >= 1 && rating <= 6;
+    button.SetPaneVisibility(MISSION_STAGE_RANK_PANE, hasRank);
+    if (hasRank) {
+        Text::Info rankInfo;
+        memset(&rankInfo, 0, sizeof(rankInfo));
+        rankInfo.strings[0] = const_cast<wchar_t*>(MISSION_RANK_GLYPHS[rating]);
+        button.SetTextBoxMessage(MISSION_STAGE_RANK_PANE, BMG_TEXT, &rankInfo);
+        if (!reportedMissionLevelRankPaneStatus) {
+            OS::Report("[MissionMode] MissionLevel rank pane loaded; rating=%u glyph=0x%04x\n", rating,
+                       MISSION_RANK_GLYPHS[rating][0]);
+            reportedMissionLevelRankPaneStatus = true;
+        }
+    }
 }
 
 kmRuntimeUse(0x805f2e84);
@@ -174,6 +249,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
             swprintf(this->buttonNames[buttonId], 32, L"Level %u", buttonId + 1);
             info.strings[0] = this->buttonNames[buttonId];
             this->levelButtons[buttonId].SetMessage(UI::BMG_TEXT, &info);
+            SetMissionLevelRank(this->levelButtons[buttonId], this->GetLowestLevelRating(buttonId));
         } else {
             const u32 stageId = buttonId - BUTTON_COUNT;
             this->UpdateStageButtonMessage(selectedLevel, stageId);
@@ -245,6 +321,16 @@ class MissionSelectPage : public Pages::MenuInteractable {
         swprintf(this->buttonNames[BUTTON_COUNT + stageId], 32, L"%u-%u", level + 1, stageId + 1);
         info.strings[0] = this->buttonNames[BUTTON_COUNT + stageId];
         this->stageButtons[stageId].SetMessage(UI::BMG_TEXT, &info);
+
+        u8 missionId = 0;
+        u32 finishTimeMillis = 0;
+        u8 rating = 0;
+        if (this->GetMissionId(level, stageId, missionId) &&
+            Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating)) {
+            SetMissionStageRank(this->stageButtons[stageId], rating);
+        } else {
+            SetMissionStageRank(this->stageButtons[stageId], 0);
+        }
     }
 
     void UpdateStageButtonMessages(u32 level) {
@@ -261,6 +347,37 @@ class MissionSelectPage : public Pages::MenuInteractable {
     void SetStageBorderVisible(PushButton& button, bool visible) {
         for (u32 i = 0; i < sizeof(MISSION_STAGE_BORDER_PANES) / sizeof(MISSION_STAGE_BORDER_PANES[0]); ++i)
             button.SetPaneVisibility(MISSION_STAGE_BORDER_PANES[i], visible);
+    }
+
+    bool GetMissionId(u32 level, u32 stageId, u8& missionId) const {
+        if (this->missionUiFile == nullptr || level >= BUTTON_COUNT || stageId >= BUTTON_COUNT ||
+            this->missionUiSize < MISSION_UI_LEVEL_SIZE * BUTTON_COUNT)
+            return false;
+
+        const u32 uiOffset = level * MISSION_UI_LEVEL_SIZE + stageId * MISSION_UI_STAGE_SIZE;
+        if (uiOffset + sizeof(u16) > this->missionUiSize) return false;
+
+        const u16 mappedMissionId = ReadBigEndian16(this->missionUiFile + uiOffset);
+        if (static_cast<s16>(mappedMissionId) < 0) return false;
+
+        missionId = static_cast<u8>(mappedMissionId & 0xff);
+        return true;
+    }
+
+    u8 GetLowestLevelRating(u32 level) const {
+        u8 lowestRating = 0;
+        for (u32 stageId = 0; stageId < BUTTON_COUNT; ++stageId) {
+            u8 missionId = 0;
+            u32 finishTimeMillis = 0;
+            u8 rating = 0;
+            if (!this->GetMissionId(level, stageId, missionId) ||
+                !Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating) || rating == 0 ||
+                rating > 6)
+                continue;
+
+            if (lowestRating == 0 || rating < lowestRating) lowestRating = rating;
+        }
+        return lowestRating;
     }
 
     void ShowLevelSelect() {
@@ -318,10 +435,8 @@ class MissionSelectPage : public Pages::MenuInteractable {
             this->missionKmtSize < MISSION_KMT_HEADER_SIZE)
             return false;
 
-        const u32 uiOffset = selectedLevel * MISSION_UI_LEVEL_SIZE + selectedMission * MISSION_UI_STAGE_SIZE;
-        const u16 mappedMissionId = ReadBigEndian16(this->missionUiFile + uiOffset);
-        if (static_cast<s16>(mappedMissionId) < 0) return false;
-        const u16 missionId = mappedMissionId & 0xff;
+        u8 missionId = 0;
+        if (!this->GetMissionId(selectedLevel, selectedMission, missionId)) return false;
         const u16 missionCount = ReadBigEndian16(this->missionKmtFile + 0x08);
         const u32 missionOffset = MISSION_KMT_HEADER_SIZE + static_cast<u32>(missionId) * MISSION_KMT_ENTRY_SIZE;
         if (missionId >= missionCount || missionOffset + MISSION_KMT_ENTRY_SIZE > this->missionKmtSize)
