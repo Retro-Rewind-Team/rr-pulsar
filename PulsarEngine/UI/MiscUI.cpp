@@ -2,7 +2,6 @@
 #include <include/c_string.h>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceWifi.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuText.hpp>
-#include <MarioKartWii/UI/Page/Other/Title.hpp>
 #include <MarioKartWii/UI/Page/Other/Message.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <Settings/Settings.hpp>
@@ -97,15 +96,14 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage* startMsg, u32 bmgId, 
 }
 kmCall(0x807f8b7c, FixStartMessageFroom);
 
-static void DisplayDate(CtrlMenuPressStart* start) {
+static void DisplayDate(CtrlMenuPageTitleText* titleText) {
     Text::Info text;
 
     text.strings[0] = GIT_COMMIT;
 
-    start->Load();
-    start->SetMessage(UI::BMG_TEXT, &text);
+    titleText->SetMessage(UI::BMG_TEXT, &text);
 }
-kmCall(0x8063ac58, DisplayDate);
+kmCall(0x805eac64, DisplayDate);
 
 static void CustomRoomDenyText(Pages::MessageBoxTransparent* msgBox, u32 bmgId, const Text::Info* info) {
     if (Pulsar::System::sInstance->netMgr.denyType == Network::DENY_TYPE_BAD_PACK) bmgId = BMG_ROOM_DENY;
