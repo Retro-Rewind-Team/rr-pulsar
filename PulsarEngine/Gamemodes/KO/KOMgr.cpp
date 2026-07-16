@@ -27,7 +27,7 @@ Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false), isOff
         this->elimThresholdPlayers = elimThreshold == KOSETTING_ELIMTHRESHOLD_DISABLED ? 0 : elimThreshold + 2;
         this->elimChangeCount = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMCHANGE) + 1;
         this->baseLocPlayerCount = Racedata::sInstance->menusScenario.localPlayerCount;
-        SectionMgr::sInstance->sectionParams->vsRaceCount = offlineVSRaceCount;
+        this->ForceOfflineVSRaceCount();
     }
     for (int aid = 0; aid < 12; ++aid) {
         this->status[aid][0] = NORMAL;
@@ -38,6 +38,10 @@ Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false), isOff
 
 bool Mgr::IsOfflineVS() const {
     return this->isOfflineVS;
+}
+
+void Mgr::ForceOfflineVSRaceCount() const {
+    if (this->isOfflineVS) SectionMgr::sInstance->sectionParams->vsRaceCount = offlineVSRaceCount;
 }
 
 u32 Mgr::GetCurrentRaceNumber() const {

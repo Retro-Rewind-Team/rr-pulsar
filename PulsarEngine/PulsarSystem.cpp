@@ -579,8 +579,9 @@ s32 System::OnSceneEnter(Random& random) {
     System* self = System::sInstance;
     self->UpdateContext();
     if (self->IsContext(PULSAR_MODE_OTT)) OTT::AddGhostToVS();
-    if (self->IsContext(PULSAR_MODE_KO) && self->koMgr != nullptr && self->koMgr->IsOfflineVS() && GameScene::GetCurrent()->id == SCENE_ID_RACE) {
-        self->koMgr->PrepareOfflineVSNextRace();
+    if (self->IsContext(PULSAR_MODE_KO) && self->koMgr != nullptr && self->koMgr->IsOfflineVS()) {
+        self->koMgr->ForceOfflineVSRaceCount();
+        if (GameScene::GetCurrent()->id == SCENE_ID_RACE) self->koMgr->PrepareOfflineVSNextRace();
     }
     if (self->IsContext(PULSAR_HAW) && self->IsContext(PULSAR_MODE_KO) && GameScene::GetCurrent()->id == SCENE_ID_RACE && SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber > 0) {
         KO::HAWChangeData();
