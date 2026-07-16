@@ -1,4 +1,5 @@
 #include <Gamemodes/MissionMode/MissionModeRanking.hpp>
+#include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 
@@ -117,6 +118,7 @@ static bool SetRankFromTime(void* mission) {
             sMissionTimeRankFailure = false;
             sMissionRankReported = true;
             SetMissionValue(mission, MISSION_RANK_FIELD_OFFSET, rank);
+            SaveMissionResult(finishTimeMillis, rank);
             return true;
         }
     }
