@@ -42,8 +42,14 @@ static u8 GetBattleRoyaleLapCount(u8 baseLapCount, const System* system) {
 }
 
 kmRuntimeUse(0x808a9cc7);  // lap_number.brctr
+static void SetLapCounterResourceName(char first, char second) {
+    volatile char* name = reinterpret_cast<volatile char*>(kmRuntimeAddr(0x808a9cc7));
+    name[0] = first;
+    name[1] = second;
+}
+
 RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
-    kmRuntimeWrite16A(0x808a9cc7, 'la');
+    SetLapCounterResourceName('l', 'a');
     System* system = System::sInstance;
     Racedata* racedata = Racedata::sInstance;
     u8 lapCount = KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->lapCount;
@@ -79,7 +85,7 @@ RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
         racedata->racesScenario.settings.lapCount = lapCount;
         if (lapKoActive) racedata->menusScenario.settings.lapCount = lapCount;
         if (lapCount > 9) {
-            kmRuntimeWrite16A(0x808a9cc7, 'RR');  // RRp_number.brctr
+            SetLapCounterResourceName('R', 'R');  // RRp_number.brctr
         }
     }
     return new (player) RaceinfoPlayer(id, lapCount);

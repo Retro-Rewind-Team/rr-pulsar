@@ -15,7 +15,7 @@
 #include <MarioKartWii/RKNet/USER.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
-#include <runtimeWrite.hpp>
+#include <hooks.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <include/c_string.h>
 
@@ -442,7 +442,6 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
 }
 
 // Address found by B_squo, original idea by Zeraora, developed by ZPL
-kmRuntimeUse(0x806436a0);
 static u64 GetCurrentLicenseFriendCode() {
     RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return 0;
@@ -450,35 +449,17 @@ static u64 GetCurrentLicenseFriendCode() {
     return DWC::CreateFriendKey(&license.dwcAccUserData);
 }
 
-static bool WriteFetchedBadgeForFC(u64 friendCode) {
-    if (friendCode == 0 || !Settings::Mgr::IsCreated()) return false;
+static s32 GetFetchedBadgeForFC(u64 friendCode) {
+    if (friendCode == 0 || !Settings::Mgr::IsCreated()) return -1;
 
     const Settings::Mgr& settings = Settings::Mgr::Get();
     if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) != STREAMERMODE_DISABLED) {
-        return false;
+        return -1;
     }
-    if (IsAntBadgeFC(friendCode)) {
-        kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10 -> Ants
-        return true;
-    }
-    if (IsDevBadgeFC(friendCode)) {
-        kmRuntimeWrite32A(0x806436a0, 0x3860000B);  // li r3,11 -> Developers
-        return true;
-    }
-    if (IsDonoBadgeFC(friendCode)) {
-        kmRuntimeWrite32A(0x806436a0, 0x3860000C);  // li r3,12 -> Donators
-        return true;
-    }
-    return false;
-}
-
-static void TryApplyFetchedBadge() {
-    u64 friendCode = s_badgeFriendCode;
-    if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized &&
-        RKNet::USERHandler::sInstance->toSendPacket.fc != 0) {
-        friendCode = RKNet::USERHandler::sInstance->toSendPacket.fc;
-    }
-    WriteFetchedBadgeForFC(friendCode);
+    if (IsAntBadgeFC(friendCode)) return 10;
+    if (IsDevBadgeFC(friendCode)) return 11;
+    if (IsDonoBadgeFC(friendCode)) return 12;
+    return -1;
 }
 
 static const char* GetBadgeUrl(BadgeRequestKind kind) {
@@ -534,7 +515,6 @@ static void OnBadgeListDownloaded(s32 result, void* response, void* userdata) {
             } else if (ctx->kind == BADGE_REQUEST_DONO) {
                 s_donoBadgeFC = true;
             }
-            TryApplyFetchedBadge();
         }
     }
 
@@ -642,21 +622,20 @@ asmFunc AsmHook_WFCMainOnActivateBadgeRefresh() {
 }
 kmCall(0x8064bcd0, AsmHook_WFCMainOnActivateBadgeRefresh);
 
-static void DisplayOnlineRanking() {
-    kmRuntimeWrite32A(0x806436a0, 0x38600000);  // li r3,0
+static u8 GetOnlineRankingIcon(u8, u8) {
     if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
         const u64 myFc = RKNet::USERHandler::sInstance->toSendPacket.fc;
-        if (WriteFetchedBadgeForFC(myFc)) return;
+        const s32 badge = GetFetchedBadgeForFC(myFc);
+        if (badge >= 0) return static_cast<u8>(badge);
     }
 
 #ifdef BETA
-    kmRuntimeWrite32A(0x806436a0, 0x3860000A);  // li r3,10
-    return;
+    return 10;
 #endif
 
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING)) return;
+    if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING)) return 0;
     int rank = GetCurrentLicenseRankVS();
     if (rank < 0) rank = 0;
     const RKSYS::LicenseMgr& license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
@@ -666,10 +645,9 @@ static void DisplayOnlineRanking() {
         rank = 0;
     }
 
-    u32 opcode = 0x38600000 | (rank & 0xFFFF);
-    kmRuntimeWrite32A(0x806436a0, opcode);
+    return static_cast<u8>(rank);
 }
-static SectionLoadHook HookRankIcon(DisplayOnlineRanking);
+kmCall(0x806436a0, GetOnlineRankingIcon);
 
 }  // namespace Ranking
 }  // namespace Pulsar

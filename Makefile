@@ -56,10 +56,6 @@ build:
 build/kamek.o: $(KAMEK_H)/kamek.cpp | build
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-build/RuntimeWrite.o: $(KAMEK_H)/RuntimeWrite.cpp | build
-	@echo Compiling $<...
-	@$(CC) $(CFLAGS) -c -o $@ $<
-
 # C++ compilation
 build/%.o: $(PULSAR)/%.cpp | build
 	@echo Compiling C++ $<...
@@ -87,7 +83,7 @@ build/Network/RoomKey.o: .force
 
 .force:
 
-force_link: build/kamek.o build/RuntimeWrite.o $(OBJS)
+force_link: build/kamek.o $(OBJS)
 	@echo Linking...
 	@$(KAMEK) $^ -dynamic $(EXTERNALS) -output-combined=build/Code.pul -output-map=build/Code.map
 

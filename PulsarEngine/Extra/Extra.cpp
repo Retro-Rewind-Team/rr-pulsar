@@ -1,7 +1,6 @@
 #include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <hooks.hpp>
 #include <kamek.hpp>
-#include <runtimeWrite.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
@@ -16,12 +15,21 @@ namespace Codes {
 kmWrite32(0x80258184, 0x30);
 
 // Anti Online Item Delimiters [Ro]
+extern "C" u8 sBlockOnlineItemDelimiters = true;
 asmFunc GetItemDelimiterShock() {
     ASM(
         nofralloc;
-        loc_0x0 : mflr r12;
+        mflr r12;
         cmpwi r7, 0x1;
         bne + validLightning;
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        lis r11, sBlockOnlineItemDelimiters @ha;
+        lbz r11, sBlockOnlineItemDelimiters @l(r11);
+        cmpwi r11, 0;
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
+        beq + validLightning;
         addi r12, r12, 0x12C;
         mtlr r12;
         blr;
@@ -32,9 +40,17 @@ asmFunc GetItemDelimiterShock() {
 asmFunc GetItemDelimiterBlooper() {
     ASM(
         nofralloc;
-        loc_0x0 : mflr r12;
+        mflr r12;
         cmpwi r7, 0x1;
         bne + validBlooper;
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        lis r11, sBlockOnlineItemDelimiters @ha;
+        lbz r11, sBlockOnlineItemDelimiters @l(r11);
+        cmpwi r11, 0;
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
+        beq + validBlooper;
         addi r12, r12, 0x1A8;
         mtlr r12;
         blr;
@@ -45,9 +61,17 @@ asmFunc GetItemDelimiterBlooper() {
 asmFunc GetItemDelimiterPOW() {
     ASM(
         nofralloc;
-        loc_0x0 : mflr r12;
+        mflr r12;
         cmpwi r7, 0x1;
         bne + validPOW;
+        stwu r1, -0x10(r1);
+        stw r11, 0x8(r1);
+        lis r11, sBlockOnlineItemDelimiters @ha;
+        lbz r11, sBlockOnlineItemDelimiters @l(r11);
+        cmpwi r11, 0;
+        lwz r11, 0x8(r1);
+        addi r1, r1, 0x10;
+        beq + validPOW;
         addi r12, r12, 0x48;
         mtlr r12;
         blr;
@@ -55,33 +79,34 @@ asmFunc GetItemDelimiterPOW() {
         blr;)
 }
 
-kmRuntimeUse(0x807B7C34);
-kmRuntimeUse(0x807A81C0);
-kmRuntimeUse(0x807B1B44);
-kmRuntimeUse(0x807BB380);
-kmRuntimeUse(0x807BB384);
 void EnableDelimitersForAllItems() {
-    kmRuntimeCallA(0x807B7C34, GetItemDelimiterShock);
-    kmRuntimeCallA(0x807A81C0, GetItemDelimiterBlooper);
-    kmRuntimeCallA(0x807B1B44, GetItemDelimiterPOW);
-
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
                                                    controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-    if (isFroom || Pulsar::ItemRain::IsItemRainEnabled()) {
-        kmRuntimeWrite32A(0x807B7C34, 0x1fa300f0);
-        kmRuntimeWrite32A(0x807A81C0, 0x39610050);
-        kmRuntimeWrite32A(0x807B1B44, 0x7c7e1b78);
-
-        // Anti Online Item Delimiter check (Usage)
-        kmRuntimeWrite32A(0x807BB380, 0x38600000);  // li r3, 0
-        kmRuntimeWrite32A(0x807BB384, 0x4E800020);  // blr
-    } else {
-        kmRuntimeWrite32A(0x807BB380, 0x7C0500D0);  // neg r0, r5
-        kmRuntimeWrite32A(0x807BB384, 0x2C840006);  // cmpwi cr1, r4, 6
-    }
+    sBlockOnlineItemDelimiters = !isFroom && !Pulsar::ItemRain::IsItemRainEnabled();
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
+kmCall(0x807B7C34, GetItemDelimiterShock);
+kmCall(0x807A81C0, GetItemDelimiterBlooper);
+kmCall(0x807B1B44, GetItemDelimiterPOW);
+
+static bool CanItemNotBeObtained(Item::ItemSlotData* slotData, ItemObjId objId, bool hasTimer) {
+    if (!sBlockOnlineItemDelimiters || !hasTimer) return false;
+
+    switch (objId) {
+        case OBJ_LIGHTNING:
+            return slotData->itemSpawnTimers[0] >= 300;
+        case OBJ_BLUE_SHELL:
+            return slotData->itemSpawnTimers[1] >= 300;
+        case OBJ_BLOOPER:
+            return slotData->itemSpawnTimers[2] >= 300;
+        case OBJ_POW_BLOCK:
+            return slotData->itemSpawnTimers[3] >= 300;
+        default:
+            return false;
+    }
+}
+kmBranch(0x807BB380, CanItemNotBeObtained);
 
 // Blue Shell Cooldown [ZPL]
 extern "C" Item::ItemSlotData* itemSlotData;

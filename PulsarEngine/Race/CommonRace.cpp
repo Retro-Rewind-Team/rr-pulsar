@@ -3,6 +3,7 @@
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
+#include <Network/Rating/PlayerRating.hpp>
 
 namespace Pulsar {
 // For hooks which are shared by different things
@@ -24,7 +25,7 @@ void UpdatePoints(RacedataScenario& scenario) {
             racedata->racesScenario.playerCount--;
         }
     }
-    scenario.UpdatePoints();
+    PointRating::UpdatePoints(&scenario);
     racedata->menusScenario.settings.gametype = oldType;
 }
 kmCall(0x8085c878, UpdatePoints);
