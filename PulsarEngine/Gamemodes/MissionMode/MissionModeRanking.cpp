@@ -44,6 +44,25 @@ static bool IsMissionVSObjective() {
     return objective == 1 || objective == 2;
 }
 
+typedef void (*MissionEndRaceFn)(void*);
+kmRuntimeUse(0x80535de8);
+
+static void FixMissionEndRace(void* raceMode) {
+    if (IsMissionVSObjective() && Raceinfo::sInstance != 0 &&
+        Raceinfo::sInstance->players != 0 && Raceinfo::sInstance->players[0] != 0 &&
+        Raceinfo::sInstance->players[0]->position != 1) {
+        SetMissionState(raceMode);
+        sMissionTimeRankFailure = true;
+        SetMissionValue(raceMode, MISSION_STATUS_OFFSET, 2);
+    }
+
+    static const MissionEndRaceFn endRace =
+        reinterpret_cast<MissionEndRaceFn>(kmRuntimeAddr(0x80535de8));
+    endRace(raceMode);
+}
+
+kmCall(0x8053e118, FixMissionEndRace);
+
 typedef void (*LapRunCalcMissionFn)(void*);
 kmRuntimeUse(0x8053e018);
 
