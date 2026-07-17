@@ -13,11 +13,35 @@ static const u32 MISSION_ITEM_MODE_OFFSET = 0x2E;
 static const u32 MISSION_FEATURE_FLAGS_OFFSET = 0x2F;
 static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
 static const u32 MISSION_SCORE_REQUIRED_OFFSET = 0x08;
+static const u32 MISSION_LAP_COUNT_MIN = 1;
+static const u32 MISSION_LAP_COUNT_MAX = 9;
+static const u32 MISSION_COMPETITION_MODE_FLAG = 1 << 2;
 static const u32 MISSION_CUSTOM_ITEMS_OFFSET = 0x54;
 static const u32 MISSION_ENGINE_OFFSET = 0x07;
 static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
 bool IsMissionScenario(const RacedataScenario& scenario) {
     return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
+}
+
+static u32 GetMissionValue(const void* mission, u32 offset) {
+    return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + offset);
+}
+
+static u16 GetMissionU16(const void* mission, u32 offset) {
+    const u8* const bytes = reinterpret_cast<const u8*>(mission) + offset;
+    return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
+}
+
+u8 GetMissionLapCount(const RacedataScenario& scenario) {
+    if (!IsMissionScenario(scenario)) return 0;
+
+    const u16 objective = GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET);
+    if (objective != 1 && objective != 2) return 0;
+
+    const u32 requestedLaps = GetMissionValue(scenario.mission, MISSION_SCORE_REQUIRED_OFFSET);
+    if (requestedLaps < MISSION_LAP_COUNT_MIN || requestedLaps > MISSION_LAP_COUNT_MAX)
+        return 0;
+    return static_cast<u8>(requestedLaps);
 }
 
 bool HasMissionFeature(const RacedataScenario& scenario, MissionFeatureFlag feature) {
@@ -42,7 +66,10 @@ void ApplyMissionScenarioSettings(RacedataScenario& scenario) {
 
     const u8 flags = scenario.mission[MISSION_FEATURE_FLAGS_OFFSET];
     const u8 engine = scenario.mission[MISSION_ENGINE_OFFSET];
-    
+
+    scenario.settings.modeFlags &= ~MISSION_COMPETITION_MODE_FLAG;
+    scenario.settings.lapCount = GetMissionLapCount(scenario);
+
     if ((flags & ENGINE_500CC) != 0) {
         scenario.settings.engineClass = CC_50;
     } else if (engine == 2) {
@@ -54,6 +81,30 @@ void ApplyMissionScenarioSettings(RacedataScenario& scenario) {
     if ((flags & ITEM_MODE_OVERRIDE) == 0 || GetMissionItemMode(scenario) == GAMEMODE_DEFAULT)
         scenario.settings.itemMode = ITEMS_BALANCED;
 }
+
+typedef void (*RaceManagerPlayerEndLapFn)(void*);
+kmRuntimeUse(0x805349b8);
+
+static void MissionRaceManagerPlayerEndLap(void* player) {
+    RacedataScenario* scenario = nullptr;
+    if (Racedata::sInstance != nullptr)
+        scenario = &Racedata::sInstance->racesScenario;
+
+    const u8 requestedLaps = scenario != nullptr ? GetMissionLapCount(*scenario) : 0;
+    const bool enabledCompetitionPath = scenario != nullptr && requestedLaps != 0 &&
+                                        (scenario->settings.modeFlags & MISSION_COMPETITION_MODE_FLAG) == 0;
+    const u32 oldModeFlags = enabledCompetitionPath ? scenario->settings.modeFlags : 0;
+    if (enabledCompetitionPath) scenario->settings.modeFlags |= MISSION_COMPETITION_MODE_FLAG;
+
+    static const RaceManagerPlayerEndLapFn sRaceManagerPlayerEndLap =
+        reinterpret_cast<RaceManagerPlayerEndLapFn>(kmRuntimeAddr(0x805349b8));
+    sRaceManagerPlayerEndLap(player);
+
+    if (enabledCompetitionPath) scenario->settings.modeFlags = oldModeFlags;
+}
+
+kmCall(0x80534fbc, MissionRaceManagerPlayerEndLap);
+kmCall(0x805350d4, MissionRaceManagerPlayerEndLap);
 
 static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
     return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) |
@@ -108,15 +159,6 @@ static void SetMissionStartPosition(Raceinfo* raceinfo, Vec3* position, Vec3* an
 
 kmCall(0x8058ee78, SetMissionStartPosition);
 kmCall(0x805a70e8, SetMissionStartPosition);
-
-static u32 GetMissionValue(const void* mission, u32 offset) {
-    return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + offset);
-}
-
-static u16 GetMissionU16(const void* mission, u32 offset) {
-    const u8* const bytes = reinterpret_cast<const u8*>(mission) + offset;
-    return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
-}
 
 bool IsMissionScoreObjective(const RacedataScenario& scenario) {
     if (!IsMissionScenario(scenario)) return false;
