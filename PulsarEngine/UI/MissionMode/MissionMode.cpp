@@ -8,7 +8,7 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
-#include <core/rvl/OS/OS.hpp>
+#include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -28,9 +28,11 @@ static const u32 MISSION_KMT_ENTRY_SIZE = 0x70;
 static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
 static const u32 BACK_MODEL_CONTROL_OFFSET = 0x1C8;
+static const u32 BMG_OK = 0x7D0;
+// RaceRSARPlayer::PlayEndRaceMenuButtonClickSound() plays this sound for the
+// vanilla Time Trial restart action.
+static const u32 MISSION_PAUSE_END_MENU_SOUND_ID = 0xD5;
 static const char* const MISSION_STAGE_RANK_PANE = "mission_rank";
-static bool reportedMissionRankPaneStatus;
-static bool reportedMissionLevelRankPaneStatus;
 
 // These are the private-font glyphs used by Common.bmg for the GP ranks.
 // The BMG rank messages wrap these as a "1 char" escape, but passing the
@@ -53,6 +55,64 @@ static const char* const MISSION_STAGE_BORDER_PANES[] = {
     "color_base",    "fuchi_black",   "fuchi_pattern", "color_down",   "shadow_top_r",
     "shadow_top_l",  "shadow_botom_r", "shadow_botom_l", "hight_light_l", "hight_light_r",
     "text_light_01",
+};
+
+class MissionPausePage : public Pages::RaceMenu {
+   public:
+    MissionPausePage() {
+        this->onButtonClickHandler.subject = this;
+        this->onButtonClickHandler.ptmf = &MissionPausePage::OnButtonClick;
+    }
+
+    int GetMessageBMG() const override { return 0; }
+    u32 GetButtonCount() const override { return BUTTON_COUNT; }
+
+    const u32* GetVariantsIdxArray() const override {
+        // RaceMenu::OnInit uses this array for both the BRCTR variant and the
+        // button ID.  18 is ButtonChangeMission in the game's variant table.
+        static const u32 variants[BUTTON_COUNT] = {0, 2, 18, 1};
+        return variants;
+    }
+
+    bool IsPausePage() const override { return true; }
+    const char* GetButtonsBRCTRName() const override { return "PauseMenuMR"; }
+
+   private:
+    static const u32 BUTTON_COUNT = 4;
+
+    void OnButtonClick(PushButton& button, u32 hudSlotId) {
+        const u32 buttonId = static_cast<u32>(button.buttonId);
+        const float delay = button.GetAnimationFrameSize();
+
+        switch (buttonId) {
+            case 0:  // Continue
+                button.clickSoundId = 0;
+                this->EndStateAnimated(1, delay);
+                if (Pages::RacePauseMgr::sInstance != nullptr)
+                    Pages::RacePauseMgr::sInstance->RequestUnpause();
+                return;
+
+            case 2:  // Restart
+                button.clickSoundId = MISSION_PAUSE_END_MENU_SOUND_ID;
+                this->ChangeSectionBySceneChange(SECTION_MISSION_MODE, 0, delay);
+                return;
+
+            case 18:  // Choose Mission
+                button.clickSoundId = MISSION_PAUSE_END_MENU_SOUND_ID;
+                this->ChangeSectionBySceneChange(SECTION_SINGLE_P_MR_CHOOSE_MISSION, 0, delay);
+                return;
+
+            case 1:  // Quit
+                // The vanilla handler records this page as the return target
+                // and replaces it with PAGE_QUIT_CONFIRMATION. That page then
+                // owns the confirmation text, sounds, and final transition.
+                this->Pages::RaceMenu::OnButtonClick(button, hudSlotId);
+                return;
+
+            default:
+                return;
+        }
+    }
 };
 
 static u16 ReadBigEndian16(const u8* data) {
@@ -95,11 +155,6 @@ static void SetMissionStageRank(PushButton& button, u8 rating) {
 
     nw4r::lyt::Pane* rankPane = button.layout.GetPaneByName(MISSION_STAGE_RANK_PANE);
     if (rankPane == nullptr) {
-        if (!reportedMissionRankPaneStatus) {
-            OS::Report("[MissionMode] MissionStage layout has no '%s' pane; rank layout override is not loaded\n",
-                       MISSION_STAGE_RANK_PANE);
-            reportedMissionRankPaneStatus = true;
-        }
         return;
     }
 
@@ -110,22 +165,12 @@ static void SetMissionStageRank(PushButton& button, u8 rating) {
         memset(&rankInfo, 0, sizeof(rankInfo));
         rankInfo.strings[0] = const_cast<wchar_t*>(MISSION_RANK_GLYPHS[rating]);
         button.SetTextBoxMessage(MISSION_STAGE_RANK_PANE, BMG_TEXT, &rankInfo);
-        if (!reportedMissionRankPaneStatus) {
-            OS::Report("[MissionMode] MissionStage rank pane loaded; rating=%u glyph=0x%04x\n", rating,
-                       MISSION_RANK_GLYPHS[rating][0]);
-            reportedMissionRankPaneStatus = true;
-        }
     }
 }
 
 static void SetMissionLevelRank(PushButton& button, u8 rating) {
     nw4r::lyt::Pane* rankPane = button.layout.GetPaneByName(MISSION_STAGE_RANK_PANE);
     if (rankPane == nullptr) {
-        if (!reportedMissionLevelRankPaneStatus) {
-            OS::Report("[MissionMode] MissionLevel layout has no '%s' pane; rank layout override is not loaded\n",
-                       MISSION_STAGE_RANK_PANE);
-            reportedMissionLevelRankPaneStatus = true;
-        }
         return;
     }
 
@@ -136,11 +181,6 @@ static void SetMissionLevelRank(PushButton& button, u8 rating) {
         memset(&rankInfo, 0, sizeof(rankInfo));
         rankInfo.strings[0] = const_cast<wchar_t*>(MISSION_RANK_GLYPHS[rating]);
         button.SetTextBoxMessage(MISSION_STAGE_RANK_PANE, BMG_TEXT, &rankInfo);
-        if (!reportedMissionLevelRankPaneStatus) {
-            OS::Report("[MissionMode] MissionLevel rank pane loaded; rating=%u glyph=0x%04x\n", rating,
-                       MISSION_RANK_GLYPHS[rating][0]);
-            reportedMissionLevelRankPaneStatus = true;
-        }
     }
 }
 
@@ -279,6 +319,10 @@ class MissionSelectPage : public Pages::MenuInteractable {
         }
         ExpSection* section = ExpSection::GetSection();
         if (section != nullptr) SetMissionInfoSelection(*section, selectedLevel, selectedMission);
+        // The information page returns to this page through the normal menu
+        // stack. Preserve the stage-selection subpage so B restores the
+        // button set the player came from instead of resetting to levels.
+        returnToStageSelect = true;
         this->LoadNextPageById(PAGE_MISSION_INFORMATION_PROMPT, button);
     }
 
@@ -366,18 +410,21 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
     u8 GetLowestLevelRating(u32 level) const {
         u8 lowestRating = 0;
+        bool hasMissions = false;
         for (u32 stageId = 0; stageId < BUTTON_COUNT; ++stageId) {
             u8 missionId = 0;
             u32 finishTimeMillis = 0;
             u8 rating = 0;
-            if (!this->GetMissionId(level, stageId, missionId) ||
-                !Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating) || rating == 0 ||
+            if (!this->GetMissionId(level, stageId, missionId)) continue;
+
+            hasMissions = true;
+            if (!Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating) || rating == 0 ||
                 rating > 6)
-                continue;
+                return 0;
 
             if (lowestRating == 0 || rating < lowestRating) lowestRating = rating;
         }
-        return lowestRating;
+        return hasMissions ? lowestRating : 0;
     }
 
     void ShowLevelSelect() {
@@ -412,8 +459,8 @@ class MissionSelectPage : public Pages::MenuInteractable {
             ResetMissionButtonFreeText(this->stageButtons[i]);
         }
 
-        this->stageButtons[0].Select(0);
         this->UpdateButtonMessages();
+        this->stageButtons[selectedMission % BUTTON_COUNT].Select(0);
     }
 
     void LoadMissionResources() {
@@ -478,8 +525,49 @@ static void InstallMissionPage(ExpSection& section, PageId id, Page* page) {
 
 }  // namespace
 
+Page* CreateMissionPausePage() { return new MissionPausePage(); }
+
 void PrepareMissionStageSelectReturn() {
     returnToStageSelect = true;
+}
+
+void ConfigureMissionInformationPage(Page& page) {
+    if (page.pageId != PAGE_MISSION_INFORMATION_PROMPT) return;
+
+    PushButton* buttons[2] = {};
+    u32 buttonCount = 0;
+    for (u32 i = 0; i < page.controlGroup.controlCount; ++i) {
+        UIControl* control = page.controlGroup.GetControl(i);
+        if (control == nullptr || strcmp(control->GetClassName(), "PushButton") != 0) continue;
+        if (buttonCount < sizeof(buttons) / sizeof(buttons[0]))
+            buttons[buttonCount++] = static_cast<PushButton*>(control);
+    }
+
+    if (buttonCount == 0) return;
+
+    // MissionInstruction.brctr places ButtonOK above ButtonTutorial. The
+    // tutorial page has no movie resources in the distribution and its stock
+    // handler crashes when selected, so leave only the OK action reachable.
+    PushButton* okButton = buttons[0];
+    PushButton* tutorialButton = nullptr;
+    if (buttonCount > 1) {
+        if (buttons[1]->positionAndscale[0].position.y > okButton->positionAndscale[0].position.y) {
+            tutorialButton = okButton;
+            okButton = buttons[1];
+        } else {
+            tutorialButton = buttons[1];
+        }
+    }
+
+    okButton->SetMessage(BMG_OK);
+    okButton->isHidden = false;
+    okButton->manipulator.inaccessible = false;
+    okButton->Select(0);
+
+    if (tutorialButton != nullptr) {
+        tutorialButton->isHidden = true;
+        tutorialButton->manipulator.inaccessible = true;
+    }
 }
 
 static Pages::RaceHUD* SetMissionHudNextPage(Pages::RaceHUD* hud) {
