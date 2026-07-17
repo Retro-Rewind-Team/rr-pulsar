@@ -437,6 +437,7 @@ void DestroyAllReloadedMenuDriverModels() {
 void SyncReloadedMenuDriverModelHeaps(MenuDriverModel *models) {
     const GameScene *scene = GameScene::GetCurrent();
     if (reloadedMenuDriverModelSceneOwner != scene) {
+        if (reloadedMenuDriverModelSceneOwner != nullptr) DestroyAllReloadedMenuDriverModels();
         ForgetReloadedMenuDriverModelHeaps();
         reloadedMenuDriverModelSceneOwner = scene;
     }
@@ -563,7 +564,8 @@ ToadetteHair *LoadMenuDriverToadetteHair(void *handle, EGG::ExpHeap *heap, Model
 
 bool IsLoadedMenuDriverModelReady(const ModelDirector *model) {
     return model != nullptr && (model->bitfield & 0x100000) != 0 && model->scnMdlEx[0] != nullptr &&
-           model->scnMdlEx[0]->scnObj != nullptr && model->scnMdlEx[1] != nullptr && model->scnMdlEx[1]->scnObj != nullptr;
+           model->scnMdlEx[0]->scnObj != nullptr && model->scnMdlEx[1] != nullptr && model->scnMdlEx[1]->scnObj != nullptr &&
+           model->modelTransformator != nullptr && reinterpret_cast<u32>(model->modelTransformator) >= 0x80000000;
 }
 
 // Build a replacement menu model in an isolated heap and restore scene allocators.

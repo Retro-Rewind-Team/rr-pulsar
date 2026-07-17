@@ -295,6 +295,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
             return;
         }
 
+        MissionModel::RestoreMenuCombo();
         this->backButton.SelectFocus();
         this->LoadPrevPage(this->backButton);
     }
@@ -547,6 +548,47 @@ bool IsBTMRModeButton(const Pages::SinglePlayer* page, u32 id) { return id == 3 
 
 u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer* page, u32 id) { return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON; }
 
+static bool IsMissionMenuTTButton(const Pages::SinglePlayer* page, u32 id) {
+    return id == 1 || (id > 3 && id < GetMissionButtonId(page));
+}
+
+static void LeaveMissionMenuMode(const Pages::SinglePlayer* page, u32 id) {
+    if (Racedata::sInstance == nullptr)
+        return;
+
+    GameMode mode;
+    switch (id) {
+        case 0:
+            mode = MODE_GRAND_PRIX;
+            break;
+        case 2:
+            mode = MODE_VS_RACE;
+            break;
+        case 3:
+            mode = MODE_BATTLE;
+            break;
+        default:
+            if (!IsMissionMenuTTButton(page, id)) return;
+            mode = MODE_TIME_TRIAL;
+            break;
+    }
+
+    RacedataScenario* scenarios[2] = {
+        &Racedata::sInstance->menusScenario,
+        &Racedata::sInstance->racesScenario,
+    };
+    for (u32 i = 0; i < sizeof(scenarios) / sizeof(scenarios[0]); ++i) {
+        RacedataScenario& scenario = *scenarios[i];
+        if (!::Pulsar::MissionMode::IsMissionScenario(scenario)) continue;
+
+        scenario.settings.gamemode = mode;
+        memset(scenario.mission, 0, sizeof(scenario.mission));
+        for (u32 playerId = 1; playerId < 12; ++playerId)
+            scenario.players[playerId].playerType = PLAYER_NONE;
+    }
+    MissionModel::Reset();
+}
+
 void CreateSinglePlayerPages(ExpSection& section) {
     if (section.pages[PAGE_SINGLE_PLAYER_MENU] == nullptr)
         section.CreateAndInitPage(section, PAGE_SINGLE_PLAYER_MENU);
@@ -571,10 +613,15 @@ void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId
 }
 
 bool OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
-    if (!IsMissionButton(page, button.buttonId)) return false;
+    if (!IsMissionButton(page, button.buttonId)) {
+        MissionModel::RestoreMenuCombo();
+        LeaveMissionMenuMode(page, button.buttonId);
+        return false;
+    }
 
     selectedLevel = 0;
     selectedMission = 0;
+    MissionModel::SaveMenuCombo();
     MissionModel::Reset();
     Pulsar::MissionMode::PrepareMenuScenario();
     page->LoadNextPageById(PAGE_MISSION_LEVEL_SELECT_UNUSED, button);
