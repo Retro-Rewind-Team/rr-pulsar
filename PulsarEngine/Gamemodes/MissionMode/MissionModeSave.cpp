@@ -3,7 +3,6 @@
 #include <PulsarSystem.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
-#include <core/rvl/OS/OS.hpp>
 
 namespace Pulsar {
 namespace MissionMode {
@@ -56,51 +55,24 @@ static bool GetCurrentLicenseId(u32& licenseId) {
     return true;
 }
 
-static void ReportContents(const char* source) {
-    u32 populatedEntries = 0;
-    OS::Report("[RRMission] %s contents:\n", source);
-    for (u32 licenseId = 0; licenseId < MAX_LICENSES; ++licenseId) {
-        for (u32 missionId = 0; missionId < MAX_MISSIONS; ++missionId) {
-            const MissionEntry& entry = sMissions[licenseId][missionId];
-            if (!entry.hasData) continue;
-
-            ++populatedEntries;
-            OS::Report("[RRMission] license=%u mission=%u finishTimeMillis=%u rating=%u\n", licenseId,
-                       missionId, entry.finishTimeMillis, entry.rating);
-        }
-    }
-    if (populatedEntries == 0) OS::Report("[RRMission] no populated entries\n");
-}
-
 static void Load() {
     if (sLoaded) return;
     sLoaded = true;
 
     IO* io = IO::sInstance;
     const char* path = GetPath();
-    OS::Report("[RRMission] loading path=%s\n", path != nullptr ? path : "<null>");
-    if (!io || !path) {
-        OS::Report("[RRMission] cannot load: IO or path unavailable\n");
-        return;
-    }
-    if (!io->OpenFile(path, FILE_MODE_READ)) {
-        OS::Report("[RRMission] file does not exist or could not be opened\n");
-        return;
-    }
+    if (!io || !path) return;
+    if (!io->OpenFile(path, FILE_MODE_READ)) return;
 
     union {
         PackedHeader h;
         u8 pad[32];
     } hBuf __attribute__((aligned(32))) = {};
     if (io->Read(sizeof(PackedHeader), &hBuf.h) != sizeof(PackedHeader)) {
-        OS::Report("[RRMission] file is too short for a header\n");
         io->Close();
         return;
     }
-    OS::Report("[RRMission] header magic=0x%08x version=%u count=%u\n", hBuf.h.magic, hBuf.h.version,
-               hBuf.h.count);
     if (hBuf.h.magic != MAGIC || hBuf.h.version != VERSION) {
-        OS::Report("[RRMission] invalid header; expected magic=0x%08x version=%u\n", MAGIC, VERSION);
         io->Close();
         return;
     }
@@ -113,18 +85,13 @@ static void Load() {
             u8 pad[32];
         } eBuf __attribute__((aligned(32))) = {};
         if (io->Read(sizeof(PackedEntry), &eBuf.e) != (s32)sizeof(PackedEntry)) {
-            OS::Report("[RRMission] entry read stopped at index=%u\n", i);
             break;
         }
 
         const u32 licenseId = i / MAX_MISSIONS;
         const u32 missionId = i % MAX_MISSIONS;
         if ((eBuf.e.flags & 1) == 0) continue;
-        if (eBuf.e.rating > MAX_RATING) {
-            OS::Report("[RRMission] invalid entry license=%u mission=%u finishTimeMillis=%u rating=%u flags=0x%02x\n",
-                       licenseId, missionId, eBuf.e.finishTimeMillis, eBuf.e.rating, eBuf.e.flags);
-            continue;
-        }
+        if (eBuf.e.rating > MAX_RATING) continue;
 
         MissionEntry& entry = sMissions[licenseId][missionId];
         entry.finishTimeMillis = eBuf.e.finishTimeMillis;
@@ -132,7 +99,6 @@ static void Load() {
         entry.hasData = 1;
     }
     io->Close();
-    ReportContents("loaded");
 }
 
 static void Save() {
@@ -161,13 +127,10 @@ static void Save() {
     }
 
     if (!io->OpenFile(path, FILE_MODE_WRITE) && !io->CreateAndOpen(path, FILE_MODE_WRITE)) {
-        OS::Report("[RRMission] could not open file for saving: %s\n", path);
         return;
     }
-    const s32 written = io->Overwrite(sizeof(file), &file);
+    io->Overwrite(sizeof(file), &file);
     io->Close();
-    OS::Report("[RRMission] saved path=%s bytes=%u result=%d\n", path, sizeof(file), written);
-    ReportContents("saved");
 }
 
 static u8 ConvertMissionRankToRating(u32 missionRank) {

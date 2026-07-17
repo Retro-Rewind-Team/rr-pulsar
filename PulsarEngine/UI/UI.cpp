@@ -226,6 +226,12 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
         case PAGE_VOTE:
             page = new ExpVotePage;
             break;
+        case PAGE_TOURNAMENT_PAUSE_MENU:
+            if (self.sectionId == SECTION_MISSION_MODE)
+                page = MissionMode::CreateMissionPausePage();
+            else
+                page = self.CreatePageById(initId);
+            break;
             // PULPAGES
         case ChooseNextTrack::id:
             initId = ChooseNextTrack::fakeId;
@@ -312,6 +318,8 @@ Page* ExpSection::AddPageLayerAnimatedReturnTopLayer(ExpSection& self, u32 id, u
     self.activePages[++self.layerCount] = page;
     if (animDirection != 0xffffffff) page->animationDirection = animDirection;
     page->Activate();
+    if (id == PAGE_MISSION_INFORMATION_PROMPT)
+        Pulsar::UI::MissionMode::ConfigureMissionInformationPage(*page);
     return page;
 }
 kmBranch(0x80622e00, ExpSection::AddPageLayerAnimatedReturnTopLayer);
