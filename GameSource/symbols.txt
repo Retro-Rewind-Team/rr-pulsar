@@ -2603,3 +2603,4 @@ GetKTPTHolder__8RaceinfoFUc = 0x805365c8
 CalcCoordinates__Q23KMP13Holder<4KTPT>FR4Vec3R4Vec3UiUi = 0x80514b24
 RipFromDisc__13SystemManagerFPCcPQ23EGG4HeapbPUi = 0x8000b5c8
 RequestBackModel__12MenuModelMgrF13BackModelType = 0x8059e598
+OnButtonClick__Q25Pages8RaceMenuFR10PushButtonUi = 0x8085a0f4
