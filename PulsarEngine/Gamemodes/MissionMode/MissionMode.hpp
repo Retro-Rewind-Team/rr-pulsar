@@ -24,6 +24,6 @@ void ApplyMissionScenarioSettings(RacedataScenario& scenario);
 void PopulateMissionCPUs(RacedataScenario& scenario);
 void PrepareMenuScenario();
 
-}  // namespace MissionMode
-}  // namespace Pulsar
+}
+}
 #endif

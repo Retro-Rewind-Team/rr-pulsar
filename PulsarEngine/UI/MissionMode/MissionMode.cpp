@@ -29,22 +29,17 @@ static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
 static const u32 BACK_MODEL_CONTROL_OFFSET = 0x1C8;
 static const u32 BMG_OK = 0x7D0;
-// RaceRSARPlayer::PlayEndRaceMenuButtonClickSound() plays this sound for the
-// vanilla Time Trial restart action.
 static const u32 MISSION_PAUSE_END_MENU_SOUND_ID = 0xD5;
 static const char* const MISSION_STAGE_RANK_PANE = "mission_rank";
 
-// These are the private-font glyphs used by Common.bmg for the GP ranks.
-// The BMG rank messages wrap these as a "1 char" escape, but passing the
-// character directly avoids the rank-message lookup path for this textbox.
 static const wchar_t MISSION_RANK_GLYPHS[7][2] = {
     {0, 0},
-    {0xF07A, 0},  // C
-    {0xF079, 0},  // B
-    {0xF078, 0},  // A
-    {0xF061, 0},  // 1 star
-    {0xF062, 0},  // 2 stars
-    {0xF063, 0},  // 3 stars
+    {0xF07A, 0},
+    {0xF079, 0},
+    {0xF078, 0},
+    {0xF061, 0},
+    {0xF062, 0},
+    {0xF063, 0},
 };
 
 static const char* const MISSION_LEVEL_BUTTON_VARIANTS[8] = {
@@ -68,8 +63,6 @@ class MissionPausePage : public Pages::RaceMenu {
     u32 GetButtonCount() const override { return BUTTON_COUNT; }
 
     const u32* GetVariantsIdxArray() const override {
-        // RaceMenu::OnInit uses this array for both the BRCTR variant and the
-        // button ID.  18 is ButtonChangeMission in the game's variant table.
         static const u32 variants[BUTTON_COUNT] = {0, 2, 18, 1};
         return variants;
     }
@@ -85,27 +78,24 @@ class MissionPausePage : public Pages::RaceMenu {
         const float delay = button.GetAnimationFrameSize();
 
         switch (buttonId) {
-            case 0:  // Continue
+            case 0:
                 button.clickSoundId = 0;
                 this->EndStateAnimated(1, delay);
                 if (Pages::RacePauseMgr::sInstance != nullptr)
                     Pages::RacePauseMgr::sInstance->RequestUnpause();
                 return;
 
-            case 2:  // Restart
+            case 2:
                 button.clickSoundId = MISSION_PAUSE_END_MENU_SOUND_ID;
                 this->ChangeSectionBySceneChange(SECTION_MISSION_MODE, 0, delay);
                 return;
 
-            case 18:  // Choose Mission
+            case 18:
                 button.clickSoundId = MISSION_PAUSE_END_MENU_SOUND_ID;
                 this->ChangeSectionBySceneChange(SECTION_SINGLE_P_MR_CHOOSE_MISSION, 0, delay);
                 return;
 
-            case 1:  // Quit
-                // The vanilla handler records this page as the return target
-                // and replaces it with PAGE_QUIT_CONFIRMATION. That page then
-                // owns the confirmation text, sounds, and final transition.
+            case 1:
                 this->Pages::RaceMenu::OnButtonClick(button, hudSlotId);
                 return;
 
@@ -148,8 +138,6 @@ static void ResetMissionButtonFreeText(PushButton& button) {
 }
 
 static void SetMissionStageRank(PushButton& button, u8 rating) {
-    // The rank glyphs are already present in the game's BMG resources. The
-    // BRLYT text pane uses the normal menu font to render the complete icon.
     nw4r::lyt::Pane* oldIcon = button.layout.GetPaneByName("level_icon");
     if (oldIcon != nullptr) button.SetPaneVisibility("level_icon", false);
 
@@ -319,9 +307,6 @@ class MissionSelectPage : public Pages::MenuInteractable {
         }
         ExpSection* section = ExpSection::GetSection();
         if (section != nullptr) SetMissionInfoSelection(*section, selectedLevel, selectedMission);
-        // The information page returns to this page through the normal menu
-        // stack. Preserve the stage-selection subpage so B restores the
-        // button set the player came from instead of resetting to levels.
         returnToStageSelect = true;
         this->LoadNextPageById(PAGE_MISSION_INFORMATION_PROMPT, button);
     }
@@ -523,7 +508,7 @@ static void InstallMissionPage(ExpSection& section, PageId id, Page* page) {
     page->Init(id);
 }
 
-}  // namespace
+}
 
 Page* CreateMissionPausePage() { return new MissionPausePage(); }
 
@@ -545,9 +530,6 @@ void ConfigureMissionInformationPage(Page& page) {
 
     if (buttonCount == 0) return;
 
-    // MissionInstruction.brctr places ButtonOK above ButtonTutorial. The
-    // tutorial page has no movie resources in the distribution and its stock
-    // handler crashes when selected, so leave only the OK action reachable.
     PushButton* okButton = buttons[0];
     PushButton* tutorialButton = nullptr;
     if (buttonCount > 1) {
@@ -620,6 +602,6 @@ bool OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
     return true;
 }
 
-}  // namespace MissionMode
-}  // namespace UI
-}  // namespace Pulsar
+}
+}
+}

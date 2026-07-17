@@ -20,8 +20,8 @@ namespace MissionMode {
     Page* CreateMissionPausePage();
     void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId);
     bool OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId);
-}  // namespace MissionMode
+}
 
-}  // namespace UI
-}  // namespace Pulsar
+}
+}
 #endif
