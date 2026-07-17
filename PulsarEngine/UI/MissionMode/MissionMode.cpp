@@ -1,15 +1,14 @@
 #include <kamek.hpp>
 #include <UI/MissionMode/MissionMode.hpp>
+#include <UI/MissionMode/MissionModel.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Gamemodes/MissionMode/MissionModeSave.hpp>
-#include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
-#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -27,7 +26,6 @@ static const u32 MISSION_KMT_HEADER_SIZE = 0x10;
 static const u32 MISSION_KMT_ENTRY_SIZE = 0x70;
 static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
-static const u32 BACK_MODEL_CONTROL_OFFSET = 0x1C8;
 static const u32 BMG_OK = 0x7D0;
 static const u32 MISSION_PAUSE_END_MENU_SOUND_ID = 0xD5;
 static const char* const MISSION_STAGE_RANK_PANE = "mission_rank";
@@ -172,22 +170,6 @@ static void SetMissionLevelRank(PushButton& button, u8 rating) {
     }
 }
 
-kmRuntimeUse(0x805f2e84);
-static void RequestMissionBackgroundModel() {
-    ExpSection* section = ExpSection::GetSection();
-    if (section != nullptr && section->pages[PAGE_BACKMODEL] != nullptr) {
-        typedef void (*RequestModelFn)(void*, BackModelType);
-        const RequestModelFn requestModel =
-            reinterpret_cast<RequestModelFn>(kmRuntimeAddr(0x805f2e84));
-        requestModel(reinterpret_cast<u8*>(section->pages[PAGE_BACKMODEL]) + BACK_MODEL_CONTROL_OFFSET,
-                     BACKMODEL_BALOON);
-        return;
-    }
-
-    if (MenuModelMgr::sInstance != nullptr)
-        MenuModelMgr::sInstance->RequestBackModel(BACKMODEL_BALOON);
-}
-
 class MissionSelectPage : public Pages::MenuInteractable {
    public:
     static const u32 BUTTON_COUNT = 8;
@@ -228,7 +210,8 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
     void OnActivate() override {
         ::Pages::Menu::OnActivate();
-        RequestMissionBackgroundModel();
+        MissionModel::ResetDriverAnimation(0);
+        MissionModel::RequestBackgroundModel();
         if (this->titleText != nullptr) this->titleText->SetMessage(this->titleBmg);
         if (this->bottomText != nullptr) this->bottomText->SetMessage(BMG_MISSION_MODE_BOTTOM);
         this->UpdateButtonMessages();
@@ -293,17 +276,20 @@ class MissionSelectPage : public Pages::MenuInteractable {
         if (button.buttonId < static_cast<s32>(BUTTON_COUNT)) {
             selectedLevel = static_cast<u32>(button.buttonId) % BUTTON_COUNT;
             selectedMission = 0;
+            MissionModel::Reset();
             this->ShowStageSelect();
             return;
         }
 
         const u32 stageId = static_cast<u32>(button.buttonId) - BUTTON_COUNT;
         selectedMission = stageId;
+        MissionModel::Reset();
         if (Racedata::sInstance != nullptr) {
             RacedataSettings& settings = Racedata::sInstance->menusScenario.settings;
             settings.cupId = selectedLevel;
             settings.raceNumber = static_cast<u8>(selectedLevel * BUTTON_COUNT + selectedMission);
-            this->LoadMissionScenario();
+            const bool scenarioLoaded = this->LoadMissionScenario();
+            MissionModel::SetScenarioLoaded(scenarioLoaded);
         }
         ExpSection* section = ExpSection::GetSection();
         if (section != nullptr) SetMissionInfoSelection(*section, selectedLevel, selectedMission);
@@ -322,6 +308,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
     }
 
     void OnBackPress(u32) {
+        MissionModel::Reset();
         if (this->levelSelected) {
             this->ShowLevelSelect();
             return;
@@ -464,15 +451,19 @@ class MissionSelectPage : public Pages::MenuInteractable {
     bool LoadMissionScenario() {
         if (Racedata::sInstance == nullptr || this->missionUiFile == nullptr || this->missionKmtFile == nullptr ||
             this->missionUiSize < MISSION_UI_LEVEL_SIZE * BUTTON_COUNT ||
-            this->missionKmtSize < MISSION_KMT_HEADER_SIZE)
+            this->missionKmtSize < MISSION_KMT_HEADER_SIZE) {
             return false;
+        }
 
         u8 missionId = 0;
-        if (!this->GetMissionId(selectedLevel, selectedMission, missionId)) return false;
+        if (!this->GetMissionId(selectedLevel, selectedMission, missionId)) {
+            return false;
+        }
         const u16 missionCount = ReadBigEndian16(this->missionKmtFile + 0x08);
         const u32 missionOffset = MISSION_KMT_HEADER_SIZE + static_cast<u32>(missionId) * MISSION_KMT_ENTRY_SIZE;
-        if (missionId >= missionCount || missionOffset + MISSION_KMT_ENTRY_SIZE > this->missionKmtSize)
+        if (missionId >= missionCount || missionOffset + MISSION_KMT_ENTRY_SIZE > this->missionKmtSize) {
             return false;
+        }
 
         RacedataScenario& scenario = Racedata::sInstance->menusScenario;
         const u8* mission = this->missionKmtFile + missionOffset;
@@ -481,6 +472,10 @@ class MissionSelectPage : public Pages::MenuInteractable {
         scenario.settings.raceNumber = static_cast<u8>(missionId);
         scenario.players[0].characterId = static_cast<CharacterId>(mission[0x05]);
         scenario.players[0].kartId = static_cast<KartId>(mission[0x06]);
+        if (SectionMgr::sInstance != nullptr && SectionMgr::sInstance->sectionParams != nullptr) {
+            SectionMgr::sInstance->sectionParams->characters[0] = scenario.players[0].characterId;
+            SectionMgr::sInstance->sectionParams->karts[0] = scenario.players[0].kartId;
+        }
         Pulsar::MissionMode::PopulateMissionCPUs(scenario);
         return true;
     }
@@ -578,10 +573,15 @@ void CreateSinglePlayerPages(ExpSection& section) {
     if (section.pages[PAGE_SINGLE_PLAYER_MENU] == nullptr)
         section.CreateAndInitPage(section, PAGE_SINGLE_PLAYER_MENU);
 
+    MissionModel::CreateModelPage(section);
+
     InstallMissionPage(section, PAGE_MISSION_LEVEL_SELECT_UNUSED, new MissionSelectPage());
 
-    const u32 pages[] = {PAGE_MISSION_INFORMATION_PROMPT, PAGE_DRIFT_SELECT_WITH_ONE_OPTION, PAGE_MISSION_TUTORIAL};
+    const u32 pages[] = {PAGE_MISSION_INFORMATION_PROMPT, PAGE_MISSION_TUTORIAL};
     for (u32 i = 0; i < sizeof(pages) / sizeof(pages[0]); ++i) section.CreateAndInitPage(section, pages[i]);
+
+    InstallMissionPage(section, PAGE_DRIFT_SELECT, MissionModel::CreateDriftSelectPage());
+    InstallMissionPage(section, PAGE_DRIFT_SELECT_WITH_ONE_OPTION, MissionModel::CreateDriftSelectPage());
 }
 
 void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
@@ -597,6 +597,7 @@ bool OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
 
     selectedLevel = 0;
     selectedMission = 0;
+    MissionModel::Reset();
     Pulsar::MissionMode::PrepareMenuScenario();
     page->LoadNextPageById(PAGE_MISSION_LEVEL_SELECT_UNUSED, button);
     return true;
