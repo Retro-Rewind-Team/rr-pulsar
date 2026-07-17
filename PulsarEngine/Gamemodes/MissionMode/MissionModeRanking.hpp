@@ -6,6 +6,6 @@ namespace Pulsar {
 namespace MissionMode {
 bool GetMissionResultRank(u32& rank);
 
-}  // namespace MissionMode
-}  // namespace Pulsar
+}
+}
 #endif

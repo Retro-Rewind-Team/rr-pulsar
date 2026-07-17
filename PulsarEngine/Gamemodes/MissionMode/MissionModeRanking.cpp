@@ -60,8 +60,6 @@ static void FixMissionScoreCalcRank(void* mission) {
     const u32 raceManager = GetMissionValue(mission, 4);
     const u32 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission,
                                         MISSION_OBJECTIVE_OFFSET);
-    // The native completion call needs a rank value, but the final rank is
-    // based on finish time and is assigned once the finish timer is available.
     const u32 rank = IsRankReported() ? GetRank(mission) : 0;
     sSetMissionObjectiveComplete(reinterpret_cast<void*>(raceManager), objective, rank);
     if (!IsRankReported()) SetRankFromTime(mission);
@@ -215,7 +213,7 @@ static u32 GetMissionPresentationStatus(u32 playerId) {
     return status;
 }
 
-}  // namespace Ranking
+}
 
 kmCall(0x807121fc, Ranking::GetMissionPresentationStatus);
 kmCall(0x8071223c, Ranking::GetMissionPresentationStatus);
@@ -237,5 +235,5 @@ bool GetMissionResultRank(u32& rank) {
     return Ranking::GetResultRank(rank);
 }
 
-}  // namespace MissionMode
-}  // namespace Pulsar
+}
+}
