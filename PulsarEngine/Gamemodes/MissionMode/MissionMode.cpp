@@ -3,6 +3,8 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <Settings/SettingsParam.hpp>
+#include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceScore.hpp>
+#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace MissionMode {
@@ -147,9 +149,43 @@ static u32 GetMissionScoreDisplayTarget(const void* raceConfig) {
     return GetMissionValue(raceConfig, 0xBCC);
 }
 
+kmRuntimeUse(0x807f784c);
+static void FixMissionScoreLayout(CtrlRaceScore* self) {
+    typedef void (*CtrlRaceScoreOnUpdateFn)(CtrlRaceScore*);
+    static const CtrlRaceScoreOnUpdateFn sCtrlRaceScoreOnUpdate =
+        reinterpret_cast<CtrlRaceScoreOnUpdateFn>(kmRuntimeAddr(0x807f784c));
+    sCtrlRaceScoreOnUpdate(self);
+
+    if (Racedata::sInstance == 0 ||
+        !IsMissionScoreObjective(Racedata::sInstance->racesScenario))
+        return;
+
+    nw4r::lyt::Pane* slash = self->layout.GetPaneByName("slash");
+    if (slash == nullptr) return;
+
+    static const float SCORE_SLASH_ONE_DIGIT_OFFSET = 22.0f;
+    const u32 target = GetMissionValue(Racedata::sInstance->racesScenario.mission,
+                                       MISSION_SCORE_REQUIRED_OFFSET);
+    static CtrlRaceScore* sAdjustedControl = nullptr;
+    static float sSlashBaseX = 0.0f;
+
+    if (target >= 10) {
+        if (sAdjustedControl == self) sAdjustedControl = nullptr;
+        return;
+    }
+
+    if (sAdjustedControl != self) {
+        sAdjustedControl = self;
+        sSlashBaseX = slash->trans.x;
+    }
+    slash->trans.x = sSlashBaseX + SCORE_SLASH_ONE_DIGIT_OFFSET;
+}
+
+kmWritePointer(0x808d3fdc, FixMissionScoreLayout);
+
 kmCall(0x807f773c, GetMissionScoreDisplayTarget);
-kmWrite32(0x807f7740, 0x907f01a0);  // stw r3, 0x1a0(r31)
-kmWrite32(0x807f7744, 0x2c030000);  // cmpwi r3, 0
+kmWrite32(0x807f7740, 0x907f01a0);
+kmWrite32(0x807f7744, 0x2c030000);
 
 void PrepareMenuScenario() {
     RacedataScenario& scenario = Racedata::sInstance->menusScenario;
@@ -178,5 +214,5 @@ void PrepareMenuScenario() {
     memset(scenario.mission, 0, sizeof(scenario.mission));
 }
 
-}  // namespace MissionMode
-}  // namespace Pulsar
+}
+}
