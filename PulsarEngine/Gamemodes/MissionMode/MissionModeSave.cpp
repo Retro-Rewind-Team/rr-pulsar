@@ -134,13 +134,11 @@ static void Save() {
 }
 
 static u8 ConvertMissionRankToRating(u32 missionRank) {
-    // Mission ranks are ordered from best to worst (3 stars through C).
-    // Keep 0 available for no rank while making 6 the best saved rating.
     if (missionRank > 5) return 0;
     return static_cast<u8>(6 - missionRank);
 }
 
-}  // namespace
+}
 
 void SaveMissionResult(u32 finishTimeMillis, u32 missionRank) {
     Load();
@@ -182,5 +180,5 @@ bool GetMissionRecord(u32 missionId, u32& finishTimeMillis, u8& rating) {
     return true;
 }
 
-}  // namespace MissionMode
-}  // namespace Pulsar
+}
+}
