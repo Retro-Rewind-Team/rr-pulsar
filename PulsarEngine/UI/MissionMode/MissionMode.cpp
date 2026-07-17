@@ -194,6 +194,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
         MissionModel::RequestBackgroundModel();
         if (this->titleText != nullptr) this->titleText->SetMessage(this->titleBmg);
         if (this->bottomText != nullptr) this->bottomText->SetMessage(BMG_MISSION_MODE_BOTTOM);
+        this->HideMissionBottomText();
         this->UpdateButtonMessages();
         if (returnToStageSelect) {
             returnToStageSelect = false;
@@ -284,7 +285,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
         } else {
             this->ResetOtherButtonText(this->stageButtons, button);
         }
-        if (this->bottomText != nullptr) this->bottomText->SetMessage(BMG_MISSION_MODE_BOTTOM);
+        this->HideMissionBottomText();
     }
 
     void OnBackPress(u32) {
@@ -301,6 +302,10 @@ class MissionSelectPage : public Pages::MenuInteractable {
     void OnBackButtonClick(PushButton&, u32 hudSlotId) { this->OnBackPress(hudSlotId); }
 
    private:
+    void HideMissionBottomText() {
+        if (this->bottomText != nullptr) this->bottomText->isHidden = true;
+    }
+
     void ResetOtherButtonText(PushButton* buttons, PushButton& selected) {
         for (u32 i = 0; i < BUTTON_COUNT; ++i)
             if (&buttons[i] != &selected) ResetMissionButtonFreeText(buttons[i]);
@@ -376,6 +381,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
     void ShowLevelSelect() {
         this->levelSelected = false;
+        this->HideMissionBottomText();
 
         for (u32 i = 0; i < BUTTON_COUNT; ++i) {
             this->levelButtons[i].isHidden = false;
@@ -393,6 +399,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
     void ShowStageSelect() {
         this->levelSelected = true;
+        this->HideMissionBottomText();
 
         for (u32 i = 0; i < BUTTON_COUNT; ++i) {
             const bool selected = i == (selectedLevel % BUTTON_COUNT);
