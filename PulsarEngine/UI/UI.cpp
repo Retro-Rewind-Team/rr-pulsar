@@ -36,6 +36,7 @@
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/MissionMode/MissionMode.hpp>
+#include <UI/MissionMode/MissionModel.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
@@ -53,6 +54,7 @@ kmWrite32(0x80635058, 0x60000000);
 void ExpSection::CreatePages(ExpSection& self, SectionId id) {
     const System* system = System::sInstance;
     if (id == SECTION_SINGLE_P_MR_CHOOSE_MISSION && Racedata::sInstance != nullptr) {
+        MissionModel::SaveMenuCombo();
         Pulsar::MissionMode::PrepareMenuScenario();
     }
     if (!self.hasAutoVote) self.CreateSectionPages(id);

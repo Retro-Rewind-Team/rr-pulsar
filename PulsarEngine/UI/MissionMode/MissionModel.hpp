@@ -12,6 +12,8 @@ namespace UI {
 namespace MissionModel {
 
 void Reset();
+void SaveMenuCombo();
+void RestoreMenuCombo();
 void SetScenarioLoaded(bool loaded);
 bool IsMissionMenuSection();
 void ResetDriverAnimation(u8 hudSlotId);
