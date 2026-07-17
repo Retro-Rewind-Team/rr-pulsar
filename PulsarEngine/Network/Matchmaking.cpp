@@ -3,6 +3,8 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/Rating/MogiRating.hpp>
+#include <Network/Mogi.hpp>
 #include <Settings/Settings.hpp>
 #include <UI/PlayerCount.hpp>
 
@@ -131,11 +133,15 @@ void CustomRandomizeServers() {
     RKNet::Controller *const net = RKNet::Controller::sInstance;
     const bool isBattle = net != nullptr &&
                           (net->roomType == RKNet::ROOMTYPE_BT_WW || net->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
-    const int playerRating = isBattle
-                                 ? (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f)
-                                 : (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
-    const char *const ratingKey = isBattle ? "eb" : "ev";
+    const bool isMogi = Mogi::IsEnabled() && !isBattle;
+    const int playerRating = isMogi
+                                 ? (int)(MogiRating::GetUserMMR(licenseId) * 100.0f + 0.5f)
+                                 : isBattle
+                                       ? (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f)
+                                       : (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
+    const char *const ratingKey = isMogi ? "em" : isBattle ? "eb" : "ev";
     const int maximumRoomVR = playerRating + 4000000;  // 40,000 VR, stored at 100x precision.
+    const bool isCompetitiveMatchmakingEnabled = isInfiniteMatchmakingEnabled || isMogi;
     // Preserve the high-VR rooms only when no otherwise eligible room exists.
     bool hasRoomWithinVRLimit = isBattle;
 
@@ -147,7 +153,7 @@ void CustomRandomizeServers() {
         const bool isPreviousRoom = sPreviousRoomGroupId != 0 &&
                                     SBServerGetIntValueA(server, "dwc_groupid", 0) == (int)sPreviousRoomGroupId;
         const bool isEligibleRoom = roomPlayerCount < 12 && !isPreviousRoom &&
-                                    (!isInfiniteMatchmakingEnabled || roomPlayerCount >= 6);
+                                    (!isCompetitiveMatchmakingEnabled || roomPlayerCount >= 6);
         if (isEligibleRoom && SBServerGetIntValueA(server, ratingKey, 0) <= maximumRoomVR) {
             hasRoomWithinVRLimit = true;
         }
@@ -166,7 +172,7 @@ void CustomRandomizeServers() {
             (sPreviousRoomGroupId != 0 &&
              SBServerGetIntValueA(server, "dwc_groupid", 0) == (int)sPreviousRoomGroupId) ||
             (!isBattle && hasRoomWithinVRLimit && roomRating > maximumRoomVR) ||
-            (isInfiniteMatchmakingEnabled && roomPlayerCount < 6)) {
+            (isCompetitiveMatchmakingEnabled && roomPlayerCount < 6)) {
             ServerBrowserRemoveServerA(sb, server);
         }
     }
@@ -186,7 +192,7 @@ void CustomRandomizeServers() {
     }
     ServerBrowserSortA(sb, true, "dwc_eval", 0);
 
-    if (isInfiniteMatchmakingEnabled) {
+    if (isCompetitiveMatchmakingEnabled) {
         // Once VR-ranked, retain only the three closest eligible rooms. Subsequent
         // retries receive this same constrained set and never use random fallback.
         for (int i = ServerBrowserCountA(sb) - 1; i >= 3; --i) {
@@ -199,6 +205,7 @@ kmBranch(0x800e4ad0, CustomRandomizeServers);
 
 static void UpdateMatchmakingInfos(RKNet::Controller *self) {
     self->UpdateSubsAndVR();
+    Mogi::UpdateRoomState();
     RememberPreviousPublicRoomGroupId(self);
 }
 kmCall(0x80657990, UpdateMatchmakingInfos);

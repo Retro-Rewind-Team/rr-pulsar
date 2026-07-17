@@ -1,4 +1,5 @@
 #include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultIrregularTotal.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -17,6 +18,7 @@ PageId ExtendedTeamResultIrregularTotal::GetNextPage() const {
 
 void ExtendedTeamResultIrregularTotal::OnInit() {
     Pages::GPVSLeaderboardTotal::OnInit();
+    Mogi::OnResultsDisplayed();
 
     this->AddControl(this->GetRowCount(), this->textMessage, 0);
 
@@ -60,7 +62,8 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
     }
 
     for (int i = 0; i < menuScenario.playerCount; i++) {
-        ExtendedTeamID team = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
+        ExtendedTeamID team = static_cast<ExtendedTeamID>(menuScenario.players[i].team);
+        if (team >= TEAM_COUNT) continue;
         if (!scores[team].present) {
             teamCount++;
             scores[team].present = true;
@@ -68,8 +71,20 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
 
         scores[team].score += menuScenario.players[i].score;
     }
+    for (int team = 0; team < TEAM_COUNT; ++team) {
+        const u16 missingScore = Mogi::GetMissingTeamScore(team, false);
+        if (missingScore == 0) continue;
+        if (!scores[team].present) {
+            scores[team].present = true;
+            ++teamCount;
+        }
+        scores[team].score += missingScore;
+    }
 
     qsort(scores, TEAM_COUNT, sizeof(TeamScore), sort_by_score);
+
+    u8 teamColorOrder[TEAM_COUNT];
+    ExtendedTeamSelect::GetTeamColorOrder(teamColorOrder);
 
     for (int i = teamCount; i < this->GetRowCount(); i++) {
         this->results[i]->isHidden = true;
@@ -113,7 +128,7 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
         this->results[i]->SetPaneVisibility("chara_icon", false);
         this->results[i]->SetPaneVisibility("chara_icon_sha", false);
 
-        this->results[i]->SetTextBoxMessage("player_name", BMG_EXTENDEDTEAMS_TEAM_NAME + scores[i].team, nullptr);
+        this->results[i]->SetTextBoxMessage("player_name", BMG_EXTENDEDTEAMS_TEAM_NAME + teamColorOrder[scores[i].team], nullptr);
 
         pane->flag |= 1;
 
