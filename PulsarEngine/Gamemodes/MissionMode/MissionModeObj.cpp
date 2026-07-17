@@ -1,12 +1,16 @@
 #include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
+#include <MarioKartWii/System/Random.hpp>
+#include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace MissionMode {
 
 static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
+static const u16 MISSION_OBJECTIVE_BREAK_ITEM_BOXES = 4;
+static const u32 ITEMBOX_NO_RESPAWN_TIME = 0x7fffffff;
 static const u32 COIN_ADD_INTRO_BRANCH_ORIGINAL = 0x4082000C;
 static const u32 COIN_ADD_SKIP_INTRO_BRANCH = 0x4800000C;
 
@@ -19,6 +23,27 @@ static bool IsMissionCoinObjective(const RacedataScenario& scenario) {
     return IsMissionScenario(scenario) &&
            GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == 8;
 }
+
+static bool IsMissionBreakItemBoxObjective(const RacedataScenario& scenario) {
+    return IsMissionScenario(scenario) &&
+           GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_BREAK_ITEM_BOXES;
+}
+
+static void PreventMissionItemBoxRespawn(Objects::Itembox* itembox) {
+    register u32 itemBoxPtr;
+    asm(mr itemBoxPtr, r3;);
+
+    if (itembox != nullptr && Racedata::sInstance != nullptr &&
+        IsMissionBreakItemBoxObjective(Racedata::sInstance->racesScenario)) {
+        itembox->respawnTime = ITEMBOX_NO_RESPAWN_TIME;
+    }
+
+    // The replaced instruction was lwz r4, 0xb4(r3), so restore both live registers.
+    asmVolatile(mr r3, itemBoxPtr; lwz r4, 0xb4(r3););
+}
+
+// Itembox::Update checks timer against respawnTime before bringing a broken box back.
+kmCall(0x808288b4, PreventMissionItemBoxRespawn);
 
 kmRuntimeUse(0x8087bacc);
 kmRuntimeUse(0x8087baf4);
