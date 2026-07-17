@@ -4,6 +4,7 @@
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 // For hooks which are shared by different things
@@ -26,6 +27,7 @@ void UpdatePoints(RacedataScenario& scenario) {
         }
     }
     PointRating::UpdatePoints(&scenario);
+    Mogi::OnFinalResults();
     racedata->menusScenario.settings.gametype = oldType;
 }
 kmCall(0x8085c878, UpdatePoints);

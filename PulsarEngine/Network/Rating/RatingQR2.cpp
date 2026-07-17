@@ -9,6 +9,7 @@
 #include <MarioKartWii/RKNet/USER.hpp>
 #include <MarioKartWii/Mii/Mii.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/Rating/MogiRating.hpp>
 #include <Settings/Settings.hpp>
 
 namespace Pulsar {
@@ -81,6 +82,12 @@ static void MyServerKeyCallback(int key, void* buffer) {
         qr2_buffer_addA(buffer, buf);
         return;
     }
+    if (key == 0x68) {  // em
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d", (int)(MogiRating::GetUserMMR(licenseId) * 100.0f + 0.5f));
+        qr2_buffer_addA(buffer, buf);
+        return;
+    }
     OriginalServerKeyCallback(key, buffer);
 }
 
@@ -94,12 +101,15 @@ static void MyKeyListCallback(int keyType, void* buffer) {
         int count = *(int*)(b + 0x100);
         bool hasEv = false;
         bool hasEb = false;
+        bool hasEm = false;
         for (int i = 0; i < count; i++) {
             if (b[i] == 0x65) hasEv = true;
             if (b[i] == 0x66) hasEb = true;
+            if (b[i] == 0x68) hasEm = true;
         }
         if (!hasEv) qr2_keybuffer_add(buffer, 0x65);
         if (!hasEb) qr2_keybuffer_add(buffer, 0x66);
+        if (!hasEm) qr2_keybuffer_add(buffer, 0x68);
     }
 }
 

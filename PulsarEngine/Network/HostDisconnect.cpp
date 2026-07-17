@@ -3,6 +3,7 @@
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <core/rvl/DWC/DWCCore.hpp>
+#include <Network/Mogi.hpp>
 #include <Network/PhantomRacer.hpp>
 
 namespace Pulsar {
@@ -24,6 +25,7 @@ static void OnConnectionClosed(RKNet::Controller* controller, u32 aid) {
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
     const u8 hostAid = sub.hostAid;
     const bool isLocalHost = sub.localAid == hostAid;
+    Mogi::OnPlayerDisconnect(static_cast<u8>(aid));
 
     if (!isLocalHost && aid != hostAid) {
         MarkPhantomAid(aid);
@@ -34,7 +36,7 @@ static void OnConnectionClosed(RKNet::Controller* controller, u32 aid) {
     controller->ProcessPlayerDisconnect(aid);
 
     // 2. Check for host disconnect in friend room
-    if (IsInFriendRoom() && Pulsar::System::sInstance->IsContext(PULSAR_VR)) {
+    if (!Mogi::IsActive() && IsInFriendRoom() && Pulsar::System::sInstance->IsContext(PULSAR_VR)) {
         if (!isLocalHost && aid == hostAid) {
             // Host disconnected, trigger local disconnect for everyone else
             const SetDisconnectInfoFn setDisconnectInfo = reinterpret_cast<SetDisconnectInfoFn>(kmRuntimeAddr(0x80656920));

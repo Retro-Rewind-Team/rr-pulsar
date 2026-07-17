@@ -9,6 +9,7 @@
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 #include <UI/RoomKick/RoomKickPage.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -80,7 +81,8 @@ void ExpFroom::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
 
 void ExpFroom::OnTeamsButtonClick(PushButton& button, u32 hudSlotId) {
     this->areControlsHidden = true;
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED) {
+    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED ||
+        (Mogi::IsActive() && Mogi::IsTeamFormat())) {
         this->AddPageLayer(static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT), 0);
     } else {
         this->AddPageLayer(static_cast<PageId>(PULPAGE_TEAMSELECT), 0);

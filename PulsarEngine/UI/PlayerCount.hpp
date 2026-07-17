@@ -15,6 +15,8 @@
 namespace PlayerCount {
 
 void GetNumbersMain(int& nRetro, int& nCT, int& nRT);
+void GetNumbersMogi(int& nMogi);
+void GetNumbersMogiModes(int& nRetro, int& nCT, int& nRT);
 void GetNumbersOther(int& n200, int& nOtt, int& nIR);
 void GetNumbersBT(int& nBattle, int& nBattleELIM);
 void GetNumbersRegular(int& nRegular);

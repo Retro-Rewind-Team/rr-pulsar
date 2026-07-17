@@ -1,4 +1,5 @@
 #include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultIrregularTotal.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -17,6 +18,7 @@ PageId ExtendedTeamResultIrregularTotal::GetNextPage() const {
 
 void ExtendedTeamResultIrregularTotal::OnInit() {
     Pages::GPVSLeaderboardTotal::OnInit();
+    Mogi::OnResultsDisplayed();
 
     this->AddControl(this->GetRowCount(), this->textMessage, 0);
 
@@ -60,7 +62,8 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
     }
 
     for (int i = 0; i < menuScenario.playerCount; i++) {
-        ExtendedTeamID team = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
+        ExtendedTeamID team = static_cast<ExtendedTeamID>(menuScenario.players[i].team);
+        if (team >= TEAM_COUNT) continue;
         if (!scores[team].present) {
             teamCount++;
             scores[team].present = true;
@@ -68,28 +71,31 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
 
         scores[team].score += menuScenario.players[i].score;
     }
+    for (int team = 0; team < TEAM_COUNT; ++team) {
+        const u16 missingScore = Mogi::GetMissingTeamScore(team, false);
+        if (missingScore == 0) continue;
+        if (!scores[team].present) {
+            scores[team].present = true;
+            ++teamCount;
+        }
+        scores[team].score += missingScore;
+    }
 
     qsort(scores, TEAM_COUNT, sizeof(TeamScore), sort_by_score);
+
+    u8 teamColorOrder[TEAM_COUNT];
+    ExtendedTeamSelect::GetTeamColorOrder(teamColorOrder);
 
     for (int i = teamCount; i < this->GetRowCount(); i++) {
         this->results[i]->isHidden = true;
     }
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
     ExtendedTeamID selfTeams[2] = {TEAM_COUNT, TEAM_COUNT};
     for (int i = 0; i < menuScenario.playerCount; i++) {
         if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 0) {
-            selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-            if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
-                RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
-                selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 0);
-            }
+            selfTeams[0] = static_cast<ExtendedTeamID>(menuScenario.players[i].team);
         } else if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 1) {
-            selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-            if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
-                RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
-                selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 1);
-            }
+            selfTeams[1] = static_cast<ExtendedTeamID>(menuScenario.players[i].team);
         }
     }
 
@@ -113,7 +119,7 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
         this->results[i]->SetPaneVisibility("chara_icon", false);
         this->results[i]->SetPaneVisibility("chara_icon_sha", false);
 
-        this->results[i]->SetTextBoxMessage("player_name", BMG_EXTENDEDTEAMS_TEAM_NAME + scores[i].team, nullptr);
+        this->results[i]->SetTextBoxMessage("player_name", BMG_EXTENDEDTEAMS_TEAM_NAME + teamColorOrder[scores[i].team], nullptr);
 
         pane->flag |= 1;
 
