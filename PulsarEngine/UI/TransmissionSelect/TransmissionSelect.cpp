@@ -5,6 +5,7 @@
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <RetroRewindChannel.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
+#include <UI/MissionMode/MissionModel.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -88,6 +89,14 @@ void TransmissionSelect::OnActivate() {
     SetTransmissionMessages(*this);
     HideTransmissionExtras(*this);
     SelectCurrentTransmission(*this, 0);
+    if (MissionModel::IsMissionMenuSection() && this->extraControlNumber > 0) {
+        MissionModel::LoadComboModel(this->modelPosition[0]);
+    }
+}
+
+void TransmissionSelect::OnDeactivate() {
+    if (MissionModel::IsMissionMenuSection()) MissionModel::HideComboModel();
+    Pages::DriftSelect::OnDeactivate();
 }
 
 void TransmissionSelect::AfterControlUpdate() {
@@ -161,48 +170,5 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
     menu.LoadNextPageById(id, button);
 }
 
-static void LoadTransmissionSelectBeforeSectionChange(Pages::Menu& menu, SectionId id, PushButton& button) {
-    System* system = System::sInstance;
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
-        menu.ChangeSectionById(id, button);
-        return;
-    }
-    returnToGlobeAfterTransmission = false;
-    nextPageAfterTransmission = PAGE_NONE;
-    nextSectionAfterTransmission = id;
-    CopyDriftTimerToTransmission(menu);
-    menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
 }
-kmCall(0x8084e4c8, LoadTransmissionSelectBeforeSectionChange);
-kmCall(0x8084e650, LoadTransmissionSelectBeforeSectionChange);
-
-static void LoadTransmissionSelectAfterMissionDrift(Pages::Menu& menu, SectionId id, float delay) {
-    System* system = System::sInstance;
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
-        menu.ChangeSectionWithDelayById(id, delay);
-        return;
-    }
-    returnToGlobeAfterTransmission = false;
-    nextPageAfterTransmission = PAGE_NONE;
-    nextSectionAfterTransmission = id;
-    CopyDriftTimerToTransmission(menu);
-    menu.LoadNextPageWithDelayById(static_cast<PageId>(TransmissionSelect::id), delay);
 }
-kmCall(0x8084e668, LoadTransmissionSelectAfterMissionDrift);
-
-void LoadTransmissionSelectAfterGlobeDrift(Pages::Menu& menu, u32 animDirection, float animLength) {
-    System* system = System::sInstance;
-    if (system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA)) {
-        menu.EndStateAnimated(animDirection, animLength);
-        return;
-    }
-    returnToGlobeAfterTransmission = true;
-    nextPageAfterTransmission = PAGE_NONE;
-    nextSectionAfterTransmission = SECTION_NONE;
-    CopyDriftTimerToTransmission(menu);
-    menu.LoadNextPageWithDelayById(static_cast<PageId>(TransmissionSelect::id), animLength);
-}
-kmCall(0x8084e4b8, LoadTransmissionSelectAfterGlobeDrift);
-
-}  // namespace UI
-}  // namespace Pulsar

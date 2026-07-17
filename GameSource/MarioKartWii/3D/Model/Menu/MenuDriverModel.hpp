@@ -24,7 +24,8 @@ class MenuDriverModel : public MenuModel {
    public:
     enum State {
         MENUDRIVERMODEL_STATE_ONCHARSELECT = 1,
-        MENUDRIVERMODEL_STATE_ONKARTSELECT = 2
+        MENUDRIVERMODEL_STATE_ONKARTSELECT = 2,
+        MENUDRIVERMODEL_STATE_VEHICLE_SELECTED = 3
     };
     MenuDriverModel();  // 8082f860
     ~MenuDriverModel() override;  // 80830708 vtable 808d8c44
@@ -33,13 +34,13 @@ class MenuDriverModel : public MenuModel {
     void SwitchState(u8 playerId, State newState);  // 8082fb78 for example with state == 2, will switch to OnKartAnms
     void Draw(u8 playerId);  // 80830a80 toggles chars not shown off so it only shows one model at a time
 
-    u8 unknown_0x4[4];
     State state;  // 0x8
     ModelTransformator* charSelTransformator;  // 0xC
     ModelTransformator* onKartTransformator;  // 0x10
     u8 unknown_0x14[4];
     u32 id;  // 0x18
-    u8 unknown_0x1c[0x28 - 0x1c];
+    KartId vehicleId;  // 0x1C, used by the on-vehicle animation state
+    u8 unknown_0x20[0x28 - 0x20];
 };  // 0x28
 
 class MenuDriverModelMgr {
