@@ -176,6 +176,7 @@ enum LooseArchiveOverridesSetting {
 enum Transmission {
     TRANSMISSION_DEFAULT,
     TRANSMISSION_INSIDE,
+    TRANSMISSION_INSIDEBIKE = 2,
     TRANSMISSION_OUTSIDE = 3
 };
 
