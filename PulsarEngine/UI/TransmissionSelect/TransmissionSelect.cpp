@@ -5,6 +5,7 @@
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <RetroRewindChannel.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
+#include <UI/MissionMode/MissionModel.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -88,6 +89,14 @@ void TransmissionSelect::OnActivate() {
     SetTransmissionMessages(*this);
     HideTransmissionExtras(*this);
     SelectCurrentTransmission(*this, 0);
+    if (MissionModel::IsMissionMenuSection() && this->extraControlNumber > 0) {
+        MissionModel::LoadComboModel(this->modelPosition[0]);
+    }
+}
+
+void TransmissionSelect::OnDeactivate() {
+    if (MissionModel::IsMissionMenuSection()) MissionModel::HideComboModel();
+    Pages::DriftSelect::OnDeactivate();
 }
 
 void TransmissionSelect::AfterControlUpdate() {
@@ -161,5 +170,5 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
     menu.LoadNextPageById(id, button);
 }
 
-}  // namespace UI
-}  // namespace Pulsar
+}
+}
