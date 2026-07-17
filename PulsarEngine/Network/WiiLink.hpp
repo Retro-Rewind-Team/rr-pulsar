@@ -15,7 +15,7 @@
 #ifndef WWFC_DOMAIN
 
 #ifdef PROD
-#define WWFC_DOMAIN "rwfc.net"  // Production server
+#define WWFC_DOMAIN "play.rwfc.net"  // Production server
 #elif defined(TEST)
 #define WWFC_DOMAIN "zpltest.xyz"  // Testing server
 #elif defined(NINJAWFC)
