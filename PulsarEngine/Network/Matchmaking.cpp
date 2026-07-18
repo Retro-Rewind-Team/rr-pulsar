@@ -14,10 +14,9 @@ kmRuntimeUse(0x8011d1e4);
 kmRuntimeUse(0x8011e488);
 kmRuntimeUse(0x8011e480);
 kmRuntimeUse(0x8011e490);
-kmRuntimeUse(0x800d6c94);
-kmRuntimeUse(0x800d6ee4);
 static u32 sJoinAttempts = 0;
 static u32 sPreviousRoomGroupId = 0;
+extern "C" u32 sMatchmakingTimeoutMs = 0x4e20;
 
 static bool IsPublicMatchmakingRoomType(const RKNet::RoomType roomType) {
     switch (roomType) {
@@ -55,12 +54,16 @@ static void ApplyMatchmakingTimeoutPatch() {
         Settings::SETTINGSTYPE_ONLINE,
         RADIO_INFINITEMATCHMAKINGTIMEOUT);
 
-    const u32 timeoutMs =
+    sMatchmakingTimeoutMs =
         (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
-    const u32 liR6TimeoutMs = 0x38c00000 | timeoutMs;
+}
 
-    kmRuntimeWrite32A(0x800d6c94, liR6TimeoutMs);
-    kmRuntimeWrite32A(0x800d6ee4, liR6TimeoutMs);
+asmFunc LoadMatchmakingTimeout() {
+    ASM(
+        nofralloc;
+        lis r6, sMatchmakingTimeoutMs @ha;
+        lwz r6, sMatchmakingTimeoutMs @l(r6);
+        blr;)
 }
 
 typedef int (*SBServerGetIntValueA_t)(void* server, const char* key, int defaultValue);
@@ -254,9 +257,8 @@ static void OnRetryReserving(int r3) {
 kmCall(0x800d66ac, OnRetryReserving);
 kmCall(0x800d6950, OnRetryReserving);
 
-// Patch timeouts to 20s (20000ms = 0x4e20)
-kmWrite32(0x800d6c94, 0x38c04e20);  // li r6, 20000 (default)
-kmWrite32(0x800d6ee4, 0x38c04e20);  // li r6, 20000 (default)
+kmCall(0x800d6c94, LoadMatchmakingTimeout);
+kmCall(0x800d6ee4, LoadMatchmakingTimeout);
 
 }  // namespace Network
 }  // namespace Pulsar

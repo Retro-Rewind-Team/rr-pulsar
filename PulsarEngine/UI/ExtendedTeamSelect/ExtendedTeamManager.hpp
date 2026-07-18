@@ -31,6 +31,8 @@ struct ExtendedTeamPlayer {
 
 class ExtendedTeamManager {
    public:
+    static const u32 TEAM_MODE_FLAG = 0x2;
+
     enum ExtendedROOMMessageType {
         MSG_TYPE_START_RACE = 0x81,
         MSG_TYPE_UPDATE_TEAMS = 0x82,
@@ -103,6 +105,7 @@ class ExtendedTeamManager {
     void ResetPlayers();
 
     void VotePageSync();
+    void ConfigureOfflineTeams();
 
     Status GetStatus() {
         return this->status;
@@ -145,8 +148,15 @@ class ExtendedTeamManager {
     }
 
     static bool IsActivated() {
+        const RacedataSettings& settings = Racedata::sInstance->menusScenario.settings;
+        if (!System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS)) return false;
+
+        if (settings.gamemode == MODE_VS_RACE) {
+            return !(settings.modeFlags & TEAM_MODE_FLAG);
+        }
+
         RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-        return System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && (Racedata::sInstance->menusScenario.settings.gamemode == MODE_PRIVATE_VS || Racedata::sInstance->menusScenario.settings.gamemode == MODE_PRIVATE_BATTLE) && (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+        return (settings.gamemode == MODE_PRIVATE_VS || settings.gamemode == MODE_PRIVATE_BATTLE) && (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     }
 
    private:

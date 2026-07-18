@@ -1,5 +1,5 @@
-#ifndef _WFCCONNECTPAGEaa& _
-#define _WFCCONNECTPAGEaa &_
+#ifndef _WFCCONNECTPAGE_
+#define _WFCCONNECTPAGE_
 #include <kamek.hpp>
 #include <MarioKartWii/UI/Page/Page.hpp>
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
@@ -11,7 +11,13 @@ namespace Pages {
 class WFCConnect : public Page {  // ID 0x84
    public:
     static const PageId id = PAGE_WFC_CONNECT;
-    enum Status {};
+    enum Status {
+        STATUS_INIT_CONNECTION = 6,
+        STATUS_AWAIT_LOGIN,
+        STATUS_AWAIT_FRIEND_SYNC,
+        STATUS_REQUEST_FRIEND_INFO,
+        STATUS_AWAIT_FRIEND_INFO,
+    };
     WFCConnect();  // 806467d4
     ~WFCConnect() override;  // 80646850 vtable 808bfaa4
     PageId GetNextPage() const override;  // 0x10 806478c4
@@ -83,7 +89,7 @@ class WFCAllowData : public Page {  // ID 0x86 https://imgur.com/o7Gyanj
     CtrlMenuPageTitleText titleText;  // 0x2a4
     MessageWindowControl explanationBox;  // 0x418
     PushButton nextButton;  // 0x58c
-    PushButton nextButton;  // 0x7e0
+    PushButton nextButton2;  // 0x7e0
     CtrlMenuBackButton backButton;  // 0xa34
     u32 unknown_0xc98;
 };

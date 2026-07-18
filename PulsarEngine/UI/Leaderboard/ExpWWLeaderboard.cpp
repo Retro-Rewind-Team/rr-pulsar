@@ -305,7 +305,7 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
         UpdateBattleScores(raceScenario, raceInfo);
     }
 
-    raceData->menusScenario.UpdatePoints();
+    PointRating::UpdatePoints(&raceData->menusScenario);
 
     u32 rowCount = static_cast<u32>(page->GetRowCount());
     const u32 playerCount = raceScenario.playerCount;

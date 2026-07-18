@@ -1,7 +1,7 @@
 #include <kamek.hpp>
 #include <include/c_string.h>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceWifi.hpp>
-#include <MarioKartWii/UI/Page/Other/Title.hpp>
+#include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuText.hpp>
 #include <MarioKartWii/UI/Page/Other/Message.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <Settings/Settings.hpp>
@@ -15,6 +15,7 @@
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <UI/UI.hpp>
 #include <RetroRewindChannel.hpp>
+#include <Version.hpp>
 
 namespace Pulsar {
 
@@ -47,7 +48,7 @@ kmBranch(0x80646754, AfterWifiResults);
 static void LaunchRiivolutionButton(SectionMgr* sectionMgr) {
     const SectionId id = sectionMgr->nextSectionId;
     if (id == SECTION_CHANNEL_FROM_MENU || id == SECTION_CHANNEL_FROM_CHECK_RANKINGS || id == SECTION_CHANNEL_FROM_DOWNLOADS) {
-        if(!Dolphin::IsEmulator() && IsNewChannel()) {
+        if (!Dolphin::IsEmulator() && IsNewChannel()) {
             NewChannel_WriteLoadedFromRREphFile();
         }
 
@@ -95,11 +96,14 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage* startMsg, u32 bmgId, 
 }
 kmCall(0x807f8b7c, FixStartMessageFroom);
 
-static void DisplayDate(CtrlMenuPressStart* start) {
-    start->Load();
-    start->SetMessage(BMG_DATE);
+static void DisplayDate(CtrlMenuPageTitleText* titleText) {
+    Text::Info text;
+
+    text.strings[0] = GIT_COMMIT;
+
+    titleText->SetMessage(UI::BMG_TEXT, &text);
 }
-kmCall(0x8063ac58, DisplayDate);
+kmCall(0x805eac64, DisplayDate);
 
 static void CustomRoomDenyText(Pages::MessageBoxTransparent* msgBox, u32 bmgId, const Text::Info* info) {
     if (Pulsar::System::sInstance->netMgr.denyType == Network::DENY_TYPE_BAD_PACK) bmgId = BMG_ROOM_DENY;

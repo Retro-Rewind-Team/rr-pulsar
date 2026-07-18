@@ -53,7 +53,7 @@ static bool IsGroupedTrack(PulsarId id) {
 
 bool IsTrackBlocked(PulsarId id) {
     System* system = System::sInstance;
-    if (!system || !system->IsContext(PULSAR_CT)) return false;
+    if (!system) return false;
 
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();
     if (blockingCount == 0 || system->netMgr.lastTracks == nullptr) return false;

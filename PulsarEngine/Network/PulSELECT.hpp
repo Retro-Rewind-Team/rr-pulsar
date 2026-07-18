@@ -5,7 +5,13 @@
 #include <MarioKartWii/RKNet/Select.hpp>
 #include <Network/Network.hpp>
 namespace Pulsar {
+class CupsConfig;
+class System;
+
 namespace Network {
+
+PulsarId RandomizeHAWTrack(const System& system, const CupsConfig& cupsConfig);
+void StoreBlockedTrack(System& system, PulsarId trackId);
 
 #define GetRecvPulSELECTPacket(addr)                      \
     asmFunc GetRecvPulSELECTPacket##addr() {              \

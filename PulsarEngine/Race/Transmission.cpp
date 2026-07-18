@@ -22,6 +22,15 @@ static void ApplyInside(Kart::Stats& stats) {
     }
 }
 
+static void ApplyInsideBike(Kart::Stats& stats) {
+    if (stats.type == INSIDE_BIKE) {
+        stats.targetAngle = 0.0f;
+    } else if (stats.type == OUTSIDE_BIKE) {
+        stats.type = INSIDE_BIKE;
+        stats.targetAngle = 0.0f;
+    }
+}
+
 static void ApplyOutside(Kart::Stats& stats) {
     if (stats.type == INSIDE_BIKE) {
         stats.type = OUTSIDE_BIKE;
@@ -83,6 +92,8 @@ static void ApplyTransmission(Kart::Stats& stats, u32 playerId) {
     const Transmission transmission = GetPlayerTransmission(playerId);
     if (transmission == TRANSMISSION_INSIDE) {
         ApplyInside(stats);
+    } else if (transmission == TRANSMISSION_INSIDEBIKE) {
+        ApplyInsideBike(stats);
     } else if (transmission == TRANSMISSION_OUTSIDE) {
         ApplyOutside(stats);
     }

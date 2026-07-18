@@ -24,7 +24,7 @@ A makefile is available at the root of the repository. The `CFLAGS` environment 
 
 | Switch         | Domain           |
 | -------------- | ---------------- |
-| -DPROD         | rwfc.net         |
+| -DPROD         | play.rwfc.net    |
 | -DTEST         | zpltest.xyz      |
 | None Specified | nwfc.wiinoma.com |
 

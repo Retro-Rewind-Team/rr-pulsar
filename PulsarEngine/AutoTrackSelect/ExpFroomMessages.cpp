@@ -98,18 +98,20 @@ void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Tex
         const bool isStartItemRain = hostContext & (1 << PULSAR_STARTITEMRAIN);
         const bool isRoyale = hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
 
-        if (isOTT && isKO) {
-            bmgId = BMG_PLAY_OTTKO;
-        } else if (isRoyale && isKO && !isOTT) {
-            bmgId = BMG_PLAY_KOROYALE;
-        } else if (isOTT) {
-            bmgId = BMG_PLAY_OTT;
-        } else if (isRoyale) {
-            bmgId = BMG_PLAY_ROYALE;
-        } else if (isKO) {
-            bmgId = BMG_PLAY_KO;
-        } else if (isExtendedTeam) {
-            bmgId = BMG_EXTENDEDTEAMS_PLAY;
+        if (!isStartRetro && !isStartCT && !isStartRTS && !isStart200 && !isStartOTT && !isStartItemRain) {
+            if (isOTT && isKO) {
+                bmgId = BMG_PLAY_OTTKO;
+            } else if (isRoyale && isKO && !isOTT) {
+                bmgId = BMG_PLAY_KOROYALE;
+            } else if (isOTT) {
+                bmgId = BMG_PLAY_OTT;
+            } else if (isRoyale) {
+                bmgId = BMG_PLAY_ROYALE;
+            } else if (isKO) {
+                bmgId = BMG_PLAY_KO;
+            } else if (isExtendedTeam) {
+                bmgId = BMG_EXTENDEDTEAMS_PLAY;
+            }
         } else if (isStartRetro) {
             bmgId = BMG_RETRO_START_MESSAGE;
         } else if (isStartCT) {

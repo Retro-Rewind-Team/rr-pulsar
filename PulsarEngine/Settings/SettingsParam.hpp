@@ -157,7 +157,8 @@ enum KORoyaleSettings {
 // 11) Extended Teams
 enum ExtendedTeamsSettings {
     RADIO_EXTENDEDTEAMSENABLED = 0,
-    RADIO_EXTENDEDTEAMSLINE = 1
+    RADIO_EXTENDEDTEAMSLINE = 1,
+    SCROLLER_EXTENDEDTEAMSPLAYERS = 0 + 8
 };
 
 // 12) Misc
@@ -176,6 +177,7 @@ enum LooseArchiveOverridesSetting {
 enum Transmission {
     TRANSMISSION_DEFAULT,
     TRANSMISSION_INSIDE,
+    TRANSMISSION_INSIDEBIKE = 2,
     TRANSMISSION_OUTSIDE = 3
 };
 
@@ -527,6 +529,13 @@ enum ExtendedTeams {
 enum ExtendedTeamsLine {
     EXTENDEDTEAMS_LINE_TEAM,
     EXTENDEDTEAMS_LINE_REGION
+};
+
+enum ExtendedTeamsPlayers {
+    EXTENDEDTEAMS_PLAYERS_2,
+    EXTENDEDTEAMS_PLAYERS_3,
+    EXTENDEDTEAMS_PLAYERS_4,
+    EXTENDEDTEAMS_PLAYERS_6
 };
 
 // 12) Misc values

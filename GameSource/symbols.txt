@@ -878,6 +878,7 @@ InitRNG__16RacedataScenarioFv = 0x8052f924
 UpdatePoints__16RacedataScenarioFv = 0x8052e950
 #RacedataPlayer
 ComputeGPRank__14RacedataPlayerFv = 0x8052daf0
+SetPrevFinishPos__14RacedataPlayerFUc = 0x8052e658
 __dt__14RacedataPlayerFv = 0x8052DC68
 __vt__14RacedataPlayer = 0x808b3294
 
@@ -1708,6 +1709,10 @@ OnActivate__Q25Pages2VRFv = 0x8064a84c
 AfterControlUpdate__Q25Pages2VRFv = 0x8064aac4
 FillVRControl__Q25Pages2VRFUiUiUiUcb = 0x8064ab08
 GetRuntimeTypeInfo__Q25Pages2VRCFv = 0x8064aea8
+
+#WFCConnect
+AfterControlUpdate__Q25Pages10WFCConnectFv = 0x80646eb0
+OnDisconnect__Q25Pages10WFCConnectFv = 0x80647db8
 
 #WFCMain
 __ct__Q25Pages11WFCMainMenuFv = 0x8064b640
@@ -2584,3 +2589,8 @@ StopAnmType__18ModelTransformatorF7AnmType = 0x80557830
 GetAnmHolderByIdx__18ModelTransformatorCFUi = 0x80557234
 NormalizeAndGetNorm__Q23EGG8Vector3fFv = 0x80243adc
 detail_PrepareSound__Q34nw4r3snd14SoundStartableFPQ34nw4r3snd11SoundHandleUiPCQ44nw4r3snd14SoundStartable9StartInfo = 0x800a4130
+Update__Q22AI20EnemyRouteControllerFRC16KartAIController = 0x8073b690
+Update__Q24Item5PointFRC4Vec3 = 0x807b8a9c
+Update2__Q24Item5PointFRC4Vec3 = 0x807b8f30
+CalcNextPoint__4ItemFRCQ24Item5PointRQ24Item5PointUcb = 0x807b91e4
+Update__Q24Kart6KillerFv = 0x8059bc44
