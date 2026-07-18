@@ -16,6 +16,7 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Settings/Settings.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -507,6 +508,25 @@ static bool IsPlayerOnlineRaceComplete(const Raceinfo& raceinfo, u8 playerId) {
     return IsPlayerFinished(raceinfo, playerId) && player->currentLap >= player->maxLap;
 }
 
+static bool AreOnSameBattleRoyaleTeam(u8 firstPlayerId, u8 secondPlayerId) {
+    if (firstPlayerId >= maxPlayers || secondPlayerId >= maxPlayers) return false;
+
+    const Racedata* racedata = Racedata::sInstance;
+    if (racedata == nullptr) return false;
+
+    const System* system = System::sInstance;
+    UI::ExtendedTeamManager* extendedTeamMgr = UI::ExtendedTeamManager::sInstance;
+    if (system != nullptr && system->IsContext(PULSAR_EXTENDEDTEAMS) && extendedTeamMgr != nullptr) {
+        const UI::ExtendedTeamID firstTeam = extendedTeamMgr->GetPlayerTeam(firstPlayerId);
+        return firstTeam != UI::TEAM_COUNT && firstTeam == extendedTeamMgr->GetPlayerTeam(secondPlayerId);
+    }
+
+    if ((racedata->racesScenario.settings.modeFlags & UI::ExtendedTeamManager::TEAM_MODE_FLAG) == 0) return false;
+
+    const Team firstTeam = racedata->racesScenario.players[firstPlayerId].team;
+    return firstTeam != TEAM_NONE && firstTeam == racedata->racesScenario.players[secondPlayerId].team;
+}
+
 static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) {
     register u8* itemObj;
     asm { mr itemObj, r31 }
@@ -517,6 +537,7 @@ static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) 
     }
 
     if (hitterPlayerId == hittedPlayerId) return;
+    if (AreOnSameBattleRoyaleTeam(static_cast<u8>(hitterPlayerId), static_cast<u8>(hittedPlayerId))) return;
     if (HasPoweredHitLossThisFrame(static_cast<u8>(hittedPlayerId))) return;
     if (IsOnline() && !IsLocalPlayer(static_cast<u8>(hittedPlayerId))) return;
     if (IsPlayerFinished(*Raceinfo::sInstance, static_cast<u8>(hittedPlayerId))) return;
@@ -538,6 +559,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     RaceBalloonManager* balloonMgr = GetBalloonManager();
     const u8 losingPlayer = static_cast<u8>(losingPlayerId);
     const u8 gainingPlayer = static_cast<u8>(gainingPlayerId);
+    if (AreOnSameBattleRoyaleTeam(losingPlayer, gainingPlayer)) return;
     if (HasMushroomStolenFromVictim(gainingPlayer, losingPlayer)) return;
 
     if (!IsOnline()) {
@@ -573,6 +595,7 @@ static void FinishPoweredHitAction(void* action, u32 sourcePlayerObjId) {
     if (sourcePlayerObjId >= maxPlayers) return;
 
     const u8 playerId = reinterpret_cast<Kart::Link*>(action)->GetPlayerIdx();
+    if (AreOnSameBattleRoyaleTeam(playerId, static_cast<u8>(sourcePlayerObjId))) return;
     RemovePoweredHitBalloon(playerId);
 }
 
