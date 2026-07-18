@@ -32,6 +32,10 @@ static u16 GetMissionU16(const void* mission, u32 offset) {
     return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
 }
 
+bool IsMissionToGateObjective(const RacedataScenario& scenario) {
+    return IsMissionScenario(scenario) && GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == 0x09;
+}
+
 u8 GetMissionLapCount(const RacedataScenario& scenario) {
     if (!IsMissionScenario(scenario)) return 0;
 
@@ -197,6 +201,9 @@ static void FixMissionScoreLayout(CtrlRaceScore* self) {
     static const CtrlRaceScoreOnUpdateFn sCtrlRaceScoreOnUpdate =
         reinterpret_cast<CtrlRaceScoreOnUpdateFn>(kmRuntimeAddr(0x807f784c));
     sCtrlRaceScoreOnUpdate(self);
+
+    if (Racedata::sInstance != 0 && IsMissionToGateObjective(Racedata::sInstance->racesScenario))
+        self->isHidden = true;
 
     if (Racedata::sInstance == 0 ||
         !IsMissionScoreObjective(Racedata::sInstance->racesScenario))
