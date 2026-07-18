@@ -16,7 +16,7 @@ struct sd_vtable {
     int (*rename)(const char* oldName, const char* newName);
     int (*stat)(const char* path, void* statbuf);
     int (*mkdir)(const char* path);
-    int (*diropen)(dir_struct* dir, const char* path);
+    dir_struct* (*diropen)(dir_struct* dir, const char* path);
     int (*dirnext)(dir_struct* dir, char* outFilename, void* filestatbuf);
     int (*dirclose)(dir_struct* dir);
     int (*seek)(int fd, int pos, int direction);
@@ -65,39 +65,60 @@ bool SDIO::CreateFolder(const char* path) {
 }
 
 void SDIO::ReadFolder(const char* path) {
-    this->CloseFolder();
-    fileCount = 0;
-    fileNames = nullptr;
-
-    __sd_vtable->diropen(&dirData, path);
-    snprintf(folderName, IOS::ipcMaxPath, "%s", path);
-    char filename[SD_MAX_FILENAME_LENGTH];
+    if (!this->OpenFolderStream(path)) return;
 
     fileNames = new (heap) IOS::IPCPath[maxFileCount];
-    stat stat;
-    memset(&stat, 0, sizeof(stat));
-    memset(filename, 0, sizeof(filename));
-    while (__sd_vtable->dirnext(&dirData, filename, &stat) == 0) {
-        if (fileCount >= maxFileCount) {
-            break;
-        }
-        if ((stat.st_mode & S_IFMT) == S_IFDIR) {
-            // Skip directories
-            memset(filename, 0, sizeof(filename));
-            continue;
-        }
-        snprintf(fileNames[fileCount], IOS::ipcMaxPath, "%s", filename);
-        fileCount++;
-        memset(&stat, 0, sizeof(stat));
-        memset(filename, 0, sizeof(filename));
+    if (fileNames == nullptr) {
+        this->CloseFolderStream();
+        return;
     }
+
+    bool isDirectory = false;
+    while (fileCount < maxFileCount &&
+           this->ReadFolderEntry(fileNames[fileCount], IOS::ipcMaxPath, isDirectory)) {
+        if (!isDirectory) ++fileCount;
+    }
+    this->CloseFolderStream();
+}
+
+bool SDIO::OpenFolderStream(const char* path) {
+    this->CloseFolder();
+    if (path == nullptr || __sd_vtable->diropen(&dirData, path) == nullptr) return false;
+
+    snprintf(folderName, IOS::ipcMaxPath, "%s", path);
+    isFolderOpen = true;
+    return true;
+}
+
+bool SDIO::ReadFolderEntry(char* outFilename, u32 outFilenameSize, bool& outIsDirectory) {
+    if (!isFolderOpen || outFilename == nullptr || outFilenameSize == 0) return false;
+
+    char filename[SD_MAX_FILENAME_LENGTH];
+    stat entryStat;
+    while (true) {
+        memset(&entryStat, 0, sizeof(entryStat));
+        memset(filename, 0, sizeof(filename));
+        if (__sd_vtable->dirnext(&dirData, filename, &entryStat) != 0) return false;
+
+        const int written = snprintf(outFilename, outFilenameSize, "%s", filename);
+        if (written <= 0 || static_cast<u32>(written) >= outFilenameSize) continue;
+
+        outIsDirectory = (entryStat.st_mode & S_IFMT) == S_IFDIR;
+        return true;
+    }
+}
+
+void SDIO::CloseFolderStream() {
+    if (!isFolderOpen) return;
+    __sd_vtable->dirclose(&dirData);
+    isFolderOpen = false;
 }
 
 void SDIO::CloseFolder() {
     if (fileNames) {
         delete[] (fileNames);
-        __sd_vtable->dirclose(&dirData);
     }
+    this->CloseFolderStream();
     fileNames = nullptr;
     folderName[0] = '\0';
     fileCount = 0;
