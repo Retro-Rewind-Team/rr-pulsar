@@ -2593,3 +2593,5 @@ RipFromDisc__13SystemManagerFPCcPQ23EGG4HeapbPUi = 0x8000b5c8
 RequestBackModel__12MenuModelMgrF13BackModelType = 0x8059e598
 OnButtonClick__Q25Pages8RaceMenuFR10PushButtonUi = 0x8085a0f4
 Reset__19ModelRendererParamsFv = 0x805f5e28
+
+RipFromDisc__13SystemManagerFPCcPvPUi = 0x8000b5f0
