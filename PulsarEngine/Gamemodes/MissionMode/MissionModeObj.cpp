@@ -3,7 +3,6 @@
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <MarioKartWii/System/Random.hpp>
 #include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
-#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace MissionMode {
@@ -45,23 +44,21 @@ static void PreventMissionItemBoxRespawn(Objects::Itembox* itembox) {
 // Itembox::Update checks timer against respawnTime before bringing a broken box back.
 kmCall(0x808288b4, PreventMissionItemBoxRespawn);
 
-kmRuntimeUse(0x8087bacc);
-kmRuntimeUse(0x8087baf4);
+extern "C" u32 sMissionCoinAddIntroBranch; 
+extern "C" u32 sMissionCoinAddSkipIntroBranch;
 static u32 AddMissionCoin(void* coinManager, const KMP::Holder<GOBJ>* object) {
     typedef u32 (*AddCoinFn)(void*, const KMP::Holder<GOBJ>*);
-    static const AddCoinFn sAddCoin = reinterpret_cast<AddCoinFn>(kmRuntimeAddr(0x8087bacc));
+    static const AddCoinFn sAddCoin = reinterpret_cast<AddCoinFn>(sMissionCoinAddIntroBranch);
 
     if (Racedata::sInstance != nullptr && object != nullptr && object->raw != nullptr &&
         coinManager != nullptr && IsMissionCoinObjective(Racedata::sInstance->racesScenario)) {
         object->raw->settings[0] = 1;
         object->raw->settings[1] = 0;
         object->raw->settings[2] = 1;
-        const bool skippedIntroGuard = KamekRuntimeWrite::CondWrite32(kmRuntimeAddr(0x8087baf4),
-                                                                       COIN_ADD_INTRO_BRANCH_ORIGINAL,
-                                                                       COIN_ADD_SKIP_INTRO_BRANCH);
+        const bool skippedIntroGuard = (sMissionCoinAddSkipIntroBranch, COIN_ADD_INTRO_BRANCH_ORIGINAL, COIN_ADD_SKIP_INTRO_BRANCH);
         const u32 result = sAddCoin(coinManager, object);
         if (skippedIntroGuard)
-            KamekRuntimeWrite::Write32(kmRuntimeAddr(0x8087baf4), COIN_ADD_INTRO_BRANCH_ORIGINAL);
+            sMissionCoinAddSkipIntroBranch, COIN_ADD_INTRO_BRANCH_ORIGINAL;
         return result;
     }
 
