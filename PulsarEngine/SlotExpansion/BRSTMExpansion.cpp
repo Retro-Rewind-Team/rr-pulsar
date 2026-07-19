@@ -3,6 +3,7 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Sound/MiscSound.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
@@ -12,8 +13,6 @@ namespace Pulsar {
 namespace Sound {
 
 static char pulPath[0x100];
-static const char missionRunMusicFile[] = "/sound/strm/MissionRun.brstm";
-static const char missionBossMusicFile[] = "/sound/strm/MissionBoss.brstm";
 
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
@@ -40,21 +39,6 @@ static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFile
 
 static bool CheckBRSTMPath(const char* path) {
     return DVD::ConvertPathToEntryNum(path) >= 0;
-}
-
-static bool ResolveMissionMusicPath(const char*& extFilePath) {
-    if (Racedata::sInstance == nullptr) return false;
-
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    const char* missionMusicFile = nullptr;
-    if (Pulsar::MissionMode::IsMissionBossObjective(scenario))
-        missionMusicFile = missionBossMusicFile;
-    else if (Pulsar::MissionMode::IsMissionScoreObjective(scenario))
-        missionMusicFile = missionRunMusicFile;
-    if (missionMusicFile == nullptr || !CheckBRSTMPath(missionMusicFile)) return false;
-
-    extFilePath = missionMusicFile;
-    return true;
 }
 
 static bool StringEndsWith(const char* str, const char* suffix) {
@@ -159,10 +143,17 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
         }
     }
-    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && ResolveMissionMusicPath(extFilePath)) {
-        return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
-    }
-    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
+
+    if (firstChar == 'n' || firstChar == 'S' || firstChar == 'r') {
+        if (Pulsar::MissionMode::ResolveMissionMusicPath(archive->extFileRoot, extFilePath)) {
+            return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
+        }
+
+        CourseId missionMusicSlot;
+        const bool hasMissionNativeMusic = Pulsar::MissionMode::GetMissionMusicSlotOverride(missionMusicSlot);
+        if (hasMissionNativeMusic || isBRSTMOn != Pulsar::CTMUSIC_ENABLED)
+            return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
+
         if (!CupsConfig::IsReg(track)) {
             register u32 strLength;
             asm(mr strLength, r28;);

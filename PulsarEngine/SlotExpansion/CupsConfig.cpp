@@ -8,6 +8,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Settings/Settings.hpp>
 #include <PulsarSystem.hpp>
+#include <Gamemodes/MissionMode/MissionMusic.hpp>
 
 namespace Pulsar {
 
@@ -698,6 +699,15 @@ void CupsConfig::SaveSelectedCourse(const PushButton& courseButton) {
 }
 
 static int GetCorrectMusicSlotWrapper() {
+    CourseId missionMusicSlot;
+    if (Pulsar::MissionMode::GetMissionMusicSlotOverride(missionMusicSlot)) {
+        int ret = Audio::ItemAlterationMgr::courseToSoundIdTable[missionMusicSlot];
+        register Audio::RaceState futureState;
+        asm(mr futureState, r31;);
+        if (futureState == Audio::RACE_STATE_FAST && ret == SOUND_ID_GALAXY_COLOSSEUM)
+            ret = SOUND_ID_GALAXY_COLOSSEUM - 1;
+        return ret;
+    }
     return CupsConfig::sInstance->GetCorrectMusicSlot();
 }
 kmCall(0x80711fd8, GetCorrectMusicSlotWrapper);
