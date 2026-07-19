@@ -209,9 +209,6 @@ kmCall(0x807BA078, ApplyMushroomGlitchFix);
 kmWrite32(0x800EE3A0, 0x2C030000);
 kmWrite32(0x800ECAAC, 0x7C7E1B78);
 
-// NHTTP already emits the Host header from the request URL; remove DWC's duplicate auth header [ZPL]
-kmWrite32(0x800ED868, 0x60000000);
-
 // Disable Camera Shaking from Bombs [ZPL]
 kmWrite32(0x805a906c, 0x4E800020);
 

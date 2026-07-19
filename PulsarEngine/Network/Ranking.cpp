@@ -23,9 +23,9 @@
 namespace Pulsar {
 namespace Ranking {
 
-static const char* ANT_BADGE_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/badges/ant.txt";
-static const char* DEV_BADGE_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/badges/dev.txt";
-static const char* DONO_BADGE_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/badges/dono.txt";
+static const char* ANT_BADGE_URL = "http://rwfc.net/api/game/badges/ant.txt";
+static const char* DEV_BADGE_URL = "http://rwfc.net/api/game/badges/dev.txt";
+static const char* DONO_BADGE_URL = "http://rwfc.net/api/game/badges/dono.txt";
 static const u32 BADGE_REQUEST_WORK_BUF_SIZE = 0x1000;
 
 enum BadgeRequestKind {
