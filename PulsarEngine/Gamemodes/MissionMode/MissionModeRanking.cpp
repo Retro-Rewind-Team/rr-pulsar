@@ -82,9 +82,10 @@ static void SetMissionValue(void* mission, u32 offset, u32 value) {
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mission) + offset) = value;
 }
 
+kmRuntimeUse(0x8053e194);
 typedef void (*SetMissionObjectiveCompleteFn)(void*, u32, u32);
 static const SetMissionObjectiveCompleteFn sSetMissionObjectiveComplete =
-    reinterpret_cast<SetMissionObjectiveCompleteFn>(0x8053e194);
+    reinterpret_cast<SetMissionObjectiveCompleteFn>(kmRuntimeAddr(0x8053e194));
 static u32 GetRank(const void* mission);
 
 static bool HasMissionScoreRequirement(void* mission) {
@@ -251,9 +252,10 @@ static u32 FixMissionCanEnd(void* mission) {
     return status != 0;
 }
 
+kmRuntimeUse(0x8078cfa4);
 static u32 GetMissionPresentationStatus(u32 playerId) {
     typedef u32 (*GetStatusFn)(u32);
-    const GetStatusFn getStatus = reinterpret_cast<GetStatusFn>(0x8078cfa4);
+    const GetStatusFn getStatus = reinterpret_cast<GetStatusFn>(kmRuntimeAddr(0x8078cfa4));
     const u32 status = getStatus(playerId);
 
     UpdateRankFromCurrentMission();
