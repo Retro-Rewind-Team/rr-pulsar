@@ -515,4 +515,13 @@ kmWrite8(0x808ad02b, 'R');
 // Allow 18 rank symbols instead of 12 [ZPL]
 kmWrite32(0x805e3d48, 0x38C00012);
 
+// gsiResolveHostnameThread resolves a hostname to an IPv4 address at [sp + 0xc],
+// then needlessly performs SOInetNtoA -> SOInetAtoN before storing it at [sp + 0x8].
+// During a server-side resolver failure SOInetNtoA can return an invalid pointer;
+// SOInetAtoN then dereferences it and raises a DSI. Keep the resolved address in
+// binary form instead. Confirmed against mkw-pal in Ghidra at 0x800F20AC.
+kmWrite32(0x800F20AC, 0x8001000C);  // lwz r0, 0xc(r1)
+kmWrite32(0x800F20B0, 0x90010008);  // stw r0, 0x8(r1)
+kmWrite32(0x800F20B4, 0x60000000);  // nop SOInetAtoN call
+
 }  // namespace Codes
