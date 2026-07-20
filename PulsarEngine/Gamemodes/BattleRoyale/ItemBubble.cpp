@@ -7,7 +7,6 @@
 #include <MarioKartWii/3D/Model/ModelDirector.hpp>
 #include <MarioKartWii/3D/Model/ModelTransformator.hpp>
 #include <MarioKartWii/3D/Model/AnmHolder.hpp>
-#include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 
 namespace Pulsar {
 namespace Extra {
@@ -16,32 +15,13 @@ static bool ShouldUseBattleRoyaleItemBubbles() {
     return BattleRoyale::ShouldApplyBattleRoyale();
 }
 
-static bool AreOnSameItemBubbleTeam(u8 firstPlayerId, u8 secondPlayerId) {
+// Returns true if the given race player ID belongs to any local player on this console.
+static bool IsLocalRacePlayer(u8 playerId) {
     const Racedata* racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;
     const RacedataScenario& scenario = racedata->racesScenario;
-    if (firstPlayerId >= scenario.playerCount || secondPlayerId >= scenario.playerCount) return false;
-    if (firstPlayerId == secondPlayerId) return true;
-
-    const System* system = System::sInstance;
-    UI::ExtendedTeamManager* extendedTeamMgr = UI::ExtendedTeamManager::sInstance;
-    if (system != nullptr && system->IsContext(PULSAR_EXTENDEDTEAMS) && extendedTeamMgr != nullptr) {
-        const UI::ExtendedTeamID firstTeam = extendedTeamMgr->GetPlayerTeam(firstPlayerId);
-        return firstTeam != UI::TEAM_COUNT && firstTeam == extendedTeamMgr->GetPlayerTeam(secondPlayerId);
-    }
-
-    const Team firstTeam = scenario.players[firstPlayerId].team;
-    return firstTeam != TEAM_NONE && firstTeam == scenario.players[secondPlayerId].team;
-}
-
-static bool IsOnAnyLocalItemBubbleTeam(u8 playerId) {
-    const Racedata* racedata = Racedata::sInstance;
-    if (racedata == nullptr) return false;
-
-    const RacedataScenario& scenario = racedata->racesScenario;
-    for (u8 localPlayer = 0; localPlayer < scenario.localPlayerCount; ++localPlayer) {
-        const u8 localPlayerId = static_cast<u8>(racedata->GetPlayerIdOfLocalPlayer(localPlayer));
-        if (AreOnSameItemBubbleTeam(playerId, localPlayerId)) return true;
+    for (u8 hud = 0; hud < scenario.localPlayerCount; ++hud) {
+        if ((u8)racedata->GetPlayerIdOfLocalPlayer(hud) == playerId) return true;
     }
     return false;
 }
@@ -130,28 +110,20 @@ static void SetupItemLightAnimation(Item::Obj* obj) {
 
     if (obj->bitfield78 & 0x10000) return;  // item is held/tethered - keep hidden
 
-    // Show the bubble on every local screen whose player shares the item's team.
+    // Only show the bubble for items belonging to a local player.
     const u8 playerId = obj->playerUsedItemId;
-    if (playerId >= scenario.playerCount) return;
+    if (!IsLocalRacePlayer(playerId)) return;
 
     // Play blue CLR animation (index 1) and the CHR loop animation (index 2).
     ModelTransformator* transformator = obj->item_light->modelTransformator;
     if (transformator == nullptr) return;
-
-    bool showBubble = false;
-    for (u8 localPlayer = 0; localPlayer < scenario.localPlayerCount; ++localPlayer) {
-        const u8 localPlayerId = static_cast<u8>(racedata->GetPlayerIdOfLocalPlayer(localPlayer));
-        if (!AreOnSameItemBubbleTeam(playerId, localPlayerId)) continue;
-
-        const u8 hudSlot = racedata->GetHudSlotId(localPlayerId);
-        if (hudSlot >= screenCount) continue;
-        obj->item_light->EnableScreen(hudSlot);
-        showBubble = true;
-    }
-
-    if (!showBubble) return;
     transformator->PlayAnmNoBlend(1, 0.0f, 1.0f);  // item_light_blue (CLR, slot 1)
     transformator->PlayAnmNoBlend(2, 0.0f, 1.0f);  // item_light      (CHR, slot 2)
+
+    // Enable the bubble only on the owner's HUD screen.
+    const u8 hudSlot = racedata->GetHudSlotId(playerId);
+    if (hudSlot < screenCount)
+        obj->item_light->EnableScreen(hudSlot);
 }
 kmBranch(0x8079e38c, SetupItemLightAnimation);
 
@@ -165,9 +137,9 @@ static void SpawnSetupAndFixFIBTexture(Item::Obj* obj, int objId) {
     // Only post-process fake item boxes.
     if (obj->itemObjId != OBJ_FAKE_ITEM_BOX) return;
 
-    // Use the friendly texture for items owned by a local player's teammate.
+    // Only override to blue for items owned by a local player.
     const u8 playerId = obj->playerUsedItemId;
-    if (playerId >= 12 || !IsOnAnyLocalItemBubbleTeam(playerId)) return;
+    if (playerId >= 12 || !IsLocalRacePlayer(playerId)) return;
 
     ModelDirector* mdl = obj->modelDirector;
     if (mdl == nullptr) return;
