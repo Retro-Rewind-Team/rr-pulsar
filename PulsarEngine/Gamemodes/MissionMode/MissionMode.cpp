@@ -133,9 +133,10 @@ void PopulateMissionCPUs(RacedataScenario& scenario) {
     }
 }
 
+kmRuntimeUse(0x805362dc);
 typedef void (*GetInitialPhysicsValuesFn)(Raceinfo*, Vec3*, Vec3*, u8);
 static const GetInitialPhysicsValuesFn sGetInitialPhysicsValues =
-    reinterpret_cast<GetInitialPhysicsValuesFn>(0x805362dc);
+    reinterpret_cast<GetInitialPhysicsValuesFn>(kmRuntimeAddr(0x805362dc));
 
 static bool HasMissionCPUs(const RacedataScenario& scenario) {
     for (u32 i = 1; i < 12; ++i)
