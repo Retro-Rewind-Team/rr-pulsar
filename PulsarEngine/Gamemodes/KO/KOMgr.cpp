@@ -4,6 +4,7 @@
 #include <GameModes/KO/KOMgr.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Gamemodes/KO/KORaceEndPage.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
 
@@ -77,7 +78,10 @@ void Mgr::PrepareOfflineVSNextRace() {
     u8 remainingCount = 0;
     for (u8 playerId = 0; playerId < scenario.playerCount; ++playerId) {
         if (!this->IsKOdPlayerId(playerId)) {
-            if (remainingCount != playerId) memcpy(&scenario.players[remainingCount], &scenario.players[playerId], sizeof(RacedataPlayer));
+            if (remainingCount != playerId) {
+                CustomCharacters::CompactOfflineCpuSkinTable(remainingCount, playerId);
+                memcpy(&scenario.players[remainingCount], &scenario.players[playerId], sizeof(RacedataPlayer));
+            }
             ++remainingCount;
         }
     }
