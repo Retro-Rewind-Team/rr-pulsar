@@ -154,12 +154,19 @@ static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
     return reinterpret_cast<IsThereCapacityForItem>(kmRuntimeAddr(0x80799be8))(id);
 }
 
+static ItemId GetVanillaFallback(u8 position) {
+    if (position == 0) return GREEN_SHELL;
+    if (position <= 3) return MUSHROOM;
+    if (position <= 9) return TRIPLE_MUSHROOM;
+    return STAR;
+}
+
 static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-    if (bitfield == 0 || bitfield == VANILLA_ITEM_BITFIELD) return MUSHROOM;
+    if (bitfield == 0 || bitfield == VANILLA_ITEM_BITFIELD) return GetVanillaFallback(position);
 
     Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**>(kmRuntimeAddr(0x809c3670));
-    if (!slotData) return MUSHROOM;
+    if (!slotData) return GetVanillaFallback(position);
 
     const Item::ItemSlotData::Probabilities* probs;
     if (isSpecial)
@@ -169,7 +176,7 @@ static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
     else
         probs = &slotData->cpuChances;
 
-    if (!probs || !probs->probabilities) return MUSHROOM;
+    if (!probs || !probs->probabilities) return GetVanillaFallback(position);
 
     u32 rowCount = probs->rowCount;
     if (position >= rowCount) position = rowCount - 1;
@@ -200,7 +207,7 @@ static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
 
                     lcgSeed = lcgSeed * 1103515245 + 12345;
                     ItemId item = rowEnabled[(lcgSeed >> 16) % count];
-                    if (item >= ITEM_COUNT) item = MUSHROOM;
+                    if (item >= ITEM_COUNT) item = GetVanillaFallback(position);
                     return item;
                 }
             }
@@ -223,13 +230,13 @@ static ItemId GetRandomEnabledItem(u32 position, bool isHuman, bool isSpecial) {
         }
     }
 
-    if (anyCount == 0) return MUSHROOM;
+    if (anyCount == 0) return GetVanillaFallback(position);
 
     static u32 fallbackSeed = 0;
     if (fallbackSeed == 0) fallbackSeed = OS::GetTick();
     fallbackSeed = fallbackSeed * 1103515245 + 12345;
     ItemId item = anyEnabled[(fallbackSeed >> 16) % anyCount];
-    if (item >= ITEM_COUNT) item = MUSHROOM;
+    if (item >= ITEM_COUNT) item = GetVanillaFallback(position);
     return item;
 }
 
@@ -325,7 +332,7 @@ static void CalcItemFallback() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r31);
     if (GetEffectiveCustomItemsBitfield() == VANILLA_ITEM_BITFIELD)
-        roulette->nextItemId = MUSHROOM;
+        roulette->nextItemId = GetVanillaFallback(roulette->position);
     else
         roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
@@ -371,7 +378,7 @@ static void InitItemFallback1() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
     if (GetEffectiveCustomItemsBitfield() == VANILLA_ITEM_BITFIELD)
-        roulette->nextItemId = MUSHROOM;
+        roulette->nextItemId = GetVanillaFallback(roulette->position);
     else
         roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
@@ -382,7 +389,7 @@ static void InitItemFallback2() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
     if (GetEffectiveCustomItemsBitfield() == VANILLA_ITEM_BITFIELD)
-        roulette->nextItemId = MUSHROOM;
+        roulette->nextItemId = GetVanillaFallback(roulette->position);
     else
         roulette->nextItemId = GetRandomEnabledItem(roulette->position, roulette->itemPlayer->isHuman, roulette->setting != 0);
 }
