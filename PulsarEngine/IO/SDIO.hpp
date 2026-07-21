@@ -33,7 +33,8 @@ static_assert(sizeof(stat) == 88, "stat size");
 
 class SDIO : public IO {
    public:
-    SDIO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread) : IO(type, heap, taskThread) {
+    SDIO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread)
+        : IO(type, heap, taskThread), isFolderOpen(false) {
         offset_assert(stat, st_mode, 8);
         offset_assert(file_struct, filesize, 0);
         fileNames = nullptr;
@@ -47,6 +48,9 @@ class SDIO : public IO {
     bool CreateFolder(const char* path) override;
     void ReadFolder(const char* path) override;
     void CloseFolder() override;
+    bool OpenFolderStream(const char* path);
+    bool ReadFolderEntry(char* outFilename, u32 outFilenameSize, bool& outIsDirectory);
+    void CloseFolderStream();
 
     s32 GetFileSize() override;
 
@@ -59,6 +63,7 @@ class SDIO : public IO {
    private:
     file_struct fileData;
     dir_struct dirData;
+    bool isFolderOpen;
 
     int fd() const;
 };

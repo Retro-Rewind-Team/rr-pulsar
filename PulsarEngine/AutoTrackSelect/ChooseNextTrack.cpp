@@ -2,6 +2,7 @@
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <PulsarSystem.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <Network/PulSELECT.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <AutoTrackSelect/ChooseNextTrack.hpp>
@@ -145,10 +146,11 @@ void ChooseNextTrack::OnButtonClick(PushButton& button, u32 hudSlotId) {
     CupsConfig* cupsConfig = CupsConfig::sInstance;
     PulsarId next;
     if (button.buttonId == -1) {
-        next = cupsConfig->RandomizeTrack();
-        if (cupsConfig->GetWinning() == next) next = cupsConfig->RandomizeTrack();
+        next = Network::RandomizeHAWTrack(*System::sInstance, *cupsConfig);
+        if (cupsConfig->GetWinning() == next) next = Network::RandomizeHAWTrack(*System::sInstance, *cupsConfig);
     } else
         next = static_cast<PulsarId>(button.buttonId);
+    Network::StoreBlockedTrack(*System::sInstance, next);
     cupsConfig->SetWinning(next);
     cupsConfig->SetSelected(next);
     this->status = STATUS_TRACK;

@@ -1,6 +1,5 @@
 #include <RetroRewind.hpp>
 #include <Gamemodes/Battle/BattleElimination.hpp>
-#include <runtimeWrite.hpp>
 #include <MarioKartWii/Race/Racedata.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
@@ -206,55 +205,51 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
 }
 static RaceFrameHook BattleElimTimerHook(SetTimerToZeroWhenAllPlayersEliminated);
 
+extern "C" u8 sForceBalloonBattle = false;
+extern "C" u8 sBattleFanfareMode = 0;
+extern "C" u16 sBattleDuration = 180;
+
 asmFunc ForceBalloonBattle() {
     ASM(
+        lis r3, sForceBalloonBattle @ha;
+        lbz r3, sForceBalloonBattle @l(r3);
+        cmpwi r3, 0;
+        beq original;
         oris r0, r0, 0x8000;
         xoris r0, r0, 0;
         stw r0, 0x8(r1);
+        original :;
         lwz r3, 0x0(r31);)
 }
+kmCall(0x806619AC, ForceBalloonBattle);
 
-asmFunc GetFanfare() {
+asmFunc LoadBattleFanfare() {
     ASM(
         nofralloc;
         lwzx r3, r3, r0;
+        lis r4, sBattleFanfareMode @ha;
+        lbz r0, sBattleFanfareMode @l(r4);
+        cmpwi r0, 1;
+        bne checkLapKO;
         cmpwi r3, 0x6b;
-        beq - UnusedFanFareID;
-        li r3, 0x6D;
-        b end;
-        UnusedFanFareID :;
-        li r3, 0x6f;
-        end : blr;)
-}
-
-asmFunc GetFanfareKO() {
-    ASM(
-        nofralloc;
-        lwzx r3, r3, r0;
+        beq unusedFanfare;
+        li r3, 0x6d;
+        blr;
+        checkLapKO : cmpwi r0, 2;
+        bne end;
         cmpwi r3, 0x68;
-        beq - UnusedFanFareID;
-        b end;
-        UnusedFanFareID :;
-        li r3, 0x6f;
+        bne end;
+        unusedFanfare : li r3, 0x6f;
         end : blr;)
 }
+kmCall(0x807123e8, LoadBattleFanfare);
 
-kmRuntimeUse(0x806619AC);  // ForceBalloonBattle [Ro]
-kmRuntimeUse(0x807123e8);  // GetFanfare [Zeraora]
 void BattleElim() {
-    kmRuntimeWrite32A(0x806619AC, 0x807f0000);
-    kmRuntimeWrite32A(0x807123e8, 0x7c63002e);
     System* system = System::sInstance;
     if (!Racedata::sInstance) return;
-    RacedataScenario& scenario = Racedata::sInstance->menusScenario;
     const bool eliminationActive = ShouldApplyBattleElimination();
-    const GameMode mode = scenario.settings.gamemode;
-    if (eliminationActive) {
-        kmRuntimeCallA(0x806619AC, ForceBalloonBattle);
-        kmRuntimeCallA(0x807123e8, GetFanfare);
-    } else if (system->IsContext(PULSAR_MODE_LAPKO)) {
-        kmRuntimeCallA(0x807123e8, GetFanfareKO);
-    }
+    sForceBalloonBattle = eliminationActive;
+    sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2 : 0;
 }
 static FrameLoadHook BattleElimHook(BattleElim);
 
@@ -266,24 +261,32 @@ kmWrite32(0x8053cec8, 0x38000002);
 kmWrite32(0x8053b618, 0x38800002);
 kmWrite32(0x80538a74, 0x60000000);
 
-kmRuntimeUse(0x80532BCC);  // Battle Time Duration [Ro]
 void BattleTimer() {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    kmRuntimeWrite32A(0x80532BCC, 0x380000B4);
+    sBattleDuration = 180;
     if (ShouldApplyBattleElimination()) {
         if (sub.playerCount == 12 || sub.playerCount == 11 || sub.playerCount == 10) {
-            kmRuntimeWrite32A(0x80532BCC, 0x3800012C);
+            sBattleDuration = 300;
         } else if (sub.playerCount == 9 || sub.playerCount == 8 || sub.playerCount == 7) {
-            kmRuntimeWrite32A(0x80532BCC, 0x380000F0);
+            sBattleDuration = 240;
         } else if (sub.playerCount == 6 || sub.playerCount == 5 || sub.playerCount == 4) {
-            kmRuntimeWrite32A(0x80532BCC, 0x380000B4);
+            sBattleDuration = 180;
         } else if (sub.playerCount == 3 || sub.playerCount == 2 || sub.playerCount == 1) {
-            kmRuntimeWrite32A(0x80532BCC, 0x38000078);
+            sBattleDuration = 120;
         }
     }
 }
 static FrameLoadHook BattleTimerHook(BattleTimer);
+
+asmFunc LoadBattleDuration() {
+    ASM(
+        nofralloc;
+        lis r7, sBattleDuration @ha;
+        lhz r0, sBattleDuration @l(r7);
+        blr;)
+}
+kmCall(0x80532BCC, LoadBattleDuration);
 
 }  // namespace BattleElim
 }  // namespace Pulsar

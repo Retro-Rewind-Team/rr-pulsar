@@ -125,6 +125,7 @@ class Mgr {
     u8 GetRoundKoCount(u8 playerCount) const;
     bool Is1v1KoRace(u32 currentRaceNumber) const;
     bool IsOfflineVS() const;
+    void ForceOfflineVSRaceCount() const;
     u32 GetCurrentRaceNumber() const;
     void AdvanceOfflineRaceNumber();
     void FinishOfflineVSIfAllLocalPlayersAreOut();

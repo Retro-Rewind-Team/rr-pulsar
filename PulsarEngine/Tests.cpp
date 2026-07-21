@@ -9,19 +9,15 @@ namespace Race {
 
 #ifdef RR_TESTS
 #ifdef INSTANT_FINISH
-
 // Force the race manager to enter the one-frame finishing state instead of the
 // active race state as soon as the race starts.
 kmWrite32(0x805334e4, 0x38000003);
 kmWrite32(0x80533564, 0x38000003);
-
 #endif
 
 #ifdef FK
-
 kmWrite32(0x8083DFD8, 0x3BA00016);  // li r29, 0x16 -> Funky Kong
 kmWrite32(0x80846C38, 0x3BE00017);  // li r31, 0x17 -> Flame Runner
-
 #endif
 
 #ifdef TIMER
@@ -39,21 +35,17 @@ kmWrite32(0x80643794, 0x38c000ff);
 #ifdef ONE_LAP
 // Force the loaded track and racedata lap counters to one lap before
 // RaceinfoPlayer objects are initialized.
-static void SetOneLapRace() {
+static Raceinfo* CreateOneLapRaceInfo() {
     KMP::Manager* kmp = KMP::Manager::sInstance;
     if (kmp != nullptr && kmp->stgiSection != nullptr && kmp->stgiSection->holdersArray != nullptr &&
         kmp->stgiSection->holdersArray[0] != nullptr && kmp->stgiSection->holdersArray[0]->raw != nullptr) {
         kmp->stgiSection->holdersArray[0]->raw->lapCount = 1;
     }
-
     Racedata* racedata = Racedata::sInstance;
-    if (racedata == nullptr) return;
-    racedata->racesScenario.settings.lapCount = 1;
-    racedata->menusScenario.settings.lapCount = 1;
-}
-
-static Raceinfo* CreateOneLapRaceInfo() {
-    SetOneLapRace();
+    if (racedata != nullptr) {
+        racedata->racesScenario.settings.lapCount = 1;
+        racedata->menusScenario.settings.lapCount = 1;
+    }
     return Raceinfo::CreateInstance();
 }
 kmCall(0x805543cc, CreateOneLapRaceInfo);
@@ -78,7 +70,6 @@ kmCall(0x8064aaac, SetVRBottomMessageAndSelectRandom);
 #endif
 
 #ifdef CPU_COMBO
-
 // Force offline CPU character assignment to Funky Kong.
 kmWrite32(0x8083edc4, 0x38c00016);
 #endif
@@ -87,8 +78,6 @@ kmWrite32(0x8083edc4, 0x38c00016);
 kmWrite32(0x8052F564, 0x60000000);
 kmWrite32(0x8072627C, 0x38600001);
 kmWrite32(0x80590670, 0x70030003);
-kmWrite32(0x8057BD08, 0x38600000);
-
 #endif
 
 }  // namespace Race

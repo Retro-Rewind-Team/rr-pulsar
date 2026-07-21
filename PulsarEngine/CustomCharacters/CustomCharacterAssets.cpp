@@ -761,6 +761,11 @@ void ApplyVoteRandomMessageBoxKartState() {
     voteRandomMessageBoxKartStateApplied = true;
 }
 
+// Award models use separate animations and must always load from the vanilla BRRES.
+const char* GetAwardDriverBRRESName(CharacterId character) {
+    return GetDefaultCharacterPostfix(character);
+}
+kmCall(0x80789668, GetAwardDriverBRRESName);
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar

@@ -12,10 +12,15 @@ class Obj;
 
 class Point {
    public:
+    bool Update(const Vec3& playerPosition);  // 807b8a9c
+    bool Update2(const Vec3& playerPosition);  // 807b8f30
+
     u8 ITPT;
     u8 unknown_0x1[3];
     Vec3 position;
 };  // Total Size 0x10
+
+void CalcNextPoint(const Point& currentPoint, Point& nextPoint, u8 playerId, bool usePlayerPath);  // 807b91e4
 
 class PlayerRoulette {  // only exists for local players
    public:

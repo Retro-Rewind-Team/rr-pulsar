@@ -8,6 +8,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/WiiLink.hpp>
 #include <Network/ServerDateTime.hpp>
 #include <PulsarSystem.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
@@ -17,9 +18,9 @@ namespace Pulsar {
 namespace PointRating {
 
 #ifdef BETA
-static const char* MULTIPLIER_URL = "http://rwfc.net:8000/RetroRewind/multiplierBeta.txt";
+static const char* MULTIPLIER_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/multiplierBeta.txt";
 #else
-static const char* MULTIPLIER_URL = "http://rwfc.net:8000/RetroRewind/multiplier.txt";
+static const char* MULTIPLIER_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/multiplier.txt";
 #endif
 static const u32 MULTIPLIER_REQUEST_WORK_BUF_SIZE = 0x1000;
 

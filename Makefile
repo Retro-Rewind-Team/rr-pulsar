@@ -1,6 +1,7 @@
 CC := mwcceppc.exe
 AS := mwasmeppc.exe
 
+COMMIT_HASH := $(shell git rev-parse --short HEAD)
 GAMESOURCE := ./GameSource
 PULSAR := ./PulsarEngine
 SECURE := ../rr-secure
@@ -16,6 +17,18 @@ $(info [PULSAR] Random Room Key generated: $(PULSAR_RANDOM_KEY))
 else
 PULSAR_RANDOM_KEY := 0xADD2BFAF
 endif
+
+# See https://stackoverflow.com/questions/51727566/
+VERSION_FILE := PulsarEngine/Version.cpp
+
+$(shell \
+	echo -e "#include \"Version.hpp\"\n\nwchar_t *GIT_COMMIT = L\"$$(git describe --always --dirty --match 'NOT A TAG')\";" > $(VERSION_FILE).tmp; \
+	if diff -q $(VERSION_FILE).tmp $(VERSION_FILE) >/dev/null 2>&1; then \
+		rm $(VERSION_FILE).tmp; \
+	else \
+		mv $(VERSION_FILE).tmp $(VERSION_FILE); \
+	fi \
+)
 
 -include .env
 
@@ -56,10 +69,6 @@ build:
 build/kamek.o: $(KAMEK_H)/kamek.cpp | build
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-build/RuntimeWrite.o: $(KAMEK_H)/RuntimeWrite.cpp | build
-	@echo Compiling $<...
-	@$(CC) $(CFLAGS) -c -o $@ $<
-
 # C++ compilation
 build/%.o: $(PULSAR)/%.cpp | build
 	@echo Compiling C++ $<...
@@ -87,7 +96,7 @@ build/Network/RoomKey.o: .force
 
 .force:
 
-force_link: build/kamek.o build/RuntimeWrite.o $(OBJS)
+force_link: build/kamek.o $(OBJS)
 	@echo Linking...
 	@$(KAMEK) $^ -dynamic $(EXTERNALS) -output-combined=build/Code.pul -output-map=build/Code.map
 

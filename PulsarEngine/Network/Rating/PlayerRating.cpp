@@ -1,5 +1,5 @@
 #include <kamek.hpp>
-#include <runtimeWrite.hpp>
+#include <hooks.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
@@ -260,15 +260,24 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
         lastRaceDeltas[i] = next - oldRating;
     }
 }
-kmRuntimeUse(0x8052e950);
-static void ApplyRatingPatch() {
-    kmRuntimeBranchA(0x8052e950, RR_UpdatePoints);
+static bool ShouldUseCustomRating() {
+    if (System::sInstance->IsContext(PULSAR_FFA)) return true;
+
     RKNet::Controller* ctrl = RKNet::Controller::sInstance;
-    if (((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && !System::sInstance->IsContext(PULSAR_VR)) || ctrl->roomType == RKNet::ROOMTYPE_NONE) {
-        kmRuntimeWrite32A(0x8052e950, 0x9421ff70);
+    return !(((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) &&
+              !System::sInstance->IsContext(PULSAR_VR)) ||
+             ctrl->roomType == RKNet::ROOMTYPE_NONE);
+}
+
+void UpdatePoints(RacedataScenario* scenario) {
+    if (ShouldUseCustomRating()) {
+        RR_UpdatePoints(scenario);
+    } else {
+        scenario->UpdatePoints();
     }
 }
-static SectionLoadHook ratingHook(ApplyRatingPatch);
+kmCall(0x8085cf64, UpdatePoints);
+kmBranch(0x8085ea60, UpdatePoints);
 
 kmWrite16(0x8064F6DA, 30000);
 kmWrite16(0x8064F6E6, 30000);

@@ -1710,6 +1710,10 @@ AfterControlUpdate__Q25Pages2VRFv = 0x8064aac4
 FillVRControl__Q25Pages2VRFUiUiUiUcb = 0x8064ab08
 GetRuntimeTypeInfo__Q25Pages2VRCFv = 0x8064aea8
 
+#WFCConnect
+AfterControlUpdate__Q25Pages10WFCConnectFv = 0x80646eb0
+OnDisconnect__Q25Pages10WFCConnectFv = 0x80647db8
+
 #WFCMain
 __ct__Q25Pages11WFCMainMenuFv = 0x8064b640
 __dt__Q25Pages11WFCMainMenuFv = 0x8064b850
@@ -2585,6 +2589,14 @@ StopAnmType__18ModelTransformatorF7AnmType = 0x80557830
 GetAnmHolderByIdx__18ModelTransformatorCFUi = 0x80557234
 NormalizeAndGetNorm__Q23EGG8Vector3fFv = 0x80243adc
 detail_PrepareSound__Q34nw4r3snd14SoundStartableFPQ34nw4r3snd11SoundHandleUiPCQ44nw4r3snd14SoundStartable9StartInfo = 0x800a4130
+Update__Q22AI20EnemyRouteControllerFRC16KartAIController = 0x8073b690
+Update__Q24Item5PointFRC4Vec3 = 0x807b8a9c
+Update2__Q24Item5PointFRC4Vec3 = 0x807b8f30
+CalcNextPoint__4ItemFRCQ24Item5PointRQ24Item5PointUcb = 0x807b91e4
+Update__Q24Kart6KillerFv = 0x8059bc44
+
+#MissionMode
+ChangeSectionWithDelayById__Q25Pages4MenuF9SectionIdf = 0x80837c5c
 
 #MissionMode
 GetKTPTHolder__8RaceinfoFUc = 0x805365c8
@@ -2595,3 +2607,6 @@ OnButtonClick__Q25Pages8RaceMenuFR10PushButtonUi = 0x8085a0f4
 Reset__19ModelRendererParamsFv = 0x805f5e28
 
 RipFromDisc__13SystemManagerFPCcPvPUi = 0x8000b5f0
+
+sMissionCoinAddIntroBranch = 0x8087bacc
+sMissionCoinAddSkipIntroBranch = 0x8087baf4
