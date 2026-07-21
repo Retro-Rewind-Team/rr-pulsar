@@ -10,8 +10,7 @@ namespace MissionMode {
 static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
 static const u16 MISSION_OBJECTIVE_BREAK_ITEM_BOXES = 4;
 static const u32 ITEMBOX_NO_RESPAWN_TIME = 0x7fffffff;
-static const u32 COIN_ADD_INTRO_BRANCH_ORIGINAL = 0x4082000C;
-static const u32 COIN_ADD_SKIP_INTRO_BRANCH = 0x4800000C;
+static const u32 COIN_ADD_INTRO_GUARD_VALUE = 5;
 
 static u16 GetMissionU16(const void* mission, u32 offset) {
     const u8* bytes = reinterpret_cast<const u8*>(mission) + offset;
@@ -44,21 +43,28 @@ static void PreventMissionItemBoxRespawn(Objects::Itembox* itembox) {
 // Itembox::Update checks timer against respawnTime before bringing a broken box back.
 kmCall(0x808288b4, PreventMissionItemBoxRespawn);
 
-extern "C" u32 sMissionCoinAddIntroBranch; 
-extern "C" u32 sMissionCoinAddSkipIntroBranch;
+extern "C" u32 sMissionCoinAddIntroBranch;
 static u32 AddMissionCoin(void* coinManager, const KMP::Holder<GOBJ>* object) {
     typedef u32 (*AddCoinFn)(void*, const KMP::Holder<GOBJ>*);
-    static const AddCoinFn sAddCoin = reinterpret_cast<AddCoinFn>(sMissionCoinAddIntroBranch);
+    // The symbol names an instruction at the original function entry.  Taking
+    // the value of the symbol loads that instruction (0x9421ffe0), which is
+    // not a callable address and causes an ISI when the hook is reached.
+    static const AddCoinFn sAddCoin = reinterpret_cast<AddCoinFn>(&sMissionCoinAddIntroBranch);
 
     if (Racedata::sInstance != nullptr && object != nullptr && object->raw != nullptr &&
         coinManager != nullptr && IsMissionCoinObjective(Racedata::sInstance->racesScenario)) {
+        RacedataSettings& settings = Racedata::sInstance->racesScenario.settings;
+        const GameType oldGameType = settings.gametype;
         object->raw->settings[0] = 1;
         object->raw->settings[1] = 0;
         object->raw->settings[2] = 1;
-        const bool skippedIntroGuard = (sMissionCoinAddSkipIntroBranch, COIN_ADD_INTRO_BRANCH_ORIGINAL, COIN_ADD_SKIP_INTRO_BRANCH);
+        // Ghidra shows AddCoin loading RacedataSettings +0x0c at 0x8087bad4-
+        // 0x8087baf0 and returning when that value is 5.  This is the existing
+        // gametype field (Racedata +0xb74), so bypass only that data guard.
+        if (static_cast<u32>(oldGameType) == COIN_ADD_INTRO_GUARD_VALUE)
+            settings.gametype = GAMETYPE_DEFAULT;
         const u32 result = sAddCoin(coinManager, object);
-        if (skippedIntroGuard)
-            sMissionCoinAddSkipIntroBranch, COIN_ADD_INTRO_BRANCH_ORIGINAL;
+        settings.gametype = oldGameType;
         return result;
     }
 

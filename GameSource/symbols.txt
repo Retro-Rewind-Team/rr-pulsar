@@ -2609,4 +2609,3 @@ Reset__19ModelRendererParamsFv = 0x805f5e28
 RipFromDisc__13SystemManagerFPCcPvPUi = 0x8000b5f0
 
 sMissionCoinAddIntroBranch = 0x8087bacc
-sMissionCoinAddSkipIntroBranch = 0x8087baf4
