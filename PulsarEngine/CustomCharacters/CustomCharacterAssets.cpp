@@ -319,7 +319,7 @@ bool MenuKartArchiveExists(const char* postfix, u32 gamemode) {
 }
 
 const char* MenuKartArchivePostfix(CharacterId character, u32 gamemode) {
-    const char* customPostfix = GeneratedCustomPostfix(character, SelectedTable(character));
+    const char* customPostfix = GeneratedCustomPostfix(character, ResolveMenuTable(character));
     if (customPostfix != nullptr && MenuKartArchiveExists(customPostfix, gamemode)) return customPostfix;
     return GetDefaultCharacterPostfix(character);
 }

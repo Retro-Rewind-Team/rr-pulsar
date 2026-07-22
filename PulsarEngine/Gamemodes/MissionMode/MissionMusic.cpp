@@ -17,13 +17,20 @@ static const char MISSION_BOSS_MUSIC_FILE[] = "/sound/strm/MissionBoss.brstm";
 static const u32 MAX_MISSION_MUSIC_ENTRIES = 0x100;
 static const u32 MAX_MUSIC_NAME_LENGTH = 0x50;
 static const u32 MISSION_MUSIC_CONFIG_MAGIC = 0x4D524346;
-static const u32 MISSION_MUSIC_CONFIG_VERSION = 1;
+static const u32 MISSION_MUSIC_CONFIG_LEGACY_VERSION = 1;
+static const u32 MISSION_MUSIC_CONFIG_VERSION = 2;
 static const u32 MISSION_MUSIC_CONFIG_HEADER_SIZE = 0x10;
 static const u32 MISSION_MUSIC_CONFIG_ENTRY_SIZE = MAX_MUSIC_NAME_LENGTH;
+// ConfigMR version 2 appends one player and eleven CPU table bytes per mission.
+static const u32 MISSION_CHARACTER_TABLE_ENTRY_SIZE = MISSION_CHARACTER_TABLE_COUNT;
+static const u8 CUSTOM_TABLE_LIMIT = 50;
 
 static bool associationsLoaded;
+static bool characterTablesInitialized;
+static bool characterTablesLoaded;
 static bool hasAssociation[MAX_MISSION_MUSIC_ENTRIES];
 static char associationNames[MAX_MISSION_MUSIC_ENTRIES][MAX_MUSIC_NAME_LENGTH];
+static u8 missionCharacterTables[MAX_MISSION_MUSIC_ENTRIES][MISSION_CHARACTER_TABLE_COUNT];
 static char resolvedPath[0x100];
 static u32 cachedMissionId = MAX_MISSION_MUSIC_ENTRIES;
 static bool cachedTrackFound;
@@ -58,22 +65,35 @@ static u32 ReadBigEndian32(const u8* data) {
            (static_cast<u32>(data[2]) << 8) | static_cast<u32>(data[3]);
 }
 
-static void LoadAssociations() {
-    if (associationsLoaded) return;
-    associationsLoaded = true;
+static bool IsValidCharacterTable(u8 table) {
+    return table == MISSION_CHARACTER_TABLE_UNSET || table <= CUSTOM_TABLE_LIMIT;
+}
 
-    u32 fileSize = 0;
-    char* file = static_cast<char*>(SystemManager::RipFromDisc(MISSION_MUSIC_FILE, nullptr, &fileSize));
-    if (file == nullptr || fileSize < MISSION_MUSIC_CONFIG_HEADER_SIZE) return;
+static void InitializeCharacterTables() {
+    if (characterTablesInitialized) return;
+    for (u32 missionId = 0; missionId < MAX_MISSION_MUSIC_ENTRIES; ++missionId)
+        for (u32 playerId = 0; playerId < MISSION_CHARACTER_TABLE_COUNT; ++playerId)
+            missionCharacterTables[missionId][playerId] = MISSION_CHARACTER_TABLE_UNSET;
+    characterTablesInitialized = true;
+}
 
-    const u8* data = reinterpret_cast<const u8*>(file);
+static bool ParseConfig(const u8* data, u32 fileSize) {
+    if (data == nullptr || fileSize < MISSION_MUSIC_CONFIG_HEADER_SIZE) return false;
+
     const u32 magic = ReadBigEndian32(data);
     const u32 version = ReadBigEndian32(data + 0x04);
     const u32 entryCount = ReadBigEndian32(data + 0x08);
     const u32 entrySize = ReadBigEndian32(data + 0x0C);
-    if (magic != MISSION_MUSIC_CONFIG_MAGIC || version != MISSION_MUSIC_CONFIG_VERSION ||
-        entrySize != MISSION_MUSIC_CONFIG_ENTRY_SIZE || entryCount > MAX_MISSION_MUSIC_ENTRIES ||
-        entryCount > (fileSize - MISSION_MUSIC_CONFIG_HEADER_SIZE) / entrySize) return;
+    const bool validHeader = magic == MISSION_MUSIC_CONFIG_MAGIC &&
+        (version == MISSION_MUSIC_CONFIG_LEGACY_VERSION || version == MISSION_MUSIC_CONFIG_VERSION) &&
+        entrySize == MISSION_MUSIC_CONFIG_ENTRY_SIZE && entryCount <= MAX_MISSION_MUSIC_ENTRIES &&
+        entryCount <= (fileSize - MISSION_MUSIC_CONFIG_HEADER_SIZE) / entrySize;
+    if (!validHeader) return false;
+
+    const u32 tableOffset = MISSION_MUSIC_CONFIG_HEADER_SIZE + entryCount * entrySize;
+    const bool hasTableSection = version != MISSION_MUSIC_CONFIG_VERSION ||
+        (tableOffset <= fileSize && entryCount <= (fileSize - tableOffset) / MISSION_CHARACTER_TABLE_ENTRY_SIZE);
+    if (!hasTableSection) return false;
 
     for (u32 missionId = 0; missionId < entryCount; ++missionId) {
         const u8* entry = data + MISSION_MUSIC_CONFIG_HEADER_SIZE + missionId * entrySize;
@@ -86,6 +106,27 @@ static void LoadAssociations() {
         if (CopyMusicName(associationNames[missionId], name)) hasAssociation[missionId] = true;
     }
 
+    if (version == MISSION_MUSIC_CONFIG_VERSION) {
+        for (u32 missionId = 0; missionId < entryCount; ++missionId) {
+            const u8* entry = data + tableOffset + missionId * MISSION_CHARACTER_TABLE_ENTRY_SIZE;
+            for (u32 playerId = 0; playerId < MISSION_CHARACTER_TABLE_COUNT; ++playerId) {
+                const u8 table = entry[playerId];
+                if (IsValidCharacterTable(table)) missionCharacterTables[missionId][playerId] = table;
+            }
+        }
+    }
+    return true;
+}
+
+static void LoadAssociations() {
+    if (associationsLoaded) return;
+    InitializeCharacterTables();
+
+    u32 fileSize = 0;
+    char* file = static_cast<char*>(SystemManager::RipFromDisc(MISSION_MUSIC_FILE, nullptr, &fileSize));
+    if (ParseConfig(reinterpret_cast<const u8*>(file), fileSize)) characterTablesLoaded = true;
+
+    associationsLoaded = true;
 }
 
 static bool CheckPath(const char* path) {
@@ -163,6 +204,14 @@ static bool ResolveForcedMusic(const RacedataScenario& scenario, const char*& ex
 
 }
 
+void LoadMissionCharacterTablesFromConfig(const u8* file, u32 fileSize) {
+    InitializeCharacterTables();
+    characterTablesLoaded = true;
+    if (ParseConfig(file, fileSize)) {
+        associationsLoaded = true;
+    }
+}
+
 bool ResolveMissionMusicPath(const char* brstmRoot, const char*& extFilePath) {
     if (Racedata::sInstance == nullptr) return false;
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
@@ -179,6 +228,24 @@ bool ResolveMissionMusicPath(const char* brstmRoot, const char*& extFilePath) {
     if (!CheckPath(resolvedPath)) return false;
     extFilePath = resolvedPath;
     return true;
+}
+
+u8 GetMissionCharacterTable(u8 playerId) {
+    if (playerId >= MISSION_CHARACTER_TABLE_COUNT || Racedata::sInstance == nullptr) return MISSION_CHARACTER_TABLE_UNSET;
+    const RacedataScenario* scenario = &Racedata::sInstance->racesScenario;
+    if (!IsMissionScenario(*scenario)) {
+        scenario = &Racedata::sInstance->menusScenario;
+        if (!IsMissionScenario(*scenario)) return MISSION_CHARACTER_TABLE_UNSET;
+    }
+
+    InitializeCharacterTables();
+    const u32 missionId = scenario->settings.raceNumber;
+    if (missionId >= MAX_MISSION_MUSIC_ENTRIES) return MISSION_CHARACTER_TABLE_UNSET;
+    if (missionCharacterTables[missionId][playerId] != MISSION_CHARACTER_TABLE_UNSET)
+        return missionCharacterTables[missionId][playerId];
+
+    if (!characterTablesLoaded) LoadAssociations();
+    return missionCharacterTables[missionId][playerId];
 }
 
 bool GetMissionMusicSlotOverride(CourseId& musicSlot) {

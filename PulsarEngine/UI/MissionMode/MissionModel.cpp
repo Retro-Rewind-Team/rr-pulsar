@@ -1,4 +1,5 @@
 #include <kamek.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <UI/MissionMode/MissionModel.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
@@ -100,6 +101,7 @@ void ResetMissionDriverModels() {
 
 void Reset() {
     scenarioLoaded = false;
+    comboModelLoaded = false;
 
     if (SectionMgr::sInstance == nullptr || SectionMgr::sInstance->curSection == nullptr)
         return;
@@ -152,6 +154,13 @@ void RestoreMenuCombo() {
 
 void SetScenarioLoaded(bool loaded) {
     scenarioLoaded = loaded;
+    comboModelLoaded = false;
+    if (!loaded || Racedata::sInstance == nullptr ||
+        !::Pulsar::MissionMode::IsMissionScenario(Racedata::sInstance->menusScenario))
+        return;
+
+    const CharacterId character = Racedata::sInstance->menusScenario.players[0].characterId;
+    CustomCharacters::ReinitMenuDriverModelMgr(0, character);
 }
 
 bool IsMissionMenuSection() {
