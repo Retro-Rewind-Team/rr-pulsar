@@ -755,6 +755,8 @@ void ApplyVoteRandomMessageBoxKartState() {
         MenuDriverModel* model = modelMgr->driverModels->players[hud].playerModel;
         if (model == nullptr) continue;
         MenuDriverModelVehicleSlot(*model) = SelectedMenuKartForHud(hud);
+        // PrepareDriverOnKartAnms saves the active transformator as the character-select transformator.
+        model->SwitchState(hud, MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT);
         modelMgr->driverModels->PrepareDriverOnKartAnms(hud);
         model->SwitchState(hud, static_cast<MenuDriverModel::State>(3));
     }

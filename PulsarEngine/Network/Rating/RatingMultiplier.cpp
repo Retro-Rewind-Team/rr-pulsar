@@ -18,9 +18,9 @@ namespace Pulsar {
 namespace PointRating {
 
 #ifdef BETA
-static const char* MULTIPLIER_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/multiplierBeta.txt";
+static const char* MULTIPLIER_URL = "http://rwfc.net/api/game/multiplierBeta.txt";
 #else
-static const char* MULTIPLIER_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/multiplier.txt";
+static const char* MULTIPLIER_URL = "http://rwfc.net/api/game/multiplier.txt";
 #endif
 static const u32 MULTIPLIER_REQUEST_WORK_BUF_SIZE = 0x1000;
 

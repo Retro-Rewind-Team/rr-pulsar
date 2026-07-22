@@ -1,5 +1,6 @@
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <IO/SDIO.hpp>
+#include <core/rvl/os/OSCache.hpp>
 
 namespace Pulsar {
 namespace CustomCharacters {
@@ -564,6 +565,7 @@ void* LoadChannelFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper
         return nullptr;
     }
     if (allocSize > fileSize) memset(static_cast<u8*>(buffer) + fileSize, 0, allocSize - fileSize);
+    OS::DCStoreRange(buffer, allocSize);
     return buffer;
 }
 

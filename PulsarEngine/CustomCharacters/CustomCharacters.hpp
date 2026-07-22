@@ -175,6 +175,7 @@ void ResetOnlineCustomCharacterFlags();
 bool IsOnlineRoom(const RKNet::Controller* controller);
 void ResetAllCharacterTablesToDefault();
 void ResetOfflineCpuSkinTablesForSection();
+void CompactOfflineCpuSkinTable(u8 targetPlayerId, u8 sourcePlayerId);
 bool IsLocalRacePlayer(u8 playerId);
 void RefreshLocalOnlineCustomCharacterFlags();
 bool SetSelectedTable(CharacterId character, u8 table);

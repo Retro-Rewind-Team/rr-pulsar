@@ -168,14 +168,14 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", racePercentageSpecifier) >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
-                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
+                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.06f;
                 }
             } else if (isFinalLap && CheckBRSTM(archive, track, "_final") >= 0) {
                 extFilePath = pulPath;
             } else if (CheckBRSTM(archive, track, "_n") >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
-                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
+                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.06f;
                 }
             }
         }

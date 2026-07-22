@@ -356,6 +356,11 @@ void ResetOfflineCpuSkinTables() {
     for (u8 i = 0; i < ONLINE_PLAYER_COUNT; ++i) offlineCpuCharacterTables[i] = TABLE_DEFAULT;
 }
 
+void CompactOfflineCpuSkinTable(u8 targetPlayerId, u8 sourcePlayerId) {
+    if (targetPlayerId >= ONLINE_PLAYER_COUNT || sourcePlayerId >= ONLINE_PLAYER_COUNT) return;
+    offlineCpuCharacterTables[targetPlayerId] = offlineCpuCharacterTables[sourcePlayerId];
+}
+
 void ClearCustomCharacterFileCaches() {
     memset(customSkinExists, 0, sizeof(customSkinExists));
     memset(looseVoiceInfo, 0, sizeof(looseVoiceInfo));
@@ -477,7 +482,8 @@ u8 OfflineCpuSkinTable(const RacedataScenario& scenario, u8 playerId, CharacterI
         signature = signature * 33 + static_cast<u32>(scenario.players[i].playerType);
     }
 
-    const bool sameSeries = offlineCpuSkinTablesValid && offlineCpuSkinSignature == signature;
+    const bool isOfflineKO = System::sInstance->IsContext(PULSAR_MODE_KO) && !IsOnlineRoom(RKNet::Controller::sInstance);
+    const bool sameSeries = offlineCpuSkinTablesValid && (offlineCpuSkinSignature == signature || isOfflineKO);
     const bool newSeriesStart = sameSeries && scenario.settings.raceNumber == 0 && offlineCpuSkinRaceNumber != 0;
     if (!sameSeries || newSeriesStart) {
         offlineCpuSkinTablesValid = true;

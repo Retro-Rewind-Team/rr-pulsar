@@ -289,7 +289,9 @@ void ExtendedTeamManager::ConfigureOfflineTeams() {
         this->SetPlayerTeam(i, static_cast<ExtendedTeamID>(i / playersPerTeam));
     }
 
-    ExtendedTeamSelect::RandomizeTeamColors();
+    if (scenario.settings.raceNumber == 0) {
+        ExtendedTeamSelect::RandomizeTeamColors();
+    }
 }
 
 void ExtendedTeamManager::Reset() {
