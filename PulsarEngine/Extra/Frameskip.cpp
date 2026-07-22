@@ -361,7 +361,7 @@ static bool IsNoLightningFlashTrack(const Pulsar::CupsConfig& cupsConfig) {
     if (fileName == nullptr || fileName[0] == '\0') fileName = cupsConfig.GetFileName(pulsarId, 0);
     if (fileName == nullptr) return false;
 
-    return strcmp(fileName, "sw2WS") == 0 || strcmp(fileName, "117") == 0;
+    return strcmp(fileName, "sw2WS") == 0 || strcmp(fileName, "sw2MBC") == 0 || strcmp(fileName, "117") == 0;
 }
 
 static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr* mgr) {
