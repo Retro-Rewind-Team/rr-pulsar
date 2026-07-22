@@ -100,6 +100,7 @@ void ResetMissionDriverModels() {
 
 void Reset() {
     scenarioLoaded = false;
+    comboModelLoaded = false;
 
     if (SectionMgr::sInstance == nullptr || SectionMgr::sInstance->curSection == nullptr)
         return;
@@ -152,6 +153,7 @@ void RestoreMenuCombo() {
 
 void SetScenarioLoaded(bool loaded) {
     scenarioLoaded = loaded;
+    comboModelLoaded = false;
 }
 
 bool IsMissionMenuSection() {

@@ -2,6 +2,7 @@
 #include <UI/MissionMode/MissionMode.hpp>
 #include <UI/MissionMode/MissionModel.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
@@ -24,6 +25,7 @@ static const u32 MISSION_UI_LEVEL_SIZE = 0x50;
 static const u32 MISSION_UI_STAGE_SIZE = 0x0A;
 static const u32 MISSION_KMT_HEADER_SIZE = 0x10;
 static const u32 MISSION_KMT_ENTRY_SIZE = 0x70;
+static const char MISSION_CONFIG_FILE[] = "Binaries/ConfigMR.pul";
 static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
 static const u32 BMG_OK = 0x7D0;
@@ -157,7 +159,8 @@ class MissionSelectPage : public Pages::MenuInteractable {
     static const u32 BUTTON_COUNT = 8;
 
     MissionSelectPage()
-        : levelSelected(false), missionUiFile(nullptr), missionUiSize(0), missionKmtFile(nullptr), missionKmtSize(0) {
+        : levelSelected(false), missionUiFile(nullptr), missionUiSize(0), missionKmtFile(nullptr), missionKmtSize(0),
+          missionConfigFile(nullptr), missionConfigSize(0) {
         this->onButtonClickHandler.subject = this;
         this->onButtonClickHandler.ptmf = &MissionSelectPage::OnButtonClick;
         this->onButtonSelectHandler.subject = this;
@@ -429,6 +432,8 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
         this->missionKmtFile = static_cast<const u8*>(SystemManager::RipFromDisc(
             "/Race/MissionRun/mission_single.kmt", scene->structsHeaps.heaps[1], true, &this->missionKmtSize));
+        this->missionConfigFile = static_cast<const u8*>(SystemManager::RipFromDisc(
+            MISSION_CONFIG_FILE, scene->structsHeaps.heaps[1], true, &this->missionConfigSize));
     }
 
     bool LoadMissionScenario() {
@@ -444,6 +449,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
         const u32 missionOffset = MISSION_KMT_HEADER_SIZE + static_cast<u32>(missionId) * MISSION_KMT_ENTRY_SIZE;
         if (missionId >= missionCount || missionOffset + MISSION_KMT_ENTRY_SIZE > this->missionKmtSize) return false;
 
+        Pulsar::MissionMode::LoadMissionCharacterTablesFromConfig(this->missionConfigFile, this->missionConfigSize);
         RacedataScenario& scenario = Racedata::sInstance->menusScenario;
         const u8* mission = this->missionKmtFile + missionOffset;
         memcpy(scenario.mission, mission, MISSION_KMT_ENTRY_SIZE);
@@ -464,6 +470,8 @@ class MissionSelectPage : public Pages::MenuInteractable {
     u32 missionUiSize;
     const u8* missionKmtFile;
     u32 missionKmtSize;
+    const u8* missionConfigFile;
+    u32 missionConfigSize;
     PushButton levelButtons[BUTTON_COUNT];
     PushButton stageButtons[BUTTON_COUNT];
     wchar_t buttonNames[BUTTON_COUNT * 2][32];
