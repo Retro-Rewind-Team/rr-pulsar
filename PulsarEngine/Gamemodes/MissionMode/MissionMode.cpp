@@ -19,6 +19,8 @@ static const u32 MISSION_COMPETITION_MODE_FLAG = 1 << 2;
 static const u32 MISSION_CUSTOM_ITEMS_OFFSET = 0x54;
 static const u32 MISSION_ENGINE_OFFSET = 0x07;
 static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
+static const u16 MISSION_OBJECTIVE_VS_RACE_01 = 0x01;
+static const u16 MISSION_OBJECTIVE_VS_RACE_02 = 0x02;
 bool IsMissionScenario(const RacedataScenario& scenario) {
     return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
 }
@@ -30,6 +32,13 @@ static u32 GetMissionValue(const void* mission, u32 offset) {
 static u16 GetMissionU16(const void* mission, u32 offset) {
     const u8* const bytes = reinterpret_cast<const u8*>(mission) + offset;
     return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
+}
+
+static bool IsMissionVSObjective(const RacedataScenario& scenario) {
+    if (!IsMissionScenario(scenario)) return false;
+
+    const u16 objective = GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET);
+    return objective == MISSION_OBJECTIVE_VS_RACE_01 || objective == MISSION_OBJECTIVE_VS_RACE_02;
 }
 
 bool IsMissionToGateObjective(const RacedataScenario& scenario) {
@@ -109,6 +118,25 @@ static void MissionRaceManagerPlayerEndLap(void* player) {
 
 kmCall(0x80534fbc, MissionRaceManagerPlayerEndLap);
 kmCall(0x805350d4, MissionRaceManagerPlayerEndLap);
+
+// EnableBackwardsAction::EnableAction.  Mission objectives other than VS Race
+// should not start Lakitu's backwards-facing action.
+kmRuntimeUse(0x80725c98);
+static void PreventMissionBackwardsLakitu(void* action) {
+    typedef void (*EnableBackwardsActionFn)(void*);
+    static const EnableBackwardsActionFn original =
+        reinterpret_cast<EnableBackwardsActionFn>(kmRuntimeAddr(0x80725c98));
+    original(action);
+
+    if (Racedata::sInstance == nullptr || IsMissionVSObjective(Racedata::sInstance->racesScenario))
+        return;
+
+    // EnableLakituAction::isEnabled is the byte at offset 0x5.
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(action) + 0x5) = 0;
+}
+
+// EnableBackwardsAction vtable + 0x10 (PAL vtable at 0x808c9878).
+kmWritePointer(0x808c9888, PreventMissionBackwardsLakitu);
 
 static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
     return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) |
