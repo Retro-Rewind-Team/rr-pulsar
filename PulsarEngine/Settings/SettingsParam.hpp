@@ -93,6 +93,7 @@ enum SoundSettings {
     RADIO_MUSIC = 1,
     RADIO_MUSICSPEEDUP = 2,
     RADIO_SPECIALITEMRECEIVE = 3,
+    RADIO_CUSTOMENDINGFANFARES = 4,
 };
 
 // 6) Battle
@@ -315,6 +316,11 @@ enum RaceSettingSPEEDUP {
 enum SpecialItemReceive {
     SPECIALITEMRECEIVE_ENABLED = 0x0,
     SPECIALITEMRECEIVE_DISABLED = 0x1
+};
+
+enum CustomEndingFanfares {
+    CUSTOMENDINGFANFARES_ENABLED = 0x0,
+    CUSTOMENDINGFANFARES_DISABLED = 0x1
 };
 
 // 6) Battle values

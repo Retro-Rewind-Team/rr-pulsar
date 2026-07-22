@@ -1,3 +1,7 @@
 #BMG
 2849  = \z{a02,2000000000}
-  
+421892 = Custom Ending Fanfares
+421968 = Enabled
+421969 = Disabled
+423168 = Use console-specific ending fanfares on supported tracks.
+423169 = Always use the original Mario Kart Wii ending fanfares.
