@@ -62,7 +62,9 @@ static void Load() {
     IO* io = IO::sInstance;
     const char* path = GetPath();
     if (!io || !path) return;
-    if (!io->OpenFile(path, FILE_MODE_READ)) return;
+    if (!io->OpenFile(path, FILE_MODE_READ)) {
+        return;
+    }
 
     union {
         PackedHeader h;
