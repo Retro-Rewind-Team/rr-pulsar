@@ -133,6 +133,20 @@ void PopulateMissionCPUs(RacedataScenario& scenario) {
     }
 }
 
+void FinalizeMissionRaceScenario() {
+    if (Racedata::sInstance == nullptr ||
+        !IsMissionScenario(Racedata::sInstance->menusScenario))
+        return;
+
+    // Native Racedata::InitRace has now copied the selected menu scenario into
+    // racesScenario. Preserve the mission entry byte-for-byte at its existing
+    // location so every native mission consumer sees the selected KMT entry.
+    RacedataScenario& menuScenario = Racedata::sInstance->menusScenario;
+    RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
+    memcpy(raceScenario.mission, menuScenario.mission, sizeof(raceScenario.mission));
+    ApplyMissionScenarioSettings(raceScenario);
+}
+
 kmRuntimeUse(0x805362dc);
 typedef void (*GetInitialPhysicsValuesFn)(Raceinfo*, Vec3*, Vec3*, u8);
 static const GetInitialPhysicsValuesFn sGetInitialPhysicsValues =
