@@ -2594,3 +2594,6 @@ Update__Q24Item5PointFRC4Vec3 = 0x807b8a9c
 Update2__Q24Item5PointFRC4Vec3 = 0x807b8f30
 CalcNextPoint__4ItemFRCQ24Item5PointRQ24Item5PointUcb = 0x807b91e4
 Update__Q24Kart6KillerFv = 0x8059bc44
+
+AssignTeams__Q25Pages11VSTeamsViewFv = 0x8084ffc8
+IsMultiplayer__Q25Pages4MenuFv = 0x808388b4
