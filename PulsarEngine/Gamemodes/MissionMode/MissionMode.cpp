@@ -3,12 +3,9 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <Settings/SettingsParam.hpp>
-<<<<<<< HEAD
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceScore.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <runtimeWrite.hpp>
-=======
->>>>>>> 583bc8f6 (Add ranking display to mission end screen)
 
 namespace Pulsar {
 namespace MissionMode {
@@ -22,10 +19,7 @@ static const u32 MISSION_LAP_COUNT_MAX = 9;
 static const u32 MISSION_COMPETITION_MODE_FLAG = 1 << 2;
 static const u32 MISSION_CUSTOM_ITEMS_OFFSET = 0x54;
 static const u32 MISSION_ENGINE_OFFSET = 0x07;
-<<<<<<< HEAD
 static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
-=======
->>>>>>> 583bc8f6 (Add ranking display to mission end screen)
 bool IsMissionScenario(const RacedataScenario& scenario) {
     return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
 }
@@ -122,6 +116,11 @@ static void MissionRaceManagerPlayerEndLap(void* player) {
     if (Racedata::sInstance != nullptr)
         scenario = &Racedata::sInstance->racesScenario;
 
+    const bool skipMissionLap = scenario != nullptr && IsMissionScenario(*scenario) &&
+                                !IsMissionVSObjective(*scenario) &&
+                                !IsMissionBossObjective(*scenario);
+    if (skipMissionLap) return;
+
     const u8 requestedLaps = scenario != nullptr ? GetMissionLapCount(*scenario) : 0;
     const bool enabledCompetitionPath = scenario != nullptr && requestedLaps != 0 &&
                                         (scenario->settings.modeFlags & MISSION_COMPETITION_MODE_FLAG) == 0;
@@ -138,6 +137,24 @@ static void MissionRaceManagerPlayerEndLap(void* player) {
 kmCall(0x80534fbc, MissionRaceManagerPlayerEndLap);
 kmCall(0x805350d4, MissionRaceManagerPlayerEndLap);
 
+<<<<<<< HEAD
+=======
+kmRuntimeUse(0x80725c98);
+static void PreventMissionBackwardsLakitu(void* action) {
+    typedef void (*EnableBackwardsActionFn)(void*);
+    static const EnableBackwardsActionFn original =
+        reinterpret_cast<EnableBackwardsActionFn>(kmRuntimeAddr(0x80725c98));
+    original(action);
+
+    if (Racedata::sInstance == nullptr || IsMissionVSObjective(Racedata::sInstance->racesScenario))
+        return;
+
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(action) + 0x5) = 0;
+}
+
+kmWritePointer(0x808c9888, PreventMissionBackwardsLakitu);
+
+>>>>>>> b4d51449 (Skip native lap advance for non-race missions)
 static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
     return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) |
                              static_cast<u16>(scenario.mission[0x59]));
@@ -166,9 +183,6 @@ void FinalizeMissionRaceScenario() {
         !IsMissionScenario(Racedata::sInstance->menusScenario))
         return;
 
-    // Native Racedata::InitRace has now copied the selected menu scenario into
-    // racesScenario. Preserve the mission entry byte-for-byte at its existing
-    // location so every native mission consumer sees the selected KMT entry.
     RacedataScenario& menuScenario = Racedata::sInstance->menusScenario;
     RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
     memcpy(raceScenario.mission, menuScenario.mission, sizeof(raceScenario.mission));
@@ -210,19 +224,7 @@ kmCall(0x805a70e8, SetMissionStartPosition);
 bool IsMissionScoreObjective(const RacedataScenario& scenario) {
     if (!IsMissionScenario(scenario)) return false;
 
-<<<<<<< HEAD
     switch (GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET)) {
-=======
-static u16 GetMissionU16(const void* mission, u32 offset) {
-    const u8* const bytes = reinterpret_cast<const u8*>(mission) + offset;
-    return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
-}
-
-static bool IsMissionScoreObjective() {
-    if (Racedata::sInstance == 0) return false;
-
-    switch (GetMissionU16(Racedata::sInstance->racesScenario.mission, MISSION_OBJECTIVE_OFFSET)) {
->>>>>>> 583bc8f6 (Add ranking display to mission end screen)
         case 0:
         case 3:
         case 4:

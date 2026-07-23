@@ -36,19 +36,14 @@ static void PreventMissionItemBoxRespawn(Objects::Itembox* itembox) {
         itembox->respawnTime = ITEMBOX_NO_RESPAWN_TIME;
     }
 
-    // The replaced instruction was lwz r4, 0xb4(r3), so restore both live registers.
     asmVolatile(mr r3, itemBoxPtr; lwz r4, 0xb4(r3););
 }
 
-// Itembox::Update checks timer against respawnTime before bringing a broken box back.
 kmCall(0x808288b4, PreventMissionItemBoxRespawn);
 
 extern "C" u32 sMissionCoinAddIntroBranch;
 static u32 AddMissionCoin(void* coinManager, const KMP::Holder<GOBJ>* object) {
     typedef u32 (*AddCoinFn)(void*, const KMP::Holder<GOBJ>*);
-    // The symbol names an instruction at the original function entry.  Taking
-    // the value of the symbol loads that instruction (0x9421ffe0), which is
-    // not a callable address and causes an ISI when the hook is reached.
     static const AddCoinFn sAddCoin = reinterpret_cast<AddCoinFn>(&sMissionCoinAddIntroBranch);
 
     if (Racedata::sInstance != nullptr && object != nullptr && object->raw != nullptr &&
@@ -58,9 +53,6 @@ static u32 AddMissionCoin(void* coinManager, const KMP::Holder<GOBJ>* object) {
         object->raw->settings[0] = 1;
         object->raw->settings[1] = 0;
         object->raw->settings[2] = 1;
-        // Ghidra shows AddCoin loading RacedataSettings +0x0c at 0x8087bad4-
-        // 0x8087baf0 and returning when that value is 5.  This is the existing
-        // gametype field (Racedata +0xb74), so bypass only that data guard.
         if (static_cast<u32>(oldGameType) == COIN_ADD_INTRO_GUARD_VALUE)
             settings.gametype = GAMETYPE_DEFAULT;
         const u32 result = sAddCoin(coinManager, object);

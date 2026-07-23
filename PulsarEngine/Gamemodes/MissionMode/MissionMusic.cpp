@@ -21,7 +21,6 @@ static const u32 MISSION_MUSIC_CONFIG_LEGACY_VERSION = 1;
 static const u32 MISSION_MUSIC_CONFIG_VERSION = 2;
 static const u32 MISSION_MUSIC_CONFIG_HEADER_SIZE = 0x10;
 static const u32 MISSION_MUSIC_CONFIG_ENTRY_SIZE = MAX_MUSIC_NAME_LENGTH;
-// ConfigMR version 2 appends one player and eleven CPU table bytes per mission.
 static const u32 MISSION_CHARACTER_TABLE_ENTRY_SIZE = MISSION_CHARACTER_TABLE_COUNT;
 static const u8 CUSTOM_TABLE_LIMIT = 50;
 
