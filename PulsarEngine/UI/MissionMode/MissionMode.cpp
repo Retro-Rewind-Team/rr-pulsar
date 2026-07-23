@@ -26,6 +26,10 @@ static const u32 MISSION_UI_LEVEL_SIZE = 0x50;
 static const u32 MISSION_UI_STAGE_SIZE = 0x0A;
 static const u32 MISSION_KMT_HEADER_SIZE = 0x10;
 static const u32 MISSION_KMT_ENTRY_SIZE = 0x70;
+static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
+static const char* const MISSION_OBJECTIVE_ICONS[] = {
+    "mr_turbo", "mr_vs", "mr_vs", 0, "mr_itembox", "mr_enemy", "mr_boss", 0, "mr_coin", "mr_gate",
+};
 static const char MISSION_CONFIG_FILE[] = "Binaries/ConfigMR.pul";
 static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
@@ -50,7 +54,7 @@ static const char* const MISSION_LEVEL_BUTTON_VARIANTS[8] = {
 static const char* const MISSION_STAGE_BORDER_PANES[] = {
     "color_base",    "fuchi_black",   "fuchi_pattern", "color_down",   "shadow_top_r",
     "shadow_top_l",  "shadow_botom_r", "shadow_botom_l", "hight_light_l", "hight_light_r",
-    "text_light_01",
+    "text_light_01", "objective_icon",
 };
 
 class MissionPausePage : public Pages::RaceMenu {
@@ -153,6 +157,12 @@ static void SetMissionRank(PushButton& button, u8 rating, bool hideLevelIcon) {
         rankInfo.strings[0] = const_cast<wchar_t*>(MISSION_RANK_GLYPHS[rating]);
         button.SetTextBoxMessage(MISSION_STAGE_RANK_PANE, BMG_TEXT, &rankInfo);
     }
+}
+
+static const char* GetMissionObjectiveIcon(u16 objective) {
+    return objective < sizeof(MISSION_OBJECTIVE_ICONS) / sizeof(MISSION_OBJECTIVE_ICONS[0])
+               ? MISSION_OBJECTIVE_ICONS[objective]
+               : 0;
 }
 
 class MissionSelectPage : public Pages::MenuInteractable {
@@ -328,6 +338,13 @@ class MissionSelectPage : public Pages::MenuInteractable {
         info.strings[0] = this->buttonNames[BUTTON_COUNT + stageId];
         this->stageButtons[stageId].SetMessage(UI::BMG_TEXT, &info);
 
+        u16 objective = 0;
+        const bool hasObjective = this->GetMissionObjective(level, stageId, objective);
+        const char* objectiveIcon = hasObjective ? GetMissionObjectiveIcon(objective) : 0;
+        this->stageButtons[stageId].SetPaneVisibility("objective_icon", objectiveIcon != nullptr);
+        if (objectiveIcon != nullptr)
+            this->stageButtons[stageId].SetPicturePane("objective_icon", objectiveIcon);
+
         u8 missionId = 0;
         u32 finishTimeMillis = 0;
         u8 rating = 0;
@@ -362,6 +379,21 @@ class MissionSelectPage : public Pages::MenuInteractable {
         if (static_cast<s16>(mappedMissionId) < 0) return false;
 
         missionId = static_cast<u8>(mappedMissionId & 0xff);
+        return true;
+    }
+
+    bool GetMissionObjective(u32 level, u32 stageId, u16& objective) const {
+        u8 missionId = 0;
+        if (!this->GetMissionId(level, stageId, missionId) || this->missionKmtFile == nullptr ||
+            this->missionKmtSize < MISSION_KMT_HEADER_SIZE)
+            return false;
+
+        const u16 missionCount = ReadBigEndian16(this->missionKmtFile + 0x08);
+        const u32 missionOffset = MISSION_KMT_HEADER_SIZE + static_cast<u32>(missionId) * MISSION_KMT_ENTRY_SIZE;
+        if (missionId >= missionCount || missionOffset + MISSION_KMT_ENTRY_SIZE > this->missionKmtSize)
+            return false;
+
+        objective = ReadBigEndian16(this->missionKmtFile + missionOffset + MISSION_OBJECTIVE_OFFSET);
         return true;
     }
 
