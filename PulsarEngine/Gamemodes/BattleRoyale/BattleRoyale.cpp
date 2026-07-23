@@ -7,6 +7,7 @@
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
+#include <MarioKartWii/Kart/KartPart.hpp>
 #include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Objects/ObjectsMgr.hpp>
 #include <MarioKartWii/Race/RaceBalloon.hpp>
@@ -208,6 +209,23 @@ static u8 GetStartingBalloonCountSetting() {
 static u8 GetStartingBalloonAddCount() {
     return GetStartingBalloonCountSetting();
 }
+
+// A split-screen kart can retain its loaded flag while its optional primary model
+// director is absent. Balloon-loss blinking reaches this method on the next frame.
+static void SetPartBlinkDrawSafely(Kart::Part* part) {
+    if (part == nullptr) return;
+
+    // Battle Royale starts the battle blink from a VS race. In split-screen its
+    // kart part-model set is incomplete, so any resulting draw update can call
+    // EnableDraw with a null director. Keep the blink state but skip its draw.
+    if (ShouldApplyBattleRoyale()) return;
+    if (!part->isModelLoaded || part->model == nullptr) return;
+
+    const bool isVisible = part->GetModelsVisibility().areModelsVisible;
+    part->model->EnableDraw(isVisible);
+    if (part->secondModel != nullptr) part->secondModel->EnableDraw(isVisible);
+}
+kmBranch(0x80592e5c, SetPartBlinkDrawSafely);
 
 static void StartBalloonLossBlink(u8 playerId) {
     Raceinfo* raceinfo = Raceinfo::sInstance;
