@@ -103,6 +103,11 @@ static void MissionRaceManagerPlayerEndLap(void* player) {
     if (Racedata::sInstance != nullptr)
         scenario = &Racedata::sInstance->racesScenario;
 
+    const bool skipMissionLap = scenario != nullptr && IsMissionScenario(*scenario) &&
+                                !IsMissionVSObjective(*scenario) &&
+                                !IsMissionBossObjective(*scenario);
+    if (skipMissionLap) return;
+
     const u8 requestedLaps = scenario != nullptr ? GetMissionLapCount(*scenario) : 0;
     const bool enabledCompetitionPath = scenario != nullptr && requestedLaps != 0 &&
                                         (scenario->settings.modeFlags & MISSION_COMPETITION_MODE_FLAG) == 0;
@@ -119,8 +124,6 @@ static void MissionRaceManagerPlayerEndLap(void* player) {
 kmCall(0x80534fbc, MissionRaceManagerPlayerEndLap);
 kmCall(0x805350d4, MissionRaceManagerPlayerEndLap);
 
-// EnableBackwardsAction::EnableAction.  Mission objectives other than VS Race
-// should not start Lakitu's backwards-facing action.
 kmRuntimeUse(0x80725c98);
 static void PreventMissionBackwardsLakitu(void* action) {
     typedef void (*EnableBackwardsActionFn)(void*);
@@ -131,11 +134,9 @@ static void PreventMissionBackwardsLakitu(void* action) {
     if (Racedata::sInstance == nullptr || IsMissionVSObjective(Racedata::sInstance->racesScenario))
         return;
 
-    // EnableLakituAction::isEnabled is the byte at offset 0x5.
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(action) + 0x5) = 0;
 }
 
-// EnableBackwardsAction vtable + 0x10 (PAL vtable at 0x808c9878).
 kmWritePointer(0x808c9888, PreventMissionBackwardsLakitu);
 
 static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
@@ -166,9 +167,6 @@ void FinalizeMissionRaceScenario() {
         !IsMissionScenario(Racedata::sInstance->menusScenario))
         return;
 
-    // Native Racedata::InitRace has now copied the selected menu scenario into
-    // racesScenario. Preserve the mission entry byte-for-byte at its existing
-    // location so every native mission consumer sees the selected KMT entry.
     RacedataScenario& menuScenario = Racedata::sInstance->menusScenario;
     RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
     memcpy(raceScenario.mission, menuScenario.mission, sizeof(raceScenario.mission));
