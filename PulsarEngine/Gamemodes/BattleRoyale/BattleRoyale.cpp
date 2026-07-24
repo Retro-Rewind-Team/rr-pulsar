@@ -7,6 +7,7 @@
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Kart/KartMovement.hpp>
+#include <MarioKartWii/Kart/KartPart.hpp>
 #include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Objects/ObjectsMgr.hpp>
 #include <MarioKartWii/Race/RaceBalloon.hpp>
@@ -16,6 +17,7 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Settings/Settings.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -207,6 +209,23 @@ static u8 GetStartingBalloonCountSetting() {
 static u8 GetStartingBalloonAddCount() {
     return GetStartingBalloonCountSetting();
 }
+
+// A split-screen kart can retain its loaded flag while its optional primary model
+// director is absent. Balloon-loss blinking reaches this method on the next frame.
+static void SetPartBlinkDrawSafely(Kart::Part* part) {
+    if (part == nullptr) return;
+
+    // Battle Royale starts the battle blink from a VS race. In split-screen its
+    // kart part-model set is incomplete, so any resulting draw update can call
+    // EnableDraw with a null director. Keep the blink state but skip its draw.
+    if (ShouldApplyBattleRoyale()) return;
+    if (!part->isModelLoaded || part->model == nullptr) return;
+
+    const bool isVisible = part->GetModelsVisibility().areModelsVisible;
+    part->model->EnableDraw(isVisible);
+    if (part->secondModel != nullptr) part->secondModel->EnableDraw(isVisible);
+}
+kmBranch(0x80592e5c, SetPartBlinkDrawSafely);
 
 static void StartBalloonLossBlink(u8 playerId) {
     Raceinfo* raceinfo = Raceinfo::sInstance;
@@ -507,6 +526,25 @@ static bool IsPlayerOnlineRaceComplete(const Raceinfo& raceinfo, u8 playerId) {
     return IsPlayerFinished(raceinfo, playerId) && player->currentLap >= player->maxLap;
 }
 
+static bool AreOnSameBattleRoyaleTeam(u8 firstPlayerId, u8 secondPlayerId) {
+    if (firstPlayerId >= maxPlayers || secondPlayerId >= maxPlayers) return false;
+
+    const Racedata* racedata = Racedata::sInstance;
+    if (racedata == nullptr) return false;
+
+    const System* system = System::sInstance;
+    UI::ExtendedTeamManager* extendedTeamMgr = UI::ExtendedTeamManager::sInstance;
+    if (system != nullptr && system->IsContext(PULSAR_EXTENDEDTEAMS) && extendedTeamMgr != nullptr) {
+        const UI::ExtendedTeamID firstTeam = extendedTeamMgr->GetPlayerTeam(firstPlayerId);
+        return firstTeam != UI::TEAM_COUNT && firstTeam == extendedTeamMgr->GetPlayerTeam(secondPlayerId);
+    }
+
+    if ((racedata->racesScenario.settings.modeFlags & UI::ExtendedTeamManager::TEAM_MODE_FLAG) == 0) return false;
+
+    const Team firstTeam = racedata->racesScenario.players[firstPlayerId].team;
+    return firstTeam != TEAM_NONE && firstTeam == racedata->racesScenario.players[secondPlayerId].team;
+}
+
 static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) {
     register u8* itemObj;
     asm { mr itemObj, r31 }
@@ -517,6 +555,7 @@ static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) 
     }
 
     if (hitterPlayerId == hittedPlayerId) return;
+    if (AreOnSameBattleRoyaleTeam(static_cast<u8>(hitterPlayerId), static_cast<u8>(hittedPlayerId))) return;
     if (HasPoweredHitLossThisFrame(static_cast<u8>(hittedPlayerId))) return;
     if (IsOnline() && !IsLocalPlayer(static_cast<u8>(hittedPlayerId))) return;
     if (IsPlayerFinished(*Raceinfo::sInstance, static_cast<u8>(hittedPlayerId))) return;
@@ -538,6 +577,7 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     RaceBalloonManager* balloonMgr = GetBalloonManager();
     const u8 losingPlayer = static_cast<u8>(losingPlayerId);
     const u8 gainingPlayer = static_cast<u8>(gainingPlayerId);
+    if (AreOnSameBattleRoyaleTeam(losingPlayer, gainingPlayer)) return;
     if (HasMushroomStolenFromVictim(gainingPlayer, losingPlayer)) return;
 
     if (!IsOnline()) {
@@ -573,6 +613,7 @@ static void FinishPoweredHitAction(void* action, u32 sourcePlayerObjId) {
     if (sourcePlayerObjId >= maxPlayers) return;
 
     const u8 playerId = reinterpret_cast<Kart::Link*>(action)->GetPlayerIdx();
+    if (AreOnSameBattleRoyaleTeam(playerId, static_cast<u8>(sourcePlayerObjId))) return;
     RemovePoweredHitBalloon(playerId);
 }
 

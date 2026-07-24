@@ -4,7 +4,7 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Settings/Settings.hpp>
-#include <include/c_stdlib.h>
+#include <UI/PlayerCount.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -14,7 +14,8 @@ kmRuntimeUse(0x8011d1e4);
 kmRuntimeUse(0x8011e488);
 kmRuntimeUse(0x8011e480);
 kmRuntimeUse(0x8011e490);
-static u32 sJoinAttempts = 0;
+kmRuntimeUse(0x8011e384);
+kmRuntimeUse(0x800d1984);
 static u32 sPreviousRoomGroupId = 0;
 extern "C" u32 sMatchmakingTimeoutMs = 0x4e20;
 
@@ -32,30 +33,30 @@ static bool IsPublicMatchmakingRoomType(const RKNet::RoomType roomType) {
     }
 }
 
-static u32 GetTrackedRoomGroupId(const RKNet::Controller* controller) {
-    if (controller == nullptr) return 0;
-    const u32 currentSub = static_cast<u32>(controller->currentSub) & 1;
-    for (u32 i = 0; i < 2; ++i) {
-        const u32 groupId = controller->subs[(currentSub + i) & 1].groupId;
-        if (groupId != 0) return groupId;
-    }
-    return 0;
-}
-
 static void RememberPreviousPublicRoomGroupId(const RKNet::Controller* controller) {
     if (controller == nullptr || !IsPublicMatchmakingRoomType(controller->roomType)) return;
 
-    const u32 activeGroupId = GetTrackedRoomGroupId(controller);
-    if (activeGroupId != 0) sPreviousRoomGroupId = activeGroupId;
+    const u32 currentSub = static_cast<u32>(controller->currentSub) & 1;
+    for (u32 i = 0; i < 2; ++i) {
+        const u32 groupId = controller->subs[(currentSub + i) & 1].groupId;
+        if (groupId != 0) {
+            sPreviousRoomGroupId = groupId;
+            return;
+        }
+    }
+}
+
+static bool IsInfiniteMatchmakingEnabled() {
+    int totalPlayers = 0;
+    PlayerCount::GetNumbersTotal(totalPlayers);
+    return totalPlayers >= 40 && Settings::Mgr::Get().GetUserSettingValue(
+        Settings::SETTINGSTYPE_ONLINE,
+        RADIO_INFINITEMATCHMAKINGTIMEOUT) == MATCHMAKINGTIMEOUT_INFINITE;
 }
 
 static void ApplyMatchmakingTimeoutPatch() {
-    const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
-        Settings::SETTINGSTYPE_ONLINE,
-        RADIO_INFINITEMATCHMAKINGTIMEOUT);
-
     sMatchmakingTimeoutMs =
-        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
+        IsInfiniteMatchmakingEnabled() ? 0x7fff : 0x4e20;
 }
 
 asmFunc LoadMatchmakingTimeout() {
@@ -65,6 +66,29 @@ asmFunc LoadMatchmakingTimeout() {
         lwz r6, sMatchmakingTimeoutMs @l(r6);
         blr;)
 }
+
+typedef int (*DWCSetupGameServer_t)(int maxPlayers, void* callback, void* callbackParam,
+                                    void* option0, void* option1, void* playerValidCallback,
+                                    void* playerUserData, void* userData);
+static const DWCSetupGameServer_t DWCSetupGameServer =
+    (DWCSetupGameServer_t)kmRuntimeAddr(0x800d1984);
+
+static int PreventInfiniteMatchmakingRoomCreation(int maxPlayers, void* callback, void* callbackParam,
+                                                  void* option0, void* option1,
+                                                  void* playerValidCallback, void* playerUserData,
+                                                  void* userData) {
+    const RKNet::Controller* const net = RKNet::Controller::sInstance;
+    if (IsInfiniteMatchmakingEnabled() && net != nullptr &&
+        IsPublicMatchmakingRoomType(net->roomType)) {
+        return 0;
+    }
+
+    return DWCSetupGameServer(maxPlayers, callback, callbackParam, option0, option1,
+                              playerValidCallback, playerUserData, userData);
+}
+kmCall(0x806577a4, PreventInfiniteMatchmakingRoomCreation);
+kmCall(0x80659100, PreventInfiniteMatchmakingRoomCreation);
+kmCall(0x80659608, PreventInfiniteMatchmakingRoomCreation);
 
 typedef int (*SBServerGetIntValueA_t)(void* server, const char* key, int defaultValue);
 static const SBServerGetIntValueA_t SBServerGetIntValueA = (SBServerGetIntValueA_t)kmRuntimeAddr(0x8011d2b0);
@@ -81,32 +105,12 @@ static const ServerBrowserGetServerAtIndexA_t ServerBrowserGetServerAtIndexA = (
 typedef void (*ServerBrowserSortA_t)(void* sb, bool ascending, const char* sortKey, int sortType);
 static const ServerBrowserSortA_t ServerBrowserSortA = (ServerBrowserSortA_t)kmRuntimeAddr(0x8011e490);
 
-static bool HasNonSmallRoomOption(void* sb, int count) {
-    for (int i = 0; i < count; ++i) {
-        void* server = ServerBrowserGetServerAtIndexA(sb, i);
-        if (!server) continue;
+typedef void (*ServerBrowserRemoveServerA_t)(void* sb, void* server);
+static const ServerBrowserRemoveServerA_t ServerBrowserRemoveServerA =
+    (ServerBrowserRemoveServerA_t)kmRuntimeAddr(0x8011e384);
 
-        const int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
-        if (serverPlayerCount >= 6) return true;
-    }
-    return false;
-}
-
-static bool HasAlternativeRoomOption(void* sb, int count, bool blockSmallRooms) {
-    for (int i = 0; i < count; ++i) {
-        void* server = ServerBrowserGetServerAtIndexA(sb, i);
-        if (!server) continue;
-
-        const int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
-        if (sPreviousRoomGroupId != 0 && serverGroupId == (int)sPreviousRoomGroupId) continue;
-
-        const int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
-        const bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
-        if (blockSmallRooms && isSmallRoom) continue;
-
-        return true;
-    }
-    return false;
+static int GetRoomPlayerCount(void* server) {
+    return SBServerGetIntValueA(server, "numplayers", -1) + 1;
 }
 
 // Hook DWCi_RandomizeServers to sort by VR proximity
@@ -122,140 +126,90 @@ void CustomRandomizeServers() {
     int count = ServerBrowserCountA(sb);
     if (count <= 0) return;
 
-    const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
-        Settings::SETTINGSTYPE_ONLINE,
-        RADIO_INFINITEMATCHMAKINGTIMEOUT);
-    const bool isCompetitiveMatchmakingEnabled =
-        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE);
-    const bool blockSmallRooms = isCompetitiveMatchmakingEnabled && HasNonSmallRoomOption(sb, count);
-    const bool hasAlternativeRoomOption = HasAlternativeRoomOption(sb, count, blockSmallRooms);
-    const int previousRoomPenalty = hasAlternativeRoomOption ? 2000000000 : 0;
-    const int ratingMismatchEval = 999999;
-    const int blockedSmallRoomEval = 0x50000000;
-    const int fullRoomEval = 0x60000000;
+    const bool isInfiniteMatchmakingEnabled = IsInfiniteMatchmakingEnabled();
+    const u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
+    RKNet::Controller* const net = RKNet::Controller::sInstance;
+    const bool isBattle = net != nullptr &&
+        (net->roomType == RKNet::ROOMTYPE_BT_WW || net->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
+    const int playerRating = isBattle
+        ? (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f)
+        : (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
+    const char* const ratingKey = isBattle ? "eb" : "ev";
+    const int maximumRoomVR = playerRating + 4000000;  // 40,000 VR, stored at 100x precision.
+    // Preserve the high-VR rooms only when no otherwise eligible room exists.
+    bool hasRoomWithinVRLimit = isBattle;
 
-    if (sJoinAttempts < 3) {
-        u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
+    for (int i = 0; i < count && !hasRoomWithinVRLimit; ++i) {
+        void* const server = ServerBrowserGetServerAtIndexA(sb, i);
+        if (!server) continue;
 
-        RKNet::Controller* net = RKNet::Controller::sInstance;
-        bool isBattle = false;
-        if (net) {
-            isBattle = (net->roomType == RKNet::ROOMTYPE_BT_WW || net->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
+        const int roomPlayerCount = GetRoomPlayerCount(server);
+        const bool isPreviousRoom = sPreviousRoomGroupId != 0 &&
+            SBServerGetIntValueA(server, "dwc_groupid", 0) == (int)sPreviousRoomGroupId;
+        const bool isEligibleRoom = roomPlayerCount < 12 && !isPreviousRoom &&
+            (!isInfiniteMatchmakingEnabled || roomPlayerCount >= 6);
+        if (isEligibleRoom && SBServerGetIntValueA(server, ratingKey, 0) <= maximumRoomVR) {
+            hasRoomWithinVRLimit = true;
         }
+    }
 
-        int playerRating;
-        const char* key;
-        if (isBattle) {
-            playerRating = (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f);
-            key = "eb";
-        } else {
-            playerRating = (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
-            key = "ev";
+    for (int i = count - 1; i >= 0; --i) {
+        void* const server = ServerBrowserGetServerAtIndexA(sb, i);
+        if (!server) continue;
+
+        const int roomPlayerCount = GetRoomPlayerCount(server);
+        // Do not let the DWC fallback try a full room. Infinite matchmaking also
+        // excludes small rooms, so an empty browser causes another search rather
+        // than a new-room attempt.
+        const int roomRating = SBServerGetIntValueA(server, ratingKey, 0);
+        if (roomPlayerCount >= 12 ||
+            (sPreviousRoomGroupId != 0 &&
+                SBServerGetIntValueA(server, "dwc_groupid", 0) == (int)sPreviousRoomGroupId) ||
+            (!isBattle && hasRoomWithinVRLimit && roomRating > maximumRoomVR) ||
+            (isInfiniteMatchmakingEnabled && roomPlayerCount < 6)) {
+            ServerBrowserRemoveServerA(sb, server);
         }
+    }
 
-        // For players below 150 VR, filter out rooms above their VR + 200
-        bool isLowVR = !isBattle && playerRating < 15000;  // 150 VR * 100
-        int maxRoomRating = playerRating + 20000;  // Player VR + 200 VR * 100
+    count = ServerBrowserCountA(sb);
+    for (int i = 0; i < count; ++i) {
+        void* const server = ServerBrowserGetServerAtIndexA(sb, i);
+        if (!server) continue;
 
-        // For players above 600 VR, heavily deprioritize rooms below 300 VR
-        bool isHighVR = !isBattle && playerRating > 60000;  // 600 VR * 100
-        int lowRoomThreshold = 30000;  // 300 VR * 100
-        int highRoomThreshold = playerRating + 40000;  // Player VR + 400 VR * 100
+        int ratingDifference = playerRating - SBServerGetIntValueA(server, ratingKey, 0);
+        if (ratingDifference < 0) ratingDifference = -ratingDifference;
 
-        for (int i = 0; i < count; ++i) {
-            void* server = ServerBrowserGetServerAtIndexA(sb, i);
-            if (!server) continue;
+        // The browser has no pre-join latency/NAT measurement. Keep VR decisively
+        // primary and use a fuller room only as a small continuity tiebreaker.
+        const int eval = ratingDifference * 32 - GetRoomPlayerCount(server);
+        SBServerSetIntValueA(server, "dwc_eval", eval);
+    }
+    ServerBrowserSortA(sb, true, "dwc_eval", 0);
 
-            int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
-            if (isCompetitiveMatchmakingEnabled && serverPlayerCount >= 12) {
-                SBServerSetIntValueA(server, "dwc_eval", fullRoomEval);
-                continue;
-            }
-
-            int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
-            if (sPreviousRoomGroupId != 0 && serverGroupId == (int)sPreviousRoomGroupId) {
-                SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
-                continue;
-            }
-
-            bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
-            if (blockSmallRooms && isSmallRoom) {
-                SBServerSetIntValueA(server, "dwc_eval", blockedSmallRoomEval);
-                continue;
-            }
-
-            int serverRating = SBServerGetIntValueA(server, key, 0);
-            int diff = playerRating - serverRating;
-            if (diff < 0) diff = -diff;
-
-            int eval;
-
-            // If player is low VR and room is above the threshold, mark it with very high eval
-            if (isLowVR && serverRating > maxRoomRating) {
-                eval = ratingMismatchEval;
-            } else if (!isBattle && serverRating > highRoomThreshold) {
-                eval = ratingMismatchEval;
-            } else if (isHighVR && serverRating > 0 && serverRating < lowRoomThreshold) {
-                eval = ratingMismatchEval;
-            } else {
-                eval = diff;
-            }
-
-            SBServerSetIntValueA(server, "dwc_eval", eval);
+    if (isInfiniteMatchmakingEnabled) {
+        // Once VR-ranked, retain only the three closest eligible rooms. Subsequent
+        // retries receive this same constrained set and never use random fallback.
+        for (int i = ServerBrowserCountA(sb) - 1; i >= 3; --i) {
+            void* const server = ServerBrowserGetServerAtIndexA(sb, i);
+            if (server) ServerBrowserRemoveServerA(sb, server);
         }
-        // Sort by dwc_eval ascending (closest first)
-        ServerBrowserSortA(sb, true, "dwc_eval", 0);
-    } else {
-        // Fallback to random
-        for (int i = 0; i < count; ++i) {
-            void* server = ServerBrowserGetServerAtIndexA(sb, i);
-            if (!server) continue;
-            int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
-            if (isCompetitiveMatchmakingEnabled && serverPlayerCount >= 12) {
-                SBServerSetIntValueA(server, "dwc_eval", fullRoomEval);
-                continue;
-            }
-
-            int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
-            bool isSmallRoom = serverPlayerCount > 0 && serverPlayerCount < 6;
-            if (sPreviousRoomGroupId != 0 && serverGroupId == (int)sPreviousRoomGroupId) {
-                SBServerSetIntValueA(server, "dwc_eval", previousRoomPenalty);
-            } else if (blockSmallRooms && isSmallRoom) {
-                SBServerSetIntValueA(server, "dwc_eval", blockedSmallRoomEval);
-            } else {
-                int eval = blockSmallRooms ? (rand() & 0x3fffffff) : rand();
-                SBServerSetIntValueA(server, "dwc_eval", eval);
-            }
-        }
-        ServerBrowserSortA(sb, true, "dwc_eval", 0);
     }
 }
 kmBranch(0x800e4ad0, CustomRandomizeServers);
 
-static void UpdateMatchmakingInfosAndRememberGroupId(RKNet::Controller* self) {
+static void UpdateMatchmakingInfos(RKNet::Controller* self) {
     self->UpdateSubsAndVR();
     RememberPreviousPublicRoomGroupId(self);
 }
-kmCall(0x80657990, UpdateMatchmakingInfosAndRememberGroupId);
+kmCall(0x80657990, UpdateMatchmakingInfos);
 
 // Reset when starting ConnectToAnyoneAsync
 static void OnConnectToAnyoneAsync(RKNet::Controller* self) {
     ApplyMatchmakingTimeoutPatch();
-    sJoinAttempts = 0;
     RememberPreviousPublicRoomGroupId(self);
     self->ConnectToAnybodyAsync();
 }
 kmCall(0x806590b4, OnConnectToAnyoneAsync);
-
-// Increment in DWCi_RetryReserving
-kmRuntimeUse(0x800df094);
-typedef void (*DWCi_RetryReserving_t)(int);
-static void OnRetryReserving(int r3) {
-    ++sJoinAttempts;
-    ((DWCi_RetryReserving_t)kmRuntimeAddr(0x800df094))(r3);
-}
-kmCall(0x800d66ac, OnRetryReserving);
-kmCall(0x800d6950, OnRetryReserving);
 
 kmCall(0x800d6c94, LoadMatchmakingTimeout);
 kmCall(0x800d6ee4, LoadMatchmakingTimeout);

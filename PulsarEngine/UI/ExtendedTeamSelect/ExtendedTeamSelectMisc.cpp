@@ -25,8 +25,9 @@ void Racedata_InitRace(Racedata* racedata) {
     racedata->InitRace();
 
     const RacedataSettings& settings = racedata->menusScenario.settings;
-    if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
+    if (settings.gamemode == MODE_VS_RACE && (settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
+        racedata->racesScenario.settings.modeFlags &= ~ExtendedTeamManager::TEAM_MODE_FLAG;
     }
 }
 
@@ -34,6 +35,24 @@ kmCall(0x80530878, Racedata_InitRace);
 kmCall(0x80530ef4, Racedata_InitRace);
 kmCall(0x80553c90, Racedata_InitRace);
 kmCall(0x80554ab0, Racedata_InitRace);
+
+static bool IsExtendedTeamVSSelected() {
+    const RacedataSettings& settings = Racedata::sInstance->menusScenario.settings;
+    return settings.gamemode == MODE_VS_RACE && (settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG);
+}
+
+void VSTeamsView_AssignTeams(Pages::Menu* _this) {
+    if (!IsExtendedTeamVSSelected()) {
+        reinterpret_cast<void (*)(Pages::Menu*)>(0x8084ffc8)(_this);
+    }
+}
+kmCall(0x8083e528, VSTeamsView_AssignTeams);
+
+void CharacterSelect_LoadNextPage(Pages::Menu* _this, PageId pageId, float delay) {
+    if (pageId == PAGE_VS_TEAMS_VIEW && IsExtendedTeamVSSelected()) pageId = PAGE_KART_SELECT;
+    _this->LoadNextPageWithDelayById(pageId, delay);
+}
+kmCall(0x8083e54c, CharacterSelect_LoadNextPage);
 
 void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
     _this->StartRoom();
