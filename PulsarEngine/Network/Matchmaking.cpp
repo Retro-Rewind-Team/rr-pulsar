@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Settings/Settings.hpp>
+#include <UI/PlayerCount.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -14,6 +15,7 @@ kmRuntimeUse(0x8011e488);
 kmRuntimeUse(0x8011e480);
 kmRuntimeUse(0x8011e490);
 kmRuntimeUse(0x8011e384);
+kmRuntimeUse(0x800d1984);
 static u32 sPreviousRoomGroupId = 0;
 extern "C" u32 sMatchmakingTimeoutMs = 0x4e20;
 
@@ -44,13 +46,17 @@ static void RememberPreviousPublicRoomGroupId(const RKNet::Controller* controlle
     }
 }
 
-static void ApplyMatchmakingTimeoutPatch() {
-    const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
+static bool IsInfiniteMatchmakingEnabled() {
+    int totalPlayers = 0;
+    PlayerCount::GetNumbersTotal(totalPlayers);
+    return totalPlayers >= 40 && Settings::Mgr::Get().GetUserSettingValue(
         Settings::SETTINGSTYPE_ONLINE,
-        RADIO_INFINITEMATCHMAKINGTIMEOUT);
+        RADIO_INFINITEMATCHMAKINGTIMEOUT) == MATCHMAKINGTIMEOUT_INFINITE;
+}
 
+static void ApplyMatchmakingTimeoutPatch() {
     sMatchmakingTimeoutMs =
-        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
+        IsInfiniteMatchmakingEnabled() ? 0x7fff : 0x4e20;
 }
 
 asmFunc LoadMatchmakingTimeout() {
@@ -60,6 +66,29 @@ asmFunc LoadMatchmakingTimeout() {
         lwz r6, sMatchmakingTimeoutMs @l(r6);
         blr;)
 }
+
+typedef int (*DWCSetupGameServer_t)(int maxPlayers, void* callback, void* callbackParam,
+                                    void* option0, void* option1, void* playerValidCallback,
+                                    void* playerUserData, void* userData);
+static const DWCSetupGameServer_t DWCSetupGameServer =
+    (DWCSetupGameServer_t)kmRuntimeAddr(0x800d1984);
+
+static int PreventInfiniteMatchmakingRoomCreation(int maxPlayers, void* callback, void* callbackParam,
+                                                  void* option0, void* option1,
+                                                  void* playerValidCallback, void* playerUserData,
+                                                  void* userData) {
+    const RKNet::Controller* const net = RKNet::Controller::sInstance;
+    if (IsInfiniteMatchmakingEnabled() && net != nullptr &&
+        IsPublicMatchmakingRoomType(net->roomType)) {
+        return 0;
+    }
+
+    return DWCSetupGameServer(maxPlayers, callback, callbackParam, option0, option1,
+                              playerValidCallback, playerUserData, userData);
+}
+kmCall(0x806577a4, PreventInfiniteMatchmakingRoomCreation);
+kmCall(0x80659100, PreventInfiniteMatchmakingRoomCreation);
+kmCall(0x80659608, PreventInfiniteMatchmakingRoomCreation);
 
 typedef int (*SBServerGetIntValueA_t)(void* server, const char* key, int defaultValue);
 static const SBServerGetIntValueA_t SBServerGetIntValueA = (SBServerGetIntValueA_t)kmRuntimeAddr(0x8011d2b0);
@@ -97,11 +126,7 @@ void CustomRandomizeServers() {
     int count = ServerBrowserCountA(sb);
     if (count <= 0) return;
 
-    const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
-        Settings::SETTINGSTYPE_ONLINE,
-        RADIO_INFINITEMATCHMAKINGTIMEOUT);
-    const bool isInfiniteMatchmakingEnabled =
-        (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE);
+    const bool isInfiniteMatchmakingEnabled = IsInfiniteMatchmakingEnabled();
     const u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
     RKNet::Controller* const net = RKNet::Controller::sInstance;
     const bool isBattle = net != nullptr &&
@@ -111,6 +136,22 @@ void CustomRandomizeServers() {
         : (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
     const char* const ratingKey = isBattle ? "eb" : "ev";
     const int maximumRoomVR = playerRating + 4000000;  // 40,000 VR, stored at 100x precision.
+    // Preserve the high-VR rooms only when no otherwise eligible room exists.
+    bool hasRoomWithinVRLimit = isBattle;
+
+    for (int i = 0; i < count && !hasRoomWithinVRLimit; ++i) {
+        void* const server = ServerBrowserGetServerAtIndexA(sb, i);
+        if (!server) continue;
+
+        const int roomPlayerCount = GetRoomPlayerCount(server);
+        const bool isPreviousRoom = sPreviousRoomGroupId != 0 &&
+            SBServerGetIntValueA(server, "dwc_groupid", 0) == (int)sPreviousRoomGroupId;
+        const bool isEligibleRoom = roomPlayerCount < 12 && !isPreviousRoom &&
+            (!isInfiniteMatchmakingEnabled || roomPlayerCount >= 6);
+        if (isEligibleRoom && SBServerGetIntValueA(server, ratingKey, 0) <= maximumRoomVR) {
+            hasRoomWithinVRLimit = true;
+        }
+    }
 
     for (int i = count - 1; i >= 0; --i) {
         void* const server = ServerBrowserGetServerAtIndexA(sb, i);
@@ -124,7 +165,7 @@ void CustomRandomizeServers() {
         if (roomPlayerCount >= 12 ||
             (sPreviousRoomGroupId != 0 &&
                 SBServerGetIntValueA(server, "dwc_groupid", 0) == (int)sPreviousRoomGroupId) ||
-            (!isBattle && roomRating > maximumRoomVR) ||
+            (!isBattle && hasRoomWithinVRLimit && roomRating > maximumRoomVR) ||
             (isInfiniteMatchmakingEnabled && roomPlayerCount < 6)) {
             ServerBrowserRemoveServerA(sb, server);
         }
