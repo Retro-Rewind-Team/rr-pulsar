@@ -206,7 +206,8 @@ static u16 EncodeMMR(float mmr) {
 }
 
 bool IsEnabled() {
-    return sEnabled;
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    return sEnabled && controller->GetConnectionState() != RKNet::CONNECTIONSTATE_SHUTDOWN;
 }
 
 void SetEnabled(bool enabled) {
