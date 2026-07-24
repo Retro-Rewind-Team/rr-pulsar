@@ -69,9 +69,9 @@ MMRMode GetCurrentMode() {
     const System* system = System::sInstance;
     if (system != nullptr) {
         if (system->netMgr.region == Mogi::REGION_CT) return MMR_MODE_CT;
-        if (system->netMgr.region == Mogi::REGION_REG) return MMR_MODE_REGULAR;
+        if (system->netMgr.region == Mogi::REGION_REG) return MMR_MODE_VANILLA;
     }
-    return MMR_MODE_RETRO;
+    return MMR_MODE_RT;
 }
 
 static const char* GetPath() {
@@ -169,8 +169,8 @@ static void Load() {
                     sProfiles[i].mmr[mode] = ClampMMR(entry.mmr);
                     sProfiles[i].storedMMR[mode] = sProfiles[i].mmr[mode];
                 }
-                sProfiles[i].dataFlags = ModeFlag(MMR_MODE_RETRO) | ModeFlag(MMR_MODE_CT) |
-                                          ModeFlag(MMR_MODE_REGULAR);
+                sProfiles[i].dataFlags = ModeFlag(MMR_MODE_RT) | ModeFlag(MMR_MODE_CT) |
+                                         ModeFlag(MMR_MODE_VANILLA);
                 sProfiles[i].storedFlags = sProfiles[i].dataFlags;
             }
             continue;
@@ -271,7 +271,7 @@ void ReportCurrentMMR(u32 licenseId) {
 
     const MMRMode mode = GetCurrentMode();
     const char* modeName = mode == MMR_MODE_CT ? "ct" :
-                           mode == MMR_MODE_REGULAR ? "regular" : "retro";
+                           mode == MMR_MODE_VANILLA ? "vanilla" : "rt";
     const int scaled = (int)(GetUserMMRForMode(licenseId, mode) * 100.0f + 0.5f);
     char buffer[48];
     if (snprintf(buffer, sizeof(buffer), "mode=%s|mmr=%d", modeName, scaled) >= 0) {

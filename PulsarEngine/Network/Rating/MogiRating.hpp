@@ -7,9 +7,9 @@ namespace Pulsar {
 namespace MogiRating {
 
 enum MMRMode {
-    MMR_MODE_RETRO = 0,
+    MMR_MODE_RT = 0,
     MMR_MODE_CT = 1,
-    MMR_MODE_REGULAR = 2,
+    MMR_MODE_VANILLA = 2,
     MMR_MODE_COUNT = 3
 };
 
