@@ -3,7 +3,6 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
-#include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Dolphin/DolphinIOS.hpp>
@@ -197,13 +196,8 @@ kmWrite32(0x805BC8B4, 0x60000000);  // Skip setting credits course for true cred
 // No Disconnect on Countdown [_tZ]
 kmWrite32(0x80655578, 0x60000000);
 
-// Mushroom Glitch Fix [Vabold]
-static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulette) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
-    return roulette;
-}
-kmCall(0x807BA078, ApplyMushroomGlitchFix);
+// Mushroom Glitch Fix [Vega]
+kmWrite8(0x807BA077, 0x00);
 
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);
