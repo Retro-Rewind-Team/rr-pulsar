@@ -24,14 +24,13 @@ static const u32 s_nhttpWorkBufSize = 0x1000;
 static u32 s_requestGeneration = 0;
 static float s_requestStartVr = 0.0f;
 static float s_requestStartBr = 0.0f;
-static float s_requestStartMMR = 0.0f;
-static float s_requestStartStoredMMR = 0.0f;
-static void *s_requestWorkBuf = nullptr;
+static float s_requestStartMMR[MogiRating::MMR_MODE_COUNT] = {};
+static float s_requestStartStoredMMR[MogiRating::MMR_MODE_COUNT] = {};
+static void* s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
 static s32 s_pendingInitialReportProfileId = 0;
 static u32 s_pendingInitialReportLicenseId = 0;
 static bool s_pendingLoginDownload = false;
-static bool s_pendingLoginEstablished = false;
 static s32 s_pendingProfileId = 0;
 static u32 s_pendingLicenseId = 0;
 static bool s_pendingLoginMMRChange = false;
@@ -53,29 +52,29 @@ static int ClampRatingForSync(float rating) {
     return scaled;
 }
 
-static bool ParseJsonScaledValue(const char *json, const char *key, int &out) {
+static bool ParseJsonScaledValue(const char* json, const char* key, int& out) {
     if (json == nullptr || key == nullptr) return false;
 
-    const char *pos = strstr(json, key);
+    const char* pos = strstr(json, key);
     if (pos == nullptr) return false;
 
-    const char *colon = strchr(pos, ':');
+    const char* colon = strchr(pos, ':');
     if (colon == nullptr) return false;
 
-    char *end = nullptr;
+    char* end = nullptr;
     long value = strtol(Network::Json::SkipWhitespace(colon + 1), &end, 10);
     if (end == nullptr || end == colon + 1) return false;
     out = (int)value;
     return true;
 }
 
-static bool ParseJsonFoundFlag(const char *json) {
+static bool ParseJsonFoundFlag(const char* json) {
     if (json == nullptr) return false;
 
-    const char *pos = strstr(json, "\"found\"");
+    const char* pos = strstr(json, "\"found\"");
     if (pos == nullptr) return false;
 
-    const char *colon = strchr(pos, ':');
+    const char* colon = strchr(pos, ':');
     if (colon == nullptr) return false;
 
     colon = Network::Json::SkipWhitespace(colon + 1);
@@ -116,27 +115,30 @@ void ClearPendingLoginMMRChange() {
     s_pendingLoginMMRChange = false;
 }
 
-static bool IsRequestStillRelevant(const RequestCtx &ctx) {
+static bool IsRequestStillRelevant(const RequestCtx& ctx) {
     if (ctx.generation != s_requestGeneration) return false;
     if (ctx.profileId <= 0) return false;
 
-    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || ctx.licenseId >= 4) return false;
 
-    const RKSYS::LicenseMgr &license = rksys->licenses[ctx.licenseId];
+    const RKSYS::LicenseMgr& license = rksys->licenses[ctx.licenseId];
     if ((s32)license.dwcAccUserData.gsProfileId != ctx.profileId) return false;
 
     const float currentVr = GetUserVR(ctx.licenseId);
     const float currentBr = GetUserBR(ctx.licenseId);
-    const float currentMMR = MogiRating::GetUserMMR(ctx.licenseId);
-    if (currentVr != s_requestStartVr || currentBr != s_requestStartBr || currentMMR != s_requestStartMMR) return false;
+    if (currentVr != s_requestStartVr || currentBr != s_requestStartBr) return false;
+    for (u8 mode = 0; mode < MogiRating::MMR_MODE_COUNT; ++mode) {
+        const MogiRating::MMRMode mmrMode = static_cast<MogiRating::MMRMode>(mode);
+        if (MogiRating::GetUserMMRForMode(ctx.licenseId, mmrMode) != s_requestStartMMR[mode]) return false;
+    }
 
     return true;
 }
 
-static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
+static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
     Network::FinishNHTTPRequest();
-    RequestCtx *ctx = reinterpret_cast<RequestCtx *>(userdata);
+    RequestCtx* ctx = reinterpret_cast<RequestCtx*>(userdata);
     if (ctx == nullptr || response == nullptr) return;
 
     if (ctx->generation != s_requestGeneration) {
@@ -149,8 +151,8 @@ static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
         return;
     }
 
-    char *body = nullptr;
-    const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res *>(response), &body);
+    char* body = nullptr;
+    const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res*>(response), &body);
     if (body == nullptr || bodyLen <= 0) {
         NHTTPDestroyResponse(response);
         return;
@@ -172,26 +174,49 @@ static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
 
     int vrScaled = 0;
     int brScaled = 0;
-    int mmrScaled = 0;
+    int mmrScaled[MogiRating::MMR_MODE_COUNT] = {};
+    int legacyMMRScaled = 0;
     const bool hasVR = ParseJsonScaledValue(json, "\"vr\"", vrScaled);
     const bool hasBR = ParseJsonScaledValue(json, "\"br\"", brScaled);
-    const bool hasMMR = ParseJsonScaledValue(json, "\"mmr\"", mmrScaled);
-    if (!hasVR && !hasBR && !hasMMR) return;
+    const bool hasLegacyMMR = ParseJsonScaledValue(json, "\"mmr\"", legacyMMRScaled);
+    bool hasMMR[MogiRating::MMR_MODE_COUNT] = {};
+    hasMMR[MogiRating::MMR_MODE_RETRO] = ParseJsonScaledValue(json, "\"mmr_retro\"", mmrScaled[MogiRating::MMR_MODE_RETRO]);
+    hasMMR[MogiRating::MMR_MODE_CT] = ParseJsonScaledValue(json, "\"mmr_ct\"", mmrScaled[MogiRating::MMR_MODE_CT]);
+    hasMMR[MogiRating::MMR_MODE_REGULAR] = ParseJsonScaledValue(json, "\"mmr_regular\"", mmrScaled[MogiRating::MMR_MODE_REGULAR]);
+    if (!hasMMR[MogiRating::MMR_MODE_RETRO] && hasLegacyMMR) {
+        mmrScaled[MogiRating::MMR_MODE_RETRO] = legacyMMRScaled;
+        hasMMR[MogiRating::MMR_MODE_RETRO] = true;
+    }
+    if (!hasMMR[MogiRating::MMR_MODE_CT] && hasLegacyMMR) {
+        mmrScaled[MogiRating::MMR_MODE_CT] = legacyMMRScaled;
+        hasMMR[MogiRating::MMR_MODE_CT] = true;
+    }
+    if (!hasMMR[MogiRating::MMR_MODE_REGULAR] && hasLegacyMMR) {
+        mmrScaled[MogiRating::MMR_MODE_REGULAR] = legacyMMRScaled;
+        hasMMR[MogiRating::MMR_MODE_REGULAR] = true;
+    }
+    if (!hasVR && !hasBR && !hasMMR[MogiRating::MMR_MODE_RETRO] && !hasMMR[MogiRating::MMR_MODE_CT] &&
+        !hasMMR[MogiRating::MMR_MODE_REGULAR]) return;
 
     SetSyncReportingSuppressed(true);
     if (hasVR && hasBR && vrScaled >= 1 && brScaled >= 1) {
         SaveProfileVR(ctx->profileId, (float)vrScaled / 100.0f);
         SaveProfileBR(ctx->profileId, (float)brScaled / 100.0f);
     }
-    if (hasMMR && mmrScaled >= (int)(MogiRating::MIN_MMR * 100.0f) &&
-        mmrScaled <= (int)(MogiRating::MAX_MMR * 100.0f)) {
-        const int oldMMRScaled = (int)(s_requestStartStoredMMR * 100.0f + 0.5f);
-        if (mmrScaled != oldMMRScaled) {
-            s_pendingLoginOldMMR = s_requestStartStoredMMR;
-            s_pendingLoginNewMMR = (float)mmrScaled / 100.0f;
+    for (u8 mode = 0; mode < MogiRating::MMR_MODE_COUNT; ++mode) {
+        if (!hasMMR[mode] || mmrScaled[mode] < (int)(MogiRating::MIN_MMR * 100.0f) ||
+            mmrScaled[mode] > (int)(MogiRating::MAX_MMR * 100.0f)) {
+            continue;
+        }
+
+        const int oldMMRScaled = (int)(s_requestStartStoredMMR[mode] * 100.0f + 0.5f);
+        if (mmrScaled[mode] != oldMMRScaled && !s_pendingLoginMMRChange) {
+            s_pendingLoginOldMMR = s_requestStartStoredMMR[mode];
+            s_pendingLoginNewMMR = (float)mmrScaled[mode] / 100.0f;
             s_pendingLoginMMRChange = true;
         }
-        MogiRating::SetProfileMMR(ctx->profileId, (float)mmrScaled / 100.0f);
+        MogiRating::SetProfileMMR(ctx->profileId, static_cast<MogiRating::MMRMode>(mode),
+                                   (float)mmrScaled[mode] / 100.0f);
     }
     SetSyncReportingSuppressed(false);
 }
@@ -199,7 +224,7 @@ static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
 void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     if (profileId <= 0) return;
 
-    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
     s_pendingLoginMMRChange = false;
@@ -215,8 +240,11 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     ++s_requestGeneration;
     s_requestStartVr = GetUserVR(licenseId);
     s_requestStartBr = GetUserBR(licenseId);
-    s_requestStartMMR = MogiRating::GetUserMMR(licenseId);
-    s_requestStartStoredMMR = MogiRating::GetStoredMMR(profileId);
+    for (u8 mode = 0; mode < MogiRating::MMR_MODE_COUNT; ++mode) {
+        const MogiRating::MMRMode mmrMode = static_cast<MogiRating::MMRMode>(mode);
+        s_requestStartMMR[mode] = MogiRating::GetUserMMRForMode(licenseId, mmrMode);
+        s_requestStartStoredMMR[mode] = MogiRating::GetStoredMMRForMode(profileId, mmrMode);
+    }
 
     s_requestCtx.generation = s_requestGeneration;
     s_requestCtx.profileId = profileId;
@@ -227,9 +255,9 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
         return;
     }
 
-    void *request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
-                                       reinterpret_cast<void *>(&OnRatingsDownloaded),
-                                       reinterpret_cast<void *>(&s_requestCtx));
+    void* request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
+                                       reinterpret_cast<void*>(&OnRatingsDownloaded),
+                                       reinterpret_cast<void*>(&s_requestCtx));
     if (request == nullptr) return;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
@@ -241,39 +269,16 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
 }
 
 static bool CanStartLoginRatingDownload() {
-    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::Controller* controller = RKNet::Controller::sInstance;
     return controller != nullptr && controller->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
 }
 
 static void TryStartPendingLoginRatingDownload() {
-    if (!s_pendingLoginDownload) return;
-
-    RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return;
-
-    const RKNet::ConnectionState state = controller->GetConnectionState();
-    if (state == RKNet::CONNECTIONSTATE_LOGIN_AUTHORISED ||
-        state == RKNet::CONNECTIONSTATE_LOGIN_FRIENDS_SYNCED) {
-        s_pendingLoginEstablished = true;
-        return;
-    }
-
-    if (state != RKNet::CONNECTIONSTATE_IDLE) return;
-
-    // Both a completed login and a cancelled login end in IDLE. Only launch the
-    // deferred request if this login progressed far enough to be established.
-    // Otherwise the request would start while the WFC section is being torn down.
-    if (!s_pendingLoginEstablished) {
-        s_pendingLoginDownload = false;
-        s_pendingProfileId = 0;
-        s_pendingLicenseId = 0;
-        return;
-    }
+    if (!s_pendingLoginDownload || !CanStartLoginRatingDownload()) return;
 
     const s32 profileId = s_pendingProfileId;
     const u32 licenseId = s_pendingLicenseId;
     s_pendingLoginDownload = false;
-    s_pendingLoginEstablished = false;
     s_pendingProfileId = 0;
     s_pendingLicenseId = 0;
     BeginLoginRatingDownload(profileId, licenseId);
@@ -284,20 +289,18 @@ static FrameLoadHook startPendingLoginRatingDownload(TryStartPendingLoginRatingD
 void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
     if (profileId <= 0) return;
 
-    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
 
     if (!CanStartLoginRatingDownload()) {
         s_pendingLoginDownload = true;
-        s_pendingLoginEstablished = false;
         s_pendingProfileId = profileId;
         s_pendingLicenseId = licenseId;
         return;
     }
 
     s_pendingLoginDownload = false;
-    s_pendingLoginEstablished = false;
     BeginLoginRatingDownload(profileId, licenseId);
 }
 
