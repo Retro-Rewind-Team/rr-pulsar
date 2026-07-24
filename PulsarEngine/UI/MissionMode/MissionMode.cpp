@@ -165,6 +165,15 @@ static const char* GetMissionObjectiveIcon(u16 objective) {
                : 0;
 }
 
+static bool MissionBossIntroCheck() {
+    const bool isBoss = Racedata::sInstance != nullptr &&
+                        Pulsar::MissionMode::IsMissionBossObjective(Racedata::sInstance->menusScenario);
+    asm("cmpwi %0, 0" : : "r"(isBoss));
+    return isBoss;
+}
+kmCall(0x808440e0, MissionBossIntroCheck);
+kmCall(0x8084e62c, MissionBossIntroCheck);
+
 class MissionSelectPage : public Pages::MenuInteractable {
    public:
     static const u32 BUTTON_COUNT = 8;
