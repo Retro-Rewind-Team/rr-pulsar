@@ -2,6 +2,7 @@
 #include <Ghost/GhostManager.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -159,6 +160,11 @@ kmCall(0x8085da54, Leaderboard::GetEntry);
 // Correct BMG if you beat the expert
 kmWrite32(0x8085d744, 0x38805000);
 int Leaderboard::ExpertBMGDisplay(CourseId courseId) {
+    if (Racedata::sInstance != nullptr &&
+            Racedata::sInstance->racesScenario.settings.gamemode == MODE_MISSION_TOURNAMENT) {
+        return 1;
+    }
+
     PulsarId trackId;
     CourseId realCourseId;
     u8 variantIdx;

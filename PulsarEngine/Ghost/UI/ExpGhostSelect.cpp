@@ -7,6 +7,8 @@
 #include <Ghost/GhostManager.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionModeRanking.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -212,6 +214,8 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
     page->ctrlRaceTimeArray[0]->OnFocus();
     Timer* bestLap = &page->timers[0];
     u32 bestLapId = 1;
+    const bool hideLapSplits = MissionMode::IsMissionScoreObjective(scenario) ||
+                               MissionMode::IsMissionToGateObjective(scenario);
     for (int i = 1; i < page->splitsRowCount; ++i) {
         raceInfoPlayer->FillTimerWithSplits(i, &page->timers[i]);
         if ((*bestLap) > page->timers[i]) {
@@ -220,10 +224,22 @@ void BeforeEntranceAnimations(Pages::TTSplits* page) {
         }
         CtrlRaceTime* curRaceTime = page->ctrlRaceTimeArray[i];
         curRaceTime->SetTimer(&page->timers[i]);
+        curRaceTime->isHidden = hideLapSplits;
         curRaceTime->OnFocus();
     }
 
     // No saving and no new record in OTT for now
+    if (gamemode == MODE_MISSION_TOURNAMENT) {
+        Text::Info resultInfo;
+        u32 rank;
+        if (MissionMode::GetMissionResultRank(rank)) {
+            resultInfo.bmgToPass[0] = UI::BMG_GP_RANK_3STARS + rank;
+            page->savedGhostMessage.SetMessage(UI::BMG_MISSION_RANK, &resultInfo);
+        } else {
+            page->savedGhostMessage.SetMessage(UI::BMG_MISSION_FAILED);
+        }
+        return;
+    }
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
 
     // enhanced replay

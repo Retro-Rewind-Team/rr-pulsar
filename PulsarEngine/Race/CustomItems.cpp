@@ -9,6 +9,7 @@
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <PulsarSystem.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -17,6 +18,19 @@ static const u32 ITEM_COUNT = 19;
 static const u32 VANILLA_ITEM_BITFIELD = 0x7FFFF;
 
 u32 Pulsar::Race::GetEffectiveCustomItemsBitfield() {
+    if (Racedata::sInstance != nullptr) {
+        const RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
+        const RacedataScenario& menuScenario = Racedata::sInstance->menusScenario;
+        const RacedataScenario* mission = nullptr;
+        if (MissionMode::IsMissionScenario(raceScenario)) mission = &raceScenario;
+        else if (MissionMode::IsMissionScenario(menuScenario)) mission = &menuScenario;
+        if (mission != nullptr) {
+            if (MissionMode::HasMissionFeature(*mission, MissionMode::CUSTOM_ITEMS_OVERRIDE))
+                return MissionMode::GetMissionCustomItems(*mission) & VANILLA_ITEM_BITFIELD;
+            return VANILLA_ITEM_BITFIELD;
+        }
+    }
+
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller != nullptr) {
         const RKNet::RoomType roomType = controller->roomType;

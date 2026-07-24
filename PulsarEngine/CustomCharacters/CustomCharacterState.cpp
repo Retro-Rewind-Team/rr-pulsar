@@ -1,4 +1,6 @@
 #include <CustomCharacters/CustomCharacters.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionMusic.hpp>
 
 namespace Pulsar {
 namespace CustomCharacters {
@@ -509,6 +511,18 @@ u8 OfflineCpuSkinTable(const RacedataScenario& scenario, u8 playerId, CharacterI
 // Race skin selection chooses local, remote, or stable offline CPU tables.
 u8 RaceSkinTable(u8 playerId, CharacterId character) {
     const Racedata* racedata = Racedata::sInstance;
+    if (racedata != nullptr) {
+        const RacedataScenario* missionScenario = &racedata->racesScenario;
+        if (!MissionMode::IsMissionScenario(*missionScenario)) {
+            missionScenario = &racedata->menusScenario;
+            if (!MissionMode::IsMissionScenario(*missionScenario)) missionScenario = nullptr;
+        }
+        if (missionScenario != nullptr && playerId < missionScenario->playerCount) {
+            const u8 configuredTable = MissionMode::GetMissionCharacterTable(playerId);
+            if (configuredTable != MissionMode::MISSION_CHARACTER_TABLE_UNSET)
+                return NormalizeTable(character, configuredTable);
+        }
+    }
     if (racedata != nullptr && playerId < racedata->racesScenario.playerCount) {
         const RacedataScenario& scenario = racedata->racesScenario;
         const GameMode mode = scenario.settings.gamemode;

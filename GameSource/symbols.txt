@@ -2594,3 +2594,18 @@ Update__Q24Item5PointFRC4Vec3 = 0x807b8a9c
 Update2__Q24Item5PointFRC4Vec3 = 0x807b8f30
 CalcNextPoint__4ItemFRCQ24Item5PointRQ24Item5PointUcb = 0x807b91e4
 Update__Q24Kart6KillerFv = 0x8059bc44
+
+#MissionMode
+ChangeSectionWithDelayById__Q25Pages4MenuF9SectionIdf = 0x80837c5c
+
+#MissionMode
+GetKTPTHolder__8RaceinfoFUc = 0x805365c8
+CalcCoordinates__Q23KMP13Holder<4KTPT>FR4Vec3R4Vec3UiUi = 0x80514b24
+RipFromDisc__13SystemManagerFPCcPQ23EGG4HeapbPUi = 0x8000b5c8
+RequestBackModel__12MenuModelMgrF13BackModelType = 0x8059e598
+OnButtonClick__Q25Pages8RaceMenuFR10PushButtonUi = 0x8085a0f4
+Reset__19ModelRendererParamsFv = 0x805f5e28
+
+RipFromDisc__13SystemManagerFPCcPvPUi = 0x8000b5f0
+
+sMissionCoinAddIntroBranch = 0x8087bacc

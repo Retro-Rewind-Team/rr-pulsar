@@ -15,6 +15,7 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBalloon.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceRankNum.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -23,6 +24,7 @@ static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
 void Racedata_InitRace(Racedata* racedata) {
     racedata->InitRace();
+    Pulsar::MissionMode::FinalizeMissionRaceScenario();
 
     const RacedataSettings& settings = racedata->menusScenario.settings;
     if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {

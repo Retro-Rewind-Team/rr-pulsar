@@ -1,8 +1,10 @@
 #include <kamek.hpp>
 #include <MarioKartWii/UI/Page/Menu/SinglePlayer.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <PulsarSystem.hpp>
 #include <UI/UI.hpp>
+#include <UI/MissionMode/MissionMode.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 // Implements 4 TT modes by splitting the "Time Trials" button
@@ -11,18 +13,38 @@ namespace Pulsar {
 static void SetCC();
 namespace UI {
 
+static inline u32 GetSettingsButtonId(const Pages::SinglePlayer* page) {
+    return page->externControlCount - 1;
+}
+
+static inline u32 GetTTExtraButtonCount(const Pages::SinglePlayer* page) {
+    return page->externControlCount - 6;
+}
+
+static inline bool IsBTMRModeButton(const Pages::SinglePlayer* page, u32 id) {
+    return MissionMode::IsBTMRModeButton(page, id);
+}
+
+static inline bool IsSettingsButton(const Pages::SinglePlayer* page, u32 id) {
+    return id == GetSettingsButtonId(page);
+}
+
+static inline bool IsTTModeButton(const Pages::SinglePlayer* page, u32 id) {
+    return id == 1 || (id > 3 && id < MissionMode::GetMissionButtonId(page));
+}
+
 void CorrectButtonCount(Pages::SinglePlayer* page) {
     const System* system = System::sInstance;
     const bool hasFeather = system->GetInfo().HasFeather();
     const bool has200cc = system->GetInfo().Has200cc();
-    page->externControlCount = 4 + hasFeather + has200cc + (hasFeather && has200cc) + 1;
+    page->externControlCount = 4 + hasFeather + has200cc + (hasFeather && has200cc) + 2;
     new (page) Page;
 }
 kmCall(0x806266b8, CorrectButtonCount);
 kmWrite32(0x806266d4, 0x60000000);
 
 UIControl* CreateExternalControls(Pages::SinglePlayer* page, u32 id) {
-    if (id == page->externControlCount - 1) {
+    if (IsSettingsButton(page, id)) {
         PushButton* button = new (PushButton);
         page->AddControl(page->controlCount++, *button, 0);
         const char* name = "Settings1P";
@@ -40,10 +62,16 @@ static void LoadCorrectBRCTR(PushButton& button, const char* folder, const char*
     const System* system = System::sInstance;
 
     u32 varId = 0;
-    u32 count = page->externControlCount;
-    if (count > 5 && (idx == 1 || idx > 3)) {
-        switch (count) {
-            case (6):
+    const u32 ttExtraButtonCount = GetTTExtraButtonCount(page);
+    if (IsBTMRModeButton(page, idx)) {
+        ctr = "PulBTMRTwo";
+        if (idx != 3) varId = 1;
+        char btmrVariant[0x15];
+        snprintf(btmrVariant, 0x15, "%s_%d", ctr, varId);
+        variant = btmrVariant;
+    } else if (ttExtraButtonCount > 0 && IsTTModeButton(page, idx)) {
+        switch (ttExtraButtonCount) {
+            case (1):
                 ctr = "PulTTTwo";
                 if (idx != 1) {
                     if (system->GetInfo().Has200cc())
@@ -52,7 +80,7 @@ static void LoadCorrectBRCTR(PushButton& button, const char* folder, const char*
                         varId = 2;
                 }
                 break;
-            case (8):
+            case (3):
                 ctr = "PulTTFour";
                 if (idx != 1) varId = idx - 3;
                 break;
@@ -63,6 +91,7 @@ static void LoadCorrectBRCTR(PushButton& button, const char* folder, const char*
     }
 
     button.Load(folder, ctr, variant, localPlayerField, 0, false);
+    if (IsBTMRModeButton(page, idx)) button.SetMessage(MissionMode::GetBTMRModeButtonBMG(page, idx));
     page->curMovieCount = 0;
 }
 kmCall(0x8084f084, LoadCorrectBRCTR);
@@ -70,19 +99,17 @@ kmCall(0x8084f084, LoadCorrectBRCTR);
 static int FixCalcDistance(const ControlManipulator& subject, const ControlManipulator& other, Directions direction) {
     const s32 subId = static_cast<PushButton*>(subject.actionHandlers[0]->subject)->buttonId;
     const s32 destId = static_cast<PushButton*>(other.actionHandlers[0]->subject)->buttonId;
-    switch (subId) {
-        case (0):
-            if (direction == DIRECTION_DOWN && destId == 1) return 1;
-            break;
-        case (2):
-            if (direction == DIRECTION_UP && destId == 1) return 1;
-            break;
-        case (1):
-        case (4):
-        case (5):
-        case (6):
-            if (direction == DIRECTION_UP && destId == 0 || direction == DIRECTION_DOWN && destId == 2) return 1;
-    }
+    const Pages::SinglePlayer* page = static_cast<PushButton*>(subject.actionHandlers[0]->subject)->parentGroup->GetParentPage<Pages::SinglePlayer>();
+    const s32 settingsButtonId = GetSettingsButtonId(page);
+
+    if (subId == 0 && direction == DIRECTION_DOWN && IsTTModeButton(page, destId)) return 1;
+    if (subId == 2 && direction == DIRECTION_UP && IsTTModeButton(page, destId)) return 1;
+    if (IsTTModeButton(page, subId) && (direction == DIRECTION_UP && destId == 0 || direction == DIRECTION_DOWN && destId == 2)) return 1;
+
+    if (subId == 2 && direction == DIRECTION_DOWN && IsBTMRModeButton(page, destId)) return 1;
+    if (subId == settingsButtonId && direction == DIRECTION_UP && IsBTMRModeButton(page, destId)) return 1;
+    if (IsBTMRModeButton(page, subId) && (direction == DIRECTION_UP && destId == 2 || direction == DIRECTION_DOWN && destId == settingsButtonId)) return 1;
+
     return subject.CalcDistanceBothWrapping(other, direction);
 }
 
@@ -93,30 +120,28 @@ kmCall(0x8084ef68, SetDistanceFunc);
 
 void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
     const s32 id = button.buttonId;
-    u32 count = page->externControlCount;
-    if (count > 5 && (id == 1 || id > 3)) {
-        u32 bmgId;
-        if (id == count - 1)
-            bmgId = BMG_SETTINGSBUTTON_BOTTOM;
-        else {
-            button.buttonId = 1;
-            page->Pages::SinglePlayer::OnExternalButtonSelect(button, hudSlotId);
-            button.buttonId = id;
-            bmgId = BMG_TT_MODE_BOTTOM_SINGLE;
-            const System* system = System::sInstance;
-            switch (page->externControlCount) {
-                case (6):
-                    if (id > 3) {
-                        if (system->GetInfo().Has200cc())
-                            bmgId += 1;
-                        else
-                            bmgId += 2;
-                    }
-                    break;
-                case (8):
-                    if (id > 3) bmgId = bmgId + id - 3;
-                    break;
-            }
+    if (MissionMode::IsMissionButton(page, id)) {
+        MissionMode::OnButtonSelect(page, button, hudSlotId);
+    } else if (IsSettingsButton(page, id)) {
+        page->bottomText->SetMessage(BMG_SETTINGSBUTTON_BOTTOM);
+    } else if (GetTTExtraButtonCount(page) > 0 && IsTTModeButton(page, id)) {
+        button.buttonId = 1;
+        page->Pages::SinglePlayer::OnExternalButtonSelect(button, hudSlotId);
+        button.buttonId = id;
+        u32 bmgId = BMG_TT_MODE_BOTTOM_SINGLE;
+        const System* system = System::sInstance;
+        switch (GetTTExtraButtonCount(page)) {
+            case (1):
+                if (id > 3) {
+                    if (system->GetInfo().Has200cc())
+                        bmgId += 1;
+                    else
+                        bmgId += 2;
+                }
+                break;
+            case (3):
+                if (id > 3) bmgId = bmgId + id - 3;
+                break;
         }
         page->bottomText->SetMessage(bmgId);
     } else
@@ -127,7 +152,9 @@ kmWritePointer(0x808D9F64, &OnButtonSelect);
 // Sets the ttMode based on which button was clicked
 void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
     const u32 id = button.buttonId;
-    if (page->externControlCount > 4 && id == page->externControlCount - 1) {
+    if (MissionMode::OnButtonClick(page, button, hudSlotId)) return;
+
+    if (IsSettingsButton(page, id)) {
         // Navigate to page selection first
         ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
         ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
@@ -136,14 +163,15 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
         return;
     }
 
-    if (id == 1 || id > 3) button.buttonId = 1;
+    if (IsTTModeButton(page, id))
+        button.buttonId = 1;
     page->Pages::SinglePlayer::OnButtonClick(button, hudSlotId);
     button.buttonId = id;
     System* system = System::sInstance;
-    if (id == 1 || id > 3) {
+    if (IsTTModeButton(page, id)) {
         TTMode mode = TTMODE_150;
-        switch (page->externControlCount) {
-            case (6):
+        switch (GetTTExtraButtonCount(page)) {
+            case (1):
                 if (id > 3) {
                     if (system->GetInfo().Has200cc())
                         mode = TTMODE_200;
@@ -151,7 +179,7 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
                         mode = TTMODE_150_FEATHER;
                 }
                 break;
-            case (8):
+            case (3):
                 if (id > 3) mode = (TTMode)(id - 3);
                 break;
         }
@@ -159,7 +187,17 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
         SetCC();
     }
 }
-kmWritePointer(0x808BBED0, OnButtonClick);
+
+static void TriggerClickHandler(PtmfHolder_2A<Page, void, PushButton&, u32>& handler, PushButton& button, u32 hudSlotId) {
+    Page* page = handler.subject;
+    if (page != nullptr && page->pageId == PAGE_SINGLE_PLAYER_MENU) {
+        OnButtonClick(static_cast<Pages::SinglePlayer*>(page), button, hudSlotId);
+        return;
+    }
+    if (page == nullptr) return;
+    (page->*handler.ptmf.ptr)(button, hudSlotId);
+}
+kmCall(0x805be3f0, TriggerClickHandler);
 }  // namespace UI
 
 // Sets the CC (based on the mode) when retrying after setting a time, as racedata's CC is overwritten usually

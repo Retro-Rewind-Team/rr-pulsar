@@ -1,8 +1,11 @@
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
+#include <MarioKartWii/UI/Page/Menu/Menu.hpp>
 #include <MarioKartWii/UI/Layout/Layout.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <UI/UI.hpp>
 #include <PulsarSystem.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 
 // Expanded Pages:
 #include <Ghost/UI/ExpGhostSelect.hpp>
@@ -32,6 +35,8 @@
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <UI/MissionMode/MissionMode.hpp>
+#include <UI/MissionMode/MissionModel.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
@@ -48,6 +53,10 @@ kmWrite32(0x80635058, 0x60000000);
 
 void ExpSection::CreatePages(ExpSection& self, SectionId id) {
     const System* system = System::sInstance;
+    if (id == SECTION_SINGLE_P_MR_CHOOSE_MISSION && Racedata::sInstance != nullptr) {
+        MissionModel::SaveMenuCombo();
+        Pulsar::MissionMode::PrepareMenuScenario();
+    }
     if (!self.hasAutoVote) self.CreateSectionPages(id);
     self.CreatePulPages();
 }
@@ -74,6 +83,9 @@ void ExpSection::CreatePulPages() {
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL);
                 this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR);
             }
+            break;
+        case SECTION_MISSION_MODE:
+            MissionMode::CreateRacePages(*this);
             break;
         case SECTION_P1_WIFI_FROOM_VS_VOTING:  // 0x60
         case SECTION_P1_WIFI_FROOM_TEAMVS_VOTING:  // 0x61
@@ -111,11 +123,13 @@ void ExpSection::CreatePulPages() {
             }
             break;
         case SECTION_SINGLE_P_FROM_MENU:  // 0x48
+        case SECTION_SINGLE_P_MR_CHOOSE_MISSION:  // 0x4d
+            MissionMode::CreateSinglePlayerPages(*this);
+            // fall through
         case SECTION_SINGLE_P_TT_CHANGE_CHARA:  // 0x49
         case SECTION_SINGLE_P_TT_CHANGE_COURSE:  // 0x4a
         case SECTION_SINGLE_P_VS_NEXT_RACE:  // 0x4b
         case SECTION_SINGLE_P_BT_NEXT_BATTLE:  // 0x4c
-        case SECTION_SINGLE_P_MR_CHOOSE_MISSION:  // 0x4d
         case SECTION_SINGLE_P_CHAN_RACE_GHOST:  // 0x4e
         case SECTION_SINGLE_P_LIST_RACE_GHOST:  // 0x50
         case SECTION_P1_WIFI:  // 0x55
@@ -214,6 +228,12 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
         case PAGE_VOTE:
             page = new ExpVotePage;
             break;
+        case PAGE_TOURNAMENT_PAUSE_MENU:
+            if (self.sectionId == SECTION_MISSION_MODE)
+                page = MissionMode::CreateMissionPausePage();
+            else
+                page = self.CreatePageById(initId);
+            break;
             // PULPAGES
         case ChooseNextTrack::id:
             initId = ChooseNextTrack::fakeId;
@@ -298,15 +318,27 @@ Page* ExpSection::AddPageLayerAnimatedReturnTopLayer(ExpSection& self, u32 id, u
         page = self.pulPages[id - PULPAGE_INITIAL];
 
     self.activePages[++self.layerCount] = page;
-    if (animDirection != 0xffffffff) page->animationDirection = animDirection;  // inlined Page::SetAnimDirection
+    if (animDirection != 0xffffffff) page->animationDirection = animDirection;
     page->Activate();
+    if (id == PAGE_MISSION_INFORMATION_PROMPT)
+        Pulsar::UI::MissionMode::ConfigureMissionInformationPage(*page);
     return page;
 }
 kmBranch(0x80622e00, ExpSection::AddPageLayerAnimatedReturnTopLayer);
 
-kmWrite32(0x80623128, 0x48000020);  // skip the usual activate
-kmWrite32(0x80623140, 0x60000000);  // nop layerCount increase, as AddPageLayer will do it for us
-kmWrite32(0x80623144, 0x60000000);  // nop setanimdirection as r29 is faulty
+kmBranchDefCpp(0x80630818, 0x80631574, void) {
+    ExpSection* section = ExpSection::GetSection();
+    Pages::Menu* levelPage = static_cast<Pages::Menu*>(section->pages[PAGE_MISSION_LEVEL_SELECT_UNUSED]);
+    levelPage->prevPageId = PAGE_SINGLE_PLAYER_MENU;
+    Pulsar::UI::MissionMode::PrepareMissionStageSelectReturn();
+    Page* volatile addedPage =
+        ExpSection::AddPageLayerAnimatedReturnTopLayer(*section, PAGE_MISSION_LEVEL_SELECT_UNUSED, 0xff);
+    (void)addedPage;
+}
+
+kmWrite32(0x80623128, 0x48000020);
+kmWrite32(0x80623140, 0x60000000);
+kmWrite32(0x80623144, 0x60000000);
 
 void ExpSection::SetNextPage(u32 id, u32 animDirection) {
     register ExpSection* self;
