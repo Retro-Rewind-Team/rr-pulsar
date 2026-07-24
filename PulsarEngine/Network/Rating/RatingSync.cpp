@@ -180,23 +180,29 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
     const bool hasBR = ParseJsonScaledValue(json, "\"br\"", brScaled);
     const bool hasLegacyMMR = ParseJsonScaledValue(json, "\"mmr\"", legacyMMRScaled);
     bool hasMMR[MogiRating::MMR_MODE_COUNT] = {};
-    hasMMR[MogiRating::MMR_MODE_RETRO] = ParseJsonScaledValue(json, "\"mmr_retro\"", mmrScaled[MogiRating::MMR_MODE_RETRO]);
+    hasMMR[MogiRating::MMR_MODE_RT] = ParseJsonScaledValue(json, "\"mmr_rt\"", mmrScaled[MogiRating::MMR_MODE_RT]);
+    if (!hasMMR[MogiRating::MMR_MODE_RT]) {
+        hasMMR[MogiRating::MMR_MODE_RT] = ParseJsonScaledValue(json, "\"mmr_retro\"", mmrScaled[MogiRating::MMR_MODE_RT]);
+    }
     hasMMR[MogiRating::MMR_MODE_CT] = ParseJsonScaledValue(json, "\"mmr_ct\"", mmrScaled[MogiRating::MMR_MODE_CT]);
-    hasMMR[MogiRating::MMR_MODE_REGULAR] = ParseJsonScaledValue(json, "\"mmr_regular\"", mmrScaled[MogiRating::MMR_MODE_REGULAR]);
-    if (!hasMMR[MogiRating::MMR_MODE_RETRO] && hasLegacyMMR) {
-        mmrScaled[MogiRating::MMR_MODE_RETRO] = legacyMMRScaled;
-        hasMMR[MogiRating::MMR_MODE_RETRO] = true;
+    hasMMR[MogiRating::MMR_MODE_VANILLA] = ParseJsonScaledValue(json, "\"mmr_vanilla\"", mmrScaled[MogiRating::MMR_MODE_VANILLA]);
+    if (!hasMMR[MogiRating::MMR_MODE_VANILLA]) {
+        hasMMR[MogiRating::MMR_MODE_VANILLA] = ParseJsonScaledValue(json, "\"mmr_regular\"", mmrScaled[MogiRating::MMR_MODE_VANILLA]);
+    }
+    if (!hasMMR[MogiRating::MMR_MODE_RT] && hasLegacyMMR) {
+        mmrScaled[MogiRating::MMR_MODE_RT] = legacyMMRScaled;
+        hasMMR[MogiRating::MMR_MODE_RT] = true;
     }
     if (!hasMMR[MogiRating::MMR_MODE_CT] && hasLegacyMMR) {
         mmrScaled[MogiRating::MMR_MODE_CT] = legacyMMRScaled;
         hasMMR[MogiRating::MMR_MODE_CT] = true;
     }
-    if (!hasMMR[MogiRating::MMR_MODE_REGULAR] && hasLegacyMMR) {
-        mmrScaled[MogiRating::MMR_MODE_REGULAR] = legacyMMRScaled;
-        hasMMR[MogiRating::MMR_MODE_REGULAR] = true;
+    if (!hasMMR[MogiRating::MMR_MODE_VANILLA] && hasLegacyMMR) {
+        mmrScaled[MogiRating::MMR_MODE_VANILLA] = legacyMMRScaled;
+        hasMMR[MogiRating::MMR_MODE_VANILLA] = true;
     }
-    if (!hasVR && !hasBR && !hasMMR[MogiRating::MMR_MODE_RETRO] && !hasMMR[MogiRating::MMR_MODE_CT] &&
-        !hasMMR[MogiRating::MMR_MODE_REGULAR]) return;
+    if (!hasVR && !hasBR && !hasMMR[MogiRating::MMR_MODE_RT] && !hasMMR[MogiRating::MMR_MODE_CT] &&
+        !hasMMR[MogiRating::MMR_MODE_VANILLA]) return;
 
     SetSyncReportingSuppressed(true);
     if (hasVR && hasBR && vrScaled >= 1 && brScaled >= 1) {
