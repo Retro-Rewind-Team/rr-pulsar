@@ -19,6 +19,37 @@ namespace Pulsar {
 namespace UI {
 
 static wchar_t s_rankDetailsBuffer[512];
+static MogiRating::MMRMode sHoveredCompMode = MogiRating::MMR_MODE_RETRO;
+
+static bool GetMMRModeForButton(u32 buttonId, MogiRating::MMRMode& mode) {
+    if (buttonId == ExpWFCModeSel::mogiButtonId) {
+        mode = MogiRating::MMR_MODE_RETRO;
+        return true;
+    }
+    if (buttonId == ExpWFCModeSel::compCTButtonId) {
+        mode = MogiRating::MMR_MODE_CT;
+        return true;
+    }
+    if (buttonId == ExpWFCModeSel::compRegButtonId) {
+        mode = MogiRating::MMR_MODE_REGULAR;
+        return true;
+    }
+    return false;
+}
+
+static void SetMMRButtonValue(LayoutUIControl& mmrButton, MogiRating::MMRMode mode) {
+    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    float mmr = MogiRating::DEFAULT_MMR;
+    if (rksysMgr != nullptr && rksysMgr->curLicenseId >= 0 && rksysMgr->curLicenseId < 4) {
+        mmr = MogiRating::GetUserMMRForMode(rksysMgr->curLicenseId, mode);
+    }
+
+    wchar_t mmrBuffer[64];
+    Text::Info mmrInfo;
+    PointRating::FormatRatingDigits(mmr, mmrBuffer, sizeof(mmrBuffer) / sizeof(mmrBuffer[0]));
+    mmrInfo.strings[0] = mmrBuffer;
+    mmrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_MOGI_MMR_VALUE, &mmrInfo);
+}
 
 static void FormatMMRValue(float mmr, wchar_t* buffer, u32 bufferSize) {
     int scaled = (int)(mmr * 100.0f + 0.5f);
@@ -572,12 +603,15 @@ void ExpWFCModeSel::OnActivatePatch() {
         if (System::sInstance->netMgr.region == Mogi::REGION_CT) {
             page->lastClickedButton = compCTButtonId;
             button = &page->compCTButton;
+            sHoveredCompMode = MogiRating::MMR_MODE_CT;
         } else if (System::sInstance->netMgr.region == Mogi::REGION_REG) {
             page->lastClickedButton = compRegButtonId;
             button = &page->compRegButton;
+            sHoveredCompMode = MogiRating::MMR_MODE_REGULAR;
         } else {
             page->lastClickedButton = mogiButtonId;
             button = &page->mogiButton;
+            sHoveredCompMode = MogiRating::MMR_MODE_RETRO;
         }
         bmgId = BMG_MOGI_BOTTOM;
     } else if (System::sInstance->IsContext(PULSAR_MODE_OTT) && System::sInstance->IsContext(PULSAR_RETROS)) {
@@ -614,6 +648,7 @@ void ExpWFCModeSel::OnActivatePatch() {
     }
 
     page->bottomText.SetMessage(bmgId);
+    if (isCompetitiveMode) SetMMRButtonValue(page->mmrButton, sHoveredCompMode);
     button->Select(0);
     if (ExpWFCMain::lastClickedMainMenuButton == 8) {
         BTbutton->Select(0);
@@ -628,6 +663,12 @@ void ExpWFCModeSel::OnActivatePatch() {
 kmCall(0x8064c5f0, ExpWFCModeSel::OnActivatePatch);
 
 void ExpWFCModeSel::OnModeButtonSelect(PushButton& modeButton, u32 hudSlotId) {
+    MogiRating::MMRMode hoveredMode;
+    if (GetMMRModeForButton(modeButton.buttonId, hoveredMode)) {
+        sHoveredCompMode = hoveredMode;
+        SetMMRButtonValue(this->mmrButton, sHoveredCompMode);
+    }
+
     if (modeButton.buttonId == ottButtonId) {
         this->bottomText.SetMessage(BMG_OTT_WW_BOTTOM);
     } else if (modeButton.buttonId == twoHundredButtonId) {
@@ -732,15 +773,7 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     }
 
     if (ExpWFCMain::lastClickedMainMenuButton == 9) {
-        float mmr = MogiRating::DEFAULT_MMR;
-        if (rksysMgr->curLicenseId >= 0) {
-            mmr = MogiRating::GetUserMMR(rksysMgr->curLicenseId);
-        }
-        wchar_t mmrBuffer[64];
-        Text::Info mmrInfo;
-        PointRating::FormatRatingDigits(mmr, mmrBuffer, sizeof(mmrBuffer) / sizeof(mmrBuffer[0]));
-        mmrInfo.strings[0] = mmrBuffer;
-        this->mmrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_MOGI_MMR_VALUE, &mmrInfo);
+        SetMMRButtonValue(this->mmrButton, sHoveredCompMode);
     }
 
     ApplyVRMultiplierHighlight(this->twoHundredButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0C));
