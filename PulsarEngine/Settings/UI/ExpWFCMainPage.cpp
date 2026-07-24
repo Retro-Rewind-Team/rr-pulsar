@@ -19,11 +19,11 @@ namespace Pulsar {
 namespace UI {
 
 static wchar_t s_rankDetailsBuffer[512];
-static MogiRating::MMRMode sHoveredCompMode = MogiRating::MMR_MODE_RETRO;
+static MogiRating::MMRMode sHoveredCompMode = MogiRating::MMR_MODE_RT;
 
 static bool GetMMRModeForButton(u32 buttonId, MogiRating::MMRMode& mode) {
     if (buttonId == ExpWFCModeSel::mogiButtonId) {
-        mode = MogiRating::MMR_MODE_RETRO;
+        mode = MogiRating::MMR_MODE_RT;
         return true;
     }
     if (buttonId == ExpWFCModeSel::compCTButtonId) {
@@ -31,7 +31,7 @@ static bool GetMMRModeForButton(u32 buttonId, MogiRating::MMRMode& mode) {
         return true;
     }
     if (buttonId == ExpWFCModeSel::compRegButtonId) {
-        mode = MogiRating::MMR_MODE_REGULAR;
+        mode = MogiRating::MMR_MODE_VANILLA;
         return true;
     }
     return false;
@@ -607,11 +607,11 @@ void ExpWFCModeSel::OnActivatePatch() {
         } else if (System::sInstance->netMgr.region == Mogi::REGION_REG) {
             page->lastClickedButton = compRegButtonId;
             button = &page->compRegButton;
-            sHoveredCompMode = MogiRating::MMR_MODE_REGULAR;
+            sHoveredCompMode = MogiRating::MMR_MODE_VANILLA;
         } else {
             page->lastClickedButton = mogiButtonId;
             button = &page->mogiButton;
-            sHoveredCompMode = MogiRating::MMR_MODE_RETRO;
+            sHoveredCompMode = MogiRating::MMR_MODE_RT;
         }
         bmgId = BMG_MOGI_BOTTOM;
     } else if (System::sInstance->IsContext(PULSAR_MODE_OTT) && System::sInstance->IsContext(PULSAR_RETROS)) {
