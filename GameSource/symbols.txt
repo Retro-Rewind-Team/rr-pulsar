@@ -1901,6 +1901,7 @@ CreateExternalControl__Q25Pages10KartSelectFUi = 0x80845148
 CreateControl__Q25Pages10KartSelectFUi = 0x80845150
 SetButtonHandlers__Q25Pages10KartSelectFR10PushButton = 0x808454b4
 OnActivate__Q25Pages10KartSelectFv = 0x80845510
+kartUIOrderToIDArray__Q25Pages10KartSelect = 0x808ad678
 GetManipulatorManager__Q25Pages10KartSelectFv = 0x80846a1c
 GetActivePlayerBitfield__Q25Pages10KartSelectCFv = 0x80846a24
 AfterControlUpdate__Q25Pages10KartSelectFv = 0x80846a2c

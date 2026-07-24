@@ -158,7 +158,7 @@ void ExpVR::OnInit() {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL))) isKOd = true;
 
     bool isRandomHidden = false;
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
+    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED || Mogi::IsEnabled()) isRandomHidden = true;
 
     this->AddControl(0xF, this->randomComboButton, 0);
     this->randomComboButton.isHidden = isKOd || isRandomHidden;
@@ -204,6 +204,8 @@ void ExpVR::OnInit() {
 }
 
 static void RandomizeCombo() {
+    if (Mogi::IsEnabled()) return;
+
     Random random;
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
     Pulsar::CharacterRestriction charRestrictLight = Pulsar::CHAR_DEFAULTSELECTION;
@@ -328,7 +330,8 @@ void ExpVR::AfterControlUpdate() {
         const bool isKOd = ShouldHideComboButtons(*system);
 
         const bool isRandomHidden =
-            Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED;
+            Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED ||
+            Mogi::IsEnabled();
 
         this->randomComboButton.isHidden = isKOd || isRandomHidden;
         this->changeComboButton.isHidden = isKOd;

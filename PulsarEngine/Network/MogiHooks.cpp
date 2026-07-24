@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/SELECT.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <Network/Mogi.hpp>
 #include <PulsarSystem.hpp>
@@ -148,6 +149,27 @@ static bool IsMogiSelectPrepared(RKNet::SELECTHandler* handler) {
     return handler->IsPrepared();
 }
 kmCall(0x80650484, IsMogiSelectPrepared);
+
+static void AllowedMogiVehicles(Pages::KartSelect* page) {
+    page->Menu::OnActivate();
+    if (!IsEnabled()) return;
+
+    for (u32 i = 0; i < 36; ++i) {
+        switch (Pages::KartSelect::kartUIOrderToIDArray[i]) {
+            case BULLET_BIKE:
+            case MINI_BEAST:
+            case MACH_BIKE:
+            case WILD_WING:
+            case BOWSER_BIKE:
+            case FLAME_FLYER:
+                break;
+            default:
+                page->isUnlocked[i] = false;
+                break;
+        }
+    }
+}
+kmCall(0x80845524, AllowedMogiVehicles);
 
 }  // namespace Mogi
 }  // namespace Pulsar
