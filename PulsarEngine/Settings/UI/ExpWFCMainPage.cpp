@@ -111,6 +111,34 @@ static void SetButtonHidden(PushButton &button, bool hidden) {
     button.manipulator.inaccessible = hidden;
 }
 
+static void MoveWorldwideButton(Page* page) {
+    page->BeforeControlUpdate();
+    if (page->pageId != PAGE_WFC_MAIN) return;
+    Pages::WFCMainMenu* wfcPage = static_cast<Pages::WFCMainMenu*>(page);
+    static Section* movedSection = nullptr;
+    Section* currentSection = SectionMgr::sInstance->curSection;
+    if (movedSection == currentSection) return;
+    movedSection = currentSection;
+    if (wfcPage->regionalButton.isHidden) {
+        wfcPage->worldwideButton.positionAndscale[1].position.y -= 28.0f;
+    }
+}
+kmCall(0x806022fc, MoveWorldwideButton);
+
+static void MoveFriendButton(Page* page) {
+    page->AfterControlUpdate();
+    if (page->pageId != PAGE_WFC_MAIN) return;
+    Pages::WFCMainMenu* wfcPage = static_cast<Pages::WFCMainMenu*>(page);
+    static Section* movedSection = nullptr;
+    Section* currentSection = SectionMgr::sInstance->curSection;
+    if (movedSection == currentSection) return;
+    movedSection = currentSection;
+    if (wfcPage->regionalButton.isHidden) {
+        wfcPage->friendsButton.positionAndscale[1].position.y += 28.0f;
+    }
+}
+kmCall(0x80602318, MoveFriendButton);
+
 // Expanded WFC main menu. The vanilla worldwide/regional buttons stay loaded because
 // the original menu code still expects them to exist.
 
