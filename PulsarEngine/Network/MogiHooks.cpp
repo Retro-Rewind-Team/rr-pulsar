@@ -12,6 +12,7 @@
 #include <Network/Mogi.hpp>
 #include <PulsarSystem.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <Settings/UI/ExpWFCMainPage.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -153,6 +154,7 @@ static bool IsMogiSelectPrepared(RKNet::SELECTHandler* handler) {
 }
 kmCall(0x80650484, IsMogiSelectPrepared);
 
+// Restrict the unlocked vehicles to only those allowed in Mogi, otherwise all vehicles will be unlocked.
 static void AllowedMogiVehicles(Pages::KartSelect* page) {
     page->Menu::OnActivate();
     if (!IsEnabled()) return;
@@ -176,7 +178,7 @@ kmCall(0x80845524, AllowedMogiVehicles);
 
 // Create a new message box when the competitive button is pressed, and set the next page to the message box.
 static void OnCompetitiveEntrance(Pages::WFCMainMenu* page, u32 animDirection, float animLength) {
-    if (page->regionalButton.buttonId == 2) {
+    if (UI::ExpWFCMain::lastClickedMainMenuButton == 9) {  // competitive button
         Pages::MessageBox* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBox>();
         if (messageBox != nullptr) {
             messageBox->Reset();
