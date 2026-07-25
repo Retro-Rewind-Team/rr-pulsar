@@ -241,6 +241,11 @@ void ExpWFCMain::OnBattleButtonClick(PushButton &pushButton, u32 hudSlotId) {
 }
 
 void ExpWFCMain::OnCompetitiveButtonClick(PushButton& pushButton, u32 hudSlotId) {
+    #ifndef RR_TESTS
+    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    if (PointRating::GetUserVR(rksysMgr->curLicenseId) < 300.0f) return;
+    #endif
+
     ExpWFCMain::lastClickedMainMenuButton = 9;  // competitive
     this->restoreWorldwideMenuOnActivate = false;
     this->SetMenuLevel(false);
@@ -298,6 +303,13 @@ void ExpWFCMain::ExtOnButtonSelect(PushButton &button, u32 hudSlotId) {
 
 void ExpWFCMain::BeforeControlUpdate() {
     WFCMainMenu::BeforeControlUpdate();
+    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    #ifndef RR_TESTS
+    this->regionalButton.manipulator.inaccessible = this->showWorldwideCategories || PointRating::GetUserVR(rksysMgr->curLicenseId) < 300.0f;
+    this->regionalButton.isHidden = this->showWorldwideCategories || PointRating::GetUserVR(rksysMgr->curLicenseId) < 300.0f;
+    #else
+    this->regionalButton.manipulator.inaccessible = this->showWorldwideCategories;
+    #endif
     if (this->selectMainButtonOnResume) {
         this->selectMainButtonOnResume = false;
         if (this->showWorldwideCategories)
