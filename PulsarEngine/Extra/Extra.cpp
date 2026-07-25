@@ -2,6 +2,7 @@
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
+#include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
@@ -204,6 +205,16 @@ static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulet
     return roulette;
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);
+
+// Slow Ramp Offroad Fix [vabold, ported by ZPL]
+static Kart::Status* ClearSlowRampMushroomRequirement(Kart::Pointers* pointers) {
+    Kart::Status* status = pointers->kartStatus;
+    if (!Pulsar::System::sInstance->IsVanillaMode()) {
+        status->bitfield2 &= ~0x00100000;
+    }
+    return status;
+}
+kmCall(0x80582670, ClearSlowRampMushroomRequirement);
 
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);
