@@ -181,14 +181,8 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
     const bool hasLegacyMMR = ParseJsonScaledValue(json, "\"mmr\"", legacyMMRScaled);
     bool hasMMR[MogiRating::MMR_MODE_COUNT] = {};
     hasMMR[MogiRating::MMR_MODE_RT] = ParseJsonScaledValue(json, "\"mmr_rt\"", mmrScaled[MogiRating::MMR_MODE_RT]);
-    if (!hasMMR[MogiRating::MMR_MODE_RT]) {
-        hasMMR[MogiRating::MMR_MODE_RT] = ParseJsonScaledValue(json, "\"mmr_retro\"", mmrScaled[MogiRating::MMR_MODE_RT]);
-    }
     hasMMR[MogiRating::MMR_MODE_CT] = ParseJsonScaledValue(json, "\"mmr_ct\"", mmrScaled[MogiRating::MMR_MODE_CT]);
     hasMMR[MogiRating::MMR_MODE_VANILLA] = ParseJsonScaledValue(json, "\"mmr_vanilla\"", mmrScaled[MogiRating::MMR_MODE_VANILLA]);
-    if (!hasMMR[MogiRating::MMR_MODE_VANILLA]) {
-        hasMMR[MogiRating::MMR_MODE_VANILLA] = ParseJsonScaledValue(json, "\"mmr_regular\"", mmrScaled[MogiRating::MMR_MODE_VANILLA]);
-    }
     if (!hasMMR[MogiRating::MMR_MODE_RT] && hasLegacyMMR) {
         mmrScaled[MogiRating::MMR_MODE_RT] = legacyMMRScaled;
         hasMMR[MogiRating::MMR_MODE_RT] = true;
