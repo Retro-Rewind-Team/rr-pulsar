@@ -431,7 +431,7 @@ u8 ResolveMenuTable(CharacterId character) {
     if (forceDefaultMenuDriverBRRES) return TABLE_DEFAULT;
     if (ShouldForceDefaultVotingMenuTable()) return TABLE_DEFAULT;
     if (Racedata::sInstance != nullptr && MissionMode::IsMissionScenario(Racedata::sInstance->menusScenario)) {
-        const u8 missionTable = MissionMode::GetMissionCharacterTable(0);
+        const u8 missionTable = MissionMode::GetMissionCharacterTable(Racedata::sInstance->menusScenario, 0);
         if (missionTable != MissionMode::MISSION_CHARACTER_TABLE_UNSET)
             return HasSkin(character, missionTable) ? missionTable : TABLE_DEFAULT;
     }
