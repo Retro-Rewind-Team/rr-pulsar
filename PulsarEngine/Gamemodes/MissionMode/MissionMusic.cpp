@@ -229,22 +229,28 @@ bool ResolveMissionMusicPath(const char* brstmRoot, const char*& extFilePath) {
     return true;
 }
 
-u8 GetMissionCharacterTable(u8 playerId) {
-    if (playerId >= MISSION_CHARACTER_TABLE_COUNT || Racedata::sInstance == nullptr) return MISSION_CHARACTER_TABLE_UNSET;
-    const RacedataScenario* scenario = &Racedata::sInstance->racesScenario;
-    if (!IsMissionScenario(*scenario)) {
-        scenario = &Racedata::sInstance->menusScenario;
-        if (!IsMissionScenario(*scenario)) return MISSION_CHARACTER_TABLE_UNSET;
-    }
+u8 GetMissionCharacterTable(const RacedataScenario& scenario, u8 playerId) {
+    if (playerId >= MISSION_CHARACTER_TABLE_COUNT || !IsMissionScenario(scenario))
+        return MISSION_CHARACTER_TABLE_UNSET;
 
     InitializeCharacterTables();
-    const u32 missionId = scenario->settings.raceNumber;
+    const u32 missionId = scenario.settings.raceNumber;
     if (missionId >= MAX_MISSION_MUSIC_ENTRIES) return MISSION_CHARACTER_TABLE_UNSET;
     if (missionCharacterTables[missionId][playerId] != MISSION_CHARACTER_TABLE_UNSET)
         return missionCharacterTables[missionId][playerId];
 
     if (!characterTablesLoaded) LoadAssociations();
     return missionCharacterTables[missionId][playerId];
+}
+
+u8 GetMissionCharacterTable(u8 playerId) {
+    if (Racedata::sInstance == nullptr) return MISSION_CHARACTER_TABLE_UNSET;
+    const RacedataScenario* scenario = &Racedata::sInstance->racesScenario;
+    if (!IsMissionScenario(*scenario)) {
+        scenario = &Racedata::sInstance->menusScenario;
+        if (!IsMissionScenario(*scenario)) return MISSION_CHARACTER_TABLE_UNSET;
+    }
+    return GetMissionCharacterTable(*scenario, playerId);
 }
 
 bool GetMissionMusicSlotOverride(CourseId& musicSlot) {

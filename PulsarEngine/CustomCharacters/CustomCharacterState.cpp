@@ -518,7 +518,7 @@ u8 RaceSkinTable(u8 playerId, CharacterId character) {
             if (!MissionMode::IsMissionScenario(*missionScenario)) missionScenario = nullptr;
         }
         if (missionScenario != nullptr && playerId < missionScenario->playerCount) {
-            const u8 configuredTable = MissionMode::GetMissionCharacterTable(playerId);
+            const u8 configuredTable = MissionMode::GetMissionCharacterTable(*missionScenario, playerId);
             if (configuredTable != MissionMode::MISSION_CHARACTER_TABLE_UNSET)
                 return NormalizeTable(character, configuredTable);
         }
