@@ -110,6 +110,55 @@ namespace Pulsar_Pack_Creator
             Hide();
         }
 
+        private static void ReassignMassImportedVariants(List<Cup> cups, int cupCount, string[] importedTrackNames)
+        {
+            Dictionary<string, List<Cup.Track.Variant>> variantsByTrackName =
+                new Dictionary<string, List<Cup.Track.Variant>>(StringComparer.InvariantCultureIgnoreCase);
+            HashSet<string> importedNames =
+                new HashSet<string>(importedTrackNames, StringComparer.InvariantCultureIgnoreCase);
+
+            for (int cupIdx = 0; cupIdx < cupCount && cupIdx < cups.Count; cupIdx++)
+            {
+                for (int trackIdx = 0; trackIdx < 4; trackIdx++)
+                {
+                    Cup.Track track = cups[cupIdx].tracks[trackIdx];
+                    string trackName = !string.IsNullOrEmpty(track.commonName) ? track.commonName : track.main.trackName;
+                    if (!string.IsNullOrEmpty(trackName) && track.variants.Count > 0)
+                    {
+                        variantsByTrackName[trackName] = new List<Cup.Track.Variant>(track.variants);
+                    }
+                }
+            }
+
+            for (int cupIdx = 0; cupIdx < cupCount && cupIdx < cups.Count; cupIdx++)
+            {
+                for (int trackIdx = 0; trackIdx < 4; trackIdx++)
+                {
+                    Cup.Track track = cups[cupIdx].tracks[trackIdx];
+                    string trackName = !string.IsNullOrEmpty(track.commonName) ? track.commonName : track.main.trackName;
+                    if (!string.IsNullOrEmpty(trackName) && importedNames.Contains(trackName))
+                    {
+                        track.variants = new List<Cup.Track.Variant>();
+                    }
+                }
+            }
+
+            int importedTrackCount = Math.Min(importedTrackNames.Length, cupCount * 4);
+            for (int importedIdx = 0; importedIdx < importedTrackCount; importedIdx++)
+            {
+                Cup.Track track = cups[importedIdx / 4].tracks[importedIdx % 4];
+                List<Cup.Track.Variant> variants;
+                if (variantsByTrackName.TryGetValue(importedTrackNames[importedIdx], out variants))
+                {
+                    track.variants = new List<Cup.Track.Variant>(variants);
+                }
+                else
+                {
+                    track.variants = new List<Cup.Track.Variant>();
+                }
+            }
+        }
+
         private void OnSaveImportClick(object sender, RoutedEventArgs e)
         {
             //Need to add checks here i.e. slot validity, number of lines in each text box
@@ -241,6 +290,11 @@ namespace Pulsar_Pack_Creator
                     MsgWindow.Show($"Music Slot {importStringArrays[3][line]} (Line {line + 1}) is invalid.");
                     return;
                 }
+            }
+
+            if (type == Type.MASSIMPORT)
+            {
+                ReassignMassImportedVariants(parent.cups, parent.ctsCupCount, namesImport);
             }
 
             Hide();
