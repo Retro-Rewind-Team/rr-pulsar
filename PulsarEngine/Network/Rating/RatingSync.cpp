@@ -140,8 +140,12 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
 
     NHTTPDestroyResponse(response);
 
-    if (!ParseJsonFoundFlag(json)) return;
     if (!IsRequestStillRelevant(*ctx)) return;
+
+    if (!ParseJsonFoundFlag(json)) {
+        ReportCurrentRatings(ctx->licenseId);
+        return;
+    }
 
     int vrScaled = 0;
     int brScaled = 0;
