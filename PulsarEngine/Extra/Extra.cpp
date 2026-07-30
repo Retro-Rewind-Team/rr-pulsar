@@ -195,7 +195,7 @@ kmWrite32(0x805BC8B4, 0x60000000);  // Skip setting credits course for true cred
 // No Disconnect on Countdown [_tZ]
 kmWrite32(0x80655578, 0x60000000);
 
-// Mushroom Glitch Fix [Vabold]
+// Mushroom Glitch Fix [Vega, ported by ZPL]
 static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulette) {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
