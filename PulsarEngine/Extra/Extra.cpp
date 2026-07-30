@@ -6,6 +6,7 @@
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
+#include <MarioKartWii/Item/Obj/KouraTogezo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <PulsarSystem.hpp>
@@ -111,19 +112,15 @@ kmBranch(0x807BB380, CanItemNotBeObtained);
 
 // Blue Shell Cooldown [ZPL]
 extern "C" Item::ItemSlotData* itemSlotData;
-static void UpdateBlueShellCooldown() {
+static void EnableBlueShellCooldown(Item::ObjKouraTogezo* blueShell) {
     const Pulsar::System* system = Pulsar::System::sInstance;
-    if (system->IsVanillaMode() || system->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) || system->IsContext(Pulsar::PULSAR_ITEMMODEBLAST)) return;
+    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled()) return blueShell->Reset();
 
-    const Item::Manager* manager = Item::Manager::sInstance;
-    if (manager == nullptr || itemSlotData == nullptr) return;
-
-    static u16 previousSpawnCount = 0;
-    const u16 totalSpawnedCount = manager->itemObjHolders[OBJ_BLUE_SHELL].totalSpawnedCount;
-    if (totalSpawnedCount > previousSpawnCount) itemSlotData->itemSpawnTimers[1] = 1200;  // 15 seconds
-    previousSpawnCount = totalSpawnedCount;
+    blueShell->Reset();
+    if (blueShell->itemObjId == OBJ_BLUE_SHELL && itemSlotData != nullptr) itemSlotData->ResetBlueShellTimer();
 }
-static RaceFrameHook UpdateBlueShellCooldownHook(UpdateBlueShellCooldown);
+kmCall(0x807AC6B8, EnableBlueShellCooldown);
+kmWrite32(0x807BB9C8, 0x38000384);  // li r0, 900 (15 seconds)
 
 // Anti Mii Crash
 asmFunc AntiWiper() {

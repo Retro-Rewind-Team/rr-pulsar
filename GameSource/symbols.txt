@@ -2218,7 +2218,11 @@ ProcessOtherCollision__Q24Item3ObjFUiRC4Vec3RC4Vec3 = 0x807a18fc
 sInstance__Q24Item12ItemSlotDataFv = 0x809c3670
 DecideItem__Q24Item12ItemSlotDataFUsUcbbPQ24Item6Player = 0x807bb42c
 DecideRouletteItem__Q24Item12ItemSlotDataFUsUc6ItemIdb = 0x807bb8d0
+ResetBlueShellTimer__Q24Item12ItemSlotDataFv = 0x807bb9c8
 itemSlotData = 0x809c3670
+
+#Blue Shell
+Reset__Q24Item14ObjKouraTogezoFv = 0x807ac49c
 
 #Inventory
 EjectItems__Q24Item15PlayerInventoryFv = 0x807bc350
