@@ -386,6 +386,9 @@ kmWrite32(0x807f0644, 0x48000024);
 // Fix Mii opponents having silent / Rosalina voice Bug [B_squo]
 kmWrite32(0x8086975C, 0x4082001C);
 
+// Mute Rosalina's Luma sounds [ZPL]
+kmWrite32(0x80864BC4, 0x60000000);
+
 // Online Miis look at the camera when finishing in Live View [B_squo]
 kmWrite32(0x80596770, 0x60000000);
 
