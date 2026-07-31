@@ -3,8 +3,8 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <Settings/SettingsParam.hpp>
+#include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceTime.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceScore.hpp>
-#include <core/rvl/OS/OS.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -20,29 +20,32 @@ static const u32 MISSION_COMPETITION_MODE_FLAG = 1 << 2;
 static const u32 MISSION_CUSTOM_ITEMS_OFFSET = 0x54;
 static const u32 MISSION_ENGINE_OFFSET = 0x07;
 static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
+static const u16 MISSION_OBJECTIVE_VS_RACE_01 = 0x01;
+static const u16 MISSION_OBJECTIVE_VS_RACE_02 = 0x02;
+
+static bool IsMissionTimerWarningMode(const Racedata& racedata) {
+	return CtrlRaceTime::IsBattle(racedata) || IsMissionScenario(racedata.racesScenario);
+}
+kmCall(0x807f806c, IsMissionTimerWarningMode);
+
+typedef CtrlRaceTime* (*CtrlRaceTimeConstructorFn)(CtrlRaceTime*, u32, u32);
+kmRuntimeUse(0x807f7bd0);
+
+static CtrlRaceTime* MissionCtrlRaceTimeConstructor(CtrlRaceTime* self, u32 variantId, u32 type) {
+	static const CtrlRaceTimeConstructorFn original =
+		reinterpret_cast<CtrlRaceTimeConstructorFn>(kmRuntimeAddr(0x807f7bd0));
+	self = original(self, variantId, type);
+	if (Racedata::sInstance != nullptr &&
+		IsMissionScenario(Racedata::sInstance->racesScenario))
+		reinterpret_cast<u8*>(self)[0x1b4] = 1;
+	return self;
+}
+
+kmCall(0x808559a0, MissionCtrlRaceTimeConstructor);
+kmCall(0x80858130, MissionCtrlRaceTimeConstructor);
+
 bool IsMissionScenario(const RacedataScenario& scenario) {
     return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
-}
-
-static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
-    return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) |
-                             static_cast<u16>(scenario.mission[0x59]));
-}
-
-void PopulateMissionCPUs(RacedataScenario& scenario) {
-    if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT) return;
-
-    u16 cpuCount = GetMissionCPUCount(scenario);
-    if (cpuCount > 11) cpuCount = 11;
-
-    for (u32 i = 1; i < 12; ++i) scenario.players[i].playerType = PLAYER_NONE;
-    for (u32 i = 0; i < cpuCount; ++i) {
-        RacedataPlayer& player = scenario.players[i + 1];
-        const u32 kmtOffset = 0x5A + i * 2;
-        player.characterId = static_cast<CharacterId>(scenario.mission[kmtOffset]);
-        player.kartId = static_cast<KartId>(scenario.mission[kmtOffset + 1]);
-        player.playerType = PLAYER_CPU;
-    }
 }
 
 static u32 GetMissionValue(const void* mission, u32 offset) {
@@ -52,6 +55,13 @@ static u32 GetMissionValue(const void* mission, u32 offset) {
 static u16 GetMissionU16(const void* mission, u32 offset) {
     const u8* const bytes = reinterpret_cast<const u8*>(mission) + offset;
     return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
+}
+
+static bool IsMissionVSObjective(const RacedataScenario& scenario) {
+    if (!IsMissionScenario(scenario)) return false;
+
+    const u16 objective = GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET);
+    return objective == MISSION_OBJECTIVE_VS_RACE_01 || objective == MISSION_OBJECTIVE_VS_RACE_02;
 }
 
 bool IsMissionToGateObjective(const RacedataScenario& scenario) {
@@ -137,8 +147,6 @@ static void MissionRaceManagerPlayerEndLap(void* player) {
 kmCall(0x80534fbc, MissionRaceManagerPlayerEndLap);
 kmCall(0x805350d4, MissionRaceManagerPlayerEndLap);
 
-<<<<<<< HEAD
-=======
 kmRuntimeUse(0x80725c98);
 static void PreventMissionBackwardsLakitu(void* action) {
     typedef void (*EnableBackwardsActionFn)(void*);
@@ -154,7 +162,6 @@ static void PreventMissionBackwardsLakitu(void* action) {
 
 kmWritePointer(0x808c9888, PreventMissionBackwardsLakitu);
 
->>>>>>> b4d51449 (Skip native lap advance for non-race missions)
 static u16 GetMissionCPUCount(const RacedataScenario& scenario) {
     return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) |
                              static_cast<u16>(scenario.mission[0x59]));
@@ -252,7 +259,6 @@ static u32 GetMissionScoreDisplayTarget(const void* raceConfig) {
     return GetMissionValue(raceConfig, 0xBCC);
 }
 
-<<<<<<< HEAD
 kmRuntimeUse(0x807f784c);
 static void FixMissionScoreLayout(CtrlRaceScore* self) {
     typedef void (*CtrlRaceScoreOnUpdateFn)(CtrlRaceScore*);
@@ -293,133 +299,6 @@ kmWritePointer(0x808d3fdc, FixMissionScoreLayout);
 kmCall(0x807f773c, GetMissionScoreDisplayTarget);
 kmWrite32(0x807f7740, 0x907f01a0);
 kmWrite32(0x807f7744, 0x2c030000);
-
-static void* sMissionState = nullptr;
-static bool sMissionTimeRankFailure = false;
-static bool sMissionRankReported = false;
-static const u32 MISSION_RANK_TIMES_OFFSET = 0x30;
-static const u32 MISSION_RANK_COUNT = 6;
-static const u32 MISSION_RANK_FIELD_OFFSET = 0x10;
-
-static u32 GetMissionScore(void* mission) {
-    return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + 8);
-}
-
-static u32 GetMissionRequiredScore() {
-    return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(Racedata::sInstance) + 0xbcc);
-}
-
-static void SetMissionValue(void* mission, u32 offset, u32 value) {
-    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mission) + offset) = value;
-}
-
-static bool GetMissionFinishTimeMillis(u32& finishTimeMillis) {
-    if (Raceinfo::sInstance == nullptr) return false;
-    Timer* finishTime = nullptr;
-    if (Raceinfo::sInstance->players != nullptr && Raceinfo::sInstance->players[0] != nullptr)
-        finishTime = Raceinfo::sInstance->players[0]->raceFinishTime;
-    if (finishTime == nullptr || !finishTime->isActive) {
-        if (Raceinfo::sInstance->timerMgr == nullptr || !Raceinfo::sInstance->timerMgr->timers[0].isActive)
-            return false;
-        finishTime = &Raceinfo::sInstance->timerMgr->timers[0];
-    }
-    finishTimeMillis = (static_cast<u32>(finishTime->minutes) * 60 + finishTime->seconds) * 1000 +
-                       finishTime->milliseconds;
-    return true;
-}
-
-static bool SetMissionRankFromTime(void* mission) {
-    if (Racedata::sInstance == nullptr ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT ||
-        sMissionRankReported)
-        return false;
-    u32 finishTimeMillis = 0;
-    if (!GetMissionFinishTimeMillis(finishTimeMillis)) return false;
-    const u8* const missionData = Racedata::sInstance->racesScenario.mission;
-    for (u32 rank = 0; rank < MISSION_RANK_COUNT; ++rank) {
-        const u32 threshold = GetMissionValue(missionData, MISSION_RANK_TIMES_OFFSET + rank * 4);
-        if (threshold != 0 && finishTimeMillis < threshold * 1000) {
-            sMissionTimeRankFailure = false;
-            sMissionRankReported = true;
-            SetMissionValue(mission, MISSION_RANK_FIELD_OFFSET, rank);
-            return true;
-        }
-    }
-    sMissionTimeRankFailure = true;
-    sMissionRankReported = true;
-    SetMissionValue(mission, 0xc, 2);
-    return false;
-}
-
-typedef void (*SetMissionObjectiveCompleteFn)(void*, u32, u32);
-static void FixMissionScoreCalcRank(void* mission) {
-    if (Racedata::sInstance == nullptr ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT ||
-        GetMissionScore(mission) < GetMissionValue(Racedata::sInstance->racesScenario.mission,
-                                                    MISSION_SCORE_REQUIRED_OFFSET))
-        return;
-    const u32 raceManager = GetMissionValue(mission, 4);
-    const u32 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission, MISSION_OBJECTIVE_OFFSET);
-    reinterpret_cast<SetMissionObjectiveCompleteFn>(0x8053e194)(reinterpret_cast<void*>(raceManager), objective, 0);
-}
-
-static bool HasMissionScoreRequirement(void* mission) {
-    return GetMissionScore(mission) >= GetMissionRequiredScore();
-}
-
-static bool IsMissionPresentationFailure() {
-    if (Racedata::sInstance == nullptr || sMissionState == nullptr ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
-        return false;
-    return (sMissionTimeRankFailure || !HasMissionScoreRequirement(sMissionState)) &&
-           *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(sMissionState) + 0xc) == 2;
-}
-
-static void FixMissionTimeout(void* mission) {
-    if (sMissionState != mission) {
-        sMissionTimeRankFailure = false;
-        sMissionRankReported = false;
-    }
-    sMissionState = mission;
-    typedef void (*MissionFinishFn)(void*);
-    const u32* const vtable = *reinterpret_cast<const u32* const*>(mission);
-    reinterpret_cast<MissionFinishFn>(vtable[0x34 / 4])(mission);
-    if (!HasMissionScoreRequirement(mission))
-        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mission) + 0xc) = 2;
-}
-
-static void FixMissionTimeoutEnd(void* mission) {
-    sMissionState = mission;
-    typedef void (*MissionEndFn)(void*);
-    const u32* const vtable = *reinterpret_cast<const u32* const*>(mission);
-    reinterpret_cast<MissionEndFn>(vtable[0xc / 4])(mission);
-    if (!HasMissionScoreRequirement(mission) && Raceinfo::sInstance != nullptr &&
-        Raceinfo::sInstance->stage == RACESTAGE_IS_FINISHING)
-        Raceinfo::sInstance->stage = RACESTAGE_FINISHED;
-}
-
-static u32 FixMissionCanEnd(void* mission) {
-    sMissionState = mission;
-    const bool timerExpired = Raceinfo::sInstance != nullptr && Raceinfo::sInstance->timerMgr != nullptr &&
-                               Raceinfo::sInstance->timerMgr->hasRaceTimeRanOut;
-    const u32 status = *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(mission) + 0xc);
-    if (timerExpired && status == 1 && !HasMissionScoreRequirement(mission)) {
-        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(mission) + 0xc) = 2;
-        return 1;
-    }
-    if (status == 1) SetMissionRankFromTime(mission);
-    return status != 0;
-}
-
-static u32 GetMissionPresentationStatus(u32 playerId) {
-    typedef u32 (*GetStatusFn)(u32);
-    const u32 status = reinterpret_cast<GetStatusFn>(0x8078cfa4)(playerId);
-    if (sMissionState != nullptr && *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(sMissionState) + 0xc) == 1)
-        SetMissionRankFromTime(sMissionState);
-    return IsMissionPresentationFailure() ? 2 : status;
-}
-
-// Ranking hooks are implemented by MissionModeRanking.cpp.
 
 void PrepareMenuScenario() {
     RacedataScenario& scenario = Racedata::sInstance->menusScenario;
