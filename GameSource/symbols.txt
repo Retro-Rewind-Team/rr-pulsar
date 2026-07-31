@@ -2615,3 +2615,5 @@ RipFromDisc__13SystemManagerFPCcPvPUi = 0x8000b5f0
 sMissionCoinAddIntroBranch = 0x8087bacc
 
 HasFinishedLoadingGroups__Q25Audio10RSARPlayerFv = 0x807141ec
+IsBattle__12CtrlRaceTimeFRC8Racedata = 0x807f82f4
+FillTimerGlobal__12CtrlRaceTimeFP5Timer = 0x807f82ac

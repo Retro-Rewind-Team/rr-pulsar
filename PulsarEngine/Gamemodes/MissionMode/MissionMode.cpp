@@ -3,6 +3,7 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
 #include <Settings/SettingsParam.hpp>
+#include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceTime.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceScore.hpp>
 #include <runtimeWrite.hpp>
 
@@ -21,6 +22,28 @@ static const u32 MISSION_ENGINE_OFFSET = 0x07;
 static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
 static const u16 MISSION_OBJECTIVE_VS_RACE_01 = 0x01;
 static const u16 MISSION_OBJECTIVE_VS_RACE_02 = 0x02;
+
+static bool IsMissionTimerWarningMode(const Racedata& racedata) {
+	return CtrlRaceTime::IsBattle(racedata) || IsMissionScenario(racedata.racesScenario);
+}
+kmCall(0x807f806c, IsMissionTimerWarningMode);
+
+typedef CtrlRaceTime* (*CtrlRaceTimeConstructorFn)(CtrlRaceTime*, u32, u32);
+kmRuntimeUse(0x807f7bd0);
+
+static CtrlRaceTime* MissionCtrlRaceTimeConstructor(CtrlRaceTime* self, u32 variantId, u32 type) {
+	static const CtrlRaceTimeConstructorFn original =
+		reinterpret_cast<CtrlRaceTimeConstructorFn>(kmRuntimeAddr(0x807f7bd0));
+	self = original(self, variantId, type);
+	if (Racedata::sInstance != nullptr &&
+		IsMissionScenario(Racedata::sInstance->racesScenario))
+		reinterpret_cast<u8*>(self)[0x1b4] = 1;
+	return self;
+}
+
+kmCall(0x808559a0, MissionCtrlRaceTimeConstructor);
+kmCall(0x80858130, MissionCtrlRaceTimeConstructor);
+
 bool IsMissionScenario(const RacedataScenario& scenario) {
     return scenario.settings.gamemode == MODE_MISSION_TOURNAMENT;
 }
