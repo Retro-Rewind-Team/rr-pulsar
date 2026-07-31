@@ -603,6 +603,7 @@ static Pages::RaceHUD* SetMissionHudNextPage(Pages::RaceHUD* hud) {
 kmCall(0x80624adc, SetMissionHudNextPage);
 
 void CreateRacePages(ExpSection& section) {
+	::Pulsar::MissionMode::PrepareMissionRankSoundGroup();
     section.CreateAndInitPage(section, PAGE_TT_SPLITS);
     section.CreateAndInitPage(section, PAGE_MISSION_ENDMENU);
     if (Pages::RaceHUD::sInstance != nullptr) {
