@@ -1,10 +1,13 @@
 #include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/Audio/Race/AudioItemAlterationMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/UI/Page/Other/TTSplits.hpp>
 #include <core/rvl/dvd/dvd.hpp>
 #include <core/System/SystemManager.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace MissionMode {
@@ -23,6 +26,34 @@ static const u32 MISSION_MUSIC_CONFIG_HEADER_SIZE = 0x10;
 static const u32 MISSION_MUSIC_CONFIG_ENTRY_SIZE = MAX_MUSIC_NAME_LENGTH;
 static const u32 MISSION_CHARACTER_TABLE_ENTRY_SIZE = MISSION_CHARACTER_TABLE_COUNT;
 static const u8 CUSTOM_TABLE_LIMIT = 50;
+static const u32 MISSION_RANK_SOUND_GROUP = 8;
+
+static bool missionRankSoundPending;
+static u32 missionRankSoundId;
+
+typedef void* (*RequestSoundGroupFn)(void*, u32, u32);
+typedef void* (*ProcessSoundGroupRequestsFn)();
+
+kmRuntimeUse(0x807000d4);
+kmRuntimeUse(0x80700230);
+kmRuntimeUse(0x809c2690);
+kmRuntimeUse(0x80855adc);
+
+static void TryPlayMissionRankSound(Pages::TTSplits* page) {
+	if (!missionRankSoundPending || !Audio::RSARPlayer::HasFinishedLoadingGroups()) return;
+
+	Audio::RSARPlayer::PlaySoundById(missionRankSoundId, 0xffffffff, page);
+	missionRankSoundPending = false;
+}
+
+typedef void (*TTSplitsAfterControlUpdateFn)(Pages::TTSplits*);
+
+static void MissionTTSplitsAfterControlUpdate(Pages::TTSplits* page) {
+	TryPlayMissionRankSound(page);
+	reinterpret_cast<TTSplitsAfterControlUpdateFn>(kmRuntimeAddr(0x80855adc))(page);
+}
+
+kmWritePointer(0x808DA628, MissionTTSplitsAfterControlUpdate);
 
 static bool associationsLoaded;
 static bool characterTablesInitialized;
@@ -201,6 +232,23 @@ static bool ResolveForcedMusic(const RacedataScenario& scenario, const char*& ex
     return true;
 }
 
+}
+
+void PrepareMissionRankSoundGroup() {
+	void* requester = *reinterpret_cast<void**>(kmRuntimeAddr(0x809c2690));
+	if (requester == nullptr) return;
+
+	reinterpret_cast<RequestSoundGroupFn>(kmRuntimeAddr(0x807000d4))(
+		requester, MISSION_RANK_SOUND_GROUP, 0);
+	reinterpret_cast<ProcessSoundGroupRequestsFn>(kmRuntimeAddr(0x80700230))();
+}
+
+void QueueMissionRankSound(Pages::TTSplits* page, u32 rank) {
+	if (rank > 2) return;
+
+	missionRankSoundId = 0x219 - rank;
+	missionRankSoundPending = true;
+	TryPlayMissionRankSound(page);
 }
 
 void LoadMissionCharacterTablesFromConfig(const u8* file, u32 fileSize) {
