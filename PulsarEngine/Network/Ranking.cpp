@@ -109,7 +109,7 @@ static s32 ParseBadgeJson(const char* body, int bodyLen, u32 pid) {
             u32 badgeType = 0;
             if (!Network::Json::ParseU32(p, end, badgeType)) break;
             const s32 icon = BadgeTypeToIcon(badgeType);
-            if (icon >= 0 && (selectedIcon < 0 || icon < selectedIcon)) selectedIcon = icon;
+            if (icon >= 0 && selectedIcon < 0) selectedIcon = icon;
 
             p = Network::Json::SkipWhitespace(p, end);
             if (p < end && *p == ',') ++p;
