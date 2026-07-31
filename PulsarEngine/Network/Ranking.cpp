@@ -200,7 +200,7 @@ static const RankText& GetRankText() {
         L"1st Places: %u / 2250\n"
         L"Distance: %.1f km / 40000 km\n"
         L"1st Distance: %.1f km / 10000 km\n"
-        L"Score: %.2f points (need %.2f for Rank %ls)\n"};
+        L"Score: %.2f points (need +%.2f for Rank %ls)\n"};
 
     static const RankText japanese = {
         L"\u30E9\u30F3\u30AF: %ls\n\u30B9\u30B3\u30A2: %d",
