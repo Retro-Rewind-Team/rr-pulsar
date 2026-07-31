@@ -33,8 +33,9 @@ void ExpCupSelect::OnActivate() {
     this->randomizedId = PULSARID_NONE;
     PushButton** buttons = reinterpret_cast<PushButton**>(this->ctrlMenuCupSelectCup.childrenGroup.controlArray);
     for (int i = 0; i < 8; ++i) buttons[i]->manipulator.inaccessible = false;
-    this->arrows.leftArrow.manipulator.inaccessible = false;
-    this->arrows.rightArrow.manipulator.inaccessible = false;
+    const bool hasCTs = CupsConfig::sInstance->GetCtsTrackCount() != 0;
+    this->arrows.leftArrow.manipulator.inaccessible = !hasCTs;
+    this->arrows.rightArrow.manipulator.inaccessible = !hasCTs;
     Pages::CupSelect::OnActivate();
 }
 

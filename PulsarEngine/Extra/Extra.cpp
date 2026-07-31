@@ -2,9 +2,11 @@
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
+#include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
+#include <MarioKartWii/Item/Obj/KouraTogezo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <PulsarSystem.hpp>
@@ -110,19 +112,15 @@ kmBranch(0x807BB380, CanItemNotBeObtained);
 
 // Blue Shell Cooldown [ZPL]
 extern "C" Item::ItemSlotData* itemSlotData;
-static void UpdateBlueShellCooldown() {
+static void EnableBlueShellCooldown(Item::ObjKouraTogezo* blueShell) {
     const Pulsar::System* system = Pulsar::System::sInstance;
-    if (system->IsVanillaMode() || system->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) || system->IsContext(Pulsar::PULSAR_ITEMMODEBLAST)) return;
+    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled()) return blueShell->Reset();
 
-    const Item::Manager* manager = Item::Manager::sInstance;
-    if (manager == nullptr || itemSlotData == nullptr) return;
-
-    static u16 previousSpawnCount = 0;
-    const u16 totalSpawnedCount = manager->itemObjHolders[OBJ_BLUE_SHELL].totalSpawnedCount;
-    if (totalSpawnedCount > previousSpawnCount) itemSlotData->itemSpawnTimers[1] = 1200;  // 15 seconds
-    previousSpawnCount = totalSpawnedCount;
+    blueShell->Reset();
+    if (blueShell->itemObjId == OBJ_BLUE_SHELL && itemSlotData != nullptr) itemSlotData->ResetBlueShellTimer();
 }
-static RaceFrameHook UpdateBlueShellCooldownHook(UpdateBlueShellCooldown);
+kmCall(0x807AC6B8, EnableBlueShellCooldown);
+kmWrite32(0x807BB9C8, 0x38000384);  // li r0, 900 (15 seconds)
 
 // Anti Mii Crash
 asmFunc AntiWiper() {
@@ -197,13 +195,23 @@ kmWrite32(0x805BC8B4, 0x60000000);  // Skip setting credits course for true cred
 // No Disconnect on Countdown [_tZ]
 kmWrite32(0x80655578, 0x60000000);
 
-// Mushroom Glitch Fix [Vabold]
+// Mushroom Glitch Fix [Vega, ported by ZPL]
 static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulette) {
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
     return roulette;
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);
+
+// Slow Ramp Offroad Fix [vabold, ported by ZPL]
+static Kart::Status* ClearSlowRampMushroomRequirement(Kart::Pointers* pointers) {
+    Kart::Status* status = pointers->kartStatus;
+    if (!Pulsar::System::sInstance->IsVanillaMode()) {
+        status->bitfield2 &= ~0x00100000;
+    }
+    return status;
+}
+kmCall(0x80582670, ClearSlowRampMushroomRequirement);
 
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);
@@ -377,6 +385,9 @@ kmWrite32(0x807f0644, 0x48000024);
 
 // Fix Mii opponents having silent / Rosalina voice Bug [B_squo]
 kmWrite32(0x8086975C, 0x4082001C);
+
+// Mute Rosalina's Luma sounds [ZPL]
+kmWrite32(0x80864BC4, 0x60000000);
 
 // Online Miis look at the camera when finishing in Live View [B_squo]
 kmWrite32(0x80596770, 0x60000000);
