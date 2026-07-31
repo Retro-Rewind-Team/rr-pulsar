@@ -6,6 +6,8 @@
 #include <MarioKartWii/Audio/Actors/KartActor.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceGhostDiffTime.hpp>
+#include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceTime.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Settings/Settings.hpp>
 
 /*Music speedup:
@@ -22,14 +24,44 @@ static const u8 INVALID_HUD_SLOT_ID = 0xFF;
 static u8 finalLapSpeedupHudSlot = INVALID_HUD_SLOT_ID;
 void UpdateSW2RRRacePercentageMusic();
 
-static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 hudSlotId) {
-    u8 isSpeedUp = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSICSPEEDUP);
-    Audio::RaceMgr *raceAudioMgr = Audio::RaceMgr::sInstance;
-    Raceinfo *raceInfo = Raceinfo::sInstance;
+static u8 missionTimerWarningSecond = 0xFF;
+
+static void PlayMissionTimerWarningSound() {
+	const Racedata* racedata = Racedata::sInstance;
+	const Raceinfo* raceInfo = Raceinfo::sInstance;
+	if (racedata == nullptr || !MissionMode::IsMissionScenario(racedata->racesScenario) ||
+		raceInfo == nullptr || raceInfo->stage != RACESTAGE_RACE) {
+		missionTimerWarningSecond = 0xFF;
+		return;
+	}
+
+	Timer timer;
+	CtrlRaceTime::FillTimerGlobal(&timer);
+	if (!timer.isActive || timer.minutes != 0 || timer.seconds > 9) {
+		missionTimerWarningSecond = 0xFF;
+		return;
+	}
+	if (timer.seconds == missionTimerWarningSecond) return;
+
+	Audio::RaceRSARPlayer* rsarSoundPlayer =
+		static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+	if (rsarSoundPlayer == nullptr) return;
+
+	missionTimerWarningSecond = timer.seconds;
+	const u32 soundId = timer.seconds >= 3
+		? SOUND_ID_BATTLE_COUNTDOWN_10_9_8
+		: SOUND_ID_BATTLE_COUNTDOWN_3_2_1;
+	rsarSoundPlayer->PlaySound(soundId, INVALID_HUD_SLOT_ID);
+}
+
+static void MusicSpeedup(Audio::RaceRSARPlayer* rsarSoundPlayer, u32 jingle, u8 hudSlotId) {
+    u8 isSpeedUp = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSICSPEEDUP);
+    Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
+    Raceinfo* raceInfo = Raceinfo::sInstance;
     const u8 maxLap = raceAudioMgr->maxLap;
     const u8 curLap = raceAudioMgr->lap;
-    const RacedataSettings &raceDataSettings = Racedata::sInstance->racesScenario.settings;
-    RaceinfoPlayer *hudPlayer = nullptr;
+    const RacedataSettings& raceDataSettings = Racedata::sInstance->racesScenario.settings;
+    RaceinfoPlayer* hudPlayer = nullptr;
     if (raceInfo != nullptr && raceInfo->players != nullptr) {
         hudPlayer = raceInfo->players[raceDataSettings.hudPlayerIds[hudSlotId]];
     }
@@ -41,9 +73,9 @@ static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 
     }
     if (maxLap == 1) return;
     if (maxLap == raceDataSettings.lapCount) {
-        register Audio::KartActor *kartActor;
+        register Audio::KartActor* kartActor;
         asm(mr kartActor, r29;);
-        snd::detail::BasicSound &sound = kartActor->soundArchivePlayer->soundPlayerArray[0].soundList.GetFront();
+        snd::detail::BasicSound& sound = kartActor->soundArchivePlayer->soundPlayerArray[0].soundList.GetFront();
         if (isSpeedUp == SPEEDUP_ENABLED || sound.soundId == SOUND_ID_GALAXY_COLOSSEUM) {
             if (isFirstFinalLapTrigger) {
                 finalLapSpeedupHudSlot = hudSlotId;
@@ -51,8 +83,8 @@ static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 
                 rsarSoundPlayer->PlaySound(SOUND_ID_FINAL_LAP, hudSlotId);
             }
             if (finalLapSpeedupHudSlot == hudSlotId && raceInfo != nullptr && raceInfo->players != nullptr) {
-                const Timer &raceTimer = raceInfo->timerMgr->timers[0];
-                const Timer &playerTimer = raceInfo->players[raceDataSettings.hudPlayerIds[finalLapSpeedupHudSlot]]->lapSplits[maxLap - 2];
+                const Timer& raceTimer = raceInfo->timerMgr->timers[0];
+                const Timer& playerTimer = raceInfo->players[raceDataSettings.hudPlayerIds[finalLapSpeedupHudSlot]]->lapSplits[maxLap - 2];
                 const Timer difference = CtrlRaceGhostDiffTime::SubtractTimers(raceTimer, playerTimer);
                 if (difference.minutes < 1 && difference.seconds < 5) {
                     sound.ambientParam.pitch += 0.0002f;
@@ -71,17 +103,17 @@ kmWrite32(0x8070b2c0, 0x60000000);
 kmWrite32(0x8070b2d4, 0x60000000);
 
 kmRuntimeUse(0x807125d4);
-static void RaceSoundManager_CheckRaceState(void *raceSoundManager) {
-    const Racedata *racedata = Racedata::sInstance;
-    const RKNet::Controller *rknet = RKNet::Controller::sInstance;
-    Audio::RaceMgr *raceAudioMgr = Audio::RaceMgr::sInstance;
+static void RaceSoundManager_CheckRaceState(void* raceSoundManager) {
+    const Racedata* racedata = Racedata::sInstance;
+    const RKNet::Controller* rknet = RKNet::Controller::sInstance;
+    Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
     if (racedata != nullptr && rknet != nullptr && raceAudioMgr != nullptr && rknet->roomType != RKNet::ROOMTYPE_NONE) {
-        const RacedataSettings &settings = racedata->racesScenario.settings;
+        const RacedataSettings& settings = racedata->racesScenario.settings;
         if (settings.lapCount == 1 && raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL) {
             const u8 localPlayerId = raceAudioMgr->playerIdFirstLocalPlayer;
-            Raceinfo *raceInfo = Raceinfo::sInstance;
+            Raceinfo* raceInfo = Raceinfo::sInstance;
             if (raceInfo != nullptr && raceInfo->players != nullptr && localPlayerId < 12) {
-                RaceinfoPlayer *player = raceInfo->players[localPlayerId];
+                RaceinfoPlayer* player = raceInfo->players[localPlayerId];
                 if (player != nullptr && player->raceFinishTime != nullptr && player->raceFinishTime->isActive) {
                     raceAudioMgr->raceState = RACE_STATE_FINAL_LAP_JINGLE;
                 }
@@ -89,7 +121,8 @@ static void RaceSoundManager_CheckRaceState(void *raceSoundManager) {
         }
     }
 
-    reinterpret_cast<void (*)(void *)>(kmRuntimeAddr(0x807125d4))(raceSoundManager);
+    reinterpret_cast<void (*)(void*)>(kmRuntimeAddr(0x807125d4))(raceSoundManager);
+    PlayMissionTimerWarningSound();
     UpdateSW2RRRacePercentageMusic();
 }
 kmCall(0x80710f84, RaceSoundManager_CheckRaceState);
