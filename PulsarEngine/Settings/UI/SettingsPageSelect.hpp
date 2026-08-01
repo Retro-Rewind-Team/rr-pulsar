@@ -4,6 +4,7 @@
 #include <MarioKartWii/UI/Page/Menu/Menu.hpp>
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
 #include <Settings/SettingsParam.hpp>
+#include <Network/Ranking.hpp>
 #include <UI/UI.hpp>
 
 /*
@@ -19,7 +20,7 @@ class SettingsPageSelect : public Pages::MenuInteractable {
    public:
     static const PulPageId id = PULPAGE_SETTINGSPAGESELECT;
 
-    SettingsPageSelect();
+    explicit SettingsPageSelect(bool badgeSelect = false);
     ~SettingsPageSelect() override {}
 
     void OnInit() override;
@@ -37,6 +38,8 @@ class SettingsPageSelect : public Pages::MenuInteractable {
     void OnBackButtonClick(PushButton& button, u32 hudSlotId);
 
    private:
+    void UpdateBadgeButtons();
+    void SetBadgeButtonMessage(PushButton& button);
     void OnButtonClick(PushButton& button, u32 hudSlotId);
     void OnButtonSelect(PushButton& button, u32 hudSlotId);
     void OnButtonDeselect(PushButton& button, u32 hudSlotId) {}
@@ -44,7 +47,10 @@ class SettingsPageSelect : public Pages::MenuInteractable {
     PtmfHolder_2A<SettingsPageSelect, void, PushButton&, u32> onBackButtonClickHandler;
 
     // Buttons for each settings page - max 12 pages
-    PushButton pageButtons[Settings::Params::pageCount];
+    static const u32 settingsButtonCount = Settings::Params::pageCount + 1;
+    static const u32 badgeButtonCount = Ranking::SPECIAL_BADGE_COUNT + 1;
+    PushButton pageButtons[settingsButtonCount];
+    bool badgeSelectMode;
 };
 
 }  // namespace UI

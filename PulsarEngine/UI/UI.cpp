@@ -85,6 +85,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_P2_WIFI_FROOM_COIN_VOTING:  // 0x67
             this->CreateAndInitPage(*this, SettingsPanel::id);
             this->CreateAndInitPage(*this, SettingsPageSelect::id);
+            this->CreateAndInitPage(*this, PULPAGE_BADGESELECT);
             break;
 
         case SECTION_P1_WIFI_VS:  // 0x68
@@ -129,6 +130,7 @@ void ExpSection::CreatePulPages() {
         case SECTION_P1_WIFI_BATTLE_VOTING:
             this->CreateAndInitPage(*this, SettingsPanel::id);
             this->CreateAndInitPage(*this, SettingsPageSelect::id);
+            this->CreateAndInitPage(*this, PULPAGE_BADGESELECT);
             this->CreateAndInitPage(*this, VRLeaderboardPage::id);
             break;
         case SECTION_LOCAL_MULTIPLAYER:  // 0x54
@@ -237,6 +239,9 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
             break;
         case SettingsPageSelect::id:
             page = new SettingsPageSelect;
+            break;
+        case PULPAGE_BADGESELECT:
+            page = new SettingsPageSelect(true);
             break;
         case ExtendedTeamSelect::id:
             page = new ExtendedTeamSelect;

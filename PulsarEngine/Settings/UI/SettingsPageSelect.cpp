@@ -5,13 +5,22 @@
 #include <MarioKartWii/UI/Page/Menu/VSSettings.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
+#include <Network/Ranking.hpp>
 
 namespace Pulsar {
 namespace UI {
 
-SettingsPageSelect::SettingsPageSelect() {
+static bool IsOnlineSettingsSection(SectionId sectionId) {
+    return sectionId == SECTION_P1_WIFI || sectionId == SECTION_P2_WIFI ||
+           sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE || sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE ||
+           sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || sectionId == SECTION_P2_WIFI_FROM_FIND_FRIEND ||
+           (sectionId >= SECTION_P1_WIFI_FROOM_VS_VOTING && sectionId <= SECTION_P2_WIFI_FROOM_COIN_VOTING) ||
+           sectionId == SECTION_P1_WIFI_VS_VOTING || sectionId == SECTION_P1_WIFI_BATTLE_VOTING;
+}
+
+SettingsPageSelect::SettingsPageSelect(bool badgeSelect) : badgeSelectMode(badgeSelect) {
     externControlCount = 0;
-    internControlCount = Settings::Params::pageCount;
+    internControlCount = badgeSelectMode ? badgeButtonCount : settingsButtonCount;
     hasBackButton = true;
     nextPageId = PAGE_NONE;
     titleBmg = BMG_SETTINGS_TITLE;  // "Settings" title
@@ -25,7 +34,9 @@ SettingsPageSelect::SettingsPageSelect() {
 
     // Determine previous page based on section
     SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (sectionId == SECTION_OPTIONS)
+    if (badgeSelectMode)
+        prevPageId = static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT);
+    else if (sectionId == SECTION_OPTIONS)
         prevPageId = PAGE_OPTIONS;
     else if ((sectionId == SECTION_P1_WIFI) || (sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE) ||
              (sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND) || (sectionId == SECTION_P2_WIFI) ||
@@ -59,7 +70,19 @@ void SettingsPageSelect::OnInit() {
 }
 
 UIControl* SettingsPageSelect::CreateControl(u32 id) {
-    if (id < Settings::Params::pageCount) {
+    if (this->badgeSelectMode && id < badgeButtonCount) {
+        PushButton& button = this->pageButtons[id];
+        this->AddControl(this->controlCount++, button, 0);
+
+        char variant[16];
+        snprintf(variant, 16, "Page%d", id);
+        button.Load(UI::buttonFolder, "SettingsPageSelect", variant, this->activePlayerBitfield, 0, false);
+        button.buttonId = id;
+        this->SetButtonHandlers(button);
+        return &button;
+    }
+
+    if (!this->badgeSelectMode && id < settingsButtonCount) {
         PushButton& button = this->pageButtons[id];
         this->AddControl(this->controlCount++, button, 0);
 
@@ -93,6 +116,14 @@ void SettingsPageSelect::SetButtonHandlers(PushButton& button) {
 }
 
 void SettingsPageSelect::OnActivate() {
+    if (this->badgeSelectMode) {
+        this->UpdateBadgeButtons();
+        this->bottomText->SetMessage(0);
+        this->pageButtons[0].Select(0);
+        MenuInteractable::OnActivate();
+        return;
+    }
+
     // Select the first button by default
     if (Settings::Params::pageCount > 0) {
         this->pageButtons[0].Select(0);
@@ -104,9 +135,7 @@ void SettingsPageSelect::OnActivate() {
     SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     bool isVotingSection = (sectionId >= SECTION_P1_WIFI_FROOM_VS_VOTING && sectionId <= SECTION_P2_WIFI_FROOM_COIN_VOTING) ||
                            (sectionId == SECTION_P1_WIFI_VS_VOTING) || (sectionId == SECTION_P1_WIFI_BATTLE_VOTING);
-    bool isOnlineSection = (sectionId == SECTION_P1_WIFI || sectionId == SECTION_P2_WIFI ||
-                            sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE || sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE ||
-                            sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || sectionId == SECTION_P2_WIFI_FROM_FIND_FRIEND);
+    bool isOnlineSection = IsOnlineSettingsSection(sectionId);
 
     for (int i = 0; i < Settings::Params::pageCount; ++i) {
         bool isHidden = false;
@@ -136,6 +165,10 @@ void SettingsPageSelect::OnActivate() {
         this->pageButtons[i].isHidden = isHidden;
         this->pageButtons[i].manipulator.inaccessible = isHidden;
     }
+
+    const bool showBadgeButton = isOnlineSection && Ranking::HasSpecialBadges();
+    this->pageButtons[Settings::Params::pageCount].isHidden = !showBadgeButton;
+    this->pageButtons[Settings::Params::pageCount].manipulator.inaccessible = !showBadgeButton;
 
     MenuInteractable::OnActivate();
 }
@@ -169,6 +202,26 @@ void SettingsPageSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
     // Get the SettingsPanel and set up the selected page
     const u32 selectedPage = button.buttonId;
 
+    if (this->badgeSelectMode) {
+        u8 selectedBadge = Ranking::NORMAL_RANKING_BADGE;
+        if (selectedPage > 0) selectedBadge = Ranking::GetSpecialBadgeAt(selectedPage - 1);
+        if (selectedPage == 0 || Ranking::IsSpecialBadgeAvailable(selectedBadge)) {
+            Settings::Mgr::Get().SetRankingBadge(selectedBadge);
+            this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
+            this->EndStateAnimated(0, button.GetAnimationFrameSize());
+        }
+        return;
+    }
+
+    if (selectedPage == Settings::Params::pageCount) {
+        const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
+        if (IsOnlineSettingsSection(sectionId) && Ranking::HasSpecialBadges()) {
+            this->nextPageId = static_cast<PageId>(PULPAGE_BADGESELECT);
+            this->EndStateAnimated(0, button.GetAnimationFrameSize());
+        }
+        return;
+    }
+
     if (selectedPage == Settings::SETTINGSTYPE_ITEMS) {
         this->nextPageId = static_cast<PageId>(CustomItemPage::id);
         this->EndStateAnimated(0, button.GetAnimationFrameSize());
@@ -191,6 +244,11 @@ void SettingsPageSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
 }
 
 void SettingsPageSelect::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+    if (this->badgeSelectMode) {
+        this->bottomText->SetMessage(0);
+        return;
+    }
+
     // Display the page name/description in the bottom text
     u32 bmgOffset = 0;
     u32 pageIdx = button.buttonId;
@@ -199,6 +257,30 @@ void SettingsPageSelect::OnButtonSelect(PushButton& button, u32 hudSlotId) {
         pageIdx = button.buttonId - Settings::Params::pulsarPageCount;
     }
     this->bottomText->SetMessage(bmgOffset + BMG_SETTINGS_TITLE + pageIdx);
+}
+
+void SettingsPageSelect::SetBadgeButtonMessage(PushButton& button) {
+    if (button.buttonId == 0) {
+        button.SetMessage(BMG_RANKING_BADGE);
+        return;
+    }
+
+    const u8 badge = Ranking::GetSpecialBadgeAt(button.buttonId - 1);
+    wchar_t badgeText[] = {static_cast<wchar_t>(0xF07C + badge), L'\0'};
+    Text::Info info;
+    info.strings[0] = badgeText;
+    button.SetMessage(BMG_TEXT, &info);
+}
+
+void SettingsPageSelect::UpdateBadgeButtons() {
+    const u32 specialBadgeCount = Ranking::GetSpecialBadgeCount();
+    for (u32 i = 0; i < badgeButtonCount; ++i) {
+        PushButton& button = this->pageButtons[i];
+        const bool isHidden = i > 0 && i - 1 >= specialBadgeCount;
+        button.isHidden = isHidden;
+        button.manipulator.inaccessible = isHidden;
+        this->SetBadgeButtonMessage(button);
+    }
 }
 
 void SettingsPageSelect::BeforeControlUpdate() {
