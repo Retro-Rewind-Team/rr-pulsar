@@ -41,6 +41,7 @@ static void SetRaceNameBadgeMessage(LayoutUIControl* control, const char* paneNa
     control->SetTextBoxMessage(paneName, bmgId, info);
 }
 kmCall(0x807f05dc, SetRaceNameBadgeMessage);
+kmCall(0x807f6248, SetRaceNameBadgeMessage);
 
 static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool isLocal, bool isBR, bool* hasDecimal) {
     *hasDecimal = false;
