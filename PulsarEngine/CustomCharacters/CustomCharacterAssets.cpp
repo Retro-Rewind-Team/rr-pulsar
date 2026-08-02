@@ -697,13 +697,51 @@ bool ReloadMenuDriverModel(MenuDriverModelMgr& driverMgr, CharacterId character)
     return true;
 }
 
+// The scn roots are double buffered (ScnMgr::SwitchScnRoot flips them every
+// draw): the root drawn this frame was already calculated last frame, before
+// the reloaded model existed, and would display it in bind pose for one frame.
+// Attach the animations and recalculate that root now, then attach them to the
+// root the upcoming ScnMgr::CalcMain calculates. Only correct right before
+// CalcMain, so this must stay on the queued reload path below.
+void PoseReloadedMenuDriverModel(CharacterId character) {
+    ModelDirector* model = reloadedMenuDriverModels[character];
+    ToadetteHair* hair = reloadedMenuDriverModelHairs[character];
+    ScnMgr* scnMgr = ScnMgr::sInstance[0];
+    if (model == nullptr || scnMgr == nullptr) return;
+
+    const u32 curRootIdx = scnMgr->curScnRootIdx;
+    const u32 drawnRootIdx = curRootIdx ^ 1;
+    model->Update(drawnRootIdx);
+    if (hair != nullptr) hair->Update(drawnRootIdx);
+    scnMgr->curScnRootIdx = drawnRootIdx;
+    scnMgr->curScnRoot = scnMgr->scnRoots[drawnRootIdx];
+    scnMgr->UpdateScnRoot(0);
+    scnMgr->curScnRootIdx = curRootIdx;
+    scnMgr->curScnRoot = scnMgr->scnRoots[curRootIdx];
+    model->Update(curRootIdx);
+    if (hair != nullptr) hair->Update(curRootIdx);
+}
+
+// In menus the section update runs after ScnMgr::CalcMain, so a model reloaded
+// there could never be posed in time for its first draw. Skin changes are
+// therefore only queued here and executed right before the next CalcMain.
+bool pendingMenuDriverModelReloads[LOCAL_PLAYER_COUNT];
+CharacterId pendingMenuDriverModelCharacters[LOCAL_PLAYER_COUNT];
+
 void ReinitMenuDriverModelMgr(u8 hud, CharacterId character) {
+    if (hud >= LOCAL_PLAYER_COUNT) return;
+    pendingMenuDriverModelReloads[hud] = true;
+    pendingMenuDriverModelCharacters[hud] = character;
+}
+
+void ExecuteMenuDriverModelReload(u8 hud, CharacterId character) {
     MenuModelMgr* modelMgr = MenuModelMgr::sInstance;
     if (modelMgr == nullptr || !modelMgr->isActive || modelMgr->driverModels == nullptr) return;
     if (hud >= LOCAL_PLAYER_COUNT || hud >= modelMgr->playerCount) return;
 
     UnlockMenuModelHeaps(*modelMgr);
     if (!ReloadMenuDriverModel(*modelMgr->driverModels, character)) return;
+    PoseReloadedMenuDriverModel(character);
     modelMgr->driverModels->SetPlayerCharacter(hud, character);
 
     SectionMgr* sectionMgr = SectionMgr::sInstance;
@@ -711,6 +749,20 @@ void ReinitMenuDriverModelMgr(u8 hud, CharacterId character) {
     Pages::CharacterSelect* page = sectionMgr->curSection->Get<Pages::CharacterSelect>();
     if (page != nullptr && page->models != nullptr) page->models[hud].RequestModel(character);
 }
+
+// These are the three ScnMgr::CalcMain call sites of GameScene::calc, covering
+// every scene calc path a menu can take.
+void ProcessMenuDriverModelReloadsAndCalc() {
+    for (u8 hud = 0; hud < LOCAL_PLAYER_COUNT; ++hud) {
+        if (!pendingMenuDriverModelReloads[hud]) continue;
+        pendingMenuDriverModelReloads[hud] = false;
+        ExecuteMenuDriverModelReload(hud, pendingMenuDriverModelCharacters[hud]);
+    }
+    ScnMgr::CalcMain();
+}
+kmCall(0x8051b444, ProcessMenuDriverModelReloadsAndCalc);
+kmCall(0x8051b4dc, ProcessMenuDriverModelReloadsAndCalc);
+kmCall(0x8051b610, ProcessMenuDriverModelReloadsAndCalc);
 
 void RefreshMenuDriverModel(CharacterId character) {
     MenuModelMgr* modelMgr = MenuModelMgr::sInstance;

@@ -720,7 +720,10 @@ CreatePath__Q23EGG11ScnRendererFUiPQ23EGG9Allocator = 0x8023bd38
 
 #ScnMgr
 AppendScreenSpecificModelDirector__6ScnMgrFP13ModelDirector = 0x805635cc
+CalcMain__6ScnMgrFv = 0x80564adc
+UpdateScnRoot__6ScnMgrFUi = 0x80562888
 RemoveFromGroup__13ModelDirectorFv = 0x8055f2fc
+Update__13ModelDirectorFUi = 0x8055d23c
 
 #TaskThread
 Create__Q23EGG10TaskThreadFiiUiPQ23EGG4Heap = 0x802428e8
