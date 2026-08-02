@@ -45,10 +45,13 @@ struct MiscParams {
     static const u32 index = SECTION_MISC;
     Pulsar::SectionHeader header;
     u32 customItemsBitfield;
-    u32 reserved[19];  // 0xc
+    u32 reserved[18];  // 0xc
+    u8 rankingBadge;  // 0x58, 0 is the normal ranking badge
+    u8 rankingBadgePadding[3];
     PulsarCupId lastSelectedCup;  // 0x5c
     u32 trackCount;  // 0x60
 };
+static_assert(sizeof(MiscParams) == 0x64, "MiscParams layout changed");
 
 struct TrophiesHolder {
     static const u32 tropMagic = 'TROP';

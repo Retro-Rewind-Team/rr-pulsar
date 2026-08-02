@@ -1,4 +1,5 @@
 #include <Settings/Settings.hpp>
+#include <Network/Ranking.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
@@ -100,6 +101,10 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
     MiscParams& params = this->rawBin->GetSection<MiscParams>();
     if (params.customItemsBitfield == 0) {
         params.customItemsBitfield = 0x7FFFF;
+    }
+    if (params.rankingBadge != Ranking::NORMAL_RANKING_BADGE &&
+        (params.rankingBadge < Ranking::SPECIAL_BADGE_FIRST || params.rankingBadge > Ranking::SPECIAL_BADGE_LAST)) {
+        params.rankingBadge = Ranking::NORMAL_RANKING_BADGE;
     }
 
     u8& looseOverridesSetting =

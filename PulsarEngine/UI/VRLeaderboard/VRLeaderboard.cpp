@@ -1,4 +1,5 @@
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
+#include <Network/Json.hpp>
 #include <Network/WiiLink.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <UI/UI.hpp>
@@ -197,11 +198,6 @@ static const char* FindStr(const char* haystack, const char* needle) {
     return nullptr;
 }
 
-static const char* SkipWhitespace(const char* p) {
-    while (p != nullptr && (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')) ++p;
-    return p;
-}
-
 static unsigned char ParseJsonEscape(const char*& p) {
     const unsigned char esc = static_cast<unsigned char>(*p++);
     if (esc == '\0') return '?';
@@ -231,7 +227,7 @@ static unsigned char ParseJsonEscape(const char*& p) {
 static const char* ParseJsonStringIntoWide(const char* p, wchar_t* out, size_t outLen) {
     if (out == nullptr || outLen == 0) return nullptr;
     out[0] = L'\0';
-    p = SkipWhitespace(p);
+    p = Network::Json::SkipWhitespace(p);
     if (p == nullptr || *p != '"') return nullptr;
     ++p;
 
@@ -246,30 +242,10 @@ static const char* ParseJsonStringIntoWide(const char* p, wchar_t* out, size_t o
     return p;
 }
 
-template <typename T>
-static const char* ParseJsonUInt(const char* p, T& out) {
-    out = 0;
-    p = SkipWhitespace(p);
-    if (p == nullptr || *p == '-' || *p < '0' || *p > '9') return nullptr;
-    while (*p >= '0' && *p <= '9') {
-        out = out * 10 + static_cast<T>(*p - '0');
-        ++p;
-    }
-    return p;
-}
-
-static const char* ParseJsonU32(const char* p, u32& out) {
-    return ParseJsonUInt(p, out);
-}
-
-static const char* ParseJsonU64(const char* p, u64& out) {
-    return ParseJsonUInt(p, out);
-}
-
 static const char* ParseJsonStringIntoAscii(const char* p, char* out, size_t outLen) {
     if (out == nullptr || outLen == 0) return nullptr;
     out[0] = '\0';
-    p = SkipWhitespace(p);
+    p = Network::Json::SkipWhitespace(p);
     if (p == nullptr || *p != '"') return nullptr;
     ++p;
 
@@ -742,7 +718,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
     memset(s_requestWorkBuf, 0, s_nhttpWorkBufSize);
 
     char* url = s_requestUrl;
-    snprintf(url, sizeof(s_requestUrl), "http://%s:8000/api/leaderboard/in-game?page=%u", WWFC_DOMAIN, apiPage);
+    snprintf(url, sizeof(s_requestUrl), "http://%s/api/leaderboard/in-game?page=%u", WWFC_DOMAIN, apiPage);
 
     void* request = NHTTPCreateRequest(url, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
                                        reinterpret_cast<void*>(&VRLeaderboardPage::OnLeaderboardReceived),
@@ -887,7 +863,7 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
             const char* colon = FindStrInRange(vrKey, objEnd, ":");
             if (colon != nullptr) {
                 u32 vrValue = 0;
-                (void)ParseJsonU32(colon + 1, vrValue);
+                (void)Network::Json::ParseU32(colon + 1, vrValue);
                 outEntries[count].vr = vrValue;
             }
         }
@@ -896,7 +872,7 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
             const char* colon = FindStrInRange(rankKey, objEnd, ":");
             if (colon != nullptr) {
                 u32 rankValue = 0;
-                (void)ParseJsonU32(colon + 1, rankValue);
+                (void)Network::Json::ParseU32(colon + 1, rankValue);
                 outEntries[count].rank = rankValue;
             }
         }
@@ -904,7 +880,7 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
         if (friendCodeKey != nullptr) {
             const char* colon = FindStrInRange(friendCodeKey, objEnd, ":");
             if (colon != nullptr) {
-                colon = SkipWhitespace(colon + 1);
+                colon = Network::Json::SkipWhitespace(colon + 1);
                 if (colon != nullptr && *colon == '"') {
                     char fcStr[32];
                     ParseJsonStringIntoAscii(colon, fcStr, sizeof(fcStr));
@@ -914,7 +890,7 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
                     }
                     outEntries[count].friendCode = friendCodeValue;
                 } else {
-                    ParseJsonU64(colon, outEntries[count].friendCode);
+                    Network::Json::ParseU64(colon, outEntries[count].friendCode);
                 }
             }
         }

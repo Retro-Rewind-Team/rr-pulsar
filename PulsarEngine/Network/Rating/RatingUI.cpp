@@ -9,15 +9,39 @@
 #include <MarioKartWii/UI/Text/Text.hpp>
 #include <UI/UI.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/Ranking.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 
 namespace Pulsar {
 namespace PointRating {
 
 static u8 GetNameRatingIcon(u8 wheelType, u8 starRating) {
+    if (starRating >= Ranking::SPECIAL_BADGE_FIRST && starRating <= Ranking::SPECIAL_BADGE_LAST) {
+        return starRating;
+    }
     return wheelType * 4 + starRating;
 }
 kmBranch(0x805e3d38, GetNameRatingIcon);
+
+static void SetRaceNameBadgeMessage(LayoutUIControl* control, const char* paneName, u32 bmgId,
+                                    const Text::Info* info) {
+    if (control == nullptr) return;
+
+    static const u32 onlineRankBmgBase = 0x25ee;
+    if (bmgId >= onlineRankBmgBase + Ranking::SPECIAL_BADGE_FIRST &&
+        bmgId <= onlineRankBmgBase + Ranking::SPECIAL_BADGE_LAST) {
+        const u32 badge = bmgId - onlineRankBmgBase;
+        wchar_t badgeText[] = {static_cast<wchar_t>(0xF07C + badge), L'\0'};
+        Text::Info badgeInfo;
+        badgeInfo.strings[0] = badgeText;
+        control->SetTextBoxMessage(paneName, UI::BMG_TEXT, &badgeInfo);
+        return;
+    }
+
+    control->SetTextBoxMessage(paneName, bmgId, info);
+}
+kmCall(0x807f05dc, SetRaceNameBadgeMessage);
+kmCall(0x807f6248, SetRaceNameBadgeMessage);
 
 static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool isLocal, bool isBR, bool* hasDecimal) {
     *hasDecimal = false;

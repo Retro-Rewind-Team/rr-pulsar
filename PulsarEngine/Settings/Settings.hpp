@@ -101,6 +101,12 @@ class Mgr {
     PulsarCupId GetSavedSelectedCup() const { return this->rawBin->GetSection<MiscParams>().lastSelectedCup; }
     u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
     void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }
+    u8 GetRankingBadge() const { return this->rawBin->GetSection<MiscParams>().rankingBadge; }
+    void SetRankingBadge(u8 badge) {
+        if (this->rawBin == nullptr || this->rawBin->GetSection<MiscParams>().rankingBadge == badge) return;
+        this->rawBin->GetSection<MiscParams>().rankingBadge = badge;
+        this->RequestSave();
+    }
 
     // GP
     static u8 GetGPStatus(u32 idx, u32 cc) {

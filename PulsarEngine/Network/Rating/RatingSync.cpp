@@ -8,6 +8,7 @@
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
 #include <Network/GPReport.hpp>
+#include <Network/Json.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/Rating/RatingSync.hpp>
@@ -45,11 +46,6 @@ static int ClampRatingForSync(float rating) {
     return scaled;
 }
 
-static const char* SkipWhitespace(const char* p) {
-    while (p != nullptr && (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')) ++p;
-    return p;
-}
-
 static bool ParseJsonScaledValue(const char* json, const char* key, int& out) {
     if (json == nullptr || key == nullptr) return false;
 
@@ -60,7 +56,7 @@ static bool ParseJsonScaledValue(const char* json, const char* key, int& out) {
     if (colon == nullptr) return false;
 
     char* end = nullptr;
-    long value = strtol(SkipWhitespace(colon + 1), &end, 10);
+    long value = strtol(Network::Json::SkipWhitespace(colon + 1), &end, 10);
     if (end == nullptr || end == colon + 1) return false;
     out = (int)value;
     return true;
@@ -75,7 +71,7 @@ static bool ParseJsonFoundFlag(const char* json) {
     const char* colon = strchr(pos, ':');
     if (colon == nullptr) return false;
 
-    colon = SkipWhitespace(colon + 1);
+    colon = Network::Json::SkipWhitespace(colon + 1);
     return colon != nullptr && *colon == '1';
 }
 
