@@ -693,6 +693,7 @@ bool OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
 
     selectedLevel = 0;
     selectedMission = 0;
+    returnToStageSelect = false;
     MissionModel::SaveMenuCombo();
     MissionModel::Reset();
     Pulsar::MissionMode::PrepareMenuScenario();
