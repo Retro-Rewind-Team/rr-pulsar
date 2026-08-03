@@ -39,7 +39,7 @@ kmCall(0x807f4b64, EditPosTracker);
 static u8 ReturnCorrectId(u8 localId) {
     const System* system = System::sInstance;
     const RaceCameraMgr* cameraMgr = RaceCameraMgr::sInstance;
-    if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating) {
+    if (system != nullptr && system->IsContext(PULSAR_MODE_KO) && system->koMgr != nullptr && system->koMgr->isSpectating) {
         if (cameraMgr == nullptr) return 0;
         return cameraMgr->focusedPlayerIdx;
     }
