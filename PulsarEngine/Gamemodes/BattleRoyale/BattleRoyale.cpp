@@ -1,6 +1,7 @@
 #include <PulsarSystem.hpp>
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
+#include <MarioKartWii/3D/Model/ModelDirector.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/Obj/ItemObj.hpp>
 #include <MarioKartWii/Kart/KartAction.hpp>
@@ -233,6 +234,12 @@ static void StartBalloonLossBlink(u8 playerId) {
     settings.gamemode = prevMode;
     settings.battleType = prevBattleType;
 }
+
+static void EnableSecondKartModelDrawIfReady(ModelDirector* model, bool enable) {
+    if (model == nullptr || model->scnMdlEx[0] == nullptr || model->scnMdlEx[1] == nullptr) return;
+    model->EnableDraw(enable);
+}
+kmCall(0x80592ec8, EnableSecondKartModelDrawIfReady);
 
 static bool RemoveBalloon(RaceBalloonManager* mgr, u8 playerId) {
     if (mgr == nullptr || playerId >= maxPlayers || GetBalloonCount(mgr, playerId) == 0) return false;
