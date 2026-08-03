@@ -15,6 +15,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <PulsarSystem.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
+#include <Race/CustomItems.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -48,6 +49,38 @@ static const ItemWeight ITEM_WEIGHTS[] = {
     {0x8000, OBJ_LIGHTNING},
 };
 
+static ItemId GetItemId(ItemObjId objectId) {
+    switch (objectId) {
+        case OBJ_GREEN_SHELL: return GREEN_SHELL;
+        case OBJ_RED_SHELL: return RED_SHELL;
+        case OBJ_BANANA: return BANANA;
+        case OBJ_FAKE_ITEM_BOX: return FAKE_ITEM_BOX;
+        case OBJ_MUSHROOM: return MUSHROOM;
+        case OBJ_BOBOMB: return BOBOMB;
+        case OBJ_BLUE_SHELL: return BLUE_SHELL;
+        case OBJ_LIGHTNING: return LIGHTNING;
+        case OBJ_STAR: return STAR;
+        case OBJ_GOLDEN_MUSHROOM: return GOLDEN_MUSHROOM;
+        case OBJ_MEGA_MUSHROOM: return MEGA_MUSHROOM;
+        case OBJ_BLOOPER: return BLOOPER;
+        case OBJ_POW_BLOCK: return POW_BLOCK;
+        case OBJ_THUNDER_CLOUD: return THUNDER_CLOUD;
+        case OBJ_BULLET_BILL: return BULLET_BILL;
+        default: return ITEM_NONE;
+    }
+}
+
+static bool IsItemEnabled(ItemObjId objectId, u32 bitfield) {
+    const ItemId itemId = GetItemId(objectId);
+    if (itemId == ITEM_NONE) return false;
+    if (((bitfield >> itemId) & 1) != 0) return true;
+    if (objectId == OBJ_GREEN_SHELL) return (bitfield & (1 << TRIPLE_GREEN_SHELL)) != 0;
+    if (objectId == OBJ_RED_SHELL) return (bitfield & (1 << TRIPLE_RED_SHELL)) != 0;
+    if (objectId == OBJ_BANANA) return (bitfield & (1 << TRIPLE_BANANA)) != 0;
+    if (objectId == OBJ_MUSHROOM) return (bitfield & (1 << TRIPLE_MUSHROOM)) != 0;
+    return false;
+}
+
 struct State {
     u32 lastFrame;
     u32 seed;
@@ -64,6 +97,35 @@ float GetRadius__Q24Item3ObjFUi(Item::Obj*, u32);
 }
 
 static ItemObjId GetRandomItem(u32 rnd) {
+    const u32 bitfield = Race::GetEffectiveCustomItemsBitfield();
+    if (bitfield != 0x7FFFF) {
+        u32 totalWeight = 0;
+        u32 previousThreshold = 0;
+        for (size_t i = 0; i < sizeof(ITEM_WEIGHTS) / sizeof(ItemWeight); ++i) {
+            const u32 weight = ITEM_WEIGHTS[i].threshold - previousThreshold;
+            previousThreshold = ITEM_WEIGHTS[i].threshold;
+            if (IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield)) totalWeight += weight;
+        }
+
+        if (totalWeight != 0) {
+            u32 value = rnd % totalWeight;
+            previousThreshold = 0;
+            for (size_t i = 0; i < sizeof(ITEM_WEIGHTS) / sizeof(ItemWeight); ++i) {
+                const u32 weight = ITEM_WEIGHTS[i].threshold - previousThreshold;
+                previousThreshold = ITEM_WEIGHTS[i].threshold;
+                if (!IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield)) continue;
+                if (value < weight) return ITEM_WEIGHTS[i].id;
+                value -= weight;
+            }
+        }
+
+        // Triple items share the corresponding object's rain representation.
+        // If a mask contains only unsupported entries, use a safe fallback.
+        for (size_t i = 0; i < sizeof(ITEM_WEIGHTS) / sizeof(ItemWeight); ++i)
+            if (IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield)) return ITEM_WEIGHTS[i].id;
+        return OBJ_MUSHROOM;
+    }
+
     for (size_t i = 0; i < sizeof(ITEM_WEIGHTS) / sizeof(ItemWeight); ++i) {
         if (rnd < ITEM_WEIGHTS[i].threshold) return ITEM_WEIGHTS[i].id;
     }
@@ -88,6 +150,7 @@ bool IsItemRainEnabled() {
         controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
         controller->roomType == RKNet::ROOMTYPE_NONE) {
         GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
+        if (mode == MODE_MISSION_TOURNAMENT) return true;
         return mode == MODE_VS_RACE || mode == MODE_GRAND_PRIX ||
                mode == MODE_PUBLIC_VS || mode == MODE_PRIVATE_VS;
     }

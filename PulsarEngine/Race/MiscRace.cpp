@@ -9,6 +9,7 @@
 #include <MarioKartWii/Item/Obj/ItemObjHolder.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/RKNet/ITEM.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Settings/Settings.hpp>
 #include <RetroRewind.hpp>
 
@@ -16,6 +17,7 @@ namespace Pulsar {
 namespace Race {
 
 static void NonGhostPlayerCount(RacedataScenario& scenario, u8* playerCount, u8* screenCount, u8* localPlayerCount) {
+    Pulsar::MissionMode::PopulateMissionCPUs(scenario);
     scenario.ComputePlayerCounts(playerCount, screenCount, localPlayerCount);
     System* system = System::sInstance;
     u8 realPlayers = *playerCount;

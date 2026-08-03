@@ -20,6 +20,7 @@
 #include <Dolphin/DolphinIOS.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <hooks.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 
 namespace Pulsar {
 
@@ -247,8 +248,11 @@ void System::InitSettings(const u16* totalTrophyCount) const {
 }
 
 void System::UpdateContext() {
+    MissionMode::ApplyMissionScenarioSettings(Racedata::sInstance->menusScenario);
+    MissionMode::ApplyMissionScenarioSettings(Racedata::sInstance->racesScenario);
     const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
+    const bool isMission = MissionMode::IsMissionScenario(Racedata::sInstance->menusScenario);
     this->ottMgr.Reset();
     const Settings::Mgr& settings = Settings::Mgr::Get();
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
@@ -272,6 +276,11 @@ void System::UpdateContext() {
     bool isOTT = false;
     bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
     bool is500 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) == HOSTCC_500 && isFroom;
+    if (isMission) {
+        is200 = MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ENGINE_200CC) &&
+                racedataSettings.engineClass == CC_100;
+        is500 = MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ENGINE_500CC);
+    }
     bool isOTTOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
     bool isMiiHeads = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS);
     bool is200Online = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
@@ -288,6 +297,25 @@ void System::UpdateContext() {
     bool isItemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
     bool isItemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
     bool isItemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
+    if (isMission) {
+        // The mission entry owns these values. Reset first so a setting from
+        // a previous friend room cannot leak into an offline mission.
+        isItemModeRandom = false;
+        isItemModeBlast = false;
+        isItemModeNone = false;
+        isItemModeRain = false;
+        isItemModeStorm = false;
+        if (MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ITEM_MODE_OVERRIDE)) {
+            switch (MissionMode::GetMissionItemMode(Racedata::sInstance->menusScenario)) {
+                case GAMEMODE_RANDOM: isItemModeRandom = true; break;
+                case GAMEMODE_BLAST: isItemModeBlast = true; break;
+                case GAMEMODE_ITEMRAIN: isItemModeRain = true; break;
+                case GAMEMODE_ITEMSTORM: isItemModeStorm = true; break;
+                case GAMEMODE_NONE: isItemModeNone = true; break;
+                default: break;
+            }
+        }
+    }
     bool isTrackSelectionRegs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
     bool isTrackSelectionRetros = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
     bool isTrackSelectionCts = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;

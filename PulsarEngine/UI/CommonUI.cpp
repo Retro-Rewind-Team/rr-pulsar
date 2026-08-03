@@ -28,7 +28,9 @@ PageId TTSplitsGetNextPage(const Pages::TTSplits& splits) {
                         (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (isOTTW)
+    if (sectionId == SECTION_MISSION_MODE)
+        return PAGE_MISSION_ENDMENU;
+    else if (isOTTW)
         return PAGE_WW_LEADERBOARDS_UPDATE;
     else if (isOTTF || sectionId == SECTION_GP)
         return PAGE_GPVS_LEADERBOARD_UPDATE;

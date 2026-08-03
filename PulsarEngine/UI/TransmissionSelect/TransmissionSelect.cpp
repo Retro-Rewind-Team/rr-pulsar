@@ -5,6 +5,7 @@
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <RetroRewindChannel.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
+#include <UI/MissionMode/MissionModel.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -88,6 +89,14 @@ void TransmissionSelect::OnActivate() {
     SetTransmissionMessages(*this);
     HideTransmissionExtras(*this);
     SelectCurrentTransmission(*this, 0);
+    if (MissionModel::IsMissionMenuSection() && this->extraControlNumber > 0) {
+        MissionModel::LoadComboModel(this->modelPosition[0]);
+    }
+}
+
+void TransmissionSelect::OnDeactivate() {
+    if (MissionModel::IsMissionMenuSection()) MissionModel::HideComboModel();
+    Pages::DriftSelect::OnDeactivate();
 }
 
 void TransmissionSelect::AfterControlUpdate() {
@@ -140,6 +149,12 @@ kmCall(0x80846d64, LoadTransmissionSelectBeforeDrift);
 kmCall(0x80846e1c, LoadTransmissionSelectBeforeDrift);
 kmCall(0x80846e40, LoadTransmissionSelectBeforeDrift);
 
+void LoadMissionTransmissionSelectBeforeDrift(Pages::Menu& menu, PageId, PushButton& button) {
+    menu.LoadNextPageById(static_cast<PageId>(TransmissionSelect::id), button);
+}
+kmCall(0x8084333c, LoadMissionTransmissionSelectBeforeDrift);
+kmWrite32(0x80843300, 0x48000030);
+
 void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {
     System* system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_OTT) && system->ottMgr.voteState == OTT::COMBO_SELECTION) {
@@ -155,5 +170,5 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& 
     menu.LoadNextPageById(id, button);
 }
 
-}  // namespace UI
-}  // namespace Pulsar
+}
+}

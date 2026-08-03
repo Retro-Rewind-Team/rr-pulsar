@@ -54,6 +54,19 @@ void GetHUDBaseColor(void* self, RGBA16* c) {
 }
 kmBranch(0x805f04d8, GetHUDBaseColor);
 
+static void SetHUDRacePaneColor(nw4r::lyt::Pane* pane, u32 idx, nw4r::ut::Color color) {
+    if (pane == nullptr) return;
+
+    pane->SetVtxColor(idx, color);
+
+    if (strcmp(pane->name, "lap_text") != 0 || pane->parent == nullptr ||
+        strcmp(pane->parent->name, "race_null") != 0)
+        return;
+
+    nw4r::lyt::Pane* slash = pane->parent->FindPaneByName("slash", true);
+    if (slash != nullptr) slash->SetVtxColor(idx, color);
+}
+
 void GetHUDRaceColor(nw4r::lyt::Pane* _this, u32 idx, nw4r::ut::Color color) {
     UpdateHUDColor();
     if (idx < 2) {
@@ -67,7 +80,7 @@ void GetHUDRaceColor(nw4r::lyt::Pane* _this, u32 idx, nw4r::ut::Color color) {
         color.b = hudB > 20 ? hudB - 20 : 0;
         color.a = 0xFD;
     }
-    _this->SetVtxColor(idx, color);
+    SetHUDRacePaneColor(_this, idx, color);
 }
 kmCall(0x807ec1dc, GetHUDRaceColor);
 

@@ -1,6 +1,9 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Audio/AudioManager.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Sound/MiscSound.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
@@ -140,7 +143,17 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
         }
     }
-    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
+
+    if (firstChar == 'n' || firstChar == 'S' || firstChar == 'r') {
+        if (Pulsar::MissionMode::ResolveMissionMusicPath(archive->extFileRoot, extFilePath)) {
+            return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
+        }
+
+        CourseId missionMusicSlot;
+        const bool hasMissionNativeMusic = Pulsar::MissionMode::GetMissionMusicSlotOverride(missionMusicSlot);
+        if (hasMissionNativeMusic || isBRSTMOn != Pulsar::CTMUSIC_ENABLED)
+            return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
+
         if (!CupsConfig::IsReg(track)) {
             register u32 strLength;
             asm(mr strLength, r28;);
