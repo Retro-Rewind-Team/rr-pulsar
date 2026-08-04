@@ -68,7 +68,6 @@ kmCall(0x8053F124, UpdateIdleDisconnectCounter);
 
 // Change HUD Elements to Attached PlayerID [Ro]
 kmWrite32(0x807EB500, 0x3800006A);
-kmWrite32(0x807EB550, 0x38000001);
 kmWrite32(0x807E20B4, 0x38000001);
 
 extern "C" void exhaustPipeboost(void*);
