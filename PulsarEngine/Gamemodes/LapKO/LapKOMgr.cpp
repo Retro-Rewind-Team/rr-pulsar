@@ -26,16 +26,38 @@ static bool IsBattleMode(GameMode mode) {
     return mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE;
 }
 
-static bool AreAllOfflineLocalPlayersEliminated(const Mgr& mgr, const Racedata& racedata) {
-    const RacedataScenario& scenario = racedata.menusScenario;
-    const u8 localPlayerCount = scenario.localPlayerCount;
-    if (localPlayerCount == 0) return false;
+static bool IsRacePlayerFinished(const Raceinfo& raceinfo, u8 playerId) {
+    if (playerId >= 12 || raceinfo.players == nullptr) return false;
+    const RaceinfoPlayer* player = raceinfo.players[playerId];
+    return player != nullptr && (player->stateFlags & 0x2) != 0;
+}
 
-    for (u8 localIdx = 0; localIdx < localPlayerCount; ++localIdx) {
-        const u32 playerId = racedata.GetPlayerIdOfLocalPlayer(localIdx);
-        if (playerId >= 12) return false;
-        if (mgr.IsActive(static_cast<u8>(playerId))) return false;
+static bool AreAllOfflineLocalPlayersResolved(const Mgr& mgr, const Racedata& racedata, const Raceinfo& raceinfo) {
+    const RacedataScenario& scenario = racedata.racesScenario;
+    const u8 playerCount = (scenario.playerCount < 12) ? scenario.playerCount : 12;
+    bool hasLocalPlayer = false;
+
+    for (u8 playerId = 0; playerId < playerCount; ++playerId) {
+        if (scenario.players[playerId].playerType != PLAYER_REAL_LOCAL) continue;
+        hasLocalPlayer = true;
+        if (mgr.IsActive(playerId) && !IsRacePlayerFinished(raceinfo, playerId)) return false;
     }
+    return hasLocalPlayer;
+}
+
+static bool FinishOfflineWhenLocalPlayersResolved(Mgr& mgr) {
+    if (mgr.raceFinished) return false;
+
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || controller->roomType != RKNet::ROOMTYPE_NONE) return false;
+
+    const Racedata* racedata = Racedata::sInstance;
+    const Raceinfo* raceinfo = Raceinfo::sInstance;
+    if (racedata == nullptr || raceinfo == nullptr || raceinfo->players == nullptr || raceinfo->gamemodeData == nullptr) return false;
+    if (!AreAllOfflineLocalPlayersResolved(mgr, *racedata, *raceinfo)) return false;
+
+    mgr.raceFinished = true;
+    mgr.FinishOfflineAtCurrentStandings();
     return true;
 }
 
@@ -373,34 +395,21 @@ void Mgr::ConcludeRace(u8 winnerId) {
 
 void Mgr::FinishOfflineAtCurrentStandings() {
     Raceinfo* raceinfo = Raceinfo::sInstance;
-    Timer now(false);
-    raceinfo->CloneTimer(&now);
-    now.SetActive(true);
+    if (raceinfo == nullptr || raceinfo->players == nullptr || raceinfo->gamemodeData == nullptr) return;
 
     u8 total = 12;
     const Racedata* racedata = Racedata::sInstance;
     if (racedata != nullptr) total = racedata->racesScenario.playerCount;
     if (total > 12) total = 12;
 
-    if (raceinfo->playerIdInEachPosition != nullptr) {
-        for (u8 pos = 0; pos < total && pos < 12; ++pos) {
-            const u8 pid = raceinfo->playerIdInEachPosition[pos];
-            RaceinfoPlayer* p = raceinfo->players[pid];
-            const Timer* commitTime = &now;
-            if (p->raceFinishTime->isActive) {
-                commitTime = p->raceFinishTime;
-            }
-            p->EndRace(*commitTime, false, 0);
-            raceinfo->EndPlayerRace(pid);
-        }
-    } else {
-        for (u8 pid = 0; pid < total && pid < 12; ++pid) {
-            RaceinfoPlayer* p = raceinfo->players[pid];
-            const Timer* commitTime = &now;
-            if (p->raceFinishTime->isActive) commitTime = p->raceFinishTime;
-            p->EndRace(*commitTime, false, 0);
-            raceinfo->EndPlayerRace(pid);
-        }
+    u8 finishedCount = 0;
+    for (u8 pid = 0; pid < total; ++pid) {
+        RaceinfoPlayer* player = raceinfo->players[pid];
+        if (player != nullptr && (player->stateFlags & 0x12) != 0) ++finishedCount;
+    }
+
+    if (raceinfo->gamemodeData->vf_0x24(finishedCount, total)) {
+        raceinfo->stage = RACESTAGE_IS_FINISHING;
     }
 }
 
@@ -479,6 +488,8 @@ void Mgr::UpdateFrame() {
 
     this->EnsureRaceInitialized(*raceinfo);
 
+    if (FinishOfflineWhenLocalPlayersResolved(*this)) return;
+
     if (this->raceFinished && !this->hasPendingEvent) return;
 
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
@@ -530,12 +541,7 @@ bool Mgr::EnterSpectateIfLocal(u8 eliminatedId) {
     if (isOffline && eliminatedId < racedata->racesScenario.playerCount) {
         const RacedataPlayer& eliminatedPlayer = racedata->racesScenario.players[eliminatedId];
         if (eliminatedPlayer.playerType == PLAYER_REAL_LOCAL) {
-            if (AreAllOfflineLocalPlayersEliminated(*this, *racedata)) {
-                this->FinishOfflineAtCurrentStandings();
-                this->raceFinished = true;
-                return true;
-            }
-            return false;
+            return FinishOfflineWhenLocalPlayersResolved(*this);
         }
     } else {
         RKNet::Controller* controller = RKNet::Controller::sInstance;
