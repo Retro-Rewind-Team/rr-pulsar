@@ -1,5 +1,6 @@
 #include <RetroRewind.hpp>
 #include <Settings/Settings.hpp>
+#include <MarioKartWii/UI/Ctrl/Manipulator.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -13,7 +14,7 @@ static const u8 hudColors[12][3] = {
     {60, 60, 60},  // Black
     {232, 46, 46},  // Red
     {245, 129, 47},  // Orange
-    {233, 212, 0},  // Yellow
+    {243, 232, 37},  // Yellow
     {169, 255, 69},  // Green
     {64, 99, 227},  // Blue
     {96, 38, 158},  // Purple
@@ -31,7 +32,26 @@ void UpdateHUDColor() {
     hudB = hudColors[setting][2];
 }
 
-void GetHUDColor(void* self, RGBA16* c0, RGBA16* c1) {
+// Vanilla maps local player slots 0..3 to palette entries 1..4. Keep those
+// pairings intact so local multiplayer HUD controls remain distinguishable.
+static const RGBA16 localPlayerHUDColors[4][2] = {
+    {{255, 255, 0, 255}, {210, 170, 0, 255}},
+    {{0, 111, 255, 255}, {19, 229, 255, 255}},
+    {{255, 0, 0, 255}, {255, 79, 255, 255}},
+    {{0, 186, 0, 255}, {76, 255, 130, 255}},
+};
+
+static bool SetLocalPlayerHUDColors(u32 playerId, RGBA16* c0, RGBA16* c1) {
+    if (playerId < 1 || playerId > 4) return false;
+
+    *c0 = localPlayerHUDColors[playerId - 1][0];
+    *c1 = localPlayerHUDColors[playerId - 1][1];
+    return true;
+}
+
+void GetHUDColor(const ControlManipulator* self, RGBA16* c0, RGBA16* c1) {
+    if (self != nullptr && SetLocalPlayerHUDColors(self->allowedPlayerId, c0, c1)) return;
+
     UpdateHUDColor();
     c0->red = hudR;
     c0->green = hudG;
@@ -43,7 +63,12 @@ void GetHUDColor(void* self, RGBA16* c0, RGBA16* c1) {
     c1->alpha = 0xFD;
 }
 kmBranch(0x805f03dc, GetHUDColor);
-kmBranch(0x805f0440, GetHUDColor);
+
+void GetHUDSlotColor(u8 hudSlotId, RGBA16* c0, RGBA16* c1) {
+    if (GetLocalPlayerCount() > 1 && SetLocalPlayerHUDColors(hudSlotId + 1, c0, c1)) return;
+    GetHUDColor(nullptr, c0, c1);
+}
+kmBranch(0x805f0440, GetHUDSlotColor);
 
 void GetHUDBaseColor(void* self, RGBA16* c) {
     UpdateHUDColor();
@@ -55,6 +80,11 @@ void GetHUDBaseColor(void* self, RGBA16* c) {
 kmBranch(0x805f04d8, GetHUDBaseColor);
 
 void GetHUDRaceColor(nw4r::lyt::Pane* _this, u32 idx, nw4r::ut::Color color) {
+    if (GetLocalPlayerCount() > 1) {
+        _this->SetVtxColor(idx, color);
+        return;
+    }
+
     UpdateHUDColor();
     if (idx < 2) {
         color.r = hudR;
