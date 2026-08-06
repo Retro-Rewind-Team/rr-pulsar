@@ -195,7 +195,8 @@ static const SettingId koScrollers[] = {
 };
 
 static const SettingId royaleRadios[] = {
-    SETTING_KOROYALEENABLED
+    SETTING_KOROYALEENABLED,
+    SETTING_ALLITEMSCANLAND
 };
 
 static const SettingId royaleScrollers[] = {
