@@ -11,6 +11,7 @@
 #include <MarioKartWii/UI/Page/Other/VR.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <Network/Mogi.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 
 namespace Pulsar {

@@ -5,9 +5,14 @@
 #include <MarioKartWii/UI/Page/Menu/VSSettings.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
+#include <MarioKartWii/UI/Page/Other/ActionLess.hpp>
+#include <Network/Mogi.hpp>
 
 namespace Pulsar {
 namespace UI {
+
+static const float MOGI_FORMAT_VOTE_SECONDS = 15.0f;
+static const u16 MOGI_FORMAT_HANDOFF_FRAMES = 120;
 
 static bool IsVotingSettingsSection(SectionId id) {
     return (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) ||
@@ -34,6 +39,11 @@ SettingsPageSelect::SettingsPageSelect(bool badgeSelect) : context(Settings::SET
     controlCount = 0;
     nextSection = SECTION_NONE;
     controlSources = 2;
+    isFormatVotePage = false;
+    isFormatVoteEnding = false;
+    isFormatVoteSubmitted = false;
+    formatVoteResolvedFrames = 0;
+    formatVotePreviousCountdown = 0.0f;
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (badgeSelectMode)
@@ -94,6 +104,37 @@ void SettingsPageSelect::SetButtonHandlers(PushButton &button) {
 }
 
 void SettingsPageSelect::OnActivate() {
+    isFormatVotePage = !badgeSelectMode && Mogi::IsFormatVoteActive();
+    isFormatVoteEnding = false;
+    isFormatVoteSubmitted = false;
+    formatVoteResolvedFrames = 0;
+    if (isFormatVotePage) {
+        SetPreparingRaceVisible(false);
+        titleBmg = BMG_MOGI_FORMAT_TITLE;
+        bottomText->SetMessage(BMG_MOGI_FORMAT_BOTTOM);
+        backButton.isHidden = true;
+        backButton.manipulator.inaccessible = true;
+        Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        if (select != nullptr) {
+            formatVotePreviousCountdown = select->countdown.countdown;
+            select->countdown.SetInitial(MOGI_FORMAT_VOTE_SECONDS);
+            select->countdown.isActive = true;
+            select->timerControl.isHidden = false;
+            select->timerControl.AnimateCurrentCountDown();
+        }
+        for (u32 i = 0; i < settingsButtonCount; ++i) {
+            const bool hidden = i >= 5;
+            pageButtons[i].isHidden = hidden;
+            pageButtons[i].manipulator.inaccessible = hidden;
+            if (!hidden) pageButtons[i].SetMessage(BMG_MOGI_FORMAT_FFA + i);
+        }
+        pageButtons[0].Select(0);
+        MenuInteractable::OnActivate();
+        return;
+    }
+    titleBmg = BMG_SETTINGS_TITLE;
+    backButton.isHidden = false;
+    backButton.manipulator.inaccessible = false;
     if (badgeSelectMode) {
         UpdateBadgeButtons();
         bottomText->SetMessage(0);
@@ -127,12 +168,17 @@ int SettingsPageSelect::GetPlayerBitfield() const { return playerBitfield; }
 ManipulatorManager &SettingsPageSelect::GetManipulatorManager() { return controlsManipulatorManager; }
 
 void SettingsPageSelect::OnBackPress(u32) {
+    if (isFormatVotePage) return;
     backButton.SelectFocus();
     LoadPrevPage(backButton);
 }
 void SettingsPageSelect::OnBackButtonClick(PushButton &, u32 hudSlotId) { OnBackPress(hudSlotId); }
 
 void SettingsPageSelect::OnButtonClick(PushButton &button, u32) {
+    if (isFormatVotePage) {
+        if (!isFormatVoteSubmitted && Mogi::CastFormatVote(static_cast<u8>(button.buttonId))) ShowFormatVoteWaiting();
+        return;
+    }
     const u32 selected = button.buttonId;
     if (badgeSelectMode) {
         const u8 badge = selected > 0 ? Ranking::GetSpecialBadgeAt(selected - 1) : Ranking::NORMAL_RANKING_BADGE;
@@ -167,6 +213,10 @@ void SettingsPageSelect::OnButtonClick(PushButton &button, u32) {
 }
 
 void SettingsPageSelect::OnButtonSelect(PushButton &button, u32) {
+    if (isFormatVotePage) {
+        bottomText->SetMessage(BMG_MOGI_FORMAT_BOTTOM);
+        return;
+    }
     if (badgeSelectMode) {
         bottomText->SetMessage(0);
         return;
@@ -201,7 +251,60 @@ void SettingsPageSelect::UpdateBadgeButtons() {
     }
 }
 
+void SettingsPageSelect::ShowFormatVoteWaiting() {
+    if (isFormatVoteSubmitted) return;
+    isFormatVoteSubmitted = true;
+    controlsManipulatorManager.inaccessible = true;
+    titleText->isHidden = true;
+    bottomText->isHidden = true;
+    backButton.isHidden = true;
+    for (u32 i = 0; i < settingsButtonCount; ++i) {
+        pageButtons[i].isHidden = true;
+        pageButtons[i].manipulator.inaccessible = true;
+    }
+    Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+    if (select != nullptr) select->timerControl.isHidden = true;
+    SetPreparingRaceVisible(true);
+}
+
+void SettingsPageSelect::SetPreparingRaceVisible(bool visible) {
+    Pages::AutoEnding* preparingRace = SectionMgr::sInstance->curSection->Get<Pages::AutoEnding>(PAGE_AUTO_ENDING2);
+    if (preparingRace == nullptr) return;
+    preparingRace->titleText.isHidden = !visible;
+    preparingRace->busySymbol.isHidden = !visible;
+    if (preparingRace->messageWindow != nullptr) preparingRace->messageWindow->isHidden = !visible;
+}
+
 void SettingsPageSelect::BeforeControlUpdate() {
+    if (isFormatVotePage) {
+        Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        if (select != nullptr && !isFormatVoteSubmitted) {
+            select->countdown.Update();
+            select->timerControl.AnimateCurrentCountDown();
+            if (select->countdown.countdown <= 0.0f) {
+                Mogi::OnFormatVoteTimeout();
+                ShowFormatVoteWaiting();
+            }
+        }
+        if (Mogi::IsFormatVoteResolved()) {
+            ShowFormatVoteWaiting();
+            if (formatVoteResolvedFrames < MOGI_FORMAT_HANDOFF_FRAMES) ++formatVoteResolvedFrames;
+        }
+        if (formatVoteResolvedFrames >= MOGI_FORMAT_HANDOFF_FRAMES && !isFormatVoteEnding) {
+            isFormatVoteEnding = true;
+            Mogi::FinishFormatVote();
+            if (select != nullptr) {
+                select->countdown.SetInitial(formatVotePreviousCountdown);
+                select->countdown.isActive = true;
+                select->timerControl.isHidden = false;
+                select->timerControl.AnimateCurrentCountDown();
+            }
+            SetPreparingRaceVisible(true);
+            nextPageId = PAGE_NONE;
+            EndStateAnimated(1, 0.0f);
+        }
+        return;
+    }
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (!badgeSelectMode && IsVotingSettingsSection(sectionId)) {
         Pages::SELECTStageMgr *select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
