@@ -220,37 +220,31 @@ static const SettingId miscScrollers[] = {
     SETTING_LANGUAGE
 };
 
-// Page text uses stable named blocks, independent from setting and context order.
-enum PageBmg {
-    PAGE_BMG_NAME_BASE = 0x5B0000,
-    PAGE_BMG_DESCRIPTION_BASE = 0x5B0100
-};
-
-#define PAGE_DEF(id, radios, scrollers) \
-    {PAGE_BMG_NAME_BASE + id, PAGE_BMG_DESCRIPTION_BASE + id, radios, ARRAY_COUNT(radios), scrollers, ARRAY_COUNT(scrollers), false}
-#define PAGE_DEF_RADIOS_ONLY(id, radios) \
-    {PAGE_BMG_NAME_BASE + id, PAGE_BMG_DESCRIPTION_BASE + id, radios, ARRAY_COUNT(radios), 0, 0, false}
+#define PAGE_DEF(bmg, radios, scrollers) \
+    {bmg, radios, ARRAY_COUNT(radios), scrollers, ARRAY_COUNT(scrollers), false}
+#define PAGE_DEF_RADIOS_ONLY(bmg, radios) \
+    {bmg, radios, ARRAY_COUNT(radios), 0, 0, false}
 
 const SettingsPageDef Params::pageDefs[SETTINGS_PAGE_COUNT] = {
-    PAGE_DEF_RADIOS_ONLY(SETTINGS_PAGE_RACE1, race1Radios),
-    PAGE_DEF_RADIOS_ONLY(SETTINGS_PAGE_RACE2, race2Radios),
-    PAGE_DEF(SETTINGS_PAGE_MENU, menuRadios, menuScrollers),
-    PAGE_DEF_RADIOS_ONLY(SETTINGS_PAGE_SOUND, soundRadios),
-    PAGE_DEF_RADIOS_ONLY(SETTINGS_PAGE_ONLINE, onlineRadios),
-    PAGE_DEF_RADIOS_ONLY(SETTINGS_PAGE_BATTLE, battleRadios),
-    PAGE_DEF(SETTINGS_PAGE_FROOM1, froom1Radios, froom1Scrollers),
-    PAGE_DEF_RADIOS_ONLY(SETTINGS_PAGE_FROOM2, froom2Radios),
-    PAGE_DEF_RADIOS_ONLY(SETTINGS_PAGE_OTT_OFFLINE, ottOfflineRadios),
-    PAGE_DEF_RADIOS_ONLY(SETTINGS_PAGE_OTT_ONLINE, ottOnlineRadios),
-    PAGE_DEF(SETTINGS_PAGE_KO, koRadios, koScrollers),
-    PAGE_DEF(SETTINGS_PAGE_ROYALE, royaleRadios, royaleScrollers),
-    PAGE_DEF(SETTINGS_PAGE_EXTENDED_TEAMS, extendedTeamsRadios, extendedTeamsScrollers),
-    PAGE_DEF(SETTINGS_PAGE_MISC, miscRadios, miscScrollers),
-    {PAGE_BMG_NAME_BASE + SETTINGS_PAGE_ITEMS, PAGE_BMG_DESCRIPTION_BASE + SETTINGS_PAGE_ITEMS, 0, 0, 0, 0, true},
-    {PAGE_BMG_NAME_BASE + SETTINGS_PAGE_RACE1, PAGE_BMG_DESCRIPTION_BASE + SETTINGS_PAGE_RACE1,
+    PAGE_DEF_RADIOS_ONLY(0x62F01, race1Radios),
+    PAGE_DEF_RADIOS_ONLY(0x62F02, race2Radios),
+    PAGE_DEF(0x62F03, menuRadios, menuScrollers),
+    PAGE_DEF_RADIOS_ONLY(0x62F05, soundRadios),
+    PAGE_DEF_RADIOS_ONLY(0x62F04, onlineRadios),
+    PAGE_DEF_RADIOS_ONLY(0x62F06, battleRadios),
+    PAGE_DEF(0x62F07, froom1Radios, froom1Scrollers),
+    PAGE_DEF_RADIOS_ONLY(0x62F08, froom2Radios),
+    PAGE_DEF_RADIOS_ONLY(0x62F09, ottOfflineRadios),
+    PAGE_DEF_RADIOS_ONLY(0x62F09, ottOnlineRadios),
+    PAGE_DEF(0x62F0A, koRadios, koScrollers),
+    PAGE_DEF(0x62F0E, royaleRadios, royaleScrollers),
+    PAGE_DEF(0x62F0B, extendedTeamsRadios, extendedTeamsScrollers),
+    PAGE_DEF(0x62F0C, miscRadios, miscScrollers),
+    {0x62F0D, 0, 0, 0, 0, true},
+    {0x62F01,
      race1OfflineRadios, ARRAY_COUNT(race1OfflineRadios), race1OfflineScrollers,
      ARRAY_COUNT(race1OfflineScrollers), false},
-    {PAGE_BMG_NAME_BASE + SETTINGS_PAGE_RACE2, PAGE_BMG_DESCRIPTION_BASE + SETTINGS_PAGE_RACE2,
+    {0x62F02,
      race2OfflineRadios, ARRAY_COUNT(race2OfflineRadios), race2OfflineScrollers,
      ARRAY_COUNT(race2OfflineScrollers), false},
 };

@@ -161,7 +161,7 @@ void SettingsPageSelect::OnButtonSelect(PushButton& button, u32) {
     }
     const Settings::SettingsContextDef& contextDef = Settings::Params::GetContextDef(context);
     if (button.buttonId < contextDef.pageCount)
-        bottomText->SetMessage(Settings::Params::GetPageDef(contextDef.pages[button.buttonId]).descriptionBmg);
+        bottomText->SetMessage(Settings::Params::GetPageDef(contextDef.pages[button.buttonId]).nameBmg + 0x10);
     else bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
 }
 

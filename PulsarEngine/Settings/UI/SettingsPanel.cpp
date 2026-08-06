@@ -217,7 +217,7 @@ void SettingsPanel::LoadCurrentValues() {
 
 void SettingsPanel::OnActivate() {
     const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
-    titleBmg = page.nameBmg;
+    titleBmg = page.nameBmg + 0x1F;
     LoadCurrentValues();
 
     externControls[0]->isHidden = s_votingSettingsPreviewActive;
@@ -243,7 +243,7 @@ void SettingsPanel::OnActivate() {
             for (u32 option = 0; option < 4; ++option) {
                 const bool optionHidden = option >= def.optionCount;
                 radio.optionButtonsArray[option].isHidden = optionHidden;
-                if (!optionHidden) radio.optionButtonsArray[option].SetMessage(id + 0x10 + option);
+                if (!optionHidden) radio.optionButtonsArray[option].SetMessage(Settings::Params::GetOptionBmg(id, option));
             }
         }
     }
@@ -261,7 +261,7 @@ void SettingsPanel::OnActivate() {
             scroller.optionsCount = def.optionCount;
             scroller.curSelectedOption = scrollerValues[i];
             scroller.SetMessage(id);
-            value.activeTextValueControl->SetMessage(id + 0x10 + scrollerValues[i]);
+            value.activeTextValueControl->SetMessage(Settings::Params::GetOptionBmg(id, scrollerValues[i]));
         }
     }
 
@@ -352,7 +352,7 @@ void SettingsPanel::OnRadioButtonClick(RadioButtonControl& radio, u32, u32 optio
 void SettingsPanel::OnRadioButtonChange(RadioButtonControl& radio, u32, u32 optionId) {
     const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
     if (radio.id >= page.radioCount) return;
-    bottomText->SetMessage(page.radioSettings[radio.id] + 0x100 + optionId);
+    bottomText->SetMessage(Settings::Params::GetDescriptionBmg(page.radioSettings[radio.id], optionId));
 }
 
 void SettingsPanel::OnUpDownClick(UpDownControl&, u32) { externControls[0]->Select(0); }
@@ -363,14 +363,15 @@ void SettingsPanel::OnTextChange(TextUpDownValueControl::TextControl& text, u32 
     if (index >= page.scrollerCount) return;
     const Settings::SettingId id = page.scrollerSettings[index];
     scrollerValues[index] = optionId;
-    text.SetMessage(id + 0x10 + optionId);
-    if (!externControls[0]->IsSelected()) bottomText->SetMessage(id + 0x100 + optionId);
+    text.SetMessage(Settings::Params::GetOptionBmg(id, optionId));
+    if (!externControls[0]->IsSelected()) bottomText->SetMessage(Settings::Params::GetDescriptionBmg(id, optionId));
 }
 
 void SettingsPanel::OnUpDownSelect(UpDownControl& scroller, u32) {
     const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
     if (scroller.id >= page.scrollerCount) return;
-    bottomText->SetMessage(page.scrollerSettings[scroller.id] + 0x100 + scroller.curSelectedOption);
+    bottomText->SetMessage(Settings::Params::GetDescriptionBmg(
+        page.scrollerSettings[scroller.id], scroller.curSelectedOption));
 }
 
 void SettingsPanel::BeforeControlUpdate() {
