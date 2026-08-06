@@ -229,7 +229,7 @@ void CtrlRaceNameBalloon_refresh(CtrlRaceNameBalloon* _this, u8 playerId) {
         mat->tevColours[1].g = 255;
         mat->tevColours[1].b = 255;
 
-        if (static_cast<Pulsar::ExtendedTeamsLine>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_EXTENDEDTEAMS), Pulsar::RADIO_EXTENDEDTEAMSLINE)) == Pulsar::EXTENDEDTEAMS_LINE_TEAM) {
+        if (static_cast<Pulsar::ExtendedTeamsLine>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSLINE)) == Pulsar::EXTENDEDTEAMS_LINE_TEAM) {
             for (int i = 0; i < 4; i++) {
                 _this->layout.GetPaneByName("line")->SetVtxColor(i, nw4r::ut::Color(r, g, b, 255));
             }

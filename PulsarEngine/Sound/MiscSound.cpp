@@ -41,7 +41,7 @@ static bool IsOnlineRaceSection(SectionId sectionId) {
 static bool ShouldRefreshWifiMenuMusic(u32 soundId) {
     if (soundId != SOUND_ID_WIFI_MUSIC) return false;
 
-    const u8 musicSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC);
+    const u8 musicSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC);
     if (musicSetting != MUSIC_DISABLE_RACE) return false;
 
     const SectionMgr* sectionMgr = SectionMgr::sInstance;
@@ -52,7 +52,7 @@ static bool ShouldRefreshWifiMenuMusic(u32 soundId) {
 
 // RaceAudioMgr SetRaceState patch that skips the entire func, effectively disabling the mgr
 static void DisableRaceMusic(Audio::SinglePlayer& singlePlayer, u32 soundId, s16 delay) {
-    const bool isEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC) == MUSIC_DEFAULT;
+    const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) == MUSIC_DEFAULT;
     if (isEnabled) singlePlayer.PlaySound(soundId, delay);
 }
 kmCall(0x80711fcc, DisableRaceMusic);  // RaceMgr::SetRaceState
@@ -63,19 +63,19 @@ kmCall(0x8064a398, DisableRaceMusic);  // wifi waiting, hook at Page::LiveViewWa
 kmCall(0x8064a340, DisableRaceMusic);  // wifi waiting
 
 static void PreventPrepareRaceMusic(u32 unused, Audio::Handle* handle, u32 soundId) {
-    const bool isEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC) == MUSIC_DEFAULT;
+    const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) == MUSIC_DEFAULT;
     if (isEnabled) Audio::Manager::sInstance->PrepareSound(handle, soundId);
 }
 kmCall(0x806f8eb4, PreventPrepareRaceMusic);
 
 static void DisableMenuMusic(Audio::SinglePlayer& singlePlayer, u32 soundId, s16 delay) {
-    const bool isEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC) != MUSIC_DISABLE_ALL;
+    const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) != MUSIC_DISABLE_ALL;
     if (isEnabled) singlePlayer.PlaySound(soundId, delay);
 }
 kmCall(0x806fa64c, DisableMenuMusic);
 
 static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 soundId) {
-    const bool isEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC) != MUSIC_DISABLE_ALL;
+    const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) != MUSIC_DISABLE_ALL;
     if (isEnabled) {
         const bool shouldRefreshWifiMusic = ShouldRefreshWifiMenuMusic(soundId);
         const char* customBGPath = nullptr;
@@ -136,7 +136,7 @@ static snd::SoundArchive::SoundType PatchPrepareStreamsBG(snd::SoundArchive& arc
 kmCall(0x806fa2fc, PatchPrepareStreamsBG);
 
 static void ToggleMenuMusic() {
-    const bool isEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC) != MUSIC_DISABLE_ALL;
+    const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) != MUSIC_DISABLE_ALL;
     Audio::SinglePlayer* singlePlayer = Audio::SinglePlayer::sInstance;
     if (isEnabled)
         singlePlayer->PlayBGSound(2);
@@ -146,7 +146,7 @@ static void ToggleMenuMusic() {
 Settings::Hook ToggleMenuMusicHook(ToggleMenuMusic);
 
 static float CheckFanfare(const Audio::SinglePlayer& singlePlayer) {
-    const bool isEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSIC) == MUSIC_DEFAULT;
+    const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) == MUSIC_DEFAULT;
     if (isEnabled)
         return singlePlayer.GetFanfareLength();
     else
@@ -160,9 +160,9 @@ static u8 specialItemReceiveSoundPitchPending = 0;
 
 static void RefreshSpecialItemReceiveSoundSetting() {
     specialItemReceiveSoundEnabled =
-        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_SPECIALITEMRECEIVE) == SPECIALITEMRECEIVE_ENABLED;
+        Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPECIALITEMRECEIVE) == SPECIALITEMRECEIVE_ENABLED;
     megaThunderCloudEnabled =
-        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_MEGA &&
+        Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_MEGA &&
         (System::sInstance == nullptr || !System::sInstance->IsContext(PULSAR_THUNDERCLOUD));
 }
 Settings::Hook RefreshSpecialItemReceiveSoundSettingHook(RefreshSpecialItemReceiveSoundSetting);

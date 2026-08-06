@@ -2,6 +2,7 @@
 #define _PULUI_
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/UIControl.hpp>
+#include <Settings/SettingsParam.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -11,7 +12,7 @@ const wchar_t* GetCustomMsg(s32 bmgId);
 void UnbindRLMC(lyt::Material* mat);
 void ResetMatColor(lyt::Pane* pane, u32 color);
 void ResetFroomSettingsPreviewShown();
-bool AdvanceFroomSettingsPreview(u32& sheetIdx);
+bool AdvanceFroomSettingsPreview(Settings::SettingsPageId& page);
 /*Expanded pages: (do not necessitate a PulPageId)
 -ExpGhostSelect
 -ExpFroom
@@ -286,12 +287,8 @@ enum BMG {
     BMG_AUTHORS = 0x30000,
 
     // ADD 0x50000 to all of these for YOUR settings, 0x52f01 = the button text etc...
-    BMG_SETTINGS_PAGE = 0x2f01,
     BMG_SETTINGS_BOTTOM = 0x2f10,
     BMG_SETTINGS_TITLE = 0x2f20,
-    BMG_RADIO_SETTINGS = 0x3000,
-    BMG_SCROLLER_SETTINGS = 0x3A00,
-    BMG_USERSETTINGSOFFSET = 0x60000,  // user settings therefore start at 0x53000 for radio settings, 0x53A00 for scrollers
 
     // Custom texts (extended teams, explanations, etc..)
     BMG_EXTENDEDTEAMS_EXPLANATION = 0x83337,

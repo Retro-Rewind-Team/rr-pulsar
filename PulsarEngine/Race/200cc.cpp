@@ -20,7 +20,7 @@ static bool IsBrakeDriftingEnabled() {
     if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
     bool is200 = scenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
     return is200 || RetroRewind::System::Is500cc() ||
-           (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
+           (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
             mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
 }
 

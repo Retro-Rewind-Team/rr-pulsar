@@ -23,7 +23,7 @@ void Mgr::SaveTask(void* data) {
 }
 
 int Mgr::GetSettingsBinSize(u32 trackCount) const {
-    u32 size = sizeof(BinaryHeader) + sizeof(u32) * (Binary::sectionCount - 1) + sizeof(PagesHolder) + sizeof(Page) * (this->pulsarPageCount + this->userPageCount - 1) + sizeof(MiscParams) + sizeof(TrophiesHolder) + sizeof(TrackTrophy) * (trackCount - 1) + sizeof(GPSection) + sizeof(GPCupStatus) * (trackCount / 4 - 1);
+    u32 size = sizeof(BinaryHeader) + sizeof(u32) * (Binary::sectionCount - 1) + sizeof(SettingsHolder) + sizeof(MiscParams) + sizeof(TrophiesHolder) + sizeof(TrackTrophy) * (trackCount - 1) + sizeof(GPSection) + sizeof(GPCupStatus) * (trackCount / 4 - 1);
     return size;
 }
 
@@ -51,9 +51,6 @@ void Mgr::SaveTrophies() {
 }
 
 void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char* trophiesPath) {
-    this->pulsarPageCount = Settings::Params::pulsarPageCount;
-    this->userPageCount = Settings::Params::userPageCount;
-
     snprintf(this->filePath, IOS::ipcMaxPath, "%s", settingsPath);
     snprintf(this->trophiesFilePath, IOS::ipcMaxPath, "%s", trophiesPath);
 
@@ -85,7 +82,7 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
     if (!ret) {
         buffer = io->Alloc<Binary>(size);
         memset(buffer, 0, size);
-        new (buffer) Binary(this->pulsarPageCount, this->userPageCount, trackCount);
+        new (buffer) Binary(trackCount);
     }
     io->Close();
 
@@ -107,22 +104,11 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         params.rankingBadge = Ranking::NORMAL_RANKING_BADGE;
     }
 
-    u8& looseOverridesSetting =
-        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_MISC].settings[RADIO_LOOSEARCHIVEOVERRIDES];
-    if (looseOverridesSetting > LOOSEARCHIVEOVERRIDES_DISABLED) {
-        looseOverridesSetting = LOOSEARCHIVEOVERRIDES_ENABLED;
-    }
-
-    u8& koEnabledSetting =
-        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_KO].settings[RADIO_KOENABLED];
-    if (koEnabledSetting > KOSETTING_LAPBASED) {
-        koEnabledSetting = KOSETTING_DISABLED;
-    }
-
-    u8& extendedTeamsPlayers =
-        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_EXTENDEDTEAMS].settings[SCROLLER_EXTENDEDTEAMSPLAYERS];
-    if (extendedTeamsPlayers > EXTENDEDTEAMS_PLAYERS_6) {
-        extendedTeamsPlayers = EXTENDEDTEAMS_PLAYERS_2;
+    SettingsHolder& values = this->rawBin->GetSection<SettingsHolder>();
+    for (u32 i = 0; i < SETTING_COUNT; ++i) {
+        if (values.values[i] >= Params::settingDefs[i].optionCount) {
+            values.values[i] = 0;
+        }
     }
 
     this->InitTrophyEntries(totalTrophyCount);
@@ -444,19 +430,17 @@ int Mgr::GetTrophyCount(PulsarId id, TTMode mode) const {
     return this->GetTrophyCount(mode);
 }
 
-u8 Mgr::GetSettingValue(Type type, u32 setting) const {
-    return this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting];
-}
-u8 Mgr::GetUserSettingValue(UserType type, u32 setting) const {
-    return this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting];
+u8 Mgr::GetSettingValue(SettingId id) const {
+    if (!Params::IsValidSettingId(id)) return 0;
+    return this->rawBin->GetSection<SettingsHolder>().values[Params::GetSettingIndex(id)];
 }
 
-void Mgr::SetSettingValue(Type type, u32 setting, u8 value) {
-    this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting] = value;
-}
-void Mgr::SetUserSettingValue(UserType type, u32 setting, u8 value) {
-    u8& currentValue = this->rawBin->GetSection<PagesHolder>().pages[type].settings[setting];
-    if (type == SETTINGSTYPE_MISC && setting == RADIO_LOOSEARCHIVEOVERRIDES && currentValue != value) {
+void Mgr::SetSettingValue(SettingId id, u8 value) {
+    if (!Params::IsValidSettingId(id)) return;
+    const SettingDef& def = Params::GetSettingDef(id);
+    if (value >= def.optionCount) value = 0;
+    u8& currentValue = this->rawBin->GetSection<SettingsHolder>().values[Params::GetSettingIndex(id)];
+    if (id == SETTING_LOOSEARCHIVEOVERRIDES && currentValue != value) {
         CustomCharacters::ResetAllCharacterTablesToDefault();
     }
     currentValue = value;
@@ -545,28 +529,19 @@ void Mgr::AdjustSections() {
 
 void Mgr::AdjustSectionsSizes() {
     Binary* oldBin = this->rawBin;
-    PagesHolder& srcPages = oldBin->GetSection<PagesHolder>();
+    SettingsHolder& srcSettings = oldBin->GetSection<SettingsHolder>();
     MiscParams& srcParams = oldBin->GetSection<MiscParams>();
     TrophiesHolder& srcTrophiesHolder = oldBin->GetSection<TrophiesHolder>();
     GPSection& srcGp = oldBin->GetSection<GPSection>();
 
     u32 newTrackCount = CupsConfig::sInstance->GetEffectiveTrackCount();
 
-    s32 pulsarPageDiff = this->pulsarPageCount - srcPages.pulsarPageCount;
-    s32 userPageDiff = this->userPageCount - srcPages.userPageCount;
-
     s32 trackDiff = newTrackCount - srcParams.trackCount;
     s32 trophySizeDiff = sizeof(TrackTrophy) * (trackDiff);
     s32 gpSizeDiff = sizeof(GPCupStatus) * (trackDiff / 4);
 
-    if (trophySizeDiff <= 0 && pulsarPageDiff <= 0 && userPageDiff <= 0) return;  // no modifications necessary
-    if (pulsarPageDiff < 0) pulsarPageDiff = 0;
-    if (userPageDiff < 0) userPageDiff = 0;
-
-    s32 totalPageDiff = sizeof(Page) * (pulsarPageDiff + userPageDiff);
+    if (trophySizeDiff <= 0) return;
     u32 newSize = oldBin->header.fileSize +
-                  totalPageDiff +  // added pages
-                  // miscSizeDiff, nothing for now
                   trophySizeDiff +
                   gpSizeDiff;
 
@@ -575,91 +550,28 @@ void Mgr::AdjustSectionsSizes() {
     Binary* buffer = IO::sInstance->Alloc<Binary>(newSize);
 
     // Copy the sections one by one, then change the offsets and the section sizes
-    // HEADER
-    memcpy(buffer, oldBin, oldBin->header.offsets[0]);  // copy header + page offset to section 0 = size of the header
-
-    // PAGES
-    // Pages offset should never be modified in this function
-    PagesHolder& destPages = buffer->GetSection<PagesHolder>();
-    memcpy(&destPages, &srcPages, srcPages.header.size - sizeof(Page) * srcPages.userPageCount);  // start by copying the pulsarPages (and the header)
-    destPages.pulsarPageCount = this->pulsarPageCount;
-    destPages.userPageCount = this->userPageCount;
-
-    Page& destUserPages = destPages.pages[destPages.pulsarPageCount];  // start of the user Page array
-    Page& srcUserPages = srcPages.pages[srcPages.pulsarPageCount];
-    memcpy(&destUserPages, &srcUserPages, srcPages.userPageCount * sizeof(Page));
+    // HEADER and fixed-size SETTINGS
+    memcpy(buffer, oldBin, oldBin->header.offsets[0]);
+    SettingsHolder& destSettings = buffer->GetSection<SettingsHolder>();
+    memcpy(&destSettings, &srcSettings, sizeof(SettingsHolder));
 
     // MISC, NOT modified for now
-    buffer->header.offsets[MiscParams::index] += totalPageDiff;
     memcpy(&buffer->GetSection<MiscParams>(), &srcParams, srcParams.header.size);  // copy params
 
     // TROPHIES
-    buffer->header.offsets[TrophiesHolder::index] += totalPageDiff;
     memcpy(&buffer->GetSection<TrophiesHolder>(), &srcTrophiesHolder, srcTrophiesHolder.header.size);  // copy trophies
 
     // GP
-    buffer->header.offsets[GPSection::index] += totalPageDiff + trophySizeDiff;
+    buffer->header.offsets[GPSection::index] += trophySizeDiff;
     memcpy(&buffer->GetSection<GPSection>(), &srcGp, srcGp.header.size);
 
     // SIZES:
-    buffer->GetSection<PagesHolder>().header.size += totalPageDiff;
     buffer->GetSection<TrophiesHolder>().header.size += trophySizeDiff;
     buffer->GetSection<GPSection>().header.size += gpSizeDiff;
 
     buffer->header.fileSize = newSize;
     this->rawBin = buffer;
     delete oldBin;
-}
-
-Binary* Mgr::CreateFromOld(const Binary* old) {
-    Binary* ret;
-    const u32 version = old->header.version;
-    if (version < 2)
-        ret = nullptr;
-    else {
-        const PagesHolderV1* oldPages;
-        const MiscParams* oldParams;
-        const TrophiesHolder* oldTrophies;
-
-        if (version == 2) {
-            const BinaryHeaderV1& oldHeader = reinterpret_cast<const BinaryHeaderV1&>(old->header);
-            oldPages = reinterpret_cast<const PagesHolderV1*>(ut::AddU32ToPtr(old, oldHeader.offsetToPages));
-            oldParams = reinterpret_cast<const MiscParams*>(ut::AddU32ToPtr(old, oldHeader.offsetToMisc));
-            oldTrophies = reinterpret_cast<const TrophiesHolder*>(ut::AddU32ToPtr(old, oldHeader.offsetToTrophies));
-        } else {  // version 3
-            oldPages = reinterpret_cast<const PagesHolderV1*>(&old->GetSection<PagesHolder>());  // since GetSection uses offset, this reinterpret_cast is completely safe
-            oldParams = &old->GetSection<MiscParams>();
-            oldTrophies = &old->GetSection<TrophiesHolder>();
-        }
-        const u32 pageCount = ut::Min(this->pulsarPageCount, oldPages->pageCount);  // we use the minimum here, it's fine if some settings are lost
-        const u32 trackCount = oldParams->trackCount;  // we use the old track count to preserve all trophies
-        ret = IO::sInstance->Alloc<Binary>(this->GetSettingsBinSize(trackCount));
-        new (ret) Binary(pageCount, 0, trackCount);  // this didn't have userPageCount
-
-        // PAGES, version 4 modifies the header and adds user pages so just copy the pulsar pages
-        PagesHolder& pages = ret->GetSection<PagesHolder>();
-        memcpy(&pages.pages[0], &oldPages->pages[0], pageCount * sizeof(Page));
-
-        // MISC, unchanged from 2/3 to 4
-        MiscParams& params = ret->GetSection<MiscParams>();
-        memcpy(&params, oldParams, params.header.size);
-
-        // TROPHIES, unchanged from 2/3 to 4
-        TrophiesHolder& trophies = ret->GetSection<TrophiesHolder>();
-        memcpy(&trophies, oldTrophies, trophies.header.size);
-
-        // GP
-        GPSection& gp = ret->GetSection<GPSection>();  // create GPSection
-        if (version == 2) {
-            const u32 cupCount = trackCount / 4;
-            memset(&gp.gpStatus[0], 0xFF, sizeof(GPCupStatus) * cupCount);
-        } else if (version == 3) {
-            const GPSection& oldGp = old->GetSection<GPSection>();
-            memcpy(&gp, &oldGp, oldGp.header.size);
-        }
-    }
-    delete old;
-    return ret;
 }
 
 void Mgr::SaveGPResult(RKSYSRequester* requester, u32 r4, u32 r5, u32 r6, u32 r7, u32 r8, u32 r9, bool isNew) {

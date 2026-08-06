@@ -452,7 +452,7 @@ const char* PathBasename(const char* path) {
 
 bool ShouldUsePatchCharacterFiles() {
     if (!Settings::Mgr::IsCreated()) return false;
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MISC, RADIO_LOOSEARCHIVEOVERRIDES) ==
+    return Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LOOSEARCHIVEOVERRIDES) ==
            LOOSEARCHIVEOVERRIDES_ENABLED;
 }
 

@@ -23,7 +23,7 @@ static u8 finalLapSpeedupHudSlot = INVALID_HUD_SLOT_ID;
 void UpdateSW2RRRacePercentageMusic();
 
 static void MusicSpeedup(Audio::RaceRSARPlayer* rsarSoundPlayer, u32 jingle, u8 hudSlotId) {
-    u8 isSpeedUp = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_MUSICSPEEDUP);
+    u8 isSpeedUp = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSICSPEEDUP);
     Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
     Raceinfo* raceInfo = Raceinfo::sInstance;
     const u8 maxLap = raceAudioMgr->maxLap;

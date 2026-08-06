@@ -117,9 +117,7 @@ static float hookLocalTimer = 0.0f;
 static bool hasRKNetRequestFinished = true;
 
 static bool IsCompetitiveMatchmakingEnabled() {
-    const u8 timeoutSetting = Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-        Pulsar::Settings::SETTINGSTYPE_ONLINE,
-        Pulsar::RADIO_INFINITEMATCHMAKINGTIMEOUT);
+    const u8 timeoutSetting = Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_INFINITEMATCHMAKINGTIMEOUT);
     return timeoutSetting == Pulsar::MATCHMAKINGTIMEOUT_INFINITE;
 }
 

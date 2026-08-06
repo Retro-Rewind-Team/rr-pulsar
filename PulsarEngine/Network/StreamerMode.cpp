@@ -91,7 +91,7 @@ static bool IsFriend(u32 pid) {
 
 static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid, RKNet::USERPacket* userPacket) {
     const Settings::Mgr& settings = Settings::Mgr::Get();
-    if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
+    if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) == STREAMERMODE_DISABLED) {
         return;
     }
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {

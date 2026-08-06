@@ -45,9 +45,7 @@ struct VRLeaderboardText {
 
 static Language GetCurrentLanguage() {
     return static_cast<Language>(
-        Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Settings::UserType>(Settings::SETTINGSTYPE_MISC),
-            SCROLLER_LANGUAGE));
+        Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
 }
 
 static const VRLeaderboardText& GetVRLeaderboardText() {

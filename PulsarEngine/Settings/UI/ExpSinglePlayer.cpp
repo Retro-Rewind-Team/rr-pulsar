@@ -129,7 +129,8 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
     const u32 id = button.buttonId;
     if (page->externControlCount > 4 && id == page->externControlCount - 1) {
         // Navigate to page selection first
-        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
+        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
+            Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_SINGLE_PLAYER_MENU);
         ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
         page->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
         page->EndStateAnimated(0, button.GetAnimationFrameSize());

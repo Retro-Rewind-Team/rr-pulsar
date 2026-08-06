@@ -8,7 +8,7 @@ namespace Pulsar {
 namespace Settings {
 
 enum SectionIndexes {
-    SECTION_PAGES,
+    SECTION_SETTINGS,
     SECTION_MISC,
     SECTION_TROPHIES,
     SECTION_GP
@@ -19,25 +19,15 @@ struct TrackTrophy {
     bool hastrophy[4];
 };  // 0x8
 
-struct Page {
-    union {
-        struct {
-            u8 radioSetting[6];
-            u8 scrollSetting[6];
-        };
-        u8 settings[12];
-    };
-};
-
-struct PagesHolder {
-    static const u32 pageMagic = 'PAGE';
+struct SettingsHolder {
+    static const u32 magic = 'SETT';
     static const u32 version = 1;
-    static const u32 index = SECTION_PAGES;
+    static const u32 index = SECTION_SETTINGS;
+    static const u32 valueCapacity = (SETTING_COUNT + 3) & ~3;
     Pulsar::SectionHeader header;
-    u32 pulsarPageCount;
-    u32 userPageCount;
-    Page pages[1];  // 0x14
+    u8 values[valueCapacity];
 };
+static_assert(sizeof(SettingsHolder) == 0x4c, "SettingsHolder layout changed");
 
 struct MiscParams {
     static const u32 miscMagic = 'MISC';
@@ -86,32 +76,12 @@ struct BinaryHeader {
     u32 offsets[1];  // 0x10
 };
 
-// Legacy layout used when migrating version 1 settings files.
-struct BinaryHeaderV1 {
-    u32 magic;
-    u32 version;
-    u32 fileSize;
-    u32 offsetToPages;
-    u32 offsetToMisc;
-    u32 offsetToTrophies;
-    u32 offsetToGP;
-};
-
-struct PagesHolderV1 {
-    static const u32 pageMagic = 'PAGE';
-    static const u32 version = 1;
-    static const u32 index = SECTION_PAGES;
-    Pulsar::SectionHeader header;
-    u32 pageCount;
-    Page pages[1];
-};
-
 class alignas(0x20) Binary {
     static const u32 binMagic = 'PULP';
     static const u32 sectionCount = 4;
-    static const u32 curVersion = 6;
+    static const u32 curVersion = 7;
 
-    Binary(u32 pulsarPageCount, u32 userPageCount, u32 trackCount);
+    Binary(u32 trackCount);
 
     template <typename T>
     inline T& GetSection() {
@@ -128,7 +98,7 @@ class alignas(0x20) Binary {
     }
 
     BinaryHeader header;
-    PagesHolder pages;
+    SettingsHolder settings;
     friend class Mgr;
 };
 

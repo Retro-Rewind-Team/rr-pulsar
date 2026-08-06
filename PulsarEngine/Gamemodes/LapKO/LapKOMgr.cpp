@@ -195,7 +195,7 @@ void Mgr::InitForRace() {
         this->lastAvailableAids = 0;
 
         const Settings::Mgr& settings = Settings::Mgr::Get();
-        u8 offlineKo = static_cast<u8>(settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1);
+        u8 offlineKo = static_cast<u8>(settings.GetSettingValue(Pulsar::Settings::SETTING_KOPERRACE) + 1);
         this->SetKoPerRace(offlineKo);
     }
 

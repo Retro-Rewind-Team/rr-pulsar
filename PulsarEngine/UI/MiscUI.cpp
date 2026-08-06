@@ -165,7 +165,7 @@ CameraParamBin* GetKartParamCamera(u32 weight, u32 screenCount) {
         s_hasSavedCameraParams = true;
     }
 
-    FOVChange fovChange = static_cast<FOVChange>(Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE2, RADIO_FOV));
+    FOVChange fovChange = static_cast<FOVChange>(Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FOV));
     if (fovChange != FOV_CHANGE_DEFAULT) {
         if (fovChange == FOV_CHANGE_16_9) {
             for (int i = 0; i < 9; ++i) {

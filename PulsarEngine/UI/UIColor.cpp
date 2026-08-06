@@ -25,7 +25,7 @@ static const u8 hudColors[12][3] = {
 };
 
 void UpdateHUDColor() {
-    u8 setting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, SCROLL_HUDCOLOR);
+    u8 setting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_HUDCOLOR);
     if (setting >= 12) setting = 0;
     hudR = hudColors[setting][0];
     hudG = hudColors[setting][1];

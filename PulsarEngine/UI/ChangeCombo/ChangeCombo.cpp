@@ -36,8 +36,8 @@ static u8 GetKartOptionCount(Pulsar::KartRestriction kartRest, Pulsar::KartRestr
     return (kartRest == KART_KARTONLY || bikeRest == KART_BIKEONLY) ? 6 : 12;
 }
 
-static const u32 settingsPreviewSheetCount = 4;
-static u32 s_settingsPreviewSheets[settingsPreviewSheetCount];
+static const u32 settingsPreviewPageCapacity = 6;
+static Settings::SettingsPageId s_settingsPreviewPages[settingsPreviewPageCapacity];
 static u32 s_settingsPreviewSheetCount = 0;
 static u32 s_settingsPreviewSheetIdx = 0;
 static bool s_settingsPreviewComplete = false;
@@ -59,23 +59,22 @@ void ResetFroomSettingsPreviewShown() {
 }
 
 static void BuildSettingsPreviewSheets() {
-    s_settingsPreviewSheetCount = 0;
-    s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_FROOM1;
-    s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_FROOM2;
-
     const System* system = System::sInstance;
-    if (system->IsContext(PULSAR_MODE_KO)) {
-        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_KO;
-    }
-    if (system->IsContext(PULSAR_MODE_OTT)) {
-        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_OTT;
-    }
-    if (system->IsContext(PULSAR_MODE_BATTLEROYALE) && !system->IsContext(PULSAR_MODE_OTT)) {
-        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_KOROYALE;
-    }
+    const Network::Mgr& netMgr = system->netMgr;
+    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
+    const bool isBattle = sectionId == SECTION_P1_WIFI_FROOM_BALLOON_VOTING ||
+                          sectionId == SECTION_P2_WIFI_FROOM_BALLOON_VOTING ||
+                          sectionId == SECTION_P1_WIFI_FROOM_COIN_VOTING ||
+                          sectionId == SECTION_P2_WIFI_FROOM_COIN_VOTING;
+    s_settingsPreviewSheetCount = Settings::Params::BuildHostRulePages(
+        s_settingsPreviewPages, isBattle,
+        (netMgr.hostContext & (1 << PULSAR_MODE_KO)) || (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO)),
+        netMgr.hostContext & (1 << PULSAR_MODE_OTT), netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE),
+        netMgr.hostContext & (1 << PULSAR_EXTENDEDTEAMS));
 }
 
 static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr& page) {
+    if (!System::sInstance->netMgr.hasHostSettingsPreview) return false;
     if (s_settingsPreviewShownThisRoom) return false;
     if (s_settingsPreviewComplete) return false;
     if (s_settingsPreviewSheetCount == 0) BuildSettingsPreviewSheets();
@@ -86,13 +85,13 @@ static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr& page) {
         return false;
     }
 
-    const u32 sheetIdx = s_settingsPreviewSheets[s_settingsPreviewSheetIdx++];
-    SettingsPanel::StartVotingPreview(sheetIdx);
+    const Settings::SettingsPageId settingsPage = s_settingsPreviewPages[s_settingsPreviewSheetIdx++];
+    SettingsPanel::StartVotingPreview(settingsPage);
     page.AddPageLayer(static_cast<PageId>(SettingsPanel::id), 0);
     return true;
 }
 
-bool AdvanceFroomSettingsPreview(u32& sheetIdx) {
+bool AdvanceFroomSettingsPreview(Settings::SettingsPageId& settingsPage) {
     if (s_settingsPreviewShownThisRoom) return false;
     if (s_settingsPreviewComplete) return false;
     if (s_settingsPreviewSheetCount == 0) BuildSettingsPreviewSheets();
@@ -103,7 +102,7 @@ bool AdvanceFroomSettingsPreview(u32& sheetIdx) {
         return false;
     }
 
-    sheetIdx = s_settingsPreviewSheets[s_settingsPreviewSheetIdx++];
+    settingsPage = s_settingsPreviewPages[s_settingsPreviewSheetIdx++];
     return true;
 }
 
@@ -155,7 +154,7 @@ void ExpVR::OnInit() {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL))) isKOd = true;
 
     bool isRandomHidden = false;
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
+    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
 
     this->AddControl(0xF, this->randomComboButton, 0);
     this->randomComboButton.isHidden = isKOd || isRandomHidden;
@@ -300,7 +299,7 @@ void ExpVR::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
     SettingsPanel* settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
     settingsPanel->prevPageId = PAGE_NONE;
     SettingsPageSelect* settingsPageSelect = ExpSection::GetSection()->GetPulPage<SettingsPageSelect>();
-    settingsPageSelect->prevPageId = PAGE_NONE;
+    settingsPageSelect->SetContext(Settings::SETTINGS_CONTEXT_VOTING, PAGE_NONE);
     this->AddPageLayer(static_cast<PageId>(this->topSettingsPage), 0);
 }
 
@@ -325,7 +324,7 @@ void ExpVR::AfterControlUpdate() {
         const bool isKOd = ShouldHideComboButtons(*system);
 
         const bool isRandomHidden =
-            Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED;
+            Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED;
 
         this->randomComboButton.isHidden = isKOd || isRandomHidden;
         this->changeComboButton.isHidden = isKOd;
@@ -452,7 +451,7 @@ void ExpCharacterSelect::BeforeControlUpdate() {
         } else if (roulette == 0) {
             if (this->buttonCooldown == 0) {
                 this->ctrlMenuCharSelect.GetButtonDriver(randomizedCharIdx[hudId])->HandleClick(hudId, -1);
-                if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, RADIO_FASTMENUS) == FASTMENUS_ENABLED)
+                if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FASTMENUS) == FASTMENUS_ENABLED)
                     this->buttonCooldown = 30;
                 else
                     this->buttonCooldown = 150;

@@ -56,7 +56,7 @@ void ExpMultiPlayer::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
     SettingsPanel* settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
     if (settingsPageSelect == nullptr || settingsPanel == nullptr) return;
 
-    settingsPageSelect->prevPageId = PAGE_MULTIPLAYER_MENU;
+    settingsPageSelect->SetContext(Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_MULTIPLAYER_MENU);
     settingsPanel->prevPageId = PAGE_MULTIPLAYER_MENU;
     this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
     this->EndStateAnimated(0, button.GetAnimationFrameSize());

@@ -397,7 +397,7 @@ kmCall(0x80644414, SetCorrectTrack);
 
 // Overwrites CC rules -> 10% 100, 65% 150, 25% mirror and/or in frooms, overwritten by host setting
 static void DecideCC(ExpSELECTHandler& handler) {
-    const u8 ccSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC);
+    const u8 ccSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FROOMCC);
     RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::RoomType roomType = controller->roomType;
     u8 ccClass = 1;  // 1 100, 2 150, 3 mirror
@@ -486,15 +486,15 @@ void InitPatch() {
     if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)
         allowChangeCombo = true;
     else
-        allowChangeCombo = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWCHANGECOMBO);
+        allowChangeCombo = settings.GetSettingValue(Pulsar::Settings::SETTING_OTTALLOWCHANGECOMBO);
     select->toSendPacket.allowChangeComboStatus = allowChangeCombo;
-    select->toSendPacket.koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
-    select->toSendPacket.racesPerKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_RACESPERKO) + 1;
-    select->toSendPacket.alwaysFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
-    select->toSendPacket.singleRace1v1Final = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KO1V1FINALE) == KOSETTING_1V1FINALE_SINGLE;
-    const u8 elimThreshold = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMTHRESHOLD);
+    select->toSendPacket.koPerRace = settings.GetSettingValue(Pulsar::Settings::SETTING_KOPERRACE) + 1;
+    select->toSendPacket.racesPerKO = settings.GetSettingValue(Pulsar::Settings::SETTING_RACESPERKO) + 1;
+    select->toSendPacket.alwaysFinal = settings.GetSettingValue(Pulsar::Settings::SETTING_KOFINAL) == KOSETTING_FINAL_ALWAYS;
+    select->toSendPacket.singleRace1v1Final = settings.GetSettingValue(Pulsar::Settings::SETTING_KO1V1FINALE) == KOSETTING_1V1FINALE_SINGLE;
+    const u8 elimThreshold = settings.GetSettingValue(Pulsar::Settings::SETTING_KOELIMTHRESHOLD);
     select->toSendPacket.elimThresholdPlayers = elimThreshold == KOSETTING_ELIMTHRESHOLD_DISABLED ? 0 : static_cast<u8>(elimThreshold + 2);
-    select->toSendPacket.elimChangeCount = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMCHANGE) + 1;
+    select->toSendPacket.elimChangeCount = settings.GetSettingValue(Pulsar::Settings::SETTING_KOELIMCHANGE) + 1;
     for (int aid = 0; aid < 12; ++aid) {
         PulSELECT& cur = select->receivedPackets[aid];
         cur.pulVote = 0x43;

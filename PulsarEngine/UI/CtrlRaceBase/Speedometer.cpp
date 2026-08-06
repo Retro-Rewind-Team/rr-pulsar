@@ -5,7 +5,7 @@
 namespace Pulsar {
 namespace UI {
 u32 CtrlRaceSpeedo::Count() {
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_SPEEDOMETER) == SOM_DISABLED) return 0;
+    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPEEDOMETER) == SOM_DISABLED) return 0;
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
     if (scenario.localPlayerCount > 1) return 0;
     u32 localPlayerCount = scenario.localPlayerCount;
@@ -61,7 +61,7 @@ void CtrlRaceSpeedo::Init() {
 
 void CtrlRaceSpeedo::OnUpdate() {
     this->UpdatePausePosition();
-    const u8 digits = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_SPEEDOMETER) - 1;
+    const u8 digits = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPEEDOMETER) - 1;
     const Kart::Pointers& pointers = Kart::Manager::sInstance->players[this->GetPlayerId()]->pointers;
     const Kart::Physics* physics = pointers.kartBody->kartPhysicsHolder->physics;
 

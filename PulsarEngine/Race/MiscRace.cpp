@@ -56,7 +56,7 @@ static int MiiHeads(Racedata* racedata, u32 unused, u32 unused2, u8 id) {
     bool isFroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
     if (isFroom)
         miiHeadFroom = System::sInstance->IsContext(PULSAR_MIIHEADS) ? ALLOW_MIIHEADS_ENABLED : ALLOW_MIIHEADS_DISABLED;
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS) == MII_ENABLED && isFroom) {
+    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MIIHEADS) == MII_ENABLED && isFroom) {
         if (miiHeadFroom == ALLOW_MIIHEADS_ENABLED) {
             if (charId < MII_M) {
                 if (id == 0)
@@ -74,7 +74,7 @@ kmWrite32(0x807eb160, 0x88de01b4);
 
 // credit to XeR for finding the float address
 static void BattleGlitchEnable() {
-    const u8 val = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_RACE2, RADIO_BATTLEGLITCH);
+    const u8 val = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BATTLEGLITCH);
     float maxDistance = 7500.0f;
     if (val == BATTLE_GLITCH_ENABLED) maxDistance = 75000.0f;
     System* system = System::sInstance;

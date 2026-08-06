@@ -20,13 +20,13 @@ Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false), isOff
     this->isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
     if (this->isOfflineVS) {
         const Settings::Mgr& settings = Settings::Mgr::Get();
-        this->koPerRace = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1;
-        this->racesPerKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_RACESPERKO) + 1;
-        this->alwaysFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
-        this->singleRace1v1Final = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KO1V1FINALE) == KOSETTING_1V1FINALE_SINGLE;
-        const u8 elimThreshold = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMTHRESHOLD);
+        this->koPerRace = settings.GetSettingValue(Pulsar::Settings::SETTING_KOPERRACE) + 1;
+        this->racesPerKO = settings.GetSettingValue(Pulsar::Settings::SETTING_RACESPERKO) + 1;
+        this->alwaysFinal = settings.GetSettingValue(Pulsar::Settings::SETTING_KOFINAL) == KOSETTING_FINAL_ALWAYS;
+        this->singleRace1v1Final = settings.GetSettingValue(Pulsar::Settings::SETTING_KO1V1FINALE) == KOSETTING_1V1FINALE_SINGLE;
+        const u8 elimThreshold = settings.GetSettingValue(Pulsar::Settings::SETTING_KOELIMTHRESHOLD);
         this->elimThresholdPlayers = elimThreshold == KOSETTING_ELIMTHRESHOLD_DISABLED ? 0 : elimThreshold + 2;
-        this->elimChangeCount = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOELIMCHANGE) + 1;
+        this->elimChangeCount = settings.GetSettingValue(Pulsar::Settings::SETTING_KOELIMCHANGE) + 1;
         this->baseLocPlayerCount = Racedata::sInstance->menusScenario.localPlayerCount;
         this->ForceOfflineVSRaceCount();
     }

@@ -346,7 +346,7 @@ bool IsOnlineRoom(const RKNet::Controller* controller) {
 }
 
 bool DisplayOnlineSkins() {
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_ENABLED;
+    return Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_ENABLED;
 }
 
 void ResetOfflineCpuSkinTables() {
@@ -379,7 +379,7 @@ void ResetCharacterTablesOnLooseArchiveOverrideChange() {
     static u8 lastValue;
     if (!Settings::Mgr::IsCreated()) return;
 
-    const u8 value = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MISC, RADIO_LOOSEARCHIVEOVERRIDES);
+    const u8 value = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LOOSEARCHIVEOVERRIDES);
     if (!initialized) {
         initialized = true;
         lastValue = value;

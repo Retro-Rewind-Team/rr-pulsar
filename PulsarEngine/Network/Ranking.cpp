@@ -186,9 +186,7 @@ struct RankText {
 
 static Language GetCurrentLanguage() {
     return static_cast<Language>(
-        Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Settings::UserType>(Settings::SETTINGSTYPE_MISC),
-            SCROLLER_LANGUAGE));
+        Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
 }
 
 static const RankText& GetRankText() {
@@ -502,7 +500,7 @@ static s32 GetFetchedBadgeForPID(u32 pid) {
     if (pid == 0 || pid != s_badgePid || !Settings::Mgr::IsCreated()) return -1;
 
     const Settings::Mgr& settings = Settings::Mgr::Get();
-    if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) != STREAMERMODE_DISABLED) {
+    if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) != STREAMERMODE_DISABLED) {
         return -1;
     }
     const u8 selectedBadge = settings.GetRankingBadge();

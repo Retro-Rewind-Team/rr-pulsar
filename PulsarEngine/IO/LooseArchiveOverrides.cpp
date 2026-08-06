@@ -211,7 +211,7 @@ static bool AreLooseArchiveOverridesEnabled() {
         // Settings not initialized yet, assume disabled to avoid unsafe behavior.
         return false;
     }
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MISC, RADIO_LOOSEARCHIVEOVERRIDES) ==
+    return Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LOOSEARCHIVEOVERRIDES) ==
            LOOSEARCHIVEOVERRIDES_ENABLED;
 }
 

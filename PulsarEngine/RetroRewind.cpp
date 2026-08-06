@@ -66,7 +66,7 @@ static bool IsTTMode(const GameMode mode) {
 void FPSPatch() {
     FPSPatchHook = 0x00;
     const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_RACE2, Pulsar::RADIO_FPS) == Pulsar::FPS_HALF &&
+    if (Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FPS) == Pulsar::FPS_HALF &&
         !IsTTMode(mode)) {
         FPSPatchHook = 0x00FF0100;
     }
@@ -91,7 +91,7 @@ kmCall(0x80828EDC, ItemBoxRespawn);
 
 void PredictionPatch() {
     float predictionValue = 0.1f;
-    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_ONLINE, Pulsar::RADIO_PREDICTIONREMOVAL) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
+    if (Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_PREDICTIONREMOVAL) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
         predictionValue = 1.0f;
     }
     PredictionHook = *reinterpret_cast<u32*>(&predictionValue);

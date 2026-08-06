@@ -255,7 +255,7 @@ void ExtendedTeamManager::VotePageSync() {
 
 void ExtendedTeamManager::ConfigureOfflineTeams() {
     RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    const u8 playersSetting = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, SCROLLER_EXTENDEDTEAMSPLAYERS);
+    const u8 playersSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSPLAYERS);
     u32 playersPerTeam = 2;
     switch (playersSetting) {
         case EXTENDEDTEAMS_PLAYERS_3:

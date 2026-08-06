@@ -42,10 +42,10 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
     }
 
     if (rowIdx == 0) {
-        const bool isOTT = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
-        const bool isKO = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) != KOSETTING_DISABLED;
-        const bool isExtendedTeam = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
-        const bool isRoyale = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
+        const bool isOTT = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
+        const bool isKO = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
+        const bool isExtendedTeam = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+        const bool isRoyale = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
 
         if (isOTT && isKO) {
             bmgId = BMG_PLAY_OTTKO;

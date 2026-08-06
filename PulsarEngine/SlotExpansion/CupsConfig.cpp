@@ -561,7 +561,7 @@ void CupsConfig::ToggleCTs(bool enabled) {
 }
 
 void CupsConfig::SetLayout() {
-    CupsConfig::sInstance->isAlphabeticalLayout = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, RADIO_LAYOUT) == LAYOUT_ALPHABETICAL;
+    CupsConfig::sInstance->isAlphabeticalLayout = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LAYOUT) == LAYOUT_ALPHABETICAL;
 }
 Settings::Hook CTLayout(CupsConfig::SetLayout);
 

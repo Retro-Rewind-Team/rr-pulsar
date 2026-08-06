@@ -73,14 +73,15 @@ void ExpFroom::OnActivate() {
 
 void ExpFroom::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
     this->areControlsHidden = true;
-    ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->prevPageId = PAGE_NONE;
+    ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
+        Settings::SETTINGS_CONTEXT_ONLINE, PAGE_NONE);
     ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_NONE;
     this->AddPageLayer(static_cast<PageId>(this->topSettingsPage), 0);
 }
 
 void ExpFroom::OnTeamsButtonClick(PushButton& button, u32 hudSlotId) {
     this->areControlsHidden = true;
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED) {
+    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED) {
         this->AddPageLayer(static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT), 0);
     } else {
         this->AddPageLayer(static_cast<PageId>(PULPAGE_TEAMSELECT), 0);

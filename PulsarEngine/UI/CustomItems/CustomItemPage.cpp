@@ -70,7 +70,7 @@ CustomItemPage::CustomItemPage() {
     this->activePlayerBitfield = 1;
     this->controlSources = 2;
     this->prevPageId = static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT);
-    this->titleBmg = BMG_USERSETTINGSOFFSET + BMG_SETTINGS_TITLE + Settings::SETTINGSTYPE_ITEMS;
+    this->titleBmg = Settings::Params::GetPageDef(Settings::SETTINGS_PAGE_ITEMS).nameBmg;
     this->friendRoomPreviewNextPageId = PAGE_CHARACTER_SELECT;
     this->isFriendRoomPreview = false;
 

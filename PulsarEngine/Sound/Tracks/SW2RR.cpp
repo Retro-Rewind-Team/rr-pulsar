@@ -24,7 +24,7 @@ static bool sw2rrTier3ReloadPending = false;
 bool HasSW2RRTieredBRSTM(u8 tier);
 
 static bool IsCTMusicEnabled() {
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CTMUSIC) == CTMUSIC_ENABLED;
+    return Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) == CTMUSIC_ENABLED;
 }
 
 static bool StringsEqual(const char* lhs, const char* rhs) {

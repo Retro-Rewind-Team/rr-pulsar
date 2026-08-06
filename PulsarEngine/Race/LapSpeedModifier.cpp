@@ -66,7 +66,7 @@ RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
             koPerRace = system->lapKoMgr->GetKoPerRace();
         } else {
             const Settings::Mgr& settings = Settings::Mgr::Get();
-            koPerRace = static_cast<u8>(settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, SCROLLER_KOPERRACE) + 1);
+            koPerRace = static_cast<u8>(settings.GetSettingValue(Pulsar::Settings::SETTING_KOPERRACE) + 1);
             if (koPerRace == 0) koPerRace = 1;
             system->lapKoMgr->SetKoPerRace(koPerRace);
         }

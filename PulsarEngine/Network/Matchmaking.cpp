@@ -50,9 +50,7 @@ static void RememberPreviousPublicRoomGroupId(const RKNet::Controller* controlle
 }
 
 static void ApplyMatchmakingTimeoutPatch() {
-    const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
-        Settings::SETTINGSTYPE_ONLINE,
-        RADIO_INFINITEMATCHMAKINGTIMEOUT);
+    const u8 timeoutSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_INFINITEMATCHMAKINGTIMEOUT);
 
     sMatchmakingTimeoutMs =
         (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE) ? 0x7fff : 0x4e20;
@@ -122,9 +120,7 @@ void CustomRandomizeServers() {
     int count = ServerBrowserCountA(sb);
     if (count <= 0) return;
 
-    const u8 timeoutSetting = Settings::Mgr::Get().GetUserSettingValue(
-        Settings::SETTINGSTYPE_ONLINE,
-        RADIO_INFINITEMATCHMAKINGTIMEOUT);
+    const u8 timeoutSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_INFINITEMATCHMAKINGTIMEOUT);
     const bool isCompetitiveMatchmakingEnabled =
         (timeoutSetting == MATCHMAKINGTIMEOUT_INFINITE);
     const bool blockSmallRooms = isCompetitiveMatchmakingEnabled && HasNonSmallRoomOption(sb, count);

@@ -1,15 +1,10 @@
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <Settings/Settings.hpp>
-#include <Settings/UI/ExpOptionsPage.hpp>
-#include <Settings/UI/ExpFroomPage.hpp>
-#include <Settings/UI/ExpWFCMainPage.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Network/PacketExpansion.hpp>
-#include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
-#include <core/System/SystemManager.hpp>
 #include <Network/Network.hpp>
 
 namespace Pulsar {
@@ -18,13 +13,23 @@ namespace UI {
 static bool s_votingSettingsPreviewActive = false;
 static u32 s_votingSettingsPreviewFrame = 0;
 static const u32 votingSettingsPreviewDuration = 240;
+static u8 s_hostPreviewValues[Settings::SETTING_COUNT];
 
-// SETTINGS PANEL
+static bool IsVotingSection(SectionId id) {
+    return (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) ||
+           id == SECTION_P1_WIFI_VS_VOTING || id == SECTION_P2_WIFI_VS_VOTING ||
+           id == SECTION_P1_WIFI_BATTLE_VOTING || id == SECTION_P2_WIFI_BATTLE_VOTING;
+}
+
+static bool IsBattleVotingSection(SectionId id) {
+    return id == SECTION_P1_WIFI_BATTLE_VOTING || id == SECTION_P2_WIFI_BATTLE_VOTING ||
+           id == SECTION_P1_WIFI_FROOM_BALLOON_VOTING || id == SECTION_P2_WIFI_FROOM_BALLOON_VOTING ||
+           id == SECTION_P1_WIFI_FROOM_COIN_VOTING || id == SECTION_P2_WIFI_FROOM_COIN_VOTING;
+}
+
 SettingsPanel::SettingsPanel() {
-    bmgOffset = BMG_USERSETTINGSOFFSET;
-    sheetIdx = Settings::Params::pulsarPageCount;
-    catIdx = 0;
-    externControlCount = 1;  // Only save button, no left/right navigation
+    settingsPageId = Settings::SETTINGS_PAGE_RACE1;
+    externControlCount = 1;
     internControlCount = Settings::Params::maxRadioCount + Settings::Params::maxScrollerCount;
     hasBackButton = true;
     nextPageId = static_cast<PageId>(id);
@@ -36,29 +41,27 @@ SettingsPanel::SettingsPanel() {
     nextSection = SECTION_NONE;
     controlSources = 2;
 
-    SectionId id = SectionMgr::sInstance->curSection->sectionId;
-    if (id == SECTION_OPTIONS)
+    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
+    if (sectionId == SECTION_OPTIONS)
         prevPageId = PAGE_OPTIONS;
-    else if ((id == SECTION_P1_WIFI) || (id == SECTION_P1_WIFI_FROM_FROOM_RACE) || (id == SECTION_P1_WIFI_FROM_FIND_FRIEND) || (id == SECTION_P2_WIFI) || (id == SECTION_P2_WIFI_FROM_FROOM_RACE))
+    else if (sectionId == SECTION_P1_WIFI || sectionId == SECTION_P2_WIFI ||
+             sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE || sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE ||
+             sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || sectionId == SECTION_P2_WIFI_FROM_FIND_FRIEND)
         prevPageId = PAGE_WFC_MAIN;
-    else if (id >= SECTION_LICENSE_SETTINGS_MENU && id <= SECTION_SINGLE_P_LIST_RACE_GHOST)
+    else if (sectionId >= SECTION_LICENSE_SETTINGS_MENU && sectionId <= SECTION_SINGLE_P_LIST_RACE_GHOST)
         prevPageId = PAGE_SINGLE_PLAYER_MENU;
 
     onMessageBoxClickHandler.ptmf = &Menu::ChangeToPrevSection;
-
     onRadioButtonClickHandler.subject = this;
     onRadioButtonClickHandler.ptmf = &SettingsPanel::OnRadioButtonClick;
     onRadioButtonChangeHandler.subject = this;
     onRadioButtonChangeHandler.ptmf = &SettingsPanel::OnRadioButtonChange;
-
     onUpDownClickHandler.subject = this;
     onUpDownClickHandler.ptmf = &SettingsPanel::OnUpDownClick;
     onUpDownSelectHandler.subject = this;
     onUpDownSelectHandler.ptmf = &SettingsPanel::OnUpDownSelect;
-
     onTextChangeHandler.subject = this;
     onTextChangeHandler.ptmf = &SettingsPanel::OnTextChange;
-
     onButtonSelectHandler.subject = this;
     onButtonSelectHandler.ptmf = &SettingsPanel::OnExternalButtonSelect;
     onButtonDeselectHandler.subject = this;
@@ -69,80 +72,13 @@ SettingsPanel::SettingsPanel() {
     onBackButtonClickHandler.ptmf = &SettingsPanel::OnBackButtonClick;
     onStartPressHandler.subject = this;
     onStartPressHandler.ptmf = &MenuInteractable::HandleStartPress;
-
     onButtonClickHandler.subject = this;
     onButtonClickHandler.ptmf = &SettingsPanel::OnSaveButtonClick;
-    onRightButtonClickHandler.subject = this;
-    onRightButtonClickHandler.ptmf = &SettingsPanel::OnRightButtonClick;
-    onLeftButtonClickHandler.subject = this;
-    onLeftButtonClickHandler.ptmf = &SettingsPanel::OnLeftButtonClick;
 
-    this->controlsManipulatorManager.Init(1, false);
-    this->SetManipulatorManager(controlsManipulatorManager);
-    this->controlsManipulatorManager.SetGlobalHandler(START_PRESS, onStartPressHandler, false, false);
-    this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, onBackPressHandler, false, false);
-};
-
-void SettingsPanel::StartVotingPreview(u32 firstSheetIdx) {
-    s_votingSettingsPreviewActive = true;
-    s_votingSettingsPreviewFrame = 0;
-    ApplyVotingPreviewHostSettings();
-    SetVotingPreviewSheet(firstSheetIdx);
-}
-
-bool SettingsPanel::IsVotingPreviewActive() {
-    return s_votingSettingsPreviewActive;
-}
-
-void SettingsPanel::SetVotingPreviewSheet(u32 sheetIdx) {
-    SettingsPanel* panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
-    if (panel == nullptr) return;
-
-    panel->sheetIdx = sheetIdx;
-    if (sheetIdx < Settings::Params::pulsarPageCount) {
-        panel->catIdx = sheetIdx;
-        panel->bmgOffset = 0;
-    } else {
-        panel->catIdx = sheetIdx - Settings::Params::pulsarPageCount;
-        panel->bmgOffset = BMG_USERSETTINGSOFFSET;
-    }
-}
-
-void SettingsPanel::ApplyVotingPreviewHostSettings() {
-    SettingsPanel* panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
-    if (panel == nullptr) return;
-
-    const Network::Mgr& netMgr = System::sInstance->netMgr;
-    if (!netMgr.hasHostSettingsPreview) return;
-
-    Settings::UserType pages[4];
-    u32 pageCount = 0;
-    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM1;
-    pages[pageCount++] = Settings::SETTINGSTYPE_FROOM2;
-    if ((netMgr.hostContext & (1 << PULSAR_MODE_KO)) || (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO))) {
-        pages[pageCount++] = Settings::SETTINGSTYPE_KO;
-    }
-    if (netMgr.hostContext & (1 << PULSAR_MODE_OTT)) {
-        pages[pageCount++] = Settings::SETTINGSTYPE_OTT;
-    } else if (netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE)) {
-        pages[pageCount++] = Settings::SETTINGSTYPE_KOROYALE;
-    }
-
-    u32 offset = 0;
-    for (u32 page = 0; page < pageCount; ++page) {
-        const Settings::UserType type = pages[page];
-        const u32 valueCount = Settings::Params::radioCount[type] + Settings::Params::scrollerCount[type];
-        if (offset + valueCount > Network::HOST_SETTINGS_PREVIEW_COUNT) break;
-        const u8* src = netMgr.hostSettingsPreview + offset;
-
-        for (u32 setting = 0; setting < Settings::Params::radioCount[type]; ++setting) {
-            panel->radioSettings[type][setting] = src[setting];
-        }
-        for (u32 setting = 0; setting < Settings::Params::scrollerCount[type]; ++setting) {
-            panel->scrollerSettings[type][setting] = src[Settings::Params::radioCount[type] + setting];
-        }
-        offset += valueCount;
-    }
+    controlsManipulatorManager.Init(1, false);
+    SetManipulatorManager(controlsManipulatorManager);
+    controlsManipulatorManager.SetGlobalHandler(START_PRESS, onStartPressHandler, false, false);
+    controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, onBackPressHandler, false, false);
 }
 
 SettingsPanel::~SettingsPanel() {
@@ -151,427 +87,317 @@ SettingsPanel::~SettingsPanel() {
     mgr->RequestSave();
 }
 
-void SettingsPanel::OnInit() {
-    this->backButton.SetOnClickHandler(this->onBackButtonClickHandler, 0);
+void SettingsPanel::SetPage(Settings::SettingsPageId id) {
+    settingsPageId = id;
+}
 
-    const Settings::Mgr& settings = Settings::Mgr::Get();
-    for (int i = 0; i < Settings::Params::pageCount; ++i) {
-        for (int radioIdx = 0; radioIdx < Settings::Params::radioCount[i]; ++radioIdx) {
-            this->radioSettings[i][radioIdx] = settings.GetSettingValue(static_cast<Settings::Type>(i), radioIdx);
+void SettingsPanel::StartVotingPreview(Settings::SettingsPageId firstPage) {
+    s_votingSettingsPreviewActive = true;
+    s_votingSettingsPreviewFrame = 0;
+    ApplyVotingPreviewHostSettings();
+    SetVotingPreviewPage(firstPage);
+}
+
+bool SettingsPanel::IsVotingPreviewActive() {
+    return s_votingSettingsPreviewActive;
+}
+
+void SettingsPanel::SetVotingPreviewPage(Settings::SettingsPageId page) {
+    SettingsPanel* panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
+    if (panel != nullptr) panel->SetPage(page);
+}
+
+void SettingsPanel::ApplyVotingPreviewHostSettings() {
+    const Network::Mgr& netMgr = System::sInstance->netMgr;
+    memset(s_hostPreviewValues, 0, sizeof(s_hostPreviewValues));
+    if (!netMgr.hasHostSettingsPreview) return;
+
+    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
+    const bool isBattle = IsBattleVotingSection(sectionId);
+    const bool isKO = (netMgr.hostContext & (1 << PULSAR_MODE_KO)) ||
+                      (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO));
+    const bool isOTT = netMgr.hostContext & (1 << PULSAR_MODE_OTT);
+    const bool isRoyale = netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
+    const bool isExtendedTeams = netMgr.hostContext & (1 << PULSAR_EXTENDEDTEAMS);
+
+    Settings::SettingsPageId pages[6];
+    const u32 pageCount = Settings::Params::BuildHostRulePages(
+        pages, isBattle, isKO, isOTT, isRoyale, isExtendedTeams);
+    u32 offset = 0;
+    for (u32 page = 0; page < pageCount; ++page) {
+        const Settings::SettingsPageDef& def = Settings::Params::GetPageDef(pages[page]);
+        for (u32 i = 0; i < def.radioCount && offset < Network::HOST_SETTINGS_PREVIEW_COUNT; ++i) {
+            const Settings::SettingId id = def.radioSettings[i];
+            const Settings::SettingDef& setting = Settings::Params::GetSettingDef(id);
+            const u8 value = netMgr.hostSettingsPreview[offset++];
+            s_hostPreviewValues[Settings::Params::GetSettingIndex(id)] =
+                value < setting.optionCount ? value : 0;
         }
-        for (int scrollerIdx = 0; scrollerIdx < Settings::Params::scrollerCount[i]; ++scrollerIdx) {
-            this->scrollerSettings[i][scrollerIdx] = settings.GetSettingValue(static_cast<Settings::Type>(i), scrollerIdx + 8);
+        for (u32 i = 0; i < def.scrollerCount && offset < Network::HOST_SETTINGS_PREVIEW_COUNT; ++i) {
+            const Settings::SettingId id = def.scrollerSettings[i];
+            const Settings::SettingDef& setting = Settings::Params::GetSettingDef(id);
+            const u8 value = netMgr.hostSettingsPreview[offset++];
+            s_hostPreviewValues[Settings::Params::GetSettingIndex(id)] =
+                value < setting.optionCount ? value : 0;
         }
     }
+}
+
+void SettingsPanel::OnInit() {
+    backButton.SetOnClickHandler(onBackButtonClickHandler, 0);
     MenuInteractable::OnInit();
-    this->SetTransitionSound(0, 0);
+    SetTransitionSound(0, 0);
 }
 
 UIControl* SettingsPanel::CreateExternalControl(u32 id) {
-    const char* variant = "SAVE";
-    if (id == 1)
-        variant = "RIGHT";
-    else if (id == 2)
-        variant = "LEFT";
     PushButton* button = new (PushButton);
-    this->AddControl(this->controlCount++, *button, 0);
-    button->Load(UI::buttonFolder, "Settings", variant, this->activePlayerBitfield, 0, false);
+    AddControl(controlCount++, *button, 0);
+    button->Load(UI::buttonFolder, "Settings", "SAVE", activePlayerBitfield, 0, false);
     return button;
-};
+}
 
 UIControl* SettingsPanel::CreateControl(u32 id) {
-    const Settings::Mgr& settings = Settings::Mgr::Get();
     if (id < Settings::Params::maxRadioCount) {
-        RadioButtonControl& radioButtonControl = this->radioButtonControls[id];
-        this->AddControl(this->controlCount++, radioButtonControl, 0);
-
+        RadioButtonControl& radio = radioButtonControls[id];
+        AddControl(controlCount++, radio, 0);
         char variant[12];
-        char option0Variant[12];
-        char option1Variant[12];
-        char option2Variant[12];
-        char option3Variant[12];
+        char option0[12];
+        char option1[12];
+        char option2[12];
+        char option3[12];
         snprintf(variant, 12, "Row%d", id);
-        snprintf(option0Variant, 12, "%sOption%d", variant, 0);
-        snprintf(option1Variant, 12, "%sOption%d", variant, 1);
-        snprintf(option2Variant, 12, "%sOption%d", variant, 2);
-        snprintf(option3Variant, 12, "%sOption%d", variant, 3);
-
-        const char* optionVariants[5] = {option0Variant, option1Variant, option2Variant, option3Variant, nullptr};
-        radioButtonControl.Load(4, 0, UI::controlFolder, "RadioBase", variant, "RadioOption", optionVariants, 1, 0, 0);
-        radioButtonControl.SetOnClickHandler(this->onRadioButtonClickHandler);
-        radioButtonControl.SetOnChangeHandler(this->onRadioButtonChangeHandler);
-        radioButtonControl.id = id;
-
-    } else if (id < (Settings::Params::maxRadioCount + Settings::Params::maxScrollerCount)) {
+        snprintf(option0, 12, "%sOption0", variant);
+        snprintf(option1, 12, "%sOption1", variant);
+        snprintf(option2, 12, "%sOption2", variant);
+        snprintf(option3, 12, "%sOption3", variant);
+        const char* options[5] = {option0, option1, option2, option3, nullptr};
+        radio.Load(4, 0, UI::controlFolder, "RadioBase", variant, "RadioOption", options, 1, 0, 0);
+        radio.SetOnClickHandler(onRadioButtonClickHandler);
+        radio.SetOnChangeHandler(onRadioButtonChangeHandler);
+        radio.id = id;
+    } else if (id < Settings::Params::maxRadioCount + Settings::Params::maxScrollerCount) {
         id -= Settings::Params::maxRadioCount;
-        UpDownControl& upDownControl = this->upDownControls[id];
-        this->AddControl(this->controlCount, upDownControl, 0);
-        ++this->controlCount;
-
+        UpDownControl& scroller = upDownControls[id];
+        AddControl(controlCount++, scroller, 0);
         char variant[12];
         snprintf(variant, 12, "UpDown%d", id);
-
-        upDownControl.Load(7, 0, UI::controlFolder, "UpDownBase", variant, "UpDownR", "Right", "UpDownL",
-                           "Left", &this->textUpDown[id], 1, 0, false, true, true);
-        upDownControl.SetOnClickHandler(this->onUpDownClickHandler);
-        upDownControl.SetOnSelectHandler(this->onUpDownSelectHandler);
-        upDownControl.id = id;
-
-        TextUpDownValueControl& valueControl = this->textUpDown[id];
-        valueControl.Load(UI::controlFolder, "UpDownValue", "Value", "UpDownText", "Text");
-        valueControl.SetOnTextChangeHandler(this->onTextChangeHandler);
+        scroller.Load(7, 0, UI::controlFolder, "UpDownBase", variant, "UpDownR", "Right", "UpDownL",
+                      "Left", &textUpDown[id], 1, 0, false, true, true);
+        scroller.SetOnClickHandler(onUpDownClickHandler);
+        scroller.SetOnSelectHandler(onUpDownSelectHandler);
+        scroller.id = id;
+        textUpDown[id].Load(UI::controlFolder, "UpDownValue", "Value", "UpDownText", "Text");
+        textUpDown[id].SetOnTextChangeHandler(onTextChangeHandler);
     }
     return nullptr;
 }
 
 void SettingsPanel::SetButtonHandlers(PushButton& button) {
-    PtmfHolder_2A<MenuInteractable, void, PushButton&, u32>* onClickHandler = &this->onButtonClickHandler;
-    if (button.buttonId == 1)
-        onClickHandler = &this->onRightButtonClickHandler;
-    else if (button.buttonId == 2)
-        onClickHandler = &this->onLeftButtonClickHandler;
-    button.SetOnClickHandler(*onClickHandler, 0);
-    button.SetOnSelectHandler(this->onButtonSelectHandler);
-    button.SetOnDeselectHandler(this->onButtonDeselectHandler);
+    button.SetOnClickHandler(onButtonClickHandler, 0);
+    button.SetOnSelectHandler(onButtonSelectHandler);
+    button.SetOnDeselectHandler(onButtonDeselectHandler);
+}
+
+void SettingsPanel::LoadCurrentValues() {
+    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    const Settings::Mgr& mgr = Settings::Mgr::Get();
+    for (u32 i = 0; i < page.radioCount; ++i) {
+        const Settings::SettingId id = page.radioSettings[i];
+        radioValues[i] = s_votingSettingsPreviewActive
+                             ? s_hostPreviewValues[Settings::Params::GetSettingIndex(id)]
+                             : mgr.GetSettingValue(id);
+    }
+    for (u32 i = 0; i < page.scrollerCount; ++i) {
+        const Settings::SettingId id = page.scrollerSettings[i];
+        scrollerValues[i] = s_votingSettingsPreviewActive
+                                ? s_hostPreviewValues[Settings::Params::GetSettingIndex(id)]
+                                : mgr.GetSettingValue(id);
+    }
 }
 
 void SettingsPanel::OnActivate() {
-    this->titleBmg = this->bmgOffset + BMG_SETTINGS_TITLE + this->catIdx;
-    if (s_votingSettingsPreviewActive) {
-        this->externControls[0]->isHidden = true;
-        this->backButton.isHidden = true;
-    } else {
-        this->externControls[0]->isHidden = false;
-        this->externControls[0]->manipulator.inaccessible = false;
-        this->backButton.isHidden = false;
-        this->backButton.manipulator.inaccessible = false;
-        this->controlsManipulatorManager.inaccessible = false;
-        this->externControls[0]->SelectInitial(0);
-    }
-    this->bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
+    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    titleBmg = page.nameBmg;
+    LoadCurrentValues();
 
-    // Check if we're in any of the voting sections
-    SectionId id = SectionMgr::sInstance->curSection->sectionId;
-    bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING) || (id == SECTION_P1_WIFI_BATTLE_VOTING);
+    externControls[0]->isHidden = s_votingSettingsPreviewActive;
+    externControls[0]->manipulator.inaccessible = s_votingSettingsPreviewActive;
+    backButton.isHidden = s_votingSettingsPreviewActive;
+    backButton.manipulator.inaccessible = s_votingSettingsPreviewActive;
+    controlsManipulatorManager.inaccessible = s_votingSettingsPreviewActive;
+    if (!s_votingSettingsPreviewActive) externControls[0]->SelectInitial(0);
+    bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
 
-    for (int i = 0; i < Settings::Params::maxRadioCount; ++i) {
-        RadioButtonControl& radio = this->radioButtonControls[i];
-        bool isDisabled = false;
-        if (i >= Settings::Params::radioCount[this->sheetIdx]) isDisabled = true;
-        radio.isHidden = isDisabled;
-        radio.manipulator.inaccessible = isDisabled;
-
-        if (!isDisabled) {
-            radio.buttonsCount = Settings::Params::buttonsPerPagePerRow[this->sheetIdx][radio.id];
-            const u8 setting = this->radioSettings[this->sheetIdx][radio.id];
-            radio.chosenButtonId = setting;
-            radio.selectedButtonId = setting;
-            u32 bmgCategory = this->bmgOffset + BMG_RADIO_SETTINGS + (this->catIdx << 12);
-            radio.SetMessage(radio.id + bmgCategory);
-
-            for (int j = 0; j < 4; ++j) {
-                bool isHidden = false;
-                if (j >= Settings::Params::buttonsPerPagePerRow[this->sheetIdx][radio.id]) isHidden = true;
-                radio.optionButtonsArray[j].isHidden = isHidden;
-                if (!isHidden) radio.optionButtonsArray[j].SetMessage((radio.id + 1 << 4) + j + bmgCategory);
+    for (u32 i = 0; i < Settings::Params::maxRadioCount; ++i) {
+        RadioButtonControl& radio = radioButtonControls[i];
+        const bool hidden = i >= page.radioCount;
+        radio.isHidden = hidden;
+        radio.manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
+        if (!hidden) {
+            const Settings::SettingId id = page.radioSettings[i];
+            const Settings::SettingDef& def = Settings::Params::GetSettingDef(id);
+            radio.buttonsCount = def.optionCount;
+            radio.chosenButtonId = radioValues[i];
+            radio.selectedButtonId = radioValues[i];
+            radio.SetMessage(id);
+            for (u32 option = 0; option < 4; ++option) {
+                const bool optionHidden = option >= def.optionCount;
+                radio.optionButtonsArray[option].isHidden = optionHidden;
+                if (!optionHidden) radio.optionButtonsArray[option].SetMessage(id + 0x10 + option);
             }
         }
     }
-    for (int i = 0; i < Settings::Params::maxScrollerCount; ++i) {
-        UpDownControl& scroller = this->upDownControls[i];
-        TextUpDownValueControl& valueControl = this->textUpDown[i];
-        bool isDisabled = false;
-        if (i >= Settings::Params::scrollerCount[this->sheetIdx]) isDisabled = true;
-        scroller.isHidden = isDisabled;
-        scroller.manipulator.inaccessible = isDisabled;
-        scroller.optionsCount = Settings::Params::optionsPerPagePerScroller[this->sheetIdx][i];
-        valueControl.isHidden = isDisabled;
-        if (!isDisabled) {
-            scroller.curSelectedOption = this->scrollerSettings[this->sheetIdx][i];
-            u32 bmgCategory = this->bmgOffset + BMG_SCROLLER_SETTINGS + (this->catIdx << 12);
-            scroller.SetMessage(scroller.id + bmgCategory);
-            valueControl.activeTextValueControl->SetMessage((scroller.id + 1 << 4) + bmgCategory + scroller.curSelectedOption);
+
+    for (u32 i = 0; i < Settings::Params::maxScrollerCount; ++i) {
+        UpDownControl& scroller = upDownControls[i];
+        TextUpDownValueControl& value = textUpDown[i];
+        const bool hidden = i >= page.scrollerCount;
+        scroller.isHidden = hidden;
+        scroller.manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
+        value.isHidden = hidden;
+        if (!hidden) {
+            const Settings::SettingId id = page.scrollerSettings[i];
+            const Settings::SettingDef& def = Settings::Params::GetSettingDef(id);
+            scroller.optionsCount = def.optionCount;
+            scroller.curSelectedOption = scrollerValues[i];
+            scroller.SetMessage(id);
+            value.activeTextValueControl->SetMessage(id + 0x10 + scrollerValues[i]);
         }
     }
 
     MenuInteractable::OnActivate();
 
-    if (s_votingSettingsPreviewActive) {
-        this->externControls[0]->isHidden = true;
-        this->externControls[0]->manipulator.inaccessible = true;
-        this->backButton.isHidden = true;
-        this->backButton.manipulator.inaccessible = true;
-        this->controlsManipulatorManager.inaccessible = true;
-
-        for (int i = 0; i < Settings::Params::maxRadioCount; ++i) {
-            RadioButtonControl& radio = this->radioButtonControls[i];
-            radio.isHidden = i >= Settings::Params::radioCount[this->sheetIdx];
-            radio.manipulator.inaccessible = true;
-            if (!radio.isHidden) radio.Init();
-        }
-        for (int i = 0; i < Settings::Params::maxScrollerCount; ++i) {
-            const bool isDisabled = i >= Settings::Params::scrollerCount[this->sheetIdx];
-            this->upDownControls[i].isHidden = isDisabled;
-            this->upDownControls[i].manipulator.inaccessible = true;
-            this->textUpDown[i].isHidden = isDisabled;
-        }
-        return;
+    externControls[0]->isHidden = s_votingSettingsPreviewActive;
+    externControls[0]->manipulator.inaccessible = s_votingSettingsPreviewActive;
+    backButton.isHidden = s_votingSettingsPreviewActive;
+    backButton.manipulator.inaccessible = s_votingSettingsPreviewActive;
+    controlsManipulatorManager.inaccessible = s_votingSettingsPreviewActive;
+    for (u32 i = 0; i < Settings::Params::maxRadioCount; ++i) {
+        const bool hidden = i >= page.radioCount;
+        radioButtonControls[i].isHidden = hidden;
+        radioButtonControls[i].manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
+        if (s_votingSettingsPreviewActive && !hidden) radioButtonControls[i].Init();
     }
-
-    // Hide specific settings pages in voting sections
-    if (isVotingSection) {
-        if (this->sheetIdx == Settings::SETTINGSTYPE_KO ||
-            this->sheetIdx == Settings::SETTINGSTYPE_KOROYALE ||
-            this->sheetIdx == Settings::SETTINGSTYPE_OTT ||
-            this->sheetIdx == Settings::SETTINGSTYPE_FROOM1 ||
-            this->sheetIdx == Settings::SETTINGSTYPE_FROOM2 ||
-            this->sheetIdx == Settings::SETTINGSTYPE_EXTENDEDTEAMS ||
-            this->sheetIdx == Settings::SETTINGSTYPE_MISC) {
-            return;
-        }
+    for (u32 i = 0; i < Settings::Params::maxScrollerCount; ++i) {
+        const bool hidden = i >= page.scrollerCount;
+        upDownControls[i].isHidden = hidden;
+        upDownControls[i].manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
+        textUpDown[i].isHidden = hidden;
     }
-
-    // Hide/show scroller controls based on section
-    for (int i = 0; i < Settings::Params::maxScrollerCount; ++i) {
-        UpDownControl& upDown = this->upDownControls[i];
-        TextUpDownValueControl& text = this->textUpDown[i];
-
-        if (isVotingSection) {
-            // Hide scrollers and make them completely inaccessible
-            upDown.isHidden = true;
-            upDown.manipulator.inaccessible = true;
-            text.isHidden = true;
-        } else {
-            bool isDisabled = i >= Settings::Params::scrollerCount[this->sheetIdx];
-            upDown.isHidden = isDisabled;
-            upDown.manipulator.inaccessible = isDisabled;
-            text.isHidden = isDisabled;
-        }
-    }
-
-    // Make sure radio buttons remain accessible
-    for (int i = 0; i < Settings::Params::maxRadioCount; ++i) {
-        RadioButtonControl& radio = this->radioButtonControls[i];
-        bool isDisabled = i >= Settings::Params::radioCount[this->sheetIdx];
-        radio.isHidden = isDisabled;
-        radio.manipulator.inaccessible = isDisabled;
-    }
-
 }
 
-const ut::detail::RuntimeTypeInfo* SettingsPanel::GetRuntimeTypeInfo() const {
-    return Pages::VSSettings::typeInfo;
-}
-
-void SettingsPanel::OnExternalButtonSelect(PushButton& button, u32 r5) {
-    // Only save button exists now (id == 0)
-    this->bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
-}
-
-int SettingsPanel::GetActivePlayerBitfield() const {
-    return this->activePlayerBitfield;
-}
-
-int SettingsPanel::GetPlayerBitfield() const {
-    return this->playerBitfield;
-}
-
-ManipulatorManager& SettingsPanel::GetManipulatorManager() {
-    return this->controlsManipulatorManager;
-}
-
-void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton& button) {
-    // Navigate back to SettingsPageSelect instead of the original menu
-    this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
-    this->EndStateAnimated(0, button.GetAnimationFrameSize());
-    this->SaveSettings(true);
-}
+const ut::detail::RuntimeTypeInfo* SettingsPanel::GetRuntimeTypeInfo() const { return Pages::VSSettings::typeInfo; }
+void SettingsPanel::OnExternalButtonSelect(PushButton&, u32) { bottomText->SetMessage(BMG_SETTINGS_BOTTOM); }
+int SettingsPanel::GetActivePlayerBitfield() const { return activePlayerBitfield; }
+int SettingsPanel::GetPlayerBitfield() const { return playerBitfield; }
+ManipulatorManager& SettingsPanel::GetManipulatorManager() { return controlsManipulatorManager; }
 
 bool SettingsPanel::HasModifiedMiscSettings() const {
-    const Settings::Mgr& settings = Settings::Mgr::Get();
-    const u32 miscSheetIdx = Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC;
-
-    for (int i = 0; i < Settings::Params::radioCount[miscSheetIdx]; ++i) {
-        if (this->radioSettings[miscSheetIdx][i] != settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, i)) {
-            return true;
-        }
-    }
-
-    for (int i = 0; i < Settings::Params::scrollerCount[miscSheetIdx]; ++i) {
-        if (this->scrollerSettings[miscSheetIdx][i] != settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, i + Settings::Params::maxRadioCount)) {
-            return true;
-        }
-    }
-
+    if (settingsPageId != Settings::SETTINGS_PAGE_MISC) return false;
+    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    const Settings::Mgr& mgr = Settings::Mgr::Get();
+    for (u32 i = 0; i < page.radioCount; ++i)
+        if (radioValues[i] != mgr.GetSettingValue(page.radioSettings[i])) return true;
+    for (u32 i = 0; i < page.scrollerCount; ++i)
+        if (scrollerValues[i] != mgr.GetSettingValue(page.scrollerSettings[i])) return true;
     return false;
 }
 
+void SettingsPanel::SaveSettings(bool) {
+    if (s_votingSettingsPreviewActive) return;
+    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    Settings::Mgr* mgr = Settings::Mgr::sInstance;
+    for (u32 i = 0; i < page.radioCount; ++i) mgr->SetSettingValue(page.radioSettings[i], radioValues[i]);
+    for (u32 i = 0; i < page.scrollerCount; ++i) mgr->SetSettingValue(page.scrollerSettings[i], scrollerValues[i]);
+    mgr->Update();
+}
+
+void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton& button) {
+    nextPageId = static_cast<PageId>(SettingsPageSelect::id);
+    EndStateAnimated(0, button.GetAnimationFrameSize());
+    SaveSettings(true);
+}
+
 void SettingsPanel::LoadMainMenuAndSaveSettings(PushButton& button) {
-    this->SaveSettings(true);
-    this->ChangeSectionById(SECTION_MAIN_MENU_FROM_MENU, button);
+    SaveSettings(true);
+    ChangeSectionById(SECTION_MAIN_MENU_FROM_MENU, button);
 }
 
-// On Save Click/Back Press, is called and updates PulsarSettings
-void SettingsPanel::SaveSettings(bool writeFile) {
-    const ExpSection* section = ExpSection::GetSection();
-    Settings::Mgr* settings = Settings::Mgr::sInstance;
-
-    for (int count = 0; count < Settings::Params::pageCount; ++count) {
-        const bool isPulsarPage = count < Settings::Params::pulsarPageCount;
-        for (int i = 0; i < Settings::Params::radioCount[count]; ++i) {
-            const u8 value = this->radioSettings[count][i];
-            if (isPulsarPage)
-                settings->SetSettingValue(static_cast<Settings::Type>(count), i, value);
-            else
-                settings->SetUserSettingValue(static_cast<Settings::UserType>(count), i, value);
-        }
-        for (int i = 0; i < Settings::Params::scrollerCount[count]; ++i) {
-            const u8 value = this->scrollerSettings[count][i];
-            if (isPulsarPage)
-                settings->SetSettingValue(static_cast<Settings::Type>(count), i + Settings::Params::maxRadioCount, value);
-            else
-                settings->SetUserSettingValue(static_cast<Settings::UserType>(count), i + Settings::Params::maxRadioCount, value);
-        }
-    }
-    settings->Update();
-}
-
-void SettingsPanel::OnBackPress(u32 hudSlotId) {
-    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC && this->HasModifiedMiscSettings()) {
-        this->backButton.SelectFocus();
-        this->LoadMainMenuAndSaveSettings(this->backButton);
+void SettingsPanel::OnBackPress(u32) {
+    if (s_votingSettingsPreviewActive) {
+        s_votingSettingsPreviewActive = false;
+        nextPageId = static_cast<PageId>(SettingsPageSelect::id);
+        EndStateAnimated(0, backButton.GetAnimationFrameSize());
         return;
     }
-    this->backButton.SelectFocus();
-    this->LoadPrevMenuAndSaveSettings(this->backButton);
+    const bool reloadMenu = HasModifiedMiscSettings();
+    backButton.SelectFocus();
+    if (reloadMenu) LoadMainMenuAndSaveSettings(backButton);
+    else LoadPrevMenuAndSaveSettings(backButton);
 }
 
-void SettingsPanel::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
-    this->OnBackPress(hudSlotId);
+void SettingsPanel::OnBackButtonClick(PushButton&, u32 hudSlotId) { OnBackPress(hudSlotId); }
+
+void SettingsPanel::OnSaveButtonClick(PushButton& button, u32) {
+    if (HasModifiedMiscSettings()) LoadMainMenuAndSaveSettings(button);
+    else LoadPrevMenuAndSaveSettings(button);
 }
 
-void SettingsPanel::OnSaveButtonClick(PushButton& button, u32 hudSlotId) {
-    if (this->sheetIdx == Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_MISC && this->HasModifiedMiscSettings()) {
-        this->LoadMainMenuAndSaveSettings(button);
-        return;
-    }
-    this->LoadPrevMenuAndSaveSettings(button);
+void SettingsPanel::OnRadioButtonClick(RadioButtonControl& radio, u32, u32 optionId) {
+    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    if (radio.id >= page.radioCount) return;
+    radioValues[radio.id] = optionId;
 }
 
-void SettingsPanel::OnRightButtonClick(PushButton& button, u32 hudSlotId) {
-    this->OnButtonClick(button, 1);
+void SettingsPanel::OnRadioButtonChange(RadioButtonControl& radio, u32, u32 optionId) {
+    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    if (radio.id >= page.radioCount) return;
+    bottomText->SetMessage(page.radioSettings[radio.id] + 0x100 + optionId);
 }
 
-void SettingsPanel::OnLeftButtonClick(PushButton& button, u32 hudSlotId) {
-    this->OnButtonClick(button, -1);
-}
-
-void SettingsPanel::OnButtonClick(PushButton& button, u32 direction) {
-    SectionId id = SectionMgr::sInstance->curSection->sectionId;
-    bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING) || (id == SECTION_P1_WIFI_BATTLE_VOTING);
-    bool isOnlineSection = (id == SECTION_P1_WIFI || id == SECTION_P2_WIFI || id == SECTION_P1_WIFI_FROM_FROOM_RACE || id == SECTION_P2_WIFI_FROM_FROOM_RACE || id == SECTION_P1_WIFI_FROM_FIND_FRIEND || id == SECTION_P2_WIFI_FROM_FIND_FRIEND);
-
-    int nextIdx = this->GetNextSheetIdx(direction);
-
-    // Skip restricted pages in voting sections
-    if (isVotingSection) {
-        while (nextIdx == Settings::SETTINGSTYPE_KO ||
-               nextIdx == Settings::SETTINGSTYPE_KOROYALE ||
-               nextIdx == Settings::SETTINGSTYPE_OTT ||
-               nextIdx == Settings::SETTINGSTYPE_FROOM1 ||
-               nextIdx == (Settings::SETTINGSTYPE_EXTENDEDTEAMS + Settings::Params::pulsarPageCount) ||
-               nextIdx == (Settings::SETTINGSTYPE_FROOM2 + Settings::Params::pulsarPageCount) ||
-               nextIdx == (Settings::SETTINGSTYPE_MISC + Settings::Params::pulsarPageCount)) {
-            nextIdx = (nextIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
-        }
-    }
-
-    if (isOnlineSection) {
-        // Skip restricted pages in online sections
-        while (nextIdx == (Settings::SETTINGSTYPE_MISC + Settings::Params::pulsarPageCount)) {
-            nextIdx = (nextIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
-        }
-    }
-
-    this->nextPageId = this->pageId;
-    this->sheetIdx = nextIdx;
-    if (nextIdx < Settings::Params::pulsarPageCount) {
-        this->catIdx = nextIdx;
-        this->bmgOffset = 0;
-    } else {
-        this->catIdx = nextIdx - Settings::Params::pulsarPageCount;
-        this->bmgOffset = BMG_USERSETTINGSOFFSET;
-    }
-
-    this->EndStateAnimated(0, button.GetAnimationFrameSize());
-    this->SaveSettings(false);
-}
-
-void SettingsPanel::OnRadioButtonClick(RadioButtonControl& radioButtonControl, u32 hudSlotId, u32 optionId) {
-    this->radioSettings[this->sheetIdx][radioButtonControl.id] = optionId;
-}
-
-void SettingsPanel::OnRadioButtonChange(RadioButtonControl& radioButtonControl, u32 hudSlotId, u32 optionId) {
-    this->bottomText->SetMessage(this->bmgOffset + BMG_RADIO_SETTINGS + (this->catIdx << 12) + (radioButtonControl.id + 1 << 8) + optionId);
-}
-
-void SettingsPanel::OnUpDownClick(UpDownControl& upDownControl, u32 hudSlotId) {
-    PushButton& okButton = *this->externControls[0];
-    okButton.Select(0);
-}
+void SettingsPanel::OnUpDownClick(UpDownControl&, u32) { externControls[0]->Select(0); }
 
 void SettingsPanel::OnTextChange(TextUpDownValueControl::TextControl& text, u32 optionId) {
-    const u32 bmgId = this->bmgOffset + BMG_SCROLLER_SETTINGS + (this->catIdx << 12) + optionId;
-    u32 id = this->GetTextId(text);
-    this->scrollerSettings[this->sheetIdx][id] = optionId;
-
-    text.SetMessage(bmgId + (id + 1 << 4));
-    if (!this->externControls[0]->IsSelected()) {
-        this->bottomText->SetMessage(bmgId + (id + 1 << 8));
-    }
-};
-
-void SettingsPanel::OnUpDownSelect(UpDownControl& upDownControl, u32 hudSlotId) {
-    const u32 bmgId = this->bmgOffset + BMG_SCROLLER_SETTINGS + (this->catIdx << 12) + (upDownControl.id + 1 << 8) + upDownControl.curSelectedOption;
-    this->bottomText->SetMessage(bmgId);
+    const u32 index = GetTextId(text);
+    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    if (index >= page.scrollerCount) return;
+    const Settings::SettingId id = page.scrollerSettings[index];
+    scrollerValues[index] = optionId;
+    text.SetMessage(id + 0x10 + optionId);
+    if (!externControls[0]->IsSelected()) bottomText->SetMessage(id + 0x100 + optionId);
 }
 
-int SettingsPanel::GetNextSheetIdx(s32 direction) {
-    return (this->sheetIdx + direction + Settings::Params::pageCount) % Settings::Params::pageCount;
+void SettingsPanel::OnUpDownSelect(UpDownControl& scroller, u32) {
+    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    if (scroller.id >= page.scrollerCount) return;
+    bottomText->SetMessage(page.scrollerSettings[scroller.id] + 0x100 + scroller.curSelectedOption);
 }
 
 void SettingsPanel::BeforeControlUpdate() {
     if (s_votingSettingsPreviewActive) {
-        ++s_votingSettingsPreviewFrame;
-        if (s_votingSettingsPreviewFrame >= votingSettingsPreviewDuration) {
-            u32 nextSheetIdx = 0;
-            if (AdvanceFroomSettingsPreview(nextSheetIdx)) {
+        if (++s_votingSettingsPreviewFrame >= votingSettingsPreviewDuration) {
+            Settings::SettingsPageId nextPage;
+            if (AdvanceFroomSettingsPreview(nextPage)) {
                 s_votingSettingsPreviewFrame = 0;
-                SetVotingPreviewSheet(nextSheetIdx);
-                this->OnActivate();
+                SetVotingPreviewPage(nextPage);
+                OnActivate();
             } else {
                 s_votingSettingsPreviewActive = false;
                 Section* section = SectionMgr::sInstance->curSection;
                 if (section != nullptr && section->layerCount > 1) {
                     section->RemovePageLayers(section->layerCount - 1);
-                    Pages::SELECTStageMgr* selectStageMgr = section->Get<Pages::SELECTStageMgr>();
-                    if (selectStageMgr != nullptr) {
-                        selectStageMgr->Pages::SELECTStageMgr::OnResume();
-                    }
+                    Pages::SELECTStageMgr* select = section->Get<Pages::SELECTStageMgr>();
+                    if (select != nullptr) select->Pages::SELECTStageMgr::OnResume();
                 }
             }
         }
         return;
     }
 
-    SectionId id = SectionMgr::sInstance->curSection->sectionId;
-    bool isVotingSection = (id >= SECTION_P1_WIFI_FROOM_VS_VOTING && id <= SECTION_P2_WIFI_FROOM_COIN_VOTING) || (id == SECTION_P1_WIFI_VS_VOTING);
-    if (isVotingSection) {
-        Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
-        CountDown* timer = &selectStageMgr->countdown;
-        if (timer->countdown <= 0) {
-            this->OnBackPress(0);
-        }
+    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
+    if (IsVotingSection(sectionId)) {
+        Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        if (select != nullptr && select->countdown.countdown <= 0) OnBackPress(0);
     }
 }
 

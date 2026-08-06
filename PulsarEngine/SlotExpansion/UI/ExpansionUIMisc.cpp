@@ -89,8 +89,7 @@ static void LoadCorrectTrackListBox(ControlLoader& loader, const char* folder, c
 kmCall(0x807e5f24, LoadCorrectTrackListBox);
 
 static u32 GetLanguageTrackOffset() {
-    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(
-        static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_MISC), Pulsar::SCROLLER_LANGUAGE));
+    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:
             return 0x1000;

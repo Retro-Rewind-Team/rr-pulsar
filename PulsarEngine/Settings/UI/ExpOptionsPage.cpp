@@ -24,7 +24,9 @@ void ExpOptions::OnInit() {
 
 void ExpOptions::ExpandedOnButtonClick(PushButton& pushButton, u32 hudSlotId) {
     if (pushButton.buttonId == 5) {
-        // Navigate to settings page selection menu first
+        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
+            Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_OPTIONS);
+        ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_OPTIONS;
         this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
         this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
     } else {

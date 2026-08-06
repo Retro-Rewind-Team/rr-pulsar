@@ -6,23 +6,22 @@
 namespace Pulsar {
 namespace Settings {
 
-Binary::Binary(u32 pulsarPageCount, u32 userPageCount, u32 trackCount) {
+Binary::Binary(u32 trackCount) {
     const u32 cupCount = trackCount / 4;
     header.magic = binMagic;
     header.version = Binary::curVersion;
-    header.offsets[PagesHolder::index] = sizeof(BinaryHeader) + sizeof(u32) * (sectionCount - 1);
-    header.offsets[MiscParams::index] = header.offsets[PagesHolder::index] + sizeof(PagesHolder) + sizeof(Page) * (pulsarPageCount + userPageCount - 1);
+    header.offsets[SettingsHolder::index] = sizeof(BinaryHeader) + sizeof(u32) * (sectionCount - 1);
+    header.offsets[MiscParams::index] = header.offsets[SettingsHolder::index] + sizeof(SettingsHolder);
     header.offsets[TrophiesHolder::index] = header.offsets[MiscParams::index] + sizeof(MiscParams);
     header.offsets[GPSection::index] = header.offsets[TrophiesHolder::index] + sizeof(TrophiesHolder) + sizeof(TrackTrophy) * (trackCount - 1);
     header.fileSize = header.offsets[GPSection::index] + sizeof(GPSection) + sizeof(GPCupStatus) * (cupCount - 1);
     header.sectionCount = sectionCount;
 
-    PagesHolder& pages = this->GetSection<PagesHolder>();
-    pages.header.magic = PagesHolder::pageMagic;
-    pages.header.version = PagesHolder::version;
-    pages.header.size = sizeof(PagesHolder) + sizeof(Page) * (pulsarPageCount + userPageCount - 1);
-    pages.pulsarPageCount = pulsarPageCount;
-    pages.userPageCount = userPageCount;
+    SettingsHolder& settings = this->GetSection<SettingsHolder>();
+    settings.header.magic = SettingsHolder::magic;
+    settings.header.version = SettingsHolder::version;
+    settings.header.size = sizeof(SettingsHolder);
+    for (u32 i = 0; i < SETTING_COUNT; ++i) settings.values[i] = 0;
 
     MiscParams& params = this->GetSection<MiscParams>();
     params.header.magic = MiscParams::miscMagic;

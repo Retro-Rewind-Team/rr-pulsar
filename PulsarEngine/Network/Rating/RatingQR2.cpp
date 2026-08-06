@@ -39,7 +39,7 @@ static KeyListCallback OriginalKeyListCallback = nullptr;
 
 static bool IsStreamerModeActiveForServer() {
     const Settings::Mgr& settings = Settings::Mgr::Get();
-    if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) == STREAMERMODE_DISABLED) {
+    if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) == STREAMERMODE_DISABLED) {
         return false;
     }
     RKNet::Controller* controller = RKNet::Controller::sInstance;
