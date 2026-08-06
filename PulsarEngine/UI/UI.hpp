@@ -234,6 +234,7 @@ enum BMG {
     // Ranking
     BMG_RANKING_TEXT = 0x691d,
     BMG_RANKING_BADGE = 0x6967,
+    BMR_RANKING_BUTTON = 0x62f0f,
 
     // Start Worldwide Message
     BMG_RETRO_START_MESSAGE = 0x6920,

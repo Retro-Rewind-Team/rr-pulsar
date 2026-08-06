@@ -103,7 +103,7 @@ void SettingsPageSelect::OnActivate() {
         button.isHidden = hidden;
         button.manipulator.inaccessible = hidden;
         if (isPage) button.SetMessage(Settings::Params::GetPageDef(contextDef.pages[i]).nameBmg);
-        else if (isBadge) button.SetMessage(BMG_RANKING_BADGE);
+        else if (isBadge) button.SetMessage(BMR_RANKING_BUTTON);
     }
     if (contextDef.pageCount > 0) pageButtons[0].Select(0);
     bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
