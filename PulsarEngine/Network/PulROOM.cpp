@@ -25,7 +25,8 @@ static void ConvertROOMPacketToData(const PulROOM &packet) {
 
 static void WriteHostSettingsPreviewToPacket(PulROOM *packet, const Settings::Mgr &settings) {
     const bool isBattle = packet->message == 2 || packet->message == 3;
-    const bool isExtendedTeams = settings.GetSettingValue(Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+    const bool isExtendedTeams = settings.GetSettingValue(Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED ||
+                                 (Mogi::IsActive() && Mogi::IsTeamFormat());
     const bool isKO = !isBattle && !isExtendedTeams &&
                       settings.GetSettingValue(Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
     const bool isOTT = settings.GetSettingValue(Settings::SETTING_OTTONLINE) != OTTSETTING_ONLINE_DISABLED;
@@ -294,7 +295,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         }
     }
 
-    const bool isExtendedTeams = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+    const bool isExtendedTeams = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED ||
+                                 (Mogi::IsActive() && Mogi::IsTeamFormat());
     const bool isUpdateTeamMessage = destPacket->messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS;
     const bool isStartVSRaceMessage = destPacket->messageType == 1 && (destPacket->message == 0 || destPacket->message == 2 || destPacket->message == 3);
     if ((isUpdateTeamMessage || (isStartVSRaceMessage && isExtendedTeams)) && sub.localAid == sub.hostAid) {
