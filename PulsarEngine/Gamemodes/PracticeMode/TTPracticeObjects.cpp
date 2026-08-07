@@ -90,6 +90,55 @@ static void UpdatePracticeItemBox(Objects::Itembox* itembox) {
 }
 kmWritePointer(0x808d7bd4, UpdatePracticeItemBox);
 
+// ObjectsMgr::CreateAllObjects skips itembox/f_itembox/s_itembox/sin_itembox/w_itembox twice: once
+// when the item mode is ITEMS_NONE and once when ObjectsMgr::isTT is set. In time trials the second
+// gate always fires, so no item box object ever exists for UpdatePracticeItemBox to run on and the
+// practice item box setting could never make one appear. Neutralise both comparisons (and nothing
+// else, so K_bomb_car stays filtered out in TT) while practice mode wants item boxes.
+extern "C" bool ShouldCreatePracticeItemBoxes() {
+    return IsEnabled() && AreItemBoxesEnabled();
+}
+
+// 0x808274a8 lwz r0, itemMode / 0x808274ac cmpwi r0, ITEMS_NONE / 0x808274b0 bne
+static asmFunc AllowPracticeItemBoxesInNoItemMode() {
+    ASM(
+        nofralloc;
+        stwu sp, -0x10(sp);
+        mflr r12;
+        stw r12, 0x14(sp);
+        stw r0, 0x8(sp);
+        bl ShouldCreatePracticeItemBoxes;
+        addi r3, r3, -1;  // false -> -1 (keep the item mode), true -> 0 (never equals ITEMS_NONE)
+        lwz r0, 0x8(sp);
+        and r0, r0, r3;
+        lwz r12, 0x14(sp);
+        mtlr r12;
+        addi sp, sp, 0x10;
+        cmpwi r0, 3;  // ITEMS_NONE, the comparison this hook replaced
+        blr;)
+}
+kmBranch(0x808274ac, AllowPracticeItemBoxesInNoItemMode);
+kmPatchExitPoint(AllowPracticeItemBoxesInNoItemMode, 0x808274b0);
+
+// 0x8082757c lbz r0, ObjectsMgr::isTT(r15) / 0x80827580 cmpwi r0, 0 / 0x80827584 beq (creates it)
+static asmFunc ClearIsTTForPracticeItemBoxes() {
+    ASM(
+        nofralloc;
+        stwu sp, -0x10(sp);
+        mflr r12;
+        stw r12, 0x14(sp);
+        bl ShouldCreatePracticeItemBoxes;
+        addi r3, r3, -1;  // false -> -1 (keep isTT), true -> 0 (pretend this is not a time trial)
+        lbz r0, 0x55(r15);
+        and r0, r0, r3;
+        lwz r12, 0x14(sp);
+        mtlr r12;
+        addi sp, sp, 0x10;
+        blr;)
+}
+kmBranch(0x8082757c, ClearIsTTForPracticeItemBoxes);
+kmPatchExitPoint(ClearIsTTForPracticeItemBoxes, 0x80827580);
+
 static bool ShouldFreezePracticeObjects() {
     return IsEnabled() && IsObjectFreezeEnabled();
 }
