@@ -27,7 +27,7 @@ struct SettingsHolder {
     Pulsar::SectionHeader header;
     u8 values[valueCapacity];
 };
-static_assert(sizeof(SettingsHolder) == 0x4c, "SettingsHolder layout changed");
+static_assert(sizeof(SettingsHolder) == 0x50, "SettingsHolder layout changed");
 
 struct MiscParams {
     static const u32 miscMagic = 'MISC';
@@ -85,7 +85,7 @@ struct BinaryHeader {
 class alignas(0x20) Binary {
     static const u32 binMagic = 'PULP';
     static const u32 sectionCount = 4;
-    static const u32 curVersion = 7;
+    static const u32 curVersion = 8;
 
     Binary(u32 trackCount);
 

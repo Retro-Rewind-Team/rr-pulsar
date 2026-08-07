@@ -50,14 +50,12 @@ bool IsPracticeMode() {
 
 bool AreItemBoxesEnabled() {
     if (!Settings::Mgr::IsCreated()) return true;
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_TTPRACTICE, RADIO_TTPRACTICE_ITEMBOXES) ==
-           TTPRACTICE_ITEMBOXES_ENABLED;
+    return Settings::Mgr::Get().GetSettingValue(Settings::SETTING_TTPRACTICE_ITEMBOXES) == TTPRACTICE_ITEMBOXES_ENABLED;
 }
 
 bool IsObjectFreezeEnabled() {
     if (!Settings::Mgr::IsCreated()) return true;
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_TTPRACTICE, RADIO_TTPRACTICE_OBJECTFREEZE) ==
-           TTPRACTICE_OBJECTFREEZE_ENABLED;
+    return Settings::Mgr::Get().GetSettingValue(Settings::SETTING_TTPRACTICE_OBJECTFREEZE) == TTPRACTICE_OBJECTFREEZE_ENABLED;
 }
 
 ItemId GetStartingItem(u32 hudSlotId) {
