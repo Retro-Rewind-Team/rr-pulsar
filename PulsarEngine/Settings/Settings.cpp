@@ -111,18 +111,6 @@ void Mgr::Init(const u16* totalTrophyCount, const char* settingsPath, const char
         }
     }
 
-    u8& practiceObjectFreezeSetting =
-        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_TTPRACTICE].settings[RADIO_TTPRACTICE_OBJECTFREEZE];
-    if (practiceObjectFreezeSetting > TTPRACTICE_OBJECTFREEZE_DISABLED) {
-        practiceObjectFreezeSetting = TTPRACTICE_OBJECTFREEZE_ENABLED;
-    }
-
-    u8& practiceCheckpointDisplaySetting =
-        this->rawBin->GetSection<PagesHolder>().pages[SETTINGSTYPE_TTPRACTICE].settings[RADIO_TTPRACTICE_CHECKPOINTDISPLAY];
-    if (practiceCheckpointDisplaySetting > TTPRACTICE_CHECKPOINTDISPLAY_ALL) {
-        practiceCheckpointDisplaySetting = TTPRACTICE_CHECKPOINTDISPLAY_DISABLED;
-    }
-
     this->InitTrophyEntries(totalTrophyCount);
     this->LoadTrophiesFromFiles();
     this->MigrateLegacyTrophies();

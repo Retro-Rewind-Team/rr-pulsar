@@ -51,8 +51,7 @@ static ScnMgrDrawModelsImplFn GetScnMgrDrawModelsImpl() {
 DisplayMode GetDisplayMode() {
     if (!Settings::Mgr::IsCreated()) return DISPLAY_DISABLED;
 
-    const u8 setting =
-        Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_TTPRACTICE, RADIO_TTPRACTICE_CHECKPOINTDISPLAY);
+    const u8 setting = Settings::Mgr::Get().GetSettingValue(Settings::SETTING_TTPRACTICE_CHECKPOINTDISPLAY);
     if (setting == TTPRACTICE_CHECKPOINTDISPLAY_KEY_ONLY) return DISPLAY_KEY_ONLY;
     if (setting == TTPRACTICE_CHECKPOINTDISPLAY_ALL) return DISPLAY_ALL;
     return DISPLAY_DISABLED;

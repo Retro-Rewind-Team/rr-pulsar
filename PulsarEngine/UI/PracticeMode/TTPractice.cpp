@@ -201,8 +201,7 @@ void ConfirmPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
 
     UI::SettingsPanel* settingsPanel = UI::ExpSection::GetSection()->GetPulPage<UI::SettingsPanel>();
     if (settingsPanel != nullptr) {
-        settingsPanel->sheetIdx = Settings::Params::pulsarPageCount + Settings::SETTINGSTYPE_TTPRACTICE;
-        settingsPanel->catIdx = Settings::SETTINGSTYPE_TTPRACTICE;
+        settingsPanel->SetPage(Settings::SETTINGS_PAGE_TTPRACTICE);
         settingsPanel->prevPageId = static_cast<PageId>(ConfirmPage::id);
     }
     this->LoadNextPageById(static_cast<PageId>(UI::SettingsPanel::id), button);
