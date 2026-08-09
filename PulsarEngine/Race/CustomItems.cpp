@@ -155,25 +155,16 @@ static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
     return reinterpret_cast<IsThereCapacityForItem>(kmRuntimeAddr(0x80799be8))(id);
 }
 
-static bool IsFallbackItemExcluded(ItemId id, bool isVanilla, u32 enabledCount) {
-    if (id != LIGHTNING && id != BULLET_BILL && id != POW_BLOCK && id != BLOOPER && id != BLUE_SHELL) {
-        return false;
-    }
-    return isVanilla || enabledCount > 6;
+static bool IsRestrictedFallbackItem(ItemId id) {
+    return id == LIGHTNING || id == BULLET_BILL || id == POW_BLOCK || id == BLOOPER || id == BLUE_SHELL;
 }
 
 static ItemId GetRandomItemFromRow(u32 rowIndex, const Item::ItemSlotData::Probabilities& probs, u32 bitfield,
-                                   Item::ItemSlotData* slotData, bool isVanilla, bool isFallback) {
+                                   Item::ItemSlotData* slotData, bool excludeRestrictedItems) {
     if (probs.probabilities == nullptr || probs.rowCount == 0) return MUSHROOM;
     if (rowIndex >= probs.rowCount) rowIndex = probs.rowCount - 1;
 
     const u16* row = &probs.probabilities[rowIndex * ITEM_COUNT];
-    u32 enabledCount = 0;
-    if (isFallback) {
-        for (u32 item = 0; item < ITEM_COUNT; ++item) {
-            if ((bitfield >> item) & 1) ++enabledCount;
-        }
-    }
 
     ItemId candidates[ITEM_COUNT];
     u16 weights[ITEM_COUNT];
@@ -182,7 +173,7 @@ static ItemId GetRandomItemFromRow(u32 rowIndex, const Item::ItemSlotData::Proba
     for (u32 item = 0; item < ITEM_COUNT; ++item) {
         const ItemId id = static_cast<ItemId>(item);
         if (((bitfield >> item) & 1) && row[item] > 0 &&
-            (!isFallback || !IsFallbackItemExcluded(id, isVanilla, enabledCount)) &&
+            (!excludeRestrictedItems || !IsRestrictedFallbackItem(id)) &&
             IsItemAvailable(id, slotData)) {
             candidates[candidateCount] = id;
             weights[candidateCount] = row[item];
@@ -206,13 +197,6 @@ static ItemId GetRandomItemFromRow(u32 rowIndex, const Item::ItemSlotData::Proba
     return MUSHROOM;
 }
 
-static ItemId GetVanillaFallback(u8 position) {
-    Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**>(kmRuntimeAddr(0x809c3670));
-    if (slotData == nullptr) return MUSHROOM;
-    return GetRandomItemFromRow(position > 0 ? position - 1 : 0, slotData->playerChances,
-                                VANILLA_ITEM_BITFIELD, slotData, true, true);
-}
-
 static u32 GetItemTableRow(u32 position, u16 setting) {
     if (setting != 0) return setting - 1;
     return position > 0 ? position - 1 : 0;
@@ -224,15 +208,27 @@ static const Item::ItemSlotData::Probabilities* GetItemProbabilities(const Item:
     return isHuman ? &slotData.playerChances : &slotData.cpuChances;
 }
 
-static ItemId GetRandomEnabledItem(u32 position, bool isHuman, u16 setting, bool isFallback) {
+static bool ShouldExcludeRestrictedFallbackItems(u32 bitfield) {
+    if (bitfield == VANILLA_ITEM_BITFIELD) return true;
+
+    u32 enabledCount = 0;
+    for (u32 item = 0; item < ITEM_COUNT; ++item) {
+        if ((bitfield >> item) & 1) ++enabledCount;
+    }
+    return enabledCount > 6;
+}
+
+static ItemId GetItemFromTable(u32 position, bool isHuman, u16 setting, bool isFallback) {
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-    if (bitfield == 0 || bitfield == VANILLA_ITEM_BITFIELD) return GetVanillaFallback(static_cast<u8>(position));
+    if (bitfield == 0) bitfield = VANILLA_ITEM_BITFIELD;
 
     Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**>(kmRuntimeAddr(0x809c3670));
     if (slotData == nullptr) return MUSHROOM;
 
     const Item::ItemSlotData::Probabilities* probs = GetItemProbabilities(*slotData, isHuman, setting);
-    return GetRandomItemFromRow(GetItemTableRow(position, setting), *probs, bitfield, slotData, false, isFallback);
+    const bool excludeRestrictedItems = isFallback && ShouldExcludeRestrictedFallbackItems(bitfield);
+    return GetRandomItemFromRow(GetItemTableRow(position, setting), *probs, bitfield, slotData,
+                                excludeRestrictedItems);
 }
 
 static u8 GetPlayerPosition(Item::Player* itemPlayer, u8 fallbackPosition) {
@@ -245,7 +241,12 @@ static u8 GetPlayerPosition(Item::Player* itemPlayer, u8 fallbackPosition) {
 
 static ItemId GetFallbackItem(Item::Player* itemPlayer, u8 fallbackPosition, bool isHuman, u16 setting) {
     const u8 position = GetPlayerPosition(itemPlayer, fallbackPosition);
-    return GetRandomEnabledItem(position, isHuman, setting, true);
+    return GetItemFromTable(position, isHuman, setting, true);
+}
+
+static ItemId GetFallbackItem(Item::PlayerRoulette* roulette) {
+    return GetFallbackItem(roulette->itemPlayer, roulette->position,
+                           roulette->itemPlayer != nullptr && roulette->itemPlayer->isHuman, roulette->setting);
 }
 
 static u32 GetBestPlacement(const Item::ItemSlotData::Probabilities* probs, u32 currentPlacement) {
@@ -339,8 +340,7 @@ kmPatchExitPoint(CustomLimitCheck, 0x807bb7dc);  // Return to the ble instructio
 static void CalcItemFallback() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r31);
-    const bool isHuman = roulette->itemPlayer != nullptr && roulette->itemPlayer->isHuman;
-    roulette->nextItemId = GetFallbackItem(roulette->itemPlayer, roulette->position, isHuman, roulette->setting);
+    roulette->nextItemId = GetFallbackItem(roulette);
 }
 kmBranch(0x807ba48c, CalcItemFallback);
 kmPatchExitPoint(CalcItemFallback, 0x807ba494);
@@ -383,8 +383,7 @@ kmCall(0x807923ac, CallPlayerObjPtmfIfValid);
 static void InitItemFallback1() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
-    const bool isHuman = roulette->itemPlayer != nullptr && roulette->itemPlayer->isHuman;
-    roulette->nextItemId = GetFallbackItem(roulette->itemPlayer, roulette->position, isHuman, roulette->setting);
+    roulette->nextItemId = GetFallbackItem(roulette);
 }
 kmBranch(0x807ba138, InitItemFallback1);
 kmPatchExitPoint(InitItemFallback1, 0x807ba140);
@@ -392,8 +391,7 @@ kmPatchExitPoint(InitItemFallback1, 0x807ba140);
 static void InitItemFallback2() {
     register Item::PlayerRoulette* roulette;
     asm(mr roulette, r23);
-    const bool isHuman = roulette->itemPlayer != nullptr && roulette->itemPlayer->isHuman;
-    roulette->nextItemId = GetFallbackItem(roulette->itemPlayer, roulette->position, isHuman, roulette->setting);
+    roulette->nextItemId = GetFallbackItem(roulette);
 }
 kmBranch(0x807ba194, InitItemFallback2);
 kmPatchExitPoint(InitItemFallback2, 0x807ba19c);
@@ -404,7 +402,7 @@ static ItemId DecideRouletteItemFiltered(Item::ItemSlotData* slotData, u16 itemB
         return slotData->DecideRouletteItem(itemBoxType, position, prevRandomItem, r7);
     }
 
-    return GetRandomEnabledItem(position, true, itemBoxType, false);
+    return GetItemFromTable(position, true, itemBoxType, false);
 }
 kmCall(0x807ba428, DecideRouletteItemFiltered);
 
