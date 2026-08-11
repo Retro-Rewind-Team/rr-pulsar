@@ -576,6 +576,15 @@ static void OnMoveHit(void* raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     if (IsLocalPlayer(gainingPlayer)) ClearActiveGoldenMushroom(gainingPlayer);
 }
 
+static void OnMoveHitFromRemoveCall(void* raceMode, u32 firstPlayerId, u32 secondPlayerId) {
+    if (!ShouldApplyBattleRoyale()) {
+        CallRaceModeHit(raceMode, 0x2c, firstPlayerId, secondPlayerId);
+        return;
+    }
+
+    OnMoveHit(raceMode, firstPlayerId, secondPlayerId);
+}
+
 static void FinishPoweredHitAction(void* action, u32 sourcePlayerObjId) {
     if (sourcePlayerObjId >= maxPlayers) return;
 
@@ -617,10 +626,10 @@ kmCall(0x8057015c, OnMoveHit);
 kmCall(0x80570184, OnMoveHit);
 kmCall(0x805701c0, OnMoveHit);
 kmCall(0x805701e8, OnMoveHit);
-kmCall(0x805704f4, OnMoveHit);
-kmCall(0x8057051c, OnMoveHit);
-kmCall(0x80570558, OnMoveHit);
-kmCall(0x80570580, OnMoveHit);
+kmCall(0x805704f4, OnMoveHitFromRemoveCall);
+kmCall(0x8057051c, OnMoveHitFromRemoveCall);
+kmCall(0x80570558, OnMoveHitFromRemoveCall);
+kmCall(0x80570580, OnMoveHitFromRemoveCall);
 kmCall(0x80570a50, OnMoveHit);
 kmCall(0x80570a78, OnMoveHit);
 kmCall(0x80570ab4, OnMoveHit);
