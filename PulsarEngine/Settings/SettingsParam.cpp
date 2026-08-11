@@ -65,7 +65,10 @@ const SettingDef Params::settingDefs[SETTING_COUNT] = {
     {SETTING_EXTENDEDTEAMSLINE, 2},
     {SETTING_EXTENDEDTEAMSPLAYERS, 4},
     {SETTING_LOOSEARCHIVEOVERRIDES, 2},
-    {SETTING_LANGUAGE, 13}
+    {SETTING_LANGUAGE, 13},
+    {SETTING_TTPRACTICE_ITEMBOXES, 2},
+    {SETTING_TTPRACTICE_OBJECTFREEZE, 2},
+    {SETTING_TTPRACTICE_CHECKPOINTDISPLAY, 3}
 };
 
 static const SettingId race1Radios[] = {
@@ -221,6 +224,12 @@ static const SettingId miscScrollers[] = {
     SETTING_LANGUAGE
 };
 
+static const SettingId practiceRadios[] = {
+    SETTING_TTPRACTICE_ITEMBOXES,
+    SETTING_TTPRACTICE_OBJECTFREEZE,
+    SETTING_TTPRACTICE_CHECKPOINTDISPLAY
+};
+
 #define PAGE_DEF(bmg, radios, scrollers) \
     {bmg, radios, ARRAY_COUNT(radios), scrollers, ARRAY_COUNT(scrollers), false}
 #define PAGE_DEF_RADIOS_ONLY(bmg, radios) \
@@ -248,6 +257,7 @@ const SettingsPageDef Params::pageDefs[SETTINGS_PAGE_COUNT] = {
     {0x62F02,
      race2OfflineRadios, ARRAY_COUNT(race2OfflineRadios), race2OfflineScrollers,
      ARRAY_COUNT(race2OfflineScrollers), false},
+    PAGE_DEF_RADIOS_ONLY(0x62F2D, practiceRadios),
 };
 
 static const SettingsPageId offlinePages[] = {
