@@ -10,6 +10,7 @@ SECURE_INCLUDE := $(if $(SECURE_EXISTS),-i $(SECURE),)
 SECURE_EXTERNALS := $(if $(SECURE_EXISTS),-externals=$(SECURE)/anticheat.txt,)
 KAMEK := Kamek.exe
 KAMEK_H := ./KamekInclude
+KAMEK_LOADER := ./Loader
 
 ifneq ($(filter install%,$(MAKECMDGOALS)),)
 PULSAR_RANDOM_KEY := $(shell python -c "import random; print(hex(random.randint(0, 0xFFFFFFFF)))")
@@ -32,7 +33,9 @@ $(shell \
 
 -include .env
 
-CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) $(SECURE_INCLUDE) -i $(PULSAR) -opt all -inline auto -enum int -proc gekko -fp hard -sdata 0 -sdata2 0 -maxerrors 1 -func_align 4 -DPULSAR_RANDOM_KEY=$(PULSAR_RANDOM_KEY) $(CFLAGS)
+CFLAGS := -I- -i $(KAMEK_H) -i $(GAMESOURCE) $(SECURE_INCLUDE) -i $(PULSAR) -i $(KAMEK_LOADER) \
+		  -opt all -inline auto -enum int -proc gekko -fp hard -sdata 0 -sdata2 0 -maxerrors 1 \
+		  -func_align 4 -DPULSAR_RANDOM_KEY=$(PULSAR_RANDOM_KEY) $(CFLAGS)
 ASFLAGS := -proc gekko -c
 
 EXTERNALS := -externals=$(GAMESOURCE)/symbols.txt -externals=$(GAMESOURCE)/anticheat.txt $(SECURE_EXTERNALS) -versions=$(GAMESOURCE)/versions.txt
@@ -46,8 +49,8 @@ PULSAR_CPP_SRCS := $(filter-out $(foreach src,$(SECURE_CPP_SRCS),$(PULSAR)/$(pat
 PULSAR_ASM_SRCS := $(filter-out $(foreach src,$(SECURE_ASM_SRCS),$(PULSAR)/$(patsubst $(SECURE)/%,%,$(src))),$(ASM_SRCS))
 
 # Object files
-CPP_OBJS := $(patsubst $(PULSAR)/%.cpp, build/%.o, $(PULSAR_CPP_SRCS))
-ASM_OBJS := $(patsubst $(PULSAR)/%.S, build/%.o, $(PULSAR_ASM_SRCS))
+CPP_OBJS := $(patsubst $(PULSAR)/%.cpp, build/PulsarEngine/%.o, $(PULSAR_CPP_SRCS))
+ASM_OBJS := $(patsubst $(PULSAR)/%.S, build/PulsarEngine/%.o, $(PULSAR_ASM_SRCS))
 SECURE_CPP_OBJS := $(patsubst $(SECURE)/%.cpp, build/secure/%.o, $(SECURE_CPP_SRCS))
 SECURE_ASM_OBJS := $(patsubst $(SECURE)/%.S, build/secure/%.o, $(SECURE_ASM_SRCS))
 
@@ -64,19 +67,19 @@ test:
 	@echo "$(ASM_SRCS)"
 
 build:
-	@mkdir -p build
+	@mkdir -p build/PulsarEngine
 
 build/kamek.o: $(KAMEK_H)/kamek.cpp | build
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 # C++ compilation
-build/%.o: $(PULSAR)/%.cpp | build
+build/PulsarEngine/%.o: $(PULSAR)/%.cpp | build
 	@echo Compiling C++ $<...
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 # Assembly compilation (.S)
-build/%.o: $(PULSAR)/%.S | build
+build/PulsarEngine/%.o: $(PULSAR)/%.S | build
 	@echo Assembling $<...
 	@mkdir -p $(dir $@)
 	@$(AS) $(ASFLAGS) -o $@ $<
@@ -110,3 +113,21 @@ install: force_link
 clean:
 	@echo Cleaning...
 	@rm -rf build
+
+
+LOADER_CPP_SRCS := $(shell find $(KAMEK_LOADER) -type f -name "*.cpp")
+LOADER_OBJS := $(patsubst $(KAMEK_LOADER)/%.cpp, build/Loader/%.o, $(LOADER_CPP_SRCS))
+
+.PHONY: build_loader loader
+
+loader: build_loader link_loader
+
+build_loader:
+	@mkdir -p build/Loader
+
+build/Loader/%.o: $(KAMEK_LOADER)/%.cpp
+	@echo Compiling C++ $<...
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+link_loader: $(LOADER_OBJS)
+	@$(KAMEK) $^ -static=0x80004000 -output-code=build/Loader.pul
