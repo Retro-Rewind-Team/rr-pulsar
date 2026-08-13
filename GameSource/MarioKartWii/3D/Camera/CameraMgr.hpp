@@ -9,7 +9,7 @@
 class ClipInfo;
 
 class CameraMgr {
-   public:
+public:
     static CameraMgr *sInstance;  // 809c19a4
     CameraMgr();  // 805a1a34
     static void SetInstance(CameraMgr *mgr);  // 805a1a64 can only have 1
@@ -18,7 +18,7 @@ class CameraMgr {
 };
 
 class RaceCameraMgr : public CameraMgr {
-   public:
+public:
     static RaceCameraMgr *sInstance;  // 809c19b8
     static RaceCameraMgr *CreateInstance();  // 805a83e4
     static void DestroyInstance();  // 805a8434

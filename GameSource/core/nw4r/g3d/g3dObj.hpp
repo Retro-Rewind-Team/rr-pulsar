@@ -7,7 +7,7 @@ namespace nw4r {
 namespace g3d {
 
 class G3dObj {  // abstract class from which all Objs are built
-   public:
+public:
     class TypeObj {
         struct ResNameDataPT {  // 802476c8 for example for G3dObj
             u32 length;

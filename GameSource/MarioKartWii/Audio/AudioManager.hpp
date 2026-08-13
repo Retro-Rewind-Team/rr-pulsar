@@ -26,7 +26,7 @@ enum PlayerIds {
 };
 
 class Manager : public EGG::ExpAudioMgr {
-   public:
+public:
     static void LoadGroup(u32 groupId);
     static Manager *sInstance;  // 809c2898
     static Manager *CreateInstance();  // 80716e2c

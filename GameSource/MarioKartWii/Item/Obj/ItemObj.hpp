@@ -26,7 +26,7 @@ class Collision {
 // some of these functions are obviously part of ObjMiddle, but it's very hard to tell and it doesn't matter since there is only one instance of an Obj that isn't an ObjMiddle (the one in ItemManager)
 
 class Obj {
-   public:
+public:
     bool IsExpired() const {
         // Adjust this condition as needed (here we assume an item is expired when duration is 0)
         return (duration == 0);
@@ -178,7 +178,7 @@ class Obj {
 // size_assert(Obj, 0x188);  // where to cut the class and decide the rest is part of "ObjMiddle" was done through analyzing the size of the obj in ItemManager, which can only be up to 0x188
 
 class ObjMiddle : public Obj {  // the vtable of base has a ton of copies in memory so there could be in btw classes
-   public:
+public:
     ObjMiddle();  // 807a6928
     // vtable 808d1c50
 

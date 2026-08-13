@@ -10,7 +10,7 @@ namespace g3d {
 
 class AnmObjTexPatRes;
 class AnmObjTexPat : public AnmObj {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 80059c10 vtable 80272b18
     ~AnmObjTexPat() override;  // 0x10 800589a0
     TypeObj GetTypeObj() const override;  // 0x14 80059f00
@@ -26,7 +26,7 @@ class AnmObjTexPat : public AnmObj {
 };  // 0x18
 
 class AnmObjTexPatRes : public AnmObjTexPat, public FrameCtrl {
-   public:
+public:
     static AnmObjTexPatRes *Construct(G3dHeap *heap, u32 *size, ResAnmTexPat res, ResMdl resMdl, bool bHasCache);  // 80059360
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 80059ba0 vtable 80272a40
     void G3dProc(u32 g3dproc, u32 param, void *info) override;  // 0xc 80059950
@@ -46,7 +46,7 @@ class AnmObjTexPatRes : public AnmObjTexPat, public FrameCtrl {
 };  // 0x34
 
 class AnmObjTexPatNode : public AnmObjTexPat {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 80059d70 vtable 80272ad0
     void G3dProc(u32 g3dproc, u32 param, void *info) override;  // 0xc 800590e0
     ~AnmObjTexPatNode() override;  // 0x10 800589e0

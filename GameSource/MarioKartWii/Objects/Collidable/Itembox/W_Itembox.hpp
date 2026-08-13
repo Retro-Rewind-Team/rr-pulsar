@@ -18,7 +18,7 @@ SubObjectArray<W_Itembox::Box>
 
 class W_Itembox : public ObjectCollidable {  // ObjectNum 0xd3 = 211
     class Box : public Itembox {  // one box of the line
-       public:
+    public:
         explicit Box(const KMP::Holder<GOBJ> &gobjHolder);  // 8076ccc8 inlined
         ~Box() override;  // 8076cd04 vtable 808cec78
         void OnStart() override;  // 0xc 8076cd44

@@ -56,7 +56,7 @@ struct CompressedRKG {
 };
 
 class RKG {
-   public:
+public:
     void ClearBuffer();  // 8051c088
     bool CheckHeader() const;  // 8051c094 inlined checks magic, character, kart, year, day, month
     bool CheckValidity() const;  // 8051c120

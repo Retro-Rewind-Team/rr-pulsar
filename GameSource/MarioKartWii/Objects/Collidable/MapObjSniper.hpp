@@ -9,7 +9,7 @@ class MapObjShooter;
 class MapObjProjectile;
 
 class MapObjSniper : public ObjectCollidable {  // used by SunDSManager and HeyHoManager
-   public:
+public:
     MapObjSniper();  // 806dda84
     ~MapObjSniper() override;  // 806ddaf4 vtable 808c60f8
     void OnStart() override;  // 0xC 806ddb34

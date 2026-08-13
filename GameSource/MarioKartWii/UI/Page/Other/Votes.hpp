@@ -7,7 +7,7 @@
 
 //_sinit_ at 80644694
 class VoteControl : public LayoutUIControl {
-   public:
+public:
     VoteControl();  // 80642aac
     ~VoteControl() override;  // 80642ae8 808bf67c
     void InitSelf() override;  // 80642bec
@@ -28,7 +28,7 @@ class VoteControl : public LayoutUIControl {
 
 namespace Pages {
 class Vote : public Page {  // ID 0x92
-   public:
+public:
     static const PageId id = PAGE_VOTE;
     Vote();  // 80642f90
     ~Vote() override;  // 806430bc vtable 808bf60c

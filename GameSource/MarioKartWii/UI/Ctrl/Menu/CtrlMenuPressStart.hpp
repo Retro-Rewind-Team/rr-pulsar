@@ -5,7 +5,7 @@
 
 //_sinit_ at 807e9d9c
 class CtrlMenuPressStart : public LayoutUIControl {
-   public:
+public:
     // no ctor
     ~CtrlMenuPressStart() override;  // 8063aa8c vtable 808d3798
     void InitSelf() override;  // 0x18 807e9c50

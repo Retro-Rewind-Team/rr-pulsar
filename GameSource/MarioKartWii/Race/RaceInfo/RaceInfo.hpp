@@ -31,7 +31,7 @@ enum RaceStage {
 };
 
 class KMGHolder {
-   public:
+public:
     static u16 ConvertStageIdToIdx;  // 80538344 block plaza -> idx 0 etc...
     virtual ~KMGHolder();  // 805371a8 vtable 808b34d8
     void SetKMG(KMG *rawKMG);  // 8053831c
@@ -39,7 +39,7 @@ class KMGHolder {
 };  // 0x8
 
 class RaceTimerMgrBase {
-   public:
+public:
     virtual ~RaceTimerMgrBase();  // 80532de0 vtable 808b34c4
     virtual void Reset();  // 80532d44
     virtual void Update();  // 805336a0
@@ -48,7 +48,7 @@ class RaceTimerMgrBase {
 };
 
 class RaceTimerMgr : public RaceTimerMgrBase {
-   public:
+public:
     ~RaceTimerMgr() override;  // 805376e0 vtable 808b34b0
     void Reset() override;  // 80535864
     void Update() override;  // 80535904
@@ -62,7 +62,7 @@ class RaceTimerMgr : public RaceTimerMgrBase {
 };  // Total size 0x50
 
 class RaceinfoPlayer {
-   public:
+public:
     RaceinfoPlayer(u8 id, u8 lapCount);  // 80533ed8
     virtual ~RaceinfoPlayer();  // 80532f48 vtable 808b34a4
     void Init();  // 80534194
@@ -114,7 +114,7 @@ class RaceinfoPlayer {
 // size_assert(RaceinfoPlayer, 0x54);
 
 class Raceinfo {
-   public:
+public:
     static Raceinfo *sInstance;  // 809bd730
     static Raceinfo *CreateInstance();  // 80532084
     static void DestroyInstance();  // 805320d4

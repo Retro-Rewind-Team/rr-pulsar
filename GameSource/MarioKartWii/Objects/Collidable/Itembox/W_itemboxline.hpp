@@ -26,12 +26,12 @@ SubObjectArray<W_Itemboxline::Block>
 */
 
 class W_Itemboxline : public ObjectCollidable {  // ObjectNum 0xd5 = 213
-   public:
+public:
     class Press;
     class Block;
 
     class Box : public Itembox {  // one box on the belt
-       public:
+    public:
         ~Box() override;  // 8076da48 vtable 808ceea0
         void OnStart() override;  // 0xc 8076da88
         void Update() override;  // 0x14 8076daf4
@@ -46,7 +46,7 @@ class W_Itemboxline : public ObjectCollidable {  // ObjectNum 0xd5 = 213
     };  // 0xdc
 
     class Press : public Objects::Press {
-       public:
+    public:
         explicit Press(const KMP::Holder<GOBJ> &gobjHolder);  // 8076e7ac
         ~Press() override;  // 8076e818 vtable 808cf07c
         u16 GetID() const override;  // 0x24 8076ea28
@@ -60,7 +60,7 @@ class W_Itemboxline : public ObjectCollidable {  // ObjectNum 0xd5 = 213
     };
 
     class Block : public ObjectCollidable {
-       public:
+    public:
         ~Block() override;  // 8076e164 vtable 808cef90
         void OnStart() override;  // 0xc 8076e1a4
         void Update() override;  // 0x14 8076e2c0

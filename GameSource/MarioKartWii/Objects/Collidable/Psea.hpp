@@ -7,7 +7,7 @@
 namespace Objects {
 
 class Psea1sand : public ObjectCollidable {
-   public:
+public:
     ~Psea1sand() override;  // 8082ca98 vtable 808d86c0
     const char *GetName() const override;  // 0x28 8082ca78
     u32 GetPropertiesBitfield() override;  // 0x2c 8082ca90
@@ -17,7 +17,7 @@ class Psea1sand : public ObjectCollidable {
 };  // 0xb4
 
 class Psea2dark : public ObjectCollidable {
-   public:
+public:
     ~Psea2dark() override;  // 8082ca30 vtable 808d85d4
     const char *GetName() const override;  // 0x28 8082ca10
     u32 GetPropertiesBitfield() override;  // 0x2c 8082ca28
@@ -27,7 +27,7 @@ class Psea2dark : public ObjectCollidable {
 };  // 0xb4
 
 class Psea3nami : public ObjectCollidable {
-   public:
+public:
     ~Psea3nami() override;  // 8082c9c8 vtable 808d84e8
     const char *GetName() const override;  // 0x28 8082c9a8
     u32 GetPropertiesBitfield() override;  // 0x2c 8082c9c0
@@ -37,7 +37,7 @@ class Psea3nami : public ObjectCollidable {
 };  // 0xb4
 
 class Psea4tex : public ObjectCollidable {
-   public:
+public:
     ~Psea4tex() override;  // 8082c960 vtable 808d83fc
     const char *GetName() const override;  // 0x28 8082c940
     u32 GetPropertiesBitfield() override;  // 0x2c 8082c958
@@ -47,7 +47,7 @@ class Psea4tex : public ObjectCollidable {
 };  // 0xb4
 
 class Psea5spc : public ObjectCollidable {
-   public:
+public:
     ~Psea5spc() override;  // 8082c8f8 vtable 808d8310
     const char *GetName() const override;  // 0x28 8082c8d8
     u32 GetPropertiesBitfield() override;  // 0x2c 8082c8f0
@@ -57,7 +57,7 @@ class Psea5spc : public ObjectCollidable {
 };  // 0xb4
 
 class Psea : public ObjectCollidable {  // ObjectNum 0x2 = 2
-   public:
+public:
     explicit Psea(const KMP::Holder<GOBJ> &gobjHolder);  // 8082c234
     ~Psea() override;  // 8082c890 vtable 808d8224
     void Update() override;  // 0x14 8082c634

@@ -10,7 +10,7 @@
 //_sinit_ at 8083d42c
 namespace Pages {
 class BattleStageSelect : public MenuInteractable {  // ID 0x79
-   public:
+public:
     static const PageId id = PAGE_BATTLE_STAGE_SELECT;
     BattleStageSelect();  // 80629954
     ~BattleStageSelect() override;  // 8083d334 vtable 808d9228

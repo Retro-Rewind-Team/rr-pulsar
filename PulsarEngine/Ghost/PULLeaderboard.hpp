@@ -48,7 +48,7 @@ class alignas(0x20) Leaderboard {
     static const u32 trackNameLen = 48;  // 0x30
     static const char filePathFormat[];
 
-   public:
+public:
     Leaderboard();
     Leaderboard(const char *folderPath, PulsarId id, bool createNew);
     void SetTrack(PulsarId id);
@@ -66,7 +66,7 @@ class alignas(0x20) Leaderboard {
     static const RKSYS::LicenseLdbEntry *GetEntry(u32 index);  // pointer as the game expects as such
     static int ExpertBMGDisplay(CourseId courseId);
 
-   private:
+private:
     u32 magic;  // PULL
     u32 version;
     u32 crc32;  // of the track

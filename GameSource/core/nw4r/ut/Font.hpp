@@ -20,7 +20,7 @@ struct Glyph {
 };
 
 class Font {
-   public:
+public:
     enum Type {
         TYPE_NULL,
         TYPE_ROM,

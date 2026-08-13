@@ -6,7 +6,7 @@
 namespace Objects {
 
 class ItemDropper : public ObjectCollidable {  // base for objects that can spawn an item like leaf piles (karehayama)
-   public:
+public:
     enum State {
         ITEM_DROPPER_UNINITIALIZED,
         ITEM_DROPPER_ACTIVE,
@@ -33,7 +33,7 @@ class ItemDropper : public ObjectCollidable {  // base for objects that can spaw
     virtual void OnNormalItemCollision(const Kart::Player &kartPlayer, const Vec3 &itemSpeed);  // 0x10c 8076f2d8
     virtual void OnImperviousItemCollision(const Kart::Player &kartPlayer, const Vec3 &itemSpeed);  // 0x110 8076f2dc
 
-   public:
+public:
     State state;  // 0xb0
     u32 respawnTimer;  // 0xb4
     EGG::Effect *explosionEffect;  // 0xb8 nullptr for karehayama

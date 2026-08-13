@@ -17,7 +17,7 @@ namespace Audio {
 using namespace nw4r;
 
 class Track : public EGG::AudioTrack {
-   public:
+public:
     bool Calc() override;  // 80717d2c vtable 808c91e0
     void SetValue(float minValue, float maxValue);  // 80717d08 if curVol > max then set to max, opposite for min
 

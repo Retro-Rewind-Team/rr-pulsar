@@ -7,12 +7,12 @@
 namespace Pulsar {
 
 class PositionCounter {
-   public:
+public:
     static void UpdatePositionDisplay(CtrlRaceRankNum &posTracker);
     static void UpdateAnimationFrame(u8 hudSlotId, bool isInDanger);
     static void ResetAnimationFrames();
 
-   private:
+private:
     static u8 posTrackerAnmFrames[2];
 };
 

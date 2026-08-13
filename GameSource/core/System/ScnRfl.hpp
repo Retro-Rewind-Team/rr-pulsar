@@ -12,7 +12,7 @@ namespace nw4r {
 namespace g3d {
 
 class ScnRfl : public ScnLeaf {
-   public:
+public:
     typedef void (*DrawProc)(ScnRfl *thisPtr, const RFL::CharModel *charModel, u32 mask_diff, u32 mask_spec, GX::Color ambientColor, bool opa);
 
     // expression flag = bitfield of RFL::ExpressionFlag

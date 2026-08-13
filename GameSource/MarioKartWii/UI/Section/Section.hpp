@@ -40,7 +40,7 @@ activates the topmost layer, resumes page if the layer on top of them was exited
 */
 
 class Section {
-   public:
+public:
     Section();  // 80621d0c
     ~Section();  // 80621d84
     void Init(SectionId sectionId);  // 80621e00

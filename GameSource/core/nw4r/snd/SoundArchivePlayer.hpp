@@ -18,7 +18,7 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class SoundArchivePlayer_FileManager {
-   public:
+public:
     virtual const void *GetFileAddress(SoundArchive::FileId fileId) const = 0;
     virtual const void *GetFileWaveDataAddress(SoundArchive::FileId fileId) const = 0;
 };
@@ -26,14 +26,14 @@ class SoundArchivePlayer_FileManager {
 
 class SoundActor;
 class SoundArchivePlayer : public detail::DisposeCallback, public SoundStartable {
-   public:
+public:
     class SeqNoteOnCallBack : public detail::NoteOnCallback {
         ~SeqNoteOnCallBack() override;  // 800a0630 vtable 80274a20
         detail::Channel *NoteOn(detail::SeqPlayer *player, int, const detail::NoteOnInfo &noteOnInfo) override;  // 800a2b50
         SoundArchivePlayer *soundArchivePlaye;
     };
     class WsdCallback : public detail::WsdPlayer::WsdCallback {
-       public:
+    public:
         WsdCallback(const SoundArchivePlayer &player);  // inlined
         virtual bool GetWaveSoundData(detail::WaveSoundInfo *info, detail::WaveSoundNoteInfo *noteInfo, detail::WaveInfo *waveData,
                                       const void *waveSoundData, int index, int noteIndex, u32 userData) const;  // 800a2c80 vtable 80274a10

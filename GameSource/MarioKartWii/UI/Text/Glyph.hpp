@@ -11,7 +11,7 @@ using namespace nw4r;
 namespace Text {
 
 class GlyphParams {
-   public:
+public:
     GlyphParams();  // 805cf068
     ~GlyphParams();  // 805cf06c
     void SetCharacter(u16 characterCode, const GameFont &font, u16 _0x5c);  // 805cf0ac inlined
@@ -28,7 +28,7 @@ class GlyphParams {
 };  // 0x18
 
 class GlyphUnicodeExternal : public GlyphParams {  // supports up to 4 unicode codes
-   public:
+public:
     struct Code {
         u16 unicode;
         u16 duration;
@@ -42,7 +42,7 @@ class GlyphUnicodeExternal : public GlyphParams {  // supports up to 4 unicode c
 };  // 0x44
 
 class GlyphDrawer {
-   public:
+public:
     GlyphDrawer(lyt::TextBox *pane);  // 805cf264
     ~GlyphDrawer();  // 805cf27c
     void Init();  // 805cf2bc

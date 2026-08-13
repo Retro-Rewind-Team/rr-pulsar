@@ -6,7 +6,7 @@
 namespace Objects {
 // ObjectNum 0x17a = 378 StarRing, ObjectNum 0x259 = 601 DonkyCannonGC, ObjectNum 0x25f = 607 DonkyCannon_wii, ObjectNum 0x261 = 609 tree_cannon
 class Cannon : public ObjectCollidable {
-   public:
+public:
     enum Type {
         DonkyCannon_wii = 0,
         DonkyCannonGC = 1,

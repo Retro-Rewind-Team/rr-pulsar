@@ -19,7 +19,7 @@ enum RankingType {
 };
 
 class RankingItemSelector {
-   public:
+public:
     virtual ~RankingItemSelector();  // 806199fc vtable 808bb430
     virtual float vf_0x10() = 0;
     void SetParams(u32 r4, RankingItem *array, u32 itemCount);  // 80619a58
@@ -30,13 +30,13 @@ class RankingItemSelector {
 };  // 0xc0
 
 class RankingItemSelectorTA : public RankingItemSelector {
-   public:
+public:
     RankingItemSelectorTA();  // 8061aba0
     ~RankingItemSelectorTA() override;  // 8061abec vtable 808bb410
     float vf_0x10();  // 8061adfc
 };
 class RankingRuler : public LayoutUIControl {
-   public:
+public:
     RankingRuler();  // 80619114
     ~RankingRuler() override;  // 80619150 vtable 808bb270
     void InitSelf() override;  // 0x18 8061921c
@@ -46,7 +46,7 @@ class RankingRuler : public LayoutUIControl {
 };  // 0x174
 
 class RankingItem : public LayoutUIControl {
-   public:
+public:
     enum State {
         DISABLED,
         WILL_ACTIVATE,
@@ -89,7 +89,7 @@ class RankingItem : public LayoutUIControl {
 };
 
 class RankingItemSelectable : public RankingItem {
-   public:
+public:
     RankingItemSelectable();  // 806173b8
     ~RankingItemSelectable() override;  // 806174cc vtable 808bb318
     void InitSelf() override;  // 0x18 8061799c
@@ -118,7 +118,7 @@ class RankingItemSelectable : public RankingItem {
 };  // 0x274
 
 class RankingItemStranger : public RankingItem {
-   public:
+public:
     RankingItemStranger();  // 80618f2c
     ~RankingItemStranger() override;  // 80618f88 vtable 808bb2b0
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80619914
@@ -134,7 +134,7 @@ class RankingItemStranger : public RankingItem {
 };
 
 class RankingWindow : public LayoutUIControl {
-   public:
+public:
     RankingWindow();  // 80619434
     ~RankingWindow() override;  // 80619470 vtable 808bb234
     void InitSelf() override;  // 0x18 80619638
@@ -145,7 +145,7 @@ class RankingWindow : public LayoutUIControl {
 };  // 0x178
 
 class RankingGraphControl : public LayoutUIControl {
-   public:
+public:
     RankingGraphControl();  // 80611878 inlined
     ~RankingGraphControl() override;  // 806118f0 vtable 808baf68
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80615014
@@ -168,7 +168,7 @@ class RankingGraphControl : public LayoutUIControl {
 };  // 0xc54
 
 class RankingGraphControlTimeAttack : public RankingGraphControl {
-   public:
+public:
     RankingGraphControlTimeAttack();  // 806123c8
     ~RankingGraphControlTimeAttack() override;  // 8061250c vtable 808baf1c
     void InitSelf() override;  // 0x18 80612a68
@@ -202,7 +202,7 @@ class RankingGraphControlTimeAttack : public RankingGraphControl {
 namespace Pages {
 
 class RankingGraph : public Page {  // ID 0xA8, also 0xA9
-   public:
+public:
     static const PageId pageId = PAGE_COURSE_RANKING_GRAPH;
     RankingGraph();  // 806153b4
     ~RankingGraph() override;  // 80615650 vtable 808bb034

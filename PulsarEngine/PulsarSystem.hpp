@@ -85,10 +85,10 @@ enum Context2 {
 };
 
 class System {
-   protected:
+protected:
     System();
 
-   public:
+public:
     // System functions
     void Init(const ConfigFile &confRT, const ConfigFile &confCT, const ConfigFile &confBT,
               u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes);
@@ -100,11 +100,11 @@ class System {
     static void UpdateContextWrapper();
     static void ClearOttContext();
 
-   protected:
+protected:
     // Virtual
     virtual void AfterInit() {};
 
-   public:
+public:
     static System *sInstance;
 
     virtual void SetUserInfo(Network::ResvInfo::UserInfo &userInfo) {};
@@ -135,14 +135,14 @@ class System {
     EGG::TaskThread *const taskThread;  // 0x8
     // Constants
 
-   public:
+public:
     char modFolderName[IOS::ipcMaxFileName + 1];  // 0xC
     u8 padding[2];
     Info info;  // 0x1c
     u32 context;
     u32 context2;
 
-   public:
+public:
     // Updated from ROOM packets when the host starts a GP.
     Network::Mgr netMgr;
 
@@ -158,7 +158,7 @@ class System {
     OTT::Mgr ottMgr;
     u8 nonTTGhostPlayersCount;  // because a ghost can be added in vs, racedata's playercount is not reliable
 
-   private:
+private:
     // Custom BMGS
     BMGHolder customBmgs;
     BMGHeader *rawBmg;
@@ -167,7 +167,7 @@ class System {
     BMGHolder customBmgsBT;
     BMGHeader *rawBmgBT;
 
-   public:
+public:
     // string pool
     static const char pulsarString[];
     static const char CommonAssets[];

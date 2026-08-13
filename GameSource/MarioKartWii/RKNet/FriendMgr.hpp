@@ -6,7 +6,7 @@
 
 namespace RKNet {
 class FriendMgr {
-   public:
+public:
     static FriendMgr *sInstance;  // 809c2110
     static FriendMgr *CreateInstance();  // 80663194
     static void DestroyInstance();  // 806632bc

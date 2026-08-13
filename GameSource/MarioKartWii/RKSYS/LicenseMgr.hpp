@@ -156,7 +156,7 @@ struct LicenseStaffGhostStatus {
 };
 
 class LicenseMgr {
-   public:
+public:
     LicenseMgr();  // 8054400c
     void SetInitialized(bool isInitialized);  // 8054454c
     bool IsInitialized() const;  // 80546fb4

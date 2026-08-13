@@ -16,7 +16,7 @@ namespace EGG {
 void AlarmHandler(OS::Alarm *alarm, OS::Context *context);  // 8020fd10
 
 class TSystem {  // names obtained from BBA
-   public:
+public:
     static TSystem mInstance;  // 802a4080
     static TSystem *sInstance;  // 80385fc8
     static TSystem *sInstance2;  // 80386F60

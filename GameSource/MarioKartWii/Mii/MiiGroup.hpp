@@ -11,7 +11,7 @@ class MiiTexObj {
 };  // 0x24
 
 class MiiGroup {
-   public:
+public:
     MiiGroup();  // 805f9e78 vtable 808b9f68
     virtual ~MiiGroup();  // 805f9f58 vtable 808b9f68
     void Init(u32 miiCount, u32 usedTexObjSlotsBitfield, EGG::Heap *heap);  // 805fa04c

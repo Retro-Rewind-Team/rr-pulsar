@@ -7,7 +7,7 @@
 namespace Objects {
 
 class Penguin : public ObjectCollidable {
-   public:
+public:
     ~Penguin() override;  // 80775670 vtable 808d0250
     void OnStart() override;  // 0xC 807756b0
     void Update() override;  // 0x14 80775764
@@ -39,7 +39,7 @@ class Penguin : public ObjectCollidable {
 };  // 0xd8
 
 class PenguinUnkObj : ObjectCollidable {  // its model is invisible but has animations?
-   public:
+public:
     ~PenguinUnkObj() override;  // 80777464 vtable 808d0160
     void Update() override;  // 0x14 80777458
     void LoadAnimations() override;  // 0x5c 80775fc4
@@ -48,7 +48,7 @@ class PenguinUnkObj : ObjectCollidable {  // its model is invisible but has anim
 };
 
 class Penguin_s : public Penguin {  // ObjectNum 0xd7 = 215
-   public:
+public:
     explicit Penguin_s(const KMP::Holder<GOBJ> &gobjHolder);  // 80775e60
     ~Penguin_s() override;  // 80776070 vtable 808d0054
     void OnStart() override;  // 0xc 807760b0
@@ -70,13 +70,13 @@ class Penguin_s : public Penguin {  // ObjectNum 0xd7 = 215
 };  // 0xec
 
 class Penguin_m : public Penguin {  // ObjectNum 0xd8 = 216
-   public:
+public:
     explicit Penguin_m(const KMP::Holder<GOBJ> &gobjHolder);  // 8077708c
     ~Penguin_m() override;  // 80776070 vtable 808cff48
 };  // 0xd8
 
 class Penguin_l : public Penguin {  // ObjectNum 0xd9 = 217
-   public:
+public:
     explicit Penguin_l(const KMP::Holder<GOBJ> &gobjHolder);  // 80777130
     ~Penguin_l() override;  // 80777524 vtable 808cfd48
     void OnStart() override;  // 807771dc

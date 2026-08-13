@@ -6,7 +6,7 @@
 
 namespace Pages {
 class VSPause : public RaceMenu {  // ID 0x18
-   public:
+public:
     static const PageId id = PAGE_VS_RACE_PAUSE_MENU;
     VSPause();  // 80624ba0
     ~VSPause() override;  // 80633348 vtable 808bdd74

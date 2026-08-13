@@ -8,7 +8,7 @@
 namespace Pages {
 
 class BatteryMgr : public Page {  // ID 0x55
-   public:
+public:
     static const PageId id = PAGE_BATTERY_MGR;
     BatteryMgr();  // 805c35f8
     ~BatteryMgr() override;  // 805c363c vtable 808b7d5c

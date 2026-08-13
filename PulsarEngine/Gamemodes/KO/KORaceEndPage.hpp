@@ -11,7 +11,7 @@ void RaceMenuExtraControls(Pages::RaceMenu &page, u32 gameControlCount);
 }  // namespace UI
 namespace KO {
 class RaceEndPage : public Pages::RaceMenu {
-   public:
+public:
     static const PageId fakeId = PAGE_VS_RACE_PAUSE_MENU;
     static const UI::PulPageId id = UI::PULPAGE_KORACEEND;
     static const u32 buttonCount = 2;
@@ -24,7 +24,7 @@ class RaceEndPage : public Pages::RaceMenu {
     bool IsPausePage() const override;
     const char *GetButtonsBRCTRName() const override;
 
-   private:
+private:
     void OnButtonClick(PushButton &button, u32 hudSlotId);
     void InitExtraControls(u32 gameControlCount) {
         this->InitControlGroup(gameControlCount + 1);

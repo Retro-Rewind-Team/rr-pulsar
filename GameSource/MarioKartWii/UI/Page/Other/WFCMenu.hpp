@@ -20,7 +20,7 @@ Group State2:
 0 Offline2, 1 RandomMatching2, 2 FriendParent2
 */
 class FriendStatusButton : public PushButton {
-   public:
+public:
     static const char stateAnmGroup[];  // 80899984
     static const char state2AnmGroup[];  // 808999b8
     static const char offlineAnm[];  // 80899990
@@ -67,7 +67,7 @@ class Approve2PWFC : public Page {  // ID 0x8a, just a wrapper that activates Ap
 // size_assert(Approve2PWFC, 0x68);
 
 class WFCMainMenu : public Page {  // ID 0x8B
-   public:
+public:
     static const PageId id = PAGE_WFC_MAIN;
     WFCMainMenu();  // 8064b640
     ~WFCMainMenu() override;  // 8064b850 vtable 808bff44
@@ -101,7 +101,7 @@ class WFCMainMenu : public Page {  // ID 0x8B
 // size_assert(WFCMainMenu, 0xf34);
 
 class WFCModeSelect : public Page {  // ID 0x8C
-   public:
+public:
     static const PageId id = PAGE_WFC_MODE_SELECT;
     WFCModeSelect();  // 8064bfd8
     ~WFCModeSelect() override;  // 8064c170
@@ -130,7 +130,7 @@ class WFCModeSelect : public Page {  // ID 0x8C
 // size_assert(WFCModeSelect, 0xcb0);
 
 class WFCFriendsMenu : public Page {  // ID 0x8D
-   public:
+public:
     static const PageId id = PAGE_WFC_FRIENDS_MENU;
     WFCFriendsMenu();  // 8064c7c8
     ~WFCFriendsMenu() override;  // 8064c9d8 vtable 808bfe4c

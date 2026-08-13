@@ -8,7 +8,7 @@
 namespace Kart {
 
 class Suspensions : public Part {
-   public:
+public:
     explicit Suspensions(const Values &values);  // 80598b08
     ~Suspensions() override;  // 8058f52c vtable 808b6640
     bool LoadModel(BRRESHandle &handle) override;  // 0x18 80598b50
@@ -22,7 +22,7 @@ class Suspensions : public Part {
 };  // Total size 0x94
 
 class KartSuspensionsBike : public Suspensions {
-   public:
+public:
     ~KartSuspensionsBike() override;  // 805993cc vtable 808b65f8
     bool LoadModel(BRRESHandle &handle) override;  // 0x18 80598fe8
     void UpdateMatrix() override;  // 0x1c 80598ff8

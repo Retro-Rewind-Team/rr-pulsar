@@ -32,7 +32,7 @@ union ROOMPacketReg {
 };
 
 class ROOMHandler {
-   public:
+public:
     static ROOMHandler *sInstance;  // 809c20e0
     static ROOMHandler *CreateInstance();  // 8065aa88
     static void DestroyInstance();  // 8065ab4c

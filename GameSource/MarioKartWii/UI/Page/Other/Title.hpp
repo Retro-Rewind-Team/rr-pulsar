@@ -5,7 +5,7 @@
 
 //_sinit_ at 8063c3b8
 class TitleImage : public LayoutUIControl {
-   public:
+public:
     TitleImage();  // 8063a598 inlined
     ~TitleImage() override;  // 8063a5d4 vtable 808bef0c
     void InitSelf() override;  // 0x18 8063a6cc
@@ -29,7 +29,7 @@ class TitleMovieControl : public LayoutUIControl {
 
 namespace Pages {
 class Title : public Page {  // ID 0x57
-   public:
+public:
     static const PageId id = PAGE_TITLE;
     Title();  // 8063aa08
     ~Title() override;  // 8063aae4 vtable 808beea8

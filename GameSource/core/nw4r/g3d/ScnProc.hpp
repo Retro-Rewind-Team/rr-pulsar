@@ -7,7 +7,7 @@ namespace nw4r {
 namespace g3d {
 
 class ScnProc : public ScnLeaf {  // user-defined drawings
-   public:
+public:
     typedef void (*DrawFunc)(ScnProc *, bool);  // rendering func, bool: true for opa, false for xlu
     static ScnProc *Construct(G3dHeap *heap, u32 *size, DrawFunc *procFunc, bool drawOpa, bool drawXlu, u32 sizeUserData);  // 800771d0
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 800773e0 vtable 802733b8

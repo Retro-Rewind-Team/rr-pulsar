@@ -5,7 +5,7 @@
 
 //_sinit_ at 807f4e48
 class CtrlRaceRankNum : public CtrlRaceBase {  // position tracker
-   public:
+public:
     // no ctor
     ~CtrlRaceRankNum() override;  // 807f4de0 vtable 808d3e98
     void Init() override;  // 0xc 807f48fc

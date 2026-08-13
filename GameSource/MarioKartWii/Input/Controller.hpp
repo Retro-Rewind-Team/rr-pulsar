@@ -21,7 +21,7 @@ using namespace nw4r;
 namespace Input {
 
 class Controller {
-   public:
+public:
     Controller();  // 8051eba8
     virtual ~Controller();  // 8051f1ec vtable 808b2ed8
     virtual void UpdateImpl(State &state, UIState &uiState) = 0;
@@ -54,7 +54,7 @@ class Controller {
 // size_assert(Controller, 0x90);
 
 class DummyController : public Controller {
-   public:
+public:
     // no ctor
     ~DummyController() override;  // 805232b0 vtable 808b3020
     void UpdateImpl(State &state, UIState &uiState) override;  // 80524ab0 just a blr
@@ -62,7 +62,7 @@ class DummyController : public Controller {
 
 class MotionController;
 class WiiController : public Controller {
-   public:
+public:
     WiiController();  // 8051f088
     ~WiiController() override;  // 80522934 vtable 808b2e90
     void UpdateImpl(State &state, UIState &uiState) override;  // 0xc 8051fc84
@@ -107,7 +107,7 @@ class WiiController : public Controller {
 // size_assert(WiiController, 0x920);
 
 class GCNController : public Controller {
-   public:
+public:
     GCNController();  // 8051ffd0
     ~GCNController() override;  // 0x8 80522874 vtable 808b2e48
     void UpdateImpl(State &state, UIState &uiState) override;  // 0xc 805201b0
@@ -146,7 +146,7 @@ class GhostController : public Controller {
 };  // total size 0xa8
 
 class AIController : public Controller {
-   public:
+public:
     ~AIController() override;  // 805227dc vtable 808b2fd8
     void UpdateImpl(State &state, UIState &uiState) override;  // 80524a58
     ControllerType GetType() const override;  // 0x10 80524aa8
@@ -155,14 +155,14 @@ class AIController : public Controller {
 };  // 0xa8
 
 class MotionControllerSub {
-   public:
+public:
     MotionControllerSub();  // 8071b86c
     virtual ~MotionControllerSub();  // 8071bd1c vtable 808c9454
     u8 unknown[0x18];
 };
 
 class MotionController {  // only for nunchuck and wheel (core)
-   public:
+public:
     MotionController();  // 80745884
     virtual ~MotionController();  // 8074595c vtable 808cb780
     void Init(bool isDriftAuto);  // 807459e4

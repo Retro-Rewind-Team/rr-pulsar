@@ -36,7 +36,7 @@ struct USERPacket {
 // size_assert(USERPacket, 0xc0);
 
 class USERHandler {
-   public:
+public:
     static USERHandler *sInstance;  // 809c2108
     static void CreateInstance();  // 80662778
     static void DestroyInstance();  // 806627f8

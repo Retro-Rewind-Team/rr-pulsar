@@ -10,7 +10,7 @@ class ControlGroupAction {
 };
 
 class ControlGroup {
-   public:
+public:
     ControlGroup();  // 805C23E4
     ~ControlGroup();  // 805c2400
 

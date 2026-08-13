@@ -10,19 +10,19 @@ class ModelRenderer;
 }  // namespace Pages
 
 class UnkModelClass {
-   public:
+public:
     UnkModelClass();  // 80832cbc
     ~UnkModelClass();  // 80832cc0
 };  // 0x1c
 
 class MenuKartDisplayModel : public MenuModel {  // the models inside the kartSelect buttons
-   public:
+public:
     ~MenuKartDisplayModel() override;  // 8082f8b8 vtable 808d8c60
     TextureHolder *texture;  // 0x8
 };  // 0xC
 
 class MenuKartModel : public MenuModel {  // the main model but also the display model
-   public:
+public:
     MenuKartModel();  // 80831f60
     ~MenuKartModel() override;  // 80831f84 vtable 808d8c8c
     void Init() override;  // 0xc 80832240
@@ -40,7 +40,7 @@ class MenuKartModel : public MenuModel {  // the main model but also the display
 };  // 0x2c
 
 class MenuKartModelMgr {
-   public:
+public:
     MenuKartModelMgr(u8 playerCount);  // 80832ae8
     virtual ~MenuKartModelMgr();  // 808334a0 vtable 808d8c80
     void Update();  // 8083300c

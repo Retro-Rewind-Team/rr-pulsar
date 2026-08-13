@@ -6,7 +6,7 @@
 namespace Objects {
 
 class TruckChimSmk : public ObjectCollidable {  // ObjectNum 0x14c = 332
-   public:
+public:
     explicit TruckChimSmk(const KMP::Holder<GOBJ> &gobjHolder);  // 806deb40
     ~TruckChimSmk() override;  // 806ded34 vtable 808c6608
     void OnStart() override;  // 0xC 806ded74

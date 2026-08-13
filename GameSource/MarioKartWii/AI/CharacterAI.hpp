@@ -19,7 +19,7 @@ class Character;
 typedef Actions<Character> CharacterActions;
 
 class Character : public Base {  // for example, controls the character (miis) looking at the camera at the end of a race
-   public:
+public:
     Character(Inputs &inputs);  // 80735948
     ~Character() override;  // 80736258 vtable 808caec0
     virtual void Init();  // 0x18 807362dc
@@ -72,7 +72,7 @@ class Character : public Base {  // for example, controls the character (miis) l
 };  // 0x21c
 
 class CharacterBattle : public Character {
-   public:
+public:
     CharacterBattle(Inputs &inputs);  // 80738558
     ~CharacterBattle() override;  // 80738594 vtable 808cae28
     void Init() override;  // 0x18 807385ec
@@ -81,7 +81,7 @@ class CharacterBattle : public Character {
 };
 
 class CharacterAwards : public Character {
-   public:
+public:
     CharacterAwards(Inputs &inputs);  // 80738664
     ~CharacterAwards() override;  // 807386A0 vtable 808cad90
     void Init() override;  // 0x18 807386f8

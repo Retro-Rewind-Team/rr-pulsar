@@ -5,7 +5,7 @@
 //_sinit_ at 8085e644
 namespace Pages {
 class Leaderboard : public Page {  // used for tt leaderboard, GP/VS score table etc..
-   public:
+public:
     Leaderboard();  // 8085be44
     ~Leaderboard() override;  // 80625198 vtable 808da9cc
     virtual PageId GetNextPage() const = 0;

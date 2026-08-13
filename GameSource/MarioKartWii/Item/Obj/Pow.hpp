@@ -7,7 +7,7 @@
 //_sinit_ at 807b2ed0
 namespace Item {
 class ObjPow : public ObjMiddle {
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807b1ab0
     void InitSelf() override;  // 0x8 807b1ba4 vtable 808d2530
 };
@@ -24,7 +24,7 @@ class PowScreen {  // one per Screen
 // size_assert(PowScreen, 0x10);
 
 class PowMgr {
-   public:
+public:
     static PowMgr *sInstance;  // 809c3660
     static PowMgr *CreateInstance();  // 807b1bc0
     static void DestroyInstance();  // 807b1c70

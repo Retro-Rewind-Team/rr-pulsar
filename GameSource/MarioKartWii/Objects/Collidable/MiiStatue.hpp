@@ -10,7 +10,7 @@ namespace Objects {
 // 0x2df = 735 MiiStatueM2, 0x2e1 = 737 MiiStatueL3, 0x2e3 = 739 MiiStatueBL1, 0x2e4 = 740 MiiStatueBD1
 
 class MiiStatue : public ObjectCollidable {
-   public:
+public:
     static MiiCreationParams *params[4];  // 809c44d0
     explicit MiiStatue(const KMP::Holder<GOBJ> &gobjHolder);  // 8082b63c
     ~MiiStatue() override;  // 8082ba18 vtable 808d8120

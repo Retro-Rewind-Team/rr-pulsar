@@ -20,7 +20,7 @@ class MessageWindowControlScaleFade : public LayoutUIControl {
 };  // total size 0x174
 
 class SimpleMessageWindowControl : public LayoutUIControl {
-   public:
+public:
     SimpleMessageWindowControl();  // 805f9900
     ~SimpleMessageWindowControl() override;  // 805f993c virtual 808b9e68
     void InitSelf() override;  // 0x18 805f9a48
@@ -30,7 +30,7 @@ class SimpleMessageWindowControl : public LayoutUIControl {
 };  // total size 0x174
 
 class BlackBackControlForMessage : public LayoutUIControl {
-   public:
+public:
     BlackBackControlForMessage();  // 805f9abc
     ~BlackBackControlForMessage() override;  // 805f9af8 vtable 808b9e2c
     void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 805f9bc4
@@ -40,7 +40,7 @@ class BlackBackControlForMessage : public LayoutUIControl {
 };  // total size 0x174
 
 class BusySymbol : public LayoutUIControl {
-   public:
+public:
     BusySymbol();  // 805f9c34
     ~BusySymbol() override;  // 805f9c70 vtable 808b9df0
     void InitSelf() override;  // 805f9d5c 0x18

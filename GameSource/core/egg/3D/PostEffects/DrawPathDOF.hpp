@@ -11,7 +11,7 @@ namespace EGG {
 // https://wiki.tockdom.com/wiki/BDOF_(File_Format)
 
 class DrawPathDOF : public DrawPathBase, public IBinary<DrawPathDOF> {
-   public:
+public:
     struct BDOF : IBinary::Binary {
         // BinaryHeader header; //BDOF
         u16 filterBitfield;

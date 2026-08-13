@@ -5,7 +5,7 @@
 
 namespace Pages {
 class GPRaceEnd : public RaceMenu {  // ID 0x20
-   public:
+public:
     static const PageId id = PAGE_GP_ENDMENU;
     GPRaceEnd();  // 80624dc0
     ~GPRaceEnd() override;  // 80632c2c vtable 808bd89c

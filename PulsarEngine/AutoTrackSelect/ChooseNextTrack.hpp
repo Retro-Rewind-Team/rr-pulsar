@@ -10,12 +10,12 @@ namespace Pulsar {
 namespace UI {
 
 class RaceControlButtonInfo : public ControlButtonInfo {  // needed because inputs are inverted online in mirror
-   public:
+public:
     void Update(const Input::ControllerHolder *controllerHolder) override;
 };
 
 class ChooseNextTrack : public Pages::RaceMenu {  // use page 0x27
-   public:
+public:
     static const PageId fakeId = PAGE_GHOST_RACE_ENDMENU;  // never exists in an online race, and RaceMenu uses this id to know what/how to init and activate the page
     static const PulPageId id = PULPAGE_CHOOSENEXT;
     enum Status {
@@ -38,26 +38,26 @@ class ChooseNextTrack : public Pages::RaceMenu {  // use page 0x27
     bool IsPausePage() const override;
     const char *GetButtonsBRCTRName() const override;
 
-   private:
+private:
     void OnRightArrowSelect(SheetSelectControl &control, u32 hudSlotId);
     void OnLeftArrowSelect(SheetSelectControl &control, u32 hudSlotId);
     void OnButtonClick(PushButton &button, u32 hudSlotId);  // 8055a0f4
 
-   public:
+public:
     SectionId ProcessHAW(SectionId defaultId);
     PageId GetPageAfterWifiResults(PageId defaultId) const;
 
-   private:
+private:
     void UpdateButtonInfo(s32 direction);
     void UpdateRH1();
 
-   public:
+public:
     const bool isBattle;
     Status status;
     bool isHost;
     bool hasReceivedHostTrack[12];  // for the host to send confirmation once everyone has sent their confirmation
 
-   private:
+private:
     void InitExtraControls(u32 gameControlCount);
     PtmfHolder_2A<ChooseNextTrack, void, SheetSelectControl &, u32> onRightArrowSelectHandler;
     PtmfHolder_2A<ChooseNextTrack, void, SheetSelectControl &, u32> onLeftArrowSelectHandler;

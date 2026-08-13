@@ -4,7 +4,7 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
 //_sinit_ at 807f9258
 class CtrlRaceWifiStartMessage : public CtrlRaceBase {
-   public:
+public:
     // no ctor
     ~CtrlRaceWifiStartMessage() override;  // 807f91f0 vtable 808d4110
     void OnUpdate() override;  // 0x1c 807f8c34
@@ -37,7 +37,7 @@ class CtrlRaceWaitSymbol : public CtrlRaceBase {
 };
 
 class CtrlRaceWifiFinishMessage : public CtrlRaceBase {
-   public:
+public:
     // no ctor
     ~CtrlRaceWifiFinishMessage() override;  // 807f9180 vtable 808d40c0
     void OnUpdate() override;  // 0x1c 807f8f8c

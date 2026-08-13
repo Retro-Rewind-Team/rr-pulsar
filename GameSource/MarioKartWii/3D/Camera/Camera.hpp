@@ -21,7 +21,7 @@ class Player;
 }
 
 class GameCamValues {
-   public:
+public:
     void Reset();  // 805a1c3c
     Vec3 position;  // 0
     Vec3 prevPosition;  // 0xC
@@ -53,7 +53,7 @@ class GameCamValues {
 // size_assert(GameCamValues, 0xcc);
 
 class CameraLink {
-   public:
+public:
     static ut::List cameraList;  // 809c19a8
     static void InitCameraList();  // 805a1a44
     static void UpdateAllCameras();  // 805a1af0
@@ -72,7 +72,7 @@ class CameraLink {
 };  // 0x10
 
 class GameCamera : public EGG::LookAtCamera, public CameraLink {
-   public:
+public:
     GameCamera(GameScreen &gameScreen, bool registerCamera);  // 805a18bc
 
     // LookAtCamera vtable 808b6b10 at 0x0

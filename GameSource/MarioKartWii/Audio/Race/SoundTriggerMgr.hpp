@@ -9,7 +9,7 @@ class Player;
 
 namespace Audio {
 class SoundTriggerMgr {
-   public:
+public:
     static SoundTriggerMgr *sInstance;  // 809c28a8
     static SoundTriggerMgr *CreateInstance();  // 80718414
     static void DestroyInstance();  // 80718498

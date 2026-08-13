@@ -11,7 +11,7 @@ namespace detail {
 // size_assert(void*, 0x4);
 class FrameHeap {
     struct Block {
-       public:
+    public:
         ut::LinkListNode link;
         void *buffer;
         u32 size;
@@ -19,7 +19,7 @@ class FrameHeap {
         void *callbackArg;
     };
     class Section {
-       public:
+    public:
         ut::LinkListNode link;
         ut::LinkList<Block, offsetof(Block, link)> blockList;
     };

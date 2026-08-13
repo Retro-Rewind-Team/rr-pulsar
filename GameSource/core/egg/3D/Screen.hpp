@@ -22,7 +22,7 @@ struct EFBParams {
 };
 
 class Screen : public Frustum {
-   public:
+public:
     struct InitParams {
         static InitParams *params;  // 802a3ee8
         // these are the values of the root screen, but also the values all screens use by default

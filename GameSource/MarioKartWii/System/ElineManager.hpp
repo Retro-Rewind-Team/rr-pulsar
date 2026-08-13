@@ -7,7 +7,7 @@
 That means the "enter/do not enter" flag can be switched at will that way */
 
 class ElineController {
-   public:
+public:
     ElineController();  // 8052d298 inlined
     KMP::Holder<GOBJ> *gobjHolder;
     ElineController *next;
@@ -19,7 +19,7 @@ class ElineController {
 };  // 0x10
 
 class ElineMgr {
-   public:
+public:
     ElineMgr();  // 8052d46c
     void Update();  // 8052d888
     ElineController *GetController(KMP::Holder<GOBJ> *gobj);  // 8052d828

@@ -15,7 +15,7 @@ to prevent ugly Z-fighting
 namespace Pulsar {
 namespace UI {
 class ExpFroom : public Pages::FriendRoom {
-   public:
+public:
     ExpFroom() : areControlsHidden(false) {
         this->onSettingsClickHandler.subject = this;
         this->onSettingsClickHandler.ptmf = &ExpFroom::OnSettingsButtonClick;
@@ -31,7 +31,7 @@ class ExpFroom : public Pages::FriendRoom {
     void OnMessageBoxClick(Pages::MessageBoxTransparent *msgPage);
     void OnActivate() override;
 
-   private:
+private:
     void ExtOnButtonSelect(PushButton &button, u32 hudSlotId);
     void OnSettingsButtonClick(PushButton &button, u32 hudSlotId);
     void OnTeamsButtonClick(PushButton &button, u32 hudSlotId);
@@ -44,7 +44,7 @@ class ExpFroom : public Pages::FriendRoom {
     PushButton kickButton;
     bool areControlsHidden;
 
-   public:
+public:
     PulPageId topSettingsPage;
 };
 }  // namespace UI

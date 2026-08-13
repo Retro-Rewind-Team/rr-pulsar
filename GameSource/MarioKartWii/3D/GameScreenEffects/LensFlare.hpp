@@ -13,9 +13,9 @@ class GameScreenEffectsMgr;
 class LensFlareMgr;
 
 class LensFlare : public StatePtmfTrigger<LensFlare> {
-   public:
+public:
     class Texture {
-       public:
+    public:
         Texture();  // 8054b094
         void CopyFromEFB();  // 8054b1a8
         void SetPosition(float left, float top);  // 8054b164
@@ -34,7 +34,7 @@ class LensFlare : public StatePtmfTrigger<LensFlare> {
     };  // 0xC
 
     class QuadDrawer {
-       public:
+    public:
         QuadDrawer(const QuadDrawerParams &params, LensFlareMgr *flare);  // 8054ab2c
         void Draw(u8 alpha);  // 8054adf0 draws a quad using the viewMtx, the tevColor
         u32 idx;  // 0x0
@@ -81,14 +81,14 @@ class LensFlare : public StatePtmfTrigger<LensFlare> {
 };  // 0xa4
 
 class LensFXObj {
-   public:
+public:
     const KMP::Holder<GOBJ> &gobjHolder;
     Vec3 position;  // 0x4
     u8 unknown_0x10[0x18 - 0x10];  // 0x10
 };
 
 class LensFlareMgr {
-   public:
+public:
     LensFlareMgr(GameScreenEffectsMgr *mgr, u32 screenCount);  // 8054bf50
     virtual ~LensFlareMgr();  // 8054c350 vtable 808b3e64
     u32 GetBRRESTexCount() const;  // 8054c414

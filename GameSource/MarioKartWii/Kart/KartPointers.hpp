@@ -29,7 +29,7 @@ class RaceCamera;
 namespace Kart {
 
 class Pointers {
-   public:
+public:
     Values *values;  // 0x0
     Status *kartStatus;  // 0x4
     Body *kartBody;  // 0x8

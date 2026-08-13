@@ -9,7 +9,7 @@
 namespace Objects {
 
 class HwanwanBall : public ObjectCollidable, public StatePtmfTrigger<HwanwanBall> {
-   public:
+public:
     explicit HwanwanBall(const KMP::Holder<GOBJ> &gobjHolder);  // 806e95b0
     // ObjectCollidable vtable 808c7554
     ~HwanwanBall() override;  // 806ec6e0
@@ -32,7 +32,7 @@ class HwanwanBall : public ObjectCollidable, public StatePtmfTrigger<HwanwanBall
 };  // 0x4a0
 
 class Hwanwan_Chn : public ObjectCollidable {
-   public:
+public:
     ~Hwanwan_Chn() override;  // 806c6adc vtable 808c41d8
     void OnStart() override;  // 0xC 806c6a8c
     const char *GetName() const override;  // 0x28 806c6b24
@@ -46,7 +46,7 @@ class Hwanwan_Chn : public ObjectCollidable {
 };  // 0xc0
 
 class HwanwanItembox : public Itembox {
-   public:
+public:
     HwanwanItembox(u16 routeId, float baseSpeed);  // 806c4ef0
     ~HwanwanItembox() override;  // 806c6a40 vtable 808c3ff8
     void OnStart() override;  // 0xC 806c4ff4

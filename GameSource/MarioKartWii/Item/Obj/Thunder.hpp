@@ -6,7 +6,7 @@
 //_sinit_ at 807b7d74
 namespace Item {
 class ObjThunder : public ObjMiddle {
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807b7b00
 
     void InitSelf() override;  // 0x8 807b7c04 vtable 808d2770

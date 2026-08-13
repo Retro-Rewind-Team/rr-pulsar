@@ -18,7 +18,7 @@ class HanachanPart;
 using namespace nw4r;
 
 class HanachanPart : public ObjectCollidable {
-   public:
+public:
     ~HanachanPart() override;  // 806c7e68 vtable 808c4720
     void OnStart() override;  // 0xC 806c6b7c
     void Update() override;  // 0x14 806c6c10
@@ -50,7 +50,7 @@ class HanachanPart : public ObjectCollidable {
 };  // 0xe4
 
 class HanachanBody : public HanachanPart {
-   public:
+public:
     ~HanachanBody() override;  // 806ccad8 vtable 808c44e0
     void OnStart() override;  // 0xC 806c8878
     const char *GetSubFileName() const override;  // 0x38 806ccb80
@@ -69,14 +69,14 @@ class HanachanBody : public HanachanPart {
 };  // 0xFC
 
 class BossHanachanHead : public HanachanPart {  // ObjectNum 0xf2 = 242 BossHanachanHead
-   public:
+public:
     class Handler {
-       public:
+    public:
         explicit Handler(BossHanachanHead *head);  // inlined
         BossHanachanHead *head;
     };
     class CalcWorldCB : public ModelCalcBase, public EmptyModelCalcParent, public g3d::ICalcWorldCallback, public Handler {
-       public:
+    public:
         explicit CalcWorldCB(BossHanachanHead *head);  // inlined
         // vtable 808c46f8 for empty, 808c4700 at 0x10
         ~CalcWorldCB() override;  // thunk 806cce80 func 806cce38
@@ -110,7 +110,7 @@ class BossHanachanHead : public HanachanPart {  // ObjectNum 0xf2 = 242 BossHana
 };  // 0x104
 
 class Hanachan : public ObjectCollidable, public StatePtmfTrigger<Hanachan> {  // ObjectNum 0xe2 = 226 Hanachan
-   public:
+public:
     explicit Hanachan(const KMP::Holder<GOBJ> &gobjHolder);  // 806c8a5c
     ~Hanachan() override;  // 806c9598 vtable 808c43b8
     void OnStart() override;  // 0xC 806c9630

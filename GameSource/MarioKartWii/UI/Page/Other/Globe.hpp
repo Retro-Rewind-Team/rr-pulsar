@@ -8,7 +8,7 @@
 class FriendMatchingPlayer;
 namespace Pages {
 class Globe : public Page {  // ID 0x95
-   public:
+public:
     static const PageId id = PAGE_GLOBE;
     class MessageWindow : public LayoutUIControl {
         // no ctor

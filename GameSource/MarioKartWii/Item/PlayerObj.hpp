@@ -9,7 +9,7 @@ namespace Item {
 class Player;
 
 class PlayerObj : public Kart::Link {  // most of the values are only updated when an item is used or tethered
-   public:
+public:
     enum UseType {
         ONLY_USE,  // mushroom
 

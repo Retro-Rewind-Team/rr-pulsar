@@ -6,7 +6,7 @@
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuMovie.hpp>
 // CtrlMenuCup _sinit_ at 807e63ec
 class CtrlMenuCupSelectCup : public LayoutUIControl {
-   public:
+public:
     // ctor inlined
     ~CtrlMenuCupSelectCup() override;  // 80627adc vtable 808d3234
     void InitSelf() override;  // 807e5894 0x18
@@ -25,7 +25,7 @@ class CtrlMenuCupSelectCup : public LayoutUIControl {
 // size_assert(CtrlMenuCupSelectCup, 0x15cc);
 
 class CtrlMenuCupSelectCourse : public LayoutUIControl {
-   public:
+public:
     static CourseId idxToCourseId[32];  // 808a8410
     // ctor inlined
     ~CtrlMenuCupSelectCourse() override;  // 80627b64 vtable 808d31f8

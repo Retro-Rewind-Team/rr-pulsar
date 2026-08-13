@@ -5,7 +5,7 @@
 
 using namespace nw4r;
 class ShadowModelDirector : public ModelDirector {
-   public:
+public:
     ShadowModelDirector(ClipInfo *clipInfo, u32 r5, u32 bitfield);  // 805b8984
     ShadowModelDirector(u32 bitfield);  // 805b89f4
     ~ShadowModelDirector() override;  // 805b8a48 vtable 808b7340
@@ -16,7 +16,7 @@ class ShadowModelDirector : public ModelDirector {
 };  // 0x58
 
 class ShadowModelsMgr {
-   public:
+public:
     static ShadowModelsMgr *sInstance;  // 809c1b40
     static ShadowModelsMgr *CreateInstance();  // 805b8c3c
     static void DestroyInstance();  // 805b8cfc

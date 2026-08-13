@@ -5,7 +5,7 @@
 
 namespace Audio {
 class ItemAlterationMgr {  // changes the music or the pitch when using a mega/a star/getting small or squished
-   public:
+public:
     enum Status {
         STATUS_PLAYER_MEGA,
         STATUS_PLAYER_STAR,

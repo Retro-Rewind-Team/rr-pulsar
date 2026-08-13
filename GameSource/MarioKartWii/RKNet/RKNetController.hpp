@@ -55,7 +55,7 @@ struct Friend {
 };  // total size 0xC
 
 class SplitRACEPointers {
-   public:
+public:
     SplitRACEPointers();  // 8065a3dc inlined
     ~SplitRACEPointers();  // 8065a474
 
@@ -158,7 +158,7 @@ struct ErrorParams {
 };
 
 class Controller {
-   public:
+public:
     static Controller *sInstance;  // 809c20d8
     static Controller *CreateInstance();  // 80655b24
     static void DestroyInstance();  // 80655bac
@@ -268,10 +268,10 @@ class Controller {
     u64 RACEToSendTimesTaken[12];  // 0x2a0 last send time minus the time of the send before it
     u64 RACEReceivedTimesTaken[12];  // 0x300 last receive time minus the time of the receive before it
     u8 lastRACESendAid;  // 0x360 aid a packet was last sent to
-   private:  // because it's modified in pulsar
+private:  // because it's modified in pulsar
     u8 fullReceivedPackets[12][0x2e0];  // 0x361 1 per aid
     u8 padding[3];  // 0x25e1
-   public:
+public:
     StatusData localStatusData;  // 0x25e4 8 bytes, see http://wiki.tockdom.com/wiki/MKWii_Network_Protocol/Server/gpcm.gs.nintendowifi.net#locstring
     Friend friends[30];  // 0x25ec
     bool friendsListIsChanged;  // 0x2754 true if unprocessed changes have happeend

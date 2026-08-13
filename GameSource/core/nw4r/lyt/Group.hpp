@@ -14,7 +14,7 @@ struct PaneLink {
 }  // namespace detail
 
 class Group {
-   public:
+public:
     Group();  // 80079910
     Group(const res::Group *src, Pane *rootPane);  // 80079980
     virtual ~Group();  // 80079aa0 vtable 802734b0
@@ -27,7 +27,7 @@ class Group {
 };  // total size 0x2c
 
 class GroupContainer {
-   public:
+public:
     GroupContainer() {};
     ~GroupContainer();  // 80079be0
     void AppendGroup(Group *group);  // 80079cb0

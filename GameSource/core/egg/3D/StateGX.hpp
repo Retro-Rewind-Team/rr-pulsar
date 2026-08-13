@@ -7,7 +7,7 @@
 namespace EGG {
 
 class StateGX {
-   public:
+public:
     struct CachedState {
         enum Status {  // if any if set, when the corresponding func is called, it checks if the old values are the same as the one the user is trying to set, which prevents useless calls
             CACHED_STATUS_PROJECTIONV = 0x1,

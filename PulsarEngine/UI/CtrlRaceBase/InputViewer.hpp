@@ -51,7 +51,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
         TriggerState_Count  // Invalid
     };
 
-   public:
+public:
     CtrlRaceInputViewer() {
         m_dpadState = DpadState_Off;
         m_dpadTimer = 0;
@@ -68,7 +68,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
     static u32 Count();
     static void Create(Page &page, u32 index, u32 count);
 
-   private:
+private:
     void Load(const char *variant, u8 id);
 
     void setDpad(DpadState state);
@@ -76,7 +76,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
     void setTrigger(Trigger trigger, TriggerState state);
     void setStick(Vec2 state);
 
-   private:
+private:
     nw4r::lyt::Pane *m_dpadPanes[(int)DpadState_Count];
     nw4r::lyt::Pane *m_accelPanes[(int)AccelState_Count];
     nw4r::lyt::Pane *m_triggerPanes[(int)Trigger_Count][(int)TriggerState_Count];
@@ -93,7 +93,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
 
     static const s8 DPAD_HOLD_FOR_N_FRAMES;
 
-   private:
+private:
     static const char *DpadStateToName(DpadState state) {
         switch (state) {
             case DpadState_Up:

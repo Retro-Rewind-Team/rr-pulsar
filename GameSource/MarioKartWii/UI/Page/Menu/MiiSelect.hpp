@@ -8,7 +8,7 @@
 
 //_sinit_ at 80849570
 class MiiName : public LayoutUIControl {
-   public:
+public:
     ~MiiName() override;  // 80626640 vtable 808d9a58
     void InitSelf() override;  // 0x18 80849284
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80849504

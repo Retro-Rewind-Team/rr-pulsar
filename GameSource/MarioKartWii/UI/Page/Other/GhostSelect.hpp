@@ -38,7 +38,7 @@ class GhostSelectSupporting : public Page {  // ID 0x70
 // size_assert(GhostSelectSupporting, 0x5C);
 
 class GhostSelect : public Page {  // ID 0x71
-   public:
+public:
     static const PageId id = PAGE_GHOST_SELECT;
     GhostSelect();  // 806395ec vtable 808bec2c
     ~GhostSelect() override;  // 8063982c

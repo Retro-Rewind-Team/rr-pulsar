@@ -9,7 +9,7 @@
 namespace Kart {
 
 class Status {
-   public:
+public:
     explicit Status(const Values &values);  // 805943b4
     void Reset();  // 8059455c
     void Init();  // 80594594

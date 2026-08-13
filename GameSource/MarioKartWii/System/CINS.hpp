@@ -18,14 +18,14 @@ struct WadList {
 };
 
 class WadListHolder {
-   public:
+public:
     virtual ~WadListHolder();  // 80510a50 vtable 808b2c04
     WadList *wadList;
 };
 
 // This is obviously used to install the MKChannel, but this is also how the game launches "HALP", the "Region Select" channel, it corresponds to idx 3 (see 8088f720)
 class CINS {  // official name? "channel installer"
-   public:
+public:
     enum ChannelErrCode {
         IS_INSTALLED,
         NOT_INSTALLED = 1,

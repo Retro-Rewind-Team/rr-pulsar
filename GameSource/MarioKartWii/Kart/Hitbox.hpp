@@ -6,7 +6,7 @@
 
 namespace Kart {
 class CollisionData {
-   public:
+public:
     CollisionData();  // 805b821c
     u32 types;  // bit flags:
     /*
@@ -35,7 +35,7 @@ class CollisionData {
 };  // Total size 0x84
 
 class Hitbox {
-   public:
+public:
     Hitbox();  // 805b7f48
     void Reset();  // 808b7f84
     void Update(const Vec3 &scale, Quat *rotation, const Vec3 &centerPosition, float scale0, float scale1);  // 805b7fbc
@@ -48,7 +48,7 @@ class Hitbox {
 };  // Total size 0x30
 
 class HitboxGroup {
-   public:
+public:
     HitboxGroup();  // 805b82bc
     explicit HitboxGroup(const BSP::Hitbox &hitboxes);  // 805b84c0
     HitboxGroup(const Vec3 &position, float radius);  // 805b875c

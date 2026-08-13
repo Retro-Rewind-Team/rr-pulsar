@@ -11,16 +11,16 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class SoundThread {
-   public:
+public:
     class SoundFrameCallback {
-       public:
+    public:
         ut::LinkListNode link;
         virtual ~SoundFrameCallback();
         virtual void OnBeginSoundFrame();
         virtual void OnEndSoundFrame();
     };
     class PlayerCallback {
-       public:
+    public:
         ut::LinkListNode link;
         virtual ~PlayerCallback();
         virtual void OnUpdateFrameSoundThread();

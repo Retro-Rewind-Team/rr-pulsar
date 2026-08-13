@@ -5,7 +5,7 @@
 
 namespace Objects {
 class Dokan_sfc : public ObjectCollidable {  // ObjectNum 0x12e = 302
-   public:
+public:
     explicit Dokan_sfc(const KMP::Holder<GOBJ> &gobjHolder);  // 807787f0
     ~Dokan_sfc() override;  // 80778fec vtable 808d04d8
     void OnStart() override;  // 0xC 80778830

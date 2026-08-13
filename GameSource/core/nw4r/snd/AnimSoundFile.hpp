@@ -53,7 +53,7 @@ struct AnimSoundFile {  // https://wiki.tockdom.com/wiki/BRASD_(File_Format)#Fil
 };
 
 class AnimSoundFileReader {
-   public:
+public:
     AnimSoundFileReader();  // 80088100
     bool Setup(const void *animSoundData);  // 80088110
     void Shutdown();  // 80088180

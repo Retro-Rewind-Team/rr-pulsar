@@ -7,7 +7,7 @@ namespace Pages {
 
 //_sinit_ at 808551ec
 class Unlock : public MenuInteractable {  // ID 0xCD
-   public:
+public:
     static const PageId id = PAGE_UNLOCK;
     Unlock();  // 8062be24
     ~Unlock() override;  // 80855130 vtable 808da4d0

@@ -23,7 +23,7 @@ struct PointInfo {
 };
 
 class ENPTSettingsHolder {
-   public:
+public:
     virtual ~ENPTSettingsHolder();  // 8073b49c vtable 808cb134
     virtual bool IsCutPoint() const;  // 0xC 8073ebe4 checks if setting 1 == 1
     virtual bool IsUseOffroadCutItem() const;  // 0x10 8073ebf8
@@ -65,7 +65,7 @@ struct ENPTTransitionParams {
 };
 
 class ENPTController {
-   public:
+public:
     ENPTController();  // 8073c54c
     virtual ~ENPTController();  // 8073c5b8 vtable 808cb1b0
     virtual void Init(bool r4, float startOffset);  // 0xc 8073c644
@@ -104,7 +104,7 @@ class ENPTController {
 };  // 0x34
 
 class EnemyRouteController {
-   public:
+public:
     EnemyRouteController();  // 8073b0f8
     virtual ~EnemyRouteController();  // 8073b49c vtable 808cb01c
     virtual void Init(const PointInfo &info);  // 0xc 8073b5dc
@@ -148,7 +148,7 @@ class ParamActionCalculator {
 };
 
 class CPUDriving : public Base {
-   public:
+public:
     CPUDriving(Inputs &inputs);  // 80729d9c
     ~CPUDriving() override;  // offset 0x34 80729f18 vtable 808c9cfc
     virtual void Init();  // 0x18 8072a0e8
@@ -187,7 +187,7 @@ typedef Actions<CPUDrivingRace> CPUDrivingAction;  // 808ca608
 // AI::Actions<CPUDrivingRace> void OnEnd() override; //0x14 80730AF8
 
 class CPUDrivingRaceSub8c {
-   public:
+public:
     CPUDrivingRaceSub8c(Inputs &inputs);  // 8073f37c
     virtual ~CPUDrivingRaceSub8c();  // 8073f3c0 vtable 808cb294
     void Init();  // 8073f400

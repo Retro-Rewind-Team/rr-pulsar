@@ -8,7 +8,7 @@
 #include <MarioKartWii/NAND/NandUtils.hpp>
 
 class NandMgr {
-   public:
+public:
     static const char *saveFileNames[7];  // 808b3228 to 808b3240 see bottom of header
     static NandMgr *sInstance;  // 809bd720
     static NandMgr *CreateInstance();  // 8052bdf4

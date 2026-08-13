@@ -9,7 +9,7 @@
 //_sinit_ at 806531dc
 namespace Pages {
 class YesNo : public Page {
-   public:
+public:
     static const PageId id = PAGE_YESNO_FULL;  // ID 0x53
     YesNo();  // 80652300 inlined
     ~YesNo() override;  // 806523a4 vtable 808c08e8
@@ -42,10 +42,10 @@ class YesNo : public Page {
 // size_assert(YesNo, 0x8b8);
 
 class YesNoPopUp : public YesNo {  // ID 0x4e for example Choose/Random online cup select
-   public:
+public:
     static const PageId id = PAGE_VOTERANDOM_MESSAGE_BOX;
     class Container : public LayoutUIControl {
-       public:
+    public:
         Container();  // 80652be0
         ~Container() override;  // 80652c1c
         void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 80652d44
@@ -66,7 +66,7 @@ class YesNoPopUp : public YesNo {  // ID 0x4e for example Choose/Random online c
 // size_assert(YesNoPopUp, 0xba0);
 
 class YesNoFull : public YesNo {  // ID 0x53 not displayed on top of another page, takes the whole space
-   public:
+public:
     YesNoFull();  // 80652d7c
     ~YesNoFull() override;  // 80652e4c vtable 808c07d8
     void OnInit() override;  // 80652ef0

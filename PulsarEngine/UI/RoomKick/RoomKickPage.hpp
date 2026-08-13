@@ -16,7 +16,7 @@ namespace Pulsar {
 namespace UI {
 
 class RoomKickPage : public Pages::MenuInteractable {
-   public:
+public:
     static const PulPageId id = PULPAGE_ROOMKICK;
 
     RoomKickPage();
@@ -35,7 +35,7 @@ class RoomKickPage : public Pages::MenuInteractable {
     void ClearKickHistory();
     u32 *GetKickHistory(u32 &outCount);
 
-   private:
+private:
     void OnBackPress(u32 hudSlotId);
     void OnButtonClick(PushButton &button, u32 hudSlotId);
     void OnButtonSelect(PushButton &button, u32 hudSlotId);

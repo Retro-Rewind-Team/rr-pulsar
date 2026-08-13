@@ -9,7 +9,7 @@
 namespace Pages {
 
 class Suggest60Hz : public Page {  // ID 0x2 background page that manages the section of the same name
-   public:
+public:
     static const PageId id = PAGE_CORRUPT_SAVE_MGR;
     Suggest60Hz();  // 806376e8
     ~Suggest60Hz() override;  // 80637734 vtable 808be9f0

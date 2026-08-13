@@ -45,7 +45,7 @@ struct TCLostEntry {  // ItemObjId itemObjId, u8 playerId, u8 r5, u16 eventBitfi
 };  // 0x3 +2 for time u16 = 0x5
 
 class EVENTBuffer {
-   public:
+public:
     struct Entry {
         u8 data[0x18];
         ItemObjId objId;  // 0x18

@@ -10,7 +10,7 @@
 
 namespace EGG {
 class Thread {
-   public:
+public:
     Thread(u32 stackSize, int msgCount, int priority, Heap *heap);  // 802432e0
     Thread(OS::Thread *thread, int msgCount);  // 802433ac, probably creates an EGG::Thread around the OSthread
     virtual ~Thread();  // 8024341c vtable 802a3fc0
@@ -31,7 +31,7 @@ class Thread {
 };  // total size 0x48
 
 class TaskThread : public Thread {
-   public:
+public:
     typedef void (*TaskFunction)(void *);
     struct TJob {  // this is the message for OSSendMessage
         TJob();  // 80242b94

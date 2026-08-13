@@ -5,7 +5,7 @@
 
 namespace Objects {
 class MiiKanban : public ObjectCollidable {  // ObjectNum 0x18e = 398
-   public:
+public:
     explicit MiiKanban(const KMP::Holder<GOBJ> &gobjHolder);  // 80773930
     ~MiiKanban() override;  // 80773c1c vtable 808cf9e0
     void OnStart() override;  // 0xC 80773c08

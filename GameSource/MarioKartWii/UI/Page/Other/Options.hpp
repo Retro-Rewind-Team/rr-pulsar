@@ -13,7 +13,7 @@ Contributors:
 //_sinit_ at 80601284
 namespace Pages {
 class Options : public Page {  // ID 0xC0
-   public:
+public:
     static const PageId id = PAGE_OPTIONS;
     Options();  // 805fd518
     ~Options() override;  // 805fd638 vtable 808ba3ec

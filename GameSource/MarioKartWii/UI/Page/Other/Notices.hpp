@@ -9,7 +9,7 @@
 namespace Pages {
 
 class Suggest60Hz : public Page {  // ID 0x2 background page that manages the section of the same name
-   public:
+public:
     static const PageId id = PAGE_CORRUPT_SAVE_MGR;
     Suggest60Hz();  // 806376e8
     ~Suggest60Hz() override;  // 80637734 vtable 808be9f0
@@ -27,7 +27,7 @@ class Suggest60Hz : public Page {  // ID 0x2 background page that manages the se
 // size_assert(Suggest60Hz, 0x1cc);
 
 class ESRBNotice : public Page {  // ID 0x1
-   public:
+public:
     static const PageId id = PAGE_ESRB_NOTICE;
     ESRBNotice();  // 80637514
     ~ESRBNotice() override;  // 80637560 vtable 808bea54

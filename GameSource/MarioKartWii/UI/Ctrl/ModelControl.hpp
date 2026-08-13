@@ -23,7 +23,7 @@ class BackGroundModelControl : public LayoutUIControl {
 // size_assert(BackGroundModelControl, 0x180);
 
 class NoteModelControl : public LayoutUIControl {
-   public:
+public:
     NoteModelControl();  // 805f42b4 vtable 808b9ad0
     ~NoteModelControl() override;  // 805f42f0
     void InitSelf() override;  // 805f44c0
@@ -43,7 +43,7 @@ class NoteModelControl : public LayoutUIControl {
 // size_assert(NoteModelControl, 0x180);
 
 class VehicleModelControl : public LayoutUIControl {  // this c
-   public:
+public:
     VehicleModelControl();  // 805f39bc
     ~VehicleModelControl() override;  // 805f39f8 vtable 808B9B0C
     void InitSelf() override;  // 0x18 805f3c8c
@@ -65,7 +65,7 @@ class VehicleModelControl : public LayoutUIControl {  // this c
 // size_assert(VehicleModelControl, 0x184);
 
 class DriverModelControl : public LayoutUIControl {
-   public:
+public:
     DriverModelControl();  // 805f3248
     ~DriverModelControl() override;  // 805f3284 vtable 808b9b48
     void InitSelf() override;  // 0x18 805f3568

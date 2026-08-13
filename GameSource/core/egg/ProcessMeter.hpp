@@ -9,7 +9,7 @@ namespace EGG {
 class ProcessMeter;
 
 class PerformanceView {  // vtable not present in-game?
-   public:
+public:
     virtual void measureBeginFrame();  // 0x8
     virtual void measureEndFrame();  // 0xc
     virtual void measureBeginRender();  // 0x10
@@ -22,9 +22,9 @@ class PerformanceView {  // vtable not present in-game?
 };
 
 class ProcessMeter : public Thread, public PerformanceView {
-   public:
+public:
     class ProcessBar {
-       public:
+    public:
         ProcessBar(nw4r::ut::Color color, float yOrigin, float ySize) : xOrigin(0.0), xSize(0.0), tickBegin(0), tickEnd(0), color(color), yOrigin(yOrigin), ySize(ySize), bitfield(0) {};  // inlined
         float xOrigin;
         float xSize;
@@ -39,7 +39,7 @@ class ProcessMeter : public Thread, public PerformanceView {
     };  // 0x28
 
     class CpuMonitor {  // red bar
-       public:
+    public:
         CpuMonitor(const nw4r::ut::Color color, float yOrigin) : bar(color, yOrigin, 1.0f) {};  // inlined
 
         virtual void show();  // 0x8 80238750 vtable 802a3d60
@@ -50,7 +50,7 @@ class ProcessMeter : public Thread, public PerformanceView {
     };  // 0x2c
 
     class CpuGpMonitor : public CpuMonitor {  // cpumonitor's bar is the green
-       public:
+    public:
         struct Next {
             void *gxFifoWritePtr;  // from GX::GetFifoPtrs
             u16 curGXDrawSyncToken;

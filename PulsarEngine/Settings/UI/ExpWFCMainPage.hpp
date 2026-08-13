@@ -9,7 +9,7 @@ namespace Pulsar {
 namespace UI {
 
 class ExpWFCMain : public Pages::WFCMainMenu {
-   public:
+public:
     ExpWFCMain() {
         this->onSettingsClick.subject = this;
         this->onSettingsClick.ptmf = &ExpWFCMain::OnSettingsButtonClick;
@@ -29,7 +29,7 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     void OnInit() override;
     void BeforeControlUpdate() override;
 
-   private:
+private:
     void OnSettingsButtonClick(PushButton &pushButton, u32 r5);
     void ExtOnButtonSelect(PushButton &pushButton, u32 hudSlotId);
     void OnMainButtonClick(PushButton &pushButton, u32 hudSlotId);
@@ -52,13 +52,13 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     LayoutUIControl playerCount;
     LayoutUIControl rankInfo;
 
-   public:
+public:
     PulPageId topSettingsPage;
     static u32 lastClickedMainMenuButton;
 };
 
 class ExpWFCModeSel : public Pages::WFCModeSelect {
-   public:
+public:
     ExpWFCModeSel() : region(0xA) {
         this->onButtonSelectHandler.ptmf = &ExpWFCModeSel::OnModeButtonSelect;
         this->onModeButtonClickHandler.ptmf = &ExpWFCModeSel::OnModeButtonClick;
@@ -69,7 +69,7 @@ class ExpWFCModeSel : public Pages::WFCModeSelect {
     static void OnActivatePatch();
     static void ClearModeContexts();
 
-   public:
+public:
     void OnModeButtonSelect(PushButton &modeButton, u32 hudSlotId);  // 8064c718
     void OnModeButtonClick(PushButton &pushButton, u32 r5);
 

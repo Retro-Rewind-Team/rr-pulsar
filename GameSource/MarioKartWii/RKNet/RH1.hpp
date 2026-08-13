@@ -35,7 +35,7 @@ struct RH1Data {
 // size_assert(RH1Data, 0x30);
 
 class RH1Handler {
-   public:
+public:
     static RH1Handler *sInstance;  // 809c2118
     static void CreateInstance();  // 80663aa4
     static void DestroyInstance();  // 80663c38

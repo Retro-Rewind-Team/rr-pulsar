@@ -17,7 +17,7 @@ Melg
 class Page;
 
 class SectionMgr {
-   public:
+public:
     static SectionMgr *sInstance;  // 809c1e38
     static SectionMgr *CreateInstance();  // 80634c90
     static void DestroyInstance();  // 80634cc8

@@ -9,13 +9,13 @@ namespace ef {
 class ParticleManager;
 
 class DrawStrategy {
-   public:
+public:
     virtual ~DrawStrategy();
     virtual void Draw(const DrawInfo &drawInfo, ParticleManager *particleMgr) = 0;
 };
 
 class DrawStrategyImpl : public DrawStrategy {
-   public:
+public:
     struct AheadContext {
         AheadContext(const nw4r::math::MTX34 &viewMtx, ParticleManager *particleMgr);  // 8003dfc0
         ParticleManager *particleManager;
@@ -96,7 +96,7 @@ class DrawStrategyImpl : public DrawStrategy {
 };
 
 class DrawStrategyBuilder {
-   public:
+public:
     virtual DrawStrategy *Create(u32 type);  // 8003bf30 vtable 802725a0
 };
 

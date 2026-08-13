@@ -7,9 +7,9 @@
 namespace nw4r {
 namespace snd {
 class DVDSoundArchive : public SoundArchive {
-   public:
+public:
     class DVDFileStream : public ut::DvdLockedFileStream {
-       public:
+    public:
         // ctor inlined 8009132c
         ~DVDFileStream() override;  // 0xc 80091660 vtable 802742b0
         s32 Read(void *buf, u32 length) override;  // 0x14 800914b0

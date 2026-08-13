@@ -5,7 +5,7 @@
 #include <core/egg/mem/Disposer.hpp>
 
 class ModuleLinker {
-   public:
+public:
     struct ModuleValues {
         OS::ModuleInfo *rawModule;
     };

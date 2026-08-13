@@ -11,7 +11,7 @@ enum ArchiveStatus {
 };
 
 class ArchiveFile {
-   public:
+public:
     // Load functions will also mount the file
     ArchiveFile();  // 80518cc0
     virtual ~ArchiveFile();  // 80518cf4 vtable 808b2c78

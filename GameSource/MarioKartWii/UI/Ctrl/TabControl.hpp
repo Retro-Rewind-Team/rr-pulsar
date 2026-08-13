@@ -6,9 +6,9 @@
 
 //_sinit_ at 80638e6c
 class TabControl : public LayoutUIControl {  // change mii top buttons contains OptionButtons 808beb80
-   public:
+public:
     class OptionButton : public LayoutUIControl {
-       public:
+    public:
         OptionButton();  // 80638048
         ~OptionButton() override;  // 8063813c vtable 808beb80
         void Init() override;  // 80638370

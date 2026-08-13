@@ -8,7 +8,7 @@
 namespace Kart {
 
 class BRRESHandle {
-   public:
+public:
     BRRESHandle(Light *light, bool isGhost, u8 playerId);  // 80576b3c "ApplyTransparency"
     ~BRRESHandle();  // 80576c54
 

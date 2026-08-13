@@ -6,7 +6,7 @@
 namespace EGG {
 
 class Xfb {
-   public:
+public:
     Xfb(Heap *heap);  // 80244160
     static u32 CalcBufferSize(u16 width, u16 height);  // 802441ec
     u16 width;
@@ -16,7 +16,7 @@ class Xfb {
 };  // 0x10
 
 class XfbManager {
-   public:
+public:
     bool Attach(Xfb *xfb);  // 80244200 returns true if it attached a new xfb
     void CopyEFB(bool clear);  // 80244268
     void SetNextFrameBuffer();  // 802442e8

@@ -8,7 +8,7 @@
 
 namespace Pages {
 class RaceMenu : public Page {  // also used for end of races
-   public:
+public:
     RaceMenu();  // 80858ca4
     ~RaceMenu() override;  // 80624b38 vtable 808da928
     PageId GetNextPage() const override;  // 0x10 80632414
@@ -47,7 +47,7 @@ class RaceMenu : public Page {  // also used for end of races
 // size_assert(RaceMenu, 0x344);
 
 class RacePauseMgr {
-   public:
+public:
     static RacePauseMgr *sInstance;  // 809c4730
     static RacePauseMgr *CreateInstance();  // 8085ffd4
     static void DestroyInstance();  // 8086004c

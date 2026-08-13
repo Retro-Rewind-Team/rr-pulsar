@@ -8,7 +8,7 @@
 #include <MarioKartWii/System/Ghost.hpp>
 
 class ServerMgr : public EGG::Disposer {  // SAKE, SOAP, NWC24
-   public:
+public:
     struct AJPGHolder {
         void *ajpgPtr;
         u32 ajpgSize;

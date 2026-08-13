@@ -7,7 +7,7 @@
 //_sinit_ at 8085e644
 namespace Pages {
 class GPVSLeaderboardTotal : public GPVSLeaderboardUpdate {
-   public:
+public:
     static const PageId id = PAGE_GPVS_TOTAL_LEADERBOARDS;  // ID 0x30
     GPVSLeaderboardTotal();  // 806252a8
     ~GPVSLeaderboardTotal() override;  // 8085e540 vtable 808daba4

@@ -19,7 +19,7 @@ namespace g3d {
 4)GX::DrawDone to wait for render processing to finish
 */
 class ScnRoot : public ScnGroup {
-   public:
+public:
     static ScnRoot *Construct(G3dHeap *heap, u32 *size, u32 maxChildren, u32 maxScnObj, u32 lightObjCount, u32 lightSetCount);  // 8006f1a0
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 80070c70 vtable 802731b0
     void G3dProc(u32 g3dproc, u32 param, void *info);  // 0xC 8006f2e0 renders
@@ -54,7 +54,7 @@ class ScnRoot : public ScnGroup {
 
 // Collects the ScnObj to be rendered in the scene graph, and determines its rendering order.
 class ScnObjGather : public IScnObjGather {
-   public:
+public:
     ScnObj **opaArray;  // ScnObj objects to be rendered by DrawOpa are gathered together
     ScnObj **xluArray;  // ScnObj objects to be rendered by DrawXlu are gathered together
     u32 arraySize;

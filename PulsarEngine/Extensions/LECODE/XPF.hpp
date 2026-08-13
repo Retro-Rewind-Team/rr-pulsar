@@ -14,11 +14,11 @@ enum DEF_OBJ_MODE {
 };
 
 class XPFMgr {
-   public:
+public:
     XPFMgr() : randScenario(0) {}
     static void EvaluateXPFAndCreateObjs(ObjectsMgr *mgr, bool isMii);
 
-   private:
+private:
     void EvaluateConditions();
     GOBJ *GetDefinitionObject(u16 id);
     bool CalcDefinitionObjectCondition(GOBJ *gobj, bool neg);

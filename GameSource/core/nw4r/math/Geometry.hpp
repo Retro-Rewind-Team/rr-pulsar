@@ -46,7 +46,7 @@ struct AABB {  // axis-aligned bounding boxes, box of minimum volume within whic
 };  // Total size 0x18
 
 class FRUSTUM {
-   public:
+public:
     FRUSTUM();  // empty
     void Set(float fovy, float aspect, float near, float far, const MTX34 &camera);  // 80085e70
     void Set(float top, float bottom, float left, float right, float near, float far, const MTX34 &camera);  // 80085f30

@@ -8,7 +8,7 @@
 
 //_sinit_ at 805e6b2c
 class MatchingMessageWindow : public LayoutUIControl {
-   public:
+public:
     MatchingMessageWindow();  // 80607d98
     ~MatchingMessageWindow();  // 80607dd4 vtable 808bab40
     void InitSelf() override;  // 0x18 80607e90
@@ -47,7 +47,7 @@ class RandomMatchingPlayer : public LayoutUIControl {
 
 namespace Pages {
 class GlobeSearch : public Page {  // ID 0x8f
-   public:
+public:
     static const PageId id = PAGE_GLOBE_SEARCH;
     GlobeSearch();  // 80608060
     ~GlobeSearch();  // 80608194 vtable 808baad0

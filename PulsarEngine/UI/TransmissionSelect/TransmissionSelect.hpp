@@ -12,7 +12,7 @@ Transmission GetSelectedTransmission(u32 hudSlotId);
 void SetSelectedTransmission(u32 hudSlotId, Transmission transmission);
 
 class TransmissionSelect : public Pages::DriftSelect {
-   public:
+public:
     static const PulPageId id = PULPAGE_TRANSMISSIONSELECT;
 
     void OnInit() override;

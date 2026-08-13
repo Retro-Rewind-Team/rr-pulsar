@@ -15,7 +15,7 @@ namespace EGG {
 using namespace nw4r;
 
 class AudioSystem {
-   public:
+public:
     AudioSystem();  // 80213cc8
     ~AudioSystem();  // 80213ce4
     void Calc();  // 80213d24
@@ -25,9 +25,9 @@ class AudioSystem {
 // size_assert(AudioSystem, 0xC);
 
 class IAudioMgr {
-   public:
+public:
     class Arg {
-       public:
+    public:
     };
     virtual void Initialize(Arg *args);  // 80213690 vtable 802a2910
     virtual void Calc() = 0;
@@ -36,7 +36,7 @@ class IAudioMgr {
 };
 
 class SoundArchivePlayerEGG : public snd::SoundArchivePlayer {  // yes, that's the official name
-   public:
+public:
     // SoundArchivePlayer
     // callback vtable 802a2920
     ~SoundArchivePlayerEGG() override;  // 8021337c
@@ -47,9 +47,9 @@ class SoundArchivePlayerEGG : public snd::SoundArchivePlayer {  // yes, that's t
 // size_assert(SoundArchivePlayerEGG, 0xe0);
 
 class SimpleAudioMgr : public IAudioMgr, public SoundHeapMgr, public ArcPlayer {
-   public:
+public:
     class SimpleAudioMgrArg : public Arg {
-       public:
+    public:
         SimpleAudioMgrArg();  // 80213260
         Heap *heap;
         u32 unknown_0x4;
@@ -78,7 +78,7 @@ class SimpleAudioMgr : public IAudioMgr, public SoundHeapMgr, public ArcPlayer {
 // size_assert(SimpleAudioMgr, 0x6bc);
 
 class ExpAudioMgr : public SimpleAudioMgr {
-   public:
+public:
     static SoundArchivePlayerEGG *audioArchivePlayer;  // 80386d98
     static snd::Sound3DManager *sound3DManagerInstance;  // 80386d9c
     class ExpAudioMgrArg : public SimpleAudioMgrArg {

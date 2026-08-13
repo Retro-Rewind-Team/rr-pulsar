@@ -21,7 +21,7 @@ struct PadInfo {
 };  // 0x10
 
 class SectionPad {
-   public:
+public:
     SectionPad();  // 8061ae6c
     virtual ~SectionPad();  // 8061ae7c vtable 808bb440
     void ResetPad(u32 hudSlotId);  // 8061b7c4 calls Input::Manager's reset Pads

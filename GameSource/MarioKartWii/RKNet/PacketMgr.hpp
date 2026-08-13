@@ -11,7 +11,7 @@
 namespace RKNet {
 
 class PacketMgr {
-   public:
+public:
     static PacketMgr *sInstance;  // 809c1f50
     static PacketMgr *CreateInstance();  // 80653208
     static void DestroyInstance();  // 80653284

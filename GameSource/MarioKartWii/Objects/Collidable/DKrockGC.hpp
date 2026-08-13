@@ -6,7 +6,7 @@
 
 namespace Objects {
 class DKRockGC : public ObjectCollidable {  // ObjectNum 0x198 = 408
-   public:
+public:
     explicit DKRockGC(const KMP::Holder<GOBJ> &gobjHolder);  // 8076f2e0
     ~DKRockGC() override;  // 8076f344 vtable 808cf2d8
     void OnStart() override;  // 0xC 8076f384

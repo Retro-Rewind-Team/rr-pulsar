@@ -12,14 +12,14 @@ class ModelCalcBase {
 };  // 0x8
 
 class EmptyModelCalcParent {
-   public:
+public:
     EmptyModelCalcParent();
     // this causes a 2nd vtable
 };  // 0x4
 
 // ScnObjCallback
 class ModelCalcCallback : public ModelCalcBase, public EmptyModelCalcParent, public g3d::IScnObjCallback {
-   public:
+public:
     // vtable 808b49d8 at 0x8, 808b49d0 at 0xc for empty
     ModelCalcCallback(ModelDirector *mdlDirector, ModelDirector *other, Timing timingOfExec);  // 8055fe34
     ~ModelCalcCallback() override;  // 0x8  thunk 80560388 func 80560010

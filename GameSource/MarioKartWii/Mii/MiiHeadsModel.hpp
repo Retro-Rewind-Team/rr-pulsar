@@ -7,12 +7,12 @@
 class MiiHeadsModel;
 
 class MiiDriverModel : public ModelDirector {
-   public:
+public:
     void UpdateParams(MiiHeadsModel *headsModel);  // 807d0b5c
 };
 
 class MiiHeadsModel : public ModelDirector {
-   public:
+public:
     MiiHeadsModel(u32 r4, MiiDriverModel *driverModel, MiiId id, Mii *mii, u32 r8);  // 807dbd80
     MiiHeadsModel(u32 r4, MiiDriverModel *driverModel, MiiId id, u32 miiIdx, u32 r8, u32 r9);  // 807dbe0c
     MiiHeadsModel(u32 r4, MiiDriverModel *driverModel, MiiId id, Mii *mii, u32 r8, u32 r9);  // 807dbfbc

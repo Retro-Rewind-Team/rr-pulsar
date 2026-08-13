@@ -6,7 +6,7 @@
 
 namespace Pages {
 class QuitConfirmation : public RaceMenu {  // ID 0x2C
-   public:
+public:
     static const PageId id = PAGE_QUIT_CONFIRMATION;
     QuitConfirmation();  // 806250f0
     ~QuitConfirmation() override;  // 806324f4 vtable 808bd3c4

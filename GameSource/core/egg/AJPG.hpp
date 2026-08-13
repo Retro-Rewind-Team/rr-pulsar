@@ -6,7 +6,7 @@
 namespace EGG {
 
 class AJPGCreator {  // unofficial name
-   public:
+public:
     AJPGCreator(u32 size, EGG::Heap *heap);  // 80234950
     u32 CreateImage(const void *sourceImage, u16 width, u16 height, u32 r7, void *workBuffer);  // 802349b0 returns size of the created image
     void *ajpgBuffer;  // 0x0

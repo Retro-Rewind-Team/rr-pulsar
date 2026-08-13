@@ -7,7 +7,7 @@
 
 //_sinit_ at 807e5628
 class CourseButton : public CtrlMenuMovieButton {
-   public:
+public:
     CourseButton();  // 80628074
     ~CourseButton() override;  // 80628130 vtable 808d3100 for CtrlMenuMovieHandler
 
@@ -18,7 +18,7 @@ class CourseButton : public CtrlMenuMovieButton {
 // size_assert(CourseButton, 0x26c);
 
 class CtrlMenuCourseSelectCupSub : public LayoutUIControl {
-   public:
+public:
     CtrlMenuCourseSelectCupSub();  // 80627f6c
     ~CtrlMenuCourseSelectCupSub() override;  // 80627fa8 vtable 808d31b8
     void InitSelf() override;  // 807e47c8
@@ -33,7 +33,7 @@ class CtrlMenuCourseSelectCupSub : public LayoutUIControl {
 };  // total size 0x18c
 
 class CtrlMenuCourseSelectCup : public LayoutUIControl {
-   public:
+public:
     // ctor inlined
     ~CtrlMenuCourseSelectCup() override;  // 80628000 vtable 808d3178
     void InitSelf() override;  // 807e45c0 0x18
@@ -45,7 +45,7 @@ class CtrlMenuCourseSelectCup : public LayoutUIControl {
 // size_assert(CtrlMenuCourseSelectCup, 0xdd4);
 
 class CtrlMenuCourseSelectCourse : public LayoutUIControl {  // layoutUIControl are coursebutton in the ptmfholder
-   public:
+public:
     static CourseId idxToCourseId[32];  // 808a8088
     ~CtrlMenuCourseSelectCourse() override;  // 80628190 vtable 808d30c0
     void InitSelf() override;  // 807e5118 0x18

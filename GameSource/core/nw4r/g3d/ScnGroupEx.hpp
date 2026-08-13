@@ -9,7 +9,7 @@ namespace g3d {
 
 // the class that actually renders the identical materials
 class ScnObjGatherEx : public ScnObjGather {
-   public:
+public:
     ~ScnObjGatherEx() override;
     virtual void SetResMdl(ResMdl);
     virtual ResMdl GetResMdl() const;
@@ -18,7 +18,7 @@ class ScnObjGatherEx : public ScnObjGather {
 };
 
 class ScnObjGatherExScnMdl : public ScnObjGatherEx {
-   public:
+public:
     ScnObjGatherExScnMdl(ScnObj **bufferOpa, ScnObj **bufferXlu, u32 size, ResMdl mdl);  // inlined
     ~ScnObjGatherExScnMdl() override;  // 80076670 vtable 80273290
     void DrawOpa(ResMdlDrawMode *forceDrawMode) override;  // 800759f0
@@ -38,7 +38,7 @@ class ScnObjGatherExScnMdl : public ScnObjGatherEx {
 
 // A group that draws objects which share the same model data all at once
 class ScnGroupEx : public ScnGroup {
-   public:
+public:
     // maxMdlCount: max amount of objects that can be rendered together; resMdl: the model data shared by all children
     static ScnGroupEx *Construct(G3dHeap *heap, u32 *size, u32 maxChildren, u32 maxMdlCount, ResMdl resMdl);  // 80076070
     ScnGroupEx(G3dHeap *heap, ScnObj **array, u32 maxNumChildren, ScnObjGatherEx *collection,

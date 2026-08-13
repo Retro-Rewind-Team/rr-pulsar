@@ -3,7 +3,7 @@
 #include <kamek.hpp>
 
 class Timer {
-   public:
+public:
     Timer();  // 8051c374
     Timer(bool setActive);  // 805442c0 if bool is true, timer is init at 99:99.999
     void SetActive(bool isActive);  // 80544310

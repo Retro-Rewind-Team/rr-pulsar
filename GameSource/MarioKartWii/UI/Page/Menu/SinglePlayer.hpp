@@ -7,7 +7,7 @@
 //_sinit_ at 8084fc88
 namespace Pages {
 class SinglePlayer : public MenuInteractable {  // ID 0x69
-   public:
+public:
     static const PageId id = PAGE_SINGLE_PLAYER_MENU;
     SinglePlayer();  // 80626698
     ~SinglePlayer() override;  // 8084fbfc vtable 808d9f00

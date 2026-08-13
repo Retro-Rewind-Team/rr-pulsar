@@ -7,7 +7,7 @@
 
 //_sinit_ at 805cd91c
 class MiiNameMsgPrinter : public BMGHolder {  // prints a message that contains the current mii name and/or the user friendcode
-   public:
+public:
     MiiNameMsgPrinter();  // 805ee8d0
     ~MiiNameMsgPrinter();  // 805ee900
     void Load();  // 805ee958

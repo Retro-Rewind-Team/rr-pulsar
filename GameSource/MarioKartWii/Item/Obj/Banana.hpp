@@ -5,7 +5,7 @@
 
 namespace Item {
 class ObjBanana : public ObjThrowable {
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807a3a24
 
     void InitSelf() override;  // 0x8 807a4070 vtable 808d1a38

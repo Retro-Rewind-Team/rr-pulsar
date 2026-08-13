@@ -6,7 +6,7 @@
 namespace Objects {
 
 class KoopaFigure64 : public EffectSpawner {  // ObjectNum 0x18b = 395
-   public:
+public:
     explicit KoopaFigure64(const KMP::Holder<GOBJ> &gobjHolder);  // 806da914
     ~KoopaFigure64() override;  // 806db114 vtable 808c5c84
     void OnStart() override;  // 0xC 806daa44

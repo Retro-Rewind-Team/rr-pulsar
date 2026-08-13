@@ -18,7 +18,7 @@ class SceneCreator {  // vtable got done away by the compiler
 
 // size_assert(SceneCreator, 0x4);
 class Scene : public EGG::Disposer {
-   public:
+public:
     Scene();  // 8023ad10
     ~Scene() override;  // 8023ad84, vtable 802a3de0
     virtual void calc();  // 0xc  80007f4c
@@ -40,7 +40,7 @@ class Scene : public EGG::Disposer {
 // size_assert(Scene, 0x30);
 
 class SceneManager {
-   public:
+public:
     static ExpHeap *creatingSceneOtherMEMHeap;  // 80386f04
     static ExpHeap *creatingSceneMainMEMHeap;  // 80386f08
     static Scene *creatingSceneDebugHeap;  // 80386f0c

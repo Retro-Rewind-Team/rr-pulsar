@@ -16,7 +16,7 @@ class EnemyRouteHolder {
 };  // 0x38
 
 class AiMgrSub84 {
-   public:
+public:
     AiMgrSub84();  // 80740d1c
     void AddKartAIController(KartAIController *ai);  // 807414b8
     u8 unknown_[0x194];
@@ -35,7 +35,7 @@ class AIMgrSub94 : public Base {  // battle only
 };  // 0xd0
 
 class Manager {
-   public:
+public:
     static Manager *sInstance;  // 809c2be8
     static Manager *CreateInstance();  // 80738e50
     static void DestroyInstance();  // 80738ea0

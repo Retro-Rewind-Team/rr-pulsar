@@ -24,7 +24,7 @@ class UnkUnkFriendRoomManager {
 // size_assert(UnkUnkFriendRoomManager, 0x8);
 
 class UnkFriendRoomManager {
-   public:
+public:
     ~UnkFriendRoomManager();  // 805dae80
     UnkFriendRoomManager();  // 805daec0
     UnkUnkFriendRoomManager packetHolders[12];
@@ -64,7 +64,7 @@ class FriendMatchingPlayer : public LayoutUIControl {
 // size_assert(FriendMatchingPlayer, 0x1a0);
 
 class MessageSelectControl : public LayoutUIControl {
-   public:
+public:
     MessageSelectControl();  // 805db6c8
     ~MessageSelectControl() override;  // 805db724 vtable 808b8ef0
     void InitSelf() override;  // 0x18 805db8ec
@@ -90,7 +90,7 @@ class MessageSelectControl : public LayoutUIControl {
 namespace Pages {
 
 class FriendJoinMgr : public Page {  // ID 0x9a when joining via channel
-   public:
+public:
     static const PageId id = PAGE_FRIEND_JOIN_MGR;
     FriendJoinMgr();  // 805d796c
     ~FriendJoinMgr() override;  // 805d79b0
@@ -105,7 +105,7 @@ class FriendJoinMgr : public Page {  // ID 0x9a when joining via channel
     PageId nextPage;  // 0x54
 };  // 0x58
 class FriendRoomWaiting : public Page {  // ID 0x9b
-   public:
+public:
     static const PageId id = PAGE_FRIEND_ROOM_WAITING;
     FriendRoomWaiting();  // 805dd330
     ~FriendRoomWaiting();  // 805dd38c vtable 808b8df8
@@ -130,7 +130,7 @@ class FriendRoomWaiting : public Page {  // ID 0x9b
 // size_assert(FriendRoomWaiting, 0x364);
 
 class FriendRoomManager : public Page {  // ID 0x9c
-   public:
+public:
     static const PageId id = PAGE_FRIEND_ROOM_MANAGER;
     FriendRoomManager();  // 805d9b38
     ~FriendRoomManager() override;  // 805d9bcc vtable 808b8f2c
@@ -166,7 +166,7 @@ class FriendRoomManager : public Page {  // ID 0x9c
 // size_assert(FriendRoomManager, 0x2c68);
 
 class FriendRoom : public Page {  // ID 0x9d
-   public:
+public:
     static const PageId id = PAGE_FRIEND_ROOM;
     FriendRoom();  // 805d7f78
     ~FriendRoom() override;  // 805d8160 vtable 808b8fd8
@@ -207,7 +207,7 @@ class FriendRoom : public Page {  // ID 0x9d
 class FriendRoomMessages;
 
 class FriendRoomMessages : public Page {  // ID 0x9e
-   public:
+public:
     static const PageId id = PAGE_FRIEND_ROOM_MESSAGES;
     FriendRoomMessages();  // 805dbd94
     ~FriendRoomMessages() override;  // 805dc034 vtable 808b8e5c

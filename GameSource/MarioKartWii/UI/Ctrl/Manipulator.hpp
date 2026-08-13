@@ -68,7 +68,7 @@ enum Directions {
 };
 
 class ButtonInfo {
-   public:
+public:
     ButtonInfo();  // 805eee24
     virtual ~ButtonInfo();  // 805eeed0 vtable 808b9a80
     virtual void Reset();  // 0xc 805eef10, calls reset
@@ -81,7 +81,7 @@ class ButtonInfo {
 // size_assert(ButtonInfo, 0x34);
 
 class ControlButtonInfo : public ButtonInfo {
-   public:
+public:
     ControlButtonInfo();  // 805ef780 always inlined
     ~ControlButtonInfo() override;  // 805ef848 vt 808b9a30 at 0x8
     void Reset() override;  // 0xc 805ef888, calls reset
@@ -103,7 +103,7 @@ class ControlButtonInfo : public ButtonInfo {
 // size_assert(ControlButtonInfo, 0x54);
 
 class ControlManipulatorHolder {  // holds an action holder
-   public:
+public:
     ControlManipulatorHolder();  // 805f0a98
     ~ControlManipulatorHolder();  // 805f0b94
 
@@ -114,7 +114,7 @@ class ControlManipulatorHolder {  // holds an action holder
 // size_assert(ControlManipulatorHolder, 0x5C);
 
 class ManipulatorManager {  // PARENT
-   public:
+public:
     ManipulatorManager();  // 805eeb68  808b9a98
     virtual const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const;  // 805bd704 vtable 808b9a98
     virtual ~ManipulatorManager();  // 805eeb8c
@@ -143,7 +143,7 @@ class ManipulatorManager {  // PARENT
 // size_assert(ManipulatorManager, 0x10);
 
 class PageManipulatorManager : public ManipulatorManager {  // sets actions for page, equivalent to ControlsManipulatorManager but for pages 80601d04 checks actions
-   public:
+public:
     PageManipulatorManager();  // 805ef240
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 805f2cf8 vtable 808b9a48
     ~PageManipulatorManager() override;  // 0xc 805ef2fc
@@ -160,7 +160,7 @@ class PageManipulatorManager : public ManipulatorManager {  // sets actions for 
 // size_assert(PageManipulatorManager, 0x144);
 
 class ControlsManipulatorManager : public ManipulatorManager {  // contains multiple action handlers, tied to a page
-   public:
+public:
     typedef int (*CalcDistanceFunc)(const ControlManipulator &subject, const ControlManipulator &other, Directions direction);
     ControlsManipulatorManager();  // 805f09a8
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 805f2cdc vtable 808b99e8
@@ -200,7 +200,7 @@ class ControlsManipulatorManager : public ManipulatorManager {  // contains mult
 // size_assert(ControlsManipulatorManager, 0x224);
 
 class ControlBoundingBox {
-   public:
+public:
     ControlBoundingBox();  // 805f058c
     ~ControlBoundingBox();  // 805f05cc
     void CalculateBounds();  // 805f0618
@@ -219,7 +219,7 @@ class ControlBoundingBox {
 // size_assert(ControlBoundingBox, 0x28);
 
 class ControlManipulator {
-   public:
+public:
     ControlManipulator();  // 805efaf8
     EGG::Link link;
     virtual ~ControlManipulator();  // 805efbd4 vtable 808b9a20

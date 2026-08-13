@@ -9,11 +9,11 @@ namespace Objects {
 // lifts work in pairs; the first half doesn't create its own rider, instead only the latter half does
 
 class Heyho2 : public ObjectCollidable {  // ObjectNum 0x149 = 329
-   public:
+public:
     static u32 liftCount;  // 808d7cb0 set to 14 on boot, set to 10 if >1screen, never reset
     class Lift;
     class Rider : public ObjectCollidable {
-       public:
+    public:
         Rider(Lift &initial, Lift &opposite, u32 side);  // 80829d68 1 = right, 2 = left
         ~Rider() override;  // 8082a274 vtable 808d7e90
         void OnStart() override;  // 0xC 80829ed4
@@ -33,7 +33,7 @@ class Heyho2 : public ObjectCollidable {  // ObjectNum 0x149 = 329
     };  // 0xcc
 
     class Lift : public ObjectCollidable {
-       public:
+    public:
         Lift(const KMP::Holder<GOBJ> &gobjHolder, Heyho2 &parent, u32 idx);  // 80829764
         ~Lift() override;  // 8082a1c8 vtable 808d7da4
         void OnStart() override;  // 0xC 808298dc

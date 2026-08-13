@@ -5,12 +5,12 @@
 
 namespace EGG {
 class RotCamera {
-   public:
+public:
     RotCamera();  // 80214a8c
 };
 
 class BaseCamera {
-   public:
+public:
     virtual Matrix34f &GetViewMatrix() = 0;  // 0x8
     virtual const Matrix34f &GetViewMatrix() const = 0;  // 0xc
     virtual void UpdateMatrix();  // 0x10 8021460c
@@ -28,7 +28,7 @@ class BaseCamera {
 };
 
 class LookAtCamera : public BaseCamera {
-   public:
+public:
     Matrix34f &GetViewMatrix() override;  // 0x8 80214bac vtable 802a29c0
     const Matrix34f &GetViewMatrix() const override;  // 0xc 80214ba4
     void DoUpdateMatrix() override;  // 0x14 80214770
@@ -48,7 +48,7 @@ class LookAtCamera : public BaseCamera {
 
 // Orthographic camera, objects' size stays constant regardless of distance, makes for a great 2D representation
 class OrthoCamera : public LookAtCamera {
-   public:
+public:
     OrthoCamera();  // 80214a08
     void DoUpdateMatrix() override;  // 0x14 80214b14 vtable 802a2990
     float unknown_0x88[2];

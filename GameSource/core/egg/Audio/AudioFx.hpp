@@ -12,7 +12,7 @@ namespace EGG {
 using namespace nw4r;
 
 class AudioFx {
-   public:
+public:
     AudioFx();  // 80211a14
     ~AudioFx();  // 80211a28
     bool CreateFxReverb(u32 r4, nw4r::snd::detail::FxReverbStdParam, u32 type);  // 80212748
@@ -26,7 +26,7 @@ class AudioFx {
 };  // total size 0x18
 
 class AudioFxMgr {
-   public:
+public:
     AudioFxMgr();  // 80211c14
     ~AudioFxMgr();  // 80211c74
     bool InitalizeFx(snd::SoundHeap *heap, u32 *sizeArray);  // 80211cd8

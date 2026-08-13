@@ -9,7 +9,7 @@
 namespace nw4r {
 namespace lyt {
 class AnimTransform {
-   public:
+public:
     virtual ~AnimTransform();  // 80082990 vtable 802737e4
     virtual void SetResource(const res::AnimationBlock *pRes, ResourceAccessor *pResAccessor) = 0;
     virtual void SetResource(const res::AnimationBlock *res, ResourceAccessor *resAccessor, u16 animCount) = 0;
@@ -26,7 +26,7 @@ class AnimTransform {
 };
 
 class AnimTransformBasic : public AnimTransform {
-   public:
+public:
     AnimTransformBasic();  // 80082a00
     virtual ~AnimTransformBasic();  // 80082a40 vtable 802737c0
     virtual void SetResource(const res::AnimationBlock *pRes, ResourceAccessor *pResAccessor);  // 80082ad0

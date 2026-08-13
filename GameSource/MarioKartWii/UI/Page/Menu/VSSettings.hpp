@@ -13,7 +13,7 @@ Contributors:
 //_sinit_ at 80853ca4
 namespace Pages {
 class VSSettings : public MenuInteractable {  // ID 0x73
-   public:
+public:
     static const PageId id = PAGE_VS_SETTINGS;
     VSSettings();  // 806284c8
     ~VSSettings() override;  // 80853b10 vtable 808da3c8

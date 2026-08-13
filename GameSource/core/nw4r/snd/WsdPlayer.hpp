@@ -9,9 +9,9 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class WsdPlayer : public BasicPlayer, public DisposeCallback, public SoundThread::PlayerCallback {
-   public:
+public:
     class WsdCallback {
-       public:
+    public:
         virtual ~WsdCallback();  // 800a0670
         virtual bool GetWaveSoundData(WaveSoundInfo *info, WaveSoundNoteInfo *noteInfo, WaveInfo *waveData,
                                       const void *waveSoundData, int index, int noteIndex, u32 callbackData) const = 0;

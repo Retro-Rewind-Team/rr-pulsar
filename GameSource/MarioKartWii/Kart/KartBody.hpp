@@ -14,7 +14,7 @@ namespace Kart {
 class PhysicsHolder;
 
 class Body : public Part {  // tentative name
-   public:
+public:
     Body(const Values &kartValues, PhysicsHolder *physicsHolder);  // 8056c394
     ~Body() override;  // 8056cd84 vtable 808b53c0
     void CreateModelDirectors(BRRESHandle &handle) override;  // 0x14 8056c410
@@ -59,7 +59,7 @@ class Body : public Part {  // tentative name
 };  // Total size 0x240
 
 class Arm : public Part {  // arm_fr rr fl rl rl (forward/rear right/left)
-   public:
+public:
     ~Arm() override;  // 8056e4d4 vtable 808b5424
     bool LoadModel(BRRESHandle &handle) override;  // 0x18 8056c10c
     void UpdateMatrix() override;  // 0x1c 8056c124
@@ -69,7 +69,7 @@ class Arm : public Part {  // arm_fr rr fl rl rl (forward/rear right/left)
     u8 padding[3];
 };
 class BodyKart : public Body {
-   public:
+public:
     BodyKart(const Values &values, PhysicsHolder *physicsHolder);  // 8056ccc0
     ~BodyKart() override;  // 8056e494 vtable 808b5358
     void vf_0xC() override;  // 0xC 8056d118
@@ -91,7 +91,7 @@ class BodyKart : public Body {
 };  // 0x240
 
 class BikeHandle : public Part {
-   public:
+public:
     ~BikeHandle() override;  // 8056d8f0 vtable 808b5314
     bool LoadModel(BRRESHandle &handle) override;  // 0x18 8056d4b0
     void UpdateMatrix() override;  // 0x1c 8056d4c0

@@ -6,7 +6,7 @@
 
 namespace Effects {
 class Player {
-   public:
+public:
     struct Color : nw4r::ut::Color {
         Color(int r, int g, int b, int a);  // 806ae36c
         Color();  // 8068e844

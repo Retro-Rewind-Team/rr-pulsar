@@ -8,7 +8,7 @@
 namespace Objects {
 
 class FireSnake_ball : public ObjectCollidable {
-   public:
+public:
     explicit FireSnake_ball(const KMP::Holder<GOBJ> &gobjHolder);  // 806c0d18 inlined
     ~FireSnake_ball() override;  // 806c2acc vtable 808c356c
     void OnStart() override;  // 0xc 806c0d88
@@ -29,7 +29,7 @@ class FireSnake_ball : public ObjectCollidable {
 };  // 0xb8
 
 class FireSnake_eye : public ObjectCollidable {
-   public:
+public:
     ~FireSnake_eye() override;  // 806c2a8c vtable 808c3480
     const char *GetName() const override;  // 0x28 806c2a6c
     u32 GetPropertiesBitfield() override;  // 0x2c 806c2a84
@@ -39,7 +39,7 @@ class FireSnake_eye : public ObjectCollidable {
 };  // 0xb0
 
 class FireSnake : public MapObjProjectile, public StatePtmfTrigger<FireSnake> {  // ObjectNum 0x1a4 = 420
-   public:
+public:
     explicit FireSnake(const KMP::Holder<GOBJ> &gobjHolder);  // 806c0f30
     ~FireSnake() override;  // 806c1344 vtable 808c3340
     void OnStart() override;  // 0xc 806c13b0
@@ -80,7 +80,7 @@ class FireSnake : public MapObjProjectile, public StatePtmfTrigger<FireSnake> { 
 };  // 0x54c
 
 class FireSnake_v : public FireSnake {  // Object 0x1a8 = 424
-   public:
+public:
     explicit FireSnake_v(const KMP::Holder<GOBJ> &gobjHolder);  // 806c2b70
     ~FireSnake_v() override;  // 806c3548 vtable 808c3828
 

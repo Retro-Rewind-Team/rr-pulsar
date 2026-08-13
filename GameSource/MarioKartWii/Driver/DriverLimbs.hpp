@@ -8,7 +8,7 @@ using namespace nw4r;
 class DriverController;
 
 class DriverCalcWorldCB : public ModelCalcBase, public EmptyModelCalcParent, public g3d::ICalcWorldCallback {
-   public:
+public:
     // vtable 808d2cf8 empty, 808d2d00 ICalcWorldCallback
     DriverCalcWorldCB(ModelDirector *driverMdl, DriverController *controller);  // 807d9798
     ~DriverCalcWorldCB() override;  // thunk 807d9b90 func 807d45e8
@@ -26,7 +26,7 @@ class DriverCalcWorldCB : public ModelCalcBase, public EmptyModelCalcParent, pub
 };  // 0x84
 
 class DriverLimbs : public DriverCalcWorldCB {
-   public:
+public:
     DriverLimbs(ModelDirector *driverMdl, DriverController *controller);  // 807d42e8
     // vtable 808d2c48 empty, 808d2c50 ICalcWorldCallback
     ~DriverLimbs() override;  // thunk 807d9764 func 807d9688

@@ -6,7 +6,7 @@
 //_sinit_ at 807a9ec0
 namespace Item {
 class ObjKinokoBig : public ObjMiddle {  // MEGA Mushroom
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807a9dd4
 
     void InitSelf() override;  // 0x8 807a9ea4 vtable 808d2060

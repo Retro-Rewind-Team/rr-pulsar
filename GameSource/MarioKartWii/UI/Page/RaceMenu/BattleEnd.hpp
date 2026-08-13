@@ -6,7 +6,7 @@
 
 namespace Pages {
 class BattleEnd : public RaceMenu {  // ID 0x23
-   public:
+public:
     static const PageId id = PAGE_BATTLEENDMENU;
     BattleEnd();  // 80624e8c
     ~BattleEnd() override;  // 80632a34 vtable 808bd7a4
@@ -20,7 +20,7 @@ class BattleEnd : public RaceMenu {  // ID 0x23
 // size_assert(BattleEnd, 0x344);
 
 class BattleFinalRaceEnd : public RaceMenu {  // ID 0x24
-   public:
+public:
     static const PageId id = PAGE_BATTLE_FINALRACE_ENDMENU;
     BattleFinalRaceEnd();  // 80624ed0
     ~BattleFinalRaceEnd() override;  // 8063298c vtable 808bd728

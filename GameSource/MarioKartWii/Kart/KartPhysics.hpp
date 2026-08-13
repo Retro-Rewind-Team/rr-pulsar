@@ -8,7 +8,7 @@
 namespace Kart {
 
 class Physics {
-   public:
+public:
     Physics();  // 805b4af8
     void Reset();  // 805b4b54
     void ResetSpeed();  // 805b4d24
@@ -52,13 +52,13 @@ class Physics {
 };  // Total size 0x1b4
 
 class PhysicsBike : public Physics {
-   public:
+public:
     ~PhysicsBike() override;  // 805b66e4 vtable 808b7300
     void Stabilize() override;  // 805b6448
 };  // Total size 0x1b4
 
 class PhysicsHolder {
-   public:
+public:
     PhysicsHolder(bool isBike, StatsAndBsp *statsAndBsp, void *arg_r5, u32 wheelCount);  // 805a04a0
     void Init(bool isBike);  // 8059f5bc
     void Reset();  // 8059f7c8

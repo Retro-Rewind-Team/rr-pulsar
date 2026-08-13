@@ -11,7 +11,7 @@ namespace EGG {
 // Matrix form using field of view: https://imgur.com/yl2fpo3
 
 class Frustum {
-   public:
+public:
     Frustum(u32 type, Vector2f *aspectRatios, u32 r6, float near, float far);  // r5 = width and height aspect ratio = width / height
     Frustum(const Frustum &other);  // 80227724
     void CopyToG3D_Perspective(g3d::Camera &camera);  // 802277fc

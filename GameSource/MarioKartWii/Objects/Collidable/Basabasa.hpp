@@ -10,7 +10,7 @@ namespace Objects {
 class BasabasaMgr;
 
 class Basabasa : public ObjectCollidable, public StatePtmfTrigger<Basabasa> {
-   public:
+public:
     static u32 curIdx;  // 809c21f8
     Basabasa(const KMP::Holder<GOBJ> &gobjHolder, BasabasaMgr *mgr);  // 806b5c84
     ~Basabasa() override;  // 806b7630 vtable 808c20ac
@@ -45,7 +45,7 @@ class Basabasa : public ObjectCollidable, public StatePtmfTrigger<Basabasa> {
 };  // 0x15c
 
 class BasabasaMgr : public ObjectCollidable {  // ObjectNum 0xcd = 205
-   public:
+public:
     static float distanceBtwSwoops;  // 809c21fc setting6
     static float dispersion;  // 809c2200 setting4
     static float maxHeight;  // 809c2204 setting5

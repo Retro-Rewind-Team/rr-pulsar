@@ -44,7 +44,7 @@ class Sub9d8 {  // related to clipInfo but can't tell what it does
 
 //_sinit_ at 8067b304
 class Mgr {
-   public:
+public:
     int GetRuntimeTypeInfo();  // 8067b2f8
 
     static Mgr *sInstance;  // 809c21d0

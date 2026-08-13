@@ -5,7 +5,7 @@
 //_sinit_ at 807f7bb0
 
 class CtrlRaceScore : public CtrlRaceBase {  // https://imgur.com/6vAMhch "+5" in this screenshot
-   public:
+public:
     ~CtrlRaceScore() override;  // 807f7b48 vtable 808d3fc0
     void InitSelf() override;  // 0x18 807f76f8
     void OnUpdate() override;  // 0x1c 807f784c

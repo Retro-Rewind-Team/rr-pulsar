@@ -20,7 +20,7 @@ class ExpParticleManager;
 */
 using namespace nw4r;
 class Effect {
-   public:
+public:
     Effect(const char *effectName, int creatorIdx);  // 80222ccc
     virtual ~Effect();  // 80222d50 vtable 802a2dc8 reset at 0x84
     virtual void Create();  // 0xc 80222d90

@@ -19,7 +19,7 @@ struct StrmDataInfo {
 };
 namespace detail {
 class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
-   public:
+public:
     static const int maxTrackCount = 8;
     static const int maxBlockSize = 8 * 1024;  // That can be played
     static const int maxChannelCount = 16;
@@ -43,7 +43,7 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
     };
 
     class StrmHeaderLoadTask : public Task {
-       public:
+    public:
         ~StrmHeaderLoadTask() override;  // 800a5960 80274ae8
         void Execute() override;  // 800a8070
         void Cancel() override;  // 800a80c0
@@ -56,7 +56,7 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
     // size_assert(StrmHeaderLoadTask, 0x20);
 
     class StrmDataLoadTask : public Task {
-       public:
+    public:
         StrmDataLoadTask();  // 800a8180
         ~StrmDataLoadTask() override;  // 800a59c0 vtable 80274ad0
         void Execute() override;  // 800a81d0

@@ -24,7 +24,7 @@ struct SoftWallInfo {
 
 //_sinit_ at 80790ac0
 class CourseMgr {
-   public:
+public:
     static CourseMgr *sInstance;  // 809c2F44
     static CourseMgr *CreateInstance();  // 8078dfe8
     static void DestroyInstance();  // 8078e124

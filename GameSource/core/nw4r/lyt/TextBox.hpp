@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace lyt {
 class TextBox : public Pane {
-   public:
+public:
     TextBox(const res::TextBox *src, const ResBlockSet &resBlockSet);  // 8007b320
     ~TextBox() override;  // 8007b610 vtable 80273578
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0xc 8007cc10

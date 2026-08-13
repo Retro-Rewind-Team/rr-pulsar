@@ -10,7 +10,7 @@
 namespace Pages {
 
 class Menu : public Page {
-   public:
+public:
     Menu() {};
     ~Menu() override;  // 80625d30 vtable 808d8d78
     // virtual const char* GetClassName() const; //0xC
@@ -103,7 +103,7 @@ class Menu : public Page {
 // size_assert(Menu, 0x430);
 
 class MenuInteractable : public Menu {  // adds actions support to Menu
-   public:
+public:
     MenuInteractable() {};
     ControlsManipulatorManager controlsManipulatorManager;  // 0x430
     u32 controlCount;  // 0x654

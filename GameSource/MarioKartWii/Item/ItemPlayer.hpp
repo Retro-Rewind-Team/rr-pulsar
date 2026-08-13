@@ -11,7 +11,7 @@ class Player;
 class Obj;
 
 class Point {
-   public:
+public:
     bool Update(const Vec3 &playerPosition);  // 807b8a9c
     bool Update2(const Vec3 &playerPosition);  // 807b8f30
 
@@ -23,7 +23,7 @@ class Point {
 void CalcNextPoint(const Point &currentPoint, Point &nextPoint, u8 playerId, bool usePlayerPath);  // 807b91e4
 
 class PlayerRoulette {  // only exists for local players
-   public:
+public:
     PlayerRoulette();  // 807b9f48
     void Init(Player *itemPlayer);  // 807b9f80
     bool Update();  // 807ba37c returns true when the roulette just ended
@@ -49,7 +49,7 @@ class PlayerRoulette {  // only exists for local players
 };  // Total Size 0x34
 
 class PlayerInventory {
-   public:
+public:
     PlayerInventory();  // 807bc0f8
     void Init(Player *itemPlayer);  // 807bc130
     void Update();  // 807bc6e8
@@ -73,7 +73,7 @@ class PlayerInventory {
 };  // Total Size 0x2C
 
 class Player : public Kart::Link {
-   public:
+public:
     Player();  // 8079754c
     ~Player();  // 8079951c
     void Init(u8 playerId);  // 807976e0

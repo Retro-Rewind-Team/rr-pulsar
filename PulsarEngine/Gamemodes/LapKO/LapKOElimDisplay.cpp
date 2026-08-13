@@ -66,13 +66,13 @@ static const wchar_t *CopyCharacterNameFromBMG(const BMGHolder &holder, s32 bmgI
 }
 
 class CtrlRaceLapKOElimMessage : public CtrlRaceBase {
-   public:
+public:
     static u32 Count();
     static void Create(Page &page, u32 index, u32 count);
     void Load(u8 hudSlotId);
     void OnUpdate() override;
 
-   private:
+private:
     void UpdateMessage(const u8 *playerIds, u8 count);
     void Show(bool visible);
     const wchar_t *GetPlayerDisplayName(u8 playerId, wchar_t *scratch, size_t length) const;

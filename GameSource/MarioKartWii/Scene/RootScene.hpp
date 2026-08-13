@@ -3,7 +3,7 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 
 class RootScene : public BaseScene {
-   public:
+public:
     static RootScene *sInstance;  // 809bd740
     static void RequestRootScene();  // 80543b10 creates a GameSceneCreator and request a scene change with it, only works if no gamescene has been created yet
     RootScene();  // 80542878

@@ -5,7 +5,7 @@
 #include <core/egg/3D/PostEffects/OutlineEffect.hpp>
 #include <MarioKartWii/3D/Model/ModelDirector.hpp>
 class MinimapMgr {
-   public:
+public:
     static MinimapMgr *sInstance;  // 809c3f58
     static MinimapMgr *CreateInstance();  // 807df908
     static void DestroyInstance();  // 807dfa04

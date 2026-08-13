@@ -24,7 +24,7 @@ enum ObjectType {
 class Object;
 
 class Object {
-   public:
+public:
     explicit Object(const KMP::Holder<GOBJ> &gobj);  // 8081f828
     Object(u16 objId, const Vec3 &position, const Vec3 &rotation, const Vec3 &scale);  // 8081f9bc
     Object(const char *name, const Vec3 &position, const Vec3 &rotation, const Vec3 &scale, u32 r8);  // 8081fb04 used for sub objects
@@ -128,13 +128,13 @@ class Object {
 // size_assert(Object, 0xaC);
 
 class ObjectEffect : public EGG::Effect {
-   public:
+public:
     ~ObjectEffect() override;  // 806805a8 vtable 808c1010
 };
 
 template <class T>
 class SubObjectArray {  // for example w_itembox
-   public:
+public:
     static_assert(is_base_of<Object, T>::value, "Not a child of object");
     virtual ~SubObjectArray();
     virtual void CreateArray(u32 boxCount, u32 unused);

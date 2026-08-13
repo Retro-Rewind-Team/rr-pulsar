@@ -5,7 +5,7 @@
 
 //_sinit_ at 807ee474
 class CtrlRaceCount : public CtrlRaceBase {  // FINISH//YOU LOSE etc..
-   public:
+public:
     CtrlRaceCount();  // 80858828
     ~CtrlRaceCount() override;  // 807ee40c vtable 808d3c18
     void Init() override;  // 0xc 807ee30c

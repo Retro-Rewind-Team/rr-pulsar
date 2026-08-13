@@ -25,7 +25,7 @@ struct CameraParamBin {  // https://wiki.tockdom.com/wiki/KartCameraParam.bin
 };
 
 class BCPInfo {
-   public:
+public:
     void Load(const BCP &raw);  // 805a6e40
     u32 bcp0x0;
     u16 idxPointToIgnore;

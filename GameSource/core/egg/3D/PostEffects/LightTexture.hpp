@@ -28,7 +28,7 @@ struct BinaryLightMAPInfo {
 };
 
 class LightTexture : public CapTexture, public IBinary<LightTexture> {
-   public:
+public:
     struct BinaryLightTex : IBinary::Binary {
         // BinaryHeader header; //LTEX
         u16 subObjectsCount;
@@ -76,7 +76,7 @@ class LightTexture : public CapTexture, public IBinary<LightTexture> {
 };  // 0x80
 
 class LightMap : public IBinary<LightMap> {
-   public:
+public:
     struct BLMAP : IBinary::Binary {
         // BinaryHeader header; //BLMAP
         BinaryLightMAPInfo info;

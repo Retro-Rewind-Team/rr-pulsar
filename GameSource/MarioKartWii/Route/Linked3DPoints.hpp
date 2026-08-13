@@ -6,9 +6,9 @@
 
 // This class is used for 3D points that physically linked to each other, the best example being Hanachan's parts
 class Linked3DPoints {
-   public:
+public:
     class Sub {
-       public:
+    public:
         float distance;  // 0x8
         float unknown_0xC[0x5c - 0xC];
         u8 unknown_0x60;

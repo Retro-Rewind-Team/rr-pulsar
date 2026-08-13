@@ -7,7 +7,7 @@
 namespace Pulsar {
 namespace KO {
 class WinnerPage : public Page {
-   public:
+public:
     enum Status {
         WAITING_STATS,
         HAS_STATS,

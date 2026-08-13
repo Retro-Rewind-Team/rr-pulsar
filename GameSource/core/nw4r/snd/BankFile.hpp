@@ -93,7 +93,7 @@ struct InstInfo {
 };
 
 class BankFileReader {
-   public:
+public:
     BankFileReader(const void *bankData);
     const BankFile::InstParam *GetInstParam(int prgNumber, int key, int velocity) const;  // 8008d630
     bool ReadInstInfo(InstInfo *instInfo, int prgNo, int key, int velocity) const;  // 8008d740

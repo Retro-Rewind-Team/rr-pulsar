@@ -9,7 +9,7 @@ namespace nw4r {
 namespace ef {
 
 class DrawInfo {
-   public:
+public:
     const nw4r::math::MTX34 &GetViewMtxCooked(nw4r::math::MTX34 *dest) const;  // 800418c0
     nw4r::math::MTX34 viewMtx;
     nw4r::math::MTX34 projMtx;

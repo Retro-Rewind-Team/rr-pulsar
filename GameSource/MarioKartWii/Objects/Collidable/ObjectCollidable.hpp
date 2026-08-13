@@ -48,7 +48,7 @@ class ObjectCollidable : public Object {  // collision is added as there is no K
 // size_assert(ObjectCollidable, 0xb0);
 
 class UnkCollidableSub {
-   public:
+public:
     UnkCollidableSub();  // 8074792c
     virtual ~UnkCollidableSub();  // 80747974 vtable 808cb8e8
     virtual void Reset();  // 0xc 807479b4

@@ -10,7 +10,7 @@ Contributors:
 
 //_sinit_ at 805be64c
 class PushButton : public LayoutUIControl {
-   public:
+public:
     PushButton();  // 805bd3a8
     ~PushButton() override;  // 805bd4b0 vtable 808B776C
     void Init() override;  // 0xc 805bdbe0
@@ -64,7 +64,7 @@ class PushButton : public LayoutUIControl {
 // size_assert(PushButton, 0x254);
 
 class PushButtonScaleFade : public PushButton {
-   public:
+public:
     PushButtonScaleFade();  // 805be448
     ~PushButtonScaleFade() override;  // 805be55c vtable 808b7720
     void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 805be5c8

@@ -9,7 +9,7 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class AnimEventPlayer {
-   public:
+public:
     AnimEventPlayer();  // 80087f50
     ~AnimEventPlayer();  // 80087f70
     void InitParam(const detail::AnimEvent *event, bool shutdownStopFlag);
@@ -19,7 +19,7 @@ class AnimEventPlayer {
 };  // 0xc
 
 class AnimSoundImpl {
-   public:
+public:
     enum PlayDirection {
         PLAY_FORWARD,
         PLAY_BACKWARD

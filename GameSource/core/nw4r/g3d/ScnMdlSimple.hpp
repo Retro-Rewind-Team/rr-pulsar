@@ -13,7 +13,7 @@ namespace nw4r {
 namespace g3d {
 
 class ScnMdlSimple : public ScnLeaf {
-   public:
+public:
     enum OptID {  // see scnleaf's enum for the rest
         OPTID_IGNORE_ANMCHR_TRANS = 0x00020001
     };

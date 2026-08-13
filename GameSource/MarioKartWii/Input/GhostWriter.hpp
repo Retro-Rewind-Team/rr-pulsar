@@ -6,7 +6,7 @@
 namespace Input {
 
 class GhostStream {
-   public:
+public:
     struct Input {
         u8 value;
         u8 duration;
@@ -34,7 +34,7 @@ class GhostStream {
 };  // 0x18
 
 class GhostActionStream : public GhostStream {  // size 0x276c value = buttonAction
-   public:
+public:
     static const int inputSize = 2;
     void Write(u8 value) override;  // 0x8 80522dcc vtable 808b30c8
     u8 Read() override;  // 0xC 80522f40
@@ -83,7 +83,7 @@ struct RKGInputs {  // 0x88 of uncompressed rkg
 // size_assert(RKGInputs, 0x2774);
 
 class GhostWriter {
-   public:
+public:
     enum Status {
         STATUS_ENABLED = 1,
         STATUS_DISABLED = 2

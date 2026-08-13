@@ -12,7 +12,7 @@ class ParticleManager;
 class Particle;
 
 class MemoryManagerBase {
-   public:
+public:
     MemoryManagerBase();  // 8022500c used by EGG only hence the addresses
     virtual ~MemoryManagerBase();  // 80224bc4 vtable 802a2f08
     virtual void GarbageCollection() = 0;  // 0xc
@@ -52,7 +52,7 @@ class MemoryManagerTmp {
 };
 
 class MemoryManager : public MemoryManagerBase {
-   public:
+public:
     MemoryManager(void *startAddress, u32 size, int maxEffects, int maxEmitters, int maxParticleManagers, int maxParticles);  // inlined
 
     ~MemoryManager() override;  // 80225314 vtable 802a2e70

@@ -29,7 +29,7 @@ class AutoStrmHandle : public snd::StrmSoundHandle {  // auto detaches the sound
 // Mostly useful when trying to prevent overlaps (BG music, countdown into race music etc...)
 // as this has bools and checks in place to cancel the already playing/prepared sound should you try to start a new sound
 class SinglePlayer {
-   public:
+public:
     static SinglePlayer *sInstance;  // 809c2328
     static SinglePlayer *CreateInstance();  // 806f8648
     static void DestroyInstance();  // 806f86f0

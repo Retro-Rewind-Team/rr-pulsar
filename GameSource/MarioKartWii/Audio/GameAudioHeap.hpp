@@ -16,7 +16,7 @@ using namespace nw4r;
 
 namespace Audio {
 class GameHeapImpl : public EGG::SoundHeapMgr {
-   public:
+public:
     ~GameHeapImpl();  // 806fdeac
     using EGG::SoundHeapMgr::GetCurrentLevel;  // 806fe240
     using EGG::SoundHeapMgr::LoadState;  // 806fe1b4 vtable 808c7a10
@@ -25,7 +25,7 @@ class GameHeapImpl : public EGG::SoundHeapMgr {
 // size_assert(GameHeapImpl, 0xF0);
 
 class GameHeap : public GameHeapImpl {
-   public:
+public:
     // a 2nd vtable existing (with the same funcs) shows this template system is incorrect OR that disposers work differently than thought
     static GameHeap *sInstance;  // 809c2350 vtable 808c79f0
     GameHeap *CreateInstance();  // 806fdc1c

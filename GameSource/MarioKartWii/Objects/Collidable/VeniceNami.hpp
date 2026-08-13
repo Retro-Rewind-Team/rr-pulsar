@@ -7,7 +7,7 @@
 namespace Objects {
 
 class VeniceNami : public ObjectCollidable {  // ObjectNum 0x4 = 4
-   public:
+public:
     explicit VeniceNami(const KMP::Holder<GOBJ> &gobjHolder);  // 8082e854
     ~VeniceNami() override;  // 8082f3c8 vtable 808d8a60
     void Update() override;  // 0x14 8082ef80

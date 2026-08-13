@@ -7,7 +7,7 @@
 namespace Objects {
 
 class Kinoko_kuki : public ObjectCollidable {  // ObjectNum 0x201 = 513 stem
-   public:
+public:
     ~Kinoko_kuki() override;  // 80807e90 vtable 808d582c
     u32 GetPropertiesBitfield() override;  // 0x2c 80807e88
     const char *GetSubFileName() const override;  // 0x38 80807e64
@@ -19,7 +19,7 @@ class Kinoko_kuki : public ObjectCollidable {  // ObjectNum 0x201 = 513 stem
 };  // 0xb4
 
 class Kinoko : public ObjectExternKCL {
-   public:
+public:
     Kinoko(const KMP::Holder<GOBJ> &gobjHolder);  // 8080761c
     ~Kinoko() override;  // 80807a14 vtable 808d56d8
     void OnStart() override;  // 0xC 808077ec
@@ -44,7 +44,7 @@ class Kinoko : public ObjectExternKCL {
 };  // 0x148
 
 class Kinoko_bend : public Kinoko {  // ObjectNum 0x1f6 = 502
-   public:
+public:
     Kinoko_bend(const KMP::Holder<GOBJ> &gobjHolder);  // 80807b7c
     ~Kinoko_bend() override;  // 80807db4 vtable 808d5430
     void UpdateSpecific() override;  // 0x150 80807c98
@@ -79,7 +79,7 @@ class Kinoko_ud : public Kinoko {  // ObjectNum 0x1f5 = 501
 };  // 0x15c
 
 class Kinoko_nm : public ObjectExternKCL {  // ObjectNum 0x1fa = 506 green mushrooms
-   public:
+public:
     ~Kinoko_nm() override;  // 80827a9c vtable 808d7248
     u32 GetPropertiesBitfield() override;  // 0x2c 80827a94
     const char *GetSubFileName() const override;  // 0x38 80827a74

@@ -7,7 +7,7 @@
 namespace Item {
 
 class ObjHolder {  // one instance per objID
-   public:
+public:
     ObjHolder();  // 80795cc8
     ~ObjHolder();  // 807994dc
 

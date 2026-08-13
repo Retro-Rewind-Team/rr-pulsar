@@ -48,7 +48,7 @@ struct EmitterParameter {
 
 // source of generated particles
 class Emitter : public ReferencedObject {
-   public:
+public:
     Emitter();  // 80027be0
     ~Emitter();  // 80027c40
 

@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace ut {
 class DvdFileStream : public FileStream {
-   public:
+public:
     class DvdFileStreamInfo {
         DVD::FileInfo dvdInfo;
         DvdFileStream *stream;

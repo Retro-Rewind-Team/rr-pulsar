@@ -18,7 +18,7 @@ struct AudioTrackCallback {
 };
 
 class AudioTrack {
-   public:
+public:
     AudioTrack();  // 80213e1c
     AudioTrackCallback callback;
     virtual void Reset();  // at 0x8 80213e48 vtable 802a2980

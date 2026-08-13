@@ -6,7 +6,7 @@
 
 //_sinit_ at 807ef6c8
 class CtrlRaceItemWindow : public CtrlRaceBase {
-   public:
+public:
     ~CtrlRaceItemWindow() override;  // 807ef660 vtable 808d3cc8
     void Init() override;  // 807eea40
     void OnUpdate() override;  // 807eef64

@@ -38,13 +38,13 @@ struct TrophyFile {
 class Hook : public DoFuncsHook {
     static DoFuncsHook *settingsHooks;
 
-   public:
+public:
     Hook(Func &f) : DoFuncsHook(f, &settingsHooks) {}
     static void Exec() { DoFuncsHook::Exec(settingsHooks); }
 };
 
 class Mgr {
-   private:
+private:
     static Mgr *sInstance;
     static void SaveTask(void *);
     void Init(const u16 *totalTrophyCount, const char *settingsPath, const char *trophiesPath);
@@ -78,7 +78,7 @@ class Mgr {
     u32 CountTrophiesInTrackRange(u32 firstTrackIdx, u32 trackCount, TTMode mode) const;
     void SetLastSelectedCup(PulsarCupId id) { this->rawBin->GetSection<MiscParams>().lastSelectedCup = id; }
 
-   public:
+public:
     Mgr() : rawBin(nullptr), trophyEntries(nullptr), trophyEntryCount(0) {
         for (int i = 0; i < 4; ++i) this->trophyCount[i] = 0;
     }
@@ -122,7 +122,7 @@ class Mgr {
     void SetSettingValue(SettingId id, u8 value);
     static void Create();
 
-   private:
+private:
     u16 totalTrophyCount[4];
     u16 trophyCount[4];
     TrophyEntry *trophyEntries;

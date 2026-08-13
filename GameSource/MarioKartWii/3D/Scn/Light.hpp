@@ -39,7 +39,7 @@ class Light {
 };  // 0x58
 
 class LightMgrHolder {
-   public:
+public:
     explicit LightMgrHolder(ScnMgr *parent);  // 80561024 inlined
     Light *AcquireLight();  // 80561398
     nw4r::ut::List acquiredLightsList;  // 0x0

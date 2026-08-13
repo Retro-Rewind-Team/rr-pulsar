@@ -8,7 +8,7 @@
 namespace Objects {
 
 class HeyHoManager : public MapObjSniper {
-   public:
+public:
     HeyHoManager();  // 806d2368
     ~HeyHoManager() override;  // 806d2514 vtable 808c5108
     void OnStart() override;  // 0xc 806d2590
@@ -20,7 +20,7 @@ class HeyHoManager : public MapObjSniper {
 };  // 0xcc
 
 class HeyHoShipGBA : public MapObjShooter {  // ObjectNum 0xce = 206
-   public:
+public:
     explicit HeyHoShipGBA(const KMP::Holder<GOBJ> &gobjHolder);  // 806d18fc
     ~HeyHoShipGBA() override;  // 806d2320 vtable 808c4f28
     void OnStart() override;  // 0xc 806d19d8
@@ -35,7 +35,7 @@ class HeyHoShipGBA : public MapObjShooter {  // ObjectNum 0xce = 206
 };  // 0xf4
 
 class HeyHoBallGBA : public MapObjProjectile, public StatePtmfTrigger<HeyHoBallGBA> {  // ObjectNum 0xea = 234
-   public:
+public:
     explicit HeyHoBallGBA(const KMP::Holder<GOBJ> &gobjHolder);  // 806d02c4
     ~HeyHoBallGBA() override;  // 806c1820 vtable 808c4cc8
     void OnStart() override;  // 0xc 806d05f0

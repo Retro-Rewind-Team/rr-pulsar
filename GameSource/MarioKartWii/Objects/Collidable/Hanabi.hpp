@@ -6,7 +6,7 @@
 
 namespace Objects {
 class Hanabi : public ObjectCollidable {  // ObjectNum 0x16a = 362a
-   public:
+public:
     explicit Hanabi(const KMP::Holder<GOBJ> &gobjHolder);  // 807689ec
     ~Hanabi() override;  // 80768a50 vtable 808ce478
     void OnStart() override;  // 0xC 80768a90

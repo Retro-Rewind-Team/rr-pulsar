@@ -6,7 +6,7 @@ namespace nw4r {
 namespace snd {
 
 class Sound3DListener {  // Listens to actors
-   public:
+public:
     Sound3DListener();  // 8009d550
     void SetMatrix(const math::MTX34 &mtx);  // 8009d5c0
     void ResetMatrix();  // 8009d820

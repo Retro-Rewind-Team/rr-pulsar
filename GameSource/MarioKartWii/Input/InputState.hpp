@@ -13,7 +13,7 @@ Contributors:
 namespace Input {
 
 class State {
-   public:
+public:
     State() {}
     virtual ~State();  // 8051ec94 vtable 808b2f2c
     void Reset();  // 8051e85c
@@ -42,7 +42,7 @@ class State {
 };  // Total size 0x18
 
 class UIState {
-   public:
+public:
     UIState() {}
     virtual ~UIState();  // 8051ecd4 vtable 808b2f20
     void Reset();  // 8051e904

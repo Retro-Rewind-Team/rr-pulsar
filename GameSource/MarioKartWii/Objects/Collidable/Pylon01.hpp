@@ -6,7 +6,7 @@
 namespace Objects {
 
 class Pylon01 : public ObjectCollidable {  // ObjectNum 0x144 = 324
-   public:
+public:
     Pylon01(const KMP::Holder<GOBJ> &gobjHolder, bool isSub);  // 8082cad8
     ~Pylon01() override;  // 8082e500 vtable 808d8874
     void OnStart() override;  // 0xC 8082cd60

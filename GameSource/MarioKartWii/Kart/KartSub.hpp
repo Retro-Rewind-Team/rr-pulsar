@@ -17,7 +17,7 @@ namespace Kart {
 class KartPointers;
 
 class Sub : public Link {
-   public:
+public:
     void Update();  // 80596480
     void InitEntity(Pointers &pointers);  // 8059828c
     void ResetPhysics();  // 8059617c

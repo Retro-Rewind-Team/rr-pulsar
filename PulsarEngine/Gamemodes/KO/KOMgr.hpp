@@ -18,7 +18,7 @@ enum Status {
 };
 
 class Mgr {
-   public:
+public:
     static const u16 spectatorVote = 0x45;
     static const u32 arbitraryAlmostDied = 60;  // 60 frames in danger in the last 5s = almost out
 
@@ -131,7 +131,7 @@ class Mgr {
     void FinishOfflineVSIfAllLocalPlayersAreOut();
     void PrepareOfflineVSNextRace();
 
-   private:
+private:
     void SetStatus(u8 playerId, Status status) {
         u32 aidSlot = this->GetAidAndSlotFromPlayerId(playerId);
         this->status[aidSlot & 0xFFFF][aidSlot >> 16] = status;
@@ -145,7 +145,7 @@ class Mgr {
     bool isOfflineVS;
     u8 offlineRaceNumber;
 
-   public:
+public:
     bool isTiebreakerRace;
     u8 racesPerKO;
     u8 koPerRace;

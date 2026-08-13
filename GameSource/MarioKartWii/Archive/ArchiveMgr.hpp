@@ -11,7 +11,7 @@ class RKG;
 class BSP;
 
 class ArchiveLoadHandle {  //+0x338
-   public:
+public:
     ArchivesHolder *holder;
     ArchiveFile *file;
     u8 unknown_0x8[0xc - 0x8];
@@ -54,7 +54,7 @@ class AllkartArchivesLoader {
 // size_assert(AllkartArchivesLoader, 0x18);
 
 class ArchiveMgr {
-   public:
+public:
     ArchiveMgr();  // 8053fcec
     static ArchiveMgr *sInstance;  // 809bd738
     static ArchiveMgr *CreateInstance();  // 8053fc4c

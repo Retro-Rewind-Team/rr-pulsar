@@ -5,7 +5,7 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 
 class CtrlRaceBase : public LayoutUIControl {  // one element is one CtrlRaceBase
-   public:
+public:
     // no ctor
     ~CtrlRaceBase() override;  // 807ea8d8 vtable 808d3a98
     // init 0xc

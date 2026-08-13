@@ -9,7 +9,7 @@
 // The devs could have used GetResMat(idx) instead of GetResMat(name) but then it would have hardcoded the orders of the materials
 
 class MatModelDirector : public ModelDirector, public EGG::Disposer {
-   public:
+public:
     MatModelDirector(u32 scnObjDrawOptionsIdx, ClipInfo *clipInfo, u32 bitfield);  // 805b90c8
     MatModelDirector(u32 scnObjDrawOptionsIdx, u32 bitfield);  // 805b9010
     MatModelDirector(u32 scnMgrIdx, u32 scnObjDrawOptionsIdx, u32 bitfield);  // 805b906c
@@ -35,7 +35,7 @@ class MatModelDirector : public ModelDirector, public EGG::Disposer {
 // size_assert(MatModelDirector, 0x74);
 
 class MHModelDirector : public MatModelDirector {
-   public:
+public:
     static const char *matNames[12];  // 808d1860
     static ut::Color torchColor;  // 808a4b5c
     MHModelDirector(u32 scnObjDrawOptionsIdx);  // 8078de04 ctor inlined

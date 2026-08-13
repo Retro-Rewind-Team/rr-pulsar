@@ -7,7 +7,7 @@
 
 //_sinit_ at 80642a20
 class UpDownDisplayedText {
-   public:
+public:
     UpDownDisplayedText() {};  // inlined? //808bf3d8 vtable
     virtual LayoutUIControl *GetTextControl() const = 0;  // 0x8
     virtual void InitText(bool state) = 0;  // 0xc
@@ -23,9 +23,9 @@ class UpDownDisplayedText {
 // size_assert(UpDownDisplayedText, 0x4);
 
 class TextUpDownValueControl : public LayoutUIControl, public UpDownDisplayedText {
-   public:
+public:
     class TextControl : public LayoutUIControl {
-       private:
+    private:
         TextControl();  // 806410e0
         ~TextControl() override;  // 8064111c vtable 808bf430
         void InitSelf() override;  // 0x18 806411e8
@@ -71,9 +71,9 @@ class TextUpDownValueControl : public LayoutUIControl, public UpDownDisplayedTex
 // if you click/select etc... on one of the arrows with the pointer, curChildId is not -1 and the Handle function also triggers
 // for example HandleClick triggers the onChangePtmf if the arrow was clicked, but just clicking on the number doesn't
 class UpDownControl : public LayoutUIControl {
-   public:
+public:
     class UpDownButton : public LayoutUIControl {
-       private:
+    private:
         UpDownButton();  // 8063fdc0
         ~UpDownButton() override;  // 8063fdfc vtable 808bf4b0
         void Init() override;  // 0xc 8063ff18

@@ -15,7 +15,7 @@ Contributors:
 
 //_sinit_ for both classes below at
 class CharaName : public LayoutUIControl {
-   public:
+public:
     CharaName();  // 8083d840
     ~CharaName() override;  // 8062912c vtable 808d9358
     void InitSelf() override;  // 0x18 8083f09c
@@ -27,7 +27,7 @@ class CharaName : public LayoutUIControl {
 
 namespace Pages {
 class CharacterSelect : public MenuInteractable {  // ID 0x6B
-   public:
+public:
     static const PageId id = PAGE_CHARACTER_SELECT;
     CharacterSelect();  // 80626c10
     ~CharacterSelect() override;  // 8083f2cc vtable 808d92c0

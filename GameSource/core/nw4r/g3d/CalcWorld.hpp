@@ -8,7 +8,7 @@
 namespace nw4r {
 namespace g3d {
 class WorldMtxManip {
-   public:
+public:
     math::MTX34 *matrix;
     math::VEC3 *scale;
     u32 *attrib;
@@ -17,7 +17,7 @@ class WorldMtxManip {
 class FuncObjCalcWorld;
 // the 3 callback when a G3CPROC for CALC_WORLD is executed for the ScnGroup the model is part of
 class ICalcWorldCallback {
-   public:
+public:
     virtual ~ICalcWorldCallback() {}  // 806c7c6c vtable 808c4828
     virtual void ExecCallbackA(ChrAnmResult *result, ResMdl mdl, FuncObjCalcWorld *obj) {}  // 806cc9e8
     virtual void ExecCallbackB(WorldMtxManip *manip, ResMdl mdl, FuncObjCalcWorld *obj) {}  // 806cce34
@@ -26,7 +26,7 @@ class ICalcWorldCallback {
 
 // Class to add callback processing to CalcWorld.
 class FuncObjCalcWorld {
-   public:
+public:
     ICalcWorldCallback *callback;
     u8 timing;
     u8 padding;

@@ -43,7 +43,7 @@ struct LightSetData {
 
 class LightSetting;
 class LightSet {
-   public:
+public:
     LightSet(LightSetting *setting, LightSetData *setData);  // inlined
     bool SelectLightObj(u32 idxLight, int idxLightObj);  // 80078030
     bool SelectAmbLightObj(int idxAmbLightObj);  // 800780a0
@@ -52,7 +52,7 @@ class LightSet {
 };
 
 class LightSetting {
-   public:
+public:
     LightSetting(LightObj *lightObjArray, AmbLightObj *ambLightObjArray, u32 lightCount, LightSetData *lightSetDataArray, u32 numLightSet);  // 80077930
     bool Import(const LightSetting &rhs);  // 80077d70
     void ApplyViewMtx(const math::MTX34 &camera, u32 objCount);  // 80077f10

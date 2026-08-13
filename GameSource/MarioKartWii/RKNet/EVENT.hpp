@@ -56,7 +56,7 @@ struct EVENTEntry {  // this means each entry has size up to 0x21
 #pragma pack(pop)
 
 class EVENTHandler {
-   public:
+public:
     static EVENTHandler *sInstance;  // 809c20f0
     static EVENTHandler *CreateInstance();  // 8065b4e8
     static void DestroyInstance();  // 8065b600

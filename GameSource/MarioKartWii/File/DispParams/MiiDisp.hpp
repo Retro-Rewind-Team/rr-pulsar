@@ -3,7 +3,7 @@
 #include <kamek.hpp>
 
 class MiiDispParam {  // https://wiki.tockdom.com/wiki/Filesystem/Race/Common.szs/miiDispParam.bin
-   public:
+public:
     struct Entry {
         float headScale;
         Vec2 yzTranslation;

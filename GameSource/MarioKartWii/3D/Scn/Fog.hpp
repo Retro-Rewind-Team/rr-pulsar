@@ -24,7 +24,7 @@ class BFGHolder {
 };  // 0x38
 
 class FogManager {
-   public:
+public:
     explicit FogManager(EGG::FogMgr *fogMgr);  // 805ae440
     virtual ~FogManager();  // 805ae734 vtable 808b6e58
     void Update(u8 holderIdx);  // 805ae53c

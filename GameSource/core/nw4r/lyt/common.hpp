@@ -15,7 +15,7 @@ struct ResBlockSet {
 };
 namespace detail {
 class TexCoordAry {
-   public:
+public:
     TexCoordAry();  // 80084370
     void Free();  // 80084390
     void Reserve(u8 count);  // 800843e0

@@ -21,7 +21,7 @@ struct InflationLRTB {
     float b;
 };
 class Window : public Pane {
-   public:
+public:
     struct Content {
         ut::Color vtxColors[4];
         detail::TexCoordAry texCoordAry;  // 0x10

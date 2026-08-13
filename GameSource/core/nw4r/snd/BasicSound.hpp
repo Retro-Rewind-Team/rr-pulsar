@@ -58,20 +58,20 @@ class BasicPlayer;
 class ExternalSoundPlayer;
 
 class BasicSound {
-   public:
+public:
     class AmbientArgAllocaterCallback {
         virtual ~AmbientArgAllocaterCallback();
         virtual void *detail_AllocAmbientArg(u32 argSize) = 0;
         virtual void detail_FreeAmbientArg(void *arg, const detail::BasicSound *sound) = 0;
     };
     class AmbientArgUpdateCallback {
-       public:
+    public:
         virtual ~AmbientArgUpdateCallback();
         // Updates the actor parameters, as arg is almost always a Sound3DParam, that arg is then passed to UpdateAmbientParam
         virtual void detail_UpdateAmbientArg(void *arg, const detail::BasicSound *sound) = 0;
     };
     class AmbientParamUpdateCallback {
-       public:
+    public:
         virtual ~AmbientParamUpdateCallback();
         // Fills the ambient param using arg, which is almost always a Sound3DParam (the actor) that has been filled by ArgUpdateCB
         virtual void detail_UpdateAmbientParam(const void *arg, u32 soundId, int voiceOutCount, SoundAmbientParam *param) = 0;

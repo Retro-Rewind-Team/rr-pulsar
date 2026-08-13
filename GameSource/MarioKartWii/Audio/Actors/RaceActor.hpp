@@ -22,7 +22,7 @@ enum ActorType {
 
 template <int handleNum>
 class Actor : public EGG::Audio3DActor {  // value for <4>||<2>||<1>
-   public:
+public:
     // ctor always inlined
     // Sound3DActor vtable 808c7fa0||808c86c8||808c8408
     ~Actor() override;  // 807005b8||807041c4||80704c7c
@@ -54,7 +54,7 @@ class Actor : public EGG::Audio3DActor {  // value for <4>||<2>||<1>
 };  // 0x94||0x8C||0x88
 
 class LinkedRaceActor {  // actors managed by RaceAudioManager //nw4r has a similar "LinkedObject" so names copied
-   public:
+public:
     static u16 actorCount;  // 809c26a0
     LinkedRaceActor();  // 80702678
     ~LinkedRaceActor();  // 807026cc
@@ -103,7 +103,7 @@ class LinkedRaceActor {  // actors managed by RaceAudioManager //nw4r has a simi
 };  // 0x20
 
 class RaceActor : public Actor<4>, public LinkedRaceActor {
-   public:
+public:
     // no ctor
     // AUDIOACTOR
     // Sound3DActor vtable 808c7d60
@@ -138,7 +138,7 @@ class RaceActor : public Actor<4>, public LinkedRaceActor {
 };  // 0xb4
 
 class SimpleRaceActor : public RaceActor {  // for actors without BRASD support
-   public:
+public:
     // no ctor
     // AUDIOACTOR
     // Sound3DActor vtable 808C8A68
@@ -159,7 +159,7 @@ class Anim : public snd::detail::AnimSoundImpl {  // BRASD for example penguins
 };  // 0x40
 
 class RaceAnimActor : public RaceActor {
-   public:
+public:
     RaceAnimActor();  // 80701018
     // AUDIOACTOR
     // SoundActor vtable 808c7b00

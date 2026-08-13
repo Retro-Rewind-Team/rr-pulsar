@@ -54,7 +54,7 @@ struct ResShpData {
 };
 
 class ResShp : public ResCommon<ResShpData> {
-   public:
+public:
     void GetAnmResult(ShpAnmResult *result, u32 anmId, float frame, const ShpAnmVtxSet *shpArray) const;  // 80056da0
 };
 

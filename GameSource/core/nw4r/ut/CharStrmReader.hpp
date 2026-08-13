@@ -5,7 +5,7 @@ namespace nw4r {
 namespace ut {
 
 class CharStrmReader {
-   public:
+public:
     typedef u16 (CharStrmReader::*ReadNextCharFunc)();
     // ReadNextChar functions
     u16 ReadNextCharUTF8();  // 800af420

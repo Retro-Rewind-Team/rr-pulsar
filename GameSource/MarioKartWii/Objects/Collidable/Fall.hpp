@@ -6,7 +6,7 @@
 
 namespace Objects {
 class Fall : public ObjectCollidable {  // ObjectNum 0x2da = 730 Fall_T
-   public:
+public:
     explicit Fall(const KMP::Holder<GOBJ> &gobjHolder);  // 8077d9d8
     ~Fall() override;  // 8077dd10 vtable 808d11a0
     void OnStart() override;  // 0xC 8077dd50

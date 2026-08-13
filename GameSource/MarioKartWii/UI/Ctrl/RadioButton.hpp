@@ -6,9 +6,9 @@
 
 //_sinit_ at 80607130
 class RadioButtonControl : public LayoutUIControl {
-   public:
+public:
     class OptionButton : public LayoutUIControl {
-       private:
+    private:
         OptionButton();  // 80606858
         ~OptionButton() override;  // 80606894 vtable 808baa24
         void Init() override;  // 80606994

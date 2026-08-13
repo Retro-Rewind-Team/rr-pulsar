@@ -7,7 +7,7 @@
 #include <MarioKartWii/Mii/MiiCreationParams.hpp>
 
 class MiiManagerSub {
-   public:
+public:
     MiiManagerSub();  // 80526d3c
     virtual ~MiiManagerSub();  // 80526d54 vtable 808b3160
     void *middleDBBuffer;  // 0x4

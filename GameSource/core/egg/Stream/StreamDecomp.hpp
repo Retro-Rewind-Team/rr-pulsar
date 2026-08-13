@@ -6,7 +6,7 @@
 namespace EGG {
 // non-official names
 class StreamDecompLZ {
-   public:
+public:
     virtual void init(void *buffer, u32 lengthToDecompress);  // 80242498 vtable 802a3f78
     virtual s32 decomp(const void *src, u32 length);  // 802424c8
     virtual s32 getAlignment();  // 802424f4

@@ -9,7 +9,7 @@ namespace EGG {
 class EffectCreator;
 
 class EffectManager {
-   public:
+public:
     struct EffectArg {
         EGG::Heap *heap;
         int maxEffects;

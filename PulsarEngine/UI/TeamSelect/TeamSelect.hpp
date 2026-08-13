@@ -11,7 +11,7 @@ namespace Pulsar {
 namespace UI {
 
 class TeamSelect : public Pages::MenuInteractable {
-   public:
+public:
     static const PulPageId id = PULPAGE_TEAMSELECT;
     TeamSelect();
     void OnInit() override;
@@ -26,7 +26,7 @@ class TeamSelect : public Pages::MenuInteractable {
     void SetButtonHandlers(PushButton &button) override;  // 80853aac 0x8C
     static inline Team GetPlayerTeam(u8 teamsArrayIdx) { return static_cast<Team>(teams[teamsArrayIdx]); }
 
-   private:
+private:
     void OnArrowClick(PushButton &button, u32 hudSlotId);
     void OnArrowSelect(PushButton &button, u32 hudSlotId);
     void OnArrowDeselect(PushButton &button, u32 hudSlotId) {};
@@ -55,7 +55,7 @@ class TeamSelect : public Pages::MenuInteractable {
     static const char *border;
     static u8 teams[24];
 
-   public:
+public:
     static bool isEnabled;
 };
 }  // namespace UI

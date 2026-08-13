@@ -6,7 +6,7 @@
 
 //_sinit_ at 805e2f4c
 class GhostInfoControl : public LayoutUIControl {
-   public:
+public:
     GhostInfoControl();  // 805e274c
     ~GhostInfoControl() override;  // 805e27dc vtable 808b92c0
     void InitSelf() override;  // 0x18 805e2964

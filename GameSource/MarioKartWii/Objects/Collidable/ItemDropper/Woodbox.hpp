@@ -6,7 +6,7 @@
 namespace Objects {
 
 class Woodbox : public ItemDropper {  // ObjectNum 0x70 = 112
-   public:
+public:
     static u32 respawnTimer;  // 808d1290
     explicit Woodbox(const KMP::Holder<GOBJ> &gobjHolder);  // 8077e5e4
     ~Woodbox() override;  // 8077e620 vtable 808d14b4
@@ -43,9 +43,9 @@ SubObjectArray<Temp>
 */
 
 class W_Woodbox : public ObjectCollidable {  // ObjectNum 0xd3 = 211
-   public:
+public:
     class Box : public Woodbox {
-       public:
+    public:
         explicit Box(const KMP::Holder<GOBJ> &gobjHolder);  // 8077e34c inlined
         ~Box() override;  // 8077e388 vtable 808d13a0
         void OnStart() override;  // 0xc 8077e3e4

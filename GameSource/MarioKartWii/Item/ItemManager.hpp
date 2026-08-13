@@ -18,7 +18,7 @@ namespace Item {
 class Player;
 
 class Manager {
-   public:
+public:
     static Manager *sInstance;  // 809c3618
     static Manager *CreateInstance();  // 80799138
     static void DestroyInstance();  // 80799188

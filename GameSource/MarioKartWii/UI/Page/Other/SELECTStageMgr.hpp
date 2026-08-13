@@ -21,7 +21,7 @@ struct PlayerInfo {
 
 namespace Pages {
 class SELECTStageMgr : public Page {  // ID 0x90
-   public:
+public:
     enum Status {
         STATUS_WAITING = 0x2,
         STATUS_VR_PAGE,

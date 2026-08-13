@@ -71,7 +71,7 @@ struct PositionAndScale {
 };  // Total Size 0x18
 
 class UIControl {
-   public:
+public:
     UIControl();
     virtual ~UIControl();  // 0x8 8063cfa0 vtable 808bf008
     virtual void Init();  // 0xc 8063d004
@@ -114,7 +114,7 @@ class UIControl {
 
 //_sinit_ at 8063e930
 class LayoutUIControl : public UIControl {
-   public:
+public:
     LayoutUIControl();  // 8063d798
     ~LayoutUIControl() override;  // 8063d8c0 vtable 808befb4
     void Init() override;  // 0xc 8063dac0
@@ -169,7 +169,7 @@ class LayoutUIControl : public UIControl {
 // size_assert(LayoutUIControl, 0x174);
 
 class LayoutUIControlScaleFade : public LayoutUIControl {
-   public:
+public:
     LayoutUIControlScaleFade();  // 8063e674
     ~LayoutUIControlScaleFade() override;  // 8063e7a8 vtable 808bef78
     void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 8063e840

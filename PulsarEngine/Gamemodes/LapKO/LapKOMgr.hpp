@@ -11,7 +11,7 @@ namespace Pulsar {
 namespace LapKO {
 
 class Mgr {
-   public:
+public:
     enum { MaxRounds = 12 };
     enum EliminationCause {
         ELIMINATION_CAUSE_ROUND,

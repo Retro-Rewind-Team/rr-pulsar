@@ -210,7 +210,7 @@ struct PtmfHolder_3A : PtmfHolderBase_3A<Ret, A1, A2, A3> {
 };
 
 class DoFuncsHook {
-   protected:
+protected:
     typedef void(Func)();
     typedef void (*Invoker)(void *funcPtr, void *a1, void *a2, void *a3);
 
@@ -275,7 +275,7 @@ class DoFuncsHook {
 class RaceLoadHook : public DoFuncsHook {
     static DoFuncsHook *raceLoadHooks;
 
-   public:
+public:
     template <typename F>
     RaceLoadHook(F f) : DoFuncsHook(f, &raceLoadHooks) {}
     static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) { DoFuncsHook::Exec(raceLoadHooks, a1, a2, a3); }
@@ -284,7 +284,7 @@ class RaceLoadHook : public DoFuncsHook {
 class FrameLoadHook : public DoFuncsHook {
     static DoFuncsHook *FrameLoadHooks;
 
-   public:
+public:
     template <typename F>
     FrameLoadHook(F f) : DoFuncsHook(f, &FrameLoadHooks) {}
     static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) { DoFuncsHook::Exec(FrameLoadHooks, a1, a2, a3); }
@@ -293,7 +293,7 @@ class FrameLoadHook : public DoFuncsHook {
 class RaceFrameHook : public DoFuncsHook {
     static DoFuncsHook *raceFrameHooks;
 
-   public:
+public:
     template <typename F>
     RaceFrameHook(F f) : DoFuncsHook(f, &raceFrameHooks) {}
     static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) { DoFuncsHook::Exec(raceFrameHooks, a1, a2, a3); }
@@ -302,7 +302,7 @@ class RaceFrameHook : public DoFuncsHook {
 class SectionLoadHook : public DoFuncsHook {
     static DoFuncsHook *sHooks;
 
-   public:
+public:
     template <typename F>
     SectionLoadHook(F f) : DoFuncsHook(f, &sHooks) {}
     static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) { DoFuncsHook::Exec(sHooks, a1, a2, a3); }
@@ -310,13 +310,13 @@ class SectionLoadHook : public DoFuncsHook {
 
 // REL has NOT loaded yet, so do NOT do anything with REL addr, it will not work
 class BootHook {
-   public:
+public:
     typedef void(Func)();
     Func *func;
     nw4r::ut::Link link;
     static nw4r::ut::List list;
 
-   public:
+public:
     BootHook(Func *f, u16 position) {
         this->func = f;
         Func *obj = (Func *)nw4r::ut::List_GetNth(&list, position);

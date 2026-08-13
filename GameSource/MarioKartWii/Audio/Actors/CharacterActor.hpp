@@ -34,7 +34,7 @@ class CharacterActor;
 typedef void (*CharacterVoiceActionTable)(s32 *type, bool isReal);
 
 class DriverSoundManager {
-   public:
+public:
     RandomSoundPicker *GetCharacterVoiceSoundSet(CharacterId character, u32 type);  // 80868f1c
 
     static DriverSoundManager sInstance;  // 809c4740
@@ -47,7 +47,7 @@ class RandomCharacterActorPicker : public RandomSoundPicker {  // one per type
 };  // 0x30
 
 class CharacterActor : public RaceAnimActor {
-   public:
+public:
     CharacterActor();  // 80863928
 
     // AUDIOACTOR

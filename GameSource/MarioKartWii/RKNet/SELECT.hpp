@@ -44,7 +44,7 @@ struct SELECTPacket {
 // size_assert(SELECTPacket, 0x38);
 
 class SELECTHandler {
-   public:
+public:
     static SELECTHandler *sInstance;  // 809c2100 /!\ do not use within pulsar
     static SELECTHandler *CreateInstance(OnlineMode mode);  // 8065fe8c
     static void DestroyInstance();  // 8065ff60
@@ -95,14 +95,14 @@ class SELECTHandler {
     void DecidePublicTeams(u32 &teams);  // 80662290
     void DecidePrivateTeams(u32 &teams);  // 80662588
 
-   public:
+public:
     OnlineMode mode;  // from page 0x90 OnInit SectionId Switch
     u32 unknown_0x4;
 
-   private:
+private:
     SELECTPacket toSendPacket;  // 0x8
     SELECTPacket receivedPackets[12];  // 0x40
-   public:
+public:
     u8 lastSentToAid;  // 0x2e0
     u8 unknown_0x2e4[7];
     u64 lastSentTime;  // 0x2e8

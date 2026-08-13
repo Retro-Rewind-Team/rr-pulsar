@@ -6,7 +6,7 @@
 namespace Objects {
 
 class Airblock : public ObjectKCL {  // ObjectNum 0x1 = 1
-   public:
+public:
     explicit Airblock(const KMP::Holder<GOBJ> &gobjHolder);  // 807f9388
     Airblock(const Vec3 &position, const Vec3 &rotation, const Vec3 &scale);  // 807f9424
     ~Airblock() override;  // 807f9910 vtable 808d4178

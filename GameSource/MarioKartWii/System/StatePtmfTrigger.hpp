@@ -11,7 +11,7 @@
 // the state are almost always (except for one camera class and earthmodel) related to the cycle of an object
 template <class T>
 class StatePtmfTrigger {
-   public:
+public:
     struct Entry {
         u16 id;
         u8 padding[2];

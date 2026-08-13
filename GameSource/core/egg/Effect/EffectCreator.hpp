@@ -8,7 +8,7 @@ using namespace nw4r;
 namespace EGG {
 
 class EffectCreator : public EGG::Disposer {
-   public:
+public:
     EffectCreator(int idx);  // 80224348
     ~EffectCreator() override;  // 802243b4 vtable 802a2e50
     virtual void StopAllEffect();  // 8022443c

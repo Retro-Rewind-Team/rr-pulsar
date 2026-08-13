@@ -5,14 +5,14 @@
 
 namespace GeoObj {
 class ObjBalloon {
-   public:
+public:
     ObjBalloon(u8 poolIdx, u8 teamId);  // 8086e224
     void OnAdd(u32 time, u8 playerId, u8 balloonIndex, u8 isInitial);  // 8086ec5c
 };
 }  // namespace GeoObj
 
 class RaceBalloonManager {
-   public:
+public:
     static RaceBalloonManager *sInstance;  // 809c4748
     static void CreateInstance();  // 808697bc
 

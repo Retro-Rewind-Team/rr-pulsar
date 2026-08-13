@@ -7,7 +7,7 @@
 namespace Kart {
 
 class Manager : public EGG::Disposer {
-   public:
+public:
     static Manager *sInstance;  // 809c18f8
     static Manager *CreateInstance();  // 8058faa8
     static void DestroyInstance();  // 8058faf8

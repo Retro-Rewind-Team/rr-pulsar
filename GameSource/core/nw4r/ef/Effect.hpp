@@ -14,7 +14,7 @@ namespace ef {
 
 // Manages one layer of emitters
 class Effect : public ReferencedObject {
-   public:
+public:
     Effect();  // 80026340
     ~Effect();  // 800263b0
 
@@ -22,7 +22,7 @@ class Effect : public ReferencedObject {
                                        u16 *aPtclLife, float *aPtclLifeRnd, math::MTX34 *space);
     typedef void (*FuncCBPtclCalc)(ParticleManager *particleMgr, ut::List *utList, Particle *head);
     struct CallBack {
-       public:
+    public:
         FuncCBPrevEmission mPrevEmission;
         FuncCBPtclCalc mPrevPtclCalc;
         FuncCBPtclCalc mPostPtclCalc;

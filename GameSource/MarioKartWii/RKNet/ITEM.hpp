@@ -20,7 +20,7 @@ struct ITEMPacket {
 // size_assert(ITEMPacket, 0x8);
 
 class ITEMHandler {
-   public:
+public:
     static ITEMHandler *sInstance;  // 809c20f8
     static ITEMHandler *CreateInstance();  // 8065c0ec
     static void DestroyInstance();  // 8065c368

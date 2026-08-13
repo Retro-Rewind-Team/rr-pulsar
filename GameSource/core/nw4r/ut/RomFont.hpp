@@ -8,7 +8,7 @@ namespace nw4r {
 namespace ut {
 
 class RomFont : public Font {
-   public:
+public:
     RomFont();  // 800b1a20
     ~RomFont() override;  // 800b1a80 vtable 80274dac
     int GetWidth() const override;  // 0xc 800b1ae0

@@ -19,7 +19,7 @@ struct SeqUserprocCallbackParam {
 
 namespace detail {
 class SeqPlayer : BasicPlayer, public DisposeCallback, public SoundThread::PlayerCallback {
-   public:
+public:
     enum OffsetType {
         OFFSET_TYPE_TICK,
         OFFSET_TYPE_MILLISEC

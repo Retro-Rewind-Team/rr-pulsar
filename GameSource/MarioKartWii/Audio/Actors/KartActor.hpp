@@ -14,7 +14,7 @@ class Object;
 namespace Audio {
 class EngineMgr;
 class KartActor : public SimpleRaceActor {  // LinkedRaceActor: 0xb2 is KCLVariant (when needed), 0xb3 is hudSlotId
-   public:
+public:
     static Vec3 DefaultVelocity;  // 809c2858 0.0f x3
     KartActor();  // 8070722c
 
@@ -94,7 +94,7 @@ class KartActor : public SimpleRaceActor {  // LinkedRaceActor: 0xb2 is KCLVaria
 // size_assert(KartActor, 0xfc);
 
 class EngineMgr {
-   public:
+public:
     void Init(KartActor *kartActor);  // 806fae60
     void Update();  // 806fafb4
     void CalcSoundId();  // 806fb2fc

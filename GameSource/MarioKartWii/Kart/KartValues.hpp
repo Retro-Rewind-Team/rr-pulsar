@@ -14,13 +14,13 @@
 namespace Kart {
 
 class StatsAndBsp {
-   public:
+public:
     Stats *stats;  // http://wiki.tockdom.com/wiki/KartParam.bin
     BSP *bsp;  // http://wiki.tockdom.com/wiki/BSP_(File_Format)
 };  // Total size 0x8
 
 class GpStats {
-   public:
+public:
     bool startBoostSuccessful;
     u8 unknown_0x1[0x4 - 0x1];
     u32 mtCount;
@@ -33,7 +33,7 @@ class GpStats {
 };  // Total size 0x1cf
 
 class Values {
-   public:
+public:
     Values(u32 playerIdx, KartId kart, CharacterId character, bool isBike, const StatsAndBsp &statsAndBsp, void *unknown,
            KartDriverDispParam::Entry *kartDriverDispEntry, KartPartsDispParam::Entry *kartPartsDispEntry,
            BikePartsDispParam::Entry *bikePartsDispEntry, DriverDispParam::Entry *driverDispEntry);  // 80592fc0
@@ -66,7 +66,7 @@ class Values {
 };  // Total size 0x3c
 
 class DriverParams {
-   public:
+public:
     static DriverParams *sInstance;  // 809c191c
     u32 wheelCount;
     KartType type;
@@ -100,7 +100,7 @@ class DriverParams {
 };  // total size 0x18c
 
 class KartParams {
-   public:
+public:
     static KartParams *sInstance;  // 809c1918
     u32 wheelCount;
     KartType type;

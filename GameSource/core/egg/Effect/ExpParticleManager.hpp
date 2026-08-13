@@ -8,7 +8,7 @@
 namespace EGG {
 
 class ExpParticleManager : public nw4r::ef::ParticleManager {
-   public:
+public:
     ExpParticleManager();  // 802261f8
     bool Initialize(nw4r::ef::Emitter *parent, nw4r::ef::EmitterResource *resource) override;  // 0x10 802262a8 vtable 802a2fb0
     void Calc() override;  // 0x18 80226308

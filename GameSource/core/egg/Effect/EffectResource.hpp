@@ -8,7 +8,7 @@
 using namespace nw4r;
 namespace EGG {
 class EffectResource : public EGG::Disposer {
-   public:
+public:
     static nw4r::ut::List effectResList;  // 803841a0
     EffectResource(void *breff, void *breft);  // 80225c98
     ~EffectResource() override;  // 80225d34 vtable 802a2f70

@@ -10,9 +10,9 @@
 namespace Kart {
 
 class Killer : public Link {  // bullet bill
-   public:
+public:
     class ModelCalc : public ModelCalcCallback {
-       public:
+    public:
         ~ModelCalc() override;  // 0x8 vtable 808b6890 at 0x8, 808b6888 at 0xc for empty thunk 8059df1c func 8059dedc
         void ExecWorldCBImpl(u32 args) override;  // 0x24 8059b600
     };

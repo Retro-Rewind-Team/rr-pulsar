@@ -5,7 +5,7 @@
 
 namespace Item {
 class ObjKouraGreen : public ObjThrowable {
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807aeaec
     static void *SendOrExtractShootEVENT(void *packet, Obj *obj, bool extractOrSend);  // 807aee58
 

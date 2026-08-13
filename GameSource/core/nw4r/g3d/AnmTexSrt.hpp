@@ -10,7 +10,7 @@ namespace g3d {
 
 class AnmObjTexSrtRes;
 class AnmObjTexSrt : public AnmObj {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 8005b250 vtable 80272c38
     ~AnmObjTexSrt() override;  // 0x10 80059fa0
     TypeObj GetTypeObj() const override;  // 0x14 8005b540
@@ -26,7 +26,7 @@ class AnmObjTexSrt : public AnmObj {
 };
 
 class AnmObjTexSrtRes : public AnmObjTexSrt, public FrameCtrl {
-   public:
+public:
     static AnmObjTexSrtRes *Construct(G3dHeap *heap, u32 *size, ResAnmTexSrt res, ResMdl resMdl, bool bHasCache);  // 8005a950
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 8005b1e0 vtable 80272b60
     void G3dProc(u32 g3dproc, u32 param, void *info) override;  // 0xc 8005af40
@@ -46,7 +46,7 @@ class AnmObjTexSrtRes : public AnmObjTexSrt, public FrameCtrl {
 };  // 0x34
 
 class AnmObjTexSrtNode : public AnmObjTexSrt {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 8005b3b0 vtable 80272bf0
     void G3dProc(u32 g3dproc, u32 param, void *info) override;  // 0xc 8005a6e0
     ~AnmObjTexSrtNode() override;  // 0x10 80059fe0

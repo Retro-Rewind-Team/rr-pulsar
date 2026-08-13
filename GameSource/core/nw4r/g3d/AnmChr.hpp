@@ -9,7 +9,7 @@ namespace g3d {
 
 class AnmObjChrRes;
 class AnmObjChr : public AnmObj {
-   public:
+public:
     enum BindOption {
         BIND_ONE,
         BIND_PARTIAL,
@@ -61,7 +61,7 @@ class AnmObjChrRes : public AnmObjChr, public FrameCtrl {
 };
 
 class AnmObjChrNode : public AnmObjChr {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 8005d3d0 vtable 80272d30
     void G3dProc(u32 g3dproc, u32 param, void *info) override;  // 0xC 8005bf80
     ~AnmObjChrNode() override;  // 0x10 8005b620
@@ -84,7 +84,7 @@ class AnmObjChrNode : public AnmObjChr {
 };
 
 class AnmObjChrBlend : public AnmObjChrNode {
-   public:
+public:
     static AnmObjChrBlend *Construct(G3dHeap *heap, u32 *size, ResMdl resMdl, int maxChildren = 4);  // 8005c000
     AnmObjChrBlend(G3dHeap *heap, u16 *binding, int bindingCount, AnmObjChrRes **children, int arraySize, float *weightArray);  // inlined
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 8005d350 vtable 80272cd8

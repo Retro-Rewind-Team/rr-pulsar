@@ -130,7 +130,7 @@ class LayoutResourceAccessorList {
     LayoutResourceAccessor *tail;
 };
 class LayoutResourceAccessor {
-   public:
+public:
     LayoutResourceAccessor();  // inlined
     void Init(const char *folderName);  // 805ea66c inlined
     lyt::MultiArcResourceAccessor multiArcResourceAccessor;
@@ -142,7 +142,7 @@ class LayoutResourceAccessor {
 // size_assert(LayoutResourceAccessor, 0x3b4);
 
 class BaseLayout {
-   public:
+public:
     BaseLayout();  // 805e82c4 inlined
     virtual ~BaseLayout();  // 805e830c vtable 808b950c
     lyt::Pane *GetPaneByName(const char *paneName) const;  // 805e8368
@@ -154,7 +154,7 @@ class BaseLayout {
 // size_assert(BaseLayout, 0x28);
 
 class MainLayout : public BaseLayout {  // main brlyt in brctr
-   public:
+public:
     MainLayout();  // 805e85a8
     ~MainLayout() override;  // 805e8630 vtable 808b94c4
     void CreateResourceAcccessor(const char *folderName);  // 805e86f4 completely identical to layout's
@@ -187,7 +187,7 @@ class PictureLayoutList {
 };  // 0x4
 
 class PictureLayout : public BaseLayout {  // picture brlyt
-   public:
+public:
     PictureLayout();  // 805e9b28 inlined
     ~PictureLayout() override;  // 805e9bc0 vtable 808b94b8
     void CreateResourceAcccessor(const char *folderName);  // 805e9c20 completely identical to layout's

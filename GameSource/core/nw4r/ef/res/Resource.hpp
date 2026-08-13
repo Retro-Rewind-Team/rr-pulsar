@@ -28,7 +28,7 @@ struct TextureProject {  // BREFT
 };
 
 class Resource {
-   public:
+public:
     static Resource instance;  // 802b7590
     static Resource *GetInstance();  // 80035940
     ResEmitter FindEmitter(const char *name, EffectProject *project = nullptr) const;  // 80035eb0

@@ -5,7 +5,7 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class StrmBufferPool {
-   public:
+public:
     void *Alloc();  // 800a4d20
     void Free(void *p);  // 800a4e10
     void *buffer;  // 0

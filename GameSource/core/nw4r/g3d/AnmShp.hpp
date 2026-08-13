@@ -9,7 +9,7 @@ namespace g3d {
 
 class AnmObjShpRes;
 class AnmObjShp : public AnmObj {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 8005ea70 vtable 80272ed0
     ~AnmObjShp() override;  // 8005d620
     TypeObj GetTypeObj() const override;  // 0x14 8005ed60
@@ -47,7 +47,7 @@ class AnmObjShpRes : public AnmObjShp, public FrameCtrl {
 };
 
 class AnmObjShpNode : public AnmObjShp {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 8005ebd0 vtable 80272e80
     void G3dProc(u32 g3dproc, u32 param, void *info) override;  // 0xC 8005dd60
     ~AnmObjShpNode() override;  // 0x10 8005d660
@@ -69,7 +69,7 @@ class AnmObjShpNode : public AnmObjShp {
 };  // 0x20
 
 class AnmObjShpBlend : public AnmObjShpNode {
-   public:
+public:
     static AnmObjShpBlend *Construct(G3dHeap *heap, u32 *size, ResMdl resMdl, int maxChildren = 4);  // 8005dde0
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 8005eb50 vtable 80272e30
     ~AnmObjShpBlend() override;  // 0x10 8005ec80

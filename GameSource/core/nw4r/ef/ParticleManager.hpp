@@ -14,7 +14,7 @@ namespace ef {
 class Emitter;
 
 class ParticleManager : public ReferencedObject {
-   public:
+public:
     enum ParticleManagerFlag {
         NW4R_EF_PMF_INHERITSCALE = 1 << 0,
         NW4R_EF_PMF_INHERITROTATE = 1 << 1,

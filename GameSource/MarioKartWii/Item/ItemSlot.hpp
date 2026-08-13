@@ -28,7 +28,7 @@ struct ItemSlotBinary {
 namespace Item {
 class Player;
 class ItemSlotData {
-   public:
+public:
     struct Probabilities {
         u32 rowCount;  // almost always raw's columnsCount since this is inverted
         u16 *probabilities;  // obviously multiplied by 2 as usual

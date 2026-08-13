@@ -10,7 +10,7 @@ namespace detail {
 class BasicSound;
 class SoundPlayer;
 class PlayerHeap : public SoundMemoryAllocatable {
-   public:
+public:
     PlayerHeap();  // 80097e00
     ~PlayerHeap() override;  // 80097e30 vtable 80274828
     void *Alloc(u32 size) override;  // 80097f30

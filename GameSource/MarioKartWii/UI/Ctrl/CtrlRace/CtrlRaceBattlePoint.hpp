@@ -4,7 +4,7 @@
 
 //_sinit_ at 807edcbc
 class CtrlRaceBattlePoint : public CtrlRaceBase {  // bottomleft
-   public:
+public:
     // no ctor
     ~CtrlRaceBattlePoint() override;  // 807edbec vtable 808d3b38
     void Init() override;  // 0xc 807ed098
@@ -20,7 +20,7 @@ class CtrlRaceBattlePoint : public CtrlRaceBase {  // bottomleft
 };  // Total Size 0x19c
 
 class CtrlRaceBattleAddPoint : public CtrlRaceBase {  //+1 -1 on scorechange
-   public:
+public:
     // no ctor
     ~CtrlRaceBattleAddPoint() override;  // 807edc60 vtable 808d3b88
     void InitSelf() override;  // 0x18 807ec9ac
@@ -39,7 +39,7 @@ class CtrlRaceBattleAddPoint : public CtrlRaceBase {  //+1 -1 on scorechange
 };  // Total Size 0x208
 
 class CtrlRaceBattleTotalPoint : public CtrlRaceBase {  //+1 -1 on scorechange
-   public:
+public:
     // no ctor
     ~CtrlRaceBattleTotalPoint() override;  // 807edb84 vtable 808d3ae8
     void Init() override;  // 0xc 807ed268

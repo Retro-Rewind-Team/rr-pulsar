@@ -8,7 +8,7 @@ namespace Kart {
 class Player;
 }
 class KartObjectCollision {  // karts make use of this simplified system for item/objects collisions
-   public:
+public:
     KartObjectCollision();  // 8081e0cc
     virtual ~KartObjectCollision();  // 8081e0e4 vtable 808d6da8
     virtual void Init(u8 playerId);  // 8081d090

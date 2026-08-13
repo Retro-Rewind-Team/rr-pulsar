@@ -18,7 +18,7 @@ class LinkedRaceActor;
 
 class ModelDirector;
 class ModelTransformator {  // animation stuff
-   public:
+public:
     explicit ModelTransformator(ModelDirector *parent);  // 80555750
     ~ModelTransformator();  // 80556774
     virtual void vf_0x8(u32 listIdx, float frame, float rate);  // 80557fb0 vtable 808b44b8
@@ -86,7 +86,7 @@ class ModelTransformator {  // animation stuff
 };  // 0x3c
 
 class ModelTransformatorAddedCHRs : public ModelTransformator {  // animation stuff
-   public:
+public:
     ModelTransformatorAddedCHRs(ModelDirector *parent, u8 additionalCHRCount);  // 80557cf8
     ~ModelTransformatorAddedCHRs();  // 80557d90
     void vf_0x8(u32 listIdx, float frame, float rate) override;  // 80557dd0 vtable 808b44a8

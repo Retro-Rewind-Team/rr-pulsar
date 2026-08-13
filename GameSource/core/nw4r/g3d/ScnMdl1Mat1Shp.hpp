@@ -8,7 +8,7 @@ namespace nw4r {
 namespace g3d {
 
 class ScnMdl1Mat1Shp : public ScnLeaf {
-   public:
+public:
     static ScnMdl1Mat1Shp *Construct(G3dHeap *heap, u32 *size, ResMat mat, ResShp shp, bool opacity);  // 800767c0
     ScnMdl1Mat1Shp(G3dHeap *heap, ResMat mat, ResShp shp, bool opacity);
 

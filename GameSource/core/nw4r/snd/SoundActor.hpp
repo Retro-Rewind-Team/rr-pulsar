@@ -10,7 +10,7 @@
 namespace nw4r {
 namespace snd {
 class SoundActor : public SoundStartable {
-   public:
+public:
     typedef detail::ExternalSoundPlayer ActorPlayer;
 
     SoundActor(SoundArchivePlayer &soundArchivePlayer);  // 8009dbe0

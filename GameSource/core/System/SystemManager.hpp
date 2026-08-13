@@ -7,7 +7,7 @@
 #include <core/rvl/OS/OSMessage.hpp>
 
 class SystemManager {
-   public:
+public:
     static SystemManager *sInstance;  // 80386000
     static SystemManager *CreateInstance(EGG::Heap *heap);  // 8000a5d0
     SystemManager(EGG::Heap *heap);  // 8000a688

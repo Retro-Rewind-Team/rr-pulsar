@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace snd {
 class StrmSoundHandle {
-   public:
+public:
     StrmSoundHandle(SoundHandle *handle);  // 800a8de4
     ~StrmSoundHandle() { DetachSound(); }
     bool IsAttachedSound() const { return sound != nullptr; }

@@ -6,7 +6,7 @@ namespace Pulsar {
 namespace UI {
 
 class ExpMultiPlayer : public Pages::MultiPlayer {
-   public:
+public:
     ExpMultiPlayer();
 
     UIControl *CreateExternalControl(u32 externControlId) override;
@@ -15,7 +15,7 @@ class ExpMultiPlayer : public Pages::MultiPlayer {
 
     void OnSettingsButtonClick(PushButton &button, u32 hudSlotId);
 
-   private:
+private:
     PtmfHolder_2A<ExpMultiPlayer, void, PushButton &, u32> onSettingsClickHandler;
 };
 

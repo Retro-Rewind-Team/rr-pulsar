@@ -11,7 +11,7 @@
 namespace Kart {
 
 class WheelPhysics : public Link {
-   public:
+public:
     WheelPhysics(u32 wheelIdx, u32 bspWheelIdx);  // 8059940c
     void Reset();  // 80599508
     void InitHitboxGroup();  // 80599470
@@ -35,7 +35,7 @@ class WheelPhysics : public Link {
 };  // Total size 0x84
 
 class WheelPhysicsHolder : public Link {
-   public:
+public:
     WheelPhysicsHolder(u32 wheelIdx, bool xMirroredKart, u32 bspWheelIdx);  // 80599ed4
     void Reset();  // 80599f54
     void Update(const Vec3 &gravity, const Mtx34 &wheelMat, float unknown);  // 8059a278
@@ -55,7 +55,7 @@ class WheelPhysicsHolder : public Link {
 };  // Total size 0x48
 
 class Wheel : public Part {
-   public:
+public:
     Wheel(const Values &values, bool xMirroredKart, u32 bspWheelIdx);  // 8059aa44
     ~Wheel() override;  // 8058ec08 vtable 808b67e0
     bool LoadModel(BRRESHandle &handle) override;  // 0x18 8059ab70
@@ -72,7 +72,7 @@ class Wheel : public Part {
 };  // Total size 0xa0
 
 class WheelFront : public Wheel {
-   public:
+public:
     ~WheelFront() override;  // 8058f4ac vtable 808b6798
     bool LoadModel(BRRESHandle &handle) override;  // 0x18 8059abf4
     void UpdateMatrix() override;  // 0x1c 8059aecc
@@ -81,7 +81,7 @@ class WheelFront : public Wheel {
 };  // Total size 0xd0
 
 class WheelBikeFront : public Wheel {
-   public:
+public:
     ~WheelBikeFront() override;  // 8058f4ec vtable 808b6750
     bool LoadModel(BRRESHandle &handle) override;  // 0x18 8059b08c
     void UpdateMatrix() override;  // 0x1c 8059b09c
@@ -91,7 +91,7 @@ class WheelBikeFront : public Wheel {
 };
 
 class WheelBikeRear : public Wheel {
-   public:
+public:
     ~WheelBikeRear() override;  // 8059b564 vtable 808b6708
     bool LoadModel(BRRESHandle &handle) override;  // 0x18 8059b250
     void UpdateMatrix() override;  // 0x1c 8059b260

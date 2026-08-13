@@ -6,7 +6,7 @@
 namespace Objects {
 
 class LeafEffect : public EffectSpawner {  // ObjectNum 0x175 = 373
-   public:
+public:
     explicit LeafEffect(const KMP::Holder<GOBJ> &gobjHolder);  // 806c085c
     ~LeafEffect() override;  // 806c0cd8 vtable 808c3180
     void Update() override;  // 0x14 806c0b54

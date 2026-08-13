@@ -37,7 +37,7 @@ struct Sound3DParam {
 class Sound3DEngine;
 
 class Sound3DManager : public detail::BasicSound::AmbientParamUpdateCallback, public detail::BasicSound::AmbientArgAllocaterCallback {
-   public:
+public:
     typedef ut::LinkList<Sound3DListener, offsetof(Sound3DListener, link)> ListenerList;
 
     Sound3DManager();  // 8009d8a0

@@ -24,7 +24,7 @@ class IScnProc {
 };  // 0xC
 
 class ScnProcHolder {  // non official sets itself as the userdata of g3d::ScnProc, which when it procs, allows IScnProc (obtained via parent) to call draw with the idx
-   public:
+public:
     IScnProc *parent;
     g3d::ScnProc *proc;
     u16 idx;

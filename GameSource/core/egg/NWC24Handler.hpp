@@ -8,7 +8,7 @@
 namespace EGG {
 
 class NWC24Handler {
-   public:
+public:
     NWC24Handler(EGG::Heap *heap);  // 802313d4
     enum Error {
 

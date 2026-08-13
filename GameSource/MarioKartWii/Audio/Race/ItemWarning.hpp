@@ -22,7 +22,7 @@ struct ItemWarning {
 };  // 0xC
 
 class ItemWarningMgr {
-   public:
+public:
     static ItemWarningMgr *sInstance;  // 809c2320
     static ItemWarningMgr *CreateInstance();  // 806f7ee8
     static void DestroyInstance();  // 806f7fcc

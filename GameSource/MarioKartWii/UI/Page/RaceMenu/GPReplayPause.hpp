@@ -6,7 +6,7 @@
 
 namespace Pages {
 class GPReplayPause : public RaceMenu {  // ID 0x17
-   public:
+public:
     static const PageId id = PAGE_GP_REPLAY_PAUSE;
     GPReplayPause();  // 806256f4
     ~GPReplayPause() override;  // 80633070 vtable 808bdb84

@@ -11,7 +11,7 @@ class StrmSoundHandle;
 
 namespace detail {
 class StrmSound : public BasicSound {
-   public:
+public:
     StrmSound(StrmSoundInstanceManager *manager, int priority, int ambientPriority);  // 800a8480
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 800a8dc0
     ~StrmSound() override;  // 800a8c10 vtable 80274b00

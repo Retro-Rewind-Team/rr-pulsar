@@ -29,7 +29,7 @@ struct CourseIDToMusicID {
 };
 
 class RaceMgr {
-   public:
+public:
     struct ActorHolder {
         static int Compare(ActorHolder *first, ActorHolder *second);  // 80710664
         LinkedRaceActor *actor;

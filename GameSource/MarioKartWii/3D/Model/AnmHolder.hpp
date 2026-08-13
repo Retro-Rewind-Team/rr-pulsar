@@ -23,7 +23,7 @@ using namespace nw4r;
 class AnmHolder;
 
 class AnmHolder {
-   public:
+public:
     AnmHolder(g3d::AnmObj *anmObjRes, snd::detail::AnimSoundFile *rawBRASD);  // 8055572c inlined
     virtual float GetFrameCount() const;  // 0x8 80557b28 vtable 808b44c8
     virtual float GetFrame() const;  // 0xc 80557954
@@ -41,7 +41,7 @@ class AnmHolder {
 };  // 0x1c
 
 class AnmChrHolder : public AnmHolder {
-   public:
+public:
     // ctor inlined
     float GetFrameCount() const override;  // 8055ae90 vtable 808b4430
     float GetFrame() const override;  // 8055adfc
@@ -54,7 +54,7 @@ class AnmChrHolder : public AnmHolder {
 };
 
 class AnmShpHolder : public AnmHolder {
-   public:
+public:
     // ctor inlined
     float GetFrameCount() const override;  // 8055a800 vtable 808b42f0
     float GetFrame() const override;  // 8055a76c
@@ -67,7 +67,7 @@ class AnmShpHolder : public AnmHolder {
 };
 
 class AnmMatClrHolder : public AnmHolder {
-   public:
+public:
     // ctor inlined
     float GetFrameCount() const override;  // 8055acec vtable 808b43e0
     float GetFrame() const override;  // 8055ac58
@@ -80,7 +80,7 @@ class AnmMatClrHolder : public AnmHolder {
 };  // 0x20
 
 class AnmTexPatHolder : public AnmHolder {
-   public:
+public:
     // ctor inlined
     float GetFrameCount() const override;  // 8055a9a4 vtable 808b4340
     float GetFrame() const override;  // 8055a910
@@ -93,7 +93,7 @@ class AnmTexPatHolder : public AnmHolder {
 };
 
 class AnmTexSrtHolder : public AnmHolder {
-   public:
+public:
     // ctor inlined
     float GetFrameCount() const override;  // 8055ab48 vtable 808b4390
     float GetFrame() const override;  // 8055aab4
@@ -106,7 +106,7 @@ class AnmTexSrtHolder : public AnmHolder {
 };
 
 class AnmBlendHolder {
-   public:
+public:
     virtual ~AnmBlendHolder();  // 0x8 80556734 vtable 808b4480
     virtual void AttachNew(AnmHolder *newActive, AnmHolder *prev, bool changeUpdateRate) = 0;  // 0xc
     virtual void Attach(AnmHolder *obj, int idx) = 0;  // 0x10

@@ -13,7 +13,7 @@ class Pointers;
 
 // ParameterFile size is 0x1c, Racedata's is /boot/menuset.prm
 class EmptyCollisionParent {
-   public:
+public:
     virtual void ProcessKartBodyCollision(CollisionData &collisionData, Hitbox &hitbox,
                                           void *unk, const KCLTypeHolder &kclFlags) = 0;  // vtable 808b56c0
     virtual void ProcessWheelCollision(CollisionData &collisionData, Hitbox &hitbox,
@@ -22,7 +22,7 @@ class EmptyCollisionParent {
 };
 
 class Collision : public EmptyCollisionParent, public Link {
-   public:
+public:
     Collision();  // 8056e56c
 
     void ProcessKartBodyCollision(CollisionData &collisionData, Hitbox &hitbox,

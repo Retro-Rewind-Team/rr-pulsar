@@ -8,10 +8,10 @@ namespace Objects {
 
 class Poihana;
 class PoihanaBase : public ObjectCollidable, public AI::Base {  // likely not specific to poihana (it doesn't appear they share the same cpp file)
-   public:
+public:
     explicit PoihanaBase(const KMP::Holder<GOBJ> &gobjHolder);  // 80747198
     class SubChild : public UnkCollidableSub {
-       public:
+    public:
         SubChild();  // 80747c40
         ~SubChild() override;  // 80747c98 vtable 808cb8d0
         void Reset() override;  // 0xc 80747cd8
@@ -45,7 +45,7 @@ class PoihanaBase : public ObjectCollidable, public AI::Base {  // likely not sp
 // AI::Actions<Poihana> virtual void OnEnd(); //0x14  8074addc
 
 class Poihana : public PoihanaBase {  // ObjectNum 0x197 = 407
-   public:
+public:
     typedef AI::Actions<Poihana> Actions;
 
     explicit Poihana(const KMP::Holder<GOBJ> &gobjHolder);  // 8074816c

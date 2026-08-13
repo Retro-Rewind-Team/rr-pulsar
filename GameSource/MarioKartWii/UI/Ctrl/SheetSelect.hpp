@@ -5,9 +5,9 @@
 //_sinit_ at 806374e8
 
 class SheetSelectControl : public UIControl {  // arrowpair
-   public:
+public:
     class SheetSelectButton : public LayoutUIControl {  // select is equivalent to clicking for these
-       public:
+    public:
         SheetSelectButton();  // inlined but at 80636470
         ~SheetSelectButton() override;  // 80636564 vtable 808be998
         void Init() override;  // 0xc 806367f8
@@ -65,7 +65,7 @@ class SheetSelectControl : public UIControl {  // arrowpair
 // size_assert(SheetSelectControl::SheetSelectButton, 0x248);
 
 class SheetSelectControlScaleFade : public SheetSelectControl {
-   public:
+public:
     SheetSelectControlScaleFade() {}
     ~SheetSelectControlScaleFade() override;  // 805dbfdc vtable 808BE908
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80637494

@@ -5,7 +5,7 @@
 
 //_sinit_ at 800099cc
 class RKSystem : public EGG::TSystem {  // probably an intermediate class in btw
-   public:
+public:
     static RKSystem *GetStaticInstance();  // 80008e84
     Heap *GetSystemHeap() override;  // 0xC 80008fac
     void Run() override;  // 0x34 8000951c

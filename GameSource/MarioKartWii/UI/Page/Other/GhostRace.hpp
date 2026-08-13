@@ -10,7 +10,7 @@
 //_sinit_ at 805e0c18
 namespace Pages {
 class GhostRaceExplanation : public Page {  // ID 0x9f
-   public:
+public:
     static const PageId id = PAGE_GHOST_RACE_EXPLANATION;
     GhostRaceExplanation();  // 805de9f0
     ~GhostRaceExplanation() override;  // 805deb08 vtable 808b91a0
@@ -31,7 +31,7 @@ class GhostRaceExplanation : public Page {  // ID 0x9f
 // size_assert(GhostRaceExplanation, 0xa30);
 
 class GhostRaceMgr : public Page {  // ID 0xa0
-   public:
+public:
     static const PageId id = PAGE_GHOST_RACE_MGR;
     GhostRaceMgr();  // 805defd4
     ~GhostRaceMgr() override;  // 805df058 vtable 808b9130
@@ -60,7 +60,7 @@ class GhostRaceMgr : public Page {  // ID 0xa0
 // size_assert(GhostRaceMgr, 0x2874);
 
 class GhostRaceInfo : public Page {  // ID 0xA1
-   public:
+public:
     static const PageId id = PAGE_GHOST_RACE_INFO;
     GhostRaceInfo();  // 805e0584
     ~GhostRaceInfo() override;  // 805e069c vtable 808b90b4

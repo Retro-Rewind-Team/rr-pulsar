@@ -32,7 +32,7 @@ static_assert(sizeof(dir_struct) == 836, "dir_struct size");
 static_assert(sizeof(stat) == 88, "stat size");
 
 class SDIO : public IO {
-   public:
+public:
     SDIO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread)
         : IO(type, heap, taskThread), isFolderOpen(false) {
         offset_assert(stat, st_mode, 8);
@@ -60,7 +60,7 @@ class SDIO : public IO {
     s32 Overwrite(u32 length, const void *buffer) override;
     void Close() override;
 
-   private:
+private:
     file_struct fileData;
     dir_struct dirData;
     bool isFolderOpen;

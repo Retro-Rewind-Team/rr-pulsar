@@ -13,7 +13,7 @@ Contributors:
 // timeOffset : subtracted from raceinfo's timer
 
 class ObjectKCL : public Object {  // still an abstract class, used by objects that use a custom KCL, extended by a subclass for external KCLs
-   public:
+public:
     explicit ObjectKCL(const KMP::Holder<GOBJ> &gobjHolder);  // 8081a6d0
     ObjectKCL(u16 objId, const Vec3 &position, const Vec3 &rotation, const Vec3 &scale);  // 8081a714
     ObjectKCL(const char *name, const Vec3 &position, const Vec3 &rotation, const Vec3 &scale, u32 r8);  // 8081a758

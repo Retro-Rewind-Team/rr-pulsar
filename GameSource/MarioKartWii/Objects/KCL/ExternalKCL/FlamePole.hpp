@@ -8,7 +8,7 @@
 namespace Objects {
 
 class FlamePoleEff : public ObjectCollidable {
-   public:
+public:
     ~FlamePoleEff() override;  // 80681828 vtable 808c1208
     void OnStart() override;  // 0xc 8067e404
     void Update() override;  // 0x14 8067e410

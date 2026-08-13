@@ -20,7 +20,7 @@ so stuff like the position tracker, the lap transition sound, the roulette spinn
 namespace Audio {
 class Handle;
 class RSARPlayer {
-   public:
+public:
     static RSARPlayer *CreateInstance(SceneId sceneId);  // 80713e90 1 = menu
     static RSARPlayer *DestroyInstance();  // 807140b4
     static RSARPlayer *sInstance;  // 809c2850
@@ -56,7 +56,7 @@ class RSARPlayer {
 // size_assert(RSARPlayer, 0x18);
 
 class MenuRSARPlayer : public RSARPlayer {
-   public:
+public:
     MenuRSARPlayer();  // 80715a98 inlined
     void Close() override;  // 0x8 80715b7c vtable 808c90b8
     void OnDeactivate() override;  // 0xc 80715bd4 sets state to 2, and child classes check variables like if the player is a ghost
@@ -67,7 +67,7 @@ class MenuRSARPlayer : public RSARPlayer {
 };
 
 class RaceRSARPlayer : public RSARPlayer {
-   public:
+public:
     RaceRSARPlayer();  // 80715da4 inlined
     void Close() override;  // 0x8 80716404 vtable 808c9088
     void OnDeactivate() override;  // 0xc 80715e24
@@ -88,7 +88,7 @@ class RaceRSARPlayer : public RSARPlayer {
 };  // total size 0x1C
 
 class TestRSARPlayer : public RSARPlayer {  // sceneId 0x3
-   public:
+public:
     TestRSARPlayer();  // 807167b8 inlined
     virtual void Close();  // 0x8 8071681c vtable 808c9058
     virtual void OnDeactivate();  // 0xc 80716874
@@ -96,7 +96,7 @@ class TestRSARPlayer : public RSARPlayer {  // sceneId 0x3
 };
 
 class GlobeRSARPlayer : public RSARPlayer {
-   public:
+public:
     GlobeRSARPlayer();  // 80716880 inlined
     void Close() override;  // 0x8 80716ca4 vtable 808c9028
     void OnDeactivate() override;  // 0xc 80716940

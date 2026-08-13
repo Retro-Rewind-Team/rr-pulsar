@@ -18,7 +18,7 @@ namespace Input {
 
 //_sinit_ at 0x805230b0
 class Manager {
-   public:
+public:
     static Manager *sInstance;  // 809bd70c
     static Manager *GetInstance();  // 8052313c
     static void DestroyInstance();  // 8052318c

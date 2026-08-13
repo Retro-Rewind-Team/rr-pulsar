@@ -16,7 +16,7 @@ struct POWParams {
 };
 
 class Damage : public Link {  // PlayerObjIdx set to 0xC if the damage shouldn't lead to item loss
-   public:
+public:
     enum SpinType {
         SPIN_TYPE_ONLY_SOUND_AND_ITEMLOSS,
         SPIN_TYPE_SHORT,

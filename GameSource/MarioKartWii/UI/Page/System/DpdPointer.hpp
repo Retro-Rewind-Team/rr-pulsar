@@ -32,7 +32,7 @@ class DpdPointerControl : public LayoutUIControl {
 
 namespace Pages {
 class DpdPointer : public System {
-   public:
+public:
     DpdPointer();  // 805c9534
     ~DpdPointer() override;  // 805c9598 vtable 808b80f8
     const char *GetClassName() const override;  // 0xC 805c972c

@@ -38,7 +38,7 @@ class ObjectCollisionSphere : public ObjectCollision {  // P4 = 1, P5 is 3D Radi
 };  // 0x58
 
 class ObjectCollisionCylinder : public ObjectCollision {  // P4 = 2, P5 is 2D Radius, P6 is height Kuribo for example
-   public:
+public:
     ObjectCollisionCylinder(const Vec3 &center, float radius, float height);  // 80836068
     ~ObjectCollisionCylinder() override;  // 808364a0 vtable 808d8d10
     void SetPositionAndScale(const Mtx34 &transformationMtx, float objScale) override;  // 808361f0
@@ -81,7 +81,7 @@ class ObjectCollisionPolyhedra : public ObjectCollision {
 
 // rectangular cuboid, e.g. a truck on MH
 class ObjectCollisionCuboid : public ObjectCollisionPolyhedra {  // P4 = 3, P5, P6, P7 are X, Y, Z sizes DKShip64 for example
-   public:
+public:
     ObjectCollisionCuboid(const Vec3 &center, float x, float y, float z);  // 80833840
     ~ObjectCollisionCuboid() override;  // 808342f0 vtable 808d8ce8
     void SetPositionAndScale(const Mtx34 &transformationMtx, float objScale) override;  // 80833b00

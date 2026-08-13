@@ -9,7 +9,7 @@ namespace EGG {
 
 template <class T>
 class IBinary {
-   public:
+public:
     struct BinaryHeader {
         char magic[4];  // LGHT for example
         u32 fileSize;

@@ -13,7 +13,7 @@ namespace Pulsar {
 namespace UI {
 
 class VRLeaderboardPage : public Page {
-   public:
+public:
     static const PulPageId id = PULPAGE_VRLEADERBOARD;
 
     static const int kRowsPerPage = 10;
@@ -31,7 +31,7 @@ class VRLeaderboardPage : public Page {
     void BeforeEntranceAnimations() override;
     void OnUpdate() override;
 
-   private:
+private:
     void OnBackPress(u32 hudSlotId);
     void OnBackButtonClick(PushButton &button, u32 hudSlotId);
     void ResetRowsToLoading();

@@ -13,10 +13,10 @@ namespace snd {
 class SeqSoundHandle;
 namespace detail {
 class SeqSound : public BasicSound {
-   public:
+public:
     typedef void (*NotifyAsyncEndCallback)(bool result, const void *seqBase, void *userData);
     class SeqLoadTask : public Task {
-       public:
+    public:
         ~SeqLoadTask() override;  // 8009a4b0 vtable 802748f0
         void Execute() override;  // 8009ab00
         void Cancel() override;  // 8009ac00

@@ -8,7 +8,7 @@
 namespace Objects {
 
 class Heyho : public ObjectCollidable, public StatePtmfTrigger<Heyho> {  // ObjectNum 0x19c = 412
-   public:
+public:
     explicit Heyho(const KMP::Holder<GOBJ> &gobjHolder);  // 806ce828
 
     // ObjectCollidable vtable 808c4a68

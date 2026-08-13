@@ -120,7 +120,7 @@ struct SettingsContextDef {
 };
 
 class Params {
-   public:
+public:
     static const int maxRadioCount = 8;
     static const int maxScrollerCount = 5;
     static const int maxContextPageCount = 13;

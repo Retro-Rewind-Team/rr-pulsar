@@ -6,7 +6,7 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class Util {
-   public:
+public:
     enum RefType {
         REF_TYPE_ADDR = 0,
         REF_TYPE_OFFSET = 1,

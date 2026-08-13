@@ -14,7 +14,7 @@ class ObjectCollidable;
 // class that links karts/objects/items etc.. into a single trait
 
 class Entity {
-   public:
+public:
     Entity();  // 80786ed0
     ~Entity();  // 80786ef4
     void Init(Vec3 *position, u32 params, void *subject, float radius, float maxSpeed);  // 80786f34
@@ -40,7 +40,7 @@ class Entity {
 };  // 0x20
 
 class EntityManager : public EGG::Disposer {
-   public:
+public:
     u8 playerCount;
     u8 unknown_0x1[0x3];
     Entity *players;

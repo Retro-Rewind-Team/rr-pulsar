@@ -10,7 +10,7 @@ namespace g3d {
 
 class AnmObjMatClrRes;
 class AnmObjMatClr : public AnmObj {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 80058610 vtable 802729f8
     ~AnmObjMatClr() override;  // 0x10 800570f0
     TypeObj GetTypeObj() const override;  // 0x14 80058900
@@ -26,7 +26,7 @@ class AnmObjMatClr : public AnmObj {
 };
 
 class AnmObjMatClrRes : public AnmObjMatClr, public FrameCtrl {
-   public:
+public:
     static AnmObjMatClrRes *Construct(G3dHeap *heap, u32 *size, ResAnmClr res, ResMdl resMdl, bool bHasCache);  // 80057aa0
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 800585a0 vtable 80272920
     void G3dProc(u32 g3dproc, u32 param, void *info) override;  // 0xc 80058090
@@ -46,7 +46,7 @@ class AnmObjMatClrRes : public AnmObjMatClr, public FrameCtrl {
 };  // 0x34
 
 class AnmObjMatClrNode : public AnmObjMatClr {
-   public:
+public:
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 80058770 vtable 802729b0
     void G3dProc(u32 g3dproc, u32 param, void *info) override;  // 0xc 80057830
     ~AnmObjMatClrNode() override;  // 0x10 80057130

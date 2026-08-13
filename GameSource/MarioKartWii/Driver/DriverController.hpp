@@ -12,7 +12,7 @@ using namespace nw4r;
 class DriverController;
 
 class IKParams {  // Inverse kinematics
-   public:
+public:
     IKParams(u8 playerId);  // 8078b5d0 calls Load, if returns false, gets params from IKParam.ikp in the driver szs
     bool Load(u8 playerId);  // 8078b7ac loads from DiverIKParam.bin
     u8 unk[0x11c];  // IKParam.ikp
@@ -44,7 +44,7 @@ class DriverModelBones {
 };  // 0x60
 
 class DriverController : public Kart::Link {
-   public:
+public:
     static char **characterNames;  // 808d6c58 "M Mii AM" for medium mii male outfit A
     DriverController();  // 807c7364
     void Load();  // 807c8758
@@ -104,7 +104,7 @@ class DriverController : public Kart::Link {
 // size_assert(DriverController, 0x6e4);
 
 class DriverControllerBike : public DriverController {
-   public:
+public:
     DriverControllerBike();  // 807cdccc
     ~DriverControllerBike() override;  // 807d3f58 vtable 808d2ab0
     void Init() override;  // 807cb130

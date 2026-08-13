@@ -68,7 +68,7 @@ enum KartUIStats {
 };
 
 class ButtonMachine : public PushButton {
-   public:
+public:
     // ctor inline
     ~ButtonMachine() override;  // 80847ca8 vtable 808d9918
     void InitSelf() override;  // 0x18 80847810
@@ -81,7 +81,7 @@ class ButtonMachine : public PushButton {
 //_sinit_ at 80847d00
 namespace Pages {
 class KartSelect : public MenuInteractable {  // ID 0x6C
-   public:
+public:
     static const PageId id = PAGE_KART_SELECT;
     KartSelect();  // 80627060
     ~KartSelect() override;  // 80847bf4 vtable 808d9880

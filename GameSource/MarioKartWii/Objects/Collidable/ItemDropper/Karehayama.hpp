@@ -6,7 +6,7 @@
 namespace Objects {
 
 class Karehayama : public ItemDropper {  // ObjectNum 0x176 = 374
-   public:
+public:
     explicit Karehayama(const KMP::Holder<GOBJ> &gobjHolder);  // 80766f4c
     ~Karehayama() override;  // 80766f88 vtable 808ce020
     void OnStart() override;  // 80766fe0

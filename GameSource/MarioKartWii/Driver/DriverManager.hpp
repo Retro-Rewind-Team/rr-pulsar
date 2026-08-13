@@ -20,7 +20,7 @@ struct Timers {
 };
 
 class DriverMgr {
-   public:
+public:
     static DriverMgr *sInstance;  // 809c2f38
     static DriverMgr *CreateInstance();  // 8079c9e8
     static void DestroyInstance();  // 8078ca38

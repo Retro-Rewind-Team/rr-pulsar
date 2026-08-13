@@ -32,7 +32,7 @@ struct Texture {
 };  // 0xC
 
 class GameFont : public ut::ResFont {
-   public:
+public:
     GameFont();  // 805d0f34 inlined
     ~GameFont() override;  // 805d0f80 vtable 808b87c0
     void Load(const char *fontName);  // 805d0ff0 inlined

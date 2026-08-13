@@ -9,7 +9,7 @@ using namespace nw4r;
 namespace EGG {
 
 class PostEffectBlur : public PostEffect {
-   public:
+public:
     struct BlurData {
         u8 unknown_0x0;
         ut::Color color;

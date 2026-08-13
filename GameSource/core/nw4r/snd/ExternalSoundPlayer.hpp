@@ -10,7 +10,7 @@ class SoundActor;
 namespace detail {
 
 class ExternalSoundPlayer {
-   public:
+public:
     typedef ut::LinkList<BasicSound, offsetof(BasicSound, extSoundPlayerPlayLink)> SoundList;
     ExternalSoundPlayer();  // 80091a90
     ~ExternalSoundPlayer();  // 80091ac0

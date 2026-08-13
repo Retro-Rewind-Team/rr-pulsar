@@ -12,7 +12,7 @@ class MovieScale {
 
 //_sinit_ at 807e917c
 class CtrlMenuMovieHandler {
-   public:
+public:
     // no ctor
     virtual ~CtrlMenuMovieHandler();  // 80627a40 vable 808D3608
     virtual void Toggle(bool hide);  // 807e8138
@@ -43,7 +43,7 @@ class CtrlMenuMovieLayout : public CtrlMenuMovieHandler, public LayoutUIControl 
 // size_assert(CtrlMenuMovieLayout, 0x18c);
 
 class CtrlMenuMovieButton : public CtrlMenuMovieHandler, public PushButton {
-   public:
+public:
     CtrlMenuMovieButton() {};
     ~CtrlMenuMovieButton() override;  // 806280d4 vtable 808d3590 for Movie
     int GetMovieCount() const override;  // 807e2520

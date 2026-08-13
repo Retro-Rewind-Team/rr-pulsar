@@ -26,7 +26,7 @@ struct MiiRenderCreationParams {
 };  // 0x20
 
 class MiiRenderMgr {
-   public:
+public:
     void InitLights(u32 param);  // 80780f0c for lightobj: 0 calcDir and grey, 1 grey and no calcDir, 2 calcDir and grey/brown, 2 grey/brown and no calcDir
 
     // these are used to create 2D tex of Miis and insert them into the Scn; used for CarA and MiiObj

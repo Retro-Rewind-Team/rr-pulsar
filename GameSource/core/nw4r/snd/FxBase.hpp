@@ -8,7 +8,7 @@
 namespace nw4r {
 namespace snd {
 class FxBase {
-   public:
+public:
     virtual ~FxBase() {}  // 0x8
     virtual bool StartUp();  // 0xc
     virtual void Shutdown();  // 0x10

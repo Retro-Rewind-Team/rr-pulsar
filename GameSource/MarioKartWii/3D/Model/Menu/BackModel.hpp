@@ -7,7 +7,7 @@
 
 using namespace nw4r;
 class BackModelMgr {
-   public:
+public:
     BackModelMgr();  // 8082f408
     virtual ~BackModelMgr();  // 8082f4d4 vtable 808d8b98
     void Start();  // 8082f514

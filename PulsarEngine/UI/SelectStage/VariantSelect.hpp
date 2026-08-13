@@ -11,7 +11,7 @@ namespace Pulsar {
 namespace UI {
 
 class VariantSelect : public Pages::CourseSelect {
-   public:
+public:
     static const u32 id = static_cast<u32>(PULPAGE_VARIANTSELECT);
 
     VariantSelect();
@@ -28,7 +28,7 @@ class VariantSelect : public Pages::CourseSelect {
     u32 GetVariantIndexForButton(const PushButton &button) const;
     void SetBaseRowIdx(u8 rowIdx);
 
-   private:
+private:
     void PopulateVariantButtons();
     void ApplyVariantButtonState();
     void ResetVariantButtonState();

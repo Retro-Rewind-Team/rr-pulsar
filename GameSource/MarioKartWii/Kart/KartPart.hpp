@@ -8,7 +8,7 @@
 namespace Kart {
 
 class Part : public Link {
-   public:
+public:
     Part(const Values &kartValues, u32 r5);  // 80592848
 
     virtual ~Part();  // offset 0xc 8056c0cc vtable 808b6450

@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace snd {
 class SoundStartable {
-   public:
+public:
     struct StartInfo {
         enum EnableFlagBit {
             ENABLE_START_OFFSET = 0x00000001,

@@ -13,7 +13,7 @@ Melg
 
 //_sinit_ at 805c1c94
 class NotifyButton : public PushButton {
-   public:
+public:
     enum Status {
         DOWNLOAD_LATEST = 0,
         NEW_FRIEND_CHALLENGE = 1,
@@ -45,7 +45,7 @@ class NotifyButton : public PushButton {
 };  // 0x268
 namespace Pages {
 class Channel : public Page {  // ID 0xA2
-   public:
+public:
     static const PageId pageId = PAGE_MKCHANNEL;
     Channel();  // 805bff18
     ~Channel() override;  // 805c0118 vtable 808b7b3c
@@ -78,7 +78,7 @@ class Channel : public Page {  // ID 0xA2
 // size_assert(Channel, 0x1448);
 
 class ChannelRankingChoice : public Page {  // ID 0xA3 2 buttons, TTRankings or Competition Rankings
-   public:
+public:
     static const PageId pageId = PAGE_CHANNEL_RANKING_CHOICE;
     ChannelRankingChoice();  // 805c13ac
     ~ChannelRankingChoice() override;  // 805c151c vtable 808b7a44
@@ -101,7 +101,7 @@ class ChannelRankingChoice : public Page {  // ID 0xA3 2 buttons, TTRankings or 
 };  // 0xc98
 
 class ChannelGhostChoice : public Page {  // ID 0xA4
-   public:
+public:
     static const PageId pageId = PAGE_CHANNEL_GHOST_CHOICE;
     ChannelGhostChoice();  // 805c0cc8
     ~ChannelGhostChoice() override;  // 805c0e38 vtable 808b7ac0

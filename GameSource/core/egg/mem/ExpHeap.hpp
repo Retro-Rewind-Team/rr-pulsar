@@ -8,9 +8,9 @@ namespace EGG {
 class GroupSizeHolder;
 
 class ExpHeap : public Heap {
-   public:
+public:
     class GroupSizeHolder {  // non-official naming
-       public:
+    public:
         GroupSizeHolder();  // 80226dd0
         void Reset();  // 80226e00
         void Add(u16 groupId, u32 size);  // adds size to the entry of groupId

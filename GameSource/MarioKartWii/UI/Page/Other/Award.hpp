@@ -14,7 +14,7 @@ namespace Pages {
 //__sinit__ at 805bd370
 
 class AwardDemoCongratulations : public LayoutUIControl {
-   public:
+public:
     AwardDemoCongratulations();  // 805bb734
     ~AwardDemoCongratulations() override;  // 805bb770 vtable 808b75d4
     void InitSelf() override;  // 0x18 805bb8a0
@@ -25,7 +25,7 @@ class AwardDemoCongratulations : public LayoutUIControl {
 };  // 0x174
 
 class AwardDemoResultItem : public LayoutUIControl {
-   public:
+public:
     AwardDemoResultItem();  // 805bb958
     ~AwardDemoResultItem() override;  // 805bb994 vtable 808b7598
     void InitSelf() override;  // 0x18 805bbb98
@@ -37,7 +37,7 @@ class AwardDemoResultItem : public LayoutUIControl {
 };  // 0x174
 
 class AwardFade : public Page {  // ID 0x3b
-   public:
+public:
     static Audio::PlayersVolumeMgr *GetPlayersVolumeMgr();  // 805bb2b8
     static const PageId id = PAGE_AWARD_FADE;
     AwardFade();  // 805bb2c4
@@ -60,7 +60,7 @@ class AwardFade : public Page {  // ID 0x3b
 // size_assert(AwardFade, 0x314);
 
 class AwardResults : public Page {
-   public:
+public:
     static const PageId id = PAGE_AWARD_RESULTS;  // ID 0x3c
     AwardResults();  // 805bc03cs
     ~AwardResults() override;  // 805bc108 vtable 808b7528

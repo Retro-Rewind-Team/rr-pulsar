@@ -67,7 +67,7 @@ class ManagedObjects {
 };  // 0xf4
 
 class ObjectsMgr {
-   public:
+public:
     static ObjectsMgr *sInstance;  // 809c4330
     static ObjectsMgr *CreateInstance();  // 8082a784 also inits
     static void DestroyInstance();  // 8082a824

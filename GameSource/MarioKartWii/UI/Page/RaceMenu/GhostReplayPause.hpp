@@ -11,7 +11,7 @@ Contributors:
 
 namespace Pages {
 class GhostReplayPause : public RaceMenu {  // ID 0x1f
-   public:
+public:
     static const PageId id = PAGE_GHOST_REPLAY_PAUSE_MENU;
     GhostReplayPause();  // 80624d7c 808bdb08
     ~GhostReplayPause() override;  // 80632f74

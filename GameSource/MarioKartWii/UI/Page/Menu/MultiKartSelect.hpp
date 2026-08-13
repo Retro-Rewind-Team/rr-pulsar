@@ -26,7 +26,7 @@ class MultiKartBox : public LayoutUIControl {  // doesn't seem to have any disce
 //_sinit_ at 8084a9a0
 namespace Pages {
 class MultiKartSelect : public MenuInteractable {  // ID 0x81
-   public:
+public:
     static const PageId id = PAGE_MULTIPLAYER_KART_SELECT;
     MultiKartSelect();  // 8062b4f4
     ~MultiKartSelect() override;  // 8084a824 vtable 808d9b08

@@ -17,7 +17,7 @@ struct JumpPadProperties {
 };  // total size 0xc
 
 class Boost {
-   public:
+public:
     Boost();  // 80588d28
     void Reset();  // 80588d74
     bool Activate(u32 type, s16 frames);  // 80588db0
@@ -69,7 +69,7 @@ struct TrickProperties {
 };  // total size 0x10
 
 class Trick : public Link {
-   public:
+public:
     Trick();  // 80575a44
     void UpdateNext();  // 80575b38
     void TryStart(const Vec3 &left);  // 80575d7c
@@ -102,7 +102,7 @@ class Trick : public Link {
 };  // total size 0x50
 
 class TrickBike : public Trick {
-   public:
+public:
     ~TrickBike() override;  // 0xC 80576afc vtable 808b5890
     void Start(const Vec3 &left) override;  // 80576758
     void StartInner(TrickCategory category) override;  // 8057689c
@@ -110,7 +110,7 @@ class TrickBike : public Trick {
 };  // total size 0x50
 
 class Zipper : public Link {
-   public:
+public:
     Zipper();  // 80574114
     void Update();  // 80574340
     void End(int unk0);  // 805758e4
@@ -120,7 +120,7 @@ class Zipper : public Link {
 };  // total size 0x90
 
 class Movement : public Link {
-   public:
+public:
     Movement();  // 80577fc4
     void ResetMaxSpeed();  // 8057b9ac
     void ResetBulletSpped();  // 8057b99c
@@ -303,20 +303,20 @@ class Movement : public Link {
 };  // Total size 0x294
 
 class MovementRemote : public Movement {
-   public:
+public:
     ~MovementRemote() override;  // 80589758 vtable 808b5d90
     bool CanHop() override;  // 0x5c 8058956c
 
 };  // Total size 0x294
 
 class MovementRealLocal : public Movement {
-   public:
+public:
     ~MovementRealLocal() override;  // 805897d8 vtable 808b5e78
     int Hop() override;  // 0x60 80589400
 };  // Total size 0x294
 
 class MovementBike : public Movement {
-   public:
+public:
     MovementBike();  // 80587b30
 
     ~MovementBike() override;  // 80589704 vtable 808b5ee8
@@ -356,14 +356,14 @@ class MovementBike : public Movement {
 };  // Total size 0x2c4
 
 class MovementBikeRemote : public MovementBike {
-   public:
+public:
     ~MovementBikeRemote() override;  // 805896c4 vtable 808b5d18
     bool CanHop() override;  // 0x5c 805895cc
     void TryStartWheelie() override;  // 0x74 8058962c
 };  // Total size 0x2c4
 
 class MovementBikeRealLocal : public MovementBike {
-   public:
+public:
     ~MovementBikeRealLocal() override;  // 80589798 vtable 808b5e00
     int Hop() override;  // 0x60 80589440
     int StartWheelie() override;  // 0x6c 80589480

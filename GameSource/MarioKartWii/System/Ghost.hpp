@@ -20,7 +20,7 @@ enum GhostGroupType {
 };
 
 class GhostData {
-   public:
+public:
     GhostData();  // 8051c270
     explicit GhostData(const RKG &rkg);  // 8051c398
     ~GhostData();  // 8051cf90
@@ -58,7 +58,7 @@ class GhostData {
 // size_assert(GhostData, 0xd8);
 
 class GhostGroup {
-   public:
+public:
     GhostGroup(EGG::Heap *heap, u32 type);  // 8051ce94
     virtual ~GhostGroup();  // 8051cff8 vtable 808b2d38
     void DisableGhostData(u16 id);  // 8051d064 set isValid to false

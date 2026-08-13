@@ -16,7 +16,7 @@ class RandomMgr : public Random {  // is used to get 12 seeds 809c4740 + 4728[id
 };  // 0x28
 
 class RandomSoundPicker : public Random {  // one per type
-   public:
+public:
     RandomSoundPicker();  // 8086708c
     ~RandomSoundPicker() override;  // 80863a44 vtable 808dbe08
     u32 initialSoundId;  // depends on character/object Id

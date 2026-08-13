@@ -22,7 +22,7 @@ using namespace nw4r;
 
 // see ScnRoot for small g3d explanation
 class ModelDirector {
-   public:
+public:
     static g3d::ResFile GetBRRES(ArchiveSource type, const char *brresName);  // 8055b5fc
     static void BindBRRES(g3d::ResFile &file, ArchiveSource type, const char *brresName);  // 8055b618
     static void BindBRRESFallback(g3d::ResFile &file, ArchiveSource type, const char *brresName, const g3d::ResFile &fallBack);  // 8055b6a4

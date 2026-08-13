@@ -7,7 +7,7 @@
 class LayoutUIControl;
 
 class ControlLoader {
-   public:
+public:
     explicit ControlLoader(LayoutUIControl *control);  // 805c2c18
     ~ControlLoader();  // 805c2c20
     // Anims should be formatted the following way: GROUP NAME 1, ANIM NAME1, ANIM NAME 2..., EMPTY STRING, GROUP NAME 2, ANIM NAME 1 etc...

@@ -10,7 +10,7 @@ using namespace nw4r;
 
 // color is the same for all screens, at 0x808B3D70
 class FilterEffect : public StatePtmfTrigger<FilterEffect> {
-   public:
+public:
     FilterEffect(u32 idx);  // 8054ce90 inlined
     ~FilterEffect() override;  // 8054d7ac vtable 808b3e4c entries 808b3cc8
     void Update();  // 8054d13c inlined
@@ -23,7 +23,7 @@ class FilterEffect : public StatePtmfTrigger<FilterEffect> {
 };  // 0x38
 
 class FilterEffectMgr {  // https://imgur.com/SLNAest
-   public:
+public:
     FilterEffectMgr(u32 screenCount);  // 8054d488 inlined
     virtual ~FilterEffectMgr();  // 8054d6f4 vtable 808b3e40
     static void SetColor(ut::Color color);  // 8054d114
@@ -35,7 +35,7 @@ class FilterEffectMgr {  // https://imgur.com/SLNAest
 
 // every entity is "in front" of the filter
 class CourseFilterEffect : public StatePtmfTrigger<CourseFilterEffect> {
-   public:
+public:
     enum Filters {
         WHITE_ALPHA210PREPARE,
         WHITE_ALPHA210,  // only active for 3 frames
@@ -65,7 +65,7 @@ class CourseFilterEffect : public StatePtmfTrigger<CourseFilterEffect> {
 };  // 0x38
 
 class CourseFilterEffectMgr {
-   public:
+public:
     CourseFilterEffectMgr(u32 screenCount);  // 8054e198 inlined
     virtual ~CourseFilterEffectMgr();  // 8054e3c8 vtable 808b3e1c
     void Update();  // 8054e4e8 inlined

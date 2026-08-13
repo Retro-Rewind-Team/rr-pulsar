@@ -6,7 +6,7 @@
 namespace nw4r {
 namespace ut {
 class DvdLockedFileStream : public DvdFileStream {
-   public:
+public:
     explicit DvdLockedFileStream(s32 entryNum);  // 800b06b0
     explicit DvdLockedFileStream(const DVD::FileInfo *openedFile, bool closeEnable = true);  // 800b0740
 

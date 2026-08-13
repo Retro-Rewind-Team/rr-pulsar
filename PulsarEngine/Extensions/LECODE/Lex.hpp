@@ -55,7 +55,7 @@ struct RITP {
 class LexMgr {
     inline void Reset();
 
-   public:
+public:
     static const KMPHeader *LoadLEXAndKMP(u32, const char *kmpString);
     LEXHeader *lex;
     SET1 *set1;

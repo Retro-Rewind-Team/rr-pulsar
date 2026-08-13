@@ -23,7 +23,7 @@ class ShadowTextureManager {
 };  // 0x48
 
 class ShadowTextureDirector {
-   public:
+public:
     static ShadowTextureDirector *sInstance;  // 80386EE8
     static void CreateInstance(Heap *heap);  // 802384fc
     ShadowTextureDirector();  // 80238580

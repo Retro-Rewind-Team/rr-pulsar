@@ -15,7 +15,7 @@ namespace Pulsar {
 namespace UI {
 
 class SettingsPanel : public Pages::MenuInteractable {
-   public:
+public:
     static const PulPageId id = PULPAGE_SETTINGS;
 
     SettingsPanel();
@@ -42,7 +42,7 @@ class SettingsPanel : public Pages::MenuInteractable {
 
     Settings::SettingsPageId settingsPageId;
 
-   private:
+private:
     void LoadCurrentValues();
     void SaveSettings(bool writeFile);
     bool HasModifiedMiscSettings() const;
@@ -74,7 +74,7 @@ class SettingsPanel : public Pages::MenuInteractable {
     u8 radioValues[Settings::Params::maxRadioCount];
     u8 scrollerValues[Settings::Params::maxScrollerCount];
 
-   public:
+public:
     CountDown *timer;
     s32 rouletteCounter;
     CountDownTimerControl countdownControl;

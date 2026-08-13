@@ -33,7 +33,7 @@ struct ResFileData {
 };
 
 class ResFile : public ResCommon<ResFileData> {  // BRRES
-   public:
+public:
     bool CheckRevision() const;  // 8004d900
     void Init();  // 8004d630
     bool Bind(ResFile rhs);  // 8004d1f0

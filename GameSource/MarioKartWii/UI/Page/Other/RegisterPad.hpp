@@ -8,7 +8,7 @@
 //_sinit_ at 806056e4
 
 class ConnectController : public LayoutUIControl {
-   public:
+public:
     ~ConnectController() override;  // 80603404 vtable 808ba868
     void InitSelf() override;  // 0x18 806035d8
     void OnUpdate() override;  // 0x1c 80603690
@@ -20,7 +20,7 @@ class ConnectController : public LayoutUIControl {
 // size_assert(ConnectController, 0x178);
 
 class EasyPairingController : public LayoutUIControl {
-   public:
+public:
     EasyPairingController();  // 80604084
     ~EasyPairingController() override;  // 806040c0 vtable 808ba7b0
     void InitSelf() override;  // 0x18 806042a8
@@ -36,7 +36,7 @@ class EasyPairingController : public LayoutUIControl {
 
 namespace Pages {
 class RegisteredPads : public Page {  // ID 0x61 multiple register controllers
-   public:
+public:
     static const PageId id = PAGE_REGISTERED_PADS;
     RegisteredPads();  // 80602f04
     ~RegisteredPads() override;  // 80602f68 vtable 808ba8a4
@@ -60,7 +60,7 @@ class RegisteredPads : public Page {  // ID 0x61 multiple register controllers
 // size_assert(RegisteredPads, 0x674);
 
 class RegisterPad : public Page {  // ID 0x62
-   public:
+public:
     static const PageId id = PAGE_REGISTER_PAD;
     RegisterPad();  // 80603764
     ~RegisterPad() override;  // 806038e8 vtable 808ba7ec
@@ -87,7 +87,7 @@ class RegisterPad : public Page {  // ID 0x62
 // size_assert(RegisterPad, 0xd70);
 
 class PairWiimotes : public Page {
-   public:
+public:
     static const PageId id = PAGE_PAIR_WII_REMOTES;  // ID 0x63
     enum Status {
         STATUS_END,  // for example when all 4 wiimotes are connected
@@ -118,7 +118,7 @@ class PairWiimotes : public Page {
 // size_assert(PairWiimotes, 0xbf0);
 
 class ConfirmPads : public Page {
-   public:
+public:
     static const PageId id = PAGE_CONFIRM_PAD;  // ID 0x64
     ConfirmPads();  // 80604cd8
     ~ConfirmPads() override;  // 80604ea0 vtable 808ba6b8

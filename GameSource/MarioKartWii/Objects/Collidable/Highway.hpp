@@ -15,7 +15,7 @@ class K_bomb_tire00;
 class Kbomneji;
 
 class HighwayManager : public ObjectCollidable {
-   public:
+public:
     HighwayManager();  // 806d2908
     ~HighwayManager() override;  // 806d2fe8 vtable 808c55b8
     void OnStart() override;  // 0xC 806d332c
@@ -59,7 +59,7 @@ class HighwayManager : public ObjectCollidable {
 
 // ObjectNum 0xd0 = 208 kart_truck, ObjectNum 0xd1 = 209  car_body, ObjectNum 0xde = 222 K_bomb_car, ObjectNum 0xf3 = 243 K_bomb_car1
 class HighwayCar : public ObjectCollidable, public StatePtmfTrigger<HighwayCar> {
-   public:
+public:
     enum Type {
         TYPE_CAR_BODY,
         TYPE_KART_TRUCK,
@@ -134,7 +134,7 @@ class HighwayCar : public ObjectCollidable, public StatePtmfTrigger<HighwayCar> 
 };  // 0x234
 
 class K_car_tire : public ObjectCollidable {
-   public:
+public:
     ~K_car_tire() override;  // 806d5c1c vtable 808c54c8
     u16 GetID() const override;  // 0x24 806d5c14
     u32 GetPropertiesBitfield() override;  // 0x2c 806d5c0c
@@ -150,7 +150,7 @@ class K_car_tire : public ObjectCollidable {
 };
 
 class K_truck_tire : public ObjectCollidable {
-   public:
+public:
     ~K_truck_tire() override;  // 806d5b58 vtable 808c53d8
     u16 GetID() const override;  // 0x24 806d5b50
     u32 GetPropertiesBitfield() override;  // 0x2c 806d5b48
@@ -166,7 +166,7 @@ class K_truck_tire : public ObjectCollidable {
 };
 
 class K_car_light : public ObjectCollidable {
-   public:
+public:
     ~K_car_light() override;  // 806d5a94 vtable 808c52e8
     u16 GetID() const override;  // 0x24 806d5a8c
     u32 GetPropertiesBitfield() override;  // 0x2c 806d5a84
@@ -182,7 +182,7 @@ class K_car_light : public ObjectCollidable {
 };
 
 class K_truck_light : public ObjectCollidable {
-   public:
+public:
     ~K_truck_light() override;  // 806d598c vtable 808c51f8
     u16 GetID() const override;  // 0x24 806d5984
     u32 GetPropertiesBitfield() override;  // 0x2c 806d597c
@@ -198,7 +198,7 @@ class K_truck_light : public ObjectCollidable {
 };
 
 class K_bomb_tire00 : public ObjectCollidable {
-   public:
+public:
     ~K_bomb_tire00() override;  // 806da8cc vtable 808c5ad0
     u32 GetPropertiesBitfield() override;  // 0x2c 806da8c4
     const char *GetSubFileName() const override;  // 0x38 806da8b8
@@ -210,7 +210,7 @@ class K_bomb_tire00 : public ObjectCollidable {
 };  // 0xd0
 
 class Kbomneji : public ObjectCollidable {  // the big screw
-   public:
+public:
     ~Kbomneji() override;  // 806da81c vtable 808c59e0
     u32 GetPropertiesBitfield() override;  // 0x2c 806da814
     const char *GetSubFileName() const override;  // 0x38 806da808

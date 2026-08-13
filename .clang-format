@@ -1,8 +1,10 @@
 BasedOnStyle: Google
+AccessModifierOffset: -4
 AlignTrailingComments: false
 ColumnLimit: 0
 IncludeBlocks: Preserve
 IndentPPDirectives: None
 IndentWidth: 4
+MaxEmptyLinesToKeep: 1
 PointerAlignment: Right
 SortIncludes: false

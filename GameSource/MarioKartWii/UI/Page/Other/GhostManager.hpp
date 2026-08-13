@@ -32,7 +32,7 @@ struct GhostListEntry {
 };  // total size 0x10
 
 class GhostList {
-   public:
+public:
     GhostList();  // 805e208c
     ~GhostList();  // 805e209c
     void FillWithAllGhosts();  // 805e20dc
@@ -57,7 +57,7 @@ class GhostList {
 //_sinit_ at 805e272c
 namespace Pages {
 class GhostManager : public Page {  // ID 0xA7
-   public:
+public:
     static const PageId id = PAGE_GHOST_MANAGER;
     GhostManager();  // 805e0c38 vtable 808b9258
     ~GhostManager() override;  // 805e0cb8

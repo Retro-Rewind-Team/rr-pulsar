@@ -7,7 +7,7 @@
 namespace Pulsar {
 
 class IOSIO : public IO {
-   public:
+public:
     IOSIO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread) : isBusy(false), fd(-1), fileSize(-1), IO(type, heap, taskThread) {
         filePath[0] = '\0';
     }
@@ -23,7 +23,7 @@ class IOSIO : public IO {
     s32 Overwrite(u32 length, const void *buffer) override;
     void Close() override;
 
-   protected:
+protected:
     bool isBusy;
     s32 fd;
     s32 fileSize;

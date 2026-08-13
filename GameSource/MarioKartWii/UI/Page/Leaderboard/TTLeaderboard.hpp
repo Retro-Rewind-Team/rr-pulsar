@@ -7,7 +7,7 @@
 
 namespace Pages {
 class TTLeaderboard : public GPVSLeaderboardUpdate {  // unsure why it inherits from VSLeaderboardUpdate, might be wrong and could be an intermediate class
-   public:
+public:
     static const PageId id = PAGE_TT_LEADERBOARDS;  // ID 0x2E
     TTLeaderboard();  // 80625134
     ~TTLeaderboard() override;  // 8085e438 vtable 808daabc

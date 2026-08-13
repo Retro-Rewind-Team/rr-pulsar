@@ -5,7 +5,7 @@
 #include <core/rvl/HBM/HBM.hpp>
 
 class HomeMenuMgr {
-   public:
+public:
     static HomeMenuMgr *sInstance;  // 809bd6f8
     static HomeMenuMgr *CreateInstance(EGG::Heap *heap);  // 8051d4d4
     static void DestroyInstance();  // 8051d534

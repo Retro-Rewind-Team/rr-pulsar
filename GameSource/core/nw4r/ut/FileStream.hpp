@@ -5,7 +5,7 @@
 namespace nw4r {
 namespace ut {
 class FileStream : public IOStream {
-   public:
+public:
     FileStream();
     virtual u32 GetSize() const = 0;  // 0x40
     virtual void Seek(s32 offset, u32 origin);  // 0x44
@@ -16,7 +16,7 @@ class FileStream : public IOStream {
     virtual u32 Tell() const = 0;  // 0x58
 
     class FilePosition {
-       public:
+    public:
         u32 Skip(s32 offset);  // 800aff10
         u32 Append(s32 offset);  // 800aff80
         void Seek(s32 offset, u32 origin);  // 800affd0

@@ -12,7 +12,7 @@ namespace Pulsar {
 namespace UI {
 
 class SettingsPageSelect : public Pages::MenuInteractable {
-   public:
+public:
     static const PulPageId id = PULPAGE_SETTINGSPAGESELECT;
 
     explicit SettingsPageSelect(bool badgeSelect = false);
@@ -32,7 +32,7 @@ class SettingsPageSelect : public Pages::MenuInteractable {
     void OnBackPress(u32 hudSlotId);
     void OnBackButtonClick(PushButton &button, u32 hudSlotId);
 
-   private:
+private:
     void UpdateBadgeButtons();
     void SetBadgeButtonMessage(PushButton &button);
     void OnButtonClick(PushButton &button, u32 hudSlotId);

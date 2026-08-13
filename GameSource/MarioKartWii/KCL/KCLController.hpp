@@ -36,7 +36,7 @@ struct CollisionInfo {  // match = matches the "accepted" kcl types bitfield
 };  // 0x5c
 
 class KCLController {
-   public:
+public:
     explicit KCLController(const KCL &raw);  // 807bdc5c
     ~KCLController();  // 807bddbc
     void GetTrianglesList(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, float radius);  // 807c1bb4

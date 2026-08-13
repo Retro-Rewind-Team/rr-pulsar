@@ -20,14 +20,14 @@ class DrawInfo;
 
 namespace detail {
 class PaneBase {
-   public:
+public:
     virtual ~PaneBase();
     ut::LinkListNode link;
 };
 }  // namespace detail
 
 class Pane : public detail::PaneBase {
-   public:
+public:
     Pane(const res::Pane *res);  // 80078980
     ~Pane() override;  // 80078ac0 vtable 80273438
     virtual const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const;  // 0xc 800798f0

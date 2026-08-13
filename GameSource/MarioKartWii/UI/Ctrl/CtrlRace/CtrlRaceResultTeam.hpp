@@ -5,7 +5,7 @@
 //_sinit_ at 807f76c8
 
 class CtrlResultAddPoint : public CtrlRaceBase {  // https://imgur.com/6vAMhch "+5" in this screenshot
-   public:
+public:
     ~CtrlResultAddPoint() override;  // 807f766c vtable 808d3f30
     void InitSelf() override;  // 0x18 807f7590
     void OnUpdate() override;  // 0x1c 807f75e4
@@ -16,7 +16,7 @@ class CtrlResultAddPoint : public CtrlRaceBase {  // https://imgur.com/6vAMhch "
 };
 
 class CtrlRaceResultTeam : public LayoutUIControl {  // one battle ldb column MAKE HPP
-   public:
+public:
     struct Player {
         u32 battleScore;  // 0x174 from RaceinfoPlayer
         u32 prevBattleScore;  // 0x178

@@ -10,7 +10,7 @@ class MiiHeadsModel;
 class ToadetteHair;
 
 class DriverModelAnmCalculator {
-   public:
+public:
     DriverModelAnmCalculator();  // inlined
     virtual ~DriverModelAnmCalculator();  // 8081e74c vtable 808d6dc0
 
@@ -21,7 +21,7 @@ class DriverModelAnmCalculator {
 };  // 0x18
 
 class MenuDriverModel : public MenuModel {
-   public:
+public:
     enum State {
         MENUDRIVERMODEL_STATE_ONCHARSELECT = 1,
         MENUDRIVERMODEL_STATE_ONKARTSELECT = 2
@@ -43,7 +43,7 @@ class MenuDriverModel : public MenuModel {
 };  // 0x28
 
 class MenuDriverModelMgr {
-   public:
+public:
     struct Player {
         CharacterId id;
         bool isVisible;

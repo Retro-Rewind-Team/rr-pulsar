@@ -10,7 +10,7 @@ class Effect;
 class ParticleManager;
 
 class DrawOrderBase {
-   public:
+public:
     DrawOrderBase();
 
     virtual void Add(Effect *ef, ParticleManager *pm) = 0;
@@ -19,7 +19,7 @@ class DrawOrderBase {
 };
 
 class DrawOrder : public DrawOrderBase {
-   public:
+public:
     virtual void Add(Effect *ef, ParticleManager *pm);  // 800262b0 vtable 803860e8
     virtual void Remove(Effect *ef, ParticleManager *pm);  // 80026330
     virtual void Draw(Effect *ef, const DrawInfo &drawInfo);  // 80026220

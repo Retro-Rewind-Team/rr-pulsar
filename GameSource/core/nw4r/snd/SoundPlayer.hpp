@@ -8,7 +8,7 @@ namespace nw4r {
 namespace snd {
 
 class SoundPlayer {
-   public:
+public:
     // 800a3610
     // 800a38b0
 

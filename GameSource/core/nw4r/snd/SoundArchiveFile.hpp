@@ -12,7 +12,7 @@ class Sound3DParam;
 namespace detail {
 
 class SoundArchiveFile {  // https://wiki.tockdom.com/wiki/BRSAR_(File_Format)
-   public:
+public:
     struct SeqSoundInfo {
         u32 dataOffset;
         SoundArchive::BankId bankId;
@@ -143,7 +143,7 @@ class SoundArchiveFile {  // https://wiki.tockdom.com/wiki/BRSAR_(File_Format)
 };
 
 class SoundArchiveFileReader {
-   public:
+public:
     SoundArchiveFileReader();  // 8009e690
     void Init(const void *soundArchiveData);  // 8009e6c0
     void SetStringChunk(const void *stringChunk, u32 stringChunkSize);  // 8009e770
@@ -184,7 +184,7 @@ class SoundArchiveFileReader {
 }  // namespace detail
 
 class NandSoundArchive : public SoundArchive {
-   public:
+public:
     NandSoundArchive();  // 80097570
     ~NandSoundArchive() override;  // 800975c0 vtable 80274808
     const void *detail_GetFileAddress(FileId fileId) const override;  // 0xc 80097df0
@@ -201,7 +201,7 @@ class NandSoundArchive : public SoundArchive {
 // size_assert(NandSoundArchive, 0x1DC);
 
 class MemorySoundArchive : public SoundArchive {
-   public:
+public:
     MemorySoundArchive();  // 80095d80
     ~MemorySoundArchive() override;  // 80095dd0 vtable 802744d8
     const void *detail_GetFileAddress(FileId fileId) const override;  // 0xc 80095ec0

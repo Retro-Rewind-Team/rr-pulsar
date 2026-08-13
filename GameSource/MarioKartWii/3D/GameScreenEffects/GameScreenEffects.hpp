@@ -13,7 +13,7 @@ using namespace nw4r;
 
 //_sinit_ at 8054faf0
 class GameScreenEffectsMgr {  // lensflare, filters, etc...
-   public:
+public:
     explicit GameScreenEffectsMgr(u32 screenCount);  // 8054eb54
     virtual ~GameScreenEffectsMgr();  // 8054f120 vtable 808b3e04
     void Update();  // 8054f1b0

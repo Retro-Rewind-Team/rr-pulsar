@@ -7,7 +7,7 @@
 //_sinit_ at 8064a094
 namespace Pages {
 class DisconnectMgr : public Page {  // ID 0x88, checks if disconnect has occured and changes section accordingly
-   public:
+public:
     static const PageId id = PAGE_DISCONNECT_MGR;
     DisconnectMgr();  // 80649470
     ~DisconnectMgr() override;  // 806494bc vtable 808bfbb4
@@ -21,7 +21,7 @@ class DisconnectMgr : public Page {  // ID 0x88, checks if disconnect has occure
 // size_assert(DisconnectMgr, 0x58);
 
 class DisconnectError : public Page {  // ID 0x89 error on disconnection "86420" for example
-   public:
+public:
     static const PageId id = PAGE_DISCONNECT_ERROR;
     DisconnectError();  // 80649988
     ~DisconnectError() override;  // 80649a14 vtable 808bfb44

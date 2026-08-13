@@ -8,7 +8,7 @@
 
 //_sinit_ at 8064fba8
 class FriendStatusButtonRaceAfter : public PushButton {
-   public:
+public:
     FriendStatusButtonRaceAfter() {};  // 8064db68
     ~FriendStatusButtonRaceAfter() override;  // 8064dba4 vtable 808c0350
     void InitSelf() override;  // 0x18 8064dd38
@@ -24,7 +24,7 @@ class FriendStatusButtonRaceAfter : public PushButton {
 namespace Pages {  // WW means continental races too
 
 class WWRaceEndCountDown : public Page {  // ID 0x45
-   public:
+public:
     static const PageId id = PAGE_WWRACEEND_COUNTDOWN;
     WWRaceEndCountDown();  // 8064d834
     ~WWRaceEndCountDown() override;  // 8064d888 vtable 808c039c
@@ -42,7 +42,7 @@ class WWRaceEndCountDown : public Page {  // ID 0x45
 // size_assert(WWRaceEndCountDown, 0x1e0);
 
 class WWRaceEnd : public Page {  // ID 0x46
-   public:
+public:
     static const PageId id = PAGE_WWRACEEND_MENU;
     WWRaceEnd();  // 8064dee8
     ~WWRaceEnd() override;  // 8064e014 vtable 808c02d4
@@ -71,7 +71,7 @@ class WWRaceEnd : public Page {  // ID 0x46
 // size_assert(WWRaceEnd, 0xb20);
 
 class WWRaceEndQuit : public Page {  // ID 0x47
-   public:
+public:
     static const PageId id = PAGE_WWRACEEND_QUIT;
     WWRaceEndQuit();  // 8064e9d0
     ~WWRaceEndQuit() override;  // 8064ea94 vtable 808c0264
@@ -99,7 +99,7 @@ class WWRaceEndQuit : public Page {  // ID 0x47
 // size_assert(WWRaceEndQuit, 0x8bc);
 
 class WWRaceEndWait : public Page {  // ID 0x48 "Please wait a moment" at the end of online races
-   public:
+public:
     static const PageId id = PAGE_WWRACEEND_WAIT;
     static const char msgWindowBRCTR[];  // 80899ec7
     WWRaceEndWait();  // 8064f168
@@ -115,7 +115,7 @@ class WWRaceEndWait : public Page {  // ID 0x48 "Please wait a moment" at the en
 // size_assert(WWRaceEndWait, 0x1cc);
 
 class DisableHomeButton : public Page {  // ID 0x94 used in online races
-   public:
+public:
     static const PageId id = PAGE_DISABLEHOMEMENU;
     DisableHomeButton();  // 8064f9d8
     ~DisableHomeButton() override;  // 8064fa1c vtable 808c019c

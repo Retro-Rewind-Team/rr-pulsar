@@ -8,7 +8,7 @@
 namespace Lakitu {
 
 class Manager {
-   public:
+public:
     static Manager *sInstance;  // 809c28b8
     static Manager CreateInstance();  // 8071e270
     static void DestroyInstance();  // 8071e2fc

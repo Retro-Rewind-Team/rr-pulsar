@@ -5,7 +5,7 @@
 
 //_sinit_ at 807eea20
 class CtrlRaceGhostDiffTime : public CtrlRaceBase {
-   public:
+public:
     CtrlRaceGhostDiffTime() {};
     ~CtrlRaceGhostDiffTime() override;  // 807ee990 vtable 808d3c78
     void Init() override;  // 0xc 807ee494

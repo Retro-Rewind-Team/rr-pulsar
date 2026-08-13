@@ -21,7 +21,7 @@ namespace UI {
 static void RandomizeCombo();
 void StopRandomComboRoulette();
 class ExpVR : public Pages::VR {
-   public:
+public:
     static const int randomDuration = 60;  // 1s
     static const int voteDuration = 1620;  // 30s
     static_assert(randomDuration % 4 == 0, "Random Combo Duration");
@@ -38,7 +38,7 @@ class ExpVR : public Pages::VR {
     CountDown countdown;
     CountDownTimerControl countdownControl;
 
-   private:
+private:
     void RandomizeComboVR(PushButton &button, u32 hudSlotId);
     void ChangeCombo(PushButton &button, u32 hudSlotId);
     void OnSettingsButtonClick(PushButton &button, u32 hudSlotId);
@@ -52,7 +52,7 @@ class ExpVR : public Pages::VR {
     PushButton changeComboButton;
     PushButton settingsButton;
 
-   public:
+public:
     u8 comboButtonState;  // 1 = randomize, 2 = change
     PulPageId topSettingsPage;
     bool areControlsHidden;
@@ -69,7 +69,7 @@ class ExpVR : public Pages::VR {
 };
 
 class ExpCharacterSelect : public Pages::CharacterSelect {
-   public:
+public:
     ExpCharacterSelect();
     void BeforeControlUpdate() override;
     void OnStartPress(u32 hudSlotId) override {
@@ -82,14 +82,14 @@ class ExpCharacterSelect : public Pages::CharacterSelect {
 };
 
 class ExpBattleKartSelect : public Pages::BattleKartSelect {
-   public:
+public:
     ExpBattleKartSelect();
     void BeforeControlUpdate() override;
     s32 selectedKart;  // 0 kart 1 bike
 };
 
 class ExpKartSelect : public Pages::KartSelect {
-   public:
+public:
     ExpKartSelect();
     void BeforeControlUpdate() override;
     ButtonMachine *GetKartButton(u32 idx) const;
@@ -99,7 +99,7 @@ class ExpKartSelect : public Pages::KartSelect {
 };
 
 class ExpMultiKartSelect : public Pages::MultiKartSelect {
-   public:
+public:
     ExpMultiKartSelect();
     void BeforeControlUpdate() override;
     s32 rouletteCounter;

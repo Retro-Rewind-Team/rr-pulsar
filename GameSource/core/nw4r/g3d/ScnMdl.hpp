@@ -30,7 +30,7 @@ struct DrawResMdlReplacement {
 // same as ScnMdlSimple, but with possibility for a shape animation and copies of model res used for animation via CopyMatAccess
 // this allows the possibility to execute animations separately even if multiple ScnMdl share the same ResMdl
 class ScnMdl : public ScnMdlSimple {
-   public:
+public:
     enum OptID {  // see scnmdlsimple's enum for the rest
         OPTID_REFRESH_VISIBILITY = 0x00030001
     };
@@ -70,7 +70,7 @@ class ScnMdl : public ScnMdlSimple {
     };
     // access a copy of a given material
     class CopiedMatAccess {
-       public:
+    public:
         CopiedMatAccess(ScnMdl *scnMdl, u32 id);  // 800730b0
         ResTexObj GetResTexObj(bool bMarkDirty);  // 80072e60
         ResMatTevColor GetResMatTevColor(bool bMarkDirty);  // 80072e60

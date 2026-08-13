@@ -12,7 +12,7 @@ class RegisterFriend;
 
 namespace Pages {
 class RegisteringFriend : public Page {  // ID 0xA5
-   public:
+public:
     RegisteringFriend();  // 8061d214
     ~RegisteringFriend();  // 8061d288 vtable 808bb740
     virtual PageId GetNextPage() const;  // 0x10 8061dc40
@@ -38,7 +38,7 @@ class RegisteringFriend : public Page {  // ID 0xA5
 // size_assert(RegisteringFriend, 0x368);
 
 class RegisterFriend : public Page {  // ID 0xA6
-   public:
+public:
     static const PageId id = PAGE_REGISTER_FRIEND;
     RegisterFriend();  // 8061dcb8
     ~RegisterFriend();  // 8061def0 vtable 808bb6ac

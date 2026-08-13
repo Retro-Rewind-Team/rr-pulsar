@@ -30,7 +30,7 @@ struct BitGXNums {
 }  // namespace detail
 
 class Material {
-   public:
+public:
     Material(const res::Material *source, const ResBlockSet &resBlockSet);  // 8007f660
     virtual ~Material();  // 800801b0 vtable 80273780
     virtual bool SetupGX(bool modVtxColor, u8 alpha);  // 80081210

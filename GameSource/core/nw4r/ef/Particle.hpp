@@ -15,7 +15,7 @@ class Emitter;
 class ParticleManager;
 
 class ParticleParameter {
-   public:
+public:
     void Initialize(ParticleParameterDesc *ppd, ParticleManager *pm);  // 800324b0
     GX::Color color[2][2];
     math::VEC2 size;  // 0x10
@@ -42,7 +42,7 @@ class ParticleParameter {
 };
 
 class Particle : public ReferencedObject {
-   public:
+public:
     Particle();  // 80032440
     ~Particle();  // 80032450
     void SendClosing() override;  // 80032490 vtable 802724e8

@@ -15,7 +15,7 @@ using namespace nw4r;
 namespace EGG {
 
 class ScnMdlEx {
-   public:
+public:
     explicit ScnMdlEx(g3d::ScnObj *src);  // 80230458
     g3d::ResMdl GetResMdl();  // 80230fd4
     g3d::ResMat GetResMat(u32 matIdx);  // 8023101c
@@ -88,7 +88,7 @@ class ScnRootEx {
 };  // 0xb8
 
 class ScnRenderer : public ScnRootEx, public IScnProc {
-   public:
+public:
     explicit ScnRenderer(g3d::ScnRoot *scnRoot);  // 8023b980
     // ScnRootEx vtable 802a3e58 at 0xB4
     ~ScnRenderer() override;  // 8023ba18

@@ -5,7 +5,7 @@
 #include <MarioKartWii/Kart/KartLink.hpp>
 
 class KartAIController : public Kart::Link {
-   public:
+public:
     KartAIController(bool isBike);  // 80725fdc
     void Init();  // 80726110
     void Update();  // 807261b8

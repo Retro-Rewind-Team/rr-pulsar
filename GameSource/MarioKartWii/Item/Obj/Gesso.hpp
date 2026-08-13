@@ -8,7 +8,7 @@
 //_sinit_ at 807a9a58
 namespace Item {
 class ObjGesso : public ObjMiddle {
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807a8138
     void InitSelf() override;  // 0x8 807a8378 vtable 808d1e48
 };
@@ -33,7 +33,7 @@ class GessoScreen {  // one per Screen
 // size_assert(GessoScreen, 0xd0);
 
 class GessoMgr {
-   public:
+public:
     static GessoMgr *sInstance;  // 809c3648
     static GessoMgr *CreateInstance();  // 807a8f04
     static void DestroyInstance();  // 807a8fa0

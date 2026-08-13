@@ -6,7 +6,7 @@
 //_sinit_ at 807b70dc
 namespace Item {
 class ObjStar : public ObjMiddle {
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807b6ff0
 
     void InitSelf() override;  // 0x8 807b70c0 vtable 808d2698

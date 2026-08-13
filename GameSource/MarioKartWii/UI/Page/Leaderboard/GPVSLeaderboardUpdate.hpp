@@ -9,7 +9,7 @@
 namespace Pages {
 
 class GPVSLeaderboardUpdate : public Leaderboard {  // ID 0x2f
-   public:
+public:
     struct Player {
         u32 totalScore;
         u32 lastRaceScore;  // the score just obtained

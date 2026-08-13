@@ -6,7 +6,7 @@
 namespace EGG {
 
 class GFXEngine {  // unofficial
-   public:
+public:
     struct GFXEngineInitParams {
         GFXEngineInitParams();  // 80229344
 

@@ -13,7 +13,7 @@ class IScnObjCallback;
 class IScnObjGather;
 
 class ScnObj : public G3dObj {
-   public:
+public:
     enum Timing {
         CALLBACK_TIMING_A = 0x0001,  // before making calculations.
         CALLBACK_TIMING_B = 0x0002,  // in the middle of making calculations.
@@ -66,7 +66,7 @@ class ScnObj : public G3dObj {
 
 // no children
 class ScnLeaf : public ScnObj {
-   public:
+public:
     enum OptID {  // see scnobj's enum for the rest
         OPTID_DISABLE_DRAW = 0x00010001
     };
@@ -87,7 +87,7 @@ class ScnLeaf : public ScnObj {
 
 // An object that has children
 class ScnGroup : public ScnObj {
-   public:
+public:
     static ScnGroup *Construct(G3dHeap *heap, u32 *size, u32 maxChildren);  // 8006e390
     ScnGroup(G3dHeap *heap, ScnObj **array, u32 maxChildren);
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 8006ef70 vtable 802730d8
@@ -109,7 +109,7 @@ class ScnGroup : public ScnObj {
 };  // 0xe8
 
 class IScnObjCallback {
-   public:
+public:
     typedef ScnObj::Timing Timing;
     virtual ~IScnObjCallback();
     virtual void ExecCallback_CALC_WORLD(Timing, ScnObj *scnObj, u32 args, void *info);
@@ -121,7 +121,7 @@ class IScnObjCallback {
 
 // class used by ScnRoot's GatherDrawScnObj to gather ScnObj to be rendered
 class IScnObjGather {
-   public:
+public:
     enum CullingStatus {
         CULLINGSTATUS_INTERSECT = 0,
         CULLINGSTATUS_INSIDE = 1,

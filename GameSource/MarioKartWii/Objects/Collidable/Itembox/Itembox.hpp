@@ -21,7 +21,7 @@ class Itembox : public ObjectCollidable {  // ObjectNum 0x65 = 101
     bool IsSolid() const override;  // 806c69d4
     virtual bool IsActive() const;  // 0xec 806c69c0
 
-   public:
+public:
     u32 isActive;  // 0xb0 set to 0 when the box is destroyed, set to 1 when it respawns/is created
     u32 timer;  // 0xb4 resets on player hit
     u32 respawnTime;  // 0xb8 based on setting 5

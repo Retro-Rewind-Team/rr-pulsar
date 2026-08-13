@@ -9,7 +9,7 @@
 #include <MarioKartWii/System/StatePtmfTrigger.hpp>
 
 class GlobeMii {
-   public:
+public:
     GlobeMii();  // 80750aac
     virtual void Init();  // 0x8 8075102c vtable 808cbe88
     virtual void Update();  // 0xc 80751144
@@ -38,7 +38,7 @@ class GlobeMii {
 // size_assert(GlobeMii, 0x1a8);
 
 class EarthModel : public StatePtmfTrigger<EarthModel> {
-   public:
+public:
     EarthModel();  // 8074d700
     ~EarthModel() override;  // 8074dcc8 vtable 808cbdb0
 
@@ -58,7 +58,7 @@ class EarthModel : public StatePtmfTrigger<EarthModel> {
 // size_assert(EarthModel, 0x110);
 
 class GlobeMgr {
-   public:
+public:
     static GlobeMgr *sInstance;  // 809c2cb8
     static GlobeMgr *CreateInstance();  // 8074d650
     static void DestroyInstance();  // 8074d6cc

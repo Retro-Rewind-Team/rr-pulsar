@@ -5,7 +5,7 @@
 #include <MarioKartWii/KCL/KCLController.hpp>
 
 class ObjectKCLController {
-   public:
+public:
     explicit ObjectKCLController(KCL *raw);  // 807c4ce8
     ~ObjectKCLController();  // 807c4d6c
     void Update(const Vec3 &position, KCLBitfield accepted, bool isBiggerThanDefaultScale, float radius);  // 807c4dc8
@@ -35,7 +35,7 @@ class ObjectKCLController {
 
 // ObjectNum 0x219 = 537 DemoCol, 0x217 = 535 M
 class ObjectExternKCL : public ObjectKCL {  // for objects whose KCL is provided by the szs and not in the game code
-   public:
+public:
     explicit ObjectExternKCL(const KMP::Holder<GOBJ> &gobjHolder);  // 8081a980
     ~ObjectExternKCL() override;  // 8067eafc vtable 808d6af8
 

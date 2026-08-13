@@ -6,7 +6,7 @@
 namespace Objects {
 
 class Aurora : public ObjectKCL {  // ObjectNum 0x204 = 516
-   public:
+public:
     explicit Aurora(const KMP::Holder<GOBJ> &gobjHolder);  // 807fab58
     ~Aurora() override;  // 807fb690 vtable 808d42a8
     void OnStart() override;  // 0xC 807fabc4

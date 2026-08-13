@@ -21,7 +21,7 @@ References:
 #include <MarioKartWii/System/Rating.hpp>
 
 class RacedataPlayer {
-   public:
+public:
     RacedataPlayer();  // 8052d96c
 
     virtual ~RacedataPlayer();  // 8052DC68 vtable 808b3294
@@ -68,7 +68,7 @@ class RacedataPlayer {
 // size_assert(RacedataPlayer, 0xf0);
 
 struct RacedataSettings {  // 0xb68 for race scenario, 0x1758 for menu
-   public:
+public:
     CourseId courseId;  // http://wiki.tockdom.com/wiki/List_of_Identifiers#Courses
     EngineClass engineClass;  // 0x4
     GameMode gamemode;  // 0x8
@@ -94,7 +94,7 @@ struct RacedataSettings {  // 0xb68 for race scenario, 0x1758 for menu
 };  // Total size 0x34
 
 class RacedataScenario {
-   public:
+public:
     explicit RacedataScenario(RKG &rkg);  // 8052dbc8, never used - racedata's constructor does it inline
     virtual ~RacedataScenario();  // 805300f4 vtable 808b3288
     RacedataScenario &operator=(const RacedataScenario &rhs);  // 805305ac
@@ -128,13 +128,13 @@ class RacedataScenario {
 
 // ParameterFile size is 0x1c, Racedata's is /boot/menuset.prm
 class EmptyRacedataParent {
-   public:
+public:
     EmptyRacedataParent() {};
     // this causes a 2nd vtable after RKParameterFile which is a copy of RKParameter file and would contain any new virtual function in Racedata
 };
 
 class Racedata : public EmptyRacedataParent, public RKParameterFile {
-   public:
+public:
     static Racedata *sInstance;  // 809bd728 presumably private
     static Racedata *CreateInstance();  // 8052fe58
     static void DestroyInstance();  // 8052ffe8

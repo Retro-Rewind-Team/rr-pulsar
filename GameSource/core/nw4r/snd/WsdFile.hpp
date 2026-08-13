@@ -112,7 +112,7 @@ struct WsdFile {  // RWSD https ://wiki.tockdom.com/wiki/BRWSD_(File_Format)
 };
 
 class WsdFileReader {
-   public:
+public:
     WsdFileReader(const void *rawWsd);  // 800ad9b0
     bool ReadWaveSoundInfo(WaveSoundInfo *noteInfo, int index) const;  // 800ada40
     bool ReadWaveSoundNoteInfo(WaveSoundNoteInfo *noteInfo, int index, int noteIndex) const;  // 800adb60

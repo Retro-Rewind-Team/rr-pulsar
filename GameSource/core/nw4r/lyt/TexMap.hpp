@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace lyt {
 class TexMap {
-   public:
+public:
     void ReplaceImage(TPLPalettePtr pal, u32 id = 0);  // 80082550
     void Set(const GX::TexObj &texObj);  // 80082400
     void *image;  // 0

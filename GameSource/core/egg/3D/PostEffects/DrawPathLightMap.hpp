@@ -9,7 +9,7 @@ using namespace nw4r;
 namespace EGG {
 
 class DrawPathLightMap : public DrawPathBase {
-   public:
+public:
     DrawPathLightMap();  // 8022183c
 
     // ScreenEffect vtable 802a2d70 at 0x4

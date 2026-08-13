@@ -10,7 +10,7 @@ namespace nw4r {
 namespace lyt {
 
 class FontRefLink {
-   public:
+public:
     FontRefLink();  // 80083f20
     void Set(char const *fontName, ut::Font *font);  // 80083f40
     ut::LinkListNode link;
@@ -29,14 +29,14 @@ class ArcResourceAccessor {
 };  // 0x9C
 
 class ArcResourceLink {
-   public:
+public:
     void Set(void *rawFile, const char *folderName);  // 80084000
     ut::LinkListNode link;
     ArcResourceAccessor accessor;
 };  // 0XA4
 
 class MultiArcResourceAccessor : public ResourceAccessor {
-   public:
+public:
     MultiArcResourceAccessor();  // 80084070
     ~MultiArcResourceAccessor() override;  // 800840e0 vt 80273820
     void *GetResource(ResType type, const char *fileName, u32 *size = 0) override;  // 800841b0

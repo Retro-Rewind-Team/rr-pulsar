@@ -11,7 +11,7 @@ namespace Pulsar {
 namespace UI {
 
 class CustomItemPage : public ::Pages::MenuInteractable {
-   public:
+public:
     CustomItemPage();
     ~CustomItemPage() override;
     void OnInit() override;
@@ -35,7 +35,7 @@ class CustomItemPage : public ::Pages::MenuInteractable {
 
     static const PulPageId id = PULPAGE_CUSTOMITEMS;
 
-   private:
+private:
     u32 GetDisplayBitfield() const;
     void UpdateButtonVisuals();
     void SetButtonIcon(PushButton &button, u32 itemId);

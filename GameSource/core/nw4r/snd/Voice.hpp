@@ -10,7 +10,7 @@ namespace detail {
 
 class AxVoice;
 class Voice : public DisposeCallback {
-   public:
+public:
     enum VoiceCallbackStatus {
         CALLBACK_STATUS_FINISH_WAVE,
         CALLBACK_STATUS_CANCEL,

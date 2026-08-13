@@ -10,7 +10,7 @@ namespace ef {
 class Particle;
 
 class CreationQueue {
-   public:
+public:
     enum CreationType {
         TYPE_PARTICLE,
         TYPE_EMITTER
@@ -36,7 +36,7 @@ class CreationQueue {
     int itemCount;
     CreationQueueData queueData[1024];
 
-   public:
+public:
 };
 
 }  // namespace ef

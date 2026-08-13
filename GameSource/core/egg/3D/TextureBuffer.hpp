@@ -7,7 +7,7 @@
 namespace EGG {
 
 class TextureBuffer : public CapTexture {
-   public:
+public:
     void Initialize(u32 totalSize, EGG::Heap *heap);  // 80243080
     static u32 totalSize;  // 80386F74
     static TextureBuffer *array;  // 80386F70

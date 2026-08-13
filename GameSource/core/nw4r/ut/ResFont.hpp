@@ -8,7 +8,7 @@ namespace nw4r {
 namespace ut {
 namespace detail {
 class ResFontBase : public Font {
-   public:
+public:
     ResFontBase();  // 800b1f90
     ~ResFontBase() override;  // 800b1ff0 vtable 80274e74
     int GetWidth() const override;  // 0xc 800b2040
@@ -39,7 +39,7 @@ class ResFontBase : public Font {
 };  // 0x1c
 }  // namespace detail
 class ResFont : public detail::ResFontBase {
-   public:
+public:
     ResFont();  // 800b2830
     ~ResFont() override;  // 800b2870 vtable 80274ed0
     void SetResource(void *rawBRFNT);  // 800b28d0

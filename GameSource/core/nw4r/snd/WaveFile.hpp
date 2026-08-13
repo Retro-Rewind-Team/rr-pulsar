@@ -74,7 +74,7 @@ struct WaveFile {  // RWAV
 };
 
 class WaveFileReader {
-   public:
+public:
     WaveFileReader(const WaveFile::FileHeader *raw);  // 800ad1f0
     WaveFileReader(const WaveFile::WaveInfo *rawInfo);  // 800ad210
     bool ReadWaveInfo(WaveInfo *waveData, const void *waveDataOffsetOrigin) const;  // 800ad220

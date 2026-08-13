@@ -5,7 +5,7 @@
 
 //_sinit_ at 806522dc
 class WipeControl : public LayoutUIControl {
-   public:
+public:
     WipeControl();  // 80651c0c
     ~WipeControl() override;  // 80651c48
     void InitSelf() override;  // 0x18 80651d54
@@ -18,7 +18,7 @@ class WipeControl : public LayoutUIControl {
 
 namespace Pages {
 class Wipe : public Page {  // ID 0x3a respawn fade out/fade in
-   public:
+public:
     static const PageId id = PAGE_WIPE;
     Wipe();  // 80651e80
     ~Wipe() override;  // 80651eec vtable 808c0710

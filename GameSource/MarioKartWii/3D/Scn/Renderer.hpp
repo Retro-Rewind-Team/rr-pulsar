@@ -6,7 +6,7 @@
 #include <MarioKartWii/3D/Scn/ScnMgr.hpp>
 
 class Renderer : public EGG::Disposer {
-   public:
+public:
     static Renderer *cur[2];  // 809c1848 1st is main, 2nd is created for stuff like Miis
 
     static ut::List renderList[2];  // 809c1830 and 809c183c, one per scene
@@ -32,7 +32,7 @@ class Renderer : public EGG::Disposer {
 };
 
 class RendererWithModels : public Renderer {
-   public:
+public:
     RendererWithModels(GameScreen &screen);  // 80564378
     ~RendererWithModels() override;  // 805643cc vtable 808b4bb8
     virtual void Calc() override;  // 0xc 80564444
@@ -51,7 +51,7 @@ class RendererMixed : public RendererWithModels {
 
 // IMPLEMENTATIONS
 class RendererRaceUIOrtho : public Renderer {  // the screen it's tied with covers the whole TV area, this is used for UI
-   public:
+public:
     RendererRaceUIOrtho(GameScreen &screen);  // 805b423c
     ~RendererRaceUIOrtho() override;  // 805b4280 vtable 808b7278
     void Calc() override;  // 805b4314
@@ -66,7 +66,7 @@ class RendererRaceUIScreen : public Renderer {  // renders UI that is specific t
 };
 
 class RendererRaceModels : public RendererWithModels {
-   public:
+public:
     RendererRaceModels(GameScreen &screen, ScnMgr *scnMgr);  // 805b431c
     ~RendererRaceModels() override;  // 805b4684 vtable 808b72e0
 
@@ -76,7 +76,7 @@ class RendererRaceModels : public RendererWithModels {
 };
 
 class RendererMenu : public RendererMixed {  // draws the UI in menu scenes but can also draw models (character models, miis, karts)
-   public:
+public:
     RendererMenu(GameScreen &screen);  // 8059eca8 also creates a CameraLook
     ~RendererMenu() override;  // 805671ac vtable 808b69b0
     void Calc() override;  // 8059ed30
@@ -89,13 +89,13 @@ class RendererMenu : public RendererMixed {  // draws the UI in menu scenes but 
 };  // 0x34
 
 class RendererGlobe : public RendererMenu {
-   public:
+public:
     RendererGlobe(GameScreen &screen);  // 80567170
     ~RendererGlobe() override;  // 80567268
 };
 
 class RendererMii : public RendererMixed {
-   public:
+public:
     RendererMii(GameScreen &screen);  // 80564688
     ~RendererMii() override;  // 805647bc vtable 808b4b88
     void DrawModels() override;  // 0x1c 80564760

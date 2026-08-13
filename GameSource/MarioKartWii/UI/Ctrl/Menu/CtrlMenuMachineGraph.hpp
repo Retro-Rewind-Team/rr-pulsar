@@ -13,7 +13,7 @@ class MachineAbility : public LayoutUIControl {  // somehow, get class name isn'
 
 //_sinit_ at 807e8124
 class CtrlMenuMachineGraph : public LayoutUIControl {
-   public:
+public:
     CtrlMenuMachineGraph();  // 80627338
     ~CtrlMenuMachineGraph() override;  // 80627374 vtable 808d3420
     void OnUpdate() override;  // 807e7e1c

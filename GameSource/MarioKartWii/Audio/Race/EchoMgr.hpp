@@ -11,7 +11,7 @@ struct Echo {
 };  // 0x3c
 
 class EchoMgr {
-   public:
+public:
     static EchoMgr *sInstance;  // 809c28a0
     static EchoMgr *CreateInstance();  // 80717f60
     static void DestroyInstance();  // 80718014

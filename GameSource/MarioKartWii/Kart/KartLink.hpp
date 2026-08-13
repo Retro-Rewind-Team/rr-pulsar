@@ -49,7 +49,7 @@ class Trick;
 typedef void (*CallOnAllPartsFunc)(Part &part);
 
 class Link {
-   public:
+public:
     static void InitList();  // 80590128
     static void LinkKartList(Pointers *pointers);  // 80590138 adds KartPointers to all Base objects
 

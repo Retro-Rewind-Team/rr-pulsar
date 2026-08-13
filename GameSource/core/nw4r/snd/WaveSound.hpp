@@ -10,7 +10,7 @@ namespace snd {
 class WaveSoundHandle;
 namespace detail {
 class WaveSound : public BasicSound {
-   public:
+public:
     WaveSound(WaveSoundInstanceManager *manager, int priority, int ambientPriority);  // 800ad4a0
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 800ad840
     ~WaveSound() override;  // 800ad690 vtable 80274b80

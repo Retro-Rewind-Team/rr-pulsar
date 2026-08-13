@@ -8,11 +8,11 @@
 namespace Pulsar {
 namespace UI {
 class ExpOptions : public Pages::Options {
-   public:
+public:
     ExpOptions();
     void OnInit() override;
 
-   private:
+private:
     void ExpandedOnButtonClick(PushButton &pushButton, u32 hudSlotId);
     PushButton settingsButton;
 };

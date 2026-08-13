@@ -14,7 +14,7 @@ class Obj;
 
 namespace Pages {
 class RaceHUD : public Page {
-   public:
+public:
     // ctor inlined
     static RaceHUD *sInstance;  // 809c4680
     ~RaceHUD() override;  // 80624764 vtable 808da710

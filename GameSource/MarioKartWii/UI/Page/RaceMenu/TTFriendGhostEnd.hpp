@@ -5,7 +5,7 @@
 
 namespace Pages {
 class TTFriendGhostEnd : public RaceMenu {  // ID 0x29 "Congrats you beat XXX's ghost, Would you like to send"
-   public:
+public:
     static const PageId id = PAGE_TT_FRIENDGHOST_END;
     TTFriendGhostEnd();  // 80625024
     ~TTFriendGhostEnd() override;  // 80632644 vtable 808bd4bc

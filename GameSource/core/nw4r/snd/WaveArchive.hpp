@@ -36,7 +36,7 @@ struct WaveArchive {  // RWAR, composed of RWAV files, as many as fileTable has 
 };
 
 class WaveArchiveReader {
-   public:
+public:
     WaveArchiveReader(const void *rawArchive);  // 800ad0e0
     const WaveFile::FileHeader *WaveArchiveReader::GetWaveFile(int index) const;  // 800ad160
     const WaveArchive::TableBlock *rawTbleBlock;

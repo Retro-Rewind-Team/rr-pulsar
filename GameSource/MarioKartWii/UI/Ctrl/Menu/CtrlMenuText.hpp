@@ -15,7 +15,7 @@ class CtrlMenuObiTop : public LayoutUIControl {
 // size_assert(CtrlMenuObiTop, 0x174);
 
 class CtrlMenuPageTitleText : public LayoutUIControl {
-   public:
+public:
     ~CtrlMenuPageTitleText() override;  // 805baf10 vtable 808d36d4
     void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 807e9898
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807e9bec
@@ -25,7 +25,7 @@ class CtrlMenuPageTitleText : public LayoutUIControl {
 };  // total size 0x174
 
 class CtrlMenuInstructionText : public LayoutUIControl {
-   public:
+public:
     ~CtrlMenuInstructionText() override;  // 805c00c0 vtable 808d3698
     void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 807e999c
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807e9be0
@@ -35,7 +35,7 @@ class CtrlMenuInstructionText : public LayoutUIControl {
 };  // total size 0x174
 
 class CtrlMenuBackButton : public PushButton {
-   public:
+public:
     CtrlMenuBackButton() {
         bmgId = 0x7d1;
         unknown_0x258 = 0;

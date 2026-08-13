@@ -5,7 +5,7 @@
 
 //_sinit_CtrlRaceTime_cpp; //807f8974
 class CtrlRaceTime : public CtrlRaceBase {
-   public:
+public:
     CtrlRaceTime(u8 variantId, u32 type);  // 807f7bd0 id is just RowCount, 0 = final time, the rest = split, r5 is 4 if final, 5 otherwise
     ~CtrlRaceTime() override;  // 807f890c vtable 808d4010
     void InitSelf() override;  // 0x1C 807f7c6c

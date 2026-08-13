@@ -7,9 +7,9 @@
 class DriverController;
 
 class ToadetteHair : public ModelDirector {
-   public:
+public:
     class CalcWorldCB : public ModelCalcBase, public EmptyModelCalcParent, public g3d::ICalcWorldCallback {  // probably for position
-       public:
+    public:
         // vtable 808d2d68 for empty, 808d2d70
         ~CalcWorldCB() override;  // thunk 807dbcc4 func 807dbc7c
         void ExecCallbackC(math::MTX34 *mat, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj) override;  // thunk 807dbcbc func 807db03c

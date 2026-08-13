@@ -9,7 +9,7 @@
 
 //_sinit_ at 805d7f40
 class FriendButton : public PushButton {
-   public:
+public:
     FriendButton();  // 805d380c
     ~FriendButton() override;  // 805d3850 vtable 808b8d04
     void InitSelf() override;  // 0x18 805d3c54
@@ -32,7 +32,7 @@ class FriendButton : public PushButton {
 // size_assert(FriendButton, 0x264);
 
 class JoinFriendButton : public PushButton {
-   public:
+public:
     JoinFriendButton();  // 805d5510 inlined
     ~JoinFriendButton() override;  // 805d554c vtable 808b8c0c
     void OnUpdate() override;  // 0x1c 805d5818
@@ -44,7 +44,7 @@ class JoinFriendButton : public PushButton {
 
 namespace Pages {
 class FriendList : public Page {  // ID 0x96
-   public:
+public:
     static const PageId id = PAGE_FRIEND_LIST;
     FriendList();  // 805d41c8
     ~FriendList() override;  // 805d43a8 vtable 808b8c58
@@ -90,7 +90,7 @@ class FriendList : public Page {  // ID 0x96
 // size_assert(FriendList, 0x1a64);
 
 class FriendInfo : public Page {  // ID 0x97
-   public:
+public:
     static const PageId id = PAGE_FRIEND_INFO;
     FriendInfo();  // 805d585c
     ~FriendInfo() override;  // 805d5a14 vtable 808b8b90
@@ -129,7 +129,7 @@ class FriendInfo : public Page {  // ID 0x97
 // size_assert(FriendInfo, 0x11b0);
 
 class FriendRemove : public Page {  // ID 0x98
-   public:
+public:
     static const PageId id = PAGE_FRIEND_REMOVE;
     FriendRemove();  // 805d69ac
     ~FriendRemove() override;  // 805d6b04 vtable 808b8b14
@@ -157,7 +157,7 @@ class FriendRemove : public Page {  // ID 0x98
 // size_assert(FriendRemove, 0xb28);
 
 class FriendRemoving : public Page {  // ID 0x99, the wait after clicking remove friend code on the previous page
-   public:
+public:
     static const PageId id = PAGE_FRIEND_REMOVING;
     enum Status {
         FRIEND_REMOVE_IDLE = 0,

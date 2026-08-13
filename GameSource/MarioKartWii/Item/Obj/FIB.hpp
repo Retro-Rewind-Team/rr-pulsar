@@ -5,7 +5,7 @@
 
 namespace Item {
 class ObjFIB : public ObjThrowable {
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807a78a8
 
     void InitSelf() override;  // 807a7ac0 vtable 808d1d60

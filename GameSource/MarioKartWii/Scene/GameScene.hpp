@@ -47,7 +47,7 @@ enum SceneId {
 };
 
 class GameSceneCreator : public RKSceneCreator {  // also creates the rootscene
-   public:
+public:
     GameSceneCreator *CreateInstance();  // 8054aa30
     static GameSceneCreator *sInstance;  // 809bd754 not actually used, as RootScene creates a heap allocated one
     static bool hasInstance;  // 809bd750
@@ -56,7 +56,7 @@ class GameSceneCreator : public RKSceneCreator {  // also creates the rootscene
 };
 
 class BaseScene : public RKScene {  // used by RootScene only?
-   public:
+public:
     ~BaseScene() override;  // 8051a368 vtable 808b2d10
     void calc() override;  // 0xc  8051c02c
     void draw() override;  // 0x10 8051c028
@@ -76,7 +76,7 @@ class ArchiveLink {
 };
 
 class GameScene : public BaseScene {
-   public:
+public:
     static const GameScene *GetCurrent();  // 8051bed0, gets current scene from SceneManager and if id != 0 and != 5, returns it
     static u32 stateBitfield;  // 809c1874
     /*

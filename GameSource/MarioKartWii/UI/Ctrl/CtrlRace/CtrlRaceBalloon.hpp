@@ -11,7 +11,7 @@ namespace Item {
 class Obj;
 }  // namespace Item
 class RaceBalloons {
-   public:
+public:
     RaceBalloons();  // 807f1c58
     ~RaceBalloons();  // 80858864
     void Update();  // 807f132c
@@ -32,7 +32,7 @@ class RaceBalloons {
 };  // total size 0xC4
 
 class CtrlRaceNameBalloon : public LayoutUIControl {
-   public:
+public:
     CtrlRaceNameBalloon();  // 808588cc
     virtual ~CtrlRaceNameBalloon();  // 807f4820 vtable 808d3e58
     virtual void InitSelf();  // 0x18 807efec8

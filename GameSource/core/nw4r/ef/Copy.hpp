@@ -7,7 +7,7 @@ namespace nw4r {
 namespace ef {
 
 class Copy {
-   public:
+public:
 };
 
 }  // namespace ef

@@ -8,7 +8,7 @@
 namespace Pulsar {
 namespace UI {
 class ExpCupSelect : public Pages::CupSelect {
-   public:
+public:
     ExpCupSelect();
     static void UpdateCupData(PulsarCupId id, LayoutUIControl &control);
     void OnActivate() override;
@@ -17,7 +17,7 @@ class ExpCupSelect : public Pages::CupSelect {
     void OnMoviesActivate(u32 r4) override;
     void OnStartPress(u32 hudSlotId) override;
 
-   private:
+private:
     void OnRightArrowSelect(SheetSelectControl &control, u32 hudSlotId);
     void OnLeftArrowSelect(SheetSelectControl &control, u32 hudSlotId);
     void OnArrowSelect(s32 direction);

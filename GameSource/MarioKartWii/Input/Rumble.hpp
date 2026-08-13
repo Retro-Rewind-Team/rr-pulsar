@@ -35,7 +35,7 @@ class Rumble {
 };  // 0x2c
 
 class RumbleController {
-   public:
+public:
     RumbleController();  // 80525498
     virtual ~RumbleController();  // 80525c38 vtable 808b30f0
     void Init(u32 subsCount, ControllerHolder *holder);  // 80525508

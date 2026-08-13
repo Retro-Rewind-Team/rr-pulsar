@@ -8,7 +8,7 @@
 // sinit at 805f96d4
 namespace Pages {
 class Click : public Page {  // just a page with one action, clicking
-   public:
+public:
     Click();  // 805f8d5c inlined
     ~Click() override;  // 805f8de0 vtable 808b9d70
     void OnInit() override;  // 0x28 805f8e48
@@ -28,7 +28,7 @@ class Click : public Page {  // just a page with one action, clicking
 // size_assert(Click, 0x1a4);
 
 class MessageBoxTransparent : public Click {  // ID 0x4d used for drift explanation, pressing A goes back to page "under"
-   public:
+public:
     static const PageId id = PAGE_MESSAGE_BOX_TRANSPARENT;
     MessageBoxTransparent();  // 805f8fac
     ~MessageBoxTransparent() override;  // 805f9054 vtable 808b9d00
@@ -48,7 +48,7 @@ class MessageBoxTransparent : public Click {  // ID 0x4d used for drift explanat
 // size_assert(MessageBoxTransparent, 0x604);
 
 class MessageBox : public Click {  // ID 0x51, ID 0xc8 and probably others just a message box where pressing A goes to another page
-   public:
+public:
     static const PageId id = PAGE_MESSAGEBOX;
     MessageBox();  // 805f931c
     ~MessageBox() override;  // 805f93dc vtable 808b9c90

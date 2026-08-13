@@ -6,7 +6,7 @@
 
 namespace Pages {
 class BattlePause : public RaceMenu {  // ID 0x1A
-   public:
+public:
     static const PageId id = PAGE_BATTLE_PAUSE_MENU;
     BattlePause();  // 80624c28
     ~BattlePause() override;  // 80633284 vtable 808bdcf8

@@ -7,7 +7,7 @@
 class GameCamera;
 
 class GameScreen : public EGG::Screen {
-   public:
+public:
     GameScreen(u32 r4, u32 idx);  // 8056581c idx is hudSlotId in races
     ~GameScreen() override;  // 80567130 vtable 808b4c20
 
@@ -32,7 +32,7 @@ class GameScreen : public EGG::Screen {
 };  // 0x10c
 
 class ScreensHolder {
-   public:
+public:
     static ScreensHolder mInstance;  // 809c1868
 
     virtual ~ScreensHolder();  // 8056572c vtable 808b4c04

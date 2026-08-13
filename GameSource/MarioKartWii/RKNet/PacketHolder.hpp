@@ -29,7 +29,7 @@ typedef PacketHolder<void> DefaultPacketHolder;
 
 template <class T>
 class PacketHolder {
-   public:
+public:
     explicit PacketHolder(u32 bufferSize);
     ~PacketHolder();  // 8065a2ac
 
@@ -44,7 +44,7 @@ class PacketHolder {
 
 template <>
 class PacketHolder<void> {
-   public:
+public:
     explicit PacketHolder(u32 bufferSize);
     ~PacketHolder();  // 8065a2ac
 

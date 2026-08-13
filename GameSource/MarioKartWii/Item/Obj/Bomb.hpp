@@ -6,7 +6,7 @@
 //_sinit_ at 807a62d8
 namespace Item {
 class ObjBomb : public ObjThrowable, public ObjExplosion {
-   public:
+public:
     enum State {
         STATE_MOVING,
         STATE_TICKING,

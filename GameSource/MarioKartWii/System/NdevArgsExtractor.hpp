@@ -15,7 +15,7 @@
 //-w%lld: unknown u64
 //-d%lld: unknown u64
 class NdevArgsExtractor {
-   public:
+public:
     NdevArgsExtractor();  // 805b9300
     ~NdevArgsExtractor();  // 805b9304
     SectionId ExtractAllArgs() const;  // 805b9344 "SetupSectionLoad"

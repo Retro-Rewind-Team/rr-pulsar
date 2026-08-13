@@ -99,7 +99,7 @@ struct StrmFile {
 };
 
 class StrmFileReader {
-   public:
+public:
     struct StrmInfo {  //-C for all offsets
         SampleFormat sampleFormat;  // 0x0 3 for strm, 800a4ec4, base on soundtype
         bool isLooped;  // 0x4
@@ -137,7 +137,7 @@ class StrmFileReader {
 };
 
 class StrmFileLoader {
-   public:
+public:
     StrmFileLoader(ut::FileStream &fileStream);  // inlined
     bool LoadFileHeader(void *buffer, u32 maxADPCoffset);  // 800a5270
     bool ReadStrmInfo(StrmFileReader::StrmInfo *info);  // 800a5490

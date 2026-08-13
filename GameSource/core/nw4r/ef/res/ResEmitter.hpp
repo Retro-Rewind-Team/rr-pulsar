@@ -136,7 +136,7 @@ struct EmitterResource {
 };
 
 class ResEmitter {
-   public:
+public:
     ResAnimCurve GetEmitTrack(u16 num);  // 8004bc80 often inlinted in egg
     EmitterResource *data;
 };

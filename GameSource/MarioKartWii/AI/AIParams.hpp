@@ -46,7 +46,7 @@ struct ParamAction {
 };  // 0x8
 
 class Params {
-   public:
+public:
     typedef BinAIParamSpeed ParamSpeed;
     Params(u32 aiDifficulty);  // 8073ab68
     ParamSpeed *GetParamSpeed() const;  // 8073ac80

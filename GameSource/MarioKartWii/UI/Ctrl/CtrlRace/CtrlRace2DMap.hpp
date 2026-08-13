@@ -8,7 +8,7 @@
 
 // Object can refer to karts, the startline, etc...
 class CtrlRace2DMapObject : public CtrlRaceBase {  // used as a base for other objects but also used for the start line as is
-   public:
+public:
     ~CtrlRace2DMapObject() override;  // 807ea930 vtable 808d3900
     void InitSelf() override;  // 0x18 807eac2c
     void OnUpdate() override;  // 0x1c 807eac88
@@ -24,7 +24,7 @@ class CtrlRace2DMapObject : public CtrlRaceBase {  // used as a base for other o
 };  // 0x1b4
 
 class CtrlRace2DMapCharacter : public CtrlRace2DMapObject {
-   public:
+public:
     CtrlRace2DMapCharacter();  // 807ea89c
     ~CtrlRace2DMapCharacter() override;  // 807ea98c vtable 808d389c
     void InitSelf() override;  // 0x18 807eaecc

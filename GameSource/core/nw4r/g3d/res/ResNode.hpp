@@ -46,7 +46,7 @@ struct ResNodeData {  // BONES https://wiki.tockdom.com/wiki/MDL0_(File_Format)#
 };  // 0xD0
 
 class ResNode : public ResCommon<ResNodeData> {
-   public:
+public:
     void PatchChrAnmResult(ChrAnmResult *result) const;  // 80052af0
     void CalcChrAnmResult(ChrAnmResult *result) const;  // 80052c90
     void SetScale(float x, float y, float z);  // 80052e00

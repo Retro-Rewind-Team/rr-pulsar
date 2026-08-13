@@ -7,7 +7,7 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class AxFxImpl {
-   public:
+public:
     bool CreateHeap(void *buffer, u32 size);  // 8008d120
     void DestroyHeap();  // 8008d190
     void HookAlloc(void *(**alloc)(u32), void (**free)(void *));  // 8008d1e0 will fill the ptrs

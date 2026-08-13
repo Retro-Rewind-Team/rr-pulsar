@@ -12,7 +12,7 @@
 using namespace nw4r;
 
 class AwardCupModel {
-   public:
+public:
     AwardCupModel *sInstance;  // 809c2c48
     static AwardCupModel *CreateInstance();  // 8074c5b0
     static void DestroyInstance();  // 8074c680
@@ -39,7 +39,7 @@ class AwardCupModel {
 };  // 0x68
 
 class AwardsMgr {
-   public:
+public:
     static AwardsMgr *sInstance;  // 809c2f00
     static AwardsMgr *CreateInstance();  // 80787eb0
     static void DestroyInstance();  // 80787fe0

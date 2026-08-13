@@ -18,7 +18,7 @@ class SoundMessages {
 // size_assert(SoundMessages, 0x30);
 
 class SoundHeapMgr {
-   public:
+public:
     virtual bool LoadState(u32 level);  // 80211874 vtable 802a2950
     virtual int GetCurrentLevel();  // 8021174c
     virtual void SaveState();  // 802117a0

@@ -14,7 +14,7 @@ class ObjKouraTogezoBase : public ObjTargeting {
 };  // 0x2bc
 
 class ObjKouraTogezo : public ObjKouraTogezoBase, public ObjExplosion {  // blue shell actually inherits a second class also used by reds and bombs
-   public:
+public:
     static Obj **CreateArray(u32 count);  // 807ab9e0
     static void *SendOrExtractShootEVENT(void *packet, Obj *obj, bool extractOrSend);  // 807ae5d0
 

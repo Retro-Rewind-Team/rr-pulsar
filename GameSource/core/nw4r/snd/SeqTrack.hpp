@@ -10,7 +10,7 @@ namespace detail {
 class SeqPlayer;
 
 class SeqTrack {
-   public:
+public:
     struct ParserTrackParam {
         u8 _[0x40];
     };

@@ -12,7 +12,7 @@ using namespace nw4r;
 namespace Text {
 
 class Info {
-   public:
+public:
     Info();  // 805cd94c
     u32 intToPass[9];  // 0
     u32 bmgToPass[9];  // 24
@@ -26,7 +26,7 @@ class Info {
 };  // total size 0xC4
 
 class PaneHandler {
-   public:
+public:
     PaneHandler();  // 805cda34
     ~PaneHandler();  // 805cda50
     void Init(lyt::TextBox *pane);  // 805cdbe4

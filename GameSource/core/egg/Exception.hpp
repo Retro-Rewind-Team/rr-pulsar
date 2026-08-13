@@ -6,7 +6,7 @@
 
 namespace EGG {
 class Exception {
-   public:
+public:
     static Exception *sInstance;  // 80386E38
     static nw4r::db::detail::ConsoleHead *console;  // 80386E3C
     static Exception *Create(u16 consoleWidth, u16 consoleHeight, u16 attributes, Heap *heap, u32 r7);  // 80226734

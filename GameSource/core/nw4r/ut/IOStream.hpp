@@ -6,7 +6,7 @@
 namespace nw4r {
 namespace ut {
 class IOStream {
-   public:
+public:
     typedef void (*IOStreamCallback)(s32 result, IOStream *stream, void *arg);
     virtual const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const;  // 0x8
     virtual ~IOStream();  // 0xc

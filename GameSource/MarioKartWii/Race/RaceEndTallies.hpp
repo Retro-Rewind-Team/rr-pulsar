@@ -8,7 +8,7 @@
 #include <MarioKartWii/Kart/KartValues.hpp>
 
 class RaceEndTallies {
-   public:
+public:
     static RaceEndTallies *sInstance;  // 809c2ee8
     static RaceEndTallies *CreateInstance();  // 807834a0
     static void DestroyInstance();  // 80783548

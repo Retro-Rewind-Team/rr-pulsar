@@ -16,7 +16,7 @@ namespace Ghosts {
 
 // Implements MultiGhost and handles leaderboards/expert
 class Mgr {
-   public:
+public:
     enum CBTiming {
         IS_LOADING_LEADERBOARDS,
         IS_SETTING_RACE,
@@ -70,7 +70,7 @@ class Mgr {
     }
     bool LoadGhost(RKG &dest, u32 index) const;
 
-   private:
+private:
     Mgr() : pulsarId(PULSARID_NONE), variantIdx(0), files(nullptr), areGhostsSaving(true) {
         Racedata *racedata = Racedata::sInstance;
         for (int i = 0; i < 4; ++i) racedata->ghosts[i].ClearBuffer();

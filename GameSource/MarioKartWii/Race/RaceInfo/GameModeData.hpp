@@ -9,7 +9,7 @@
 
 class Raceinfo;
 class GMData {  // Abstract
-   public:
+public:
     virtual bool CanRaceEnd() = 0;
     virtual void UpdateLocalPlayers();  // 0xc 80535de8
     virtual void Update();  // 0x10 80535e84
@@ -81,7 +81,7 @@ class GMDataCoinBattle : public GMDataBattle {
 };  // 0x38
 
 class GMDataOnlineVSPlayer {
-   public:
+public:
     GMDataOnlineVSPlayer();  // 80532488
     ~GMDataOnlineVSPlayer();  // 805324ac
     Timer raceFinishTime;
@@ -96,7 +96,7 @@ class RH2Packer {  // 808b33c0, 808b3390, 808b33a8, 808b3378, 808b3360, 808b33f0
 };  // 0x8
 
 class RH2IntPacker : public RH2Packer {
-   public:
+public:
     ~RH2IntPacker() override;
     void Pack(RKNet::RACEHEADER2Packet *packet, u32 r5) override;
     int Unpack(RKNet::RACEHEADER2Packet *packet, u32 r5) override;
@@ -105,7 +105,7 @@ class RH2IntPacker : public RH2Packer {
 };
 
 class GMDataOnlineVS : public GMData {
-   public:
+public:
     bool CanRaceEnd() override;  // 0x8 8053fa10 vtable 808b3928
     void UpdateLocalPlayers() override;  // 0xc 8053fb98
     void Update() override;  // 0x10 8053f2a4
@@ -119,7 +119,7 @@ class GMDataOnlineVS : public GMData {
 };  // Total size 0x174
 
 class GMDataOnlineBalloonBattle : public GMDataBattle {
-   public:
+public:
     GMDataOnlineBalloonBattle(Raceinfo *raceinfo);  // 80539f88
     bool CanRaceEnd() override;  // 0x8 8053d914 vtable 808b3570
     void Update() override;  // 0x10 8053bbf4
@@ -139,7 +139,7 @@ class GMDataOnlineBalloonBattle : public GMDataBattle {
 };  // 0x170
 
 class GMDataOnlineCoinBattle : public GMDataCoinBattle {
-   public:
+public:
     void Update() override;  // 0x10 8053d428 vtable 808b3524
 };  // 0x38
 

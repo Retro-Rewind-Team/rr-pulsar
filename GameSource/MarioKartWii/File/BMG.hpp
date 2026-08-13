@@ -58,7 +58,7 @@ struct BMGMessageIdsBlock {
 };
 
 class BMGHolder {
-   public:
+public:
     BMGHolder();  // 805f8b34
     void Load(const char *name);  // 805f8b90
     void Init(const BMGHeader &bmgFile);  // 805f8c00

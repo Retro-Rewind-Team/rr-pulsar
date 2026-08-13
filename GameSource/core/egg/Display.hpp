@@ -11,7 +11,7 @@ void DrawDoneCallback();  // 801780b4
 void PostRetraceCallback(u32 retraceCount);
 
 class Video {
-   public:
+public:
     static u32 GetTickPerVRetrace(u32 format);  // 80243e70
     static u32 GetTickPerVRetrace();  // 80243ed0
     GX::RenderModeObj *Configure(GX::RenderModeObj *newRenderMode, u32 r5);  // 80243d6c returns previous
@@ -23,7 +23,7 @@ class Video {
 };  // total size 0xc
 
 class Display {
-   public:
+public:
     Display(u8 timeBtwFrames);  // 80219e68
     bool clear;
     u8 padding[3];
@@ -47,7 +47,7 @@ class Display {
 };  // 0x28
 
 class AsyncDisplay : public Display {
-   public:
+public:
     static void HandleAlarmWrapper(OS::Alarm *alarm, OS::Context *context);  // 8020fd10
 
     AsyncDisplay(u8 timeBtwFrames);  // 8020fd18

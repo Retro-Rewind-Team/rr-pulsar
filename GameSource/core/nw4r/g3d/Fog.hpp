@@ -23,7 +23,7 @@ struct FogData {
 };
 
 class Fog : public ResCommon<FogData> {
-   public:
+public:
     Fog(FogData *data);  // 800774d0
     void Init();  // 800774e0
     void SetGP() const;  // 800775d0

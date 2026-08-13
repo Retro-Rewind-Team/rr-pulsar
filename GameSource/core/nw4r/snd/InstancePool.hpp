@@ -6,7 +6,7 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class PoolImpl {
-   public:
+public:
     u32 PoolImpl::CreateImpl(void *buffer, u32 size, u32 objSize);  // 80095850
     int PoolImpl::CountImpl() const;  // 80095a30
     void *PoolImpl::AllocImpl();  // 80095a90

@@ -11,7 +11,7 @@ namespace Pulsar {
 namespace UI {
 
 class ExtendedTeamSelect : public Pages::MenuInteractable {
-   public:
+public:
     static const PulPageId id = PULPAGE_EXTENDEDTEAMSELECT;
 
     ExtendedTeamSelect();
@@ -50,7 +50,7 @@ class ExtendedTeamSelect : public Pages::MenuInteractable {
     static void ResetTeamColors();
     static void GetTeamColor(ExtendedTeamID team, u8 &r, u8 &g, u8 &b);
 
-   private:
+private:
     PtmfHolder_1A<ExtendedTeamSelect, void, u32> onFrontPressHandler;
     PtmfHolder_1A<Page, void, Pages::Click &> onDisconnectClickHandler;
 
@@ -105,7 +105,7 @@ class ExtendedTeamSelect : public Pages::MenuInteractable {
     bool isHost;
     u32 playerCount;
 
-   public:
+public:
     static const void ChangeVRButtonColors(LayoutUIControl &button, ExtendedTeamID team);
 };
 

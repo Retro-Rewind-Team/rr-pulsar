@@ -16,7 +16,7 @@ enum HeapType {
 };
 
 class Heap : public Disposer {
-   public:
+public:
     static Heap *current;  // 80386ea0
     Heap(MEM::iHeapHead *rvlHeap);  // 802296e8
     virtual ~Heap();  // 80229780 vtable 802a30c0
@@ -44,7 +44,7 @@ class Heap : public Disposer {
     Heap *BecomeCurrentHeap() const;  // returns old heap there's an unused r4 arg
     Heap *becomeCurrentHeapWithoutLocking();
 
-   public:
+public:
     MEM::iHeapHead *rvlHeap;  // 0x10
     void *parentHeapMBlock;  // 0x14
     Heap *parentHeap;  // 0x18

@@ -14,7 +14,7 @@ struct ModelRendererParams {
 };  // total size 0xC
 
 class ModelRendererValues {
-   public:
+public:
     void SetValues(Vec2 translation, float scale);  // 805f8b24
     Vec2 translation;
     float scale;
@@ -42,7 +42,7 @@ class ModelRendererValuesHolder {
 
 namespace Pages {
 class ModelRenderer : public Page {  // ID 0x7f
-   public:
+public:
     static const PageId id = PAGE_MODEL_RENDERER;
     ModelRenderer();  // 805f4fd0
     ~ModelRenderer() override;  // 805f51c8 vtable 808b9c00

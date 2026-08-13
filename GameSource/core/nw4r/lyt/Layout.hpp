@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace lyt {
 class Layout {
-   public:
+public:
     static MEM::Allocator *spAllocator;  // 80396170
     Layout();  // 8007a000
     virtual ~Layout();  // 8007a040 vtable 802734c0

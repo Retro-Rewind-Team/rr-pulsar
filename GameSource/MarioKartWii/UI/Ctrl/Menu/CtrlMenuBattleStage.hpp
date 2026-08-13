@@ -7,7 +7,7 @@
 
 //_sinit_ at 807e2540
 class StageButton : public CtrlMenuMovieButton {
-   public:
+public:
     StageButton();  // 80629df0
     ~StageButton() override;  // 80629e50 vtable 808d2f40 CtrlMenuMovieHandler
     // virtual ~StageButton(); //thunk 807e2584 function 80629e50 vtable 808d2f58 pushbutton's

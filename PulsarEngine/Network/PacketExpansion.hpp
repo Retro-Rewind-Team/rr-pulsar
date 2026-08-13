@@ -142,7 +142,7 @@ struct PulEVENT : public RKNet::EVENTPacket {};  // NOT RECOMMENDED as this has 
 static const u32 totalRACESize = sizeof(RKNet::RACEPacketHeader) + sizeof(PulRH1) + sizeof(PulRH2) + sizeof(PulSELECT) + 2 * sizeof(PulRACEDATA) + sizeof(PulUSER) + 2 * sizeof(PulITEM) + sizeof(PulEVENT);
 
 class CustomRKNetController {  // Exists to make received packets a pointer array so that the size can be variable
-   public:
+public:
     virtual ~CustomRKNetController();  // 8065741c vtable 808c097c
 
     u32 unkVtable;  // unknown class vtable 808c0988
@@ -199,7 +199,7 @@ class CustomRKNetController {  // Exists to make received packets a pointer arra
 static_assert(sizeof(PulROOM) < sizeof(PulSELECT), "ROOM SELECT");
 
 class ExpSELECTHandler {
-   public:
+public:
     static ExpSELECTHandler &Get() { return *reinterpret_cast<ExpSELECTHandler *>(RKNet::SELECTHandler::sInstance); };
     static void DecideTrack(ExpSELECTHandler &self);
 

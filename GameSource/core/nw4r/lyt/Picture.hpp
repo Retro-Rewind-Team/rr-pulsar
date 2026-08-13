@@ -8,7 +8,7 @@
 namespace nw4r {
 namespace lyt {
 class Picture : public Pane {
-   public:
+public:
     Picture(const res::TextBox *src, const ResBlockSet &resBlockSet);  // 8007ad90
     ~Picture() override;  // 0x8 8007aee0 vtable 80273500
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0xc 8007b300

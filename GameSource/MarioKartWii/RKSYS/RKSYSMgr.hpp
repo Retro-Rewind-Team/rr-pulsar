@@ -9,7 +9,7 @@
 namespace RKSYS {
 
 class Mgr {
-   public:
+public:
     static Mgr *sInstance;  // 809bd748
     static Mgr *CreateInstance();  // 80543db0
     static void DestroyInstance();  // 80543edc

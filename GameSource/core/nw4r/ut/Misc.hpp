@@ -67,11 +67,11 @@ static inline int ComparePtr(const void *lhs, const void *rhs) {
 }
 
 class NonCopyable {
-   protected:
+protected:
     NonCopyable() {}
     ~NonCopyable() {}
 
-   private:
+private:
     NonCopyable(const NonCopyable &);
     const NonCopyable &operator=(const NonCopyable &);
 };
@@ -86,21 +86,21 @@ inline void Unlock(OS::Mutex &mutex) {
 
 template <typename Type>
 class AutoLock : private NonCopyable {
-   public:
+public:
     AutoLock(Type &lockObj) : lock(lockObj) { Lock(lockObj); }
     ~AutoLock() { Unlock(lock); }
 
-   private:
+private:
     Type &lock;
 };
 typedef AutoLock<OS::Mutex> AutoMutexLock;
 
 class AutoInterruptLock : private NonCopyable {
-   public:
+public:
     AutoInterruptLock() : oldState(OS::DisableInterrupts()) {}
     ~AutoInterruptLock() { (void)OS::RestoreInterrupts(oldState); }
 
-   private:
+private:
     BOOL oldState;
 };
 

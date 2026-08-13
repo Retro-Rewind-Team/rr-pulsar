@@ -33,7 +33,7 @@ class IO {
     };
     static void CreateFolderAsync(CreateRequest *request);
 
-   public:
+public:
     static inline s32 OpenFix(const char *path, IOS::Mode mode) {
         asmVolatile(stwu sp, -0x0020(sp););
         IOS::Open2ndInst(path, mode);
@@ -87,7 +87,7 @@ class IO {
 
     const IOType type;
 
-   protected:
+protected:
     IO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread)
         : type(type), heap(heap), taskThread(taskThread), fileCount(0), fileNames(nullptr) {
         folderName[0] = '\0';

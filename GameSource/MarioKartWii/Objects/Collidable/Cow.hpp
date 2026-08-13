@@ -12,7 +12,7 @@ namespace Objects {
 // The front cow is a CowLeader, the rest CowVassals
 
 class CowBase : public ObjectCollidable {
-   public:
+public:
     explicit CowBase(const KMP::Holder<GOBJ> &gobjHolder);  // 806bbec0 inlined
     ~CowBase() override;  // 806bbf24 vtable 808c2aec
 
@@ -29,7 +29,7 @@ class CowBase : public ObjectCollidable {
 };  // 0x128
 
 class CowLeader : public CowBase, public StatePtmfTrigger<CowLeader> {
-   public:
+public:
     explicit CowLeader(const KMP::Holder<GOBJ> &gobjHolder);  // 806bd080 inlined
 
     // ObjectCollidable vtable 808c29e0
@@ -49,7 +49,7 @@ class CowLeader : public CowBase, public StatePtmfTrigger<CowLeader> {
 };
 
 class CowVassal : public CowBase, public StatePtmfTrigger<CowVassal> {
-   public:
+public:
     CowVassal(const KMP::Holder<GOBJ> &gobjHolder, u32 unused, const Vec3 &distToLeader, float yRot);  // 806bdd48 inlined
     // ObjectCollidable vtable 808c28d0
     ~CowVassal() override;  // 806bdff4
@@ -68,7 +68,7 @@ class CowVassal : public CowBase, public StatePtmfTrigger<CowVassal> {
 };  // 0x184
 
 class CowGroup : public ObjectCollidable {  // ObjectNum 0x193 = 403 Cow
-   public:
+public:
     explicit CowGroup(const KMP::Holder<GOBJ> &gobjHolder);  // 806beb54
 
     ~CowGroup() override;  // 806befec vtable 808c27e4

@@ -19,7 +19,7 @@ extern EmitFormBuilder basicEmitFormBuilder;  // the standard EmitFormBuilder
 
 //_sinit_ at 80027ab0
 class EffectSystem {
-   public:
+public:
     typedef bool (*SortEffectOperatorLess)(const Effect *op1, const Effect *op2);
 
     static EffectSystem instance;  // 802ab4f8

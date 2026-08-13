@@ -46,7 +46,7 @@ typedef AI::Actions<AutoCameraMover> CamMove;
 // AI::Actions<RaceCameraSub18c> virtual void OnEnd(); //0x14  805adf10
 
 class OpeningPan {
-   public:
+public:
     OpeningPan(GameCamera &camera);  // inlined
     virtual ~OpeningPan();  // 805a9ba4 vtable 808b6c34
     void Load(const BCP *raw);  // 805a6f44
@@ -118,7 +118,7 @@ class AutoCameraMoverRace : public AutoCameraMover {  // CameraMover?
 
 // 805a224c rearview camera
 class RaceCamera : public GameCamera {
-   public:
+public:
     RaceCamera(u8 playerId, GameScreen &screen, BCP *rawBCP, u8 r7);  // 805a1d10
 
     // LookAtCamera vtable 808b6c40 at 0x0

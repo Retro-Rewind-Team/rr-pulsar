@@ -18,7 +18,7 @@ enum DenyType {
 };
 
 class Mgr {  // Manages network related stuff within Pulsar
-   public:
+public:
     Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A), customItemsBitfield(0x7FFFF), hasHostSettingsPreview(false) {}
     u32 hostContext;
     u32 hostContext2;

@@ -8,7 +8,7 @@ namespace EGG {
 
 // Heap of Unit Blocks of fixed size and alignment (specified at creation)
 class UnitHeap : public Heap {
-   public:
+public:
     static UnitHeap *Create(int size, u32 blockSize, Heap *parent, s32 alignment, u16 flag);  // 802437c8
     static u32 calcHeapSize(u32 blockSize, u32 blockCount, s32 alignment);  // 802439d4
 

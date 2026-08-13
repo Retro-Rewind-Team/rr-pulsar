@@ -8,7 +8,7 @@ namespace Pulsar {
 namespace UI {
 
 class CtrlRaceResultExtendedTeams : public LayoutUIControl {
-   public:
+public:
     void InitSelf() override;
     void OnUpdate() override;
     const char *GetClassName() const override;

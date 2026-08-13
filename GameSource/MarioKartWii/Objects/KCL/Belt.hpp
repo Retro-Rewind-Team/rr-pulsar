@@ -6,7 +6,7 @@
 namespace Objects {
 
 class Belt : public ObjectKCL {
-   public:
+public:
     // explicit Belt(KMP::Holder<GOBJ>) inlined
     ~Belt() override;  // 807fc5ec vtable 808d4768
     u32 GetPropertiesBitfield() override;  // 0x2c 807fd79c
@@ -78,7 +78,7 @@ class BeltEasy : public Belt {  // ObjectNum 0x25a = 602
 };  // 0xb4
 
 class BeltCrossing : public Belt {  // ObjectNum 0x25b = 603
-   public:
+public:
     explicit BeltCrossing(const KMP::Holder<GOBJ> &gobjHolder);  // 807fc764
     ~BeltCrossing() override;  // 807fd8a8 vtable 808d4508
     u32 GetScnObjDrawOptionsIdx() const override;  // 0xb0 807fd8a0

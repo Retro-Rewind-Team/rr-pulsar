@@ -37,7 +37,7 @@ class MatModelDirector;
 using namespace nw4r;
 
 class ScnMgrCreator {  // akin to EGG's sceneCreator
-   public:
+public:
     static ScnMgrCreator *sInstance;  // 809c1af0
     static ScnMgrCreator *CreateInstance();  // 805af408
     static void DestroyInstance();  // 805af4cc
@@ -52,7 +52,7 @@ class ScnMgrCreator {  // akin to EGG's sceneCreator
 };
 
 class ScnGroupHolder {
-   public:
+public:
     virtual ~ScnGroupHolder();  // 80564238 vtable 808b4b18
     g3d::ScnGroup *group[2];  // one per scene
     u32 id;
@@ -64,7 +64,7 @@ class ScnGroupHolder {
 // That ensures a given ResMdl is only rendered once,
 // since the g3d library provides ScnGroupEx, which draws all at once a group of ScnObj that share the same model
 class ScnGroupExHolder {
-   public:
+public:
     ScnGroupExHolder(ScnMgr *mgr, g3d::ResMdl resMdl, u32 scnObjDrawOptionsIdx);  // 80563c84 inlined
     virtual ~ScnGroupExHolder();  // 80564278 vtable 808b4b24
     g3d::ResMdl mdl;  // 0x4
@@ -83,7 +83,7 @@ enum ScnGroupId {  // matches GameScnProc names
 };
 
 class ScnMgr : public EGG::Disposer {
-   public:
+public:
     static u32 screenCount;  // 808b4bf0 copied from racedata
     static void CalcMain();  // 80564adc
     static void Calc(u32 idx);  // 80564b7c calcs the specific scnmgr
@@ -189,7 +189,7 @@ class ScnMgrMenu : public ScnMgr {
 };
 
 class ScnMgrRace : public ScnMgr {  // there is a middle class with ctor 805b3b00
-   public:
+public:
     ScnMgrRace();  // 805b1300
     ~ScnMgrRace();  // 805b1354 vtable 808b70b0
     void vf_0xc() override;  // 0xC 805b1a74

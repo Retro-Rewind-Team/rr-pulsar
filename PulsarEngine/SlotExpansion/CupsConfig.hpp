@@ -13,7 +13,7 @@ class CupsHolder;
 class CupsConfig;
 
 class CupsConfig {
-   public:
+public:
     static CupsConfig *sInstance;
     static const u32 RegsCRC32[];
 
@@ -87,7 +87,7 @@ class CupsConfig {
         return this->mainTracks[id - PULSARID_FIRSTCT];
     }
 
-   public:
+public:
     u32 RandomizeVariant(PulsarId id) const;
     void SetWinning(PulsarId id, u32 variantIdx = 0xFF);
     void SetPendingVariant(u8 variantIdx);
@@ -105,7 +105,7 @@ class CupsConfig {
     PulsarCupId lastSelectedCup;  // 0
     u32 lastSelectedCupButtonIdx;  // 4
 
-   public:
+public:
     Track cur;  // 0x8 contains information about the current track, including the correct slots if it is a variant
 
     PulsarId winningCourse;  // 0x10

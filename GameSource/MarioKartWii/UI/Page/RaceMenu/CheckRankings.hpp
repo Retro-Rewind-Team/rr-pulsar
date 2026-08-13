@@ -5,7 +5,7 @@
 
 namespace Pages {
 class CheckRankings : public RaceMenu {  // ID 0x2B "Go to the MK Channel to view rankings?"
-   public:
+public:
     static const PageId id = PAGE_CHECK_RANKINGS;
     CheckRankings();  // 806250ac
     ~CheckRankings() override;  // 8063259c vtable 808bd440

@@ -7,7 +7,7 @@
 //_sinit_ at 8085e644
 namespace Pages {
 class WWLeaderboardUpdate : public GPVSLeaderboardUpdate {  // ID 0x31
-   public:
+public:
     static const PageId id = PAGE_WW_LEADERBOARDS_UPDATE;
     WWLeaderboardUpdate();  // 806252e4
     ~WWLeaderboardUpdate() override;  // 8085e4c4 vtable 808dab30

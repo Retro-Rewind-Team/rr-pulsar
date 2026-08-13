@@ -24,7 +24,7 @@ class ActionLess : public Page {  // has to be ended by another Page
 };  // 0x58
 
 class AutoEndingTransparent : public ActionLess {  // ID 0x4C on top of another page https://imgur.com/Z3zJZLd
-   public:
+public:
     static const PageId id = PAGE_AUTO_ENDING_TRANSPARENT;
     AutoEndingTransparent();  // 805bac90
     ~AutoEndingTransparent() override;  // 805bacf8
@@ -38,7 +38,7 @@ class AutoEndingTransparent : public ActionLess {  // ID 0x4C on top of another 
 };
 
 class AutoEnding : public ActionLess {  // ID 0x4F but also ID 0x50 and ID 0xc7 used for msg that have a spinner "waiting for"
-   public:
+public:
     static const PageId id = PAGE_AUTO_ENDING;
     AutoEnding();  // 805bae98
     ~AutoEnding() override;  // 805baf68 vtable 808b73a8

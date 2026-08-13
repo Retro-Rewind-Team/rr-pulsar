@@ -12,7 +12,7 @@ enum CorruptSaveMgrState {
 
 };
 class CorruptSaveMgr : public Page {  // ID 0x3 background page that manages the section of the same name
-   public:
+public:
     static const PageId id = PAGE_HZ60_SUGGESTION;
     CorruptSaveMgr();  // 8061f6e8
     ~CorruptSaveMgr() override;  // 8061f764
@@ -32,7 +32,7 @@ class CorruptSaveMgr : public Page {  // ID 0x3 background page that manages the
 // size_assert(CorruptSaveMgr, 0x6c);
 
 class CannotSave : public Page {  // ID 0x04
-   public:
+public:
     static const PageId id = PAGE_CANNOT_SAVE;
     CannotSave();  // 806200bc
     ~CannotSave() override;  // 80620138 vtable 808bb948
@@ -50,7 +50,7 @@ class CannotSave : public Page {  // ID 0x04
 // size_assert(CannotSave, 0x68);
 
 class CorruptMemory : public Page {  // ID 0x5
-   public:
+public:
     static const PageId id = PAGE_SYSTEM_MEMORY_CORRUPT;
     CorruptMemory();  // 80620440
     ~CorruptMemory() override;  // 8062048c vtable 808bb8e4
@@ -65,7 +65,7 @@ class CorruptMemory : public Page {  // ID 0x5
 // size_assert(CorruptMemory, 0x1c8);
 
 class CorruptMiiData : public Page {  // ID 0x6 background page that manages the section of the same name
-   public:
+public:
     static const PageId id = PAGE_MII_DATA_CORRUPT;
     CorruptMiiData();  // 80620638
     ~CorruptMiiData() override;  // 806206c4 vtable 808bb874

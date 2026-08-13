@@ -7,7 +7,7 @@ namespace Audio {
 using namespace nw4r;
 
 class ItemActor : public Actor<2>, public LinkedRaceActor {
-   public:
+public:
     ItemActor();  // 807040dc
 
     // AUDIOACTOR
@@ -43,7 +43,7 @@ class ItemActor : public Actor<2>, public LinkedRaceActor {
 // size_assert(ItemActor, 0xac);
 
 class GessoActor : public Actor<1>, public LinkedRaceActor {
-   public:
+public:
     GessoActor();  // 80704bd4
 
     // AUDIOACTOR

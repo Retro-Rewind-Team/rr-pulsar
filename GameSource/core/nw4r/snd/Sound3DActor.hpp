@@ -9,7 +9,7 @@
 namespace nw4r {
 namespace snd {
 class Sound3DActor : public SoundActor, public detail::BasicSound::AmbientArgUpdateCallback {
-   public:
+public:
     Sound3DActor(SoundArchivePlayer &soundArchivePlayer, Sound3DManager &sound3DManager);  // 8009c2a0
 
     // SoundActor vtable 80274918

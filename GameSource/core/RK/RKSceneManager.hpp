@@ -6,7 +6,7 @@
 using namespace EGG;
 
 class ExpHeapGroup {
-   public:
+public:
     void SetHeapsGroupId(u32 groupId);  // 80009bc0
     void CalculateGroupSizes();  // 80009c24
     ExpHeap *heaps[3];  // mem1, mem2, debug
@@ -14,7 +14,7 @@ class ExpHeapGroup {
 };  // 0xc0c
 
 class RKScene : public Scene {
-   public:
+public:
     ~RKScene() override;  // 800073f0 vtable 802585d8
     ExpHeapGroup expHeapGroup;  // 0x30
     u8 unknown_0xc3c[0xc70 - 0xc3c];  // 0xc3c
@@ -26,7 +26,7 @@ class RKSceneCreator : public SceneCreator {  // Creates StrapScene
 };
 
 class RKSceneManager : public SceneManager {
-   public:
+public:
     void calc() override;  // 0x8  80009984 vtable 80270c68
     void draw() override;  // 0xc  80009988
     void calcCurrentFader() override;  // 0x14 8000984c

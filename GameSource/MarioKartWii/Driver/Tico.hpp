@@ -8,7 +8,7 @@ class DriverController;
 
 // TICO = LUMA
 class TicoModel {
-   public:
+public:
     TicoModel(DriverController *controller);  // 807d9b98
     void Update();  // 807d9d64
     void UpdateKartPosition();  // 807da578 inlined

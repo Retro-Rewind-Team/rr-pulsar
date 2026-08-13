@@ -27,7 +27,7 @@ class ControllerParams {
 };
 
 class ControllerHolder {
-   public:
+public:
     ControllerHolder();  // 80520f64 - inlined in RealControllerHolder()
     virtual ~ControllerHolder();  // 805222b4 vtable 808b2dd8
     virtual void Update(bool writeGhostFrame);  // 0xc 80521198
@@ -67,7 +67,7 @@ class ControllerHolder {
 };  // Total size 0xd8
 
 class RealControllerHolder : public ControllerHolder {
-   public:
+public:
     RealControllerHolder();  // 805220bc
     ~RealControllerHolder() override;  // 805222f4 vtable 808b2d90
     void Update(bool writeGhostFrame) override;  // 0xc 80521768
@@ -91,7 +91,7 @@ class RealControllerHolder : public ControllerHolder {
 };  // Total size 0xec
 
 class AIControllerHolder : public ControllerHolder {
-   public:
+public:
     AIControllerHolder();  // 805234a0
     ~AIControllerHolder() override;  // 8052279c vtable 808b2db4
     void CopyCPUInputs(const State &cpuInputs) override;  // 805219ac

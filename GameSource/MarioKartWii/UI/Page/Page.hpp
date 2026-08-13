@@ -61,7 +61,7 @@ enum PageState {
 };
 
 class Page {
-   public:
+public:
     Page();  // 8060197c
     virtual ~Page();  // 80601a04 vtable 808ba5c0
     virtual const char *GetClassName() const;  // 0xC 805bb25c returns "(unknown page)"

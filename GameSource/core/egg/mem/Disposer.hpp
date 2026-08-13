@@ -9,18 +9,18 @@ class Heap;
 class Disposer {  // a way to garbage collect objects when a heap is destroyed
     friend class Heap;
 
-   protected:
+protected:
     Disposer();  // 8021a0f0
     virtual ~Disposer();  // 8021a144 vtable 802a2b48
 
-   private:
+private:
     Heap *heap;
     nw4r::ut::LinkListNode link;  // the heap traverses the link list on destruction and calls all the dtors
 };  // Total size 0x10
 
 template <class T>
 class TDisposer : public Disposer {
-   public:
+public:
     // code for the dtor
     ~TDisposer() override;
     /*code for it

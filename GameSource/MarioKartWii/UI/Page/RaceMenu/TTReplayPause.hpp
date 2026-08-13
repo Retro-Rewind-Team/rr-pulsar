@@ -6,7 +6,7 @@
 
 namespace Pages {
 class TTReplayPause : public RaceMenu {  // ID 0x39
-   public:
+public:
     static const PageId id = PAGE_TT_REPLAY_PAUSE;
     TTReplayPause();  // 80625738
     ~TTReplayPause() override;  // 80633118 vtable 808bdc00

@@ -5,7 +5,7 @@
 
 //_sinit_ at 807f64f4
 class CtrlRaceResult : public LayoutUIControl {
-   public:
+public:
     // ctor inlined
     ~CtrlRaceResult() override;  // 807f6490 vtable 808d3ee8
     void Init() override;  // 807f5a4c

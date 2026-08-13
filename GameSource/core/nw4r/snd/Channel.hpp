@@ -11,13 +11,13 @@ namespace snd {
 namespace detail {
 
 class WaveDataLocationCallback {
-   public:
+public:
     virtual const WaveInfo *AttachWaveInfo() = 0;
     virtual void DetachWaveInfo(const WaveInfo *waveInfo) = 0;
 };
 
 class Channel {
-   public:
+public:
     enum ChannelCallbackStatus {
         CALLBACK_STATUS_STOPPED,
         CALLBACK_STATUS_DROP,
@@ -101,7 +101,7 @@ class Channel {
 };  // 0xfc
 
 class ChannelManager {
-   public:
+public:
     static ChannelManager instance;  // 802d5878
     static ChannelManager &GetInstance();  // 8008f970
     u32 GetRequiredMemSize(int channelCount);  // 8008fa50

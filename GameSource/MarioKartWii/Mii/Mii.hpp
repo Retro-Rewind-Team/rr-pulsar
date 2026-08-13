@@ -51,7 +51,7 @@ enum MiiType {
 };
 
 class Mii {  // online, rflId is hudSlotId and middleDBIdx is aid
-   public:
+public:
     Mii() {}
     virtual ~Mii();  // 80529034 vtable 808b3148
     void Init(u32 type);  // 80525f88 could be reset

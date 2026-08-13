@@ -10,7 +10,7 @@ using namespace nw4r;
 namespace EGG {
 
 class PostEffect {
-   public:
+public:
     PostEffect();  // 80234a54
 
     void SetVtxState();  // 80234ba4
@@ -28,7 +28,7 @@ class PostEffect {
 };  // 0x24
 
 class PostEffectSimple : public PostEffect {
-   public:
+public:
     PostEffectSimple();  // 80236250
     ~PostEffectSimple() override;  // 8021c9c4 vtable 802a3c10
     void PreDraw() override;  // 0x10 80235e80

@@ -8,7 +8,7 @@ namespace nw4r {
 namespace ut {
 
 class LinkListNode : private NonCopyable {
-   public:
+public:
     LinkListNode *next;
     LinkListNode *prev;
 };  // Total size 0x8
@@ -16,7 +16,7 @@ class LinkListNode : private NonCopyable {
 
 namespace detail {
 class LinkListImpl : private NonCopyable {
-   public:
+public:
     class IteratorImpl;
 
     explicit LinkListImpl() {
@@ -43,7 +43,7 @@ class LinkListImpl : private NonCopyable {
     void PopBack() { this->Erase(--GetEndIter()); }
 
     class IteratorImpl {
-       public:
+    public:
         explicit IteratorImpl(LinkListNode *ptr) : ptr(ptr) {}
         explicit IteratorImpl() : ptr(nullptr) {}
         LinkListNode &operator*() const { return *ptr; }
@@ -81,9 +81,9 @@ class LinkListImpl : private NonCopyable {
 
 template <class T, s32 offset>
 class LinkList : private detail::LinkListImpl {
-   public:
+public:
     class Iterator {
-       public:
+    public:
         Iterator() {}
         T &operator*() const {
             return *operator->();
@@ -110,7 +110,7 @@ class LinkList : private detail::LinkListImpl {
         friend bool operator==(Iterator it1, Iterator it2) { return it1.itImpl == it2.itImpl; }
         friend bool operator!=(Iterator it1, Iterator it2) { return !(it1 == it2); }
 
-       private:
+    private:
         explicit Iterator(LinkListImpl::IteratorImpl it) : itImpl(it) {}
 
         LinkListImpl::IteratorImpl itImpl;

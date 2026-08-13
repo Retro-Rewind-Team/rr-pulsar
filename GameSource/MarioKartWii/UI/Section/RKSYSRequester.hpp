@@ -13,7 +13,7 @@ enum RequestType {  // array position in the class
 };
 
 class RKSYSRequester {
-   public:
+public:
     struct Request {
         u32 licenseId;  // 0x0
         GhostGroupType ghostType;  // 0x4

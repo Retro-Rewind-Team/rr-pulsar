@@ -19,7 +19,7 @@ struct Holder {
 
 template <class T>
 class Section {
-   public:
+public:
     Holder<T> **holdersArray;
     u16 pointCount;  // 0x4
     u16 padding;  // 0x6
@@ -37,7 +37,7 @@ struct RawHolder {
 
 template <>
 class Holder<KTPT> {
-   public:
+public:
     void InitLinks();  // 805148a0
     void CalcCoordinates_0Indexed(Vec3 &position, Vec3 &rotation, u32 playerPosition, u32 playerCount);  // 80514368
     void CalcCoordinates(Vec3 &position, Vec3 &rotation, u32 playerPosition, u32 playerCount);  // 80514b24
@@ -48,7 +48,7 @@ class Holder<KTPT> {
 
 template <>
 class Holder<ENPH> {
-   public:
+public:
     void CalcExtremes();  // 80514c30
     void ToggleENPHLink(u8 enphId, bool isActivated);  // 80517858 edits the links to remove/insert the enph
     ENPH *raw;
@@ -58,7 +58,7 @@ class Holder<ENPH> {
 
 template <>
 class Holder<ENPT> {
-   public:
+public:
     virtual ~Holder();  // 80518c40 vtable 808b2c6c
     void InitLinks(u16 idx);  // 80516d74
     void AddPrevLink(u16 idx);  // 80517ce4 inlined
@@ -76,7 +76,7 @@ class Holder<ENPT> {
 
 template <>
 class Holder<ITPT> {
-   public:
+public:
     void InitLinks(u16 idx);  // 80517e88
     ITPT *raw;
     u8 prevLinks[6];
@@ -89,7 +89,7 @@ class Holder<ITPT> {
 class CKPHSection;
 template <>
 class Holder<CKPH> {
-   public:
+public:
     void CalcDepthRecursive(u8 depth, const CKPHSection *section);  // 805150e0
     void Init(CKPH *raw);  // 80515098 inlined
     CKPH *raw;
@@ -110,7 +110,7 @@ struct LinkedCKPT {
 class CKPTSection;
 template <>
 class Holder<CKPT> {
-   public:
+public:
     Holder(const CKPT &raw);  // 805154e4
     void InitLinks(CKPTSection &section, u16 id);  // 80515624
     void InitType(u8 type);  // 80515a6c recursive
@@ -133,7 +133,7 @@ class Holder<CKPT> {
 
 template <>
 class Holder<AREA> {
-   public:
+public:
     Holder(AREA *raw);  // 80516050
     ~Holder();  // 805163b4
     virtual bool IsPointInAREAShape(const Vec3 &subjectPosition) = 0;  // vtable 808b2c60
@@ -155,20 +155,20 @@ class Holder<AREA> {
 };
 
 class HolderAREABox : public Holder<AREA> {
-   public:
+public:
     HolderAREABox(AREA *raw);  // 80516220
     virtual bool IsPointInAREAShape(const Vec3 &subjectPosition);  // 805163f4 vtable 808b2c54
 };  // total size 0x48
 
 class HolderAREACylinder : public Holder<AREA> {
-   public:
+public:
     HolderAREACylinder(AREA *raw);  // 805164fc
     virtual bool IsPointInAREAShape(const Vec3 &subjectPosition);  // 80516688 vtable 808b2c48
 };  // total size 0x48
 
 template <>
 class Holder<JGPT> {
-   public:
+public:
     Holder(const JGPT &raw);  // 805183a8
     void InitLinks();  // 805184fc
     void GetPosition(Vec &dest, u8 playerId);  // 8051896c
@@ -185,7 +185,7 @@ class Holder<JGPT> {
 
 template <>
 class Holder<CAME> {
-   public:
+public:
     u8 GetType() const;  // 80512c6c
     s8 GetOpeningCamIdx() const;  // 80512c9c
     Holder<CAME> GetNext();  // 80516cd4
@@ -194,7 +194,7 @@ class Holder<CAME> {
 
 template <>
 class Holder<STGI> {  // what the wiki calls LensFlare, but isn't actually LensFlare per se
-   public:
+public:
     bool IsNarrowGrid() const;  // 80512d40
     u32 GetFilterEffectColor() const;  // 80512d4c
     u8 GetFilterEffectAlpha() const;  // 80518bb0
@@ -204,26 +204,26 @@ class Holder<STGI> {  // what the wiki calls LensFlare, but isn't actually LensF
 
 template <>
 class Holder<GOBJ> {
-   public:
+public:
     const Holder<POTI> *GetRoute() const;  // 80514194
     GOBJ *raw;
 };
 
 // SECTIONS
 class KTPTSection : public Section<KTPT> {
-   public:
+public:
     static KTPTBlock *GetBlock(RawHolder *rawKMP, u32 ktptMagic);  // 80514208 inlined
     KTPTSection(KTPTBlock *raw);  // 80514258 inlined
     Holder<KTPT> *GetHolder(u16 idx);  // 80514124 part of section
 };
 
 class JGPTSection : public Section<JGPT> {
-   public:
+public:
     Holder<JGPT> *GetHolder(u16 idx) const;  // 80514100 part of Section
 };
 
 class CKPTSection : public Section<CKPT> {
-   public:
+public:
     void Init();  // 80515244
     void CalcTotalDistance();  // 80512370
     void CalcDistanceFromCPRecursive(u16 cpIdx);  // 80512064
@@ -234,14 +234,14 @@ class CKPTSection : public Section<CKPT> {
 };
 
 class CKPHSection : public Section<CKPH> {
-   public:
+public:
     void Init();  // 80514df0 inlined
     Holder<CKPH> *GetHolder(u16 cp);  // 80515014
     float invLayerSize;
 };
 
 class AREASection : public Section<AREA> {
-   public:
+public:
     AREASection(const AREABlock &rawBlock);  // 80515e50
     Holder<AREA> *GetHolder(u16 idx) const;  // 805140dc
     void SortByPriority();  // 80515f8c
@@ -249,7 +249,7 @@ class AREASection : public Section<AREA> {
 };  // total size 0x14
 
 class POTISection : public Section<POTI> {
-   public:
+public:
     POTISection(POTIBlock *raw);  // 80515d3c inlined
     Holder<POTI> *GetHolder(u16 idx);  // 80514124 part of section
 };
@@ -265,7 +265,7 @@ typedef Section<STGI> STGISection;
 typedef Section<MSPT> MSPTSection;
 
 class Manager {
-   public:
+public:
     static Manager *sInstance;
     static Manager *CreateInstance();  // 80512694
     static void DestroyInstance();  // 8051271c

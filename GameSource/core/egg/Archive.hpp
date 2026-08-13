@@ -7,7 +7,7 @@
 
 namespace EGG {
 class Archive : public Disposer {
-   public:
+public:
     struct FileInfo {
         u32 offset;
         u32 size;

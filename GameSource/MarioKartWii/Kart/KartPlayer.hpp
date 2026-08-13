@@ -13,7 +13,7 @@
 
 namespace Kart {
 class Player : public Link {
-   public:
+public:
     Player(u8 idx, KartId kart, CharacterId character, bool isBike, const StatsAndBsp &statsAndBsp, void *unknown,
            KartDriverDispParam::Entry *kartDriverDispEntry, KartPartsDispParam::Entry *kartPartsDispEntry,
            BikePartsDispParam::Entry *bikePartsDispEntry, DriverDispParam::Entry *driverDispEntry);  // 8058ddbc
@@ -40,7 +40,7 @@ class Player : public Link {
 // size_assert(Player, 0x80);
 
 class PlayerBike : public Player {
-   public:
+public:
     void InitWheels();  // 8058f2e8
     ~PlayerBike() override;  // 8058f8b0 vtable 808b63d0
     void CreateBody() override;  // 8058f260

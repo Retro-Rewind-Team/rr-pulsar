@@ -15,7 +15,7 @@ struct ResAnmChrNulld : g3d::ResAnmChr {  // just a resanmchr with a ctor that n
 };
 
 class ScaleAnmController : public Link {
-   public:
+public:
     static void LoadAnimations();  // 8056ab6c item scale anms for thunder/kinoko
     static void GetAnmScale(Vec3 &scaleDest, u8 anmIdx);  // 8056ac9c see names for the idx
     static void GetPressUpAnmScale(Vec3 &scaleDest);  // 8056acf4

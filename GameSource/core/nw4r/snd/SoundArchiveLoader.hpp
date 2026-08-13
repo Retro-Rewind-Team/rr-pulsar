@@ -10,7 +10,7 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class SoundArchiveLoader {
-   public:
+public:
     SoundArchiveLoader(const SoundArchive &archive);  // 8009f990
     ~SoundArchiveLoader();  // 8009f9d0
     void *LoadFile(SoundArchive::FileId fileId, SoundMemoryAllocatable *allocater);  // 800a0180

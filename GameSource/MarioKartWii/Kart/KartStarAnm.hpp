@@ -9,7 +9,7 @@
 namespace Kart {
 
 class StarAnmMgr : public Link {
-   public:
+public:
     static void LoadAnm();  // 8056b63c star.clr0 in driver.brres
     StarAnmMgr();  // 8056b8a8
     static float frameCount;  // 809c18d0

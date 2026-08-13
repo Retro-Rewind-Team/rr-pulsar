@@ -11,7 +11,7 @@ namespace Objects {
 // ObjectNum 0x2e8 = 744 MiiObjD01,  ObjectNum 0x2e9 = 745 MiiObjD02,  ObjectNum 0x2ea = 746 MiiObjD03
 
 class MiiObj : public ObjectCollidable {
-   public:
+public:
     static MiiCreationParams *miiCreationParams;  // 809c2da0
     static Mii **miis;  // 809c2da8
     static u32 *processedMiisCount;  // 809c2dac

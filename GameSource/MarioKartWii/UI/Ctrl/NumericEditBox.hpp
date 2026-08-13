@@ -5,9 +5,9 @@
 
 //_sinit_ at 805cadc0
 class NumericEditBox : public LayoutUIControl {
-   public:
+public:
     class EditLetter : public LayoutUIControl {
-       public:
+    public:
         EditLetter();  // 805caaf0
         ~EditLetter() override;  // 805cab2c vtable 808b82f8
         void Init() override;  // 0xc 805cac0c

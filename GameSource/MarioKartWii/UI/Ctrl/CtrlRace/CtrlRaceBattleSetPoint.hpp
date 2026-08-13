@@ -4,7 +4,7 @@
 
 //_sinit_ at 807edd98
 class CtrlRaceBattleSetPoint : public LayoutUIControl {
-   public:
+public:
     ~CtrlRaceBattleSetPoint() override;  // 807ee1d8 vtable 808d3bd8
     void InitSelf() override;  // 0x18 807edeb8
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807ee230

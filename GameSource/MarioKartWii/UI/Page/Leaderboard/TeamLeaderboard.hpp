@@ -10,7 +10,7 @@
 namespace Pages {
 
 class TeamLeaderboardBase : public Leaderboard {
-   public:
+public:
     ~TeamLeaderboardBase() override;  // 80625460 vtable 808dae44
     void OnInit() override;  // 0x28 8085e674
     void AfterControlUpdate() override;  // 0x4c 8085e7a0
@@ -26,7 +26,7 @@ class TeamLeaderboardBase : public Leaderboard {
 // size_assert(TeamLeaderboardBase, 0x18c4);
 
 class TeamVSLeaderboardTotal : public TeamLeaderboardBase {  // ID 0x32
-   public:
+public:
     static const PageId id = PAGE_TEAMVS_TOTAL_LEADERBOARDS;
     TeamVSLeaderboardTotal();  // 80625320
     ~TeamVSLeaderboardTotal() override;  // 8085efe0 vtable 808dadd8
@@ -37,7 +37,7 @@ class TeamVSLeaderboardTotal : public TeamLeaderboardBase {  // ID 0x32
 // size_assert(TeamVSLeaderboardTotal, 0x18c4);
 
 class BattleLeaderboardUpdate : public TeamLeaderboardBase {  // ID 0x33
-   public:
+public:
     static const PageId id = PAGE_BATTLE_LEADERBOARDS_UPDATE;
     BattleLeaderboardUpdate();  // 806254e8
     ~BattleLeaderboardUpdate() override;  // 8085ef48 vtable 808dad6c
@@ -48,7 +48,7 @@ class BattleLeaderboardUpdate : public TeamLeaderboardBase {  // ID 0x33
 };  // total size 0x18c4
 
 class BattleLeaderboardTotal : public TeamLeaderboardBase {  // ID 0x34
-   public:
+public:
     static const PageId id = PAGE_BATTLE_TOTAL_LEADERBOARDS;
     BattleLeaderboardTotal();  // 80625550
     ~BattleLeaderboardTotal() override;  // 8085eeb0 vtable 808dad00

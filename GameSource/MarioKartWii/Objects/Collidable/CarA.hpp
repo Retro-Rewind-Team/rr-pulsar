@@ -7,7 +7,7 @@
 namespace Objects {
 // linear movement so centripetal acceleration ie distance = speed²/accel
 class CarA : public ObjectCollidable, StatePtmfTrigger {  // ObjectNum 0xCC = 204 CarA1, ObjectNum 0xe7 = 231 CarA2, ObjectNum 0xe8 = 232 CarA3
-   public:
+public:
     explicit CarA(const KMP::Holder<GOBJ> &gobjHolder);  // 806b7710
     static bool hasRenderedMiis;  // 809c2210
 
