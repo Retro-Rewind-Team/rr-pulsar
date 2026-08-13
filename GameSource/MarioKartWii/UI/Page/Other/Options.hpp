@@ -21,13 +21,13 @@ class Options : public Page {  // ID 0xC0
     void OnInit() override;  // 805fd6e4
     void OnDispose() override;  // 805fd8e4
     void OnActivate() override;  // 805fd8e8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 80601068 returns809c1ce8
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 80601068 returns809c1ce8
 
-    void OnButtonClick(PushButton& pushButton, u32 hudSlotId);  // 805fd90c
+    void OnButtonClick(PushButton &pushButton, u32 hudSlotId);  // 805fd90c
     void OnBackPress(u32 hudSlotId);  // 805fda80
-    static void TriggerPtmf(PtmfHolder_2A<Options, void, PushButton&, u32>& handler, PushButton& button, u32 hudSlotId);  // 80601134
-    static void TriggerBackPtmf(PtmfHolder_1A<Options, void, u32>* handler, u32 hudSlotId);  // 80601254
-    PtmfHolder_2A<Options, void, PushButton&, u32> onButtonClickHandler;  // 0x44 vtable 808ba45c 805fd90c
+    static void TriggerPtmf(PtmfHolder_2A<Options, void, PushButton &, u32> &handler, PushButton &button, u32 hudSlotId);  // 80601134
+    static void TriggerBackPtmf(PtmfHolder_1A<Options, void, u32> *handler, u32 hudSlotId);  // 80601254
+    PtmfHolder_2A<Options, void, PushButton &, u32> onButtonClickHandler;  // 0x44 vtable 808ba45c 805fd90c
     PtmfHolder_1A<Options, void, u32> onBackPressHandler;  // 0x58 vtable 808ba450 805fda80
     ControlsManipulatorManager manipulatorManager;  // 0x6C
     CtrlMenuPageTitleText titleText;  // 0x290
@@ -47,12 +47,12 @@ class WiFiOptions : public Page {  // ID 0xC1
     PageId GetNextPage() const override;  // 0x10 8060104c
     void OnInit() override;  // 0x28 805fdc9c
     void OnActivate() override;  // 0x30 805fdf34
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80601054
-    void OnButtonClick(PushButton& pushButton, u32 hudSlotId);  // 805fdf58
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80601054
+    void OnButtonClick(PushButton &pushButton, u32 hudSlotId);  // 805fdf58
     void OnBackPress(u32 hudSlotId);  // 805fe110
-    static void TriggerPtmf(PtmfHolder_2A<WiFiOptions, void, PushButton&, u32>* handler, PushButton& button, u32 hudSlotId);  // 80601104
-    static void TriggerBackPtmf(PtmfHolder_1A<WiFiOptions, void, u32>* handler, u32 hudSlotId);  // 80601224
-    PtmfHolder_2A<WiFiOptions, void, PushButton&, u32> onButtonClickHandler;  // 0x44 805fdf58 808ba3e0
+    static void TriggerPtmf(PtmfHolder_2A<WiFiOptions, void, PushButton &, u32> *handler, PushButton &button, u32 hudSlotId);  // 80601104
+    static void TriggerBackPtmf(PtmfHolder_1A<WiFiOptions, void, u32> *handler, u32 hudSlotId);  // 80601224
+    PtmfHolder_2A<WiFiOptions, void, PushButton &, u32> onButtonClickHandler;  // 0x44 805fdf58 808ba3e0
     PtmfHolder_1A<WiFiOptions, void, u32> onBackPressHandler;  // 0x58 805fe110 808ba3d4
     ControlsManipulatorManager manipulatorManager;  // 0x6C
     CtrlMenuPageTitleText titleText;  // 0x290
@@ -72,12 +72,12 @@ class OptionExplanation : public Page {  // ID 0xc2 a message box with explanati
     ~OptionExplanation() override;  // 805fe240 vtable 808ba2f4
     void OnInit() override;  // 0x28 805fe2e0
     void OnActivate() override;  // 0x30 805fe460
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80601040
-    void OnButtonClick(PushButton& pushButton, u32 hudSlotId);  // 805fe48c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80601040
+    void OnButtonClick(PushButton &pushButton, u32 hudSlotId);  // 805fe48c
     void OnBackPress(u32 hudSlotId);  // 805fe57c
-    static void TriggerPtmf(PtmfHolder_2A<OptionExplanation, void, PushButton&, u32>* handler, PushButton& button, u32 hudSlotId);  // 806010d4
-    static void TriggerPtmf(PtmfHolder_1A<OptionExplanation, void, u32>* handler, u32 hudSlotId);  // 806011f4
-    PtmfHolder_2A<OptionExplanation, void, PushButton&, u32> onButtonClickHandler;  // 0x44 805fe48c 808ba364
+    static void TriggerPtmf(PtmfHolder_2A<OptionExplanation, void, PushButton &, u32> *handler, PushButton &button, u32 hudSlotId);  // 806010d4
+    static void TriggerPtmf(PtmfHolder_1A<OptionExplanation, void, u32> *handler, u32 hudSlotId);  // 806011f4
+    PtmfHolder_2A<OptionExplanation, void, PushButton &, u32> onButtonClickHandler;  // 0x44 805fe48c 808ba364
     PtmfHolder_1A<OptionExplanation, void, u32> onBackPressHandler;  // 0x58 805fe57c 808ba358
     ControlsManipulatorManager manipulatorManager;  // 0x6C
     CtrlMenuPageTitleText titleText;  // 0x290
@@ -96,16 +96,16 @@ class OptionChoice : public Page {  // ID 0xc3 (2used buttons) and ID 0xc4(3 but
     void OnInit() override;  // 0x28 805fe7d4
     void OnActivate() override;  // 0x30 805fea58
     void OnResume() override;  // 0x54 805fea88
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80601034
-    void OnButtonClick(PushButton& pushButton, u32 hudSlotId);  // 805febe4
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80601034
+    void OnButtonClick(PushButton &pushButton, u32 hudSlotId);  // 805febe4
     void OnBackPress(u32 hudSlotId);  // 805fed8c
     void SetTitleText(u32 bmgId);  // 805feb60 inlined
     void SetMessageWindowText(u32 bmgId);  // 805feb6c inlined
     void SetButtonText(u32 buttonId, u32 bmgId, u32 ed8);  // 805feb78 inlined
     void SetInitialButton(u8 buttonId);  // 805febdc
-    static void TriggerPtmf(PtmfHolder_2A<OptionChoice, void, PushButton&, u32>* handler, PushButton& button, u32 hudSlotId);  // 806010a4
-    static void TriggerBackPtmf(PtmfHolder_1A<OptionChoice, void, u32>* handler, u32 hudSlotId);  // 806011c4
-    PtmfHolder_2A<OptionChoice, void, PushButton&, u32> onButtonClickHandler;  // 0x44 805febe4 808ba2e8
+    static void TriggerPtmf(PtmfHolder_2A<OptionChoice, void, PushButton &, u32> *handler, PushButton &button, u32 hudSlotId);  // 806010a4
+    static void TriggerBackPtmf(PtmfHolder_1A<OptionChoice, void, u32> *handler, u32 hudSlotId);  // 806011c4
+    PtmfHolder_2A<OptionChoice, void, PushButton &, u32> onButtonClickHandler;  // 0x44 805febe4 808ba2e8
     PtmfHolder_1A<OptionChoice, void, u32> onBackPressHandler;  // 0x58 805fed8c 808ba2dc
     ControlsManipulatorManager manipulatorManager;  // 0x6C
     CtrlMenuPageTitleText titleText;  // 0x290
@@ -127,14 +127,14 @@ class RegionOptions : public Page {  // ID 0xc5
     PageId GetNextPage() const override;  // 0x10 805ff134
     void OnInit() override;  // 0x28 805fef9c
     void OnActivate() override;  // 0x30 805ff128
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80601028
-    void OnButtonClick(PushButton& pushButton, u32 hudSlotId);  // 805ff194
-    void OnBackButtonClick(CtrlMenuBackButton& backButton, u32 hudSlotId);  // 805ff1e0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80601028
+    void OnButtonClick(PushButton &pushButton, u32 hudSlotId);  // 805ff194
+    void OnBackButtonClick(CtrlMenuBackButton &backButton, u32 hudSlotId);  // 805ff1e0
     void OnBackPress(u32 hudSlotId);  // 805ff2a0
-    static void TriggerPtmf(PtmfHolder_2A<OptionChoice, void, PushButton&, u32>* handler, PushButton& button, u32 hudSlotId);  // 80601074
-    static void TriggerBackPtmf(PtmfHolder_1A<OptionChoice, void, u32>* handler, u32 hudSlotId);  // 80601194
-    PtmfHolder_2A<OptionChoice, void, PushButton&, u32> onButtonClickHandler;  // 0x44 805ff194 808ba26c
-    PtmfHolder_2A<OptionChoice, void, CtrlMenuBackButton&, u32> onBackButtonClickHandler;  // 0x58 805ff1e0 808ba26c
+    static void TriggerPtmf(PtmfHolder_2A<OptionChoice, void, PushButton &, u32> *handler, PushButton &button, u32 hudSlotId);  // 80601074
+    static void TriggerBackPtmf(PtmfHolder_1A<OptionChoice, void, u32> *handler, u32 hudSlotId);  // 80601194
+    PtmfHolder_2A<OptionChoice, void, PushButton &, u32> onButtonClickHandler;  // 0x44 805ff194 808ba26c
+    PtmfHolder_2A<OptionChoice, void, CtrlMenuBackButton &, u32> onBackButtonClickHandler;  // 0x58 805ff1e0 808ba26c
     PtmfHolder_1A<OptionChoice, void, u32> onBackPressHandler;  // 0x6c 805ff2a0 808ba260
     ControlsManipulatorManager manipulatorManager;  // 0x80
     CtrlMenuPageTitleText titleText;  // 0x2A4
@@ -156,7 +156,7 @@ class MasterOptions : public Page {  // ID 0xc6 chooses which option to load dep
     void BeforeExitAnimations() override;  // 0x40 805ff4dc
     void AfterControlUpdate() override;  // 0x4c 805ff4e0
     void OnResume() override;  // 0x54 805ff6c4 sets the option in rksys too
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8060101c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 8060101c
     void SetNextPageType(u32 r4);  // 806000c4 inlined at 805fe070, no idea what r4 is
     void LoadOptionChoice(u32 r4);  // 806003e0 called by OnDeactivate r4 is add page layer r5, called if type = 0
     void LoadOptionFirstExplanation(u32 r4);  // 80600128 same, called if type >= 1
@@ -165,7 +165,7 @@ class MasterOptions : public Page {  // ID 0xc6 chooses which option to load dep
     void LoadOptionWaitingNetwork();  // 8060079c inlined loads waiting page 0xC7
     void LoadOptionWaiting();  // 806008cc, inlined
     void LoadOptionChoiceSavedNetwork();  // 806009fc to get error code
-    static void TriggerPtmf(PtmfHolder_1A<MasterOptions, void, u32>& handler, u32 hudSlotId);  // 80601164
+    static void TriggerPtmf(PtmfHolder_1A<MasterOptions, void, u32> &handler, u32 hudSlotId);  // 80601164
     PtmfHolder_1A<MasterOptions, void, u32> onClickHandler;  // 0x44 80600F88 back press and ChoiceSaved boxes
     ManipulatorManager manipulatorManager;  // 0x58
     u32 nextPageType;  // 0x68 0 = choice box, >= 1 explanation box

@@ -11,7 +11,7 @@ class CtrlRaceSpeedo : public CtrlRaceBase {
     void Init() override;
     void OnUpdate() override;
     static u32 Count();
-    static void Create(Page& page, u32 index, u32 count);
+    static void Create(Page &page, u32 index, u32 count);
 
    private:
     struct SpeedArg {
@@ -30,8 +30,8 @@ class CtrlRaceSpeedo : public CtrlRaceBase {
             };
         };
     };
-    void Load(const char* variant, u8 id);
-    void Animate(const SpeedArg* args = nullptr);
+    void Load(const char *variant, u8 id);
+    void Animate(const SpeedArg *args = nullptr);
 };
 }  // namespace UI
 }  // namespace Pulsar

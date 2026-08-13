@@ -36,7 +36,7 @@ class UnkFriendRoomManager {
     u8 localAid;  // 0x15c
     u8 unknown_0x15d[3];
 
-    void HandleROOMPacket(u8 playerId, u8 myAid, RKNet::ROOMPacket& packet);  // 805db358
+    void HandleROOMPacket(u8 playerId, u8 myAid, RKNet::ROOMPacket &packet);  // 805db358
     void Update();  // 805daf38
 };  // 0x160
 // size_assert(UnkFriendRoomManager, 0x160);
@@ -46,17 +46,17 @@ class FriendMatchingPlayer : public LayoutUIControl {
     ~FriendMatchingPlayer() override;  // 805d94d0 vtable 808b8f90
     void InitSelf() override;  // 0x18 805d9614
     void OnUpdate() override;  // 0x1c 805d9700
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805de884
-    const char* GetClassName() const override;  // 0x2c 805d944c
-    void Load(MiiGroup* miiGroup, u8 id, bool isGuest);  // 805d9528
-    void OnMessageSent(Mii& mii);  // 805d9aa8 just does the animation, mii isn't actually used
-    PtmfHolder_1A<FriendMatchingPlayer, void, Mii&> onMessageSentHandler;  // 0x174 805d9aa8 808b8fcc
-    MiiGroup* miiGroup;  // 0x188
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805de884
+    const char *GetClassName() const override;  // 0x2c 805d944c
+    void Load(MiiGroup *miiGroup, u8 id, bool isGuest);  // 805d9528
+    void OnMessageSent(Mii &mii);  // 805d9aa8 just does the animation, mii isn't actually used
+    PtmfHolder_1A<FriendMatchingPlayer, void, Mii &> onMessageSentHandler;  // 0x174 805d9aa8 808b8fcc
+    MiiGroup *miiGroup;  // 0x188
     u8 id;  // 0x18c
     bool isGuest;  // 0x18d
     u8 padding[2];
     u32 managerArrayIndex;  // 0x190 id * 2 + isGuest
-    nw4r::lyt::Pane* all_null;  // 0x194
+    nw4r::lyt::Pane *all_null;  // 0x194
     float slidingXPos;  // some kind of sliding thing, changing it makes the icon slide
     bool hasJoined;  // 0x19c 0->1 triggers the join animation
     u8 padding2[3];
@@ -69,9 +69,9 @@ class MessageSelectControl : public LayoutUIControl {
     ~MessageSelectControl() override;  // 805db724 vtable 808b8ef0
     void InitSelf() override;  // 0x18 805db8ec
     void OnUpdate() override;  // 0x1c 805db8f0
-    void SetPositionAnim(PositionAndScale& positionAndScale, float curFrame) override;  // 0x20  805db9e8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805de86c
-    const char* GetClassName() const override;  // 0x2c 805db6b8
+    void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20  805db9e8
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805de86c
+    const char *GetClassName() const override;  // 0x2c 805db6b8
     void Load();  // 805db798
     void Activate();  // 805dba20 plays show anim + sets playerbitfield
     void Deactivate();  // 805dbab8 opposite plays hide anim
@@ -79,8 +79,8 @@ class MessageSelectControl : public LayoutUIControl {
     void ChangeFromPage(u8 direction);  // 805dbb88 plays slide out animation and disables buttons
     bool IsActivated();  // 805dbc20
     bool IsDeactivated();  // 805dbc58
-    void SetButtonBmg(u8 id, u32 r5, u32 bmgId, const Text::Info* text = nullptr);  // 805dbc8c
-    void SetOnClickHandler(const PtmfHolder_2A<Pages::FriendRoomMessages, void, PushButton&, u32>& handler);  // 805dbcc4
+    void SetButtonBmg(u8 id, u32 r5, u32 bmgId, const Text::Info *text = nullptr);  // 805dbc8c
+    void SetOnClickHandler(const PtmfHolder_2A<Pages::FriendRoomMessages, void, PushButton &, u32> &handler);  // 805dbcc4
     void SelectInitialButton(u32 hudSlotId, u8 id);  // 805dbd24
     u32 GetSelectedButtonId() const;  // 805dbd34
     PushButton buttons[4];  // 0x174
@@ -100,7 +100,7 @@ class FriendJoinMgr : public Page {  // ID 0x9a when joining via channel
     void BeforeEntranceAnimations() override;  // 0x38 805D7D54
     void AfterEntranceAnimations() override;  // 0x3c 805d7d58
     void BeforeExitAnimations() override;  // 0x40 805d7d68
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805d7d74
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805d7d74
     ManipulatorManager manipulatorManager;
     PageId nextPage;  // 0x54
 };  // 0x58
@@ -118,7 +118,7 @@ class FriendRoomWaiting : public Page {  // ID 0x9b
     void BeforeExitAnimations() override;  // 0x40 805dd7c0
     void AfterControlUpdate() override;  // 0x4c 805dd7c4
     void OnResume() override;  // 0x54 805ddcc8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805de854
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805de854
     void StartRoom();  // 805de090 resets SectionParams, sets initial countdown, goes to character select etc..
     ManipulatorManager manipulatorManager;  // 0x44
     MatchingMessageWindow messageWindow;  // 0x54
@@ -140,10 +140,10 @@ class FriendRoomManager : public Page {  // ID 0x9c
     void AfterEntranceAnimations() override;  // 0x3c 805d9f20
     void BeforeExitAnimations() override;  // 0x40 805da028
     void AfterControlUpdate() override;  // 0x4c 805da140
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805de878
-    static u32 GetMessageBmg(const RKNet::ROOMPacket& packet, u32 r4);  // 805dacb0
-    void SetToSendPacket(const RKNet::ROOMPacket& packet);  // 805dae30
-    void SetPacket(const RKNet::ROOMPacket& packet, u8 id);  // 805dae58
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805de878
+    static u32 GetMessageBmg(const RKNet::ROOMPacket &packet, u32 r4);  // 805dacb0
+    void SetToSendPacket(const RKNet::ROOMPacket &packet);  // 805dae30
+    void SetPacket(const RKNet::ROOMPacket &packet, u8 id);  // 805dae58
 
     ManipulatorManager manipulatorManager;  // 0x44
     CtrlMenuPageTitleText titleText;  // 0x54
@@ -175,19 +175,19 @@ class FriendRoom : public Page {  // ID 0x9d
     void OnDeactivate() override;  // 0x34 805d84fc
     void AfterControlUpdate() override;  // 0x4c 805d8508
     void OnResume() override;  // 0x54 805d8c98
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805de890
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805de890
     void SetStatus(u32 status);  // 805d8f40
-    void OnMessagesButtonClick(PushButton& button, u32 hudSlotId);  // 805d8f84
-    void OnStartButtonClick(PushButton& button, u32 hudSlotId);  // 805d906c
-    void OnAddFriendsButtonClick(PushButton& button, u32 hudSlotId);  // 805d9154
-    void OnBackButtonClick(PushButton& button, u32 hudSlotId);  // 805d9160
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);  // 805d92a0
+    void OnMessagesButtonClick(PushButton &button, u32 hudSlotId);  // 805d8f84
+    void OnStartButtonClick(PushButton &button, u32 hudSlotId);  // 805d906c
+    void OnAddFriendsButtonClick(PushButton &button, u32 hudSlotId);  // 805d9154
+    void OnBackButtonClick(PushButton &button, u32 hudSlotId);  // 805d9160
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);  // 805d92a0
     void OnBackPress(u32 hudSlotId);  // 805d930c
-    PtmfHolder_2A<FriendRoom, void, PushButton&, u32> onMessagesButtonsClickHandler;  // 0x44 805d8f84
-    PtmfHolder_2A<FriendRoom, void, PushButton&, u32> onStartButtonClickHandler;  // 0x58 805d906c
-    PtmfHolder_2A<FriendRoom, void, PushButton&, u32> onAddFriendsButtonClickHandler;  // 0x6c 805d9154
-    PtmfHolder_2A<FriendRoom, void, PushButton&, u32> onBackButtonClickHandler;  // 0x80 805d9160
-    PtmfHolder_2A<FriendRoom, void, PushButton&, u32> onButtonSelectHandler;  // 0x94 805d92a0
+    PtmfHolder_2A<FriendRoom, void, PushButton &, u32> onMessagesButtonsClickHandler;  // 0x44 805d8f84
+    PtmfHolder_2A<FriendRoom, void, PushButton &, u32> onStartButtonClickHandler;  // 0x58 805d906c
+    PtmfHolder_2A<FriendRoom, void, PushButton &, u32> onAddFriendsButtonClickHandler;  // 0x6c 805d9154
+    PtmfHolder_2A<FriendRoom, void, PushButton &, u32> onBackButtonClickHandler;  // 0x80 805d9160
+    PtmfHolder_2A<FriendRoom, void, PushButton &, u32> onButtonSelectHandler;  // 0x94 805d92a0
     PtmfHolder_1A<FriendRoom, void, u32> onBackPressHandler;  // 0xa8 805d930c
     ControlsManipulatorManager manipulatorManager;  // 0xbc
     PushButton messagesButton;  // 0x2e0
@@ -215,22 +215,22 @@ class FriendRoomMessages : public Page {  // ID 0x9e
     void OnActivate() override;  // 0x30 805dc378
     void OnDeactivate() override;  // 0x34 805dc71c
     void BeforeControlUpdate() override;  // 0x48 805dc7b8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805de860
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805de860
     void UpdateMessages();  // 805dcab4
-    void OnMessageButtonClick(PushButton& button, u32 hudSlotId);  // 805dcc70
-    void OnModeButtonClick(PushButton& button, u32 hudSlotId);  // 805dcd78
-    void OnAddFriendsButtonClick(PushButton& button, u32 hudSlotId);  // 805dce80
-    void OnRightArrowPress(SheetSelectControlScaleFade* control, u32 hudSlotId);  // 805dd0c8
-    void OnLeftArrowPress(SheetSelectControlScaleFade* control, u32 hudSlotId);  // 805dd1d4
-    void OnBackButtonClick(CtrlMenuBackButton* backButton, u32 hudSlotId);  // 805dd2dc
+    void OnMessageButtonClick(PushButton &button, u32 hudSlotId);  // 805dcc70
+    void OnModeButtonClick(PushButton &button, u32 hudSlotId);  // 805dcd78
+    void OnAddFriendsButtonClick(PushButton &button, u32 hudSlotId);  // 805dce80
+    void OnRightArrowPress(SheetSelectControlScaleFade *control, u32 hudSlotId);  // 805dd0c8
+    void OnLeftArrowPress(SheetSelectControlScaleFade *control, u32 hudSlotId);  // 805dd1d4
+    void OnBackButtonClick(CtrlMenuBackButton *backButton, u32 hudSlotId);  // 805dd2dc
     void OnBackPress(u32 hudSlotId);  // 805dd318
     void End();  // 805dca9c sets animLength and isEnding
-    PtmfHolder_2A<FriendRoomMessages, void, PushButton&, u32> onMessageButtonClickHandler;  // 0x44 805dcc70
-    PtmfHolder_2A<FriendRoomMessages, void, PushButton&, u32> onModeButtonClickHandler;  // 0x58 805dcd78
-    PtmfHolder_2A<FriendRoomMessages, void, PushButton&, u32> onAddFriendsButtonClickHandler;  // 0x6c 805dce80
-    PtmfHolder_2A<Page, void, SheetSelectControlScaleFade&, u32> onRightArrowPressHandler;  // 0x80 805dd0c8
-    PtmfHolder_2A<Page, void, SheetSelectControlScaleFade&, u32> onLeftArrowPressHandler;  // 0x94 805dd1d4
-    PtmfHolder_2A<FriendRoomMessages, void, CtrlMenuBackButton&, u32> onBackButtonClick;  // 0xa8 805dd2dc
+    PtmfHolder_2A<FriendRoomMessages, void, PushButton &, u32> onMessageButtonClickHandler;  // 0x44 805dcc70
+    PtmfHolder_2A<FriendRoomMessages, void, PushButton &, u32> onModeButtonClickHandler;  // 0x58 805dcd78
+    PtmfHolder_2A<FriendRoomMessages, void, PushButton &, u32> onAddFriendsButtonClickHandler;  // 0x6c 805dce80
+    PtmfHolder_2A<Page, void, SheetSelectControlScaleFade &, u32> onRightArrowPressHandler;  // 0x80 805dd0c8
+    PtmfHolder_2A<Page, void, SheetSelectControlScaleFade &, u32> onLeftArrowPressHandler;  // 0x94 805dd1d4
+    PtmfHolder_2A<FriendRoomMessages, void, CtrlMenuBackButton &, u32> onBackButtonClick;  // 0xa8 805dd2dc
     PtmfHolder_1A<Page, void, u32> onBackPress;  // 0xbc 805dd318
     ControlsManipulatorManager manipulatorManager;  // 0xd0
     LayoutUIControlScaleFade messageBase;  // 0x2f4
@@ -239,7 +239,7 @@ class FriendRoomMessages : public Page {  // ID 0x9e
     LayoutUIControlScaleFade pageNumber;  // 0x1f28
     LayoutUIControl obiBottom;  // 0x209c
     CtrlMenuBackButton backButton;  // 0x2210
-    MessageSelectControl* messagesPtrs[2];  // 0x2474
+    MessageSelectControl *messagesPtrs[2];  // 0x2474
     u32 location;  // 0x247c messages = 0, mode selection = 1, add friends = 2
     u32 msgCount;  // 0x2480
     u32 pageCount;  // 0x2484

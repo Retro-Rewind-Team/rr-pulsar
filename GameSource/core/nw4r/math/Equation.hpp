@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace math {
 
-int SolveEquation2(float* root, float b, float c);  // 800867c0 ret = number of sols, root = solutions, must be at least float[2], a is assumed to be 1 in ax²+bx+c = 0
+int SolveEquation2(float *root, float b, float c);  // 800867c0 ret = number of sols, root = solutions, must be at least float[2], a is assumed to be 1 in ax²+bx+c = 0
 template <int pow>
 inline float spow(float x) {
     return spow<pow - 1>(x) * x;

@@ -8,24 +8,24 @@ namespace Objects {
 class Woodbox : public ItemDropper {  // ObjectNum 0x70 = 112
    public:
     static u32 respawnTimer;  // 808d1290
-    explicit Woodbox(const KMP::Holder<GOBJ>& gobjHolder);  // 8077e5e4
+    explicit Woodbox(const KMP::Holder<GOBJ> &gobjHolder);  // 8077e5e4
     ~Woodbox() override;  // 8077e620 vtable 808d14b4
     void OnStart() override;  // 0xc 8077e678
     u32 GetPropertiesBitfield() override;  // 0x2c 8077edac
-    const char* GetBRRESName() const override;  // 0x34 8077ed70
-    const char* GetSubFileName() const override;  // 0x38 8077ed7c
+    const char *GetBRRESName() const override;  // 0x34 8077ed70
+    const char *GetSubFileName() const override;  // 0x38 8077ed7c
     virtual void UpdateCollision() override;  // 0x74 8077ebb8
     virtual void InitEntity(float maxSpeed) override;  // 0xe0 8077ece4
 
     void LoadEffects() override;  // 0xec 8077e6b8
     void Respawn() override;  // 0xf4 8077e750
-    void DropItem(u8 playerId, const Vec3& speed) override;  // 0xf8 8077e704
+    void DropItem(u8 playerId, const Vec3 &speed) override;  // 0xf8 8077e704
     void UpdateRespawn() override;  // 0xfc 8077e7b0
 
-    void OnNormalCollision(const Kart::Player& kartPlayer) override;  // 0x104 8077e928
-    void OnImperviousCollision(const Kart::Player& kartPlayer) override;  // 0x108 8077e9c0
-    void OnNormalItemCollision(const Kart::Player& kartPlayer, const Vec3& itemSpeed) override;  // 0x10c 8077ea6c
-    void OnImperviousItemCollision(const Kart::Player& kartPlayer, const Vec3& itemSpeed) override;  // 0x110 8077eb08
+    void OnNormalCollision(const Kart::Player &kartPlayer) override;  // 0x104 8077e928
+    void OnImperviousCollision(const Kart::Player &kartPlayer) override;  // 0x108 8077e9c0
+    void OnNormalItemCollision(const Kart::Player &kartPlayer, const Vec3 &itemSpeed) override;  // 0x10c 8077ea6c
+    void OnImperviousItemCollision(const Kart::Player &kartPlayer, const Vec3 &itemSpeed) override;  // 0x110 8077eb08
 
     void UpdateRespawnImpl();  // 8077e7e0
     u8 unknown_0xc0[0x8];
@@ -46,7 +46,7 @@ class W_Woodbox : public ObjectCollidable {  // ObjectNum 0xd3 = 211
    public:
     class Box : public Woodbox {
        public:
-        explicit Box(const KMP::Holder<GOBJ>& gobjHolder);  // 8077e34c inlined
+        explicit Box(const KMP::Holder<GOBJ> &gobjHolder);  // 8077e34c inlined
         ~Box() override;  // 8077e388 vtable 808d13a0
         void OnStart() override;  // 0xc 8077e3e4
         void Update() override;  // 0x14 8077e49c
@@ -54,7 +54,7 @@ class W_Woodbox : public ObjectCollidable {  // ObjectNum 0xd3 = 211
         void RespawnImpl() override;  // 0xf0 8077e444
     };
     // this is essentially a dummy object so all the load funcs are blr'd
-    explicit W_Woodbox(const KMP::Holder<GOBJ>& gobjHolder);  // 8077df24
+    explicit W_Woodbox(const KMP::Holder<GOBJ> &gobjHolder);  // 8077df24
     ~W_Woodbox() override;  // 8077e120 vtable 808d1298
     void OnStart() override;  // 0xc 8077e1a0
     void Update() override;  // 0x14 8077e1e4

@@ -7,7 +7,7 @@
 namespace Item {
 class ObjKinokoPowerful : public ObjMiddle {  // Golden Mushroom
    public:
-    static Obj** CreateArray(u32 count);  // 807a9ee8
+    static Obj **CreateArray(u32 count);  // 807a9ee8
     void InitSelf() override;  // 807a9fac vtable 808d2110
     float unknown_0x1a0;
 };

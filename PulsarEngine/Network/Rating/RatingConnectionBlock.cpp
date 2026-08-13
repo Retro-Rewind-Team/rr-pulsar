@@ -7,11 +7,11 @@
 namespace Pulsar {
 namespace Network {
 
-extern "C" void DWC_LoginAsync(wchar_t* miiName, int unk, void* callback, RKNet::Controller* self);
+extern "C" void DWC_LoginAsync(wchar_t *miiName, int unk, void *callback, RKNet::Controller *self);
 
-void CheckVRAndLogin(wchar_t* miiName, int unk, void* callback, RKNet::Controller* self) {
+void CheckVRAndLogin(wchar_t *miiName, int unk, void *callback, RKNet::Controller *self) {
     bool block = false;
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys) {
         float vr = PointRating::GetUserVR(rksys->curLicenseId);
         if (vr > 2587.67f) {

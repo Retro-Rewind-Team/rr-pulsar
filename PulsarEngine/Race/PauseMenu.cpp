@@ -12,8 +12,8 @@ kmWrite32(0x8062c8e0, 0x38800019);
 kmWrite32(0x80633970, 0x38600019);
 kmWrite32(0x8083d618, 0x60000000);
 
-extern "C" void sInstance__8Racedata(void*);
-extern "C" void sInstance__10SectionMgr(void*);
+extern "C" void sInstance__8Racedata(void *);
+extern "C" void sInstance__10SectionMgr(void *);
 asmFunc EnhancedPauseMenu1() {
     ASM(
         lwz r3, sInstance__10SectionMgr @l(r6);
@@ -48,7 +48,7 @@ asmFunc EnhancedPauseMenu1() {
 }
 kmCall(0x806024d8, EnhancedPauseMenu1);
 
-extern "C" void sInstance__8Racedata(void*);
+extern "C" void sInstance__8Racedata(void *);
 asmFunc EnhancedPauseMenu2() {
     ASM(
         lis r3, sInstance__8Racedata @ha;

@@ -12,7 +12,7 @@ class FxBase {
     virtual ~FxBase() {}  // 0x8
     virtual bool StartUp();  // 0xc
     virtual void Shutdown();  // 0x10
-    virtual void UpdateBuffer(int numChannels, void* buffer[], u32 bufferSize,
+    virtual void UpdateBuffer(int numChannels, void *buffer[], u32 bufferSize,
                               SampleFormat format, float sampleRate, OutputMode mode) = 0;  // 0x14
     virtual void OnChangeOutputMode();  // 0x18
     ut::LinkListNode fxLink;

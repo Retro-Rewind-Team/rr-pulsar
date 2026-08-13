@@ -9,7 +9,7 @@ namespace ef {
 
 class ResAnimCurve {
    public:
-    u8* animCurveData;
+    u8 *animCurveData;
     void SetStop(bool b);  // 8004bcb0 stop animation evaluation
 };
 }  // namespace ef

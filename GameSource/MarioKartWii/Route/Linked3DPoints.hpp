@@ -16,15 +16,15 @@ class Linked3DPoints {
         float unknown_0x64[0x70 - 0x64];
         u32 unknown_0x74[2];
     };  // 0x7c
-    Linked3DPoints(u8 totalPartCount, float* distBtwParts);  // 806f2fe8
+    Linked3DPoints(u8 totalPartCount, float *distBtwParts);  // 806f2fe8
     ~Linked3DPoints();  // 806f31f4
     nw4r::ut::List subsList;  // 0x0
-    Sub* subs;  // 4xpointsCount
+    Sub *subs;  // 4xpointsCount
     u8 pointsCount;  // 0x10 simply totalPartCount
     u8 unknown_0x14[0x24 - 0x14];
-    Vec3* points;  // 0x24 count pointsCount
+    Vec3 *points;  // 0x24 count pointsCount
     float unknown_0x28[2];
-    float* distBtwEachPoints;  // 0x48 copy of arg
+    float *distBtwEachPoints;  // 0x48 copy of arg
     float totalLength;  // 0x4c
 };  // 0x50
 

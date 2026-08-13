@@ -8,7 +8,7 @@ namespace Objects {
 // linear movement so centripetal acceleration ie distance = speed²/accel
 class CarA : public ObjectCollidable, StatePtmfTrigger {  // ObjectNum 0xCC = 204 CarA1, ObjectNum 0xe7 = 231 CarA2, ObjectNum 0xe8 = 232 CarA3
    public:
-    explicit CarA(const KMP::Holder<GOBJ>& gobjHolder);  // 806b7710
+    explicit CarA(const KMP::Holder<GOBJ> &gobjHolder);  // 806b7710
     static bool hasRenderedMiis;  // 809c2210
 
     // ObjectCollidable vtable 808c2260
@@ -22,9 +22,9 @@ class CarA : public ObjectCollidable, StatePtmfTrigger {  // ObjectNum 0xCC = 20
     void LoadCollision() override;  // 0x60 806b7b44
     void UpdateCollision() override;  // 0x74 806b7bc4
 
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806b7e60
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 806b802c
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806b7e60
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806b802c
 
     // StatePtmfTrigger vtable 808c234c at 0xB0
     //~CarA() override; thunk 806b8f8c

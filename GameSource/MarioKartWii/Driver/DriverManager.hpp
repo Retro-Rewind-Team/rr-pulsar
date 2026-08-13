@@ -21,18 +21,18 @@ struct Timers {
 
 class DriverMgr {
    public:
-    static DriverMgr* sInstance;  // 809c2f38
-    static DriverMgr* CreateInstance();  // 8079c9e8
+    static DriverMgr *sInstance;  // 809c2f38
+    static DriverMgr *CreateInstance();  // 8079c9e8
     static void DestroyInstance();  // 8078ca38
-    static Random* GetRaceinfoRandom();  // 807bd718
+    static Random *GetRaceinfoRandom();  // 807bd718
     static bool IsPlayerComputer(u8 playerId);  // 807bd5bc
-    static Timers* timers;  // 809c38c0
+    static Timers *timers;  // 809c38c0
     static FinishType localFinishType;  // 808d1818
     DriverMgr();  // 8078ca5c
     ~DriverMgr();  // 8078ce24
     void InitAwards();  // 8078d7e8
     void Update();  // 8078d824
-    void SetController(u8 playerIdx, DriverController* model);  // 8078cf4c
+    void SetController(u8 playerIdx, DriverController *model);  // 8078cf4c
     static void ChangeFocusedPlayer(u8 playerIdx);  // 8078dde4
     static u8 GetFocusedPlayer();  // 8078ddf4
     static FinishType CalcFinishType(u8 playerIdx);  // 8078cfa4
@@ -43,7 +43,7 @@ class DriverMgr {
 
     ut::Color GetMiiFavoriteColor(RFL::FavoriteColor color) const;  // 8078cf38
 
-    void SetControllerModelsFloats(DriverController& controller);  // 8078cf5c
+    void SetControllerModelsFloats(DriverController &controller);  // 8078cf5c
     void SetLocalFinishType(FinishType type);  // 8078d4c0
     static u8 playerCount;  // 809c38b8
     static bool isOnlineRace;  // 809c38b9
@@ -54,9 +54,9 @@ class DriverMgr {
     static float unknown_float;  // 809c38d0 only on gcn cookie gba battle course 3snes battle course 4 block plaza, read by KartModel
     static bool isDKJP;  // 809c38d4
     EGG::TDisposer<DriverMgr> disposer;  // 8078c960 vtable 808d1850
-    DriverController* models[12];  // 8078cf4c stored by KartModel::Init
+    DriverController *models[12];  // 8078cf4c stored by KartModel::Init
     // Position3D positions[12]; //0x40
-    Vec3* targetingItemPosition[12];  // related to items 8078da90
+    Vec3 *targetingItemPosition[12];  // related to items 8078da90
     u32 frameCounter[12];  // 0x100 related to something about the model
     u32 invertedFrameCounter[12];  // 0x130  decrements
     bool isAwards;  // 0x160

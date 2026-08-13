@@ -8,7 +8,7 @@ namespace nw4r {
 namespace ut {
 namespace detail {
 struct RuntimeTypeInfo {
-    const RuntimeTypeInfo* parentTypeInfo;
+    const RuntimeTypeInfo *parentTypeInfo;
 };
 }  // namespace detail
 }  // namespace ut

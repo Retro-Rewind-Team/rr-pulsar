@@ -54,8 +54,8 @@ static SectionId ConvertToRegionalSection(SectionId id) {
 }
 
 static bool ConvertFriendRoomStateToRegional() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    System* system = System::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    System *system = System::sInstance;
     if (controller == nullptr || system == nullptr) return false;
 
     const bool wasHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST;
@@ -63,17 +63,17 @@ static bool ConvertFriendRoomStateToRegional() {
     if (!wasHost && !wasNonHost)
         return false;
 
-    Racedata* racedata = Racedata::sInstance;
+    Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;
 
-    RacedataSettings& menuSettings = racedata->menusScenario.settings;
+    RacedataSettings &menuSettings = racedata->menusScenario.settings;
     if (menuSettings.gamemode != MODE_PRIVATE_VS) return false;
 
     menuSettings.gamemode = MODE_PUBLIC_VS;
     menuSettings.modeFlags &= ~static_cast<u32>(2);
     menuSettings.gametype = GAMETYPE_DEFAULT;
 
-    RacedataSettings& raceSettings = racedata->racesScenario.settings;
+    RacedataSettings &raceSettings = racedata->racesScenario.settings;
     raceSettings.gamemode = MODE_PUBLIC_VS;
     raceSettings.modeFlags &= ~static_cast<u32>(2);
     raceSettings.gametype = GAMETYPE_DEFAULT;
@@ -81,7 +81,7 @@ static bool ConvertFriendRoomStateToRegional() {
     const u8 localPlayerCount = controller->subs[controller->currentSub].localPlayerCount;
     const u8 totalPlayerCount = controller->subs[controller->currentSub].playerCount;
 
-    Network::Mgr& netMgr = system->netMgr;
+    Network::Mgr &netMgr = system->netMgr;
     netMgr.hostContext = 0;
     netMgr.hostContext2 = 0;
     netMgr.denyType = DENY_TYPE_NORMAL;
@@ -146,7 +146,7 @@ static bool ShouldConvert(SectionId nextSectionId) {
     }
 }
 
-static void ApplyNextSection(SectionMgr* sectionMgr, SectionId nextSectionId, u32 animDirection) {
+static void ApplyNextSection(SectionMgr *sectionMgr, SectionId nextSectionId, u32 animDirection) {
     const SectionId currentNext = sectionMgr->nextSectionId;
     if (currentNext != nextSectionId) {
         const int currentPriority = sectionMgr->GetSectionPriority(currentNext);
@@ -161,7 +161,7 @@ static void ApplyNextSection(SectionMgr* sectionMgr, SectionId nextSectionId, u3
     }
 }
 
-static void SetNextSectionRegionalHook(SectionMgr* sectionMgr, SectionId nextSectionId, u32 animDirection) {
+static void SetNextSectionRegionalHook(SectionMgr *sectionMgr, SectionId nextSectionId, u32 animDirection) {
     SetRegionId(REGIONID);
     bool isFroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
     if ((Pulsar::System::sInstance->IsContext(PULSAR_STARTRETROS) || Pulsar::System::sInstance->IsContext(PULSAR_STARTCTS) ||
@@ -172,12 +172,12 @@ static void SetNextSectionRegionalHook(SectionMgr* sectionMgr, SectionId nextSec
 
         SectionId desiredSection = nextSectionId;
 
-        if (DWC::MatchControl* matchControl = DWC::MatchControl::sInstance) {
-            volatile u8* ctrlBytes = reinterpret_cast<volatile u8*>(matchControl);
+        if (DWC::MatchControl *matchControl = DWC::MatchControl::sInstance) {
+            volatile u8 *ctrlBytes = reinterpret_cast<volatile u8 *>(matchControl);
             ctrlBytes[0x15] = DWC::MATCH_TYPE_ANYBODY;
         }
 
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
+        RKNet::Controller *controller = RKNet::Controller::sInstance;
         if (controller != nullptr) {
             if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
                 hasConverted = false;

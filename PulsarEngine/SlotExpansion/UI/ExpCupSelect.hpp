@@ -10,21 +10,21 @@ namespace UI {
 class ExpCupSelect : public Pages::CupSelect {
    public:
     ExpCupSelect();
-    static void UpdateCupData(PulsarCupId id, LayoutUIControl& control);
+    static void UpdateCupData(PulsarCupId id, LayoutUIControl &control);
     void OnActivate() override;
     void AfterControlUpdate() override;
-    UIControl* CreateControl(u32 controlId) override;
+    UIControl *CreateControl(u32 controlId) override;
     void OnMoviesActivate(u32 r4) override;
     void OnStartPress(u32 hudSlotId) override;
 
    private:
-    void OnRightArrowSelect(SheetSelectControl& control, u32 hudSlotId);
-    void OnLeftArrowSelect(SheetSelectControl& control, u32 hudSlotId);
+    void OnRightArrowSelect(SheetSelectControl &control, u32 hudSlotId);
+    void OnLeftArrowSelect(SheetSelectControl &control, u32 hudSlotId);
     void OnArrowSelect(s32 direction);
     void OnBackPress(u32 hudSlotId);
 
-    PtmfHolder_2A<ExpCupSelect, void, SheetSelectControl&, u32> onRightArrowSelectHandler;
-    PtmfHolder_2A<ExpCupSelect, void, SheetSelectControl&, u32> onLeftArrowSelectHandler;
+    PtmfHolder_2A<ExpCupSelect, void, SheetSelectControl &, u32> onRightArrowSelectHandler;
+    PtmfHolder_2A<ExpCupSelect, void, SheetSelectControl &, u32> onLeftArrowSelectHandler;
     SheetSelectControl arrows;
     LayoutUIControl randomControl;
     PulsarId randomizedId;

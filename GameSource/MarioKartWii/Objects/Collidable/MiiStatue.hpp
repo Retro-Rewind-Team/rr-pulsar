@@ -11,8 +11,8 @@ namespace Objects {
 
 class MiiStatue : public ObjectCollidable {
    public:
-    static MiiCreationParams* params[4];  // 809c44d0
-    explicit MiiStatue(const KMP::Holder<GOBJ>& gobjHolder);  // 8082b63c
+    static MiiCreationParams *params[4];  // 809c44d0
+    explicit MiiStatue(const KMP::Holder<GOBJ> &gobjHolder);  // 8082b63c
     ~MiiStatue() override;  // 8082ba18 vtable 808d8120
 
     void OnStart() override;  // 0xC 8082bae0
@@ -20,7 +20,7 @@ class MiiStatue : public ObjectCollidable {
     u32 GetPropertiesBitfield() override;  // 0x2c 8082be0c
 
     u8 unknown_0xb0[4];
-    Mii* miiUsed;  // 0xb4
+    Mii *miiUsed;  // 0xb4
     u8 unknown_0xb8[0xdc - 0xb8];
     u32 unknown_0xdc;
     float unknown_0xe0[6];

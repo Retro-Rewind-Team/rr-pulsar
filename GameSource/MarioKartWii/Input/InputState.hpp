@@ -21,7 +21,7 @@ class State {
     void SetStickX(u8 quantisedStickX);  // 8051e9e8
     static float ConvertQuantised(u8 quantisedStick);  // 8051ea28
     void SetStickY(u8 quantisedStickY);  // 8051ea60
-    bool operator==(State& rhs);  // 8051e89c
+    bool operator==(State &rhs);  // 8051e89c
     void SetMotionControlFlick(u8 motionControlFlickUnmirrored);  // 8051eb68
 
     u16 buttonActions;  // bit flags:

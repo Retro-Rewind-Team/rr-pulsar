@@ -23,17 +23,17 @@ class ResFontBase : public Font {
     GX::TexFmt GetTextureFormat() const override;  // 0x30 800b20f0
     int GetLineFeed() const override;  // 0x34 800b2100
     const CharWidths GetDefaultCharWidths() const override;  // 0x38 800b2110
-    void SetDefaultCharWidths(const CharWidths& widths) override;  // 0x3c 800b2130
+    void SetDefaultCharWidths(const CharWidths &widths) override;  // 0x3c 800b2130
     bool SetAlternateChar(u16 code) override;  // 0x40 800b2150
     void SetLineFeed(int linefeed) override;  // 0x44 800b2210
     int GetCharWidth(u16 code) const override;  // 0x48 800b2220
     const CharWidths GetCharWidths(u16 code) const override;  // 0x4c 800b2270
-    void GetGlyph(Glyph* glyphPtr, u16 code) const override;  // 0x50 800b2390
+    void GetGlyph(Glyph *glyphPtr, u16 code) const override;  // 0x50 800b2390
     bool HasGlyph(u16 c) const override;  // 0x54 800b2460
     FontEncoding GetEncoding() const override;  // 0x58 800b2520
 
-    void* resource;  // 0x10
-    FontInformation* fontInfo;  // 0x14
+    void *resource;  // 0x10
+    FontInformation *fontInfo;  // 0x14
     mutable u16 lastCharCode;  // 0x18
     mutable u16 lastGlyphIndex;  // 0x1a
 };  // 0x1c
@@ -42,8 +42,8 @@ class ResFont : public detail::ResFontBase {
    public:
     ResFont();  // 800b2830
     ~ResFont() override;  // 800b2870 vtable 80274ed0
-    void SetResource(void* rawBRFNT);  // 800b28d0
-    static FontInformation* Rebuild(BinaryFileHeader* brfnt);  // 800b2a20 brfnt file header
+    void SetResource(void *rawBRFNT);  // 800b28d0
+    static FontInformation *Rebuild(BinaryFileHeader *brfnt);  // 800b2a20 brfnt file header
 };
 
 }  // namespace ut

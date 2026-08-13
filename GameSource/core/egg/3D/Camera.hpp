@@ -11,16 +11,16 @@ class RotCamera {
 
 class BaseCamera {
    public:
-    virtual Matrix34f& GetViewMatrix() = 0;  // 0x8
-    virtual const Matrix34f& GetViewMatrix() const = 0;  // 0xc
+    virtual Matrix34f &GetViewMatrix() = 0;  // 0x8
+    virtual const Matrix34f &GetViewMatrix() const = 0;  // 0xc
     virtual void UpdateMatrix();  // 0x10 8021460c
     virtual void DoUpdateMatrix() = 0;  // 0x14
     virtual void LoadMatrix() = 0;  // 0x18
     virtual void LoadOldMatrix() = 0;  // 0x1c
     virtual Vector3f GetPosition() = 0;  // 0x20
-    virtual void Draw(EGG::BaseCamera* camera);  // 0x24 8021461c
+    virtual void Draw(EGG::BaseCamera *camera);  // 0x24 8021461c
     virtual void DoDraw() = 0;  // 0x28
-    virtual Matrix34f& GetViewMatrixOld() = 0;  // 0x2c
+    virtual Matrix34f &GetViewMatrixOld() = 0;  // 0x2c
 
     Vector3f GetLookVector();  // 8021466c
     Vector3f GetRightVector();  // 802146c0
@@ -29,14 +29,14 @@ class BaseCamera {
 
 class LookAtCamera : public BaseCamera {
    public:
-    Matrix34f& GetViewMatrix() override;  // 0x8 80214bac vtable 802a29c0
-    const Matrix34f& GetViewMatrix() const override;  // 0xc 80214ba4
+    Matrix34f &GetViewMatrix() override;  // 0x8 80214bac vtable 802a29c0
+    const Matrix34f &GetViewMatrix() const override;  // 0xc 80214ba4
     void DoUpdateMatrix() override;  // 0x14 80214770
     void LoadMatrix() override;  // 0x18 802149b8
     void LoadOldMatrix() override;  // 0x1c 80214a04
     Vector3f GetPosition() override;  // 0x20 80214bb4
     void DoDraw() override;  // 0x28 802149b4
-    Matrix34f& GetViewMatrixOld() override;  // 0x2c 80214768
+    Matrix34f &GetViewMatrixOld() override;  // 0x2c 80214768
 
     Matrix34f viewMatrix;  // 0x4
     Matrix34f viewMatrixOld;  // 0x34

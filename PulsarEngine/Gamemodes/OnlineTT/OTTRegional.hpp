@@ -6,7 +6,7 @@
 namespace Pulsar {
 namespace Network {
 
-void SetGlobeMsgColor(Pages::Globe::MessageWindow& msg, ut::Color color);
+void SetGlobeMsgColor(Pages::Globe::MessageWindow &msg, ut::Color color);
 
 }  // namespace Network
 }  // namespace Pulsar

@@ -32,22 +32,22 @@ class ExpVR : public Pages::VR {
     void OnDeactivate() override;
     void AfterControlUpdate() override;
     void OnResume() override;
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);
-    PushButton& GetRandomComboButton() { return this->randomComboButton; }
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);
+    PushButton &GetRandomComboButton() { return this->randomComboButton; }
     s32 rouletteCounter;
     CountDown countdown;
     CountDownTimerControl countdownControl;
 
    private:
-    void RandomizeComboVR(PushButton& button, u32 hudSlotId);
-    void ChangeCombo(PushButton& button, u32 hudSlotId);
-    void OnSettingsButtonClick(PushButton& button, u32 hudSlotId);
-    void ExtOnButtonSelect(PushButton& button, u32 hudSlotId);
-    static void CreateAndInitPage(ExpSection& self, u32 id);
-    PtmfHolder_2A<ExpVR, void, PushButton&, u32> onButtonSelectHandler;
-    PtmfHolder_2A<ExpVR, void, PushButton&, u32> onRandomComboClick;  // 0x192c
-    PtmfHolder_2A<ExpVR, void, PushButton&, u32> onChangeComboClick;
-    PtmfHolder_2A<ExpVR, void, PushButton&, u32> onSettingsClick;
+    void RandomizeComboVR(PushButton &button, u32 hudSlotId);
+    void ChangeCombo(PushButton &button, u32 hudSlotId);
+    void OnSettingsButtonClick(PushButton &button, u32 hudSlotId);
+    void ExtOnButtonSelect(PushButton &button, u32 hudSlotId);
+    static void CreateAndInitPage(ExpSection &self, u32 id);
+    PtmfHolder_2A<ExpVR, void, PushButton &, u32> onButtonSelectHandler;
+    PtmfHolder_2A<ExpVR, void, PushButton &, u32> onRandomComboClick;  // 0x192c
+    PtmfHolder_2A<ExpVR, void, PushButton &, u32> onChangeComboClick;
+    PtmfHolder_2A<ExpVR, void, PushButton &, u32> onSettingsClick;
     PushButton randomComboButton;
     PushButton changeComboButton;
     PushButton settingsButton;
@@ -92,7 +92,7 @@ class ExpKartSelect : public Pages::KartSelect {
    public:
     ExpKartSelect();
     void BeforeControlUpdate() override;
-    ButtonMachine* GetKartButton(u32 idx) const;
+    ButtonMachine *GetKartButton(u32 idx) const;
     u32 randomizedKartPos;  // from 0 to 11
     s32 rouletteCounter;
     u32 rolledKartPos;  // from 0 to 11

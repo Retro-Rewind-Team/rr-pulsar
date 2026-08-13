@@ -34,7 +34,7 @@ class FogMgr {
     u16 fogCount;  // 0x8 = screenCount
     u16 fogCount2;  // 0xA
     u8 padding2[2];
-    Fog** fogs;  // 0xC
+    Fog **fogs;  // 0xC
     u8 unknown_0x10[0x20 - 0xC];
 };  // 0x20
 }  // namespace EGG

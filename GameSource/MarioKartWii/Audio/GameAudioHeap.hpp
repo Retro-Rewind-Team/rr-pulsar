@@ -27,13 +27,13 @@ class GameHeapImpl : public EGG::SoundHeapMgr {
 class GameHeap : public GameHeapImpl {
    public:
     // a 2nd vtable existing (with the same funcs) shows this template system is incorrect OR that disposers work differently than thought
-    static GameHeap* sInstance;  // 809c2350 vtable 808c79f0
-    GameHeap* CreateInstance();  // 806fdc1c
+    static GameHeap *sInstance;  // 809c2350 vtable 808c79f0
+    GameHeap *CreateInstance();  // 806fdc1c
     void DestroyInstance();  // 806fdcec
     GameHeap();  // 806fde08
     ~GameHeap();  // 806fdf18
     u32 SetType();  // 806fe084 returns the size of the heap that'll contain the sound heap
-    void Initialize(EGG::Heap* heap);  // 806fdffc heap size is implictly obtained through size
+    void Initialize(EGG::Heap *heap);  // 806fdffc heap size is implictly obtained through size
     void DestroySoundHeap();  // 806fe044
     EGG::TDisposer<GameHeap> disposer;  // 806fdae4 vtable 808c7a04
     bool isInitialized;  // 0x100

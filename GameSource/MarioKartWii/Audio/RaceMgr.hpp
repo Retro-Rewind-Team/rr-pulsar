@@ -31,14 +31,14 @@ struct CourseIDToMusicID {
 class RaceMgr {
    public:
     struct ActorHolder {
-        static int Compare(ActorHolder* first, ActorHolder* second);  // 80710664
-        LinkedRaceActor* actor;
+        static int Compare(ActorHolder *first, ActorHolder *second);  // 80710664
+        LinkedRaceActor *actor;
         float lowestTaxicabDistanceToAnyPlayer;
     };
 
-    static RaceMgr* sInstance;  // 809c27f8
-    static RaceMgr* CreateInstance();  // 807104d0
-    static void* DestroyInstance();  // 80710520
+    static RaceMgr *sInstance;  // 809c27f8
+    static RaceMgr *CreateInstance();  // 807104d0
+    static void *DestroyInstance();  // 80710520
 
     RaceMgr();  // 80710688 also appends the Sound3DListeners (one per local player) to the 3DManager list
     ~RaceMgr();  // 807108e8
@@ -46,7 +46,7 @@ class RaceMgr {
     SoundIDs GetEndFanfareId() const;  // 807121c0
 
     void SetRaceState(RaceState raceState);  // 80711ac4 changes music accordingly etc...
-    void SetKartActor(KartActor* sound);  // 80713754
+    void SetKartActor(KartActor *sound);  // 80713754
     void Init();  // 80710a00
     void Shutdown();  // 80710bac unlinks the actors, shutdowns all the sounds (ambience, etc...)
     void Calc();  // 80710ca0
@@ -67,7 +67,7 @@ class RaceMgr {
     EGG::TDisposer<RaceMgr> disposer;  // 80710340 vtable 808c8fdc
     CourseId courseId;  // 0x10
     u8 unknown_0x14[4];
-    KartActor* kartActors[4];  // 0x18
+    KartActor *kartActors[4];  // 0x18
     u8 lastUsedKartActorSlot;  // 0x28
     u8 totalKartActors;  // 0x29
     u8 unknown_0x2a[0x30 - 0x2a];

@@ -17,14 +17,14 @@
 namespace Pulsar {
 namespace Race {
 // Mostly a port of MrBean's version with better hooks and arguments documentation
-bool IsLapKOEnabled(const System* system) {
+bool IsLapKOEnabled(const System *system) {
     if (system == nullptr) return false;
     if (system->IsContext(PULSAR_MODE_LAPKO)) return true;
     if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_FROOM_HOST && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) return false;
     return false;
 }
 
-u8 GetLapKOTargetCount(const System* system, const Racedata* racedata, u8 fallback) {
+u8 GetLapKOTargetCount(const System *system, const Racedata *racedata, u8 fallback) {
     u8 playerCount = 0;
     if (system != nullptr) playerCount = system->nonTTGhostPlayersCount;
     if (playerCount == 0 && racedata != nullptr) playerCount = racedata->racesScenario.playerCount;
@@ -34,7 +34,7 @@ u8 GetLapKOTargetCount(const System* system, const Racedata* racedata, u8 fallba
     return playerCount;
 }
 
-static u8 GetBattleRoyaleLapCount(u8 baseLapCount, const System* system) {
+static u8 GetBattleRoyaleLapCount(u8 baseLapCount, const System *system) {
     if (baseLapCount <= 1 || system == nullptr) return baseLapCount;
     if (system->IsContext(PULSAR_KOROYALE_LAPS_1_5X)) return static_cast<u8>((baseLapCount * 3 + 1) / 2);
     if (system->IsContext(PULSAR_KOROYALE_LAPS_2_0X)) return static_cast<u8>(baseLapCount * 2);
@@ -43,29 +43,29 @@ static u8 GetBattleRoyaleLapCount(u8 baseLapCount, const System* system) {
 
 kmRuntimeUse(0x808a9cc7);  // lap_number.brctr
 static void SetLapCounterResourceName(char first, char second) {
-    volatile char* name = reinterpret_cast<volatile char*>(kmRuntimeAddr(0x808a9cc7));
+    volatile char *name = reinterpret_cast<volatile char *>(kmRuntimeAddr(0x808a9cc7));
     name[0] = first;
     name[1] = second;
 }
 
-RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
+RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
     SetLapCounterResourceName('l', 'a');
-    System* system = System::sInstance;
-    Racedata* racedata = Racedata::sInstance;
+    System *system = System::sInstance;
+    Racedata *racedata = Racedata::sInstance;
     u8 lapCount = KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->lapCount;
 
     const bool lapKoActive = IsLapKOEnabled(system);
     if (lapKoActive) {
         // Base KO lap count (existing behaviour)
         const u8 basePlayers = GetLapKOTargetCount(system, racedata, 1);
-        const RKNet::Controller* controller = RKNet::Controller::sInstance;
+        const RKNet::Controller *controller = RKNet::Controller::sInstance;
         const bool offlineLapKO = (controller->roomType == RKNet::ROOMTYPE_NONE);
 
         u8 koPerRace = 1;
         if (!offlineLapKO) {
             koPerRace = system->lapKoMgr->GetKoPerRace();
         } else {
-            const Settings::Mgr& settings = Settings::Mgr::Get();
+            const Settings::Mgr &settings = Settings::Mgr::Get();
             koPerRace = static_cast<u8>(settings.GetSettingValue(Pulsar::Settings::SETTING_KOPERRACE) + 1);
             if (koPerRace == 0) koPerRace = 1;
             system->lapKoMgr->SetKoPerRace(koPerRace);
@@ -92,7 +92,7 @@ RaceinfoPlayer* LoadCustomLapCount(RaceinfoPlayer* player, u8 id) {
 }
 kmCall(0x805328d4, LoadCustomLapCount);
 
-void DisplayCorrectLap(AnmTexPatHolder* texPat) {  // This Anm is held by a ModelDirector in a Lakitu::Player
+void DisplayCorrectLap(AnmTexPatHolder *texPat) {  // This Anm is held by a ModelDirector in a Lakitu::Player
     register u32 maxLap;
     asm(mr maxLap, r29;);
     texPat->UpdateRateAndSetFrame((float)(maxLap - 2));
@@ -100,13 +100,13 @@ void DisplayCorrectLap(AnmTexPatHolder* texPat) {  // This Anm is held by a Mode
 }
 kmCall(0x80723d70, DisplayCorrectLap);
 
-Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType kartType) {
+Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType kartType) {
     union SpeedModConv {
         float speedMod;
         u32 kmpValue;
     };
 
-    Kart::Stats* stats = Kart::ComputeStats(kartId, characterId);
+    Kart::Stats *stats = Kart::ComputeStats(kartId, characterId);
     const GameMode gameMode = Racedata::sInstance->menusScenario.settings.gamemode;
     const GameType gameType = Racedata::sInstance->menusScenario.settings.gametype;
     SpeedModConv speedModConv;

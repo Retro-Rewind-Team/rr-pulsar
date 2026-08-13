@@ -49,7 +49,7 @@ class StateGX {
     void ResetCachedState();  // 802415e8
     void SetPixelFmt(GX::PixelFmt pix_fmt, GX::ZFmt16 z_fmt);  // 80241668
     void SetProjection(Mtx44 projMtx, GX::ProjectionType projType);  // 802416fc
-    void SetProjectionv(const float* p);  // 802417fc first float is GX::ProjectionType as a float
+    void SetProjectionv(const float *p);  // 802417fc first float is GX::ProjectionType as a float
     // offset 1: mtx[0][0]
     // offset 2: mtx[0][3] (ortho) or mtx[0][2] (persp)
     // offset 3: mtx[1][1]

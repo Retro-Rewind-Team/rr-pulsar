@@ -9,10 +9,10 @@ namespace Pulsar {
 // For hooks which are shared by different things
 
 namespace Race {
-void UpdatePoints(RacedataScenario& scenario) {
+void UpdatePoints(RacedataScenario &scenario) {
     const GameType oldType = scenario.settings.gametype;
-    const System* system = System::sInstance;
-    Racedata* racedata = Racedata::sInstance;
+    const System *system = System::sInstance;
+    Racedata *racedata = Racedata::sInstance;
 
     bool forceDefault = false;
     if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating) forceDefault = true;

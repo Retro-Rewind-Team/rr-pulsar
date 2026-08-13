@@ -19,17 +19,17 @@ namespace Pulsar {
 namespace UI {
 
 static bool IsOnlinePauseMode() {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (!racedata) return false;
 
     const GameMode mode = racedata->menusScenario.settings.gamemode;
     return mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE;
 }
 
-static Page* GetActiveOnlinePausePage(Section* section) {
+static Page *GetActiveOnlinePausePage(Section *section) {
     if (section == nullptr) return nullptr;
 
-    Page* pausePage = section->pages[PAGE_VS_RACE_PAUSE_MENU];
+    Page *pausePage = section->pages[PAGE_VS_RACE_PAUSE_MENU];
     if (pausePage && pausePage->currentState != STATE_DEACTIVATED) return pausePage;
 
     pausePage = section->pages[PAGE_BATTLE_PAUSE_MENU];
@@ -43,13 +43,13 @@ kmWrite32(0x808567d4, 0x60000000);
 
 kmRuntimeUse(0x8051e85c);
 void SetInputPaused(bool paused) {
-    Input::Manager* input = Input::Manager::sInstance;
+    Input::Manager *input = Input::Manager::sInstance;
     if (input) {
         input->isPaused = paused;
         for (int i = 0; i < 4; i++) {
             input->realControllerHolders[i].blockInputs = paused;
             if (paused) {
-                reinterpret_cast<void (*)(Input::State*)>(kmRuntimeAddr(0x8051e85c))(&input->realControllerHolders[i].inputStates[0]);
+                reinterpret_cast<void (*)(Input::State *)>(kmRuntimeAddr(0x8051e85c))(&input->realControllerHolders[i].inputStates[0]);
             }
         }
     }
@@ -58,19 +58,19 @@ void SetInputPaused(bool paused) {
 // Prevent race freeze when pausing online
 kmRuntimeUse(0x809c4680);
 void SetRaceHUDVisibility(bool visible) {
-    Page* raceHUD = *reinterpret_cast<Page**>(kmRuntimeAddr(0x809c4680));
+    Page *raceHUD = *reinterpret_cast<Page **>(kmRuntimeAddr(0x809c4680));
     if (!raceHUD) return;
 
     // ControlGroup is at page + 0x24
     // controlArray is at group + 0x0
     // controlCount is at group + 0x10
-    u8* groupPtr = reinterpret_cast<u8*>(raceHUD) + 0x24;
-    UIControl** controlArray = *reinterpret_cast<UIControl***>(groupPtr + 0x0);
-    u32 controlCount = *reinterpret_cast<u32*>(groupPtr + 0x10);
+    u8 *groupPtr = reinterpret_cast<u8 *>(raceHUD) + 0x24;
+    UIControl **controlArray = *reinterpret_cast<UIControl ***>(groupPtr + 0x0);
+    u32 controlCount = *reinterpret_cast<u32 *>(groupPtr + 0x10);
 
     if (controlArray) {
         for (u32 i = 0; i < controlCount; ++i) {
-            UIControl* ctrl = controlArray[i];
+            UIControl *ctrl = controlArray[i];
             if (ctrl) {
                 ctrl->isHidden = !visible;
             }
@@ -81,7 +81,7 @@ void SetRaceHUDVisibility(bool visible) {
 // Add Pause Pages to online sections
 void AddOnlinePausePages() {
     SetInputPaused(false);  // Reset pause state on section load
-    Section* section = SectionMgr::sInstance->curSection;
+    Section *section = SectionMgr::sInstance->curSection;
     SectionId sid = section->sectionId;
 
     // Online Race Sections (including Live View)
@@ -109,22 +109,22 @@ kmWrite32(0x8085b774, 0x60000000);
 
 // Disconnect from WFC entirely when confirming Quit from the Quit Confirmation page in online modes.
 kmRuntimeUse(0x80715ff0);
-static void OnOnlineQuitConfirm_DisconnectAndStopSound(void* sceneSoundManager) {
-    const Racedata* racedata = Racedata::sInstance;
+static void OnOnlineQuitConfirm_DisconnectAndStopSound(void *sceneSoundManager) {
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata) {
         const GameMode mode = racedata->menusScenario.settings.gamemode;
         if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
-            SectionMgr* sectionMgr = SectionMgr::sInstance;
+            SectionMgr *sectionMgr = SectionMgr::sInstance;
             bool isLiveView = false;
             if (sectionMgr && sectionMgr->curSection) {
                 SectionId sid = sectionMgr->curSection->sectionId;
                 isLiveView = (sid == SECTION_P1_WIFI_VS_LIVEVIEW || sid == SECTION_P2_WIFI_VS_LIVEVIEW ||
-                             sid == SECTION_P1_WIFI_BT_LIVEVIEW || sid == SECTION_P2_WIFI_BT_LIVEVIEW);
+                              sid == SECTION_P1_WIFI_BT_LIVEVIEW || sid == SECTION_P2_WIFI_BT_LIVEVIEW);
             }
-            
+
             // Subtract 210 VR points when quitting through pause menu in VS
             if (mode == MODE_PUBLIC_VS && !isLiveView) {
-                RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+                RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
                 if (rksys) {
                     float currentVR = PointRating::GetUserVR(rksys->curLicenseId);
                     float newVR = currentVR - 2.1f;
@@ -137,16 +137,16 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void* sceneSoundManager) 
             }
         }
     }
-    reinterpret_cast<void (*)(void*)>(kmRuntimeAddr(0x80715ff0))(sceneSoundManager);
+    reinterpret_cast<void (*)(void *)>(kmRuntimeAddr(0x80715ff0))(sceneSoundManager);
 }
 kmCall(0x8085a2d0, OnOnlineQuitConfirm_DisconnectAndStopSound);
 
 // The default quit-confirmation cancel path restores the previous page.
 // For online pause, cancel should dismiss the whole pause stack instead.
-static void CloseOnlineQuitConfirmation(Pages::RaceMenu* page, PageId nextPage) {
+static void CloseOnlineQuitConfirmation(Pages::RaceMenu *page, PageId nextPage) {
     if (page && page->pageId == PAGE_QUIT_CONFIRMATION && IsOnlinePauseMode()) {
-        Section* section = SectionMgr::sInstance ? SectionMgr::sInstance->curSection : 0;
-        Page* pausePage = GetActiveOnlinePausePage(section);
+        Section *section = SectionMgr::sInstance ? SectionMgr::sInstance->curSection : 0;
+        Page *pausePage = GetActiveOnlinePausePage(section);
 
         // Online quit confirmation should dismiss the full pause stack instead of resuming the pause page.
         if (pausePage && pausePage != page && pausePage->currentState != STATE_DEACTIVATED) {
@@ -154,8 +154,9 @@ static void CloseOnlineQuitConfirmation(Pages::RaceMenu* page, PageId nextPage) 
         }
         page->SetNextPage(static_cast<PageId>(-1));
 
-        Pages::RacePauseMgr* pauseMgr = Pages::RacePauseMgr::sInstance;
-        if (pauseMgr) pauseMgr->RequestUnpause();
+        Pages::RacePauseMgr *pauseMgr = Pages::RacePauseMgr::sInstance;
+        if (pauseMgr)
+            pauseMgr->RequestUnpause();
         else {
             SetRaceHUDVisibility(true);
             SetInputPaused(false);
@@ -169,16 +170,16 @@ kmCall(0x8085bbc8, CloseOnlineQuitConfirmation);
 
 void OnlineHUDVisibilityHook() {
     if (IsOnlinePauseMode()) {
-        const Raceinfo* raceInfo = Raceinfo::sInstance;
+        const Raceinfo *raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_IS_FINISHING)) {
-            Section* section = 0;
+            Section *section = 0;
             if (SectionMgr::sInstance) section = SectionMgr::sInstance->curSection;
             if (section) {
                 // If the player finishes while paused, the underlying race UI can transition/dispose.
                 // Force-close pause layers to prevent stale pages from being updated during section layer processing.
-                Page* vsPause = section->pages[PAGE_VS_RACE_PAUSE_MENU];
-                Page* btPause = section->pages[PAGE_BATTLE_PAUSE_MENU];
-                Page* quitConf = section->pages[PAGE_QUIT_CONFIRMATION];
+                Page *vsPause = section->pages[PAGE_VS_RACE_PAUSE_MENU];
+                Page *btPause = section->pages[PAGE_BATTLE_PAUSE_MENU];
+                Page *quitConf = section->pages[PAGE_QUIT_CONFIRMATION];
                 if (vsPause && vsPause->currentState != STATE_DEACTIVATED) vsPause->EndState();
                 if (btPause && btPause->currentState != STATE_DEACTIVATED) btPause->EndState();
                 if (quitConf && quitConf->currentState != STATE_DEACTIVATED) quitConf->EndState();
@@ -189,15 +190,15 @@ void OnlineHUDVisibilityHook() {
             return;
         }
 
-        Input::Manager* input = Input::Manager::sInstance;
+        Input::Manager *input = Input::Manager::sInstance;
         if (input && input->isPaused) {
-            Section* section = SectionMgr::sInstance->curSection;
+            Section *section = SectionMgr::sInstance->curSection;
             bool isPauseOpen = false;
 
             // Check if pause menu or quit confirmation is open
-            Page* vsPause = section->pages[PAGE_VS_RACE_PAUSE_MENU];
-            Page* btPause = section->pages[PAGE_BATTLE_PAUSE_MENU];
-            Page* quitConf = section->pages[PAGE_QUIT_CONFIRMATION];
+            Page *vsPause = section->pages[PAGE_VS_RACE_PAUSE_MENU];
+            Page *btPause = section->pages[PAGE_BATTLE_PAUSE_MENU];
+            Page *quitConf = section->pages[PAGE_QUIT_CONFIRMATION];
 
             if ((vsPause && vsPause->currentState != STATE_DEACTIVATED) ||
                 (btPause && btPause->currentState != STATE_DEACTIVATED) ||
@@ -217,29 +218,29 @@ void OnlineHUDVisibilityHook() {
 static RaceFrameHook OnlineHUDVisibility(OnlineHUDVisibilityHook);
 
 kmRuntimeUse(0x808600dc);
-void OnlinePauseControl(void* r3) {
+void OnlinePauseControl(void *r3) {
     if (IsOnlinePauseMode()) {
-        const Raceinfo* raceInfo = Raceinfo::sInstance;
+        const Raceinfo *raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_RACE)) {
             SetRaceHUDVisibility(false);
             SetInputPaused(true);
             // Play pause sound effect and reduce music volume
             Audio::RSARPlayer::PlaySoundById(SOUND_ID_PAUSE, 0, 0);
-            Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+            Audio::RaceRSARPlayer *rsarPlayer = static_cast<Audio::RaceRSARPlayer *>(Audio::RSARPlayer::sInstance);
             if (rsarPlayer) {
                 rsarPlayer->SetFullVolume();
             }
         }
         return;
     }
-    reinterpret_cast<void (*)(void*)>(kmRuntimeAddr(0x808600dc))(r3);
+    reinterpret_cast<void (*)(void *)>(kmRuntimeAddr(0x808600dc))(r3);
 }
 kmCall(0x80856b38, OnlinePauseControl);
 
 kmRuntimeUse(0x80860100);
-void OnlineUnpauseControl(void* r3) {
+void OnlineUnpauseControl(void *r3) {
     if (IsOnlinePauseMode()) {
-        const Raceinfo* raceInfo = Raceinfo::sInstance;
+        const Raceinfo *raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_IS_FINISHING)) {
             // Race is ending; ensure we don't keep any pause state alive.
             SetInputPaused(false);
@@ -249,13 +250,13 @@ void OnlineUnpauseControl(void* r3) {
         SetInputPaused(false);
         // Play resume sound effect and restore music volume
         Audio::RSARPlayer::PlaySoundById(SOUND_ID_RESUME, 0, 0);
-        Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+        Audio::RaceRSARPlayer *rsarPlayer = static_cast<Audio::RaceRSARPlayer *>(Audio::RSARPlayer::sInstance);
         if (rsarPlayer) {
             rsarPlayer->HalveVolume();
         }
         return;
     }
-    reinterpret_cast<void (*)(void*)>(kmRuntimeAddr(0x80860100))(r3);
+    reinterpret_cast<void (*)(void *)>(kmRuntimeAddr(0x80860100))(r3);
 }
 kmCall(0x8085a080, OnlineUnpauseControl);
 kmCall(0x8085a0dc, OnlineUnpauseControl);
@@ -263,7 +264,7 @@ kmCall(0x8085a200, OnlineUnpauseControl);
 kmCall(0x8085a260, OnlineUnpauseControl);
 
 int GetOnlineVSPausePageId() {
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
     if (raceInfo && !raceInfo->IsAtLeastStage(RACESTAGE_RACE)) {
         return -1;
     }
@@ -271,7 +272,7 @@ int GetOnlineVSPausePageId() {
 }
 
 int GetOnlineBTPausePageId() {
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
     if (raceInfo && !raceInfo->IsAtLeastStage(RACESTAGE_RACE)) {
         return -1;
     }

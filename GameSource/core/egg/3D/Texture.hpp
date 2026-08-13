@@ -13,7 +13,7 @@ class CpuTexture {
    public:
     CpuTexture();  // 8021805c
     CpuTexture(u16 width, u16 height, GX::TexFmt gxTexFmt);  // 80218098
-    CpuTexture(GX::TexObj* texObj);  // 802180d0
+    CpuTexture(GX::TexObj *texObj);  // 802180d0
     u16 width;
     u16 height;
     u8 flags;
@@ -23,10 +23,10 @@ class CpuTexture {
     GX::TexFilter min_filt;
     GX::TexFilter max_filt;
     u8 unknown_0xA[2];
-    void* image_ptr;  // 0xC
+    void *image_ptr;  // 0xC
     virtual ~CpuTexture();  // 80218178 vtable 802a2b10
     virtual void Configure();  // 80218b98
-    virtual void InitTexObj(GX::TexObj* obj);  // 802181e8
+    virtual void InitTexObj(GX::TexObj *obj);  // 802181e8
 };
 
 // this is NOT loaded directly into GX (using GXLoadTexObj), instead, once the TexObj is initialized (using the image_ptr buffer), it is used to replace MDL0's materials (g3d::ResMat) TexObj,

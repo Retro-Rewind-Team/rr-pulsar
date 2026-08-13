@@ -3,9 +3,9 @@
 namespace Pulsar {
 namespace Network {
 
-void* CreateSendAndRecvBuffers() {
-    register RKNet::PacketHolder<void>* holder;
-    register CustomRKNetController* controller;
+void *CreateSendAndRecvBuffers() {
+    register RKNet::PacketHolder<void> *holder;
+    register CustomRKNetController *controller;
     register u8 aid;
     asm(mr holder, r24;);
     asm(mr controller, r27;);
@@ -27,8 +27,8 @@ kmWrite8(0x8089a1ab, sizeof(PulUSER));
 kmWrite8(0x8089a1af, 2 * sizeof(PulITEM));
 kmWrite8(0x8089a1b3, sizeof(PulEVENT));
 
-void SetProperRecvBuffers(u8 aid, void* usualBuffer, u32 usualSize) {
-    register CustomRKNetController* controller;
+void SetProperRecvBuffers(u8 aid, void *usualBuffer, u32 usualSize) {
+    register CustomRKNetController *controller;
     asm(mr controller, r31;);
     memset(controller->fullPulRecvPackets[aid], 0, totalRACESize);
     DWC::SetRecvBuffer(aid, controller->fullPulRecvPackets[aid], totalRACESize);
@@ -37,12 +37,12 @@ kmWrite32(0x80658c78, 0x60000000);  // prevent usual memset
 kmCall(0x80658c90, SetProperRecvBuffers);
 
 void ProperRecvBuffersClear() {
-    const CustomRKNetController* controller = reinterpret_cast<CustomRKNetController*>(RKNet::Controller::sInstance);
+    const CustomRKNetController *controller = reinterpret_cast<CustomRKNetController *>(RKNet::Controller::sInstance);
     for (int aid = 0; aid < 12; ++aid) memset(controller->fullPulRecvPackets[aid], 0, totalRACESize);
 }
 kmCall(0x8065607c, ProperRecvBuffersClear);
 
-void CheckPacket(CustomRKNetController* controller, RKNet::RACEPacketHeader& packet, u32 size, u32 sizeUnused, u32 aid) {
+void CheckPacket(CustomRKNetController *controller, RKNet::RACEPacketHeader &packet, u32 size, u32 sizeUnused, u32 aid) {
     using namespace RKNet;
 
     const u32 recvCRC = packet.crc32;
@@ -53,13 +53,13 @@ void CheckPacket(CustomRKNetController* controller, RKNet::RACEPacketHeader& pac
     if (recvCRC != calcCRC)
         disconnect = true;
     else {
-        u32* lastUsedBufferAid = &controller->lastReceivedBufferUsed[aid][0];
-        SplitRACEPointers* recv = controller->splitReceivedRACEPackets[lastUsedBufferAid[0]][aid];
-        PacketHolder<void>** holderRecv = &recv->packetHolders[0];
-        const u8* sizes = &packet.sizes[0];
+        u32 *lastUsedBufferAid = &controller->lastReceivedBufferUsed[aid][0];
+        SplitRACEPointers *recv = controller->splitReceivedRACEPackets[lastUsedBufferAid[0]][aid];
+        PacketHolder<void> **holderRecv = &recv->packetHolders[0];
+        const u8 *sizes = &packet.sizes[0];
 
         for (int i = 0; i < 8; ++i) {
-            const PacketHolder<void>* curHolder = holderRecv[i];  // starts at header etc...
+            const PacketHolder<void> *curHolder = holderRecv[i];  // starts at header etc...
 
             const u8 curSize = sizes[i];  // transmitted in packet
             if (curSize != 0) {
@@ -70,12 +70,12 @@ void CheckPacket(CustomRKNetController* controller, RKNet::RACEPacketHeader& pac
     if (disconnect)
         controller->toDisconnectAids |= 1 << aid;
     else
-        reinterpret_cast<RKNet::Controller*>(controller)->ProcessRACEPacket(aid, packet, size);
+        reinterpret_cast<RKNet::Controller *>(controller)->ProcessRACEPacket(aid, packet, size);
 }
 kmBranch(0x80658608, CheckPacket);
 
 bool DisconnectBadAids() {
-    register CustomRKNetController* controller;
+    register CustomRKNetController *controller;
     asm(mr controller, r15;);
 
     int old = OS::DisableInterrupts();
@@ -95,7 +95,7 @@ kmWrite32(0x80661100, 0x418000d8);  // bne -> blt for comparison against sizeof(
 kmWrite32(0x8065adc8, 0x41800014);  // bne -> blt for comparison against sizeof(ROOMPacket)
 kmWrite32(0x80665244, 0x418000d0);  // bne -> blt for comparison against sizeof(RACEHEADER1Packet)
 
-ExpSELECTHandler* CreateRecvArr(ExpSELECTHandler* handler) {  // wiimmfi hook prevents a more natural hook...
+ExpSELECTHandler *CreateRecvArr(ExpSELECTHandler *handler) {  // wiimmfi hook prevents a more natural hook...
     register RKNet::OnlineMode mode;
     asm(mr mode, r31;);
     handler->mode = mode;
@@ -104,15 +104,15 @@ ExpSELECTHandler* CreateRecvArr(ExpSELECTHandler* handler) {  // wiimmfi hook pr
 }
 kmCall(0x8065fec0, CreateRecvArr);
 
-void DeleteSELECT(ExpSELECTHandler* handler) {
+void DeleteSELECT(ExpSELECTHandler *handler) {
     delete handler->receivedPackets;
-    delete reinterpret_cast<RKNet::SELECTHandler*>(handler);
+    delete reinterpret_cast<RKNet::SELECTHandler *>(handler);
 }
 kmCall(0x8065ff84, DeleteSELECT);
 
 u8 GetLastRecvSECTIONSize(u8 aid, u8 sectionIdx) {
-    const CustomRKNetController* controller = reinterpret_cast<CustomRKNetController*>(RKNet::Controller::sInstance);
-    RKNet::RACEPacketHeader* header = reinterpret_cast<RKNet::RACEPacketHeader*>(controller->fullPulRecvPackets[aid]);
+    const CustomRKNetController *controller = reinterpret_cast<CustomRKNetController *>(RKNet::Controller::sInstance);
+    RKNet::RACEPacketHeader *header = reinterpret_cast<RKNet::RACEPacketHeader *>(controller->fullPulRecvPackets[aid]);
     return header->sizes[sectionIdx];
 }
 

@@ -27,15 +27,15 @@ class MGWhiteFog {  // rk_kinokoClouds
     void Update();  // 8067b3c8
     void UpdateEffect();  // 8067b448 inlined in Update
     void Kill();  // 8067b4b4
-    EGG::Effect* rk_kinokoClouds;  // 0x4 only if slot is MG
+    EGG::Effect *rk_kinokoClouds;  // 0x4 only if slot is MG
 };  // total size 0x8
 
 class Sub9d8 {  // related to clipInfo but can't tell what it does
     void Update(u32 hudSlotId);  // 8067de14
-    u8* u8Array;  // 0x0
-    u8* playerIdx;  // 0x4
-    float* floatArray;  // 0x8
-    int* intArray;  // 0xC
+    u8 *u8Array;  // 0x0
+    u8 *playerIdx;  // 0x4
+    float *floatArray;  // 0x8
+    int *intArray;  // 0xC
     u16 unknown_0x10;
     u8 padding[2];
     u32 playerCount;
@@ -47,9 +47,9 @@ class Mgr {
    public:
     int GetRuntimeTypeInfo();  // 8067b2f8
 
-    static Mgr* sInstance;  // 809c21d0
-    static Mgr* CreateInstance(EGG::Heap* heap);  // 8067b4c8
-    static EGG::EffectManager* eggEffectMgr;  // 809c21d4
+    static Mgr *sInstance;  // 809c21d0
+    static Mgr *CreateInstance(EGG::Heap *heap);  // 8067b4c8
+    static EGG::EffectManager *eggEffectMgr;  // 809c21d4
 
     void Init(u32 sceneId);  // 8067b580
     void InitRace();  // 8067ca4c inits players, items etc..
@@ -57,7 +57,7 @@ class Mgr {
     void LoadRaceEffects();  // 8067bb34
     void CreatePlayerEffects();  // 8067c4f4
     void CreateItemEffects();  // 8067c580
-    void LoadObjectEffect(KMP::Holder<GOBJ>* gobj, const char* objectName, const char* breffPath, const char* breftPath,
+    void LoadObjectEffect(KMP::Holder<GOBJ> *gobj, const char *objectName, const char *breffPath, const char *breftPath,
                           ArchiveSource source);  // 8067c5c0
     void Update();  // 8067cb88
     void UpdatePlayersVisibility();  // 8067ce44 updates player effects visibility
@@ -69,14 +69,14 @@ class Mgr {
     void UpdatePlayerFromWheelCollision(u8 playerIdx, u16 wheelIdx, KCLBitfield kclBitfield, u32 kclFlag);  // 8067da5c
     void UpdatePlayerFromKartCollision(u8 playerIdx, u16 kartHitboxIdx, KCLBitfield kclBitfield, u32 kclFlag);  // 8067da78
     void CalcEffect1();  // 8067dab0 UI effects?
-    void DrawEffect1(const nw4r::ef::DrawInfo& drawInfo);  // 8067dad0
+    void DrawEffect1(const nw4r::ef::DrawInfo &drawInfo);  // 8067dad0
 
-    EGG::Effect* GetMenuEffectByIdx(u32 idx);  // 8067daa8
+    EGG::Effect *GetMenuEffectByIdx(u32 idx);  // 8067daa8
     // Best example would be blue shell explosion; the effect is created and updated on the stack then discarded
-    static void CreateOneTimeEffect(const char* name, const Vec3& position);  // 806b5ac8
-    static void CreateOneTimeEffect(const char* name, const Mtx34& transmtx);  // 806b5b28
-    static void CreateOneTimeEffect(const char* name, const Vec3& position, const Vec3& scale);  // 806b5b88
-    static void CreateOneTimeEffect(const char* name, const Mtx34& transmtx, const Vec3& scale);  // 806b5c04
+    static void CreateOneTimeEffect(const char *name, const Vec3 &position);  // 806b5ac8
+    static void CreateOneTimeEffect(const char *name, const Mtx34 &transmtx);  // 806b5b28
+    static void CreateOneTimeEffect(const char *name, const Vec3 &position, const Vec3 &scale);  // 806b5b88
+    static void CreateOneTimeEffect(const char *name, const Mtx34 &transmtx, const Vec3 &scale);  // 806b5c04
 
     u32 playerCount;  // 0x0 from racedata 8067b580
     u32 localPlayerCount;  // 0x4
@@ -98,15 +98,15 @@ class Mgr {
     bool isGV;  // 0x40
     bool isMT;  // 0x41
     u8 unknown_0x42[2];
-    EGG::EffectResource* resources[9];  // 0x44
-    Player** players;  // 0x68
-    Menus* menus;  // 0x6C
-    MGWhiteFog* mgWhiteFog;  // 0x70
-    Items* items;  // 0x74
+    EGG::EffectResource *resources[9];  // 0x44
+    Player **players;  // 0x68
+    Menus *menus;  // 0x6C
+    MGWhiteFog *mgWhiteFog;  // 0x70
+    Items *items;  // 0x74
 
     u8 unknown_0x78[0x9d8 - 0x78];
-    Sub9d8** sub9d8s;  // 0x9d8
-    u16* objectsEffectsId;  // 0x9dc ids of objects who have effects (whose file was found) on the track; size GOBJ count
+    Sub9d8 **sub9d8s;  // 0x9d8
+    u16 *objectsEffectsId;  // 0x9dc ids of objects who have effects (whose file was found) on the track; size GOBJ count
     u8 unknown_0x9e0[4];
     float unknown_0x9e4[2];
     u16 unknown_0x9ec;

@@ -18,8 +18,8 @@ class AwardDemoCongratulations : public LayoutUIControl {
     AwardDemoCongratulations();  // 805bb734
     ~AwardDemoCongratulations() override;  // 805bb770 vtable 808b75d4
     void InitSelf() override;  // 0x18 805bb8a0
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805bd2f0
-    const char* GetClassName() const override;  // 0x2c 805bb724
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805bd2f0
+    const char *GetClassName() const override;  // 0x2c 805bb724
 
     void Load(bool isOnline, bool isSomeSections);  // 805bb7c8
 };  // 0x174
@@ -29,8 +29,8 @@ class AwardDemoResultItem : public LayoutUIControl {
     AwardDemoResultItem();  // 805bb958
     ~AwardDemoResultItem() override;  // 805bb994 vtable 808b7598
     void InitSelf() override;  // 0x18 805bbb98
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805bb2e4
-    const char* GetClassName() const override;  // 0x2c 805bb948
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805bb2e4
+    const char *GetClassName() const override;  // 0x2c 805bb948
 
     void Load(u32 idx, bool isOnline, bool isSomeSections);  // 805bb9ec
     void SetValues(u32 idx, bool isTeams, bool r6);  // 805bbbd0
@@ -38,7 +38,7 @@ class AwardDemoResultItem : public LayoutUIControl {
 
 class AwardFade : public Page {  // ID 0x3b
    public:
-    static Audio::PlayersVolumeMgr* GetPlayersVolumeMgr();  // 805bb2b8
+    static Audio::PlayersVolumeMgr *GetPlayersVolumeMgr();  // 805bb2b8
     static const PageId id = PAGE_AWARD_FADE;
     AwardFade();  // 805bb2c4
     ~AwardFade() override;  // 805bb348 vtable 808b7610
@@ -49,7 +49,7 @@ class AwardFade : public Page {  // ID 0x3b
     void BeforeEntranceAnimations() override;  // 0x38 805bb528
     void BeforeExitAnimations() override;  // 0x40 805bb52c
     void AfterControlUpdate() override;  // 0x4c 805bb530
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805bd304
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805bd304
     void HandleClick(u32 hudSlotId);  // 805bb678
 
     Ptmf_1A<AwardFade, void, u32> onClickHandler;  // 0x54 805bb678
@@ -69,7 +69,7 @@ class AwardResults : public Page {
     void OnActivate() override;  // 0x30 805bc620
     void BeforeEntranceAnimations() override;  // 0x38 805bc640
     void AfterControlUpdate() override;  // 0x4c 805bc660
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805bb2cc
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805bb2cc
 
     void HandleClick(u32 hudSlotId);  // 805bc73c
     void InitConfig();  // 805bc8dc
@@ -80,7 +80,7 @@ class AwardResults : public Page {
     void InitRank();  // 805bd050
 
     Ptmf_1A<AwardResults, void, u32> onClickHandler;  // 0x44 805bc73c
-    AwardCupModel* awardCupModel;  // 0x58
+    AwardCupModel *awardCupModel;  // 0x58
     PageManipulatorManager manipulatorManager;  // 0x5c
     LayoutUIControl awardTypeWin;  // 0x1a0
     LayoutUIControl awardRankWin;  // 0x314

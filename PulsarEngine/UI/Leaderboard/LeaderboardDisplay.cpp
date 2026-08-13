@@ -42,8 +42,8 @@ bool isSectionSpectatorLiveView(SectionId id) {
     return id == SECTION_P1_WIFI_VS_LIVEVIEW || id == SECTION_P2_WIFI_VS_LIVEVIEW || id == SECTION_P1_WIFI_BT_LIVEVIEW || id == SECTION_P2_WIFI_BT_LIVEVIEW;
 }
 
-void fillLeaderboardResult(CtrlRaceResult& result, u8 playerId) {
-    const System* system = System::sInstance;
+void fillLeaderboardResult(CtrlRaceResult &result, u8 playerId) {
+    const System *system = System::sInstance;
     const bool isKO = system->IsContext(PULSAR_MODE_KO);
     KO::Status koStatus = KO::NORMAL;
     if (isKO) koStatus = system->koMgr->GetPlayerStatus(playerId);
@@ -108,7 +108,7 @@ void fillLeaderboardResult(CtrlRaceResult& result, u8 playerId) {
             color = 0xff00f0c0;
         }
         result.animator.GetAnimationGroupById(4).PlayAnimationAtFrame(6, 0.0f);
-        lyt::Picture* selectBase = static_cast<nw4r::lyt::Picture*>(result.layout.GetPaneByName("select_base"));
+        lyt::Picture *selectBase = static_cast<nw4r::lyt::Picture *>(result.layout.GetPaneByName("select_base"));
         UI::ResetMatColor(selectBase, color);
         UI::UnbindRLMC(selectBase->material);
         selectBase->vertexColours[0] = color;
@@ -118,7 +118,7 @@ void fillLeaderboardResult(CtrlRaceResult& result, u8 playerId) {
     }
 }
 
-void fillLeaderboardResults(int count, CtrlRaceResult** results) {
+void fillLeaderboardResults(int count, CtrlRaceResult **results) {
     // Copy the way the game loops here
     for (int i = 0; i < (count & 0xff); ++i) {
         const int position = (i + 1) & 0xff;
@@ -132,7 +132,7 @@ const u32 CLASSIC_DPAD_BUTTONS = WPAD::WPAD_CL_BUTTON_UP | WPAD::WPAD_CL_BUTTON_
 const u32 GC_DPAD_BUTTONS = PAD::PAD_BUTTON_LEFT | PAD::PAD_BUTTON_RIGHT | PAD::PAD_BUTTON_DOWN | PAD::PAD_BUTTON_UP;
 
 bool checkLeaderboardDisplaySwapInputs() {
-    const Input::RealControllerHolder* controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
+    const Input::RealControllerHolder *controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
     const ControllerType controllerType = controllerHolder->curController->GetType();
     const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
     const u16 newInputs = (inputs & ~controllerHolder->inputStates[1].buttonRaw);

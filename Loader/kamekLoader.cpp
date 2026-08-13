@@ -1,5 +1,5 @@
-#include <kamekLoader.hpp>
 #include <core/nw4r/ut/Misc.hpp>
+#include <kamekLoader.hpp>
 
 struct KBHeader {
     u32 magic1;  // 0x0
@@ -28,7 +28,7 @@ struct KBHeader {
 #define kBranch 64
 #define kBranchLink 65
 
-static void DisplayError(const LoaderParams* params, const char* str) {
+static void DisplayError(const LoaderParams *params, const char *str) {
     u32 fg = 0xFFFFFFFF, bg = 0;
     params->OSFatal(&fg, &bg, str);
 }
@@ -41,90 +41,90 @@ static inline u32 resolveAddress(u32 text, u32 address) {
 }
 
 #define kCommandHandler(name) \
-    static inline const u8* kHandle##name(const u8* input, u32 text, u32 address)
+    static inline const u8 *kHandle##name(const u8 *input, u32 text, u32 address)
 #define kDispatchCommand(name)                       \
     case k##name:                                    \
         input = kHandle##name(input, text, address); \
         break
 
 kCommandHandler(Addr32) {
-    u32 target = resolveAddress(text, *(const u32*)input);
-    *(u32*)address = target;
+    u32 target = resolveAddress(text, *(const u32 *)input);
+    *(u32 *)address = target;
     return input + 4;
 }
 kCommandHandler(Addr16Lo) {
-    u32 target = resolveAddress(text, *(const u32*)input);
-    *(u16*)address = target & 0xFFFF;
+    u32 target = resolveAddress(text, *(const u32 *)input);
+    *(u16 *)address = target & 0xFFFF;
     return input + 4;
 }
 kCommandHandler(Addr16Hi) {
-    u32 target = resolveAddress(text, *(const u32*)input);
-    *(u16*)address = target >> 16;
+    u32 target = resolveAddress(text, *(const u32 *)input);
+    *(u16 *)address = target >> 16;
     return input + 4;
 }
 kCommandHandler(Addr16Ha) {
-    u32 target = resolveAddress(text, *(const u32*)input);
-    *(u16*)address = target >> 16;
+    u32 target = resolveAddress(text, *(const u32 *)input);
+    *(u16 *)address = target >> 16;
     if (target & 0x8000)
-        *(u16*)address += 1;
+        *(u16 *)address += 1;
     return input + 4;
 }
 kCommandHandler(Rel24) {
-    u32 target = resolveAddress(text, *(const u32*)input);
+    u32 target = resolveAddress(text, *(const u32 *)input);
     u32 delta = target - address;
-    *(u32*)address &= 0xFC000003;
-    *(u32*)address |= (delta & 0x3FFFFFC);
+    *(u32 *)address &= 0xFC000003;
+    *(u32 *)address |= (delta & 0x3FFFFFC);
     return input + 4;
 }
 kCommandHandler(Write32) {
-    u32 value = *(const u32*)input;
-    *(u32*)address = value;
+    u32 value = *(const u32 *)input;
+    *(u32 *)address = value;
     return input + 4;
 }
 kCommandHandler(Write16) {
-    u32 value = *(const u32*)input;
-    *(u16*)address = value & 0xFFFF;
+    u32 value = *(const u32 *)input;
+    *(u16 *)address = value & 0xFFFF;
     return input + 4;
 }
 kCommandHandler(Write8) {
-    u32 value = *(const u32*)input;
-    *(u8*)address = value & 0xFF;
+    u32 value = *(const u32 *)input;
+    *(u8 *)address = value & 0xFF;
     return input + 4;
 }
 kCommandHandler(CondWritePointer) {
-    u32 target = resolveAddress(text, *(const u32*)input);
-    u32 original = ((const u32*)input)[1];
-    if (*(u32*)address == original)
-        *(u32*)address = target;
+    u32 target = resolveAddress(text, *(const u32 *)input);
+    u32 original = ((const u32 *)input)[1];
+    if (*(u32 *)address == original)
+        *(u32 *)address = target;
     return input + 8;
 }
 kCommandHandler(CondWrite32) {
-    u32 value = *(const u32*)input;
-    u32 original = ((const u32*)input)[1];
-    if (*(u32*)address == original)
-        *(u32*)address = value;
+    u32 value = *(const u32 *)input;
+    u32 original = ((const u32 *)input)[1];
+    if (*(u32 *)address == original)
+        *(u32 *)address = value;
     return input + 8;
 }
 kCommandHandler(CondWrite16) {
-    u32 value = *(const u32*)input;
-    u32 original = ((const u32*)input)[1];
-    if (*(u16*)address == (original & 0xFFFF))
-        *(u16*)address = value & 0xFFFF;
+    u32 value = *(const u32 *)input;
+    u32 original = ((const u32 *)input)[1];
+    if (*(u16 *)address == (original & 0xFFFF))
+        *(u16 *)address = value & 0xFFFF;
     return input + 8;
 }
 kCommandHandler(CondWrite8) {
-    u32 value = *(const u32*)input;
-    u32 original = ((const u32*)input)[1];
-    if (*(u8*)address == (original & 0xFF))
-        *(u8*)address = value & 0xFF;
+    u32 value = *(const u32 *)input;
+    u32 original = ((const u32 *)input)[1];
+    if (*(u8 *)address == (original & 0xFF))
+        *(u8 *)address = value & 0xFF;
     return input + 8;
 }
 kCommandHandler(Branch) {
-    *(u32*)address = 0x48000000;
+    *(u32 *)address = 0x48000000;
     return kHandleRel24(input, text, address);
 }
 kCommandHandler(BranchLink) {
-    *(u32*)address = 0x48000001;
+    *(u32 *)address = 0x48000001;
     return kHandleRel24(input, text, address);
 }
 
@@ -134,11 +134,11 @@ inline void cacheInvalidateAddress(register u32 address) {
     asm(icbi 0, address;);
 }
 
-static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binaryLength, bool isDol) {
+static void LoadKamekBinary(LoaderParams *params, const void *binary, u32 binaryLength, bool isDol) {
     // Todo: Make this prettier
 
     static u32 text = 0;
-    const KBHeader* header = (const KBHeader*)binary;
+    const KBHeader *header = (const KBHeader *)binary;
     if (header->magic1 != 'Kame' || header->magic2 != 'k\0')
         DisplayError(params, "FATAL ERROR: Corrupted file, please check your game's Kamek files");
     if (header->version != 3) {
@@ -152,13 +152,13 @@ static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binary
 
     u32 textSize = header->codeSize + header->bssSize;
 
-    EGG::ExpHeap* heap = params->rkSystem->EGGSystem;
+    EGG::ExpHeap *heap = params->rkSystem->EGGSystem;
     if (isDol) text = (u32)heap->alloc(textSize, 0x20);
     if (!text) DisplayError(params, "FATAL ERROR: Out of code memory");
 
-    const u8* input = ((const u8*)binary) + sizeof(KBHeader);
-    const u8* inputEnd = ((const u8*)binary) + binaryLength;
-    u8* output = (u8*)text;
+    const u8 *input = ((const u8 *)binary) + sizeof(KBHeader);
+    const u8 *inputEnd = ((const u8 *)binary) + binaryLength;
+    u8 *output = (u8 *)text;
 
     if (isDol) {
         // Create text + bss sections
@@ -175,20 +175,20 @@ static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binary
         u8 _00[0x60 - 0x00];
     } NETSHA1CTX;
     NETSHA1CTX sha1ctx;
-    u8 *digest = (u8*)0x800017b0;
+    u8 *digest = (u8 *)0x800017b0;
     params->NETSHA1Init(&sha1ctx);
-    params->NETSHA1Update(&sha1ctx, (const void*)(((const u8*)binary) + sizeof(KBHeader)), header->codeSize);
+    params->NETSHA1Update(&sha1ctx, (const void *)(((const u8 *)binary) + sizeof(KBHeader)), header->codeSize);
     params->NETSHA1GetDigest(&sha1ctx, digest);
 
     while (input < inputEnd) {
-        u32 cmdHeader = *((u32*)input);
+        u32 cmdHeader = *((u32 *)input);
         input += 4;
 
         u8 cmd = cmdHeader >> 24;
         u32 address = cmdHeader & 0xFFFFFF;
         if (address == 0xFFFFFE) {
             // Absolute address
-            address = *((u32*)input);
+            address = *((u32 *)input);
             if (address < params->relStart && !isDol)
                 continue;
             else if (address >= params->relStart && isDol)
@@ -254,23 +254,23 @@ static void LoadKamekBinary(LoaderParams* params, const void* binary, u32 binary
 
     typedef void (*Func)();
     if (isDol) {
-        for (Func* f = (Func*)(text + header->ctorStart); f < (Func*)(text + header->ctorEnd); f++) {
+        for (Func *f = (Func *)(text + header->ctorStart); f < (Func *)(text + header->ctorEnd); f++) {
             (*f)();
         }
     }
 }
 
-void LoadKamekBinaryFromDisc(LoaderParams* params) {
-    static void* codePulBuf = nullptr;
+void LoadKamekBinaryFromDisc(LoaderParams *params) {
+    static void *codePulBuf = nullptr;
     static u32 sectionLength = 0;
     params->OSReport("{Kamek by Treeki}\nLoading Kamek binary");
-    static EGG::ExpHeap* codePulHeap = nullptr;
+    static EGG::ExpHeap *codePulHeap = nullptr;
 
     bool isDol = false;
-    EGG::ExpHeap* heap = params->rkSystem->EGGSystem;
+    EGG::ExpHeap *heap = params->rkSystem->EGGSystem;
 
     if (codePulBuf == nullptr) {
-        const char* path = "/Binaries/Code.pul";
+        const char *path = "/Binaries/Code.pul";
         int entrynum = params->DVDConvertPathToEntrynum(path);
         if (entrynum < 0) {
             char err[512];

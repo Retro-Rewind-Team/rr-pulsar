@@ -28,42 +28,42 @@ class Util {
     // size_assert(DataRef<void>, 0x8);
 
     template <typename T0, typename T1, typename T2, typename T3>
-    static T0* GetDataRefAddress0(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {
-        return reinterpret_cast<T0*>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
+    static T0 *GetDataRefAddress0(const DataRef<T0, T1, T2, T3> &ref, void *baseAddress) {
+        return reinterpret_cast<T0 *>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
     }
     template <typename T0, typename T1, typename T2, typename T3>
-    static T1* GetDataRefAddress1(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {
-        return reinterpret_cast<T1*>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
+    static T1 *GetDataRefAddress1(const DataRef<T0, T1, T2, T3> &ref, void *baseAddress) {
+        return reinterpret_cast<T1 *>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
     }
     template <typename T0, typename T1, typename T2, typename T3>
-    static T2* GetDataRefAddress2(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {
-        return reinterpret_cast<T2*>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
+    static T2 *GetDataRefAddress2(const DataRef<T0, T1, T2, T3> &ref, void *baseAddress) {
+        return reinterpret_cast<T2 *>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
     }
     template <typename T0, typename T1, typename T2, typename T3>
-    static T3* GetDataRefAddress3(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {
-        return reinterpret_cast<T3*>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
+    static T3 *GetDataRefAddress3(const DataRef<T0, T1, T2, T3> &ref, void *baseAddress) {
+        return reinterpret_cast<T3 *>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
     }
 
     template <typename T0, typename T1, typename T2, typename T3>
-    static const T0* GetDataRefAddress0(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {
-        return reinterpret_cast<const T0*>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
+    static const T0 *GetDataRefAddress0(const DataRef<T0, T1, T2, T3> &ref, void *baseAddress) {
+        return reinterpret_cast<const T0 *>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
     }
     template <typename T0, typename T1, typename T2, typename T3>
-    static const T1* GetDataRefAddress1(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {
-        return reinterpret_cast<const T1*>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
+    static const T1 *GetDataRefAddress1(const DataRef<T0, T1, T2, T3> &ref, void *baseAddress) {
+        return reinterpret_cast<const T1 *>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
     }
     template <typename T0, typename T1, typename T2, typename T3>
-    static const T2* GetDataRefAddress2(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {
-        return reinterpret_cast<const T2*>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
+    static const T2 *GetDataRefAddress2(const DataRef<T0, T1, T2, T3> &ref, void *baseAddress) {
+        return reinterpret_cast<const T2 *>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
     }
     template <typename T0, typename T1, typename T2, typename T3>
-    static const T3* GetDataRefAddress3(const DataRef<T0, T1, T2, T3>& ref, void* baseAddress) {
-        return reinterpret_cast<const T3*>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
+    static const T3 *GetDataRefAddress3(const DataRef<T0, T1, T2, T3> &ref, void *baseAddress) {
+        return reinterpret_cast<const T3 *>(GetDataRefAddressImpl(static_cast<RefType>(ref.refType), ref.value, baseAddress));
     }
 
     // if RefType == Addr, returns r4 casted to Type, else returns r4 + r5 casted to Type
-    static void* Util::GetDataRefAddressImpl(RefType refType, u32 value, void* baseAddress);  // 800ad080
-    static const void* Util::GetDataRefAddressImpl(RefType refType, u32 value, const void* baseAddress);  // 800ad0b0
+    static void *Util::GetDataRefAddressImpl(RefType refType, u32 value, void *baseAddress);  // 800ad080
+    static const void *Util::GetDataRefAddressImpl(RefType refType, u32 value, const void *baseAddress);  // 800ad0b0
 
     static u16 CalcRandom();
 };

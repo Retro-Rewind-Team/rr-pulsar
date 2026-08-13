@@ -7,7 +7,7 @@
 namespace Objects {
 
 class Sin_Itembox : public Itembox {  // ObjectNum 0xee = 0x238
-    explicit Sin_Itembox(const KMP::Holder<GOBJ>& gobjHolder);  // 8077cec8
+    explicit Sin_Itembox(const KMP::Holder<GOBJ> &gobjHolder);  // 8077cec8
 
     ~Sin_Itembox() override;  // 8077cf04 vtable 808d0ed0
     // Tries to lower the box position by 1 unit until it collides with solid terrain

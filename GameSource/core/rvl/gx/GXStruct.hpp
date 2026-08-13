@@ -5,7 +5,7 @@
 
 namespace GX {
 
-typedef void* FifoObj;
+typedef void *FifoObj;
 
 struct Color {
     union {
@@ -25,7 +25,7 @@ struct TexObj {
     u32 mode1;  // 0x4
     u32 image0;  // 0x8
     u32 image3;  // 0xc
-    void* userData;  // 0x10
+    void *userData;  // 0x10
     TexFmt format;  // 0x14
     u32 tlutName;  // 0x18
     u16 loadCnt;  // 0x1c

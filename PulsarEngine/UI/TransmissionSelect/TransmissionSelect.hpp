@@ -18,12 +18,12 @@ class TransmissionSelect : public Pages::DriftSelect {
     void OnInit() override;
     void OnActivate() override;
     void AfterControlUpdate() override;
-    void OnExternalButtonSelect(PushButton& button, u32 hudSlotId) override;
-    void OnButtonClick(PushButton& button, u32 hudSlotId);
+    void OnExternalButtonSelect(PushButton &button, u32 hudSlotId) override;
+    void OnButtonClick(PushButton &button, u32 hudSlotId);
 };
 
-void LoadTransmissionSelectBeforeDrift(Pages::Menu& menu, PageId id, PushButton& button);
-void LoadTransmissionSelectAfterDrift(Pages::Menu& menu, PageId id, PushButton& button);
+void LoadTransmissionSelectBeforeDrift(Pages::Menu &menu, PageId id, PushButton &button);
+void LoadTransmissionSelectAfterDrift(Pages::Menu &menu, PageId id, PushButton &button);
 
 }  // namespace UI
 }  // namespace Pulsar

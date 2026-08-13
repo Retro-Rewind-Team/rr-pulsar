@@ -14,45 +14,45 @@ static const u32 GET_BRRES_NAME_VTABLE_OFFSET = 0x34;
 static const u32 GET_SUBFILE_NAME_VTABLE_OFFSET = 0x38;
 static const u32 VARIANT_NAME_BUFFER_COUNT = 4;
 static const u32 VARIANT_NAME_BUFFER_SIZE = 0x40;
-static const char* FALLBACK_EMPTY_RESOURCE_NAME = "-";
+static const char *FALLBACK_EMPTY_RESOURCE_NAME = "-";
 
 enum VariantNameType {
     VARIANT_NAME_BRRES,
     VARIANT_NAME_KCL
 };
 
-typedef const char* (*ObjectNameGetter)(Object*);
+typedef const char *(*ObjectNameGetter)(Object *);
 
 struct ObjectGobjView {
     u8 padding[0xa0];
-    const void* gobjLink;
+    const void *gobjLink;
 };
 
 static char sVariantNameBuffers[VARIANT_NAME_BUFFER_COUNT][VARIANT_NAME_BUFFER_SIZE];
 static u32 sNextVariantNameBufferIdx = 0;
 
-static char* GetNextVariantNameBuffer() {
-    char* nameBuffer = sVariantNameBuffers[sNextVariantNameBufferIdx];
+static char *GetNextVariantNameBuffer() {
+    char *nameBuffer = sVariantNameBuffers[sNextVariantNameBufferIdx];
     sNextVariantNameBufferIdx = (sNextVariantNameBufferIdx + 1) % VARIANT_NAME_BUFFER_COUNT;
     return nameBuffer;
 }
 
-static const char* CallOriginalObjectNameGetter(Object* object, u32 vtableOffset) {
+static const char *CallOriginalObjectNameGetter(Object *object, u32 vtableOffset) {
     if (object == nullptr) return nullptr;
 
-    const u32* vtable = *reinterpret_cast<const u32* const*>(object);
+    const u32 *vtable = *reinterpret_cast<const u32 *const *>(object);
     ObjectNameGetter getter = reinterpret_cast<ObjectNameGetter>(vtable[vtableOffset / 4]);
     return getter(object);
 }
 
-static const GOBJ* GetObjectGobj(const Object& object) {
-    const ObjectGobjView& view = reinterpret_cast<const ObjectGobjView&>(object);
+static const GOBJ *GetObjectGobj(const Object &object) {
+    const ObjectGobjView &view = reinterpret_cast<const ObjectGobjView &>(object);
     if (view.gobjLink == nullptr) return nullptr;
-    return *reinterpret_cast<GOBJ* const*>(view.gobjLink);
+    return *reinterpret_cast<GOBJ *const *>(view.gobjLink);
 }
 
-static bool TryGetObjectHolderIndex(const Object& object, u16& holderIdx) {
-    const KMP::Manager* kmp = KMP::Manager::sInstance;
+static bool TryGetObjectHolderIndex(const Object &object, u16 &holderIdx) {
+    const KMP::Manager *kmp = KMP::Manager::sInstance;
     if (kmp == nullptr || kmp->gobjSection == nullptr || kmp->gobjSection->holdersArray == nullptr) return false;
 
     const u16 gobjCount = kmp->gobjSection->pointCount;
@@ -63,11 +63,11 @@ static bool TryGetObjectHolderIndex(const Object& object, u16& holderIdx) {
         return true;
     }
 
-    const GOBJ* gobj = GetObjectGobj(object);
+    const GOBJ *gobj = GetObjectGobj(object);
     if (gobj == nullptr) return false;
 
     for (u16 i = 0; i < gobjCount; ++i) {
-        const KMP::Holder<GOBJ>* holder = kmp->gobjSection->holdersArray[i];
+        const KMP::Holder<GOBJ> *holder = kmp->gobjSection->holdersArray[i];
         if (holder != nullptr && holder->raw == gobj) {
             holderIdx = i;
             return true;
@@ -76,21 +76,21 @@ static bool TryGetObjectHolderIndex(const Object& object, u16& holderIdx) {
     return false;
 }
 
-static u32 GetObjectVariantIndex(const Object& object) {
-    const KMP::Manager* kmp = KMP::Manager::sInstance;
+static u32 GetObjectVariantIndex(const Object &object) {
+    const KMP::Manager *kmp = KMP::Manager::sInstance;
     if (kmp == nullptr || kmp->gobjSection == nullptr || kmp->gobjSection->holdersArray == nullptr) return 0;
 
     u16 holderIdx = 0;
     if (!TryGetObjectHolderIndex(object, holderIdx)) return 0;
 
-    const KMP::Holder<GOBJ>* holder = kmp->gobjSection->holdersArray[holderIdx];
+    const KMP::Holder<GOBJ> *holder = kmp->gobjSection->holdersArray[holderIdx];
     if (holder == nullptr || holder->raw == nullptr) return 0;
 
     const u16 objectId = holder->raw->objID;
     u32 variantIndex = 0;
 
     for (u16 i = 0; i < holderIdx; ++i) {
-        const KMP::Holder<GOBJ>* previousHolder = kmp->gobjSection->holdersArray[i];
+        const KMP::Holder<GOBJ> *previousHolder = kmp->gobjSection->holdersArray[i];
         if (previousHolder != nullptr && previousHolder->raw != nullptr && previousHolder->raw->objID == objectId) {
             ++variantIndex;
         }
@@ -98,7 +98,7 @@ static u32 GetObjectVariantIndex(const Object& object) {
     return variantIndex;
 }
 
-static bool DoesVariantResourceExist(const char* variantName, VariantNameType type) {
+static bool DoesVariantResourceExist(const char *variantName, VariantNameType type) {
     if (variantName == nullptr || variantName[0] == '\0') return false;
 
     char fileName[VARIANT_NAME_BUFFER_SIZE];
@@ -116,7 +116,7 @@ static bool IsDigit(char value) {
     return value >= '0' && value <= '9';
 }
 
-static const char* GetVariantNameIfAvailable(Object* object, const char* baseName, VariantNameType type) {
+static const char *GetVariantNameIfAvailable(Object *object, const char *baseName, VariantNameType type) {
     if (baseName == nullptr) return FALLBACK_EMPTY_RESOURCE_NAME;
     if (object == nullptr) return baseName;
     if (baseName[0] == '\0') return baseName;
@@ -129,7 +129,7 @@ static const char* GetVariantNameIfAvailable(Object* object, const char* baseNam
     while (digitStart > 0 && IsDigit(baseName[digitStart - 1])) --digitStart;
     const bool hasNumericSuffix = (digitStart > 1 && digitStart < nameLen && baseName[digitStart - 1] == '_');
 
-    char* variantName = GetNextVariantNameBuffer();
+    char *variantName = GetNextVariantNameBuffer();
     int writeCount = 0;
 
     if (hasNumericSuffix) {
@@ -146,14 +146,14 @@ static const char* GetVariantNameIfAvailable(Object* object, const char* baseNam
     return baseName;
 }
 
-static const char* GetVariantBRRESName(Object* object) {
-    const char* baseName = CallOriginalObjectNameGetter(object, GET_BRRES_NAME_VTABLE_OFFSET);
+static const char *GetVariantBRRESName(Object *object) {
+    const char *baseName = CallOriginalObjectNameGetter(object, GET_BRRES_NAME_VTABLE_OFFSET);
     return GetVariantNameIfAvailable(object, baseName, VARIANT_NAME_BRRES);
 }
 kmCall(0x8081fd68, GetVariantBRRESName);  // Object::LoadGraphics getResourcesName -> "%s.brres"
 
-static const char* GetVariantKCLName(Object* object) {
-    const char* baseName = CallOriginalObjectNameGetter(object, GET_SUBFILE_NAME_VTABLE_OFFSET);
+static const char *GetVariantKCLName(Object *object) {
+    const char *baseName = CallOriginalObjectNameGetter(object, GET_SUBFILE_NAME_VTABLE_OFFSET);
     return GetVariantNameIfAvailable(object, baseName, VARIANT_NAME_KCL);
 }
 kmCall(0x8081aa84, GetVariantKCLName);  // GeoObjectKCL::LoadCollision getKclName -> "%s.kcl"

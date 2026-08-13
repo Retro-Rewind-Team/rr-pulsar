@@ -14,7 +14,7 @@ class Cannon : public ObjectCollidable {
         StarRing = 3
     };
     static u8 cannonCount;  // 0x809c2248
-    explicit Cannon(const KMP::Holder<GOBJ>& gobjHolder);  // 806bfb14
+    explicit Cannon(const KMP::Holder<GOBJ> &gobjHolder);  // 806bfb14
     ~Cannon() override;  // 806bfd90 vtable 808c2fa0
     void OnStart() override;  // 0xC 806bfddc
     void Update() override;  // 0x14 806bfed0

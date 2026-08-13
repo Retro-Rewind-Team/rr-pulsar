@@ -14,15 +14,15 @@ class FriendButton : public PushButton {
     ~FriendButton() override;  // 805d3850 vtable 808b8d04
     void InitSelf() override;  // 0x18 805d3c54
     void OnUpdate() override;  // 0x1c 805d3c58
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805d7de4
-    const char* GetClassName() const override;  // 0x2c 805d3800
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805d7de4
+    const char *GetClassName() const override;  // 0x2c 805d3800
     void OnSelect(u32 hudSlotId, u32 r5) override;  // 0x40 805d4028
     void OnDeselect(u32 hudSlotId, u32 r5) override;  // 0x44 805d4120
 
-    void Load(u32 id, MiiGroup* miiGroup);  // 805d38a8 inlined
+    void Load(u32 id, MiiGroup *miiGroup);  // 805d38a8 inlined
     void SetMii(u32 friendIdx);  // 805d3980
 
-    MiiGroup* miiGroup;  // 0x254
+    MiiGroup *miiGroup;  // 0x254
     u32 friendIdx;  // 0x258
     u32 status;  // 0x25c
     // 0 = nothing?, 1 = added but no mii, 2 = disconnected, 3 = online, 4 = public, 5 = froomhost
@@ -36,8 +36,8 @@ class JoinFriendButton : public PushButton {
     JoinFriendButton();  // 805d5510 inlined
     ~JoinFriendButton() override;  // 805d554c vtable 808b8c0c
     void OnUpdate() override;  // 0x1c 805d5818
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805d7dc4
-    const char* GetClassName() const override;  // 0x2c 805d5500
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805d7dc4
+    const char *GetClassName() const override;  // 0x2c 805d5500
     void SetStatus(u32 status);  // 805d56ac
 };
 // size_assert(JoinFriendButton, 0x254);
@@ -56,15 +56,15 @@ class FriendList : public Page {  // ID 0x96
     void BeforeEntranceAnimations() override;  // 0x38 805d4a54
     void BeforeExitAnimations() override;  // 0x40 805d4b5c
     void AfterControlUpdate() override;  // 0x4c 805d4c10
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805d7dd8
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805d7dd8
 
     void AddNewFriend(u32 idx);  // 805d4c8c adds mii inlined
-    void OnFriendButtonClick(FriendButton& friendButton, u32 hudSlotId);  // 805d4d08
-    void OnBackButtonClick(CtrlMenuBackButton& backButton, u32 hudSlotId);  // 805d4e50
-    void OnRightArrowPress(SheetSelectControl& control, u32 hudSlotId);  // 805d4ee4
-    void OnLeftArrowPress(SheetSelectControl& control, u32 hudSlotId);  // 805d5014
+    void OnFriendButtonClick(FriendButton &friendButton, u32 hudSlotId);  // 805d4d08
+    void OnBackButtonClick(CtrlMenuBackButton &backButton, u32 hudSlotId);  // 805d4e50
+    void OnRightArrowPress(SheetSelectControl &control, u32 hudSlotId);  // 805d4ee4
+    void OnLeftArrowPress(SheetSelectControl &control, u32 hudSlotId);  // 805d5014
     void OnBackPress(u32 hudSlotId);  // 805d510c
-    static int CompareFriendIndexes(u32* idx1, u32* idx2);  // 805d518c for qsort
+    static int CompareFriendIndexes(u32 *idx1, u32 *idx2);  // 805d518c for qsort
     static int FriendStatusToValue(u32 friendStatus);  // 805d521c used as part of the comparison, friendStatus can be 0/1/-1
     void UpdatePageCounter();  // 805d5330 inlined
     void UpdateMiiGroup();  // 805d53f8
@@ -81,10 +81,10 @@ class FriendList : public Page {  // ID 0x96
     u32 curPageIdx;  // 0x19f4
     u32 updateFrequency;  // 0x19f8 every 300 frames, updates the list, which is useful for newly registered friends
     PageId nextPage;
-    PtmfHolder_2A<FriendList, void, FriendButton&, u32> onFriendButtonClickHandler;  // 0x1a00 805d4d08
-    PtmfHolder_2A<FriendList, void, CtrlMenuBackButton&, u32> onBackButtonClickHandler;  // 0x1a14 805d4e50
-    PtmfHolder_2A<FriendList, void, SheetSelectControl&, u32> onRightArrowPressHandler;  // 0x1a28 805d4ee4
-    PtmfHolder_2A<FriendList, void, SheetSelectControl&, u32> onLeftArrowPressHandler;  // 0x1a3c 805d5014
+    PtmfHolder_2A<FriendList, void, FriendButton &, u32> onFriendButtonClickHandler;  // 0x1a00 805d4d08
+    PtmfHolder_2A<FriendList, void, CtrlMenuBackButton &, u32> onBackButtonClickHandler;  // 0x1a14 805d4e50
+    PtmfHolder_2A<FriendList, void, SheetSelectControl &, u32> onRightArrowPressHandler;  // 0x1a28 805d4ee4
+    PtmfHolder_2A<FriendList, void, SheetSelectControl &, u32> onLeftArrowPressHandler;  // 0x1a3c 805d5014
     PtmfHolder_1A<FriendList, void, u32> onBackPressHandler;  // 0x1a50 805d510
 };
 // size_assert(FriendList, 0x1a64);
@@ -98,18 +98,18 @@ class FriendInfo : public Page {  // ID 0x97
     void OnInit() override;  // 0x28 805d5af4
     void OnActivate() override;  // 0x30 805d6000
     void AfterControlUpdate() override;  // 0x4c 805d6128
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805d7db8
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805d7db8
 
     void PlaySound(u32 friendStatus);  // 805d6390
-    void SetInfoText(MiiGroup& miiGroup, u32 friendIdx);  // 805d6470
-    void OnJoinButtonClick(JoinFriendButton& joinButton, u32 hudSlotId);  // 805d6678
-    void OnRemoveButtonClick(PushButton& removeButton, u32 hudSlotId);  // 805d690c
-    void OnBackButtonClick(CtrlMenuBackButton& backButton, u32 hudSlotId);  // 0805d6950
+    void SetInfoText(MiiGroup &miiGroup, u32 friendIdx);  // 805d6470
+    void OnJoinButtonClick(JoinFriendButton &joinButton, u32 hudSlotId);  // 805d6678
+    void OnRemoveButtonClick(PushButton &removeButton, u32 hudSlotId);  // 805d690c
+    void OnBackButtonClick(CtrlMenuBackButton &backButton, u32 hudSlotId);  // 0805d6950
     void OnBackPress(u32 hudSlotId);  // 805d6994
 
-    PtmfHolder_2A<FriendInfo, void, JoinFriendButton&, u32> onJoinButtonClickHandler;  // 0x44 805d6678
-    PtmfHolder_2A<FriendInfo, void, PushButton&, u32> onRemoveButtonClick;  // 0x58 805d690c
-    PtmfHolder_2A<FriendInfo, void, CtrlMenuBackButton&, u32> onBackButtonClickHandler;  // 0x6c 805d6950
+    PtmfHolder_2A<FriendInfo, void, JoinFriendButton &, u32> onJoinButtonClickHandler;  // 0x44 805d6678
+    PtmfHolder_2A<FriendInfo, void, PushButton &, u32> onRemoveButtonClick;  // 0x58 805d690c
+    PtmfHolder_2A<FriendInfo, void, CtrlMenuBackButton &, u32> onBackButtonClickHandler;  // 0x6c 805d6950
     PtmfHolder_1A<FriendInfo, void, u32> onBackPressHandler;  // 0x80 805d6994
     ControlsManipulatorManager manipulatorManager;  // 0x94
     CtrlMenuPageTitleText titleText;  // 0x2b8
@@ -138,14 +138,14 @@ class FriendRemove : public Page {  // ID 0x98
     void OnActivate() override;  // 0x30 805d6d40
     void OnDeactivate() override;  // 0x34 805d6e10
     void OnResume() override;  // 0x54 805d6ec8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805d7da4
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805d7da4
 
-    void OnRemoveButtonClick(PushButton& button, u32 hudSlotId);  // 805d6f9c
-    void OnCancelAndBackButtonClick(PushButton& button, u32 hudSlotId);  // 805d7190
+    void OnRemoveButtonClick(PushButton &button, u32 hudSlotId);  // 805d6f9c
+    void OnCancelAndBackButtonClick(PushButton &button, u32 hudSlotId);  // 805d7190
     void OnBackPress(u32 hudSlotId);  // 805d71ec
 
-    PtmfHolder_2A<FriendRemove, void, PushButton&, u32> onRemoveButtonClickHandler;  // 0x44 805d6f9c
-    PtmfHolder_2A<FriendRemove, void, PushButton&, u32> onCancelAndBackButtonClickHandler;  // 0x58 805d7190
+    PtmfHolder_2A<FriendRemove, void, PushButton &, u32> onRemoveButtonClickHandler;  // 0x44 805d6f9c
+    PtmfHolder_2A<FriendRemove, void, PushButton &, u32> onCancelAndBackButtonClickHandler;  // 0x58 805d7190
     PtmfHolder_1A<FriendRemove, void, u32> onBackPressHandler;  // 0x6c 805d71ec
     ControlsManipulatorManager manipulatorManager;  // 0x80
     CtrlMenuPageTitleText titleText;  // 0x2a4
@@ -174,7 +174,7 @@ class FriendRemoving : public Page {  // ID 0x99, the wait after clicking remove
     void OnActivate() override;  // 0x30 805d7404
     void BeforeExitAnimations();  // 0x40 805d74f4
     void AfterControlUpdate();  // 0x4c 805d7658
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805d7d90
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805d7d90
 
     ManipulatorManager manipulatorManager;
     CtrlMenuPageTitleText titleText;

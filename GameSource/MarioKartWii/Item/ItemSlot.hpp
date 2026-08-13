@@ -31,7 +31,7 @@ class ItemSlotData {
    public:
     struct Probabilities {
         u32 rowCount;  // almost always raw's columnsCount since this is inverted
-        u16* probabilities;  // obviously multiplied by 2 as usual
+        u16 *probabilities;  // obviously multiplied by 2 as usual
         // array of size [COLUMNSCOUNT][19], ie inverted relative to the raw bin, probabilities[3][4] would be the probability that 4th place gets a Mushroom
     };  // Total size 0x8
 
@@ -42,18 +42,18 @@ class ItemSlotData {
     };
     // size_assert(RouletteItems, 0x50);
 
-    static ItemSlotData* sInstance();  // 809c3670
-    static ItemSlotData* CreateInstance();  // 807ba77c
+    static ItemSlotData *sInstance();  // 809c3670
+    static ItemSlotData *CreateInstance();  // 807ba77c
     static void DestroyInstance();  // 807bda814
     ItemSlotData();  // 807ba8c8 inlined
     ~ItemSlotData();  // 807ba934
     void Init();  // 807ba7d8
     // takes a pointer to a raw table in an item slot file, processes the values and
     // writes them to the probabilities field of the table holder, then returns the pointer to the start of the next table
-    ItemSlotBinary::Table* ProcessTable(ItemSlotBinary::Table* rawTable, Probabilities* probabilities,
+    ItemSlotBinary::Table *ProcessTable(ItemSlotBinary::Table *rawTable, Probabilities *probabilities,
                                         bool updateRoulette, bool isSpecialTable);  // 807ba9d8
-    void PostProcessVSTable(Probabilities* probabilities);  // 807bad20 rescales the table based on something and playerCount
-    ItemId DecideItem(u16 itemBoxType, u8 position, bool isHuman, bool hasTripleItem, Player* itemHolderPlayer);  // 807bb42c
+    void PostProcessVSTable(Probabilities *probabilities);  // 807bad20 rescales the table based on something and playerCount
+    ItemId DecideItem(u16 itemBoxType, u8 position, bool isHuman, bool hasTripleItem, Player *itemHolderPlayer);  // 807bb42c
     // for the roulette, r7 based on boxType (is true if type == 0xFF but idk how that can happen)
     ItemId DecideRouletteItem(u16 itemBoxType, u8 position, ItemId prevRandomItem, bool r7);  // 807bb8d0
     void ResetLightningTimer();  // 807bb9bc
@@ -68,17 +68,17 @@ class ItemSlotData {
     void SetupOnlineVSProbabilities();  // 807bbd60
     void SetupVSProbabilities();  // 807bbef8
     void SetupGPProbabilities();  // 807bc000
-    static ItemId RandomizeRouletteItem(RouletteItems* rouletteItems, ItemId prevRouletteItem);  // 807baed4 inlined
-    static ItemSlotBinary::Table* GetNextTable(ItemSlotBinary* table);  // 807bad08 inlined
-    static ItemSlotBinary* GetBinary();  // 807bba94
+    static ItemId RandomizeRouletteItem(RouletteItems *rouletteItems, ItemId prevRouletteItem);  // 807baed4 inlined
+    static ItemSlotBinary::Table *GetNextTable(ItemSlotBinary *table);  // 807bad08 inlined
+    static ItemSlotBinary *GetBinary();  // 807bba94
 
     EGG::TDisposer<ItemSlotData> disposer;  // 807ba650 vtable 808b27b4
     Probabilities playerChances;  // 0x10
     Probabilities cpuChances;  // 0x18
     Probabilities specialChances;  // 0x20
-    RouletteItems* normalBoxes;  // 0x28 only 1 obviously
-    RouletteItems* unknown;  // 0x2c 12 rouletteItems, not used in VS
-    RouletteItems* specialBoxes;  // 0x30 as many as there are special box settings in the bin, so mostly 10
+    RouletteItems *normalBoxes;  // 0x28 only 1 obviously
+    RouletteItems *unknown;  // 0x2c 12 rouletteItems, not used in VS
+    RouletteItems *specialBoxes;  // 0x30 as many as there are special box settings in the bin, so mostly 10
 
     u32 itemSpawnTimers[4];  // 0x34 frames for when an item can next be pulled 0 = lightning, 1 = blue shell, 2 = blooper, 3 = pow
     u32 playerCount;  // 0x44 used to check when the player count changes online

@@ -21,10 +21,10 @@ namespace UI {
 
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
-void Racedata_InitRace(Racedata* racedata) {
+void Racedata_InitRace(Racedata *racedata) {
     racedata->InitRace();
 
-    const RacedataSettings& settings = racedata->menusScenario.settings;
+    const RacedataSettings &settings = racedata->menusScenario.settings;
     if (settings.gamemode == MODE_VS_RACE && !(settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
     }
@@ -35,15 +35,15 @@ kmCall(0x80530ef4, Racedata_InitRace);
 kmCall(0x80553c90, Racedata_InitRace);
 kmCall(0x80554ab0, Racedata_InitRace);
 
-void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
+void PrepareOnlinePages(Pages::FriendRoomWaiting *_this) {
     _this->StartRoom();
 
-    Pages::FriendRoomManager* friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
+    Pages::FriendRoomManager *friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
 
     if (friendRoomManager) {
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
+        RKNet::Controller *controller = RKNet::Controller::sInstance;
         if (controller) {
-            RKNet::StatusData& status = controller->localStatusData;
+            RKNet::StatusData &status = controller->localStatusData;
             const bool isHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST;
             const u32 mode = friendRoomManager->startedGameMode;
             const bool isBattle = mode >= 2;
@@ -63,7 +63,7 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting* _this) {
     }
 
     if (Race::GetEffectiveCustomItemsBitfield() != ALL_CUSTOM_ITEMS && !CustomItemPage::ShouldSkipFriendRoomPreview()) {
-        CustomItemPage* page = ExpSection::GetSection()->GetPulPage<CustomItemPage>();
+        CustomItemPage *page = ExpSection::GetSection()->GetPulPage<CustomItemPage>();
         page->StartFriendRoomPreview(nextPageId);
         _this->AddPageLayer(static_cast<PageId>(CustomItemPage::id), 0);
         return;
@@ -79,16 +79,16 @@ kmCall(0x805dddb0, PrepareOnlinePages);
 // Because I only patched the regular VS UIs for this mode
 //
 // Keep pkt as a raw word here; this hook works on the packed ROOM message value.
-void SetBroadcastROOMPacket(RKNet::ROOMHandler* _this, u32 pkt) {
+void SetBroadcastROOMPacket(RKNet::ROOMHandler *_this, u32 pkt) {
     u8 messageType = (pkt >> 24) & 0xFF;
     u16 message = (pkt >> 8) & 0xFFFF;
     u8 messageSequence = pkt & 0xFF;
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    RKNet::ControllerSub* sub = &controller->subs[controller->currentSub];
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub *sub = &controller->subs[controller->currentSub];
 
-    UI::ExtendedTeamSelect* extendedTeamSelect = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
-    Pages::FriendRoomManager* friendRoomBackPage = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
+    UI::ExtendedTeamSelect *extendedTeamSelect = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
+    Pages::FriendRoomManager *friendRoomBackPage = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
     if (System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && messageType == 1 && message == 1) {
         message = 0;
     }
@@ -96,16 +96,16 @@ void SetBroadcastROOMPacket(RKNet::ROOMHandler* _this, u32 pkt) {
     pkt = (messageType << 24) | (message << 8) | messageSequence;
     for (int i = 0; i < 12; ++i) {
         if (i != sub->localAid) {
-            _this->toSendPackets[i] = *(RKNet::ROOMPacket*)&pkt;
+            _this->toSendPackets[i] = *(RKNet::ROOMPacket *)&pkt;
         }
     }
 
-    friendRoomBackPage->networkManager.lastSentPacket = *(RKNet::ROOMPacket*)&pkt;
+    friendRoomBackPage->networkManager.lastSentPacket = *(RKNet::ROOMPacket *)&pkt;
 }
 
 kmCall(0x805dce34, SetBroadcastROOMPacket);
 
-void RecvRoomPacket(UnkFriendRoomManager* _this, u8 playerId, u8 myAid, RKNet::ROOMPacket& packet) {
+void RecvRoomPacket(UnkFriendRoomManager *_this, u8 playerId, u8 myAid, RKNet::ROOMPacket &packet) {
     if (packet.messageType == ExtendedTeamManager::MSG_TYPE_START_RACE) {
         UI::ExtendedTeamManager::sInstance->SetStatusExternal(ExtendedTeamManager::STATUS_DONE);
     }
@@ -114,10 +114,10 @@ void RecvRoomPacket(UnkFriendRoomManager* _this, u8 playerId, u8 myAid, RKNet::R
 }
 kmCall(0x805db1dc, RecvRoomPacket);
 
-void VotingVRPage_SetControlState(Pages::VR* _this, u32 idx, u32 playerId, Team team, u32 type, bool isLocalPlayer) {
+void VotingVRPage_SetControlState(Pages::VR *_this, u32 idx, u32 playerId, Team team, u32 type, bool isLocalPlayer) {
     _this->FillVRControl(idx, playerId, team, type, isLocalPlayer);
     if (ExtendedTeamManager::IsActivated()) {
-        Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        Pages::SELECTStageMgr *selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         u8 aid = selectStageMgr->infos[idx].aid;
         u8 playerIdOnConsole = selectStageMgr->infos[idx].hudSlotid;
 
@@ -128,14 +128,14 @@ void VotingVRPage_SetControlState(Pages::VR* _this, u32 idx, u32 playerId, Team 
 kmCall(0x8064aa78, VotingVRPage_SetControlState);
 kmCall(0x8064a9f0, VotingVRPage_SetControlState);
 
-bool PageVote_FillVoteControl(Pages::Vote* _this, u32 playerId) {
+bool PageVote_FillVoteControl(Pages::Vote *_this, u32 playerId) {
     bool res = _this->FillVoteControl(playerId);
     if (ExtendedTeamManager::IsActivated() && res) {
-        Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        Pages::SELECTStageMgr *selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         u8 aid = selectStageMgr->infos[playerId].aid;
         u8 playerIdOnConsole = selectStageMgr->infos[playerId].hudSlotid;
 
-        VoteControl& control = _this->votes[_this->lastHandledVote - 1];
+        VoteControl &control = _this->votes[_this->lastHandledVote - 1];
         control.animator.GetAnimationGroupById(3).PlayAnimationAtFrame(2, 0.0f);
         ExtendedTeamSelect::ChangeVRButtonColors(control, ExtendedTeamManager::sInstance->GetPlayerTeamByAID(aid, playerIdOnConsole));
     }
@@ -145,7 +145,7 @@ bool PageVote_FillVoteControl(Pages::Vote* _this, u32 playerId) {
 
 kmCall(0x80643b3c, PageVote_FillVoteControl);
 
-void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr* _this) {
+void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr *_this) {
     _this->PrepareRace();
     if (ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->VotePageSync();
@@ -154,23 +154,23 @@ void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr* _this) {
 
 kmCall(0x80643ce8, SELECTStageMgr_PrepareRace);
 
-void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter* _this, const Vec3& kartPosition, Vec2& dest, u32 r6) {
+void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter *_this, const Vec3 &kartPosition, Vec2 &dest, u32 r6) {
     _this->CalculatePosition(kartPosition, dest, r6);
-    RacedataScenario& menuScenario = Racedata::sInstance->menusScenario;
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RacedataScenario &menuScenario = Racedata::sInstance->menusScenario;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (ExtendedTeamManager::IsActivated()) {
         ExtendedTeamID selfTeams[2] = {TEAM_COUNT, TEAM_COUNT};
         for (int i = 0; i < menuScenario.playerCount; i++) {
             if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 0) {
                 selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
                 if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
-                    RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
+                    RKNet::ControllerSub &currentSub = controller->subs[controller->currentSub];
                     selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 0);
                 }
             } else if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 1) {
                 selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
                 if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
-                    RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
+                    RKNet::ControllerSub &currentSub = controller->subs[controller->currentSub];
                     selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 1);
                 }
             }
@@ -183,8 +183,8 @@ void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter* _this, const V
 
             _this->SetPaneVisibility("chara_shadow_0_0", true);
             _this->SetPaneVisibility("chara_shadow_0_1", true);
-            nw4r::lyt::Material* mat1 = _this->layout.GetPaneByName("chara_shadow_0_0")->GetMaterial();
-            nw4r::lyt::Material* mat2 = _this->layout.GetPaneByName("chara_shadow_0_1")->GetMaterial();
+            nw4r::lyt::Material *mat1 = _this->layout.GetPaneByName("chara_shadow_0_0")->GetMaterial();
+            nw4r::lyt::Material *mat2 = _this->layout.GetPaneByName("chara_shadow_0_1")->GetMaterial();
 
             for (int i = 0; i < 2; i++) {
                 mat1->tevColours[i].r = mat2->tevColours[i].r = r;
@@ -203,7 +203,7 @@ void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter* _this, const V
     }
 }
 
-void CtrlRace2DMapCharacter_PlayAnimationAtFrameAndDisable(AnimationGroup* _this, u32 id, float frame) {
+void CtrlRace2DMapCharacter_PlayAnimationAtFrameAndDisable(AnimationGroup *_this, u32 id, float frame) {
     if (ExtendedTeamManager::IsActivated()) {
         _this->isActive = false;
     } else {
@@ -215,13 +215,13 @@ kmCall(0x807eb308, CtrlRace2DMapCharacter_CalcTransform);
 kmCall(0x807eaf1c, CtrlRace2DMapCharacter_PlayAnimationAtFrameAndDisable);
 kmCall(0x807eb9d4, CtrlRace2DMapCharacter_PlayAnimationAtFrameAndDisable);
 
-void CtrlRaceNameBalloon_refresh(CtrlRaceNameBalloon* _this, u8 playerId) {
+void CtrlRaceNameBalloon_refresh(CtrlRaceNameBalloon *_this, u8 playerId) {
     _this->UpdateInfo(playerId);
     if (ExtendedTeamManager::IsActivated()) {
         u8 r, g, b;
         ExtendedTeamSelect::GetTeamColor(ExtendedTeamManager::sInstance->GetPlayerTeam(playerId), r, g, b);
-        nw4r::lyt::TextBox* characterName = (nw4r::lyt::TextBox*)_this->layout.GetPaneByName("chara_name");
-        nw4r::lyt::Material* mat = characterName->GetMaterial();
+        nw4r::lyt::TextBox *characterName = (nw4r::lyt::TextBox *)_this->layout.GetPaneByName("chara_name");
+        nw4r::lyt::Material *mat = characterName->GetMaterial();
 
         characterName->color1[0] = nw4r::ut::Color(r, g, b, 255);
 
@@ -237,7 +237,7 @@ void CtrlRaceNameBalloon_refresh(CtrlRaceNameBalloon* _this, u8 playerId) {
     }
 }
 
-void CtrlRaceNameBalloon_PlayAnimationAtFrameAndDisable(AnimationGroup* _this, u32 id, float frame) {
+void CtrlRaceNameBalloon_PlayAnimationAtFrameAndDisable(AnimationGroup *_this, u32 id, float frame) {
     if (ExtendedTeamManager::IsActivated()) {
         _this->isActive = false;
     } else {
@@ -249,15 +249,15 @@ kmCall(0x807f0c48, CtrlRaceNameBalloon_refresh);
 kmCall(0x807f00f8, CtrlRaceNameBalloon_PlayAnimationAtFrameAndDisable);
 kmCall(0x807efe5c, CtrlRaceNameBalloon_PlayAnimationAtFrameAndDisable);
 
-void GPVSLeaderboardUpdate_hookSetupEntries(Pages::GPVSLeaderboardUpdate* _this) {
+void GPVSLeaderboardUpdate_hookSetupEntries(Pages::GPVSLeaderboardUpdate *_this) {
     _this->FillRows();
     if (_this->pageId == PAGE_GPVS_LEADERBOARD_UPDATE && ExtendedTeamManager::IsActivated()) {
         for (u8 i = 0; i < _this->GetRowCount(); i++) {
             u8 playerId = Raceinfo::sInstance->playerIdInEachPosition[i];
-            CtrlRaceResult* result = _this->results[i];
+            CtrlRaceResult *result = _this->results[i];
 
-            nw4r::lyt::Material* mat;
-            nw4r::lyt::Pane* pane;
+            nw4r::lyt::Material *mat;
+            nw4r::lyt::Pane *pane;
             if (Racedata::sInstance->racesScenario.players[playerId].playerType == PLAYER_REAL_LOCAL) {
                 pane = result->layout.GetPaneByName("select_base");
                 mat = pane->GetMaterial();
@@ -284,7 +284,7 @@ void GPVSLeaderboardUpdate_hookSetupEntries(Pages::GPVSLeaderboardUpdate* _this)
 
 kmCall(0x8085bfc8, GPVSLeaderboardUpdate_hookSetupEntries);
 
-void CtrlRaceResult_InitPatchAnimation(AnimationGroup* _this, u32 id, float frame) {
+void CtrlRaceResult_InitPatchAnimation(AnimationGroup *_this, u32 id, float frame) {
     if (ExtendedTeamManager::IsActivated()) {
         _this->isActive = false;
     } else {
@@ -292,7 +292,7 @@ void CtrlRaceResult_InitPatchAnimation(AnimationGroup* _this, u32 id, float fram
     }
 }
 
-void CtrlRaceResult_CalcSkipAnimation(AnimationGroup* _this, u32 id, float frame) {
+void CtrlRaceResult_CalcSkipAnimation(AnimationGroup *_this, u32 id, float frame) {
     if (!ExtendedTeamManager::IsActivated()) {
         _this->PlayAnimationAtFrame(id, frame);
     }
@@ -304,12 +304,12 @@ kmCall(0x807f63a4, CtrlRaceResult_CalcSkipAnimation);
 kmCall(0x807f4f74, CtrlRaceResult_InitPatchAnimation);
 kmCall(0x807f4f8c, CtrlRaceResult_InitPatchAnimation);
 
-void WifiAwardResultItem_fillPlayerResult(Pages::WifiAwardResultItem* _this, u8 playerIdx, bool isTeamVS, int localPlayerCount) {
+void WifiAwardResultItem_fillPlayerResult(Pages::WifiAwardResultItem *_this, u8 playerIdx, bool isTeamVS, int localPlayerCount) {
     _this->FillResult(playerIdx, isTeamVS, localPlayerCount);
 
     if (ExtendedTeamManager::IsActivated()) {
         nw4r::lyt::Pane *pane, *pane2;
-        nw4r::lyt::Material* mat;
+        nw4r::lyt::Material *mat;
 
         if (Racedata::sInstance->racesScenario.players[playerIdx].playerType == PLAYER_REAL_LOCAL) {
             pane = _this->layout.GetPaneByName("p_color_r");
@@ -348,7 +348,7 @@ void WifiAwardResultItem_fillPlayerResult(Pages::WifiAwardResultItem* _this, u8 
 kmCall(0x806466f4, WifiAwardResultItem_fillPlayerResult);
 kmCall(0x80646728, WifiAwardResultItem_fillPlayerResult);
 
-void WiFiVSResults_InitPatchAnimation(AnimationGroup* _this, u32 id, float frame) {
+void WiFiVSResults_InitPatchAnimation(AnimationGroup *_this, u32 id, float frame) {
     if (ExtendedTeamManager::IsActivated()) {
         _this->isActive = false;
     } else {
@@ -356,7 +356,7 @@ void WiFiVSResults_InitPatchAnimation(AnimationGroup* _this, u32 id, float frame
     }
 }
 
-void WiFiVSResults_CalcSkipAnimation(AnimationGroup* _this, u32 id, float frame) {
+void WiFiVSResults_CalcSkipAnimation(AnimationGroup *_this, u32 id, float frame) {
     if (!ExtendedTeamManager::IsActivated()) {
         _this->PlayAnimationAtFrame(id, frame);
     }
@@ -371,15 +371,15 @@ struct TeamScore {
     TeamScore(ExtendedTeamID team) : team(team), score(0), present(false) {}
 };
 
-static int sort_by_score(const void* a, const void* b) {
-    return ((TeamScore*)b)->score - ((TeamScore*)a)->score;
+static int sort_by_score(const void *a, const void *b) {
+    return ((TeamScore *)b)->score - ((TeamScore *)a)->score;
 }
 
-void WiFiVSResults_setCongratulationText(Pages::WiFiVSResults* _this) {
+void WiFiVSResults_setCongratulationText(Pages::WiFiVSResults *_this) {
     _this->SetCongratulationUIAndSound();
 
     if (ExtendedTeamManager::IsActivated()) {
-        RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+        RacedataScenario &scenario = Racedata::sInstance->menusScenario;
 
         int teamCount = 0;
         TeamScore scores[TEAM_COUNT];

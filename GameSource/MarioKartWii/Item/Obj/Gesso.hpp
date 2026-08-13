@@ -9,7 +9,7 @@
 namespace Item {
 class ObjGesso : public ObjMiddle {
    public:
-    static Obj** CreateArray(u32 count);  // 807a8138
+    static Obj **CreateArray(u32 count);  // 807a8138
     void InitSelf() override;  // 0x8 807a8378 vtable 808d1e48
 };
 // size_assert(ObjGesso, 0x1a0);
@@ -19,7 +19,7 @@ class GessoScreen {  // one per Screen
     ~GessoScreen();  // 807a85f4
     void UpdateModel();  // 807a8750 scale, distance, visibility set by this
     u32 state;
-    ModelDirector* gessoModel;  // 0x4
+    ModelDirector *gessoModel;  // 0x4
     u32 screenId;  // 0x8
     u8 unknown_0xc[2];
     u16 id;  // 0xE loop ite, init at 0xC, if 0xC then blooper not applied to that screen
@@ -34,8 +34,8 @@ class GessoScreen {  // one per Screen
 
 class GessoMgr {
    public:
-    static GessoMgr* sInstance;  // 809c3648
-    static GessoMgr* CreateInstance();  // 807a8f04
+    static GessoMgr *sInstance;  // 809c3648
+    static GessoMgr *CreateInstance();  // 807a8f04
     static void DestroyInstance();  // 807a8fa0
     GessoMgr();  // 807a90a0 inlined
     static void Init();  // 807a8fd8
@@ -54,7 +54,7 @@ class GessoMgr {
     u32 startTimerInitValue;  // 0xc
     u32 positionGroup[12];  // 0x10 arrayIdx = playerIdx 4 - pos/4 ie 1-4 = 3; 5-8 = 2; 9-12 = 1
     u8 unknown_0x40[0x44 - 0x40];
-    GessoScreen* gessoScreens[4];  // 0x44
+    GessoScreen *gessoScreens[4];  // 0x44
 };  // Total Size 0x54
 // size_assert(GessoMgr, 0x54);
 }  // namespace Item

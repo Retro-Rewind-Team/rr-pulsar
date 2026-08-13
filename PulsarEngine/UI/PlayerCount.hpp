@@ -14,12 +14,12 @@
 
 namespace PlayerCount {
 
-void GetNumbersMain(int& nRetro, int& nCT, int& nRT);
-void GetNumbersOther(int& n200, int& nOtt, int& nIR);
-void GetNumbersBT(int& nBattle, int& nBattleELIM);
-void GetNumbersRegular(int& nRegular);
-void GetNumbersTotal(int& nTotal);
-void GetNumbersOthers(int& nOthers);
+void GetNumbersMain(int &nRetro, int &nCT, int &nRT);
+void GetNumbersOther(int &n200, int &nOtt, int &nIR);
+void GetNumbersBT(int &nBattle, int &nBattleELIM);
+void GetNumbersRegular(int &nRegular);
+void GetNumbersTotal(int &nTotal);
+void GetNumbersOthers(int &nOthers);
 
 }  // namespace PlayerCount
 

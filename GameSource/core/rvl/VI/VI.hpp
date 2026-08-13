@@ -3,7 +3,7 @@
 #include <types.hpp>
 namespace VI {
 typedef void (*RetraceCallback)(u32 retraceCount);
-void* GetNextFrameBuffer();  // 801bab24
+void *GetNextFrameBuffer();  // 801bab24
 
 enum TVMode {
     VI_TVMODE_NTSC_INT,  // NTSC INTERLACING

@@ -28,15 +28,15 @@ enum InstallAnswer {
 };
 
 struct InstallInfo {
-    char* fileName;  // channel application's file name to install
-    wchar_t* titleName;  // channel application's title name to draw on screen
+    char *fileName;  // channel application's file name to install
+    wchar_t *titleName;  // channel application's title name to draw on screen
 };
 
 BOOL IsTitleInstalled(u64 titleId);
 void __LaunchTitle(u32 launchCode, u32 titleID);
-InstallReturn CheckInstall(u32 num, u32 fsBlock, u32 inode, InstallAnswer* answer);  // 801ad1d4
-void LaunchInstaller(u32 launchCode, u16* gameTitleName, InstallInfo* info);  // 801a4828
-void LaunchDiskl(DVD::DiskID* id, u32 LaunchCode, const char* arg0, ... /*, (char*)NULL */);  // 801a3cec
+InstallReturn CheckInstall(u32 num, u32 fsBlock, u32 inode, InstallAnswer *answer);  // 801ad1d4
+void LaunchInstaller(u32 launchCode, u16 *gameTitleName, InstallInfo *info);  // 801a4828
+void LaunchDiskl(DVD::DiskID *id, u32 LaunchCode, const char *arg0, ... /*, (char*)NULL */);  // 801a3cec
 
 }  // namespace OS
 

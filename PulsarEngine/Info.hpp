@@ -27,7 +27,7 @@ class Info {
 
    private:
     Info() {}
-    void Init(const Info& rawInfo) { memcpy(this, &rawInfo, sizeof(Info)); }
+    void Init(const Info &rawInfo) { memcpy(this, &rawInfo, sizeof(Info)); }
     u32 roomKey;  // 0x0 transmitted to other players
     u32 prob100cc;  // 0x4
     u32 prob150cc;  // 0x8

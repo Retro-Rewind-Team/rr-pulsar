@@ -14,11 +14,11 @@ class CupsConfig;
 
 class CupsConfig {
    public:
-    static CupsConfig* sInstance;
+    static CupsConfig *sInstance;
     static const u32 RegsCRC32[];
 
-    CupsConfig(const CupsHolder& rawCups);
-    CupsConfig(const CupsHolder& rtCups, const CupsHolder& ctCups, const CupsHolder& btCups);
+    CupsConfig(const CupsHolder &rawCups);
+    CupsConfig(const CupsHolder &rtCups, const CupsHolder &ctCups, const CupsHolder &btCups);
 
     PulsarId ConvertTrack_PulsarCupToTrack(PulsarCupId pulsarCupId, u32 rowIdx) const {
         if (IsRegCup(pulsarCupId) || !this->isAlphabeticalLayout)
@@ -33,12 +33,12 @@ class CupsConfig {
     int GetEffectiveTrackCount() const { return (definedCTsCupCount + HasRegs() * 8) * 4; }  // settings and froom msgs
     void ToggleCTs(bool enabled);
     static void SetLayout();
-    void GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantIdx) const;
-    void LoadFileNames(const char* buffer, u32 length, u32 trackIdxOffset = 0, u32 sourceTrackCount = 0);
+    void GetExpertPath(char *dest, PulsarId id, TTMode mode, u8 variantIdx) const;
+    void LoadFileNames(const char *buffer, u32 length, u32 trackIdxOffset = 0, u32 sourceTrackCount = 0);
 
     // Ghosts
     int GetCRC32(PulsarId id) const;
-    void GetTrackGhostFolder(char* dest, PulsarId pulsarId, u8 variantIdx) const;
+    void GetTrackGhostFolder(char *dest, PulsarId pulsarId, u8 variantIdx) const;
 
     // Slot Getters
     CourseId GetCorrectTrackSlot() const;
@@ -47,8 +47,8 @@ class CupsConfig {
     bool HasRegs() const { return hasRegs; }
     bool HasOddCups() const { return hasOddCups; }
     bool IsAlphabetical() const { return isAlphabeticalLayout; }
-    const u16* GetAlphabeticalArray() const { return alphabeticalArray; }
-    const u16* GetInvertedArray() const { return invertedAlphabeticalArray; }
+    const u16 *GetAlphabeticalArray() const { return alphabeticalArray; }
+    const u16 *GetInvertedArray() const { return invertedAlphabeticalArray; }
     // Validity
     bool IsValidCup(PulsarCupId id) {
         if (this->hasRegs && IsRegCup(id))
@@ -63,7 +63,7 @@ class CupsConfig {
     }
 
     // Slot Expansion
-    void SaveSelectedCourse(const PushButton& courseButton);
+    void SaveSelectedCourse(const PushButton &courseButton);
     PulsarCupId GetNextCupId(PulsarCupId cupId, s32 direction) const;
     PulsarId RandomizeTrack() const;
 
@@ -83,7 +83,7 @@ class CupsConfig {
 
     static const u8 idToCourseId[32];
 
-    const Track& GetTrack(PulsarId id) const {  // only for CTs
+    const Track &GetTrack(PulsarId id) const {  // only for CTs
         return this->mainTracks[id - PULSARID_FIRSTCT];
     }
 
@@ -98,7 +98,7 @@ class CupsConfig {
     u8 GetCurVariantIdx() const { return this->curVariantIdx; }
     PulsarId GetSelected() const { return this->selectedCourse; };
     void SetSelected(PulsarId id) { this->selectedCourse = id; }
-    const char* GetFileName(PulsarId id, u8 variantIdx) const;
+    const char *GetFileName(PulsarId id, u8 variantIdx) const;
     u32 GetTotalVariantCount() const { return this->totalVariantCount; }
 
     // Cup variables can be public because they're seldom used and do not lead to faulty file loads
@@ -133,22 +133,22 @@ class CupsConfig {
     u32 GetBattleTrackCount() const { return battleCupCount * 4; }
     u32 GetRetroPlusCTCupCount() const { return retroCupCount + ctOnlyCupCount; }
 
-    Track* mainTracks;  // 0x28
-    Variant* variants;
-    u16* variantsOffs;
+    Track *mainTracks;  // 0x28
+    Variant *variants;
+    u16 *variantsOffs;
 
-    u16* alphabeticalArray;  // 0x30
-    u16* invertedAlphabeticalArray;
-    char** trackFileNames;
-    char** variantFileNames;
-    u32* trackNameBmgIds;
-    u32* variantNameBmgIds;
+    u16 *alphabeticalArray;  // 0x30
+    u16 *invertedAlphabeticalArray;
+    char **trackFileNames;
+    char **variantFileNames;
+    u32 *trackNameBmgIds;
+    u32 *variantNameBmgIds;
     u32 totalVariantCount;
 
-    void RegisterFileName(u32 trackIdx, u32 variantIdx, const char* name);
+    void RegisterFileName(u32 trackIdx, u32 variantIdx, const char *name);
 
     u8 vsTrackVariantIdx[32];
-    u8* lastVariantIdxByTrack;
+    u8 *lastVariantIdxByTrack;
 };  // 0x28
 
 }  // namespace Pulsar

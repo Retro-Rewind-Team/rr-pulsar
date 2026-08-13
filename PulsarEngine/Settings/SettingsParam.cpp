@@ -65,24 +65,21 @@ const SettingDef Params::settingDefs[SETTING_COUNT] = {
     {SETTING_EXTENDEDTEAMSLINE, 2},
     {SETTING_EXTENDEDTEAMSPLAYERS, 4},
     {SETTING_LOOSEARCHIVEOVERRIDES, 2},
-    {SETTING_LANGUAGE, 13}
-};
+    {SETTING_LANGUAGE, 13}};
 
 static const SettingId race1Radios[] = {
     SETTING_BRAKEDRIFT,
     SETTING_HARDAI,
     SETTING_INPUTDISPLAY,
     SETTING_MIIHEADS,
-    SETTING_SPEEDOMETER
-};
+    SETTING_SPEEDOMETER};
 
 static const SettingId race2Radios[] = {
     SETTING_BATTLEGLITCH,
     SETTING_FPS,
     SETTING_BLOOM,
     SETTING_FOV,
-    SETTING_NAMETAG
-};
+    SETTING_NAMETAG};
 
 static const SettingId race1OfflineRadios[] = {
     SETTING_BRAKEDRIFT,
@@ -91,12 +88,10 @@ static const SettingId race1OfflineRadios[] = {
     SETTING_MIIHEADS,
     SETTING_SPEEDOMETER,
     SETTING_KARTSELECT,
-    SETTING_CHARSELECT
-};
+    SETTING_CHARSELECT};
 
 static const SettingId race1OfflineScrollers[] = {
-    SETTING_TRACKSELECTION
-};
+    SETTING_TRACKSELECTION};
 
 static const SettingId race2OfflineRadios[] = {
     SETTING_BATTLEGLITCH,
@@ -106,56 +101,47 @@ static const SettingId race2OfflineRadios[] = {
     SETTING_NAMETAG,
     SETTING_ITEMBOXRESPAWN,
     SETTING_THUNDERCLOUD,
-    SETTING_ALLITEMSCANLAND
-};
+    SETTING_ALLITEMSCANLAND};
 
 static const SettingId race2OfflineScrollers[] = {
-    SETTING_ITEMMODE
-};
+    SETTING_ITEMMODE};
 
 static const SettingId menuRadios[] = {
     SETTING_FASTMENUS,
-    SETTING_LAYOUT
-};
+    SETTING_LAYOUT};
 
 static const SettingId menuScrollers[] = {
     SETTING_BOOT,
-    SETTING_HUDCOLOR
-};
+    SETTING_HUDCOLOR};
 
 static const SettingId soundRadios[] = {
     SETTING_CTMUSIC,
     SETTING_MUSIC,
     SETTING_MUSICSPEEDUP,
-    SETTING_SPECIALITEMRECEIVE
-};
+    SETTING_SPECIALITEMRECEIVE};
 
 static const SettingId onlineRadios[] = {
     SETTING_ONLINERANDOMBUTTON,
     SETTING_PREDICTIONREMOVAL,
     SETTING_STREAMERMODE,
     SETTING_INFINITEMATCHMAKINGTIMEOUT,
-    SETTING_DISPLAYCUSTOMSKINS
-};
+    SETTING_DISPLAYCUSTOMSKINS};
 
 static const SettingId battleRadios[] = {
     SETTING_BATTLETEAMS,
-    SETTING_BATTLEELIMINATION
-};
+    SETTING_BATTLEELIMINATION};
 
 static const SettingId froom1Radios[] = {
     SETTING_FROOMCC,
     SETTING_KARTSELECT,
     SETTING_CHARSELECT,
     SETTING_RANKINGS,
-    SETTING_VR
-};
+    SETTING_VR};
 
 static const SettingId froom1Scrollers[] = {
     SETTING_RACECOUNT,
     SETTING_ITEMMODE,
-    SETTING_TRACKSELECTION
-};
+    SETTING_TRACKSELECTION};
 
 static const SettingId froom2Radios[] = {
     SETTING_HOSTWINS,
@@ -164,62 +150,51 @@ static const SettingId froom2Radios[] = {
     SETTING_THUNDERCLOUD,
     SETTING_FORCETRANSMISSION,
     SETTING_ALLITEMSCANLAND,
-    SETTING_VANILLAMODE
-};
+    SETTING_VANILLAMODE};
 
 static const SettingId ottOfflineRadios[] = {
     SETTING_OTTOFFLINE,
     SETTING_OTTALLOWCHANGECOMBO,
     SETTING_OTTALLOWUMTS,
-    SETTING_OTTMUTEPTANDPLAYERS
-};
+    SETTING_OTTMUTEPTANDPLAYERS};
 
 static const SettingId ottOnlineRadios[] = {
     SETTING_OTTONLINE,
     SETTING_OTTALLOWCHANGECOMBO,
     SETTING_OTTALLOWUMTS,
-    SETTING_OTTMUTEPTANDPLAYERS
-};
+    SETTING_OTTMUTEPTANDPLAYERS};
 
 static const SettingId koRadios[] = {
     SETTING_KOENABLED,
     SETTING_KOFINAL,
-    SETTING_KO1V1FINALE
-};
+    SETTING_KO1V1FINALE};
 
 static const SettingId koScrollers[] = {
     SETTING_KOPERRACE,
     SETTING_RACESPERKO,
     SETTING_KOELIMTHRESHOLD,
-    SETTING_KOELIMCHANGE
-};
+    SETTING_KOELIMCHANGE};
 
 static const SettingId royaleRadios[] = {
     SETTING_KOROYALEENABLED,
-    SETTING_ALLITEMSCANLAND
-};
+    SETTING_ALLITEMSCANLAND};
 
 static const SettingId royaleScrollers[] = {
     SETTING_KOROYALEBALLOONS,
-    SETTING_KOROYALELAPMULTIPLIER
-};
+    SETTING_KOROYALELAPMULTIPLIER};
 
 static const SettingId extendedTeamsRadios[] = {
     SETTING_EXTENDEDTEAMSENABLED,
-    SETTING_EXTENDEDTEAMSLINE
-};
+    SETTING_EXTENDEDTEAMSLINE};
 
 static const SettingId extendedTeamsScrollers[] = {
-    SETTING_EXTENDEDTEAMSPLAYERS
-};
+    SETTING_EXTENDEDTEAMSPLAYERS};
 
 static const SettingId miscRadios[] = {
-    SETTING_LOOSEARCHIVEOVERRIDES
-};
+    SETTING_LOOSEARCHIVEOVERRIDES};
 
 static const SettingId miscScrollers[] = {
-    SETTING_LANGUAGE
-};
+    SETTING_LANGUAGE};
 
 #define PAGE_DEF(bmg, radios, scrollers) \
     {bmg, radios, ARRAY_COUNT(radios), scrollers, ARRAY_COUNT(scrollers), false}
@@ -268,7 +243,7 @@ const SettingsContextDef Params::contextDefs[SETTINGS_CONTEXT_COUNT] = {
     {votingPages, ARRAY_COUNT(votingPages)},
 };
 
-u32 Params::BuildHostRulePages(SettingsPageId* dest, bool isBattle, bool isKO,
+u32 Params::BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO,
                                bool isOTT, bool isRoyale, bool isExtendedTeams) {
     u32 count = 0;
     dest[count++] = SETTINGS_PAGE_FROOM1;
@@ -277,10 +252,14 @@ u32 Params::BuildHostRulePages(SettingsPageId* dest, bool isBattle, bool isKO,
         dest[count++] = SETTINGS_PAGE_BATTLE;
         if (isExtendedTeams) dest[count++] = SETTINGS_PAGE_EXTENDED_TEAMS;
     } else {
-        if (isExtendedTeams) dest[count++] = SETTINGS_PAGE_EXTENDED_TEAMS;
-        else if (isKO) dest[count++] = SETTINGS_PAGE_KO;
-        if (isOTT) dest[count++] = SETTINGS_PAGE_OTT_ONLINE;
-        else if (isRoyale) dest[count++] = SETTINGS_PAGE_ROYALE;
+        if (isExtendedTeams)
+            dest[count++] = SETTINGS_PAGE_EXTENDED_TEAMS;
+        else if (isKO)
+            dest[count++] = SETTINGS_PAGE_KO;
+        if (isOTT)
+            dest[count++] = SETTINGS_PAGE_OTT_ONLINE;
+        else if (isRoyale)
+            dest[count++] = SETTINGS_PAGE_ROYALE;
     }
     return count;
 }

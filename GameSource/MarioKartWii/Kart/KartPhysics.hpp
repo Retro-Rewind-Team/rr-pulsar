@@ -13,11 +13,11 @@ class Physics {
     void Reset();  // 805b4b54
     void ResetSpeed();  // 805b4d24
     void Init();  // 805b4dc0
-    void Init(const Vec3& cuboid1, const Vec3& cuboid2, float rotationSpeed, bool isInertiaInit);  // 805b4dc4
-    void InitInertia(const Vec3& cuboid1, const Vec3& cuboid2);  // 805b4e84
+    void Init(const Vec3 &cuboid1, const Vec3 &cuboid2, float rotationSpeed, bool isInertiaInit);  // 805b4dc4
+    void InitInertia(const Vec3 &cuboid1, const Vec3 &cuboid2);  // 805b4e84
     void CalcInvInertia();  // 805b4f34
     void Update(bool unknown, float one, float maxSpeed);  // 805b5170
-    void ApplyWheelSuspension(const Vec3& unk0, const Vec3& normalAcceleration, const Vec3& unk1, bool unk2);  // 805b6150
+    void ApplyWheelSuspension(const Vec3 &unk0, const Vec3 &normalAcceleration, const Vec3 &unk1, bool unk2);  // 805b6150
 
     virtual ~Physics();  // 8059f678 vtable 808b7314
     virtual void Stabilize();  // 805b5b68
@@ -59,13 +59,13 @@ class PhysicsBike : public Physics {
 
 class PhysicsHolder {
    public:
-    PhysicsHolder(bool isBike, StatsAndBsp* statsAndBsp, void* arg_r5, u32 wheelCount);  // 805a04a0
+    PhysicsHolder(bool isBike, StatsAndBsp *statsAndBsp, void *arg_r5, u32 wheelCount);  // 805a04a0
     void Init(bool isBike);  // 8059f5bc
     void Reset();  // 8059f7c8
     void ResetQuaternions();  // 805a0410
     virtual ~PhysicsHolder();  // 8059f6f8 vtable 808b69e8
-    Physics* physics;
-    HitboxGroup* hitboxGroup;
+    Physics *physics;
+    HitboxGroup *hitboxGroup;
     u8 unknown_0xc[0x18 - 0xc];
     Vec3 position;
     Quat unknown_0x24[6];

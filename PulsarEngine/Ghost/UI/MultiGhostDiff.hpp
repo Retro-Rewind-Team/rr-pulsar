@@ -19,11 +19,11 @@ class MultiGhostDiff : public UIControl {
     MultiGhostDiff();
     ~MultiGhostDiff() override { delete (diffTimes); }
     static u32 Count();
-    static void Create(Page& page, u32 index, u32 count);
+    static void Create(Page &page, u32 index, u32 count);
 
    private:
     void Load();
-    CtrlRaceGhostDiffTime* diffTimes;
+    CtrlRaceGhostDiffTime *diffTimes;
     u32 diffTimeCount;
     bool isGhostReplay;
 };

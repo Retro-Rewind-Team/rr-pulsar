@@ -32,7 +32,7 @@ static bool IsPublicMatchmakingRoomType(const RKNet::RoomType roomType) {
     }
 }
 
-static u32 GetTrackedRoomGroupId(const RKNet::Controller* controller) {
+static u32 GetTrackedRoomGroupId(const RKNet::Controller *controller) {
     if (controller == nullptr) return 0;
     const u32 currentSub = static_cast<u32>(controller->currentSub) & 1;
     for (u32 i = 0; i < 2; ++i) {
@@ -42,7 +42,7 @@ static u32 GetTrackedRoomGroupId(const RKNet::Controller* controller) {
     return 0;
 }
 
-static void RememberPreviousPublicRoomGroupId(const RKNet::Controller* controller) {
+static void RememberPreviousPublicRoomGroupId(const RKNet::Controller *controller) {
     if (controller == nullptr || !IsPublicMatchmakingRoomType(controller->roomType)) return;
 
     const u32 activeGroupId = GetTrackedRoomGroupId(controller);
@@ -64,24 +64,24 @@ asmFunc LoadMatchmakingTimeout() {
         blr;)
 }
 
-typedef int (*SBServerGetIntValueA_t)(void* server, const char* key, int defaultValue);
+typedef int (*SBServerGetIntValueA_t)(void *server, const char *key, int defaultValue);
 static const SBServerGetIntValueA_t SBServerGetIntValueA = (SBServerGetIntValueA_t)kmRuntimeAddr(0x8011d2b0);
 
-typedef void (*SBServerSetIntValueA_t)(void* server, const char* key, int value);
+typedef void (*SBServerSetIntValueA_t)(void *server, const char *key, int value);
 static const SBServerSetIntValueA_t SBServerSetIntValueA = (SBServerSetIntValueA_t)kmRuntimeAddr(0x8011d1e4);
 
-typedef int (*ServerBrowserCountA_t)(void* sb);
+typedef int (*ServerBrowserCountA_t)(void *sb);
 static const ServerBrowserCountA_t ServerBrowserCountA = (ServerBrowserCountA_t)kmRuntimeAddr(0x8011e488);
 
-typedef void* (*ServerBrowserGetServerAtIndexA_t)(void* sb, int index);
+typedef void *(*ServerBrowserGetServerAtIndexA_t)(void *sb, int index);
 static const ServerBrowserGetServerAtIndexA_t ServerBrowserGetServerAtIndexA = (ServerBrowserGetServerAtIndexA_t)kmRuntimeAddr(0x8011e480);
 
-typedef void (*ServerBrowserSortA_t)(void* sb, bool ascending, const char* sortKey, int sortType);
+typedef void (*ServerBrowserSortA_t)(void *sb, bool ascending, const char *sortKey, int sortType);
 static const ServerBrowserSortA_t ServerBrowserSortA = (ServerBrowserSortA_t)kmRuntimeAddr(0x8011e490);
 
-static bool HasNonSmallRoomOption(void* sb, int count) {
+static bool HasNonSmallRoomOption(void *sb, int count) {
     for (int i = 0; i < count; ++i) {
-        void* server = ServerBrowserGetServerAtIndexA(sb, i);
+        void *server = ServerBrowserGetServerAtIndexA(sb, i);
         if (!server) continue;
 
         const int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
@@ -90,9 +90,9 @@ static bool HasNonSmallRoomOption(void* sb, int count) {
     return false;
 }
 
-static bool HasAlternativeRoomOption(void* sb, int count, bool blockSmallRooms) {
+static bool HasAlternativeRoomOption(void *sb, int count, bool blockSmallRooms) {
     for (int i = 0; i < count; ++i) {
-        void* server = ServerBrowserGetServerAtIndexA(sb, i);
+        void *server = ServerBrowserGetServerAtIndexA(sb, i);
         if (!server) continue;
 
         const int serverGroupId = SBServerGetIntValueA(server, "dwc_groupid", 0);
@@ -111,10 +111,10 @@ static bool HasAlternativeRoomOption(void* sb, int count, bool blockSmallRooms) 
 kmRuntimeUse(0x8038630C);
 void CustomRandomizeServers() {
     // dwcControl lives at r13 - 0x68f4.
-    void* dwcControl = *(void**)kmRuntimeAddr(0x8038630C);
+    void *dwcControl = *(void **)kmRuntimeAddr(0x8038630C);
     if (!dwcControl) return;
 
-    void* sb = *(void**)((u8*)dwcControl + 0x6dc);
+    void *sb = *(void **)((u8 *)dwcControl + 0x6dc);
     if (!sb) return;
 
     int count = ServerBrowserCountA(sb);
@@ -133,14 +133,14 @@ void CustomRandomizeServers() {
     if (sJoinAttempts < 3) {
         u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
 
-        RKNet::Controller* net = RKNet::Controller::sInstance;
+        RKNet::Controller *net = RKNet::Controller::sInstance;
         bool isBattle = false;
         if (net) {
             isBattle = (net->roomType == RKNet::ROOMTYPE_BT_WW || net->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
         }
 
         int playerRating;
-        const char* key;
+        const char *key;
         if (isBattle) {
             playerRating = (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f);
             key = "eb";
@@ -159,7 +159,7 @@ void CustomRandomizeServers() {
         int highRoomThreshold = playerRating + 40000;  // Player VR + 400 VR * 100
 
         for (int i = 0; i < count; ++i) {
-            void* server = ServerBrowserGetServerAtIndexA(sb, i);
+            void *server = ServerBrowserGetServerAtIndexA(sb, i);
             if (!server) continue;
 
             int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
@@ -204,7 +204,7 @@ void CustomRandomizeServers() {
     } else {
         // Fallback to random
         for (int i = 0; i < count; ++i) {
-            void* server = ServerBrowserGetServerAtIndexA(sb, i);
+            void *server = ServerBrowserGetServerAtIndexA(sb, i);
             if (!server) continue;
             int serverPlayerCount = SBServerGetIntValueA(server, "numplayers", -1) + 1;
             if (isCompetitiveMatchmakingEnabled && serverPlayerCount >= 12) {
@@ -228,14 +228,14 @@ void CustomRandomizeServers() {
 }
 kmBranch(0x800e4ad0, CustomRandomizeServers);
 
-static void UpdateMatchmakingInfosAndRememberGroupId(RKNet::Controller* self) {
+static void UpdateMatchmakingInfosAndRememberGroupId(RKNet::Controller *self) {
     self->UpdateSubsAndVR();
     RememberPreviousPublicRoomGroupId(self);
 }
 kmCall(0x80657990, UpdateMatchmakingInfosAndRememberGroupId);
 
 // Reset when starting ConnectToAnyoneAsync
-static void OnConnectToAnyoneAsync(RKNet::Controller* self) {
+static void OnConnectToAnyoneAsync(RKNet::Controller *self) {
     ApplyMatchmakingTimeoutPatch();
     sJoinAttempts = 0;
     RememberPreviousPublicRoomGroupId(self);

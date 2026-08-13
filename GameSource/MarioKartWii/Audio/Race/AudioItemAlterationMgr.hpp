@@ -12,8 +12,8 @@ class ItemAlterationMgr {  // changes the music or the pitch when using a mega/a
         STATUS_PLAYER_SQUISHED_SMALL,
         STATUS_PLAYER_NORMAL
     };
-    static ItemAlterationMgr* sInstance;  // 809c27f0
-    static ItemAlterationMgr* CreateInstance();  // 8070fa08
+    static ItemAlterationMgr *sInstance;  // 809c27f0
+    static ItemAlterationMgr *CreateInstance();  // 8070fa08
     static void DestroyInstance();  // 8070fabc
     ~ItemAlterationMgr();  // 8070fbc0
     void Init();  // 8070fc98
@@ -24,7 +24,7 @@ class ItemAlterationMgr {  // changes the music or the pitch when using a mega/a
     void Update();  // 8070fd10
     void UpdateStatus();  // 8070fec8
     void SetAudioAlteration();  // 8071007c based on status, inlined in Update
-    void CalcStatus2Values(float* baseValues);  // 80710214 inlined
+    void CalcStatus2Values(float *baseValues);  // 80710214 inlined
     void PlayStarMusic();  // 807102b0 inlined
     void PlayMegaMusic();  // 80710308 inlined
 

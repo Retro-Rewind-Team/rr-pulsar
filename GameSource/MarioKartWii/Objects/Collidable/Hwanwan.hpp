@@ -10,20 +10,20 @@ namespace Objects {
 
 class HwanwanBall : public ObjectCollidable, public StatePtmfTrigger<HwanwanBall> {
    public:
-    explicit HwanwanBall(const KMP::Holder<GOBJ>& gobjHolder);  // 806e95b0
+    explicit HwanwanBall(const KMP::Holder<GOBJ> &gobjHolder);  // 806e95b0
     // ObjectCollidable vtable 808c7554
     ~HwanwanBall() override;  // 806ec6e0
     void OnStart() override;  // 0xC 806e9724
     void Update() override;  // 0x14 806e9a78
     u32 GetPropertiesBitfield() override;  // 0x2c 806ec7b8
-    const char* GetSubFileName() const override;  // 0x38 806ec7ac
+    const char *GetSubFileName() const override;  // 0x38 806ec7ac
     void LoadAnimations() override;  // 0x5c 806ec750
     void LoadRoute() override;  // 0x64 806ec7a8
     void UpdateModelMatrix() override;  // 0x6c 806ec74c
     void UpdateShadow() override;  // 0x70 806ebe90
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806e9cac
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 806e9d6c
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806e9cac
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806e9d6c
 
     // StatePtmfTrigger vtable 808c7640 at 0xb0
     //~HwanwanBall() override; thunk 806ec7c0
@@ -35,9 +35,9 @@ class Hwanwan_Chn : public ObjectCollidable {
    public:
     ~Hwanwan_Chn() override;  // 806c6adc vtable 808c41d8
     void OnStart() override;  // 0xC 806c6a8c
-    const char* GetName() const override;  // 0x28 806c6b24
+    const char *GetName() const override;  // 0x28 806c6b24
     u32 GetPropertiesBitfield() override;  // 0x2c 806c6b3c
-    const char* GetSubFileName() const override;  // 0x38 806c6b30
+    const char *GetSubFileName() const override;  // 0x38 806c6b30
 
     void LoadCollision() override;  // 0x60 806c6b1c
     void LoadRoute() override;  // 0x64 806c6b20
@@ -53,16 +53,16 @@ class HwanwanItembox : public Itembox {
     void Update() override;  // 0x14 806c5070
 
     u16 GetID() const override;  // 0x24 806c6a28
-    const char* GetName() const override;  // 0x28 806c6a1c
-    const char* GetBRRESName() const override;  // 0x34 806c6a04
-    const char* GetSubFileName() const override;  // 0x38 806c6a10
+    const char *GetName() const override;  // 0x28 806c6a1c
+    const char *GetBRRESName() const override;  // 0x34 806c6a04
+    const char *GetSubFileName() const override;  // 0x38 806c6a10
     void LoadRoute() override;  // 0x64 806c6a80
     void UpdateShadow() override;  // 0x70 806c5254
     u8 unknown_0xc8[0xe0 - 0xc8];
 };  // 0xe0
 
 class Hwanwan : public ObjectCollidable {  // ObjectNum 0xe9 = 233
-    Hwanwan(const KMP::Holder<GOBJ>& gobjHolder, u8 chainLinkCount, u32 unused);  // 806c5354
+    Hwanwan(const KMP::Holder<GOBJ> &gobjHolder, u8 chainLinkCount, u32 unused);  // 806c5354
     ~Hwanwan() override;  // 806c56dc vtable 808c3f08
     void OnStart() override;  // 0xC 806c571c
     void Update() override;  // 0x14 806c5ac4
@@ -72,13 +72,13 @@ class Hwanwan : public ObjectCollidable {  // ObjectNum 0xe9 = 233
     void LoadCollision() override;  // 0x60 806c69b0
     virtual void vf_0xec();  // 806c5bcc
 
-    HwanwanBall* hwanhwan;  // 0xb0
-    Hwanwan_Chn* chain;  // 0xb4
-    Hwanwan_Chn* chainLinks;  // 0xb8
-    HwanwanItembox* itemBoxes;  // 0xbc
-    void* unknown_class0xc0;  // 0xc0
+    HwanwanBall *hwanhwan;  // 0xb0
+    Hwanwan_Chn *chain;  // 0xb4
+    Hwanwan_Chn *chainLinks;  // 0xb8
+    HwanwanItembox *itemBoxes;  // 0xbc
+    void *unknown_class0xc0;  // 0xc0
     u8 itemBoxCount;  // 0xc4 setting1
-    u16* unknown_0xc8;  // 0xc8 size itemboxcount * 2
+    u16 *unknown_0xc8;  // 0xc8 size itemboxcount * 2
     u8 chainLinkCount;  // 0xcc minimum 4
     bool hasItemBoxes;  // 0xcd
     u8 padding[2];

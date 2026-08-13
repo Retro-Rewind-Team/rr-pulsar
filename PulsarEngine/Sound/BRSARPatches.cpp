@@ -14,11 +14,11 @@ using namespace nw4r;
 // On a file that actually only has 1 channel, these superfluous reads can overflow the file length when the block index is close to the total block count,
 // which leads to a read error and a playback stop, so we fix the issue by taking the smallest channel count btw the file and the entry.
 // Track Count also needs to be reduced, otherwise the game will play track which are not populated with data
-bool LoadBRSTMVolumeAndFixTrackCount(snd::detail::StrmFileLoader& fileLoader, snd::detail::StrmFileReader::StrmInfo& info) {
-    register snd::detail::StrmSound* sound;
+bool LoadBRSTMVolumeAndFixTrackCount(snd::detail::StrmFileLoader &fileLoader, snd::detail::StrmFileReader::StrmInfo &info) {
+    register snd::detail::StrmSound *sound;
     asm(subi sound, r29, 0x100);
 
-    u8 volume = *reinterpret_cast<const u8*>(ut::AddU32ToPtr(fileLoader.fileReader.header, 0x3F));
+    u8 volume = *reinterpret_cast<const u8 *>(ut::AddU32ToPtr(fileLoader.fileReader.header, 0x3F));
     if (volume != 0) {
         const u32 maxVolume = 0x7F;
         if (volume > maxVolume) volume = maxVolume;
@@ -26,7 +26,7 @@ bool LoadBRSTMVolumeAndFixTrackCount(snd::detail::StrmFileLoader& fileLoader, sn
     }
     bool ret = fileLoader.ReadStrmInfo(&info);
     if (ret) {
-        snd::detail::StrmPlayer& player = sound->strmPlayer;
+        snd::detail::StrmPlayer &player = sound->strmPlayer;
         u32 brsarChannel = player.channelsNeeded;
         u32 actual = ut::Min(sound->strmPlayer.channelsNeeded, info.channelCount);
         for (int index = actual; index < brsarChannel; ++index) {
@@ -42,7 +42,7 @@ bool LoadBRSTMVolumeAndFixTrackCount(snd::detail::StrmFileLoader& fileLoader, sn
 kmCall(0x800a66f4, LoadBRSTMVolumeAndFixTrackCount);
 
 // Automatic BRSAR patching from Elias_
-void BRSAREntrySizePatch(snd::DVDSoundArchive::DVDFileStream* stream, s32 offset, u32 origin) {
+void BRSAREntrySizePatch(snd::DVDSoundArchive::DVDFileStream *stream, s32 offset, u32 origin) {
     stream->size = 0x7FFFFFFF;
     stream->Seek(offset, origin);
 }

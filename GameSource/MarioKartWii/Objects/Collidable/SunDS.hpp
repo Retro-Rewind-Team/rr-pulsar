@@ -16,7 +16,7 @@ class SunDSManager : public MapObjSniper {
 
 class SunDS : public MapObjShooter, public StatePtmfTrigger<SunDS> {  // ObjectNum 0x72 = 114
    public:
-    explicit SunDS(const KMP::Holder<GOBJ>& gobjHolder);  // 806dddd8
+    explicit SunDS(const KMP::Holder<GOBJ> &gobjHolder);  // 806dddd8
     ~SunDS() override;  // 806ddf68 vtable 808c6310
     void OnStart() override;  // 0xc 806ddfd4
     void Update() override;  // 0x14 806de03c

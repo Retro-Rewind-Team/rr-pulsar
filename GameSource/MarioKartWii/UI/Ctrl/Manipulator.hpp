@@ -72,7 +72,7 @@ class ButtonInfo {
     ButtonInfo();  // 805eee24
     virtual ~ButtonInfo();  // 805eeed0 vtable 808b9a80
     virtual void Reset();  // 0xc 805eef10, calls reset
-    virtual void Update(const Input::ControllerHolder* controllerHolder);  // 0x10 805eef20
+    virtual void Update(const Input::ControllerHolder *controllerHolder);  // 0x10 805eef20
     virtual void Init();  // 0x14 805ef138
     u32 pressTimes[9];  // 0x4 see actions enum
     bool lockAction[9];  // 0x28 set to true if button was held OR manually; this is used to prevent rapidfire non-stick presses
@@ -85,7 +85,7 @@ class ControlButtonInfo : public ButtonInfo {
     ControlButtonInfo();  // 805ef780 always inlined
     ~ControlButtonInfo() override;  // 805ef848 vt 808b9a30 at 0x8
     void Reset() override;  // 0xc 805ef888, calls reset
-    void Update(const Input::ControllerHolder* controllerHolder) override;  // 0x10 805ef898
+    void Update(const Input::ControllerHolder *controllerHolder) override;  // 0x10 805ef898
     void Init() override;  // 0x14 805ef958
     void LockNonDirectionalActions();  // 805ef9ec only for 1 frame
     bool IsADirectionHeldForMultipleOf15(bool allowMultiples);  // 805efa70 otherwise only 0 frames will return true, which is used to know if a direction has JUST been held
@@ -97,7 +97,7 @@ class ControlButtonInfo : public ButtonInfo {
     Vec2 pointerPosition;  // 0x40
     bool enabled;  // 0x48 if this control button info is taking inputs
     u8 unknown_0x49[3];  // padding?
-    ControlManipulator* childManipulator;  // set by controls that have children like RadioControl or TabControl
+    ControlManipulator *childManipulator;  // set by controls that have children like RadioControl or TabControl
     u8 unknown_0x50[0x54 - 0x50];
 };  // 0x54
 // size_assert(ControlButtonInfo, 0x54);
@@ -107,7 +107,7 @@ class ControlManipulatorHolder {  // holds an action holder
     ControlManipulatorHolder();  // 805f0a98
     ~ControlManipulatorHolder();  // 805f0b94
 
-    ControlManipulator* curManipulator;
+    ControlManipulator *curManipulator;
     u32 curChildId;  // for controls that have children like RadioControl or TabControl
     ControlButtonInfo info;  // 0xC
 };  // total size 0x5C
@@ -116,10 +116,10 @@ class ControlManipulatorHolder {  // holds an action holder
 class ManipulatorManager {  // PARENT
    public:
     ManipulatorManager();  // 805eeb68  808b9a98
-    virtual const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const;  // 805bd704 vtable 808b9a98
+    virtual const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const;  // 805bd704 vtable 808b9a98
     virtual ~ManipulatorManager();  // 805eeb8c
     virtual void Init(u32 localPlayerBitfield, bool isMultiplayer);  // 0x10 805eebcc r4 related to inputs
-    virtual void* GetHolderList() const;  // 805f2cf4, just a blr as no list
+    virtual void *GetHolderList() const;  // 805f2cf4, just a blr as no list
     virtual void CheckActions();  // 0x18 805eec58
     virtual void Activate(u32 hudSlotId, u32 localPlayerBitfield2, bool isMultiplayer);  // 805eec5c
     virtual void OnDeactivate(bool isMultiplayer);  // 0x20 805eece8
@@ -138,21 +138,21 @@ class ManipulatorManager {  // PARENT
     bool inaccessible;  // 0xC if set to true, actions are blocked
     bool isMultiplayer;
     u8 unknown_0xE[0x10 - 0xE];  // padding?
-    static const Input::ControllerHolder* GetControllerHolder(u8 id);  // 805eee0c
+    static const Input::ControllerHolder *GetControllerHolder(u8 id);  // 805eee0c
 };  // total size 0x10
 // size_assert(ManipulatorManager, 0x10);
 
 class PageManipulatorManager : public ManipulatorManager {  // sets actions for page, equivalent to ControlsManipulatorManager but for pages 80601d04 checks actions
    public:
     PageManipulatorManager();  // 805ef240
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 805f2cf8 vtable 808b9a48
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 805f2cf8 vtable 808b9a48
     ~PageManipulatorManager() override;  // 0xc 805ef2fc
     void Init(u32 localPlayerBitfield, bool isMultiplayer) override;  // 0x10 805ef364
     void CheckActions() override;  // 0x18 805ef43c
     void Activate(u32 hudSlotId, u32 localPlayerBitfield2, bool isMultiplayer) override;  // 805ef5a8
     void OnReset() override;  // 0x24 805ef688
-    void SetGlobalHandler(Action input, const PtmfHolder_1A<Page, void, u32>& handler, bool isTriggered);  // 805ef768
-    const PtmfHolder_1A<Page, void, u32>* globalHandlers[9];  // 0x10 805f15cc, first arg is buttin info id
+    void SetGlobalHandler(Action input, const PtmfHolder_1A<Page, void, u32> &handler, bool isTriggered);  // 805ef768
+    const PtmfHolder_1A<Page, void, u32> *globalHandlers[9];  // 0x10 805f15cc, first arg is buttin info id
     bool isTriggered[9];  // 0x34
     u8 unknown_0x3D[3];  // padding
     ButtonInfo buttoninfoArray[5];  // 0x40 5th corresponds to Input::Manager's dummy controller
@@ -161,12 +161,12 @@ class PageManipulatorManager : public ManipulatorManager {  // sets actions for 
 
 class ControlsManipulatorManager : public ManipulatorManager {  // contains multiple action handlers, tied to a page
    public:
-    typedef int (*CalcDistanceFunc)(const ControlManipulator& subject, const ControlManipulator& other, Directions direction);
+    typedef int (*CalcDistanceFunc)(const ControlManipulator &subject, const ControlManipulator &other, Directions direction);
     ControlsManipulatorManager();  // 805f09a8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 805f2cdc vtable 808b99e8
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 805f2cdc vtable 808b99e8
     ~ControlsManipulatorManager() override;  // 805f0bd4
     void Init(u32 localPlayerBitfield, bool isMultiplayer) override;  // 0x10 805f0c48
-    void* GetHolderList() const override;  // 805f0e30
+    void *GetHolderList() const override;  // 805f0e30
     void CheckActions() override;  // 0x18 805f0e94
     void Activate(u32 activeLocalPlayerBitfield, u32 localPlayerBitfield, bool isMultiplayer) override;  // 805f1bc0
     void OnDeactivate(bool isMultiplayer) override;  // 805f1cf4 //0x20
@@ -177,10 +177,10 @@ class ControlsManipulatorManager : public ManipulatorManager {  // contains mult
     bool CheckPlayerPointer() override;  // 805f22d4
 
     // Most funcs are inlined
-    void AddControlManipulator(ControlManipulator* manipulator);  // 805f0d44 adds it to the list
-    void SetGlobalHandler(Action id, const PtmfHolder_1A<Page, void, u32>& handler, bool repeatable, bool ispointerDisabled);  // 805f0d84
-    void SetControlManipulator(u32 hudSlotId, ControlManipulator& manipulator, u32 childId);  // 805f0da0, for initial selected control
-    void SetChildControlManipulator(u32 hudSlotId, ControlManipulator& child, u32 childId);  // 805f20ec
+    void AddControlManipulator(ControlManipulator *manipulator);  // 805f0d44 adds it to the list
+    void SetGlobalHandler(Action id, const PtmfHolder_1A<Page, void, u32> &handler, bool repeatable, bool ispointerDisabled);  // 805f0d84
+    void SetControlManipulator(u32 hudSlotId, ControlManipulator &manipulator, u32 childId);  // 805f0da0, for initial selected control
+    void SetChildControlManipulator(u32 hudSlotId, ControlManipulator &child, u32 childId);  // 805f20ec
     // 0 = all wrapping, 1 = vertical only, 2 = no wrapping, 3 = linear
     void SetDistanceFunc(u32 type);  // 805f0db4
     void InitHolders(u8 hudSlotId, bool enabled);  // 805f2100
@@ -190,7 +190,7 @@ class ControlsManipulatorManager : public ManipulatorManager {  // contains mult
     bool func_805f226c(u8 hudSlotId, u8 r5);
 
     EGG::List manipulatorsList;  // 0x10
-    const PtmfHolder_2A<LayoutUIControl, void, u32, u32>* globalHandlers[9];  // 0x1c 805f15cc, applies to all controls
+    const PtmfHolder_2A<LayoutUIControl, void, u32, u32> *globalHandlers[9];  // 0x1c 805f15cc, applies to all controls
     bool repeatable[9];  // the input triggers the action every 15 frames if this is set to true and the action doesn't change the curManipulator
     bool isPointerDisabled[9];
     u8 unknown_0x52[2];  // padding?
@@ -207,11 +207,11 @@ class ControlBoundingBox {
     bool TriggerOnSelectHandler(u8 hudSlotId);  // 805f08a0 inlined, returns false if no handler
     bool TriggerOnDeselectHandler(u8 hudSlotId);  // 805f08f0 inlined, returns false if no handler
 
-    nw4r::lyt::Pane* touchPane;  // 0
+    nw4r::lyt::Pane *touchPane;  // 0
     Vec3 boundingBoxOrigin;  // 0x4
     Vec2 boundingBoxSize;  // 0x10
-    PtmfHolder_2A<LayoutUIControl, void, u32, u32>* onSelectControlHandler;  // 0x18 tied to control's handleSelect
-    PtmfHolder_2A<LayoutUIControl, void, u32, u32>* onDeselectControlHandler;  // 0x1C
+    PtmfHolder_2A<LayoutUIControl, void, u32, u32> *onSelectControlHandler;  // 0x18 tied to control's handleSelect
+    PtmfHolder_2A<LayoutUIControl, void, u32, u32> *onDeselectControlHandler;  // 0x1C
     u32 childId;  //-1 if not in the array
     u8 bool_0x24;  // 0x24, unsure 8063ffd8
     u8 padding[3];
@@ -224,30 +224,30 @@ class ControlManipulator {
     EGG::Link link;
     virtual ~ControlManipulator();  // 805efbd4 vtable 808b9a20
     void Init(u32 childCount, bool r5, bool inaccessible);  // 805efc48
-    void SetAction(Action id, const PtmfHolder_2A<LayoutUIControl, void, u32, u32>& handler, bool repeatable);  // 805efcf8
+    void SetAction(Action id, const PtmfHolder_2A<LayoutUIControl, void, u32, u32> &handler, bool repeatable);  // 805efcf8
     void SetEnabledHudSlots(u32 localPlayerBitfield);  // 805efd14
     bool HasDirectionalHandler(u8 directions);  // 805efdc8 1,2,8,4 for up, down, left, right, can call it with an or of directions
     bool TriggerAction(Action actionId, u8 hudSlotId, u32 childId);  // 805efe40 (inlined at 805f19ac) childId refers to the childcontrol (like a radio button) whose action is triggered
     void Load();  // 805efef4
     void Update();  // 805f0040
-    void GetHudColor(RGBA16* primary, RGBA16* secondary) const;  // 805f03dc
-    void GetHudSlotIdColorSingle(u8 hudSlotId, RGBA16* out) const;  // 805f04d8
-    int CalcDistanceBothWrapping(const ControlManipulator& other,
+    void GetHudColor(RGBA16 *primary, RGBA16 *secondary) const;  // 805f03dc
+    void GetHudSlotIdColorSingle(u8 hudSlotId, RGBA16 *out) const;  // 805f04d8
+    int CalcDistanceBothWrapping(const ControlManipulator &other,
                                  Directions direction) const;  // 805f0d38 calls calcdistance with true, true
-    int CalcDistanceVerticalWrappingOnly(const ControlManipulator& other,
+    int CalcDistanceVerticalWrappingOnly(const ControlManipulator &other,
                                          Directions direction) const;  // 805f0e18 calls calcdistance with false, true
-    int CalcDistanceNoWrapping(const ControlManipulator& other,
+    int CalcDistanceNoWrapping(const ControlManipulator &other,
                                Directions direction) const;  // 805f0e24 calls calcdistance with false, false
-    int CalcDistance(const ControlManipulator& other,
+    int CalcDistance(const ControlManipulator &other,
                      Directions direction, bool hasHorizontalWrapping, bool hasVerticalWrapping) const;  // mode: 0 returns 0, 1 only up, 2 both
-    int CalcDistanceLinear(const ControlManipulator& other, Directions direction) const;  // 805f2948
-    static void GetHudSlotIdColor(u8 hudSlotId, RGBA16* primary, RGBA16* secondary);  // 805f0440
+    int CalcDistanceLinear(const ControlManipulator &other, Directions direction) const;  // 805f2948
+    static void GetHudSlotIdColor(u8 hudSlotId, RGBA16 *primary, RGBA16 *secondary);  // 805f0440
 
     ControlBoundingBox boundingBox;  // 0xC
-    ControlBoundingBox* childrenControlsBoundingBoxArray;  // 805efc98 array here 0x34
+    ControlBoundingBox *childrenControlsBoundingBoxArray;  // 805efc98 array here 0x34
     u32 childrenBoundingBoxCount;  // 0x38
-    ControlsManipulatorManager* parentManager;  // 0x3c
-    const PtmfHolder_2A<LayoutUIControl, void, u32, u32>* actionHandlers[9];  // each corresponds to an Action, size based on ctor
+    ControlsManipulatorManager *parentManager;  // 0x3c
+    const PtmfHolder_2A<LayoutUIControl, void, u32, u32> *actionHandlers[9];  // each corresponds to an Action, size based on ctor
     bool repeatable[9];  // same
     u8 unknown_0x6D[3];  // padding?
     u32 enabledHudSlotsBitfield;  // if bit i is set, listens to player i

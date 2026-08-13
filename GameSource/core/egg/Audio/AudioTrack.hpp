@@ -14,7 +14,7 @@ using namespace nw4r;
 class AudioTrack;
 struct AudioTrackCallback {
     void(*callbackFunc);
-    AudioTrack* ptr;
+    AudioTrack *ptr;
 };
 
 class AudioTrack {
@@ -32,12 +32,12 @@ class AudioTrack {
 };
 
 class SimpleAudioTrack : public AudioTrack {
-    SimpleAudioTrack(u32 r4, snd::SoundHandle* handle);  // 80213f88
+    SimpleAudioTrack(u32 r4, snd::SoundHandle *handle);  // 80213f88
     void Reset() override;  // 80213ffc vtable 802a2968
     bool Calc() override;  // 802141c0
     virtual void SetValueSmooth(u32 r4, u32 delay, float maxValue);  // 80214058
     virtual void SetValueSmoothAsync(u32 delay, float maxValue);  // 8021410c
-    snd::SoundHandle* handle;
+    snd::SoundHandle *handle;
     u32 unknown_0x20;
 };
 

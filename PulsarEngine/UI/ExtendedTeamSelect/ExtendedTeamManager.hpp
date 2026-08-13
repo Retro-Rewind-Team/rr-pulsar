@@ -48,8 +48,8 @@ class ExtendedTeamManager {
         STATUS_DONE
     };
 
-    static ExtendedTeamManager* sInstance;
-    static void CreateInstance(ExtendedTeamManager* obj);
+    static ExtendedTeamManager *sInstance;
+    static void CreateInstance(ExtendedTeamManager *obj);
     static void DestroyInstance();
 
     ExtendedTeamManager();
@@ -91,7 +91,7 @@ class ExtendedTeamManager {
         return this->players[idx].aid;
     }
 
-    const ExtendedTeamPlayer* GetPlayerInfo() const {
+    const ExtendedTeamPlayer *GetPlayerInfo() const {
         return this->players;
     }
 
@@ -148,7 +148,7 @@ class ExtendedTeamManager {
     }
 
     static bool IsActivated() {
-        const RacedataSettings& settings = Racedata::sInstance->menusScenario.settings;
+        const RacedataSettings &settings = Racedata::sInstance->menusScenario.settings;
         if (!System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS)) return false;
 
         if (settings.gamemode == MODE_VS_RACE) {

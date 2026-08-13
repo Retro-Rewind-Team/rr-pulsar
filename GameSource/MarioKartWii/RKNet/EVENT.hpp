@@ -57,23 +57,23 @@ struct EVENTEntry {  // this means each entry has size up to 0x21
 
 class EVENTHandler {
    public:
-    static EVENTHandler* sInstance;  // 809c20f0
-    static EVENTHandler* CreateInstance();  // 8065b4e8
+    static EVENTHandler *sInstance;  // 809c20f0
+    static EVENTHandler *CreateInstance();  // 8065b4e8
     static void DestroyInstance();  // 8065b600
     EVENTHandler();  // 8065b640
     ~EVENTHandler();  // 8065ba8c
     void Update();  // 8065b730
-    void AddEntry(ItemObjId itemObjId, EVENTAction action, const void* data, u32 dataLength);  // 8065b780
+    void AddEntry(ItemObjId itemObjId, EVENTAction action, const void *data, u32 dataLength);  // 8065b780
     bool HasFreeEntries() const;  // 8065b8d4
     void Reset();  // 8065b998
     void ExportSendEntries();  // 8065bb94
     void ImportReceivedEntries();  // 8065bce4
     void ProcessReceivedEntries();  // 8065be40
     void FreeExpiredSendEntries();  // 8065bacc 200 frames + state_expired
-    void ResetEntry(EVENTEntry& entry);  // 8065c04c
-    EVENTType GetEntryType(const EVENTEntry& entry) const;  // 8065c078
-    void SetItemAndActionFromType(EVENTType type, EVENTEntry& entry);  // 8065c0b0
-    void ProcessEntry(u32 playerId, EVENTEntry& entry) const;  // 8065c0c4 inlined
+    void ResetEntry(EVENTEntry &entry);  // 8065c04c
+    EVENTType GetEntryType(const EVENTEntry &entry) const;  // 8065c078
+    void SetItemAndActionFromType(EVENTType type, EVENTEntry &entry);  // 8065c0b0
+    void ProcessEntry(u32 playerId, EVENTEntry &entry) const;  // 8065c0c4 inlined
 
     bool isPrepared;
     u8 padding[3];

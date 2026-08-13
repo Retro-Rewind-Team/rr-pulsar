@@ -75,12 +75,12 @@ struct WaveFile {  // RWAV
 
 class WaveFileReader {
    public:
-    WaveFileReader(const WaveFile::FileHeader* raw);  // 800ad1f0
-    WaveFileReader(const WaveFile::WaveInfo* rawInfo);  // 800ad210
-    bool ReadWaveInfo(WaveInfo* waveData, const void* waveDataOffsetOrigin) const;  // 800ad220
-    const void* GetWaveDataAddress(const WaveFile::WaveChannelInfo* waveChannelInfo, const void* waveDataOffsetOrigin) const;  // 800ad430
+    WaveFileReader(const WaveFile::FileHeader *raw);  // 800ad1f0
+    WaveFileReader(const WaveFile::WaveInfo *rawInfo);  // 800ad210
+    bool ReadWaveInfo(WaveInfo *waveData, const void *waveDataOffsetOrigin) const;  // 800ad220
+    const void *GetWaveDataAddress(const WaveFile::WaveChannelInfo *waveChannelInfo, const void *waveDataOffsetOrigin) const;  // 800ad430
 
-    const WaveFile::WaveInfo* rawWaveInfo;
+    const WaveFile::WaveInfo *rawWaveInfo;
 };
 
 }  // namespace detail

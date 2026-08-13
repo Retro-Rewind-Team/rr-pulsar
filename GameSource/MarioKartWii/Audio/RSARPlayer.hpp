@@ -21,14 +21,14 @@ namespace Audio {
 class Handle;
 class RSARPlayer {
    public:
-    static RSARPlayer* CreateInstance(SceneId sceneId);  // 80713e90 1 = menu
-    static RSARPlayer* DestroyInstance();  // 807140b4
-    static RSARPlayer* sInstance;  // 809c2850
+    static RSARPlayer *CreateInstance(SceneId sceneId);  // 80713e90 1 = menu
+    static RSARPlayer *DestroyInstance();  // 807140b4
+    static RSARPlayer *sInstance;  // 809c2850
     ~RSARPlayer();  // 807168bc inlined
     static Handle seqSoundHandle;  // 809c282c
     static u32 curSeqSoundIds[4];  // 809c2840 0 if nothing, so mostly 0
-    static bool PlaySoundById(u32 soundId, u32 r4, Page* page);  // 807146a8 page unused
-    static bool HoldSoundById(u32 soundId, u32 r4, Page* page);  // 8071476c only works if page is defocusing or exiting
+    static bool PlaySoundById(u32 soundId, u32 r4, Page *page);  // 807146a8 page unused
+    static bool HoldSoundById(u32 soundId, u32 r4, Page *page);  // 8071476c only works if page is defocusing or exiting
     static void StopSoundById(u32 soundId, int fadeFrames);  // 807155e4
     virtual void Close();  // 0x8 8071412c vtable 808c90e8
     virtual void OnDeactivate();  // 0xc 80714184 sets state to 2, and child classes check variables like if the player is a ghost
@@ -43,7 +43,7 @@ class RSARPlayer {
     static bool HasFinishedLoadingGroups();  // 807141ec on Stop, leads to DVDCancelAll if it returns false
     static bool IsDemo();  // 80713dcc
     static SectionId curSection;  // 809c26ac
-    static void OutputSoundToWiimotes(Handle* handle, u32 outputLineBitfield);  // 80713c80 bitfield must have 1 set or main (tv) is silent
+    static void OutputSoundToWiimotes(Handle *handle, u32 outputLineBitfield);  // 80713c80 bitfield must have 1 set or main (tv) is silent
     u8 unknown_0x4[4];
     u32 state;  // 0x8 01 before load, 02 after, 0x3 after pressing next race -> setting it to 3 midrace mutes most BRSAR sounds
     u8 unknown_0xC;  // checks if it's 1 after pressing next race

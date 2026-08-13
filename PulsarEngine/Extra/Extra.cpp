@@ -82,7 +82,7 @@ asmFunc GetItemDelimiterPOW() {
 }
 
 void EnableDelimitersForAllItems() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
                                                    controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     sBlockOnlineItemDelimiters = !isFroom && !Pulsar::ItemRain::IsItemRainEnabled();
@@ -92,7 +92,7 @@ kmCall(0x807B7C34, GetItemDelimiterShock);
 kmCall(0x807A81C0, GetItemDelimiterBlooper);
 kmCall(0x807B1B44, GetItemDelimiterPOW);
 
-static bool CanItemNotBeObtained(Item::ItemSlotData* slotData, ItemObjId objId, bool hasTimer) {
+static bool CanItemNotBeObtained(Item::ItemSlotData *slotData, ItemObjId objId, bool hasTimer) {
     if (!sBlockOnlineItemDelimiters || !hasTimer) return false;
 
     switch (objId) {
@@ -111,9 +111,9 @@ static bool CanItemNotBeObtained(Item::ItemSlotData* slotData, ItemObjId objId, 
 kmBranch(0x807BB380, CanItemNotBeObtained);
 
 // Blue Shell Cooldown [ZPL]
-extern "C" Item::ItemSlotData* itemSlotData;
-static void EnableBlueShellCooldown(Item::ObjKouraTogezo* blueShell) {
-    const Pulsar::System* system = Pulsar::System::sInstance;
+extern "C" Item::ItemSlotData *itemSlotData;
+static void EnableBlueShellCooldown(Item::ObjKouraTogezo *blueShell) {
+    const Pulsar::System *system = Pulsar::System::sInstance;
     if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled()) return blueShell->Reset();
 
     blueShell->Reset();
@@ -140,7 +140,7 @@ kmCall(0x800CB6C0, AntiWiper);
 kmWrite32(0x80526660, 0x38000001);  // Credits to Ro for the last line.
 
 // Anti Item Collission Crash [Marioiscool246]
-extern "C" void __ptmf_test(void*);
+extern "C" void __ptmf_test(void *);
 asmFunc AntiItemColCrash() {
     ASM(
         nofralloc;
@@ -196,16 +196,16 @@ kmWrite32(0x805BC8B4, 0x60000000);  // Skip setting credits course for true cred
 kmWrite32(0x80655578, 0x60000000);
 
 // Mushroom Glitch Fix [Vega, ported by ZPL]
-static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulette) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+static Item::PlayerRoulette *ApplyMushroomGlitchFix(Item::PlayerRoulette *roulette) {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
     return roulette;
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);
 
 // Slow Ramp Offroad Fix [vabold, ported by ZPL]
-static Kart::Status* ClearSlowRampMushroomRequirement(Kart::Pointers* pointers) {
-    Kart::Status* status = pointers->kartStatus;
+static Kart::Status *ClearSlowRampMushroomRequirement(Kart::Pointers *pointers) {
+    Kart::Status *status = pointers->kartStatus;
     if (!Pulsar::System::sInstance->IsVanillaMode()) {
         status->bitfield2 &= ~0x00100000;
     }
@@ -249,7 +249,7 @@ asmFunc GetUltraUncut() {
 kmCall(0x8053511C, GetUltraUncut);
 
 // Anti Lag Start [Ro]
-extern "C" void sInstance__8Racedata(void*);
+extern "C" void sInstance__8Racedata(void *);
 asmFunc AntiLagStart() {
     ASM(
         nofralloc;
@@ -400,7 +400,7 @@ kmWrite32(0x80827968, 0x38000000);
 kmWrite32(0x8082A4F8, 0x3800000A);
 
 // Cancel Friend Room Joining by Pressing B [Ro]
-extern "C" void ptr_inputBase(void*);
+extern "C" void ptr_inputBase(void *);
 asmFunc friendRoomJoinCancel() {
     ASM(
         nofralloc;
@@ -436,11 +436,11 @@ kmCall(0x807EB38C, burnoutIconFix);
 asmFunc pokeyDeathFix() {
     ASM(
         nofralloc;
-        loc_0x0:;
+        loc_0x0 :;
         cmpwi r0, 0x1;
-        beq- loc_0xC;
+        beq - loc_0xC;
         cmpwi r0, 0x3;
-        loc_0xC:;
+        loc_0xC :;
         blr;)
 }
 kmCall(0x8077AC50, pokeyDeathFix);
@@ -455,7 +455,7 @@ kmWrite16(0x808a22ec, 'RR');
 kmWrite32(0x8053F478, 0x4800000C);
 
 // Clear Exhaust Pipe Boost Particle After Damage [Ro]
-extern "C" void exhaustPipeboost(void*);
+extern "C" void exhaustPipeboost(void *);
 asmFunc exhaustPipeboostFix() {
     ASM(
         nofralloc;

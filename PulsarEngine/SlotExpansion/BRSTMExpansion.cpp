@@ -14,7 +14,7 @@ static char pulPath[0x100];
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
 
-static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
+static bool ResolveKCMenuMusicPath(const SectionId section, const char *&extFilePath) {
     if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
         extFilePath = titleMusicFile;
         return true;
@@ -34,17 +34,17 @@ static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFile
     return false;
 }
 
-static bool CheckBRSTMPath(const char* path) {
+static bool CheckBRSTMPath(const char *path) {
     return DVD::ConvertPathToEntryNum(path) >= 0;
 }
 
-static bool StringEndsWith(const char* str, const char* suffix) {
+static bool StringEndsWith(const char *str, const char *suffix) {
     if (str == nullptr || suffix == nullptr) return false;
 
-    const char* strEnd = str;
+    const char *strEnd = str;
     while (*strEnd != '\0') ++strEnd;
 
-    const char* suffixEnd = suffix;
+    const char *suffixEnd = suffix;
     while (*suffixEnd != '\0') ++suffixEnd;
 
     while (suffixEnd != suffix) {
@@ -56,7 +56,7 @@ static bool StringEndsWith(const char* str, const char* suffix) {
     return true;
 }
 
-static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath) {
+static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive *archive, const char *&extFilePath) {
     if (archive == nullptr || !IsSW2RRLoaded() || !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) return false;
 
     snprintf(pulPath, sizeof(pulPath), "%sstrm/o_FanfareRRGP1_32.brstm", archive->extFileRoot);
@@ -66,11 +66,11 @@ static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive
     return true;
 }
 
-s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier,
-                   const char* racePercentageSpecifier = "") {
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+s32 CheckBRSTMRoot(const char *root, PulsarId id, const char *lapSpecifier,
+                   const char *racePercentageSpecifier = "") {
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
-    const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
+    const char *creatorName = cupsConfig->GetFileName(id, variantIdx);
     if (creatorName != nullptr) {
         snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, creatorName, lapSpecifier, racePercentageSpecifier);
         if (CheckBRSTMPath(pulPath)) return 0;
@@ -93,24 +93,28 @@ s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier,
     return -1;
 }
 
-s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier,
-               const char* racePercentageSpecifier = "") {
+s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive *archive, PulsarId id, const char *lapSpecifier,
+               const char *racePercentageSpecifier = "") {
     return CheckBRSTMRoot(archive->extFileRoot, id, lapSpecifier, racePercentageSpecifier);
 }
 
-static const char* GetSW2RRRacePercentageSpecifier() {
+static const char *GetSW2RRRacePercentageSpecifier() {
     switch (GetSW2RRRacePercentageMusicTier()) {
-        case 1: return "-1";
-        case 2: return "-2";
-        case 3: return "-3";
-        default: return "";
+        case 1:
+            return "-1";
+        case 2:
+            return "-2";
+        case 3:
+            return "-3";
+        default:
+            return "";
     }
 }
 
 bool HasSW2RRTieredBRSTM(u8 tier) {
     if (tier == 0 || tier > 3) return true;
 
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     if (cupsConfig == nullptr) return false;
 
     const PulsarId track = cupsConfig->GetWinning();
@@ -122,11 +126,11 @@ bool HasSW2RRTieredBRSTM(u8 tier) {
     return CheckBRSTMRoot("/sound/", track, "_n", racePercentageSpecifier) >= 0;
 }
 
-nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void* buffer, int size,
-                                       const char* extFilePath, u32 r7, u32 length) {
+nw4r::ut::FileStream *MusicSlotsExpand(nw4r::snd::DVDSoundArchive *archive, void *buffer, int size,
+                                       const char *extFilePath, u32 r7, u32 length) {
     const Pulsar::CTMusic isBRSTMOn = static_cast<Pulsar::CTMusic>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC));
     const char firstChar = extFilePath[0xC];
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     const PulsarId track = cupsConfig->GetWinning();
     register SoundIDs toPlayId;
     asm(mr toPlayId, r20;);
@@ -146,7 +150,7 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
             const char finalChar = extFilePath[strLength];
             const bool isFinalLap = finalChar == 'f' || finalChar == 'F';
 
-            const char* racePercentageSpecifier = GetSW2RRRacePercentageSpecifier();
+            const char *racePercentageSpecifier = GetSW2RRRacePercentageSpecifier();
             const bool hasRacePercentageSpecifier = racePercentageSpecifier[0] != '\0';
 
             if (isFinalLap && hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_final", racePercentageSpecifier) >= 0) {
@@ -170,5 +174,5 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
 }
 kmCall(0x8009e0e4, MusicSlotsExpand);
 
-}
-}
+}  // namespace Sound
+}  // namespace Pulsar

@@ -23,16 +23,16 @@
 
 namespace Pulsar {
 
-System* System::sInstance = nullptr;
-System::Inherit* System::inherit = nullptr;
+System *System::sInstance = nullptr;
+System::Inherit *System::inherit = nullptr;
 
-static void ApplyVanillaModeRestrictions(System* system, bool clearOttAndItemModes) {
+static void ApplyVanillaModeRestrictions(System *system, bool clearOttAndItemModes) {
     system->context |= (1 << PULSAR_REGS) | (1 << PULSAR_THUNDERCLOUD);
     system->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_CTS) | (1 << PULSAR_200_WW) |
                          (1 << PULSAR_ELIMINATION) | (1 << PULSAR_FFA));
     system->context2 &= ~((1 << PULSAR_ITEMMODERANDOM) | (1 << PULSAR_ITEMMODEBLAST) |
-                         (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) |
-                         (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
+                          (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) |
+                          (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
     system->context2 |= (1 << PULSAR_TRANSMISSIONVANILLA);
     if (clearOttAndItemModes) {
         system->context &= ~(1 << PULSAR_MODE_OTT);
@@ -41,9 +41,9 @@ static void ApplyVanillaModeRestrictions(System* system, bool clearOttAndItemMod
     }
 }
 
-static void OverrideFroomVanillaModeSettings(bool& isTrackSelectionRegs, bool& isTrackSelectionRetros, bool& isTrackSelectionCts,
-                                             bool& isTransmissionInside, bool& isTransmissionOutside, bool& isTransmissionVanilla,
-                                             bool& isThunderCloud, bool& isAllItemsCanLand, bool& isItemBoxRespawnFast) {
+static void OverrideFroomVanillaModeSettings(bool &isTrackSelectionRegs, bool &isTrackSelectionRetros, bool &isTrackSelectionCts,
+                                             bool &isTransmissionInside, bool &isTransmissionOutside, bool &isTransmissionVanilla,
+                                             bool &isThunderCloud, bool &isAllItemsCanLand, bool &isItemBoxRespawnFast) {
     isTrackSelectionRegs = true;
     isTrackSelectionRetros = false;
     isTrackSelectionCts = false;
@@ -56,7 +56,7 @@ static void OverrideFroomVanillaModeSettings(bool& isTrackSelectionRegs, bool& i
 }
 
 bool System::IsVanillaMode() const {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr || controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN) return false;
 
     const bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
@@ -67,14 +67,14 @@ bool System::IsVanillaMode() const {
 }
 
 static inline bool ShouldForceNandIoSaves() {
-    return *reinterpret_cast<volatile u32*>(0x800017D8) == 0x01;
+    return *reinterpret_cast<volatile u32 *>(0x800017D8) == 0x01;
 }
 
 void System::CreateSystem() {
     if (sInstance != nullptr) return;
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    const EGG::Heap* prev = heap->BecomeCurrentHeap();
-    System* system;
+    EGG::Heap *heap = RKSystem::mInstance.EGGSystem;
+    const EGG::Heap *prev = heap->BecomeCurrentHeap();
+    System *system;
     if (inherit != nullptr) {
         system = inherit->create();
     } else
@@ -85,9 +85,9 @@ void System::CreateSystem() {
     u32 rtReadBytes = 0;
     u32 ctReadBytes = 0;
     u32 btReadBytes = 0;
-    ConfigFile* confRT = ConfigFile::LoadConfigFile("Binaries/ConfigRT.pul", rtReadBytes);
-    ConfigFile* confCT = ConfigFile::LoadConfigFile("Binaries/ConfigCT.pul", ctReadBytes);
-    ConfigFile* confBT = ConfigFile::LoadConfigFile("Binaries/ConfigBT.pul", btReadBytes);
+    ConfigFile *confRT = ConfigFile::LoadConfigFile("Binaries/ConfigRT.pul", rtReadBytes);
+    ConfigFile *confCT = ConfigFile::LoadConfigFile("Binaries/ConfigCT.pul", ctReadBytes);
+    ConfigFile *confBT = ConfigFile::LoadConfigFile("Binaries/ConfigBT.pul", btReadBytes);
     ConfigFile::readBytes = rtReadBytes;
 
     system->Init(*confRT, *confCT, *confBT, rtReadBytes, ctReadBytes, btReadBytes);
@@ -108,31 +108,36 @@ System::System() : heap(RKSystem::mInstance.EGGSystem), taskThread(EGG::TaskThre
                    lapKoMgr(nullptr) {
 }
 
-static void PatchBMGOffsets(BMGHolder& holder, u32 cupOffset, u32 trackOffset) {
+static void PatchBMGOffsets(BMGHolder &holder, u32 cupOffset, u32 trackOffset) {
     if (holder.messageIds == nullptr) return;
-    BMGMessageIds* msgIds = const_cast<BMGMessageIds*>(holder.messageIds);
+    BMGMessageIds *msgIds = const_cast<BMGMessageIds *>(holder.messageIds);
     const u32 variantTrackOffset = trackOffset << 4;
     for (u16 i = 0; i < msgIds->msgCount; ++i) {
-        u32& mid = msgIds->messageIds[i];
-        if (mid >= 0x500000) mid += variantTrackOffset;
-        else if (mid >= 0x400000) mid += variantTrackOffset;
-        else if (mid >= 0x30000) mid += trackOffset;
-        else if (mid >= 0x20000) mid += trackOffset;
-        else if (mid >= 0x10000) mid += cupOffset;
+        u32 &mid = msgIds->messageIds[i];
+        if (mid >= 0x500000)
+            mid += variantTrackOffset;
+        else if (mid >= 0x400000)
+            mid += variantTrackOffset;
+        else if (mid >= 0x30000)
+            mid += trackOffset;
+        else if (mid >= 0x20000)
+            mid += trackOffset;
+        else if (mid >= 0x10000)
+            mid += cupOffset;
     }
 }
 
-static void LoadConfigFileNames(const ConfigFile& config, u32 readBytes, u32 firstTrack, u32 trackCount) {
-    const PulBMG& bmgSection = config.GetSection<PulBMG>();
-    const u8* configStart = reinterpret_cast<const u8*>(&config);
-    const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
+static void LoadConfigFileNames(const ConfigFile &config, u32 readBytes, u32 firstTrack, u32 trackCount) {
+    const PulBMG &bmgSection = config.GetSection<PulBMG>();
+    const u8 *configStart = reinterpret_cast<const u8 *>(&config);
+    const u8 *fileSection = reinterpret_cast<const u8 *>(&bmgSection.header) + bmgSection.header.fileLength;
     const u32 offset = static_cast<u32>(fileSection - configStart);
     if (offset >= readBytes) return;
 
-    CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), readBytes - offset, firstTrack, trackCount);
+    CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char *>(fileSection), readBytes - offset, firstTrack, trackCount);
 }
 
-void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const ConfigFile& confBT,
+void System::Init(const ConfigFile &confRT, const ConfigFile &confCT, const ConfigFile &confBT,
                   u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes) {
     IOType type = IOType_ISO;
     bool isDolphin = Dolphin::IsEmulator();
@@ -152,12 +157,12 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     }
 
     strncpy(this->modFolderName, confRT.header.modFolderName, IOS::ipcMaxFileName);
-    static char* pulMagic = reinterpret_cast<char*>(0x800017CC);
+    static char *pulMagic = reinterpret_cast<char *>(0x800017CC);
     strcpy(pulMagic, "PUL2");
 
-    const CupsHolder& rtCups = confRT.GetSection<CupsHolder>();
-    const CupsHolder& ctCups = confCT.GetSection<CupsHolder>();
-    const CupsHolder& btCups = confBT.GetSection<CupsHolder>();
+    const CupsHolder &rtCups = confRT.GetSection<CupsHolder>();
+    const CupsHolder &ctCups = confCT.GetSection<CupsHolder>();
+    const CupsHolder &btCups = confBT.GetSection<CupsHolder>();
 
     CupsConfig::sInstance = new CupsConfig(rtCups, ctCups, btCups);
     this->info.Init(confRT.GetSection<InfoHolder>().info);
@@ -176,7 +181,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     LoadConfigFileNames(confBT, btReadBytes, rtTrackCount + ctTrackCount, btTrackCount);
 
     const PulsarCupId last = Settings::Mgr::sInstance->GetSavedSelectedCup();
-    CupsConfig* cupsConfig = CupsConfig::sInstance;
+    CupsConfig *cupsConfig = CupsConfig::sInstance;
     cupsConfig->SetLayout();
     if (last != -1 && cupsConfig->IsValidCup(last) && cupsConfig->GetTotalCupCount() > 8) {
         cupsConfig->lastSelectedCup = last;
@@ -190,19 +195,19 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         this->netMgr.lastTracks[i] = PULSARID_NONE;
     }
 
-    EGG::Heap* bmgHeap = RootScene::sInstance->expHeapGroup.heaps[1];
+    EGG::Heap *bmgHeap = RootScene::sInstance->expHeapGroup.heaps[1];
 
-    const BMGHeader* const rtBMG = &confRT.GetSection<PulBMG>().header;
+    const BMGHeader *const rtBMG = &confRT.GetSection<PulBMG>().header;
     this->rawBmg = EGG::Heap::alloc<BMGHeader>(rtBMG->fileLength, 0x4, bmgHeap);
     memcpy(this->rawBmg, rtBMG, rtBMG->fileLength);
     this->customBmgs.Init(*this->rawBmg);
 
-    const BMGHeader* const ctBMG = &confCT.GetSection<PulBMG>().header;
+    const BMGHeader *const ctBMG = &confCT.GetSection<PulBMG>().header;
     this->rawBmgCT = EGG::Heap::alloc<BMGHeader>(ctBMG->fileLength, 0x4, bmgHeap);
     memcpy(this->rawBmgCT, ctBMG, ctBMG->fileLength);
     this->customBmgsCT.Init(*this->rawBmgCT);
 
-    const BMGHeader* const btBMG = &confBT.GetSection<PulBMG>().header;
+    const BMGHeader *const btBMG = &confBT.GetSection<PulBMG>().header;
     this->rawBmgBT = EGG::Heap::alloc<BMGHeader>(btBMG->fileLength, 0x4, bmgHeap);
     memcpy(this->rawBmgBT, btBMG, btBMG->fileLength);
     this->customBmgsBT.Init(*this->rawBmgBT);
@@ -216,10 +221,10 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
 // IO
 #pragma suppress_warnings on
 void System::InitIO(IOType type) const {
-    IO* io = IO::CreateInstance(type, this->heap, this->taskThread);
+    IO *io = IO::CreateInstance(type, this->heap, this->taskThread);
     bool ret;
     if (io->type == IOType_DOLPHIN) ret = ISFS::CreateDir("/shared2/Pulsar", 0, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE);
-    const char* modFolder = this->GetModFolder();
+    const char *modFolder = this->GetModFolder();
     ret = io->CreateFolder(modFolder);
     if (!ret && io->type == IOType_DOLPHIN) {
         char path[0x100];
@@ -232,14 +237,14 @@ void System::InitIO(IOType type) const {
 }
 #pragma suppress_warnings reset
 
-void System::InitSettings(const u16* totalTrophyCount) const {
-    Settings::Mgr* settings = new (this->heap) Settings::Mgr;
+void System::InitSettings(const u16 *totalTrophyCount) const {
+    Settings::Mgr *settings = new (this->heap) Settings::Mgr;
     char settingsPath[IOS::ipcMaxPath];
-    #ifdef BETA
+#ifdef BETA
     snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettingsBeta.pul");
-    #else
+#else
     snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettings.pul");
-    #endif
+#endif
     char trophiesPath[IOS::ipcMaxPath];
     snprintf(trophiesPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRSettings.pul");  // Original settings file
     settings->Init(totalTrophyCount, settingsPath, trophiesPath);
@@ -247,12 +252,12 @@ void System::InitSettings(const u16* totalTrophyCount) const {
 }
 
 void System::UpdateContext() {
-    const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
+    const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
     this->ottMgr.Reset();
-    const Settings::Mgr& settings = Settings::Mgr::Get();
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    Network::Mgr& netMgr = this->netMgr;
+    const Settings::Mgr &settings = Settings::Mgr::Get();
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    Network::Mgr &netMgr = this->netMgr;
     const u32 sceneId = GameScene::GetCurrent()->id;
     const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
 
@@ -576,8 +581,8 @@ void System::ClearOttContext() {
 
 static Pulsar::Settings::Hook UpdateOTTContext(System::ClearOttContext);
 
-s32 System::OnSceneEnter(Random& random) {
-    System* self = System::sInstance;
+s32 System::OnSceneEnter(Random &random) {
+    System *self = System::sInstance;
     self->UpdateContext();
     if (self->IsContext(PULSAR_MODE_OTT)) OTT::AddGhostToVS();
     if (self->IsContext(PULSAR_MODE_KO) && self->koMgr != nullptr && self->koMgr->IsOfflineVS()) {
@@ -625,9 +630,9 @@ const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";
 const char System::breff[] = "/Effect/Pulsar.breff";
 const char System::breft[] = "/Effect/Pulsar.breft";
-const char* System::ttModeFolders[] = {"150", "200", "150F", "200F"};
+const char *System::ttModeFolders[] = {"150", "200", "150F", "200F"};
 
-void FriendSelectPage_joinFriend(Pages::FriendInfo* _this, u32 animDir, float animLength) {
+void FriendSelectPage_joinFriend(Pages::FriendInfo *_this, u32 animDir, float animLength) {
     Pulsar::System::sInstance->netMgr.region = RKNet::Controller::sInstance->friends[_this->selectedFriendIdx].statusData.regionId;
     return _this->EndStateAnimated(animDir, animLength);
 }

@@ -40,21 +40,21 @@ namespace Pulsar {
 namespace UI {
 
 // ExpSection
-static ExpSection* CreateSection() {
+static ExpSection *CreateSection() {
     return new ExpSection;
 }
 kmCall(0x8063504c, CreateSection);
 kmWrite32(0x80635058, 0x60000000);
 
-void ExpSection::CreatePages(ExpSection& self, SectionId id) {
-    const System* system = System::sInstance;
+void ExpSection::CreatePages(ExpSection &self, SectionId id) {
+    const System *system = System::sInstance;
     if (!self.hasAutoVote) self.CreateSectionPages(id);
     self.CreatePulPages();
 }
 kmCall(0x80622088, ExpSection::CreatePages);
 
 void ExpSection::CreatePulPages() {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     switch (this->sectionId) {
         case SECTION_GP:  // 0x1e
         case SECTION_TT:  // 0x1f
@@ -139,7 +139,7 @@ void ExpSection::CreatePulPages() {
             this->CreateAndInitPage(*this, CustomItemPage::id);
             break;
     }
-    Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
+    Pages::CourseSelect *coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
     if (coursePage != nullptr) {
         this->CreateAndInitPage(*this, PULPAGE_VARIANTSELECT);
     }
@@ -158,8 +158,8 @@ void ExpSection::CreatePulPages() {
     }
 }
 
-void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
-    Page* page;
+void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
+    Page *page;
     PageId initId = static_cast<PageId>(id);  // in case a pulpage wants a specific init id
     switch (id) {
         case PAGE_CUP_SELECT:
@@ -275,12 +275,12 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
 }
 kmBranch(0x80622d08, ExpSection::CreateAndInitPage);
 
-void ExpSection::DisposePulPages(SectionPad& pad, bool enablePointer) {
+void ExpSection::DisposePulPages(SectionPad &pad, bool enablePointer) {
     pad.EnablePointer(enablePointer);  // default
-    register ExpSection* section;
+    register ExpSection *section;
     asm(mr section, r31;);
     for (int pulPageId = 0; pulPageId < PULPAGE_MAX; ++pulPageId) {
-        Page* page = section->pulPages[pulPageId];
+        Page *page = section->pulPages[pulPageId];
         if (page != nullptr) {
             page->Dispose();
             delete page;
@@ -289,14 +289,14 @@ void ExpSection::DisposePulPages(SectionPad& pad, bool enablePointer) {
 }
 kmCall(0x80622268, ExpSection::DisposePulPages);
 
-void ExpSection::AddPageLayer(ExpSection& self, u32 id) {
+void ExpSection::AddPageLayer(ExpSection &self, u32 id) {
     AddPageLayerAnimatedReturnTopLayer(self, id, 0xff);
 }
 kmBranch(0x80622da0, ExpSection::AddPageLayer);
 
-Page* ExpSection::AddPageLayerAnimatedReturnTopLayer(ExpSection& self, u32 id, u32 animDirection) {
+Page *ExpSection::AddPageLayerAnimatedReturnTopLayer(ExpSection &self, u32 id, u32 animDirection) {
     if (animDirection == 0xff) animDirection = self.animDirection;
-    Page* page;
+    Page *page;
     if (id < PULPAGE_INITIAL) {
         page = self.pages[id];
     } else
@@ -314,19 +314,19 @@ kmWrite32(0x80623140, 0x60000000);  // nop layerCount increase, as AddPageLayer 
 kmWrite32(0x80623144, 0x60000000);  // nop setanimdirection as r29 is faulty
 
 void ExpSection::SetNextPage(u32 id, u32 animDirection) {
-    register ExpSection* self;
+    register ExpSection *self;
     asm(mr self, r28;);
     AddPageLayerAnimatedReturnTopLayer(*self, id, animDirection);
 }
 kmCall(0x8062314c, ExpSection::SetNextPage);
 
 // Various Util funcs
-void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tplName) {
+void ChangeImage(LayoutUIControl &control, const char *paneName, const char *tplName) {
     TPLPalettePtr tplRes = static_cast<TPLPalettePtr>(control.layout.resources->multiArcResourceAccessor.GetResource(lyt::res::RESOURCETYPE_TEXTURE, tplName));
     if (tplRes == nullptr) {
-        Section* section = SectionMgr::sInstance->curSection;
+        Section *section = SectionMgr::sInstance->curSection;
         if (section && section->resourceAccessorList) {
-            LayoutResourceAccessor* acc = *reinterpret_cast<LayoutResourceAccessor**>(section->resourceAccessorList);
+            LayoutResourceAccessor *acc = *reinterpret_cast<LayoutResourceAccessor **>(section->resourceAccessorList);
             for (; acc != nullptr; acc = acc->prev) {
                 tplRes = static_cast<TPLPalettePtr>(acc->multiArcResourceAccessor.GetResource(lyt::res::RESOURCETYPE_TEXTURE, tplName));
                 if (tplRes) break;
@@ -334,7 +334,7 @@ void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tpl
         }
     }
     if (tplRes != nullptr) {
-        lyt::Pane* pane = control.layout.GetPaneByName(paneName);
+        lyt::Pane *pane = control.layout.GetPaneByName(paneName);
         if (pane) pane->GetMaterial()->GetTexMapAry()->ReplaceImage(tplRes);
     }
 };
@@ -346,9 +346,9 @@ enum BMGType {
 };
 BMGType isCustom;
 
-static int GetMsgIdxByBmgId(const BMGHolder& bmg, s32 bmgId) {
+static int GetMsgIdxByBmgId(const BMGHolder &bmg, s32 bmgId) {
     if (bmg.bmgFile == nullptr || bmg.messageIds == nullptr) return -1;
-    const BMGMessageIds& msgIds = *bmg.messageIds;
+    const BMGMessageIds &msgIds = *bmg.messageIds;
     int ret = -1;
     for (int i = 0; i < msgIds.msgCount; ++i) {
         int curBmgId = msgIds.messageIds[i];
@@ -361,16 +361,16 @@ static int GetMsgIdxByBmgId(const BMGHolder& bmg, s32 bmgId) {
     return ret;
 }
 
-static const BMGHolder* matchedCustomBmg = nullptr;
+static const BMGHolder *matchedCustomBmg = nullptr;
 
-static const BMGHolder* GetCharaNameBmg() {
+static const BMGHolder *GetCharaNameBmg() {
     static BMGHolder charaNameBmg;
-    static const void* loadedFile = nullptr;
+    static const void *loadedFile = nullptr;
 
-    ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+    ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
     if (archiveMgr == nullptr) return nullptr;
 
-    void* file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/CharaName.bmg", nullptr);
+    void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/CharaName.bmg", nullptr);
     if (file == nullptr) {
         loadedFile = nullptr;
         charaNameBmg.bmgFile = nullptr;
@@ -378,13 +378,13 @@ static const BMGHolder* GetCharaNameBmg() {
     }
 
     if (file != loadedFile) {
-        charaNameBmg.Init(*reinterpret_cast<const BMGHeader*>(file));
+        charaNameBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
         loadedFile = file;
     }
     return &charaNameBmg;
 }
 
-static int GetMsgIdxById(const BMGHolder& normalHolder, s32 bmgId) {
+static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
     int ret = GetMsgIdxByBmgId(System::sInstance->GetBMG(), bmgId);
     if (ret >= 0) {
         isCustom = CUSTOM_BMG;
@@ -403,7 +403,7 @@ static int GetMsgIdxById(const BMGHolder& normalHolder, s32 bmgId) {
         matchedCustomBmg = &System::sInstance->GetBMGBT();
         return ret;
     }
-    const BMGHolder* charaNameBmg = GetCharaNameBmg();
+    const BMGHolder *charaNameBmg = GetCharaNameBmg();
     if (charaNameBmg != nullptr) {
         ret = GetMsgIdxByBmgId(*charaNameBmg, bmgId);
         if (ret >= 0) {
@@ -419,16 +419,16 @@ static int GetMsgIdxById(const BMGHolder& normalHolder, s32 bmgId) {
 }
 kmBranch(0x805f8c88, GetMsgIdxById);
 
-wchar_t* GetMsgByMsgIdx(const BMGHolder& bmg, s32 msgIdx) {
-    const BMGInfo& info = *bmg.info;
+wchar_t *GetMsgByMsgIdx(const BMGHolder &bmg, s32 msgIdx) {
+    const BMGInfo &info = *bmg.info;
     if (msgIdx < 0 || msgIdx >= info.msgCount) return nullptr;
     const u32 offset = info.entries[msgIdx].dat1Offset & 0xFFFFFFFE;
-    const BMGData& data = *bmg.data;
-    return reinterpret_cast<wchar_t*>((u8*)&data + offset);
+    const BMGData &data = *bmg.data;
+    return reinterpret_cast<wchar_t *>((u8 *)&data + offset);
 }
 
-wchar_t* GetMsg(const BMGHolder& normalHolder, s32 msgIdx) {
-    wchar_t* ret = nullptr;
+wchar_t *GetMsg(const BMGHolder &normalHolder, s32 msgIdx) {
+    wchar_t *ret = nullptr;
     if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
         ret = GetMsgByMsgIdx(*matchedCustomBmg, msgIdx);
     }
@@ -437,14 +437,14 @@ wchar_t* GetMsg(const BMGHolder& normalHolder, s32 msgIdx) {
 }
 kmBranch(0x805f8cf0, GetMsg);
 
-const u8* GetFontIndex(const BMGHolder& bmg, s32 msgIdx) {
-    const BMGInfo& info = *bmg.info;
+const u8 *GetFontIndex(const BMGHolder &bmg, s32 msgIdx) {
+    const BMGInfo &info = *bmg.info;
     if (msgIdx < 0 || msgIdx >= info.msgCount) return nullptr;
     return &info.entries[msgIdx].font;
 };
 
-const u8* GetFont(const BMGHolder& normalHolder, s32 msgIdx) {
-    const u8* ret = nullptr;
+const u8 *GetFont(const BMGHolder &normalHolder, s32 msgIdx) {
+    const u8 *ret = nullptr;
     if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
         ret = GetFontIndex(*matchedCustomBmg, msgIdx);
     }
@@ -453,16 +453,16 @@ const u8* GetFont(const BMGHolder& normalHolder, s32 msgIdx) {
 }
 kmBranch(0x805f8d2c, GetFont);
 
-const wchar_t* GetCustomMsg(s32 bmgId) {
-    const BMGHolder& bmg = System::sInstance->GetBMG();
+const wchar_t *GetCustomMsg(s32 bmgId) {
+    const BMGHolder &bmg = System::sInstance->GetBMG();
     int msgIdx = GetMsgIdxById(bmg, bmgId);
     if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
         return GetMsgByMsgIdx(*matchedCustomBmg, msgIdx);
     }
     return GetMsgByMsgIdx(bmg, msgIdx);
 }
-void ResetMatColor(lyt::Pane* pane, u32 color) {
-    lyt::Material* mat = pane->material;
+void ResetMatColor(lyt::Pane *pane, u32 color) {
+    lyt::Material *mat = pane->material;
     ut::Color colors(color);
     mat->tevColours[0].r = colors.r;
     mat->tevColours[0].g = colors.g;
@@ -473,19 +473,19 @@ void ResetMatColor(lyt::Pane* pane, u32 color) {
     mat->tevColours[1].b = 0xff;
     mat->tevColours[1].a = 0xff;
 }
-void UnbindRLMC(lyt::Material* mat) {
+void UnbindRLMC(lyt::Material *mat) {
     for (ut::LinkList<lyt::AnimationLink, offsetof(lyt::AnimationLink, link)>::Iterator it = mat->animLinkList.GetBeginIter();
          it != mat->animLinkList.GetEndIter(); ++it) {
         if (!it->disable) {
-            lyt::AnimTransform* anim = it->animTrans;
+            lyt::AnimTransform *anim = it->animTrans;
             u32 idx = it->idx;
-            const lyt::res::AnimationBlock* res = anim->resource;
+            const lyt::res::AnimationBlock *res = anim->resource;
             u32 animOffsets = ut::ConvertOffsToPtr<u32>(res, res->animOffsetToAnimOffsetsArray)[idx];
-            const lyt::res::AnimationContent* animContent = ut::ConvertOffsToPtr<lyt::res::AnimationContent>(res, animOffsets);
+            const lyt::res::AnimationContent *animContent = ut::ConvertOffsToPtr<lyt::res::AnimationContent>(res, animOffsets);
 
-            const u32* animInfoOffsets = ut::ConvertOffsToPtr<u32>(animContent, sizeof(*animContent));
+            const u32 *animInfoOffsets = ut::ConvertOffsToPtr<u32>(animContent, sizeof(*animContent));
             for (int i = 0; i < animContent->infoCount; ++i) {
-                const lyt::res::AnimationInfo* animInfo = ut::ConvertOffsToPtr<lyt::res::AnimationInfo>(animContent, animInfoOffsets[i]);
+                const lyt::res::AnimationInfo *animInfo = ut::ConvertOffsToPtr<lyt::res::AnimationInfo>(animContent, animInfoOffsets[i]);
                 if (animInfo->kind == lyt::res::ANIMATIONTYPE_RLMC) mat->UnbindAnimation(anim);
             }
         }

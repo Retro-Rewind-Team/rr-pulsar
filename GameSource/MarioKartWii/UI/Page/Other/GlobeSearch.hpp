@@ -13,10 +13,10 @@ class MatchingMessageWindow : public LayoutUIControl {
     ~MatchingMessageWindow();  // 80607dd4 vtable 808bab40
     void InitSelf() override;  // 0x18 80607e90
     void OnUpdate() override;  // 0x1c 80607ef4
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 8060a68c
-    const char* GetClassName() const override;  // 0x2c 80607d88
-    void Load(const char* variant);  // 80607e2c
-    void SetMessage(u32 bmgId, const Text::Info* text = nullptr);  // 80607ef8
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 8060a68c
+    const char *GetClassName() const override;  // 0x2c 80607d88
+    void Load(const char *variant);  // 80607e2c
+    void SetMessage(u32 bmgId, const Text::Info *text = nullptr);  // 80607ef8
     void Hide();  // 80607fb0
 };  // 0x174
 
@@ -25,21 +25,21 @@ class RandomMatchingPlayer : public LayoutUIControl {
     ~RandomMatchingPlayer();  // 806071cc vtable 808bab7c
     void InitSelf() override;  // 0x18 80607368
     void OnUpdate() override;  // 0x1c 806074c0
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 8060a698
-    const char* GetClassName() const override;  // 0x2c 8060714c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 8060a698
+    const char *GetClassName() const override;  // 0x2c 8060714c
     void Load(u32 idx);  // 80607224
     void SetMii();  // 80607b58 inlined
     bool IsShowing();  // 80607be4 checks if Fade anim group is currently on "Show"
     void CalcAngle();  // 80607cdc
     void OnMiiShowing();
     PtmfHolder_0A<RandomMatchingPlayer, void> onMiiShowing;  // 0x174 80607c1c triggers when the animations that makes the bubble change from ? to the mii plays
-    lyt::Pane* all_null;  // 0x188
+    lyt::Pane *all_null;  // 0x188
     u32 localPlayerCount;  // 0x18c
     u32 idx;  // 0x190
     u8 unknown_0x194[0x19c - 0x194];  // 0x194
     float angle;  // 0x19c 90deg - 2pi * (idx / 12)
     float unknown_0x1a0[2];
-    MiiGroup* miiGroup;  // 0x1a8
+    MiiGroup *miiGroup;  // 0x1a8
     u32 miiIdx;  // 0x1ac
     u8 unknown_0x1b0[0x1b8 - 0x1b0];  // 0x1b0
 
@@ -60,7 +60,7 @@ class GlobeSearch : public Page {  // ID 0x8f
     void BeforeControlUpdate() override;  // 0x48 80608d6c
     void AfterControlUpdate() override;  // 0x4c 806092c0
     void OnResume() override;  // 0x54 80609a30
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8060a680
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 8060a680
 
     void PrepareLiveView();  // 80609e84
     u8 unknown_0x44[4];

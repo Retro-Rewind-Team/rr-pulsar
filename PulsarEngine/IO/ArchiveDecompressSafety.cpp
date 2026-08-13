@@ -11,7 +11,7 @@
 namespace Pulsar {
 namespace IOOverrides {
 
-static void ClearCompressedArchive(ArchiveFile* file) {
+static void ClearCompressedArchive(ArchiveFile *file) {
     if (file->compressedArchive != nullptr && file->dumpHeap != nullptr) {
         EGG::Heap::free(file->compressedArchive, file->dumpHeap);
     }
@@ -20,7 +20,7 @@ static void ClearCompressedArchive(ArchiveFile* file) {
     file->dumpHeap = nullptr;
 }
 
-static void FailDecompress(ArchiveFile* file) {
+static void FailDecompress(ArchiveFile *file) {
     ClearCompressedArchive(file);
     file->rawArchive = nullptr;
     file->archiveSize = 0;
@@ -28,28 +28,28 @@ static void FailDecompress(ArchiveFile* file) {
     file->status = ARCHIVE_STATUS_NONE;
 }
 
-static u8* AllocDecompressedArchive(u32 allocSize, EGG::Heap* primaryHeap, EGG::Heap* fallbackHeap,
-                                    EGG::Heap*& outHeap) {
+static u8 *AllocDecompressedArchive(u32 allocSize, EGG::Heap *primaryHeap, EGG::Heap *fallbackHeap,
+                                    EGG::Heap *&outHeap) {
     outHeap = primaryHeap;
-    u8* buffer = static_cast<u8*>(EGG::Heap::alloc(allocSize, 0x20, primaryHeap));
+    u8 *buffer = static_cast<u8 *>(EGG::Heap::alloc(allocSize, 0x20, primaryHeap));
     if (buffer == nullptr && fallbackHeap != nullptr && fallbackHeap != primaryHeap) {
         outHeap = fallbackHeap;
-        buffer = static_cast<u8*>(EGG::Heap::alloc(allocSize, 0x20, fallbackHeap));
+        buffer = static_cast<u8 *>(EGG::Heap::alloc(allocSize, 0x20, fallbackHeap));
     }
     return buffer;
 }
 
-static EGG::Heap* SelectStructuralDecodeScratchHeap(const char* archiveBaseLower, u32 allocSize,
-                                                    EGG::Heap* archiveHeap, EGG::Heap* dumpHeap) {
+static EGG::Heap *SelectStructuralDecodeScratchHeap(const char *archiveBaseLower, u32 allocSize,
+                                                    EGG::Heap *archiveHeap, EGG::Heap *dumpHeap) {
     if (!HasStructuralLooseOverrides(archiveBaseLower)) return nullptr;
 
-    EGG::Heap* candidates[3];
+    EGG::Heap *candidates[3];
     candidates[0] = dumpHeap;
     candidates[1] = RKSystem::mInstance.EGGRootMEM2;
     candidates[2] = RKSystem::mInstance.EGGRootMEM1;
 
     for (u32 i = 0; i < 3; ++i) {
-        EGG::Heap* candidate = candidates[i];
+        EGG::Heap *candidate = candidates[i];
         if (candidate == nullptr || candidate == archiveHeap) continue;
         bool alreadyChecked = false;
         for (u32 j = 0; j < i; ++j) {
@@ -64,8 +64,8 @@ static EGG::Heap* SelectStructuralDecodeScratchHeap(const char* archiveBaseLower
     return nullptr;
 }
 
-static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap, EGG::Archive::FileInfo* info) {
-    u8* compressedData = static_cast<u8*>(file->compressedArchive);
+static void SafeDecompress(ArchiveFile *file, const char *path, EGG::Heap *heap, EGG::Archive::FileInfo *info) {
+    u8 *compressedData = static_cast<u8 *>(file->compressedArchive);
     if (compressedData == nullptr) {
         FailDecompress(file);
         return;
@@ -82,15 +82,15 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     // This gate is cheap on purpose: skip all index work for non-SZS loads before allocating extra scratch logic.
     const bool canApplyOverrides = ShouldApplyLooseOverrides(path, archiveBaseLower, sizeof(archiveBaseLower));
     const u32 allocSize = nw4r::ut::RoundUp(expandSize, 0x20);
-    EGG::Heap* archiveHeap = nullptr;
-    EGG::Heap* sourceArchiveHeap = nullptr;
-    u8* decompressedBuffer = nullptr;
+    EGG::Heap *archiveHeap = nullptr;
+    EGG::Heap *sourceArchiveHeap = nullptr;
+    u8 *decompressedBuffer = nullptr;
     if (canApplyOverrides) {
         sourceArchiveHeap = SelectStructuralDecodeScratchHeap(archiveBaseLower, allocSize, heap, file->dumpHeap);
     }
     if (sourceArchiveHeap != nullptr) {
         archiveHeap = heap;
-        decompressedBuffer = static_cast<u8*>(EGG::Heap::alloc(allocSize, 0x20, sourceArchiveHeap));
+        decompressedBuffer = static_cast<u8 *>(EGG::Heap::alloc(allocSize, 0x20, sourceArchiveHeap));
     }
     if (decompressedBuffer == nullptr) {
         decompressedBuffer = AllocDecompressedArchive(allocSize, heap, file->dumpHeap, sourceArchiveHeap);
@@ -110,7 +110,7 @@ static void SafeDecompress(ArchiveFile* file, const char* path, EGG::Heap* heap,
     u32 missingOverrides = 0;
     u32 finalSize = expandSize;
 
-    u8* archiveBase = decompressedBuffer;
+    u8 *archiveBase = decompressedBuffer;
     if (canApplyOverrides) {
         // `ApplyLooseOverrides()` may swap `archiveBase` to a repacked buffer on another heap.
         ApplyLooseOverrides(archiveBaseLower, archiveBase, finalSize, sourceArchiveHeap, archiveHeap, &appliedOverrides,

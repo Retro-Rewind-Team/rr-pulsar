@@ -23,9 +23,9 @@ struct FriendInfo {
     FriendAddr addr;
 };
 
-Error ReadFriendInfo(FriendInfo* info, u32 index);  // 801e70c8
+Error ReadFriendInfo(FriendInfo *info, u32 index);  // 801e70c8
 int IsFriendInfoThere(u32 index);  // 801e7244
-Error GetNumFriendInfos(u32* num);  // 801e716c
+Error GetNumFriendInfos(u32 *num);  // 801e716c
 
 }  // namespace NWC24
 

@@ -34,8 +34,8 @@ struct PitchModuler {  // curModulingValue / 5 is added to curPitch; very suptle
 };  // 0x10
 
 class PlayersVolumeMgr {
-    static PlayersVolumeMgr* sInstance;  // 809c27ec
-    static PlayersVolumeMgr* CreateInstance();  // 8070eff4
+    static PlayersVolumeMgr *sInstance;  // 809c27ec
+    static PlayersVolumeMgr *CreateInstance();  // 8070eff4
     static void DestroyInstance();  // 8070f0e8
     ~PlayersVolumeMgr();  // 8070f19c
     void Calc() const;  // 8070f3e8
@@ -61,18 +61,18 @@ class PlayersVolumeMgr {
 };
 
 class SinglePlayerValuesMgr {  // allows a finer control of volume/pitch for one handle (ie basicsound)
-    static SinglePlayerValuesMgr* sInstance;  // 809c232c
-    static SinglePlayerValuesMgr* CreateInstance();  // 806f9abc
+    static SinglePlayerValuesMgr *sInstance;  // 809c232c
+    static SinglePlayerValuesMgr *CreateInstance();  // 806f9abc
     static void DestroyInstance();  // 806f9b64
     ~SinglePlayerValuesMgr();  // 806f9c18
     void SetValue(u32 trackIdx, u32 stepCount, float maxValue);  // 806f9e78
     void Calc();  // 806f9ce0
-    void SetHandle(Handle* handle);  // 806f9cbc inlined in SinglePlayer::Calc
+    void SetHandle(Handle *handle);  // 806f9cbc inlined in SinglePlayer::Calc
     void DetachHandle();  // 806f9e14 inlined
     void UpdateTracks();  // 806f9e20 inlined
     EGG::TDisposer<SinglePlayerValuesMgr> disposer;  // 806f9990 vtable 808c78e0
     Track tracks[6];  // 0x10 ALL volumes except index 2 which is pitch; their value is multiplied to set SoundPlayer 0 volume/pitch
-    Handle* curHandle;  // 0xb8
+    Handle *curHandle;  // 0xb8
     u32 soundId;  // 0xbc
     float unknown_0xC0;
 };

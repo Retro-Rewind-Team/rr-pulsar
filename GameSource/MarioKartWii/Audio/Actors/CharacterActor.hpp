@@ -31,11 +31,11 @@ enum CharacterSourceType {
 };
 
 class CharacterActor;
-typedef void (*CharacterVoiceActionTable)(s32* type, bool isReal);
+typedef void (*CharacterVoiceActionTable)(s32 *type, bool isReal);
 
 class DriverSoundManager {
    public:
-    RandomSoundPicker* GetCharacterVoiceSoundSet(CharacterId character, u32 type);  // 80868f1c
+    RandomSoundPicker *GetCharacterVoiceSoundSet(CharacterId character, u32 type);  // 80868f1c
 
     static DriverSoundManager sInstance;  // 809c4740
 };
@@ -43,7 +43,7 @@ class DriverSoundManager {
 class RandomCharacterActorPicker : public RandomSoundPicker {  // one per type
     RandomCharacterActorPicker();  // 808676e0
     ~RandomCharacterActorPicker() override;  // 808639e8 vtable 808dbe18
-    CharacterActor* sound;  // 2c
+    CharacterActor *sound;  // 2c
 };  // 0x30
 
 class CharacterActor : public RaceAnimActor {
@@ -57,7 +57,7 @@ class CharacterActor : public RaceAnimActor {
     //~CharacterActor thunk 80866d0c func 80866c08
 
     // LinkedRaceActor vtable 808dbc6c at 0x94
-    void Link(void* pointer, u16 objectId) override;  // thunk 80866d3c func 80863a9c pointer is KartModel
+    void Link(void *pointer, u16 objectId) override;  // thunk 80866d3c func 80863a9c pointer is KartModel
     void Unlink() override;  // thunk 80866d34 func 80863ff8
     void Update() override;  // thunk 80866d2c func 80864000
     bool StartSound(u32 soundId) override;  // 40 thunk 80866d24 func 80865618
@@ -78,7 +78,7 @@ class CharacterActor : public RaceAnimActor {
     u32 delay;  // 0x100 if request, delay until request is executed
     u8 unknown_0x104[0x150 - 0x104];
     RandomCharacterActorPicker randomSoundPickers[0x1D];  // 0x150 use type enum
-    DriverController* model;  // 0x6c0
+    DriverController *model;  // 0x6c0
     u32 wiiRemoteChannelx2;  // 0x6c4 only if controller is wheel/nunchuck ofc
     CharacterSourceType prevType;  // 0x6c8
     u32 unknown_0x6CC[4];

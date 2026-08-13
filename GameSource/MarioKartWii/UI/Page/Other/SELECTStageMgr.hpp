@@ -42,7 +42,7 @@ class SELECTStageMgr : public Page {  // ID 0x90
     void BeforeControlUpdate() override;  // 0x48 80650218
     void AfterControlUpdate() override;  // 0x4c 80650274
     void OnResume() override;  // 0x54 806507a0
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80651bb0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80651bb0
     int GetOnlineMode() const;
     bool IsPublicBattle();  // 80650af4
     u8 GetPlayerId(u8 aid, u8 hudSlotId);  // 80650ddc
@@ -51,10 +51,10 @@ class SELECTStageMgr : public Page {  // ID 0x90
     u32 GetBattleType() const;  // 80650b90
     void PrepareRace();  // 80650e24 using RKNetSelect, sets stuff like racedata etc..
     void UpdateOnlineParams();  // 806515cc
-    void OnDisconnect(MessageBox& messageBox);  // 806517b0
+    void OnDisconnect(MessageBox &messageBox);  // 806517b0
     void SetModeTypes();  // 80651854 from RKNetSELECT
-    static void TriggerPtmf(PtmfHolder_1A<SELECTStageMgr, void, MessageBox&>, MessageBox&);  // 80651bbc
-    PtmfHolder_1A<SELECTStageMgr, void, MessageBox&> onDisconnectHandler;  // 0x44, 0x806517b0, selects next page
+    static void TriggerPtmf(PtmfHolder_1A<SELECTStageMgr, void, MessageBox &>, MessageBox &);  // 80651bbc
+    PtmfHolder_1A<SELECTStageMgr, void, MessageBox &> onDisconnectHandler;  // 0x44, 0x806517b0, selects next page
     ManipulatorManager manipulatorManager;
     Status status;  // 0x68
     CountDown countdown;  // 0x6C

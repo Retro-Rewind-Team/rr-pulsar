@@ -64,7 +64,7 @@ void ExtendedTeamSelect::OnInit() {
 void ExtendedTeamSelect::BeforeEntranceAnimations() {
     MenuInteractable::BeforeEntranceAnimations();
 
-    Pages::FriendRoomManager* friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
+    Pages::FriendRoomManager *friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
 
     this->isHost = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST;
     this->instructionText.SetMessage(this->isHost ? BMG_TEAM_SELECT : BMG_EXTENDEDTEAMS_NONHOST_TITLE);
@@ -84,8 +84,8 @@ void ExtendedTeamSelect::BeforeExitAnimations() {
 
     // Report team info to GPCM
     if (this->manager->hasFriendRoomStarted) {
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
-        RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+        RKNet::Controller *controller = RKNet::Controller::sInstance;
+        RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
 
         u8 numPlayersOnAid = sub.connectionUserDatas[sub.localAid].playersAtConsole;
         for (int playerOnAid = 0; playerOnAid < numPlayersOnAid; playerOnAid++) {
@@ -99,8 +99,8 @@ void ExtendedTeamSelect::BeforeExitAnimations() {
 void ExtendedTeamSelect::OnResume() {
     MenuInteractable::OnResume();
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
 
     if (sub.localPlayerCount > 1) {
         SectionMgr::sInstance->SetNextSection(SECTION_P2_WIFI_FROM_FROOM_RACE, 0);
@@ -112,7 +112,7 @@ void ExtendedTeamSelect::OnResume() {
 }
 
 void ExtendedTeamSelect::BeforeControlUpdate() {
-    Pages::FriendRoomManager* friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
+    Pages::FriendRoomManager *friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
     friendRoomManager->networkManager.Update();
     this->manager->Update();
 
@@ -123,8 +123,8 @@ void ExtendedTeamSelect::BeforeControlUpdate() {
     if (this->manager->IsDoneStatus())
         this->OnStartRaceClick(this->startRaceButton, 0);
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    RKNet::ControllerSub& sub = controller->subs[0];
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub &sub = controller->subs[0];
     if (sub.connectionUserDatas[sub.localAid].playersAtConsole == 0)
         sub = controller->subs[1];
 
@@ -184,7 +184,7 @@ void ExtendedTeamSelect::BeforeControlUpdate() {
     this->playerCount = count;
 
     if (this->playerCount <= 1 && (this->manager->IsSelectingStatus() || this->manager->IsWaitingStatus()) && !this->shouldDisconnect) {
-        Pages::MessageBox* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBox>();
+        Pages::MessageBox *messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBox>();
         messageBox->Reset();
         messageBox->SetMessageWindowText(BMG_DISCONNECTED_FROM_OTHER_PLAYERS);
         this->AddPageLayer(Pages::MessageBox::id, 0);
@@ -207,15 +207,15 @@ int ExtendedTeamSelect::GetPlayerBitfield() const {
     return this->playerBitfield;
 }
 
-ManipulatorManager& ExtendedTeamSelect::GetManipulatorManager() {
+ManipulatorManager &ExtendedTeamSelect::GetManipulatorManager() {
     return this->controlsManipulatorManager;
 }
 
-UIControl* ExtendedTeamSelect::CreateExternalControl(u32 id) {
+UIControl *ExtendedTeamSelect::CreateExternalControl(u32 id) {
     return nullptr;
 }
 
-UIControl* ExtendedTeamSelect::CreateControl(u32 id) {
+UIControl *ExtendedTeamSelect::CreateControl(u32 id) {
     const u32 count = this->controlCount;
     this->controlCount++;
     if (id == INSTRUCTION_TEXT) {
@@ -242,7 +242,7 @@ UIControl* ExtendedTeamSelect::CreateControl(u32 id) {
         const u32 idx = id - TEAM_ENTRY_0;
         this->AddControl(count, this->teamPlayerControl[idx], 0);
 
-        const char* anims[] = {
+        const char *anims[] = {
             "Loop", "Loop", nullptr,
             "Local", "Local", "NetOther", nullptr,
             "LocalFlash", "FlashLocal", "FlashNetOther", nullptr,
@@ -295,8 +295,8 @@ void ExtendedTeamSelect::OnBackPress(u32 hudSlotId) {
     }
 }
 
-void ExtendedTeamSelect::OnStartRaceClick(PushButton& button, u32 hudSlotId) {
-    Pages::FriendRoomWaiting* friendRoomWaiting = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomWaiting>();
+void ExtendedTeamSelect::OnStartRaceClick(PushButton &button, u32 hudSlotId) {
+    Pages::FriendRoomWaiting *friendRoomWaiting = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomWaiting>();
 
     if (!this->manager->IsInactiveStatus()) {
         if (this->isHost) {
@@ -315,7 +315,7 @@ void ExtendedTeamSelect::OnStartRaceClick(PushButton& button, u32 hudSlotId) {
     }
 }
 
-void ExtendedTeamSelect::OnArrowClick(PushButton& button, u32 hudSlotId) {
+void ExtendedTeamSelect::OnArrowClick(PushButton &button, u32 hudSlotId) {
     u32 id = button.buttonId - 2;
     this->UpdatePlayerTeam(id, static_cast<ExtendedTeamID>((this->manager->GetPlayerTeam(id) + 1) % TEAM_COUNT));
     this->manager->SendUpdateTeamsPacket();
@@ -328,7 +328,7 @@ void ExtendedTeamSelect::UpdatePlayerTeam(u32 idx, ExtendedTeamID team) {
     u8 nr, ng, nb;
     ExtendedTeamSelect::GetTeamColor(static_cast<ExtendedTeamID>((team + 1) % TEAM_COUNT), nr, ng, nb);
 
-    nw4r::lyt::Material* arrowBorder = this->teamPlayerArrows[idx].layout.GetPaneByName("border")->GetMaterial();
+    nw4r::lyt::Material *arrowBorder = this->teamPlayerArrows[idx].layout.GetPaneByName("border")->GetMaterial();
     arrowBorder->tevColours[0].r = nr;
     arrowBorder->tevColours[0].g = ng;
     arrowBorder->tevColours[0].b = nb;
@@ -347,14 +347,14 @@ void ExtendedTeamSelect::UpdatePlayerTeamByAID(u8 aid, u8 playerIdOnConsole, Ext
     }
 }
 
-const void ExtendedTeamSelect::ChangeVRButtonColors(LayoutUIControl& button, ExtendedTeamID team) {
+const void ExtendedTeamSelect::ChangeVRButtonColors(LayoutUIControl &button, ExtendedTeamID team) {
     button.SetPaneVisibility("blue_null", false);
     button.SetPaneVisibility("red_null", true);
 
-    nw4r::lyt::Pane* teamColorPane1 = button.layout.GetPaneByName("black_parts_r_l");
-    nw4r::lyt::Pane* teamColorPane2 = button.layout.GetPaneByName("black_parts_r_r");
-    nw4r::lyt::Material* teamColor1 = teamColorPane1->GetMaterial();
-    nw4r::lyt::Material* teamColor2 = teamColorPane2->GetMaterial();
+    nw4r::lyt::Pane *teamColorPane1 = button.layout.GetPaneByName("black_parts_r_l");
+    nw4r::lyt::Pane *teamColorPane2 = button.layout.GetPaneByName("black_parts_r_r");
+    nw4r::lyt::Material *teamColor1 = teamColorPane1->GetMaterial();
+    nw4r::lyt::Material *teamColor2 = teamColorPane2->GetMaterial();
     teamColorPane1->alpha = teamColorPane2->alpha = 255;
 
     u8 r, g, b;
@@ -428,7 +428,7 @@ void ExtendedTeamSelect::RandomizeTeamColors() {
     }
 }
 
-void ExtendedTeamSelect::GetTeamColor(ExtendedTeamID team, u8& r, u8& g, u8& b) {
+void ExtendedTeamSelect::GetTeamColor(ExtendedTeamID team, u8 &r, u8 &g, u8 &b) {
     if (team >= TEAM_COUNT) {
         r = 0;
         g = 0;

@@ -3,7 +3,7 @@
 namespace Pulsar {
 namespace UI {
 
-static const char* anims[7] = {"Choice", "ChoiceOff", "ChoiceOffToOn", "ChoiceOn", "ChoiceOnToOff", nullptr, nullptr};
+static const char *anims[7] = {"Choice", "ChoiceOff", "ChoiceOffToOn", "ChoiceOn", "ChoiceOnToOff", nullptr, nullptr};
 
 void ToggleButton::ToggleState(bool state) {
     if (this->state != state) {
@@ -14,7 +14,7 @@ void ToggleButton::ToggleState(bool state) {
 }
 
 void ToggleButton::OnClick(u32, u32) {
-    AnimationGroup& choiceGroup = this->animator.GetAnimationGroupById(4);  // choice group, off, offtoon, on, ontooff
+    AnimationGroup &choiceGroup = this->animator.GetAnimationGroupById(4);  // choice group, off, offtoon, on, ontooff
     const u32 curAnimation = choiceGroup.curAnimation;
     const bool curState = this->state;
     this->state = !this->state;
@@ -27,9 +27,9 @@ void ToggleButton::OnClick(u32, u32) {
         choiceGroup.PlayAnimationAtFrame(1, 0.0f);
 }
 
-void ToggleButton::Load(u32 localPlayerBitfield, const char* folderName, const char* ctrName, const char* variant) {
+void ToggleButton::Load(u32 localPlayerBitfield, const char *folderName, const char *ctrName, const char *variant) {
     this->LoadWithAnims(anims, folderName, ctrName, variant, localPlayerBitfield, 0);
-    AnimationGroup& choiceGroup = this->animator.GetAnimationGroupById(4);  // choice, pattern and colours on click
+    AnimationGroup &choiceGroup = this->animator.GetAnimationGroupById(4);  // choice, pattern and colours on click
     choiceGroup.PlayAnimationAtFrame(this->state ? 2 : 0, 0.0f);
 }
 

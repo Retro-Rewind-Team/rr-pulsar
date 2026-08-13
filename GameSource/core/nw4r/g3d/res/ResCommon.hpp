@@ -24,7 +24,7 @@ struct ResTagDLData {
 template <class T>
 class ResCommon {
    public:
-    T* data;
+    T *data;
 };
 
 class ResName : public ResCommon<const ResNameData> {

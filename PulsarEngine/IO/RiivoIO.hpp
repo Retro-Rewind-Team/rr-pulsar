@@ -99,22 +99,22 @@ enum RiivoError {
 };
 
 class RiivoIO : public IOSIO {
-    RiivoIO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread) : IOSIO(type, heap, taskThread) {}
+    RiivoIO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread) : IOSIO(type, heap, taskThread) {}
 
-    bool OpenFile(const char* path, u32 mode) override;
-    bool CreateAndOpen(const char* path, u32 mode) override;
-    void GetCorrectPath(char* realPath, const char* path) const;
-    bool RenameFile(const char* oldPath, const char* newPath) const override { return false; }
+    bool OpenFile(const char *path, u32 mode) override;
+    bool CreateAndOpen(const char *path, u32 mode) override;
+    void GetCorrectPath(char *realPath, const char *path) const;
+    bool RenameFile(const char *oldPath, const char *newPath) const override { return false; }
 
-    bool FolderExists(const char* path) const override;
-    bool CreateFolder(const char* path) override;
+    bool FolderExists(const char *path) const override;
+    bool CreateFolder(const char *path) override;
     // virtual void GetFilePath(char *path, u32 index);
-    void ReadFolder(const char* path) override;
+    void ReadFolder(const char *path) override;
 
     s32 GetDevice_fd() const;
     RiivoMode GetRiivoMode(u32 mode) const;
 
-    friend IO* IO::CreateInstance(IOType type, EGG::Heap* heap, EGG::TaskThread* const taskThread);
+    friend IO *IO::CreateInstance(IOType type, EGG::Heap *heap, EGG::TaskThread *const taskThread);
 };
 
 struct RiivoStats {

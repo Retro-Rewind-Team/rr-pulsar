@@ -33,7 +33,7 @@ class VRLeaderboardPage : public Page {
 
    private:
     void OnBackPress(u32 hudSlotId);
-    void OnBackButtonClick(PushButton& button, u32 hudSlotId);
+    void OnBackButtonClick(PushButton &button, u32 hudSlotId);
     void ResetRowsToLoading();
     void ApplyResults();
     void ApplyError();
@@ -54,24 +54,24 @@ class VRLeaderboardPage : public Page {
         u64 friendCode;
     };
 
-    static void OnLeaderboardReceived(s32 result, void* response, void* userdata);
-    static void StartFetch(VRLeaderboardPage* page);
-    static int ParseResponse(const char* json, Entry* outEntries, int maxEntries);
-    static void OverrideOwnMiiData(Entry* entries, int entryCount, u64 ownFriendCode);
+    static void OnLeaderboardReceived(s32 result, void *response, void *userdata);
+    static void StartFetch(VRLeaderboardPage *page);
+    static int ParseResponse(const char *json, Entry *outEntries, int maxEntries);
+    static void OverrideOwnMiiData(Entry *entries, int entryCount, u64 ownFriendCode);
 
     static FetchState s_fetchState;
     static bool s_hasApplied;
-    static Entry* s_entries;
+    static Entry *s_entries;
 
-    CtrlMenuPageTitleText* titleText;
-    CtrlMenuInstructionText* bottomText;
-    CtrlMenuBackButton* backButton;
-    LayoutUIControl* rows[kRowsPerPage];
+    CtrlMenuPageTitleText *titleText;
+    CtrlMenuInstructionText *bottomText;
+    CtrlMenuBackButton *backButton;
+    LayoutUIControl *rows[kRowsPerPage];
 
-    MiiGroup* miiGroup;
+    MiiGroup *miiGroup;
 
-    ControlsManipulatorManager* controlsManipulatorManager;
-    PtmfHolder_2A<VRLeaderboardPage, void, PushButton&, u32> onBackButtonClickHandler;
+    ControlsManipulatorManager *controlsManipulatorManager;
+    PtmfHolder_2A<VRLeaderboardPage, void, PushButton &, u32> onBackButtonClickHandler;
     PtmfHolder_1A<VRLeaderboardPage, void, u32> onBackPressHandler;
 
     PageId nextPageId;

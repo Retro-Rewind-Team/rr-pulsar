@@ -6,12 +6,12 @@
 namespace Item {
 class ObjFIB : public ObjThrowable {
    public:
-    static Obj** CreateArray(u32 count);  // 807a78a8
+    static Obj **CreateArray(u32 count);  // 807a78a8
 
     void InitSelf() override;  // 807a7ac0 vtable 808d1d60
     void UpdateModelPosition() override;  // 0x10 807a7fec
     void SpawnModel() override;  // 807a7f1c
-    bool SetInitialPosition(PlayerObj& playerObj) override;  // 807a7940
+    bool SetInitialPosition(PlayerObj &playerObj) override;  // 807a7940
     int OnKill() override;  // 807a8134
     void vf_0x30() override;  // 807a7a5c
 

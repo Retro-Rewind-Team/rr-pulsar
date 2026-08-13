@@ -18,7 +18,7 @@ class UnkModelClass {
 class MenuKartDisplayModel : public MenuModel {  // the models inside the kartSelect buttons
    public:
     ~MenuKartDisplayModel() override;  // 8082f8b8 vtable 808d8c60
-    TextureHolder* texture;  // 0x8
+    TextureHolder *texture;  // 0x8
 };  // 0xC
 
 class MenuKartModel : public MenuModel {  // the main model but also the display model
@@ -27,11 +27,11 @@ class MenuKartModel : public MenuModel {  // the main model but also the display
     ~MenuKartModel() override;  // 80831f84 vtable 808d8c8c
     void Init() override;  // 0xc 80832240
     void Update() override;  // 0x10 8083275c
-    void Load(u8 playerId, CharacterId characterId, KartId kartId, EGG::Heap* heap, u16 width, u16 height);  // 80831fc4
+    void Load(u8 playerId, CharacterId characterId, KartId kartId, EGG::Heap *heap, u16 width, u16 height);  // 80831fc4
 
     KartId kart;  // 0x8
     CharacterId character;  // 0xC
-    EGG::Allocator* allocator;  // 0x10
+    EGG::Allocator *allocator;  // 0x10
 
     u8 unknown_0x10[0x18 - 0x10];
     MenuKartDisplayModel unk;  // 0x18
@@ -49,10 +49,10 @@ class MenuKartModelMgr {
     void SetKartModel(u8 playerId, KartId id);  // 80833290
     void Reset(u8 playerId);  // 808332e8
     void Draw(u8 playerId);  // 808331c4 toggles karts not shown off
-    MenuKartModel* GetMenuKartModel(u8 playerId, u32 mdlIdx);  // 80833474
+    MenuKartModel *GetMenuKartModel(u8 playerId, u32 mdlIdx);  // 80833474
 
     struct Player {
-        MenuKartModel* modelsArray;
+        MenuKartModel *modelsArray;
         u32 idx;  // 0x4 from 0 to 11
         bool hasLoadRequest;  // 0x8
         bool isLocked;  // 0x9
@@ -69,7 +69,7 @@ class MenuKartModelMgr {
     u16 KartScale[2];  // 0x48 converted from KartSelect's Vec2 and adjusted from Section's scale
     void (Pages::ModelRenderer::*prepareFunc)(u8);  // 0x4c
     u32 unknown_0x50;
-    UnkModelClass* unk;  // 0x54
+    UnkModelClass *unk;  // 0x54
     u8 unknown_0x54[0x5c - 0x54];
 };  // 0x5c
 

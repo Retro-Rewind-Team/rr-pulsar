@@ -9,8 +9,8 @@ namespace UI {
 
 u8 TeamSelect::teams[24] = {0};
 bool TeamSelect::isEnabled = false;
-const char* TeamSelect::border = "border";
-const char* TeamSelect::miiBg = "bg";
+const char *TeamSelect::border = "border";
+const char *TeamSelect::miiBg = "bg";
 
 TeamSelect::TeamSelect() {
     hasBackButton = true;
@@ -78,15 +78,15 @@ void TeamSelect::BeforeEntranceAnimations() {
 }
 
 void TeamSelect::BeforeControlUpdate() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub* sub = &controller->subs[0];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub *sub = &controller->subs[0];
     if (sub->connectionUserDatas[0].playersAtConsole == 0) sub = &controller->subs[1];
 
     int idx = 0;
     for (int aid = 0; aid < 12; ++aid) {
         if (sub->availableAids & (1 << aid)) {
             for (int player = 0; player < sub->connectionUserDatas[aid].playersAtConsole; ++player) {
-                LayoutUIControl& mii = this->miis[idx];
+                LayoutUIControl &mii = this->miis[idx];
                 mii.SetMiiPane("chara", *this->miiGroup, aid * 2 + player, 2);
                 mii.SetMiiPane("chara_shadow", *this->miiGroup, aid * 2 + player, 2);
                 mii.isHidden = false;
@@ -95,7 +95,7 @@ void TeamSelect::BeforeControlUpdate() {
                 this->SetColours(idx, this->teams[aid + 12 * player]);
                 this->RotateArrow(this->arrows[idx], this->teams[aid + 12 * player]);
 
-                PushButton& arrow = this->arrows[idx];
+                PushButton &arrow = this->arrows[idx];
                 arrow.isHidden = false;
                 arrow.manipulator.inaccessible = false;
                 if (arrow.IsSelected()) {
@@ -113,7 +113,7 @@ void TeamSelect::BeforeControlUpdate() {
     }
 }
 
-UIControl* TeamSelect::CreateControl(u32 id) {
+UIControl *TeamSelect::CreateControl(u32 id) {
     if (id > 26) return nullptr;
     const u32 count = this->controlCount;
     this->controlCount++;
@@ -131,14 +131,14 @@ UIControl* TeamSelect::CreateControl(u32 id) {
         this->AddControl(count, this->miis[id], 0);
         ControlLoader loader(&this->miis[id]);
         snprintf(variant, 0x40, "Mii%d", id);
-        const char* brctr = "TeamMii";
-        static const char* miiAnim[5] = {"Translate", "TranslateRight", "TranslateLeft", nullptr, nullptr};
+        const char *brctr = "TeamMii";
+        static const char *miiAnim[5] = {"Translate", "TranslateRight", "TranslateLeft", nullptr, nullptr};
         loader.Load(UI::controlFolder, brctr, variant, miiAnim);
         return &this->miis[id];
     } else if (id == 24) {
         this->AddControl(count, this->name, 0);
         ControlLoader loader(&this->name);
-        const char* brctr = "TeamName";
+        const char *brctr = "TeamName";
         loader.Load(UI::controlFolder, brctr, brctr, nullptr);
         return &this->name;
 
@@ -150,7 +150,7 @@ UIControl* TeamSelect::CreateControl(u32 id) {
     }
 }
 
-void TeamSelect::OnArrowClick(PushButton& button, u32 hudSlotId) {
+void TeamSelect::OnArrowClick(PushButton &button, u32 hudSlotId) {
     const s32 id = button.buttonId;
     u8 teamsArrayIdx = this->CalcTeamsArrayIdx(id);
     if (teamsArrayIdx != 0xFF) {
@@ -162,12 +162,12 @@ void TeamSelect::OnArrowClick(PushButton& button, u32 hudSlotId) {
     }
 }
 
-void TeamSelect::OnArrowSelect(PushButton& button, u32 hudSlotId) {
+void TeamSelect::OnArrowSelect(PushButton &button, u32 hudSlotId) {
     this->text.miis[0] = this->miiGroup->GetMii(this->arrowMiiIdx[button.buttonId]);
     this->name.SetMessage(BMG_MII_NAME, &this->text);
 }
 
-void TeamSelect::OnToggleButtonClick(ToggleButton& button, u32) {
+void TeamSelect::OnToggleButtonClick(ToggleButton &button, u32) {
     const u32 bmgId = button.GetState() ? BMG_TEAMS_ENABLED : BMG_TEAMS_DISABLED;
     this->isEnabled = button.GetState();
     button.SetMessage(bmgId);
@@ -181,15 +181,15 @@ int TeamSelect::GetPlayerBitfield() const {
     return this->playerBitfield;
 }
 
-ManipulatorManager& TeamSelect::GetManipulatorManager() {
+ManipulatorManager &TeamSelect::GetManipulatorManager() {
     return this->controlsManipulatorManager;
 }
 
-UIControl* TeamSelect::CreateExternalControl(u32 id) {
+UIControl *TeamSelect::CreateExternalControl(u32 id) {
     return nullptr;
 }
 
-void TeamSelect::SetButtonHandlers(PushButton& button) {
+void TeamSelect::SetButtonHandlers(PushButton &button) {
     button.SetOnClickHandler(this->onButtonClickHandler, 0);
     button.SetOnSelectHandler(this->onButtonSelectHandler);
     button.SetOnDeselectHandler(this->onButtonDeselectHandler);
@@ -199,13 +199,13 @@ void TeamSelect::OnBackPress(u32 hudSlotId) {
     this->EndStateAnimated(0.0f, 1);
 }
 
-void TeamSelect::OnButtonClick(PushButton& button, u32 hudSlotId) {
+void TeamSelect::OnButtonClick(PushButton &button, u32 hudSlotId) {
     this->EndStateAnimated(1, button.GetAnimationFrameSize());
 }
 
 u8 TeamSelect::CalcTeamsArrayIdx(u32 idx) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub* sub = &controller->subs[0];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub *sub = &controller->subs[0];
     if (sub->connectionUserDatas[0].playersAtConsole == 0) sub = &controller->subs[1];
 
     u32 curIdx = 0;
@@ -221,8 +221,8 @@ u8 TeamSelect::CalcTeamsArrayIdx(u32 idx) {
 }
 
 u32 TeamSelect::CalcIdx(u8 teamsArrayIdx) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub* sub = &controller->subs[0];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub *sub = &controller->subs[0];
     if (sub->connectionUserDatas[0].playersAtConsole == 0) sub = &controller->subs[1];
 
     bool isGuest = teamsArrayIdx >= 12;
@@ -238,16 +238,16 @@ u32 TeamSelect::CalcIdx(u8 teamsArrayIdx) {
     return isGuest ? idx + 1 : idx;
 }
 
-void TeamSelect::RotateArrow(PushButton& button, u8 team) {
+void TeamSelect::RotateArrow(PushButton &button, u8 team) {
     RotateArrowPane(button, "chara_shadow", team);
     RotateArrowPane(button, "color_yajirushi", team);
     RotateArrowPane(button, "chara_c_down", team);
     RotateArrowPane(button, "chara_light_01", team);
 }
 
-void TeamSelect::RotateArrowPane(PushButton& button, const char* name, u8 team) {
-    lyt::Picture* pane = static_cast<lyt::Picture*>(button.layout.GetPaneByName(name));
-    nw4r::math::VEC2* vec = reinterpret_cast<nw4r::math::VEC2*>(pane->texCoords.data);
+void TeamSelect::RotateArrowPane(PushButton &button, const char *name, u8 team) {
+    lyt::Picture *pane = static_cast<lyt::Picture *>(button.layout.GetPaneByName(name));
+    nw4r::math::VEC2 *vec = reinterpret_cast<nw4r::math::VEC2 *>(pane->texCoords.data);
 
     bool isRed = team == 1;
     vec[0].x = isRed ? 0.0f : 1.0f;
@@ -265,7 +265,7 @@ void TeamSelect::SetColours(u32 idx, u8 team) {
         b = 0;
         g = 33;
     }
-    nw4r::lyt::Material* arrowBorder = this->arrows[idx].layout.GetPaneByName(this->border)->GetMaterial();
+    nw4r::lyt::Material *arrowBorder = this->arrows[idx].layout.GetPaneByName(this->border)->GetMaterial();
     arrowBorder->tevColours[0].r = r;
     arrowBorder->tevColours[0].g = 0;
     arrowBorder->tevColours[0].b = b;
@@ -275,13 +275,13 @@ void TeamSelect::SetColours(u32 idx, u8 team) {
     arrowBorder->tevColours[1].b = b;
     arrowBorder->tevColours[1].a = 255;
 
-    nw4r::lyt::Material* miiBg = this->miis[idx].layout.GetPaneByName(this->miiBg)->GetMaterial();
+    nw4r::lyt::Material *miiBg = this->miis[idx].layout.GetPaneByName(this->miiBg)->GetMaterial();
     miiBg->tevColours[1].r = r;
     miiBg->tevColours[1].g = 0;
     miiBg->tevColours[1].b = b;
     miiBg->tevColours[1].a = 255;
 
-    nw4r::lyt::Material* miiBorder = this->miis[idx].layout.GetPaneByName(this->border)->GetMaterial();
+    nw4r::lyt::Material *miiBorder = this->miis[idx].layout.GetPaneByName(this->border)->GetMaterial();
     if (r == 0xDC)
         r = 0xb3;
     else {
@@ -299,9 +299,9 @@ void TeamSelect::SetColours(u32 idx, u8 team) {
 }
 
 // Sets Team using the TeamSelectPage if it has been enabled by the host; verifies the validity of the teams
-static void SetTeams(RKNet::SELECTHandler* handler, u32& teams) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub* sub = &controller->subs[0];
+static void SetTeams(RKNet::SELECTHandler *handler, u32 &teams) {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub *sub = &controller->subs[0];
     if (sub->connectionUserDatas[0].playersAtConsole == 0) sub = &controller->subs[1];
 
     bool isValid = false;

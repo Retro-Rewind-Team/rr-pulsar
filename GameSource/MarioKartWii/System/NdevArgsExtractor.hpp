@@ -29,8 +29,8 @@ class NdevArgsExtractor {
     u64 ExtractW() const;  // 805ba798
     u64 ExtractD() const;  // 805ba88c
 
-    bool ExtractInt(char extractType, int& dest);  // 805ba98c extracts all but W or D
-    u64 ExtractU64(char extractType, u64& dest);  // 805baa60 extracts W or D
+    bool ExtractInt(char extractType, int &dest);  // 805ba98c extracts all but W or D
+    u64 ExtractU64(char extractType, u64 &dest);  // 805baa60 extracts W or D
 };
 
 #endif

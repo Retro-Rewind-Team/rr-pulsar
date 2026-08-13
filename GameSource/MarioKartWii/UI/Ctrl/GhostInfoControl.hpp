@@ -11,11 +11,11 @@ class GhostInfoControl : public LayoutUIControl {
     ~GhostInfoControl() override;  // 805e27dc vtable 808b92c0
     void InitSelf() override;  // 0x18 805e2964
     void OnUpdate() override;  // 0x1c 805e2968
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805e2f40
-    const char* GetClassName() const override;  // 0x2c 805e2740
-    void Load(const char* variantName);  // 805e2844
-    void UpdateInfoAnimate(const GhostData& data, bool isNew, u32 animationId);  // 805e2d40
-    void UpdateInfo(const GhostData& data, bool isNew);  // 805e296c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805e2f40
+    const char *GetClassName() const override;  // 0x2c 805e2740
+    void Load(const char *variantName);  // 805e2844
+    void UpdateInfoAnimate(const GhostData &data, bool isNew, u32 animationId);  // 805e2d40
+    void UpdateInfo(const GhostData &data, bool isNew);  // 805e296c
     MiiGroup miiGroup;  // 0x174
     // 0x20c
     u8 unknown_0x20C[0x234 - 0x20c];

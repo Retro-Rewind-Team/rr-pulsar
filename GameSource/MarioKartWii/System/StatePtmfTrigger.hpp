@@ -55,9 +55,9 @@ class StatePtmfTrigger {
     u32 curStateframes;  // resets when the object reaches the end of its route//its cycle
     u16 cyclePtmfsCount;  // unsure
     u8 padding2[2];
-    u16* idsArray;  // 0x14 to be accessed via curState
-    Entry* entries;  // 0x18 808c5da0
-    T* subject;  // 0x1c
+    u16 *idsArray;  // 0x14 to be accessed via curState
+    Entry *entries;  // 0x18 808c5da0
+    T *subject;  // 0x1c
 };  // 0x20
 // size_assert(StatePtmfTrigger<u32>, 0x20);
 

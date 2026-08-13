@@ -7,7 +7,7 @@
 
 namespace Pulsar {
 namespace UI {
-void RaceMenuExtraControls(Pages::RaceMenu& page, u32 gameControlCount);
+void RaceMenuExtraControls(Pages::RaceMenu &page, u32 gameControlCount);
 }  // namespace UI
 namespace KO {
 class RaceEndPage : public Pages::RaceMenu {
@@ -20,12 +20,12 @@ class RaceEndPage : public Pages::RaceMenu {
     void BeforeControlUpdate() override;
     int GetMessageBMG() const override;
     u32 GetButtonCount() const override;
-    const u32* GetVariantsIdxArray() const override;
+    const u32 *GetVariantsIdxArray() const override;
     bool IsPausePage() const override;
-    const char* GetButtonsBRCTRName() const override;
+    const char *GetButtonsBRCTRName() const override;
 
    private:
-    void OnButtonClick(PushButton& button, u32 hudSlotId);
+    void OnButtonClick(PushButton &button, u32 hudSlotId);
     void InitExtraControls(u32 gameControlCount) {
         this->InitControlGroup(gameControlCount + 1);
         this->AddControl(gameControlCount, this->countdownControl, 0);
@@ -35,7 +35,7 @@ class RaceEndPage : public Pages::RaceMenu {
     CountDownTimerControl countdownControl;
     CountDown countdown;
 
-    friend void UI::RaceMenuExtraControls(Pages::RaceMenu& page, u32 gameControlCount);
+    friend void UI::RaceMenuExtraControls(Pages::RaceMenu &page, u32 gameControlCount);
 };
 }  // namespace KO
 }  // namespace Pulsar

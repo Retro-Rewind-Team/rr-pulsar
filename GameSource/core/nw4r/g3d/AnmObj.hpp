@@ -27,7 +27,7 @@ class FrameCtrl {
     float updateRate;
     float startFrame;
     float endFrame;
-    void* playPolicyFunc;
+    void *playPolicyFunc;
 };  // 0x14
 }  // namespace g3d
 }  // namespace nw4r

@@ -14,14 +14,14 @@ class HeyHoManager : public MapObjSniper {
     void OnStart() override;  // 0xc 806d2590
     void Update() override;  // 0x14 806d2868
 
-    float* routePointsSized2;  // 0xc0
-    Vec3* routePointsSized3;  // 0xc4
+    float *routePointsSized2;  // 0xc0
+    Vec3 *routePointsSized3;  // 0xc4
     u8 unknown_0xc8[4];
 };  // 0xcc
 
 class HeyHoShipGBA : public MapObjShooter {  // ObjectNum 0xce = 206
    public:
-    explicit HeyHoShipGBA(const KMP::Holder<GOBJ>& gobjHolder);  // 806d18fc
+    explicit HeyHoShipGBA(const KMP::Holder<GOBJ> &gobjHolder);  // 806d18fc
     ~HeyHoShipGBA() override;  // 806d2320 vtable 808c4f28
     void OnStart() override;  // 0xc 806d19d8
     void Update() override;  // 0x14 806dd1b9c
@@ -29,30 +29,30 @@ class HeyHoShipGBA : public MapObjShooter {  // ObjectNum 0xce = 206
     int GetShootFromRoutePointID() const override;  // 0xec 806d1ca4
 
     float verticalHeave;  // 0xb0 setting0
-    float* routePointsSized2;  // 0xb4 copyy of manager's
-    Vec3* routePointsSized3;  // 0xb8 cooppy of manhbgv
+    float *routePointsSized2;  // 0xb4 copyy of manager's
+    Vec3 *routePointsSized3;  // 0xb8 cooppy of manhbgv
     u8 unknown_0xbc[0xf4 - 0xbc];
 };  // 0xf4
 
 class HeyHoBallGBA : public MapObjProjectile, public StatePtmfTrigger<HeyHoBallGBA> {  // ObjectNum 0xea = 234
    public:
-    explicit HeyHoBallGBA(const KMP::Holder<GOBJ>& gobjHolder);  // 806d02c4
+    explicit HeyHoBallGBA(const KMP::Holder<GOBJ> &gobjHolder);  // 806d02c4
     ~HeyHoBallGBA() override;  // 806c1820 vtable 808c4cc8
     void OnStart() override;  // 0xc 806d05f0
     void Update() override;  // 0x14 806d0780
     u32 GetPropertiesBitfield() override;  // 0x2c 806d18ec
     void LoadAnimations() override;  // 0x5c 806d18a0
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806d0880
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 806d0978
-    void vf_0xec(const Vec3& vec3) override;  // 0xec 806d10a4
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806d0880
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806d0978
+    void vf_0xec(const Vec3 &vec3) override;  // 0xec 806d10a4
     void RequestShoot() override;  // 0xf0 806d188c
 
     // StatePtmfTrigger vtable 808c4dbc at 0xb4
     //~HeyHoBallGBA() override; //thunk 806d18f4
 
-    ModelDirector* bombCore;  // 0xd4
-    EGG::Effect* rk_bombHei;  // 0xd8
+    ModelDirector *bombCore;  // 0xd4
+    EGG::Effect *rk_bombHei;  // 0xd8
     u16 routeShipFiresFrom;  // 0xdc setting0
     u8 padding4[2];  // 0xde
     float timeBtwShotAndArrival;  // 0xe0

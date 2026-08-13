@@ -42,7 +42,7 @@ class AnimTransform;
 class AnimationLink {
    public:
     ut::LinkListNode link;
-    AnimTransform* animTrans;
+    AnimTransform *animTrans;
     u16 idx;
     bool disable;
 };

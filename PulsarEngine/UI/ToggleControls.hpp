@@ -20,7 +20,7 @@ private:
 class ToggleButton : public PushButton {
    public:
     ToggleButton() : state(false) {}
-    void Load(u32 localPlayerBitfield, const char* folderName, const char* ctrName, const char* variant);
+    void Load(u32 localPlayerBitfield, const char *folderName, const char *ctrName, const char *variant);
     void ToggleState(bool state);  // changes the state without an animation
     inline bool GetState() const { return this->state; }
 

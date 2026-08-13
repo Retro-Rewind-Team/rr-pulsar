@@ -64,12 +64,12 @@ static bool IsValidPlayerId(u32 pid) {
 }
 
 bool ShouldApplyBattleElimination() {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     return system->IsContext(PULSAR_ELIMINATION) && system->IsContext(PULSAR_FFA);
 }
 
-static void SetInitialBattleScores(RacedataScenario& scenario, u16 startScore) {
-    Raceinfo* raceinfo = Raceinfo::sInstance;
+static void SetInitialBattleScores(RacedataScenario &scenario, u16 startScore) {
+    Raceinfo *raceinfo = Raceinfo::sInstance;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     if (!ShouldApplyBattleElimination()) {
         ResetEliminationTracking();
@@ -80,14 +80,14 @@ static void SetInitialBattleScores(RacedataScenario& scenario, u16 startScore) {
         ResetEliminationTracking();
     }
     for (u8 idx = 0; idx < playerCount && idx < MAX_BATTLE_PLAYERS; ++idx) {
-        RaceinfoPlayer* player = raceinfo->players[idx];
+        RaceinfoPlayer *player = raceinfo->players[idx];
         if (!atRaceStage) player->battleScore = 3;
     }
 }
 static RaceFrameHook BattleElimInitScoresHook(SetInitialBattleScores);
 
 static void SetVanishOnElim(u8 playerIdx) {
-    Raceinfo* raceinfo = Raceinfo::sInstance;
+    Raceinfo *raceinfo = Raceinfo::sInstance;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     if (!ShouldApplyBattleElimination() || !raceinfo->IsAtLeastStage(RACESTAGE_RACE)) {
         ResetEliminationTracking();
@@ -95,7 +95,7 @@ static void SetVanishOnElim(u8 playerIdx) {
         return;
     }
     for (u8 idx = 0; idx < playerCount && idx < MAX_BATTLE_PLAYERS; ++idx) {
-        RaceinfoPlayer* player = raceinfo->players[idx];
+        RaceinfoPlayer *player = raceinfo->players[idx];
         if (player->battleScore == 0) {
             if (!sEliminationRecorded[idx]) {
                 AppendElimination(idx);
@@ -125,11 +125,11 @@ u8 GetRecentEliminationId(u8 index) {
     return sEliminationDisplay.recentEliminations[index];
 }
 
-static void ApplySpectatorToEliminatedPlayersOnly(LapKO::Mgr* lapKOMgr) {
-    Raceinfo* raceinfo = Raceinfo::sInstance;
+static void ApplySpectatorToEliminatedPlayersOnly(LapKO::Mgr *lapKOMgr) {
+    Raceinfo *raceinfo = Raceinfo::sInstance;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     const u8 localPlayerCount = Racedata::sInstance->menusScenario.localPlayerCount;
-    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
     if (!raceinfo->IsAtLeastStage(RACESTAGE_RACE)) return;
     if (!ShouldApplyBattleElimination()) return;
@@ -138,7 +138,7 @@ static void ApplySpectatorToEliminatedPlayersOnly(LapKO::Mgr* lapKOMgr) {
         const u32 pid = Racedata::sInstance->GetPlayerIdOfLocalPlayer(localIdx);
         if (!IsValidPlayerId(pid)) continue;
         if (pid >= playerCount) continue;
-        RaceinfoPlayer* localPlayer = raceinfo->players[pid];
+        RaceinfoPlayer *localPlayer = raceinfo->players[pid];
         if (localPlayer->battleScore == 0) {
             lapKOMgr->isSpectating = true;
             if (mode != MODE_BATTLE) {
@@ -151,9 +151,9 @@ static void ApplySpectatorToEliminatedPlayersOnly(LapKO::Mgr* lapKOMgr) {
 static RaceFrameHook BattleElimSpectateHook(ApplySpectatorToEliminatedPlayersOnly);
 
 static void SetTimerToZeroWhenAllPlayersEliminated() {
-    Raceinfo* raceinfo = Raceinfo::sInstance;
-    Racedata& racedata = *Racedata::sInstance;
-    const RacedataScenario& scenario = racedata.menusScenario;
+    Raceinfo *raceinfo = Raceinfo::sInstance;
+    Racedata &racedata = *Racedata::sInstance;
+    const RacedataScenario &scenario = racedata.menusScenario;
     const GameMode mode = scenario.settings.gamemode;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     const u8 localPlayerCount = scenario.localPlayerCount;
@@ -161,7 +161,7 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
     if (!ShouldApplyBattleElimination()) return;
     u32 eliminatedCount = 0;
     for (u8 playerIdx = 0; playerIdx < playerCount && playerIdx < MAX_BATTLE_PLAYERS; ++playerIdx) {
-        RaceinfoPlayer* player = raceinfo->players[playerIdx];
+        RaceinfoPlayer *player = raceinfo->players[playerIdx];
         if (!player) continue;
         if (player->battleScore == 0) ++eliminatedCount;
     }
@@ -176,7 +176,7 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
                     allLocalEliminated = false;
                     break;
                 }
-                RaceinfoPlayer* localPlayer = raceinfo->players[pid];
+                RaceinfoPlayer *localPlayer = raceinfo->players[pid];
                 if (!localPlayer || localPlayer->battleScore != 0) {
                     allLocalEliminated = false;
                     break;
@@ -184,9 +184,9 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
             }
         }
         if (allLocalEliminated || eliminatedCount >= (playerCount - 1)) {
-            RaceTimerMgr* timerMgr = raceinfo->timerMgr;
+            RaceTimerMgr *timerMgr = raceinfo->timerMgr;
             for (u8 idx = 0; idx < playerCount && idx < MAX_BATTLE_PLAYERS; ++idx) {
-                Timer& timer = timerMgr->timers[idx];
+                Timer &timer = timerMgr->timers[idx];
                 timer.minutes = 0;
                 timer.seconds = 0;
                 timer.milliseconds = 0;
@@ -245,11 +245,12 @@ asmFunc LoadBattleFanfare() {
 kmCall(0x807123e8, LoadBattleFanfare);
 
 void BattleElim() {
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     if (!Racedata::sInstance) return;
     const bool eliminationActive = ShouldApplyBattleElimination();
     sForceBalloonBattle = eliminationActive;
-    sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2 : 0;
+    sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2
+                                                                                      : 0;
 }
 static FrameLoadHook BattleElimHook(BattleElim);
 
@@ -262,8 +263,8 @@ kmWrite32(0x8053b618, 0x38800002);
 kmWrite32(0x80538a74, 0x60000000);
 
 void BattleTimer() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     sBattleDuration = 180;
     if (ShouldApplyBattleElimination()) {
         if (sub.playerCount == 12 || sub.playerCount == 11 || sub.playerCount == 10) {

@@ -6,8 +6,8 @@
 
 namespace Audio {
 class RandomMgr : public Random {  // is used to get 12 seeds 809c4740 + 4728[id] which impact character sounds etc...
-    static RandomMgr* sInstance;  // 809c4738
-    static RandomMgr* CreateInstance();  // 80866ddc
+    static RandomMgr *sInstance;  // 809c4738
+    static RandomMgr *CreateInstance();  // 80866ddc
     static void DestroyInstance();  // 80866e64
     ~RandomMgr() override;  // 80866e98 vtable 808dbdf0
     u32 RandInt(u32 min, u32 max);  // 80866f4c non-inclusive

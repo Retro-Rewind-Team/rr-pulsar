@@ -15,7 +15,7 @@ class DriverModelAnmCalculator {
     virtual ~DriverModelAnmCalculator();  // 8081e74c vtable 808d6dc0
 
     void Determine(CharacterId charId, KartId kartId, u32 type);  // 80831c1c type 1 = wink, 2 = gut
-    static const char* GetPrefix(KartId id);  // 80831d20 sel, kart, etc... id = -1 means sel
+    static const char *GetPrefix(KartId id);  // 80831d20 sel, kart, etc... id = -1 means sel
     u32 state;
     char anmName[0x10];
 };  // 0x18
@@ -35,8 +35,8 @@ class MenuDriverModel : public MenuModel {
 
     u8 unknown_0x4[4];
     State state;  // 0x8
-    ModelTransformator* charSelTransformator;  // 0xC
-    ModelTransformator* onKartTransformator;  // 0x10
+    ModelTransformator *charSelTransformator;  // 0xC
+    ModelTransformator *onKartTransformator;  // 0x10
     u8 unknown_0x14[4];
     u32 id;  // 0x18
     u8 unknown_0x1c[0x28 - 0x1c];
@@ -48,7 +48,7 @@ class MenuDriverModelMgr {
         CharacterId id;
         bool isVisible;
         u8 padding[3];
-        MenuDriverModel* playerModel;
+        MenuDriverModel *playerModel;
     };  // 0xC
 
     MenuDriverModelMgr(u8 playerCount);  // 80830180
@@ -58,16 +58,16 @@ class MenuDriverModelMgr {
     void SetPlayerCharacter(u8 playerId, CharacterId id);  // 80830d00 updates players[id] values
     void PrepareDriverOnKartAnms(u8 playerId);  // 80830c64 prepares a new Transformator since the model has 2 "stances", alone and on a kart
 
-    MenuDriverModel* models;  // 0x4
+    MenuDriverModel *models;  // 0x4
     u8 playerCount;  // 0x8
     u8 modelCount;  // 0x9 playerCount * 2 (for miis) + 24 characters
     u8 padding[2];
     u32 longestChrLength;  // 0xC in frames
     Player players[4];  // 0x10
     u8 unknown_0x40[4];  // 0xc
-    Mii* miis;  // 0x44 one per player
-    MiiHeadsModel* miiHeads;  // 0x48 one per player
-    ToadetteHair* bangs;  // 0x4c
+    Mii *miis;  // 0x44 one per player
+    MiiHeadsModel *miiHeads;  // 0x48 one per player
+    ToadetteHair *bangs;  // 0x4c
     u32 unknown_0x50;  // 0x50
 };  // 0x54
 

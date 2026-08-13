@@ -6,7 +6,7 @@
 namespace Objects {
 
 class Press : public ObjectCollidable {  // ObjectNum 0x19d = 413
-    explicit Press(const KMP::Holder<GOBJ>& gobjHolder);  // 80777564
+    explicit Press(const KMP::Holder<GOBJ> &gobjHolder);  // 80777564
 
     enum State {
         PRESS_WAITING,
@@ -23,7 +23,7 @@ class Press : public ObjectCollidable {  // ObjectNum 0x19d = 413
     void LoadCollision() override;  // 0x60 8077840c
     u8 GetShadowListIdx() override;  // 0x80 8076ea18
     float GetCollisionDiameter() const override;  // 0xa0 8076ea0c
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 807782d4
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 807782d4
     virtual void TryFall();  // 0xec 80777a90
     virtual void UpdateEffect();  // 0xec 80777ef8
 
@@ -36,7 +36,7 @@ class Press : public ObjectCollidable {  // ObjectNum 0x19d = 413
     u32 collidingFrameCounter;  // 0xc0
     u32 unknown_0xc4;
     float height;  // 0xd8
-    EGG::Effect* rk_Effect;  // 0xdc
+    EGG::Effect *rk_Effect;  // 0xdc
     u32 idPlus1;  // 0xe0
     Vec3 yRot;  // 0xe4
     bool unknown_0xf0;

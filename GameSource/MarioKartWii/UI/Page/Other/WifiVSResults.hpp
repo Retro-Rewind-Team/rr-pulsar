@@ -13,8 +13,8 @@ class WifiAwardResultItem : public LayoutUIControl {
     WifiAwardResultItem();  // 806455dc
     ~WifiAwardResultItem();  // 80645618 vtable 808bf854
     void InitSelf() override;  // 0x18 806457e8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 80646764
-    const char* GetClassName() const override;  // 0x2c 806455cc
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80646764
+    const char *GetClassName() const override;  // 0x2c 806455cc
     void Load(u8 idx, bool hasTwoColumns);  // 80645670 bools depends on isTeamVS and localPlayerCount
 
     void FillResult(u8 playerIdx, bool isTeamVS, int localPlayerCount);  // 80645820
@@ -31,7 +31,7 @@ class WiFiVSResults : public Page {  // ID 0x44
     void AfterEntranceAnimations() override;  // 0x3c 8064615c
     void BeforeExitAnimations() override;  // 0x40 806461b4
     void AfterControlUpdate() override;  // 0x4c 806461c8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80646758
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80646758
 
     void SetCupPanes();  // 80646278, sets the mode names and icon in battle (?)
     void SetCongratulationUIAndSound();  // 806463a0, Sets the congratulation message and play the appropriate SFX

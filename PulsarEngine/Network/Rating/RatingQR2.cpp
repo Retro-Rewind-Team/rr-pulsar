@@ -25,24 +25,24 @@ kmRuntimeUse(0x800e4c88);
 kmRuntimeUse(0x8010f354);
 kmRuntimeUse(0x800e5524);
 
-typedef void (*qr2_buffer_addA_t)(void* buffer, const char* value);
+typedef void (*qr2_buffer_addA_t)(void *buffer, const char *value);
 static const qr2_buffer_addA_t qr2_buffer_addA = (qr2_buffer_addA_t)kmRuntimeAddr(0x8010f434);
 
-typedef void (*qr2_keybuffer_add_t)(void* buffer, int key);
+typedef void (*qr2_keybuffer_add_t)(void *buffer, int key);
 static const qr2_keybuffer_add_t qr2_keybuffer_add = (qr2_keybuffer_add_t)kmRuntimeAddr(0x8010f354);
 
-typedef void (*ServerKeyCallback)(int key, void* buffer);
+typedef void (*ServerKeyCallback)(int key, void *buffer);
 static const ServerKeyCallback OriginalServerKeyCallback = (ServerKeyCallback)kmRuntimeAddr(0x800e4c88);
 
-typedef void (*KeyListCallback)(int keyType, void* buffer);
+typedef void (*KeyListCallback)(int keyType, void *buffer);
 static KeyListCallback OriginalKeyListCallback = nullptr;
 
 static bool IsStreamerModeActiveForServer() {
-    const Settings::Mgr& settings = Settings::Mgr::Get();
+    const Settings::Mgr &settings = Settings::Mgr::Get();
     if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) == STREAMERMODE_DISABLED) {
         return false;
     }
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return false;
     if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
         return false;
@@ -60,8 +60,8 @@ static int ClampRatingForQr2(float vr) {
     return scaled;
 }
 
-static void MyServerKeyCallback(int key, void* buffer) {
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+static void MyServerKeyCallback(int key, void *buffer) {
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     u32 licenseId = 0;
     if (rksys) {
         licenseId = rksys->curLicenseId;
@@ -84,14 +84,14 @@ static void MyServerKeyCallback(int key, void* buffer) {
     OriginalServerKeyCallback(key, buffer);
 }
 
-static void MyKeyListCallback(int keyType, void* buffer) {
+static void MyKeyListCallback(int keyType, void *buffer) {
     if (OriginalKeyListCallback) {
         OriginalKeyListCallback(keyType, buffer);
     }
-    if (keyType == 0) { // QR2_SERVER_KEY
+    if (keyType == 0) {  // QR2_SERVER_KEY
         // Add ev and eb if they aren't already in the buffer (they are missing in private rooms)
-        unsigned char* b = (unsigned char*)buffer;
-        int count = *(int*)(b + 0x100);
+        unsigned char *b = (unsigned char *)buffer;
+        int count = *(int *)(b + 0x100);
         bool hasEv = false;
         bool hasEb = false;
         for (int i = 0; i < count; i++) {
@@ -104,19 +104,19 @@ static void MyKeyListCallback(int keyType, void* buffer) {
 }
 
 kmRuntimeUse(0x8010ecac);
-typedef int (*qr2_init_socketA_t)(void* q, int s, int bound_port, const char* gamename, const char* secret_key, int is_public, int nat_negotiate, void* server_key_callback, void* player_key_callback, void* team_key_callback, void* key_list_callback, void* count_callback, void* adderror_callback, void* userdata);
+typedef int (*qr2_init_socketA_t)(void *q, int s, int bound_port, const char *gamename, const char *secret_key, int is_public, int nat_negotiate, void *server_key_callback, void *player_key_callback, void *team_key_callback, void *key_list_callback, void *count_callback, void *adderror_callback, void *userdata);
 static const qr2_init_socketA_t qr2_init_socketA_Real = (qr2_init_socketA_t)kmRuntimeAddr(0x8010ecac);
 
-static int Hook_qr2_init_socketA(void* q, int s, int bound_port, const char* gamename, const char* secret_key, int is_public, int nat_negotiate, void* server_key_callback, void* player_key_callback, void* team_key_callback, void* key_list_callback, void* count_callback, void* adderror_callback, void* userdata) {
+static int Hook_qr2_init_socketA(void *q, int s, int bound_port, const char *gamename, const char *secret_key, int is_public, int nat_negotiate, void *server_key_callback, void *player_key_callback, void *team_key_callback, void *key_list_callback, void *count_callback, void *adderror_callback, void *userdata) {
     OriginalKeyListCallback = (KeyListCallback)key_list_callback;
-    return qr2_init_socketA_Real(q, s, bound_port, gamename, secret_key, is_public, nat_negotiate, (void*)MyServerKeyCallback, player_key_callback, team_key_callback, (void*)MyKeyListCallback, count_callback, adderror_callback, userdata);
+    return qr2_init_socketA_Real(q, s, bound_port, gamename, secret_key, is_public, nat_negotiate, (void *)MyServerKeyCallback, player_key_callback, team_key_callback, (void *)MyKeyListCallback, count_callback, adderror_callback, userdata);
 }
 kmCall(0x800d4f28, Hook_qr2_init_socketA);
 
 static RFL::StoreData s_originalMiis[2];
 static bool s_originalMiisStored = false;
 
-void GetOriginalMiis(RFL::StoreData* outMii0, RFL::StoreData* outMii1) {
+void GetOriginalMiis(RFL::StoreData *outMii0, RFL::StoreData *outMii1) {
     if (s_originalMiisStored) {
         *outMii0 = s_originalMiis[0];
         *outMii1 = s_originalMiis[1];
@@ -127,7 +127,7 @@ bool HasOriginalMiisStored() {
     return s_originalMiisStored;
 }
 
-static void ReplaceUserPacketMiiForServer(RKNet::USERHandler* handler) {
+static void ReplaceUserPacketMiiForServer(RKNet::USERHandler *handler) {
     if (!IsStreamerModeActiveForServer()) {
         s_originalMiisStored = false;
         return;
@@ -138,13 +138,14 @@ static void ReplaceUserPacketMiiForServer(RKNet::USERHandler* handler) {
     s_originalMiisStored = true;
 
     u32 randomIdx = Network::streamerModeRandomIndex;
-    RFL::StoreData* miiSlot0 = &handler->toSendPacket.rflPacket.rawMiis[0];
-    RFL::StoreData* miiSlot1 = &handler->toSendPacket.rflPacket.rawMiis[1];
+    RFL::StoreData *miiSlot0 = &handler->toSendPacket.rflPacket.rawMiis[0];
+    RFL::StoreData *miiSlot1 = &handler->toSendPacket.rflPacket.rawMiis[1];
 
     RFL::GetStoreData(miiSlot0, RFL::RFLDataSource_Default, randomIdx);
     RFL::GetStoreData(miiSlot1, RFL::RFLDataSource_Default, randomIdx);
 }
 
+// clang-format off
 asm void AsmHook_AfterMiiCopyLoop() {
     nofralloc
     // Save volatile registers used by the caller
@@ -173,9 +174,10 @@ asm void AsmHook_AfterMiiCopyLoop() {
     // Return
     blr
 }
+// clang-format on
 kmCall(0x80663088, AsmHook_AfterMiiCopyLoop);
 
-static wchar_t* GetLoginMiiName(Mii* mii) {
+static wchar_t *GetLoginMiiName(Mii *mii) {
     if (IsStreamerModeActiveForServer()) {
         RFL::StoreData tempMii;
         u32 randomIdx = Network::streamerModeRandomIndex;
@@ -186,6 +188,7 @@ static wchar_t* GetLoginMiiName(Mii* mii) {
     return mii->info.name;
 }
 
+// clang-format off
 asm void AsmHook_BeforeDWCLoginAsync() {
     nofralloc
     
@@ -212,6 +215,7 @@ asm void AsmHook_BeforeDWCLoginAsync() {
     // Return with r3 = name pointer
     blr
 }
+// clang-format on
 kmCall(0x80658cd8, AsmHook_BeforeDWCLoginAsync);
 
 }  // namespace PointRating

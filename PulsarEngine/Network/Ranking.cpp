@@ -29,7 +29,7 @@ struct BadgeRequestCtx {
 };
 
 static BadgeRequestCtx s_badgeRequestCtx;
-static void* s_badgeRequestWorkBuf = nullptr;
+static void *s_badgeRequestWorkBuf = nullptr;
 static u32 s_badgeRequestGeneration = 0;
 static u32 s_badgePid = 0;
 static u32 s_badgeMask = 0;
@@ -64,11 +64,11 @@ static s32 BadgeTypeToIcon(u32 badgeType) {
     }
 }
 
-static u32 ParseBadgeJson(const char* body, int bodyLen, u32 pid) {
+static u32 ParseBadgeJson(const char *body, int bodyLen, u32 pid) {
     if (body == nullptr || bodyLen <= 0 || pid == 0) return 0;
 
-    const char* p = body;
-    const char* end = body + bodyLen;
+    const char *p = body;
+    const char *end = body + bodyLen;
     while (p < end) {
         if (*p != '"') {
             ++p;
@@ -120,8 +120,8 @@ static u32 ParseBadgeJson(const char* body, int bodyLen, u32 pid) {
     return 0;
 }
 
-static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
-    const Rating& vr = license.GetVR();
+static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
+    const Rating &vr = license.GetVR();
     u32 vsWins = license.GetWFCVSWins();
     u32 vsLosses = license.GetWFCVSLosses();
     u32 totalVs = vsWins + vsLosses;
@@ -132,7 +132,7 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
 
     float racingWinPct = (totalVs > 0) ? (100.0f * (float)vsWins / (float)totalVs) : 45.0f;
 
-    const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    const RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     const float userVr = rksys != nullptr ? PointRating::GetUserVR(rksys->curLicenseId) : static_cast<float>(vr.points);
     float vrClamped = userVr > 1000.0f ? 1000.0f : userVr;
     if (vrClamped < 0) vrClamped = 0;
@@ -179,9 +179,9 @@ static int ScoreToRank(float finalScore) {
 }
 
 struct RankText {
-    const wchar_t* summaryFormat;
-    const wchar_t* noLicenseLoaded;
-    const wchar_t* detailsFormat;
+    const wchar_t *summaryFormat;
+    const wchar_t *noLicenseLoaded;
+    const wchar_t *detailsFormat;
 };
 
 static Language GetCurrentLanguage() {
@@ -189,7 +189,7 @@ static Language GetCurrentLanguage() {
         Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
 }
 
-static const RankText& GetRankText() {
+static const RankText &GetRankText() {
     static const RankText english = {
         L"Rank: %ls\nScore: %d",
         L"No license loaded.",
@@ -352,7 +352,7 @@ static const RankText& GetRankText() {
     }
 }
 
-static const wchar_t* RankToLabel(int rank) {
+static const wchar_t *RankToLabel(int rank) {
     switch (rank) {
         case 1:
             return L"\uF07D";
@@ -378,9 +378,9 @@ static const wchar_t* RankToLabel(int rank) {
 }
 
 int GetCurrentLicenseRankVS() {
-    const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
-    const RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     const u32 MIN_VS_MATCHES = 100;
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
@@ -393,9 +393,9 @@ int GetCurrentLicenseRankVS() {
 }
 
 int GetCurrentLicenseScore() {
-    const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
-    const RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     const u32 MIN_VS_MATCHES = 100;
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
@@ -407,27 +407,27 @@ int GetCurrentLicenseScore() {
     return static_cast<int>(score);
 }
 
-int FormatRankMessage(wchar_t* dst, size_t dstLen) {
+int FormatRankMessage(wchar_t *dst, size_t dstLen) {
     if (dst == nullptr || dstLen == 0) return -1;
-    const RankText& text = GetRankText();
+    const RankText &text = GetRankText();
     int rank = GetCurrentLicenseRankVS();
     int score = GetCurrentLicenseScore();
     if (rank < 0) rank = 0;
     if (score < 0) score = 0;
-    const wchar_t* rankLabel = RankToLabel(rank);
+    const wchar_t *rankLabel = RankToLabel(rank);
 
     return ::swprintf(dst, dstLen, text.summaryFormat, rankLabel, score);
 }
 
-int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
+int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
     if (dst == nullptr || dstLen == 0) return -1;
-    const RankText& text = GetRankText();
-    const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    const RankText &text = GetRankText();
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) {
         return ::swprintf(dst, dstLen, text.noLicenseLoaded);
     }
 
-    const RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
     const u32 totalVs = vsWins + vsLosses;
@@ -455,7 +455,7 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
     float scoreNeededForNextRank = (rank >= 9) ? 0.0f : (nextThreshold - score);
     if (scoreNeededForNextRank < 0.0f) scoreNeededForNextRank = 0.0f;
     int nextRank = (rank >= 9) ? 9 : (rank + 1);
-    const wchar_t* nextRankLabel = RankToLabel(nextRank);
+    const wchar_t *nextRankLabel = RankToLabel(nextRank);
 
     return ::swprintf(
         dst, dstLen,
@@ -464,9 +464,9 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
 }
 
 static u32 GetCurrentLicensePID() {
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return 0;
-    RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     if (license.dwcAccUserData.gsProfileId <= 0) return 0;
     return static_cast<u32>(license.dwcAccUserData.gsProfileId);
 }
@@ -499,7 +499,7 @@ u8 GetSpecialBadgeAt(u32 index) {
 static s32 GetFetchedBadgeForPID(u32 pid) {
     if (pid == 0 || pid != s_badgePid || !Settings::Mgr::IsCreated()) return -1;
 
-    const Settings::Mgr& settings = Settings::Mgr::Get();
+    const Settings::Mgr &settings = Settings::Mgr::Get();
     if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) != STREAMERMODE_DISABLED) {
         return -1;
     }
@@ -507,9 +507,9 @@ static s32 GetFetchedBadgeForPID(u32 pid) {
     return IsSpecialBadgeAvailable(selectedBadge) ? selectedBadge : -1;
 }
 
-static void OnBadgeResponse(s32 result, void* response, void* userdata) {
+static void OnBadgeResponse(s32 result, void *response, void *userdata) {
     Network::FinishNHTTPRequest();
-    BadgeRequestCtx* ctx = reinterpret_cast<BadgeRequestCtx*>(userdata);
+    BadgeRequestCtx *ctx = reinterpret_cast<BadgeRequestCtx *>(userdata);
     if (ctx == nullptr || ctx->generation != s_badgeRequestGeneration || response == nullptr) {
         if (response != nullptr) NHTTPDestroyResponse(response);
         s_badgeRequestActive = false;
@@ -518,11 +518,11 @@ static void OnBadgeResponse(s32 result, void* response, void* userdata) {
     }
 
     if (result == 0) {
-        char* body = nullptr;
-        const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res*>(response), &body);
+        char *body = nullptr;
+        const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res *>(response), &body);
         s_badgeMask = ParseBadgeJson(body, bodyLen, ctx->pid);
         if (Settings::Mgr::IsCreated()) {
-            Settings::Mgr& settings = Settings::Mgr::Get();
+            Settings::Mgr &settings = Settings::Mgr::Get();
             const u8 selectedBadge = settings.GetRankingBadge();
             if (selectedBadge != NORMAL_RANKING_BADGE && !IsSpecialBadgeAvailable(selectedBadge)) {
                 settings.SetRankingBadge(NORMAL_RANKING_BADGE);
@@ -551,9 +551,9 @@ static bool StartBadgeRequest(u32 pid) {
     s_badgeRequestCtx.generation = s_badgeRequestGeneration;
     s_badgeRequestCtx.pid = pid;
 
-    void* request = NHTTPCreateRequest(BADGE_URL, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
-                                       reinterpret_cast<void*>(&OnBadgeResponse),
-                                       reinterpret_cast<void*>(&s_badgeRequestCtx));
+    void *request = NHTTPCreateRequest(BADGE_URL, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
+                                       reinterpret_cast<void *>(&OnBadgeResponse),
+                                       reinterpret_cast<void *>(&s_badgeRequestCtx));
     if (request == nullptr) return false;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
@@ -634,12 +634,12 @@ static u8 GetOnlineRankingIcon(u8, u8) {
     return 17;  // Beta tester badge
 #endif
 
-    const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
+    const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
     if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING)) return 0;
     int rank = GetCurrentLicenseRankVS();
     if (rank < 0) rank = 0;
-    const RKSYS::LicenseMgr& license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
+    const RKSYS::LicenseMgr &license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
     const u32 MIN_VS_MATCHES = 100;
     const u32 totalVs = license.GetWFCVSWins() + license.GetWFCVSLosses();
     if (totalVs <= MIN_VS_MATCHES) {

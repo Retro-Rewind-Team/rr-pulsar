@@ -1,8 +1,8 @@
 BasedOnStyle: Google
-IndentWidth: 4
-ColumnLimit: 0
-PointerAlignment: Left
 AlignTrailingComments: false
-IndentPPDirectives: None
-SortIncludes: false
+ColumnLimit: 0
 IncludeBlocks: Preserve
+IndentPPDirectives: None
+IndentWidth: 4
+PointerAlignment: Right
+SortIncludes: false

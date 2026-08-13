@@ -4,7 +4,7 @@
 
 class RootScene : public BaseScene {
    public:
-    static RootScene* sInstance;  // 809bd740
+    static RootScene *sInstance;  // 809bd740
     static void RequestRootScene();  // 80543b10 creates a GameSceneCreator and request a scene change with it, only works if no gamescene has been created yet
     RootScene();  // 80542878
     ~RootScene() override;  // 805129a8 vtable 808b3c48
@@ -29,7 +29,7 @@ class RootScene : public BaseScene {
     void CreateUIInstances();  // 80542cc4
 
     u8 unknown_0xc70[8];
-    EGG::ExpHeap* audioHeap;  // 0xc78
+    EGG::ExpHeap *audioHeap;  // 0xc78
     u8 unknown_0xc7c[0xcd8 - 0xc7c];  // 0xc7c
 };  // 0xcb8
 

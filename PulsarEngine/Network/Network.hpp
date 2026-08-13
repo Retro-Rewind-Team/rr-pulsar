@@ -32,7 +32,7 @@ class Mgr {  // Manages network related stuff within Pulsar
     bool lastGroupedTrackPlayed;  // Whether the most recent blocked track was a grouped track
     u8 padding[1];
     u32 region;
-    PulsarId* lastTracks;
+    PulsarId *lastTracks;
     u8 hostSettingsPreview[HOST_SETTINGS_PREVIEW_COUNT];
     bool hasHostSettingsPreview;
 };

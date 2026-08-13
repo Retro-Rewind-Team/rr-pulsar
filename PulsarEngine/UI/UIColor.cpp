@@ -41,7 +41,7 @@ static const RGBA16 localPlayerHUDColors[4][2] = {
     {{0, 186, 0, 255}, {76, 255, 130, 255}},
 };
 
-static bool SetLocalPlayerHUDColors(u32 playerId, RGBA16* c0, RGBA16* c1) {
+static bool SetLocalPlayerHUDColors(u32 playerId, RGBA16 *c0, RGBA16 *c1) {
     if (playerId < 1 || playerId > 4) return false;
 
     *c0 = localPlayerHUDColors[playerId - 1][0];
@@ -49,7 +49,7 @@ static bool SetLocalPlayerHUDColors(u32 playerId, RGBA16* c0, RGBA16* c1) {
     return true;
 }
 
-void GetHUDColor(const ControlManipulator* self, RGBA16* c0, RGBA16* c1) {
+void GetHUDColor(const ControlManipulator *self, RGBA16 *c0, RGBA16 *c1) {
     if (self != nullptr && SetLocalPlayerHUDColors(self->allowedPlayerId, c0, c1)) return;
 
     UpdateHUDColor();
@@ -64,13 +64,13 @@ void GetHUDColor(const ControlManipulator* self, RGBA16* c0, RGBA16* c1) {
 }
 kmBranch(0x805f03dc, GetHUDColor);
 
-void GetHUDSlotColor(u8 hudSlotId, RGBA16* c0, RGBA16* c1) {
+void GetHUDSlotColor(u8 hudSlotId, RGBA16 *c0, RGBA16 *c1) {
     if (GetLocalPlayerCount() > 1 && SetLocalPlayerHUDColors(hudSlotId + 1, c0, c1)) return;
     GetHUDColor(nullptr, c0, c1);
 }
 kmBranch(0x805f0440, GetHUDSlotColor);
 
-void GetHUDBaseColor(void* self, RGBA16* c) {
+void GetHUDBaseColor(void *self, RGBA16 *c) {
     UpdateHUDColor();
     c->red = 0;
     c->green = 0;
@@ -79,7 +79,7 @@ void GetHUDBaseColor(void* self, RGBA16* c) {
 }
 kmBranch(0x805f04d8, GetHUDBaseColor);
 
-void GetHUDRaceColor(nw4r::lyt::Pane* _this, u32 idx, nw4r::ut::Color color) {
+void GetHUDRaceColor(nw4r::lyt::Pane *_this, u32 idx, nw4r::ut::Color color) {
     if (GetLocalPlayerCount() > 1) {
         _this->SetVtxColor(idx, color);
         return;

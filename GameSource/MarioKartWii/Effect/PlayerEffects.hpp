@@ -11,13 +11,13 @@ class Player {
         Color(int r, int g, int b, int a);  // 806ae36c
         Color();  // 8068e844
         ~Color();  // 8068e848
-        Color& operator=(Color& other);  // 806ae380
+        Color &operator=(Color &other);  // 806ae380
     };
 
-    static Racedata* GetRacedata();  // 8068e830
-    static CourseId* GetCourseId(Racedata* racedata);  // 8068e83c
+    static Racedata *GetRacedata();  // 8068e830
+    static CourseId *GetCourseId(Racedata *racedata);  // 8068e83c
 
-    explicit Player(Kart::Player* kartPlayer);  // 8068df98
+    explicit Player(Kart::Player *kartPlayer);  // 8068df98
     virtual ~Player();  // 8068e888 vtable 808c1f64
 
     void Init();  // 8068e9a8
@@ -29,17 +29,17 @@ class Player {
 
     void UpdateNonItemEffects();  // 80695ba8
 
-    void CreateAndUpdateEffectsByIdx(EGG::Effect** effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
-                                     const Mtx34& playerMat2, const Vec3& wheelPos, bool updateScale);  // 806975d4
-    void CreateEffectsByIdx(EGG::Effect** effectsArray, u32 firstEffectIndex, u32 lastEffectIndex);  // 8069797c
-    void UpdateEffectsByIdx(EGG::Effect** effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
-                            const Mtx34& playerMat2, const Vec3& wheelPos, bool r9);  // 806979f0
-    void FollowFadeEffectsByIdx(EGG::Effect** effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
-                                const Mtx34& playerMat2, const Vec3& wheelPos, bool updateScale);  // 80697788
-    void KillEffectsByIdx(EGG::Effect** effectsArray, u32 firstEffectIndex, u32 lastEffectIndex);
+    void CreateAndUpdateEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
+                                     const Mtx34 &playerMat2, const Vec3 &wheelPos, bool updateScale);  // 806975d4
+    void CreateEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex);  // 8069797c
+    void UpdateEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
+                            const Mtx34 &playerMat2, const Vec3 &wheelPos, bool r9);  // 806979f0
+    void FollowFadeEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
+                                const Mtx34 &playerMat2, const Vec3 &wheelPos, bool updateScale);  // 80697788
+    void KillEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex);
 
-    void FollowFadeEffectsByIdxVelocity(EGG::Effect** effectsArray, u32 firstEffectIndex, u32 lastEffectIndex, u32 _7ecIdx);  // 806a1b68
-    void CreateAndUpdateEffectsByIdxVelocity(EGG::Effect** effectsArray, u32 firstEffectIndex, u32 lastEffectIndex, u32 _7ecIdx);  // 806a19d8
+    void FollowFadeEffectsByIdxVelocity(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex, u32 _7ecIdx);  // 806a1b68
+    void CreateAndUpdateEffectsByIdxVelocity(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex, u32 _7ecIdx);  // 806a19d8
     void UpdateKartEffects();  // 80698028
     void UpdateBikeEffects();  // 80698f70
 
@@ -88,11 +88,11 @@ class Player {
     bool UpdateInBillEffects();  // 8069d120 bill effect, thunder on bill, fib if bill collides etc... returns true if player in bill
     void UpdatePowEffect();  // 806aa530
     void UpdatePow1Effect();  // 806aa784
-    void CreateRKKiller(const Vec3& mtx);  // 806a8f2c
+    void CreateRKKiller(const Vec3 &mtx);  // 806a8f2c
     void UpdateRKKiller();  // 806a9070 RKKiller_1T is inlined in updatebilleffects
     void UpdateThunderEffects();  // 8069dba4
     void UpdateNiseBoxBiriEffect();  // 806aaf04
-    void CreateRKHitEffect(const Vec3& pos);  // 806a65ec
+    void CreateRKHitEffect(const Vec3 &pos);  // 806a65ec
 
     void CreateStarEffect();  // 806a8ad4 also updates it
     void UpdateStarEffect();  // 806a8cb0 updates pos for when not in a star
@@ -234,7 +234,7 @@ class Player {
     u8 playerCountCategoryParam;  // 0x115 (playerCount / 3) * 2 + (playerCount % 3 == 2 ? 1 : 0)
     u8 playerCount;  // 0x116
     u8 padding2;
-    Kart::Player* kartPlayer;  // 0x118
+    Kart::Player *kartPlayer;  // 0x118
     KartId kartId;  // 0x11c
     CharacterId characterId;  // 0x120
     u32 isBike;  // 0x124 yes it's a word
@@ -280,16 +280,16 @@ class Player {
     bool isBlueTeam;  // 0x155
     bool isBattle;  // 0x156
     bool effectHolder_0x1A;  // 0x157
-    ModelDirector* pochaModel;  // 0x158
-    ModelDirector* pochaYoganModel;  // 0x15C
-    ModelDirector* iceModel;  // for rSL 0x160
+    ModelDirector *pochaModel;  // 0x158
+    ModelDirector *pochaYoganModel;  // 0x15C
+    ModelDirector *iceModel;  // for rSL 0x160
     u32 unknown_0x164[12];  // 0x164
     Color offroadColors[16];  // 0x194 sand is 0
     Color offroadColors2[4];  // 0x1d4 graess is 0th
     Color class_0x1e4[2];
     Color class_0x1ec[1];
 
-    EGG::Effect* rk_raceEffects[92];  // 0x1f0 use enum
+    EGG::Effect *rk_raceEffects[92];  // 0x1f0 use enum
 
     bool hasLoaded_1[0x38c - 0x360];  // 0x360 check from crash to hitA
     bool hasLoaded_2[0x39A - 0x38C];  // rk_koukasen to rk_effect_0x2D4
@@ -301,20 +301,20 @@ class Player {
     float unk_emission_value_0x4A4[16];  // 806b0e5c related to gasSmoke ends at 4E4
     float unk_emission_value_0x4E4[18];  // related to dirtSmoke to stone2 ends at 52c
 
-    EGG::Effect** kartEffects;  // 0x52c 8069188c 8 elements use kartEffects enum
-    EGG::Effect** kartDriftEffects;  // 0x530 8069189c 36 elements use driftEffects enum
+    EGG::Effect **kartEffects;  // 0x52c 8069188c 8 elements use kartEffects enum
+    EGG::Effect **kartDriftEffects;  // 0x530 8069189c 36 elements use driftEffects enum
     bool hasLoaded_5[8];  // 0x534 8 elements in the 52c array
     bool hasLoaded_6[36];  // 0x53C 36 elements in the 530 array
     float unk_emission_value_0x560[8];  // ends at 580
     float unk_emission_value_0x580[36];  // ends at 610
-    EGG::Effect** bikeEffects;  // 0x610
-    EGG::Effect** bikeDriftEffects;  // 0x614
+    EGG::Effect **bikeEffects;  // 0x610
+    EGG::Effect **bikeDriftEffects;  // 0x614
     bool hasLoaded_7[8];  // 0x618 for the array above 600
     bool hasLoaded_8[28];  // 0x620, for the array at 614
     float unk_emission_value_0x63C[8];  // 0x63C ends at 65c
 
     float unk_emission_value_0x65C[28];  // ends at 0x6CC, for the array at 614
-    ExhaustParticleSet* exhaustParticleSet2;  // 0x6cc
+    ExhaustParticleSet *exhaustParticleSet2;  // 0x6cc
     Vec3 playerPosition;  // 0x6d0 from kartPhysics 80693eb0
     Vec3 speed;  // 0x6dc from kartPhysics
     float speedNorm;  // 0x6e8 calculed from speed vector

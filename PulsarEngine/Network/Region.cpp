@@ -19,7 +19,7 @@ static void PatchLoginRegion() {
 }
 BootHook LoginRegion(PatchLoginRegion, 2);
 
-int PatchRegion(char* path, u32 len, const char* fmt, const char* mode) {
+int PatchRegion(char *path, u32 len, const char *fmt, const char *mode) {
     return snprintf(path, len, fmt, mode, System::sInstance->netMgr.region);
 }
 kmCall(0x8065921c, PatchRegion);

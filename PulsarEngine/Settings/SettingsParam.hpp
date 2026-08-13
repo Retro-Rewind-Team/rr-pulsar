@@ -107,15 +107,15 @@ struct SettingDef {
 
 struct SettingsPageDef {
     u32 nameBmg;
-    const SettingId* radioSettings;
+    const SettingId *radioSettings;
     u8 radioCount;
-    const SettingId* scrollerSettings;
+    const SettingId *scrollerSettings;
     u8 scrollerCount;
     bool isSpecial;
 };
 
 struct SettingsContextDef {
-    const SettingsPageId* pages;
+    const SettingsPageId *pages;
     u8 pageCount;
 };
 
@@ -140,7 +140,7 @@ class Params {
         return SETTING_COUNT;
     }
 
-    static inline const SettingDef& GetSettingDef(SettingId id) {
+    static inline const SettingDef &GetSettingDef(SettingId id) {
         return settingDefs[GetSettingIndex(id)];
     }
 
@@ -154,15 +154,15 @@ class Params {
         return (bmg & ~0xF) + ((bmg & 0xF) + 1) * 0x100 + option;
     }
 
-    static inline const SettingsPageDef& GetPageDef(SettingsPageId id) {
+    static inline const SettingsPageDef &GetPageDef(SettingsPageId id) {
         return pageDefs[id];
     }
 
-    static inline const SettingsContextDef& GetContextDef(SettingsContext context) {
+    static inline const SettingsContextDef &GetContextDef(SettingsContext context) {
         return contextDefs[context];
     }
 
-    static u32 BuildHostRulePages(SettingsPageId* dest, bool isBattle, bool isKO,
+    static u32 BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO,
                                   bool isOTT, bool isRoyale, bool isExtendedTeams);
 };
 

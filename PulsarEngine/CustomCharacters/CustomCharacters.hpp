@@ -58,15 +58,15 @@ enum {
     MII_C_COUNT = 6
 };
 
-extern "C" const char* characterNames[];
+extern "C" const char *characterNames[];
 
 static_assert(TABLE_COUNT <= (1 << PACKET_BITS), "SELECT packet skin table field is too small");
 static_assert(PACKET_BITS * 2 <= 16, "SELECT packet skin table fields must fit in two bytes");
 
 // Raw model cache used when a loose BRRES replaces the disc archive model.
 struct RawBRRES {
-    EGG::ExpHeap* heap;
-    void* file;
+    EGG::ExpHeap *heap;
+    void *file;
     bool failed;
     bool bound;
 };
@@ -100,7 +100,7 @@ struct VoiceGroupBase {
 
 // Maps voice suffixes to character ids.
 struct CharacterNameMap {
-    const char* name;
+    const char *name;
     CharacterId character;
 };
 
@@ -110,7 +110,7 @@ enum { AUTHOR_NAME_CONTROL_WORDS = (sizeof(CharaName) + sizeof(u32) - 1) / sizeo
 extern u8 selectedTable[CHARACTER_COUNT];
 extern u8 onlineCharacterTables[ONLINE_PLAYER_COUNT];
 extern u8 offlineCpuCharacterTables[ONLINE_PLAYER_COUNT];
-extern const char* defaultNames[CHARACTER_COUNT];
+extern const char *defaultNames[CHARACTER_COUNT];
 extern bool cachedDefaultNames;
 extern char customPostfixes[CHARACTER_COUNT][TABLE_COUNT][16];
 extern u8 customSkinExists[CHARACTER_COUNT][TABLE_COUNT];
@@ -118,7 +118,7 @@ extern CharacterId hoveredCharacters[LOCAL_PLAYER_COUNT];
 extern RawBRRES rawBRRES[TABLE_COUNT][CHARACTER_COUNT];
 extern RawBRRES looseMiiCBRRES[MII_C_COUNT];
 extern RawTPL looseMinimapTPL[TABLE_COUNT][CHARACTER_COUNT];
-extern const GameScene* rawCacheSceneOwner;
+extern const GameScene *rawCacheSceneOwner;
 extern u32 offlineCpuSkinSignature;
 extern u8 offlineCpuSkinRaceNumber;
 extern bool offlineCpuSkinTablesValid;
@@ -127,52 +127,52 @@ extern u32 authorNameControlStorage[LOCAL_PLAYER_COUNT][AUTHOR_NAME_CONTROL_WORD
 extern bool authorNameControlConstructed[LOCAL_PLAYER_COUNT];
 extern bool authorNameControlLoaded[LOCAL_PLAYER_COUNT];
 extern bool loadingAuthorNameControl;
-extern CharaName* authorTextControl;
+extern CharaName *authorTextControl;
 extern u32 authorTextValue;
-extern CharaName* characterNameTextControl[LOCAL_PLAYER_COUNT];
+extern CharaName *characterNameTextControl[LOCAL_PLAYER_COUNT];
 extern u32 characterNameTextValue[LOCAL_PLAYER_COUNT];
 extern bool characterNameTextOverridden[LOCAL_PLAYER_COUNT];
 extern SectionId votingMenuTableSection;
 extern bool votingMenuTablesRestored;
 extern bool voteRandomMessageBoxKartStateApplied;
-extern EGG::ExpHeap* reloadedMenuDriverModelHeaps[MENU_DRIVER_MODEL_COUNT];
-extern ModelDirector* reloadedMenuDriverModels[MENU_DRIVER_MODEL_COUNT];
-extern ToadetteHair* reloadedMenuDriverModelHairs[MENU_DRIVER_MODEL_COUNT];
-extern const GameScene* reloadedMenuDriverModelSceneOwner;
-extern MenuDriverModel* reloadedMenuDriverModelOwner;
+extern EGG::ExpHeap *reloadedMenuDriverModelHeaps[MENU_DRIVER_MODEL_COUNT];
+extern ModelDirector *reloadedMenuDriverModels[MENU_DRIVER_MODEL_COUNT];
+extern ToadetteHair *reloadedMenuDriverModelHairs[MENU_DRIVER_MODEL_COUNT];
+extern const GameScene *reloadedMenuDriverModelSceneOwner;
+extern MenuDriverModel *reloadedMenuDriverModelOwner;
 extern bool forceDefaultMenuDriverBRRES;
 extern LooseVoiceInfo looseVoiceInfo[TABLE_COUNT][CHARACTER_COUNT];
-extern Audio::CharacterActor* voiceInitActor;
-extern const char* const looseVoiceGroupSuffixes[];
-extern const char* const looseVoiceTimeAttackGroupSuffixAliases[];
+extern Audio::CharacterActor *voiceInitActor;
+extern const char *const looseVoiceGroupSuffixes[];
+extern const char *const looseVoiceTimeAttackGroupSuffixAliases[];
 extern const VoiceGroupBase voiceGroupBases[];
 extern const CharacterNameMap voiceCharacterNames[];
 
 // Character ids and generated file names.
 bool IsCharacter(CharacterId character);
 bool IsMiiCharacter(CharacterId character);
-const char** CharacterNameEntry(CharacterId character);
-const char* GetDefaultCharacterPostfix(CharacterId character);
+const char **CharacterNameEntry(CharacterId character);
+const char *GetDefaultCharacterPostfix(CharacterId character);
 CharacterId StateCharacter(CharacterId character);
-const char* GeneratedCustomPostfix(CharacterId character, u8 table);
+const char *GeneratedCustomPostfix(CharacterId character, u8 table);
 CharacterId MenuBRRESCharacter(CharacterId character);
 bool HasSkin(CharacterId character, u8 table);
 u32 SkinNameBmgId(CharacterId character, u8 table);
 u32 SkinAuthorBmgId(CharacterId character, u8 table);
-bool SetCustomCharacterNameMessage(LayoutUIControl& control, const char* paneName, u32 bmgId);
-bool SetCustomCharacterNameMessage(LayoutUIControl& control, u32 bmgId);
-bool SetCustomCharacterAuthorMessage(LayoutUIControl& control, u32 bmgId);
-const char* DriverBRRESName(CharacterId character, u8 table);
+bool SetCustomCharacterNameMessage(LayoutUIControl &control, const char *paneName, u32 bmgId);
+bool SetCustomCharacterNameMessage(LayoutUIControl &control, u32 bmgId);
+bool SetCustomCharacterAuthorMessage(LayoutUIControl &control, u32 bmgId);
+const char *DriverBRRESName(CharacterId character, u8 table);
 
 // Section and selection state.
-u8 SectionPlayerCount(const SectionMgr* mgr);
+u8 SectionPlayerCount(const SectionMgr *mgr);
 bool ShouldForceDefaultVotingMenuTable();
 bool IsLocalMultiplayer();
 u8 SelectedTable(CharacterId character);
 void ApplySelectedNames();
 bool IsCustomCharacterTableActive();
 void ResetOnlineCustomCharacterFlags();
-bool IsOnlineRoom(const RKNet::Controller* controller);
+bool IsOnlineRoom(const RKNet::Controller *controller);
 void ResetAllCharacterTablesToDefault();
 void ResetOfflineCpuSkinTablesForSection();
 void CompactOfflineCpuSkinTable(u8 targetPlayerId, u8 sourcePlayerId);
@@ -180,34 +180,34 @@ bool IsLocalRacePlayer(u8 playerId);
 void RefreshLocalOnlineCustomCharacterFlags();
 bool SetSelectedTable(CharacterId character, u8 table);
 u8 RaceSkinTable(u8 playerId, CharacterId character);
-const char** BeginNameSwap(u8 playerId, CharacterId character, const char*& oldName);
+const char **BeginNameSwap(u8 playerId, CharacterId character, const char *&oldName);
 CharacterId PreviewCharacter(u8 hud);
-void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 characterTables);
+void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8 *playerIdToAid, u16 characterTables);
 u16 GetLocalOnlineCharacterTables();
 bool ShouldUseCustomCharacterForPlayer(u8 playerId);
 
 // Menu, race, and UI text updates.
 void CacheHoveredFromSection();
-bool SetRaceNameTextIfCustom(LayoutUIControl& control, const char* paneName, u8 playerId);
-void UpdateCharacterSelectNameText(Pages::CharacterSelect* page, u8 hud);
-void UpdateCharacterSelectAuthorText(Pages::CharacterSelect* page, u8 hud);
+bool SetRaceNameTextIfCustom(LayoutUIControl &control, const char *paneName, u8 playerId);
+void UpdateCharacterSelectNameText(Pages::CharacterSelect *page, u8 hud);
+void UpdateCharacterSelectAuthorText(Pages::CharacterSelect *page, u8 hud);
 void UpdateCurrentCharacterSelectAuthorText(u8 hud);
 
 // Heap and loose asset loading helpers.
-void UnlockHeap(EGG::Heap* heap);
-bool IsInHeap(const EGG::ExpHeap* heap, const void* ptr);
-void DestroyHeap(EGG::ExpHeap*& heap);
-void ClearRawCache(RawBRRES& cache, bool destroyHeap);
+void UnlockHeap(EGG::Heap *heap);
+bool IsInHeap(const EGG::ExpHeap *heap, const void *ptr);
+void DestroyHeap(EGG::ExpHeap *&heap);
+void ClearRawCache(RawBRRES &cache, bool destroyHeap);
 void SyncRawCachesToCurrentScene();
 u8 ResolveMenuTable(CharacterId character);
 u32 AlignUp(u32 value, u32 alignment);
-bool BuildDriverPath(CharacterId character, u8 table, char* path, u32 pathSize);
-bool DiscFileSize(const char* path, u32& size);
-void* LoadFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper::EAllocDirection allocDirection, u32* outSize);
+bool BuildDriverPath(CharacterId character, u8 table, char *path, u32 pathSize);
+bool DiscFileSize(const char *path, u32 &size);
+void *LoadFileToMainRAM(const char *path, EGG::Heap *heap, EGG::DvdRipper::EAllocDirection allocDirection, u32 *outSize);
 
 // Loose voices and menu model reloads.
-const char* GetLooseVoicePostfixForGroup(u32 groupId, const char*& groupSuffix, const char*& voiceName);
-const LooseVoiceInfo& GetLooseVoiceInfo(CharacterId character, u8 table);
+const char *GetLooseVoicePostfixForGroup(u32 groupId, const char *&groupSuffix, const char *&voiceName);
+const LooseVoiceInfo &GetLooseVoiceInfo(CharacterId character, u8 table);
 void ReinitMenuDriverModelMgr(u8 hud, CharacterId character);
 void RefreshMenuDriverModel(CharacterId character);
 void ApplyVoteRandomMessageBoxKartState();
@@ -217,8 +217,8 @@ SectionId CurrentSectionId();
 bool IsVotingSection(SectionId section);
 bool IsCharacterSelectActive();
 bool CycleSkin(CharacterId character, int step);
-bool LooseVoiceStemExists(const char* postfix, const char* suffix, const char* voiceName = nullptr);
-bool FindLooseSoundEffectPath(u32 fileId, const char* extension, char* path, u32 pathSize, u32* outFileSize = nullptr);
+bool LooseVoiceStemExists(const char *postfix, const char *suffix, const char *voiceName = nullptr);
+bool FindLooseSoundEffectPath(u32 fileId, const char *extension, char *path, u32 pathSize, u32 *outFileSize = nullptr);
 
 }  // namespace CustomCharacters
 }  // namespace Pulsar

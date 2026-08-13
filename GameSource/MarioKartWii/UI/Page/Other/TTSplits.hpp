@@ -17,10 +17,10 @@ class TTSplits : public Page {  // ID 0x2D
     void BeforeEntranceAnimations() override;  // 0x38 80855b30
     void BeforeExitAnimations() override;  // 0x40 8085616c
     void AfterControlUpdate() override;  // 0x4c 80855adc
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80856228
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80856228
     void Unload();  // 80855854 inlined
-    static void TriggerAction(PtmfHolder_1A<TTSplits, void, u32>& triggeredHandler, u32 hudSlotId);  // 80856234
-    CtrlRaceTime** ctrlRaceTimeArray;  // size splitsRowCount
+    static void TriggerAction(PtmfHolder_1A<TTSplits, void, u32> &triggeredHandler, u32 hudSlotId);  // 80856234
+    CtrlRaceTime **ctrlRaceTimeArray;  // size splitsRowCount
     u8 splitsRowCount;  // 0x48, lap count + 1 for total time
     u8 unknown_0x49[3];  // padding
     u32 maxActiveFrames;  // 0x4C set to 600, frames until timeout

@@ -15,9 +15,9 @@
 namespace Pulsar {
 namespace Race {
 
-static void NonGhostPlayerCount(RacedataScenario& scenario, u8* playerCount, u8* screenCount, u8* localPlayerCount) {
+static void NonGhostPlayerCount(RacedataScenario &scenario, u8 *playerCount, u8 *screenCount, u8 *localPlayerCount) {
     scenario.ComputePlayerCounts(playerCount, screenCount, localPlayerCount);
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     u8 realPlayers = *playerCount;
     if (scenario.settings.gamemode != MODE_TIME_TRIAL)
         for (int i = 0; i < 12; ++i)
@@ -28,11 +28,11 @@ kmCall(0x8052fc78, NonGhostPlayerCount);
 
 kmWrite32(0x807997e0, 0x60000000);
 // Starting item for OTT and TT, id is TRIPLE_MUSHROOM by default
-static void SetStartingItem(Item::PlayerInventory& inventory, ItemId id, bool isItemForcedDueToCapacity) {
+static void SetStartingItem(Item::PlayerInventory &inventory, ItemId id, bool isItemForcedDueToCapacity) {
     register u32 playerId;
     asm(mr playerId, r29;);
     if (Racedata::sInstance->racesScenario.players[playerId].playerType == PLAYER_CPU) return;
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     const bool isTT = DriverMgr::isTT;
     if (isTT || system->IsContext(PULSAR_MODE_OTT)) {
         bool isFeather;
@@ -50,7 +50,7 @@ static void SetStartingItem(Item::PlayerInventory& inventory, ItemId id, bool is
 kmCall(0x80799808, SetStartingItem);
 
 // From JoshuaMK, ported to C++ by Brawlbox and adapted as a setting
-static int MiiHeads(Racedata* racedata, u32 unused, u32 unused2, u8 id) {
+static int MiiHeads(Racedata *racedata, u32 unused, u32 unused2, u8 id) {
     CharacterId charId = racedata->racesScenario.players[id].characterId;
     bool miiHeadFroom = ALLOW_MIIHEADS_ENABLED;
     bool isFroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
@@ -77,9 +77,9 @@ static void BattleGlitchEnable() {
     const u8 val = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BATTLEGLITCH);
     float maxDistance = 7500.0f;
     if (val == BATTLE_GLITCH_ENABLED) maxDistance = 75000.0f;
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_OTT)) {
-        const Input::RealControllerHolder* controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
+        const Input::RealControllerHolder *controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
         const ControllerType controllerType = controllerHolder->curController->GetType();
         const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
         const u16 newInputs = (inputs & ~controllerHolder->inputStates[1].buttonRaw);
@@ -102,7 +102,7 @@ static void BattleGlitchEnable() {
 }
 RaceFrameHook BattleGlitch(BattleGlitchEnable);
 
-static void DisplayTimesInsteadOfNames(CtrlRaceResult& result, u8 id) {
+static void DisplayTimesInsteadOfNames(CtrlRaceResult &result, u8 id) {
     result.FillName(id);
 }
 kmCall(0x8085d460, DisplayTimesInsteadOfNames);  // for WWs
@@ -110,7 +110,7 @@ kmCall(0x8085d460, DisplayTimesInsteadOfNames);  // for WWs
 // don't hide position tracker (MrBean35000vr)
 kmWrite32(0x807F4DB8, 0x38000001);
 
-void SafeResizeSphere(float radius, float maxSpeed, Entity* entity) {
+void SafeResizeSphere(float radius, float maxSpeed, Entity *entity) {
     if (entity != nullptr) {
         entity->Resize(radius, maxSpeed);
     }
@@ -155,12 +155,12 @@ kmWrite16(0x80569F68, 0x4800);
 // CtrlItemWindow
 kmWrite24(0x808A9C16, 'PUL');  // item_window_new -> item_window_PUL
 
-const char* ChangeItemWindowPane(ItemId id, u32 itemCount) {
+const char *ChangeItemWindowPane(ItemId id, u32 itemCount) {
     const bool feather = System::sInstance->IsContext(PULSAR_FEATHER);
     bool MegaTC = true;
     if (System::sInstance->IsContext(PULSAR_THUNDERCLOUD)) MegaTC = false;
     if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) MegaTC = true;
-    const char* paneName;
+    const char *paneName;
     if (id == BLOOPER && feather) {
         if (itemCount == 2)
             paneName = "feather_2";

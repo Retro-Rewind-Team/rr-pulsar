@@ -74,15 +74,15 @@ struct InterruptMsg4 {
     u32 device;
     u32 endpoint;
     u32 size;
-    void* ptr;
+    void *ptr;
 };
 
 class WUP028Manager {
    public:
     WUP028Manager() : isStarted(false), isWorking(false), isInit(false), adapterId(-1U) {}
     static void CreateStaticInstance();
-    static WUP028Manager* GetStaticInstance() { return sInstance; }
-    void CustomPADRead(PAD::Status* status);
+    static WUP028Manager *GetStaticInstance() { return sInstance; }
+    void CustomPADRead(PAD::Status *status);
 
    private:
     void OnInit();
@@ -91,19 +91,19 @@ class WUP028Manager {
         this->hidFd = -1U;
     }
 
-    static void OnUsbPollCallback(s32 ret, void* arg) {
+    static void OnUsbPollCallback(s32 ret, void *arg) {
         sInstance->OnUsbPoll(ret);
     }
     void OnUsbPoll(s32 ret);
 
     // Version 4
     void OnInitVer4();
-    static void OnUsbChangeVer4Callback(s32 hid, void* arg) {
+    static void OnUsbChangeVer4Callback(s32 hid, void *arg) {
         sInstance->OnUsbChangeVer4(hid);
     }
     void OnUsbChangeVer4(s32 hid);
 
-    static void OnUsbInitVer4Callback(s32 ret, void* arg) {
+    static void OnUsbInitVer4Callback(s32 ret, void *arg) {
         sInstance->OnUsbInitVer4(ret);
     }
     void OnUsbInitVer4(s32 ret);
@@ -120,7 +120,7 @@ class WUP028Manager {
     alignas(0x20) u32 tmpBufferSize[0x20];
     PAD::Status status[4];
 
-    static WUP028Manager* sInstance;
+    static WUP028Manager *sInstance;
 };
 }  // namespace Cosmos
 #endif

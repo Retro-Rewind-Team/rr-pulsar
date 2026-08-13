@@ -13,17 +13,17 @@ class SoundActor : public SoundStartable {
    public:
     typedef detail::ExternalSoundPlayer ActorPlayer;
 
-    SoundActor(SoundArchivePlayer& soundArchivePlayer);  // 8009dbe0
+    SoundActor(SoundArchivePlayer &soundArchivePlayer);  // 8009dbe0
     ~SoundActor() override;  // 8009dca0 vtable 802749a0
-    SoundStartable::StartResult detail_SetupSound(SoundHandle* handle, u32 soundId, bool holdFlag,
-                                                  SoundArchive::SoundInfo* soundInfo) override;  // 8009dd90
-    u32 ConvertLabelStringToSoundId(const char* label) override;  // 8009ddd0
+    SoundStartable::StartResult detail_SetupSound(SoundHandle *handle, u32 soundId, bool holdFlag,
+                                                  SoundArchive::SoundInfo *soundInfo) override;  // 8009dd90
+    u32 ConvertLabelStringToSoundId(const char *label) override;  // 8009ddd0
 
-    virtual StartResult SetupSound(SoundHandle* handle, u32 soundId, const StartInfo* startInfo, void* setupArg);  // 8009dd50
-    virtual SoundStartable::StartResult detail_SetupSoundWithAmbientInfo(SoundHandle* handle, u32 soundId,
-                                                                         const StartInfo* startInfo, detail::BasicSound::AmbientInfo* ambientInfo, void* setupArg);  // 8009dd70
+    virtual StartResult SetupSound(SoundHandle *handle, u32 soundId, const StartInfo *startInfo, void *setupArg);  // 8009dd50
+    virtual SoundStartable::StartResult detail_SetupSoundWithAmbientInfo(SoundHandle *handle, u32 soundId,
+                                                                         const StartInfo *startInfo, detail::BasicSound::AmbientInfo *ambientInfo, void *setupArg);  // 8009dd70
 
-    SoundArchivePlayer& soundArchivePlayer;
+    SoundArchivePlayer &soundArchivePlayer;
     detail::ExternalSoundPlayer actorPlayers[4];
     detail::SoundActorParam actorParam;
 };  // 0x54

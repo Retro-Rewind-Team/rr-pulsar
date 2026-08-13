@@ -13,7 +13,7 @@ class WWLeaderboardUpdate : public GPVSLeaderboardUpdate {  // ID 0x31
     ~WWLeaderboardUpdate() override;  // 8085e4c4 vtable 808dab30
     PageId GetNextPage() const override;  // 0x10 8085d55c
     void OnInit() override;  // 0x28 8085cd18
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8085e534
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 8085e534
     void FillRows() override;  // 0x68 8085ce8c
 };  // total size 0x1A8
 // size_assert(WWLeaderboardUpdate, 0x1A8);

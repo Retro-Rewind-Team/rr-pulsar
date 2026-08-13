@@ -13,16 +13,16 @@ class StarAnmMgr : public Link {
     static void LoadAnm();  // 8056b63c star.clr0 in driver.brres
     StarAnmMgr();  // 8056b8a8
     static float frameCount;  // 809c18d0
-    static nw4r::g3d::ResAnmClrAnmData* matAnmData;  // 809c18cc
+    static nw4r::g3d::ResAnmClrAnmData *matAnmData;  // 809c18cc
     static s16 totalDuration;  // 809c18d4
 
-    virtual void SetModelColors(ModelDirector& dest);  // 0x8 8056c030 vtable 808b5120
+    virtual void SetModelColors(ModelDirector &dest);  // 0x8 8056c030 vtable 808b5120
     virtual ~StarAnmMgr();  // 0xc 8056c034
 
     void Reset();  // 8056bbcc
     void Activate();  // 8056b8ec
     void Update();  // 8056b910
-    void SetModelColorsImpl(ModelDirector& dest);  // 0x8 8056be20
+    void SetModelColorsImpl(ModelDirector &dest);  // 0x8 8056be20
     void StartEnding();  // 8056bbac
     void End();  // 8056bbc0
 

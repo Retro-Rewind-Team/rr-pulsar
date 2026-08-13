@@ -10,8 +10,8 @@ class CtrlMenuPressStart : public LayoutUIControl {
     ~CtrlMenuPressStart() override;  // 8063aa8c vtable 808d3798
     void InitSelf() override;  // 0x18 807e9c50
     void OnUpdate() override;  // 0x1c 807e9ccc
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 807e9d90
-    const char* GetClassName() const override;  // 0x2c 807e9c44
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807e9d90
+    const char *GetClassName() const override;  // 0x2c 807e9c44
     void Load();  // 807e9cd0
 };  // total size 0x174
 // size_assert(CtrlMenuPressStart, 0x174);

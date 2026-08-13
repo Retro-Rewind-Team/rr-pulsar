@@ -32,29 +32,29 @@ enum SourceType {  // conditions what "suffixes" contains
 class ArchivesHolder {
    public:
     explicit ArchivesHolder(u16 archiveCount);  // 8052a538 vtable
-    static ArchivesHolder* CreateByType(ArchiveSource type);  // 8052a098
+    static ArchivesHolder *CreateByType(ArchiveSource type);  // 8052a098
     virtual ~ArchivesHolder();  // 8052a6dc vtable 808b31d8
     virtual void Reset();  // 8052a648 sets extensions to .szs
-    void* GetFile(const char* fileName, u32* size) const;  // 8052a760 gets subfile from archive
+    void *GetFile(const char *fileName, u32 *size) const;  // 8052a760 gets subfile from archive
     bool HasArchives() const;  // 8052a800
-    bool FileExists(const char* fileName) const;  // 8052a864
-    void LoadArchives(const char* fileName, EGG::Heap* mountHeap, EGG::Heap* dumpHeap, u32* size = nullptr);  // 8052a954 decompresses
+    bool FileExists(const char *fileName) const;  // 8052a864
+    void LoadArchives(const char *fileName, EGG::Heap *mountHeap, EGG::Heap *dumpHeap, u32 *size = nullptr);  // 8052a954 decompresses
     void UnmountArchives();  // 8052aa88 also frees buffers
-    void LoadFromOther(const ArchivesHolder& other, EGG::Heap* heap);  // 8052aae8
-    void DumpArchives(char* fileName, EGG::Heap* dumpHeap);  // 8052ab6c just dumps without
+    void LoadFromOther(const ArchivesHolder &other, EGG::Heap *heap);  // 8052aae8
+    void DumpArchives(char *fileName, EGG::Heap *dumpHeap);  // 8052ab6c just dumps without
     void ClearArchives();  // 8052ac40
     int GetTotalMountedArchivesSize() const;  // 8052aca0
-    void* GetFirstMountedArchive() const;  // 8052ad08 1st in terms of memory address which is very weird
-    void* GetFirstMountedArchiveEnd() const;  // 8052ad80 same but returns the end of the block holding the archive
+    void *GetFirstMountedArchive() const;  // 8052ad08 1st in terms of memory address which is very weird
+    void *GetFirstMountedArchiveEnd() const;  // 8052ad80 same but returns the end of the block holding the archive
     int GetLoadedArchivesCount() const;  // 8052ae08
 
-    ArchiveFile* archives;  // 0x4 size archive count
+    ArchiveFile *archives;  // 0x4 size archive count
     u16 archiveCount;  // 0x8
     u8 padding[2];
-    void* filePtr;  // only used for sourceType 2 (sets the matching Archive ptr)
-    char** archiveSuffixes;  // 0x10 appended to the name .szs, _E.szs, _Dif.szs etc...
-    u32* fileSizes;  // only used for sourceType 2
-    SourceType* sourceType;  // 0x18 name => 0 = fileName.suffix 1 = suffix 2 = idk
+    void *filePtr;  // only used for sourceType 2 (sets the matching Archive ptr)
+    char **archiveSuffixes;  // 0x10 appended to the name .szs, _E.szs, _Dif.szs etc...
+    u32 *fileSizes;  // only used for sourceType 2
+    SourceType *sourceType;  // 0x18 name => 0 = fileName.suffix 1 = suffix 2 = idk
 };  // total size 0x1c
 // size_assert(ArchivesHolder, 0x1C);
 

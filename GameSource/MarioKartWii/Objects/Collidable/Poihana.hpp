@@ -9,13 +9,13 @@ namespace Objects {
 class Poihana;
 class PoihanaBase : public ObjectCollidable, public AI::Base {  // likely not specific to poihana (it doesn't appear they share the same cpp file)
    public:
-    explicit PoihanaBase(const KMP::Holder<GOBJ>& gobjHolder);  // 80747198
+    explicit PoihanaBase(const KMP::Holder<GOBJ> &gobjHolder);  // 80747198
     class SubChild : public UnkCollidableSub {
        public:
         SubChild();  // 80747c40
         ~SubChild() override;  // 80747c98 vtable 808cb8d0
         void Reset() override;  // 0xc 80747cd8
-        void Update(const Vec3& vec, float f1, float f2) override;  // 0x10 80747cfc
+        void Update(const Vec3 &vec, float f1, float f2) override;  // 0x10 80747cfc
         bool vf_0x14() const override;  // 80748138
         u8 unknown_0x28;
         u8 paddding[3];
@@ -32,7 +32,7 @@ class PoihanaBase : public ObjectCollidable, public AI::Base {  // likely not sp
     Vec3 GetTranslation() const;  // 80747308 returns translation col of transMtx2
 
     u32 unknown_0xe8;
-    UnkCollidableSub* sub;  // 0xec Poihana::SubChild here
+    UnkCollidableSub *sub;  // 0xec Poihana::SubChild here
     u8 unknown_0xf0[0x108 - 0xf0];
     Mtx34 transMtx2;  // 0x108
     u8 unknown_0x138[0x168 - 0x138];
@@ -48,7 +48,7 @@ class Poihana : public PoihanaBase {  // ObjectNum 0x197 = 407
    public:
     typedef AI::Actions<Poihana> Actions;
 
-    explicit Poihana(const KMP::Holder<GOBJ>& gobjHolder);  // 8074816c
+    explicit Poihana(const KMP::Holder<GOBJ> &gobjHolder);  // 8074816c
 
     // ObjectCollidable vtable 808cba80 at 0x0
     ~Poihana() override;  // 807488bc
@@ -56,9 +56,9 @@ class Poihana : public PoihanaBase {  // ObjectNum 0x197 = 407
     void Update() override;  // 0x14 80748b70
 
     void LoadAnimations() override;  // 0x5c 80748cec
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 80749378
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 80749504
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 80749378
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 80749504
 
     // AI::Base vtable 808cbb6c at 0xe4, all vf offsets from start of Collidable's vtable
     //~Poihana(); //thunk 8074ae24 func 807488bc
@@ -102,7 +102,7 @@ class Poihana : public PoihanaBase {  // ObjectNum 0x197 = 407
     bool isTTOrGameMode7OrMore;  // 0x34b
     u8 unknown_0x34c[0x370 - 0x34c];
 
-    EGG::Effect* rk_poihanaExclm;  // 0x370
+    EGG::Effect *rk_poihanaExclm;  // 0x370
 };  // 0x374
 
 }  // namespace Objects

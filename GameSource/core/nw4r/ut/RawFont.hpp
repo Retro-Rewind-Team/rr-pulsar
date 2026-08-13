@@ -48,13 +48,13 @@ struct FontTextureGlyph {  // TGLP section Stores the glyph texture of the font
     u16 imageLine;  // 0xE
     u16 imageWidth;  // 0x10
     u16 imageHeight;  // 0x12
-    u8* rawImage;  // 0x14 The pointer to the texture data.
+    u8 *rawImage;  // 0x14 The pointer to the texture data.
 };
 
 struct FontWidth {  // CWDH section Stores the character width information for each character
     u16 indexBegin;  // glyph index corresponding to the first entry in widthTable
     u16 indexEnd;
-    FontWidth* next;
+    FontWidth *next;
     CharWidths widthTable[];  // width information array
 };
 
@@ -63,7 +63,7 @@ struct FontCodeMap {  // CMAP Provides mapping to the index in the glyph image a
     u16 ccodeEnd;
     u16 mappingMethod;
     u16 reserved;
-    FontCodeMap* pNext;  // Pointer to the next FontCodeMap
+    FontCodeMap *pNext;  // Pointer to the next FontCodeMap
     u16 mapInfo[];  // the specific details of the character code mapping information depend on the mappingMethod
 };
 
@@ -73,9 +73,9 @@ struct FontInformation {  // Stores the information related to the overall font.
     u16 alterCharIndex;  // 0x2 (*) glyph index of the glyph for characters not contained in the font
     CharWidths defaultWidth;  // 0x4 (*)character width information for glyphs that have no character width information
     u8 encoding;  // 0x7 FontEncoding
-    FontTextureGlyph* glyph;  // 0x8 NNSG2dFontGlyph
-    FontWidth* fontWidth;  // 0xc to the last
-    FontCodeMap* map;  // 0x10 to the first
+    FontTextureGlyph *glyph;  // 0x8 NNSG2dFontGlyph
+    FontWidth *fontWidth;  // 0xc to the last
+    FontCodeMap *map;  // 0x10 to the first
     u8 height;  // 0x14
     u8 width;  // 0x15
     u8 ascent;  // 0x16

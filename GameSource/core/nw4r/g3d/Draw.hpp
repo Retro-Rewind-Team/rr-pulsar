@@ -33,15 +33,15 @@ enum ResMdlDrawMode {
     RESMDL_DRAWMODE_SORT_Z = RESMDL_DRAWMODE_SORT_OPA_Z | RESMDL_DRAWMODE_SORT_XLU_Z
 };
 
-detail::workmem::MdlZ* SetUpMdlZ(u32* pNumMdlZ, const ResMdl mdl, const math::MTX34* pViewPos, const u8* pByteCode, DrawResMdlReplacement* pRep);  // 80068ec0
+detail::workmem::MdlZ *SetUpMdlZ(u32 *pNumMdlZ, const ResMdl mdl, const math::MTX34 *pViewPos, const u8 *pByteCode, DrawResMdlReplacement *pRep);  // 80068ec0
 
-void DrawResMdlDirectly(const ResMdl mdl, const math::MTX34* viewPos, const math::MTX33* viewNrm, const math::MTX34* viewEnv, const u8* opa, const u8* xlu,
-                        DrawResMdlReplacement* rep, u32 resMdlDrawMode = RESMDL_DRAWMODE_DEFAULT);  // 80069000
+void DrawResMdlDirectly(const ResMdl mdl, const math::MTX34 *viewPos, const math::MTX33 *viewNrm, const math::MTX34 *viewEnv, const u8 *opa, const u8 *xlu,
+                        DrawResMdlReplacement *rep, u32 resMdlDrawMode = RESMDL_DRAWMODE_DEFAULT);  // 80069000
 
-void DrawResMdlLoop(const ResMdl mdl, const detail::workmem::MdlZ* mdlZArray, u32 mdlZCount, DrawResMdlReplacement* replacement, u32 resMdlDrawMode);  // 80068d60
-void DrawResMdlLoop(const ResMdl mdl, const detail::workmem::MdlZ* mdlZArray, u32 mdlZCount, u32 resMdlDrawMode);  // 80068c50
-void DrawResMdlLoop(const ResMdl mdl, const u8* byteCode, DrawResMdlReplacement* replacement, u32 resMdlDrawMode);  // 80068a80
-void DrawResMdlLoop(const ResMdl mdl, const u8* byteCode, u32 resMdlDrawMode);  // 80068940
+void DrawResMdlLoop(const ResMdl mdl, const detail::workmem::MdlZ *mdlZArray, u32 mdlZCount, DrawResMdlReplacement *replacement, u32 resMdlDrawMode);  // 80068d60
+void DrawResMdlLoop(const ResMdl mdl, const detail::workmem::MdlZ *mdlZArray, u32 mdlZCount, u32 resMdlDrawMode);  // 80068c50
+void DrawResMdlLoop(const ResMdl mdl, const u8 *byteCode, DrawResMdlReplacement *replacement, u32 resMdlDrawMode);  // 80068a80
+void DrawResMdlLoop(const ResMdl mdl, const u8 *byteCode, u32 resMdlDrawMode);  // 80068940
 
 }  // namespace g3d
 }  // namespace nw4r

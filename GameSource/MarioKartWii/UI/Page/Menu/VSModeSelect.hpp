@@ -13,19 +13,19 @@ class VSModeSelect : public MenuInteractable {  // ID 0x72
     void OnActivate() override;  // 0x30 80852450
     void OnDeactivate() override;  // 80852b28
     void AfterControlUpdate() override;  // 0x4c 808529fc
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80852c60
-    void OnExternalButtonSelect(PushButton& button, u32 hudSlotId) override;  // 0x64  80852ae0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80852c60
+    void OnExternalButtonSelect(PushButton &button, u32 hudSlotId) override;  // 0x64  80852ae0
     int GetActivePlayerBitfield() const override;  // 0x68 80852b7c
     int GetPlayerBitfield() const override;  // 0x6C 80852b74
-    ManipulatorManager& GetManipulatorManager() override;  // 0x70 80852290
-    UIControl* CreateExternalControl(u32 externControlId) override;  // 0x84 80852298
-    UIControl* CreateControl(u32 controlId) override;  // 0x88 80852448
-    void SetButtonHandlers(PushButton& button) override;  // 0x8C 80852b84
+    ManipulatorManager &GetManipulatorManager() override;  // 0x70 80852290
+    UIControl *CreateExternalControl(u32 externControlId) override;  // 0x84 80852298
+    UIControl *CreateControl(u32 controlId) override;  // 0x88 80852448
+    void SetButtonHandlers(PushButton &button) override;  // 0x8C 80852b84
 
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 80852a00
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId);  // 80852b18
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 80852a00
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId);  // 80852b18
     void OnBackPress(u32 hudSlotId);  // 80852b1c
-    static Page* GetPageById(PageId id = PAGE_VS_MODE_SELECT);  // 8085212c
+    static Page *GetPageById(PageId id = PAGE_VS_MODE_SELECT);  // 8085212c
 
     // onButtonClick    vtable = 0x808bd1a4 function = 80852a00
     // onButtonSelect   vtable = 0x808bd1a4 offset   = 0x64 call is virtual

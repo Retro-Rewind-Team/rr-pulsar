@@ -82,7 +82,7 @@ SettingsPanel::SettingsPanel() {
 }
 
 SettingsPanel::~SettingsPanel() {
-    Settings::Mgr* mgr = Settings::Mgr::sInstance;
+    Settings::Mgr *mgr = Settings::Mgr::sInstance;
     mgr->SetLastSelectedCup(CupsConfig::sInstance->lastSelectedCup);
     mgr->RequestSave();
 }
@@ -103,12 +103,12 @@ bool SettingsPanel::IsVotingPreviewActive() {
 }
 
 void SettingsPanel::SetVotingPreviewPage(Settings::SettingsPageId page) {
-    SettingsPanel* panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
+    SettingsPanel *panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
     if (panel != nullptr) panel->SetPage(page);
 }
 
 void SettingsPanel::ApplyVotingPreviewHostSettings() {
-    const Network::Mgr& netMgr = System::sInstance->netMgr;
+    const Network::Mgr &netMgr = System::sInstance->netMgr;
     memset(s_hostPreviewValues, 0, sizeof(s_hostPreviewValues));
     if (!netMgr.hasHostSettingsPreview) return;
 
@@ -125,17 +125,17 @@ void SettingsPanel::ApplyVotingPreviewHostSettings() {
         pages, isBattle, isKO, isOTT, isRoyale, isExtendedTeams);
     u32 offset = 0;
     for (u32 page = 0; page < pageCount; ++page) {
-        const Settings::SettingsPageDef& def = Settings::Params::GetPageDef(pages[page]);
+        const Settings::SettingsPageDef &def = Settings::Params::GetPageDef(pages[page]);
         for (u32 i = 0; i < def.radioCount && offset < Network::HOST_SETTINGS_PREVIEW_COUNT; ++i) {
             const Settings::SettingId id = def.radioSettings[i];
-            const Settings::SettingDef& setting = Settings::Params::GetSettingDef(id);
+            const Settings::SettingDef &setting = Settings::Params::GetSettingDef(id);
             const u8 value = netMgr.hostSettingsPreview[offset++];
             s_hostPreviewValues[Settings::Params::GetSettingIndex(id)] =
                 value < setting.optionCount ? value : 0;
         }
         for (u32 i = 0; i < def.scrollerCount && offset < Network::HOST_SETTINGS_PREVIEW_COUNT; ++i) {
             const Settings::SettingId id = def.scrollerSettings[i];
-            const Settings::SettingDef& setting = Settings::Params::GetSettingDef(id);
+            const Settings::SettingDef &setting = Settings::Params::GetSettingDef(id);
             const u8 value = netMgr.hostSettingsPreview[offset++];
             s_hostPreviewValues[Settings::Params::GetSettingIndex(id)] =
                 value < setting.optionCount ? value : 0;
@@ -149,16 +149,16 @@ void SettingsPanel::OnInit() {
     SetTransitionSound(0, 0);
 }
 
-UIControl* SettingsPanel::CreateExternalControl(u32 id) {
-    PushButton* button = new (PushButton);
+UIControl *SettingsPanel::CreateExternalControl(u32 id) {
+    PushButton *button = new (PushButton);
     AddControl(controlCount++, *button, 0);
     button->Load(UI::buttonFolder, "Settings", "SAVE", activePlayerBitfield, 0, false);
     return button;
 }
 
-UIControl* SettingsPanel::CreateControl(u32 id) {
+UIControl *SettingsPanel::CreateControl(u32 id) {
     if (id < Settings::Params::maxRadioCount) {
-        RadioButtonControl& radio = radioButtonControls[id];
+        RadioButtonControl &radio = radioButtonControls[id];
         AddControl(controlCount++, radio, 0);
         char variant[12];
         char option0[12];
@@ -170,14 +170,14 @@ UIControl* SettingsPanel::CreateControl(u32 id) {
         snprintf(option1, 12, "%sOption1", variant);
         snprintf(option2, 12, "%sOption2", variant);
         snprintf(option3, 12, "%sOption3", variant);
-        const char* options[5] = {option0, option1, option2, option3, nullptr};
+        const char *options[5] = {option0, option1, option2, option3, nullptr};
         radio.Load(4, 0, UI::controlFolder, "RadioBase", variant, "RadioOption", options, 1, 0, 0);
         radio.SetOnClickHandler(onRadioButtonClickHandler);
         radio.SetOnChangeHandler(onRadioButtonChangeHandler);
         radio.id = id;
     } else if (id < Settings::Params::maxRadioCount + Settings::Params::maxScrollerCount) {
         id -= Settings::Params::maxRadioCount;
-        UpDownControl& scroller = upDownControls[id];
+        UpDownControl &scroller = upDownControls[id];
         AddControl(controlCount++, scroller, 0);
         char variant[12];
         snprintf(variant, 12, "UpDown%d", id);
@@ -192,15 +192,15 @@ UIControl* SettingsPanel::CreateControl(u32 id) {
     return nullptr;
 }
 
-void SettingsPanel::SetButtonHandlers(PushButton& button) {
+void SettingsPanel::SetButtonHandlers(PushButton &button) {
     button.SetOnClickHandler(onButtonClickHandler, 0);
     button.SetOnSelectHandler(onButtonSelectHandler);
     button.SetOnDeselectHandler(onButtonDeselectHandler);
 }
 
 void SettingsPanel::LoadCurrentValues() {
-    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
-    const Settings::Mgr& mgr = Settings::Mgr::Get();
+    const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
+    const Settings::Mgr &mgr = Settings::Mgr::Get();
     for (u32 i = 0; i < page.radioCount; ++i) {
         const Settings::SettingId id = page.radioSettings[i];
         radioValues[i] = s_votingSettingsPreviewActive
@@ -216,7 +216,7 @@ void SettingsPanel::LoadCurrentValues() {
 }
 
 void SettingsPanel::OnActivate() {
-    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     titleBmg = page.nameBmg + 0x1F;
     LoadCurrentValues();
 
@@ -229,13 +229,13 @@ void SettingsPanel::OnActivate() {
     bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
 
     for (u32 i = 0; i < Settings::Params::maxRadioCount; ++i) {
-        RadioButtonControl& radio = radioButtonControls[i];
+        RadioButtonControl &radio = radioButtonControls[i];
         const bool hidden = i >= page.radioCount;
         radio.isHidden = hidden;
         radio.manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
         if (!hidden) {
             const Settings::SettingId id = page.radioSettings[i];
-            const Settings::SettingDef& def = Settings::Params::GetSettingDef(id);
+            const Settings::SettingDef &def = Settings::Params::GetSettingDef(id);
             radio.buttonsCount = def.optionCount;
             radio.chosenButtonId = radioValues[i];
             radio.selectedButtonId = radioValues[i];
@@ -249,15 +249,15 @@ void SettingsPanel::OnActivate() {
     }
 
     for (u32 i = 0; i < Settings::Params::maxScrollerCount; ++i) {
-        UpDownControl& scroller = upDownControls[i];
-        TextUpDownValueControl& value = textUpDown[i];
+        UpDownControl &scroller = upDownControls[i];
+        TextUpDownValueControl &value = textUpDown[i];
         const bool hidden = i >= page.scrollerCount;
         scroller.isHidden = hidden;
         scroller.manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
         value.isHidden = hidden;
         if (!hidden) {
             const Settings::SettingId id = page.scrollerSettings[i];
-            const Settings::SettingDef& def = Settings::Params::GetSettingDef(id);
+            const Settings::SettingDef &def = Settings::Params::GetSettingDef(id);
             scroller.optionsCount = def.optionCount;
             scroller.curSelectedOption = scrollerValues[i];
             scroller.SetMessage(id);
@@ -286,16 +286,16 @@ void SettingsPanel::OnActivate() {
     }
 }
 
-const ut::detail::RuntimeTypeInfo* SettingsPanel::GetRuntimeTypeInfo() const { return Pages::VSSettings::typeInfo; }
-void SettingsPanel::OnExternalButtonSelect(PushButton&, u32) { bottomText->SetMessage(BMG_SETTINGS_BOTTOM); }
+const ut::detail::RuntimeTypeInfo *SettingsPanel::GetRuntimeTypeInfo() const { return Pages::VSSettings::typeInfo; }
+void SettingsPanel::OnExternalButtonSelect(PushButton &, u32) { bottomText->SetMessage(BMG_SETTINGS_BOTTOM); }
 int SettingsPanel::GetActivePlayerBitfield() const { return activePlayerBitfield; }
 int SettingsPanel::GetPlayerBitfield() const { return playerBitfield; }
-ManipulatorManager& SettingsPanel::GetManipulatorManager() { return controlsManipulatorManager; }
+ManipulatorManager &SettingsPanel::GetManipulatorManager() { return controlsManipulatorManager; }
 
 bool SettingsPanel::HasModifiedMiscSettings() const {
     if (settingsPageId != Settings::SETTINGS_PAGE_MISC) return false;
-    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
-    const Settings::Mgr& mgr = Settings::Mgr::Get();
+    const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
+    const Settings::Mgr &mgr = Settings::Mgr::Get();
     for (u32 i = 0; i < page.radioCount; ++i)
         if (radioValues[i] != mgr.GetSettingValue(page.radioSettings[i])) return true;
     for (u32 i = 0; i < page.scrollerCount; ++i)
@@ -305,20 +305,20 @@ bool SettingsPanel::HasModifiedMiscSettings() const {
 
 void SettingsPanel::SaveSettings(bool) {
     if (s_votingSettingsPreviewActive) return;
-    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
-    Settings::Mgr* mgr = Settings::Mgr::sInstance;
+    const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
+    Settings::Mgr *mgr = Settings::Mgr::sInstance;
     for (u32 i = 0; i < page.radioCount; ++i) mgr->SetSettingValue(page.radioSettings[i], radioValues[i]);
     for (u32 i = 0; i < page.scrollerCount; ++i) mgr->SetSettingValue(page.scrollerSettings[i], scrollerValues[i]);
     mgr->Update();
 }
 
-void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton& button) {
+void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton &button) {
     nextPageId = static_cast<PageId>(SettingsPageSelect::id);
     EndStateAnimated(0, button.GetAnimationFrameSize());
     SaveSettings(true);
 }
 
-void SettingsPanel::LoadMainMenuAndSaveSettings(PushButton& button) {
+void SettingsPanel::LoadMainMenuAndSaveSettings(PushButton &button) {
     SaveSettings(true);
     ChangeSectionById(SECTION_MAIN_MENU_FROM_MENU, button);
 }
@@ -332,34 +332,38 @@ void SettingsPanel::OnBackPress(u32) {
     }
     const bool reloadMenu = HasModifiedMiscSettings();
     backButton.SelectFocus();
-    if (reloadMenu) LoadMainMenuAndSaveSettings(backButton);
-    else LoadPrevMenuAndSaveSettings(backButton);
+    if (reloadMenu)
+        LoadMainMenuAndSaveSettings(backButton);
+    else
+        LoadPrevMenuAndSaveSettings(backButton);
 }
 
-void SettingsPanel::OnBackButtonClick(PushButton&, u32 hudSlotId) { OnBackPress(hudSlotId); }
+void SettingsPanel::OnBackButtonClick(PushButton &, u32 hudSlotId) { OnBackPress(hudSlotId); }
 
-void SettingsPanel::OnSaveButtonClick(PushButton& button, u32) {
-    if (HasModifiedMiscSettings()) LoadMainMenuAndSaveSettings(button);
-    else LoadPrevMenuAndSaveSettings(button);
+void SettingsPanel::OnSaveButtonClick(PushButton &button, u32) {
+    if (HasModifiedMiscSettings())
+        LoadMainMenuAndSaveSettings(button);
+    else
+        LoadPrevMenuAndSaveSettings(button);
 }
 
-void SettingsPanel::OnRadioButtonClick(RadioButtonControl& radio, u32, u32 optionId) {
-    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+void SettingsPanel::OnRadioButtonClick(RadioButtonControl &radio, u32, u32 optionId) {
+    const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     if (radio.id >= page.radioCount) return;
     radioValues[radio.id] = optionId;
 }
 
-void SettingsPanel::OnRadioButtonChange(RadioButtonControl& radio, u32, u32 optionId) {
-    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+void SettingsPanel::OnRadioButtonChange(RadioButtonControl &radio, u32, u32 optionId) {
+    const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     if (radio.id >= page.radioCount) return;
     bottomText->SetMessage(Settings::Params::GetDescriptionBmg(page.radioSettings[radio.id], optionId));
 }
 
-void SettingsPanel::OnUpDownClick(UpDownControl&, u32) { externControls[0]->Select(0); }
+void SettingsPanel::OnUpDownClick(UpDownControl &, u32) { externControls[0]->Select(0); }
 
-void SettingsPanel::OnTextChange(TextUpDownValueControl::TextControl& text, u32 optionId) {
+void SettingsPanel::OnTextChange(TextUpDownValueControl::TextControl &text, u32 optionId) {
     const u32 index = GetTextId(text);
-    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+    const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     if (index >= page.scrollerCount) return;
     const Settings::SettingId id = page.scrollerSettings[index];
     scrollerValues[index] = optionId;
@@ -367,8 +371,8 @@ void SettingsPanel::OnTextChange(TextUpDownValueControl::TextControl& text, u32 
     if (!externControls[0]->IsSelected()) bottomText->SetMessage(Settings::Params::GetDescriptionBmg(id, optionId));
 }
 
-void SettingsPanel::OnUpDownSelect(UpDownControl& scroller, u32) {
-    const Settings::SettingsPageDef& page = Settings::Params::GetPageDef(settingsPageId);
+void SettingsPanel::OnUpDownSelect(UpDownControl &scroller, u32) {
+    const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     if (scroller.id >= page.scrollerCount) return;
     bottomText->SetMessage(Settings::Params::GetDescriptionBmg(
         page.scrollerSettings[scroller.id], scroller.curSelectedOption));
@@ -384,10 +388,10 @@ void SettingsPanel::BeforeControlUpdate() {
                 OnActivate();
             } else {
                 s_votingSettingsPreviewActive = false;
-                Section* section = SectionMgr::sInstance->curSection;
+                Section *section = SectionMgr::sInstance->curSection;
                 if (section != nullptr && section->layerCount > 1) {
                     section->RemovePageLayers(section->layerCount - 1);
-                    Pages::SELECTStageMgr* select = section->Get<Pages::SELECTStageMgr>();
+                    Pages::SELECTStageMgr *select = section->Get<Pages::SELECTStageMgr>();
                     if (select != nullptr) select->Pages::SELECTStageMgr::OnResume();
                 }
             }
@@ -397,7 +401,7 @@ void SettingsPanel::BeforeControlUpdate() {
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (IsVotingSection(sectionId)) {
-        Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        Pages::SELECTStageMgr *select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         if (select != nullptr && select->countdown.countdown <= 0) OnBackPress(0);
     }
 }

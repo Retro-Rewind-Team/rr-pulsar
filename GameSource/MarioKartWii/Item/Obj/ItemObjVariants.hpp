@@ -13,7 +13,7 @@ class ObjThrowable : public ObjMiddle {  // this has a vtable but it doesn't inh
    public:
     void OnFinishThrow();  // 807b6910
     // height also depends on speed because the game appears to try to keep time as a constant (for a given height)
-    void SetInitialPositionImpl(PlayerObj& playerObj, u32 groundEffectDelay, bool isThrow, float speed, float throwHeight, float dropHeight);  // 807b7104
+    void SetInitialPositionImpl(PlayerObj &playerObj, u32 groundEffectDelay, bool isThrow, float speed, float throwHeight, float dropHeight);  // 807b7104
     float delayBeforeGroundEffect;  // 0x1a0 puff of smoke, small ground reaction, bomb standing up etc...
 };  // 0x1a4
 
@@ -34,9 +34,9 @@ class ObjExplosion {
     u8 padding[2];
     u32 nextState;  // held at -1 if there is no next state
     u32 timer;  // 0xc
-    u16* ptmfIdxArray;  // 0x14
-    void* ptrToStructContainingPtmfArray;  // 0x18 807a4d74 here for example
-    Obj* obj;  // 0x1c
+    u16 *ptmfIdxArray;  // 0x14
+    void *ptrToStructContainingPtmfArray;  // 0x18 807a4d74 here for example
+    Obj *obj;  // 0x1c
 };  // 0x20
 
 }  // namespace Item

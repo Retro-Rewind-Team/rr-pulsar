@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace ef {
 
-typedef void (*ForeachFunc)(void*, u32);
+typedef void (*ForeachFunc)(void *, u32);
 enum CalcOption {
     CALC_TYPE_NORMAL = 0,
     CALC_TYPE_BILLBOARD = 1,

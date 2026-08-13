@@ -30,15 +30,18 @@ SettingsPageSelect::SettingsPageSelect(bool badgeSelect) : context(Settings::SET
     controlSources = 2;
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (badgeSelectMode) prevPageId = static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT);
-    else if (sectionId == SECTION_OPTIONS) prevPageId = PAGE_OPTIONS;
+    if (badgeSelectMode)
+        prevPageId = static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT);
+    else if (sectionId == SECTION_OPTIONS)
+        prevPageId = PAGE_OPTIONS;
     else if (sectionId == SECTION_P1_WIFI || sectionId == SECTION_P2_WIFI ||
              sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE || sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE ||
              sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || sectionId == SECTION_P2_WIFI_FROM_FIND_FRIEND)
         prevPageId = PAGE_WFC_MAIN;
     else if (sectionId >= SECTION_LICENSE_SETTINGS_MENU && sectionId <= SECTION_SINGLE_P_LIST_RACE_GHOST)
         prevPageId = PAGE_SINGLE_PLAYER_MENU;
-    else prevPageId = PAGE_FRIEND_ROOM;
+    else
+        prevPageId = PAGE_FRIEND_ROOM;
 
     onButtonClickHandler.subject = this;
     onButtonClickHandler.ptmf = &SettingsPageSelect::OnButtonClick;
@@ -67,8 +70,8 @@ void SettingsPageSelect::OnInit() {
     backButton.SetOnClickHandler(onBackButtonClickHandler, 0);
 }
 
-UIControl* SettingsPageSelect::CreateControl(u32 id) {
-    PushButton& button = pageButtons[id];
+UIControl *SettingsPageSelect::CreateControl(u32 id) {
+    PushButton &button = pageButtons[id];
     AddControl(controlCount++, button, 0);
     char variant[16];
     snprintf(variant, 16, "Page%d", id);
@@ -78,7 +81,7 @@ UIControl* SettingsPageSelect::CreateControl(u32 id) {
     return &button;
 }
 
-void SettingsPageSelect::SetButtonHandlers(PushButton& button) {
+void SettingsPageSelect::SetButtonHandlers(PushButton &button) {
     button.SetOnClickHandler(onButtonClickHandler, 0);
     button.SetOnSelectHandler(onButtonSelectHandler);
     button.SetOnDeselectHandler(onButtonDeselectHandler);
@@ -93,35 +96,37 @@ void SettingsPageSelect::OnActivate() {
         return;
     }
 
-    const Settings::SettingsContextDef& contextDef = Settings::Params::GetContextDef(context);
+    const Settings::SettingsContextDef &contextDef = Settings::Params::GetContextDef(context);
     const bool showBadge = context == Settings::SETTINGS_CONTEXT_ONLINE && Ranking::HasSpecialBadges();
     for (u32 i = 0; i < settingsButtonCount; ++i) {
-        PushButton& button = pageButtons[i];
+        PushButton &button = pageButtons[i];
         const bool isPage = i < contextDef.pageCount;
         const bool isBadge = showBadge && i == contextDef.pageCount;
         const bool hidden = !isPage && !isBadge;
         button.isHidden = hidden;
         button.manipulator.inaccessible = hidden;
-        if (isPage) button.SetMessage(Settings::Params::GetPageDef(contextDef.pages[i]).nameBmg);
-        else if (isBadge) button.SetMessage(BMR_RANKING_BUTTON);
+        if (isPage)
+            button.SetMessage(Settings::Params::GetPageDef(contextDef.pages[i]).nameBmg);
+        else if (isBadge)
+            button.SetMessage(BMR_RANKING_BUTTON);
     }
     if (contextDef.pageCount > 0) pageButtons[0].Select(0);
     bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
     MenuInteractable::OnActivate();
 }
 
-const ut::detail::RuntimeTypeInfo* SettingsPageSelect::GetRuntimeTypeInfo() const { return Pages::VSSettings::typeInfo; }
+const ut::detail::RuntimeTypeInfo *SettingsPageSelect::GetRuntimeTypeInfo() const { return Pages::VSSettings::typeInfo; }
 int SettingsPageSelect::GetActivePlayerBitfield() const { return activePlayerBitfield; }
 int SettingsPageSelect::GetPlayerBitfield() const { return playerBitfield; }
-ManipulatorManager& SettingsPageSelect::GetManipulatorManager() { return controlsManipulatorManager; }
+ManipulatorManager &SettingsPageSelect::GetManipulatorManager() { return controlsManipulatorManager; }
 
 void SettingsPageSelect::OnBackPress(u32) {
     backButton.SelectFocus();
     LoadPrevPage(backButton);
 }
-void SettingsPageSelect::OnBackButtonClick(PushButton&, u32 hudSlotId) { OnBackPress(hudSlotId); }
+void SettingsPageSelect::OnBackButtonClick(PushButton &, u32 hudSlotId) { OnBackPress(hudSlotId); }
 
-void SettingsPageSelect::OnButtonClick(PushButton& button, u32) {
+void SettingsPageSelect::OnButtonClick(PushButton &button, u32) {
     const u32 selected = button.buttonId;
     if (badgeSelectMode) {
         const u8 badge = selected > 0 ? Ranking::GetSpecialBadgeAt(selected - 1) : Ranking::NORMAL_RANKING_BADGE;
@@ -133,7 +138,7 @@ void SettingsPageSelect::OnButtonClick(PushButton& button, u32) {
         return;
     }
 
-    const Settings::SettingsContextDef& contextDef = Settings::Params::GetContextDef(context);
+    const Settings::SettingsContextDef &contextDef = Settings::Params::GetContextDef(context);
     if (selected == contextDef.pageCount) {
         if (context == Settings::SETTINGS_CONTEXT_ONLINE && Ranking::HasSpecialBadges()) {
             nextPageId = static_cast<PageId>(PULPAGE_BADGESELECT);
@@ -144,9 +149,10 @@ void SettingsPageSelect::OnButtonClick(PushButton& button, u32) {
     if (selected >= contextDef.pageCount) return;
 
     const Settings::SettingsPageId selectedPage = contextDef.pages[selected];
-    if (selectedPage == Settings::SETTINGS_PAGE_ITEMS) nextPageId = static_cast<PageId>(CustomItemPage::id);
+    if (selectedPage == Settings::SETTINGS_PAGE_ITEMS)
+        nextPageId = static_cast<PageId>(CustomItemPage::id);
     else {
-        SettingsPanel* panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
+        SettingsPanel *panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
         if (panel == nullptr) return;
         panel->SetPage(selectedPage);
         nextPageId = static_cast<PageId>(SettingsPanel::id);
@@ -154,18 +160,19 @@ void SettingsPageSelect::OnButtonClick(PushButton& button, u32) {
     EndStateAnimated(0, button.GetAnimationFrameSize());
 }
 
-void SettingsPageSelect::OnButtonSelect(PushButton& button, u32) {
+void SettingsPageSelect::OnButtonSelect(PushButton &button, u32) {
     if (badgeSelectMode) {
         bottomText->SetMessage(0);
         return;
     }
-    const Settings::SettingsContextDef& contextDef = Settings::Params::GetContextDef(context);
+    const Settings::SettingsContextDef &contextDef = Settings::Params::GetContextDef(context);
     if (button.buttonId < contextDef.pageCount)
         bottomText->SetMessage(Settings::Params::GetPageDef(contextDef.pages[button.buttonId]).nameBmg + 0x10);
-    else bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
+    else
+        bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
 }
 
-void SettingsPageSelect::SetBadgeButtonMessage(PushButton& button) {
+void SettingsPageSelect::SetBadgeButtonMessage(PushButton &button) {
     if (button.buttonId == 0) {
         button.SetMessage(BMG_RANKING_BADGE);
         return;
@@ -180,7 +187,7 @@ void SettingsPageSelect::SetBadgeButtonMessage(PushButton& button) {
 void SettingsPageSelect::UpdateBadgeButtons() {
     const u32 count = Ranking::GetSpecialBadgeCount();
     for (u32 i = 0; i < badgeButtonCount; ++i) {
-        PushButton& button = pageButtons[i];
+        PushButton &button = pageButtons[i];
         const bool hidden = i > 0 && i - 1 >= count;
         button.isHidden = hidden;
         button.manipulator.inaccessible = hidden;
@@ -191,7 +198,7 @@ void SettingsPageSelect::UpdateBadgeButtons() {
 void SettingsPageSelect::BeforeControlUpdate() {
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (!badgeSelectMode && IsVotingSettingsSection(sectionId)) {
-        Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        Pages::SELECTStageMgr *select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         if (select != nullptr && select->countdown.countdown <= 0) OnBackPress(0);
     }
 }

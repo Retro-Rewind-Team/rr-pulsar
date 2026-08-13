@@ -4,19 +4,19 @@ namespace Pulsar {
 namespace Network {
 namespace Json {
 
-const char* SkipWhitespace(const char* p) {
+const char *SkipWhitespace(const char *p) {
     while (p != nullptr && (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')) ++p;
     return p;
 }
 
-const char* SkipWhitespace(const char* p, const char* end) {
+const char *SkipWhitespace(const char *p, const char *end) {
     if (p == nullptr || end == nullptr) return p;
     while (p < end && (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')) ++p;
     return p;
 }
 
 template <typename T>
-static const char* ParseUnsigned(const char* p, T& out) {
+static const char *ParseUnsigned(const char *p, T &out) {
     out = 0;
     p = SkipWhitespace(p);
     if (p == nullptr || *p == '-' || *p < '0' || *p > '9') return nullptr;
@@ -27,15 +27,15 @@ static const char* ParseUnsigned(const char* p, T& out) {
     return p;
 }
 
-const char* ParseU32(const char* p, u32& out) {
+const char *ParseU32(const char *p, u32 &out) {
     return ParseUnsigned(p, out);
 }
 
-const char* ParseU64(const char* p, u64& out) {
+const char *ParseU64(const char *p, u64 &out) {
     return ParseUnsigned(p, out);
 }
 
-bool ParseU32(const char*& p, const char* end, u32& value) {
+bool ParseU32(const char *&p, const char *end, u32 &value) {
     if (p == nullptr || end == nullptr) return false;
     p = SkipWhitespace(p, end);
     if (p >= end || *p < '0' || *p > '9') return false;

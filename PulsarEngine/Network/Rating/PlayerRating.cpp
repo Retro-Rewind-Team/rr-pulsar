@@ -81,26 +81,26 @@ static bool IsBattle(GameMode mode) {
 }
 
 static bool IsRegionalVS() {
-    RKNet::Controller* ctrl = RKNet::Controller::sInstance;
+    RKNet::Controller *ctrl = RKNet::Controller::sInstance;
     return ctrl && (ctrl->roomType == RKNet::ROOMTYPE_VS_REGIONAL || ctrl->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
 }
 
 static bool IsRankedFroom() {
-    RKNet::Controller* ctrl = RKNet::Controller::sInstance;
+    RKNet::Controller *ctrl = RKNet::Controller::sInstance;
     return ctrl && (ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) &&
            System::sInstance->IsContext(PULSAR_VR);
 }
 
 static bool IsRegionalBT() {
-    RKNet::Controller* ctrl = RKNet::Controller::sInstance;
+    RKNet::Controller *ctrl = RKNet::Controller::sInstance;
     return ctrl && (ctrl->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
 }
 
-static bool IsRankedMode(const RacedataSettings& settings) {
+static bool IsRankedMode(const RacedataSettings &settings) {
     return settings.gamemode > MODE_6 && settings.gamemode < MODE_AWARD;
 }
 
-static int CountLocalPlayersBefore(const RacedataScenario& scenario, int idx) {
+static int CountLocalPlayersBefore(const RacedataScenario &scenario, int idx) {
     int count = 0;
     for (int i = 0; i < idx; ++i) {
         if (scenario.players[i].playerType == PLAYER_REAL_LOCAL) count++;
@@ -108,11 +108,11 @@ static int CountLocalPlayersBefore(const RacedataScenario& scenario, int idx) {
     return count;
 }
 
-static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
-    const RacedataPlayer& player = scenario.players[idx];
+static float GetPlayerRating(const RacedataScenario &scenario, int idx) {
+    const RacedataPlayer &player = scenario.players[idx];
 
     if (player.playerType == PLAYER_REAL_LOCAL && CountLocalPlayersBefore(scenario, idx) == 0) {
-        RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+        RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
         if (rksys) {
             if (IsBattle(scenario.settings.gamemode)) {
                 return GetUserBR(rksys->curLicenseId);
@@ -122,8 +122,8 @@ static float GetPlayerRating(const RacedataScenario& scenario, int idx) {
             }
         }
     } else if (player.playerType == PLAYER_REAL_ONLINE) {
-        const Network::CustomRKNetController* ctrl =
-            reinterpret_cast<const Network::CustomRKNetController*>(RKNet::Controller::sInstance);
+        const Network::CustomRKNetController *ctrl =
+            reinterpret_cast<const Network::CustomRKNetController *>(RKNet::Controller::sInstance);
         u8 aid = ctrl->aidsBelongingToPlayerIds[idx];
 
         int slot = 0;
@@ -143,7 +143,7 @@ static float TruncateToCentis(float val) {
     return (float)((int)(val * 100.0f)) / 100.0f;
 }
 
-void FormatRatingDigits(float rating, wchar_t* buffer, u32 bufferSize) {
+void FormatRatingDigits(float rating, wchar_t *buffer, u32 bufferSize) {
     int whole = (int)rating;
     int centis = (int)((rating - (float)whole) * 100.0f + 0.5f);
     if (centis >= 100) {
@@ -158,11 +158,11 @@ void FormatRatingDigits(float rating, wchar_t* buffer, u32 bufferSize) {
         swprintf(buffer, bufferSize, L"%d%02d", whole, centis);
 }
 
-static void SaveLocalRating(const RacedataScenario& scenario, int idx, float rating) {
-    const RacedataPlayer& player = scenario.players[idx];
+static void SaveLocalRating(const RacedataScenario &scenario, int idx, float rating) {
+    const RacedataPlayer &player = scenario.players[idx];
     if (player.playerType != PLAYER_REAL_LOCAL || CountLocalPlayersBefore(scenario, idx) != 0) return;
 
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (!rksys) return;
 
     if (IsBattle(scenario.settings.gamemode)) {
@@ -172,18 +172,18 @@ static void SaveLocalRating(const RacedataScenario& scenario, int idx, float rat
     }
 }
 
-static void UpdatePlayerRating(RacedataScenario& scenario, int idx, float delta) {
+static void UpdatePlayerRating(RacedataScenario &scenario, int idx, float delta) {
     float next = Clamp(GetPlayerRating(scenario, idx) + delta, (float)MIN_RATING, (float)MAX_RATING);
     next = TruncateToCentis(next);
     scenario.players[idx].rating.points = (u16)next;
     SaveLocalRating(scenario, idx, next);
 }
 
-void RR_UpdatePoints(RacedataScenario* scenario) {
+void RR_UpdatePoints(RacedataScenario *scenario) {
     if (scenario->settings.gametype != GAMETYPE_DEFAULT) return;
 
     const u32 playerCount = scenario->playerCount;
-    Raceinfo* raceInfo = Raceinfo::sInstance;
+    Raceinfo *raceInfo = Raceinfo::sInstance;
     bool isBattle = IsBattle(scenario->settings.gamemode);
     bool isRanked = IsRankedMode(scenario->settings);
     bool isVR = !isBattle && ((IsRegionalVS() && scenario->settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom());
@@ -191,7 +191,7 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
     float deltas[12] = {};
     bool allDisconnected = false;
     if (isVR) {
-        const RKNet::Controller* rkCtrl = RKNet::Controller::sInstance;
+        const RKNet::Controller *rkCtrl = RKNet::Controller::sInstance;
         if (rkCtrl->subs[rkCtrl->currentSub].connectionCount <= 1) {
             allDisconnected = true;
         }
@@ -263,13 +263,13 @@ void RR_UpdatePoints(RacedataScenario* scenario) {
 static bool ShouldUseCustomRating() {
     if (System::sInstance->IsContext(PULSAR_FFA)) return true;
 
-    RKNet::Controller* ctrl = RKNet::Controller::sInstance;
+    RKNet::Controller *ctrl = RKNet::Controller::sInstance;
     return !(((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) &&
               !System::sInstance->IsContext(PULSAR_VR)) ||
              ctrl->roomType == RKNet::ROOMTYPE_NONE);
 }
 
-void UpdatePoints(RacedataScenario* scenario) {
+void UpdatePoints(RacedataScenario *scenario) {
     if (ShouldUseCustomRating()) {
         RR_UpdatePoints(scenario);
     } else {

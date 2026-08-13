@@ -13,7 +13,7 @@ class ExpOptions : public Pages::Options {
     void OnInit() override;
 
    private:
-    void ExpandedOnButtonClick(PushButton& pushButton, u32 hudSlotId);
+    void ExpandedOnButtonClick(PushButton &pushButton, u32 hudSlotId);
     PushButton settingsButton;
 };
 }  // namespace UI

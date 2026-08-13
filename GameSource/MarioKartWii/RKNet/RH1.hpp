@@ -36,7 +36,7 @@ struct RH1Data {
 
 class RH1Handler {
    public:
-    static RH1Handler* sInstance;  // 809c2118
+    static RH1Handler *sInstance;  // 809c2118
     static void CreateInstance();  // 80663aa4
     static void DestroyInstance();  // 80663c38
 
@@ -54,7 +54,7 @@ class RH1Handler {
     u8 GetPlayerCount();  // 806647d0
     u32 GetSELECTId();  // 80664944 OBVIOUSLY WRONG
     u8 GetEngineClass();  // 80664a3c
-    u8* GetAidsBelongingToPlayer();  // 80664b34
+    u8 *GetAidsBelongingToPlayer();  // 80664b34
     void ImportNewPackets();  // 806651b4
     void ExportDefaultPacket(u32 aid);  // 806653c8
     void ExportDefaultPacket2(u32 aid);  // 806653c80665480

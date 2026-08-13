@@ -74,7 +74,7 @@ struct ResMdlData {
 
 class ResMdl : public ResCommon<ResMdlData> {
    public:
-    ResMat GetResMat(const char* name) const;  // 8004e8f0
+    ResMat GetResMat(const char *name) const;  // 8004e8f0
     ResMat GetResMat(const ResName resName) const;  // 8004e940
     ResMat GetResMat(int idx) const;  // 8004e990 offset to Dic = ResDic->ResMat, same for all the get
     ResMat GetResMat(u32 idx) const;  // 8004e9f0
@@ -85,7 +85,7 @@ class ResMdl : public ResCommon<ResMdlData> {
     ResShp GetResShp(u32 idx) const;  // 8004eaf0
     u32 GetResShpNumEntries() const;  // 8004eb50
 
-    ResNode GetResNode(const char* name) const;  // 8004e2a4
+    ResNode GetResNode(const char *name) const;  // 8004e2a4
     ResNode GetResNode(const ResName resName) const;  // 8004e2f0
     ResNode GetResNode(int idx) const;  // 8004e340
     ResNode GetResNode(u32 idx) const;  // 8004e340

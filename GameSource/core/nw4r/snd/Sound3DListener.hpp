@@ -8,7 +8,7 @@ namespace snd {
 class Sound3DListener {  // Listens to actors
    public:
     Sound3DListener();  // 8009d550
-    void SetMatrix(const math::MTX34& mtx);  // 8009d5c0
+    void SetMatrix(const math::MTX34 &mtx);  // 8009d5c0
     void ResetMatrix();  // 8009d820
     void SetInteriorSize(float interiorSize);  // 8009d870
     void SetMaxVolumeDistance(float maxVolumeDistance);  // 8009d870

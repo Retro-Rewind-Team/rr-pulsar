@@ -8,7 +8,7 @@
 namespace Pulsar {
 namespace Ranking {
 
-static const char* BADGE_URL = "http://rwfc.net/api/badges/all";
+static const char *BADGE_URL = "http://rwfc.net/api/badges/all";
 static const u32 BADGE_REQUEST_WORK_BUF_SIZE = 0x4000;
 static const u8 NORMAL_RANKING_BADGE = 0;
 static const u8 SPECIAL_BADGE_FIRST = 10;
@@ -17,8 +17,8 @@ static const u32 SPECIAL_BADGE_COUNT = SPECIAL_BADGE_LAST - SPECIAL_BADGE_FIRST 
 
 int GetCurrentLicenseRankVS();
 int GetCurrentLicenseScore();
-int FormatRankMessage(wchar_t* dst, size_t dstLen);
-int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen);
+int FormatRankMessage(wchar_t *dst, size_t dstLen);
+int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen);
 bool HasSpecialBadges();
 u32 GetSpecialBadgeCount();
 u8 GetSpecialBadgeAt(u32 index);

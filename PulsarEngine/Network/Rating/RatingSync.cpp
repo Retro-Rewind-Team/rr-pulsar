@@ -23,7 +23,7 @@ static const u32 s_nhttpWorkBufSize = 0x1000;
 static u32 s_requestGeneration = 0;
 static float s_requestStartVr = 0.0f;
 static float s_requestStartBr = 0.0f;
-static void* s_requestWorkBuf = nullptr;
+static void *s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
 static s32 s_pendingInitialReportProfileId = 0;
 static u32 s_pendingInitialReportLicenseId = 0;
@@ -47,29 +47,29 @@ static int ClampRatingForSync(float rating) {
     return scaled;
 }
 
-static bool ParseJsonScaledValue(const char* json, const char* key, int& out) {
+static bool ParseJsonScaledValue(const char *json, const char *key, int &out) {
     if (json == nullptr || key == nullptr) return false;
 
-    const char* pos = strstr(json, key);
+    const char *pos = strstr(json, key);
     if (pos == nullptr) return false;
 
-    const char* colon = strchr(pos, ':');
+    const char *colon = strchr(pos, ':');
     if (colon == nullptr) return false;
 
-    char* end = nullptr;
+    char *end = nullptr;
     long value = strtol(Network::Json::SkipWhitespace(colon + 1), &end, 10);
     if (end == nullptr || end == colon + 1) return false;
     out = (int)value;
     return true;
 }
 
-static bool ParseJsonFoundFlag(const char* json) {
+static bool ParseJsonFoundFlag(const char *json) {
     if (json == nullptr) return false;
 
-    const char* pos = strstr(json, "\"found\"");
+    const char *pos = strstr(json, "\"found\"");
     if (pos == nullptr) return false;
 
-    const char* colon = strchr(pos, ':');
+    const char *colon = strchr(pos, ':');
     if (colon == nullptr) return false;
 
     colon = Network::Json::SkipWhitespace(colon + 1);
@@ -91,14 +91,14 @@ void ReportCurrentRatings(u32 licenseId) {
     Network::Report("wl:mkw_vrbr", buffer);
 }
 
-static bool IsRequestStillRelevant(const RequestCtx& ctx) {
+static bool IsRequestStillRelevant(const RequestCtx &ctx) {
     if (ctx.generation != s_requestGeneration) return false;
     if (ctx.profileId <= 0) return false;
 
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || ctx.licenseId >= 4) return false;
 
-    const RKSYS::LicenseMgr& license = rksys->licenses[ctx.licenseId];
+    const RKSYS::LicenseMgr &license = rksys->licenses[ctx.licenseId];
     if ((s32)license.dwcAccUserData.gsProfileId != ctx.profileId) return false;
 
     const float currentVr = GetUserVR(ctx.licenseId);
@@ -108,9 +108,9 @@ static bool IsRequestStillRelevant(const RequestCtx& ctx) {
     return true;
 }
 
-static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
+static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
     Network::FinishNHTTPRequest();
-    RequestCtx* ctx = reinterpret_cast<RequestCtx*>(userdata);
+    RequestCtx *ctx = reinterpret_cast<RequestCtx *>(userdata);
     if (ctx == nullptr || response == nullptr) return;
 
     if (ctx->generation != s_requestGeneration) {
@@ -123,8 +123,8 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
         return;
     }
 
-    char* body = nullptr;
-    const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res*>(response), &body);
+    char *body = nullptr;
+    const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res *>(response), &body);
     if (body == nullptr || bodyLen <= 0) {
         NHTTPDestroyResponse(response);
         return;
@@ -158,7 +158,7 @@ static void OnRatingsDownloaded(s32 result, void* response, void* userdata) {
 void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
     if (profileId <= 0) return;
 
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
 
@@ -183,9 +183,9 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
         return;
     }
 
-    void* request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
-                                       reinterpret_cast<void*>(&OnRatingsDownloaded),
-                                       reinterpret_cast<void*>(&s_requestCtx));
+    void *request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
+                                       reinterpret_cast<void *>(&OnRatingsDownloaded),
+                                       reinterpret_cast<void *>(&s_requestCtx));
     if (request == nullptr) return;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
@@ -197,14 +197,14 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
 }
 
 static bool CanStartLoginRatingDownload() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     return controller != nullptr && controller->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
 }
 
 static void TryStartPendingLoginRatingDownload() {
     if (!s_pendingLoginDownload) return;
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return;
 
     const RKNet::ConnectionState state = controller->GetConnectionState();
@@ -240,7 +240,7 @@ static FrameLoadHook startPendingLoginRatingDownload(TryStartPendingLoginRatingD
 void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
     if (profileId <= 0) return;
 
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
 

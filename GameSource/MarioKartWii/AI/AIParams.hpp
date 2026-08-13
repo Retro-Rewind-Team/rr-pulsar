@@ -49,14 +49,14 @@ class Params {
    public:
     typedef BinAIParamSpeed ParamSpeed;
     Params(u32 aiDifficulty);  // 8073ab68
-    ParamSpeed* GetParamSpeed() const;  // 8073ac80
-    ParamAction* GetParamAction(u8 playerIdx) const;  // 8073ac88
-    static void LoadParamFile(ArchiveSource type, const char* path);  // 8073ac98
+    ParamSpeed *GetParamSpeed() const;  // 8073ac80
+    ParamAction *GetParamAction(u8 playerIdx) const;  // 8073ac88
+    static void LoadParamFile(ArchiveSource type, const char *path);  // 8073ac98
     void Load();  // 8073aca8
-    void LoadActions(CommonBinAIParamAction& rawActions, u32 difficulty);  // 8073b020
+    void LoadActions(CommonBinAIParamAction &rawActions, u32 difficulty);  // 8073b020
     virtual ~Params();  // 8073abf8 vtable 808cb008
-    ParamSpeed* speed;
-    ParamAction* actions;  // array of size 12
+    ParamSpeed *speed;
+    ParamAction *actions;  // array of size 12
     u32 parameter;
     u32 difficulty;
 };  // 0x14

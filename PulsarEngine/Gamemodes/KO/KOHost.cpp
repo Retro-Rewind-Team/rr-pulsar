@@ -20,15 +20,15 @@ namespace Pulsar {
 namespace KO {
 
 void HAWChangeData() {
-    const System* system = System::sInstance;
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const System *system = System::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     const u8 localAid = sub.localAid;
     if (system->IsContext(PULSAR_MODE_KO)) {
         u8 oldAidsBelonging[12];
         u8 oldPlayerIds[12][2];
 
-        Mgr* mgr = system->koMgr;
+        Mgr *mgr = system->koMgr;
         mgr->PatchAids(sub);
         int inCounter = 0;
         int koCounter = 0;
@@ -54,13 +54,13 @@ void HAWChangeData() {
             oldPlayerIds[aid][hudSlotId] = playerId;
         }
 
-        Racedata* racedata = Racedata::sInstance;
-        SectionMgr* sectionMgr = SectionMgr::sInstance;
-        SectionParams* params = sectionMgr->sectionParams;
+        Racedata *racedata = Racedata::sInstance;
+        SectionMgr *sectionMgr = SectionMgr::sInstance;
+        SectionParams *params = sectionMgr->sectionParams;
         if (sub.localPlayerCount == 2 && !mgr->IsKOdAid(localAid, 0) && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();
 
         for (int playerId = 0; playerId < 12; ++playerId) {
-            RacedataPlayer& player = racedata->menusScenario.players[playerId];
+            RacedataPlayer &player = racedata->menusScenario.players[playerId];
             const u8 aid = controller->aidsBelongingToPlayerIds[playerId];
 
             if (aid >= 12) {
@@ -70,16 +70,16 @@ void HAWChangeData() {
                 u8 hudSlotId = 0;
                 if (playerId != 0 && controller->aidsBelongingToPlayerIds[playerId - 1] == aid) hudSlotId = 1;
                 const u8 oldPlayerId = oldPlayerIds[aid][hudSlotId];
-                const RacedataPlayer& prev = racedata->menusScenario.players[oldPlayerId];
+                const RacedataPlayer &prev = racedata->menusScenario.players[oldPlayerId];
                 memcpy(&player, &prev, sizeof(RacedataPlayer));
                 if (aid == localAid)
                     player.playerType = PLAYER_REAL_LOCAL;
                 else
                     player.playerType = PLAYER_REAL_ONLINE;
-                MiiGroup& playerMiis = params->playerMiis;
+                MiiGroup &playerMiis = params->playerMiis;
                 playerMiis.mii[playerId] = playerMiis.mii[oldPlayerId];
                 for (int i = 0; i < 7; ++i) {
-                    MiiTexObj* tex = playerMiis.texObj[i];
+                    MiiTexObj *tex = playerMiis.texObj[i];
                     if (tex != nullptr) memcpy(&tex[playerId], &tex[oldPlayerId], sizeof(MiiTexObj));
                 }
             }

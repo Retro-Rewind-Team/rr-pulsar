@@ -5,7 +5,7 @@
  *
  * Copyright (C) Retro Rewind.
  * SPDX-License-Identifier: MIT
- * 
+ *
  * This code is licensed under the MIT License.
  *
  * Credit is not legally required, but if you use or adapt this system,
@@ -32,22 +32,22 @@ using namespace nw4r;
 bool IsSW2RRLoaded();
 
 namespace {
-typedef void* (*LoadFileFn)(snd::detail::SoundArchiveLoader* loader, snd::SoundArchive::FileId fileId,
-                            snd::SoundMemoryAllocatable* allocater);
-typedef void* (*LoadWaveDataFileFn)(snd::detail::SoundArchiveLoader* loader, snd::SoundArchive::FileId fileId,
-                                    snd::SoundMemoryAllocatable* allocater);
-typedef void* (*LoadGroupFn)(snd::detail::SoundArchiveLoader* loader, u32 groupId, snd::SoundMemoryAllocatable* allocater,
-                             void** waveDataAddress, u32 loadBlockSize);
-typedef ut::FileStream* (*OpenFileStreamFn)(const snd::SoundArchive* archive, snd::SoundArchive::FileId fileId, void* buffer,
+typedef void *(*LoadFileFn)(snd::detail::SoundArchiveLoader *loader, snd::SoundArchive::FileId fileId,
+                            snd::SoundMemoryAllocatable *allocater);
+typedef void *(*LoadWaveDataFileFn)(snd::detail::SoundArchiveLoader *loader, snd::SoundArchive::FileId fileId,
+                                    snd::SoundMemoryAllocatable *allocater);
+typedef void *(*LoadGroupFn)(snd::detail::SoundArchiveLoader *loader, u32 groupId, snd::SoundMemoryAllocatable *allocater,
+                             void **waveDataAddress, u32 loadBlockSize);
+typedef ut::FileStream *(*OpenFileStreamFn)(const snd::SoundArchive *archive, snd::SoundArchive::FileId fileId, void *buffer,
                                             int size);
-typedef bool (*ReadFileInfoFn)(const snd::SoundArchive* archive, snd::SoundArchive::FileId fileId,
-                               snd::SoundArchive::FileInfo* info);
-typedef bool (*ReadFilePosFn)(const snd::SoundArchive* archive, snd::SoundArchive::FileId fileId, u32 index,
-                              snd::SoundArchive::FilePos* info);
-typedef bool (*ReadGroupInfoFn)(const snd::SoundArchive* archive, snd::SoundArchive::GroupId groupId,
-                                snd::SoundArchive::GroupInfo* info);
-typedef bool (*ReadGroupItemInfoFn)(const snd::SoundArchive* archive, snd::SoundArchive::GroupId groupId, u32 index,
-                                    snd::SoundArchive::GroupItemInfo* info);
+typedef bool (*ReadFileInfoFn)(const snd::SoundArchive *archive, snd::SoundArchive::FileId fileId,
+                               snd::SoundArchive::FileInfo *info);
+typedef bool (*ReadFilePosFn)(const snd::SoundArchive *archive, snd::SoundArchive::FileId fileId, u32 index,
+                              snd::SoundArchive::FilePos *info);
+typedef bool (*ReadGroupInfoFn)(const snd::SoundArchive *archive, snd::SoundArchive::GroupId groupId,
+                                snd::SoundArchive::GroupInfo *info);
+typedef bool (*ReadGroupItemInfoFn)(const snd::SoundArchive *archive, snd::SoundArchive::GroupId groupId, u32 index,
+                                    snd::SoundArchive::GroupItemInfo *info);
 
 enum ResolvedTargetKind {
     RESOLVEDTARGET_NONE = 0,
@@ -64,7 +64,7 @@ enum ExternalBufferSource {
 };
 
 struct ResolvedBRSARTarget {
-    const void* address;
+    const void *address;
     u32 capacity;
     u32 groupId;
     u32 groupIndex;
@@ -88,12 +88,12 @@ static ReadFileInfoFn sReadFileInfo = reinterpret_cast<ReadFileInfoFn>(kmRuntime
 static ReadFilePosFn sReadFilePos = reinterpret_cast<ReadFilePosFn>(kmRuntimeAddr(0x8009e000));
 static ReadGroupInfoFn sReadGroupInfo = reinterpret_cast<ReadGroupInfoFn>(kmRuntimeAddr(0x8009dfc0));
 static ReadGroupItemInfoFn sReadGroupItemInfo = reinterpret_cast<ReadGroupItemInfoFn>(kmRuntimeAddr(0x8009dfd0));
-static const void* sPatchedFileAddresses[1024] = {};
-static const void* sPatchedWaveAddresses[1024] = {};
-static void* sExternalFileBuffers[1024] = {};
-static void* sExternalWaveBuffers[1024] = {};
-static EGG::Heap* sExternalFileBufferHeaps[1024] = {};
-static EGG::Heap* sExternalWaveBufferHeaps[1024] = {};
+static const void *sPatchedFileAddresses[1024] = {};
+static const void *sPatchedWaveAddresses[1024] = {};
+static void *sExternalFileBuffers[1024] = {};
+static void *sExternalWaveBuffers[1024] = {};
+static EGG::Heap *sExternalFileBufferHeaps[1024] = {};
+static EGG::Heap *sExternalWaveBufferHeaps[1024] = {};
 static u8 sExternalFileBufferSources[1024] = {};
 static u8 sExternalWaveBufferSources[1024] = {};
 static u8 sExternalFileAttempts[1024] = {};
@@ -106,8 +106,8 @@ struct LooseVoiceLayout {
     u32 waveSize;
 };
 
-static u32 ReadBE32(const void* data) {
-    const u8* bytes = reinterpret_cast<const u8*>(data);
+static u32 ReadBE32(const void *data) {
+    const u8 *bytes = reinterpret_cast<const u8 *>(data);
     return (static_cast<u32>(bytes[0]) << 24) | (static_cast<u32>(bytes[1]) << 16) |
            (static_cast<u32>(bytes[2]) << 8) | static_cast<u32>(bytes[3]);
 }
@@ -116,20 +116,20 @@ static inline u32 Align32(u32 value) {
     return nw4r::ut::RoundUp(value, 0x20);
 }
 
-static void InvalidateRange(void* addr, u32 size) {
+static void InvalidateRange(void *addr, u32 size) {
     if (addr == nullptr || size == 0) return;
     const u32 start = reinterpret_cast<u32>(addr) & ~0x1F;
     const u32 end = Align32(reinterpret_cast<u32>(addr) + size);
-    OS::DCInvalidateRange(reinterpret_cast<void*>(start), end - start);
+    OS::DCInvalidateRange(reinterpret_cast<void *>(start), end - start);
 }
 
-static bool ReadOpenedDVDFileRange(DVD::FileInfo& info, void* dest, u32 size, u32 offset) {
+static bool ReadOpenedDVDFileRange(DVD::FileInfo &info, void *dest, u32 size, u32 offset) {
     InvalidateRange(dest, size);
     const s32 read = DVD::ReadPrio(&info, dest, static_cast<s32>(size), static_cast<s32>(offset), 2);
     return read == static_cast<s32>(size);
 }
 
-static bool FindEmbeddedRWAROffset(DVD::FileInfo& info, u32 fileSize, u32 searchStart, u32& outOffset, u32& outSize) {
+static bool FindEmbeddedRWAROffset(DVD::FileInfo &info, u32 fileSize, u32 searchStart, u32 &outOffset, u32 &outSize) {
     outOffset = 0;
     outSize = 0;
     if (searchStart >= fileSize) return false;
@@ -177,7 +177,7 @@ static bool FindEmbeddedRWAROffset(DVD::FileInfo& info, u32 fileSize, u32 search
     return false;
 }
 
-static void CopyUpperPostfix(char* dest, u32 destSize, const char* postfix) {
+static void CopyUpperPostfix(char *dest, u32 destSize, const char *postfix) {
     if (dest == nullptr || destSize == 0) return;
     u32 i = 0;
     if (postfix != nullptr) {
@@ -190,7 +190,7 @@ static void CopyUpperPostfix(char* dest, u32 destSize, const char* postfix) {
     dest[i] = '\0';
 }
 
-static bool BuildLooseVoicePath(const char* postfix, const char* suffix, const char* extension, const char* voiceName, char* path,
+static bool BuildLooseVoicePath(const char *postfix, const char *suffix, const char *extension, const char *voiceName, char *path,
                                 u32 pathSize) {
     char upperPostfix[32];
     CopyUpperPostfix(upperPostfix, sizeof(upperPostfix), postfix);
@@ -201,8 +201,8 @@ static bool BuildLooseVoicePath(const char* postfix, const char* suffix, const c
     return written > 0 && static_cast<u32>(written) < pathSize;
 }
 
-static bool OpenLooseVoiceFile(const char* postfix, const char* suffix, const char* extension, const char* voiceName,
-                               DVD::FileInfo& info, char* path, u32 pathSize) {
+static bool OpenLooseVoiceFile(const char *postfix, const char *suffix, const char *extension, const char *voiceName,
+                               DVD::FileInfo &info, char *path, u32 pathSize) {
     if (voiceName != nullptr && BuildLooseVoicePath(postfix, suffix, extension, voiceName, path, pathSize) &&
         DVD::Open(path, &info)) {
         return true;
@@ -211,7 +211,7 @@ static bool OpenLooseVoiceFile(const char* postfix, const char* suffix, const ch
     return DVD::Open(path, &info);
 }
 
-static bool ReadLooseVoiceLayout(DVD::FileInfo& info, const char* magic, LooseVoiceLayout& outLayout) {
+static bool ReadLooseVoiceLayout(DVD::FileInfo &info, const char *magic, LooseVoiceLayout &outLayout) {
     outLayout.fileSize = 0;
     outLayout.waveOffset = 0;
     outLayout.waveSize = 0;
@@ -232,18 +232,18 @@ static bool ReadLooseVoiceLayout(DVD::FileInfo& info, const char* magic, LooseVo
     return true;
 }
 
-static bool PreloadLooseCustomVoiceBufferWithAllocater(snd::SoundMemoryAllocatable* allocater,
+static bool PreloadLooseCustomVoiceBufferWithAllocater(snd::SoundMemoryAllocatable *allocater,
                                                        snd::SoundArchive::FileId fileId, bool waveData,
-                                                       DVD::FileInfo& info, const char* path, u32 readOffset,
+                                                       DVD::FileInfo &info, const char *path, u32 readOffset,
                                                        u32 overrideSize) {
     if (allocater == nullptr || fileId >= 1024 || overrideSize == 0) return false;
 
-    void** buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
-    u8* attempts = waveData ? sExternalWaveAttempts : sExternalFileAttempts;
+    void **buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
+    u8 *attempts = waveData ? sExternalWaveAttempts : sExternalFileAttempts;
     if (buffers[fileId] != nullptr) return true;
 
     const u32 allocSize = nw4r::ut::RoundUp(overrideSize, 0x20);
-    void* buffer = allocater->Alloc(allocSize);
+    void *buffer = allocater->Alloc(allocSize);
     if (buffer == nullptr) {
         if (attempts[fileId] == 0) {
             attempts[fileId] = 1;
@@ -262,12 +262,12 @@ static bool PreloadLooseCustomVoiceBufferWithAllocater(snd::SoundMemoryAllocatab
         return false;
     }
 
-    if (overrideSize < allocSize) memset(reinterpret_cast<u8*>(buffer) + overrideSize, 0, allocSize - overrideSize);
+    if (overrideSize < allocSize) memset(reinterpret_cast<u8 *>(buffer) + overrideSize, 0, allocSize - overrideSize);
     OS::DCStoreRange(buffer, allocSize);
 
     buffers[fileId] = buffer;
-    EGG::Heap** bufferHeaps = waveData ? sExternalWaveBufferHeaps : sExternalFileBufferHeaps;
-    u8* bufferSources = waveData ? sExternalWaveBufferSources : sExternalFileBufferSources;
+    EGG::Heap **bufferHeaps = waveData ? sExternalWaveBufferHeaps : sExternalFileBufferHeaps;
+    u8 *bufferSources = waveData ? sExternalWaveBufferSources : sExternalFileBufferSources;
     bufferHeaps[fileId] = nullptr;
     bufferSources[fileId] = EXTERNALBUFFER_GROUP_ALLOCATER;
     attempts[fileId] = 0;
@@ -299,30 +299,30 @@ static void ResetLooseBRSARExternalBuffers() {
     }
 }
 
-static void* AllocAudioHeapOverrideBuffer(u32 allocSize) {
-    EGG::ExpAudioMgr* audioMgr = RKSystem::mInstance.audioManager;
+static void *AllocAudioHeapOverrideBuffer(u32 allocSize) {
+    EGG::ExpAudioMgr *audioMgr = RKSystem::mInstance.audioManager;
     if (audioMgr == nullptr) return nullptr;
     return audioMgr->EGG::SoundHeapMgr::heap.Alloc(allocSize);
 }
 
-static void* AllocPersistentSoundOverrideBuffer(u32 allocSize, EGG::Heap*& outHeap) {
+static void *AllocPersistentSoundOverrideBuffer(u32 allocSize, EGG::Heap *&outHeap) {
     outHeap = nullptr;
 
-    EGG::Heap* candidates[3];
+    EGG::Heap *candidates[3];
     candidates[0] = RKSystem::mInstance.EGGRootMEM2;
     candidates[1] = RKSystem::mInstance.EGGRootMEM1;
-    EGG::Heap* overridesHeap = nullptr;
+    EGG::Heap *overridesHeap = nullptr;
     if (Pulsar::System::sInstance != nullptr) {
-        overridesHeap = static_cast<EGG::Heap*>(Pulsar::System::sInstance->heap);
+        overridesHeap = static_cast<EGG::Heap *>(Pulsar::System::sInstance->heap);
     }
     candidates[2] = overridesHeap;
 
     for (u32 index = 0; index < 3; ++index) {
-        EGG::Heap* heap = candidates[index];
+        EGG::Heap *heap = candidates[index];
         if (heap == nullptr) continue;
         if (heap->getAllocatableSize(0x20) < allocSize) continue;
 
-        void* buffer = EGG::Heap::alloc<void>(allocSize, 0x20, heap);
+        void *buffer = EGG::Heap::alloc<void>(allocSize, 0x20, heap);
         if (buffer != nullptr) {
             outHeap = heap;
             return buffer;
@@ -332,16 +332,16 @@ static void* AllocPersistentSoundOverrideBuffer(u32 allocSize, EGG::Heap*& outHe
     return nullptr;
 }
 
-static const void* PreloadLooseBRSARBufferWithAllocater(snd::SoundMemoryAllocatable* allocater, snd::SoundArchive::FileId fileId,
+static const void *PreloadLooseBRSARBufferWithAllocater(snd::SoundMemoryAllocatable *allocater, snd::SoundArchive::FileId fileId,
                                                         bool waveData, u32 overrideSize) {
     if (allocater == nullptr || fileId >= 1024 || overrideSize == 0) return nullptr;
 
-    void** buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
-    u8* attempts = waveData ? sExternalWaveAttempts : sExternalFileAttempts;
+    void **buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
+    u8 *attempts = waveData ? sExternalWaveAttempts : sExternalFileAttempts;
     if (buffers[fileId] != nullptr) return buffers[fileId];
 
     const u32 allocSize = nw4r::ut::RoundUp(overrideSize, 0x20);
-    void* buffer = allocater->Alloc(allocSize);
+    void *buffer = allocater->Alloc(allocSize);
     if (buffer == nullptr) {
         if (attempts[fileId] == 0) {
             attempts[fileId] = 1;
@@ -362,28 +362,28 @@ static const void* PreloadLooseBRSARBufferWithAllocater(snd::SoundMemoryAllocata
         return nullptr;
     }
 
-    if (overrideSize < allocSize) memset(reinterpret_cast<u8*>(buffer) + overrideSize, 0, allocSize - overrideSize);
+    if (overrideSize < allocSize) memset(reinterpret_cast<u8 *>(buffer) + overrideSize, 0, allocSize - overrideSize);
     OS::DCStoreRange(buffer, allocSize);
 
     buffers[fileId] = buffer;
-    EGG::Heap** bufferHeaps = waveData ? sExternalWaveBufferHeaps : sExternalFileBufferHeaps;
-    u8* bufferSources = waveData ? sExternalWaveBufferSources : sExternalFileBufferSources;
+    EGG::Heap **bufferHeaps = waveData ? sExternalWaveBufferHeaps : sExternalFileBufferHeaps;
+    u8 *bufferSources = waveData ? sExternalWaveBufferSources : sExternalFileBufferSources;
     bufferHeaps[fileId] = nullptr;
     bufferSources[fileId] = EXTERNALBUFFER_GROUP_ALLOCATER;
     attempts[fileId] = 0;
     return buffer;
 }
 
-static const void* GetExternalLooseBRSARBuffer(snd::SoundArchive::FileId fileId, bool waveData, u32 overrideSize) {
+static const void *GetExternalLooseBRSARBuffer(snd::SoundArchive::FileId fileId, bool waveData, u32 overrideSize) {
     if (fileId >= 1024 || overrideSize == 0) return nullptr;
 
-    void** buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
-    u8* attempts = waveData ? sExternalWaveAttempts : sExternalFileAttempts;
+    void **buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
+    u8 *attempts = waveData ? sExternalWaveAttempts : sExternalFileAttempts;
     if (buffers[fileId] != nullptr) return buffers[fileId];
 
     const u32 allocSize = nw4r::ut::RoundUp(overrideSize, 0x20);
-    EGG::Heap* heap = nullptr;
-    void* buffer = nullptr;
+    EGG::Heap *heap = nullptr;
+    void *buffer = nullptr;
 
     if (waveData) {
         buffer = AllocAudioHeapOverrideBuffer(allocSize);
@@ -416,21 +416,21 @@ static const void* GetExternalLooseBRSARBuffer(snd::SoundArchive::FileId fileId,
         return nullptr;
     }
 
-    if (overrideSize < allocSize) memset(reinterpret_cast<u8*>(buffer) + overrideSize, 0, allocSize - overrideSize);
+    if (overrideSize < allocSize) memset(reinterpret_cast<u8 *>(buffer) + overrideSize, 0, allocSize - overrideSize);
     OS::DCStoreRange(buffer, allocSize);
 
     buffers[fileId] = buffer;
-    EGG::Heap** bufferHeaps = waveData ? sExternalWaveBufferHeaps : sExternalFileBufferHeaps;
-    u8* bufferSources = waveData ? sExternalWaveBufferSources : sExternalFileBufferSources;
+    EGG::Heap **bufferHeaps = waveData ? sExternalWaveBufferHeaps : sExternalFileBufferHeaps;
+    u8 *bufferSources = waveData ? sExternalWaveBufferSources : sExternalFileBufferSources;
     bufferHeaps[fileId] = heap;
     bufferSources[fileId] = (waveData && heap == nullptr) ? EXTERNALBUFFER_AUDIO_HEAP : EXTERNALBUFFER_PERSISTENT_HEAP;
     attempts[fileId] = 0;
     return buffer;
 }
 
-static bool TryGetGroupItemSlotCapacity(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId, u32 itemCount,
-                                        const snd::SoundArchive::GroupItemInfo& target, bool waveData, u32 groupSize,
-                                        u32& outCapacity) {
+static bool TryGetGroupItemSlotCapacity(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId, u32 itemCount,
+                                        const snd::SoundArchive::GroupItemInfo &target, bool waveData, u32 groupSize,
+                                        u32 &outCapacity) {
     outCapacity = 0;
 
     const u32 targetOffset = waveData ? target.waveDataOffset : target.offset;
@@ -453,8 +453,8 @@ static bool TryGetGroupItemSlotCapacity(const snd::SoundArchive& archive, snd::S
     return true;
 }
 
-static const void* FindGroupFileAddress(const snd::SoundArchivePlayer* player, snd::SoundArchive::FileId fileId, bool waveData,
-                                        ResolvedBRSARTarget* outTarget) {
+static const void *FindGroupFileAddress(const snd::SoundArchivePlayer *player, snd::SoundArchive::FileId fileId, bool waveData,
+                                        ResolvedBRSARTarget *outTarget) {
     if (outTarget != nullptr) {
         outTarget->address = nullptr;
         outTarget->capacity = 0;
@@ -476,7 +476,7 @@ static const void* FindGroupFileAddress(const snd::SoundArchivePlayer* player, s
         if (!sReadFilePos(player->soundArchive, fileId, index, &filePos)) continue;
 
         u32 baseAddress = 0;
-        u32* groupTable = player->groupTable;
+        u32 *groupTable = player->groupTable;
         if (groupTable != nullptr && filePos.groupId < groupTable[0]) {
             baseAddress = groupTable[filePos.groupId * 2 + (waveData ? 2 : 1)];
         }
@@ -497,7 +497,7 @@ static const void* FindGroupFileAddress(const snd::SoundArchivePlayer* player, s
             capacity = waveData ? itemInfo.waveDataSize : itemInfo.size;
         }
 
-        const void* address = reinterpret_cast<const void*>(baseAddress + offset);
+        const void *address = reinterpret_cast<const void *>(baseAddress + offset);
         if (outTarget != nullptr) {
             outTarget->address = address;
             outTarget->capacity = capacity;
@@ -511,8 +511,8 @@ static const void* FindGroupFileAddress(const snd::SoundArchivePlayer* player, s
     return nullptr;
 }
 
-static const void* GetOriginalFileAddress(const snd::SoundArchivePlayer* player, snd::SoundArchive::FileId fileId,
-                                          ResolvedBRSARTarget* outTarget) {
+static const void *GetOriginalFileAddress(const snd::SoundArchivePlayer *player, snd::SoundArchive::FileId fileId,
+                                          ResolvedBRSARTarget *outTarget) {
     if (outTarget != nullptr) {
         outTarget->address = nullptr;
         outTarget->capacity = 0;
@@ -529,7 +529,7 @@ static const void* GetOriginalFileAddress(const snd::SoundArchivePlayer* player,
     const bool hasFileInfo = sReadFileInfo(player->soundArchive, fileId, &fileInfo);
 
     if (player->fileManager != nullptr) {
-        const void* fileAddress = player->fileManager->GetFileAddress(fileId);
+        const void *fileAddress = player->fileManager->GetFileAddress(fileId);
         if (fileAddress != nullptr) {
             if (outTarget != nullptr) {
                 outTarget->address = fileAddress;
@@ -540,7 +540,7 @@ static const void* GetOriginalFileAddress(const snd::SoundArchivePlayer* player,
         }
     }
 
-    const void* archiveAddress = player->soundArchive->detail_GetFileAddress(fileId);
+    const void *archiveAddress = player->soundArchive->detail_GetFileAddress(fileId);
     if (archiveAddress != nullptr) {
         if (outTarget != nullptr) {
             outTarget->address = archiveAddress;
@@ -553,8 +553,8 @@ static const void* GetOriginalFileAddress(const snd::SoundArchivePlayer* player,
     return FindGroupFileAddress(player, fileId, false, outTarget);
 }
 
-static const void* GetOriginalWaveDataAddress(const snd::SoundArchivePlayer* player, snd::SoundArchive::FileId fileId,
-                                              ResolvedBRSARTarget* outTarget) {
+static const void *GetOriginalWaveDataAddress(const snd::SoundArchivePlayer *player, snd::SoundArchive::FileId fileId,
+                                              ResolvedBRSARTarget *outTarget) {
     if (outTarget != nullptr) {
         outTarget->address = nullptr;
         outTarget->capacity = 0;
@@ -570,7 +570,7 @@ static const void* GetOriginalWaveDataAddress(const snd::SoundArchivePlayer* pla
     snd::SoundArchive::FileInfo fileInfo;
     const bool hasFileInfo = sReadFileInfo(player->soundArchive, fileId, &fileInfo);
 
-    const void* archiveAddress = player->soundArchive->detail_GetWaveDataFileAddress(fileId);
+    const void *archiveAddress = player->soundArchive->detail_GetWaveDataFileAddress(fileId);
     if (archiveAddress != nullptr) {
         if (outTarget != nullptr) {
             outTarget->address = archiveAddress;
@@ -581,7 +581,7 @@ static const void* GetOriginalWaveDataAddress(const snd::SoundArchivePlayer* pla
     }
 
     if (player->fileManager != nullptr) {
-        const void* fileAddress = player->fileManager->GetFileWaveDataAddress(fileId);
+        const void *fileAddress = player->fileManager->GetFileWaveDataAddress(fileId);
         if (fileAddress != nullptr) {
             if (outTarget != nullptr) {
                 outTarget->address = fileAddress;
@@ -595,7 +595,7 @@ static const void* GetOriginalWaveDataAddress(const snd::SoundArchivePlayer* pla
     return FindGroupFileAddress(player, fileId, true, outTarget);
 }
 
-static void PatchResolvedAddress(snd::SoundArchive::FileId fileId, bool waveData, const ResolvedBRSARTarget& target) {
+static void PatchResolvedAddress(snd::SoundArchive::FileId fileId, bool waveData, const ResolvedBRSARTarget &target) {
     if (target.address == nullptr || target.capacity == 0) return;
 
     u32 fileSize = 0;
@@ -605,7 +605,7 @@ static void PatchResolvedAddress(snd::SoundArchive::FileId fileId, bool waveData
     const u32 overrideSize = waveData ? waveDataSize : fileSize;
     if (overrideSize == 0) return;
 
-    const void** patchedCache = waveData ? sPatchedWaveAddresses : sPatchedFileAddresses;
+    const void **patchedCache = waveData ? sPatchedWaveAddresses : sPatchedFileAddresses;
     if (fileId < 1024 && patchedCache[fileId] == target.address) return;
 
     if (overrideSize > target.capacity) {
@@ -614,7 +614,7 @@ static void PatchResolvedAddress(snd::SoundArchive::FileId fileId, bool waveData
         return;
     }
 
-    void* dest = const_cast<void*>(target.address);
+    void *dest = const_cast<void *>(target.address);
     const bool readOk = waveData ? IOOverrides::ReadLooseBRSAROverrideWaveData(fileId, dest, overrideSize)
                                  : IOOverrides::ReadLooseBRSAROverrideFile(fileId, dest, overrideSize);
     if (!readOk) {
@@ -624,18 +624,18 @@ static void PatchResolvedAddress(snd::SoundArchive::FileId fileId, bool waveData
     }
 
     if (overrideSize < target.capacity) {
-        memset(reinterpret_cast<u8*>(dest) + overrideSize, 0, target.capacity - overrideSize);
+        memset(reinterpret_cast<u8 *>(dest) + overrideSize, 0, target.capacity - overrideSize);
     }
     OS::DCStoreRange(dest, target.capacity);
 
     if (fileId < 1024) patchedCache[fileId] = target.address;
 }
 
-static const char* LooseVoiceExtensionForGroupItem(const u8* groupData, const snd::SoundArchive::GroupItemInfo& item,
-                                                   const char*& magic) {
+static const char *LooseVoiceExtensionForGroupItem(const u8 *groupData, const snd::SoundArchive::GroupItemInfo &item,
+                                                   const char *&magic) {
     magic = nullptr;
     if (groupData == nullptr || item.size < 4) return nullptr;
-    const u8* data = groupData + item.offset;
+    const u8 *data = groupData + item.offset;
     if (memcmp(data, "RWSD", 4) == 0) {
         magic = "RWSD";
         return "brwsd";
@@ -651,7 +651,7 @@ static const char* LooseVoiceExtensionForGroupItem(const u8* groupData, const sn
     return nullptr;
 }
 
-static bool ReadLooseRSTMLayout(DVD::FileInfo& info, u32& outSize) {
+static bool ReadLooseRSTMLayout(DVD::FileInfo &info, u32 &outSize) {
     outSize = 0;
     if (info.length < 0x20) return false;
 
@@ -665,11 +665,11 @@ static bool ReadLooseRSTMLayout(DVD::FileInfo& info, u32& outSize) {
     return true;
 }
 
-static const char* LooseSoundEffectExtensionForGroupItem(const u8* groupData, const snd::SoundArchive::GroupItemInfo& item,
-                                                         const char*& magic) {
+static const char *LooseSoundEffectExtensionForGroupItem(const u8 *groupData, const snd::SoundArchive::GroupItemInfo &item,
+                                                         const char *&magic) {
     magic = nullptr;
     if (groupData == nullptr || item.size < 4) return nullptr;
-    const u8* data = groupData + item.offset;
+    const u8 *data = groupData + item.offset;
     if (memcmp(data, "RSTM", 4) == 0) {
         magic = "RSTM";
         return "brstm";
@@ -677,15 +677,15 @@ static const char* LooseSoundEffectExtensionForGroupItem(const u8* groupData, co
     return LooseVoiceExtensionForGroupItem(groupData, item, magic);
 }
 
-static void PatchLoadedGroupItemWithLooseCustomSoundEffect(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId,
-                                                           snd::SoundMemoryAllocatable* allocater, u32 itemCount,
-                                                           const snd::SoundArchive::GroupItemInfo& item, u32 groupSize,
-                                                           void* groupData) {
+static void PatchLoadedGroupItemWithLooseCustomSoundEffect(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId,
+                                                           snd::SoundMemoryAllocatable *allocater, u32 itemCount,
+                                                           const snd::SoundArchive::GroupItemInfo &item, u32 groupSize,
+                                                           void *groupData) {
     if (groupData == nullptr || item.size < 4) return;
 
-    u8* groupDest = reinterpret_cast<u8*>(groupData) + item.offset;
-    const char* magic = nullptr;
-    const char* extension = LooseSoundEffectExtensionForGroupItem(static_cast<const u8*>(groupData), item, magic);
+    u8 *groupDest = reinterpret_cast<u8 *>(groupData) + item.offset;
+    const char *magic = nullptr;
+    const char *extension = LooseSoundEffectExtensionForGroupItem(static_cast<const u8 *>(groupData), item, magic);
     if (extension == nullptr || magic == nullptr) return;
 
     char path[0x80];
@@ -742,13 +742,13 @@ static void PatchLoadedGroupItemWithLooseCustomSoundEffect(const snd::SoundArchi
     DVD::Close(&info);
 }
 
-static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId,
-                                                  snd::SoundMemoryAllocatable* allocater, u32 itemCount,
-                                                  const snd::SoundArchive::GroupItemInfo& item, u32 groupSize,
-                                                  u32 waveDataSize, void* groupData, void* waveData) {
+static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId,
+                                                  snd::SoundMemoryAllocatable *allocater, u32 itemCount,
+                                                  const snd::SoundArchive::GroupItemInfo &item, u32 groupSize,
+                                                  u32 waveDataSize, void *groupData, void *waveData) {
     if (groupId != BRSAR_GROUP_RACE || !IsSW2RRLoaded() || groupData == nullptr || item.size < 4) return;
 
-    const u8* itemData = static_cast<const u8*>(groupData) + item.offset;
+    const u8 *itemData = static_cast<const u8 *>(groupData) + item.offset;
     if (memcmp(itemData, "RWSD", 4) != 0) return;
 
     const char path[] = "/sound/strm/RRGRP_RACE.brwsd";
@@ -767,7 +767,7 @@ static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive& archi
         fileCapacity >= layout.fileSize;
 
     if (canPatchFileInGroup) {
-        u8* groupDest = static_cast<u8*>(groupData) + item.offset;
+        u8 *groupDest = static_cast<u8 *>(groupData) + item.offset;
         if (!ReadOpenedDVDFileRange(info, groupDest, layout.fileSize, 0)) {
             DVD::Close(&info);
             return;
@@ -788,7 +788,7 @@ static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive& archi
             waveCapacity >= layout.waveSize;
 
         if (canPatchWaveInGroup) {
-            u8* waveDest = static_cast<u8*>(waveData) + item.waveDataOffset;
+            u8 *waveDest = static_cast<u8 *>(waveData) + item.waveDataOffset;
             if (ReadOpenedDVDFileRange(info, waveDest, layout.waveSize, layout.waveOffset)) {
                 if (layout.waveSize < item.waveDataSize) memset(waveDest + layout.waveSize, 0, item.waveDataSize - layout.waveSize);
                 OS::DCStoreRange(waveDest, item.waveDataSize);
@@ -803,17 +803,17 @@ static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive& archi
     DVD::Close(&info);
 }
 
-static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId,
-                                                     snd::SoundMemoryAllocatable* allocater, u32 itemCount,
-                                                     const snd::SoundArchive::GroupItemInfo& item, u32 groupSize,
-                                                     u32 waveDataSize, void* groupData, void* waveData) {
-    const char* groupSuffix = nullptr;
-    const char* voiceName = nullptr;
-    const char* postfix = CustomCharacters::GetLooseVoicePostfixForGroup(groupId, groupSuffix, voiceName);
+static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId,
+                                                     snd::SoundMemoryAllocatable *allocater, u32 itemCount,
+                                                     const snd::SoundArchive::GroupItemInfo &item, u32 groupSize,
+                                                     u32 waveDataSize, void *groupData, void *waveData) {
+    const char *groupSuffix = nullptr;
+    const char *voiceName = nullptr;
+    const char *postfix = CustomCharacters::GetLooseVoicePostfixForGroup(groupId, groupSuffix, voiceName);
     if (postfix == nullptr || groupSuffix == nullptr) return;
 
-    const char* magic = nullptr;
-    const char* extension = LooseVoiceExtensionForGroupItem(static_cast<const u8*>(groupData), item, magic);
+    const char *magic = nullptr;
+    const char *extension = LooseVoiceExtensionForGroupItem(static_cast<const u8 *>(groupData), item, magic);
     if (extension == nullptr) return;
 
     char path[0x80];
@@ -833,7 +833,7 @@ static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive& ar
         fileCapacity >= layout.fileSize;
 
     if (canPatchFileInGroup) {
-        u8* groupDest = reinterpret_cast<u8*>(groupData) + item.offset;
+        u8 *groupDest = reinterpret_cast<u8 *>(groupData) + item.offset;
         if (!ReadOpenedDVDFileRange(info, groupDest, layout.fileSize, 0)) {
             OS::Report("[Pulsar] Loose custom voice skipped in group %u: read failed '%s'\n", groupId, path);
         } else {
@@ -856,7 +856,7 @@ static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive& ar
             TryGetGroupItemSlotCapacity(archive, groupId, itemCount, item, true, waveDataSize, waveCapacity) &&
             waveCapacity >= layout.waveSize;
         if (canPatchWaveInGroup) {
-            u8* waveDest = reinterpret_cast<u8*>(waveData) + item.waveDataOffset;
+            u8 *waveDest = reinterpret_cast<u8 *>(waveData) + item.waveDataOffset;
             if (!ReadOpenedDVDFileRange(info, waveDest, layout.waveSize, layout.waveOffset)) {
                 OS::Report("[Pulsar] Loose custom voice wave skipped in group %u: read failed '%s'\n", groupId, path);
             } else {
@@ -876,8 +876,8 @@ static void PatchLoadedGroupItemWithLooseCustomVoice(const snd::SoundArchive& ar
     DVD::Close(&info);
 }
 
-static void* LoadLooseBRSARFile(snd::detail::SoundArchiveLoader* loader, snd::SoundArchive::FileId fileId,
-                                snd::SoundMemoryAllocatable* allocater) {
+static void *LoadLooseBRSARFile(snd::detail::SoundArchiveLoader *loader, snd::SoundArchive::FileId fileId,
+                                snd::SoundMemoryAllocatable *allocater) {
     if (loader == nullptr || allocater == nullptr) return nullptr;
 
     u32 fileSize = 0;
@@ -886,7 +886,7 @@ static void* LoadLooseBRSARFile(snd::detail::SoundArchiveLoader* loader, snd::So
         return nullptr;
     }
 
-    void* buffer = allocater->Alloc(fileSize);
+    void *buffer = allocater->Alloc(fileSize);
     if (buffer == nullptr) {
         OS::Report("[Pulsar] Loose BRSAR override skipped: fileId=%u alloc 0x%X failed\n", fileId, fileSize);
         return nullptr;
@@ -902,22 +902,22 @@ static void* LoadLooseBRSARFile(snd::detail::SoundArchiveLoader* loader, snd::So
     return buffer;
 }
 
-static void* LoadFileWithLooseBRSAROverride(snd::detail::SoundArchiveLoader* loader, snd::SoundArchive::FileId fileId,
-                                            snd::SoundMemoryAllocatable* allocater) {
-    void* buffer = LoadLooseBRSARFile(loader, fileId, allocater);
+static void *LoadFileWithLooseBRSAROverride(snd::detail::SoundArchiveLoader *loader, snd::SoundArchive::FileId fileId,
+                                            snd::SoundMemoryAllocatable *allocater) {
+    void *buffer = LoadLooseBRSARFile(loader, fileId, allocater);
     if (buffer != nullptr) return buffer;
     return sOriginalLoadFile(loader, fileId, allocater);
 }
 
-static void* LoadWaveDataFileWithLooseBRSAROverride(snd::detail::SoundArchiveLoader* loader,
+static void *LoadWaveDataFileWithLooseBRSAROverride(snd::detail::SoundArchiveLoader *loader,
                                                     snd::SoundArchive::FileId fileId,
-                                                    snd::SoundMemoryAllocatable* allocater) {
+                                                    snd::SoundMemoryAllocatable *allocater) {
     if (loader == nullptr || allocater == nullptr) return nullptr;
 
     u32 fileSize = 0;
     u32 waveDataSize = 0;
     if (IOOverrides::GetLooseBRSAROverrideSizes(fileId, fileSize, waveDataSize) && waveDataSize > 0) {
-        void* buffer = allocater->Alloc(waveDataSize);
+        void *buffer = allocater->Alloc(waveDataSize);
         if (buffer == nullptr) {
             OS::Report("[Pulsar] Loose BRSAR wave override skipped: fileId=%u alloc 0x%X failed\n", fileId, waveDataSize);
         } else if (IOOverrides::ReadLooseBRSAROverrideWaveData(fileId, buffer, waveDataSize)) {
@@ -932,19 +932,19 @@ static void* LoadWaveDataFileWithLooseBRSAROverride(snd::detail::SoundArchiveLoa
     return sOriginalLoadWaveDataFile(loader, fileId, allocater);
 }
 
-static const void* GetFileAddressWithLooseBRSAROverride(const snd::SoundArchivePlayer* player,
+static const void *GetFileAddressWithLooseBRSAROverride(const snd::SoundArchivePlayer *player,
                                                         snd::SoundArchive::FileId fileId) {
     if (fileId < 1024 && sExternalFileBuffers[fileId] != nullptr) return sExternalFileBuffers[fileId];
 
     ResolvedBRSARTarget target;
-    const void* address = GetOriginalFileAddress(player, fileId, &target);
+    const void *address = GetOriginalFileAddress(player, fileId, &target);
 
     u32 fileSize = 0;
     u32 waveDataSize = 0;
     if (!IOOverrides::GetLooseBRSAROverrideSizes(fileId, fileSize, waveDataSize) || fileSize == 0) return address;
 
     if (address == nullptr || target.capacity < fileSize) {
-        const void* external = GetExternalLooseBRSARBuffer(fileId, false, fileSize);
+        const void *external = GetExternalLooseBRSARBuffer(fileId, false, fileSize);
         if (external != nullptr) return external;
     }
 
@@ -952,19 +952,19 @@ static const void* GetFileAddressWithLooseBRSAROverride(const snd::SoundArchiveP
     return address;
 }
 
-static const void* GetFileWaveDataAddressWithLooseBRSAROverride(const snd::SoundArchivePlayer* player,
+static const void *GetFileWaveDataAddressWithLooseBRSAROverride(const snd::SoundArchivePlayer *player,
                                                                 snd::SoundArchive::FileId fileId) {
     if (fileId < 1024 && sExternalWaveBuffers[fileId] != nullptr) return sExternalWaveBuffers[fileId];
 
     ResolvedBRSARTarget target;
-    const void* address = GetOriginalWaveDataAddress(player, fileId, &target);
+    const void *address = GetOriginalWaveDataAddress(player, fileId, &target);
 
     u32 fileSize = 0;
     u32 waveDataSize = 0;
     if (!IOOverrides::GetLooseBRSAROverrideSizes(fileId, fileSize, waveDataSize) || waveDataSize == 0) return address;
 
     if (address == nullptr || target.capacity < waveDataSize) {
-        const void* external = GetExternalLooseBRSARBuffer(fileId, true, waveDataSize);
+        const void *external = GetExternalLooseBRSARBuffer(fileId, true, waveDataSize);
         if (external != nullptr) return external;
     }
 
@@ -972,8 +972,8 @@ static const void* GetFileWaveDataAddressWithLooseBRSAROverride(const snd::Sound
     return address;
 }
 
-static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& archive, snd::SoundArchive::GroupId groupId,
-                                                    snd::SoundMemoryAllocatable* allocater, void* groupData, void* waveData) {
+static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId,
+                                                    snd::SoundMemoryAllocatable *allocater, void *groupData, void *waveData) {
     if (groupData == nullptr) return;
 
     snd::SoundArchive::GroupInfo groupInfo;
@@ -1003,7 +1003,7 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
             }
 
             if (canPatchFileInGroup) {
-                u8* groupDest = reinterpret_cast<u8*>(groupData) + item.offset;
+                u8 *groupDest = reinterpret_cast<u8 *>(groupData) + item.offset;
                 if (!IOOverrides::ReadLooseBRSAROverrideFile(item.fileId, groupDest, fileSize)) {
                     OS::Report("[Pulsar] Loose BRSAR override skipped in group %u: fileId=%u read failed\n", groupId,
                                item.fileId);
@@ -1015,14 +1015,14 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
                     if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = groupDest;
                 }
             } else {
-                const void* external = PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, false, fileSize);
+                const void *external = PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, false, fileSize);
                 OS::Report("[Pulsar] Loose BRSAR file override cannot fit in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X; %s\n",
                            groupId, item.fileId, fileSize, fileCapacity,
                            (external != nullptr) ? "external fallback ready" : "override unavailable");
             }
 
             if (waveDataSize > 0 && canPatchWaveInGroup) {
-                u8* waveDest = reinterpret_cast<u8*>(waveData) + item.waveDataOffset;
+                u8 *waveDest = reinterpret_cast<u8 *>(waveData) + item.waveDataOffset;
                 if (!IOOverrides::ReadLooseBRSAROverrideWaveData(item.fileId, waveDest, waveDataSize)) {
                     OS::Report("[Pulsar] Loose BRSAR wave override skipped in group %u: fileId=%u read failed\n", groupId,
                                item.fileId);
@@ -1034,7 +1034,7 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
                     if (item.fileId < 1024) sPatchedWaveAddresses[item.fileId] = waveDest;
                 }
             } else if (waveDataSize > 0) {
-                const void* external = PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, true, waveDataSize);
+                const void *external = PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, true, waveDataSize);
                 OS::Report("[Pulsar] Loose BRSAR wave override cannot fit in group %u: fileId=%u needs 0x%X bytes, slot has 0x%X; %s\n",
                            groupId, item.fileId, waveDataSize, waveCapacity,
                            (external != nullptr) ? "external fallback ready" : "override unavailable");
@@ -1050,13 +1050,13 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive& arc
     }
 }
 
-static void* LoadGroupWithLooseBRSAROverride(snd::detail::SoundArchiveLoader* loader, u32 groupId,
-                                             snd::SoundMemoryAllocatable* allocater, void** waveDataAddress,
+static void *LoadGroupWithLooseBRSAROverride(snd::detail::SoundArchiveLoader *loader, u32 groupId,
+                                             snd::SoundMemoryAllocatable *allocater, void **waveDataAddress,
                                              u32 loadBlockSize) {
-    void* groupData = sOriginalLoadGroup(loader, groupId, allocater, waveDataAddress, loadBlockSize);
+    void *groupData = sOriginalLoadGroup(loader, groupId, allocater, waveDataAddress, loadBlockSize);
     if (groupData == nullptr || loader == nullptr) return groupData;
 
-    void* waveData = (waveDataAddress != nullptr) ? *waveDataAddress : nullptr;
+    void *waveData = (waveDataAddress != nullptr) ? *waveDataAddress : nullptr;
     PatchLoadedGroupWithLooseBRSAROverrides(loader->archive, groupId, allocater, groupData, waveData);
     return groupData;
 }

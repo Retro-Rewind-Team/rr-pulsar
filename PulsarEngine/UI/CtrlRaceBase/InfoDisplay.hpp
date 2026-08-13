@@ -10,7 +10,7 @@ namespace UI {
 class CtrlRaceTrackInfoDisplay : public CtrlRaceWifiStartMessage {
    public:
     static u32 Count();
-    static void Create(Page& page, u32 index, u32);
+    static void Create(Page &page, u32 index, u32);
 
    private:
     void Load();

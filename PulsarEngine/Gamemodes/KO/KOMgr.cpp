@@ -14,12 +14,12 @@ namespace KO {
 static const u8 offlineVSRaceCount = 255;
 
 Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false), isOfflineVS(false), offlineRaceNumber(0) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     this->baseLocPlayerCount = sub.localPlayerCount;
     this->isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
     if (this->isOfflineVS) {
-        const Settings::Mgr& settings = Settings::Mgr::Get();
+        const Settings::Mgr &settings = Settings::Mgr::Get();
         this->koPerRace = settings.GetSettingValue(Pulsar::Settings::SETTING_KOPERRACE) + 1;
         this->racesPerKO = settings.GetSettingValue(Pulsar::Settings::SETTING_RACESPERKO) + 1;
         this->alwaysFinal = settings.GetSettingValue(Pulsar::Settings::SETTING_KOFINAL) == KOSETTING_FINAL_ALWAYS;
@@ -46,7 +46,7 @@ void Mgr::ForceOfflineVSRaceCount() const {
 }
 
 u32 Mgr::GetCurrentRaceNumber() const {
-    const SectionParams* params = SectionMgr::sInstance->sectionParams;
+    const SectionParams *params = SectionMgr::sInstance->sectionParams;
     return this->isOfflineVS ? this->offlineRaceNumber + 1 : params->onlineParams.currentRaceNumber + 1;
 }
 
@@ -57,7 +57,7 @@ void Mgr::AdvanceOfflineRaceNumber() {
 void Mgr::FinishOfflineVSIfAllLocalPlayersAreOut() {
     if (!this->isOfflineVS) return;
 
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     bool hasLocalPlayer = false;
     for (u8 playerId = 0; playerId < scenario.playerCount; ++playerId) {
         if (scenario.players[playerId].playerType != PLAYER_REAL_LOCAL) continue;
@@ -66,7 +66,7 @@ void Mgr::FinishOfflineVSIfAllLocalPlayersAreOut() {
     }
 
     if (hasLocalPlayer) {
-        SectionParams* params = SectionMgr::sInstance->sectionParams;
+        SectionParams *params = SectionMgr::sInstance->sectionParams;
         params->vsRaceNumber = params->vsRaceCount;
     }
 }
@@ -74,7 +74,7 @@ void Mgr::FinishOfflineVSIfAllLocalPlayersAreOut() {
 void Mgr::PrepareOfflineVSNextRace() {
     if (!this->isOfflineVS || this->winnerPlayerId != 0xFF) return;
 
-    RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     u8 remainingCount = 0;
     for (u8 playerId = 0; playerId < scenario.playerCount; ++playerId) {
         if (!this->IsKOdPlayerId(playerId)) {
@@ -99,7 +99,7 @@ void Mgr::PrepareOfflineVSNextRace() {
     }
 }
 Mgr::~Mgr() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     controller->subs[0].localPlayerCount = this->baseLocPlayerCount;
     controller->subs[1].localPlayerCount = this->baseLocPlayerCount;
     if (this->GetIsSwapped()) this->SwapControllersAndUI();
@@ -139,10 +139,10 @@ u8 Mgr::GetRoundKoCount(u8 playerCount) const {
 }
 
 void Mgr::AddRaceStats() {
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const u8 localPlayerCount = this->isOfflineVS ? 0 : scenario.localPlayerCount;
     for (int hudSlot = 0; hudSlot < localPlayerCount; ++hudSlot) {
-        Stats& stats = this->stats[hudSlot];
+        Stats &stats = this->stats[hudSlot];
         if (stats.boolCountArray >= arbitraryAlmostDied) ++stats.final.almostKOdCounter;
         const u8 pos = Raceinfo::sInstance->players[scenario.settings.hudPlayerIds[hudSlot]]->position;
         stats.percentageSum += static_cast<float>(pos) / static_cast<float>(System::sInstance->nonTTGhostPlayersCount);  // this allows higher precision across multiple races
@@ -153,10 +153,10 @@ void Mgr::AddRaceStats() {
 }
 
 void Mgr::CalcWouldBeKnockedOut() {
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
-    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
-    const u8* pointsArray = &Racedata::pointsRoom[playerCount - 1][0];
+    const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
+    const u8 *pointsArray = &Racedata::pointsRoom[playerCount - 1][0];
 
     PlayerPosition players[12];
     for (u8 curPlayerId = 0; curPlayerId < playerCount; ++curPlayerId) {
@@ -193,7 +193,7 @@ void Mgr::CalcWouldBeKnockedOut() {
     s32 roundKOs = this->GetRoundKoCount(playerCount);
 
     qsort(players, playerCount, sizeof(PlayerPosition),
-          reinterpret_cast<int (*)(const void*, const void*)>(SortPlayersByPosition));
+          reinterpret_cast<int (*)(const void *, const void *)>(SortPlayersByPosition));
 
     s32 assignedKOs = 0;
     if (racesPerKO > 1) {
@@ -215,22 +215,22 @@ void Mgr::CalcWouldBeKnockedOut() {
     }
 }
 
-void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nitems, size_t size, int (*compar)(const void*, const void*)) {
+void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr, size_t nitems, size_t size, int (*compar)(const void *, const void *)) {
     qsort(playerArr, nitems, size, compar);
 
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     if (!system->IsContext(PULSAR_MODE_KO)) {
         return;
     }
 
-    Mgr* self = system->koMgr;
-    RacedataScenario& scenario = Racedata::sInstance->menusScenario;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    const Raceinfo* raceinfo = Raceinfo::sInstance;
+    Mgr *self = system->koMgr;
+    RacedataScenario &scenario = Racedata::sInstance->menusScenario;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
+    const Raceinfo *raceinfo = Raceinfo::sInstance;
     const u8 playerCount = system->nonTTGhostPlayersCount;
     self->alwaysFinal = System::sInstance->IsContext(PULSAR_KOFINAL);
-    SectionParams* sectionParams = SectionMgr::sInstance->sectionParams;
+    SectionParams *sectionParams = SectionMgr::sInstance->sectionParams;
     const u32 currentRaceNumber = self->GetCurrentRaceNumber();
     bool hasTies = false;
 
@@ -382,17 +382,17 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr, size_t nit
 kmCall(0x8085cb94, Mgr::ProcessKOs);
 
 void Mgr::Update() {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_KO)) {
-        Mgr* self = System::sInstance->koMgr;
+        Mgr *self = System::sInstance->koMgr;
         self->CalcWouldBeKnockedOut();
-        const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+        const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
         const u8 localPlayerCount = self->IsOfflineVS() ? 0 : scenario.localPlayerCount;
         for (int hudSlot = 0; hudSlot < localPlayerCount; ++hudSlot) {
             const bool wouldBeOut = self->GetWouldBeKnockedOut(scenario.settings.hudPlayerIds[hudSlot]);
             const u32 idx = Raceinfo::sInstance->raceFrames % 300;
 
-            Stats& stats = self->stats[hudSlot];
+            Stats &stats = self->stats[hudSlot];
             if (wouldBeOut) ++stats.final.timeInDanger;
             if (!stats.isInDangerFrames[idx] && wouldBeOut)
                 ++stats.boolCountArray;
@@ -403,16 +403,16 @@ void Mgr::Update() {
 
         const u8 winnerPlayerId = self->winnerPlayerId;
         if (winnerPlayerId != 0xFF && !self->IsOfflineVS()) {
-            const RKNet::Controller* controller = RKNet::Controller::sInstance;
-            const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+            const RKNet::Controller *controller = RKNet::Controller::sInstance;
+            const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
             if (controller->aidsBelongingToPlayerIds[winnerPlayerId] == sub.localAid) {
                 for (int aid = 0; aid < 12; ++aid) {
                     if (((1 << aid) & sub.availableAids) == 0 || aid == sub.localAid) continue;
 
-                    Stats& stats = self->stats[0];
-                    RKNet::PacketHolder<Network::PulRH1>* holder = controller->GetSendPacketHolder<Network::PulRH1>(aid);
+                    Stats &stats = self->stats[0];
+                    RKNet::PacketHolder<Network::PulRH1> *holder = controller->GetSendPacketHolder<Network::PulRH1>(aid);
 
-                    Network::PulRH1* dest = holder->packet;
+                    Network::PulRH1 *dest = holder->packet;
                     dest->timeInDanger = stats.final.timeInDanger;
                     dest->almostKOdCounter = stats.final.almostKOdCounter;
                     dest->finalPercentageSum = stats.final.finalPercentageSum;
@@ -423,7 +423,7 @@ void Mgr::Update() {
 }
 RaceFrameHook koUpdate(Mgr::Update);
 
-void Mgr::PatchAids(RKNet::ControllerSub& sub) const {
+void Mgr::PatchAids(RKNet::ControllerSub &sub) const {
     u32 availableAids = sub.availableAids;
     const u8 localAid = sub.localAid;
     for (u8 aid = 0; aid < 12; ++aid) {
@@ -456,8 +456,8 @@ void Mgr::PatchAids(RKNet::ControllerSub& sub) const {
 
 u32 Mgr::GetAidAndSlotFromPlayerId(u8 playerId) const {
     if (this->isOfflineVS) return playerId;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     const u8 aid = controller->aidsBelongingToPlayerIds[playerId];
     const u8 localAid = sub.localAid;
     u8 slot = 0;
@@ -472,8 +472,8 @@ u32 Mgr::GetAidAndSlotFromPlayerId(u8 playerId) const {
 }
 
 SectionId Mgr::GetSectionAfterKO(SectionId defaultId) const {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     if (this->baseLocPlayerCount == 2) {
         if (this->IsKOdAid(sub.localAid, 0) != this->IsKOdAid(sub.localAid, 1)) {
             if (defaultId == SECTION_P2_WIFI_FROOM_VS_VOTING)
@@ -487,8 +487,8 @@ SectionId Mgr::GetSectionAfterKO(SectionId defaultId) const {
     return defaultId;
 }
 
-void OnDisconnectKO(SectionMgr* sectionMgr, SectionId id) {
-    const System* system = System::sInstance;
+void OnDisconnectKO(SectionMgr *sectionMgr, SectionId id) {
+    const System *system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_KO)) id = system->koMgr->GetSectionAfterKO(id);
     sectionMgr->SetNextSection(id, 0);
 }
@@ -497,15 +497,15 @@ kmCall(0x80651814, OnDisconnectKO);
 PageId Mgr::KickPlayersOut(PageId defaultId) {  // only called if KOMode
 
     PageId ret = defaultId;
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
 
-    Mgr* mgr = system->koMgr;
-    RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    Mgr *mgr = system->koMgr;
+    RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const bool isMainOut = mgr->IsKOdPlayerId(scenario.settings.hudPlayerIds[0]) || mgr->IsDisconnectedPlayerId(scenario.settings.hudPlayerIds[0]);
     if (system->nonTTGhostPlayersCount > 2) {
         if (scenario.localPlayerCount == 1) {
-            const RKNet::Controller* controller = RKNet::Controller::sInstance;
-            const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+            const RKNet::Controller *controller = RKNet::Controller::sInstance;
+            const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
             if (isMainOut) {
                 if (sub.localAid == sub.hostAid)
                     mgr->isSpectating = true;  // force the host to spectate, they should not be allowed to quit
@@ -525,17 +525,17 @@ PageId Mgr::KickPlayersOut(PageId defaultId) {  // only called if KOMode
 }
 
 void Mgr::SwapControllersAndUI() {
-    Input::Manager* input = Input::Manager::sInstance;
+    Input::Manager *input = Input::Manager::sInstance;
 
     char mainController[sizeof(Input::RealControllerHolder)];
     memcpy(&mainController, &input->realControllerHolders[0], sizeof(Input::RealControllerHolder));
     memcpy(&input->realControllerHolders[0], &input->realControllerHolders[1], sizeof(Input::RealControllerHolder));
     memcpy(&input->realControllerHolders[1], &mainController, sizeof(Input::RealControllerHolder));
 
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
-    SectionPad& pad = sectionMgr->pad;
-    PadInfo& main = pad.padInfos[0];
-    PadInfo& guest = pad.padInfos[1];
+    SectionMgr *sectionMgr = SectionMgr::sInstance;
+    SectionPad &pad = sectionMgr->pad;
+    PadInfo &main = pad.padInfos[0];
+    PadInfo &guest = pad.padInfos[1];
     u32 old = main.controllerID;
     u32 oldg = guest.controllerID;
     main.controllerID = oldg;
@@ -543,7 +543,7 @@ void Mgr::SwapControllersAndUI() {
     main.controllerIDActive = main.controllerID;
     guest.controllerIDActive = guest.controllerID;
 
-    SectionParams* params = sectionMgr->sectionParams;
+    SectionParams *params = sectionMgr->sectionParams;
     CharacterId mainChar = params->characters[0];
     KartId mainKart = params->karts[0];
     params->characters[0] = params->characters[1];

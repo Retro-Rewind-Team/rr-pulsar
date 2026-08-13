@@ -12,8 +12,8 @@ class ObjBomb : public ObjThrowable, public ObjExplosion {
         STATE_TICKING,
         STATE_EXPLODING,
     };
-    static Obj** CreateArray(u32 count);  // 807a41c4
-    static void* SendOrExtractShootEVENT(void* packet, Obj* obj, bool extractOrSend);  // 807a4fa0
+    static Obj **CreateArray(u32 count);  // 807a41c4
+    static void *SendOrExtractShootEVENT(void *packet, Obj *obj, bool extractOrSend);  // 807a4fa0
 
     ObjBomb();  // 807a4850 inlined
     // ObjThrowable vtable 808d1be0 at 0x0
@@ -23,7 +23,7 @@ class ObjBomb : public ObjThrowable, public ObjExplosion {
     void UpdateModelPositionNoClip() override;  // 0x14 807a59e0
     void SpawnModel() override;  // 0x18 807a5bc4
     void PrepareLight() override;  // 0x1c 807a5cfc
-    bool SetInitialPosition(PlayerObj& playerObj) override;  // 0x20 807a4a18
+    bool SetInitialPosition(PlayerObj &playerObj) override;  // 0x20 807a4a18
     int OnKill() override;  // 0x24 807a5f6c
     void OnTetherBreak() override;  // 0x28 807a60f8
     void OnFinishKill() override;  // 0x2c 807a619c
@@ -37,7 +37,7 @@ class ObjBomb : public ObjThrowable, public ObjExplosion {
     void Update();  // 807a4cdc
 
     u8 unknown_0x1c4[0x1c4 - 0x1a4];
-    ModelDirector* bombCore;  // 0x1d4
+    ModelDirector *bombCore;  // 0x1d4
     u8 unknown_0x1d8[0x4];
     u32 timer;  // 0x1dc how long a bomb lasts before exploding
     u8 unknown_0x1e0[0x1f0 - 0x1e0];

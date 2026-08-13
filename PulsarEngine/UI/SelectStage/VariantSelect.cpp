@@ -51,14 +51,14 @@ void VariantSelect::OnDeactivate() {
     Pages::CourseSelect::OnDeactivate();
 }
 
-UIControl* VariantSelect::CreateControl(u32 controlId) { return Pages::CourseSelect::CreateControl(controlId); }
+UIControl *VariantSelect::CreateControl(u32 controlId) { return Pages::CourseSelect::CreateControl(controlId); }
 
 void VariantSelect::BeforeControlUpdate() {
-    Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+    Pages::SELECTStageMgr *selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
     if (selectStageMgr != nullptr) {
-        CountDown* timer = &selectStageMgr->countdown;
+        CountDown *timer = &selectStageMgr->countdown;
         if (timer->countdown <= 0) {
-            CupsConfig* cups = CupsConfig::sInstance;
+            CupsConfig *cups = CupsConfig::sInstance;
             if (cups != nullptr) {
                 cups->ClearPendingVariant();
                 cups->SetSelected(static_cast<PulsarId>(RANDOM));
@@ -79,7 +79,7 @@ void VariantSelect::ToggleCourseSelectDecor(bool hidden) {
     if (this->titleText) this->titleText->isHidden = hidden;
     if (this->bottomText) this->bottomText->isHidden = hidden;
     for (u32 i = 0; i < this->externControlCount; ++i) {
-        PushButton* ctrl = this->externControls[i];
+        PushButton *ctrl = this->externControls[i];
         if (ctrl) {
             ctrl->isHidden = hidden;
             ctrl->manipulator.inaccessible = hidden;
@@ -111,11 +111,11 @@ void VariantSelect::OnBackPress(u32 hudSlotId) {
     this->LoadPrevPageById(PAGE_COURSE_SELECT, this->backButton);
 }
 
-void VariantSelect::OnBackButtonClick(PushButton& button, u32 hudSlotId) {
+void VariantSelect::OnBackButtonClick(PushButton &button, u32 hudSlotId) {
     OnBackPress(hudSlotId);
 }
 
-void VariantSelect::OnVariantButtonSelect(PushButton& button, u32 hudSlotId) {
+void VariantSelect::OnVariantButtonSelect(PushButton &button, u32 hudSlotId) {
     const u32 variantIdx = this->GetVariantIndexForButton(button);
     if (variantIdx == 0xFFFFFFFF) return;
     this->highlightedVariantIdx = static_cast<u8>(variantIdx);
@@ -123,14 +123,14 @@ void VariantSelect::OnVariantButtonSelect(PushButton& button, u32 hudSlotId) {
 }
 
 void VariantSelect::PopulateVariantButtons() {
-    CupsConfig* cups = CupsConfig::sInstance;
+    CupsConfig *cups = CupsConfig::sInstance;
     if (!cups) return;
     if (selectedPulsarId == PULSARID_NONE) return;
 
     ResetVariantButtonState();
 
     if (!cups->IsReg(selectedPulsarId)) {
-        const Track& track = cups->GetTrack(selectedPulsarId);
+        const Track &track = cups->GetTrack(selectedPulsarId);
         u32 variantCount = track.variantCount;
         const u32 maxButtons = 4;
         u32 displayCount = variantCount + 1;
@@ -161,11 +161,11 @@ void VariantSelect::PopulateVariantButtons() {
 }
 
 void VariantSelect::ApplyVariantButtonState() {
-    CupsConfig* cups = CupsConfig::sInstance;
+    CupsConfig *cups = CupsConfig::sInstance;
     if (!cups) return;
     const bool isBlocked = UI::IsTrackBlocked(selectedPulsarId);
     for (u32 i = 0; i < 4; ++i) {
-        CourseButton& btn = this->CtrlMenuCourseSelectCourse.courseButtons[i];
+        CourseButton &btn = this->CtrlMenuCourseSelectCourse.courseButtons[i];
         const u8 variantIdx = variantButtonVariants[i];
         if (selectedPulsarId == PULSARID_NONE || variantIdx == 0xFF) {
             btn.manipulator.inaccessible = true;
@@ -190,9 +190,9 @@ void VariantSelect::ApplyVariantButtonState() {
             UI::SetCourseButtonMessage(btn, bmgId, selectedPulsarId, i, false);
             continue;
         } else {
-            wchar_t* nameBuf = variantButtonNames[i];
+            wchar_t *nameBuf = variantButtonNames[i];
             wchar_t tempBuf[128];
-            const char* fileName = cups->GetFileName(selectedPulsarId, variantIdx);
+            const char *fileName = cups->GetFileName(selectedPulsarId, variantIdx);
             if (fileName != nullptr) {
                 mbstowcs(tempBuf, fileName, 127);
                 tempBuf[127] = L'\0';
@@ -212,7 +212,7 @@ void VariantSelect::ApplyVariantButtonState() {
     }
 }
 
-u32 VariantSelect::GetVariantIndexForButton(const PushButton& button) const {
+u32 VariantSelect::GetVariantIndexForButton(const PushButton &button) const {
     for (u32 i = 0; i < 4; ++i) {
         if (&this->CtrlMenuCourseSelectCourse.courseButtons[i] == &button) {
             if (variantButtonVariants[i] == 0xFF) return 0xFFFFFFFF;

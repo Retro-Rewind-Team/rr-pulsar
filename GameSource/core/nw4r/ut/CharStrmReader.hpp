@@ -13,7 +13,7 @@ class CharStrmReader {
     u16 ReadNextCharCP1252();  // 800af4c0
     u16 ReadNextCharSJIS();  // 800af4e0
 
-    const void* charStream;
+    const void *charStream;
     const ReadNextCharFunc readFunction;
 };
 

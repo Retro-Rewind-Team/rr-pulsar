@@ -113,13 +113,13 @@ struct WsdFile {  // RWSD https ://wiki.tockdom.com/wiki/BRWSD_(File_Format)
 
 class WsdFileReader {
    public:
-    WsdFileReader(const void* rawWsd);  // 800ad9b0
-    bool ReadWaveSoundInfo(WaveSoundInfo* noteInfo, int index) const;  // 800ada40
-    bool ReadWaveSoundNoteInfo(WaveSoundNoteInfo* noteInfo, int index, int noteIndex) const;  // 800adb60
-    bool ReadWaveInfo(int waveIndex, WaveInfo* waveData, const void* waveDataOffsetOrigin) const;  // 800adc80
-    const WsdFile::Header* header;
-    const WsdFile::DataBlock* dataBlock;
-    const WsdFile::WaveBlock* waveBlock;
+    WsdFileReader(const void *rawWsd);  // 800ad9b0
+    bool ReadWaveSoundInfo(WaveSoundInfo *noteInfo, int index) const;  // 800ada40
+    bool ReadWaveSoundNoteInfo(WaveSoundNoteInfo *noteInfo, int index, int noteIndex) const;  // 800adb60
+    bool ReadWaveInfo(int waveIndex, WaveInfo *waveData, const void *waveDataOffsetOrigin) const;  // 800adc80
+    const WsdFile::Header *header;
+    const WsdFile::DataBlock *dataBlock;
+    const WsdFile::WaveBlock *waveBlock;
 };
 }  // namespace detail
 }  // namespace snd

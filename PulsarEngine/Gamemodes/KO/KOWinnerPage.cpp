@@ -18,7 +18,7 @@ WinnerPage::WinnerPage() {
 void WinnerPage::OnInit() {
     this->InitControlGroup(6);
     for (int i = 0; i < 3; ++i) {
-        LayoutUIControl& stats = this->stats[i];
+        LayoutUIControl &stats = this->stats[i];
         this->AddControl(i, stats, 0);
         ControlLoader loader(&stats);
         char variant[0x50];
@@ -46,7 +46,7 @@ void WinnerPage::OnInit() {
 }
 
 void WinnerPage::OnDeactivate() {
-    Mgr* mgr = System::sInstance->koMgr;
+    Mgr *mgr = System::sInstance->koMgr;
     SectionId id = mgr->GetSectionAfterKO(SECTION_P1_WIFI_FROM_FROOM_RACE);
     this->ChangeSectionBySceneChange(id, 0, 0.0f);
 }
@@ -55,8 +55,8 @@ void WinnerPage::DisplayWinner() {
     this->manipulator.SetGlobalHandler(FORWARD_PRESS, this->onClickHandler, false);
     this->manipulator.activeLocalPlayerBitfield = 1;
     this->msgWindow.isHidden = true;
-    const Mgr* mgr = System::sInstance->koMgr;
-    MiiGroup& playerMiis = SectionMgr::sInstance->sectionParams->playerMiis;
+    const Mgr *mgr = System::sInstance->koMgr;
+    MiiGroup &playerMiis = SectionMgr::sInstance->sectionParams->playerMiis;
     this->miiAndName.SetMiiPane("chara", playerMiis, mgr->winnerPlayerId, 5);
     this->miiAndName.isHidden = false;
     Text::Info info;
@@ -71,16 +71,16 @@ void WinnerPage::AfterControlUpdate() {
     this->duration++;
 
     if (this->status == WAITING_STATS) {
-        const Mgr* mgr = System::sInstance->koMgr;
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
-        const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+        const Mgr *mgr = System::sInstance->koMgr;
+        RKNet::Controller *controller = RKNet::Controller::sInstance;
+        const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         const u8 winnerAid = controller->aidsBelongingToPlayerIds[mgr->winnerPlayerId];
-        const Mgr::Stats::Final* finalStats;
+        const Mgr::Stats::Final *finalStats;
         if (sub.localAid == winnerAid)
             finalStats = &mgr->stats[0].final;
         else {
-            const Network::PulRH1* dest = controller->GetReceivedPacketHolder<Network::PulRH1>(winnerAid)->packet;
-            finalStats = reinterpret_cast<const Mgr::Stats::Final*>(&dest->timeInDanger);
+            const Network::PulRH1 *dest = controller->GetReceivedPacketHolder<Network::PulRH1>(winnerAid)->packet;
+            finalStats = reinterpret_cast<const Mgr::Stats::Final *>(&dest->timeInDanger);
         }
         if (finalStats->finalPercentageSum != 0) {
             this->status = HAS_STATS;
@@ -133,7 +133,7 @@ void WinnerPage::HandleClick(u32 hudSlotId) {
 }
 
 static PageId LoadCorrectPageAfterOnlineLdb(PageId ret) {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->winnerPlayerId != 0xFF) ret = static_cast<PageId>(WinnerPage::id);
     return ret;
 }

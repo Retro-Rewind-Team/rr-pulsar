@@ -117,7 +117,7 @@ void SetDistParam(s32 channel, float play_radius, float sensitivity);  // 801950
 void SetAccParam(s32 channel, float play_radius, float sensitivity);  // 80195108
 void InitEx(UnifiedWpadStatus unifiedBuffers[], u32 bufferCount);  // 80197aac
 s32 Read(s32 channel, Status buffers[], u32 bufferCount);  // 80197380 returns number of buffers read
-void GetUnifiedWpadStatus(s32 channel, UnifiedWpadStatus* dest, u32 count);  // 8019812c
+void GetUnifiedWpadStatus(s32 channel, UnifiedWpadStatus *dest, u32 count);  // 8019812c
 
 }  // namespace KPAD
 

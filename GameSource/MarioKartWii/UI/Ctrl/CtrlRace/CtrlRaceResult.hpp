@@ -10,11 +10,11 @@ class CtrlRaceResult : public LayoutUIControl {
     ~CtrlRaceResult() override;  // 807f6490 vtable 808d3ee8
     void Init() override;  // 807f5a4c
     void OnUpdate() override;  // 807f5a50
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 807f64e8
-    const char* GetClassName() const override;  // 807f4e5c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 807f64e8
+    const char *GetClassName() const override;  // 807f4e5c
     virtual void Load();  // 0x3C 807f4e68, loads BRCTR with variant based on id
     virtual bool CanEnd();  // 0x40 807f5f9c returns true if section != TT gameplay AND if timer€[0.05,0.5]
-    virtual char* GetButtonBRCTRName() const;  // 0x44 807f5f20, based on sectionId
+    virtual char *GetButtonBRCTRName() const;  // 0x44 807f5f20, based on sectionId
 
     void Fill(u8 position, u8 playerId);  // 807f5fec fills position bmg, controller/star rank bmg, character icon, prepares animationsposition is 1-indexed, ie if 1 bmg will be "1st"
     void FillScore(u32 score, u32 ptsBmgId);  // 807f56d4 fills score bmgId

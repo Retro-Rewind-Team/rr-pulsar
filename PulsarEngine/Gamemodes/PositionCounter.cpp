@@ -10,18 +10,18 @@ namespace Pulsar {
 
 u8 PositionCounter::posTrackerAnmFrames[2] = {0, 0};
 
-void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum& posTracker) {
-    const System* system = System::sInstance;
+void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum &posTracker) {
+    const System *system = System::sInstance;
     if (system == nullptr) return;
 
-    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
     if (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) return;
 
     const u8 hudSlotId = posTracker.hudSlotId;
     if (hudSlotId >= 2) return;
 
-    lyt::Picture* posPane = static_cast<nw4r::lyt::Picture*>(posTracker.layout.GetPaneByName("position"));
+    lyt::Picture *posPane = static_cast<nw4r::lyt::Picture *>(posTracker.layout.GetPaneByName("position"));
     if (posPane == nullptr) return;
 
     ut::Color color = 0xffffffff;
@@ -29,8 +29,8 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum& posTracker) {
     u8 playerId = 0xFF;
 
     // Determine player ID based on mode
-    const Racedata* racedata = Racedata::sInstance;
-    const Raceinfo* raceinfo = Raceinfo::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
+    const Raceinfo *raceinfo = Raceinfo::sInstance;
     if (racedata == nullptr || raceinfo == nullptr) return;
 
     const bool isKO = system->IsContext(PULSAR_MODE_KO);
@@ -44,7 +44,7 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum& posTracker) {
 
     // Get player ID
     if (isKO && system->koMgr != nullptr && system->koMgr->isSpectating) {
-        const RaceCameraMgr* cameraMgr = RaceCameraMgr::sInstance;
+        const RaceCameraMgr *cameraMgr = RaceCameraMgr::sInstance;
         if (cameraMgr != nullptr) {
             playerId = cameraMgr->focusedPlayerIdx;
         }
@@ -70,7 +70,7 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum& posTracker) {
             if (activeCount > 1) {
                 const u8 elimCount = system->lapKoMgr->GetCurrentRoundEliminationCount();
                 if (elimCount > 0) {
-                    const RaceinfoPlayer* player = raceinfo->players[playerId];
+                    const RaceinfoPlayer *player = raceinfo->players[playerId];
                     if (player != nullptr) {
                         const u8 position = player->position;  // 1 = leader
                         // Players considered in danger are those in the last 'elimCount' positions among active racers.

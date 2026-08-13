@@ -25,16 +25,16 @@ struct SoftWallInfo {
 //_sinit_ at 80790ac0
 class CourseMgr {
    public:
-    static CourseMgr* sInstance;  // 809c2F44
-    static CourseMgr* CreateInstance();  // 8078dfe8
+    static CourseMgr *sInstance;  // 809c2F44
+    static CourseMgr *CreateInstance();  // 8078dfe8
     static void DestroyInstance();  // 8078e124
-    static void LoadModels(bool isCourse, nw4r::g3d::ResFile* brresDest, ModelDirector** modelDest, const char* brresName,
-                           const char* mdlName, u32 scnObjDrawOptionsIdx);  // 8078e1b0 will fill model and ResFile's brres
+    static void LoadModels(bool isCourse, nw4r::g3d::ResFile *brresDest, ModelDirector **modelDest, const char *brresName,
+                           const char *mdlName, u32 scnObjDrawOptionsIdx);  // 8078e1b0 will fill model and ResFile's brres
 
     CourseMgr();  // 8078e33c
     ~CourseMgr();  // 8078e454
-    void SetSoftWallInfo(SoftWallInfo* info);  // 8078e4e8
-    void UpdateKCL(const Vec3& position, KCLBitfield accepted, bool isBiggerThanDefaultScale, float radius);  // 8078e4f0
+    void SetSoftWallInfo(SoftWallInfo *info);  // 8078e4e8
+    void UpdateKCL(const Vec3 &position, KCLBitfield accepted, bool isBiggerThanDefaultScale, float radius);  // 8078e4f0
 
     /*
     Uses in game:
@@ -48,26 +48,26 @@ class CourseMgr {
 
     // checks if the player is on a KCL triangle with a flag matching those of r6 (it's a bitfield, nth bit = 2^n kcl flag)
     // Results (r8) gets filled with the flag hit if a match is found
-    bool IsColliding(const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted, CollisionInfo* info,
-                     KCLTypeHolder* ret, u32 initialTime, float radius);  // 8078f500
-    bool IsCollidingNoTerrainInfo(const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted, CollisionInfo* info,
-                                  KCLTypeHolder* ret, u32 initialTime, float radius);  // 807901f0
-    bool IsCollidingNoTerrainInfoNoTriangleCheck(const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted, CollisionInfo* info,
-                                                 KCLTypeHolder* ret, u32 initialTime, float radius);  // 8078f140
-    bool IsCollidingNoTriangleCheck(const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted, CollisionInfo* info,
-                                    KCLTypeHolder* ret, u32 initialTime, float radius);  // 8078f784
-    bool IsCollidingAddEntry(const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted, CollisionInfo* info,
-                             KCLTypeHolder* ret, u32 initialTime, float radius);  // 807907f8
-    bool IsCollidingAddEntryNoTerrainInfo(const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted, CollisionInfo* info,
-                                          KCLTypeHolder* ret, u32 initialTime, float radius);  // 807903bc
-    bool IsCollidingAddEntryNoTerrainInfoNoTriangleCheck(const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted, CollisionInfo* info,
-                                                         KCLTypeHolder* ret, u32 initialTime, float radius);  // 8078float0
+    bool IsColliding(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
+                     KCLTypeHolder *ret, u32 initialTime, float radius);  // 8078f500
+    bool IsCollidingNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
+                                  KCLTypeHolder *ret, u32 initialTime, float radius);  // 807901f0
+    bool IsCollidingNoTerrainInfoNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
+                                                 KCLTypeHolder *ret, u32 initialTime, float radius);  // 8078f140
+    bool IsCollidingNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
+                                    KCLTypeHolder *ret, u32 initialTime, float radius);  // 8078f784
+    bool IsCollidingAddEntry(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
+                             KCLTypeHolder *ret, u32 initialTime, float radius);  // 807907f8
+    bool IsCollidingAddEntryNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
+                                          KCLTypeHolder *ret, u32 initialTime, float radius);  // 807903bc
+    bool IsCollidingAddEntryNoTerrainInfoNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
+                                                         KCLTypeHolder *ret, u32 initialTime, float radius);  // 8078float0
 
-    ModelDirector* courseModel;  // 0x0 course MDL0
-    ModelDirector* vrcornModel;  // 0x4 vrcorn MDL0
+    ModelDirector *courseModel;  // 0x0 course MDL0
+    ModelDirector *vrcornModel;  // 0x4 vrcorn MDL0
     nw4r::g3d::ResFile courseBRRES;  // 0x8 course_model.brres
     nw4r::g3d::ResFile vrcornBRRES;  // 0x10 vrcorn_model.brres
-    SoftWallInfo* info;  // 0x10
+    SoftWallInfo *info;  // 0x10
 
     static float modelScale;  // 808a4be0 ModelDirectors' ScnObj Mtx is set with a MakeS mtx using that float
     static u32 mhSetNamesMatCount;  // 809c2f40 12

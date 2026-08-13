@@ -13,7 +13,7 @@ class ObjBalloon {
 
 class RaceBalloonManager {
    public:
-    static RaceBalloonManager* sInstance;  // 809c4748
+    static RaceBalloonManager *sInstance;  // 809c4748
     static void CreateInstance();  // 808697bc
 
     void Add(int playerId, u32 teamId, u32 isInitial, int delay, u32 count, int interval);  // 80869df4

@@ -29,7 +29,7 @@ class FilterEffectMgr {  // https://imgur.com/SLNAest
     static void SetColor(ut::Color color);  // 8054d114
     void Update();  // 8054d814 inlined
     void Draw();  // 8054d908 inlined
-    FilterEffect** filters;  // 0x4 arr size screenCount
+    FilterEffect **filters;  // 0x4 arr size screenCount
     u32 screenCount;  // 0x8
 };  // 0xC
 
@@ -70,7 +70,7 @@ class CourseFilterEffectMgr {
     virtual ~CourseFilterEffectMgr();  // 8054e3c8 vtable 808b3e1c
     void Update();  // 8054e4e8 inlined
     void Draw();  // 8054e5dc inlined
-    CourseFilterEffect** filters;  // 0x4 arr size screenCount
+    CourseFilterEffect **filters;  // 0x4 arr size screenCount
     u32 screenCount;  // 0x8
 };  // 0xC
 

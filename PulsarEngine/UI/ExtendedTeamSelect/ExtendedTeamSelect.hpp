@@ -25,42 +25,42 @@ class ExtendedTeamSelect : public Pages::MenuInteractable {
 
     int GetActivePlayerBitfield() const override;
     int GetPlayerBitfield() const override;
-    ManipulatorManager& GetManipulatorManager() override;
-    UIControl* CreateExternalControl(u32 id) override;
-    UIControl* CreateControl(u32 id) override;
+    ManipulatorManager &GetManipulatorManager() override;
+    UIControl *CreateExternalControl(u32 id) override;
+    UIControl *CreateControl(u32 id) override;
 
     void OnBackPress(u32 hudSlotId);
     void OnFrontPress(u32 hudSlotId) {}
     void OnDisconnectClick(u32 hudSlotId) {}
 
-    void OnBackButtonClick(PushButton& button, u32 hudSlotId) {
+    void OnBackButtonClick(PushButton &button, u32 hudSlotId) {
         OnBackPress(hudSlotId);
     }
 
-    void OnStartRaceClick(PushButton& button, u32 hudSlotId);
-    void OnStartRaceSelect(PushButton& button, u32 hudSlotId) {}
+    void OnStartRaceClick(PushButton &button, u32 hudSlotId);
+    void OnStartRaceSelect(PushButton &button, u32 hudSlotId) {}
 
-    void OnArrowClick(PushButton& button, u32 hudSlotId);
-    void OnArrowSelect(PushButton& button, u32 hudSlotId) {}
+    void OnArrowClick(PushButton &button, u32 hudSlotId);
+    void OnArrowSelect(PushButton &button, u32 hudSlotId) {}
 
     void UpdatePlayerTeam(u32 idx, ExtendedTeamID team);
     void UpdatePlayerTeamByAID(u8 aid, u8 playerIdOnConsole, ExtendedTeamID team);
 
     static void RandomizeTeamColors();
     static void ResetTeamColors();
-    static void GetTeamColor(ExtendedTeamID team, u8& r, u8& g, u8& b);
+    static void GetTeamColor(ExtendedTeamID team, u8 &r, u8 &g, u8 &b);
 
    private:
     PtmfHolder_1A<ExtendedTeamSelect, void, u32> onFrontPressHandler;
-    PtmfHolder_1A<Page, void, Pages::Click&> onDisconnectClickHandler;
+    PtmfHolder_1A<Page, void, Pages::Click &> onDisconnectClickHandler;
 
-    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton&, u32> onBackClickHandler;
+    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton &, u32> onBackClickHandler;
 
-    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton&, u32> onStartRaceClickHandler;
-    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton&, u32> onStartRaceSelectHandler;
+    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton &, u32> onStartRaceClickHandler;
+    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton &, u32> onStartRaceSelectHandler;
 
-    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton&, u32> onArrowClickHandler;
-    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton&, u32> onArrowSelectHandler;
+    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton &, u32> onArrowClickHandler;
+    PtmfHolder_2A<ExtendedTeamSelect, void, PushButton &, u32> onArrowSelectHandler;
 
     enum InternalControls {
         INSTRUCTION_TEXT,
@@ -98,15 +98,15 @@ class ExtendedTeamSelect : public Pages::MenuInteractable {
     PushButton startRaceButton;
     LayoutUIControl teamPlayerControl[12];
     PushButton teamPlayerArrows[12];
-    MiiGroup* miiGroup;
-    ExtendedTeamManager* manager;
+    MiiGroup *miiGroup;
+    ExtendedTeamManager *manager;
 
     bool shouldDisconnect;
     bool isHost;
     u32 playerCount;
 
    public:
-    static const void ChangeVRButtonColors(LayoutUIControl& button, ExtendedTeamID team);
+    static const void ChangeVRButtonColors(LayoutUIControl &button, ExtendedTeamID team);
 };
 
 }  // namespace UI

@@ -21,10 +21,10 @@ class Mgr {
 
     void InitForRace();
     void ResetRound();
-    void OnLapComplete(u8 playerId, RaceinfoPlayer& player);
+    void OnLapComplete(u8 playerId, RaceinfoPlayer &player);
     void UpdateFrame();
     void ApplyRemoteEvent(u8 seq, u8 eliminatedId, u8 roundIndex, u8 activeCount);
-    void ApplyRemoteBatch(u8 seq, u8 roundIndex, u8 activeCount, const u8* elimIds, u8 elimCount, bool noRoundAdvance);
+    void ApplyRemoteBatch(u8 seq, u8 roundIndex, u8 activeCount, const u8 *elimIds, u8 elimCount, bool noRoundAdvance);
 
     bool IsActive(u8 playerId) const { return playerId < 12 && this->active[playerId]; }
     u8 GetActiveCount() const { return this->activeCount; }
@@ -43,7 +43,7 @@ class Mgr {
 
     void SetKoPerRace(u8 value);
     u8 GetKoPerRace() const;
-    static u8 BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8* outPlan, u8 capacity);
+    static u8 BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8 *outPlan, u8 capacity);
 
     void ClearPendingEvent();
     void ReweightItemProbabilitiesNow();
@@ -58,29 +58,29 @@ class Mgr {
     void ConcludeRace(u8 winnerId);
     void FinishOfflineAtCurrentStandings();
     void BroadcastEvent(u8 playerId, u8 concludedRound);
-    void BroadcastBatch(const u8* elimIds, u8 elimCount, u8 concludedRound);
+    void BroadcastBatch(const u8 *elimIds, u8 elimCount, u8 concludedRound);
     void UpdateActivePlayerCounts();
     void RecordEliminationForDisplay(u8 playerId, u8 concludedRound);
     void ResetEliminationDisplay();
     bool IsFriendRoomOnline() const;
     void TickEliminationDisplay();
-    void EnsureRaceInitialized(Raceinfo& raceinfo);
-    void HostMonitorDisconnects(RKNet::Controller& controller, const RKNet::ControllerSub& sub);
-    void UpdateLapProgress(Raceinfo& raceinfo);
-    void UpdateSpectatorInputs(const Raceinfo& raceinfo);
-    void MaintainSpectatorView(const Raceinfo& raceinfo);
+    void EnsureRaceInitialized(Raceinfo &raceinfo);
+    void HostMonitorDisconnects(RKNet::Controller &controller, const RKNet::ControllerSub &sub);
+    void UpdateLapProgress(Raceinfo &raceinfo);
+    void UpdateSpectatorInputs(const Raceinfo &raceinfo);
+    void MaintainSpectatorView(const Raceinfo &raceinfo);
     void ProcessPendingItemReweight();
-    void HostDistributeEvents(RKNet::Controller& controller, const RKNet::ControllerSub& sub);
-    void ClientConsumeHostEvents(RKNet::Controller& controller, const RKNet::ControllerSub& sub);
-    u8 SelectEliminationCandidates(u8 toEliminate, u8* eliminatedList) const;
-    bool HasCandidate(const u8* list, u8 count, u8 playerId) const;
+    void HostDistributeEvents(RKNet::Controller &controller, const RKNet::ControllerSub &sub);
+    void ClientConsumeHostEvents(RKNet::Controller &controller, const RKNet::ControllerSub &sub);
+    u8 SelectEliminationCandidates(u8 toEliminate, u8 *eliminatedList) const;
+    bool HasCandidate(const u8 *list, u8 count, u8 playerId) const;
     u8 AdvanceSequence();
     void PreparePendingEvent(u8 concludedRound, u8 activeCount);
-    void InitializeSpectateView(const Raceinfo& raceinfo);
-    void EnsureSpectateTargetIsActive(const Raceinfo& raceinfo);
-    u8 BuildActiveSpectateOrder(const Raceinfo& raceinfo, u8* outOrder) const;
-    u8 FindNextActiveSpectatePlayer(const Raceinfo& raceinfo, u8 current, bool forward) const;
-    u8 GetLeaderPlayerId(const Raceinfo& raceinfo) const;
+    void InitializeSpectateView(const Raceinfo &raceinfo);
+    void EnsureSpectateTargetIsActive(const Raceinfo &raceinfo);
+    u8 BuildActiveSpectateOrder(const Raceinfo &raceinfo, u8 *outOrder) const;
+    u8 FindNextActiveSpectatePlayer(const Raceinfo &raceinfo, u8 current, bool forward) const;
+    u8 GetLeaderPlayerId(const Raceinfo &raceinfo) const;
     bool FocusCameraOnPlayer(u8 playerId) const;
 
     u8 koPerRaceSetting;

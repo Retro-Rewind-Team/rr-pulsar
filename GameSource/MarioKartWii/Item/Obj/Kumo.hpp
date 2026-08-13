@@ -6,7 +6,7 @@
 namespace Item {
 class ObjKumo : public ObjMiddle {  // TC
    public:
-    static Obj** CreateArray(u32 count);  // 807af140
+    static Obj **CreateArray(u32 count);  // 807af140
     void InitSelf() override;  // 0x8 807af534 vtable 808d2480
     void UpdateModelPosition() override;  // 0x10 807af39c
     void SpawnModel() override;  // 0x18 807af200

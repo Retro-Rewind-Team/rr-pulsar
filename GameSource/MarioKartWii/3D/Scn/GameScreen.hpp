@@ -19,12 +19,12 @@ class GameScreen : public EGG::Screen {
     void Set16_9AspectRatio();  // 80566bb8 sets width and height to 608/456
     void SetAndLoadOrthoProj(u32 r4);  // 80565da0
 
-    bool GetViewToScreen(Vec3* screenPos, const Vec3& viewPos) const;  // 80566fc0
-    void GetAbsoluteToScreen(Vec3* screenPos, const Vec3& absolutePos) const;  // 80566fc4
-    void GetAbsoluteToView(Vec3* viewPos, const Vec3& absolutePos) const;  // 80566f6c
+    bool GetViewToScreen(Vec3 *screenPos, const Vec3 &viewPos) const;  // 80566fc0
+    void GetAbsoluteToScreen(Vec3 *screenPos, const Vec3 &absolutePos) const;  // 80566fc4
+    void GetAbsoluteToView(Vec3 *viewPos, const Vec3 &absolutePos) const;  // 80566f6c
 
     u32 idx;  // 0x68
-    GameCamera* perspectiveCam;  // 0x6c
+    GameCamera *perspectiveCam;  // 0x6c
     EGG::OrthoCamera uiCamera;  // 0x70 used for UI, but essentially always kept at the default parameters
     float unknown_0x100[2];
     u32 r4ctorArg;  // 0x108
@@ -42,7 +42,7 @@ class ScreensHolder {
     static void Init();  // 8056483c
 
     u32 screenCount;
-    GameScreen** gameScreens;  // 0x8 one per screen
+    GameScreen **gameScreens;  // 0x8 one per screen
 };
 
 #endif

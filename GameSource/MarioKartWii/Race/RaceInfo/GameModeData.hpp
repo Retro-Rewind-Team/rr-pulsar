@@ -14,19 +14,19 @@ class GMData {  // Abstract
     virtual void UpdateLocalPlayers();  // 0xc 80535de8
     virtual void Update();  // 0x10 80535e84
     virtual void HandlePositionTracking();  // 0x14 805336d8
-    virtual const KMP::Holder<JGPT>* GetRespawnPoint(u8 playerId);  // 0x18 80535ef4
+    virtual const KMP::Holder<JGPT> *GetRespawnPoint(u8 playerId);  // 0x18 80535ef4
     virtual void Init();  // 0x1c 8053308c
     virtual void vf_0x20();  // 0x20 80533be8
     virtual bool vf_0x24(u32 playerThatHaveFinished, u32 playerCount);  // 0x24 80533c34
     virtual void vf_0x28();  // 0x28 805371a4
-    Raceinfo* raceinfo;
+    Raceinfo *raceinfo;
 };  // Total size 0x8
 
 class GMDataGP : public GMData {
-    GMDataGP(Raceinfo* raceinfo);  // 80532124 inlined
+    GMDataGP(Raceinfo *raceinfo);  // 80532124 inlined
     bool CanRaceEnd() override;  // 0x8 80535f28 vtable 808b344c
     void Update() override;  // 0x10 80535fe4
-    KRT* rawKRT;  // 0x8 ranktimeGP.krt
+    KRT *rawKRT;  // 0x8 ranktimeGP.krt
 };  // 0xc
 
 class GMDataVS : public GMData {
@@ -39,7 +39,7 @@ class GMDataTT : public GMData {  // also used
 
 class GMDataBattle : public GMData {
     void HandlePositionTracking() override;  // 0x14 80538418
-    KMP::Holder<JGPT>* GetRespawnPoint(u8 playerId) override;  // 0x18 805391e4
+    KMP::Holder<JGPT> *GetRespawnPoint(u8 playerId) override;  // 0x18 805391e4
     void Init() override;  // 0x1c 80538fec
     virtual void OnItemCollision(u8 playerIdSubject, u8 playerIdUser) = 0;  // 0x2c user = who used the item who collided
     virtual void OnKartCollision(u8 playerIdCollided, u8 playerIdCollider) = 0;  // 0x30
@@ -90,16 +90,16 @@ class GMDataOnlineVSPlayer {
 
 class RH2Packer {  // 808b33c0, 808b3390, 808b33a8, 808b3378, 808b3360, 808b33f0
     virtual ~RH2Packer();
-    virtual void Pack(RKNet::RACEHEADER2Packet* packet, u32 r5);
-    virtual int Unpack(RKNet::RACEHEADER2Packet* packet, u32 r5);
+    virtual void Pack(RKNet::RACEHEADER2Packet *packet, u32 r5);
+    virtual int Unpack(RKNet::RACEHEADER2Packet *packet, u32 r5);
     virtual int GetParamSize();
 };  // 0x8
 
 class RH2IntPacker : public RH2Packer {
    public:
     ~RH2IntPacker() override;
-    void Pack(RKNet::RACEHEADER2Packet* packet, u32 r5) override;
-    int Unpack(RKNet::RACEHEADER2Packet* packet, u32 r5) override;
+    void Pack(RKNet::RACEHEADER2Packet *packet, u32 r5) override;
+    int Unpack(RKNet::RACEHEADER2Packet *packet, u32 r5) override;
     int GetParamSize() override;
     int param;
 };
@@ -120,7 +120,7 @@ class GMDataOnlineVS : public GMData {
 
 class GMDataOnlineBalloonBattle : public GMDataBattle {
    public:
-    GMDataOnlineBalloonBattle(Raceinfo* raceinfo);  // 80539f88
+    GMDataOnlineBalloonBattle(Raceinfo *raceinfo);  // 80539f88
     bool CanRaceEnd() override;  // 0x8 8053d914 vtable 808b3570
     void Update() override;  // 0x10 8053bbf4
     void Init() override;  // 0x1c 80539c3c

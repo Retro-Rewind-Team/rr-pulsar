@@ -9,7 +9,7 @@ namespace Objects {
 // ObjectNum 0x16b = 363
 
 class MiiPoster : public ObjectCollidable {
-    explicit MiiPoster(const KMP::Holder<GOBJ>& gobjHolder);  // 807736c8
+    explicit MiiPoster(const KMP::Holder<GOBJ> &gobjHolder);  // 807736c8
     ~MiiPoster() override;  // 807738f0 vtable 808cf8f0
     void OnStart() override;  // 0xC 80773708
     u32 GetPropertiesBitfield() override;  // 0x2c 807738e8

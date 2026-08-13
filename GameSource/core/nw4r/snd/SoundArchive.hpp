@@ -30,7 +30,7 @@ class SoundArchive {
     struct FileInfo {
         u32 fileSize;
         u32 waveDataFileSize;
-        const char* extFilePath;
+        const char *extFilePath;
         u32 filePosCount;
     };
 
@@ -43,7 +43,7 @@ class SoundArchive {
 
     struct GroupInfo {
         u32 itemCount;
-        const char* extFilePath;
+        const char *extFilePath;
         u32 offset;
         u32 size;
         u32 waveDataOffset;
@@ -84,43 +84,43 @@ class SoundArchive {
     SoundArchive();  // 8009de00
     virtual ~SoundArchive();  // 8009de30 vtable 802749c0
     // File access
-    virtual const void* detail_GetFileAddress(FileId fileId) const = 0;  // 0xc
-    virtual const void* detail_GetWaveDataFileAddress(FileId fileId) const = 0;  // 0x10
+    virtual const void *detail_GetFileAddress(FileId fileId) const = 0;  // 0xc
+    virtual const void *detail_GetWaveDataFileAddress(FileId fileId) const = 0;  // 0x10
     virtual int detail_GetRequiredStreamBufferSize() const = 0;  // 0x14
 
-    virtual ut::FileStream* OpenStream(void* buffer, int size, u32 begin, u32 length) const = 0;  // 0x18
-    virtual ut::FileStream* OpenExtStream(void* buffer, int size, const char* extFilePath, u32 begin, u32 length) const = 0;  // 0x1c
+    virtual ut::FileStream *OpenStream(void *buffer, int size, u32 begin, u32 length) const = 0;  // 0x18
+    virtual ut::FileStream *OpenExtStream(void *buffer, int size, const char *extFilePath, u32 begin, u32 length) const = 0;  // 0x1c
 
     bool IsAvailable();  // 8009de70
     void Shutdown();  // 8009dea0
-    void Setup(detail::SoundArchiveFileReader* fileReader);  // 8009de90
+    void Setup(detail::SoundArchiveFileReader *fileReader);  // 8009de90
     u32 GetPlayerCount() const;  // 8009dec0
     u32 GetGroupCount() const;  // 8009ded0
-    const char* GetGroupLabelString(GroupId groupId) const;  // 8009dee0
-    const char* GetBankLabelString(BankId groupId) const;  // 8009def0
-    SoundId ConvertLabelStringToSoundId(const char* label) const;  // 8009df00
-    GroupId ConvertLabelStringToGroupId(const char* label) const;  // 8009df10
+    const char *GetGroupLabelString(GroupId groupId) const;  // 8009dee0
+    const char *GetBankLabelString(BankId groupId) const;  // 8009def0
+    SoundId ConvertLabelStringToSoundId(const char *label) const;  // 8009df00
+    GroupId ConvertLabelStringToGroupId(const char *label) const;  // 8009df10
 
     u32 GetSoundUserParam(SoundId soundId) const;  // 8009df20
     SoundType GetSoundType(SoundId soundId) const;  // 8009df30
 
-    bool ReadSoundInfo(SoundArchive::SoundId soundId, SoundArchive::SoundInfo* info) const;  // 8009df40
-    bool detail_ReadSeqSoundInfo(SoundArchive::SoundId soundId, SoundArchive::SeqSoundInfo* info) const;  // 8009df50
-    bool detail_ReadStrmSoundInfo(SoundArchive::SoundId soundId, SoundArchive::StrmSoundInfo* info) const;  // 8009df60
-    bool detail_ReadWaveSoundInfo(SoundArchive::SoundId soundId, SoundArchive::WaveSoundInfo* info) const;  // 8009df70
-    bool ReadPlayerInfo(SoundArchive::PlayerId playerId, SoundArchive::PlayerInfo* info) const;  // 8009df80
-    bool ReadSoundArchivePlayerInfo(SoundArchive::SoundArchivePlayerInfo* info) const;  // 8009df90
-    bool ReadSound3DParam(SoundArchive::SoundId soundId, SoundArchive::Sound3DParam* param) const;  // 8009dfa0
-    bool ReadBankInfo(SoundArchive::BankId bankId, SoundArchive::BankInfo* info) const;  // 8009dfb0
-    bool ReadGroupInfo(SoundArchive::GroupId groupId, SoundArchive::GroupInfo* info) const;  // 8009dfc0
-    bool detail_ReadGroupItemInfo(SoundArchive::GroupId groupId, u32 index, SoundArchive::GroupItemInfo* info) const;  // 8009dfd0
+    bool ReadSoundInfo(SoundArchive::SoundId soundId, SoundArchive::SoundInfo *info) const;  // 8009df40
+    bool detail_ReadSeqSoundInfo(SoundArchive::SoundId soundId, SoundArchive::SeqSoundInfo *info) const;  // 8009df50
+    bool detail_ReadStrmSoundInfo(SoundArchive::SoundId soundId, SoundArchive::StrmSoundInfo *info) const;  // 8009df60
+    bool detail_ReadWaveSoundInfo(SoundArchive::SoundId soundId, SoundArchive::WaveSoundInfo *info) const;  // 8009df70
+    bool ReadPlayerInfo(SoundArchive::PlayerId playerId, SoundArchive::PlayerInfo *info) const;  // 8009df80
+    bool ReadSoundArchivePlayerInfo(SoundArchive::SoundArchivePlayerInfo *info) const;  // 8009df90
+    bool ReadSound3DParam(SoundArchive::SoundId soundId, SoundArchive::Sound3DParam *param) const;  // 8009dfa0
+    bool ReadBankInfo(SoundArchive::BankId bankId, SoundArchive::BankInfo *info) const;  // 8009dfb0
+    bool ReadGroupInfo(SoundArchive::GroupId groupId, SoundArchive::GroupInfo *info) const;  // 8009dfc0
+    bool detail_ReadGroupItemInfo(SoundArchive::GroupId groupId, u32 index, SoundArchive::GroupItemInfo *info) const;  // 8009dfd0
     u32 detail_GetFileCount() const;  // 8009dfe0
-    bool detail_ReadFileInfo(SoundArchive::FileId fileId, SoundArchive::FileInfo* info) const;  // 8009ff0
-    bool detail_ReadFilePos(SoundArchive::FileId fileId, u32 index, SoundArchive::FilePos* info) const;  // 8009e000
-    u32 ConvertLabelStringToId(const void* stringTree, const char* str) const;  // 8009f740
-    ut::FileStream* detail_OpenFileWaveDataStream(FileId fileId, void* buffer, int size) const;  // 8009e240
+    bool detail_ReadFileInfo(SoundArchive::FileId fileId, SoundArchive::FileInfo *info) const;  // 8009ff0
+    bool detail_ReadFilePos(SoundArchive::FileId fileId, u32 index, SoundArchive::FilePos *info) const;  // 8009e000
+    u32 ConvertLabelStringToId(const void *stringTree, const char *str) const;  // 8009f740
+    ut::FileStream *detail_OpenFileWaveDataStream(FileId fileId, void *buffer, int size) const;  // 8009e240
 
-    detail::SoundArchiveFileReader* fileReader;
+    detail::SoundArchiveFileReader *fileReader;
     char extFileRoot[256];
 
 };  // total size 0x108
@@ -144,8 +144,8 @@ struct SoundArchive::StrmSoundInfo {  // https://wiki.tockdom.com/wiki/BRSAR_(Fi
 };  // total size 0x8
 
 struct SeqSoundInfo {
-    void* seqDataAddress;
-    char* startLocationLabel;
+    void *seqDataAddress;
+    char *startLocationLabel;
 };  // total size 0x8
 }  // namespace snd
 }  // namespace nw4r

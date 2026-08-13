@@ -56,7 +56,7 @@ struct LicenseFriends {
 };  // 0x35F0
 
 struct LicenseUnk5680 {  // the _X refers to the bitflag in RKPD
-    LicenseUnk5680(const LicenseUnk5680& other);  // 80547f98
+    LicenseUnk5680(const LicenseUnk5680 &other);  // 80547f98
     void Set(u8 _0, u8 _7, u8 _11);  // 80546660
     u8 Get_0();  // 80547e84
     u8 Get_7();  // 80547e8c
@@ -75,7 +75,7 @@ struct LicenseCompletion {
     // careful the relative bits are "inverted", bit 0 offset 0 is in fact dry bones (33.7, last bit of the 0x30 word)
     // AbsoluteBit: 40 means offset 0x1 bit 8, relative means relative to an offset
     // 40 absolute = 0x1 (40 / 32) offset, so the 2nd int, and 8 relativeBit
-    void GetOffsetAndRelativeBit(u32 absoluteBit, u32& u32Offset, u32& relativeBit) const;  // 805498e8
+    void GetOffsetAndRelativeBit(u32 absoluteBit, u32 &u32Offset, u32 &relativeBit) const;  // 805498e8
     void SetComplete(u32 absoluteBit);  // 805498fc
     void ResetComplete(u32 absoluteBit);  // 80549924
     bool IsCompleted(u32 absoluteBit) const;  // 8054994c
@@ -162,15 +162,15 @@ class LicenseMgr {
     bool IsInitialized() const;  // 80546fb4
 
     // Misc & Non-Const Getters
-    wchar_t* GetMiiName();  // 80545658
-    LicenseFriends& GetFriends();  // 80545854
-    LicenseCup& GetCup(u32 cc, u32 cupIdx);  // 80545934
-    LicenseLdbEntry& GetLdbEntry(u32 ldbPos, SaveCourseId saveId);  // 80545a00
-    LicenseUnkTimer& GetUnkTimer(u32 idx);  // 80545a94
-    LicenseLdbEntry* GetLdbEntry(u32 ldbPos, CourseId id);  // 80548e30
-    void OverwriteAndStoreLdbEntry(const LicenseLdbEntry& entry, u32 ldbPos, CourseId id);  // 80548e90
-    void StoreLdbEntry(const LicenseLdbEntry& entry, u32 ldbPos, CourseId id);  // 80548f84 moves every entry above down one pos
-    int GetGhostPosition(const Timer& ghostTimer, CourseId id) const;  // 805490f4
+    wchar_t *GetMiiName();  // 80545658
+    LicenseFriends &GetFriends();  // 80545854
+    LicenseCup &GetCup(u32 cc, u32 cupIdx);  // 80545934
+    LicenseLdbEntry &GetLdbEntry(u32 ldbPos, SaveCourseId saveId);  // 80545a00
+    LicenseUnkTimer &GetUnkTimer(u32 idx);  // 80545a94
+    LicenseLdbEntry *GetLdbEntry(u32 ldbPos, CourseId id);  // 80548e30
+    void OverwriteAndStoreLdbEntry(const LicenseLdbEntry &entry, u32 ldbPos, CourseId id);  // 80548e90
+    void StoreLdbEntry(const LicenseLdbEntry &entry, u32 ldbPos, CourseId id);  // 80548f84 moves every entry above down one pos
+    int GetGhostPosition(const Timer &ghostTimer, CourseId id) const;  // 805490f4
 
     int GetBestRank() const;  // 805491e4
     CharacterId GetFavouriteCharacter() const;  // 805493b0
@@ -255,16 +255,16 @@ class LicenseMgr {
     u8 padding3[2];  // 0x93ed
 
     // Setters
-    void SetRFLCreateID(const RFL::CreateID& src);  // 805456b0
-    void SetDWCAccUserData(const DWC::AccUserData& src);  // 80545798
-    void SetCompletion(const LicenseCompletion& src);  // 80545ad8
+    void SetRFLCreateID(const RFL::CreateID &src);  // 805456b0
+    void SetDWCAccUserData(const DWC::AccUserData &src);  // 80545798
+    void SetCompletion(const LicenseCompletion &src);  // 80545ad8
     void SetPBGhostBitfield(u32 bitfield);  // 80545b1c
     void SetDLGhostBitfield(u32 bitfield);  // 80545b44
     void SetRKPDEA_2(bool val);  // 80545b50
-    void SetStaffGhostStatus(const LicenseStaffGhostStatus& src, bool isExpert);  // 80545ba8
+    void SetStaffGhostStatus(const LicenseStaffGhostStatus &src, bool isExpert);  // 80545ba8
     void SetRKPD1BC_31(u8 val);  // 80545bc0
-    void SetVR(const Rating& src);  // 80545c04
-    void SetBR(const Rating& src);  // 80545c30
+    void SetVR(const Rating &src);  // 80545c04
+    void SetBR(const Rating &src);  // 80545c30
     void SetOfflineVSWins(u32 val, u32 licenseIdx);  // 80545c40
     void SetOfflineVSLosses(u32 val, u32 licenseIdx);  // 80545c78
     void SetOfflineBattleWins(u32 val, u32 licenseIdx);  // 80545cb0
@@ -301,87 +301,87 @@ class LicenseMgr {
     void SetCourseChoice(u32 ruleIdx, u32 courseChoice);  // 8054641c
     void SetItemsType(u32 ruleIdx, u32 courseChoice);  // 80546454
     void SetTotalRaceCount(u32 ruleIdx, u32 courseChoice);  // 8054648c
-    LicenseUnkTimer2& SetUnkTimer2(const LicenseUnkTimer2& src, u32 idx);  // 8054652c
-    void SetRKPD_568c(const Timer& srcTimer, u32& src);  // 805465cc
-    void SetRKPD_5680(const LicenseUnk5680& src);  // 805466b4
+    LicenseUnkTimer2 &SetUnkTimer2(const LicenseUnkTimer2 &src, u32 idx);  // 8054652c
+    void SetRKPD_568c(const Timer &srcTimer, u32 &src);  // 805465cc
+    void SetRKPD_5680(const LicenseUnk5680 &src);  // 805466b4
     void SetRKPD_5688(u32 idx, u8 val);  // 80546734
-    void SetRKPD_568c(const u8& src);  // 8054677c
+    void SetRKPD_568c(const u8 &src);  // 8054677c
     void SetRKPD_5688_31(u8 val);  // 805467a8
 
     // Readers
-    static void ReadMiiName(const Binary& raw, wchar_t* dest, u32 licenseIdx);  // 805455e0
-    static void ReadRFLCreateID(const Binary& raw, RFL::CreateID& dest, u32 licenseIdx);  // 8054565c
-    static void ReadDWCAccUserData(const Binary& raw, DWC::AccUserData& dest, u32 licenseIdx);  // 805456f4
-    static void ReadFriendData(const Binary& raw, LicenseFriends& dest, u32 licenseIdx);  // 80545830
-    static void ReadCup(const Binary& raw, LicenseCup& dest, u32 licenseIdx, u32 cc, u32 cupIdx);  // 8054585c
-    static void ReadLdbEntry(const Binary& raw, LicenseLdbEntry& dest, u32 licenseIdx, u32 ldbPos, SaveCourseId saveId);  // 8054594c
-    static void ReadUnkTimer(const Binary& raw, LicenseUnkTimer& dest, u32 licenseIdx, u32 idx);  // 80545a18
-    static void ReadCompletion(const Binary& raw, LicenseCompletion& dest, u32 licenseIdx);  // 80545aa4
-    static void ReadPBGhostBitfield(u32& dest, u32 licenseIdx);  // 80545b00
-    static void ReadDLGhostBitfield(u32& dest, u32 licenseIdx);  // 80545b28
+    static void ReadMiiName(const Binary &raw, wchar_t *dest, u32 licenseIdx);  // 805455e0
+    static void ReadRFLCreateID(const Binary &raw, RFL::CreateID &dest, u32 licenseIdx);  // 8054565c
+    static void ReadDWCAccUserData(const Binary &raw, DWC::AccUserData &dest, u32 licenseIdx);  // 805456f4
+    static void ReadFriendData(const Binary &raw, LicenseFriends &dest, u32 licenseIdx);  // 80545830
+    static void ReadCup(const Binary &raw, LicenseCup &dest, u32 licenseIdx, u32 cc, u32 cupIdx);  // 8054585c
+    static void ReadLdbEntry(const Binary &raw, LicenseLdbEntry &dest, u32 licenseIdx, u32 ldbPos, SaveCourseId saveId);  // 8054594c
+    static void ReadUnkTimer(const Binary &raw, LicenseUnkTimer &dest, u32 licenseIdx, u32 idx);  // 80545a18
+    static void ReadCompletion(const Binary &raw, LicenseCompletion &dest, u32 licenseIdx);  // 80545aa4
+    static void ReadPBGhostBitfield(u32 &dest, u32 licenseIdx);  // 80545b00
+    static void ReadDLGhostBitfield(u32 &dest, u32 licenseIdx);  // 80545b28
     static bool ReadRKPD_EA_2(u32 licenseIdx);  // 80545b5c
-    static void ReadStaffGhostStatus(const Binary& raw, LicenseStaffGhostStatus& dest, u32 licenseIdx, bool isExpert);  // 80545b84
-    static u8 ReadRKPD1BC_31(const Binary& raw, u32 licenseIdx);  // 80545bcc
-    static void ReadVR(const Binary& raw, Rating& dest, u32 licenseIdx);  // 80545be8
-    static void ReadBR(const Binary& raw, Rating& dest, u32 licenseIdx);  // 80545c14
-    static u32 ReadOfflineVSWins(const Binary& raw, u32 licenseIdx);  // 80545c60
-    static u32 ReadOfflineVSLosses(const Binary& raw, u32 licenseIdx);  // 80545c98
-    static u32 ReadOfflineBattleWins(const Binary& raw, u32 licenseIdx);  // 80545cd0
-    static u32 ReadOfflineBattleLosses(const Binary& raw, u32 licenseIdx);  // 80545d08
-    static u32 ReadWFCVSWins(const Binary& raw, u32 licenseIdx);  // 80545d40
-    static u32 ReadWFCVSLosses(const Binary& raw, u32 licenseIdx);  // 80545d78
-    static u32 ReadWFCBattleWins(const Binary& raw, u32 licenseIdx);  // 80545db0
-    static u32 ReadWFCBattleLosses(const Binary& raw, u32 licenseIdx);  // 80545de8
-    static u32 ReadGhostRacesWins(const Binary& raw, u32 licenseIdx);  // 80545e20
-    static u32 ReadGhostRacesLosses(const Binary& raw, u32 licenseIdx);  // 80545e58
-    static u32 ReadTotalRacePlayed(const Binary& raw, u32 licenseIdx);  // 80545e90
-    static u32 ReadTotalBattlePlayed(const Binary& raw, u32 licenseIdx);  // 80545ec8
-    static u32 ReadRacesOnWheel(const Binary& raw, u32 licenseIdx);  // 80545f00
-    static u32 ReadBattlesOnWheel(const Binary& raw, u32 licenseIdx);  // 80545f38
-    static float ReadDistanceTravelled(const Binary& raw, u32 licenseIdx);  // 80545f50
-    static u32 ReadGhostDataChallengesSent(const Binary& raw, u32 licenseIdx);  // 80545fc4
-    static u32 ReadGhostDataChallengesReceived(const Binary& raw, u32 licenseIdx);  // 80545ffc
-    static u32 ReadItemHitsDelivered(const Binary& raw, u32 licenseIdx);  // 80546034
-    static u32 ReadItemHitsReceived(const Binary& raw, u32 licenseIdx);  // 8054606c
-    static u32 ReadTricksPerformed(const Binary& raw, u32 licenseIdx);  // 805460a4
-    static u32 ReadTimes1stPlaceAchieved(const Binary& raw, u32 licenseIdx);  // 805460dc
-    static float ReadDistancetravelledwhilein1stplace(const Binary& raw, u32 licenseIdx);  // 805460f4
-    static float ReadDistancetravelledonVSRaces(const Binary& raw, u32 licenseIdx);  // 80546148
-    static u16 ReadCompetitionsEntered(const Binary& raw, u32 licenseIdx);  // 805461bc
-    static u16 ReadRacesOnCharacter(const Binary& raw, CharacterId id, u32 licenseIdx);  // 805461fc
-    static u16 ReadRacesOnKart(const Binary& raw, KartId id, u32 licenseIdx);  // 80546244
-    static u16 ReadRacesOnTrack(const Binary& raw, CourseId id, u32 licenseIdx);  // 8054628c
-    static u16 ReadRacesOnBattleArena(const Binary& raw, CourseId id, u32 licenseIdx);  // 805462d4
-    static u32 ReadUnk55f0(const Binary& raw, u32 licenseIdx, u32 idx1, u32 idx2);  // 80546310
-    static u32 ReadDefaultDrift(const Binary& raw, u32 licenseIdx);  // 80546358
-    static u32 ReadCC(const Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80546388
-    static u32 ReadCPUDifficulty(const Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 805463c0
-    static void ReadVehicleType(const Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 805463f8
-    static void ReadCourseChoice(const Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80546430
-    static void ReadItemsType(const Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80546468
-    static void ReadTotalRaceCount(const Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 805464a0
-    static void ReadUnkTimer2(const Binary& raw, LicenseUnkTimer& dest, u32 licenseIdx, u32 idx);  // 805464c4
-    static void ReadRKPD_1BC(const Binary& raw, Timer& destTimer, u32& dest, u32 licenseIdx);  // 8054656c
-    static void ReadRKPD_5680(const Binary& raw, u8& _5680, u8& _5680_7, u8& _5680_11, u32 licenseIdx);  // 805465f8
-    static u8 ReadRKPD_5688(const Binary& raw, u32 idx, u32 licenseIdx);  // 805466dc
-    static void ReadRKPD_568c(const Binary& raw, u8& dest, u32 licenseIdx);  // 80546744
-    static u8 ReadRKPD_5688_31(const Binary& raw, u32 licenseIdx);  // 805467b4
+    static void ReadStaffGhostStatus(const Binary &raw, LicenseStaffGhostStatus &dest, u32 licenseIdx, bool isExpert);  // 80545b84
+    static u8 ReadRKPD1BC_31(const Binary &raw, u32 licenseIdx);  // 80545bcc
+    static void ReadVR(const Binary &raw, Rating &dest, u32 licenseIdx);  // 80545be8
+    static void ReadBR(const Binary &raw, Rating &dest, u32 licenseIdx);  // 80545c14
+    static u32 ReadOfflineVSWins(const Binary &raw, u32 licenseIdx);  // 80545c60
+    static u32 ReadOfflineVSLosses(const Binary &raw, u32 licenseIdx);  // 80545c98
+    static u32 ReadOfflineBattleWins(const Binary &raw, u32 licenseIdx);  // 80545cd0
+    static u32 ReadOfflineBattleLosses(const Binary &raw, u32 licenseIdx);  // 80545d08
+    static u32 ReadWFCVSWins(const Binary &raw, u32 licenseIdx);  // 80545d40
+    static u32 ReadWFCVSLosses(const Binary &raw, u32 licenseIdx);  // 80545d78
+    static u32 ReadWFCBattleWins(const Binary &raw, u32 licenseIdx);  // 80545db0
+    static u32 ReadWFCBattleLosses(const Binary &raw, u32 licenseIdx);  // 80545de8
+    static u32 ReadGhostRacesWins(const Binary &raw, u32 licenseIdx);  // 80545e20
+    static u32 ReadGhostRacesLosses(const Binary &raw, u32 licenseIdx);  // 80545e58
+    static u32 ReadTotalRacePlayed(const Binary &raw, u32 licenseIdx);  // 80545e90
+    static u32 ReadTotalBattlePlayed(const Binary &raw, u32 licenseIdx);  // 80545ec8
+    static u32 ReadRacesOnWheel(const Binary &raw, u32 licenseIdx);  // 80545f00
+    static u32 ReadBattlesOnWheel(const Binary &raw, u32 licenseIdx);  // 80545f38
+    static float ReadDistanceTravelled(const Binary &raw, u32 licenseIdx);  // 80545f50
+    static u32 ReadGhostDataChallengesSent(const Binary &raw, u32 licenseIdx);  // 80545fc4
+    static u32 ReadGhostDataChallengesReceived(const Binary &raw, u32 licenseIdx);  // 80545ffc
+    static u32 ReadItemHitsDelivered(const Binary &raw, u32 licenseIdx);  // 80546034
+    static u32 ReadItemHitsReceived(const Binary &raw, u32 licenseIdx);  // 8054606c
+    static u32 ReadTricksPerformed(const Binary &raw, u32 licenseIdx);  // 805460a4
+    static u32 ReadTimes1stPlaceAchieved(const Binary &raw, u32 licenseIdx);  // 805460dc
+    static float ReadDistancetravelledwhilein1stplace(const Binary &raw, u32 licenseIdx);  // 805460f4
+    static float ReadDistancetravelledonVSRaces(const Binary &raw, u32 licenseIdx);  // 80546148
+    static u16 ReadCompetitionsEntered(const Binary &raw, u32 licenseIdx);  // 805461bc
+    static u16 ReadRacesOnCharacter(const Binary &raw, CharacterId id, u32 licenseIdx);  // 805461fc
+    static u16 ReadRacesOnKart(const Binary &raw, KartId id, u32 licenseIdx);  // 80546244
+    static u16 ReadRacesOnTrack(const Binary &raw, CourseId id, u32 licenseIdx);  // 8054628c
+    static u16 ReadRacesOnBattleArena(const Binary &raw, CourseId id, u32 licenseIdx);  // 805462d4
+    static u32 ReadUnk55f0(const Binary &raw, u32 licenseIdx, u32 idx1, u32 idx2);  // 80546310
+    static u32 ReadDefaultDrift(const Binary &raw, u32 licenseIdx);  // 80546358
+    static u32 ReadCC(const Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80546388
+    static u32 ReadCPUDifficulty(const Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 805463c0
+    static void ReadVehicleType(const Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 805463f8
+    static void ReadCourseChoice(const Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80546430
+    static void ReadItemsType(const Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80546468
+    static void ReadTotalRaceCount(const Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 805464a0
+    static void ReadUnkTimer2(const Binary &raw, LicenseUnkTimer &dest, u32 licenseIdx, u32 idx);  // 805464c4
+    static void ReadRKPD_1BC(const Binary &raw, Timer &destTimer, u32 &dest, u32 licenseIdx);  // 8054656c
+    static void ReadRKPD_5680(const Binary &raw, u8 &_5680, u8 &_5680_7, u8 &_5680_11, u32 licenseIdx);  // 805465f8
+    static u8 ReadRKPD_5688(const Binary &raw, u32 idx, u32 licenseIdx);  // 805466dc
+    static void ReadRKPD_568c(const Binary &raw, u8 &dest, u32 licenseIdx);  // 80546744
+    static u8 ReadRKPD_5688_31(const Binary &raw, u32 licenseIdx);  // 805467b4
 
     // Const Getters
-    const wchar_t* GetMiiName() const;  // 80546fdc
-    const RFL::CreateID& GetRFLCreateID() const;  // 80547034
-    const DWC::AccUserData& GetDWCAccUserData() const;  // 805470d0
-    const LicenseFriends& GetFriends() const;  // 805470fc
-    const LicenseCup& GetCup(u32 cc, u32 cupIdx) const;  // 80547128
-    const LicenseLdbEntry& GetLdbEntry(u32 ldbPos, SaveCourseId saveId) const;  // 8054726c
-    const LicenseUnkTimer& GetUnkTimer(u32 idx) const;  // 80547374
-    const LicenseCompletion& GetCompletion() const;  // 805473b8
+    const wchar_t *GetMiiName() const;  // 80546fdc
+    const RFL::CreateID &GetRFLCreateID() const;  // 80547034
+    const DWC::AccUserData &GetDWCAccUserData() const;  // 805470d0
+    const LicenseFriends &GetFriends() const;  // 805470fc
+    const LicenseCup &GetCup(u32 cc, u32 cupIdx) const;  // 80547128
+    const LicenseLdbEntry &GetLdbEntry(u32 ldbPos, SaveCourseId saveId) const;  // 8054726c
+    const LicenseUnkTimer &GetUnkTimer(u32 idx) const;  // 80547374
+    const LicenseCompletion &GetCompletion() const;  // 805473b8
     u32 GetPBGhostBitfield() const;  // 805473dc
     u32 GetDLGhostBitfield() const;  // 80547400
     bool GetRKPD_EA_2() const;  // 8054742c
     u8 GetRKPD1BC_31() const;  // 80547458
-    const Rating& GetVR() const;  // 80547480
-    const Rating& GetBR() const;  // 805474a8
+    const Rating &GetVR() const;  // 80547480
+    const Rating &GetBR() const;  // 805474a8
     u32 GetOfflineVSWins() const;  // 805474cc
     u32 GetOfflineVSLosses() const;  // 805474f0
     u32 GetOfflineBattleWins() const;  // 80547514
@@ -410,7 +410,7 @@ class LicenseMgr {
     u16 GetRacesOnKart(KartId id) const;  // 8054799c
     u16 GetRacesOnTrack(CourseId id) const;  // 805479e8
     u32 GetUnk55f0() const;  // 80547a64
-    const LicenseStaffGhostStatus& GetStaffGhostStatus(bool isExpert);  // 80547aa4
+    const LicenseStaffGhostStatus &GetStaffGhostStatus(bool isExpert);  // 80547aa4
     u32 GetDefaultDrift() const;  // 80547ad8
     u32 GetCC(u32 ruleIdx) const;  // 80547b0c
     u32 GetCPUDifficulty(u32 ruleIdx) const;  // 80547b48
@@ -418,71 +418,71 @@ class LicenseMgr {
     void GetCourseChoice(u32 ruleIdx) const;  // 80547bc0
     void GetItemsType(u32 ruleIdx) const;  // 80547bfc
     void GetTotalRaceCount(u32 ruleIdx) const;  // 80547c38
-    const LicenseUnkTimer2& GetUnkTimer2(u32 idx) const;  // 80547d1c
-    void GetRKPD_1BC(Timer& destTimer, u32& dest) const;  // 80547d30
-    const LicenseUnk5680& GetRKPD_5680() const;  // 80547e1c
+    const LicenseUnkTimer2 &GetUnkTimer2(u32 idx) const;  // 80547d1c
+    void GetRKPD_1BC(Timer &destTimer, u32 &dest) const;  // 80547d30
+    const LicenseUnk5680 &GetRKPD_5680() const;  // 80547e1c
     u8 GetRKPD_5688(u8 idx) const;  // 80547e9c7e9c
-    const u8& GetRKPD_568c() const;  // 80547f40
+    const u8 &GetRKPD_568c() const;  // 80547f40
     u8 GetRKPD_5688_31() const;  // 80547f6c
 
     // Writers
-    static void WriteMiiName(Binary& raw, wchar_t* src, u32 licenseIdx);  // 80546fc0
-    static void WriteRFLCreateID(Binary& raw, const RFL::CreateID& src, u32 licenseIdx);  // 80546fe0
-    static void WriteDWCAccUserData(Binary& raw, const DWC::AccUserData& src, u32 licenseIdx);  // 8054703c
-    static void WriteFriendData(Binary& raw, const LicenseFriends& src, u32 licenseIdx);  // 805470dc
-    static void WriteCup(Binary& raw, const LicenseCup& src, u32 licenseIdx, u32 cc, u32 cupIdx);  // 80547104
-    static void WriteLdbEntry(Binary& raw, const LicenseLdbEntry& src, u32 licenseIdx, u32 ldbPos, SaveCourseId saveId);  // 80547140
-    static void WriteUnkTimer(Binary& raw, const LicenseUnkTimer& src, u32 licenseIdx, u32 idx);  // 80547284
-    static void WriteCompletion(Binary& raw, const LicenseCompletion& src, u32 licenseIdx);  // 80547384
+    static void WriteMiiName(Binary &raw, wchar_t *src, u32 licenseIdx);  // 80546fc0
+    static void WriteRFLCreateID(Binary &raw, const RFL::CreateID &src, u32 licenseIdx);  // 80546fe0
+    static void WriteDWCAccUserData(Binary &raw, const DWC::AccUserData &src, u32 licenseIdx);  // 8054703c
+    static void WriteFriendData(Binary &raw, const LicenseFriends &src, u32 licenseIdx);  // 805470dc
+    static void WriteCup(Binary &raw, const LicenseCup &src, u32 licenseIdx, u32 cc, u32 cupIdx);  // 80547104
+    static void WriteLdbEntry(Binary &raw, const LicenseLdbEntry &src, u32 licenseIdx, u32 ldbPos, SaveCourseId saveId);  // 80547140
+    static void WriteUnkTimer(Binary &raw, const LicenseUnkTimer &src, u32 licenseIdx, u32 idx);  // 80547284
+    static void WriteCompletion(Binary &raw, const LicenseCompletion &src, u32 licenseIdx);  // 80547384
     static void WritePBGhostBitfield(u32 src, u32 licenseIdx);  // 805473c4
     static void WriteDLGhostBitfield(u32 src, u32 licenseIdx);  // 805473e8
     static bool WriteRKPD_EA_2(bool val, u32 licenseIdx);  // 8054740c
     static void WriteRKPD1BC_31(u8 val, u32 licenseIdx);  // 80547438
-    static void WriteVR(Binary& raw, const Rating& src, u32 licenseIdx);  // 80547464
-    static void WriteBR(Binary& raw, const Rating& src, u32 licenseIdx);  // 8054748c
-    static void WriteOfflineVSWins(Binary& raw, u32 val, u32 licenseIdx);  // 805474b4
-    static void WriteOfflineVSLosses(Binary& raw, u32 val, u32 licenseIdx);  // 805474d8
-    static void WriteOfflineBattleWins(Binary& raw, u32 val, u32 licenseIdx);  // 805474fc
-    static void WriteOfflineBattleLosses(Binary& raw, u32 val, u32 licenseIdx);  // 80547520
-    static void WriteWFCVSWins(Binary& raw, u32 val, u32 licenseIdx);  // 80547544
-    static void WriteWFCVSLosses(Binary& raw, u32 val, u32 licenseIdx);  // 80547568
-    static void WriteWFCBattleWins(Binary& raw, u32 val, u32 licenseIdx);  // 8054758c
-    static void WriteWFCBattleLosses(Binary& raw, u32 val, u32 licenseIdx);  // 805475b0
-    static void WriteGhostRacesWins(Binary& raw, u32 val, u32 licenseIdx);  // 805475d4
-    static void WriteGhostRacesLosses(Binary& raw, u32 val, u32 licenseIdx);  // 805475f8
-    static void WriteTotalRacePlayed(Binary& raw, u32 val, u32 licenseIdx);  // 8054761c
-    static void WriteTotalBattlePlayed(Binary& raw, u32 val, u32 licenseIdx);  // 80547654
-    static void WriteRacesOnWheel(Binary& raw, u32 val, u32 licenseIdx);  // 8054766c
-    static void WriteBattlesOnWheel(Binary& raw, u32 val, u32 licenseIdx);  // 805476c4
-    static void WriteDistanceTravelled(Binary& raw, u32 licenseIdx, float val);  // 805476fc
-    static void WriteGhostDataChallengesSent(Binary& raw, u32 val, u32 licenseIdx);  // 80547734
-    static void WriteGhostDataChallengesReceived(Binary& raw, u32 val, u32 licenseIdx);  // 8054776c
-    static void WriteItemHitsDelivered(Binary& raw, u32 val, u32 licenseIdx);  // 805477a0
-    static void WriteItemHitsReceived(Binary& raw, u32 val, u32 licenseIdx);  // 805477dc
-    static void WriteTricksPerformed(Binary& raw, u32 val, u32 licenseIdx);  // 80547814
-    static void WriteTimes1stPlaceAchieved(Binary& raw, u32 val, u32 licenseIdx);  // 8054784c
-    static void WriteDistancetravelledwhilein1stplace(Binary& raw, u32 licenseIdx, float val);  // 80547884
-    static void WriteDistancetravelledonVSRaces(Binary& raw, u32 licenseIdx);  // 805478bc
-    static void WriteCompetitionsEntered(Binary& raw, u16 val, u32 licenseIdx);  // 805478f4
-    static void WriteRacesOnCharacter(Binary& raw, CharacterId id, u32 licenseIdx);  // 80547930
-    static void WriteRacesOnKart(Binary& raw, KartId id, u32 licenseIdx);  // 8054797c
-    static void WriteRacesOnTrack(Binary& raw, CourseId id, u32 licenseIdx);  // 805479c8
-    static void WriteRacesOnBattleArena(Binary& raw, CourseId id, u32 licenseIdx);  // 80547a14
-    static void WriteUnk55f0(Binary& raw, u32 licenseIdx, u32 val, u32 idx2);  // 80547a34
-    static void WriteStaffGhostStatus(Binary& raw, const LicenseStaffGhostStatus& src, u32 licenseIdx, bool isExpert);  // 80547a80
-    static void WriteDefaultDrift(Binary& raw, u32 licenseIdx);  // 80547ab8
-    static void WriteCC(Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80547ae4
-    static void WriteCPUDifficulty(Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80547b20
-    static void WriteVehicleType(Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80547b5c
-    static void WriteCourseChoice(Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80547b98
-    static void WriteItemsType(Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80547bd0
-    static void WriteTotalRaceCount(Binary& raw, u32 ruleIdx, u32 licenseIdx);  // 80547c10
-    static void WriteUnkTimer2(Binary& raw, const LicenseUnkTimer& src, u32 licenseIdx, u32 idx);  // 80547c4c
-    static void WriteRKPD_1BC(Binary& raw, const Timer& srcTimer, const u32& src, u32 licenseIdx);  // 80547d74
-    static void WriteRKPD_5680(Binary& raw, u8& _5680, u8& _5680_7, u8& _5680_11, u32 licenseIdx);  // 80547e28
-    static void WriteRKPD_5688(Binary& raw, u32 idx, u32 licenseIdx);  // 80547eac
-    static void WriteRKPD_568c(Binary& raw, u8& src, u32 licenseIdx);  // 80547f08
-    static void WriteRKPD_5688_31(Binary& raw, u32 licenseIdx);  // 80547f4c
+    static void WriteVR(Binary &raw, const Rating &src, u32 licenseIdx);  // 80547464
+    static void WriteBR(Binary &raw, const Rating &src, u32 licenseIdx);  // 8054748c
+    static void WriteOfflineVSWins(Binary &raw, u32 val, u32 licenseIdx);  // 805474b4
+    static void WriteOfflineVSLosses(Binary &raw, u32 val, u32 licenseIdx);  // 805474d8
+    static void WriteOfflineBattleWins(Binary &raw, u32 val, u32 licenseIdx);  // 805474fc
+    static void WriteOfflineBattleLosses(Binary &raw, u32 val, u32 licenseIdx);  // 80547520
+    static void WriteWFCVSWins(Binary &raw, u32 val, u32 licenseIdx);  // 80547544
+    static void WriteWFCVSLosses(Binary &raw, u32 val, u32 licenseIdx);  // 80547568
+    static void WriteWFCBattleWins(Binary &raw, u32 val, u32 licenseIdx);  // 8054758c
+    static void WriteWFCBattleLosses(Binary &raw, u32 val, u32 licenseIdx);  // 805475b0
+    static void WriteGhostRacesWins(Binary &raw, u32 val, u32 licenseIdx);  // 805475d4
+    static void WriteGhostRacesLosses(Binary &raw, u32 val, u32 licenseIdx);  // 805475f8
+    static void WriteTotalRacePlayed(Binary &raw, u32 val, u32 licenseIdx);  // 8054761c
+    static void WriteTotalBattlePlayed(Binary &raw, u32 val, u32 licenseIdx);  // 80547654
+    static void WriteRacesOnWheel(Binary &raw, u32 val, u32 licenseIdx);  // 8054766c
+    static void WriteBattlesOnWheel(Binary &raw, u32 val, u32 licenseIdx);  // 805476c4
+    static void WriteDistanceTravelled(Binary &raw, u32 licenseIdx, float val);  // 805476fc
+    static void WriteGhostDataChallengesSent(Binary &raw, u32 val, u32 licenseIdx);  // 80547734
+    static void WriteGhostDataChallengesReceived(Binary &raw, u32 val, u32 licenseIdx);  // 8054776c
+    static void WriteItemHitsDelivered(Binary &raw, u32 val, u32 licenseIdx);  // 805477a0
+    static void WriteItemHitsReceived(Binary &raw, u32 val, u32 licenseIdx);  // 805477dc
+    static void WriteTricksPerformed(Binary &raw, u32 val, u32 licenseIdx);  // 80547814
+    static void WriteTimes1stPlaceAchieved(Binary &raw, u32 val, u32 licenseIdx);  // 8054784c
+    static void WriteDistancetravelledwhilein1stplace(Binary &raw, u32 licenseIdx, float val);  // 80547884
+    static void WriteDistancetravelledonVSRaces(Binary &raw, u32 licenseIdx);  // 805478bc
+    static void WriteCompetitionsEntered(Binary &raw, u16 val, u32 licenseIdx);  // 805478f4
+    static void WriteRacesOnCharacter(Binary &raw, CharacterId id, u32 licenseIdx);  // 80547930
+    static void WriteRacesOnKart(Binary &raw, KartId id, u32 licenseIdx);  // 8054797c
+    static void WriteRacesOnTrack(Binary &raw, CourseId id, u32 licenseIdx);  // 805479c8
+    static void WriteRacesOnBattleArena(Binary &raw, CourseId id, u32 licenseIdx);  // 80547a14
+    static void WriteUnk55f0(Binary &raw, u32 licenseIdx, u32 val, u32 idx2);  // 80547a34
+    static void WriteStaffGhostStatus(Binary &raw, const LicenseStaffGhostStatus &src, u32 licenseIdx, bool isExpert);  // 80547a80
+    static void WriteDefaultDrift(Binary &raw, u32 licenseIdx);  // 80547ab8
+    static void WriteCC(Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80547ae4
+    static void WriteCPUDifficulty(Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80547b20
+    static void WriteVehicleType(Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80547b5c
+    static void WriteCourseChoice(Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80547b98
+    static void WriteItemsType(Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80547bd0
+    static void WriteTotalRaceCount(Binary &raw, u32 ruleIdx, u32 licenseIdx);  // 80547c10
+    static void WriteUnkTimer2(Binary &raw, const LicenseUnkTimer &src, u32 licenseIdx, u32 idx);  // 80547c4c
+    static void WriteRKPD_1BC(Binary &raw, const Timer &srcTimer, const u32 &src, u32 licenseIdx);  // 80547d74
+    static void WriteRKPD_5680(Binary &raw, u8 &_5680, u8 &_5680_7, u8 &_5680_11, u32 licenseIdx);  // 80547e28
+    static void WriteRKPD_5688(Binary &raw, u32 idx, u32 licenseIdx);  // 80547eac
+    static void WriteRKPD_568c(Binary &raw, u8 &src, u32 licenseIdx);  // 80547f08
+    static void WriteRKPD_5688_31(Binary &raw, u32 licenseIdx);  // 80547f4c
     static void WriteMagic(u32 licenseIdx);  // 80547f78
 };
 // size_assert(LicenseMgr, 0x93f0);

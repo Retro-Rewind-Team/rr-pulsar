@@ -17,10 +17,10 @@ enum AREARenderType {
 class ClipInfo {  // as with entity, used by items, karts, objects...
     ClipInfo();  // 80787bd8
     ~ClipInfo();  // 80787be4
-    void Init(Vec3* position, bool isDefaultyEnabled, u16 area8GroupIds, AREARenderType type, u32 r7, u32 r8,
+    void Init(Vec3 *position, bool isDefaultyEnabled, u16 area8GroupIds, AREARenderType type, u32 r7, u32 r8,
               float near, float maxSpeed, float farDistance);  // 80787c24
 
-    Vec3* position;  // 0
+    Vec3 *position;  // 0
     float nearDistance;  // 0x4
     float farDistanceSquared;  // 0x8
     float unknown_0xC[4];  // 0xC
@@ -82,26 +82,26 @@ struct ClipScreenInfo {  // essentially used to control whether a player (a scre
 };
 
 class ClipInfoMgr {
-    static ClipInfoMgr* sInstance;  // 809c2ef8
-    static ClipInfoMgr* CreateInstance();  // 8078746c
+    static ClipInfoMgr *sInstance;  // 809c2ef8
+    static ClipInfoMgr *CreateInstance();  // 8078746c
     static void DestroyInstance();  // 80787538
 
     //"GetAreaReferencesByType", this function can be used with any area and will return a bitfield of setting1s of all areaType AREAs the position is inside of
-    static int GetArea8And9GroupIDs(const Vec3& position, u32 areaType);  // 80786fc0
-    static bool NormalizeVector(Vec3& dest, const Vec3& src);  // 807872c0 only if non-null vec
-    static void UpdateScreenInfo(ClipScreenInfo& info, const GameScreen& screen);  // 8078707c
-    static void CalcAreaType8Refs(ClipInfo& dest);  // 80787ba0 stores the refs in dest
+    static int GetArea8And9GroupIDs(const Vec3 &position, u32 areaType);  // 80786fc0
+    static bool NormalizeVector(Vec3 &dest, const Vec3 &src);  // 807872c0 only if non-null vec
+    static void UpdateScreenInfo(ClipScreenInfo &info, const GameScreen &screen);  // 8078707c
+    static void CalcAreaType8Refs(ClipInfo &dest);  // 80787ba0 stores the refs in dest
     ClipInfoMgr();  // 807875ec inlined
     ~ClipInfoMgr();  // 807876d0
     void Update();  // 80787774
-    ClipInfo* Insert(Vec3* position, bool isDefaultyEnabled, AREARenderType type, u32 r7, u32 r8,
+    ClipInfo *Insert(Vec3 *position, bool isDefaultyEnabled, AREARenderType type, u32 r7, u32 r8,
                      float nearDistance, float maxSpeed, float farDistance);  // 80787ab8 maxSpeed unused
 
     EGG::TDisposer<ClipInfoMgr> disposer;  // 0x0 //80787340 vtable 808d17f8
-    ClipInfo* clipInfoArray;  // 0x10 array size 512
+    ClipInfo *clipInfoArray;  // 0x10 array size 512
     u32 maxClipInfoCount;  // 0x14
     u32 clipInfoCount;  // 0x18 increment by insert
-    ClipScreenInfo* screenInfos;  // 0x1c array size4, one per screen
+    ClipScreenInfo *screenInfos;  // 0x1c array size4, one per screen
 
 };  // 0x20
 // size_assert(ClipInfoMgr, 0x20);

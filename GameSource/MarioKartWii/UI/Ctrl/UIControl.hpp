@@ -79,10 +79,10 @@ class UIControl {
     virtual void Draw(u32 curZIdx);  // 0x14 8063d084
     virtual void InitSelf();  // 0x18 805be600 just a blr
     virtual void OnUpdate();  // 0x1c 805bd2e0 just a blr
-    virtual void SetPositionAnim(PositionAndScale& positionAndScale, float curFrame);  // 0x20 8063d194
+    virtual void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame);  // 0x20 8063d194
     virtual void OnPlayAnimSound();  // 0x24 805bd2dc just a blr
-    virtual const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const;  // 0x28 80606bdc returns 809c1e80 0x28
-    virtual const char* GetClassName() const;  // 0x2c 8063d3c0 how the class name was found
+    virtual const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const;  // 0x28 80606bdc returns 809c1e80 0x28
+    virtual const char *GetClassName() const;  // 0x2c 8063d3c0 how the class name was found
     virtual void vf_0x30();  // 0x30 8063d608
     virtual void vf_0x34();  // 0x34 805bd2d8 just a blr
 
@@ -92,13 +92,13 @@ class UIControl {
     void StopSound(u32 soundId, int fadeFrames);  // 8063d764
     void PlayAnimSound(bool isActivating, u32 r5);  // 8063d0e0
     void InitControlGroup(u32 controlCount);  // 8063d268 children group
-    void AddControl(u32 childId, UIControl* child);  // 8063d278 equivalent of the very often used Page::SetControl
+    void AddControl(u32 childId, UIControl *child);  // 8063d278 equivalent of the very often used Page::SetControl
     float GetAnimationDelay() const;  // 8063d288
-    void SetParentControlGroup(ControlGroup* controlGroup, u32 curZIdx);  // 8063d398
+    void SetParentControlGroup(ControlGroup *controlGroup, u32 curZIdx);  // 8063d398
     void SetSoundIds(u32 onEntranceSoundId, u32 onExitSoundId);  // 8063d3a4
 
     PositionAndScale positionAndscale[4];  // 0x4
-    ControlGroup* parentGroup;  // 0x64
+    ControlGroup *parentGroup;  // 0x64
     ControlGroup childrenGroup;  // 0x68
     float drawPriority;  // 0x7c setting this to anything but 0 removes the element
     bool isHidden;  // 0x80
@@ -124,45 +124,45 @@ class LayoutUIControl : public UIControl {
     // virtual void OnUpdate(); //0x1c 805bd2e0
     // virtual void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame); //0x20 8063d194
     // virtual void OnPlayAnimSound(); //0x24 805bd2dc
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 80636bd0
-    const char* GetClassName() const override;  // 0x2c 8063d788
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80636bd0
+    const char *GetClassName() const override;  // 0x2c 8063d788
     void vf_0x30() override;  // 0x30 8063e61c
     // virtual void func_0x34(); //0x34 805bd2d8
-    virtual void LoadNewLayout(const char* folderName, const char* lytName);  // 0x38 8063d954 unused
+    virtual void LoadNewLayout(const char *folderName, const char *lytName);  // 0x38 8063d954 unused
 
-    void LoadPictureLayout(const char* folderName, const char* lytName);  // 8063d9c0
-    void ResetTextBoxMessage(const char* textBoxName);  // 8063deec
+    void LoadPictureLayout(const char *folderName, const char *lytName);  // 8063d9c0
+    void ResetTextBoxMessage(const char *textBoxName);  // 8063deec
     void ResetMsg();  // 8063dfc8
 
-    void SetMessage(u32 bmgId, const Text::Info* text = nullptr);  // 8063ddb4
-    void SetTextBoxMessage(const char* textBoxName, u32 bmgId, const Text::Info* text = nullptr);  // 8063dcbc
-    void SetRootPane(const char* paneName);  // 8063da00
-    void SetPicturePane(const char* mainPane, const char* picturePane);
-    void SetPaneVisibility(const char* paneName, bool isVisible);  // 8063e54c
-    void SetMiiPane(const char* pane, const MiiGroup& miiGroup, u32 miiIdx, u8 texMapIdx);  // 8063e3dc
-    bool PicturePaneExists(const char* paneName);  // 8063e328
-    void CropMovie(const char* paneName, const nw4r::ut::Rect& rect);  // 8063e58c
-    void CropMovie(const char* paneName, float left, float top, float right, float bottom);  // 8063e5c0
+    void SetMessage(u32 bmgId, const Text::Info *text = nullptr);  // 8063ddb4
+    void SetTextBoxMessage(const char *textBoxName, u32 bmgId, const Text::Info *text = nullptr);  // 8063dcbc
+    void SetRootPane(const char *paneName);  // 8063da00
+    void SetPicturePane(const char *mainPane, const char *picturePane);
+    void SetPaneVisibility(const char *paneName, bool isVisible);  // 8063e54c
+    void SetMiiPane(const char *pane, const MiiGroup &miiGroup, u32 miiIdx, u8 texMapIdx);  // 8063e3dc
+    bool PicturePaneExists(const char *paneName);  // 8063e328
+    void CropMovie(const char *paneName, const nw4r::ut::Rect &rect);  // 8063e58c
+    void CropMovie(const char *paneName, float left, float top, float right, float bottom);  // 8063e5c0
 
     UIAnimator animator;  // 0x98
     MainLayout layout;  // 0xA8
     BMGHolder curFileBmgs;  // 0x144
     BMGHolder commonBmgs;  // 0x158
-    PictureLayout* pictureLayout;  // 0x16c
-    nw4r::lyt::Pane* rootPane;
+    PictureLayout *pictureLayout;  // 0x16c
+    nw4r::lyt::Pane *rootPane;
 
     class MessageRequester : PaneAction {
         // ctor inlined
-        void Calc(lyt::Pane* pane) override;  // 8063ddf4 808beffc
-        LayoutUIControl* control;  // 0x4
+        void Calc(lyt::Pane *pane) override;  // 8063ddf4 808beffc
+        LayoutUIControl *control;  // 0x4
         u32 bmgId;  // 0x8
-        Text::Info* info;  // 0xc
+        Text::Info *info;  // 0xc
     };  // total size 0xc
 
     class MessageResetter : PaneAction {
         // ctor inlined
-        void Calc(lyt::Pane* pane) override;  // 8063e000 vtable 808beff0
-        LayoutUIControl* control;
+        void Calc(lyt::Pane *pane) override;  // 8063e000 vtable 808beff0
+        LayoutUIControl *control;
     };
 
 };  // Total Size 0x174
@@ -172,9 +172,9 @@ class LayoutUIControlScaleFade : public LayoutUIControl {
    public:
     LayoutUIControlScaleFade();  // 8063e674
     ~LayoutUIControlScaleFade() override;  // 8063e7a8 vtable 808bef78
-    void SetPositionAnim(PositionAndScale& positionAndScale, float curFrame) override;  // 0x20 8063e840
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 8063e924
-    const char* GetClassName() const override;  // 0x2c 8063e664
+    void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 8063e840
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 8063e924
+    const char *GetClassName() const override;  // 0x2c 8063e664
 };
 
 // total size 0xC

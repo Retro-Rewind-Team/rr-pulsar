@@ -17,20 +17,20 @@ struct ItemWarning {
 
     u8 hudSlotId;
     u8 padding[3];
-    KartActor* kartActor;
+    KartActor *kartActor;
     Handle handle;
 };  // 0xC
 
 class ItemWarningMgr {
    public:
-    static ItemWarningMgr* sInstance;  // 809c2320
-    static ItemWarningMgr* CreateInstance();  // 806f7ee8
+    static ItemWarningMgr *sInstance;  // 809c2320
+    static ItemWarningMgr *CreateInstance();  // 806f7ee8
     static void DestroyInstance();  // 806f7fcc
     ~ItemWarningMgr();  // 806f80ac
     void Init();  // 806f8188
     void Shutdown();  // 806f8204 sets playerCount to 0
 
-    ItemWarning& GetItemWarning(u8 hudSlotId) const;  // 806f8210
+    ItemWarning &GetItemWarning(u8 hudSlotId) const;  // 806f8210
 
     EGG::TDisposer<ItemWarningMgr> disposer;  // 806f7d58 vtable 808c7860
     u8 localPlayerCount;

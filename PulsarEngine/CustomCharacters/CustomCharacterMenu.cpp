@@ -17,7 +17,7 @@ void RestoreVotingMenuDriverModels() {
         if (SelectedTable(characterId) != TABLE_DEFAULT) RefreshMenuDriverModel(characterId);
     }
 
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
     if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr) return;
     const u8 count = SectionPlayerCount(sectionMgr);
     for (u8 hud = 0; hud < count; ++hud) {
@@ -55,7 +55,7 @@ void ResetCustomCharacterMenuState() {
 SectionLoadHook ResetCustomCharacterMenuStateHook(ResetCustomCharacterMenuState);
 
 // Hover updates both the preview model and the custom name/author labels.
-void CharacterSelectHoverHook(Pages::CharacterSelect* page, CtrlMenuCharacterSelect::ButtonDriver* button, u32 buttonId, u8 hud) {
+void CharacterSelectHoverHook(Pages::CharacterSelect *page, CtrlMenuCharacterSelect::ButtonDriver *button, u32 buttonId, u8 hud) {
     if (hud < LOCAL_PLAYER_COUNT) hoveredCharacters[hud] = static_cast<CharacterId>(buttonId);
     page->OnButtonDriverSelect(button, buttonId, hud);
     if (hud < LOCAL_PLAYER_COUNT) characterNameTextControl[hud] = nullptr;
@@ -69,16 +69,16 @@ kmCall(0x807e37b0, CharacterSelectHoverHook);
 kmCall(0x807e3a88, CharacterSelectHoverHook);
 
 // Hint panes show the skin-cycle buttons for the active controller type.
-ControllerType ControllerForHud(const SectionMgr& mgr, u8 hud) {
+ControllerType ControllerForHud(const SectionMgr &mgr, u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT) return GCN;
-    const Input::RealControllerHolder* holder = mgr.pad.padInfos[hud].controllerHolder;
+    const Input::RealControllerHolder *holder = mgr.pad.padInfos[hud].controllerHolder;
     if (holder == nullptr || holder->curController == nullptr) return GCN;
     const ControllerType type = holder->curController->GetType();
     return type == WHEEL || type == NUNCHUCK || type == CLASSIC || type == GCN ? type : GCN;
 }
 
-void SetHintPanes(CharaName& name, ControllerType type, bool visible) {
-    const char* panes[] = {"cc_prev_wh", "cc_next_wh", "cc_prev_nc", "cc_next_nc", "cc_prev_cls", "cc_next_cls", "cc_prev_gc", "cc_next_gc"};
+void SetHintPanes(CharaName &name, ControllerType type, bool visible) {
+    const char *panes[] = {"cc_prev_wh", "cc_next_wh", "cc_prev_nc", "cc_next_nc", "cc_prev_cls", "cc_next_cls", "cc_prev_gc", "cc_next_gc"};
     for (u32 i = 0; i < ARRAY_COUNT(panes); ++i) name.SetPaneVisibility(panes[i], false);
     if (!visible) return;
     u32 offset = 6;
@@ -92,30 +92,31 @@ void SetHintPanes(CharaName& name, ControllerType type, bool visible) {
     name.SetPaneVisibility(panes[offset + 1], true);
 }
 
-bool IsHudChoosingCharacter(const Pages::CharacterSelect& page, u8 hud) {
+bool IsHudChoosingCharacter(const Pages::CharacterSelect &page, u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT) return false;
-    enum { PLAYER_STATE_SIZE = 0x5c, IS_PER_CONTROL_OFFSET = 0xa4 };
-    const u8* manager = reinterpret_cast<const u8*>(&page.controlsManipulatorManager);
+    enum { PLAYER_STATE_SIZE = 0x5c,
+           IS_PER_CONTROL_OFFSET = 0xa4 };
+    const u8 *manager = reinterpret_cast<const u8 *>(&page.controlsManipulatorManager);
     return manager[IS_PER_CONTROL_OFFSET + hud * PLAYER_STATE_SIZE] != 0;
 }
 
-bool CanToggleSkin(const Pages::CharacterSelect& page, const SectionMgr& mgr, u8 hud) {
+bool CanToggleSkin(const Pages::CharacterSelect &page, const SectionMgr &mgr, u8 hud) {
     const u8 count = SectionPlayerCount(&mgr);
     return count <= 1 || IsHudChoosingCharacter(page, hud);
 }
 
 void UpdateHintPanes() {
     if (!IsCharacterSelectActive()) return;
-    SectionMgr* mgr = SectionMgr::sInstance;
+    SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == nullptr || mgr->sectionParams == nullptr) return;
-    Pages::CharacterSelect* page = mgr->curSection->Get<Pages::CharacterSelect>();
+    Pages::CharacterSelect *page = mgr->curSection->Get<Pages::CharacterSelect>();
     if (page == nullptr || page->names == nullptr) return;
     const u8 count = SectionPlayerCount(mgr);
     for (u8 hud = 0; hud < count; ++hud) SetHintPanes(page->names[hud], ControllerForHud(*mgr, hud), CanToggleSkin(*page, *mgr, hud));
 }
 
 // Map each controller type to previous/next skin buttons and consumed UI actions.
-void ToggleInputs(ControllerType type, u16& prevButton, u16& nextButton, u16& prevAction, u16& nextAction) {
+void ToggleInputs(ControllerType type, u16 &prevButton, u16 &nextButton, u16 &prevAction, u16 &nextAction) {
     prevAction = 0;
     nextAction = 0;
     switch (type) {
@@ -143,7 +144,7 @@ void ToggleInputs(ControllerType type, u16& prevButton, u16& nextButton, u16& pr
     }
 }
 
-void EatButton(Input::RealControllerHolder& holder, u16 button, u16 action) {
+void EatButton(Input::RealControllerHolder &holder, u16 button, u16 action) {
     holder.inputStates[0].buttonRaw &= static_cast<u16>(~button);
     holder.uiinputStates[0].rawButtons &= static_cast<u16>(~button);
     holder.uiinputStates[0].buttonActions &= static_cast<u16>(~action);
@@ -155,7 +156,7 @@ bool ProcessSkinInput() {
         memset(heldToggleButtons, 0, sizeof(heldToggleButtons));
         return false;
     }
-    SectionMgr* mgr = SectionMgr::sInstance;
+    SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == nullptr || mgr->sectionParams == nullptr) {
         memset(heldToggleButtons, 0, sizeof(heldToggleButtons));
         return false;
@@ -163,10 +164,10 @@ bool ProcessSkinInput() {
 
     bool changed = false;
     const u8 count = SectionPlayerCount(mgr);
-    Pages::CharacterSelect* page = mgr->curSection->Get<Pages::CharacterSelect>();
+    Pages::CharacterSelect *page = mgr->curSection->Get<Pages::CharacterSelect>();
     if (page == nullptr) return false;
     for (u8 hud = 0; hud < count; ++hud) {
-        Input::RealControllerHolder* holder = mgr->pad.padInfos[hud].controllerHolder;
+        Input::RealControllerHolder *holder = mgr->pad.padInfos[hud].controllerHolder;
         if (holder == nullptr || holder->curController == nullptr) {
             heldToggleButtons[hud] = 0;
             continue;
@@ -207,7 +208,7 @@ bool ProcessSkinInput() {
 }
 
 // Menu updates keep hints, labels, and random-vote kart previews in sync.
-void MenuSceneSectionUpdateHook(SectionMgr* mgr) {
+void MenuSceneSectionUpdateHook(SectionMgr *mgr) {
     UpdateHintPanes();
     ProcessSkinInput();
     const u8 count = SectionPlayerCount(mgr);

@@ -24,7 +24,7 @@ class DrawPathLightMap : public DrawPathBase {
     u8 unknown_0x15;  // 0x15
     u8 padding[2];
     u32 unknown_0x18[2];
-    TextureBuffer* buffers[3];  // 0x24
+    TextureBuffer *buffers[3];  // 0x24
     u32 unknown_0x30;  // 0x30
 };  // 0x34
 

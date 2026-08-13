@@ -26,7 +26,7 @@ struct NoteOnInfo {
 class NoteOnCallback {
    public:
     virtual ~NoteOnCallback();
-    virtual Channel* NoteOn(SeqPlayer* seqPlayer, int bankNo, const NoteOnInfo& noteOnInfo) = 0;
+    virtual Channel *NoteOn(SeqPlayer *seqPlayer, int bankNo, const NoteOnInfo &noteOnInfo) = 0;
 };
 }  // namespace detail
 }  // namespace snd

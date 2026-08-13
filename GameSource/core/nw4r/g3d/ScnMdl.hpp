@@ -10,21 +10,21 @@ namespace g3d {
 
 struct DrawResMdlReplacement {
     u32 flag;  // 0
-    u8* visArray;  // 0x4
-    ResTexObjData* texObjDataArray;  // 0x8
-    ResTlutObjData* tlutObjDataArray;  // 0xc
-    ResTexSrtData* texSrtDataArray;  // 0x10
-    ResChanData* chanDataArray;  // 0x14
-    ResGenModeData* genModeDataArray;  // 0x18
-    ResMatMiscData* matMiscDataArray;  // 0x1c
-    ResPixDL* pixDLArray;  // 0x20
-    ResTevColorDL* tevColorDLArray;  // 0x24
-    ResIndMtxAndScaleDL* indMtxAndScaleDLArray;  // 0x28
-    ResTexCoordGenDL* texCoordGenDLArray;  // 0x2c
-    ResTevData* tevDataArray;  // 0x30
-    ResVtxPosData** vtxPosTable;  // 0x34
-    ResVtxNrmData** vtxNrmTable;  // 0x38
-    ResVtxClrData** vtxClrTable;  // 0x3c
+    u8 *visArray;  // 0x4
+    ResTexObjData *texObjDataArray;  // 0x8
+    ResTlutObjData *tlutObjDataArray;  // 0xc
+    ResTexSrtData *texSrtDataArray;  // 0x10
+    ResChanData *chanDataArray;  // 0x14
+    ResGenModeData *genModeDataArray;  // 0x18
+    ResMatMiscData *matMiscDataArray;  // 0x1c
+    ResPixDL *pixDLArray;  // 0x20
+    ResTevColorDL *tevColorDLArray;  // 0x24
+    ResIndMtxAndScaleDL *indMtxAndScaleDLArray;  // 0x28
+    ResTexCoordGenDL *texCoordGenDLArray;  // 0x2c
+    ResTevData *tevDataArray;  // 0x30
+    ResVtxPosData **vtxPosTable;  // 0x34
+    ResVtxNrmData **vtxNrmTable;  // 0x38
+    ResVtxClrData **vtxClrTable;  // 0x3c
 };  // 0x40
 
 // same as ScnMdlSimple, but with possibility for a shape animation and copies of model res used for animation via CopyMatAccess
@@ -71,7 +71,7 @@ class ScnMdl : public ScnMdlSimple {
     // access a copy of a given material
     class CopiedMatAccess {
        public:
-        CopiedMatAccess(ScnMdl* scnMdl, u32 id);  // 800730b0
+        CopiedMatAccess(ScnMdl *scnMdl, u32 id);  // 800730b0
         ResTexObj GetResTexObj(bool bMarkDirty);  // 80072e60
         ResMatTevColor GetResMatTevColor(bool bMarkDirty);  // 80072e60
         ResTexSrt GetResTexSrtEx();  // 80072f00
@@ -79,7 +79,7 @@ class ScnMdl : public ScnMdlSimple {
         ResMatTevColor GetResMatTevColorEx();  // 80072fc0
         ResTev GetResTevEx();  // 8007230b0
 
-        ScnMdl* scnMdl;  // 0x0
+        ScnMdl *scnMdl;  // 0x0
         u32 matID;  // 0x4
         ResTexObj texObj;  // 0x8
         ResTlutObj tlutObj;  // 0xc
@@ -93,25 +93,25 @@ class ScnMdl : public ScnMdlSimple {
         ResMatTexCoordGen texCoordGen;  // 0x2c
         ResTev tev;  // 0x30
     };
-    static ScnMdl* Construct(G3dHeap* heap, u32* size, ResMdl mdl, u32 bufferOption, int nView = 1);  // 80073470
+    static ScnMdl *Construct(G3dHeap *heap, u32 *size, ResMdl mdl, u32 bufferOption, int nView = 1);  // 80073470
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 800757f0 vtable 80273248
-    void G3dProc(u32 g3dproc, u32 param, void* info);  // 0xC 80074770
+    void G3dProc(u32 g3dproc, u32 param, void *info);  // 0xC 80074770
     ~ScnMdl() override;  // 0x10 80075780
     TypeObj GetTypeObj() const override;  // 0x14 800758a0
-    const char* GetTypeName() const override;  // 0x18 80075870
+    const char *GetTypeName() const override;  // 0x18 80075870
     bool SetScnObjOption(u32 optionID, u32 value) override;  // 0x20 80074c20
-    bool GetScnObjOption(u32 optionID, u32* value) const override;  // 0x24 80074c60
-    virtual bool SetAnmObj(AnmObj* obj, AnmObjType type);  // 0x34 80075380
-    virtual bool RemoveAnmObj(AnmObj* obj);  // 0x38 800754f0
-    virtual AnmObj* RemoveAnmObj(AnmObjType type);  // 0x3c 800756f0
-    virtual AnmObj* GetAnmObj(AnmObjType type);  // 0x40 80075740
-    virtual const AnmObj* GetAnmObj(AnmObjType type) const;  // 0x44 80075760
+    bool GetScnObjOption(u32 optionID, u32 *value) const override;  // 0x24 80074c60
+    virtual bool SetAnmObj(AnmObj *obj, AnmObjType type);  // 0x34 80075380
+    virtual bool RemoveAnmObj(AnmObj *obj);  // 0x38 800754f0
+    virtual AnmObj *RemoveAnmObj(AnmObjType type);  // 0x3c 800756f0
+    virtual AnmObj *GetAnmObj(AnmObjType type);  // 0x40 80075740
+    virtual const AnmObj *GetAnmObj(AnmObjType type) const;  // 0x44 80075760
 
-    void ScnMdl_G3DPROC_CALC_MAT(u32 param, void* info);  // 80074000
+    void ScnMdl_G3DPROC_CALC_MAT(u32 param, void *info);  // 80074000
 
-    AnmObjShp* anmObjShp;  // 0x138
+    AnmObjShp *anmObjShp;  // 0x138
     u32 flagVisBuffer;  // 0x13c
-    u32* matBufferDirtyFlag;  // 0x140
+    u32 *matBufferDirtyFlag;  // 0x140
     DrawResMdlReplacement replacement;  // 0x144
     u32 replacementFlag;  // 0x184
 };

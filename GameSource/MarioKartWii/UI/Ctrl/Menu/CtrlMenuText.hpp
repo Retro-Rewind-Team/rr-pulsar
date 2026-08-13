@@ -8,30 +8,30 @@
 class CtrlMenuObiTop : public LayoutUIControl {
     // no ctor
     ~CtrlMenuObiTop() override;  // 807e9b7c vtable 808d365c
-    void SetPositionAnim(PositionAndScale& positionAndScale, float curFrame) override;  // 807e9a68
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 807e9bd4
-    const char* GetClassName() const override;  // 0x2c 807e9250
+    void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 807e9a68
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807e9bd4
+    const char *GetClassName() const override;  // 0x2c 807e9250
 };  // 0x174
 // size_assert(CtrlMenuObiTop, 0x174);
 
 class CtrlMenuPageTitleText : public LayoutUIControl {
    public:
     ~CtrlMenuPageTitleText() override;  // 805baf10 vtable 808d36d4
-    void SetPositionAnim(PositionAndScale& positionAndScale, float curFrame) override;  // 0x20 807e9898
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 807e9bec
-    const char* GetClassName() const override;  // 0x2c 807e9230
-    void SetMessage(u32 bmgId, const Text::Info* text = nullptr);  // 807e987c
+    void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 807e9898
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807e9bec
+    const char *GetClassName() const override;  // 0x2c 807e9230
+    void SetMessage(u32 bmgId, const Text::Info *text = nullptr);  // 807e987c
     void Load(bool r4);  // 807e947c
 };  // total size 0x174
 
 class CtrlMenuInstructionText : public LayoutUIControl {
    public:
     ~CtrlMenuInstructionText() override;  // 805c00c0 vtable 808d3698
-    void SetPositionAnim(PositionAndScale& positionAndScale, float curFrame) override;  // 0x20 807e999c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 807e9be0
-    const char* GetClassName() const override;  // 0x2c 807e9240
+    void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 807e999c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807e9be0
+    const char *GetClassName() const override;  // 0x2c 807e9240
     void Load();  // 807e9904
-    void SetMessage(u32 bmgId, const Text::Info* text = nullptr);  // 807e9a38
+    void SetMessage(u32 bmgId, const Text::Info *text = nullptr);  // 807e9a38
 };  // total size 0x174
 
 class CtrlMenuBackButton : public PushButton {
@@ -44,22 +44,22 @@ class CtrlMenuBackButton : public PushButton {
     ~CtrlMenuBackButton() override;  // 805be7f4 vtable 808d374c
     void InitSelf() override;  // 0x18 807e93b8
     void OnUpdate() override;  // 0x1c 807e9270
-    void SetPositionAnim(PositionAndScale& positionAndScale, float curFrame) override;  // 0x20 807e9410
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 807e9c04
-    const char* GetClassName() const override;  // 0x2c 807e9214
+    void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 807e9410
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807e9c04
+    const char *GetClassName() const override;  // 0x2c 807e9214
     void SetPlayerBitfield();  // 807e9610
     u32 bmgId;  // 0x254
     u32 unknown_0x258;
     float alpha;
-    char* pane;
+    char *pane;
 };  // total size 0x264
 // size_assert(CtrlMenuBackButton, 0x264);
 
 class CtrlMenuDummyBack : public LayoutUIControl {  // a back button...but with just the visuals, useful if the page wants to use PageManipulatorManager
     ~CtrlMenuDummyBack() override;  // 80603890 vtable 808d3710
     void OnUpdate() override;  // 0x1c 807e9724
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 807e9bf8
-    const char* GetClassName() const override;  // 0x2c 807e9220
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 807e9bf8
+    const char *GetClassName() const override;  // 0x2c 807e9220
     u8 unknown_0x174[0x184 - 0x174];
 };
 // size_assert(CtrlMenuDummyBack, 0x184);

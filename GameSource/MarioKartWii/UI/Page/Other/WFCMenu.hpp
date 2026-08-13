@@ -34,12 +34,12 @@ class FriendStatusButton : public PushButton {
     ~FriendStatusButton() override;  // 8064b2fc vtable 808bffc0
     void InitSelf();  // 0x18 8064b444
     void OnUpdate();  // 0x1c 8064b450
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 8064d69c
-    const char* GetClassName() const override;  // 0x2c 8064b2b4
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 8064d69c
+    const char *GetClassName() const override;  // 0x2c 8064b2b4
     void OnSelect(u32 hudSlotId, u32 r5) override;  // 0x40 8064b4c0
     void OnDeselect(u32 hudSlotId, u32 r5) override;  // 0x44 8064b4c4
 
-    void Load(const char* folderName, const char* ctrName, const char* variant);  // 8064b354
+    void Load(const char *folderName, const char *ctrName, const char *variant);  // 8064b354
     void UpdateButtonStatus();  // 8064b4c8
     u32 frames;  // increments by 1 each frame, resets at 300, used to know when to call updatestatus
     u32 curStatus;  // 0x258 0 = nothing, 1 = public, 2 = froom
@@ -57,11 +57,11 @@ class Approve2PWFC : public Page {  // ID 0x8a, just a wrapper that activates Ap
     void BeforeEntranceAnimations() override;  // 0x38 8064b15c
     void BeforeExitAnimations() override;  // 0x40 8064b160
     void OnResume() override;  // 0x54 8064b164
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8064d6a8
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 8064d6a8
 
-    void OnApprove(Approve& approvePage);  // 8064b23c
+    void OnApprove(Approve &approvePage);  // 8064b23c
 
-    PtmfHolder_1A<Approve2PWFC, void, Approve&> onApproveHandler;  // 0x44
+    PtmfHolder_1A<Approve2PWFC, void, Approve &> onApproveHandler;  // 0x44
     ManipulatorManager manipulatorManager;  // 0x58
 };
 // size_assert(Approve2PWFC, 0x68);
@@ -74,20 +74,20 @@ class WFCMainMenu : public Page {  // ID 0x8B
     PageId GetNextPage() const override;  // 8064d688
     void OnInit() override;  // 8064b910
     void OnActivate() override;  // 8064bc90
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 8064d690
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 8064d690
 
-    void OnWorldwideButtonClick(PushButton& button, u32 hudSlotId);  // 8064bce8
-    void OnRegionalButtonClick(PushButton& button, u32 hudSlotId);  // 8064bdc4
-    void OnFriendsButtonClick(FriendStatusButton& button, u32 hudSlotId);  // 8064bea0
-    void OnBackButtonClick(CtrlMenuBackButton& backButton, u32 hudSlotId);  // 8064bee4
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);  // 8064bf4c
+    void OnWorldwideButtonClick(PushButton &button, u32 hudSlotId);  // 8064bce8
+    void OnRegionalButtonClick(PushButton &button, u32 hudSlotId);  // 8064bdc4
+    void OnFriendsButtonClick(FriendStatusButton &button, u32 hudSlotId);  // 8064bea0
+    void OnBackButtonClick(CtrlMenuBackButton &backButton, u32 hudSlotId);  // 8064bee4
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);  // 8064bf4c
     void OnBackPress(u32 hudSlotId);  // 8064bfb8
 
-    PtmfHolder_2A<WFCMainMenu, void, PushButton&, u32> onWorldwideClick;  // 0x44 vtable 808bffb4 8064bce8
-    PtmfHolder_2A<WFCMainMenu, void, PushButton&, u32> onRegionalClick;  // 0x58 vtable 808bffb4 8064bdc4
-    PtmfHolder_2A<WFCMainMenu, void, FriendStatusButton&, u32> onFriendsClick;  // 0x6C vtable 808bffb4 8064bea0
-    PtmfHolder_2A<WFCMainMenu, void, CtrlMenuBackButton&, u32> onBackButtonClick;  // 0x80 vtable 808bffb4 8064bee4 ctrlmenubackbutton
-    PtmfHolder_2A<WFCMainMenu, void, PushButton&, u32> onButtonSelectHandler;  // 0x94 vtable 808bffb4 8064bf4c
+    PtmfHolder_2A<WFCMainMenu, void, PushButton &, u32> onWorldwideClick;  // 0x44 vtable 808bffb4 8064bce8
+    PtmfHolder_2A<WFCMainMenu, void, PushButton &, u32> onRegionalClick;  // 0x58 vtable 808bffb4 8064bdc4
+    PtmfHolder_2A<WFCMainMenu, void, FriendStatusButton &, u32> onFriendsClick;  // 0x6C vtable 808bffb4 8064bea0
+    PtmfHolder_2A<WFCMainMenu, void, CtrlMenuBackButton &, u32> onBackButtonClick;  // 0x80 vtable 808bffb4 8064bee4 ctrlmenubackbutton
+    PtmfHolder_2A<WFCMainMenu, void, PushButton &, u32> onButtonSelectHandler;  // 0x94 vtable 808bffb4 8064bf4c
     PtmfHolder_1A<WFCMainMenu, void, u32> onBackPress;  // 0xA8 vtable 808bffa8 8064bfb8
     CtrlMenuPageTitleText ctrlMenuPageTitleText;  // 0xBC
     PushButton worldwideButton;  // 0x230
@@ -108,16 +108,16 @@ class WFCModeSelect : public Page {  // ID 0x8C
     PageId GetNextPage() const override;  // 8064d674
     void OnInit() override;  // 8064c220
     void OnActivate() override;  // 8064c4f8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 8064d67c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 8064d67c
 
-    void OnModeButtonClick(PushButton& modeButton, u32 hudSlotId);  // 8064c610
-    void OnBackButtonClick(CtrlMenuBackButton& backButton, u32 hudSlotId);  // 8064c718
-    void OnModeButtonSelect(PushButton& modeButton, u32 hudSlotId);  // 8064c75c
+    void OnModeButtonClick(PushButton &modeButton, u32 hudSlotId);  // 8064c610
+    void OnBackButtonClick(CtrlMenuBackButton &backButton, u32 hudSlotId);  // 8064c718
+    void OnModeButtonSelect(PushButton &modeButton, u32 hudSlotId);  // 8064c75c
     void OnBackPress(u32 hudSlotId);  // 8064c7b0
 
-    PtmfHolder_2A<WFCModeSelect, void, PushButton&, u32> onModeButtonClickHandler;  // 0x44 8064c610
-    PtmfHolder_2A<WFCModeSelect, void, PushButton&, u32> onBackButtonClickHandler;  // 0x58 8064c718
-    PtmfHolder_2A<WFCModeSelect, void, PushButton&, u32> onButtonSelectHandler;  // 0x6c 8064c75c
+    PtmfHolder_2A<WFCModeSelect, void, PushButton &, u32> onModeButtonClickHandler;  // 0x44 8064c610
+    PtmfHolder_2A<WFCModeSelect, void, PushButton &, u32> onBackButtonClickHandler;  // 0x58 8064c718
+    PtmfHolder_2A<WFCModeSelect, void, PushButton &, u32> onButtonSelectHandler;  // 0x6c 8064c75c
     PtmfHolder_1A<WFCModeSelect, void, u32> onBackPressHandler;  // 0x80 8064c7b0
     CtrlMenuPageTitleText titleText;  // 0x94
     PushButton vsButton;  // 0x208
@@ -138,20 +138,20 @@ class WFCFriendsMenu : public Page {  // ID 0x8D
     void OnInit() override;  // 8064ca98
     void OnActivate() override;  // 8064cf18
     void OnDeactivate() override;  // 8064cff8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 8064d668
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 8064d668
 
-    void OnRosterButtonClick(FriendStatusButton& button, u32 hudSlotId);  // 8064d0a0
-    void OnRegisterButtonClick(PushButton& button, u32 hudSlotId);  // 8064d1e8
-    void OnCreateRoomButtonClick(PushButton& button, u32 hudSlotId);  // 8064d330
-    void OnBackButtonClick(CtrlMenuBackButton& backButton, u32 hudSlotId);  // 8064d4f4
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);  // 8064d5a0
+    void OnRosterButtonClick(FriendStatusButton &button, u32 hudSlotId);  // 8064d0a0
+    void OnRegisterButtonClick(PushButton &button, u32 hudSlotId);  // 8064d1e8
+    void OnCreateRoomButtonClick(PushButton &button, u32 hudSlotId);  // 8064d330
+    void OnBackButtonClick(CtrlMenuBackButton &backButton, u32 hudSlotId);  // 8064d4f4
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);  // 8064d5a0
     void OnBackPress(u32 hudSlotId);  // 8064d60c
 
-    PtmfHolder_2A<WFCMainMenu, void, PushButton&, u32> onRosterButtonClick;  // 0x44 8064d0a0
-    PtmfHolder_2A<WFCMainMenu, void, PushButton&, u32> onRegisterButtonClick;  // 0x58 8064d1e8
-    PtmfHolder_2A<WFCMainMenu, void, FriendStatusButton&, u32> onCreateRoomButtonClick;  // 0x6C 8064d330
-    PtmfHolder_2A<WFCMainMenu, void, CtrlMenuBackButton&, u32> onBackButtonClick;  // 0x80 8064d4f4
-    PtmfHolder_2A<WFCMainMenu, void, PushButton&, u32> onButtonSelectHandler;  // 0x94 8064d5a0
+    PtmfHolder_2A<WFCMainMenu, void, PushButton &, u32> onRosterButtonClick;  // 0x44 8064d0a0
+    PtmfHolder_2A<WFCMainMenu, void, PushButton &, u32> onRegisterButtonClick;  // 0x58 8064d1e8
+    PtmfHolder_2A<WFCMainMenu, void, FriendStatusButton &, u32> onCreateRoomButtonClick;  // 0x6C 8064d330
+    PtmfHolder_2A<WFCMainMenu, void, CtrlMenuBackButton &, u32> onBackButtonClick;  // 0x80 8064d4f4
+    PtmfHolder_2A<WFCMainMenu, void, PushButton &, u32> onButtonSelectHandler;  // 0x94 8064d5a0
     PtmfHolder_1A<WFCMainMenu, void, u32> onBackPress;  // 0xA8 vtable 808bffa8 8064d60c
     CtrlMenuPageTitleText titleText;  // 0xbc
     FriendStatusButton rosterButton;  // 0x230

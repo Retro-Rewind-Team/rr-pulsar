@@ -9,14 +9,14 @@ namespace Item {
 class ObjKouraTogezoBase : public ObjTargeting {
     void SpawnModel() override;  // 0x18 807b3efc vtable 808d25a8
     u8 unknown_0x24c[0x280 - 0x24c];
-    Item::Player* playerTargeted;  // 0x280
+    Item::Player *playerTargeted;  // 0x280
     u8 unknown_0x284[0x2bc - 0x284];
 };  // 0x2bc
 
 class ObjKouraTogezo : public ObjKouraTogezoBase, public ObjExplosion {  // blue shell actually inherits a second class also used by reds and bombs
    public:
-    static Obj** CreateArray(u32 count);  // 807ab9e0
-    static void* SendOrExtractShootEVENT(void* packet, Obj* obj, bool extractOrSend);  // 807ae5d0
+    static Obj **CreateArray(u32 count);  // 807ab9e0
+    static void *SendOrExtractShootEVENT(void *packet, Obj *obj, bool extractOrSend);  // 807ae5d0
 
     /*blue shells:
     -first fly following item routes until a target (1st) is acquired (through distance)
@@ -41,7 +41,7 @@ class ObjKouraTogezo : public ObjKouraTogezoBase, public ObjExplosion {  // blue
     void UpdateModelPosition() override;  // 0x10 807ac7d4
     void UpdateModelPositionNoClip() override;  // 0x14 807ac9ec
     void SpawnModel() override;  // 0x18 807abf70
-    bool SetInitialPosition(PlayerObj& playerObj) override;  // 0x20 807ac634
+    bool SetInitialPosition(PlayerObj &playerObj) override;  // 0x20 807ac634
     int OnKill() override;  // 0x24 807ae414
     void OnFinishKill() override;  // 0x2c 807ae574
     void vf_0x30() override;  // 0x30 807ae6ec
@@ -65,7 +65,7 @@ class ObjKouraTogezo : public ObjKouraTogezoBase, public ObjExplosion {  // blue
     u8 unknown_0x2dc[0x2ec - 0x2dc];
     u8 targetedPlayerId;  // 0x2ec
     u8 unknown_0x2ed[0x330 - 0x2ed];
-    ModelDirector* bombCore;  // 0x330
+    ModelDirector *bombCore;  // 0x330
     u8 unknown_0x334[4];
 };
 // size_assert(ObjKouraTogezo, 0x338);

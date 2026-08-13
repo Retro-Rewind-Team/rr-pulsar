@@ -13,8 +13,8 @@ kmWrite24(0x808a9af9, 'PUL');
 u32 MultiGhostDiff::Count() {
     return System::sInstance->IsContext(PULSAR_MODE_OTT);
 }
-void MultiGhostDiff::Create(Page& page, u32 idx, u32 unused) {
-    MultiGhostDiff* ghostDiff = new (MultiGhostDiff);
+void MultiGhostDiff::Create(Page &page, u32 idx, u32 unused) {
+    MultiGhostDiff *ghostDiff = new (MultiGhostDiff);
     page.AddControl(idx, *ghostDiff, 0);
     ghostDiff->Load();
 }
@@ -29,7 +29,7 @@ MultiGhostDiff::MultiGhostDiff() {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT))
         count = 2;
     else {
-        RacedataScenario* scenario = &Racedata::sInstance->menusScenario;
+        RacedataScenario *scenario = &Racedata::sInstance->menusScenario;
         if (scenario->players[0].playerType == PLAYER_GHOST) this->isGhostReplay = true;
         for (int i = 1; i < 4; ++i)
             if (scenario->players[i].playerType == PLAYER_GHOST) ++count;
@@ -53,7 +53,7 @@ void MultiGhostDiff::Load() {
             if (!System::sInstance->IsContext(PULSAR_MODE_OTT))
                 this->diffTimes[i].ghostData.Init(Racedata::sInstance->ghosts[i + this->isGhostReplay]);
             else
-                reinterpret_cast<OTTGhostDiff&>(this->diffTimes[i]).SetIdx(i);
+                reinterpret_cast<OTTGhostDiff &>(this->diffTimes[i]).SetIdx(i);
         }
     }
 }
@@ -62,11 +62,11 @@ void MultiGhostDiff::Load() {
 void OTTGhostDiff::OnUpdate() {
     this->UpdatePausePosition();
     const u8 playerId = this->GetPlayerId();
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
-    const RaceinfoPlayer* curPlayer = raceInfo->players[playerId];
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
+    const RaceinfoPlayer *curPlayer = raceInfo->players[playerId];
     u8 maxLap = curPlayer->maxLap;
     const u8 curPos = curPlayer->position;
-    RaceinfoPlayer* target = nullptr;
+    RaceinfoPlayer *target = nullptr;
     if (this->GetIdx() == 0) {
         if (curPos == 1) {
             target = raceInfo->players[raceInfo->playerIdInEachPosition[1]];  // I'm in 1st, target is 2nd

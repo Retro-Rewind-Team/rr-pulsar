@@ -11,8 +11,8 @@ namespace Pulsar {
 static void SetCC();
 namespace UI {
 
-void CorrectButtonCount(Pages::SinglePlayer* page) {
-    const System* system = System::sInstance;
+void CorrectButtonCount(Pages::SinglePlayer *page) {
+    const System *system = System::sInstance;
     const bool hasFeather = system->GetInfo().HasFeather();
     const bool has200cc = system->GetInfo().Has200cc();
     page->externControlCount = 4 + hasFeather + has200cc + (hasFeather && has200cc) + 1;
@@ -21,11 +21,11 @@ void CorrectButtonCount(Pages::SinglePlayer* page) {
 kmCall(0x806266b8, CorrectButtonCount);
 kmWrite32(0x806266d4, 0x60000000);
 
-UIControl* CreateExternalControls(Pages::SinglePlayer* page, u32 id) {
+UIControl *CreateExternalControls(Pages::SinglePlayer *page, u32 id) {
     if (id == page->externControlCount - 1) {
-        PushButton* button = new (PushButton);
+        PushButton *button = new (PushButton);
         page->AddControl(page->controlCount++, *button, 0);
-        const char* name = "Settings1P";
+        const char *name = "Settings1P";
         button->Load(UI::buttonFolder, name, name, page->activePlayerBitfield, 0, false);
         return button;
     }
@@ -33,11 +33,11 @@ UIControl* CreateExternalControls(Pages::SinglePlayer* page, u32 id) {
 }
 kmWritePointer(0x808D9F84, CreateExternalControls);
 
-static void LoadCorrectBRCTR(PushButton& button, const char* folder, const char* ctr, const char* variant, u32 localPlayerField) {
+static void LoadCorrectBRCTR(PushButton &button, const char *folder, const char *ctr, const char *variant, u32 localPlayerField) {
     register int idx;
     asm(mr idx, r28;);
-    Pages::SinglePlayer* page = button.parentGroup->GetParentPage<Pages::SinglePlayer>();
-    const System* system = System::sInstance;
+    Pages::SinglePlayer *page = button.parentGroup->GetParentPage<Pages::SinglePlayer>();
+    const System *system = System::sInstance;
 
     u32 varId = 0;
     u32 count = page->externControlCount;
@@ -67,9 +67,9 @@ static void LoadCorrectBRCTR(PushButton& button, const char* folder, const char*
 }
 kmCall(0x8084f084, LoadCorrectBRCTR);
 
-static int FixCalcDistance(const ControlManipulator& subject, const ControlManipulator& other, Directions direction) {
-    const s32 subId = static_cast<PushButton*>(subject.actionHandlers[0]->subject)->buttonId;
-    const s32 destId = static_cast<PushButton*>(other.actionHandlers[0]->subject)->buttonId;
+static int FixCalcDistance(const ControlManipulator &subject, const ControlManipulator &other, Directions direction) {
+    const s32 subId = static_cast<PushButton *>(subject.actionHandlers[0]->subject)->buttonId;
+    const s32 destId = static_cast<PushButton *>(other.actionHandlers[0]->subject)->buttonId;
     switch (subId) {
         case (0):
             if (direction == DIRECTION_DOWN && destId == 1) return 1;
@@ -86,12 +86,12 @@ static int FixCalcDistance(const ControlManipulator& subject, const ControlManip
     return subject.CalcDistanceBothWrapping(other, direction);
 }
 
-static void SetDistanceFunc(ControlsManipulatorManager& mgr) {
+static void SetDistanceFunc(ControlsManipulatorManager &mgr) {
     mgr.distanceFunc = &FixCalcDistance;
 }
 kmCall(0x8084ef68, SetDistanceFunc);
 
-void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
+void OnButtonSelect(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId) {
     const s32 id = button.buttonId;
     u32 count = page->externControlCount;
     if (count > 5 && (id == 1 || id > 3)) {
@@ -103,7 +103,7 @@ void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId
             page->Pages::SinglePlayer::OnExternalButtonSelect(button, hudSlotId);
             button.buttonId = id;
             bmgId = BMG_TT_MODE_BOTTOM_SINGLE;
-            const System* system = System::sInstance;
+            const System *system = System::sInstance;
             switch (page->externControlCount) {
                 case (6):
                     if (id > 3) {
@@ -125,7 +125,7 @@ void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId
 kmWritePointer(0x808D9F64, &OnButtonSelect);
 
 // Sets the ttMode based on which button was clicked
-void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
+void OnButtonClick(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId) {
     const u32 id = button.buttonId;
     if (page->externControlCount > 4 && id == page->externControlCount - 1) {
         // Navigate to page selection first
@@ -140,7 +140,7 @@ void OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
     if (id == 1 || id > 3) button.buttonId = 1;
     page->Pages::SinglePlayer::OnButtonClick(button, hudSlotId);
     button.buttonId = id;
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     if (id == 1 || id > 3) {
         TTMode mode = TTMODE_150;
         switch (page->externControlCount) {
@@ -165,7 +165,7 @@ kmWritePointer(0x808BBED0, OnButtonClick);
 
 // Sets the CC (based on the mode) when retrying after setting a time, as racedata's CC is overwritten usually
 static void SetCC() {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     EngineClass cc = CC_150;
     if (system->ttMode == TTMODE_200 || system->ttMode == TTMODE_200_FEATHER) cc = CC_100;
     Racedata::sInstance->menusScenario.settings.engineClass = cc;

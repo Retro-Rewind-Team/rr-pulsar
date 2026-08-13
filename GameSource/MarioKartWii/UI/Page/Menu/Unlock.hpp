@@ -14,24 +14,24 @@ class Unlock : public MenuInteractable {  // ID 0xCD
     void OnInit() override;  // 0x28 80853e18
     void OnActivate() override;  // 0x30 80854104
     void AfterControlUpdate() override;  // 0x4c 80854320
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 808551e0
-    void OnExternalButtonSelect(PushButton& button, u32 hudSlotId) override;  // 0x64 80854748
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 808551e0
+    void OnExternalButtonSelect(PushButton &button, u32 hudSlotId) override;  // 0x64 80854748
     int GetActivePlayerBitfield() const override;  // 0x68 808550c4
     int GetPlayerBitfield() const override;  // 0x6C 808550bc
-    ManipulatorManager& GetManipulatorManager() override;  // 0x70 80855128
-    UIControl* CreateExternalControl(u32 externControlId) override;  // 0x84 80853e30
-    UIControl* CreateControl(u32 controlId) override;  // 0x88 80853ec0
-    void SetButtonHandlers(PushButton& button) override;  // 0x8C 808550cc
+    ManipulatorManager &GetManipulatorManager() override;  // 0x70 80855128
+    UIControl *CreateExternalControl(u32 externControlId) override;  // 0x84 80853e30
+    UIControl *CreateControl(u32 controlId) override;  // 0x88 80853ec0
+    void SetButtonHandlers(PushButton &button) override;  // 0x8C 808550cc
 
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 8085447c
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId);  // 8085474c
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 8085447c
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId);  // 8085474c
     void OnBackPress(u32 hudSlotId);  // 80854750
     void SetTitleBMG(u32 unlockIdx);  // 80854754
     void PrepareControls(u32 unlockIdx);  // 80854810
     void SetMessageWindowMessage(CharacterId character, KartId kart);  // 80854e00 ids set to -1 if the other is unlocked
     void SetModels(CharacterId character, KartId kart);  // 80854b40 same as above
 
-    static Page* GetPageById(PageId id = PAGE_UNLOCK);  // 80853cb8
+    static Page *GetPageById(PageId id = PAGE_UNLOCK);  // 80853cb8
     // onButtonClick     vtable = 0x808bcff4 function = 8085447c
     // onButtonSelect    vtable = 0x808bcff4 offset   = 0x64
     // onButtonDeselect  vtable = 0x808bcff4 function = 8085474c

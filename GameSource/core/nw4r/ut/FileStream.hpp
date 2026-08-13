@@ -10,7 +10,7 @@ class FileStream : public IOStream {
     virtual u32 GetSize() const = 0;  // 0x40
     virtual void Seek(s32 offset, u32 origin);  // 0x44
     virtual void Cancel();  // 0x48 800afef0
-    virtual bool CancelAsync(IOStreamCallback callback, void* arg);  // 0x4c 800aff00
+    virtual bool CancelAsync(IOStreamCallback callback, void *arg);  // 0x4c 800aff00
     virtual bool CanSeek() const = 0;  // 0x50
     virtual bool CanCancel() const = 0;  // 0x54
     virtual u32 Tell() const = 0;  // 0x58

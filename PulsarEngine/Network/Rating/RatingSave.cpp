@@ -56,16 +56,16 @@ static bool IsUsableProfileId(s32 id) {
     return id > 0 && id < RESERVED_PROFILE_ID_BASE;
 }
 
-static const char* GetPath() {
+static const char *GetPath() {
     if (sPath[0] == '\0') {
-        const System* sys = System::sInstance;
+        const System *sys = System::sInstance;
         if (!sys) return nullptr;
         snprintf(sPath, IOS::ipcMaxPath, "%s/RRRating.pul", sys->GetModFolder());
     }
     return sPath;
 }
 
-static ProfileEntry* FindProfile(s32 id) {
+static ProfileEntry *FindProfile(s32 id) {
     if (!IsUsableProfileId(id)) return nullptr;
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         if (sProfiles[i].profileId == id) return &sProfiles[i];
@@ -73,14 +73,14 @@ static ProfileEntry* FindProfile(s32 id) {
     return nullptr;
 }
 
-static ProfileEntry* AllocProfile(s32 id) {
+static ProfileEntry *AllocProfile(s32 id) {
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         if (!sProfiles[i].hasData) {
             sProfiles[i].profileId = id;
             return &sProfiles[i];
         }
     }
-    ProfileEntry& rep = sProfiles[sReplaceIdx];
+    ProfileEntry &rep = sProfiles[sReplaceIdx];
     sReplaceIdx = (sReplaceIdx + 1) % MAX_PROFILES;
     rep.hasData = false;
     rep.vr = 0.0f;
@@ -89,9 +89,9 @@ static ProfileEntry* AllocProfile(s32 id) {
     return &rep;
 }
 
-static ProfileEntry* GetProfile(s32 id, bool create) {
+static ProfileEntry *GetProfile(s32 id, bool create) {
     if (!IsUsableProfileId(id)) return nullptr;
-    ProfileEntry* e = FindProfile(id);
+    ProfileEntry *e = FindProfile(id);
     if (e) return e;
     if (create) return AllocProfile(id);
     return nullptr;
@@ -100,7 +100,7 @@ static ProfileEntry* GetProfile(s32 id, bool create) {
 static s32 ResolveProfileIdForLicense(u32 licenseId) {
     if (licenseId >= MAX_LICENSES) return 0;
 
-    RKSYS::Mgr* mgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *mgr = RKSYS::Mgr::sInstance;
     if (mgr != nullptr) {
         const s32 liveProfileId = mgr->licenses[licenseId].dwcAccUserData.gsProfileId;
         if (IsUsableProfileId(liveProfileId)) {
@@ -113,7 +113,7 @@ static s32 ResolveProfileIdForLicense(u32 licenseId) {
     return IsUsableProfileId(boundProfileId) ? boundProfileId : 0;
 }
 
-static ProfileEntry* GetProfileForLicense(u32 licenseId, bool create) {
+static ProfileEntry *GetProfileForLicense(u32 licenseId, bool create) {
     return GetProfile(ResolveProfileIdForLicense(licenseId), create);
 }
 
@@ -121,8 +121,8 @@ static void Load() {
     if (sLoaded) return;
     sLoaded = true;
 
-    IO* io = IO::sInstance;
-    const char* path = GetPath();
+    IO *io = IO::sInstance;
+    const char *path = GetPath();
     if (!io || !path || !io->OpenFile(path, FILE_MODE_READ)) return;
 
     union {
@@ -156,8 +156,8 @@ static void Load() {
 }
 
 static void Save() {
-    IO* io = IO::sInstance;
-    const char* path = GetPath();
+    IO *io = IO::sInstance;
+    const char *path = GetPath();
     if (!io || !path) return;
 
     struct {
@@ -193,7 +193,7 @@ static float ClampF(float v) {
 
 void SaveProfileVR(s32 profileId, float vr) {
     Load();
-    ProfileEntry* e = GetProfile(profileId, true);
+    ProfileEntry *e = GetProfile(profileId, true);
     if (e) {
         e->vr = ClampF(vr);
         e->hasData = true;
@@ -203,7 +203,7 @@ void SaveProfileVR(s32 profileId, float vr) {
 
 void SaveProfileBR(s32 profileId, float br) {
     Load();
-    ProfileEntry* e = GetProfile(profileId, true);
+    ProfileEntry *e = GetProfile(profileId, true);
     if (e) {
         e->br = ClampF(br);
         e->hasData = true;
@@ -213,19 +213,19 @@ void SaveProfileBR(s32 profileId, float br) {
 
 float GetUserVR(u32 licenseId) {
     Load();
-    ProfileEntry* e = GetProfileForLicense(licenseId, false);
+    ProfileEntry *e = GetProfileForLicense(licenseId, false);
     return (e && e->hasData) ? e->vr : DEFAULT_RATING;
 }
 
 float GetUserBR(u32 licenseId) {
     Load();
-    ProfileEntry* e = GetProfileForLicense(licenseId, false);
+    ProfileEntry *e = GetProfileForLicense(licenseId, false);
     return (e && e->hasData) ? e->br : DEFAULT_RATING;
 }
 
 void SetUserVR(u32 licenseId, float vr) {
     Load();
-    ProfileEntry* e = GetProfileForLicense(licenseId, true);
+    ProfileEntry *e = GetProfileForLicense(licenseId, true);
     if (e) {
         e->vr = ClampF(vr);
         e->hasData = true;
@@ -236,7 +236,7 @@ void SetUserVR(u32 licenseId, float vr) {
 
 void SetUserBR(u32 licenseId, float br) {
     Load();
-    ProfileEntry* e = GetProfileForLicense(licenseId, true);
+    ProfileEntry *e = GetProfileForLicense(licenseId, true);
     if (e) {
         e->br = ClampF(br);
         e->hasData = true;
@@ -250,7 +250,7 @@ void BindLicenseProfileId(u32 licenseId, s32 profileId) {
     if (IsUsableProfileId(profileId)) sBoundProfileIds[licenseId] = profileId;
 }
 
-static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr& lic) {
+static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr &lic) {
     Load();
     if (idx >= MAX_LICENSES) return;
 
@@ -259,7 +259,7 @@ static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr& lic) {
     sBackups[idx].hasOriginal = true;
 
     const s32 profileId = ResolveProfileIdForLicense(idx);
-    ProfileEntry* e = GetProfile(profileId, true);
+    ProfileEntry *e = GetProfile(profileId, true);
     if (!e) return;
 
     if (!e->hasData) {
@@ -272,7 +272,7 @@ static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr& lic) {
     lic.br.points = ClampU16(e->br);
 }
 
-static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr& lic) {
+static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr &lic) {
     Load();
     if (idx >= MAX_LICENSES) return;
 
@@ -283,7 +283,7 @@ static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr& lic) {
     }
 
     const s32 profileId = ResolveProfileIdForLicense(idx);
-    ProfileEntry* e = GetProfile(profileId, true);
+    ProfileEntry *e = GetProfile(profileId, true);
     if (!e) return;
 
     if (!e->hasData) {
@@ -297,10 +297,10 @@ static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr& lic) {
 }
 
 extern "C" int SaveManager_ReadLicenseHook() {
-    RKSYS::Mgr* mgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *mgr = RKSYS::Mgr::sInstance;
     if (!mgr) return 1;
 
-    RKSYS::LicenseMgr* lic = nullptr;
+    RKSYS::LicenseMgr *lic = nullptr;
     asm("mr %0, r31" : "=r"(lic));
     if (!lic) return 1;
 
@@ -313,8 +313,8 @@ extern "C" int SaveManager_ReadLicenseHook() {
     return 1;
 }
 
-extern "C" void SaveManager_WriteLicenseHook(RKSYS::Binary* raw, u32 idx) {
-    RKSYS::Mgr* mgr = RKSYS::Mgr::sInstance;
+extern "C" void SaveManager_WriteLicenseHook(RKSYS::Binary *raw, u32 idx) {
+    RKSYS::Mgr *mgr = RKSYS::Mgr::sInstance;
     if (!mgr || idx >= MAX_LICENSES) return;
 
     StoreFromLicense(idx, mgr->licenses[idx]);

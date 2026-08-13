@@ -11,7 +11,7 @@ namespace UI {
 
 class RaceControlButtonInfo : public ControlButtonInfo {  // needed because inputs are inverted online in mirror
    public:
-    void Update(const Input::ControllerHolder* controllerHolder) override;
+    void Update(const Input::ControllerHolder *controllerHolder) override;
 };
 
 class ChooseNextTrack : public Pages::RaceMenu {  // use page 0x27
@@ -34,14 +34,14 @@ class ChooseNextTrack : public Pages::RaceMenu {  // use page 0x27
     // const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;
     int GetMessageBMG() const override;
     u32 GetButtonCount() const override;
-    const u32* GetVariantsIdxArray() const override;
+    const u32 *GetVariantsIdxArray() const override;
     bool IsPausePage() const override;
-    const char* GetButtonsBRCTRName() const override;
+    const char *GetButtonsBRCTRName() const override;
 
    private:
-    void OnRightArrowSelect(SheetSelectControl& control, u32 hudSlotId);
-    void OnLeftArrowSelect(SheetSelectControl& control, u32 hudSlotId);
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 8055a0f4
+    void OnRightArrowSelect(SheetSelectControl &control, u32 hudSlotId);
+    void OnLeftArrowSelect(SheetSelectControl &control, u32 hudSlotId);
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 8055a0f4
 
    public:
     SectionId ProcessHAW(SectionId defaultId);
@@ -59,14 +59,14 @@ class ChooseNextTrack : public Pages::RaceMenu {  // use page 0x27
 
    private:
     void InitExtraControls(u32 gameControlCount);
-    PtmfHolder_2A<ChooseNextTrack, void, SheetSelectControl&, u32> onRightArrowSelectHandler;
-    PtmfHolder_2A<ChooseNextTrack, void, SheetSelectControl&, u32> onLeftArrowSelectHandler;
+    PtmfHolder_2A<ChooseNextTrack, void, SheetSelectControl &, u32> onRightArrowSelectHandler;
+    PtmfHolder_2A<ChooseNextTrack, void, SheetSelectControl &, u32> onLeftArrowSelectHandler;
     SheetSelectControlScaleFade arrows;
     CountDownTimerControl countdownControl;
     CountDown countdown;
     u32 curPageIdx;
 
-    friend void RaceMenuExtraControls(Pages::RaceMenu& page, u32 gameControlCount);
+    friend void RaceMenuExtraControls(Pages::RaceMenu &page, u32 gameControlCount);
 };
 }  // namespace UI
 }  // namespace Pulsar

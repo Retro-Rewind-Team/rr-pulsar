@@ -11,7 +11,7 @@ struct PulRH1;
 namespace BattleRoyale {
 
 bool ShouldApplyBattleRoyale();
-void WriteRH1Packet(Network::PulRH1& packet);
+void WriteRH1Packet(Network::PulRH1 &packet);
 
 }  // namespace BattleRoyale
 }  // namespace Pulsar

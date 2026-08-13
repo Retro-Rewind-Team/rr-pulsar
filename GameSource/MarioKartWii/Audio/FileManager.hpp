@@ -26,8 +26,8 @@ class GroupBankRequester {
         u8 padding[2];
         u32 bankId;
     };
-    GroupBankRequester* sInstance;  // 809c2690
-    GroupBankRequester* CreateInstance();  // 806ffcd8
+    GroupBankRequester *sInstance;  // 809c2690
+    GroupBankRequester *CreateInstance();  // 806ffcd8
     void DestroyInstance();  // 806ffe40
     GroupBankRequester();  // 806ffef4
     ~GroupBankRequester();  // 80700030
@@ -49,26 +49,26 @@ class GroupBankRequester {
 // there is an intermediate cb class  //806fea20 vtable 808c7da8
 class FileManager : public snd::detail::SoundArchivePlayer_FileManager, public snd::detail::DisposeCallback {
     static FileManager mInstance;  // 809c236c
-    static FileManager* Init(snd::SoundArchive* archive, snd::SoundHeap* heap);  // 806feaa0
+    static FileManager *Init(snd::SoundArchive *archive, snd::SoundHeap *heap);  // 806feaa0
     FileManager();  // 806ff660
 
     // FileManager vtable 808c7a98, this checks if the file has already been loaded
-    const void* GetFileAddress(snd::SoundArchive::FileId fileId) const override;  // 806ff638
-    const void* GetFileWaveDataAddress(snd::SoundArchive::FileId fileId) const override;  // 806ff610
+    const void *GetFileAddress(snd::SoundArchive::FileId fileId) const override;  // 806ff638
+    const void *GetFileWaveDataAddress(snd::SoundArchive::FileId fileId) const override;  // 806ff610
 
     // DisposeCallback vtable 808c7aa8 at 0xC
     ~FileManager() override;  // thunk 806ff6c0 func 806fe9e0
-    void InvalidateData(const void* start, const void* end) override;  // thunk 806ff6b8 func 806ff5c4
-    void InvalidateWaveData(const void* start, const void* end) override;  // thunk 806ff6b0 func 806ff578
-    static bool IsBankLoaded(snd::SoundArchivePlayer* archivePlayer, u32 bankId);  // 806ff17c
-    static bool LoadBank(snd::SoundArchive* archive, u32 bankId, snd::SoundHeap* heap);  // 806fee90
+    void InvalidateData(const void *start, const void *end) override;  // thunk 806ff6b8 func 806ff5c4
+    void InvalidateWaveData(const void *start, const void *end) override;  // thunk 806ff6b0 func 806ff578
+    static bool IsBankLoaded(snd::SoundArchivePlayer *archivePlayer, u32 bankId);  // 806ff17c
+    static bool LoadBank(snd::SoundArchive *archive, u32 bankId, snd::SoundHeap *heap);  // 806fee90
     static void SetRequest(u32 id, bool isBankId);  // 806ff6c8 impl of one above
     static void LoadGroupAsync(u32 groupId);  // 806ff8a4
 
-    void* unknown_0x10;
+    void *unknown_0x10;
     static u32 fileCount;  // 0x809c2360
-    static snd::detail::BankFile* loadedBanks;  // 809c2364 RBNK use fileId to access or the virtual functions
-    static snd::detail::WaveArchive* loadedWaves;  // 809c2368 RWAR use fileId to access
+    static snd::detail::BankFile *loadedBanks;  // 809c2364 RBNK use fileId to access or the virtual functions
+    static snd::detail::WaveArchive *loadedWaves;  // 809c2368 RWAR use fileId to access
 
 };  // 0x14
 }  // namespace Audio

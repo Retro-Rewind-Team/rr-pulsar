@@ -16,7 +16,7 @@ class PostEffect {
     void SetVtxState();  // 80234ba4
     u16 bitfield;  // 0x0
     GX::BlendMode blendMode;  // 0x4
-    CapTexture* capTexture;  // 0x8
+    CapTexture *capTexture;  // 0x8
     Vector2f pos;  // 0xC
     Vector2f scale;  // 0x14
     u8 unknown_0x1c[8];

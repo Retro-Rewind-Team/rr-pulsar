@@ -14,9 +14,9 @@ class Penguin : public ObjectCollidable {
     u32 GetPropertiesBitfield() override;  // 0x2c 80777324
     void LoadAnimations() override;  // 0x5c 807772c8
 
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 80775c58
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 80775ce0
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 80775c58
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 80775ce0
 
     virtual void vf_0xec();  // 0xec 8077731c
     virtual void UpdateWithRot();  // 0xf0 807757a0
@@ -31,7 +31,7 @@ class Penguin : public ObjectCollidable {
     Vec3 dir;  // 0xb4
     u32 counterNoRotation;  // 0xc0 -1 every frame
     u32 unknown_0xc4;
-    ObjectEffect* effect;  // 0xc8 rk_PgnSpin for example
+    ObjectEffect *effect;  // 0xc8 rk_PgnSpin for example
     float unknown_0xcc;
     float unknown_0xd0;  // 0xd0
     bool unknown_0xd4;
@@ -49,7 +49,7 @@ class PenguinUnkObj : ObjectCollidable {  // its model is invisible but has anim
 
 class Penguin_s : public Penguin {  // ObjectNum 0xd7 = 215
    public:
-    explicit Penguin_s(const KMP::Holder<GOBJ>& gobjHolder);  // 80775e60
+    explicit Penguin_s(const KMP::Holder<GOBJ> &gobjHolder);  // 80775e60
     ~Penguin_s() override;  // 80776070 vtable 808d0054
     void OnStart() override;  // 0xc 807760b0
     void Update() override;  // 0x14 80776198
@@ -65,19 +65,19 @@ class Penguin_s : public Penguin {  // ObjectNum 0xd7 = 215
     u8 unknown_0xd8[4];  // 0xd8
     u32 unknown_0xdc;  // 0xdc
     float unknown_0xe0;  // 0xe0
-    ObjectEffect* rk_pgnSlider_s;  // 0xe4
-    PenguinUnkObj* unkPenObj;  // 0xe8
+    ObjectEffect *rk_pgnSlider_s;  // 0xe4
+    PenguinUnkObj *unkPenObj;  // 0xe8
 };  // 0xec
 
 class Penguin_m : public Penguin {  // ObjectNum 0xd8 = 216
    public:
-    explicit Penguin_m(const KMP::Holder<GOBJ>& gobjHolder);  // 8077708c
+    explicit Penguin_m(const KMP::Holder<GOBJ> &gobjHolder);  // 8077708c
     ~Penguin_m() override;  // 80776070 vtable 808cff48
 };  // 0xd8
 
 class Penguin_l : public Penguin {  // ObjectNum 0xd9 = 217
    public:
-    explicit Penguin_l(const KMP::Holder<GOBJ>& gobjHolder);  // 80777130
+    explicit Penguin_l(const KMP::Holder<GOBJ> &gobjHolder);  // 80777130
     ~Penguin_l() override;  // 80777524 vtable 808cfd48
     void OnStart() override;  // 807771dc
     void UpdateModelMatrix() override;  // 0x6c 80777284

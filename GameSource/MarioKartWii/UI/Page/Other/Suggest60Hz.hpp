@@ -17,7 +17,7 @@ class Suggest60Hz : public Page {  // ID 0x2 background page that manages the se
     void OnInit() override;  // 0x28 806377a8
     void OnActivate() override;  // 0x30 80637850
     void AfterControlUpdate() override;  // 0x4c 8063789c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8063795c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 8063795c
 
     ManipulatorManager manipulatorManager;  // 0x44
     LayoutUIControl hzSuggestion;  // 0x54

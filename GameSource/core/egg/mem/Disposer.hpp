@@ -14,7 +14,7 @@ class Disposer {  // a way to garbage collect objects when a heap is destroyed
     virtual ~Disposer();  // 8021a144 vtable 802a2b48
 
    private:
-    Heap* heap;
+    Heap *heap;
     nw4r::ut::LinkListNode link;  // the heap traverses the link list on destruction and calls all the dtors
 };  // Total size 0x10
 

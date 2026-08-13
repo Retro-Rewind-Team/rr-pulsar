@@ -14,8 +14,8 @@ class LightObj {  // just a wrapper
     u32 flag;
     GX::LightObj obj;
     void Clear();  // 80077850
-    void GetLightDir(math::VEC3* dest) const;  // 80077910
-    void GetLightPos(math::VEC3* v) const;  // 800778f0
+    void GetLightDir(math::VEC3 *dest) const;  // 80077910
+    void GetLightPos(math::VEC3 *v) const;  // 800778f0
     void InitLightAttnA(float a0, float a1, float a2);  // 80077790
     void InitLightAttnK(float k0, float k1, float k2);  // 80077810
     void InitLightColor(GX::Color color);  // 80077680
@@ -44,23 +44,23 @@ struct LightSetData {
 class LightSetting;
 class LightSet {
    public:
-    LightSet(LightSetting* setting, LightSetData* setData);  // inlined
+    LightSet(LightSetting *setting, LightSetData *setData);  // inlined
     bool SelectLightObj(u32 idxLight, int idxLightObj);  // 80078030
     bool SelectAmbLightObj(int idxAmbLightObj);  // 800780a0
-    LightSetting* setting;
-    LightSetData* lightSetData;
+    LightSetting *setting;
+    LightSetData *lightSetData;
 };
 
 class LightSetting {
    public:
-    LightSetting(LightObj* lightObjArray, AmbLightObj* ambLightObjArray, u32 lightCount, LightSetData* lightSetDataArray, u32 numLightSet);  // 80077930
-    bool Import(const LightSetting& rhs);  // 80077d70
-    void ApplyViewMtx(const math::MTX34& camera, u32 objCount);  // 80077f10
+    LightSetting(LightObj *lightObjArray, AmbLightObj *ambLightObjArray, u32 lightCount, LightSetData *lightSetDataArray, u32 numLightSet);  // 80077930
+    bool Import(const LightSetting &rhs);  // 80077d70
+    void ApplyViewMtx(const math::MTX34 &camera, u32 objCount);  // 80077f10
     u16 lightCount;
     u16 lightSetCount;
-    LightObj* lightObjArray;
-    AmbLightObj* ambLightObjArray;
-    LightSetData* lightSetDataArray;
+    LightObj *lightObjArray;
+    AmbLightObj *ambLightObjArray;
+    LightSetData *lightSetDataArray;
 };
 
 }  // namespace g3d

@@ -15,8 +15,8 @@ class BackModelMgr {
     void SetBackModel(BackModelType type, bool reAnimate);  // 8082f780 reAnimate only works if type = curType and plays the transition again
     void ToggleVisible(bool isVisible);  // 8082f84c
 
-    ModelDirector* cur;  // 0x4
-    ModelDirector* mdlArray;  // 0x8
+    ModelDirector *cur;  // 0x4
+    ModelDirector *mdlArray;  // 0x8
     BackModelType curType;  // 0xC used to get scale from a float array as well as position
 };  // 0x10
 

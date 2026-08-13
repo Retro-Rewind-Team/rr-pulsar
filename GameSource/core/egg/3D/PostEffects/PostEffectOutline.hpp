@@ -18,7 +18,7 @@ class PostEffectOutline : public PostEffect {  // https://imgur.com/mgtzqwD outl
     u16 unknown_0x34;
     u8 padding[2];
     float unknown_0x38[5];
-    CpuTexture* cpuTexture;  // 0x4c
+    CpuTexture *cpuTexture;  // 0x4c
 };  // 0x50
 
 }  // namespace EGG

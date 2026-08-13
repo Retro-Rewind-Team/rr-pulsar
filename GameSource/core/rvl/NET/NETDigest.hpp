@@ -11,10 +11,10 @@ struct SHA1Context {
     u32 blocks_high;
 };
 
-void SHA1Init(SHA1Context* context);
-void SHA1Update(SHA1Context* context, const void* input, u32 length);
-void SHA1Fill(SHA1Context* context, u8 input, u32 length);
-void SHA1GetDigest(SHA1Context* context, void* digest);
+void SHA1Init(SHA1Context *context);
+void SHA1Update(SHA1Context *context, const void *input, u32 length);
+void SHA1Fill(SHA1Context *context, u8 input, u32 length);
+void SHA1GetDigest(SHA1Context *context, void *digest);
 
 }  // namespace NET
 #endif

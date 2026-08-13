@@ -16,7 +16,7 @@ class CreditsBars {  // https://imgur.com/6NhidNt because credits are not meant 
     void Draw();  // 8054e9d4 inlined
     float screenWidth;  // 0x4
     float screenHeight;  // 0x8
-    float* heightOfBars;  // 0xC
+    float *heightOfBars;  // 0xC
     bool isInitialized;  // 0x10
     u8 padding[3];
 };  // 0x14

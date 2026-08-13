@@ -36,14 +36,14 @@ class LightObject : public IBinary<LightObject> {
 
     LightObject();  // 8022b6d4
 
-    void SetBinaryImpl(const IBinary::Binary& rawLOBJ) override;  // 0x8 8022c2b4 vtable 802a3128
-    void GetBinaryImpl(IBinary::Binary* lobjDest) const override;  // 0xc 8022c958
-    const char* GetBinaryType() const override;  // 0x10 8022c2a4
+    void SetBinaryImpl(const IBinary::Binary &rawLOBJ) override;  // 0x8 8022c2b4 vtable 802a3128
+    void GetBinaryImpl(IBinary::Binary *lobjDest) const override;  // 0xc 8022c958
+    const char *GetBinaryType() const override;  // 0x10 8022c2a4
     u32 GetBinarySize() const override;  // 0x14 8022b664
     u8 GetVersion() const override;  // 0x18 8022d0f0
     void DoubleMount() override;  // 0x1c 8022ca4c
 
-    void Load(const BinaryLIGHTObject& raw);  // 8022b414
+    void Load(const BinaryLIGHTObject &raw);  // 8022b414
     void CalcDestination();  // 8022c260
     void CalcDir();  // 8022c1bc
 

@@ -52,11 +52,11 @@ class ProcessMeter : public Thread, public PerformanceView {
     class CpuGpMonitor : public CpuMonitor {  // cpumonitor's bar is the green
        public:
         struct Next {
-            void* gxFifoWritePtr;  // from GX::GetFifoPtrs
+            void *gxFifoWritePtr;  // from GX::GetFifoPtrs
             u16 curGXDrawSyncToken;
             u8 padding[2];
-            Next* next;
-            CpuGpMonitor* cpuGpMonitor;
+            Next *next;
+            CpuGpMonitor *cpuGpMonitor;
         };  // 0x10
         CpuGpMonitor(const nw4r::ut::Color color, float yOrigin);  // inlined
         void show() override;  // 80238804 vtable 802a3d48
@@ -66,14 +66,14 @@ class ProcessMeter : public Thread, public PerformanceView {
         ProcessBar blueBar;
         u16 unknown_0x54;
         u8 padding[2];
-        ProcessMeter* processMeter;  // 0x58
+        ProcessMeter *processMeter;  // 0x58
         Next begin;
         Next end;
     };  // 0x7c
 
     explicit ProcessMeter(bool r4);  // 8023883c
     ~ProcessMeter() override;  // 80239628 vtable 802a3ce0
-    void* Run() override;  // 80238d8c
+    void *Run() override;  // 80238d8c
 
     // 0x48, vtable parent 2 802a3cf8
     void measureBeginFrame() override;  // 0x8  thunk 802396b8 func 80238a94
@@ -85,10 +85,10 @@ class ProcessMeter : public Thread, public PerformanceView {
     void setVisible(bool isVisible) override;  // 0x24 thunk 80239688 func 80238f14
     bool isVisible() const override;  // 0x28 thunk 80239680 func 80238f3c
 
-    void append(CpuMonitor* cpuMonitor);  // 80238f48
-    void append(CpuGpMonitor* cpuGpMonitor);  // 80238f54
+    void append(CpuMonitor *cpuMonitor);  // 80238f48
+    void append(CpuGpMonitor *cpuGpMonitor);  // 80238f54
     void callbackDrawSyncStatic();  // 80234a04
-    void SetDrawSync(CpuGpMonitor::Next* next);  // 80238e38
+    void SetDrawSync(CpuGpMonitor::Next *next);  // 80238e38
     void drawSetting(float width, float height);  // 802393e0
     void draw(u32 videoTicks, float width, float height);
 
@@ -98,8 +98,8 @@ class ProcessMeter : public Thread, public PerformanceView {
     float xSize;
     float ySize;
     nw4r::ut::List processBarList;  // 0x60
-    CpuGpMonitor::Next* beginNext;  // 0x6c
-    CpuGpMonitor::Next* endNext;  // 0x70
+    CpuGpMonitor::Next *beginNext;  // 0x6c
+    CpuGpMonitor::Next *endNext;  // 0x70
     ProcessBar bgBar;  // 0x74
     CpuMonitor cpuMonitor;  // 0x9c
     CpuGpMonitor cpuGpMonitor;  // 0xc8

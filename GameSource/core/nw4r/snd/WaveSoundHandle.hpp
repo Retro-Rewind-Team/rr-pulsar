@@ -6,9 +6,9 @@
 namespace nw4r {
 namespace snd {
 class WaveSoundHandle {
-    WaveSoundHandle(SoundHandle* handle);  // 800ad860
+    WaveSoundHandle(SoundHandle *handle);  // 800ad860
     void DetachSound();  // 800ad970
-    detail::WaveSound* sound;
+    detail::WaveSound *sound;
 };  // total size 0x4
 }  // namespace snd
 }  // namespace nw4r

@@ -11,7 +11,7 @@ namespace Pulsar {
 namespace UI {
 
 class CustomItemPage : public ::Pages::MenuInteractable {
-public:
+   public:
     CustomItemPage();
     ~CustomItemPage() override;
     void OnInit() override;
@@ -19,9 +19,9 @@ public:
     void OnDeactivate() override;
     void BeforeEntranceAnimations() override;
 
-    void OnButtonClick(PushButton& button, u32 hudSlotId);
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId);
+    void OnButtonClick(PushButton &button, u32 hudSlotId);
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId);
     void OnBackPress(u32 hudSlotId);
     void AfterControlUpdate() override;
     void StartFriendRoomPreview(PageId nextPageId);
@@ -30,27 +30,27 @@ public:
     // Menu virtuals
     int GetActivePlayerBitfield() const override { return this->activePlayerBitfield; }
     int GetPlayerBitfield() const override { return this->playerBitfield; }
-    ManipulatorManager& GetManipulatorManager() override { return this->controlsManipulatorManager; }
-    UIControl* CreateControl(u32 controlId) override;
+    ManipulatorManager &GetManipulatorManager() override { return this->controlsManipulatorManager; }
+    UIControl *CreateControl(u32 controlId) override;
 
     static const PulPageId id = PULPAGE_CUSTOMITEMS;
 
-private:
+   private:
     u32 GetDisplayBitfield() const;
     void UpdateButtonVisuals();
-    void SetButtonIcon(PushButton& button, u32 itemId);
+    void SetButtonIcon(PushButton &button, u32 itemId);
 
     CountDown previewTimer;
-    PushButton buttons[20]; // 19 items + 1 randomize
+    PushButton buttons[20];  // 19 items + 1 randomize
     PageId friendRoomPreviewNextPageId;
     bool isFriendRoomPreview;
-    PtmfHolder_2A<CustomItemPage, void, PushButton&, u32> onButtonClickHandler;
-    PtmfHolder_2A<CustomItemPage, void, PushButton&, u32> onButtonSelectHandler;
-    PtmfHolder_2A<CustomItemPage, void, PushButton&, u32> onButtonDeselectHandler;
+    PtmfHolder_2A<CustomItemPage, void, PushButton &, u32> onButtonClickHandler;
+    PtmfHolder_2A<CustomItemPage, void, PushButton &, u32> onButtonSelectHandler;
+    PtmfHolder_2A<CustomItemPage, void, PushButton &, u32> onButtonDeselectHandler;
     PtmfHolder_1A<CustomItemPage, void, u32> onBackPressHandler;
 };
 
-} // namespace UI
-} // namespace Pulsar
+}  // namespace UI
+}  // namespace Pulsar
 
 #endif

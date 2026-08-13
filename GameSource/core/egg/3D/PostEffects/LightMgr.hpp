@@ -35,9 +35,9 @@ class LightMgr : public IBinary<LightMgr> {
         // BinaryAmbLight lights;
     };
 
-    void SetBinaryImpl(const IBinary::Binary& rawBlight) override;  // 0x8 8022a8f0 vtable 802a3100
-    void GetBinaryImpl(IBinary::Binary* blightDest) const override;  // 0xc 8022aee4
-    const char* GetBinaryType() const override;  // 0x10 8022a8e0
+    void SetBinaryImpl(const IBinary::Binary &rawBlight) override;  // 0x8 8022a8f0 vtable 802a3100
+    void GetBinaryImpl(IBinary::Binary *blightDest) const override;  // 0xc 8022aee4
+    const char *GetBinaryType() const override;  // 0x10 8022a8e0
     u32 GetBinarySize() const override;  // 0x14 8022b6ac
     u8 GetVersion() const override;  // 0x18 8022b6cc
     void DoubleMount() override;  // 0x1c 8022afd8
@@ -50,11 +50,11 @@ class LightMgr : public IBinary<LightMgr> {
     u16 ambLightCount;
     u16 maxLightObjCount;  // 0x8
     u16 maxAmbLightCount;  // 0xA
-    LightObject** lightObjs;  // 0xC
-    BinaryAmbLight* ambientLights;  // 0x10
+    LightObject **lightObjs;  // 0xC
+    BinaryAmbLight *ambientLights;  // 0x10
     GX::Color ambBlackColor;  // 0x14
     u8 unknown_0x18[0x20 - 0x18];
-    LightMap* binary;  // 0x20
+    LightMap *binary;  // 0x20
     u8 unknown_0x24[0x2C - 0x24];
 };
 }  // namespace EGG

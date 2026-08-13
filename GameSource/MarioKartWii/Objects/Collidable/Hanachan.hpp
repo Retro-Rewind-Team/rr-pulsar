@@ -23,14 +23,14 @@ class HanachanPart : public ObjectCollidable {
     void OnStart() override;  // 0xC 806c6b7c
     void Update() override;  // 0x14 806c6c10
     u32 GetPropertiesBitfield() override;  // 0x2c 806ccad0
-    const char* GetSubFileName() const override;  // 0x38 806ccb88
+    const char *GetSubFileName() const override;  // 0x38 806ccb88
     void LoadModels() override;  // 0x44 806c6b44
     void LoadRoute() override;  // 0x64 806ccacc
     void UpdateModelMatrix() override;  // 0x6c 806cca14
     bool vf_0x84() override;  // 0x84 0x84 806cca0c
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806c6c94
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 806c6e40
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806c6c94
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806c6e40
 
     virtual void vf_0xec() = 0;  // 0xec
     virtual void vf_0xf0() = 0;  // 0xf0
@@ -53,8 +53,8 @@ class HanachanBody : public HanachanPart {
    public:
     ~HanachanBody() override;  // 806ccad8 vtable 808c44e0
     void OnStart() override;  // 0xC 806c8878
-    const char* GetSubFileName() const override;  // 0x38 806ccb80
-    const char* GetShadowResName() const override;  // 0x40 806ccb74
+    const char *GetSubFileName() const override;  // 0x38 806ccb80
+    const char *GetShadowResName() const override;  // 0x40 806ccb74
     void LoadAnimations() override;  // 0x5c 806c87cc
 
     void vf_0xec() override;  // 0xec 806ccb4c
@@ -64,7 +64,7 @@ class HanachanBody : public HanachanPart {
     void vf_0xfc() override;  // 0xfc 806ccb18
     int vf_0x108() override;  // 0x108 806ccb6c
 
-    const char* mdlName;  // 0xe4
+    const char *mdlName;  // 0xe4
     u8 unknown_0xe8[0xfc - 0xe8];
 };  // 0xFC
 
@@ -72,22 +72,22 @@ class BossHanachanHead : public HanachanPart {  // ObjectNum 0xf2 = 242 BossHana
    public:
     class Handler {
        public:
-        explicit Handler(BossHanachanHead* head);  // inlined
-        BossHanachanHead* head;
+        explicit Handler(BossHanachanHead *head);  // inlined
+        BossHanachanHead *head;
     };
     class CalcWorldCB : public ModelCalcBase, public EmptyModelCalcParent, public g3d::ICalcWorldCallback, public Handler {
        public:
-        explicit CalcWorldCB(BossHanachanHead* head);  // inlined
+        explicit CalcWorldCB(BossHanachanHead *head);  // inlined
         // vtable 808c46f8 for empty, 808c4700 at 0x10
         ~CalcWorldCB() override;  // thunk 806cce80 func 806cce38
-        void ExecCallbackB(g3d::WorldMtxManip* manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj) override;  // thunk 806cce78 thunk 806c7cac
+        void ExecCallbackB(g3d::WorldMtxManip *manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj) override;  // thunk 806cce78 thunk 806c7cac
     };  // 0x14
-    explicit BossHanachanHead(const char* name);  // 806c7d74 inlined
+    explicit BossHanachanHead(const char *name);  // 806c7d74 inlined
     ~BossHanachanHead() override;  // 806ccb94 vtable 808c45ec
     void OnStart() override;  // 0xC 806c8204
     void Update() override;  // 0x14 806c82ac
 
-    const char* GetBRRESName() const override;  // 0x34 806cce28
+    const char *GetBRRESName() const override;  // 0x34 806cce28
     void LoadAnimations() override;  // 0x5c 806ccda0
     void LoadCollision() override;  // 0x60 806c818c
     void UpdateShadow() override;  // 0x70 806ccd24
@@ -101,17 +101,17 @@ class BossHanachanHead : public HanachanPart {  // ObjectNum 0xf2 = 242 BossHana
     int vf_0x108() override;  // 0x108 806ccd98
 
     u8 unknown_0xe4[4];
-    ModelDirector* hanachanAngry;  // 0xe4
-    EGG::Effect* rk_hanaBlow;  // 0xE8
-    EGG::Effect* rk_hanaPun;  // 0xEC
-    CalcWorldCB* CalcWorldCB;  // 0xf0
+    ModelDirector *hanachanAngry;  // 0xe4
+    EGG::Effect *rk_hanaBlow;  // 0xE8
+    EGG::Effect *rk_hanaPun;  // 0xEC
+    CalcWorldCB *CalcWorldCB;  // 0xf0
     u8 unknown_0xf4[0x104 - 0xf4];
 
 };  // 0x104
 
 class Hanachan : public ObjectCollidable, public StatePtmfTrigger<Hanachan> {  // ObjectNum 0xe2 = 226 Hanachan
    public:
-    explicit Hanachan(const KMP::Holder<GOBJ>& gobjHolder);  // 806c8a5c
+    explicit Hanachan(const KMP::Holder<GOBJ> &gobjHolder);  // 806c8a5c
     ~Hanachan() override;  // 806c9598 vtable 808c43b8
     void OnStart() override;  // 0xC 806c9630
     void Update() override;  // 0x14 806c9860
@@ -129,17 +129,17 @@ class Hanachan : public ObjectCollidable, public StatePtmfTrigger<Hanachan> {  /
     u8 padding[3];
     u32 bodyPartCount;  // 0xd4 init at 6
 
-    BossHanachanHead* hanaHead;  // 0xd8
-    HanachanBody* bodies;  // 0xdc
-    HanachanPart* parts;  // 4xd0
-    Linked3DPoints* partsGeometry;
-    Linked3DPoints* partsGeometry2;
+    BossHanachanHead *hanaHead;  // 0xd8
+    HanachanBody *bodies;  // 0xdc
+    HanachanPart *parts;  // 4xd0
+    Linked3DPoints *partsGeometry;
+    Linked3DPoints *partsGeometry2;
     float baseSpeed;  // 0xec setting 1
-    float* distBtwParts;  // 0xf0 one per body part
-    float* totalDistanceToHead;  // 0xf0, for each part
+    float *distBtwParts;  // 0xf0 one per body part
+    float *totalDistanceToHead;  // 0xf0, for each part
     u8 unknown_0xf8;
-    Vec3* vecs;  // 0xfc d4 vectors
-    float* float_0x100;  // 4xd4
+    Vec3 *vecs;  // 0xfc d4 vectors
+    float *float_0x100;  // 4xd4
     u8 unknown_0xd8[0x13c - 0x100];
 };  // 0x13c
 // size_assert(Hanachan, 0x13c);

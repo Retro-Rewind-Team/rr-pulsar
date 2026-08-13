@@ -49,7 +49,7 @@
 
 namespace Cosmos {
 
-WUP028Manager* WUP028Manager::sInstance = nullptr;
+WUP028Manager *WUP028Manager::sInstance = nullptr;
 
 void WUP028Manager::OnInit() {
     this->lastDataWrite = OS::GetTime();
@@ -77,7 +77,7 @@ void WUP028Manager::OnInit() {
     }
 }
 
-void WUP028Manager::CustomPADRead(PAD::Status* status) {
+void WUP028Manager::CustomPADRead(PAD::Status *status) {
     if (!this->isStarted) return;
     if (this->isWorking && this->isInit) {
         if (OS::TicksToMilliseconds(OS::GetTime() - this->lastDataWrite) > GCN_TIMEOUT_MS) {
@@ -104,8 +104,8 @@ void WUP028Manager::CustomPADRead(PAD::Status* status) {
         PAD::Read(status);
 }
 
-void PatchPADRead(PAD::Status* status) {
-    WUP028Manager* mgr = WUP028Manager::GetStaticInstance();
+void PatchPADRead(PAD::Status *status) {
+    WUP028Manager *mgr = WUP028Manager::GetStaticInstance();
     if (mgr) mgr->CustomPADRead(status);
 }
 kmCall(0x80523910, PatchPADRead);
@@ -130,7 +130,7 @@ void WUP028Manager::OnUsbPoll(s32 ret) {
         if (*PollMsgBuffer == 0x21) {
             s32 isr = OS::DisableInterrupts();
             for (int i = 0; i < 4; i++) {
-                u8* data = PollMsgBuffer + (i * 9 + 1);
+                u8 *data = PollMsgBuffer + (i * 9 + 1);
                 u8 status = data[0] >> 4;
                 if (status != 1 && status != 2) {
                     this->status[i].error = -1;
@@ -149,7 +149,7 @@ void WUP028Manager::OnUsbPoll(s32 ret) {
                 buttonData |= (data[7] >= GCN_TRIGGER_THRESHOLD ? PAD::PAD_BUTTON_L : 0);
                 buttonData |= (data[8] >= GCN_TRIGGER_THRESHOLD ? PAD::PAD_BUTTON_R : 0);
 
-                PAD::Status& gcn = this->status[i];
+                PAD::Status &gcn = this->status[i];
                 gcn.buttons = buttonData;
                 gcn.stickX = data[3] - 128;
                 gcn.stickY = data[4] - 128;

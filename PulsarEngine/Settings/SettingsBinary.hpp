@@ -84,15 +84,15 @@ class alignas(0x20) Binary {
     Binary(u32 trackCount);
 
     template <typename T>
-    inline T& GetSection() {
-        return *reinterpret_cast<T*>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
+    inline T &GetSection() {
+        return *reinterpret_cast<T *>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
     }
     template <typename T>
-    inline const T& GetSection() const {
-        return *reinterpret_cast<const T*>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
+    inline const T &GetSection() const {
+        return *reinterpret_cast<const T *>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
     }
     template <class T>
-    bool CheckSection(const T& t) {
+    bool CheckSection(const T &t) {
         if (t.header.magic != T::magic) return false;
         return true;
     }

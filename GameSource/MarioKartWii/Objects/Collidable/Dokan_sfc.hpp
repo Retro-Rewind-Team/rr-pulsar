@@ -6,7 +6,7 @@
 namespace Objects {
 class Dokan_sfc : public ObjectCollidable {  // ObjectNum 0x12e = 302
    public:
-    explicit Dokan_sfc(const KMP::Holder<GOBJ>& gobjHolder);  // 807787f0
+    explicit Dokan_sfc(const KMP::Holder<GOBJ> &gobjHolder);  // 807787f0
     ~Dokan_sfc() override;  // 80778fec vtable 808d04d8
     void OnStart() override;  // 0xC 80778830
     void Update() override;  // 0x14 807788c8
@@ -14,9 +14,9 @@ class Dokan_sfc : public ObjectCollidable {  // ObjectNum 0x12e = 302
     void LoadAnimations() override;  // 0x5c 80778f5c
     void UpdateShadow() override;  // 0x70 80778ea8
     void UpdateCollision() override;  // 0x74 80778d50
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 80778c0c
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 80778cc4
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 80778c0c
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 80778cc4
     virtual bool vf_0xec();  // 80778fdc
 
     bool hasBeenHit;  // 0xb0 by a star/mega

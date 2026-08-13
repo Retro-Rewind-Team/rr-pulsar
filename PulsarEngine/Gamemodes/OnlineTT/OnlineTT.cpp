@@ -29,20 +29,20 @@
 namespace Pulsar {
 
 namespace OTT {
-void CondCollisions(Kart::Collision& collision, const Kart::Player& other) {
+void CondCollisions(Kart::Collision &collision, const Kart::Player &other) {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
     collision.CheckKartCollision(other);
 }
 kmCall(0x80596dc8, CondCollisions);
 
-void CondSlipstream(Kart::Movement& movement) {
+void CondSlipstream(Kart::Movement &movement) {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
     movement.UpdateSlipstream();
 }
 kmCall(0x805798c0, CondSlipstream);
 
 void CondTTObjects(u32 r3, u32 r4, u32 r5, u32 r6, bool isTT) {
-    register ObjectsMgr* mgr;
+    register ObjectsMgr *mgr;
     asm(mr mgr, r31;);
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) isTT = true;
     mgr->isTT = isTT;
@@ -53,7 +53,7 @@ kmCall(0x8082a4ec, CondTTObjects);
 // Start with 3 shrooms part of "SetStartingItem" in MiscRace
 // Display end times already part of Pulsar
 
-void CondStartPos(KMP::Holder<KTPT>& holder, Vec3& position, Vec3& rotation, u32 playerPosition, u32 playerCount) {
+void CondStartPos(KMP::Holder<KTPT> &holder, Vec3 &position, Vec3 &rotation, u32 playerPosition, u32 playerCount) {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
         playerPosition = 1;
         playerCount = 1;
@@ -62,7 +62,7 @@ void CondStartPos(KMP::Holder<KTPT>& holder, Vec3& position, Vec3& rotation, u32
 }
 kmBranch(0x80514b2c, CondStartPos);
 
-bool CondAIRelatedTTCheck(bool, const Racedata& racedata) {  // most notably the animation on overtake
+bool CondAIRelatedTTCheck(bool, const Racedata &racedata) {  // most notably the animation on overtake
     const GameMode mode = racedata.racesScenario.settings.gamemode;
     bool isTT = (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE);
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) isTT = true;
@@ -70,9 +70,9 @@ bool CondAIRelatedTTCheck(bool, const Racedata& racedata) {  // most notably the
 }
 kmBranch(0x807396b0, CondAIRelatedTTCheck);
 
-static bool CondTTCycles(const Raceinfo& raceInfo) {  // this function is only called for onlineModes, true = objects and entity get updated this frame
+static bool CondTTCycles(const Raceinfo &raceInfo) {  // this function is only called for onlineModes, true = objects and entity get updated this frame
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
-        const OpeningPan* pan = RaceCameraMgr::sInstance->cameras[0]->openingPan;
+        const OpeningPan *pan = RaceCameraMgr::sInstance->cameras[0]->openingPan;
         if (pan->bitfield & 0x3) return true;  // Is the pan not finished yet? always update the objects
     }
     return raceInfo.IsAtLeastStage(RACESTAGE_COUNTDOWN);  // if the pan is finished but the countdown has not started, freeze the objects
@@ -90,7 +90,7 @@ static bool CondPylonCollision(u32, u8 playerId) {  // returns true if ghost col
 kmCall(0x8082dc5c, CondPylonCollision);
 kmWrite32(0x8082dc60, 0x2c030001);
 
-static bool CondPoihanaStopOnHit(const Kart::Player& player) {  // disables the poihana animating on hit if returns false
+static bool CondPoihanaStopOnHit(const Kart::Player &player) {  // disables the poihana animating on hit if returns false
     const u32 bitfield = player.pointers.kartStatus->bitfield4;
     if (System::sInstance->IsContext(PULSAR_MODE_OTT))
         return !(bitfield & 0x2);  // return false if player is local, as that is the only situation where the cataquack should stop
@@ -99,7 +99,7 @@ static bool CondPoihanaStopOnHit(const Kart::Player& player) {  // disables the 
 }
 kmCall(0x807493e4, CondPoihanaStopOnHit);
 
-static void CondTTSeed(RacedataScenario& scenario) {  // real non-ghost count is stored in system
+static void CondTTSeed(RacedataScenario &scenario) {  // real non-ghost count is stored in system
     const GameMode old = scenario.settings.gamemode;
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) scenario.settings.gamemode = MODE_TIME_TRIAL;
     scenario.InitRNG();
@@ -108,17 +108,17 @@ static void CondTTSeed(RacedataScenario& scenario) {  // real non-ghost count is
 kmCall(0x8052fe18, CondTTSeed);
 
 static void CondAIMgrIsTT(u32, u32, bool isTT) {
-    register AI::Manager* mgr;
+    register AI::Manager *mgr;
     asm(mr mgr, r31;);
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) isTT = true;
     mgr->isTT = isTT;
 }
 kmCall(0x80738f64, CondAIMgrIsTT);
 
-static void CondRaceinfoRandom(Random& random) {
+static void CondRaceinfoRandom(Random &random) {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
         const RaceStage stage = Raceinfo::sInstance->stage;
-        const OpeningPan* pan = RaceCameraMgr::sInstance->cameras[0]->openingPan;
+        const OpeningPan *pan = RaceCameraMgr::sInstance->cameras[0]->openingPan;
         if (stage == RACESTAGE_INTRO && (pan->bitfield & 0x8)) return;  // do not update random if the pan has ended but the countdown hasn't started yet
     }
     random.Next();
@@ -127,12 +127,12 @@ kmCall(0x80554cf8, CondRaceinfoRandom);
 
 void CondOpacity() {
     if (!System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
-    Kart::Manager* kartMgr = Kart::Manager::sInstance;
+    Kart::Manager *kartMgr = Kart::Manager::sInstance;
     for (int i = 0; i < kartMgr->playerCount; ++i) {
-        Kart::Pointers& pointers = kartMgr->players[i]->pointers;
+        Kart::Pointers &pointers = kartMgr->players[i]->pointers;
         u32 scnObjDrawOptionsIdx = (pointers.kartStatus->bitfield4 & 0x2) ? 0xA : 1;  // is the player local?
 
-        DriverController* driver = pointers.driverController;
+        DriverController *driver = pointers.driverController;
         pointers.kartBody->UpdateModelDrawPriority(scnObjDrawOptionsIdx);
         if (driver->driverModel != nullptr) driver->driverModel->UpdateDrawPriority(scnObjDrawOptionsIdx);
         if (driver->driverModel_lod != nullptr) driver->driverModel_lod->UpdateDrawPriority(scnObjDrawOptionsIdx);
@@ -147,16 +147,16 @@ void CondOpacity() {
 }
 RaceLoadHook opacity(CondOpacity);
 
-static void EnableOpacityFunctionality(EGG::ScnRenderer& renderer, u32 enabledEffectsFlag) {
+static void EnableOpacityFunctionality(EGG::ScnRenderer &renderer, u32 enabledEffectsFlag) {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) enabledEffectsFlag |= 1;
     renderer.CreatePath(enabledEffectsFlag, nullptr);
 }
 kmCall(0x805b15e0, EnableOpacityFunctionality);
 
-static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
+static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr *stageMgr) {
     static int waitFrames = 0;
 
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     const Pages::SELECTStageMgr::Status old = stageMgr->status;
     if (system->ottMgr.voteState == COMBO_SELECTION) stageMgr->status = Pages::SELECTStageMgr::STATUS_VR_PAGE;  // so that the countdown shows
     stageMgr->Pages::SELECTStageMgr::BeforeControlUpdate();
@@ -167,10 +167,10 @@ static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
     }
 
     if (system->IsContext(PULSAR_MODE_OTT)) {
-        const RKNet::Controller* controller = RKNet::Controller::sInstance;
-        const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-        Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
-        Network::PulSELECT* hostSelect;
+        const RKNet::Controller *controller = RKNet::Controller::sInstance;
+        const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
+        Network::ExpSELECTHandler &handler = Network::ExpSELECTHandler::Get();
+        Network::PulSELECT *hostSelect;
         const u8 hostAid = sub.hostAid;
         const u8 localAid = sub.localAid;
         if (hostAid == localAid)
@@ -230,32 +230,32 @@ static void SELECTStageMgrBeforeControlUpdate(Pages::SELECTStageMgr* stageMgr) {
 
 kmWritePointer(0x808C06E4, SELECTStageMgrBeforeControlUpdate);
 
-static void PreventVoteChangeSection(Pages::Vote& vote, SectionId id, float delay) {
+static void PreventVoteChangeSection(Pages::Vote &vote, SectionId id, float delay) {
     static int frameCounter = 0;
     frameCounter++;
 
     if (frameCounter >= 600) {
-        System* system = System::sInstance;
+        System *system = System::sInstance;
         system->ottMgr.voteState = COMBO_SELECTED;
         vote.EndStateAnimated(0, delay);
         frameCounter = 0;
         return;
     }
 
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     system->ottMgr.Reset();
     if (system->IsContext(PULSAR_MODE_OTT)) {
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
-        RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-        Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
-        const Network::PulSELECT* select;
+        RKNet::Controller *controller = RKNet::Controller::sInstance;
+        RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
+        Network::ExpSELECTHandler &handler = Network::ExpSELECTHandler::Get();
+        const Network::PulSELECT *select;
         const u8 hostAid = sub.hostAid;
         if (hostAid == sub.localAid)
             select = &handler.toSendPacket;
         else
             select = &handler.receivedPackets[hostAid];
         if (select->allowChangeComboStatus > 0) {
-            Pages::SELECTStageMgr* page = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+            Pages::SELECTStageMgr *page = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
             page->countdown.SetInitial(10.0f);
             page->countdown.isActive = true;
             page->timerControl.Reset();
@@ -275,12 +275,12 @@ static void PreventVoteChangeSection(Pages::Vote& vote, SectionId id, float dela
 }
 kmCall(0x80643da0, PreventVoteChangeSection);
 
-static void FixAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {  // menu is either drift or multidrift
+static void FixAfterDrift(Pages::Menu &menu, PageId id, PushButton &button) {  // menu is either drift or multidrift
     UI::LoadTransmissionSelectAfterDrift(menu, id, button);
 }
 kmCall(0x8084e698, FixAfterDrift);
 
-static void MuteKartSounds(Audio::EngineMgr* mgr, Audio::KartActor* actor) {
+static void MuteKartSounds(Audio::EngineMgr *mgr, Audio::KartActor *actor) {
     mgr->Init(actor);
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && !actor->isLocal && !Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_OTTMUTEPTANDPLAYERS)) {
         actor->isGhost = true;
@@ -288,7 +288,7 @@ static void MuteKartSounds(Audio::EngineMgr* mgr, Audio::KartActor* actor) {
 }
 kmCall(0x80707620, MuteKartSounds);
 
-static bool MuteCharSounds(Kart::Link* link) {
+static bool MuteCharSounds(Kart::Link *link) {
     const u32 bitfield = link->pointers->kartStatus->bitfield4;
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && !Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_OTTMUTEPTANDPLAYERS)) {
         return !(bitfield & 0x2);  // isLocal
@@ -297,7 +297,7 @@ static bool MuteCharSounds(Kart::Link* link) {
 }
 kmCall(0x80716208, MuteCharSounds);
 
-static bool MutePositionTracker(CtrlRaceRankNum& tracker) {  // isInactive = muted if true, bctrl = IsInactive
+static bool MutePositionTracker(CtrlRaceRankNum &tracker) {  // isInactive = muted if true, bctrl = IsInactive
     asmVolatile(bctrl;);
     register bool isInactive;
     asm(mr isInactive, r3;);

@@ -9,16 +9,16 @@ namespace Pulsar {
 // Adds extra archives to Common and UI holders for custom Pulsar assets
 kmWrite32(0x8052a108, 0x38800003);  // Add one archive to CommonArchiveHolder
 kmWrite32(0x8052a188, 0x38800004);  // Add one archive to UIArchiveHolder
-void LoadAssetsFile(ArchiveFile* file, const char* path, EGG::Heap* decompressedHeap, bool isCompressed, s32 allocDirection,
-                    EGG::Heap* archiveHeap, EGG::Archive::FileInfo* info) {
-    const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+void LoadAssetsFile(ArchiveFile *file, const char *path, EGG::Heap *decompressedHeap, bool isCompressed, s32 allocDirection,
+                    EGG::Heap *archiveHeap, EGG::Archive::FileInfo *info) {
+    const ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
     if (file == &archiveMgr->archivesHolders[ARCHIVE_HOLDER_UI]->archives[3]) {
-        const char* fileType = "UI";
+        const char *fileType = "UI";
         Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
 
         bool isRaceScene = (GameScene::GetCurrent()->id == SCENE_ID_RACE);
-        const char* baseType = isRaceScene ? "Race" : "UI";
-        const char* langSuffix = "";
+        const char *baseType = isRaceScene ? "Race" : "UI";
+        const char *langSuffix = "";
         switch (currentLanguage) {
             case Pulsar::LANGUAGE_JAPANESE:
                 langSuffix = "_J";
