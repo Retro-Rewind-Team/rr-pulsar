@@ -618,7 +618,8 @@ asmFunc System::GetNonTTGhostPlayersCount() {
 kmWrite32(0x80549974, 0x38600001);
 
 // Skip ESRB page
-kmRegionWrite32(0x80604094, 0x4800001c, 'E');
+// TODO: Reimplement without using custom kamek hooks
+// kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 
 // Retro Rewind Pack ID
 kmWrite32(0x800017D0, 0x0A);
