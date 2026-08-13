@@ -98,7 +98,9 @@ build/Network/RoomKey.o: .force
 
 force_link: build/kamek.o $(OBJS)
 	@echo Linking...
-	@$(KAMEK) $^ -dynamic $(EXTERNALS) -output-combined=build/Code.pul -output-map=build/Code.map
+	@$(KAMEK) $^ -dynamic $(EXTERNALS) '-output-kamek=build/Code.$$KV$$.bin' -output-map=build/Code.map
+	python scripts/combine_bin.py -p build/Code.P.bin \
+		-e build/Code.E.bin -j build/Code.J.bin -o build/Code.pul
 
 install: force_link
 	@echo Copying binaries to $(RIIVO)/Binaries...
