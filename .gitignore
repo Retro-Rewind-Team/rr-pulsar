@@ -5,7 +5,6 @@ bin/
 build/
 .env
 PulsarEngine/Security/
-/.github
 AGENTS.md
 /.agent
 /.clangd
