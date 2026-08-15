@@ -15,72 +15,72 @@ typedef enum {
     sbc_serverchallengereceived  // received ip verification challenge from server
 } SBCallbackReason;
 
-typedef void (*SBServerKeyEnumFn)(char* key, char* value,
-                                  void* instance);
+typedef void (*SBServerKeyEnumFn)(char *key, char *value,
+                                  void *instance);
 
-typedef void* SBServer;
-typedef void* ServerBrowser;
+typedef void *SBServer;
+typedef void *ServerBrowser;
 typedef void (*ServerBrowserCallback)(ServerBrowser sb, SBCallbackReason reason,
-                                      SBServer server, void* instance);
-typedef void (*TableMapFn)(void* elem, void* clientData);
+                                      SBServer server, void *instance);
+typedef void (*TableMapFn)(void *elem, void *clientData);
 
-extern "C" ServerBrowser ServerBrowserNewA(const char* queryForGamename,
-                                           const char* queryFromGamename,
-                                           const char* queryFromKey,
+extern "C" ServerBrowser ServerBrowserNewA(const char *queryForGamename,
+                                           const char *queryFromGamename,
+                                           const char *queryFromKey,
                                            int queryFromVersion, int maxConcUpdates,
                                            int queryVersion, bool lanBrowse,
-                                           ServerBrowserCallback callback, void* instance);
+                                           ServerBrowserCallback callback, void *instance);
 extern "C" int ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
                                          bool disconnectOnComplete,
-                                         const unsigned char* basicFields,
+                                         const unsigned char *basicFields,
                                          int numBasicFields,
-                                         const char* serverFilter, int maxServers);
+                                         const char *serverFilter, int maxServers);
 extern "C" int ServerBrowserCount(ServerBrowser sb);
 extern "C" void ServerBrowserThink(ServerBrowser sb);
 extern "C" void ServerBrowserClear(ServerBrowser sb);
 extern "C" void ServerBrowserFree(ServerBrowser sb);
 extern "C" SBServer ServerBrowserGetServer(ServerBrowser sb, int index);
-extern "C" void TableMapSafe(void* table, TableMapFn fn, void* clientData);
-extern "C" const char* SBServerGetStringValueA(SBServer server, const char* keyname,
-                                               const char* def);
+extern "C" void TableMapSafe(void *table, TableMapFn fn, void *clientData);
+extern "C" const char *SBServerGetStringValueA(SBServer server, const char *keyname,
+                                               const char *def);
 
-extern "C" int SBServerGetIntValueA(SBServer server, const char* key, int idefault);
+extern "C" int SBServerGetIntValueA(SBServer server, const char *key, int idefault);
 
-extern "C" void qr2_register_keyA(int keyid, const char* key);
+extern "C" void qr2_register_keyA(int keyid, const char *key);
 
 extern "C" void msleep(unsigned int msecs);
-extern "C" void* gsimalloc(u32 size);
+extern "C" void *gsimalloc(u32 size);
 extern "C" int DWCi_QR2Startup(u32 profileID);
 extern "C" void DWC_SetReportLevel(u32 level);
 extern "C" void DWC_ProcessFriendsMatch();
-extern "C" void DWCi_SBCallback(ServerBrowser sb, SBCallbackReason reason, SBServer server, void* instance);
+extern "C" void DWCi_SBCallback(ServerBrowser sb, SBCallbackReason reason, SBServer server, void *instance);
 
 typedef struct {
     SBServerKeyEnumFn EnumFn;
-    void* instance;
+    void *instance;
 } SBServerEnumData;
 
 typedef struct _SBKeyValuePair {
-    const char* key;
-    const char* value;
+    const char *key;
+    const char *value;
 } SBKeyValuePair;
 
-static void KeyMapF(void* elem, void* clientData) {
-    SBKeyValuePair* kv = (SBKeyValuePair*)elem;
-    SBServerEnumData* ped = (SBServerEnumData*)clientData;
-    ped->EnumFn((char*)kv->key, (char*)kv->value, ped->instance);
+static void KeyMapF(void *elem, void *clientData) {
+    SBKeyValuePair *kv = (SBKeyValuePair *)elem;
+    SBServerEnumData *ped = (SBServerEnumData *)clientData;
+    ped->EnumFn((char *)kv->key, (char *)kv->value, ped->instance);
 }
 
 void SBServerEnumKeys(SBServer server, SBServerKeyEnumFn KeyFn,
-                      void* instance) {
+                      void *instance) {
     SBServerEnumData ed;
 
     ed.EnumFn = KeyFn;
     ed.instance = instance;
-    TableMapSafe(*(void**)((u32)server + 0x18), KeyMapF, &ed);
+    TableMapSafe(*(void **)((u32)server + 0x18), KeyMapF, &ed);
 }
 
-void GetRegionParamsFromString(const char* region, char* outputRegion, u32& outputRegionID) {
+void GetRegionParamsFromString(const char *region, char *outputRegion, u32 &outputRegionID) {
     outputRegion[0] = '\0';
     outputRegionID = 0xffffffff;
     if (region == nullptr) return;
@@ -94,12 +94,12 @@ void GetRegionParamsFromString(const char* region, char* outputRegion, u32& outp
         return;
     }
 
-    char* delimiter = strchr(value, '_');
+    char *delimiter = strchr(value, '_');
     if (delimiter) {
         *delimiter = '\0';
         snprintf(outputRegion, 16, "%s", value);
 
-        char* end = nullptr;
+        char *end = nullptr;
         int regionInt = strtol(delimiter + 1, &end, 10);
 
         if (end != delimiter + 1) {
@@ -121,17 +121,17 @@ static bool IsCompetitiveMatchmakingEnabled() {
     return timeoutSetting == Pulsar::MATCHMAKINGTIMEOUT_INFINITE;
 }
 
-static const char* GetCompetitiveServerFilter(const char* serverFilter, char* expandedFilter, u32 filterSize) {
+static const char *GetCompetitiveServerFilter(const char *serverFilter, char *expandedFilter, u32 filterSize) {
     if (!IsCompetitiveMatchmakingEnabled() || serverFilter == nullptr) return serverFilter;
 
-    const char* suspendNeedle = "dwc_suspend = 0";
-    const char* suspendPos = strstr(serverFilter, suspendNeedle);
+    const char *suspendNeedle = "dwc_suspend = 0";
+    const char *suspendPos = strstr(serverFilter, suspendNeedle);
     if (suspendPos == nullptr || strstr(serverFilter, "dwc_hoststate") == nullptr || strstr(serverFilter, "dwc_pid !=") == nullptr) {
         return serverFilter;
     }
 
     const int prefixLength = suspendPos - serverFilter;
-    const char* suffix = suspendPos + strlen(suspendNeedle);
+    const char *suffix = suspendPos + strlen(suspendNeedle);
     const int written = snprintf(
         expandedFilter,
         filterSize,
@@ -159,37 +159,37 @@ static int RR_numPlayersRegular = 0;
 static int RR_numPlayersOthers = 0;
 static int RR_numPlayersTotal = 0;
 
-void PlayerCount::GetNumbersMain(int& nRetro, int& nCT, int& nRT) {
+void PlayerCount::GetNumbersMain(int &nRetro, int &nCT, int &nRT) {
     nRetro = RR_numPlayers150cc;
     nCT = RR_numPlayersCT;
     nRT = RR_numPlayersRT;
 }
 
-void PlayerCount::GetNumbersOther(int& n200, int& nOtt, int& nIR) {
+void PlayerCount::GetNumbersOther(int &n200, int &nOtt, int &nIR) {
     n200 = RR_numPlayers200cc;
     nOtt = RR_numPlayersOTT;
     nIR = RR_numPlayersIR;
 }
 
-void PlayerCount::GetNumbersBT(int& nBattle, int& nBattleELIM) {
+void PlayerCount::GetNumbersBT(int &nBattle, int &nBattleELIM) {
     nBattle = BT_numPlayersRegular;
     nBattleELIM = BT_numPlayersELIM;
 }
 
-void PlayerCount::GetNumbersRegular(int& nRegular) {
+void PlayerCount::GetNumbersRegular(int &nRegular) {
     nRegular = RR_numPlayersRegular;
 }
 
-void PlayerCount::GetNumbersTotal(int& nTotal) {
+void PlayerCount::GetNumbersTotal(int &nTotal) {
     nTotal = RR_numPlayersTotal;
 }
 
-void PlayerCount::GetNumbersOthers(int& nOthers) {
+void PlayerCount::GetNumbersOthers(int &nOthers) {
     nOthers = RR_numPlayersOthers;
 }
 
 void sbCallback(ServerBrowser sb, SBCallbackReason reason,
-                SBServer server, void* instance) {
+                SBServer server, void *instance) {
     if (reason == sbc_updatecomplete) {
         int totalPlayers = 0;
         int numElse = 0;
@@ -203,7 +203,7 @@ void sbCallback(ServerBrowser sb, SBCallbackReason reason,
             char region[16];
             u32 regionID = 0xffffffff;
 
-            const char* rk = SBServerGetStringValueA(server, "rk", "");
+            const char *rk = SBServerGetStringValueA(server, "rk", "");
             GetRegionParamsFromString(rk, region, regionID);
 
             int numplayers = SBServerGetIntValueA(server, "numplayers", -1) + 1;
@@ -291,7 +291,7 @@ int hook_QR2Startup(u32 id) {
     return res;
 }
 
-void StartRequestTask(void* arg) {
+void StartRequestTask(void *arg) {
     if (isHookedRequest) {
         playerCntSB = ServerBrowserNewA(
             DWC::MatchControl::sInstance->gameName,
@@ -310,9 +310,9 @@ void StartRequestTask(void* arg) {
 
 int hook_ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
                                    bool disconnectOnComplete,
-                                   const unsigned char* basicFields,
+                                   const unsigned char *basicFields,
                                    int numBasicFields,
-                                   const char* serverFilter, int maxServers) {
+                                   const char *serverFilter, int maxServers) {
     while (isHookedRequest)
         msleep(10);
 
@@ -340,7 +340,7 @@ int hook_ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
     if (!hasEB) newFields[newNumFields++] = 0x66;
 
     char expandedFilter[0x100];
-    const char* updatedServerFilter = GetCompetitiveServerFilter(serverFilter, expandedFilter, sizeof(expandedFilter));
+    const char *updatedServerFilter = GetCompetitiveServerFilter(serverFilter, expandedFilter, sizeof(expandedFilter));
 
     int res = ServerBrowserLimitUpdateA(
         sb,
@@ -367,7 +367,7 @@ void hook_DWC_SetReportLevel(u32 level) {
 #endif
 }
 
-void hook_Section_calc(Section* _this) {
+void hook_Section_calc(Section *_this) {
     _this->UpdateLayers();
 
     hookLocalTimer += 1.0f / 60.0f;

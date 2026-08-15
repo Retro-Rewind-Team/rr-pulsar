@@ -6,18 +6,18 @@
 namespace Objects {
 
 class KoopaFigure64 : public EffectSpawner {  // ObjectNum 0x18b = 395
-   public:
-    explicit KoopaFigure64(const KMP::Holder<GOBJ>& gobjHolder);  // 806da914
+public:
+    explicit KoopaFigure64(const KMP::Holder<GOBJ> &gobjHolder);  // 806da914
     ~KoopaFigure64() override;  // 806db114 vtable 808c5c84
     void OnStart() override;  // 0xC 806daa44
     void Update() override;  // 0x14 806dab5c
     void LoadCollision() override;  // 0x60 806db154
     void UpdateCollision() override;  // 0x74 806dafb8
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806db168
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806db168
 
     void UpdateForCPURace();  // 806daf10 inlined
 
-    EGG::Effect* rk_koopaFire;  // 0xb8
+    EGG::Effect *rk_koopaFire;  // 0xb8
     float distToDetectionSquared;  // 0xbc setting0²
     bool useLEff;  // 0xc0 setting1 converted to a bool
     bool isGameModeMoreThan7OrTT;  // 0xc1

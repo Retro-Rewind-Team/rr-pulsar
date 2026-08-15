@@ -7,9 +7,9 @@ namespace Pulsar {
 namespace LapKO {
 
 static void FrameUpdate() {
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     if (!system->IsContext(PULSAR_MODE_LAPKO)) return;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
     system->lapKoMgr->UpdateFrame();
 }
@@ -21,14 +21,14 @@ static void WifiEdits() {
     sWifiRaceTimeLimit = 300000;
     sDisableIdleDisconnect = false;
 
-    #ifdef RR_TESTS
+#ifdef RR_TESTS
     sDisableIdleDisconnect = true;
-    #endif
+#endif
 
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     if (system == nullptr) return;
     if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)) return;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
 
     sWifiRaceTimeLimit = 900000;
@@ -70,7 +70,7 @@ kmCall(0x8053F124, UpdateIdleDisconnectCounter);
 kmWrite32(0x807EB500, 0x3800006A);
 kmWrite32(0x807E20B4, 0x38000001);
 
-extern "C" void exhaustPipeboost(void*);
+extern "C" void exhaustPipeboost(void *);
 extern "C" u8 sUseLocalCameraHudId = false;
 asmFunc cameraIDHUD() {
     ASM(
@@ -91,13 +91,13 @@ asmFunc cameraIDHUD() {
 }
 
 static void camerIDHUDLocal() {
-    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     sUseLocalCameraHudId = scenario.localPlayerCount <= 1;
 }
 static SectionLoadHook cameraIDHUDHook(camerIDHUDLocal);
 kmCall(0x807EC8D4, cameraIDHUD);
 
-extern "C" void ptr_playerBase(void*);
+extern "C" void ptr_playerBase(void *);
 asmFunc HideMapIcon() {
     ASM(
         lwz r5, 0x38(r3);
@@ -128,10 +128,10 @@ asmFunc HideNametag() {
 }
 kmCall(0x807F09A4, HideNametag);
 
-static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 position, bool isHuman, bool disableTripleShellsAndBananas, Item::Player* player) {
+static ItemId DecideItemHook(Item::ItemSlotData *slotData, u16 setting, u8 position, bool isHuman, bool disableTripleShellsAndBananas, Item::Player *player) {
     ItemId item = slotData->DecideItem(setting, position, isHuman, disableTripleShellsAndBananas, player);
 
-    System* system = System::sInstance;
+    System *system = System::sInstance;
     if (ItemRain::IsItemRainEnabled()) {
         if (item == GREEN_SHELL || item == RED_SHELL || item == BLUE_SHELL || item == BANANA || item == BOBOMB || item == TRIPLE_BANANA || item == TRIPLE_GREEN_SHELL || item == TRIPLE_RED_SHELL || item == FAKE_ITEM_BOX) {
             return MUSHROOM;
@@ -141,12 +141,12 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
     if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return item;
 
     if (item == BLUE_SHELL) {
-        LapKO::Mgr* lapKoMgr = system->lapKoMgr;
+        LapKO::Mgr *lapKoMgr = system->lapKoMgr;
         if (lapKoMgr->roundIndex >= lapKoMgr->totalRounds) {
             return MEGA_MUSHROOM;
         }
 
-        const Raceinfo* ri = Raceinfo::sInstance;
+        const Raceinfo *ri = Raceinfo::sInstance;
         if (ri == nullptr) return item;
 
         u8 playerCount = Item::Manager::sInstance->playerCount;
@@ -158,8 +158,8 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
 
             if (firstId >= 12 || secondId >= 12) return item;
 
-            RaceinfoPlayer* first = ri->players[firstId];
-            RaceinfoPlayer* second = ri->players[secondId];
+            RaceinfoPlayer *first = ri->players[firstId];
+            RaceinfoPlayer *second = ri->players[secondId];
 
             if (first == nullptr || second == nullptr) return item;
 
@@ -175,19 +175,19 @@ static ItemId DecideItemHook(Item::ItemSlotData* slotData, u16 setting, u8 posit
 kmCall(0x807ba160, DecideItemHook);
 
 // Fix Lap Counter Color in LapKO [Saucy]
-extern "C" void LapCounterColorFixHelper(CtrlRaceBase* self) {
-    System* system = System::sInstance;
+extern "C" void LapCounterColorFixHelper(CtrlRaceBase *self) {
+    System *system = System::sInstance;
     if (self == nullptr) return;
     if (system == nullptr || (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE))) return;
 
-    const char* leftPane = nullptr;
+    const char *leftPane = nullptr;
     if (self->layout.GetPaneByName("lap_lefft") != nullptr) {
         leftPane = "lap_lefft";
     } else if (self->layout.GetPaneByName("lap_left") != nullptr) {
         leftPane = "lap_left";
     }
 
-    const char* rightPane = nullptr;
+    const char *rightPane = nullptr;
     if (self->layout.GetPaneByName("lap_riighter") != nullptr) {
         rightPane = "lap_riighter";
     } else if (self->layout.GetPaneByName("lap_right") != nullptr) {
@@ -213,8 +213,7 @@ asmFunc LapCounterColorFix() {
         addi sp, sp, 0x10;
 
         mr r3, r28;
-        blr;
-    )
+        blr;)
 }
 kmCall(0x807EF7E8, LapCounterColorFix);
 

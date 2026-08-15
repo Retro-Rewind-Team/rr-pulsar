@@ -18,7 +18,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
 
     int playerCount = 0;
 
-    RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     for (int i = 0; i < scenario.playerCount; i++) {
         if (playerCount >= 6)
             break;
@@ -39,7 +39,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         }
     }
 
-    qsort(this->players, playerCount, sizeof(CtrlRaceResultTeam::Player), (int (*)(const void*, const void*))CtrlRaceResultTeam::ComparePlayers);
+    qsort(this->players, playerCount, sizeof(CtrlRaceResultTeam::Player), (int (*)(const void *, const void *))CtrlRaceResultTeam::ComparePlayers);
     for (int i = playerCount; i < 6; i++) {
         this->players[i].playerIdx = -1;
         this->players[i].battleScore = 0;
@@ -60,7 +60,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         u8 localPlayerCount = scenario.localPlayerCount;
         PlayerType playerType = scenario.players[playerId].playerType;
         CharacterId characterId = scenario.players[playerId].characterId;
-        MiiGroup& miiGroup = SectionMgr::sInstance->sectionParams->playerMiis;
+        MiiGroup &miiGroup = SectionMgr::sInstance->sectionParams->playerMiis;
 
         if (playerType == PLAYER_REAL_LOCAL) {
             this->items[i].animator.GetAnimationGroupById(0).PlayAnimationAtFrame(0, 0.0f);
@@ -155,7 +155,7 @@ void CtrlRaceResultExtendedTeams::OnUpdate() {
     }
 }
 
-const char* CtrlRaceResultExtendedTeams::GetClassName() const {
+const char *CtrlRaceResultExtendedTeams::GetClassName() const {
     return "CtrlRaceResultExpandedTeams";
 }
 
@@ -170,7 +170,7 @@ void CtrlRaceResultExtendedTeams::Load(ExtendedTeamID teamID, int numTeams, int 
 
     this->InitControlGroup(6 + 1);
 
-    const char* anims[] = {
+    const char *anims[] = {
         "Loop", "Loop", nullptr,
         "Select", "SelectOn", "SelectOff", nullptr,
         "Select2", "Select2On", "Select2Off", nullptr,
@@ -185,10 +185,10 @@ void CtrlRaceResultExtendedTeams::Load(ExtendedTeamID teamID, int numTeams, int 
 
         this->items[i].SetPaneVisibility("blue_null", false);
 
-        nw4r::lyt::Pane* teamColorPane1 = this->items[i].layout.GetPaneByName("black_parts_r_l");
-        nw4r::lyt::Pane* teamColorPane2 = this->items[i].layout.GetPaneByName("black_parts_r_r");
-        nw4r::lyt::Material* teamColor1 = teamColorPane1->GetMaterial();
-        nw4r::lyt::Material* teamColor2 = teamColorPane2->GetMaterial();
+        nw4r::lyt::Pane *teamColorPane1 = this->items[i].layout.GetPaneByName("black_parts_r_l");
+        nw4r::lyt::Pane *teamColorPane2 = this->items[i].layout.GetPaneByName("black_parts_r_r");
+        nw4r::lyt::Material *teamColor1 = teamColorPane1->GetMaterial();
+        nw4r::lyt::Material *teamColor2 = teamColorPane2->GetMaterial();
         teamColorPane1->alpha = teamColorPane2->alpha = 255;
 
         u8 r, g, b;
@@ -214,7 +214,7 @@ void CtrlRaceResultExtendedTeams::Load(ExtendedTeamID teamID, int numTeams, int 
     this->resultTeamPoint = new LayoutUIControl();
     this->AddControl(6, this->resultTeamPoint);
 
-    const char* teamPointAnims[] = {
+    const char *teamPointAnims[] = {
         "team", "blue", "red", nullptr,
         nullptr};
 
@@ -222,10 +222,10 @@ void CtrlRaceResultExtendedTeams::Load(ExtendedTeamID teamID, int numTeams, int 
     pointLoader.Load("result", "ResultTeamPoint", "red", teamPointAnims);
     this->resultTeamPoint->animator.GetAnimationGroupById(0).isActive = false;
 
-    nw4r::lyt::TextBox* pane1 = (nw4r::lyt::TextBox*)this->resultTeamPoint->layout.GetPaneByName("point");
-    nw4r::lyt::TextBox* pane2 = (nw4r::lyt::TextBox*)this->resultTeamPoint->layout.GetPaneByName("pts");
-    nw4r::lyt::Material* mat1 = pane1->GetMaterial();
-    nw4r::lyt::Material* mat2 = pane2->GetMaterial();
+    nw4r::lyt::TextBox *pane1 = (nw4r::lyt::TextBox *)this->resultTeamPoint->layout.GetPaneByName("point");
+    nw4r::lyt::TextBox *pane2 = (nw4r::lyt::TextBox *)this->resultTeamPoint->layout.GetPaneByName("pts");
+    nw4r::lyt::Material *mat1 = pane1->GetMaterial();
+    nw4r::lyt::Material *mat2 = pane2->GetMaterial();
 
     u8 r, g, b;
     ExtendedTeamSelect::GetTeamColor(this->teamId, r, g, b);

@@ -20,7 +20,7 @@ static bool IsPublicOnlineRoom(const RKNet::RoomType roomType) {
     }
 }
 
-static bool IsInChristmasWindow(const ServerDateTime& sdt) {
+static bool IsInChristmasWindow(const ServerDateTime &sdt) {
     if (!sdt.isValid) return false;
     const unsigned month = static_cast<unsigned>(sdt.month);
     const unsigned day = static_cast<unsigned>(sdt.day);

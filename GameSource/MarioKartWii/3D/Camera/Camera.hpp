@@ -21,7 +21,7 @@ class Player;
 }
 
 class GameCamValues {
-   public:
+public:
     void Reset();  // 805a1c3c
     Vec3 position;  // 0
     Vec3 prevPosition;  // 0xC
@@ -53,31 +53,31 @@ class GameCamValues {
 // size_assert(GameCamValues, 0xcc);
 
 class CameraLink {
-   public:
+public:
     static ut::List cameraList;  // 809c19a8
     static void InitCameraList();  // 805a1a44
     static void UpdateAllCameras();  // 805a1af0
     static void InitAllCameras();  // 805a1a8c
 
-    CameraLink(GameCamera* camera, GameScreen& gameScreen);  // 805a1864
+    CameraLink(GameCamera *camera, GameScreen &gameScreen);  // 805a1864
     virtual ~CameraLink();  // 805a19d8 vtable 808b6b60
     virtual void Init() = 0;
     virtual void Update(bool r4) = 0;
 
     void Register();  // 805a1a7c
 
-    GameScreen& screen;
-    GameCamera* camera;
+    GameScreen &screen;
+    GameCamera *camera;
     ut::Link link;
 };  // 0x10
 
 class GameCamera : public EGG::LookAtCamera, public CameraLink {
-   public:
-    GameCamera(GameScreen& gameScreen, bool registerCamera);  // 805a18bc
+public:
+    GameCamera(GameScreen &gameScreen, bool registerCamera);  // 805a18bc
 
     // LookAtCamera vtable 808b6b10 at 0x0
-    EGG::Matrix34f& GetViewMatrix() override;  // 0x8 80562bf0
-    const EGG::Matrix34f& GetViewMatrix() const override;  // 0xc 805a1c1c
+    EGG::Matrix34f &GetViewMatrix() override;  // 0x8 80562bf0
+    const EGG::Matrix34f &GetViewMatrix() const override;  // 0xc 805a1c1c
     EGG::Vector3f GetPosition() override;  // 0x20 805a1c00
 
     // CameraLink vtable 808b6b40 at 0x88

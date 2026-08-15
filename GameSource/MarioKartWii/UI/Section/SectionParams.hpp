@@ -41,7 +41,7 @@ struct TitleParams {  //+0x4cc for params
 };  // 0x1c
 
 class SectionParams {
-   public:
+public:
     SectionParams();  // 805e2f60
     ~SectionParams();  // 805e2ff8
 

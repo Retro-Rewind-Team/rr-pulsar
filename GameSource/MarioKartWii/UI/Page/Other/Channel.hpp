@@ -13,7 +13,7 @@ Melg
 
 //_sinit_ at 805c1c94
 class NotifyButton : public PushButton {
-   public:
+public:
     enum Status {
         DOWNLOAD_LATEST = 0,
         NEW_FRIEND_CHALLENGE = 1,
@@ -31,8 +31,8 @@ class NotifyButton : public PushButton {
     ~NotifyButton() override;  // 805bf418 vtable 808b7bd0
     void InitSelf() override;  // 0x18 805bf52c
     void OnUpdate() override;  // 0x1c 805bf600
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805c1b68
-    const char* GetClassName() const override;  // 0x2c 805bf3d0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805c1b68
+    const char *GetClassName() const override;  // 0x2c 805bf3d0
     void OnClick() override;  // 0x48 805bf998
     void Load();  // 805bf470
     void UpdateText();  // 805bfe1c
@@ -45,7 +45,7 @@ class NotifyButton : public PushButton {
 };  // 0x268
 namespace Pages {
 class Channel : public Page {  // ID 0xA2
-   public:
+public:
     static const PageId pageId = PAGE_MKCHANNEL;
     Channel();  // 805bff18
     ~Channel() override;  // 805c0118 vtable 808b7b3c
@@ -53,10 +53,10 @@ class Channel : public Page {  // ID 0xA2
     void OnInit() override;  // 0x28 805c01fc
     void OnDispose() override;  // 0x2c 805c0884
     void OnActivate() override;  // 0x30 805c0888
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805c1b5c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805c1b5c
 
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 805c08e0
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);  // 805c0b78
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 805c08e0
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);  // 805c0b78
     void OnBackPress(u32 hudSlotId);  // 805c0c90
 
     ControlsManipulatorManager controlsManipulatorManager;  // 0x44
@@ -68,8 +68,8 @@ class Channel : public Page {  // ID 0xA2
     NotifyButton notifyButton;  // 0xd2c
     CtrlMenuBackButton backButton;  // 0xf94
     CtrlMenuInstructionText bottomText;  // 0x11f8
-    PtmfHolder_2A<Channel, void, PushButton&, u32> onButtonClickHandler;  // 0x136c 805c08e0
-    PtmfHolder_2A<Channel, void, PushButton&, u32> onButtonSelectHandler;  // 0x1380 805c0b78
+    PtmfHolder_2A<Channel, void, PushButton &, u32> onButtonClickHandler;  // 0x136c 805c08e0
+    PtmfHolder_2A<Channel, void, PushButton &, u32> onButtonSelectHandler;  // 0x1380 805c0b78
     PtmfHolder_1A<Channel, void, u32> onBackPressHandler;  // 0x1394 805c0c90
     u8 unknown_0x13a8[4];
     PageId nextPage;  // 0x13ac
@@ -78,19 +78,19 @@ class Channel : public Page {  // ID 0xA2
 // size_assert(Channel, 0x1448);
 
 class ChannelRankingChoice : public Page {  // ID 0xA3 2 buttons, TTRankings or Competition Rankings
-   public:
+public:
     static const PageId pageId = PAGE_CHANNEL_RANKING_CHOICE;
     ChannelRankingChoice();  // 805c13ac
     ~ChannelRankingChoice() override;  // 805c151c vtable 808b7a44
     PageId GetNextPage() const override;  // 0x10 805c188c
     void OnInit() override;  // 0x28 805c15cc
     void OnActivate() override;  // 0x30 805c183c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805c1b34
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 805c18a4
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);  // 805c1ad0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805c1b34
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 805c18a4
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);  // 805c1ad0
     void OnBackPress(u32 hudSlotId);  // 805c1b24
-    PtmfHolder_2A<ChannelRankingChoice, void, PushButton&, u32> onButtonClickHandler;  // 0x44 805c18a4
-    PtmfHolder_2A<ChannelRankingChoice, void, PushButton&, u32> onButtonSelectHandler;  // 0x58 805c1ad0
+    PtmfHolder_2A<ChannelRankingChoice, void, PushButton &, u32> onButtonClickHandler;  // 0x44 805c18a4
+    PtmfHolder_2A<ChannelRankingChoice, void, PushButton &, u32> onButtonSelectHandler;  // 0x58 805c1ad0
     PtmfHolder_1A<ChannelRankingChoice, void, u32> onBackPressHandler;  // 0x6c 805c1b24
     ControlsManipulatorManager controlsManipulatorManager;  // 0x80
     CtrlMenuPageTitleText titleText;  // 0x2a4
@@ -101,20 +101,20 @@ class ChannelRankingChoice : public Page {  // ID 0xA3 2 buttons, TTRankings or 
 };  // 0xc98
 
 class ChannelGhostChoice : public Page {  // ID 0xA4
-   public:
+public:
     static const PageId pageId = PAGE_CHANNEL_GHOST_CHOICE;
     ChannelGhostChoice();  // 805c0cc8
     ~ChannelGhostChoice() override;  // 805c0e38 vtable 808b7ac0
     PageId GetNextPage() const override;  // 0x10 805c1b40
     void OnInit() override;  // 0x28 805c0ee8
     void OnActivate() override;  // 0x30 805c1200
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805c1b48
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 805c1258
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);  // 805c1340
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805c1b48
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 805c1258
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);  // 805c1340
     void OnBackPress(u32 hudSlotId);  // 805c1394
 
-    PtmfHolder_2A<ChannelGhostChoice, void, PushButton&, u32> onButtonClickHandler;  // 0x44 805c1258
-    PtmfHolder_2A<ChannelGhostChoice, void, PushButton&, u32> onButtonSelectHandler;  // 0x58 805c1340
+    PtmfHolder_2A<ChannelGhostChoice, void, PushButton &, u32> onButtonClickHandler;  // 0x44 805c1258
+    PtmfHolder_2A<ChannelGhostChoice, void, PushButton &, u32> onButtonSelectHandler;  // 0x58 805c1340
     PtmfHolder_1A<ChannelGhostChoice, void, u32> onBackPressHandler;  // 0x6c 805c1394
     ControlsManipulatorManager controlsManipulatorManager;  // 0x80
     CtrlMenuPageTitleText titleText;  // 0x2a4

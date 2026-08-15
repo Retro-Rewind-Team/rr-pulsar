@@ -10,7 +10,7 @@
 //_sinit_ at 80840dd8
 namespace Pages {
 class CourseSelect : public MenuInteractable {  // ID 0x6F
-   public:
+public:
     static const PageId id = PAGE_COURSE_SELECT;
     CourseSelect();  // 80627bd8
     ~CourseSelect() override;  // 80840ce0 vtable 808d9450
@@ -20,22 +20,22 @@ class CourseSelect : public MenuInteractable {  // ID 0x6F
     void BeforeEntranceAnimations() override;  // 0x38 808405c0
     void BeforeExitAnimations() override;  // 0x40 80840b1c
     void AfterControlUpdate() override;  // 0x4c 8084060c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80840dcc
-    void OnExternalButtonSelect(PushButton& button, u32 hudSlotId) override;  // 0x64  80840aac
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80840dcc
+    void OnExternalButtonSelect(PushButton &button, u32 hudSlotId) override;  // 0x64  80840aac
     int GetActivePlayerBitfield() const override;  // 0x68 80840c7c
     int GetPlayerBitfield() const override;  // 0x6C 80840c74
-    ManipulatorManager& GetManipulatorManager() override;  // 0x70 807e4f74
-    UIControl* CreateExternalControl(u32 externControlId) override;  // 0x84 80840390
-    UIControl* CreateControl(u32 controlId) override;  // 0x88 80840398
-    void SetButtonHandlers(PushButton& button) override;  // 0x8C 80840c84
+    ManipulatorManager &GetManipulatorManager() override;  // 0x70 807e4f74
+    UIControl *CreateExternalControl(u32 externControlId) override;  // 0x84 80840390
+    UIControl *CreateControl(u32 controlId) override;  // 0x88 80840398
+    void SetButtonHandlers(PushButton &button) override;  // 0x8C 80840c84
 
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 80840a44
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId);  // 80840ab0
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 80840a44
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId);  // 80840ab0
     void OnBackPress(u32 hudSlotId);  // 80840ab4
-    void UpdateBottomText(CtrlMenuCourseSelectCourse& course, PushButton& button, u32 hudSlotId);  // 80840728
+    void UpdateBottomText(CtrlMenuCourseSelectCourse &course, PushButton &button, u32 hudSlotId);  // 80840728
     void OnTimeout();  // 80840ba0 ends page and loads 0x92 (course votes)
-    void LoadNextPage(CtrlMenuCourseSelectCourse& control, PushButton& courseButton, u32 hudSlotId);  // 80840830
-    static Page* GetPageById(PageId id = PAGE_COURSE_SELECT);  // 808401e4
+    void LoadNextPage(CtrlMenuCourseSelectCourse &control, PushButton &courseButton, u32 hudSlotId);  // 80840830
+    static Page *GetPageById(PageId id = PAGE_COURSE_SELECT);  // 808401e4
     // here the button refers to the back button as the course buttons are handled via extern controls
     // onButtonClick     vtable = 0x808bd054 function = 80840a44
     // onButtonSelect    vtable = 0x808bd054 offset   = 0x64 call is virtual

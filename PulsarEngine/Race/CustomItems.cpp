@@ -18,7 +18,7 @@ static const u32 ITEM_COUNT = 19;
 static const u32 VANILLA_ITEM_BITFIELD = 0x7FFFF;
 
 u32 Pulsar::Race::GetEffectiveCustomItemsBitfield() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller != nullptr) {
         const RKNet::RoomType roomType = controller->roomType;
         if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
@@ -36,9 +36,9 @@ u32 Pulsar::Race::GetEffectiveCustomItemsBitfield() {
 static bool sFallbackItemDropFix[12];
 static const u32 PLAYER_OBJ_SLOT_COUNT = 3;
 
-extern "C" void __ptmf_scall(Item::PlayerObj* playerObj, const Ptmf_0A<Item::PlayerObj, void>* ptmf);
+extern "C" void __ptmf_scall(Item::PlayerObj *playerObj, const Ptmf_0A<Item::PlayerObj, void> *ptmf);
 
-static void ClearPlayerObjUse(Item::PlayerObj& playerObj) {
+static void ClearPlayerObjUse(Item::PlayerObj &playerObj) {
     playerObj.itemObjId = OBJ_NONE;
     playerObj.itemId = ITEM_NONE;
     playerObj.useType = Item::PlayerObj::NO_ITEM;
@@ -47,7 +47,7 @@ static void ClearPlayerObjUse(Item::PlayerObj& playerObj) {
     playerObj.unknown_0x54 = static_cast<ItemObjId>(0);
 }
 
-static bool HasSpawnedPlayerObjs(const Item::PlayerObj& playerObj) {
+static bool HasSpawnedPlayerObjs(const Item::PlayerObj &playerObj) {
     if (playerObj.useType == Item::PlayerObj::ONLY_USE) return true;
     if (playerObj.activeItemCount == 0 || playerObj.activeItemCount > PLAYER_OBJ_SLOT_COUNT) return false;
 
@@ -57,7 +57,7 @@ static bool HasSpawnedPlayerObjs(const Item::PlayerObj& playerObj) {
     return true;
 }
 
-static void CallPlayerObjPtmfIfValid(Item::PlayerObj* playerObj, const Ptmf_0A<Item::PlayerObj, void>* ptmf) {
+static void CallPlayerObjPtmfIfValid(Item::PlayerObj *playerObj, const Ptmf_0A<Item::PlayerObj, void> *ptmf) {
     if (playerObj == nullptr || ptmf == nullptr) return;
 
     if (!HasSpawnedPlayerObjs(*playerObj)) {
@@ -68,22 +68,22 @@ static void CallPlayerObjPtmfIfValid(Item::PlayerObj* playerObj, const Ptmf_0A<I
     __ptmf_scall(playerObj, ptmf);
 }
 
-static void RotateSpawnedObjQueue(Item::ObjHolder& holder) {
+static void RotateSpawnedObjQueue(Item::ObjHolder &holder) {
     if (holder.spawnedCount <= 1) return;
 
-    Item::Obj* first = holder.itemObj[0];
+    Item::Obj *first = holder.itemObj[0];
     for (u32 i = 0; i < holder.spawnedCount - 1; ++i) {
         holder.itemObj[i] = holder.itemObj[i + 1];
     }
     holder.itemObj[holder.spawnedCount - 1] = first;
 }
 
-static bool FreeOneSpawnedObj(Item::ObjHolder& holder) {
+static bool FreeOneSpawnedObj(Item::ObjHolder &holder) {
     if (holder.itemObj == nullptr || holder.spawnedCount == 0) return false;
 
     const u32 prevBodyCount = holder.bodyCount;
     const u32 prevSpawnedCount = holder.spawnedCount;
-    Item::Obj* oldestObj = holder.itemObj[0];
+    Item::Obj *oldestObj = holder.itemObj[0];
     if (oldestObj == nullptr) return false;
 
     holder.OnObjKillFinish(oldestObj);
@@ -91,17 +91,17 @@ static bool FreeOneSpawnedObj(Item::ObjHolder& holder) {
     return holder.bodyCount < prevBodyCount || holder.spawnedCount < prevSpawnedCount;
 }
 
-static Item::PlayerObj* GetPlayerObjFromUsedObjs(Item::Obj** usedObjs) {
+static Item::PlayerObj *GetPlayerObjFromUsedObjs(Item::Obj **usedObjs) {
     // ObjHolder::Spawn receives &PlayerObj::usedObjs[0]; usedObjs starts at 0x20.
-    return reinterpret_cast<Item::PlayerObj*>(reinterpret_cast<u8*>(usedObjs) - 0x20);
+    return reinterpret_cast<Item::PlayerObj *>(reinterpret_cast<u8 *>(usedObjs) - 0x20);
 }
 
-static void SafePlayerObjSpawn(Item::ObjHolder* holder, u32 quantity, Item::Obj** usedObjs, u8 playerId, const Vec3& playerPos, bool r8) {
+static void SafePlayerObjSpawn(Item::ObjHolder *holder, u32 quantity, Item::Obj **usedObjs, u8 playerId, const Vec3 &playerPos, bool r8) {
     if (usedObjs != nullptr) {
         for (u32 i = 0; i < PLAYER_OBJ_SLOT_COUNT; ++i) usedObjs[i] = nullptr;
     }
 
-    Item::PlayerObj* playerObj = nullptr;
+    Item::PlayerObj *playerObj = nullptr;
     if (usedObjs != nullptr) playerObj = GetPlayerObjFromUsedObjs(usedObjs);
     if (holder == nullptr || holder->itemObj == nullptr || usedObjs == nullptr || playerObj == nullptr) {
         if (playerObj != nullptr) ClearPlayerObjUse(*playerObj);
@@ -116,7 +116,7 @@ static void SafePlayerObjSpawn(Item::ObjHolder* holder, u32 quantity, Item::Obj*
         }
         if (holder->bodyCount >= holder->capacity) break;
 
-        Item::Obj* obj = holder->itemObj[holder->bodyCount];
+        Item::Obj *obj = holder->itemObj[holder->bodyCount];
         if (obj == nullptr) break;
 
         usedObjs[spawned] = obj;
@@ -132,11 +132,11 @@ static void SafePlayerObjSpawn(Item::ObjHolder* holder, u32 quantity, Item::Obj*
 kmRuntimeUse(0x809c3670);  // Item::ItemSlotData
 kmRuntimeUse(0x809c36a0);  // Item::Behavior::behaviourTable
 kmRuntimeUse(0x80799be8);  // Item::ItemSlotData::itemSpawnTimers
-static bool IsItemAvailable(ItemId id, const Item::ItemSlotData* slotData) {
+static bool IsItemAvailable(ItemId id, const Item::ItemSlotData *slotData) {
     if (id >= ITEM_COUNT) return false;
 
     // Timer checks
-    Item::Behavior* behaviourTable = reinterpret_cast<Item::Behavior*>(kmRuntimeAddr(0x809c36a0));
+    Item::Behavior *behaviourTable = reinterpret_cast<Item::Behavior *>(kmRuntimeAddr(0x809c36a0));
     ItemObjId objId = behaviourTable[id].objId;
     if (slotData) {
         if (objId == 6 && slotData->itemSpawnTimers[0] != 0) return false;  // Lightning
@@ -159,12 +159,12 @@ static bool IsRestrictedFallbackItem(ItemId id) {
     return id == LIGHTNING || id == BULLET_BILL || id == POW_BLOCK || id == BLOOPER || id == BLUE_SHELL;
 }
 
-static ItemId GetRandomItemFromRow(u32 rowIndex, const Item::ItemSlotData::Probabilities& probs, u32 bitfield,
-                                   Item::ItemSlotData* slotData, bool excludeRestrictedItems) {
+static ItemId GetRandomItemFromRow(u32 rowIndex, const Item::ItemSlotData::Probabilities &probs, u32 bitfield,
+                                   Item::ItemSlotData *slotData, bool excludeRestrictedItems) {
     if (probs.probabilities == nullptr || probs.rowCount == 0) return MUSHROOM;
     if (rowIndex >= probs.rowCount) rowIndex = probs.rowCount - 1;
 
-    const u16* row = &probs.probabilities[rowIndex * ITEM_COUNT];
+    const u16 *row = &probs.probabilities[rowIndex * ITEM_COUNT];
 
     ItemId candidates[ITEM_COUNT];
     u16 weights[ITEM_COUNT];
@@ -202,8 +202,8 @@ static u32 GetItemTableRow(u32 position, u16 setting) {
     return position > 0 ? position - 1 : 0;
 }
 
-static const Item::ItemSlotData::Probabilities* GetItemProbabilities(const Item::ItemSlotData& slotData,
-                                                                      bool isHuman, u16 setting) {
+static const Item::ItemSlotData::Probabilities *GetItemProbabilities(const Item::ItemSlotData &slotData,
+                                                                     bool isHuman, u16 setting) {
     if (setting != 0) return &slotData.specialChances;
     return isHuman ? &slotData.playerChances : &slotData.cpuChances;
 }
@@ -222,16 +222,16 @@ static ItemId GetItemFromTable(u32 position, bool isHuman, u16 setting, bool isF
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
     if (bitfield == 0) bitfield = VANILLA_ITEM_BITFIELD;
 
-    Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**>(kmRuntimeAddr(0x809c3670));
+    Item::ItemSlotData *slotData = *reinterpret_cast<Item::ItemSlotData **>(kmRuntimeAddr(0x809c3670));
     if (slotData == nullptr) return MUSHROOM;
 
-    const Item::ItemSlotData::Probabilities* probs = GetItemProbabilities(*slotData, isHuman, setting);
+    const Item::ItemSlotData::Probabilities *probs = GetItemProbabilities(*slotData, isHuman, setting);
     const bool excludeRestrictedItems = isFallback && ShouldExcludeRestrictedFallbackItems(bitfield);
     return GetRandomItemFromRow(GetItemTableRow(position, setting), *probs, bitfield, slotData,
                                 excludeRestrictedItems);
 }
 
-static u8 GetPlayerPosition(Item::Player* itemPlayer, u8 fallbackPosition) {
+static u8 GetPlayerPosition(Item::Player *itemPlayer, u8 fallbackPosition) {
     if (itemPlayer != nullptr && itemPlayer->id < 12 && Raceinfo::sInstance != nullptr &&
         Raceinfo::sInstance->players[itemPlayer->id] != nullptr) {
         return Raceinfo::sInstance->players[itemPlayer->id]->position;
@@ -239,17 +239,17 @@ static u8 GetPlayerPosition(Item::Player* itemPlayer, u8 fallbackPosition) {
     return fallbackPosition;
 }
 
-static ItemId GetFallbackItem(Item::Player* itemPlayer, u8 fallbackPosition, bool isHuman, u16 setting) {
+static ItemId GetFallbackItem(Item::Player *itemPlayer, u8 fallbackPosition, bool isHuman, u16 setting) {
     const u8 position = GetPlayerPosition(itemPlayer, fallbackPosition);
     return GetItemFromTable(position, isHuman, setting, true);
 }
 
-static ItemId GetFallbackItem(Item::PlayerRoulette* roulette) {
+static ItemId GetFallbackItem(Item::PlayerRoulette *roulette) {
     return GetFallbackItem(roulette->itemPlayer, roulette->position,
                            roulette->itemPlayer != nullptr && roulette->itemPlayer->isHuman, roulette->setting);
 }
 
-static u32 GetBestPlacement(const Item::ItemSlotData::Probabilities* probs, u32 currentPlacement) {
+static u32 GetBestPlacement(const Item::ItemSlotData::Probabilities *probs, u32 currentPlacement) {
     if (probs == nullptr || probs->probabilities == nullptr) return currentPlacement;
 
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
@@ -258,8 +258,8 @@ static u32 GetBestPlacement(const Item::ItemSlotData::Probabilities* probs, u32 
     u32 rowCount = probs->rowCount;
     if (currentPlacement >= rowCount) currentPlacement = rowCount - 1;
 
-    const u16* data = probs->probabilities;
-    Item::ItemSlotData* slotData = *reinterpret_cast<Item::ItemSlotData**>(kmRuntimeAddr(0x809c3670));
+    const u16 *data = probs->probabilities;
+    Item::ItemSlotData *slotData = *reinterpret_cast<Item::ItemSlotData **>(kmRuntimeAddr(0x809c3670));
 
     for (int dist = 0; dist < static_cast<int>(rowCount); ++dist) {
         int low = static_cast<int>(currentPlacement) - dist;
@@ -338,7 +338,7 @@ kmBranch(0x807bb7d8, CustomLimitCheck);
 kmPatchExitPoint(CustomLimitCheck, 0x807bb7dc);  // Return to the ble instruction
 
 static void CalcItemFallback() {
-    register Item::PlayerRoulette* roulette;
+    register Item::PlayerRoulette *roulette;
     asm(mr roulette, r31);
     roulette->nextItemId = GetFallbackItem(roulette);
 }
@@ -352,7 +352,7 @@ static ItemId DecideItemFallback() {
         register u32 row;
         register bool isHuman;
         register u32 boxType;
-        register Item::Player* itemPlayer;
+        register Item::Player *itemPlayer;
         asm {
             mr row, r21
             mr isHuman, r20
@@ -381,7 +381,7 @@ kmCall(0x80791b28, CallPlayerObjPtmfIfValid);
 kmCall(0x807923ac, CallPlayerObjPtmfIfValid);
 
 static void InitItemFallback1() {
-    register Item::PlayerRoulette* roulette;
+    register Item::PlayerRoulette *roulette;
     asm(mr roulette, r23);
     roulette->nextItemId = GetFallbackItem(roulette);
 }
@@ -389,14 +389,14 @@ kmBranch(0x807ba138, InitItemFallback1);
 kmPatchExitPoint(InitItemFallback1, 0x807ba140);
 
 static void InitItemFallback2() {
-    register Item::PlayerRoulette* roulette;
+    register Item::PlayerRoulette *roulette;
     asm(mr roulette, r23);
     roulette->nextItemId = GetFallbackItem(roulette);
 }
 kmBranch(0x807ba194, InitItemFallback2);
 kmPatchExitPoint(InitItemFallback2, 0x807ba19c);
 
-static ItemId DecideRouletteItemFiltered(Item::ItemSlotData* slotData, u16 itemBoxType, u8 position, ItemId prevRandomItem, bool r7) {
+static ItemId DecideRouletteItemFiltered(Item::ItemSlotData *slotData, u16 itemBoxType, u8 position, ItemId prevRandomItem, bool r7) {
     u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
     if (bitfield == VANILLA_ITEM_BITFIELD) {
         return slotData->DecideRouletteItem(itemBoxType, position, prevRandomItem, r7);
@@ -406,8 +406,8 @@ static ItemId DecideRouletteItemFiltered(Item::ItemSlotData* slotData, u16 itemB
 }
 kmCall(0x807ba428, DecideRouletteItemFiltered);
 
-static void SetItemFix(Item::PlayerInventory& inventory, ItemId id, bool isItemForcedDueToCapacity) {
-    Item::Player* itemPlayer = inventory.itemPlayer;
+static void SetItemFix(Item::PlayerInventory &inventory, ItemId id, bool isItemForcedDueToCapacity) {
+    Item::Player *itemPlayer = inventory.itemPlayer;
     if (itemPlayer) {
         const u8 playerId = itemPlayer->id;
         if (playerId < 12 && sFallbackItemDropFix[playerId]) {
@@ -427,7 +427,7 @@ static void SetItemFix(Item::PlayerInventory& inventory, ItemId id, bool isItemF
 }
 kmBranch(0x807bc940, SetItemFix);
 
-static void EjectItemsFromDamageSafely(Item::PlayerInventory& inventory) {
+static void EjectItemsFromDamageSafely(Item::PlayerInventory &inventory) {
     if (inventory.currentItemId >= ITEM_COUNT || inventory.currentItemCount == 0 ||
         !Item::Manager::IsThereCapacityForItem(inventory.currentItemId)) {
         inventory.ClearAll();

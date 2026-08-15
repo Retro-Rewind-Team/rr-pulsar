@@ -21,11 +21,11 @@ References:
 #include <MarioKartWii/System/Rating.hpp>
 
 class RacedataPlayer {
-   public:
+public:
     RacedataPlayer();  // 8052d96c
 
     virtual ~RacedataPlayer();  // 8052DC68 vtable 808b3294
-    void RegisterPlayerParams(RKParameterFile& paramFile);  // 8052da50 inlined in Racedata::init
+    void RegisterPlayerParams(RKParameterFile &paramFile);  // 8052da50 inlined in Racedata::init
     void Init();  // 8052efd4
     GPRank ComputeGPRank();  // 8052daf0 from hiddenScore
 
@@ -33,12 +33,12 @@ class RacedataPlayer {
     void SetCharacterId(CharacterId character);  // 8052e42c
     void SetPlayerType(PlayerType type);  // 8052e44c
     void SetPrevFinishPos(u8 prevPos);  // 8052e658
-    void SetMii(Mii* mii);  // 80530f30
+    void SetMii(Mii *mii);  // 80530f30
 
     KartId GetKartId() const;  // 80530f28
     CharacterId GetCharacterId() const;  // 80530f20
     PlayerType GetPlayerType() const;  // 8052ed20
-    Mii* GetMii() const;  // 80531068
+    Mii *GetMii() const;  // 80531068
     Team GetTeam() const;  // 8052dd18
     void ResetScores();  // 8052e640
     // u8 GetPrevFinishPos(); //8052e44c
@@ -68,7 +68,7 @@ class RacedataPlayer {
 // size_assert(RacedataPlayer, 0xf0);
 
 struct RacedataSettings {  // 0xb68 for race scenario, 0x1758 for menu
-   public:
+public:
     CourseId courseId;  // http://wiki.tockdom.com/wiki/List_of_Identifiers#Courses
     EngineClass engineClass;  // 0x4
     GameMode gamemode;  // 0x8
@@ -94,26 +94,26 @@ struct RacedataSettings {  // 0xb68 for race scenario, 0x1758 for menu
 };  // Total size 0x34
 
 class RacedataScenario {
-   public:
-    explicit RacedataScenario(RKG& rkg);  // 8052dbc8, never used - racedata's constructor does it inline
+public:
+    explicit RacedataScenario(RKG &rkg);  // 8052dbc8, never used - racedata's constructor does it inline
     virtual ~RacedataScenario();  // 805300f4 vtable 808b3288
-    RacedataScenario& operator=(const RacedataScenario& rhs);  // 805305ac
-    void Init(const RacedataScenario* prev);  // 8052fb90 prev can be Race if this is Menu
+    RacedataScenario &operator=(const RacedataScenario &rhs);  // 805305ac
+    void Init(const RacedataScenario *prev);  // 8052fb90 prev can be Race if this is Menu
     void InitCompetitionSettings();  // 8052fa0c
     void UpdateFromPrevRace();  // 8052f1e0 prev positions + next GP race
-    void ComputePlayerCounts(u8* playerCount, u8* screenCount, u8* localPlayerCount) const;  // 8052f788
+    void ComputePlayerCounts(u8 *playerCount, u8 *screenCount, u8 *localPlayerCount) const;  // 8052f788
     void InitScreens(u8 screenCount);  // 8052f4e8
     void InitGhostPlayer(u8 id, u8 realControllerId);  // 8052eef0
-    void InitControllers(const RacedataScenario* prev);  // 8052ed28 prev used for TT replays
+    void InitControllers(const RacedataScenario *prev);  // 8052ed28 prev used for TT replays
     void InitRNG();  // 8052f924
     void UpdatePoints();  // 8052e950
 
     GameType GetGameType() const;  // 8052ed18
-    RacedataPlayer* GetPlayer(u8 idx);  // 8052e434
-    const RacedataPlayer* GetPlayer(u8 idx) const;  // 8052dd20
+    RacedataPlayer *GetPlayer(u8 idx);  // 8052e434
+    const RacedataPlayer *GetPlayer(u8 idx) const;  // 8052dd20
     bool AreTeamsEnabled() const;  // 80530f0c
     bool BlueTeamHasMorePoints() const;  // 8052dca8
-    void RegisterParamsToRKParameter(RKParameterFile& rkParamFile);  // 80531de4
+    void RegisterParamsToRKParameter(RKParameterFile &rkParamFile);  // 80531de4
 
     u8 playerCount;  // 0x4
     u8 screenCount;  // 0x5 equal to player count except for 3P where it's 4
@@ -122,21 +122,21 @@ class RacedataScenario {
     RacedataPlayer players[12];  // 0x8
     RacedataSettings settings;  // 0xb48
     u8 mission[0x70];  // 0xB7C 0x70 struct, see http://wiki.tockdom.com/wiki/Mission_Mode#mission_single.kmt
-    RKG* rkg;  // 0xBEC Scenario 0 points to the one you race, 1 points to one I'm not sure about, 2 points to null
+    RKG *rkg;  // 0xBEC Scenario 0 points to the one you race, 1 points to one I'm not sure about, 2 points to null
 };  // Total size 0xbf0
 // size_assert(RacedataScenario, 0xbf0);
 
 // ParameterFile size is 0x1c, Racedata's is /boot/menuset.prm
 class EmptyRacedataParent {
-   public:
+public:
     EmptyRacedataParent() {};
     // this causes a 2nd vtable after RKParameterFile which is a copy of RKParameter file and would contain any new virtual function in Racedata
 };
 
 class Racedata : public EmptyRacedataParent, public RKParameterFile {
-   public:
-    static Racedata* sInstance;  // 809bd728 presumably private
-    static Racedata* CreateInstance();  // 8052fe58
+public:
+    static Racedata *sInstance;  // 809bd728 presumably private
+    static Racedata *CreateInstance();  // 8052fe58
     static void DestroyInstance();  // 8052ffe8
     Racedata();  // 8053015c inlined
     ~Racedata() override;  // 80530038 vtable 808b3268  for RKParemeterFile and 808b3260 for Racedata itself
@@ -155,7 +155,7 @@ class Racedata : public EmptyRacedataParent, public RKParameterFile {
 
     u8 GetHudSlotId(u8 playerId) const;  // 80531f18
     u32 GetPlayerIdOfLocalPlayer(u8 hudSloftId) const;  // 80531f70
-    void SetGhost(const RKG& rkg);  // 80531f2c
+    void SetGhost(const RKG &rkg);  // 80531f2c
     void LoadNextGPTrack();  // 80531f80
     bool IsTTReplay() const;  // 80532030
 

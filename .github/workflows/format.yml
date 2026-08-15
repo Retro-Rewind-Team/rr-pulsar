@@ -1,0 +1,21 @@
+name: format
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: clang-format
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install clang and git
+        run: pacman -Syu --noconfirm clang git
+      - name: Run clang-format
+        run: bash scripts/check_clang_format.sh

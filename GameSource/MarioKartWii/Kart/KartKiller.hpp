@@ -10,14 +10,14 @@
 namespace Kart {
 
 class Killer : public Link {  // bullet bill
-   public:
+public:
     class ModelCalc : public ModelCalcCallback {
-       public:
+    public:
         ~ModelCalc() override;  // 0x8 vtable 808b6890 at 0x8, 808b6888 at 0xc for empty thunk 8059df1c func 8059dedc
         void ExecWorldCBImpl(u32 args) override;  // 0x24 8059b600
     };
 
-    explicit Killer(const BRRESHandle& handle);  // 8059b658
+    explicit Killer(const BRRESHandle &handle);  // 8059b658
     void Activate(u8 itemPoint);  // 8059b7b8 if itemPoint == 0xFF, gets item point from Item::Player
     void Update();  // 8059bc44
     void UpdateUps();  // 8059d0c0
@@ -41,8 +41,8 @@ class Killer : public Link {  // bullet bill
     bool isEnding;  // 0x30
     bool hasEnded;  // 0x31
     u8 padding[2];
-    ModelDirector* kartKillerModel;  // 0x34
-    ShadowModelDirector* kartKillerShadowModel;  // 0x38
+    ModelDirector *kartKillerModel;  // 0x34
+    ShadowModelDirector *kartKillerShadowModel;  // 0x38
     u8 unknown_0x38[8];
     u32 settingBitfield;  // 0x44 1 = uses gravity, 2 = disregards gravity, 4 = setting value 3, 0x8 = don't drop, 0x10 = low priority
     u8 unknown_0x48[0x64 - 0x48];

@@ -68,20 +68,20 @@ enum KartUIStats {
 };
 
 class ButtonMachine : public PushButton {
-   public:
+public:
     // ctor inline
     ~ButtonMachine() override;  // 80847ca8 vtable 808d9918
     void InitSelf() override;  // 0x18 80847810
     void OnUpdate() override;  // 0x1c 808476f0
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 80847c9c
-    const char* GetClassName() const override;  // 0x2c 808448dc
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80847c9c
+    const char *GetClassName() const override;  // 0x2c 808448dc
     u8 unknown_0x254[0x260 - 0x254];
 };  // total size 0x260
 
 //_sinit_ at 80847d00
 namespace Pages {
 class KartSelect : public MenuInteractable {  // ID 0x6C
-   public:
+public:
     static const PageId id = PAGE_KART_SELECT;
     KartSelect();  // 80627060
     ~KartSelect() override;  // 80847bf4 vtable 808d9880
@@ -90,29 +90,29 @@ class KartSelect : public MenuInteractable {  // ID 0x6C
     void BeforeEntranceAnimations() override;  // 0x38 80847630
     void BeforeExitAnimations() override;  // 0x44 80847690
     void AfterControlUpdate() override;  // 0x4c 80846a2c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 80847c90
-    void OnExternalButtonSelect(PushButton& button, u32 r5) override;  // 0x64 80846ea4
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 80847c90
+    void OnExternalButtonSelect(PushButton &button, u32 r5) override;  // 0x64 80846ea4
     int GetActivePlayerBitfield() const override;  // 0x68 80846a24
     int GetPlayerBitfield() const override;  // 0x6c 80847bec
-    ManipulatorManager& GetManipulatorManager() override;  // 0x70 80846a1c
-    UIControl* CreateExternalControl(u32 id) override;  // 0x84 80845148
-    UIControl* CreateControl(u32 id) override;  // 0x88 80845150
-    void SetButtonHandlers(PushButton& pushButton) override;  // 0x8C 808454b4
+    ManipulatorManager &GetManipulatorManager() override;  // 0x70 80846a1c
+    UIControl *CreateExternalControl(u32 id) override;  // 0x84 80845148
+    UIControl *CreateControl(u32 id) override;  // 0x88 80845150
+    void SetButtonHandlers(PushButton &pushButton) override;  // 0x8C 808454b4
 
-    LayoutUIControl* GetExternalControl(u32 type, u8 row, u8 column);  // 0 = kart name, 1 = one column of buttonmachine (such as only bike), 2 = all buttonmachine, always inlined 80847094
-    ButtonMachine* GetButtonMachineById(u8 buttonId);  // 808471c4
-    void InitButtonMachine(ButtonMachine& machine, u8 buttonId);  // 80847344
+    LayoutUIControl *GetExternalControl(u32 type, u8 row, u8 column);  // 0 = kart name, 1 = one column of buttonmachine (such as only bike), 2 = all buttonmachine, always inlined 80847094
+    ButtonMachine *GetButtonMachineById(u8 buttonId);  // 808471c4
+    void InitButtonMachine(ButtonMachine &machine, u8 buttonId);  // 80847344
     KartId GetkartId(u8 weight, bool isBike, u32 UIPosition);  // 808448e8 UI Position from 0 to 5
     u32 GetUnlockedKartsCountByWeightAndType(u8 weight, bool isBike);  // 80844960
     u32 GetUnlockedKartsCountByWeight(u8 weight);  // 808449dc inlined
     u32 GetMinUnlockedKartsCount() const;  // 80844abc inlined
     static void func_8084745c();  // some weird random stuff that stores different karts in racedata scenario1, akin to char select
     static void func_80847590();  // same, but without the random
-    static Page* GetPageById(PageId id = PAGE_KART_SELECT);  // 808447cc only ever used with id = veh select so it's here
+    static Page *GetPageById(PageId id = PAGE_KART_SELECT);  // 808447cc only ever used with id = veh select so it's here
     static KartId kartUIOrderToIDArray[36];  // 808ad678
 
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 80846c1c
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId);  // 80846fbc
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 80846c1c
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId);  // 80846fbc
     void OnBackPress(u32 hudSlotId);  // 80846fc0
 
     // onButtonClick    vtable = 0x808bd06c function = 80846c1c
@@ -124,7 +124,7 @@ class KartSelect : public MenuInteractable {  // ID 0x6C
     u32 unknwown_0x6C4;  // init at -1
     bool isUnlocked[36];  // in UIORDER
     u32 kartsDisplayType;  // 0 = only karts, 1 = only bikes, 2 = all
-    CountDown* timer;  // 0x6f0
+    CountDown *timer;  // 0x6f0
     u32 curButtonId;  // matches kart IDs
     VehicleModelControl vehicleModel;
     CtrlMenuMachineGraph ctrlMenuMachineGraph;  // 0x87c 808d3420 inherited from LayoutUIControl,

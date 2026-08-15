@@ -4,7 +4,7 @@
 
 namespace Pulsar {
 
-static bool SafeCheckRevision(nw4r::g3d::ResFile* file) {
+static bool SafeCheckRevision(nw4r::g3d::ResFile *file) {
     if (file == nullptr || file->data == nullptr) {
         return false;
     }
@@ -12,7 +12,7 @@ static bool SafeCheckRevision(nw4r::g3d::ResFile* file) {
 }
 kmCall(0x8055b810, SafeCheckRevision);
 
-static void SafeInit(nw4r::g3d::ResFile* file) {
+static void SafeInit(nw4r::g3d::ResFile *file) {
     if (file == nullptr || file->data == nullptr) {
         return;
     }
@@ -20,7 +20,7 @@ static void SafeInit(nw4r::g3d::ResFile* file) {
 }
 kmCall(0x8055b81c, SafeInit);
 
-static bool SafeBind(nw4r::g3d::ResFile* file, nw4r::g3d::ResFile* rhs) {
+static bool SafeBind(nw4r::g3d::ResFile *file, nw4r::g3d::ResFile *rhs) {
     if (file == nullptr || file->data == nullptr || rhs == nullptr || rhs->data == nullptr) {
         return false;
     }
@@ -29,4 +29,4 @@ static bool SafeBind(nw4r::g3d::ResFile* file, nw4r::g3d::ResFile* rhs) {
 kmCall(0x8055b838, SafeBind);
 kmCall(0x8055b854, SafeBind);
 
-} // namespace Pulsar
+}  // namespace Pulsar

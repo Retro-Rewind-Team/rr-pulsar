@@ -21,10 +21,10 @@ using namespace nw4r;
 namespace Input {
 
 class Controller {
-   public:
+public:
     Controller();  // 8051eba8
     virtual ~Controller();  // 8051f1ec vtable 808b2ed8
-    virtual void UpdateImpl(State& state, UIState& uiState) = 0;
+    virtual void UpdateImpl(State &state, UIState &uiState) = 0;
     virtual ControllerType GetType() const;  // 0x10 8051ce7c returns -1
     virtual bool HasRumble() const;  // 0x14 80521d84
     virtual void ActivateRumble();  // 0x18 8052208c
@@ -36,7 +36,7 @@ class Controller {
     virtual void UpdateBatteryField();  // 0x30 8051f010
     virtual int GetChannel() const;  // 0x34 80522494
     virtual void SetDriftType(bool isDriftAuto);  // 0x38 8051f37c
-    virtual const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const;  // 0x3c 8051f07c
+    virtual const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const;  // 0x3c 8051f07c
     virtual u8 GetRemainingBattery() const;  // 0x40 8051f074
     virtual void Init(bool isDriftAuto);  // 0x44 8051f308 could be called init too
 
@@ -54,18 +54,18 @@ class Controller {
 // size_assert(Controller, 0x90);
 
 class DummyController : public Controller {
-   public:
+public:
     // no ctor
     ~DummyController() override;  // 805232b0 vtable 808b3020
-    void UpdateImpl(State& state, UIState& uiState) override;  // 80524ab0 just a blr
+    void UpdateImpl(State &state, UIState &uiState) override;  // 80524ab0 just a blr
 };  // total size 0x90
 
 class MotionController;
 class WiiController : public Controller {
-   public:
+public:
     WiiController();  // 8051f088
     ~WiiController() override;  // 80522934 vtable 808b2e90
-    void UpdateImpl(State& state, UIState& uiState) override;  // 0xc 8051fc84
+    void UpdateImpl(State &state, UIState &uiState) override;  // 0xc 8051fc84
     ControllerType GetType() const override;  // 0x10 8052292c returns 0x8dc (0 1 2)
     bool HasRumble() const override;  // 0x14 805228dc checks wiimote internal setting
     void ActivateRumble() override;  // 0x18 805228d0
@@ -77,10 +77,10 @@ class WiiController : public Controller {
     u8 GetRemainingBattery() const override;  // 0x40 8051f3d0
     void Init(bool isDriftAuto) override;  // 0x44 8051f22c
 
-    void UpdateStatesClassic(const WPAD::CLStatus& classicStatus, State& state, UIState& uiState);  // 8051f410 CLStatus from KPAD::UnifiedWpadStatus
+    void UpdateStatesClassic(const WPAD::CLStatus &classicStatus, State &state, UIState &uiState);  // 8051f410 CLStatus from KPAD::UnifiedWpadStatus
     // The next 2 use WPAD::Status/WPAD::FSStatus with MotionController directly
-    void UpdateStatesNunchuck(UIState& uiState, State& state);  // 8051fa7c
-    void UpdateStatesCore(UIState& uiState, State& state);  // 8051fbe0
+    void UpdateStatesNunchuck(UIState &uiState, State &state);  // 8051fa7c
+    void UpdateStatesCore(UIState &uiState, State &state);  // 8051fbe0
     static void WPADInfoCallback(s32 channel, s32 result);  // 8051f384 updates controller's battery using wpadInfo's battery
     void UpdateBattery(s32 result);  // 8051f3b4 inlined in the func above
 
@@ -102,15 +102,15 @@ class WiiController : public Controller {
     Vec2 horizon;  // 0x908
     Vec2 horiVec;  // 0x910
     float dist;  // 0x918
-    MotionController* motionController;  // 0x91c
+    MotionController *motionController;  // 0x91c
 };  // total size 0x920 seems other controllers related
 // size_assert(WiiController, 0x920);
 
 class GCNController : public Controller {
-   public:
+public:
     GCNController();  // 8051ffd0
     ~GCNController() override;  // 0x8 80522874 vtable 808b2e48
-    void UpdateImpl(State& state, UIState& uiState) override;  // 0xc 805201b0
+    void UpdateImpl(State &state, UIState &uiState) override;  // 0xc 805201b0
     ControllerType GetType() const override;  // 0x10 8052286c returns 3
     bool HasRumble() const override;  // 0x14 805206fc checks RKSYS setting
     void ActivateRumble() override;  // 0x18 80522858
@@ -130,45 +130,45 @@ class GCNController : public Controller {
 class GhostController : public Controller {
     GhostController();  // 80520730
     ~GhostController() override;  // 80520924 vtable 808b2e00
-    void UpdateImpl(State& state, UIState& uiState) override;  // 80520b9c
+    void UpdateImpl(State &state, UIState &uiState) override;  // 80520b9c
     ControllerType GetType() const override;  // 0x10 8052282c returns 4
     double func_0x24() override;  // 0x24 80520a60
     void SetDriftType(bool isDriftAuto);  // 0x38 80522828
     void Init(bool isDriftAuto) override;  // 0x44 80520998
     bool HasRKGInputs() const;  // 80520a4c
-    RKGInputs* ghostInputs;  // 0x90
-    GhostActionStream* actionStream;  // 0x94
-    GhostDirectionStream* directionStream;  // 0x98
-    GhostTrickStream* trickStream;  // 0x9c
+    RKGInputs *ghostInputs;  // 0x90
+    GhostActionStream *actionStream;  // 0x94
+    GhostDirectionStream *directionStream;  // 0x98
+    GhostTrickStream *trickStream;  // 0x9c
     u8 unknown_0xa0[6];
     bool isReadingGhost;  // 0xa6 will not read if set to false
     u8 padding;
 };  // total size 0xa8
 
 class AIController : public Controller {
-   public:
+public:
     ~AIController() override;  // 805227dc vtable 808b2fd8
-    void UpdateImpl(State& state, UIState& uiState) override;  // 80524a58
+    void UpdateImpl(State &state, UIState &uiState) override;  // 80524a58
     ControllerType GetType() const override;  // 0x10 80524aa8
 
     State cpuInputState;  // 0x90
 };  // 0xa8
 
 class MotionControllerSub {
-   public:
+public:
     MotionControllerSub();  // 8071b86c
     virtual ~MotionControllerSub();  // 8071bd1c vtable 808c9454
     u8 unknown[0x18];
 };
 
 class MotionController {  // only for nunchuck and wheel (core)
-   public:
+public:
     MotionController();  // 80745884
     virtual ~MotionController();  // 8074595c vtable 808cb780
     void Init(bool isDriftAuto);  // 807459e4
-    void UpdateForNunchuck(State& state, const KPAD::Status& status);  // 80745be4
-    void UpdateForCore(State& state, const KPAD::Status& status);  // 80745de4
-    MotionControllerSub* sub;  // 0x4
+    void UpdateForNunchuck(State &state, const KPAD::Status &status);  // 80745be4
+    void UpdateForCore(State &state, const KPAD::Status &status);  // 80745de4
+    MotionControllerSub *sub;  // 0x4
     u32 unknown_0x8[2];
     u8 unknown_0x10[2];
     u8 padding[2];

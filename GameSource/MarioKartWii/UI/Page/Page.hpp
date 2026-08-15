@@ -61,10 +61,10 @@ enum PageState {
 };
 
 class Page {
-   public:
+public:
     Page();  // 8060197c
     virtual ~Page();  // 80601a04 vtable 808ba5c0
-    virtual const char* GetClassName() const;  // 0xC 805bb25c returns "(unknown page)"
+    virtual const char *GetClassName() const;  // 0xC 805bb25c returns "(unknown page)"
     virtual PageId GetNextPage() const;  // 0x10 805bb278 returns -1
     virtual int IsHomeMenuWorking() const;  // 0x14 805bb254 returns 3 if homebutton is not allowed
     virtual bool IsDVDEnabled();  // 0x18 805bb24c
@@ -85,7 +85,7 @@ class Page {
     virtual void OnResume();  // 0x54 805bb228 just a blr called when a layer on top of the page is removed
     virtual void OnSectionChange();  // 0x58 805bb224 just a blr
     virtual void func_0x5C();  // 0x5c 805bb220 just a blr
-    virtual const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const;  // 0x60 805bed68 returns 809C1d10
+    virtual const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const;  // 0x60 805bed68 returns 809C1d10
 
     void Init(PageId pageId);  // 80601a60
     void Dispose();  // 80601adc
@@ -104,8 +104,8 @@ class Page {
     void HandleSectionChange();  // 80602428 calls OnSectionChange
     void SetAnimDirection(u32 animDirection);  // 8060244c
     void InitControlGroup(u32 controlCount);  // 8060245C
-    void AddControl(u8 controlIdx, UIControl& control, u32 zIdx);  // 8060246c
-    void SetManipulatorManager(ManipulatorManager& manager);  // 00602474
+    void AddControl(u8 controlIdx, UIControl &control, u32 zIdx);  // 8060246c
+    void SetManipulatorManager(ManipulatorManager &manager);  // 00602474
     void EndState();  // 8060247c
     void EndStateAnimated(u32 animDirection, float animLength);  // 80602488
     void EndExitState();  // 806024a4
@@ -128,12 +128,12 @@ class Page {
     u32 curStateDuration;  // 0x1C
     u32 duration;  // 0x20
     ControlGroup controlGroup;  // 0x24
-    ManipulatorManager* manipulatorManager;  // 0x38
+    ManipulatorManager *manipulatorManager;  // 0x38
     u32 entranceSoundId;
     u32 exitSoundId;
 
     class ControlAnimator : ControlGroupAction {
-        virtual void Calc(UIControl* control);  // 806027ac vtable 808ba63c
+        virtual void Calc(UIControl *control);  // 806027ac vtable 808ba63c
         u32 animationDirection;  // 0x4
         PageState pageState;  // 0x8
         float animationDelay;  // 0xC
@@ -146,12 +146,12 @@ class Page {
     };  // total size 0x24
 
     class OnStateChangeControlAnimator : ControlGroupAction {
-        void Calc(UIControl* control) override;  // 808ba624 80602960 resets initial position on load/unload for example
+        void Calc(UIControl *control) override;  // 808ba624 80602960 resets initial position on load/unload for example
         float direction;  // 0x4 = 1/-1  if animdirection = 0/1 and state = activating or exiting
     };
 
     class MaxAnimDelayGetter : ControlGroupAction {
-        void Calc(UIControl* control) override;  // 808ba630 80602920
+        void Calc(UIControl *control) override;  // 808ba630 80602920
         float delay;  // filled by calc from the control
     };
     static float transitionDelay;

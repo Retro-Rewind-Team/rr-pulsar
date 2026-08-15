@@ -17,9 +17,9 @@ class Ambience {
 };  // 0x74
 
 class RaceAmbienceMgr {
-   public:
-    static RaceAmbienceMgr* sInstance;  // 809c2338
-    static RaceAmbienceMgr* CreateInstance();  // 806fb8b8
+public:
+    static RaceAmbienceMgr *sInstance;  // 809c2338
+    static RaceAmbienceMgr *CreateInstance();  // 806fb8b8
     static void DestroyInstance();  // 806fb964
     RaceAmbienceMgr();  // 806fbab0
     ~RaceAmbienceMgr();  // 806fbb70

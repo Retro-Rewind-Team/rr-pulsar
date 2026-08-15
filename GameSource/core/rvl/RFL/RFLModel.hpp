@@ -37,14 +37,14 @@ struct DrawCoreSetting {
 
 GX::Color GetFavoriteColor(FavoriteColor favoriteColor);  // 800c0ad0
 u32 GetModelBufferSize(Resolution resolution, u32 expressionFlag);  // inlined in ScnRfl::Construct 8024451c
-void SetMtx(CharModel* charModel, const Mtx viewMtx);  // 800c0a70
-void DrawOpa(const CharModel* charModel);  // 800c0e10
-void DrawOpa(const CharModel* charModel);  // 800c0e20
-void DrawOpaCore(const CharModel* charModel, const DrawCoreSetting* setting);  // 800c0f90
-void DrawXluCore(const CharModel* charModel, const DrawCoreSetting* setting);  // 800c14a0
-void LoadDrawSetting(const DrawSetting* setting);  // 800c0b20
+void SetMtx(CharModel *charModel, const Mtx viewMtx);  // 800c0a70
+void DrawOpa(const CharModel *charModel);  // 800c0e10
+void DrawOpa(const CharModel *charModel);  // 800c0e20
+void DrawOpaCore(const CharModel *charModel, const DrawCoreSetting *setting);  // 800c0f90
+void DrawXluCore(const CharModel *charModel, const DrawCoreSetting *setting);  // 800c14a0
+void LoadDrawSetting(const DrawSetting *setting);  // 800c0b20
 
-void SetExpression(CharModel* charModel);  // 800c0ac0
+void SetExpression(CharModel *charModel);  // 800c0ac0
 }  // namespace RFL
 
 #endif

@@ -51,19 +51,19 @@ enum MiiType {
 };
 
 class Mii {  // online, rflId is hudSlotId and middleDBIdx is aid
-   public:
+public:
     Mii() {}
     virtual ~Mii();  // 80529034 vtable 808b3148
     void Init(u32 type);  // 80525f88 could be reset
-    static bool ComputeRFLStoreData(RFL::StoreData& dest, const RFL::CreateID* createId);  // 8052758c
+    static bool ComputeRFLStoreData(RFL::StoreData &dest, const RFL::CreateID *createId);  // 8052758c
     static bool IsMiiId(CharacterId character);  // 805275ec
-    static bool GetMiiId(const RFL::CreateID* createId, u32* r4, u16* id);  // 80527604
+    static bool GetMiiId(const RFL::CreateID *createId, u32 *r4, u16 *id);  // 80527604
     void Load(RFL::IDX rflIdx, u32 middleDBIdx);  // 80526020 rflId == 0 leads to empty mii
 
     // rflId stored to idx if type == 3, presumably normal mii, middleDBIdx is most often playerId
-    bool GetRFLArgs(RFL::IDX rflIdx, u32 middleDBIdx, MiiType type, RFL::MiddleDB* dbDest, RFL::DataSource* sourceDest, RFL::IDX* idxDest);  // 80526460
-    nw4r::g3d::ScnRfl* CreateScnRfl(EGG::Allocator* allocator, RFL::Resolution resolution, u32 expressionFlag,
-                                    nw4r::g3d::ScnRfl* copyFrom, u32 sizeUserData);  // 8052663c copies copyFrom CharInfo if not null
+    bool GetRFLArgs(RFL::IDX rflIdx, u32 middleDBIdx, MiiType type, RFL::MiddleDB *dbDest, RFL::DataSource *sourceDest, RFL::IDX *idxDest);  // 80526460
+    nw4r::g3d::ScnRfl *CreateScnRfl(EGG::Allocator *allocator, RFL::Resolution resolution, u32 expressionFlag,
+                                    nw4r::g3d::ScnRfl *copyFrom, u32 sizeUserData);  // 8052663c copies copyFrom CharInfo if not null
 
     MiiType type;
     u8 rflIdx;  // 0x8
@@ -71,7 +71,7 @@ class Mii {  // online, rflId is hudSlotId and middleDBIdx is aid
     u8 padding[2];
     RFL::DataSource source;  // 0xc
     RFL::StoreData rawStoreMii;  // 0x10 used when the mii was loaded from the official store (player miis) or a file (rkg, etc...)
-    RFL::MiddleDB* middleDB;  // 0x5c
+    RFL::MiddleDB *middleDB;  // 0x5c
     GX::Color rflToGXFavoriteColor;  // 0x60
     RFL::FavoriteColor favoriteColor;  // 0x64
     RFL::AdditionalInfo info;  // 0x68 CreateID at 0x94 (info + 0x2c)

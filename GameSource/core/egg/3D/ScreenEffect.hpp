@@ -6,7 +6,7 @@
 namespace EGG {
 
 class ScreenEffect {
-   public:
+public:
     ScreenEffect();  // 8023e724
     void SetupGX(bool cache);  // 80240988
     bool Release(u32 type);  // 80240844

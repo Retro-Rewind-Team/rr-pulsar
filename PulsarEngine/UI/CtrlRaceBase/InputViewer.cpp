@@ -28,9 +28,9 @@ namespace UI {
 const s8 CtrlRaceInputViewer::DPAD_HOLD_FOR_N_FRAMES = 10;
 
 static bool IsBrakeDriftingEnabled() {
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
     return (scenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) ||
@@ -42,14 +42,14 @@ void CtrlRaceInputViewer::Init() {
     char name[32];
     bool isBrakedriftToggled = IsBrakeDriftingEnabled();
     bool isNunchuk = (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_INPUTDISPLAY)) == Pulsar::INPUTDISPLAY_CHUK);
-    RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
+    RacedataScenario &raceScenario = Racedata::sInstance->racesScenario;
 
     for (int i = 0; i < (int)DpadState_Count; ++i) {
         DpadState state = static_cast<DpadState>(i);
-        const char* stateName = CtrlRaceInputViewer::DpadStateToName(state);
+        const char *stateName = CtrlRaceInputViewer::DpadStateToName(state);
 
         snprintf(name, 32, "Dpad%.*s", strlen(stateName), stateName);
-        nw4r::lyt::Pane* pane = this->layout.GetPaneByName(name);
+        nw4r::lyt::Pane *pane = this->layout.GetPaneByName(name);
         this->SetPaneVisibility(name, state == DpadState_Off);
         this->m_dpadPanes[i] = pane;
 
@@ -58,12 +58,12 @@ void CtrlRaceInputViewer::Init() {
 
     for (int i = 0; i < (int)AccelState_Count; ++i) {
         AccelState state = static_cast<AccelState>(i);
-        const char* stateName = CtrlRaceInputViewer::AccelStateToName(state);
+        const char *stateName = CtrlRaceInputViewer::AccelStateToName(state);
 
         snprintf(name, 32, "Accel%.*s", strlen(stateName), stateName);
-        nw4r::lyt::Pane* pane = this->layout.GetPaneByName(name);
-        nw4r::lyt::Pane* chuk_b = this->layout.GetPaneByName("TriggerRPressed");
-        nw4r::lyt::Pane* chuk_boff = this->layout.GetPaneByName("TriggerROff");
+        nw4r::lyt::Pane *pane = this->layout.GetPaneByName(name);
+        nw4r::lyt::Pane *chuk_b = this->layout.GetPaneByName("TriggerRPressed");
+        nw4r::lyt::Pane *chuk_boff = this->layout.GetPaneByName("TriggerROff");
         this->SetPaneVisibility(name, state == AccelState_Off);
         if (isBrakedriftToggled) {
             if (isNunchuk) {
@@ -74,7 +74,6 @@ void CtrlRaceInputViewer::Init() {
                 pane->trans.x += pane->scale.x * 15.0f;
                 pane->trans.y += pane->scale.z * 15.0f;
             }
-            
         }
         this->m_accelPanes[i] = pane;
 
@@ -83,14 +82,14 @@ void CtrlRaceInputViewer::Init() {
 
     for (int i = 0; i < (int)Trigger_Count; ++i) {
         Trigger trigger = static_cast<Trigger>(i);
-        const char* triggerName = CtrlRaceInputViewer::TriggerToName(trigger);
+        const char *triggerName = CtrlRaceInputViewer::TriggerToName(trigger);
 
         for (int j = 0; j < (int)TriggerState_Count; ++j) {
             TriggerState state = static_cast<TriggerState>(j);
-            const char* stateName = CtrlRaceInputViewer::TriggerStateToName(state);
+            const char *stateName = CtrlRaceInputViewer::TriggerStateToName(state);
 
             snprintf(name, 32, "Trigger%.*s%.*s", strlen(triggerName), triggerName, strlen(stateName), stateName);
-            nw4r::lyt::Pane* pane = this->layout.GetPaneByName(name);
+            nw4r::lyt::Pane *pane = this->layout.GetPaneByName(name);
             this->SetPaneVisibility(name, state == TriggerState_Off);
             if (!isBrakedriftToggled && trigger == Trigger_BD) {
                 this->SetPaneVisibility(name, false);
@@ -121,11 +120,11 @@ void CtrlRaceInputViewer::OnUpdate() {
         m_playerId = playerId;
     }
 
-    RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
+    RacedataScenario &raceScenario = Racedata::sInstance->racesScenario;
     if (playerId < raceScenario.playerCount) {
-        RaceinfoPlayer* player = Raceinfo::sInstance->players[playerId];
+        RaceinfoPlayer *player = Raceinfo::sInstance->players[playerId];
         if (player) {
-            Input::State* input = &player->realControllerHolder->inputStates[0];
+            Input::State *input = &player->realControllerHolder->inputStates[0];
 
             DpadState dpadState = (DpadState)input->motionControlFlick;
             Vec2 stick = input->stick;
@@ -163,7 +162,7 @@ void CtrlRaceInputViewer::OnUpdate() {
 
 u32 CtrlRaceInputViewer::Count() {
     if (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_INPUTDISPLAY)) != Pulsar::INPUTDISPLAY_DISABLED) {
-        const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+        const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
         u32 localPlayerCount = scenario.localPlayerCount;
         const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
         if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) localPlayerCount += 1;
@@ -173,10 +172,10 @@ u32 CtrlRaceInputViewer::Count() {
     return 0;
 }
 
-void CtrlRaceInputViewer::Create(Page& page, u32 index, u32 count) {
+void CtrlRaceInputViewer::Create(Page &page, u32 index, u32 count) {
     u8 variantId = (count == 3) ? 4 : count;
     for (int i = 0; i < count; ++i) {
-        CtrlRaceInputViewer* inputViewer = new CtrlRaceInputViewer;
+        CtrlRaceInputViewer *inputViewer = new CtrlRaceInputViewer;
         page.AddControl(index + i, *inputViewer, 0);
 
         char variant[0x20];
@@ -189,10 +188,10 @@ void CtrlRaceInputViewer::Create(Page& page, u32 index, u32 count) {
 
 static CustomCtrlBuilder INPUTVIEWER(CtrlRaceInputViewer::Count, CtrlRaceInputViewer::Create);
 
-void CtrlRaceInputViewer::Load(const char* variant, u8 id) {
+void CtrlRaceInputViewer::Load(const char *variant, u8 id) {
     this->hudSlotId = id;
     ControlLoader loader(this);
-    const char* groups[] = {nullptr, nullptr};
+    const char *groups[] = {nullptr, nullptr};
     if (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_INPUTDISPLAY)) == Pulsar::INPUTDISPLAY_CHUK) {
         loader.Load(UI::raceFolder, "PULInputViewerChuk", variant, groups);
     } else {

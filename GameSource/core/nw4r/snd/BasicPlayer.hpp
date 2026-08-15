@@ -6,7 +6,7 @@ namespace nw4r {
 namespace snd {
 namespace detail {
 class BasicPlayer {
-   public:
+public:
     BasicPlayer();  // 8008dc60
     virtual ~BasicPlayer();  // 8008e0a0 vtable 80274250
     virtual bool Start() = 0;

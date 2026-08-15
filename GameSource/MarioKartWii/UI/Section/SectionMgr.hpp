@@ -17,12 +17,12 @@ Melg
 class Page;
 
 class SectionMgr {
-   public:
-    static SectionMgr* sInstance;  // 809c1e38
-    static SectionMgr* CreateInstance();  // 80634c90
+public:
+    static SectionMgr *sInstance;  // 809c1e38
+    static SectionMgr *CreateInstance();  // 80634c90
     static void DestroyInstance();  // 80634cc8
 
-    static Pages::System* CreateSystemPages(u8 idx, SectionId id);  // 80634a64
+    static Pages::System *CreateSystemPages(u8 idx, SectionId id);  // 80634a64
     static int GetSectionPriority(SectionId id);  // 80634b80
     SectionMgr();  // 80634d40
     ~SectionMgr();  // 80634dc4
@@ -41,13 +41,13 @@ class SectionMgr {
     void RequestSceneReinit(u32 delay, u32 fadeOutColor);  // 80635b2c
     void RequestGoToWiiMenu();  // 80635c0c SetNextSection with "ReturnToMenu" section
     void RequestPowerOff();  // 80635c74  SetNextSection with "PowerOff" section
-    const char* GetNextSectionArchiveName();  // 80635cdc
+    const char *GetNextSectionArchiveName();  // 80635cdc
     bool NextSectionHasBackModel();  // 80635ce4
     bool NextSectionHasDriverModel();  // 80635cec
     void UpdateStatusBitfield();  // 80635cf4 inlined in update
     void UpdateDVDStatus(bool forceResume);  // 80635e08 inlined, forceResume regardless of Pages' isDvdEnabled
 
-    Section* curSection; /* http://wiki.tockdom.com/wiki/List_of_Identifiers#Menu_Identifiers */
+    Section *curSection; /* http://wiki.tockdom.com/wiki/List_of_Identifiers#Menu_Identifiers */
     SectionId bootSectionId;  // 0x4 usually set by SavedGhostHandler::Init, for example Creating new save/Corrupted save etc...
     SectionId unknownSectionId;
     SectionId nextSectionId;  // 0xc
@@ -63,9 +63,9 @@ class SectionMgr {
     u32 dvdRelatedFrameCounter;  // 0x2c
     u32 fadeSceneAction;  // 0x30 1 = reinit scene, 2 = change scene
     SectionPad pad;  // 0x34
-    RKSYSRequester* rksysRequester;  // 0x90
-    SystemBMGHolder* systemBMG;  // 0x94
-    SectionParams* sectionParams;
+    RKSYSRequester *rksysRequester;  // 0x90
+    SystemBMGHolder *systemBMG;  // 0x94
+    SectionParams *sectionParams;
 
 };  // Total Size 0x9C
 // size_assert(SectionMgr, 0x9c);

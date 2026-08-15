@@ -36,8 +36,8 @@ struct USERPacket {
 // size_assert(USERPacket, 0xc0);
 
 class USERHandler {
-   public:
-    static USERHandler* sInstance;  // 809c2108
+public:
+    static USERHandler *sInstance;  // 809c2108
     static void CreateInstance();  // 80662778
     static void DestroyInstance();  // 806627f8
     USERHandler();  // 80662e08 inlined
@@ -62,7 +62,7 @@ class USERHandler {
     USERPacket receivedPackets[12];  // 0xc8
 
     RFL::WiFiInformation rflWifiInfo;  // 0x9c8
-    void* rflWifiInfoBuffer;  // 0x9d8 just an array of RFL::WiFiPackets
+    void *rflWifiInfoBuffer;  // 0x9d8 just an array of RFL::WiFiPackets
 
     u8 unknown_0x9dc[4];
     u32 aidBitflag;  // 0x9e0

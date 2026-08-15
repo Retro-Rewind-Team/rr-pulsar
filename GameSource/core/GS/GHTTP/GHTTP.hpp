@@ -37,10 +37,10 @@ enum Result {
     GHTTPEncryptionError
 };
 
-typedef struct GHIPost* Post;
+typedef struct GHIPost *Post;
 
-bool PostAddXML(Post* post, void* xml);
-bool PostAddFileFromMemoryA(Post* post, const char* attachedName, const void* file, int bufferLength, const char* reportFilename, const char* contentType);
+bool PostAddXML(Post *post, void *xml);
+bool PostAddFileFromMemoryA(Post *post, const char *attachedName, const void *file, int bufferLength, const char *reportFilename, const char *contentType);
 
 }  // namespace GHTTP
 

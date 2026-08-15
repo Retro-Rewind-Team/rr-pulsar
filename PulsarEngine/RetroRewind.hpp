@@ -44,7 +44,7 @@ extern u8 CUSTOM_DRIVER;
 
 namespace RetroRewind {
 class System : public Pulsar::System {
-   public:
+public:
     static bool Is500cc();
 
     enum WeightClass {
@@ -85,7 +85,7 @@ class System : public Pulsar::System {
     };
 
     WeightClass weight;
-    static Pulsar::System* Create();  // My Create function, needs to return Pulsar
+    static Pulsar::System *Create();  // My Create function, needs to return Pulsar
     static WeightClass GetWeightClass(CharacterId);
 };
 }  // namespace RetroRewind

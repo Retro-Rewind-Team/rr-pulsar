@@ -30,77 +30,77 @@ static inline T RoundUp(T value, u32 base) {
     return static_cast<T>((value + (base - 1)) & ~(base - 1));
 }
 
-static inline u32 GetIntPtr(const void* ptr) {  // somehow doesn't get inlined
+static inline u32 GetIntPtr(const void *ptr) {  // somehow doesn't get inlined
     return reinterpret_cast<u32>(ptr);
 }
 
 template <typename T>
-static inline void* AddOffsetToPtr(void* pointer, T offset) {
-    return reinterpret_cast<void*>(GetIntPtr(pointer) + offset);
+static inline void *AddOffsetToPtr(void *pointer, T offset) {
+    return reinterpret_cast<void *>(GetIntPtr(pointer) + offset);
 }
 
-static inline void* AddU32ToPtr(void* pointer, u32 offset) {
+static inline void *AddU32ToPtr(void *pointer, u32 offset) {
     return AddOffsetToPtr(pointer, offset);
 }
 
 template <typename T>
-static inline const void* AddOffsetToPtr(const void* pointer, T offset) {
-    return reinterpret_cast<const void*>(GetIntPtr(pointer) + offset);
+static inline const void *AddOffsetToPtr(const void *pointer, T offset) {
+    return reinterpret_cast<const void *>(GetIntPtr(pointer) + offset);
 }
 
 template <typename T>
-inline const T*
-ConvertOffsToPtr(const void* baseAddress, unsigned int offset) {
-    return reinterpret_cast<const T*>(static_cast<const u8*>(baseAddress) + offset);
+inline const T *
+ConvertOffsToPtr(const void *baseAddress, unsigned int offset) {
+    return reinterpret_cast<const T *>(static_cast<const u8 *>(baseAddress) + offset);
 }
 
-static inline const void* AddU32ToPtr(const void* pointer, u32 offset) {
+static inline const void *AddU32ToPtr(const void *pointer, u32 offset) {
     return AddOffsetToPtr(pointer, offset);
 }
 
-inline int GetOffsetFromPtr(const void* start, const void* end) {
+inline int GetOffsetFromPtr(const void *start, const void *end) {
     return static_cast<int>(GetIntPtr(end) - GetIntPtr(start));
 }
 
-static inline int ComparePtr(const void* lhs, const void* rhs) {
+static inline int ComparePtr(const void *lhs, const void *rhs) {
     return static_cast<int>(GetIntPtr(lhs) - GetIntPtr(rhs));
 }
 
 class NonCopyable {
-   protected:
+protected:
     NonCopyable() {}
     ~NonCopyable() {}
 
-   private:
-    NonCopyable(const NonCopyable&);
-    const NonCopyable& operator=(const NonCopyable&);
+private:
+    NonCopyable(const NonCopyable &);
+    const NonCopyable &operator=(const NonCopyable &);
 };
 
-inline void Lock(OS::Mutex& mutex) {
+inline void Lock(OS::Mutex &mutex) {
     OS::LockMutex(&mutex);
 }
 
-inline void Unlock(OS::Mutex& mutex) {
+inline void Unlock(OS::Mutex &mutex) {
     OS::UnlockMutex(&mutex);
 }
 
 template <typename Type>
 class AutoLock : private NonCopyable {
-   public:
-    AutoLock(Type& lockObj) : lock(lockObj) { Lock(lockObj); }
+public:
+    AutoLock(Type &lockObj) : lock(lockObj) { Lock(lockObj); }
     ~AutoLock() { Unlock(lock); }
 
-   private:
-    Type& lock;
+private:
+    Type &lock;
 };
 typedef AutoLock<OS::Mutex> AutoMutexLock;
 
 class AutoInterruptLock : private NonCopyable {
-   public:
+public:
     AutoInterruptLock() : oldState(OS::DisableInterrupts()) {}
     ~AutoInterruptLock() { (void)OS::RestoreInterrupts(oldState); }
 
-   private:
+private:
     BOOL oldState;
 };
 

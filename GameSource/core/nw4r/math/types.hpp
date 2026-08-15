@@ -22,13 +22,13 @@ struct VEC3 : Vec {
         this->y = y;
         this->z = z;
     }
-    void Report(bool addNewLine, const char* prefixText = 0);
+    void Report(bool addNewLine, const char *prefixText = 0);
 };
 
-VEC2* VEC2Maximize(VEC2* dest, const VEC2* src1, const VEC2* src2);  // 80085580
-VEC2* VEC2Minimize(VEC2* dest, const VEC2* src1, const VEC2* src2);  // 800855c0
-VEC3* VEC3Maximize(VEC3* dest, const VEC3* src1, const VEC3* src2);
-VEC3* VEC3Minimize(VEC3* dest, const VEC3* src1, const VEC3* src2);
+VEC2 *VEC2Maximize(VEC2 *dest, const VEC2 *src1, const VEC2 *src2);  // 80085580
+VEC2 *VEC2Minimize(VEC2 *dest, const VEC2 *src1, const VEC2 *src2);  // 800855c0
+VEC3 *VEC3Maximize(VEC3 *dest, const VEC3 *src1, const VEC3 *src2);
+VEC3 *VEC3Minimize(VEC3 *dest, const VEC3 *src1, const VEC3 *src2);
 
 struct QUAT {
     float x, y, z, w;
@@ -95,17 +95,17 @@ struct MTX43 {
     };
 };
 
-void MTX33Identity(MTX33* mtx);
-void MTX34ToMTX33(MTX33* dest, const MTX34* source);
-void MTX34Zero(MTX34* mtx);
-void MTX34Add(MTX34* dest, const MTX34* sourceA, const MTX34* sourceB);
-void MTX34Scale(MTX34* dest, const MTX34* sourceMatrix, const VEC3* sourceVector);
-void MTX34Trans(MTX34* dest, const MTX34* sourceMatrix, const VEC3* sourceVector);
-void MTX34RotAxisFIdx(MTX34* dest, const VEC3* vector, float fidx);
-void MTX34RotXYZFIdx(MTX34* dest, float x, float y, float z);
-void VEC3TransformNormal(VEC3* dest, const MTX34* sourceMatrix, const VEC3* sourceVector);  // transforms a vector from a space to another using the transMtx
-void MTX44Identity(MTX44* mtx);
-void MTX44Copy(MTX44* dest, const MTX44* source);
+void MTX33Identity(MTX33 *mtx);
+void MTX34ToMTX33(MTX33 *dest, const MTX34 *source);
+void MTX34Zero(MTX34 *mtx);
+void MTX34Add(MTX34 *dest, const MTX34 *sourceA, const MTX34 *sourceB);
+void MTX34Scale(MTX34 *dest, const MTX34 *sourceMatrix, const VEC3 *sourceVector);
+void MTX34Trans(MTX34 *dest, const MTX34 *sourceMatrix, const VEC3 *sourceVector);
+void MTX34RotAxisFIdx(MTX34 *dest, const VEC3 *vector, float fidx);
+void MTX34RotXYZFIdx(MTX34 *dest, float x, float y, float z);
+void VEC3TransformNormal(VEC3 *dest, const MTX34 *sourceMatrix, const VEC3 *sourceVector);  // transforms a vector from a space to another using the transMtx
+void MTX44Identity(MTX44 *mtx);
+void MTX44Copy(MTX44 *dest, const MTX44 *source);
 
 }  // namespace math
 }  // namespace nw4r

@@ -9,7 +9,7 @@ class MapObjShooter;
 class MapObjProjectile;
 
 class MapObjSniper : public ObjectCollidable {  // used by SunDSManager and HeyHoManager
-   public:
+public:
     MapObjSniper();  // 806dda84
     ~MapObjSniper() override;  // 806ddaf4 vtable 808c60f8
     void OnStart() override;  // 0xC 806ddb34
@@ -20,10 +20,10 @@ class MapObjSniper : public ObjectCollidable {  // used by SunDSManager and HeyH
     void LoadCollision() override;  // 0x60 806d28f4
     void LoadRoute() override;  // 0x64 806d28f8
 
-    MapObjProjectile** projectiles;  // 0xb0 heyhoBallGBA, FireSnake
-    MapObjShooter* shooter;  // 0xb4 heyhoShipGBA
+    MapObjProjectile **projectiles;  // 0xb0 heyhoBallGBA, FireSnake
+    MapObjShooter *shooter;  // 0xb4 heyhoShipGBA
     u32 projectileCount;  // 0xb8
-    u16* routePointsSized;  // 0xbc
+    u16 *routePointsSized;  // 0xbc
 };  // 0xc0
 
 class MapObjShooter : public ObjectCollidable {  // its inlined ctor just registers itself as a managed object
@@ -33,7 +33,7 @@ class MapObjShooter : public ObjectCollidable {  // its inlined ctor just regist
 
 class MapObjProjectile : public ObjectCollidable {
     ~MapObjProjectile() override;  // 806c1284 vtable 808c3668
-    virtual void vf_0xec(const Vec3& vec3) = 0;  // 0xec
+    virtual void vf_0xec(const Vec3 &vec3) = 0;  // 0xec
     virtual void RequestShoot() = 0;  // 0xf0
     u16 routeIdShooterFiresFrom;  // 0xb0 setting0
     u8 padding4[2];

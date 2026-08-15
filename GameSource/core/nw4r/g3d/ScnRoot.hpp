@@ -19,13 +19,13 @@ namespace g3d {
 4)GX::DrawDone to wait for render processing to finish
 */
 class ScnRoot : public ScnGroup {
-   public:
-    static ScnRoot* Construct(G3dHeap* heap, u32* size, u32 maxChildren, u32 maxScnObj, u32 lightObjCount, u32 lightSetCount);  // 8006f1a0
+public:
+    static ScnRoot *Construct(G3dHeap *heap, u32 *size, u32 maxChildren, u32 maxScnObj, u32 lightObjCount, u32 lightSetCount);  // 8006f1a0
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 80070c70 vtable 802731b0
-    void G3dProc(u32 g3dproc, u32 param, void* info);  // 0xC 8006f2e0 renders
+    void G3dProc(u32 g3dproc, u32 param, void *info);  // 0xC 8006f2e0 renders
     ~ScnRoot() override;  // 0x10 8006fe50
     TypeObj GetTypeObj() const override;  // 0x14 80070d10
-    const char* GetTypeName() const override;  // 0x18 80070ce0
+    const char *GetTypeName() const override;  // 0x18 80070ce0
 
     LightSet GetLightSet(int lightSetId);  // 8006f4a0
     // Gathers ScnObj objects to be drawn in the scene.
@@ -42,7 +42,7 @@ class ScnRoot : public ScnGroup {
     void DrawOpa();  // 8006fc20
     void DrawXlu();  // 8006fca0
 
-    IScnObjGather* collection;
+    IScnObjGather *collection;
     u32 drawMode;
     u32 scnRootFlags;
     u8 curCameraIdx;
@@ -54,23 +54,23 @@ class ScnRoot : public ScnGroup {
 
 // Collects the ScnObj to be rendered in the scene graph, and determines its rendering order.
 class ScnObjGather : public IScnObjGather {
-   public:
-    ScnObj** opaArray;  // ScnObj objects to be rendered by DrawOpa are gathered together
-    ScnObj** xluArray;  // ScnObj objects to be rendered by DrawXlu are gathered together
+public:
+    ScnObj **opaArray;  // ScnObj objects to be rendered by DrawOpa are gathered together
+    ScnObj **xluArray;  // ScnObj objects to be rendered by DrawXlu are gathered together
     u32 arraySize;
     u32 opaArrayObjCount;
     u32 xluArrayObjCount;
 
-    ScnObjGather(ScnObj** opaBuffer, ScnObj** xluBuffer, u32 objCount);  // 80070bf0
+    ScnObjGather(ScnObj **opaBuffer, ScnObj **xluBuffer, u32 objCount);  // 80070bf0
     ~ScnObjGather() override;  // 80070c30 vtable 80273180
-    CullingStatus Add(ScnObj* obj, bool addToOpa, bool addToXlu) override;  // 8006fed0
+    CullingStatus Add(ScnObj *obj, bool addToOpa, bool addToXlu) override;  // 8006fed0
     void Clear() override;  // 80070c20
     void ZSort() override;  // 8006fff0
     void Sort() override;  // 800708d0
     void Sort(CompFunc compOpa, CompFunc compXlu) override;  // 80070a50
-    void DrawOpa(ResMdlDrawMode* forceDrawMode) override;  // 80070ac0
-    void DrawXlu(ResMdlDrawMode* forceDrawMode) override;  // 80070b50
-    CheckStatus CheckScnObj(ScnObj* obj) override;  // 80070be0
+    void DrawOpa(ResMdlDrawMode *forceDrawMode) override;  // 80070ac0
+    void DrawXlu(ResMdlDrawMode *forceDrawMode) override;  // 80070b50
+    CheckStatus CheckScnObj(ScnObj *obj) override;  // 80070be0
 };
 
 }  // namespace g3d

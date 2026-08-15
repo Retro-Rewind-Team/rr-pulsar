@@ -24,10 +24,10 @@ namespace UI {
 kmWrite32(0x8054913C, 0x60000000);
 kmWrite32(0x80855f48, 0x48000148);
 
-static void CenterTopMenuWifiWaku(ControlLoader* loader, const char* folderName, const char* ctrName, const char* variant, const char** animNames) {
+static void CenterTopMenuWifiWaku(ControlLoader *loader, const char *folderName, const char *ctrName, const char *variant, const char **animNames) {
     loader->Load(folderName, ctrName, variant, animNames);
     if (Dolphin::IsEmulator() && strcmp(ctrName, "TopMenuWifiWaku") == 0) {
-        LayoutUIControl* control = loader->layoutUIControl;
+        LayoutUIControl *control = loader->layoutUIControl;
         for (int i = 0; i < 4; ++i) {
             control->positionAndscale[i].position.x += 135.0f;
         }
@@ -37,7 +37,7 @@ static void CenterTopMenuWifiWaku(ControlLoader* loader, const char* folderName,
 kmCall(0x80850604, CenterTopMenuWifiWaku);
 
 static PageId AfterWifiResults(PageId id) {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
 
     if (system->IsContext(PULSAR_MODE_KO)) id = system->koMgr->KickPlayersOut(id);  // return KO::RaceEndPage with the choice to spectate if the local players are out
     return id;
@@ -45,7 +45,7 @@ static PageId AfterWifiResults(PageId id) {
 kmBranch(0x80646754, AfterWifiResults);
 
 // Credit to Kazuki for making the original ASM code, and Brawlbox for porting it to C++
-static void LaunchRiivolutionButton(SectionMgr* sectionMgr) {
+static void LaunchRiivolutionButton(SectionMgr *sectionMgr) {
     const SectionId id = sectionMgr->nextSectionId;
     if (id == SECTION_CHANNEL_FROM_MENU || id == SECTION_CHANNEL_FROM_CHECK_RANKINGS || id == SECTION_CHANNEL_FROM_DOWNLOADS) {
         if (!Dolphin::IsEmulator() && IsNewChannel()) {
@@ -60,15 +60,15 @@ static void LaunchRiivolutionButton(SectionMgr* sectionMgr) {
 kmCall(0x80553a60, LaunchRiivolutionButton);
 
 // Top left message when a race is about to start in a froom
-static void FixStartMessageFroom(CtrlRaceWifiStartMessage* startMsg, u32 bmgId, Text::Info* info) {
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+static void FixStartMessageFroom(CtrlRaceWifiStartMessage *startMsg, u32 bmgId, Text::Info *info) {
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
     const SectionId id = sectionMgr->curSection->sectionId;
     if (id == SECTION_P1_WIFI_FRIEND_VS || id == SECTION_P1_WIFI_FRIEND_TEAMVS || id == SECTION_P2_WIFI_FRIEND_VS || id == SECTION_P2_WIFI_FRIEND_TEAMVS) {
-        const System* system = System::sInstance;
+        const System *system = System::sInstance;
         const u32 raceNumber = sectionMgr->sectionParams->onlineParams.currentRaceNumber + 1;
         bmgId = BMG_GP_RACE;
         if (system->IsContext(PULSAR_MODE_KO)) {
-            const KO::Mgr* koMgr = system->koMgr;
+            const KO::Mgr *koMgr = system->koMgr;
             const u32 playerCount = system->nonTTGhostPlayersCount;
             u32 koCount = 0;
             if (playerCount == 2 && koMgr->Is1v1KoRace(raceNumber))
@@ -77,7 +77,7 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage* startMsg, u32 bmgId, 
                 koCount = koMgr->GetRoundKoCount(static_cast<u8>(playerCount));
             bmgId = BMG_KO_ELIM_START_NONE + koCount;
         } else if (system->IsContext(PULSAR_MODE_LAPKO)) {
-            const LapKO::Mgr* lapKoMgr = system->lapKoMgr;
+            const LapKO::Mgr *lapKoMgr = system->lapKoMgr;
             const u32 playerCount = system->nonTTGhostPlayersCount;
             u32 koCount = 0;
             if (playerCount == 2)
@@ -96,7 +96,7 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage* startMsg, u32 bmgId, 
 }
 kmCall(0x807f8b7c, FixStartMessageFroom);
 
-static void DisplayDate(CtrlMenuPageTitleText* titleText) {
+static void DisplayDate(CtrlMenuPageTitleText *titleText) {
     Text::Info text;
 
     text.strings[0] = GIT_COMMIT;
@@ -105,17 +105,17 @@ static void DisplayDate(CtrlMenuPageTitleText* titleText) {
 }
 kmCall(0x805eac64, DisplayDate);
 
-static void CustomRoomDenyText(Pages::MessageBoxTransparent* msgBox, u32 bmgId, const Text::Info* info) {
+static void CustomRoomDenyText(Pages::MessageBoxTransparent *msgBox, u32 bmgId, const Text::Info *info) {
     if (Pulsar::System::sInstance->netMgr.denyType == Network::DENY_TYPE_BAD_PACK) bmgId = BMG_ROOM_DENY;
     msgBox->SetMessageWindowText(bmgId, info);
 }
 kmCall(0x805dd90c, CustomRoomDenyText);
 
-SectionParams& FavouriteCombo(SectionParams& params) {
-    const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+SectionParams &FavouriteCombo(SectionParams &params) {
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     s32 curLicense = rksysMgr->curLicenseId;
     if (curLicense >= 0) {
-        const RKSYS::LicenseMgr& license = rksysMgr->licenses[curLicense];
+        const RKSYS::LicenseMgr &license = rksysMgr->licenses[curLicense];
         CharacterId favChar = license.GetFavouriteCharacter();
         KartId favKart = license.GetFavouriteKart();
 
@@ -146,7 +146,7 @@ SectionParams& FavouriteCombo(SectionParams& params) {
 kmBranch(0x805e4228, FavouriteCombo);
 
 u8 ModifyCheckRankings() {
-    register Pages::RaceMenu* ttEnd;
+    register Pages::RaceMenu *ttEnd;
     asm(mr ttEnd, r28;);
     register float animLength;
     asm(fmr animLength, f31;);
@@ -158,8 +158,8 @@ kmPatchExitPoint(ModifyCheckRankings, 0x8085bbe0);
 
 static bool s_hasSavedCameraParams = false;
 static CameraParamBin s_savedCameraParams;
-CameraParamBin* GetKartParamCamera(u32 weight, u32 screenCount) {
-    CameraParamBin* cameraParam = Kart::Link::GetCameraParamBin(weight, screenCount);
+CameraParamBin *GetKartParamCamera(u32 weight, u32 screenCount) {
+    CameraParamBin *cameraParam = Kart::Link::GetCameraParamBin(weight, screenCount);
     if (cameraParam != nullptr && !s_hasSavedCameraParams) {
         s_savedCameraParams = *cameraParam;
         s_hasSavedCameraParams = true;
@@ -191,7 +191,7 @@ CameraParamBin* GetKartParamCamera(u32 weight, u32 screenCount) {
 
 kmCall(0x805a20d4, GetKartParamCamera);
 
-static void SafeControlGroupInsert(ControlGroup* controlGroup, int index, UIControl* control, u32 drawPass) {
+static void SafeControlGroupInsert(ControlGroup *controlGroup, int index, UIControl *control, u32 drawPass) {
     if (control == nullptr) return;
     controlGroup->SetControl(index, *control, drawPass);
 }

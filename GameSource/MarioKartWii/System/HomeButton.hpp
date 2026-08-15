@@ -5,27 +5,27 @@
 #include <core/rvl/HBM/HBM.hpp>
 
 class HomeMenuMgr {
-   public:
-    static HomeMenuMgr* sInstance;  // 809bd6f8
-    static HomeMenuMgr* CreateInstance(EGG::Heap* heap);  // 8051d4d4
+public:
+    static HomeMenuMgr *sInstance;  // 809bd6f8
+    static HomeMenuMgr *CreateInstance(EGG::Heap *heap);  // 8051d4d4
     static void DestroyInstance();  // 8051d534
 
-    HomeMenuMgr(EGG::Heap* heap);  // 8051d6a0
+    HomeMenuMgr(EGG::Heap *heap);  // 8051d6a0
     virtual ~HomeMenuMgr();  // 8051d584 vtable 808b2d80
     // HomeBtn_ENG.szs/SpeakerSe.arc/home.csv/config.txt/homeBtnIcon.tpl
 
-    void* LoadHBMArc(const char* name, EGG::Heap* heap, bool decode, u32* decodedSize = nullptr);  // 8051d5e8
+    void *LoadHBMArc(const char *name, EGG::Heap *heap, bool decode, u32 *decodedSize = nullptr);  // 8051d5e8
     void ResetControllerData();  // 8051d894 inlined
     void Open();  // 8051d918 inlined
     void Close();  // 8051d9f4
 
-    void UpdateControllerData(HBM::ControllerData& controllerData);  // 8051dd70
+    void UpdateControllerData(HBM::ControllerData &controllerData);  // 8051dd70
     void UpdateLockParams();  // 8051df78
     void Calc();  // 8051e114
     void Draw();  // 8051e7e8
 
     HBM::DataInfo dataInfo;  // 0x8
-    void* homeBtnIconTPL;  // 0x48
+    void *homeBtnIconTPL;  // 0x48
     bool isActive;  // 0x4c
     bool isAllowed;  // 0x4d if false, home button cannot be opened
     u8 padding[2];

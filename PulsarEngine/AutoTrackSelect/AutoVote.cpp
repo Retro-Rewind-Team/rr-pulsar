@@ -12,7 +12,7 @@ namespace UI {
 AutoVote::AutoVote() : readyDuration(0) {}
 
 void AutoVote::OnActivate() {
-    Pages::AutoEnding* msg = SectionMgr::sInstance->curSection->Get<Pages::AutoEnding>(PAGE_AUTO_ENDING2);
+    Pages::AutoEnding *msg = SectionMgr::sInstance->curSection->Get<Pages::AutoEnding>(PAGE_AUTO_ENDING2);
     msg->SetMessageWindowText(BMG_READY_TO_RACE, nullptr);
     this->AddPageLayer(PAGE_AUTO_ENDING2, 0);
 }
@@ -30,22 +30,22 @@ void AutoVote::OnDispose() {
 }
 
 void AutoVote::OnUpdate() {
-    Network::ExpSELECTHandler& select = Network::ExpSELECTHandler::Get();
-    CupsConfig* cupsConfig = CupsConfig::sInstance;
+    Network::ExpSELECTHandler &select = Network::ExpSELECTHandler::Get();
+    CupsConfig *cupsConfig = CupsConfig::sInstance;
 
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
     if (status == 6) {
-        Pages::MessageBox* messageBox = sectionMgr->curSection->Get<Pages::MessageBox>();
+        Pages::MessageBox *messageBox = sectionMgr->curSection->Get<Pages::MessageBox>();
         messageBox->Reset();
         messageBox->SetMessageWindowText(0xfb2);
-        const PtmfHolder_1A<Page, void, Pages::Click&>& onMessageClickPtmf = this->onDisconnectHandler;
+        const PtmfHolder_1A<Page, void, Pages::Click &> &onMessageClickPtmf = this->onDisconnectHandler;
         messageBox->masterPageOnClickHandler = &onMessageClickPtmf;
         this->AddPageLayer(PAGE_MESSAGEBOX, 0);
         this->status = STATUS_DISCONNECT_MSG;
     }
-    if (reinterpret_cast<RKNet::SELECTHandler&>(select).IsPrepared() && status == 2) {
-        const RKNet::Controller* controller = RKNet::Controller::sInstance;
-        const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    if (reinterpret_cast<RKNet::SELECTHandler &>(select).IsPrepared() && status == 2) {
+        const RKNet::Controller *controller = RKNet::Controller::sInstance;
+        const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         const u8 hostAid = sub.hostAid;
         const u8 localAid = sub.localAid;
         PulsarId vote;
@@ -64,12 +64,12 @@ void AutoVote::OnUpdate() {
             } else
                 vote = PULSARID_FIRSTREG;
         }
-        const SectionParams* params = sectionMgr->sectionParams;
+        const SectionParams *params = sectionMgr->sectionParams;
         for (int i = 0; i < params->localPlayerCount; ++i) {
-            const PlayerCombo& combo = params->combos[i];
+            const PlayerCombo &combo = params->combos[i];
             select.toSendPacket.variantIdx = cupsConfig->GetCurVariantIdx();
-            reinterpret_cast<RKNet::SELECTHandler&>(select).SetPlayerData(combo.selCharacter, combo.selKart,
-                                                                          static_cast<CourseId>(vote), i, combo.rank);
+            reinterpret_cast<RKNet::SELECTHandler &>(select).SetPlayerData(combo.selCharacter, combo.selKart,
+                                                                           static_cast<CourseId>(vote), i, combo.rank);
         }
         bool isReady = true;
         if (sub.connectionCount == 1 || this->duration > 5000) {
@@ -89,7 +89,7 @@ void AutoVote::OnUpdate() {
             isReady = false;
         if (isReady) ++readyDuration;
         if (readyDuration > 180) {
-            reinterpret_cast<RKNet::SELECTHandler&>(select).AllocatePlayerIdsToAids();
+            reinterpret_cast<RKNet::SELECTHandler &>(select).AllocatePlayerIdsToAids();
             this->status = STATUS_VOTES_PAGE;
             ArchiveMgr::sInstance->RequestLoadCourseAsync(static_cast<CourseId>(cupsConfig->GetWinning()));
             this->SetModeTypes();

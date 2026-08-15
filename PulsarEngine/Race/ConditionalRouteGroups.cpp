@@ -20,7 +20,7 @@ Route group condition encoding (ENPH/ITPH unknown_0xE):
 
 static const u8 MAX_CONDITIONAL_LAP_INDEX_COUNT = 8;
 static const u16 INVALID_GROUP_ID = 0xFFFF;
-static const char* CONDITIONAL_ROUTE_GROUPS_ENABLE_FILE = "enable.rgrp";
+static const char *CONDITIONAL_ROUTE_GROUPS_ENABLE_FILE = "enable.rgrp";
 
 enum ConditionalRouteTrackFileState {
     CONDITIONAL_ROUTE_TRACK_FILE_UNKNOWN = -1,
@@ -28,9 +28,9 @@ enum ConditionalRouteTrackFileState {
     CONDITIONAL_ROUTE_TRACK_FILE_PRESENT = 1
 };
 
-static const void* sCachedCourseArchive = nullptr;
+static const void *sCachedCourseArchive = nullptr;
 static s8 sConditionalRouteTrackFileState = CONDITIONAL_ROUTE_TRACK_FILE_UNKNOWN;
-static const KMP::Manager* sCachedKmpMgr = nullptr;
+static const KMP::Manager *sCachedKmpMgr = nullptr;
 static u16 sEnemyGroupByPoint[256];
 static u16 sItemGroupByPoint[256];
 static u16 sEnemyGroupRules[256];
@@ -55,13 +55,13 @@ void ResetConditionalRouteGroupsState() {
 }
 
 static bool IsTrackConditionalRouteGroupsEnabled() {
-    const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+    const ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
     if (archiveMgr == nullptr) {
         ResetConditionalRouteGroupsState();
         return false;
     }
 
-    const void* courseArchive = archiveMgr->GetArchive(ARCHIVE_HOLDER_COURSE, 0);
+    const void *courseArchive = archiveMgr->GetArchive(ARCHIVE_HOLDER_COURSE, 0);
     if (courseArchive != sCachedCourseArchive) {
         sCachedCourseArchive = courseArchive;
         sConditionalRouteTrackFileState = CONDITIONAL_ROUTE_TRACK_FILE_UNKNOWN;
@@ -71,15 +71,15 @@ static bool IsTrackConditionalRouteGroupsEnabled() {
     if (sConditionalRouteTrackFileState == CONDITIONAL_ROUTE_TRACK_FILE_UNKNOWN) {
         if (courseArchive == nullptr) return false;
 
-        const void* condFile = archiveMgr->GetFile(ARCHIVE_HOLDER_COURSE, CONDITIONAL_ROUTE_GROUPS_ENABLE_FILE, nullptr);
+        const void *condFile = archiveMgr->GetFile(ARCHIVE_HOLDER_COURSE, CONDITIONAL_ROUTE_GROUPS_ENABLE_FILE, nullptr);
         sConditionalRouteTrackFileState = (condFile != nullptr) ? CONDITIONAL_ROUTE_TRACK_FILE_PRESENT : CONDITIONAL_ROUTE_TRACK_FILE_MISSING;
     }
 
     return sConditionalRouteTrackFileState == CONDITIONAL_ROUTE_TRACK_FILE_PRESENT;
 }
 
-static bool TryGetTrackDefinedLapCount(u8& lapCount) {
-    const KMP::Manager* kmp = KMP::Manager::sInstance;
+static bool TryGetTrackDefinedLapCount(u8 &lapCount) {
+    const KMP::Manager *kmp = KMP::Manager::sInstance;
     if (kmp == nullptr || kmp->stgiSection == nullptr || kmp->stgiSection->holdersArray[0] == nullptr ||
         kmp->stgiSection->holdersArray[0]->raw == nullptr) {
         return false;
@@ -91,11 +91,11 @@ static bool TryGetTrackDefinedLapCount(u8& lapCount) {
     return true;
 }
 
-static bool TryGetCurrentLapIdx(u8 playerId, u8& lapIdx) {
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
+static bool TryGetCurrentLapIdx(u8 playerId, u8 &lapIdx) {
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
     if (raceInfo == nullptr || raceInfo->players == nullptr) return false;
 
-    const RaceinfoPlayer* raceInfoPlayer = nullptr;
+    const RaceinfoPlayer *raceInfoPlayer = nullptr;
     if (playerId < 12) raceInfoPlayer = raceInfo->players[playerId];
     if (raceInfoPlayer == nullptr && raceInfo->playerIdInEachPosition != nullptr) {
         const u8 leaderId = raceInfo->playerIdInEachPosition[0];
@@ -126,18 +126,18 @@ static u8 SetRoutePlayerId(u8 playerId) {
     return previousPlayerId;
 }
 
-static void BuildRouteGroupCache(const KMP::Manager& kmpMgr) {
+static void BuildRouteGroupCache(const KMP::Manager &kmpMgr) {
     ResetRouteGroupCache();
     sCachedKmpMgr = &kmpMgr;
 
-    const KMP::Section<ENPH>* enphSection = kmpMgr.enphSection;
+    const KMP::Section<ENPH> *enphSection = kmpMgr.enphSection;
     if (enphSection != nullptr) {
         const u16 enphCount = enphSection->pointCount;
         for (u16 groupId = 0; groupId < enphCount && groupId < 256; ++groupId) {
-            const KMP::Holder<ENPH>* groupHolder = kmpMgr.GetHolder<ENPH>(groupId);
+            const KMP::Holder<ENPH> *groupHolder = kmpMgr.GetHolder<ENPH>(groupId);
             if (groupHolder == nullptr || groupHolder->raw == nullptr) continue;
 
-            const ENPH& group = *groupHolder->raw;
+            const ENPH &group = *groupHolder->raw;
             sEnemyGroupRules[groupId] = group.unknown_0xE;
 
             const u16 start = group.start;
@@ -148,14 +148,14 @@ static void BuildRouteGroupCache(const KMP::Manager& kmpMgr) {
         }
     }
 
-    const KMP::Section<ITPH>* itphSection = kmpMgr.itphSection;
+    const KMP::Section<ITPH> *itphSection = kmpMgr.itphSection;
     if (itphSection != nullptr) {
         const u16 itphCount = itphSection->pointCount;
         for (u16 groupId = 0; groupId < itphCount && groupId < 256; ++groupId) {
-            const KMP::Holder<ITPH>* groupHolder = kmpMgr.GetHolder<ITPH>(groupId);
+            const KMP::Holder<ITPH> *groupHolder = kmpMgr.GetHolder<ITPH>(groupId);
             if (groupHolder == nullptr || groupHolder->raw == nullptr) continue;
 
-            const ITPH& group = *groupHolder->raw;
+            const ITPH &group = *groupHolder->raw;
             sItemGroupRules[groupId] = group.unknown_0xE;
 
             const u16 start = group.start;
@@ -167,7 +167,7 @@ static void BuildRouteGroupCache(const KMP::Manager& kmpMgr) {
     }
 }
 
-static void EnsureRouteGroupCache(const KMP::Manager* kmpMgr) {
+static void EnsureRouteGroupCache(const KMP::Manager *kmpMgr) {
     if (kmpMgr == nullptr) return;
     if (sCachedKmpMgr == kmpMgr) return;
     BuildRouteGroupCache(*kmpMgr);
@@ -194,7 +194,7 @@ static bool IsItemPointDisabled(u8 itptId, u8 lapIdx) {
     return IsLapDisabledByRule(sItemGroupRules[groupId], lapIdx);
 }
 
-static bool ShouldFilterRouteGroups(const KMP::Manager* kmpMgr, u8& lapIdx) {
+static bool ShouldFilterRouteGroups(const KMP::Manager *kmpMgr, u8 &lapIdx) {
     if (!IsTrackConditionalRouteGroupsEnabled()) return false;
     if (kmpMgr == nullptr) return false;
     if (!TryGetCurrentLapIdx(sRoutePlayerId, lapIdx)) return false;
@@ -202,14 +202,14 @@ static bool ShouldFilterRouteGroups(const KMP::Manager* kmpMgr, u8& lapIdx) {
     return true;
 }
 
-static s8 GetENPTCount(const KMP::Manager* kmpMgr, const u8& curENPT, bool useNextLinks) {
+static s8 GetENPTCount(const KMP::Manager *kmpMgr, const u8 &curENPT, bool useNextLinks) {
     if (kmpMgr == nullptr) return 0;
 
-    const KMP::Holder<ENPT>* enptHolder = kmpMgr->GetHolder<ENPT>(curENPT);
+    const KMP::Holder<ENPT> *enptHolder = kmpMgr->GetHolder<ENPT>(curENPT);
     if (enptHolder == nullptr) return 0;
 
     const u8 rawCount = useNextLinks ? enptHolder->nextCount : enptHolder->prevCount;
-    const u8* rawLinks = useNextLinks ? enptHolder->nextLinks : enptHolder->prevLinks;
+    const u8 *rawLinks = useNextLinks ? enptHolder->nextLinks : enptHolder->prevLinks;
     if (rawLinks == nullptr) return 0;
 
     u8 lapIdx = 0;
@@ -227,14 +227,14 @@ static s8 GetENPTCount(const KMP::Manager* kmpMgr, const u8& curENPT, bool useNe
     return filteredCount;
 }
 
-static s8 GetENPTLink(const KMP::Manager* kmpMgr, const u8& curENPT, u8 linkIdx, bool useNextLinks) {
+static s8 GetENPTLink(const KMP::Manager *kmpMgr, const u8 &curENPT, u8 linkIdx, bool useNextLinks) {
     if (kmpMgr == nullptr) return -1;
 
-    const KMP::Holder<ENPT>* enptHolder = kmpMgr->GetHolder<ENPT>(curENPT);
+    const KMP::Holder<ENPT> *enptHolder = kmpMgr->GetHolder<ENPT>(curENPT);
     if (enptHolder == nullptr) return -1;
 
     const u8 rawCount = useNextLinks ? enptHolder->nextCount : enptHolder->prevCount;
-    const u8* rawLinks = useNextLinks ? enptHolder->nextLinks : enptHolder->prevLinks;
+    const u8 *rawLinks = useNextLinks ? enptHolder->nextLinks : enptHolder->prevLinks;
     if (rawLinks == nullptr) return -1;
 
     u8 lapIdx = 0;
@@ -259,10 +259,10 @@ static s8 GetENPTLink(const KMP::Manager* kmpMgr, const u8& curENPT, u8 linkIdx,
     return -1;
 }
 
-static u8 GetITPTCount(const KMP::Manager* kmpMgr, const u8& itpt, bool useNextLinks) {
+static u8 GetITPTCount(const KMP::Manager *kmpMgr, const u8 &itpt, bool useNextLinks) {
     if (kmpMgr == nullptr) return 0;
 
-    const KMP::Holder<ITPT>* itptHolder = kmpMgr->GetHolder<ITPT>(itpt);
+    const KMP::Holder<ITPT> *itptHolder = kmpMgr->GetHolder<ITPT>(itpt);
     if (itptHolder == nullptr) return 0;
 
     u8 rawCount = useNextLinks ? itptHolder->nextCount : itptHolder->prevCount;
@@ -283,10 +283,10 @@ static u8 GetITPTCount(const KMP::Manager* kmpMgr, const u8& itpt, bool useNextL
     return filteredCount;
 }
 
-static u8 GetITPTLink(const KMP::Manager* kmpMgr, const u8& curITPT, u8 linkIdx, bool useNextLinks) {
+static u8 GetITPTLink(const KMP::Manager *kmpMgr, const u8 &curITPT, u8 linkIdx, bool useNextLinks) {
     if (kmpMgr == nullptr) return 0xFF;
 
-    const KMP::Holder<ITPT>* itptHolder = kmpMgr->GetHolder<ITPT>(curITPT);
+    const KMP::Holder<ITPT> *itptHolder = kmpMgr->GetHolder<ITPT>(curITPT);
     if (itptHolder == nullptr) return 0xFF;
 
     u8 rawCount = useNextLinks ? itptHolder->nextCount : itptHolder->prevCount;
@@ -314,55 +314,55 @@ static u8 GetITPTLink(const KMP::Manager* kmpMgr, const u8& curITPT, u8 linkIdx,
     return 0xFF;
 }
 
-static s8 ConditionalGetNextENPT(KMP::Manager* kmpMgr, const u8& curENPT, u8 linkIdx) {
+static s8 ConditionalGetNextENPT(KMP::Manager *kmpMgr, const u8 &curENPT, u8 linkIdx) {
     return GetENPTLink(kmpMgr, curENPT, linkIdx, true);
 }
 kmBranch(0x80517590, ConditionalGetNextENPT);
 
-static s8 ConditionalGetNextENPTCount(KMP::Manager* kmpMgr, const u8& curENPT) {
+static s8 ConditionalGetNextENPTCount(KMP::Manager *kmpMgr, const u8 &curENPT) {
     return GetENPTCount(kmpMgr, curENPT, true);
 }
 kmBranch(0x8051760c, ConditionalGetNextENPTCount);
 
-static s8 ConditionalGetPrevENPT(KMP::Manager* kmpMgr, const u8& curENPT, u8 linkIdx) {
+static s8 ConditionalGetPrevENPT(KMP::Manager *kmpMgr, const u8 &curENPT, u8 linkIdx) {
     return GetENPTLink(kmpMgr, curENPT, linkIdx, false);
 }
 kmBranch(0x80517670, ConditionalGetPrevENPT);
 
-static s8 ConditionalGetPrevENPTCount(KMP::Manager* kmpMgr, const u8& curENPT) {
+static s8 ConditionalGetPrevENPTCount(KMP::Manager *kmpMgr, const u8 &curENPT) {
     return GetENPTCount(kmpMgr, curENPT, false);
 }
 kmBranch(0x805176ec, ConditionalGetPrevENPTCount);
 
-static u8 ConditionalGetNextITPT(KMP::Manager* kmpMgr, const u8& curITPT, u8 linkIdx) {
+static u8 ConditionalGetNextITPT(KMP::Manager *kmpMgr, const u8 &curITPT, u8 linkIdx) {
     return GetITPTLink(kmpMgr, curITPT, linkIdx, true);
 }
 kmBranch(0x805181f0, ConditionalGetNextITPT);
 
-static u8 ConditionalGetITPTNextCount(KMP::Manager* kmpMgr, const u8& itpt) {
+static u8 ConditionalGetITPTNextCount(KMP::Manager *kmpMgr, const u8 &itpt) {
     return GetITPTCount(kmpMgr, itpt, true);
 }
 kmBranch(0x80518268, ConditionalGetITPTNextCount);
 
-static u8 ConditionalGetPrevITPT(KMP::Manager* kmpMgr, const u8& curITPT, u8 linkIdx) {
+static u8 ConditionalGetPrevITPT(KMP::Manager *kmpMgr, const u8 &curITPT, u8 linkIdx) {
     return GetITPTLink(kmpMgr, curITPT, linkIdx, false);
 }
 kmBranch(0x805182cc, ConditionalGetPrevITPT);
 
-static u8 ConditionalGetITPTPrevCount(KMP::Manager* kmpMgr, const u8& itpt) {
+static u8 ConditionalGetITPTPrevCount(KMP::Manager *kmpMgr, const u8 &itpt) {
     return GetITPTCount(kmpMgr, itpt, false);
 }
 kmBranch(0x80518344, ConditionalGetITPTPrevCount);
 
-static void ConditionalEnemyRouteUpdate(AI::EnemyRouteController* routeController, const KartAIController& controller) {
+static void ConditionalEnemyRouteUpdate(AI::EnemyRouteController *routeController, const KartAIController &controller) {
     const u8 previousPlayerId = SetRoutePlayerId(controller.GetPlayerIdx());
     routeController->AI::EnemyRouteController::Update(controller);
     sRoutePlayerId = previousPlayerId;
 }
 kmWritePointer(0x808cb02c, ConditionalEnemyRouteUpdate);  // EnemyRouteController::Update vtable entry
 
-static bool ConditionalItemPointUpdate(Item::Point* point, const Vec3& playerPosition) {
-    Item::Player* player = reinterpret_cast<Item::Player*>(reinterpret_cast<u8*>(point) - offsetof(Item::Player, itemPoint));
+static bool ConditionalItemPointUpdate(Item::Point *point, const Vec3 &playerPosition) {
+    Item::Player *player = reinterpret_cast<Item::Player *>(reinterpret_cast<u8 *>(point) - offsetof(Item::Player, itemPoint));
     const u8 previousPlayerId = SetRoutePlayerId(player->id);
     const bool updated = point->Update(playerPosition);
     sRoutePlayerId = previousPlayerId;
@@ -372,8 +372,8 @@ kmCall(0x80798184, ConditionalItemPointUpdate);  // Item::Player::Update
 kmCall(0x807989c0, ConditionalItemPointUpdate);  // Item::Player route refresh
 kmCall(0x80798d68, ConditionalItemPointUpdate);  // Item::Player trigger route refresh
 
-static bool ConditionalItemPointUpdate2(Item::Point* point, const Vec3& playerPosition) {
-    Item::Player* player = reinterpret_cast<Item::Player*>(reinterpret_cast<u8*>(point) - offsetof(Item::Player, itemPoint));
+static bool ConditionalItemPointUpdate2(Item::Point *point, const Vec3 &playerPosition) {
+    Item::Player *player = reinterpret_cast<Item::Player *>(reinterpret_cast<u8 *>(point) - offsetof(Item::Player, itemPoint));
     const u8 previousPlayerId = SetRoutePlayerId(player->id);
     const bool updated = point->Update2(playerPosition);
     sRoutePlayerId = previousPlayerId;
@@ -383,7 +383,7 @@ kmCall(0x807981b0, ConditionalItemPointUpdate2);  // Item::Player::Update
 kmCall(0x807989f0, ConditionalItemPointUpdate2);  // Item::Player route refresh
 kmCall(0x80798d98, ConditionalItemPointUpdate2);  // Item::Player trigger route refresh
 
-static void ConditionalCalcNextItemPoint(const Item::Point& currentPoint, Item::Point& nextPoint, u8 playerId, bool usePlayerPath) {
+static void ConditionalCalcNextItemPoint(const Item::Point &currentPoint, Item::Point &nextPoint, u8 playerId, bool usePlayerPath) {
     const u8 previousPlayerId = SetRoutePlayerId(playerId);
     Item::CalcNextPoint(currentPoint, nextPoint, playerId, usePlayerPath);
     sRoutePlayerId = previousPlayerId;
@@ -393,7 +393,7 @@ kmCall(0x807b4bb8, ConditionalCalcNextItemPoint);  // Item route update
 kmCall(0x807b4dc4, ConditionalCalcNextItemPoint);  // Item route point advance
 kmCall(0x807b514c, ConditionalCalcNextItemPoint);  // Item route initialization
 
-static void ConditionalKillerUpdate(Kart::Killer* killer) {
+static void ConditionalKillerUpdate(Kart::Killer *killer) {
     const u8 previousPlayerId = SetRoutePlayerId(killer->GetPlayerIdx());
     killer->Update();
     sRoutePlayerId = previousPlayerId;

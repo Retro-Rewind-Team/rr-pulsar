@@ -11,7 +11,7 @@ namespace UI {
 
 // Extends GhostSelect by adding a ToggleButton to select ghosts and a BottomText
 class ExpGhostSelect : public Pages::GhostSelect {
-   public:
+public:
     ExpGhostSelect();
     void OnInit() override;
     void OnActivate() override;
@@ -21,18 +21,18 @@ class ExpGhostSelect : public Pages::GhostSelect {
         this->selectGhostButton.isHidden = isInvisible;
     }
 
-   private:
-    void OnChallengeGhostPress(PushButton& button, u32 hudSlotId);
-    void OnWatchReplayPress(PushButton& button, u32 hudSlotId);
-    void OnSelectGhostChange(ToggleButton& button, u32);
+private:
+    void OnChallengeGhostPress(PushButton &button, u32 hudSlotId);
+    void OnWatchReplayPress(PushButton &button, u32 hudSlotId);
+    void OnSelectGhostChange(ToggleButton &button, u32);
     void OnStartPress(u32);
-    void OnRightArrowPress(SheetSelectControl& control, u32 hudSlotId);
-    void OnLeftArrowPress(SheetSelectControl& control, u32 hudSlotId);
+    void OnRightArrowPress(SheetSelectControl &control, u32 hudSlotId);
+    void OnLeftArrowPress(SheetSelectControl &control, u32 hudSlotId);
     void OnNewPage();
     void SetToggleBMG();
     void Reset();
 
-    PtmfHolder_2A<ExpGhostSelect, void, ToggleButton&, u32> onSelectGhostChangeHandler;
+    PtmfHolder_2A<ExpGhostSelect, void, ToggleButton &, u32> onSelectGhostChangeHandler;
     PtmfHolder_1A<ExpGhostSelect, void, u32> onStartPressHandler;
     CtrlMenuInstructionText bottomText;
     ToggleButton selectGhostButton;
@@ -42,8 +42,8 @@ class ExpGhostSelect : public Pages::GhostSelect {
     s8 favGhostIndex;
 };
 
-const Text::Info GetCourseBottomText(PulsarId id, u32* bmgId);
-const Text::Info GetCourseBottomText(PulsarId id, u8 variantIdx, u32* bmgId);
+const Text::Info GetCourseBottomText(PulsarId id, u32 *bmgId);
+const Text::Info GetCourseBottomText(PulsarId id, u8 variantIdx, u32 *bmgId);
 
 }  // namespace UI
 }  // namespace Pulsar

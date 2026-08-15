@@ -17,7 +17,7 @@
     mtlr r0;          \
     addi sp, sp, 0x80;
 
-extern void MD5Digest(const unsigned char*, unsigned int, unsigned char*);
+extern void MD5Digest(const unsigned char *, unsigned int, unsigned char *);
 
 // These are not actually functions.
 extern void saveFcAndCountryHookExit(void);
@@ -36,10 +36,10 @@ typedef struct {
 
 SavedFc savedFc;
 
-void saveFcAndCountry(unsigned char* r3, unsigned int r19) {
+void saveFcAndCountry(unsigned char *r3, unsigned int r19) {
     unsigned int index = r19 / 4;
     unsigned char country = *(r3 + 0x178);
-    unsigned int pid = *((unsigned int*)((void*)(r3 + 0x174)));
+    unsigned int pid = *((unsigned int *)((void *)(r3 + 0x174)));
     savedFc.pid[index] = pid;
     savedFc.country[index] = country;
 }
@@ -98,11 +98,11 @@ unsigned char get8bit(unsigned char c) {
     return c - 87;
 }
 
-unsigned char getByte(unsigned char* src) {
+unsigned char getByte(unsigned char *src) {
     return get8bit(src[0]) * 16 + get8bit(src[1]);
 }
 
-void calcFc(unsigned int pid, wchar_t* dest) {
+void calcFc(unsigned int pid, wchar_t *dest) {
     // calculate fc from pid
     // https://wiki.tockdom.com/wiki/PID
     unsigned char calcFcBuf[8];
@@ -127,7 +127,7 @@ void calcFc(unsigned int pid, wchar_t* dest) {
     swprintf(dest, 0x10, L"%04d-%04d-%04d", fc4Digit[2], fc4Digit[1], fc4Digit[0]);
 }
 
-void displayFcAndCountry(LayoutUIControl* r3, unsigned int r4) {
+void displayFcAndCountry(LayoutUIControl *r3, unsigned int r4) {
     Text::Info textInfo;
     wchar_t fcDisplayStr[0x10];
     char flagPaneName[4];

@@ -21,7 +21,7 @@ namespace UI {
 static void RandomizeCombo();
 void StopRandomComboRoulette();
 class ExpVR : public Pages::VR {
-   public:
+public:
     static const int randomDuration = 60;  // 1s
     static const int voteDuration = 1620;  // 30s
     static_assert(randomDuration % 4 == 0, "Random Combo Duration");
@@ -32,27 +32,27 @@ class ExpVR : public Pages::VR {
     void OnDeactivate() override;
     void AfterControlUpdate() override;
     void OnResume() override;
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);
-    PushButton& GetRandomComboButton() { return this->randomComboButton; }
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);
+    PushButton &GetRandomComboButton() { return this->randomComboButton; }
     s32 rouletteCounter;
     CountDown countdown;
     CountDownTimerControl countdownControl;
 
-   private:
-    void RandomizeComboVR(PushButton& button, u32 hudSlotId);
-    void ChangeCombo(PushButton& button, u32 hudSlotId);
-    void OnSettingsButtonClick(PushButton& button, u32 hudSlotId);
-    void ExtOnButtonSelect(PushButton& button, u32 hudSlotId);
-    static void CreateAndInitPage(ExpSection& self, u32 id);
-    PtmfHolder_2A<ExpVR, void, PushButton&, u32> onButtonSelectHandler;
-    PtmfHolder_2A<ExpVR, void, PushButton&, u32> onRandomComboClick;  // 0x192c
-    PtmfHolder_2A<ExpVR, void, PushButton&, u32> onChangeComboClick;
-    PtmfHolder_2A<ExpVR, void, PushButton&, u32> onSettingsClick;
+private:
+    void RandomizeComboVR(PushButton &button, u32 hudSlotId);
+    void ChangeCombo(PushButton &button, u32 hudSlotId);
+    void OnSettingsButtonClick(PushButton &button, u32 hudSlotId);
+    void ExtOnButtonSelect(PushButton &button, u32 hudSlotId);
+    static void CreateAndInitPage(ExpSection &self, u32 id);
+    PtmfHolder_2A<ExpVR, void, PushButton &, u32> onButtonSelectHandler;
+    PtmfHolder_2A<ExpVR, void, PushButton &, u32> onRandomComboClick;  // 0x192c
+    PtmfHolder_2A<ExpVR, void, PushButton &, u32> onChangeComboClick;
+    PtmfHolder_2A<ExpVR, void, PushButton &, u32> onSettingsClick;
     PushButton randomComboButton;
     PushButton changeComboButton;
     PushButton settingsButton;
 
-   public:
+public:
     u8 comboButtonState;  // 1 = randomize, 2 = change
     PulPageId topSettingsPage;
     bool areControlsHidden;
@@ -69,7 +69,7 @@ class ExpVR : public Pages::VR {
 };
 
 class ExpCharacterSelect : public Pages::CharacterSelect {
-   public:
+public:
     ExpCharacterSelect();
     void BeforeControlUpdate() override;
     void OnStartPress(u32 hudSlotId) override {
@@ -82,24 +82,24 @@ class ExpCharacterSelect : public Pages::CharacterSelect {
 };
 
 class ExpBattleKartSelect : public Pages::BattleKartSelect {
-   public:
+public:
     ExpBattleKartSelect();
     void BeforeControlUpdate() override;
     s32 selectedKart;  // 0 kart 1 bike
 };
 
 class ExpKartSelect : public Pages::KartSelect {
-   public:
+public:
     ExpKartSelect();
     void BeforeControlUpdate() override;
-    ButtonMachine* GetKartButton(u32 idx) const;
+    ButtonMachine *GetKartButton(u32 idx) const;
     u32 randomizedKartPos;  // from 0 to 11
     s32 rouletteCounter;
     u32 rolledKartPos;  // from 0 to 11
 };
 
 class ExpMultiKartSelect : public Pages::MultiKartSelect {
-   public:
+public:
     ExpMultiKartSelect();
     void BeforeControlUpdate() override;
     s32 rouletteCounter;

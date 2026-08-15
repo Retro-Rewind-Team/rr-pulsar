@@ -20,7 +20,7 @@ static CharacterId charID = CHARACTER_NONE;
 static char smallImageKey[32] = "";
 static char smallImageText[32] = "";
 
-static void SetSmallImage(const char* key, const char* text) {
+static void SetSmallImage(const char *key, const char *text) {
     snprintf(smallImageKey, sizeof(smallImageKey), "%s", key);
     snprintf(smallImageText, sizeof(smallImageText), "%s", text);
 }
@@ -124,11 +124,11 @@ static void SetCharacterSmallImage(CharacterId character) {
 }
 
 // Removes 00 1A escapes from the BMG text
-void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
+void CleanBMGMessage(wchar_t *dest, const wchar_t *src) {
     int inc = 0;
     for (int i = 0; i < 0x100 && src[i] && inc + 1 < 0x100; i++) {
         if (src[i] == 0x001a) {
-            u8 size = *(u8*)(&src[i + 1]);
+            u8 size = *(u8 *)(&src[i + 1]);
             i += (size / 2) - 1;
         } else {
             dest[inc] = src[i];
@@ -138,11 +138,11 @@ void CleanBMGMessage(wchar_t* dest, const wchar_t* src) {
     dest[inc] = '\0';
 }
 
-void ConvertUTF16toUtf8(char* dest, const wchar_t* src, size_t max_len) {
+void ConvertUTF16toUtf8(char *dest, const wchar_t *src, size_t max_len) {
     if (max_len == 0) return;
 
     size_t destIndex = 0;
-    for (size_t i = 0; ; i++) {
+    for (size_t i = 0;; i++) {
         wchar_t c = src[i];
         if (c == 0) {
             break;
@@ -161,19 +161,19 @@ void ConvertUTF16toUtf8(char* dest, const wchar_t* src, size_t max_len) {
             dest[destIndex++] = 0x80 | (c & 0x3F);
         }
     }
-    dest[destIndex] = '\0'; 
+    dest[destIndex] = '\0';
 }
 
 static CharacterId GetFirstLocalRaceCharacter() {
-    const GameScene* scene = GameScene::GetCurrent();
-    Racedata* raceData = Racedata::sInstance;
-    Raceinfo* raceInfo = Raceinfo::sInstance;
+    const GameScene *scene = GameScene::GetCurrent();
+    Racedata *raceData = Racedata::sInstance;
+    Raceinfo *raceInfo = Raceinfo::sInstance;
     if (scene == nullptr || scene->id != SCENE_ID_RACE || raceData == nullptr || raceInfo == nullptr ||
         !raceInfo->IsAtLeastStage(RACESTAGE_INTRO)) {
         return CHARACTER_NONE;
     }
 
-    const RacedataScenario& scenario = raceData->racesScenario;
+    const RacedataScenario &scenario = raceData->racesScenario;
     if (scenario.localPlayerCount > 0) {
         const u8 playerId = scenario.settings.hudPlayerIds[0];
         if (playerId < scenario.playerCount && scenario.players[playerId].playerType == PLAYER_REAL_LOCAL) {
@@ -189,7 +189,7 @@ static CharacterId GetFirstLocalRaceCharacter() {
     return CHARACTER_NONE;
 }
 
-void DiscordRichPresence(Section* _this) {
+void DiscordRichPresence(Section *_this) {
     _this->Update();
     if (!Dolphin::IsEmulator()) {
         return;
@@ -204,13 +204,13 @@ void DiscordRichPresence(Section* _this) {
         hasWrittenClientID = true;
     }
 
-    char* state = "";
-    char* details = "In a Menu";
-    char* largeImageText = "";
+    char *state = "";
+    char *details = "In a Menu";
+    char *largeImageText = "";
     int minPlayers = 0;
     int maxPlayers = 0;
 
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     float vr = 0, br = 0;
     u64 fc = 0;
 
@@ -218,7 +218,7 @@ void DiscordRichPresence(Section* _this) {
     smallImageText[0] = '\0';
 
     if (rksysMgr && rksysMgr->curLicenseId >= 0) {
-        RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+        RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
         vr = Pulsar::PointRating::GetUserVR(rksysMgr->curLicenseId);
         br = Pulsar::PointRating::GetUserBR(rksysMgr->curLicenseId);
         fc = DWC::CreateFriendKey(&license.dwcAccUserData);
@@ -252,16 +252,16 @@ void DiscordRichPresence(Section* _this) {
     memset(trackNameW, 0, 0x100);
 
     u32 bmgId = Pulsar::UI::GetCurTrackBMG();
-    const wchar_t* msg = Pulsar::UI::GetCustomMsg(bmgId);
+    const wchar_t *msg = Pulsar::UI::GetCustomMsg(bmgId);
     if (msg && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO)) {
         CleanBMGMessage(trackNameW, msg);
         ConvertUTF16toUtf8(trackName, trackNameW, 32);
         state = trackName;
     }
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller) {
-        RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+        RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         maxPlayers = 12;
         minPlayers = sub.playerCount;
     }

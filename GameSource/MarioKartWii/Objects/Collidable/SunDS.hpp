@@ -9,14 +9,14 @@
 namespace Objects {
 
 class SunDSManager : public MapObjSniper {
-   public:
+public:
     SunDSManager();  // 806de624
     ~SunDSManager() override;  // 806de780 vtable 808c6420
 };  // 0xc0
 
 class SunDS : public MapObjShooter, public StatePtmfTrigger<SunDS> {  // ObjectNum 0x72 = 114
-   public:
-    explicit SunDS(const KMP::Holder<GOBJ>& gobjHolder);  // 806dddd8
+public:
+    explicit SunDS(const KMP::Holder<GOBJ> &gobjHolder);  // 806dddd8
     ~SunDS() override;  // 806ddf68 vtable 808c6310
     void OnStart() override;  // 0xc 806ddfd4
     void Update() override;  // 0x14 806de03c

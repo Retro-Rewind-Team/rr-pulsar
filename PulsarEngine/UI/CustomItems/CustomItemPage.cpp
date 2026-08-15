@@ -13,7 +13,7 @@
 namespace Pulsar {
 namespace UI {
 
-static const char* itemTpls[] = {
+static const char *itemTpls[] = {
     "tt_item_kame_green.tpl",  // 0: GREEN_SHELL
     "tt_item_kame_red.tpl",  // 1: RED_SHELL
     "tt_item_banana.tpl",  // 2: BANANA
@@ -38,7 +38,7 @@ static const char* itemTpls[] = {
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
 static bool IsStartRegionalContext() {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     if (system == nullptr) return false;
 
     return system->IsContext(PULSAR_STARTRETROS) || system->IsContext(PULSAR_STARTCTS) || system->IsContext(PULSAR_STARTREGS) ||
@@ -46,7 +46,7 @@ static bool IsStartRegionalContext() {
 }
 
 bool CustomItemPage::ShouldSkipFriendRoomPreview() {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     if (system == nullptr) return false;
 
     if (IsStartRegionalContext()) return true;
@@ -85,7 +85,7 @@ void CustomItemPage::OnInit() {
     ::Pages::Menu::OnInit();
 }
 
-UIControl* CustomItemPage::CreateControl(u32 controlId) {
+UIControl *CustomItemPage::CreateControl(u32 controlId) {
     if (controlId < 20) {
         this->AddControl(controlId, buttons[controlId], 0);
         char variant[32];
@@ -97,7 +97,7 @@ UIControl* CustomItemPage::CreateControl(u32 controlId) {
         buttons[controlId].SetOnDeselectHandler(this->onButtonDeselectHandler);
 
         // Fix for missing "touch" pane in the brlyt. PushButton expects it for its manipulator.
-        nw4r::lyt::Pane* touchPane = buttons[controlId].layout.GetPaneByName("race_null");
+        nw4r::lyt::Pane *touchPane = buttons[controlId].layout.GetPaneByName("race_null");
         if (touchPane) {
             buttons[controlId].manipulator.boundingBox.touchPane = touchPane;
         }
@@ -114,7 +114,7 @@ UIControl* CustomItemPage::CreateControl(u32 controlId) {
 void CustomItemPage::OnActivate() {
     if (this->isFriendRoomPreview && ShouldSkipFriendRoomPreview()) {
         this->isFriendRoomPreview = false;
-        ExpSection* section = ExpSection::GetSection();
+        ExpSection *section = ExpSection::GetSection();
         section->RemovePageLayers(section->layerCount - 1);
         ExpSection::AddPageLayer(*section, this->friendRoomPreviewNextPageId);
         return;
@@ -145,14 +145,14 @@ void CustomItemPage::AfterControlUpdate() {
         this->previewTimer.Update();
         if (this->previewTimer.countdown <= 0.0f) {
             this->isFriendRoomPreview = false;
-            ExpSection* section = ExpSection::GetSection();
+            ExpSection *section = ExpSection::GetSection();
             section->RemovePageLayers(section->layerCount - 1);
             ExpSection::AddPageLayer(*section, this->friendRoomPreviewNextPageId);
         }
         return;
     }
 
-    const Pages::FriendRoomManager* mgr = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
+    const Pages::FriendRoomManager *mgr = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
     if (mgr && mgr->startedGameMode < 4 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
         this->LoadPrevPageById(static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT), buttons[0]);
     }
@@ -170,7 +170,7 @@ void CustomItemPage::BeforeEntranceAnimations() {
     if (!this->isFriendRoomPreview) this->OnButtonSelect(buttons[0], 0);
 }
 
-void CustomItemPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
+void CustomItemPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
     if (this->isFriendRoomPreview) return;
 
     u32 bitfield = Settings::Mgr::Get().GetCustomItems();
@@ -190,13 +190,13 @@ void CustomItemPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
     this->UpdateButtonVisuals();
 }
 
-void CustomItemPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+void CustomItemPage::OnButtonSelect(PushButton &button, u32 hudSlotId) {
     if (this->isFriendRoomPreview) return;
 
     button.SetPaneVisibility("hilight_curr", true);
 }
 
-void CustomItemPage::OnButtonDeselect(PushButton& button, u32 hudSlotId) {
+void CustomItemPage::OnButtonDeselect(PushButton &button, u32 hudSlotId) {
     button.SetPaneVisibility("hilight_curr", false);
 }
 
@@ -227,15 +227,15 @@ void CustomItemPage::UpdateButtonVisuals() {
         bool enabled = (bitfield >> i) & 1;
         // Enabled: No tint (fully transparent), Disabled: red tint
         u32 color = enabled ? 0x00000000 : 0xA0000080;
-        lyt::Pane* pane = buttons[i].layout.GetPaneByName("item_curr");
+        lyt::Pane *pane = buttons[i].layout.GetPaneByName("item_curr");
         if (pane) ResetMatColor(pane, color);
     }
     // Button 19 (Randomize) is always fully transparent
-    lyt::Pane* randPane = buttons[19].layout.GetPaneByName("item_curr");
+    lyt::Pane *randPane = buttons[19].layout.GetPaneByName("item_curr");
     if (randPane) ResetMatColor(randPane, 0x00000000);
 }
 
-void CustomItemPage::SetButtonIcon(PushButton& button, u32 itemId) {
+void CustomItemPage::SetButtonIcon(PushButton &button, u32 itemId) {
     if (itemId < 20) {
         ChangeImage(button, "item_curr", itemTpls[itemId]);
     }

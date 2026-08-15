@@ -5,13 +5,13 @@
 namespace OS {
 // https://wiki.tockdom.com/wiki/REL_(File_Format)
 struct ModuleQueue {
-    ModuleInfo* head;
-    ModuleInfo* tail;
+    ModuleInfo *head;
+    ModuleInfo *tail;
 };
 
 struct ModuleLink {
-    ModuleInfo* next;
-    ModuleInfo* prev;
+    ModuleInfo *next;
+    ModuleInfo *prev;
 };
 
 struct ModuleInfo {
@@ -59,7 +59,7 @@ struct Rel {
     u32 addend;
 };
 
-BOOL Link(ModuleInfo* newModule, void* bss);  // 801a72dc
+BOOL Link(ModuleInfo *newModule, void *bss);  // 801a72dc
 
 }  // namespace OS
 #endif

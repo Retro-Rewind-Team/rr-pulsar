@@ -12,7 +12,7 @@ class Sound3DParam;
 namespace detail {
 
 class SoundArchiveFile {  // https://wiki.tockdom.com/wiki/BRSAR_(File_Format)
-   public:
+public:
     struct SeqSoundInfo {
         u32 dataOffset;
         SoundArchive::BankId bankId;
@@ -143,55 +143,55 @@ class SoundArchiveFile {  // https://wiki.tockdom.com/wiki/BRSAR_(File_Format)
 };
 
 class SoundArchiveFileReader {
-   public:
+public:
     SoundArchiveFileReader();  // 8009e690
-    void Init(const void* soundArchiveData);  // 8009e6c0
-    void SetStringChunk(const void* stringChunk, u32 stringChunkSize);  // 8009e770
-    void SetInfoChunk(const void* infoChunk, u32 infoChunkSize);  // 8009e820
+    void Init(const void *soundArchiveData);  // 8009e6c0
+    void SetStringChunk(const void *stringChunk, u32 stringChunkSize);  // 8009e770
+    void SetInfoChunk(const void *infoChunk, u32 infoChunkSize);  // 8009e820
 
     SoundArchive::SoundType GetSoundType(SoundArchive::SoundId soundId) const;  // 8009e830
-    bool ReadSoundInfo(SoundArchive::SoundId soundId, SoundArchive::SoundInfo* info) const;  // 8009e920
-    bool ReadSound3DParam(SoundArchive::SoundId soundId, SoundArchive::Sound3DParam* param) const;  // 8009ea50
-    bool ReadSeqSoundInfo(SoundArchive::SoundId soundId, SoundArchive::SeqSoundInfo* info) const;  // 8009eb60
-    bool ReadStrmSoundInfo(SoundArchive::SoundId soundId, SoundArchive::StrmSoundInfo* info) const;  // 8009ec10
-    bool ReadWaveSoundInfo(SoundArchive::SoundId soundId, SoundArchive::WaveSoundInfo* info) const;  // 8009ece0
-    bool ReadBankInfo(SoundArchive::BankId bankId, SoundArchive::BankInfo* info) const;  // 8009ed80
-    bool ReadPlayerInfo(SoundArchive::PlayerId playerId, SoundArchive::PlayerInfo* info) const;  // 8009ee30
-    bool ReadGroupInfo(SoundArchive::GroupId groupId, SoundArchive::GroupInfo* info) const;  // 8009eef0
-    bool ReadGroupItemInfo(SoundArchive::GroupId groupId, u32 index, SoundArchive::GroupItemInfo* info) const;  // 8009f000
-    bool ReadSoundArchivePlayerInfo(SoundArchive::SoundArchivePlayerInfo* info) const;  // 8009f138
+    bool ReadSoundInfo(SoundArchive::SoundId soundId, SoundArchive::SoundInfo *info) const;  // 8009e920
+    bool ReadSound3DParam(SoundArchive::SoundId soundId, SoundArchive::Sound3DParam *param) const;  // 8009ea50
+    bool ReadSeqSoundInfo(SoundArchive::SoundId soundId, SoundArchive::SeqSoundInfo *info) const;  // 8009eb60
+    bool ReadStrmSoundInfo(SoundArchive::SoundId soundId, SoundArchive::StrmSoundInfo *info) const;  // 8009ec10
+    bool ReadWaveSoundInfo(SoundArchive::SoundId soundId, SoundArchive::WaveSoundInfo *info) const;  // 8009ece0
+    bool ReadBankInfo(SoundArchive::BankId bankId, SoundArchive::BankInfo *info) const;  // 8009ed80
+    bool ReadPlayerInfo(SoundArchive::PlayerId playerId, SoundArchive::PlayerInfo *info) const;  // 8009ee30
+    bool ReadGroupInfo(SoundArchive::GroupId groupId, SoundArchive::GroupInfo *info) const;  // 8009eef0
+    bool ReadGroupItemInfo(SoundArchive::GroupId groupId, u32 index, SoundArchive::GroupItemInfo *info) const;  // 8009f000
+    bool ReadSoundArchivePlayerInfo(SoundArchive::SoundArchivePlayerInfo *info) const;  // 8009f138
     u32 GetPlayerCount() const;  // 8009f1d0
     u32 GetGroupCount() const;  // 8009f210
-    const char* GetGroupLabelString(SoundArchive::GroupId groupId) const;  // 8009f260
-    const char* GetBankLabelString(SoundArchive::BankId bankId) const;  // 8009f340
+    const char *GetGroupLabelString(SoundArchive::GroupId groupId) const;  // 8009f260
+    const char *GetBankLabelString(SoundArchive::BankId bankId) const;  // 8009f340
     u32 GetSoundUserParam(SoundArchive::SoundId soundId) const;  // 8009f420
     u32 GetFileCount() const;  // 8009f4e0
-    bool ReadFileInfo(SoundArchive::FileId fileId, SoundArchive::FileInfo* info) const;  // 8009f520
-    bool ReadFilePos(SoundArchive::FileId fileId, u32 index, SoundArchive::FilePos* info) const;  // 8009f620
-    u32 ConvertLabelStringToId(const void* stringTree, const char* str) const;  // 8009f740
+    bool ReadFileInfo(SoundArchive::FileId fileId, SoundArchive::FileInfo *info) const;  // 8009f520
+    bool ReadFilePos(SoundArchive::FileId fileId, u32 index, SoundArchive::FilePos *info) const;  // 8009f620
+    u32 ConvertLabelStringToId(const void *stringTree, const char *str) const;  // 8009f740
     SoundArchiveFile::SoundInfoRef impl_GetSoundInfoOffset();  // 8009f890
 
     SoundArchiveFile::Header header;
-    SoundArchiveFile::Info* soundInfo;  // 0x28
-    void* stringBase;  // 0x2c
-    u8* stringTable;  // 0x30
-    u8* soundStringTree;  // 0x34
-    u8* playerStringTree;
-    u8* groupStringTree;
-    u8* bankStringTree;
+    SoundArchiveFile::Info *soundInfo;  // 0x28
+    void *stringBase;  // 0x2c
+    u8 *stringTable;  // 0x30
+    u8 *soundStringTree;  // 0x34
+    u8 *playerStringTree;
+    u8 *groupStringTree;
+    u8 *bankStringTree;
 };  // total size 0x44
 // size_assert(SoundArchiveFileReader, 0x44);
 }  // namespace detail
 
 class NandSoundArchive : public SoundArchive {
-   public:
+public:
     NandSoundArchive();  // 80097570
     ~NandSoundArchive() override;  // 800975c0 vtable 80274808
-    const void* detail_GetFileAddress(FileId fileId) const override;  // 0xc 80097df0
-    const void* detail_GetWaveDataFileAddress(FileId fileId) const override;  // 0x10 80097de0
+    const void *detail_GetFileAddress(FileId fileId) const override;  // 0xc 80097df0
+    const void *detail_GetWaveDataFileAddress(FileId fileId) const override;  // 0x10 80097de0
     int detail_GetRequiredStreamBufferSize() const override;  // 0x14 800979e0
-    ut::FileStream* OpenStream(void* buffer, int size, u32 begin, u32 length) const override;  // 0x18 800977e0
-    ut::FileStream* OpenExtStream(void* buffer, int size, const char* extFilePath, u32 begin, u32 length) const override;  // 0x1c 800978a0
+    ut::FileStream *OpenStream(void *buffer, int size, u32 begin, u32 length) const override;  // 0x18 800977e0
+    ut::FileStream *OpenExtStream(void *buffer, int size, const char *extFilePath, u32 begin, u32 length) const override;  // 0x1c 800978a0
 
     detail::SoundArchiveFileReader fileReader;  // 0x108
     NAND::FileInfo fileInfo;  // 14c
@@ -201,17 +201,17 @@ class NandSoundArchive : public SoundArchive {
 // size_assert(NandSoundArchive, 0x1DC);
 
 class MemorySoundArchive : public SoundArchive {
-   public:
+public:
     MemorySoundArchive();  // 80095d80
     ~MemorySoundArchive() override;  // 80095dd0 vtable 802744d8
-    const void* detail_GetFileAddress(FileId fileId) const override;  // 0xc 80095ec0
-    const void* detail_GetWaveDataFileAddress(FileId fileId) const override;  // 0x10 80095f70
+    const void *detail_GetFileAddress(FileId fileId) const override;  // 0xc 80095ec0
+    const void *detail_GetWaveDataFileAddress(FileId fileId) const override;  // 0x10 80095f70
     int detail_GetRequiredStreamBufferSize() const override;  // 0x14 80096090
-    ut::FileStream* OpenStream(void* buffer, int size, u32 begin, u32 length) const override;  // 0x18 80096020
-    ut::FileStream* OpenExtStream(void* buffer, int size, const char* extFilePath, u32 begin, u32 length) const override;  // 0x1c 80096080
+    ut::FileStream *OpenStream(void *buffer, int size, u32 begin, u32 length) const override;  // 0x18 80096020
+    ut::FileStream *OpenExtStream(void *buffer, int size, const char *extFilePath, u32 begin, u32 length) const override;  // 0x1c 80096080
 
-    bool Setup(const void* soundArchiveData);  // 80095e30
-    const void* data;
+    bool Setup(const void *soundArchiveData);  // 80095e30
+    const void *data;
     detail::SoundArchiveFileReader fileReader;
 };  // total size 0x150
 // size_assert(MemorySoundArchive, 0x150);

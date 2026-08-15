@@ -10,15 +10,15 @@ namespace AI {
 class EnemyRouteHolder {
     EnemyRouteHolder();  // 8073c2c0
     virtual ~EnemyRouteHolder();  // 8073c308 vtable 808cb034
-    void AddKartAIController(KartAIController* ai);  // 8073c348
-    EnemyRouteController* controllers[12];
+    void AddKartAIController(KartAIController *ai);  // 8073c348
+    EnemyRouteController *controllers[12];
     u32 addedKartAIs;
 };  // 0x38
 
 class AiMgrSub84 {
-   public:
+public:
     AiMgrSub84();  // 80740d1c
-    void AddKartAIController(KartAIController* ai);  // 807414b8
+    void AddKartAIController(KartAIController *ai);  // 807414b8
     u8 unknown_[0x194];
 };  // 0x194
 
@@ -35,15 +35,15 @@ class AIMgrSub94 : public Base {  // battle only
 };  // 0xd0
 
 class Manager {
-   public:
-    static Manager* sInstance;  // 809c2be8
-    static Manager* CreateInstance();  // 80738e50
+public:
+    static Manager *sInstance;  // 809c2be8
+    static Manager *CreateInstance();  // 80738e50
     static void DestroyInstance();  // 80738ea0
     Manager();  // 80738e7c
 
-    void AddKartAI(KartAIController* kartAi);  // 8073922c
-    KartAIController* GetKartAIController(u8 playerIdx) const;  // 80739300
-    KartAIController* GetRealPlayerKartAI(u8 idx) const;  // 80739310
+    void AddKartAI(KartAIController *kartAi);  // 8073922c
+    KartAIController *GetKartAIController(u8 playerIdx) const;  // 80739300
+    KartAIController *GetRealPlayerKartAI(u8 idx) const;  // 80739310
     void Init();  // 80739328
     void Update();  // 8073942c
 
@@ -74,15 +74,15 @@ class Manager {
     u32 engineClass;  // 0x18
     u32 difficulty;  // 0x1c
     bool isTT;  // 0x20
-    KartAIController* controllers[12];  // 0x24 idx = playerId
-    KartAIController* realPlayersControllers[12];  // 0x54 not ordered by playerId, simply filled
+    KartAIController *controllers[12];  // 0x24 idx = playerId
+    KartAIController *realPlayersControllers[12];  // 0x54 not ordered by playerId, simply filled
 
-    void* specialItemStruct;  // 0x84
+    void *specialItemStruct;  // 0x84
 
-    EnemyRouteHolder* enemyRouteHolder;
-    Params* params;  // 0x8c
-    AIMgrSub90* sub90;
-    AIMgrSub94* sub94;  // battle only
+    EnemyRouteHolder *enemyRouteHolder;
+    Params *params;  // 0x8c
+    AIMgrSub90 *sub90;
+    AIMgrSub94 *sub94;  // battle only
 
 };  // 0x9c
 

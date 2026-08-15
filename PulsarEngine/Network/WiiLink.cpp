@@ -150,7 +150,7 @@ kmBranchDefCpp(
         return;
     }
 
-    s_payload = reinterpret_cast<void*>((u32(s_payloadBlock) + 31) & ~31);
+    s_payload = reinterpret_cast<void *>((u32(s_payloadBlock) + 31) & ~31);
     memset(s_payload, 0, PAYLOAD_BLOCK_SIZE);
 
     u8 salt[SHA256_DIGEST_SIZE];

@@ -26,7 +26,7 @@ class Collision {
 // some of these functions are obviously part of ObjMiddle, but it's very hard to tell and it doesn't matter since there is only one instance of an Obj that isn't an ObjMiddle (the one in ItemManager)
 
 class Obj {
-   public:
+public:
     bool IsExpired() const {
         // Adjust this condition as needed (here we assume an item is expired when duration is 0)
         return (duration == 0);
@@ -36,11 +36,11 @@ class Obj {
     class CalcWorldCB : public ModelCalcBase, public EmptyModelCalcParent, public g3d::ICalcWorldCallback {
         // vtable 808d19b0, 808D19A8 for empty
         ~CalcWorldCB() override;  // thunk 807a3a1c func 807a39d4
-        void ExecCallbackB(g3d::WorldMtxManip* manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj) override;  // thunk 807a3a14 func 8079d84c
-        Vec3* position;
+        void ExecCallbackB(g3d::WorldMtxManip *manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj) override;  // thunk 807a3a14 func 8079d84c
+        Vec3 *position;
     };  // 0x14 used to set ScnMdlSimple's cb
     struct AnmParam {  // 808d1d20 for example
-        const char* name;
+        const char *name;
         AnmType type;
     };
 
@@ -52,7 +52,7 @@ class Obj {
 
     virtual void SpawnModel();  // 0x18 8079d9fc
     virtual void PrepareLight();  // 0x1c 8079da9c acquires and sets light
-    virtual bool SetInitialPosition(PlayerObj& playerObj);
+    virtual bool SetInitialPosition(PlayerObj &playerObj);
     ;  // 0x20 8079dcb4 returns 1 if it's a forward throw
     virtual int OnKill();  // 0x24 8079dcbc
     virtual void OnTetherBreak();  // 0x28 8079dd6c just a blr, called when a tether breaks (for example you trail a green and hit an obj)
@@ -73,32 +73,32 @@ class Obj {
     // or extract data from a packet (if the bool is false)
     // often the game first prepares and sends the packet, then it calls the same func with the packet to extract its data into Obj
     // returns the packet
-    static void* SendOrExtractShootEVENT(void* packet, Obj* obj, bool extractOrSend);  // 807a3370
-    static void* SendOrExtractHitDraggedEVENT(void* packet, Obj* obj, bool extractOrSend);  // 8079c960
-    void ProcessRecvShootEVENT(ItemObjId itemObjId, const EVENTBuffer::Entry& entry, bool isBreak, bool isDrop, u8 playerUsedItemId);  // 8079de34
+    static void *SendOrExtractShootEVENT(void *packet, Obj *obj, bool extractOrSend);  // 807a3370
+    static void *SendOrExtractHitDraggedEVENT(void *packet, Obj *obj, bool extractOrSend);  // 8079c960
+    void ProcessRecvShootEVENT(ItemObjId itemObjId, const EVENTBuffer::Entry &entry, bool isBreak, bool isDrop, u8 playerUsedItemId);  // 8079de34
     void PrepareShootEVENTPacket();  // 807a31c0
 
     // Load
-    void LoadGraphics(const char* brresName, const char* mdlName, const char* shadowSrc, u8 whichShadowListToUse, AnmParam* anmParam,
-                      g3d::ScnMdl::BufferOption option, void* funcPtr, u32 directorBitfield);  // 807a0040
-    void LoadGraphicsImplicitBRRESNoFunc(const char* mdlName, const char* shadowSrc, AnmParam* anmParam,
+    void LoadGraphics(const char *brresName, const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse, AnmParam *anmParam,
+                      g3d::ScnMdl::BufferOption option, void *funcPtr, u32 directorBitfield);  // 807a0040
+    void LoadGraphicsImplicitBRRESNoFunc(const char *mdlName, const char *shadowSrc, AnmParam *anmParam,
                                          g3d::ScnMdl::BufferOption option, u32 directorBitfield);  // 8079ff5c brresName will be deduced from mdlName, shadow list always 0
-    void LoadGraphicsDefault(const char* brresName, const char* mdlName, const char* shadowSrc, AnmParam* param);  // 8079ffa4
-    void LoadGraphicsImplicitBRRES(const char* mdlName, const char* shadowSrc, u8 whichShadowListToUse, AnmParam* anmParam,
-                                   g3d::ScnMdl::BufferOption option, void* funcPtr);  // 8079ffdc
+    void LoadGraphicsDefault(const char *brresName, const char *mdlName, const char *shadowSrc, AnmParam *param);  // 8079ffa4
+    void LoadGraphicsImplicitBRRES(const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse, AnmParam *anmParam,
+                                   g3d::ScnMdl::BufferOption option, void *funcPtr);  // 8079ffdc
     // calls loadGraphics with brresName == nullptr which causes it to be copied from mdlName
     void LoadItemLight();  // 807a0380 only for teams
 
     void Init(u32 idx, u16 effectIdx, ItemObjId id);  // 8079e224
-    void Spawn(ItemObjId objId, u8 playerId, const Vec3& position, bool r7);  // 8079e550
+    void Spawn(ItemObjId objId, u8 playerId, const Vec3 &position, bool r7);  // 8079e550
     void Set(ItemObjId objId);  // 8079e5f4
 
     // Update
     void Update(bool r4);  // 8079efec
     void UpdateWithClipping();  // 807a25b0
-    void UpdateModelFromQuat(Mtx34* transMtxCopy = nullptr);  // 807a0cd4 will copy the calculated transMtx into the arg if not null
-    void UpdateModelFromVecs(Mtx34* transMtxCopy = nullptr);  // 807a07b8 will copy the calculated transMtx into the arg if not null
-    void UpdateShadow(Mtx34& transMtx);  // 807a0a68
+    void UpdateModelFromQuat(Mtx34 *transMtxCopy = nullptr);  // 807a0cd4 will copy the calculated transMtx into the arg if not null
+    void UpdateModelFromVecs(Mtx34 *transMtxCopy = nullptr);  // 807a07b8 will copy the calculated transMtx into the arg if not null
+    void UpdateShadow(Mtx34 &transMtx);  // 807a0a68
 
     // Kill
     int KillObj(u32 r4);  // 807a6328 might be objthrowable
@@ -106,19 +106,19 @@ class Obj {
     void UpdateKill();  // 807a6700
 
     // Collision
-    void OnPlayerCollision(Kart::Player& player, bool isRemote);  // 807a3790
-    void OnObjCollision(Item::Obj& other);
+    void OnPlayerCollision(Kart::Player &player, bool isRemote);  // 807a3790
+    void OnObjCollision(Item::Obj &other);
     void UnregisterEntity();  // 8079eecc
     void RegisterEntity(bool usePropertiesSmallRadius);  // 8079ee30
     // result: 0 the obj survives with no effect, 1 the obj bounces off the other entity, 2 kill the obj
-    void ProcessOtherCollision(u32 result, const Vec3& otherPos, const Vec3& otherSpeed);  // 807a18fc a green runs into a green, a green runs into an Object like a goomba
+    void ProcessOtherCollision(u32 result, const Vec3 &otherPos, const Vec3 &otherSpeed);  // 807a18fc a green runs into a green, a green runs into an Object like a goomba
     void KillFromPlayerCollision(bool sendBreakEVENT, u8 playerIdOfCollision);  // 807a6614
     void KillFromOtherCollision(bool sendBreakEVENT);  // 807a6560 for example a bomb makes objs disappear, or a green has bounced too many times with a wall
     bool CanDisappearFromDuration() const;  // 8079feb4 inlined in TryKill if has been active for over 300 frames
     void TryDisappearDueToExcess();  // 8079fe30 when too many of this type exist on the map
     void DisappearDueToExcess(bool sendBreakEVENT);  // 807a6c14
     void CheckOtherObjsCollision();  // 807a1c94
-    bool CheckKartCollision(Kart::Player* kartPlayer, u32 r5);  // 807a14d4
+    bool CheckKartCollision(Kart::Player *kartPlayer, u32 r5);  // 807a14d4
 
     void FinishKill();  // 8079e884 removes entity and calls OnFinishKill
 
@@ -153,32 +153,32 @@ class Obj {
     */
     Vec3 initialPosition;  // 0x80 the position it spawned on
     Vec3 positionRelativeToPlayer;  // 0x8c only updated while the item is tethered (including during the throw anm)
-    Vec3* curPosition;  // 0x98 there's likely a substruct here else why would this ptr be needed
-    ModelDirector* modelDirector;  // 0x9c
-    ShadowModelDirector* shadowMdlDirector;  // 0xa0
-    ClipInfo* clipInfo;  // 0xa4
-    ModelDirector* item_light;  // 0xa8 only in teams, it's the coloured halo around the item
-    Light* light;  // 0xac
-    Entity* entity;  // 0xb0
+    Vec3 *curPosition;  // 0x98 there's likely a substruct here else why would this ptr be needed
+    ModelDirector *modelDirector;  // 0x9c
+    ShadowModelDirector *shadowMdlDirector;  // 0xa0
+    ClipInfo *clipInfo;  // 0xa4
+    ModelDirector *item_light;  // 0xa8 only in teams, it's the coloured halo around the item
+    Light *light;  // 0xac
+    Entity *entity;  // 0xb0
     float unknown_0xb4[2];
     Vec3 lastPosition;  // 0xbc
     u8 unknown_0xc8[0xd4 - 0xc8];
     KCLTypeHolder kclType;  // 0xd4
     Collision collision;  // 0xd8
-    void* unknown_0x134;
+    void *unknown_0x134;
     u8 unknown_0x138[0x160 - 0x138];
     u32 duration;  // 0x160
     u8 unknown_0x164[4];  // 0x164
     Ptmf_0A<Obj, void> updatePtmf;  // 0x168 Update, UpdateKill
     u8 unknown_0x174[0x180 - 0x174];
-    Audio::ItemActor* sound;  // 0x180
+    Audio::ItemActor *sound;  // 0x180
     u8 unknown_0x184[0x188 - 0x184];
 
 };  // Total Size 0x188
 // size_assert(Obj, 0x188);  // where to cut the class and decide the rest is part of "ObjMiddle" was done through analyzing the size of the obj in ItemManager, which can only be up to 0x188
 
 class ObjMiddle : public Obj {  // the vtable of base has a ton of copies in memory so there could be in btw classes
-   public:
+public:
     ObjMiddle();  // 807a6928
     // vtable 808d1c50
 

@@ -8,8 +8,8 @@
 namespace Objects {
 
 class Heyho : public ObjectCollidable, public StatePtmfTrigger<Heyho> {  // ObjectNum 0x19c = 412
-   public:
-    explicit Heyho(const KMP::Holder<GOBJ>& gobjHolder);  // 806ce828
+public:
+    explicit Heyho(const KMP::Holder<GOBJ> &gobjHolder);  // 806ce828
 
     // ObjectCollidable vtable 808c4a68
     ~Heyho() override;  // 806ceb24 vtable 808c4a68
@@ -22,9 +22,9 @@ class Heyho : public ObjectCollidable, public StatePtmfTrigger<Heyho> {  // Obje
     void LoadAnimations() override;  // 0x5c 806d013c
     void UpdateShadow() override;  // 0x70 806cf3a4
     void UpdateCollision() override;  // 0x74 806d01d4
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806cf024
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 806cf198
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806cf024
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806cf198
 
     // StatePtmfTrigger vtable 808c4b54 at 0xb0
     //~Heyho() override; //thunk 806d02bc

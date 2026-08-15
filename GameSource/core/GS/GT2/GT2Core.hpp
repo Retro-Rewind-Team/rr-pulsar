@@ -68,7 +68,7 @@ typedef int SOCKET;
 typedef u8 Byte;
 
 struct Buffer {
-    Byte* buffer;
+    Byte *buffer;
     int size;  // buffer size
     int len;  // actual datalength
 };

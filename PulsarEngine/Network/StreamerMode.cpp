@@ -11,9 +11,9 @@
 
 namespace Pulsar {
 namespace PointRating {
-void GetOriginalMiis(RFL::StoreData* outMii0, RFL::StoreData* outMii1);
+void GetOriginalMiis(RFL::StoreData *outMii0, RFL::StoreData *outMii1);
 bool HasOriginalMiisStored();
-}
+}  // namespace PointRating
 
 namespace Network {
 
@@ -28,12 +28,12 @@ static void RerandomizeBaseIndex() {
 static SectionLoadHook RerandomizeHook(RerandomizeBaseIndex);
 
 static void UpdateStreamerMiis() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
 
     Random random;
     streamerModeRandomIndex = random.NextLimited(6);
 
-    RKNet::USERHandler* userHandler = RKNet::USERHandler::sInstance;
+    RKNet::USERHandler *userHandler = RKNet::USERHandler::sInstance;
     if (userHandler) {
         userHandler->aidsThatHaveGivenMiis = 0;
 
@@ -46,11 +46,11 @@ static void UpdateStreamerMiis() {
         }
     }
 
-    ExpSELECTHandler& selectHandler = ExpSELECTHandler::Get();
+    ExpSELECTHandler &selectHandler = ExpSELECTHandler::Get();
     selectHandler.lastSentTime = 0;
 }
 
-static CourseId OnTrackDecidedHook(RKNet::SELECTHandler* handler) {
+static CourseId OnTrackDecidedHook(RKNet::SELECTHandler *handler) {
     CourseId course = handler->GetWinningCourse();
     if (course != 0xFF && !trackDecidedTriggered) {
         UpdateStreamerMiis();
@@ -60,17 +60,17 @@ static CourseId OnTrackDecidedHook(RKNet::SELECTHandler* handler) {
 }
 kmCall(0x80644318, OnTrackDecidedHook);
 
-extern "C" void* sInstance__Q23DWC12MatchControl;
+extern "C" void *sInstance__Q23DWC12MatchControl;
 
 static u32 GetPidForAid(u32 aid) {
-    u8* stpMatchCnt = (u8*)sInstance__Q23DWC12MatchControl;
+    u8 *stpMatchCnt = (u8 *)sInstance__Q23DWC12MatchControl;
     if (stpMatchCnt == nullptr) return 0;
 
-    u32 numHost = *(u32*)(stpMatchCnt + 0x30);
+    u32 numHost = *(u32 *)(stpMatchCnt + 0x30);
     for (u32 i = 0; i < numHost; i++) {
-        u8* node = stpMatchCnt + 0x38 + i * 0x30;
+        u8 *node = stpMatchCnt + 0x38 + i * 0x30;
         if (*(node + 0x16) == aid) {
-            return *(u32*)node;
+            return *(u32 *)node;
         }
     }
     return 0;
@@ -78,7 +78,7 @@ static u32 GetPidForAid(u32 aid) {
 
 static bool IsFriend(u32 pid) {
     if (pid == 0) return false;
-    RKNet::FriendMgr* friendMgr = RKNet::FriendMgr::sInstance;
+    RKNet::FriendMgr *friendMgr = RKNet::FriendMgr::sInstance;
     if (friendMgr == nullptr) return false;
 
     for (int i = 0; i < 30; i++) {
@@ -89,8 +89,8 @@ static bool IsFriend(u32 pid) {
     return false;
 }
 
-static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid, RKNet::USERPacket* userPacket) {
-    const Settings::Mgr& settings = Settings::Mgr::Get();
+static void ReplaceWithRandomPlayerMii(RKNet::USERHandler *handler, u32 aid, RKNet::USERPacket *userPacket) {
+    const Settings::Mgr &settings = Settings::Mgr::Get();
     if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) == STREAMERMODE_DISABLED) {
         return;
     }
@@ -107,8 +107,8 @@ static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid, RKN
             return;
         }
 
-        u8* stpMatchCnt = (u8*)sInstance__Q23DWC12MatchControl;
-        if (stpMatchCnt && pid == *(u32*)(stpMatchCnt + 0x8a8)) {
+        u8 *stpMatchCnt = (u8 *)sInstance__Q23DWC12MatchControl;
+        if (stpMatchCnt && pid == *(u32 *)(stpMatchCnt + 0x8a8)) {
             if (PointRating::HasOriginalMiisStored()) {
                 PointRating::GetOriginalMiis(&userPacket->rflPacket.rawMiis[0], &userPacket->rflPacket.rawMiis[1]);
             }
@@ -118,23 +118,23 @@ static void ReplaceWithRandomPlayerMii(RKNet::USERHandler* handler, u32 aid, RKN
 
     u32 playerRandomIndex = (streamerModeRandomIndex + aid) % 6;
 
-    RFL::StoreData* miiSlot0 = &userPacket->rflPacket.rawMiis[0];
-    RFL::StoreData* miiSlot1 = &userPacket->rflPacket.rawMiis[1];
+    RFL::StoreData *miiSlot0 = &userPacket->rflPacket.rawMiis[0];
+    RFL::StoreData *miiSlot1 = &userPacket->rflPacket.rawMiis[1];
 
     RFL::GetStoreData(miiSlot0, RFL::RFLDataSource_Default, playerRandomIndex);
     RFL::GetStoreData(miiSlot1, RFL::RFLDataSource_Default, playerRandomIndex);
 }
 
-static void CopySendToPacketHolderHook(RKNet::USERHandler* handler, u32 aid) {
+static void CopySendToPacketHolderHook(RKNet::USERHandler *handler, u32 aid) {
     if (!handler->isInitialized) return;
 
     RKNet::USERPacket packet = handler->toSendPacket;
     ReplaceWithRandomPlayerMii(handler, aid, &packet);
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     u32 bufferIdx = controller->lastSendBufferUsed[aid];
-    RKNet::SplitRACEPointers* splitPointers = controller->splitToSendRACEPackets[bufferIdx][aid];
-    RKNet::PacketHolder<RKNet::USERPacket>* holder = splitPointers->GetPacketHolder<RKNet::USERPacket>();
+    RKNet::SplitRACEPointers *splitPointers = controller->splitToSendRACEPackets[bufferIdx][aid];
+    RKNet::PacketHolder<RKNet::USERPacket> *holder = splitPointers->GetPacketHolder<RKNet::USERPacket>();
 
     holder->Copy(&packet, sizeof(RKNet::USERPacket));
 }

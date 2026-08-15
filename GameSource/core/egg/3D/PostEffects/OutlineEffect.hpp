@@ -10,7 +10,7 @@
 namespace EGG {
 
 class OutlineEffect : public ScreenEffect {  // non-official name, outline with a bit of blur, used for minimap borders
-   public:
+public:
     OutlineEffect();  // 8023e748
     ~OutlineEffect() override;  // 8023e86c vtable 802a3f30
     void SetupDraw();  // 8023e90c
@@ -20,9 +20,9 @@ class OutlineEffect : public ScreenEffect {  // non-official name, outline with 
     u32 unknown_0xC;
     float unknown_0x14[6];
     u8 unknown_0x2c[4];
-    PostEffectOutline* outline;  // 0x30
-    PostEffectBlur* blur;  // 0x34
-    TextureBuffer* buffer;  // 0x38
+    PostEffectOutline *outline;  // 0x30
+    PostEffectBlur *blur;  // 0x34
+    TextureBuffer *buffer;  // 0x38
 };  // 0x3c
 
 }  // namespace EGG

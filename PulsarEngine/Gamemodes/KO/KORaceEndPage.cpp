@@ -34,21 +34,21 @@ int RaceEndPage::GetMessageBMG() const {
 u32 RaceEndPage::GetButtonCount() const {
     return buttonCount;
 }
-const u32* RaceEndPage::GetVariantsIdxArray() const {
+const u32 *RaceEndPage::GetVariantsIdxArray() const {
     static const u32 array[buttonCount] = {0, 1};  // corresponds to 3 buttons centered on the screen
     return array;
 }
 bool RaceEndPage::IsPausePage() const { return false; }
-const char* RaceEndPage::GetButtonsBRCTRName() const { return "KORaceEnd"; }
+const char *RaceEndPage::GetButtonsBRCTRName() const { return "KORaceEnd"; }
 
-void RaceEndPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
+void RaceEndPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
     this->EndStateAnimated(0, button.GetAnimationFrameSize());
     switch (button.buttonId) {
         case 0:  // Spectate
             System::sInstance->koMgr->isSpectating = true;
             break;
         case 1:  // Quit
-            const Mgr* mgr = System::sInstance->koMgr;
+            const Mgr *mgr = System::sInstance->koMgr;
             const u8 localCount = mgr->GetBaseLocalPlayerCount();
             const SectionId next = localCount == 1 ? SECTION_P1_WIFI : SECTION_P2_WIFI;
             SectionMgr::sInstance->sectionParams->localPlayerCount = localCount;

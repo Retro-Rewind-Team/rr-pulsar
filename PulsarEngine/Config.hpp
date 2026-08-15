@@ -95,16 +95,16 @@ struct ConfigFile {
         delete (this);
     }
     static const char error[];
-    static ConfigFile& LoadConfig();
-    static ConfigFile* LoadConfigFile(const char* path, u32& readBytesOut);
+    static ConfigFile &LoadConfig();
+    static ConfigFile *LoadConfigFile(const char *path, u32 &readBytesOut);
     template <typename T>
-    inline const T& GetSection() const {
-        const T& section = *reinterpret_cast<const T*>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
+    inline const T &GetSection() const {
+        const T &section = *reinterpret_cast<const T *>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
         return section;
     }
 
     template <class T>
-    static inline void CheckSection(const T& t) {
+    static inline void CheckSection(const T &t) {
         if (t.header.magic != T::magic || t.header.version != T::curVersion) Debug::FatalError(error);
     }
 
@@ -113,7 +113,7 @@ struct ConfigFile {
 };
 
 template <>
-static inline void ConfigFile::CheckSection<PulBMG>(const PulBMG& bmg) {
+static inline void ConfigFile::CheckSection<PulBMG>(const PulBMG &bmg) {
     if (bmg.header.magic != 0x4D455347626D6731) Debug::FatalError(error);
 }
 

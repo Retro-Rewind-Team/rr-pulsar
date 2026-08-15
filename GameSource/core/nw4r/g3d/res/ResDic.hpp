@@ -20,7 +20,7 @@ struct ResDicData {
 };
 
 class ResDic : public ResCommon<ResDicData> {
-   public:
+public:
 };
 }  // namespace g3d
 }  // namespace nw4r

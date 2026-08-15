@@ -32,9 +32,9 @@ union ROOMPacketReg {
 };
 
 class ROOMHandler {
-   public:
-    static ROOMHandler* sInstance;  // 809c20e0
-    static ROOMHandler* CreateInstance();  // 8065aa88
+public:
+    static ROOMHandler *sInstance;  // 809c20e0
+    static ROOMHandler *CreateInstance();  // 8065aa88
     static void DestroyInstance();  // 8065ab4c
     ROOMHandler();  // 8065af84 just a wrapper around Reset
     ~ROOMHandler();  // 8065b008
@@ -51,8 +51,8 @@ class ROOMHandler {
     void ClearRecvPacket(u8 aid);  // 8065b300
     void SetToSendPacke2(u8 aid, ROOMPacket packet);  // 8065b314
     void SetRecvPacket(u8 aid, ROOMPacket packet);  // 8065b324
-    ROOMPacket* GetToSendPacket(u8 aid) const;  // 8065b334
-    ROOMPacket* GetRecvPacketPtr(u8 aid) const;  // 8065b344
+    ROOMPacket *GetToSendPacket(u8 aid) const;  // 8065b334
+    ROOMPacket *GetRecvPacketPtr(u8 aid) const;  // 8065b344
     void ResetAllPackets();  // 8065b260
     void InitPacket(ROOMPacket packet);  // 8065b2e0
 

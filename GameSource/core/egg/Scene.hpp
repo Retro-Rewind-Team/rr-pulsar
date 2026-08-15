@@ -12,13 +12,13 @@ class SceneManager;
 class Scene;
 
 class SceneCreator {  // vtable got done away by the compiler
-    virtual Scene* create(u32 sceneId);  // 0x8
+    virtual Scene *create(u32 sceneId);  // 0x8
     virtual void destroy(u32 sceneId);  // 0xc
 };  // 0x4
 
 // size_assert(SceneCreator, 0x4);
 class Scene : public EGG::Disposer {
-   public:
+public:
     Scene();  // 8023ad10
     ~Scene() override;  // 8023ad84, vtable 802a3de0
     virtual void calc();  // 0xc  80007f4c
@@ -28,24 +28,24 @@ class Scene : public EGG::Disposer {
     virtual void reinit();  // 0x1c 80007f3c
     virtual void incoming_child_destroy();  // 0x20 80007f38
     virtual void outgoing_child_create();  // 0x24 80007f34
-    ExpHeap* parentHeap;  // 0x10
-    ExpHeap* otherMEMHeap;  // 0x14 every scene is created with mem2 as the main MEM therefore this is mem1
-    ExpHeap* mainMEMHeap;  // 0x18 mem2
-    ExpHeap* debugHeap;  // 0x1c
-    Scene* parent;  // 0x20
-    Scene* child;
+    ExpHeap *parentHeap;  // 0x10
+    ExpHeap *otherMEMHeap;  // 0x14 every scene is created with mem2 as the main MEM therefore this is mem1
+    ExpHeap *mainMEMHeap;  // 0x18 mem2
+    ExpHeap *debugHeap;  // 0x1c
+    Scene *parent;  // 0x20
+    Scene *child;
     u32 id;  // 0x28
-    SceneManager* manager;  // 0x2c
+    SceneManager *manager;  // 0x2c
 };  // 0x30
 // size_assert(Scene, 0x30);
 
 class SceneManager {
-   public:
-    static ExpHeap* creatingSceneOtherMEMHeap;  // 80386f04
-    static ExpHeap* creatingSceneMainMEMHeap;  // 80386f08
-    static Scene* creatingSceneDebugHeap;  // 80386f0c
+public:
+    static ExpHeap *creatingSceneOtherMEMHeap;  // 80386f04
+    static ExpHeap *creatingSceneMainMEMHeap;  // 80386f08
+    static Scene *creatingSceneDebugHeap;  // 80386f0c
 
-    SceneManager(SceneCreator* creator);  // 8023addc
+    SceneManager(SceneCreator *creator);  // 8023addc
     virtual void calc();  // 0x8  8023ae60 vtable 802a3e08
     virtual void draw();  // 0xc  8023aeac
     virtual void calcCurrentScene();  // 0x10 8023b588
@@ -61,27 +61,27 @@ class SceneManager {
     void changeSiblingScene(u32 sceneId);  // 8023afe0
     bool changeSiblingSceneAfterFadeOut(u32 sceneId);  // 8023afe8 initiates a fadeout and prepares a scene change
     void changeScene();  // 8023b064 non official
-    void createScene(u32 sceneId, Scene* parent);  // 8023b0e4
-    void createChildScene(u32 sceneId, Scene* parent);  // 8023b248
+    void createScene(u32 sceneId, Scene *parent);  // 8023b0e4
+    void createChildScene(u32 sceneId, Scene *parent);  // 8023b248
     void destroyCurrentScene(bool destroyIfNoParent);  // 8023b2ac
     bool destroyToSelectSceneId(u32 sceneId);  // 8023b344 destroys from current scene until sceneId then switches to sceneId
-    void destroyScene(Scene* scene);  // 8023b3f0
+    void destroyScene(Scene *scene);  // 8023b3f0
     void incomingCurrentScene();  // 8023b568
-    Scene* findParentScene(u32 sceneId);  // 8023b940
+    Scene *findParentScene(u32 sceneId);  // 8023b940
     void setupNextSceneId();  // 8023b910 non-official
-    void outgoingParentScene(Scene* parent);  // 8023b92c calls outgoing_child_create
+    void outgoingParentScene(Scene *parent);  // 8023b92c calls outgoing_child_create
 
-    SceneCreator* curSectionCeator;  // 0x4
+    SceneCreator *curSectionCeator;  // 0x4
     u8 unknown_0x8[4];
-    Scene* currentScene;  // 0xc
-    Scene* parentOfCurrent;  // 0x10
+    Scene *currentScene;  // 0xc
+    Scene *parentOfCurrent;  // 0x10
     u32 nextSceneId;  // 0x14
     u32 currentSceneId;  // 0x18
     u32 someKindOfSceneId;  // 0x1c
     u32 actionAfterFade;  // 0x20 0 changeUncle, 1 changeSibling, 2 outgoingParent, 4 destroyToSelect, 3 reinit
-    ColorFader* colorFader;  // 0x24
+    ColorFader *colorFader;  // 0x24
     u32 nextSceneMainMEM;  // 0x28, 1 for mem2, unsure
-    SceneCreator* nextSceneCreator;  // 0x2c
+    SceneCreator *nextSceneCreator;  // 0x2c
 
 };  // 0x30
 // size_assert(SceneManager, 0x30);

@@ -30,7 +30,7 @@ struct ExtendedTeamPlayer {
 };
 
 class ExtendedTeamManager {
-   public:
+public:
     static const u32 TEAM_MODE_FLAG = 0x2;
 
     enum ExtendedROOMMessageType {
@@ -48,8 +48,8 @@ class ExtendedTeamManager {
         STATUS_DONE
     };
 
-    static ExtendedTeamManager* sInstance;
-    static void CreateInstance(ExtendedTeamManager* obj);
+    static ExtendedTeamManager *sInstance;
+    static void CreateInstance(ExtendedTeamManager *obj);
     static void DestroyInstance();
 
     ExtendedTeamManager();
@@ -91,7 +91,7 @@ class ExtendedTeamManager {
         return this->players[idx].aid;
     }
 
-    const ExtendedTeamPlayer* GetPlayerInfo() const {
+    const ExtendedTeamPlayer *GetPlayerInfo() const {
         return this->players;
     }
 
@@ -148,7 +148,7 @@ class ExtendedTeamManager {
     }
 
     static bool IsActivated() {
-        const RacedataSettings& settings = Racedata::sInstance->menusScenario.settings;
+        const RacedataSettings &settings = Racedata::sInstance->menusScenario.settings;
         if (!System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS)) return false;
 
         if (settings.gamemode == MODE_VS_RACE) {
@@ -159,7 +159,7 @@ class ExtendedTeamManager {
         return (settings.gamemode == MODE_PRIVATE_VS || settings.gamemode == MODE_PRIVATE_BATTLE) && (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     }
 
-   private:
+private:
     bool AreAllOtherPlayersActive(u8 localAid);
     bool AreAllOtherPlayersDone(u8 localAid);
 
@@ -169,7 +169,7 @@ class ExtendedTeamManager {
 
     Status status;
 
-   public:
+public:
     CountDown waitingTimer;
     CountDown lastUpdateTimer;
 

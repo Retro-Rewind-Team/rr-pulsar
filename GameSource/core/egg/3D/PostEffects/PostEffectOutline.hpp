@@ -8,7 +8,7 @@ using namespace nw4r;
 namespace EGG {
 
 class PostEffectOutline : public PostEffect {  // https://imgur.com/mgtzqwD outline
-   public:
+public:
     PostEffectOutline();  // 80236250
     ~PostEffectOutline() override;  // 80236bd8 vtable 802a3c30
     void Draw(float width, float height) override;  // 0xc 80236448
@@ -18,7 +18,7 @@ class PostEffectOutline : public PostEffect {  // https://imgur.com/mgtzqwD outl
     u16 unknown_0x34;
     u8 padding[2];
     float unknown_0x38[5];
-    CpuTexture* cpuTexture;  // 0x4c
+    CpuTexture *cpuTexture;  // 0x4c
 };  // 0x50
 
 }  // namespace EGG

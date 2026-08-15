@@ -11,7 +11,7 @@ namespace EGG {
 // https://wiki.tockdom.com/wiki/BDOF_(File_Format)
 
 class DrawPathDOF : public DrawPathBase, public IBinary<DrawPathDOF> {
-   public:
+public:
     struct BDOF : IBinary::Binary {
         // BinaryHeader header; //BDOF
         u16 filterBitfield;
@@ -43,9 +43,9 @@ class DrawPathDOF : public DrawPathBase, public IBinary<DrawPathDOF> {
     void DrawImpl(u16 scnProcIdx) override;  // 0x18 8021eec0
 
     // IBinary vtable 802a2cdc at 0x14
-    void SetBinaryImpl(const IBinary::Binary& rawBDOF) override;  // 0x8  thunk 80220a1c func 802203fc
-    void GetBinaryImpl(IBinary::Binary* bdofDest) const override;  // 0xc  thunk 80220a2c func 80220508
-    const char* GetBinaryType() const override;  // 0x10 thunk 80220a34 func 802203ec
+    void SetBinaryImpl(const IBinary::Binary &rawBDOF) override;  // 0x8  thunk 80220a1c func 802203fc
+    void GetBinaryImpl(IBinary::Binary *bdofDest) const override;  // 0xc  thunk 80220a2c func 80220508
+    const char *GetBinaryType() const override;  // 0x10 thunk 80220a34 func 802203ec
     u32 GetBinarySize() const override;  // 0x14 802209fc
     u8 GetVersion() const override;  // 0x18 thunk 80220a3c func 80220a0c
     void DoubleMount() override;  // 0x1c thunk 80220a24 func 802205d8

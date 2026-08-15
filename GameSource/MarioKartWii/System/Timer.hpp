@@ -3,12 +3,12 @@
 #include <kamek.hpp>
 
 class Timer {
-   public:
+public:
     Timer();  // 8051c374
     Timer(bool setActive);  // 805442c0 if bool is true, timer is init at 99:99.999
     void SetActive(bool isActive);  // 80544310
 
-    Timer& operator=(const Timer& src) {
+    Timer &operator=(const Timer &src) {
         this->minutes = src.minutes;
         this->seconds = src.seconds;
         this->milliseconds = src.milliseconds;
@@ -16,7 +16,7 @@ class Timer {
         return *this;
     }
 
-    const bool operator>(const Timer& src) const {
+    const bool operator>(const Timer &src) const {
         if (this->isActive == false)
             return true;
         else if (src.minutes < this->minutes)
@@ -27,7 +27,7 @@ class Timer {
             return true;
         return false;
     }
-    const bool operator<(const Timer& src) const {
+    const bool operator<(const Timer &src) const {
         return !(*this > src);
     }
 

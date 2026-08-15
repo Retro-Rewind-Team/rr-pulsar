@@ -11,13 +11,13 @@ namespace snd {
 namespace detail {
 
 class WaveDataLocationCallback {
-   public:
-    virtual const WaveInfo* AttachWaveInfo() = 0;
-    virtual void DetachWaveInfo(const WaveInfo* waveInfo) = 0;
+public:
+    virtual const WaveInfo *AttachWaveInfo() = 0;
+    virtual void DetachWaveInfo(const WaveInfo *waveInfo) = 0;
 };
 
 class Channel {
-   public:
+public:
     enum ChannelCallbackStatus {
         CALLBACK_STATUS_STOPPED,
         CALLBACK_STATUS_DROP,
@@ -25,20 +25,20 @@ class Channel {
         CALLBACK_STATUS_CANCEL
     };
 
-    typedef void (*ChannelCallback)(Channel* channel, ChannelCallbackStatus status, u32 userData);
+    typedef void (*ChannelCallback)(Channel *channel, ChannelCallbackStatus status, u32 userData);
 
     void InitParam(ChannelCallback callback, u32 callbackData);  // 8008fce0
     void Update(bool doPeriodicProc);  // 8008fe10
-    void Start(const WaveInfo& waveParam, int length, u32 startOffset);  // 800905b0
+    void Start(const WaveInfo &waveParam, int length, u32 startOffset);  // 800905b0
     void Release();  // 80090630
     void NoteOff();  // 800906a0
     void Stop();  // 80090720
     void UpdateSweep(int count);  // 80090850
     void SetSweepParam(int sweepTime, bool autoUpdate, float sweepPitch);  // 8009086c
-    void VoiceCallbackFunc(Voice* voice, Voice::VoiceCallbackStatus status, void* arg);  // 80090890
+    void VoiceCallbackFunc(Voice *voice, Voice::VoiceCallbackStatus status, void *arg);  // 80090890
 
-    static Channel* AllocChannel(int voiceChannelCount, int voiceOutCount, int priority, Channel::ChannelCallback callback, u32 callbackData);  // 800909e0
-    static void FreeChannel(Channel* channel);  // 80090be0
+    static Channel *AllocChannel(int voiceChannelCount, int voiceOutCount, int priority, Channel::ChannelCallback callback, u32 callbackData);  // 800909e0
+    static void FreeChannel(Channel *channel);  // 80090be0
 
     u8 envelopeAndLowFreqOscillation[0x34];
 
@@ -92,20 +92,20 @@ class Channel {
     ChannelCallback callback;  // 0xdc
     u32 callbackArg;  // 0xe0
 
-    WaveDataLocationCallback* waveDataLocationCallback;  // 0xe4
-    const WaveInfo* waveInfo;  // 0xe8
-    Voice* voice;  // 0xEC
-    Channel* nextLink;  // 0xf0
+    WaveDataLocationCallback *waveDataLocationCallback;  // 0xe4
+    const WaveInfo *waveInfo;  // 0xe8
+    Voice *voice;  // 0xEC
+    Channel *nextLink;  // 0xf0
 
     ut::LinkListNode link;  // 0xf4
 };  // 0xfc
 
 class ChannelManager {
-   public:
+public:
     static ChannelManager instance;  // 802d5878
-    static ChannelManager& GetInstance();  // 8008f970
+    static ChannelManager &GetInstance();  // 8008f970
     u32 GetRequiredMemSize(int channelCount);  // 8008fa50
-    void Setup(void* buffer, u32 size);  // 8008fa60
+    void Setup(void *buffer, u32 size);  // 8008fa60
     void Shutdown();  // 8008fb00
     void UpdateAllChannel();  // 8008fc80
 
@@ -113,7 +113,7 @@ class ChannelManager {
     ut::LinkList<Channel, offsetof(Channel, link)> channelList;
     bool initialized;
     u32 channelCount;
-    void* buffer;
+    void *buffer;
     u32 memSize;
 };
 

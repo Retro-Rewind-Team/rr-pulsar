@@ -58,32 +58,32 @@ class BasicPlayer;
 class ExternalSoundPlayer;
 
 class BasicSound {
-   public:
+public:
     class AmbientArgAllocaterCallback {
         virtual ~AmbientArgAllocaterCallback();
-        virtual void* detail_AllocAmbientArg(u32 argSize) = 0;
-        virtual void detail_FreeAmbientArg(void* arg, const detail::BasicSound* sound) = 0;
+        virtual void *detail_AllocAmbientArg(u32 argSize) = 0;
+        virtual void detail_FreeAmbientArg(void *arg, const detail::BasicSound *sound) = 0;
     };
     class AmbientArgUpdateCallback {
-       public:
+    public:
         virtual ~AmbientArgUpdateCallback();
         // Updates the actor parameters, as arg is almost always a Sound3DParam, that arg is then passed to UpdateAmbientParam
-        virtual void detail_UpdateAmbientArg(void* arg, const detail::BasicSound* sound) = 0;
+        virtual void detail_UpdateAmbientArg(void *arg, const detail::BasicSound *sound) = 0;
     };
     class AmbientParamUpdateCallback {
-       public:
+    public:
         virtual ~AmbientParamUpdateCallback();
         // Fills the ambient param using arg, which is almost always a Sound3DParam (the actor) that has been filled by ArgUpdateCB
-        virtual void detail_UpdateAmbientParam(const void* arg, u32 soundId, int voiceOutCount, SoundAmbientParam* param) = 0;
-        virtual int detail_GetAmbientPriority(const void* arg, u32 soundId) = 0;
-        virtual int detail_GetRequiredVoiceOutCount(const void* arg, u32 soundId) = 0;
+        virtual void detail_UpdateAmbientParam(const void *arg, u32 soundId, int voiceOutCount, SoundAmbientParam *param) = 0;
+        virtual int detail_GetAmbientPriority(const void *arg, u32 soundId) = 0;
+        virtual int detail_GetRequiredVoiceOutCount(const void *arg, u32 soundId) = 0;
     };
 
     struct AmbientInfo {
-        AmbientParamUpdateCallback* paramUpdateCallback;  // 1c
-        AmbientArgUpdateCallback* argUpdateCallback;  // 20
-        AmbientArgAllocaterCallback* argAllocaterCallback;  // 24
-        void* arg;  // 28 the one passed in the callBacks
+        AmbientParamUpdateCallback *paramUpdateCallback;  // 1c
+        AmbientArgUpdateCallback *argUpdateCallback;  // 20
+        AmbientArgAllocaterCallback *argAllocaterCallback;  // 24
+        void *arg;  // 28 the one passed in the callBacks
         u32 argSize;  // 2c
     };
     enum PauseState {
@@ -93,15 +93,15 @@ class BasicSound {
         PAUSE_STATE_UNPAUSING
     };
     BasicSound(int priority, int ambientPriority);  // 8008e0e0, size seems to be headerSize
-    virtual const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const;  // 8008f950 vtable 80274278
+    virtual const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const;  // 8008f950 vtable 80274278
     virtual ~BasicSound();  // 0xc 8008f910
     virtual void Shutdown();  // 0x10 8008f2c0
     virtual bool IsPrepared() = 0;  // 0x14
     virtual bool IsAttachedTempSpecialHandle() = 0;  // 0x18
     virtual void DetachTempSpecialHandle() = 0;  // 0x1c
     virtual void InitParam();  // 0x20 8008e1c0
-    virtual BasicPlayer& GetBasicPlayer() = 0;  // 0x28
-    virtual const BasicPlayer& GetBasicPlayer() const = 0;  // 0x24
+    virtual BasicPlayer &GetBasicPlayer() = 0;  // 0x28
+    virtual const BasicPlayer &GetBasicPlayer() const = 0;  // 0x24
     virtual void OnUpdatePlayerPriority();  // 0x2c 8008f520
     virtual void UpdateMoveValue();  // 0x30 8008eee0
     virtual void UpdateParam();  // 0x34 8008ef20
@@ -112,14 +112,14 @@ class BasicSound {
     void FadeIn(int frames);  // 8008e7a0
     bool IsPause() const;  // 8008e8b0
     void Update();  // 8008e8d0
-    void AttachPlayerHeap(PlayerHeap* heap);  // 8008f430
-    void DetachPlayerHeap(PlayerHeap* heap);  // 8008f440
-    void AttachSoundPlayer(SoundPlayer* player);  // 8008f450
-    void DetachSoundPlayer(SoundPlayer* player);  // 8008f460
-    void AttachSoundActor(SoundActor* actor);  // 8008f470
-    void DetachSoundActor(SoundActor* actor);  // 8008f480
-    void AttachExternalSoundPlayer(ExternalSoundPlayer* externalPlayer);  // 8008f490
-    void DetachExternalSoundPlayer(ExternalSoundPlayer* externalPlayer);  // 8008f4a0
+    void AttachPlayerHeap(PlayerHeap *heap);  // 8008f430
+    void DetachPlayerHeap(PlayerHeap *heap);  // 8008f440
+    void AttachSoundPlayer(SoundPlayer *player);  // 8008f450
+    void DetachSoundPlayer(SoundPlayer *player);  // 8008f460
+    void AttachSoundActor(SoundActor *actor);  // 8008f470
+    void DetachSoundActor(SoundActor *actor);  // 8008f480
+    void AttachExternalSoundPlayer(ExternalSoundPlayer *externalPlayer);  // 8008f490
+    void DetachExternalSoundPlayer(ExternalSoundPlayer *externalPlayer);  // 8008f4a0
     int GetVoiceOutCount() const;  // 8008f4b0
     void SetPlayerPriority(int priority);  // 8008f4c0
     void SetInitialVolume(float volume);  // 8008f530
@@ -133,20 +133,20 @@ class BasicSound {
     void SetRemoteFilter(int filter);  // 8008f6a0
     void SetPanMode(u32 panMode);  // 8008f6e0
     void SetPanCurve(u32 panCurve);  // 8008f720
-    void SetAmbientInfo(const AmbientInfo& ambientArgInfo);  // 8008f760
-    int GetAmbientPriority(const AmbientInfo& ambientInfo, u32 soundId);  // 8008f830
+    void SetAmbientInfo(const AmbientInfo &ambientArgInfo);  // 8008f760
+    int GetAmbientPriority(const AmbientInfo &ambientInfo, u32 soundId);  // 8008f830
     bool IsAttachedGeneralHandle();  // 8008f870
     bool IsAttachedTempGeneralHandle();  // 8008f890
     void DetachGeneralHandle();  // 8008f8b0
     void DetachTempGeneralHandle();  // 8008f8c0
     void SetId(u32 id);  // 8008f8d0
 
-    PlayerHeap* playerHeap;  // 4
-    SoundHandle* generalHandle;  // 8
-    SoundHandle* tempGeneralHandle;  // c
-    SoundPlayer* soundPlayer;  // 10
-    SoundActor* soundActor;  // 14
-    ExternalSoundPlayer* extSoundPlayer;  // 18
+    PlayerHeap *playerHeap;  // 4
+    SoundHandle *generalHandle;  // 8
+    SoundHandle *tempGeneralHandle;  // c
+    SoundPlayer *soundPlayer;  // 10
+    SoundActor *soundActor;  // 14
+    ExternalSoundPlayer *extSoundPlayer;  // 18
     AmbientInfo ambientInfo;  // 1c
 
     // External user params

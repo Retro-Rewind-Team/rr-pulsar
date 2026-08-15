@@ -6,7 +6,7 @@ namespace Pulsar {
 namespace UI {
 u32 CtrlRaceSpeedo::Count() {
     if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPEEDOMETER) == SOM_DISABLED) return 0;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (scenario.localPlayerCount > 1) return 0;
     u32 localPlayerCount = scenario.localPlayerCount;
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
@@ -14,10 +14,10 @@ u32 CtrlRaceSpeedo::Count() {
     if (localPlayerCount == 0 && (scenario.settings.gametype & GAMETYPE_ONLINE_SPECTATOR)) localPlayerCount = 1;
     return localPlayerCount;
 }
-void CtrlRaceSpeedo::Create(Page& page, u32 index, u32 count) {
+void CtrlRaceSpeedo::Create(Page &page, u32 index, u32 count) {
     u8 speedoType = (count == 3) ? 4 : count;
     for (int i = 0; i < count; ++i) {
-        CtrlRaceSpeedo* som = new (CtrlRaceSpeedo);
+        CtrlRaceSpeedo *som = new (CtrlRaceSpeedo);
         page.AddControl(index + i, *som, 0);
         char variant[0x20];
         int pos = 1;
@@ -27,10 +27,10 @@ void CtrlRaceSpeedo::Create(Page& page, u32 index, u32 count) {
 }
 static CustomCtrlBuilder SOM(CtrlRaceSpeedo::Count, CtrlRaceSpeedo::Create);
 
-void CtrlRaceSpeedo::Load(const char* variant, u8 id) {
+void CtrlRaceSpeedo::Load(const char *variant, u8 id) {
     this->hudSlotId = id;
     ControlLoader loader(this);
-    const char* anims[] = {
+    const char *anims[] = {
         "Hundreds", "Hundreds", nullptr,
         "Tens", "Tens", nullptr,
         "Units", "Units", nullptr,
@@ -62,8 +62,8 @@ void CtrlRaceSpeedo::Init() {
 void CtrlRaceSpeedo::OnUpdate() {
     this->UpdatePausePosition();
     const u8 digits = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPEEDOMETER) - 1;
-    const Kart::Pointers& pointers = Kart::Manager::sInstance->players[this->GetPlayerId()]->pointers;
-    const Kart::Physics* physics = pointers.kartBody->kartPhysicsHolder->physics;
+    const Kart::Pointers &pointers = Kart::Manager::sInstance->players[this->GetPlayerId()]->pointers;
+    const Kart::Physics *physics = pointers.kartBody->kartPhysicsHolder->physics;
 
     Vec3 sum;
     MTX::PSVECAdd(&physics->engineSpeed, &physics->speed2, &sum);
@@ -106,9 +106,9 @@ void CtrlRaceSpeedo::OnUpdate() {
     return;
 }
 
-void CtrlRaceSpeedo::Animate(const SpeedArg* args) {
+void CtrlRaceSpeedo::Animate(const SpeedArg *args) {
     for (int i = 0; i < 7; ++i) {
-        AnimationGroup& group = this->animator.GetAnimationGroupById(i);
+        AnimationGroup &group = this->animator.GetAnimationGroupById(i);
         float frame = 0.0f;
         if (args != nullptr) frame = static_cast<float>(args->values[i]);
         group.PlayAnimationAtFrameAndDisable(0, frame);

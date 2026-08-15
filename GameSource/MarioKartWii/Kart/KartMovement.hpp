@@ -17,12 +17,12 @@ struct JumpPadProperties {
 };  // total size 0xc
 
 class Boost {
-   public:
+public:
     Boost();  // 80588d28
     void Reset();  // 80588d74
     bool Activate(u32 type, s16 frames);  // 80588db0
     void CancelAll();  // 80588e18
-    bool Update(bool* unk0);  // 80588e24
+    bool Update(bool *unk0);  // 80588e24
 
     virtual ~Boost();  // 8057811c vtable 808b5fd8
     s16 mtFrames;  // 0x4
@@ -69,15 +69,15 @@ struct TrickProperties {
 };  // total size 0x10
 
 class Trick : public Link {
-   public:
+public:
     Trick();  // 80575a44
     void UpdateNext();  // 80575b38
-    void TryStart(const Vec3& left);  // 80575d7c
+    void TryStart(const Vec3 &left);  // 80575d7c
     void Update();  // 805763e4
     void End();  // 805766b8
 
     virtual ~Trick();  // 0xC 80575aa8 vtable 808b58b0
-    virtual void Start(const Vec3& left);  // 80575ee8
+    virtual void Start(const Vec3 &left);  // 80575ee8
     virtual void StartInner(TrickCategory category);  // 8057616c
     virtual void Unknown_1();
     virtual void Unknown_2();
@@ -88,7 +88,7 @@ class Trick : public Link {
     u8 unknown_0x19;
     s16 nextTimer;
     float rotDir;
-    TrickProperties* properties;
+    TrickProperties *properties;
     float angle;
     float angleDiff;
     float angleDiffMul;
@@ -98,19 +98,19 @@ class Trick : public Link {
     bool boostRampEnabled;
     u8 unknown_0x3b;
     Quat rot;
-    Movement* kartMovement;
+    Movement *kartMovement;
 };  // total size 0x50
 
 class TrickBike : public Trick {
-   public:
+public:
     ~TrickBike() override;  // 0xC 80576afc vtable 808b5890
-    void Start(const Vec3& left) override;  // 80576758
+    void Start(const Vec3 &left) override;  // 80576758
     void StartInner(TrickCategory category) override;  // 8057689c
     void UpdateRot() override;  // 80576994
 };  // total size 0x50
 
 class Zipper : public Link {
-   public:
+public:
     Zipper();  // 80574114
     void Update();  // 80574340
     void End(int unk0);  // 805758e4
@@ -120,7 +120,7 @@ class Zipper : public Link {
 };  // total size 0x90
 
 class Movement : public Link {
-   public:
+public:
     Movement();  // 80577fc4
     void ResetMaxSpeed();  // 8057b9ac
     void ResetBulletSpped();  // 8057b99c
@@ -152,7 +152,7 @@ class Movement : public Link {
     void UpdateBoost();  // 80582694, always inlined
     void ReleaseMt(int unk0, int unk1);  // 80582f9c
     void UpdateStickyRoad();  // 80583b88
-    void SetInitialPhysicsValues(const Vec3& position, const Vec3& angles);  // 80584044
+    void SetInitialPhysicsValues(const Vec3 &position, const Vec3 &angles);  // 80584044
     void DoRespawn();  // 80584334
     void EnterCannon();  // 8058498c
     void UpdateCannon();  // 80584d58
@@ -164,12 +164,12 @@ class Movement : public Link {
     void CancelBoost();  // 805832e4
     s32 GetMTMaxCharge() const;  // 8057efe0
     s32 GetSMTMaxCharge() const;  // 8057efec
-    void SetScale(const Vec& scale);  // 80581720
+    void SetScale(const Vec &scale);  // 80581720
 
     void UpdateFromPseaVenice();  // 8058677c func responsible for the "kcl" of psea and venice nami
 
     virtual ~Movement();  // offset 0xC 80587b78 vtable 808b5f60
-    virtual void CreateTrickZipper(const Values& values);  // 0xC 8057821c
+    virtual void CreateTrickZipper(const Values &values);  // 0xC 8057821c
     virtual int SetTurnParams();  // 0x10 8057829c
     virtual void Reset(bool unk0, bool unk1);  // 0x14 805784d4
     virtual void ActivateStar();  // 0x18 80580268
@@ -283,8 +283,8 @@ class Movement : public Link {
       4 jump pad
     */
     u8 unknown_0x254[0x258 - 0x254];
-    Trick* trick;  // 0x258
-    Zipper* zipper;  // 0x25c
+    Trick *trick;  // 0x258
+    Zipper *zipper;  // 0x25c
     u8 unknown_0x260[0x288 - 0x260];
     float rawTurn;
     float unknown_0x28c;
@@ -303,25 +303,25 @@ class Movement : public Link {
 };  // Total size 0x294
 
 class MovementRemote : public Movement {
-   public:
+public:
     ~MovementRemote() override;  // 80589758 vtable 808b5d90
     bool CanHop() override;  // 0x5c 8058956c
 
 };  // Total size 0x294
 
 class MovementRealLocal : public Movement {
-   public:
+public:
     ~MovementRealLocal() override;  // 805897d8 vtable 808b5e78
     int Hop() override;  // 0x60 80589400
 };  // Total size 0x294
 
 class MovementBike : public Movement {
-   public:
+public:
     MovementBike();  // 80587b30
 
     ~MovementBike() override;  // 80589704 vtable 808b5ee8
 
-    void CreateTrickZipper(const Values& values) override;  // 0xC 80587bb8
+    void CreateTrickZipper(const Values &values) override;  // 0xC 80587bb8
     int SetTurnParams() override;  // 0x10 80587c54
     void Reset(bool unk0, bool unk1) override;  // 0x14 80587d00
     void vf_0x24() override;  // 0x24 80588950
@@ -352,18 +352,18 @@ class MovementBike : public Movement {
     u16 wheelietimer2;  // from what i know the same as wheelieTimer, but stored as a ushort
     u16 wheelieCooldown;
     u8 unknown_0x254[0x2c0 - 0x2b8];
-    void* turnParams;
+    void *turnParams;
 };  // Total size 0x2c4
 
 class MovementBikeRemote : public MovementBike {
-   public:
+public:
     ~MovementBikeRemote() override;  // 805896c4 vtable 808b5d18
     bool CanHop() override;  // 0x5c 805895cc
     void TryStartWheelie() override;  // 0x74 8058962c
 };  // Total size 0x2c4
 
 class MovementBikeRealLocal : public MovementBike {
-   public:
+public:
     ~MovementBikeRealLocal() override;  // 80589798 vtable 808b5e00
     int Hop() override;  // 0x60 80589440
     int StartWheelie() override;  // 0x6c 80589480

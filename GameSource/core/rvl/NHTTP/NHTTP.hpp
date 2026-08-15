@@ -25,7 +25,7 @@ enum ReqMethod {
 };
 struct Req {};
 struct Res {};
-BOOL AddPostDataAscii(Req* req, char* label, char* value);  // 801d9198
-int GetBodyAll(Res* res, char** value);  // 801d937c
+BOOL AddPostDataAscii(Req *req, char *label, char *value);  // 801d9198
+int GetBodyAll(Res *res, char **value);  // 801d937c
 }  // namespace NHTTP
 #endif

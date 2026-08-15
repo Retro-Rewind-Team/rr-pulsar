@@ -23,7 +23,7 @@ struct PointInfo {
 };
 
 class ENPTSettingsHolder {
-   public:
+public:
     virtual ~ENPTSettingsHolder();  // 8073b49c vtable 808cb134
     virtual bool IsCutPoint() const;  // 0xC 8073ebe4 checks if setting 1 == 1
     virtual bool IsUseOffroadCutItem() const;  // 0x10 8073ebf8
@@ -37,7 +37,7 @@ class ENPTSettingsHolder {
     virtual void vf_0x30();
     virtual bool IsDriftAllowed() const;  // 0x34 8073ecac calls IsDriftForbidden and inverts the bool
 
-    void SetStartPositionIdx(const KMP::KTPTHolder& ktpt);  // 8073eb7c
+    void SetStartPositionIdx(const KMP::KTPTHolder &ktpt);  // 8073eb7c
     void SetENPTSettings(u8 enpt);  // 8073eb8c
 
     s32 enptSetting1;
@@ -65,13 +65,13 @@ struct ENPTTransitionParams {
 };
 
 class ENPTController {
-   public:
+public:
     ENPTController();  // 8073c54c
     virtual ~ENPTController();  // 8073c5b8 vtable 808cb1b0
     virtual void Init(bool r4, float startOffset);  // 0xc 8073c644
     virtual void Update();  // 0x10 8073c9b8
 
-    void CalcNext(ENPTTransitionParams& params);  // 8073cd3c
+    void CalcNext(ENPTTransitionParams &params);  // 8073cd3c
 
     Vec3 GetPrevPrevPrevENPTPosition() const;  // 8073c9bc
     Vec3 GetPrevPrevENPTPosition() const;  // 8073ca10
@@ -85,7 +85,7 @@ class ENPTController {
     void SetStartingENPT();  // 8073c5f8
     void CalcNextPosition(float someAngle);  // 8073d98c
 
-    EnemyRouteHolder* holder;  // 0x4
+    EnemyRouteHolder *holder;  // 0x4
     u8 startingENPT;
     u8 nextENPT;  // 0x9
     u8 curENPT;  // 0xA
@@ -104,21 +104,21 @@ class ENPTController {
 };  // 0x34
 
 class EnemyRouteController {
-   public:
+public:
     EnemyRouteController();  // 8073b0f8
     virtual ~EnemyRouteController();  // 8073b49c vtable 808cb01c
-    virtual void Init(const PointInfo& info);  // 0xc 8073b5dc
-    virtual void Update(const KartAIController& controller);  // 0x10 8073b690
+    virtual void Init(const PointInfo &info);  // 0xc 8073b5dc
+    virtual void Update(const KartAIController &controller);  // 0x10 8073b690
 
     void SetStartPositionIdx(u8 playerId);  // 8073b830
-    bool IsOutCurENPTBounds(const Vec3& playerPosition, float distToNext);  // 8073bd50
-    void AdvanceToNextENPT(ENPTTransitionParams& params);  // 8073c110
+    bool IsOutCurENPTBounds(const Vec3 &playerPosition, float distToNext);  // 8073bd50
+    void AdvanceToNextENPT(ENPTTransitionParams &params);  // 8073c110
 
     u8 unknown_0x4[4];
-    ENPTSettingsHolder* startPosIdx;  // 0x8 this one is used for start position idx in battle
-    ENPTSettingsHolder* enptSettingsHolder;  // 0xC
+    ENPTSettingsHolder *startPosIdx;  // 0x8 this one is used for start position idx in battle
+    ENPTSettingsHolder *enptSettingsHolder;  // 0xC
     u8 unknwon_0x10[4];
-    ENPTController* enptController;  // 0x14
+    ENPTController *enptController;  // 0x14
     u32 difficulty;  // 0x18
     u8 unknown_0x1c[0x30 - 0x1c];
 
@@ -129,7 +129,7 @@ class EnemyRouteController {
 };  // 0x40
 
 class ParamActionCalculator {
-    ParamActionCalculator(Inputs& inputs);  // 8073edf0
+    ParamActionCalculator(Inputs &inputs);  // 8073edf0
     virtual ~ParamActionCalculator();  // 8073ee14 vtable 808cb240
     virtual void Init();  // 0xC 8073ee54
     virtual void CalcStartBoost();  // 0x10 8073ee8c
@@ -142,14 +142,14 @@ class ParamActionCalculator {
     virtual bool CalcGotParamAction6();  // 0x2c 8073f218
     virtual bool CalcGotParamAction7();  // 0x30 8073f2a0
 
-    Inputs& inputs;
+    Inputs &inputs;
     s32 startBoost;
     u8 unknown_0xC[0x18 - 0xC];
 };
 
 class CPUDriving : public Base {
-   public:
-    CPUDriving(Inputs& inputs);  // 80729d9c
+public:
+    CPUDriving(Inputs &inputs);  // 80729d9c
     ~CPUDriving() override;  // offset 0x34 80729f18 vtable 808c9cfc
     virtual void Init();  // 0x18 8072a0e8
     virtual void Update() = 0;  // 0x1c
@@ -163,17 +163,17 @@ class CPUDriving : public Base {
     virtual void vf_0x38();
     virtual void vf_0x3c();
     virtual void vf_0x40();
-    virtual ParamActionCalculator* GetCalculator() const;  // 0x44 80728214
+    virtual ParamActionCalculator *GetCalculator() const;  // 0x44 80728214
     virtual void vf_0x48();
     virtual void vf_0x4c();
     virtual void vf_0x50();
     virtual void vf_0x54();
     virtual bool IsBattle() const;  // 0x58 8072a88c
 
-    Inputs& inputs;  // 0x38
-    EnemyRouteController* enemyRouteController;  // 0x3c
+    Inputs &inputs;  // 0x38
+    EnemyRouteController *enemyRouteController;  // 0x3c
     u8 unknown_0x40[0x44 - 0x40];
-    ParamActionCalculator* actionCalculator;
+    ParamActionCalculator *actionCalculator;
     u8 unknown_0x48[0x60 - 0x48];
 
 };  // 0x60
@@ -187,14 +187,14 @@ typedef Actions<CPUDrivingRace> CPUDrivingAction;  // 808ca608
 // AI::Actions<CPUDrivingRace> void OnEnd() override; //0x14 80730AF8
 
 class CPUDrivingRaceSub8c {
-   public:
-    CPUDrivingRaceSub8c(Inputs& inputs);  // 8073f37c
+public:
+    CPUDrivingRaceSub8c(Inputs &inputs);  // 8073f37c
     virtual ~CPUDrivingRaceSub8c();  // 8073f3c0 vtable 808cb294
     void Init();  // 8073f400
     void Update();  // 8073f43c
-    Inputs& inputs;  // 0x4
+    Inputs &inputs;  // 0x4
     u8 unknown_0x8[2];
-    void* aiPlayer148;  // 0xC
+    void *aiPlayer148;  // 0xC
     u32 position;
     u32 unknown_0x18;
     float unknown_0x1c;
@@ -203,16 +203,16 @@ class CPUDrivingRaceSub8c {
 };  // 0x28
 
 class CPUDrivingRace : public CPUDriving {
-    CPUDrivingRace(Inputs& inputs);  // 80730198
+    CPUDrivingRace(Inputs &inputs);  // 80730198
     ~CPUDrivingRace() override;  // 80730364 vtable 808ca598
     void Init() override;  // 0x18 80730420
     void Update() override;  // 0x1c 8073078c
     void InitEnemyRoute() override;  // 0x24 80730510
 
-    void FillPointInfo(PointInfo& info);  // 807306ac
+    void FillPointInfo(PointInfo &info);  // 807306ac
 
     CPUDrivingAction action;  // 0x60
-    CPUDrivingRaceSub8c* _0x8c;
+    CPUDrivingRaceSub8c *_0x8c;
     u8 unknown_0x90[0x8];
 };
 

@@ -9,7 +9,7 @@ namespace Pulsar {
 namespace UI {
 
 class ExpGPVSLeaderboardTotal : public Pages::GPVSLeaderboardTotal {
-   public:
+public:
     void OnUpdate() override;
     void BeforeEntranceAnimations() override;
 };

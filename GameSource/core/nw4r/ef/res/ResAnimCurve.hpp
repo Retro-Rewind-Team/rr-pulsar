@@ -8,8 +8,8 @@ namespace nw4r {
 namespace ef {
 
 class ResAnimCurve {
-   public:
-    u8* animCurveData;
+public:
+    u8 *animCurveData;
     void SetStop(bool b);  // 8004bcb0 stop animation evaluation
 };
 }  // namespace ef

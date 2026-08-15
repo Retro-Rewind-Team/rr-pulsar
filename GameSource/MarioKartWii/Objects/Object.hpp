@@ -24,11 +24,11 @@ enum ObjectType {
 class Object;
 
 class Object {
-   public:
-    explicit Object(const KMP::Holder<GOBJ>& gobj);  // 8081f828
-    Object(u16 objId, const Vec3& position, const Vec3& rotation, const Vec3& scale);  // 8081f9bc
-    Object(const char* name, const Vec3& position, const Vec3& rotation, const Vec3& scale, u32 r8);  // 8081fb04 used for sub objects
-    static Random& GetRaceinfoRandom();  // 80782f74
+public:
+    explicit Object(const KMP::Holder<GOBJ> &gobj);  // 8081f828
+    Object(u16 objId, const Vec3 &position, const Vec3 &rotation, const Vec3 &scale);  // 8081f9bc
+    Object(const char *name, const Vec3 &position, const Vec3 &rotation, const Vec3 &scale, u32 r8);  // 8081fb04 used for sub objects
+    static Random &GetRaceinfoRandom();  // 80782f74
 
     virtual ~Object();  // 8067e3c4 vtable 808d6ecc
     virtual void OnStart();  // 0xC 8081fc68
@@ -38,16 +38,16 @@ class Object {
     virtual void UpdateModel();  // 0x1c 808217b8
     virtual void Init() = 0;  // 0x20
     virtual u16 GetID() const;  // 0x24 80572574
-    virtual const char* GetName() const;  // 0x28 80680784
+    virtual const char *GetName() const;  // 0x28 80680784
     virtual u32 GetPropertiesBitfield();  // 0x2c 806bf434 1 : isUpdating
-    virtual ClipInfo* GetClipInfo() const;  // 0x30 8067da54
-    virtual const char* GetBRRESName() const;  // 0x34 80680730
-    virtual const char* GetSubFileName() const;  // 0x38 806806dc completely identical to the one above, but for other objects can be MDL, KCL, BREFF etc...
-    virtual void* vf_0x3c();  // 0x3c 806806d4
-    virtual const char* GetShadowResName() const;  // 0x40 806806cc
+    virtual ClipInfo *GetClipInfo() const;  // 0x30 8067da54
+    virtual const char *GetBRRESName() const;  // 0x34 80680730
+    virtual const char *GetSubFileName() const;  // 0x38 806806dc completely identical to the one above, but for other objects can be MDL, KCL, BREFF etc...
+    virtual void *vf_0x3c();  // 0x3c 806806d4
+    virtual const char *GetShadowResName() const;  // 0x40 806806cc
     virtual void LoadModels();  // 0x44 8081fcec calls loadgraphics
-    virtual void LoadModels(Light* light);  // 0x48 8081fd00 same
-    virtual void LoadGraphics(Light* light);  // 0x4c 8081fd10
+    virtual void LoadModels(Light *light);  // 0x48 8081fd00 same
+    virtual void LoadGraphics(Light *light);  // 0x4c 8081fd10
     virtual void LoadShadow();  // 0x50 808205dc
     virtual void LoadSound();  // 0x54 80820360
     virtual void LoadClipInfo();  // 0x58 80821070
@@ -66,8 +66,8 @@ class Object {
     virtual void vf_0x8c();  // 0x8c 80821dd8
     virtual void DisableCollision();  // 0x90 80821dec for example when you destroy a create
     virtual void EnableCollision();  // 0x94 80821e00
-    virtual const Entity& GetEntity() const;  // 0x98 80680618
-    virtual Vec3& GetPosition();  // 0x9c 80681598
+    virtual const Entity &GetEntity() const;  // 0x98 80680618
+    virtual Vec3 &GetPosition();  // 0x9c 80681598
     virtual float GetCollisionDiameter() const;  // 0xa0 8080bdc0
     virtual bool IsLodDisbled();  // 0xa4 80680610
     virtual bool IsMat1Shp1();  // 0xa8 80680608 only has a single material so can use the simpler/smaller g3d class
@@ -75,28 +75,28 @@ class Object {
     virtual u32 GetScnObjDrawOptionsIdx() const = 0;  // 0xb0
 
     void LoadAnimationByType(u32 idx, AnmType type);  // 80820a90
-    void LinkAnimations(char** brasd, char** idk, u32 brsadCount, u32 idkCount);  // 80820eb8
+    void LinkAnimations(char **brasd, char **idk, u32 brsadCount, u32 idkCount);  // 80820eb8
     void UpdateMatrix();  // 80821640
-    Audio::Handle* StartSoundLimited(u32 soundId, float volume);  // 808204fc
-    Audio::Handle* HoldSoundLimited(u32 soundId);  // 8082051c
-    Audio::Handle* StartNewSoundLimited(u32 soundId, float volume);  // no overlap, if sound already started, does nothing
+    Audio::Handle *StartSoundLimited(u32 soundId, float volume);  // 808204fc
+    Audio::Handle *HoldSoundLimited(u32 soundId);  // 8082051c
+    Audio::Handle *StartNewSoundLimited(u32 soundId, float volume);  // no overlap, if sound already started, does nothing
     bool StartSound(u32 soundId);  // 8082055c
     bool HoldSound(u32 soundId);  // 8082057c
     void StopAllSound(int fadeOutFrames);  // 8052059c
     void StopSound(int fadeOutFrames);  // 808205bc
     void LinkSound(u16 objId);  // 808204b8 if objId == 0, uses own id
-    void CalcYAxisTransMtx(const Vec3& dir);  // 808218b0 calculates the trans mtx using the position as the translation, and a YAxisRotMtx based on dir
+    void CalcYAxisTransMtx(const Vec3 &dir);  // 808218b0 calculates the trans mtx using the position as the translation, and a YAxisRotMtx based on dir
 
     ObjectType type;
-    ModelDirector* mdlDirector;  // 0x8
-    ModelDirector* mdlLodDirector;  // 0xc
-    ShadowModelDirector* shadowDirector;  // 0x10
+    ModelDirector *mdlDirector;  // 0x8
+    ModelDirector *mdlLodDirector;  // 0xc
+    ShadowModelDirector *shadowDirector;  // 0x10
     nw4r::g3d::ResFile rawBrres;  // 0x14
-    Audio::LinkedRaceActor* objectActor;  // 0x18 see object actor class
-    ClipInfo* clipInfo;  // 0x1c
-    RouteController* routeController;  // 0x20
-    Entity* entity;  // 0x24
-    const char* shadowResName;  // 0x28
+    Audio::LinkedRaceActor *objectActor;  // 0x18 see object actor class
+    ClipInfo *clipInfo;  // 0x1c
+    RouteController *routeController;  // 0x20
+    Entity *entity;  // 0x24
+    const char *shadowResName;  // 0x28
     u16 flags;  // 0x2c bitfield
     /*
     1: update mtx pos
@@ -113,14 +113,14 @@ class Object {
     Mtx34 transformationMtx;  // 0x58
     u16 objId;  // 0x88
     u8 padding_0x8a[2];
-    const char* name;  // 0x8c unsure, read by vf_0x3c
+    const char *name;  // 0x8c unsure, read by vf_0x3c
     u8 lodFlags;  // 0x90 1 = has lod
     u8 padding2[3];
-    const char* lodResName;  // 0x94
+    const char *lodResName;  // 0x94
     u8 unknown_0x98[3];
     bool isVisible;  // 0x9b
     u8 unknown_0x9c[4];
-    const KMP::Holder<GOBJ>& gobj;  // 0xa0
+    const KMP::Holder<GOBJ> &gobj;  // 0xa0
     u32 holderIdx;  // 0xa4
     bool unknown_0xA8;
     u8 padding3[3];
@@ -128,22 +128,22 @@ class Object {
 // size_assert(Object, 0xaC);
 
 class ObjectEffect : public EGG::Effect {
-   public:
+public:
     ~ObjectEffect() override;  // 806805a8 vtable 808c1010
 };
 
 template <class T>
 class SubObjectArray {  // for example w_itembox
-   public:
+public:
     static_assert(is_base_of<Object, T>::value, "Not a child of object");
     virtual ~SubObjectArray();
     virtual void CreateArray(u32 boxCount, u32 unused);
-    virtual void CreateArray(u32 boxCount, EGG::Heap* heap);
+    virtual void CreateArray(u32 boxCount, EGG::Heap *heap);
     virtual void vf_0x14(u32 r4);
     virtual void vf_0x18();
 
     u32 arrayCount;  // 0x4
-    T** subObjects;  // 0x8
+    T **subObjects;  // 0x8
 };  // 0xc
 
 #endif

@@ -46,7 +46,7 @@ enum ErrorType {  // how to process the error
 
 extern int lastErrorCode;  // 803862AC
 extern Error lastError;  // 803862a8
-Error GetLastErrorEx(u32* errorCode, ErrorType* errorType);  // 800ccb64
+Error GetLastErrorEx(u32 *errorCode, ErrorType *errorType);  // 800ccb64
 
 }  // namespace DWC
 

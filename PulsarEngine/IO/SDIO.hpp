@@ -32,35 +32,35 @@ static_assert(sizeof(dir_struct) == 836, "dir_struct size");
 static_assert(sizeof(stat) == 88, "stat size");
 
 class SDIO : public IO {
-   public:
-    SDIO(IOType type, EGG::Heap* heap, EGG::TaskThread* taskThread)
+public:
+    SDIO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread)
         : IO(type, heap, taskThread), isFolderOpen(false) {
         offset_assert(stat, st_mode, 8);
         offset_assert(file_struct, filesize, 0);
         fileNames = nullptr;
     }
 
-    bool OpenFile(const char* path, u32 mode) override;
-    bool CreateAndOpen(const char* path, u32 mode) override;
-    bool RenameFile(const char* oldPath, const char* newPath) const override;
+    bool OpenFile(const char *path, u32 mode) override;
+    bool CreateAndOpen(const char *path, u32 mode) override;
+    bool RenameFile(const char *oldPath, const char *newPath) const override;
 
-    bool FolderExists(const char* path) const override;
-    bool CreateFolder(const char* path) override;
-    void ReadFolder(const char* path) override;
+    bool FolderExists(const char *path) const override;
+    bool CreateFolder(const char *path) override;
+    void ReadFolder(const char *path) override;
     void CloseFolder() override;
-    bool OpenFolderStream(const char* path);
-    bool ReadFolderEntry(char* outFilename, u32 outFilenameSize, bool& outIsDirectory);
+    bool OpenFolderStream(const char *path);
+    bool ReadFolderEntry(char *outFilename, u32 outFilenameSize, bool &outIsDirectory);
     void CloseFolderStream();
 
     s32 GetFileSize() override;
 
-    s32 Read(u32 size, void* bufferIn) override;
+    s32 Read(u32 size, void *bufferIn) override;
     void Seek(u32 offset) override;
-    s32 Write(u32 length, const void* buffer) override;
-    s32 Overwrite(u32 length, const void* buffer) override;
+    s32 Write(u32 length, const void *buffer) override;
+    s32 Overwrite(u32 length, const void *buffer) override;
     void Close() override;
 
-   private:
+private:
     file_struct fileData;
     dir_struct dirData;
     bool isFolderOpen;

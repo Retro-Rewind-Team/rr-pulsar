@@ -51,7 +51,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
         TriggerState_Count  // Invalid
     };
 
-   public:
+public:
     CtrlRaceInputViewer() {
         m_dpadState = DpadState_Off;
         m_dpadTimer = 0;
@@ -66,21 +66,21 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
     void OnUpdate() override;
 
     static u32 Count();
-    static void Create(Page& page, u32 index, u32 count);
+    static void Create(Page &page, u32 index, u32 count);
 
-   private:
-    void Load(const char* variant, u8 id);
+private:
+    void Load(const char *variant, u8 id);
 
     void setDpad(DpadState state);
     void setAccel(AccelState state);
     void setTrigger(Trigger trigger, TriggerState state);
     void setStick(Vec2 state);
 
-   private:
-    nw4r::lyt::Pane* m_dpadPanes[(int)DpadState_Count];
-    nw4r::lyt::Pane* m_accelPanes[(int)AccelState_Count];
-    nw4r::lyt::Pane* m_triggerPanes[(int)Trigger_Count][(int)TriggerState_Count];
-    nw4r::lyt::Pane* m_stickPane;
+private:
+    nw4r::lyt::Pane *m_dpadPanes[(int)DpadState_Count];
+    nw4r::lyt::Pane *m_accelPanes[(int)AccelState_Count];
+    nw4r::lyt::Pane *m_triggerPanes[(int)Trigger_Count][(int)TriggerState_Count];
+    nw4r::lyt::Pane *m_stickPane;
     nw4r::math::VEC3 m_stickOrigin;
 
     DpadState m_dpadState;
@@ -93,8 +93,8 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
 
     static const s8 DPAD_HOLD_FOR_N_FRAMES;
 
-   private:
-    static const char* DpadStateToName(DpadState state) {
+private:
+    static const char *DpadStateToName(DpadState state) {
         switch (state) {
             case DpadState_Up:
                 return "Up";
@@ -109,7 +109,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
         }
     }
 
-    static const char* AccelStateToName(AccelState state) {
+    static const char *AccelStateToName(AccelState state) {
         switch (state) {
             case AccelState_Pressed:
                 return "Pressed";
@@ -118,7 +118,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
         }
     }
 
-    static const char* TriggerToName(Trigger trigger) {
+    static const char *TriggerToName(Trigger trigger) {
         switch (trigger) {
             case Trigger_L:
                 return "L";
@@ -131,7 +131,7 @@ class CtrlRaceInputViewer : public CtrlRaceBase {
         }
     }
 
-    static const char* TriggerStateToName(TriggerState state) {
+    static const char *TriggerStateToName(TriggerState state) {
         switch (state) {
             case TriggerState_Pressed:
                 return "Pressed";

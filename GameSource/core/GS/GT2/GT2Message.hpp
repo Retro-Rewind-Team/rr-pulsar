@@ -6,7 +6,7 @@
 
 namespace GT2 {  // this is C, but don't care
 
-Bool iHandleUnreliableMessage(Connection* connection, iMessageType type, Byte* message, int recvFromRetVal);
+Bool iHandleUnreliableMessage(Connection *connection, iMessageType type, Byte *message, int recvFromRetVal);
 
 }  // namespace GT2
 

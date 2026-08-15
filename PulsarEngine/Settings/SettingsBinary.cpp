@@ -17,13 +17,13 @@ Binary::Binary(u32 trackCount) {
     header.fileSize = header.offsets[GPSection::index] + sizeof(GPSection) + sizeof(GPCupStatus) * (cupCount - 1);
     header.sectionCount = sectionCount;
 
-    SettingsHolder& settings = this->GetSection<SettingsHolder>();
+    SettingsHolder &settings = this->GetSection<SettingsHolder>();
     settings.header.magic = SettingsHolder::magic;
     settings.header.version = SettingsHolder::version;
     settings.header.size = sizeof(SettingsHolder);
     for (u32 i = 0; i < SETTING_COUNT; ++i) settings.values[i] = 0;
 
-    MiscParams& params = this->GetSection<MiscParams>();
+    MiscParams &params = this->GetSection<MiscParams>();
     params.header.magic = MiscParams::miscMagic;
     params.header.version = MiscParams::version;
     params.header.size = sizeof(MiscParams);
@@ -31,12 +31,12 @@ Binary::Binary(u32 trackCount) {
     params.lastSelectedCup = PULSARCUPID_NONE;
     params.customItemsBitfield = 0x7FFFF;
 
-    TrophiesHolder& trophies = this->GetSection<TrophiesHolder>();
+    TrophiesHolder &trophies = this->GetSection<TrophiesHolder>();
     trophies.header.magic = TrophiesHolder::tropMagic;
     trophies.header.version = TrophiesHolder::version;
     trophies.header.size = sizeof(TrophiesHolder) + sizeof(TrackTrophy) * (trackCount - 1);
 
-    GPSection& gp = this->GetSection<GPSection>();
+    GPSection &gp = this->GetSection<GPSection>();
     gp.header.magic = GPSection::gpMagic;
     gp.header.version = GPSection::version;
 

@@ -7,16 +7,16 @@
 
 //_sinit_ at 80644694
 class VoteControl : public LayoutUIControl {
-   public:
+public:
     VoteControl();  // 80642aac
     ~VoteControl() override;  // 80642ae8 808bf67c
     void InitSelf() override;  // 80642bec
     void OnUpdate() override;  // 80642ca0
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 80644658
-    const char* GetClassName() const override;  // 80642aa0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 80644658
+    const char *GetClassName() const override;  // 80642aa0
 
     void Load(u32 index);  // 80642b40
-    void Fill(bool isCourseIdInvalid, u32 bmgId, const MiiGroup& miiGroup, u32 playerId, bool isLocalPlayer, u32 team);  // 80642ca4
+    void Fill(bool isCourseIdInvalid, u32 bmgId, const MiiGroup &miiGroup, u32 playerId, bool isLocalPlayer, u32 team);  // 80642ca4
     void AnimateDeselect();  // 80642e68 inlined removes yellow border
     void AnimateSelect();  // 80642e14 inlined, yellow border + text + sound
     void AnimateChose(u32 bmgId);  // 80642ea0 inlined bmg id needed if vote is random
@@ -28,7 +28,7 @@ class VoteControl : public LayoutUIControl {
 
 namespace Pages {
 class Vote : public Page {  // ID 0x92
-   public:
+public:
     static const PageId id = PAGE_VOTE;
     Vote();  // 80642f90
     ~Vote() override;  // 806430bc vtable 808bf60c
@@ -38,12 +38,12 @@ class Vote : public Page {  // ID 0x92
     void BeforeEntranceAnimations() override;  // 0x38 806433cc
     void BeforeExitAnimations() override;  // 0x40 80643e98
     void BeforeControlUpdate() override;  // 0x48 806437e8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8064464c
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 8064464c
     void SetVotedCourseId(CourseId course);  // 80643f48
     bool FillVoteControl(u32 playerId);  // 80643f8c
     void FillVotesCounter();  // 80644430
-    void OnMessageBoxClick(MessageBox& messageBox);
-    PtmfHolder_1A<Vote, void, MessageBox*> onMessageBoxClick;  // 806445a8 disconnected message box
+    void OnMessageBoxClick(MessageBox &messageBox);
+    PtmfHolder_1A<Vote, void, MessageBox *> onMessageBoxClick;  // 806445a8 disconnected message box
     ManipulatorManager manipulatorManager;  // 0x48
     CourseId votedCourse;  // 0x68
     CtrlMenuPageTitleText titleText;  // 0x6c

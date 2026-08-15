@@ -9,7 +9,7 @@ using namespace nw4r;
 namespace EGG {
 
 class PostEffectBloom : public PostEffect {
-   public:
+public:
     struct BloomData {
         u32 unknown_0x0[2];
         ut::Color color;  // 0x8

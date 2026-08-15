@@ -23,8 +23,8 @@ static u8 GetNameRatingIcon(u8 wheelType, u8 starRating) {
 }
 kmBranch(0x805e3d38, GetNameRatingIcon);
 
-static void SetRaceNameBadgeMessage(LayoutUIControl* control, const char* paneName, u32 bmgId,
-                                    const Text::Info* info) {
+static void SetRaceNameBadgeMessage(LayoutUIControl *control, const char *paneName, u32 bmgId,
+                                    const Text::Info *info) {
     if (control == nullptr) return;
 
     static const u32 onlineRankBmgBase = 0x25ee;
@@ -43,10 +43,10 @@ static void SetRaceNameBadgeMessage(LayoutUIControl* control, const char* paneNa
 kmCall(0x807f05dc, SetRaceNameBadgeMessage);
 kmCall(0x807f6248, SetRaceNameBadgeMessage);
 
-static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool isLocal, bool isBR, bool* hasDecimal) {
+static float GetRatingForDisplay(Pages::SELECTStageMgr *mgr, u32 playerId, bool isLocal, bool isBR, bool *hasDecimal) {
     *hasDecimal = false;
     if (isLocal) {
-        RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+        RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
         if (mgr->infos[playerId].hudSlotid == 0 && rksys && rksys->curLicenseId >= 0) {
             *hasDecimal = true;
             return isBR ? GetUserBR(rksys->curLicenseId) : GetUserVR(rksys->curLicenseId);
@@ -63,7 +63,7 @@ static float GetRatingForDisplay(Pages::SELECTStageMgr* mgr, u32 playerId, bool 
     return (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
 }
 
-static void FormatRatingText(float rating, bool hasDecimal, wchar_t* buf, Text::Info* info, u32* valMsg, u32* unitMsg, u32 unitId) {
+static void FormatRatingText(float rating, bool hasDecimal, wchar_t *buf, Text::Info *info, u32 *valMsg, u32 *unitMsg, u32 unitId) {
     if ((u16)rating == 0xffff) {
         *valMsg = 0x25e7;
         return;
@@ -79,36 +79,36 @@ static void FormatRatingText(float rating, bool hasDecimal, wchar_t* buf, Text::
     *unitMsg = unitId;
 }
 
-static void FillVRControl(Pages::VR* page, u32 idx, u32 playerId, u32 team, u8 type, bool isLocal) {
+static void FillVRControl(Pages::VR *page, u32 idx, u32 playerId, u32 team, u8 type, bool isLocal) {
     if (!page || idx >= 12) return;
-    
-    LayoutUIControl& ctrl = page->vrControls[idx];
+
+    LayoutUIControl &ctrl = page->vrControls[idx];
     ctrl.ResetMsg();
     ctrl.isHidden = false;
-    
-    Pages::SELECTStageMgr* mgr = nullptr;
+
+    Pages::SELECTStageMgr *mgr = nullptr;
     if (SectionMgr::sInstance && SectionMgr::sInstance->curSection) {
         mgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
     }
-    
+
     if (mgr && playerId < mgr->playerCount) {
         ctrl.SetMiiPane("chara_icon", mgr->miiGroup, playerId, 2);
         ctrl.SetMiiPane("chara_icon_sha", mgr->miiGroup, playerId, 2);
-        
+
         Text::Info nameInfo;
         nameInfo.miis[0] = mgr->miiGroup.GetMii((u8)playerId);
         ctrl.SetTextBoxMessage("mii_name", 0x251d, &nameInfo);
-        
+
         wchar_t buf[64];
         Text::Info ptsInfo;
         u32 valMsg = 0, unitMsg = 0;
-        
+
         if (type == 1 || type == 2) {
             bool hasDecimal;
             float rating = GetRatingForDisplay(mgr, playerId, isLocal, type == 2, &hasDecimal);
             FormatRatingText(rating, hasDecimal, buf, &ptsInfo, &valMsg, &unitMsg, (type == 1) ? 0x25e4 : 0x25e5);
         }
-        
+
         if (valMsg) {
             ctrl.SetTextBoxMessage("point_2", valMsg, &ptsInfo);
             ctrl.SetTextBoxMessage("point_sha_2", valMsg, &ptsInfo);
@@ -122,21 +122,21 @@ static void FillVRControl(Pages::VR* page, u32 idx, u32 playerId, u32 team, u8 t
         ctrl.SetPicturePane("chara_icon", "no_linkmii");
         ctrl.SetPicturePane("chara_icon_sha", "no_linkmii");
     }
-    
+
     ctrl.SetPaneVisibility("red_null", team == 0);
     ctrl.SetPaneVisibility("blue_null", team == 1);
-    
-    AnimationGroup& hl = ctrl.animator.GetAnimationGroupById(1);
-    AnimationGroup& sh = ctrl.animator.GetAnimationGroupById(2);
+
+    AnimationGroup &hl = ctrl.animator.GetAnimationGroupById(1);
+    AnimationGroup &sh = ctrl.animator.GetAnimationGroupById(2);
     u32 frame = isLocal ? 0 : 1;
     hl.PlayAnimationAtFrame(frame, 0.0f);
     sh.PlayAnimationAtFrame(frame, 0.0f);
 }
 kmBranch(0x8064ab08, FillVRControl);
 
-static void FillWFCRecordsControl(Page* /*page*/, int row, LayoutUIControl* control) {
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
-    RKSYS::LicenseMgr* license = nullptr;
+static void FillWFCRecordsControl(Page * /*page*/, int row, LayoutUIControl *control) {
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+    RKSYS::LicenseMgr *license = nullptr;
     if (rksys && rksys->curLicenseId >= 0) {
         license = &rksys->licenses[rksys->curLicenseId];
     }

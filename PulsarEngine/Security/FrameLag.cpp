@@ -9,7 +9,7 @@ namespace Security {
 
 extern "C" u32 current_time();
 
-void getRTCTimeInMs(u32& out) {
+void getRTCTimeInMs(u32 &out) {
     u32 currentTimeStamp;
     bool isDolphin = Dolphin::IsEmulator();
     if (isDolphin) {
@@ -25,10 +25,10 @@ void getRTCTimeInMs(u32& out) {
 
 static u32 raceStartTime = 0;
 
-void EveryFrame(ElineMgr* _this) {
+void EveryFrame(ElineMgr *_this) {
     _this->Update();
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (!controller || controller->roomType == RKNet::ROOMTYPE_NONE) {
         return;
     }
@@ -50,7 +50,7 @@ void EveryFrame(ElineMgr* _this) {
     }
 }
 
-void InitNewRace(RacedataScenario* scenario) {
+void InitNewRace(RacedataScenario *scenario) {
     scenario->UpdateFromPrevRace();
     raceStartTime = 0;
     OS::Report("New race started\n");

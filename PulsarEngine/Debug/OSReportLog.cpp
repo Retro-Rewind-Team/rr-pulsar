@@ -11,7 +11,7 @@
 namespace Pulsar {
 namespace Debug {
 
-const char* OS_REPORT_LOG_PATH = "/RetroRewind6/OSReport.txt";
+const char *OS_REPORT_LOG_PATH = "/RetroRewind6/OSReport.txt";
 const u32 LOG_BUFFER_SIZE = 0x4000;
 const u32 LOG_FLUSH_CHUNK_SIZE = 0x400;
 
@@ -25,7 +25,7 @@ u32 PendingLogBytes() {
     return LOG_BUFFER_SIZE - sLogReadPos + sLogWritePos;
 }
 
-void QueueOSReportLog(const char* text, u32 length) {
+void QueueOSReportLog(const char *text, u32 length) {
     if (text == nullptr || length == 0) return;
 
     for (u32 i = 0; i < length; ++i) {
@@ -42,7 +42,7 @@ void FlushOSReportLog() {
     sWritingOSReportLog = true;
 
     SDIO sd(IOType_SD, nullptr, nullptr);
-    IO* logIo = &sd;
+    IO *logIo = &sd;
     if (IO::sInstance != nullptr && IO::sInstance->type == IOType_DOLPHIN) {
         logIo = IO::sInstance;
     }
@@ -77,7 +77,7 @@ void FlushOSReportLog() {
     sWritingOSReportLog = false;
 }
 
-int OSReportLogHook(const char* format, ...) {
+int OSReportLogHook(const char *format, ...) {
     va_list args;
     va_start(args, format);
     const int printed = vprintf(format, args);

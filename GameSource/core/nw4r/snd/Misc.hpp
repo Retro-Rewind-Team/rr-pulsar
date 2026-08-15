@@ -48,7 +48,7 @@ struct AdpcmLoopParam {
 
 struct WaveInfo {
     struct ChannelParam {
-        const void* dataAddr;
+        const void *dataAddr;
         AdpcmParam adpcmParam;
         AdpcmLoopParam adpcmLoopParam;
     };

@@ -7,7 +7,7 @@ namespace nw4r {
 namespace snd {
 
 class SoundSystem {
-   public:
+public:
     struct SoundSystemParam {
         s32 soundThreadPriority;
         u32 soundThreadStackSize;

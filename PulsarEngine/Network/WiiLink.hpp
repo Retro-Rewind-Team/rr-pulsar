@@ -161,8 +161,8 @@ typedef struct {
 
     union {
         u32 arg0;
-        const void* arg0p;
-        const u32* arg0p32;
+        const void *arg0p;
+        const u32 *arg0p32;
     };
 
     u32 arg1;

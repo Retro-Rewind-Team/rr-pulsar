@@ -15,8 +15,8 @@ struct SHA256Context {
     u8 buf[SHA256_DIGEST_SIZE]; /* Used to store the final digest. */
 };
 
-void SHA256Init(SHA256Context* ctx);
-void SHA256Update(SHA256Context* ctx, const void* data, u32 len);
-u8* SHA256Final(SHA256Context* ctx);
+void SHA256Init(SHA256Context *ctx);
+void SHA256Update(SHA256Context *ctx, const void *data, u32 len);
+u8 *SHA256Final(SHA256Context *ctx);
 
 #endif

@@ -9,8 +9,8 @@ namespace Pulsar {
 namespace Race {
 
 // Mega TC
-void MegaTC(Kart::Movement& movement, int frames, int unk0, int unk1) {
-    const System* system = System::sInstance;
+void MegaTC(Kart::Movement &movement, int frames, int unk0, int unk1) {
+    const System *system = System::sInstance;
     bool isMegaTC = true;
     if (system->IsContext(PULSAR_THUNDERCLOUD)) isMegaTC = false;
     if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) isMegaTC = true;
@@ -21,9 +21,9 @@ void MegaTC(Kart::Movement& movement, int frames, int unk0, int unk1) {
 }
 kmCall(0x80580630, MegaTC);
 
-void LoadCorrectTCBRRES(Item::ObjKumo& objKumo, const char* mdlName, const char* shadowSrc, u8 whichShadowListToUse,
-                        Item::Obj::AnmParam* anmParam) {
-    const System* system = System::sInstance;
+void LoadCorrectTCBRRES(Item::ObjKumo &objKumo, const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse,
+                        Item::Obj::AnmParam *anmParam) {
+    const System *system = System::sInstance;
     bool isMegaTC = true;
     if (system->IsContext(PULSAR_THUNDERCLOUD)) isMegaTC = false;
     if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) isMegaTC = true;

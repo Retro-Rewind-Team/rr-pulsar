@@ -8,14 +8,14 @@
 class FriendMatchingPlayer;
 namespace Pages {
 class Globe : public Page {  // ID 0x95
-   public:
+public:
     static const PageId id = PAGE_GLOBE;
     class MessageWindow : public LayoutUIControl {
         // no ctor
         ~MessageWindow() override;  // 805e42c0 vtable 808b9414
         void InitSelf() override;  // 0x18 805e6930
-        const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805e6b20
-        const char* GetClassName() const override;  // 0x2c 805e683c
+        const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805e6b20
+        const char *GetClassName() const override;  // 0x2c 805e683c
     };  // 0x174
     Globe();  // 805e422c
     ~Globe();  // 805e4318 vtable 808b93b0
@@ -24,10 +24,10 @@ class Globe : public Page {  // ID 0x95
     void BeforeEntranceAnimations() override;  // 0x38 805e46c0
     void BeforeExitAnimations() override;  // 0x40 805e46c4
     void AfterControlUpdate() override;  // 0x4c 805e46c8
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805e6b14s
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805e6b14s
 
-    void SetMessage(const Mii& mii, u16 longitude, u16 latitude, u32 country, u32 msgBmgId, u32 messageType,
-                    const Mii& mii2, const PtmfHolder_1A<FriendMatchingPlayer, void, Mii&>* onMessageSent);  // 805e5a0c
+    void SetMessage(const Mii &mii, u16 longitude, u16 latitude, u32 country, u32 msgBmgId, u32 messageType,
+                    const Mii &mii2, const PtmfHolder_1A<FriendMatchingPlayer, void, Mii &> *onMessageSent);  // 805e5a0c
     static u32 GetFriendActivityBMG(u32 friendStatus);  // 805e6744 I'm in a Worldwide VS Race!
 
     ManipulatorManager manipulatorManager;  // 0x44
@@ -41,7 +41,7 @@ class Globe : public Page {  // ID 0x95
     u32 msgBmgId;  // 0x400
     u32 country;  // 0x404
     u32 messageType;  // 0x408 0 = normal, 1 = register friend, 2 = start (blue, yellow, purple)
-    const PtmfHolder_1A<FriendMatchingPlayer, void, Mii&>* onMessageSentHandler;  // 0x40c
+    const PtmfHolder_1A<FriendMatchingPlayer, void, Mii &> *onMessageSentHandler;  // 0x40c
 
     Mii mii2;  // 0x410
 };

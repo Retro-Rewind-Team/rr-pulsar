@@ -18,12 +18,12 @@ class SoundMessages {
 // size_assert(SoundMessages, 0x30);
 
 class SoundHeapMgr {
-   public:
+public:
     virtual bool LoadState(u32 level);  // 80211874 vtable 802a2950
     virtual int GetCurrentLevel();  // 8021174c
     virtual void SaveState();  // 802117a0
-    void Initialize(EGG::Heap* heap, u32 heapSize);  // 8021318c
-    void CreateSoundHeap(EGG::Allocator* allocator, u32 size);  // 802131e8
+    void Initialize(EGG::Heap *heap, u32 heapSize);  // 8021318c
+    void CreateSoundHeap(EGG::Allocator *allocator, u32 size);  // 802131e8
     void DestroySoundHeap();  // 80213258
     snd::SoundHeap heap;  // 0x4
     u8 unknown_0x30[0x60 - 0x30];

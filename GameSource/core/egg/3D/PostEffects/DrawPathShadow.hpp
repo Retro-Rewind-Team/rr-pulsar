@@ -9,7 +9,7 @@ using namespace nw4r;
 namespace EGG {
 
 class DrawPathShadowVolume : public DrawPathBase {
-   public:
+public:
     DrawPathShadowVolume();  // 80220ce8
     // ScreenEffect vtable 802a2d40 at 0x4
     ~DrawPathShadowVolume() override;  // 802217d4
@@ -20,7 +20,7 @@ class DrawPathShadowVolume : public DrawPathBase {
     void DrawImpl(u16 scnProcIdx) override;  // 0x18 80220d7c
 
     u8 unknown_0x14[0x4];
-    TextureBuffer* buffers[2];  // 0x18
+    TextureBuffer *buffers[2];  // 0x18
     u8 unknown_0x20[0x14];
 };  // 0x34
 

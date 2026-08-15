@@ -10,7 +10,7 @@ namespace detail {
 
 class AxVoice;
 class Voice : public DisposeCallback {
-   public:
+public:
     enum VoiceCallbackStatus {
         CALLBACK_STATUS_FINISH_WAVE,
         CALLBACK_STATUS_CANCEL,
@@ -18,19 +18,19 @@ class Voice : public DisposeCallback {
         CALLBACK_STATUS_DROP_DSP
     };
 
-    typedef void (*VoiceCallback)(Voice* voice, VoiceCallbackStatus status, void* callbackData);
+    typedef void (*VoiceCallback)(Voice *voice, VoiceCallbackStatus status, void *callbackData);
     Voice();  // 800a9950
     ~Voice() override;  // 800a9bc0 vtable 80274b5c
-    void InvalidateData(const void* start, const void* end) override;  // 8004c430
-    void InvalidateWaveData(const void* start, const void* end) override;  // 800ac2e0
+    void InvalidateData(const void *start, const void *end) override;  // 8004c430
+    void InvalidateWaveData(const void *start, const void *end) override;  // 800ac2e0
 
-    void InitParam(int channelCount, int voiceOutCount, VoiceCallback callback, void* callbackData);  // 800a9c70
+    void InitParam(int channelCount, int voiceOutCount, VoiceCallback callback, void *callbackData);  // 800a9c70
     void StopFinished();  // 800a9d20
     void Calc();  // 800a9dc0
     void Update();  // 800a9f60
-    bool Acquire(int channelCount, int voiceOutCount, int priority, VoiceCallback callback, void* callbackData);  // 800aa1a0
+    bool Acquire(int channelCount, int voiceOutCount, int priority, VoiceCallback callback, void *callbackData);  // 800aa1a0
     void Free();  // 800aa3e0
-    void Setup(const WaveInfo& waveParam, u32 startOffset);  // 800aa4b0
+    void Setup(const WaveInfo &waveParam, u32 startOffset);  // 800aa4b0
     void Start();  // 800aa730
     void Stop();  // 800aa750
     void Pause(bool pauseOrRestart);
@@ -51,30 +51,30 @@ class Voice : public DisposeCallback {
     void SetRemoteOutVolume(int remoteIndex, float volume);  // 800aaba0
     void SetRemoteOutVolume2(int remoteIndex, float volume);  // 800aaba0 2nd column
     void SetRemoteOutVolume3(int remoteIndex, float volume);  // 800aac40 3rd column
-    void SetVoiceOutParam(int voiceOutIndex, const VoiceOutParam& voiceOutParam);  // 800aac90
+    void SetVoiceOutParam(int voiceOutIndex, const VoiceOutParam &voiceOutParam);  // 800aac90
     void SetPriority(int priority);  // 800aace0
     void UpdateVoicesPriority();  // 800aad80
-    void SetAdpcmLoop(int channelIndex, const AdpcmLoopParam* param);  // 800aae10
+    void SetAdpcmLoop(int channelIndex, const AdpcmLoopParam *param);  // 800aae10
     u32 GetCurrentPlayingSample() const;  // 800aae90
-    void SetLoopStart(int channelIndex, const void* baseAddress, u32 samples);  // 800aaeb0
-    void SetLoopEnd(int channelIndex, const void* baseAddress, u32 samples);  // 800aaf30
+    void SetLoopStart(int channelIndex, const void *baseAddress, u32 samples);  // 800aaeb0
+    void SetLoopEnd(int channelIndex, const void *baseAddress, u32 samples);  // 800aaf30
     void SetLoopFlag(bool loopFlag);  // 800aafb0
-    void StopAtPoint(int channelIndex, const void* baseAddress, u32 samples);  // 800ab040
+    void StopAtPoint(int channelIndex, const void *baseAddress, u32 samples);  // 800ab040
     void SetVoiceType(u32 type);  // 800ab0c0
     void CalcAxSrc(bool initialUpdate);  // 800ab150
     void CalcAxVe();  // 800ab210
     bool CalcAxMix();  // 800ab300
     void ResetDelta();  // 800ab3f0
-    static void AxVoiceCallbackFunc(AxVoice* dropVoice, u32 axVoiceCbstatus, void* callbackData);  // 800ab470
-    void TransformDpl2Pan(float* outPan, float* outSurroundPan, float inPan, float inSurroundPan);  // 800ab5c0
-    void CalcMixParam(int channelIndex, int voiceOutIndex, u32* mix, u32* rmtmix);  // 800ab760
+    static void AxVoiceCallbackFunc(AxVoice *dropVoice, u32 axVoiceCbstatus, void *callbackData);  // 800ab470
+    void TransformDpl2Pan(float *outPan, float *outSurroundPan, float inPan, float inSurroundPan);  // 800ab5c0
+    void CalcMixParam(int channelIndex, int voiceOutIndex, u32 *mix, u32 *rmtmix);  // 800ab760
 
-    AxVoice* axVoice[2][4];  // 0xC stereo
+    AxVoice *axVoice[2][4];  // 0xC stereo
     VoiceOutParam voiceOutParam[4];  // 0x2c
     int channelCount;  // 0x8c
     int voiceOutCount;  // 0x90
     VoiceCallback callback;  // 0x94
-    void* callbackArg;  // 0x98
+    void *callbackArg;  // 0x98
     bool activeFlag;  // 0x9c
     bool startFlag;
     bool startedFlag;
@@ -105,15 +105,15 @@ class Voice : public DisposeCallback {
 class VoiceManager {
     static VoiceManager mInstance;  // 802f12cc
 
-    VoiceManager& VoiceManager::GetInstance();
+    VoiceManager &VoiceManager::GetInstance();
     ~VoiceManager();  // 800ac4cc
-    void Setup(void* mem, u32 memSize);  // 800ac550
+    void Setup(void *mem, u32 memSize);  // 800ac550
     void Shutdown();  // 800ac600
-    Voice* AllocVoice(int voiceChannelCount, int voiceOutCount, int priority, Voice::VoiceCallback callback, void* callbackArg);  // 800ac6e0
-    void FreeVoice(Voice* voice);  // 800ac8a0
+    Voice *AllocVoice(int voiceChannelCount, int voiceOutCount, int priority, Voice::VoiceCallback callback, void *callbackArg);  // 800ac6e0
+    void FreeVoice(Voice *voice);  // 800ac8a0
     void UpdateAllVoices();  // 800ac940
     void NotifyVoiceUpdate();  // 800ac9f0
-    void ChangeVoicePriority(Voice* voice);  // 800aca60
+    void ChangeVoicePriority(Voice *voice);  // 800aca60
     void UpdateAllVoicesSync(u32 syncFlag);  // 800acb70
 
     bool initialized;

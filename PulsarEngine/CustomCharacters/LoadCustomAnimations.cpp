@@ -24,41 +24,29 @@ static const u16 WAIT_BEFORE_START_FALLBACK_FRAMES = 45;
 static const u16 SHOCK_DODGE_STAR_FALLBACK_FRAMES = 45;
 
 static s16 shockHitAnimId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 starUseAnimId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 megaUseAnimId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 waitBeforeStartAnimId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 shockDodgeStarAnimId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 shockHitPatId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 starUsePatId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 megaUsePatId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 waitBeforeStartPatId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 shockDodgeStarPatId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static s16 activePatId[ONLINE_PLAYER_COUNT] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static u16 waitBeforeStartFrames[ONLINE_PLAYER_COUNT] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static u16 waitBeforeStartFrameCount[ONLINE_PLAYER_COUNT] = {
     WAIT_BEFORE_START_FALLBACK_FRAMES,
     WAIT_BEFORE_START_FALLBACK_FRAMES,
@@ -71,17 +59,13 @@ static u16 waitBeforeStartFrameCount[ONLINE_PLAYER_COUNT] = {
     WAIT_BEFORE_START_FALLBACK_FRAMES,
     WAIT_BEFORE_START_FALLBACK_FRAMES,
     WAIT_BEFORE_START_FALLBACK_FRAMES,
-    WAIT_BEFORE_START_FALLBACK_FRAMES
-};
+    WAIT_BEFORE_START_FALLBACK_FRAMES};
 static bool waitBeforeStartIsLooped[ONLINE_PLAYER_COUNT] = {
-    true, true, true, true, true, true, true, true, true, true, true, true
-};
+    true, true, true, true, true, true, true, true, true, true, true, true};
 static bool waitBeforeStartPlayed[ONLINE_PLAYER_COUNT] = {
-    false, false, false, false, false, false, false, false, false, false, false, false
-};
+    false, false, false, false, false, false, false, false, false, false, false, false};
 static u16 shockDodgeStarFrames[ONLINE_PLAYER_COUNT] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static u16 shockDodgeStarFrameCount[ONLINE_PLAYER_COUNT] = {
     SHOCK_DODGE_STAR_FALLBACK_FRAMES,
     SHOCK_DODGE_STAR_FALLBACK_FRAMES,
@@ -94,46 +78,36 @@ static u16 shockDodgeStarFrameCount[ONLINE_PLAYER_COUNT] = {
     SHOCK_DODGE_STAR_FALLBACK_FRAMES,
     SHOCK_DODGE_STAR_FALLBACK_FRAMES,
     SHOCK_DODGE_STAR_FALLBACK_FRAMES,
-    SHOCK_DODGE_STAR_FALLBACK_FRAMES
-};
+    SHOCK_DODGE_STAR_FALLBACK_FRAMES};
 static bool shockDodgeStarActive[ONLINE_PLAYER_COUNT] = {
-    false, false, false, false, false, false, false, false, false, false, false, false
-};
+    false, false, false, false, false, false, false, false, false, false, false, false};
 static bool waitBeforeStartActive[ONLINE_PLAYER_COUNT] = {
-    false, false, false, false, false, false, false, false, false, false, false, false
-};
+    false, false, false, false, false, false, false, false, false, false, false, false};
 static bool waitBeforeStartLimbFlagsSaved[ONLINE_PLAYER_COUNT] = {
-    false, false, false, false, false, false, false, false, false, false, false, false
-};
+    false, false, false, false, false, false, false, false, false, false, false, false};
 static u8 waitBeforeStartArmFlags[ONLINE_PLAYER_COUNT] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static u8 waitBeforeStartLegFlags[ONLINE_PLAYER_COUNT] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static bool shockDodgeStarLimbFlagsSaved[ONLINE_PLAYER_COUNT] = {
-    false, false, false, false, false, false, false, false, false, false, false, false
-};
+    false, false, false, false, false, false, false, false, false, false, false, false};
 static u8 shockDodgeStarArmFlags[ONLINE_PLAYER_COUNT] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static u8 shockDodgeStarLegFlags[ONLINE_PLAYER_COUNT] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 extern "C" void DriverController_SetupModelAnims(
-    g3d::ResFile* brresArray, ModelDirector** pDriver,
-    ModelDirector** pDriverLod, DriverController* controller);
+    g3d::ResFile *brresArray, ModelDirector **pDriver,
+    ModelDirector **pDriverLod, DriverController *controller);
 
 extern "C" bool PlayerModel_setAnimation(
-    float blendRate, DriverController* controller, u32 animation, int param4);
+    float blendRate, DriverController *controller, u32 animation, int param4);
 
 static s16 LinkOptionalChrAnimation(
-    DriverController* controller, ModelDirector* driverModel, const char* animationName)
-{
+    DriverController *controller, ModelDirector *driverModel, const char *animationName) {
     if (controller->driverModelBRRES.GetResAnmChr(animationName).data == nullptr) return -1;
 
-    ModelTransformator* transformator = driverModel->modelTransformator;
+    ModelTransformator *transformator = driverModel->modelTransformator;
     if (transformator == nullptr) return -1;
 
     const u16 nextSlot = transformator->anmHolderList.count;
@@ -152,10 +126,9 @@ static s16 LinkOptionalChrAnimation(
 }
 
 static s16 LinkOptionalPatAnimation(
-    DriverController* controller, ModelDirector* driverModel, const char* animationName)
-{
+    DriverController *controller, ModelDirector *driverModel, const char *animationName) {
     char patName[40];
-    const char* resolvedName = animationName;
+    const char *resolvedName = animationName;
     if (controller->driverModelBRRES.GetResAnmTexPat(resolvedName).data == nullptr) {
         const int written = snprintf(patName, sizeof(patName), "%s.pat0", animationName);
         if (written <= 0 || static_cast<u32>(written) >= sizeof(patName) ||
@@ -165,7 +138,7 @@ static s16 LinkOptionalPatAnimation(
         resolvedName = patName;
     }
 
-    ModelTransformator* transformator = driverModel->modelTransformator;
+    ModelTransformator *transformator = driverModel->modelTransformator;
     if (transformator == nullptr) return -1;
 
     const u16 nextSlot = transformator->anmHolderList.count;
@@ -183,8 +156,7 @@ static s16 LinkOptionalPatAnimation(
     return static_cast<s16>(nextSlot);
 }
 
-static u16 GetOptionalChrFrameCount(DriverController* controller, const char* animationName)
-{
+static u16 GetOptionalChrFrameCount(DriverController *controller, const char *animationName) {
     g3d::ResAnmChr animation = controller->driverModelBRRES.GetResAnmChr(animationName);
     if (animation.data == nullptr || animation.data->fileInfo.frameCount == 0) {
         return 0;
@@ -192,58 +164,52 @@ static u16 GetOptionalChrFrameCount(DriverController* controller, const char* an
     return animation.data->fileInfo.frameCount;
 }
 
-static bool IsOptionalChrLooped(DriverController* controller, const char* animationName)
-{
+static bool IsOptionalChrLooped(DriverController *controller, const char *animationName) {
     g3d::ResAnmChr animation = controller->driverModelBRRES.GetResAnmChr(animationName);
     return animation.data == nullptr || animation.data->fileInfo.isLooped != 0;
 }
 
-static ModelTransformator* GetDriverTransformator(DriverController* controller)
-{
+static ModelTransformator *GetDriverTransformator(DriverController *controller) {
     if (controller == nullptr || controller->driverModel == nullptr) return nullptr;
     return controller->driverModel->modelTransformator;
 }
 
-static void StopPatAnimation(DriverController* controller, u8 playerIdx);
+static void StopPatAnimation(DriverController *controller, u8 playerIdx);
 
-static void SetActivePatSlot(DriverController* controller, s16 animationSlot)
-{
+static void SetActivePatSlot(DriverController *controller, s16 animationSlot) {
     if (controller == nullptr) return;
-    u16* const activePatSlot =
-        reinterpret_cast<u16*>(reinterpret_cast<u8*>(controller) + 0x1ca);
+    u16 *const activePatSlot =
+        reinterpret_cast<u16 *>(reinterpret_cast<u8 *>(controller) + 0x1ca);
     *activePatSlot = animationSlot < 0 ? 0xff : static_cast<u16>(animationSlot);
 }
 
-static void SetPatMapping(DriverController* controller, u32 animation, s16 patSlot)
-{
+static void SetPatMapping(DriverController *controller, u32 animation, s16 patSlot) {
     if (controller == nullptr || animation >= 0x29) return;
 
-    u8* const patMappings = reinterpret_cast<u8*>(controller) + 0x19e;
+    u8 *const patMappings = reinterpret_cast<u8 *>(controller) + 0x19e;
     patMappings[animation] = patSlot < 0 ? 0xff : static_cast<u8>(patSlot);
 }
 
-static void PlayPatAnimationIfPresent(DriverController* controller, u8 playerIdx, s16 animationSlot)
-{
+static void PlayPatAnimationIfPresent(DriverController *controller, u8 playerIdx, s16 animationSlot) {
     if (playerIdx >= ONLINE_PLAYER_COUNT) return;
     if (animationSlot < 0) {
         StopPatAnimation(controller, playerIdx);
         return;
     }
 
-    ModelTransformator* transformator = GetDriverTransformator(controller);
+    ModelTransformator *transformator = GetDriverTransformator(controller);
     if (transformator == nullptr) return;
-    AnmHolder* holder =
+    AnmHolder *holder =
         transformator->GetAnmHolderByIdx(static_cast<u32>(static_cast<u16>(animationSlot)));
     if (holder == nullptr || holder->type != ANMTYPE_TEXPAT) return;
 
     transformator->PlayAnmNoBlend(static_cast<u32>(static_cast<u16>(animationSlot)), 0.0f, 1.0f);
 }
 
-static void StopPatAnimation(DriverController* controller, u8 playerIdx)
-{
+static void StopPatAnimation(DriverController *controller, u8 playerIdx) {
     if (playerIdx >= ONLINE_PLAYER_COUNT) return;
 
-    ModelTransformator* transformator = GetDriverTransformator(controller);
+    ModelTransformator *transformator = GetDriverTransformator(controller);
     if (transformator != nullptr) {
         transformator->StopAnmType(ANMTYPE_TEXPAT);
     }
@@ -252,9 +218,8 @@ static void StopPatAnimation(DriverController* controller, u8 playerIdx)
 }
 
 static void LinkCustomCharacterAnimations(
-    g3d::ResFile* brresArray, ModelDirector** pDriver,
-    ModelDirector** pDriverLod, DriverController* controller)
-{
+    g3d::ResFile *brresArray, ModelDirector **pDriver,
+    ModelDirector **pDriverLod, DriverController *controller) {
     DriverController_SetupModelAnims(brresArray, pDriver, pDriverLod, controller);
 
     const u8 playerIdx = controller->GetPlayerIdx();
@@ -284,7 +249,7 @@ static void LinkCustomCharacterAnimations(
 
     if (controller->isCpu) return;
 
-    ModelDirector* driverModel = controller->driverModel;
+    ModelDirector *driverModel = controller->driverModel;
     if (driverModel == nullptr) return;
 
     shockHitAnimId[playerIdx] = LinkOptionalChrAnimation(controller, driverModel, "shockHit");
@@ -327,9 +292,8 @@ static void LinkCustomCharacterAnimations(
 kmCall(0x807c7894, LinkCustomCharacterAnimations);
 
 static bool PlayCustomAnimationIfPresent(
-    float blendRate, DriverController* controller, s16 animationSlot, s16 patSlot,
-    u32 vanillaAnimation, int param4)
-{
+    float blendRate, DriverController *controller, s16 animationSlot, s16 patSlot,
+    u32 vanillaAnimation, int param4) {
     const u32 customAnimation = static_cast<u32>(static_cast<u16>(animationSlot));
     SetPatMapping(controller, vanillaAnimation, patSlot);
     const bool played = PlayerModel_setAnimation(blendRate, controller, customAnimation, param4);
@@ -342,17 +306,15 @@ static bool PlayCustomAnimationIfPresent(
     return false;
 }
 
-static bool IsBeforeRaceStart()
-{
-    Raceinfo* raceInfo = Raceinfo::sInstance;
+static bool IsBeforeRaceStart() {
+    Raceinfo *raceInfo = Raceinfo::sInstance;
     return raceInfo != nullptr && raceInfo->timerMgr != nullptr &&
-        (!raceInfo->timerMgr->hasRaceStarted || !raceInfo->IsAtLeastStage(RACESTAGE_RACE));
+           (!raceInfo->timerMgr->hasRaceStarted || !raceInfo->IsAtLeastStage(RACESTAGE_RACE));
 }
 
-static s16 GetPowerUseAnimId(DriverController* controller, u8 playerIdx);
+static s16 GetPowerUseAnimId(DriverController *controller, u8 playerIdx);
 
-static s16 GetPatIdForChrId(u8 playerIdx, s16 animationSlot)
-{
+static s16 GetPatIdForChrId(u8 playerIdx, s16 animationSlot) {
     if (playerIdx >= ONLINE_PLAYER_COUNT) return -1;
     if (animationSlot == shockHitAnimId[playerIdx]) return shockHitPatId[playerIdx];
     if (animationSlot == starUseAnimId[playerIdx]) return starUsePatId[playerIdx];
@@ -362,18 +324,16 @@ static s16 GetPatIdForChrId(u8 playerIdx, s16 animationSlot)
     return -1;
 }
 
-static bool IsInStar(DriverController* controller)
-{
+static bool IsInStar(DriverController *controller) {
     return controller != nullptr && controller->pointers != nullptr &&
-        controller->pointers->kartStatus != nullptr &&
-        (controller->pointers->kartStatus->bitfield1 & 0x80000000) != 0;
+           controller->pointers->kartStatus != nullptr &&
+           (controller->pointers->kartStatus->bitfield1 & 0x80000000) != 0;
 }
 
-static bool IsActivelyStar(DriverController* controller)
-{
+static bool IsActivelyStar(DriverController *controller) {
     if (controller == nullptr || controller->pointers == nullptr) return false;
 
-    Kart::Movement* movement = controller->pointers->kartMovement;
+    Kart::Movement *movement = controller->pointers->kartMovement;
     if (movement != nullptr) {
         return movement->starTimer > 0;
     }
@@ -381,21 +341,19 @@ static bool IsActivelyStar(DriverController* controller)
     return IsInStar(controller);
 }
 
-static bool IsActivelyMega(DriverController* controller)
-{
+static bool IsActivelyMega(DriverController *controller) {
     if (controller == nullptr || controller->pointers == nullptr) return false;
 
-    Kart::Movement* movement = controller->pointers->kartMovement;
+    Kart::Movement *movement = controller->pointers->kartMovement;
     if (movement != nullptr) {
         return movement->megaTimer > 0;
     }
 
     return controller->pointers->kartStatus != nullptr &&
-        (controller->pointers->kartStatus->bitfield2 & 0x8000) != 0;
+           (controller->pointers->kartStatus->bitfield2 & 0x8000) != 0;
 }
 
-static u32 GetMappedPatSlotForCurrentDriverAnimation(DriverController* controller)
-{
+static u32 GetMappedPatSlotForCurrentDriverAnimation(DriverController *controller) {
     if (controller == nullptr) return 0xff;
 
     const u8 playerIdx = controller->GetPlayerIdx();
@@ -406,14 +364,14 @@ static u32 GetMappedPatSlotForCurrentDriverAnimation(DriverController* controlle
         if (shockDodgeStarActive[playerIdx] && shockDodgeStarPatId[playerIdx] >= 0) {
             customPat = shockDodgeStarPatId[playerIdx];
         } else if (currentAnimation == WAIT_ANIM_ID && waitBeforeStartActive[playerIdx] &&
-            IsBeforeRaceStart()) {
+                   IsBeforeRaceStart()) {
             customPat = waitBeforeStartPatId[playerIdx];
         } else if (currentAnimation == STAR_USE_SENTINEL_ANIM_ID) {
             customPat = GetPatIdForChrId(playerIdx, GetPowerUseAnimId(controller, playerIdx));
         } else if (currentAnimation == DAMAGE_ANIM_ID &&
-            shockHitPatId[playerIdx] >= 0 && controller->pointers != nullptr &&
-            controller->pointers->kartStatus != nullptr &&
-            (controller->pointers->kartStatus->bitfield2 & 0x80) != 0) {
+                   shockHitPatId[playerIdx] >= 0 && controller->pointers != nullptr &&
+                   controller->pointers->kartStatus != nullptr &&
+                   (controller->pointers->kartStatus->bitfield2 & 0x80) != 0) {
             customPat = shockHitPatId[playerIdx];
         }
 
@@ -422,7 +380,7 @@ static u32 GetMappedPatSlotForCurrentDriverAnimation(DriverController* controlle
 
     const u16 currentAnimation = controller->currentAnimation;
     if (currentAnimation >= 0x29) return 0xff;
-    return *(reinterpret_cast<u8*>(controller) + 0x19e + currentAnimation);
+    return *(reinterpret_cast<u8 *>(controller) + 0x19e + currentAnimation);
 }
 
 static asmFunc GetMappedPatSlotForCurrentDriverAnimationWrapper() {
@@ -437,20 +395,18 @@ static asmFunc GetMappedPatSlotForCurrentDriverAnimationWrapper() {
         lwz r12, 0x1C(r1);
         mtlr r12;
         addi r1, r1, 0x20;
-        blr;
-    )
+        blr;)
 }
 kmCall(0x807ccfcc, GetMappedPatSlotForCurrentDriverAnimationWrapper);
 
-static void PlayShockDodgeStarNow(DriverController* controller, u8 playerIdx)
-{
+static void PlayShockDodgeStarNow(DriverController *controller, u8 playerIdx) {
     if (controller == nullptr || playerIdx >= ONLINE_PLAYER_COUNT ||
         shockDodgeStarAnimId[playerIdx] < 0) {
         return;
     }
 
-    u16* selectedAnimationPtr =
-        reinterpret_cast<u16*>(reinterpret_cast<u8*>(controller) + 0xf6);
+    u16 *selectedAnimationPtr =
+        reinterpret_cast<u16 *>(reinterpret_cast<u8 *>(controller) + 0xf6);
     *selectedAnimationPtr = static_cast<u16>(STAR_USE_SENTINEL_ANIM_ID);
     PlayCustomAnimationIfPresent(
         1.0f,
@@ -462,11 +418,10 @@ static void PlayShockDodgeStarNow(DriverController* controller, u8 playerIdx)
 }
 
 static void SetTemporaryLimbLock(
-    DriverController* controller, u8 playerIdx, bool locked, bool* flagsSaved,
-    u8* savedArmFlags, u8* savedLegFlags)
-{
-    u8* const armFlag = reinterpret_cast<u8*>(controller) + 0x14a;
-    u8* const legFlag = reinterpret_cast<u8*>(controller) + 0x14b;
+    DriverController *controller, u8 playerIdx, bool locked, bool *flagsSaved,
+    u8 *savedArmFlags, u8 *savedLegFlags) {
+    u8 *const armFlag = reinterpret_cast<u8 *>(controller) + 0x14a;
+    u8 *const legFlag = reinterpret_cast<u8 *>(controller) + 0x14b;
 
     if (locked) {
         if (!flagsSaved[playerIdx]) {
@@ -486,8 +441,7 @@ static void SetTemporaryLimbLock(
     }
 }
 
-static void SetWaitBeforeStartLimbLock(DriverController* controller, u8 playerIdx, bool locked)
-{
+static void SetWaitBeforeStartLimbLock(DriverController *controller, u8 playerIdx, bool locked) {
     SetTemporaryLimbLock(
         controller,
         playerIdx,
@@ -497,8 +451,7 @@ static void SetWaitBeforeStartLimbLock(DriverController* controller, u8 playerId
         waitBeforeStartLegFlags);
 }
 
-static void SetShockDodgeStarLimbLock(DriverController* controller, u8 playerIdx, bool locked)
-{
+static void SetShockDodgeStarLimbLock(DriverController *controller, u8 playerIdx, bool locked) {
     SetTemporaryLimbLock(
         controller,
         playerIdx,
@@ -509,8 +462,7 @@ static void SetShockDodgeStarLimbLock(DriverController* controller, u8 playerIdx
 }
 
 static bool PlayCustomDriverAnimation(
-    float blendRate, DriverController* controller, u32 animation, int param4)
-{
+    float blendRate, DriverController *controller, u32 animation, int param4) {
     const u8 playerIdx = controller->GetPlayerIdx();
 
     if (playerIdx < ONLINE_PLAYER_COUNT && waitBeforeStartActive[playerIdx] &&
@@ -592,9 +544,8 @@ static bool PlayCustomDriverAnimation(
 kmCall(0x807cb774, PlayCustomDriverAnimation);
 kmCall(0x807d07c0, PlayCustomDriverAnimation);
 
-static bool ShouldSuppressShockRotation(Kart::Damage* damage)
-{
-    const u32 currentActionId = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(damage) + 0x1c);
+static bool ShouldSuppressShockRotation(Kart::Damage *damage) {
+    const u32 currentActionId = *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(damage) + 0x1c);
     if (currentActionId != 10 && currentActionId != 17) return false;
 
     const u8 playerIdx = damage->GetPlayerIdx();
@@ -604,11 +555,10 @@ static bool ShouldSuppressShockRotation(Kart::Damage* damage)
     return false;
 }
 
-void AddSpinRotationUnlessShockHit(void* physicsHolder, Quat* rotation, Kart::Damage* damage)
-{
+void AddSpinRotationUnlessShockHit(void *physicsHolder, Quat *rotation, Kart::Damage *damage) {
     if (ShouldSuppressShockRotation(damage)) return;
 
-    typedef void (*AddInstantaneousExtraRotFn)(void*, Quat*);
+    typedef void (*AddInstantaneousExtraRotFn)(void *, Quat *);
     AddInstantaneousExtraRotFn addInstantaneousExtraRot =
         reinterpret_cast<AddInstantaneousExtraRotFn>(kmRuntimeAddr(0x8059fd0c));
     addInstantaneousExtraRot(physicsHolder, rotation);
@@ -618,20 +568,18 @@ static asmFunc AddSpinRotationUnlessShockHitWrapper() {
     ASM(
         nofralloc;
         mr r5, r30;
-        b AddSpinRotationUnlessShockHit;
-    )
+        b AddSpinRotationUnlessShockHit;)
 }
 kmCall(0x8056835c, AddSpinRotationUnlessShockHitWrapper);
 
-static bool ShouldLightningAffectPlayerWithStarDodge(Item::Player* itemPlayer)
-{
-    typedef bool (*ShouldLightningAffectPlayerFn)(Item::Player*);
+static bool ShouldLightningAffectPlayerWithStarDodge(Item::Player *itemPlayer) {
+    typedef bool (*ShouldLightningAffectPlayerFn)(Item::Player *);
     ShouldLightningAffectPlayerFn shouldLightningAffectPlayer =
         reinterpret_cast<ShouldLightningAffectPlayerFn>(kmRuntimeAddr(0x80798728));
 
     const bool affected = shouldLightningAffectPlayer(itemPlayer);
     if (!affected && itemPlayer != nullptr) {
-        DriverController* controller = itemPlayer->model2;
+        DriverController *controller = itemPlayer->model2;
         const u8 playerIdx = itemPlayer->id;
         if (playerIdx < ONLINE_PLAYER_COUNT && shockDodgeStarAnimId[playerIdx] >= 0 &&
             IsInStar(controller)) {
@@ -645,8 +593,7 @@ static bool ShouldLightningAffectPlayerWithStarDodge(Item::Player* itemPlayer)
 }
 kmCall(0x807b7cd0, ShouldLightningAffectPlayerWithStarDodge);
 
-static s16 GetPowerUseAnimId(DriverController* controller, u8 playerIdx)
-{
+static s16 GetPowerUseAnimId(DriverController *controller, u8 playerIdx) {
     if (IsActivelyMega(controller) && megaUseAnimId[playerIdx] >= 0) {
         return megaUseAnimId[playerIdx];
     }
@@ -658,10 +605,9 @@ static s16 GetPowerUseAnimId(DriverController* controller, u8 playerIdx)
     return -1;
 }
 
-u32 GetPowerUseOrSelectedAnimation(DriverController* controller)
-{
-    u16* selectedAnimationPtr =
-        reinterpret_cast<u16*>(reinterpret_cast<u8*>(controller) + 0xf6);
+u32 GetPowerUseOrSelectedAnimation(DriverController *controller) {
+    u16 *selectedAnimationPtr =
+        reinterpret_cast<u16 *>(reinterpret_cast<u8 *>(controller) + 0xf6);
     u32 selectedAnimation = *selectedAnimationPtr;
 
     const u8 playerIdx = controller->GetPlayerIdx();
@@ -796,8 +742,7 @@ static asmFunc SelectPowerUseAnimation() {
         lwz r12, 0x8(r1);
         mtcr r12;
         addi r1, r1, 0x50;
-        blr;
-    )
+        blr;)
 }
 kmCall(0x807cd2dc, SelectPowerUseAnimation);
 

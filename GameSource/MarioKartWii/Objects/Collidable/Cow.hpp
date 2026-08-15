@@ -12,14 +12,14 @@ namespace Objects {
 // The front cow is a CowLeader, the rest CowVassals
 
 class CowBase : public ObjectCollidable {
-   public:
-    explicit CowBase(const KMP::Holder<GOBJ>& gobjHolder);  // 806bbec0 inlined
+public:
+    explicit CowBase(const KMP::Holder<GOBJ> &gobjHolder);  // 806bbec0 inlined
     ~CowBase() override;  // 806bbf24 vtable 808c2aec
 
     void LoadAnimations() override;  // 0x5c 806bf364
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806bc2ac
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc4 806bc3f0
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806bc2ac
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806bc3f0
     virtual int vf_0xec();  // 0xec 806bf35c
     virtual void vf_0xf0();  // 0xf0 806bc87c
     u32 startDelay;  // 0xb0 setting3
@@ -29,8 +29,8 @@ class CowBase : public ObjectCollidable {
 };  // 0x128
 
 class CowLeader : public CowBase, public StatePtmfTrigger<CowLeader> {
-   public:
-    explicit CowLeader(const KMP::Holder<GOBJ>& gobjHolder);  // 806bd080 inlined
+public:
+    explicit CowLeader(const KMP::Holder<GOBJ> &gobjHolder);  // 806bd080 inlined
 
     // ObjectCollidable vtable 808c29e0
     ~CowLeader() override;  // 806bd1f8
@@ -49,8 +49,8 @@ class CowLeader : public CowBase, public StatePtmfTrigger<CowLeader> {
 };
 
 class CowVassal : public CowBase, public StatePtmfTrigger<CowVassal> {
-   public:
-    CowVassal(const KMP::Holder<GOBJ>& gobjHolder, u32 unused, const Vec3& distToLeader, float yRot);  // 806bdd48 inlined
+public:
+    CowVassal(const KMP::Holder<GOBJ> &gobjHolder, u32 unused, const Vec3 &distToLeader, float yRot);  // 806bdd48 inlined
     // ObjectCollidable vtable 808c28d0
     ~CowVassal() override;  // 806bdff4
     void OnStart() override;  // 0xC 806be060
@@ -62,14 +62,14 @@ class CowVassal : public CowBase, public StatePtmfTrigger<CowVassal> {
     //~CowVassal() override; thunk 806bf4c0
     Vec3 distToLeader;  // 0x148
     // 0x154
-    RouteController* leadezrRoute;  // 0x154
+    RouteController *leadezrRoute;  // 0x154
     u16 randVal;  // 0x158
     u8 unknown_0x15e[0x184 - 0x15e];
 };  // 0x184
 
 class CowGroup : public ObjectCollidable {  // ObjectNum 0x193 = 403 Cow
-   public:
-    explicit CowGroup(const KMP::Holder<GOBJ>& gobjHolder);  // 806beb54
+public:
+    explicit CowGroup(const KMP::Holder<GOBJ> &gobjHolder);  // 806beb54
 
     ~CowGroup() override;  // 806befec vtable 808c27e4
     void OnStart() override;  // 0xC 806bf02c
@@ -81,8 +81,8 @@ class CowGroup : public ObjectCollidable {  // ObjectNum 0x193 = 403 Cow
     void LoadCollision() override;  // 0x60 806bf348 just a blr
     void LoadRoute() override;  // 0x64 806bf34c just a blr
 
-    CowLeader* leader;  // 0xb0
-    CowVassal** vassals;  // 0xb4
+    CowLeader *leader;  // 0xb0
+    CowVassal **vassals;  // 0xb4
     u8 vassalCount;  // 0xb8 setting0
     u8 unknown_0xb9[0x7];
 };  // 0xc0

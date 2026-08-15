@@ -18,7 +18,7 @@ static bool CheckControllerStrap() {
     register u8 usedChannel;
     u16 type = 0x24;
     if (ret == 1) {  // GCN
-        register PAD::Status* gcnStatus;
+        register PAD::Status *gcnStatus;
         asm(addi gcnStatus, sp, 0x10;);
         for (u8 channel = 0; channel < 4; ++channel) {
             if (gcnStatus[channel].buttons != 0) {
@@ -28,7 +28,7 @@ static bool CheckControllerStrap() {
         }
     } else if (ret == 2) {  // ret == 2, KPAD controller
         asm(mr usedChannel, r29;);
-        register KPAD::Status* kpadStatus;
+        register KPAD::Status *kpadStatus;
         asm(addi kpadStatus, sp, 0x40;);
         type = kpadStatus->extension + 0x11;
     }
@@ -38,14 +38,14 @@ static bool CheckControllerStrap() {
 kmCall(0x800079b0, CheckControllerStrap);
 
 char bootParams[17];
-SectionId BootIntoSection(const NdevArgsExtractor& extractor) {
+SectionId BootIntoSection(const NdevArgsExtractor &extractor) {
     SectionId section = SECTION_NONE;
     const u8 bootSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BOOT);
     u8 license = 0;
     if (bootSetting != BOOT_DISABLED) {
-        const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+        const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
         if (rksysMgr->CheckLicenseMagic(bootSetting - 1)) {
-            const RKSYS::LicenseMgr* licenseMgr = &rksysMgr->licenses[bootSetting - 1];
+            const RKSYS::LicenseMgr *licenseMgr = &rksysMgr->licenses[bootSetting - 1];
             if (licenseMgr->createID.miiId != 0) {
                 section = SECTION_P1_WIFI;
                 license = bootSetting - 1;
@@ -61,15 +61,15 @@ kmCall(0x80634f20, BootIntoSection);
 
 using namespace Input;
 // r4 usually uses Input::Manager dummy which is slot and controller independant
-static void SetUpCorrectController(RealControllerHolder* realControllerHolder, Controller* controller) {
-    SectionPad& pad = SectionMgr::sInstance->pad;
+static void SetUpCorrectController(RealControllerHolder *realControllerHolder, Controller *controller) {
+    SectionPad &pad = SectionMgr::sInstance->pad;
     const u32 controllerID = pad.padInfos[0].controllerID;  // technically hooking into a loop
     const ControllerType controllerType = pad.GetType(pad.padInfos[0].controllerID);
     u32 channel = ((pad.padInfos[0].controllerID & 0xFF00) >> 0x8) - 1;  // to make it 0-indexed
     register u32 loopIndex;
     asm(mr loopIndex, r27;);
     if (channel == loopIndex) {
-        register Manager* input;
+        register Manager *input;
         asm(mr input, r30;);
         if (controllerType == GCN)
             controller = &input->gcnControllers[channel];

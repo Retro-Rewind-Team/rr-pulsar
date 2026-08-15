@@ -15,12 +15,12 @@ class MKChannelExplanation : public Page {  // ID 0xca
     PageId GetNextPage() const override;  // 0x10 805bf1ac
     void OnInit() override;  // 0x28 805bf004
     void OnActivate() override;  // 0x30 805bf1a0
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805bf2dc
-    void OnButtonClick(CtrlMenuBackButton& button, u32 hudSlotId);  // 805bf1e4
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805bf2dc
+    void OnButtonClick(CtrlMenuBackButton &button, u32 hudSlotId);  // 805bf1e4
     void OnBackPress(u32 hudSlotId);  // 805bf290
-    static void TriggerButtonPtmf(PtmfHolder_2A<AddMKChannel, void, PushButton&, u32>&, u32);  // 805bf2f4
-    static void TriggerBackPtmf(PtmfHolder_1A<AddMKChannel, void, u32>&, u32);  // 805bf354
-    PtmfHolder_2A<AddMKChannel, void, PushButton&, u32> onbuttonClickHandler;  // 0x44 805bf1e4
+    static void TriggerButtonPtmf(PtmfHolder_2A<AddMKChannel, void, PushButton &, u32> &, u32);  // 805bf2f4
+    static void TriggerBackPtmf(PtmfHolder_1A<AddMKChannel, void, u32> &, u32);  // 805bf354
+    PtmfHolder_2A<AddMKChannel, void, PushButton &, u32> onbuttonClickHandler;  // 0x44 805bf1e4
     PtmfHolder_1A<AddMKChannel, void, u32> onBackPressHandler;  // 0x58 805bf290
     ControlsManipulatorManager manipulatorManager;  // 0x6c
     CtrlMenuPageTitleText titleText;  // 0x290
@@ -39,19 +39,19 @@ class AddMKChannel : public Page {  // ID 0xcb
     void OnDispose() override;  // 0x2c 805beb28
     void OnActivate() override;  // 0x30 805beb2c
     void OnDeactivate() override;  // 0x34 805beb30
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805bf2e8
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805bf2e8
 
-    void OnAddButtonClick(PushButton& button, u32 hudSlotId);  // 805beb4c
-    void OnCancelButtonClick(PushButton& button, u32 hudSlotId);  // 805bed74
-    void OnBackButtonClick(CtrlMenuBackButton& button, u32 hudSlotId);  // 805bee00
+    void OnAddButtonClick(PushButton &button, u32 hudSlotId);  // 805beb4c
+    void OnCancelButtonClick(PushButton &button, u32 hudSlotId);  // 805bed74
+    void OnBackButtonClick(CtrlMenuBackButton &button, u32 hudSlotId);  // 805bee00
     void OnBackPress(u32 hudSlotId);  // 805bee3c
 
-    static void TriggerButtonPtmf(PtmfHolder_2A<AddMKChannel, void, PushButton&, u32>*, u32);  // 805bfloat4
-    static void TriggerBackPtmf(PtmfHolder_1A<AddMKChannel, void, u32>*, u32);  // 805bf384
+    static void TriggerButtonPtmf(PtmfHolder_2A<AddMKChannel, void, PushButton &, u32> *, u32);  // 805bfloat4
+    static void TriggerBackPtmf(PtmfHolder_1A<AddMKChannel, void, u32> *, u32);  // 805bf384
 
-    PtmfHolder_2A<AddMKChannel, void, PushButton&, u32> onAddButtonHandler;  // 0x44 805beb4c
-    PtmfHolder_2A<AddMKChannel, void, PushButton&, u32> onCancelButtonClickHandler;  // 0x58 805bed74
-    PtmfHolder_2A<AddMKChannel, void, CtrlMenuBackButton&, u32> onBackButtonClickHandler;  // 0x6c 805bee00
+    PtmfHolder_2A<AddMKChannel, void, PushButton &, u32> onAddButtonHandler;  // 0x44 805beb4c
+    PtmfHolder_2A<AddMKChannel, void, PushButton &, u32> onCancelButtonClickHandler;  // 0x58 805bed74
+    PtmfHolder_2A<AddMKChannel, void, CtrlMenuBackButton &, u32> onBackButtonClickHandler;  // 0x6c 805bee00
     PtmfHolder_1A<AddMKChannel, void, u32> onBackPressHandler;  // 0x80 805bee3c
     ControlsManipulatorManager manipulatorManager;  // 0x94
     CtrlMenuPageTitleText titleText;  // 0x2b8

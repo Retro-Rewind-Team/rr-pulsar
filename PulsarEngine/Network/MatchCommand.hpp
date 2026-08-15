@@ -29,7 +29,7 @@ struct ResvInfo {
 static_assert(sizeof(ResvInfo) == 0x24, "ResvInfo size");
 
 struct ResvPacket : DWC::Reservation {
-    ResvPacket(const DWC::Reservation& src);
+    ResvPacket(const DWC::Reservation &src);
     ResvInfo pulInfo;
 };
 static_assert(sizeof(ResvPacket) == 0x48, "ResvPacket size");

@@ -13,17 +13,17 @@ enum EAllocDirection {
     ALLOC_FROM_TAIL = 2
 };
 
-void* LoadToMainRAM(const char* path, void* buffer, Heap* heap,
-                    EAllocDirection allocDirection, u32 offset, u32* readBytes, u32* size);  // 802226d8 calls the 2nd one
+void *LoadToMainRAM(const char *path, void *buffer, Heap *heap,
+                    EAllocDirection allocDirection, u32 offset, u32 *readBytes, u32 *size);  // 802226d8 calls the 2nd one
 
-void* LoadToMainRAM(DvdFile* file, void* buffer, Heap* heap,
-                    EAllocDirection allocDirection, u32 offset, u32* readBytes, u32* size);  // 8022277c
+void *LoadToMainRAM(DvdFile *file, void *buffer, Heap *heap,
+                    EAllocDirection allocDirection, u32 offset, u32 *readBytes, u32 *size);  // 8022277c
 
 // non-official
-void* LoadToMainRAMLZDecomp(const char* path, StreamDecompLZ* streamDecompLZ, void* buffer, Heap* heap,
+void *LoadToMainRAMLZDecomp(const char *path, StreamDecompLZ *streamDecompLZ, void *buffer, Heap *heap,
                             EAllocDirection allocDirection, u32 offset, u32 lengthToDecompress, u32 r10);  // 8022293c
 
-void* LoadToMainRAMLZDecomp(DvdFile* file, StreamDecompLZ* streamDecompLZ, void* buffer, Heap* heap,
+void *LoadToMainRAMLZDecomp(DvdFile *file, StreamDecompLZ *streamDecompLZ, void *buffer, Heap *heap,
                             EAllocDirection allocDirection, u32 offset, u32 lengthToDecompress, u32 r10);  // 802229e8
 
 }  // namespace DvdRipper

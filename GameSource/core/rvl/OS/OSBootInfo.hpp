@@ -6,15 +6,15 @@
 namespace OS {
 struct BootInfo {
     static BootInfo mInstance;  // 80000000
-    static BootInfo* sInstance;  // 80386890
+    static BootInfo *sInstance;  // 80386890
     DVD::DiskID diskID;
     u32 magic;
     u32 version;
     u32 memorySize;
     u32 consoleType;
-    void* arenaLo;
-    void* arenaHi;
-    void* FSTLocation;
+    void *arenaLo;
+    void *arenaHi;
+    void *FSTLocation;
     u32 FSTMaxLength;
 };
 }  // namespace OS

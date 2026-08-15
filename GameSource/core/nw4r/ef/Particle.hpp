@@ -15,8 +15,8 @@ class Emitter;
 class ParticleManager;
 
 class ParticleParameter {
-   public:
-    void Initialize(ParticleParameterDesc* ppd, ParticleManager* pm);  // 800324b0
+public:
+    void Initialize(ParticleParameterDesc *ppd, ParticleManager *pm);  // 800324b0
     GX::Color color[2][2];
     math::VEC2 size;  // 0x10
     math::VEC2 scale;  // 0x18
@@ -25,7 +25,7 @@ class ParticleParameter {
     nw4r::math::VEC2 textureScale[3];  // 0x2c
     float textureRotate[3];  // 0x44
     nw4r::math::VEC2 textureTranslate[3];  // 0x50
-    TextureData* texture[3];  // 0x68
+    TextureData *texture[3];  // 0x68
     u16 textureWrap;  // 0x74
     u8 textureReverse;  // 0x76
     u8 alphaCmpRef0;
@@ -42,16 +42,16 @@ class ParticleParameter {
 };
 
 class Particle : public ReferencedObject {
-   public:
+public:
     Particle();  // 80032440
     ~Particle();  // 80032450
     void SendClosing() override;  // 80032490 vtable 802724e8
     void DestroyFunc() override;  // 800324a0
-    virtual bool Initialize(u16 life, nw4r::math::VEC3 position, nw4r::math::VEC3 velocity, ParticleManager* particleMgr,
-                            const nw4r::math::MTX34* space, float omentum, const EmitterInheritSetting* setting, Particle* sourceParticle);  // 800327d0
+    virtual bool Initialize(u16 life, nw4r::math::VEC3 position, nw4r::math::VEC3 velocity, ParticleManager *particleMgr,
+                            const nw4r::math::MTX34 *space, float omentum, const EmitterInheritSetting *setting, Particle *sourceParticle);  // 800327d0
 
     ParticleParameter parameter;  // 0x20
-    ParticleManager* particleManager;  // 0xc8
+    ParticleManager *particleManager;  // 0xc8
 
     math::VEC3 prevAxis;  // 0xcc
 

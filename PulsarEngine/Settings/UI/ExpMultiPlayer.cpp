@@ -12,9 +12,9 @@ ExpMultiPlayer::ExpMultiPlayer() {
     this->onSettingsClickHandler.ptmf = &ExpMultiPlayer::OnSettingsButtonClick;
 }
 
-UIControl* ExpMultiPlayer::CreateExternalControl(u32 externControlId) {
+UIControl *ExpMultiPlayer::CreateExternalControl(u32 externControlId) {
     if (externControlId == this->externControlCount - 1) {
-        PushButton* button = new (PushButton);
+        PushButton *button = new (PushButton);
         this->AddControl(this->controlCount++, *button, 0);
 
         button->Load(UI::buttonFolder, "Settings1P", "Settings1P", this->activePlayerBitfield, 0, false);
@@ -25,7 +25,7 @@ UIControl* ExpMultiPlayer::CreateExternalControl(u32 externControlId) {
     return this->Pages::MultiPlayer::CreateExternalControl(externControlId);
 }
 
-void ExpMultiPlayer::SetButtonHandlers(PushButton& button) {
+void ExpMultiPlayer::SetButtonHandlers(PushButton &button) {
     if (button.buttonId == this->externControlCount - 1) {
         button.SetOnClickHandler(this->onSettingsClickHandler, 0);
         button.SetOnSelectHandler(this->onButtonSelectHandler);
@@ -36,7 +36,7 @@ void ExpMultiPlayer::SetButtonHandlers(PushButton& button) {
     this->Pages::MultiPlayer::SetButtonHandlers(button);
 }
 
-void ExpMultiPlayer::OnExternalButtonSelect(PushButton& button, u32 hudSlotId) {
+void ExpMultiPlayer::OnExternalButtonSelect(PushButton &button, u32 hudSlotId) {
     if (button.buttonId == this->externControlCount - 1) {
         this->bottomText->SetMessage(BMG_SETTINGSBUTTON_BOTTOM);
         return;
@@ -51,9 +51,9 @@ void ExpMultiPlayer::OnExternalButtonSelect(PushButton& button, u32 hudSlotId) {
     this->externControlCount = originalExternControlCount;
 }
 
-void ExpMultiPlayer::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
-    SettingsPageSelect* settingsPageSelect = ExpSection::GetSection()->GetPulPage<SettingsPageSelect>();
-    SettingsPanel* settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
+void ExpMultiPlayer::OnSettingsButtonClick(PushButton &button, u32 hudSlotId) {
+    SettingsPageSelect *settingsPageSelect = ExpSection::GetSection()->GetPulPage<SettingsPageSelect>();
+    SettingsPanel *settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
     if (settingsPageSelect == nullptr || settingsPanel == nullptr) return;
 
     settingsPageSelect->SetContext(Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_MULTIPLAYER_MENU);

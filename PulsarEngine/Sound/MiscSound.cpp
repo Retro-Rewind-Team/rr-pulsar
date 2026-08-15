@@ -44,14 +44,14 @@ static bool ShouldRefreshWifiMenuMusic(u32 soundId) {
     const u8 musicSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC);
     if (musicSetting != MUSIC_DISABLE_RACE) return false;
 
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
     if (sectionMgr == nullptr) return false;
 
     return IsOnlineRaceSection(sectionMgr->prevSectionId);
 }
 
 // RaceAudioMgr SetRaceState patch that skips the entire func, effectively disabling the mgr
-static void DisableRaceMusic(Audio::SinglePlayer& singlePlayer, u32 soundId, s16 delay) {
+static void DisableRaceMusic(Audio::SinglePlayer &singlePlayer, u32 soundId, s16 delay) {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) == MUSIC_DEFAULT;
     if (isEnabled) singlePlayer.PlaySound(soundId, delay);
 }
@@ -62,23 +62,23 @@ kmCall(0x80711074, DisableRaceMusic);  // RaceMgr::SetRaceState
 kmCall(0x8064a398, DisableRaceMusic);  // wifi waiting, hook at Page::LiveViewWaiting
 kmCall(0x8064a340, DisableRaceMusic);  // wifi waiting
 
-static void PreventPrepareRaceMusic(u32 unused, Audio::Handle* handle, u32 soundId) {
+static void PreventPrepareRaceMusic(u32 unused, Audio::Handle *handle, u32 soundId) {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) == MUSIC_DEFAULT;
     if (isEnabled) Audio::Manager::sInstance->PrepareSound(handle, soundId);
 }
 kmCall(0x806f8eb4, PreventPrepareRaceMusic);
 
-static void DisableMenuMusic(Audio::SinglePlayer& singlePlayer, u32 soundId, s16 delay) {
+static void DisableMenuMusic(Audio::SinglePlayer &singlePlayer, u32 soundId, s16 delay) {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) != MUSIC_DISABLE_ALL;
     if (isEnabled) singlePlayer.PlaySound(soundId, delay);
 }
 kmCall(0x806fa64c, DisableMenuMusic);
 
-static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 soundId) {
+static void DisableAndChangeBGMusic(Audio::SinglePlayer &singlePlayer, u32 soundId) {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) != MUSIC_DISABLE_ALL;
     if (isEnabled) {
         const bool shouldRefreshWifiMusic = ShouldRefreshWifiMenuMusic(soundId);
-        const char* customBGPath = nullptr;
+        const char *customBGPath = nullptr;
         if (soundId == SOUND_ID_TITLE)
             customBGPath = titleMusicFile;
         else if (soundId == SOUND_ID_OFFLINE_MENUS)
@@ -110,7 +110,7 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer& singlePlayer, u32 sound
 }
 kmCall(0x806fa664, DisableAndChangeBGMusic);
 kmWrite32(0x8085a674, 0x60000000);  // no use in preparing the TT jingle if you're going to the change character menu
-static snd::SoundArchive::SoundType PatchPrepareStreamsBG(snd::SoundArchive& archive, u32 soundId) {
+static snd::SoundArchive::SoundType PatchPrepareStreamsBG(snd::SoundArchive &archive, u32 soundId) {
     if (soundId == SOUND_ID_KC) {
         const SectionId section = SectionMgr::sInstance->curSection->sectionId;
 
@@ -120,7 +120,7 @@ static snd::SoundArchive::SoundType PatchPrepareStreamsBG(snd::SoundArchive& arc
         else if (section >= SECTION_P1_WIFI && section <= SECTION_P2_WIFI_FROOM_COIN_VOTING)
             type = 2;
         if (type != 0) {
-            register Audio::StreamsMgr* streams;
+            register Audio::StreamsMgr *streams;
             asm(mr streams, r30;);
             snd::StrmSoundHandle strmHandle(streams->curHandle);
             for (int i = 0; i < 4; ++i) {
@@ -137,7 +137,7 @@ kmCall(0x806fa2fc, PatchPrepareStreamsBG);
 
 static void ToggleMenuMusic() {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) != MUSIC_DISABLE_ALL;
-    Audio::SinglePlayer* singlePlayer = Audio::SinglePlayer::sInstance;
+    Audio::SinglePlayer *singlePlayer = Audio::SinglePlayer::sInstance;
     if (isEnabled)
         singlePlayer->PlayBGSound(2);
     else
@@ -145,7 +145,7 @@ static void ToggleMenuMusic() {
 }
 Settings::Hook ToggleMenuMusicHook(ToggleMenuMusic);
 
-static float CheckFanfare(const Audio::SinglePlayer& singlePlayer) {
+static float CheckFanfare(const Audio::SinglePlayer &singlePlayer) {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) == MUSIC_DEFAULT;
     if (isEnabled)
         return singlePlayer.GetFanfareLength();
@@ -240,8 +240,8 @@ static asmFunc UseSpecialReceiveSoundForMegaThundercloud() {
 kmCall(0x80798028, UseSpecialReceiveSoundForMegaThundercloud);
 
 kmRuntimeUse(0x8071497c);
-static bool StartItemReceiveSoundWithPitch(Audio::RSARPlayer* rsarPlayer, u32 soundId, u32 localPlayerNum) {
-    typedef bool (*PlaySound)(Audio::RSARPlayer*, u32, u32);
+static bool StartItemReceiveSoundWithPitch(Audio::RSARPlayer *rsarPlayer, u32 soundId, u32 localPlayerNum) {
+    typedef bool (*PlaySound)(Audio::RSARPlayer *, u32, u32);
     const bool ret = reinterpret_cast<PlaySound>(kmRuntimeAddr(0x8071497c))(rsarPlayer, soundId, localPlayerNum);
 
     if (ret && specialItemReceiveSoundPitchPending != 0 && soundId == 0xE3 && Audio::RSARPlayer::seqSoundHandle.basicSound != nullptr) {
@@ -253,12 +253,12 @@ static bool StartItemReceiveSoundWithPitch(Audio::RSARPlayer* rsarPlayer, u32 so
 kmCall(0x80798160, StartItemReceiveSoundWithPitch);
 kmCall(0x8079803c, StartItemReceiveSoundWithPitch);
 
-snd::SoundStartable::StartResult PlayExtBRSEQ(snd::SoundStartable& startable, Audio::Handle& handle, const char* fileName, const char* labelName, bool hold) {
+snd::SoundStartable::StartResult PlayExtBRSEQ(snd::SoundStartable &startable, Audio::Handle &handle, const char *fileName, const char *labelName, bool hold) {
     snd::SoundStartable::StartInfo startInfo;
     startInfo.seqSoundInfo.startLocationLabel = labelName;
     startInfo.enableFlag |= snd::SoundStartable::StartInfo::ENABLE_SEQ_SOUND_INFO;
 
-    void* file = ArchiveMgr::sInstance->GetFile(ARCHIVE_HOLDER_COMMON, fileName);
+    void *file = ArchiveMgr::sInstance->GetFile(ARCHIVE_HOLDER_COMMON, fileName);
     if (file != nullptr) {
         startInfo.seqSoundInfo.seqDataAddress = file;
         if (hold)

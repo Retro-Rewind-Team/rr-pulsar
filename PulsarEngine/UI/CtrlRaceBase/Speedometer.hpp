@@ -7,13 +7,13 @@
 namespace Pulsar {
 namespace UI {
 class CtrlRaceSpeedo : public CtrlRaceBase {
-   public:
+public:
     void Init() override;
     void OnUpdate() override;
     static u32 Count();
-    static void Create(Page& page, u32 index, u32 count);
+    static void Create(Page &page, u32 index, u32 count);
 
-   private:
+private:
     struct SpeedArg {
         SpeedArg() {}
         SpeedArg(u32 hundreds, u32 tens, u32 units, u32 dot, u32 tenths, u32 hundredths, u32 thousandths) : hundreds(hundreds), tens(tens), units(units), dot(dot), tenths(tenths), hundredths(hundredths), thousandths(thousandths) {}
@@ -30,8 +30,8 @@ class CtrlRaceSpeedo : public CtrlRaceBase {
             };
         };
     };
-    void Load(const char* variant, u8 id);
-    void Animate(const SpeedArg* args = nullptr);
+    void Load(const char *variant, u8 id);
+    void Animate(const SpeedArg *args = nullptr);
 };
 }  // namespace UI
 }  // namespace Pulsar

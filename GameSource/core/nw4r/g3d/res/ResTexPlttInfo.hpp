@@ -15,7 +15,7 @@ struct ResTexPlttInfoOffsetData {  // https://wiki.tockdom.com/wiki/MDL0_(File_F
 };
 
 class ResTexPlttInfoOffset : public ResCommon<ResTexPlttInfoOffsetData> {
-   public:
+public:
 };
 }  // namespace g3d
 }  // namespace nw4r

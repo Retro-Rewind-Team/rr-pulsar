@@ -6,7 +6,7 @@
 namespace Objects {
 // ObjectNum 0x17a = 378 StarRing, ObjectNum 0x259 = 601 DonkyCannonGC, ObjectNum 0x25f = 607 DonkyCannon_wii, ObjectNum 0x261 = 609 tree_cannon
 class Cannon : public ObjectCollidable {
-   public:
+public:
     enum Type {
         DonkyCannon_wii = 0,
         DonkyCannonGC = 1,
@@ -14,7 +14,7 @@ class Cannon : public ObjectCollidable {
         StarRing = 3
     };
     static u8 cannonCount;  // 0x809c2248
-    explicit Cannon(const KMP::Holder<GOBJ>& gobjHolder);  // 806bfb14
+    explicit Cannon(const KMP::Holder<GOBJ> &gobjHolder);  // 806bfb14
     ~Cannon() override;  // 806bfd90 vtable 808c2fa0
     void OnStart() override;  // 0xC 806bfddc
     void Update() override;  // 0x14 806bfed0

@@ -84,8 +84,8 @@ asmFunc GetKartDriverDispEntryHook() {
 kmBranch(0x805924b4, GetKartDriverDispEntryHook);
 
 kmRuntimeUse(0x807e3cac);
-static int GetCharacterIdForButtonHook(CtrlMenuCharacterSelect* ctrl, u32 weightClass, u32 buttonIdx) {
-    typedef int (*GetCharacterIdForButtonFn)(CtrlMenuCharacterSelect*, u32, u32);
+static int GetCharacterIdForButtonHook(CtrlMenuCharacterSelect *ctrl, u32 weightClass, u32 buttonIdx) {
+    typedef int (*GetCharacterIdForButtonFn)(CtrlMenuCharacterSelect *, u32, u32);
     const GetCharacterIdForButtonFn original = reinterpret_cast<GetCharacterIdForButtonFn>(kmRuntimeAddr(0x807e3cac));
 
     const int character = original(ctrl, weightClass, buttonIdx);
@@ -96,7 +96,7 @@ static int GetCharacterIdForButtonHook(CtrlMenuCharacterSelect* ctrl, u32 weight
             const u32 localIdx = buttonIdx % categorySize;
             const u32 localColumn = localIdx % categoryCount;
             if (localColumn == 2) {
-                RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+                RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
                 if (rksys == nullptr) return character;
                 const CharacterId miiCCharacter = static_cast<CharacterId>(character);
                 if (PointRating::GetUserVR(rksys->curLicenseId) < 300.0f) return CHARACTER_NONE;
@@ -177,7 +177,7 @@ asmFunc MiiOutfitCInitialFocus() {
     ASM(
         nofralloc;
 
-        lwz r3, __kAutoMap_0x809c1e38@l(r31);
+        lwz r3, __kAutoMap_0x809c1e38 @l(r31);
         lwz r0, 0x98(r3);
         add r3, r0, r28;
         lwz r3, 0x12c(r3);
@@ -223,14 +223,14 @@ asmFunc MiiOutfitCInitialFocus() {
         beq - skip;
 
         select :;
-        lis r12, __kAutoMap_0x807e2fb0@h;
-        ori r12, r12, __kAutoMap_0x807e2fb0@l;
+        lis r12, __kAutoMap_0x807e2fb0 @h;
+        ori r12, r12, __kAutoMap_0x807e2fb0 @l;
         mtctr r12;
         bctr;
 
         skip :;
-        lis r12, __kAutoMap_0x807e3064@h;
-        ori r12, r12, __kAutoMap_0x807e3064@l;
+        lis r12, __kAutoMap_0x807e3064 @h;
+        ori r12, r12, __kAutoMap_0x807e3064 @l;
         mtctr r12;
         bctr;);
 }

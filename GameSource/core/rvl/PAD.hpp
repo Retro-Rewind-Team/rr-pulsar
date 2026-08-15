@@ -42,9 +42,9 @@ struct Status {
 
 BOOL Init();  // 801af2f0
 BOOL Reset(u32 mask);  // 801af0dc
-u32 Read(Status* dest);  // 801af44c
-void ClampCircle(Status* status);  // 801ae6f4
-void Clamp(Status* status, u32 type);  // 801ae7dc
+u32 Read(Status *dest);  // 801af44c
+void ClampCircle(Status *status);  // 801ae6f4
+void Clamp(Status *status, u32 type);  // 801ae7dc
 BOOL Recalibrate(u32 mask);  // 801aef1e4
 void ControlMotor(int channel, u32 command);  // 801af908
 

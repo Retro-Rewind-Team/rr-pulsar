@@ -6,7 +6,7 @@
 namespace Pulsar {
 namespace UI {
 // Adapted from east_'s code
-static void FasterMenusOnSceneChange(SectionMgr* sectionMgr, u32 delay, u32 color) {
+static void FasterMenusOnSceneChange(SectionMgr *sectionMgr, u32 delay, u32 color) {
     if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FASTMENUS) == FASTMENUS_ENABLED) delay = 0;
     sectionMgr->RequestSceneChange(delay, color);
 }

@@ -18,7 +18,7 @@ enum Status {
 };
 
 class Mgr {
-   public:
+public:
     static const u16 spectatorVote = 0x45;
     static const u32 arbitraryAlmostDied = 60;  // 60 frames in danger in the last 5s = almost out
 
@@ -43,13 +43,13 @@ class Mgr {
         Final final;
     };
 
-    static void Create(Page* froom, u32 director, float length);
+    static void Create(Page *froom, u32 director, float length);
     static void Update();  // RaceFrameHook
-    static void ProcessKOs(Pages::GPVSLeaderboardUpdate::Player* playerArr,
+    static void ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr,
                            size_t nitems, size_t size,
-                           int (*compar)(const void*, const void*));
+                           int (*compar)(const void *, const void *));
 
-    static int SortPlayersByPosition(PlayerPosition* a, PlayerPosition* b) {
+    static int SortPlayersByPosition(PlayerPosition *a, PlayerPosition *b) {
         return a->position - b->position;
     }
 
@@ -58,7 +58,7 @@ class Mgr {
 
     inline void ResetRace() {
         for (int i = 0; i < 2; ++i) {
-            Stats& stats = this->stats[i];
+            Stats &stats = this->stats[i];
             memset(&stats.isInDangerFrames[0], 0, sizeof(u8) * 300);
             stats.boolCountArray = 0;
             this->posTrackerAnmFrames[i] = 0;
@@ -115,7 +115,7 @@ class Mgr {
 
     bool GetIsSwapped() const { return this->hasSwapped; }
     void SwapControllersAndUI();
-    void PatchAids(RKNet::ControllerSub& sub) const;
+    void PatchAids(RKNet::ControllerSub &sub) const;
     PageId KickPlayersOut(PageId defaultId);
 
     SectionId GetSectionAfterKO(SectionId defaultId) const;
@@ -131,7 +131,7 @@ class Mgr {
     void FinishOfflineVSIfAllLocalPlayersAreOut();
     void PrepareOfflineVSNextRace();
 
-   private:
+private:
     void SetStatus(u8 playerId, Status status) {
         u32 aidSlot = this->GetAidAndSlotFromPlayerId(playerId);
         this->status[aidSlot & 0xFFFF][aidSlot >> 16] = status;
@@ -145,7 +145,7 @@ class Mgr {
     bool isOfflineVS;
     u8 offlineRaceNumber;
 
-   public:
+public:
     bool isTiebreakerRace;
     u8 racesPerKO;
     u8 koPerRace;

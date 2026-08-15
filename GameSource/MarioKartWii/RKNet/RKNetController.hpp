@@ -55,15 +55,15 @@ struct Friend {
 };  // total size 0xC
 
 class SplitRACEPointers {
-   public:
+public:
     SplitRACEPointers();  // 8065a3dc inlined
     ~SplitRACEPointers();  // 8065a474
 
     template <class T>
-    PacketHolder<T>* GetPacketHolder() { return (PacketHolder<T>*)(this->packetHolders[T::idx]); };
+    PacketHolder<T> *GetPacketHolder() { return (PacketHolder<T> *)(this->packetHolders[T::idx]); };
     template <class T>
-    const PacketHolder<T>* GetPacketHolder() const { return (PacketHolder<T>*)(this->packetHolders[T::idx]); };
-    PacketHolder<void>* packetHolders[8];
+    const PacketHolder<T> *GetPacketHolder() const { return (PacketHolder<T> *)(this->packetHolders[T::idx]); };
+    PacketHolder<void> *packetHolders[8];
 
 };  // 0x20
 // size_assert(SplitRACEPointers, 0x20);
@@ -137,10 +137,10 @@ and a string rk = 'mode' and evaluationString and p = int
 static char mode[0x7e];  // 809c1fd8 'vs' for example, used as keyValue
 static char evaluationString[0x7e];  // 809c2058
 static char matchmakingFilter[0x7e];  // 809c1f58 the full string
-void GPReverseBuddiesListCallback(GP::Connection* connection, GP::GetReverseBuddiesListResponseArg* arg, Controller* self);  // 8065a8d4
+void GPReverseBuddiesListCallback(GP::Connection *connection, GP::GetReverseBuddiesListResponseArg *arg, Controller *self);  // 8065a8d4
 void SetGPError(GP::Result badResult);  // 8065a974
 struct RatingRangeMaker {
-    static u16* groups;  // 8089a1d0
+    static u16 *groups;  // 8089a1d0
     // groups for VS: 1-3000, 3000-4250, 4250-5750, 5750-7000, 7000-9999 so a rating a 5000 would return 2
     void Init();  // 8065a4f8 inlined in Controller::Init
     u16 GetLowerRange(u16 rating, bool isBattle) const;  // 8065a5e0 returns rating - ranges[1][rating's group][isBattle]
@@ -158,27 +158,27 @@ struct ErrorParams {
 };
 
 class Controller {
-   public:
-    static Controller* sInstance;  // 809c20d8
-    static Controller* CreateInstance();  // 80655b24
+public:
+    static Controller *sInstance;  // 809c20d8
+    static Controller *CreateInstance();  // 80655b24
     static void DestroyInstance();  // 80655bac
-    explicit Controller(EGG::ExpHeap* heap);  // 80657004
+    explicit Controller(EGG::ExpHeap *heap);  // 80657004
     virtual ~Controller();  // 8065741c vtable 808c097c
 
-    static void MainNetworkLoop(Controller* controller);  // 80657500
-    static void* SOAlloc(u32 size);  // 80658418
-    static void SOFree(void* memBlock);  // 80658498
-    static void* DWCAlloc(u32 size, s32 alignment);  // 80658500
-    static void DWCFree(void* memBlock);  // 8065858c
-    static void LoginCallback(DWC::Error error, int profileId, Controller* self);  // 80658614 DWC::LoginCallback
-    static void MatchedSCCallback(DWC::Error error, BOOL cancel, BOOL isSelf, BOOL isServer, int index, Controller* self);  // 80658718 DWC::MatchedSCCallback
-    static bool ConnectionAttemptCallback(ConnectionUserData* newClientUserData, Controller* self);  // 80658768  true if the player is <=12, this validates the ResvPacket
-    static void ConnectionClosedCallback(DWC::Error error, BOOL isLocal, BOOL isServer, u32 aid, int index, Controller* controller);  // 80658824 DWC::ConnectionClosedCallback
-    static void UpdateServersCallback(DWC::Error error, BOOL isChanged, Controller* self);  // 806588d8 DWC::UpdateServersCallback
-    static void UpdateServersCallbackAlt(DWC::Error error, BOOL isChanged, Controller* self);  // 806588fc
-    static void FriendStatusCallback(int index, u8 status, const char* statusString, Controller* self);  // 80658918 DWC::FriendStatusCallback just a blr
-    static void BuddyFriendCallback(int index, Controller* self);  // 8065891c DWC::BuddyFriendCallback
-    static void UserRecvCallback(u32 aid, RACEPacketHeader* packet, u32 size);  // 806585f4 DWC::UserRecvCallback in DWC::TransportInfo
+    static void MainNetworkLoop(Controller *controller);  // 80657500
+    static void *SOAlloc(u32 size);  // 80658418
+    static void SOFree(void *memBlock);  // 80658498
+    static void *DWCAlloc(u32 size, s32 alignment);  // 80658500
+    static void DWCFree(void *memBlock);  // 8065858c
+    static void LoginCallback(DWC::Error error, int profileId, Controller *self);  // 80658614 DWC::LoginCallback
+    static void MatchedSCCallback(DWC::Error error, BOOL cancel, BOOL isSelf, BOOL isServer, int index, Controller *self);  // 80658718 DWC::MatchedSCCallback
+    static bool ConnectionAttemptCallback(ConnectionUserData *newClientUserData, Controller *self);  // 80658768  true if the player is <=12, this validates the ResvPacket
+    static void ConnectionClosedCallback(DWC::Error error, BOOL isLocal, BOOL isServer, u32 aid, int index, Controller *controller);  // 80658824 DWC::ConnectionClosedCallback
+    static void UpdateServersCallback(DWC::Error error, BOOL isChanged, Controller *self);  // 806588d8 DWC::UpdateServersCallback
+    static void UpdateServersCallbackAlt(DWC::Error error, BOOL isChanged, Controller *self);  // 806588fc
+    static void FriendStatusCallback(int index, u8 status, const char *statusString, Controller *self);  // 80658918 DWC::FriendStatusCallback just a blr
+    static void BuddyFriendCallback(int index, Controller *self);  // 8065891c DWC::BuddyFriendCallback
+    static void UserRecvCallback(u32 aid, RACEPacketHeader *packet, u32 size);  // 806585f4 DWC::UserRecvCallback in DWC::TransportInfo
 
     void ScheduleShutdown();  // 806561a8
     void Init(u8 localPlayerCount);  // 80655c10 starts MainNetworkLoop
@@ -197,7 +197,7 @@ class Controller {
     void UpdateServersAsync();  // 80656b44
     void UpdateFriendsStatus();  // 80656b6c
     // check if any of my friends' pids match the pids that have added me back, obtained through a GP::ReverseBuddiesList search, and when that is, set the bool in the Friend structure
-    void SetFriendsAddedBack(u32* pidsThatHaveAddedBack, u32 countOfPids);  // 80656ca0
+    void SetFriendsAddedBack(u32 *pidsThatHaveAddedBack, u32 countOfPids);  // 80656ca0
     void SetFriendDeleted(u32 friendIdx);  // 80656d6c
     bool CanExchangeFriendData();  // 80656d9c returns true if all these are false: checks if last error is friend related (4xxxx) or SAKE related (98xxx) or connection state is NOT idle/room
     bool IsIdle();  // 80656e44 checks if MainLoop is running, which returns false (via EGG::TaskThread::IsTaskExist)
@@ -213,8 +213,8 @@ class Controller {
     void SetConnectionState(ConnectionState state);  // 80658140
     ConnectionState GetConnectionState() const;  // 80658148
     void HandleError();  // 806581cc gets errorcode, divides by 10000 (to get sequence), divides by 1000 to get seq + SDK src
-    void* Alloc(u32 size, s32 alignment);  // 8065832c
-    void Free(void* memBlock);  // 806583b4
+    void *Alloc(u32 size, s32 alignment);  // 8065832c
+    void Free(void *memBlock);  // 806583b4
     void SetDWCRecvBuffers();  // 80658928
     void ProcessPlayerDisconnect(u32 aid);  // 80658990
     void ConnectToWFC();  // 80658b9c
@@ -226,7 +226,7 @@ class Controller {
     void SetupGameServer();  // 806595b8
     void ConnectToGameServerFromGroupId();  // 80659680
     void CalcRACEPacketCRC32(u32 aid);  // 80659a3c
-    void ProcessRACEPacket(u32 aid, const RACEPacketHeader& packet, u32 size);  // 80659a84
+    void ProcessRACEPacket(u32 aid, const RACEPacketHeader &packet, u32 size);  // 80659a84
     void UpdateAidsBelongingToPlayerIds();  // 80659bc0
     void ResetAidsBelongingToPlayerIds();  // 80659d20
     SearchType GetFriendSearchType(u32 friendIdx) const;  // 80659fa4 not quite DWC::FriendStatus
@@ -237,19 +237,19 @@ class Controller {
     void ResetErrorParams();  // 80656a30
     u32 GetSubTickDiff() const;  // 80656a8c returns ((u32)sub.unk0-(u32)OS::GetTime)/(busClock / 4)
     template <class T>
-    PacketHolder<T>* GetSendPacketHolder(u8 aid) const {
+    PacketHolder<T> *GetSendPacketHolder(u8 aid) const {
         return this->splitToSendRACEPackets[this->lastSendBufferUsed[aid]][aid]->GetPacketHolder<T>();
     }
     template <class T>
-    PacketHolder<T>* GetReceivedPacketHolder(u8 aid) const {
+    PacketHolder<T> *GetReceivedPacketHolder(u8 aid) const {
         u32 idx = T::idx;
         return this->splitReceivedRACEPackets[this->lastReceivedBufferUsed[aid][idx]][aid]->GetPacketHolder<T>();
     }
     u32 unkVtable;  // unknown class vtable 808c0988
     OS::Mutex mutex;  // 0x8
 
-    EGG::Heap* Heap;  // 0x20
-    EGG::TaskThread* taskThread;  // 0x24
+    EGG::Heap *Heap;  // 0x20
+    EGG::TaskThread *taskThread;  // 0x24
     ConnectionState connectionState;  // 0x28
 
     ErrorParams errorParams;  // 0x2c
@@ -260,18 +260,18 @@ class Controller {
     RoomType roomType;  // 0xe8
     u8 unknown_0xec[4];
 
-    SplitRACEPointers* splitToSendRACEPackets[2][12];  // 0xf0 split pointers for the outgoing packets, double buffered, indexed by aid
-    SplitRACEPointers* splitReceivedRACEPackets[2][12];  // 0x150 split pointers for the incoming packets, double buffered, indexed by aid
-    PacketHolder<void>* fullSendPackets[12];  // 0x1b0 combined outgoing packets, indexed by aid
+    SplitRACEPointers *splitToSendRACEPackets[2][12];  // 0xf0 split pointers for the outgoing packets, double buffered, indexed by aid
+    SplitRACEPointers *splitReceivedRACEPackets[2][12];  // 0x150 split pointers for the incoming packets, double buffered, indexed by aid
+    PacketHolder<void> *fullSendPackets[12];  // 0x1b0 combined outgoing packets, indexed by aid
     u64 lastRACEToSendTimes[12];  // 0x1e0 time when last sent to that aid
     u64 lastRACERecivedTimes[12];  // 0x240 time when last received from that aid
     u64 RACEToSendTimesTaken[12];  // 0x2a0 last send time minus the time of the send before it
     u64 RACEReceivedTimesTaken[12];  // 0x300 last receive time minus the time of the receive before it
     u8 lastRACESendAid;  // 0x360 aid a packet was last sent to
-   private:  // because it's modified in pulsar
+private:  // because it's modified in pulsar
     u8 fullReceivedPackets[12][0x2e0];  // 0x361 1 per aid
     u8 padding[3];  // 0x25e1
-   public:
+public:
     StatusData localStatusData;  // 0x25e4 8 bytes, see http://wiki.tockdom.com/wiki/MKWii_Network_Protocol/Server/gpcm.gs.nintendowifi.net#locstring
     Friend friends[30];  // 0x25ec
     bool friendsListIsChanged;  // 0x2754 true if unprocessed changes have happeend
@@ -296,7 +296,7 @@ class Controller {
     u32 biggestRH1Timer;  // 0x29c0
     u8 unknown_0x29c4[4];
 
-    static u32* splitRACEPointersBufferSizes;  // 8089a194 same order as split packets header, raceHeader1, raceHeader2, select, 2 * racedata, user, 2 * item, event,
+    static u32 *splitRACEPointersBufferSizes;  // 8089a194 same order as split packets header, raceHeader1, raceHeader2, select, 2 * racedata, user, 2 * item, event,
 };
 // size_assert(Controller, 0x29c8);
 

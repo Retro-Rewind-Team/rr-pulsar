@@ -25,40 +25,40 @@ class Items {
     void KillKouraTailBEffect(u32 idx);  // 8068d4cc
 
     // lifeframes = how long since it's started, playerIdx only needed if updateVelocity true as it uses the player's velocity
-    void CreateKouraTailGEffect(u32 idx, const Vec3& translation, const Vec3& rotationAngle, u32 lifeFrames, bool enable,
+    void CreateKouraTailGEffect(u32 idx, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool enable,
                                 float scale);  // 8068d284
-    void CreateKouraTailREffect(u32 idx, const Vec3& translation, const Vec3& rotationAngle, u32 lifeFrames, bool enable,
+    void CreateKouraTailREffect(u32 idx, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool enable,
                                 float scale);  // 8068d2d8
-    void CreateKouraTailBEffect(u32 idx, const Vec3& translation, const Vec3& rotationAngle, u32 lifeFrames, bool enable,
-                                const Mtx34& transMtx, bool updatePtclLifeAndVelocity, u32 playerIdx, float scale);  // 8068d32c
+    void CreateKouraTailBEffect(u32 idx, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool enable,
+                                const Mtx34 &transMtx, bool updatePtclLifeAndVelocity, u32 playerIdx, float scale);  // 8068d32c
 
-    void CreateKouraTailEffect(EGG::Effect* effect, const Vec3& translation, const Vec3& rotationAngle, u32 lifeFrames, bool useExtMtx,
-                               bool enable, const Mtx34& extMtx, bool updatePtclLifeAndVelocity, u32 playerIdx, float scale);  // 8068dd08 calcs Mtx using pos and angle except if useExtMtx is true
+    void CreateKouraTailEffect(EGG::Effect *effect, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool useExtMtx,
+                               bool enable, const Mtx34 &extMtx, bool updatePtclLifeAndVelocity, u32 playerIdx, float scale);  // 8068dd08 calcs Mtx using pos and angle except if useExtMtx is true
 
-    void CreateHaneKouraEffect(const Vec3& position);  // 8068d748 Blue shell explosion
+    void CreateHaneKouraEffect(const Vec3 &position);  // 8068d748 Blue shell explosion
 
-    void CreateBananaEffect(const Mtx34& transMtx, float scale);  // 8068d848
+    void CreateBananaEffect(const Mtx34 &transMtx, float scale);  // 8068d848
 
     void KillBombHeiSparkEffect(u32 idx);  // 8068d81c
-    void CreateBombHeiSparkEffect(u32 idx, const Mtx34& transMtx);  // 8068d784
-    void CreateBombHeiEffect(const Vec3& pos, u32 type, float scale);  // 8068d608 normal, Red, Blue and then checks 0x30 for S versions like rk_BombHeiS
+    void CreateBombHeiSparkEffect(u32 idx, const Mtx34 &transMtx);  // 8068d784
+    void CreateBombHeiEffect(const Vec3 &pos, u32 type, float scale);  // 8068d608 normal, Red, Blue and then checks 0x30 for S versions like rk_BombHeiS
 
     void CreateItemVanEffect();  // 8068d5e8
     void CreateKouraBrkGEffect();  // 8068d4f8
     void CreateKouraBrkREffect();  // 8068d570 brk = break, red shell breaks
 
     void KillKaminariGumoPreEffect(u32 idx);  // 8068dad8
-    void CreateKaminariGumoPreEffect(u32 idx, const Vec3& pos, const Vec3& scale);  // 8068d9e8
+    void CreateKaminariGumoPreEffect(u32 idx, const Vec3 &pos, const Vec3 &scale);  // 8068d9e8
     void CreateKaminariGumoVanEffect(u32 idx);  // 8068daf4
-    void UpdateKaminariGumoVanEffect(u32 idx, const Vec3& translation, u32 playerId);  // 8068db8c
+    void UpdateKaminariGumoVanEffect(u32 idx, const Vec3 &translation, u32 playerId);  // 8068db8c
 
-    EGG::Effect** rk_kouraTailG;  // length capacity 8068cfb8
-    EGG::Effect** rk_kouraTailR;  // length capacity
-    EGG::Effect** rk_kouraTailB;  // 0x8 length capacity
-    EGG::Effect** rk_bombHeiSpark;  // length capacity 0xC
-    EGG::Effect** rk_kaminariGumoPre;  // length capacity 0x10
-    EGG::Effect** rk_kaminariGumoVan;  // length capacity 0x14
-    EGG::Effect** rk_kaminariGumoVanS;  // length capacity 0x18
+    EGG::Effect **rk_kouraTailG;  // length capacity 8068cfb8
+    EGG::Effect **rk_kouraTailR;  // length capacity
+    EGG::Effect **rk_kouraTailB;  // 0x8 length capacity
+    EGG::Effect **rk_bombHeiSpark;  // length capacity 0xC
+    EGG::Effect **rk_kaminariGumoPre;  // length capacity 0x10
+    EGG::Effect **rk_kaminariGumoVan;  // length capacity 0x14
+    EGG::Effect **rk_kaminariGumoVanS;  // length capacity 0x18
     u32 greenShellCapacity;  // 0x1C
     u32 redShellCapacity;
     u32 blueShellCapacity;  //+4 if online gamemode

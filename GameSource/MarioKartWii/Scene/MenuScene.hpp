@@ -3,7 +3,7 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 
 class MenuScene : public GameScene {
-   public:
+public:
     MenuScene();  // 80554fa4
     ~MenuScene() override;  // 80554fe8 vtable 808b4280
     void OnCalc() override;  // 0x30 805552c8

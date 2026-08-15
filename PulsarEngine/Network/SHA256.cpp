@@ -42,14 +42,14 @@
 #define SHA256_F3(x) (ROTR(x, 7) ^ ROTR(x, 18) ^ SHFR(x, 3))
 #define SHA256_F4(x) (ROTR(x, 17) ^ ROTR(x, 19) ^ SHFR(x, 10))
 
-#define UNPACK32(x, str)      \
-    {                         \
-        *((u32*)(str)) = (x); \
+#define UNPACK32(x, str)       \
+    {                          \
+        *((u32 *)(str)) = (x); \
     }
 
-#define PACK32(str, x)         \
-    {                          \
-        *(x) = *((u32*)(str)); \
+#define PACK32(str, x)          \
+    {                           \
+        *(x) = *((u32 *)(str)); \
     }
 
 /* Macros used for loops unrolling */
@@ -86,7 +86,7 @@ static const u32 sha256_k[64] = {
     0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
-void SHA256Init(SHA256Context* ctx) {
+void SHA256Init(SHA256Context *ctx) {
     int i;
 
     for (i = 0; i < 8; i++)
@@ -96,12 +96,12 @@ void SHA256Init(SHA256Context* ctx) {
     ctx->tot_len = 0;
 }
 
-void SHA256Transform(SHA256Context* ctx, const u8* message, u32 block_nb) {
+void SHA256Transform(SHA256Context *ctx, const u8 *message, u32 block_nb) {
     /* Note: this function requires a considerable amount of stack */
     u32 w[64];
     u32 wv[8];
     u32 t1, t2;
-    const u8* sub_block;
+    const u8 *sub_block;
     int i, j;
 
     for (i = 0; i < (int)block_nb; i++) {
@@ -135,10 +135,10 @@ void SHA256Transform(SHA256Context* ctx, const u8* message, u32 block_nb) {
     }
 }
 
-void SHA256Update(SHA256Context* ctx, const void* data, u32 len) {
+void SHA256Update(SHA256Context *ctx, const void *data, u32 len) {
     u32 block_nb;
     u32 new_len, rem_len, tmp_len;
-    const u8* shifted_data;
+    const u8 *shifted_data;
 
     tmp_len = SHA256_BLOCK_SIZE - ctx->len;
     rem_len = len < tmp_len ? len : tmp_len;
@@ -153,7 +153,7 @@ void SHA256Update(SHA256Context* ctx, const void* data, u32 len) {
     new_len = len - rem_len;
     block_nb = new_len / SHA256_BLOCK_SIZE;
 
-    shifted_data = (u8*)data + rem_len;
+    shifted_data = (u8 *)data + rem_len;
 
     SHA256Transform(ctx, ctx->block, 1);
     SHA256Transform(ctx, shifted_data, block_nb);
@@ -166,7 +166,7 @@ void SHA256Update(SHA256Context* ctx, const void* data, u32 len) {
     ctx->tot_len += (block_nb + 1) << 6;
 }
 
-u8* SHA256Final(SHA256Context* ctx) {
+u8 *SHA256Final(SHA256Context *ctx) {
     u32 block_nb;
     u32 pm_len;
     u32 len_b;

@@ -10,8 +10,8 @@ class System;
 
 namespace Network {
 
-PulsarId RandomizeHAWTrack(const System& system, const CupsConfig& cupsConfig);
-void StoreBlockedTrack(System& system, PulsarId trackId);
+PulsarId RandomizeHAWTrack(const System &system, const CupsConfig &cupsConfig);
+void StoreBlockedTrack(System &system, PulsarId trackId);
 
 #define GetRecvPulSELECTPacket(addr)                      \
     asmFunc GetRecvPulSELECTPacket##addr() {              \

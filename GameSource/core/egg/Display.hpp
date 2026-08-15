@@ -11,19 +11,19 @@ void DrawDoneCallback();  // 801780b4
 void PostRetraceCallback(u32 retraceCount);
 
 class Video {
-   public:
+public:
     static u32 GetTickPerVRetrace(u32 format);  // 80243e70
     static u32 GetTickPerVRetrace();  // 80243ed0
-    GX::RenderModeObj* Configure(GX::RenderModeObj* newRenderMode, u32 r5);  // 80243d6c returns previous
-    GX::RenderModeObj* Initialize(GX::RenderModeObj* newRenderMode, u32 r5);  // 80243d18 returns previous
-    static GX::RenderModeObj* GetStandardRenderModeObj(const GX::RenderModeObj** defaultObjs);  // 80243db4
-    GX::RenderModeObj* mode;
+    GX::RenderModeObj *Configure(GX::RenderModeObj *newRenderMode, u32 r5);  // 80243d6c returns previous
+    GX::RenderModeObj *Initialize(GX::RenderModeObj *newRenderMode, u32 r5);  // 80243d18 returns previous
+    static GX::RenderModeObj *GetStandardRenderModeObj(const GX::RenderModeObj **defaultObjs);  // 80243db4
+    GX::RenderModeObj *mode;
     u32 bitfield;
     u32 unknown;
 };  // total size 0xc
 
 class Display {
-   public:
+public:
     Display(u8 timeBtwFrames);  // 80219e68
     bool clear;
     u8 padding[3];
@@ -47,8 +47,8 @@ class Display {
 };  // 0x28
 
 class AsyncDisplay : public Display {
-   public:
-    static void HandleAlarmWrapper(OS::Alarm* alarm, OS::Context* context);  // 8020fd10
+public:
+    static void HandleAlarmWrapper(OS::Alarm *alarm, OS::Context *context);  // 8020fd10
 
     AsyncDisplay(u8 timeBtwFrames);  // 8020fd18
     void beginFrame() override;  // 8020fe24 vtable 802a26e0
@@ -56,7 +56,7 @@ class AsyncDisplay : public Display {
     void endRender() override;  // 8020ff9c
     void postVRetrace();  // 80210024
     void startSyncNTSC(u8 r4);  // 8020fd8c
-    void HandleAlarm(OS::Alarm* alarm, OS::Context* context);  // 8020fd10
+    void HandleAlarm(OS::Alarm *alarm, OS::Context *context);  // 8020fd10
     OS::Alarm syncAlarm;  // 0x28
     u8 unknown_0x54[4];
     OS::ThreadQueue threadQueue;  // 0x58

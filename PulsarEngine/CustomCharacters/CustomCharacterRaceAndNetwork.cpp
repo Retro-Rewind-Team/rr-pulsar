@@ -6,24 +6,24 @@ namespace Pulsar {
 namespace CustomCharacters {
 
 // Tico models are placement-new constructed by the vanilla driver model path.
-TicoModel* CreateTicoModelHook(void* memory, DriverController* controller) {
+TicoModel *CreateTicoModelHook(void *memory, DriverController *controller) {
     if (memory == nullptr) return nullptr;
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     const u8 playerId = controller->GetPlayerIdx();
     const CharacterId character = racedata->racesScenario.players[playerId].characterId;
-    const LooseVoiceInfo& info = GetLooseVoiceInfo(character, RaceSkinTable(playerId, character));
+    const LooseVoiceInfo &info = GetLooseVoiceInfo(character, RaceSkinTable(playerId, character));
     if (info.hasFiles || info.silent) return nullptr;
     return new (memory) TicoModel(controller);
 }
 kmCall(0x807c8994, CreateTicoModelHook);
 
 // Temporarily swap the vanilla postfix so archive loads find the selected skin.
-const char** BeginNameSwap(u8 playerId, CharacterId character, const char*& oldName) {
-    const char** entry = CharacterNameEntry(character);
+const char **BeginNameSwap(u8 playerId, CharacterId character, const char *&oldName) {
+    const char **entry = CharacterNameEntry(character);
     oldName = nullptr;
     if (entry == nullptr) return nullptr;
     oldName = *entry;
-    const char* name = GeneratedCustomPostfix(character, RaceSkinTable(playerId, character));
+    const char *name = GeneratedCustomPostfix(character, RaceSkinTable(playerId, character));
     if (name == nullptr) name = GetDefaultCharacterPostfix(character);
     *entry = name;
     return entry;
@@ -32,7 +32,7 @@ const char** BeginNameSwap(u8 playerId, CharacterId character, const char*& oldN
 // Character select previews use the hovered button until section params catch up.
 CharacterId PreviewCharacter(u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT) return MARIO;
-    const SectionMgr* mgr = SectionMgr::sInstance;
+    const SectionMgr *mgr = SectionMgr::sInstance;
     CharacterId character = hoveredCharacters[hud];
     if (mgr != nullptr && mgr->sectionParams != nullptr && !IsCharacter(character)) character = mgr->sectionParams->characters[hud];
     return character;
@@ -40,11 +40,11 @@ CharacterId PreviewCharacter(u8 hud) {
 
 CharacterId SelectedCharacterForHud(u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT) return MARIO;
-    const SectionMgr* mgr = SectionMgr::sInstance;
+    const SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr != nullptr && mgr->sectionParams != nullptr && hud < mgr->sectionParams->localPlayerCount) {
         return mgr->sectionParams->characters[hud];
     }
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata != nullptr && hud < racedata->menusScenario.localPlayerCount) {
         const u8 playerId = racedata->menusScenario.settings.hudPlayerIds[hud];
         if (playerId < ONLINE_PLAYER_COUNT) return racedata->menusScenario.players[playerId].characterId;
@@ -53,7 +53,7 @@ CharacterId SelectedCharacterForHud(u8 hud) {
 }
 
 // Unpack up to two advertised skin tables from a remote player's SELECT packet.
-void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 characterTables) {
+void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8 *playerIdToAid, u16 characterTables) {
     if (playerIdToAid == nullptr) return;
     if (IsLocalMultiplayer()) {
         ResetOnlineCustomCharacterFlags();
@@ -72,7 +72,7 @@ void UpdateOnlineCharacterTablesFromAid(u8 aid, const u8* playerIdToAid, u16 cha
 u16 GetLocalOnlineCharacterTables() {
     if (IsLocalMultiplayer()) return 0;
     u8 localCount = GetLocalPlayerCount();
-    const SectionMgr* mgr = SectionMgr::sInstance;
+    const SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr != nullptr && mgr->sectionParams != nullptr) {
         localCount = static_cast<u8>(mgr->sectionParams->localPlayerCount);
     } else if (Racedata::sInstance != nullptr) {
@@ -93,14 +93,14 @@ bool ShouldUseCustomCharacterForPlayer(u8 playerId) {
 
 // Skin input only runs while the character select page is the active top layer.
 bool IsCharacterSelectActive() {
-    const SectionMgr* mgr = SectionMgr::sInstance;
+    const SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == nullptr || mgr->curSection == nullptr) return false;
-    const Pages::CharacterSelect* page = mgr->curSection->Get<Pages::CharacterSelect>();
+    const Pages::CharacterSelect *page = mgr->curSection->Get<Pages::CharacterSelect>();
     return page != nullptr && mgr->curSection->GetTopLayerPage() == page && page->currentState == STATE_ACTIVE && !page->updateState;
 }
 
 void CacheHoveredFromSection() {
-    const SectionMgr* mgr = SectionMgr::sInstance;
+    const SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == nullptr || mgr->sectionParams == nullptr) return;
     const u8 count = SectionPlayerCount(mgr);
     for (u8 hud = 0; hud < count; ++hud) hoveredCharacters[hud] = mgr->sectionParams->characters[hud];
@@ -123,24 +123,24 @@ bool IsOnlineRaceMode(GameMode mode) {
 }
 
 u32 RaceNameBmgId(u8 playerId) {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr || playerId >= racedata->racesScenario.playerCount || playerId >= ONLINE_PLAYER_COUNT) return 0;
     const CharacterId character = racedata->racesScenario.players[playerId].characterId;
     if (IsMiiCharacter(character)) return 0;
     return SkinNameBmgId(character, RaceSkinTable(playerId, character));
 }
 
-bool SetRaceNameTextIfCustom(LayoutUIControl& control, const char* paneName, u8 playerId) {
+bool SetRaceNameTextIfCustom(LayoutUIControl &control, const char *paneName, u8 playerId) {
     const u32 bmgId = RaceNameBmgId(playerId);
     if (bmgId == 0) return false;
     return SetCustomCharacterNameMessage(control, paneName, bmgId);
 }
 
 // Race name controls store playerId at 0x178 in the vanilla layout control.
-void SetRaceCharacterNameHook(LayoutUIControl* control, const char* paneName, u32 bmgId, const Text::Info* info) {
+void SetRaceCharacterNameHook(LayoutUIControl *control, const char *paneName, u32 bmgId, const Text::Info *info) {
     if (control == nullptr) return;
     static const u32 PLAYER_ID_OFFSET = 0x178;
-    const u32 playerId = *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(control) + PLAYER_ID_OFFSET);
+    const u32 playerId = *reinterpret_cast<const u32 *>(reinterpret_cast<const u8 *>(control) + PLAYER_ID_OFFSET);
     if (playerId >= ONLINE_PLAYER_COUNT) {
         control->SetTextBoxMessage(paneName, bmgId, info);
         return;
@@ -152,20 +152,20 @@ void SetRaceCharacterNameHook(LayoutUIControl* control, const char* paneName, u3
 kmCall(0x807f0580, SetRaceCharacterNameHook);
 kmCall(0x807f06b0, SetRaceCharacterNameHook);
 
-bool RaceResultUsesMiiName(const RacedataScenario& scenario, u8 playerId) {
-    const RacedataPlayer& player = scenario.players[playerId];
+bool RaceResultUsesMiiName(const RacedataScenario &scenario, u8 playerId) {
+    const RacedataPlayer &player = scenario.players[playerId];
     if (IsMiiCharacter(player.characterId)) return true;
     return (IsOnlineRaceMode(scenario.settings.gamemode) || scenario.localPlayerCount > 1) && player.playerType != PLAYER_CPU;
 }
 
-void FillRaceResultNameHook(CtrlRaceResult* result, u8 playerId) {
-    const Racedata* racedata = Racedata::sInstance;
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
+void FillRaceResultNameHook(CtrlRaceResult *result, u8 playerId) {
+    const Racedata *racedata = Racedata::sInstance;
+    SectionMgr *sectionMgr = SectionMgr::sInstance;
     if (result == nullptr || racedata == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || playerId >= racedata->racesScenario.playerCount) {
         return;
     }
-    const RacedataScenario& scenario = racedata->racesScenario;
-    const RacedataPlayer& player = scenario.players[playerId];
+    const RacedataScenario &scenario = racedata->racesScenario;
+    const RacedataPlayer &player = scenario.players[playerId];
     if (RaceResultUsesMiiName(scenario, playerId)) {
         Text::Info info;
         info.miis[0] = sectionMgr->sectionParams->playerMiis.GetMii(playerId);
@@ -179,14 +179,14 @@ kmBranch(0x807f52f4, FillRaceResultNameHook);
 
 kmRuntimeUse(0x807f4e68);
 // Custom race result names need a larger text buffer than the vanilla control.
-void LoadRaceResultHook(CtrlRaceResult* result) {
-    reinterpret_cast<void (*)(CtrlRaceResult*)>(kmRuntimeAddr(0x807f4e68))(result);
+void LoadRaceResultHook(CtrlRaceResult *result) {
+    reinterpret_cast<void (*)(CtrlRaceResult *)>(kmRuntimeAddr(0x807f4e68))(result);
 
-    nw4r::lyt::TextBox* name = static_cast<nw4r::lyt::TextBox*>(result->layout.GetPaneByName("player_name"));
+    nw4r::lyt::TextBox *name = static_cast<nw4r::lyt::TextBox *>(result->layout.GetPaneByName("player_name"));
     if (name == nullptr) return;
 
     name->AllocStringBuffer(32);
-    Text::PaneHandler* handler = result->layout.GetTextPaneHandlerByName("player_name");
+    Text::PaneHandler *handler = result->layout.GetTextPaneHandlerByName("player_name");
     if (handler != nullptr) {
         handler->~PaneHandler();
         new (handler) Text::PaneHandler;
@@ -203,7 +203,7 @@ void ResetCharacterSelectNameTextCache() {
     }
 }
 
-void RestoreCharacterSelectNameText(CharaName& name, CharacterId character) {
+void RestoreCharacterSelectNameText(CharaName &name, CharacterId character) {
     if (IsMiiCharacter(character)) return;
     CharacterId displayCharacter = StateCharacter(character);
     if (!IsCharacter(displayCharacter)) displayCharacter = character;
@@ -211,9 +211,9 @@ void RestoreCharacterSelectNameText(CharaName& name, CharacterId character) {
     name.SetMessage(GetCharacterBMGId(displayCharacter, false), nullptr);
 }
 
-void UpdateCharacterSelectNameText(Pages::CharacterSelect* page, u8 hud) {
+void UpdateCharacterSelectNameText(Pages::CharacterSelect *page, u8 hud) {
     if (page == nullptr || page->names == nullptr || hud >= LOCAL_PLAYER_COUNT) return;
-    CharaName& name = page->names[hud];
+    CharaName &name = page->names[hud];
     const u32 bmgId = PreviewNameBmgId(hud);
     if (characterNameTextControl[hud] == &name && characterNameTextValue[hud] == bmgId) return;
     if (bmgId != 0) {
@@ -227,18 +227,18 @@ void UpdateCharacterSelectNameText(Pages::CharacterSelect* page, u8 hud) {
     characterNameTextValue[hud] = bmgId;
 }
 
-CharaName* GetAuthorNameControl(u8 hud) {
+CharaName *GetAuthorNameControl(u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT || !authorNameControlLoaded[hud]) return nullptr;
-    return reinterpret_cast<CharaName*>(&authorNameControlStorage[hud][0]);
+    return reinterpret_cast<CharaName *>(&authorNameControlStorage[hud][0]);
 }
 
 bool ShouldHideCharacterSelectAuthorText() {
     return SectionPlayerCount(SectionMgr::sInstance) > 1;
 }
 
-void UpdateCharacterSelectAuthorText(Pages::CharacterSelect* page, u8 hud) {
+void UpdateCharacterSelectAuthorText(Pages::CharacterSelect *page, u8 hud) {
     if (page == nullptr || page->names == nullptr) return;
-    CharaName* authorControl = GetAuthorNameControl(hud);
+    CharaName *authorControl = GetAuthorNameControl(hud);
     if (authorControl == nullptr) return;
     if (ShouldHideCharacterSelectAuthorText()) {
         authorControl->isHidden = true;
@@ -266,18 +266,18 @@ void UpdateCurrentCharacterSelectAuthorText(u8 hud) {
         ResetCharacterSelectNameTextCache();
         return;
     }
-    SectionMgr* mgr = SectionMgr::sInstance;
+    SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == nullptr || mgr->curSection == nullptr) return;
     UpdateCharacterSelectNameText(mgr->curSection->Get<Pages::CharacterSelect>(), hud);
     UpdateCharacterSelectAuthorText(mgr->curSection->Get<Pages::CharacterSelect>(), hud);
 }
 
-void SetPaneVisibleIfPresent(LayoutUIControl& control, const char* paneName, bool visible) {
+void SetPaneVisibleIfPresent(LayoutUIControl &control, const char *paneName, bool visible) {
     if (control.layout.GetPaneByName(paneName) != nullptr) control.SetPaneVisibility(paneName, visible);
 }
 
-void HideAuthorNameDecoration(LayoutUIControl& control) {
-    const char* panes[] = {"Window_00",
+void HideAuthorNameDecoration(LayoutUIControl &control) {
+    const char *panes[] = {"Window_00",
                            "black_parts_t_00",
                            "black_parts_t_01",
                            "select_base",
@@ -293,7 +293,7 @@ void HideAuthorNameDecoration(LayoutUIControl& control) {
     for (u32 i = 0; i < ARRAY_COUNT(panes); ++i) SetPaneVisibleIfPresent(control, panes[i], false);
 }
 
-void PositionAuthorNameControl(LayoutUIControl& control, const LayoutUIControl& characterNameControl) {
+void PositionAuthorNameControl(LayoutUIControl &control, const LayoutUIControl &characterNameControl) {
     for (u32 i = 0; i < ARRAY_COUNT(control.positionAndscale); ++i) {
         control.positionAndscale[i].position = characterNameControl.positionAndscale[i].position;
         control.positionAndscale[i].position.y -= 14.5f;
@@ -301,19 +301,19 @@ void PositionAuthorNameControl(LayoutUIControl& control, const LayoutUIControl& 
     }
 }
 
-CharaName* ConstructCharaName(CharaName* name) {
+CharaName *ConstructCharaName(CharaName *name) {
     return new (name) CharaName;
 }
 
 // Author text reuses a CharaName control attached under the vanilla name control.
-void AttachAuthorNameControl(CharaName& name, const char* folderName, const char* ctrName, const char* variant) {
+void AttachAuthorNameControl(CharaName &name, const char *folderName, const char *ctrName, const char *variant) {
     const u32 hud = name.unknown_0x178;
     if (hud >= LOCAL_PLAYER_COUNT) return;
     characterNameTextControl[hud] = nullptr;
     characterNameTextValue[hud] = 0;
     characterNameTextOverridden[hud] = false;
 
-    CharaName* author = reinterpret_cast<CharaName*>(&authorNameControlStorage[hud][0]);
+    CharaName *author = reinterpret_cast<CharaName *>(&authorNameControlStorage[hud][0]);
     if (authorNameControlConstructed[hud]) {
         authorNameControlLoaded[hud] = false;
         if (authorTextControl == author) {
@@ -337,40 +337,40 @@ void AttachAuthorNameControl(CharaName& name, const char* folderName, const char
     authorNameControlLoaded[hud] = true;
 }
 
-void CharacterSelectNameLoadHook(ControlLoader* loader, const char* folderName, const char* ctrName, const char* variant, const char** animNames) {
+void CharacterSelectNameLoadHook(ControlLoader *loader, const char *folderName, const char *ctrName, const char *variant, const char **animNames) {
     loader->Load(folderName, ctrName, variant, animNames);
     if (loadingAuthorNameControl || loader == nullptr || loader->layoutUIControl == nullptr) return;
-    AttachAuthorNameControl(*static_cast<CharaName*>(loader->layoutUIControl), folderName, ctrName, variant);
+    AttachAuthorNameControl(*static_cast<CharaName *>(loader->layoutUIControl), folderName, ctrName, variant);
 }
 kmCall(0x8083d9dc, CharacterSelectNameLoadHook);
 
 // Some vanilla heaps are marked no-alloc after setup; loose assets reopen them.
-void UnlockHeap(EGG::Heap* heap) {
+void UnlockHeap(EGG::Heap *heap) {
     if (heap != nullptr) heap->dameFlag &= ~0x1;
 }
 
 // Heap ownership checks prevent scene lists from keeping freed model pointers.
-bool IsInHeap(const EGG::ExpHeap* heap, const void* ptr) {
+bool IsInHeap(const EGG::ExpHeap *heap, const void *ptr) {
     if (heap == nullptr || ptr == nullptr || heap->rvlHeap == nullptr) return false;
-    const u8* start = reinterpret_cast<const u8*>(heap->rvlHeap->startAddr);
-    const u8* end = reinterpret_cast<const u8*>(heap->rvlHeap->endAddr);
-    const u8* address = reinterpret_cast<const u8*>(ptr);
+    const u8 *start = reinterpret_cast<const u8 *>(heap->rvlHeap->startAddr);
+    const u8 *end = reinterpret_cast<const u8 *>(heap->rvlHeap->endAddr);
+    const u8 *address = reinterpret_cast<const u8 *>(ptr);
     return start != nullptr && end != nullptr && start < end && address >= start && address < end;
 }
 
-void DetachHeapListNodes(nw4r::ut::List* list, const EGG::ExpHeap* heap) {
-    for (void* node = nw4r::ut::List_GetNext(list, nullptr); node != nullptr;) {
-        void* next = nw4r::ut::List_GetNext(list, node);
+void DetachHeapListNodes(nw4r::ut::List *list, const EGG::ExpHeap *heap) {
+    for (void *node = nw4r::ut::List_GetNext(list, nullptr); node != nullptr;) {
+        void *next = nw4r::ut::List_GetNext(list, node);
         if (IsInHeap(heap, node)) nw4r::ut::List_Remove(list, node);
         node = next;
     }
 }
 
-void DetachHeapFromScnMgrs(const EGG::ExpHeap* heap) {
+void DetachHeapFromScnMgrs(const EGG::ExpHeap *heap) {
     if (heap == nullptr) return;
-    ScnMgr* const* mgrs = ScnMgr::sInstance;
+    ScnMgr *const *mgrs = ScnMgr::sInstance;
     for (u32 i = 0; i < 2; ++i) {
-        ScnMgr* mgr = mgrs[i];
+        ScnMgr *mgr = mgrs[i];
         if (mgr == nullptr) continue;
         DetachHeapListNodes(&mgr->modelDirectors, heap);
         DetachHeapListNodes(&mgr->screenSpecificModelDirectors, heap);
@@ -380,7 +380,7 @@ void DetachHeapFromScnMgrs(const EGG::ExpHeap* heap) {
 }
 
 // Destroy loose heaps only after detaching every scene-list node they own.
-void DestroyHeap(EGG::ExpHeap*& heap) {
+void DestroyHeap(EGG::ExpHeap *&heap) {
     if (heap == nullptr) return;
     DetachHeapFromScnMgrs(heap);
     UnlockHeap(heap);
@@ -389,13 +389,13 @@ void DestroyHeap(EGG::ExpHeap*& heap) {
 }
 
 bool IsGameplaySectionLoading() {
-    const SectionMgr* mgr = SectionMgr::sInstance;
+    const SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == nullptr) return false;
     if (mgr->curSection != nullptr && IsGameplaySection(mgr->curSection->sectionId)) return true;
     return mgr->nextSectionId != SECTION_NONE && IsGameplaySection(mgr->nextSectionId);
 }
 
-void ClearRawCache(RawBRRES& cache, bool destroyHeap) {
+void ClearRawCache(RawBRRES &cache, bool destroyHeap) {
     if (destroyHeap)
         DestroyHeap(cache.heap);
     else
@@ -416,7 +416,7 @@ bool ClearRawCaches(bool destroyHeap) {
 }
 
 void SyncRawCachesToCurrentScene() {
-    const GameScene* const scene = GameScene::GetCurrent();
+    const GameScene *const scene = GameScene::GetCurrent();
     if (rawCacheSceneOwner == scene) return;
     if (ClearRawCaches(true)) {
         rawCacheSceneOwner = scene;
@@ -434,17 +434,17 @@ u32 AlignUp(u32 value, u32 alignment) {
     return (value + alignment - 1) & ~(alignment - 1);
 }
 
-bool BuildDriverPath(CharacterId character, u8 table, char* path, u32 pathSize) {
-    const char* name = DriverBRRESName(character, table);
+bool BuildDriverPath(CharacterId character, u8 table, char *path, u32 pathSize) {
+    const char *name = DriverBRRESName(character, table);
     if (name == nullptr) return false;
     const int written = snprintf(path, pathSize, "/Scene/Model/Driver/%s.brres", name);
     return written > 0 && static_cast<u32>(written) < pathSize;
 }
 
-const char* PathBasename(const char* path) {
+const char *PathBasename(const char *path) {
     if (path == nullptr) return nullptr;
-    const char* basename = path;
-    for (const char* cursor = path; *cursor != '\0'; ++cursor) {
+    const char *basename = path;
+    for (const char *cursor = path; *cursor != '\0'; ++cursor) {
         if (*cursor == '/') basename = cursor + 1;
     }
     return basename;
@@ -456,10 +456,10 @@ bool ShouldUsePatchCharacterFiles() {
            LOOSEARCHIVEOVERRIDES_ENABLED;
 }
 
-bool BuildChannelSdPath(const char* discPath, u32 candidate, char* outPath, u32 outSize) {
+bool BuildChannelSdPath(const char *discPath, u32 candidate, char *outPath, u32 outSize) {
     if (discPath == nullptr || outPath == nullptr || outSize == 0) return false;
     while (*discPath == '/') ++discPath;
-    const char* basename = PathBasename(discPath);
+    const char *basename = PathBasename(discPath);
 
     int written = -1;
     switch (candidate) {
@@ -497,7 +497,7 @@ bool BuildChannelSdPath(const char* discPath, u32 candidate, char* outPath, u32 
     return written > 0 && static_cast<u32>(written) < outSize;
 }
 
-bool OpenChannelCharacterFile(SDIO& sd, const char* discPath, char* resolvedPath, u32 resolvedPathSize) {
+bool OpenChannelCharacterFile(SDIO &sd, const char *discPath, char *resolvedPath, u32 resolvedPathSize) {
     if (!IsNewChannel()) return false;
 
     char path[0x80];
@@ -510,7 +510,7 @@ bool OpenChannelCharacterFile(SDIO& sd, const char* discPath, char* resolvedPath
     return false;
 }
 
-bool DiscFileSize(const char* path, u32& size) {
+bool DiscFileSize(const char *path, u32 &size) {
     if (!IsNewChannel()) {
         DVD::FileInfo info;
         if (!DVD::Open(path, &info)) {
@@ -537,7 +537,7 @@ bool DiscFileSize(const char* path, u32& size) {
     return size != 0;
 }
 
-void* LoadChannelFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper::EAllocDirection allocDirection, u32* outSize) {
+void *LoadChannelFileToMainRAM(const char *path, EGG::Heap *heap, EGG::DvdRipper::EAllocDirection allocDirection, u32 *outSize) {
     if (outSize != nullptr) *outSize = 0;
     SDIO sd(IOType_SD, nullptr, nullptr);
     char resolvedPath[0x80];
@@ -552,7 +552,7 @@ void* LoadChannelFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper
     if (outSize != nullptr) *outSize = fileSize;
 
     const u32 allocSize = AlignUp(fileSize + 1, 0x20);
-    void* buffer = EGG::Heap::alloc(allocSize, allocDirection == EGG::DvdRipper::ALLOC_FROM_TAIL ? -0x20 : 0x20, heap);
+    void *buffer = EGG::Heap::alloc(allocSize, allocDirection == EGG::DvdRipper::ALLOC_FROM_TAIL ? -0x20 : 0x20, heap);
     if (buffer == nullptr) {
         sd.Close();
         return nullptr;
@@ -564,12 +564,12 @@ void* LoadChannelFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper
         EGG::Heap::free(buffer, heap);
         return nullptr;
     }
-    if (allocSize > fileSize) memset(static_cast<u8*>(buffer) + fileSize, 0, allocSize - fileSize);
+    if (allocSize > fileSize) memset(static_cast<u8 *>(buffer) + fileSize, 0, allocSize - fileSize);
     OS::DCStoreRange(buffer, allocSize);
     return buffer;
 }
 
-void* LoadFileToMainRAM(const char* path, EGG::Heap* heap, EGG::DvdRipper::EAllocDirection allocDirection, u32* outSize) {
+void *LoadFileToMainRAM(const char *path, EGG::Heap *heap, EGG::DvdRipper::EAllocDirection allocDirection, u32 *outSize) {
     if (!IsNewChannel()) {
         return EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, allocDirection, 0, nullptr, outSize);
     }

@@ -24,13 +24,13 @@ struct FriendData {
 
 class Friend {
     virtual ~Friend();  // 80519670 vtable 808b2c88
-    void AddFriend(u16 idx, const u64* friendCode);
-    bool SetFriend(const FriendData& src);  // 805196b0
-    void StoreFriendToDest(FriendData& dest);  // 805196f0 essentially for RKPD
+    void AddFriend(u16 idx, const u64 *friendCode);
+    bool SetFriend(const FriendData &src);  // 805196b0
+    void StoreFriendToDest(FriendData &dest);  // 805196f0 essentially for RKPD
     void AddLoss();  // 805199d0
     void AddWin();  // 805199e8
     // location = country/state/city as a u32
-    void SetData(const RFL::StoreData& mii, u32 location, u16 longitude, u16 latitude, u32 unused, u64 wiiFC, char gameRegion);  // 80519980
+    void SetData(const RFL::StoreData &mii, u32 location, u16 longitude, u16 latitude, u32 unused, u64 wiiFC, char gameRegion);  // 80519980
     u8 unknown_0x4[4];
     FriendData data;  // 0x8
 };  // 0x1c0

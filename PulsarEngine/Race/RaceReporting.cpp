@@ -13,7 +13,7 @@ void UpdateRaceInstances() {
     if (!DriverMgr::isOnlineRace)
         return;
 
-    Raceinfo* raceInfo = Raceinfo::sInstance;
+    Raceinfo *raceInfo = Raceinfo::sInstance;
     if (!raceInfo)
         return;
 
@@ -25,19 +25,19 @@ void UpdateRaceInstances() {
     }
 }
 
-void EndPlayerRaceHook(Raceinfo* _this, u8 playerIdx) {
+void EndPlayerRaceHook(Raceinfo *_this, u8 playerIdx) {
     _this->EndPlayerRace(playerIdx);
     if (!DriverMgr::isOnlineRace)
         return;
 
-    Racedata* raceData = Racedata::sInstance;
+    Racedata *raceData = Racedata::sInstance;
     if (!raceData)
         return;
 
-    RacedataPlayer* racePlayer = &raceData->racesScenario.players[playerIdx];
+    RacedataPlayer *racePlayer = &raceData->racesScenario.players[playerIdx];
     if (racePlayer->playerType == PLAYER_REAL_LOCAL) {
-        RKNet::Controller* netController = RKNet::Controller::sInstance;
-        RKNet::ControllerSub& sub = netController->subs[netController->currentSub];
+        RKNet::Controller *netController = RKNet::Controller::sInstance;
+        RKNet::ControllerSub &sub = netController->subs[netController->currentSub];
 
         s8 hostPlayerIdx = -1;
         for (int i = 0; i < raceData->racesScenario.playerCount; i++) {
@@ -73,7 +73,7 @@ void EndPlayerRaceHook(Raceinfo* _this, u8 playerIdx) {
                 return;
         }
 
-        Timer* finishTime = _this->players[playerIdx]->raceFinishTime;
+        Timer *finishTime = _this->players[playerIdx]->raceFinishTime;
         float time = (finishTime->minutes * 60.0f) + (finishTime->seconds) + (finishTime->milliseconds / 1000.0f);
 
         char buffer[128];
@@ -83,7 +83,7 @@ void EndPlayerRaceHook(Raceinfo* _this, u8 playerIdx) {
                  racePlayer->hudSlotId,
                  racePlayer->characterId,
                  racePlayer->kartId,
-                 *(u32*)&time,
+                 *(u32 *)&time,
                  racePlayer->finishPos,
                  _this->players[playerIdx]->framesInFirst,
                  raceData->racesScenario.playerCount);

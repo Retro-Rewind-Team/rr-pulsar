@@ -8,7 +8,7 @@ namespace Objects {
 
 // StatePtmf: 0 = route end, 1 = cycle
 class Kuribo : public ObjectCollidable, public StatePtmfTrigger<Kuribo> {  // ObjectNum 0x191 = 401
-    explicit Kuribo(const KMP::Holder<GOBJ>& gobjHolder);  // 806db184
+    explicit Kuribo(const KMP::Holder<GOBJ> &gobjHolder);  // 806db184
     static StatePtmfTrigger<Kuribo>::Entry entries;  // 808c5da0
 
     // ObjectCollidable vtable 808c5e10
@@ -19,8 +19,8 @@ class Kuribo : public ObjectCollidable, public StatePtmfTrigger<Kuribo> {  // Ob
     u32 GetPropertiesBitfield();  // 0x2c 806dd2c8
     void LoadAnimations() override;  // 0x5c 806dd278
 
-    ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806db764
-    ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) override;  // 0xc0 806dba98
+    ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806db764
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc0 806dba98
     // StatePtmfTrigger vtable 808c5efc at 0xB0
     //~Kuribo() override; thunk 806dd2d0
     virtual int vf_0xC();  // 806dd270 returns 2 this might be wrong since kart_truck has no such function

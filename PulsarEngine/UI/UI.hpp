@@ -7,12 +7,12 @@
 namespace Pulsar {
 namespace UI {
 
-void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tplName);
-const wchar_t* GetCustomMsg(s32 bmgId);
-void UnbindRLMC(lyt::Material* mat);
-void ResetMatColor(lyt::Pane* pane, u32 color);
+void ChangeImage(LayoutUIControl &control, const char *paneName, const char *tplName);
+const wchar_t *GetCustomMsg(s32 bmgId);
+void UnbindRLMC(lyt::Material *mat);
+void ResetMatColor(lyt::Pane *pane, u32 color);
 void ResetFroomSettingsPreviewShown();
-bool AdvanceFroomSettingsPreview(Settings::SettingsPageId& page);
+bool AdvanceFroomSettingsPreview(Settings::SettingsPageId &page);
 /*Expanded pages: (do not necessitate a PulPageId)
 -ExpGhostSelect
 -ExpFroom
@@ -50,31 +50,31 @@ enum PulPageId {
 };
 
 class ExpSection : public Section {  // u32 id -> either a standard pageId but can also be a PulPageId
-   public:
-    static ExpSection* GetSection() { return reinterpret_cast<ExpSection*>(SectionMgr::sInstance->curSection); }
+public:
+    static ExpSection *GetSection() { return reinterpret_cast<ExpSection *>(SectionMgr::sInstance->curSection); }
 
-    static void CreatePages(ExpSection& self, SectionId id);
+    static void CreatePages(ExpSection &self, SectionId id);
     void CreatePulPages();
-    static void CreateAndInitPage(ExpSection& self, u32 id);
+    static void CreateAndInitPage(ExpSection &self, u32 id);
     static void SetNextPage(u32 id, u32 animDirection);
-    static void DisposePulPages(SectionPad& pad, bool enablePointer);
-    static void AddPageLayer(ExpSection& self, u32 id);
-    static Page* AddPageLayerAnimatedReturnTopLayer(ExpSection& self, u32 id, u32 animDirection);
+    static void DisposePulPages(SectionPad &pad, bool enablePointer);
+    static void AddPageLayer(ExpSection &self, u32 id);
+    static Page *AddPageLayerAnimatedReturnTopLayer(ExpSection &self, u32 id, u32 animDirection);
 
     template <class T>
-    inline T* GetPulPage() const {
+    inline T *GetPulPage() const {
         static_assert(is_base_of<Page, T>::value, "Not a Page");
-        return static_cast<T*>(this->pulPages[T::id - PULPAGE_INITIAL]);
+        return static_cast<T *>(this->pulPages[T::id - PULPAGE_INITIAL]);
     }
 
     template <class T>
-    inline T* GetPulPage(PulPageId id) const {
+    inline T *GetPulPage(PulPageId id) const {
         static_assert(is_base_of<Page, T>::value, "Not a Page");
-        return static_cast<T*>(this->pulPages[id - PULPAGE_INITIAL]);
+        return static_cast<T *>(this->pulPages[id - PULPAGE_INITIAL]);
     }
-    inline void SetPulPage(Page* t, PulPageId id) { this->pulPages[id - PULPAGE_INITIAL] = t; }
+    inline void SetPulPage(Page *t, PulPageId id) { this->pulPages[id - PULPAGE_INITIAL] = t; }
 
-    Page* pulPages[PULPAGE_MAX];
+    Page *pulPages[PULPAGE_MAX];
     bool hasAutoVote;
 };
 

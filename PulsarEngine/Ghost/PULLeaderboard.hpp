@@ -48,25 +48,25 @@ class alignas(0x20) Leaderboard {
     static const u32 trackNameLen = 48;  // 0x30
     static const char filePathFormat[];
 
-   public:
+public:
     Leaderboard();
-    Leaderboard(const char* folderPath, PulsarId id, bool createNew);
+    Leaderboard(const char *folderPath, PulsarId id, bool createNew);
     void SetTrack(PulsarId id);
-    s32 GetPosition(const Timer& other) const;
-    s8 GetRepeatCount(const RKG& rkg) const;
-    void Update(u32 position, const RKSYS::LicenseLdbEntry& entry, u32 rkgCRC32);
-    void Save(const char* folderPath);
+    s32 GetPosition(const Timer &other) const;
+    s8 GetRepeatCount(const RKG &rkg) const;
+    void Update(u32 position, const RKSYS::LicenseLdbEntry &entry, u32 rkgCRC32);
+    void Save(const char *folderPath);
     void AddTrophy() { this->hasTrophy[System::sInstance->ttMode] = true; }
-    const PULLdbEntry& GetPulEntry(EntryLaps lap) const { return this->entries[System::sInstance->ttMode][lap]; }
-    void EntryToTimer(Timer& dest, u8 id) const;
-    void EntryToGameEntry(RKSYS::LicenseLdbEntry& dest, u8 id) const;
+    const PULLdbEntry &GetPulEntry(EntryLaps lap) const { return this->entries[System::sInstance->ttMode][lap]; }
+    void EntryToTimer(Timer &dest, u8 id) const;
+    void EntryToGameEntry(RKSYS::LicenseLdbEntry &dest, u8 id) const;
     void SetFavGhost(u32 fileIdx, TTMode mode, bool add);
-    const char* GetFavGhost(TTMode mode) const { return this->favGhost[mode]; }
+    const char *GetFavGhost(TTMode mode) const { return this->favGhost[mode]; }
     static void CreateFile(PulsarId id);
-    static const RKSYS::LicenseLdbEntry* GetEntry(u32 index);  // pointer as the game expects as such
+    static const RKSYS::LicenseLdbEntry *GetEntry(u32 index);  // pointer as the game expects as such
     static int ExpertBMGDisplay(CourseId courseId);
 
-   private:
+private:
     u32 magic;  // PULL
     u32 version;
     u32 crc32;  // of the track
@@ -78,7 +78,7 @@ class alignas(0x20) Leaderboard {
 };
 static_assert(sizeof(Leaderboard) % 0x20 == 0, "Leaderboard Size Check");
 
-PULLdbEntry* GetPULLdbEntry(u32 index);
+PULLdbEntry *GetPULLdbEntry(u32 index);
 
 }  // namespace Ghosts
 }  // namespace Pulsar

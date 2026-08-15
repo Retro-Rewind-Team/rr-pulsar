@@ -8,7 +8,7 @@ namespace nw4r {
 namespace snd {
 
 class SoundPlayer {
-   public:
+public:
     // 800a3610
     // 800a38b0
 
@@ -22,16 +22,16 @@ class SoundPlayer {
     void StopAllSound(int fadeFrames);  // 800a34d0
     void PauseAllSound(bool flag, int fadeFrames);  // 800a3550
     void SetVolume(float volume);  // 800a35e0
-    void detail_SortPriorityList(detail::BasicSound* sound);  // 800a3620
+    void detail_SortPriorityList(detail::BasicSound *sound);  // 800a3620
     void detail_SortPriorityList();  // 800a3720
-    bool detail_AppendSound(detail::BasicSound* sound);  // 800a38d0
-    void detail_RemoveSound(detail::BasicSound* sound);  // 800a3ab0
+    bool detail_AppendSound(detail::BasicSound *sound);  // 800a38d0
+    void detail_RemoveSound(detail::BasicSound *sound);  // 800a3ab0
     void SetPlayableSoundCount(int count);  // 800a3b40
     void detail_SetPlayableSoundLimit(int limit);  // 800a3bd0
     bool detail_CanPlaySound(int startPriority);  // 800a3be0
-    void detail_AppendPlayerHeap(detail::PlayerHeap* heap);  // 800a3cc0
-    detail::PlayerHeap* detail_AllocPlayerHeap(detail::BasicSound* sound);  // 800a3d30 attaches a heap from the list to the sound, no alloc
-    void detail_FreePlayerHeap(detail::BasicSound* sound);  // 800a3de0 same as above, no freeing
+    void detail_AppendPlayerHeap(detail::PlayerHeap *heap);  // 800a3cc0
+    detail::PlayerHeap *detail_AllocPlayerHeap(detail::BasicSound *sound);  // 800a3d30 attaches a heap from the list to the sound, no alloc
+    void detail_FreePlayerHeap(detail::BasicSound *sound);  // 800a3de0 same as above, no freeing
 
     SoundList soundList;
     SoundPriorityList priorityList;

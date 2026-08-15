@@ -8,11 +8,11 @@
 namespace Pulsar {
 namespace UI {
 class CtrlRaceTrackInfoDisplay : public CtrlRaceWifiStartMessage {
-   public:
+public:
     static u32 Count();
-    static void Create(Page& page, u32 index, u32);
+    static void Create(Page &page, u32 index, u32);
 
-   private:
+private:
     void Load();
     static u32 lastCourse;
 };

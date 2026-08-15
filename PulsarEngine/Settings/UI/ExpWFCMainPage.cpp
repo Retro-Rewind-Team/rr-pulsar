@@ -17,8 +17,8 @@ namespace UI {
 
 static wchar_t s_rankDetailsBuffer[512];
 
-static void ApplyVRMultiplierHighlight(PushButton& button, bool hasMultiplier) {
-    nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(button.layout.GetPaneByName("go"));
+static void ApplyVRMultiplierHighlight(PushButton &button, bool hasMultiplier) {
+    nw4r::lyt::TextBox *textBox = reinterpret_cast<nw4r::lyt::TextBox *>(button.layout.GetPaneByName("go"));
     if (textBox != nullptr) {
         nw4r::ut::Color color = hasMultiplier ? nw4r::ut::Color(0, 255, 0, 255) : nw4r::ut::Color(255, 255, 255, 255);
         textBox->color1[0] = color;
@@ -26,13 +26,13 @@ static void ApplyVRMultiplierHighlight(PushButton& button, bool hasMultiplier) {
     }
 }
 
-static void FormatRatingLabel(float rating, const wchar_t* suffix, wchar_t* buffer, u32 bufferSize) {
+static void FormatRatingLabel(float rating, const wchar_t *suffix, wchar_t *buffer, u32 bufferSize) {
     wchar_t digits[32];
     PointRating::FormatRatingDigits(rating, digits, sizeof(digits) / sizeof(digits[0]));
     swprintf(buffer, bufferSize, (rating >= 1000.0f) ? L"%ls%ls\uF06D" : L"%ls%ls", digits, suffix);
 }
 
-static void SetButtonHidden(PushButton& button, bool hidden) {
+static void SetButtonHidden(PushButton &button, bool hidden) {
     button.isHidden = hidden;
     button.manipulator.inaccessible = hidden;
 }
@@ -101,22 +101,22 @@ void ExpWFCMain::OnInit() {
 }
 
 u32 Pulsar::UI::ExpWFCMain::lastClickedMainMenuButton = 6;
-void ExpWFCMain::OnMainButtonClick(PushButton& pushButton, u32 hudSlotId) {
+void ExpWFCMain::OnMainButtonClick(PushButton &pushButton, u32 hudSlotId) {
     ExpWFCMain::lastClickedMainMenuButton = 6;  // retros
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
-void ExpWFCMain::OnOtherButtonClick(PushButton& pushButton, u32 hudSlotId) {
+void ExpWFCMain::OnOtherButtonClick(PushButton &pushButton, u32 hudSlotId) {
     ExpWFCMain::lastClickedMainMenuButton = 7;  // customs
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
-void ExpWFCMain::OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId) {
+void ExpWFCMain::OnBattleButtonClick(PushButton &pushButton, u32 hudSlotId) {
     ExpWFCMain::lastClickedMainMenuButton = 8;  // battle
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
-void ExpWFCMain::OnSettingsButtonClick(PushButton& pushButton, u32 r5) {
+void ExpWFCMain::OnSettingsButtonClick(PushButton &pushButton, u32 r5) {
     ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
         Settings::SETTINGS_CONTEXT_ONLINE, PAGE_WFC_MAIN);
     ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_WFC_MAIN;
@@ -124,13 +124,13 @@ void ExpWFCMain::OnSettingsButtonClick(PushButton& pushButton, u32 r5) {
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
 }
 
-void ExpWFCMain::OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId) {
+void ExpWFCMain::OnLeaderboardButtonClick(PushButton &pushButton, u32 hudSlotId) {
     this->nextPageId = static_cast<PageId>(PULPAGE_VRLEADERBOARD);
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
 }
 
 void ExpWFCMain::ExtOnStartPress(u32) {
-    Pages::MessageBoxTransparent* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
+    Pages::MessageBoxTransparent *messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
     if (messageBox == nullptr) return;
 
     s_rankDetailsBuffer[0] = L'\0';
@@ -143,7 +143,7 @@ void ExpWFCMain::ExtOnStartPress(u32) {
     this->AddPageLayer(PAGE_MESSAGE_BOX_TRANSPARENT, 0);
 }
 
-void ExpWFCMain::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
+void ExpWFCMain::ExtOnButtonSelect(PushButton &button, u32 hudSlotId) {
     if (button.buttonId != 5) {
         this->OnButtonSelect(button, hudSlotId);
     }
@@ -185,7 +185,7 @@ void ExpWFCModeSel::OnInit() {
 
 u32 Pulsar::UI::ExpWFCModeSel::lastClickedButton = 0;
 
-void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
+void ExpWFCModeSel::InitButton(ExpWFCModeSel &self) {
     self.InitControlGroup(13);
 
     self.AddControl(5, self.ctButton, 0);
@@ -242,7 +242,7 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
     loader.Load(UI::buttonFolder, "VRButton", "VRButton", nullptr);
 
     Text::Info info;
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     float vr = 0.0f;
     float br = 0.0f;
     if (rksysMgr->curLicenseId >= 0) {
@@ -288,7 +288,7 @@ void ExpWFCModeSel::ClearModeContexts() {
     }
 }
 
-void ExpWFCModeSel::OnModeButtonClick(PushButton& modeButton, u32 hudSlotId) {
+void ExpWFCModeSel::OnModeButtonClick(PushButton &modeButton, u32 hudSlotId) {
     const u32 id = modeButton.buttonId;
     ClearModeContexts();
 
@@ -320,9 +320,9 @@ void ExpWFCModeSel::OnModeButtonClick(PushButton& modeButton, u32 hudSlotId) {
 }
 
 void ExpWFCModeSel::OnActivatePatch() {
-    register ExpWFCModeSel* page;
+    register ExpWFCModeSel *page;
     asm(mr page, r29;);
-    register Pages::GlobeSearch* search;
+    register Pages::GlobeSearch *search;
     asm(mr search, r30;);
     const bool isHidden = search->searchType != 1;
 
@@ -363,11 +363,11 @@ void ExpWFCModeSel::OnActivatePatch() {
     SetButtonHidden(page->battleButton, true);
 
     Text::Info info;
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     u32 vr = 0;
     u32 br = 0;
     if (rksysMgr->curLicenseId >= 0) {
-        RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+        RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
         vr = license.vr.points;
         br = license.br.points;
     }
@@ -378,9 +378,9 @@ void ExpWFCModeSel::OnActivatePatch() {
     page->vsButton.SetTextBoxMessage("go", BMG_VR_RATING, &info);
 
     page->nextPage = PAGE_NONE;
-    PushButton* button = &page->vsButton;
-    PushButton* BTbutton = &page->RRbattleButton;
-    PushButton* TWObutton = &page->twoHundredButton;
+    PushButton *button = &page->vsButton;
+    PushButton *BTbutton = &page->RRbattleButton;
+    PushButton *TWObutton = &page->twoHundredButton;
     u32 bmgId = UI::BMG_RACE_WITH11P;
     page->lastClickedButton = 0;
     const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
@@ -431,7 +431,7 @@ void ExpWFCModeSel::OnActivatePatch() {
 }
 kmCall(0x8064c5f0, ExpWFCModeSel::OnActivatePatch);
 
-void ExpWFCModeSel::OnModeButtonSelect(PushButton& modeButton, u32 hudSlotId) {
+void ExpWFCModeSel::OnModeButtonSelect(PushButton &modeButton, u32 hudSlotId) {
     if (modeButton.buttonId == ottButtonId) {
         this->bottomText.SetMessage(BMG_OTT_WW_BOTTOM);
     } else if (modeButton.buttonId == twoHundredButtonId) {
@@ -464,7 +464,7 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     PlayerCount::GetNumbersBT(BT_numRegulars, BT_numELIM);
     PlayerCount::GetNumbersRegular(numRegulars);
 
-    Pages::GlobeSearch* globeSearch = SectionMgr::sInstance->curSection->Get<Pages::GlobeSearch>();
+    Pages::GlobeSearch *globeSearch = SectionMgr::sInstance->curSection->Get<Pages::GlobeSearch>();
 
     Text::Info info;
     if (globeSearch->searchType == 1) {
@@ -496,7 +496,7 @@ void ExpWFCModeSel::BeforeControlUpdate() {
         this->vsButton.SetTextBoxMessage("go", Pulsar::UI::BMG_PLAYER_COUNT, &info);
     }
 
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     float vr = 0.0f;
     float br = 0.0f;
     if (rksysMgr->curLicenseId >= 0) {

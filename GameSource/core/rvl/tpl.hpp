@@ -9,14 +9,14 @@ typedef struct {
     u8 unpacked;
     u8 pad8;
     GX::TlutFmt format;
-    void* data;
+    void *data;
 } TPLClutHeader, *TPLClutHeaderPtr;
 
 typedef struct {
     u16 height;
     u16 width;
     u32 format;
-    void* data;
+    void *data;
     GX::TexWrapMode wrapS;
     GX::TexWrapMode wrapT;
     GX::TexFilter minFilter;
@@ -41,7 +41,7 @@ typedef struct {
 
 void TPLBind(TPLPalettePtr pal);
 TPLDescriptorPtr TPLGet(TPLPalettePtr pal, u32 id);
-void TPLGetGXTexObjFromPalette(TPLPalettePtr pal, GX::TexObj* to, u32 id);
-void TPLGetGXTexObjFromPaletteCI(TPLPalettePtr pal, GX::TexObj* to, GX::TlutObj* tlo, GX::Tlut tluts, u32 id);
+void TPLGetGXTexObjFromPalette(TPLPalettePtr pal, GX::TexObj *to, u32 id);
+void TPLGetGXTexObjFromPaletteCI(TPLPalettePtr pal, GX::TexObj *to, GX::TlutObj *tlo, GX::Tlut tluts, u32 id);
 
 #endif

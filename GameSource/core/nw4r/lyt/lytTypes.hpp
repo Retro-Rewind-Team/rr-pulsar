@@ -40,9 +40,9 @@ struct IndirectStage {
 class AnimTransform;
 
 class AnimationLink {
-   public:
+public:
     ut::LinkListNode link;
-    AnimTransform* animTrans;
+    AnimTransform *animTrans;
     u16 idx;
     bool disable;
 };

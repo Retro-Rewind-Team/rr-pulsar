@@ -10,10 +10,10 @@ namespace Kart {
 
 // bad name, but it simply calls SetTevSwapMode/SetTevColorOp on all kart models mats, changing the swap mode of the texture color input
 class MatTEVHandler : public Link {
-   public:
+public:
     MatTEVHandler();  // 8056a5ec
-    static void SetPartTEVSwapMode(Part& part);  // 8056a5dc a CallOnAllPartsFunc
-    virtual void SetModelTEVSwapMode(ModelDirector& model);  // 8056aa28 vtable 808b5048 TEVStage1, called with driver model, but any model will do
+    static void SetPartTEVSwapMode(Part &part);  // 8056a5dc a CallOnAllPartsFunc
+    virtual void SetModelTEVSwapMode(ModelDirector &model);  // 8056aa28 vtable 808b5048 TEVStage1, called with driver model, but any model will do
     virtual ~MatTEVHandler();  // 8056ab2c
 
     // only the middle one is ever called, hence why the simpler name for it
@@ -21,9 +21,9 @@ class MatTEVHandler : public Link {
     void SetTEVSwapModes(bool doSwap);  // 8056a6d8 "removes" the bool from the u16, ie if it was mode 1 it becomes mode 0
     void SetTEVSwapModesNoTexModeUpdate();  // 8056a998
 
-    void SetModelTEVSwapMode(ModelDirector& model, bool onTEVStage1);  // 8056a780 otherwise on tevStage0
+    void SetModelTEVSwapMode(ModelDirector &model, bool onTEVStage1);  // 8056a780 otherwise on tevStage0
 
-    void SetModelTevColorOp(ModelDirector& model);  // 8056a89c
+    void SetModelTevColorOp(ModelDirector &model);  // 8056a89c
 
     u16 textureColorInputSwapMode;  // 0x10
     /*

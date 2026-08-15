@@ -15,10 +15,10 @@ static const ut::Color colors[5] = {0xffff00ff, 0x00ff00ff, 0xffa000ff, 0x00ffff
 
 ut::Color GetFriendColor(u32 friendIdx) {
     RKNet::SearchType type = RKNet::Controller::sInstance->GetFriendSearchType(friendIdx);
-    const ut::Color* color = &colors[0];
+    const ut::Color *color = &colors[0];
 
     // Get the friend's region
-    const RKNet::Friend* friendData = &RKNet::Controller::sInstance->friends[friendIdx];
+    const RKNet::Friend *friendData = &RKNet::Controller::sInstance->friends[friendIdx];
     const u8 friendRegion = friendData->statusData.regionId;
 
     const bool isSpecialRegion = (friendRegion == 0x0B || friendRegion == 0x0C || friendRegion == 0x0D);
@@ -42,17 +42,17 @@ ut::Color GetFriendColor(u32 friendIdx) {
 }
 
 // wiimmfi hook forces the u64 trick
-u64 AddModeToStatusData(const RKNet::StatusData* own) {
+u64 AddModeToStatusData(const RKNet::StatusData *own) {
     static char customData[9];
     u32 length = 8;
     if (own->status == RKNet::FRIEND_STATUS_PUBLIC_VS) {
         if (own->regionId != 0xff) {
             length = 9;
             for (int i = 0; i < 8; ++i) {
-                customData[i] = reinterpret_cast<const u8*>(own)[i];
+                customData[i] = reinterpret_cast<const u8 *>(own)[i];
             }
             customData[8] = System::sInstance->netMgr.ownStatusData;
-            own = reinterpret_cast<RKNet::StatusData*>(&customData);
+            own = reinterpret_cast<RKNet::StatusData *>(&customData);
         }
     }
     u64 ret = ((reinterpret_cast<const u64>(own)) << 32) | (length & 0xffffffffL);
@@ -60,7 +60,7 @@ u64 AddModeToStatusData(const RKNet::StatusData* own) {
 }
 kmCall(0x8065a0e8, AddModeToStatusData);
 
-u8 ReceiveMode(const DWC::AccFriendData* data, char* dest, int* size) {
+u8 ReceiveMode(const DWC::AccFriendData *data, char *dest, int *size) {
     register u32 idx;
     asm(mr idx, r26;);
     char temp[32];
@@ -86,10 +86,10 @@ u8 ReceiveMode(const DWC::AccFriendData* data, char* dest, int* size) {
 }
 kmCall(0x8065a1d4, ReceiveMode);
 
-RKNet::SearchType SetModeOnJoin(const RKNet::Controller& controller, u32 friendIdx) {
+RKNet::SearchType SetModeOnJoin(const RKNet::Controller &controller, u32 friendIdx) {
     RKNet::SearchType type = controller.GetFriendSearchType(friendIdx);
     if (type == RKNet::SEARCH_TYPE_VS_REGIONAL) {
-        Mgr& netMgr = System::sInstance->netMgr;
+        Mgr &netMgr = System::sInstance->netMgr;
         netMgr.ownStatusData = netMgr.statusDatas[friendIdx];
     }
     return type;
@@ -108,27 +108,27 @@ asmFunc FriendStatusUsedIdx() {
 kmCall(0x8064b548, FriendStatusUsedIdx);
 kmCall(0x8064de54, FriendStatusUsedIdx);  // after race
 
-void WifiMenuButtonColor(LayoutUIControl& control, u32 friendIdx) {
+void WifiMenuButtonColor(LayoutUIControl &control, u32 friendIdx) {
     ut::Color color = GetFriendColor(friendIdx);
-    lyt::TextBox* text = reinterpret_cast<lyt::TextBox*>(control.layout.GetPaneByName("text_meet"));
+    lyt::TextBox *text = reinterpret_cast<lyt::TextBox *>(control.layout.GetPaneByName("text_meet"));
     text->color1[0] = color;
     UI::ResetMatColor(text, 0xa0a0a000);
     UI::UnbindRLMC(text->material);
-    lyt::Picture* smiley = reinterpret_cast<lyt::Picture*>(control.layout.GetPaneByName("nikoyellow_waku"));
+    lyt::Picture *smiley = reinterpret_cast<lyt::Picture *>(control.layout.GetPaneByName("nikoyellow_waku"));
     smiley->vertexColours[0] = color;
     smiley->vertexColours[1] = color;
     smiley->vertexColours[2] = color;
     smiley->vertexColours[3] = color;
     UI::ResetMatColor(smiley, 0);
     UI::UnbindRLMC(smiley->material);
-    smiley = reinterpret_cast<lyt::Picture*>(control.layout.GetPaneByName("nikoyellow_light"));
+    smiley = reinterpret_cast<lyt::Picture *>(control.layout.GetPaneByName("nikoyellow_light"));
     smiley->vertexColours[0] = color;
     smiley->vertexColours[1] = color;
     smiley->vertexColours[2] = color;
     smiley->vertexColours[3] = color;
     UI::ResetMatColor(smiley, 0xa0a0a000);
     UI::UnbindRLMC(smiley->material);
-    lyt::Material* border = reinterpret_cast<lyt::Window*>(control.layout.GetPaneByName("Window_00"))->frames->material;
+    lyt::Material *border = reinterpret_cast<lyt::Window *>(control.layout.GetPaneByName("Window_00"))->frames->material;
     border->tevColours[0].r = color.r;
     border->tevColours[0].g = color.g;
     border->tevColours[0].b = color.b;
@@ -136,10 +136,10 @@ void WifiMenuButtonColor(LayoutUIControl& control, u32 friendIdx) {
     UI::UnbindRLMC(border);
 }
 
-void FriendStatusButtonColor(AnimationGroup& group, u32 idx, float frame) {
+void FriendStatusButtonColor(AnimationGroup &group, u32 idx, float frame) {
     group.PlayAnimationAtFrame(idx, frame);
     if (idx == 1) {  // MEET anm
-        register LayoutUIControl* button;
+        register LayoutUIControl *button;
         asm(mr button, r27;);
         WifiMenuButtonColor(*button, friendStatusButtonUsedIdx);
     }
@@ -148,23 +148,23 @@ kmCall(0x8064b5e8, FriendStatusButtonColor);
 kmCall(0x8064de98, FriendStatusButtonColor);  // after race
 kmWrite32(0x8064b560, 0x60000000);
 
-void FriendButtonWindowColor(FriendButton& button) {
+void FriendButtonWindowColor(FriendButton &button) {
     ut::Color color = GetFriendColor(button.friendIdx);
-    lyt::Picture* smiley = reinterpret_cast<lyt::Picture*>(button.layout.GetPaneByName("nikoyellow_waku"));
+    lyt::Picture *smiley = reinterpret_cast<lyt::Picture *>(button.layout.GetPaneByName("nikoyellow_waku"));
     smiley->vertexColours[0] = color;
     smiley->vertexColours[1] = color;
     smiley->vertexColours[2] = color;
     smiley->vertexColours[3] = color;
     UI::ResetMatColor(smiley, 0);
     UI::UnbindRLMC(smiley->material);
-    smiley = reinterpret_cast<lyt::Picture*>(button.layout.GetPaneByName("nikoyellow_base"));
+    smiley = reinterpret_cast<lyt::Picture *>(button.layout.GetPaneByName("nikoyellow_base"));
     smiley->vertexColours[0] = color;
     smiley->vertexColours[1] = color;
     smiley->vertexColours[2] = color;
     smiley->vertexColours[3] = color;
     UI::UnbindRLMC(smiley->material);
     // UI::ResetMatColor(smiley); don't do that as this is a light
-    lyt::Material* border = reinterpret_cast<lyt::Window*>(button.layout.GetPaneByName("Window_00"))->frames->material;
+    lyt::Material *border = reinterpret_cast<lyt::Window *>(button.layout.GetPaneByName("Window_00"))->frames->material;
     border->tevColours[0].r = color.r;
     border->tevColours[0].g = color.g;
     border->tevColours[0].b = color.b;
@@ -172,13 +172,13 @@ void FriendButtonWindowColor(FriendButton& button) {
     UI::UnbindRLMC(border);
 }
 
-void FriendButtonColorOnActivate(AnimationGroup& group, u32 idx, float frame) {
+void FriendButtonColorOnActivate(AnimationGroup &group, u32 idx, float frame) {
     group.PlayAnimationAtFrame(idx, frame);
-    register FriendButton* button;
+    register FriendButton *button;
     asm(mr button, r30;);
     if (button->status == 4) FriendButtonWindowColor(*button);
 }
-bool FriendButtonColorOnUpdate(FriendButton& button, u32 idx, float frame) {
+bool FriendButtonColorOnUpdate(FriendButton &button, u32 idx, float frame) {
     register u32 status;
     asm(mr status, r31;);
     if (status == 4) FriendButtonWindowColor(button);
@@ -189,7 +189,7 @@ kmCall(0x805d3d1c, FriendButtonColorOnUpdate);
 
 kmWrite32(0x805d60e4, 0x7fe3fb78);  // nop to preserve the page
 kmWrite32(0x805d61a0, 0x7fc3f378);
-void JoinButtonColor(Pages::FriendInfo& info, u32 status) {
+void JoinButtonColor(Pages::FriendInfo &info, u32 status) {
     info.joinButton.SetStatus(status);
     if (status >= 0x15 && status <= 0x18) {
         WifiMenuButtonColor(info.joinButton, info.selectedFriendIdx);
@@ -198,12 +198,12 @@ void JoinButtonColor(Pages::FriendInfo& info, u32 status) {
 kmCall(0x805d60e8, JoinButtonColor);
 kmCall(0x805d61a8, JoinButtonColor);
 
-void SetGlobeMsgColor(Pages::Globe::MessageWindow& msg, ut::Color color) {
-    static const char* suffixes[5] = {"c", "normal_l", "normal_r", "l", "r"};
+void SetGlobeMsgColor(Pages::Globe::MessageWindow &msg, ut::Color color) {
+    static const char *suffixes[5] = {"c", "normal_l", "normal_r", "l", "r"};
     char paneName[20];
     for (int i = 0; i < 5; ++i) {
         snprintf(paneName, 20, "window_%s", suffixes[i]);
-        lyt::Picture* picture = reinterpret_cast<lyt::Picture*>(msg.layout.GetPaneByName(paneName));
+        lyt::Picture *picture = reinterpret_cast<lyt::Picture *>(msg.layout.GetPaneByName(paneName));
         picture->vertexColours[0] = color;
         picture->vertexColours[1] = color;
         picture->vertexColours[2] = color;
@@ -214,12 +214,12 @@ void SetGlobeMsgColor(Pages::Globe::MessageWindow& msg, ut::Color color) {
     }
 }
 
-void GlobeMsgColor(Pages::Globe::MessageWindow& msg, u32 bmgId, Text::Info* info) {
-    register Pages::Globe* globe;
+void GlobeMsgColor(Pages::Globe::MessageWindow &msg, u32 bmgId, Text::Info *info) {
+    register Pages::Globe *globe;
     asm(mr globe, r31;);
 
     // Get the friend's region
-    const RKNet::Friend* friendData = &RKNet::Controller::sInstance->friends[globe->selFriendIdx];
+    const RKNet::Friend *friendData = &RKNet::Controller::sInstance->friends[globe->selFriendIdx];
     const u8 friendRegion = friendData->statusData.regionId;
 
     // Set appropriate BMG based on region
@@ -241,7 +241,7 @@ void GlobeMsgColor(Pages::Globe::MessageWindow& msg, u32 bmgId, Text::Info* info
 }
 kmCall(0x805e504c, GlobeMsgColor);
 
-void GlobeSearchTopMsg(CtrlMenuPageTitleText& title, u32 bmgId, Text::Info* info) {
+void GlobeSearchTopMsg(CtrlMenuPageTitleText &title, u32 bmgId, Text::Info *info) {
     if (System::sInstance->netMgr.region == 0x0A)
         bmgId = UI::BMG_TITLE_TEXT_RT;
     else if (System::sInstance->netMgr.region == 0x0B)

@@ -9,13 +9,13 @@ namespace OS {
 
 // DATA CACHE
 // Store a range of cached data at addr (dcbst, sync)
-void DCStoreRange(void* addr, u32 size);  // 801a165c
+void DCStoreRange(void *addr, u32 size);  // 801a165c
 // Invalidates a range of cached data, so that when that data is read, it is read from main memory (so is guaranteed to be correct)
-void DCInvalidateRange(void* addr, u32 size);  // 801a1600
-void DCFlushRange(void* ptr, u32 size);
+void DCInvalidateRange(void *addr, u32 size);  // 801a1600
+void DCFlushRange(void *ptr, u32 size);
 
 // Instruction Cache
-void ICInvalidateRange(void* ptr, u32 size);
+void ICInvalidateRange(void *ptr, u32 size);
 
 // LOCKED CACHE
 void LCEnable();  // 801a1834

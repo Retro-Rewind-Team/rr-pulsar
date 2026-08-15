@@ -20,8 +20,8 @@ u32 CtrlRaceTrackInfoDisplay::Count() {
     }
     return 0;
 }
-void CtrlRaceTrackInfoDisplay::Create(Page& page, u32 index, u32) {
-    CtrlRaceTrackInfoDisplay* info = new (CtrlRaceTrackInfoDisplay);
+void CtrlRaceTrackInfoDisplay::Create(Page &page, u32 index, u32) {
+    CtrlRaceTrackInfoDisplay *info = new (CtrlRaceTrackInfoDisplay);
     page.AddControl(index, *info, 0);
     info->Load();
 }
@@ -34,7 +34,7 @@ void CtrlRaceTrackInfoDisplay::Load() {
     loader.Load("game_image", "CTInfo", "CTInfo", nullptr);
     this->textBox_00 = this->layout.GetPaneByName("TextBox_00");
 
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     const PulsarId winning = cupsConfig->GetWinning();
     const u32 bmgId = GetCurTrackBMG();
 

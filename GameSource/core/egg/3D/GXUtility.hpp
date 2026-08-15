@@ -26,11 +26,11 @@ struct ResTIMG {
 };
 
 class GXUtility {
-   public:
-    static void SetScaleOffsetPerspective(float* dest, float xScale, float yScale, float xOffset, float yOffset);  // 80228dd8
+public:
+    static void SetScaleOffsetPerspective(float *dest, float xScale, float yScale, float xOffset, float yOffset);  // 80228dd8
 
     static u8 GetTexMtxID(u32 idx);  // 80228dcc converts 0-8 to GX::TexMtx enum (30,33,36,39 etc...)
-    static void GetTexObj(GX::TexObj* dest, const ResTIMG& timg);  // 80228e18
+    static void GetTexObj(GX::TexObj *dest, const ResTIMG &timg);  // 80228e18
 
     static const u8 texMtxID[8];  // 80388d30
 

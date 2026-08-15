@@ -85,38 +85,38 @@ enum Context2 {
 };
 
 class System {
-   protected:
+protected:
     System();
 
-   public:
+public:
     // System functions
-    void Init(const ConfigFile& confRT, const ConfigFile& confCT, const ConfigFile& confBT,
+    void Init(const ConfigFile &confRT, const ConfigFile &confCT, const ConfigFile &confBT,
               u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes);
-    void InitInstances(const ConfigFile& conf, IOType type);
+    void InitInstances(const ConfigFile &conf, IOType type);
     void InitIO(IOType type) const;
-    void InitCups(const ConfigFile& conf);
-    void InitSettings(const u16* totalTrophyCount) const;
+    void InitCups(const ConfigFile &conf);
+    void InitSettings(const u16 *totalTrophyCount) const;
     void UpdateContext();
     static void UpdateContextWrapper();
     static void ClearOttContext();
 
-   protected:
+protected:
     // Virtual
     virtual void AfterInit() {};
 
-   public:
-    static System* sInstance;
+public:
+    static System *sInstance;
 
-    virtual void SetUserInfo(Network::ResvInfo::UserInfo& userInfo) {};
-    virtual bool CheckUserInfo(const Network::ResvInfo::UserInfo& userInfo) { return true; };
-    const Info& GetInfo() const { return this->info; }
+    virtual void SetUserInfo(Network::ResvInfo::UserInfo &userInfo) {};
+    virtual bool CheckUserInfo(const Network::ResvInfo::UserInfo &userInfo) { return true; };
+    const Info &GetInfo() const { return this->info; }
 
     bool IsContext(Context context) const { return (this->context & (1 << context)) != 0; }
     bool IsContext(Context2 context2) const { return (this->context2 & (1 << context2)) != 0; }
     bool IsVanillaMode() const;
-    static s32 OnSceneEnter(Random& random);
+    static s32 OnSceneEnter(Random &random);
 
-    const char* GetModFolder() const { return modFolderName; }
+    const char *GetModFolder() const { return modFolderName; }
     static void CreateSystem();
 
     // Network
@@ -126,23 +126,23 @@ class System {
     static asmFunc GetNonTTGhostPlayersCount();
 
     // BMG
-    const BMGHolder& GetBMG() const { return customBmgs; }
-    const BMGHolder& GetBMGCT() const { return customBmgsCT; }
-    const BMGHolder& GetBMGBT() const { return customBmgsBT; }
+    const BMGHolder &GetBMG() const { return customBmgs; }
+    const BMGHolder &GetBMGCT() const { return customBmgsCT; }
+    const BMGHolder &GetBMGBT() const { return customBmgsBT; }
 
     // VARIABLES
-    EGG::ExpHeap* const heap;  // 0x4
-    EGG::TaskThread* const taskThread;  // 0x8
+    EGG::ExpHeap *const heap;  // 0x4
+    EGG::TaskThread *const taskThread;  // 0x8
     // Constants
 
-   public:
+public:
     char modFolderName[IOS::ipcMaxFileName + 1];  // 0xC
     u8 padding[2];
     Info info;  // 0x1c
     u32 context;
     u32 context2;
 
-   public:
+public:
     // Updated from ROOM packets when the host starts a GP.
     Network::Mgr netMgr;
 
@@ -152,38 +152,38 @@ class System {
     LECODE::Mgr lecodeMgr;
 
     // Modes
-    KO::Mgr* koMgr;
-    LapKO::Mgr* lapKoMgr;
+    KO::Mgr *koMgr;
+    LapKO::Mgr *lapKoMgr;
     bool ottHideNames;
     OTT::Mgr ottMgr;
     u8 nonTTGhostPlayersCount;  // because a ghost can be added in vs, racedata's playercount is not reliable
 
-   private:
+private:
     // Custom BMGS
     BMGHolder customBmgs;
-    BMGHeader* rawBmg;
+    BMGHeader *rawBmg;
     BMGHolder customBmgsCT;
-    BMGHeader* rawBmgCT;
+    BMGHeader *rawBmgCT;
     BMGHolder customBmgsBT;
-    BMGHeader* rawBmgBT;
+    BMGHeader *rawBmgBT;
 
-   public:
+public:
     // string pool
     static const char pulsarString[];
     static const char CommonAssets[];
     static const char breff[];
     static const char breft[];
-    static const char* ttModeFolders[];
+    static const char *ttModeFolders[];
 
     struct Inherit {
-        typedef System* (*CreateFunc)();
+        typedef System *(*CreateFunc)();
         Inherit(CreateFunc func) {
             create = func;
             inherit = this;
         }
         CreateFunc create;
     };
-    static Inherit* inherit;
+    static Inherit *inherit;
     friend class Info;
 };
 }  // namespace Pulsar

@@ -8,10 +8,10 @@ namespace Pulsar {
 namespace UI {
 
 class CtrlRaceResultExtendedTeams : public LayoutUIControl {
-   public:
+public:
     void InitSelf() override;
     void OnUpdate() override;
-    const char* GetClassName() const override;
+    const char *GetClassName() const override;
 
     void Load(ExtendedTeamID teamID, int numTeams, int teamIdx);
     bool IsResultAnimDone() const;
@@ -20,7 +20,7 @@ class CtrlRaceResultExtendedTeams : public LayoutUIControl {
     CtrlRaceResultTeam::Player players[6];
 
     LayoutUIControl items[6];
-    LayoutUIControl* resultTeamPoint;
+    LayoutUIControl *resultTeamPoint;
 
     Text::Info textInfo;
     float currentScore;

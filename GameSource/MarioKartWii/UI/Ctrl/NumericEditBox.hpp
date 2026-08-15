@@ -5,16 +5,16 @@
 
 //_sinit_ at 805cadc0
 class NumericEditBox : public LayoutUIControl {
-   public:
+public:
     class EditLetter : public LayoutUIControl {
-       public:
+    public:
         EditLetter();  // 805caaf0
         ~EditLetter() override;  // 805cab2c vtable 808b82f8
         void Init() override;  // 0xc 805cac0c
         void Update() override;  // 0x10 805cac8c
-        const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805cad84
-        const char* GetClassName() const override;  // 0x2c 805caae0
-        void Load(const char* folderName, const char* ctrName, const char* variant);  // 805cab84
+        const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805cad84
+        const char *GetClassName() const override;  // 0x2c 805caae0
+        void Load(const char *folderName, const char *ctrName, const char *variant);  // 805cab84
         void AddDigit(u32 digit);  // 805cac90 inlined
         void RemoveDigit();  // 805cace4 inlined
         void ToggleCursor(bool isEnabled);  // 805cacf0 inlined
@@ -26,12 +26,12 @@ class NumericEditBox : public LayoutUIControl {
     ~NumericEditBox() override;  // 805c99f8 vtable 808b82b8
     void Init() override;  // 0xc 805ca438
     void Update() override;  // 0x10 805ca53c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805cad78
-    const char* GetClassName() const override;  // 0x2c 805c9894
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805cad78
+    const char *GetClassName() const override;  // 0x2c 805c9894
     virtual void vf_0x3c();  // 0x3c 805c9ebc
 
-    void Load(u32 digitCount, const char* folderName, const char* boxCtrName, const char* variant, const char* digitCtrName,
-              const char* digitVariant, u32 localPlayerBitfield, bool r5, bool inaccessible);  // 805c9a7c r5 == manipulator's init r5
+    void Load(u32 digitCount, const char *folderName, const char *boxCtrName, const char *variant, const char *digitCtrName,
+              const char *digitVariant, u32 localPlayerBitfield, bool r5, bool inaccessible);  // 805c9a7c r5 == manipulator's init r5
     void SelectInitial(u32 hudSlotId);  // 805c9ec0
     void Select(u32 hudSlotId);  // 805c9f14
     void RemoveAllDigits();  // 805c9f34
@@ -55,9 +55,9 @@ class NumericEditBox : public LayoutUIControl {
     u32 digitCount;  // 0x1dc
     u32 curDigitCount;  // 0x1e0 how many digits have been entered
     ControlManipulator controlManipulator;  // 0x1e4
-    lyt::Pane* fuchi_pattern;  // 0x268
-    lyt::Pane* color_base;  // 0x26c
-    EditLetter* digits;  // 0x270
+    lyt::Pane *fuchi_pattern;  // 0x268
+    lyt::Pane *color_base;  // 0x26c
+    EditLetter *digits;  // 0x270
 };  // Total Size 0x274
 // size_assert(NumericEditBox::EditLetter, 0x178);
 // size_assert(NumericEditBox, 0x274);

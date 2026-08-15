@@ -11,7 +11,7 @@
 #include <core/rvl/OS/OS.hpp>
 
 namespace RetroRewind {
-Pulsar::System* System::Create() {
+Pulsar::System *System::Create() {
     return new System();  // now Pulsar::sInstance is of type RetroRewind
 }
 Pulsar::System::Inherit CreateRetroRewind(System::Create);
@@ -74,7 +74,7 @@ void FPSPatch() {
 static SectionLoadHook PatchFPS(FPSPatch);
 static RaceLoadHook PatchFPSOnRaceLoad(FPSPatch);
 
-void ItemBoxRespawn(Objects::Itembox* itembox) {
+void ItemBoxRespawn(Objects::Itembox *itembox) {
     bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
     bool isFastRespawn = Pulsar::ITEMBOX_DEFAULTRESPAWN;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
@@ -94,13 +94,13 @@ void PredictionPatch() {
     if (Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_PREDICTIONREMOVAL) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
         predictionValue = 1.0f;
     }
-    PredictionHook = *reinterpret_cast<u32*>(&predictionValue);
+    PredictionHook = *reinterpret_cast<u32 *>(&predictionValue);
 }
 static SectionLoadHook PatchPrediction(PredictionPatch);
 
 // Clear contexts from worldwides upon disconnecting from WFC. [Opt]
 static void ClearContextsUponWFCDisconnect() {
-    Pulsar::System* system = Pulsar::System::sInstance;
+    Pulsar::System *system = Pulsar::System::sInstance;
     SectionId id = SectionMgr::sInstance->curSection->sectionId;
 
     // Single-player menu

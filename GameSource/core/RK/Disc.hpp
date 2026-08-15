@@ -11,8 +11,8 @@
 // using namespace EGG;
 
 class DiscCheckThread {
-   public:
-    static DiscCheckThread* sInstance;  // 80385FC0
-    static void Create(EGG::Heap* heap);  // 80008c10
+public:
+    static DiscCheckThread *sInstance;  // 80385FC0
+    static void Create(EGG::Heap *heap);  // 80008c10
 };
 #endif

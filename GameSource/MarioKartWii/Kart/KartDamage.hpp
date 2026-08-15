@@ -16,7 +16,7 @@ struct POWParams {
 };
 
 class Damage : public Link {  // PlayerObjIdx set to 0xC if the damage shouldn't lead to item loss
-   public:
+public:
     enum SpinType {
         SPIN_TYPE_ONLY_SOUND_AND_ITEMLOSS,
         SPIN_TYPE_SHORT,
@@ -80,7 +80,7 @@ class Damage : public Link {  // PlayerObjIdx set to 0xC if the damage shouldn't
     void OnSquishDamageEnd(bool resetRot);  // 80569ad0
 
     virtual ~Damage();  // 8056a1a8 vtable 808B5008
-    virtual bool SetDamage(DamageType newDamage, u32, bool affectsMegas, DamageType* appliedDamage,
+    virtual bool SetDamage(DamageType newDamage, u32, bool affectsMegas, DamageType *appliedDamage,
                            u32 playerObjIdx, u32);  // 805675dc r5/r9 unused
     virtual void vf_0x10();  // 0x10 80568558
     virtual void vf_0x14();  // 0x14 8056a164
@@ -97,7 +97,7 @@ class Damage : public Link {  // PlayerObjIdx set to 0xC if the damage shouldn't
     Ptmf_0A<Damage, bool> curDamageUpdater;  // 0x98 returns true when damage is done
     Ptmf_1A<Damage, void, bool> onCurDamageEndHandler;  // 0xa4 for example stuff like reset the rotation of the kart
     u8 unknown_0xb0[0x10];
-    float* onHitSpeedMultiplier;  // 0xc0
+    float *onHitSpeedMultiplier;  // 0xc0
     u32 curDamageCounter;  // 0xc4
     u8 unknown_0xc8[0xe8 - 0xc8];
     Vec3 up;  // 0xe8

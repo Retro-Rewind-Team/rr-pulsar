@@ -16,19 +16,19 @@ extern OS::Message DecodedTextureSetMessage[3];  // 809c181c
 extern s32 First;  // 809C1828
 
 // VideoDecode
-BOOL CreateVideoDecodeThread(s32 priority, u8* ptr);  // 8055286c
+BOOL CreateVideoDecodeThread(s32 priority, u8 *ptr);  // 8055286c
 void VideoDecodeThreadStart();  // 80552940
 void VideoDecodeThreadCancel();  // 80552960
 
 // Thread run funcs
-void* VideoDecoder(void* ptr);  // 805529a8 ptr will be null since not OnMemory
-void* VideoDecoderForOnMemory(void* ptr);  // 80552a74
+void *VideoDecoder(void *ptr);  // 805529a8 ptr will be null since not OnMemory
+void *VideoDecoderForOnMemory(void *ptr);  // 80552a74
 
-u32 VideoDecode(ReadBuffer* readBuffer);  // 80552ba4
-void* PopFreeTextureSet();  // 80552cf0
-void PushFreeTextureSet(void* buffer);  // 80552d24 Free video data
-void* PopDecodedTextureSet(s32 flag);  // 80552d38 get decoded
-void PushDecodedTextureSet(void* buffer);  // 80552d7c
+u32 VideoDecode(ReadBuffer *readBuffer);  // 80552ba4
+void *PopFreeTextureSet();  // 80552cf0
+void PushFreeTextureSet(void *buffer);  // 80552d24 Free video data
+void *PopDecodedTextureSet(s32 flag);  // 80552d38 get decoded
+void PushDecodedTextureSet(void *buffer);  // 80552d7c
 
 }  // namespace THP
 #endif

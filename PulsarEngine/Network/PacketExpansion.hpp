@@ -142,14 +142,14 @@ struct PulEVENT : public RKNet::EVENTPacket {};  // NOT RECOMMENDED as this has 
 static const u32 totalRACESize = sizeof(RKNet::RACEPacketHeader) + sizeof(PulRH1) + sizeof(PulRH2) + sizeof(PulSELECT) + 2 * sizeof(PulRACEDATA) + sizeof(PulUSER) + 2 * sizeof(PulITEM) + sizeof(PulEVENT);
 
 class CustomRKNetController {  // Exists to make received packets a pointer array so that the size can be variable
-   public:
+public:
     virtual ~CustomRKNetController();  // 8065741c vtable 808c097c
 
     u32 unkVtable;  // unknown class vtable 808c0988
     OS::Mutex mutex;  // 0x8
 
-    EGG::Heap* Heap;  // 0x20
-    EGG::TaskThread* taskThread;  // 0x24
+    EGG::Heap *Heap;  // 0x20
+    EGG::TaskThread *taskThread;  // 0x24
     RKNet::ConnectionState connectionState;  // 0x28
 
     RKNet::ErrorParams errorParams;  // 0x2c
@@ -160,9 +160,9 @@ class CustomRKNetController {  // Exists to make received packets a pointer arra
     RKNet::RoomType roomType;  // 0xe8
     u8 unknown_0xec[4];
 
-    RKNet::SplitRACEPointers* splitToSendRACEPackets[2][12];  // 0xf0 split pointers for the outgoing packets, double buffered, indexed by aid
-    RKNet::SplitRACEPointers* splitReceivedRACEPackets[2][12];  // 0x150 split pointers for the incoming packets, double buffered, indexed by aid
-    RKNet::PacketHolder<void>* fullSendPackets[12];  // 0x1b0 combined outgoing packets, indexed by aid
+    RKNet::SplitRACEPointers *splitToSendRACEPackets[2][12];  // 0xf0 split pointers for the outgoing packets, double buffered, indexed by aid
+    RKNet::SplitRACEPointers *splitReceivedRACEPackets[2][12];  // 0x150 split pointers for the incoming packets, double buffered, indexed by aid
+    RKNet::PacketHolder<void> *fullSendPackets[12];  // 0x1b0 combined outgoing packets, indexed by aid
     u64 lastRACEToSendTimes[12];  // 0x1e0 time when last sent to that aid
     u64 lastRACERecivedTimes[12];  // 0x240 time when last received from that aid
     u64 RACEToSendTimesTaken[12];  // 0x2a0 last send time minus the time of the send before it
@@ -172,7 +172,7 @@ class CustomRKNetController {  // Exists to make received packets a pointer arra
     // MODIFICATIONS
     u8 defaultBuffer[0x25b0 - 0x361];  // 0x361 1 per aid
     u32 toDisconnectAids;  // 0x25b0 for wiimmfi only?
-    void* fullPulRecvPackets[12];  // 0x25b4
+    void *fullPulRecvPackets[12];  // 0x25b4
     // END
 
     RKNet::StatusData localStatusData;  // 0x25e4 8 bytes, see http://wiki.tockdom.com/wiki/MKWii_Network_Protocol/Server/gpcm.gs.nintendowifi.net#locstring
@@ -199,9 +199,9 @@ class CustomRKNetController {  // Exists to make received packets a pointer arra
 static_assert(sizeof(PulROOM) < sizeof(PulSELECT), "ROOM SELECT");
 
 class ExpSELECTHandler {
-   public:
-    static ExpSELECTHandler& Get() { return *reinterpret_cast<ExpSELECTHandler*>(RKNet::SELECTHandler::sInstance); };
-    static void DecideTrack(ExpSELECTHandler& self);
+public:
+    static ExpSELECTHandler &Get() { return *reinterpret_cast<ExpSELECTHandler *>(RKNet::SELECTHandler::sInstance); };
+    static void DecideTrack(ExpSELECTHandler &self);
 
     // Get the vote variant index for a specific player
     u8 GetVoteVariantIdx(u8 aid, u8 hudSlotId) const;
@@ -209,7 +209,7 @@ class ExpSELECTHandler {
     RKNet::OnlineMode mode;  // from page 0x90 OnInit SectionId Switch
     u32 unknown_0x4;
     PulSELECT toSendPacket;  // 0x8
-    PulSELECT* receivedPackets;  // sizeof(PulSELECT) + 0x8
+    PulSELECT *receivedPackets;  // sizeof(PulSELECT) + 0x8
 
     u8 padding[0x2e0 - (sizeof(PulSELECT) + 0x8 + 4)];
 

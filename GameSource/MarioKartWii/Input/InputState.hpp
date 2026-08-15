@@ -13,7 +13,7 @@ Contributors:
 namespace Input {
 
 class State {
-   public:
+public:
     State() {}
     virtual ~State();  // 8051ec94 vtable 808b2f2c
     void Reset();  // 8051e85c
@@ -21,7 +21,7 @@ class State {
     void SetStickX(u8 quantisedStickX);  // 8051e9e8
     static float ConvertQuantised(u8 quantisedStick);  // 8051ea28
     void SetStickY(u8 quantisedStickY);  // 8051ea60
-    bool operator==(State& rhs);  // 8051e89c
+    bool operator==(State &rhs);  // 8051e89c
     void SetMotionControlFlick(u8 motionControlFlickUnmirrored);  // 8051eb68
 
     u16 buttonActions;  // bit flags:
@@ -42,7 +42,7 @@ class State {
 };  // Total size 0x18
 
 class UIState {
-   public:
+public:
     UIState() {}
     virtual ~UIState();  // 8051ecd4 vtable 808b2f20
     void Reset();  // 8051e904

@@ -8,15 +8,15 @@ namespace nw4r {
 namespace ut {
 
 class LinkListNode : private NonCopyable {
-   public:
-    LinkListNode* next;
-    LinkListNode* prev;
+public:
+    LinkListNode *next;
+    LinkListNode *prev;
 };  // Total size 0x8
 // size_assert(LinkListNode, 0x8);
 
 namespace detail {
 class LinkListImpl : private NonCopyable {
-   public:
+public:
     class IteratorImpl;
 
     explicit LinkListImpl() {
@@ -31,24 +31,24 @@ class LinkListImpl : private NonCopyable {
 
     void Clear();  // 800af2f0
     IteratorImpl Erase(IteratorImpl itFirst, IteratorImpl itLast);  // 800af2a0 removes in btw
-    IteratorImpl Erase(LinkListNode* node);  // 800af370 removes from the list
+    IteratorImpl Erase(LinkListNode *node);  // 800af370 removes from the list
     IteratorImpl Erase(IteratorImpl it) {
         IteratorImpl itNext = it;
         ++itNext;
         return Erase(it, itNext);
     }
-    IteratorImpl Insert(IteratorImpl it, LinkListNode* node);  // 800af340
+    IteratorImpl Insert(IteratorImpl it, LinkListNode *node);  // 800af340
 
     void PopFront() { this->Erase(GetBeginIter()); }
     void PopBack() { this->Erase(--GetEndIter()); }
 
     class IteratorImpl {
-       public:
-        explicit IteratorImpl(LinkListNode* ptr) : ptr(ptr) {}
+    public:
+        explicit IteratorImpl(LinkListNode *ptr) : ptr(ptr) {}
         explicit IteratorImpl() : ptr(nullptr) {}
-        LinkListNode& operator*() const { return *ptr; }
-        LinkListNode* operator->() const { return ptr; }
-        IteratorImpl& operator++() {
+        LinkListNode &operator*() const { return *ptr; }
+        LinkListNode *operator->() const { return ptr; }
+        IteratorImpl &operator++() {
             ptr = ptr->next;
             return *this;
         }
@@ -57,7 +57,7 @@ class LinkListImpl : private NonCopyable {
             ++*this;
             return it;
         }
-        IteratorImpl& operator--() {
+        IteratorImpl &operator--() {
             ptr = ptr->prev;
             return *this;
         }
@@ -69,7 +69,7 @@ class LinkListImpl : private NonCopyable {
         friend bool operator==(IteratorImpl it1, IteratorImpl it2) { return it1.ptr == it2.ptr; }
         friend bool operator!=(IteratorImpl it1, IteratorImpl it2) { return !(it1 == it2); }
 
-        LinkListNode* ptr;
+        LinkListNode *ptr;
     };
     IteratorImpl GetBeginIter() { return IteratorImpl(node.next); }
     IteratorImpl GetEndIter() { return IteratorImpl(&node); }
@@ -81,15 +81,15 @@ class LinkListImpl : private NonCopyable {
 
 template <class T, s32 offset>
 class LinkList : private detail::LinkListImpl {
-   public:
+public:
     class Iterator {
-       public:
+    public:
         Iterator() {}
-        T& operator*() const {
+        T &operator*() const {
             return *operator->();
         }
-        T* operator->() const { return GetPointerFromNode(itImpl.operator->()); }
-        Iterator& operator++() {
+        T *operator->() const { return GetPointerFromNode(itImpl.operator->()); }
+        Iterator &operator++() {
             ++itImpl;
             return *this;
         }
@@ -98,7 +98,7 @@ class LinkList : private detail::LinkListImpl {
             ++*this;
             return it;
         }
-        Iterator& operator--() {
+        Iterator &operator--() {
             --itImpl;
             return *this;
         }
@@ -110,7 +110,7 @@ class LinkList : private detail::LinkListImpl {
         friend bool operator==(Iterator it1, Iterator it2) { return it1.itImpl == it2.itImpl; }
         friend bool operator!=(Iterator it1, Iterator it2) { return !(it1 == it2); }
 
-       private:
+    private:
         explicit Iterator(LinkListImpl::IteratorImpl it) : itImpl(it) {}
 
         LinkListImpl::IteratorImpl itImpl;
@@ -124,32 +124,32 @@ class LinkList : private detail::LinkListImpl {
     Iterator GetBeginIter() { return Iterator(detail::LinkListImpl::GetBeginIter()); }
     Iterator GetEndIter() { return Iterator(detail::LinkListImpl::GetEndIter()); }
 
-    T& GetFront() { return *GetBeginIter(); }
-    T& GetBack() { return *--GetEndIter(); }
+    T &GetFront() { return *GetBeginIter(); }
+    T &GetBack() { return *--GetEndIter(); }
 
-    Iterator Insert(Iterator it, T* ptr) { return Iterator(detail::LinkListImpl::Insert(it.it, GetNodeFromPointer(ptr))); }
-    void PushFront(T* ptr) { this->Insert(GetBeginIter(), ptr); }
-    void PushBack(T* ptr) { this->Insert(GetEndIter(), ptr); }
+    Iterator Insert(Iterator it, T *ptr) { return Iterator(detail::LinkListImpl::Insert(it.it, GetNodeFromPointer(ptr))); }
+    void PushFront(T *ptr) { this->Insert(GetBeginIter(), ptr); }
+    void PushBack(T *ptr) { this->Insert(GetEndIter(), ptr); }
 
     using detail::LinkListImpl::PopBack;
     using detail::LinkListImpl::PopFront;
 
     // Iterator Erase(Iterator it) { return Iterator(detail::LinkListImpl::Erase(it.it)); }
     // Iterator Erase(Iterator itFirst, Iterator itLast) { return Iterator(detail::LinkListImpl::Erase(itFirst.it, itLast.it)); }
-    Iterator Erase(T* ptr) { return Iterator(detail::LinkListImpl::Erase(GetNodeFromPointer(ptr))); }
+    Iterator Erase(T *ptr) { return Iterator(detail::LinkListImpl::Erase(GetNodeFromPointer(ptr))); }
     using detail::LinkListImpl::Clear;
 
-    static LinkListNode* GetNodeFromPointer(T* ptr) {
-        return reinterpret_cast<LinkListNode*>(reinterpret_cast<u32>(ptr) + offset);
+    static LinkListNode *GetNodeFromPointer(T *ptr) {
+        return reinterpret_cast<LinkListNode *>(reinterpret_cast<u32>(ptr) + offset);
     }
-    static const LinkListNode* GetNodeFromPointer(const T* ptr) {
-        return reinterpret_cast<const LinkListNode*>(reinterpret_cast<u32>(ptr) + offset);
+    static const LinkListNode *GetNodeFromPointer(const T *ptr) {
+        return reinterpret_cast<const LinkListNode *>(reinterpret_cast<u32>(ptr) + offset);
     }
-    static T* GetPointerFromNode(LinkListNode* ptr) {
-        return reinterpret_cast<T*>(reinterpret_cast<u32>(ptr) - offset);
+    static T *GetPointerFromNode(LinkListNode *ptr) {
+        return reinterpret_cast<T *>(reinterpret_cast<u32>(ptr) - offset);
     }
-    static const T* GetPointerFromNode(const LinkListNode* ptr) {
-        return reinterpret_cast<const T*>(reinterpret_cast<u32>(ptr) - offset);
+    static const T *GetPointerFromNode(const LinkListNode *ptr) {
+        return reinterpret_cast<const T *>(reinterpret_cast<u32>(ptr) - offset);
     }
 };  // Total size 0xc
 

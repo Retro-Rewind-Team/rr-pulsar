@@ -18,25 +18,25 @@ namespace Pulsar {
 namespace PointRating {
 
 #ifdef BETA
-static const char* MULTIPLIER_URL = "http://rwfc.net/api/game/multiplierBeta.txt";
+static const char *MULTIPLIER_URL = "http://rwfc.net/api/game/multiplierBeta.txt";
 #else
-static const char* MULTIPLIER_URL = "http://rwfc.net/api/game/multiplier.txt";
+static const char *MULTIPLIER_URL = "http://rwfc.net/api/game/multiplier.txt";
 #endif
 static const u32 MULTIPLIER_REQUEST_WORK_BUF_SIZE = 0x1000;
 
-static void* s_multiplierRequestWorkBuf = nullptr;
+static void *s_multiplierRequestWorkBuf = nullptr;
 static bool s_multiplierRequestActive = false;
 static bool s_multiplierRequestDone = false;
 static bool s_wasConnectedToWfc = false;
 static bool s_remoteMultiplierValid = false;
 static float s_remoteMultiplier = 1.0f;
 
-static const char* SkipWhitespace(const char* p) {
+static const char *SkipWhitespace(const char *p) {
     while (p != nullptr && (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')) ++p;
     return p;
 }
 
-static bool ParseRemoteMultiplier(const char* body, int bodyLen, float& out) {
+static bool ParseRemoteMultiplier(const char *body, int bodyLen, float &out) {
     if (body == nullptr || bodyLen <= 0) return false;
 
     const int maxLen = bodyLen < 31 ? bodyLen : 31;
@@ -44,8 +44,8 @@ static bool ParseRemoteMultiplier(const char* body, int bodyLen, float& out) {
     memcpy(text, body, maxLen);
     text[maxLen] = '\0';
 
-    const char* start = SkipWhitespace(text);
-    const char* p = start;
+    const char *start = SkipWhitespace(text);
+    const char *p = start;
     if (*p == '+') ++p;
 
     bool hasDigit = false;
@@ -75,11 +75,11 @@ static bool ParseRemoteMultiplier(const char* body, int bodyLen, float& out) {
 }
 
 static bool CanStartMultiplierDownload() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     return controller != nullptr && controller->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
 }
 
-static void OnMultiplierDownloaded(s32 result, void* response, void* /*userdata*/) {
+static void OnMultiplierDownloaded(s32 result, void *response, void * /*userdata*/) {
     Network::FinishNHTTPRequest();
     s_multiplierRequestActive = false;
     s_multiplierRequestDone = true;
@@ -87,8 +87,8 @@ static void OnMultiplierDownloaded(s32 result, void* response, void* /*userdata*
     if (response == nullptr) return;
 
     if (result == 0) {
-        char* body = nullptr;
-        const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res*>(response), &body);
+        char *body = nullptr;
+        const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res *>(response), &body);
         float multiplier = 1.0f;
         if (ParseRemoteMultiplier(body, bodyLen, multiplier)) {
             s_remoteMultiplier = multiplier;
@@ -110,8 +110,8 @@ static void TryStartMultiplierDownload() {
     }
     memset(s_multiplierRequestWorkBuf, 0, MULTIPLIER_REQUEST_WORK_BUF_SIZE);
 
-    void* request = NHTTPCreateRequest(MULTIPLIER_URL, 0, s_multiplierRequestWorkBuf, MULTIPLIER_REQUEST_WORK_BUF_SIZE,
-                                       reinterpret_cast<void*>(&OnMultiplierDownloaded),
+    void *request = NHTTPCreateRequest(MULTIPLIER_URL, 0, s_multiplierRequestWorkBuf, MULTIPLIER_REQUEST_WORK_BUF_SIZE,
+                                       reinterpret_cast<void *>(&OnMultiplierDownloaded),
                                        nullptr);
     if (request == nullptr) {
         s_multiplierRequestDone = true;
@@ -128,7 +128,7 @@ static void TryStartMultiplierDownload() {
 }
 
 static void UpdateMultiplierDownloadForWfcConnection() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isConnectedToWfc =
         controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
 
@@ -156,13 +156,13 @@ static bool IsEventDay(unsigned m, unsigned d) {
 
 static float GetBattleBonus() {
     if (!BattleElim::ShouldApplyBattleElimination()) return 0.0f;
-    const RKNet::Controller* ctrl = RKNet::Controller::sInstance;
+    const RKNet::Controller *ctrl = RKNet::Controller::sInstance;
     int count = ctrl->subs[ctrl->currentSub].playerCount;
     return (count > 5) ? (float)(count - 5) * 0.166f : 0.0f;
 }
 
 bool IsWeekendMultiplierActive() {
-    ServerDateTime* sdt = ServerDateTime::sInstance;
+    ServerDateTime *sdt = ServerDateTime::sInstance;
     if (sdt == nullptr || !sdt->isValid) return false;
     sdt->Update();
 
@@ -176,7 +176,7 @@ bool IsWeekendMultiplierActive() {
 
 bool IsWeekendMultiplierActiveForRegion(u8 region) {
     if (!IsWeekendMultiplierActive()) return false;
-    ServerDateTime* sdt = ServerDateTime::sInstance;
+    ServerDateTime *sdt = ServerDateTime::sInstance;
     return sdt->GetCurrentVRMultiplierRegion() == region;
 }
 
@@ -184,7 +184,7 @@ bool IsItemRainEventActive() {
     unsigned year = 0, month = 0, day = 0;
     bool valid = false;
 
-    ServerDateTime* sdt = ServerDateTime::sInstance;
+    ServerDateTime *sdt = ServerDateTime::sInstance;
     if (sdt && sdt->isValid) {
         sdt->Update();
         year = sdt->year;
@@ -192,7 +192,7 @@ bool IsItemRainEventActive() {
         day = sdt->day;
         valid = true;
     } else {
-        SystemManager* sm = SystemManager::sInstance;
+        SystemManager *sm = SystemManager::sInstance;
         if (sm && sm->isValidDate) {
             year = sm->year + 2000;
             month = sm->month;
@@ -213,14 +213,14 @@ float GetMultiplier() {
     unsigned month = 0, day = 0;
     bool valid = false;
 
-    ServerDateTime* sdt = ServerDateTime::sInstance;
+    ServerDateTime *sdt = ServerDateTime::sInstance;
     if (sdt && sdt->isValid) {
         sdt->Update();
         month = sdt->month;
         day = sdt->day;
         valid = true;
     } else {
-        SystemManager* sm = SystemManager::sInstance;
+        SystemManager *sm = SystemManager::sInstance;
         if (sm && sm->isValidDate) {
             month = sm->month;
             day = sm->day;

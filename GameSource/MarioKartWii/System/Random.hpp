@@ -10,7 +10,7 @@ Contributors:
 #include <kamek.hpp>
 
 class Random {
-   public:
+public:
     Random();  // 80555464
     explicit Random(s32 seed);  // 80555514
     virtual ~Random();  // 80555538 vtable 808b42e0

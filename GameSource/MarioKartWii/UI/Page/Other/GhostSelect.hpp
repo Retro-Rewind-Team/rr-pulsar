@@ -29,7 +29,7 @@ class GhostSelectSupporting : public Page {  // ID 0x70
     void BeforeExitAnimations() override;  // 80639148
     void AfterControlUpdate() override;  // 8063914c
     void OnResume() override;  // 80639260
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 8063a4d4
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 8063a4d4
     void InitGhostList();  // based on state 806393c8
     ManipulatorManager controller;  // 0x44 to 0x54
     PageId nextPageId;  // set to -1 by OnDeactivate, then by 0x71 by
@@ -38,7 +38,7 @@ class GhostSelectSupporting : public Page {  // ID 0x70
 // size_assert(GhostSelectSupporting, 0x5C);
 
 class GhostSelect : public Page {  // ID 0x71
-   public:
+public:
     static const PageId id = PAGE_GHOST_SELECT;
     GhostSelect();  // 806395ec vtable 808bec2c
     ~GhostSelect() override;  // 8063982c
@@ -47,12 +47,12 @@ class GhostSelect : public Page {  // ID 0x71
     void OnActivate() override;  // 80639bd0
     void BeforeEntranceAnimations() override;  // 80639d34
     void OnResume() override;  // 80639d6c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 8063a4c0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 8063a4c0
 
-    void OnChallengeGhostPress(PushButton& button, u32 hudSlotId);
-    void OnWatchReplayPress(PushButton& button, u32 hudSlotId);
-    void OnRightArrowPress(SheetSelectControl& control, u32 hudSlotId);  // 8063a1a4
-    void OnLeftArrowPress(SheetSelectControl& control, u32 hudSlotId);  // 8063a2a4
+    void OnChallengeGhostPress(PushButton &button, u32 hudSlotId);
+    void OnWatchReplayPress(PushButton &button, u32 hudSlotId);
+    void OnRightArrowPress(SheetSelectControl &control, u32 hudSlotId);  // 8063a1a4
+    void OnLeftArrowPress(SheetSelectControl &control, u32 hudSlotId);  // 8063a2a4
     void OnBackPress(u32 hudSlotId);  // 8063a444
     ControlsManipulatorManager manipulatorManager;  // 0x44
     CtrlMenuPageTitleText ctrlMenuPageTitleText;  // 0x268
@@ -64,17 +64,17 @@ class GhostSelect : public Page {  // ID 0x71
     PushButton watchReplayButton;  // 0x1174
     PushButton soloTTButton;  // 0x13c8
     CtrlMenuBackButton backButton;  // 0x161c
-    GhostInfoControl* info;  // 0x1880 they alternate even and odd pages
-    GhostInfoControl* info2;
+    GhostInfoControl *info;  // 0x1880 they alternate even and odd pages
+    GhostInfoControl *info2;
     u32 selectedButtonId;  // 0x1888
-    PtmfHolder_2A<Page, void, SheetSelectControl&, u32> onRightArrowPressHandler;  // 8063a1a4 0x188c
-    PtmfHolder_2A<Page, void, SheetSelectControl&, u32> onLeftArrowPressHandler;  // 8063a2a4 0x18a0
-    PtmfHolder_2A<Page, void, PushButton&, u32> onChallengeGhostClickHandler;  // 8063a3a0 0x18B4
-    PtmfHolder_2A<Page, void, PushButton&, u32> onWatchReplayClickHandler;  // 8063a3c0 0x18C8
-    PtmfHolder_2A<Page, void, PushButton&, u32> onSoloTimeTrialClickHandler;  // 8063a3e0 0x18DC
-    PtmfHolder_2A<Page, void, CtrlMenuBackButton&, u32> onBackButtonClickHandler;  // 8063a444 0x18F0
+    PtmfHolder_2A<Page, void, SheetSelectControl &, u32> onRightArrowPressHandler;  // 8063a1a4 0x188c
+    PtmfHolder_2A<Page, void, SheetSelectControl &, u32> onLeftArrowPressHandler;  // 8063a2a4 0x18a0
+    PtmfHolder_2A<Page, void, PushButton &, u32> onChallengeGhostClickHandler;  // 8063a3a0 0x18B4
+    PtmfHolder_2A<Page, void, PushButton &, u32> onWatchReplayClickHandler;  // 8063a3c0 0x18C8
+    PtmfHolder_2A<Page, void, PushButton &, u32> onSoloTimeTrialClickHandler;  // 8063a3e0 0x18DC
+    PtmfHolder_2A<Page, void, CtrlMenuBackButton &, u32> onBackButtonClickHandler;  // 8063a444 0x18F0
     PtmfHolder_1A<Page, void, u32> onBackPress;  // 8063a400 0x1904
-    GhostList* ghostList;  // 0x1918 from ghostmanager
+    GhostList *ghostList;  // 0x1918 from ghostmanager
     u32 page;  // 0x191C
     PageId nextPageId;  // 0x1920
 };  // total size 0x1924

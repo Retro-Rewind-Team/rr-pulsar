@@ -3,29 +3,29 @@
 
 namespace Pulsar {
 
-bool NANDIO::CreateAndOpen(const char* path, u32 mode) {
+bool NANDIO::CreateAndOpen(const char *path, u32 mode) {
     this->GetCorrectPath(this->filePath, path);
     ISFS::CreateFile(this->filePath, 0, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE);
     return this->OpenFileDirectly(this->filePath, mode);
 }
 
-bool NANDIO::OpenFile(const char* path, u32 mode) {
+bool NANDIO::OpenFile(const char *path, u32 mode) {
     this->GetCorrectPath(this->filePath, path);
     return this->OpenFileDirectly(this->filePath, mode);
 }
 
-void NANDIO::GetCorrectPath(char* realPath, const char* path) const {
+void NANDIO::GetCorrectPath(char *realPath, const char *path) const {
     snprintf(realPath, IOS::ipcMaxPath, "%s%s", "/shared2/Pulsar", path);
 }
 
-bool NANDIO::FolderExists(const char* path) const {
+bool NANDIO::FolderExists(const char *path) const {
     char realPath[IOS::ipcMaxPath];
     this->GetCorrectPath(realPath, path);
     u32 count;
     return ISFS::ReadDir(realPath, nullptr, &count) >= 0;
 }
 
-bool NANDIO::CreateFolder(const char* path) {
+bool NANDIO::CreateFolder(const char *path) {
     if (type != IOType_ISO) {
         this->Bind(path);
         char realPath[IOS::ipcMaxPath];
@@ -36,19 +36,19 @@ bool NANDIO::CreateFolder(const char* path) {
     return false;
 }
 
-void NANDIO::ReadFolder(const char* path) {
+void NANDIO::ReadFolder(const char *path) {
     this->Bind(path);
     char realPath[IOS::ipcMaxPath];
     this->GetCorrectPath(realPath, path);
 
     u32 count = maxFileCount;
-    char* tmpArray = new (this->heap, 0x20) char[255 * (count + 1)];
-    void* originalPtr = tmpArray;
+    char *tmpArray = new (this->heap, 0x20) char[255 * (count + 1)];
+    void *originalPtr = tmpArray;
     s32 error = ISFS::ReadDir(realPath, tmpArray, &count);
     if (error >= 0 && !isBusy) {
         isBusy = true;
         snprintf(this->folderName, IOS::ipcMaxPath, "%s", path);
-        IOS::IPCPath* namesArray = new (this->heap, 0x20) IOS::IPCPath[count];
+        IOS::IPCPath *namesArray = new (this->heap, 0x20) IOS::IPCPath[count];
         u32 realCount = 0;
         char curFile[IOS::ipcMaxPath];
         while (tmpArray[0] != '\0') {
@@ -72,7 +72,7 @@ void NANDIO::ReadFolder(const char* path) {
     EGG::Heap::free(originalPtr, this->heap);
 }
 
-bool NANDIO::RenameFile(const char* oldPath, const char* newPath) const {
+bool NANDIO::RenameFile(const char *oldPath, const char *newPath) const {
     char realOldPath[IOS::ipcMaxPath];
     char realNewPath[IOS::ipcMaxPath];
     this->GetCorrectPath(realOldPath, oldPath);

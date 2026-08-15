@@ -21,7 +21,7 @@ namespace Race {
 
 struct ObjectConditionalView {
     u8 padding[0xa0];
-    const void* gobjLink;
+    const void *gobjLink;
 };
 
 struct ConditionalConfig {
@@ -51,13 +51,13 @@ static void FillScreenState(bool (&screenIsActive)[4], bool value) {
     for (u8 i = 0; i < 4; ++i) screenIsActive[i] = value;
 }
 
-static bool IsModelDirectorReadyForPerScreenVisibility(const ModelDirector* director) {
+static bool IsModelDirectorReadyForPerScreenVisibility(const ModelDirector *director) {
     if (director == nullptr) return false;
     if ((director->bitfield & 0x100000) == 0) return false;
     return director->scnMdlEx[0] != nullptr && director->scnMdlEx[1] != nullptr;
 }
 
-static void InitConditionalState(ConditionalState& state) {
+static void InitConditionalState(ConditionalState &state) {
     state.isConditional = false;
     state.isActive = true;
     state.isCollisionActive = true;
@@ -75,7 +75,7 @@ static const u32 BOXCOL_FLAG_OBJECT = 0x4;
 static const u32 BOXCOL_FLAG_OBJECT_OBSTACLE_ENEMY = 0x8;
 static const u32 BOXCOL_FLAG_DRIVABLE = 0x10;
 static const u8 MAX_CONDITIONAL_LAP_INDEX_COUNT = 8;
-static const char* CONDITIONAL_OBJECTS_ENABLE_FILE = "enable.cobj";
+static const char *CONDITIONAL_OBJECTS_ENABLE_FILE = "enable.cobj";
 
 enum ConditionalTrackFileState {
     CONDITIONAL_TRACK_FILE_UNKNOWN = -1,
@@ -86,10 +86,10 @@ enum ConditionalTrackFileState {
 struct BoxColUnitView {
     u8 padding[0x0c];
     u32 unitType;
-    void* userData;
+    void *userData;
 };
 
-static const void* sCachedCourseArchive = nullptr;
+static const void *sCachedCourseArchive = nullptr;
 static s8 sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
 
 void ResetConditionalObjectsTrackState() {
@@ -141,13 +141,13 @@ static bool IsInWrappedRange(u16 value, u16 start, u16 end, u16 wrapSize) {
 }
 
 static bool IsTrackConditionalObjectsEnabled() {
-    const ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+    const ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
     if (archiveMgr == nullptr) {
         ResetConditionalObjectsTrackState();
         return false;
     }
 
-    const void* courseArchive = archiveMgr->GetArchive(ARCHIVE_HOLDER_COURSE, 0);
+    const void *courseArchive = archiveMgr->GetArchive(ARCHIVE_HOLDER_COURSE, 0);
     if (courseArchive != sCachedCourseArchive) {
         sCachedCourseArchive = courseArchive;
         sConditionalTrackFileState = CONDITIONAL_TRACK_FILE_UNKNOWN;
@@ -156,21 +156,21 @@ static bool IsTrackConditionalObjectsEnabled() {
     if (sConditionalTrackFileState == CONDITIONAL_TRACK_FILE_UNKNOWN) {
         if (courseArchive == nullptr) return false;
 
-        const void* condFile = archiveMgr->GetFile(ARCHIVE_HOLDER_COURSE, CONDITIONAL_OBJECTS_ENABLE_FILE, nullptr);
+        const void *condFile = archiveMgr->GetFile(ARCHIVE_HOLDER_COURSE, CONDITIONAL_OBJECTS_ENABLE_FILE, nullptr);
         sConditionalTrackFileState = (condFile != nullptr) ? CONDITIONAL_TRACK_FILE_PRESENT : CONDITIONAL_TRACK_FILE_MISSING;
     }
 
     return sConditionalTrackFileState == CONDITIONAL_TRACK_FILE_PRESENT;
 }
 
-static const GOBJ* GetObjectGobj(const Object& object) {
-    const ObjectConditionalView& view = reinterpret_cast<const ObjectConditionalView&>(object);
+static const GOBJ *GetObjectGobj(const Object &object) {
+    const ObjectConditionalView &view = reinterpret_cast<const ObjectConditionalView &>(object);
     if (view.gobjLink == nullptr) return nullptr;
-    return *reinterpret_cast<GOBJ* const*>(view.gobjLink);
+    return *reinterpret_cast<GOBJ *const *>(view.gobjLink);
 }
 
-static bool TryGetTrackDefinedLapCount(u8& lapCount) {
-    const KMP::Manager* kmp = KMP::Manager::sInstance;
+static bool TryGetTrackDefinedLapCount(u8 &lapCount) {
+    const KMP::Manager *kmp = KMP::Manager::sInstance;
     if (kmp == nullptr || kmp->stgiSection == nullptr || kmp->stgiSection->holdersArray[0] == nullptr ||
         kmp->stgiSection->holdersArray[0]->raw == nullptr) {
         return false;
@@ -182,11 +182,11 @@ static bool TryGetTrackDefinedLapCount(u8& lapCount) {
     return true;
 }
 
-static bool TryGetConditionalConfig(const Object& object, ConditionalConfig& config) {
+static bool TryGetConditionalConfig(const Object &object, ConditionalConfig &config) {
     static const u16 LAP_PROGRESS_STEPS_PER_LAP = 100;
     if (!IsTrackConditionalObjectsEnabled()) return false;
 
-    const GOBJ* gobj = GetObjectGobj(object);
+    const GOBJ *gobj = GetObjectGobj(object);
     if (gobj == nullptr) return false;
 
     const u16 flags = gobj->presenceFlags;
@@ -216,7 +216,7 @@ static bool TryGetConditionalConfig(const Object& object, ConditionalConfig& con
     return true;
 }
 
-static u8 GetPlayerLapRangeIdx(const RaceinfoPlayer& player, u8 trackLapCount) {
+static u8 GetPlayerLapRangeIdx(const RaceinfoPlayer &player, u8 trackLapCount) {
     u16 currentLap = player.currentLap;
     if (currentLap == 0) currentLap = 1;
 
@@ -230,7 +230,7 @@ static u8 GetPlayerLapRangeIdx(const RaceinfoPlayer& player, u8 trackLapCount) {
     return static_cast<u8>(currentLap - 1);
 }
 
-static u8 GetPlayerCheckpointRangeIdx(const RaceinfoPlayer& player, u16 ckptCount) {
+static u8 GetPlayerCheckpointRangeIdx(const RaceinfoPlayer &player, u16 ckptCount) {
     u16 checkpoint = player.checkpoint;
     if (checkpoint >= ckptCount) checkpoint = static_cast<u16>(ckptCount - 1);
 
@@ -251,7 +251,7 @@ static u16 GetLapProgressValue(u8 lapIdx, u8 progressPercent) {
     return value;
 }
 
-static u16 GetPlayerLapProgressRangeValue(const RaceinfoPlayer& player, u8 trackLapCount) {
+static u16 GetPlayerLapProgressRangeValue(const RaceinfoPlayer &player, u8 trackLapCount) {
     static const float LAP_PROGRESS_STEPS_PER_LAP_FLOAT = 100.0f;
     static const s32 LAP_PROGRESS_STEPS_PER_LAP_INT = 100;
     static const u16 LAP_PROGRESS_WRAP = 800;
@@ -270,7 +270,7 @@ static u16 GetPlayerLapProgressRangeValue(const RaceinfoPlayer& player, u8 track
     return static_cast<u16>(lapProgress);
 }
 
-static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, const ConditionalConfig& config, u16 ckptCount, u8 trackLapCount) {
+static bool IsPlayerInConditionalRange(const RaceinfoPlayer &player, const ConditionalConfig &config, u16 ckptCount, u8 trackLapCount) {
     switch (config.mode) {
         case ConditionalConfig::MODE_CHECKPOINT_RANGE: {
             const u8 checkpointIdx = GetPlayerCheckpointRangeIdx(player, ckptCount);
@@ -292,18 +292,18 @@ static bool IsPlayerInConditionalRange(const RaceinfoPlayer& player, const Condi
     return IsInWrappedRange(lapIdx, config.startIdx, config.endIdx);
 }
 
-static bool EvaluateConditionalForPlayer(const ConditionalConfig& config, u8 playerId) {
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
+static bool EvaluateConditionalForPlayer(const ConditionalConfig &config, u8 playerId) {
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
     if (raceInfo == nullptr) return true;
 
     if (playerId >= 12) return true;
-    const RaceinfoPlayer* player = raceInfo->players[playerId];
+    const RaceinfoPlayer *player = raceInfo->players[playerId];
     if (player == nullptr) return true;
 
     u16 ckptCount = 0;
     u8 trackLapCount = 0;
     if (config.mode == ConditionalConfig::MODE_CHECKPOINT_RANGE) {
-        const KMP::Manager* kmp = KMP::Manager::sInstance;
+        const KMP::Manager *kmp = KMP::Manager::sInstance;
         if (kmp == nullptr || kmp->ckptSection == nullptr || kmp->ckptSection->pointCount == 0) return true;
         ckptCount = kmp->ckptSection->pointCount;
     } else {
@@ -314,7 +314,7 @@ static bool EvaluateConditionalForPlayer(const ConditionalConfig& config, u8 pla
     return config.invert ? !inRange : inRange;
 }
 
-static bool IsConditionalReplayPlayer(const RacedataScenario& scenario, const Raceinfo& raceInfo, u8 playerId) {
+static bool IsConditionalReplayPlayer(const RacedataScenario &scenario, const Raceinfo &raceInfo, u8 playerId) {
     if (playerId >= 12) return false;
 
     const PlayerType type = scenario.players[playerId].playerType;
@@ -322,7 +322,7 @@ static bool IsConditionalReplayPlayer(const RacedataScenario& scenario, const Ra
     return raceInfo.players[playerId] != nullptr;
 }
 
-static bool EvaluateConditionalForAnyReplayPlayer(const ConditionalConfig& config, const RacedataScenario& scenario, const Raceinfo& raceInfo) {
+static bool EvaluateConditionalForAnyReplayPlayer(const ConditionalConfig &config, const RacedataScenario &scenario, const Raceinfo &raceInfo) {
     bool hasReplayPlayer = false;
     for (u8 playerId = 0; playerId < 12; ++playerId) {
         if (!IsConditionalReplayPlayer(scenario, raceInfo, playerId)) continue;
@@ -333,18 +333,18 @@ static bool EvaluateConditionalForAnyReplayPlayer(const ConditionalConfig& confi
     return !hasReplayPlayer;
 }
 
-static void EvaluateConditionalState(const Object& object, ConditionalState& state) {
+static void EvaluateConditionalState(const Object &object, ConditionalState &state) {
     InitConditionalState(state);
 
     ConditionalConfig config;
     if (!TryGetConditionalConfig(object, config)) return;
     state.isConditional = true;
 
-    const Racedata* raceData = Racedata::sInstance;
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
+    const Racedata *raceData = Racedata::sInstance;
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
     if (raceData == nullptr || raceInfo == nullptr) return;
 
-    const RacedataScenario& scenario = raceData->racesScenario;
+    const RacedataScenario &scenario = raceData->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
     const bool isTTMode = (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE);
 
@@ -353,7 +353,7 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
         state.isCollisionActive = EvaluateConditionalForAnyReplayPlayer(config, scenario, *raceInfo);
 
         u8 watchedPlayerId = 0xFF;
-        const RaceCameraMgr* cameraMgr = RaceCameraMgr::sInstance;
+        const RaceCameraMgr *cameraMgr = RaceCameraMgr::sInstance;
         if (cameraMgr != nullptr) {
             const u8 focusedPlayerId = cameraMgr->focusedPlayerIdx;
             if (IsConditionalReplayPlayer(scenario, *raceInfo, focusedPlayerId)) watchedPlayerId = focusedPlayerId;
@@ -393,7 +393,7 @@ static void EvaluateConditionalState(const Object& object, ConditionalState& sta
     }
 }
 
-static void ApplyModelDirectorScreenVisibility(ModelDirector* director, const ConditionalState& state) {
+static void ApplyModelDirectorScreenVisibility(ModelDirector *director, const ConditionalState &state) {
     // ScnMgr::UpdateVisibility dereferences both scnMdlEx slots for screen-specific directors.
     if (!IsModelDirectorReadyForPerScreenVisibility(director)) return;
 
@@ -405,8 +405,8 @@ static void ApplyModelDirectorScreenVisibility(ModelDirector* director, const Co
     }
 }
 
-static bool IsScreenSpecificModelRegistered(const ScnMgr& scnMgr, const ModelDirector* director) {
-    void* current = nullptr;
+static bool IsScreenSpecificModelRegistered(const ScnMgr &scnMgr, const ModelDirector *director) {
+    void *current = nullptr;
     while (true) {
         current = nw4r::ut::List_GetNext(&scnMgr.screenSpecificModelDirectors, current);
         if (current == nullptr) return false;
@@ -414,11 +414,11 @@ static bool IsScreenSpecificModelRegistered(const ScnMgr& scnMgr, const ModelDir
     }
 }
 
-static void EnsureScreenSpecificModelRegistration(ModelDirector* director) {
+static void EnsureScreenSpecificModelRegistration(ModelDirector *director) {
     // Only register directors that are safe for ScnMgr::UpdateVisibility.
     if (!IsModelDirectorReadyForPerScreenVisibility(director)) return;
 
-    ScnMgr* scnMgr = director->GetScnManager();
+    ScnMgr *scnMgr = director->GetScnManager();
     if (scnMgr == nullptr) return;
     if (IsScreenSpecificModelRegistered(*scnMgr, director)) return;
 
@@ -427,7 +427,7 @@ static void EnsureScreenSpecificModelRegistration(ModelDirector* director) {
     scnMgr->AppendScreenSpecificModelDirector(director);
 }
 
-static void ApplyPerScreenVisibility(Object& object, const ConditionalState& state) {
+static void ApplyPerScreenVisibility(Object &object, const ConditionalState &state) {
     if (!state.isConditional || state.localScreenCount <= 1) return;
 
     EnsureScreenSpecificModelRegistration(object.mdlDirector);
@@ -439,7 +439,7 @@ static void ApplyPerScreenVisibility(Object& object, const ConditionalState& sta
     ApplyModelDirectorScreenVisibility(object.shadowDirector, state);
 }
 
-static void ApplyConditionalState(Object& object, const ConditionalState& state) {
+static void ApplyConditionalState(Object &object, const ConditionalState &state) {
     if (!state.isConditional) return;
 
     object.ToggleVisible(state.isActive);
@@ -449,7 +449,7 @@ static void ApplyConditionalState(Object& object, const ConditionalState& state)
         object.DisableCollision();
 }
 
-static void ApplyKCLConditionalState(Object& object, const ConditionalState& state) {
+static void ApplyKCLConditionalState(Object &object, const ConditionalState &state) {
     if (!state.isConditional) return;
 
     object.ToggleVisible(state.isActive);
@@ -462,71 +462,71 @@ static void ApplyKCLConditionalState(Object& object, const ConditionalState& sta
     }
 }
 
-static bool IsObjectActiveForPlayer(const Object& object, u8 playerId) {
+static bool IsObjectActiveForPlayer(const Object &object, u8 playerId) {
     ConditionalConfig config;
     if (!TryGetConditionalConfig(object, config)) return true;
     return EvaluateConditionalForPlayer(config, playerId);
 }
 
-static ObjectCollision* CallOriginalGetCollision(void* object) {
-    typedef ObjectCollision* (*GetCollisionFn)(void*);
-    const u32* vtable = *reinterpret_cast<const u32* const*>(object);
+static ObjectCollision *CallOriginalGetCollision(void *object) {
+    typedef ObjectCollision *(*GetCollisionFn)(void *);
+    const u32 *vtable = *reinterpret_cast<const u32 *const *>(object);
     GetCollisionFn getCollision = reinterpret_cast<GetCollisionFn>(vtable[0xb4 / 4]);
     return getCollision(object);
 }
 
-static bool CallOriginalDriveableCollisionCheck(void* object, float radius, const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted,
-                                                CollisionInfo* info, KCLTypeHolder* ret, u32 timeOffset, u32 vtableOffset) {
-    typedef bool (*DriveableCollisionCheckFn)(void*, float, const Vec3&, const Vec3&, KCLBitfield, CollisionInfo*, KCLTypeHolder*, u32);
-    const u32* vtable = *reinterpret_cast<const u32* const*>(object);
+static bool CallOriginalDriveableCollisionCheck(void *object, float radius, const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted,
+                                                CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, u32 vtableOffset) {
+    typedef bool (*DriveableCollisionCheckFn)(void *, float, const Vec3 &, const Vec3 &, KCLBitfield, CollisionInfo *, KCLTypeHolder *, u32);
+    const u32 *vtable = *reinterpret_cast<const u32 *const *>(object);
     DriveableCollisionCheckFn checkFn = reinterpret_cast<DriveableCollisionCheckFn>(vtable[vtableOffset / 4]);
     return checkFn(object, radius, pos, prevPos, accepted, info, ret, timeOffset);
 }
 
-static bool IsDriveableObjectActiveForCurrentPlayer(const void* object) {
+static bool IsDriveableObjectActiveForCurrentPlayer(const void *object) {
     const u8 playerId = GetConditionalCollisionPlayerContext();
     if (playerId >= 12) return true;
 
-    const Object& mapObject = *reinterpret_cast<const Object*>(object);
+    const Object &mapObject = *reinterpret_cast<const Object *>(object);
     return IsObjectActiveForPlayer(mapObject, playerId);
 }
 
-static ObjectCollision* ConditionalGetObjectCollision(void* object) {
+static ObjectCollision *ConditionalGetObjectCollision(void *object) {
     if (object == nullptr) return nullptr;
 
-    ObjectCollision* collision = CallOriginalGetCollision(object);
+    ObjectCollision *collision = CallOriginalGetCollision(object);
     if (collision == nullptr) return nullptr;
 
-    register const Kart::Player* kartPlayer;
+    register const Kart::Player *kartPlayer;
     asm(mr kartPlayer, r25;);
     if (kartPlayer == nullptr) return collision;
 
     const u8 playerId = kartPlayer->GetPlayerIdx();
-    const Object& mapObject = *reinterpret_cast<const Object*>(object);
+    const Object &mapObject = *reinterpret_cast<const Object *>(object);
     if (!IsObjectActiveForPlayer(mapObject, playerId)) return nullptr;
     return collision;
 }
 kmCall(0x8082ab8c, ConditionalGetObjectCollision);
 
-static ObjectCollision* ConditionalGetObjectCollisionForItem(void* object) {
+static ObjectCollision *ConditionalGetObjectCollisionForItem(void *object) {
     if (object == nullptr) return nullptr;
 
-    ObjectCollision* collision = CallOriginalGetCollision(object);
+    ObjectCollision *collision = CallOriginalGetCollision(object);
     if (collision == nullptr) return nullptr;
 
-    register Item::Obj* itemObj;
+    register Item::Obj *itemObj;
     asm(mr itemObj, r27;);
     if (itemObj == nullptr) return collision;
 
     const u8 playerId = itemObj->playerUsedItemId;
-    const Object& mapObject = *reinterpret_cast<const Object*>(object);
+    const Object &mapObject = *reinterpret_cast<const Object *>(object);
     if (!IsObjectActiveForPlayer(mapObject, playerId)) return nullptr;
     return collision;
 }
 kmCall(0x8082ae18, ConditionalGetObjectCollisionForItem);
 
-static bool ConditionalCourseCollisionSetPlayerFromWheel(float radius, CourseMgr& mgr, const Vec3& position, const Vec3& prevPosition,
-                                                         KCLBitfield acceptedFlags, CollisionInfo* info, KCLTypeHolder& kclFlags) {
+static bool ConditionalCourseCollisionSetPlayerFromWheel(float radius, CourseMgr &mgr, const Vec3 &position, const Vec3 &prevPosition,
+                                                         KCLBitfield acceptedFlags, CollisionInfo *info, KCLTypeHolder &kclFlags) {
     register u32 playerIdRaw;
     asm(mr playerIdRaw, r25;);
 
@@ -537,25 +537,25 @@ static bool ConditionalCourseCollisionSetPlayerFromWheel(float radius, CourseMgr
 }
 kmCall(0x805b7028, ConditionalCourseCollisionSetPlayerFromWheel);  // CourseMgr::IsCollidingAddEntry call in KartCollide::calcWheelCollision
 
-static void FilterConditionalDriveablesForCurrentPlayer(void* boxColMgr) {
+static void FilterConditionalDriveablesForCurrentPlayer(void *boxColMgr) {
     const u8 playerId = GetConditionalCollisionPlayerContext();
     if (playerId >= 12 || boxColMgr == nullptr) return;
 
-    u8* const mgr = reinterpret_cast<u8*>(boxColMgr);
-    s32& maxId = *reinterpret_cast<s32*>(mgr + 0x438);
+    u8 *const mgr = reinterpret_cast<u8 *>(boxColMgr);
+    s32 &maxId = *reinterpret_cast<s32 *>(mgr + 0x438);
     if (maxId <= 0) return;
 
-    BoxColUnitView** units = *reinterpret_cast<BoxColUnitView***>(mgr + 0x1c);
+    BoxColUnitView **units = *reinterpret_cast<BoxColUnitView ***>(mgr + 0x1c);
     if (units == nullptr) return;
 
     s32 writeIdx = 0;
     for (s32 readIdx = 0; readIdx < maxId; ++readIdx) {
-        BoxColUnitView* unit = units[readIdx];
+        BoxColUnitView *unit = units[readIdx];
         if (unit == nullptr) continue;
 
         bool keep = true;
         if ((unit->unitType & BOXCOL_FLAG_DRIVABLE) != 0 && unit->userData != nullptr) {
-            const Object& object = *reinterpret_cast<const Object*>(unit->userData);
+            const Object &object = *reinterpret_cast<const Object *>(unit->userData);
             keep = IsObjectActiveForPlayer(object, playerId);
         }
 
@@ -568,27 +568,27 @@ static void FilterConditionalDriveablesForCurrentPlayer(void* boxColMgr) {
     maxId = writeIdx;
 }
 
-static s32 FindFirstUnitOfType(BoxColUnitView* const* units, s32 maxId, u32 mask) {
+static s32 FindFirstUnitOfType(BoxColUnitView *const *units, s32 maxId, u32 mask) {
     for (s32 i = 0; i < maxId; ++i) {
-        const BoxColUnitView* unit = units[i];
+        const BoxColUnitView *unit = units[i];
         if (unit != nullptr && (unit->unitType & mask) != 0) return i;
     }
     return 0x100;
 }
 
-static void ConditionalResetIterators(void* boxColMgr) {
+static void ConditionalResetIterators(void *boxColMgr) {
     if (boxColMgr == nullptr) return;
 
     FilterConditionalDriveablesForCurrentPlayer(boxColMgr);
 
-    u8* const mgr = reinterpret_cast<u8*>(boxColMgr);
-    const s32 maxId = *reinterpret_cast<const s32*>(mgr + 0x438);
-    BoxColUnitView** units = *reinterpret_cast<BoxColUnitView***>(mgr + 0x1c);
+    u8 *const mgr = reinterpret_cast<u8 *>(boxColMgr);
+    const s32 maxId = *reinterpret_cast<const s32 *>(mgr + 0x438);
+    BoxColUnitView **units = *reinterpret_cast<BoxColUnitView ***>(mgr + 0x1c);
 
-    s32& nextPlayerId = *reinterpret_cast<s32*>(mgr + 0x428);
-    s32& nextItemId = *reinterpret_cast<s32*>(mgr + 0x42c);
-    s32& nextObjectId = *reinterpret_cast<s32*>(mgr + 0x430);
-    s32& nextDrivableId = *reinterpret_cast<s32*>(mgr + 0x434);
+    s32 &nextPlayerId = *reinterpret_cast<s32 *>(mgr + 0x428);
+    s32 &nextItemId = *reinterpret_cast<s32 *>(mgr + 0x42c);
+    s32 &nextObjectId = *reinterpret_cast<s32 *>(mgr + 0x430);
+    s32 &nextDrivableId = *reinterpret_cast<s32 *>(mgr + 0x434);
 
     if (units == nullptr || maxId <= 0) {
         nextPlayerId = 0x100;
@@ -605,8 +605,8 @@ static void ConditionalResetIterators(void* boxColMgr) {
 }
 kmBranch(0x80785f2c, ConditionalResetIterators);  // BoxColManager::resetIterators
 
-static void ConditionalCalcCollisions(Kart::Status* status) {
-    Kart::Link* link = status->link;
+static void ConditionalCalcCollisions(Kart::Status *status) {
+    Kart::Link *link = status->link;
     u8 playerId = link->GetPlayerIdx();
     PushConditionalCollisionPlayerContext(playerId);
     status->UpdateCollisions();
@@ -614,7 +614,7 @@ static void ConditionalCalcCollisions(Kart::Status* status) {
 }
 kmCall(0x80594858, ConditionalCalcCollisions);  // KartStatus::UpdateCollisions call in KartStatus::calc
 
-static void ConditionalObjectUpdate(Object* object) {
+static void ConditionalObjectUpdate(Object *object) {
     if (object == nullptr) return;
 
     ConditionalState state;
@@ -624,7 +624,7 @@ static void ConditionalObjectUpdate(Object* object) {
 }
 kmCall(0x8082a9e0, ConditionalObjectUpdate);  // Object::Update call in ObjectsMgr::Update
 
-static void ConditionalObjectModelUpdate(Object* object) {
+static void ConditionalObjectModelUpdate(Object *object) {
     if (object == nullptr) return;
 
     ConditionalState state;
@@ -636,13 +636,13 @@ static void ConditionalObjectModelUpdate(Object* object) {
 }
 kmCall(0x8082aa20, ConditionalObjectModelUpdate);  // Object::UpdateModel call in ObjectsMgr::Update
 
-static void ConditionalProcessAllAndCalcKCL(ObjectsKCLMgr* kclMgr, ObjectsMgr& objectsMgr) {
+static void ConditionalProcessAllAndCalcKCL(ObjectsKCLMgr *kclMgr, ObjectsMgr &objectsMgr) {
     if (kclMgr == nullptr) return;
 
-    const u16 kclCount = *reinterpret_cast<const u16*>(reinterpret_cast<const u8*>(kclMgr) + 0x4);
-    Object** kclObjects = *reinterpret_cast<Object***>(reinterpret_cast<u8*>(kclMgr) + 0x8);
+    const u16 kclCount = *reinterpret_cast<const u16 *>(reinterpret_cast<const u8 *>(kclMgr) + 0x4);
+    Object **kclObjects = *reinterpret_cast<Object ***>(reinterpret_cast<u8 *>(kclMgr) + 0x8);
     for (u16 i = 0; i < kclCount; ++i) {
-        Object* obj = kclObjects[i];
+        Object *obj = kclObjects[i];
         if (obj == nullptr) continue;
         ConditionalState state;
         EvaluateConditionalState(*obj, state);
@@ -654,7 +654,7 @@ static void ConditionalProcessAllAndCalcKCL(ObjectsKCLMgr* kclMgr, ObjectsMgr& o
 }
 kmCall(0x8082aa40, ConditionalProcessAllAndCalcKCL);  // ObjectDriveableDirector::calc call in ObjectsMgr::Update
 
-static void ConditionalKCLObjectUpdate(Object* object) {
+static void ConditionalKCLObjectUpdate(Object *object) {
     if (object == nullptr) return;
 
     ConditionalState state;
@@ -664,7 +664,7 @@ static void ConditionalKCLObjectUpdate(Object* object) {
 }
 kmCall(0x8081b658, ConditionalKCLObjectUpdate);  // ObjectKCL::Update call in ObjectDriveableDirector::calc
 
-static void ConditionalKCLObjectModelUpdate(Object* object) {
+static void ConditionalKCLObjectModelUpdate(Object *object) {
     if (object == nullptr) return;
 
     ConditionalState state;
