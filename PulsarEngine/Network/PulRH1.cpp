@@ -12,17 +12,17 @@ namespace Pulsar {
 namespace Network {
 
 static bool IsFriendRoom() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (!controller) return false;
     return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
             controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
 }
 
 // Fixes for spectating
-void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u32 len) {
+void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u32 len) {
     packetHolder.Copy(packet, len);
 
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
 
     const bool inFriendRoom = IsFriendRoom();
     const bool battleRoyaleEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_BATTLEROYALE);
@@ -68,13 +68,13 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1>& packetHolder, PulRH1* packet, u3
 kmCall(0x80655458, BeforeRH1Send);
 kmCall(0x806550e4, BeforeRH1Send);
 
-static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder<PulRH1>& holder, u32 len) {
-    register RKNet::RH1Data* data;
+static void AfterRH1Reception(register u8 *aidArrDest, const RKNet::PacketHolder<PulRH1> &holder, u32 len) {
+    register RKNet::RH1Data *data;
     register u8 senderAid;
     asm(subi data, aidArrDest, 0x20;);  // offset of the array in data
     asm(mr senderAid, r29;);  // r29 contains the current AID being processed in the loop
 
-    const PulRH1* packet = holder.packet;
+    const PulRH1 *packet = holder.packet;
     const u32 packetSize = holder.packetSize;
     CourseId track;
     if (packetSize >= PulRH1SizeBase)
@@ -99,9 +99,9 @@ static void AfterRH1Reception(register u8* aidArrDest, const RKNet::PacketHolder
 }
 kmCall(0x806652d0, AfterRH1Reception);
 
-static bool GetValidReceivedTrackId(CourseId receivedTrack, PulsarId& id) {
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+static bool GetValidReceivedTrackId(CourseId receivedTrack, PulsarId &id) {
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (cupsConfig == nullptr || controller == nullptr || receivedTrack == COURSEID_NONE) return false;
 
     const RKNet::RoomType roomType = controller->roomType;
@@ -113,22 +113,22 @@ static bool GetValidReceivedTrackId(CourseId receivedTrack, PulsarId& id) {
     return cupsConfig->IsValidTrack(id);
 }
 
-CourseId ReturnCorrectId(const RKNet::RH1Handler& rh1Handler) {
-    CupsConfig* cupsConfig = CupsConfig::sInstance;
-    const System* system = System::sInstance;
+CourseId ReturnCorrectId(const RKNet::RH1Handler &rh1Handler) {
+    CupsConfig *cupsConfig = CupsConfig::sInstance;
+    const System *system = System::sInstance;
     for (int aid = 0; aid < 12; ++aid) {
-        const RKNet::RH1Data& cur = rh1Handler.rh1Data[aid];
+        const RKNet::RH1Data &cur = rh1Handler.rh1Data[aid];
         const CourseId curTrack = cur.trackId;
         PulsarId id;
         if (cur.timer != 0 && GetValidReceivedTrackId(curTrack, id)) {
             u8 variantIdx = 0;
-            const RKNet::Controller* controller = RKNet::Controller::sInstance;
+            const RKNet::Controller *controller = RKNet::Controller::sInstance;
             const RKNet::RoomType roomType = controller->roomType;  // only ever called when joining (this is used to correct liveview), therefore simply checkings roomtype is enough
 
             if (roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || roomType == RKNet::ROOMTYPE_BT_REGIONAL) {
                 const u32 lastBufferUsed = controller->lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
                 if (lastBufferUsed < 2 && controller->splitReceivedRACEPackets[lastBufferUsed][aid] != nullptr) {
-                    const RKNet::PacketHolder<Network::PulRH1>* holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
+                    const RKNet::PacketHolder<Network::PulRH1> *holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
                     if (holder != nullptr && holder->packet != nullptr && holder->packetSize >= PulRH1SizeBase)
                         variantIdx = holder->packet->variantIdx;
                 }
@@ -141,9 +141,9 @@ CourseId ReturnCorrectId(const RKNet::RH1Handler& rh1Handler) {
 }
 kmBranch(0x80664560, ReturnCorrectId);
 
-const u8* GetRH1aidArray(const RKNet::RH1Handler& rh1) {
+const u8 *GetRH1aidArray(const RKNet::RH1Handler &rh1) {
     for (int i = 0; i < 12; ++i) {
-        const RKNet::RH1Data& cur = rh1.rh1Data[i];
+        const RKNet::RH1Data &cur = rh1.rh1Data[i];
         PulsarId id;
         if (GetValidReceivedTrackId(cur.trackId, id)) return &cur.aidsBelongingToPlayer[0];
     }
@@ -152,10 +152,10 @@ const u8* GetRH1aidArray(const RKNet::RH1Handler& rh1) {
 kmBranch(0x80664b34, GetRH1aidArray);
 
 static bool IsThereAValidId() {
-    const RKNet::RH1Handler* rh1 = RKNet::RH1Handler::sInstance;
+    const RKNet::RH1Handler *rh1 = RKNet::RH1Handler::sInstance;
     bool isValid = false;
     for (int i = 0; i < 12; ++i) {
-        const RKNet::RH1Data& cur = rh1->rh1Data[i];
+        const RKNet::RH1Data &cur = rh1->rh1Data[i];
         PulsarId id;
         if (GetValidReceivedTrackId(cur.trackId, id)) {
             isValid = true;

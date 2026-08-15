@@ -10,8 +10,8 @@
 namespace Pulsar {
 namespace UI {
 
-void RaceControlButtonInfo::Update(const Input::ControllerHolder* controllerHolder) {
-    Input::ControllerHolder* modHolder = const_cast<Input::ControllerHolder*>(controllerHolder);
+void RaceControlButtonInfo::Update(const Input::ControllerHolder *controllerHolder) {
+    Input::ControllerHolder *modHolder = const_cast<Input::ControllerHolder *>(controllerHolder);
     bool isMirror = false;
     if (modHolder != nullptr) {
         isMirror = Racedata::sInstance->racesScenario.settings.modeFlags & 1;
@@ -26,8 +26,8 @@ void RaceControlButtonInfo::Update(const Input::ControllerHolder* controllerHold
 }
 
 ChooseNextTrack::ChooseNextTrack() : isBattle(Racedata::sInstance->racesScenario.settings.gamemode == MODE_PRIVATE_BATTLE) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     this->isHost = sub.hostAid == sub.localAid;
     this->status = STATUS_NOTRACK;
 
@@ -40,7 +40,7 @@ ChooseNextTrack::ChooseNextTrack() : isBattle(Racedata::sInstance->racesScenario
     onButtonClickHandler.ptmf = &ChooseNextTrack::OnButtonClick;
     for (int i = 0; i < 6; ++i) new (&this->manipulatorManager.holders[0].info) RaceControlButtonInfo;
     for (int i = 0; i < 12; ++i) hasReceivedHostTrack[i] = false;
-    CupsConfig* cupsConfig = CupsConfig::sInstance;
+    CupsConfig *cupsConfig = CupsConfig::sInstance;
     PulsarId lastTrack = cupsConfig->GetWinning();
     if (!this->isBattle && cupsConfig->IsAlphabetical() && lastTrack >= PULSARID_FIRSTCT) lastTrack = static_cast<PulsarId>(cupsConfig->GetInvertedArray()[lastTrack - PULSARID_FIRSTCT] + PULSARID_FIRSTCT);
     curPageIdx = CupsConfig::ConvertCup_PulsarTrackToCup(lastTrack);
@@ -61,7 +61,7 @@ void ChooseNextTrack::OnActivate() {
 void ChooseNextTrack::OnUpdate() {
     this->countdown.Update();
     this->countdownControl.AnimateCurrentCountDown();
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     if (this->duration == System::sInstance->GetInfo().GetChooseNextTrackTimer() * 60) {
         PulsarId lastTrack = cupsConfig->GetWinning();
         if (this->isBattle && lastTrack == N64_SKYSCRAPER)
@@ -89,7 +89,7 @@ int ChooseNextTrack::GetMessageBMG() const {
 u32 ChooseNextTrack::GetButtonCount() const {
     return this->isBattle ? 4 : maxButtonCount;
 }
-const u32* ChooseNextTrack::GetVariantsIdxArray() const {
+const u32 *ChooseNextTrack::GetVariantsIdxArray() const {
     static const u32 array[maxButtonCount] = {0, 1, 2, 4, 5};  // can't use 3 because 808da7a8 of variant names
     return array;
 }
@@ -97,14 +97,14 @@ const u32* ChooseNextTrack::GetVariantsIdxArray() const {
 bool ChooseNextTrack::IsPausePage() const {
     return false;
 }
-const char* ChooseNextTrack::GetButtonsBRCTRName() const {
+const char *ChooseNextTrack::GetButtonsBRCTRName() const {
     return "ChooseNext";
 }
 
-void ChooseNextTrack::OnRightArrowSelect(SheetSelectControl& control, u32 hudSlotId) {
+void ChooseNextTrack::OnRightArrowSelect(SheetSelectControl &control, u32 hudSlotId) {
     this->UpdateButtonInfo(1);
 }
-void ChooseNextTrack::OnLeftArrowSelect(SheetSelectControl& control, u32 hudSlotId) {
+void ChooseNextTrack::OnLeftArrowSelect(SheetSelectControl &control, u32 hudSlotId) {
     this->UpdateButtonInfo(-1);
 }
 void ChooseNextTrack::UpdateButtonInfo(s32 direction) {
@@ -123,7 +123,7 @@ void ChooseNextTrack::UpdateButtonInfo(s32 direction) {
             this->buttons[i].SetMessage(BMG_BATTLE + curId);
         }
     } else {
-        const CupsConfig* cupsConfig = CupsConfig::sInstance;
+        const CupsConfig *cupsConfig = CupsConfig::sInstance;
         int ret = cupsConfig->GetNextCupId(static_cast<PulsarCupId>(this->curPageIdx), direction);
         const u32 count = cupsConfig->GetCtsTrackCount() / 4;
         if (cupsConfig->HasOddCups() && ret == count - 1) {
@@ -142,8 +142,8 @@ void ChooseNextTrack::UpdateButtonInfo(s32 direction) {
     this->buttons[4].buttonId = -1;
 }
 
-void ChooseNextTrack::OnButtonClick(PushButton& button, u32 hudSlotId) {
-    CupsConfig* cupsConfig = CupsConfig::sInstance;
+void ChooseNextTrack::OnButtonClick(PushButton &button, u32 hudSlotId) {
+    CupsConfig *cupsConfig = CupsConfig::sInstance;
     PulsarId next;
     if (button.buttonId == -1) {
         next = Network::RandomizeHAWTrack(*System::sInstance, *cupsConfig);
@@ -156,7 +156,7 @@ void ChooseNextTrack::OnButtonClick(PushButton& button, u32 hudSlotId) {
     this->status = STATUS_TRACK;
     this->EndStateAnimated(0, button.GetAnimationFrameSize());
     Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
-    Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+    Audio::RaceRSARPlayer *rsarPlayer = static_cast<Audio::RaceRSARPlayer *>(Audio::RSARPlayer::sInstance);
     rsarPlayer->PlayEndRaceMenuButtonClickSound();
 }
 
@@ -173,16 +173,16 @@ void ChooseNextTrack::InitExtraControls(u32 gameControlCount) {
 }
 
 void ChooseNextTrack::UpdateRH1() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     for (int aid = 0; aid < 12; ++aid) {
         if (((1 << aid) & sub.availableAids) == 0) continue;
         if (aid == sub.localAid) continue;
         for (int i = 0; i < 2; ++i) {
-            RKNet::PacketHolder<Network::PulRH1>* holder = controller->splitToSendRACEPackets[i][aid]->GetPacketHolder<Network::PulRH1>();
-            Network::PulRH1* sendPacket = holder->packet;
+            RKNet::PacketHolder<Network::PulRH1> *holder = controller->splitToSendRACEPackets[i][aid]->GetPacketHolder<Network::PulRH1>();
+            Network::PulRH1 *sendPacket = holder->packet;
             sendPacket->chooseNextStatus = this->status;
-            const CupsConfig* cupsConfig = CupsConfig::sInstance;
+            const CupsConfig *cupsConfig = CupsConfig::sInstance;
             sendPacket->nextTrack = cupsConfig->GetWinning();
             sendPacket->variantIdx = cupsConfig->GetCurVariantIdx();
             sendPacket->hasTrack = true;
@@ -192,11 +192,11 @@ void ChooseNextTrack::UpdateRH1() {
 
 SectionId ChooseNextTrack::ProcessHAW(SectionId defaultId) {
     SectionId ret = defaultId;
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
 
     // Process Received Packets:
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
 
     bool hasReceivedEveryone = true;
     bool isEveryoneWaiting = true;
@@ -206,14 +206,14 @@ SectionId ChooseNextTrack::ProcessHAW(SectionId defaultId) {
         if (((1 << aid) & sub.availableAids) == 0) continue;
         if (aid == sub.localAid) continue;
         const u32 lastBufferUsed = controller->lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
-        const RKNet::PacketHolder<Network::PulRH1>* holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
+        const RKNet::PacketHolder<Network::PulRH1> *holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
 
         // Accept both base and full Pulsar packet sizes
         if (holder->packetSize >= Network::PulRH1SizeBase) {
-            const Network::PulRH1* rh1 = holder->packet;
+            const Network::PulRH1 *rh1 = holder->packet;
             if (aid == sub.hostAid) {
                 if (rh1->chooseNextStatus == STATUS_TRACK) {
-                    CupsConfig* cupsConfig = CupsConfig::sInstance;
+                    CupsConfig *cupsConfig = CupsConfig::sInstance;
                     const PulsarId nextTrack = static_cast<PulsarId>(rh1->nextTrack);
                     if (cupsConfig != nullptr && cupsConfig->IsValidTrack(nextTrack)) {
                         this->status = STATUS_TRACK;
@@ -254,7 +254,7 @@ SectionId ChooseNextTrack::ProcessHAW(SectionId defaultId) {
 PageId ChooseNextTrack::GetPageAfterWifiResults(PageId defaultId) const {
     PageId ret = defaultId;
     if (this->isHost) {
-        const SectionParams* params = SectionMgr::sInstance->sectionParams;
+        const SectionParams *params = SectionMgr::sInstance->sectionParams;
         if (System::sInstance->IsContext(PULSAR_MODE_KO) || this->isBattle && params->redWins < 2 && params->blueWins < 2 || !this->isBattle && params->onlineParams.currentRaceNumber != System::sInstance->netMgr.racesPerGP) ret = static_cast<PageId>(ChooseNextTrack::id);
     }
     return ret;
