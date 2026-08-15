@@ -3,57 +3,6 @@
 namespace Pulsar {
 namespace Network {
 
-// todo: is this really the best place to put this?
-static bool IsValidRACESectionSizes(const RKNet::RACEPacketHeader &packet, u32 receivedSize) {
-    using namespace RKNet;
-
-    if (receivedSize < sizeof(RACEPacketHeader) || receivedSize > totalRACESize) return false;
-    if (packet.sizes[PACKET_RACEHEADER] != sizeof(RACEPacketHeader)) return false;
-
-    const u8 rh1Size = packet.sizes[PACKET_RACEHEADER1];
-    if (rh1Size != 0 && rh1Size != sizeof(RACEHEADER1Packet) &&
-        rh1Size != PulRH1SizeBase && rh1Size != PulRH1SizeLapKo && rh1Size != PulRH1SizeFull)
-        return false;
-
-    const u8 rh2Size = packet.sizes[PACKET_RACEHEADER2];
-    if (rh2Size != 0 && rh2Size != sizeof(PulRH2)) return false;
-
-    const u8 selectRoomSize = packet.sizes[PACKET_SELECTROOM];
-    if (selectRoomSize != 0 && selectRoomSize != sizeof(ROOMPacket) && selectRoomSize != sizeof(SELECTPacket) &&
-        selectRoomSize != sizeof(PulROOM) && selectRoomSize != sizeof(PulSELECT))
-        return false;
-
-    const u8 raceDataSize = packet.sizes[PACKET_RACEDATA];
-    if (raceDataSize != 0 && raceDataSize != sizeof(PulRACEDATA) && raceDataSize != 2 * sizeof(PulRACEDATA)) return false;
-
-    const u8 userSize = packet.sizes[PACKET_USER];
-    if (userSize != 0 && userSize != sizeof(PulUSER)) return false;
-
-    const u8 itemSize = packet.sizes[PACKET_ITEM];
-    if (itemSize != 0 && itemSize != sizeof(PulITEM) && itemSize != 2 * sizeof(PulITEM)) return false;
-
-    const u8 eventSize = packet.sizes[PACKET_EVENT];
-    const u32 minEventSize = offsetof(EVENTPacket, entryData);
-    if (eventSize != 0 && (eventSize < minEventSize || eventSize > sizeof(PulEVENT))) return false;
-
-    u32 declaredSize = 0;
-    for (u32 i = 0; i < 8; ++i) declaredSize += packet.sizes[i];
-    if (declaredSize != receivedSize) return false;
-
-    if (userSize != 0) {
-        u32 userOffset = 0;
-        for (u32 i = 0; i < PACKET_USER; ++i) userOffset += packet.sizes[i];
-        if (userOffset > receivedSize || sizeof(PulUSER) > receivedSize - userOffset) return false;
-
-        const PulUSER *user = reinterpret_cast<const PulUSER *>(reinterpret_cast<const u8 *>(&packet) + userOffset);
-        // RFLiSetRecvPacket uses this network value as both a loop bound and a
-        // memcpy multiplier into a fixed buffer. MKWii allocates exactly two Miis.
-        if (user->rflPacket.maxMiiCount != 2) return false;
-    }
-
-    return true;
-}
-
 void *CreateSendAndRecvBuffers() {
     register RKNet::PacketHolder<void> *holder;
     register CustomRKNetController *controller;
@@ -96,42 +45,28 @@ kmCall(0x8065607c, ProperRecvBuffersClear);
 void CheckPacket(CustomRKNetController *controller, RKNet::RACEPacketHeader &packet, u32 size, u32 sizeUnused, u32 aid) {
     using namespace RKNet;
 
-    (void)sizeUnused;
-    if (controller == nullptr || aid >= 12) return;
-
-    bool disconnect = !IsValidRACESectionSizes(packet, size);
-    if (!disconnect) {
-        const u32 recvCRC = packet.crc32;
-        packet.crc32 = 0;
-        const u32 calcCRC = OS::CalcCRC32(&packet, size);
-        packet.crc32 = recvCRC;
-        disconnect = recvCRC != calcCRC;
-    }
-
-    if (!disconnect) {
+    const u32 recvCRC = packet.crc32;
+    packet.crc32 = 0;
+    const u32 calcCRC = OS::CalcCRC32(&packet, size);
+    packet.crc32 = recvCRC;
+    bool disconnect = false;
+    if (recvCRC != calcCRC)
+        disconnect = true;
+    else {
         u32 *lastUsedBufferAid = &controller->lastReceivedBufferUsed[aid][0];
-        if (lastUsedBufferAid[0] >= 2) {
-            disconnect = true;
-        } else {
-            SplitRACEPointers *recv = controller->splitReceivedRACEPackets[lastUsedBufferAid[0]][aid];
-            if (recv == nullptr) {
-                disconnect = true;
-            } else {
-                PacketHolder<void> **holderRecv = &recv->packetHolders[0];
-                for (int i = 0; i < 8; ++i) {
-                    const PacketHolder<void> *curHolder = holderRecv[i];  // starts at header etc...
-                    const u8 curSize = packet.sizes[i];  // transmitted in packet
-                    if (curHolder == nullptr || curHolder->bufferSize < curSize) disconnect = true;
-                }
+        SplitRACEPointers *recv = controller->splitReceivedRACEPackets[lastUsedBufferAid[0]][aid];
+        PacketHolder<void> **holderRecv = &recv->packetHolders[0];
+        const u8 *sizes = &packet.sizes[0];
+
+        for (int i = 0; i < 8; ++i) {
+            const PacketHolder<void> *curHolder = holderRecv[i];  // starts at header etc...
+
+            const u8 curSize = sizes[i];  // transmitted in packet
+            if (curSize != 0) {
+                if (curHolder->bufferSize < curSize) disconnect = true;
             }
         }
     }
-    // if a non-host sends a invalid packet, each console will close the connection to that player,
-    // this also means the host will close the connection to the player and it will cause them to be disconnected from the room
-
-    // however if the person sending the invalid packet is the host,
-    // every console will independently close the connection to the host
-
     if (disconnect)
         controller->toDisconnectAids |= 1 << aid;
     else
