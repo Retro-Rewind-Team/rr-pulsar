@@ -9,11 +9,11 @@
 namespace Pulsar {
 namespace Network {
 
-ResvPacket::ResvPacket(const DWC::Reservation &src) {
+ResvPacket::ResvPacket(const DWC::Reservation& src) {
     memcpy(this, &src, sizeof(DWC::Reservation));
 
-    const System *system = System::sInstance;
-    const Mgr &mgr = system->netMgr;
+    const System* system = System::sInstance;
+    const Mgr& mgr = system->netMgr;
     pulInfo.statusData = mgr.ownStatusData;
     pulInfo.roomKey = HARD_CODED_ROOM_KEY;  // Use the hardcoded key
     strncpy(pulInfo.modFolderName, system->GetModFolder(), IOS::ipcMaxFileName);
@@ -28,19 +28,19 @@ asmFunc MoveSize() {  // Needed to get data size later
 }
 kmCall(0x800dc3bc, MoveSize);
 
-DWC::MatchCommand Process(DWC::MatchCommand type, const void *data, u32 dataSize, u32 pid) {
+DWC::MatchCommand Process(DWC::MatchCommand type, const void* data, u32 dataSize, u32 pid) {
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
     const bool isCustom = roomType == RKNet::ROOMTYPE_FROOM_NONHOST || roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
                           roomType == RKNet::ROOMTYPE_BT_REGIONAL;
 
-    Pulsar::System *system = Pulsar::System::sInstance;
-    Mgr &mgr = system->netMgr;
+    Pulsar::System* system = Pulsar::System::sInstance;
+    Mgr& mgr = system->netMgr;
     DenyType denyType = DENY_TYPE_NORMAL;
 
     if (type == DWC::MATCH_COMMAND_RESV_OK && isCustom) {
-        const ResvPacket *packet = reinterpret_cast<const ResvPacket *>(data);
-        if (dataSize != (sizeof(ResvPacket) / sizeof(u32)) || packet->pulInfo.roomKey != HARD_CODED_ROOM_KEY  // Compare with hardcoded key
-            || strcmp(packet->pulInfo.modFolderName, system->GetModFolder()) != 0 || !system->CheckUserInfo(packet->pulInfo.userInfo)) {
+        const ResvPacket* packet = reinterpret_cast<const ResvPacket*>(data);
+        if (data == nullptr || dataSize != (sizeof(ResvPacket) / sizeof(u32)) || packet->pulInfo.roomKey != HARD_CODED_ROOM_KEY  // Compare with hardcoded key
+            || strncmp(packet->pulInfo.modFolderName, system->GetModFolder(), IOS::ipcMaxFileName) != 0 || !system->CheckUserInfo(packet->pulInfo.userInfo)) {
             denyType = DENY_TYPE_BAD_PACK;
             if (roomType == RKNet::ROOMTYPE_VS_REGIONAL) mgr.deniesCount++;
             type = DWC::MATCH_COMMAND_RESV_DENY;
@@ -52,10 +52,10 @@ DWC::MatchCommand Process(DWC::MatchCommand type, const void *data, u32 dataSize
         }
 
         if (SectionMgr::sInstance && SectionMgr::sInstance->curSection) {
-            UI::RoomKickPage *roomKick = SectionMgr::sInstance->curSection->Get<UI::RoomKickPage>();
+            UI::RoomKickPage* roomKick = SectionMgr::sInstance->curSection->Get<UI::RoomKickPage>();
             if (roomKick) {
                 u32 bannedCount = 0;
-                u32 *bannedPIDs = roomKick->GetKickHistory(bannedCount);
+                u32* bannedPIDs = roomKick->GetKickHistory(bannedCount);
                 for (u32 i = 0; i < bannedCount; i++) {
                     if (bannedPIDs[i] == pid) {
                         denyType = DENY_TYPE_KICK;
@@ -70,7 +70,7 @@ DWC::MatchCommand Process(DWC::MatchCommand type, const void *data, u32 dataSize
     return type;
 }
 
-static int GetSuspendType(int r3, const char *string) {
+static int GetSuspendType(int r3, const char* string) {
     DWC::Printf(r3, string);
     const u32 errorType = 0x120000000 + Pulsar::System::sInstance->netMgr.denyType << 28;
     return errorType;
@@ -78,11 +78,11 @@ static int GetSuspendType(int r3, const char *string) {
 kmCall(0x800dc9e8, GetSuspendType);
 kmWrite32(0x800dc9f4, 0x906100d8);
 
-static void HasBeenPulsarDenied(u32 level, const char *string) {
+static void HasBeenPulsarDenied(u32 level, const char* string) {
     register u32 error;
     asm(mr error, r0);
     DenyType type = DENY_TYPE_NORMAL;
-    Mgr &mgr = Pulsar::System::sInstance->netMgr;
+    Mgr& mgr = Pulsar::System::sInstance->netMgr;
     if (error != 0x12) {
         type = static_cast<DenyType>(error & 0xf);
         if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL && type == DENY_TYPE_BAD_PACK)
@@ -108,12 +108,12 @@ asmFunc ProcessWrapper() {
 }
 kmCall(0x800dc4a0, ProcessWrapper);
 
-void Send(DWC::MatchCommand type, u32 pid, u32 ip, u16 port, void *data, u32 dataSize) {
+void Send(DWC::MatchCommand type, u32 pid, u32 ip, u16 port, void* data, u32 dataSize) {
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
     const bool isCustom = roomType == RKNet::ROOMTYPE_FROOM_NONHOST || roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
                           roomType == RKNet::ROOMTYPE_BT_REGIONAL;
     if (type == DWC::MATCH_COMMAND_RESERVATION && isCustom) {
-        ResvPacket packet(*reinterpret_cast<const DWC::Reservation *>(data));
+        ResvPacket packet(*reinterpret_cast<const DWC::Reservation*>(data));
         System::sInstance->SetUserInfo(packet.pulInfo.userInfo);
         data = &packet;
         dataSize = sizeof(ResvPacket) / sizeof(u32);
@@ -122,7 +122,7 @@ void Send(DWC::MatchCommand type, u32 pid, u32 ip, u16 port, void *data, u32 dat
 }
 kmCall(0x800df078, Send);
 
-static void ResetDenyCounter(UIControl *control, u32 soundId, u32 r5) {
+static void ResetDenyCounter(UIControl* control, u32 soundId, u32 r5) {
     control->PlaySound(soundId, r5);
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_BT_REGIONAL) {
         Pulsar::System::sInstance->netMgr.deniesCount = 0;

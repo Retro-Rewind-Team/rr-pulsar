@@ -58,8 +58,11 @@ public:
             return idx >= 0 && idx < this->ctsCupCount - 8 * hasRegs;
         }
     }
-    bool IsValidTrack(PulsarId id) {
-        return id < 0x2000 && IsValidCup(static_cast<PulsarCupId>(id / 4));
+    bool IsValidTrack(PulsarId id) const {
+        const u32 rawId = static_cast<u32>(id);
+        if (rawId <= 0x29) return true;
+        if (rawId < PULSARID_FIRSTCT) return false;
+        return rawId - PULSARID_FIRSTCT < static_cast<u32>(this->GetCtsTrackCount());
     }
 
     // Slot Expansion

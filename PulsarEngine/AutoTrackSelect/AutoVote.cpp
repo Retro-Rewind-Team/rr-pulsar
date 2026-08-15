@@ -49,20 +49,23 @@ void AutoVote::OnUpdate() {
         const u8 hostAid = sub.hostAid;
         const u8 localAid = sub.localAid;
         PulsarId vote;
+        bool hasValidHostVote = true;
         if (hostAid == localAid) {
             vote = cupsConfig->GetWinning();
             select.toSendPacket.pulWinningTrack = vote;
             select.toSendPacket.winningVoterAid = hostAid;
         } else {
             const PulsarId hostVote = static_cast<PulsarId>(select.receivedPackets[hostAid].pulVote);
-            if (hostVote != 0x43) {
+            if (hostVote != static_cast<PulsarId>(NO_TRACK_SELECTED) && cupsConfig->IsValidTrack(hostVote)) {
                 vote = hostVote;
                 cupsConfig->SetWinning(hostVote, select.receivedPackets[hostAid].variantIdx);
                 select.toSendPacket.pulWinningTrack = vote;
                 select.toSendPacket.winningVoterAid = hostAid;
                 select.toSendPacket.phase = 2;
-            } else
+            } else {
                 vote = PULSARID_FIRSTREG;
+                hasValidHostVote = false;
+            }
         }
         const SectionParams *params = sectionMgr->sectionParams;
         for (int i = 0; i < params->localPlayerCount; ++i) {
@@ -71,7 +74,7 @@ void AutoVote::OnUpdate() {
             reinterpret_cast<RKNet::SELECTHandler &>(select).SetPlayerData(combo.selCharacter, combo.selKart,
                                                                            static_cast<CourseId>(vote), i, combo.rank);
         }
-        bool isReady = true;
+        bool isReady = hasValidHostVote;
         if (sub.connectionCount == 1 || this->duration > 5000) {
             isReady = false;
             this->status = STATUS_DISCONNECTED;  // 6

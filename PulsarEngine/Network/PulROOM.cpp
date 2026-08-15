@@ -13,8 +13,8 @@ namespace Network {
 
 static_assert(HOST_SETTINGS_PREVIEW_COUNT == 27, "Update settings preview capacity checks with the ROOM payload");
 
-static void ConvertROOMPacketToData(const PulROOM &packet) {
-    System *system = System::sInstance;
+static void ConvertROOMPacketToData(const PulROOM& packet) {
+    System* system = System::sInstance;
     system->netMgr.hostContext = packet.hostSystemContext;
     system->netMgr.hostContext2 = packet.hostSystemContext2;
     system->netMgr.customItemsBitfield = packet.customItemsBitfield;
@@ -23,7 +23,7 @@ static void ConvertROOMPacketToData(const PulROOM &packet) {
     system->netMgr.hasHostSettingsPreview = true;
 }
 
-static void WriteHostSettingsPreviewToPacket(PulROOM *packet, const Settings::Mgr &settings) {
+static void WriteHostSettingsPreviewToPacket(PulROOM* packet, const Settings::Mgr& settings) {
     const bool isBattle = packet->message == 2 || packet->message == 3;
     const bool isExtendedTeams = settings.GetSettingValue(Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
     const bool isKO = !isBattle && !isExtendedTeams &&
@@ -37,10 +37,10 @@ static void WriteHostSettingsPreviewToPacket(PulROOM *packet, const Settings::Mg
     memset(packet->hostSettingsPreview, 0, sizeof(packet->hostSettingsPreview));
     u32 offset = 0;
     for (u32 page = 0; page < pageCount; ++page) {
-        const Settings::SettingsPageDef &def = Settings::Params::GetPageDef(pages[page]);
+        const Settings::SettingsPageDef& def = Settings::Params::GetPageDef(pages[page]);
         const u32 valueCount = def.radioCount + def.scrollerCount;
         if (offset + valueCount > HOST_SETTINGS_PREVIEW_COUNT) break;
-        u8 *dest = packet->hostSettingsPreview + offset;
+        u8* dest = packet->hostSettingsPreview + offset;
 
         for (u32 i = 0; i < def.radioCount; ++i) dest[i] = settings.GetSettingValue(def.radioSettings[i]);
         for (u32 i = 0; i < def.scrollerCount; ++i)
@@ -49,11 +49,11 @@ static void WriteHostSettingsPreviewToPacket(PulROOM *packet, const Settings::Mg
     }
 }
 
-static void WriteBlockedTracksToPacket(PulROOM *packet) {
-    System *system = System::sInstance;
+static void WriteBlockedTracksToPacket(PulROOM* packet) {
+    System* system = System::sInstance;
     if (!system) return;
 
-    const Network::Mgr &netMgr = system->netMgr;
+    const Network::Mgr& netMgr = system->netMgr;
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();
 
     const u32 writeCount = (blockingCount < MAX_TRACK_BLOCKING) ? blockingCount : MAX_TRACK_BLOCKING;
@@ -69,20 +69,21 @@ static void WriteBlockedTracksToPacket(PulROOM *packet) {
     }
 }
 
-static void HandleExtendedTeamUpdates(const PulROOM &packet) {
-    UI::ExtendedTeamSelect *ets = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
+static void HandleExtendedTeamUpdates(const PulROOM& packet) {
+    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+    UI::ExtendedTeamSelect* ets = sectionMgr->curSection->Get<UI::ExtendedTeamSelect>();
+    if (ets == nullptr) return;
     for (int id = 0; id < 12; ++id) {
         const u8 byte = id / 2;
         const u8 shift = (id % 2) * 4;
         UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F);
-        if (team != 0x0F) {
-            ets->UpdatePlayerTeam(id, static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F));
-        }
+        if (team < UI::TEAM_COUNT) ets->UpdatePlayerTeam(id, team);
     }
 }
 
 static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
-    System *system = System::sInstance;
+    System* system = System::sInstance;
 
     const bool isCharRestrictLight = hostContext & (1 << PULSAR_CHARRESTRICTLIGHT);
     const bool isCharRestrictMid = hostContext & (1 << PULSAR_CHARRESTRICTMID);
@@ -123,13 +124,13 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     return isExtendedTeams;
 }
 
-static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *src, u32 len) {
+static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* src, u32 len) {
     packetHolder->Copy(src, len);  // default
 
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
-    Pulsar::System *system = Pulsar::System::sInstance;
-    PulROOM *destPacket = packetHolder->packet;
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    Pulsar::System* system = Pulsar::System::sInstance;
+    PulROOM* destPacket = packetHolder->packet;
     if (destPacket->messageType == 1 && sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);  // this has been changed by copy so it's safe to do this
 
@@ -139,9 +140,9 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
             destPacket->message = 0;
         }
 
-        const Settings::Mgr &settings = Settings::Mgr::Get();
+        const Settings::Mgr& settings = Settings::Mgr::Get();
         WriteHostSettingsPreviewToPacket(destPacket, settings);
-        const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
+        const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
 
         bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
@@ -298,7 +299,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
     const bool isStartVSRaceMessage = destPacket->messageType == 1 && (destPacket->message == 0 || destPacket->message == 2 || destPacket->message == 3);
     if ((isUpdateTeamMessage || (isStartVSRaceMessage && isExtendedTeams)) && sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);
-        const UI::ExtendedTeamPlayer *playerInfo = UI::ExtendedTeamManager::sInstance->GetPlayerInfo();
+        const UI::ExtendedTeamPlayer* playerInfo = UI::ExtendedTeamManager::sInstance->GetPlayerInfo();
 
         memset(destPacket->extendedTeams, 0xff, sizeof(destPacket->extendedTeams));
         for (int i = 0; i < 12; ++i) {
@@ -316,56 +317,71 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
 kmCall(0x8065b15c, BeforeROOMSend);
 
 kmWrite32(0x8065add0, 0x60000000);
-static void AfterROOMReception(const RKNet::PacketHolder<PulROOM> *packetHolder, const PulROOM &src, u32 len) {
-    register RKNet::ROOMPacket *packet;
+static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder, const PulROOM& src, u32 len) {
+    register RKNet::ROOMPacket* packet;
     register u32 aid;
     asm(mr packet, r28;);
     asm(mr aid, r29;);
 
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || packetHolder == nullptr) {
+        if (packet != nullptr) memcpy(packet, &src, sizeof(RKNet::ROOMPacket));
+        return;
+    }
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
 
     const bool isHost = sub.localAid == sub.hostAid;
+    const bool isFromHost = aid < 12 && aid == sub.hostAid;
+    const bool isFromConnectedPeer = aid < 12 && ((sub.availableAids >> aid) & 1) != 0;
 
     // START msg sent by the host, size check should always be guaranteed in theory
-    if (src.messageType == 1 && !isHost && packetHolder->packetSize == sizeof(PulROOM)) {
+    if (src.messageType == 1 && !isHost && isFromHost && packetHolder->packetSize == sizeof(PulROOM)) {
         ConvertROOMPacketToData(src);
 
         // Get context from host packet (no need to read local settings - host values take precedence)
-        Network::Mgr &netMgr = Pulsar::System::sInstance->netMgr;
+        Network::Mgr& netMgr = Pulsar::System::sInstance->netMgr;
         const bool isExtendedTeams = ApplyHostContextLocally(netMgr.hostContext, netMgr.hostContext2);
 
         // Also exit the settings page to prevent weird graphical artefacts
-        Page *topPage = SectionMgr::sInstance->curSection->GetTopLayerPage();
-        PageId topId = topPage->pageId;
-        if (topId == UI::SettingsPanel::id) {
-            UI::SettingsPanel *panel = static_cast<UI::SettingsPanel *>(topPage);
-            panel->OnBackPress(0);
-        } else if (topId == UI::SettingsPageSelect::id) {
-            UI::SettingsPageSelect *pageSelect = static_cast<UI::SettingsPageSelect *>(topPage);
-            pageSelect->OnBackPress(0);
+        SectionMgr* sectionMgr = SectionMgr::sInstance;
+        Page* topPage = nullptr;
+        if (sectionMgr != nullptr && sectionMgr->curSection != nullptr)
+            topPage = sectionMgr->curSection->GetTopLayerPage();
+        if (topPage != nullptr) {
+            PageId topId = topPage->pageId;
+            if (topId == UI::SettingsPanel::id) {
+                UI::SettingsPanel* panel = static_cast<UI::SettingsPanel*>(topPage);
+                panel->OnBackPress(0);
+            } else if (topId == UI::SettingsPageSelect::id) {
+                UI::SettingsPageSelect* pageSelect = static_cast<UI::SettingsPageSelect*>(topPage);
+                pageSelect->OnBackPress(0);
+            }
         }
 
         // Extended Team VS start
         if (isExtendedTeams) {
             HandleExtendedTeamUpdates(src);
-            UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
+            if (UI::ExtendedTeamManager::sInstance != nullptr)
+                UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
         }
     }
 
     if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS &&
         !isHost &&
+        isFromHost &&
         packetHolder->packetSize == sizeof(PulROOM)) {
         HandleExtendedTeamUpdates(src);
     }
 
-    if (isHost && src.messageType == UI::ExtendedTeamManager::MSG_TYPE_PING) {
-        UI::ExtendedTeamManager::sInstance->SetActiveStatusForAID(aid);
-    } else if (!isHost && src.messageType == UI::ExtendedTeamManager::MSG_TYPE_ACK_START_RACE) {
-        UI::ExtendedTeamManager::sInstance->SetDoneStatusForAID(aid);
+    UI::ExtendedTeamManager* extendedTeamManager = UI::ExtendedTeamManager::sInstance;
+    if (extendedTeamManager != nullptr && isHost && isFromConnectedPeer) {
+        if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_PING)
+            extendedTeamManager->SetActiveStatusForAID(aid);
+        else if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_ACK_START_RACE)
+            extendedTeamManager->SetDoneStatusForAID(aid);
     }
 
-    memcpy(packet, &src, sizeof(RKNet::ROOMPacket));  // default
+    if (packet != nullptr) memcpy(packet, &src, sizeof(RKNet::ROOMPacket));  // default
 }
 kmCall(0x8065add8, AfterROOMReception);
 

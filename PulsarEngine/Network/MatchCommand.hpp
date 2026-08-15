@@ -17,6 +17,7 @@ struct ResvInfo {
         u32 info[4];
     };
     ResvInfo() {
+        memset(modFolderName, 0, sizeof(modFolderName));
         padding[0] = 0;
         padding[1] = 0;
     }
