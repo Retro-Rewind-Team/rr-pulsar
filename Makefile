@@ -22,7 +22,7 @@ endif
 VERSION_FILE := PulsarEngine/Version.cpp
 
 $(shell \
-	echo -e "#include \"Version.hpp\"\n\nwchar_t *GIT_COMMIT = L\"$$(git describe --always --dirty --match 'NOT A TAG')\";" > $(VERSION_FILE).tmp; \
+	printf "#include \"Version.hpp\"\n\nwchar_t *GIT_COMMIT = L\"%s\";\n" "$$(git describe --always --dirty --match 'NOT A TAG')" > $(VERSION_FILE).tmp; \
 	if diff -q $(VERSION_FILE).tmp $(VERSION_FILE) >/dev/null 2>&1; then \
 		rm $(VERSION_FILE).tmp; \
 	else \
