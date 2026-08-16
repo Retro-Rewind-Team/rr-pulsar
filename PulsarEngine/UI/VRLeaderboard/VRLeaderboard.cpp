@@ -716,7 +716,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage *page) {
     memset(s_requestWorkBuf, 0, s_nhttpWorkBufSize);
 
     char *url = s_requestUrl;
-    snprintf(url, sizeof(s_requestUrl), "http://%s/api/leaderboard/in-game?page=%u", WWFC_DOMAIN, apiPage);
+    snprintf(url, sizeof(s_requestUrl), "http://rwfc.net/api/leaderboard/in-game?page=%u", apiPage);
 
     void *request = NHTTPCreateRequest(url, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
                                        reinterpret_cast<void *>(&VRLeaderboardPage::OnLeaderboardReceived),
