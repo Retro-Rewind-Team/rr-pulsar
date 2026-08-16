@@ -23,6 +23,10 @@ static bool IsLocalRacePlayer(u8 playerId) {
     const RacedataScenario &scenario = racedata->racesScenario;
     for (u8 hud = 0; hud < scenario.localPlayerCount; ++hud) {
         if ((u8)racedata->GetPlayerIdOfLocalPlayer(hud) == playerId) return true;
+    }
+    return false;
+}
+
 static bool AreOnSameItemBubbleTeam(u8 firstPlayerId, u8 secondPlayerId) {
     const Racedata* racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;

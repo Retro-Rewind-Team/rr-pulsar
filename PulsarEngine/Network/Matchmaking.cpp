@@ -49,9 +49,9 @@ static void RememberPreviousPublicRoomGroupId(const RKNet::Controller* controlle
 static bool IsInfiniteMatchmakingEnabled() {
     int totalPlayers = 0;
     PlayerCount::GetNumbersTotal(totalPlayers);
-    return totalPlayers >= 40 && Settings::Mgr::Get().GetUserSettingValue(
-        Settings::SETTINGSTYPE_ONLINE,
-        RADIO_INFINITEMATCHMAKINGTIMEOUT) == MATCHMAKINGTIMEOUT_INFINITE;
+    return totalPlayers >= 40 &&
+           Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_INFINITEMATCHMAKINGTIMEOUT) ==
+               MATCHMAKINGTIMEOUT_INFINITE;
 }
 
 static void ApplyMatchmakingTimeoutPatch() {
