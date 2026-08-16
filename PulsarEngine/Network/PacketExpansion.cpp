@@ -105,13 +105,14 @@ ExpSELECTHandler *CreateRecvArr(ExpSELECTHandler *handler) {  // wiimmfi hook pr
 kmCall(0x8065fec0, CreateRecvArr);
 
 void DeleteSELECT(ExpSELECTHandler *handler) {
-    delete handler->receivedPackets;
+    delete[] handler->receivedPackets;
     delete reinterpret_cast<RKNet::SELECTHandler *>(handler);
 }
 kmCall(0x8065ff84, DeleteSELECT);
 
 u8 GetLastRecvSECTIONSize(u8 aid, u8 sectionIdx) {
     const CustomRKNetController *controller = reinterpret_cast<CustomRKNetController *>(RKNet::Controller::sInstance);
+    if (controller == nullptr || aid >= 12 || sectionIdx >= 8 || controller->fullPulRecvPackets[aid] == nullptr) return 0;
     RKNet::RACEPacketHeader *header = reinterpret_cast<RKNet::RACEPacketHeader *>(controller->fullPulRecvPackets[aid]);
     return header->sizes[sectionIdx];
 }

@@ -470,7 +470,7 @@ const char *CupsConfig::GetFileName(PulsarId id, u8 variantIdx) const {
 
 u32 CupsConfig::RandomizeVariant(PulsarId id) const {
     u32 variantIdx = 0;
-    if (!IsReg(id)) {
+    if (IsValidTrack(id) && !IsReg(id)) {
         const Track &track = GetTrack(id);
         Random random;
         variantIdx = random.NextLimited(track.variantCount + 1);
@@ -501,6 +501,8 @@ void CupsConfig::SetLastSelectedVariant(PulsarId id, u8 variantIdx) {
 }
 
 void CupsConfig::SetWinning(PulsarId id, u32 variantIdx) {
+    if (!IsValidTrack(id)) return;
+
     if (variantIdx == 0xFF) variantIdx = 0;
     if (IsReg(id)) variantIdx = 0;
 

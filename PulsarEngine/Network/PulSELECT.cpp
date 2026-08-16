@@ -122,6 +122,32 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
         }
     }
 
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
+    if (cupsConfig != nullptr) {
+        const PulsarId vote = static_cast<PulsarId>(src->pulVote);
+        if (vote != static_cast<PulsarId>(NO_TRACK_SELECTED) && vote != static_cast<PulsarId>(RANDOM) &&
+            !cupsConfig->IsValidTrack(vote))
+            src->pulVote = NO_TRACK_SELECTED;
+
+        const PulsarId winningTrack = static_cast<PulsarId>(src->pulWinningTrack);
+        if (winningTrack != static_cast<PulsarId>(RANDOM) && !cupsConfig->IsValidTrack(winningTrack))
+            src->pulWinningTrack = RANDOM;
+
+        for (u32 i = 0; i < MAX_TRACK_BLOCKING; ++i) {
+            const PulsarId blockedTrack = static_cast<PulsarId>(src->blockedTracks[i]);
+            if (src->blockedTracks[i] != 0xFFFF && !cupsConfig->IsValidTrack(blockedTrack)) src->blockedTracks[i] = 0xFFFF;
+        }
+    }
+
+    for (u32 i = 0; i < 2; ++i) {
+        const bool invalidCharacter = src->playersData[i].character != 0xFF && src->playersData[i].character > ROSALINA_BIKER;
+        const bool invalidKart = src->playersData[i].kart != 0xFF && src->playersData[i].kart > PHANTOM;
+        if (invalidCharacter || invalidKart) {
+            src->playersData[i].character = MARIO;
+            src->playersData[i].kart = STANDARD_KART_M;
+        }
+    }
+
     System *system = System::sInstance;
     if (system != nullptr && holder != nullptr && holder->packetSize == sizeof(PulSELECT)) {
         Network::Mgr &netMgr = system->netMgr;
@@ -171,6 +197,7 @@ kmCall(0x80661130, AfterSELECTReception);
 
 u8 ExpSELECTHandler::GetVoteVariantIdx(u8 aid, u8 hudSlotId) const {
     RKNet::Controller *controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || aid >= 12 || hudSlotId >= 2) return 0;
     RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
 
     if (aid == sub.localAid) {
@@ -276,7 +303,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler &self) {
     if (isFriendRoomVS && system->IsContext(PULSAR_HAW)) {
         self.toSendPacket.winningVoterAid = hostAid;
         u16 hostVote = self.toSendPacket.pulVote;
-        bool hostVotedRandom = (hostVote == 0xFF);
+        const bool hostVotedRandom = hostVote == 0xFF || !cupsConfig->IsValidTrack(static_cast<PulsarId>(hostVote));
         if (hostVotedRandom) hostVote = RandomizeHAWTrack(*system, *cupsConfig);
         self.toSendPacket.pulWinningTrack = hostVote;  // If host voted random, also randomize the variant
         if (hostVotedRandom) {
@@ -300,8 +327,8 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler &self) {
             ++playerCount;
 
             PulsarId aidVote = static_cast<PulsarId>(aid == sub.localAid ? self.toSendPacket.pulVote : self.receivedPackets[aid].pulVote);
-            votedRandom[aid] = (aidVote == 0xFF);
-            if (aidVote == 0xFF) {
+            votedRandom[aid] = aidVote == 0xFF || !cupsConfig->IsValidTrack(aidVote);
+            if (votedRandom[aid]) {
                 if (isCT)
                     aidVote = cupsConfig->RandomizeTrack();
                 else {
@@ -315,7 +342,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler &self) {
                         next = offset + next + 1;
                         if (offsetTrick < next) next -= offsetTrick - 1;
                     }
-                    if (isVS) next += trackCount;  // add 32 to match battle ids
+                    if (!isVS) next += 32;  // add 32 to match battle ids
                     aidVote = static_cast<PulsarId>(next);
                 }
             }
@@ -365,6 +392,8 @@ kmCall(0x80650ea8, SetCorrectSlot);
 
 static void SetCorrectTrack(ArchiveMgr *root, PulsarId winningCourse) {
     CupsConfig *cupsConfig = CupsConfig::sInstance;
+    if (root == nullptr || cupsConfig == nullptr || !cupsConfig->IsValidTrack(winningCourse)) return;
+
     System *system = System::sInstance;
     RKNet::Controller *controller = RKNet::Controller::sInstance;
     RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
@@ -455,6 +484,7 @@ GetRecvPulSELECTPacket(0x8066063c);
 u16 GetTrack(const ExpSELECTHandler &handler, u8 aid, u8 hudSlotId, register void *subR6) {
     register RKNet::ControllerSub *sub;
     asm(addi sub, subR6, 0x38);
+    if (aid >= 12) return NO_TRACK_SELECTED;
     if (sub->localAid == aid)
         return handler.toSendPacket.pulVote;
     else
@@ -632,13 +662,22 @@ void ProcessNewPacketVoting() {
                     if ((availableAids & accField) == availableAids) {
                         const u8 winningAid = curRecv.winningVoterAid;
                         const u16 winningTrack = curRecv.pulWinningTrack;
-                        if (((1 << winningAid) & availableAids) == 0) {
-                            handler->receivedPackets[winningAid].pulVote = winningTrack;  // if the winner is dcd, fallback
-                        }
-                        send.winningVoterAid = winningAid;
-                        send.pulWinningTrack = winningTrack;
+                        bool hasValidAidMap = true;
                         for (int i = 0; i < 12; ++i) {
-                            send.playerIdToAid[i] = curRecv.playerIdToAid[i];
+                            const u8 mappedAid = curRecv.playerIdToAid[i];
+                            if (mappedAid != 0xFF && mappedAid >= 12) {
+                                hasValidAidMap = false;
+                                break;
+                            }
+                        }
+                        if (winningAid < 12 && hasValidAidMap &&
+                            CupsConfig::sInstance != nullptr && CupsConfig::sInstance->IsValidTrack(static_cast<PulsarId>(winningTrack))) {
+                            if (((1 << winningAid) & availableAids) == 0) {
+                                handler->receivedPackets[winningAid].pulVote = winningTrack;  // if the winner is dcd, fallback
+                            }
+                            send.winningVoterAid = winningAid;
+                            send.pulWinningTrack = winningTrack;
+                            memcpy(send.playerIdToAid, curRecv.playerIdToAid, sizeof(send.playerIdToAid));
                         }
                     }
                 }

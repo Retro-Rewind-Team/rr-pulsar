@@ -213,10 +213,13 @@ SectionId ChooseNextTrack::ProcessHAW(SectionId defaultId) {
             const Network::PulRH1 *rh1 = holder->packet;
             if (aid == sub.hostAid) {
                 if (rh1->chooseNextStatus == STATUS_TRACK) {
-                    this->status = STATUS_TRACK;
                     CupsConfig *cupsConfig = CupsConfig::sInstance;
-                    cupsConfig->SetWinning(static_cast<PulsarId>(rh1->nextTrack), rh1->variantIdx);
-                    Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
+                    const PulsarId nextTrack = static_cast<PulsarId>(rh1->nextTrack);
+                    if (cupsConfig != nullptr && cupsConfig->IsValidTrack(nextTrack)) {
+                        this->status = STATUS_TRACK;
+                        cupsConfig->SetWinning(nextTrack, rh1->variantIdx);
+                        Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
+                    }
                 } else if (rh1->chooseNextStatus == STATUS_HOST_START) {
                     this->status = STATUS_RH1_READY;
                 }

@@ -70,14 +70,15 @@ static void WriteBlockedTracksToPacket(PulROOM *packet) {
 }
 
 static void HandleExtendedTeamUpdates(const PulROOM &packet) {
-    UI::ExtendedTeamSelect *ets = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
+    SectionMgr *sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+    UI::ExtendedTeamSelect *ets = sectionMgr->curSection->Get<UI::ExtendedTeamSelect>();
+    if (ets == nullptr) return;
     for (int id = 0; id < 12; ++id) {
         const u8 byte = id / 2;
         const u8 shift = (id % 2) * 4;
         UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F);
-        if (team != 0x0F) {
-            ets->UpdatePlayerTeam(id, static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F));
-        }
+        if (team < UI::TEAM_COUNT) ets->UpdatePlayerTeam(id, team);
     }
 }
 
@@ -323,12 +324,18 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM> *packetHolder,
     asm(mr aid, r29;);
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || packetHolder == nullptr) {
+        if (packet != nullptr) memcpy(packet, &src, sizeof(RKNet::ROOMPacket));
+        return;
+    }
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
 
     const bool isHost = sub.localAid == sub.hostAid;
+    const bool isFromHost = aid < 12 && aid == sub.hostAid;
+    const bool isFromConnectedPeer = aid < 12 && ((sub.availableAids >> aid) & 1) != 0;
 
     // START msg sent by the host, size check should always be guaranteed in theory
-    if (src.messageType == 1 && !isHost && packetHolder->packetSize == sizeof(PulROOM)) {
+    if (src.messageType == 1 && !isHost && isFromHost && packetHolder->packetSize == sizeof(PulROOM)) {
         ConvertROOMPacketToData(src);
 
         // Get context from host packet (no need to read local settings - host values take precedence)
@@ -336,36 +343,45 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM> *packetHolder,
         const bool isExtendedTeams = ApplyHostContextLocally(netMgr.hostContext, netMgr.hostContext2);
 
         // Also exit the settings page to prevent weird graphical artefacts
-        Page *topPage = SectionMgr::sInstance->curSection->GetTopLayerPage();
-        PageId topId = topPage->pageId;
-        if (topId == UI::SettingsPanel::id) {
-            UI::SettingsPanel *panel = static_cast<UI::SettingsPanel *>(topPage);
-            panel->OnBackPress(0);
-        } else if (topId == UI::SettingsPageSelect::id) {
-            UI::SettingsPageSelect *pageSelect = static_cast<UI::SettingsPageSelect *>(topPage);
-            pageSelect->OnBackPress(0);
+        SectionMgr *sectionMgr = SectionMgr::sInstance;
+        Page *topPage = nullptr;
+        if (sectionMgr != nullptr && sectionMgr->curSection != nullptr)
+            topPage = sectionMgr->curSection->GetTopLayerPage();
+        if (topPage != nullptr) {
+            PageId topId = topPage->pageId;
+            if (topId == UI::SettingsPanel::id) {
+                UI::SettingsPanel *panel = static_cast<UI::SettingsPanel *>(topPage);
+                panel->OnBackPress(0);
+            } else if (topId == UI::SettingsPageSelect::id) {
+                UI::SettingsPageSelect *pageSelect = static_cast<UI::SettingsPageSelect *>(topPage);
+                pageSelect->OnBackPress(0);
+            }
         }
 
         // Extended Team VS start
         if (isExtendedTeams) {
             HandleExtendedTeamUpdates(src);
-            UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
+            if (UI::ExtendedTeamManager::sInstance != nullptr)
+                UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
         }
     }
 
     if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS &&
         !isHost &&
+        isFromHost &&
         packetHolder->packetSize == sizeof(PulROOM)) {
         HandleExtendedTeamUpdates(src);
     }
 
-    if (isHost && src.messageType == UI::ExtendedTeamManager::MSG_TYPE_PING) {
-        UI::ExtendedTeamManager::sInstance->SetActiveStatusForAID(aid);
-    } else if (!isHost && src.messageType == UI::ExtendedTeamManager::MSG_TYPE_ACK_START_RACE) {
-        UI::ExtendedTeamManager::sInstance->SetDoneStatusForAID(aid);
+    UI::ExtendedTeamManager *extendedTeamManager = UI::ExtendedTeamManager::sInstance;
+    if (extendedTeamManager != nullptr && isHost && isFromConnectedPeer) {
+        if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_PING)
+            extendedTeamManager->SetActiveStatusForAID(aid);
+        else if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_ACK_START_RACE)
+            extendedTeamManager->SetDoneStatusForAID(aid);
     }
 
-    memcpy(packet, &src, sizeof(RKNet::ROOMPacket));  // default
+    if (packet != nullptr) memcpy(packet, &src, sizeof(RKNet::ROOMPacket));  // default
 }
 kmCall(0x8065add8, AfterROOMReception);
 
