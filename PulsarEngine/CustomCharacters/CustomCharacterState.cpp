@@ -506,6 +506,18 @@ u8 OfflineCpuSkinTable(const RacedataScenario &scenario, u8 playerId, CharacterI
     return NormalizeTable(character, offlineCpuCharacterTables[playerId]);
 }
 
+u8 SavedGhostSkinTable(const RacedataScenario &scenario, u8 playerId, CharacterId character) {
+    if (scenario.players[playerId].playerType != PLAYER_GHOST) return TABLE_DEFAULT;
+
+    const u8 offset = scenario.players[0].playerType != PLAYER_GHOST ? 1 : 0;
+    const int rkgIndex = static_cast<int>(playerId) - offset;
+    if (rkgIndex < 0 || rkgIndex >= 4) return TABLE_DEFAULT;
+
+    const u32 table = Racedata::sInstance->ghosts[rkgIndex].header.customCharacterTable;
+    if (table > CUSTOM_TABLE_LIMIT) return TABLE_DEFAULT;
+    return NormalizeTable(character, static_cast<u8>(table));
+}
+
 // Race skin selection chooses local, remote, or stable offline CPU tables.
 u8 RaceSkinTable(u8 playerId, CharacterId character) {
     const Racedata *racedata = Racedata::sInstance;
@@ -516,6 +528,9 @@ u8 RaceSkinTable(u8 playerId, CharacterId character) {
         const bool offlineCpu = scenario.players[playerId].playerType == PLAYER_CPU;
         if (offlineCpuSkinMode && offlineCpu && !IsOnlineRoom(RKNet::Controller::sInstance) && DisplayOnlineSkins() && !IsLocalMultiplayer()) {
             return OfflineCpuSkinTable(scenario, playerId, character);
+        }
+        if (scenario.players[playerId].playerType == PLAYER_GHOST) {
+            return SavedGhostSkinTable(scenario, playerId, character);
         }
     }
 

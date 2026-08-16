@@ -3,6 +3,7 @@
 #include <IO/IO.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 
 namespace Pulsar {
@@ -212,7 +213,11 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry &entry, u32 ldbPosition, bool i
     bool gotTrophy = false;
     buffer.header.unknown_3 = Pulsar::UI::GetSelectedTransmission(0);
 
-    if (data.CreateRKG(buffer) && buffer.CompressTo(this->rkg)) {
+    const bool createdRkg = data.CreateRKG(buffer);
+    if (createdRkg) {
+        buffer.header.customCharacterTable = CustomCharacters::SelectedTable(static_cast<CharacterId>(buffer.header.characterId));
+    }
+    if (createdRkg && buffer.CompressTo(this->rkg)) {
         if (this->cb != nullptr) {
             this->cb(buffer, IS_SAVING_GHOST, -1);
         }

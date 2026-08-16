@@ -43,7 +43,7 @@ struct RKGHeader {
     u8 countryCode;
     u8 stateCode;
     u16 locationCode;
-    u32 unknown_0x6;  // 0x38
+    u32 customCharacterTable;  // 0x38, 0 for vanilla/legacy ghosts
     RFL::StoreData miiData;  // 0x3C to
 };  // total size 0x88
 // size_assert(RKGHeader, 0x88);
