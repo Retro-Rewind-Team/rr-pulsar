@@ -28,14 +28,14 @@ static bool IsLocalRacePlayer(u8 playerId) {
 }
 
 static bool AreOnSameItemBubbleTeam(u8 firstPlayerId, u8 secondPlayerId) {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;
-    const RacedataScenario& scenario = racedata->racesScenario;
+    const RacedataScenario &scenario = racedata->racesScenario;
     if (firstPlayerId >= scenario.playerCount || secondPlayerId >= scenario.playerCount) return false;
     if (firstPlayerId == secondPlayerId) return true;
 
-    const System* system = System::sInstance;
-    UI::ExtendedTeamManager* extendedTeamMgr = UI::ExtendedTeamManager::sInstance;
+    const System *system = System::sInstance;
+    UI::ExtendedTeamManager *extendedTeamMgr = UI::ExtendedTeamManager::sInstance;
     if (system != nullptr && system->IsContext(PULSAR_EXTENDEDTEAMS) && extendedTeamMgr != nullptr) {
         const UI::ExtendedTeamID firstTeam = extendedTeamMgr->GetPlayerTeam(firstPlayerId);
         return firstTeam != UI::TEAM_COUNT && firstTeam == extendedTeamMgr->GetPlayerTeam(secondPlayerId);
@@ -46,10 +46,10 @@ static bool AreOnSameItemBubbleTeam(u8 firstPlayerId, u8 secondPlayerId) {
 }
 
 static bool IsOnAnyLocalItemBubbleTeam(u8 playerId) {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;
 
-    const RacedataScenario& scenario = racedata->racesScenario;
+    const RacedataScenario &scenario = racedata->racesScenario;
     for (u8 localPlayer = 0; localPlayer < scenario.localPlayerCount; ++localPlayer) {
         const u8 localPlayerId = static_cast<u8>(racedata->GetPlayerIdOfLocalPlayer(localPlayer));
         if (AreOnSameItemBubbleTeam(playerId, localPlayerId)) return true;

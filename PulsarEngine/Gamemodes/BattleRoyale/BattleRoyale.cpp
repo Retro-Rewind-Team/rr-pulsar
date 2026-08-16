@@ -518,11 +518,11 @@ static bool IsPlayerOnlineRaceComplete(const Raceinfo &raceinfo, u8 playerId) {
 static bool AreOnSameBattleRoyaleTeam(u8 firstPlayerId, u8 secondPlayerId) {
     if (firstPlayerId >= maxPlayers || secondPlayerId >= maxPlayers) return false;
 
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;
 
-    const System* system = System::sInstance;
-    UI::ExtendedTeamManager* extendedTeamMgr = UI::ExtendedTeamManager::sInstance;
+    const System *system = System::sInstance;
+    UI::ExtendedTeamManager *extendedTeamMgr = UI::ExtendedTeamManager::sInstance;
     if (system != nullptr && system->IsContext(PULSAR_EXTENDEDTEAMS) && extendedTeamMgr != nullptr) {
         const UI::ExtendedTeamID firstTeam = extendedTeamMgr->GetPlayerTeam(firstPlayerId);
         return firstTeam != UI::TEAM_COUNT && firstTeam == extendedTeamMgr->GetPlayerTeam(secondPlayerId);
@@ -534,8 +534,8 @@ static bool AreOnSameBattleRoyaleTeam(u8 firstPlayerId, u8 secondPlayerId) {
     return firstTeam != TEAM_NONE && firstTeam == racedata->racesScenario.players[secondPlayerId].team;
 }
 
-static void OnRemoveHit(void* raceMode, u32 hitterPlayerId, u32 hittedPlayerId) {
-    register u8* itemObj;
+static void OnRemoveHit(void *raceMode, u32 hitterPlayerId, u32 hittedPlayerId) {
+    register u8 *itemObj;
     asm { mr itemObj, r31 }
 
     if (!ShouldApplyBattleRoyale()) {
