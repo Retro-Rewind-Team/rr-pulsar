@@ -15,6 +15,12 @@ static bool IsVotingSettingsSection(SectionId id) {
            id == SECTION_P1_WIFI_BATTLE_VOTING || id == SECTION_P2_WIFI_BATTLE_VOTING;
 }
 
+static bool CanSelectRankingBadge(Settings::SettingsContext context) {
+    return (context == Settings::SETTINGS_CONTEXT_ONLINE ||
+            context == Settings::SETTINGS_CONTEXT_VOTING) &&
+           Ranking::HasSpecialBadges();
+}
+
 SettingsPageSelect::SettingsPageSelect(bool badgeSelect) : context(Settings::SETTINGS_CONTEXT_OFFLINE), badgeSelectMode(badgeSelect) {
     externControlCount = 0;
     internControlCount = badgeSelectMode ? badgeButtonCount : settingsButtonCount;
@@ -97,7 +103,7 @@ void SettingsPageSelect::OnActivate() {
     }
 
     const Settings::SettingsContextDef &contextDef = Settings::Params::GetContextDef(context);
-    const bool showBadge = context == Settings::SETTINGS_CONTEXT_ONLINE && Ranking::HasSpecialBadges();
+    const bool showBadge = CanSelectRankingBadge(context);
     for (u32 i = 0; i < settingsButtonCount; ++i) {
         PushButton &button = pageButtons[i];
         const bool isPage = i < contextDef.pageCount;
@@ -140,7 +146,7 @@ void SettingsPageSelect::OnButtonClick(PushButton &button, u32) {
 
     const Settings::SettingsContextDef &contextDef = Settings::Params::GetContextDef(context);
     if (selected == contextDef.pageCount) {
-        if (context == Settings::SETTINGS_CONTEXT_ONLINE && Ranking::HasSpecialBadges()) {
+        if (CanSelectRankingBadge(context)) {
             nextPageId = static_cast<PageId>(PULPAGE_BADGESELECT);
             EndStateAnimated(0, button.GetAnimationFrameSize());
         }
