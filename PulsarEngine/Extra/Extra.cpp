@@ -235,15 +235,21 @@ kmWrite32(0x8053c710, 0x38000000);
 kmWrite32(0x8053D67C, 0x38000000);
 
 // Ultra Uncut [MrBean35000vr + Chadderz]
+extern "C" void isOnlineRace__9DriverMgr(void *);
 asmFunc GetUltraUncut() {
     ASM(
         nofralloc;
-        loc_0x0 : lbz r3, 0x1C(r29);
+        lis r12, isOnlineRace__9DriverMgr @ha;
+        lbz r12, isOnlineRace__9DriverMgr @l(r12);
+        cmpwi r12, 0;
+        beq + vanilla;
+
+        lbz r3, 0x1C(r29);
         cmplwi r3, 0x1;
-        ble + loc_0x10;
+        ble + vanilla;
         mr r0, r30;
 
-        loc_0x10 : cmplw r30, r0;
+        vanilla : cmplw r30, r0;
         blr;)
 }
 kmCall(0x8053511C, GetUltraUncut);
