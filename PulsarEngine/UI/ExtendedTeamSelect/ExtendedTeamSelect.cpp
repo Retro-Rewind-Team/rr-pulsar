@@ -237,6 +237,7 @@ UIControl *ExtendedTeamSelect::CreateControl(u32 id) {
         this->startRaceButton.buttonId = 1;
         this->startRaceButton.SetOnClickHandler(this->onStartRaceClickHandler, 0);
         this->startRaceButton.SetOnSelectHandler(this->onStartRaceSelectHandler);
+        this->startRaceButton.SetMessage(UI::BMG_EXTENDEDTEAMS_START);
         return &this->startRaceButton;
     } else if (id >= TEAM_ENTRY_0 && id <= TEAM_ENTRY_11) {
         const u32 idx = id - TEAM_ENTRY_0;
