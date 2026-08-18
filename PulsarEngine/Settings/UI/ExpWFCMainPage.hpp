@@ -9,6 +9,7 @@ namespace Pulsar {
 namespace UI {
 
 class ExpWFCMain : public Pages::WFCMainMenu {
+public:
     ExpWFCMain() : selectMainButtonOnResume(false), showWorldwideCategories(false), restoreWorldwideMenuOnActivate(false) {
         this->onSettingsClick.subject = this;
         this->onSettingsClick.ptmf = &ExpWFCMain::OnSettingsButtonClick;
