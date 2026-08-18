@@ -92,6 +92,7 @@ static void ReloadMainRaceMusic(u32 soundId) {
 
     singlePlayer->canNotCancel = false;
     singlePlayer->canNotPrepareOther = false;
+    singlePlayer->StopInactiveSounds();
     singlePlayer->PrepareSound(soundId, false);
     singlePlayer->StopSound();
     singlePlayer->PlayPreparedSound(0);
@@ -121,6 +122,8 @@ static void PlaySW2RRTierChangeJingle(Audio::RaceMgr &raceAudioMgr, u8 tier, u8 
         if (raceAudioMgr.raceState == RACE_STATE_FINAL_LAP_MUSIC) {
             raceAudioMgr.raceState = Audio::RACE_STATE_NORMAL;
         }
+        Audio::SinglePlayer *singlePlayer = Audio::SinglePlayer::sInstance;
+        if (singlePlayer != nullptr) singlePlayer->StopInactiveSounds();
         raceAudioMgr.SetRaceState(Audio::RACE_STATE_FAST);
         return;
     }
