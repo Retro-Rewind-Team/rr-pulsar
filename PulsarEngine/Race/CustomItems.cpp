@@ -133,26 +133,6 @@ static void SafePlayerObjSpawn(Item::ObjHolder *holder, u32 quantity, Item::Obj 
 static bool IsItemAvailable(ItemId id, const Item::ItemSlotData *slotData) {
     if (id >= ITEM_COUNT) return false;
 
-    const ItemObjId objId = Item::Behavior::behaviourTable[id].objId;
-    if (slotData != nullptr) {
-        switch (objId) {
-            case OBJ_LIGHTNING:
-                if (slotData->itemSpawnTimers[0] != 0) return false;
-                break;
-            case OBJ_BLUE_SHELL:
-                if (slotData->itemSpawnTimers[1] != 0) return false;
-                break;
-            case OBJ_BLOOPER:
-                if (slotData->itemSpawnTimers[2] != 0) return false;
-                break;
-            case OBJ_POW_BLOCK:
-                if (slotData->itemSpawnTimers[3] != 0) return false;
-                break;
-            default:
-                break;
-        }
-    }
-
     const u32 bitfield = GetEffectiveCustomItemsBitfield();
     if (bitfield != 0 && bitfield != ALL_ITEMS_BITFIELD && ((bitfield >> id) & 1)) return true;
 
