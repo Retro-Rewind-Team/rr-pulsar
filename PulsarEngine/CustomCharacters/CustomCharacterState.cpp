@@ -3,7 +3,6 @@
 namespace Pulsar {
 namespace CustomCharacters {
 
-// Process-wide skin, cache, and menu state shared by the custom character hooks.
 u8 selectedTable[CHARACTER_COUNT];
 u8 onlineCharacterTables[ONLINE_PLAYER_COUNT];
 u8 offlineCpuCharacterTables[ONLINE_PLAYER_COUNT];
@@ -208,14 +207,12 @@ u32 ResolveCustomCharacterNameBmgId(const LayoutUIControl &control, u32 bmgId) {
     return defaultBmgId != 0 ? defaultBmgId : bmgId;
 }
 
-bool SetCustomCharacterNameMessage(LayoutUIControl &control, const char *paneName, u32 bmgId) {
+void SetCustomCharacterNameMessage(LayoutUIControl &control, const char *paneName, u32 bmgId) {
     control.SetTextBoxMessage(paneName, ResolveCustomCharacterNameBmgId(control, bmgId), nullptr);
-    return true;
 }
 
-bool SetCustomCharacterNameMessage(LayoutUIControl &control, u32 bmgId) {
+void SetCustomCharacterNameMessage(LayoutUIControl &control, u32 bmgId) {
     control.SetMessage(ResolveCustomCharacterNameBmgId(control, bmgId), nullptr);
-    return true;
 }
 
 bool SetCustomCharacterAuthorMessage(LayoutUIControl &control, u32 bmgId) {
@@ -245,7 +242,6 @@ const char *DriverBRRESName(CharacterId character, u8 table) {
     return GetDefaultCharacterPostfix(character);
 }
 
-// Apply selected skin names through the vanilla global character name table.
 void ApplyName(CharacterId character, u8 table) {
     const char **entry = CharacterNameEntry(character);
     const char *name = GeneratedCustomPostfix(character, table);
@@ -518,7 +514,6 @@ u8 SavedGhostSkinTable(const RacedataScenario &scenario, u8 playerId, CharacterI
     return NormalizeTable(character, static_cast<u8>(table));
 }
 
-// Race skin selection chooses local, remote, or stable offline CPU tables.
 u8 RaceSkinTable(u8 playerId, CharacterId character) {
     const Racedata *racedata = Racedata::sInstance;
     if (racedata != nullptr && playerId < racedata->racesScenario.playerCount) {

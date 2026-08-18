@@ -47,7 +47,6 @@ enum {
     TABLE_DEFAULT = 0,
     CUSTOM_TABLE_LIMIT = 50,
     TABLE_COUNT = CUSTOM_TABLE_LIMIT + 1,
-    TABLE_INVALID = TABLE_COUNT,
 
     CHARACTER_COUNT = 0x30,
     CUSTOM_CHARACTER_NAME_BMG_START = UI::BMG_CUSTOM_CHARACTER_NAME_START,
@@ -159,8 +158,8 @@ CharacterId MenuBRRESCharacter(CharacterId character);
 bool HasSkin(CharacterId character, u8 table);
 u32 SkinNameBmgId(CharacterId character, u8 table);
 u32 SkinAuthorBmgId(CharacterId character, u8 table);
-bool SetCustomCharacterNameMessage(LayoutUIControl &control, const char *paneName, u32 bmgId);
-bool SetCustomCharacterNameMessage(LayoutUIControl &control, u32 bmgId);
+void SetCustomCharacterNameMessage(LayoutUIControl &control, const char *paneName, u32 bmgId);
+void SetCustomCharacterNameMessage(LayoutUIControl &control, u32 bmgId);
 bool SetCustomCharacterAuthorMessage(LayoutUIControl &control, u32 bmgId);
 const char *DriverBRRESName(CharacterId character, u8 table);
 

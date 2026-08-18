@@ -133,7 +133,8 @@ u32 RaceNameBmgId(u8 playerId) {
 bool SetRaceNameTextIfCustom(LayoutUIControl &control, const char *paneName, u8 playerId) {
     const u32 bmgId = RaceNameBmgId(playerId);
     if (bmgId == 0) return false;
-    return SetCustomCharacterNameMessage(control, paneName, bmgId);
+    SetCustomCharacterNameMessage(control, paneName, bmgId);
+    return true;
 }
 
 // Race name controls store playerId at 0x178 in the vanilla layout control.

@@ -729,6 +729,12 @@ bool pendingMenuDriverModelReloads[LOCAL_PLAYER_COUNT];
 CharacterId pendingMenuDriverModelCharacters[LOCAL_PLAYER_COUNT];
 
 void ReinitMenuDriverModelMgr(u8 hud, CharacterId character) {
+    if (hud >= LOCAL_PLAYER_COUNT) return;
+    pendingMenuDriverModelReloads[hud] = true;
+    pendingMenuDriverModelCharacters[hud] = character;
+}
+
+void ExecuteMenuDriverModelReload(u8 hud, CharacterId character) {
     MenuModelMgr *modelMgr = MenuModelMgr::sInstance;
     if (modelMgr == nullptr || !modelMgr->isActive || modelMgr->driverModels == nullptr) return;
     if (hud >= LOCAL_PLAYER_COUNT || hud >= modelMgr->playerCount) return;
@@ -750,7 +756,7 @@ void ProcessMenuDriverModelReloadsAndCalc() {
     for (u8 hud = 0; hud < LOCAL_PLAYER_COUNT; ++hud) {
         if (!pendingMenuDriverModelReloads[hud]) continue;
         pendingMenuDriverModelReloads[hud] = false;
-        ReinitMenuDriverModelMgr(hud, pendingMenuDriverModelCharacters[hud]);
+        ExecuteMenuDriverModelReload(hud, pendingMenuDriverModelCharacters[hud]);
     }
     ScnMgr::CalcMain();
 }

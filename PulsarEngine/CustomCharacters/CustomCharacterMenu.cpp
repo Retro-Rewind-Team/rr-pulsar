@@ -25,7 +25,6 @@ void RestoreVotingMenuDriverModels() {
     }
 }
 
-// Random selection chooses from the vanilla table plus installed custom skins.
 bool RandomizeSelectedCharacterTable(CharacterId character) {
     if (!IsCharacter(StateCharacter(character))) return false;
     u8 valid[TABLE_COUNT];
@@ -40,7 +39,6 @@ bool RandomizeSelectedCharacterTable(CharacterId character) {
     return changed;
 }
 
-// Section loads refresh menu-visible state and clear stale per-section caches.
 void ResetCustomCharacterMenuState() {
     if (!IsVotingSection(CurrentSectionId())) {
         votingMenuTableSection = SECTION_NONE;
@@ -54,7 +52,6 @@ void ResetCustomCharacterMenuState() {
 }
 SectionLoadHook ResetCustomCharacterMenuStateHook(ResetCustomCharacterMenuState);
 
-// Hover updates both the preview model and the custom name/author labels.
 void CharacterSelectHoverHook(Pages::CharacterSelect *page, CtrlMenuCharacterSelect::ButtonDriver *button, u32 buttonId, u8 hud) {
     if (hud < LOCAL_PLAYER_COUNT) hoveredCharacters[hud] = static_cast<CharacterId>(buttonId);
     page->OnButtonDriverSelect(button, buttonId, hud);
@@ -68,7 +65,6 @@ kmCall(0x807e34d0, CharacterSelectHoverHook);
 kmCall(0x807e37b0, CharacterSelectHoverHook);
 kmCall(0x807e3a88, CharacterSelectHoverHook);
 
-// Hint panes show the skin-cycle buttons for the active controller type.
 ControllerType ControllerForHud(const SectionMgr &mgr, u8 hud) {
     if (hud >= LOCAL_PLAYER_COUNT) return GCN;
     const Input::RealControllerHolder *holder = mgr.pad.padInfos[hud].controllerHolder;
@@ -115,7 +111,6 @@ void UpdateHintPanes() {
     for (u8 hud = 0; hud < count; ++hud) SetHintPanes(page->names[hud], ControllerForHud(*mgr, hud), CanToggleSkin(*page, *mgr, hud));
 }
 
-// Map each controller type to previous/next skin buttons and consumed UI actions.
 void ToggleInputs(ControllerType type, u16 &prevButton, u16 &nextButton, u16 &prevAction, u16 &nextAction) {
     prevAction = 0;
     nextAction = 0;
@@ -150,22 +145,20 @@ void EatButton(Input::RealControllerHolder &holder, u16 button, u16 action) {
     holder.uiinputStates[0].buttonActions &= static_cast<u16>(~action);
 }
 
-// Character select allows each local player to cycle installed skin tables.
-bool ProcessSkinInput() {
+void ProcessSkinInput() {
     if (!IsCharacterSelectActive()) {
         memset(heldToggleButtons, 0, sizeof(heldToggleButtons));
-        return false;
+        return;
     }
     SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == nullptr || mgr->sectionParams == nullptr) {
         memset(heldToggleButtons, 0, sizeof(heldToggleButtons));
-        return false;
+        return;
     }
 
-    bool changed = false;
     const u8 count = SectionPlayerCount(mgr);
     Pages::CharacterSelect *page = mgr->curSection->Get<Pages::CharacterSelect>();
-    if (page == nullptr) return false;
+    if (page == nullptr) return;
     for (u8 hud = 0; hud < count; ++hud) {
         Input::RealControllerHolder *holder = mgr->pad.padInfos[hud].controllerHolder;
         if (holder == nullptr || holder->curController == nullptr) {
@@ -192,7 +185,6 @@ bool ProcessSkinInput() {
             if (CycleSkin(character, -1)) {
                 ReinitMenuDriverModelMgr(hud, character);
                 Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
-                changed = true;
             }
         }
         if ((pressed & nextButton) != 0) {
@@ -200,14 +192,11 @@ bool ProcessSkinInput() {
             if (CycleSkin(character, 1)) {
                 ReinitMenuDriverModelMgr(hud, character);
                 Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
-                changed = true;
             }
         }
     }
-    return changed;
 }
 
-// Menu updates keep hints, labels, and random-vote kart previews in sync.
 void MenuSceneSectionUpdateHook(SectionMgr *mgr) {
     UpdateHintPanes();
     ProcessSkinInput();
