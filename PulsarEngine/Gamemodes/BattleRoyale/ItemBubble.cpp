@@ -12,21 +12,6 @@
 namespace Pulsar {
 namespace Extra {
 
-static bool ShouldUseBattleRoyaleItemBubbles() {
-    return BattleRoyale::ShouldApplyBattleRoyale();
-}
-
-// Returns true if the given race player ID belongs to any local player on this console.
-static bool IsLocalRacePlayer(u8 playerId) {
-    const Racedata *racedata = Racedata::sInstance;
-    if (racedata == nullptr) return false;
-    const RacedataScenario &scenario = racedata->racesScenario;
-    for (u8 hud = 0; hud < scenario.localPlayerCount; ++hud) {
-        if ((u8)racedata->GetPlayerIdOfLocalPlayer(hud) == playerId) return true;
-    }
-    return false;
-}
-
 static bool AreOnSameItemBubbleTeam(u8 firstPlayerId, u8 secondPlayerId) {
     const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;
@@ -115,14 +100,14 @@ static void LoadGraphicsAndItemLight(Item::Obj *obj, const char *mdlName, const 
                                      nw4r::g3d::ScnMdl::BufferOption option,
                                      u32 directorBitfield) {
     obj->LoadGraphicsImplicitBRRESNoFunc(mdlName, shadowSrc, anmParam, option, directorBitfield);
-    if (ShouldUseBattleRoyaleItemBubbles()) obj->LoadItemLight();
+    if (BattleRoyale::ShouldApplyBattleRoyale()) obj->LoadItemLight();
 }
 kmCall(0x807af01c, LoadGraphicsAndItemLight);  // ObjKouraGreen non-teams path
 kmCall(0x807a40d8, LoadGraphicsAndItemLight);  // ObjBanana non-teams path
 kmCall(0x807ab3f4, LoadGraphicsAndItemLight);  // ObjKouraRed non-teams path
 
 static void SetupItemLightAnimation(Item::Obj *obj) {
-    if (!ShouldUseBattleRoyaleItemBubbles()) {
+    if (!BattleRoyale::ShouldApplyBattleRoyale()) {
         SetupVanillaItemLightAnimation(obj);
         return;
     }
@@ -135,13 +120,11 @@ static void SetupItemLightAnimation(Item::Obj *obj) {
     const RacedataScenario &scenario = racedata->racesScenario;
     const u8 screenCount = scenario.screenCount;
 
-    // Hide on every screen first.
     for (u32 i = 0; i < screenCount; ++i)
         obj->item_light->DisableScreen(i);
 
     if (obj->bitfield78 & 0x10000) return;  // item is held/tethered - keep hidden
 
-    // Show the bubble on every local screen whose player shares the item's team.
     const u8 playerId = obj->playerUsedItemId;
     if (playerId >= scenario.playerCount) return;
 
@@ -171,14 +154,13 @@ static void SpawnSetupAndFixFIBTexture(Item::Obj *obj, int objId) {
     // FIB visible and freezes the animation at the default (red) frame.
     obj->Set(static_cast<ItemObjId>(objId));
 
-    if (!ShouldUseBattleRoyaleItemBubbles()) return;
+    if (!BattleRoyale::ShouldApplyBattleRoyale()) return;
 
-    // Only post-process fake item boxes.
     if (obj->itemObjId != OBJ_FAKE_ITEM_BOX) return;
 
     // Use the friendly texture for items owned by a local player's teammate.
     const u8 playerId = obj->playerUsedItemId;
-    if (playerId >= 12 || !IsOnAnyLocalItemBubbleTeam(playerId)) return;
+    if (!IsOnAnyLocalItemBubbleTeam(playerId)) return;
 
     ModelDirector *mdl = obj->modelDirector;
     if (mdl == nullptr) return;

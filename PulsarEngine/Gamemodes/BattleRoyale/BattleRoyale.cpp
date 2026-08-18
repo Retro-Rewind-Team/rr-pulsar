@@ -64,10 +64,6 @@ void EjectItemsFromItemDamage(u8 playerId);
 
 kmRuntimeUse(0x807a1ed8);
 
-static RaceBalloonManager *GetBalloonManager() {
-    return RaceBalloonManager::sInstance;
-}
-
 static u8 GetBalloonCount(void *mgr, u8 playerId) {
     if (mgr == nullptr || playerId >= maxPlayers) return 0;
     const u8 *base = reinterpret_cast<const u8 *>(mgr);
@@ -185,11 +181,11 @@ static void AddBalloons(RaceBalloonManager *mgr, u8 playerId, u8 count) {
     if (mgr == nullptr || playerId >= maxPlayers || count == 0) return;
 
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    u32 team = static_cast<u32>(scenario.players[playerId].team);
+    u8 team = static_cast<u8>(scenario.players[playerId].team);
     if (team > 1) team = 0;
 
     if (ShouldApplyBattleRoyale()) {
-        AddBattleRoyaleBalloons(mgr, playerId, static_cast<u8>(team), 1, 0, count, 0);
+        AddBattleRoyaleBalloons(mgr, playerId, team, 1, 0, count, 0);
         return;
     }
 
@@ -204,10 +200,6 @@ static u8 GetStartingBalloonCountSetting() {
         if (system->IsContext(PULSAR_KOPERRACE_2)) return 2;
     }
     return 1;
-}
-
-static u8 GetStartingBalloonAddCount() {
-    return GetStartingBalloonCountSetting();
 }
 
 static void StartBalloonLossBlink(u8 playerId) {
@@ -258,18 +250,11 @@ static bool IsOnline() {
     return controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE;
 }
 
-static bool IsLocalAid(u8 aid) {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return true;
-    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
-    return aid == sub.localAid;
-}
-
 static bool IsLocalPlayer(u8 playerId) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE) return true;
     if (playerId >= maxPlayers) return false;
-    return IsLocalAid(controller->aidsBelongingToPlayerIds[playerId]);
+    return controller->aidsBelongingToPlayerIds[playerId] == controller->subs[controller->currentSub].localAid;
 }
 
 static void QueueBalloonEvent(u8 eventPlayerId) {
@@ -360,7 +345,7 @@ static void WriteLocalFinishTimes(Network::PulRH1 &packet) {
 }
 
 void WriteRH1Packet(Network::PulRH1 &packet) {
-    packet.battleRoyaleBalloonCounts = GetPackedLocalBalloonCounts(GetBalloonManager());
+    packet.battleRoyaleBalloonCounts = GetPackedLocalBalloonCounts(RaceBalloonManager::sInstance);
     WriteLocalFinishTimes(packet);
 
     if (!ShouldApplyBattleRoyale() || sPendingBalloonEventSize == 0) {
@@ -421,7 +406,7 @@ static void RemovePoweredHitBalloon(u8 playerId) {
     if (!ShouldApplyBattleRoyale() || playerId >= maxPlayers) return;
     if (HasPoweredHitLossThisFrame(playerId)) return;
 
-    RemoveBalloon(GetBalloonManager(), playerId);
+    if (!RemoveBalloon(RaceBalloonManager::sInstance, playerId)) return;
     QueueLocalBalloonLoss(playerId);
     sPoweredHitLossFrame[playerId] = GetCurrentRaceFrames();
 }
@@ -493,7 +478,7 @@ static bool IsPlayerEliminated(u8 playerId) {
     if (system != nullptr && system->lapKoMgr != nullptr && !system->lapKoMgr->IsActive(playerId)) return true;
     const Raceinfo *raceinfo = Raceinfo::sInstance;
     if (raceinfo != nullptr && IsPlayerFinished(*raceinfo, playerId)) return true;
-    return GetBalloonCount(GetBalloonManager(), playerId) == 0;
+    return GetBalloonCount(RaceBalloonManager::sInstance, playerId) == 0;
 }
 
 static void StartOobWipeWithoutEliminatedPlayers(Kart::Link *link, u32 state) {
@@ -549,8 +534,9 @@ static void OnRemoveHit(void *raceMode, u32 hitterPlayerId, u32 hittedPlayerId) 
     if (IsOnline() && !IsLocalPlayer(static_cast<u8>(hittedPlayerId))) return;
     if (IsPlayerFinished(*Raceinfo::sInstance, static_cast<u8>(hittedPlayerId))) return;
     if (*reinterpret_cast<ItemObjId *>(itemObj + 0x4) == OBJ_BLUE_SHELL &&
-        GetBalloonCount(GetBalloonManager(), static_cast<u8>(hittedPlayerId)) == 1) return;
-    RemoveBalloon(GetBalloonManager(), static_cast<u8>(hittedPlayerId));
+        GetBalloonCount(RaceBalloonManager::sInstance, static_cast<u8>(hittedPlayerId)) == 1)
+        return;
+    if (!RemoveBalloon(RaceBalloonManager::sInstance, static_cast<u8>(hittedPlayerId))) return;
     QueueLocalBalloonLoss(static_cast<u8>(hittedPlayerId));
 }
 
@@ -563,37 +549,23 @@ static void OnMoveHit(void *raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     if (losingPlayerId == gainingPlayerId) return;
     if (HasPoweredHitLossThisFrame(static_cast<u8>(losingPlayerId))) return;
 
-    RaceBalloonManager *balloonMgr = GetBalloonManager();
+    RaceBalloonManager *balloonMgr = RaceBalloonManager::sInstance;
     const u8 losingPlayer = static_cast<u8>(losingPlayerId);
     const u8 gainingPlayer = static_cast<u8>(gainingPlayerId);
     if (AreOnSameBattleRoyaleTeam(losingPlayer, gainingPlayer)) return;
     if (HasMushroomStolenFromVictim(gainingPlayer, losingPlayer)) return;
 
-    if (!IsOnline()) {
-        const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
-        if (previousBalloonCount <= 1) return;
-        if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
-        if (IsMushroomStealVictimProtected(losingPlayer)) return;
-        MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
-        if (GetBalloonCount(balloonMgr, losingPlayer) >= previousBalloonCount) return;
-        RecordMushroomStealVictim(gainingPlayer, losingPlayer);
-        ClearActiveGoldenMushroom(gainingPlayer);
-        return;
-    }
-
-    if (!IsLocalPlayer(losingPlayer)) return;
+    if (IsOnline() && !IsLocalPlayer(losingPlayer)) return;
 
     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
     if (previousBalloonCount <= 1) return;
     if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
     if (IsMushroomStealVictimProtected(losingPlayer)) return;
 
-    MoveBalloon(balloonMgr, gainingPlayer, losingPlayer);
-
-    if (GetBalloonCount(balloonMgr, losingPlayer) >= previousBalloonCount) return;
+    if (!MoveBalloon(balloonMgr, gainingPlayer, losingPlayer)) return;
 
     RecordMushroomStealVictim(gainingPlayer, losingPlayer);
-    QueueBalloonMoveFromLocalLoss(losingPlayer, gainingPlayer);
+    if (IsOnline()) QueueBalloonMoveFromLocalLoss(losingPlayer, gainingPlayer);
 
     if (IsLocalPlayer(gainingPlayer)) ClearActiveGoldenMushroom(gainingPlayer);
 }
@@ -770,7 +742,7 @@ static void CreateBattleRoyaleBalloonManager() {
     sCreatingBattleRoyaleBalloonManager = true;
     RaceBalloonManager::CreateInstance();
     sCreatingBattleRoyaleBalloonManager = false;
-    LoadStartingBalloonModels(GetBalloonManager());
+    LoadStartingBalloonModels(RaceBalloonManager::sInstance);
     settings.gamemode = prevMode;
     settings.battleType = prevBattleType;
 }
@@ -876,7 +848,7 @@ static void InitForRace(LapKO::Mgr &lapKoMgr, RaceBalloonManager *balloonMgr) {
     }
 
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
-    const u8 targetCount = GetStartingBalloonAddCount();
+    const u8 targetCount = GetStartingBalloonCountSetting();
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers; ++playerId) {
         const u8 current = GetBalloonCount(balloonMgr, playerId);
         if (current < targetCount) {
@@ -1041,12 +1013,9 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNe
                     controller.aidsBelongingToPlayerIds[losingPlayerId] == aid &&
                     !HasMushroomStolenFromVictim(gainingPlayerId, losingPlayerId)) {
                     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayerId);
-                    if (previousBalloonCount > 1) {
-                        MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId);
-                        if (GetBalloonCount(balloonMgr, losingPlayerId) < previousBalloonCount) {
-                            RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
-                            if (IsLocalPlayer(gainingPlayerId)) ClearActiveGoldenMushroom(gainingPlayerId);
-                        }
+                    if (previousBalloonCount > 1 && MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId)) {
+                        RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
+                        if (IsLocalPlayer(gainingPlayerId)) ClearActiveGoldenMushroom(gainingPlayerId);
                     }
                 }
             } else if (eventPlayerId < maxPlayers && controller.aidsBelongingToPlayerIds[eventPlayerId] == aid) {
@@ -1111,7 +1080,7 @@ static void FrameUpdate() {
     Raceinfo *raceinfo = Raceinfo::sInstance;
     if (lapKoMgr == nullptr || raceinfo == nullptr) return;
 
-    RaceBalloonManager *balloonMgr = GetBalloonManager();
+    RaceBalloonManager *balloonMgr = RaceBalloonManager::sInstance;
     if (balloonMgr == nullptr) return;
 
     if (sLastRaceFrames != 0xffff && raceinfo->raceFrames < sLastRaceFrames) {
