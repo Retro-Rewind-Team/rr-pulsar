@@ -49,7 +49,6 @@ private:
         wchar_t name[24];
         u32 vr;
         u32 rank;
-        wchar_t line[64];
         RFL::StoreData miiData;
         u64 friendCode;
     };
