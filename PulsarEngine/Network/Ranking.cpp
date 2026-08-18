@@ -36,10 +36,10 @@ static u32 s_badgeMask = 0;
 static bool s_badgeRequestActive = false;
 static bool s_badgeRefreshPending = false;
 static u32 s_pendingBadgePid = 0;
+static const u32 MIN_VS_MATCHES = 100;
 
 static s32 BadgeTypeToIcon(u32 badgeType) {
-    // These are the existing ranking icon slots. Multiple API badge types map
-    // to the same slot so the server can expose more specific badge names.
+    // Several API badge types share one of the existing ranking icon slots.
     switch (static_cast<BadgeType>(badgeType)) {
         case BADGE_RETRO_REWIND_DEVELOPER:
         case BADGE_WHEEL_WIZARD_DEVELOPER:
@@ -121,60 +121,64 @@ static u32 ParseBadgeJson(const char *body, int bodyLen, u32 pid) {
 }
 
 static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
-    const Rating &vr = license.GetVR();
-    u32 vsWins = license.GetWFCVSWins();
-    u32 vsLosses = license.GetWFCVSLosses();
-    u32 totalVs = vsWins + vsLosses;
+    const Rating &licenseVr = license.GetVR();
+    const u32 vsWins = license.GetWFCVSWins();
+    const u32 vsLosses = license.GetWFCVSLosses();
+    const u32 totalVs = vsWins + vsLosses;
 
-    u32 times1st = license.GetTimes1stPlaceAchieved();
-    float distTravelled = license.GetDistanceTravelled();
-    float distInFirst = license.GetDistancetravelledwhilein1stplace();
+    const u32 times1st = license.GetTimes1stPlaceAchieved();
+    const float distTravelled = license.GetDistanceTravelled();
+    const float distInFirst = license.GetDistancetravelledwhilein1stplace();
 
-    float racingWinPct = (totalVs > 0) ? (100.0f * (float)vsWins / (float)totalVs) : 45.0f;
+    const float winRate = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
 
-    const RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-    const float userVr = rksys != nullptr ? PointRating::GetUserVR(rksys->curLicenseId) : static_cast<float>(vr.points);
-    float vrClamped = userVr > 1000.0f ? 1000.0f : userVr;
-    if (vrClamped < 0) vrClamped = 0;
-    float vrNorm = (vrClamped / 1000.0f) * 100.0f;
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
+    const float userVr = rksysMgr != nullptr ? PointRating::GetUserVR(rksysMgr->curLicenseId)
+                                             : static_cast<float>(licenseVr.points);
+    float clampedVr = userVr > 1000.0f ? 1000.0f : userVr;
+    if (clampedVr < 0.0f) clampedVr = 0.0f;
+    const float normalizedVr = clampedVr / 1000.0f * 100.0f;
 
-    float firstsNorm = (times1st >= 2250.0f) ? 100.0f : (100.0f * times1st / 2250.0f);
-    float distNorm = (distTravelled >= 40000.0f) ? 100.0f : (100.0f * distTravelled / 40000.0f);
-    float distFirstNorm = (distInFirst >= 10000.0f) ? 100.0f : (100.0f * distInFirst / 10000.0f);
+    const float normalizedFirsts = times1st >= 2250 ? 100.0f : 100.0f * times1st / 2250.0f;
+    const float normalizedDistance = distTravelled >= 40000.0f ? 100.0f : 100.0f * distTravelled / 40000.0f;
+    const float normalizedFirstDistance =
+        distInFirst >= 10000.0f ? 100.0f : 100.0f * distInFirst / 10000.0f;
 
-    const float W_VR = 0.60f;
-    const float W_RWIN = 0.15f;
-    const float W_FIRSTS = 0.15f;
-    const float W_DIST = 0.05f;
-    const float W_DIST1ST = 0.05f;
+    const float vrWeight = 0.60f;
+    const float winRateWeight = 0.15f;
+    const float firstsWeight = 0.15f;
+    const float distanceWeight = 0.05f;
+    const float firstDistanceWeight = 0.05f;
 
-    float baseM = (W_VR * vrNorm) + (W_RWIN * racingWinPct) + (W_FIRSTS * firstsNorm) + (W_DIST * distNorm) + (W_DIST1ST * distFirstNorm);
+    const float weightedScore = (vrWeight * normalizedVr) + (winRateWeight * winRate) +
+                                (firstsWeight * normalizedFirsts) +
+                                (distanceWeight * normalizedDistance) +
+                                (firstDistanceWeight * normalizedFirstDistance);
 
-    // Anchors
-    const float AH_VR = 100.0f, AH_RWIN = 55.0f, AH_FIRSTS = 100.0f, AH_DIST = 100.0f, AH_DIST1ST = 100.0f;  // -> 100
-    const float AL_VR = 5.0f, AL_RWIN = 50.0f, AL_FIRSTS = 0.0f, AL_DIST = 0.0f, AL_DIST1ST = 0.0f;  // -> 10
-    float M1 = W_VR * AH_VR + W_RWIN * AH_RWIN + W_FIRSTS * AH_FIRSTS + W_DIST * AH_DIST + W_DIST1ST * AH_DIST1ST;  // ~100.0
-    float M2 = W_VR * AL_VR + W_RWIN * AL_RWIN + W_FIRSTS * AL_FIRSTS + W_DIST * AL_DIST + W_DIST1ST * AL_DIST1ST;  // ~10.0
-    float alpha = 90.0f / (M1 - M2);
-    float beta = 100.0f - alpha * M1;
+    // Map the weighted metrics from the low and high anchors to a 10-100 score.
+    const float highAnchor = vrWeight * 100.0f + winRateWeight * 55.0f + firstsWeight * 100.0f +
+                             distanceWeight * 100.0f + firstDistanceWeight * 100.0f;
+    const float lowAnchor = vrWeight * 5.0f + winRateWeight * 50.0f;
+    const float scoreScale = 90.0f / (highAnchor - lowAnchor);
+    const float scoreOffset = 100.0f - scoreScale * highAnchor;
 
-    float finalScore = alpha * baseM + beta;
-    if (finalScore < 0.0f)
-        finalScore = 0.0f;
-    else if (finalScore > 100.0f)
-        finalScore = 100.0f;
-    return finalScore;
+    float score = scoreScale * weightedScore + scoreOffset;
+    if (score < 0.0f)
+        score = 0.0f;
+    else if (score > 100.0f)
+        score = 100.0f;
+    return score;
 }
 
-static int ScoreToRank(float finalScore) {
-    if (finalScore >= 100.0f) return 9;
-    if (finalScore >= 94.0f) return 8;
-    if (finalScore >= 84.0f) return 7;
-    if (finalScore >= 72.0f) return 6;
-    if (finalScore >= 60.0f) return 5;
-    if (finalScore >= 48.0f) return 4;
-    if (finalScore >= 36.0f) return 3;
-    if (finalScore >= 24.0f) return 2;
+static int ScoreToRank(float score) {
+    if (score >= 100.0f) return 9;
+    if (score >= 94.0f) return 8;
+    if (score >= 84.0f) return 7;
+    if (score >= 72.0f) return 6;
+    if (score >= 60.0f) return 5;
+    if (score >= 48.0f) return 4;
+    if (score >= 36.0f) return 3;
+    if (score >= 24.0f) return 2;
     return 1;
 }
 
@@ -183,11 +187,6 @@ struct RankText {
     const wchar_t *noLicenseLoaded;
     const wchar_t *detailsFormat;
 };
-
-static Language GetCurrentLanguage() {
-    return static_cast<Language>(
-        Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
-}
 
 static const RankText &GetRankText() {
     static const RankText english = {
@@ -322,7 +321,7 @@ static const RankText &GetRankText() {
         L"Vzd\u00E1lenost na 1. m\u00EDst\u011B: %.1f km / 10000 km\n"
         L"Sk\u00F3re: %.2f bod\u016F (pot\u0159eba %.2f pro hodnost %ls)\n"};
 
-    switch (GetCurrentLanguage()) {
+    switch (static_cast<Language>(Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE))) {
         case LANGUAGE_JAPANESE:
             return japanese;
         case LANGUAGE_FRENCH:
@@ -381,30 +380,26 @@ int GetCurrentLicenseRankVS() {
     const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
     const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
-    const u32 MIN_VS_MATCHES = 100;
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
     const u32 totalVs = vsWins + vsLosses;
     if (totalVs < MIN_VS_MATCHES) {
         return 0;
     }
-    float score = ComputeVsScoreFromLicense(license);
-    return ScoreToRank(score);
+    return ScoreToRank(ComputeVsScoreFromLicense(license));
 }
 
 int GetCurrentLicenseScore() {
     const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
     const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
-    const u32 MIN_VS_MATCHES = 100;
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
     const u32 totalVs = vsWins + vsLosses;
     if (totalVs < MIN_VS_MATCHES) {
         return 0;
     }
-    float score = ComputeVsScoreFromLicense(license);
-    return static_cast<int>(score);
+    return static_cast<int>(ComputeVsScoreFromLicense(license));
 }
 
 int FormatRankMessage(wchar_t *dst, size_t dstLen) {
@@ -431,30 +426,28 @@ int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
     const u32 totalVs = vsWins + vsLosses;
-    const u32 MIN_VS_MATCHES = 100;
-
-    float winPct = (totalVs > 0) ? (100.0f * (float)vsWins / (float)totalVs) : 45.0f;
+    const float winPct = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
 
     float vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
     if (vr < 0.0f) vr = 0.0f;
-    u32 vrClamped = static_cast<u32>(vr * 100.0f + 0.5f);
+    const u32 vrClamped = static_cast<u32>(vr * 100.0f + 0.5f);
 
-    u32 times1st = license.GetTimes1stPlaceAchieved();
-    float distTravelled = license.GetDistanceTravelled();
-    float distInFirst = license.GetDistancetravelledwhilein1stplace();
+    const u32 times1st = license.GetTimes1stPlaceAchieved();
+    const float distTravelled = license.GetDistanceTravelled();
+    const float distInFirst = license.GetDistancetravelledwhilein1stplace();
 
-    int rank = GetCurrentLicenseRankVS();
+    int rank = 0;
     float score = 0.0f;
     if (totalVs >= MIN_VS_MATCHES) {
         score = ComputeVsScoreFromLicense(license);
+        rank = ScoreToRank(score);
     }
 
-    if (rank < 0) rank = 0;
     static const float kRankThresholds[] = {12.0f, 24.0f, 36.0f, 48.0f, 60.0f, 72.0f, 84.0f, 94.0f, 100.0f};
-    float nextThreshold = (rank >= 9) ? 100.0f : kRankThresholds[rank];
-    float scoreNeededForNextRank = (rank >= 9) ? 0.0f : (nextThreshold - score);
+    const float nextThreshold = rank >= 9 ? 100.0f : kRankThresholds[rank];
+    float scoreNeededForNextRank = rank >= 9 ? 0.0f : nextThreshold - score;
     if (scoreNeededForNextRank < 0.0f) scoreNeededForNextRank = 0.0f;
-    int nextRank = (rank >= 9) ? 9 : (rank + 1);
+    const int nextRank = rank >= 9 ? 9 : rank + 1;
     const wchar_t *nextRankLabel = RankToLabel(nextRank);
 
     return ::swprintf(
@@ -536,15 +529,14 @@ static void OnBadgeResponse(s32 result, void *response, void *userdata) {
     s_badgeRequestActive = false;
 }
 
-static bool StartBadgeRequest(u32 pid) {
-    if (pid == 0) return false;
-    if (s_badgeRequestActive) return false;
+static void StartBadgeRequest(u32 pid) {
+    if (pid == 0 || s_badgeRequestActive) return;
 
-    if (!Network::PrepareNHTTPRequest()) return false;
+    if (!Network::PrepareNHTTPRequest()) return;
 
     if (s_badgeRequestWorkBuf == nullptr) {
         s_badgeRequestWorkBuf = Network::NHTTPAlloc(BADGE_REQUEST_WORK_BUF_SIZE, 0x20);
-        if (s_badgeRequestWorkBuf == nullptr) return false;
+        if (s_badgeRequestWorkBuf == nullptr) return;
     }
     memset(s_badgeRequestWorkBuf, 0, BADGE_REQUEST_WORK_BUF_SIZE);
 
@@ -554,14 +546,13 @@ static bool StartBadgeRequest(u32 pid) {
     void *request = NHTTPCreateRequest(BADGE_URL, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
                                        reinterpret_cast<void *>(&OnBadgeResponse),
                                        reinterpret_cast<void *>(&s_badgeRequestCtx));
-    if (request == nullptr) return false;
+    if (request == nullptr) return;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet >= 0) {
         Network::MarkNHTTPRequestActive();
         s_badgeRequestActive = true;
     }
-    return sendRet >= 0;
 }
 
 static void StartBadgeRefresh(u32 pid) {
@@ -577,7 +568,7 @@ static void StartBadgeRefresh(u32 pid) {
     ++s_badgeRequestGeneration;
     s_badgePid = pid;
     s_badgeMask = 0;
-    if (!StartBadgeRequest(s_badgePid)) s_badgeMask = 0;
+    StartBadgeRequest(s_badgePid);
 }
 
 static void BeginBadgeDownloads() {
@@ -600,6 +591,7 @@ static void ProcessPendingBadgeRequests() {
         StartBadgeRefresh(s_pendingBadgePid);
     }
 }
+
 static FrameLoadHook BadgeRequestFrameHook(ProcessPendingBadgeRequests);
 
 asmFunc AsmHook_WFCMainOnActivateBadgeRefresh() {
@@ -631,7 +623,7 @@ static u8 GetOnlineRankingIcon(u8, u8) {
     }
 
 #ifdef BETA
-    return 17;  // Beta tester badge
+    return 17;
 #endif
 
     const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
@@ -640,7 +632,6 @@ static u8 GetOnlineRankingIcon(u8, u8) {
     int rank = GetCurrentLicenseRankVS();
     if (rank < 0) rank = 0;
     const RKSYS::LicenseMgr &license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
-    const u32 MIN_VS_MATCHES = 100;
     const u32 totalVs = license.GetWFCVSWins() + license.GetWFCVSLosses();
     if (totalVs <= MIN_VS_MATCHES) {
         rank = 0;
