@@ -142,7 +142,7 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
     for (u32 i = 0; i < 2; ++i) {
         const bool invalidCharacter = src->playersData[i].character != 0xFF && src->playersData[i].character > ROSALINA_BIKER;
         const bool invalidKart = src->playersData[i].kart != 0xFF && src->playersData[i].kart > PHANTOM;
-        if (invalidCharacter || invalidKart) {
+        if ((invalidCharacter || invalidKart) && src->pulVote != NO_TRACK_SELECTED) {
             src->playersData[i].character = MARIO;
             src->playersData[i].kart = STANDARD_KART_M;
         }
