@@ -52,7 +52,6 @@ public:
     static void GetTeamColor(ExtendedTeamID team, u8 &r, u8 &g, u8 &b);
     static void GetTeamColorOrder(u8* colors);
     static void SetTeamColorOrder(const u8* colors);
-    static void GetTeamColor(ExtendedTeamID team, u8& r, u8& g, u8& b);
 
 private:
     PtmfHolder_1A<ExtendedTeamSelect, void, u32> onFrontPressHandler;
