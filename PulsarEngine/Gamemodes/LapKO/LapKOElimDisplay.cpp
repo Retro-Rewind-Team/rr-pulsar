@@ -50,7 +50,7 @@ static const wchar_t *CopyNameSafe(const wchar_t *src, size_t srcMax, wchar_t *d
         dst[i] = ch;
     }
     if (i == 0) {
-        if (dstLen > 0) dst[0] = L'\0';
+        dst[0] = L'\0';
         return nullptr;
     }
     dst[i] = L'\0';
@@ -94,9 +94,7 @@ u32 CtrlRaceLapKOElimMessage::Count() {
     if (!lapKoDisplay && !battleDisplay) return 0;
     const Racedata *racedata = Racedata::sInstance;
     const RacedataScenario &scenario = racedata->racesScenario;
-    u32 localCount = scenario.localPlayerCount;
-    if (localCount == 0) localCount = 1;
-    return localCount;
+    return scenario.localPlayerCount == 0 ? 1 : scenario.localPlayerCount;
 }
 
 void CtrlRaceLapKOElimMessage::Create(Page &page, u32 index, u32 count) {
@@ -146,11 +144,6 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
         for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
             playerIds[idx] = ::Pulsar::BattleElim::GetRecentEliminationId(idx);
         }
-    } else {
-        this->Show(false);
-        this->lastDisplayTimer = 0;
-        this->soundPlayedThisDisplay = false;
-        return;
     }
 
     if (timer == 0 || eliminationCount == 0) {
@@ -175,43 +168,30 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
 
 void CtrlRaceLapKOElimMessage::UpdateMessage(const u8 *playerIds, u8 count) {
     if (this->textBox == nullptr || playerIds == nullptr) return;
-    wchar_t buffer[128];
-    buffer[0] = L'\0';
-    const size_t bufferLen = sizeof(buffer) / sizeof(buffer[0]);
-    int written = 0;
-    wchar_t nameScratch[64];
-    const u8 limitedCount = (count > 4) ? static_cast<u8>(4) : count;
-    u8 addedNames = 0;
-    for (u8 idx = 0; idx < limitedCount; ++idx) {
+    wchar_t message[128];
+    message[0] = L'\0';
+    const size_t messageCapacity = sizeof(message) / sizeof(message[0]);
+    size_t messageLength = 0;
+    wchar_t nameBuffer[64];
+    const u8 displayCount = (count > 4) ? static_cast<u8>(4) : count;
+    u8 nameCount = 0;
+    for (u8 idx = 0; idx < displayCount; ++idx) {
         const u8 playerId = playerIds[idx];
-        const wchar_t *displayName = this->GetPlayerDisplayName(playerId, nameScratch, sizeof(nameScratch) / sizeof(nameScratch[0]));
+        const wchar_t *displayName = this->GetPlayerDisplayName(playerId, nameBuffer, sizeof(nameBuffer) / sizeof(nameBuffer[0]));
         if (displayName == nullptr) continue;
-        size_t remaining = (written >= 0) ? bufferLen - static_cast<size_t>(written) : bufferLen;
+        const size_t remaining = messageCapacity - messageLength;
         if (remaining <= 1) break;
-        if (addedNames == 0) {
-            const int res = ::swprintf(buffer + written, remaining, L"\n%ls", displayName);
-            if (res > 0) {
-                written += res;
-                ++addedNames;
-            }
-        } else {
-            const int res = ::swprintf(buffer + written, remaining, L", %ls", displayName);
-            if (res > 0) {
-                written += res;
-                ++addedNames;
-            }
-        }
+        const wchar_t *format = nameCount == 0 ? L"\n%ls" : L", %ls";
+        const int nameLength = ::swprintf(message + messageLength, remaining, format, displayName);
+        if (nameLength <= 0) continue;
+        messageLength += static_cast<size_t>(nameLength);
+        ++nameCount;
     }
-    if (addedNames > 0) {
-        size_t remaining = (written >= 0) ? bufferLen - static_cast<size_t>(written) : bufferLen;
+    if (nameCount > 0) {
+        const size_t remaining = messageCapacity - messageLength;
         if (remaining > 1) {
-            if (addedNames == 1) {
-                const int res = ::swprintf(buffer + written, remaining, L" has been eliminated!");
-                if (res > 0) written += res;
-            } else {
-                const int res = ::swprintf(buffer + written, remaining, L" have been eliminated!");
-                if (res > 0) written += res;
-            }
+            const wchar_t *suffix = nameCount == 1 ? L" has been eliminated!" : L" have been eliminated!";
+            ::swprintf(message + messageLength, remaining, suffix);
         }
     }
     if (!this->soundPlayedThisDisplay) {
@@ -219,7 +199,7 @@ void CtrlRaceLapKOElimMessage::UpdateMessage(const u8 *playerIds, u8 count) {
         this->soundPlayedThisDisplay = true;
     }
     Text::Info info;
-    info.strings[0] = buffer;
+    info.strings[0] = message;
     this->SetMessage(UI::BMG_TEXT, &info);
 }
 

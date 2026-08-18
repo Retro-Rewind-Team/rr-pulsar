@@ -51,7 +51,6 @@ public:
     u8 GetUsualTrackLapCount() const;
     u8 GetBaseEliminationCountForCurrentRound(u8 usualLapCount) const;
     u8 GetRemainingEliminationsForCurrentRound(u8 usualLapCount) const;
-    void ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance);
     void TryResolveRound();
     void ProcessElimination(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance = false);
     bool EnterSpectateIfLocal(u8 playerId);
@@ -81,7 +80,7 @@ public:
     u8 BuildActiveSpectateOrder(const Raceinfo &raceinfo, u8 *outOrder) const;
     u8 FindNextActiveSpectatePlayer(const Raceinfo &raceinfo, u8 current, bool forward) const;
     u8 GetLeaderPlayerId(const Raceinfo &raceinfo) const;
-    bool FocusCameraOnPlayer(u8 playerId) const;
+    void FocusCameraOnPlayer(u8 playerId) const;
 
     u8 koPerRaceSetting;
     u8 eliminationPlan[MaxRounds];

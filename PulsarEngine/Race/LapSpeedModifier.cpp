@@ -18,10 +18,7 @@ namespace Pulsar {
 namespace Race {
 // Mostly a port of MrBean's version with better hooks and arguments documentation
 bool IsLapKOEnabled(const System *system) {
-    if (system == nullptr) return false;
-    if (system->IsContext(PULSAR_MODE_LAPKO)) return true;
-    if (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_FROOM_HOST && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) return false;
-    return false;
+    return system != nullptr && system->IsContext(PULSAR_MODE_LAPKO);
 }
 
 u8 GetLapKOTargetCount(const System *system, const Racedata *racedata, u8 fallback) {
@@ -56,7 +53,6 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
 
     const bool lapKoActive = IsLapKOEnabled(system);
     if (lapKoActive) {
-        // Base KO lap count (existing behaviour)
         const u8 basePlayers = GetLapKOTargetCount(system, racedata, 1);
         const RKNet::Controller *controller = RKNet::Controller::sInstance;
         const bool offlineLapKO = (controller->roomType == RKNet::ROOMTYPE_NONE);
@@ -71,10 +67,7 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
             system->lapKoMgr->SetKoPerRace(koPerRace);
         }
 
-        const u8 usualTrackLaps = KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->lapCount;
-
-        // BuildPlan handles 1-lap tracks and 2-lap pacing adjustments internally
-        const u8 totalRounds = LapKO::Mgr::BuildPlan(basePlayers, koPerRace, usualTrackLaps, nullptr, LapKO::Mgr::MaxRounds);
+        const u8 totalRounds = LapKO::Mgr::BuildPlan(basePlayers, koPerRace, lapCount, nullptr, LapKO::Mgr::MaxRounds);
         lapCount = (totalRounds == 0) ? 1 : totalRounds;
     } else if (system != nullptr && system->IsContext(PULSAR_MODE_BATTLEROYALE)) {
         lapCount = GetBattleRoyaleLapCount(lapCount, system);

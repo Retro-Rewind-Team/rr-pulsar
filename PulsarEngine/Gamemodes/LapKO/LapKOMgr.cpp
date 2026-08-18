@@ -18,9 +18,9 @@
 namespace Pulsar {
 namespace LapKO {
 
-static const u16 pendingBroadcastFrames = 120;
-static const u16 eliminationDisplayDuration = 180;
-static const u8 lapKoNoRoundAdvanceFlag = 0x80;
+static const u16 kPendingBroadcastFrames = 120;
+static const u16 kEliminationDisplayDuration = 180;
+static const u8 kLapKoNoRoundAdvanceFlag = 0x80;
 
 static bool IsBattleMode(GameMode mode) {
     return mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE;
@@ -63,12 +63,12 @@ static bool FinishOfflineWhenLocalPlayersResolved(Mgr &mgr) {
 
 Mgr::Mgr()
     : koPerRaceSetting(1),
+      totalRounds(0),
       orderCursor(0),
       activeCount(0),
       playerCount(0),
       roundIndex(1),
       roundDisconnectDebits(0),
-      totalRounds(0),
       eventSequence(0),
       appliedSequence(0),
       pendingSequence(0),
@@ -124,7 +124,7 @@ u8 Mgr::BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8 *outPlan, u
     if (playerCount < 2) return 0;
 
     if (usualLapCount <= 1) {
-        if (outPlan != nullptr && capacity > 0) {
+        if (outPlan != nullptr) {
             outPlan[0] = (playerCount > 1) ? static_cast<u8>(playerCount - 1) : 0;
         }
         return 1;
@@ -257,15 +257,11 @@ void Mgr::TryResolveRound() {
     const u8 concludedRound = this->roundIndex;
     for (u8 i = 0; i < elimCount; ++i) {
         const bool lastOne = (i == elimCount - 1);
-        this->ProcessEliminationInternal(eliminatedList[i], ELIMINATION_CAUSE_ROUND, false, !lastOne);
+        this->ProcessElimination(eliminatedList[i], ELIMINATION_CAUSE_ROUND, false, !lastOne);
     }
     if (this->IsFriendRoomOnline() && this->isHost) {
         this->BroadcastBatch(eliminatedList, elimCount, concludedRound);
     }
-}
-
-void Mgr::ProcessElimination(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance) {
-    this->ProcessEliminationInternal(playerId, cause, fromNetwork, suppressRoundAdvance);
 }
 
 u8 Mgr::GetBaseEliminationCountForCurrentRound(u8 usualLapCount) const {
@@ -285,7 +281,7 @@ u8 Mgr::GetBaseEliminationCountForCurrentRound(u8 usualLapCount) const {
 }
 
 u8 Mgr::GetRemainingEliminationsForCurrentRound(u8 usualLapCount) const {
-    u8 base = this->GetBaseEliminationCountForCurrentRound(usualLapCount);
+    const u8 base = this->GetBaseEliminationCountForCurrentRound(usualLapCount);
     if (base == 0) return 0;
 
     if (usualLapCount <= 1) {
@@ -301,7 +297,7 @@ u8 Mgr::GetRemainingEliminationsForCurrentRound(u8 usualLapCount) const {
     return remaining;
 }
 
-void Mgr::ProcessEliminationInternal(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance) {
+void Mgr::ProcessElimination(u8 playerId, EliminationCause cause, bool fromNetwork, bool suppressRoundAdvance) {
     if (playerId >= 12) return;
 
     const u8 concludedRound = this->roundIndex;
@@ -415,7 +411,7 @@ void Mgr::FinishOfflineAtCurrentStandings() {
 
 void Mgr::BroadcastEvent(u8 playerId, u8 concludedRound) {
     this->pendingSequence = this->AdvanceSequence();
-    const u8 encodedId = static_cast<u8>((playerId & 0x7F) | (this->pendingNoRoundAdvance ? lapKoNoRoundAdvanceFlag : 0));
+    const u8 encodedId = static_cast<u8>((playerId & 0x7F) | (this->pendingNoRoundAdvance ? kLapKoNoRoundAdvanceFlag : 0));
     this->pendingElimination = encodedId;
     this->pendingBatchCount = 0;
     this->PreparePendingEvent(concludedRound, this->activeCount);
@@ -449,7 +445,7 @@ void Mgr::ClearPendingEvent() {
 
 void Mgr::ApplyRemoteEvent(u8 seq, u8 eliminatedId, u8 roundIdx, u8 activeCnt) {
     if (seq == 0) return;
-    const bool noRoundAdvance = (eliminatedId & lapKoNoRoundAdvanceFlag) != 0;
+    const bool noRoundAdvance = (eliminatedId & kLapKoNoRoundAdvanceFlag) != 0;
     const u8 playerId = static_cast<u8>(eliminatedId & 0x7F);
     if (playerId >= 12) return;
     if (seq == this->appliedSequence) return;
@@ -475,7 +471,7 @@ void Mgr::ApplyRemoteBatch(u8 seq, u8 roundIdx, u8 activeCnt, const u8 *elimIds,
         const u8 elimId = static_cast<u8>(elimIds[i] & 0x7F);
         if (elimId >= 12) continue;
         const bool suppress = noRoundAdvance ? true : !lastOne;
-        this->ProcessEliminationInternal(elimId, cause, true, suppress);
+        this->ProcessElimination(elimId, cause, true, suppress);
     }
     this->activeCount = activeCnt;
 }
@@ -572,7 +568,7 @@ u8 Mgr::GetUsualTrackLapCount() const {
         KMP::Manager::sInstance->stgiSection->holdersArray[0] != nullptr &&
         KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw != nullptr) {
         usual = KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->lapCount;
-        if (usual == 0) usual = 3;  // safety
+        if (usual == 0) usual = 3;  // KMP data can report zero before track info is loaded.
     }
     return usual;
 }
@@ -588,7 +584,7 @@ void Mgr::RecordEliminationForDisplay(u8 playerId, u8 concludedRound) {
         this->recentEliminations[this->recentEliminationCount++] = playerId;
     }
 
-    this->eliminationDisplayTimer = eliminationDisplayDuration;
+    this->eliminationDisplayTimer = kEliminationDisplayDuration;
 }
 
 void Mgr::ResetEliminationDisplay() {
@@ -769,7 +765,7 @@ void Mgr::HostDistributeEvents(RKNet::Controller &controller, const RKNet::Contr
             packet->lapKoSeq = this->pendingSequence;
             packet->lapKoRoundIndex = this->pendingRound;
             packet->lapKoActiveCount = this->pendingActiveCount;
-            const u8 countFlag = this->pendingNoRoundAdvance ? lapKoNoRoundAdvanceFlag : 0;
+            const u8 countFlag = this->pendingNoRoundAdvance ? kLapKoNoRoundAdvanceFlag : 0;
             if (this->pendingBatchCount > 0) {
                 const u8 count = this->pendingBatchCount;
                 packet->lapKoElimCount = static_cast<u8>((count & 0x7F) | countFlag);
@@ -810,7 +806,7 @@ void Mgr::ClientConsumeHostEvents(RKNet::Controller &controller, const RKNet::Co
         const u8 rawCount = packet->lapKoElimCount;
         const u8 elimCount = static_cast<u8>(rawCount & 0x7F);
         if (elimCount > 0 && elimCount <= 12) {
-            const bool noRoundAdvance = (rawCount & lapKoNoRoundAdvanceFlag) != 0;
+            const bool noRoundAdvance = (rawCount & kLapKoNoRoundAdvanceFlag) != 0;
             this->ApplyRemoteBatch(packet->lapKoSeq, packet->lapKoRoundIndex, packet->lapKoActiveCount, packet->lapKoElims, elimCount, noRoundAdvance);
         }
     }
@@ -875,7 +871,7 @@ u8 Mgr::AdvanceSequence() {
 void Mgr::PreparePendingEvent(u8 concludedRound, u8 activeCount) {
     this->pendingRound = concludedRound;
     this->pendingActiveCount = activeCount;
-    this->pendingTimer = pendingBroadcastFrames;
+    this->pendingTimer = kPendingBroadcastFrames;
     this->hasPendingEvent = true;
 }
 
@@ -896,17 +892,7 @@ void Mgr::InitializeSpectateView(const Raceinfo &raceinfo) {
 
 void Mgr::EnsureSpectateTargetIsActive(const Raceinfo &raceinfo) {
     const u8 current = this->spectateTargetPlayer;
-    const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
-    const GameMode mode = scenario.settings.gamemode;
     if (current < 12 && this->active[current]) return;
-    if (IsBattleMode(mode)) {
-        if (current < 12) {
-            RaceinfoPlayer *rifPlayerCur = nullptr;
-            if (raceinfo.players != nullptr) rifPlayerCur = raceinfo.players[current];
-            const bool isBattleEliminated = (rifPlayerCur != nullptr && rifPlayerCur->battleScore == 0);
-            if (this->active[current] && !isBattleEliminated) return;
-        }
-    }
 
     const u8 fallback = this->FindNextActiveSpectatePlayer(raceinfo, current, true);
     this->spectateTargetPlayer = fallback;
@@ -1014,8 +1000,8 @@ u8 Mgr::GetLeaderPlayerId(const Raceinfo &raceinfo) const {
     return 0xFF;
 }
 
-bool Mgr::FocusCameraOnPlayer(u8 playerId) const {
-    if (playerId >= 12) return false;
+void Mgr::FocusCameraOnPlayer(u8 playerId) const {
+    if (playerId >= 12) return;
     RaceCameraMgr *camMgr = RaceCameraMgr::sInstance;
 
     u8 targetCamIdx = 0xFF;
@@ -1030,7 +1016,7 @@ bool Mgr::FocusCameraOnPlayer(u8 playerId) const {
     if (targetCamIdx != 0xFF) {
         DriverMgr::ChangeFocusedPlayer(targetCamIdx);
         RaceCameraMgr::ChangeFocusedPlayer(targetCamIdx);
-        return true;
+        return;
     }
 
     const u32 currentIdx = (camMgr->focusedPlayerIdx < camMgr->cameraCount) ? camMgr->focusedPlayerIdx : 0;
@@ -1039,7 +1025,6 @@ bool Mgr::FocusCameraOnPlayer(u8 playerId) const {
         currentCam->playerId = playerId;
     }
     DriverMgr::ChangeFocusedPlayer(static_cast<u8>(currentIdx));
-    return true;
 }
 
 }  // namespace LapKO
