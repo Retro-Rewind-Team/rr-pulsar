@@ -1,3 +1,4 @@
+#include <PulsarSystem.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Network/PacketExpansion.hpp>
@@ -5,7 +6,6 @@
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <RetroRewindChannel.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
-#include <PulsarSystem.hpp>
 
 namespace Pulsar {
 namespace UI {
