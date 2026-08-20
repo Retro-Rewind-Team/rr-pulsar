@@ -238,8 +238,12 @@ float GetMultiplier() {
     float multiplier = base + GetBattleBonus();
     if (s_remoteMultiplierValid) multiplier *= s_remoteMultiplier;
 #ifdef BETA
-    return multiplier * 1.25f;
+    multiplier *= 1.25f;
 #endif
+
+    // Clamp the multiplier to a reasonable range to prevent stacked multipliers causing unintentional flags
+    if (multiplier < 1.0f) multiplier = 1.0f;
+    if (multiplier > 2.5f) multiplier = 2.5f;
 
     return multiplier;
 }
