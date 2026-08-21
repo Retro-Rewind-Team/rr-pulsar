@@ -165,13 +165,7 @@ bool IsWeekendMultiplierActive() {
     ServerDateTime *sdt = ServerDateTime::sInstance;
     if (sdt == nullptr || !sdt->isValid) return false;
     sdt->Update();
-
-    u8 dow = ServerDateTime::GetDayOfWeek(sdt->year, sdt->month, sdt->day);
-    bool isWeekend = (dow == 0 || dow == 6);  // Sunday or Saturday
-    if (!isWeekend) return false;
-
-    u32 weekNum = sdt->GetWeekNumber();
-    return (weekNum % 2) == 1;  // Even weeks get the multiplier
+    return sdt->IsVRMultiplierWeekend();
 }
 
 bool IsWeekendMultiplierActiveForRegion(u8 region) {

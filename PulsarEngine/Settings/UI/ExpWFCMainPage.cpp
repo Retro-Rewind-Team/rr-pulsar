@@ -518,6 +518,8 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     ApplyVRMultiplierHighlight(this->twoHundredButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0C));
     ApplyVRMultiplierHighlight(this->ottButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0B));
     ApplyVRMultiplierHighlight(this->itemRainButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0D) || PointRating::IsItemRainEventActive());
+    ApplyVRMultiplierHighlight(this->ctButton, PointRating::IsWeekendMultiplierActiveForRegion(0x14));
+    ApplyVRMultiplierHighlight(this->regButton, PointRating::IsWeekendMultiplierActiveForRegion(0x15));
 }
 
 }  // namespace UI

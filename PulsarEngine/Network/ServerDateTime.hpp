@@ -108,13 +108,12 @@ struct ServerDateTime {
 
     bool IsVRMultiplierWeekend() const {
         if (!IsWeekend()) return false;
-        u32 weekNum = GetWeekNumber();
-        return (weekNum % 2) == 1;  // Odd weeks get the multiplier
+        return (GetWeekNumber() % 2) == 1;
     }
 
     static u8 GetVRMultiplierRegion(u32 weekNum) {
-        static const u8 regions[] = {0x0C, 0x0B, 0x0D};  // vs_12, vs_11, vs_13
-        u32 cycleIndex = (weekNum / 2) % 3;  // Every 2 weeks, cycle to next region
+        static const u8 regions[] = {0x0C, 0x0B, 0x0D, 0x14, 0x15};  // 200cc, OTT, Item Rain, CT, RT
+        u32 cycleIndex = (weekNum / 2) % 5;
         return regions[cycleIndex];
     }
 
