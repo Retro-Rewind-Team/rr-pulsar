@@ -2560,6 +2560,7 @@ LoadKartArchiveAsync__10ArchiveMgrFUc = 0x80541e44
 sInstance__6ScnMgr = 0x809c1850
 MenuUpdate__10SectionMgrFv = 0x8063583c
 StartSound__Q25Audio13RaceAnimActorFUi = 0x80701140
+HoldSoundLimited__Q25Audio9RaceActorFUi = 0x807014e8
 StartSound__Q25Audio9RaceActorFUiPCQ44nw4r3snd14SoundStartable9StartInfo = 0x807011c8
 __ct__9CharaNameFv = 0x8083d840
 __ct__20MenuModelBRRESHandleFv = 0x8081e284
