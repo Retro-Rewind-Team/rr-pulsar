@@ -2189,6 +2189,7 @@ LoadObjProperties__4ItemFv = 0x80790ad8
 #Player
 Update__19ItemHolderPlayerSubFv = 0x80795668
 Update__Q24Item6PlayerFv = 0x80797928
+DecideItem__Q24Item6PlayerFUsUsUi = 0x80798c38
 ActivateMegaMushroom__Q24Item6PlayerFv = 0x807986b4
 UseBlooper__Q24Item6PlayerFv = 0x807a81b4
 UseMegaMushroom__Q24Item6PlayerFv = 0x807a9e50
