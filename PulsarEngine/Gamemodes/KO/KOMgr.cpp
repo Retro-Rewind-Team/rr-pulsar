@@ -135,6 +135,11 @@ u8 Mgr::GetRoundKoCount(u8 playerCount) const {
         }
     }
 
+    // A round must never take out every remaining player, or the match ends with no winner.
+    if (koCount >= playerCount) {
+        koCount = static_cast<u8>(playerCount - 1);
+    }
+
     return koCount;
 }
 
