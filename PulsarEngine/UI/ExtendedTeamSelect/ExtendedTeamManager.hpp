@@ -11,6 +11,7 @@ namespace Pulsar {
 namespace Mogi {
 bool IsActive();
 bool IsTeamFormat();
+u8 GetTeamForPlayer(u8 playerIdx);
 }
 
 namespace UI {
@@ -75,6 +76,10 @@ public:
     }
 
     ExtendedTeamID GetPlayerTeam(u32 idx) {
+        if (Mogi::IsActive() && Mogi::IsTeamFormat() && idx < 12) {
+            return static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(static_cast<u8>(idx)));
+        }
+
         for (int i = 0; i < 12; i++) {
             if (this->players[i].playerIdx == idx) {
                 return this->players[i].team;
@@ -84,6 +89,19 @@ public:
     }
 
     ExtendedTeamID GetPlayerTeamByAID(u8 aid, u8 playerIdOnConsole) {
+        if (Mogi::IsActive() && Mogi::IsTeamFormat()) {
+            RKNet::Controller *controller = RKNet::Controller::sInstance;
+            if (controller != nullptr) {
+                u8 playerOnAid = 0;
+                for (u8 playerIdx = 0; playerIdx < 12; ++playerIdx) {
+                    if (controller->aidsBelongingToPlayerIds[playerIdx] != aid) continue;
+                    if (playerOnAid == playerIdOnConsole)
+                        return static_cast<ExtendedTeamID>(Mogi::GetTeamForPlayer(playerIdx));
+                    ++playerOnAid;
+                }
+            }
+        }
+
         for (int i = 0; i < 12; i++) {
             if (this->players[i].aid == aid && this->players[i].playerIdOnConsole == playerIdOnConsole) {
                 return this->players[i].team;

@@ -539,6 +539,7 @@ void CupsConfig::ToggleCTs(bool enabled) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
+    const u8 region = System::sInstance->netMgr.region;
     if ((controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) && !isBattle) {
         if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = true;
     }
@@ -546,9 +547,10 @@ void CupsConfig::ToggleCTs(bool enabled) {
         isRegsOnly = true;
     }
     if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) &&
-        (System::sInstance->IsVanillaMode() || System::sInstance->netMgr.region == Mogi::REGION_REG)) {
+        (System::sInstance->IsVanillaMode() || region == Mogi::REGION_REG)) {
         isRegsOnly = true;
     }
+    if (Mogi::IsActive() && region == Mogi::REGION_REG) isRegsOnly = true;
     if (isRegsOnly) {
         if (lastSelectedCup > 7) {
             hasRegs = true;
@@ -603,6 +605,7 @@ PulsarId CupsConfig::RandomizeTrack() const {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
+    const u8 region = System::sInstance->netMgr.region;
     Random random;
     u32 pulsarId;
     TrackSelection retroSelection = TRACKSELECTION_ALL;
@@ -614,9 +617,14 @@ PulsarId CupsConfig::RandomizeTrack() const {
         if (System::sInstance->IsContext(PULSAR_REGS)) regsSelection = TRACKSELECTION_REGS;
     }
     if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
-        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D || System::sInstance->netMgr.region == Mogi::REGION) retroSelection = TRACKSELECTION_RETROS;
-        if (System::sInstance->netMgr.region == 0x14 || System::sInstance->netMgr.region == Mogi::REGION_CT) ctSelection = TRACKSELECTION_CTS;
-        if (System::sInstance->netMgr.region == Mogi::REGION_REG) regsSelection = TRACKSELECTION_REGS;
+        if (region == 0x0A || region == 0x0C || region == 0x0D || region == Mogi::REGION) retroSelection = TRACKSELECTION_RETROS;
+        if (region == 0x14 || region == Mogi::REGION_CT) ctSelection = TRACKSELECTION_CTS;
+        if (region == Mogi::REGION_REG) regsSelection = TRACKSELECTION_REGS;
+    }
+    if (Mogi::IsActive()) {
+        if (region == Mogi::REGION) retroSelection = TRACKSELECTION_RETROS;
+        if (region == Mogi::REGION_CT) ctSelection = TRACKSELECTION_CTS;
+        if (region == Mogi::REGION_REG) regsSelection = TRACKSELECTION_REGS;
     }
     if (retroSelection == TRACKSELECTION_RETROS && regsSelection != TRACKSELECTION_REGS && !isBattle)
         pulsarId = random.NextLimited(this->GetRetroTrackCount()) + 0x100;
@@ -642,6 +650,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
+    const u8 region = System::sInstance->netMgr.region;
     TrackSelection retroSelection = TRACKSELECTION_ALL;
     TrackSelection ctSelection = TRACKSELECTION_ALL;
     TrackSelection regsSelection = TRACKSELECTION_ALL;
@@ -656,9 +665,14 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         if (System::sInstance->IsContext(PULSAR_REGS)) regsSelection = TRACKSELECTION_REGS;
     }
     if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
-        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D || System::sInstance->netMgr.region == Mogi::REGION) retroSelection = TRACKSELECTION_RETROS;
-        if (System::sInstance->netMgr.region == 0x14 || System::sInstance->netMgr.region == Mogi::REGION_CT) ctSelection = TRACKSELECTION_CTS;
-        if (System::sInstance->netMgr.region == Mogi::REGION_REG) regsSelection = TRACKSELECTION_REGS;
+        if (region == 0x0A || region == 0x0B || region == 0x0C || region == 0x0D || region == Mogi::REGION) retroSelection = TRACKSELECTION_RETROS;
+        if (region == 0x14 || region == Mogi::REGION_CT) ctSelection = TRACKSELECTION_CTS;
+        if (region == Mogi::REGION_REG) regsSelection = TRACKSELECTION_REGS;
+    }
+    if (Mogi::IsActive()) {
+        if (region == Mogi::REGION) retroSelection = TRACKSELECTION_RETROS;
+        if (region == Mogi::REGION_CT) ctSelection = TRACKSELECTION_CTS;
+        if (region == Mogi::REGION_REG) regsSelection = TRACKSELECTION_REGS;
     }
     if (retroSelection == TRACKSELECTION_RETROS && regsSelection != TRACKSELECTION_REGS && !isBattle) {
         const u32 countRetro = this->retroCupCount;

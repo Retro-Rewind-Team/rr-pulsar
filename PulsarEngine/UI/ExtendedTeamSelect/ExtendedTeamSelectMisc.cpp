@@ -25,6 +25,11 @@ static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 void Racedata_InitRace(Racedata *racedata) {
     racedata->InitRace();
 
+    if (Mogi::IsTeamFormat()) {
+        Mogi::ApplyTeamAssignments(racedata->menusScenario);
+        Mogi::ApplyTeamAssignments(racedata->racesScenario);
+    }
+
     const RacedataSettings &settings = racedata->menusScenario.settings;
     if (settings.gamemode == MODE_VS_RACE && (settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
@@ -77,7 +82,9 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting *_this) {
         }
     }
     PageId nextPageId = PAGE_CHARACTER_SELECT;
-    if (System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && (friendRoomManager->startedGameMode == 0 || friendRoomManager->startedGameMode == 2 || friendRoomManager->startedGameMode == 3)) {
+    const bool isMogiTeam = Mogi::IsActive() && Mogi::IsTeamFormat();
+    if ((System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) || isMogiTeam) &&
+        (friendRoomManager->startedGameMode == 0 || friendRoomManager->startedGameMode == 2 || friendRoomManager->startedGameMode == 3)) {
         _this->countdown.SetInitial(86400.0f);
         nextPageId = static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT);
     }
@@ -109,7 +116,8 @@ void SetBroadcastROOMPacket(RKNet::ROOMHandler *_this, u32 pkt) {
 
     UI::ExtendedTeamSelect *extendedTeamSelect = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
     Pages::FriendRoomManager *friendRoomBackPage = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
-    if (System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && messageType == 1 && message == 1) {
+    if ((System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) || (Mogi::IsActive() && Mogi::IsTeamFormat())) &&
+        messageType == 1 && message == 1) {
         message = 0;
     }
 
@@ -167,6 +175,10 @@ kmCall(0x80643b3c, PageVote_FillVoteControl);
 
 void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr *_this) {
     _this->PrepareRace();
+    if (Mogi::IsTeamFormat()) {
+        Mogi::ApplyTeamAssignments(Racedata::sInstance->menusScenario);
+        Mogi::ApplyTeamAssignments(Racedata::sInstance->racesScenario);
+    }
     if (ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->VotePageSync();
     }

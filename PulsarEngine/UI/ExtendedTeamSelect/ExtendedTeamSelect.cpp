@@ -67,10 +67,13 @@ void ExtendedTeamSelect::BeforeEntranceAnimations() {
 
     Pages::FriendRoomManager *friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     this->isHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
                    (Mogi::IsActive() && sub.localAid == sub.hostAid);
+    if (Mogi::IsActive() && Mogi::IsTeamFormat() && !this->manager->hasFriendRoomStarted) {
+        this->manager->ConfigureMogiTeams();
+    }
     this->instructionText.SetMessage(this->isHost ? BMG_TEAM_SELECT : BMG_EXTENDEDTEAMS_NONHOST_TITLE);
 
     this->backButton.isHidden = this->manager->hasFriendRoomStarted;
@@ -445,17 +448,17 @@ void ExtendedTeamSelect::RandomizeTeamColors(u32 seed) {
     }
 }
 
-void ExtendedTeamSelect::GetTeamColorOrder(u8* colors) {
+void ExtendedTeamSelect::GetTeamColorOrder(u8 *colors) {
     for (u32 i = 0; i < TEAM_COUNT; ++i) colors[i] = static_cast<u8>(teamColors[i]);
 }
 
-void ExtendedTeamSelect::SetTeamColorOrder(const u8* colors) {
+void ExtendedTeamSelect::SetTeamColorOrder(const u8 *colors) {
     for (u32 i = 0; i < TEAM_COUNT; ++i) {
         teamColors[i] = colors[i] < TEAM_COUNT ? static_cast<ExtendedTeamID>(colors[i]) : static_cast<ExtendedTeamID>(i);
     }
 }
 
-void ExtendedTeamSelect::GetTeamColor(ExtendedTeamID team, u8& r, u8& g, u8& b) {
+void ExtendedTeamSelect::GetTeamColor(ExtendedTeamID team, u8 &r, u8 &g, u8 &b) {
     if (team >= TEAM_COUNT) {
         r = 0;
         g = 0;

@@ -6,6 +6,7 @@
 #include <Settings/Settings.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <Network/Mogi.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
 
 namespace Pulsar {
@@ -180,7 +181,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         u8 itemModeStorm = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_ITEMSTORM;
         u8 allItemsCanLand = settings.GetSettingValue(Pulsar::Settings::SETTING_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
         const u8 vanillaMode = settings.GetSettingValue(Pulsar::Settings::SETTING_VANILLAMODE) == VANILLAMODE_ENABLED;
-        const u8 extendedTeams = settings.GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+        const u8 extendedTeams = settings.GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED ||
+                                  (Mogi::IsActive() && Mogi::IsTeamFormat());
         u8 normalTC = settings.GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
         u8 vr = settings.GetSettingValue(Pulsar::Settings::SETTING_VR) == VR_ENABLED && isNotPublic;
         const u8 isStartRetro = (originalMessage == 4);
@@ -220,6 +222,22 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
             allItemsCanLand = 0;
             itemBoxRespawnFast = 0;
             destPacket->customItemsBitfield = 0x7FFFF;
+        }
+
+        if (Mogi::IsActive()) {
+            if (system->netMgr.region == Mogi::REGION) {
+                regsOnly = 0;
+                retrosOnly = 1;
+                ctsOnly = 0;
+            } else if (system->netMgr.region == Mogi::REGION_CT) {
+                regsOnly = 0;
+                retrosOnly = 0;
+                ctsOnly = 1;
+            } else if (system->netMgr.region == Mogi::REGION_REG) {
+                regsOnly = 1;
+                retrosOnly = 0;
+                ctsOnly = 0;
+            }
         }
 
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT |  // ott

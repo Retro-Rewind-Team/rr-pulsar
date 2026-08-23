@@ -20,6 +20,7 @@
 #include <RetroRewindChannel.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <Network/Mogi.hpp>
 #include <hooks.hpp>
 
 namespace Pulsar {
@@ -470,9 +471,12 @@ void System::UpdateContext() {
 
     // Set contexts based on region for regionals
     const u32 region = this->netMgr.region;
-    if (isRegionalRoom) {
+    const bool isMogiRegionalRoom = Mogi::IsActive() &&
+                                     (region == Mogi::REGION || region == Mogi::REGION_CT || region == Mogi::REGION_REG);
+    if (isRegionalRoom || isMogiRegionalRoom) {
         switch (region) {
             case 0x0A:  // Regular retro tracks
+            case Mogi::REGION:  // Mogi retro tracks
                 this->context |= (1 << PULSAR_RETROS);
                 sInstance->context &= ~(1 << PULSAR_200_WW);
                 sInstance->context &= ~(1 << PULSAR_MODE_OTT);
@@ -512,6 +516,7 @@ void System::UpdateContext() {
                 break;
 
             case 0x14:  // CT (Custom Tracks)
+            case Mogi::REGION_CT:  // Mogi custom tracks
                 this->context |= (1 << PULSAR_CTS);
                 sInstance->context &= ~(1 << PULSAR_200_WW);
                 sInstance->context &= ~(1 << PULSAR_MODE_OTT);
@@ -522,6 +527,7 @@ void System::UpdateContext() {
                 break;
 
             case 0x15:  // RT (Regular Tracks)
+            case Mogi::REGION_REG:  // Mogi regular tracks
                 ApplyVanillaModeRestrictions(this, true);
                 break;
 

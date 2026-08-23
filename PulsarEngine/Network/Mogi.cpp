@@ -448,6 +448,15 @@ u8 GetTeamForPlayer(u8 playerIdx) {
     return sTeamByPlayer[currentPlayerIdx];
 }
 
+void ApplyTeamAssignments(RacedataScenario &scenario) {
+    if (!IsTeamFormat()) return;
+
+    const u8 playerCount = scenario.playerCount < 12 ? scenario.playerCount : 12;
+    for (u8 playerIdx = 0; playerIdx < playerCount; ++playerIdx) {
+        scenario.players[playerIdx].team = static_cast<Team>(GetTeamForPlayer(playerIdx));
+    }
+}
+
 void ApplyHostTeamAssignments(const u8* teams) {
     if (!IsTeamFormat() || teams == nullptr) return;
 
@@ -521,6 +530,9 @@ static void ApplyFormat(u8 format) {
         sTeamByPlayer[swapIdx] = team;
     }
     ResetTeamAssignments();
+    if (sTeamFormat && UI::ExtendedTeamManager::sInstance != nullptr) {
+        UI::ExtendedTeamManager::sInstance->ConfigureMogiTeams();
+    }
     UI::ExtendedTeamSelect::RandomizeTeamColors(sLobbySeed);
     sFormatVoteResolved = true;
     EnsureParticipants();
