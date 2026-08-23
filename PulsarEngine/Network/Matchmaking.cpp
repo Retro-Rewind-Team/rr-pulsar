@@ -172,7 +172,9 @@ void CustomRandomizeServers() {
             (sPreviousRoomGroupId != 0 &&
              SBServerGetIntValueA(server, "dwc_groupid", 0) == (int)sPreviousRoomGroupId) ||
             (!isBattle && hasRoomWithinVRLimit && roomRating > maximumRoomVR) ||
-            (isCompetitiveMatchmakingEnabled && roomPlayerCount < 6)) {
+            // Keep small rooms available when no viable larger room exists so
+            // matchmaking can converge on a newly created lobby.
+            (isCompetitiveMatchmakingEnabled && hasRoomWithinVRLimit && roomPlayerCount < 6)) {
             ServerBrowserRemoveServerA(sb, server);
         }
     }
