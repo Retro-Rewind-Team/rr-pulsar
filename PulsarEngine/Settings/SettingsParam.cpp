@@ -67,21 +67,7 @@ const SettingDef Params::settingDefs[SETTING_COUNT] = {
     {SETTING_LOOSEARCHIVEOVERRIDES, 2},
     {SETTING_LANGUAGE, 13}};
 
-static const SettingId race1Radios[] = {
-    SETTING_BRAKEDRIFT,
-    SETTING_HARDAI,
-    SETTING_INPUTDISPLAY,
-    SETTING_MIIHEADS,
-    SETTING_SPEEDOMETER};
-
-static const SettingId race2Radios[] = {
-    SETTING_BATTLEGLITCH,
-    SETTING_FPS,
-    SETTING_BLOOM,
-    SETTING_FOV,
-    SETTING_NAMETAG};
-
-static const SettingId race1OfflineRadios[] = {
+static const SettingId race1RadioSettings[] = {
     SETTING_BRAKEDRIFT,
     SETTING_HARDAI,
     SETTING_INPUTDISPLAY,
@@ -90,10 +76,7 @@ static const SettingId race1OfflineRadios[] = {
     SETTING_DISPLAYCUSTOMSKINS,
     SETTING_THUNDERCLOUD};
 
-static const SettingId race1OfflineScrollers[] = {
-    SETTING_TRACKSELECTION};
-
-static const SettingId race2OfflineRadios[] = {
+static const SettingId race2RadioSettings[] = {
     SETTING_BATTLEGLITCH,
     SETTING_FPS,
     SETTING_BLOOM,
@@ -102,7 +85,10 @@ static const SettingId race2OfflineRadios[] = {
     SETTING_ITEMBOXRESPAWN,
     SETTING_ALLITEMSCANLAND};
 
-static const SettingId race2OfflineScrollers[] = {
+static const SettingId race1Scrollers[] = {
+    SETTING_TRACKSELECTION};
+
+static const SettingId race2Scrollers[] = {
     SETTING_ITEMMODE};
 
 static const SettingId menuRadios[] = {
@@ -195,33 +181,48 @@ static const SettingId miscRadios[] = {
 static const SettingId miscScrollers[] = {
     SETTING_LANGUAGE};
 
-#define PAGE_DEF(bmg, radios, scrollers) \
+enum PageBmg {
+    PAGE_RACE1_BMG = 0x62F01,
+    PAGE_RACE2_BMG = 0x62F02,
+    PAGE_MENU_BMG = 0x62F03,
+    PAGE_ONLINE_BMG = 0x62F04,
+    PAGE_SOUND_BMG = 0x62F05,
+    PAGE_BATTLE_BMG = 0x62F06,
+    PAGE_FROOM1_BMG = 0x62F07,
+    PAGE_FROOM2_BMG = 0x62F08,
+    PAGE_OTT_BMG = 0x62F09,
+    PAGE_KO_BMG = 0x62F0A,
+    PAGE_MISC_BMG = 0x62F0C,
+    PAGE_ITEMS_BMG = 0x62F0D,
+    PAGE_ROYALE_BMG = 0x62F0E,
+    PAGE_EXTENDED_TEAMS_BMG = 0x62F0B
+};
+
+#define PAGE(bmg, radios, scrollers) \
     {bmg, radios, ARRAY_COUNT(radios), scrollers, ARRAY_COUNT(scrollers), false}
-#define PAGE_DEF_RADIOS_ONLY(bmg, radios) \
+#define RADIO_PAGE(bmg, radios) \
     {bmg, radios, ARRAY_COUNT(radios), 0, 0, false}
+#define RADIO_PAGE_COUNT(bmg, radios, count) \
+    {bmg, radios, count, 0, 0, false}
 
 const SettingsPageDef Params::pageDefs[SETTINGS_PAGE_COUNT] = {
-    PAGE_DEF_RADIOS_ONLY(0x62F01, race1Radios),
-    PAGE_DEF_RADIOS_ONLY(0x62F02, race2Radios),
-    PAGE_DEF(0x62F03, menuRadios, menuScrollers),
-    PAGE_DEF_RADIOS_ONLY(0x62F05, soundRadios),
-    PAGE_DEF_RADIOS_ONLY(0x62F04, onlineRadios),
-    PAGE_DEF_RADIOS_ONLY(0x62F06, battleRadios),
-    PAGE_DEF(0x62F07, froom1Radios, froom1Scrollers),
-    PAGE_DEF_RADIOS_ONLY(0x62F08, froom2Radios),
-    PAGE_DEF_RADIOS_ONLY(0x62F09, ottOfflineRadios),
-    PAGE_DEF_RADIOS_ONLY(0x62F09, ottOnlineRadios),
-    PAGE_DEF(0x62F0A, koRadios, koScrollers),
-    PAGE_DEF(0x62F0E, royaleRadios, royaleScrollers),
-    PAGE_DEF(0x62F0B, extendedTeamsRadios, extendedTeamsScrollers),
-    PAGE_DEF(0x62F0C, miscRadios, miscScrollers),
-    {0x62F0D, 0, 0, 0, 0, true},
-    {0x62F01,
-     race1OfflineRadios, ARRAY_COUNT(race1OfflineRadios), race1OfflineScrollers,
-     ARRAY_COUNT(race1OfflineScrollers), false},
-    {0x62F02,
-     race2OfflineRadios, ARRAY_COUNT(race2OfflineRadios), race2OfflineScrollers,
-     ARRAY_COUNT(race2OfflineScrollers), false},
+    RADIO_PAGE_COUNT(PAGE_RACE1_BMG, race1RadioSettings, 5),
+    RADIO_PAGE_COUNT(PAGE_RACE2_BMG, race2RadioSettings, 5),
+    PAGE(PAGE_MENU_BMG, menuRadios, menuScrollers),
+    RADIO_PAGE(PAGE_SOUND_BMG, soundRadios),
+    RADIO_PAGE(PAGE_ONLINE_BMG, onlineRadios),
+    RADIO_PAGE(PAGE_BATTLE_BMG, battleRadios),
+    PAGE(PAGE_FROOM1_BMG, froom1Radios, froom1Scrollers),
+    RADIO_PAGE(PAGE_FROOM2_BMG, froom2Radios),
+    RADIO_PAGE(PAGE_OTT_BMG, ottOfflineRadios),
+    RADIO_PAGE(PAGE_OTT_BMG, ottOnlineRadios),
+    PAGE(PAGE_KO_BMG, koRadios, koScrollers),
+    PAGE(PAGE_ROYALE_BMG, royaleRadios, royaleScrollers),
+    PAGE(PAGE_EXTENDED_TEAMS_BMG, extendedTeamsRadios, extendedTeamsScrollers),
+    PAGE(PAGE_MISC_BMG, miscRadios, miscScrollers),
+    {PAGE_ITEMS_BMG, 0, 0, 0, 0, true},
+    PAGE(PAGE_RACE1_BMG, race1RadioSettings, race1Scrollers),
+    PAGE(PAGE_RACE2_BMG, race2RadioSettings, race2Scrollers),
 };
 
 static const SettingsPageId offlinePages[] = {
@@ -242,30 +243,29 @@ const SettingsContextDef Params::contextDefs[SETTINGS_CONTEXT_COUNT] = {
     {votingPages, ARRAY_COUNT(votingPages)},
 };
 
-u32 Params::BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO,
-                               bool isOTT, bool isRoyale, bool isExtendedTeams) {
+u32 Params::BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO, bool isOTT, bool isRoyale, bool isExtendedTeams) {
     u32 count = 0;
     dest[count++] = SETTINGS_PAGE_FROOM1;
     dest[count++] = SETTINGS_PAGE_FROOM2;
+
     if (isBattle) {
         dest[count++] = SETTINGS_PAGE_BATTLE;
         if (isExtendedTeams) dest[count++] = SETTINGS_PAGE_EXTENDED_TEAMS;
-    } else {
-        if (isExtendedTeams)
-            dest[count++] = SETTINGS_PAGE_EXTENDED_TEAMS;
-        else if (isKO)
-            dest[count++] = SETTINGS_PAGE_KO;
-        if (isOTT)
-            dest[count++] = SETTINGS_PAGE_OTT_ONLINE;
-        else if (isRoyale)
-            dest[count++] = SETTINGS_PAGE_ROYALE;
+        return count;
     }
+
+    if (isExtendedTeams)
+        dest[count++] = SETTINGS_PAGE_EXTENDED_TEAMS;
+    else if (isKO)
+        dest[count++] = SETTINGS_PAGE_KO;
+
+    if (isOTT)
+        dest[count++] = SETTINGS_PAGE_OTT_ONLINE;
+    else if (isRoyale)
+        dest[count++] = SETTINGS_PAGE_ROYALE;
+
     return count;
 }
-
-#undef PAGE_DEF_RADIOS_ONLY
-#undef PAGE_DEF
-#undef ARRAY_COUNT
 
 }  // namespace Settings
 }  // namespace Pulsar
