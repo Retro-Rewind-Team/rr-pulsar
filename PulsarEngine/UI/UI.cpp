@@ -3,6 +3,7 @@
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <UI/UI.hpp>
 #include <PulsarSystem.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 
 // Expanded Pages:
 #include <Ghost/UI/ExpGhostSelect.hpp>
