@@ -141,7 +141,7 @@ static void LoadKamekBinary(LoaderParams *params, const void *binary, u32 binary
     const KBHeader *header = (const KBHeader *)binary;
     if (header->magic1 != 'Kame' || header->magic2 != 'k\0')
         DisplayError(params, "FATAL ERROR: Corrupted file, please check your game's Kamek files");
-    if (header->version != 3) {
+    if (header->version != 2) {
         char err[512];
         params->sprintf(err, "FATAL ERROR: Incompatible file (version %d), please upgrade your Kamek Loader", header->version);
         DisplayError(params, err);
