@@ -76,7 +76,7 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
     }
 
     if (racedata != nullptr) {
-        const RacedataScenario& scenario = racedata->racesScenario;
+        const RacedataScenario &scenario = racedata->racesScenario;
         const u8 missionLapCount = MissionMode::GetMissionLapCount(scenario);
         if (missionLapCount != 0) lapCount = missionLapCount;
         racedata->racesScenario.settings.lapCount = lapCount;
@@ -107,7 +107,7 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     const GameMode gameMode = Racedata::sInstance->menusScenario.settings.gamemode;
     const GameType gameType = Racedata::sInstance->menusScenario.settings.gametype;
     SpeedModConv speedModConv;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const bool isMission = MissionMode::IsMissionScenario(scenario);
     const bool is200 = isMission ? MissionMode::HasMissionFeature(scenario, MissionMode::ENGINE_200CC)
                                  : scenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;

@@ -236,7 +236,7 @@ void BeforeEntranceAnimations(Pages::TTSplits *page) {
         if (MissionMode::GetMissionResultRank(rank)) {
             resultInfo.bmgToPass[0] = UI::BMG_GP_RANK_3STARS + rank;
             page->savedGhostMessage.SetMessage(UI::BMG_MISSION_RANK, &resultInfo);
-			::Pulsar::MissionMode::QueueMissionRankSound(page, rank);
+            ::Pulsar::MissionMode::QueueMissionRankSound(page, rank);
         } else {
             page->savedGhostMessage.SetMessage(UI::BMG_MISSION_FAILED);
         }

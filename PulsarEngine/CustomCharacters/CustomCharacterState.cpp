@@ -517,9 +517,9 @@ u8 SavedGhostSkinTable(const RacedataScenario &scenario, u8 playerId, CharacterI
 }
 
 u8 RaceSkinTable(u8 playerId, CharacterId character) {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata != nullptr) {
-        const RacedataScenario* missionScenario = &racedata->racesScenario;
+        const RacedataScenario *missionScenario = &racedata->racesScenario;
         if (!MissionMode::IsMissionScenario(*missionScenario)) {
             missionScenario = &racedata->menusScenario;
             if (!MissionMode::IsMissionScenario(*missionScenario)) missionScenario = nullptr;
@@ -528,8 +528,8 @@ u8 RaceSkinTable(u8 playerId, CharacterId character) {
             const u8 configuredTable = MissionMode::GetMissionCharacterTable(*missionScenario, playerId);
             if (configuredTable != MissionMode::MISSION_CHARACTER_TABLE_UNSET)
                 return NormalizeTable(character, configuredTable);
-         }
-     }
+        }
+    }
     if (racedata != nullptr && playerId < racedata->racesScenario.playerCount) {
         const RacedataScenario &scenario = racedata->racesScenario;
         const GameMode mode = scenario.settings.gamemode;

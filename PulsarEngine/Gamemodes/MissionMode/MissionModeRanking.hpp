@@ -4,8 +4,8 @@
 
 namespace Pulsar {
 namespace MissionMode {
-bool GetMissionResultRank(u32& rank);
+bool GetMissionResultRank(u32 &rank);
 
 }
-}
+}  // namespace Pulsar
 #endif

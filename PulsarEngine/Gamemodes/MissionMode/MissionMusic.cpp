@@ -31,26 +31,26 @@ static const u32 MISSION_RANK_SOUND_GROUP = 8;
 static bool missionRankSoundPending;
 static u32 missionRankSoundId;
 
-typedef void* (*RequestSoundGroupFn)(void*, u32, u32);
-typedef void* (*ProcessSoundGroupRequestsFn)();
+typedef void *(*RequestSoundGroupFn)(void *, u32, u32);
+typedef void *(*ProcessSoundGroupRequestsFn)();
 
 kmRuntimeUse(0x807000d4);
 kmRuntimeUse(0x80700230);
 kmRuntimeUse(0x809c2690);
 kmRuntimeUse(0x80855adc);
 
-static void TryPlayMissionRankSound(Pages::TTSplits* page) {
-	if (!missionRankSoundPending || !Audio::RSARPlayer::HasFinishedLoadingGroups()) return;
+static void TryPlayMissionRankSound(Pages::TTSplits *page) {
+    if (!missionRankSoundPending || !Audio::RSARPlayer::HasFinishedLoadingGroups()) return;
 
-	Audio::RSARPlayer::PlaySoundById(missionRankSoundId, 0xffffffff, page);
-	missionRankSoundPending = false;
+    Audio::RSARPlayer::PlaySoundById(missionRankSoundId, 0xffffffff, page);
+    missionRankSoundPending = false;
 }
 
-typedef void (*TTSplitsAfterControlUpdateFn)(Pages::TTSplits*);
+typedef void (*TTSplitsAfterControlUpdateFn)(Pages::TTSplits *);
 
-static void MissionTTSplitsAfterControlUpdate(Pages::TTSplits* page) {
-	TryPlayMissionRankSound(page);
-	reinterpret_cast<TTSplitsAfterControlUpdateFn>(kmRuntimeAddr(0x80855adc))(page);
+static void MissionTTSplitsAfterControlUpdate(Pages::TTSplits *page) {
+    TryPlayMissionRankSound(page);
+    reinterpret_cast<TTSplitsAfterControlUpdateFn>(kmRuntimeAddr(0x80855adc))(page);
 }
 
 kmWritePointer(0x808DA628, MissionTTSplitsAfterControlUpdate);
@@ -69,14 +69,14 @@ static CourseId cachedMusicSlot;
 static const u32 NATIVE_MUSIC_SLOT_COUNT =
     sizeof(Audio::ItemAlterationMgr::courseToSoundIdTable) / sizeof(Audio::ItemAlterationMgr::courseToSoundIdTable[0]);
 
-static bool IsSafeMusicName(const char* name) {
+static bool IsSafeMusicName(const char *name) {
     if (name == nullptr || *name == '\0') return false;
     if (strstr(name, "..") != nullptr) return false;
     if (strchr(name, '/') != nullptr || strchr(name, '\\') != nullptr || strchr(name, ':') != nullptr) return false;
     return true;
 }
 
-static bool CopyMusicName(char* dest, const char* source) {
+static bool CopyMusicName(char *dest, const char *source) {
     if (!IsSafeMusicName(source)) return false;
     const size_t length = strlen(source);
     if (length >= MAX_MUSIC_NAME_LENGTH) return false;
@@ -90,7 +90,7 @@ static bool CopyMusicName(char* dest, const char* source) {
     return dest[0] != '\0';
 }
 
-static u32 ReadBigEndian32(const u8* data) {
+static u32 ReadBigEndian32(const u8 *data) {
     return (static_cast<u32>(data[0]) << 24) | (static_cast<u32>(data[1]) << 16) |
            (static_cast<u32>(data[2]) << 8) | static_cast<u32>(data[3]);
 }
@@ -107,7 +107,7 @@ static void InitializeCharacterTables() {
     characterTablesInitialized = true;
 }
 
-static bool ParseConfig(const u8* data, u32 fileSize) {
+static bool ParseConfig(const u8 *data, u32 fileSize) {
     if (data == nullptr || fileSize < MISSION_MUSIC_CONFIG_HEADER_SIZE) return false;
 
     const u32 magic = ReadBigEndian32(data);
@@ -115,18 +115,18 @@ static bool ParseConfig(const u8* data, u32 fileSize) {
     const u32 entryCount = ReadBigEndian32(data + 0x08);
     const u32 entrySize = ReadBigEndian32(data + 0x0C);
     const bool validHeader = magic == MISSION_MUSIC_CONFIG_MAGIC &&
-        (version == MISSION_MUSIC_CONFIG_LEGACY_VERSION || version == MISSION_MUSIC_CONFIG_VERSION) &&
-        entrySize == MISSION_MUSIC_CONFIG_ENTRY_SIZE && entryCount <= MAX_MISSION_MUSIC_ENTRIES &&
-        entryCount <= (fileSize - MISSION_MUSIC_CONFIG_HEADER_SIZE) / entrySize;
+                             (version == MISSION_MUSIC_CONFIG_LEGACY_VERSION || version == MISSION_MUSIC_CONFIG_VERSION) &&
+                             entrySize == MISSION_MUSIC_CONFIG_ENTRY_SIZE && entryCount <= MAX_MISSION_MUSIC_ENTRIES &&
+                             entryCount <= (fileSize - MISSION_MUSIC_CONFIG_HEADER_SIZE) / entrySize;
     if (!validHeader) return false;
 
     const u32 tableOffset = MISSION_MUSIC_CONFIG_HEADER_SIZE + entryCount * entrySize;
     const bool hasTableSection = version != MISSION_MUSIC_CONFIG_VERSION ||
-        (tableOffset <= fileSize && entryCount <= (fileSize - tableOffset) / MISSION_CHARACTER_TABLE_ENTRY_SIZE);
+                                 (tableOffset <= fileSize && entryCount <= (fileSize - tableOffset) / MISSION_CHARACTER_TABLE_ENTRY_SIZE);
     if (!hasTableSection) return false;
 
     for (u32 missionId = 0; missionId < entryCount; ++missionId) {
-        const u8* entry = data + MISSION_MUSIC_CONFIG_HEADER_SIZE + missionId * entrySize;
+        const u8 *entry = data + MISSION_MUSIC_CONFIG_HEADER_SIZE + missionId * entrySize;
         char name[MAX_MUSIC_NAME_LENGTH];
         u32 nameLength = 0;
         while (nameLength < entrySize && entry[nameLength] != '\0') ++nameLength;
@@ -138,7 +138,7 @@ static bool ParseConfig(const u8* data, u32 fileSize) {
 
     if (version == MISSION_MUSIC_CONFIG_VERSION) {
         for (u32 missionId = 0; missionId < entryCount; ++missionId) {
-            const u8* entry = data + tableOffset + missionId * MISSION_CHARACTER_TABLE_ENTRY_SIZE;
+            const u8 *entry = data + tableOffset + missionId * MISSION_CHARACTER_TABLE_ENTRY_SIZE;
             for (u32 playerId = 0; playerId < MISSION_CHARACTER_TABLE_COUNT; ++playerId) {
                 const u8 table = entry[playerId];
                 if (IsValidCharacterTable(table)) missionCharacterTables[missionId][playerId] = table;
@@ -153,17 +153,17 @@ static void LoadAssociations() {
     InitializeCharacterTables();
 
     u32 fileSize = 0;
-    char* file = static_cast<char*>(SystemManager::RipFromDisc(MISSION_MUSIC_FILE, nullptr, &fileSize));
-    if (ParseConfig(reinterpret_cast<const u8*>(file), fileSize)) characterTablesLoaded = true;
+    char *file = static_cast<char *>(SystemManager::RipFromDisc(MISSION_MUSIC_FILE, nullptr, &fileSize));
+    if (ParseConfig(reinterpret_cast<const u8 *>(file), fileSize)) characterTablesLoaded = true;
 
     associationsLoaded = true;
 }
 
-static bool CheckPath(const char* path) {
+static bool CheckPath(const char *path) {
     return DVD::ConvertPathToEntryNum(path) >= 0;
 }
 
-static bool StringsEqualIgnoreCase(const char* lhs, const char* rhs) {
+static bool StringsEqualIgnoreCase(const char *lhs, const char *rhs) {
     if (lhs == nullptr || rhs == nullptr) return false;
     while (*lhs != '\0' && *rhs != '\0') {
         char left = *lhs++;
@@ -175,7 +175,7 @@ static bool StringsEqualIgnoreCase(const char* lhs, const char* rhs) {
     return *lhs == '\0' && *rhs == '\0';
 }
 
-static bool MusicNamesMatch(const char* configuredName, const char* trackName) {
+static bool MusicNamesMatch(const char *configuredName, const char *trackName) {
     if (StringsEqualIgnoreCase(configuredName, trackName)) return true;
     if (trackName == nullptr) return false;
 
@@ -189,9 +189,9 @@ static bool MusicNamesMatch(const char* configuredName, const char* trackName) {
     return StringsEqualIgnoreCase(configuredName, trackNameWithoutExtension);
 }
 
-static bool FindConfiguredMusicSlot(CourseId& musicSlot) {
+static bool FindConfiguredMusicSlot(CourseId &musicSlot) {
     if (CupsConfig::sInstance == nullptr || Racedata::sInstance == nullptr) return false;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (!IsMissionScenario(scenario) || IsMissionBossObjective(scenario) || IsMissionScoreObjective(scenario)) return false;
 
     const u32 missionId = scenario.settings.raceNumber;
@@ -205,13 +205,13 @@ static bool FindConfiguredMusicSlot(CourseId& musicSlot) {
     cachedMissionId = missionId;
     cachedTrackFound = false;
 
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     const u32 trackCount = static_cast<u32>(cupsConfig->GetCtsTrackCount());
     for (u32 i = 0; i < trackCount; ++i) {
         const PulsarId candidate = static_cast<PulsarId>(PULSARID_FIRSTCT + i);
         if (!MusicNamesMatch(associationNames[missionId], cupsConfig->GetFileName(candidate, 0))) continue;
 
-        const Track& track = cupsConfig->GetTrack(candidate);
+        const Track &track = cupsConfig->GetTrack(candidate);
         if (track.musicSlot >= NATIVE_MUSIC_SLOT_COUNT) return false;
         cachedTrackFound = true;
         cachedMusicSlot = static_cast<CourseId>(track.musicSlot);
@@ -221,8 +221,8 @@ static bool FindConfiguredMusicSlot(CourseId& musicSlot) {
     return false;
 }
 
-static bool ResolveForcedMusic(const RacedataScenario& scenario, const char*& extFilePath) {
-    const char* path = nullptr;
+static bool ResolveForcedMusic(const RacedataScenario &scenario, const char *&extFilePath) {
+    const char *path = nullptr;
     if (IsMissionBossObjective(scenario))
         path = MISSION_BOSS_MUSIC_FILE;
     else if (IsMissionScoreObjective(scenario))
@@ -232,26 +232,26 @@ static bool ResolveForcedMusic(const RacedataScenario& scenario, const char*& ex
     return true;
 }
 
-}
+}  // namespace
 
 void PrepareMissionRankSoundGroup() {
-	void* requester = *reinterpret_cast<void**>(kmRuntimeAddr(0x809c2690));
-	if (requester == nullptr) return;
+    void *requester = *reinterpret_cast<void **>(kmRuntimeAddr(0x809c2690));
+    if (requester == nullptr) return;
 
-	reinterpret_cast<RequestSoundGroupFn>(kmRuntimeAddr(0x807000d4))(
-		requester, MISSION_RANK_SOUND_GROUP, 0);
-	reinterpret_cast<ProcessSoundGroupRequestsFn>(kmRuntimeAddr(0x80700230))();
+    reinterpret_cast<RequestSoundGroupFn>(kmRuntimeAddr(0x807000d4))(
+        requester, MISSION_RANK_SOUND_GROUP, 0);
+    reinterpret_cast<ProcessSoundGroupRequestsFn>(kmRuntimeAddr(0x80700230))();
 }
 
-void QueueMissionRankSound(Pages::TTSplits* page, u32 rank) {
-	if (rank > 2) return;
+void QueueMissionRankSound(Pages::TTSplits *page, u32 rank) {
+    if (rank > 2) return;
 
-	missionRankSoundId = 0x219 - rank;
-	missionRankSoundPending = true;
-	TryPlayMissionRankSound(page);
+    missionRankSoundId = 0x219 - rank;
+    missionRankSoundPending = true;
+    TryPlayMissionRankSound(page);
 }
 
-void LoadMissionCharacterTablesFromConfig(const u8* file, u32 fileSize) {
+void LoadMissionCharacterTablesFromConfig(const u8 *file, u32 fileSize) {
     InitializeCharacterTables();
     characterTablesLoaded = true;
     if (ParseConfig(file, fileSize)) {
@@ -259,9 +259,9 @@ void LoadMissionCharacterTablesFromConfig(const u8* file, u32 fileSize) {
     }
 }
 
-bool ResolveMissionMusicPath(const char* brstmRoot, const char*& extFilePath) {
+bool ResolveMissionMusicPath(const char *brstmRoot, const char *&extFilePath) {
     if (Racedata::sInstance == nullptr) return false;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (!IsMissionScenario(scenario)) return false;
 
     const u32 missionId = scenario.settings.raceNumber;
@@ -270,14 +270,14 @@ bool ResolveMissionMusicPath(const char* brstmRoot, const char*& extFilePath) {
     LoadAssociations();
     if (missionId >= MAX_MISSION_MUSIC_ENTRIES || !hasAssociation[missionId]) return false;
 
-    const char* root = brstmRoot != nullptr ? brstmRoot : "/sound/";
+    const char *root = brstmRoot != nullptr ? brstmRoot : "/sound/";
     snprintf(resolvedPath, sizeof(resolvedPath), "%sstrm/%s_n.brstm", root, associationNames[missionId]);
     if (!CheckPath(resolvedPath)) return false;
     extFilePath = resolvedPath;
     return true;
 }
 
-u8 GetMissionCharacterTable(const RacedataScenario& scenario, u8 playerId) {
+u8 GetMissionCharacterTable(const RacedataScenario &scenario, u8 playerId) {
     if (playerId >= MISSION_CHARACTER_TABLE_COUNT || !IsMissionScenario(scenario))
         return MISSION_CHARACTER_TABLE_UNSET;
 
@@ -293,7 +293,7 @@ u8 GetMissionCharacterTable(const RacedataScenario& scenario, u8 playerId) {
 
 u8 GetMissionCharacterTable(u8 playerId) {
     if (Racedata::sInstance == nullptr) return MISSION_CHARACTER_TABLE_UNSET;
-    const RacedataScenario* scenario = &Racedata::sInstance->racesScenario;
+    const RacedataScenario *scenario = &Racedata::sInstance->racesScenario;
     if (!IsMissionScenario(*scenario)) {
         scenario = &Racedata::sInstance->menusScenario;
         if (!IsMissionScenario(*scenario)) return MISSION_CHARACTER_TABLE_UNSET;
@@ -301,14 +301,14 @@ u8 GetMissionCharacterTable(u8 playerId) {
     return GetMissionCharacterTable(*scenario, playerId);
 }
 
-bool GetMissionMusicSlotOverride(CourseId& musicSlot) {
+bool GetMissionMusicSlotOverride(CourseId &musicSlot) {
     if (Racedata::sInstance == nullptr) return false;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (!IsMissionScenario(scenario)) return false;
 
     LoadAssociations();
     return FindConfiguredMusicSlot(musicSlot);
 }
 
-}
-}
+}  // namespace MissionMode
+}  // namespace Pulsar

@@ -27,15 +27,24 @@ static const u32 MISSION_UI_STAGE_SIZE = 0x0A;
 static const u32 MISSION_KMT_HEADER_SIZE = 0x10;
 static const u32 MISSION_KMT_ENTRY_SIZE = 0x70;
 static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
-static const char* const MISSION_OBJECTIVE_ICONS[] = {
-    "mr_turbo", "mr_vs", "mr_vs", 0, "mr_itembox", "mr_enemy", "mr_boss", 0, "mr_coin", "mr_gate",
+static const char *const MISSION_OBJECTIVE_ICONS[] = {
+    "mr_turbo",
+    "mr_vs",
+    "mr_vs",
+    0,
+    "mr_itembox",
+    "mr_enemy",
+    "mr_boss",
+    0,
+    "mr_coin",
+    "mr_gate",
 };
 static const char MISSION_CONFIG_FILE[] = "Binaries/ConfigMR.pul";
 static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
 static const u32 BMG_OK = 0x7D0;
 static const u32 MISSION_PAUSE_END_MENU_SOUND_ID = 0xD5;
-static const char* const MISSION_STAGE_RANK_PANE = "mission_rank";
+static const char *const MISSION_STAGE_RANK_PANE = "mission_rank";
 
 static const wchar_t MISSION_RANK_GLYPHS[7][2] = {
     {0, 0},
@@ -47,18 +56,35 @@ static const wchar_t MISSION_RANK_GLYPHS[7][2] = {
     {0xF063, 0},
 };
 
-static const char* const MISSION_LEVEL_BUTTON_VARIANTS[8] = {
-    "Button0", "Button1", "Button2", "Button3", "Button4", "Button5", "Button6", "Button7",
+static const char *const MISSION_LEVEL_BUTTON_VARIANTS[8] = {
+    "Button0",
+    "Button1",
+    "Button2",
+    "Button3",
+    "Button4",
+    "Button5",
+    "Button6",
+    "Button7",
 };
 
-static const char* const MISSION_STAGE_BORDER_PANES[] = {
-    "color_base",    "fuchi_black",   "fuchi_pattern", "color_down",   "shadow_top_r",
-    "shadow_top_l",  "shadow_botom_r", "shadow_botom_l", "hight_light_l", "hight_light_r",
-    "text_light_01", "objective_icon", "black_base",
+static const char *const MISSION_STAGE_BORDER_PANES[] = {
+    "color_base",
+    "fuchi_black",
+    "fuchi_pattern",
+    "color_down",
+    "shadow_top_r",
+    "shadow_top_l",
+    "shadow_botom_r",
+    "shadow_botom_l",
+    "hight_light_l",
+    "hight_light_r",
+    "text_light_01",
+    "objective_icon",
+    "black_base",
 };
 
 class MissionPausePage : public Pages::RaceMenu {
-   public:
+public:
     MissionPausePage() {
         this->onButtonClickHandler.subject = this;
         this->onButtonClickHandler.ptmf = &MissionPausePage::OnButtonClick;
@@ -67,18 +93,18 @@ class MissionPausePage : public Pages::RaceMenu {
     int GetMessageBMG() const override { return 0; }
     u32 GetButtonCount() const override { return BUTTON_COUNT; }
 
-    const u32* GetVariantsIdxArray() const override {
+    const u32 *GetVariantsIdxArray() const override {
         static const u32 variants[BUTTON_COUNT] = {0, 2, 18, 1};
         return variants;
     }
 
     bool IsPausePage() const override { return true; }
-    const char* GetButtonsBRCTRName() const override { return "PauseMenuMR"; }
+    const char *GetButtonsBRCTRName() const override { return "PauseMenuMR"; }
 
-   private:
+private:
     static const u32 BUTTON_COUNT = 4;
 
-    void OnButtonClick(PushButton& button, u32 hudSlotId) {
+    void OnButtonClick(PushButton &button, u32 hudSlotId) {
         const u32 buttonId = static_cast<u32>(button.buttonId);
         const float delay = button.GetAnimationFrameSize();
 
@@ -110,29 +136,29 @@ class MissionPausePage : public Pages::RaceMenu {
     }
 };
 
-static u16 ReadBigEndian16(const u8* data) {
+static u16 ReadBigEndian16(const u8 *data) {
     return static_cast<u16>((static_cast<u16>(data[0]) << 8) | data[1]);
 }
 
-static void SetMissionInfoSelection(ExpSection& section, u32 level, u32 stage) {
-    Page* infoPage = section.pages[PAGE_MISSION_INFORMATION_PROMPT];
+static void SetMissionInfoSelection(ExpSection &section, u32 level, u32 stage) {
+    Page *infoPage = section.pages[PAGE_MISSION_INFORMATION_PROMPT];
     if (infoPage == nullptr) return;
 
-    u8* pageBytes = reinterpret_cast<u8*>(infoPage);
-    *reinterpret_cast<u32*>(pageBytes + MISSION_INFO_STAGE_OFFSET) = stage;
-    *reinterpret_cast<u32*>(pageBytes + MISSION_INFO_LEVEL_OFFSET) = level;
+    u8 *pageBytes = reinterpret_cast<u8 *>(infoPage);
+    *reinterpret_cast<u32 *>(pageBytes + MISSION_INFO_STAGE_OFFSET) = stage;
+    *reinterpret_cast<u32 *>(pageBytes + MISSION_INFO_LEVEL_OFFSET) = level;
 }
 
-static void ResetMissionButtonFreeText(PushButton& button, bool locked = false) {
-	if (button.animator.animationGroups != nullptr && button.animator.animationCount > 2) {
-		AnimationGroup& textLightGroup = button.animator.GetAnimationGroupById(2);
-		if (textLightGroup.animationsCount > 1) textLightGroup.PlayAnimationAtFrame(1, 0.0f);
-	}
+static void ResetMissionButtonFreeText(PushButton &button, bool locked = false) {
+    if (button.animator.animationGroups != nullptr && button.animator.animationCount > 2) {
+        AnimationGroup &textLightGroup = button.animator.GetAnimationGroupById(2);
+        if (textLightGroup.animationsCount > 1) textLightGroup.PlayAnimationAtFrame(1, 0.0f);
+    }
 
-    nw4r::lyt::Pane* text = button.layout.GetPaneByName("text");
+    nw4r::lyt::Pane *text = button.layout.GetPaneByName("text");
     if (text == nullptr || text->GetMaterial() == nullptr) return;
 
-    nw4r::lyt::Material* material = text->GetMaterial();
+    nw4r::lyt::Material *material = text->GetMaterial();
     material->UnbindAllAnimation();
     material->tevColours[0].r = 30;
     material->tevColours[0].g = 20;
@@ -144,11 +170,11 @@ static void ResetMissionButtonFreeText(PushButton& button, bool locked = false) 
     material->tevColours[1].a = 255;
 }
 
-static void SetMissionRank(PushButton& button, u8 rating, bool hideLevelIcon) {
+static void SetMissionRank(PushButton &button, u8 rating, bool hideLevelIcon) {
     if (hideLevelIcon && button.layout.GetPaneByName("level_icon") != nullptr)
         button.SetPaneVisibility("level_icon", false);
 
-    nw4r::lyt::Pane* rankPane = button.layout.GetPaneByName(MISSION_STAGE_RANK_PANE);
+    nw4r::lyt::Pane *rankPane = button.layout.GetPaneByName(MISSION_STAGE_RANK_PANE);
     if (rankPane == nullptr) return;
 
     const bool hasRank = rating >= 1 && rating <= 6;
@@ -156,12 +182,12 @@ static void SetMissionRank(PushButton& button, u8 rating, bool hideLevelIcon) {
     if (hasRank) {
         Text::Info rankInfo;
         memset(&rankInfo, 0, sizeof(rankInfo));
-        rankInfo.strings[0] = const_cast<wchar_t*>(MISSION_RANK_GLYPHS[rating]);
+        rankInfo.strings[0] = const_cast<wchar_t *>(MISSION_RANK_GLYPHS[rating]);
         button.SetTextBoxMessage(MISSION_STAGE_RANK_PANE, BMG_TEXT, &rankInfo);
     }
 }
 
-static const char* GetMissionObjectiveIcon(u16 objective) {
+static const char *GetMissionObjectiveIcon(u16 objective) {
     return objective < sizeof(MISSION_OBJECTIVE_ICONS) / sizeof(MISSION_OBJECTIVE_ICONS[0])
                ? MISSION_OBJECTIVE_ICONS[objective]
                : 0;
@@ -177,12 +203,11 @@ kmCall(0x808440e0, MissionBossIntroCheck);
 kmCall(0x8084e62c, MissionBossIntroCheck);
 
 class MissionSelectPage : public Pages::MenuInteractable {
-   public:
+public:
     static const u32 BUTTON_COUNT = 8;
 
     MissionSelectPage()
-        : levelSelected(false), missionUiFile(nullptr), missionUiSize(0), missionKmtFile(nullptr), missionKmtSize(0),
-          missionConfigFile(nullptr), missionConfigSize(0) {
+        : levelSelected(false), missionUiFile(nullptr), missionUiSize(0), missionKmtFile(nullptr), missionKmtSize(0), missionConfigFile(nullptr), missionConfigSize(0) {
         this->onButtonClickHandler.subject = this;
         this->onButtonClickHandler.ptmf = &MissionSelectPage::OnButtonClick;
         this->onButtonSelectHandler.subject = this;
@@ -235,14 +260,14 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
     int GetActivePlayerBitfield() const override { return this->activePlayerBitfield; }
     int GetPlayerBitfield() const override { return this->playerBitfield; }
-    ManipulatorManager& GetManipulatorManager() override { return this->controlsManipulatorManager; }
+    ManipulatorManager &GetManipulatorManager() override { return this->controlsManipulatorManager; }
 
-    UIControl* CreateControl(u32 controlId) override {
+    UIControl *CreateControl(u32 controlId) override {
         if (controlId >= BUTTON_COUNT * 2) return nullptr;
 
         const bool isStage = controlId >= BUTTON_COUNT;
         const u32 index = isStage ? controlId - BUTTON_COUNT : controlId;
-        PushButton& button = isStage ? this->stageButtons[index] : this->levelButtons[index];
+        PushButton &button = isStage ? this->stageButtons[index] : this->levelButtons[index];
 
         this->AddControl(controlId, button, 0);
         button.Load(UI::buttonFolder, isStage ? "MissionStage" : "MissionLevel",
@@ -259,9 +284,9 @@ class MissionSelectPage : public Pages::MenuInteractable {
         return &button;
     }
 
-    void SetButtonHandlers(PushButton&) override {}
+    void SetButtonHandlers(PushButton &) override {}
 
-    UIControl* CreateExternalControl(u32) override { return nullptr; }
+    UIControl *CreateExternalControl(u32) override { return nullptr; }
 
     void UpdateButtonMessage(u32 buttonId) {
         Text::Info info;
@@ -282,7 +307,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
         this->UpdateStageButtonMessages(selectedLevel);
     }
 
-    void OnButtonClick(PushButton& button, u32) {
+    void OnButtonClick(PushButton &button, u32) {
         if (button.buttonId < static_cast<s32>(BUTTON_COUNT)) {
             const u32 level = static_cast<u32>(button.buttonId);
             if (this->levelSelected || !this->IsLevelAccessible(level)) return;
@@ -300,19 +325,19 @@ class MissionSelectPage : public Pages::MenuInteractable {
         selectedMission = stageId;
         MissionModel::Reset();
         if (Racedata::sInstance != nullptr) {
-            RacedataSettings& settings = Racedata::sInstance->menusScenario.settings;
+            RacedataSettings &settings = Racedata::sInstance->menusScenario.settings;
             settings.cupId = selectedLevel;
             settings.raceNumber = static_cast<u8>(selectedLevel * BUTTON_COUNT + selectedMission);
             const bool scenarioLoaded = this->LoadMissionScenario();
             MissionModel::SetScenarioLoaded(scenarioLoaded);
         }
-        ExpSection* section = ExpSection::GetSection();
+        ExpSection *section = ExpSection::GetSection();
         if (section != nullptr) SetMissionInfoSelection(*section, selectedLevel, selectedMission);
         returnToStageSelect = true;
         this->LoadNextPageById(PAGE_MISSION_INFORMATION_PROMPT, button);
     }
 
-    void OnButtonSelect(PushButton& button, u32) {
+    void OnButtonSelect(PushButton &button, u32) {
         if (button.buttonId < static_cast<s32>(BUTTON_COUNT)) {
             if (this->levelSelected) return;
             this->ResetOtherButtonText(this->levelButtons, button);
@@ -340,24 +365,24 @@ class MissionSelectPage : public Pages::MenuInteractable {
         this->LoadPrevPage(this->backButton);
     }
 
-    void OnBackButtonClick(PushButton&, u32 hudSlotId) { this->OnBackPress(hudSlotId); }
+    void OnBackButtonClick(PushButton &, u32 hudSlotId) { this->OnBackPress(hudSlotId); }
 
-   private:
+private:
     void HideMissionBottomText() {
         if (this->bottomText != nullptr) this->bottomText->isHidden = true;
     }
 
-    void ResetOtherButtonText(PushButton* buttons, PushButton& selected) {
+    void ResetOtherButtonText(PushButton *buttons, PushButton &selected) {
         for (u32 i = 0; i < BUTTON_COUNT; ++i)
             if (&buttons[i] != &selected) ResetMissionButtonFreeText(buttons[i]);
     }
 
-    void SetMissionButtonHandlers(PushButton& button) {
+    void SetMissionButtonHandlers(PushButton &button) {
         button.SetOnClickHandler(this->onButtonClickHandler, 0);
         button.SetOnSelectHandler(this->onButtonSelectHandler);
     }
 
-    void SetMissionButtonActive(PushButton& button, bool active) {
+    void SetMissionButtonActive(PushButton &button, bool active) {
         button.SetPlayerBitfield(active ? this->playerBitfield : 0);
         button.manipulator.inaccessible = !active;
     }
@@ -408,7 +433,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
         u16 objective = 0;
         const bool hasObjective = this->GetMissionObjective(level, stageId, objective);
-        const char* objectiveIcon = hasObjective ? GetMissionObjectiveIcon(objective) : 0;
+        const char *objectiveIcon = hasObjective ? GetMissionObjectiveIcon(objective) : 0;
         this->stageButtons[stageId].SetPaneVisibility("objective_icon", objectiveIcon != nullptr);
         if (objectiveIcon != nullptr)
             this->stageButtons[stageId].SetPicturePane("objective_icon", objectiveIcon);
@@ -426,19 +451,19 @@ class MissionSelectPage : public Pages::MenuInteractable {
         for (u32 i = 0; i < BUTTON_COUNT; ++i) this->UpdateStageButtonMessage(level, i);
     }
 
-    void PositionButton(PushButton& button, float x) {
+    void PositionButton(PushButton &button, float x) {
         for (u32 i = 0; i < 4; ++i) button.positionAndscale[i].position.x = x;
         button.SetPosition(0.0f);
     }
 
-    void SetStageBorderVisible(PushButton& button, bool visible) {
+    void SetStageBorderVisible(PushButton &button, bool visible) {
         for (u32 i = 0; i < sizeof(MISSION_STAGE_BORDER_PANES) / sizeof(MISSION_STAGE_BORDER_PANES[0]); ++i) {
             if (button.layout.GetPaneByName(MISSION_STAGE_BORDER_PANES[i]) != nullptr)
                 button.SetPaneVisibility(MISSION_STAGE_BORDER_PANES[i], visible);
         }
     }
 
-    bool GetMissionId(u32 level, u32 stageId, u8& missionId) const {
+    bool GetMissionId(u32 level, u32 stageId, u8 &missionId) const {
         if (this->missionUiFile == nullptr || level >= BUTTON_COUNT || stageId >= BUTTON_COUNT ||
             this->missionUiSize < MISSION_UI_LEVEL_SIZE * BUTTON_COUNT) return false;
 
@@ -452,7 +477,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
         return true;
     }
 
-    bool GetMissionObjective(u32 level, u32 stageId, u16& objective) const {
+    bool GetMissionObjective(u32 level, u32 stageId, u16 &objective) const {
         u8 missionId = 0;
         if (!this->GetMissionId(level, stageId, missionId) || this->missionKmtFile == nullptr ||
             this->missionKmtSize < MISSION_KMT_HEADER_SIZE)
@@ -526,16 +551,16 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
     void LoadMissionResources() {
         if (ArchiveMgr::sInstance != nullptr) {
-            this->missionUiFile = static_cast<const u8*>(
+            this->missionUiFile = static_cast<const u8 *>(
                 ArchiveMgr::sInstance->GetFile(ARCHIVE_HOLDER_UI, "parameter/mission_ui_single.bin", &this->missionUiSize));
         }
 
-        const GameScene* scene = GameScene::GetCurrent();
+        const GameScene *scene = GameScene::GetCurrent();
         if (scene == nullptr || scene->structsHeaps.heaps[1] == nullptr) return;
 
-        this->missionKmtFile = static_cast<const u8*>(SystemManager::RipFromDisc(
+        this->missionKmtFile = static_cast<const u8 *>(SystemManager::RipFromDisc(
             "/Race/MissionRun/mission_single.kmt", scene->structsHeaps.heaps[1], true, &this->missionKmtSize));
-        this->missionConfigFile = static_cast<const u8*>(SystemManager::RipFromDisc(
+        this->missionConfigFile = static_cast<const u8 *>(SystemManager::RipFromDisc(
             MISSION_CONFIG_FILE, scene->structsHeaps.heaps[1], true, &this->missionConfigSize));
     }
 
@@ -553,8 +578,8 @@ class MissionSelectPage : public Pages::MenuInteractable {
         if (missionId >= missionCount || missionOffset + MISSION_KMT_ENTRY_SIZE > this->missionKmtSize) return false;
 
         Pulsar::MissionMode::LoadMissionCharacterTablesFromConfig(this->missionConfigFile, this->missionConfigSize);
-        RacedataScenario& scenario = Racedata::sInstance->menusScenario;
-        const u8* mission = this->missionKmtFile + missionOffset;
+        RacedataScenario &scenario = Racedata::sInstance->menusScenario;
+        const u8 *mission = this->missionKmtFile + missionOffset;
         memcpy(scenario.mission, mission, MISSION_KMT_ENTRY_SIZE);
         scenario.settings.courseId = static_cast<CourseId>(mission[0x04]);
         scenario.settings.raceNumber = static_cast<u8>(missionId);
@@ -569,22 +594,22 @@ class MissionSelectPage : public Pages::MenuInteractable {
     }
 
     bool levelSelected;
-    const u8* missionUiFile;
+    const u8 *missionUiFile;
     u32 missionUiSize;
-    const u8* missionKmtFile;
+    const u8 *missionKmtFile;
     u32 missionKmtSize;
-    const u8* missionConfigFile;
+    const u8 *missionConfigFile;
     u32 missionConfigSize;
     PushButton levelButtons[BUTTON_COUNT];
     PushButton stageButtons[BUTTON_COUNT];
     wchar_t buttonNames[BUTTON_COUNT * 2][32];
-    PtmfHolder_2A<MissionSelectPage, void, PushButton&, u32> onButtonClickHandler;
-    PtmfHolder_2A<MissionSelectPage, void, PushButton&, u32> onButtonSelectHandler;
+    PtmfHolder_2A<MissionSelectPage, void, PushButton &, u32> onButtonClickHandler;
+    PtmfHolder_2A<MissionSelectPage, void, PushButton &, u32> onButtonSelectHandler;
     PtmfHolder_1A<MissionSelectPage, void, u32> onBackPressHandler;
-    PtmfHolder_2A<MissionSelectPage, void, PushButton&, u32> onBackButtonClickHandler;
+    PtmfHolder_2A<MissionSelectPage, void, PushButton &, u32> onBackButtonClickHandler;
 };
 
-static void InstallMissionPage(ExpSection& section, PageId id, Page* page) {
+static void InstallMissionPage(ExpSection &section, PageId id, Page *page) {
     if (section.pages[id] != nullptr) {
         section.pages[id]->Dispose();
         delete section.pages[id];
@@ -593,30 +618,30 @@ static void InstallMissionPage(ExpSection& section, PageId id, Page* page) {
     page->Init(id);
 }
 
-}
+}  // namespace
 
-Page* CreateMissionPausePage() { return new MissionPausePage(); }
+Page *CreateMissionPausePage() { return new MissionPausePage(); }
 
 void PrepareMissionStageSelectReturn() {
     returnToStageSelect = true;
 }
 
-void ConfigureMissionInformationPage(Page& page) {
+void ConfigureMissionInformationPage(Page &page) {
     if (page.pageId != PAGE_MISSION_INFORMATION_PROMPT) return;
 
-    PushButton* buttons[2] = {};
+    PushButton *buttons[2] = {};
     u32 buttonCount = 0;
     for (u32 i = 0; i < page.controlGroup.controlCount; ++i) {
-        UIControl* control = page.controlGroup.GetControl(i);
+        UIControl *control = page.controlGroup.GetControl(i);
         if (control == nullptr || strcmp(control->GetClassName(), "PushButton") != 0) continue;
         if (buttonCount < sizeof(buttons) / sizeof(buttons[0]))
-            buttons[buttonCount++] = static_cast<PushButton*>(control);
+            buttons[buttonCount++] = static_cast<PushButton *>(control);
     }
 
     if (buttonCount == 0) return;
 
-    PushButton* okButton = buttons[0];
-    PushButton* tutorialButton = nullptr;
+    PushButton *okButton = buttons[0];
+    PushButton *tutorialButton = nullptr;
     if (buttonCount > 1) {
         if (buttons[1]->positionAndscale[0].position.y > okButton->positionAndscale[0].position.y) {
             tutorialButton = okButton;
@@ -637,14 +662,14 @@ void ConfigureMissionInformationPage(Page& page) {
     }
 }
 
-static Pages::RaceHUD* SetMissionHudNextPage(Pages::RaceHUD* hud) {
+static Pages::RaceHUD *SetMissionHudNextPage(Pages::RaceHUD *hud) {
     hud->nextPageId = PAGE_TT_SPLITS;
     return hud;
 }
 kmCall(0x80624adc, SetMissionHudNextPage);
 
-void CreateRacePages(ExpSection& section) {
-	::Pulsar::MissionMode::PrepareMissionRankSoundGroup();
+void CreateRacePages(ExpSection &section) {
+    ::Pulsar::MissionMode::PrepareMissionRankSoundGroup();
     section.CreateAndInitPage(section, PAGE_TT_SPLITS);
     section.CreateAndInitPage(section, PAGE_MISSION_ENDMENU);
     if (Pages::RaceHUD::sInstance != nullptr) {
@@ -652,19 +677,19 @@ void CreateRacePages(ExpSection& section) {
     }
 }
 
-u32 GetMissionButtonId(const Pages::SinglePlayer* page) { return page->externControlCount - 2; }
+u32 GetMissionButtonId(const Pages::SinglePlayer *page) { return page->externControlCount - 2; }
 
-bool IsMissionButton(const Pages::SinglePlayer* page, u32 id) { return id == GetMissionButtonId(page); }
+bool IsMissionButton(const Pages::SinglePlayer *page, u32 id) { return id == GetMissionButtonId(page); }
 
-bool IsBTMRModeButton(const Pages::SinglePlayer* page, u32 id) { return id == 3 || IsMissionButton(page, id); }
+bool IsBTMRModeButton(const Pages::SinglePlayer *page, u32 id) { return id == 3 || IsMissionButton(page, id); }
 
-u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer* page, u32 id) { return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON; }
+u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer *page, u32 id) { return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON; }
 
-static bool IsMissionMenuTTButton(const Pages::SinglePlayer* page, u32 id) {
+static bool IsMissionMenuTTButton(const Pages::SinglePlayer *page, u32 id) {
     return id == 1 || (id > 3 && id < GetMissionButtonId(page));
 }
 
-static void LeaveMissionMenuMode(const Pages::SinglePlayer* page, u32 id) {
+static void LeaveMissionMenuMode(const Pages::SinglePlayer *page, u32 id) {
     if (Racedata::sInstance == nullptr)
         return;
 
@@ -685,12 +710,12 @@ static void LeaveMissionMenuMode(const Pages::SinglePlayer* page, u32 id) {
             break;
     }
 
-    RacedataScenario* scenarios[2] = {
+    RacedataScenario *scenarios[2] = {
         &Racedata::sInstance->menusScenario,
         &Racedata::sInstance->racesScenario,
     };
     for (u32 i = 0; i < sizeof(scenarios) / sizeof(scenarios[0]); ++i) {
-        RacedataScenario& scenario = *scenarios[i];
+        RacedataScenario &scenario = *scenarios[i];
         if (!::Pulsar::MissionMode::IsMissionScenario(scenario)) continue;
 
         scenario.settings.gamemode = mode;
@@ -702,7 +727,7 @@ static void LeaveMissionMenuMode(const Pages::SinglePlayer* page, u32 id) {
     MissionModel::Reset();
 }
 
-void CreateSinglePlayerPages(ExpSection& section) {
+void CreateSinglePlayerPages(ExpSection &section) {
     if (section.pages[PAGE_SINGLE_PLAYER_MENU] == nullptr)
         section.CreateAndInitPage(section, PAGE_SINGLE_PLAYER_MENU);
 
@@ -717,7 +742,7 @@ void CreateSinglePlayerPages(ExpSection& section) {
     InstallMissionPage(section, PAGE_DRIFT_SELECT_WITH_ONE_OPTION, MissionModel::CreateDriftSelectPage());
 }
 
-void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
+void OnButtonSelect(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId) {
     const s32 id = button.buttonId;
     button.buttonId = 4;
     page->Pages::SinglePlayer::OnExternalButtonSelect(button, hudSlotId);
@@ -725,7 +750,7 @@ void OnButtonSelect(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId
     page->bottomText->SetMessage(BMG_MISSION_MODE_BOTTOM);
 }
 
-bool OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId) {
+bool OnButtonClick(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId) {
     if (!IsMissionButton(page, button.buttonId)) {
         MissionModel::RestoreMenuCombo();
         LeaveMissionMenuMode(page, button.buttonId);
@@ -742,6 +767,6 @@ bool OnButtonClick(Pages::SinglePlayer* page, PushButton& button, u32 hudSlotId)
     return true;
 }
 
-}
-}
-}
+}  // namespace MissionMode
+}  // namespace UI
+}  // namespace Pulsar

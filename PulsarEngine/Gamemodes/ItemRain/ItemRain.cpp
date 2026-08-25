@@ -51,22 +51,38 @@ static const ItemWeight ITEM_WEIGHTS[] = {
 
 static ItemId GetItemId(ItemObjId objectId) {
     switch (objectId) {
-        case OBJ_GREEN_SHELL: return GREEN_SHELL;
-        case OBJ_RED_SHELL: return RED_SHELL;
-        case OBJ_BANANA: return BANANA;
-        case OBJ_FAKE_ITEM_BOX: return FAKE_ITEM_BOX;
-        case OBJ_MUSHROOM: return MUSHROOM;
-        case OBJ_BOBOMB: return BOBOMB;
-        case OBJ_BLUE_SHELL: return BLUE_SHELL;
-        case OBJ_LIGHTNING: return LIGHTNING;
-        case OBJ_STAR: return STAR;
-        case OBJ_GOLDEN_MUSHROOM: return GOLDEN_MUSHROOM;
-        case OBJ_MEGA_MUSHROOM: return MEGA_MUSHROOM;
-        case OBJ_BLOOPER: return BLOOPER;
-        case OBJ_POW_BLOCK: return POW_BLOCK;
-        case OBJ_THUNDER_CLOUD: return THUNDER_CLOUD;
-        case OBJ_BULLET_BILL: return BULLET_BILL;
-        default: return ITEM_NONE;
+        case OBJ_GREEN_SHELL:
+            return GREEN_SHELL;
+        case OBJ_RED_SHELL:
+            return RED_SHELL;
+        case OBJ_BANANA:
+            return BANANA;
+        case OBJ_FAKE_ITEM_BOX:
+            return FAKE_ITEM_BOX;
+        case OBJ_MUSHROOM:
+            return MUSHROOM;
+        case OBJ_BOBOMB:
+            return BOBOMB;
+        case OBJ_BLUE_SHELL:
+            return BLUE_SHELL;
+        case OBJ_LIGHTNING:
+            return LIGHTNING;
+        case OBJ_STAR:
+            return STAR;
+        case OBJ_GOLDEN_MUSHROOM:
+            return GOLDEN_MUSHROOM;
+        case OBJ_MEGA_MUSHROOM:
+            return MEGA_MUSHROOM;
+        case OBJ_BLOOPER:
+            return BLOOPER;
+        case OBJ_POW_BLOCK:
+            return POW_BLOCK;
+        case OBJ_THUNDER_CLOUD:
+            return THUNDER_CLOUD;
+        case OBJ_BULLET_BILL:
+            return BULLET_BILL;
+        default:
+            return ITEM_NONE;
     }
 }
 

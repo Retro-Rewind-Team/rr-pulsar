@@ -18,7 +18,7 @@ namespace {
 
 static bool scenarioLoaded;
 static bool comboModelLoaded;
-static Pages::ModelRenderer* comboModelRenderer;
+static Pages::ModelRenderer *comboModelRenderer;
 static CharacterId comboModelCharacter;
 static KartId comboModelKart;
 static bool savedMenuCombo;
@@ -28,7 +28,7 @@ static bool missionLoadedCharacters[0x18];
 static const u32 BACK_MODEL_CONTROL_OFFSET = 0x1C8;
 
 class MissionDriftSelect : public Pages::DriftSelect {
-   public:
+public:
     void OnActivate() override {
         Pages::DriftSelect::OnActivate();
         if (!IsMissionMenuSection()) return;
@@ -44,18 +44,18 @@ class MissionDriftSelect : public Pages::DriftSelect {
     }
 };
 
-}
+}  // namespace
 
 void ResetDriverAnimation(u8 hudSlotId) {
     if (MenuModelMgr::sInstance == nullptr || !MenuModelMgr::sInstance->isActive ||
         MenuModelMgr::sInstance->driverModels == nullptr)
         return;
 
-    MenuDriverModelMgr* driverModels = MenuModelMgr::sInstance->driverModels;
+    MenuDriverModelMgr *driverModels = MenuModelMgr::sInstance->driverModels;
     if (hudSlotId >= driverModels->playerCount || driverModels->players[hudSlotId].playerModel == nullptr)
         return;
 
-    MenuDriverModel* driver = driverModels->players[hudSlotId].playerModel;
+    MenuDriverModel *driver = driverModels->players[hudSlotId].playerModel;
     if (driver->state < MenuDriverModel::MENUDRIVERMODEL_STATE_ONKARTSELECT)
         return;
 
@@ -70,7 +70,7 @@ void RestoreMenuDriverModel(CharacterId character) {
         MenuModelMgr::sInstance->driverModels == nullptr)
         return;
 
-    MenuDriverModelMgr* driverModels = MenuModelMgr::sInstance->driverModels;
+    MenuDriverModelMgr *driverModels = MenuModelMgr::sInstance->driverModels;
     if (driverModels->playerCount == 0) return;
 
     driverModels->SetPlayerCharacter(0, character);
@@ -82,13 +82,13 @@ void ResetMissionDriverModels() {
         MenuModelMgr::sInstance->driverModels == nullptr)
         return;
 
-    MenuDriverModelMgr* driverModels = MenuModelMgr::sInstance->driverModels;
+    MenuDriverModelMgr *driverModels = MenuModelMgr::sInstance->driverModels;
     if (driverModels->models == nullptr) return;
 
     for (u32 character = 0; character < sizeof(missionLoadedCharacters); ++character) {
         if (!missionLoadedCharacters[character]) continue;
 
-        MenuDriverModel* driver = &driverModels->models[character];
+        MenuDriverModel *driver = &driverModels->models[character];
         if (driver->model != nullptr && driver->model->modelTransformator != nullptr &&
             reinterpret_cast<u32>(driver->model->modelTransformator) >= 0x1000) {
             driver->charSelTransformator = driver->model->modelTransformator;
@@ -106,8 +106,8 @@ void Reset() {
     if (SectionMgr::sInstance == nullptr || SectionMgr::sInstance->curSection == nullptr)
         return;
 
-    Pages::ModelRenderer* renderer =
-        static_cast<Pages::ModelRenderer*>(SectionMgr::sInstance->curSection->pages[PAGE_MODEL_RENDERER]);
+    Pages::ModelRenderer *renderer =
+        static_cast<Pages::ModelRenderer *>(SectionMgr::sInstance->curSection->pages[PAGE_MODEL_RENDERER]);
     if (renderer != nullptr) renderer->params[0].isVisible = false;
 }
 
@@ -117,7 +117,7 @@ void SaveMenuCombo() {
     if (savedMenuCombo || SectionMgr::sInstance == nullptr || SectionMgr::sInstance->sectionParams == nullptr)
         return;
 
-    SectionParams* params = SectionMgr::sInstance->sectionParams;
+    SectionParams *params = SectionMgr::sInstance->sectionParams;
     savedCharacter = params->characters[0];
     savedKart = params->karts[0];
     savedMenuCombo = true;
@@ -127,7 +127,7 @@ void RestoreMenuCombo() {
     if (!savedMenuCombo || SectionMgr::sInstance == nullptr || SectionMgr::sInstance->sectionParams == nullptr)
         return;
 
-    SectionParams* params = SectionMgr::sInstance->sectionParams;
+    SectionParams *params = SectionMgr::sInstance->sectionParams;
     params->characters[0] = savedCharacter;
     params->karts[0] = savedKart;
     params->combos[0].selCharacter = savedCharacter;
@@ -139,7 +139,7 @@ void RestoreMenuCombo() {
     }
 
     if (SectionMgr::sInstance->curSection != nullptr) {
-        Pages::ModelRenderer* renderer = static_cast<Pages::ModelRenderer*>(
+        Pages::ModelRenderer *renderer = static_cast<Pages::ModelRenderer *>(
             SectionMgr::sInstance->curSection->pages[PAGE_MODEL_RENDERER]);
         if (renderer != nullptr) {
             renderer->params[0].character = savedCharacter;
@@ -175,11 +175,11 @@ bool IsMissionMenuSection() {
 
 kmRuntimeUse(0x805f2e84);
 void RequestBackgroundModel() {
-    ExpSection* section = ExpSection::GetSection();
+    ExpSection *section = ExpSection::GetSection();
     if (section != nullptr && section->pages[PAGE_BACKMODEL] != nullptr) {
-        typedef void (*RequestModelFn)(void*, BackModelType);
+        typedef void (*RequestModelFn)(void *, BackModelType);
         const RequestModelFn requestModel = reinterpret_cast<RequestModelFn>(kmRuntimeAddr(0x805f2e84));
-        requestModel(reinterpret_cast<u8*>(section->pages[PAGE_BACKMODEL]) + BACK_MODEL_CONTROL_OFFSET,
+        requestModel(reinterpret_cast<u8 *>(section->pages[PAGE_BACKMODEL]) + BACK_MODEL_CONTROL_OFFSET,
                      BACKMODEL_BALOON);
         return;
     }
@@ -187,34 +187,34 @@ void RequestBackgroundModel() {
     if (MenuModelMgr::sInstance != nullptr) MenuModelMgr::sInstance->RequestBackModel(BACKMODEL_BALOON);
 }
 
-void CreateModelPage(ExpSection& section) {
+void CreateModelPage(ExpSection &section) {
     if (section.pages[PAGE_MODEL_RENDERER] == nullptr) section.CreateAndInitPage(section, PAGE_MODEL_RENDERER);
 
-    Pages::ModelRenderer* renderer = section.Get<Pages::ModelRenderer>();
+    Pages::ModelRenderer *renderer = section.Get<Pages::ModelRenderer>();
     if (renderer != comboModelRenderer) {
         comboModelRenderer = renderer;
         comboModelLoaded = false;
     }
 }
 
-void UpdateComboModel(NoteModelControl& model) {
+void UpdateComboModel(NoteModelControl &model) {
     if (!IsMissionMenuSection()) {
         model.isHidden = true;
         return;
     }
 
-    ExpSection* section = ExpSection::GetSection();
+    ExpSection *section = ExpSection::GetSection();
     if (section == nullptr) {
         model.isHidden = true;
         return;
     }
-    Pages::ModelRenderer* renderer = section->Get<Pages::ModelRenderer>();
+    Pages::ModelRenderer *renderer = section->Get<Pages::ModelRenderer>();
     if (renderer == nullptr) {
         model.isHidden = true;
         return;
     }
 
-    const RacedataPlayer& player = Racedata::sInstance->menusScenario.players[0];
+    const RacedataPlayer &player = Racedata::sInstance->menusScenario.players[0];
     const s32 characterId = static_cast<s32>(player.characterId);
     const s32 kartId = static_cast<s32>(player.kartId);
     if (characterId < static_cast<s32>(MARIO) || characterId > static_cast<s32>(ROSALINA_BIKER) ||
@@ -234,7 +234,7 @@ void UpdateComboModel(NoteModelControl& model) {
     model.isHidden = false;
 }
 
-bool LoadComboModel(NoteModelControl& model) {
+bool LoadComboModel(NoteModelControl &model) {
     if (!IsMissionMenuSection()) {
         model.isHidden = true;
         return false;
@@ -243,13 +243,13 @@ bool LoadComboModel(NoteModelControl& model) {
     UpdateComboModel(model);
     if (model.isHidden) return false;
 
-    ExpSection* section = ExpSection::GetSection();
+    ExpSection *section = ExpSection::GetSection();
     if (section == nullptr || Racedata::sInstance == nullptr) return false;
 
-    Pages::ModelRenderer* renderer = section->Get<Pages::ModelRenderer>();
+    Pages::ModelRenderer *renderer = section->Get<Pages::ModelRenderer>();
     if (renderer == nullptr) return false;
 
-    const RacedataPlayer& player = Racedata::sInstance->menusScenario.players[0];
+    const RacedataPlayer &player = Racedata::sInstance->menusScenario.players[0];
     if (comboModelLoaded && comboModelRenderer == renderer && comboModelCharacter == player.characterId &&
         comboModelKart == player.kartId)
         return true;
@@ -273,13 +273,13 @@ bool LoadComboModel(NoteModelControl& model) {
 void HideComboModel() {
     if (!IsMissionMenuSection()) return;
 
-    ExpSection* section = ExpSection::GetSection();
-    Pages::ModelRenderer* renderer = section->Get<Pages::ModelRenderer>();
+    ExpSection *section = ExpSection::GetSection();
+    Pages::ModelRenderer *renderer = section->Get<Pages::ModelRenderer>();
     if (renderer != nullptr) renderer->params[0].isVisible = false;
 }
 
-Page* CreateDriftSelectPage() { return new MissionDriftSelect(); }
+Page *CreateDriftSelectPage() { return new MissionDriftSelect(); }
 
-}
-}
-}
+}  // namespace MissionModel
+}  // namespace UI
+}  // namespace Pulsar

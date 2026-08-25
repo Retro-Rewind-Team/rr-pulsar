@@ -7,8 +7,8 @@ namespace MissionMode {
 
 void SaveMissionResult(u32 finishTimeMillis, u32 missionRank);
 
-bool GetMissionRecord(u32 missionId, u32& finishTimeMillis, u8& rating);
+bool GetMissionRecord(u32 missionId, u32 &finishTimeMillis, u8 &rating);
 
-}
-}
+}  // namespace MissionMode
+}  // namespace Pulsar
 #endif
