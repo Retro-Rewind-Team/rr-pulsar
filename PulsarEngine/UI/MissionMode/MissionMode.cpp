@@ -54,7 +54,7 @@ static const char* const MISSION_LEVEL_BUTTON_VARIANTS[8] = {
 static const char* const MISSION_STAGE_BORDER_PANES[] = {
     "color_base",    "fuchi_black",   "fuchi_pattern", "color_down",   "shadow_top_r",
     "shadow_top_l",  "shadow_botom_r", "shadow_botom_l", "hight_light_l", "hight_light_r",
-    "text_light_01", "objective_icon",
+    "text_light_01", "objective_icon", "black_base",
 };
 
 class MissionPausePage : public Pages::RaceMenu {
@@ -123,9 +123,11 @@ static void SetMissionInfoSelection(ExpSection& section, u32 level, u32 stage) {
     *reinterpret_cast<u32*>(pageBytes + MISSION_INFO_LEVEL_OFFSET) = level;
 }
 
-static void ResetMissionButtonFreeText(PushButton& button) {
-    AnimationGroup& textLightGroup = button.animator.GetAnimationGroupById(2);
-    if (textLightGroup.animationsCount > 1) textLightGroup.PlayAnimationAtFrame(1, 0.0f);
+static void ResetMissionButtonFreeText(PushButton& button, bool locked = false) {
+	if (button.animator.animationGroups != nullptr && button.animator.animationCount > 2) {
+		AnimationGroup& textLightGroup = button.animator.GetAnimationGroupById(2);
+		if (textLightGroup.animationsCount > 1) textLightGroup.PlayAnimationAtFrame(1, 0.0f);
+	}
 
     nw4r::lyt::Pane* text = button.layout.GetPaneByName("text");
     if (text == nullptr || text->GetMaterial() == nullptr) return;
@@ -136,9 +138,9 @@ static void ResetMissionButtonFreeText(PushButton& button) {
     material->tevColours[0].g = 20;
     material->tevColours[0].b = 5;
     material->tevColours[0].a = 0;
-    material->tevColours[1].r = 150;
-    material->tevColours[1].g = 140;
-    material->tevColours[1].b = 128;
+    material->tevColours[1].r = locked ? 60 : 150;
+    material->tevColours[1].g = locked ? 60 : 140;
+    material->tevColours[1].b = locked ? 60 : 128;
     material->tevColours[1].a = 255;
 }
 
@@ -213,7 +215,6 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
     void OnControlsInitialized() override {
         ::Pages::Menu::OnControlsInitialized();
-        this->UpdateMissionButtonAccess();
     }
 
     void OnActivate() override {
@@ -283,8 +284,9 @@ class MissionSelectPage : public Pages::MenuInteractable {
 
     void OnButtonClick(PushButton& button, u32) {
         if (button.buttonId < static_cast<s32>(BUTTON_COUNT)) {
-            if (this->levelSelected) return;
-            selectedLevel = static_cast<u32>(button.buttonId) % BUTTON_COUNT;
+            const u32 level = static_cast<u32>(button.buttonId);
+            if (this->levelSelected || !this->IsLevelAccessible(level)) return;
+            selectedLevel = level;
             selectedMission = 0;
             MissionModel::Reset();
             this->ShowStageSelect();
@@ -294,6 +296,7 @@ class MissionSelectPage : public Pages::MenuInteractable {
         if (!this->levelSelected) return;
 
         const u32 stageId = static_cast<u32>(button.buttonId) - BUTTON_COUNT;
+        if (!this->IsStageAccessible(selectedLevel, stageId)) return;
         selectedMission = stageId;
         MissionModel::Reset();
         if (Racedata::sInstance != nullptr) {
@@ -313,10 +316,14 @@ class MissionSelectPage : public Pages::MenuInteractable {
         if (button.buttonId < static_cast<s32>(BUTTON_COUNT)) {
             if (this->levelSelected) return;
             this->ResetOtherButtonText(this->levelButtons, button);
-            this->UpdateStageButtonMessages(static_cast<u32>(button.buttonId));
+            const u32 level = static_cast<u32>(button.buttonId);
+            this->UpdateStageButtonMessages(level);
+            for (u32 i = 0; i < BUTTON_COUNT; ++i) ResetMissionButtonFreeText(this->stageButtons[i]);
+            this->UpdateMissionButtonAccess(level);
         } else {
             if (!this->levelSelected) return;
             this->ResetOtherButtonText(this->stageButtons, button);
+            this->UpdateMissionButtonAccess();
         }
         this->HideMissionBottomText();
     }
@@ -355,11 +362,41 @@ class MissionSelectPage : public Pages::MenuInteractable {
         button.manipulator.inaccessible = !active;
     }
 
-    void UpdateMissionButtonAccess() {
+    void UpdateMissionButtonAccess(u32 level = selectedLevel) {
         for (u32 i = 0; i < BUTTON_COUNT; ++i) {
-            this->SetMissionButtonActive(this->levelButtons[i], !this->levelSelected);
-            this->SetMissionButtonActive(this->stageButtons[i], this->levelSelected);
+            const bool levelAccessible = this->IsLevelAccessible(i);
+            const bool stageAccessible = this->IsStageAccessible(level, i);
+            this->SetMissionButtonActive(this->levelButtons[i], !this->levelSelected && levelAccessible);
+            this->SetMissionButtonActive(this->stageButtons[i], this->levelSelected && stageAccessible);
+            if (!levelAccessible) ResetMissionButtonFreeText(this->levelButtons[i], true);
+            if (!stageAccessible) ResetMissionButtonFreeText(this->stageButtons[i], true);
         }
+    }
+
+    bool HasMissionRecord(u32 level, u32 stageId) const {
+        u8 missionId = 0;
+        u32 finishTimeMillis = 0;
+        u8 rating = 0;
+        return this->GetMissionId(level, stageId, missionId) &&
+               Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating);
+    }
+
+    bool IsLevelAccessible(u32 level) const {
+        if (level == 0) return true;
+        if (level >= BUTTON_COUNT) return false;
+
+        for (u32 stageId = 0; stageId < BUTTON_COUNT; ++stageId)
+            if (!this->HasMissionRecord(level - 1, stageId)) return false;
+        return true;
+    }
+
+    bool IsStageAccessible(u32 level, u32 stageId) const {
+        if (level >= BUTTON_COUNT || stageId >= BUTTON_COUNT) return false;
+        if (stageId < BUTTON_COUNT - 1) return true;
+
+        for (u32 previousStage = 0; previousStage < stageId; ++previousStage)
+            if (!this->HasMissionRecord(level, previousStage)) return false;
+        return true;
     }
 
     void UpdateStageButtonMessage(u32 level, u32 stageId) {
@@ -395,8 +432,10 @@ class MissionSelectPage : public Pages::MenuInteractable {
     }
 
     void SetStageBorderVisible(PushButton& button, bool visible) {
-        for (u32 i = 0; i < sizeof(MISSION_STAGE_BORDER_PANES) / sizeof(MISSION_STAGE_BORDER_PANES[0]); ++i)
-            button.SetPaneVisibility(MISSION_STAGE_BORDER_PANES[i], visible);
+        for (u32 i = 0; i < sizeof(MISSION_STAGE_BORDER_PANES) / sizeof(MISSION_STAGE_BORDER_PANES[0]); ++i) {
+            if (button.layout.GetPaneByName(MISSION_STAGE_BORDER_PANES[i]) != nullptr)
+                button.SetPaneVisibility(MISSION_STAGE_BORDER_PANES[i], visible);
+        }
     }
 
     bool GetMissionId(u32 level, u32 stageId, u8& missionId) const {
@@ -450,10 +489,10 @@ class MissionSelectPage : public Pages::MenuInteractable {
     void ShowLevelSelect() {
         this->levelSelected = false;
         this->HideMissionBottomText();
-        this->UpdateMissionButtonAccess();
 
         for (u32 i = 0; i < BUTTON_COUNT; ++i) {
             this->levelButtons[i].isHidden = false;
+            SetStageBorderVisible(this->levelButtons[i], this->IsLevelAccessible(i));
             ResetMissionButtonFreeText(this->levelButtons[i]);
 
             SetStageBorderVisible(this->stageButtons[i], false);
@@ -461,24 +500,26 @@ class MissionSelectPage : public Pages::MenuInteractable {
             ResetMissionButtonFreeText(this->stageButtons[i]);
         }
 
+        this->UpdateMissionButtonAccess();
         this->levelButtons[selectedLevel % BUTTON_COUNT].Select(0);
     }
 
     void ShowStageSelect() {
         this->levelSelected = true;
         this->HideMissionBottomText();
-        this->UpdateMissionButtonAccess();
 
         for (u32 i = 0; i < BUTTON_COUNT; ++i) {
             const bool selected = i == (selectedLevel % BUTTON_COUNT);
             this->levelButtons[i].isHidden = !selected;
+            SetStageBorderVisible(this->levelButtons[i], selected && this->IsLevelAccessible(i));
             if (!selected) ResetMissionButtonFreeText(this->levelButtons[i]);
 
-            SetStageBorderVisible(this->stageButtons[i], true);
+            SetStageBorderVisible(this->stageButtons[i], this->IsStageAccessible(selectedLevel, i));
             this->stageButtons[i].isHidden = false;
             ResetMissionButtonFreeText(this->stageButtons[i]);
         }
 
+        this->UpdateMissionButtonAccess();
         this->UpdateButtonMessages();
         this->stageButtons[selectedMission % BUTTON_COUNT].Select(0);
     }
