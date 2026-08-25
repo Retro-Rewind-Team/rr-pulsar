@@ -18,14 +18,14 @@ void SetScenarioLoaded(bool loaded);
 bool IsMissionMenuSection();
 void ResetDriverAnimation(u8 hudSlotId);
 void RequestBackgroundModel();
-void CreateModelPage(ExpSection& section);
-void UpdateComboModel(NoteModelControl& model);
-bool LoadComboModel(NoteModelControl& model);
+void CreateModelPage(ExpSection &section);
+void UpdateComboModel(NoteModelControl &model);
+bool LoadComboModel(NoteModelControl &model);
 void HideComboModel();
-Page* CreateDriftSelectPage();
+Page *CreateDriftSelectPage();
 
-}
-}
-}
+}  // namespace MissionModel
+}  // namespace UI
+}  // namespace Pulsar
 
 #endif

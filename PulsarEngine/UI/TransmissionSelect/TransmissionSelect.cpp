@@ -178,5 +178,5 @@ void LoadTransmissionSelectAfterDrift(Pages::Menu &menu, PageId id, PushButton &
     menu.LoadNextPageById(id, button);
 }
 
-}
-}
+}  // namespace UI
+}  // namespace Pulsar

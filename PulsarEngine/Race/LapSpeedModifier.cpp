@@ -85,7 +85,7 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
     }
 
     if (racedata != nullptr) {
-        const RacedataScenario& scenario = racedata->racesScenario;
+        const RacedataScenario &scenario = racedata->racesScenario;
         const u8 missionLapCount = MissionMode::GetMissionLapCount(scenario);
         if (missionLapCount != 0) lapCount = missionLapCount;
         racedata->racesScenario.settings.lapCount = lapCount;

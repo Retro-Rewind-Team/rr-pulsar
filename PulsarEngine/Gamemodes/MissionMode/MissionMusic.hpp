@@ -17,15 +17,15 @@ enum {
     MISSION_CHARACTER_TABLE_COUNT = 12
 };
 
-bool ResolveMissionMusicPath(const char* brstmRoot, const char*& extFilePath);
-bool GetMissionMusicSlotOverride(CourseId& musicSlot);
-void LoadMissionCharacterTablesFromConfig(const u8* file, u32 fileSize);
-u8 GetMissionCharacterTable(const RacedataScenario& scenario, u8 playerId);
+bool ResolveMissionMusicPath(const char *brstmRoot, const char *&extFilePath);
+bool GetMissionMusicSlotOverride(CourseId &musicSlot);
+void LoadMissionCharacterTablesFromConfig(const u8 *file, u32 fileSize);
+u8 GetMissionCharacterTable(const RacedataScenario &scenario, u8 playerId);
 u8 GetMissionCharacterTable(u8 playerId);
 void PrepareMissionRankSoundGroup();
-void QueueMissionRankSound(Pages::TTSplits* page, u32 rank);
+void QueueMissionRankSound(Pages::TTSplits *page, u32 rank);
 
-}
-}
+}  // namespace MissionMode
+}  // namespace Pulsar
 
 #endif

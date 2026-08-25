@@ -24,8 +24,10 @@ u32 GetEffectiveCustomItemsBitfield() {
         const RacedataScenario &raceScenario = Racedata::sInstance->racesScenario;
         const RacedataScenario &menuScenario = Racedata::sInstance->menusScenario;
         const RacedataScenario *mission = nullptr;
-        if (MissionMode::IsMissionScenario(raceScenario)) mission = &raceScenario;
-        else if (MissionMode::IsMissionScenario(menuScenario)) mission = &menuScenario;
+        if (MissionMode::IsMissionScenario(raceScenario))
+            mission = &raceScenario;
+        else if (MissionMode::IsMissionScenario(menuScenario))
+            mission = &menuScenario;
         if (mission != nullptr) {
             if (MissionMode::HasMissionFeature(*mission, MissionMode::CUSTOM_ITEMS_OVERRIDE))
                 return MissionMode::GetMissionCustomItems(*mission) & ALL_ITEMS_BITFIELD;
