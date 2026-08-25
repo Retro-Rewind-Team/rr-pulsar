@@ -313,12 +313,23 @@ void System::UpdateContext() {
         isItemModeStorm = false;
         if (MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ITEM_MODE_OVERRIDE)) {
             switch (MissionMode::GetMissionItemMode(Racedata::sInstance->menusScenario)) {
-                case GAMEMODE_RANDOM: isItemModeRandom = true; break;
-                case GAMEMODE_BLAST: isItemModeBlast = true; break;
-                case GAMEMODE_ITEMRAIN: isItemModeRain = true; break;
-                case GAMEMODE_ITEMSTORM: isItemModeStorm = true; break;
-                case GAMEMODE_NONE: isItemModeNone = true; break;
-                default: break;
+                case GAMEMODE_RANDOM:
+                    isItemModeRandom = true;
+                    break;
+                case GAMEMODE_BLAST:
+                    isItemModeBlast = true;
+                    break;
+                case GAMEMODE_ITEMRAIN:
+                    isItemModeRain = true;
+                    break;
+                case GAMEMODE_ITEMSTORM:
+                    isItemModeStorm = true;
+                    break;
+                case GAMEMODE_NONE:
+                    isItemModeNone = true;
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -335,7 +346,7 @@ void System::UpdateContext() {
     bool isTeamBattle = settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetSettingValue(Pulsar::Settings::SETTING_VR) == VR_ENABLED && isNotPublic;
-    bool isBattleRoyale = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED && isNotPublic && !isBattle && !isTimeTrial;
+    bool isBattleRoyale = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED && isNotPublic && !isBattle && !isTimeTrial && !isMission;
     const u8 koRoyaleBalloons = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEBALLOONS);
     bool isKoPerRace2 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_2;
     bool isKoPerRace3 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_3;
