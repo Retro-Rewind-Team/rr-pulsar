@@ -7,6 +7,7 @@
 #include <PulsarSystem.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
 #include <Race/ConditionalTrackState.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 
 // https://wiki.tockdom.com/wiki/LEX_(File_Format)
 
@@ -59,6 +60,9 @@ kmCall(0x80512820, LexMgr::LoadLEXAndKMP);
 
 bool ApplyHIPT(CtrlRaceRankNum &tracker) {  // return value: if true, tracker is hidden
     bool isInactive = tracker.CtrlRaceRankNum::IsInactive();
+    if (Racedata::sInstance != nullptr &&
+        Pulsar::MissionMode::ShouldHidePositionCounter(Racedata::sInstance->racesScenario))
+        return true;
     if (!isInactive) {
         const u8 playerId = tracker.GetPlayerId();
         const LexMgr &mgr = Pulsar::System::sInstance->lecodeMgr.lexMgr;

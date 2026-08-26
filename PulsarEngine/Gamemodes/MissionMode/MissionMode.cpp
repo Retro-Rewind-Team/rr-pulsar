@@ -207,6 +207,10 @@ static bool HasMissionCPUs(const RacedataScenario &scenario) {
     return false;
 }
 
+bool ShouldHidePositionCounter(const RacedataScenario &scenario) {
+    return IsMissionVSObjective(scenario) && GetMissionCPUCount(scenario) == 0;
+}
+
 static void SetMissionStartPosition(Raceinfo *raceinfo, Vec3 *position, Vec3 *angles, u8 playerId) {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT || !HasMissionCPUs(scenario) ||
