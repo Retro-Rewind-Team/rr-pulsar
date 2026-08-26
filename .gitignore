@@ -21,3 +21,5 @@ PulsarEngine/Version.cpp
 AGENTS.md
 .agent
 .claude
+scripts/Test-DolphinScenario.paths.txt
+crash.txt

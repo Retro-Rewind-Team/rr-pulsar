@@ -6,6 +6,8 @@
 #include <MarioKartWii/Audio/Actors/KartActor.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceGhostDiffTime.hpp>
+#include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceTime.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Settings/Settings.hpp>
 
 /*Music speedup:
@@ -21,6 +23,36 @@ static const Audio::RaceState RACE_STATE_FINAL_LAP_JINGLE = static_cast<Audio::R
 static const u8 INVALID_HUD_SLOT_ID = 0xFF;
 static u8 finalLapSpeedupHudSlot = INVALID_HUD_SLOT_ID;
 void UpdateSW2RRRacePercentageMusic();
+
+static u8 missionTimerWarningSecond = 0xFF;
+
+static void PlayMissionTimerWarningSound() {
+    const Racedata *racedata = Racedata::sInstance;
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
+    if (racedata == nullptr || !MissionMode::IsMissionScenario(racedata->racesScenario) ||
+        raceInfo == nullptr || raceInfo->stage != RACESTAGE_RACE) {
+        missionTimerWarningSecond = 0xFF;
+        return;
+    }
+
+    Timer timer;
+    CtrlRaceTime::FillTimerGlobal(&timer);
+    if (!timer.isActive || timer.minutes != 0 || timer.seconds > 9) {
+        missionTimerWarningSecond = 0xFF;
+        return;
+    }
+    if (timer.seconds == missionTimerWarningSecond) return;
+
+    Audio::RaceRSARPlayer *rsarSoundPlayer =
+        static_cast<Audio::RaceRSARPlayer *>(Audio::RSARPlayer::sInstance);
+    if (rsarSoundPlayer == nullptr) return;
+
+    missionTimerWarningSecond = timer.seconds;
+    const u32 soundId = timer.seconds >= 3
+                            ? SOUND_ID_BATTLE_COUNTDOWN_10_9_8
+                            : SOUND_ID_BATTLE_COUNTDOWN_3_2_1;
+    rsarSoundPlayer->PlaySound(soundId, INVALID_HUD_SLOT_ID);
+}
 
 static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 hudSlotId) {
     u8 isSpeedUp = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSICSPEEDUP);
@@ -90,6 +122,7 @@ static void RaceSoundManager_CheckRaceState(void *raceSoundManager) {
     }
 
     reinterpret_cast<void (*)(void *)>(kmRuntimeAddr(0x807125d4))(raceSoundManager);
+    PlayMissionTimerWarningSound();
     UpdateSW2RRRacePercentageMusic();
 }
 kmCall(0x80710f84, RaceSoundManager_CheckRaceState);

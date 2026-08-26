@@ -9,6 +9,7 @@
 #include <Gamemodes/KO/KOHost.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Settings/Settings.hpp>
 #include <Config.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
@@ -252,8 +253,11 @@ void System::InitSettings(const u16 *totalTrophyCount) const {
 }
 
 void System::UpdateContext() {
+    MissionMode::ApplyMissionScenarioSettings(Racedata::sInstance->menusScenario);
+    MissionMode::ApplyMissionScenarioSettings(Racedata::sInstance->racesScenario);
     const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
+    const bool isMission = MissionMode::IsMissionScenario(Racedata::sInstance->menusScenario);
     this->ottMgr.Reset();
     const Settings::Mgr &settings = Settings::Mgr::Get();
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
@@ -280,6 +284,11 @@ void System::UpdateContext() {
     bool isOTT = false;
     bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
     bool is500 = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC) == HOSTCC_500 && isFroom;
+    if (isMission) {
+        is200 = MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ENGINE_200CC) &&
+                racedataSettings.engineClass == CC_100;
+        is500 = MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ENGINE_500CC);
+    }
     bool isOTTOnline = settings.GetSettingValue(Pulsar::Settings::SETTING_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
     bool isMiiHeads = settings.GetSettingValue(Pulsar::Settings::SETTING_MIIHEADS);
     bool is200Online = settings.GetSettingValue(Pulsar::Settings::SETTING_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
@@ -296,6 +305,34 @@ void System::UpdateContext() {
     bool isItemModeNone = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_NONE;
     bool isItemModeRain = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_ITEMRAIN;
     bool isItemModeStorm = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_ITEMSTORM;
+    if (isMission) {
+        isItemModeRandom = false;
+        isItemModeBlast = false;
+        isItemModeNone = false;
+        isItemModeRain = false;
+        isItemModeStorm = false;
+        if (MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ITEM_MODE_OVERRIDE)) {
+            switch (MissionMode::GetMissionItemMode(Racedata::sInstance->menusScenario)) {
+                case GAMEMODE_RANDOM:
+                    isItemModeRandom = true;
+                    break;
+                case GAMEMODE_BLAST:
+                    isItemModeBlast = true;
+                    break;
+                case GAMEMODE_ITEMRAIN:
+                    isItemModeRain = true;
+                    break;
+                case GAMEMODE_ITEMSTORM:
+                    isItemModeStorm = true;
+                    break;
+                case GAMEMODE_NONE:
+                    isItemModeNone = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
     bool isTrackSelectionRegs = settings.GetSettingValue(Pulsar::Settings::SETTING_TRACKSELECTION) == TRACKSELECTION_REGS;
     bool isTrackSelectionRetros = settings.GetSettingValue(Pulsar::Settings::SETTING_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
     bool isTrackSelectionCts = settings.GetSettingValue(Pulsar::Settings::SETTING_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
@@ -309,7 +346,7 @@ void System::UpdateContext() {
     bool isTeamBattle = settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
     bool isElimination = settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetSettingValue(Pulsar::Settings::SETTING_VR) == VR_ENABLED && isNotPublic;
-    bool isBattleRoyale = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED && isNotPublic && !isBattle && !isTimeTrial;
+    bool isBattleRoyale = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED && isNotPublic && !isBattle && !isTimeTrial && !isMission;
     const u8 koRoyaleBalloons = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEBALLOONS);
     bool isKoPerRace2 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_2;
     bool isKoPerRace3 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_3;

@@ -2606,3 +2606,22 @@ Update__Q24Kart6KillerFv = 0x8059bc44
 
 AssignTeams__Q25Pages11VSTeamsViewFv = 0x8084ffc8
 IsMultiplayer__Q25Pages4MenuFv = 0x808388b4
+
+#MissionMode
+ChangeSectionWithDelayById__Q25Pages4MenuF9SectionIdf = 0x80837c5c
+
+#MissionMode
+GetKTPTHolder__8RaceinfoFUc = 0x805365c8
+CalcCoordinates__Q23KMP13Holder<4KTPT>FR4Vec3R4Vec3UiUi = 0x80514b24
+RipFromDisc__13SystemManagerFPCcPQ23EGG4HeapbPUi = 0x8000b5c8
+RequestBackModel__12MenuModelMgrF13BackModelType = 0x8059e598
+OnButtonClick__Q25Pages8RaceMenuFR10PushButtonUi = 0x8085a0f4
+Reset__19ModelRendererParamsFv = 0x805f5e28
+
+RipFromDisc__13SystemManagerFPCcPvPUi = 0x8000b5f0
+
+sMissionCoinAddIntroBranch = 0x8087bacc
+
+HasFinishedLoadingGroups__Q25Audio10RSARPlayerFv = 0x807141ec
+IsBattle__12CtrlRaceTimeFRC8Racedata = 0x807f82f4
+FillTimerGlobal__12CtrlRaceTimeFP5Timer = 0x807f82ac
