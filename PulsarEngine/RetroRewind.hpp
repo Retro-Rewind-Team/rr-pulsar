@@ -45,8 +45,6 @@ extern u8 CUSTOM_DRIVER;
 namespace RetroRewind {
 class System : public Pulsar::System {
 public:
-    static bool Is500cc();
-
     enum WeightClass {
         LIGHTWEIGHT,
         MEDIUMWEIGHT,

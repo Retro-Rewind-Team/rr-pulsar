@@ -3,6 +3,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/RH1.hpp>
 #include <PulsarSystem.hpp>
+#include <Race/200ccParams.hpp>
 #include <Extensions/LECODE/XPF.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
 
@@ -233,8 +234,7 @@ bool XPFMgr::CalcPredefinedCondition(u16 val) {
         if ((val & 0x2) && enClass == CC_50) ret = true;
         if ((val & 0x4) && enClass == CC_100) ret = true;
         if ((val & 0x8) && enClass == CC_150) ret = true;
-        // for 200cc implement your own code
-        if ((val & 0x10 && enClass == CC_100)) ret = true;
+        if ((val & 0x10) && Pulsar::Race::Is200cc()) ret = true;
         if ((val & 0x20) && enClass == CC_150 && (scenario.settings.modeFlags & 1)) ret = true;
         // if((val & 0x40) && enClass == CC_200 && (scenario->settings.modeFlags & 1)) ret = true;
     } else if (val >= 0x1f00) {

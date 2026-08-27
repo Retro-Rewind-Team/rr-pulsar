@@ -9,7 +9,6 @@
 #include <Race/200ccParams.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <PulsarSystem.hpp>
-#include <RetroRewind.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <runtimeWrite.hpp>
@@ -103,7 +102,7 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     const GameMode gameMode = Racedata::sInstance->menusScenario.settings.gamemode;
     const GameType gameType = Racedata::sInstance->menusScenario.settings.gametype;
     SpeedModConv speedModConv;
-    bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
+    const bool is200 = Is200cc();
     speedModConv.kmpValue = (KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->speedMod << 16);
     if (speedModConv.speedMod == 0.0f) speedModConv.speedMod = 1.0f;
     float factor = 1.0f;
@@ -113,10 +112,6 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         factor = 2.66f;
     } else if (is200) {
         factor = Race::speedFactor;
-    } else if (RetroRewind::System::Is500cc() && (gameMode == MODE_PRIVATE_VS || gameMode == MODE_VS_RACE || gameMode == MODE_PUBLIC_VS || gameMode == MODE_GRAND_PRIX)) {
-        factor = 3.0f;
-    } else if (RetroRewind::System::Is500cc() && (gameMode == MODE_BATTLE || gameMode == MODE_PUBLIC_BATTLE || gameMode == MODE_PRIVATE_BATTLE)) {
-        factor = 1.214;
     } else if (System::sInstance->IsContext(PULSAR_MODE_OTT) && gameMode == MODE_PUBLIC_VS) {
         factor = 1.0f;
     }

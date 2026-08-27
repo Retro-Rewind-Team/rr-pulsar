@@ -4,6 +4,7 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <PulsarSystem.hpp>
+#include <Race/200ccParams.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOHost.hpp>
@@ -278,7 +279,7 @@ void System::UpdateContext() {
     const bool disableOfflineKO = isExtendedTeams && isOfflineVS;
     bool isKO = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_ENABLED && isOfflineVS && !disableOfflineKO;
     bool isOTT = false;
-    bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
+    bool is200 = Race::Is200cc() && this->info.Has200cc();
     bool is500 = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC) == HOSTCC_500 && isFroom;
     bool isOTTOnline = settings.GetSettingValue(Pulsar::Settings::SETTING_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
     bool isMiiHeads = settings.GetSettingValue(Pulsar::Settings::SETTING_MIIHEADS);

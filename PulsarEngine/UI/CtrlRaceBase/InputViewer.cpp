@@ -17,8 +17,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <UI/CtrlRaceBase/InputViewer.hpp>
+#include <Race/200ccParams.hpp>
 #include <Settings/Settings.hpp>
-#include <RetroRewind.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 
@@ -33,7 +33,7 @@ static bool IsBrakeDriftingEnabled() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
-    return (scenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW) ||
+    return Race::Is200cc() ||
            (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
             mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
 }

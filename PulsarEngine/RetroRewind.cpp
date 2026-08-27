@@ -1,4 +1,5 @@
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <Race/200ccParams.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/Settings.hpp>
@@ -15,10 +16,6 @@ Pulsar::System *System::Create() {
     return new System();  // now Pulsar::sInstance is of type RetroRewind
 }
 Pulsar::System::Inherit CreateRetroRewind(System::Create);
-
-bool System::Is500cc() {
-    return Racedata::sInstance->racesScenario.settings.engineClass == CC_50;
-}
 
 System::WeightClass System::GetWeightClass(const CharacterId id) {
     switch (id) {
@@ -75,7 +72,7 @@ static SectionLoadHook PatchFPS(FPSPatch);
 static RaceLoadHook PatchFPSOnRaceLoad(FPSPatch);
 
 void ItemBoxRespawn(Objects::Itembox *itembox) {
-    bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
+    const bool is200 = Pulsar::Race::Is200cc();
     bool isFastRespawn = Pulsar::ITEMBOX_DEFAULTRESPAWN;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
         isFastRespawn = Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMBOXRESPAWN) ? Pulsar::ITEMBOX_FASTRESPAWN : Pulsar::ITEMBOX_DEFAULTRESPAWN;
