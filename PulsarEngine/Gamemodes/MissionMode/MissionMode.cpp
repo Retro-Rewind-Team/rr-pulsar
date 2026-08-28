@@ -2,6 +2,7 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
+#include <MarioKartWii/Kart/KartManager.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceTime.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceScore.hpp>
@@ -63,6 +64,18 @@ static bool IsMissionVSObjective(const RacedataScenario &scenario) {
     const u16 objective = GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET);
     return objective == MISSION_OBJECTIVE_VS_RACE_01 || objective == MISSION_OBJECTIVE_VS_RACE_02;
 }
+
+kmRuntimeUse(0x805acc34);
+typedef void (*UpdateRaceCameraFn)(void *);
+static void UpdateRaceCamera(void *camera) {
+    if (Racedata::sInstance != nullptr && IsMissionVSObjective(Racedata::sInstance->racesScenario))
+        return;
+
+    static const UpdateRaceCameraFn original =
+        reinterpret_cast<UpdateRaceCameraFn>(kmRuntimeAddr(0x805acc34));
+    original(camera);
+}
+kmCall(0x805ab800, UpdateRaceCamera);
 
 bool IsMissionToGateObjective(const RacedataScenario &scenario) {
     return IsMissionScenario(scenario) && GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == 0x09;
@@ -195,6 +208,34 @@ void FinalizeMissionRaceScenario() {
     memcpy(raceScenario.mission, menuScenario.mission, sizeof(raceScenario.mission));
     ApplyMissionScenarioSettings(raceScenario);
 }
+
+kmRuntimeUse(0x805983f4);
+void MovePlayersToMissionSuccessPoint() {
+    if (Racedata::sInstance == nullptr ||
+        !IsMissionScenario(Racedata::sInstance->racesScenario) ||
+        Kart::Manager::sInstance == nullptr || Kart::Manager::sInstance->players == nullptr)
+        return;
+
+    typedef void (*GoToMissionSuccessPointFn)(void *);
+    const GoToMissionSuccessPointFn goToMissionSuccessPoint =
+        reinterpret_cast<GoToMissionSuccessPointFn>(kmRuntimeAddr(0x805983f4));
+    for (u32 i = 0; i < Racedata::sInstance->racesScenario.playerCount; ++i) {
+        Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(i);
+        if (player != nullptr && player->kartSub != nullptr) goToMissionSuccessPoint(player->kartSub);
+    }
+}
+
+kmRuntimeUse(0x80518b2c);
+typedef KMP::Holder<MSPT> *(*GetMissionPointHolderFn)(KMP::Manager *, u16);
+static const GetMissionPointHolderFn sGetMissionPointHolder =
+    reinterpret_cast<GetMissionPointHolderFn>(kmRuntimeAddr(0x80518b2c));
+
+static KMP::Holder<MSPT> *GetMissionPointHolderWithKTPTFallback(KMP::Manager *manager, u16 idx) {
+    KMP::Holder<MSPT> *holder = sGetMissionPointHolder(manager, idx);
+    if (holder != nullptr) return holder;
+    return reinterpret_cast<KMP::Holder<MSPT> *>(manager->GetHolder<KTPT>(idx));
+}
+kmCall(0x805847b0, GetMissionPointHolderWithKTPTFallback);
 
 kmRuntimeUse(0x805362dc);
 typedef void (*GetInitialPhysicsValuesFn)(Raceinfo *, Vec3 *, Vec3 *, u8);

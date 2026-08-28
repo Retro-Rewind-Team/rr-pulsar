@@ -26,6 +26,7 @@ u32 GetMissionCustomItems(const RacedataScenario &scenario);
 void ApplyMissionScenarioSettings(RacedataScenario &scenario);
 void PopulateMissionCPUs(RacedataScenario &scenario);
 void FinalizeMissionRaceScenario();
+void MovePlayersToMissionSuccessPoint();
 void PrepareMenuScenario();
 
 }  // namespace MissionMode
