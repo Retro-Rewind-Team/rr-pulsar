@@ -231,6 +231,7 @@ void BeforeEntranceAnimations(Pages::TTSplits *page) {
 
     // No saving and no new record in OTT for now
     if (gamemode == MODE_MISSION_TOURNAMENT) {
+        ::Pulsar::MissionMode::MovePlayersToMissionSuccessPoint();
         Text::Info resultInfo;
         u32 rank;
         if (MissionMode::GetMissionResultRank(rank)) {
