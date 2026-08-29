@@ -12,6 +12,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <AutoTrackSelect/ChooseNextTrack.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
+#include <UI/MissionMode/MissionMode.hpp>
 
 namespace Pulsar {
 // For hooks which are shared by different things
@@ -28,8 +29,10 @@ PageId TTSplitsGetNextPage(const Pages::TTSplits &splits) {
                         (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (sectionId == SECTION_MISSION_MODE)
+    if (sectionId == SECTION_MISSION_MODE) {
+        MissionMode::PrepareMissionEndPage();
         return PAGE_MISSION_ENDMENU;
+    }
     else if (isOTTW)
         return PAGE_WW_LEADERBOARDS_UPDATE;
     else if (isOTTF || sectionId == SECTION_GP)

@@ -3,6 +3,7 @@
 #include <UI/MissionMode/MissionModel.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionModeRanking.hpp>
 #include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
@@ -21,6 +22,7 @@ namespace {
 static u32 selectedLevel;
 static u32 selectedMission;
 static bool returnToStageSelect;
+static bool missionEndPagePrepared;
 
 static const u32 MISSION_UI_LEVEL_SIZE = 0x50;
 static const u32 MISSION_UI_STAGE_SIZE = 0x0A;
@@ -81,6 +83,40 @@ static const char *const MISSION_STAGE_BORDER_PANES[] = {
     "text_light_01",
     "objective_icon",
     "black_base",
+};
+
+class MissionEndPage : public Pages::RaceMenu {
+public:
+	MissionEndPage(bool successful) : successful(successful) {}
+
+	int GetMessageBMG() const override { return 0; }
+	u32 GetButtonCount() const override { return BUTTON_COUNT; }
+
+	void OnInit() override {
+		Pages::RaceMenu::OnInit();
+		if (!successful) return;
+
+		for (u32 i = 0; i < 4; ++i) {
+			PositionAndScale position = this->buttons[0].positionAndscale[i];
+			this->buttons[0].positionAndscale[i] = this->buttons[1].positionAndscale[i];
+			this->buttons[1].positionAndscale[i] = position;
+		}
+		this->buttons[0].SetPosition(0.0f);
+		this->buttons[1].SetPosition(0.0f);
+	}
+
+	const u32 *GetVariantsIdxArray() const override {
+		static const u32 failedVariants[BUTTON_COUNT] = {3, 18, 1};
+		static const u32 successfulVariants[BUTTON_COUNT] = {18, 3, 1};
+		return successful ? successfulVariants : failedVariants;
+	}
+
+	bool IsPausePage() const override { return false; }
+	const char *GetButtonsBRCTRName() const override { return "AfterMenuMR"; }
+
+private:
+	static const u32 BUTTON_COUNT = 3;
+	bool successful;
 };
 
 class MissionPausePage : public Pages::RaceMenu {
@@ -620,6 +656,23 @@ static void InstallMissionPage(ExpSection &section, PageId id, Page *page) {
 
 }  // namespace
 
+void PrepareMissionEndPage() {
+	if (missionEndPagePrepared) return;
+	ExpSection *section = ExpSection::GetSection();
+	u32 rank;
+	if (::Pulsar::MissionMode::GetMissionResultRank(rank)) {
+		Page *successPage = section->GetPulPage<MissionEndPage>(PULPAGE_TRANSMISSIONSELECT);
+		Page *failedPage = section->pages[PAGE_MISSION_ENDMENU];
+		if (successPage != nullptr && failedPage != nullptr) {
+			section->Set(successPage, PAGE_MISSION_ENDMENU);
+			section->SetPulPage(nullptr, PULPAGE_TRANSMISSIONSELECT);
+			failedPage->Dispose();
+			delete failedPage;
+		}
+	}
+	missionEndPagePrepared = true;
+}
+
 Page *CreateMissionPausePage() { return new MissionPausePage(); }
 
 void PrepareMissionStageSelectReturn() {
@@ -670,8 +723,12 @@ kmCall(0x80624adc, SetMissionHudNextPage);
 
 void CreateRacePages(ExpSection &section) {
     ::Pulsar::MissionMode::PrepareMissionRankSoundGroup();
+    missionEndPagePrepared = false;
     section.CreateAndInitPage(section, PAGE_TT_SPLITS);
-    section.CreateAndInitPage(section, PAGE_MISSION_ENDMENU);
+    InstallMissionPage(section, PAGE_MISSION_ENDMENU, new MissionEndPage(false));
+    MissionEndPage *successPage = new MissionEndPage(true);
+    section.SetPulPage(successPage, PULPAGE_TRANSMISSIONSELECT);
+    successPage->Init(PAGE_MISSION_ENDMENU);
     if (Pages::RaceHUD::sInstance != nullptr) {
         Pages::RaceHUD::sInstance->nextPageId = PAGE_TT_SPLITS;
     }
