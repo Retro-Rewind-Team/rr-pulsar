@@ -14,6 +14,7 @@ bool IsMissionButton(const Pages::SinglePlayer *page, u32 id);
 bool IsBTMRModeButton(const Pages::SinglePlayer *page, u32 id);
 u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer *page, u32 id);
 void PrepareMissionStageSelectReturn();
+void PrepareMissionEndPage();
 void ConfigureMissionInformationPage(Page &page);
 void CreateSinglePlayerPages(ExpSection &section);
 void CreateRacePages(ExpSection &section);
