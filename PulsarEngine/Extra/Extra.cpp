@@ -557,8 +557,8 @@ kmWrite32(0x805A225C, 0x38800001);
 kmWrite8(0x808acfdf, 'R');
 kmWrite8(0x808ad02b, 'R');
 
-// Allow 18 rank symbols instead of 12 [ZPL]
-kmWrite32(0x805e3d48, 0x38C00012);
+// Allow 32 rank symbols instead of 12 [ZPL]
+kmWrite32(0x805e3d48, 0x38C00020);
 
 // Fix Online Crash [ImZeraora]
 kmWrite32(0x800F20AC, 0x8001000C);

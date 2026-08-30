@@ -1,6 +1,8 @@
 #include <RetroRewind.hpp>
 #include <Network/Json.hpp>
+#include <Network/Mogi.hpp>
 #include <Network/Ranking.hpp>
+#include <Network/Rating/MogiRating.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <Network/WiiLink.hpp>
 #include <MarioKartWii/Race/Racedata.hpp>
@@ -180,6 +182,17 @@ static int ScoreToRank(float score) {
     if (score >= 36.0f) return 3;
     if (score >= 24.0f) return 2;
     return 1;
+}
+
+static u8 GetMogiBadge(float mmr) {
+    if (mmr < 25.0f) return 18;
+    if (mmr < 50.0f) return 19;
+    if (mmr < 75.0f) return 20;
+    if (mmr < 100.0f) return 21;
+    if (mmr < 125.0f) return 22;
+    if (mmr < 150.0f) return 23;
+    if (mmr < 200.0f) return 24;
+    return 25;
 }
 
 struct RankText {
@@ -616,6 +629,13 @@ asmFunc AsmHook_WFCMainOnActivateBadgeRefresh() {
 kmCall(0x8064bcd0, AsmHook_WFCMainOnActivateBadgeRefresh);
 
 static u8 GetOnlineRankingIcon(u8, u8) {
+    if (Mogi::IsActive()) {
+        RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
+        if (rksysMgr != nullptr && rksysMgr->curLicenseId >= 0) {
+            return GetMogiBadge(MogiRating::GetUserMMR(rksysMgr->curLicenseId));
+        }
+    }
+
     if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
         const u32 pid = GetCurrentLicensePID();
         const s32 badge = GetFetchedBadgeForPID(pid);
