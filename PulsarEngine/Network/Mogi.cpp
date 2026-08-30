@@ -58,7 +58,6 @@ static u32 sLobbySeed = 0;
 static u16 sRemoteMMR[12][2];
 static bool sMMRFinalized = false;
 static bool sSessionActive = false;
-static bool sRaceStarted = false;
 static bool sPendingDisconnect = false;
 static bool sResultsSectionSeen = false;
 static bool sStartReported = false;
@@ -197,7 +196,7 @@ void OnDisconnect() {
     if (!sSessionActive) return;
 
     sSessionActive = false;
-    if (!sRaceStarted || sMMRFinalized) return;
+    if (sMMRFinalized) return;
 
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys != nullptr && rksys->curLicenseId < 4) {
@@ -233,7 +232,6 @@ void SetEnabled(bool enabled) {
         ResetRemoteMMR();
         sMMRFinalized = false;
         sSessionActive = false;
-        sRaceStarted = false;
         sPendingDisconnect = false;
         sResultsSectionSeen = false;
         sStartReported = false;
@@ -287,7 +285,6 @@ static void UpdateActiveFromRoom() {
         ResetRemoteMMR();
         sMMRFinalized = false;
         sSessionActive = true;
-        sRaceStarted = false;
         sPendingDisconnect = false;
         sStartReported = false;
     } else if (sLobbyGroupId != sub.groupId) {
@@ -363,10 +360,7 @@ static void EnsureParticipants() {
 }
 
 static void CaptureRaceParticipants() {
-    if (!sActive || Racedata::sInstance == nullptr) return;
-
-    sRaceStarted = true;
-    if (!sTeamFormat) return;
+    if (!sActive || !sTeamFormat || Racedata::sInstance == nullptr) return;
 
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const u8 playerCount = scenario.playerCount < 12 ? scenario.playerCount : 12;
@@ -663,7 +657,6 @@ void PrepareHostRoom(u32 &hostContext2, u8 &raceCount) {
     sActive = true;
     sMMRFinalized = false;
     sSessionActive = true;
-    sRaceStarted = false;
     CaptureTeamAssignments();
     EnsureParticipants();
     sPendingDisconnect = false;
@@ -699,7 +692,6 @@ void ApplyHostRoom(u32 hostContext2) {
     sActive = true;
     sMMRFinalized = false;
     sSessionActive = true;
-    sRaceStarted = false;
     CaptureTeamAssignments();
     EnsureParticipants();
     sPendingDisconnect = false;
