@@ -18,17 +18,21 @@
 namespace Pulsar {
 namespace Mogi {
 
-static void ConvertMogiPublicRoomToPrivate(RKNet::Controller* controller) {
+static void ConvertMogiPublicRoomToPrivate(RKNet::Controller *controller) {
     if (!IsEnabled()) {
         controller->SetVoteMatchmakingSuspend();
         return;
     }
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     const bool isHost = sub.localAid == sub.hostAid;
     controller->roomType = isHost ? RKNet::ROOMTYPE_FROOM_HOST : RKNet::ROOMTYPE_FROOM_NONHOST;
     controller->localStatusData.status = isHost ? RKNet::FRIEND_STATUS_FROOM_VS_HOST : RKNet::FRIEND_STATUS_FROOM_VS_NON_HOST;
     controller->UpdateStatusDatas();
+#ifndef RR_TESTS
     if (sub.playerCount >= 12) controller->SetVoteMatchmakingSuspend();
+#else
+    if (sub.playerCount >= 6) controller->SetVoteMatchmakingSuspend();
+#endif
 }
 kmCall(0x80663e64, ConvertMogiPublicRoomToPrivate);
 
@@ -122,7 +126,7 @@ kmBranch(0x806438ac, NormalizeMogiVotePageSection);
 kmPatchExitPoint(NormalizeMogiVotePageSection, 0x806438b0);
 
 // 0x80643cf0 is the UpdateOnlineParams call immediately after PrepareRace.
-static void UpdateMogiVotingOnlineParams(Pages::SELECTStageMgr* page) {
+static void UpdateMogiVotingOnlineParams(Pages::SELECTStageMgr *page) {
     page->UpdateOnlineParams();
     if (IsActive()) Racedata::sInstance->menusScenario.settings.gamemode = MODE_PUBLIC_VS;
 }
@@ -130,7 +134,7 @@ kmCall(0x80643cf0, UpdateMogiVotingOnlineParams);
 
 static void OpenMogiFormatVotePage() {
     if (!IsFormatVoteActive()) return;
-    UI::ExpSection* section = UI::ExpSection::GetSection();
+    UI::ExpSection *section = UI::ExpSection::GetSection();
     if (section == nullptr || section->GetPulPage<UI::SettingsPageSelect>() == nullptr) return;
     UI::ExpSection::AddPageLayer(*section, UI::SettingsPageSelect::id);
 }
@@ -148,14 +152,14 @@ asmFunc OpenMogiFormatVotePageHook() {
 }
 kmCall(0x806501f8, OpenMogiFormatVotePageHook);
 
-static bool IsMogiSelectPrepared(RKNet::SELECTHandler* handler) {
+static bool IsMogiSelectPrepared(RKNet::SELECTHandler *handler) {
     if (IsFormatVoteActive()) return false;
     return handler->IsPrepared();
 }
 kmCall(0x80650484, IsMogiSelectPrepared);
 
 // Restrict the unlocked vehicles to only those allowed in Mogi, otherwise all vehicles will be unlocked.
-static void AllowedMogiVehicles(Pages::KartSelect* page) {
+static void AllowedMogiVehicles(Pages::KartSelect *page) {
     page->Menu::OnActivate();
     if (!IsEnabled()) return;
 
@@ -177,9 +181,9 @@ static void AllowedMogiVehicles(Pages::KartSelect* page) {
 kmCall(0x80845524, AllowedMogiVehicles);
 
 // Create a new message box when the competitive button is pressed, and set the next page to the message box.
-static void OnCompetitiveEntrance(Pages::WFCMainMenu* page, u32 animDirection, float animLength) {
+static void OnCompetitiveEntrance(Pages::WFCMainMenu *page, u32 animDirection, float animLength) {
     if (UI::ExpWFCMain::lastClickedMainMenuButton == 9) {  // competitive button
-        Pages::MessageBox* messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBox>();
+        Pages::MessageBox *messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBox>();
         if (messageBox != nullptr) {
             messageBox->Reset();
             messageBox->SetMessageWindowText(UI::BMG_COMPETITIVE_ENTRANCE);
