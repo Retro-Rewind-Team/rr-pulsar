@@ -29,6 +29,8 @@ static const u32 MISSION_UI_STAGE_SIZE = 0x0A;
 static const u32 MISSION_KMT_HEADER_SIZE = 0x10;
 static const u32 MISSION_KMT_ENTRY_SIZE = 0x70;
 static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
+static const u32 MISSION_FEATURE_FLAGS_OFFSET = 0x2F;
+static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
 static const char *const MISSION_OBJECTIVE_ICONS[] = {
     "mr_turbo",
     "mr_vs",
@@ -44,6 +46,8 @@ static const char *const MISSION_OBJECTIVE_ICONS[] = {
 static const char MISSION_CONFIG_FILE[] = "Binaries/ConfigMR.pul";
 static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
+static const u32 MISSION_BOSS_INTRO_STAGE = 7;
+static const u32 MISSION_NORMAL_INTRO_STAGE = 0;
 static const u32 BMG_OK = 0x7D0;
 static const u32 MISSION_PAUSE_END_MENU_SOUND_ID = 0xD5;
 static const char *const MISSION_STAGE_RANK_PANE = "mission_rank";
@@ -229,14 +233,29 @@ static const char *GetMissionObjectiveIcon(u16 objective) {
                : 0;
 }
 
-static bool MissionBossIntroCheck() {
-    const bool isBoss = Racedata::sInstance != nullptr &&
-                        Pulsar::MissionMode::IsMissionBossObjective(Racedata::sInstance->menusScenario);
-    asm("cmpwi %0, 0" : : "r"(isBoss));
-    return isBoss;
+typedef Page *(*GetMissionInstructionPageFn)(int);
+
+kmRuntimeUse(0x80842a78);
+static Page *GetMissionInstructionPageForIntro(int pageId) {
+	static const GetMissionInstructionPageFn original =
+		reinterpret_cast<GetMissionInstructionPageFn>(kmRuntimeAddr(0x80842a78));
+	Page *page = original(pageId);
+	if (page == nullptr || pageId != PAGE_MISSION_INFORMATION_PROMPT)
+		return page;
+
+	u32 *stage = reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(page) + MISSION_INFO_STAGE_OFFSET);
+	const bool bossIntro =
+		Racedata::sInstance != nullptr &&
+		Pulsar::MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario,
+			Pulsar::MissionMode::BOSS_MISSION);
+	if (bossIntro)
+		*stage = MISSION_BOSS_INTRO_STAGE;
+	else if (*stage == MISSION_BOSS_INTRO_STAGE)
+		*stage = MISSION_NORMAL_INTRO_STAGE;
+	return page;
 }
-kmCall(0x808440e0, MissionBossIntroCheck);
-kmCall(0x8084e62c, MissionBossIntroCheck);
+kmCall(0x808440d8, GetMissionInstructionPageForIntro);
+kmCall(0x8084e624, GetMissionInstructionPageForIntro);
 
 class MissionSelectPage : public Pages::MenuInteractable {
 public:
@@ -525,6 +544,9 @@ private:
             return false;
 
         objective = ReadBigEndian16(this->missionKmtFile + missionOffset + MISSION_OBJECTIVE_OFFSET);
+        if ((this->missionKmtFile[missionOffset + MISSION_FEATURE_FLAGS_OFFSET] &
+             Pulsar::MissionMode::BOSS_MISSION) != 0)
+            objective = MISSION_OBJECTIVE_ENEMY_DOWN_02;
         return true;
     }
 

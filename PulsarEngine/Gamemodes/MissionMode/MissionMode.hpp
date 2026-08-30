@@ -11,7 +11,8 @@ enum MissionFeatureFlag {
     ITEM_MODE_OVERRIDE = 1 << 0,
     CUSTOM_ITEMS_OVERRIDE = 1 << 1,
     ENGINE_200CC = 1 << 2,
-    ENGINE_500CC = 1 << 3
+    ENGINE_500CC = 1 << 3,
+    BOSS_MISSION = 1 << 4
 };
 
 bool IsMissionScenario(const RacedataScenario &scenario);

@@ -294,7 +294,8 @@ bool IsMissionScoreObjective(const RacedataScenario &scenario) {
 
 bool IsMissionBossObjective(const RacedataScenario &scenario) {
     return IsMissionScenario(scenario) &&
-           GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_ENEMY_DOWN_02;
+           (HasMissionFeature(scenario, BOSS_MISSION) ||
+            GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_ENEMY_DOWN_02);
 }
 
 static u32 GetMissionScoreDisplayTarget(const void *raceConfig) {
