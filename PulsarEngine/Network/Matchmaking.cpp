@@ -136,10 +136,11 @@ void CustomRandomizeServers() {
     const bool isMogi = Mogi::IsEnabled() && !isBattle;
     const int playerRating = isMogi
                                  ? (int)(MogiRating::GetUserMMR(licenseId) * 100.0f + 0.5f)
-                                 : isBattle
-                                       ? (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f)
-                                       : (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
-    const char *const ratingKey = isMogi ? "em" : isBattle ? "eb" : "ev";
+                             : isBattle
+                                 ? (int)(PointRating::GetUserBR(licenseId) * 100.0f + 0.5f)
+                                 : (int)(PointRating::GetUserVR(licenseId) * 100.0f + 0.5f);
+    const char *const ratingKey = isMogi ? "em" : isBattle ? "eb"
+                                                           : "ev";
     const int maximumRoomVR = playerRating + 4000000;  // 40,000 VR, stored at 100x precision.
     const bool isCompetitiveMatchmakingEnabled = isInfiniteMatchmakingEnabled || isMogi;
     // Preserve the high-VR rooms only when no otherwise eligible room exists.

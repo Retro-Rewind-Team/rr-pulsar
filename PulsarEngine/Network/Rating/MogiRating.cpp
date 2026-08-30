@@ -66,7 +66,7 @@ static u32 ModeFlag(MMRMode mode) {
 }
 
 MMRMode GetCurrentMode() {
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
     if (system != nullptr) {
         if (system->netMgr.region == Mogi::REGION_CT) return MMR_MODE_CT;
         if (system->netMgr.region == Mogi::REGION_REG) return MMR_MODE_VANILLA;
@@ -74,16 +74,16 @@ MMRMode GetCurrentMode() {
     return MMR_MODE_RT;
 }
 
-static const char* GetPath() {
+static const char *GetPath() {
     if (sPath[0] == '\0') {
-        const System* system = System::sInstance;
+        const System *system = System::sInstance;
         if (!system) return nullptr;
         snprintf(sPath, IOS::ipcMaxPath, "%s/RRMogi.pul", system->GetModFolder());
     }
     return sPath;
 }
 
-static ProfileEntry* FindProfile(s32 profileId) {
+static ProfileEntry *FindProfile(s32 profileId) {
     if (!IsUsableProfileId(profileId)) return nullptr;
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         if (sProfiles[i].profileId == profileId) return &sProfiles[i];
@@ -91,10 +91,10 @@ static ProfileEntry* FindProfile(s32 profileId) {
     return nullptr;
 }
 
-static ProfileEntry* GetProfile(s32 profileId, bool create) {
+static ProfileEntry *GetProfile(s32 profileId, bool create) {
     if (!IsUsableProfileId(profileId)) return nullptr;
 
-    ProfileEntry* profile = FindProfile(profileId);
+    ProfileEntry *profile = FindProfile(profileId);
     if (profile || !create) return profile;
 
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
@@ -110,7 +110,7 @@ static ProfileEntry* GetProfile(s32 profileId, bool create) {
         }
     }
 
-    ProfileEntry& replacement = sProfiles[sReplaceIdx];
+    ProfileEntry &replacement = sProfiles[sReplaceIdx];
     sReplaceIdx = (sReplaceIdx + 1) % MAX_PROFILES;
     replacement.profileId = profileId;
     for (u32 mode = 0; mode < MMR_MODE_COUNT; ++mode) {
@@ -125,7 +125,7 @@ static ProfileEntry* GetProfile(s32 profileId, bool create) {
 static s32 ResolveProfileId(u32 licenseId) {
     if (licenseId >= MAX_LICENSES) return 0;
 
-    RKSYS::Mgr* manager = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *manager = RKSYS::Mgr::sInstance;
     if (manager != nullptr) {
         const s32 profileId = manager->licenses[licenseId].dwcAccUserData.gsProfileId;
         if (IsUsableProfileId(profileId)) {
@@ -147,8 +147,8 @@ static void Load() {
     if (sLoaded) return;
     sLoaded = true;
 
-    IO* io = IO::sInstance;
-    const char* path = GetPath();
+    IO *io = IO::sInstance;
+    const char *path = GetPath();
     if (!io || !path || !io->OpenFile(path, FILE_MODE_READ)) return;
 
     PackedHeader header = {};
@@ -192,8 +192,8 @@ static void Load() {
 }
 
 static void Save() {
-    IO* io = IO::sInstance;
-    const char* path = GetPath();
+    IO *io = IO::sInstance;
+    const char *path = GetPath();
     if (!io || !path) return;
 
     struct {
@@ -221,7 +221,7 @@ void SetProfileMMR(s32 profileId, MMRMode mode, float mmr) {
     if (!IsValidMode(mode)) return;
 
     Load();
-    ProfileEntry* profile = GetProfile(profileId, true);
+    ProfileEntry *profile = GetProfile(profileId, true);
     if (!profile) return;
 
     profile->mmr[mode] = ClampMMR(mmr);
@@ -235,7 +235,7 @@ float GetUserMMRForMode(u32 licenseId, MMRMode mode) {
     if (!IsValidMode(mode)) return DEFAULT_MMR;
 
     Load();
-    ProfileEntry* profile = GetProfile(ResolveProfileId(licenseId), false);
+    ProfileEntry *profile = GetProfile(ResolveProfileId(licenseId), false);
     return profile && (profile->dataFlags & ModeFlag(mode)) ? ClampMMR(profile->mmr[mode]) : DEFAULT_MMR;
 }
 
@@ -247,7 +247,7 @@ float GetStoredMMRForMode(s32 profileId, MMRMode mode) {
     if (!IsValidMode(mode)) return DEFAULT_MMR;
 
     Load();
-    ProfileEntry* profile = GetProfile(profileId, false);
+    ProfileEntry *profile = GetProfile(profileId, false);
     return profile && (profile->storedFlags & ModeFlag(mode)) ? ClampMMR(profile->storedMMR[mode]) : DEFAULT_MMR;
 }
 
@@ -258,7 +258,7 @@ float GetStoredMMR(s32 profileId) {
 void SetUserMMR(u32 licenseId, float mmr) {
     const MMRMode mode = GetCurrentMode();
     Load();
-    ProfileEntry* profile = GetProfile(ResolveProfileId(licenseId), true);
+    ProfileEntry *profile = GetProfile(ResolveProfileId(licenseId), true);
     if (!profile) return;
 
     profile->mmr[mode] = ClampMMR(mmr);
@@ -270,8 +270,8 @@ void ReportCurrentMMR(u32 licenseId) {
     if (!Mogi::IsEnabled()) return;
 
     const MMRMode mode = GetCurrentMode();
-    const char* modeName = mode == MMR_MODE_CT ? "ct" :
-                           mode == MMR_MODE_VANILLA ? "vanilla" : "rt";
+    const char *modeName = mode == MMR_MODE_CT ? "ct" : mode == MMR_MODE_VANILLA ? "vanilla"
+                                                                                 : "rt";
     const int scaled = (int)(GetUserMMRForMode(licenseId, mode) * 100.0f + 0.5f);
     char buffer[48];
     if (snprintf(buffer, sizeof(buffer), "mode=%s|mmr=%d", modeName, scaled) >= 0) {

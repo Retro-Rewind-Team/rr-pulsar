@@ -49,7 +49,7 @@ static float GetRatingForDisplay(Pages::SELECTStageMgr *mgr, u32 playerId, bool 
     *hasDecimal = false;
     if (Mogi::IsActive()) {
         if (isLocal) {
-            RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+            RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
             if (mgr->infos[playerId].hudSlotid == 0 && rksys && rksys->curLicenseId >= 0) {
                 *hasDecimal = true;
                 return MogiRating::GetUserMMR(rksys->curLicenseId);

@@ -12,7 +12,7 @@ namespace Pulsar {
 RaceStage sLastRaceStage = RACESTAGE_RACE;
 
 static bool HasOnlineControllerRoom() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     return controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE;
 }
 
@@ -30,7 +30,7 @@ void UpdateRaceInstances() {
         if (sLastRaceStage == RACESTAGE_FINISHED) {
             Network::ReportU32("wl:mkw_race_stage", sLastRaceStage);
 
-            RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+            RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
             if (rksys != nullptr && rksys->curLicenseId < 4) {
                 PointRating::ReportCurrentRatings(rksys->curLicenseId);
             }

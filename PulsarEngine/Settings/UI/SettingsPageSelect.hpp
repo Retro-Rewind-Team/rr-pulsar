@@ -39,7 +39,7 @@ private:
     void OnButtonSelect(PushButton &button, u32 hudSlotId);
     void ShowFormatVoteWaiting();
     void SetPreparingRaceVisible(bool visible);
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId) {}
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId) {}
 
     static const u32 settingsButtonCount = Settings::Params::maxContextPageCount + 1;
     static const u32 badgeButtonCount = Ranking::SPECIAL_BADGE_COUNT + 1;

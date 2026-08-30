@@ -21,7 +21,7 @@ namespace UI {
 static wchar_t s_rankDetailsBuffer[512];
 static MogiRating::MMRMode sHoveredCompMode = MogiRating::MMR_MODE_RT;
 
-static bool GetMMRModeForButton(u32 buttonId, MogiRating::MMRMode& mode) {
+static bool GetMMRModeForButton(u32 buttonId, MogiRating::MMRMode &mode) {
     if (buttonId == ExpWFCModeSel::mogiButtonId) {
         mode = MogiRating::MMR_MODE_RT;
         return true;
@@ -37,8 +37,8 @@ static bool GetMMRModeForButton(u32 buttonId, MogiRating::MMRMode& mode) {
     return false;
 }
 
-static void SetMMRButtonValue(LayoutUIControl& mmrButton, MogiRating::MMRMode mode) {
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+static void SetMMRButtonValue(LayoutUIControl &mmrButton, MogiRating::MMRMode mode) {
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     float mmr = MogiRating::DEFAULT_MMR;
     if (rksysMgr != nullptr && rksysMgr->curLicenseId >= 0 && rksysMgr->curLicenseId < 4) {
         mmr = MogiRating::GetUserMMRForMode(rksysMgr->curLicenseId, mode);
@@ -51,12 +51,12 @@ static void SetMMRButtonValue(LayoutUIControl& mmrButton, MogiRating::MMRMode mo
     mmrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_MOGI_MMR_VALUE, &mmrInfo);
 }
 
-static void FormatMMRValue(float mmr, wchar_t* buffer, u32 bufferSize) {
+static void FormatMMRValue(float mmr, wchar_t *buffer, u32 bufferSize) {
     int scaled = (int)(mmr * 100.0f + 0.5f);
     swprintf(buffer, bufferSize, L"%d", scaled);
 }
 
-static void FormatMMRDelta(float delta, wchar_t* buffer, u32 bufferSize) {
+static void FormatMMRDelta(float delta, wchar_t *buffer, u32 bufferSize) {
     int scaled = (int)(delta * 100.0f + (delta >= 0.0f ? 0.5f : -0.5f));
     if (scaled < 0)
         swprintf(buffer, bufferSize, L"%d", scaled);
@@ -64,11 +64,11 @@ static void FormatMMRDelta(float delta, wchar_t* buffer, u32 bufferSize) {
         swprintf(buffer, bufferSize, L"+%d", scaled);
 }
 
-static void ShowPendingLoginMMRChange(ExpWFCMain& page) {
-    Section* section = SectionMgr::sInstance->curSection;
+static void ShowPendingLoginMMRChange(ExpWFCMain &page) {
+    Section *section = SectionMgr::sInstance->curSection;
     if (section == nullptr || section->GetTopLayerPage() != &page) return;
 
-    Pages::MessageBoxTransparent* messageBox = section->Get<Pages::MessageBoxTransparent>();
+    Pages::MessageBoxTransparent *messageBox = section->Get<Pages::MessageBoxTransparent>();
     if (messageBox == nullptr) return;
 
     float oldMMR;
@@ -91,8 +91,8 @@ static void ShowPendingLoginMMRChange(ExpWFCMain& page) {
     PointRating::ClearPendingLoginMMRChange();
 }
 
-static void ApplyVRMultiplierHighlight(PushButton& button, bool hasMultiplier) {
-    nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(button.layout.GetPaneByName("go"));
+static void ApplyVRMultiplierHighlight(PushButton &button, bool hasMultiplier) {
+    nw4r::lyt::TextBox *textBox = reinterpret_cast<nw4r::lyt::TextBox *>(button.layout.GetPaneByName("go"));
     if (textBox != nullptr) {
         nw4r::ut::Color color = hasMultiplier ? nw4r::ut::Color(0, 255, 0, 255) : nw4r::ut::Color(255, 255, 255, 255);
         textBox->color1[0] = color;
@@ -111,12 +111,12 @@ static void SetButtonHidden(PushButton &button, bool hidden) {
     button.manipulator.inaccessible = hidden;
 }
 
-static void MoveWorldwideButton(Page* page) {
+static void MoveWorldwideButton(Page *page) {
     page->BeforeControlUpdate();
     if (page->pageId != PAGE_WFC_MAIN) return;
-    Pages::WFCMainMenu* wfcPage = static_cast<Pages::WFCMainMenu*>(page);
-    static Section* movedSection = nullptr;
-    Section* currentSection = SectionMgr::sInstance->curSection;
+    Pages::WFCMainMenu *wfcPage = static_cast<Pages::WFCMainMenu *>(page);
+    static Section *movedSection = nullptr;
+    Section *currentSection = SectionMgr::sInstance->curSection;
     if (movedSection == currentSection) return;
     movedSection = currentSection;
     if (wfcPage->regionalButton.isHidden) {
@@ -125,12 +125,12 @@ static void MoveWorldwideButton(Page* page) {
 }
 kmCall(0x806022fc, MoveWorldwideButton);
 
-static void MoveFriendButton(Page* page) {
+static void MoveFriendButton(Page *page) {
     page->AfterControlUpdate();
     if (page->pageId != PAGE_WFC_MAIN) return;
-    Pages::WFCMainMenu* wfcPage = static_cast<Pages::WFCMainMenu*>(page);
-    static Section* movedSection = nullptr;
-    Section* currentSection = SectionMgr::sInstance->curSection;
+    Pages::WFCMainMenu *wfcPage = static_cast<Pages::WFCMainMenu *>(page);
+    static Section *movedSection = nullptr;
+    Section *currentSection = SectionMgr::sInstance->curSection;
     if (movedSection == currentSection) return;
     movedSection = currentSection;
     if (wfcPage->regionalButton.isHidden) {
@@ -243,7 +243,7 @@ void ExpWFCMain::SetMenuLevel(bool showWorldwideCategories) {
 }
 
 u32 Pulsar::UI::ExpWFCMain::lastClickedMainMenuButton = 6;
-void ExpWFCMain::OnMainButtonClick(PushButton& pushButton, u32 hudSlotId) {
+void ExpWFCMain::OnMainButtonClick(PushButton &pushButton, u32 hudSlotId) {
     if (!this->showWorldwideCategories) {
         this->restoreWorldwideMenuOnActivate = true;
         this->nextPageId = PAGE_WFC_MAIN;
@@ -268,11 +268,11 @@ void ExpWFCMain::OnBattleButtonClick(PushButton &pushButton, u32 hudSlotId) {
     this->OnRegionalButtonClick(pushButton, hudSlotId);
 }
 
-void ExpWFCMain::OnCompetitiveButtonClick(PushButton& pushButton, u32 hudSlotId) {
-    #ifndef RR_TESTS
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+void ExpWFCMain::OnCompetitiveButtonClick(PushButton &pushButton, u32 hudSlotId) {
+#ifndef RR_TESTS
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (PointRating::GetUserVR(rksysMgr->curLicenseId) < 300.0f) return;
-    #endif
+#endif
 
     ExpWFCMain::lastClickedMainMenuButton = 9;  // competitive
     this->restoreWorldwideMenuOnActivate = false;
@@ -288,13 +288,13 @@ void ExpWFCMain::OnSettingsButtonClick(PushButton &pushButton, u32 r5) {
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
 }
 
-void ExpWFCMain::OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId) {
+void ExpWFCMain::OnLeaderboardButtonClick(PushButton &pushButton, u32 hudSlotId) {
     this->restoreWorldwideMenuOnActivate = true;
     this->nextPageId = static_cast<PageId>(PULPAGE_VRLEADERBOARD);
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
 }
 
-void ExpWFCMain::OnBackButtonClick(PushButton& pushButton, u32 hudSlotId) {
+void ExpWFCMain::OnBackButtonClick(PushButton &pushButton, u32 hudSlotId) {
     this->OnBackPress(hudSlotId);
 }
 
@@ -331,13 +331,13 @@ void ExpWFCMain::ExtOnButtonSelect(PushButton &button, u32 hudSlotId) {
 
 void ExpWFCMain::BeforeControlUpdate() {
     WFCMainMenu::BeforeControlUpdate();
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
-    #ifndef RR_TESTS
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
+#ifndef RR_TESTS
     this->regionalButton.manipulator.inaccessible = this->showWorldwideCategories || PointRating::GetUserVR(rksysMgr->curLicenseId) < 300.0f;
     this->regionalButton.isHidden = this->showWorldwideCategories || PointRating::GetUserVR(rksysMgr->curLicenseId) < 300.0f;
-    #else
+#else
     this->regionalButton.manipulator.inaccessible = this->showWorldwideCategories;
-    #endif
+#endif
     if (this->selectMainButtonOnResume) {
         this->selectMainButtonOnResume = false;
         if (this->showWorldwideCategories)
@@ -394,7 +394,7 @@ void ExpWFCModeSel::OnInit() {
 
 u32 Pulsar::UI::ExpWFCModeSel::lastClickedButton = 0;
 
-void ExpWFCModeSel::InitButton(ExpWFCModeSel& self) {
+void ExpWFCModeSel::InitButton(ExpWFCModeSel &self) {
     self.InitControlGroup(17);
 
     self.AddControl(5, self.ctButton, 0);

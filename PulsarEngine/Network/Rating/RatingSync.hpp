@@ -10,7 +10,7 @@ void SetSyncReportingSuppressed(bool suppress);
 void ReportCurrentVRBR(u32 licenseId);
 void ReportCurrentRatings(u32 licenseId);
 void StartLoginRatingDownload(s32 profileId, u32 licenseId);
-bool GetPendingLoginMMRChange(float& oldMMR, float& newMMR);
+bool GetPendingLoginMMRChange(float &oldMMR, float &newMMR);
 void ClearPendingLoginMMRChange();
 
 }  // namespace PointRating

@@ -46,7 +46,7 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket &packet) {
         const bool isOTT = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
         const bool isKO = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
         const bool isExtendedTeam = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED ||
-                                     (Mogi::IsActive() && Mogi::IsTeamFormat());
+                                    (Mogi::IsActive() && Mogi::IsTeamFormat());
         const bool isRoyale = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
 
         if (isOTT && isKO) {

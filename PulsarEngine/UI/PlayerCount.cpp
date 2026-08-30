@@ -133,9 +133,7 @@ static const char *GetCompetitiveServerFilter(const char *serverFilter, char *ex
 
     const int prefixLength = suspendPos - serverFilter;
     const char *suffix = suspendPos + strlen(suspendNeedle);
-    const char* roomFilter = Pulsar::Mogi::IsEnabled() ?
-        "((dwc_suspend = 0 or numplayers < 11) and em > 0)" :
-        "(dwc_suspend = 0 or numplayers < 11)";
+    const char *roomFilter = Pulsar::Mogi::IsEnabled() ? "((dwc_suspend = 0 or numplayers < 11) and em > 0)" : "(dwc_suspend = 0 or numplayers < 11)";
     const int written = snprintf(
         expandedFilter,
         filterSize,
@@ -173,17 +171,17 @@ void PlayerCount::GetNumbersMain(int &nRetro, int &nCT, int &nRT) {
     nRT = RR_numPlayersRT;
 }
 
-void PlayerCount::GetNumbersMogi(int& nMogi) {
+void PlayerCount::GetNumbersMogi(int &nMogi) {
     nMogi = RR_numPlayersMogi + RR_numPlayersMogiCT + RR_numPlayersMogiRT;
 }
 
-void PlayerCount::GetNumbersMogiModes(int& nRetro, int& nCT, int& nRT) {
+void PlayerCount::GetNumbersMogiModes(int &nRetro, int &nCT, int &nRT) {
     nRetro = RR_numPlayersMogi;
     nCT = RR_numPlayersMogiCT;
     nRT = RR_numPlayersMogiRT;
 }
 
-void PlayerCount::GetNumbersOther(int& n200, int& nOtt, int& nIR) {
+void PlayerCount::GetNumbersOther(int &n200, int &nOtt, int &nIR) {
     n200 = RR_numPlayers200cc;
     nOtt = RR_numPlayersOTT;
     nIR = RR_numPlayersIR;

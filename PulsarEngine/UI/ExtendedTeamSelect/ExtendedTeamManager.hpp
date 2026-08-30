@@ -12,7 +12,7 @@ namespace Mogi {
 bool IsActive();
 bool IsTeamFormat();
 u8 GetTeamForPlayer(u8 playerIdx);
-}
+}  // namespace Mogi
 
 namespace UI {
 

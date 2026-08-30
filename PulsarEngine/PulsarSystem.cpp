@@ -472,7 +472,7 @@ void System::UpdateContext() {
     // Set contexts based on region for regionals
     const u32 region = this->netMgr.region;
     const bool isMogiRegionalRoom = Mogi::IsActive() &&
-                                     (region == Mogi::REGION || region == Mogi::REGION_CT || region == Mogi::REGION_REG);
+                                    (region == Mogi::REGION || region == Mogi::REGION_CT || region == Mogi::REGION_REG);
     if (isRegionalRoom || isMogiRegionalRoom) {
         switch (region) {
             case 0x0A:  // Regular retro tracks

@@ -114,7 +114,7 @@ void SettingsPageSelect::OnActivate() {
         bottomText->SetMessage(BMG_MOGI_FORMAT_BOTTOM);
         backButton.isHidden = true;
         backButton.manipulator.inaccessible = true;
-        Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        Pages::SELECTStageMgr *select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         if (select != nullptr) {
             formatVotePreviousCountdown = select->countdown.countdown;
             select->countdown.SetInitial(MOGI_FORMAT_VOTE_SECONDS);
@@ -262,13 +262,13 @@ void SettingsPageSelect::ShowFormatVoteWaiting() {
         pageButtons[i].isHidden = true;
         pageButtons[i].manipulator.inaccessible = true;
     }
-    Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+    Pages::SELECTStageMgr *select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
     if (select != nullptr) select->timerControl.isHidden = true;
     SetPreparingRaceVisible(true);
 }
 
 void SettingsPageSelect::SetPreparingRaceVisible(bool visible) {
-    Pages::AutoEnding* preparingRace = SectionMgr::sInstance->curSection->Get<Pages::AutoEnding>(PAGE_AUTO_ENDING2);
+    Pages::AutoEnding *preparingRace = SectionMgr::sInstance->curSection->Get<Pages::AutoEnding>(PAGE_AUTO_ENDING2);
     if (preparingRace == nullptr) return;
     preparingRace->titleText.isHidden = !visible;
     preparingRace->busySymbol.isHidden = !visible;
@@ -277,7 +277,7 @@ void SettingsPageSelect::SetPreparingRaceVisible(bool visible) {
 
 void SettingsPageSelect::BeforeControlUpdate() {
     if (isFormatVotePage) {
-        Pages::SELECTStageMgr* select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        Pages::SELECTStageMgr *select = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
         if (select != nullptr && !isFormatVoteSubmitted) {
             select->countdown.Update();
             select->timerControl.AnimateCurrentCountDown();

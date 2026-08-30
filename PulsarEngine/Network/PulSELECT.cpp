@@ -25,10 +25,10 @@ static bool IsRegionalRoom(RKNet::RoomType roomType) {
 }
 
 static u16 GetLocalMogiGPScore(u8 hudSlotId) {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr || hudSlotId >= 2) return 0;
 
-    const RacedataScenario& menuScenario = racedata->menusScenario;
+    const RacedataScenario &menuScenario = racedata->menusScenario;
     const u8 playerId = menuScenario.settings.hudPlayerIds[hudSlotId];
     if (playerId >= menuScenario.playerCount) return 0;
     return menuScenario.players[playerId].score;
