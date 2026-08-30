@@ -219,10 +219,16 @@ void MovePlayersToMissionSuccessPoint() {
     typedef void (*GoToMissionSuccessPointFn)(void *);
     const GoToMissionSuccessPointFn goToMissionSuccessPoint =
         reinterpret_cast<GoToMissionSuccessPointFn>(kmRuntimeAddr(0x805983f4));
-    for (u32 i = 0; i < Racedata::sInstance->racesScenario.playerCount; ++i) {
-        Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(i);
-        if (player != nullptr && player->kartSub != nullptr) goToMissionSuccessPoint(player->kartSub);
-    }
+	for (u32 i = 0; i < Racedata::sInstance->racesScenario.playerCount; ++i) {
+		Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(i);
+		if (player == nullptr || player->kartSub == nullptr) continue;
+		if (player->IsCPU()) {
+			if (player->pointers.kartStatus != nullptr)
+				player->pointers.kartStatus->bitfield0 &= ~1u;
+			continue;
+		}
+		goToMissionSuccessPoint(player->kartSub);
+	}
 }
 
 kmRuntimeUse(0x80518b2c);
@@ -233,7 +239,9 @@ static const GetMissionPointHolderFn sGetMissionPointHolder =
 static KMP::Holder<MSPT> *GetMissionPointHolderWithKTPTFallback(KMP::Manager *manager, u16 idx) {
     KMP::Holder<MSPT> *holder = sGetMissionPointHolder(manager, idx);
     if (holder != nullptr) return holder;
-    return reinterpret_cast<KMP::Holder<MSPT> *>(manager->GetHolder<KTPT>(idx));
+	KMP::Holder<KTPT> *ktpt = manager->GetHolder<KTPT>(idx);
+	if (ktpt == nullptr) ktpt = manager->GetHolder<KTPT>(0);
+	return reinterpret_cast<KMP::Holder<MSPT> *>(ktpt);
 }
 kmCall(0x805847b0, GetMissionPointHolderWithKTPTFallback);
 
