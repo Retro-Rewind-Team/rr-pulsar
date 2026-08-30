@@ -106,7 +106,15 @@ static void ResetParticipants() {
     sResetRoomAfterGP = false;
 }
 
-static bool IsFriendRoom(const RKNet::Controller* controller) {
+static void ResetLocalGpScores() {
+    if (Racedata::sInstance == nullptr) return;
+    for (u8 i = 0; i < 12; ++i) {
+        Racedata::sInstance->menusScenario.players[i].score = 0;
+        Racedata::sInstance->menusScenario.players[i].previousScore = 0;
+    }
+}
+
+static bool IsFriendRoom(const RKNet::Controller *controller) {
     return controller != nullptr &&
            (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
             controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
@@ -127,8 +135,8 @@ static void ResetTeamAssignments() {
     sTeamAssignmentsCaptured = false;
 }
 
-static bool GetPlayerIdentity(u8 playerIdx, u8& aid, u8& playerOnConsole) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+static bool GetPlayerIdentity(u8 playerIdx, u8 &aid, u8 &playerOnConsole) {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr || playerIdx >= 12) return false;
 
     aid = controller->aidsBelongingToPlayerIds[playerIdx];
@@ -144,10 +152,10 @@ static bool GetPlayerIdentity(u8 playerIdx, u8& aid, u8& playerOnConsole) {
 static void CaptureTeamAssignments() {
     if (!sActive || !sTeamFormat || sTeamAssignmentsCaptured) return;
 
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return;
 
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     const u8 playerCount = sub.playerCount < 12 ? sub.playerCount : 12;
     if (playerCount == 0) return;
 
@@ -186,12 +194,11 @@ void OnDisconnect() {
     sSessionActive = false;
     if (sMMRFinalized) return;
 
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys != nullptr && rksys->curLicenseId < 4) {
         const float currentMMR = MogiRating::GetUserMMR(rksys->curLicenseId);
         const float maximumLoss = -GetMaximumLoss(currentMMR);
-        const float penalty = MOGI_DISCONNECT_PENALTY < maximumLoss ?
-                                  MOGI_DISCONNECT_PENALTY : maximumLoss;
+        const float penalty = MOGI_DISCONNECT_PENALTY < maximumLoss ? MOGI_DISCONNECT_PENALTY : maximumLoss;
         MogiRating::SetUserMMR(rksys->curLicenseId, currentMMR - penalty);
     }
     sMMRFinalized = true;
@@ -206,7 +213,7 @@ static u16 EncodeMMR(float mmr) {
 }
 
 bool IsEnabled() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     return sEnabled && controller->GetConnectionState() != RKNet::CONNECTIONSTATE_SHUTDOWN;
 }
 
@@ -231,7 +238,7 @@ void SetEnabled(bool enabled) {
 }
 
 bool IsPublicRoom() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (!controller) return false;
 
     switch (controller->roomType) {
@@ -246,7 +253,7 @@ bool IsPublicRoom() {
 }
 
 static void UpdateActiveFromRoom() {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool connectionLost = controller == nullptr ||
                                 controller->roomType == RKNet::ROOMTYPE_NONE ||
                                 controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN ||
@@ -265,7 +272,7 @@ static void UpdateActiveFromRoom() {
     }
 
     controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     if (sub.groupId == 0) return;
     if (!sActive) {
         sLobbyGroupId = sub.groupId;
@@ -296,7 +303,7 @@ bool IsTeamFormat() {
     return sActive && sTeamFormat;
 }
 
-static MogiParticipant* FindParticipant(u8 aid, u8 playerOnConsole) {
+static MogiParticipant *FindParticipant(u8 aid, u8 playerOnConsole) {
     for (u8 i = 0; i < 12; ++i) {
         if (sParticipants[i].valid && sParticipants[i].aid == aid &&
             sParticipants[i].playerOnConsole == playerOnConsole) {
@@ -306,8 +313,8 @@ static MogiParticipant* FindParticipant(u8 aid, u8 playerOnConsole) {
     return nullptr;
 }
 
-static MogiParticipant* AddParticipant(u8 aid, u8 playerOnConsole, u8 team, u16 score) {
-    MogiParticipant* participant = FindParticipant(aid, playerOnConsole);
+static MogiParticipant *AddParticipant(u8 aid, u8 playerOnConsole, u8 team, u16 score) {
+    MogiParticipant *participant = FindParticipant(aid, playerOnConsole);
     if (participant == nullptr) {
         for (u8 i = 0; i < 12; ++i) {
             if (!sParticipants[i].valid) {
@@ -334,16 +341,16 @@ static MogiParticipant* AddParticipant(u8 aid, u8 playerOnConsole, u8 team, u16 
 
 static void EnsureParticipants() {
     if (!sActive || !sTeamFormat) return;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr || RKNet::SELECTHandler::sInstance == nullptr) return;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
-    const Network::ExpSELECTHandler& select = Network::ExpSELECTHandler::Get();
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
+    const Network::ExpSELECTHandler &select = Network::ExpSELECTHandler::Get();
     const u8 playerCount = sub.playerCount < 12 ? sub.playerCount : 12;
     for (u8 playerIdx = 0; playerIdx < playerCount; ++playerIdx) {
         u8 aid;
         u8 playerOnConsole;
         if (!GetPlayerIdentity(playerIdx, aid, playerOnConsole) || FindParticipant(aid, playerOnConsole) != nullptr) continue;
-        const Network::PulSELECT& packet = aid == sub.localAid ? select.toSendPacket : select.receivedPackets[aid];
+        const Network::PulSELECT &packet = aid == sub.localAid ? select.toSendPacket : select.receivedPackets[aid];
         AddParticipant(aid, playerOnConsole, sTeamByPlayer[playerIdx], packet.playersData[playerOnConsole].sumPoints);
     }
 }
@@ -351,14 +358,14 @@ static void EnsureParticipants() {
 static void CaptureRaceParticipants() {
     if (!sActive || !sTeamFormat || Racedata::sInstance == nullptr) return;
 
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const u8 playerCount = scenario.playerCount < 12 ? scenario.playerCount : 12;
     for (u8 playerIdx = 0; playerIdx < playerCount; ++playerIdx) {
         u8 aid;
         u8 playerOnConsole;
         if (!GetPlayerIdentity(playerIdx, aid, playerOnConsole)) continue;
 
-        MogiParticipant* participant = FindParticipant(aid, playerOnConsole);
+        MogiParticipant *participant = FindParticipant(aid, playerOnConsole);
         if (participant == nullptr) {
             AddParticipant(aid, playerOnConsole, static_cast<u8>(scenario.players[playerIdx].team),
                            scenario.players[playerIdx].score);
@@ -375,13 +382,13 @@ static RaceLoadHook captureMogiRaceParticipants(CaptureRaceParticipants);
 void ReceivePlayerScores(u8 aid, u16 player0, u16 player1) {
     if (!sActive || !sTeamFormat || aid >= 12) return;
     CaptureTeamAssignments();
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     const u8 playerCount = sub.connectionUserDatas[aid].playersAtConsole;
     const u16 scores[2] = {player0, player1};
     for (u8 slot = 0; slot < 2; ++slot) {
-        MogiParticipant* participant = FindParticipant(aid, slot);
+        MogiParticipant *participant = FindParticipant(aid, slot);
         if (participant == nullptr && sTeamAssignmentsCaptured && slot < playerCount &&
             sTeamByAid[aid][slot] != 0xFF) {
             participant = AddParticipant(aid, slot, sTeamByAid[aid][slot], scores[slot]);
@@ -399,7 +406,7 @@ void OnPlayerDisconnect(u8 aid) {
     EnsureParticipants();
     const u8 raceInGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber % MOGI_RACE_COUNT;
     for (u8 slot = 0; slot < 2; ++slot) {
-        MogiParticipant* participant = FindParticipant(aid, slot);
+        MogiParticipant *participant = FindParticipant(aid, slot);
         if (participant == nullptr || participant->disconnected || !participant->activeInGP) continue;
         participant->disconnected = true;
         participant->disconnectRaceInGP = raceInGP;
@@ -412,7 +419,7 @@ u16 GetMissingTeamScore(u8 team, bool previous) {
     if (!sActive || !sTeamFormat) return 0;
     u16 score = 0;
     for (u8 i = 0; i < 12; ++i) {
-        const MogiParticipant& participant = sParticipants[i];
+        const MogiParticipant &participant = sParticipants[i];
         if (!participant.valid || !participant.disconnected || participant.team != team ||
             participant.presentOnResults) continue;
         score += previous ? participant.previousScore : participant.score;
@@ -457,7 +464,7 @@ void ApplyTeamAssignments(RacedataScenario &scenario) {
     }
 }
 
-void ApplyHostTeamAssignments(const u8* teams) {
+void ApplyHostTeamAssignments(const u8 *teams) {
     if (!IsTeamFormat() || teams == nullptr) return;
 
     const u8 teamCount = 12 / sPlayersPerTeam;
@@ -469,7 +476,7 @@ void ApplyHostTeamAssignments(const u8* teams) {
     CaptureTeamAssignments();
     if (sTeamAssignmentsCaptured) {
         for (u8 i = 0; i < 12; ++i) {
-            MogiParticipant& participant = sParticipants[i];
+            MogiParticipant &participant = sParticipants[i];
             if (!participant.valid || participant.aid >= 12 || participant.playerOnConsole >= 2) continue;
             const u8 team = sTeamByAid[participant.aid][participant.playerOnConsole];
             if (team != 0xFF) participant.team = team;
@@ -482,8 +489,8 @@ u32 GetLobbySeed() {
     return sLobbySeed;
 }
 
-void FillMMRPacket(u16& player0, u16& player1) {
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+void FillMMRPacket(u16 &player0, u16 &player1) {
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     const u16 mmr = rksys != nullptr ? EncodeMMR(MogiRating::GetUserMMR(rksys->curLicenseId)) : 1000;
     player0 = mmr;
     player1 = mmr;
@@ -542,9 +549,9 @@ static void ResolveFormatVote() {
     if (!sFormatVoteActive || sFormatVoteResolved) return;
 
     u8 counts[MOGI_FORMAT_COUNT] = {};
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     for (u8 aid = 0; aid < 12; ++aid) {
         if ((sub.availableAids & (1 << aid)) == 0) continue;
         const u8 state = aid == sub.localAid ? sLocalFormatVoteState : sFormatVoteStates[aid];
@@ -573,9 +580,9 @@ static void ResolveFormatVote() {
 
 static void TryResolveFormatVote() {
     if (!sFormatVoteActive || sFormatVoteResolved) return;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     if (sub.localAid != sub.hostAid) return;
 
     for (u8 aid = 0; aid < 12; ++aid) {
@@ -586,16 +593,16 @@ static void TryResolveFormatVote() {
     ResolveFormatVote();
 }
 
-void FillFormatVotePacket(u8& state, u8& format) {
+void FillFormatVotePacket(u8 &state, u8 &format) {
     state = sLocalFormatVoteState;
     format = sLocalFormatVote;
 }
 
 void ReceiveFormatVotePacket(u8 aid, u8 state, u8 format) {
     if (!sActive || aid >= 12 || state > MOGI_FORMAT_VOTE_RESOLVED) return;
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return;
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     if (aid == sub.hostAid && state == MOGI_FORMAT_VOTE_RESOLVED &&
         format < MOGI_FORMAT_COUNT && !sFormatVoteResolved) {
         ApplyFormat(format);
@@ -633,14 +640,15 @@ static void SelectLobbyFormat(u32 groupId) {
     sPlayersPerTeam = 2;
     ResetFormatVotes();
     ResetParticipants();
+    ResetLocalGpScores();
 }
 
-void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+void PrepareHostRoom(u32 &hostContext2, u8 &raceCount) {
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isMigratedFriendRoom = sActive && IsFriendRoom(controller);
     if (!IsEnabled() || (!IsPublicRoom() && !isMigratedFriendRoom)) return;
 
-    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     SelectLobbyFormat(sub.groupId);
     sActive = true;
     sMMRFinalized = false;
@@ -672,9 +680,9 @@ void PrepareHostRoom(u32& hostContext2, u8& raceCount) {
 void ApplyHostRoom(u32 hostContext2) {
     if ((hostContext2 & MOGI_HOST_FLAG) == 0) return;
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller != nullptr) {
-        const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+        const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         SelectLobbyFormat(sub.groupId);
     }
     sActive = true;
@@ -688,7 +696,7 @@ void ApplyHostRoom(u32 hostContext2) {
     System::sInstance->netMgr.racesPerGP = MOGI_RACE_COUNT - 1;
 }
 
-static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {
+static u16 GetTeamScore(const RacedataScenario &scenario, u8 team) {
     u16 score = GetMissingTeamScore(team, false);
     for (u8 i = 0; i < scenario.playerCount; ++i) {
         if (GetTeamForPlayer(i) == team) score += scenario.players[i].score;
@@ -696,7 +704,7 @@ static u16 GetTeamScore(const RacedataScenario& scenario, u8 team) {
     return score;
 }
 
-static float GetPlayerRank(const RacedataScenario& scenario, u8 playerIdx) {
+static float GetPlayerRank(const RacedataScenario &scenario, u8 playerIdx) {
     u8 betterCount = 0;
     u8 tiedCount = 0;
     for (u8 i = 0; i < scenario.playerCount; ++i) {
@@ -709,7 +717,7 @@ static float GetPlayerRank(const RacedataScenario& scenario, u8 playerIdx) {
     return static_cast<float>(betterCount) + (static_cast<float>(tiedCount) - 1.0f) * 0.5f;
 }
 
-static float GetTeamRank(const RacedataScenario& scenario, u8 playerIdx) {
+static float GetTeamRank(const RacedataScenario &scenario, u8 playerIdx) {
     const u8 ownTeam = GetTeamForPlayer(playerIdx);
     const u16 ownScore = GetTeamScore(scenario, ownTeam);
     u8 betterCount = 0;
@@ -727,7 +735,7 @@ static float GetTeamRank(const RacedataScenario& scenario, u8 playerIdx) {
     return static_cast<float>(betterCount) + static_cast<float>(tiedCount) * 0.5f;
 }
 
-static bool IsReducedLossEligible(const RacedataScenario& scenario, u8 playerIdx) {
+static bool IsReducedLossEligible(const RacedataScenario &scenario, u8 playerIdx) {
     if (!IsTeamFormat() || playerIdx >= scenario.playerCount) return false;
 
     const u16 playerScore = scenario.players[playerIdx].score;
@@ -743,11 +751,11 @@ static bool IsReducedLossEligible(const RacedataScenario& scenario, u8 playerIdx
     return false;
 }
 
-static float GetPlayerMMR(const RacedataScenario& scenario, u8 playerIdx, float fallbackMMR) {
+static float GetPlayerMMR(const RacedataScenario &scenario, u8 playerIdx, float fallbackMMR) {
     if (playerIdx >= 12) return fallbackMMR;
     if (scenario.players[playerIdx].playerType == PLAYER_REAL_LOCAL) return fallbackMMR;
 
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr) return fallbackMMR;
 
     const u8 aid = controller->aidsBelongingToPlayerIds[playerIdx];
@@ -762,7 +770,7 @@ static float GetPlayerMMR(const RacedataScenario& scenario, u8 playerIdx, float 
     return encodedMMR == 0xFFFF ? fallbackMMR : static_cast<float>(encodedMMR) / 100.0f;
 }
 
-static float GetTeamMMR(const RacedataScenario& scenario, const float* playerMMRs, u8 team) {
+static float GetTeamMMR(const RacedataScenario &scenario, const float *playerMMRs, u8 team) {
     float totalMMR = 0.0f;
     u8 playerCount = 0;
     for (u8 i = 0; i < scenario.playerCount; ++i) {
@@ -780,7 +788,7 @@ static float GetPairExpectedPerformance(float playerMMR, float opponentMMR) {
     return expected;
 }
 
-static float GetExpectedPerformance(float playerMMR, const float* opponentMMRs, u8 opponentCount) {
+static float GetExpectedPerformance(float playerMMR, const float *opponentMMRs, u8 opponentCount) {
     if (opponentCount == 0) return 0.5f;
 
     float expected = 0.0f;
@@ -838,13 +846,13 @@ static bool IsFinalRace() {
     return SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber >= GetFinalRaceNumber();
 }
 
-static void UpdateDisconnectScores(const RacedataScenario& scenario) {
+static void UpdateDisconnectScores(const RacedataScenario &scenario) {
     if (!IsTeamFormat() || SectionMgr::sInstance == nullptr || SectionMgr::sInstance->sectionParams == nullptr) return;
     EnsureParticipants();
     const u8 raceInGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber % MOGI_RACE_COUNT;
 
     for (u8 i = 0; i < 12; ++i) {
-        MogiParticipant& participant = sParticipants[i];
+        MogiParticipant &participant = sParticipants[i];
         if (!participant.valid) continue;
         if (!participant.activeInGP) {
             participant.presentOnResults = false;
@@ -878,7 +886,7 @@ static void UpdateDisconnectScores(const RacedataScenario& scenario) {
 
         if (participant.disconnectRaceInGP == 0) {
             if (!participant.fixedDisconnectScore) {
-                participant.score = participant.gpStartScore + (present ? 39 :42);
+                participant.score = participant.gpStartScore + (present ? 39 : 42);
                 participant.fixedDisconnectScore = true;
             }
         } else if (present) {
@@ -892,7 +900,7 @@ static void UpdateDisconnectScores(const RacedataScenario& scenario) {
     if (raceInGP != MOGI_RACE_COUNT - 1) return;
     if (sResetRoomAfterGP && RKNet::Controller::sInstance != nullptr) RKNet::Controller::sInstance->ResetRH1andROOM();
     for (u8 i = 0; i < 12; ++i) {
-        MogiParticipant& participant = sParticipants[i];
+        MogiParticipant &participant = sParticipants[i];
         if (!participant.valid) continue;
         if (participant.disconnected) {
             participant.activeInGP = false;
@@ -908,8 +916,8 @@ static void UpdateDisconnectScores(const RacedataScenario& scenario) {
 void OnFinalResults() {
     if (Racedata::sInstance == nullptr) return;
 
-    RacedataScenario& raceScenario = Racedata::sInstance->racesScenario;
-    const RacedataScenario& scenario = Racedata::sInstance->menusScenario;
+    RacedataScenario &raceScenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     if (!IsActive()) return;
     UpdateDisconnectScores(scenario);
 
@@ -919,7 +927,7 @@ void OnFinalResults() {
 
     if (!IsFinalRace()) return;
 
-    RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || rksys->curLicenseId >= 4) return;
 
     s32 localPlayerId = -1;
@@ -983,7 +991,7 @@ void OnResultsDisplayed() {
 static void MonitorDisconnect() {
     if (!sSessionActive) return;
 
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE ||
         controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN ||
         static_cast<u32>(controller->connectionState) > static_cast<u32>(RKNet::CONNECTIONSTATE_ROOM)) {
@@ -1013,7 +1021,7 @@ void ProcessPendingDisconnect() {
 
     const bool isOfflineResults = sectionId == SECTION_VS_RACE_AWARD || sectionId == SECTION_GP_AWARD;
     if (isOfflineResults || sResultsSectionSeen) {
-        RKNet::Controller* controller = RKNet::Controller::sInstance;
+        RKNet::Controller *controller = RKNet::Controller::sInstance;
         if (controller != nullptr) controller->ScheduleShutdown();
         sPendingDisconnect = false;
         sActive = false;
