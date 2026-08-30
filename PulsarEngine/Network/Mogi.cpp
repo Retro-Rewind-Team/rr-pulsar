@@ -22,7 +22,11 @@ static const u32 MOGI_TEAM_SIZE_MASK = 0x30000000;
 static const u32 MOGI_TEAM_SIZE_2 = 0x10000000;
 static const u32 MOGI_TEAM_SIZE_3 = 0x20000000;
 static const u32 MOGI_TEAM_SIZE_6 = 0x30000000;
+#ifndef RR_TESTS
 static const u8 MOGI_RACE_COUNT = 12;
+#else
+static const u8 MOGI_RACE_COUNT = 4;
+#endif
 static const u8 MOGI_FORMAT_COUNT = 5;
 static const u8 MOGI_FORMAT_NONE = 0xFF;
 static const u8 MOGI_FORMAT_VOTE_PENDING = 0;
