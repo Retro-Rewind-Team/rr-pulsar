@@ -347,6 +347,13 @@ static void ResetMissionButtonFreeText(PushButton &button, bool locked = false) 
     material->tevColours[1].a = 255;
 }
 
+static void SetMissionButtonSelectedText(PushButton &button) {
+    if (button.animator.animationGroups == nullptr || button.animator.animationCount <= 2) return;
+
+    AnimationGroup &textLightGroup = button.animator.GetAnimationGroupById(2);
+    if (textLightGroup.animationsCount > 0) textLightGroup.PlayAnimationAtFrame(0, 0.0f);
+}
+
 static void SetMissionRank(PushButton &button, u8 rating, bool hideLevelIcon) {
     if (hideLevelIcon && button.layout.GetPaneByName("level_icon") != nullptr)
         button.SetPaneVisibility("level_icon", false);
@@ -766,7 +773,9 @@ private:
 
         this->UpdateMissionButtonAccess();
         this->UpdateButtonMessages();
-        this->stageButtons[selectedMission % BUTTON_COUNT].Select(0);
+        const u32 selectedStage = selectedMission % BUTTON_COUNT;
+        this->stageButtons[selectedStage].Select(0);
+        SetMissionButtonSelectedText(this->stageButtons[selectedStage]);
     }
 
     void LoadMissionResources() {
