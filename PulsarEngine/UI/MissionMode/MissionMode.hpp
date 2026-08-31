@@ -5,8 +5,12 @@
 #include <UI/UI.hpp>
 #include <MarioKartWii/UI/Page/Page.hpp>
 
+class BMGHolder;
+
 namespace Pulsar {
 namespace UI {
+const BMGHolder *GetMissionBmg();
+
 namespace MissionMode {
 
 u32 GetMissionButtonId(const Pages::SinglePlayer *page);

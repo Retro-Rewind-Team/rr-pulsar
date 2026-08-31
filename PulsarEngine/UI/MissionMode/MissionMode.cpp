@@ -7,14 +7,40 @@
 #include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/File/BMG.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
+#include <MarioKartWii/Scene/RootScene.hpp>
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
 
 namespace Pulsar {
 namespace UI {
+
+static const char MISSION_BMG_FILE[] = "/Race/MissionRun/Mission.bmg";
+
+const BMGHolder *GetMissionBmg() {
+	static BMGHolder missionBmg;
+	static const void *loadedFile = nullptr;
+	static bool loadAttempted = false;
+
+	if (!loadAttempted && RootScene::sInstance != nullptr &&
+		RootScene::sInstance->expHeapGroup.heaps[1] != nullptr) {
+		loadAttempted = true;
+		u32 fileSize = 0;
+		void *file = SystemManager::RipFromDisc(
+			MISSION_BMG_FILE, RootScene::sInstance->expHeapGroup.heaps[1], true, &fileSize);
+		if (file != nullptr && fileSize >= sizeof(BMGHeader)) {
+			missionBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
+			loadedFile = file;
+		}
+	}
+
+	if (loadedFile == nullptr) return nullptr;
+	return &missionBmg;
+}
+
 namespace MissionMode {
 
 namespace {

@@ -599,6 +599,15 @@ static const BMGHolder *GetCommonBmg() {
 
 static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
     int ret;
+    const BMGHolder *missionBmg = GetMissionBmg();
+    if (missionBmg != nullptr) {
+        ret = GetMsgIdxByBmgId(*missionBmg, bmgId);
+        if (ret >= 0) {
+            isCustom = CUSTOM_BMG;
+            matchedCustomBmg = missionBmg;
+            return ret;
+        }
+    }
     const BMGHolder *countryBmg = GetCountryBmg();
     if (countryBmg != nullptr) {
         ret = GetMsgIdxByBmgId(*countryBmg, bmgId);
