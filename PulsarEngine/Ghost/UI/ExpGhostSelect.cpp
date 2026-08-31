@@ -187,7 +187,8 @@ void ExpGhostSelect::Reset() {
 
 // Requests a ghost save when the current run earns a flap or top-10 time.
 void BeforeEntranceAnimations(Pages::TTSplits *page) {
-    const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
+	if (Racedata::sInstance == nullptr) return;
+	const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
     SectionParams *sectionParams = sectionMgr->sectionParams;
     sectionParams->isNewTime = false;
