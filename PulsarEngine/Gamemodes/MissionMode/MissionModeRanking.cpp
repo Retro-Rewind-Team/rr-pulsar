@@ -44,6 +44,13 @@ static bool IsMissionVSObjective() {
     return objective == 1 || objective == 2;
 }
 
+static void StopMissionTimerOnSuccess(const void *mission) {
+	if (GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1 ||
+		Raceinfo::sInstance == 0 || Raceinfo::sInstance->timerMgr == 0)
+		return;
+	Raceinfo::sInstance->timerMgr->hasRaceStarted = false;
+}
+
 typedef void (*MissionEndRaceFn)(void *);
 kmRuntimeUse(0x80535de8);
 
@@ -72,6 +79,7 @@ static void FixLapRunCalcMission(void *mission) {
     calc(mission);
     if (!IsMissionVSObjective() || GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1) return;
     SetMissionState(mission);
+	StopMissionTimerOnSuccess(mission);
     if (!IsRankReported())
         SetRankFromTime(mission);
     else
@@ -112,6 +120,7 @@ static void FixMissionScoreCalcRank(void *mission) {
                                         MISSION_OBJECTIVE_OFFSET);
     const u32 rank = IsRankReported() ? GetRank(mission) : 0;
     sSetMissionObjectiveComplete(reinterpret_cast<void *>(raceManager), objective, rank);
+	StopMissionTimerOnSuccess(mission);
     if (!IsRankReported()) SetRankFromTime(mission);
 }
 
@@ -224,6 +233,7 @@ static void FixMissionTimeout(void *mission) {
     if (!HasMissionScoreRequirement(mission)) {
         SetMissionValue(mission, MISSION_STATUS_OFFSET, 2);
     }
+	StopMissionTimerOnSuccess(mission);
     if (GetMissionValue(mission, MISSION_STATUS_OFFSET) == 1 && !IsRankReported())
         SetRankFromTime(mission);
 }
@@ -235,6 +245,7 @@ static void FixMissionTimeoutEnd(void *mission) {
         Raceinfo::sInstance->stage == RACESTAGE_IS_FINISHING) {
         Raceinfo::sInstance->stage = RACESTAGE_FINISHED;
     }
+	StopMissionTimerOnSuccess(mission);
     if (GetMissionValue(mission, MISSION_STATUS_OFFSET) == 1 && !IsRankReported())
         SetRankFromTime(mission);
 }
@@ -250,6 +261,7 @@ static u32 FixMissionCanEnd(void *mission) {
         SetMissionValue(mission, MISSION_STATUS_OFFSET, 2);
         return 1;
     }
+	StopMissionTimerOnSuccess(mission);
     if (status == 1 && !IsRankReported()) SetRankFromTime(mission);
     return status != 0;
 }
