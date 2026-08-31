@@ -619,9 +619,16 @@ private:
     void UpdateStageButtonMessage(u32 level, u32 stageId) {
         Text::Info info;
         memset(&info, 0, sizeof(info));
-        swprintf(this->buttonNames[BUTTON_COUNT + stageId], 32, L"%u-%u", level + 1, stageId + 1);
-        info.strings[0] = this->buttonNames[BUTTON_COUNT + stageId];
-        this->stageButtons[stageId].SetMessage(UI::BMG_TEXT, &info);
+        u16 stageBmgId = 0;
+        if (this->GetMissionStageBmgId(level, stageId, stageBmgId)) {
+            info.intToPass[0] = level + 1;
+            info.intToPass[1] = stageId + 1;
+            this->stageButtons[stageId].SetMessage(stageBmgId, &info);
+        } else {
+            swprintf(this->buttonNames[BUTTON_COUNT + stageId], 32, L"%u-%u", level + 1, stageId + 1);
+            info.strings[0] = this->buttonNames[BUTTON_COUNT + stageId];
+            this->stageButtons[stageId].SetMessage(UI::BMG_TEXT, &info);
+        }
 
         u16 objective = 0;
         const bool hasObjective = this->GetMissionObjective(level, stageId, objective);
@@ -656,17 +663,35 @@ private:
     }
 
     bool GetMissionId(u32 level, u32 stageId, u8 &missionId) const {
-        if (this->missionUiFile == nullptr || level >= BUTTON_COUNT || stageId >= BUTTON_COUNT ||
-            this->missionUiSize < MISSION_UI_LEVEL_SIZE * BUTTON_COUNT) return false;
+        const u8 *record = this->GetMissionStageRecord(level, stageId);
+        if (record == nullptr) return false;
 
-        const u32 uiOffset = level * MISSION_UI_LEVEL_SIZE + stageId * MISSION_UI_STAGE_SIZE;
-        if (uiOffset + sizeof(u16) > this->missionUiSize) return false;
-
-        const u16 mappedMissionId = ReadBigEndian16(this->missionUiFile + uiOffset);
+        const u16 mappedMissionId = ReadBigEndian16(record);
         if (static_cast<s16>(mappedMissionId) < 0) return false;
 
         missionId = static_cast<u8>(mappedMissionId & 0xff);
         return true;
+    }
+
+    bool GetMissionStageBmgId(u32 level, u32 stageId, u16 &bmgId) const {
+        const u8 *record = this->GetMissionStageRecord(level, stageId);
+        if (record == nullptr) return false;
+
+        const u16 mappedBmgId = ReadBigEndian16(record + sizeof(u16));
+        if (static_cast<s16>(mappedBmgId) < 0) return false;
+
+        bmgId = mappedBmgId;
+        return true;
+    }
+
+    const u8 *GetMissionStageRecord(u32 level, u32 stageId) const {
+        if (this->missionUiFile == nullptr || level >= BUTTON_COUNT || stageId >= BUTTON_COUNT)
+            return nullptr;
+
+        const u32 uiOffset = level * MISSION_UI_LEVEL_SIZE + stageId * MISSION_UI_STAGE_SIZE;
+        if (uiOffset + MISSION_UI_STAGE_SIZE > this->missionUiSize) return nullptr;
+
+        return this->missionUiFile + uiOffset;
     }
 
     bool GetMissionObjective(u32 level, u32 stageId, u16 &objective) const {
