@@ -170,7 +170,8 @@ bool IsMissionMenuSection() {
         return false;
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    return sectionId == SECTION_SINGLE_P_FROM_MENU || sectionId == SECTION_SINGLE_P_MR_CHOOSE_MISSION;
+    return sectionId == SECTION_SINGLE_P_FROM_MENU || sectionId == SECTION_SINGLE_P_TT_CHANGE_CHARA ||
+           sectionId == SECTION_SINGLE_P_VS_NEXT_RACE || sectionId == SECTION_SINGLE_P_MR_CHOOSE_MISSION;
 }
 
 kmRuntimeUse(0x805f2e84);

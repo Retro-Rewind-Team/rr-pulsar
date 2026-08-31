@@ -122,12 +122,12 @@ void ExpSection::CreatePulPages() {
             }
             break;
         case SECTION_SINGLE_P_FROM_MENU:  // 0x48
+        case SECTION_SINGLE_P_TT_CHANGE_CHARA:  // 0x49
+        case SECTION_SINGLE_P_VS_NEXT_RACE:  // 0x4b
         case SECTION_SINGLE_P_MR_CHOOSE_MISSION:  // 0x4d
             MissionMode::CreateSinglePlayerPages(*this);
             // fall through
-        case SECTION_SINGLE_P_TT_CHANGE_CHARA:  // 0x49
         case SECTION_SINGLE_P_TT_CHANGE_COURSE:  // 0x4a
-        case SECTION_SINGLE_P_VS_NEXT_RACE:  // 0x4b
         case SECTION_SINGLE_P_BT_NEXT_BATTLE:  // 0x4c
         case SECTION_SINGLE_P_CHAN_RACE_GHOST:  // 0x4e
         case SECTION_SINGLE_P_LIST_RACE_GHOST:  // 0x50
