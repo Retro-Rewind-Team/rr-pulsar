@@ -7,14 +7,151 @@
 #include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/File/BMG.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
+#include <MarioKartWii/Scene/RootScene.hpp>
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
 
 namespace Pulsar {
 namespace UI {
+
+// Implements the use of Pulsar's BMGHolder when needed
+enum BMGType {
+    BMG_NORMAL,
+    CUSTOM_BMG,
+};
+BMGType isCustom;
+
+static int GetMsgIdxByBmgId(const BMGHolder &bmg, s32 bmgId) {
+    if (bmg.bmgFile == nullptr || bmg.messageIds == nullptr) return -1;
+    const BMGMessageIds &msgIds = *bmg.messageIds;
+    int ret = -1;
+    for (int i = 0; i < msgIds.msgCount; ++i) {
+        int curBmgId = msgIds.messageIds[i];
+        if (curBmgId == bmgId) {
+            ret = i;
+            break;
+        } else if (curBmgId > bmgId)
+            break;
+    }
+    return ret;
+}
+
+static const BMGHolder *matchedCustomBmg = nullptr;
+static const char MISSION_BMG_FILE[] = "/Race/MissionRun/Mission.bmg";
+
+static const BMGHolder *GetMissionBmg() {
+	static BMGHolder missionBmg;
+	static const void *loadedFile = nullptr;
+	static bool loadAttempted = false;
+
+	if (!loadAttempted && RootScene::sInstance != nullptr &&
+		RootScene::sInstance->expHeapGroup.heaps[1] != nullptr) {
+		loadAttempted = true;
+		u32 fileSize = 0;
+		void *file = SystemManager::RipFromDisc(
+			MISSION_BMG_FILE, RootScene::sInstance->expHeapGroup.heaps[1], true, &fileSize);
+		if (file != nullptr && fileSize >= sizeof(BMGHeader)) {
+			missionBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
+			loadedFile = file;
+		}
+	}
+
+	if (loadedFile == nullptr) return nullptr;
+	return &missionBmg;
+}
+
+static const BMGHolder *GetCharaNameBmg() {
+    static BMGHolder charaNameBmg;
+    static const void *loadedFile = nullptr;
+
+    ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
+    if (archiveMgr == nullptr) return nullptr;
+
+    void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/CharaName.bmg", nullptr);
+    if (file == nullptr) {
+        loadedFile = nullptr;
+        charaNameBmg.bmgFile = nullptr;
+        return nullptr;
+    }
+
+    if (file != loadedFile) {
+        charaNameBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
+        loadedFile = file;
+    }
+    return &charaNameBmg;
+}
+
+static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
+	const BMGHolder *customBmgs[] = {
+		GetMissionBmg(),
+		&System::sInstance->GetBMG(),
+		&System::sInstance->GetBMGCT(),
+		&System::sInstance->GetBMGBT(),
+		GetCharaNameBmg(),
+	};
+	for (u32 i = 0; i < sizeof(customBmgs) / sizeof(customBmgs[0]); ++i) {
+		const BMGHolder *customBmg = customBmgs[i];
+		if (customBmg == nullptr) continue;
+		int ret = GetMsgIdxByBmgId(*customBmg, bmgId);
+		if (ret < 0) continue;
+		isCustom = CUSTOM_BMG;
+		matchedCustomBmg = customBmg;
+		return ret;
+	}
+
+    isCustom = BMG_NORMAL;
+    matchedCustomBmg = nullptr;
+    return GetMsgIdxByBmgId(normalHolder, bmgId);
+}
+kmBranch(0x805f8c88, GetMsgIdxById);
+
+wchar_t *GetMsgByMsgIdx(const BMGHolder &bmg, s32 msgIdx) {
+    const BMGInfo &info = *bmg.info;
+    if (msgIdx < 0 || msgIdx >= info.msgCount) return nullptr;
+    const u32 offset = info.entries[msgIdx].dat1Offset & 0xFFFFFFFE;
+    const BMGData &data = *bmg.data;
+    return reinterpret_cast<wchar_t *>((u8 *)&data + offset);
+}
+
+wchar_t *GetMsg(const BMGHolder &normalHolder, s32 msgIdx) {
+    wchar_t *ret = nullptr;
+    if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
+        ret = GetMsgByMsgIdx(*matchedCustomBmg, msgIdx);
+    }
+    if (ret == nullptr) ret = GetMsgByMsgIdx(normalHolder, msgIdx);
+    return ret;
+}
+kmBranch(0x805f8cf0, GetMsg);
+
+const u8 *GetFontIndex(const BMGHolder &bmg, s32 msgIdx) {
+    const BMGInfo &info = *bmg.info;
+    if (msgIdx < 0 || msgIdx >= info.msgCount) return nullptr;
+    return &info.entries[msgIdx].font;
+};
+
+const u8 *GetFont(const BMGHolder &normalHolder, s32 msgIdx) {
+    const u8 *ret = nullptr;
+    if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
+        ret = GetFontIndex(*matchedCustomBmg, msgIdx);
+    }
+    if (ret == nullptr) ret = GetFontIndex(normalHolder, msgIdx);
+    return ret;
+}
+kmBranch(0x805f8d2c, GetFont);
+
+const wchar_t *GetCustomMsg(s32 bmgId) {
+    const BMGHolder &bmg = System::sInstance->GetBMG();
+    int msgIdx = GetMsgIdxById(bmg, bmgId);
+    if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
+        return GetMsgByMsgIdx(*matchedCustomBmg, msgIdx);
+    }
+    return GetMsgByMsgIdx(bmg, msgIdx);
+}
+
 namespace MissionMode {
 
 namespace {
