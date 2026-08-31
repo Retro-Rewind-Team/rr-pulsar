@@ -1,7 +1,9 @@
 #include <Gamemodes/MissionMode/MissionModeRanking.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <MarioKartWii/Kart/KartManager.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -12,6 +14,10 @@ static void *sMissionState = 0;
 static bool sMissionTimeRankFailure = false;
 static bool sMissionRankReported = false;
 static u32 sMissionRankValue = 0;
+static void *sMissionTrickState = 0;
+static u32 sMissionTrickScore = 0;
+static u32 sMissionTrickFlags = 0;
+static u32 sMissionTrickStatus = 0;
 
 static const u32 MISSION_SCORE_REQUIRED_OFFSET = 0x08;
 static const u32 MISSION_STATUS_OFFSET = 0x0c;
@@ -19,6 +25,8 @@ static const u32 MISSION_OBJECTIVE_OFFSET = 0x02;
 static const u32 MISSION_RANK_THRESHOLDS_OFFSET = 0x30;
 static const u32 MISSION_RANK_COUNT = 6;
 static const u32 MISSION_RANK_FIELD_OFFSET = 0x10;
+static const u32 MISSION_IN_A_TRICK = 0x40;
+static const u32 MISSION_ZIPPER_TRICK = 0x8000;
 
 static void SetMissionState(void *mission);
 static bool IsRankReported();
@@ -42,6 +50,32 @@ static bool IsMissionVSObjective() {
     const u16 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission,
                                         MISSION_OBJECTIVE_OFFSET);
     return objective == 1 || objective == 2;
+}
+
+static u32 GetMissionTrickScore(void *mission) {
+	if (Racedata::sInstance == 0 ||
+		!IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
+		return 0;
+	if (Kart::Manager::sInstance == 0) return sMissionTrickScore;
+
+	const u32 missionStatus = GetMissionValue(mission, MISSION_STATUS_OFFSET);
+	if (sMissionTrickState != mission || (sMissionTrickStatus != 0 && missionStatus == 0)) {
+		sMissionTrickState = mission;
+		sMissionTrickScore = 0;
+		sMissionTrickFlags = 0;
+	}
+	sMissionTrickStatus = missionStatus;
+
+	const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+	const u8 playerId = scenario.settings.hudPlayerIds[0];
+	Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(playerId);
+	if (player == 0 || player->pointers.kartStatus == 0) return sMissionTrickScore;
+
+	const u32 trickFlags = player->pointers.kartStatus->bitfield1 &
+		(MISSION_IN_A_TRICK | MISSION_ZIPPER_TRICK);
+	if (trickFlags != 0 && sMissionTrickFlags == 0) ++sMissionTrickScore;
+	sMissionTrickFlags = trickFlags;
+	return sMissionTrickScore;
 }
 
 static void StopMissionTimerOnSuccess(const void *mission) {
@@ -109,7 +143,9 @@ static void FixMissionScoreCalcRank(void *mission) {
         Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
         return;
 
-    SetMissionState(mission);
+	SetMissionState(mission);
+	if (IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
+		SetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET, GetMissionTrickScore(mission));
     const u32 score = GetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET);
     const u32 requiredScore = GetMissionValue(Racedata::sInstance->racesScenario.mission,
                                               MISSION_SCORE_REQUIRED_OFFSET);

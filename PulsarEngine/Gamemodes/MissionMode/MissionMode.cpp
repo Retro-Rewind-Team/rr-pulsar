@@ -23,6 +23,8 @@ static const u32 MISSION_ENGINE_OFFSET = 0x07;
 static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
 static const u16 MISSION_OBJECTIVE_VS_RACE_01 = 0x01;
 static const u16 MISSION_OBJECTIVE_VS_RACE_02 = 0x02;
+static const u16 MISSION_OBJECTIVE_TRICK_SCORE = 0x0c;
+static const u32 MISSION_WHEELIE = 0x20000000;
 
 static bool IsMissionTimerWarningMode(const Racedata &racedata) {
     return CtrlRaceTime::IsBattle(racedata) || IsMissionScenario(racedata.racesScenario);
@@ -96,6 +98,25 @@ kmCall(0x805ab830, FindMissionCameraArea);
 
 bool IsMissionToGateObjective(const RacedataScenario &scenario) {
     return IsMissionScenario(scenario) && GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == 0x09;
+}
+
+bool IsMissionTrickScoreObjective(const RacedataScenario &scenario) {
+    return IsMissionScenario(scenario) &&
+           GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_TRICK_SCORE;
+}
+
+static bool IsMissionPlayerWheelie() {
+    if (Racedata::sInstance == 0 ||
+        !IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario) ||
+        Kart::Manager::sInstance == 0)
+        return false;
+
+    const u8 playerId = Racedata::sInstance->racesScenario.settings.hudPlayerIds[0];
+    if (playerId >= Kart::Manager::sInstance->playerCount) return false;
+
+    Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(playerId);
+    return player != 0 && player->pointers.kartStatus != 0 &&
+           (player->pointers.kartStatus->bitfield0 & MISSION_WHEELIE) != 0;
 }
 
 u8 GetMissionLapCount(const RacedataScenario &scenario) {
@@ -341,6 +362,8 @@ static u32 GetMissionScoreDisplayTarget(const void *raceConfig) {
 
 kmRuntimeUse(0x807f784c);
 static void FixMissionScoreLayout(CtrlRaceScore *self) {
+    if (IsMissionPlayerWheelie()) return;
+
     typedef void (*CtrlRaceScoreOnUpdateFn)(CtrlRaceScore *);
     static const CtrlRaceScoreOnUpdateFn sCtrlRaceScoreOnUpdate =
         reinterpret_cast<CtrlRaceScoreOnUpdateFn>(kmRuntimeAddr(0x807f784c));

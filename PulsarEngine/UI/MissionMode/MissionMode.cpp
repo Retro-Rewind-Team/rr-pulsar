@@ -179,6 +179,9 @@ static const char *const MISSION_OBJECTIVE_ICONS[] = {
     0,
     "mr_coin",
     "mr_gate",
+    0,
+    0,
+    "mr_trick",
 };
 static const char MISSION_CONFIG_FILE[] = "Binaries/ConfigMR.pul";
 static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;

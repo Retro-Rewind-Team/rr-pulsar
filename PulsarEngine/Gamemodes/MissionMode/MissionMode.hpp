@@ -18,6 +18,7 @@ enum MissionFeatureFlag {
 bool IsMissionScenario(const RacedataScenario &scenario);
 bool ShouldHidePositionCounter(const RacedataScenario &scenario);
 bool IsMissionToGateObjective(const RacedataScenario &scenario);
+bool IsMissionTrickScoreObjective(const RacedataScenario &scenario);
 u8 GetMissionLapCount(const RacedataScenario &scenario);
 bool HasMissionFeature(const RacedataScenario &scenario, MissionFeatureFlag feature);
 bool IsMissionScoreObjective(const RacedataScenario &scenario);
