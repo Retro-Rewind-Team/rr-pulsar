@@ -565,7 +565,4 @@ kmWrite32(0x800F20AC, 0x8001000C);
 kmWrite32(0x800F20B0, 0x90010008);
 kmWrite32(0x800F20B4, 0x60000000);
 
-// 50cc -> 100cc [Lesseratte]
-kmWrite32(0x808B5CD4, 0x3F666666);
-
 }  // namespace Codes

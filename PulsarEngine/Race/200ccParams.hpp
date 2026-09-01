@@ -15,9 +15,10 @@ const float fastFallingWheelGravity = 0.3f;
 inline bool Is200cc() {
     const Racedata &racedata = *Racedata::sInstance;
     const RKNet::Controller &controller = *RKNet::Controller::sInstance;
-    const RacedataSettings &menuSettings = racedata.menusScenario.settings;
-    const bool isOfflineVS100 = controller.roomType == RKNet::ROOMTYPE_NONE && menuSettings.gamemode == MODE_VS_RACE && menuSettings.engineClass == CC_50;
-    return racedata.racesScenario.settings.engineClass == CC_100 && controller.roomType != RKNet::ROOMTYPE_VS_WW && !isOfflineVS100;
+    const RacedataSettings &raceSettings = racedata.racesScenario.settings;
+    const bool isOffline500cc = controller.roomType == RKNet::ROOMTYPE_NONE && raceSettings.engineClass == CC_50;
+    const bool isOfflineMirror = controller.roomType == RKNet::ROOMTYPE_NONE && (racedata.menusScenario.settings.modeFlags & 1);
+    return isOffline500cc || (raceSettings.engineClass == CC_100 && controller.roomType != RKNet::ROOMTYPE_VS_WW && !isOfflineMirror);
 }
 
 }  // namespace Race

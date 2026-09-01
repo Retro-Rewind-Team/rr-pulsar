@@ -25,6 +25,11 @@ void Racedata_InitRace(Racedata *racedata) {
     racedata->InitRace();
 
     const RacedataSettings &settings = racedata->menusScenario.settings;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    if (controller->roomType == RKNet::ROOMTYPE_NONE && (settings.modeFlags & 1)) {
+        racedata->racesScenario.settings.modeFlags &= ~1;
+        racedata->racesScenario.settings.engineClass = CC_100;
+    }
     if (settings.gamemode == MODE_VS_RACE && (settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
         racedata->racesScenario.settings.modeFlags &= ~ExtendedTeamManager::TEAM_MODE_FLAG;

@@ -110,6 +110,8 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         factor = 1.0f;
     } else if (is200 && System::sInstance->IsContext(Pulsar::PULSAR_500)) {
         factor = 2.66f;
+    } else if (is200 && Racedata::sInstance->racesScenario.settings.engineClass == CC_50) {
+        factor = 3.0f;
     } else if (is200) {
         factor = Race::speedFactor;
     } else if (System::sInstance->IsContext(PULSAR_MODE_OTT) && gameMode == MODE_PUBLIC_VS) {
