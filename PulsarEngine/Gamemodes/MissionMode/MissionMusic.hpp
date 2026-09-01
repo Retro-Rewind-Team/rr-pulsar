@@ -2,6 +2,7 @@
 #define _PUL_MISSIONMUSIC_
 
 #include <kamek.hpp>
+#include <Config.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 
 class RacedataScenario;
@@ -18,6 +19,7 @@ enum {
 };
 
 bool ResolveMissionMusicPath(const char *brstmRoot, const char *&extFilePath);
+bool GetMissionMusicTrack(PulsarId &trackId);
 bool GetMissionMusicSlotOverride(CourseId &musicSlot);
 void LoadMissionCharacterTablesFromConfig(const u8 *file, u32 fileSize);
 u8 GetMissionCharacterTable(const RacedataScenario &scenario, u8 playerId);

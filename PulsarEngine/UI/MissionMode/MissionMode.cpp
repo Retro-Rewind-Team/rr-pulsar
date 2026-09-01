@@ -11,6 +11,7 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <MarioKartWii/Scene/RootScene.hpp>
+#include <MarioKartWii/UI/Page/Other/RaceIntro.hpp>
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
@@ -158,6 +159,7 @@ namespace {
 
 static u32 selectedLevel;
 static u32 selectedMission;
+static u16 selectedMissionStageBmgId;
 static bool returnToStageSelect;
 static bool missionEndPagePrepared;
 
@@ -188,6 +190,7 @@ static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
 static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
 static const u32 MISSION_BOSS_INTRO_STAGE = 7;
 static const u32 MISSION_NORMAL_INTRO_STAGE = 0;
+static const u32 MISSION_INTRO_TITLE_OFFSET = 0x1B8;
 static const u32 BMG_OK = 0x7D0;
 static const u32 MISSION_PAUSE_END_MENU_SOUND_ID = 0xD5;
 static const char *const MISSION_STAGE_RANK_PANE = "mission_rank";
@@ -404,6 +407,34 @@ static Page *GetMissionInstructionPageForIntro(int pageId) {
 kmCall(0x808440d8, GetMissionInstructionPageForIntro);
 kmCall(0x8084e624, GetMissionInstructionPageForIntro);
 
+kmRuntimeUse(0x80855200);
+typedef void (*RaceIntroOnInitFn)(Pages::RaceIntro *);
+static void RaceIntroOnInit(Pages::RaceIntro *intro) {
+	static const RaceIntroOnInitFn original =
+		reinterpret_cast<RaceIntroOnInitFn>(kmRuntimeAddr(0x80855200));
+	original(intro);
+
+	if (Racedata::sInstance == nullptr) return;
+	const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
+	if (!Pulsar::MissionMode::IsMissionScenario(scenario)) return;
+
+	LayoutUIControl *cupDisplay = reinterpret_cast<LayoutUIControl *>(
+		reinterpret_cast<u8 *>(intro) + MISSION_INTRO_TITLE_OFFSET);
+	Pulsar::UI::ChangeImage(*cupDisplay, "cup_icon", "mr_boss.tpl");
+
+	if (!Pulsar::MissionMode::HasMissionFeature(scenario, Pulsar::MissionMode::BOSS_MISSION)) return;
+
+	if (selectedMissionStageBmgId == 0)
+		return;
+
+	Text::Info info;
+	memset(&info, 0, sizeof(info));
+	info.intToPass[0] = selectedLevel + 1;
+	info.intToPass[1] = selectedMission + 1;
+	cupDisplay->SetMessage(selectedMissionStageBmgId, &info);
+}
+kmWritePointer(0x808da590, RaceIntroOnInit);
+
 class MissionSelectPage : public Pages::MenuInteractable {
 public:
     static const u32 BUTTON_COUNT = 8;
@@ -515,6 +546,7 @@ public:
             if (this->levelSelected || !this->IsLevelAccessible(level)) return;
             selectedLevel = level;
             selectedMission = 0;
+            selectedMissionStageBmgId = 0;
             MissionModel::Reset();
             this->ShowStageSelect();
             return;
@@ -524,7 +556,10 @@ public:
 
         const u32 stageId = static_cast<u32>(button.buttonId) - BUTTON_COUNT;
         if (!this->IsStageAccessible(selectedLevel, stageId)) return;
-        selectedMission = stageId;
+		selectedMission = stageId;
+		u16 stageBmgId = 0;
+		selectedMissionStageBmgId =
+			this->GetMissionStageBmgId(selectedLevel, selectedMission, stageBmgId) ? stageBmgId : 0;
         MissionModel::Reset();
         if (Racedata::sInstance != nullptr) {
             RacedataSettings &settings = Racedata::sInstance->menusScenario.settings;

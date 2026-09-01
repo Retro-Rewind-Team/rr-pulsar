@@ -10,6 +10,8 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpCupSelect.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <core/nw4r/lyt/TextBox.hpp>
 
@@ -276,11 +278,17 @@ bool SetTrackNameAuthorMessage(LayoutUIControl &control, PulsarId trackId, u32 t
 }
 
 static void SetVSIntroBmgId(LayoutUIControl *trackName) {
-    u32 bmgId = GetCurTrackBMG();
-    Text::Info info;
-    info.bmgToPass[0] = bmgId;
-    const PulsarId winning = CupsConfig::sInstance->GetWinning();
-    if (CupsConfig::IsReg(winning)) return;
+	PulsarId winning = CupsConfig::sInstance->GetWinning();
+	if (Racedata::sInstance != nullptr &&
+		Pulsar::MissionMode::IsMissionScenario(Racedata::sInstance->racesScenario)) {
+		PulsarId missionMusicTrack;
+		if (Pulsar::MissionMode::GetMissionMusicTrack(missionMusicTrack))
+			winning = missionMusicTrack;
+	}
+	const u32 bmgId = GetTrackBMGId(winning, false);
+	Text::Info info;
+	info.bmgToPass[0] = bmgId;
+	if (CupsConfig::IsReg(winning)) return;
     if (SetTrackNameAuthorMessage(*trackName, winning, bmgId)) return;
 
     info.bmgToPass[1] = GetTrackAuthorBMGId(winning, bmgId);
