@@ -1,7 +1,15 @@
 #include <kamek.hpp>
 #include <MarioKartWii/UI/Page/Menu/GPClassSelect.hpp>
+#include <RetroRewindChannel.hpp>
 
 namespace Pulsar {
+
+void LoadGrandPrixClassMovie(Pages::Menu *page, char **, bool isVisible) {
+    if (IsNewChannel()) return;
+    static char *movie = "thp/button/class.thp";
+    page->LoadMovies(&movie, isVisible);
+}
+kmCall(0x8083F870, LoadGrandPrixClassMovie);
 
 void InitializeReversedGPClassButtons(Pages::GPClassSelect *page) {
     page->Pages::Menu::OnControlsInitialized();
