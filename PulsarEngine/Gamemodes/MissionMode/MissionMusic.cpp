@@ -189,6 +189,24 @@ static bool MusicNamesMatch(const char *configuredName, const char *trackName) {
     return StringsEqualIgnoreCase(configuredName, trackNameWithoutExtension);
 }
 
+static bool FindConfiguredMusicTrack(const RacedataScenario &scenario, PulsarId &trackId) {
+	if (!IsMissionScenario(scenario)) return false;
+
+	const u32 missionId = scenario.settings.raceNumber;
+	if (missionId >= MAX_MISSION_MUSIC_ENTRIES || !hasAssociation[missionId]) return false;
+
+	const CupsConfig *cupsConfig = CupsConfig::sInstance;
+	const u32 trackCount = static_cast<u32>(cupsConfig->GetCtsTrackCount());
+	for (u32 i = 0; i < trackCount; ++i) {
+		const PulsarId candidate = static_cast<PulsarId>(PULSARID_FIRSTCT + i);
+		if (MusicNamesMatch(associationNames[missionId], cupsConfig->GetFileName(candidate, 0))) {
+			trackId = candidate;
+			return true;
+		}
+	}
+	return false;
+}
+
 static bool FindConfiguredMusicSlot(CourseId &musicSlot) {
     if (CupsConfig::sInstance == nullptr || Racedata::sInstance == nullptr) return false;
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
@@ -205,20 +223,15 @@ static bool FindConfiguredMusicSlot(CourseId &musicSlot) {
     cachedMissionId = missionId;
     cachedTrackFound = false;
 
-    const CupsConfig *cupsConfig = CupsConfig::sInstance;
-    const u32 trackCount = static_cast<u32>(cupsConfig->GetCtsTrackCount());
-    for (u32 i = 0; i < trackCount; ++i) {
-        const PulsarId candidate = static_cast<PulsarId>(PULSARID_FIRSTCT + i);
-        if (!MusicNamesMatch(associationNames[missionId], cupsConfig->GetFileName(candidate, 0))) continue;
+	PulsarId trackId;
+	if (!FindConfiguredMusicTrack(scenario, trackId)) return false;
 
-        const Track &track = cupsConfig->GetTrack(candidate);
-        if (track.musicSlot >= NATIVE_MUSIC_SLOT_COUNT) return false;
-        cachedTrackFound = true;
-        cachedMusicSlot = static_cast<CourseId>(track.musicSlot);
-        musicSlot = cachedMusicSlot;
-        return true;
-    }
-    return false;
+	const Track &track = CupsConfig::sInstance->GetTrack(trackId);
+	if (track.musicSlot >= NATIVE_MUSIC_SLOT_COUNT) return false;
+	cachedTrackFound = true;
+	cachedMusicSlot = static_cast<CourseId>(track.musicSlot);
+	musicSlot = cachedMusicSlot;
+	return true;
 }
 
 static bool ResolveForcedMusic(const RacedataScenario &scenario, const char *&extFilePath) {
@@ -275,6 +288,12 @@ bool ResolveMissionMusicPath(const char *brstmRoot, const char *&extFilePath) {
     if (!CheckPath(resolvedPath)) return false;
     extFilePath = resolvedPath;
     return true;
+}
+
+bool GetMissionMusicTrack(PulsarId &trackId) {
+	if (CupsConfig::sInstance == nullptr || Racedata::sInstance == nullptr || !associationsLoaded)
+		return false;
+	return FindConfiguredMusicTrack(Racedata::sInstance->racesScenario, trackId);
 }
 
 u8 GetMissionCharacterTable(const RacedataScenario &scenario, u8 playerId) {
