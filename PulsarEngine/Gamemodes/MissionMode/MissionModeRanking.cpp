@@ -33,6 +33,16 @@ static bool IsRankReported();
 static void SetMissionValue(void *mission, u32 offset, u32 value);
 static bool SetRankFromTime(void *mission);
 
+static void ResetMissionTrickScore(void *mission) {
+	sMissionTrickState = 0;
+	sMissionTrickScore = 0;
+	sMissionTrickFlags = 0;
+	sMissionTrickStatus = 0;
+	SetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET, 0);
+	SetMissionValue(mission, MISSION_STATUS_OFFSET, 0);
+}
+kmBranch(0x8053e2a0, ResetMissionTrickScore);
+
 static u32 GetMissionValue(const void *mission, u32 offset) {
     return *reinterpret_cast<const u32 *>(reinterpret_cast<const u8 *>(mission) + offset);
 }
