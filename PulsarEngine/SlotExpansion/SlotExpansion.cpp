@@ -91,10 +91,12 @@ kmCall(0x807e5da8, UpdateLastSelCup);
 static void FormatTrackPath(char *path, u32 length, const char *format, const char *fileName) {
     const CupsConfig *cupsConfig = CupsConfig::sInstance;
     PulsarId pulsarId = cupsConfig->GetWinning();  // fileName already set through racedata's courseId, which has been set to slot before
-    const bool isAwardCourse = strcmp(fileName, "winningrun_demo") == 0 || strcmp(fileName, "loser_demo") == 0 || strcmp(fileName, "draw_dmeo") == 0;
-    if (isAwardCourse || IsBattle() || CupsConfig::IsReg(pulsarId)) {
-        snprintf(path, length, format, fileName);
-        return;
+    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
+        const bool isAwardCourse = strcmp(fileName, "winningrun_demo") == 0 || strcmp(fileName, "loser_demo") == 0 || strcmp(fileName, "draw_demo") == 0;
+        if (isAwardCourse || IsBattle() || CupsConfig::IsReg(pulsarId)) {
+            snprintf(path, length, format, fileName);
+            return;
+        }
     }
 
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
