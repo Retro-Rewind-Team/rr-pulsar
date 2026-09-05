@@ -635,7 +635,7 @@ BootHook RemoveESRBHook(removeESRB, 0);
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 6126);
+kmWrite32(0x800017D4, 6127);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";
