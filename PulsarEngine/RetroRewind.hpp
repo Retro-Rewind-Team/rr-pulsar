@@ -4,7 +4,6 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 
-extern u32 FPSPatchHook;
 extern u32 PredictionHook;
 extern u32 ItemRainOnlineFixHook;
 extern u32 BloomHook;

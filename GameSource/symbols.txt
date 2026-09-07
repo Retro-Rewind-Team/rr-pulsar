@@ -2382,7 +2382,6 @@ NHTTPSetClientCertDefault__Fv = 0x801d9798
 sprintf = 0x80011a2c
 
 WWFC_CUSTOM_REGION = 0x80005efc
-FPSPatchHook = 0x80001202
 OTTFixHook = 0x80001208
 ItemRainOnlineFixHook = 0x8000120A
 PredictionHook = 0x80891B28

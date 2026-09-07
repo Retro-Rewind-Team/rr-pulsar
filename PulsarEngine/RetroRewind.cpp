@@ -9,6 +9,7 @@
 #include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
+#include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/rvl/OS/OS.hpp>
 
 namespace RetroRewind {
@@ -51,22 +52,14 @@ System::WeightClass System::GetWeightClass(const CharacterId id) {
     }
 }
 
-// Force 30 FPS [Vabold]
-kmWrite32(0x80554224, 0x3C808000);
-kmWrite32(0x80554228, 0x88841204);
-kmWrite32(0x8055422C, 0x48000044);
-
-static bool IsTTMode(const GameMode mode) {
-    return mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE;
-}
-
 void FPSPatch() {
-    FPSPatchHook = 0x00;
-    const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    if (Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FPS) == Pulsar::FPS_HALF &&
-        !IsTTMode(mode)) {
-        FPSPatchHook = 0x00FF0100;
+    GameScene *scene = const_cast<GameScene *>(GameScene::GetCurrent());
+    bool use30FPS = Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FPS) == Pulsar::FPS_HALF;
+    if (use30FPS && scene->id == SCENE_ID_RACE) {
+        const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
+        if (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE) use30FPS = false;
     }
+    scene->SetFramerate(use30FPS ? 1 : 0);
 }
 static SectionLoadHook PatchFPS(FPSPatch);
 static RaceLoadHook PatchFPSOnRaceLoad(FPSPatch);
