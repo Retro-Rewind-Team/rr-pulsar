@@ -742,17 +742,15 @@ static void PatchLoadedGroupItemWithLooseCustomSoundEffect(const snd::SoundArchi
     DVD::Close(&info);
 }
 
-static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId,
-                                                  snd::SoundMemoryAllocatable *allocater, u32 itemCount,
-                                                  const snd::SoundArchive::GroupItemInfo &item, u32 groupSize,
-                                                  u32 waveDataSize, void *groupData, void *waveData) {
-    if (groupId != BRSAR_GROUP_RACE || !IsSW2RRLoaded() || groupData == nullptr || item.size < 4) return;
+static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId, snd::SoundMemoryAllocatable *allocater, u32 itemCount, const snd::SoundArchive::GroupItemInfo &item, u32 groupSize, u32 waveDataSize, void *groupData, void *waveData) {
+    DVD::FileInfo info;
+    const char revokart[] = "/patches/revo_kart.brsar";
+    if (groupId != BRSAR_GROUP_RACE || !IsSW2RRLoaded() || groupData == nullptr || item.size < 4 || DVD::Open(revokart, &info)) return;
 
     const u8 *itemData = static_cast<const u8 *>(groupData) + item.offset;
     if (memcmp(itemData, "RWSD", 4) != 0) return;
 
     const char path[] = "/sound/strm/RRGRP_RACE.brwsd";
-    DVD::FileInfo info;
     if (!DVD::Open(path, &info)) return;
 
     LooseVoiceLayout layout;
