@@ -67,57 +67,28 @@ static s32 BadgeTypeToIcon(u32 badgeType) {
 static u32 ParseBadgeJson(const char *body, int bodyLen, u32 pid) {
     if (body == nullptr || bodyLen <= 0 || pid == 0) return 0;
 
-    const char *p = body;
-    const char *end = body + bodyLen;
-    while (p < end) {
-        if (*p != '"') {
-            ++p;
-            continue;
-        }
+    Network::Json::Value root;
+    if (!Network::Json::Parse(body, static_cast<u32>(bodyLen), root)) return 0;
 
-        ++p;
-        u32 key = 0;
-        bool hasKeyDigits = false;
-        bool validKey = true;
-        while (p < end && *p != '"') {
-            if (*p >= '0' && *p <= '9') {
-                const u32 digit = static_cast<u32>(*p - '0');
-                if (key > (0xffffffffu - digit) / 10) validKey = false;
-                key = key * 10 + digit;
-                hasKeyDigits = true;
-            } else {
-                validKey = false;
-            }
-            ++p;
-        }
-        if (p >= end) break;
-        ++p;
-        p = Network::Json::SkipWhitespace(p, end);
-        if (p >= end || *p != ':') continue;
-        ++p;
-        p = Network::Json::SkipWhitespace(p, end);
-        if (!validKey || !hasKeyDigits || key != pid || p >= end || *p != '[') continue;
+    Network::Json::Value badgeMap;
+    if (!Network::Json::Find(root, "badges", badgeMap)) return 0;
 
-        ++p;
-        u32 badgeMask = 0;
-        while (p < end && *p != ']') {
-            p = Network::Json::SkipWhitespace(p, end);
-            if (p < end && *p == ',') {
-                ++p;
-                continue;
-            }
+    char pidKey[16];
+    snprintf(pidKey, sizeof(pidKey), "%u", pid);
 
-            u32 badgeType = 0;
-            if (!Network::Json::ParseU32(p, end, badgeType)) break;
-            const s32 icon = BadgeTypeToIcon(badgeType);
-            if (icon >= SPECIAL_BADGE_FIRST && icon <= SPECIAL_BADGE_LAST) badgeMask |= 1u << icon;
+    Network::Json::Value badges;
+    if (!Network::Json::Find(badgeMap, pidKey, badges)) return 0;
 
-            p = Network::Json::SkipWhitespace(p, end);
-            if (p < end && *p == ',') ++p;
-        }
-        return p < end && *p == ']' ? badgeMask : 0;
+    u32 badgeMask = 0;
+    const char *cursor = nullptr;
+    Network::Json::Value badge;
+    while (Network::Json::Next(badges, cursor, badge)) {
+        u32 badgeType = 0;
+        if (!Network::Json::GetU32(badge, badgeType)) return 0;
+        const s32 icon = BadgeTypeToIcon(badgeType);
+        if (icon >= SPECIAL_BADGE_FIRST && icon <= SPECIAL_BADGE_LAST) badgeMask |= 1u << icon;
     }
-    return 0;
+    return badgeMask;
 }
 
 static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {

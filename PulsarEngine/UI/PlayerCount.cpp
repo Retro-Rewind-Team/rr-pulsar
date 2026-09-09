@@ -98,51 +98,37 @@ void PlayerCount::GetNumbersOthers(int &nOthers) {
     nOthers = RR_numPlayersOthers;
 }
 
-static bool GetOnlineCount(const char *json, const char *objectName, u32 &online) {
-    char objectPattern[32];
-    snprintf(objectPattern, sizeof(objectPattern), "\"%s\"", objectName);
-
-    const char *objectNamePos = strstr(json, objectPattern);
-    if (objectNamePos == nullptr) return false;
-
-    const char *objectStart = strchr(objectNamePos + strlen(objectPattern), '{');
-    if (objectStart == nullptr) return false;
-
-    const char *objectEnd = strchr(objectStart + 1, '}');
-    if (objectEnd == nullptr) return false;
-
-    const char *onlinePos = strstr(objectStart, "\"online\"");
-    if (onlinePos == nullptr || onlinePos >= objectEnd) return false;
-
-    const char *colon = strchr(onlinePos + sizeof("\"online\"") - 1, ':');
-    if (colon == nullptr || colon >= objectEnd) return false;
-
-    const char *valuePos = colon + 1;
-    return Pulsar::Network::Json::ParseU32(valuePos, objectEnd, online);
+static bool GetOnlineCount(const Pulsar::Network::Json::Value &root, const char *objectName, u32 &online) {
+    Pulsar::Network::Json::Value object;
+    return Pulsar::Network::Json::Find(root, objectName, object) && Pulsar::Network::Json::Get(object, "online", online);
 }
 
-static int GetRegionOnlineCount(const char *json, const char *region) {
+static int GetRegionOnlineCount(const Pulsar::Network::Json::Value &root, const char *region) {
     u32 online = 0;
-    GetOnlineCount(json, region, online);
+    GetOnlineCount(root, region, online);
     return static_cast<int>(online);
 }
 
 static bool ParsePlayerCountResponse(const char *json) {
-    if (json == nullptr) return false;
+    Pulsar::Network::Json::Value root;
+    if (!Pulsar::Network::Json::Parse(json, root)) return false;
 
     u32 totalPlayers = 0;
-    if (!GetOnlineCount(json, "global", totalPlayers)) return false;
+    if (!GetOnlineCount(root, "global", totalPlayers)) return false;
 
-    RR_numPlayers150cc = GetRegionOnlineCount(json, "vs_10");
-    RR_numPlayers200cc = GetRegionOnlineCount(json, "vs_12");
-    RR_numPlayersOTT = GetRegionOnlineCount(json, "vs_11");
-    RR_numPlayersIR = GetRegionOnlineCount(json, "vs_13");
-    RR_numPlayersCT = GetRegionOnlineCount(json, "vs_20");
-    RR_numPlayersRT = GetRegionOnlineCount(json, "vs_21");
-    RR_numPlayersRegular = GetRegionOnlineCount(json, "vs");
-    BT_numPlayersRegular = GetRegionOnlineCount(json, "bt_14");
-    BT_numPlayersELIM = GetRegionOnlineCount(json, "bt_15");
-    RR_numPlayersOthers = GetRegionOnlineCount(json, "unknown");
+    Pulsar::Network::Json::Value regions;
+    if (!Pulsar::Network::Json::Find(root, "by_region", regions)) return false;
+
+    RR_numPlayers150cc = GetRegionOnlineCount(regions, "vs_10");
+    RR_numPlayers200cc = GetRegionOnlineCount(regions, "vs_12");
+    RR_numPlayersOTT = GetRegionOnlineCount(regions, "vs_11");
+    RR_numPlayersIR = GetRegionOnlineCount(regions, "vs_13");
+    RR_numPlayersCT = GetRegionOnlineCount(regions, "vs_20");
+    RR_numPlayersRT = GetRegionOnlineCount(regions, "vs_21");
+    RR_numPlayersRegular = GetRegionOnlineCount(regions, "vs");
+    BT_numPlayersRegular = GetRegionOnlineCount(regions, "bt_14");
+    BT_numPlayersELIM = GetRegionOnlineCount(regions, "bt_15");
+    RR_numPlayersOthers = GetRegionOnlineCount(regions, "unknown");
     RR_numPlayersTotal = static_cast<int>(totalPlayers);
     return true;
 }

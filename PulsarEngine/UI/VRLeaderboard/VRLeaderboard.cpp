@@ -158,68 +158,6 @@ static void ClearLeaderboardRow(LayoutUIControl &row, wchar_t *nameText) {
     SetPaneVisibleIfPresent(row, "chara_icon_sha", false);
 }
 
-static unsigned char ParseJsonEscape(const char *&p) {
-    const unsigned char esc = static_cast<unsigned char>(*p++);
-    if (esc == '\0') return '?';
-    switch (esc) {
-        case '"':
-        case '\\':
-        case '/':
-            return esc;
-        case 'b':
-            return '\b';
-        case 'f':
-            return '\f';
-        case 'n':
-            return '\n';
-        case 'r':
-            return '\r';
-        case 't':
-            return '\t';
-        case 'u':
-            for (int i = 0; i < 4 && *p != '\0'; ++i) ++p;
-            return '?';
-        default:
-            return '?';
-    }
-}
-
-static const char *ParseJsonStringIntoWide(const char *p, wchar_t *out, size_t outLen) {
-    if (out == nullptr || outLen == 0) return nullptr;
-    out[0] = L'\0';
-    p = Network::Json::SkipWhitespace(p);
-    if (p == nullptr || *p != '"') return nullptr;
-    ++p;
-
-    size_t o = 0;
-    while (*p != '\0' && *p != '"') {
-        unsigned char c = static_cast<unsigned char>(*p++);
-        if (c == '\\') c = ParseJsonEscape(p);
-        if (o + 1 < outLen) out[o++] = (c < 0x80) ? static_cast<wchar_t>(c) : L'?';
-    }
-    if (*p == '"') ++p;
-    out[o] = L'\0';
-    return p;
-}
-
-static const char *ParseJsonStringIntoAscii(const char *p, char *out, size_t outLen) {
-    if (out == nullptr || outLen == 0) return nullptr;
-    out[0] = '\0';
-    p = Network::Json::SkipWhitespace(p);
-    if (p == nullptr || *p != '"') return nullptr;
-    ++p;
-
-    size_t o = 0;
-    while (*p != '\0' && *p != '"') {
-        unsigned char c = static_cast<unsigned char>(*p++);
-        if (c == '\\') c = ParseJsonEscape(p);
-        if (o + 1 < outLen) out[o++] = static_cast<char>(c);
-    }
-    if (*p == '"') ++p;
-    out[o] = '\0';
-    return p;
-}
-
 static int Base64CharValue(char c) {
     if (c >= 'A' && c <= 'Z') return c - 'A';
     if (c >= 'a' && c <= 'z') return c - 'a' + 26;
@@ -283,49 +221,6 @@ static void ExtractMiiNameFromStoreData(const RFL::StoreData *storeData, wchar_t
         outName[o++] = static_cast<wchar_t>(code);
     }
     outName[o] = L'\0';
-}
-
-static const char *FindStrInRange(const char *start, const char *end, const char *needle) {
-    if (start == nullptr || end == nullptr || needle == nullptr) return nullptr;
-    const size_t needleLen = strlen(needle);
-    if (needleLen == 0) return start;
-    for (const char *p = start; p + needleLen <= end; ++p) {
-        if (strncmp(p, needle, needleLen) == 0) return p;
-    }
-    return nullptr;
-}
-
-static const char *FindMatchingObjectEnd(const char *objStart) {
-    if (objStart == nullptr || *objStart != '{') return nullptr;
-    int depth = 0;
-    bool inString = false;
-    bool escape = false;
-    for (const char *p = objStart; *p != '\0'; ++p) {
-        const char c = *p;
-        if (inString) {
-            if (escape) {
-                escape = false;
-                continue;
-            }
-            if (c == '\\') {
-                escape = true;
-                continue;
-            }
-            if (c == '"') inString = false;
-            continue;
-        }
-        if (c == '"') {
-            inString = true;
-            continue;
-        }
-        if (c == '{') {
-            ++depth;
-        } else if (c == '}') {
-            --depth;
-            if (depth == 0) return p;
-        }
-    }
-    return nullptr;
 }
 
 static bool IsFriendCodeInLicenseFriends(u64 friendCode) {
@@ -759,20 +654,14 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void *response, void *
 int VRLeaderboardPage::ParseResponse(const char *json, Entry *outEntries, int maxEntries) {
     if (json == nullptr || outEntries == nullptr || maxEntries <= 0) return 0;
 
-    const char *p = strchr(json, '[');
-    if (p == nullptr) return 0;
-
-    ++p;
+    Network::Json::Value array;
+    if (!Network::Json::FindArray(json, array)) return 0;
 
     int count = 0;
-
-    while (*p != '\0' && count < maxEntries) {
-        while (*p != '\0' && *p != '{' && *p != ']') ++p;
-        if (*p == ']' || *p == '\0') break;
-
-        const char *objStart = p;
-        const char *objEnd = FindMatchingObjectEnd(objStart);
-        if (objEnd == nullptr) break;
+    const char *cursor = nullptr;
+    Network::Json::Value object;
+    while (count < maxEntries && Network::Json::Next(array, cursor, object)) {
+        if (object.start == nullptr || object.start >= object.end || *object.start != '{') continue;
 
         outEntries[count].name[0] = L'\0';
         outEntries[count].vr = 0;
@@ -780,73 +669,42 @@ int VRLeaderboardPage::ParseResponse(const char *json, Entry *outEntries, int ma
         outEntries[count].friendCode = 0;
         memset(&outEntries[count].miiData, 0, sizeof(outEntries[count].miiData));
 
-        const char *miiKey = FindStrInRange(objStart, objEnd, "\"miiData\"");
-        const char *nameKey = FindStrInRange(objStart, objEnd, "\"name\"");
-        const char *vrKey = FindStrInRange(objStart, objEnd, "\"vr\"");
-        const char *rankKey = FindStrInRange(objStart, objEnd, "\"rank\"");
-        const char *friendCodeKey = FindStrInRange(objStart, objEnd, "\"friendCode\"");
-        if (friendCodeKey == nullptr) {
-            friendCodeKey = FindStrInRange(objStart, objEnd, "\"friend_code\"");
+        char miiB64[192];
+        if (Network::Json::Get(object, "miiData", miiB64, sizeof(miiB64))) {
+            DecodeBase64(miiB64, reinterpret_cast<u8 *>(&outEntries[count].miiData), sizeof(outEntries[count].miiData));
+            ExtractMiiNameFromStoreData(&outEntries[count].miiData, outEntries[count].name,
+                                        sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
         }
 
-        if (miiKey != nullptr) {
-            const char *colon = FindStrInRange(miiKey, objEnd, ":");
-            if (colon != nullptr) {
-                char miiB64[192];
-                (void)ParseJsonStringIntoAscii(colon + 1, miiB64, sizeof(miiB64));
-                DecodeBase64(miiB64, reinterpret_cast<u8 *>(&outEntries[count].miiData), sizeof(outEntries[count].miiData));
-                ExtractMiiNameFromStoreData(&outEntries[count].miiData, outEntries[count].name,
-                                            sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
-            }
+        if (outEntries[count].name[0] == L'\0') {
+            Network::Json::Get(object, "name", outEntries[count].name,
+                               sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
         }
 
-        if (outEntries[count].name[0] == L'\0' && nameKey != nullptr) {
-            const char *colon = FindStrInRange(nameKey, objEnd, ":");
-            if (colon != nullptr) {
-                (void)ParseJsonStringIntoWide(colon + 1, outEntries[count].name,
-                                              sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
-            }
-        }
+        Network::Json::Get(object, "vr", outEntries[count].vr);
+        Network::Json::Get(object, "rank", outEntries[count].rank);
 
-        if (vrKey != nullptr) {
-            const char *colon = FindStrInRange(vrKey, objEnd, ":");
-            if (colon != nullptr) {
-                Network::Json::ParseU32(colon + 1, outEntries[count].vr);
-            }
-        }
-
-        if (rankKey != nullptr) {
-            const char *colon = FindStrInRange(rankKey, objEnd, ":");
-            if (colon != nullptr) {
-                Network::Json::ParseU32(colon + 1, outEntries[count].rank);
-            }
-        }
-
-        if (friendCodeKey != nullptr) {
-            const char *colon = FindStrInRange(friendCodeKey, objEnd, ":");
-            if (colon != nullptr) {
-                colon = Network::Json::SkipWhitespace(colon + 1);
-                if (colon != nullptr && *colon == '"') {
-                    char fcStr[32];
-                    ParseJsonStringIntoAscii(colon, fcStr, sizeof(fcStr));
-                    u64 friendCodeValue = 0;
+        Network::Json::Value friendCode;
+        if (Network::Json::Find(object, "friendCode", friendCode) ||
+            Network::Json::Find(object, "friend_code", friendCode)) {
+            if (friendCode.start < friendCode.end && *friendCode.start == '"') {
+                char fcStr[32];
+                if (Network::Json::GetString(friendCode, fcStr, sizeof(fcStr))) {
                     for (const char *fc = fcStr; *fc != '\0'; ++fc) {
                         if (*fc >= '0' && *fc <= '9') {
-                            friendCodeValue = friendCodeValue * 10 + static_cast<u64>(*fc - '0');
+                            outEntries[count].friendCode = outEntries[count].friendCode * 10 +
+                                                           static_cast<u64>(*fc - '0');
                         }
                     }
-                    outEntries[count].friendCode = friendCodeValue;
-                } else {
-                    Network::Json::ParseU64(colon, outEntries[count].friendCode);
                 }
+            } else {
+                Network::Json::GetU64(friendCode, outEntries[count].friendCode);
             }
         }
 
         if (outEntries[count].name[0] != L'\0') {
             ++count;
         }
-
-        p = objEnd + 1;
     }
     return count;
 }

@@ -47,35 +47,6 @@ static int ClampRatingForSync(float rating) {
     return scaled;
 }
 
-static bool ParseJsonScaledValue(const char *json, const char *key, int &out) {
-    if (json == nullptr || key == nullptr) return false;
-
-    const char *pos = strstr(json, key);
-    if (pos == nullptr) return false;
-
-    const char *colon = strchr(pos, ':');
-    if (colon == nullptr) return false;
-
-    char *end = nullptr;
-    long value = strtol(Network::Json::SkipWhitespace(colon + 1), &end, 10);
-    if (end == nullptr || end == colon + 1) return false;
-    out = (int)value;
-    return true;
-}
-
-static bool ParseJsonFoundFlag(const char *json) {
-    if (json == nullptr) return false;
-
-    const char *pos = strstr(json, "\"found\"");
-    if (pos == nullptr) return false;
-
-    const char *colon = strchr(pos, ':');
-    if (colon == nullptr) return false;
-
-    colon = Network::Json::SkipWhitespace(colon + 1);
-    return colon != nullptr && *colon == '1';
-}
-
 void SetSyncReportingSuppressed(bool suppress) {
     s_syncReportingSuppressed = suppress;
 }
@@ -139,15 +110,17 @@ static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
 
     if (!IsRequestStillRelevant(*ctx)) return;
 
-    if (!ParseJsonFoundFlag(json)) {
+    Network::Json::Value root;
+    u32 found = 0;
+    if (!Network::Json::Parse(json, root) || !Network::Json::Get(root, "found", found) || found != 1) {
         ReportCurrentRatings(ctx->licenseId);
         return;
     }
 
     int vrScaled = 0;
     int brScaled = 0;
-    if (!ParseJsonScaledValue(json, "\"vr\"", vrScaled)) return;
-    if (!ParseJsonScaledValue(json, "\"br\"", brScaled)) return;
+    if (!Network::Json::Get(root, "vr", vrScaled)) return;
+    if (!Network::Json::Get(root, "br", brScaled)) return;
 
     SetSyncReportingSuppressed(true);
     SaveProfileVR(ctx->profileId, (float)vrScaled / 100.0f);
