@@ -21,14 +21,12 @@ namespace PointRating {
 static bool s_syncReportingSuppressed = false;
 static const u32 s_nhttpWorkBufSize = 0x1000;
 static u32 s_requestGeneration = 0;
-static float s_requestStartVr = 0.0f;
-static float s_requestStartBr = 0.0f;
+static bool s_requestInFlight = false;
 static void *s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
 static s32 s_pendingInitialReportProfileId = 0;
 static u32 s_pendingInitialReportLicenseId = 0;
 static bool s_pendingLoginDownload = false;
-static bool s_pendingLoginEstablished = false;
 static s32 s_pendingProfileId = 0;
 static u32 s_pendingLicenseId = 0;
 
@@ -68,19 +66,14 @@ static bool IsRequestStillRelevant(const RequestCtx &ctx) {
 
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || ctx.licenseId >= 4) return false;
-
-    const RKSYS::LicenseMgr &license = rksys->licenses[ctx.licenseId];
-    if ((s32)license.dwcAccUserData.gsProfileId != ctx.profileId) return false;
-
-    const float currentVr = GetUserVR(ctx.licenseId);
-    const float currentBr = GetUserBR(ctx.licenseId);
-    if (currentVr != s_requestStartVr || currentBr != s_requestStartBr) return false;
+    if (rksys->curLicenseId != ctx.licenseId) return false;
 
     return true;
 }
 
 static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
     Network::FinishNHTTPRequest();
+    s_requestInFlight = false;
     RequestCtx *ctx = reinterpret_cast<RequestCtx *>(userdata);
     if (ctx == nullptr || response == nullptr) return;
 
@@ -128,24 +121,18 @@ static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
     SetSyncReportingSuppressed(false);
 }
 
-void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
-    if (profileId <= 0) return;
+static bool BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
+    if (profileId <= 0) return false;
 
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-    if (rksys == nullptr || licenseId >= 4) return;
+    if (rksys == nullptr || licenseId >= 4) return false;
     BindLicenseProfileId(licenseId, profileId);
-
-    if (!Network::PrepareNHTTPRequest()) return;
 
     if (s_requestWorkBuf == nullptr) {
         s_requestWorkBuf = Network::NHTTPAlloc(s_nhttpWorkBufSize, 0x20);
-        if (s_requestWorkBuf == nullptr) return;
+        if (s_requestWorkBuf == nullptr) return false;
     }
     memset(s_requestWorkBuf, 0, s_nhttpWorkBufSize);
-
-    ++s_requestGeneration;
-    s_requestStartVr = GetUserVR(licenseId);
-    s_requestStartBr = GetUserBR(licenseId);
 
     s_requestCtx.generation = s_requestGeneration;
     s_requestCtx.profileId = profileId;
@@ -153,59 +140,28 @@ void BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
 
     if (snprintf(s_requestUrl, sizeof(s_requestUrl), "http://nas.%s/api/mkw_rr_ratings?pid=%ld",
                  WWFC_DOMAIN, (long)profileId) < 0) {
-        return;
+        return false;
     }
 
     void *request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
                                        reinterpret_cast<void *>(&OnRatingsDownloaded),
                                        reinterpret_cast<void *>(&s_requestCtx));
-    if (request == nullptr) return;
+    if (request == nullptr) return false;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
-    if (sendRet < 0) {
-        ++s_requestGeneration;
-        return;
-    }
+    if (sendRet < 0) return false;
     Network::MarkNHTTPRequestActive();
-}
-
-static bool CanStartLoginRatingDownload() {
-    RKNet::Controller *controller = RKNet::Controller::sInstance;
-    return controller != nullptr && controller->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
+    s_requestInFlight = true;
+    return true;
 }
 
 static void TryStartPendingLoginRatingDownload() {
-    if (!s_pendingLoginDownload) return;
-
-    RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return;
-
-    const RKNet::ConnectionState state = controller->GetConnectionState();
-    if (state == RKNet::CONNECTIONSTATE_LOGIN_AUTHORISED ||
-        state == RKNet::CONNECTIONSTATE_LOGIN_FRIENDS_SYNCED) {
-        s_pendingLoginEstablished = true;
-        return;
-    }
-
-    if (state != RKNet::CONNECTIONSTATE_IDLE) return;
-
-    // Both a completed login and a cancelled login end in IDLE. Only launch the
-    // deferred request if this login progressed far enough to be established.
-    // Otherwise the request would start while the WFC section is being torn down.
-    if (!s_pendingLoginEstablished) {
-        s_pendingLoginDownload = false;
-        s_pendingProfileId = 0;
-        s_pendingLicenseId = 0;
-        return;
-    }
-
-    const s32 profileId = s_pendingProfileId;
-    const u32 licenseId = s_pendingLicenseId;
+    if (!s_pendingLoginDownload || s_requestInFlight) return;
+    if (!Network::PrepareNHTTPRequest()) return;
+    if (!BeginLoginRatingDownload(s_pendingProfileId, s_pendingLicenseId)) return;
     s_pendingLoginDownload = false;
-    s_pendingLoginEstablished = false;
     s_pendingProfileId = 0;
     s_pendingLicenseId = 0;
-    BeginLoginRatingDownload(profileId, licenseId);
 }
 
 static FrameLoadHook startPendingLoginRatingDownload(TryStartPendingLoginRatingDownload);
@@ -216,18 +172,10 @@ void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (rksys == nullptr || licenseId >= 4) return;
     BindLicenseProfileId(licenseId, profileId);
-
-    if (!CanStartLoginRatingDownload()) {
-        s_pendingLoginDownload = true;
-        s_pendingLoginEstablished = false;
-        s_pendingProfileId = profileId;
-        s_pendingLicenseId = licenseId;
-        return;
-    }
-
-    s_pendingLoginDownload = false;
-    s_pendingLoginEstablished = false;
-    BeginLoginRatingDownload(profileId, licenseId);
+    ++s_requestGeneration;
+    s_pendingLoginDownload = true;
+    s_pendingProfileId = profileId;
+    s_pendingLicenseId = licenseId;
 }
 
 }  // namespace PointRating

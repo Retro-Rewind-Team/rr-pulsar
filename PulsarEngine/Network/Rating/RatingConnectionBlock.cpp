@@ -8,6 +8,14 @@ namespace Pulsar {
 namespace Network {
 
 extern "C" void DWC_LoginAsync(wchar_t *miiName, int unk, void *callback, RKNet::Controller *self);
+static DWC::LoginCallback s_originalLoginCallback = nullptr;
+
+static void LoginCallbackAndQueueRating(DWC::Error error, int profileId, void *param) {
+    if (s_originalLoginCallback != nullptr) s_originalLoginCallback(error, profileId, param);
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+    const u32 licenseId = rksys->curLicenseId;
+    PointRating::StartLoginRatingDownload(profileId, licenseId);
+}
 
 void CheckVRAndLogin(wchar_t *miiName, int unk, void *callback, RKNet::Controller *self) {
     bool block = false;
@@ -27,14 +35,8 @@ void CheckVRAndLogin(wchar_t *miiName, int unk, void *callback, RKNet::Controlle
         return;
     }
 
-    if (rksys != nullptr && rksys->curLicenseId < 4) {
-        const s32 profileId = rksys->licenses[rksys->curLicenseId].dwcAccUserData.gsProfileId;
-        PointRating::BindLicenseProfileId(rksys->curLicenseId, profileId);
-        PointRating::StartLoginRatingDownload(profileId, rksys->curLicenseId);
-    }
-
-    // Call original DWC_LoginAsync
-    DWC_LoginAsync(miiName, unk, callback, self);
+    s_originalLoginCallback = reinterpret_cast<DWC::LoginCallback>(callback);
+    DWC_LoginAsync(miiName, unk, reinterpret_cast<void *>(&LoginCallbackAndQueueRating), self);
 }
 kmCall(0x80658cdc, CheckVRAndLogin);
 
