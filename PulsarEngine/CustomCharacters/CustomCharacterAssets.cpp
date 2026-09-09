@@ -3,28 +3,95 @@
 namespace Pulsar {
 namespace CustomCharacters {
 
-// Choose a scene heap that can hold loose raw model data without starving menus.
-EGG::Heap *RawParentHeap(GameScene &scene, u32 heapSize) {
-    static const u32 PARENT_RESERVE = 0x200000;
-    EGG::Heap *heaps[] = {scene.structsHeaps.heaps[1], scene.structsHeaps.heaps[0]};
-    EGG::Heap *best = nullptr;
-    u32 bestSize = 0;
-    for (u32 i = 0; i < ARRAY_COUNT(heaps); ++i) {
-        if (heaps[i] == nullptr) continue;
-        UnlockHeap(heaps[i]);
-        const u32 size = heaps[i]->getAllocatableSize(0x20);
-        if (size >= heapSize + PARENT_RESERVE) return heaps[i];
-        if (size > bestSize) {
-            best = heaps[i];
-            bestSize = size;
-        }
-    }
-    if (bestSize >= heapSize) return best;
-    return nullptr;
+struct RawBRRES {
+    EGG::ExpHeap *heap;
+    void *file;
+    bool failed;
+    bool bound;
+};
+
+struct RawTPL {
+    bool failed;
+};
+
+struct ReloadedMenuDriverModel {
+    EGG::ExpHeap *heap;
+    ModelDirector *model;
+    ToadetteHair *hair;
+};
+
+static RawBRRES rawBRRES[TABLE_COUNT][CHARACTER_COUNT];
+static RawBRRES looseMiiCBRRES[MII_C_COUNT];
+static RawTPL looseMinimapTPL[TABLE_COUNT][CHARACTER_COUNT];
+static const GameScene *rawCacheSceneOwner;
+static ReloadedMenuDriverModel reloadedMenuDriverModels[MENU_DRIVER_MODEL_COUNT];
+static const GameScene *reloadedMenuDriverModelSceneOwner;
+static MenuDriverModel *reloadedMenuDriverModelOwner;
+
+static void UnlockHeap(EGG::Heap *heap) {
+    if (heap != nullptr) heap->dameFlag &= ~0x1;
 }
 
-bool BindRawBRRES(nw4r::g3d::ResFile &resFile, const char *path) {
-    return ModelDirector::BindBRRESImpl(resFile, path, nullptr, 0);
+static bool IsInHeap(const EGG::ExpHeap *heap, const void *ptr) {
+    if (heap == nullptr || ptr == nullptr || heap->rvlHeap == nullptr) return false;
+    const u8 *start = reinterpret_cast<const u8 *>(heap->rvlHeap->startAddr);
+    const u8 *end = reinterpret_cast<const u8 *>(heap->rvlHeap->endAddr);
+    const u8 *address = reinterpret_cast<const u8 *>(ptr);
+    return start != nullptr && end != nullptr && start < end && address >= start && address < end;
+}
+
+static void DetachHeapListNodes(nw4r::ut::List *list, const EGG::ExpHeap *heap) {
+    for (void *node = nw4r::ut::List_GetNext(list, nullptr); node != nullptr;) {
+        void *next = nw4r::ut::List_GetNext(list, node);
+        if (IsInHeap(heap, node)) nw4r::ut::List_Remove(list, node);
+        node = next;
+    }
+}
+
+static void DetachHeapFromScnMgrs(const EGG::ExpHeap *heap) {
+    if (heap == nullptr) return;
+    ScnMgr *const *mgrs = ScnMgr::sInstance;
+    for (u32 i = 0; i < 2; ++i) {
+        ScnMgr *mgr = mgrs[i];
+        if (mgr == nullptr) continue;
+        DetachHeapListNodes(&mgr->modelDirectors, heap);
+        DetachHeapListNodes(&mgr->screenSpecificModelDirectors, heap);
+        DetachHeapListNodes(&mgr->scnGroupExHolderList, heap);
+        DetachHeapListNodes(&mgr->hardcodedMatNamesModelDirectors, heap);
+    }
+}
+
+static void DestroyHeap(EGG::ExpHeap *&heap) {
+    if (heap == nullptr) return;
+    DetachHeapFromScnMgrs(heap);
+    UnlockHeap(heap);
+    heap->destroy();
+    heap = nullptr;
+}
+
+static void ClearRawCache(RawBRRES &cache, bool destroyHeap) {
+    if (destroyHeap)
+        DestroyHeap(cache.heap);
+    else
+        cache.heap = nullptr;
+    cache.file = nullptr;
+    cache.failed = false;
+    cache.bound = false;
+}
+
+void SyncRawCachesToCurrentScene() {
+    const GameScene *const scene = GameScene::GetCurrent();
+    if (rawCacheSceneOwner == scene) return;
+    const SectionMgr *mgr = SectionMgr::sInstance;
+    if (mgr != nullptr && ((mgr->curSection != nullptr && IsGameplaySection(mgr->curSection->sectionId)) ||
+                           (mgr->nextSectionId != SECTION_NONE && IsGameplaySection(mgr->nextSectionId)))) {
+        return;
+    }
+    for (u32 table = 0; table < TABLE_COUNT; ++table) {
+        for (u32 character = 0; character < CHARACTER_COUNT; ++character) ClearRawCache(rawBRRES[table][character], true);
+    }
+    for (u32 i = 0; i < MII_C_COUNT; ++i) ClearRawCache(looseMiiCBRRES[i], true);
+    rawCacheSceneOwner = scene;
 }
 
 // Loose BRRES files are loaded once, then bound into each model holder.
@@ -41,8 +108,25 @@ bool LoadRawBRRES(void *holder, RawBRRES &cache, const char *path) {
             cache.failed = true;
             return false;
         }
-        const u32 heapSize = AlignUp(fileSize, 0x20) + 0x2000;
-        EGG::Heap *parent = RawParentHeap(*scene, heapSize);
+        const u32 heapSize = ((fileSize + 0x1f) & ~0x1f) + 0x2000;
+        static const u32 PARENT_RESERVE = 0x200000;
+        EGG::Heap *heaps[] = {scene->structsHeaps.heaps[1], scene->structsHeaps.heaps[0]};
+        EGG::Heap *parent = nullptr;
+        u32 bestSize = 0;
+        for (u32 i = 0; i < ARRAY_COUNT(heaps); ++i) {
+            if (heaps[i] == nullptr) continue;
+            UnlockHeap(heaps[i]);
+            const u32 size = heaps[i]->getAllocatableSize(0x20);
+            if (size >= heapSize + PARENT_RESERVE) {
+                parent = heaps[i];
+                break;
+            }
+            if (size > bestSize) {
+                parent = heaps[i];
+                bestSize = size;
+            }
+        }
+        if (bestSize < heapSize && (parent == nullptr || parent->getAllocatableSize(0x20) < heapSize)) parent = nullptr;
         if (parent == nullptr) {
             cache.failed = true;
             return false;
@@ -67,7 +151,7 @@ bool LoadRawBRRES(void *holder, RawBRRES &cache, const char *path) {
     nw4r::g3d::ResFile &resFile = *reinterpret_cast<nw4r::g3d::ResFile *>(reinterpret_cast<u8 *>(holder) + 4);
     resFile.data = reinterpret_cast<nw4r::g3d::ResFileData *>(cache.file);
     if (!cache.bound) {
-        BindRawBRRES(resFile, path);
+        ModelDirector::BindBRRESImpl(resFile, path, nullptr, 0);
         cache.bound = true;
     }
     return true;
@@ -85,7 +169,7 @@ bool LoadRawBRRESIntoHeap(void *holder, EGG::Heap *heap, const char *path, u32 f
 
     nw4r::g3d::ResFile &resFile = *reinterpret_cast<nw4r::g3d::ResFile *>(reinterpret_cast<u8 *>(holder) + 4);
     resFile.data = reinterpret_cast<nw4r::g3d::ResFileData *>(file);
-    BindRawBRRES(resFile, path);
+    ModelDirector::BindBRRESImpl(resFile, path, nullptr, 0);
     return true;
 }
 
@@ -184,24 +268,6 @@ bool LoadMenuDriverBRRESForReload(void *holder, CharacterId character, EGG::ExpH
     return static_cast<MenuModelBRRESHandle *>(holder)->BindDriverBRRES(character);
 }
 
-bool BuildMinimapTPLPath(CharacterId character, u8 table, char *path, u32 pathSize) {
-    const char *postfix = GeneratedCustomPostfix(character, table);
-    if (postfix == nullptr) return false;
-    const int written = snprintf(path, pathSize, "/Race/Map/%s.tpl", postfix);
-    return written > 0 && static_cast<u32>(written) < pathSize;
-}
-
-EGG::Heap *MinimapTPLHeap(GameScene &scene, u32 fileSize) {
-    EGG::Heap *heaps[] = {scene.structsHeaps.heaps[0], scene.structsHeaps.heaps[1], scene.mainMEMHeap, scene.otherMEMHeap};
-    for (u32 i = 0; i < ARRAY_COUNT(heaps); ++i) {
-        EGG::Heap *heap = heaps[i];
-        if (heap == nullptr) continue;
-        UnlockHeap(heap);
-        if (heap->getAllocatableSize(0x20) >= fileSize + 0x1000) return heap;
-    }
-    return nullptr;
-}
-
 // Loose minimap icons are optional TPL files matched to the selected skin table.
 TPLPalettePtr LoadLooseMinimapTPL(CharacterId character, u8 table) {
     static const u32 TPL_VERSION_NUMBER = 0x0020af30;
@@ -210,7 +276,9 @@ TPLPalettePtr LoadLooseMinimapTPL(CharacterId character, u8 table) {
     if (cache.failed) return nullptr;
 
     char path[0x60];
-    if (!BuildMinimapTPLPath(character, table, path, sizeof(path))) {
+    const char *postfix = GeneratedCustomPostfix(character, table);
+    const int written = postfix != nullptr ? snprintf(path, sizeof(path), "/Race/Map/%s.tpl", postfix) : -1;
+    if (written <= 0 || static_cast<u32>(written) >= sizeof(path)) {
         cache.failed = true;
         return nullptr;
     }
@@ -224,7 +292,16 @@ TPLPalettePtr LoadLooseMinimapTPL(CharacterId character, u8 table) {
         cache.failed = true;
         return nullptr;
     }
-    EGG::Heap *heap = MinimapTPLHeap(*scene, fileSize);
+    EGG::Heap *heaps[] = {scene->structsHeaps.heaps[0], scene->structsHeaps.heaps[1], scene->mainMEMHeap, scene->otherMEMHeap};
+    EGG::Heap *heap = nullptr;
+    for (u32 i = 0; i < ARRAY_COUNT(heaps); ++i) {
+        if (heaps[i] == nullptr) continue;
+        UnlockHeap(heaps[i]);
+        if (heaps[i]->getAllocatableSize(0x20) >= fileSize + 0x1000) {
+            heap = heaps[i];
+            break;
+        }
+    }
     if (heap == nullptr) {
         cache.failed = true;
         return nullptr;
@@ -238,29 +315,21 @@ TPLPalettePtr LoadLooseMinimapTPL(CharacterId character, u8 table) {
     return palette;
 }
 
-void ReplacePaneTPL(nw4r::lyt::Pane *pane, TPLPalettePtr tpl) {
-    if (pane == nullptr || tpl == nullptr) return;
-    nw4r::lyt::Material *material = pane->GetMaterial();
-    if (material == nullptr) return;
-    material->GetTexMapAry()->ReplaceImage(tpl);
-}
-
-void ApplyLooseMinimapTPL(CtrlRace2DMapCharacter *control) {
-    const Racedata *racedata = Racedata::sInstance;
-    if (control == nullptr || racedata == nullptr) return;
-    const u8 playerId = control->playerId;
-    if (playerId >= racedata->racesScenario.playerCount) return;
-    const CharacterId character = racedata->racesScenario.players[playerId].characterId;
-    const u8 table = RaceSkinTable(playerId, character);
-    TPLPalettePtr tpl = LoadLooseMinimapTPL(character, table);
-    if (tpl == nullptr) return;
-    ReplacePaneTPL(control->charaPane, tpl);
-    ReplacePaneTPL(control->charaShadow0Pane, tpl);
-    ReplacePaneTPL(control->charaShadow1Pane, tpl);
-}
-
 void InitMinimapCharacterHook(CtrlRace2DMapCharacter *control) {
-    ApplyLooseMinimapTPL(control);
+    const Racedata *racedata = Racedata::sInstance;
+    if (control != nullptr && racedata != nullptr && control->playerId < racedata->racesScenario.playerCount) {
+        const u8 playerId = control->playerId;
+        const CharacterId character = racedata->racesScenario.players[playerId].characterId;
+        TPLPalettePtr tpl = LoadLooseMinimapTPL(character, RaceSkinTable(playerId, character));
+        if (tpl != nullptr) {
+            nw4r::lyt::Pane *panes[] = {control->charaPane, control->charaShadow0Pane, control->charaShadow1Pane};
+            for (u32 i = 0; i < ARRAY_COUNT(panes); ++i) {
+                if (panes[i] == nullptr) continue;
+                nw4r::lyt::Material *material = panes[i]->GetMaterial();
+                if (material != nullptr) material->GetTexMapAry()->ReplaceImage(tpl);
+            }
+        }
+    }
     control->CtrlRaceBase::InitSelf();
 }
 kmCall(0x807eb22c, InitMinimapCharacterHook);
@@ -268,8 +337,14 @@ kmCall(0x807eb22c, InitMinimapCharacterHook);
 // Kart archive loading reads the temporarily swapped character name postfix.
 ArchivesHolder *LoadKartArchiveHook(ArchiveMgr *archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
                                     EGG::Heap *decompressedHeap, EGG::Heap *archiveHeap) {
-    const char *oldName;
-    const char **entry = BeginNameSwap(playerId, character, oldName);
+    const char **entry = nullptr;
+    if (IsCharacter(character)) entry = characterNames + character;
+    const char *oldName = nullptr;
+    if (entry != nullptr) oldName = *entry;
+    if (entry != nullptr) {
+        const char *name = GeneratedCustomPostfix(character, RaceSkinTable(playerId, character));
+        *entry = name != nullptr ? name : GetDefaultCharacterPostfix(character);
+    }
     ArchivesHolder *holder = archiveMgr->LoadKartArchive(playerId, kart, character, color, type, decompressedHeap, archiveHeap);
     if (entry != nullptr) *entry = oldName;
     return holder;
@@ -278,8 +353,14 @@ kmCall(0x805540f4, LoadKartArchiveHook);
 
 ArchivesHolder *LoadBackupKartArchiveHook(ArchiveMgr *archiveMgr, u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
                                           EGG::Heap *decompressedHeap, EGG::Heap *archiveHeap) {
-    const char *oldName;
-    const char **entry = BeginNameSwap(playerId, character, oldName);
+    const char **entry = nullptr;
+    if (IsCharacter(character)) entry = characterNames + character;
+    const char *oldName = nullptr;
+    if (entry != nullptr) oldName = *entry;
+    if (entry != nullptr) {
+        const char *name = GeneratedCustomPostfix(character, RaceSkinTable(playerId, character));
+        *entry = name != nullptr ? name : GetDefaultCharacterPostfix(character);
+    }
     ArchivesHolder *holder = archiveMgr->LoadKartArchiveHolder2(playerId, kart, character, color, 0, decompressedHeap, archiveHeap);
     if (entry != nullptr) *entry = oldName;
     return holder;
@@ -308,33 +389,6 @@ struct MenuKartArchiveLoader {
     u32 gamemode;
 };
 
-bool MenuKartArchiveExists(const char *postfix, u32 gamemode) {
-    if (postfix == nullptr) return false;
-    char path[0x60];
-    const char *suffix = gamemode == 2 ? "" : "_BT";
-    const int written = snprintf(path, sizeof(path), "/Scene/Model/Kart/%s-allkart%s.szs", postfix, suffix);
-    if (written <= 0 || static_cast<u32>(written) >= sizeof(path)) return false;
-    u32 fileSize = 0;
-    return DiscFileSize(path, fileSize);
-}
-
-const char *MenuKartArchivePostfix(CharacterId character, u32 gamemode) {
-    const char *customPostfix = GeneratedCustomPostfix(character, SelectedTable(character));
-    if (customPostfix != nullptr && MenuKartArchiveExists(customPostfix, gamemode)) return customPostfix;
-    return GetDefaultCharacterPostfix(character);
-}
-
-const char **BeginMenuKartNameSwap(CharacterId character, u32 gamemode, const char *&oldName) {
-    const char **entry = CharacterNameEntry(character);
-    oldName = nullptr;
-    if (entry == nullptr) return nullptr;
-    const char *postfix = MenuKartArchivePostfix(character, gamemode);
-    if (postfix == nullptr) return nullptr;
-    oldName = *entry;
-    *entry = postfix;
-    return entry;
-}
-
 bool RequestLoadKartArchivesImmediate(ArchiveMgr *archiveMgr, u8 hudSlotId, CharacterId character, u32 gamemode) {
     if (archiveMgr == nullptr || hudSlotId >= LOCAL_PLAYER_COUNT) return false;
     MenuKartArchiveLoader *loader = reinterpret_cast<MenuKartArchiveLoader *>(&archiveMgr->allkartsModelsLoaders[hudSlotId]);
@@ -343,8 +397,21 @@ bool RequestLoadKartArchivesImmediate(ArchiveMgr *archiveMgr, u8 hudSlotId, Char
     loader->gamemode = gamemode;
     loader->state = 1;
 
-    const char *oldName;
-    const char **entry = BeginMenuKartNameSwap(character, gamemode, oldName);
+    const char **entry = nullptr;
+    if (IsCharacter(character)) entry = characterNames + character;
+    const char *oldName = nullptr;
+    if (entry != nullptr) oldName = *entry;
+    if (entry != nullptr) {
+        const char *postfix = GeneratedCustomPostfix(character, SelectedTable(character));
+        if (postfix != nullptr) {
+            char path[0x60];
+            const int written = snprintf(path, sizeof(path), "/Scene/Model/Kart/%s-allkart%s.szs", postfix, gamemode == 2 ? "" : "_BT");
+            u32 fileSize = 0;
+            if (written <= 0 || static_cast<u32>(written) >= sizeof(path) || !DiscFileSize(path, fileSize)) postfix = nullptr;
+        }
+        if (postfix == nullptr) postfix = GetDefaultCharacterPostfix(character);
+        if (postfix != nullptr) *entry = postfix;
+    }
     ArchiveMgr::LoadKartArchiveAsync(hudSlotId);
     if (entry != nullptr) *entry = oldName;
     return true;
@@ -398,35 +465,32 @@ void DestroyModelDirector(ModelDirector *model) {
 }
 
 void ForgetReloadedMenuDriverModelHeaps() {
-    for (u32 i = 0; i < MENU_DRIVER_MODEL_COUNT; ++i) {
-        reloadedMenuDriverModelHeaps[i] = nullptr;
-        reloadedMenuDriverModels[i] = nullptr;
-        reloadedMenuDriverModelHairs[i] = nullptr;
-    }
+    memset(reloadedMenuDriverModels, 0, sizeof(reloadedMenuDriverModels));
     reloadedMenuDriverModelOwner = nullptr;
 }
 
 void DestroyReloadedMenuDriverModel(u8 idx, ModelDirector **modelSlot) {
     if (idx >= MENU_DRIVER_MODEL_COUNT) return;
-    EGG::ExpHeap *&heap = reloadedMenuDriverModelHeaps[idx];
-    ModelDirector *model = reloadedMenuDriverModels[idx];
+    ReloadedMenuDriverModel &reloaded = reloadedMenuDriverModels[idx];
+    EGG::ExpHeap *&heap = reloaded.heap;
+    ModelDirector *model = reloaded.model;
     if (model == nullptr && modelSlot != nullptr) model = *modelSlot;
-    ToadetteHair *hair = reloadedMenuDriverModelHairs[idx];
+    ToadetteHair *hair = reloaded.hair;
 
     if (heap == nullptr) {
         DestroyModelDirector(hair);
         DestroyModelDirector(model);
         if (modelSlot != nullptr && *modelSlot == model) *modelSlot = nullptr;
-        reloadedMenuDriverModelHairs[idx] = nullptr;
-        reloadedMenuDriverModels[idx] = nullptr;
+        reloaded.hair = nullptr;
+        reloaded.model = nullptr;
         return;
     }
 
     if (hair != nullptr && IsInHeap(heap, hair)) DestroyModelDirector(hair);
     if (model != nullptr && IsInHeap(heap, model)) DestroyModelDirector(model);
     if (modelSlot != nullptr && *modelSlot == model) *modelSlot = nullptr;
-    reloadedMenuDriverModelHairs[idx] = nullptr;
-    reloadedMenuDriverModels[idx] = nullptr;
+    reloaded.hair = nullptr;
+    reloaded.model = nullptr;
     DestroyHeap(heap);
 }
 
@@ -517,11 +581,6 @@ ModelDirector **MenuDriverModelDirectorSlot(MenuDriverModel *models, u8 idx) {
 MenuDriverModel *MenuDriverModelSlot(MenuDriverModel *models, u8 idx) {
     static const u32 MENU_DRIVER_MODEL_SIZE = 0x28;
     return reinterpret_cast<MenuDriverModel *>(reinterpret_cast<u8 *>(models) + idx * MENU_DRIVER_MODEL_SIZE);
-}
-
-u32 &MenuDriverModelStateSlot(MenuDriverModel &model) {
-    static const u32 MENU_DRIVER_MODEL_STATE_OFFSET = 0x8;
-    return *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(&model) + MENU_DRIVER_MODEL_STATE_OFFSET);
 }
 
 ModelTransformator **MenuDriverModelCharSelTransformatorSlot(MenuDriverModel &model) {
@@ -639,7 +698,7 @@ bool LoadDefaultReloadedMenuDriverModel(GameScene &scene, ScnMgr &scnMgr, Charac
 
 void DestroyOldMenuDriverModelForReload(u8 idx, ModelDirector **modelSlot, ModelDirector *oldModel, ToadetteHair **hairSlot,
                                         ToadetteHair *oldHair) {
-    if (reloadedMenuDriverModelHeaps[idx] != nullptr) {
+    if (reloadedMenuDriverModels[idx].heap != nullptr) {
         DestroyReloadedMenuDriverModel(idx, modelSlot);
         if (hairSlot != nullptr && *hairSlot == oldHair) *hairSlot = nullptr;
         return;
@@ -689,9 +748,10 @@ bool ReloadMenuDriverModel(MenuDriverModelMgr &driverMgr, CharacterId character)
 
     *modelSlot = newModel;
     if (hairSlot != nullptr) *hairSlot = newHair;
-    reloadedMenuDriverModelHeaps[idx] = newHeap;
-    reloadedMenuDriverModels[idx] = newModel;
-    reloadedMenuDriverModelHairs[idx] = newHair;
+    ReloadedMenuDriverModel &reloaded = reloadedMenuDriverModels[idx];
+    reloaded.heap = newHeap;
+    reloaded.model = newModel;
+    reloaded.hair = newHair;
     ResetReloadedMenuDriverModel(*menuModel, character);
     menuModel->Init();
     return true;
@@ -704,8 +764,9 @@ bool ReloadMenuDriverModel(MenuDriverModelMgr &driverMgr, CharacterId character)
 // root the upcoming ScnMgr::CalcMain calculates. Only correct right before
 // CalcMain, so this must stay on the queued reload path below.
 void PoseReloadedMenuDriverModel(CharacterId character) {
-    ModelDirector *model = reloadedMenuDriverModels[character];
-    ToadetteHair *hair = reloadedMenuDriverModelHairs[character];
+    ReloadedMenuDriverModel &reloaded = reloadedMenuDriverModels[character];
+    ModelDirector *model = reloaded.model;
+    ToadetteHair *hair = reloaded.hair;
     ScnMgr *scnMgr = ScnMgr::sInstance[0];
     if (model == nullptr || scnMgr == nullptr) return;
 

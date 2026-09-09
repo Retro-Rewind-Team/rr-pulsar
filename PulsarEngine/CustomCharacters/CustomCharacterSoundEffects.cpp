@@ -22,7 +22,7 @@ bool FindLooseSoundEffectPath(u32 fileId, const char *extension, char *path, u32
 
     const RacedataScenario &scenario = racedata->racesScenario;
     const u8 localCount = scenario.localPlayerCount > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : scenario.localPlayerCount;
-    for (u8 hud = 0; hud < localCount && hud < LOCAL_PLAYER_COUNT; ++hud) {
+    for (u8 hud = 0; hud < localCount; ++hud) {
         const u8 playerId = racedata->GetPlayerIdOfLocalPlayer(hud);
         if (playerId >= scenario.playerCount || playerId >= ONLINE_PLAYER_COUNT) continue;
 

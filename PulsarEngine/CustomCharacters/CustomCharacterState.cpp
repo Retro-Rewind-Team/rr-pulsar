@@ -6,44 +6,18 @@ namespace CustomCharacters {
 u8 selectedTable[CHARACTER_COUNT];
 u8 onlineCharacterTables[ONLINE_PLAYER_COUNT];
 u8 offlineCpuCharacterTables[ONLINE_PLAYER_COUNT];
-const char *defaultNames[CHARACTER_COUNT];
-bool cachedDefaultNames;
-char customPostfixes[CHARACTER_COUNT][TABLE_COUNT][16];
-u8 customSkinExists[CHARACTER_COUNT][TABLE_COUNT];
+static const char *defaultNames[CHARACTER_COUNT];
+static bool cachedDefaultNames;
+static char customPostfixes[CHARACTER_COUNT][TABLE_COUNT][16];
+static u8 customSkinExists[CHARACTER_COUNT][TABLE_COUNT];
 CharacterId hoveredCharacters[LOCAL_PLAYER_COUNT] = {MARIO, MARIO, MARIO, MARIO};
-RawBRRES rawBRRES[TABLE_COUNT][CHARACTER_COUNT];
-RawBRRES looseMiiCBRRES[MII_C_COUNT];
-RawTPL looseMinimapTPL[TABLE_COUNT][CHARACTER_COUNT];
-const GameScene *rawCacheSceneOwner;
-u32 offlineCpuSkinSignature;
-u8 offlineCpuSkinRaceNumber;
-bool offlineCpuSkinTablesValid;
-u16 heldToggleButtons[LOCAL_PLAYER_COUNT];
-u32 authorNameControlStorage[LOCAL_PLAYER_COUNT][AUTHOR_NAME_CONTROL_WORDS];
-bool authorNameControlConstructed[LOCAL_PLAYER_COUNT];
-bool authorNameControlLoaded[LOCAL_PLAYER_COUNT];
-bool loadingAuthorNameControl;
-CharaName *authorTextControl;
-u32 authorTextValue;
-CharaName *characterNameTextControl[LOCAL_PLAYER_COUNT];
-u32 characterNameTextValue[LOCAL_PLAYER_COUNT];
-bool characterNameTextOverridden[LOCAL_PLAYER_COUNT];
+static u32 offlineCpuSkinSignature;
+static u8 offlineCpuSkinRaceNumber;
+static bool offlineCpuSkinTablesValid;
 SectionId votingMenuTableSection = SECTION_NONE;
 bool votingMenuTablesRestored;
 bool voteRandomMessageBoxKartStateApplied;
-EGG::ExpHeap *reloadedMenuDriverModelHeaps[MENU_DRIVER_MODEL_COUNT];
-ModelDirector *reloadedMenuDriverModels[MENU_DRIVER_MODEL_COUNT];
-ToadetteHair *reloadedMenuDriverModelHairs[MENU_DRIVER_MODEL_COUNT];
-const GameScene *reloadedMenuDriverModelSceneOwner;
-MenuDriverModel *reloadedMenuDriverModelOwner;
 bool forceDefaultMenuDriverBRRES;
-
-LooseVoiceInfo looseVoiceInfo[TABLE_COUNT][CHARACTER_COUNT];
-
-// Clamp game-reported local player counts to the UI arrays this feature owns.
-u8 MinLocalPlayers(u32 count) {
-    return count > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(count);
-}
 
 bool IsCharacter(CharacterId character) {
     return character >= 0 && character < CHARACTER_COUNT;
@@ -53,25 +27,12 @@ bool IsMiiCharacter(CharacterId character) {
     return (character >= MII_S_A_MALE && character <= MII_L_C_FEMALE) || character == MII_M || character == MII_S || character == MII_L;
 }
 
-const char **CharacterNameEntry(CharacterId character) {
-    if (!IsCharacter(character)) return nullptr;
-    return characterNames + character;
-}
-
-// Cache vanilla postfix pointers before selected skins temporarily replace them.
-void CacheDefaults() {
-    if (cachedDefaultNames) return;
-    for (u32 i = 0; i < CHARACTER_COUNT; ++i) {
-        const char **entry = CharacterNameEntry(static_cast<CharacterId>(i));
-        defaultNames[i] = nullptr;
-        if (entry != nullptr) defaultNames[i] = *entry;
-    }
-    cachedDefaultNames = true;
-}
-
 const char *GetDefaultCharacterPostfix(CharacterId character) {
     if (!IsCharacter(character)) return nullptr;
-    CacheDefaults();
+    if (!cachedDefaultNames) {
+        for (u32 i = 0; i < CHARACTER_COUNT; ++i) defaultNames[i] = characterNames[i];
+        cachedDefaultNames = true;
+    }
     return defaultNames[character];
 }
 
@@ -92,18 +53,14 @@ CharacterId StateCharacter(CharacterId character) {
     }
 }
 
-const char *CustomPostfixBase(CharacterId character) {
-    const CharacterId stateCharacter = StateCharacter(character);
-    if (!IsCharacter(stateCharacter)) return nullptr;
-    return GetDefaultCharacterPostfix(stateCharacter);
-}
-
 // Generated postfixes use the vanilla name plus a stable table suffix.
 const char *GeneratedCustomPostfix(CharacterId character, u8 table) {
     if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT) return nullptr;
     char *postfix = customPostfixes[character][table];
     if (postfix[0] != '\0') return postfix;
-    const char *base = CustomPostfixBase(character);
+    const CharacterId stateCharacter = StateCharacter(character);
+    const char *base = nullptr;
+    if (IsCharacter(stateCharacter)) base = GetDefaultCharacterPostfix(stateCharacter);
     if (base == nullptr) return nullptr;
     const int written = snprintf(postfix, sizeof(customPostfixes[character][table]), "%s-%u", base, table);
     if (written <= 0 || static_cast<u32>(written) >= sizeof(customPostfixes[character][table])) {
@@ -113,9 +70,9 @@ const char *GeneratedCustomPostfix(CharacterId character, u8 table) {
     return postfix;
 }
 
-// Driver BRRES existence is cached because menu hooks query it repeatedly.
-bool CustomDriverFileExists(CharacterId character, u8 table) {
-    if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT) return false;
+bool HasSkin(CharacterId character, u8 table) {
+    if (table == TABLE_DEFAULT) return true;
+    if (!IsCharacter(character) || table > CUSTOM_TABLE_LIMIT) return false;
     u8 &cached = customSkinExists[character][table];
     if (cached != 0) return cached == 2;
     const char *postfix = GeneratedCustomPostfix(character, table);
@@ -146,26 +103,10 @@ CharacterId MenuBRRESCharacter(CharacterId character) {
     }
 }
 
-bool HasSkin(CharacterId character, u8 table) {
-    return table == TABLE_DEFAULT || CustomDriverFileExists(character, table);
-}
-
-u8 NormalizeTable(CharacterId character, u8 table) {
-    return HasSkin(character, table) ? table : TABLE_DEFAULT;
-}
-
-u32 SkinBmgId(u32 start, CharacterId character, u8 table) {
-    if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT || !HasSkin(character, table)) return 0;
-    return (static_cast<u32>(character) << 16) | start | table;
-}
-
 // Custom BMG ids encode the character in the high half and table in the low half.
 u32 SkinNameBmgId(CharacterId character, u8 table) {
-    return SkinBmgId(CUSTOM_CHARACTER_NAME_BMG_START, character, table);
-}
-
-u32 SkinAuthorBmgId(CharacterId character, u8 table) {
-    return SkinBmgId(CUSTOM_CHARACTER_AUTHOR_BMG_START, character, table);
+    if (!IsCharacter(character) || table == TABLE_DEFAULT || table > CUSTOM_TABLE_LIMIT || !HasSkin(character, table)) return 0;
+    return (static_cast<u32>(character) << 16) | CUSTOM_CHARACTER_NAME_BMG_START | table;
 }
 
 u32 DefaultNameBmgIdForSkinBmgId(u32 bmgId) {
@@ -221,7 +162,9 @@ bool SetCustomCharacterAuthorMessage(LayoutUIControl &control, u32 bmgId) {
     return true;
 }
 
-const char *DefaultMenuBRRESName(CharacterId character) {
+const char *DriverBRRESName(CharacterId character, u8 table) {
+    const char *generatedPostfix = GeneratedCustomPostfix(character, table);
+    if (generatedPostfix != nullptr) return generatedPostfix;
     switch (character) {
         case PEACH_BIKER:
             return "pc_menu";
@@ -230,32 +173,15 @@ const char *DefaultMenuBRRESName(CharacterId character) {
         case ROSALINA_BIKER:
             return "rs_menu";
         default:
-            return nullptr;
+            break;
     }
-}
-
-const char *DriverBRRESName(CharacterId character, u8 table) {
-    const char *generatedPostfix = GeneratedCustomPostfix(character, table);
-    if (generatedPostfix != nullptr) return generatedPostfix;
-    const char *menuName = DefaultMenuBRRESName(character);
-    if (menuName != nullptr) return menuName;
     return GetDefaultCharacterPostfix(character);
-}
-
-void ApplyName(CharacterId character, u8 table) {
-    const char **entry = CharacterNameEntry(character);
-    const char *name = GeneratedCustomPostfix(character, table);
-    if (name == nullptr) name = GetDefaultCharacterPostfix(character);
-    if (entry != nullptr && name != nullptr) *entry = name;
 }
 
 u8 SectionPlayerCount(const SectionMgr *mgr) {
     if (mgr == nullptr || mgr->sectionParams == nullptr) return 0;
-    return MinLocalPlayers(mgr->sectionParams->localPlayerCount);
-}
-
-u8 RacePlayerCount(const RacedataScenario &scenario) {
-    return MinLocalPlayers(scenario.localPlayerCount);
+    const u32 count = mgr->sectionParams->localPlayerCount;
+    return count > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(count);
 }
 
 bool IsVotingSection(SectionId section) {
@@ -264,15 +190,10 @@ bool IsVotingSection(SectionId section) {
            (section >= SECTION_P1_WIFI_FROOM_VS_VOTING && section <= SECTION_P2_WIFI_FROOM_COIN_VOTING);
 }
 
-SectionId CurrentSectionId() {
-    const SectionMgr *mgr = SectionMgr::sInstance;
-    if (mgr == nullptr || mgr->curSection == nullptr) return SECTION_NONE;
-    return mgr->curSection->sectionId;
-}
-
 // Voting menus briefly need vanilla models until custom ones are restored.
 bool ShouldForceDefaultVotingMenuTable() {
-    const SectionId section = CurrentSectionId();
+    const SectionMgr *mgr = SectionMgr::sInstance;
+    const SectionId section = mgr != nullptr && mgr->curSection != nullptr ? mgr->curSection->sectionId : SECTION_NONE;
     if (!IsVotingSection(section)) {
         votingMenuTableSection = SECTION_NONE;
         votingMenuTablesRestored = false;
@@ -290,8 +211,8 @@ bool IsLocalMultiplayer() {
     if (SectionPlayerCount(sectionMgr) > 1) return true;
     const Racedata *racedata = Racedata::sInstance;
     if (racedata != nullptr) {
-        if (RacePlayerCount(racedata->racesScenario) > 1) return true;
-        if (RacePlayerCount(racedata->menusScenario) > 1) return true;
+        if (racedata->racesScenario.localPlayerCount > 1) return true;
+        if (racedata->menusScenario.localPlayerCount > 1) return true;
     }
     return GetLocalPlayerCount() > 1;
 }
@@ -299,29 +220,28 @@ bool IsLocalMultiplayer() {
 u8 SelectedTable(CharacterId character) {
     const CharacterId stateCharacter = StateCharacter(character);
     if (!IsCharacter(stateCharacter)) return TABLE_DEFAULT;
-    return NormalizeTable(character, selectedTable[stateCharacter]);
+    const u8 table = selectedTable[stateCharacter];
+    return HasSkin(character, table) ? table : TABLE_DEFAULT;
 }
 
 void ApplySelectedNames() {
-    CacheDefaults();
     for (u32 i = 0; i < CHARACTER_COUNT; ++i) {
-        ApplyName(static_cast<CharacterId>(i), SelectedTable(static_cast<CharacterId>(i)));
+        const CharacterId character = static_cast<CharacterId>(i);
+        const char *name = GeneratedCustomPostfix(character, SelectedTable(character));
+        if (name == nullptr) name = GetDefaultCharacterPostfix(character);
+        if (name != nullptr) characterNames[i] = name;
     }
 }
 
-bool AnyCustomSkin() {
+bool IsCustomCharacterTableActive() {
     for (u32 i = 0; i < CHARACTER_COUNT; ++i) {
         if (selectedTable[i] != TABLE_DEFAULT) return true;
     }
     return false;
 }
 
-bool IsCustomCharacterTableActive() {
-    return AnyCustomSkin();
-}
-
 void ResetOnlineCustomCharacterFlags() {
-    for (u32 i = 0; i < ONLINE_PLAYER_COUNT; ++i) onlineCharacterTables[i] = TABLE_DEFAULT;
+    memset(onlineCharacterTables, TABLE_DEFAULT, sizeof(onlineCharacterTables));
 }
 
 bool IsOnlineRoom(const RKNet::Controller *controller) {
@@ -341,15 +261,11 @@ bool IsOnlineRoom(const RKNet::Controller *controller) {
     }
 }
 
-bool DisplayOnlineSkins() {
-    return Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_ENABLED;
-}
-
 void ResetOfflineCpuSkinTables() {
     offlineCpuSkinTablesValid = false;
     offlineCpuSkinRaceNumber = 0;
     offlineCpuSkinSignature = 0;
-    for (u8 i = 0; i < ONLINE_PLAYER_COUNT; ++i) offlineCpuCharacterTables[i] = TABLE_DEFAULT;
+    memset(offlineCpuCharacterTables, TABLE_DEFAULT, sizeof(offlineCpuCharacterTables));
 }
 
 void CompactOfflineCpuSkinTable(u8 targetPlayerId, u8 sourcePlayerId) {
@@ -357,16 +273,12 @@ void CompactOfflineCpuSkinTable(u8 targetPlayerId, u8 sourcePlayerId) {
     offlineCpuCharacterTables[targetPlayerId] = offlineCpuCharacterTables[sourcePlayerId];
 }
 
-void ClearCustomCharacterFileCaches() {
-    memset(customSkinExists, 0, sizeof(customSkinExists));
-    memset(looseVoiceInfo, 0, sizeof(looseVoiceInfo));
-}
-
 void ResetAllCharacterTablesToDefault() {
-    for (u32 i = 0; i < CHARACTER_COUNT; ++i) selectedTable[i] = TABLE_DEFAULT;
+    memset(selectedTable, TABLE_DEFAULT, sizeof(selectedTable));
     ResetOnlineCustomCharacterFlags();
     ResetOfflineCpuSkinTables();
-    ClearCustomCharacterFileCaches();
+    memset(customSkinExists, 0, sizeof(customSkinExists));
+    ClearLooseVoiceCache();
     ApplySelectedNames();
 }
 
@@ -420,7 +332,7 @@ bool IsLocalRacePlayer(u8 playerId) {
     const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr) return false;
     const RacedataScenario &scenario = racedata->racesScenario;
-    const u8 localCount = RacePlayerCount(scenario);
+    const u8 localCount = scenario.localPlayerCount > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(scenario.localPlayerCount);
     for (u8 hud = 0; hud < localCount; ++hud) {
         if (racedata->GetPlayerIdOfLocalPlayer(hud) == playerId) return true;
     }
@@ -434,11 +346,11 @@ void RefreshLocalOnlineCustomCharacterFlags() {
         ResetOnlineCustomCharacterFlags();
         return;
     }
-    if (!DisplayOnlineSkins()) return;
+    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_DISPLAYCUSTOMSKINS) != DISPLAYCUSTOMSKINS_ENABLED) return;
     const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr) return;
     const RacedataScenario &scenario = racedata->racesScenario;
-    const u8 localCount = RacePlayerCount(scenario);
+    const u8 localCount = scenario.localPlayerCount > LOCAL_PLAYER_COUNT ? LOCAL_PLAYER_COUNT : static_cast<u8>(scenario.localPlayerCount);
     for (u8 hud = 0; hud < localCount; ++hud) {
         const u32 playerId = racedata->GetPlayerIdOfLocalPlayer(hud);
         if (playerId < ONLINE_PLAYER_COUNT) onlineCharacterTables[playerId] = SelectedTable(scenario.players[playerId].characterId);
@@ -453,18 +365,6 @@ bool SetSelectedTable(CharacterId character, u8 table) {
     ApplySelectedNames();
     RefreshLocalOnlineCustomCharacterFlags();
     return true;
-}
-
-bool CycleSkin(CharacterId character, int step) {
-    if (!IsCharacter(StateCharacter(character))) return false;
-    u8 table = SelectedTable(character);
-    for (u8 i = 1; i < TABLE_COUNT; ++i) {
-        table = step < 0 ? (table == 0 ? TABLE_COUNT - 1 : table - 1) : (table + 1 >= TABLE_COUNT ? TABLE_DEFAULT : table + 1);
-        if (HasSkin(character, table) && SetSelectedTable(character, table)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 // Pick a stable random CPU skin table for the current offline race series.
@@ -484,7 +384,7 @@ u8 OfflineCpuSkinTable(const RacedataScenario &scenario, u8 playerId, CharacterI
     if (!sameSeries || newSeriesStart) {
         offlineCpuSkinTablesValid = true;
         offlineCpuSkinSignature = signature;
-        for (u8 i = 0; i < ONLINE_PLAYER_COUNT; ++i) offlineCpuCharacterTables[i] = TABLE_DEFAULT;
+        memset(offlineCpuCharacterTables, TABLE_DEFAULT, sizeof(offlineCpuCharacterTables));
         for (u8 i = 0; i < scenario.playerCount && i < ONLINE_PLAYER_COUNT; ++i) {
             if (scenario.players[i].playerType != PLAYER_CPU) continue;
             const CharacterId cpuCharacter = scenario.players[i].characterId;
@@ -499,7 +399,8 @@ u8 OfflineCpuSkinTable(const RacedataScenario &scenario, u8 playerId, CharacterI
         }
     }
     offlineCpuSkinRaceNumber = scenario.settings.raceNumber;
-    return NormalizeTable(character, offlineCpuCharacterTables[playerId]);
+    const u8 table = offlineCpuCharacterTables[playerId];
+    return HasSkin(character, table) ? table : TABLE_DEFAULT;
 }
 
 u8 SavedGhostSkinTable(const RacedataScenario &scenario, u8 playerId, CharacterId character) {
@@ -511,7 +412,7 @@ u8 SavedGhostSkinTable(const RacedataScenario &scenario, u8 playerId, CharacterI
 
     const u32 table = Racedata::sInstance->ghosts[rkgIndex].header.customCharacterTable;
     if (table > CUSTOM_TABLE_LIMIT) return TABLE_DEFAULT;
-    return NormalizeTable(character, static_cast<u8>(table));
+    return HasSkin(character, static_cast<u8>(table)) ? static_cast<u8>(table) : TABLE_DEFAULT;
 }
 
 u8 RaceSkinTable(u8 playerId, CharacterId character) {
@@ -521,7 +422,8 @@ u8 RaceSkinTable(u8 playerId, CharacterId character) {
         const GameMode mode = scenario.settings.gamemode;
         const bool offlineCpuSkinMode = mode == MODE_GRAND_PRIX || mode == MODE_VS_RACE || mode == MODE_BATTLE;
         const bool offlineCpu = scenario.players[playerId].playerType == PLAYER_CPU;
-        if (offlineCpuSkinMode && offlineCpu && !IsOnlineRoom(RKNet::Controller::sInstance) && DisplayOnlineSkins() && !IsLocalMultiplayer()) {
+        if (offlineCpuSkinMode && offlineCpu && !IsOnlineRoom(RKNet::Controller::sInstance) &&
+            Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_ENABLED && !IsLocalMultiplayer()) {
             return OfflineCpuSkinTable(scenario, playerId, character);
         }
         if (scenario.players[playerId].playerType == PLAYER_GHOST) {
@@ -531,8 +433,10 @@ u8 RaceSkinTable(u8 playerId, CharacterId character) {
 
     if (IsLocalMultiplayer()) return IsLocalRacePlayer(playerId) ? SelectedTable(character) : TABLE_DEFAULT;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (IsOnlineRoom(controller) && DisplayOnlineSkins()) {
-        return IsLocalRacePlayer(playerId) ? SelectedTable(character) : NormalizeTable(character, onlineCharacterTables[playerId]);
+    if (IsOnlineRoom(controller) && Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_ENABLED) {
+        if (IsLocalRacePlayer(playerId)) return SelectedTable(character);
+        const u8 table = onlineCharacterTables[playerId];
+        return HasSkin(character, table) ? table : TABLE_DEFAULT;
     }
     return IsLocalRacePlayer(playerId) ? SelectedTable(character) : TABLE_DEFAULT;
 }
