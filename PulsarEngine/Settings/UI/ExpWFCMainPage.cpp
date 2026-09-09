@@ -153,18 +153,11 @@ void ExpWFCMain::ExtOnButtonSelect(PushButton &button, u32 hudSlotId) {
 void ExpWFCMain::BeforeControlUpdate() {
     WFCMainMenu::BeforeControlUpdate();
 
-    int RR_numRetro, RR_numCT, RR_numRT;
-    int RR_num200cc, RR_numOTT, RR_numIR;
-    int BT_numRegulars, BT_numElim;
-    int numRegulars;
-
-    PlayerCount::GetNumbersMain(RR_numRetro, RR_numCT, RR_numRT);
-    PlayerCount::GetNumbersOther(RR_num200cc, RR_numOTT, RR_numIR);
-    PlayerCount::GetNumbersBT(BT_numRegulars, BT_numElim);
-    PlayerCount::GetNumbersRegular(numRegulars);
+    int totalPlayers;
+    PlayerCount::GetNumbersTotal(totalPlayers);
 
     Text::Info info;
-    info.intToPass[0] = RR_numRetro + RR_numCT + RR_numRT + RR_num200cc + RR_numOTT + RR_numIR + BT_numRegulars + BT_numElim + numRegulars;
+    info.intToPass[0] = totalPlayers;
     this->playerCount.SetTextBoxMessage("go", BMG_PLAYER_COUNT, &info);
 
     wchar_t rankBuf[48];
