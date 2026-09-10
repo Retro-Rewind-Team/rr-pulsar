@@ -35,14 +35,20 @@ static const char *FindValueEnd(const char *p, const char *end) {
         for (const char *cur = p; cur < end; ++cur) {
             const char c = *cur;
             if (inString) {
-                if (escaped) escaped = false;
-                else if (c == '\\') escaped = true;
-                else if (c == '"') inString = false;
+                if (escaped)
+                    escaped = false;
+                else if (c == '\\')
+                    escaped = true;
+                else if (c == '"')
+                    inString = false;
                 continue;
             }
-            if (c == '"') inString = true;
-            else if (c == open) ++depth;
-            else if (c == close && --depth == 0) return cur + 1;
+            if (c == '"')
+                inString = true;
+            else if (c == open)
+                ++depth;
+            else if (c == close && --depth == 0)
+                return cur + 1;
         }
         return nullptr;
     }
@@ -76,12 +82,16 @@ bool FindArray(const char *json, Value &out) {
     bool escaped = false;
     for (const char *p = json; p < end; ++p) {
         if (inString) {
-            if (escaped) escaped = false;
-            else if (*p == '\\') escaped = true;
-            else if (*p == '"') inString = false;
+            if (escaped)
+                escaped = false;
+            else if (*p == '\\')
+                escaped = true;
+            else if (*p == '"')
+                inString = false;
             continue;
         }
-        if (*p == '"') inString = true;
+        if (*p == '"')
+            inString = true;
         else if (*p == '[') {
             const char *arrayEnd = FindValueEnd(p, end);
             if (arrayEnd == nullptr) return false;
@@ -185,7 +195,10 @@ bool GetS32(const Value &value, s32 &out) {
     if (value.start == nullptr || value.end == nullptr) return false;
     const char *p = SkipWhitespace(value.start, value.end);
     bool negative = false;
-    if (p < value.end && *p == '-') { negative = true; ++p; }
+    if (p < value.end && *p == '-') {
+        negative = true;
+        ++p;
+    }
     if (p >= value.end || *p < '0' || *p > '9') return false;
 
     u64 parsed = 0;
@@ -208,16 +221,23 @@ static unsigned char ParseEscape(const char *&p, const char *end) {
     switch (escaped) {
         case '"':
         case '\\':
-        case '/': return escaped;
-        case 'b': return '\b';
-        case 'f': return '\f';
-        case 'n': return '\n';
-        case 'r': return '\r';
-        case 't': return '\t';
+        case '/':
+            return escaped;
+        case 'b':
+            return '\b';
+        case 'f':
+            return '\f';
+        case 'n':
+            return '\n';
+        case 'r':
+            return '\r';
+        case 't':
+            return '\t';
         case 'u':
             for (int i = 0; i < 4 && p < end; ++i) ++p;
             return '?';
-        default: return '?';
+        default:
+            return '?';
     }
 }
 
@@ -242,11 +262,26 @@ static bool GetStringImpl(const Value &value, T *out, u32 outLen, bool wide) {
 bool GetString(const Value &value, char *out, u32 outLen) { return GetStringImpl(value, out, outLen, false); }
 bool GetString(const Value &value, wchar_t *out, u32 outLen) { return GetStringImpl(value, out, outLen, true); }
 
-bool Get(const Value &object, const char *key, u32 &out) { Value value; return Find(object, key, value) && GetU32(value, out); }
-bool Get(const Value &object, const char *key, u64 &out) { Value value; return Find(object, key, value) && GetU64(value, out); }
-bool Get(const Value &object, const char *key, s32 &out) { Value value; return Find(object, key, value) && GetS32(value, out); }
-bool Get(const Value &object, const char *key, char *out, u32 outLen) { Value value; return Find(object, key, value) && GetString(value, out, outLen); }
-bool Get(const Value &object, const char *key, wchar_t *out, u32 outLen) { Value value; return Find(object, key, value) && GetString(value, out, outLen); }
+bool Get(const Value &object, const char *key, u32 &out) {
+    Value value;
+    return Find(object, key, value) && GetU32(value, out);
+}
+bool Get(const Value &object, const char *key, u64 &out) {
+    Value value;
+    return Find(object, key, value) && GetU64(value, out);
+}
+bool Get(const Value &object, const char *key, s32 &out) {
+    Value value;
+    return Find(object, key, value) && GetS32(value, out);
+}
+bool Get(const Value &object, const char *key, char *out, u32 outLen) {
+    Value value;
+    return Find(object, key, value) && GetString(value, out, outLen);
+}
+bool Get(const Value &object, const char *key, wchar_t *out, u32 outLen) {
+    Value value;
+    return Find(object, key, value) && GetString(value, out, outLen);
+}
 
 }  // namespace Json
 }  // namespace Network
