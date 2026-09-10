@@ -113,8 +113,10 @@ static bool ParsePlayerCountResponse(const char *json) {
     Pulsar::Network::Json::Value root;
     if (!Pulsar::Network::Json::Parse(json, root)) return false;
 
+    Pulsar::Network::Json::Value global;
     u32 totalPlayers = 0;
-    if (!GetOnlineCount(root, "global", totalPlayers)) return false;
+    if (!Pulsar::Network::Json::Find(root, "global", global) ||
+        !Pulsar::Network::Json::Get(global, "active", totalPlayers)) return false;
 
     Pulsar::Network::Json::Value regions;
     if (!Pulsar::Network::Json::Find(root, "by_region", regions)) return false;
