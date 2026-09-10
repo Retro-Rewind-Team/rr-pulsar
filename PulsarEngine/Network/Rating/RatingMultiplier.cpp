@@ -2,7 +2,6 @@
 #include <Gamemodes/Battle/BattleElimination.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/egg/mem/Heap.hpp>
-#include <core/System/SystemManager.hpp>
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -11,16 +10,16 @@
 #include <Network/WiiLink.hpp>
 #include <Network/ServerDateTime.hpp>
 #include <PulsarSystem.hpp>
-#include <Gamemodes/ItemRain/ItemRain.hpp>
+#include <include/c_stdio.h>
 #include <include/c_string.h>
 
 namespace Pulsar {
 namespace PointRating {
 
 #ifdef BETA
-static const char *MULTIPLIER_URL = "http://rwfc.net/api/game/multiplierBeta.txt";
+static const char *MULTIPLIER_URL = "http://rwfc.net/api/multiplier?channel=beta";
 #else
-static const char *MULTIPLIER_URL = "http://rwfc.net/api/game/multiplier.txt";
+static const char *MULTIPLIER_URL = "http://rwfc.net/api/multiplier?channel=stable";
 #endif
 static const u32 MULTIPLIER_REQUEST_WORK_BUF_SIZE = 0x1000;
 
@@ -49,19 +48,14 @@ static bool ParseRemoteMultiplier(const char *body, int bodyLen, float &out) {
     if (*p == '+') ++p;
 
     bool hasDigit = false;
-    float value = 0.0f;
     while (*p >= '0' && *p <= '9') {
         hasDigit = true;
-        value = value * 10.0f + (float)(*p - '0');
         ++p;
     }
     if (*p == '.') {
         ++p;
-        float scale = 0.1f;
         while (*p >= '0' && *p <= '9') {
             hasDigit = true;
-            value += (float)(*p - '0') * scale;
-            scale *= 0.1f;
             ++p;
         }
     }
@@ -70,8 +64,7 @@ static bool ParseRemoteMultiplier(const char *body, int bodyLen, float &out) {
     p = SkipWhitespace(p);
     if (*p != '\0') return false;
 
-    out = value;
-    return true;
+    return sscanf(start, "%f", &out) == 1;
 }
 
 static bool CanStartMultiplierDownload() {
@@ -144,16 +137,6 @@ static void UpdateMultiplierDownloadForWfcConnection() {
 
 static FrameLoadHook remoteMultiplierHook(UpdateMultiplierDownloadForWfcConnection);
 
-static bool IsEventDay(unsigned m, unsigned d) {
-    return (m == 12 && d >= 23) ||  // Christmas
-           (m == 1 && d <= 3) ||  // New Year
-           (m == 10 && d >= 25) ||  // Halloween
-           (m == 6 && d >= 5 && d <= 8) ||  // Start of Summer
-           (m == 3 && d >= 13 && d <= 17) ||  // St. Patrick's Day
-           (m == 4 && d >= 10 && d <= 14) ||  // MKWii Birthday
-           (m == 8 && d >= 23 && d <= 29);  // End of Summer
-}
-
 static float GetBattleBonus() {
     if (!BattleElim::ShouldApplyBattleElimination()) return 0.0f;
     const RKNet::Controller *ctrl = RKNet::Controller::sInstance;
@@ -174,59 +157,12 @@ bool IsWeekendMultiplierActiveForRegion(u8 region) {
     return sdt->GetCurrentVRMultiplierRegion() == region;
 }
 
-bool IsItemRainEventActive() {
-    unsigned year = 0, month = 0, day = 0;
-    bool valid = false;
-
-    ServerDateTime *sdt = ServerDateTime::sInstance;
-    if (sdt && sdt->isValid) {
-        sdt->Update();
-        year = sdt->year;
-        month = sdt->month;
-        day = sdt->day;
-        valid = true;
-    } else {
-        SystemManager *sm = SystemManager::sInstance;
-        if (sm && sm->isValidDate) {
-            year = sm->year + 2000;
-            month = sm->month;
-            day = sm->day;
-            valid = true;
-        }
-    }
-
-    if (valid) {
-        if (year == 2026 && month == 1 && day >= 26 && day <= 29) {
-            return true;
-        }
-    }
-    return false;
-}
-
 float GetMultiplier() {
-    unsigned month = 0, day = 0;
-    bool valid = false;
-
-    ServerDateTime *sdt = ServerDateTime::sInstance;
-    if (sdt && sdt->isValid) {
-        sdt->Update();
-        month = sdt->month;
-        day = sdt->day;
-        valid = true;
-    } else {
-        SystemManager *sm = SystemManager::sInstance;
-        if (sm && sm->isValidDate) {
-            month = sm->month;
-            day = sm->day;
-            valid = true;
-        }
-    }
-
-    float base = (valid && IsEventDay(month, day)) ? 2.0f : 1.0f;
+    float base = 1.0f;
 
     // Weekend VR multiplier (1.5x) for the active region
     u8 currentRegion = System::sInstance->netMgr.region;
-    if (IsWeekendMultiplierActiveForRegion(currentRegion) || (valid && month == 4 && day == 1)) {
+    if (IsWeekendMultiplierActiveForRegion(currentRegion)) {
         base *= 1.5f;
     }
     float multiplier = base + GetBattleBonus();
