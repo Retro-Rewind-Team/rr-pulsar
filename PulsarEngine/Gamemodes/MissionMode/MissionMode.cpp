@@ -1,4 +1,5 @@
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <MarioKartWii/3D/Camera/RaceCamera.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/KMP/KMPManager.hpp>
@@ -20,6 +21,11 @@ static const u32 MISSION_LAP_COUNT_MAX = 9;
 static const u32 MISSION_COMPETITION_MODE_FLAG = 1 << 2;
 static const u32 MISSION_CUSTOM_ITEMS_OFFSET = 0x54;
 static const u32 MISSION_ENGINE_OFFSET = 0x07;
+static const u32 MISSION_CAMERA_MODE_OFFSET = 0x48;
+static const u16 MISSION_CAMERA_MODE_BACKWARDS = 0x05;
+static const u16 MISSION_ACCELERATE_BUTTON = 0x01;
+static const u16 MISSION_REAR_VIEW_FLAG = 0x20;
+static const u32 MISSION_CAMERA_LINK_OFFSET = 0x88;
 static const u16 MISSION_OBJECTIVE_ENEMY_DOWN_02 = 0x06;
 static const u16 MISSION_OBJECTIVE_VS_RACE_01 = 0x01;
 static const u16 MISSION_OBJECTIVE_VS_RACE_02 = 0x02;
@@ -59,6 +65,40 @@ static u16 GetMissionU16(const void *mission, u32 offset) {
     const u8 *const bytes = reinterpret_cast<const u8 *>(mission) + offset;
     return static_cast<u16>((static_cast<u16>(bytes[0]) << 8) | bytes[1]);
 }
+
+static bool IsMissionCameraLockedBackwards() {
+	if (Racedata::sInstance == nullptr) return false;
+
+	const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+	return IsMissionScenario(scenario) &&
+	       GetMissionU16(scenario.mission, MISSION_CAMERA_MODE_OFFSET) == MISSION_CAMERA_MODE_BACKWARDS;
+}
+
+kmRuntimeUse(0x80521768);
+typedef void (*MissionControllerUpdateFn)(Input::RealControllerHolder *, bool);
+static void MissionControllerUpdate(Input::RealControllerHolder *holder, bool isPaused) {
+	static const MissionControllerUpdateFn original =
+		reinterpret_cast<MissionControllerUpdateFn>(kmRuntimeAddr(0x80521768));
+	original(holder, isPaused);
+	if (isPaused || !IsMissionCameraLockedBackwards()) return;
+
+	holder->inputStates[0].buttonActions &= static_cast<u16>(~MISSION_ACCELERATE_BUTTON);
+	holder->inputStates[0].buttonActions |= MISSION_REAR_VIEW_FLAG;
+}
+kmWritePointer(0x808b2d9c, MissionControllerUpdate);
+
+kmRuntimeUse(0x805a9bec);
+typedef void (*MissionRaceCameraUpdateFn)(void *, bool);
+static void MissionRaceCameraUpdate(void *cameraLink, bool isPaused) {
+	static const MissionRaceCameraUpdateFn original =
+		reinterpret_cast<MissionRaceCameraUpdateFn>(kmRuntimeAddr(0x805a9bec));
+	original(cameraLink, isPaused);
+	if (isPaused || !IsMissionCameraLockedBackwards()) return;
+
+	RaceCamera *camera = reinterpret_cast<RaceCamera *>(reinterpret_cast<u8 *>(cameraLink) - MISSION_CAMERA_LINK_OFFSET);
+	camera->bitfield |= MISSION_REAR_VIEW_FLAG;
+}
+kmWritePointer(0x808b6c80, MissionRaceCameraUpdate);
 
 static bool IsMissionVSObjective(const RacedataScenario &scenario) {
     if (!IsMissionScenario(scenario)) return false;
