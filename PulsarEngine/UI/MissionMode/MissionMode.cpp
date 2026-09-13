@@ -3,6 +3,7 @@
 #include <UI/MissionMode/MissionModel.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionIntro.hpp>
 #include <Gamemodes/MissionMode/MissionModeRanking.hpp>
 #include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Gamemodes/MissionMode/MissionModeSave.hpp>
@@ -11,7 +12,6 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <MarioKartWii/Scene/RootScene.hpp>
-#include <MarioKartWii/UI/Page/Other/RaceIntro.hpp>
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
@@ -159,7 +159,6 @@ namespace {
 
 static u32 selectedLevel;
 static u32 selectedMission;
-static u16 selectedMissionStageBmgId;
 static bool returnToStageSelect;
 static bool missionEndPagePrepared;
 
@@ -186,11 +185,6 @@ static const char *const MISSION_OBJECTIVE_ICONS[] = {
     "mr_trick",
 };
 static const char MISSION_CONFIG_FILE[] = "Binaries/ConfigMR.pul";
-static const u32 MISSION_INFO_STAGE_OFFSET = 0x83C;
-static const u32 MISSION_INFO_LEVEL_OFFSET = 0x840;
-static const u32 MISSION_BOSS_INTRO_STAGE = 7;
-static const u32 MISSION_NORMAL_INTRO_STAGE = 0;
-static const u32 MISSION_INTRO_TITLE_OFFSET = 0x1B8;
 static const u32 BMG_OK = 0x7D0;
 static const u32 MISSION_PAUSE_END_MENU_SOUND_ID = 0xD5;
 static const char *const MISSION_STAGE_RANK_PANE = "mission_rank";
@@ -323,15 +317,6 @@ static u16 ReadBigEndian16(const u8 *data) {
     return static_cast<u16>((static_cast<u16>(data[0]) << 8) | data[1]);
 }
 
-static void SetMissionInfoSelection(ExpSection &section, u32 level, u32 stage) {
-    Page *infoPage = section.pages[PAGE_MISSION_INFORMATION_PROMPT];
-    if (infoPage == nullptr) return;
-
-    u8 *pageBytes = reinterpret_cast<u8 *>(infoPage);
-    *reinterpret_cast<u32 *>(pageBytes + MISSION_INFO_STAGE_OFFSET) = stage;
-    *reinterpret_cast<u32 *>(pageBytes + MISSION_INFO_LEVEL_OFFSET) = level;
-}
-
 static void ResetMissionButtonFreeText(PushButton &button, bool locked = false) {
     if (button.animator.animationGroups != nullptr && button.animator.animationCount > 2) {
         AnimationGroup &textLightGroup = button.animator.GetAnimationGroupById(2);
@@ -382,58 +367,6 @@ static const char *GetMissionObjectiveIcon(u16 objective) {
                ? MISSION_OBJECTIVE_ICONS[objective]
                : 0;
 }
-
-typedef Page *(*GetMissionInstructionPageFn)(int);
-
-kmRuntimeUse(0x80842a78);
-static Page *GetMissionInstructionPageForIntro(int pageId) {
-	static const GetMissionInstructionPageFn original =
-		reinterpret_cast<GetMissionInstructionPageFn>(kmRuntimeAddr(0x80842a78));
-	Page *page = original(pageId);
-	if (page == nullptr || pageId != PAGE_MISSION_INFORMATION_PROMPT)
-		return page;
-
-	u32 *stage = reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(page) + MISSION_INFO_STAGE_OFFSET);
-	const bool bossIntro =
-		Racedata::sInstance != nullptr &&
-		Pulsar::MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario,
-			Pulsar::MissionMode::BOSS_MISSION);
-	if (bossIntro)
-		*stage = MISSION_BOSS_INTRO_STAGE;
-	else if (*stage == MISSION_BOSS_INTRO_STAGE)
-		*stage = MISSION_NORMAL_INTRO_STAGE;
-	return page;
-}
-kmCall(0x808440d8, GetMissionInstructionPageForIntro);
-kmCall(0x8084e624, GetMissionInstructionPageForIntro);
-
-kmRuntimeUse(0x80855200);
-typedef void (*RaceIntroOnInitFn)(Pages::RaceIntro *);
-static void RaceIntroOnInit(Pages::RaceIntro *intro) {
-	static const RaceIntroOnInitFn original =
-		reinterpret_cast<RaceIntroOnInitFn>(kmRuntimeAddr(0x80855200));
-	original(intro);
-
-	if (Racedata::sInstance == nullptr) return;
-	const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
-	if (!Pulsar::MissionMode::IsMissionScenario(scenario)) return;
-
-	LayoutUIControl *cupDisplay = reinterpret_cast<LayoutUIControl *>(
-		reinterpret_cast<u8 *>(intro) + MISSION_INTRO_TITLE_OFFSET);
-	Pulsar::UI::ChangeImage(*cupDisplay, "cup_icon", "mr_boss.tpl");
-
-	if (!Pulsar::MissionMode::HasMissionFeature(scenario, Pulsar::MissionMode::BOSS_MISSION)) return;
-
-	if (selectedMissionStageBmgId == 0)
-		return;
-
-	Text::Info info;
-	memset(&info, 0, sizeof(info));
-	info.intToPass[0] = selectedLevel + 1;
-	info.intToPass[1] = selectedMission + 1;
-	cupDisplay->SetMessage(selectedMissionStageBmgId, &info);
-}
-kmWritePointer(0x808da590, RaceIntroOnInit);
 
 class MissionSelectPage : public Pages::MenuInteractable {
 public:
@@ -546,7 +479,7 @@ public:
             if (this->levelSelected || !this->IsLevelAccessible(level)) return;
             selectedLevel = level;
             selectedMission = 0;
-            selectedMissionStageBmgId = 0;
+            Pulsar::MissionMode::ResetMissionIntroSelection();
             MissionModel::Reset();
             this->ShowStageSelect();
             return;
@@ -554,22 +487,27 @@ public:
 
         if (!this->levelSelected) return;
 
-        const u32 stageId = static_cast<u32>(button.buttonId) - BUTTON_COUNT;
-        if (!this->IsStageAccessible(selectedLevel, stageId)) return;
+		const u32 stageId = static_cast<u32>(button.buttonId) - BUTTON_COUNT;
+		if (!this->IsStageAccessible(selectedLevel, stageId)) return;
 		selectedMission = stageId;
+		Pulsar::MissionMode::ResetMissionIntroSelection();
 		u16 stageBmgId = 0;
-		selectedMissionStageBmgId =
-			this->GetMissionStageBmgId(selectedLevel, selectedMission, stageBmgId) ? stageBmgId : 0;
+		const bool hasStageBmgId = this->GetMissionStageBmgId(selectedLevel, selectedMission, stageBmgId);
         MissionModel::Reset();
         if (Racedata::sInstance != nullptr) {
             RacedataSettings &settings = Racedata::sInstance->menusScenario.settings;
             settings.cupId = selectedLevel;
             settings.raceNumber = static_cast<u8>(selectedLevel * BUTTON_COUNT + selectedMission);
-            const bool scenarioLoaded = this->LoadMissionScenario();
+			const bool scenarioLoaded = this->LoadMissionScenario();
             MissionModel::SetScenarioLoaded(scenarioLoaded);
+			if (scenarioLoaded && hasStageBmgId) {
+				Pulsar::MissionMode::SetMissionIntroSelection(selectedLevel, selectedMission,
+					settings.raceNumber, stageBmgId);
+			}
         }
         ExpSection *section = ExpSection::GetSection();
-        if (section != nullptr) SetMissionInfoSelection(*section, selectedLevel, selectedMission);
+        if (section != nullptr)
+            Pulsar::MissionMode::SetMissionIntroInfoSelection(*section, selectedLevel, selectedMission);
         returnToStageSelect = true;
         this->LoadNextPageById(PAGE_MISSION_INFORMATION_PROMPT, button);
     }
@@ -1047,6 +985,7 @@ bool OnButtonClick(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId)
 
     selectedLevel = 0;
     selectedMission = 0;
+    Pulsar::MissionMode::ResetMissionIntroSelection();
     returnToStageSelect = false;
     MissionModel::SaveMenuCombo();
     MissionModel::Reset();

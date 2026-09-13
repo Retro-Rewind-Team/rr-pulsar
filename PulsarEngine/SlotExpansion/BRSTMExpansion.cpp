@@ -1,13 +1,14 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Audio/AudioManager.hpp>
-#include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionIntro.hpp>
 #include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Sound/MiscSound.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <RetroRewind.hpp>
+#include <core/rvl/dvd/dvd.hpp>
 
 namespace Pulsar {
 namespace Sound {
@@ -67,25 +68,6 @@ static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive *archive
 
     extFilePath = pulPath;
     return true;
-}
-
-static bool ResolveMissionBossIntroPath(const nw4r::snd::DVDSoundArchive *archive, const char *&extFilePath, u32 &length) {
-	if (archive == nullptr || Racedata::sInstance == nullptr ||
-		!Pulsar::MissionMode::IsMissionScenario(Racedata::sInstance->menusScenario) ||
-		!Pulsar::MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, Pulsar::MissionMode::BOSS_MISSION) ||
-		!StringEndsWith(extFilePath, "/o_Crs_In_Fan_battle.brstm"))
-		return false;
-
-	snprintf(pulPath, sizeof(pulPath), "%sstrm/o_Crs_In_Fan_mission.brstm", archive->extFileRoot);
-
-	DVD::FileInfo fileInfo;
-	if (!DVD::Open(pulPath, &fileInfo)) return false;
-	const u32 replacementLength = fileInfo.length;
-	DVD::Close(&fileInfo);
-
-	extFilePath = pulPath;
-	length = replacementLength;
-	return true;
 }
 
 s32 CheckBRSTMRoot(const char *root, PulsarId id, const char *lapSpecifier,
@@ -158,7 +140,7 @@ nw4r::ut::FileStream *MusicSlotsExpand(nw4r::snd::DVDSoundArchive *archive, void
     asm(mr toPlayId, r20;);
 
     ResolveSW2RRFanfareGP1Path(archive, extFilePath);
-	ResolveMissionBossIntroPath(archive, extFilePath, length);
+	Pulsar::MissionMode::ResolveMissionBossIntroPath(archive, extFilePath, length);
 
     if (toPlayId == SOUND_ID_KC) {
         const SectionId section = SectionMgr::sInstance->curSection->sectionId;

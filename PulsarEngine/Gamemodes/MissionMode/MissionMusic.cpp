@@ -190,7 +190,8 @@ static bool MusicNamesMatch(const char *configuredName, const char *trackName) {
 }
 
 static bool FindConfiguredMusicTrack(const RacedataScenario &scenario, PulsarId &trackId) {
-	if (!IsMissionScenario(scenario)) return false;
+	if (!associationsLoaded || !IsMissionScenario(scenario) || CupsConfig::sInstance == nullptr)
+		return false;
 
 	const u32 missionId = scenario.settings.raceNumber;
 	if (missionId >= MAX_MISSION_MUSIC_ENTRIES || !hasAssociation[missionId]) return false;
@@ -199,10 +200,11 @@ static bool FindConfiguredMusicTrack(const RacedataScenario &scenario, PulsarId 
 	const u32 trackCount = static_cast<u32>(cupsConfig->GetCtsTrackCount());
 	for (u32 i = 0; i < trackCount; ++i) {
 		const PulsarId candidate = static_cast<PulsarId>(PULSARID_FIRSTCT + i);
-		if (MusicNamesMatch(associationNames[missionId], cupsConfig->GetFileName(candidate, 0))) {
-			trackId = candidate;
-			return true;
-		}
+		if (!cupsConfig->IsValidTrack(candidate) ||
+			!MusicNamesMatch(associationNames[missionId], cupsConfig->GetFileName(candidate, 0)))
+			continue;
+		trackId = candidate;
+		return true;
 	}
 	return false;
 }
@@ -290,10 +292,8 @@ bool ResolveMissionMusicPath(const char *brstmRoot, const char *&extFilePath) {
     return true;
 }
 
-bool GetMissionMusicTrack(PulsarId &trackId) {
-	if (CupsConfig::sInstance == nullptr || Racedata::sInstance == nullptr || !associationsLoaded)
-		return false;
-	return FindConfiguredMusicTrack(Racedata::sInstance->racesScenario, trackId);
+bool GetMissionMusicTrack(const RacedataScenario &scenario, PulsarId &trackId) {
+	return FindConfiguredMusicTrack(scenario, trackId);
 }
 
 u8 GetMissionCharacterTable(const RacedataScenario &scenario, u8 playerId) {

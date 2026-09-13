@@ -19,7 +19,7 @@ enum {
 };
 
 bool ResolveMissionMusicPath(const char *brstmRoot, const char *&extFilePath);
-bool GetMissionMusicTrack(PulsarId &trackId);
+bool GetMissionMusicTrack(const RacedataScenario &scenario, PulsarId &trackId);
 bool GetMissionMusicSlotOverride(CourseId &musicSlot);
 void LoadMissionCharacterTablesFromConfig(const u8 *file, u32 fileSize);
 u8 GetMissionCharacterTable(const RacedataScenario &scenario, u8 playerId);

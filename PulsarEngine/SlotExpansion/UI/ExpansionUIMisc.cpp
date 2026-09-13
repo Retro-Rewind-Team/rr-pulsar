@@ -10,8 +10,6 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpCupSelect.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
-#include <Gamemodes/MissionMode/MissionMode.hpp>
-#include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <core/nw4r/lyt/TextBox.hpp>
 
@@ -276,25 +274,6 @@ bool SetTrackNameAuthorMessage(LayoutUIControl &control, PulsarId trackId, u32 t
     control.SetMessage(BMG_TEXT, &customInfo);
     return true;
 }
-
-static void SetVSIntroBmgId(LayoutUIControl *trackName) {
-	PulsarId winning = CupsConfig::sInstance->GetWinning();
-	if (Racedata::sInstance != nullptr &&
-		Pulsar::MissionMode::IsMissionScenario(Racedata::sInstance->racesScenario)) {
-		PulsarId missionMusicTrack;
-		if (Pulsar::MissionMode::GetMissionMusicTrack(missionMusicTrack))
-			winning = missionMusicTrack;
-	}
-	const u32 bmgId = GetTrackBMGId(winning, false);
-	Text::Info info;
-	info.bmgToPass[0] = bmgId;
-	if (CupsConfig::IsReg(winning)) return;
-    if (SetTrackNameAuthorMessage(*trackName, winning, bmgId)) return;
-
-    info.bmgToPass[1] = GetTrackAuthorBMGId(winning, bmgId);
-    trackName->SetMessage(BMG_INFO_DISPLAY, &info);
-}
-kmCall(0x808552cc, SetVSIntroBmgId);
 
 static u32 GetCupBmgIdForInfo(PulsarCupId id, wchar_t *fallbackName, u32 fallbackNameLen, Text::Info &info) {
     const u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
