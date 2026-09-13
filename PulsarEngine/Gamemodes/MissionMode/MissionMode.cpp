@@ -355,7 +355,13 @@ static void SetMissionStartPosition(Raceinfo *raceinfo, Vec3 *position, Vec3 *an
         return;
     }
 
-    const KMP::Holder<KTPT> *holder = raceinfo->GetKTPTHolder(0);
+    const KMP::Holder<KTPT> *holder = raceinfo->GetKTPTHolder(playerId);
+    if (holder != nullptr && holder->raw->playerId != 0xffff) {
+        const_cast<KMP::Holder<KTPT> *>(holder)->CalcCoordinates(*position, *angles, 1, 1);
+        return;
+    }
+
+    holder = raceinfo->GetKTPTHolder(0);
     if (holder == nullptr) {
         sGetInitialPhysicsValues(raceinfo, position, angles, playerId);
         return;
