@@ -126,6 +126,10 @@ static u32 GetLanguageTrackBase() {
 }
 
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
+	const CupsConfig *cupsConfig = CupsConfig::sInstance;
+	if (cupsConfig == nullptr || (!CupsConfig::IsReg(pulsarId) && !cupsConfig->IsValidTrack(pulsarId)))
+		return BMG_NINTENDO;
+
     u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
     if (CupsConfig::IsReg(pulsarId)) {
         u32 bmgBase = realId > 32 ? BMG_BATTLE : BMG_REGS;
@@ -134,7 +138,7 @@ int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
     u32 languageBase = GetLanguageTrackBase();
 
     if (variantIdx == 8) variantIdx = 0;
-    if (variantIdx == 0 && CupsConfig::sInstance->GetTrack(pulsarId).variantCount == 0)
+    if (variantIdx == 0 && cupsConfig->GetTrack(pulsarId).variantCount == 0)
         return languageBase + realId;
 
     const u32 VARIANT_TRACKS_BASE = 0x400000;
@@ -143,9 +147,12 @@ int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
 }
 
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
+	const CupsConfig *cupsConfig = CupsConfig::sInstance;
+	if (cupsConfig == nullptr || (!CupsConfig::IsReg(pulsarId) && !cupsConfig->IsValidTrack(pulsarId)))
+		return BMG_NINTENDO;
+
     u8 variantIdx = 0;
     if (!CupsConfig::IsReg(pulsarId)) {
-        const CupsConfig *cupsConfig = CupsConfig::sInstance;
         if (cupsConfig->GetTrack(pulsarId).variantCount > 0) {
             if (useCommonName) {
                 u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
@@ -223,13 +230,19 @@ static void SetCupPreviewTrackMessage_R29(LayoutUIControl *control, u32 bmgId, c
 kmCall(0x807e6198, SetCupPreviewTrackMessage_R29);
 
 int GetCurTrackBMG() {
-    return GetTrackBMGId(CupsConfig::sInstance->GetWinning(), false);
+	const CupsConfig *cupsConfig = CupsConfig::sInstance;
+	if (cupsConfig == nullptr) return BMG_NINTENDO;
+
+	const PulsarId trackId = cupsConfig->GetWinning();
+	if (!CupsConfig::IsReg(trackId) && !cupsConfig->IsValidTrack(trackId)) return BMG_NINTENDO;
+	return GetTrackBMGId(trackId, false);
 }
 
 u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
     if (CupsConfig::IsReg(trackId) || trackBmgId < BMG_TRACKS) return BMG_NINTENDO;
 
-    const CupsConfig *cupsConfig = CupsConfig::sInstance;
+	const CupsConfig *cupsConfig = CupsConfig::sInstance;
+	if (cupsConfig == nullptr || !cupsConfig->IsValidTrack(trackId)) return BMG_NINTENDO;
     const u32 VARIANT_TRACKS_BASE = 0x400000;
     const u32 VARIANT_AUTHORS_BASE = 0x500000;
 
@@ -257,7 +270,8 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
 bool SetTrackNameAuthorMessage(LayoutUIControl &control, PulsarId trackId, u32 trackBmgId) {
     if (CupsConfig::IsReg(trackId)) return false;
 
-    const CupsConfig *cupsConfig = CupsConfig::sInstance;
+	const CupsConfig *cupsConfig = CupsConfig::sInstance;
+	if (cupsConfig == nullptr || !cupsConfig->IsValidTrack(trackId)) return false;
     const bool hasVariants = cupsConfig->GetTrack(trackId).variantCount > 0;
     const u32 trackNameBmgId =
         hasVariants ? GetTrackVariantBMGId(trackId, static_cast<u8>(cupsConfig->GetCurVariantIdx())) : GetTrackBMGId(trackId, true);
