@@ -157,8 +157,7 @@ static ItemId GetRandomItemFromRow(u32 rowIndex, const Item::ItemSlotData::Proba
     for (u32 item = 0; item < ITEM_COUNT; ++item) {
         const ItemId id = static_cast<ItemId>(item);
         if (((bitfield >> item) & 1) && row[item] > 0 &&
-            (!excludeRestrictedItems || !IsRestrictedFallbackItem(id)) &&
-            IsItemAvailable(id, slotData)) {
+            (!excludeRestrictedItems || !IsRestrictedFallbackItem(id)) && IsItemAvailable(id, slotData)) {
             candidates[candidateCount] = id;
             weights[candidateCount] = row[item];
             totalProbability += weights[candidateCount];
@@ -166,18 +165,21 @@ static ItemId GetRandomItemFromRow(u32 rowIndex, const Item::ItemSlotData::Proba
         }
     }
 
-    if (totalProbability == 0) return MUSHROOM;
-
-    static u32 randomSeed = 0;
-    if (randomSeed == 0) randomSeed = OS::GetTick();
-    randomSeed = randomSeed * 1103515245 + 12345;
-    u32 roll = (randomSeed >> 16) % totalProbability;
-
-    for (u32 candidate = 0; candidate < candidateCount; ++candidate) {
-        if (roll < weights[candidate]) return candidates[candidate];
-        roll -= weights[candidate];
+    if (totalProbability != 0) {
+        static u32 randomSeed = 0;
+        if (randomSeed == 0) randomSeed = OS::GetTick();
+        randomSeed = randomSeed * 1103515245 + 12345;
+        u32 roll = (randomSeed >> 16) % totalProbability;
+        for (u32 candidate = 0; candidate < candidateCount; ++candidate) {
+            if (roll < weights[candidate]) return candidates[candidate];
+            roll -= weights[candidate];
+        }
     }
 
+    for (u32 item = 0; item < ITEM_COUNT; ++item) {
+        const ItemId id = static_cast<ItemId>(item);
+        if (((bitfield >> item) & 1) && IsItemAvailable(id, slotData)) return id;
+    }
     return MUSHROOM;
 }
 
