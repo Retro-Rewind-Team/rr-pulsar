@@ -29,6 +29,7 @@ private:
     void Load();
     bool IsDisplayActive();
 
+    static u32 lastCourse;
     u64 startTime;
 };
 }  // namespace UI

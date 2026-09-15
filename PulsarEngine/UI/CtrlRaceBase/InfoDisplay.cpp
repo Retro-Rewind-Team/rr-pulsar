@@ -10,6 +10,7 @@ namespace Pulsar {
 namespace UI {
 // So that it is only done once in TTs
 u32 CtrlRaceTrackInfoDisplay::lastCourse = -1;
+u32 CtrlRaceMusicInfoDisplay::lastCourse = -1;
 
 u32 CtrlRaceTrackInfoDisplay::Count() {
     const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
@@ -56,7 +57,14 @@ u32 CtrlRaceMusicInfoDisplay::Count() {
     if (CupsConfig::IsReg(winning)) return 0;
 
     const wchar_t *credit = GetCustomMsg(GetTrackMusicCreditBMGId(winning));
-    return credit != nullptr && credit[0] != L'\0';
+    if (credit == nullptr || credit[0] == L'\0') return 0;
+
+    if (gamemode == MODE_TIME_TRIAL) {
+        if (winning == lastCourse) return 0;
+        lastCourse = winning;
+    }
+
+    return 1;
 }
 
 void CtrlRaceMusicInfoDisplay::Create(Page &page, u32 index, u32) {
