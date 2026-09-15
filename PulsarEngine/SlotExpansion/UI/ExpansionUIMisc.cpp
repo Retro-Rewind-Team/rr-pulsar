@@ -254,6 +254,11 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
     return trackBmgId + BMG_AUTHORS - BMG_TRACKS - languageFix;
 }
 
+u32 GetTrackMusicCreditBMGId(PulsarId trackId) {
+    if (CupsConfig::IsReg(trackId)) return 0;
+    return BMG_MUSIC_CREDITS + CupsConfig::ConvertTrack_PulsarIdToRealId(trackId);
+}
+
 bool SetTrackNameAuthorMessage(LayoutUIControl &control, PulsarId trackId, u32 trackBmgId) {
     if (CupsConfig::IsReg(trackId)) return false;
 

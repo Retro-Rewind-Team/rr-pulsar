@@ -16,6 +16,21 @@ private:
     void Load();
     static u32 lastCourse;
 };
+
+class CtrlRaceMusicInfoDisplay : public CtrlRaceWifiStartMessage {
+public:
+    static u32 Count();
+    static void Create(Page &page, u32 index, u32);
+
+    bool IsInactive() override;
+    bool HasStarted() override;
+
+private:
+    void Load();
+    bool IsDisplayActive();
+
+    u64 startTime;
+};
 }  // namespace UI
 }  // namespace Pulsar
 

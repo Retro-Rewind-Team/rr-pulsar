@@ -12,6 +12,7 @@ namespace UI {
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName);
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx);
 u32 GetTrackAuthorBMGId(PulsarId pulsarId, u32 trackBmgId);
+u32 GetTrackMusicCreditBMGId(PulsarId pulsarId);
 bool SetTrackNameAuthorMessage(LayoutUIControl &control, PulsarId pulsarId, u32 trackBmgId);
 bool IsTrackBlocked(PulsarId id);
 void SetCourseButtonMessage(PushButton &button, u32 bmgId, PulsarId trackId, u32 buttonIdx, bool showVariantMarker = true);
