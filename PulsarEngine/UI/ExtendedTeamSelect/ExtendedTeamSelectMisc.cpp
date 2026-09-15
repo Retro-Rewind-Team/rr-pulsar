@@ -15,6 +15,7 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBalloon.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceRankNum.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <runtimeWrite.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -46,9 +47,10 @@ static bool IsExtendedTeamVSSelected() {
     return settings.gamemode == MODE_VS_RACE && (settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG);
 }
 
+kmRuntimeUse(0x8084ffc8);
 void VSTeamsView_AssignTeams(Pages::Menu *_this) {
     if (!IsExtendedTeamVSSelected()) {
-        reinterpret_cast<void (*)(Pages::Menu *)>(0x8084ffc8)(_this);
+        reinterpret_cast<void (*)(Pages::Menu *)> kmRuntimeAddr(0x8084ffc8)(_this);
     }
 }
 kmCall(0x8083e528, VSTeamsView_AssignTeams);
