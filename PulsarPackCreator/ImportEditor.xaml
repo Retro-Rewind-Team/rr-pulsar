@@ -46,6 +46,7 @@
                 <ColumnDefinition Width="9*"/>
                 <ColumnDefinition Width="9*"/>
                 <ColumnDefinition Width="9*"/>
+                <ColumnDefinition Width="11.5*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="1*"/>
@@ -72,8 +73,11 @@
             <Border BorderThickness="1" BorderBrush="Black" Grid.Row="1" Grid.Column="4">
                 <TextBox x:Name="SlotsImport"        Width="170"  Style="{StaticResource Boxes}"/>
             </Border>
-            <Border BorderThickness="1" BorderBrush="Black" Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="2" >
+            <Border BorderThickness="1" BorderBrush="Black" Grid.Row="1" Grid.Column="5">
                 <TextBox x:Name="MusicSlotsImport"   Width="170" Style="{StaticResource Boxes}"/>
+            </Border>
+            <Border x:Name="MusicCreditsImportBorder" BorderThickness="1" BorderBrush="Black" Grid.Row="1" Grid.Column="6">
+                <TextBox x:Name="MusicCreditsImport" Width="220" Style="{StaticResource Boxes}"/>
             </Border>
             <TextBlock x:Name="FilesImportLabel"        Grid.Row="0" Grid.Column="0" Margin="56,8,55,0" Text="Track Names"         Style="{StaticResource Blocks}"/>
             <TextBlock x:Name="NamesImportLabel"        Grid.Row="0" Grid.Column="1" Margin="56,8,55,0" Text="Track Names"         Style="{StaticResource Blocks}"/>
@@ -81,6 +85,7 @@
             <TextBlock x:Name="VersionsImportLabel"     Grid.Row="0" Grid.Column="3" Margin="18,8,18,0" Text="Versions (optional)" Style="{StaticResource Blocks}"/>
             <TextBlock x:Name="SlotsImportLabel"        Grid.Row="0" Grid.Column="4" Margin="18,8,18,0" Text="Slots"               Style="{StaticResource Blocks}"/>
             <TextBlock x:Name="MusicSlotsImportLabel"   Grid.Row="0" Grid.Column="5" Margin="18,8,18,0" Text="Music Slots"         Style="{StaticResource Blocks}"/>
+            <TextBlock x:Name="MusicCreditsImportLabel" Grid.Row="0" Grid.Column="6" Margin="18,8,18,0" Text="Music Credits (optional)" Style="{StaticResource Blocks}"/>
             <TextBlock x:Name="CommonNameLabel"         Grid.Row="4" Grid.Column="1" Margin="0,12,-110,0" Text="Common Name" FontSize="14"       Style="{StaticResource Blocks}"/>
             <TextBox   x:Name="CommonName"              Grid.Row="2" Grid.Column="2" Margin="6,8,6,8" Text="Common Name"         Width="210" Height="30"  Style="{StaticResource Boxes}"/>
         </Grid>

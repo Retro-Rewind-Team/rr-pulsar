@@ -37,7 +37,8 @@ namespace Pulsar_Pack_Creator.IO
     {
         BMG_CUPS = 0x10000,
         BMG_TRACKS = 0x20000,
-        BMG_AUTHORS = 0x30000
+        BMG_AUTHORS = 0x30000,
+        BMG_MUSIC_CREDITS = 0x70000
     };
     abstract class IOBase
     {

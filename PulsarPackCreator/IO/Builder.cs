@@ -327,8 +327,11 @@ namespace Pulsar_Pack_Creator.IO {
             Result ret;
             // Write the common name to the base BMG_TRACKS block
             string commonName = string.IsNullOrEmpty(track.commonName) ? track.main.trackName : track.commonName;
-            if (!isFake)
+            if (!isFake) {
                 WriteBMG((uint)BMGIds.BMG_TRACKS + idx, commonName);
+                if (!string.IsNullOrWhiteSpace(track.musicCredit))
+                    WriteBMG((uint)BMGIds.BMG_MUSIC_CREDITS + idx, track.musicCredit);
+            }
 
             // If the track has variants, the main track variant should be written into the first variant block (1).
             ret = WriteVariant(track.main, idx, 0, expertFileNames, isFake, track.variants.Count > 0);

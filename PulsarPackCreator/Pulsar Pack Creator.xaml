@@ -126,6 +126,7 @@
                 <Button.ContextMenu>
                     <ContextMenu Name="MassImportCM" StaysOpen="true">
                         <MenuItem Header="Mass Import Tracks" Click="OnMassImportTracksClick"/>
+                        <MenuItem Header="Mass Import Music Credits" Click="OnMassImportMusicCreditsClick"/>
                         <MenuItem Header="Mass Import Cup Names &amp; Icons" Click="OnMassImportCupNamesClick"/>
                     </ContextMenu>
                 </Button.ContextMenu>
@@ -242,6 +243,36 @@
                         <TextBlock x:Name="Music3Label" Grid.Row="3" Grid.Column="6" Text="Music3" Style="{StaticResource SlotBoxes}"/>
                         <TextBlock x:Name="Music4Label" Grid.Row="4" Grid.Column="6" Text="Music4" Style="{StaticResource SlotBoxes}"/>
 
+                    </Grid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Name="MusicCredits" Header="Music Credits">
+                <DockPanel>
+                    <Button DockPanel.Dock="Left" Content="&lt;" FontWeight="Bold" FontSize="18" Click="OnLeftArrowClick" />
+                    <Button DockPanel.Dock="Right" Content="&gt;" FontWeight="Bold" FontSize="18" Click="OnRightArrowClick" />
+                    <Grid Margin="40,30">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="1*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Optional text shown under the track author when the race starts." Style="{StaticResource Blocks}" Margin="0,0,0,15"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Track 1" Style="{StaticResource TrackLabels}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Track 2" Style="{StaticResource TrackLabels}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Track 3" Style="{StaticResource TrackLabels}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Track 4" Style="{StaticResource TrackLabels}"/>
+
+                        <TextBox x:Name="MusicCredit1" Grid.Row="1" Grid.Column="1" TextChanged="OnMusicCreditChange" Style="{StaticResource Boxes}" Width="500"/>
+                        <TextBox x:Name="MusicCredit2" Grid.Row="2" Grid.Column="1" TextChanged="OnMusicCreditChange" Style="{StaticResource Boxes}" Width="500"/>
+                        <TextBox x:Name="MusicCredit3" Grid.Row="3" Grid.Column="1" TextChanged="OnMusicCreditChange" Style="{StaticResource Boxes}" Width="500"/>
+                        <TextBox x:Name="MusicCredit4" Grid.Row="4" Grid.Column="1" TextChanged="OnMusicCreditChange" Style="{StaticResource Boxes}" Width="500"/>
                     </Grid>
                 </DockPanel>
             </TabItem>

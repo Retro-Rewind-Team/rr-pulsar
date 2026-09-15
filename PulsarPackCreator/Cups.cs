@@ -165,6 +165,7 @@ namespace Pulsar_Pack_Creator
 
                 }
                 public string commonName = null;
+                public string musicCredit = "";
                 public Variant main;
                 public List<Variant> variants;
                 public string[] expertFileNames;
@@ -434,6 +435,13 @@ namespace Pulsar_Pack_Creator
             cups[curCup].tracks[idx - firstTrackRow].main.authorName = box.Text;
         }
 
+        private void OnMusicCreditChange(object sender, TextChangedEventArgs e)
+        {
+            TextBox box = sender as TextBox;
+            int idx = Grid.GetRow(box);
+            cups[curCup].tracks[idx - firstTrackRow].musicCredit = box.Text;
+        }
+
         private void OnVersionChange(object sender, TextChangedEventArgs e)
         {
             TextBox box = sender as TextBox;
@@ -473,6 +481,7 @@ namespace Pulsar_Pack_Creator
             string name = !string.IsNullOrEmpty(track.commonName) ? track.commonName : mainTrack.trackName;
             GetNameBox(row).Text = name;
             GetAuthorBox(row).Text = mainTrack.authorName;
+            GetMusicCreditBox(row).Text = track.musicCredit;
             GetVersionBox(row).Text = mainTrack.versionName;
             GetSlotBox(row).SelectedValue = PulsarGame.MarioKartWii.idxToAbbrev[Array.IndexOf(PulsarGame.MarioKartWii.idxToCourseId, mainTrack.slot)];
             GetMusicSlotBox(row).SelectedValue = PulsarGame.MarioKartWii.musicIdxToAbbrev[Array.IndexOf(PulsarGame.MarioKartWii.musicIdxToCourseId, mainTrack.musicSlot)];

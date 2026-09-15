@@ -31,6 +31,7 @@ namespace Pulsar_Pack_Creator
         public string versionsImportString;
         public string slotsImportString;
         public string musicSlotsImportString;
+        public string musicCreditsImportString;
 
         //Variant data
         private static readonly string defaultFileName = "AnimalCrossing1.szs";
@@ -51,6 +52,13 @@ namespace Pulsar_Pack_Creator
             versionsImportString = data[3];
             slotsImportString = data[4];
             musicSlotsImportString = data[5];
+            musicCreditsImportString = data[6];
+        }
+
+        public void FocusMusicCredits()
+        {
+            MusicCreditsImport.Focus();
+            MusicCreditsImport.SelectAll();
         }
         private void FillVariant(Cup.Track.Variant variant)
         {
@@ -65,6 +73,9 @@ namespace Pulsar_Pack_Creator
         public void Init(int idx = 0xff)
         {
             this.type = idx == 0xff ? Type.MASSIMPORT : Type.VARIANT;
+            Width = type == Type.MASSIMPORT ? 1450 : 1250;
+            MusicCreditsImportBorder.Visibility = type == Type.MASSIMPORT ? Visibility.Visible : Visibility.Collapsed;
+            MusicCreditsImportLabel.Visibility = type == Type.MASSIMPORT ? Visibility.Visible : Visibility.Collapsed;
             if (type == Type.MASSIMPORT)
             {
                 CommonName.Visibility = Visibility.Hidden;
@@ -75,6 +86,7 @@ namespace Pulsar_Pack_Creator
                 VersionsImport.Text = versionsImportString;
                 SlotsImport.Text = slotsImportString;
                 MusicSlotsImport.Text = musicSlotsImportString;
+                MusicCreditsImport.Text = musicCreditsImportString;
             }
             else
             {
@@ -168,6 +180,21 @@ namespace Pulsar_Pack_Creator
             string[] versionsImport = VersionsImport.Text.Replace("\r", "").Trim('\n').Split("\n").ToArray();
             string[] slotsImport = SlotsImport.Text.Replace("\r", "").Trim('\n').ToUpperInvariant().Split("\n").ToArray();
             string[] musicSlotsImport = MusicSlotsImport.Text.Replace("\r", "").Trim('\n').ToUpperInvariant().Split("\n").ToArray();
+            string[] musicCreditsImport = new string[0];
+
+            if (type == Type.MASSIMPORT)
+            {
+                musicCreditsImport = MusicCreditsImport.Text.Replace("\r", "").Split('\n');
+                if (musicCreditsImport.Length > 0 && musicCreditsImport[musicCreditsImport.Length - 1] == "")
+                    Array.Resize(ref musicCreditsImport, musicCreditsImport.Length - 1);
+
+                if (musicCreditsImport.Length > namesImport.Length)
+                {
+                    MsgWindow.Show($"Music Credits has {musicCreditsImport.Length - namesImport.Length} line(s) too many.", this);
+                    return;
+                }
+                Array.Resize(ref musicCreditsImport, namesImport.Length);
+            }
 
             List<string[]> importStringArrays = new List<string[]> { namesImport, authorsImport, slotsImport, musicSlotsImport };
 
@@ -333,7 +360,9 @@ namespace Pulsar_Pack_Creator
                 if (type == Type.MASSIMPORT)
                 {
                     // Also set commonName (BMG_TRACKS) for the track
-                    parent.cups[cupIdx].tracks[row].commonName = importStringArrays[0][line];
+                    Cup.Track track = parent.cups[cupIdx].tracks[row];
+                    track.commonName = importStringArrays[0][line];
+                    track.musicCredit = musicCreditsImport[line] ?? "";
                     if (cupIdx == parent.curCup)
                     {
                         parent.UpdateCurCup(0);

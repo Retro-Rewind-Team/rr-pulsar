@@ -315,6 +315,11 @@ namespace Pulsar_Pack_Creator.IO
                                         trackIndex = rest; // Full 16 bits is the track index
                                         variantIdxParsed = 0; // main track author
                                     }
+                                    else if (typeGroup == 7)
+                                    {
+                                        type = (uint)BMGIds.BMG_MUSIC_CREDITS;
+                                        trackIndex = rest;
+                                    }
                                     else
                                     {
                                         // For other ranges (0x4XXXX, etc. that didn't match variant blocks),
@@ -392,6 +397,9 @@ namespace Pulsar_Pack_Creator.IO
                                                     else variant.trackName = content.Trim();
                                                 }
                                             }
+                                            break;
+                                        case (uint)BMGIds.BMG_MUSIC_CREDITS:
+                                            track.musicCredit = content;
                                             break;
                                     }
                                 }
@@ -572,6 +580,7 @@ namespace Pulsar_Pack_Creator.IO
                     uint trackIdx = cupIdx * 4 + trackInCup;
                     packCreatorBMGIds.Add((uint)BMGIds.BMG_TRACKS + trackIdx);
                     packCreatorBMGIds.Add((uint)BMGIds.BMG_AUTHORS + trackIdx);
+                    packCreatorBMGIds.Add((uint)BMGIds.BMG_MUSIC_CREDITS + trackIdx);
 
                     MainWindow.Cup.Track track = cups[(int)cupIdx].tracks[(int)trackInCup];
                     uint idxShifted = trackIdx << 4;

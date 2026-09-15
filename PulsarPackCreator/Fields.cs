@@ -76,10 +76,10 @@ namespace Pulsar_Pack_Creator
             messageWindow = new MsgWindow();
 
             rows = new UIElement[4][]{
-                new UIElement[]{ File1, Name1, Author1, Version1, Slot1, Music1, Variants1},
-                new UIElement[]{ File2, Name2, Author2, Version2, Slot2, Music2, Variants2},
-                new UIElement[]{ File3, Name3, Author3, Version3, Slot3, Music3, Variants3},
-                new UIElement[]{ File4, Name4, Author4, Version4, Slot4, Music4, Variants4}};
+                new UIElement[]{ File1, Name1, Author1, Version1, Slot1, Music1, Variants1, MusicCredit1},
+                new UIElement[]{ File2, Name2, Author2, Version2, Slot2, Music2, Variants2, MusicCredit2},
+                new UIElement[]{ File3, Name3, Author3, Version3, Slot3, Music3, Variants3, MusicCredit3},
+                new UIElement[]{ File4, Name4, Author4, Version4, Slot4, Music4, Variants4, MusicCredit4}};
 
             string version = (Assembly.GetExecutingAssembly().GetCustomAttribute(typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute).InformationalVersion.ToString();
             Title = "Pulsar Pack Creator " + version;
@@ -219,6 +219,10 @@ namespace Pulsar_Pack_Creator
         public Button GetVariantsButton(int row)
         {
             return (Button)rows[row][6];
+        }
+        public TextBox GetMusicCreditBox(int row)
+        {
+            return (TextBox)rows[row][7];
         }
     }
 }

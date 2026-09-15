@@ -39,6 +39,14 @@ namespace Pulsar_Pack_Creator
             importWindow.Show();
         }
 
+        private void OnMassImportMusicCreditsClick(object sender, RoutedEventArgs e)
+        {
+            UpdateMassImport();
+            importWindow.Init();
+            importWindow.Show();
+            importWindow.FocusMusicCredits();
+        }
+
         private void OnMassImportCupNamesClick(object sender, RoutedEventArgs e)
         {
             cupsImportWindow.Show();
@@ -462,7 +470,7 @@ namespace Pulsar_Pack_Creator
 
         private void UpdateMassImport()
         {
-            string[] massImportText = new string[6];
+            string[] massImportText = new string[7];
             string[] massImportCupsNamesText = new string[2];
 
             bool isDone = false;
@@ -489,6 +497,7 @@ namespace Pulsar_Pack_Creator
                         massImportText[3] += cur.versionName + "\n";
                         massImportText[4] += PulsarGame.MarioKartWii.idxToFullNames[Array.IndexOf(PulsarGame.MarioKartWii.idxToCourseId, cur.slot)] + "\n";
                         massImportText[5] += PulsarGame.MarioKartWii.musicIdxToFullNames[Array.IndexOf(PulsarGame.MarioKartWii.musicIdxToCourseId, cur.musicSlot)] + "\n";
+                        massImportText[6] += track.musicCredit + "\n";
                     }
                     massImportCupsNamesText[0] += cup.name + "\n";
                     massImportCupsNamesText[1] += cup.iconName + "\n";
