@@ -16,8 +16,10 @@ inline bool Is200cc() {
     const Racedata &racedata = *Racedata::sInstance;
     const RKNet::Controller &controller = *RKNet::Controller::sInstance;
     const RacedataSettings &raceSettings = racedata.racesScenario.settings;
+    const GameMode gameMode = racedata.menusScenario.settings.gamemode;
     const bool isOffline500cc = controller.roomType == RKNet::ROOMTYPE_NONE && raceSettings.engineClass == CC_50;
     const bool isOfflineMirror = controller.roomType == RKNet::ROOMTYPE_NONE && (racedata.menusScenario.settings.modeFlags & 1);
+    if (gameMode == MODE_BATTLE || gameMode == MODE_PRIVATE_BATTLE || gameMode == MODE_PUBLIC_BATTLE) return false;
     return isOffline500cc || (raceSettings.engineClass == CC_100 && controller.roomType != RKNet::ROOMTYPE_VS_WW && !isOfflineMirror);
 }
 
