@@ -478,6 +478,8 @@ namespace Pulsar_Pack_Creator.IO {
 
                 WriteBMG(bmgId, trackName);
                 WriteBMG(authorId, variant.authorName);
+                if (!isFake && !string.IsNullOrWhiteSpace(variant.musicCredit))
+                    WriteBMG((uint)BMGIds.BMG_VARIANT_MUSIC_CREDITS + idxShifted + variantIdx, variant.musicCredit);
             }
 
             fileSW.WriteLine($"{(variantIdx << 12) + idx:X}={variant.fileName}|" +

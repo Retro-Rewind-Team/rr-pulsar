@@ -153,6 +153,7 @@ namespace Pulsar_Pack_Creator
                     public string trackName;
                     public string authorName;
                     public string versionName;
+                    public string musicCredit = "";
                     public byte slot;
                     public byte musicSlot;
                     public string[] expertFileNames;

@@ -262,12 +262,13 @@ namespace Pulsar_Pack_Creator.IO
                         }
 
                         if (bmgId == 0x2847) date = curLine.Split(' ')[curLine.Split(' ').Length - 1];
-                        else if (bmgId >= 0x10000 && bmgId < 0x600000)
+                        else if (bmgId >= 0x10000 && bmgId < 0x720000)
                         {
                             if (ret)
                             {
                                 const uint VARIANT_TRACKS_BASE = 0x420000u;
                                 const uint VARIANT_AUTHORS_BASE = 0x520000u;
+                                const uint VARIANT_MUSIC_CREDITS_BASE = (uint)BMGIds.BMG_VARIANT_MUSIC_CREDITS;
                                 uint type = 0;
                                 uint trackIndex = 0; // The track index (0-based across all cups)
                                 int variantIdxParsed = 0; // 0 == base
@@ -287,6 +288,13 @@ namespace Pulsar_Pack_Creator.IO
                                     trackIndex = (raw >> 4);
                                     variantIdxParsed = (int)(raw & 0xF);
                                     type = (uint)BMGIds.BMG_AUTHORS;
+                                }
+                                else if (bmgId >= VARIANT_MUSIC_CREDITS_BASE && bmgId < VARIANT_MUSIC_CREDITS_BASE + 0x100000u)
+                                {
+                                    uint raw = bmgId - VARIANT_MUSIC_CREDITS_BASE;
+                                    trackIndex = (raw >> 4);
+                                    variantIdxParsed = (int)(raw & 0xF);
+                                    type = (uint)BMGIds.BMG_MUSIC_CREDITS;
                                 }
                                 else
                                 {
@@ -399,7 +407,13 @@ namespace Pulsar_Pack_Creator.IO
                                             }
                                             break;
                                         case (uint)BMGIds.BMG_MUSIC_CREDITS:
-                                            track.musicCredit = content;
+                                            if (bmgId >= VARIANT_MUSIC_CREDITS_BASE)
+                                            {
+                                                int variantIndex = variantIdxParsed - 1;
+                                                if (variantIndex >= 0 && variantIndex < track.variants.Count)
+                                                    track.variants[variantIndex].musicCredit = content;
+                                            }
+                                            else track.musicCredit = content;
                                             break;
                                     }
                                 }
@@ -570,6 +584,7 @@ namespace Pulsar_Pack_Creator.IO
 
             const uint VARIANT_TRACKS_BASE = 0x420000u;
             const uint VARIANT_AUTHORS_BASE = 0x520000u;
+            const uint VARIANT_MUSIC_CREDITS_BASE = (uint)BMGIds.BMG_VARIANT_MUSIC_CREDITS;
 
             for (uint cupIdx = 0; cupIdx < ctsCupCount; cupIdx++)
             {
@@ -591,6 +606,7 @@ namespace Pulsar_Pack_Creator.IO
                     {
                         packCreatorBMGIds.Add(VARIANT_TRACKS_BASE + idxShifted + variantIdx);
                         packCreatorBMGIds.Add(VARIANT_AUTHORS_BASE + idxShifted + variantIdx);
+                        packCreatorBMGIds.Add(VARIANT_MUSIC_CREDITS_BASE + idxShifted + variantIdx);
                     }
                 }
             }
@@ -611,10 +627,14 @@ namespace Pulsar_Pack_Creator.IO
 
             const uint VARIANT_TRACKS_BASE = 0x420000u;
             const uint VARIANT_AUTHORS_BASE = 0x520000u;
+            const uint VARIANT_MUSIC_CREDITS_BASE = (uint)BMGIds.BMG_VARIANT_MUSIC_CREDITS;
             if (bmgId >= VARIANT_TRACKS_BASE && bmgId < VARIANT_TRACKS_BASE + 0x1000u)
                 return true;
 
             if (bmgId >= VARIANT_AUTHORS_BASE && bmgId < VARIANT_AUTHORS_BASE + 0x100000u)
+                return true;
+
+            if (bmgId >= VARIANT_MUSIC_CREDITS_BASE && bmgId < VARIANT_MUSIC_CREDITS_BASE + 0x100000u)
                 return true;
 
             return false;

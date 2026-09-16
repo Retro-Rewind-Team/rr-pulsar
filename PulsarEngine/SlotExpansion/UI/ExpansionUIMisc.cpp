@@ -256,7 +256,19 @@ u32 GetTrackAuthorBMGId(PulsarId trackId, u32 trackBmgId) {
 
 u32 GetTrackMusicCreditBMGId(PulsarId trackId) {
     if (CupsConfig::IsReg(trackId)) return 0;
-    return BMG_MUSIC_CREDITS + CupsConfig::ConvertTrack_PulsarIdToRealId(trackId);
+
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
+    const u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(trackId);
+    u8 curVariant = static_cast<u8>(cupsConfig->GetCurVariantIdx());
+    if (curVariant == 8) curVariant = 0;
+
+    if (cupsConfig->GetTrack(trackId).variantCount > 0 && curVariant > 0) {
+        const u32 variantMusicId = BMG_VARIANT_MUSIC_CREDITS + (realId << 4) + curVariant;
+        const wchar_t *variantCredit = GetCustomMsg(variantMusicId);
+        if (variantCredit != nullptr && variantCredit[0] != L'\0') return variantMusicId;
+    }
+
+    return BMG_MUSIC_CREDITS + realId;
 }
 
 bool SetTrackNameAuthorMessage(LayoutUIControl &control, PulsarId trackId, u32 trackBmgId) {
