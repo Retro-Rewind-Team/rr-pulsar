@@ -373,6 +373,27 @@ static int GetMsgIdxByBmgId(const BMGHolder &bmg, s32 bmgId) {
 
 static const BMGHolder *matchedCustomBmg = nullptr;
 
+static const BMGHolder *GetCountryBmg() {
+    static BMGHolder countryBmg;
+    static const void *loadedFile = nullptr;
+
+    ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
+    if (archiveMgr == nullptr) return nullptr;
+
+    void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/Country.bmg", nullptr);
+    if (file == nullptr) {
+        loadedFile = nullptr;
+        countryBmg.bmgFile = nullptr;
+        return nullptr;
+    }
+
+    if (file != loadedFile) {
+        countryBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
+        loadedFile = file;
+    }
+    return &countryBmg;
+}
+
 static const BMGHolder *GetCharaNameBmg() {
     static BMGHolder charaNameBmg;
     static const void *loadedFile = nullptr;
@@ -412,6 +433,15 @@ static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
         isCustom = CUSTOM_BMG;
         matchedCustomBmg = &System::sInstance->GetBMGBT();
         return ret;
+    }
+    const BMGHolder *countryBmg = GetCountryBmg();
+    if (countryBmg != nullptr) {
+        ret = GetMsgIdxByBmgId(*countryBmg, bmgId);
+        if (ret >= 0) {
+            isCustom = CUSTOM_BMG;
+            matchedCustomBmg = countryBmg;
+            return ret;
+        }
     }
     const BMGHolder *charaNameBmg = GetCharaNameBmg();
     if (charaNameBmg != nullptr) {
