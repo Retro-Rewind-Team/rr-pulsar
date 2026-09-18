@@ -1093,6 +1093,7 @@ SpawnItemInternal__Q24Item9ObjHolderFPQ24Item3Obj = 0x807961f0
 Spawn__Q24Item3ObjF9ItemObjIdUcRC4Vec3b = 0x8079e550
 InitProperties__Q24Item3ObjFUiP4Vec3P4Vec3P4Vec3 = 0x807a6f74
 LoadEntity__Q24Item3ObjFb = 0x8079ee30
+PlayGlobalItemSound = 0x807a2f00
 AddHitFreeEVENTEntry__Q24Item3ObjF9ItemObjIdUiUcUs = 0x8079c3c4
 GetRadius__Q24Item3ObjFUi = 0x8079ec44
 ProcessKartCollision__Q24Item3ObjFPQ24Kart6PlayerUi = 0x807a3790

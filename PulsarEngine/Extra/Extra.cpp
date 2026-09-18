@@ -8,6 +8,7 @@
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/Obj/KouraTogezo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <core/rvl/OS/OS.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
@@ -115,14 +116,17 @@ kmBranch(0x807BB380, CanItemNotBeObtained);
 
 // Blue Shell Cooldown [ZPL]
 extern "C" Item::ItemSlotData *itemSlotData;
-static void EnableBlueShellCooldown(Item::ObjKouraTogezo *blueShell) {
-    const Pulsar::System *system = Pulsar::System::sInstance;
-    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled()) return blueShell->Reset();
+extern "C" void PlayGlobalItemSound(Item::Obj *obj, u32 soundId);
+static void OnBlueShellExplosion(Item::ObjKouraTogezo *blueShell, u32 soundId) {
+    PlayGlobalItemSound(blueShell, soundId);
 
-    blueShell->Reset();
-    if (blueShell->itemObjId == OBJ_BLUE_SHELL && itemSlotData != nullptr) itemSlotData->ResetBlueShellTimer();
+    const Pulsar::System *system = Pulsar::System::sInstance;
+    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled() || itemSlotData == nullptr) return;
+
+    const u32 previousTimer = itemSlotData->itemSpawnTimers[1];
+    itemSlotData->ResetBlueShellTimer();
 }
-kmCall(0x807AC6B8, EnableBlueShellCooldown);
+kmCall(0x807AE2E4, OnBlueShellExplosion);
 kmWrite32(0x807BB9C8, 0x38000384);  // li r0, 900 (15 seconds)
 
 // Remove special itembox table properties [ZPL]
