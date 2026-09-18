@@ -1,4 +1,5 @@
 #include <Settings/Settings.hpp>
+#include <Settings/Region.hpp>
 #include <Network/Ranking.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <PulsarSystem.hpp>
@@ -15,6 +16,15 @@ Mgr *Mgr::sInstance = nullptr;
 static const char trophyFolderName[] = "Trophies";
 static const char trophyFileName[] = "Trophy.pul";
 static const char migratedLegacySuffix[] = ".migrated";
+
+void Mgr::SetDisplayLocation(u8 country, u8 state) {
+    if (rawBin == nullptr || country == 255) return;
+    MiscParams &params = rawBin->GetSection<MiscParams>();
+    params.regionMagic = 'RGN1';
+    params.displayCountry = country;
+    params.displaySubregion = Region::GetSubregion(country, state) == nullptr ? 0 : state;
+    RequestSave();
+}
 
 void Mgr::SaveTask(void *data) {
     if (data == nullptr)
@@ -99,6 +109,14 @@ void Mgr::Init(const u16 *totalTrophyCount, const char *settingsPath, const char
     this->AdjustSections();
 
     MiscParams &params = this->rawBin->GetSection<MiscParams>();
+    if (params.regionMagic != 'RGN1' || params.displayCountry == 255) {
+        params.regionMagic = 'RGN1';
+        params.displayCountry = 0;
+        params.displaySubregion = 0;
+        memset(params.displayCountryPadding, 0, sizeof(params.displayCountryPadding));
+    }
+    if (Region::GetSubregion(params.displayCountry, params.displaySubregion) == nullptr)
+        params.displaySubregion = 0;
     if (params.customItemsBitfield == 0) {
         params.customItemsBitfield = 0x7FFFF;
     }

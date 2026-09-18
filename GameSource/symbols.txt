@@ -2162,8 +2162,15 @@ Update__Q26Lakitu7ManagerFv = 0x8071e6c0
 IsCPU__16KartAIControllerCFv = 0x8072624c
 
 #GlobeMgr
+GetCountry__13SystemManagerCFRUib = 0x8000af78
+GetLatitude__13SystemManagerCFRUsb = 0x8000afec
+GetLongitude__13SystemManagerCFRUsb = 0x8000b0a0
+SetPosition__8GlobeMgrFUiff = 0x80750808
+Update__8GlobeMgrFv = 0x80750344
+SetMii__8GlobeMgrFRC3Mii = 0x807509a0
 DisplayMii__8GlobeMgrFv = 0x807509b4
 ResetGlobeMii__8GlobeMgrFv = 0x807509d0
+IsMiiShown__8GlobeMgrFv = 0x807507fc
 sInstance__8GlobeMgr = 0x809c2cb8
 
 #Entity

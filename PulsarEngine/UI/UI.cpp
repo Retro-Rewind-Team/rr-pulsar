@@ -32,6 +32,7 @@
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <Settings/UI/RegionPage.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
@@ -41,12 +42,18 @@ namespace UI {
 
 // ExpSection
 static ExpSection *CreateSection() {
-    return new ExpSection;
+    ExpSection *section = new ExpSection;
+    // The native Section constructor only clears its own page table.
+    // Unused custom pages must also be null when a minimal section is disposed.
+    memset(section->pulPages, 0, sizeof(section->pulPages));
+    section->hasAutoVote = false;
+    return section;
 }
 kmCall(0x8063504c, CreateSection);
 kmWrite32(0x80635058, 0x60000000);
 
 void ExpSection::CreatePages(ExpSection &self, SectionId id) {
+    if (RegionPage::CreatePages(self)) return;
     const System *system = System::sInstance;
     if (!self.hasAutoVote) self.CreateSectionPages(id);
     self.CreatePulPages();
@@ -240,6 +247,9 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
         case SettingsPageSelect::id:
             page = new SettingsPageSelect;
             break;
+        case RegionPage::id:
+            page = new RegionPage;
+            break;
         case PULPAGE_BADGESELECT:
             page = new SettingsPageSelect(true);
             break;
@@ -363,6 +373,27 @@ static int GetMsgIdxByBmgId(const BMGHolder &bmg, s32 bmgId) {
 
 static const BMGHolder *matchedCustomBmg = nullptr;
 
+static const BMGHolder *GetCountryBmg() {
+    static BMGHolder countryBmg;
+    static const void *loadedFile = nullptr;
+
+    ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
+    if (archiveMgr == nullptr) return nullptr;
+
+    void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/Country.bmg", nullptr);
+    if (file == nullptr) {
+        loadedFile = nullptr;
+        countryBmg.bmgFile = nullptr;
+        return nullptr;
+    }
+
+    if (file != loadedFile) {
+        countryBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
+        loadedFile = file;
+    }
+    return &countryBmg;
+}
+
 static const BMGHolder *GetCharaNameBmg() {
     static BMGHolder charaNameBmg;
     static const void *loadedFile = nullptr;
@@ -402,6 +433,15 @@ static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
         isCustom = CUSTOM_BMG;
         matchedCustomBmg = &System::sInstance->GetBMGBT();
         return ret;
+    }
+    const BMGHolder *countryBmg = GetCountryBmg();
+    if (countryBmg != nullptr) {
+        ret = GetMsgIdxByBmgId(*countryBmg, bmgId);
+        if (ret >= 0) {
+            isCustom = CUSTOM_BMG;
+            matchedCustomBmg = countryBmg;
+            return ret;
+        }
     }
     const BMGHolder *charaNameBmg = GetCharaNameBmg();
     if (charaNameBmg != nullptr) {

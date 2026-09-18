@@ -54,8 +54,8 @@ public:
     void EraseBinary();  // 8054a868
 
     static bool GetCountry(u32 &dest);  // 8054a9b8
-    static bool GetLongitude(u16 &dest);  // 8054a9e0
-    static bool GetLatitude(u16 &dest);  // 8054aa08
+    static bool GetLatitude(u16 &dest);  // 8054a9e0
+    static bool GetLongitude(u16 &dest);  // 8054aa08
 
     EGG::TDisposer<Mgr> disposer;  // 80543d18 vtable 808b3c98
     virtual ~Mgr();  // 8054460c vtable 808b3c80

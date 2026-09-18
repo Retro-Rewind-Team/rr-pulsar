@@ -99,6 +99,17 @@ public:
     u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
     void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }
     u8 GetRankingBadge() const { return this->rawBin->GetSection<MiscParams>().rankingBadge; }
+    u8 GetDisplayCountry() const {
+        if (rawBin == nullptr) return 0;
+        const MiscParams &params = rawBin->GetSection<MiscParams>();
+        return params.regionMagic == 'RGN1' && params.displayCountry < 255 ? params.displayCountry : 0;
+    }
+    u8 GetDisplaySubregion() const {
+        if (rawBin == nullptr) return 0;
+        const MiscParams &params = rawBin->GetSection<MiscParams>();
+        return params.regionMagic == 'RGN1' && GetDisplayCountry() != 0 ? params.displaySubregion : 0;
+    }
+    void SetDisplayLocation(u8 country, u8 state);
     void SetRankingBadge(u8 badge) {
         if (this->rawBin == nullptr || this->rawBin->GetSection<MiscParams>().rankingBadge == badge) return;
         this->rawBin->GetSection<MiscParams>().rankingBadge = badge;
