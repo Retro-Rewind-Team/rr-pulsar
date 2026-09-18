@@ -1,6 +1,7 @@
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <UI/CustomItems/CustomItemPage.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
+#include <Settings/UI/RegionPage.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/UI/Page/Menu/VSSettings.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
@@ -104,17 +105,21 @@ void SettingsPageSelect::OnActivate() {
 
     const Settings::SettingsContextDef &contextDef = Settings::Params::GetContextDef(context);
     const bool showBadge = CanSelectRankingBadge(context);
+    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     for (u32 i = 0; i < settingsButtonCount; ++i) {
         PushButton &button = pageButtons[i];
         const bool isPage = i < contextDef.pageCount;
         const bool isBadge = showBadge && i == contextDef.pageCount;
-        const bool hidden = !isPage && !isBadge;
+        const bool isRegion = context == Settings::SETTINGS_CONTEXT_OFFLINE && i == contextDef.pageCount && sectionId >= SECTION_SINGLE_P_FROM_MENU && sectionId <= SECTION_SINGLE_P_LIST_RACE_GHOST;
+        const bool hidden = !isPage && !isBadge && !isRegion;
         button.isHidden = hidden;
         button.manipulator.inaccessible = hidden;
         if (isPage)
             button.SetMessage(Settings::Params::GetPageDef(contextDef.pages[i]).nameBmg);
         else if (isBadge)
             button.SetMessage(BMR_RANKING_BUTTON);
+        else if (isRegion)
+            button.SetMessage(BMG_REGION_BUTTON);
     }
     if (contextDef.pageCount > 0) pageButtons[0].Select(0);
     bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
@@ -146,6 +151,10 @@ void SettingsPageSelect::OnButtonClick(PushButton &button, u32) {
 
     const Settings::SettingsContextDef &contextDef = Settings::Params::GetContextDef(context);
     if (selected == contextDef.pageCount) {
+        if (context == Settings::SETTINGS_CONTEXT_OFFLINE) {
+            RegionPage::Open(*this, button);
+            return;
+        }
         if (CanSelectRankingBadge(context)) {
             nextPageId = static_cast<PageId>(PULPAGE_BADGESELECT);
             EndStateAnimated(0, button.GetAnimationFrameSize());

@@ -32,6 +32,7 @@
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <Settings/UI/RegionPage.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
@@ -41,12 +42,18 @@ namespace UI {
 
 // ExpSection
 static ExpSection *CreateSection() {
-    return new ExpSection;
+    ExpSection *section = new ExpSection;
+    // The native Section constructor only clears its own page table.
+    // Unused custom pages must also be null when a minimal section is disposed.
+    memset(section->pulPages, 0, sizeof(section->pulPages));
+    section->hasAutoVote = false;
+    return section;
 }
 kmCall(0x8063504c, CreateSection);
 kmWrite32(0x80635058, 0x60000000);
 
 void ExpSection::CreatePages(ExpSection &self, SectionId id) {
+    if (RegionPage::CreatePages(self)) return;
     const System *system = System::sInstance;
     if (!self.hasAutoVote) self.CreateSectionPages(id);
     self.CreatePulPages();
@@ -239,6 +246,9 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
             break;
         case SettingsPageSelect::id:
             page = new SettingsPageSelect;
+            break;
+        case RegionPage::id:
+            page = new RegionPage;
             break;
         case PULPAGE_BADGESELECT:
             page = new SettingsPageSelect(true);

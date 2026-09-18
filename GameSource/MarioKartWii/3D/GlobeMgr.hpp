@@ -65,7 +65,7 @@ public:
     GlobeMgr();  // 8074fe3c
     void Init(u32 earthModelCount);  // 8074ff54
     void Update();  // 80750344
-    void SetPosition(u32 zoomState, float position);  // 80750808 also hides the mii temporarily
+    void SetPosition(u32 zoomState, float latitude, float longitude);  // 80750808 degrees; hides the mii temporarily
     void SetMii(const Mii &mii);  // 807509a0
     void DisplayMii();  // 807509b4
     bool IsMiiShown();  // 807507fc

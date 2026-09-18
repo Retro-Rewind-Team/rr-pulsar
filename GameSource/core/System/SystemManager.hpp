@@ -28,8 +28,8 @@ public:
     static void ProcessRipRequest(void *nullPtr);  // 8000b53c taskthread func
 
     bool GetCountry(u32 &dest, bool hasFlagDisplay) const;  // 8000af78
-    bool GetLongitude(u32 &dest, bool hasFlagDisplay) const;  // 8000afec
-    bool GetLatitude(u32 &dest, bool hasFlagDisplay) const;  // 8000b0a0
+    bool GetLatitude(u16 &dest, bool hasFlagDisplay) const;  // 8000afec, IPL.SADR + 0x1004
+    bool GetLongitude(u16 &dest, bool hasFlagDisplay) const;  // 8000b0a0, IPL.SADR + 0x1006
 
     static u32 GetDisplayModeType();  // 8000b610
     static void StopAllControllerMotors();  // 8000b654
