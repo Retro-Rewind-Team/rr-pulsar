@@ -207,6 +207,7 @@ static RaceFrameHook BattleElimTimerHook(SetTimerToZeroWhenAllPlayersEliminated)
 
 extern "C" u8 sForceBalloonBattle = false;
 extern "C" u8 sBattleFanfareMode = 0;
+extern "C" u8 sUseTimeTrialVictoryFanfare = 0;
 extern "C" u16 sBattleDuration = 180;
 
 asmFunc ForceBalloonBattle() {
@@ -227,6 +228,14 @@ asmFunc LoadBattleFanfare() {
     ASM(
         nofralloc;
         lwzx r3, r3, r0;
+        lis r4, sUseTimeTrialVictoryFanfare @ha;
+        lbz r4, sUseTimeTrialVictoryFanfare @l(r4);
+        cmpwi r4, 0;
+        beq checkBattleElim;
+        // SOUND_ID_GOOD_FINISH_FANFARE is the Time Trial victory music.
+        li r3, 0x69;
+        blr;
+        checkBattleElim :;
         lis r4, sBattleFanfareMode @ha;
         lbz r0, sBattleFanfareMode @l(r4);
         cmpwi r0, 1;
@@ -246,7 +255,10 @@ kmCall(0x807123e8, LoadBattleFanfare);
 
 void BattleElim() {
     System *system = System::sInstance;
-    if (!Racedata::sInstance) return;
+    Racedata *racedata = Racedata::sInstance;
+    if (!racedata) return;
+
+    sUseTimeTrialVictoryFanfare = racedata->racesScenario.settings.gamemode == MODE_GHOST_RACE;
     const bool eliminationActive = ShouldApplyBattleElimination();
     sForceBalloonBattle = eliminationActive;
     sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2
