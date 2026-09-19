@@ -106,6 +106,7 @@ protected:
 
 public:
     static System *sInstance;
+    static u16 offlineCustomEngineClass;
 
     virtual void SetUserInfo(Network::ResvInfo::UserInfo &userInfo) {};
     virtual bool CheckUserInfo(const Network::ResvInfo::UserInfo &userInfo) { return true; };
@@ -114,6 +115,7 @@ public:
     bool IsContext(Context context) const { return (this->context & (1 << context)) != 0; }
     bool IsContext(Context2 context2) const { return (this->context2 & (1 << context2)) != 0; }
     bool IsVanillaMode() const;
+    bool IsOfflineVS() const;
     static s32 OnSceneEnter(Random &random);
 
     const char *GetModFolder() const { return modFolderName; }

@@ -25,6 +25,7 @@
 namespace Pulsar {
 
 System *System::sInstance = nullptr;
+u16 System::offlineCustomEngineClass = 0;
 System::Inherit *System::inherit = nullptr;
 
 static void ApplyVanillaModeRestrictions(System *system, bool clearOttAndItemModes) {
@@ -65,6 +66,12 @@ bool System::IsVanillaMode() const {
 
     const bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
     return isRegionalRoom && (this->netMgr.region == 0x15 || this->netMgr.region == 0x0B);
+}
+
+bool System::IsOfflineVS() const {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    return controller != nullptr && controller->roomType == RKNet::ROOMTYPE_NONE &&
+           Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
 }
 
 static inline bool ShouldForceNandIoSaves() {

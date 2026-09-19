@@ -162,6 +162,12 @@ void ExpSection::CreatePulPages() {
         this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMSELECT);
         this->CreateAndInitPage(*this, CustomEngineClassPage::id);
     }
+    // The section is created before the offline VS gamemode is necessarily written to
+    // menusScenario. Create the keyboard whenever this section owns VSSettings, then
+    // let the VSSettings hooks decide at runtime whether the Custom option is active.
+    if (this->Get<Pages::VSSettings>() != nullptr && this->GetPulPage<CustomEngineClassPage>() == nullptr) {
+        this->CreateAndInitPage(*this, CustomEngineClassPage::id);
+    }
     if (this->Get<Pages::DriftSelect>() != nullptr) {
         this->CreateAndInitPage(*this, TransmissionSelect::id);
     }

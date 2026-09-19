@@ -106,13 +106,16 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isFroom = controller != nullptr &&
                          (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const System *system = System::sInstance;
+    const u16 customEngineClass = system->IsOfflineVS() ? System::offlineCustomEngineClass
+                                                        : (isFroom ? system->netMgr.hostCustomEngineClass : 0);
     speedModConv.kmpValue = (KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->speedMod << 16);
     if (speedModConv.speedMod == 0.0f) speedModConv.speedMod = 1.0f;
     float factor = 1.0f;
     if (gameType == GAMETYPE_ONLINE_SPECTATOR && System::sInstance->netMgr.region != 0x0C) {
         factor = 1.0f;
-    } else if (isFroom && System::sInstance->netMgr.hostCustomEngineClass >= 100) {
-        const u16 cc = System::sInstance->netMgr.hostCustomEngineClass;
+    } else if (customEngineClass >= 100) {
+        const u16 cc = customEngineClass;
         factor = cc <= 150 ? 0.9f + static_cast<float>(cc - 100) * 0.002f
                            : 1.0f + static_cast<float>(cc - 150) * 0.01f;
     } else if (is200 && System::sInstance->IsContext(Pulsar::PULSAR_500)) {

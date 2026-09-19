@@ -65,9 +65,9 @@ static wchar_t s_customEngineClassText[8];
 
 static void FixStartMessageFroom(CtrlRaceWifiStartMessage *startMsg, u32 bmgId, Text::Info *info) {
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
+    const System *system = System::sInstance;
     const SectionId id = sectionMgr->curSection->sectionId;
     if (id == SECTION_P1_WIFI_FRIEND_VS || id == SECTION_P1_WIFI_FRIEND_TEAMVS || id == SECTION_P2_WIFI_FRIEND_VS || id == SECTION_P2_WIFI_FRIEND_TEAMVS) {
-        const System *system = System::sInstance;
         const u32 raceNumber = sectionMgr->sectionParams->onlineParams.currentRaceNumber + 1;
         bmgId = BMG_GP_RACE;
         if (system->IsContext(PULSAR_MODE_KO)) {
@@ -95,7 +95,7 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage *startMsg, u32 bmgId, 
         info->intToPass[0] = raceNumber;
         info->intToPass[1] = system->netMgr.racesPerGP + 1;
     }
-    const u16 customEngineClass = System::sInstance->netMgr.hostCustomEngineClass;
+    const u16 customEngineClass = system->IsOfflineVS() ? System::offlineCustomEngineClass : system->netMgr.hostCustomEngineClass;
     if (customEngineClass >= 100) {
         swprintf(s_customEngineClassText, sizeof(s_customEngineClassText) / sizeof(s_customEngineClassText[0]), L"%ucc", customEngineClass);
         info->bmgToPass[0] = BMG_TEXT;

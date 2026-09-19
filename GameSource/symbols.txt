@@ -913,6 +913,9 @@ sInstance__Q24NAND7Manager = 0x809bd720
 __ct__Q25RKSYS15LicenseLdbEntryFv = 0x80544358
 __dt__Q25RKSYS15LicenseLdbEntryFv = 0x8054437c
 
+#LicenseCompletion
+IsCompleted__Q25RKSYS17LicenseCompletionCFUi = 0x8054994c
+
 #LicenseManager
 GetFavouriteCharacter__Q25RKSYS10LicenseMgrCFv = 0x805493b0
 GetFavouriteKart__Q25RKSYS10LicenseMgrCFv = 0x80549470
@@ -1965,7 +1968,10 @@ OnExternalButtonSelect__Q25Pages12SinglePlayerFR10PushButtonUi = 0x8084f688
 
 #VSSettings
 __ct__Q25Pages10VSSettingsFv = 0x806284c8
+OnActivate__Q25Pages10VSSettingsFv = 0x8085354c
 OnButtonDeselect__Q25Pages10VSSettingsFR10PushButtonUi = 0x808536b0
+OnRadioClick__Q25Pages10VSSettingsFR18RadioButtonControlUiUi = 0x80853714
+OnRadioChange__Q25Pages10VSSettingsFR18RadioButtonControlUiUi = 0x8085389c
 typeInfo__Q25Pages10VSSettings = 0x809c4618
 
 ##RACEHUD
