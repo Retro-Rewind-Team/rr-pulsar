@@ -1,5 +1,6 @@
 #include <kamek.hpp>
 #include <include/c_string.h>
+#include <include/c_wchar.h>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceWifi.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuText.hpp>
 #include <MarioKartWii/UI/Page/Other/Message.hpp>
@@ -60,6 +61,8 @@ static void LaunchRiivolutionButton(SectionMgr *sectionMgr) {
 kmCall(0x80553a60, LaunchRiivolutionButton);
 
 // Top left message when a race is about to start in a froom
+static wchar_t s_customEngineClassText[8];
+
 static void FixStartMessageFroom(CtrlRaceWifiStartMessage *startMsg, u32 bmgId, Text::Info *info) {
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
     const SectionId id = sectionMgr->curSection->sectionId;
@@ -91,6 +94,12 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage *startMsg, u32 bmgId, 
         }
         info->intToPass[0] = raceNumber;
         info->intToPass[1] = system->netMgr.racesPerGP + 1;
+    }
+    const u16 customEngineClass = System::sInstance->netMgr.hostCustomEngineClass;
+    if (customEngineClass >= 100) {
+        swprintf(s_customEngineClassText, sizeof(s_customEngineClassText) / sizeof(s_customEngineClassText[0]), L"%ucc", customEngineClass);
+        info->bmgToPass[0] = BMG_TEXT;
+        info->strings[0] = s_customEngineClassText;
     }
     startMsg->SetMessage(bmgId, info);
 }

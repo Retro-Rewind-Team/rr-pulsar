@@ -12,19 +12,32 @@
 namespace Pulsar {
 namespace Race {
 
+bool Has200ccPhysics() {
+    if (Is200cc()) return true;
+
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    if (controller == nullptr ||
+        (controller->roomType != RKNet::ROOMTYPE_FROOM_HOST && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST))
+        return false;
+
+    const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
+    if (mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE) return false;
+    return System::sInstance->netMgr.hostCustomEngineClass >= 200;
+}
+
 static bool IsBrakeDriftingEnabled() {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
-    return Is200cc() ||
+    return Has200ccPhysics() ||
            (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
             mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
 }
 
 static void CannonExitSpeed() {
-    const float ratio = Is200cc() ? cannonExit : 1.0f;
+    const float ratio = Has200ccPhysics() ? cannonExit : 1.0f;
     register Kart::Movement *kartMovement;
     asm(mr kartMovement, r30;);
     kartMovement->engineSpeed = kartMovement->baseSpeed * ratio;
@@ -135,7 +148,7 @@ static int BrakeEffectKarts(Effects::Player &effects) {
 kmCall(0x8069804c, BrakeEffectKarts);
 
 static void FastFallingBody(Kart::Status &status, Kart::Physics &physics) {  // weird thing 0x96 padding byte used
-    if (Is200cc()) {
+    if (Has200ccPhysics()) {
         if ((status.airtime >= 2) && (!status.bool_0x96 || (status.airtime > 19))) {
             Input::ControllerHolder &controllerHolder = status.link->GetControllerHolder();
             float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
@@ -149,7 +162,7 @@ kmCall(0x805967a4, FastFallingBody);
 kmWrite32(0x8059739c, 0x38A10014);  // addi r5, sp, 0x14 to align with the Vec3 on the stack
 static Kart::WheelPhysicsHolder &FastFallingWheels(Kart::Sub &sub, u8 wheelIdx, Vec3 &gravityVector) {  // weird thing 0x96 status
     float gravity = -1.3f;
-    if (Is200cc()) {
+    if (Has200ccPhysics()) {
         Kart::Status *status = sub.kartStatus;
         if (status->airtime == 0)
             status->bool_0x96 = (status->bitfield0 & 0x80) != 0;

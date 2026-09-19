@@ -98,6 +98,14 @@ public:
     PulsarCupId GetSavedSelectedCup() const { return this->rawBin->GetSection<MiscParams>().lastSelectedCup; }
     u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
     void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }
+    u16 GetCustomEngineClass() const { return this->rawBin->GetSection<MiscParams>().customEngineClass; }
+    void SetCustomEngineClass(u16 value) {
+        if (value < 100 || value > 9999) value = 150;
+        MiscParams &params = this->rawBin->GetSection<MiscParams>();
+        if (params.customEngineClass == value) return;
+        params.customEngineClass = value;
+        this->RequestSave();
+    }
     u8 GetRankingBadge() const { return this->rawBin->GetSection<MiscParams>().rankingBadge; }
     u8 GetDisplayCountry() const {
         if (rawBin == nullptr) return 0;

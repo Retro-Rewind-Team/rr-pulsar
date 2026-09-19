@@ -19,6 +19,9 @@ static void ConvertROOMPacketToData(const PulROOM &packet) {
     system->netMgr.hostContext2 = packet.hostSystemContext2;
     system->netMgr.customItemsBitfield = packet.customItemsBitfield;
     system->netMgr.racesPerGP = packet.raceCount;
+    system->netMgr.hostCustomEngineClass = packet.customEngineClass >= 100 && packet.customEngineClass <= 9999
+                                               ? packet.customEngineClass
+                                               : 0;
     memcpy(system->netMgr.hostSettingsPreview, packet.hostSettingsPreview, sizeof(system->netMgr.hostSettingsPreview));
     system->netMgr.hasHostSettingsPreview = true;
 }
@@ -141,6 +144,9 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         }
 
         const Settings::Mgr &settings = Settings::Mgr::Get();
+        const u8 ccSetting = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC);
+        destPacket->customEngineClass = ccSetting == HOSTCC_CUSTOM ? system->netMgr.customEngineClass : 0;
+        system->netMgr.hostCustomEngineClass = destPacket->customEngineClass;
         WriteHostSettingsPreviewToPacket(destPacket, settings);
         const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;

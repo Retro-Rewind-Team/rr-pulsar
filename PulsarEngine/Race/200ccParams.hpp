@@ -23,6 +23,8 @@ inline bool Is200cc() {
     return isOffline500cc || (raceSettings.engineClass == CC_100 && controller.roomType != RKNet::ROOMTYPE_VS_WW && !isOfflineMirror);
 }
 
+bool Has200ccPhysics();
+
 }  // namespace Race
 }  // namespace Pulsar
 

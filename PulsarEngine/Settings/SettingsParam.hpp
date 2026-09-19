@@ -334,7 +334,8 @@ enum HostSettingHostCC {
     HOSTCC_NORMAL,
     HOSTCC_150,
     HOSTCC_100,
-    HOSTCC_500
+    HOSTCC_500,
+    HOSTCC_CUSTOM
 };
 
 enum KartRestriction {

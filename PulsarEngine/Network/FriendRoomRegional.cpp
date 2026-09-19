@@ -90,6 +90,7 @@ static bool ConvertFriendRoomStateToRegional() {
     netMgr.racesPerGP = 3;
     netMgr.curBlockingArrayIdx = 0;
     netMgr.region = REGIONID;
+    netMgr.hostCustomEngineClass = 0;
     netMgr.hasHostSettingsPreview = false;
 
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();

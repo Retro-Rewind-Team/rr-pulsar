@@ -33,7 +33,7 @@ static bool IsBrakeDriftingEnabled() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
-    return Race::Is200cc() ||
+    return Race::Has200ccPhysics() ||
            (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
             mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
 }

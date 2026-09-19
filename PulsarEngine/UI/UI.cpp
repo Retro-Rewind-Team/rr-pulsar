@@ -32,6 +32,7 @@
 #include <Gamemodes/KO/KOWinnerPage.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
+#include <Settings/UI/CustomEngineClassPage.hpp>
 #include <Settings/UI/RegionPage.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
@@ -159,6 +160,7 @@ void ExpSection::CreatePulPages() {
         this->CreateAndInitPage(*this, RoomKickPage::id);
         this->CreateAndInitPage(*this, PULPAGE_TEAMSELECT);
         this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMSELECT);
+        this->CreateAndInitPage(*this, CustomEngineClassPage::id);
     }
     if (this->Get<Pages::DriftSelect>() != nullptr) {
         this->CreateAndInitPage(*this, TransmissionSelect::id);
@@ -246,6 +248,9 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
             break;
         case SettingsPageSelect::id:
             page = new SettingsPageSelect;
+            break;
+        case CustomEngineClassPage::id:
+            page = new CustomEngineClassPage;
             break;
         case RegionPage::id:
             page = new RegionPage;

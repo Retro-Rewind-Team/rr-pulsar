@@ -170,6 +170,7 @@ void SettingsPageSelect::OnButtonClick(PushButton &button, u32) {
         SettingsPanel *panel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
         if (panel == nullptr) return;
         panel->SetPage(selectedPage);
+        panel->prevPageId = static_cast<PageId>(SettingsPageSelect::id);
         nextPageId = static_cast<PageId>(SettingsPanel::id);
     }
     EndStateAnimated(0, button.GetAnimationFrameSize());

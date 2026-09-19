@@ -28,6 +28,7 @@ public:
 
     void OnInit() override;
     void OnActivate() override;
+    void OnResume() override;
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;
     void OnExternalButtonSelect(PushButton &button, u32 r5) override;
     int GetActivePlayerBitfield() const override;
@@ -44,6 +45,7 @@ public:
 
 private:
     void LoadCurrentValues();
+    void SetControlsHidden(bool hidden);
     void SaveSettings(bool writeFile);
     bool HasModifiedMiscSettings() const;
     void LoadMainMenuAndSaveSettings(PushButton &button);

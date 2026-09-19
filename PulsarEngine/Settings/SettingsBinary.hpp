@@ -39,7 +39,9 @@ struct MiscParams {
     u8 displayCountry;  // 0 = Wii location, 1..254 = AnyGlobeChanger country ID
     u8 displaySubregion;  // 0 = country default, otherwise AnyGlobeChanger state ID
     u8 displayCountryPadding[2];
-    u32 reserved[16];
+    u16 customEngineClass;
+    u16 customEngineClassPadding;
+    u32 reserved[15];
     u8 rankingBadge;  // 0x58, 0 is the normal ranking badge
     u8 rankingBadgePadding[3];
     PulsarCupId lastSelectedCup;  // 0x5c

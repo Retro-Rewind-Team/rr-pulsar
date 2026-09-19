@@ -120,6 +120,10 @@ void Mgr::Init(const u16 *totalTrophyCount, const char *settingsPath, const char
     if (params.customItemsBitfield == 0) {
         params.customItemsBitfield = 0x7FFFF;
     }
+    if (params.customEngineClass < 100 || params.customEngineClass > 9999) {
+        params.customEngineClass = 150;
+    }
+    system->netMgr.customEngineClass = params.customEngineClass;
     if (params.rankingBadge != Ranking::NORMAL_RANKING_BADGE &&
         (params.rankingBadge < Ranking::SPECIAL_BADGE_FIRST || params.rankingBadge > Ranking::SPECIAL_BADGE_LAST)) {
         params.rankingBadge = Ranking::NORMAL_RANKING_BADGE;
@@ -127,7 +131,8 @@ void Mgr::Init(const u16 *totalTrophyCount, const char *settingsPath, const char
 
     SettingsHolder &values = this->rawBin->GetSection<SettingsHolder>();
     for (u32 i = 0; i < SETTING_COUNT; ++i) {
-        if (values.values[i] >= Params::settingDefs[i].optionCount) {
+        const bool isCustomEngineClass = Params::settingDefs[i].id == SETTING_FROOMCC && values.values[i] == HOSTCC_CUSTOM;
+        if (values.values[i] >= Params::settingDefs[i].optionCount && !isCustomEngineClass) {
             values.values[i] = 0;
         }
     }
@@ -459,7 +464,7 @@ u8 Mgr::GetSettingValue(SettingId id) const {
 void Mgr::SetSettingValue(SettingId id, u8 value) {
     if (!Params::IsValidSettingId(id)) return;
     const SettingDef &def = Params::GetSettingDef(id);
-    if (value >= def.optionCount) value = 0;
+    if (value >= def.optionCount && !(id == SETTING_FROOMCC && value == HOSTCC_CUSTOM)) value = 0;
     u8 &currentValue = this->rawBin->GetSection<SettingsHolder>().values[Params::GetSettingIndex(id)];
     if (id == SETTING_LOOSEARCHIVEOVERRIDES && currentValue != value) {
         CustomCharacters::ResetAllCharacterTablesToDefault();
