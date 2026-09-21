@@ -32,6 +32,27 @@ static bool IsRacePlayerFinished(const Raceinfo &raceinfo, u8 playerId) {
     return player != nullptr && (player->stateFlags & 0x2) != 0;
 }
 
+void EndRaceWithEliminationFinishTime(u8 playerId, u8 placement) {
+    Raceinfo *raceinfo = Raceinfo::sInstance;
+    if (raceinfo == nullptr || playerId >= 12 || placement < 2 || placement > 12) return;
+
+    RaceinfoPlayer *player = raceinfo->players[playerId];
+    if (player == nullptr || player->raceFinishTime == nullptr || IsRacePlayerFinished(*raceinfo, playerId)) return;
+
+    Timer finishTime(false);
+    finishTime.minutes = 99;
+    finishTime.seconds = 99;
+    finishTime.milliseconds = static_cast<u16>(900 + placement);
+    finishTime.SetActive(true);
+
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    if (controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE) {
+        *player->raceFinishTime = finishTime;
+        player->stateFlags |= 0x2;
+        return;
+    }
+}
+
 static bool AreAllOfflineLocalPlayersResolved(const Mgr &mgr, const Racedata &racedata, const Raceinfo &raceinfo) {
     const RacedataScenario &scenario = racedata.racesScenario;
     const u8 playerCount = (scenario.playerCount < 12) ? scenario.playerCount : 12;
@@ -303,6 +324,8 @@ void Mgr::ProcessElimination(u8 playerId, EliminationCause cause, bool fromNetwo
     const u8 concludedRound = this->roundIndex;
     const u8 usualLapCount = this->GetUsualTrackLapCount();
     const bool supportsDisconnectAdjustments = (usualLapCount > 1);
+
+    EndRaceWithEliminationFinishTime(playerId, this->activeCount);
 
     this->active[playerId] = false;
 

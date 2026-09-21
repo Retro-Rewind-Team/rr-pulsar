@@ -860,27 +860,6 @@ static void InitForRace(LapKO::Mgr &lapKoMgr, RaceBalloonManager *balloonMgr) {
     sInitialized = true;
 }
 
-static void EndRaceWithEliminationFinishTime(u8 playerId, u8 placement) {
-    Raceinfo *raceinfo = Raceinfo::sInstance;
-    if (raceinfo == nullptr || playerId >= maxPlayers || placement < 2 || placement > maxPlayers) return;
-
-    RaceinfoPlayer *player = raceinfo->players[playerId];
-    if (player == nullptr || player->raceFinishTime == nullptr || IsPlayerFinished(*raceinfo, playerId)) return;
-
-    Timer finishTime(false);
-    finishTime.minutes = 99;
-    finishTime.seconds = 99;
-    finishTime.milliseconds = static_cast<u16>(900 + placement);
-    finishTime.SetActive(true);
-    if (IsOnline()) {
-        *player->raceFinishTime = finishTime;
-        player->stateFlags |= 0x2;
-        return;
-    }
-
-    player->EndRace(finishTime, false, 0);
-}
-
 static void EndRaceForElimination(u8 playerId) {
     if (playerId >= maxPlayers || sEliminationCount >= maxPlayers) return;
     ++sEliminationCount;
@@ -890,7 +869,7 @@ static void EndRaceForElimination(u8 playerId) {
     if (playerCount > maxPlayers) playerCount = maxPlayers;
 
     const u8 placement = static_cast<u8>(playerCount - sEliminationCount + 1);
-    EndRaceWithEliminationFinishTime(playerId, placement);
+    LapKO::EndRaceWithEliminationFinishTime(playerId, placement);
 }
 
 static void TickLapKoPieces(LapKO::Mgr &lapKoMgr, Raceinfo &raceinfo) {

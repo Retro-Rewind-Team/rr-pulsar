@@ -10,6 +10,8 @@
 namespace Pulsar {
 namespace LapKO {
 
+void EndRaceWithEliminationFinishTime(u8 playerId, u8 placement);
+
 class Mgr {
 public:
     enum { MaxRounds = 12 };
