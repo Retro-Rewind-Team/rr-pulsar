@@ -426,6 +426,14 @@ static const BMGHolder *GetCommonBmg() {
     ArchivesHolder *uiHolder = archiveMgr->archivesHolders[ARCHIVE_HOLDER_UI];
     if (uiHolder == nullptr) return nullptr;
 
+    //  If custom assets archive is already mounted and unchanged, return cached BMGHolder
+    if (uiHolder->archiveCount > 3) {
+        const ArchiveFile &assetsFile = uiHolder->archives[3];
+        if (assetsFile.archive != nullptr && assetsFile.archive == loadedArchive && loadedFile != nullptr) {
+            return &commonBmg;
+        }
+    }
+
     const void *currentArchive = nullptr;
     void *file = nullptr;
 

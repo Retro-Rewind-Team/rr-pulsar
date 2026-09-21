@@ -304,7 +304,7 @@ static void SetCharacterSmallImage(CharacterId character, u8 table = Pulsar::Cus
 
     const char *finalKey = defaultKey;
     const char *finalName = defaultName;
-    char customNameUtf8[32];
+    char customNameUtf8[64];
 
     if (table != Pulsar::CustomCharacters::TABLE_DEFAULT) {
         finalKey = GetSkinDiscordImageKey(character, table, defaultKey);
