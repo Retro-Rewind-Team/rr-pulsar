@@ -66,7 +66,8 @@ const SettingDef Params::settingDefs[SETTING_COUNT] = {
     {SETTING_EXTENDEDTEAMSPLAYERS, 4},
     {SETTING_LOOSEARCHIVEOVERRIDES, 2},
     {SETTING_LANGUAGE, 13},
-    {SETTING_LIGHTNINGFLASH, 2}};
+    {SETTING_LIGHTNINGFLASH, 2},
+    {SETTING_MIRROR, 2}};
 
 static const SettingId race1RadioSettings[] = {
     SETTING_BRAKEDRIFT,
@@ -137,7 +138,8 @@ static const SettingId froom2Radios[] = {
     SETTING_THUNDERCLOUD,
     SETTING_FORCETRANSMISSION,
     SETTING_ALLITEMSCANLAND,
-    SETTING_VANILLAMODE};
+    SETTING_VANILLAMODE,
+    SETTING_MIRROR};
 
 static const SettingId ottOfflineRadios[] = {
     SETTING_OTTOFFLINE,
