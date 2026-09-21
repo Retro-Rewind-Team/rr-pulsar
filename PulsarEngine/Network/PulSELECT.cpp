@@ -153,6 +153,13 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
     System *system = System::sInstance;
     if (system != nullptr && holder != nullptr && holder->packetSize == sizeof(PulSELECT)) {
         Network::Mgr &netMgr = system->netMgr;
+        const RKNet::Controller *controller = RKNet::Controller::sInstance;
+        if (controller != nullptr) {
+            const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
+            if (aid == sub.hostAid && src->friendRoomCPUSeed != 0)
+                SetFriendRoomCPUSeed(src->friendRoomCPUSeed);
+        }
+
         const u32 localBlockingCount = system->GetInfo().GetTrackBlocking();
 
         if (localBlockingCount > 0 && netMgr.lastTracks != nullptr && src->blockedTrackCount > 0) {
@@ -168,7 +175,6 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
             }
 
             bool shouldSync = false;
-            const RKNet::Controller *controller = RKNet::Controller::sInstance;
             if (controller != nullptr) {
                 const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
                 if (sub.localAid == sub.hostAid) {

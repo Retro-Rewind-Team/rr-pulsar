@@ -1,7 +1,9 @@
 #include <Network/FriendRoomCPUs.hpp>
 #include <PulsarSystem.hpp>
 
+#include <MarioKartWii/Mii/Mii.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
+#include <MarioKartWii/AI/AIManager.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Kart/KartLink.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
@@ -11,7 +13,6 @@
 #include <MarioKartWii/RKNet/PacketMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <core/egg/mem/Heap.hpp>
-#include <core/rvl/OS/OS.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -53,15 +54,6 @@ struct FriendRoomCPUState {
     u8 hostFinishOrder[12];
     bool hostFinishOrderValid;
     u16 cpuFinishTimeSentMask;
-    u16 loggedFinishedMask;
-    u16 loggedDisconnectedMask;
-    u16 loggedTimeoutMilestone;
-    u8 loggedStage;
-    u8 loggedActiveCount;
-    u8 loggedFinishedCount;
-    u8 loggedDisconnectedCount;
-    u8 loggedManagerFinishedCount;
-    bool terminalLogValid;
 };
 
 struct FriendRoomCPURoster {
@@ -70,8 +62,8 @@ struct FriendRoomCPURoster {
     u8 kartIndices[FriendRoomCPUCountMax];
 };
 
-static FriendRoomCPUState s;
-static FriendRoomCPURoster s_roster;
+static FriendRoomCPUState s_cpuState;
+static FriendRoomCPURoster s_cpuRoster;
 
 static const CharacterId FRIEND_ROOM_CPU_CHARACTERS[] = {
     MARIO,
@@ -92,7 +84,7 @@ static const CharacterId FRIEND_ROOM_CPU_CHARACTERS[] = {
 };
 
 void SetFriendRoomCPUSeed(u32 seed) {
-    if (seed == 0 || s_roster.seed == seed) return;
+    if (seed == 0 || s_cpuRoster.seed == seed) return;
 
     CharacterId characters[sizeof(FRIEND_ROOM_CPU_CHARACTERS) / sizeof(FRIEND_ROOM_CPU_CHARACTERS[0])];
     memcpy(characters, FRIEND_ROOM_CPU_CHARACTERS, sizeof(characters));
@@ -106,10 +98,10 @@ void SetFriendRoomCPUSeed(u32 seed) {
         characters[other] = character;
     }
 
-    s_roster.seed = seed;
+    s_cpuRoster.seed = seed;
     for (u8 i = 0; i < FriendRoomCPUCountMax; ++i) {
-        s_roster.characters[i] = characters[i];
-        s_roster.kartIndices[i] = static_cast<u8>(random.NextLimited(12));
+        s_cpuRoster.characters[i] = characters[i];
+        s_cpuRoster.kartIndices[i] = static_cast<u8>(random.NextLimited(12));
     }
 }
 
@@ -120,14 +112,15 @@ void StartFriendRoomCPURandomization() {
 }
 
 u32 GetFriendRoomCPUSeed() {
-    return s_roster.seed;
+    return s_cpuRoster.seed;
 }
 
 bool IsFriendRoomCPUContextEnabled() {
-    return System::sInstance && System::sInstance->IsContext(PULSAR_FROOM_CPUS) &&
-           !System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) &&
-           !System::sInstance->IsContext(PULSAR_MODE_KO) &&
-           !System::sInstance->IsContext(PULSAR_VR);
+    const System *system = System::sInstance;
+    return system && system->IsContext(PULSAR_FROOM_CPUS) &&
+           !system->IsContext(PULSAR_EXTENDEDTEAMS) &&
+           !system->IsContext(PULSAR_MODE_KO) &&
+           !system->IsContext(PULSAR_VR);
 }
 
 static bool GetFriendRoomSession(bool *isHost) {
@@ -142,30 +135,30 @@ static bool GetFriendRoomSession(bool *isHost) {
                               roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
     if (isFriendRoom) {
         if (!IsFriendRoomCPUContextEnabled()) {
-            s.active = false;
-            s.host = false;
-            s.humans = 0;
+            s_cpuState.active = false;
+            s_cpuState.host = false;
+            s_cpuState.humans = 0;
             return false;
         }
-        s.active = true;
-        s.host = roomType == RKNet::ROOMTYPE_FROOM_HOST;
-        if (s.humans == 0) {
+        s_cpuState.active = true;
+        s_cpuState.host = roomType == RKNet::ROOMTYPE_FROOM_HOST;
+        if (s_cpuState.humans == 0) {
             const u8 playerCount = controller->subs[controller->currentSub].playerCount;
-            if (playerCount != 0 && playerCount <= 12) s.humans = playerCount;
+            if (playerCount != 0 && playerCount <= 12) s_cpuState.humans = playerCount;
         }
-        if (isHost) *isHost = s.host;
+        if (isHost) *isHost = s_cpuState.host;
         return true;
     }
 
-    if (s.active && roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
-        if (isHost) *isHost = s.host;
+    if (s_cpuState.active && roomType == RKNet::ROOMTYPE_VS_REGIONAL) {
+        if (isHost) *isHost = s_cpuState.host;
         return true;
     }
 
     if (roomType != RKNet::ROOMTYPE_VS_REGIONAL) {
-        s.active = false;
-        s.host = false;
-        s.humans = 0;
+        s_cpuState.active = false;
+        s_cpuState.host = false;
+        s_cpuState.humans = 0;
     }
     return false;
 }
@@ -183,21 +176,21 @@ static bool IsSyntheticFriendRoomSlotInSession(u8 playerId);
 
 bool IsFriendRoomCPU(u8 playerId) {
     if (!GetFriendRoomSession(nullptr) || playerId >= 12) return false;
-    return s.cpu[playerId] ||
-           (!s.rosterReady && IsSyntheticFriendRoomSlotInSession(playerId));
+    return s_cpuState.cpu[playerId] ||
+           (!s_cpuState.rosterReady && IsSyntheticFriendRoomSlotInSession(playerId));
 }
 
 static bool IsSyntheticFriendRoomSlotInSession(u8 playerId) {
     if (playerId >= 12) return false;
-    if (s.cpu[playerId]) return true;
-    if (s.rosterReady) return false;
+    if (s_cpuState.cpu[playerId]) return true;
+    if (s_cpuState.rosterReady) return false;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const Racedata *racedata = Racedata::sInstance;
     if (!controller || !racedata) return false;
 
-    const u32 humanCount = s.humans != 0
-                               ? s.humans
+    const u32 humanCount = s_cpuState.humans != 0
+                               ? s_cpuState.humans
                                : controller->subs[controller->currentSub].playerCount;
     if (humanCount == 0 || humanCount >= 12 || playerId < humanCount) return false;
     return racedata->racesScenario.players[playerId].GetPlayerType() != PLAYER_NONE;
@@ -207,7 +200,7 @@ static RKNet::RACEHEADER2Packet s_friendRoomCPUEmptyRH2;
 
 static RKNet::RACEHEADER2Packet &GetFriendRoomRH2(RKNet::PacketMgr *packetMgr, u8 playerId) {
     if (playerId < 12 && GetFriendRoomSession(nullptr) && IsFriendRoomCPU(playerId)) {
-        if (s.rh2Valid[playerId]) return s.rh2Data[playerId];
+        if (s_cpuState.rh2Valid[playerId]) return s_cpuState.rh2Data[playerId];
         memset(&s_friendRoomCPUEmptyRH2, 0, sizeof(s_friendRoomCPUEmptyRH2));
         return s_friendRoomCPUEmptyRH2;
     }
@@ -218,21 +211,21 @@ kmCall(0x8053e4b8, GetFriendRoomRH2);
 
 static u8 GetFriendRoomCPUCount() {
     if (!IsFriendRoom()) return 0;
-    if (!s.rosterReady) {
-        s.cpuCount = 0;
-        for (u8 playerId = 0; playerId < 12 && s.cpuCount < FriendRoomCPUCountMax; ++playerId) {
+    if (!s_cpuState.rosterReady) {
+        s_cpuState.cpuCount = 0;
+        for (u8 playerId = 0; playerId < 12 && s_cpuState.cpuCount < FriendRoomCPUCountMax; ++playerId) {
             if (IsSyntheticFriendRoomSlotInSession(playerId)) {
-                s.cpu[playerId] = true;
-                s.cpuOrder[s.cpuCount++] = playerId;
+                s_cpuState.cpu[playerId] = true;
+                s_cpuState.cpuOrder[s_cpuState.cpuCount++] = playerId;
             }
         }
-        s.rosterReady = true;
+        s_cpuState.rosterReady = true;
     }
-    return s.cpuCount;
+    return s_cpuState.cpuCount;
 }
 
 static u8 GetFriendRoomCPUId(u8 index) {
-    return s.cpuOrder[index];
+    return s_cpuState.cpuOrder[index];
 }
 
 static void PackFriendRoomFinishOrder(u8 *packed, const Raceinfo *raceinfo) {
@@ -273,12 +266,12 @@ static u8 GetHumanPlayerCount(const RacedataScenario &scenario) {
             const u32 playerCount = controller->subs[controller->currentSub].playerCount;
 
             if (playerCount != 0 && playerCount <= 12) {
-                s.humans = static_cast<u8>(playerCount);
-                return s.humans;
+                s_cpuState.humans = static_cast<u8>(playerCount);
+                return s_cpuState.humans;
             }
         }
-        if (s.humans != 0 && s.humans <= 12)
-            return s.humans;
+        if (s_cpuState.humans != 0 && s_cpuState.humans <= 12)
+            return s_cpuState.humans;
     }
 
     u8 count = 0;
@@ -373,7 +366,7 @@ static void SyncFriendRoomCPUScenarioNames(Racedata *racedata) {
     if (!racedata) return;
 
     for (u8 playerId = 0; playerId < 12; ++playerId) {
-        if (!s.cpu[playerId]) continue;
+        if (!s_cpuState.cpu[playerId]) continue;
 
         const CharacterId character = racedata->menusScenario.players[playerId].GetCharacterId();
         SetFriendRoomCPUName(racedata->menusScenario.players[playerId].GetMii(), character);
@@ -381,31 +374,16 @@ static void SyncFriendRoomCPUScenarioNames(Racedata *racedata) {
     }
 }
 
-static void SyncFriendRoomCPUSectionNames(bool copyMissing) {
+static void SyncFriendRoomCPUSectionNames() {
     if (!SectionMgr::sInstance || !SectionMgr::sInstance->sectionParams) return;
 
     MiiGroup &playerMiis = SectionMgr::sInstance->sectionParams->playerMiis;
     if (!playerMiis.mii || playerMiis.miiCount < 12) return;
 
-    Mii *sourceMii = nullptr;
-    u8 sourceId = 0xff;
     for (u8 playerId = 0; playerId < 12; ++playerId) {
-        if (s.cpu[playerId]) continue;
-        sourceMii = playerMiis.GetMii(playerId);
-        if (sourceMii) {
-            sourceId = playerId;
-            break;
-        }
-    }
-
-    for (u8 playerId = 0; playerId < 12; ++playerId) {
-        if (!s.cpu[playerId]) continue;
+        if (!s_cpuState.cpu[playerId]) continue;
 
         Mii *mii = playerMiis.GetMii(playerId);
-        if (!mii && copyMissing && sourceMii) {
-            playerMiis.CopyMii(sourceId, playerId);
-            mii = playerMiis.GetMii(playerId);
-        }
         if (mii) {
             const CharacterId character = Racedata::sInstance
                                               ? Racedata::sInstance->menusScenario.players[playerId].GetCharacterId()
@@ -413,11 +391,6 @@ static void SyncFriendRoomCPUSectionNames(bool copyMissing) {
             SetFriendRoomCPUName(mii, character);
         }
     }
-}
-
-Mii *GetFriendRoomCPUDisplayMii(u8 playerId) {
-    if (playerId >= 12 || !Racedata::sInstance || !IsFriendRoomCPU(playerId)) return nullptr;
-    return Racedata::sInstance->racesScenario.players[playerId].GetMii();
 }
 
 bool IsFriendRoomCPUTransportActive() {
@@ -511,15 +484,12 @@ static void UpdateFriendRoomRemoteItem(Item::PlayerObj *playerObj) {
 
     bool isHost = false;
     const bool friendRoom = GetFriendRoomSession(&isHost);
-    if (playerObj && friendRoom && !isHost && playerObj->playerId < 12 &&
+    if (friendRoom && !isHost && playerObj->playerId < 12 &&
         IsSyntheticFriendRoomSlotInSession(playerObj->playerId)) {
         FriendRoomCPUItem item = {};
         item.storedItem = ITEM_NONE;
         item.activeItem = ITEM_NONE;
-        const FriendRoomCPUItem *receivedItem = 0;
-        if (s.itemValid[playerObj->playerId])
-            receivedItem = &s.items[playerObj->playerId];
-        if (receivedItem) item = *receivedItem;
+        if (s_cpuState.itemValid[playerObj->playerId]) item = s_cpuState.items[playerObj->playerId];
 
         ApplyFriendRoomCPUItemPacket(playerObj->playerId, item);
     }
@@ -559,13 +529,13 @@ bool ShouldSkipFriendRoomCPUItemDecision(Item::Player *item) {
 }
 
 static void ResetFriendRoomCPURaceState() {
-    const bool active = s.active;
-    const bool host = s.host;
-    const u8 humans = s.humans;
-    memset(&s, 0, sizeof(s));
-    s.active = active;
-    s.host = host;
-    s.humans = humans;
+    const bool active = s_cpuState.active;
+    const bool host = s_cpuState.host;
+    const u8 humans = s_cpuState.humans;
+    memset(&s_cpuState, 0, sizeof(s_cpuState));
+    s_cpuState.active = active;
+    s_cpuState.host = host;
+    s_cpuState.humans = humans;
 }
 
 void PrepareFriendRoomCPUs(Racedata *racedata) {
@@ -581,15 +551,15 @@ void PrepareFriendRoomCPUs(Racedata *racedata) {
     if (humanCount == 0 || humanCount >= 12) return;
 
     Mii *sourceMii = scenario.players[0].GetMii();
-    if (s_roster.seed == 0) SetFriendRoomCPUSeed(1);
+    if (s_cpuRoster.seed == 0) SetFriendRoomCPUSeed(1);
     const bool isHost = IsFriendRoomHost();
 
     for (u8 playerId = humanCount; playerId < 12; ++playerId) {
         RacedataPlayer &player = scenario.players[playerId];
         const u8 cpuIndex = playerId - humanCount;
-        const CharacterId character = s_roster.characters[cpuIndex];
-        const u8 kartIndex = s_roster.kartIndices[cpuIndex];
-        s.cpu[playerId] = true;
+        const CharacterId character = s_cpuRoster.characters[cpuIndex];
+        const u8 kartIndex = s_cpuRoster.kartIndices[cpuIndex];
+        s_cpuState.cpu[playerId] = true;
 
         player.SetPlayerType(isHost ? PLAYER_CPU : PLAYER_REAL_ONLINE);
         player.SetCharacterId(character);
@@ -602,7 +572,7 @@ void PrepareFriendRoomCPUs(Racedata *racedata) {
     }
 
     SyncFriendRoomCPUScenarioNames(racedata);
-    SyncFriendRoomCPUSectionNames(false);
+    SyncFriendRoomCPUSectionNames();
 }
 
 static void RefreshFriendRoomCPUAidMappings() {
@@ -624,7 +594,7 @@ void FinalizeFriendRoomCPUs() {
     if (!IsFriendRoom()) return;
 
     SyncFriendRoomCPUScenarioNames(Racedata::sInstance);
-    SyncFriendRoomCPUSectionNames(false);
+    SyncFriendRoomCPUSectionNames();
 }
 
 static bool IsFriendRoomOnlineVS() {
@@ -637,17 +607,8 @@ static bool IsFriendRoomOnlineVS() {
 typedef void (*FriendRoomRH2ProcessFn)(GMDataOnlineVS *, u32);
 
 static void ProcessFriendRoomCPUHeader(GMDataOnlineVS *mode, u8 playerId) {
-    if (!mode || playerId >= 12 || !s.rh2Valid[playerId]) return;
+    if (!mode || playerId >= 12 || !s_cpuState.rh2Valid[playerId]) return;
     reinterpret_cast<FriendRoomRH2ProcessFn>(kmRuntimeAddr(0x8053e47c))(mode, playerId);
-}
-
-static u16 GetFriendRoomTimeoutLogMilestone(u16 frames) {
-    if (frames >= FRIEND_ROOM_NATIVE_TIMEOUT_FRAMES) return FRIEND_ROOM_NATIVE_TIMEOUT_FRAMES;
-    if (frames >= 1800) return 1800;
-    if (frames >= 900) return 900;
-    if (frames >= 300) return 300;
-    if (frames >= 60) return 60;
-    return frames == 0 ? 0 : 1;
 }
 
 static bool IsFriendRoomFinishTimerValid(const Timer *timer) {
@@ -655,54 +616,10 @@ static bool IsFriendRoomFinishTimerValid(const Timer *timer) {
            (timer->minutes != 0 || timer->seconds != 0 || timer->milliseconds != 0);
 }
 
-static void LogFriendRoomTerminalState(const char *source, const Raceinfo *raceinfo) {
-    if (!raceinfo || !raceinfo->players) return;
-
-    u8 activeCount = 0;
-    u8 finishedCount = 0;
-    u8 disconnectedCount = 0;
-    for (u8 playerId = 0; playerId < 12; ++playerId) {
-        const RaceinfoPlayer *player = raceinfo->players[playerId];
-        if (!player) continue;
-
-        const u32 flags = player->stateFlags;
-        if (flags & 0x02) ++finishedCount;
-        if (flags & 0x10) ++disconnectedCount;
-        if ((flags & (0x02 | 0x10 | 0x20)) == 0) ++activeCount;
-    }
-
-    const u16 timeoutMilestone = GetFriendRoomTimeoutLogMilestone(s.nativeTimeoutFrames);
-    const u8 stage = static_cast<u8>(raceinfo->stage);
-    const bool changed = !s.terminalLogValid ||
-                         s.loggedFinishedMask != s.hostFinishedMask ||
-                         s.loggedDisconnectedMask != s.hostDisconnectedMask ||
-                         s.loggedTimeoutMilestone != timeoutMilestone ||
-                         s.loggedStage != stage ||
-                         s.loggedActiveCount != activeCount ||
-                         s.loggedFinishedCount != finishedCount ||
-                         s.loggedDisconnectedCount != disconnectedCount ||
-                         s.loggedManagerFinishedCount != raceinfo->finishedPlayerCount;
-    if (!changed) return;
-
-    OS::Report("[PULSAR] friend-terminal source=%s frame=%u stage=%u hostFinish=0x%04x hostDisconnect=0x%04x timeout=%u active=%u finished=%u disconnected=%u managerFinished=%u\n",
-               source, raceinfo->raceFrames, stage, s.hostFinishedMask,
-               s.hostDisconnectedMask, s.nativeTimeoutFrames, activeCount,
-               finishedCount, disconnectedCount, raceinfo->finishedPlayerCount);
-    s.loggedFinishedMask = s.hostFinishedMask;
-    s.loggedDisconnectedMask = s.hostDisconnectedMask;
-    s.loggedTimeoutMilestone = timeoutMilestone;
-    s.loggedStage = stage;
-    s.loggedActiveCount = activeCount;
-    s.loggedFinishedCount = finishedCount;
-    s.loggedDisconnectedCount = disconnectedCount;
-    s.loggedManagerFinishedCount = raceinfo->finishedPlayerCount;
-    s.terminalLogValid = true;
-}
-
 static void ApplyReceivedFriendRoomTerminalState() {
     bool isHost = false;
     if (!GetFriendRoomSession(&isHost) || isHost || !IsFriendRoomOnlineVS() ||
-        (s.hostFinishedMask == 0 && s.hostDisconnectedMask == 0))
+        (s_cpuState.hostFinishedMask == 0 && s_cpuState.hostDisconnectedMask == 0))
         return;
 
     Raceinfo *raceinfo = Raceinfo::sInstance;
@@ -710,8 +627,8 @@ static void ApplyReceivedFriendRoomTerminalState() {
         raceinfo->stage >= RACESTAGE_FINISHED)
         return;
 
-    const u16 disconnectedMask = s.hostDisconnectedMask;
-    const u16 finishedMask = s.hostFinishedMask & ~disconnectedMask;
+    const u16 disconnectedMask = s_cpuState.hostDisconnectedMask;
+    const u16 finishedMask = s_cpuState.hostFinishedMask & ~disconnectedMask;
     for (u8 playerId = 0; playerId < 12; ++playerId) {
         RaceinfoPlayer *player = raceinfo->players[playerId];
         if (!player) continue;
@@ -745,16 +662,13 @@ typedef void (*FriendRoomNativeRH2FinishFn)(GMDataOnlineVS *);
 static void ApplyFriendRoomNativeRH2Finish(GMDataOnlineVS *mode) {
     reinterpret_cast<FriendRoomNativeRH2FinishFn>(kmRuntimeAddr(0x8053e680))(mode);
     ApplyReceivedFriendRoomTerminalState();
-    bool isHost = false;
-    if (GetFriendRoomSession(&isHost) && !isHost)
-        LogFriendRoomTerminalState("native-rh2", Raceinfo::sInstance);
 }
 
 kmCall(0x8053f2f4, ApplyFriendRoomNativeRH2Finish);
 
 static void ApplyReceivedFriendRoomNativeTimeout() {
     bool isHost = false;
-    if (!s.nativeTimeoutActive || !GetFriendRoomSession(&isHost) || isHost ||
+    if (!s_cpuState.nativeTimeoutActive || !GetFriendRoomSession(&isHost) || isHost ||
         !IsFriendRoomOnlineVS())
         return;
 
@@ -765,8 +679,8 @@ static void ApplyReceivedFriendRoomNativeTimeout() {
 
     if (raceinfo->gamemodeData) {
         GMDataOnlineVS *mode = static_cast<GMDataOnlineVS *>(raceinfo->gamemodeData);
-        if (mode->rh2Packet.timeElapsedFirstFinished < s.nativeTimeoutFrames)
-            mode->rh2Packet.timeElapsedFirstFinished = s.nativeTimeoutFrames;
+        if (mode->rh2Packet.timeElapsedFirstFinished < s_cpuState.nativeTimeoutFrames)
+            mode->rh2Packet.timeElapsedFirstFinished = s_cpuState.nativeTimeoutFrames;
     }
 
     if (raceinfo->finishedPlayerCount == 0) raceinfo->finishedPlayerCount = 1;
@@ -775,7 +689,7 @@ static void ApplyReceivedFriendRoomNativeTimeout() {
 typedef bool (*FriendRoomNativeTimeoutFn)(GMDataOnlineVS *);
 
 static void StopFriendRoomCPUsAtNativeTimeout() {
-    if (s.cpuTimeoutApplied || !GetFriendRoomSession(nullptr) ||
+    if (s_cpuState.cpuTimeoutApplied || !GetFriendRoomSession(nullptr) ||
         !IsFriendRoomOnlineVS())
         return;
 
@@ -784,7 +698,7 @@ static void StopFriendRoomCPUsAtNativeTimeout() {
         raceinfo->stage >= RACESTAGE_FINISHED)
         return;
 
-    s.cpuTimeoutApplied = true;
+    s_cpuState.cpuTimeoutApplied = true;
     const u8 cpuCount = GetFriendRoomCPUCount();
     for (u8 cpuIndex = 0; cpuIndex < cpuCount; ++cpuIndex) {
         const u8 playerId = GetFriendRoomCPUId(cpuIndex);
@@ -802,14 +716,11 @@ static bool UpdateFriendRoomNativeTimeout(GMDataOnlineVS *mode) {
     const bool timedOut = reinterpret_cast<FriendRoomNativeTimeoutFn>(
         kmRuntimeAddr(0x8053ec40))(mode);
     if (timedOut ||
-        (!IsFriendRoomHost() && s.nativeTimeoutActive &&
-         s.nativeTimeoutFrames >= FRIEND_ROOM_NATIVE_TIMEOUT_FRAMES)) {
+        (!IsFriendRoomHost() && s_cpuState.nativeTimeoutActive &&
+         s_cpuState.nativeTimeoutFrames >= FRIEND_ROOM_NATIVE_TIMEOUT_FRAMES)) {
         StopFriendRoomCPUsAtNativeTimeout();
     }
     ApplyReceivedFriendRoomTerminalState();
-    bool isHost = false;
-    if (GetFriendRoomSession(&isHost) && !isHost)
-        LogFriendRoomTerminalState("native-timeout", Raceinfo::sInstance);
     return timedOut;
 }
 
@@ -826,8 +737,8 @@ kmRuntimeUse(0x8058cb30);
 static void BindHostRacedataFactory(u8 playerId, Kart::Player *kart) {
     if (!kart || playerId >= 12) return;
 
-    void *flags = s.flags[playerId];
-    void *sender = s.senders[playerId];
+    void *flags = s_cpuState.flags[playerId];
+    void *sender = s_cpuState.senders[playerId];
     if (!flags || !sender) return;
 
     *reinterpret_cast<void **>(reinterpret_cast<u8 *>(sender) + 0x10) = flags;
@@ -841,8 +752,8 @@ static void BindHostRacedataFactory(u8 playerId, Kart::Player *kart) {
 static void CreateHostRacedataFactory(u8 playerId, Kart::Player *kart) {
     if (!kart || !IsFriendRoomHost() || !IsFriendRoomCPU(playerId)) return;
 
-    void *&flags = s.flags[playerId];
-    void *&sender = s.senders[playerId];
+    void *&flags = s_cpuState.flags[playerId];
+    void *&sender = s_cpuState.senders[playerId];
     if (flags || sender) {
         BindHostRacedataFactory(playerId, kart);
         return;
@@ -883,7 +794,7 @@ static bool IsFriendRoomRemoteCPU(u8 playerId) {
 
 static RKNet::RACEDATAPacket &GetFriendRoomRACEDATA(RKNet::PacketMgr *packetMgr, u8 playerId) {
     if (IsFriendRoomRemoteCPU(playerId)) {
-        if (s.raceValid[playerId]) return s.raceData[playerId];
+        if (s_cpuState.raceValid[playerId]) return s_cpuState.raceData[playerId];
         memset(&s_emptyFriendRoomRaceData, 0, sizeof(s_emptyFriendRoomRaceData));
         return s_emptyFriendRoomRaceData;
     }
@@ -892,7 +803,7 @@ static RKNet::RACEDATAPacket &GetFriendRoomRACEDATA(RKNet::PacketMgr *packetMgr,
 
 static u32 GetFriendRoomPlayerRH1Timer(const RKNet::PacketMgr *packetMgr, u32 playerId) {
     if (playerId < 12 && IsFriendRoomRemoteCPU(static_cast<u8>(playerId))) {
-        return s.raceValid[playerId] ? s.raceSeq[playerId] : 0;
+        return s_cpuState.raceValid[playerId] ? s_cpuState.raceSeq[playerId] : 0;
     }
     return packetMgr->GetPlayerRH1Timer(playerId);
 }
@@ -949,10 +860,6 @@ bool WriteFriendRoomCPUState(PulRH1 *packet) {
     sync->cpuCount = cpuCount;
     sync->raceDataPlayerId = 0xff;
     sync->rh2PlayerId = 0xff;
-    sync->nativeTimeoutFrames = 0;
-    sync->nativeTimeoutActive = 0;
-    sync->hostFinishedMask = 0;
-    sync->hostDisconnectedMask = 0;
 
     const Raceinfo *raceinfo = Raceinfo::sInstance;
     const u32 sequence = raceinfo ? raceinfo->raceFrames : 0;
@@ -975,7 +882,7 @@ bool WriteFriendRoomCPUState(PulRH1 *packet) {
     // CPU as finished before at least one packet has carried that CPU's final timer.
     for (u8 cpuIndex = 0; cpuIndex < cpuCount; ++cpuIndex) {
         const u16 bit = static_cast<u16>(1u << GetFriendRoomCPUId(cpuIndex));
-        if ((actualFinishedMask & bit) != 0 && (s.cpuFinishTimeSentMask & bit) == 0)
+        if ((actualFinishedMask & bit) != 0 && (s_cpuState.cpuFinishTimeSentMask & bit) == 0)
             sync->hostFinishedMask &= ~bit;
     }
 
@@ -1006,9 +913,7 @@ bool WriteFriendRoomCPUState(PulRH1 *packet) {
         const u8 playerId = GetFriendRoomCPUId(cpuIndex);
         FriendRoomCPUItem &syncItem = sync->items[cpuIndex];
         syncItem.storedItem = static_cast<u8>(ITEM_NONE);
-        syncItem.storedItemCount = 0;
         syncItem.activeItem = static_cast<u8>(ITEM_NONE);
-        syncItem.flags = 0;
 
         if (itemManager && itemManager->players && playerId < itemManager->playerCount) {
             const Item::Player &item = itemManager->players[playerId];
@@ -1031,7 +936,7 @@ bool WriteFriendRoomCPUState(PulRH1 *packet) {
     if (kartManager) {
         Kart::Player *kart = kartManager->GetKartPlayer(raceDataPlayerId);
         BindHostRacedataFactory(raceDataPlayerId, kart);
-        void *sender = s.senders[raceDataPlayerId];
+        void *sender = s_cpuState.senders[raceDataPlayerId];
         if (sender) {
             reinterpret_cast<RacedataFactoryPackFn>(kmRuntimeAddr(0x8058cb30))(sender);
             sync->raceDataPlayerId = raceDataPlayerId;
@@ -1060,15 +965,15 @@ bool WriteFriendRoomCPUState(PulRH1 *packet) {
         if (PackFriendRoomCPUHeader(mode, rh2PlayerId, &rh2)) {
             sync->rh2PlayerId = rh2PlayerId;
             memcpy(&sync->rh2Data, &rh2, sizeof(rh2));
-            memcpy(&s.rh2Data[rh2PlayerId], &rh2, sizeof(rh2));
-            s.rh2Seq[rh2PlayerId] = sequence;
-            s.rh2Valid[rh2PlayerId] = true;
+            memcpy(&s_cpuState.rh2Data[rh2PlayerId], &rh2, sizeof(rh2));
+            s_cpuState.rh2Seq[rh2PlayerId] = sequence;
+            s_cpuState.rh2Valid[rh2PlayerId] = true;
 
             const u16 bit = static_cast<u16>(1u << rh2PlayerId);
             const RaceinfoPlayer *player = raceinfo->players ? raceinfo->players[rh2PlayerId] : 0;
             if ((actualFinishedMask & bit) != 0 && player &&
                 IsFriendRoomFinishTimerValid(player->raceFinishTime)) {
-                s.cpuFinishTimeSentMask |= bit;
+                s_cpuState.cpuFinishTimeSentMask |= bit;
                 sync->hostFinishedMask |= bit;
             }
         }
@@ -1091,37 +996,37 @@ void ReadFriendRoomCPUState(const PulRH1 *packet, u32 packetSize, u8 senderAid) 
 
     u8 finishOrder[12];
     if (UnpackFriendRoomFinishOrder(sync->finishOrder, finishOrder)) {
-        memcpy(s.hostFinishOrder, finishOrder, sizeof(s.hostFinishOrder));
-        s.hostFinishOrderValid = true;
+        memcpy(s_cpuState.hostFinishOrder, finishOrder, sizeof(s_cpuState.hostFinishOrder));
+        s_cpuState.hostFinishOrderValid = true;
     }
 
-    memset(s.itemValid, 0, sizeof(s.itemValid));
+    memset(s_cpuState.itemValid, 0, sizeof(s_cpuState.itemValid));
     const u8 localCPUCount = GetFriendRoomCPUCount();
     const u8 itemCount = sync->cpuCount < localCPUCount ? sync->cpuCount : localCPUCount;
     for (u8 i = 0; i < itemCount; ++i) {
         const u8 playerId = GetFriendRoomCPUId(i);
-        s.items[playerId] = sync->items[i];
-        s.itemValid[playerId] = true;
+        s_cpuState.items[playerId] = sync->items[i];
+        s_cpuState.itemValid[playerId] = true;
         ApplyFriendRoomCPUItemPacket(playerId, sync->items[i]);
         controller->aidsBelongingToPlayerIds[playerId] = senderAid;
     }
 
     const u8 raceDataPlayerId = sync->raceDataPlayerId;
     if (raceDataPlayerId < 12 && IsFriendRoomCPU(raceDataPlayerId) &&
-        (!s.raceValid[raceDataPlayerId] ||
-         sync->raceDataSequence != s.raceSeq[raceDataPlayerId])) {
-        memcpy(&s.raceData[raceDataPlayerId], &sync->raceData, sizeof(sync->raceData));
-        s.raceSeq[raceDataPlayerId] = sync->raceDataSequence;
-        s.raceValid[raceDataPlayerId] = true;
+        (!s_cpuState.raceValid[raceDataPlayerId] ||
+         sync->raceDataSequence != s_cpuState.raceSeq[raceDataPlayerId])) {
+        memcpy(&s_cpuState.raceData[raceDataPlayerId], &sync->raceData, sizeof(sync->raceData));
+        s_cpuState.raceSeq[raceDataPlayerId] = sync->raceDataSequence;
+        s_cpuState.raceValid[raceDataPlayerId] = true;
     }
 
     const u8 rh2PlayerId = sync->rh2PlayerId;
     if (rh2PlayerId < 12 && IsFriendRoomCPU(rh2PlayerId) &&
-        (!s.rh2Valid[rh2PlayerId] ||
-         sync->raceDataSequence != s.rh2Seq[rh2PlayerId])) {
-        memcpy(&s.rh2Data[rh2PlayerId], &sync->rh2Data, sizeof(sync->rh2Data));
-        s.rh2Seq[rh2PlayerId] = sync->raceDataSequence;
-        s.rh2Valid[rh2PlayerId] = true;
+        (!s_cpuState.rh2Valid[rh2PlayerId] ||
+         sync->raceDataSequence != s_cpuState.rh2Seq[rh2PlayerId])) {
+        memcpy(&s_cpuState.rh2Data[rh2PlayerId], &sync->rh2Data, sizeof(sync->rh2Data));
+        s_cpuState.rh2Seq[rh2PlayerId] = sync->raceDataSequence;
+        s_cpuState.rh2Valid[rh2PlayerId] = true;
 
         Raceinfo *raceinfo = Raceinfo::sInstance;
         if (raceinfo && IsFriendRoomOnlineVS() && raceinfo->gamemodeData)
@@ -1130,26 +1035,25 @@ void ReadFriendRoomCPUState(const PulRH1 *packet, u32 packetSize, u8 senderAid) 
     }
 
     if (sync->nativeTimeoutActive) {
-        if (!s.nativeTimeoutActive ||
-            sync->nativeTimeoutFrames > s.nativeTimeoutFrames)
-            s.nativeTimeoutFrames = sync->nativeTimeoutFrames;
-        s.nativeTimeoutActive = true;
+        if (!s_cpuState.nativeTimeoutActive ||
+            sync->nativeTimeoutFrames > s_cpuState.nativeTimeoutFrames)
+            s_cpuState.nativeTimeoutFrames = sync->nativeTimeoutFrames;
+        s_cpuState.nativeTimeoutActive = true;
     }
 
-    s.hostFinishedMask |= sync->hostFinishedMask;
-    s.hostDisconnectedMask |= sync->hostDisconnectedMask;
-    LogFriendRoomTerminalState("rh1-recv", Raceinfo::sInstance);
+    s_cpuState.hostFinishedMask |= sync->hostFinishedMask;
+    s_cpuState.hostDisconnectedMask |= sync->hostDisconnectedMask;
 
     ApplyReceivedFriendRoomTerminalState();
     ApplyReceivedFriendRoomNativeTimeout();
-    if (s.nativeTimeoutActive &&
-        s.nativeTimeoutFrames >= FRIEND_ROOM_NATIVE_TIMEOUT_FRAMES)
+    if (s_cpuState.nativeTimeoutActive &&
+        s_cpuState.nativeTimeoutFrames >= FRIEND_ROOM_NATIVE_TIMEOUT_FRAMES)
         StopFriendRoomCPUsAtNativeTimeout();
 }
 
 void ApplyFriendRoomCPUResultOrder() {
     bool isHost = false;
-    if (!s.hostFinishOrderValid || !GetFriendRoomSession(&isHost) || isHost) return;
+    if (!s_cpuState.hostFinishOrderValid || !GetFriendRoomSession(&isHost) || isHost) return;
 
     Raceinfo *raceinfo = Raceinfo::sInstance;
     Racedata *racedata = Racedata::sInstance;
@@ -1164,7 +1068,7 @@ void ApplyFriendRoomCPUResultOrder() {
         for (u8 cpuIndex = 0; cpuIndex < cpuCount; ++cpuIndex) {
             const u8 playerId = GetFriendRoomCPUId(cpuIndex);
             const u16 bit = static_cast<u16>(1u << playerId);
-            if ((s.hostFinishedMask & bit) == 0 || (s.hostDisconnectedMask & bit) != 0)
+            if ((s_cpuState.hostFinishedMask & bit) == 0 || (s_cpuState.hostDisconnectedMask & bit) != 0)
                 continue;
 
             if (!IsFriendRoomFinishTimerValid(&mode->players[playerId].raceFinishTime))
@@ -1178,7 +1082,7 @@ void ApplyFriendRoomCPUResultOrder() {
 
     u16 seen = 0;
     for (u8 position = 0; position < playerCount; ++position) {
-        const u8 playerId = s.hostFinishOrder[position];
+        const u8 playerId = s_cpuState.hostFinishOrder[position];
         if (playerId >= playerCount || !raceinfo->players[playerId] ||
             (seen & (1u << playerId)) != 0)
             return;
@@ -1186,7 +1090,7 @@ void ApplyFriendRoomCPUResultOrder() {
     }
 
     for (u8 position = 0; position < playerCount; ++position) {
-        const u8 playerId = s.hostFinishOrder[position];
+        const u8 playerId = s_cpuState.hostFinishOrder[position];
         const u8 rank = static_cast<u8>(position + 1);
         raceinfo->playerIdInEachPosition[position] = playerId;
         raceinfo->players[playerId]->position = rank;
@@ -1203,11 +1107,11 @@ static void ApplyReceivedCPUItems() {
     const u8 cpuCount = GetFriendRoomCPUCount();
     for (u8 i = 0; i < cpuCount; ++i) {
         const u8 playerId = GetFriendRoomCPUId(i);
-        if (!s.itemValid[playerId]) continue;
+        if (!s_cpuState.itemValid[playerId]) continue;
 
         if (itemManager && itemManager->players && playerId < itemManager->playerCount) {
             Item::Player &item = itemManager->players[playerId];
-            const FriendRoomCPUItem &received = s.items[playerId];
+            const FriendRoomCPUItem &received = s_cpuState.items[playerId];
             const ItemId storedItem = static_cast<ItemId>(received.storedItem);
             if (item.inventory.currentItemId != storedItem)
                 item.inventory.currentItemId = storedItem;
@@ -1218,14 +1122,14 @@ static void ApplyReceivedCPUItems() {
 }
 
 static void EndFriendRoomCPUsWhenHumansFinished() {
-    if (!IsFriendRoomOnlineVS() || s.humans == 0) return;
+    if (!IsFriendRoomOnlineVS() || s_cpuState.humans == 0) return;
 
     Raceinfo *raceinfo = Raceinfo::sInstance;
     if (!raceinfo || !raceinfo->players || raceinfo->stage < RACESTAGE_RACE ||
         raceinfo->stage >= RACESTAGE_FINISHED)
         return;
 
-    for (u8 playerId = 0; playerId < s.humans; ++playerId) {
+    for (u8 playerId = 0; playerId < s_cpuState.humans; ++playerId) {
         const RaceinfoPlayer *player = raceinfo->players[playerId];
         if (!player || (player->stateFlags & (0x02 | 0x10)) == 0) return;
     }
@@ -1258,7 +1162,7 @@ static void RefreshReceivedFriendRoomCPUState() {
     ReadFriendRoomCPUState(holder->packet, holder->packetSize, hostAid);
 }
 
-void UpdateFriendRoomCPUs(AI::Manager *manager) {
+static void UpdateFriendRoomCPUs(AI::Manager *manager) {
     bool isHost = false;
     const bool friendRoom = GetFriendRoomSession(&isHost);
     if (!friendRoom) {
@@ -1289,7 +1193,7 @@ void UpdateFriendRoomCPUs(AI::Manager *manager) {
     }
 
     SyncFriendRoomCPUScenarioNames(Racedata::sInstance);
-    SyncFriendRoomCPUSectionNames(false);
+    SyncFriendRoomCPUSectionNames();
 
     RefreshFriendRoomCPUAidMappings();
 }
