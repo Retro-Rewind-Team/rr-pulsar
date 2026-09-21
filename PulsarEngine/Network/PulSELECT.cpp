@@ -5,6 +5,7 @@
 #include <core/rvl/os/OS.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Network/GPReport.hpp>
+#include <Network/FriendRoomCPUs.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
@@ -117,6 +118,7 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
         src->curBlockingArrayIdx = 0;
         src->lastGroupedTrackPlayed = false;
         src->characterTables = 0;
+        src->friendRoomCPUSeed = 0;
         for (u32 i = 0; i < MAX_TRACK_BLOCKING; ++i) {
             src->blockedTracks[i] = 0xFFFF;
         }
@@ -297,6 +299,14 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler &self) {
     const RKNet::RoomType roomType = controller->roomType;
     const bool isFriendRoom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
     const bool isFriendRoomVS = isFriendRoom && (mode == RKNet::ONLINEMODE_PRIVATE_VS || mode == RKNet::ONLINEMODE_PUBLIC_VS);
+
+    if (sub.localAid == hostAid) {
+        self.toSendPacket.friendRoomCPUSeed = 0;
+        if (isFriendRoomVS && IsFriendRoomCPUContextEnabled()) {
+            if (GetFriendRoomCPUSeed() == 0) StartFriendRoomCPURandomization();
+            self.toSendPacket.friendRoomCPUSeed = GetFriendRoomCPUSeed();
+        }
+    }
 
     if (mode == RKNet::ONLINEMODE_PRIVATE_VS && system->IsContext(PULSAR_MODE_KO)) system->koMgr->PatchAids(sub);
 
@@ -510,6 +520,7 @@ void InitPatch() {
     asm(mr select, r31;);
     select->toSendPacket.pulVote = 0x43;
     select->toSendPacket.pulWinningTrack = 0xff;
+    select->toSendPacket.friendRoomCPUSeed = 0;
     select->toSendPacket.acVerifyTag = 0;
     const Settings::Mgr &settings = Settings::Mgr::Get();
     bool allowChangeCombo;
@@ -530,6 +541,7 @@ void InitPatch() {
         PulSELECT &cur = select->receivedPackets[aid];
         cur.pulVote = 0x43;
         cur.pulWinningTrack = 0xff;
+        cur.friendRoomCPUSeed = 0;
         cur.acVerifyTag = 0;
         reinterpret_cast<RKNet::SELECTHandler *>(select)->ResetPacket(select->receivedPackets[aid]);
     }

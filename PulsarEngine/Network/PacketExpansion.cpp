@@ -17,9 +17,10 @@ void *CreateSendAndRecvBuffers() {
 }
 kmCall(0x806570b4, CreateSendAndRecvBuffers);
 
-// Buffer size must be the FULL size to accommodate any packet (including LapKO in friend rooms)
+// Buffer size must accommodate the complete PulRH1 backing layout. The
+// transmitted RH1 size is still shortened dynamically in BeforeRH1Send.
 // The actual transmitted packet size is controlled dynamically in BeforeRH1Send based on context
-kmWrite8(0x8089a19b, PulRH1SizeFull);
+kmWrite8(0x8089a19b, sizeof(PulRH1));
 kmWrite8(0x8089a19f, sizeof(PulRH2));
 kmWrite8(0x8089a1a3, sizeof(PulSELECT));
 kmWrite8(0x8089a1a7, 2 * sizeof(PulRACEDATA));

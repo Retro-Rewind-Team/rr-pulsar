@@ -2,6 +2,7 @@
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
+#include <Network/FriendRoomCPUs.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -76,7 +77,9 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
                 isOnline = true;
             }
 
-            if ((isOnline || (localPlayerCount > 1)) && (playerType != PLAYER_CPU)) {
+            if (Network::IsFriendRoomCPU(playerId)) {
+                this->items[i].SetTextBoxMessage("mii_name", GetCharacterBMGId(characterId, true), nullptr);
+            } else if ((isOnline || (localPlayerCount > 1)) && (playerType != PLAYER_CPU)) {
                 info.miis[0] = miiGroup.GetMii(playerId);
                 this->items[i].SetTextBoxMessage("mii_name", BMG_MII_NAME, &info);
             } else {

@@ -9,6 +9,7 @@
 #include <MarioKartWii/3D/Camera/RaceCamera.hpp>
 #include <MarioKartWii/Driver/DriverManager.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <Network/FriendRoomCPUs.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <core/rvl/PAD.hpp>
@@ -554,6 +555,7 @@ void Mgr::ReweightItemProbabilitiesNow() {
 
 bool Mgr::EnterSpectateIfLocal(u8 eliminatedId) {
     if (this->raceFinished) return true;
+    if (Network::IsFriendRoomCPU(eliminatedId)) return false;
 
     const Racedata *racedata = Racedata::sInstance;
     const bool isOffline = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE;

@@ -85,8 +85,12 @@ public:
     GMDataOnlineVSPlayer();  // 80532488
     ~GMDataOnlineVSPlayer();  // 805324ac
     Timer raceFinishTime;
-    u8 unknown_0xc[0x14 - 0xc];
+    u16 receivedFinishMask;  // 0xc
+    u16 finishedMask;  // 0xe
+    u16 disconnectedMask;  // 0x10
+    u16 playersAheadFlags;  // 0x12
 };  // Total size 0x14
+static_assert(sizeof(GMDataOnlineVSPlayer) == 0x14, "GMDataOnlineVSPlayer layout changed");
 
 class RH2Packer {  // 808b33c0, 808b3390, 808b33a8, 808b3378, 808b3360, 808b33f0
     virtual ~RH2Packer();
@@ -103,6 +107,7 @@ public:
     int GetParamSize() override;
     int param;
 };
+static_assert(sizeof(RH2IntPacker) == 0x8, "RH2IntPacker layout changed");
 
 class GMDataOnlineVS : public GMData {
 public:
@@ -115,8 +120,9 @@ public:
     GMDataOnlineVSPlayer players[12];
     RKNet::RACEHEADER2Packet rh2Packet;  // 0xf8
     u8 unknown_0x120[0xc];
-    RH2Packer packers[9];  // 0x12c one for each RH2 value? hold the RH2 values as well as a packing parameter (the size of the value?)
+    RH2IntPacker packers[9];  // 0x12c one for each RH2 value
 };  // Total size 0x174
+static_assert(sizeof(GMDataOnlineVS) == 0x174, "GMDataOnlineVS layout changed");
 
 class GMDataOnlineBalloonBattle : public GMDataBattle {
 public:

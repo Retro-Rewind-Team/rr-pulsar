@@ -7,6 +7,7 @@
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <Network/FriendRoomCPUs.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -24,11 +25,12 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u3
 
     const System *system = System::sInstance;
 
-    const bool inFriendRoom = IsFriendRoom();
+    const bool inFriendRoom = IsFriendRoom() || IsFriendRoomCPUTransportActive();
     const bool battleRoyaleEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_BATTLEROYALE);
     const bool eliminationSyncEnabled = inFriendRoom && (system->IsContext(PULSAR_MODE_LAPKO) || battleRoyaleEnabled);
-    const u32 targetSize = battleRoyaleEnabled ? PulRH1SizeFull : (eliminationSyncEnabled ? PulRH1SizeLapKo : PulRH1SizeBase);
-    if (eliminationSyncEnabled || battleRoyaleEnabled) packetHolder.packetSize = targetSize;
+    const bool friendRoomCPUs = WriteFriendRoomCPUState(packetHolder.packet);
+    const u32 targetSize = friendRoomCPUs ? sizeof(PulRH1) : (battleRoyaleEnabled ? PulRH1SizeFull : (eliminationSyncEnabled ? PulRH1SizeLapKo : PulRH1SizeBase));
+    if (friendRoomCPUs || eliminationSyncEnabled || battleRoyaleEnabled) packetHolder.packetSize = targetSize;
 
     if (system->IsContext(PULSAR_CT)) {
         packetHolder.packetSize = targetSize;
@@ -76,6 +78,7 @@ static void AfterRH1Reception(register u8 *aidArrDest, const RKNet::PacketHolder
 
     const PulRH1 *packet = holder.packet;
     const u32 packetSize = holder.packetSize;
+    ReadFriendRoomCPUState(packet, packetSize, senderAid);
     CourseId track;
     if (packetSize >= PulRH1SizeBase)
         track = static_cast<CourseId>(packet->pulsarTrackId);

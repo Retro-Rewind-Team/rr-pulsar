@@ -13,6 +13,7 @@
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
+#include <Network/FriendRoomCPUs.hpp>
 #include <include/c_string.h>
 
 namespace Codes {
@@ -131,6 +132,7 @@ kmWrite32(0x807BB9C8, 0x38000384);  // li r0, 900 (15 seconds)
 
 // Remove special itembox table properties [ZPL]
 static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 cpuItemBoxType, u32 lotteryType) {
+    if (Pulsar::Network::ShouldSkipFriendRoomCPUItemDecision(player)) return;
     const Pulsar::CupsConfig *cupsConfig = Pulsar::CupsConfig::sInstance;
     const Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
     const char *fileName = !Pulsar::CupsConfig::IsReg(pulsarId) ? cupsConfig->GetFileName(pulsarId, cupsConfig->GetCurVariantIdx()) : 0;

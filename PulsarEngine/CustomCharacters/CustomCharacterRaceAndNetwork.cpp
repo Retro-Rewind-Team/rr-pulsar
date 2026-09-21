@@ -1,5 +1,6 @@
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <IO/SDIO.hpp>
+#include <Network/FriendRoomCPUs.hpp>
 #include <core/rvl/os/OSCache.hpp>
 
 namespace Pulsar {
@@ -127,7 +128,9 @@ void FillRaceResultNameHook(CtrlRaceResult *result, u8 playerId) {
                             ((scenario.settings.gamemode >= MODE_PRIVATE_VS && scenario.settings.gamemode <= MODE_PRIVATE_BATTLE) ||
                              scenario.localPlayerCount > 1) &&
                                 player.playerType != PLAYER_CPU;
-    if (useMiiName) {
+    if (Network::IsFriendRoomCPU(playerId)) {
+        result->SetTextBoxMessage("player_name", GetCharacterBMGId(player.characterId, true), nullptr);
+    } else if (useMiiName) {
         Text::Info info;
         info.miis[0] = sectionMgr->sectionParams->playerMiis.GetMii(playerId);
         result->SetTextBoxMessage("player_name", UI::BMG_MII_NAME, &info);

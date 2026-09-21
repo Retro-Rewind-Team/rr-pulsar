@@ -73,6 +73,9 @@ class Player : public Base {
     u32 unknown_0x15c;
     u8 unknown_0x160[3];
     bool hasRaceEnded;  // 0x163
+
+   public:
+    Input::State* GetInputState() const { return this->state; }
 };  // 0x164
 
 class PlayerKart : public Player {

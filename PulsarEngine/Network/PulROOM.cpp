@@ -11,7 +11,7 @@
 namespace Pulsar {
 namespace Network {
 
-static_assert(HOST_SETTINGS_PREVIEW_COUNT == 27, "Update settings preview capacity checks with the ROOM payload");
+static_assert(HOST_SETTINGS_PREVIEW_COUNT == 28, "Update settings preview capacity checks with the ROOM payload");
 
 static void ConvertROOMPacketToData(const PulROOM &packet) {
     System *system = System::sInstance;
@@ -104,6 +104,7 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     const bool isStartOTT = hostContext & (1 << PULSAR_STARTOTT);
     const bool isStartItemRain = hostContext & (1 << PULSAR_STARTITEMRAIN);
     const bool isVanillaMode = hostContext2 & (1 << PULSAR_VANILLAMODE);
+    const bool isFriendRoomCPUs = (hostContext2 & (1 << PULSAR_FROOM_CPUS)) && !(hostContext & (1 << PULSAR_EXTENDEDTEAMS)) && !(hostContext & (1 << PULSAR_MODE_KO)) && !(hostContext2 & (1 << PULSAR_VR));
 
     u32 context = (isStartRetro << PULSAR_STARTRETROS) | (isStartCT << PULSAR_STARTCTS) |
                   (isStartRTS << PULSAR_STARTREGS) | (isStart200 << PULSAR_START200) |
@@ -111,7 +112,7 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
                   (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) |
                   (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) |
                   (isKartRestrictBike << PULSAR_BIKERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
-    u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE) | (isVanillaForced << PULSAR_TRANSMISSIONVANILLA) | (isVanillaMode << PULSAR_VANILLAMODE);
+    u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE) | (isVanillaForced << PULSAR_TRANSMISSIONVANILLA) | (isVanillaMode << PULSAR_VANILLAMODE) | (isFriendRoomCPUs << PULSAR_FROOM_CPUS);
     system->context = context;
     system->context2 = context2;
 
@@ -196,6 +197,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         const u8 isStartItemRain = (originalMessage == 9);
         const u8 rankings = settings.GetSettingValue(Pulsar::Settings::SETTING_RANKINGS) == RANKINGS_ENABLED;
         const u8 battleRoyale = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
+        const u8 friendRoomCPUs = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCPUS) == FROOM_CPUS_ENABLED && isFroom && !isBattle && !extendedTeams && !koSetting && !vr;
         const u8 koRoyaleBalloons = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEBALLOONS);
         const u8 koPerRace2 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_2;
         const u8 koPerRace3 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_3;
@@ -256,7 +258,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
                                           koPerRace4 << PULSAR_KOPERRACE_4 |
                                           koRoyaleLaps1_5x << PULSAR_KOROYALE_LAPS_1_5X |
                                           koRoyaleLaps2_0x << PULSAR_KOROYALE_LAPS_2_0X |
-                                          vanillaMode << PULSAR_VANILLAMODE;
+                                          vanillaMode << PULSAR_VANILLAMODE |
+                                          friendRoomCPUs << PULSAR_FROOM_CPUS;
 
         if (!vanillaMode) {
             destPacket->customItemsBitfield = settings.GetCustomItems();

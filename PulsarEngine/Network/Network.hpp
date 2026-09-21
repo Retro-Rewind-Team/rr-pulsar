@@ -8,7 +8,7 @@ namespace Network {
 
 static const u32 MAX_TRACK_BLOCKING = 12;  // Maximum number of blocked tracks synced via packets
 
-static const u32 HOST_SETTINGS_PREVIEW_COUNT = 27;
+static const u32 HOST_SETTINGS_PREVIEW_COUNT = 28;
 
 enum DenyType {
     DENY_TYPE_NORMAL,
@@ -30,14 +30,15 @@ public:
     u8 curBlockingArrayIdx;
     u8 racesPerGP;
     bool lastGroupedTrackPlayed;  // Whether the most recent blocked track was a grouped track
-    u8 padding[1];
+    bool hasHostSettingsPreview;  // Reuses the old padding byte so Mgr stays 0x5C with 28 preview values
     u32 region;
     PulsarId *lastTracks;
     u16 customEngineClass;
     u16 hostCustomEngineClass;
     u8 hostSettingsPreview[HOST_SETTINGS_PREVIEW_COUNT];
-    bool hasHostSettingsPreview;
 };
+
+static_assert(sizeof(Mgr) == 0x5C, "Network::Mgr layout changed");
 
 }  // namespace Network
 }  // namespace Pulsar

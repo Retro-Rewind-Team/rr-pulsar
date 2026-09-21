@@ -318,6 +318,7 @@ void System::UpdateContext() {
     bool isElimination = settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLEELIMINATION) && isBalloonBattle;
     bool isVR = settings.GetSettingValue(Pulsar::Settings::SETTING_VR) == VR_ENABLED && isNotPublic;
     bool isBattleRoyale = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED && isNotPublic && !isBattle && !isTimeTrial;
+    bool isFriendRoomCPUs = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCPUS) == FROOM_CPUS_ENABLED && isFroom && !isBattle && !isExtendedTeams && !isKO && !isVR;
     const u8 koRoyaleBalloons = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEBALLOONS);
     bool isKoPerRace2 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_2;
     bool isKoPerRace3 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_3;
@@ -393,6 +394,8 @@ void System::UpdateContext() {
                 isKoRoyaleLaps1_5x = newContext2 & (1 << PULSAR_KOROYALE_LAPS_1_5X);
                 isKoRoyaleLaps2_0x = newContext2 & (1 << PULSAR_KOROYALE_LAPS_2_0X);
                 isVanillaMode = newContext2 & (1 << PULSAR_VANILLAMODE);
+                isFriendRoomCPUs = newContext2 & (1 << PULSAR_FROOM_CPUS);
+                if (isExtendedTeams || isKO || isVR) isFriendRoomCPUs = false;
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -467,7 +470,7 @@ void System::UpdateContext() {
                             (isKoPerRace4) << PULSAR_KOPERRACE_4 |
                             (isKoRoyaleLaps1_5x) << PULSAR_KOROYALE_LAPS_1_5X |
                             (isKoRoyaleLaps2_0x) << PULSAR_KOROYALE_LAPS_2_0X |
-                            (isVanillaMode) << PULSAR_VANILLAMODE;
+                            (isVanillaMode) << PULSAR_VANILLAMODE | (isFriendRoomCPUs) << PULSAR_FROOM_CPUS;
     }
 
     // Combine the new context with preserved bits

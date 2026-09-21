@@ -2087,6 +2087,8 @@ RacedataHandler_unpackPackets__Q24Kart14KartNetReceiverFv = 0x80589f64
 RacedataFactory_packRacedataRecord__Q24Kart13KartNetSenderFv = 0x8058cb30
 setRACEDATAs__Q25RKNet9PacketMgrFPQ25RKNet14RACEDATAPacketUiUi = 0x80653960
 getRACEDATAPacket__Q25RKNet9PacketMgrFUi = 0x80653abc
+GetRACEDATA__Q25RKNet9PacketMgrFUc = 0x80653abc
+CreateModel__Q24Kart6PlayerFv = 0x8058f820
 
 #EVENT
 AddEntry__Q25RKNet12EVENTHandlerF9ItemObjIdQ25RKNet11EVENTActionPCvUi = 0x8065b780
@@ -2580,6 +2582,8 @@ LoadKartArchive__10ArchiveMgrFUc6KartId11CharacterIdUiUiPQ23EGG4HeapPQ23EGG4Heap
 LoadKartArchiveHolder2__10ArchiveMgrFUc6KartId11CharacterIdUiUiPQ23EGG4HeapPQ23EGG4Heap = 0x80540f90
 GetKartArchivePostfix__10ArchiveMgrF11CharacterId = 0x805419c8
 LoadKartArchiveAsync__10ArchiveMgrFUc = 0x80541e44
+GetKartArchiveFile__10ArchiveMgrCFUcPCcPUi = 0x805413c8
+HasKartArchive__10ArchiveMgrCFUc = 0x805415c4
 sInstance__6ScnMgr = 0x809c1850
 MenuUpdate__10SectionMgrFv = 0x8063583c
 StartSound__Q25Audio13RaceAnimActorFUi = 0x80701140
@@ -2629,3 +2633,31 @@ Update__Q24Kart6KillerFv = 0x8059bc44
 
 AssignTeams__Q25Pages11VSTeamsViewFv = 0x8084ffc8
 IsMultiplayer__Q25Pages4MenuFv = 0x808388b4
+GetModelsVisibility__Q24Kart4LinkFv = 0x8059108c
+
+SetCharacterId__14RacedataPlayerF11CharacterId = 0x8052e42c
+SetKartId__14RacedataPlayerF6KartId = 0x8052e444
+SetPlayerType__14RacedataPlayerF10PlayerType = 0x8052e44c
+SetMii__14RacedataPlayerFP3Mii = 0x80530f30
+GetMii__14RacedataPlayerCFv = 0x80531068
+GetPlayerType__14RacedataPlayerCFv = 0x8052ed20
+sInstance__Q22AI7Manager = 0x809c2be8
+GetKartAIController__Q22AI7ManagerCFUc = 0x80739300
+GetPhysics__Q24Kart4LinkFv = 0x805903cc
+GetMtx__Q24Kart4LinkCFv = 0x80590264
+SetStickX__Q25Input5StateFUc = 0x8051e9e8
+SetStickY__Q25Input5StateFUc = 0x8051ea60
+CopyCPUInputs__14RaceinfoPlayerFRCQ25Input5State = 0x80535718
+SetKartPosition__Q24Kart4LinkFRC4Vec3 = 0x80590238
+SetKartRotation__Q24Kart4LinkFRCQ23EGG5Quatf = 0x80590288
+Update__Q22AI7ManagerFv = 0x8073942c
+Reset__Q25Input5StateFv = 0x8051e85c
+Update__16KartAIControllerFv = 0x807261b8
+GetRH2__Q25RKNet9PacketMgrFUc = 0x80653cb8
+__dt__Q25Input5StateFv = 0x8051ec94
+GetKartArchiveFileHolder2__10ArchiveMgrCFUcPCcPUi = 0x80541438
+HasKartArchiveHolder2__10ArchiveMgrCFUc = 0x805415d4
+GetKartArchivePrefix__10ArchiveMgrF6KartId = 0x805419ec
+GetCharacterId__14RacedataPlayerCFv = 0x80530f20
+CopyMii__8MiiGroupFUcUc = 0x805fabf4
+UpdateParams__Q24Item9PlayerObjFv = 0x80791e5c

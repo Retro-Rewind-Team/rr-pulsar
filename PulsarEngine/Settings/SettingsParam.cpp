@@ -65,7 +65,8 @@ const SettingDef Params::settingDefs[SETTING_COUNT] = {
     {SETTING_EXTENDEDTEAMSLINE, 2},
     {SETTING_EXTENDEDTEAMSPLAYERS, 4},
     {SETTING_LOOSEARCHIVEOVERRIDES, 2},
-    {SETTING_LANGUAGE, 13}};
+    {SETTING_LANGUAGE, 13},
+    {SETTING_FROOMCPUS, 2}};
 
 static const SettingId race1RadioSettings[] = {
     SETTING_BRAKEDRIFT,
@@ -121,7 +122,8 @@ static const SettingId froom1Radios[] = {
     SETTING_KARTSELECT,
     SETTING_CHARSELECT,
     SETTING_RANKINGS,
-    SETTING_VR};
+    SETTING_VR,
+    SETTING_FROOMCPUS};
 
 static const SettingId froom1Scrollers[] = {
     SETTING_RACECOUNT,

@@ -315,11 +315,30 @@ TPLPalettePtr LoadLooseMinimapTPL(CharacterId character, u8 table) {
     return palette;
 }
 
+static bool IsFriendRoomCPUForMinimap(const RacedataScenario &scenario, u8 playerId) {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const System *system = System::sInstance;
+    if (controller == nullptr || system == nullptr || !system->IsContext(PULSAR_FROOM_CPUS)) return false;
+
+    const u32 humanCount = controller->subs[controller->currentSub].playerCount;
+    return humanCount != 0 && humanCount < scenario.playerCount && playerId >= humanCount && playerId < scenario.playerCount && scenario.players[playerId].playerType != PLAYER_NONE;
+}
+
 void InitMinimapCharacterHook(CtrlRace2DMapCharacter *control) {
     const Racedata *racedata = Racedata::sInstance;
     if (control != nullptr && racedata != nullptr && control->playerId < racedata->racesScenario.playerCount) {
         const u8 playerId = control->playerId;
         const CharacterId character = racedata->racesScenario.players[playerId].characterId;
+
+        if (IsFriendRoomCPUForMinimap(racedata->racesScenario, playerId)) {
+            const char *pane = GetCharacterIconPaneName(character);
+            if (pane != nullptr) {
+                control->SetPicturePane("chara_0_0", pane);
+                control->SetPicturePane("chara_shadow_0_0", pane);
+                control->SetPicturePane("chara_shadow_0_1", pane);
+            }
+        }
+
         TPLPalettePtr tpl = LoadLooseMinimapTPL(character, RaceSkinTable(playerId, character));
         if (tpl != nullptr) {
             nw4r::lyt::Pane *panes[] = {control->charaPane, control->charaShadow0Pane, control->charaShadow1Pane};

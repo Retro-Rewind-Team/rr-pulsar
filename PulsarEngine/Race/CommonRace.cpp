@@ -4,12 +4,14 @@
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <Network/Rating/PlayerRating.hpp>
+#include <Network/FriendRoomCPUs.hpp>
 
 namespace Pulsar {
 // For hooks which are shared by different things
 
 namespace Race {
 void UpdatePoints(RacedataScenario &scenario) {
+    Network::ApplyFriendRoomCPUResultOrder();
     const GameType oldType = scenario.settings.gametype;
     const System *system = System::sInstance;
     Racedata *racedata = Racedata::sInstance;
