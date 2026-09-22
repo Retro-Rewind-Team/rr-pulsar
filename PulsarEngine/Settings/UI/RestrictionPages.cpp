@@ -26,13 +26,9 @@ CharacterRestrictionPage::CharacterRestrictionPage() {
 }
 
 void CharacterRestrictionPage::OnInit() {
-    Section *section = SectionMgr::sInstance->curSection;
-    Page *characterSelect = section->pages[PAGE_CHARACTER_SELECT];
-    section->pages[PAGE_CHARACTER_SELECT] = this;
     Restrictions::SetCharacterRestrictionConfigActive(true);
     Pages::CharacterSelect::OnInit();
     Restrictions::SetCharacterRestrictionConfigActive(false);
-    section->pages[PAGE_CHARACTER_SELECT] = characterSelect;
     prevPageId = static_cast<PageId>(SettingsPanel::id);
     nextPageId = static_cast<PageId>(SettingsPanel::id);
     controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, restrictionBackPressHandler, false, false);

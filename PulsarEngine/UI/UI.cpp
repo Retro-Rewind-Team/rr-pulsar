@@ -310,7 +310,14 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
         self.Set(page, initId);
     else
         self.SetPulPage(page, static_cast<PulPageId>(id));
+
+    Page *characterSelect = nullptr;
+    if (id == CharacterRestrictionPage::id) {
+        characterSelect = self.pages[PAGE_CHARACTER_SELECT];
+        self.pages[PAGE_CHARACTER_SELECT] = page;
+    }
     page->Init(initId);
+    if (id == CharacterRestrictionPage::id) self.pages[PAGE_CHARACTER_SELECT] = characterSelect;
 }
 kmBranch(0x80622d08, ExpSection::CreateAndInitPage);
 
