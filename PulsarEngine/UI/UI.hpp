@@ -292,7 +292,7 @@ enum BMG {
     BMG_CUPS = 0x10000,
     BMG_TRACKS = 0x20000,
     BMG_AUTHORS = 0x30000,
-    BMG_MUSIC_CREDITS = 0x70000,
+    BMG_MUSIC_CREDITS = 0x170000,
     BMG_VARIANT_MUSIC_CREDITS = 0x620000,
 
     // ADD 0x50000 to all of these for YOUR settings, 0x52f01 = the button text etc...
