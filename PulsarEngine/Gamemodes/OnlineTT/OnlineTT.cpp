@@ -23,6 +23,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Settings/Settings.hpp>
 
 namespace Pulsar {
@@ -45,8 +46,13 @@ kmCall(0x805798c0, CondSlipstream);
 void CondTTObjects(u32 r3, u32 r4, u32 r5, u32 r6, bool isTT) {
     register ObjectsMgr *mgr;
     asm(mr mgr, r31;);
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT))
-        isTT = true;
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT)) isTT = true;
+	if (Racedata::sInstance != nullptr) {
+		const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+		if (MissionMode::HasMissionFeature(scenario, MissionMode::ITEM_MODE_OVERRIDE) &&
+			MissionMode::GetMissionItemMode(scenario) == GAMEMODE_NONE)
+			isTT = true;
+	}
     mgr->isTT = isTT;
 }
 kmCall(0x8082a4ec, CondTTObjects);
