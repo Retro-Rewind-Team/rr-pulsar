@@ -212,7 +212,7 @@ static bool FindConfiguredMusicTrack(const RacedataScenario &scenario, PulsarId 
 static bool FindConfiguredMusicSlot(CourseId &musicSlot) {
     if (CupsConfig::sInstance == nullptr || Racedata::sInstance == nullptr) return false;
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    if (!IsMissionScenario(scenario) || IsMissionBossObjective(scenario) || IsMissionScoreObjective(scenario)) return false;
+    if (!IsMissionScenario(scenario)) return false;
 
     const u32 missionId = scenario.settings.raceNumber;
     if (missionId >= MAX_MISSION_MUSIC_ENTRIES || !hasAssociation[missionId]) return false;
@@ -237,12 +237,8 @@ static bool FindConfiguredMusicSlot(CourseId &musicSlot) {
 }
 
 static bool ResolveForcedMusic(const RacedataScenario &scenario, const char *&extFilePath) {
-    const char *path = nullptr;
-    if (IsMissionBossObjective(scenario))
-        path = MISSION_BOSS_MUSIC_FILE;
-    else if (IsMissionScoreObjective(scenario))
-        path = MISSION_RUN_MUSIC_FILE;
-    if (path == nullptr || !CheckPath(path)) return false;
+    const char *path = IsMissionBossObjective(scenario) ? MISSION_BOSS_MUSIC_FILE : MISSION_RUN_MUSIC_FILE;
+    if (!CheckPath(path)) return false;
     extFilePath = path;
     return true;
 }
@@ -280,14 +276,17 @@ bool ResolveMissionMusicPath(const char *brstmRoot, const char *&extFilePath) {
     if (!IsMissionScenario(scenario)) return false;
 
     const u32 missionId = scenario.settings.raceNumber;
-    if (ResolveForcedMusic(scenario, extFilePath)) return true;
-
     LoadAssociations();
-    if (missionId >= MAX_MISSION_MUSIC_ENTRIES || !hasAssociation[missionId]) return false;
+    if (missionId >= MAX_MISSION_MUSIC_ENTRIES || !hasAssociation[missionId])
+        return ResolveForcedMusic(scenario, extFilePath);
 
     const char *root = brstmRoot != nullptr ? brstmRoot : "/sound/";
     snprintf(resolvedPath, sizeof(resolvedPath), "%sstrm/%s_n.brstm", root, associationNames[missionId]);
-    if (!CheckPath(resolvedPath)) return false;
+    if (!CheckPath(resolvedPath)) {
+        PulsarId trackId;
+        if (FindConfiguredMusicTrack(scenario, trackId)) return false;
+        return ResolveForcedMusic(scenario, extFilePath);
+    }
     extFilePath = resolvedPath;
     return true;
 }
