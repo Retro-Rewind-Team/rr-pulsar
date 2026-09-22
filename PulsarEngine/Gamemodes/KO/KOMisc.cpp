@@ -1,3 +1,4 @@
+#include <PulsarSystem.hpp>
 #include <MarioKartWii/RKNet/SELECT.hpp>
 #include <MarioKartWii/RKNet/ITEM.hpp>
 #include <MarioKartWii/3D/Camera/CameraMgr.hpp>
@@ -39,9 +40,10 @@ kmCall(0x807f4b64, EditPosTracker);
 static u8 ReturnCorrectId(u8 localId) {
     const System *system = System::sInstance;
     const RaceCameraMgr *cameraMgr = RaceCameraMgr::sInstance;
-    if (system != nullptr && system->IsContext(PULSAR_MODE_KO) && system->koMgr != nullptr && system->koMgr->isSpectating) {
-        if (cameraMgr == nullptr) return 0;
-        return cameraMgr->focusedPlayerIdx;
+    if (system != nullptr && cameraMgr != nullptr && system->IsContext(PULSAR_MODE_KO) && system->koMgr != nullptr && system->koMgr->isSpectating) {
+        const u8 cameraIdx = cameraMgr->focusedPlayerIdx;
+        if (cameraIdx >= cameraMgr->cameraCount || cameraMgr->cameras[cameraIdx] == nullptr) return 0;
+        return cameraMgr->cameras[cameraIdx]->playerId;
     }
     return localId;
 }
@@ -120,7 +122,7 @@ static u8 SwapUISelectInfo() {
     if (system->IsContext(PULSAR_MODE_KO)) {
         if (localPlayerCount == 1) {
             Mgr *mgr = system->koMgr;
-            curHudSlotId = mgr->IsKOdAid(aid, 0);  // if only one localPlayer but slot 0 is KOd, that guarantees it was initially 2 players and the main is out
+            curHudSlotId = mgr->IsKOdAid(aid, 0) || mgr->IsDisconnectedAid(aid, 0);  // if only one localPlayer but slot 0 is out, the surviving player was originally the guest
             const RKNet::Controller *controller = RKNet::Controller::sInstance;
             const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
             if (curHudSlotId == 1 && aid == sub.localAid && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();

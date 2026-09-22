@@ -151,7 +151,8 @@ void Mgr::AddRaceStats() {
         if (stats.boolCountArray >= arbitraryAlmostDied) ++stats.final.almostKOdCounter;
         const u8 pos = Raceinfo::sInstance->players[scenario.settings.hudPlayerIds[hudSlot]]->position;
         stats.percentageSum += static_cast<float>(pos) / static_cast<float>(System::sInstance->nonTTGhostPlayersCount);  // this allows higher precision across multiple races
-        stats.final.finalPercentageSum = static_cast<u8>(stats.percentageSum * 100);
+        ++stats.racesPlayed;
+        stats.final.finalPercentageSum = static_cast<u8>((stats.percentageSum * 100.0f) / static_cast<float>(stats.racesPlayed));
     }
 
     this->ResetRace();
@@ -253,10 +254,8 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr, size_t nit
     }
 
     u8 koCount = self->GetRoundKoCount(playerCount);
-
     const bool isKoRace = currentRaceNumber % self->racesPerKO == 0;
     const bool is1v1KoRace = playerCount == 2 && self->Is1v1KoRace(currentRaceNumber);
-    const bool isCompletedKoRace = isKoRace && koCount > 0;
     if (isKoRace) {
         if (disconnectedKOs >= koCount)
             koCount = 0;
@@ -264,8 +263,26 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr, size_t nit
             koCount -= disconnectedKOs;
     }
 
-    if (is1v1KoRace || (playerCount - disconnectedKOs) == 1) {
-        if (is1v1KoRace && self->racesPerKO > 1) {
+    u8 activePlayerCount = 0;
+    u8 lastActivePlayer = 0xFF;
+    for (u8 playerId = 0; playerId < playerCount; ++playerId) {
+        if (!self->IsKOdPlayerId(playerId) && !self->IsDisconnectedPlayerId(playerId)) {
+            ++activePlayerCount;
+            lastActivePlayer = playerId;
+        }
+    }
+
+    if (activePlayerCount <= 1) {
+        if (activePlayerCount == 1) self->winnerPlayerId = lastActivePlayer;
+        self->AddRaceStats();
+        self->FinishOfflineVSIfAllLocalPlayersAreOut();
+        if (self->winnerPlayerId != 0xFF && self->IsOfflineVS()) sectionParams->vsRaceNumber = sectionParams->vsRaceCount;
+        self->AdvanceOfflineRaceNumber();
+        return;
+    }
+
+    if (is1v1KoRace) {
+        if (self->racesPerKO > 1) {
             if (playerArr[0].totalScore == playerArr[1].totalScore) {
                 self->SetTie(playerArr[0].playerId, playerArr[1].playerId);
                 if (self->IsOfflineVS())
@@ -288,50 +305,67 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr, size_t nit
         return;
     }
 
-    if (!isCompletedKoRace) {
+    if (!isKoRace) {
         self->AddRaceStats();
         self->AdvanceOfflineRaceNumber();
         return;
     }
 
     if (self->racesPerKO > 1) {
-        u32 koThresholdPosition = playerCount - koCount;
-        u32 tieScore = playerArr[koThresholdPosition].totalScore;
+        if (koCount > 0) {
+            const u8 koThresholdPosition = static_cast<u8>(activePlayerCount - koCount);
+            u8 activePosition = 0;
+            u8 thresholdPlayerId = 0xFF;
+            u32 tieScore = 0;
 
-        int tiedPlayersCount = 0;
-        int playersInKOPosition = 0;
-        int playersNotInKOPosition = 0;
-
-        for (int position = 0; position < playerCount; ++position) {
-            if (playerArr[position].totalScore == tieScore) {
-                ++tiedPlayersCount;
-                if (position >= koThresholdPosition) {
-                    ++playersInKOPosition;
-                } else {
-                    ++playersNotInKOPosition;
+            for (u8 position = 0; position < playerCount; ++position) {
+                const u8 playerId = playerArr[position].playerId;
+                if (self->IsKOdPlayerId(playerId) || self->IsDisconnectedPlayerId(playerId)) continue;
+                if (activePosition == koThresholdPosition) {
+                    thresholdPlayerId = playerId;
+                    tieScore = playerArr[position].totalScore;
+                    break;
                 }
+                ++activePosition;
             }
-        }
 
-        if (playersInKOPosition > 0 && playersNotInKOPosition > 0) {
-            for (int position = 0; position < playerCount; ++position) {
+            int tiedPlayersCount = 0;
+            int playersInKOPosition = 0;
+            int playersNotInKOPosition = 0;
+            activePosition = 0;
+
+            for (u8 position = 0; position < playerCount; ++position) {
+                const u8 playerId = playerArr[position].playerId;
+                if (self->IsKOdPlayerId(playerId) || self->IsDisconnectedPlayerId(playerId)) continue;
                 if (playerArr[position].totalScore == tieScore) {
-                    self->SetTie(playerArr[position].playerId, playerArr[koThresholdPosition].playerId);
-                    hasTies = true;
+                    ++tiedPlayersCount;
+                    if (activePosition >= koThresholdPosition)
+                        ++playersInKOPosition;
+                    else
+                        ++playersNotInKOPosition;
                 }
+                ++activePosition;
             }
-            if (hasTies) {
+
+            if (playersInKOPosition > 0 && playersNotInKOPosition > 0) {
+                for (u8 position = 0; position < playerCount; ++position) {
+                    const u8 playerId = playerArr[position].playerId;
+                    if (self->IsKOdPlayerId(playerId) || self->IsDisconnectedPlayerId(playerId)) continue;
+                    if (playerArr[position].totalScore == tieScore) self->SetTie(playerId, thresholdPlayerId);
+                }
+                hasTies = true;
                 if (self->IsOfflineVS())
                     --sectionParams->vsRaceNumber;
                 else
                     --sectionParams->onlineParams.currentRaceNumber;
                 koCount = 0;
-            }
-        } else if (tiedPlayersCount == koCount) {
-            for (int position = 0; position < playerCount; ++position) {
-                if (playerArr[position].totalScore == tieScore) {
-                    self->SetKOd(playerArr[position].playerId);
+            } else if (tiedPlayersCount == koCount) {
+                for (u8 position = 0; position < playerCount; ++position) {
+                    const u8 playerId = playerArr[position].playerId;
+                    if (self->IsKOdPlayerId(playerId) || self->IsDisconnectedPlayerId(playerId)) continue;
+                    if (playerArr[position].totalScore == tieScore) self->SetKOd(playerId);
                 }
+                koCount = 0;
             }
         }
 
@@ -344,14 +378,14 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr, size_t nit
     }
 
     if (koCount > 0) {
-        for (int idx = 0; idx < koCount; ++idx) {
+        u8 assignedKOs = 0;
+        for (s32 idx = playerCount - 1; idx >= 0 && assignedKOs < koCount; --idx) {
             u8 playerId;
-            u32 position = (playerCount - 1) - idx;
 
             if (self->racesPerKO == 1) {
-                playerId = raceinfo->playerIdInEachPosition[position];
+                playerId = raceinfo->playerIdInEachPosition[idx];
             } else {
-                playerId = playerArr[position].playerId;
+                playerId = playerArr[idx].playerId;
 
                 if (playerCount > 2 && playerId == self->winnerPlayerId) {
                     continue;
@@ -363,6 +397,7 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr, size_t nit
             }
 
             self->SetKOd(playerId);
+            ++assignedKOs;
         }
     }
 
@@ -398,7 +433,7 @@ void Mgr::Update() {
             const u32 idx = Raceinfo::sInstance->raceFrames % 300;
 
             Stats &stats = self->stats[hudSlot];
-            if (wouldBeOut) ++stats.final.timeInDanger;
+            if (wouldBeOut && stats.final.timeInDanger != 0xFFFF) ++stats.final.timeInDanger;
             if (!stats.isInDangerFrames[idx] && wouldBeOut)
                 ++stats.boolCountArray;
             else if (stats.isInDangerFrames[idx] && !wouldBeOut)

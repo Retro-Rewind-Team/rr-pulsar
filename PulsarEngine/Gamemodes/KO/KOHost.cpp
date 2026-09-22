@@ -27,6 +27,7 @@ void HAWChangeData() {
     if (system->IsContext(PULSAR_MODE_KO)) {
         u8 oldAidsBelonging[12];
         u8 oldPlayerIds[12][2];
+        memset(oldPlayerIds, 0xFF, sizeof(oldPlayerIds));
 
         Mgr *mgr = system->koMgr;
         mgr->PatchAids(sub);
@@ -49,15 +50,19 @@ void HAWChangeData() {
         }
         for (int playerId = 0; playerId < 12; ++playerId) {
             u8 aid = oldAidsBelonging[playerId];
+            if (aid >= 12) continue;
             u8 hudSlotId = 0;
             if (playerId != 0 && oldAidsBelonging[playerId - 1] == aid) hudSlotId = 1;
-            oldPlayerIds[aid][hudSlotId] = playerId;
+            if (mgr->IsKOdAid(aid, hudSlotId) || mgr->IsDisconnectedAid(aid, hudSlotId)) continue;
+            const u8 compactSlot = oldPlayerIds[aid][0] == 0xFF ? 0 : 1;
+            oldPlayerIds[aid][compactSlot] = playerId;
         }
 
         Racedata *racedata = Racedata::sInstance;
         SectionMgr *sectionMgr = SectionMgr::sInstance;
         SectionParams *params = sectionMgr->sectionParams;
-        if (sub.localPlayerCount == 2 && !mgr->IsKOdAid(localAid, 0) && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();
+        const bool isMainOut = mgr->IsKOdAid(localAid, 0) || mgr->IsDisconnectedAid(localAid, 0);
+        if (sub.localPlayerCount == 1 && isMainOut && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();
 
         for (int playerId = 0; playerId < 12; ++playerId) {
             RacedataPlayer &player = racedata->menusScenario.players[playerId];

@@ -67,7 +67,6 @@ void WinnerPage::DisplayWinner() {
 }
 
 void WinnerPage::AfterControlUpdate() {
-    const u32 maxDuration = 600;
     this->duration++;
 
     if (this->status == WAITING_STATS) {
@@ -91,7 +90,7 @@ void WinnerPage::AfterControlUpdate() {
                 this->stats[i].SetTextBoxMessage("menu_text", UI::BMG_KO_AVERAGE_PERCENT_TITLE + i);
             }
             Text::Info info;
-            info.intToPass[0] = finalStats->finalPercentageSum / (SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber + 1);
+            info.intToPass[0] = finalStats->finalPercentageSum;
             this->stats[0].SetTextBoxMessage("score", UI::BMG_PERCENT_RACE, &info);
 
             u16 framesDanger = finalStats->timeInDanger;
@@ -121,10 +120,6 @@ void WinnerPage::AfterControlUpdate() {
         }
     } else if (status == NO_STATS_TIME_ELAPSED) {
         if (duration == 900) this->EndStateAnimated(0, 0.0f);
-    }
-
-    if (duration >= maxDuration) {
-        this->EndStateAnimated(0, 0.0f);
     }
 }
 

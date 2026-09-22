@@ -28,7 +28,7 @@ public:
     };
 
     struct Stats {
-        Stats() : percentageSum(0.0f) {}
+        Stats() : percentageSum(0.0f), racesPlayed(0) {}
 
         struct Final {
             Final() : timeInDanger(0), almostKOdCounter(0), finalPercentageSum(0) {}
@@ -38,6 +38,7 @@ public:
         };
 
         float percentageSum;
+        u8 racesPlayed;
         bool isInDangerFrames[300];  // Updated each frame in race
         u32 boolCountArray;
         Final final;
