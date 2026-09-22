@@ -1143,6 +1143,7 @@ CreatePageById__7SectionF6PageId = 0x80623390
 CreateSectionPages__7SectionF9SectionId = 0x8062c3a4
 AddInitialLayers__7SectionF9SectionId = 0x80630094
 GetSceneId__7SectionF9SectionId = 0x80631588
+GetSoundId__7SectionF9SectionId = 0x80631c68
 IsGameplaySection__F9SectionId = 0x808609fc
 RemoveTopLayerPage__7SectionFv = 0x80623288
 UpdateLayers__7SectionFv = 0x80623068
