@@ -172,7 +172,9 @@ void ExpSection::CreatePulPages() {
     if (this->Get<Pages::DriftSelect>() != nullptr) {
         this->CreateAndInitPage(*this, TransmissionSelect::id);
     }
-    if (this->GetPulPage<SettingsPanel>() != nullptr) {
+
+    const bool canOpenRestrictionSettings = this->Get<ExpFroom>() != nullptr || this->sectionId == SECTION_P1_WIFI || this->sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE || this->sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || this->sectionId == SECTION_P2_WIFI || this->sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE;
+    if (canOpenRestrictionSettings && this->GetPulPage<SettingsPanel>() != nullptr) {
         if (this->GetPulPage<CharacterRestrictionPage>() == nullptr)
             this->CreateAndInitPage(*this, CharacterRestrictionPage::id);
         if (this->GetPulPage<VehicleRestrictionWeightPage>() == nullptr)
