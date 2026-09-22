@@ -452,6 +452,7 @@ void ExpCharacterSelect::OnActivate() {
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (!miiCUnlocked && rksys != nullptr) miiCUnlocked = PointRating::GetUserVR(rksys->curLicenseId) >= 300.0f;
 
+    CtrlMenuCharacterSelect::ButtonDriver *defaultButton = nullptr;
     if (!Restrictions::IsCharacterRestrictionEnabled()) {
         miiCButton.SetPlayerBitfield(miiCUnlocked ? playerBitfield : 0);
         if (!miiCUnlocked) {
@@ -460,31 +461,35 @@ void ExpCharacterSelect::OnActivate() {
             miiCButton.SetPicturePane("chara_light_01", "cha_26_hatena");
             miiCButton.SetPicturePane("chara_light_02", "cha_26_hatena");
             miiCButton.SetPicturePane("chara_c_down", "cha_26_hatena");
+            if (miiCButton.IsSelected()) defaultButton = &buttons[RetroRewind::System::BUTTON_MARIO];
         }
-        return;
+    } else {
+        for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
+            CtrlMenuCharacterSelect::ButtonDriver &button = buttons[slot];
+            const bool enabled = Restrictions::IsCharacterSlotEnabled(slot) && (slot != miiCSlot || miiCUnlocked);
+            if (enabled) {
+                button.SetPlayerBitfield(playerBitfield);
+                if (defaultButton == nullptr) defaultButton = &button;
+                continue;
+            }
+
+            button.SetPlayerBitfield(0);
+            button.SetPicturePane("chara", "cha_26_hatena");
+            button.SetPicturePane("chara_shadow", "cha_26_hatena");
+            button.SetPicturePane("chara_light_01", "cha_26_hatena");
+            button.SetPicturePane("chara_light_02", "cha_26_hatena");
+            button.SetPicturePane("chara_c_down", "cha_26_hatena");
+        }
     }
 
-    CtrlMenuCharacterSelect::ButtonDriver *firstEnabled = nullptr;
+    if (defaultButton == nullptr) return;
     for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
         CtrlMenuCharacterSelect::ButtonDriver &button = buttons[slot];
-        const bool enabled = Restrictions::IsCharacterSlotEnabled(slot) && (slot != miiCSlot || miiCUnlocked);
-        if (enabled) {
-            button.SetPlayerBitfield(playerBitfield);
-            if (firstEnabled == nullptr) firstEnabled = &button;
-            continue;
-        }
-
-        button.SetPlayerBitfield(0);
-        button.SetPicturePane("chara", "cha_26_hatena");
-        button.SetPicturePane("chara_shadow", "cha_26_hatena");
-        button.SetPicturePane("chara_light_01", "cha_26_hatena");
-        button.SetPicturePane("chara_light_02", "cha_26_hatena");
-        button.SetPicturePane("chara_c_down", "cha_26_hatena");
+        if (&button != defaultButton && button.IsSelected()) button.HandleDeselect(0, -1);
     }
-
-    if (firstEnabled == nullptr) return;
-    firstEnabled->Select(0);
-    OnButtonDriverSelect(firstEnabled, firstEnabled->buttonId, 0);
+    defaultButton->Select(0);
+    defaultButton->SetButtonColours(0);
+    OnButtonDriverSelect(defaultButton, defaultButton->buttonId, 0);
 }
 
 void ExpCharacterSelect::BeforeControlUpdate() {

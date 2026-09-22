@@ -26,9 +26,13 @@ CharacterRestrictionPage::CharacterRestrictionPage() {
 }
 
 void CharacterRestrictionPage::OnInit() {
+    Section *section = SectionMgr::sInstance->curSection;
+    Page *characterSelect = section->pages[PAGE_CHARACTER_SELECT];
+    section->pages[PAGE_CHARACTER_SELECT] = this;
     Restrictions::SetCharacterRestrictionConfigActive(true);
     Pages::CharacterSelect::OnInit();
     Restrictions::SetCharacterRestrictionConfigActive(false);
+    section->pages[PAGE_CHARACTER_SELECT] = characterSelect;
     prevPageId = static_cast<PageId>(SettingsPanel::id);
     nextPageId = static_cast<PageId>(SettingsPanel::id);
     controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, restrictionBackPressHandler, false, false);
@@ -70,8 +74,10 @@ void CharacterRestrictionPage::UpdateButtonVisuals() {
     if (buttons == nullptr) return;
     for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
         const bool enabled = ((mask >> slot) & 1) != 0;
-        buttons[slot].InitSelf();
-        if (buttons[slot].IsSelected()) buttons[slot].SetButtonColours(0);
+        if (buttons[slot].IsSelected())
+            buttons[slot].SetButtonColours(0);
+        else
+            buttons[slot].ResetButtonColours(0);
 
         if (!enabled && buttons[slot].black_base != nullptr) {
             const ut::Color red(0xA00000FF);

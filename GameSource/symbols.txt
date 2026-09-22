@@ -2394,6 +2394,7 @@ GetCharacterBMGId__F11CharacterIdb = 0x80833774
 GetMiiCharacterId__FRC3Mii = 0x80831af4
 GetCharacterIconPaneName__F11CharacterId = 0x80860acc
 SetButtonColours__Q223CtrlMenuCharacterSelect12ButtonDriverFUi = 0x807e4130
+ResetButtonColours__Q223CtrlMenuCharacterSelect12ButtonDriverFUi = 0x807e3efc
 OnButtonDriverSelect__Q25Pages15CharacterSelectFPQ223CtrlMenuCharacterSelect12ButtonDriverUiUc = 0x8083e5f4
 IsKartUnlocked = 0x8081cfb4
 IsKartUnlocked__F6KartIdUi = 0x8081cfb4
