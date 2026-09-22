@@ -123,6 +123,12 @@ void Mgr::Init(const u16 *totalTrophyCount, const char *settingsPath, const char
     if (params.customEngineClass < 100 || params.customEngineClass > 9999) {
         params.customEngineClass = 150;
     }
+    params.reserved[0] &= Restrictions::ALL_CHARACTERS;
+    if (params.reserved[0] == 0) params.reserved[0] = Restrictions::ALL_CHARACTERS;
+    for (u32 weight = 0; weight < Restrictions::VEHICLE_WEIGHT_COUNT; ++weight) {
+        params.reserved[weight + 1] &= Restrictions::ALL_VEHICLES;
+        if (params.reserved[weight + 1] == 0) params.reserved[weight + 1] = Restrictions::ALL_VEHICLES;
+    }
     system->netMgr.customEngineClass = params.customEngineClass;
     if (params.rankingBadge != Ranking::NORMAL_RANKING_BADGE &&
         (params.rankingBadge < Ranking::SPECIAL_BADGE_FIRST || params.rankingBadge > Ranking::SPECIAL_BADGE_LAST)) {

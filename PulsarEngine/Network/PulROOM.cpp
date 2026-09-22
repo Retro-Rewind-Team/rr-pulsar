@@ -22,6 +22,13 @@ static void ConvertROOMPacketToData(const PulROOM &packet) {
     system->netMgr.hostCustomEngineClass = packet.customEngineClass >= 100 && packet.customEngineClass <= 9999
                                                ? packet.customEngineClass
                                                : 0;
+    system->netMgr.characterRestrictionMask = packet.characterRestrictionMask & Restrictions::ALL_CHARACTERS;
+    if (system->netMgr.characterRestrictionMask == 0) system->netMgr.characterRestrictionMask = Restrictions::ALL_CHARACTERS;
+    for (u32 weight = 0; weight < Restrictions::VEHICLE_WEIGHT_COUNT; ++weight) {
+        system->netMgr.vehicleRestrictionMasks[weight] = packet.vehicleRestrictionMasks[weight] & Restrictions::ALL_VEHICLES;
+        if (system->netMgr.vehicleRestrictionMasks[weight] == 0)
+            system->netMgr.vehicleRestrictionMasks[weight] = Restrictions::ALL_VEHICLES;
+    }
     memcpy(system->netMgr.hostSettingsPreview, packet.hostSettingsPreview, sizeof(system->netMgr.hostSettingsPreview));
     system->netMgr.hasHostSettingsPreview = true;
 }
@@ -88,11 +95,8 @@ static void HandleExtendedTeamUpdates(const PulROOM &packet) {
 static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     System *system = System::sInstance;
 
-    const bool isCharRestrictLight = hostContext & (1 << PULSAR_CHARRESTRICTLIGHT);
-    const bool isCharRestrictMid = hostContext & (1 << PULSAR_CHARRESTRICTMID);
-    const bool isCharRestrictHeavy = hostContext & (1 << PULSAR_CHARRESTRICTHEAVY);
-    const bool isKartRestrictKart = hostContext & (1 << PULSAR_KARTRESTRICT);
-    const bool isKartRestrictBike = hostContext & (1 << PULSAR_BIKERESTRICT);
+    const bool isCharRestrict = hostContext & (1 << PULSAR_CHARRESTRICT);
+    const bool isVehicleRestrict = hostContext & (1 << PULSAR_VEHICLERESTRICT);
     const bool isInsideForced = hostContext2 & (1 << PULSAR_TRANSMISSIONINSIDE);
     const bool isOutsideForced = hostContext2 & (1 << PULSAR_TRANSMISSIONOUTSIDE);
     const bool isVanillaForced = hostContext2 & (1 << PULSAR_TRANSMISSIONVANILLA);
@@ -108,20 +112,16 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     u32 context = (isStartRetro << PULSAR_STARTRETROS) | (isStartCT << PULSAR_STARTCTS) |
                   (isStartRTS << PULSAR_STARTREGS) | (isStart200 << PULSAR_START200) |
                   (isStartOTT << PULSAR_STARTOTT) | (isStartItemRain << PULSAR_STARTITEMRAIN) |
-                  (isCharRestrictLight << PULSAR_CHARRESTRICTLIGHT) | (isCharRestrictMid << PULSAR_CHARRESTRICTMID) |
-                  (isCharRestrictHeavy << PULSAR_CHARRESTRICTHEAVY) | (isKartRestrictKart << PULSAR_KARTRESTRICT) |
-                  (isKartRestrictBike << PULSAR_BIKERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
+                  (isCharRestrict << PULSAR_CHARRESTRICT) | (isVehicleRestrict << PULSAR_VEHICLERESTRICT) |
+                  (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
     u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE) | (isVanillaForced << PULSAR_TRANSMISSIONVANILLA) | (isVanillaMode << PULSAR_VANILLAMODE);
     system->context = context;
     system->context2 = context2;
 
     if (isStartCT || isStartRetro || isStartRTS || isStart200 || isStartOTT || isStartItemRain) {
         system->context &= ~(1 << PULSAR_EXTENDEDTEAMS);
-        system->context &= ~(1 << PULSAR_CHARRESTRICTHEAVY);
-        system->context &= ~(1 << PULSAR_CHARRESTRICTMID);
-        system->context &= ~(1 << PULSAR_CHARRESTRICTLIGHT);
-        system->context &= ~(1 << PULSAR_KARTRESTRICT);
-        system->context &= ~(1 << PULSAR_BIKERESTRICT);
+        system->context &= ~(1 << PULSAR_CHARRESTRICT);
+        system->context &= ~(1 << PULSAR_VEHICLERESTRICT);
     }
 
     return isExtendedTeams;
@@ -147,6 +147,9 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         const u8 ccSetting = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC);
         destPacket->customEngineClass = ccSetting == HOSTCC_CUSTOM ? system->netMgr.customEngineClass : 0;
         system->netMgr.hostCustomEngineClass = destPacket->customEngineClass;
+        destPacket->characterRestrictionMask = settings.GetCharacterRestrictionMask();
+        for (u32 weight = 0; weight < Restrictions::VEHICLE_WEIGHT_COUNT; ++weight)
+            destPacket->vehicleRestrictionMasks[weight] = settings.GetVehicleRestrictionMask(weight);
         WriteHostSettingsPreviewToPacket(destPacket, settings);
         const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
@@ -164,11 +167,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         u8 battleElim = settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLEELIMINATION) && isBalloonBattle;
         u8 ottOnline = settings.GetSettingValue(Pulsar::Settings::SETTING_OTTONLINE);
         const u8 miiHeads = settings.GetSettingValue(Pulsar::Settings::SETTING_ALLOWMIIHEADS) == ALLOW_MIIHEADS_ENABLED;
-        u8 charRestrictLight = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHAR_LIGHTONLY;
-        u8 charRestrictMid = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHAR_MEDIUMONLY;
-        u8 charRestrictHeavy = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHAR_HEAVYONLY;
-        u8 kartRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == KART_KARTONLY;
-        u8 bikeRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == KART_BIKEONLY;
+        const u8 charRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHARACTER_RESTRICT_ENABLED;
+        const u8 vehicleRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == VEHICLE_RESTRICT_ENABLED;
         u8 itemModeRandom = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
         u8 itemModeBlast = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
         u8 itemModeNone = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_NONE;
@@ -231,9 +231,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
                                          (ottOnline == OTTSETTING_ONLINE_FEATHER) << PULSAR_FEATHER |  // ott feather
                                          (settings.GetSettingValue(Pulsar::Settings::SETTING_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED) << PULSAR_UMTS |  // ott umts
                                          koSetting << PULSAR_MODE_KO | lapKoSetting << PULSAR_MODE_LAPKO |
-                                         charRestrictLight << PULSAR_CHARRESTRICTLIGHT | charRestrictMid << PULSAR_CHARRESTRICTMID |
-                                         charRestrictHeavy << PULSAR_CHARRESTRICTHEAVY | kartRestrict << PULSAR_KARTRESTRICT |
-                                         bikeRestrict << PULSAR_BIKERESTRICT | koFinal << PULSAR_KOFINAL |
+                                         charRestrict << PULSAR_CHARRESTRICT | vehicleRestrict << PULSAR_VEHICLERESTRICT |
+                                         koFinal << PULSAR_KOFINAL |
                                          changeCombo << PULSAR_CHANGECOMBO | normalTC << PULSAR_THUNDERCLOUD |
                                          (settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC) == HOSTCC_500) << PULSAR_500 | regsOnly << PULSAR_REGS |
                                          retrosOnly << PULSAR_RETROS | ctsOnly << PULSAR_CTS |

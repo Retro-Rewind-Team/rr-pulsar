@@ -129,6 +129,7 @@ void UpdateCharacterSelectText(u8 hud);
 // Heap and loose asset loading helpers.
 void SyncRawCachesToCurrentScene();
 u8 ResolveMenuTable(CharacterId character);
+bool RequestLoadKartArchivesImmediate(ArchiveMgr *archiveMgr, u8 hudSlotId, CharacterId character, u32 gamemode);
 bool BuildDriverPath(CharacterId character, u8 table, char *path, u32 pathSize);
 bool DiscFileSize(const char *path, u32 &size);
 void *LoadFileToMainRAM(const char *path, EGG::Heap *heap, EGG::DvdRipper::EAllocDirection allocDirection, u32 *outSize);

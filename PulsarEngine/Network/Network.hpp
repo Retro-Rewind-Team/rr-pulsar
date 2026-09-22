@@ -2,6 +2,7 @@
 #define _PUL_NETWORK_
 
 #include <Config.hpp>
+#include <Network/Settings/SelectionRestrictions.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -19,7 +20,9 @@ enum DenyType {
 
 class Mgr {  // Manages network related stuff within Pulsar
 public:
-    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A), customItemsBitfield(0x7FFFF), customEngineClass(150), hostCustomEngineClass(0), hasHostSettingsPreview(false) {}
+    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A), customItemsBitfield(0x7FFFF), customEngineClass(150), hostCustomEngineClass(0), characterRestrictionMask(Restrictions::ALL_CHARACTERS), hasHostSettingsPreview(false) {
+        for (u32 i = 0; i < Restrictions::VEHICLE_WEIGHT_COUNT; ++i) vehicleRestrictionMasks[i] = Restrictions::ALL_VEHICLES;
+    }
     u32 hostContext;
     u32 hostContext2;
     u32 customItemsBitfield;
@@ -35,6 +38,8 @@ public:
     PulsarId *lastTracks;
     u16 customEngineClass;
     u16 hostCustomEngineClass;
+    u32 characterRestrictionMask;
+    u16 vehicleRestrictionMasks[Restrictions::VEHICLE_WEIGHT_COUNT];
     u8 hostSettingsPreview[HOST_SETTINGS_PREVIEW_COUNT];
     bool hasHostSettingsPreview;
 };

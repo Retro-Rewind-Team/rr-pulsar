@@ -1,10 +1,7 @@
 #include <RetroRewind.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
-#include <Network/Rating/PlayerRating.hpp>
 #include <MarioKartWii/Kart/KartFunctions.hpp>
-#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
-#include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCharacterSelect.hpp>
 
 namespace Pulsar {
 
@@ -82,52 +79,6 @@ asmFunc GetKartDriverDispEntryHook() {
         blr;);
 }
 kmBranch(0x805924b4, GetKartDriverDispEntryHook);
-
-kmRuntimeUse(0x807e3cac);
-static int GetCharacterIdForButtonHook(CtrlMenuCharacterSelect *ctrl, u32 weightClass, u32 buttonIdx) {
-    typedef int (*GetCharacterIdForButtonFn)(CtrlMenuCharacterSelect *, u32, u32);
-    const GetCharacterIdForButtonFn original = reinterpret_cast<GetCharacterIdForButtonFn>(kmRuntimeAddr(0x807e3cac));
-
-    const int character = original(ctrl, weightClass, buttonIdx);
-    if (weightClass == 3 && ctrl != nullptr) {
-        const u32 categoryCount = ctrl->categoryCount;
-        const u32 categorySize = categoryCount * 2;
-        if (categoryCount != 0 && categorySize != 0) {
-            const u32 localIdx = buttonIdx % categorySize;
-            const u32 localColumn = localIdx % categoryCount;
-            if (localColumn == 2) {
-                RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-                if (rksys == nullptr) return character;
-                const CharacterId miiCCharacter = static_cast<CharacterId>(character);
-                if (PointRating::GetUserVR(rksys->curLicenseId) < 300.0f) return CHARACTER_NONE;
-                switch (miiCCharacter) {
-                    case MII_S_A_MALE:
-                    case MII_S_B_MALE:
-                        return MII_S_C_MALE;
-                    case MII_S_A_FEMALE:
-                    case MII_S_B_FEMALE:
-                        return MII_S_C_FEMALE;
-                    case MII_M_A_MALE:
-                    case MII_M_B_MALE:
-                        return MII_M_C_MALE;
-                    case MII_M_A_FEMALE:
-                    case MII_M_B_FEMALE:
-                        return MII_M_C_FEMALE;
-                    case MII_L_A_MALE:
-                    case MII_L_B_MALE:
-                        return MII_L_C_MALE;
-                    case MII_L_A_FEMALE:
-                    case MII_L_B_FEMALE:
-                        return MII_L_C_FEMALE;
-                    default:
-                        return character;
-                }
-            }
-        }
-    }
-    return character;
-}
-kmCall(0x807e2a20, GetCharacterIdForButtonHook);
 
 // Make Mii Outfit C use the same name BMG as Mii Outfit A.
 // getCharaNameMsg has no case for C IDs and returns -1 for them.

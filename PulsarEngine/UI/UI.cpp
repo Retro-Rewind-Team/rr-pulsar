@@ -34,6 +34,7 @@
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <Settings/UI/CustomEngineClassPage.hpp>
 #include <Settings/UI/RegionPage.hpp>
+#include <Settings/UI/RestrictionPages.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
@@ -171,6 +172,14 @@ void ExpSection::CreatePulPages() {
     if (this->Get<Pages::DriftSelect>() != nullptr) {
         this->CreateAndInitPage(*this, TransmissionSelect::id);
     }
+    if (this->GetPulPage<SettingsPanel>() != nullptr) {
+        if (this->GetPulPage<CharacterRestrictionPage>() == nullptr)
+            this->CreateAndInitPage(*this, CharacterRestrictionPage::id);
+        if (this->GetPulPage<VehicleRestrictionWeightPage>() == nullptr)
+            this->CreateAndInitPage(*this, VehicleRestrictionWeightPage::id);
+        if (this->GetPulPage<VehicleRestrictionPage>() == nullptr)
+            this->CreateAndInitPage(*this, VehicleRestrictionPage::id);
+    }
 }
 
 void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
@@ -260,6 +269,15 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
             break;
         case RegionPage::id:
             page = new RegionPage;
+            break;
+        case CharacterRestrictionPage::id:
+            page = new CharacterRestrictionPage;
+            break;
+        case VehicleRestrictionWeightPage::id:
+            page = new VehicleRestrictionWeightPage;
+            break;
+        case VehicleRestrictionPage::id:
+            page = new VehicleRestrictionPage;
             break;
         case PULPAGE_BADGESELECT:
             page = new SettingsPageSelect(true);

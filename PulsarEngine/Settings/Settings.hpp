@@ -6,6 +6,7 @@
 #include <Config.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <Settings/SettingsBinary.hpp>
+#include <Network/Settings/SelectionRestrictions.hpp>
 #include <Ghost/GhostManager.hpp>
 
 namespace Pulsar {
@@ -98,6 +99,34 @@ public:
     PulsarCupId GetSavedSelectedCup() const { return this->rawBin->GetSection<MiscParams>().lastSelectedCup; }
     u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
     void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }
+    u32 GetCharacterRestrictionMask() const {
+        if (rawBin == nullptr) return Restrictions::ALL_CHARACTERS;
+        const u32 mask = rawBin->GetSection<MiscParams>().reserved[0] & Restrictions::ALL_CHARACTERS;
+        return mask == 0 ? Restrictions::ALL_CHARACTERS : mask;
+    }
+    u16 GetVehicleRestrictionMask(u32 weight) const {
+        if (rawBin == nullptr || weight >= Restrictions::VEHICLE_WEIGHT_COUNT) return Restrictions::ALL_VEHICLES;
+        const u16 mask = static_cast<u16>(rawBin->GetSection<MiscParams>().reserved[weight + 1]) & Restrictions::ALL_VEHICLES;
+        return mask == 0 ? Restrictions::ALL_VEHICLES : mask;
+    }
+    void SetCharacterRestrictionMask(u32 mask) {
+        if (rawBin == nullptr) return;
+        mask &= Restrictions::ALL_CHARACTERS;
+        if (mask == 0) mask = Restrictions::ALL_CHARACTERS;
+        MiscParams &params = rawBin->GetSection<MiscParams>();
+        if (params.reserved[0] == mask) return;
+        params.reserved[0] = mask;
+        RequestSave();
+    }
+    void SetVehicleRestrictionMask(u32 weight, u16 mask) {
+        if (rawBin == nullptr || weight >= Restrictions::VEHICLE_WEIGHT_COUNT) return;
+        mask &= Restrictions::ALL_VEHICLES;
+        if (mask == 0) mask = Restrictions::ALL_VEHICLES;
+        MiscParams &params = rawBin->GetSection<MiscParams>();
+        if (params.reserved[weight + 1] == mask) return;
+        params.reserved[weight + 1] = mask;
+        RequestSave();
+    }
     u16 GetCustomEngineClass() const { return this->rawBin->GetSection<MiscParams>().customEngineClass; }
     void SetCustomEngineClass(u16 value) {
         if (value < 100 || value > 9999) value = 150;

@@ -1,6 +1,7 @@
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <Settings/UI/CustomEngineClassPage.hpp>
+#include <Settings/UI/RestrictionPages.hpp>
 #include <Settings/Settings.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
@@ -399,10 +400,25 @@ void SettingsPanel::OnRadioButtonClick(RadioButtonControl &radio, u32, u32 optio
     const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     if (radio.id >= page.radioCount) return;
     radioValues[radio.id] = optionId;
-    if (page.radioSettings[radio.id] == Settings::SETTING_FROOMCC && optionId == 3) {
+    const Settings::SettingId settingId = page.radioSettings[radio.id];
+    if (settingId == Settings::SETTING_FROOMCC && optionId == 3) {
         ExpSection *section = ExpSection::GetSection();
         if (section != nullptr && section->GetPulPage<CustomEngineClassPage>() != nullptr) {
             nextPageId = static_cast<PageId>(CustomEngineClassPage::id);
+            EndStateAnimated(0, 0.0f);
+        }
+    } else if (settingId == Settings::SETTING_CHARSELECT && optionId == CHARACTER_RESTRICT_ENABLED) {
+        ExpSection *section = ExpSection::GetSection();
+        if (section != nullptr && section->GetPulPage<CharacterRestrictionPage>() != nullptr) {
+            SaveSettings(true);
+            nextPageId = static_cast<PageId>(CharacterRestrictionPage::id);
+            EndStateAnimated(0, 0.0f);
+        }
+    } else if (settingId == Settings::SETTING_KARTSELECT && optionId == VEHICLE_RESTRICT_ENABLED) {
+        ExpSection *section = ExpSection::GetSection();
+        if (section != nullptr && section->GetPulPage<VehicleRestrictionWeightPage>() != nullptr) {
+            SaveSettings(true);
+            nextPageId = static_cast<PageId>(VehicleRestrictionWeightPage::id);
             EndStateAnimated(0, 0.0f);
         }
     }

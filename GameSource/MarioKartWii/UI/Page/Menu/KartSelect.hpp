@@ -101,7 +101,7 @@ public:
 
     LayoutUIControl *GetExternalControl(u32 type, u8 row, u8 column);  // 0 = kart name, 1 = one column of buttonmachine (such as only bike), 2 = all buttonmachine, always inlined 80847094
     ButtonMachine *GetButtonMachineById(u8 buttonId);  // 808471c4
-    void InitButtonMachine(ButtonMachine &machine, u8 buttonId);  // 80847344
+    void InitButtonMachine(ButtonMachine &machine, s32 buttonId);  // 80847344
     KartId GetkartId(u8 weight, bool isBike, u32 UIPosition);  // 808448e8 UI Position from 0 to 5
     u32 GetUnlockedKartsCountByWeightAndType(u8 weight, bool isBike);  // 80844960
     u32 GetUnlockedKartsCountByWeight(u8 weight);  // 808449dc inlined

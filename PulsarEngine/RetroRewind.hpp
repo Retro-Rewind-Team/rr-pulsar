@@ -78,7 +78,8 @@ public:
         BUTTON_BOWSER,
         BUTTON_DRY_BOWSER,
         BUTTON_MII_A,
-        BUTTON_MII_B
+        BUTTON_MII_B,
+        BUTTON_MII_C
     };
 
     WeightClass weight;

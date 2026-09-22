@@ -293,11 +293,8 @@ void System::UpdateContext() {
     bool is200Online = settings.GetSettingValue(Pulsar::Settings::SETTING_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
     bool isLapBasedKO = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_LAPBASED && isNotPublic && !isBattle && !isTimeTrial && !disableOfflineKO;
     bool isKOFinal = settings.GetSettingValue(Pulsar::Settings::SETTING_KOFINAL) == KOSETTING_FINAL_ALWAYS && !disableOfflineKO;
-    bool isCharRestrictLight = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHAR_LIGHTONLY;
-    bool isCharRestrictMid = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHAR_MEDIUMONLY;
-    bool isCharRestrictHeavy = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHAR_HEAVYONLY;
-    bool isKartRestrictKart = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == KART_KARTONLY;
-    bool isKartRestrictBike = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == KART_BIKEONLY;
+    bool isCharRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHARACTER_RESTRICT_ENABLED;
+    bool isVehicleRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == VEHICLE_RESTRICT_ENABLED;
     bool isThunderCloud = settings.GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && (isNotPublic || (isRegionalRoom && netMgr.region == 0x15));
     bool isItemModeRandom = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
     bool isItemModeBlast = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
@@ -348,11 +345,8 @@ void System::UpdateContext() {
                 newContext = netMgr.hostContext;
                 newContext2 = netMgr.hostContext2;
                 isKOFinal = newContext & (1 << PULSAR_KOFINAL);
-                isCharRestrictLight = newContext & (1 << PULSAR_CHARRESTRICTLIGHT);
-                isCharRestrictMid = newContext & (1 << PULSAR_CHARRESTRICTMID);
-                isCharRestrictHeavy = newContext & (1 << PULSAR_CHARRESTRICTHEAVY);
-                isKartRestrictKart = newContext & (1 << PULSAR_KARTRESTRICT);
-                isKartRestrictBike = newContext & (1 << PULSAR_BIKERESTRICT);
+                isCharRestrict = newContext & (1 << PULSAR_CHARRESTRICT);
+                isVehicleRestrict = newContext & (1 << PULSAR_VEHICLERESTRICT);
                 isItemModeRandom = newContext2 & (1 << PULSAR_ITEMMODERANDOM);
                 isItemModeBlast = newContext2 & (1 << PULSAR_ITEMMODEBLAST);
                 isItemModeRain = newContext2 & (1 << PULSAR_ITEMMODERAIN);
@@ -442,9 +436,8 @@ void System::UpdateContext() {
         newContextValue |= (is200) << PULSAR_200 | (isFeather) << PULSAR_FEATHER |
                            (isUMTs) << PULSAR_UMTS | (is500) << PULSAR_500 |
                            (isOTT) << PULSAR_MODE_OTT | (isKO) << PULSAR_MODE_KO |
-                           (isCharRestrictLight) << PULSAR_CHARRESTRICTLIGHT | (isCharRestrictMid) << PULSAR_CHARRESTRICTMID |
-                           (isCharRestrictHeavy) << PULSAR_CHARRESTRICTHEAVY | (isKartRestrictKart) << PULSAR_KARTRESTRICT |
-                           (isKartRestrictBike) << PULSAR_BIKERESTRICT | (isChangeCombo) << PULSAR_CHANGECOMBO |
+                           (isCharRestrict) << PULSAR_CHARRESTRICT | (isVehicleRestrict) << PULSAR_VEHICLERESTRICT |
+                           (isChangeCombo) << PULSAR_CHANGECOMBO |
                            (isTrackSelectionRegs) << PULSAR_REGS | (isKOFinal) << PULSAR_KOFINAL |
                            (isExtendedTeams) << PULSAR_EXTENDEDTEAMS | (isTrackSelectionRetros) << PULSAR_RETROS |
                            (isTrackSelectionCts) << PULSAR_CTS | (isTeamBattle) << PULSAR_FFA |

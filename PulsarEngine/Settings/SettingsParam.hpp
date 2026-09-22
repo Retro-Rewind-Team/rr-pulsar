@@ -338,17 +338,14 @@ enum HostSettingHostCC {
     HOSTCC_CUSTOM
 };
 
-enum KartRestriction {
-    KART_DEFAULTSELECTION,
-    KART_KARTONLY,
-    KART_BIKEONLY
+enum VehicleRestrictionSetting {
+    VEHICLE_RESTRICT_DISABLED,
+    VEHICLE_RESTRICT_ENABLED
 };
 
-enum CharacterRestriction {
-    CHAR_DEFAULTSELECTION,
-    CHAR_LIGHTONLY,
-    CHAR_MEDIUMONLY,
-    CHAR_HEAVYONLY
+enum CharacterRestrictionSetting {
+    CHARACTER_RESTRICT_DISABLED,
+    CHARACTER_RESTRICT_ENABLED
 };
 
 enum RankingSetting {
