@@ -1,3 +1,4 @@
+#include <PulsarSystem.hpp>
 #include <MarioKartWii/RKNet/SELECT.hpp>
 #include <MarioKartWii/RKNet/ITEM.hpp>
 #include <MarioKartWii/3D/Camera/CameraMgr.hpp>
