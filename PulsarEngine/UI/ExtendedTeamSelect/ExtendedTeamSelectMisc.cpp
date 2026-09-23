@@ -32,6 +32,14 @@ void Racedata_InitRace(Racedata *racedata) {
         racedata->racesScenario.settings.modeFlags &= ~1;
         racedata->racesScenario.settings.engineClass = CC_100;
     }
+    const bool isFroom = controller != nullptr &&
+                         (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
+                          controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const GameMode mode = racedata->racesScenario.settings.gamemode;
+    const bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
+    if (isFroom && !isBattle && System::sInstance->IsContext(PULSAR_MIRRORMODE)) {
+        racedata->racesScenario.settings.modeFlags |= 1;
+    }
     if (settings.gamemode == MODE_VS_RACE && (settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG) && ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
         racedata->racesScenario.settings.modeFlags &= ~ExtendedTeamManager::TEAM_MODE_FLAG;

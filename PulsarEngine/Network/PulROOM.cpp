@@ -185,6 +185,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         u8 itemModeStorm = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_ITEMSTORM;
         u8 allItemsCanLand = settings.GetSettingValue(Pulsar::Settings::SETTING_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
         const u8 vanillaMode = settings.GetSettingValue(Pulsar::Settings::SETTING_VANILLAMODE) == VANILLAMODE_ENABLED;
+        const u8 mirrorMode = settings.GetSettingValue(Pulsar::Settings::SETTING_MIRROR) == MIRRORMODE_ENABLED;
         const u8 extendedTeams = settings.GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
         u8 normalTC = settings.GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
         u8 vr = settings.GetSettingValue(Pulsar::Settings::SETTING_VR) == VR_ENABLED && isNotPublic;
@@ -255,7 +256,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
                                           koPerRace4 << PULSAR_KOPERRACE_4 |
                                           koRoyaleLaps1_5x << PULSAR_KOROYALE_LAPS_1_5X |
                                           koRoyaleLaps2_0x << PULSAR_KOROYALE_LAPS_2_0X |
-                                          vanillaMode << PULSAR_VANILLAMODE;
+                                          vanillaMode << PULSAR_VANILLAMODE |
+                                          mirrorMode << PULSAR_MIRRORMODE;
 
         if (!vanillaMode) {
             destPacket->customItemsBitfield = settings.GetCustomItems();

@@ -445,11 +445,12 @@ static void DecideCC(ExpSELECTHandler &handler) {
         else if (result < 100 - prob100)
             ccClass = 2;
     }
+    const bool isMirror = System::sInstance->IsContext(PULSAR_MIRRORMODE);
     if (force200)
         ccClass = 1;
     else if (roomType == RKNet::ROOMTYPE_FROOM_HOST &&
              (ccSetting == HOSTCC_NORMAL || ccSetting == HOSTCC_150 || ccSetting == HOSTCC_CUSTOM))
-        ccClass = 2;
+        ccClass = isMirror ? 3 : 2;
     else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && (ccSetting == HOSTCC_500 || ccSetting == HOSTCC_100))
         ccClass = 1;
     handler.toSendPacket.engineClass = ccClass;
