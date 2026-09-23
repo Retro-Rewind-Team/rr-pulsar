@@ -28,6 +28,14 @@ namespace Pulsar_Pack_Creator.Languages
             return result;
         }
 
+        public async Task<TrackNameTranslationSheets> LoadTrackNameSheetsAsync(string sheetUrlOrId, CancellationToken cancellationToken)
+        {
+            string spreadsheetId = GetSpreadsheetId(sheetUrlOrId);
+            TranslationTable tracks = await DownloadFirstMatchingTabAsync(spreadsheetId, new[] { "RR: Track Name", "RR:Track Name" }, cancellationToken);
+            TranslationTable variants = await DownloadFirstMatchingTabAsync(spreadsheetId, new[] { "RR: Variant Name", "RR:Variant Name" }, cancellationToken);
+            return new TrackNameTranslationSheets(tracks, variants);
+        }
+
         public async Task<GameImageSheet> LoadGameImagesAsync(string sheetUrlOrId, CancellationToken cancellationToken)
         {
             string spreadsheetId = GetSpreadsheetId(sheetUrlOrId);
@@ -119,6 +127,27 @@ namespace Pulsar_Pack_Creator.Languages
             return messages;
         }
 
+        public IReadOnlyList<NameTranslation> GetNameTranslations(LanguageDefinition language)
+        {
+            int headerRow = FindHeaderRow(language, out int englishColumn, out int languageColumn);
+            int outputPrefixColumn = language.FolderName == "JPN" ? 1 : 0;
+            var names = new List<NameTranslation>();
+            for (int rowIndex = headerRow + 1; rowIndex < Rows.Count; ++rowIndex)
+            {
+                IReadOnlyList<string> row = Rows[rowIndex];
+                string english = GetCell(row, englishColumn).Trim();
+                if (string.IsNullOrWhiteSpace(english)) continue;
+
+                string selected = GetCell(row, languageColumn).Trim();
+                if (string.IsNullOrWhiteSpace(selected)) selected = english;
+                string englishPrefix = GetCell(row, 0).Trim();
+                string outputPrefix = GetCell(row, outputPrefixColumn).Trim();
+                names.Add(new NameTranslation(english, englishPrefix, selected, outputPrefix));
+            }
+            if (names.Count == 0) throw new InvalidOperationException($"'{SheetName}' did not contain any translated names.");
+            return names;
+        }
+
         public int FindHeaderRow(LanguageDefinition language, out int englishColumn, out int languageColumn)
         {
             for (int rowIndex = 0; rowIndex < Math.Min(Rows.Count, 20); ++rowIndex)
@@ -194,6 +223,34 @@ namespace Pulsar_Pack_Creator.Languages
         }
 
         private static string GetCell(IReadOnlyList<string> row, int index) => index >= 0 && index < row.Count ? row[index] ?? string.Empty : string.Empty;
+    }
+
+    public sealed class TrackNameTranslationSheets
+    {
+        public TranslationTable Tracks { get; }
+        public TranslationTable Variants { get; }
+
+        public TrackNameTranslationSheets(TranslationTable tracks, TranslationTable variants)
+        {
+            Tracks = tracks;
+            Variants = variants;
+        }
+    }
+
+    public sealed class NameTranslation
+    {
+        public string EnglishText { get; }
+        public string EnglishPrefix { get; }
+        public string Text { get; }
+        public string Prefix { get; }
+
+        public NameTranslation(string englishText, string englishPrefix, string text, string prefix)
+        {
+            EnglishText = englishText;
+            EnglishPrefix = englishPrefix;
+            Text = text;
+            Prefix = prefix;
+        }
     }
 
     public sealed class TranslationTarget

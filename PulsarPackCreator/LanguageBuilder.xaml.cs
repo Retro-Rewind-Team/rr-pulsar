@@ -15,8 +15,10 @@ namespace Pulsar_Pack_Creator
         private readonly LanguagePackBuilder builder = new LanguagePackBuilder();
         private Dictionary<TranslationTarget, TranslationTable> cachedSheets;
         private GameImageSheet cachedGameImages;
+        private TrackNameTranslationSheets cachedTrackNameSheets;
         private string cachedSheetId;
         private string cachedGameImageSheetId;
+        private string cachedTrackNameSheetId;
         private CancellationTokenSource cancellation;
 
         public LanguageBuilderWindow()
@@ -44,7 +46,8 @@ namespace Pulsar_Pack_Creator
             {
                 await LoadSheetsAsync(token, true);
                 await LoadGameImagesAsync(token, true);
-                AppendLog("Required RR translation tabs and game images loaded successfully.");
+                await LoadTrackNameSheetsAsync(token, true);
+                AppendLog("Required RR translation tabs, track names, variants, and game images loaded successfully.");
             });
         }
 
@@ -55,7 +58,8 @@ namespace Pulsar_Pack_Creator
             {
                 IReadOnlyDictionary<TranslationTarget, TranslationTable> sheets = await LoadSheetsAsync(token, false);
                 GameImageSheet gameImages = await LoadGameImagesAsync(token, false);
-                await builder.BuildAsync(PackFolder.Text.Trim(), sheets, gameImages, new[] { selected }, new Progress<string>(AppendLog), token);
+                TrackNameTranslationSheets trackNameSheets = await LoadTrackNameSheetsAsync(token, false);
+                await builder.BuildAsync(PackFolder.Text.Trim(), sheets, gameImages, trackNameSheets, new[] { selected }, new Progress<string>(AppendLog), token);
                 AppendLog($"Finished {selected.DisplayName}.");
             });
         }
@@ -66,8 +70,19 @@ namespace Pulsar_Pack_Creator
             {
                 IReadOnlyDictionary<TranslationTarget, TranslationTable> sheets = await LoadSheetsAsync(token, false);
                 GameImageSheet gameImages = await LoadGameImagesAsync(token, false);
-                await builder.BuildAsync(PackFolder.Text.Trim(), sheets, gameImages, LanguageDefinition.All, new Progress<string>(AppendLog), token);
+                TrackNameTranslationSheets trackNameSheets = await LoadTrackNameSheetsAsync(token, false);
+                await builder.BuildAsync(PackFolder.Text.Trim(), sheets, gameImages, trackNameSheets, LanguageDefinition.All, new Progress<string>(AppendLog), token);
                 AppendLog("Finished all languages.");
+            });
+        }
+
+        private async void OnUpdateConfigClick(object sender, RoutedEventArgs e)
+        {
+            await RunAsync(async token =>
+            {
+                TrackNameTranslationSheets trackNameSheets = await LoadTrackNameSheetsAsync(token, false);
+                await builder.UpdateConfigTranslationsAsync(PackFolder.Text.Trim(), trackNameSheets, LanguageDefinition.All, new Progress<string>(AppendLog), token);
+                AppendLog("Finished config translations.");
             });
         }
 
@@ -89,6 +104,16 @@ namespace Pulsar_Pack_Creator
             cachedGameImages = await new TranslationSheetClient(httpClient).LoadGameImagesAsync(id, token);
             cachedGameImageSheetId = id;
             return cachedGameImages;
+        }
+
+        private async Task<TrackNameTranslationSheets> LoadTrackNameSheetsAsync(CancellationToken token, bool forceRefresh)
+        {
+            string id = TranslationSheetClient.GetSpreadsheetId(SheetUrl.Text);
+            if (!forceRefresh && cachedTrackNameSheets != null && cachedTrackNameSheetId == id) return cachedTrackNameSheets;
+            AppendLog("Downloading RR: Track Name and RR: Variant Name...");
+            cachedTrackNameSheets = await new TranslationSheetClient(httpClient).LoadTrackNameSheetsAsync(id, token);
+            cachedTrackNameSheetId = id;
+            return cachedTrackNameSheets;
         }
 
         private async Task RunAsync(Func<CancellationToken, Task> action)
@@ -120,6 +145,7 @@ namespace Pulsar_Pack_Creator
         private void SetBusy(bool busy)
         {
             ValidateButton.IsEnabled = !busy;
+            UpdateConfigButton.IsEnabled = !busy;
             BuildSelectedButton.IsEnabled = !busy;
             BuildAllButton.IsEnabled = !busy;
             SheetUrl.IsEnabled = !busy;

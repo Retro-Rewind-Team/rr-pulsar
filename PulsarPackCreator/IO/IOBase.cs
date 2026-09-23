@@ -96,7 +96,7 @@ namespace Pulsar_Pack_Creator.IO
             return value + (aligment - 1) & ~(aligment - 1);
         }
 
-        protected static bool TryParseBMGLine(string line, out uint bmgId, out string content)
+        internal static bool TryParseBMGLine(string line, out uint bmgId, out string content)
         {
             bmgId = 0;
             content = "";

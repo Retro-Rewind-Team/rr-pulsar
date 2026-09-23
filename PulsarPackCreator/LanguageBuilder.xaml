@@ -30,11 +30,12 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto"><TextBlock x:Name="Log" Foreground="{DynamicResource fg}" FontFamily="Consolas" TextWrapping="Wrap"/></ScrollViewer>
         </Border>
         <Grid Grid.Row="5">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="130"/><ColumnDefinition Width="130"/><ColumnDefinition Width="130"/></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="120"/><ColumnDefinition Width="120"/><ColumnDefinition Width="120"/><ColumnDefinition Width="120"/></Grid.ColumnDefinitions>
             <TextBlock x:Name="Status" Foreground="{DynamicResource fg}" VerticalAlignment="Center" Text="The sheet must be viewable by anyone with the link."/>
             <Button x:Name="ValidateButton" Grid.Column="1" Margin="6,0,0,0" Height="30" Content="Validate Sheet" Click="OnValidateClick"/>
-            <Button x:Name="BuildSelectedButton" Grid.Column="2" Margin="6,0,0,0" Height="30" Content="Build Selected" Click="OnBuildSelectedClick"/>
-            <Button x:Name="BuildAllButton" Grid.Column="3" Margin="6,0,0,0" Height="30" Content="Build All" Click="OnBuildAllClick"/>
+            <Button x:Name="UpdateConfigButton" Grid.Column="2" Margin="6,0,0,0" Height="30" Content="Update Config" Click="OnUpdateConfigClick" ToolTip="Only update translated track and variant names in Config*.pul."/>
+            <Button x:Name="BuildSelectedButton" Grid.Column="3" Margin="6,0,0,0" Height="30" Content="Build Selected" Click="OnBuildSelectedClick"/>
+            <Button x:Name="BuildAllButton" Grid.Column="4" Margin="6,0,0,0" Height="30" Content="Build All" Click="OnBuildAllClick"/>
         </Grid>
     </Grid>
 </Window>
