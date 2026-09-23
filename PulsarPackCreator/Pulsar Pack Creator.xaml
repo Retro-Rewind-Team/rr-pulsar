@@ -133,6 +133,7 @@
             </Button>
             <Button x:Name = "OpenInput" Content = "Open Input Folder" Width = "120" Height = "20" Click="OnOpenInputClick"/>
             <Button x:Name = "Crash" Content = "Check Crash" Width = "90" Height = "20" Click="OnCrashClick"/>
+            <Button x:Name = "LanguageBuilder" Content = "Language Builder" Width = "110" Height = "20" Click="OnLanguageBuilderClick"/>
             <Button x:Name = "SettingsButton" Content = "Program Settings" Width = "100" Height = "20" Click="OnSettingsClick"/>
 
         </StackPanel>

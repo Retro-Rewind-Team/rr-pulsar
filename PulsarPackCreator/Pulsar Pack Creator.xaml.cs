@@ -73,6 +73,13 @@ namespace Pulsar_Pack_Creator
         {
             settingsWindow.Load();
         }
+        public void OnLanguageBuilderClick(object sender, RoutedEventArgs e)
+        {
+            languageBuilderWindow.Owner = this;
+            languageBuilderWindow.Show();
+            languageBuilderWindow.Activate();
+        }
+
 
 
 

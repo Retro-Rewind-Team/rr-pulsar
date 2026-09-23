@@ -47,6 +47,7 @@ namespace Pulsar_Pack_Creator
         public static MassCupsImportWindow cupsImportWindow;
         public static CrashWindow crashWindow;
         public static SettingsWindow settingsWindow;
+        public static LanguageBuilderWindow languageBuilderWindow;
         public static MsgWindow messageWindow;
 
         public Task extractTPL;
@@ -72,6 +73,7 @@ namespace Pulsar_Pack_Creator
             cupsImportWindow = new MassCupsImportWindow(this);
             crashWindow = new CrashWindow();
             settingsWindow = new SettingsWindow();
+            languageBuilderWindow = new LanguageBuilderWindow();
 
             messageWindow = new MsgWindow();
 

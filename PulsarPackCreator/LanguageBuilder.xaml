@@ -1,0 +1,41 @@
+<Window x:Class="Pulsar_Pack_Creator.LanguageBuilderWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="RR Language Builder" Height="560" Width="760"
+        ResizeMode="CanMinimize" Background="{DynamicResource AppBg}" WindowStartupLocation="CenterOwner" Closing="OnWindowClosing">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="Build Retro Rewind translations directly from a Google Sheet." Foreground="{DynamicResource fg}" FontSize="16" FontWeight="Bold" Margin="0,0,0,14"/>
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <TextBlock Text="Google Sheet" Foreground="{DynamicResource fg}" VerticalAlignment="Center"/>
+            <TextBox x:Name="SheetUrl" Grid.Column="1" Height="26" VerticalContentAlignment="Center" ToolTip="Paste a Google Sheets URL or spreadsheet ID."/>
+        </Grid>
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition Width="*"/><ColumnDefinition Width="90"/></Grid.ColumnDefinitions>
+            <TextBlock Text="RetroRewind6" Foreground="{DynamicResource fg}" VerticalAlignment="Center"/>
+            <TextBox x:Name="PackFolder" Grid.Column="1" Height="26" VerticalContentAlignment="Center"/>
+            <Button Grid.Column="2" Content="Browse..." Margin="8,0,0,0" Click="OnBrowsePackClick"/>
+        </Grid>
+        <Grid Grid.Row="3" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <TextBlock Text="Language" Foreground="{DynamicResource fg}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="LanguageBox" Grid.Column="1" Height="28"/>
+            <TextBlock Grid.Column="2" Margin="12,0,0,0" Foreground="{DynamicResource fg}" VerticalAlignment="Center" Text="Blank cells automatically use the English entry."/>
+        </Grid>
+        <Border Grid.Row="4" BorderBrush="#777" BorderThickness="1" Padding="8" Margin="0,0,0,12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"><TextBlock x:Name="Log" Foreground="{DynamicResource fg}" FontFamily="Consolas" TextWrapping="Wrap"/></ScrollViewer>
+        </Border>
+        <Grid Grid.Row="5">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="130"/><ColumnDefinition Width="130"/><ColumnDefinition Width="130"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="Status" Foreground="{DynamicResource fg}" VerticalAlignment="Center" Text="The sheet must be viewable by anyone with the link."/>
+            <Button x:Name="ValidateButton" Grid.Column="1" Margin="6,0,0,0" Height="30" Content="Validate Sheet" Click="OnValidateClick"/>
+            <Button x:Name="BuildSelectedButton" Grid.Column="2" Margin="6,0,0,0" Height="30" Content="Build Selected" Click="OnBuildSelectedClick"/>
+            <Button x:Name="BuildAllButton" Grid.Column="3" Margin="6,0,0,0" Height="30" Content="Build All" Click="OnBuildAllClick"/>
+        </Grid>
+    </Grid>
+</Window>
+
