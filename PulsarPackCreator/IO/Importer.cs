@@ -323,7 +323,7 @@ namespace Pulsar_Pack_Creator.IO
                                         trackIndex = rest; // Full 16 bits is the track index
                                         variantIdxParsed = 0; // main track author
                                     }
-                                    else if (typeGroup == 7)
+                                    else if (typeGroup == 0x17)
                                     {
                                         type = (uint)BMGIds.BMG_MUSIC_CREDITS;
                                         trackIndex = rest;
