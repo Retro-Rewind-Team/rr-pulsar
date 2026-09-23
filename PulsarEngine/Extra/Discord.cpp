@@ -76,8 +76,7 @@ static const CustomSkinDiscordImage customSkinDiscordImages[] = {
     // MII_A
     // MII_B
     // MII_C
-    { CHARACTER_NONE, 0, nullptr }
-};
+    {CHARACTER_NONE, 0, nullptr}};
 
 // Returns default Discord asset key and display name in Character Selection Screen order.
 static void GetDefaultCharacterInfo(CharacterId character, const char *&outKey, const char *&outName) {
