@@ -14,7 +14,9 @@ namespace Pulsar_Pack_Creator
         private readonly HttpClient httpClient = new HttpClient();
         private readonly LanguagePackBuilder builder = new LanguagePackBuilder();
         private Dictionary<TranslationTarget, TranslationTable> cachedSheets;
+        private GameImageSheet cachedGameImages;
         private string cachedSheetId;
+        private string cachedGameImageSheetId;
         private CancellationTokenSource cancellation;
 
         public LanguageBuilderWindow()
@@ -41,7 +43,8 @@ namespace Pulsar_Pack_Creator
             await RunAsync(async token =>
             {
                 await LoadSheetsAsync(token, true);
-                AppendLog("Required RR translation tabs loaded successfully.");
+                await LoadGameImagesAsync(token, true);
+                AppendLog("Required RR translation tabs and game images loaded successfully.");
             });
         }
 
@@ -51,7 +54,8 @@ namespace Pulsar_Pack_Creator
             await RunAsync(async token =>
             {
                 IReadOnlyDictionary<TranslationTarget, TranslationTable> sheets = await LoadSheetsAsync(token, false);
-                await builder.BuildAsync(PackFolder.Text.Trim(), sheets, new[] { selected }, new Progress<string>(AppendLog), token);
+                GameImageSheet gameImages = await LoadGameImagesAsync(token, false);
+                await builder.BuildAsync(PackFolder.Text.Trim(), sheets, gameImages, new[] { selected }, new Progress<string>(AppendLog), token);
                 AppendLog($"Finished {selected.DisplayName}.");
             });
         }
@@ -61,7 +65,8 @@ namespace Pulsar_Pack_Creator
             await RunAsync(async token =>
             {
                 IReadOnlyDictionary<TranslationTarget, TranslationTable> sheets = await LoadSheetsAsync(token, false);
-                await builder.BuildAsync(PackFolder.Text.Trim(), sheets, LanguageDefinition.All, new Progress<string>(AppendLog), token);
+                GameImageSheet gameImages = await LoadGameImagesAsync(token, false);
+                await builder.BuildAsync(PackFolder.Text.Trim(), sheets, gameImages, LanguageDefinition.All, new Progress<string>(AppendLog), token);
                 AppendLog("Finished all languages.");
             });
         }
@@ -74,6 +79,16 @@ namespace Pulsar_Pack_Creator
             cachedSheets = await new TranslationSheetClient(httpClient).LoadRequiredSheetsAsync(id, token);
             cachedSheetId = id;
             return cachedSheets;
+        }
+
+        private async Task<GameImageSheet> LoadGameImagesAsync(CancellationToken token, bool forceRefresh)
+        {
+            string id = TranslationSheetClient.GetSpreadsheetId(SheetUrl.Text);
+            if (!forceRefresh && cachedGameImages != null && cachedGameImageSheetId == id) return cachedGameImages;
+            AppendLog("Downloading RR: Game Image...");
+            cachedGameImages = await new TranslationSheetClient(httpClient).LoadGameImagesAsync(id, token);
+            cachedGameImageSheetId = id;
+            return cachedGameImages;
         }
 
         private async Task RunAsync(Func<CancellationToken, Task> action)

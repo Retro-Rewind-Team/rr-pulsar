@@ -28,6 +28,18 @@ namespace Pulsar_Pack_Creator.Languages
             return result;
         }
 
+        public async Task<GameImageSheet> LoadGameImagesAsync(string sheetUrlOrId, CancellationToken cancellationToken)
+        {
+            string spreadsheetId = GetSpreadsheetId(sheetUrlOrId);
+            TranslationTable table = await DownloadFirstMatchingTabAsync(spreadsheetId, new[] { "RR: Game Image", "RR:Game Image" }, cancellationToken);
+            string url = $"https://docs.google.com/spreadsheets/d/{spreadsheetId}/export?format=xlsx";
+            using HttpResponseMessage response = await client.GetAsync(url, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                throw new InvalidOperationException($"Google Sheets XLSX export returned {(int)response.StatusCode}.");
+            byte[] xlsx = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            return GameImageSheet.FromXlsx(xlsx);
+        }
+
         private async Task<TranslationTable> DownloadFirstMatchingTabAsync(string spreadsheetId, IReadOnlyList<string> sheetNames, CancellationToken cancellationToken)
         {
             Exception lastError = null;
@@ -86,24 +98,7 @@ namespace Pulsar_Pack_Creator.Languages
 
         public IReadOnlyList<KeyValuePair<string, string>> GetMessages(LanguageDefinition language)
         {
-            int headerRow = -1;
-            int englishColumn = -1;
-            int languageColumn = -1;
-            for (int rowIndex = 0; rowIndex < Math.Min(Rows.Count, 20); ++rowIndex)
-            {
-                IReadOnlyList<string> row = Rows[rowIndex];
-                int english = FindColumn(row, LanguageDefinition.All[0].SheetHeaders);
-                int selected = language.IsEnglish ? english : FindColumn(row, language.SheetHeaders);
-                if (english >= 0 && selected >= 0)
-                {
-                    headerRow = rowIndex;
-                    englishColumn = english;
-                    languageColumn = selected;
-                    break;
-                }
-            }
-            if (headerRow < 0)
-                throw new InvalidOperationException($"'{SheetName}' does not contain both an English column and a '{language.DisplayName}' column.");
+            int headerRow = FindHeaderRow(language, out int englishColumn, out int languageColumn);
 
             int idColumn = FindIdColumn(Rows[headerRow], englishColumn);
             var messages = new List<KeyValuePair<string, string>>();
@@ -122,6 +117,25 @@ namespace Pulsar_Pack_Creator.Languages
             }
             if (messages.Count == 0) throw new InvalidOperationException($"'{SheetName}' did not contain any translatable messages.");
             return messages;
+        }
+
+        public int FindHeaderRow(LanguageDefinition language, out int englishColumn, out int languageColumn)
+        {
+            for (int rowIndex = 0; rowIndex < Math.Min(Rows.Count, 20); ++rowIndex)
+            {
+                IReadOnlyList<string> row = Rows[rowIndex];
+                int english = FindColumn(row, LanguageDefinition.All[0].SheetHeaders);
+                int selected = language.IsEnglish ? english : FindColumn(row, language.SheetHeaders);
+                if (english >= 0 && selected >= 0)
+                {
+                    englishColumn = english;
+                    languageColumn = selected;
+                    return rowIndex;
+                }
+            }
+            englishColumn = -1;
+            languageColumn = -1;
+            throw new InvalidOperationException($"'{SheetName}' does not contain both an English column and a '{language.DisplayName}' column.");
         }
 
         public static TranslationTable ParseCsv(string sheetName, string csv)

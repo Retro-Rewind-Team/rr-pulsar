@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +15,7 @@ namespace Pulsar_Pack_Creator.Languages
 {
     public sealed class LanguagePackBuilder
     {
-        public async Task BuildAsync(string packRoot, IReadOnlyDictionary<TranslationTarget, TranslationTable> sheets, IEnumerable<LanguageDefinition> languages, IProgress<string> progress, CancellationToken cancellationToken)
+        public async Task BuildAsync(string packRoot, IReadOnlyDictionary<TranslationTarget, TranslationTable> sheets, GameImageSheet gameImages, IEnumerable<LanguageDefinition> languages, IProgress<string> progress, CancellationToken cancellationToken)
         {
             ValidatePackRoot(packRoot);
             string tempRoot = Path.Combine(Path.GetTempPath(), "PulsarLanguageBuilder", Guid.NewGuid().ToString("N"));
@@ -25,6 +29,7 @@ namespace Pulsar_Pack_Creator.Languages
                     progress?.Report($"Building {language.DisplayName}...");
                     foreach (IGrouping<string, TranslationTarget> group in TranslationTarget.Required.GroupBy(target => target.ArchiveName))
                         await BuildArchiveAsync(packRoot, language, group.Key, group, sheets, tempRoot, progress, cancellationToken);
+                    await BuildRaceUiAsync(packRoot, language, gameImages, tempRoot, progress, cancellationToken);
                 }
             }
             finally
@@ -83,6 +88,96 @@ namespace Pulsar_Pack_Creator.Languages
             progress?.Report($"  Wrote {destination}");
         }
 
+        private async Task BuildRaceUiAsync(string packRoot, LanguageDefinition language, GameImageSheet gameImages, string tempRoot, IProgress<string> progress, CancellationToken cancellationToken)
+        {
+            string englishArchive = Path.Combine(packRoot, "UI", "Race_U.szs");
+            if (!File.Exists(englishArchive)) throw new FileNotFoundException("The selected pack does not contain UI/Race_U.szs.", englishArchive);
+
+            string safeLanguage = new string(language.DisplayName.Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray());
+            string workDir = Path.Combine(tempRoot, safeLanguage, "RaceUI");
+            Directory.CreateDirectory(workDir);
+            File.Copy(englishArchive, Path.Combine(workDir, "Race_U.szs"), true);
+            await RunToolAsync(Path.Combine(tempRoot, "wszst.exe"), "extract \"Race_U.szs\"", workDir, cancellationToken);
+
+            string extractedDir = Path.Combine(workDir, "Race_U.d");
+            string timgDir = Path.Combine(extractedDir, "game_image", "timg");
+            if (!Directory.Exists(timgDir)) throw new InvalidOperationException("Race_U.szs does not contain game_image/timg.");
+
+            var textureHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            string decodedDir = Path.Combine(workDir, "decoded");
+            Directory.CreateDirectory(decodedDir);
+            foreach (string tpl in Directory.EnumerateFiles(timgDir, "*.tpl"))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string png = Path.Combine(decodedDir, Path.GetFileNameWithoutExtension(tpl) + ".png");
+                await RunToolAsync(Path.Combine(tempRoot, "wimgt.exe"), $"decode \"{tpl}\" --dest \"{png}\" -o", workDir, cancellationToken);
+                textureHashes[GetImageHash(await File.ReadAllBytesAsync(png, cancellationToken))] = Path.GetFileName(tpl);
+            }
+
+            int applied = 0;
+            int ignored = 0;
+            foreach (GameImageRow row in gameImages.GetRows(language))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!textureHashes.TryGetValue(GetImageHash(row.EnglishImage), out string targetName))
+                {
+                    progress?.Report($"  RR: Game Image row {row.SheetRow}: English image does not match Race_U.szs; skipped");
+                    continue;
+                }
+
+                string sourceImage = Path.Combine(workDir, $"game_image_{row.SheetRow}{GetImageExtension(row.SelectedImage)}");
+                await File.WriteAllBytesAsync(sourceImage, row.SelectedImage, cancellationToken);
+                string targetTpl = Path.Combine(timgDir, targetName);
+                await RunToolAsync(Path.Combine(tempRoot, "wimgt.exe"), $"encode \"{sourceImage}\" --dest \"{targetTpl}\" --transform {GetTplTransform(targetName)} -o", workDir, cancellationToken);
+                ++applied;
+            }
+
+            string outputArchive = Path.Combine(workDir, language.RaceArchiveName);
+            await RunToolAsync(Path.Combine(tempRoot, "wszst.exe"), $"create \"{extractedDir}\" --dest \"{outputArchive}\" -o", workDir, cancellationToken);
+            string destination = language.IsEnglish ? Path.Combine(packRoot, "UI", language.RaceArchiveName) : Path.Combine(packRoot, "Language", language.FolderName, "UI", language.RaceArchiveName);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            File.Copy(outputArchive, destination, true);
+            progress?.Report($"  RR: Game Image: applied {applied} textures" + (ignored > 0 ? $" ({ignored} sheet-only images ignored)" : string.Empty));
+            progress?.Report($"  Wrote {destination}");
+        }
+
+        private static string GetTplTransform(string fileName)
+        {
+            if (fileName.StartsWith("tt_multi_position_", StringComparison.OrdinalIgnoreCase)) return "IA4";
+            if (fileName.StartsWith("tt_position_", StringComparison.OrdinalIgnoreCase)) return "RGB5A3";
+            return "IA8";
+        }
+
+        private static string GetImageExtension(byte[] image)
+        {
+            if (image.Length >= 8 && image[0] == 0x89 && image[1] == 0x50 && image[2] == 0x4e && image[3] == 0x47) return ".png";
+            if (image.Length >= 2 && image[0] == 0xff && image[1] == 0xd8) return ".jpg";
+            return ".png";
+        }
+
+        private static string GetImageHash(byte[] image)
+        {
+            using var stream = new MemoryStream(image, false);
+            using var source = new Bitmap(stream);
+            using var bitmap = new Bitmap(source.Width, source.Height, PixelFormat.Format32bppArgb);
+            using (Graphics graphics = Graphics.FromImage(bitmap)) graphics.DrawImageUnscaled(source, 0, 0);
+            Rectangle rectangle = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+            BitmapData data = bitmap.LockBits(rectangle, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            try
+            {
+                int length = Math.Abs(data.Stride) * data.Height;
+                byte[] pixels = new byte[length + 8];
+                Marshal.Copy(data.Scan0, pixels, 8, length);
+                BitConverter.GetBytes(bitmap.Width).CopyTo(pixels, 0);
+                BitConverter.GetBytes(bitmap.Height).CopyTo(pixels, 4);
+                return Convert.ToHexString(SHA256.HashData(pixels));
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
+        }
+
         private static string CreateBmgText(IEnumerable<KeyValuePair<string, string>> messages)
         {
             var builder = new StringBuilder("#BMG\n\n");
@@ -125,6 +220,8 @@ namespace Pulsar_Pack_Creator.Languages
             if (string.IsNullOrWhiteSpace(packRoot) || !Directory.Exists(packRoot)) throw new DirectoryNotFoundException("Choose the RetroRewind6 pack folder.");
             if (!File.Exists(Path.Combine(packRoot, "Assets", "UIAssets.szs")) || !File.Exists(Path.Combine(packRoot, "Assets", "RaceAssets.szs")))
                 throw new DirectoryNotFoundException("The selected folder does not contain Assets/UIAssets.szs and Assets/RaceAssets.szs.");
+            if (!File.Exists(Path.Combine(packRoot, "UI", "Race_U.szs")))
+                throw new DirectoryNotFoundException("The selected folder does not contain UI/Race_U.szs.");
         }
     }
 }
