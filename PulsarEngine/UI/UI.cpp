@@ -453,6 +453,53 @@ static const BMGHolder *GetCharaNameBmg() {
     return &charaNameBmg;
 }
 
+static const BMGHolder *GetCommonBmg() {
+    static BMGHolder commonBmg;
+    static const void *loadedFile = nullptr;
+    static const void *loadedArchive = nullptr;
+
+    ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
+    if (archiveMgr == nullptr) return nullptr;
+
+    ArchivesHolder *uiHolder = archiveMgr->archivesHolders[ARCHIVE_HOLDER_UI];
+    if (uiHolder == nullptr) return nullptr;
+
+    //  If custom assets archive is already mounted and unchanged, return cached BMGHolder
+    if (uiHolder->archiveCount > 3) {
+        const ArchiveFile &assetsFile = uiHolder->archives[3];
+        if (assetsFile.archive != nullptr && assetsFile.archive == loadedArchive && loadedFile != nullptr) {
+            return &commonBmg;
+        }
+    }
+
+    const void *currentArchive = nullptr;
+    void *file = nullptr;
+
+    for (int i = static_cast<int>(uiHolder->archiveCount) - 1; i >= 0; --i) {
+        file = uiHolder->archives[i].GetFile("message/Common.bmg", nullptr);
+        if (file != nullptr) {
+            currentArchive = uiHolder->archives[i].archive;
+            break;
+        }
+    }
+    if (file == nullptr) {
+        file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/Common.bmg", nullptr);
+    }
+    if (file == nullptr) {
+        loadedFile = nullptr;
+        loadedArchive = nullptr;
+        commonBmg.bmgFile = nullptr;
+        return nullptr;
+    }
+
+    if (file != loadedFile || currentArchive != loadedArchive) {
+        commonBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
+        loadedFile = file;
+        loadedArchive = currentArchive;
+    }
+    return &commonBmg;
+}
+
 static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
     int ret = GetMsgIdxByBmgId(System::sInstance->GetBMG(), bmgId);
     if (ret >= 0) {
@@ -487,6 +534,15 @@ static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
         if (ret >= 0) {
             isCustom = CUSTOM_BMG;
             matchedCustomBmg = charaNameBmg;
+            return ret;
+        }
+    }
+    const BMGHolder *commonBmg = GetCommonBmg();
+    if (commonBmg != nullptr) {
+        ret = GetMsgIdxByBmgId(*commonBmg, bmgId);
+        if (ret >= 0) {
+            isCustom = CUSTOM_BMG;
+            matchedCustomBmg = commonBmg;
             return ret;
         }
     }

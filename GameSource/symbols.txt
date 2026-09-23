@@ -769,6 +769,7 @@ MountFromRawArchive__11ArchiveFileFPvUiPQ23EGG4Heapb = 0x80518fbc
 Dump__11ArchiveFileFPCcPQ23EGG4Heapi = 0x805190f0
 Decompress__11ArchiveFileFPCcPQ23EGG4HeapPQ33EGG7Archive8FileInfo = 0x80519508
 Unmount__11ArchiveFileFv = 0x805192cc
+GetFile__11ArchiveFileCFPCcPUi = 0x80519420
 Unmount__10ArchiveMgrFP14ArchivesHolder = 0x805411e4
 DumpArchive__14ArchivesHolderFPcPQ23EGG4Heap = 0x8052ab6c
 LoadCourseArchive__10ArchiveMgrF8CourseIdPQ23EGG4Heapb = 0x80540760
