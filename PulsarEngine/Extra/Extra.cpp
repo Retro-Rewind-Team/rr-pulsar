@@ -252,21 +252,27 @@ kmWrite32(0x8053c710, 0x38000000);
 kmWrite32(0x8053D67C, 0x38000000);
 
 // Ultra Uncut [MrBean35000vr + Chadderz]
-extern "C" void isOnlineRace__9DriverMgr(void *);
+extern "C" RKNet::Controller *sInstance__Q25RKNet10Controller;
 asmFunc GetUltraUncut() {
     ASM(
         nofralloc;
-        lis r12, isOnlineRace__9DriverMgr @ha;
-        lbz r12, isOnlineRace__9DriverMgr @l(r12);
-        cmpwi r12, 0;
-        beq + vanilla;
+        lis r12, sInstance__Q25RKNet10Controller@ha;
+        lwz r12, sInstance__Q25RKNet10Controller@l(r12);
+        cmpwi r12, 0x0;
+        beq + vanillaUncut;
+        lwz r12, 0xE8(r12);
+        cmpwi r12, 0x0;
+        beq + vanillaUncut;
 
-        lbz r3, 0x1C(r29);
+        loc_0x0 : lbz r3, 0x1C(r29);
         cmplwi r3, 0x1;
-        ble + vanilla;
+        ble + loc_0x10;
         mr r0, r30;
 
-        vanilla : cmplw r30, r0;
+        loc_0x10 : cmplw r30, r0;
+        blr;
+
+        vanillaUncut : cmplw r30, r0;
         blr;)
 }
 kmCall(0x8053511C, GetUltraUncut);
