@@ -216,6 +216,7 @@ namespace Pulsar_Pack_Creator.IO {
 
                 }  // using memorystream
                 File.Copy("temp/Config.pul", $"{modFolder}/Binaries/Config.pul", true);
+                TracklistSpreadsheet.Write($"{modFolder}/Tracklist.xlsx", cups, ctsCupCount);
                 string finalDirName = $"output/{parameters.modFolderName}";
                 if (Directory.Exists(finalDirName)) {
                     try {
