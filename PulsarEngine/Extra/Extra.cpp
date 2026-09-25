@@ -256,8 +256,8 @@ extern "C" RKNet::Controller *sInstance__Q25RKNet10Controller;
 asmFunc GetUltraUncut() {
     ASM(
         nofralloc;
-        lis r12, sInstance__Q25RKNet10Controller@ha;
-        lwz r12, sInstance__Q25RKNet10Controller@l(r12);
+        lis r12, sInstance__Q25RKNet10Controller @ha;
+        lwz r12, sInstance__Q25RKNet10Controller @l(r12);
         cmpwi r12, 0x0;
         beq + vanillaUncut;
         lwz r12, 0xE8(r12);
