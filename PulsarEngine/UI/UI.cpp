@@ -453,6 +453,27 @@ static const BMGHolder *GetCharaNameBmg() {
     return &charaNameBmg;
 }
 
+static const BMGHolder *GetCreditsBMG() {
+    static BMGHolder creditsBmg;
+    static const void *loadedFile = nullptr;
+
+    ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
+    if (archiveMgr == nullptr) return nullptr;
+
+    void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/Credits.bmg", nullptr);
+    if (file == nullptr) {
+        loadedFile = nullptr;
+        creditsBmg.bmgFile = nullptr;
+        return nullptr;
+    }
+
+    if (file != loadedFile) {
+        creditsBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
+        loadedFile = file;
+    }
+    return &creditsBmg;
+}
+
 static const BMGHolder *GetCommonBmg() {
     static BMGHolder commonBmg;
     static const void *loadedFile = nullptr;
@@ -517,6 +538,15 @@ static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
         if (ret >= 0) {
             isCustom = CUSTOM_BMG;
             matchedCustomBmg = charaNameBmg;
+            return ret;
+        }
+    }
+    const BMGHolder *creditsBmg = GetCreditsBMG();
+    if (creditsBmg != nullptr) {
+        ret = GetMsgIdxByBmgId(*creditsBmg, bmgId);
+        if (ret >= 0) {
+            isCustom = CUSTOM_BMG;
+            matchedCustomBmg = creditsBmg;
             return ret;
         }
     }
