@@ -501,24 +501,7 @@ static const BMGHolder *GetCommonBmg() {
 }
 
 static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
-    int ret = GetMsgIdxByBmgId(System::sInstance->GetBMG(), bmgId);
-    if (ret >= 0) {
-        isCustom = CUSTOM_BMG;
-        matchedCustomBmg = &System::sInstance->GetBMG();
-        return ret;
-    }
-    ret = GetMsgIdxByBmgId(System::sInstance->GetBMGCT(), bmgId);
-    if (ret >= 0) {
-        isCustom = CUSTOM_BMG;
-        matchedCustomBmg = &System::sInstance->GetBMGCT();
-        return ret;
-    }
-    ret = GetMsgIdxByBmgId(System::sInstance->GetBMGBT(), bmgId);
-    if (ret >= 0) {
-        isCustom = CUSTOM_BMG;
-        matchedCustomBmg = &System::sInstance->GetBMGBT();
-        return ret;
-    }
+    int ret;
     const BMGHolder *countryBmg = GetCountryBmg();
     if (countryBmg != nullptr) {
         ret = GetMsgIdxByBmgId(*countryBmg, bmgId);
@@ -549,7 +532,27 @@ static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
     isCustom = BMG_NORMAL;
     matchedCustomBmg = nullptr;
     ret = GetMsgIdxByBmgId(normalHolder, bmgId);
-    return ret;
+    if (ret >= 0) return ret;
+
+    ret = GetMsgIdxByBmgId(System::sInstance->GetBMG(), bmgId);
+    if (ret >= 0) {
+        isCustom = CUSTOM_BMG;
+        matchedCustomBmg = &System::sInstance->GetBMG();
+        return ret;
+    }
+    ret = GetMsgIdxByBmgId(System::sInstance->GetBMGCT(), bmgId);
+    if (ret >= 0) {
+        isCustom = CUSTOM_BMG;
+        matchedCustomBmg = &System::sInstance->GetBMGCT();
+        return ret;
+    }
+    ret = GetMsgIdxByBmgId(System::sInstance->GetBMGBT(), bmgId);
+    if (ret >= 0) {
+        isCustom = CUSTOM_BMG;
+        matchedCustomBmg = &System::sInstance->GetBMGBT();
+        return ret;
+    }
+    return -1;
 }
 kmBranch(0x805f8c88, GetMsgIdxById);
 
