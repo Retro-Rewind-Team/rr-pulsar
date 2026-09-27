@@ -426,7 +426,7 @@ kmCall(0x80644414, SetCorrectTrack);
 
 // Overwrites CC rules -> 10% 100, 65% 150, 25% mirror and/or in frooms, overwritten by host setting
 static void DecideCC(ExpSELECTHandler &handler) {
-    const u8 ccSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FROOMCC);
+    const u8 ccSetting = Settings::Mgr::Get().GetSettingValue(Settings::SETTING_FROOMCC);
     RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::RoomType roomType = controller->roomType;
     u8 ccClass = 1;  // 1 100, 2 150, 3 mirror
@@ -445,12 +445,11 @@ static void DecideCC(ExpSELECTHandler &handler) {
         else if (result < 100 - prob100)
             ccClass = 2;
     }
-    const bool isMirror = System::sInstance->IsContext(PULSAR_MIRRORMODE);
     if (force200)
         ccClass = 1;
     else if (roomType == RKNet::ROOMTYPE_FROOM_HOST &&
              (ccSetting == HOSTCC_NORMAL || ccSetting == HOSTCC_150 || ccSetting == HOSTCC_CUSTOM))
-        ccClass = isMirror ? 3 : 2;
+        ccClass = 2;
     else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && (ccSetting == HOSTCC_500 || ccSetting == HOSTCC_100))
         ccClass = 1;
     handler.toSendPacket.engineClass = ccClass;
