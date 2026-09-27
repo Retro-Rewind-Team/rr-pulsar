@@ -15,7 +15,7 @@ namespace Race {
 bool Has200ccPhysics() {
     if (Is200cc()) return true;
 
-    if (System::sInstance->IsOfflineVS()) return System::offlineCustomEngineClass >= 200;
+    if (System::sInstance->IsOfflineVS()) return System::offlineCustomEngineClass >= 175;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr ||
