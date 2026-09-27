@@ -62,6 +62,17 @@ void ExpSection::CreatePages(ExpSection &self, SectionId id) {
 }
 kmCall(0x80622088, ExpSection::CreatePages);
 
+typedef void *(*ArrayDestructor)(void *, int);
+extern "C" void __destroy_new_array(void *array, ArrayDestructor destructor);
+extern "C" void *__dt__16MoviePaneHandlerFv(void *handler, int shouldDelete);
+static void DestroyMainLayout(nw4r::lyt::Layout *layout, s32) {
+    MainLayout *mainLayout = reinterpret_cast<MainLayout *>(reinterpret_cast<u8 *>(layout) - 4);
+    __destroy_new_array(mainLayout->moviePaneHandlerArray, __dt__16MoviePaneHandlerFv);
+    mainLayout->moviePaneHandlerArray = nullptr;
+    layout->~Layout();
+}
+kmCall(0x805e86c4, DestroyMainLayout);
+
 void ExpSection::CreatePulPages() {
     const System *system = System::sInstance;
     switch (this->sectionId) {

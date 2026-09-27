@@ -608,6 +608,8 @@ GetTexMapAry__Q34nw4r3lyt8MaterialFv = 0x800809a0
 ReplaceImage__Q34nw4r3lyt6TexMapFP10TPLPaletteUi = 0x80082550
 GetFrameSize__Q34nw4r3lyt13AnimTransformFv = 0x800829d0
 __vt__Q34nw4r3lyt6Layout = 0x802734c0
+__dt__Q34nw4r3lyt6LayoutFv = 0x8007a040
+__dt__16MoviePaneHandlerFv = 0x805fb850
 
 #math
 CosFIdx__Q24nw4r4mathFf = 0x80085180
