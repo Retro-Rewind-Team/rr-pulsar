@@ -570,4 +570,7 @@ kmWrite32(0x800F20AC, 0x8001000C);
 kmWrite32(0x800F20B0, 0x90010008);
 kmWrite32(0x800F20B4, 0x60000000);
 
+// Fix online position tracking on tracks with multiple lap counters [ZPL]
+kmWrite32(0x805354D0, 0x38A00000);  // li r5, 0; use checkpoint-based lap counting for remote racers
+
 }  // namespace Codes
