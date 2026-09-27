@@ -204,7 +204,7 @@ void ExpVR::OnInit() {
 
     bool isRandomHidden = false;
     if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
-    if (Restrictions::AreOnlyMiisEnabled()) isRandomHidden = true;
+    if (Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled()) isRandomHidden = true;
 
     this->AddControl(0xF, this->randomComboButton, 0);
     this->randomComboButton.isHidden = isKOd || isRandomHidden;
@@ -250,7 +250,7 @@ void ExpVR::OnInit() {
 }
 
 static void RandomizeCombo() {
-    if (Restrictions::AreOnlyMiisEnabled()) return;
+    if (Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled()) return;
     Random random;
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
     const Section *section = sectionMgr->curSection;
@@ -298,7 +298,7 @@ static void RandomizeCombo() {
 }
 
 void ExpVR::RandomizeComboVR(PushButton &randomComboButton, u32 hudSlotId) {
-    if (Restrictions::AreOnlyMiisEnabled()) return;
+    if (Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled()) return;
     this->comboButtonState = 1;
     this->EndStateAnimated(0, randomComboButton.GetAnimationFrameSize());
     RandomizeCombo();
@@ -354,7 +354,7 @@ void ExpVR::AfterControlUpdate() {
 
         const bool isRandomHidden =
             Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED ||
-            Restrictions::AreOnlyMiisEnabled();
+            Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled();
 
         this->randomComboButton.isHidden = isKOd || isRandomHidden;
         this->changeComboButton.isHidden = isKOd;

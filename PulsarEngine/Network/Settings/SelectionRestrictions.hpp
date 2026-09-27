@@ -29,7 +29,6 @@ u32 GetVehiclePosition(KartId kart);
 bool IsCharacterSlotEnabled(u32 slot);
 bool IsCharacterEnabled(CharacterId character);
 bool IsVehicleEnabled(KartId kart);
-bool AreOnlyMiisEnabled();
 bool IsOnlyMiiOutfitCEnabled();
 
 u32 GetFirstEnabledCharacterSlot();

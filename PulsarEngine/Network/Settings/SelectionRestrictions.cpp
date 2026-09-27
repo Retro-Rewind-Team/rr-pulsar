@@ -99,13 +99,6 @@ bool IsVehicleEnabled(KartId kart) {
            ((GetVehicleMask(weight) >> position) & 1) != 0;
 }
 
-bool AreOnlyMiisEnabled() {
-    if (!IsCharacterRestrictionEnabled()) return false;
-    const u32 miiMask = (1u << RetroRewind::System::BUTTON_MII_A) | (1u << RetroRewind::System::BUTTON_MII_B) |
-                        (1u << RetroRewind::System::BUTTON_MII_C);
-    return (GetCharacterMask() & ~miiMask) == 0;
-}
-
 bool IsOnlyMiiOutfitCEnabled() {
     return IsCharacterRestrictionEnabled() && GetCharacterMask() == (1u << RetroRewind::System::BUTTON_MII_C);
 }
