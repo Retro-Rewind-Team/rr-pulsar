@@ -269,7 +269,7 @@ void System::UpdateContext() {
     const u32 sceneId = GameScene::GetCurrent()->id;
     const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
 
-    bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    bool isFroom = isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     bool isRegionalRoom = isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
     bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
     bool isBalloonBattle = isBattle && racedataSettings.battleType == BATTLE_BALLOON;
@@ -293,8 +293,8 @@ void System::UpdateContext() {
     bool is200Online = settings.GetSettingValue(Pulsar::Settings::SETTING_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
     bool isLapBasedKO = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_LAPBASED && isNotPublic && !isBattle && !isTimeTrial && !disableOfflineKO;
     bool isKOFinal = settings.GetSettingValue(Pulsar::Settings::SETTING_KOFINAL) == KOSETTING_FINAL_ALWAYS && !disableOfflineKO;
-    bool isCharRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHARACTER_RESTRICT_ENABLED;
-    bool isVehicleRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == VEHICLE_RESTRICT_ENABLED;
+    bool isCharRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHARACTER_RESTRICT_ENABLED && isFroom;
+    bool isVehicleRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == VEHICLE_RESTRICT_ENABLED && isFroom;
     bool isThunderCloud = settings.GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && (isNotPublic || (isRegionalRoom && netMgr.region == 0x15));
     bool isItemModeRandom = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
     bool isItemModeBlast = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;

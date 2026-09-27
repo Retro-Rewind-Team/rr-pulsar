@@ -2,7 +2,6 @@
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
-#include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuCharacterSelect.hpp>
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 
@@ -12,18 +11,12 @@ namespace Restrictions {
 static bool s_characterConfigActive = false;
 static bool s_vehicleConfigActive = false;
 
-bool IsFriendRoom() {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return false;
-    return controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
-}
-
 bool IsCharacterRestrictionEnabled() {
-    return IsFriendRoom() && System::sInstance != nullptr && System::sInstance->IsContext(PULSAR_CHARRESTRICT);
+    return System::sInstance != nullptr && System::sInstance->IsContext(PULSAR_CHARRESTRICT);
 }
 
 bool IsVehicleRestrictionEnabled() {
-    return IsFriendRoom() && System::sInstance != nullptr && System::sInstance->IsContext(PULSAR_VEHICLERESTRICT);
+    return System::sInstance != nullptr && System::sInstance->IsContext(PULSAR_VEHICLERESTRICT);
 }
 
 bool IsCharacterRestrictionConfigActive() { return s_characterConfigActive; }

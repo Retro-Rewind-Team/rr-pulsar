@@ -100,8 +100,16 @@ static void ClearContextsUponWFCDisconnect() {
     const bool isLocalMultiplayerMenu = (id == SECTION_LOCAL_MULTIPLAYER);
 
     if (isSinglePlayerMenu || isLocalMultiplayerMenu) {
-        // Reset OTT context the same way StartWW does
         system->context = 0;
+        system->context2 = 0;
+        system->netMgr.hostContext = 0;
+        system->netMgr.hostContext2 = 0;
+        system->netMgr.hostCustomEngineClass = 0;
+        system->netMgr.characterRestrictionMask = Pulsar::Restrictions::ALL_CHARACTERS;
+        for (u32 weight = 0; weight < Pulsar::Restrictions::VEHICLE_WEIGHT_COUNT; ++weight) {
+            system->netMgr.vehicleRestrictionMasks[weight] = Pulsar::Restrictions::ALL_VEHICLES;
+        }
+        system->netMgr.hasHostSettingsPreview = false;
         system->UpdateContext();
     }
 }

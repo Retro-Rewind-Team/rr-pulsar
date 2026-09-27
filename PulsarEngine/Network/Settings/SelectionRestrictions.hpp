@@ -13,7 +13,6 @@ static const u16 ALL_VEHICLES = 0x0fff;
 static const u32 VEHICLE_WEIGHT_COUNT = 3;
 static const u32 VEHICLES_PER_WEIGHT = 12;
 
-bool IsFriendRoom();
 bool IsCharacterRestrictionEnabled();
 bool IsVehicleRestrictionEnabled();
 bool IsCharacterRestrictionConfigActive();
