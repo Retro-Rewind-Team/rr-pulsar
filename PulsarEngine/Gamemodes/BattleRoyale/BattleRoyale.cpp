@@ -1,6 +1,8 @@
 #include <PulsarSystem.hpp>
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
+#include <Gamemodes/EliminationDisplay.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
+#include <Gamemodes/Spectating.hpp>
 #include <MarioKartWii/3D/Model/ModelDirector.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/Obj/ItemObj.hpp>
@@ -873,7 +875,7 @@ static void EndRaceForElimination(u8 playerId) {
 }
 
 static void TickLapKoPieces(LapKO::Mgr &lapKoMgr, Raceinfo &raceinfo) {
-    lapKoMgr.TickEliminationDisplay();
+    EliminationDisplay::Tick();
 
     RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
@@ -882,10 +884,7 @@ static void TickLapKoPieces(LapKO::Mgr &lapKoMgr, Raceinfo &raceinfo) {
         lapKoMgr.HostMonitorDisconnects(*controller, sub);
     }
 
-    if (lapKoMgr.isSpectating) {
-        lapKoMgr.UpdateSpectatorInputs(raceinfo);
-        lapKoMgr.MaintainSpectatorView(raceinfo);
-    }
+    Spectating::Update(raceinfo);
 
     lapKoMgr.ProcessPendingItemReweight();
 }

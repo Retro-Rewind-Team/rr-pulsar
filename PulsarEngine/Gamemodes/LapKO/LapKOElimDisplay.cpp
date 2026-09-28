@@ -1,4 +1,5 @@
 #include <Gamemodes/Battle/BattleElimination.hpp>
+#include <Gamemodes/EliminationDisplay.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
@@ -131,18 +132,11 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     u8 eliminationCount = 0;
     u8 playerIds[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
-    if (lapKoContext) {
-        const Mgr &mgr = *system->lapKoMgr;
-        timer = mgr.GetEliminationDisplayTimer();
-        eliminationCount = mgr.GetRecentEliminationCount();
+    if (lapKoContext || battleContext) {
+        timer = EliminationDisplay::GetTimer();
+        eliminationCount = EliminationDisplay::GetRecentCount();
         for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
-            playerIds[idx] = mgr.GetRecentEliminationId(idx);
-        }
-    } else if (battleContext) {
-        timer = ::Pulsar::BattleElim::GetEliminationDisplayTimer();
-        eliminationCount = ::Pulsar::BattleElim::GetRecentEliminationCount();
-        for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
-            playerIds[idx] = ::Pulsar::BattleElim::GetRecentEliminationId(idx);
+            playerIds[idx] = EliminationDisplay::GetRecentPlayerId(idx);
         }
     }
 

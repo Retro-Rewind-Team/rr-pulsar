@@ -37,12 +37,6 @@ public:
     u8 GetPendingElimination() const { return static_cast<u8>(this->pendingElimination & 0x7F); }
     u8 GetPendingRound() const { return this->pendingRound; }
     u8 GetPendingActiveCount() const { return this->pendingActiveCount; }
-    u8 GetRecentEliminationCount() const { return this->recentEliminationCount; }
-    u16 GetEliminationDisplayTimer() const { return this->eliminationDisplayTimer; }
-    u8 GetRecentEliminationId(u8 index) const {
-        return (index < this->recentEliminationCount) ? this->recentEliminations[index] : 0xFF;
-    }
-
     void SetKoPerRace(u8 value);
     u8 GetKoPerRace() const;
     static u8 BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8 *outPlan, u8 capacity);
@@ -61,15 +55,10 @@ public:
     void BroadcastEvent(u8 playerId, u8 concludedRound);
     void BroadcastBatch(const u8 *elimIds, u8 elimCount, u8 concludedRound);
     void UpdateActivePlayerCounts();
-    void RecordEliminationForDisplay(u8 playerId, u8 concludedRound);
-    void ResetEliminationDisplay();
     bool IsFriendRoomOnline() const;
-    void TickEliminationDisplay();
     void EnsureRaceInitialized(Raceinfo &raceinfo);
     void HostMonitorDisconnects(RKNet::Controller &controller, const RKNet::ControllerSub &sub);
     void UpdateLapProgress(Raceinfo &raceinfo);
-    void UpdateSpectatorInputs(const Raceinfo &raceinfo);
-    void MaintainSpectatorView(const Raceinfo &raceinfo);
     void ProcessPendingItemReweight();
     void HostDistributeEvents(RKNet::Controller &controller, const RKNet::ControllerSub &sub);
     void ClientConsumeHostEvents(RKNet::Controller &controller, const RKNet::ControllerSub &sub);
@@ -77,13 +66,6 @@ public:
     bool HasCandidate(const u8 *list, u8 count, u8 playerId) const;
     u8 AdvanceSequence();
     void PreparePendingEvent(u8 concludedRound, u8 activeCount);
-    void InitializeSpectateView(const Raceinfo &raceinfo);
-    void EnsureSpectateTargetIsActive(const Raceinfo &raceinfo);
-    u8 BuildActiveSpectateOrder(const Raceinfo &raceinfo, u8 *outOrder) const;
-    u8 FindNextActiveSpectatePlayer(const Raceinfo &raceinfo, u8 current, bool forward) const;
-    u8 GetLeaderPlayerId(const Raceinfo &raceinfo) const;
-    void FocusCameraOnPlayer(u8 playerId) const;
-
     u8 koPerRaceSetting;
     u8 eliminationPlan[MaxRounds];
     u8 totalRounds;
@@ -107,9 +89,6 @@ public:
     bool pendingNoRoundAdvance;
     u8 pendingBatchCount;
     u8 pendingBatch[12];
-    bool isSpectating;
-    u8 spectateTargetPlayer;
-    bool spectateManualTarget;
     bool isHost;
     u8 hostAid;
     u16 pendingTimer;
@@ -117,10 +96,6 @@ public:
     bool raceFinished;
     bool raceInitDone;
     u16 lastRaceFrames;
-    u8 recentEliminations[4];
-    u8 recentEliminationCount;
-    u8 recentEliminationRound;
-    u16 eliminationDisplayTimer;
     u8 pendingItemReweightFrames;
     u16 disconnectGraceFrames;
 };
