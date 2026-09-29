@@ -19,7 +19,7 @@ namespace Driver {
 
 bool characterTables[CHARACTER_COUNT][MAX_CUSTOM_CHARACTER_SLOTS + 1];
 
-static u8 selectedSlots[CHARACTER_COUNT];
+u8 selectedSlots[CHARACTER_COUNT];
 static u8 loadedSlots[CHARACTER_COUNT];
 static s8 cycleDirections[4];
 static ModelDirector *originalModels[CHARACTER_COUNT];
