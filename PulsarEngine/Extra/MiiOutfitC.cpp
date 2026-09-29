@@ -1,7 +1,18 @@
 #include <RetroRewind.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
+#include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
+#include <MarioKartWii/3D/Model/ModelDirector.hpp>
+#include <MarioKartWii/3D/Scn/ScnMgr.hpp>
 #include <MarioKartWii/Kart/KartFunctions.hpp>
+#include <core/egg/DVD/DvdRipper.hpp>
+#include <core/rvl/OS/OS.hpp>
+#include <core/rvl/os/OSCache.hpp>
+#include <core/rvl/dvd/dvd.hpp>
+#include <IO/SDIO.hpp>
+#include <RetroRewindChannel.hpp>
+#include <Settings/Settings.hpp>
 
 namespace Pulsar {
 
@@ -282,5 +293,92 @@ asmFunc MiiOutfitCDriverSlotSpecial() {
 }
 kmBranch(0x80830d7c, MiiOutfitCDriverSlotSpecial);
 kmPatchExitPoint(MiiOutfitCDriverSlotSpecial, 0x80830da4);
+
+static u32 LoadMiiOutfitCBRRES(void *holder, CharacterId character) {
+    MenuModelBRRESHandle *brresHandle = static_cast<MenuModelBRRESHandle *>(holder);
+    switch (character) {
+        case MII_S_C_MALE:
+        case MII_S_C_FEMALE:
+        case MII_M_C_MALE:
+        case MII_M_C_FEMALE:
+        case MII_L_C_MALE:
+        case MII_L_C_FEMALE:
+            break;
+        default:
+            return brresHandle->BindDriverBRRES(character);
+    }
+
+    const char *postfix = ArchiveMgr::GetKartArchivePostfix(character);
+    char path[0x60];
+    snprintf(path, sizeof(path), "/Scene/Model/Driver/%s.brres", postfix);
+
+    ScnMgr *scnMgr = ScnMgr::sInstance[0];
+    EGG::Heap *heap = scnMgr != nullptr ? scnMgr->curHeap : static_cast<EGG::Heap *>(nullptr);
+    void *file = nullptr;
+    u32 fileSize = 0;
+
+    if (IsNewChannel()) {
+        SDIO sd(IOType_SD, nullptr, nullptr);
+        char paths[3][0x80];
+        snprintf(paths[0], sizeof(paths[0]), "/RetroRewind6/Character/Driver/%s.brres", postfix);
+        u32 pathCount = 1;
+        if (Settings::Mgr::Get().GetSettingValue(Settings::SETTING_LOOSEARCHIVEOVERRIDES) == LOOSEARCHIVEOVERRIDES_ENABLED) {
+            snprintf(paths[1], sizeof(paths[1]), "/RetroRewind6/Patches/Scene/Model/Driver/%s.brres", postfix);
+            snprintf(paths[2], sizeof(paths[2]), "/RetroRewind6/Patches/%s.brres", postfix);
+            pathCount = 3;
+        }
+
+        bool found = false;
+        for (u32 i = 0; i < pathCount; ++i) {
+            if (sd.OpenFile(paths[i], FILE_MODE_READ)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) return brresHandle->BindDriverBRRES(character);
+
+        const s32 signedFileSize = sd.GetFileSize();
+        if (signedFileSize <= 0 || static_cast<u32>(signedFileSize) > 0x7fffffe0 || heap == nullptr) {
+            sd.Close();
+            return 0;
+        }
+        fileSize = static_cast<u32>(signedFileSize);
+        const u32 allocSize = (fileSize + 0x20) & ~0x1f;
+        file = EGG::Heap::alloc(allocSize, 0x20, heap);
+        if (file == nullptr) {
+            sd.Close();
+            return 0;
+        }
+        const s32 bytesRead = sd.Read(fileSize, file);
+        sd.Close();
+        if (bytesRead != static_cast<s32>(fileSize)) {
+            heap->free(file);
+            return 0;
+        }
+        if (allocSize > fileSize) memset(static_cast<u8 *>(file) + fileSize, 0, allocSize - fileSize);
+        OS::DCStoreRange(file, allocSize);
+    } else {
+        DVD::FileInfo info = {};
+        if (!DVD::Open(path, &info)) return brresHandle->BindDriverBRRES(character);
+        fileSize = info.length;
+        DVD::Close(&info);
+        if (fileSize == 0) return brresHandle->BindDriverBRRES(character);
+        if (heap == nullptr) return 0;
+        file = EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &fileSize);
+    }
+
+    if (file == nullptr || fileSize == 0) return 0;
+    if ((reinterpret_cast<u32>(file) & 0x1f) != 0) {
+        heap->free(file);
+        return 0;
+    }
+
+    brresHandle->menuModelBRRES.data = reinterpret_cast<nw4r::g3d::ResFileData *>(file);
+    ModelDirector::BindBRRESImpl(brresHandle->menuModelBRRES, path, nullptr, 0);
+    return 1;
+}
+kmCall(0x80830368, LoadMiiOutfitCBRRES);
+kmCall(0x80831234, LoadMiiOutfitCBRRES);
+kmCall(0x8083183c, LoadMiiOutfitCBRRES);
 
 }  // namespace Pulsar
