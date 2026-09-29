@@ -121,7 +121,7 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     const bool isMission = MissionMode::IsMissionScenario(scenario);
     const bool is200 = isMission ? MissionMode::HasMissionFeature(scenario, MissionMode::ENGINE_200CC) : Is200cc();
     const bool is500 = isMission ? MissionMode::HasMissionFeature(scenario, MissionMode::ENGINE_500CC)
-                                 : RetroRewind::System::Is500cc();
+                                 : System::sInstance->IsContext(Pulsar::PULSAR_500);
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     const System *system = System::sInstance;
