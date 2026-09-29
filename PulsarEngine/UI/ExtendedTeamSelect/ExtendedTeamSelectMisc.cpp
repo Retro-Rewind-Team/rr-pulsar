@@ -16,6 +16,8 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBalloon.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceRankNum.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
+#include <Race/CustomCharacters.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -25,6 +27,7 @@ static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
 void Racedata_InitRace(Racedata *racedata) {
     racedata->InitRace();
+    Race::RandomizeCPUCharacterTables(racedata->racesScenario);
 
     const RacedataSettings &settings = racedata->menusScenario.settings;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
