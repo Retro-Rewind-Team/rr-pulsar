@@ -11,7 +11,6 @@
 #include <MarioKartWii/UI/Page/Other/VR.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/Settings/SelectionRestrictions.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
@@ -266,7 +265,6 @@ static void RandomizeCombo() {
         sectionParams->karts[hudId] = kart;
         sectionParams->combos[hudId].selCharacter = character;
         sectionParams->combos[hudId].selKart = kart;
-        CustomCharacters::RandomizeSelectedCharacterTable(character);
 
         ExpCharacterSelect *charSelect = section->Get<ExpCharacterSelect>();  // guaranteed to exist on this page
         charSelect->randomizedCharIdx[hudId] = character;
@@ -379,7 +377,6 @@ void ExpVR::BeforeExitAnimations() {
 
 void ExpVR::OnDeactivate() {
     VR::OnDeactivate();
-    CustomCharacters::RestoreVotingMenuDriverModels();
 }
 
 void ExpVR::OnResume() {

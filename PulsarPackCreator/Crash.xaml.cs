@@ -98,11 +98,10 @@ namespace Pulsar_Pack_Creator
             string lastTrackSzs = string.IsNullOrWhiteSpace(rawFile.extra.lastTrackSzs) ? "Unknown" : rawFile.extra.lastTrackSzs;
             string contexts = CrashMetadataResolver.GetEnabledContexts(rawFile.extra.context, rawFile.extra.context2);
             bool looseOverridesEnabled = (rawFile.extra.flags & 1u) != 0;
-            bool customCharacterEnabled = (rawFile.extra.flags & 2u) != 0;
             bool hasPatchFiles = rawFile.extra.looseOverrideFileCount > 0;
             string myStuff = GetMyStuffState(rawFile.extra.version, rawFile.extra.myStuffState);
 
-            return $"\n\nSection: {section}\nPage: {page}\nLast Track SZS: {lastTrackSzs}\nContexts: {contexts}\nCustom Character Enabled: {customCharacterEnabled}\nMy Stuff: {myStuff}\nPatches Enabled: {looseOverridesEnabled}\nPatches Folder Has Files: {hasPatchFiles} ({rawFile.extra.looseOverrideFileCount})\n\n";
+            return $"\n\nSection: {section}\nPage: {page}\nLast Track SZS: {lastTrackSzs}\nContexts: {contexts}\nMy Stuff: {myStuff}\nPatches Enabled: {looseOverridesEnabled}\nPatches Folder Has Files: {hasPatchFiles} ({rawFile.extra.looseOverrideFileCount})\n\n";
         }
 
         private static string GetMyStuffState(uint version, uint myStuffState)

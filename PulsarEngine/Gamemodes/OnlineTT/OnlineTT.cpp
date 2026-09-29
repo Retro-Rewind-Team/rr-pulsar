@@ -24,7 +24,6 @@
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Settings/Settings.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 
 namespace Pulsar {
 

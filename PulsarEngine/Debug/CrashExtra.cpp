@@ -5,7 +5,6 @@
 #include <PulsarSystem.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 
 namespace Pulsar {
@@ -165,9 +164,6 @@ void PopulateCrashExtra(ExceptionFile &exception) {
 
     if (IOOverrides::AreLooseArchiveOverridesEnabledForDebug()) {
         extra.flags |= EXCEPTION_FLAG_LOOSE_ARCHIVE_OVERRIDES_ENABLED;
-    }
-    if (CustomCharacters::IsCustomCharacterTableActive()) {
-        extra.flags |= EXCEPTION_FLAG_CUSTOM_CHARACTER_ENABLED;
     }
     extra.looseOverrideFileCount = IOOverrides::GetLooseArchiveOverrideFileCount();
     const u8 myStuffValue = *reinterpret_cast<volatile u8 *>(0x80001200);
