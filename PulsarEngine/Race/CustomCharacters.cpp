@@ -1,8 +1,11 @@
 #include <Driver/CustomCharacters.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRace2DMap.hpp>
+#include <core/egg/DVD/DvdRipper.hpp>
 #include <MarioKartWii/System/Random.hpp>
 #include <core/rvl/dvd/dvd.hpp>
+#include <core/rvl/tpl.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -65,6 +68,29 @@ static s32 LoadCustomCharacters(char *path, u32 size, const char *format, const 
 kmCall(0x80540d9c, LoadCustomCharacters);
 kmCall(0x80540ef4, LoadCustomCharacters);
 kmCall(0x80541048, LoadCustomCharacters);
+
+static void LoadMinimapIcon(CtrlRace2DMapCharacter *control) {
+    control->CtrlRaceBase::InitSelf();
+
+    const u32 playerId = control->playerId;
+    const u32 character = static_cast<u32>(Racedata::sInstance->racesScenario.players[playerId].characterId);
+    if (character >= Driver::CHARACTER_COUNT) return;
+
+    const u32 slot = Driver::selectedSlots[character];
+    if (slot == 0) return;
+
+    char path[0x40];
+    snprintf(path, sizeof(path), "/Race/Map/%s-%u.tpl", ArchiveMgr::GetKartArchivePostfix(static_cast<CharacterId>(character)), slot);
+    if (DVD::ConvertPathToEntryNum(path) < 0) return;
+
+    TPLPalettePtr icon = static_cast<TPLPalettePtr>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, nullptr, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
+    if (icon == nullptr) return;
+
+    control->charaPane->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
+    control->charaShadow0Pane->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
+    control->charaShadow1Pane->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
+}
+kmCall(0x807eb22c, LoadMinimapIcon);
 
 }  // namespace Race
 }  // namespace Pulsar
