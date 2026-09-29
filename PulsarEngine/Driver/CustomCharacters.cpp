@@ -290,6 +290,14 @@ static void PageAfterControlUpdate(Page *page) {
 }
 kmCall(0x80602318, PageAfterControlUpdate);
 
+static void RequestDriverModel(MenuModelMgr *manager, u8 playerId, CharacterId characterId) {
+    manager->RequestDriverModel(playerId, characterId);
+    const u32 character = static_cast<u32>(characterId);
+    if (manager->isActive && character < CHARACTER_COUNT && selectedSlots[character] != 0)
+        LoadDriverBRRES(characterId, selectedSlots[character]);
+}
+kmCall(0x805f5604, RequestDriverModel);
+
 static void MenuModelMgrDestroy() {
     for (u32 character = 0; character < CHARACTER_COUNT; ++character) UnloadDriverBRRES(character);
     MenuModelMgr::DestroyInstance();
