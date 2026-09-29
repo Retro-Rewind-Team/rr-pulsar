@@ -22,24 +22,24 @@ namespace UI {
 static const char MISSION_BMG_FILE[] = "/Race/MissionRun/Mission.bmg";
 
 const BMGHolder *GetMissionBmg() {
-	static BMGHolder missionBmg;
-	static const void *loadedFile = nullptr;
-	static bool loadAttempted = false;
+    static BMGHolder missionBmg;
+    static const void *loadedFile = nullptr;
+    static bool loadAttempted = false;
 
-	if (!loadAttempted && RootScene::sInstance != nullptr &&
-		RootScene::sInstance->expHeapGroup.heaps[1] != nullptr) {
-		loadAttempted = true;
-		u32 fileSize = 0;
-		void *file = SystemManager::RipFromDisc(
-			MISSION_BMG_FILE, RootScene::sInstance->expHeapGroup.heaps[1], true, &fileSize);
-		if (file != nullptr && fileSize >= sizeof(BMGHeader)) {
-			missionBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
-			loadedFile = file;
-		}
-	}
+    if (!loadAttempted && RootScene::sInstance != nullptr &&
+        RootScene::sInstance->expHeapGroup.heaps[1] != nullptr) {
+        loadAttempted = true;
+        u32 fileSize = 0;
+        void *file = SystemManager::RipFromDisc(
+            MISSION_BMG_FILE, RootScene::sInstance->expHeapGroup.heaps[1], true, &fileSize);
+        if (file != nullptr && fileSize >= sizeof(BMGHeader)) {
+            missionBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
+            loadedFile = file;
+        }
+    }
 
-	if (loadedFile == nullptr) return nullptr;
-	return &missionBmg;
+    if (loadedFile == nullptr) return nullptr;
+    return &missionBmg;
 }
 
 namespace MissionMode {
@@ -117,36 +117,36 @@ static const char *const MISSION_STAGE_BORDER_PANES[] = {
 
 class MissionEndPage : public Pages::RaceMenu {
 public:
-	MissionEndPage(bool successful) : successful(successful) {}
+    MissionEndPage(bool successful) : successful(successful) {}
 
-	int GetMessageBMG() const override { return 0; }
-	u32 GetButtonCount() const override { return BUTTON_COUNT; }
+    int GetMessageBMG() const override { return 0; }
+    u32 GetButtonCount() const override { return BUTTON_COUNT; }
 
-	void OnInit() override {
-		Pages::RaceMenu::OnInit();
-		if (!successful) return;
+    void OnInit() override {
+        Pages::RaceMenu::OnInit();
+        if (!successful) return;
 
-		for (u32 i = 0; i < 4; ++i) {
-			PositionAndScale position = this->buttons[0].positionAndscale[i];
-			this->buttons[0].positionAndscale[i] = this->buttons[1].positionAndscale[i];
-			this->buttons[1].positionAndscale[i] = position;
-		}
-		this->buttons[0].SetPosition(0.0f);
-		this->buttons[1].SetPosition(0.0f);
-	}
+        for (u32 i = 0; i < 4; ++i) {
+            PositionAndScale position = this->buttons[0].positionAndscale[i];
+            this->buttons[0].positionAndscale[i] = this->buttons[1].positionAndscale[i];
+            this->buttons[1].positionAndscale[i] = position;
+        }
+        this->buttons[0].SetPosition(0.0f);
+        this->buttons[1].SetPosition(0.0f);
+    }
 
-	const u32 *GetVariantsIdxArray() const override {
-		static const u32 failedVariants[BUTTON_COUNT] = {3, 18, 1};
-		static const u32 successfulVariants[BUTTON_COUNT] = {18, 3, 1};
-		return successful ? successfulVariants : failedVariants;
-	}
+    const u32 *GetVariantsIdxArray() const override {
+        static const u32 failedVariants[BUTTON_COUNT] = {3, 18, 1};
+        static const u32 successfulVariants[BUTTON_COUNT] = {18, 3, 1};
+        return successful ? successfulVariants : failedVariants;
+    }
 
-	bool IsPausePage() const override { return false; }
-	const char *GetButtonsBRCTRName() const override { return "AfterMenuMR"; }
+    bool IsPausePage() const override { return false; }
+    const char *GetButtonsBRCTRName() const override { return "AfterMenuMR"; }
 
 private:
-	static const u32 BUTTON_COUNT = 3;
-	bool successful;
+    static const u32 BUTTON_COUNT = 3;
+    bool successful;
 };
 
 class MissionPausePage : public Pages::RaceMenu {
@@ -376,23 +376,23 @@ public:
 
         if (!this->levelSelected) return;
 
-		const u32 stageId = static_cast<u32>(button.buttonId) - BUTTON_COUNT;
-		if (!this->IsStageAccessible(selectedLevel, stageId)) return;
-		selectedMission = stageId;
-		Pulsar::MissionMode::ResetMissionIntroSelection();
-		u16 stageBmgId = 0;
-		const bool hasStageBmgId = this->GetMissionStageBmgId(selectedLevel, selectedMission, stageBmgId);
+        const u32 stageId = static_cast<u32>(button.buttonId) - BUTTON_COUNT;
+        if (!this->IsStageAccessible(selectedLevel, stageId)) return;
+        selectedMission = stageId;
+        Pulsar::MissionMode::ResetMissionIntroSelection();
+        u16 stageBmgId = 0;
+        const bool hasStageBmgId = this->GetMissionStageBmgId(selectedLevel, selectedMission, stageBmgId);
         MissionModel::Reset();
         if (Racedata::sInstance != nullptr) {
             RacedataSettings &settings = Racedata::sInstance->menusScenario.settings;
             settings.cupId = selectedLevel;
             settings.raceNumber = static_cast<u8>(selectedLevel * BUTTON_COUNT + selectedMission);
-			const bool scenarioLoaded = this->LoadMissionScenario();
+            const bool scenarioLoaded = this->LoadMissionScenario();
             MissionModel::SetScenarioLoaded(scenarioLoaded);
-			if (scenarioLoaded && hasStageBmgId) {
-				Pulsar::MissionMode::SetMissionIntroSelection(selectedLevel, selectedMission,
-					settings.raceNumber, stageBmgId);
-			}
+            if (scenarioLoaded && hasStageBmgId) {
+                Pulsar::MissionMode::SetMissionIntroSelection(selectedLevel, selectedMission,
+                                                              settings.raceNumber, stageBmgId);
+            }
         }
         ExpSection *section = ExpSection::GetSection();
         if (section != nullptr)
@@ -715,20 +715,20 @@ static void InstallMissionPage(ExpSection &section, PageId id, Page *page) {
 }  // namespace
 
 void PrepareMissionEndPage() {
-	if (missionEndPagePrepared) return;
-	ExpSection *section = ExpSection::GetSection();
-	u32 rank;
-	if (::Pulsar::MissionMode::GetMissionResultRank(rank)) {
-		Page *successPage = section->GetPulPage<MissionEndPage>(PULPAGE_TRANSMISSIONSELECT);
-		Page *failedPage = section->pages[PAGE_MISSION_ENDMENU];
-		if (successPage != nullptr && failedPage != nullptr) {
-			section->Set(successPage, PAGE_MISSION_ENDMENU);
-			section->SetPulPage(nullptr, PULPAGE_TRANSMISSIONSELECT);
-			failedPage->Dispose();
-			delete failedPage;
-		}
-	}
-	missionEndPagePrepared = true;
+    if (missionEndPagePrepared) return;
+    ExpSection *section = ExpSection::GetSection();
+    u32 rank;
+    if (::Pulsar::MissionMode::GetMissionResultRank(rank)) {
+        Page *successPage = section->GetPulPage<MissionEndPage>(PULPAGE_TRANSMISSIONSELECT);
+        Page *failedPage = section->pages[PAGE_MISSION_ENDMENU];
+        if (successPage != nullptr && failedPage != nullptr) {
+            section->Set(successPage, PAGE_MISSION_ENDMENU);
+            section->SetPulPage(nullptr, PULPAGE_TRANSMISSIONSELECT);
+            failedPage->Dispose();
+            delete failedPage;
+        }
+    }
+    missionEndPagePrepared = true;
 }
 
 Page *CreateMissionPausePage() { return new MissionPausePage(); }

@@ -148,8 +148,8 @@ nw4r::ut::FileStream *MusicSlotsExpand(nw4r::snd::DVDSoundArchive *archive, void
     asm(mr toPlayId, r20;);
 
     ResolveSW2RRFanfareGP1Path(archive, extFilePath);
-	if (Pulsar::MissionMode::ResolveMissionBossIntroPath(archive, extFilePath, length))
-		return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
+    if (Pulsar::MissionMode::ResolveMissionBossIntroPath(archive, extFilePath, length))
+        return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
 
     if (toPlayId == SOUND_ID_KC) {
         const SectionId section = SectionMgr::sInstance->curSection->sectionId;

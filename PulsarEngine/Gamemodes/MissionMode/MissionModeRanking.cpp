@@ -34,12 +34,12 @@ static void SetMissionValue(void *mission, u32 offset, u32 value);
 static bool SetRankFromTime(void *mission);
 
 static void ResetMissionTrickScore(void *mission) {
-	sMissionTrickState = 0;
-	sMissionTrickScore = 0;
-	sMissionTrickFlags = 0;
-	sMissionTrickStatus = 0;
-	SetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET, 0);
-	SetMissionValue(mission, MISSION_STATUS_OFFSET, 0);
+    sMissionTrickState = 0;
+    sMissionTrickScore = 0;
+    sMissionTrickFlags = 0;
+    sMissionTrickStatus = 0;
+    SetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET, 0);
+    SetMissionValue(mission, MISSION_STATUS_OFFSET, 0);
 }
 kmBranch(0x8053e2a0, ResetMissionTrickScore);
 
@@ -63,36 +63,36 @@ static bool IsMissionVSObjective() {
 }
 
 static u32 GetMissionTrickScore(void *mission) {
-	if (Racedata::sInstance == 0 ||
-		!IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
-		return 0;
-	if (Kart::Manager::sInstance == 0) return sMissionTrickScore;
+    if (Racedata::sInstance == 0 ||
+        !IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
+        return 0;
+    if (Kart::Manager::sInstance == 0) return sMissionTrickScore;
 
-	const u32 missionStatus = GetMissionValue(mission, MISSION_STATUS_OFFSET);
-	if (sMissionTrickState != mission || (sMissionTrickStatus != 0 && missionStatus == 0)) {
-		sMissionTrickState = mission;
-		sMissionTrickScore = 0;
-		sMissionTrickFlags = 0;
-	}
-	sMissionTrickStatus = missionStatus;
+    const u32 missionStatus = GetMissionValue(mission, MISSION_STATUS_OFFSET);
+    if (sMissionTrickState != mission || (sMissionTrickStatus != 0 && missionStatus == 0)) {
+        sMissionTrickState = mission;
+        sMissionTrickScore = 0;
+        sMissionTrickFlags = 0;
+    }
+    sMissionTrickStatus = missionStatus;
 
-	const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-	const u8 playerId = scenario.settings.hudPlayerIds[0];
-	Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(playerId);
-	if (player == 0 || player->pointers.kartStatus == 0) return sMissionTrickScore;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+    const u8 playerId = scenario.settings.hudPlayerIds[0];
+    Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(playerId);
+    if (player == 0 || player->pointers.kartStatus == 0) return sMissionTrickScore;
 
-	const u32 trickFlags = player->pointers.kartStatus->bitfield1 &
-		(MISSION_IN_A_TRICK | MISSION_ZIPPER_TRICK);
-	if (trickFlags != 0 && sMissionTrickFlags == 0) ++sMissionTrickScore;
-	sMissionTrickFlags = trickFlags;
-	return sMissionTrickScore;
+    const u32 trickFlags = player->pointers.kartStatus->bitfield1 &
+                           (MISSION_IN_A_TRICK | MISSION_ZIPPER_TRICK);
+    if (trickFlags != 0 && sMissionTrickFlags == 0) ++sMissionTrickScore;
+    sMissionTrickFlags = trickFlags;
+    return sMissionTrickScore;
 }
 
 static void StopMissionTimerOnSuccess(const void *mission) {
-	if (GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1 ||
-		Raceinfo::sInstance == 0 || Raceinfo::sInstance->timerMgr == 0)
-		return;
-	Raceinfo::sInstance->timerMgr->hasRaceStarted = false;
+    if (GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1 ||
+        Raceinfo::sInstance == 0 || Raceinfo::sInstance->timerMgr == 0)
+        return;
+    Raceinfo::sInstance->timerMgr->hasRaceStarted = false;
 }
 
 typedef void (*MissionEndRaceFn)(void *);
@@ -123,7 +123,7 @@ static void FixLapRunCalcMission(void *mission) {
     calc(mission);
     if (!IsMissionVSObjective() || GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1) return;
     SetMissionState(mission);
-	StopMissionTimerOnSuccess(mission);
+    StopMissionTimerOnSuccess(mission);
     if (!IsRankReported())
         SetRankFromTime(mission);
     else
@@ -153,9 +153,9 @@ static void FixMissionScoreCalcRank(void *mission) {
         Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
         return;
 
-	SetMissionState(mission);
-	if (IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
-		SetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET, GetMissionTrickScore(mission));
+    SetMissionState(mission);
+    if (IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
+        SetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET, GetMissionTrickScore(mission));
     const u32 score = GetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET);
     const u32 requiredScore = GetMissionValue(Racedata::sInstance->racesScenario.mission,
                                               MISSION_SCORE_REQUIRED_OFFSET);
@@ -166,7 +166,7 @@ static void FixMissionScoreCalcRank(void *mission) {
                                         MISSION_OBJECTIVE_OFFSET);
     const u32 rank = IsRankReported() ? GetRank(mission) : 0;
     sSetMissionObjectiveComplete(reinterpret_cast<void *>(raceManager), objective, rank);
-	StopMissionTimerOnSuccess(mission);
+    StopMissionTimerOnSuccess(mission);
     if (!IsRankReported()) SetRankFromTime(mission);
 }
 
@@ -279,7 +279,7 @@ static void FixMissionTimeout(void *mission) {
     if (!HasMissionScoreRequirement(mission)) {
         SetMissionValue(mission, MISSION_STATUS_OFFSET, 2);
     }
-	StopMissionTimerOnSuccess(mission);
+    StopMissionTimerOnSuccess(mission);
     if (GetMissionValue(mission, MISSION_STATUS_OFFSET) == 1 && !IsRankReported())
         SetRankFromTime(mission);
 }
@@ -291,7 +291,7 @@ static void FixMissionTimeoutEnd(void *mission) {
         Raceinfo::sInstance->stage == RACESTAGE_IS_FINISHING) {
         Raceinfo::sInstance->stage = RACESTAGE_FINISHED;
     }
-	StopMissionTimerOnSuccess(mission);
+    StopMissionTimerOnSuccess(mission);
     if (GetMissionValue(mission, MISSION_STATUS_OFFSET) == 1 && !IsRankReported())
         SetRankFromTime(mission);
 }
@@ -307,7 +307,7 @@ static u32 FixMissionCanEnd(void *mission) {
         SetMissionValue(mission, MISSION_STATUS_OFFSET, 2);
         return 1;
     }
-	StopMissionTimerOnSuccess(mission);
+    StopMissionTimerOnSuccess(mission);
     if (status == 1 && !IsRankReported()) SetRankFromTime(mission);
     return status != 0;
 }

@@ -67,36 +67,36 @@ static u16 GetMissionU16(const void *mission, u32 offset) {
 }
 
 static bool IsMissionCameraLockedBackwards() {
-	if (Racedata::sInstance == nullptr) return false;
+    if (Racedata::sInstance == nullptr) return false;
 
-	const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-	return IsMissionScenario(scenario) &&
-	       GetMissionU16(scenario.mission, MISSION_CAMERA_MODE_OFFSET) == MISSION_CAMERA_MODE_BACKWARDS;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+    return IsMissionScenario(scenario) &&
+           GetMissionU16(scenario.mission, MISSION_CAMERA_MODE_OFFSET) == MISSION_CAMERA_MODE_BACKWARDS;
 }
 
 kmRuntimeUse(0x80521768);
 typedef void (*MissionControllerUpdateFn)(Input::RealControllerHolder *, bool);
 static void MissionControllerUpdate(Input::RealControllerHolder *holder, bool isPaused) {
-	static const MissionControllerUpdateFn original =
-		reinterpret_cast<MissionControllerUpdateFn>(kmRuntimeAddr(0x80521768));
-	original(holder, isPaused);
-	if (isPaused || !IsMissionCameraLockedBackwards()) return;
+    static const MissionControllerUpdateFn original =
+        reinterpret_cast<MissionControllerUpdateFn>(kmRuntimeAddr(0x80521768));
+    original(holder, isPaused);
+    if (isPaused || !IsMissionCameraLockedBackwards()) return;
 
-	holder->inputStates[0].buttonActions &= static_cast<u16>(~MISSION_ACCELERATE_BUTTON);
-	holder->inputStates[0].buttonActions |= MISSION_REAR_VIEW_FLAG;
+    holder->inputStates[0].buttonActions &= static_cast<u16>(~MISSION_ACCELERATE_BUTTON);
+    holder->inputStates[0].buttonActions |= MISSION_REAR_VIEW_FLAG;
 }
 kmWritePointer(0x808b2d9c, MissionControllerUpdate);
 
 kmRuntimeUse(0x805a9bec);
 typedef void (*MissionRaceCameraUpdateFn)(void *, bool);
 static void MissionRaceCameraUpdate(void *cameraLink, bool isPaused) {
-	static const MissionRaceCameraUpdateFn original =
-		reinterpret_cast<MissionRaceCameraUpdateFn>(kmRuntimeAddr(0x805a9bec));
-	original(cameraLink, isPaused);
-	if (isPaused || !IsMissionCameraLockedBackwards()) return;
+    static const MissionRaceCameraUpdateFn original =
+        reinterpret_cast<MissionRaceCameraUpdateFn>(kmRuntimeAddr(0x805a9bec));
+    original(cameraLink, isPaused);
+    if (isPaused || !IsMissionCameraLockedBackwards()) return;
 
-	RaceCamera *camera = reinterpret_cast<RaceCamera *>(reinterpret_cast<u8 *>(cameraLink) - MISSION_CAMERA_LINK_OFFSET);
-	camera->bitfield |= MISSION_REAR_VIEW_FLAG;
+    RaceCamera *camera = reinterpret_cast<RaceCamera *>(reinterpret_cast<u8 *>(cameraLink) - MISSION_CAMERA_LINK_OFFSET);
+    camera->bitfield |= MISSION_REAR_VIEW_FLAG;
 }
 kmWritePointer(0x808b6c80, MissionRaceCameraUpdate);
 
@@ -112,27 +112,27 @@ static bool sMissionCameraHold = false;
 kmRuntimeUse(0x805acc34);
 typedef void (*UpdateRaceCameraFn)(void *);
 static void UpdateRaceCamera(void *camera) {
-	if (Racedata::sInstance != nullptr && IsMissionVSObjective(Racedata::sInstance->racesScenario)) {
-		if (Raceinfo::sInstance != nullptr &&
-			Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_IS_FINISHING))
-			sMissionCameraHold = true;
-		return;
-	}
+    if (Racedata::sInstance != nullptr && IsMissionVSObjective(Racedata::sInstance->racesScenario)) {
+        if (Raceinfo::sInstance != nullptr &&
+            Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_IS_FINISHING))
+            sMissionCameraHold = true;
+        return;
+    }
 
-	sMissionCameraHold = false;
-	static const UpdateRaceCameraFn original =
-		reinterpret_cast<UpdateRaceCameraFn>(kmRuntimeAddr(0x805acc34));
-	original(camera);
+    sMissionCameraHold = false;
+    static const UpdateRaceCameraFn original =
+        reinterpret_cast<UpdateRaceCameraFn>(kmRuntimeAddr(0x805acc34));
+    original(camera);
 }
 kmCall(0x805ab800, UpdateRaceCamera);
 
 kmRuntimeUse(0x80516808);
 typedef s16 (*FindMissionCameraAreaFn)(KMP::Manager *, const Vec3 &, u32, u8);
 static s16 FindMissionCameraArea(KMP::Manager *manager, const Vec3 &position, u32 areaIdToTestFirst, u8 areaType) {
-	static const FindMissionCameraAreaFn original =
-		reinterpret_cast<FindMissionCameraAreaFn>(kmRuntimeAddr(0x80516808));
-	if (sMissionCameraHold) return static_cast<s16>(areaIdToTestFirst);
-	return original(manager, position, areaIdToTestFirst, areaType);
+    static const FindMissionCameraAreaFn original =
+        reinterpret_cast<FindMissionCameraAreaFn>(kmRuntimeAddr(0x80516808));
+    if (sMissionCameraHold) return static_cast<s16>(areaIdToTestFirst);
+    return original(manager, position, areaIdToTestFirst, areaType);
 }
 kmCall(0x805ab830, FindMissionCameraArea);
 
@@ -289,34 +289,34 @@ void FinalizeMissionRaceScenario() {
 
 kmRuntimeUse(0x805983f4);
 void MovePlayersToMissionSuccessPoint() {
-	if (Racedata::sInstance == nullptr ||
-		!IsMissionScenario(Racedata::sInstance->racesScenario) ||
-		Kart::Manager::sInstance == nullptr || Kart::Manager::sInstance->players == nullptr) {
-		sMissionCameraHold = false;
-		return;
-	}
+    if (Racedata::sInstance == nullptr ||
+        !IsMissionScenario(Racedata::sInstance->racesScenario) ||
+        Kart::Manager::sInstance == nullptr || Kart::Manager::sInstance->players == nullptr) {
+        sMissionCameraHold = false;
+        return;
+    }
 
-	const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-	const Kart::Manager *manager = Kart::Manager::sInstance;
-	const u8 hudPlayerId = scenario.settings.hudPlayerIds[0];
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+    const Kart::Manager *manager = Kart::Manager::sInstance;
+    const u8 hudPlayerId = scenario.settings.hudPlayerIds[0];
 
-	typedef void (*GoToMissionSuccessPointFn)(void *);
-	const GoToMissionSuccessPointFn goToMissionSuccessPoint =
-		reinterpret_cast<GoToMissionSuccessPointFn>(kmRuntimeAddr(0x805983f4));
-	for (u32 i = 0; i < manager->playerCount; ++i) {
-		Kart::Player *player = manager->GetKartPlayer(i);
-		if (player == nullptr || player->kartSub == nullptr) continue;
-		if (i == hudPlayerId) {
-			goToMissionSuccessPoint(player->kartSub);
-			continue;
-		}
-		if (player->IsCPU()) {
-			if (player->pointers.kartStatus != nullptr)
-				player->pointers.kartStatus->bitfield0 &= ~1u;
-			continue;
-		}
-	}
-	sMissionCameraHold = false;
+    typedef void (*GoToMissionSuccessPointFn)(void *);
+    const GoToMissionSuccessPointFn goToMissionSuccessPoint =
+        reinterpret_cast<GoToMissionSuccessPointFn>(kmRuntimeAddr(0x805983f4));
+    for (u32 i = 0; i < manager->playerCount; ++i) {
+        Kart::Player *player = manager->GetKartPlayer(i);
+        if (player == nullptr || player->kartSub == nullptr) continue;
+        if (i == hudPlayerId) {
+            goToMissionSuccessPoint(player->kartSub);
+            continue;
+        }
+        if (player->IsCPU()) {
+            if (player->pointers.kartStatus != nullptr)
+                player->pointers.kartStatus->bitfield0 &= ~1u;
+            continue;
+        }
+    }
+    sMissionCameraHold = false;
 }
 
 kmRuntimeUse(0x80518b2c);
@@ -325,10 +325,10 @@ static const GetMissionPointHolderFn sGetMissionPointHolder =
     reinterpret_cast<GetMissionPointHolderFn>(kmRuntimeAddr(0x80518b2c));
 
 static KMP::Holder<MSPT> *GetMissionPointHolderWithKTPTFallback(KMP::Manager *manager, u16 idx) {
-	KMP::Holder<MSPT> *holder = sGetMissionPointHolder(manager, idx);
-	if (holder != nullptr) return holder;
-	KMP::Holder<KTPT> *ktpt = manager->GetHolder<KTPT>(0);
-	return reinterpret_cast<KMP::Holder<MSPT> *>(ktpt);
+    KMP::Holder<MSPT> *holder = sGetMissionPointHolder(manager, idx);
+    if (holder != nullptr) return holder;
+    KMP::Holder<KTPT> *ktpt = manager->GetHolder<KTPT>(0);
+    return reinterpret_cast<KMP::Holder<MSPT> *>(ktpt);
 }
 kmCall(0x805847b0, GetMissionPointHolderWithKTPTFallback);
 
