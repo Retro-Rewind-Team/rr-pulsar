@@ -2302,6 +2302,9 @@ isOnlineRace__9DriverMgr = 0x809c38b9
 isTT__9DriverMgr = 0x809c38bc
 ChangeFocusedPlayer__9DriverMgrFUc = 0x8078dde4
 
+#TicoModel
+__ct__9TicoModelFP16DriverController = 0x807d9b98
+
 
 ##OBJECTS
 #ObjectMgr

@@ -6,6 +6,7 @@
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Audio/AudioManager.hpp>
 #include <MarioKartWii/Audio/Actors/CharacterActor.hpp>
+#include <MarioKartWii/Driver/DriverController.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <core/nw4r/snd/SoundArchive.hpp>
 #include <core/nw4r/snd/WsdFile.hpp>
@@ -334,6 +335,27 @@ static void EnsureVoiceAssignments() {
     if (!sVoiceAssignmentsReady && Racedata::sInstance != nullptr && Audio::Manager::soundArchive != nullptr)
         LoadCharacterVoices();
 }
+
+static TicoModel *CreateTicoModelForCustomVoice(void *memory, DriverController *controller) {
+    if (memory == nullptr) return nullptr;
+    EnsureVoiceAssignments();
+    const u8 playerId = controller->GetPlayerIdx();
+    if (playerId < 12 && (sPlayerHasCustomVoice[playerId] || sPlayerIsSilent[playerId])) return nullptr;
+    return new (memory) TicoModel(controller);
+}
+kmCall(0x807c8994, CreateTicoModelForCustomVoice);
+
+static Audio::Handle *HoldRosalinaLumaSound(Audio::RaceActor *actor, u32 soundId) {
+    Audio::CharacterActor *characterActor = static_cast<Audio::CharacterActor *>(actor);
+    EnsureVoiceAssignments();
+    const u8 playerId = characterActor->playerId;
+    if ((soundId == 0xf68 || soundId == 0xf69) && playerId < 12 &&
+        Racedata::sInstance->racesScenario.players[playerId].characterId == ROSALINA &&
+        (sPlayerHasCustomVoice[playerId] || sPlayerIsSilent[playerId]))
+        return nullptr;
+    return actor->Audio::RaceActor::HoldSoundLimited(soundId);
+}
+kmWritePointer(0x808dbcd8, HoldRosalinaLumaSound);
 
 static s8 GetPlayerVoiceAlias(u32 playerId) {
     EnsureVoiceAssignments();
