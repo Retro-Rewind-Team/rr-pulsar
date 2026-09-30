@@ -26,6 +26,11 @@ static s8 cycleDirections[4];
 static ModelDirector *originalModels[CHARACTER_COUNT];
 static ModelTransformator *originalTransformators[CHARACTER_COUNT];
 static bool originalWasVisible[CHARACTER_COUNT];
+enum { AUTHOR_NAME_CONTROL_WORDS = (sizeof(CharaName) + sizeof(u32) - 1) / sizeof(u32) };
+static u32 authorNameControlStorage[4][AUTHOR_NAME_CONTROL_WORDS];
+static bool authorNameControlLoaded[4];
+static bool loadingAuthorNameControl;
+static u32 authorTextBmgIds[4];
 static ModelDirector *customModels[CHARACTER_COUNT];
 static EGG::ExpHeap *customHeaps[CHARACTER_COUNT];
 
@@ -295,8 +300,60 @@ static void PageAfterControlUpdate(Page *page) {
         if (changed[character] && character < 24)
             characterSelectPage->names[player].SetMessage(UI::GetCharacterNameBMGId(character, false, player));
     }
+
+    u32 localPlayerCount = 0;
+    for (u32 player = 0; player < 4; ++player) {
+        if ((characterSelectPage->localPlayerBitfield & (1 << player)) != 0) ++localPlayerCount;
+    }
+    for (u32 player = 0; player < 4; ++player) {
+        if ((characterSelectPage->localPlayerBitfield & (1 << player)) == 0 || !authorNameControlLoaded[player]) continue;
+        CharaName *author = reinterpret_cast<CharaName *>(&authorNameControlStorage[player][0]);
+        if (localPlayerCount > 1) {
+            author->isHidden = true;
+            authorTextBmgIds[player] = 0;
+            continue;
+        }
+        const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
+        const u32 authorBmgId = UI::GetCharacterAuthorBMGId(character, selectedSlots[character]);
+        if (authorTextBmgIds[player] == authorBmgId) continue;
+        author->isHidden = authorBmgId == 0 || !UI::SetCustomCharacterAuthorMessage(*author, authorBmgId);
+        authorTextBmgIds[player] = authorBmgId;
+    }
 }
 kmCall(0x80602318, PageAfterControlUpdate);
+
+static void CharacterSelectName(ControlLoader *loader, const char *folderName, const char *ctrName, const char *variant, const char **animNames) {
+    loader->Load(folderName, ctrName, variant, animNames);
+    if (loadingAuthorNameControl) return;
+    CharaName &name = *static_cast<CharaName *>(loader->layoutUIControl);
+    const u32 hud = name.unknown_0x178;
+    if (hud >= 4) return;
+
+    CharaName *author = reinterpret_cast<CharaName *>(&authorNameControlStorage[hud][0]);
+    authorNameControlLoaded[hud] = false;
+    authorTextBmgIds[hud] = 0;
+    new (author) CharaName;
+    author->unknown_0x178 = hud;
+    name.InitControlGroup(1);
+    name.AddControl(0, author);
+    loadingAuthorNameControl = true;
+    ControlLoader authorLoader(author);
+    authorLoader.Load(folderName, ctrName, variant, nullptr);
+    loadingAuthorNameControl = false;
+
+    const char *panes[] = {"Window_00", "black_parts_t_00", "black_parts_t_01", "select_base", "border", "cc_prev_wh", "cc_next_wh", "cc_prev_nc", "cc_next_nc", "cc_prev_cls", "cc_next_cls", "cc_prev_gc", "cc_next_gc"};
+    for (u32 i = 0; i < sizeof(panes) / sizeof(panes[0]); ++i) {
+        if (author->layout.GetPaneByName(panes[i]) != nullptr) author->SetPaneVisibility(panes[i], false);
+    }
+    for (u32 i = 0; i < sizeof(author->positionAndscale) / sizeof(author->positionAndscale[0]); ++i) {
+        author->positionAndscale[i].position = name.positionAndscale[i].position;
+        author->positionAndscale[i].position.y -= 14.5f;
+        author->positionAndscale[i].scale.x *= 1.1f;
+    }
+    author->isHidden = true;
+    authorNameControlLoaded[hud] = true;
+}
+kmCall(0x8083d9dc, CharacterSelectName);
 
 static void RequestDriverModel(MenuModelMgr *manager, u8 playerId, CharacterId characterId) {
     manager->RequestDriverModel(playerId, characterId);

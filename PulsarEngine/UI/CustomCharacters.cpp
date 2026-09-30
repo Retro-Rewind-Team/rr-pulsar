@@ -21,6 +21,18 @@ u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId) {
     return GetCharacterBMGId(static_cast<CharacterId>(character), useGenericMiiName);
 }
 
+u32 GetCharacterAuthorBMGId(u32 character, u32 slot) {
+    if (character >= Driver::CHARACTER_COUNT || slot == 0 || slot > Driver::MAX_CUSTOM_CHARACTER_SLOTS) return 0;
+    return (character << 16) | BMG_CUSTOM_CHARACTER_AUTHOR_START | slot;
+}
+
+bool SetCustomCharacterAuthorMessage(LayoutUIControl &control, u32 bmgId) {
+    const wchar_t *author = GetCustomMsg(bmgId);
+    if (author == nullptr || author[0] == L'\0') return false;
+    control.SetMessage(bmgId, nullptr);
+    return true;
+}
+
 static u32 GetNameBalloonCharacterNameBMGId(u32 character, bool useGenericMiiName) {
     register u32 playerId;
     asm(mr playerId, r30;);
