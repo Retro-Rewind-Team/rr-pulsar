@@ -1,4 +1,6 @@
 #include <Driver/CustomCharacters.hpp>
+#include <IO/LooseArchiveOverrides.hpp>
+#include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
@@ -45,10 +47,12 @@ void CreateCharacterTable() {
 
         for (u32 slot = 1; slot <= MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
             snprintf(path, sizeof(path), "/Scene/Model/Driver/%s-%u.brres", name, slot);
-            characterTables[character][slot] = DVD::ConvertPathToEntryNum(path) >= 0;
+            characterTables[character][slot] = IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0;
         }
+        if (!characterTables[character][selectedSlots[character]]) selectedSlots[character] = 0;
     }
 }
+static Settings::Hook CreateCharacterTableHook(CreateCharacterTable);
 
 static s32 LoadKartArchive(char *path, u32 size, const char *format, const char *name) {
     u32 character = 0;
@@ -61,7 +65,7 @@ static s32 LoadKartArchive(char *path, u32 size, const char *format, const char 
     if (slot != 0) {
         char archivePath[0x80];
         snprintf(archivePath, sizeof(archivePath), "/Scene/Model/Kart/%s-%u-allkart%s.szs", name, slot, battleSuffix);
-        if (DVD::ConvertPathToEntryNum(archivePath) >= 0)
+        if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(archivePath) >= 0)
             return snprintf(path, size, "Scene/Model/Kart/%s-%u-allkart%s", name, slot, battleSuffix);
     }
 
@@ -125,7 +129,7 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
 
     char path[0x80];
     snprintf(path, sizeof(path), "/Scene/Model/Driver/%s-%u.brres", ArchiveMgr::GetKartArchivePostfix(characterId), slot);
-    const s32 entryNum = DVD::ConvertPathToEntryNum(path);
+    const s32 entryNum = IOOverrides::ConvertPathToEntryNumWithLooseOverride(path);
     DVD::FileInfo fileInfo = {};
     if (entryNum < 0 || !DVD::FastOpen(entryNum, &fileInfo)) return false;
     const u32 fileSize = fileInfo.length;

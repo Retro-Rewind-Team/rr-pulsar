@@ -1,4 +1,5 @@
 #include <Driver/CustomCharacters.hpp>
+#include <IO/LooseArchiveOverrides.hpp>
 #include <Race/CustomCharacters.hpp>
 #include <Race/CustomCharacterVoice.hpp>
 #include <Sound/LooseBRSAROverrides.hpp>
@@ -162,7 +163,7 @@ static bool VoiceFileExists(const char *characterCode, u32 slot, const char *typ
                  sourceSuffix);
     else
         snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u%s.%s", characterCode, slot, typeSuffix, extension);
-    return DVD::ConvertPathToEntryNum(path) >= 0;
+    return IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0;
 }
 
 static bool HasSuffixedVoiceFiles(const char *characterCode, u32 slot, const char *sourceSuffix) {
@@ -241,7 +242,7 @@ static bool FindCustomVoiceSource(CharacterId character, u32 slot, s8 &sourceCha
 static bool IsSilentSlot(CharacterId character, u32 slot) {
     char path[0x80];
     snprintf(path, sizeof(path), "/sound/%s-%u.silent", ArchiveMgr::GetKartArchivePostfix(character), slot);
-    return DVD::ConvertPathToEntryNum(path) >= 0;
+    return IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0;
 }
 
 static void ResetVoiceAssignments() {

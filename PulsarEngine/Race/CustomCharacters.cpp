@@ -1,4 +1,5 @@
 #include <Driver/CustomCharacters.hpp>
+#include <IO/LooseArchiveOverrides.hpp>
 #include <Race/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
@@ -64,7 +65,7 @@ static s32 LoadCustomCharactersForPlayer(char *path, u32 size, const char *forma
     if (slot != 0) {
         char archivePath[0x80];
         snprintf(archivePath, sizeof(archivePath), "/Race/Kart/%s%s-%s-%u%s.szs", vehicleName, teamSuffix, characterName, slot, modeSuffix);
-        if (DVD::ConvertPathToEntryNum(archivePath) >= 0)
+        if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(archivePath) >= 0)
             return snprintf(path, size, "Race/Kart/%s%s-%s-%u%s", vehicleName, teamSuffix, characterName, slot, modeSuffix);
     }
     return snprintf(path, size, format, vehicleName, teamSuffix, characterName, modeSuffix);
@@ -107,7 +108,7 @@ static void LoadMinimapIcon(CtrlRace2DMapCharacter *control) {
 
     char path[0x40];
     snprintf(path, sizeof(path), "/Race/Map/%s-%u.tpl", ArchiveMgr::GetKartArchivePostfix(static_cast<CharacterId>(character)), slot);
-    if (DVD::ConvertPathToEntryNum(path) < 0) return;
+    if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) < 0) return;
 
     TPLPalettePtr icon = static_cast<TPLPalettePtr>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, nullptr, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
     if (icon == nullptr) return;

@@ -176,8 +176,8 @@ void System::Init(const ConfigFile &confRT, const ConfigFile &confCT, const Conf
     CupsConfig::sInstance = new CupsConfig(rtCups, ctCups, btCups);
     this->info.Init(confRT.GetSection<InfoHolder>().info);
     this->InitIO(type);
-    Driver::CreateCharacterTable();
     this->InitSettings(&CupsConfig::sInstance->trophyCount[0]);
+    Driver::CreateCharacterTable();
 
     if (IsNewChannel()) {
         NewChannel_Init();
