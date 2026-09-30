@@ -293,7 +293,7 @@ static void PageAfterControlUpdate(Page *page) {
         if ((characterSelectPage->localPlayerBitfield & (1 << player)) == 0) continue;
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (changed[character] && character < 24)
-            characterSelectPage->names[player].SetMessage(UI::GetCharacterNameBMGId(character, false));
+            characterSelectPage->names[player].SetMessage(UI::GetCharacterNameBMGId(character, false, player));
     }
 }
 kmCall(0x80602318, PageAfterControlUpdate);

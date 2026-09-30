@@ -1,6 +1,7 @@
 #include <UI/ExtendedTeamSelect/Result/CtrlRaceResultExtendedTeams.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
+#include <UI/UI.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -79,7 +80,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
                 info.miis[0] = miiGroup.GetMii(playerId);
                 this->items[i].SetTextBoxMessage("mii_name", BMG_MII_NAME, &info);
             } else {
-                u32 characterBmg = GetCharacterBMGId(characterId, true);
+                u32 characterBmg = GetCharacterNameBMGId(characterId, true, playerId);
                 this->items[i].SetTextBoxMessage("mii_name", characterBmg, nullptr);
             }
         } else {
