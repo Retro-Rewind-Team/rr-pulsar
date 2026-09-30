@@ -15,6 +15,8 @@
 #include <kamek.hpp>
 #include <PulsarSystem.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
+#include <Race/CustomCharacterVoice.hpp>
+#include <Sound/LooseBRSAROverrides.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/nw4r/snd.hpp>
@@ -830,6 +832,7 @@ static void *LoadGroupWithLooseBRSAROverride(snd::detail::SoundArchiveLoader *lo
 
     void *waveData = (waveDataAddress != nullptr) ? *waveDataAddress : nullptr;
     PatchLoadedGroupWithLooseBRSAROverrides(loader->archive, groupId, allocater, groupData, waveData);
+    Pulsar::Race::PatchLoadedCustomVoiceGroup(loader, groupId, allocater, groupData, waveData);
     return groupData;
 }
 
@@ -853,6 +856,21 @@ kmBranch(0x800a1560, GetFileAddressWithLooseBRSAROverride);
 kmBranch(0x800a16b0, GetFileWaveDataAddressWithLooseBRSAROverride);
 
 }  // namespace
+
+void SetLooseBRSARGroupItemBuffer(u32 fileId, bool waveData, void *buffer) {
+    if (fileId >= 1024) return;
+
+    void **buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
+    EGG::Heap **heaps = waveData ? sExternalWaveBufferHeaps : sExternalFileBufferHeaps;
+    u8 *sources = waveData ? sExternalWaveBufferSources : sExternalFileBufferSources;
+    u8 *attempts = waveData ? sExternalWaveAttempts : sExternalFileAttempts;
+    if (buffers[fileId] != nullptr && sources[fileId] == EXTERNALBUFFER_PERSISTENT_HEAP && heaps[fileId] != nullptr)
+        EGG::Heap::free(buffers[fileId], heaps[fileId]);
+    buffers[fileId] = buffer;
+    heaps[fileId] = nullptr;
+    sources[fileId] = buffer != nullptr ? EXTERNALBUFFER_GROUP_ALLOCATER : EXTERNALBUFFER_NONE;
+    attempts[fileId] = 0;
+}
 
 }  // namespace Sound
 }  // namespace Pulsar
