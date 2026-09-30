@@ -9,6 +9,7 @@ namespace UI {
 
 void ChangeImage(LayoutUIControl &control, const char *paneName, const char *tplName);
 const wchar_t *GetCustomMsg(s32 bmgId);
+u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName);
 void UnbindRLMC(lyt::Material *mat);
 void ResetMatColor(lyt::Pane *pane, u32 color);
 void ResetFroomSettingsPreviewShown();
@@ -250,6 +251,9 @@ enum BMG {
     BMG_OTT_START_MESSAGE = 0x6924,
     BMG_ITEMRAIN_START_MESSAGE = 0x6925,
 
+    // Custom Characters
+    BMG_CUSTOM_CHARACTER_NAME_START = 0x6a00,
+    BMG_CUSTOM_CHARACTER_AUTHOR_START = 0x7a00,
 
     // Language
     BMG_LANGUAGE_RESET_REQUIRED = 0x295f,

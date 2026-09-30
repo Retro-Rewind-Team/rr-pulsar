@@ -9,6 +9,7 @@
 #include <MarioKartWii/UI/Page/Menu/CharacterSelect.hpp>
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <UI/UI.hpp>
 #include <core/egg/mem/ExpHeap.hpp>
 #include <core/rvl/PAD.hpp>
 #include <core/rvl/WPAD.hpp>
@@ -286,6 +287,13 @@ static void PageAfterControlUpdate(Page *page) {
             (customModels[character] == nullptr && slot != 0)) {
             if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot)) selectedSlots[character] = 0;
         }
+    }
+
+    for (u32 player = 0; player < 4; ++player) {
+        if ((characterSelectPage->localPlayerBitfield & (1 << player)) == 0) continue;
+        const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
+        if (changed[character] && character < 24)
+            characterSelectPage->names[player].SetMessage(UI::GetCharacterNameBMGId(character, false));
     }
 }
 kmCall(0x80602318, PageAfterControlUpdate);
