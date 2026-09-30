@@ -61,7 +61,10 @@ struct ObjectArray {
 };  // 0x8
 
 class ManagedObjects {
+public:
     void RegisterObject(Object *object);  // 806c4ed4
+
+private:
     Object *objects[0x3c];
     u32 managedObjCount;
 };  // 0xf4
