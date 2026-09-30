@@ -197,10 +197,7 @@ static bool ReadLooseBRSARLayout(DVD::FileInfo &info, const char *magic, LooseBR
     return true;
 }
 
-static bool PreloadLooseBRSARBufferWithAllocater(snd::SoundMemoryAllocatable *allocater,
-                                                  snd::SoundArchive::FileId fileId, bool waveData,
-                                                  DVD::FileInfo &info, const char *path, u32 readOffset,
-                                                  u32 overrideSize) {
+static bool PreloadLooseBRSARBufferWithAllocater(snd::SoundMemoryAllocatable *allocater, snd::SoundArchive::FileId fileId, bool waveData, DVD::FileInfo &info, const char *path, u32 readOffset, u32 overrideSize) {
     if (allocater == nullptr || fileId >= 1024 || overrideSize == 0) return false;
 
     void **buffers = waveData ? sExternalWaveBuffers : sExternalFileBuffers;
@@ -595,6 +592,51 @@ static void PatchResolvedAddress(snd::SoundArchive::FileId fileId, bool waveData
     if (fileId < 1024) patchedCache[fileId] = target.address;
 }
 
+static void PatchLoadedGroupItemWithCustomSoundEffect(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId, snd::SoundMemoryAllocatable *allocater, u32 itemCount, const snd::SoundArchive::GroupItemInfo &item, u32 groupSize, void *groupData) {
+    const u8 *source = static_cast<const u8 *>(groupData) + item.offset;
+    const char *magic = nullptr;
+    const char *extension = nullptr;
+    if (item.size >= 4 && memcmp(source, "RSTM", 4) == 0) {
+        magic = "RSTM";
+        extension = "brstm";
+    } else if (item.size >= 4 && memcmp(source, "RWSD", 4) == 0) {
+        magic = "RWSD";
+        extension = "brwsd";
+    } else if (item.size >= 4 && memcmp(source, "RBNK", 4) == 0) {
+        magic = "RBNK";
+        extension = "brbnk";
+    } else if (item.size >= 4 && memcmp(source, "RSEQ", 4) == 0) {
+        magic = "RSEQ";
+        extension = "brseq";
+    }
+    if (extension == nullptr) return;
+
+    char path[0x80];
+    if (!FindLooseSoundEffectPath(item.fileId, extension, path, sizeof(path))) return;
+    DVD::FileInfo info;
+    if (!DVD::Open(path, &info)) return;
+
+    LooseBRSARLayout layout;
+    if (ReadLooseBRSARLayout(info, magic, layout)) {
+        u32 capacity = 0;
+        const bool fits = TryGetGroupItemSlotCapacity(archive, groupId, itemCount, item, false, groupSize, capacity) &&
+                          capacity >= layout.fileSize;
+        if (fits) {
+            u8 *dest = static_cast<u8 *>(groupData) + item.offset;
+            if (ReadOpenedDVDFileRange(info, dest, layout.fileSize, 0)) {
+                if (layout.fileSize < item.size) memset(dest + layout.fileSize, 0, item.size - layout.fileSize);
+                OS::DCStoreRange(dest, item.size);
+                if (item.fileId < 1024) sPatchedFileAddresses[item.fileId] = dest;
+            }
+        } else {
+            PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, false, info, path, 0, layout.fileSize);
+        }
+        if (layout.waveSize > 0)
+            PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, true, info, path, layout.waveOffset, layout.waveSize);
+    }
+    DVD::Close(&info);
+}
+
 static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId, snd::SoundMemoryAllocatable *allocater, u32 itemCount, const snd::SoundArchive::GroupItemInfo &item, u32 groupSize, u32 waveDataSize, void *groupData, void *waveData) {
     DVD::FileInfo info;
     const char revokart[] = "/patches/revo_kart.brsar";
@@ -647,7 +689,7 @@ static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive &archi
             }
         } else {
             PreloadLooseBRSARBufferWithAllocater(allocater, item.fileId, true, info, path, layout.waveOffset,
-                                                  layout.waveSize);
+                                                 layout.waveSize);
         }
     }
 
@@ -821,6 +863,8 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive &arc
 
         PatchLoadedRaceGroupItemWithSW2RRBank(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size,
                                               groupInfo.waveDataSize, groupData, waveData);
+        PatchLoadedGroupItemWithCustomSoundEffect(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size,
+                                                  groupData);
     }
 }
 
