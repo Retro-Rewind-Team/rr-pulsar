@@ -1,4 +1,5 @@
 #include <Driver/CustomCharacters.hpp>
+#include <Race/CustomCharacters.hpp>
 #include <Race/CustomCharacterVoice.hpp>
 #include <Sound/LooseBRSAROverrides.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
@@ -196,7 +197,7 @@ static void LoadCharacterVoices() {
         const u32 character = static_cast<u32>(scenario.players[playerId].characterId);
         if (character >= Driver::CHARACTER_COUNT) continue;
 
-        sPlayerVoiceSlots[playerId] = Driver::selectedSlots[character];
+        sPlayerVoiceSlots[playerId] = GetPlayerCustomCharacterSlot(playerId, static_cast<CharacterId>(character));
         if (sPlayerVoiceSlots[playerId] == 0 ||
             !FindCustomVoiceSource(static_cast<CharacterId>(character), sPlayerVoiceSlots[playerId],
                                    sPlayerVoiceSources[playerId], sPlayerVoiceSourceSuffixes[playerId],
