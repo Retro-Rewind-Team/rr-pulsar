@@ -961,6 +961,7 @@ EnableScreen__13ModelDirectorFUi = 0x8055cce0
 DisableScreen__13ModelDirectorFUi = 0x8055ccf8
 GetScnManager__13ModelDirectorCFv = 0x8055f2c4
 BRRESExists__13ModelDirectorF13ArchiveSourcePCc = 0x8055ba00
+MdlExists__13ModelDirectorFPCcRCQ34nw4r3g3d7ResFile = 0x8055ba64
 
 #MHModelDirector
 matNames__15MHModelDirector = 0x808d1860

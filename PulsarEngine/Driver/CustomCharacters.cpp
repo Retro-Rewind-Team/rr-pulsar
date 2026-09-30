@@ -37,6 +37,8 @@ static u32 authorTextBmgIds[4];
 static u32 characterNameBmgIds[4];
 static ModelDirector *customModels[CHARACTER_COUNT];
 static EGG::ExpHeap *customHeaps[CHARACTER_COUNT];
+static ToadetteHair *originalHair;
+static ToadetteHair *customHair;
 
 void CreateCharacterTable() {
     char path[0x80];
@@ -91,6 +93,13 @@ static void UnloadDriverBRRES(u32 character) {
 
     MenuDriverModel *driverModel = &MenuModelMgr::sInstance->driverModels->models[character];
     if (character == TOADETTE) {
+        if (customHair != nullptr) {
+            customHair->ToggleVisible(false);
+            ScnMgr::sInstance[customHair->scnMgrIdx]->RemoveModelDirector(customHair);
+            MenuModelMgr::sInstance->driverModels->bangs = originalHair;
+            customHair = nullptr;
+            originalHair = nullptr;
+        }
         ToadetteHair *hair = MenuModelMgr::sInstance->driverModels->bangs;
         hair->toadette = originalModels[character];
         hair->cb->toadette = originalModels[character];
@@ -190,6 +199,20 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
     driverModel->charSelTransformator = model->modelTransformator;
     driverModel->Init();
     if (character == TOADETTE) {
+        if (ModelDirector::MdlExists("hair", brres)) {
+            originalHair = manager->bangs;
+            originalHair->ToggleVisible(false);
+            scnMgr->curHeap = heap;
+            scnMgr->curAllocator = allocator;
+            menuAllocator = allocator;
+            EGG::Heap *oldCurrentHeap = heap->BecomeCurrentHeap();
+            customHair = new (heap) ToadetteHair(brres, model, 1);
+            oldCurrentHeap->BecomeCurrentHeap();
+            scnMgr->curHeap = oldHeap;
+            scnMgr->curAllocator = oldAllocator;
+            menuAllocator = oldMenuAllocator;
+            manager->bangs = customHair;
+        }
         ToadetteHair *hair = manager->bangs;
         hair->toadette = model;
         hair->cb->toadette = model;
