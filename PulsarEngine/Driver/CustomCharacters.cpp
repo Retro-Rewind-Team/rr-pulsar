@@ -330,7 +330,7 @@ static void PageAfterControlUpdate(Page *page) {
         if ((characterSelectPage->localPlayerBitfield & (1 << player)) == 0) continue;
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (character >= CHARACTER_COUNT) continue;
-        const u32 nameBmgId = UI::GetCharacterNameBMGId(character, false, player);
+        const u32 nameBmgId = UI::GetCharacterNameBMGId(character, false, 12);
         if (changed[character] || characterNameBmgIds[player] != nameBmgId) {
             characterSelectPage->names[player].SetMessage(nameBmgId);
             characterNameBmgIds[player] = nameBmgId;
