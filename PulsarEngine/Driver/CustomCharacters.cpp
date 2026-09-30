@@ -295,7 +295,7 @@ static void PageAfterControlUpdate(Page *page) {
     for (u32 player = 0; player < 4; ++player) {
         if ((characterSelectPage->localPlayerBitfield & (1 << player)) == 0) continue;
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
-        if (changed[character] && character < 24)
+        if (character < CHARACTER_COUNT && changed[character])
             characterSelectPage->names[player].SetMessage(UI::GetCharacterNameBMGId(character, false, player));
     }
 
@@ -312,7 +312,7 @@ static void PageAfterControlUpdate(Page *page) {
             continue;
         }
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
-        const u32 authorBmgId = UI::GetCharacterAuthorBMGId(character, selectedSlots[character]);
+        const u32 authorBmgId = character < CHARACTER_COUNT ? UI::GetCharacterAuthorBMGId(character, selectedSlots[character]) : 0;
         if (authorTextBmgIds[player] == authorBmgId) continue;
         author->isHidden = authorBmgId == 0 || !UI::SetCustomCharacterAuthorMessage(*author, authorBmgId);
         authorTextBmgIds[player] = authorBmgId;

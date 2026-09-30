@@ -14,6 +14,7 @@
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/Settings/SelectionRestrictions.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <Driver/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -57,7 +58,7 @@ static CharacterId GetRandomEnabledCharacter(Random &random, u32 hudSlotId, Char
     CharacterId choices[Restrictions::CHARACTER_SLOT_COUNT];
     u32 count = 0;
     const u32 mask = Restrictions::GetCharacterMask();
-    for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
+    for (u32 slot = 0; slot < RetroRewind::System::BUTTON_MII_C; ++slot) {
         if (((mask >> slot) & 1) == 0) continue;
         const CharacterId character = GetCharacterForSlot(slot, hudSlotId);
         if (character != CHARACTER_NONE && character != avoid) choices[count++] = character;
@@ -251,6 +252,13 @@ void ExpVR::OnInit() {
 static void RandomizeCombo() {
     if (Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled()) return;
     Random random;
+    for (u32 character = 0; character < Driver::CHARACTER_COUNT; ++character) {
+        u32 slotCount = 0;
+        for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
+            if (Driver::characterTables[character][slot] && random.NextLimited(++slotCount) == 0)
+                Driver::selectedSlots[character] = slot;
+        }
+    }
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
     const Section *section = sectionMgr->curSection;
     SectionParams *sectionParams = sectionMgr->sectionParams;
@@ -270,7 +278,6 @@ static void RandomizeCombo() {
         charSelect->randomizedCharIdx[hudId] = character;
         charSelect->rolledCharIdx[hudId] = character;
         charSelect->rouletteCounter = ExpVR::randomDuration;
-        charSelect->ctrlMenuCharSelect.selectedCharacter = character;
         charSelect->controlsManipulatorManager.inaccessible = true;
         ExpBattleKartSelect *battleKartSelect = section->Get<ExpBattleKartSelect>();
         if (battleKartSelect != nullptr) {
@@ -426,7 +433,7 @@ kmCall(0x8062eaf8, AddChangeComboPages);  // 0x65
 kmCall(0x8062eb88, AddChangeComboPages);  // 0x66
 kmCall(0x8062ec18, AddChangeComboPages);  // 0x67
 
-ExpCharacterSelect::ExpCharacterSelect() : rouletteCounter(-1) {
+ExpCharacterSelect::ExpCharacterSelect() : rouletteCounter(-1), buttonCooldown(0) {
     randomizedCharIdx[0] = CHARACTER_NONE;
     randomizedCharIdx[1] = CHARACTER_NONE;
     rolledCharIdx[0] = CHARACTER_NONE;
@@ -507,14 +514,16 @@ void ExpCharacterSelect::BeforeControlUpdate() {
         else if (isGoodFrame)
             this->rolledCharIdx[hudId] = GetRandomEnabledCharacter(random, hudId, prevChar);
         if (isGoodFrame) {
-            this->ctrlMenuCharSelect.GetButtonDriver(prevChar)->HandleDeselect(hudId, -1);
-            CtrlMenuCharacterSelect::ButtonDriver *nextButton = this->ctrlMenuCharSelect.GetButtonDriver(rolledCharIdx[hudId]);
+            this->ctrlMenuCharSelect.driverButtonsArray[Restrictions::GetCharacterSlot(prevChar)].HandleDeselect(hudId, -1);
+            CtrlMenuCharacterSelect::ButtonDriver *nextButton = &this->ctrlMenuCharSelect.driverButtonsArray[Restrictions::GetCharacterSlot(rolledCharIdx[hudId])];
             nextButton->HandleSelect(hudId, -1);
-            nextButton->Select(0);
+            nextButton->Select(hudId);
+            if (rolledCharIdx[hudId] < Driver::CHARACTER_COUNT)
+                this->names[hudId].SetMessage(GetCharacterNameBMGId(rolledCharIdx[hudId], false, 12));
 
         } else if (roulette == 0) {
             if (this->buttonCooldown == 0) {
-                this->ctrlMenuCharSelect.GetButtonDriver(randomizedCharIdx[hudId])->HandleClick(hudId, -1);
+                this->ctrlMenuCharSelect.driverButtonsArray[Restrictions::GetCharacterSlot(randomizedCharIdx[hudId])].HandleClick(hudId, -1);
                 if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FASTMENUS) == FASTMENUS_ENABLED)
                     this->buttonCooldown = 30;
                 else
