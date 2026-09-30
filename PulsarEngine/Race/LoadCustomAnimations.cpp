@@ -95,39 +95,19 @@ extern "C" void DriverController_SetupModelAnims(
 extern "C" bool PlayerModel_setAnimation(
     float blendRate, DriverController *controller, u32 animation, int param4);
 
-static s16 LinkOptionalChrAnimation(
-    DriverController *controller, ModelDirector *driverModel, const char *animationName) {
-    if (controller->driverModelBRRES.GetResAnmChr(animationName).data == nullptr) return -1;
-
-    ModelTransformator *transformator = driverModel->modelTransformator;
-    if (transformator == nullptr) return -1;
-
-    const u16 nextSlot = transformator->anmHolderList.count;
-
-    driverModel->LinkAnimation(
-        nextSlot,
-        controller->driverModelBRRES,
-        animationName,
-        ANMTYPE_CHR,
-        /*hasBlend=*/true,
-        "brasd/driver_model",
-        ARCHIVE_HOLDER_KART,
-        /*playerIdForBRASD=*/0);
-
-    return static_cast<s16>(nextSlot);
-}
-
-static s16 LinkOptionalPatAnimation(
-    DriverController *controller, ModelDirector *driverModel, const char *animationName) {
+static s16 LinkOptionalAnimation(DriverController *controller, ModelDirector *driverModel,
+                                 const char *animationName, AnmType type) {
     char patName[40];
     const char *resolvedName = animationName;
-    if (controller->driverModelBRRES.GetResAnmTexPat(resolvedName).data == nullptr) {
-        const int written = snprintf(patName, sizeof(patName), "%s.pat0", animationName);
-        if (written <= 0 || static_cast<u32>(written) >= sizeof(patName) ||
-            controller->driverModelBRRES.GetResAnmTexPat(patName).data == nullptr) {
-            return -1;
+    if (type == ANMTYPE_CHR) {
+        if (controller->driverModelBRRES.GetResAnmChr(animationName).data == nullptr) return -1;
+    } else {
+        if (controller->driverModelBRRES.GetResAnmTexPat(animationName).data == nullptr) {
+            const int written = snprintf(patName, sizeof(patName), "%s.pat0", animationName);
+            if (written <= 0 || static_cast<u32>(written) >= sizeof(patName) ||
+                controller->driverModelBRRES.GetResAnmTexPat(patName).data == nullptr) return -1;
+            resolvedName = patName;
         }
-        resolvedName = patName;
     }
 
     ModelTransformator *transformator = driverModel->modelTransformator;
@@ -139,31 +119,13 @@ static s16 LinkOptionalPatAnimation(
         nextSlot,
         controller->driverModelBRRES,
         resolvedName,
-        ANMTYPE_TEXPAT,
-        /*hasBlend=*/false,
+        type,
+        /*hasBlend=*/type == ANMTYPE_CHR,
         "brasd/driver_model",
         ARCHIVE_HOLDER_KART,
         /*playerIdForBRASD=*/0);
 
     return static_cast<s16>(nextSlot);
-}
-
-static u16 GetOptionalChrFrameCount(DriverController *controller, const char *animationName) {
-    g3d::ResAnmChr animation = controller->driverModelBRRES.GetResAnmChr(animationName);
-    if (animation.data == nullptr || animation.data->fileInfo.frameCount == 0) {
-        return 0;
-    }
-    return animation.data->fileInfo.frameCount;
-}
-
-static bool IsOptionalChrLooped(DriverController *controller, const char *animationName) {
-    g3d::ResAnmChr animation = controller->driverModelBRRES.GetResAnmChr(animationName);
-    return animation.data == nullptr || animation.data->fileInfo.isLooped != 0;
-}
-
-static ModelTransformator *GetDriverTransformator(DriverController *controller) {
-    if (controller == nullptr || controller->driverModel == nullptr) return nullptr;
-    return controller->driverModel->modelTransformator;
 }
 
 static void StopPatAnimation(DriverController *controller, u8 playerIdx);
@@ -189,7 +151,8 @@ static void PlayPatAnimationIfPresent(DriverController *controller, u8 playerIdx
         return;
     }
 
-    ModelTransformator *transformator = GetDriverTransformator(controller);
+    if (controller == nullptr || controller->driverModel == nullptr) return;
+    ModelTransformator *transformator = controller->driverModel->modelTransformator;
     if (transformator == nullptr) return;
     AnmHolder *holder =
         transformator->GetAnmHolderByIdx(static_cast<u32>(static_cast<u16>(animationSlot)));
@@ -200,11 +163,9 @@ static void PlayPatAnimationIfPresent(DriverController *controller, u8 playerIdx
 
 static void StopPatAnimation(DriverController *controller, u8 playerIdx) {
     if (playerIdx >= ONLINE_PLAYER_COUNT) return;
-
-    ModelTransformator *transformator = GetDriverTransformator(controller);
-    if (transformator != nullptr) {
-        transformator->StopAnmType(ANMTYPE_TEXPAT);
-    }
+    if (controller != nullptr && controller->driverModel != nullptr &&
+        controller->driverModel->modelTransformator != nullptr)
+        controller->driverModel->modelTransformator->StopAnmType(ANMTYPE_TEXPAT);
     SetActivePatSlot(controller, -1);
 }
 
@@ -223,25 +184,29 @@ static void LinkCustomCharacterAnimations(
     ModelDirector *driverModel = controller->driverModel;
     if (driverModel == nullptr) return;
 
-    state.shockHit.chr = LinkOptionalChrAnimation(controller, driverModel, "shockHit");
-    state.starUse.chr = LinkOptionalChrAnimation(controller, driverModel, "starUse");
-    state.megaUse.chr = LinkOptionalChrAnimation(controller, driverModel, "megaUse");
-    state.waitBeforeStart.chr = LinkOptionalChrAnimation(controller, driverModel, "waitBeforeStart");
+    state.shockHit.chr = LinkOptionalAnimation(controller, driverModel, "shockHit", ANMTYPE_CHR);
+    state.starUse.chr = LinkOptionalAnimation(controller, driverModel, "starUse", ANMTYPE_CHR);
+    state.megaUse.chr = LinkOptionalAnimation(controller, driverModel, "megaUse", ANMTYPE_CHR);
+    state.waitBeforeStart.chr = LinkOptionalAnimation(controller, driverModel, "waitBeforeStart", ANMTYPE_CHR);
     if (state.waitBeforeStart.chr >= 0) {
-        const u16 frameCount = GetOptionalChrFrameCount(controller, "waitBeforeStart");
-        state.waitFrameCount = frameCount == 0 ? WAIT_BEFORE_START_FALLBACK_FRAMES : frameCount;
-        state.waitLooped = IsOptionalChrLooped(controller, "waitBeforeStart");
+        g3d::ResAnmChr animation = controller->driverModelBRRES.GetResAnmChr("waitBeforeStart");
+        state.waitFrameCount = animation.data->fileInfo.frameCount == 0
+                                   ? WAIT_BEFORE_START_FALLBACK_FRAMES
+                                   : animation.data->fileInfo.frameCount;
+        state.waitLooped = animation.data->fileInfo.isLooped != 0;
     }
-    state.shockDodgeStar.chr = LinkOptionalChrAnimation(controller, driverModel, "shockDodgeStar");
+    state.shockDodgeStar.chr = LinkOptionalAnimation(controller, driverModel, "shockDodgeStar", ANMTYPE_CHR);
     if (state.shockDodgeStar.chr >= 0) {
-        const u16 frameCount = GetOptionalChrFrameCount(controller, "shockDodgeStar");
-        state.shockDodgeFrameCount = frameCount == 0 ? SHOCK_DODGE_STAR_FALLBACK_FRAMES : frameCount;
+        g3d::ResAnmChr animation = controller->driverModelBRRES.GetResAnmChr("shockDodgeStar");
+        state.shockDodgeFrameCount = animation.data->fileInfo.frameCount == 0
+                                         ? SHOCK_DODGE_STAR_FALLBACK_FRAMES
+                                         : animation.data->fileInfo.frameCount;
     }
-    if (state.shockHit.chr >= 0) state.shockHit.pat = LinkOptionalPatAnimation(controller, driverModel, "shockHit");
-    if (state.starUse.chr >= 0) state.starUse.pat = LinkOptionalPatAnimation(controller, driverModel, "starUse");
-    if (state.megaUse.chr >= 0) state.megaUse.pat = LinkOptionalPatAnimation(controller, driverModel, "megaUse");
-    if (state.waitBeforeStart.chr >= 0) state.waitBeforeStart.pat = LinkOptionalPatAnimation(controller, driverModel, "waitBeforeStart");
-    if (state.shockDodgeStar.chr >= 0) state.shockDodgeStar.pat = LinkOptionalPatAnimation(controller, driverModel, "shockDodgeStar");
+    if (state.shockHit.chr >= 0) state.shockHit.pat = LinkOptionalAnimation(controller, driverModel, "shockHit", ANMTYPE_TEXPAT);
+    if (state.starUse.chr >= 0) state.starUse.pat = LinkOptionalAnimation(controller, driverModel, "starUse", ANMTYPE_TEXPAT);
+    if (state.megaUse.chr >= 0) state.megaUse.pat = LinkOptionalAnimation(controller, driverModel, "megaUse", ANMTYPE_TEXPAT);
+    if (state.waitBeforeStart.chr >= 0) state.waitBeforeStart.pat = LinkOptionalAnimation(controller, driverModel, "waitBeforeStart", ANMTYPE_TEXPAT);
+    if (state.shockDodgeStar.chr >= 0) state.shockDodgeStar.pat = LinkOptionalAnimation(controller, driverModel, "shockDodgeStar", ANMTYPE_TEXPAT);
 }
 kmCall(0x807c7894, LinkCustomCharacterAnimations);
 
@@ -392,14 +357,6 @@ static void SetTemporaryLimbLock(DriverController *controller, bool locked, Limb
     }
 }
 
-static void SetWaitBeforeStartLimbLock(DriverController *controller, u8 playerIdx, bool locked) {
-    SetTemporaryLimbLock(controller, locked, GetAnimationState(playerIdx).waitLimb);
-}
-
-static void SetShockDodgeStarLimbLock(DriverController *controller, u8 playerIdx, bool locked) {
-    SetTemporaryLimbLock(controller, locked, GetAnimationState(playerIdx).shockDodgeLimb);
-}
-
 static bool PlayCustomDriverAnimation(
     float blendRate, DriverController *controller, u32 animation, int param4) {
     const u8 playerIdx = controller->GetPlayerIdx();
@@ -407,13 +364,13 @@ static bool PlayCustomDriverAnimation(
     if (playerIdx < ONLINE_PLAYER_COUNT) state = &GetAnimationState(playerIdx);
 
     if (state != nullptr && state->waitActive && IsBeforeRaceStart() && animation == WAIT_ANIM_ID) {
-        SetWaitBeforeStartLimbLock(controller, playerIdx, true);
+        SetTemporaryLimbLock(controller, true, state->waitLimb);
         return true;
     }
 
     if (state != nullptr && state->waitActive && IsBeforeRaceStart() && animation != WAIT_ANIM_ID &&
         animation != static_cast<u32>(static_cast<u16>(state->waitBeforeStart.chr))) {
-        SetWaitBeforeStartLimbLock(controller, playerIdx, false);
+        SetTemporaryLimbLock(controller, false, state->waitLimb);
         StopPatAnimation(controller, playerIdx);
         state->waitActive = false;
         state->waitFrames = 0;
@@ -470,7 +427,7 @@ static bool PlayCustomDriverAnimation(
                 if (!state->waitLooped) {
                     state->waitFrames = state->waitFrameCount;
                 }
-                SetWaitBeforeStartLimbLock(controller, playerIdx, true);
+                SetTemporaryLimbLock(controller, true, state->waitLimb);
                 return true;
             }
         }
@@ -481,19 +438,11 @@ static bool PlayCustomDriverAnimation(
 kmCall(0x807cb774, PlayCustomDriverAnimation);
 kmCall(0x807d07c0, PlayCustomDriverAnimation);
 
-static bool ShouldSuppressShockRotation(Kart::Damage *damage) {
-    const u32 currentActionId = *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(damage) + 0x1c);
-    if (currentActionId != 10 && currentActionId != 17) return false;
-
-    const u8 playerIdx = damage->GetPlayerIdx();
-    if (playerIdx < ONLINE_PLAYER_COUNT && GetAnimationState(playerIdx).shockHit.chr >= 0) {
-        return true;
-    }
-    return false;
-}
-
 void AddSpinRotationUnlessShockHit(void *physicsHolder, Quat *rotation, Kart::Damage *damage) {
-    if (ShouldSuppressShockRotation(damage)) return;
+    const u32 actionId = *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(damage) + 0x1c);
+    const u8 playerIdx = damage->GetPlayerIdx();
+    if ((actionId == 10 || actionId == 17) && playerIdx < ONLINE_PLAYER_COUNT &&
+        GetAnimationState(playerIdx).shockHit.chr >= 0) return;
 
     typedef void (*AddInstantaneousExtraRotFn)(void *, Quat *);
     AddInstantaneousExtraRotFn addInstantaneousExtraRot =
@@ -523,7 +472,7 @@ static bool ShouldLightningAffectPlayerWithStarDodge(Item::Player *itemPlayer) {
             if (state.shockDodgeStar.chr < 0 || !IsInStar(controller)) return affected;
             state.shockDodgeFrames = state.shockDodgeFrameCount;
             state.shockDodgeActive = true;
-            SetShockDodgeStarLimbLock(controller, playerIdx, true);
+            SetTemporaryLimbLock(controller, true, state.shockDodgeLimb);
             PlayShockDodgeStarNow(controller, playerIdx);
         }
     }
@@ -550,11 +499,11 @@ u32 GetPowerUseOrSelectedAnimation(DriverController *controller) {
 
     if (state.shockDodgeFrames > 0) {
         if (IsInStar(controller)) {
-            SetShockDodgeStarLimbLock(controller, playerIdx, true);
+            SetTemporaryLimbLock(controller, true, state.shockDodgeLimb);
             state.shockDodgeFrames--;
             if (state.shockDodgeFrames == 0) {
                 state.shockDodgeActive = false;
-                SetShockDodgeStarLimbLock(controller, playerIdx, false);
+                SetTemporaryLimbLock(controller, false, state.shockDodgeLimb);
                 if (state.starUse.chr >= 0) {
                     PlayCustomAnimationIfPresent(
                         1.0f,
@@ -570,7 +519,7 @@ u32 GetPowerUseOrSelectedAnimation(DriverController *controller) {
         }
         state.shockDodgeFrames = 0;
         state.shockDodgeActive = false;
-        SetShockDodgeStarLimbLock(controller, playerIdx, false);
+        SetTemporaryLimbLock(controller, false, state.shockDodgeLimb);
     }
 
     if (IsBeforeRaceStart() && state.waitBeforeStart.chr >= 0 && !state.waitPlayed) {
@@ -580,7 +529,7 @@ u32 GetPowerUseOrSelectedAnimation(DriverController *controller) {
                 controller->currentAnimation = static_cast<u16>(state.waitBeforeStart.chr);
                 PlayerModel_setAnimation(1.0f, controller, WAIT_ANIM_ID, 1);
                 controller->currentAnimation = static_cast<u16>(WAIT_ANIM_ID);
-                SetWaitBeforeStartLimbLock(controller, playerIdx, false);
+                SetTemporaryLimbLock(controller, false, state.waitLimb);
                 SetPatMapping(controller, WAIT_ANIM_ID, -1);
                 StopPatAnimation(controller, playerIdx);
                 state.waitActive = false;
@@ -600,7 +549,7 @@ u32 GetPowerUseOrSelectedAnimation(DriverController *controller) {
             if (!state.waitLooped) state.waitFrames = state.waitFrameCount;
         }
         if (state.waitActive) {
-            SetWaitBeforeStartLimbLock(controller, playerIdx, true);
+            SetTemporaryLimbLock(controller, true, state.waitLimb);
             *selectedAnimationPtr = static_cast<u16>(WAIT_ANIM_ID);
             return WAIT_ANIM_ID;
         }
@@ -617,7 +566,7 @@ u32 GetPowerUseOrSelectedAnimation(DriverController *controller) {
             controller->currentAnimation = static_cast<u16>(state.waitBeforeStart.chr);
             PlayerModel_setAnimation(1.0f, controller, WAIT_ANIM_ID, 1);
             controller->currentAnimation = static_cast<u16>(WAIT_ANIM_ID);
-            SetWaitBeforeStartLimbLock(controller, playerIdx, false);
+            SetTemporaryLimbLock(controller, false, state.waitLimb);
             SetPatMapping(controller, WAIT_ANIM_ID, -1);
             StopPatAnimation(controller, playerIdx);
             state.waitActive = false;
@@ -625,7 +574,7 @@ u32 GetPowerUseOrSelectedAnimation(DriverController *controller) {
         }
     } else {
         if (state.waitActive && IsBeforeRaceStart()) state.waitPlayed = true;
-        SetWaitBeforeStartLimbLock(controller, playerIdx, false);
+        SetTemporaryLimbLock(controller, false, state.waitLimb);
         if (state.waitActive) {
             SetPatMapping(controller, WAIT_ANIM_ID, -1);
             StopPatAnimation(controller, playerIdx);
