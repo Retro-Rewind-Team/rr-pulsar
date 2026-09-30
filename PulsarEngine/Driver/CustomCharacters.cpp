@@ -10,6 +10,7 @@
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <UI/UI.hpp>
+#include <core/egg/DVD/DvdRipper.hpp>
 #include <core/egg/mem/ExpHeap.hpp>
 #include <core/rvl/PAD.hpp>
 #include <core/rvl/WPAD.hpp>
@@ -150,10 +151,11 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
 
     ModelDirector *model = new (heap) ModelDirector(2, 0);
     g3d::ResFile brres;
-    ModelDirector::RipAndBindBRRES(brres, path, heap, true);
+    brres.data = static_cast<g3d::ResFileData *>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
+    if (brres.data != nullptr) ModelDirector::BindBRRESImpl(brres, path, nullptr, 0);
     MenuModelBRRESHandle brresHandle;
     brresHandle.menuModelBRRES = brres;
-    const bool loaded = brresHandle.LoadDriverModel(*model, characterId);
+    const bool loaded = brres.data != nullptr && brresHandle.LoadDriverModel(*model, characterId);
 
     scnMgr->curHeap = oldHeap;
     scnMgr->curAllocator = oldAllocator;
@@ -354,12 +356,14 @@ static void CharacterSelectName(ControlLoader *loader, const char *folderName, c
 kmCall(0x8083d9dc, CharacterSelectName);
 
 static void RequestDriverModel(MenuModelMgr *manager, u8 playerId, CharacterId characterId) {
-    manager->RequestDriverModel(playerId, characterId);
     const u32 character = static_cast<u32>(characterId);
     if (manager->isActive && character < CHARACTER_COUNT && selectedSlots[character] != 0)
         LoadDriverBRRES(characterId, selectedSlots[character]);
+    manager->RequestDriverModel(playerId, characterId);
 }
 kmCall(0x805f5604, RequestDriverModel);
+kmCall(0x805f5918, RequestDriverModel);
+kmBranch(0x805f5704, RequestDriverModel);
 
 static void ResetScnMgr() {
     for (u32 character = 0; character < CHARACTER_COUNT; ++character) UnloadDriverBRRES(character);
