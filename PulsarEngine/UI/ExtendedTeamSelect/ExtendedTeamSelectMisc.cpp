@@ -25,9 +25,11 @@ namespace UI {
 
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
+kmRuntimeUse(0x80553c94);
 void Racedata_InitRace(Racedata *racedata) {
+    register u32 returnAddress;
+    asm(mflr returnAddress;);
     racedata->InitRace();
-    Race::RandomizeCPUCharacterTables(racedata->racesScenario);
 
     const RacedataSettings &settings = racedata->menusScenario.settings;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
@@ -47,6 +49,7 @@ void Racedata_InitRace(Racedata *racedata) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
         racedata->racesScenario.settings.modeFlags &= ~ExtendedTeamManager::TEAM_MODE_FLAG;
     }
+    if (returnAddress == kmRuntimeAddr(0x80553c94)) Race::RandomizeCPUCharacterTables(racedata->racesScenario);
 }
 
 kmCall(0x80530878, Racedata_InitRace);
