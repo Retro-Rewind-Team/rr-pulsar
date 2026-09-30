@@ -9,7 +9,7 @@
 #include <MarioKartWii/System/Timer.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
-#include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/UI/Section/SectionMgr.hpp>
 
 namespace Pulsar {
 namespace BattleElim {
@@ -133,6 +133,7 @@ static RaceFrameHook BattleElimTimerHook(SetTimerToZeroWhenAllPlayersEliminated)
 
 extern "C" u8 sForceBalloonBattle = false;
 extern "C" u8 sBattleFanfareMode = 0;
+extern "C" u8 sUseTimeTrialVictoryFanfare = 0;
 extern "C" u16 sBattleDuration = 180;
 
 asmFunc ForceBalloonBattle() {
@@ -153,6 +154,14 @@ asmFunc LoadBattleFanfare() {
     ASM(
         nofralloc;
         lwzx r3, r3, r0;
+        lis r4, sUseTimeTrialVictoryFanfare @ha;
+        lbz r4, sUseTimeTrialVictoryFanfare @l(r4);
+        cmpwi r4, 0;
+        beq checkBattleElim;
+        // SOUND_ID_BATTLE_WIN_RESULTS is the Time Trial new-record set music.
+        li r3, 0x62;
+        blr;
+        checkBattleElim :;
         lis r4, sBattleFanfareMode @ha;
         lbz r0, sBattleFanfareMode @l(r4);
         cmpwi r0, 1;
@@ -170,9 +179,21 @@ asmFunc LoadBattleFanfare() {
 }
 kmCall(0x807123e8, LoadBattleFanfare);
 
+static bool IsGhostReplay() {
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
+    if (sectionMgr == nullptr) return false;
+
+    const SectionId sectionId = sectionMgr->curSection->sectionId;
+    return sectionId == SECTION_TT_REPLAY ||
+           (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU);
+}
+
 void BattleElim() {
     System *system = System::sInstance;
-    if (!Racedata::sInstance) return;
+    Racedata *racedata = Racedata::sInstance;
+    if (!racedata) return;
+
+    sUseTimeTrialVictoryFanfare = IsGhostReplay();
     const bool eliminationActive = ShouldApplyBattleElimination();
     sForceBalloonBattle = eliminationActive;
     sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2
