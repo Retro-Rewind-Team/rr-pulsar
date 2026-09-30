@@ -13,6 +13,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <Driver/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -83,9 +84,13 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *s
         src->playersData[1].courseVote = vanillaVote;
     } else
         len = sizeof(PulSELECT);
+    src->reserved = 0;
+    for (u32 i = 0; i < controller->subs[controller->currentSub].localPlayerCount; ++i) {
+        const u32 character = src->playersData[i].character;
+        if (character < Driver::CHARACTER_COUNT)
+            src->reserved |= Driver::selectedSlots[character] << (8 * (1 - i));
+    }
     packetHolder->Copy(src, len);
-
-    packetHolder->packet->reserved = 0;
 }
 kmCall(0x80661040, BeforeSELECTSend);
 

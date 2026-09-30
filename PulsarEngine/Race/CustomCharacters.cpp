@@ -1,5 +1,6 @@
 #include <Driver/CustomCharacters.hpp>
 #include <Race/CustomCharacters.hpp>
+#include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRace2DMap.hpp>
@@ -11,25 +12,31 @@
 namespace Pulsar {
 namespace Race {
 
-static u8 racePlayerSlots[12];
+u8 racePlayerSlots[12];
 u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character) {
     const u32 characterId = static_cast<u32>(character);
     if (characterId >= Driver::CHARACTER_COUNT) return 0;
     if (playerId >= 12 || Racedata::sInstance == nullptr || playerId >= Racedata::sInstance->racesScenario.playerCount || Racedata::sInstance->racesScenario.players[playerId].characterId != character)
         return Driver::selectedSlots[characterId];
-    return racePlayerSlots[playerId];
+    if (Racedata::sInstance->racesScenario.players[playerId].playerType != PLAYER_REAL_LOCAL &&
+        Settings::Mgr::Get().GetSettingValue(Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_DISABLED) return 0;
+    const u32 slot = racePlayerSlots[playerId];
+    return slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][slot] ? slot : 0;
 }
 
 void RandomizeCPUCharacterTables(const RacedataScenario &scenario) {
-    if (scenario.settings.raceNumber != 0) return;
-
     Random random;
     for (u32 player = 0; player < scenario.playerCount; ++player) {
         const RacedataPlayer &entry = scenario.players[player];
         const u32 character = static_cast<u32>(entry.characterId);
         if (character >= Driver::CHARACTER_COUNT) continue;
-        racePlayerSlots[player] = Driver::selectedSlots[character];
-        if (entry.playerType != PLAYER_CPU) continue;
+        if (entry.playerType == PLAYER_REAL_ONLINE) continue;
+        if (entry.playerType != PLAYER_CPU) {
+            racePlayerSlots[player] = Driver::selectedSlots[character];
+            continue;
+        }
+        if (scenario.settings.raceNumber != 0) continue;
+        racePlayerSlots[player] = 0;
 
         u32 slotCount = 0;
         for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {

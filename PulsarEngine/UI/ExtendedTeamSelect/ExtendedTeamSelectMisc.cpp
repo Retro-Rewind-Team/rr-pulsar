@@ -18,6 +18,7 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <Race/CustomCharacters.hpp>
+#include <Network/PacketExpansion.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -199,6 +200,15 @@ kmCall(0x80643b3c, PageVote_FillVoteControl);
 
 void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr *_this) {
     _this->PrepareRace();
+    memset(Race::racePlayerSlots, 0, sizeof(Race::racePlayerSlots));
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const Network::ExpSELECTHandler &handler = Network::ExpSELECTHandler::Get();
+    for (u32 player = 0; player < 12; ++player) {
+        if (Racedata::sInstance->menusScenario.players[player].playerType != PLAYER_REAL_ONLINE) continue;
+        const u8 aid = controller->aidsBelongingToPlayerIds[player];
+        const bool isGuest = player > 0 && controller->aidsBelongingToPlayerIds[player - 1] == aid;
+        Race::racePlayerSlots[player] = handler.receivedPackets[aid].reserved >> (isGuest ? 0 : 8);
+    }
     if (ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->VotePageSync();
     }

@@ -722,6 +722,7 @@ Normalize__Q23EGG8Vector3fFv = 0x80243b6c
 CreatePath__Q23EGG11ScnRendererFUiPQ23EGG9Allocator = 0x8023bd38
 
 #ScnMgr
+Reset__6ScnMgrFv = 0x80565030
 AppendScreenSpecificModelDirector__6ScnMgrFP13ModelDirector = 0x805635cc
 RemoveModelDirector__6ScnMgrFP13ModelDirector = 0x805635c4
 CalcMain__6ScnMgrFv = 0x80564adc

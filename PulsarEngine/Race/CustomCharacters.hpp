@@ -9,6 +9,8 @@ class RacedataScenario;
 namespace Pulsar {
 namespace Race {
 
+extern u8 racePlayerSlots[12];
+
 void RandomizeCPUCharacterTables(const RacedataScenario &scenario);
 u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character);
 

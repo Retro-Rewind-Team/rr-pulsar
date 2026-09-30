@@ -103,7 +103,6 @@ static void UnloadDriverBRRES(u32 character) {
 
     customModels[character] = nullptr;
     loadedSlots[character] = 0;
-    customHeaps[character]->freeAll();
     customHeaps[character]->destroy();
     customHeaps[character] = nullptr;
     originalModels[character] = nullptr;
@@ -166,7 +165,6 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
             model->ToggleVisible(false);
             scnMgr->RemoveModelDirector(model);
         }
-        heap->freeAll();
         heap->destroy();
         return false;
     }
@@ -363,11 +361,11 @@ static void RequestDriverModel(MenuModelMgr *manager, u8 playerId, CharacterId c
 }
 kmCall(0x805f5604, RequestDriverModel);
 
-static void MenuModelMgrDestroy() {
+static void ResetScnMgr() {
     for (u32 character = 0; character < CHARACTER_COUNT; ++character) UnloadDriverBRRES(character);
-    MenuModelMgr::DestroyInstance();
+    ScnMgr::Reset();
 }
-kmCall(0x805552b0, MenuModelMgrDestroy);
+kmCall(0x8051b118, ResetScnMgr);
 
 }  // namespace Driver
 }  // namespace Pulsar

@@ -129,7 +129,7 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
-    u16 reserved;  // Keeps following SELECT fields at their existing offsets
+    u16 reserved;  // Custom character slots: P1 in the high byte, P2 in the low byte
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
 
     // Anti-cheat verification tag - proves sender has correct encryption key
