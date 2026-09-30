@@ -562,4 +562,8 @@ kmWrite32(0x800F20B4, 0x60000000);
 // Fix online position tracking on tracks with multiple lap counters [ZPL]
 kmWrite32(0x805354D0, 0x38A00000);  // li r5, 0; use checkpoint-based lap counting for remote racers
 
+// Use the standard voice IDs in Time Trial [ZPL]
+kmWrite32(0x808665b8, 0x2c030002);
+kmWrite32(0x80864e7c, 0x2c000002);
+
 }  // namespace Codes
