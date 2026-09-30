@@ -7,6 +7,7 @@
 #include <MarioKartWii/Audio/Actors/CharacterActor.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <core/nw4r/snd/SoundArchive.hpp>
+#include <core/nw4r/snd/WsdFile.hpp>
 #include <core/rvl/OS/OSCache.hpp>
 #include <core/rvl/dvd/dvd.hpp>
 #include <include/c_stdio.h>
@@ -23,6 +24,80 @@ static bool sPlayerHasCustomVoice[12];
 static bool sPlayerIsSilent[12];
 static char sPlayerVoiceSourceSuffixes[12][0x20];
 static bool sVoiceAssignmentsReady;
+
+static bool ReadWaveSoundInfoSafely(const nw4r::snd::detail::WsdFileReader *reader, nw4r::snd::detail::WaveSoundInfo *info, int index) {
+    using namespace nw4r::snd::detail;
+    if (reader == nullptr || info == nullptr || reader->header == nullptr || reader->dataBlock == nullptr || index < 0) return false;
+
+    const WsdFile::Header *header = reader->header;
+    const WsdFile::DataBlock *dataBlock = reader->dataBlock;
+    const u32 fileSize = header->fileHeader.fileSize;
+    if (fileSize < sizeof(WsdFile::Header)) return false;
+
+    const u32 fileStart = reinterpret_cast<u32>(header);
+    const u32 dataBlockAddress = reinterpret_cast<u32>(dataBlock);
+    const u32 refTableOffset = sizeof(nw4r::ut::BinaryBlockHeader) + sizeof(u32);
+    const u32 refSize = sizeof(Util::DataRef<WsdFile::Wsd>);
+    if (dataBlockAddress < fileStart) return false;
+    const u32 dataBlockOffset = dataBlockAddress - fileStart;
+    if (dataBlockOffset > fileSize || refTableOffset > fileSize - dataBlockOffset) return false;
+
+    const u32 dataBlockSize = dataBlock->blockHeader.size;
+    if (dataBlockSize > fileSize - dataBlockOffset || dataBlockSize < refTableOffset ||
+        static_cast<u32>(index) >= dataBlock->wsdCount ||
+        static_cast<u32>(index) >= (dataBlockSize - refTableOffset) / refSize)
+        return false;
+
+    const u32 baseAddress = dataBlockAddress + sizeof(nw4r::ut::BinaryBlockHeader);
+    const Util::DataRef<WsdFile::Wsd> &wsdRef = dataBlock->refWsd[index];
+    u32 wsdAddress;
+    if (wsdRef.refType == Util::REF_TYPE_ADDR) {
+        wsdAddress = wsdRef.value;
+    } else if (wsdRef.refType == Util::REF_TYPE_OFFSET && wsdRef.value <= 0xffffffff - baseAddress) {
+        wsdAddress = baseAddress + wsdRef.value;
+    } else {
+        return false;
+    }
+    if (wsdAddress < fileStart || wsdAddress - fileStart > fileSize ||
+        sizeof(WsdFile::Wsd) > fileSize - (wsdAddress - fileStart))
+        return false;
+    const WsdFile::Wsd *wsd = reinterpret_cast<const WsdFile::Wsd *>(wsdAddress);
+
+    const u16 version = header->fileHeader.version;
+    memset(info, 0, sizeof(*info));
+    info->pitch = 1.0f;
+    info->pan = 0x40;
+    info->ainSend = 0x7f;
+    if (version < 0x101) return true;
+
+    const u32 infoSize = version >= 0x102 ? 10 : 6;
+    const Util::DataRef<WsdFile::WsdInfo> &infoRef = wsd->refWsdInfo;
+    u32 infoAddress;
+    if (infoRef.refType == Util::REF_TYPE_ADDR) {
+        infoAddress = infoRef.value;
+    } else if (infoRef.refType == Util::REF_TYPE_OFFSET && infoRef.value <= 0xffffffff - baseAddress) {
+        infoAddress = baseAddress + infoRef.value;
+    } else {
+        return true;
+    }
+    if (infoAddress < fileStart || infoAddress - fileStart > fileSize ||
+        infoSize > fileSize - (infoAddress - fileStart))
+        return true;
+    const WsdFile::WsdInfo *wsdInfo = reinterpret_cast<const WsdFile::WsdInfo *>(infoAddress);
+
+    info->pitch = wsdInfo->pitch;
+    info->pan = wsdInfo->pan;
+    info->surroundPan = wsdInfo->surroundPan;
+    if (version >= 0x102) {
+        info->fxSendA = wsdInfo->fxSendA;
+        info->fxSendB = wsdInfo->fxSendB;
+        info->fxSendC = wsdInfo->fxSendC;
+        info->ainSend = wsdInfo->ainSend;
+    }
+    return true;
+}
+kmBranch(0x800ada40, ReadWaveSoundInfoSafely);
+
 static const char *sVoiceSourceNames[Driver::CHARACTER_COUNT] = {
     "mario",
     "baby_peach",
