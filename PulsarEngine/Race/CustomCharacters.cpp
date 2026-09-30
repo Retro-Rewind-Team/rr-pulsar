@@ -19,7 +19,15 @@ u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character) {
     if (characterId >= Driver::CHARACTER_COUNT) return 0;
     if (playerId >= 12 || Racedata::sInstance == nullptr || playerId >= Racedata::sInstance->racesScenario.playerCount || Racedata::sInstance->racesScenario.players[playerId].characterId != character)
         return Driver::selectedSlots[characterId];
-    if (Racedata::sInstance->racesScenario.players[playerId].playerType != PLAYER_REAL_LOCAL &&
+    const RacedataPlayer &player = Racedata::sInstance->racesScenario.players[playerId];
+    if (player.playerType == PLAYER_GHOST) {
+        const u8 offset = Racedata::sInstance->racesScenario.players[0].playerType != PLAYER_GHOST ? 1 : 0;
+        const int rkgIndex = static_cast<int>(playerId) - offset;
+        if (rkgIndex < 0 || rkgIndex >= 2) return 0;
+        const u32 slot = Racedata::sInstance->ghosts[rkgIndex].header.unknown_6;
+        return slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][slot] ? slot : 0;
+    }
+    if (player.playerType != PLAYER_REAL_LOCAL &&
         Settings::Mgr::Get().GetSettingValue(Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_DISABLED) return 0;
     const u32 slot = racePlayerSlots[playerId];
     return slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][slot] ? slot : 0;

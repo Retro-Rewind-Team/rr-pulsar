@@ -4,6 +4,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
+#include <Race/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace Ghosts {
@@ -213,6 +214,7 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry &entry, u32 ldbPosition, bool i
     buffer.header.unknown_3 = Pulsar::UI::GetSelectedTransmission(0);
 
     const bool createdRkg = data.CreateRKG(buffer);
+    if (createdRkg) buffer.header.unknown_6 = Race::GetPlayerCustomCharacterSlot(0, Racedata::sInstance->racesScenario.players[0].characterId);
     if (createdRkg && buffer.CompressTo(this->rkg)) {
         if (this->cb != nullptr) {
             this->cb(buffer, IS_SAVING_GHOST, -1);
