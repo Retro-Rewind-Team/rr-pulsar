@@ -108,11 +108,13 @@ static void UnloadDriverBRRES(u32 character) {
                 static_cast<EmptyModelCalcParent *>(hair->scnMdlEx[i]->scnObj->callback));
             callback->other = originalModels[character];
         }
+        hair->Update(scnMgr->curScnRootIdx);
     }
     driverModel->model = originalModels[character];
     driverModel->charSelTransformator = originalTransformators[character];
     if (scnMgr != nullptr) {
         driverModel->Init();
+        originalModels[character]->Update(scnMgr->curScnRootIdx);
         originalModels[character]->ToggleVisible(originalWasVisible[character]);
     }
 
@@ -198,6 +200,7 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
     driverModel->model = model;
     driverModel->charSelTransformator = model->modelTransformator;
     driverModel->Init();
+    model->Update(scnMgr->curScnRootIdx);
     if (character == TOADETTE) {
         if (ModelDirector::MdlExists("hair", brres)) {
             originalHair = manager->bangs;
@@ -221,6 +224,7 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
                 static_cast<EmptyModelCalcParent *>(hair->scnMdlEx[i]->scnObj->callback));
             callback->other = model;
         }
+        hair->Update(scnMgr->curScnRootIdx);
     }
     return true;
 }
