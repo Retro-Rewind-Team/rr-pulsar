@@ -2005,6 +2005,14 @@ OnDeactivate__Q25Pages8RaceMenuFv = 0x80859fa0
 OnDispose__Q25Pages8RaceMenuFv = 0x80859fa4
 GetRuntimeTypeInfo__Q25Pages8RaceMenuCFv = 0x8085bd58
 
+##OBJECTS
+#ManagedObjects
+RegisterObject__14ManagedObjectsFP6Object = 0x806c4ed4
+
+##EGG
+#Heap
+current__Q23EGG4Heap = 0x80386ea0
+
 ##LEADERBOARD
 #LeaderboardPages
 ComparePlayers__Q25Pages20GPVSLeaderboardTotalFPCQ35Pages21GPVSLeaderboardUpdate6PlayerPCQ35Pages21GPVSLeaderboardUpdate6Player = 0x8085cc84
