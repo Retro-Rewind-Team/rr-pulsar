@@ -133,7 +133,6 @@ static RaceFrameHook BattleElimTimerHook(SetTimerToZeroWhenAllPlayersEliminated)
 
 extern "C" u8 sForceBalloonBattle = false;
 extern "C" u8 sBattleFanfareMode = 0;
-extern "C" u8 sUseTimeTrialVictoryFanfare = 0;
 extern "C" u16 sBattleDuration = 180;
 
 asmFunc ForceBalloonBattle() {
@@ -150,50 +149,39 @@ asmFunc ForceBalloonBattle() {
 }
 kmCall(0x806619AC, ForceBalloonBattle);
 
-asmFunc LoadBattleFanfare() {
-    ASM(
-        nofralloc;
-        lwzx r3, r3, r0;
-        lis r4, sUseTimeTrialVictoryFanfare @ha;
-        lbz r4, sUseTimeTrialVictoryFanfare @l(r4);
-        cmpwi r4, 0;
-        beq checkBattleElim;
-        // SOUND_ID_BATTLE_WIN_RESULTS is the Time Trial new-record set music.
-        li r3, 0x62;
-        blr;
-        checkBattleElim :;
-        lis r4, sBattleFanfareMode @ha;
-        lbz r0, sBattleFanfareMode @l(r4);
-        cmpwi r0, 1;
-        bne checkLapKO;
-        cmpwi r3, 0x6b;
-        beq unusedFanfare;
-        li r3, 0x6d;
-        blr;
-        checkLapKO : cmpwi r0, 2;
-        bne end;
-        cmpwi r3, 0x68;
-        bne end;
-        unusedFanfare : li r3, 0x6f;
-        end : blr;)
-}
-kmCall(0x807123e8, LoadBattleFanfare);
-
 static bool IsGhostReplay() {
+    const Racedata *racedata = Racedata::sInstance;
+    if (racedata == nullptr || racedata->racesScenario.players[0].playerType != PLAYER_GHOST) return false;
+
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr) return false;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
 
     const SectionId sectionId = sectionMgr->curSection->sectionId;
     return sectionId == SECTION_TT_REPLAY ||
            (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU);
 }
 
+extern "C" u32 SelectRaceFanfare(u32 soundId) {
+    // Check the active race here: a replay section alone does not prove the driver is a ghost.
+    if (IsGhostReplay()) return SOUND_ID_BATTLE_WIN_RESULTS;
+    if (sBattleFanfareMode == 1) return soundId == 0x6b ? 0x6f : 0x6d;
+    if (sBattleFanfareMode == 2 && soundId == 0x68) return 0x6f;
+    return soundId;
+}
+
+asmFunc LoadBattleFanfare() {
+    ASM(
+        nofralloc;
+        lwzx r3, r3, r0;
+        b SelectRaceFanfare;)
+}
+kmCall(0x807123e8, LoadBattleFanfare);
+
 void BattleElim() {
     System *system = System::sInstance;
     Racedata *racedata = Racedata::sInstance;
     if (!racedata) return;
 
-    sUseTimeTrialVictoryFanfare = IsGhostReplay();
     const bool eliminationActive = ShouldApplyBattleElimination();
     sForceBalloonBattle = eliminationActive;
     sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2
