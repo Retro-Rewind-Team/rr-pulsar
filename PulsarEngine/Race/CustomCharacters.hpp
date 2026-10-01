@@ -5,7 +5,11 @@
 #include <MarioKartWii/System/Identifiers.hpp>
 
 class RacedataScenario;
-namespace nw4r { namespace lyt { class Pane; } }
+namespace nw4r {
+namespace lyt {
+class Pane;
+}
+}  // namespace nw4r
 
 namespace Pulsar {
 namespace Race {
