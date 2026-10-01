@@ -239,7 +239,7 @@ static void PageBeforeControlUpdate(Page *page) {
     Pages::CharacterSelect *characterSelectPage = static_cast<Pages::CharacterSelect *>(page);
     memset(cycleDirections, 0, sizeof(cycleDirections));
     for (u32 player = 0; player < 4; ++player) {
-        if ((characterSelectPage->localPlayerBitfield & (1 << player)) == 0) continue;
+        if ((characterSelectPage->playerBitfield & (1 << player)) == 0) continue;
         Input::ControllerHolder *holder = SectionMgr::sInstance->pad.GetControllerHolder(player);
         if (holder == nullptr || holder->curController == nullptr) continue;
 
@@ -292,7 +292,7 @@ static void PageAfterControlUpdate(Page *page) {
     for (u32 player = 0; player < 4; ++player) {
         const s8 direction = cycleDirections[player];
         cycleDirections[player] = 0;
-        if (direction == 0 || (characterSelectPage->localPlayerBitfield & (1 << player)) == 0) continue;
+        if (direction == 0 || (characterSelectPage->playerBitfield & (1 << player)) == 0) continue;
 
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (character >= CHARACTER_COUNT || changed[character]) continue;
@@ -314,7 +314,7 @@ static void PageAfterControlUpdate(Page *page) {
     for (u32 character = 0; character < CHARACTER_COUNT; ++character) {
         bool focused = false;
         for (u32 player = 0; player < 4; ++player) {
-            if ((characterSelectPage->localPlayerBitfield & (1 << player)) != 0 &&
+            if ((characterSelectPage->playerBitfield & (1 << player)) != 0 &&
                 static_cast<u32>(characterSelectPage->models[player].curCharacter) == character) {
                 focused = true;
                 break;
@@ -329,7 +329,7 @@ static void PageAfterControlUpdate(Page *page) {
     }
 
     for (u32 player = 0; player < 4; ++player) {
-        if ((characterSelectPage->localPlayerBitfield & (1 << player)) == 0) continue;
+        if ((characterSelectPage->playerBitfield & (1 << player)) == 0) continue;
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (character >= CHARACTER_COUNT) continue;
         const u32 nameBmgId = UI::GetCharacterNameBMGId(character, false, 12);
@@ -339,14 +339,10 @@ static void PageAfterControlUpdate(Page *page) {
         }
     }
 
-    u32 localPlayerCount = 0;
     for (u32 player = 0; player < 4; ++player) {
-        if ((characterSelectPage->localPlayerBitfield & (1 << player)) != 0) ++localPlayerCount;
-    }
-    for (u32 player = 0; player < 4; ++player) {
-        if ((characterSelectPage->localPlayerBitfield & (1 << player)) == 0 || !authorNameControlLoaded[player]) continue;
+        if ((characterSelectPage->playerBitfield & (1 << player)) == 0 || !authorNameControlLoaded[player]) continue;
         CharaName *author = reinterpret_cast<CharaName *>(&authorNameControlStorage[player][0]);
-        if (localPlayerCount > 1) {
+        if (characterSelectPage->localPlayerCount > 1) {
             author->isHidden = true;
             authorTextBmgIds[player] = 0;
             continue;
