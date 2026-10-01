@@ -599,6 +599,7 @@ Init__Q34nw4r3g3d7ResFileFv = 0x8004d630
 Bind__Q34nw4r3g3d7ResFileFQ34nw4r3g3d7ResFile = 0x8004d1f0
 GetResMdl__Q34nw4r3g3d7ResFileCFPCc = 0x8004c240
 GetResAnmChr__Q34nw4r3g3d7ResFileCFPCc = 0x8004c780
+GetResAnmTexSrt__Q34nw4r3g3d7ResFileCFPCc = 0x8004cc00
 GetResMat__Q34nw4r3g3d6ResMdlCFPCc = 0x8004e8f0
 SetMtx__Q34nw4r3g3d6ScnObjFQ44nw4r3g3d6ScnObj13ScnObjMtxTypeRCQ34nw4r4math5MTX34 = 0x8006dc20
 GetResTex__Q34nw4r3g3d7ResFileCFPCc = 0x8004c4e0
@@ -1071,6 +1072,8 @@ ResetKartModels__12MenuModelMgrFUc = 0x8059e550
 PlayerModel_init = 0x807c8758
 PlayerModel_setAnimation = 0x807cc018
 DriverController_SetupModelAnims = 0x805778ac
+CreateModelDirectors__16DriverControllerFPP13ModelDirectorPP13ModelDirectorRQ24Kart11BRRESHandleb = 0x807d21f8
+Update__16DriverControllerFv = 0x807cb360
 SetDamageType = 0x80590d5c
 hardSpeedCap__4Kart = 0x808b59f4
 bulletSpeed__4Kart = 0x808b59f8
@@ -1089,6 +1092,7 @@ UpdateCollisions__Q24Kart6StatusFv = 0x80594bd4
 StartOobWipe__Q24Kart6StatusFUi = 0x805946f4
 
 #KartPhyiscsHolder
+AddInstantaneousExtraRot__Q24Kart13PhysicsHolderFRCQ23EGG5Quatf = 0x8059fd0c
 Update__Q24Kart18WheelPhysicsHolderFRC4Vec3RC5Mtx34f = 0x8059a278
 
 #KartParams

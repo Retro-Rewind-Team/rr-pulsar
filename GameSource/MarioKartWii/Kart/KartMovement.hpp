@@ -141,7 +141,7 @@ public:
     void ActivateZipperBoost();  // 8057f96c
     void TryStartJumpPad();  // 8057fd18
     void ApplyLightning();  // 80580438
-    void ApplyLightningEffect(int frames, int unk0, int unk1);  // 80580778
+    bool ApplyLightningEffect(int frames, int unk0, int unk1);  // 80580778
     void UpdateScale();  // 8058160c
     void StartBlinkLocal();  // 805819a8
     void ActivateTc();  // 80581a28
