@@ -252,19 +252,17 @@ void ExpVR::OnInit() {
 static void RandomizeCombo() {
     if (Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled()) return;
     Random random;
-    for (u32 character = 0; character < Driver::CHARACTER_COUNT; ++character) {
-        u32 slotCount = 0;
-        for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
-            if (Driver::characterTables[character][slot] && random.NextLimited(++slotCount) == 0)
-                Driver::selectedSlots[character] = slot;
-        }
-    }
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
     const Section *section = sectionMgr->curSection;
     SectionParams *sectionParams = sectionMgr->sectionParams;
     for (int hudId = 0; hudId < sectionParams->localPlayerCount; ++hudId) {
         const CharacterId character = GetRandomEnabledCharacter(random, hudId, CHARACTER_NONE);
         if (character == CHARACTER_NONE) continue;
+        u32 slotCount = 0;
+        for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
+            if (Driver::characterTables[character][slot] && random.NextLimited(++slotCount) == 0)
+                Driver::selectedSlots[character] = slot;
+        }
         const u32 weight = GetCharacterWeightClass(character);
         const u32 randomizedKartPos = GetRandomEnabledVehiclePosition(random, weight);
         const KartId kart = kartsSortedByWeight[weight][randomizedKartPos];
