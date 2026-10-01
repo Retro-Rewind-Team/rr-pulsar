@@ -1560,6 +1560,7 @@ IsInactive__15CtrlRaceRankNumFv = 0x807f4d40
 #CtrlResult
 Fill__14CtrlRaceResultFUcUc = 0x807f5fec
 FillName__14CtrlRaceResultFUc = 0x807f52f4
+FillCharacter__14CtrlRaceResultF11CharacterId = 0x807f544c
 FillFinishTime__14CtrlRaceResultFUc = 0x807f595c
 FillScore__14CtrlRaceResultFUiUi = 0x807f56d4
 __dt__14CtrlRaceResultFv = 0x807f6490

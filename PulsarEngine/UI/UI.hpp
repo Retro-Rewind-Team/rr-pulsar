@@ -8,6 +8,7 @@ namespace Pulsar {
 namespace UI {
 
 void ChangeImage(LayoutUIControl &control, const char *paneName, const char *tplName);
+void SetCharacterSelectIcon(LayoutUIControl *control, const char *paneName, const char *picturePane);
 const wchar_t *GetCustomMsg(s32 bmgId);
 u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId);
 u32 GetCharacterAuthorBMGId(u32 character, u32 slot);

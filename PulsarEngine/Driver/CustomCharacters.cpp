@@ -2,6 +2,7 @@
 #include <IO/LooseArchiveOverrides.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/3D/Scn/ScnMgr.hpp>
@@ -307,6 +308,7 @@ static void PageAfterControlUpdate(Page *page) {
         }
         selectedSlots[character] = slot;
         if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot)) selectedSlots[character] = 0;
+        UI::SetCharacterSelectIcon(characterSelectPage->ctrlMenuCharSelect.GetButtonDriver(static_cast<CharacterId>(character)), "chara_c_down", GetCharacterIconPaneName(static_cast<CharacterId>(character)));
     }
 
     for (u32 character = 0; character < CHARACTER_COUNT; ++character) {

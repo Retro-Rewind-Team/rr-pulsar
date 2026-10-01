@@ -2,6 +2,7 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <UI/UI.hpp>
+#include <Race/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -95,6 +96,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         } else {
             this->items[i].SetPicturePane("chara_icon", GetCharacterIconPaneName(characterId));
             this->items[i].SetPicturePane("chara_icon_sha", GetCharacterIconPaneName(characterId));
+            Race::LoadCustomCharacterIcon(characterId, Race::GetPlayerCustomCharacterSlot(playerId, characterId), this->items[i].layout.GetPaneByName("chara_icon"), this->items[i].layout.GetPaneByName("chara_icon_sha"));
         }
 
         int prevScore = this->players[i].prevBattleScore;

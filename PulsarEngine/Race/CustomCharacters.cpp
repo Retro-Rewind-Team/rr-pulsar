@@ -4,6 +4,7 @@
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/Scene/GameScene.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRace2DMap.hpp>
 #include <core/egg/DVD/DvdRipper.hpp>
 #include <MarioKartWii/System/Random.hpp>
@@ -14,12 +15,15 @@ namespace Pulsar {
 namespace Race {
 
 u8 racePlayerSlots[12];
-u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character) {
+u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAward) {
     const u32 characterId = static_cast<u32>(character);
     if (characterId >= Driver::CHARACTER_COUNT) return 0;
-    if (playerId >= 12 || Racedata::sInstance == nullptr || playerId >= Racedata::sInstance->racesScenario.playerCount || Racedata::sInstance->racesScenario.players[playerId].characterId != character)
+    if (playerId >= 12 || Racedata::sInstance == nullptr)
         return Driver::selectedSlots[characterId];
-    const RacedataPlayer &player = Racedata::sInstance->racesScenario.players[playerId];
+    const RacedataScenario &scenario = isAward ? Racedata::sInstance->awardScenario : Racedata::sInstance->racesScenario;
+    if (playerId >= scenario.playerCount || scenario.players[playerId].characterId != character)
+        return Driver::selectedSlots[characterId];
+    const RacedataPlayer &player = scenario.players[playerId];
     if (player.playerType == PLAYER_GHOST) {
         const u8 offset = Racedata::sInstance->racesScenario.players[0].playerType != PLAYER_GHOST ? 1 : 0;
         const int rkgIndex = static_cast<int>(playerId) - offset;
@@ -104,28 +108,25 @@ static s32 LoadCustomCharactersForRacePlayerHolder2(char *path, u32 size, const 
 }
 kmCall(0x80541048, LoadCustomCharactersForRacePlayerHolder2);
 
-static void LoadMinimapIcon(CtrlRace2DMapCharacter *control) {
-    control->CtrlRaceBase::InitSelf();
-
-    const u32 playerId = control->playerId;
-    const u32 character = static_cast<u32>(Racedata::sInstance->racesScenario.players[playerId].characterId);
-    if (character >= Driver::CHARACTER_COUNT) return;
-
-    const u32 slot = GetPlayerCustomCharacterSlot(playerId, static_cast<CharacterId>(character));
-    if (slot == 0) return;
+void LoadCustomCharacterIcon(CharacterId character, u32 slot, nw4r::lyt::Pane *pane, nw4r::lyt::Pane *shadow0, nw4r::lyt::Pane *shadow1) {
+    if (static_cast<u32>(character) >= Driver::CHARACTER_COUNT || slot == 0) return;
 
     char path[0x40];
-    snprintf(path, sizeof(path), "/Race/Map/%s-%u.tpl", ArchiveMgr::GetKartArchivePostfix(static_cast<CharacterId>(character)), slot);
+    snprintf(path, sizeof(path), "/Race/Map/%s-%u.tpl", ArchiveMgr::GetKartArchivePostfix(character), slot);
     if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) < 0) return;
 
-    TPLPalettePtr icon = static_cast<TPLPalettePtr>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, nullptr, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
+    // Result controls initialize after GameScene locks its dynamic heaps.
+    EGG::Heap *heap = GameScene::GetCurrent()->structsHeaps.heaps[0];
+    const u16 heapFlags = heap->dameFlag;
+    heap->dameFlag &= ~1;
+    TPLPalettePtr icon = static_cast<TPLPalettePtr>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
+    heap->dameFlag = heapFlags;
     if (icon == nullptr) return;
 
-    control->charaPane->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
-    control->charaShadow0Pane->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
-    control->charaShadow1Pane->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
+    pane->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
+    if (shadow0 != nullptr) shadow0->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
+    if (shadow1 != nullptr) shadow1->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
 }
-kmCall(0x807eb22c, LoadMinimapIcon);
 
 }  // namespace Race
 }  // namespace Pulsar

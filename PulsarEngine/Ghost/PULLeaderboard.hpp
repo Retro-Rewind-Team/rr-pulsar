@@ -35,7 +35,7 @@ struct PULLdbEntry {
     u8 padding2[1];
     u16 milliseconds;  // 0x54
     bool isActive;  // 0x56
-    u8 padding3[1];
+    u8 customCharacterSlot;  // 0x57, zero for entries saved before custom portraits
     CharacterId character;  // 0x58
     KartId kart;  // 0x5C
     ControllerType controllerType;  // 0x60
