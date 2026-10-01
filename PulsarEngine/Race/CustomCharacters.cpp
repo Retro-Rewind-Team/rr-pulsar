@@ -3,6 +3,7 @@
 #include <Race/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/3D/Model/ModelDirector.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRace2DMap.hpp>
@@ -107,6 +108,77 @@ static s32 LoadCustomCharactersForRacePlayerHolder2(char *path, u32 size, const 
     return LoadCustomCharactersForPlayer(path, size, format, vehicleName, teamSuffix, characterName, modeSuffix, playerId);
 }
 kmCall(0x80541048, LoadCustomCharactersForRacePlayerHolder2);
+
+static void BindAwardCharacterBRRES(g3d::ResFile &file, ArchiveSource source, const char *name) {
+    register const CharacterId *character;
+    register const Mii *mii;
+    asm(mr character, r23;);
+    asm(mr mii, r17;);
+    if (static_cast<u32>(*character) < Driver::CHARACTER_COUNT) {
+        const RacedataScenario &scenario = Racedata::sInstance->awardScenario;
+        for (u32 player = 0; player < 12; ++player) {
+            if (scenario.players[player].playerType == PLAYER_NONE || scenario.players[player].characterId != *character) continue;
+            // Award models use spare character IDs for duplicates; r17 identifies their original player.
+            if (mii != nullptr && mii != &scenario.players[player].mii) continue;
+            const u32 slot = GetPlayerCustomCharacterSlot(player, *character, true);
+            if (slot != 0) {
+                char path[0x80];
+                snprintf(path, sizeof(path), "/Scene/Model/Driver/%s-%u.brres", ArchiveMgr::GetKartArchivePostfix(*character), slot);
+                if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0) {
+                    ModelDirector::RipAndBindBRRES(file, path, static_cast<EGG::ExpHeap *>(ScnMgr::sInstance[0]->curHeap), true);
+                    return;
+                }
+            }
+            break;
+        }
+    }
+    ModelDirector::BindBRRES(file, source, name);
+}
+kmCall(0x80789728, BindAwardCharacterBRRES);
+
+static bool LinkCustomAwardAnimations(ModelDirector *model, g3d::ResFile &file) {
+    if (file.GetResAnmChr("sel_wait").data == nullptr) return false;
+    for (u32 id = 0; id < 6; ++id) {
+        const AnmType type = id % 3 == 0 ? ANMTYPE_CHR : id % 3 == 1 ? ANMTYPE_TEXPAT
+                                                                     : ANMTYPE_TEXSRT;
+        const bool exists = type == ANMTYPE_CHR || (type == ANMTYPE_TEXPAT && file.GetResAnmTexPat("sel_wait").data != nullptr) || (type == ANMTYPE_TEXSRT && file.GetResAnmTexSrt("sel_wait").data != nullptr);
+        if (exists)
+            model->LinkAnimation(id, file, "sel_wait", type, false, nullptr, ARCHIVE_HOLDER_KART, 0);
+        else
+            model->LinkEmptyAnm(id);
+    }
+    return true;
+}
+
+// Replace the six award animation bindings only for driver BRRES files containing sel_wait.
+extern "C" g3d::ResAnmChr GetResAnmChr__Q34nw4r3g3d7ResFileCFPCc(const g3d::ResFile *file, const char *name);
+static asmFunc LinkAwardAnimations() {
+    ASM(
+        nofralloc;
+        stwu r1, -0x20(r1);
+        mflr r0;
+        stw r0, 0x24(r1);
+        stw r3, 0x8(r1);
+        stw r4, 0xc(r1);
+        mr r4, r3;
+        mr r3, r15;
+        bl LinkCustomAwardAnimations;
+        cmpwi r3, 0;
+        beq original;
+        lwz r12, 0x24(r1);
+        addi r12, r12, 0x23c;
+        mtlr r12;
+        addi r1, r1, 0x20;
+        blr;
+        original :;
+        lwz r3, 0x8(r1);
+        lwz r4, 0xc(r1);
+        lwz r0, 0x24(r1);
+        mtlr r0;
+        addi r1, r1, 0x20;
+        b GetResAnmChr__Q34nw4r3g3d7ResFileCFPCc;)
+}
+kmCall(0x807897e0, LinkAwardAnimations);
 
 void LoadCustomCharacterIcon(CharacterId character, u32 slot, nw4r::lyt::Pane *pane, nw4r::lyt::Pane *shadow0, nw4r::lyt::Pane *shadow1) {
     if (static_cast<u32>(character) >= Driver::CHARACTER_COUNT || slot == 0) return;
