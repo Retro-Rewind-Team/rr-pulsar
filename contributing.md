@@ -11,7 +11,7 @@ Pull requests should explain what they do and what they edit. Start the descript
 Before you start adding new features, ensure that you understand:
 1. **No guarantees** Your feature is not guaranteed to actually be added to Retro Rewind.
 2. **Functionality is Desired:** The feature should actually be something improving Retro Rewind. Think a bug fix or a highly requested feature.
-3. **Useful PRs:** Your pr should consist of re-usable and extendable code, it should be useful for futur work or other developers.
+3. **Useful PRs:** Your pr should consist of re-usable and extendable code, it should be useful for future work or other developers.
 4. **Feature PR:** Submitting a PR does not give you full exclusive control over the feature, and we may reimplement any way  we see fit if your PR does not meet the standards or feature request changes.
 5. **Useful Comments:** You must comment your code to explain its purpose and reasoning. **write these comments yourself**, as AI generated comments fail to explain the decisions behind the code.
 
