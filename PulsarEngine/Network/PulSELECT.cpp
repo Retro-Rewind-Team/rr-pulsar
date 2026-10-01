@@ -9,11 +9,11 @@
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
 #include <Network/Rating/PlayerRating.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <Driver/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -84,9 +84,13 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *s
         src->playersData[1].courseVote = vanillaVote;
     } else
         len = sizeof(PulSELECT);
+    src->reserved = 0;
+    for (u32 i = 0; i < controller->subs[controller->currentSub].localPlayerCount; ++i) {
+        const u32 character = src->playersData[i].character;
+        if (character < Driver::CHARACTER_COUNT)
+            src->reserved |= Driver::selectedSlots[character] << (8 * (1 - i));
+    }
     packetHolder->Copy(src, len);
-
-    packetHolder->packet->characterTables = CustomCharacters::GetLocalOnlineCharacterTables();
 }
 kmCall(0x80661040, BeforeSELECTSend);
 
@@ -97,9 +101,6 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
     asm(mr aid, r19;);
     register RKNet::PacketHolder<PulSELECT> *holder;
     asm(mr holder, r27);
-
-    const u16 characterTables = (holder != nullptr && holder->packetSize == sizeof(PulSELECT)) ? src->characterTables : 0;
-    CustomCharacters::UpdateOnlineCharacterTablesFromAid(aid, src->playerIdToAid, characterTables);
 
     for (int i = 0; i < 2; ++i) {
         PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
@@ -116,7 +117,7 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
         src->blockedTrackCount = 0;
         src->curBlockingArrayIdx = 0;
         src->lastGroupedTrackPlayed = false;
-        src->characterTables = 0;
+        src->reserved = 0;
         for (u32 i = 0; i < MAX_TRACK_BLOCKING; ++i) {
             src->blockedTracks[i] = 0xFFFF;
         }

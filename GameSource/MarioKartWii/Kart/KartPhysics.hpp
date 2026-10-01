@@ -63,6 +63,7 @@ public:
     void Init(bool isBike);  // 8059f5bc
     void Reset();  // 8059f7c8
     void ResetQuaternions();  // 805a0410
+    void AddInstantaneousExtraRot(const Quat &rotation);  // 8059fd0c
     virtual ~PhysicsHolder();  // 8059f6f8 vtable 808b69e8
     Physics *physics;
     HitboxGroup *hitboxGroup;

@@ -8,7 +8,11 @@ namespace Pulsar {
 namespace UI {
 
 void ChangeImage(LayoutUIControl &control, const char *paneName, const char *tplName);
+void SetCharacterSelectIcon(LayoutUIControl *control, const char *paneName, const char *picturePane);
 const wchar_t *GetCustomMsg(s32 bmgId);
+u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId, bool isAward = false);
+u32 GetCharacterAuthorBMGId(u32 character, u32 slot);
+bool SetCustomCharacterAuthorMessage(LayoutUIControl &control, u32 bmgId);
 void UnbindRLMC(lyt::Material *mat);
 void ResetMatColor(lyt::Pane *pane, u32 color);
 void ResetFroomSettingsPreviewShown();
@@ -253,7 +257,6 @@ enum BMG {
     // Custom Characters
     BMG_CUSTOM_CHARACTER_NAME_START = 0x6a00,
     BMG_CUSTOM_CHARACTER_AUTHOR_START = 0x7a00,
-    BMG_CUSTOM_CHARACTER_IMAGE_START = 0x8a00,
 
     // Language
     BMG_LANGUAGE_RESET_REQUIRED = 0x295f,

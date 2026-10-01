@@ -175,6 +175,11 @@ enum LooseArchiveOverridesSetting {
     LOOSEARCHIVEOVERRIDES_DISABLED = 1
 };
 
+enum DisplayCustomSkins {
+    DISPLAYCUSTOMSKINS_ENABLED,
+    DISPLAYCUSTOMSKINS_DISABLED
+};
+
 // 1) Race 1 values
 enum Transmission {
     TRANSMISSION_DEFAULT,
@@ -296,11 +301,6 @@ enum MenuSettingStreamerMode {
 enum MatchmakingTimeoutSetting {
     MATCHMAKINGTIMEOUT_DEFAULT = 0x0,
     MATCHMAKINGTIMEOUT_INFINITE = 0x1
-};
-
-enum DisplayCustomSkins {
-    DISPLAYCUSTOMSKINS_ENABLED = 0x0,
-    DISPLAYCUSTOMSKINS_DISABLED = 0x1
 };
 
 // 5) Sound values

@@ -16,6 +16,9 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBalloon.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceRankNum.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
+#include <Race/CustomCharacters.hpp>
+#include <Network/PacketExpansion.hpp>
 #include <runtimeWrite.hpp>
 
 namespace Pulsar {
@@ -23,7 +26,10 @@ namespace UI {
 
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
+kmRuntimeUse(0x80553c94);
 void Racedata_InitRace(Racedata *racedata) {
+    register u32 returnAddress;
+    asm(mflr returnAddress;);
     racedata->InitRace();
 
     const RacedataSettings &settings = racedata->menusScenario.settings;
@@ -44,6 +50,7 @@ void Racedata_InitRace(Racedata *racedata) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
         racedata->racesScenario.settings.modeFlags &= ~ExtendedTeamManager::TEAM_MODE_FLAG;
     }
+    if (returnAddress == kmRuntimeAddr(0x80553c94)) Race::RandomizeCPUCharacterTables(racedata->racesScenario);
 }
 
 kmCall(0x80530878, Racedata_InitRace);
@@ -193,6 +200,15 @@ kmCall(0x80643b3c, PageVote_FillVoteControl);
 
 void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr *_this) {
     _this->PrepareRace();
+    memset(Race::racePlayerSlots, 0, sizeof(Race::racePlayerSlots));
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const Network::ExpSELECTHandler &handler = Network::ExpSELECTHandler::Get();
+    for (u32 player = 0; player < 12; ++player) {
+        if (Racedata::sInstance->menusScenario.players[player].playerType != PLAYER_REAL_ONLINE) continue;
+        const u8 aid = controller->aidsBelongingToPlayerIds[player];
+        const bool isGuest = player > 0 && controller->aidsBelongingToPlayerIds[player - 1] == aid;
+        Race::racePlayerSlots[player] = handler.receivedPackets[aid].reserved >> (isGuest ? 0 : 8);
+    }
     if (ExtendedTeamManager::IsActivated()) {
         ExtendedTeamManager::sInstance->VotePageSync();
     }

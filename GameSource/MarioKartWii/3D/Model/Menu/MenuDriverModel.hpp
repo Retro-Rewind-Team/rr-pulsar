@@ -33,7 +33,6 @@ public:
     void SwitchState(u8 playerId, State newState);  // 8082fb78 for example with state == 2, will switch to OnKartAnms
     void Draw(u8 playerId);  // 80830a80 toggles chars not shown off so it only shows one model at a time
 
-    u8 unknown_0x4[4];
     State state;  // 0x8
     ModelTransformator *charSelTransformator;  // 0xC
     ModelTransformator *onKartTransformator;  // 0x10

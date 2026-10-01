@@ -18,6 +18,7 @@
 #include <MarioKartWii/UI/Page/Other/FriendList.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <RetroRewindChannel.hpp>
+#include <Driver/CustomCharacters.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <hooks.hpp>
@@ -176,6 +177,7 @@ void System::Init(const ConfigFile &confRT, const ConfigFile &confCT, const Conf
     this->info.Init(confRT.GetSection<InfoHolder>().info);
     this->InitIO(type);
     this->InitSettings(&CupsConfig::sInstance->trophyCount[0]);
+    Driver::CreateCharacterTable();
 
     if (IsNewChannel()) {
         NewChannel_Init();

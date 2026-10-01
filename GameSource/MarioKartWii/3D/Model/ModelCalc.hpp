@@ -6,6 +6,7 @@ class ModelDirector;
 // mdlDirector will trigger a CB, other is used if calculations are also needed on it
 //(for ex director = toadette's driver model, other = her hair)
 class ModelCalcBase {
+public:
     ModelCalcBase(ModelDirector *director, ModelDirector *other = nullptr);  // 8055f8d0
     ModelDirector *mdlDirector;
     ModelDirector *other;  // 0x4

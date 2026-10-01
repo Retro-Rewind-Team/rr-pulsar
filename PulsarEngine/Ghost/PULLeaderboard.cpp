@@ -1,5 +1,6 @@
 #include <Ghost/PULLeaderboard.hpp>
 #include <Ghost/GhostManager.hpp>
+#include <Race/CustomCharacters.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <runtimeWrite.hpp>
@@ -110,6 +111,7 @@ void Leaderboard::Update(u32 position, const RKSYS::LicenseLdbEntry &entry, u32 
     this->entries[mode][position].isActive = entry.timer.isActive;
     this->entries[mode][position].controllerType = entry.controllerType;
     this->entries[mode][position].character = entry.character;
+    this->entries[mode][position].customCharacterSlot = Race::GetPlayerCustomCharacterSlot(0, entry.character);
     this->entries[mode][position].kart = entry.kart;
 }
 

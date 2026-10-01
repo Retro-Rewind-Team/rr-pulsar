@@ -33,6 +33,8 @@ enum { OVERRIDE_MAX_PATH = 256,
 
 bool IsModsPath(const char *path);
 
+s32 ConvertPathToEntryNumWithLooseOverride(const char *path);
+
 const char *ResolveWholeFileOverride(const char *path, char *resolvedPath, u32 resolvedSize, bool *outRedirected);
 
 bool ShouldApplyLooseOverrides(const char *path, char *archiveBaseLower, u32 archiveBaseLowerSize);

@@ -1,7 +1,6 @@
 #include <Settings/Settings.hpp>
 #include <Settings/Region.hpp>
 #include <Network/Ranking.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <IO/IO.hpp>
@@ -472,9 +471,6 @@ void Mgr::SetSettingValue(SettingId id, u8 value) {
     const SettingDef &def = Params::GetSettingDef(id);
     if (value >= def.optionCount && !(id == SETTING_FROOMCC && value == HOSTCC_CUSTOM)) value = 0;
     u8 &currentValue = this->rawBin->GetSection<SettingsHolder>().values[Params::GetSettingIndex(id)];
-    if (id == SETTING_LOOSEARCHIVEOVERRIDES && currentValue != value) {
-        CustomCharacters::ResetAllCharacterTablesToDefault();
-    }
     currentValue = value;
 }
 

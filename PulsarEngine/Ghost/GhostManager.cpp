@@ -3,8 +3,9 @@
 #include <IO/IO.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
+#include <Race/CustomCharacters.hpp>
+#include <Driver/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace Ghosts {
@@ -73,6 +74,8 @@ void Mgr::Init(PulsarId id, u8 variantIdx) {
         DVD::ReadPrio(&info, &this->rkg, info.length, 0, 2);
         if (this->rkg.CheckValidity()) {
             curData.Init(rkg);
+            // Keep the recorded skin in GhostData padding for the ghost info portrait.
+            curData.unknown_0xc9[0] = rkg.header.unknown_6 <= Driver::MAX_CUSTOM_CHARACTER_SLOTS ? rkg.header.unknown_6 : 0;
             expertCRC32 = this->GetRKGcrc32(this->rkg);
             if (this->cb != nullptr) {
                 rkg.DecompressTo(*decompressed);
@@ -98,6 +101,7 @@ void Mgr::Init(PulsarId id, u8 variantIdx) {
         s32 ret = io->ReadFolderFile(&this->rkg, i, sizeof(RKG));
         if (ret > 0 && this->rkg.CheckValidity() && this->GetRKGcrc32(this->rkg) != expertCRC32) {
             curData.Init(rkg);
+            curData.unknown_0xc9[0] = rkg.header.unknown_6 <= Driver::MAX_CUSTOM_CHARACTER_SLOTS ? rkg.header.unknown_6 : 0;
             if (this->cb != nullptr) {
                 rkg.DecompressTo(*decompressed);
                 this->cb(*decompressed, IS_LOADING_LEADERBOARDS, counter);
@@ -214,9 +218,7 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry &entry, u32 ldbPosition, bool i
     buffer.header.unknown_3 = Pulsar::UI::GetSelectedTransmission(0);
 
     const bool createdRkg = data.CreateRKG(buffer);
-    if (createdRkg) {
-        buffer.header.customCharacterTable = CustomCharacters::SelectedTable(static_cast<CharacterId>(buffer.header.characterId));
-    }
+    if (createdRkg) buffer.header.unknown_6 = Race::GetPlayerCustomCharacterSlot(0, Racedata::sInstance->racesScenario.players[0].characterId);
     if (createdRkg && buffer.CompressTo(this->rkg)) {
         if (this->cb != nullptr) {
             this->cb(buffer, IS_SAVING_GHOST, -1);

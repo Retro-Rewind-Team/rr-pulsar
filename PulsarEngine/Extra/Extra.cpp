@@ -12,7 +12,6 @@
 #include <Dolphin/DolphinIOS.hpp>
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <include/c_string.h>
 
 namespace Codes {
@@ -418,19 +417,6 @@ kmWrite32(0x807f0644, 0x48000024);
 // Fix Mii opponents having silent / Rosalina voice Bug [B_squo]
 kmWrite32(0x8086975C, 0x4082001C);
 
-// Mute only Luma's two sound handles when the selected custom character has loose or silent voices [ZPL]
-static nw4r::snd::SoundHandle *MuteRosalinaLumaSounds(Audio::RaceActor *actor, u32 soundId) {
-    Audio::CharacterActor *const characterActor = static_cast<Audio::CharacterActor *>(actor);
-    const Racedata *racedata = Racedata::sInstance;
-    if ((soundId == 0xf68 || soundId == 0xf69) && racedata->racesScenario.players[characterActor->playerId].characterId == ROSALINA) {
-        const u8 table = Pulsar::CustomCharacters::RaceSkinTable(characterActor->playerId, ROSALINA);
-        const Pulsar::CustomCharacters::LooseVoiceInfo &voiceInfo = Pulsar::CustomCharacters::GetLooseVoiceInfo(ROSALINA, table);
-        if (voiceInfo.hasFiles || voiceInfo.silent) return nullptr;
-    }
-    return actor->Audio::RaceActor::HoldSoundLimited(soundId);
-}
-kmWritePointer(0x808dbcd8, MuteRosalinaLumaSounds);
-
 // Online Miis look at the camera when finishing in Live View [B_squo]
 kmWrite32(0x80596770, 0x60000000);
 
@@ -575,5 +561,9 @@ kmWrite32(0x800F20B4, 0x60000000);
 
 // Fix online position tracking on tracks with multiple lap counters [ZPL]
 kmWrite32(0x805354D0, 0x38A00000);  // li r5, 0; use checkpoint-based lap counting for remote racers
+
+// Use the standard voice IDs in Time Trial [ZPL]
+kmWrite32(0x808665b8, 0x2c030002);
+kmWrite32(0x80864e7c, 0x2c000002);
 
 }  // namespace Codes

@@ -608,12 +608,12 @@ static bool TryParseBRSAROverride(const char *relativePath, u32 &outFileId, u8 &
     if (firstDot != lastDot) {
         const char *secondDot = strchr(firstDot + 1, '.');
         if (secondDot != nullptr && secondDot < lastDot && firstDot[1] >= '0' && firstDot[1] <= '9') {
-            // `<fileId>.<soundId>.<character>.<type>` is resolved by CustomCharacterSoundEffects.
+            // Per-sound names are not whole-file BRSAR overrides.
             return false;
         }
         for (const char *c = firstDot + 1; c < lastDot; ++c) {
             if (*c == '-') {
-                // `<fileId>.<character>.<type>` is resolved by CustomCharacterSoundEffects.
+                // Per-character names are not whole-file BRSAR overrides.
                 return false;
             }
         }
@@ -2641,22 +2641,6 @@ static const char *ResolveWholeFileOverrideSource(const char *path, char *resolv
     return resolvedPath;
 }
 
-// Redirect shared DVD path lookups so whole-file overrides also cover streams and non-SZS files.
-static s32 ConvertPathToEntryNumWithLooseOverride(const char *path) {
-    if (path == nullptr) return -1;
-
-    char resolvedPath[OVERRIDE_MAX_PATH];
-    s32 sourceEntryNum = kInvalidDVDEntryNum;
-    const char *finalPath =
-        ResolveWholeFileOverrideSource(path, resolvedPath, sizeof(resolvedPath), nullptr, &sourceEntryNum);
-    if (sourceEntryNum >= 0) return sourceEntryNum;
-    return DVD::ConvertPathToEntryNum(finalPath);
-}
-kmCall(0x800910b4, ConvertPathToEntryNumWithLooseOverride);
-kmCall(0x8009130c, ConvertPathToEntryNumWithLooseOverride);
-kmCall(0x80222500, ConvertPathToEntryNumWithLooseOverride);
-kmCall(0x8052a914, ConvertPathToEntryNumWithLooseOverride);
-
 static BOOL DVDOpenWithLooseOverride(const char *path, DVD::FileInfo *info) {
     if (path == nullptr || info == nullptr) return false;
 
@@ -3338,6 +3322,21 @@ static bool RebuildArchiveWithStructuralOverrides(const char *archiveBaseLower, 
 }
 
 }  // namespace
+
+s32 ConvertPathToEntryNumWithLooseOverride(const char *path) {
+    if (path == nullptr) return -1;
+
+    char resolvedPath[OVERRIDE_MAX_PATH];
+    s32 sourceEntryNum = kInvalidDVDEntryNum;
+    const char *finalPath =
+        ResolveWholeFileOverrideSource(path, resolvedPath, sizeof(resolvedPath), nullptr, &sourceEntryNum);
+    if (sourceEntryNum >= 0) return sourceEntryNum;
+    return DVD::ConvertPathToEntryNum(finalPath);
+}
+kmCall(0x800910b4, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x8009130c, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x80222500, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x8052a914, ConvertPathToEntryNumWithLooseOverride);
 
 bool IsModsPath(const char *path) {
     if (path == nullptr) return false;
