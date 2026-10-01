@@ -27,11 +27,11 @@ void SetCharacterSelectIcon(LayoutUIControl *control, const char *paneName, cons
 }
 kmCall(0x807e2b38, SetCharacterSelectIcon);
 
-u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId) {
+u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId, bool isAward) {
     if (character < Driver::CHARACTER_COUNT &&
         (playerId >= 12 || Racedata::sInstance->racesScenario.settings.gamemode < MODE_PRIVATE_VS ||
          Racedata::sInstance->racesScenario.settings.gamemode > MODE_PRIVATE_BATTLE)) {
-        const u32 slot = Race::GetPlayerCustomCharacterSlot(playerId, static_cast<CharacterId>(character));
+        const u32 slot = Race::GetPlayerCustomCharacterSlot(playerId, static_cast<CharacterId>(character), isAward);
         if (slot != 0) {
             const u32 customBmgId = (character << 16) | BMG_CUSTOM_CHARACTER_NAME_START | slot;
             const wchar_t *customName = GetCustomMsg(customBmgId);
@@ -74,6 +74,13 @@ static u32 GetTeamResultCharacterNameBMGId(u32 character, bool useGenericMiiName
     return GetCharacterNameBMGId(character, useGenericMiiName, playerId);
 }
 kmCall(0x807f6dfc, GetTeamResultCharacterNameBMGId);
+
+static u32 GetAwardResultCharacterNameBMGId(u32 character, bool useGenericMiiName) {
+    register u32 playerId;
+    asm(mr playerId, r28;);
+    return GetCharacterNameBMGId(character, useGenericMiiName, playerId, true);
+}
+kmCall(0x805bbd70, GetAwardResultCharacterNameBMGId);
 
 static void SetRaceResultCharacterIcon(LayoutUIControl *control, const char *paneName, const char *picturePane) {
     register u32 playerId;
