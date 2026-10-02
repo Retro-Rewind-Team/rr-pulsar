@@ -175,9 +175,6 @@ void SetScenarioLoaded(bool loaded) {
         return;
 
     const u8 configuredSlot = ::Pulsar::MissionMode::GetMissionCharacterTable(Racedata::sInstance->menusScenario, 0);
-    if (configuredSlot == ::Pulsar::MissionMode::MISSION_CHARACTER_TABLE_UNSET)
-        return;
-
     missionCharacter = characterId;
     savedMissionCharacterSlot = Driver::selectedSlots[character];
     missionCharacterSlotApplied = true;

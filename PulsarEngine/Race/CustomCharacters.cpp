@@ -26,8 +26,7 @@ u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAwa
         const RacedataScenario &missionScenario = isAward ? Racedata::sInstance->awardScenario : Racedata::sInstance->racesScenario;
         if (Pulsar::MissionMode::IsMissionScenario(missionScenario)) {
             const u8 missionSlot = Pulsar::MissionMode::GetMissionCharacterTable(missionScenario, playerId);
-            if (missionSlot != Pulsar::MissionMode::MISSION_CHARACTER_TABLE_UNSET)
-                return missionSlot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][missionSlot] ? missionSlot : 0;
+            return missionSlot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][missionSlot] ? missionSlot : 0;
         }
     }
     if (playerId >= 12 || Racedata::sInstance == nullptr)
