@@ -155,7 +155,9 @@ asmFunc PatchImportRH2() {
         cmpwi r0, 3;
         bne + end;
         li r0, 0;  // fake that the ghost is a local player
-        end : blr;)
+    end:
+        blr;
+    )
 }
 kmCall(0x8053e4a4, PatchImportRH2);
 

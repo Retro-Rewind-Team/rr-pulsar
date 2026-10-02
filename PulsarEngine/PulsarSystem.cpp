@@ -601,7 +601,8 @@ asmFunc System::GetRaceCount() {
         lis r5, sInstance @ha;
         lwz r5, sInstance @l(r5);
         lbz r0, System.netMgr.racesPerGP(r5);
-        blr;)
+        blr;
+    )
 }
 
 asmFunc System::GetNonTTGhostPlayersCount() {
@@ -610,7 +611,8 @@ asmFunc System::GetNonTTGhostPlayersCount() {
         lis r12, sInstance @ha;
         lwz r12, sInstance @l(r12);
         lbz r29, System.nonTTGhostPlayersCount(r12);
-        blr;)
+        blr;
+    )
 }
 
 // Unlock Everything Without Save (_tZ)

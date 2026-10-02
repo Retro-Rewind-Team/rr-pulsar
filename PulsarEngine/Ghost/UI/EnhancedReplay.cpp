@@ -115,8 +115,9 @@ asmFunc PatchSoundIssues() {
         cmplwi r0, 2;
         bgt + end;
         li r5, 0x1f;
-        end :;
-        blr;)
+    end:
+        blr;
+    )
 }
 kmCall(0x80716064, PatchSoundIssues);
 

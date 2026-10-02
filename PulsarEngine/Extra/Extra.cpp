@@ -38,8 +38,10 @@ asmFunc GetItemDelimiterShock() {
         addi r12, r12, 0x12C;
         mtlr r12;
         blr;
-        validLightning : mulli r29, r3, 0xF0;
-        blr;)
+    validLightning:
+        mulli r29, r3, 0xF0;
+        blr;
+    )
 }
 
 asmFunc GetItemDelimiterBlooper() {
@@ -59,8 +61,10 @@ asmFunc GetItemDelimiterBlooper() {
         addi r12, r12, 0x1A8;
         mtlr r12;
         blr;
-        validBlooper : addi r11, r1, 0x50;
-        blr;)
+    validBlooper:
+        addi r11, r1, 0x50;
+        blr;
+    )
 }
 
 asmFunc GetItemDelimiterPOW() {
@@ -80,8 +84,10 @@ asmFunc GetItemDelimiterPOW() {
         addi r12, r12, 0x48;
         mtlr r12;
         blr;
-        validPOW : mr r30, r3;
-        blr;)
+    validPOW:
+        mr r30, r3;
+        blr;
+    )
 }
 
 void EnableDelimitersForAllItems() {
@@ -149,15 +155,18 @@ kmCall(0x80828da4, RemoveSpecialItem);
 asmFunc AntiWiper() {
     ASM(
         nofralloc;
-        loc_0x0 : cmpwi r4, 0x6;
+    loc_0x0:
+        cmpwi r4, 0x6;
         ble validMii;
         lhz r12, 0xE(r30);
         cmpwi r12, 0x0;
         bne validMii;
         li r31, 0x0;
         li r4, 0x6;
-        validMii : mr r29, r4;
-        blr;)
+    validMii:
+        mr r29, r4;
+        blr;
+    )
 }
 kmCall(0x800CB6C0, AntiWiper);
 kmWrite32(0x80526660, 0x38000001);  // Credits to Ro for the last line.
@@ -167,7 +176,8 @@ extern "C" void __ptmf_test(void *);
 asmFunc AntiItemColCrash() {
     ASM(
         nofralloc;
-        loc_0x0 : stwu r1, -0xC(r1);
+    loc_0x0:
+        stwu r1, -0xC(r1);
         stw r31, 8(r1);
         mflr r31;
         addi r3, r29, 0x174;
@@ -176,25 +186,30 @@ asmFunc AntiItemColCrash() {
         bne end;
         addi r31, r31, 0x14;
 
-        end : mtlr r31;
+    end:
+        mtlr r31;
         lwz r31, 8(r1);
         addi r1, r1, 0xC;
         mr r3, r29;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x807A1A54, AntiItemColCrash);
 
 // Item Spam Anti-Freeze
 asmFunc ItemSpamAntiFreeze() {
     ASM(
-        loc_0x0 : lbz r12, 0x1C(r27);
+    loc_0x0:
+        lbz r12, 0x1C(r27);
         add r12, r30, r12;
         cmpwi r12, 0xE0;
         blt + loc_0x18;
         li r0, 0;
         stb r0, 0x19(r27);
 
-        loc_0x18 : lbz r0, 0x19(r27);)
+    loc_0x18:
+        lbz r0, 0x19(r27);
+    )
 }
 kmCall(0x8065BBD4, ItemSpamAntiFreeze);
 
@@ -269,16 +284,20 @@ asmFunc GetUltraUncut() {
         cmpwi r12, 0x0;
         beq + vanillaUncut;
 
-        loc_0x0 : lbz r3, 0x1C(r29);
+    loc_0x0:
+        lbz r3, 0x1C(r29);
         cmplwi r3, 0x1;
         ble + loc_0x10;
         mr r0, r30;
 
-        loc_0x10 : cmplw r30, r0;
+    loc_0x10:
+        cmplw r30, r0;
         blr;
 
-        vanillaUncut : cmplw r30, r0;
-        blr;)
+    vanillaUncut:
+        cmplw r30, r0;
+        blr;
+    )
 }
 kmCall(0x8053511C, GetUltraUncut);
 
@@ -287,14 +306,17 @@ extern "C" void sInstance__8Racedata(void *);
 asmFunc AntiLagStart() {
     ASM(
         nofralloc;
-        loc_0x0 : lwz r12, sInstance__8Racedata @l(r30);
+    loc_0x0:
+        lwz r12, sInstance__8Racedata @l(r30);
         lwz r12, 0xB70(r12);
         cmpwi r12, 0x7;
         blt - loc_0x14;
         li r3, 0x1;
 
-        loc_0x14 : cmpwi r3, 0x0;
-        blr;)
+    loc_0x14:
+        cmpwi r3, 0x0;
+        blr;
+    )
 }
 kmCall(0x80533430, AntiLagStart);
 
@@ -308,7 +330,8 @@ asmFunc StarOffroadFix() {
         andi.r11, r0, 0x80;
         andis.r12, r0, 0x8000;
         or.r0, r11, r12;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8057C3F8, StarOffroadFix);
 
@@ -328,7 +351,8 @@ asmFunc Deflicker() {
         cmpwi r5, 0x0;
         bnelr;
         li r0, 0x0;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8021A028, Deflicker);
 
@@ -362,9 +386,11 @@ asmFunc halfpipeWarpFix() {
         rlwinm r11, r11, 0, 22, 20;
         stw r11, 8(r4);
 
-        loc_0x20 :;
+    loc_0x20:
+        ;
         mr r4, r11;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8058BF58, halfpipeWarpFix);
 
@@ -381,9 +407,11 @@ asmFunc respawnBoostFix1() {
         xoris r5, r5, 16384;
         stw r5, 16(r4);
 
-        loc_0x20 :;
+    loc_0x20:
+        ;
         li r4, 0x3;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x80581E40, respawnBoostFix1);
 
@@ -399,9 +427,11 @@ asmFunc respawnBoostFix2() {
         xoris r5, r5, 16384;
         stw r5, 16(r4);
 
-        loc_0x20 :;
+    loc_0x20:
+        ;
         li r4, 0x3;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x805820B0, respawnBoostFix2);
 
@@ -443,9 +473,11 @@ asmFunc friendRoomJoinCancel() {
 
         li r3, 3;
 
-        end :;
+    end:
+        ;
         cmpwi r3, 3;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x805DD85C, friendRoomJoinCancel);
 
@@ -458,8 +490,10 @@ asmFunc burnoutIconFix() {
         beq - loc_0x10;
         ori r0, r0, 0x1;
 
-        loc_0x10 :;
-        blr;)
+    loc_0x10:
+        ;
+        blr;
+    )
 }
 kmCall(0x807EB38C, burnoutIconFix);
 
@@ -467,12 +501,15 @@ kmCall(0x807EB38C, burnoutIconFix);
 asmFunc pokeyDeathFix() {
     ASM(
         nofralloc;
-        loc_0x0 :;
+    loc_0x0:
+        ;
         cmpwi r0, 0x1;
         beq - loc_0xC;
         cmpwi r0, 0x3;
-        loc_0xC :;
-        blr;)
+    loc_0xC:
+        ;
+        blr;
+    )
 }
 kmCall(0x8077AC50, pokeyDeathFix);
 
@@ -501,7 +538,8 @@ asmFunc exhaustPipeboostFix() {
         lwzx r3, r3, r4;
         li r0, 0x0;
         stw r0, 24(r3);
-        blr;)
+        blr;
+    )
 }
 kmCall(0x805674B8, exhaustPipeboostFix);
 
@@ -531,15 +569,18 @@ kmWrite32(0x80797C44, 0x3C600A0C);
 asmFunc InvalidCameraPointerFix() {
     ASM(
         nofralloc;
-        loc_0x0 : cmpwi r31, 0;
+    loc_0x0:
+        cmpwi r31, 0;
         bne + loc_0x18;
         mflr r12;
         addi r12, r12, 0xA0;
         mtlr r12;
         blr;
 
-        loc_0x18 : lwz r3, 0x0(r31);
-        blr;)
+    loc_0x18:
+        lwz r3, 0x0(r31);
+        blr;
+    )
 }
 kmCall(0x805ABE14, InvalidCameraPointerFix);
 

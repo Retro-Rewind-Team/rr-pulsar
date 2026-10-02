@@ -710,9 +710,12 @@ asmFunc LoadCorrectPageAfterDrift() {  // r0 has gamemode
         beq - isBattle;
         cmpwi r0, MODE_PRIVATE_BATTLE;
         bne + end;
-        isBattle : li r0, 3;
-        end : cmpwi r0, 3;
-        blr;)
+    isBattle:
+        li r0, 3;
+    end:
+        cmpwi r0, 3;
+        blr;
+    )
 }
 kmCall(0x8084e670, LoadCorrectPageAfterDrift);
 

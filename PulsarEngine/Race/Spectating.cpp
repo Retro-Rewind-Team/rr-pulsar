@@ -32,8 +32,8 @@ asmFunc CreateSwitchFocusedPlayerPtmfs() {  // when spectating
         cmpwi cr1, r0, SECTION_WATCH_GHOST_FROM_MENU;
         bgt + cr1, end;
         crclr 4 * cr0 + lt;
-        end : blr;
-
+    end:
+        blr;
     )
 }
 
@@ -47,8 +47,7 @@ kmCall(0x805a8520, CreateAdditionalCameras);
 
 Racedata *RemoveLiveview() {
     register RaceCameraMgr *mgr;
-    asm(mr mgr, r31;);
-    const SectionId id = SectionMgr::sInstance->nextSectionId;
+    asm(mr mgr, r31;) const SectionId id = SectionMgr::sInstance->nextSectionId;
     if (id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU)
         mgr->isOnlineSpectating = false;
     return Racedata::sInstance;

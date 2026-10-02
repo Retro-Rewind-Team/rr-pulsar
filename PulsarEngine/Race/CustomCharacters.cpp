@@ -181,13 +181,14 @@ static asmFunc LinkAwardAnimations() {
         mtlr r12;
         addi r1, r1, 0x20;
         blr;
-        original :;
+    original:
         lwz r3, 0x8(r1);
         lwz r4, 0xc(r1);
         lwz r0, 0x24(r1);
         mtlr r0;
         addi r1, r1, 0x20;
-        b GetResAnmChr__Q34nw4r3g3d7ResFileCFPCc;)
+        b GetResAnmChr__Q34nw4r3g3d7ResFileCFPCc;
+    )
 }
 kmCall(0x807897e0, LinkAwardAnimations);
 

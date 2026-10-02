@@ -41,7 +41,8 @@ asmFunc ConditionalChannelSwitch() {
         mr r3, r27;
         mr r4, r28;
         mtlr r29;
-        blr;);
+        blr;
+    )
 }
 kmCall(0x806fab78, ConditionalChannelSwitch);
 

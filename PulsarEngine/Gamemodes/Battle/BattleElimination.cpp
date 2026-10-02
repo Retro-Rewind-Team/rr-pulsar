@@ -150,8 +150,9 @@ asmFunc ForceBalloonBattle() {
         oris r0, r0, 0x8000;
         xoris r0, r0, 0;
         stw r0, 0x8(r1);
-        original :;
-        lwz r3, 0x0(r31);)
+    original:
+        lwz r3, 0x0(r31);
+    )
 }
 kmCall(0x806619AC, ForceBalloonBattle);
 
@@ -183,7 +184,8 @@ asmFunc LoadBattleFanfare() {
     ASM(
         nofralloc;
         lwzx r3, r3, r0;
-        b SelectRaceFanfare;)
+        b SelectRaceFanfare;
+    )
 }
 kmCall(0x807123e8, LoadBattleFanfare);
 
@@ -230,7 +232,8 @@ asmFunc LoadBattleDuration() {
         nofralloc;
         lis r7, sBattleDuration @ha;
         lhz r0, sBattleDuration @l(r7);
-        blr;)
+        blr;
+    )
 }
 kmCall(0x80532BCC, LoadBattleDuration);
 

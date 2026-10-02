@@ -62,7 +62,8 @@ asmFunc LoadMatchmakingTimeout() {
         nofralloc;
         lis r6, sMatchmakingTimeoutMs @ha;
         lwz r6, sMatchmakingTimeoutMs @l(r6);
-        blr;)
+        blr;
+    )
 }
 
 typedef int (*DWCSetupGameServer_t)(int maxPlayers, void *callback, void *callbackParam, void *option0, void *option1, void *playerValidCallback, void *playerUserData, void *userData);

@@ -48,32 +48,34 @@ asmFunc saveFcAndCountryHook() {
     ASM(
         nofralloc;
         pushStack
-            mr r4,
+        mr r4,
         r19;
         bl saveFcAndCountry;
         popStack
-            lbz r4,
+        lbz r4,
         0x185(r3);
         lis r12, saveFcAndCountryHookExit @h;
         ori r12, r12, saveFcAndCountryHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 asmFunc saveFcAndCountryInLiveHook() {
     ASM(
         nofralloc;
         pushStack
-            mr r4,
+        mr r4,
         r19;
         bl saveFcAndCountry;
         popStack
-            lbz r4,
+        lbz r4,
         0x185(r3);
         lis r12, saveFcAndCountryInLiveHookExit @h;
         ori r12, r12, saveFcAndCountryInLiveHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 kmBranch(0x806513e0, saveFcAndCountryHook);
@@ -172,13 +174,14 @@ asmFunc displayFcAndCountryHook() {
         nofralloc;
         stw r0, 0x154(sp);
         pushStack
-            bl displayFcAndCountry;
+        bl displayFcAndCountry;
         popStack
-            lis r12,
+        lis r12,
         displayFcAndCountryHookExit @h;
         ori r12, r12, displayFcAndCountryHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 asmFunc displayFcAndCountryInResultFillNameHook() {
@@ -186,13 +189,14 @@ asmFunc displayFcAndCountryInResultFillNameHook() {
         nofralloc;
         stw r0, 0xE4(sp);
         pushStack
-            bl displayFcAndCountry;
+        bl displayFcAndCountry;
         popStack
-            lis r12,
+        lis r12,
         displayFcAndCountryInResultFillNameHookExit @h;
         ori r12, r12, displayFcAndCountryInResultFillNameHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 asmFunc displayFcAndCountryInResultFillTimeHook() {
@@ -200,13 +204,14 @@ asmFunc displayFcAndCountryInResultFillTimeHook() {
         nofralloc;
         stw r0, 0xE4(sp);
         pushStack
-            bl displayFcAndCountry;
+        bl displayFcAndCountry;
         popStack
-            lis r12,
+        lis r12,
         displayFcAndCountryInResultFillTimeHookExit @h;
         ori r12, r12, displayFcAndCountryInResultFillTimeHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 kmBranch(0x807f004c, displayFcAndCountryHook);

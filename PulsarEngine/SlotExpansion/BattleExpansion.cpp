@@ -83,8 +83,10 @@ asmFunc CoinBattle_EarlyOutIfInvalid() {
         lwz r28, 0x10(r1);
         addi r1, r1, 0x20;
         blr;
-        valid : lwz r5, 0x20B8(r6);
-        blr;)
+    valid:
+        lwz r5, 0x20B8(r6);
+        blr;
+    )
 }
 kmCall(0x8053D47C, CoinBattle_EarlyOutIfInvalid);
 

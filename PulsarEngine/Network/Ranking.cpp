@@ -585,7 +585,8 @@ asmFunc AsmHook_WFCMainOnActivateBadgeRefresh() {
         lwz r0, 0x24(r1);
         mtlr r0;
         addi r1, r1, 0x20;
-        blr;);
+        blr;
+    )
 }
 kmCall(0x8064bcd0, AsmHook_WFCMainOnActivateBadgeRefresh);
 

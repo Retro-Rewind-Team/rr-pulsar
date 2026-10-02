@@ -41,7 +41,8 @@ static asmFunc SetFFAmode() {
         mtlr r0;
         lwz r0, 0x10(r1);
         addi r1, r1, 0x20;
-        blr;);
+        blr;
+    )
 }
 kmCall(0x8053056c, SetFFAmode);
 

@@ -33,9 +33,10 @@ asmFunc MiiOutfitC1() {
         beq - end;
 
         li r26, 4;
-        end :;
+    end:
         cmplwi r0, 1;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8083E018, MiiOutfitC1);
 
@@ -52,9 +53,10 @@ asmFunc MiiOutfitC2() {
         beq - end;
 
         li r29, 4;
-        end :;
+    end:
         cmplwi r0, 1;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8083E64C, MiiOutfitC2);
 
@@ -83,11 +85,12 @@ asmFunc GetKartDriverDispEntryHook() {
 
         subi r4, r4, 2;
 
-        compute :;
+    compute:
         mulli r3, r4, 0x38;
         add r0, r5, r0;
         add r3, r3, r0;
-        blr;);
+        blr;
+    )
 }
 kmBranch(0x805924b4, GetKartDriverDispEntryHook);
 
@@ -166,7 +169,7 @@ asmFunc MiiOutfitCInitialFocus() {
         bne - select;
         b skip;
 
-        checkC :;
+    checkC:
         // Saved character is Outfit C: only match an Outfit C button.
         subi r5, r3, 0x1C;
         cmplwi r5, 0xD;
@@ -184,17 +187,18 @@ asmFunc MiiOutfitCInitialFocus() {
         andi.r5, r5, 1;
         beq - skip;
 
-        select :;
+    select:
         lis r12, __kAutoMap_0x807e2fb0 @h;
         ori r12, r12, __kAutoMap_0x807e2fb0 @l;
         mtctr r12;
         bctr;
 
-        skip :;
+    skip:
         lis r12, __kAutoMap_0x807e3064 @h;
         ori r12, r12, __kAutoMap_0x807e3064 @l;
         mtctr r12;
-        bctr;);
+        bctr;
+    )
 }
 kmBranch(0x807e2f7c, MiiOutfitCInitialFocus);
 
@@ -238,7 +242,7 @@ asmFunc MiiOutfitCDriverSlot() {
         stw r11, 0(r31);
         b done;
 
-        checkC :;
+    checkC:
         // Mii C check: r5 in {0x1C, 0x1D, 0x22, 0x23, 0x28, 0x29}.
         subi r0, r5, 0x1C;
         cmplwi r0, 0xD;
@@ -253,8 +257,9 @@ asmFunc MiiOutfitCDriverSlot() {
         addi r11, r11, 4;
         stw r11, 0(r31);
 
-        done :;
-        blr;)
+    done:
+        blr;
+    )
 }
 kmBranch(0x80830ee4, MiiOutfitCDriverSlot);
 kmPatchExitPoint(MiiOutfitCDriverSlot, 0x80830f18);
@@ -276,7 +281,7 @@ asmFunc MiiOutfitCDriverSlotSpecial() {
         addi r8, r8, 1;
         b doneSp;
 
-        checkCSp :;
+    checkCSp:
         // Mii C check.
         subi r0, r5, 0x1C;
         cmplwi r0, 0xD;
@@ -288,8 +293,9 @@ asmFunc MiiOutfitCDriverSlotSpecial() {
 
         addi r8, r8, 2;
 
-        doneSp :;
-        blr;)
+    doneSp:
+        blr;
+    )
 }
 kmBranch(0x80830d7c, MiiOutfitCDriverSlotSpecial);
 kmPatchExitPoint(MiiOutfitCDriverSlotSpecial, 0x80830da4);

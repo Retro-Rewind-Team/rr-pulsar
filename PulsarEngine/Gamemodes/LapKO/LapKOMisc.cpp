@@ -46,7 +46,8 @@ asmFunc LoadWifiRaceTimeLimit() {
         nofralloc;
         lis r4, sWifiRaceTimeLimit @ha;
         lwz r4, sWifiRaceTimeLimit @l(r4);
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8053F3BC, LoadWifiRaceTimeLimit);
 
@@ -63,8 +64,10 @@ asmFunc UpdateIdleDisconnectCounter() {
         beq increment;
         li r0, 0;
         blr;
-        increment : addi r0, r3, 1;
-        blr;)
+    increment:
+        addi r0, r3, 1;
+        blr;
+    )
 }
 kmCall(0x80521408, UpdateIdleDisconnectCounter);
 kmCall(0x8053EF6C, UpdateIdleDisconnectCounter);
@@ -90,9 +93,11 @@ asmFunc cameraIDHUD() {
         lwz r3, 0(r3);
         lwz r3, 4(r3);
         lbz r3, 0(r3);
-        original :;
+    original:
+        ;
         lwz r0, 0x14(sp);
-        blr;)
+        blr;
+    )
 }
 
 static void camerIDHUDLocal() {
@@ -118,7 +123,9 @@ asmFunc HideMapIcon() {
         beq end;
         ori r5, r5, 0x10;
 
-        end : blr;)
+    end:
+        blr;
+    )
 }
 kmCall(0x807EB290, HideMapIcon);
 
@@ -129,7 +136,9 @@ asmFunc HideNametag() {
         andis.r12, r12, 0xC;
         beq end;
         ori r0, r0, 0x10;
-        end : blr;)
+    end:
+        blr;
+    )
 }
 kmCall(0x807F09A4, HideNametag);
 
@@ -227,7 +236,8 @@ asmFunc LapCounterColorFix() {
         addi sp, sp, 0x10;
 
         mr r3, r28;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x807EF7E8, LapCounterColorFix);
 

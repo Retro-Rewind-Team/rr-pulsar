@@ -316,7 +316,8 @@ static asmFunc AdjustPlacement() {
 
         // Replaced instruction
         lis r3, -0x7f64;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x807bb614, AdjustPlacement);
 

@@ -198,7 +198,7 @@ static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
         cmpwi r28, 0xF;
         bne - end;
 
-        custom :;
+    custom:
         stwu r1, -0x10(r1);
         stw r11, 0x8(r1);
         li r0, 1;
@@ -207,8 +207,9 @@ static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
         lwz r11, 0x8(r1);
         addi r1, r1, 0x10;
 
-        end :;
-        blr;);
+    end:
+        blr;
+    )
 }
 kmCall(0x8079814c, UseThundercloudReceiveSoundForSpecialItems);
 
@@ -237,10 +238,11 @@ static asmFunc UseSpecialReceiveSoundForMegaThundercloud() {
         lis r11, specialItemReceiveSoundPitchPending @ha;
         stb r0, specialItemReceiveSoundPitchPending @l(r11);
 
-        restore :;
+    restore:
         lwz r11, 0x8(r1);
         addi r1, r1, 0x10;
-        blr;);
+        blr;
+    )
 }
 kmCall(0x80798028, UseSpecialReceiveSoundForMegaThundercloud);
 

@@ -494,7 +494,8 @@ asmFunc PatchImport() {  // r18 = handler
         lwz r6, ExpSELECTHandler.receivedPackets(r18);
         add r6, r6, r0;
         subi r6, r6, 0x40;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x80661140, PatchImport);
 
@@ -523,7 +524,8 @@ asmFunc PatchDecide() {  // r31 = handler
         mulli r0, r4, sizeof(PulSELECT);
         lwz r3, ExpSELECTHandler.receivedPackets(r31);
         add r3, r3, r0;
-        lhz r0, PulSELECT.pulVote(r3);)
+        lhz r0, PulSELECT.pulVote(r3);
+    )
 }
 kmCall(0x80661ef0, PatchDecide);
 
@@ -570,7 +572,8 @@ asmFunc SetPlayerDataPatch() {
         rlwinm r0, r7, 3, 0, 28;
         // Store the u16 pulVote (courseVote from r6)
         sth r6, ExpSELECTHandler.toSendPacket + PulSELECT.pulVote(r3);
-        blr;)
+        blr;
+    )
 }
 kmBranch(0x80660750, SetPlayerDataPatch);
 kmPatchExitPoint(SetPlayerDataPatch, 0x80660754);

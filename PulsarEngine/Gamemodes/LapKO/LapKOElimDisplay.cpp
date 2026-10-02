@@ -38,7 +38,8 @@ asmFunc playElimSound() {
         lmw r3, 0x8(sp);
         addi sp, sp, 0x80;
         mtlr r11;
-        blr;)
+        blr;
+    )
 }
 
 static const wchar_t *CopyNameSafe(const wchar_t *src, size_t srcMax, wchar_t *dst, size_t dstLen) {

@@ -45,7 +45,9 @@ asmFunc LoadSnowEffectFlag() {
         addi r1, r1, 0x10;
         bne end;
         lbz r0, 0x13e(r30);
-        end : blr;)
+    end:
+        blr;
+    )
 }
 kmCall(0x80691180, LoadSnowEffectFlag);
 kmCall(0x80696C88, LoadSnowEffectFlag);

@@ -63,7 +63,8 @@ static asmFunc FFAResults() {
         mtlr r0;
         lwz r0, 0x10(r1);
         addi r1, r1, 0x20;
-        blr;);
+        blr;
+    )
 }
 kmCall(0x80621e1c, FFAResults);
 

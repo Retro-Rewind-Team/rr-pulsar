@@ -35,7 +35,8 @@ asmFunc UpdateSlotWrapper() {
         bl UpdateSlot;
         mtlr r31;
         mr r31, r3;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x80840858, UpdateSlotWrapper);
 
@@ -141,7 +142,8 @@ asmFunc UseCorrectCourseWrapper() {
         bl UseCorrectCourse;
         lwz r0, 0x8(sp);
         mtlr r0;
-        blr;)
+        blr;
+    )
 }
 kmBranch(0x8052f224, UseCorrectCourseWrapper);
 kmPatchExitPoint(UseCorrectCourseWrapper, 0x8052f228);

@@ -728,8 +728,10 @@ static asmFunc ForceItemCollisionModeWhenBattleRoyale() {
         beq vanilla;
         li r4, 3;
         blr;
-        vanilla : lwz r4, 0xb70(r5);
-        blr;)
+    vanilla:
+        lwz r4, 0xb70(r5);
+        blr;
+    )
 }
 kmCall(0x80572814, ForceItemCollisionModeWhenBattleRoyale);
 
@@ -742,8 +744,10 @@ static asmFunc CompareKartCollisionModeWhenBattleRoyale() {
         beq vanilla;
         cmpwi r29, 1;
         blr;
-        vanilla : cmpwi r29, 0;
-        blr;)
+    vanilla:
+        cmpwi r29, 0;
+        blr;
+    )
 }
 kmCall(0x80570100, CompareKartCollisionModeWhenBattleRoyale);
 kmCall(0x80570494, CompareKartCollisionModeWhenBattleRoyale);
@@ -759,8 +763,10 @@ static asmFunc ForceKartCollisionBattleTypeWhenBattleRoyale() {
         beq vanilla;
         li r5, 3;
         blr;
-        vanilla : lwz r5, 0xb70(r4);
-        blr;)
+    vanilla:
+        lwz r5, 0xb70(r4);
+        blr;
+    )
 }
 kmCall(0x8057012c, ForceKartCollisionBattleTypeWhenBattleRoyale);
 kmCall(0x805704c4, ForceKartCollisionBattleTypeWhenBattleRoyale);
@@ -777,7 +783,8 @@ static asmFunc SetBalloonPoolCount() {
         cmpwi r12, 0;
         bnelr;
         rlwinm r0, r0, 1, 24, 30;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x808698c8, SetBalloonPoolCount);
 

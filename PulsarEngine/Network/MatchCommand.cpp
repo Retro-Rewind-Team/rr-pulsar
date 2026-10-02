@@ -24,7 +24,8 @@ asmFunc MoveSize() {  // Needed to get data size later
         nofralloc;
         mr r25, r28;
         li r28, 255;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x800dc3bc, MoveSize);
 
@@ -105,7 +106,8 @@ asmFunc ProcessWrapper() {
         bl Process;
         mtlr r31;
         rlwinm r0, r3, 0, 24, 31;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x800dc4a0, ProcessWrapper);
 

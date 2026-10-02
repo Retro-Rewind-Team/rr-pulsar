@@ -119,12 +119,14 @@ asmFunc BrakeDriftingSoundWrapper() {
         cmpwi r3, 0;
         beq + normal;
         li r0, 2;
-        normal : mtlr r27;
+    normal:
+        mtlr r27;
         mr r3, r28;
         rlwinm r27, r0, 30, 31, 31;
         rlwinm r28, r0, 31, 31, 31;
         rlwinm r30, r0, 0, 31, 31;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x806faff8, BrakeDriftingSoundWrapper);
 

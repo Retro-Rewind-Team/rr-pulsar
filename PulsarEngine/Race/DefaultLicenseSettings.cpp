@@ -22,7 +22,8 @@ static asmFunc SetNewLicenseVSDefaultsWrapper() {
         lwz r0, 0x8(sp);
         mtlr r0;
         add r6, r27, r26;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x80548070, SetNewLicenseVSDefaultsWrapper);
 

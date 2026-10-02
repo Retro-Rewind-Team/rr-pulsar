@@ -24,9 +24,10 @@ asmFunc MiiTag() {
         stw r11, 0x2C(r1);
         lwz r28, 0x2C(r1);
         blr;
-        original :;
+    original:
         lwz r28, 0x2C(r1);
-        blr;)
+        blr;
+    )
 }
 
 void PatchMiiTag() {

@@ -130,7 +130,8 @@ asmFunc LoadMainMenuControlCount() {
         nofralloc;
         lis r4, sMainMenuControlCount @ha;
         lwz r4, sMainMenuControlCount @l(r4);
-        blr;)
+        blr;
+    )
 }
 kmCall(0x80625E1C, LoadMainMenuControlCount);
 

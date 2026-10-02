@@ -104,7 +104,8 @@ asmFunc FriendStatusUsedIdx() {
         mr r30, r28;
         lis r12, friendStatusButtonUsedIdx @ha;
         stb r29, friendStatusButtonUsedIdx @l(r12);
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8064b548, FriendStatusUsedIdx);
 kmCall(0x8064de54, FriendStatusUsedIdx);  // after race
