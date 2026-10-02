@@ -28,9 +28,15 @@ public:
     }
 
     // Cup Functions
-    int GetTotalCupCount() const { return ctsCupCount + HasRegs() * 8; }  // good
-    int GetCtsTrackCount() const { return ctsCupCount * 4; }  // used by random, good, but also by settings and path
-    int GetEffectiveTrackCount() const { return (definedCTsCupCount + HasRegs() * 8) * 4; }  // settings and froom msgs
+    int GetTotalCupCount() const {
+        return ctsCupCount + HasRegs() * 8;
+    }  // good
+    int GetCtsTrackCount() const {
+        return ctsCupCount * 4;
+    }  // used by random, good, but also by settings and path
+    int GetEffectiveTrackCount() const {
+        return (definedCTsCupCount + HasRegs() * 8) * 4;
+    }  // settings and froom msgs
     void ToggleCTs(bool enabled);
     static void SetLayout();
     void GetExpertPath(char *dest, PulsarId id, TTMode mode, u8 variantIdx) const;
@@ -44,11 +50,21 @@ public:
     CourseId GetCorrectTrackSlot() const;
     inline int GetCorrectMusicSlot() const;
 
-    bool HasRegs() const { return hasRegs; }
-    bool HasOddCups() const { return hasOddCups; }
-    bool IsAlphabetical() const { return isAlphabeticalLayout; }
-    const u16 *GetAlphabeticalArray() const { return alphabeticalArray; }
-    const u16 *GetInvertedArray() const { return invertedAlphabeticalArray; }
+    bool HasRegs() const {
+        return hasRegs;
+    }
+    bool HasOddCups() const {
+        return hasOddCups;
+    }
+    bool IsAlphabetical() const {
+        return isAlphabeticalLayout;
+    }
+    const u16 *GetAlphabeticalArray() const {
+        return alphabeticalArray;
+    }
+    const u16 *GetInvertedArray() const {
+        return invertedAlphabeticalArray;
+    }
     // Validity
     bool IsValidCup(PulsarCupId id) {
         if (this->hasRegs && IsRegCup(id))
@@ -60,8 +76,10 @@ public:
     }
     bool IsValidTrack(PulsarId id) const {
         const u32 rawId = static_cast<u32>(id);
-        if (rawId <= 0x29) return true;
-        if (rawId < PULSARID_FIRSTCT) return false;
+        if (rawId <= 0x29)
+            return true;
+        if (rawId < PULSARID_FIRSTCT)
+            return false;
         return rawId - PULSARID_FIRSTCT < static_cast<u32>(this->GetCtsTrackCount());
     }
 
@@ -71,14 +89,20 @@ public:
     PulsarId RandomizeTrack() const;
 
     // Reg Check
-    static inline bool IsReg(PulsarId pulsarId) { return pulsarId < 0x100 || pulsarId == 0xFFFFU; }
-    static inline bool IsRegCup(PulsarCupId cupId) { return cupId < 8; }
+    static inline bool IsReg(PulsarId pulsarId) {
+        return pulsarId < 0x100 || pulsarId == 0xFFFFU;
+    }
+    static inline bool IsRegCup(PulsarCupId cupId) {
+        return cupId < 8;
+    }
 
     // Conversions
     static u32 ConvertCup_PulsarIdToRealId(PulsarCupId pulsarCupId);
     static u32 ConvertCup_PulsarIdToIdx(PulsarCupId pulsarCupId);
     static PulsarCupId ConvertCup_IdxToPulsarId(u32 cupIdx);
-    static inline PulsarCupId ConvertCup_PulsarTrackToCup(PulsarId pulsarId) { return static_cast<PulsarCupId>(pulsarId / 4); }
+    static inline PulsarCupId ConvertCup_PulsarTrackToCup(PulsarId pulsarId) {
+        return static_cast<PulsarCupId>(pulsarId / 4);
+    }
 
     static CourseId ConvertTrack_PulsarIdToRealId(PulsarId pulsarId);
     static PulsarId ConvertTrack_RealIdToPulsarId(CourseId id);  // ONLY FOR REGS
@@ -97,12 +121,22 @@ public:
     void ClearPendingVariant();
     u8 GetLastSelectedVariant(PulsarId id) const;
     void SetLastSelectedVariant(PulsarId id, u8 variantIdx);
-    PulsarId GetWinning() const { return this->winningCourse; }
-    u8 GetCurVariantIdx() const { return this->curVariantIdx; }
-    PulsarId GetSelected() const { return this->selectedCourse; };
-    void SetSelected(PulsarId id) { this->selectedCourse = id; }
+    PulsarId GetWinning() const {
+        return this->winningCourse;
+    }
+    u8 GetCurVariantIdx() const {
+        return this->curVariantIdx;
+    }
+    PulsarId GetSelected() const {
+        return this->selectedCourse;
+    };
+    void SetSelected(PulsarId id) {
+        this->selectedCourse = id;
+    }
     const char *GetFileName(PulsarId id, u8 variantIdx) const;
-    u32 GetTotalVariantCount() const { return this->totalVariantCount; }
+    u32 GetTotalVariantCount() const {
+        return this->totalVariantCount;
+    }
 
     // Cup variables can be public because they're seldom used and do not lead to faulty file loads
     PulsarCupId lastSelectedCup;  // 0
@@ -131,10 +165,18 @@ public:
     u32 ctOnlyCupCount;
     u32 battleCupCount;
 
-    u32 GetRetroTrackCount() const { return retroCupCount * 4; }
-    u32 GetCTOnlyTrackCount() const { return ctOnlyCupCount * 4; }
-    u32 GetBattleTrackCount() const { return battleCupCount * 4; }
-    u32 GetRetroPlusCTCupCount() const { return retroCupCount + ctOnlyCupCount; }
+    u32 GetRetroTrackCount() const {
+        return retroCupCount * 4;
+    }
+    u32 GetCTOnlyTrackCount() const {
+        return ctOnlyCupCount * 4;
+    }
+    u32 GetBattleTrackCount() const {
+        return battleCupCount * 4;
+    }
+    u32 GetRetroPlusCTCupCount() const {
+        return retroCupCount + ctOnlyCupCount;
+    }
 
     Track *mainTracks;  // 0x28
     Variant *variants;

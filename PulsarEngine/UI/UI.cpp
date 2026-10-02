@@ -55,9 +55,11 @@ kmCall(0x8063504c, CreateSection);
 kmWrite32(0x80635058, 0x60000000);
 
 void ExpSection::CreatePages(ExpSection &self, SectionId id) {
-    if (RegionPage::CreatePages(self)) return;
+    if (RegionPage::CreatePages(self))
+        return;
     const System *system = System::sInstance;
-    if (!self.hasAutoVote) self.CreateSectionPages(id);
+    if (!self.hasAutoVote)
+        self.CreateSectionPages(id);
     self.CreatePulPages();
 }
 kmCall(0x80622088, ExpSection::CreatePages);
@@ -184,7 +186,8 @@ void ExpSection::CreatePulPages() {
         this->CreateAndInitPage(*this, TransmissionSelect::id);
     }
 
-    const bool canOpenRestrictionSettings = this->Get<ExpFroom>() != nullptr || this->sectionId == SECTION_P1_WIFI || this->sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE || this->sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || this->sectionId == SECTION_P2_WIFI || this->sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE;
+    const bool canOpenRestrictionSettings = this->Get<ExpFroom>() != nullptr || this->sectionId == SECTION_P1_WIFI || this->sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE
+      || this->sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || this->sectionId == SECTION_P2_WIFI || this->sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE;
     if (canOpenRestrictionSettings && this->GetPulPage<SettingsPanel>() != nullptr) {
         if (this->GetPulPage<CharacterRestrictionPage>() == nullptr)
             this->CreateAndInitPage(*this, CharacterRestrictionPage::id);
@@ -330,7 +333,8 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
         self.pages[PAGE_CHARACTER_SELECT] = page;
     }
     page->Init(initId);
-    if (id == CharacterRestrictionPage::id) self.pages[PAGE_CHARACTER_SELECT] = characterSelect;
+    if (id == CharacterRestrictionPage::id)
+        self.pages[PAGE_CHARACTER_SELECT] = characterSelect;
 }
 kmBranch(0x80622d08, ExpSection::CreateAndInitPage);
 
@@ -354,7 +358,8 @@ void ExpSection::AddPageLayer(ExpSection &self, u32 id) {
 kmBranch(0x80622da0, ExpSection::AddPageLayer);
 
 Page *ExpSection::AddPageLayerAnimatedReturnTopLayer(ExpSection &self, u32 id, u32 animDirection) {
-    if (animDirection == 0xff) animDirection = self.animDirection;
+    if (animDirection == 0xff)
+        animDirection = self.animDirection;
     Page *page;
     if (id < PULPAGE_INITIAL) {
         page = self.pages[id];
@@ -362,7 +367,8 @@ Page *ExpSection::AddPageLayerAnimatedReturnTopLayer(ExpSection &self, u32 id, u
         page = self.pulPages[id - PULPAGE_INITIAL];
 
     self.activePages[++self.layerCount] = page;
-    if (animDirection != 0xffffffff) page->animationDirection = animDirection;  // inlined Page::SetAnimDirection
+    if (animDirection != 0xffffffff)
+        page->animationDirection = animDirection;  // inlined Page::SetAnimDirection
     page->Activate();
     return page;
 }
@@ -388,13 +394,15 @@ void ChangeImage(LayoutUIControl &control, const char *paneName, const char *tpl
             LayoutResourceAccessor *acc = *reinterpret_cast<LayoutResourceAccessor **>(section->resourceAccessorList);
             for (; acc != nullptr; acc = acc->prev) {
                 tplRes = static_cast<TPLPalettePtr>(acc->multiArcResourceAccessor.GetResource(lyt::res::RESOURCETYPE_TEXTURE, tplName));
-                if (tplRes) break;
+                if (tplRes)
+                    break;
             }
         }
     }
     if (tplRes != nullptr) {
         lyt::Pane *pane = control.layout.GetPaneByName(paneName);
-        if (pane) pane->GetMaterial()->GetTexMapAry()->ReplaceImage(tplRes);
+        if (pane)
+            pane->GetMaterial()->GetTexMapAry()->ReplaceImage(tplRes);
     }
 };
 
@@ -406,7 +414,8 @@ enum BMGType {
 BMGType isCustom;
 
 static int GetMsgIdxByBmgId(const BMGHolder &bmg, s32 bmgId) {
-    if (bmg.bmgFile == nullptr || bmg.messageIds == nullptr) return -1;
+    if (bmg.bmgFile == nullptr || bmg.messageIds == nullptr)
+        return -1;
     const BMGMessageIds &msgIds = *bmg.messageIds;
     int ret = -1;
     for (int i = 0; i < msgIds.msgCount; ++i) {
@@ -427,7 +436,8 @@ static const BMGHolder *GetCountryBmg() {
     static const void *loadedFile = nullptr;
 
     ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
-    if (archiveMgr == nullptr) return nullptr;
+    if (archiveMgr == nullptr)
+        return nullptr;
 
     void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/Country.bmg", nullptr);
     if (file == nullptr) {
@@ -448,7 +458,8 @@ static const BMGHolder *GetCharaNameBmg() {
     static const void *loadedFile = nullptr;
 
     ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
-    if (archiveMgr == nullptr) return nullptr;
+    if (archiveMgr == nullptr)
+        return nullptr;
 
     void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/CharaName.bmg", nullptr);
     if (file == nullptr) {
@@ -469,7 +480,8 @@ static const BMGHolder *GetCharaRRBmg() {
     static const void *loadedFile = nullptr;
 
     ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
-    if (archiveMgr == nullptr) return nullptr;
+    if (archiveMgr == nullptr)
+        return nullptr;
 
     void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/CharaRR.bmg", nullptr);
     if (file == nullptr) {
@@ -490,7 +502,8 @@ static const BMGHolder *GetCreditsBMG() {
     static const void *loadedFile = nullptr;
 
     ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
-    if (archiveMgr == nullptr) return nullptr;
+    if (archiveMgr == nullptr)
+        return nullptr;
 
     void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/Credits.bmg", nullptr);
     if (file == nullptr) {
@@ -512,10 +525,12 @@ static const BMGHolder *GetCommonBmg() {
     static const void *loadedArchive = nullptr;
 
     ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
-    if (archiveMgr == nullptr) return nullptr;
+    if (archiveMgr == nullptr)
+        return nullptr;
 
     ArchivesHolder *uiHolder = archiveMgr->archivesHolders[ARCHIVE_HOLDER_UI];
-    if (uiHolder == nullptr) return nullptr;
+    if (uiHolder == nullptr)
+        return nullptr;
 
     //  If custom assets archive is already mounted and unchanged, return cached BMGHolder
     if (uiHolder->archiveCount > 3) {
@@ -603,7 +618,8 @@ static int GetMsgIdxById(const BMGHolder &normalHolder, s32 bmgId) {
     isCustom = BMG_NORMAL;
     matchedCustomBmg = nullptr;
     ret = GetMsgIdxByBmgId(normalHolder, bmgId);
-    if (ret >= 0) return ret;
+    if (ret >= 0)
+        return ret;
 
     ret = GetMsgIdxByBmgId(System::sInstance->GetBMG(), bmgId);
     if (ret >= 0) {
@@ -629,7 +645,8 @@ kmBranch(0x805f8c88, GetMsgIdxById);
 
 wchar_t *GetMsgByMsgIdx(const BMGHolder &bmg, s32 msgIdx) {
     const BMGInfo &info = *bmg.info;
-    if (msgIdx < 0 || msgIdx >= info.msgCount) return nullptr;
+    if (msgIdx < 0 || msgIdx >= info.msgCount)
+        return nullptr;
     const u32 offset = info.entries[msgIdx].dat1Offset & 0xFFFFFFFE;
     const BMGData &data = *bmg.data;
     return reinterpret_cast<wchar_t *>((u8 *)&data + offset);
@@ -640,14 +657,16 @@ wchar_t *GetMsg(const BMGHolder &normalHolder, s32 msgIdx) {
     if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
         ret = GetMsgByMsgIdx(*matchedCustomBmg, msgIdx);
     }
-    if (ret == nullptr) ret = GetMsgByMsgIdx(normalHolder, msgIdx);
+    if (ret == nullptr)
+        ret = GetMsgByMsgIdx(normalHolder, msgIdx);
     return ret;
 }
 kmBranch(0x805f8cf0, GetMsg);
 
 const u8 *GetFontIndex(const BMGHolder &bmg, s32 msgIdx) {
     const BMGInfo &info = *bmg.info;
-    if (msgIdx < 0 || msgIdx >= info.msgCount) return nullptr;
+    if (msgIdx < 0 || msgIdx >= info.msgCount)
+        return nullptr;
     return &info.entries[msgIdx].font;
 };
 
@@ -656,7 +675,8 @@ const u8 *GetFont(const BMGHolder &normalHolder, s32 msgIdx) {
     if (isCustom == CUSTOM_BMG && matchedCustomBmg != nullptr) {
         ret = GetFontIndex(*matchedCustomBmg, msgIdx);
     }
-    if (ret == nullptr) ret = GetFontIndex(normalHolder, msgIdx);
+    if (ret == nullptr)
+        ret = GetFontIndex(normalHolder, msgIdx);
     return ret;
 }
 kmBranch(0x805f8d2c, GetFont);
@@ -682,8 +702,7 @@ void ResetMatColor(lyt::Pane *pane, u32 color) {
     mat->tevColours[1].a = 0xff;
 }
 void UnbindRLMC(lyt::Material *mat) {
-    for (ut::LinkList<lyt::AnimationLink, offsetof(lyt::AnimationLink, link)>::Iterator it = mat->animLinkList.GetBeginIter();
-         it != mat->animLinkList.GetEndIter(); ++it) {
+    for (ut::LinkList<lyt::AnimationLink, offsetof(lyt::AnimationLink, link)>::Iterator it = mat->animLinkList.GetBeginIter(); it != mat->animLinkList.GetEndIter(); ++it) {
         if (!it->disable) {
             lyt::AnimTransform *anim = it->animTrans;
             u32 idx = it->idx;
@@ -694,10 +713,12 @@ void UnbindRLMC(lyt::Material *mat) {
             const u32 *animInfoOffsets = ut::ConvertOffsToPtr<u32>(animContent, sizeof(*animContent));
             for (int i = 0; i < animContent->infoCount; ++i) {
                 const lyt::res::AnimationInfo *animInfo = ut::ConvertOffsToPtr<lyt::res::AnimationInfo>(animContent, animInfoOffsets[i]);
-                if (animInfo->kind == lyt::res::ANIMATIONTYPE_RLMC) mat->UnbindAnimation(anim);
+                if (animInfo->kind == lyt::res::ANIMATIONTYPE_RLMC)
+                    mat->UnbindAnimation(anim);
             }
         }
-        if (mat->animLinkList.GetSize() == 0) break;
+        if (mat->animLinkList.GetSize() == 0)
+            break;
     }
 }
 

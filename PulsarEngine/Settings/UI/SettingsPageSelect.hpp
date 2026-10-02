@@ -16,7 +16,8 @@ public:
     static const PulPageId id = PULPAGE_SETTINGSPAGESELECT;
 
     explicit SettingsPageSelect(bool badgeSelect = false);
-    ~SettingsPageSelect() override {}
+    ~SettingsPageSelect() override {
+    }
     void SetContext(Settings::SettingsContext context, PageId previousPage);
 
     void OnInit() override;
@@ -25,7 +26,9 @@ public:
     int GetActivePlayerBitfield() const override;
     int GetPlayerBitfield() const override;
     ManipulatorManager &GetManipulatorManager() override;
-    UIControl *CreateExternalControl(u32 id) override { return nullptr; }
+    UIControl *CreateExternalControl(u32 id) override {
+        return nullptr;
+    }
     UIControl *CreateControl(u32 id) override;
     void SetButtonHandlers(PushButton &button) override;
     void BeforeControlUpdate() override;
@@ -37,7 +40,8 @@ private:
     void SetBadgeButtonMessage(PushButton &button);
     void OnButtonClick(PushButton &button, u32 hudSlotId);
     void OnButtonSelect(PushButton &button, u32 hudSlotId);
-    void OnButtonDeselect(PushButton &button, u32 hudSlotId) {}
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId) {
+    }
 
     static const u32 settingsButtonCount = Settings::Params::maxContextPageCount + 1;
     static const u32 badgeButtonCount = Ranking::SPECIAL_BADGE_COUNT + 1;

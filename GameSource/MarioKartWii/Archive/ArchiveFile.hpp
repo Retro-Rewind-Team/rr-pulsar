@@ -16,8 +16,8 @@ public:
     ArchiveFile();  // 80518cc0
     virtual ~ArchiveFile();  // 80518cf4 vtable 808b2c78
     void Mount(EGG::Heap *heap);  // 80518dcc inlined in load
-    void Load(const char *path, EGG::Heap *mountHeap, bool isCompressed, s32 allocDirection,
-              EGG::Heap *dumpHeap = nullptr, EGG::Archive::FileInfo *info = nullptr);  // 80518e10 uses 1st heap if dumpHeap is nullptr
+    void Load(const char *path, EGG::Heap *mountHeap, bool isCompressed, s32 allocDirection, EGG::Heap *dumpHeap = nullptr,
+      EGG::Archive::FileInfo *info = nullptr);  // 80518e10 uses 1st heap if dumpHeap is nullptr
     void LoadUncompressed(const char *path, u32 r5, EGG::Heap *heap);  // 80518fa4 r5 unused
     // for example if the archive is included in static code
     void MountFromRawArchive(void *compressedArchive, u32 compressedSize, EGG::Heap *mountHeap, bool isCompressed);  // 80518fbc

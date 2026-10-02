@@ -9,10 +9,15 @@ namespace snd {
 class StrmSoundHandle {
 public:
     StrmSoundHandle(SoundHandle *handle);  // 800a8de4
-    ~StrmSoundHandle() { DetachSound(); }
-    bool IsAttachedSound() const { return sound != nullptr; }
+    ~StrmSoundHandle() {
+        DetachSound();
+    }
+    bool IsAttachedSound() const {
+        return sound != nullptr;
+    }
     void SetTrackVolume(unsigned long trackBitFlag, float volume, int frames = 0) {
-        if (IsAttachedSound()) sound->SetTrackVolume(trackBitFlag, volume, frames);
+        if (IsAttachedSound())
+            sound->SetTrackVolume(trackBitFlag, volume, frames);
     }
     void DetachSound();  // 800a8ef0
     detail::StrmSound *sound;

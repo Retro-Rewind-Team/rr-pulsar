@@ -22,8 +22,8 @@ public:
     const BasicPlayer &GetBasicPlayer() const override;  // 0x28 800ad820
     void OnUpdatePlayerPriority() override;  // 800ad6f0
 
-    bool WaveSound::Prepare(const void *waveSoundBase, s32 waveSoundOffset, WsdPlayer::StartOffsetType startOffsetType, s32 offset,
-                            const WsdPlayer::WsdCallback *callback, u32 callbackData);  // 800ad550
+    bool WaveSound::Prepare(
+      const void *waveSoundBase, s32 waveSoundOffset, WsdPlayer::StartOffsetType startOffsetType, s32 offset, const WsdPlayer::WsdCallback *callback, u32 callbackData);  // 800ad550
     void WaveSound::SetChannelPriority(int priority);  // 800ad6d0
     void WaveSound::SetReleasePriorityFix(bool fix);  // 800ad6e0
 

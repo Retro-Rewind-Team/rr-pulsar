@@ -64,8 +64,7 @@ struct _AssertEq {
     static_assert(lhs == rhs, "Assertion failed");
 };
 
-#define offsetof(st, m) \
-    ((const u32) & (((const st *)0)->m))
+#define offsetof(st, m) ((const u32) & (((const st *)0)->m))
 #endif
 
 #ifdef __INTELLISENSE__

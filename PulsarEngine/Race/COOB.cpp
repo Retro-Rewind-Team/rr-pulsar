@@ -25,7 +25,8 @@ s16 COOB(KMP::Manager *kmpMgr, const Vec3 &position, u32 areaIdToTestFirst, u8 a
                 u16 cp = raceInfoPlayer->checkpoint;
                 bool under1 = cp < s1;
                 bool over2 = cp >= s2;
-                if ((s2 >= s1 && (under1 || over2) || over2 && under1)) foundIdx = -1;
+                if ((s2 >= s1 && (under1 || over2) || over2 && under1))
+                    foundIdx = -1;
             }
         }
     }

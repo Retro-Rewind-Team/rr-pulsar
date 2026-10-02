@@ -28,10 +28,12 @@ public:
     };
 
     struct Stats {
-        Stats() : percentageSum(0.0f), racesPlayed(0) {}
+        Stats() : percentageSum(0.0f), racesPlayed(0) {
+        }
 
         struct Final {
-            Final() : timeInDanger(0), almostKOdCounter(0), finalPercentageSum(0) {}
+            Final() : timeInDanger(0), almostKOdCounter(0), finalPercentageSum(0) {
+            }
             u16 timeInDanger;
             u8 almostKOdCounter;
             u8 finalPercentageSum;  // Divided by race count at GP end
@@ -46,9 +48,7 @@ public:
 
     static void Create(Page *froom, u32 director, float length);
     static void Update();  // RaceFrameHook
-    static void ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr,
-                           size_t nitems, size_t size,
-                           int (*compar)(const void *, const void *));
+    static void ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr, size_t nitems, size_t size, int (*compar)(const void *, const void *));
 
     static int SortPlayersByPosition(PlayerPosition *a, PlayerPosition *b) {
         return a->position - b->position;
@@ -65,8 +65,10 @@ public:
             this->posTrackerAnmFrames[i] = 0;
         }
         for (int i = 0; i < 12; ++i) {
-            if (this->status[i][0] == TIE) this->status[i][0] = NORMAL;
-            if (this->status[i][1] == TIE) this->status[i][1] = NORMAL;
+            if (this->status[i][0] == TIE)
+                this->status[i][0] = NORMAL;
+            if (this->status[i][1] == TIE)
+                this->status[i][1] = NORMAL;
         }
     }
     void AddRaceStats();
@@ -114,14 +116,18 @@ public:
         return this->wouldBeOut[playerId];
     }
 
-    bool GetIsSwapped() const { return this->hasSwapped; }
+    bool GetIsSwapped() const {
+        return this->hasSwapped;
+    }
     void SwapControllersAndUI();
     void PatchAids(RKNet::ControllerSub &sub) const;
     PageId KickPlayersOut(PageId defaultId);
 
     SectionId GetSectionAfterKO(SectionId defaultId) const;
     u32 GetAidAndSlotFromPlayerId(u8 playerId) const;
-    u8 GetBaseLocalPlayerCount() const { return this->baseLocPlayerCount; }
+    u8 GetBaseLocalPlayerCount() const {
+        return this->baseLocPlayerCount;
+    }
 
     u8 GetRoundKoCount(u8 playerCount) const;
     bool Is1v1KoRace(u32 currentRaceNumber) const;

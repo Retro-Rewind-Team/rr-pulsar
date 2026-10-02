@@ -8,7 +8,9 @@
 #else
 #endif
 
-inline double fabs(double x) { return ::fabs(x); }
+inline double fabs(double x) {
+    return ::fabs(x);
+}
 double acos(double);
 double asin(double);
 double atan(double);

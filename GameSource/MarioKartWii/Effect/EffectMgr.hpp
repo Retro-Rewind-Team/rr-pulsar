@@ -58,7 +58,7 @@ public:
     void CreatePlayerEffects();  // 8067c4f4
     void CreateItemEffects();  // 8067c580
     void LoadObjectEffect(KMP::Holder<GOBJ> *gobj, const char *objectName, const char *breffPath, const char *breftPath,
-                          ArchiveSource source);  // 8067c5c0
+      ArchiveSource source);  // 8067c5c0
     void Update();  // 8067cb88
     void UpdatePlayersVisibility();  // 8067ce44 updates player effects visibility
     void Draw();  // 8067cf74 gets matrix from GameCamera then does stuff and ultimately draws

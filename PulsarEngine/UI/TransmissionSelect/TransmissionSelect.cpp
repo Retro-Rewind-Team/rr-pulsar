@@ -19,15 +19,15 @@ static Transmission selectedTransmission[4] = {
 
 static bool IsVanillaModeOnline() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    return controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
-           System::sInstance->IsVanillaMode();
+    return controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN && System::sInstance->IsVanillaMode();
 }
 
 static bool ShouldSkipTransmissionSelect(const System *system) {
-    if (IsVanillaModeOnline()) return true;
-    if (system->IsContext(PULSAR_STARTREGS)) return true;
-    return system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) ||
-           system->IsContext(PULSAR_TRANSMISSIONVANILLA);
+    if (IsVanillaModeOnline())
+        return true;
+    if (system->IsContext(PULSAR_STARTREGS))
+        return true;
+    return system->IsContext(PULSAR_TRANSMISSIONINSIDE) || system->IsContext(PULSAR_TRANSMISSIONOUTSIDE) || system->IsContext(PULSAR_TRANSMISSIONVANILLA);
 }
 
 static Transmission GetTransmissionFromButton(const PushButton &button) {
@@ -35,12 +35,14 @@ static Transmission GetTransmissionFromButton(const PushButton &button) {
 }
 
 Transmission GetSelectedTransmission(u32 hudSlotId) {
-    if (hudSlotId >= 4) return TRANSMISSION_INSIDE;
+    if (hudSlotId >= 4)
+        return TRANSMISSION_INSIDE;
     return selectedTransmission[hudSlotId];
 }
 
 void SetSelectedTransmission(u32 hudSlotId, Transmission transmission) {
-    if (hudSlotId < 4) selectedTransmission[hudSlotId] = transmission;
+    if (hudSlotId < 4)
+        selectedTransmission[hudSlotId] = transmission;
 }
 
 static void SetTransmissionMessages(Pages::Menu &menu) {
@@ -62,15 +64,18 @@ static void HideTransmissionExtras(Pages::Menu &menu) {
 }
 
 static void LoadTransmissionMovies(Pages::Menu &menu) {
-    if (IsNewChannel()) return;
-    if (Section::GetSceneId(SectionMgr::sInstance->curSection->sectionId) == SCENE_ID_GLOBE) return;
+    if (IsNewChannel())
+        return;
+    if (Section::GetSceneId(SectionMgr::sInstance->curSection->sectionId) == SCENE_ID_GLOBE)
+        return;
     char *thpNames[] = {"thp/button/transmissionType.thp"};
     menu.LoadMovies(thpNames, true);
 }
 
 static void CopyKartTimerToTransmission(Pages::Menu &menu) {
     TransmissionSelect *transmissionPage = ExpSection::GetSection()->GetPulPage<TransmissionSelect>();
-    if (transmissionPage == nullptr) return;
+    if (transmissionPage == nullptr)
+        return;
     transmissionPage->timer = static_cast<Pages::KartSelect &>(menu).timer;
 }
 
@@ -92,8 +97,10 @@ void TransmissionSelect::OnActivate() {
 }
 
 void TransmissionSelect::AfterControlUpdate() {
-    if (this->currentState != STATE_ACTIVE || this->timer == nullptr) return;
-    if (this->timer->countdown > 0.0f) return;
+    if (this->currentState != STATE_ACTIVE || this->timer == nullptr)
+        return;
+    if (this->timer->countdown > 0.0f)
+        return;
 
     PushButton *button;
     if (this->externControls[0]->IsSelected()) {

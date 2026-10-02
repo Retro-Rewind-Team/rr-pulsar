@@ -243,11 +243,7 @@ UIControl *ExtendedTeamSelect::CreateControl(u32 id) {
         const u32 idx = id - TEAM_ENTRY_0;
         this->AddControl(count, this->teamPlayerControl[idx], 0);
 
-        const char *anims[] = {
-            "Loop", "Loop", nullptr,
-            "Local", "Local", "NetOther", nullptr,
-            "LocalFlash", "FlashLocal", "FlashNetOther", nullptr,
-            nullptr};
+        const char *anims[] = {"Loop", "Loop", nullptr, "Local", "Local", "NetOther", nullptr, "LocalFlash", "FlashLocal", "FlashNetOther", nullptr, nullptr};
 
         char variant[16];
         snprintf(variant, 16, "Member%02d", idx);
@@ -375,41 +371,22 @@ struct InternalTeamColor {
     u8 text2[3];  // Darker color
 };
 
-static const InternalTeamColor TEAM_COLORS[TEAM_COUNT] = {
-    {// TEAM_RED
-     {255, 0, 0},
-     {230, 70, 0},
-     {180, 30, 0}},
+static const InternalTeamColor TEAM_COLORS[TEAM_COUNT] = {{// TEAM_RED
+                                                              {255, 0, 0}, {230, 70, 0}, {180, 30, 0}},
     {// TEAM_ORANGE
-     {255, 165, 0},
-     {255, 165, 0},
-     {255, 165, 0}},
+        {255, 165, 0}, {255, 165, 0}, {255, 165, 0}},
     {// TEAM_YELLOW
-     {255, 255, 0},
-     {255, 255, 0},
-     {255, 255, 0}},
+        {255, 255, 0}, {255, 255, 0}, {255, 255, 0}},
     {// TEAM_GREEN
-     {0, 255, 0},
-     {0, 255, 0},
-     {0, 255, 0}},
+        {0, 255, 0}, {0, 255, 0}, {0, 255, 0}},
     {// TEAM_BLUE
-     {0, 64, 255},
-     {0, 180, 255},
-     {80, 80, 255}},
+        {0, 64, 255}, {0, 180, 255}, {80, 80, 255}},
     {// TEAM_PURPLE
-     {128, 0, 128},
-     {128, 0, 128},
-     {128, 0, 128}
+        {128, 0, 128}, {128, 0, 128}, {128, 0, 128}
 
     }};
 
-static ExtendedTeamID teamColors[TEAM_COUNT] = {
-    TEAM_RED,
-    TEAM_ORANGE,
-    TEAM_YELLOW,
-    TEAM_GREEN,
-    TEAM_BLUE,
-    TEAM_PURPLE};
+static ExtendedTeamID teamColors[TEAM_COUNT] = {TEAM_RED, TEAM_ORANGE, TEAM_YELLOW, TEAM_GREEN, TEAM_BLUE, TEAM_PURPLE};
 
 void ExtendedTeamSelect::ResetTeamColors() {
     for (u32 i = 0; i < TEAM_COUNT; ++i) {

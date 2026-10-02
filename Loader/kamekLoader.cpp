@@ -40,8 +40,7 @@ static inline u32 resolveAddress(u32 text, u32 address) {
         return text + address;
 }
 
-#define kCommandHandler(name) \
-    static inline const u8 *kHandle##name(const u8 *input, u32 text, u32 address)
+#define kCommandHandler(name) static inline const u8 *kHandle##name(const u8 *input, u32 text, u32 address)
 #define kDispatchCommand(name)                       \
     case k##name:                                    \
         input = kHandle##name(input, text, address); \
@@ -147,14 +146,15 @@ static void LoadKamekBinary(LoaderParams *params, const void *binary, u32 binary
         DisplayError(params, err);
     }
 
-    params->OSReport("header: bssSize=%u, codeSize=%u, ctors=%u-%u\n",
-                     header->bssSize, header->codeSize, header->ctorStart, header->ctorEnd);
+    params->OSReport("header: bssSize=%u, codeSize=%u, ctors=%u-%u\n", header->bssSize, header->codeSize, header->ctorStart, header->ctorEnd);
 
     u32 textSize = header->codeSize + header->bssSize;
 
     EGG::ExpHeap *heap = params->rkSystem->EGGSystem;
-    if (isDol) text = (u32)heap->alloc(textSize, 0x20);
-    if (!text) DisplayError(params, "FATAL ERROR: Out of code memory");
+    if (isDol)
+        text = (u32)heap->alloc(textSize, 0x20);
+    if (!text)
+        DisplayError(params, "FATAL ERROR: Out of code memory");
 
     const u8 *input = ((const u8 *)binary) + sizeof(KBHeader);
     const u8 *inputEnd = ((const u8 *)binary) + binaryLength;
@@ -195,7 +195,8 @@ static void LoadKamekBinary(LoaderParams *params, const void *binary, u32 binary
                 continue;
             input += 4;
         } else {
-            if (!isDol) continue;
+            if (!isDol)
+                continue;
             // Relative address
             address += text;
         }
@@ -279,7 +280,8 @@ void LoadKamekBinaryFromDisc(LoaderParams *params) {
         }
 
         DVD::FileInfo fileInfo;
-        if (!params->DVDFastOpen(entrynum, &fileInfo)) DisplayError(params, "FATAL ERROR: Failed to open file!");
+        if (!params->DVDFastOpen(entrynum, &fileInfo))
+            DisplayError(params, "FATAL ERROR: Failed to open file!");
         params->OSReport("DVD file located: addr=%p, size=%d\n", fileInfo.startAddr, fileInfo.length);
 
         alignas(0x20) u32 sizes[4];
@@ -291,12 +293,14 @@ void LoadKamekBinaryFromDisc(LoaderParams *params) {
 
         isDol = true;
         codePulHeap = params->rkSystem->EGGRootMEM2;
-        if (codePulHeap != nullptr) codePulBuf = codePulHeap->alloc(roundedLength, -0x20);
+        if (codePulHeap != nullptr)
+            codePulBuf = codePulHeap->alloc(roundedLength, -0x20);
         if (codePulBuf == nullptr) {
             codePulHeap = params->rkSystem->EGGSystem;
             codePulBuf = codePulHeap->alloc(roundedLength, -0x20);
         }
-        if (!codePulBuf) DisplayError(params, "FATAL ERROR: Out of file memory");
+        if (!codePulBuf)
+            DisplayError(params, "FATAL ERROR: Out of file memory");
         u32 offset = sizeof(u32) * 4;
         u32 region = PAL;
         while (region < params->region) {
@@ -308,5 +312,6 @@ void LoadKamekBinaryFromDisc(LoaderParams *params) {
     }
 
     LoadKamekBinary(params, codePulBuf, sectionLength, isDol);
-    if (!isDol) heap->free(codePulBuf);
+    if (!isDol)
+        heap->free(codePulBuf);
 }

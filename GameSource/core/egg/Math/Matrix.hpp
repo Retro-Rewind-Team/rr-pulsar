@@ -17,10 +17,7 @@ struct Matrix34f : nw4r::math::MTX34 {
     Matrix34f() {};
     void TryInverseTo(Matrix34f &dest) const;  // 8022f90c dest will be identity if det(this) == 0
     void CalcRPY(Vector3f &dest);  // 8022fb04
-    void Set(float n00, float n01, float n02,
-             float n03, float n10, float n11,
-             float n12, float n13, float n20,
-             float n21, float n22, float n23);  // 8022fbf0
+    void Set(float n00, float n01, float n02, float n03, float n10, float n11, float n12, float n13, float n20, float n21, float n22, float n23);  // 8022fbf0
 
     void InverseTo(Matrix34f &dest) const;  // 8022fabc
     void InverseTransposeTo(Matrix34f &dest) const;  // 8022fac0

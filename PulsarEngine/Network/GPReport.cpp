@@ -28,16 +28,11 @@ void Report(const char *key, const char *string) {
 
     GP::IConnection *iconnection = reinterpret_cast<GP::IConnection *>(*connection);
 
-    GP::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, "\\wl:report\\\\");
-    GP::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, key);
-    GP::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, "\\");
-    GP::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, string);
-    GP::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, "\\final\\");
+    GP::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, "\\wl:report\\\\");
+    GP::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, key);
+    GP::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, "\\");
+    GP::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, string);
+    GP::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, "\\final\\");
 }
 
 void ReportU32(const char *key, u32 uint) {

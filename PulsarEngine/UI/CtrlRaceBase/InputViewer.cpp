@@ -32,10 +32,11 @@ static bool IsBrakeDriftingEnabled() {
     const GameMode mode = scenario.settings.gamemode;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
-    return Race::Has200ccPhysics() ||
-           (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
-            mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
+    if (isOnlineRoomActive && System::sInstance->IsVanillaMode())
+        return false;
+    return Race::Has200ccPhysics()
+      || (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL
+        && !System::sInstance->IsContext(PULSAR_MODE_OTT));
 }
 
 void CtrlRaceInputViewer::Init() {
@@ -165,8 +166,10 @@ u32 CtrlRaceInputViewer::Count() {
         const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
         u32 localPlayerCount = scenario.localPlayerCount;
         const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-        if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) localPlayerCount += 1;
-        if (localPlayerCount == 0 && (scenario.settings.gametype & GAMETYPE_ONLINE_SPECTATOR)) localPlayerCount = 1;
+        if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU)
+            localPlayerCount += 1;
+        if (localPlayerCount == 0 && (scenario.settings.gametype & GAMETYPE_ONLINE_SPECTATOR))
+            localPlayerCount = 1;
         return localPlayerCount;
     }
     return 0;
@@ -243,10 +246,8 @@ void CtrlRaceInputViewer::setStick(Vec2 state) {
 
     // Map range [-1, 1] -> [-width * 5 / 19, width * 5 / 19]
     f32 scale = 5.0f / 19.0f;
-    m_stickPane->trans.x =
-        m_stickOrigin.x + scale * state.x * m_stickPane->scale.x * m_stickPane->size.x;
-    m_stickPane->trans.y =
-        m_stickOrigin.y + scale * state.z * m_stickPane->scale.z * m_stickPane->size.z;
+    m_stickPane->trans.x = m_stickOrigin.x + scale * state.x * m_stickPane->scale.x * m_stickPane->size.x;
+    m_stickPane->trans.y = m_stickOrigin.y + scale * state.z * m_stickPane->scale.z * m_stickPane->size.z;
 
     m_stickState = state;
 }

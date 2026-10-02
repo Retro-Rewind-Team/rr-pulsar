@@ -15,8 +15,11 @@ u32 CtrlRaceMusicInfoDisplay::lastCourse = -1;
 u32 CtrlRaceTrackInfoDisplay::Count() {
     const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
     const PulsarId winning = CupsConfig::sInstance->GetWinning();
-    if (CupsConfig::IsReg(winning)) return 0;
-    if ((gamemode == MODE_GRAND_PRIX) || (gamemode == MODE_VS_RACE) || (gamemode == MODE_PUBLIC_VS) || (gamemode == MODE_PRIVATE_VS) || (gamemode == MODE_BATTLE) || (gamemode == MODE_PRIVATE_BATTLE) || (gamemode == MODE_PUBLIC_BATTLE)) return 1;
+    if (CupsConfig::IsReg(winning))
+        return 0;
+    if ((gamemode == MODE_GRAND_PRIX) || (gamemode == MODE_VS_RACE) || (gamemode == MODE_PUBLIC_VS) || (gamemode == MODE_PRIVATE_VS) || (gamemode == MODE_BATTLE) || (gamemode == MODE_PRIVATE_BATTLE)
+      || (gamemode == MODE_PUBLIC_BATTLE))
+        return 1;
     if (gamemode == MODE_TIME_TRIAL && winning != lastCourse) {
         lastCourse = winning;
         return 1;
@@ -41,7 +44,8 @@ void CtrlRaceTrackInfoDisplay::Load() {
     const PulsarId winning = cupsConfig->GetWinning();
     const u32 bmgId = GetCurTrackBMG();
 
-    if (SetTrackNameAuthorMessage(*this, winning, bmgId)) return;
+    if (SetTrackNameAuthorMessage(*this, winning, bmgId))
+        return;
 
     Text::Info info;
     info.bmgToPass[0] = bmgId;
@@ -50,17 +54,21 @@ void CtrlRaceTrackInfoDisplay::Load() {
 }
 
 u32 CtrlRaceMusicInfoDisplay::Count() {
-    if (!Settings::Mgr::IsCreated() || Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) != CTMUSIC_ENABLED) return 0;
+    if (!Settings::Mgr::IsCreated() || Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) != CTMUSIC_ENABLED)
+        return 0;
 
     const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
     const PulsarId winning = CupsConfig::sInstance->GetWinning();
-    if (CupsConfig::IsReg(winning)) return 0;
+    if (CupsConfig::IsReg(winning))
+        return 0;
 
     const wchar_t *credit = GetCustomMsg(GetTrackMusicCreditBMGId(winning));
-    if (credit == nullptr || credit[0] == L'\0') return 0;
+    if (credit == nullptr || credit[0] == L'\0')
+        return 0;
 
     if (gamemode == MODE_TIME_TRIAL) {
-        if (winning == lastCourse) return 0;
+        if (winning == lastCourse)
+            return 0;
         lastCourse = winning;
     }
 
@@ -92,12 +100,15 @@ void CtrlRaceMusicInfoDisplay::Load() {
 }
 
 bool CtrlRaceMusicInfoDisplay::IsDisplayActive() {
-    if (!Settings::Mgr::IsCreated() || Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) != CTMUSIC_ENABLED) return false;
+    if (!Settings::Mgr::IsCreated() || Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) != CTMUSIC_ENABLED)
+        return false;
 
     Raceinfo *raceInfo = Raceinfo::sInstance;
-    if (raceInfo == nullptr || raceInfo->timerMgr == nullptr || !raceInfo->timerMgr->hasRaceStarted) return false;
+    if (raceInfo == nullptr || raceInfo->timerMgr == nullptr || !raceInfo->timerMgr->hasRaceStarted)
+        return false;
 
-    if (this->startTime == 0) this->startTime = OS::GetTime();
+    if (this->startTime == 0)
+        this->startTime = OS::GetTime();
     return OS::TicksToMilliseconds(OS::GetTime() - this->startTime) < 3000;
 }
 

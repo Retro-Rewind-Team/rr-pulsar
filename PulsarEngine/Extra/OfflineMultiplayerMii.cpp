@@ -15,10 +15,12 @@ static void LoadStoreMii(MiiGroup &miiGroup, u8 idx, RFL::CreateID *createId) {
 static void LoadLicenseMiiForOfflineMultiplayer() {
     SectionMgr *const sectionMgr = SectionMgr::sInstance;
     RKSYS::Mgr *const rksysMgr = RKSYS::Mgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || rksysMgr == nullptr) return;
+    if (sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || rksysMgr == nullptr)
+        return;
 
     const u32 licenseId = rksysMgr->curLicenseId;
-    if (licenseId >= 4 || !rksysMgr->CheckLicenseMagic(licenseId)) return;
+    if (licenseId >= 4 || !rksysMgr->CheckLicenseMagic(licenseId))
+        return;
 
     SectionParams *const params = sectionMgr->sectionParams;
     const u32 localPlayerCount = params->localPlayerCount > 4 ? 4 : params->localPlayerCount;
@@ -33,9 +35,11 @@ kmRuntimeUse(0x80860484);
 static bool ShouldUseDirectMiiSelect(u32 sectionId) {
     typedef bool (*IsDirectMiiSelectSectionFn)(u32);
     const IsDirectMiiSelectSectionFn original = reinterpret_cast<IsDirectMiiSelectSectionFn>(kmRuntimeAddr(0x80860484));
-    if (original(sectionId)) return true;
+    if (original(sectionId))
+        return true;
 
-    if (sectionId != SECTION_LOCAL_MULTIPLAYER) return false;
+    if (sectionId != SECTION_LOCAL_MULTIPLAYER)
+        return false;
 
     LoadLicenseMiiForOfflineMultiplayer();
     return true;

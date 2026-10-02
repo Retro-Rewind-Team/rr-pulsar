@@ -114,7 +114,9 @@ public:
         static_assert(is_base_of<Page, T>::value, "Not a Page");
         return static_cast<T *>(this->pages[id]);
     }
-    inline void Set(Page *t, PageId id) { this->pages[id] = t; }
+    inline void Set(Page *t, PageId id) {
+        this->pages[id] = t;
+    }
 };  // Total Size 0x408
 // size_assert(Section, 0x408);
 

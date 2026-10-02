@@ -12,7 +12,8 @@ the channel switch will not happen*/
 int CheckChannelCount(const Audio::StreamsMgr &, u32 channel, const nw4r::snd::detail::BasicSound &sound) {
     u32 soundId = sound.soundId;
     const snd::SoundArchive *soundArchive = Audio::Manager::sInstance->soundArchivePlayer->soundArchive;
-    if (soundArchive->GetSoundType(soundId) != snd::SoundArchive::SOUND_TYPE_STRM) return soundId;
+    if (soundArchive->GetSoundType(soundId) != snd::SoundArchive::SOUND_TYPE_STRM)
+        return soundId;
 
     // cannot use StrmPlayer::channelsNeeded because it may have been overwritten by LoadBRSTMVolumeAndFixTrackCount; therefore, must fetch from the BRSAR entry again
     snd::SoundArchive::StrmSoundInfo info;

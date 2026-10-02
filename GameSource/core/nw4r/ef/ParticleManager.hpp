@@ -37,8 +37,8 @@ public:
     void SendClosing() override;  // 0x8 80033490 vtable 80272500
     void DestroyFunc() override;  // 0xc 800334a0
     virtual bool Initialize(Emitter *parent, EmitterResource *resource);  // 0x10 800335f0
-    virtual Particle *CreateParticle(u16 life, math::VEC3 position, math::VEC3 velocity, const math::MTX34 *space,
-                                     float momentum, const EmitterInheritSetting *setting, Particle *sourceParticle, u16 calcRemain = 0);  // 0x14 80033780
+    virtual Particle *CreateParticle(u16 life, math::VEC3 position, math::VEC3 velocity, const math::MTX34 *space, float momentum, const EmitterInheritSetting *setting, Particle *sourceParticle,
+      u16 calcRemain = 0);  // 0x14 80033780
     virtual void Calc();  // 0x18 800338b0
     virtual void Draw(const DrawInfo &drawInfo);  // 0x1c 80034f80
 

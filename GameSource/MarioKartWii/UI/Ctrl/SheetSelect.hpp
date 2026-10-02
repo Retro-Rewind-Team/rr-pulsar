@@ -15,8 +15,7 @@ public:
         void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 0x20 80637344
         const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 806374ac
         const char *GetClassName() const override;  // 0x2c 80636460
-        void Load(u32 buttonId, const char *folderName, const char *ctrName, const char *variant,
-                  const char **anims, bool r8, bool inaccessible);  // 806365cc
+        void Load(u32 buttonId, const char *folderName, const char *ctrName, const char *variant, const char **anims, bool r8, bool inaccessible);  // 806365cc
         void HandleSelect(u32 hudSlotId, u32 childIdx);  // 80636d08
         void HandleDeselect(u32 hudSlotId, u32 childIdx);  // 80636fc4
         void HandleScroll(u32 hudSlotId, u32 childIdx);  // 806371ac
@@ -45,8 +44,8 @@ public:
     virtual void AfterRightScroll();  // 0x3c 806363d4 just a blr
     virtual void AfterLeftScroll();  // 0x40 8063645c just a blr
     virtual int GetArrowAnimationType() const;  // 0x44 80637474 returns 0, if changed to 1 the arrows pop instead of sliding to the sides
-    void Load(const char *folderName, const char *rightArrowctrName, const char *rightArrowVariantName,
-              const char *leftArrowctrname, const char *leftArrowVariantName, u32 localPlayerBitfield, bool r10, bool inaccessible);  // 80636120
+    void Load(const char *folderName, const char *rightArrowctrName, const char *rightArrowVariantName, const char *leftArrowctrname, const char *leftArrowVariantName, u32 localPlayerBitfield,
+      bool r10, bool inaccessible);  // 80636120
     void SetRightArrowHandler(const PtmfHolder_2A<Page, void, SheetSelectControl &, u32> &handler);  // 806361e8
     void SetLeftArrowHandler(const PtmfHolder_2A<Page, void, SheetSelectControl &, u32> &handler);  // 806361f0
     void HandleRightArrowSelect(u32 hudSlotId);  // 80636350 inlined triggers ptmf at 0x98
@@ -66,7 +65,8 @@ public:
 
 class SheetSelectControlScaleFade : public SheetSelectControl {
 public:
-    SheetSelectControlScaleFade() {}
+    SheetSelectControlScaleFade() {
+    }
     ~SheetSelectControlScaleFade() override;  // 805dbfdc vtable 808BE908
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80637494
     const char *GetClassName() const override;  // 0x2c 8063747c

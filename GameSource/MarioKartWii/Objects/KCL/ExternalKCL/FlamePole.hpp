@@ -38,10 +38,8 @@ class FlamePole : public ObjectExternKCL, public StatePtmfTrigger<FlamePole> {  
     int vf_0x11c(CollisionInfo::ObjInfo *otherEntityObjInfo) override;  // 0x11c 806814a4
     const Mtx34 &GetTransformationMatrix(u32 framesOffset) override;  // 0x12c 8067fbb8
     float GetYScale() const override;  // 0x130 8067fc50
-    bool IsCollidingNoTriangleCheckImpl(const Vec3 &pos, const Vec3 &prevPos,
-                                        KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x148 8067fe88
-    bool IsCollidingImpl(const Vec3 &pos, const Vec3 &prevPos,
-                         KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x14c 80680218
+    bool IsCollidingNoTriangleCheckImpl(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x148 8067fe88
+    bool IsCollidingImpl(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x14c 80680218
     // StatePtmfTrigger vtable 808c11e8 at 0x104
     //~FlamePole() override; //thunk 80681868
 

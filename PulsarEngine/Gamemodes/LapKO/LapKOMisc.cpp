@@ -8,9 +8,11 @@ namespace LapKO {
 
 static void FrameUpdate() {
     System *system = System::sInstance;
-    if (!system->IsContext(PULSAR_MODE_LAPKO)) return;
+    if (!system->IsContext(PULSAR_MODE_LAPKO))
+        return;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
+    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST)
+        return;
     system->lapKoMgr->UpdateFrame();
 }
 static RaceFrameHook lapKoFrameHook(FrameUpdate);
@@ -26,10 +28,13 @@ static void WifiEdits() {
 #endif
 
     System *system = System::sInstance;
-    if (system == nullptr) return;
-    if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)) return;
+    if (system == nullptr)
+        return;
+    if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE))
+        return;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
+    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST)
+        return;
 
     sWifiRaceTimeLimit = 900000;
     sDisableIdleDisconnect = true;
@@ -133,12 +138,14 @@ static ItemId DecideItemHook(Item::ItemSlotData *slotData, u16 setting, u8 posit
 
     System *system = System::sInstance;
     if (ItemRain::IsItemRainEnabled()) {
-        if (item == GREEN_SHELL || item == RED_SHELL || item == BLUE_SHELL || item == BANANA || item == BOBOMB || item == TRIPLE_BANANA || item == TRIPLE_GREEN_SHELL || item == TRIPLE_RED_SHELL || item == FAKE_ITEM_BOX) {
+        if (item == GREEN_SHELL || item == RED_SHELL || item == BLUE_SHELL || item == BANANA || item == BOBOMB || item == TRIPLE_BANANA || item == TRIPLE_GREEN_SHELL || item == TRIPLE_RED_SHELL
+          || item == FAKE_ITEM_BOX) {
             return MUSHROOM;
         }
     }
 
-    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return item;
+    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO))
+        return item;
 
     if (item == BLUE_SHELL) {
         LapKO::Mgr *lapKoMgr = system->lapKoMgr;
@@ -147,7 +154,8 @@ static ItemId DecideItemHook(Item::ItemSlotData *slotData, u16 setting, u8 posit
         }
 
         const Raceinfo *ri = Raceinfo::sInstance;
-        if (ri == nullptr) return item;
+        if (ri == nullptr)
+            return item;
 
         u8 playerCount = Item::Manager::sInstance->playerCount;
         if (playerCount < 6) {
@@ -156,12 +164,14 @@ static ItemId DecideItemHook(Item::ItemSlotData *slotData, u16 setting, u8 posit
             u8 firstId = ri->playerIdInEachPosition[0];
             u8 secondId = ri->playerIdInEachPosition[1];
 
-            if (firstId >= 12 || secondId >= 12) return item;
+            if (firstId >= 12 || secondId >= 12)
+                return item;
 
             RaceinfoPlayer *first = ri->players[firstId];
             RaceinfoPlayer *second = ri->players[secondId];
 
-            if (first == nullptr || second == nullptr) return item;
+            if (first == nullptr || second == nullptr)
+                return item;
 
             float diff = first->raceCompletion - second->raceCompletion;
 
@@ -177,8 +187,10 @@ kmCall(0x807ba160, DecideItemHook);
 // Fix Lap Counter Color in LapKO [Saucy]
 extern "C" void LapCounterColorFixHelper(CtrlRaceBase *self) {
     System *system = System::sInstance;
-    if (self == nullptr) return;
-    if (system == nullptr || (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE))) return;
+    if (self == nullptr)
+        return;
+    if (system == nullptr || (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)))
+        return;
 
     const char *leftPane = nullptr;
     if (self->layout.GetPaneByName("lap_lefft") != nullptr) {
@@ -194,8 +206,10 @@ extern "C" void LapCounterColorFixHelper(CtrlRaceBase *self) {
         rightPane = "lap_right";
     }
 
-    if (leftPane != nullptr) self->HudSlotColorEnable(leftPane, true);
-    if (rightPane != nullptr) self->HudSlotColorEnable(rightPane, true);
+    if (leftPane != nullptr)
+        self->HudSlotColorEnable(leftPane, true);
+    if (rightPane != nullptr)
+        self->HudSlotColorEnable(rightPane, true);
 }
 
 asmFunc LapCounterColorFix() {

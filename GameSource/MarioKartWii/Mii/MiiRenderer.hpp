@@ -101,7 +101,8 @@ public:
     EGG::LightMgr *lightMgr;  // 0x148
     u8 unknown_0x14c[0x14c - 0x134];
     CalcWorldCB *calcWorld;  // 0x15c
-    u16 xPercentage;  // 0x160 100% = one mii per position, 25% = 4 miis per position, for example CarA creates/draws all positions are once, with 3 miis and 3pos, and it uses a % of 100 so that one mii is used per pos
+    u16
+      xPercentage;  // 0x160 100% = one mii per position, 25% = 4 miis per position, for example CarA creates/draws all positions are once, with 3 miis and 3pos, and it uses a % of 100 so that one mii is used per pos
     u16 xPercentage;
     EGG::OutlineEffect outlineEffect;  // 0x164
     u8 unknown_0x1a0[0x1bc - 0x1a0];

@@ -5,13 +5,17 @@
 namespace Pulsar {
 namespace UI {
 u32 CtrlRaceSpeedo::Count() {
-    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPEEDOMETER) == SOM_DISABLED) return 0;
+    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPEEDOMETER) == SOM_DISABLED)
+        return 0;
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    if (scenario.localPlayerCount > 1) return 0;
+    if (scenario.localPlayerCount > 1)
+        return 0;
     u32 localPlayerCount = scenario.localPlayerCount;
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) localPlayerCount += 1;
-    if (localPlayerCount == 0 && (scenario.settings.gametype & GAMETYPE_ONLINE_SPECTATOR)) localPlayerCount = 1;
+    if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU)
+        localPlayerCount += 1;
+    if (localPlayerCount == 0 && (scenario.settings.gametype & GAMETYPE_ONLINE_SPECTATOR))
+        localPlayerCount = 1;
     return localPlayerCount;
 }
 void CtrlRaceSpeedo::Create(Page &page, u32 index, u32 count) {
@@ -30,15 +34,8 @@ static CustomCtrlBuilder SOM(CtrlRaceSpeedo::Count, CtrlRaceSpeedo::Create);
 void CtrlRaceSpeedo::Load(const char *variant, u8 id) {
     this->hudSlotId = id;
     ControlLoader loader(this);
-    const char *anims[] = {
-        "Hundreds", "Hundreds", nullptr,
-        "Tens", "Tens", nullptr,
-        "Units", "Units", nullptr,
-        "Dot", "Dot", nullptr,
-        "Tenths", "Tenths", nullptr,
-        "Hundredths", "Hundredths", nullptr,
-        "Thousandths", "Thousandths", nullptr,
-        nullptr};
+    const char *anims[] = {"Hundreds", "Hundreds", nullptr, "Tens", "Tens", nullptr, "Units", "Units", nullptr, "Dot", "Dot", nullptr, "Tenths", "Tenths", nullptr, "Hundredths", "Hundredths", nullptr,
+        "Thousandths", "Thousandths", nullptr, nullptr};
 
     loader.Load(UI::raceFolder, "PULSpeedo", variant, anims);
 
@@ -70,7 +67,8 @@ void CtrlRaceSpeedo::OnUpdate() {
     MTX::PSVECAdd(&physics->speed3, &sum, &sum);
     float speed = MTX::PSVECMag(&sum);
     float speedCap = pointers.kartMovement->hardSpeedLimit;
-    if (speed > speedCap) speed = speedCap;
+    if (speed > speedCap)
+        speed = speedCap;
 
     const u32 speedValue = static_cast<u32>(speed * 1000.0f);
 
@@ -110,7 +108,8 @@ void CtrlRaceSpeedo::Animate(const SpeedArg *args) {
     for (int i = 0; i < 7; ++i) {
         AnimationGroup &group = this->animator.GetAnimationGroupById(i);
         float frame = 0.0f;
-        if (args != nullptr) frame = static_cast<float>(args->values[i]);
+        if (args != nullptr)
+            frame = static_cast<float>(args->values[i]);
         group.PlayAnimationAtFrameAndDisable(0, frame);
     }
 }

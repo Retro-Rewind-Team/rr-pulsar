@@ -34,8 +34,8 @@ public:
     virtual void OnDeactivateingEnd();  // 0x3c 80605d50
     virtual void func_0x40();  // 0x40 806070e4
 
-    void Load(u32 buttonsCount, u32 initialButtonId, const char *folderName, const char *ctrName, const char *variant,
-              const char *optionCtrName, const char **optionVariants, u32 localPlayerBitfield, u8 arg10, u8 arg11);  // 8060594c
+    void Load(u32 buttonsCount, u32 initialButtonId, const char *folderName, const char *ctrName, const char *variant, const char *optionCtrName, const char **optionVariants, u32 localPlayerBitfield,
+      u8 arg10, u8 arg11);  // 8060594c
     void SelectInitialButton(u8 hudSlotId);  // 80605d74
     void HandleSelect(u32 hudSlotId, u32 curChildId);  // 806062d8
     void HandleDeselect(u32 hudSlotId, u32 curChildId);  // 80606434

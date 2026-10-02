@@ -16,8 +16,7 @@ class Sound3DManager;
 namespace detail {
 class Sound3DEngineInterface {
     virtual ~Sound3DEngineInterface();
-    virtual void UpdateAmbientParam(const Sound3DManager *manager, const Sound3DParam *actorParam, u32 soundId,
-                                    int voiceOutCount, SoundAmbientParam *param) = 0;
+    virtual void UpdateAmbientParam(const Sound3DManager *manager, const Sound3DParam *actorParam, u32 soundId, int voiceOutCount, SoundAmbientParam *param) = 0;
     virtual int GetAmbientPriority(const Sound3DManager *manager, const Sound3DParam *actorParam, u32 soundId) = 0;
     virtual int GetRequiredVoiceOutCount(const Sound3DManager *manager, const Sound3DParam *actorParam, u32 soundId) = 0;
 };

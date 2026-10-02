@@ -28,9 +28,15 @@ public:
     static bool ShouldSkipFriendRoomPreview();
 
     // Menu virtuals
-    int GetActivePlayerBitfield() const override { return this->activePlayerBitfield; }
-    int GetPlayerBitfield() const override { return this->playerBitfield; }
-    ManipulatorManager &GetManipulatorManager() override { return this->controlsManipulatorManager; }
+    int GetActivePlayerBitfield() const override {
+        return this->activePlayerBitfield;
+    }
+    int GetPlayerBitfield() const override {
+        return this->playerBitfield;
+    }
+    ManipulatorManager &GetManipulatorManager() override {
+        return this->controlsManipulatorManager;
+    }
     UIControl *CreateControl(u32 controlId) override;
 
     static const PulPageId id = PULPAGE_CUSTOMITEMS;

@@ -14,7 +14,8 @@ namespace Input {
 
 class State {
 public:
-    State() {}
+    State() {
+    }
     virtual ~State();  // 8051ec94 vtable 808b2f2c
     void Reset();  // 8051e85c
     void SetStickXMirrorCheck(u8 quantisedStickX);  // 8051e960
@@ -43,7 +44,8 @@ public:
 
 class UIState {
 public:
-    UIState() {}
+    UIState() {
+    }
     virtual ~UIState();  // 8051ecd4 vtable 808b2f20
     void Reset();  // 8051e904
     void SetStickXMirrorCheck(u8 quantisedStickX);  // 8051eaa0

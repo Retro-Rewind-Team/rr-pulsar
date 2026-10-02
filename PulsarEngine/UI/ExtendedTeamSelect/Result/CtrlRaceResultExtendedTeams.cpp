@@ -96,7 +96,8 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         } else {
             this->items[i].SetPicturePane("chara_icon", GetCharacterIconPaneName(characterId));
             this->items[i].SetPicturePane("chara_icon_sha", GetCharacterIconPaneName(characterId));
-            Race::LoadCustomCharacterIcon(characterId, Race::GetPlayerCustomCharacterSlot(playerId, characterId), this->items[i].layout.GetPaneByName("chara_icon"), this->items[i].layout.GetPaneByName("chara_icon_sha"));
+            Race::LoadCustomCharacterIcon(
+              characterId, Race::GetPlayerCustomCharacterSlot(playerId, characterId), this->items[i].layout.GetPaneByName("chara_icon"), this->items[i].layout.GetPaneByName("chara_icon_sha"));
         }
 
         int prevScore = this->players[i].prevBattleScore;
@@ -170,11 +171,7 @@ void CtrlRaceResultExtendedTeams::Load(ExtendedTeamID teamID, int numTeams, int 
 
     this->InitControlGroup(6 + 1);
 
-    const char *anims[] = {
-        "Loop", "Loop", nullptr,
-        "Select", "SelectOn", "SelectOff", nullptr,
-        "Select2", "Select2On", "Select2Off", nullptr,
-        nullptr};
+    const char *anims[] = {"Loop", "Loop", nullptr, "Select", "SelectOn", "SelectOff", nullptr, "Select2", "Select2On", "Select2Off", nullptr, nullptr};
 
     for (int i = 0; i < 6; i++) {
         snprintf(variant, 20, "BlueRed%d", i);
@@ -214,9 +211,7 @@ void CtrlRaceResultExtendedTeams::Load(ExtendedTeamID teamID, int numTeams, int 
     this->resultTeamPoint = new LayoutUIControl();
     this->AddControl(6, this->resultTeamPoint);
 
-    const char *teamPointAnims[] = {
-        "team", "blue", "red", nullptr,
-        nullptr};
+    const char *teamPointAnims[] = {"team", "blue", "red", nullptr, nullptr};
 
     ControlLoader pointLoader(this->resultTeamPoint);
     pointLoader.Load("result", "ResultTeamPoint", "red", teamPointAnims);

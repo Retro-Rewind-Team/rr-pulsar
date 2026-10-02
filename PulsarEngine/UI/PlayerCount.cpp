@@ -7,11 +7,7 @@
 
 typedef void *ServerBrowser;
 
-extern "C" int ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
-                                         bool disconnectOnComplete,
-                                         const unsigned char *basicFields,
-                                         int numBasicFields,
-                                         const char *serverFilter, int maxServers);
+extern "C" int ServerBrowserLimitUpdateA(ServerBrowser sb, bool async, bool disconnectOnComplete, const unsigned char *basicFields, int numBasicFields, const char *serverFilter, int maxServers);
 extern "C" void ServerBrowserFree(ServerBrowser sb);
 
 extern "C" void qr2_register_keyA(int keyid, const char *key);
@@ -32,7 +28,8 @@ static bool IsCompetitiveMatchmakingEnabled() {
 }
 
 static const char *GetCompetitiveServerFilter(const char *serverFilter, char *expandedFilter, u32 filterSize) {
-    if (!IsCompetitiveMatchmakingEnabled() || serverFilter == nullptr) return serverFilter;
+    if (!IsCompetitiveMatchmakingEnabled() || serverFilter == nullptr)
+        return serverFilter;
 
     const char *suspendNeedle = "dwc_suspend = 0";
     const char *suspendPos = strstr(serverFilter, suspendNeedle);
@@ -42,14 +39,9 @@ static const char *GetCompetitiveServerFilter(const char *serverFilter, char *ex
 
     const int prefixLength = suspendPos - serverFilter;
     const char *suffix = suspendPos + strlen(suspendNeedle);
-    const int written = snprintf(
-        expandedFilter,
-        filterSize,
-        "%.*s(dwc_suspend = 0 or numplayers < 11)%s",
-        prefixLength,
-        serverFilter,
-        suffix);
-    if (written <= 0 || written >= static_cast<int>(filterSize)) return serverFilter;
+    const int written = snprintf(expandedFilter, filterSize, "%.*s(dwc_suspend = 0 or numplayers < 11)%s", prefixLength, serverFilter, suffix);
+    if (written <= 0 || written >= static_cast<int>(filterSize))
+        return serverFilter;
 
     return expandedFilter;
 }
@@ -111,15 +103,17 @@ static int GetRegionOnlineCount(const Pulsar::Network::Json::Value &root, const 
 
 static bool ParsePlayerCountResponse(const char *json) {
     Pulsar::Network::Json::Value root;
-    if (!Pulsar::Network::Json::Parse(json, root)) return false;
+    if (!Pulsar::Network::Json::Parse(json, root))
+        return false;
 
     Pulsar::Network::Json::Value global;
     u32 totalPlayers = 0;
-    if (!Pulsar::Network::Json::Find(root, "global", global) ||
-        !Pulsar::Network::Json::Get(global, "active", totalPlayers)) return false;
+    if (!Pulsar::Network::Json::Find(root, "global", global) || !Pulsar::Network::Json::Get(global, "active", totalPlayers))
+        return false;
 
     Pulsar::Network::Json::Value regions;
-    if (!Pulsar::Network::Json::Find(root, "by_region", regions)) return false;
+    if (!Pulsar::Network::Json::Find(root, "by_region", regions))
+        return false;
 
     RR_numPlayers150cc = GetRegionOnlineCount(regions, "vs_10");
     RR_numPlayers200cc = GetRegionOnlineCount(regions, "vs_12");
@@ -139,7 +133,8 @@ static void OnPlayerCountReceived(s32 result, void *response, void *userdata) {
     Pulsar::Network::FinishNHTTPRequest();
     playerCountRequestActive = false;
 
-    if (response == nullptr) return;
+    if (response == nullptr)
+        return;
     if (result != 0) {
         NHTTPDestroyResponse(response);
         return;
@@ -168,18 +163,21 @@ static void OnPlayerCountReceived(s32 result, void *response, void *userdata) {
 }
 
 static void StartPlayerCountRequest() {
-    if (playerCountRequestActive) return;
-    if (!Pulsar::Network::PreparePersistentNHTTPRequest(nhttpStarted)) return;
+    if (playerCountRequestActive)
+        return;
+    if (!Pulsar::Network::PreparePersistentNHTTPRequest(nhttpStarted))
+        return;
 
     if (playerCountWorkBuf == nullptr) {
         playerCountWorkBuf = Pulsar::Network::NHTTPAlloc(playerCountWorkBufSize, 0x20);
-        if (playerCountWorkBuf == nullptr) return;
+        if (playerCountWorkBuf == nullptr)
+            return;
     }
     memset(playerCountWorkBuf, 0, playerCountWorkBufSize);
 
-    void *request = NHTTPCreateRequest(playerCountUrl, 0, playerCountWorkBuf, playerCountWorkBufSize,
-                                       reinterpret_cast<void *>(&OnPlayerCountReceived), nullptr);
-    if (request == nullptr) return;
+    void *request = NHTTPCreateRequest(playerCountUrl, 0, playerCountWorkBuf, playerCountWorkBufSize, reinterpret_cast<void *>(&OnPlayerCountReceived), nullptr);
+    if (request == nullptr)
+        return;
 
     playerCountRequestActive = true;
     const s32 sendRet = NHTTPSendRequestAsync(request);
@@ -213,11 +211,7 @@ int hook_QR2Startup(u32 id) {
     return res;
 }
 
-int hook_ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
-                                   bool disconnectOnComplete,
-                                   const unsigned char *basicFields,
-                                   int numBasicFields,
-                                   const char *serverFilter, int maxServers) {
+int hook_ServerBrowserLimitUpdateA(ServerBrowser sb, bool async, bool disconnectOnComplete, const unsigned char *basicFields, int numBasicFields, const char *serverFilter, int maxServers) {
     hasRKNetRequestFinished = false;
 
     unsigned char newFields[64];
@@ -225,7 +219,8 @@ int hook_ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
 
     if (basicFields && numBasicFields > 0) {
         newNumFields = numBasicFields;
-        if (newNumFields > 60) newNumFields = 60;
+        if (newNumFields > 60)
+            newNumFields = 60;
         for (int i = 0; i < newNumFields; i++) {
             newFields[i] = basicFields[i];
         }
@@ -234,24 +229,21 @@ int hook_ServerBrowserLimitUpdateA(ServerBrowser sb, bool async,
     bool hasEV = false;
     bool hasEB = false;
     for (int i = 0; i < newNumFields; i++) {
-        if (newFields[i] == 0x65) hasEV = true;
-        if (newFields[i] == 0x66) hasEB = true;
+        if (newFields[i] == 0x65)
+            hasEV = true;
+        if (newFields[i] == 0x66)
+            hasEB = true;
     }
 
-    if (!hasEV) newFields[newNumFields++] = 0x65;
-    if (!hasEB) newFields[newNumFields++] = 0x66;
+    if (!hasEV)
+        newFields[newNumFields++] = 0x65;
+    if (!hasEB)
+        newFields[newNumFields++] = 0x66;
 
     char expandedFilter[0x100];
     const char *updatedServerFilter = GetCompetitiveServerFilter(serverFilter, expandedFilter, sizeof(expandedFilter));
 
-    int res = ServerBrowserLimitUpdateA(
-        sb,
-        async,
-        disconnectOnComplete,
-        newFields,
-        newNumFields,
-        updatedServerFilter,
-        maxServers);
+    int res = ServerBrowserLimitUpdateA(sb, async, disconnectOnComplete, newFields, newNumFields, updatedServerFilter, maxServers);
 
     return res;
 }
@@ -274,11 +266,10 @@ void hook_Section_calc(Section *_this) {
 
     hookLocalTimer += 1.0f / 60.0f;
 
-    bool isConnectionIdle = RKNet::Controller::sInstance &&
-                            RKNet::Controller::sInstance->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
+    bool isConnectionIdle = RKNet::Controller::sInstance && RKNet::Controller::sInstance->GetConnectionState() == RKNet::CONNECTIONSTATE_IDLE;
 
-    if (hasQR2Initialized && !playerCountRequestActive && hasRKNetRequestFinished && hookLocalTimer >= 5.0f &&
-        SectionMgr::sInstance->curSection->pages[Pages::Globe::id] && DWC::MatchControl::sInstance && isConnectionIdle) {
+    if (hasQR2Initialized && !playerCountRequestActive && hasRKNetRequestFinished && hookLocalTimer >= 5.0f && SectionMgr::sInstance->curSection->pages[Pages::Globe::id]
+      && DWC::MatchControl::sInstance && isConnectionIdle) {
         hookLocalTimer = 0.0f;
         StartPlayerCountRequest();
     }

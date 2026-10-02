@@ -94,7 +94,8 @@ unsigned char isInLiveViewSection(unsigned int sectionID) {
 }
 
 unsigned char get8bit(unsigned char c) {
-    if (c < 0x3a) return c - 0x30;
+    if (c < 0x3a)
+        return c - 0x30;
     return c - 87;
 }
 
@@ -138,7 +139,8 @@ void displayFcAndCountry(LayoutUIControl *r3, unsigned int r4) {
     unsigned int hudSlot = Racedata::sInstance->GetHudSlotId(r4);
 
     if (!isInOnlineSection(SectionMgr::sInstance->curSection->sectionId)) {
-        if (r3->layout.GetPaneByName("flag")) r3->SetPaneVisibility("flag", 0);
+        if (r3->layout.GetPaneByName("flag"))
+            r3->SetPaneVisibility("flag", 0);
         return;
     }
     if (hudSlot < 2 && (!isInLiveViewSection(SectionMgr::sInstance->curSection->sectionId))) {  // for local player
@@ -158,7 +160,8 @@ void displayFcAndCountry(LayoutUIControl *r3, unsigned int r4) {
         r3->SetPaneVisibility("flag", 0);
     }
 
-    if (!r3->layout.GetPaneByName("user_id")) return;
+    if (!r3->layout.GetPaneByName("user_id"))
+        return;
     calcFc(pid, fcDisplayStr);
     textInfo.strings[0] = fcDisplayStr;
     r3->SetTextBoxMessage("user_id", UI::BMG_TEXT, &textInfo);

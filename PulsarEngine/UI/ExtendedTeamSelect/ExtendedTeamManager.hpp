@@ -153,9 +153,11 @@ public:
             return settings.modeFlags & TEAM_MODE_FLAG;
         }
 
-        if (!System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS)) return false;
+        if (!System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS))
+            return false;
 
-        if (settings.gamemode != MODE_PRIVATE_VS && settings.gamemode != MODE_PRIVATE_BATTLE) return false;
+        if (settings.gamemode != MODE_PRIVATE_VS && settings.gamemode != MODE_PRIVATE_BATTLE)
+            return false;
 
         RKNet::Controller *controller = RKNet::Controller::sInstance;
         return controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);

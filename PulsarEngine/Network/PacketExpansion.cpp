@@ -63,7 +63,8 @@ void CheckPacket(CustomRKNetController *controller, RKNet::RACEPacketHeader &pac
 
             const u8 curSize = sizes[i];  // transmitted in packet
             if (curSize != 0) {
-                if (curHolder->bufferSize < curSize) disconnect = true;
+                if (curHolder->bufferSize < curSize)
+                    disconnect = true;
             }
         }
     }
@@ -80,7 +81,8 @@ bool DisconnectBadAids() {
 
     int old = OS::DisableInterrupts();
     for (int aid = 0; aid < 12; ++aid) {
-        if ((controller->toDisconnectAids >> aid) & 1) DWC::CloseConnectionHard(aid);
+        if ((controller->toDisconnectAids >> aid) & 1)
+            DWC::CloseConnectionHard(aid);
     }
     controller->toDisconnectAids = 0;
     OS::RestoreInterrupts(old);
@@ -112,7 +114,8 @@ kmCall(0x8065ff84, DeleteSELECT);
 
 u8 GetLastRecvSECTIONSize(u8 aid, u8 sectionIdx) {
     const CustomRKNetController *controller = reinterpret_cast<CustomRKNetController *>(RKNet::Controller::sInstance);
-    if (controller == nullptr || aid >= 12 || sectionIdx >= 8 || controller->fullPulRecvPackets[aid] == nullptr) return 0;
+    if (controller == nullptr || aid >= 12 || sectionIdx >= 8 || controller->fullPulRecvPackets[aid] == nullptr)
+        return 0;
     RKNet::RACEPacketHeader *header = reinterpret_cast<RKNet::RACEPacketHeader *>(controller->fullPulRecvPackets[aid]);
     return header->sizes[sectionIdx];
 }

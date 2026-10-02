@@ -25,10 +25,10 @@ class Engine3D : public snd::Sound3DEngine {
     ~Engine3D() override;  // 806f6d4c vtable 808c77d8
 
     int GetRequiredVoiceOutCount(const snd::Sound3DManager *sound3DManager, const snd::Sound3DParam *actorParam,
-                                 u32 soundId) override;  // 0x14 806f7608 returns listener count, so one voice per listener
+      u32 soundId) override;  // 0x14 806f7608 returns listener count, so one voice per listener
     // Fills the ambient param using actorParam, thas has been filled by the Sound3DActor itself, and the Listener list of 3DManager
-    void UpdateAmbientParam(const snd::Sound3DManager *sound3DManager, const snd::Sound3DParam *actorParam, u32 soundId,
-                            u32 updateFlag, snd::SoundAmbientParam *ambientParam) override;  // 0x18 806f6df4
+    void UpdateAmbientParam(
+      const snd::Sound3DManager *sound3DManager, const snd::Sound3DParam *actorParam, u32 soundId, u32 updateFlag, snd::SoundAmbientParam *ambientParam) override;  // 0x18 806f6df4
 
     void SetCurSound(snd::detail::BasicSound *sound);  // 806f6ac8
 

@@ -88,8 +88,7 @@ protected:
 
 public:
     // System functions
-    void Init(const ConfigFile &confRT, const ConfigFile &confCT, const ConfigFile &confBT,
-              u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes);
+    void Init(const ConfigFile &confRT, const ConfigFile &confCT, const ConfigFile &confBT, u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes);
     void InitInstances(const ConfigFile &conf, IOType type);
     void InitIO(IOType type) const;
     void InitCups(const ConfigFile &conf);
@@ -107,16 +106,26 @@ public:
     static u16 offlineCustomEngineClass;
 
     virtual void SetUserInfo(Network::ResvInfo::UserInfo &userInfo) {};
-    virtual bool CheckUserInfo(const Network::ResvInfo::UserInfo &userInfo) { return true; };
-    const Info &GetInfo() const { return this->info; }
+    virtual bool CheckUserInfo(const Network::ResvInfo::UserInfo &userInfo) {
+        return true;
+    };
+    const Info &GetInfo() const {
+        return this->info;
+    }
 
-    bool IsContext(Context context) const { return (this->context & (1 << context)) != 0; }
-    bool IsContext(Context2 context2) const { return (this->context2 & (1 << context2)) != 0; }
+    bool IsContext(Context context) const {
+        return (this->context & (1 << context)) != 0;
+    }
+    bool IsContext(Context2 context2) const {
+        return (this->context2 & (1 << context2)) != 0;
+    }
     bool IsVanillaMode() const;
     bool IsOfflineVS() const;
     static s32 OnSceneEnter(Random &random);
 
-    const char *GetModFolder() const { return modFolderName; }
+    const char *GetModFolder() const {
+        return modFolderName;
+    }
     static void CreateSystem();
 
     // Network
@@ -126,9 +135,15 @@ public:
     static asmFunc GetNonTTGhostPlayersCount();
 
     // BMG
-    const BMGHolder &GetBMG() const { return customBmgs; }
-    const BMGHolder &GetBMGCT() const { return customBmgsCT; }
-    const BMGHolder &GetBMGBT() const { return customBmgsBT; }
+    const BMGHolder &GetBMG() const {
+        return customBmgs;
+    }
+    const BMGHolder &GetBMGCT() const {
+        return customBmgsCT;
+    }
+    const BMGHolder &GetBMGBT() const {
+        return customBmgsBT;
+    }
 
     // VARIABLES
     EGG::ExpHeap *const heap;  // 0x4

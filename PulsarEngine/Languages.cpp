@@ -6,8 +6,7 @@ void RenameFont() {
     // Default 'F'
     FontRename = 0x46;
 
-    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(
-        Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
+    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
 
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_KOREAN:
@@ -24,8 +23,7 @@ BootHook FontHook(RenameFont, 4);
 void RenameRace() {
     RaceRename = 0x53;
 
-    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(
-        Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
+    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
 
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:
@@ -74,8 +72,7 @@ BootHook RaceHook(RenameRace, 4);
 void RenameAward() {
     AwardRename = 0x53;
 
-    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(
-        Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
+    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
 
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:
@@ -125,8 +122,7 @@ BootHook AwardHook(RenameAward, 4);
 void RenameCommon() {
     CommonRename = 0x52;
 
-    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(
-        Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
+    Pulsar::Language currentLanguage = static_cast<Pulsar::Language>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
 
     switch (currentLanguage) {
         case Pulsar::LANGUAGE_JAPANESE:

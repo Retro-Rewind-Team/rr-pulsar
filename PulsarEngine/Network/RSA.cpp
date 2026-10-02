@@ -60,8 +60,7 @@ static int GeMod(const RSAPublicKey *key, const u32 *a) {
 /**
  * Montgomery c[] += a * b[] / R % mod
  */
-static void
-MontMulAdd(const RSAPublicKey *key, u32 *c, const u32 a, const u32 *b) {
+static void MontMulAdd(const RSAPublicKey *key, u32 *c, const u32 a, const u32 *b) {
     u64 A = (u64)a * b[0] + c[0];
     u32 d0 = (u32)A * key->n0inv;
     u64 B = (u64)d0 * key->n[0] + (u32)A;
@@ -147,9 +146,7 @@ static void ModPow(const RSAPublicKey *key, u32 *inout) {
  *
  * PS: octet string consisting of {Length(RSA Key) - Length(T) - 3} 0xFF
  */
-static const u8 sha256Tail[20] = {0x00, 0x30, 0x31, 0x30, 0x0D, 0x06, 0x09,
-                                  0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04,
-                                  0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
+static const u8 sha256Tail[20] = {0x00, 0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
 
 /**
  * Verify a SHA256WithRSA PKCS#1 v1.5 signature against an expected SHA-256

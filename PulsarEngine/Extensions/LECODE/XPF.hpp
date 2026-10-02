@@ -15,7 +15,8 @@ enum DEF_OBJ_MODE {
 
 class XPFMgr {
 public:
-    XPFMgr() : randScenario(0) {}
+    XPFMgr() : randScenario(0) {
+    }
     static void EvaluateXPFAndCreateObjs(ObjectsMgr *mgr, bool isMii);
 
 private:

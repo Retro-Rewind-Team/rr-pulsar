@@ -34,7 +34,8 @@ static void ClearAllPhantomAids() {
 }
 
 void MarkPhantomAid(u32 aid) {
-    if (aid >= 12) return;
+    if (aid >= 12)
+        return;
     const u32 aidBit = 1 << aid;
     s_phantomAids |= aidBit;
 
@@ -42,8 +43,7 @@ void MarkPhantomAid(u32 aid) {
     if (controller != nullptr) {
         const RKNet::ControllerSub &curSub = controller->subs[controller->currentSub];
         const RKNet::ControllerSub &prevSub = controller->subs[controller->currentSub ^ 1];
-        const RKNet::ConnectionUserData &connectionUserData =
-            curSub.connectionUserDatas[aid].playersAtConsole != 0 ? curSub.connectionUserDatas[aid] : prevSub.connectionUserDatas[aid];
+        const RKNet::ConnectionUserData &connectionUserData = curSub.connectionUserDatas[aid].playersAtConsole != 0 ? curSub.connectionUserDatas[aid] : prevSub.connectionUserDatas[aid];
         if (connectionUserData.playersAtConsole != 0) {
             s_connectionUserDatas[aid] = connectionUserData;
             s_phantomConnectionUserDatas |= aidBit;
@@ -58,34 +58,41 @@ void MarkPhantomAid(u32 aid) {
 }
 
 void ClearPhantomAid(u32 aid) {
-    if (aid >= 12) return;
+    if (aid >= 12)
+        return;
     ClearPhantomAidData(aid);
 }
 
 static bool ShouldPreservePhantomAid(u32 aid) {
-    if (aid >= 12) return false;
+    if (aid >= 12)
+        return false;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return false;
+    if (controller == nullptr)
+        return false;
 
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
-    if (sub.localAid == sub.hostAid || aid == sub.hostAid) return false;
+    if (sub.localAid == sub.hostAid || aid == sub.hostAid)
+        return false;
 
     return (s_phantomAids & (1 << aid)) != 0;
 }
 
 static void ExpireStalePhantomAids(RKNet::Controller *controller) {
     const u32 phantomAids = s_phantomAids;
-    if (phantomAids == 0) return;
+    if (phantomAids == 0)
+        return;
 
     const u64 now = OS::GetTime();
     const u64 timeout = static_cast<u64>(OS::GetTimerClock()) * PHANTOM_AID_TIMEOUT_SECONDS;
     for (u32 aid = 0; aid < 12; ++aid) {
         const u32 aidBit = 1 << aid;
-        if ((phantomAids & aidBit) == 0) continue;
+        if ((phantomAids & aidBit) == 0)
+            continue;
 
         const u64 lastReceived = controller->lastRACERecivedTimes[aid];
-        if (lastReceived != 0 && now - lastReceived <= timeout) continue;
+        if (lastReceived != 0 && now - lastReceived <= timeout)
+            continue;
 
         ClearPhantomAidData(aid);
         controller->ProcessPlayerDisconnect(aid);
@@ -119,7 +126,8 @@ kmCall(0x80658e10, GetAidBitmapWithPhantomAids);
 static bool SelectInfoHasAid(const Pages::SELECTStageMgr &stageMgr, u32 aid, u32 slot) {
     for (u32 i = 0; i < stageMgr.playerCount; ++i) {
         const PlayerInfo &info = stageMgr.infos[i];
-        if (info.aid == aid && info.hudSlotid == slot) return true;
+        if (info.aid == aid && info.hudSlotid == slot)
+            return true;
     }
     return false;
 }
@@ -137,21 +145,26 @@ static Team GetPhantomSelectTeam(u32 aid, u32 slot) {
     }
 
     RKNet::SELECTHandler *selectHandler = RKNet::SELECTHandler::sInstance;
-    if (selectHandler == nullptr) return TEAM_NONE;
+    if (selectHandler == nullptr)
+        return TEAM_NONE;
     return static_cast<Team>(selectHandler->GetTeam(aid, slot));
 }
 
 void AppendPhantomSelectInfos(Pages::SELECTStageMgr &stageMgr) {
-    if (s_phantomAids == 0) return;
+    if (s_phantomAids == 0)
+        return;
 
     for (u32 aid = 0; aid < 12 && stageMgr.playerCount < 12; ++aid) {
         const u32 aidBit = 1 << aid;
-        if ((s_phantomAids & aidBit) == 0 || (s_phantomConnectionUserDatas & aidBit) == 0) continue;
-        if (!ShouldPreservePhantomAid(aid)) continue;
+        if ((s_phantomAids & aidBit) == 0 || (s_phantomConnectionUserDatas & aidBit) == 0)
+            continue;
+        if (!ShouldPreservePhantomAid(aid))
+            continue;
 
         const u32 playerCount = s_connectionUserDatas[aid].playersAtConsole;
         for (u32 slot = 0; slot < playerCount && slot < 2 && stageMgr.playerCount < 12; ++slot) {
-            if (SelectInfoHasAid(stageMgr, aid, slot)) continue;
+            if (SelectInfoHasAid(stageMgr, aid, slot))
+                continue;
 
             const u32 playerId = stageMgr.playerCount;
             PlayerInfo &info = stageMgr.infos[playerId];

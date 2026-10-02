@@ -36,7 +36,8 @@ static const char *SkipWhitespace(const char *p) {
 }
 
 static bool ParseRemoteMultiplier(const char *body, int bodyLen, float &out) {
-    if (body == nullptr || bodyLen <= 0) return false;
+    if (body == nullptr || bodyLen <= 0)
+        return false;
 
     const int maxLen = bodyLen < 31 ? bodyLen : 31;
     char text[32];
@@ -45,7 +46,8 @@ static bool ParseRemoteMultiplier(const char *body, int bodyLen, float &out) {
 
     const char *start = SkipWhitespace(text);
     const char *p = start;
-    if (*p == '+') ++p;
+    if (*p == '+')
+        ++p;
 
     bool hasDigit = false;
     while (*p >= '0' && *p <= '9') {
@@ -59,10 +61,12 @@ static bool ParseRemoteMultiplier(const char *body, int bodyLen, float &out) {
             ++p;
         }
     }
-    if (!hasDigit) return false;
+    if (!hasDigit)
+        return false;
 
     p = SkipWhitespace(p);
-    if (*p != '\0') return false;
+    if (*p != '\0')
+        return false;
 
     return sscanf(start, "%f", &out) == 1;
 }
@@ -77,7 +81,8 @@ static void OnMultiplierDownloaded(s32 result, void *response, void * /*userdata
     s_multiplierRequestActive = false;
     s_multiplierRequestDone = true;
 
-    if (response == nullptr) return;
+    if (response == nullptr)
+        return;
 
     if (result == 0) {
         char *body = nullptr;
@@ -93,19 +98,20 @@ static void OnMultiplierDownloaded(s32 result, void *response, void * /*userdata
 }
 
 static void TryStartMultiplierDownload() {
-    if (s_multiplierRequestActive || s_multiplierRequestDone || !CanStartMultiplierDownload()) return;
+    if (s_multiplierRequestActive || s_multiplierRequestDone || !CanStartMultiplierDownload())
+        return;
 
-    if (!Network::PrepareNHTTPRequest()) return;
+    if (!Network::PrepareNHTTPRequest())
+        return;
 
     if (s_multiplierRequestWorkBuf == nullptr) {
         s_multiplierRequestWorkBuf = Network::NHTTPAlloc(MULTIPLIER_REQUEST_WORK_BUF_SIZE, 0x20);
-        if (s_multiplierRequestWorkBuf == nullptr) return;
+        if (s_multiplierRequestWorkBuf == nullptr)
+            return;
     }
     memset(s_multiplierRequestWorkBuf, 0, MULTIPLIER_REQUEST_WORK_BUF_SIZE);
 
-    void *request = NHTTPCreateRequest(MULTIPLIER_URL, 0, s_multiplierRequestWorkBuf, MULTIPLIER_REQUEST_WORK_BUF_SIZE,
-                                       reinterpret_cast<void *>(&OnMultiplierDownloaded),
-                                       nullptr);
+    void *request = NHTTPCreateRequest(MULTIPLIER_URL, 0, s_multiplierRequestWorkBuf, MULTIPLIER_REQUEST_WORK_BUF_SIZE, reinterpret_cast<void *>(&OnMultiplierDownloaded), nullptr);
     if (request == nullptr) {
         s_multiplierRequestDone = true;
         return;
@@ -122,8 +128,7 @@ static void TryStartMultiplierDownload() {
 
 static void UpdateMultiplierDownloadForWfcConnection() {
     RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isConnectedToWfc =
-        controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+    const bool isConnectedToWfc = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
 
     if (isConnectedToWfc && !s_wasConnectedToWfc) {
         s_multiplierRequestDone = false;
@@ -138,7 +143,8 @@ static void UpdateMultiplierDownloadForWfcConnection() {
 static FrameLoadHook remoteMultiplierHook(UpdateMultiplierDownloadForWfcConnection);
 
 static float GetBattleBonus() {
-    if (!BattleElim::ShouldApplyBattleElimination()) return 0.0f;
+    if (!BattleElim::ShouldApplyBattleElimination())
+        return 0.0f;
     const RKNet::Controller *ctrl = RKNet::Controller::sInstance;
     int count = ctrl->subs[ctrl->currentSub].playerCount;
     return (count > 5) ? (float)(count - 5) * 0.166f : 0.0f;
@@ -146,13 +152,15 @@ static float GetBattleBonus() {
 
 bool IsWeekendMultiplierActive() {
     ServerDateTime *sdt = ServerDateTime::sInstance;
-    if (sdt == nullptr || !sdt->isValid) return false;
+    if (sdt == nullptr || !sdt->isValid)
+        return false;
     sdt->Update();
     return sdt->IsVRMultiplierWeekend();
 }
 
 bool IsWeekendMultiplierActiveForRegion(u8 region) {
-    if (!IsWeekendMultiplierActive()) return false;
+    if (!IsWeekendMultiplierActive())
+        return false;
     ServerDateTime *sdt = ServerDateTime::sInstance;
     return sdt->GetCurrentVRMultiplierRegion() == region;
 }
@@ -166,14 +174,17 @@ float GetMultiplier() {
         base *= 1.5f;
     }
     float multiplier = base + GetBattleBonus();
-    if (s_remoteMultiplierValid) multiplier *= s_remoteMultiplier;
+    if (s_remoteMultiplierValid)
+        multiplier *= s_remoteMultiplier;
 #ifdef BETA
     multiplier *= 1.25f;
 #endif
 
     // Clamp the multiplier to a reasonable range to prevent stacked multipliers causing unintentional flags
-    if (multiplier < 1.0f) multiplier = 1.0f;
-    if (multiplier > 2.5f) multiplier = 2.5f;
+    if (multiplier < 1.0f)
+        multiplier = 1.0f;
+    if (multiplier > 2.5f)
+        multiplier = 2.5f;
 
     return multiplier;
 }

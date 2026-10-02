@@ -25,9 +25,13 @@ public:
     void DoAction(ControlGroupAction &action);  // 805c2ad0
 
     template <class T>
-    inline T *GetControl(u32 index) const { return static_cast<T *>(GetControl(index)); }
+    inline T *GetControl(u32 index) const {
+        return static_cast<T *>(GetControl(index));
+    }
     template <class T>
-    inline T *GetParentPage() const { return static_cast<T *>(parentPage); }
+    inline T *GetParentPage() const {
+        return static_cast<T *>(parentPage);
+    }
 
     UIControl **controlArray;  // pointer to the array of controls
     UIControl **zIdxOrderedArray;  //

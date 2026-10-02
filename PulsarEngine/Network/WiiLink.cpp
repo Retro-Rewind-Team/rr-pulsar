@@ -24,15 +24,13 @@ static bool s_payloadReady = false;
 static u8 s_saltHash[SHA256_DIGEST_SIZE];
 
 extern "C" {
-void Real_DWCi_Auth_SendRequest(
-    int param_1, int param_2, int param_3, int param_4, int param_5, int param_6);
+void Real_DWCi_Auth_SendRequest(int param_1, int param_2, int param_3, int param_4, int param_5, int param_6);
 
 extern s32 *s_auth_work;
 extern s32 s_auth_error;
 }
 
-static asm void DWCi_Auth_SendRequest(
-    int param_1, int param_2, int param_3, int param_4, int param_5, int param_6) {
+static asm void DWCi_Auth_SendRequest(int param_1, int param_2, int param_3, int param_4, int param_5, int param_6) {
     // clang-format off
     nofralloc
 
@@ -78,15 +76,13 @@ bool GenerateRandomSalt(u8 *out) {
 }
 
 s32 HandleResponse(u8 *block) {
-    register wwfc_payload *__restrict payload =
-        reinterpret_cast<wwfc_payload *>(block);
+    register wwfc_payload *__restrict payload = reinterpret_cast<wwfc_payload *>(block);
 
     if (*reinterpret_cast<u32 *>(payload) != 0x57574643 /* WWFC */) {
         return WL_ERROR_PAYLOAD_STAGE1_HEADER_CHECK;
     }
 
-    if (payload->header.total_size < sizeof(wwfc_payload) ||
-        payload->header.total_size > PAYLOAD_BLOCK_SIZE) {
+    if (payload->header.total_size < sizeof(wwfc_payload) || payload->header.total_size > PAYLOAD_BLOCK_SIZE) {
         return WL_ERROR_PAYLOAD_STAGE1_LENGTH_ERROR;
     }
 
@@ -96,14 +92,10 @@ s32 HandleResponse(u8 *block) {
 
     SHA256Context ctx;
     SHA256Init(&ctx);
-    SHA256Update(
-        &ctx, reinterpret_cast<u8 *>(payload) + sizeof(wwfc_payload_header),
-        payload->header.total_size - sizeof(wwfc_payload_header));
+    SHA256Update(&ctx, reinterpret_cast<u8 *>(payload) + sizeof(wwfc_payload_header), payload->header.total_size - sizeof(wwfc_payload_header));
     u8 *hash = SHA256Final(&ctx);
 
-    if (!RSAVerify(
-            reinterpret_cast<const RSAPublicKey *>(PayloadPublicKey),
-            payload->header.signature, hash)) {
+    if (!RSAVerify(reinterpret_cast<const RSAPublicKey *>(PayloadPublicKey), payload->header.signature, hash)) {
         return WL_ERROR_PAYLOAD_STAGE1_SIGNATURE_INVALID;
     }
 
@@ -111,9 +103,7 @@ s32 HandleResponse(u8 *block) {
     for (register u32 i = 0; i < 0x20000; i += 0x20) {
         asm(dcbf i, payload; sync; icbi i, payload; isync;);
     }
-    s32 (*entryFunction)(wwfc_payload *) =
-        reinterpret_cast<s32 (*)(wwfc_payload *)>(
-            reinterpret_cast<u8 *>(payload) + payload->info.entry_point);
+    s32 (*entryFunction)(wwfc_payload *) = reinterpret_cast<s32 (*)(wwfc_payload *)>(reinterpret_cast<u8 *>(payload) + payload->info.entry_point);
 
     return entryFunction(payload);
 }
@@ -141,12 +131,9 @@ void OnPayloadReceived(s32 result, void *response, void *userdata) {
     s_auth_error = -1;  // This error code will retry auth
 }
 
-kmBranchDefCpp(
-    0x800ed6e8, 0, void, int param_1, int param_2, int param_3, int param_4,
-    int param_5, int param_6) {
+kmBranchDefCpp(0x800ed6e8, 0, void, int param_1, int param_2, int param_3, int param_4, int param_5, int param_6) {
     if (s_payloadReady) {
-        DWCi_Auth_SendRequest(
-            param_1, param_2, param_3, param_4, param_5, param_6);
+        DWCi_Auth_SendRequest(param_1, param_2, param_3, param_4, param_5, param_6);
         return;
     }
 
@@ -192,12 +179,9 @@ kmBranchDefCpp(
     memcpy(s_saltHash, SHA256Final(&ctx), SHA256_DIGEST_SIZE);
 
     char url[0x100];
-    sprintf(
-        url, "http://nas.%s/%s&h=%02x%02x%02x%02x", WWFC_DOMAIN, uri,
-        s_saltHash[0], s_saltHash[1], s_saltHash[2], s_saltHash[3]);
+    sprintf(url, "http://nas.%s/%s&h=%02x%02x%02x%02x", WWFC_DOMAIN, uri, s_saltHash[0], s_saltHash[1], s_saltHash[2], s_saltHash[3]);
 
-    void *request = NHTTPCreateRequest(
-        url, 0, s_payload, PAYLOAD_BLOCK_SIZE, OnPayloadReceived, 0);
+    void *request = NHTTPCreateRequest(url, 0, s_payload, PAYLOAD_BLOCK_SIZE, OnPayloadReceived, 0);
 
     if (request == nullptr) {
         s_auth_error = WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;

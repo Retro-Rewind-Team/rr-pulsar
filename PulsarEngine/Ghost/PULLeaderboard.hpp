@@ -56,12 +56,18 @@ public:
     s8 GetRepeatCount(const RKG &rkg) const;
     void Update(u32 position, const RKSYS::LicenseLdbEntry &entry, u32 rkgCRC32);
     void Save(const char *folderPath);
-    void AddTrophy() { this->hasTrophy[System::sInstance->ttMode] = true; }
-    const PULLdbEntry &GetPulEntry(EntryLaps lap) const { return this->entries[System::sInstance->ttMode][lap]; }
+    void AddTrophy() {
+        this->hasTrophy[System::sInstance->ttMode] = true;
+    }
+    const PULLdbEntry &GetPulEntry(EntryLaps lap) const {
+        return this->entries[System::sInstance->ttMode][lap];
+    }
     void EntryToTimer(Timer &dest, u8 id) const;
     void EntryToGameEntry(RKSYS::LicenseLdbEntry &dest, u8 id) const;
     void SetFavGhost(u32 fileIdx, TTMode mode, bool add);
-    const char *GetFavGhost(TTMode mode) const { return this->favGhost[mode]; }
+    const char *GetFavGhost(TTMode mode) const {
+        return this->favGhost[mode];
+    }
     static void CreateFile(PulsarId id);
     static const RKSYS::LicenseLdbEntry *GetEntry(u32 index);  // pointer as the game expects as such
     static int ExpertBMGDisplay(CourseId courseId);

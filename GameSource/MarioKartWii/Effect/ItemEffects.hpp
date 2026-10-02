@@ -26,14 +26,14 @@ class Items {
 
     // lifeframes = how long since it's started, playerIdx only needed if updateVelocity true as it uses the player's velocity
     void CreateKouraTailGEffect(u32 idx, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool enable,
-                                float scale);  // 8068d284
+      float scale);  // 8068d284
     void CreateKouraTailREffect(u32 idx, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool enable,
-                                float scale);  // 8068d2d8
-    void CreateKouraTailBEffect(u32 idx, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool enable,
-                                const Mtx34 &transMtx, bool updatePtclLifeAndVelocity, u32 playerIdx, float scale);  // 8068d32c
+      float scale);  // 8068d2d8
+    void CreateKouraTailBEffect(
+      u32 idx, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool enable, const Mtx34 &transMtx, bool updatePtclLifeAndVelocity, u32 playerIdx, float scale);  // 8068d32c
 
-    void CreateKouraTailEffect(EGG::Effect *effect, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool useExtMtx,
-                               bool enable, const Mtx34 &extMtx, bool updatePtclLifeAndVelocity, u32 playerIdx, float scale);  // 8068dd08 calcs Mtx using pos and angle except if useExtMtx is true
+    void CreateKouraTailEffect(EGG::Effect *effect, const Vec3 &translation, const Vec3 &rotationAngle, u32 lifeFrames, bool useExtMtx, bool enable, const Mtx34 &extMtx,
+      bool updatePtclLifeAndVelocity, u32 playerIdx, float scale);  // 8068dd08 calcs Mtx using pos and angle except if useExtMtx is true
 
     void CreateHaneKouraEffect(const Vec3 &position);  // 8068d748 Blue shell explosion
 

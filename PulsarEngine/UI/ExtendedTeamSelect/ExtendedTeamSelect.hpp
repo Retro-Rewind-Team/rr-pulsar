@@ -30,18 +30,22 @@ public:
     UIControl *CreateControl(u32 id) override;
 
     void OnBackPress(u32 hudSlotId);
-    void OnFrontPress(u32 hudSlotId) {}
-    void OnDisconnectClick(u32 hudSlotId) {}
+    void OnFrontPress(u32 hudSlotId) {
+    }
+    void OnDisconnectClick(u32 hudSlotId) {
+    }
 
     void OnBackButtonClick(PushButton &button, u32 hudSlotId) {
         OnBackPress(hudSlotId);
     }
 
     void OnStartRaceClick(PushButton &button, u32 hudSlotId);
-    void OnStartRaceSelect(PushButton &button, u32 hudSlotId) {}
+    void OnStartRaceSelect(PushButton &button, u32 hudSlotId) {
+    }
 
     void OnArrowClick(PushButton &button, u32 hudSlotId);
-    void OnArrowSelect(PushButton &button, u32 hudSlotId) {}
+    void OnArrowSelect(PushButton &button, u32 hudSlotId) {
+    }
 
     void UpdatePlayerTeam(u32 idx, ExtendedTeamID team);
     void UpdatePlayerTeamByAID(u8 aid, u8 playerIdOnConsole, ExtendedTeamID team);

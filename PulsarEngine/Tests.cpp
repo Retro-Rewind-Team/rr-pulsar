@@ -37,8 +37,8 @@ kmWrite32(0x80643794, 0x38c000ff);
 // RaceinfoPlayer objects are initialized.
 static Raceinfo *CreateOneLapRaceInfo() {
     KMP::Manager *kmp = KMP::Manager::sInstance;
-    if (kmp != nullptr && kmp->stgiSection != nullptr && kmp->stgiSection->holdersArray != nullptr &&
-        kmp->stgiSection->holdersArray[0] != nullptr && kmp->stgiSection->holdersArray[0]->raw != nullptr) {
+    if (kmp != nullptr && kmp->stgiSection != nullptr && kmp->stgiSection->holdersArray != nullptr && kmp->stgiSection->holdersArray[0] != nullptr
+      && kmp->stgiSection->holdersArray[0]->raw != nullptr) {
         kmp->stgiSection->holdersArray[0]->raw->lapCount = 1;
     }
     Racedata *racedata = Racedata::sInstance;
@@ -60,9 +60,11 @@ static void SetVRBottomMessageAndSelectRandom(CtrlMenuInstructionText *bottomMes
     static const u32 VR_BOTTOM_MESSAGE_OFFSET = 0x3f0;
     UI::ExpVR *page = reinterpret_cast<UI::ExpVR *>(reinterpret_cast<u8 *>(bottomMessage) - VR_BOTTOM_MESSAGE_OFFSET);
 
-    if (page->controlGroup.controlCount <= 0xf) return;
+    if (page->controlGroup.controlCount <= 0xf)
+        return;
     PushButton &randomButton = page->GetRandomComboButton();
-    if (page->controlGroup.GetControl(0xf) != &randomButton || randomButton.isHidden) return;
+    if (page->controlGroup.GetControl(0xf) != &randomButton || randomButton.isHidden)
+        return;
 
     randomButton.Select(0);
 }

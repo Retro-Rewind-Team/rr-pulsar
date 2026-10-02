@@ -9,7 +9,6 @@
 namespace Pages {
 
 enum CorruptSaveMgrState {
-
 };
 class CorruptSaveMgr : public Page {  // ID 0x3 background page that manages the section of the same name
 public:

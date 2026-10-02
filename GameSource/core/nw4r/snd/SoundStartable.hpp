@@ -22,12 +22,14 @@ public:
             START_OFFSET_TYPE_SAMPLE
         };
         struct SeqSoundInfo {
-            SeqSoundInfo() : seqDataAddress(nullptr), startLocationLabel(nullptr) {}
+            SeqSoundInfo() : seqDataAddress(nullptr), startLocationLabel(nullptr) {
+            }
             const void *seqDataAddress;
             const char *startLocationLabel;
         };
 
-        StartInfo() : enableFlag(0) {}
+        StartInfo() : enableFlag(0) {
+        }
         u32 enableFlag;
         StartOffsetType startOffsetType;
         int startOffset;

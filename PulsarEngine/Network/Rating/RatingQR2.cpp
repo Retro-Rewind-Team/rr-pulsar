@@ -43,7 +43,8 @@ static bool IsStreamerModeActiveForServer() {
         return false;
     }
     RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return false;
+    if (controller == nullptr)
+        return false;
     if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
         return false;
     }
@@ -95,21 +96,28 @@ static void MyKeyListCallback(int keyType, void *buffer) {
         bool hasEv = false;
         bool hasEb = false;
         for (int i = 0; i < count; i++) {
-            if (b[i] == 0x65) hasEv = true;
-            if (b[i] == 0x66) hasEb = true;
+            if (b[i] == 0x65)
+                hasEv = true;
+            if (b[i] == 0x66)
+                hasEb = true;
         }
-        if (!hasEv) qr2_keybuffer_add(buffer, 0x65);
-        if (!hasEb) qr2_keybuffer_add(buffer, 0x66);
+        if (!hasEv)
+            qr2_keybuffer_add(buffer, 0x65);
+        if (!hasEb)
+            qr2_keybuffer_add(buffer, 0x66);
     }
 }
 
 kmRuntimeUse(0x8010ecac);
-typedef int (*qr2_init_socketA_t)(void *q, int s, int bound_port, const char *gamename, const char *secret_key, int is_public, int nat_negotiate, void *server_key_callback, void *player_key_callback, void *team_key_callback, void *key_list_callback, void *count_callback, void *adderror_callback, void *userdata);
+typedef int (*qr2_init_socketA_t)(void *q, int s, int bound_port, const char *gamename, const char *secret_key, int is_public, int nat_negotiate, void *server_key_callback, void *player_key_callback,
+  void *team_key_callback, void *key_list_callback, void *count_callback, void *adderror_callback, void *userdata);
 static const qr2_init_socketA_t qr2_init_socketA_Real = (qr2_init_socketA_t)kmRuntimeAddr(0x8010ecac);
 
-static int Hook_qr2_init_socketA(void *q, int s, int bound_port, const char *gamename, const char *secret_key, int is_public, int nat_negotiate, void *server_key_callback, void *player_key_callback, void *team_key_callback, void *key_list_callback, void *count_callback, void *adderror_callback, void *userdata) {
+static int Hook_qr2_init_socketA(void *q, int s, int bound_port, const char *gamename, const char *secret_key, int is_public, int nat_negotiate, void *server_key_callback, void *player_key_callback,
+  void *team_key_callback, void *key_list_callback, void *count_callback, void *adderror_callback, void *userdata) {
     OriginalKeyListCallback = (KeyListCallback)key_list_callback;
-    return qr2_init_socketA_Real(q, s, bound_port, gamename, secret_key, is_public, nat_negotiate, (void *)MyServerKeyCallback, player_key_callback, team_key_callback, (void *)MyKeyListCallback, count_callback, adderror_callback, userdata);
+    return qr2_init_socketA_Real(q, s, bound_port, gamename, secret_key, is_public, nat_negotiate, (void *)MyServerKeyCallback, player_key_callback, team_key_callback, (void *)MyKeyListCallback,
+      count_callback, adderror_callback, userdata);
 }
 kmCall(0x800d4f28, Hook_qr2_init_socketA);
 
@@ -173,8 +181,7 @@ asm void AsmHook_AfterMiiCopyLoop() {
 
     // Return
     blr
-}
-// clang-format on
+}  // clang-format on
 kmCall(0x80663088, AsmHook_AfterMiiCopyLoop);
 
 static wchar_t *GetLoginMiiName(Mii *mii) {
@@ -214,8 +221,7 @@ asm void AsmHook_BeforeDWCLoginAsync() {
     
     // Return with r3 = name pointer
     blr
-}
-// clang-format on
+}  // clang-format on
 kmCall(0x80658cd8, AsmHook_BeforeDWCLoginAsync);
 
 }  // namespace PointRating

@@ -16,8 +16,7 @@ public:
     void LoadAnimations() override;  // 0x5c 8082ccb4
     u32 GetScnObjDrawOptionsIdx() const override;  // 0xb0 8082cc64
     ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 8082dbec
-    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 8082dfd8
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 8082dfd8
     void OnWallCollision(const Kart::Player &kartPlayer, Vec3 position) override;  // 0xc8 8082e4f4
 
     u32 unknown_0xb0;

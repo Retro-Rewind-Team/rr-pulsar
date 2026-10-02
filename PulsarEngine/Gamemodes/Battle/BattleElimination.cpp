@@ -38,7 +38,8 @@ static void SetInitialBattleScores(RacedataScenario &scenario, u16 startScore) {
     }
     for (u8 idx = 0; idx < playerCount && idx < MAX_BATTLE_PLAYERS; ++idx) {
         RaceinfoPlayer *player = raceinfo->players[idx];
-        if (!atRaceStage) player->battleScore = 3;
+        if (!atRaceStage)
+            player->battleScore = 3;
     }
 }
 static RaceFrameHook BattleElimInitScoresHook(SetInitialBattleScores);
@@ -71,7 +72,8 @@ static RaceFrameHook BattleElimVanishHook(SetVanishOnElim);
 
 static void UpdateSpectating(LapKO::Mgr *lapKOMgr) {
     (void)lapKOMgr;
-    if (!ShouldApplyBattleElimination()) return;
+    if (!ShouldApplyBattleElimination())
+        return;
     Spectating::Update(*Raceinfo::sInstance);
 }
 static RaceFrameHook BattleElimSpectateHook(UpdateSpectating);
@@ -83,13 +85,17 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
     const GameMode mode = scenario.settings.gamemode;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     const u8 localPlayerCount = scenario.localPlayerCount;
-    if (!raceinfo->IsAtLeastStage(RACESTAGE_RACE)) return;
-    if (!ShouldApplyBattleElimination()) return;
+    if (!raceinfo->IsAtLeastStage(RACESTAGE_RACE))
+        return;
+    if (!ShouldApplyBattleElimination())
+        return;
     u32 eliminatedCount = 0;
     for (u8 playerIdx = 0; playerIdx < playerCount && playerIdx < MAX_BATTLE_PLAYERS; ++playerIdx) {
         RaceinfoPlayer *player = raceinfo->players[playerIdx];
-        if (!player) continue;
-        if (player->battleScore == 0) ++eliminatedCount;
+        if (!player)
+            continue;
+        if (player->battleScore == 0)
+            ++eliminatedCount;
     }
     if (mode == MODE_BATTLE) {
         bool allLocalEliminated = true;
@@ -151,21 +157,25 @@ kmCall(0x806619AC, ForceBalloonBattle);
 
 static bool IsGhostReplay() {
     const Racedata *racedata = Racedata::sInstance;
-    if (racedata == nullptr || racedata->racesScenario.players[0].playerType != PLAYER_GHOST) return false;
+    if (racedata == nullptr || racedata->racesScenario.players[0].playerType != PLAYER_GHOST)
+        return false;
 
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return false;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr)
+        return false;
 
     const SectionId sectionId = sectionMgr->curSection->sectionId;
-    return sectionId == SECTION_TT_REPLAY ||
-           (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU);
+    return sectionId == SECTION_TT_REPLAY || (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU);
 }
 
 extern "C" u32 SelectRaceFanfare(u32 soundId) {
     // Check the active race here: a replay section alone does not prove the driver is a ghost.
-    if (IsGhostReplay()) return SOUND_ID_BATTLE_WIN_RESULTS;
-    if (sBattleFanfareMode == 1) return soundId == 0x6b ? 0x6f : 0x6d;
-    if (sBattleFanfareMode == 2 && soundId == 0x68) return 0x6f;
+    if (IsGhostReplay())
+        return SOUND_ID_BATTLE_WIN_RESULTS;
+    if (sBattleFanfareMode == 1)
+        return soundId == 0x6b ? 0x6f : 0x6d;
+    if (sBattleFanfareMode == 2 && soundId == 0x68)
+        return 0x6f;
     return soundId;
 }
 
@@ -180,12 +190,12 @@ kmCall(0x807123e8, LoadBattleFanfare);
 void BattleElim() {
     System *system = System::sInstance;
     Racedata *racedata = Racedata::sInstance;
-    if (!racedata) return;
+    if (!racedata)
+        return;
 
     const bool eliminationActive = ShouldApplyBattleElimination();
     sForceBalloonBattle = eliminationActive;
-    sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2
-                                                                                      : 0;
+    sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2 : 0;
 }
 static FrameLoadHook BattleElimHook(BattleElim);
 

@@ -18,13 +18,15 @@ void UseFeather(Item::Player &itemPlayer) {
 
     Kart::Status *status = pointers->kartStatus;  // Hijacking bitfield1 14th bit to create a feather state
     u32 type = 0x7;
-    if ((status->bitfield1 & 0x4000) != 0) type = 0x2;  // if already in a feather, lower vertical velocity (30.0f instead of 50.0 for type 7)
+    if ((status->bitfield1 & 0x4000) != 0)
+        type = 0x2;  // if already in a feather, lower vertical velocity (30.0f instead of 50.0 for type 7)
     status->jumpPadType = type;
     status->trickableTimer = 0x4;
 
     itemPlayer.inventory.RemoveItems(1);
 
-    if (DriverMgr::isOnlineRace && itemPlayer.isRemote) Item::Obj::AddUseEVENTEntry(OBJ_BLOOPER, itemPlayer.id);
+    if (DriverMgr::isOnlineRace && itemPlayer.isRemote)
+        Item::Obj::AddUseEVENTEntry(OBJ_BLOOPER, itemPlayer.id);
 }
 
 void UseBlooperOrFeather(Item::Player &itemPlayer) {
@@ -43,8 +45,7 @@ void ReplaceBlooperUseOtherPlayers(Item::GessoMgr &gessoMgr, u8 id) {
 }
 kmCall(0x80796d8c, ReplaceBlooperUseOtherPlayers);  // replaces the small blooper model when someone uses a blooper with a feather use
 
-static bool ConditionalIgnoreInvisibleWalls(float radius, CourseMgr &mgr, const Vec3 &position, const Vec3 &prevPosition,
-                                            KCLBitfield acceptedFlags, CollisionInfo *info, KCLTypeHolder &kclFlags) {
+static bool ConditionalIgnoreInvisibleWalls(float radius, CourseMgr &mgr, const Vec3 &position, const Vec3 &prevPosition, KCLBitfield acceptedFlags, CollisionInfo *info, KCLTypeHolder &kclFlags) {
     register u32 playerIdRaw;
     asm(mr playerIdRaw, r16;);
     PushConditionalCollisionPlayerContext(static_cast<u8>(playerIdRaw));
@@ -114,18 +115,15 @@ static u32 ConditionalBlooperTimer(u32 timer) {
 kmCall(0x807bba64, ConditionalBlooperTimer);
 kmWrite32(0x807bba68, 0x907f003c);  // store r3, the return value of the function
 
-void LoadCorrectFeatherBRRES(Item::ObjGesso &objKumo, const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse,
-                             Item::Obj::AnmParam *anmParam) {
+void LoadCorrectFeatherBRRES(Item::ObjGesso &objKumo, const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse, Item::Obj::AnmParam *anmParam) {
     if (System::sInstance->IsContext(PULSAR_FEATHER))
-        objKumo.LoadGraphics("feather.brres", mdlName, shadowSrc, 0, 0,
-                             static_cast<nw4r::g3d::ScnMdl::BufferOption>(0), nullptr, 0);
+        objKumo.LoadGraphics("feather.brres", mdlName, shadowSrc, 0, 0, static_cast<nw4r::g3d::ScnMdl::BufferOption>(0), nullptr, 0);
     else
         objKumo.LoadGraphicsImplicitBRRESNoFunc(mdlName, shadowSrc, 0, static_cast<nw4r::g3d::ScnMdl::BufferOption>(0), 0);
 }
 kmBranch(0x807a8390, LoadCorrectFeatherBRRES);
 
-void ConditionalNoBlooperAnimation(ModelDirector *mdl, u32 id, g3d::ResFile &brres, const char *name, AnmType type, bool hasBlend,
-                                   const char *brasd, ArchiveSource source, u8 kartArchiveIdx) {
+void ConditionalNoBlooperAnimation(ModelDirector *mdl, u32 id, g3d::ResFile &brres, const char *name, AnmType type, bool hasBlend, const char *brasd, ArchiveSource source, u8 kartArchiveIdx) {
     if (!System::sInstance->IsContext(PULSAR_FEATHER)) {
         mdl->LinkAnimation(id, brres, name, type, hasBlend, brasd, source, kartArchiveIdx);
     }

@@ -65,18 +65,22 @@ static Transmission GetPlayerTransmission(u32 playerId) {
 
 static bool CanApplyTransmission(u32 playerId) {
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    if (roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_BT_WW) return false;
+    if (roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_BT_WW)
+        return false;
 
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    if (playerId >= scenario.playerCount) return false;
-    if (scenario.localPlayerCount > 1) return false;
+    if (playerId >= scenario.playerCount)
+        return false;
+    if (scenario.localPlayerCount > 1)
+        return false;
 
     const PlayerType playerType = scenario.players[playerId].playerType;
     return playerType == PLAYER_REAL_LOCAL || playerType == PLAYER_GHOST;
 }
 
 static void ApplyTransmission(Kart::Stats &stats, u32 playerId) {
-    if (!CanApplyTransmission(playerId)) return;
+    if (!CanApplyTransmission(playerId))
+        return;
 
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
     if (System::sInstance->IsContext(PULSAR_TRANSMISSIONINSIDE)) {
@@ -87,7 +91,8 @@ static void ApplyTransmission(Kart::Stats &stats, u32 playerId) {
         ApplyOutside(stats);
         return;
     }
-    if (System::sInstance->IsContext(PULSAR_TRANSMISSIONVANILLA)) return;
+    if (System::sInstance->IsContext(PULSAR_TRANSMISSIONVANILLA))
+        return;
 
     const Transmission transmission = GetPlayerTransmission(playerId);
     if (transmission == TRANSMISSION_INSIDE) {
@@ -100,7 +105,8 @@ static void ApplyTransmission(Kart::Stats &stats, u32 playerId) {
 }
 
 static Kart::Stats *ApplyPlayerTransmission(Kart::Stats *stats, u32 playerId) {
-    if (playerId >= 12 || stats == nullptr) return stats;
+    if (playerId >= 12 || stats == nullptr)
+        return stats;
 
     ApplyTransmission(*stats, playerId);
     return stats;

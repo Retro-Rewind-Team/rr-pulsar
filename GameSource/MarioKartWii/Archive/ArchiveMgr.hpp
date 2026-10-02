@@ -75,12 +75,10 @@ public:
     UIArchivesHolder *LoadUIArchive(const char *path, EGG::Heap *heap);  // 80540680
     CourseArchivesHolder *LoadCourseArchive(CourseId id, EGG::Heap *heap, bool isMultiplayer);  // 80540760
     CourseArchivesHolder *LoadCompetitionArchives(CourseId id, u32 fileSize, void *filePtr, EGG::Heap *heap, u32 objIdx);  // 80540b14
-    ArchivesHolder *LoadKartArchive(ArchivesHolder *holder, u32 r5, KartId kart, CharacterId character,
-                                    bool isBike, u32 type, EGG::Heap *heap);  // 80540cfc base, unused, multiplayer for type
-    ArchivesHolder *LoadKartArchive(u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
-                                    EGG::Heap *decompressedHeap, EGG::Heap *archiveHeap);  // 80540e3c color: 0 red, 1 blue, 2 nothing, type same as above
-    ArchivesHolder *LoadKartArchiveHolder2(u8 playerId, KartId kart, CharacterId character, u32 color, u32 type,
-                                           EGG::Heap *decompressedHeap, EGG::Heap *archiveHeap);  // 80540f90 users 2nd array
+    ArchivesHolder *LoadKartArchive(ArchivesHolder *holder, u32 r5, KartId kart, CharacterId character, bool isBike, u32 type, EGG::Heap *heap);  // 80540cfc base, unused, multiplayer for type
+    ArchivesHolder *LoadKartArchive(
+      u8 playerId, KartId kart, CharacterId character, u32 color, u32 type, EGG::Heap *decompressedHeap, EGG::Heap *archiveHeap);  // 80540e3c color: 0 red, 1 blue, 2 nothing, type same as above
+    ArchivesHolder *LoadKartArchiveHolder2(u8 playerId, KartId kart, CharacterId character, u32 color, u32 type, EGG::Heap *decompressedHeap, EGG::Heap *archiveHeap);  // 80540f90 users 2nd array
     ArchivesHolder *LoadMenuKartArchive(u8 playerId, KartId kart, u32 type, EGG::Heap *archiveHeap, EGG::Heap *dumpHeap);  // 805410e4
     void Unmount(ArchiveSource source);  // 805411d4
     void Unmount(ArchivesHolder *holder);  // 805411e4
@@ -101,9 +99,8 @@ public:
     int GetArchiveCount(ArchiveSource source) const;  // 80541738
     int GetUIArchiveCount() const;  // 80541794
     void AttachUIAccessor(nw4r::lyt::ArcResourceAccessor &resourceAccessor,
-                          const char *dir) const;  // 805417a4 attaches to UI archives in mgr
-    void AttachLayoutResources(nw4r::lyt::MultiArcResourceAccessor &resourceAccessor,
-                               const char *dir, LayoutResources &resources) const;  // 80541878
+      const char *dir) const;  // 805417a4 attaches to UI archives in mgr
+    void AttachLayoutResources(nw4r::lyt::MultiArcResourceAccessor &resourceAccessor, const char *dir, LayoutResources &resources) const;  // 80541878
     static void LoadCourseArchiveAsync(CourseId id);  // 80541998
     void RequestLoadCourseAsync(CourseId id);  // 805419ac
     static const char *GetKartArchivePostfix(CharacterId character);  // 805419c8 fk part of labike_fk

@@ -18,8 +18,7 @@ public:
     Effect();  // 80026340
     ~Effect();  // 800263b0
 
-    typedef void (*FuncCBPrevEmission)(Emitter *emitter, ParticleManager *particleMgr, int *count, u32 *flags, float (*params)[6],
-                                       u16 *aPtclLife, float *aPtclLifeRnd, math::MTX34 *space);
+    typedef void (*FuncCBPrevEmission)(Emitter *emitter, ParticleManager *particleMgr, int *count, u32 *flags, float (*params)[6], u16 *aPtclLife, float *aPtclLifeRnd, math::MTX34 *space);
     typedef void (*FuncCBPtclCalc)(ParticleManager *particleMgr, ut::List *utList, Particle *head);
     struct CallBack {
     public:

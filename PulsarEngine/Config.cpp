@@ -9,13 +9,14 @@ u32 ConfigFile::readBytes = 0;
 
 ConfigFile *ConfigFile::LoadConfigFile(const char *path, u32 &readBytesOut) {
     EGG::ExpHeap *mem2Heap = RKSystem::mInstance.sceneManager->currentScene->mainMEMHeap;
-    ConfigFile *conf = static_cast<ConfigFile *>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, mem2Heap,
-                                                                               EGG::DvdRipper::ALLOC_FROM_TAIL, 0, &readBytesOut, nullptr));
+    ConfigFile *conf = static_cast<ConfigFile *>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, mem2Heap, EGG::DvdRipper::ALLOC_FROM_TAIL, 0, &readBytesOut, nullptr));
     if (conf == nullptr)
         Debug::FatalError(error);
     else {
-        if (conf->header.version < 0) Debug::FatalError("Cannot use a \"Build Config Only\" file, please build full or with tracks.");
-        if (conf->header.version != conf->header.CONFIGVERSION) Debug::FatalError("Old Config.pul file, please import and export it on the creator software to update it.");
+        if (conf->header.version < 0)
+            Debug::FatalError("Cannot use a \"Build Config Only\" file, please build full or with tracks.");
+        if (conf->header.version != conf->header.CONFIGVERSION)
+            Debug::FatalError("Old Config.pul file, please import and export it on the creator software to update it.");
         ConfigFile::CheckSection(conf->GetSection<InfoHolder>());
         ConfigFile::CheckSection(conf->GetSection<CupsHolder>());
         ConfigFile::CheckSection(conf->GetSection<PulBMG>());

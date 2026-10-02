@@ -13,17 +13,19 @@ namespace Pulsar {
 namespace Race {
 
 bool Has200ccPhysics() {
-    if (Is200cc()) return true;
+    if (Is200cc())
+        return true;
 
-    if (System::sInstance->IsOfflineVS()) return System::offlineCustomEngineClass >= 175;
+    if (System::sInstance->IsOfflineVS())
+        return System::offlineCustomEngineClass >= 175;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr ||
-        (controller->roomType != RKNet::ROOMTYPE_FROOM_HOST && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST))
+    if (controller == nullptr || (controller->roomType != RKNet::ROOMTYPE_FROOM_HOST && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST))
         return false;
 
     const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    if (mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE) return false;
+    if (mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE)
+        return false;
     return System::sInstance->netMgr.hostCustomEngineClass >= 200;
 }
 
@@ -32,10 +34,11 @@ static bool IsBrakeDriftingEnabled() {
     const GameMode mode = scenario.settings.gamemode;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
-    return Has200ccPhysics() ||
-           (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
-            mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
+    if (isOnlineRoomActive && System::sInstance->IsVanillaMode())
+        return false;
+    return Has200ccPhysics()
+      || (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL
+        && !System::sInstance->IsContext(PULSAR_MODE_OTT));
 }
 
 static void CannonExitSpeed() {
@@ -63,7 +66,8 @@ void EnableBrakeDrifting(Input::ControllerHolder &controllerHolder) {
                 inputsMask = 0x320;
                 break;
         }
-        if ((inputs & inputsMask) == inputsMask) controllerHolder.inputStates[0].buttonActions |= 0x10;
+        if ((inputs & inputsMask) == inputsMask)
+            controllerHolder.inputStates[0].buttonActions |= 0x10;
     }
 }
 
@@ -71,13 +75,13 @@ static void CalcBrakeDrifting() {
     const SectionPad &pad = SectionMgr::sInstance->pad;
     for (int hudSlotId = 0; hudSlotId < 4; ++hudSlotId) {
         Input::ControllerHolder *controllerHolder = pad.GetControllerHolder(hudSlotId);
-        if (controllerHolder != nullptr) EnableBrakeDrifting(*controllerHolder);
+        if (controllerHolder != nullptr)
+            EnableBrakeDrifting(*controllerHolder);
     }
 }
 static RaceFrameHook BrakeDriftingCheck(CalcBrakeDrifting);
 
-void FixGhostBrakeDrifting(Input::GhostWriter *writer, u16 buttonActions, u8 quantisedStickX,
-                           u8 quantisedStickY, u8 motionControlFlickUnmirrored) {
+void FixGhostBrakeDrifting(Input::GhostWriter *writer, u16 buttonActions, u8 quantisedStickX, u8 quantisedStickY, u8 motionControlFlickUnmirrored) {
     register Input::ControllerHolder *controllerHolder;
     asm(mr controllerHolder, r30;);
     EnableBrakeDrifting(*controllerHolder);
@@ -98,7 +102,8 @@ bool IsBrakeDrifting(const Kart::Status &status) {
 
 void BrakeDriftingAcceleration(Kart::Movement &movement) {
     movement.UpdateKartSpeed();
-    if (IsBrakeDrifting(*movement.pointers->kartStatus)) movement.acceleration = brakeDriftingDeceleration;  // JUMP_PAD|RAMP_BOOST|BOOST
+    if (IsBrakeDrifting(*movement.pointers->kartStatus))
+        movement.acceleration = brakeDriftingDeceleration;  // JUMP_PAD|RAMP_BOOST|BOOST
 }
 kmCall(0x80579910, BrakeDriftingAcceleration);
 
@@ -170,8 +175,7 @@ static Kart::WheelPhysicsHolder &FastFallingWheels(Kart::Sub &sub, u8 wheelIdx, 
             status->bool_0x96 = (status->bitfield0 & 0x80) != 0;
         else if ((status->airtime >= 2) && (!status->bool_0x96 || (status->airtime > 19))) {
             Input::ControllerHolder &controllerHolder = sub.GetControllerHolder();
-            float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f
-                                                                          : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
+            float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f : (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
             gravity *= (input * fastFallingWheelGravity + 1.0f);
         }
     }

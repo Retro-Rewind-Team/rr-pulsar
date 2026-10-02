@@ -11,7 +11,8 @@ extern "C" void DWC_LoginAsync(wchar_t *miiName, int unk, void *callback, RKNet:
 static DWC::LoginCallback s_originalLoginCallback = nullptr;
 
 static void LoginCallbackAndQueueRating(DWC::Error error, int profileId, void *param) {
-    if (s_originalLoginCallback != nullptr) s_originalLoginCallback(error, profileId, param);
+    if (s_originalLoginCallback != nullptr)
+        s_originalLoginCallback(error, profileId, param);
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     const u32 licenseId = rksys->curLicenseId;
     PointRating::StartLoginRatingDownload(profileId, licenseId);

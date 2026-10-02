@@ -54,7 +54,8 @@ void ExpMultiPlayer::OnExternalButtonSelect(PushButton &button, u32 hudSlotId) {
 void ExpMultiPlayer::OnSettingsButtonClick(PushButton &button, u32 hudSlotId) {
     SettingsPageSelect *settingsPageSelect = ExpSection::GetSection()->GetPulPage<SettingsPageSelect>();
     SettingsPanel *settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
-    if (settingsPageSelect == nullptr || settingsPanel == nullptr) return;
+    if (settingsPageSelect == nullptr || settingsPanel == nullptr)
+        return;
 
     settingsPageSelect->SetContext(Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_MULTIPLAYER_MENU);
     settingsPanel->prevPageId = PAGE_MULTIPLAYER_MENU;

@@ -117,8 +117,7 @@ void ExpWFCMain::OnBattleButtonClick(PushButton &pushButton, u32 hudSlotId) {
 }
 
 void ExpWFCMain::OnSettingsButtonClick(PushButton &pushButton, u32 r5) {
-    ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
-        Settings::SETTINGS_CONTEXT_ONLINE, PAGE_WFC_MAIN);
+    ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(Settings::SETTINGS_CONTEXT_ONLINE, PAGE_WFC_MAIN);
     ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_WFC_MAIN;
     this->nextPageId = static_cast<PageId>(this->topSettingsPage);
     this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
@@ -131,7 +130,8 @@ void ExpWFCMain::OnLeaderboardButtonClick(PushButton &pushButton, u32 hudSlotId)
 
 void ExpWFCMain::ExtOnStartPress(u32) {
     Pages::MessageBoxTransparent *messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBoxTransparent>();
-    if (messageBox == nullptr) return;
+    if (messageBox == nullptr)
+        return;
 
     s_rankDetailsBuffer[0] = L'\0';
     Ranking::FormatRankDetailsMessage(s_rankDetailsBuffer, sizeof(s_rankDetailsBuffer) / sizeof(s_rankDetailsBuffer[0]));

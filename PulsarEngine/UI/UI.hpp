@@ -32,7 +32,6 @@ bool AdvanceFroomSettingsPreview(Settings::SettingsPageId &page);
 
 */
 enum PulPageId {
-
     PULPAGE_INITIAL = 0x100,
     PULPAGE_CHOOSENEXT = PULPAGE_INITIAL,
     PULPAGE_VARIANTSELECT,
@@ -60,7 +59,9 @@ enum PulPageId {
 
 class ExpSection : public Section {  // u32 id -> either a standard pageId but can also be a PulPageId
 public:
-    static ExpSection *GetSection() { return reinterpret_cast<ExpSection *>(SectionMgr::sInstance->curSection); }
+    static ExpSection *GetSection() {
+        return reinterpret_cast<ExpSection *>(SectionMgr::sInstance->curSection);
+    }
 
     static void CreatePages(ExpSection &self, SectionId id);
     void CreatePulPages();
@@ -81,7 +82,9 @@ public:
         static_assert(is_base_of<Page, T>::value, "Not a Page");
         return static_cast<T *>(this->pulPages[id - PULPAGE_INITIAL]);
     }
-    inline void SetPulPage(Page *t, PulPageId id) { this->pulPages[id - PULPAGE_INITIAL] = t; }
+    inline void SetPulPage(Page *t, PulPageId id) {
+        this->pulPages[id - PULPAGE_INITIAL] = t;
+    }
 
     Page *pulPages[PULPAGE_MAX];
     bool hasAutoVote;

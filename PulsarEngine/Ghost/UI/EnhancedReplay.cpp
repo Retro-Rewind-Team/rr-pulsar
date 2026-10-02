@@ -31,14 +31,16 @@ kmCall(0x8062cc98, CreateTTHUD);
 
 static PageId TTPauseNextPage(const Pages::RaceHUD &page) {
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) return PAGE_GHOST_REPLAY_PAUSE_MENU;
+    if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU)
+        return PAGE_GHOST_REPLAY_PAUSE_MENU;
     return page.GetPausePageId();
 }
 kmCall(0x808569e0, TTPauseNextPage);
 
 static void OnContinueButtonTTPauseClick(Pages::GhostReplayPause &page, PageId id) {
     const u32 stage = Raceinfo::sInstance->stage;
-    if (stage == 0x4) id = PAGE_TT_SPLITS;  // if race is finished, repurpose the continue button
+    if (stage == 0x4)
+        id = PAGE_TT_SPLITS;  // if race is finished, repurpose the continue button
     page.nextPage = id;
     return;
 }
@@ -61,14 +63,16 @@ kmWrite32(0x80857088, 0x40820018);
 kmWrite32(0x808570a4, 0x2C030001);
 static u8 CharCheerGetCorrectArguments(int r3, u8 id) {
     u8 ret = Racedata::sInstance->racesScenario.players[id].hudSlotId;
-    if (ret == -1) ret = 0;
+    if (ret == -1)
+        ret = 0;
     return ret;
 }
 kmCall(0x808570c4, CharCheerGetCorrectArguments);
 
 static void PatchFinishRaceBMGID(LayoutUIControl &control, u32 bmgId, const Text::Info *text) {
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) bmgId = BMG_FINISH;
+    if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU)
+        bmgId = BMG_FINISH;
     control.SetMessage(bmgId, text);
 }
 kmCall(0x8085728c, PatchFinishRaceBMGID);
@@ -76,7 +80,8 @@ kmCall(0x8085728c, PatchFinishRaceBMGID);
 
 static int ChangePlayerType(const RacedataPlayer &player, u8 id) {
     PlayerType type = Racedata::sInstance->racesScenario.players[id].playerType;
-    if (type == PLAYER_GHOST && id == 0) return 0;
+    if (type == PLAYER_GHOST && id == 0)
+        return 0;
     return type;
 }
 kmCall(0x80594444, ChangePlayerType);
@@ -87,7 +92,8 @@ kmWrite32(0x80594458, 0x2c030003);
 
 bool PatchIsLocalCheck(const Kart::Player &kartPlayer) {
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) return false;
+    if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU)
+        return false;
     return kartPlayer.IsLocal();
 }
 kmCall(0x80783770, PatchIsLocalCheck);
@@ -95,7 +101,8 @@ kmCall(0x80783770, PatchIsLocalCheck);
 static bool EnableCPUDrivingAfterRace(const KartAIController &aiController) {
     const u8 id = aiController.GetPlayerIdx();
     const PlayerType type = Racedata::sInstance->racesScenario.players[id].playerType;
-    if (type == PLAYER_GHOST && id != 0) return true;
+    if (type == PLAYER_GHOST && id != 0)
+        return true;
     return false;
 }
 kmCall(0x80732634, EnableCPUDrivingAfterRace);
@@ -113,16 +120,17 @@ asmFunc PatchSoundIssues() {
 }
 kmCall(0x80716064, PatchSoundIssues);
 
-void *PatchMiiHeadsOpacity(MiiHeadsModel &model, Mii *mii, MiiDriverModel *driverModel, u32 r6, nw4r::g3d::ScnMdl::BufferOption option,
-                           u32 r8, u32 id) {
-    if (Raceinfo::sInstance != nullptr && id == 0) model.scnObjDrawOptionsIdx = 0xA;
+void *PatchMiiHeadsOpacity(MiiHeadsModel &model, Mii *mii, MiiDriverModel *driverModel, u32 r6, nw4r::g3d::ScnMdl::BufferOption option, u32 r8, u32 id) {
+    if (Raceinfo::sInstance != nullptr && id == 0)
+        model.scnObjDrawOptionsIdx = 0xA;
     return model.InitModel(mii, driverModel, r6, option, r8, id);
 }
 kmCall(0x807dc0e8, PatchMiiHeadsOpacity);
 
 static void ChangeGhostOpacity(u8 focusedPlayerIdx) {
     const SectionId id = SectionMgr::sInstance->curSection->sectionId;
-    if (id < SECTION_WATCH_GHOST_FROM_CHANNEL || id > SECTION_WATCH_GHOST_FROM_MENU) return;
+    if (id < SECTION_WATCH_GHOST_FROM_CHANNEL || id > SECTION_WATCH_GHOST_FROM_MENU)
+        return;
     Kart::Manager *kartMgr = Kart::Manager::sInstance;
     for (int i = 0; i < kartMgr->playerCount; ++i) {
         u32 scnObjDrawOptionsIdx = i == focusedPlayerIdx ? 0xA : 1;
@@ -130,11 +138,16 @@ static void ChangeGhostOpacity(u8 focusedPlayerIdx) {
         DriverController *driver = pointers.driverController;
 
         pointers.kartBody->UpdateModelDrawPriority(scnObjDrawOptionsIdx);
-        if (driver->driverModel != nullptr) driver->driverModel->UpdateDrawPriority(scnObjDrawOptionsIdx);
-        if (driver->driverModel_lod != nullptr) driver->driverModel_lod->UpdateDrawPriority(scnObjDrawOptionsIdx);
-        if (driver->miiHeads != nullptr) driver->miiHeads->UpdateDrawPriority(scnObjDrawOptionsIdx);
-        if (driver->ticoModel != nullptr) driver->ticoModel->tico->UpdateDrawPriority(scnObjDrawOptionsIdx);
-        if (driver->toadetteHair != nullptr && driver->toadetteHair->cb != 0) driver->toadetteHair->cb->hair->UpdateDrawPriority(scnObjDrawOptionsIdx);
+        if (driver->driverModel != nullptr)
+            driver->driverModel->UpdateDrawPriority(scnObjDrawOptionsIdx);
+        if (driver->driverModel_lod != nullptr)
+            driver->driverModel_lod->UpdateDrawPriority(scnObjDrawOptionsIdx);
+        if (driver->miiHeads != nullptr)
+            driver->miiHeads->UpdateDrawPriority(scnObjDrawOptionsIdx);
+        if (driver->ticoModel != nullptr)
+            driver->ticoModel->tico->UpdateDrawPriority(scnObjDrawOptionsIdx);
+        if (driver->toadetteHair != nullptr && driver->toadetteHair->cb != 0)
+            driver->toadetteHair->cb->hair->UpdateDrawPriority(scnObjDrawOptionsIdx);
         for (int j = 0; j < pointers.values->wheelCount0; ++j) {
             pointers.wheels[j]->UpdateModelDrawPriority(scnObjDrawOptionsIdx);
             pointers.suspensions[j]->UpdateModelDrawPriority(scnObjDrawOptionsIdx);

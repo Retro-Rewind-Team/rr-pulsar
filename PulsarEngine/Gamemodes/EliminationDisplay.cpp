@@ -21,7 +21,8 @@ static void ResetDisplay() {
 }
 
 static void Record(u8 playerId, bool keepNewest) {
-    if (playerId >= maxPlayers) return;
+    if (playerId >= maxPlayers)
+        return;
 
     if (sRecentCount >= maxDisplayedEliminations) {
         if (!keepNewest) {
@@ -48,13 +49,16 @@ void ResetBattleTracking() {
 }
 
 void Tick() {
-    if (sTimer == 0) return;
+    if (sTimer == 0)
+        return;
     --sTimer;
-    if (sTimer == 0) ResetDisplay();
+    if (sTimer == 0)
+        ResetDisplay();
 }
 
 void RecordRoundElimination(u8 playerId, u8 concludedRound) {
-    if (playerId >= maxPlayers) return;
+    if (playerId >= maxPlayers)
+        return;
     if (sTimer == 0 || sRecentRound != concludedRound) {
         ResetDisplay();
         sRecentRound = concludedRound;
@@ -63,12 +67,14 @@ void RecordRoundElimination(u8 playerId, u8 concludedRound) {
 }
 
 void TrackBattleElimination(u8 playerId, bool eliminated) {
-    if (playerId >= maxPlayers) return;
+    if (playerId >= maxPlayers)
+        return;
     if (!eliminated) {
         sBattleEliminationRecorded[playerId] = false;
         return;
     }
-    if (sBattleEliminationRecorded[playerId]) return;
+    if (sBattleEliminationRecorded[playerId])
+        return;
 
     sBattleEliminationRecorded[playerId] = true;
     Record(playerId, true);

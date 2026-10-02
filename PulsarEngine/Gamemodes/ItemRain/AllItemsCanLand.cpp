@@ -13,9 +13,7 @@ namespace Race {
 
 static bool IsItemStormForcedEnabled() {
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    if (roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-        roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
-        roomType == RKNet::ROOMTYPE_NONE) {
+    if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST || roomType == RKNet::ROOMTYPE_NONE) {
         return Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODESTORM);
     }
     return false;
@@ -23,11 +21,8 @@ static bool IsItemStormForcedEnabled() {
 
 static bool IsItemRainForcedEnabled() {
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    if (roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-        roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
-        roomType == RKNet::ROOMTYPE_NONE ||
-        roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
-        roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
+    if (roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST || roomType == RKNet::ROOMTYPE_NONE || roomType == RKNet::ROOMTYPE_VS_REGIONAL
+      || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         return Pulsar::System::sInstance->IsContext(PULSAR_ITEMMODERAIN);
     }
     return false;

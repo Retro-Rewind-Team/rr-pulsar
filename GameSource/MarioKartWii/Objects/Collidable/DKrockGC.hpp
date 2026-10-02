@@ -16,8 +16,7 @@ public:
     u8 GetShadowListIdx() override;  // 0x80 80770374
 
     ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 80770068
-    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 807701f8
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 807701f8
     const Vec3 &GetCollisionTranslation() const override;  // 0xd4 8077036c
 
     u32 someSortOfState;  // 0xb0 changed to 1 which causes a func call and then back to 0

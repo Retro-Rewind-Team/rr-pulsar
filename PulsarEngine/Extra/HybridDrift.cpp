@@ -8,8 +8,7 @@ static bool isVanillaModeOnline = false;
 
 static void UpdateVanillaModeOnline() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    isVanillaModeOnline = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
-                          Pulsar::System::sInstance->IsVanillaMode();
+    isVanillaModeOnline = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN && Pulsar::System::sInstance->IsVanillaMode();
 }
 static SectionLoadHook VanillaModeOnlineHook(UpdateVanillaModeOnline);
 

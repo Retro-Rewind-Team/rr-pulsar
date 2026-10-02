@@ -13,13 +13,15 @@ namespace OTT {
 bool IsVSGhost(u32 playerId) {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
         const Racedata *racedata = Racedata::sInstance;
-        if (racedata->racesScenario.players[playerId].playerType == PLAYER_GHOST) return true;
+        if (racedata->racesScenario.players[playerId].playerType == PLAYER_GHOST)
+            return true;
     }
     return false;
 }
 inline s32 GetVSGhostId() {
     const u32 playerId = Racedata::sInstance->racesScenario.playerCount - 1;
-    if (IsVSGhost(playerId)) return playerId;
+    if (IsVSGhost(playerId))
+        return playerId;
     return -1;
 }
 
@@ -32,13 +34,17 @@ void AddGhostToVS() {
         u8 localCount;
         racedata->menusScenario.ComputePlayerCounts(&playerCount, &screenCount, &localCount);
         if (racedata->menusScenario.settings.gamemode >= MODE_PRIVATE_VS) {
-            if (playerCount == 12) return;
+            if (playerCount == 12)
+                return;
         }
-        if (playerCount < 12) ++playerCount;
+        if (playerCount < 12)
+            ++playerCount;
 
         const EngineClass cc = racedata->menusScenario.settings.engineClass;
-        if ((racedata->menusScenario.settings.modeFlags & 0x1) != 0) return;
-        if (cc == CC_100 && !system->GetInfo().Has200cc()) return;
+        if ((racedata->menusScenario.settings.modeFlags & 0x1) != 0)
+            return;
+        if (cc == CC_100 && !system->GetInfo().Has200cc())
+            return;
 
         char folderPath[IOS::ipcMaxPath];
         const PulsarId id = CupsConfig::sInstance->GetWinning();
@@ -51,7 +57,8 @@ void AddGhostToVS() {
         const char *favGhost = leaderboard.GetFavGhost(ttMode);
         char initial = favGhost[0];
 
-        if (initial == '\0') return;
+        if (initial == '\0')
+            return;
 
         IO *io = IO::sInstance;
         RKG *rkg = io->Alloc<RKG>(sizeof(RKG));
@@ -100,7 +107,8 @@ kmCall(0x80523010, FinishGhostRace);
 kmCall(0x8078d0b8, System::GetNonTTGhostPlayersCount);
 
 bool CPUItemFix(KartAIController &kartAI) {
-    if (IsVSGhost(kartAI.pointers->values->playerIdx)) return true;
+    if (IsVSGhost(kartAI.pointers->values->playerIdx))
+        return true;
     return kartAI.IsCPU();
 }
 
@@ -124,7 +132,8 @@ void FixPositions(RaceinfoPlayer &player) {
 kmCall(0x80533040, FixPositions);
 
 void DoNotSetGhostsDCd(Raceinfo &raceInfo, u8 playerId) {
-    if (IsVSGhost(playerId)) return;
+    if (IsVSGhost(playerId))
+        return;
     raceInfo.SetPlayerDisconnected(playerId);
 }
 kmCall(0x80654478, DoNotSetGhostsDCd);

@@ -30,7 +30,9 @@ static s8 cycleDirections[4];
 static ModelDirector *originalModels[CHARACTER_COUNT];
 static ModelTransformator *originalTransformators[CHARACTER_COUNT];
 static bool originalWasVisible[CHARACTER_COUNT];
-enum { AUTHOR_NAME_CONTROL_WORDS = (sizeof(CharaName) + sizeof(u32) - 1) / sizeof(u32) };
+enum {
+    AUTHOR_NAME_CONTROL_WORDS = (sizeof(CharaName) + sizeof(u32) - 1) / sizeof(u32)
+};
 static u32 authorNameControlStorage[4][AUTHOR_NAME_CONTROL_WORDS];
 static bool authorNameControlLoaded[4];
 static bool loadingAuthorNameControl;
@@ -53,7 +55,8 @@ void CreateCharacterTable() {
             snprintf(path, sizeof(path), "/Scene/Model/Driver/%s-%u.brres", name, slot);
             characterTables[character][slot] = IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0;
         }
-        if (!characterTables[character][selectedSlots[character]]) selectedSlots[character] = 0;
+        if (!characterTables[character][selectedSlots[character]])
+            selectedSlots[character] = 0;
     }
 }
 static Settings::Hook CreateCharacterTableHook(CreateCharacterTable);
@@ -83,7 +86,8 @@ kmCall(0x80542140, LoadKartArchive);
 kmCall(0x80542180, LoadKartArchive);
 
 static void UnloadDriverBRRES(u32 character) {
-    if (customModels[character] == nullptr) return;
+    if (customModels[character] == nullptr)
+        return;
 
     ModelDirector *model = customModels[character];
     ScnMgr *scnMgr = ScnMgr::sInstance[model->scnMgrIdx];
@@ -105,8 +109,7 @@ static void UnloadDriverBRRES(u32 character) {
         hair->toadette = originalModels[character];
         hair->cb->toadette = originalModels[character];
         for (u32 i = 0; i < 2; ++i) {
-            ModelCalcCBBoneLinked *callback = static_cast<ModelCalcCBBoneLinked *>(
-                static_cast<EmptyModelCalcParent *>(hair->scnMdlEx[i]->scnObj->callback));
+            ModelCalcCBBoneLinked *callback = static_cast<ModelCalcCBBoneLinked *>(static_cast<EmptyModelCalcParent *>(hair->scnMdlEx[i]->scnObj->callback));
             callback->other = originalModels[character];
         }
         hair->Update(scnMgr->curScnRootIdx);
@@ -130,21 +133,26 @@ static void UnloadDriverBRRES(u32 character) {
 
 bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
     const u32 character = static_cast<u32>(characterId);
-    if (character >= CHARACTER_COUNT || slot > MAX_CUSTOM_CHARACTER_SLOTS || !characterTables[character][slot]) return false;
-    if (loadedSlots[character] == slot) return true;
+    if (character >= CHARACTER_COUNT || slot > MAX_CUSTOM_CHARACTER_SLOTS || !characterTables[character][slot])
+        return false;
+    if (loadedSlots[character] == slot)
+        return true;
 
     UnloadDriverBRRES(character);
-    if (slot == 0) return true;
+    if (slot == 0)
+        return true;
 
     MenuDriverModelMgr *manager = MenuModelMgr::sInstance->driverModels;
     MenuDriverModel *driverModel = &manager->models[character];
-    if (driverModel->model == nullptr) return false;
+    if (driverModel->model == nullptr)
+        return false;
 
     char path[0x80];
     snprintf(path, sizeof(path), "/Scene/Model/Driver/%s-%u.brres", ArchiveMgr::GetKartArchivePostfix(characterId), slot);
     const s32 entryNum = IOOverrides::ConvertPathToEntryNumWithLooseOverride(path);
     DVD::FileInfo fileInfo = {};
-    if (entryNum < 0 || !DVD::FastOpen(entryNum, &fileInfo)) return false;
+    if (entryNum < 0 || !DVD::FastOpen(entryNum, &fileInfo))
+        return false;
     const u32 fileSize = fileInfo.length;
     DVD::Close(&fileInfo);
 
@@ -155,7 +163,8 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
     parentHeap->dameFlag &= ~1;
     EGG::ExpHeap *heap = EGG::ExpHeap::Create(fileSize + 0xe1000, parentHeap, 0);
     parentHeap->dameFlag = heapFlags;
-    if (heap == nullptr) return false;
+    if (heap == nullptr)
+        return false;
 
     EGG::Allocator *allocator = new (heap) EGG::Allocator(heap, 0x20);
     ScnMgr *scnMgr = ScnMgr::sInstance[0];
@@ -169,7 +178,8 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
     ModelDirector *model = new (heap) ModelDirector(2, 0);
     g3d::ResFile brres;
     brres.data = static_cast<g3d::ResFileData *>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
-    if (brres.data != nullptr) ModelDirector::BindBRRESImpl(brres, path, nullptr, 0);
+    if (brres.data != nullptr)
+        ModelDirector::BindBRRESImpl(brres, path, nullptr, 0);
     MenuModelBRRESHandle brresHandle;
     brresHandle.menuModelBRRES = brres;
     const bool loaded = brres.data != nullptr && brresHandle.LoadDriverModel(*model, characterId);
@@ -221,8 +231,7 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
         hair->toadette = model;
         hair->cb->toadette = model;
         for (u32 i = 0; i < 2; ++i) {
-            ModelCalcCBBoneLinked *callback = static_cast<ModelCalcCBBoneLinked *>(
-                static_cast<EmptyModelCalcParent *>(hair->scnMdlEx[i]->scnObj->callback));
+            ModelCalcCBBoneLinked *callback = static_cast<ModelCalcCBBoneLinked *>(static_cast<EmptyModelCalcParent *>(hair->scnMdlEx[i]->scnObj->callback));
             callback->other = model;
         }
         hair->Update(scnMgr->curScnRootIdx);
@@ -234,14 +243,17 @@ static void PageBeforeControlUpdate(Page *page) {
     typedef void (*PageFunction)(Page *);
     PageFunction *vtable = *reinterpret_cast<PageFunction **>(page);
     vtable[18](page);
-    if (page->pageId != PAGE_CHARACTER_SELECT) return;
+    if (page->pageId != PAGE_CHARACTER_SELECT)
+        return;
 
     Pages::CharacterSelect *characterSelectPage = static_cast<Pages::CharacterSelect *>(page);
     memset(cycleDirections, 0, sizeof(cycleDirections));
     for (u32 player = 0; player < 4; ++player) {
-        if ((characterSelectPage->playerBitfield & (1 << player)) == 0) continue;
+        if ((characterSelectPage->playerBitfield & (1 << player)) == 0)
+            continue;
         Input::ControllerHolder *holder = SectionMgr::sInstance->pad.GetControllerHolder(player);
-        if (holder == nullptr || holder->curController == nullptr) continue;
+        if (holder == nullptr || holder->curController == nullptr)
+            continue;
 
         const u16 raw = holder->uiinputStates[0].rawButtons;
         const u16 pressed = raw & ~holder->uiinputStates[1].rawButtons;
@@ -259,14 +271,17 @@ static void PageBeforeControlUpdate(Page *page) {
             case NUNCHUCK:
                 previousButton = WPAD::WPAD_BUTTON_C;
                 nextButton = WPAD::WPAD_BUTTON_Z;
-                if (raw & WPAD::WPAD_BUTTON_C) holder->uiinputStates[0].buttonActions &= ~0x100;
+                if (raw & WPAD::WPAD_BUTTON_C)
+                    holder->uiinputStates[0].buttonActions &= ~0x100;
                 break;
             default:
                 previousButton = WPAD::WPAD_BUTTON_B;
                 nextButton = WPAD::WPAD_BUTTON_A;
                 holder->uiinputStates[0].buttonActions &= ~0x3;
-                if (raw & WPAD::WPAD_BUTTON_2) holder->uiinputStates[0].buttonActions |= 0x1;
-                if (raw & WPAD::WPAD_BUTTON_1) holder->uiinputStates[0].buttonActions |= 0x2;
+                if (raw & WPAD::WPAD_BUTTON_2)
+                    holder->uiinputStates[0].buttonActions |= 0x1;
+                if (raw & WPAD::WPAD_BUTTON_1)
+                    holder->uiinputStates[0].buttonActions |= 0x2;
                 break;
         }
 
@@ -285,17 +300,20 @@ static void PageAfterControlUpdate(Page *page) {
     typedef void (*PageFunction)(Page *);
     PageFunction *vtable = *reinterpret_cast<PageFunction **>(page);
     vtable[19](page);
-    if (page->pageId != PAGE_CHARACTER_SELECT) return;
+    if (page->pageId != PAGE_CHARACTER_SELECT)
+        return;
 
     Pages::CharacterSelect *characterSelectPage = static_cast<Pages::CharacterSelect *>(page);
     bool changed[CHARACTER_COUNT] = {};
     for (u32 player = 0; player < 4; ++player) {
         const s8 direction = cycleDirections[player];
         cycleDirections[player] = 0;
-        if (direction == 0 || (characterSelectPage->playerBitfield & (1 << player)) == 0) continue;
+        if (direction == 0 || (characterSelectPage->playerBitfield & (1 << player)) == 0)
+            continue;
 
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
-        if (character >= CHARACTER_COUNT || changed[character]) continue;
+        if (character >= CHARACTER_COUNT || changed[character])
+            continue;
         changed[character] = true;
 
         u32 slot = selectedSlots[character];
@@ -304,34 +322,38 @@ static void PageAfterControlUpdate(Page *page) {
                 slot = slot == 0 ? MAX_CUSTOM_CHARACTER_SLOTS : slot - 1;
             else
                 slot = slot == MAX_CUSTOM_CHARACTER_SLOTS ? 0 : slot + 1;
-            if (characterTables[character][slot]) break;
+            if (characterTables[character][slot])
+                break;
         }
         selectedSlots[character] = slot;
-        if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot)) selectedSlots[character] = 0;
-        UI::SetCharacterSelectIcon(characterSelectPage->ctrlMenuCharSelect.GetButtonDriver(static_cast<CharacterId>(character)), "chara_c_down", GetCharacterIconPaneName(static_cast<CharacterId>(character)));
+        if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot))
+            selectedSlots[character] = 0;
+        UI::SetCharacterSelectIcon(
+          characterSelectPage->ctrlMenuCharSelect.GetButtonDriver(static_cast<CharacterId>(character)), "chara_c_down", GetCharacterIconPaneName(static_cast<CharacterId>(character)));
     }
 
     for (u32 character = 0; character < CHARACTER_COUNT; ++character) {
         bool focused = false;
         for (u32 player = 0; player < 4; ++player) {
-            if ((characterSelectPage->playerBitfield & (1 << player)) != 0 &&
-                static_cast<u32>(characterSelectPage->models[player].curCharacter) == character) {
+            if ((characterSelectPage->playerBitfield & (1 << player)) != 0 && static_cast<u32>(characterSelectPage->models[player].curCharacter) == character) {
                 focused = true;
                 break;
             }
         }
 
         const u32 slot = focused ? selectedSlots[character] : 0;
-        if ((customModels[character] != nullptr && loadedSlots[character] != slot) ||
-            (customModels[character] == nullptr && slot != 0)) {
-            if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot)) selectedSlots[character] = 0;
+        if ((customModels[character] != nullptr && loadedSlots[character] != slot) || (customModels[character] == nullptr && slot != 0)) {
+            if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot))
+                selectedSlots[character] = 0;
         }
     }
 
     for (u32 player = 0; player < 4; ++player) {
-        if ((characterSelectPage->playerBitfield & (1 << player)) == 0) continue;
+        if ((characterSelectPage->playerBitfield & (1 << player)) == 0)
+            continue;
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
-        if (character >= CHARACTER_COUNT) continue;
+        if (character >= CHARACTER_COUNT)
+            continue;
         const u32 nameBmgId = UI::GetCharacterNameBMGId(character, false, 12);
         if (changed[character] || characterNameBmgIds[player] != nameBmgId) {
             characterSelectPage->names[player].SetMessage(nameBmgId);
@@ -340,7 +362,8 @@ static void PageAfterControlUpdate(Page *page) {
     }
 
     for (u32 player = 0; player < 4; ++player) {
-        if ((characterSelectPage->playerBitfield & (1 << player)) == 0 || !authorNameControlLoaded[player]) continue;
+        if ((characterSelectPage->playerBitfield & (1 << player)) == 0 || !authorNameControlLoaded[player])
+            continue;
         CharaName *author = reinterpret_cast<CharaName *>(&authorNameControlStorage[player][0]);
         if (characterSelectPage->localPlayerCount > 1) {
             author->isHidden = true;
@@ -349,7 +372,8 @@ static void PageAfterControlUpdate(Page *page) {
         }
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         const u32 authorBmgId = character < CHARACTER_COUNT ? UI::GetCharacterAuthorBMGId(character, selectedSlots[character]) : 0;
-        if (authorTextBmgIds[player] == authorBmgId) continue;
+        if (authorTextBmgIds[player] == authorBmgId)
+            continue;
         author->isHidden = authorBmgId == 0 || !UI::SetCustomCharacterAuthorMessage(*author, authorBmgId);
         authorTextBmgIds[player] = authorBmgId;
     }
@@ -358,10 +382,12 @@ kmCall(0x80602318, PageAfterControlUpdate);
 
 static void CharacterSelectName(ControlLoader *loader, const char *folderName, const char *ctrName, const char *variant, const char **animNames) {
     loader->Load(folderName, ctrName, variant, animNames);
-    if (loadingAuthorNameControl) return;
+    if (loadingAuthorNameControl)
+        return;
     CharaName &name = *static_cast<CharaName *>(loader->layoutUIControl);
     const u32 hud = name.unknown_0x178;
-    if (hud >= 4) return;
+    if (hud >= 4)
+        return;
     characterNameBmgIds[hud] = 0;
 
     CharaName *author = reinterpret_cast<CharaName *>(&authorNameControlStorage[hud][0]);
@@ -376,9 +402,11 @@ static void CharacterSelectName(ControlLoader *loader, const char *folderName, c
     authorLoader.Load(folderName, ctrName, variant, nullptr);
     loadingAuthorNameControl = false;
 
-    const char *panes[] = {"Window_00", "black_parts_t_00", "black_parts_t_01", "select_base", "border", "cc_prev_wh", "cc_next_wh", "cc_prev_nc", "cc_next_nc", "cc_prev_cls", "cc_next_cls", "cc_prev_gc", "cc_next_gc"};
+    const char *panes[] = {
+        "Window_00", "black_parts_t_00", "black_parts_t_01", "select_base", "border", "cc_prev_wh", "cc_next_wh", "cc_prev_nc", "cc_next_nc", "cc_prev_cls", "cc_next_cls", "cc_prev_gc", "cc_next_gc"};
     for (u32 i = 0; i < sizeof(panes) / sizeof(panes[0]); ++i) {
-        if (author->layout.GetPaneByName(panes[i]) != nullptr) author->SetPaneVisibility(panes[i], false);
+        if (author->layout.GetPaneByName(panes[i]) != nullptr)
+            author->SetPaneVisibility(panes[i], false);
     }
     for (u32 i = 0; i < sizeof(author->positionAndscale) / sizeof(author->positionAndscale[0]); ++i) {
         author->positionAndscale[i].position = name.positionAndscale[i].position;

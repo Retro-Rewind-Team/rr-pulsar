@@ -98,7 +98,8 @@ ExceptionFile::ExceptionFile(const OS::Context &context) : magic('PULD'), region
     this->fpscr.fpr = context.fpscr;
     u32 *sp = (u32 *)context.gpr[1];
     for (int i = 0; i < 10; ++i) {
-        if (sp == nullptr || (u32)sp == 0xFFFFFFFF) break;
+        if (sp == nullptr || (u32)sp == 0xFFFFFFFF)
+            break;
         this->frames[i].sp = (u32)sp;
         this->frames[i].lr = sp[1];
         sp = (u32 *)*sp;

@@ -233,13 +233,12 @@ public:
     void GetHudColor(RGBA16 *primary, RGBA16 *secondary) const;  // 805f03dc
     void GetHudSlotIdColorSingle(u8 hudSlotId, RGBA16 *out) const;  // 805f04d8
     int CalcDistanceBothWrapping(const ControlManipulator &other,
-                                 Directions direction) const;  // 805f0d38 calls calcdistance with true, true
+      Directions direction) const;  // 805f0d38 calls calcdistance with true, true
     int CalcDistanceVerticalWrappingOnly(const ControlManipulator &other,
-                                         Directions direction) const;  // 805f0e18 calls calcdistance with false, true
+      Directions direction) const;  // 805f0e18 calls calcdistance with false, true
     int CalcDistanceNoWrapping(const ControlManipulator &other,
-                               Directions direction) const;  // 805f0e24 calls calcdistance with false, false
-    int CalcDistance(const ControlManipulator &other,
-                     Directions direction, bool hasHorizontalWrapping, bool hasVerticalWrapping) const;  // mode: 0 returns 0, 1 only up, 2 both
+      Directions direction) const;  // 805f0e24 calls calcdistance with false, false
+    int CalcDistance(const ControlManipulator &other, Directions direction, bool hasHorizontalWrapping, bool hasVerticalWrapping) const;  // mode: 0 returns 0, 1 only up, 2 both
     int CalcDistanceLinear(const ControlManipulator &other, Directions direction) const;  // 805f2948
     static void GetHudSlotIdColor(u8 hudSlotId, RGBA16 *primary, RGBA16 *secondary);  // 805f0440
 

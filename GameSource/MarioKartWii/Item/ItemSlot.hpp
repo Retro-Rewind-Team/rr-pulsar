@@ -50,8 +50,7 @@ public:
     void Init();  // 807ba7d8
     // takes a pointer to a raw table in an item slot file, processes the values and
     // writes them to the probabilities field of the table holder, then returns the pointer to the start of the next table
-    ItemSlotBinary::Table *ProcessTable(ItemSlotBinary::Table *rawTable, Probabilities *probabilities,
-                                        bool updateRoulette, bool isSpecialTable);  // 807ba9d8
+    ItemSlotBinary::Table *ProcessTable(ItemSlotBinary::Table *rawTable, Probabilities *probabilities, bool updateRoulette, bool isSpecialTable);  // 807ba9d8
     void PostProcessVSTable(Probabilities *probabilities);  // 807bad20 rescales the table based on something and playerCount
     ItemId DecideItem(u16 itemBoxType, u8 position, bool isHuman, bool hasTripleItem, Player *itemHolderPlayer);  // 807bb42c
     // for the roulette, r7 based on boxType (is true if type == 0xFF but idk how that can happen)

@@ -11,7 +11,6 @@ enum FriendListStatus {
     FRIENDLIST_STATUS_ROOM_NONHOST = 4,
     FRIENDLIST_STATUS_PUBLIC_VS_WW = 15,
     FRIENDLIST_STATUS_PUBLIC_VS_REGIONAL = 16,
-
 };
 
 class FriendCodesController {

@@ -25,8 +25,7 @@ public:
     void UpdateShadow() override;  // 0x70 806b6eac
 
     ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806b6874
-    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806b6a18
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806b6a18
 
     // StatePtmfTrigger vtable 808c2198 at 0xb0
     //  ~Basabasa() override; thunk 806b7708

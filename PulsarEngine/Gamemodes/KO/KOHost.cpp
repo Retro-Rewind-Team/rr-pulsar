@@ -51,10 +51,13 @@ void HAWChangeData() {
         }
         for (int playerId = 0; playerId < 12; ++playerId) {
             u8 aid = oldAidsBelonging[playerId];
-            if (aid >= 12) continue;
+            if (aid >= 12)
+                continue;
             u8 hudSlotId = 0;
-            if (playerId != 0 && oldAidsBelonging[playerId - 1] == aid) hudSlotId = 1;
-            if (mgr->IsKOdAid(aid, hudSlotId) || mgr->IsDisconnectedAid(aid, hudSlotId)) continue;
+            if (playerId != 0 && oldAidsBelonging[playerId - 1] == aid)
+                hudSlotId = 1;
+            if (mgr->IsKOdAid(aid, hudSlotId) || mgr->IsDisconnectedAid(aid, hudSlotId))
+                continue;
             const u8 compactSlot = oldPlayerIds[aid][0] == 0xFF ? 0 : 1;
             oldPlayerIds[aid][compactSlot] = playerId;
         }
@@ -63,7 +66,8 @@ void HAWChangeData() {
         SectionMgr *sectionMgr = SectionMgr::sInstance;
         SectionParams *params = sectionMgr->sectionParams;
         const bool isMainOut = mgr->IsKOdAid(localAid, 0) || mgr->IsDisconnectedAid(localAid, 0);
-        if (sub.localPlayerCount == 1 && isMainOut && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();
+        if (sub.localPlayerCount == 1 && isMainOut && !mgr->GetIsSwapped())
+            mgr->SwapControllersAndUI();
 
         for (int playerId = 0; playerId < 12; ++playerId) {
             RacedataPlayer &player = racedata->menusScenario.players[playerId];
@@ -74,7 +78,8 @@ void HAWChangeData() {
                 params->onlineParams.regionId[playerId] = 0xF;
             } else {
                 u8 hudSlotId = 0;
-                if (playerId != 0 && controller->aidsBelongingToPlayerIds[playerId - 1] == aid) hudSlotId = 1;
+                if (playerId != 0 && controller->aidsBelongingToPlayerIds[playerId - 1] == aid)
+                    hudSlotId = 1;
                 const u8 oldPlayerId = oldPlayerIds[aid][hudSlotId];
                 const RacedataPlayer &prev = racedata->menusScenario.players[oldPlayerId];
                 memcpy(&player, &prev, sizeof(RacedataPlayer));
@@ -86,7 +91,8 @@ void HAWChangeData() {
                 playerMiis.mii[playerId] = playerMiis.mii[oldPlayerId];
                 for (int i = 0; i < 7; ++i) {
                     MiiTexObj *tex = playerMiis.texObj[i];
-                    if (tex != nullptr) memcpy(&tex[playerId], &tex[oldPlayerId], sizeof(MiiTexObj));
+                    if (tex != nullptr)
+                        memcpy(&tex[playerId], &tex[oldPlayerId], sizeof(MiiTexObj));
                 }
             }
         }
@@ -95,7 +101,8 @@ void HAWChangeData() {
             sectionMgr->nextSectionId = static_cast<SectionId>(next - 4);
         }
 
-        if (mgr->isSpectating) racedata->menusScenario.settings.gametype = GAMETYPE_ONLINE_SPECTATOR;
+        if (mgr->isSpectating)
+            racedata->menusScenario.settings.gametype = GAMETYPE_ONLINE_SPECTATOR;
     }
 }
 }  // namespace KO

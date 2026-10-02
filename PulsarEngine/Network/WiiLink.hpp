@@ -39,7 +39,7 @@ typedef struct {
 typedef struct {
     u32 format_version;  // Payload format version
     u32 format_version_compat;  // Minimum payload format version that this
-                                // payload is compatible with
+    // payload is compatible with
     char name[0xC];  // Payload name (e.g. "RMCPD00")
     u32 version;  // Payload version
     u32 got_start;
@@ -119,7 +119,6 @@ typedef enum {
  * Flags for different patch levels.
  */
 typedef enum {
-
     /**
      * Critical, used for security patches and other things required to connect
      * to the server. This has no value and is always automatically applied.

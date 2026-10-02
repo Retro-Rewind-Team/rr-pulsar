@@ -14,7 +14,9 @@ void EndRaceWithEliminationFinishTime(u8 playerId, u8 placement);
 
 class Mgr {
 public:
-    enum { MaxRounds = 12 };
+    enum {
+        MaxRounds = 12
+    };
     enum EliminationCause {
         ELIMINATION_CAUSE_ROUND,
         ELIMINATION_CAUSE_DISCONNECT
@@ -28,15 +30,29 @@ public:
     void ApplyRemoteEvent(u8 seq, u8 eliminatedId, u8 roundIndex, u8 activeCount);
     void ApplyRemoteBatch(u8 seq, u8 roundIndex, u8 activeCount, const u8 *elimIds, u8 elimCount, bool noRoundAdvance);
 
-    bool IsActive(u8 playerId) const { return playerId < 12 && this->active[playerId]; }
-    u8 GetActiveCount() const { return this->activeCount; }
-    u8 GetRoundIndex() const { return this->roundIndex; }
+    bool IsActive(u8 playerId) const {
+        return playerId < 12 && this->active[playerId];
+    }
+    u8 GetActiveCount() const {
+        return this->activeCount;
+    }
+    u8 GetRoundIndex() const {
+        return this->roundIndex;
+    }
     u8 GetCurrentRoundEliminationCount() const;
 
-    u8 GetPendingSequence() const { return this->pendingSequence; }
-    u8 GetPendingElimination() const { return static_cast<u8>(this->pendingElimination & 0x7F); }
-    u8 GetPendingRound() const { return this->pendingRound; }
-    u8 GetPendingActiveCount() const { return this->pendingActiveCount; }
+    u8 GetPendingSequence() const {
+        return this->pendingSequence;
+    }
+    u8 GetPendingElimination() const {
+        return static_cast<u8>(this->pendingElimination & 0x7F);
+    }
+    u8 GetPendingRound() const {
+        return this->pendingRound;
+    }
+    u8 GetPendingActiveCount() const {
+        return this->pendingActiveCount;
+    }
     void SetKoPerRace(u8 value);
     u8 GetKoPerRace() const;
     static u8 BuildPlan(u8 playerCount, u8 koPerRace, u8 usualLapCount, u8 *outPlan, u8 capacity);

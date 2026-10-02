@@ -33,8 +33,7 @@ public:
     void SetMessage(const BMGHolder &curFileBmgs, const BMGHolder &commonBmgs, u32 bmgId, const Info *text = nullptr);  // 805cdd00
     void ResetMessage();  // 805cedcc
     void Draw(const lyt::DrawInfo &drawInfo);  // 805cee08
-    static bool GetBMGInfo(const BMGHolder &curFileBmgs, const BMGHolder &commonBmgs, u32 bmgId,
-                           wchar_t *msgDest, Text::FontIndex *fontIdx);  // 805cef10
+    static bool GetBMGInfo(const BMGHolder &curFileBmgs, const BMGHolder &commonBmgs, u32 bmgId, wchar_t *msgDest, Text::FontIndex *fontIdx);  // 805cef10
 
     lyt::TextBox *pane;  // 0
     GlyphParams *glyphArray;  // 0x4 size max glyph count

@@ -1,10 +1,19 @@
 BasedOnStyle: Google
 AccessModifierOffset: -4
-AlignTrailingComments: false
-ColumnLimit: 0
-IncludeBlocks: Preserve
-IndentPPDirectives: None
 IndentWidth: 4
-MaxEmptyLinesToKeep: 1
+ContinuationIndentWidth: 2
+AlignAfterOpenBracket: DontAlign
+AlignOperands: DontAlign
+AlignTrailingComments: false
+ReflowComments: Never
+ColumnLimit: 200
+BreakBeforeBinaryOperators: NonAssignment
+BracedInitializerIndentWidth: 4
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortEnumsOnASingleLine: false
 PointerAlignment: Right
+IncludeBlocks: Preserve
 SortIncludes: false
+WhitespaceSensitiveMacros:
+  - ASM

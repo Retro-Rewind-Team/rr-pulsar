@@ -11,7 +11,6 @@ class NWC24Handler {
 public:
     NWC24Handler(EGG::Heap *heap);  // 802313d4
     enum Error {
-
     };
 
     void *nwc24WorkMem;  // size 0x4000
@@ -50,8 +49,7 @@ public:
     virtual Error ReadMsgToId(const NWC24::MsgObj *obj, u32 index, u64 *userId);  // 0x6c 802322a4
     virtual Error ReadMsgToAddr(const NWC24::MsgObj *obj, u32 index, char *buffer, u32 bufSize);  // 0x70 80232350
     virtual Error ReadMsgSubject(const NWC24::MsgObj *obj, char *buffer, u32 bufSize);  // 0x74 8023240c
-    virtual Error ReadMsgText(const NWC24::MsgObj *obj, char *buffer, u32 bufSize,
-                              NWC24::Charset *charset, NWC24::Encoding *encoding);  // 0x78 802324f8
+    virtual Error ReadMsgText(const NWC24::MsgObj *obj, char *buffer, u32 bufSize, NWC24::Charset *charset, NWC24::Encoding *encoding);  // 0x78 802324f8
     virtual Error ReadMsgAttached(const NWC24::MsgObj *obj, u32 index, char *buffer, u32 bufSize);  // 0x7c 802325e8
     virtual Error CommitMsg(NWC24::MsgObj *obj);  // 0x80 80232740
     virtual Error DeleteMsg(NWC24::MsgBoxId mboxId, u32 msgId);  // 0x84 8023277c

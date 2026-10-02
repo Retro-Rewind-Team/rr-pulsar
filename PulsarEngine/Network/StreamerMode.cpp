@@ -64,7 +64,8 @@ extern "C" void *sInstance__Q23DWC12MatchControl;
 
 static u32 GetPidForAid(u32 aid) {
     u8 *stpMatchCnt = (u8 *)sInstance__Q23DWC12MatchControl;
-    if (stpMatchCnt == nullptr) return 0;
+    if (stpMatchCnt == nullptr)
+        return 0;
 
     u32 numHost = *(u32 *)(stpMatchCnt + 0x30);
     for (u32 i = 0; i < numHost; i++) {
@@ -77,9 +78,11 @@ static u32 GetPidForAid(u32 aid) {
 }
 
 static bool IsFriend(u32 pid) {
-    if (pid == 0) return false;
+    if (pid == 0)
+        return false;
     RKNet::FriendMgr *friendMgr = RKNet::FriendMgr::sInstance;
-    if (friendMgr == nullptr) return false;
+    if (friendMgr == nullptr)
+        return false;
 
     for (int i = 0; i < 30; i++) {
         if (friendMgr->friendPids[i] == pid) {
@@ -126,7 +129,8 @@ static void ReplaceWithRandomPlayerMii(RKNet::USERHandler *handler, u32 aid, RKN
 }
 
 static void CopySendToPacketHolderHook(RKNet::USERHandler *handler, u32 aid) {
-    if (!handler->isInitialized) return;
+    if (!handler->isInitialized)
+        return;
 
     RKNet::USERPacket packet = handler->toSendPacket;
     ReplaceWithRandomPlayerMii(handler, aid, &packet);

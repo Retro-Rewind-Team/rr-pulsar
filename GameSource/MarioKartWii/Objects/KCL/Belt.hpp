@@ -17,41 +17,32 @@ public:
     u32 GetScnObjDrawOptionsIdx() const override;  // 0xb0 807fd930
     void vf_0xb4() override;  // 0xb4 807fd790
 
-    bool vf_0xc0(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                 KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xc0 807fd750
-    bool vf_0xc4(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                 KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xc4 807fd758
-    bool vf_0xc8(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                 KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xc8 807fd760
-    bool vf_0xcc(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                 KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xcc 807fd768
+    bool vf_0xc0(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xc0 807fd750
+    bool vf_0xc4(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xc4 807fd758
+    bool vf_0xc8(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xc8 807fd760
+    bool vf_0xcc(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xcc 807fd768
 
-    bool IsCollidingNoTerrainInfoNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                                 KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xd0 807fd728
-    bool IsCollidingAddEntryNoTerrainInfoNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                                         KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xd4 807fd730
-    bool IsColliding(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                     KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xd8 807fd738
-    bool IsCollidingNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                    KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xdc 807fd740
+    bool IsCollidingNoTerrainInfoNoTriangleCheck(
+      const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xd0 807fd728
+    bool IsCollidingAddEntryNoTerrainInfoNoTriangleCheck(
+      const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xd4 807fd730
+    bool IsColliding(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xd8 807fd738
+    bool IsCollidingNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xdc 807fd740
 
     bool IsCollidingNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                  KCLTypeHolder *ret) override;  // 0xe4 807fd6f4
+      KCLTypeHolder *ret) override;  // 0xe4 807fd6f4
     bool IsCollidingAddEntryNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                          KCLTypeHolder *ret) override;  // 0xe8 807fd6fc
+      KCLTypeHolder *ret) override;  // 0xe8 807fd6fc
     bool vf_0xec(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                 KCLTypeHolder *ret) override;  // 0xec 807fd704
+      KCLTypeHolder *ret) override;  // 0xec 807fd704
     bool IsCollidingAddEntry(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                             KCLTypeHolder *ret) override;  // 0xf0 807fd70c
+      KCLTypeHolder *ret) override;  // 0xf0 807fd70c
 
-    bool IsCollidingNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                  KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xf4 807fd6cc
-    bool IsCollidingAddEntryNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                          KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xf8 807fd6d4
-    bool vf_0xfc(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                 KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xfc 807fd6dc
-    bool IsCollidingAddEntry(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                             KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x100 807fd6e4
+    bool IsCollidingNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xf4 807fd6cc
+    bool IsCollidingAddEntryNoTerrainInfo(
+      const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xf8 807fd6d4
+    bool vf_0xfc(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0xfc 807fd6dc
+    bool IsCollidingAddEntry(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x100 807fd6e4
 
     bool AreItemsAllowed() override;  // 0x104 807fd6c4
     float vf_0x108() override;  // 0x108 807fd6b8

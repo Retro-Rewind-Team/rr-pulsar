@@ -18,15 +18,8 @@ struct ServerDateTime {
     u64 serverTicks;
     u64 gameTicksAtSync;
 
-    ServerDateTime() : year(0),
-                       month(0),
-                       day(0),
-                       hour(0),
-                       minute(0),
-                       second(0),
-                       isValid(false),
-                       serverTicks(0),
-                       gameTicksAtSync(0) {}
+    ServerDateTime() : year(0), month(0), day(0), hour(0), minute(0), second(0), isValid(false), serverTicks(0), gameTicksAtSync(0) {
+    }
 
     void SetDateTime(u16 y, u8 mo, u8 d, u8 h, u8 mi, u8 s) {
         year = y;
@@ -45,7 +38,8 @@ struct ServerDateTime {
     }
 
     bool Update() {
-        if (!isValid) return false;
+        if (!isValid)
+            return false;
 
         OS::CalendarTime time;
         OS::TicksToCalendarTime(serverTicks + (OS::GetTime() - gameTicksAtSync), &time);
@@ -77,18 +71,21 @@ struct ServerDateTime {
     }
 
     u8 GetDayOfWeek() const {
-        if (!isValid) return 0;
+        if (!isValid)
+            return 0;
         return GetDayOfWeek(year, month, day);
     }
 
     bool IsWeekend() const {
-        if (!isValid) return false;
+        if (!isValid)
+            return false;
         u8 dow = GetDayOfWeek();
         return dow == 0 || dow == 6;  // Sunday or Saturday
     }
 
     u32 GetWeekNumber() const {
-        if (!isValid) return 0;
+        if (!isValid)
+            return 0;
         s32 days = 0;
         for (u16 yr = 2024; yr < year; ++yr) {
             bool leap = (yr % 4 == 0 && yr % 100 != 0) || (yr % 400 == 0);
@@ -99,7 +96,8 @@ struct ServerDateTime {
             days += daysInMonth[mo - 1];
             if (mo == 2) {
                 bool leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-                if (leap) days += 1;
+                if (leap)
+                    days += 1;
             }
         }
         days += day - 1;
@@ -107,7 +105,8 @@ struct ServerDateTime {
     }
 
     bool IsVRMultiplierWeekend() const {
-        if (!IsWeekend()) return false;
+        if (!IsWeekend())
+            return false;
         return (GetWeekNumber() % 2) == 1;
     }
 

@@ -56,7 +56,8 @@ static SectionId ConvertToRegionalSection(SectionId id) {
 static bool ConvertFriendRoomStateToRegional() {
     RKNet::Controller *controller = RKNet::Controller::sInstance;
     System *system = System::sInstance;
-    if (controller == nullptr || system == nullptr) return false;
+    if (controller == nullptr || system == nullptr)
+        return false;
 
     const bool wasHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST;
     const bool wasNonHost = controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
@@ -64,10 +65,12 @@ static bool ConvertFriendRoomStateToRegional() {
         return false;
 
     Racedata *racedata = Racedata::sInstance;
-    if (racedata == nullptr) return false;
+    if (racedata == nullptr)
+        return false;
 
     RacedataSettings &menuSettings = racedata->menusScenario.settings;
-    if (menuSettings.gamemode != MODE_PRIVATE_VS) return false;
+    if (menuSettings.gamemode != MODE_PRIVATE_VS)
+        return false;
 
     menuSettings.gamemode = MODE_PUBLIC_VS;
     menuSettings.modeFlags &= ~static_cast<u32>(2);
@@ -165,10 +168,9 @@ static void ApplyNextSection(SectionMgr *sectionMgr, SectionId nextSectionId, u3
 static void SetNextSectionRegionalHook(SectionMgr *sectionMgr, SectionId nextSectionId, u32 animDirection) {
     SetRegionId(REGIONID);
     bool isFroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
-    if ((Pulsar::System::sInstance->IsContext(PULSAR_STARTRETROS) || Pulsar::System::sInstance->IsContext(PULSAR_STARTCTS) ||
-         Pulsar::System::sInstance->IsContext(PULSAR_STARTREGS) || Pulsar::System::sInstance->IsContext(PULSAR_START200) ||
-         Pulsar::System::sInstance->IsContext(PULSAR_STARTOTT) || Pulsar::System::sInstance->IsContext(PULSAR_STARTITEMRAIN)) &&
-        isFroom) {
+    if ((Pulsar::System::sInstance->IsContext(PULSAR_STARTRETROS) || Pulsar::System::sInstance->IsContext(PULSAR_STARTCTS) || Pulsar::System::sInstance->IsContext(PULSAR_STARTREGS)
+          || Pulsar::System::sInstance->IsContext(PULSAR_START200) || Pulsar::System::sInstance->IsContext(PULSAR_STARTOTT) || Pulsar::System::sInstance->IsContext(PULSAR_STARTITEMRAIN))
+      && isFroom) {
         static bool hasConverted = false;
 
         SectionId desiredSection = nextSectionId;

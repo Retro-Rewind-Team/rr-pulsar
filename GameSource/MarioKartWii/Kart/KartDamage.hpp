@@ -44,7 +44,7 @@ public:
     void UpdateCurDamageSpeed();  // 80567ce4
     void ApplySpinDamage(u32 spinType, u32 playerObjIdx);  // 80567d3c also plays the sound etc...
     void ApplyKnockback(SpinType type, float displacementX, float displacementY, float displacementZ,
-                        float spinCount);  // 80568794 type: 0 = forwards, 1 = backwards, 2 = sideways; spinCount * 360 = spinOutRot
+      float spinCount);  // 80568794 type: 0 = forwards, 1 = backwards, 2 = sideways; spinCount * 360 = spinOutRot
 
     // These DO NOT include the loss of control, they ONLY include movement + effects + sound + held/trailed items consequences
     void ApplyBananaDamage(u32 playerObjIdx);  // 80567f68
@@ -80,8 +80,7 @@ public:
     void OnSquishDamageEnd(bool resetRot);  // 80569ad0
 
     virtual ~Damage();  // 8056a1a8 vtable 808B5008
-    virtual bool SetDamage(DamageType newDamage, u32, bool affectsMegas, DamageType *appliedDamage,
-                           u32 playerObjIdx, u32);  // 805675dc r5/r9 unused
+    virtual bool SetDamage(DamageType newDamage, u32, bool affectsMegas, DamageType *appliedDamage, u32 playerObjIdx, u32);  // 805675dc r5/r9 unused
     virtual void vf_0x10();  // 0x10 80568558
     virtual void vf_0x14();  // 0x14 8056a164
     virtual void ApplyDrivingDirKnockback();  // 0x18 80569ae8

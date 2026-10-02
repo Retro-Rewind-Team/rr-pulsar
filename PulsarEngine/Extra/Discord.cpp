@@ -198,7 +198,8 @@ void CleanBMGMessage(wchar_t *dest, const wchar_t *src) {
 }
 
 void ConvertUTF16toUtf8(char *dest, const wchar_t *src, size_t max_len) {
-    if (max_len == 0) return;
+    if (max_len == 0)
+        return;
 
     size_t destIndex = 0;
     for (size_t i = 0;; i++) {
@@ -207,14 +208,17 @@ void ConvertUTF16toUtf8(char *dest, const wchar_t *src, size_t max_len) {
             break;
         }
         if (c <= 0x007F) {
-            if (destIndex + 1 >= max_len) break;
+            if (destIndex + 1 >= max_len)
+                break;
             dest[destIndex++] = (char)c;
         } else if (c <= 0x07FF) {
-            if (destIndex + 2 >= max_len) break;
+            if (destIndex + 2 >= max_len)
+                break;
             dest[destIndex++] = 0xC0 | ((c >> 6) & 0x1F);
             dest[destIndex++] = 0x80 | (c & 0x3F);
         } else {
-            if (destIndex + 3 >= max_len) break;
+            if (destIndex + 3 >= max_len)
+                break;
             dest[destIndex++] = 0xE0 | ((c >> 12) & 0x0F);
             dest[destIndex++] = 0x80 | ((c >> 6) & 0x3F);
             dest[destIndex++] = 0x80 | (c & 0x3F);
@@ -227,8 +231,7 @@ static bool GetFirstLocalRaceCharacter(CharacterId &outCharacterId) {
     const GameScene *scene = GameScene::GetCurrent();
     Racedata *raceData = Racedata::sInstance;
     Raceinfo *raceInfo = Raceinfo::sInstance;
-    if (scene == nullptr || scene->id != SCENE_ID_RACE || raceData == nullptr || raceInfo == nullptr ||
-        !raceInfo->IsAtLeastStage(RACESTAGE_INTRO)) {
+    if (scene == nullptr || scene->id != SCENE_ID_RACE || raceData == nullptr || raceInfo == nullptr || !raceInfo->IsAtLeastStage(RACESTAGE_INTRO)) {
         return false;
     }
 
@@ -466,17 +469,7 @@ void DiscordRichPresence(Section *_this) {
         details = newDetails;
     }
 
-    Dolphin::SetDiscordPresence(
-        details,
-        state,
-        "image_logo",
-        largeImageText,
-        smallImageKey,
-        smallImageText,
-        startTimeStamp,
-        0,
-        minPlayers,
-        maxPlayers);
+    Dolphin::SetDiscordPresence(details, state, "image_logo", largeImageText, smallImageKey, smallImageText, startTimeStamp, 0, minPlayers, maxPlayers);
 }
 
 kmCall(0x80635540, DiscordRichPresence);

@@ -42,7 +42,8 @@ ChooseNextTrack::ChooseNextTrack() : isBattle(Racedata::sInstance->racesScenario
     for (int i = 0; i < 12; ++i) hasReceivedHostTrack[i] = false;
     CupsConfig *cupsConfig = CupsConfig::sInstance;
     PulsarId lastTrack = cupsConfig->GetWinning();
-    if (!this->isBattle && cupsConfig->IsAlphabetical() && lastTrack >= PULSARID_FIRSTCT) lastTrack = static_cast<PulsarId>(cupsConfig->GetInvertedArray()[lastTrack - PULSARID_FIRSTCT] + PULSARID_FIRSTCT);
+    if (!this->isBattle && cupsConfig->IsAlphabetical() && lastTrack >= PULSARID_FIRSTCT)
+        lastTrack = static_cast<PulsarId>(cupsConfig->GetInvertedArray()[lastTrack - PULSARID_FIRSTCT] + PULSARID_FIRSTCT);
     curPageIdx = CupsConfig::ConvertCup_PulsarTrackToCup(lastTrack);
     cupsConfig->ToggleCTs(System::sInstance->IsContext(PULSAR_CT));
 }
@@ -69,7 +70,8 @@ void ChooseNextTrack::OnUpdate() {
         else {
             const bool isAlphabetical = cupsConfig->IsAlphabetical();
 
-            if (isAlphabetical && lastTrack >= PULSARID_FIRSTCT) lastTrack = static_cast<PulsarId>(cupsConfig->GetInvertedArray()[lastTrack - PULSARID_FIRSTCT] + PULSARID_FIRSTCT);
+            if (isAlphabetical && lastTrack >= PULSARID_FIRSTCT)
+                lastTrack = static_cast<PulsarId>(cupsConfig->GetInvertedArray()[lastTrack - PULSARID_FIRSTCT] + PULSARID_FIRSTCT);
             u32 rowIdx = lastTrack % 4;
             PulsarCupId cupId = CupsConfig::ConvertCup_PulsarTrackToCup(lastTrack);
             if (rowIdx == 3) {
@@ -111,7 +113,8 @@ void ChooseNextTrack::UpdateButtonInfo(s32 direction) {
     if (this->isBattle) {
         this->curPageIdx = (this->curPageIdx + direction + 3) % 3;
         bool isHidden = false;
-        if (this->curPageIdx == 2) isHidden = true;
+        if (this->curPageIdx == 2)
+            isHidden = true;
         this->buttons[2].isHidden = isHidden;
         this->buttons[2].manipulator.inaccessible = isHidden;
         this->buttons[3].isHidden = isHidden;
@@ -147,7 +150,8 @@ void ChooseNextTrack::OnButtonClick(PushButton &button, u32 hudSlotId) {
     PulsarId next;
     if (button.buttonId == -1) {
         next = Network::RandomizeHAWTrack(*System::sInstance, *cupsConfig);
-        if (cupsConfig->GetWinning() == next) next = Network::RandomizeHAWTrack(*System::sInstance, *cupsConfig);
+        if (cupsConfig->GetWinning() == next)
+            next = Network::RandomizeHAWTrack(*System::sInstance, *cupsConfig);
     } else
         next = static_cast<PulsarId>(button.buttonId);
     Network::StoreBlockedTrack(*System::sInstance, next);
@@ -165,8 +169,7 @@ void ChooseNextTrack::InitExtraControls(u32 gameControlCount) {
     this->AddControl(gameControlCount, this->arrows, 0);
     this->arrows.SetRightArrowHandler(this->onRightArrowSelectHandler);
     this->arrows.SetLeftArrowHandler(this->onLeftArrowSelectHandler);
-    this->arrows.Load("button", "RaceArrowRight", "ButtonArrowRight",
-                      "RaceArrowLeft", "ButtonArrowLeft", 1, 0, false);
+    this->arrows.Load("button", "RaceArrowRight", "ButtonArrowRight", "RaceArrowLeft", "ButtonArrowLeft", 1, 0, false);
 
     this->AddControl(gameControlCount + 1, this->countdownControl, 0);
     this->countdownControl.Load(this->countdown);
@@ -176,8 +179,10 @@ void ChooseNextTrack::UpdateRH1() {
     RKNet::Controller *controller = RKNet::Controller::sInstance;
     RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     for (int aid = 0; aid < 12; ++aid) {
-        if (((1 << aid) & sub.availableAids) == 0) continue;
-        if (aid == sub.localAid) continue;
+        if (((1 << aid) & sub.availableAids) == 0)
+            continue;
+        if (aid == sub.localAid)
+            continue;
         for (int i = 0; i < 2; ++i) {
             RKNet::PacketHolder<Network::PulRH1> *holder = controller->splitToSendRACEPackets[i][aid]->GetPacketHolder<Network::PulRH1>();
             Network::PulRH1 *sendPacket = holder->packet;
@@ -203,8 +208,10 @@ SectionId ChooseNextTrack::ProcessHAW(SectionId defaultId) {
     bool isEveryoneInRace = true;
 
     for (int aid = 0; aid < 12; ++aid) {
-        if (((1 << aid) & sub.availableAids) == 0) continue;
-        if (aid == sub.localAid) continue;
+        if (((1 << aid) & sub.availableAids) == 0)
+            continue;
+        if (aid == sub.localAid)
+            continue;
         const u32 lastBufferUsed = controller->lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
         const RKNet::PacketHolder<Network::PulRH1> *holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
 
@@ -255,7 +262,9 @@ PageId ChooseNextTrack::GetPageAfterWifiResults(PageId defaultId) const {
     PageId ret = defaultId;
     if (this->isHost) {
         const SectionParams *params = SectionMgr::sInstance->sectionParams;
-        if (System::sInstance->IsContext(PULSAR_MODE_KO) || this->isBattle && params->redWins < 2 && params->blueWins < 2 || !this->isBattle && params->onlineParams.currentRaceNumber != System::sInstance->netMgr.racesPerGP) ret = static_cast<PageId>(ChooseNextTrack::id);
+        if (System::sInstance->IsContext(PULSAR_MODE_KO) || this->isBattle && params->redWins < 2 && params->blueWins < 2
+          || !this->isBattle && params->onlineParams.currentRaceNumber != System::sInstance->netMgr.racesPerGP)
+            ret = static_cast<PageId>(ChooseNextTrack::id);
     }
     return ret;
 }

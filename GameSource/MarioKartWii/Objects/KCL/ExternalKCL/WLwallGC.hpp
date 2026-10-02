@@ -16,10 +16,8 @@ class WLwallGC : public ObjectExternKCL {  // ObjectNum 0xcb = 203
     int vf_0x11c(CollisionInfo::ObjInfo *otherEntityObjInfo) override;  // 0x11c 8086c684
     const Mtx34 &GetTransformationMatrix(u32 framesOffset) override;  // 0x12c 8086bf30
     float GetPeriod() const override;  // 0x134 8086c648
-    bool IsCollidingNoTriangleCheckImpl(const Vec3 &pos, const Vec3 &prevPos,
-                                        KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x148 8086c328
-    bool IsCollidingImpl(const Vec3 &pos, const Vec3 &prevPos,
-                         KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x14c 8086c5a8
+    bool IsCollidingNoTriangleCheckImpl(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x148 8086c328
+    bool IsCollidingImpl(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 initialTime, float radius) override;  // 0x14c 8086c5a8
     static Vec3 CalcNextPosition(const Vec &basePos, const Vec &finalPos, float percent);  // 8086c098 (final - base) * percent + base
     u8 unknown_0x104[0x170 - 0x104];
     u32 idx;  // 0x104 809c4760, incremented by 1 at the end of the ctor

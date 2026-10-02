@@ -335,7 +335,8 @@ static u32 LoadMiiOutfitCBRRES(void *holder, CharacterId character) {
                 break;
             }
         }
-        if (!found) return brresHandle->BindDriverBRRES(character);
+        if (!found)
+            return brresHandle->BindDriverBRRES(character);
 
         const s32 signedFileSize = sd.GetFileSize();
         if (signedFileSize <= 0 || static_cast<u32>(signedFileSize) > 0x7fffffe0 || heap == nullptr) {
@@ -355,19 +356,24 @@ static u32 LoadMiiOutfitCBRRES(void *holder, CharacterId character) {
             heap->free(file);
             return 0;
         }
-        if (allocSize > fileSize) memset(static_cast<u8 *>(file) + fileSize, 0, allocSize - fileSize);
+        if (allocSize > fileSize)
+            memset(static_cast<u8 *>(file) + fileSize, 0, allocSize - fileSize);
         OS::DCStoreRange(file, allocSize);
     } else {
         DVD::FileInfo info = {};
-        if (!DVD::Open(path, &info)) return brresHandle->BindDriverBRRES(character);
+        if (!DVD::Open(path, &info))
+            return brresHandle->BindDriverBRRES(character);
         fileSize = info.length;
         DVD::Close(&info);
-        if (fileSize == 0) return brresHandle->BindDriverBRRES(character);
-        if (heap == nullptr) return 0;
+        if (fileSize == 0)
+            return brresHandle->BindDriverBRRES(character);
+        if (heap == nullptr)
+            return 0;
         file = EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &fileSize);
     }
 
-    if (file == nullptr || fileSize == 0) return 0;
+    if (file == nullptr || fileSize == 0)
+        return 0;
     if ((reinterpret_cast<u32>(file) & 0x1f) != 0) {
         heap->free(file);
         return 0;

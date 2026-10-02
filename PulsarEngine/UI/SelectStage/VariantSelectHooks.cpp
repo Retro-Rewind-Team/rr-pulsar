@@ -28,7 +28,8 @@ static void CourseSelect_OnCourseButtonClick(CtrlMenuCourseSelectCourse *self, P
         bool hasVariants = false;
         if (!cups->IsReg(selected)) {
             const Track &track = cups->GetTrack(selected);
-            if (track.variantCount > 0) hasVariants = true;
+            if (track.variantCount > 0)
+                hasVariants = true;
         }
 
         if (hasVariants) {
@@ -59,7 +60,8 @@ static void CourseSelect_OnCourseButtonClick(CtrlMenuCourseSelectCourse *self, P
         }
     }
 
-    if (!handled) orig(self, courseButton, hudSlotId);
+    if (!handled)
+        orig(self, courseButton, hudSlotId);
 }
 kmBranch(0x807e5434, CourseSelect_OnCourseButtonClick);
 

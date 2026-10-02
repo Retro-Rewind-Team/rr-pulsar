@@ -10,7 +10,8 @@ struct Mtx34;
 struct Vec3 : EGG::Vector3f {
     Vec3() {};  // 805a1fb0
     ~Vec3() {};  // 80513600
-    Vec3(float x, float y, float z) : EGG::Vector3f(x, y, z) {}
+    Vec3(float x, float y, float z) : EGG::Vector3f(x, y, z) {
+    }
     Vec3 operator-();  // 805147d4 unary -, negates the vec
     static Vec3 RotateQuaternion(const Quat &rot, const Vec3 &point);  // 805147fc
     static Vec3 RotateQuaternionConjugate(const Quat &rot, const Vec3 &point);  // 80574c7c
@@ -30,8 +31,10 @@ struct Vec3 : EGG::Vector3f {
 };
 
 struct Vec2 : EGG::Vector2f {
-    Vec2() {}
-    Vec2(float x, float z) : EGG::Vector2f(x, z) {}
+    Vec2() {
+    }
+    Vec2(float x, float z) : EGG::Vector2f(x, z) {
+    }
     Vec2 operator+(const Vec2 &rhs) const;  // 80512040
     Vec2 operator-(const Vec2 &rhs) const;  // 8051201c
     static Vec2 MultiplyByScalar2(float scalar, const Vec3 &src);  // 8054be10

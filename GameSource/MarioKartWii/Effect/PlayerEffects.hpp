@@ -29,13 +29,10 @@ public:
 
     void UpdateNonItemEffects();  // 80695ba8
 
-    void CreateAndUpdateEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
-                                     const Mtx34 &playerMat2, const Vec3 &wheelPos, bool updateScale);  // 806975d4
+    void CreateAndUpdateEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex, const Mtx34 &playerMat2, const Vec3 &wheelPos, bool updateScale);  // 806975d4
     void CreateEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex);  // 8069797c
-    void UpdateEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
-                            const Mtx34 &playerMat2, const Vec3 &wheelPos, bool r9);  // 806979f0
-    void FollowFadeEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex,
-                                const Mtx34 &playerMat2, const Vec3 &wheelPos, bool updateScale);  // 80697788
+    void UpdateEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex, const Mtx34 &playerMat2, const Vec3 &wheelPos, bool r9);  // 806979f0
+    void FollowFadeEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex, const Mtx34 &playerMat2, const Vec3 &wheelPos, bool updateScale);  // 80697788
     void KillEffectsByIdx(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex);
 
     void FollowFadeEffectsByIdxVelocity(EGG::Effect **effectsArray, u32 firstEffectIndex, u32 lastEffectIndex, u32 _7ecIdx);  // 806a1b68

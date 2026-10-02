@@ -99,7 +99,8 @@ class alignas(0x20) Binary {
     }
     template <class T>
     bool CheckSection(const T &t) {
-        if (t.header.magic != T::magic) return false;
+        if (t.header.magic != T::magic)
+            return false;
         return true;
     }
 

@@ -47,8 +47,7 @@ public:
     bool RequestMsgBoardPublish(const wchar_t *message, u32 r5, void *nwc24Buffer, AJPGHolder *holder);  // 80672350
     void PublishMsgBoardAsync();  // 80671c7c creates letter_LZ.bin on the disc, and publishes the message and ajpg to the message board
     void InitCHJObj(void *nwc24Buffer, u32 _420c, u32 _4210);  // 806720d0
-    bool PublishMsgBoard(u32 unused, u64 userId, const wchar_t *message,
-                         void *nwc24Buffer, u32 _4214, const AJPGHolder **holder, bool r11);  // 80671df8 actually commits the msg
+    bool PublishMsgBoard(u32 unused, u64 userId, const wchar_t *message, void *nwc24Buffer, u32 _4214, const AJPGHolder **holder, bool r11);  // 80671df8 actually commits the msg
     u32 GetServerState() const;  // 80668fa4
     u32 GetState() const;  // 80668fac
     u32 GetError() const;  // 80668fdc

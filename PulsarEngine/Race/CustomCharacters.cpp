@@ -18,7 +18,8 @@ namespace Race {
 u8 racePlayerSlots[12];
 u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAward) {
     const u32 characterId = static_cast<u32>(character);
-    if (characterId >= Driver::CHARACTER_COUNT) return 0;
+    if (characterId >= Driver::CHARACTER_COUNT)
+        return 0;
     if (playerId >= 12 || Racedata::sInstance == nullptr)
         return Driver::selectedSlots[characterId];
     const RacedataScenario &scenario = isAward ? Racedata::sInstance->awardScenario : Racedata::sInstance->racesScenario;
@@ -28,12 +29,13 @@ u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAwa
     if (player.playerType == PLAYER_GHOST) {
         const u8 offset = Racedata::sInstance->racesScenario.players[0].playerType != PLAYER_GHOST ? 1 : 0;
         const int rkgIndex = static_cast<int>(playerId) - offset;
-        if (rkgIndex < 0 || rkgIndex >= 2) return 0;
+        if (rkgIndex < 0 || rkgIndex >= 2)
+            return 0;
         const u32 slot = Racedata::sInstance->ghosts[rkgIndex].header.unknown_6;
         return slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][slot] ? slot : 0;
     }
-    if (player.playerType != PLAYER_REAL_LOCAL &&
-        Settings::Mgr::Get().GetSettingValue(Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_DISABLED) return 0;
+    if (player.playerType != PLAYER_REAL_LOCAL && Settings::Mgr::Get().GetSettingValue(Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_DISABLED)
+        return 0;
     const u32 slot = racePlayerSlots[playerId];
     return slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][slot] ? slot : 0;
 }
@@ -43,23 +45,29 @@ void RandomizeCPUCharacterTables(const RacedataScenario &scenario) {
     for (u32 player = 0; player < scenario.playerCount; ++player) {
         const RacedataPlayer &entry = scenario.players[player];
         const u32 character = static_cast<u32>(entry.characterId);
-        if (character >= Driver::CHARACTER_COUNT) continue;
-        if (entry.playerType == PLAYER_REAL_ONLINE) continue;
+        if (character >= Driver::CHARACTER_COUNT)
+            continue;
+        if (entry.playerType == PLAYER_REAL_ONLINE)
+            continue;
         if (entry.playerType != PLAYER_CPU) {
             racePlayerSlots[player] = Driver::selectedSlots[character];
             continue;
         }
-        if (scenario.settings.raceNumber != 0) continue;
+        if (scenario.settings.raceNumber != 0)
+            continue;
         racePlayerSlots[player] = 0;
 
         u32 slotCount = 0;
         for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
-            if (Driver::characterTables[character][slot]) ++slotCount;
+            if (Driver::characterTables[character][slot])
+                ++slotCount;
         }
-        if (slotCount == 0) continue;
+        if (slotCount == 0)
+            continue;
         u32 selected = random.NextLimited(slotCount);
         for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
-            if (!Driver::characterTables[character][slot]) continue;
+            if (!Driver::characterTables[character][slot])
+                continue;
             if (selected == 0) {
                 racePlayerSlots[player] = slot;
                 break;
@@ -117,9 +125,11 @@ static void BindAwardCharacterBRRES(g3d::ResFile &file, ArchiveSource source, co
     if (static_cast<u32>(*character) < Driver::CHARACTER_COUNT) {
         const RacedataScenario &scenario = Racedata::sInstance->awardScenario;
         for (u32 player = 0; player < 12; ++player) {
-            if (scenario.players[player].playerType == PLAYER_NONE || scenario.players[player].characterId != *character) continue;
+            if (scenario.players[player].playerType == PLAYER_NONE || scenario.players[player].characterId != *character)
+                continue;
             // Award models use spare character IDs for duplicates; r17 identifies their original player.
-            if (mii != nullptr && mii != &scenario.players[player].mii) continue;
+            if (mii != nullptr && mii != &scenario.players[player].mii)
+                continue;
             const u32 slot = GetPlayerCustomCharacterSlot(player, *character, true);
             if (slot != 0) {
                 char path[0x80];
@@ -137,11 +147,12 @@ static void BindAwardCharacterBRRES(g3d::ResFile &file, ArchiveSource source, co
 kmCall(0x80789728, BindAwardCharacterBRRES);
 
 static bool LinkCustomAwardAnimations(ModelDirector *model, g3d::ResFile &file) {
-    if (file.GetResAnmChr("sel_wait").data == nullptr) return false;
+    if (file.GetResAnmChr("sel_wait").data == nullptr)
+        return false;
     for (u32 id = 0; id < 6; ++id) {
-        const AnmType type = id % 3 == 0 ? ANMTYPE_CHR : id % 3 == 1 ? ANMTYPE_TEXPAT
-                                                                     : ANMTYPE_TEXSRT;
-        const bool exists = type == ANMTYPE_CHR || (type == ANMTYPE_TEXPAT && file.GetResAnmTexPat("sel_wait").data != nullptr) || (type == ANMTYPE_TEXSRT && file.GetResAnmTexSrt("sel_wait").data != nullptr);
+        const AnmType type = id % 3 == 0 ? ANMTYPE_CHR : id % 3 == 1 ? ANMTYPE_TEXPAT : ANMTYPE_TEXSRT;
+        const bool exists =
+          type == ANMTYPE_CHR || (type == ANMTYPE_TEXPAT && file.GetResAnmTexPat("sel_wait").data != nullptr) || (type == ANMTYPE_TEXSRT && file.GetResAnmTexSrt("sel_wait").data != nullptr);
         if (exists)
             model->LinkAnimation(id, file, "sel_wait", type, false, nullptr, ARCHIVE_HOLDER_KART, 0);
         else
@@ -181,11 +192,13 @@ static asmFunc LinkAwardAnimations() {
 kmCall(0x807897e0, LinkAwardAnimations);
 
 void LoadCustomCharacterIcon(CharacterId character, u32 slot, nw4r::lyt::Pane *pane, nw4r::lyt::Pane *shadow0, nw4r::lyt::Pane *shadow1) {
-    if (static_cast<u32>(character) >= Driver::CHARACTER_COUNT || slot == 0) return;
+    if (static_cast<u32>(character) >= Driver::CHARACTER_COUNT || slot == 0)
+        return;
 
     char path[0x40];
     snprintf(path, sizeof(path), "/Race/Map/%s-%u.tpl", ArchiveMgr::GetKartArchivePostfix(character), slot);
-    if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) < 0) return;
+    if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) < 0)
+        return;
 
     // Result controls initialize after GameScene locks its dynamic heaps.
     EGG::Heap *heap = GameScene::GetCurrent()->structsHeaps.heaps[0];
@@ -193,11 +206,14 @@ void LoadCustomCharacterIcon(CharacterId character, u32 slot, nw4r::lyt::Pane *p
     heap->dameFlag &= ~1;
     TPLPalettePtr icon = static_cast<TPLPalettePtr>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
     heap->dameFlag = heapFlags;
-    if (icon == nullptr) return;
+    if (icon == nullptr)
+        return;
 
     pane->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
-    if (shadow0 != nullptr) shadow0->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
-    if (shadow1 != nullptr) shadow1->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
+    if (shadow0 != nullptr)
+        shadow0->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
+    if (shadow1 != nullptr)
+        shadow1->GetMaterial()->GetTexMapAry()->ReplaceImage(icon);
 }
 
 }  // namespace Race

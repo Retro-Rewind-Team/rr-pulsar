@@ -86,8 +86,7 @@ asmFunc GetItemDelimiterPOW() {
 
 void EnableDelimitersForAllItems() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-                                                   controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     sBlockOnlineItemDelimiters = !isFroom && !Pulsar::ItemRain::IsItemRainEnabled();
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
@@ -96,7 +95,8 @@ kmCall(0x807A81C0, GetItemDelimiterBlooper);
 kmCall(0x807B1B44, GetItemDelimiterPOW);
 
 static bool CanItemNotBeObtained(Item::ItemSlotData *slotData, ItemObjId objId, bool hasTimer) {
-    if (!sBlockOnlineItemDelimiters || !hasTimer) return false;
+    if (!sBlockOnlineItemDelimiters || !hasTimer)
+        return false;
 
     switch (objId) {
         case OBJ_LIGHTNING:
@@ -120,7 +120,8 @@ static void OnBlueShellExplosion(Item::ObjKouraTogezo *blueShell, u32 soundId) {
     PlayGlobalItemSound(blueShell, soundId);
 
     const Pulsar::System *system = Pulsar::System::sInstance;
-    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled() || itemSlotData == nullptr) return;
+    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled() || itemSlotData == nullptr)
+        return;
 
     const u32 previousTimer = itemSlotData->itemSpawnTimers[1];
     itemSlotData->ResetBlueShellTimer();
@@ -133,7 +134,8 @@ static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 c
     const Pulsar::CupsConfig *cupsConfig = Pulsar::CupsConfig::sInstance;
     const Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
     const char *fileName = !Pulsar::CupsConfig::IsReg(pulsarId) ? cupsConfig->GetFileName(pulsarId, cupsConfig->GetCurVariantIdx()) : 0;
-    if (fileName == 0 || fileName[0] == '\0') fileName = cupsConfig->GetFileName(pulsarId, 0);
+    if (fileName == 0 || fileName[0] == '\0')
+        fileName = cupsConfig->GetFileName(pulsarId, 0);
     if (fileName != 0 && strcmp(fileName, "Z129") == 0) {  // Haunted Woods
         playerItemBoxType = 0;
         cpuItemBoxType = 0;
@@ -214,7 +216,8 @@ kmWrite32(0x80655578, 0x60000000);
 // Mushroom Glitch Fix [Vega, ported by ZPL]
 static Item::PlayerRoulette *ApplyMushroomGlitchFix(Item::PlayerRoulette *roulette) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
+    if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode())
+        ++roulette->itemNum;
     return roulette;
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);

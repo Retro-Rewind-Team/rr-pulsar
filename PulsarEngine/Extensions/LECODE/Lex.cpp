@@ -95,7 +95,8 @@ bool ApplyHIPT(CtrlRaceRankNum &tracker) {  // return value: if true, tracker is
                     else
                         appliesToLap = listLap == (curLap - lapCount - 1);  // if 3 laps, cur lap is 2, 2 - 3 - 1 = -2, ie second to last lap
                     if (appliesToLap) {
-                        if (cur.cpFrom <= curCP && curCP <= cur.cpTo) return !cur.showTracker;
+                        if (cur.cpFrom <= curCP && curCP <= cur.cpTo)
+                            return !cur.showTracker;
                     }
                 }
             }
@@ -107,9 +108,11 @@ kmWritePointer(0x808D3EE0, ApplyHIPT);  // Vtable of CtrlRaceRankNum::IsInactive
 
 Kart::Movement::CannonParams *ApplyCANN(Kart::Movement::CannonParams *cannonPtr, const CNPT &rawCNPT) {
     s16 type = rawCNPT.type;
-    if (type < 0) type = 0;
+    if (type < 0)
+        type = 0;
     Kart::Movement::CannonParams *lexCann = Pulsar::System::sInstance->lecodeMgr.lexMgr.cann;
-    if (lexCann != nullptr) cannonPtr = lexCann;
+    if (lexCann != nullptr)
+        cannonPtr = lexCann;
     return &cannonPtr[type];
 }
 kmCall(0x805850b8, ApplyCANN);

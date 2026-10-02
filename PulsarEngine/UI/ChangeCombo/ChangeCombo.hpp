@@ -33,7 +33,9 @@ public:
     void AfterControlUpdate() override;
     void OnResume() override;
     void OnButtonSelect(PushButton &button, u32 hudSlotId);
-    PushButton &GetRandomComboButton() { return this->randomComboButton; }
+    PushButton &GetRandomComboButton() {
+        return this->randomComboButton;
+    }
     s32 rouletteCounter;
     CountDown countdown;
     CountDownTimerControl countdownControl;
@@ -74,7 +76,8 @@ public:
     void OnActivate() override;
     void BeforeControlUpdate() override;
     void OnStartPress(u32 hudSlotId) override {
-        if (hudSlotId == 0) RandomizeCombo();
+        if (hudSlotId == 0)
+            RandomizeCombo();
     }
     CharacterId randomizedCharIdx[2];
     CharacterId rolledCharIdx[2];

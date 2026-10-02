@@ -48,23 +48,28 @@ kmCall(0x8084099c, SetVotedTrack);
 
 static bool ShouldForceHAWRandomVote() {
     const System *system = System::sInstance;
-    if (system == nullptr || !system->IsContext(PULSAR_HAW)) return false;
+    if (system == nullptr || !system->IsContext(PULSAR_HAW))
+        return false;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return false;
+    if (controller == nullptr)
+        return false;
 
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     return sub.localAid != sub.hostAid;
 }
 
 static void HandleCourseSelectTimeout(Pages::YesNo *page) {
-    if (page->currentState != STATE_ACTIVE) return;
+    if (page->currentState != STATE_ACTIVE)
+        return;
 
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || !IsOnlineSection(sectionMgr->curSection->sectionId)) return;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr || !IsOnlineSection(sectionMgr->curSection->sectionId))
+        return;
 
     Pages::SELECTStageMgr *selectStageMgr = sectionMgr->curSection->Get<Pages::SELECTStageMgr>();
-    if (selectStageMgr == nullptr) return;
+    if (selectStageMgr == nullptr)
+        return;
 
     if (ShouldForceHAWRandomVote() || selectStageMgr->countdown.countdown <= 0.0f) {
         selectStageMgr->countdown.countdown = 0.0f;
@@ -81,7 +86,8 @@ void UpdateLastSelCup(Pages::CupSelect *page, CtrlMenuCupSelectCup &cups, PushBu
     }
     PushButton **buttons = reinterpret_cast<PushButton **>(cups.childrenGroup.controlArray);
     for (int i = 0; i < 8; ++i)
-        if (buttons[i] == &button) cupsConfig->lastSelectedCupButtonIdx = i;
+        if (buttons[i] == &button)
+            cupsConfig->lastSelectedCupButtonIdx = i;
     page->LoadNextPage(cups, button, hudSlotId);
     Racedata::sInstance->menusScenario.settings.cupId = cupsConfig->lastSelectedCup % 8;
 }
@@ -176,13 +182,15 @@ static void AdvanceOrderedVSTrack(const CupsConfig &cupsConfig, PulsarCupId &cup
 }
 
 static u8 GetOrderedVSVariantCount(const CupsConfig &cupsConfig, PulsarId trackId) {
-    if (CupsConfig::IsReg(trackId)) return 1;
+    if (CupsConfig::IsReg(trackId))
+        return 1;
     return static_cast<u8>(cupsConfig.GetTrack(trackId).variantCount + 1);
 }
 
 static u8 ClampOrderedVSVariantIdx(const CupsConfig &cupsConfig, PulsarId trackId, u8 variantIdx) {
     const u8 variantCount = GetOrderedVSVariantCount(cupsConfig, trackId);
-    if (variantCount == 0 || variantIdx >= variantCount) return 0;
+    if (variantCount == 0 || variantIdx >= variantCount)
+        return 0;
     return variantIdx;
 }
 
@@ -193,8 +201,7 @@ static void AppendOrderedVSTrackVariants(SectionParams *params, CupsConfig &cups
 
     const u32 variantsToSchedule = wrapVariants ? variantCount : static_cast<u32>(variantCount - firstVariantIdx);
     for (u32 variantOffset = 0; variantOffset < variantsToSchedule && scheduleIdx < 32; ++variantOffset) {
-        const u8 variantIdx = wrapVariants ? static_cast<u8>((firstVariantIdx + variantOffset) % variantCount)
-                                           : static_cast<u8>(firstVariantIdx + variantOffset);
+        const u8 variantIdx = wrapVariants ? static_cast<u8>((firstVariantIdx + variantOffset) % variantCount) : static_cast<u8>(firstVariantIdx + variantOffset);
         params->vsTracks[scheduleIdx] = static_cast<CourseId>(trackId);
         cupsConfig.vsTrackVariantIdx[scheduleIdx] = variantIdx;
         ++scheduleIdx;
@@ -220,7 +227,8 @@ static void VSRaceOrderedFix(SectionParams *params) {
     params->vsRaceLimit = 32;
     CupsConfig *cupsConfig = CupsConfig::sInstance;
     PulsarId selectedTrack = cupsConfig->GetSelected();
-    if (selectedTrack == PULSARID_NONE) selectedTrack = cupsConfig->GetWinning();
+    if (selectedTrack == PULSARID_NONE)
+        selectedTrack = cupsConfig->GetWinning();
     PulsarCupId cupId;
     u32 rowIdx;
     ResolveOrderedVSStart(*cupsConfig, selectedTrack, cupId, rowIdx);

@@ -23,8 +23,7 @@ struct ResTevData {};
 
 struct ResTevColorDL {  // DL = display list, mat colors
     union {
-        struct
-        {
+        struct {
             // GDSetTevColor/GDSetTevColorS10 GX_TEVREG0-2
             u8 tevColor[3][20];
 

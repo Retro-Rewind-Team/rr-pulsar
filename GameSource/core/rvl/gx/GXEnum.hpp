@@ -304,7 +304,6 @@ enum CompCnt {
     GX_CLR_RGBA = 1, /*RGBA color */
     GX_TEX_S = 0, /*One texture dimension */
     GX_TEX_ST = 1 /*Two texture dimensions */
-
 };
 
 /*vtxattr Vertex attribute array type*/
@@ -350,7 +349,8 @@ enum Primitive {
     GX_LINESTRIP = 0xb0, /*Draws a series of lines. Each vertex (besides the first) makes a line between it and the previous. */
     GX_TRIANGLES = 0x90, /*Draws a series of unconnected triangles. Three vertices make a single triangle. */
     GX_TRIANGLESTRIP = 0x98, /*Draws a series of triangles. Each triangle (besides the first) shares a side with the previous triangle.* Each vertex (besides the first two) completes a triangle. */
-    GX_TRIANGLEFAN = 0xa0, /*Draws a single triangle fan. The first vertex is the "centerpoint". The second and third vertex complete* the first triangle. Each subsequent vertex completes another triangle which shares a side with the previous* triangle (except the first triangle) and has the centerpoint vertex as one of the vertices. */
+    GX_TRIANGLEFAN =
+      0xa0, /*Draws a single triangle fan. The first vertex is the "centerpoint". The second and third vertex complete* the first triangle. Each subsequent vertex completes another triangle which shares a side with the previous* triangle (except the first triangle) and has the centerpoint vertex as one of the vertices. */
     GX_QUADS = 0x80 /*Draws a series of unconnected quads. Every four vertices completes a quad. Internally, each quad is* translated into a pair of triangles. */
 };
 

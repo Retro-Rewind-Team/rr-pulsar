@@ -17,24 +17,27 @@ struct ManagedObjectsStorage {
 
 static bool IsWiiMemoryAddress(const void *pointer) {
     const u32 address = reinterpret_cast<u32>(pointer);
-    return (address >= 0x80000000 && address < 0x81800000) ||
-           (address >= 0x90000000 && address < 0x94000000);
+    return (address >= 0x80000000 && address < 0x81800000) || (address >= 0x90000000 && address < 0x94000000);
 }
 
 static void RegisterManagedObject(ObjectsMgr *mgr, Object *object) {
-    if (mgr == nullptr || object == nullptr) return;
+    if (mgr == nullptr || object == nullptr)
+        return;
 
     ManagedObjectsStorage *storage = reinterpret_cast<ManagedObjectsStorage *>(mgr->managedObjects);
     if (!IsWiiMemoryAddress(storage)) {
         EGG::Heap *heap = EGG::Heap::current;
-        if (heap == nullptr) return;
+        if (heap == nullptr)
+            return;
 
         storage = new (heap) ManagedObjectsStorage();
-        if (storage == nullptr) return;
+        if (storage == nullptr)
+            return;
         mgr->managedObjects = reinterpret_cast<ManagedObjects *>(storage);
     }
 
-    if (storage->managedObjCount >= 0x3c) return;
+    if (storage->managedObjCount >= 0x3c)
+        return;
 
     mgr->managedObjects->RegisterObject(object);
 }

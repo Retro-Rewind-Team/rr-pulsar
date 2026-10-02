@@ -21,23 +21,27 @@ u32 sLogReadPos = 0;
 bool sWritingOSReportLog = false;
 
 u32 PendingLogBytes() {
-    if (sLogWritePos >= sLogReadPos) return sLogWritePos - sLogReadPos;
+    if (sLogWritePos >= sLogReadPos)
+        return sLogWritePos - sLogReadPos;
     return LOG_BUFFER_SIZE - sLogReadPos + sLogWritePos;
 }
 
 void QueueOSReportLog(const char *text, u32 length) {
-    if (text == nullptr || length == 0) return;
+    if (text == nullptr || length == 0)
+        return;
 
     for (u32 i = 0; i < length; ++i) {
         const u32 next = (sLogWritePos + 1) % LOG_BUFFER_SIZE;
-        if (next == sLogReadPos) sLogReadPos = (sLogReadPos + 1) % LOG_BUFFER_SIZE;
+        if (next == sLogReadPos)
+            sLogReadPos = (sLogReadPos + 1) % LOG_BUFFER_SIZE;
         sLogBuffer[sLogWritePos] = text[i];
         sLogWritePos = next;
     }
 }
 
 void FlushOSReportLog() {
-    if (System::sInstance == nullptr || sWritingOSReportLog || PendingLogBytes() == 0) return;
+    if (System::sInstance == nullptr || sWritingOSReportLog || PendingLogBytes() == 0)
+        return;
 
     sWritingOSReportLog = true;
 
@@ -56,17 +60,21 @@ void FlushOSReportLog() {
     }
 
     const s32 size = logIo->GetFileSize();
-    if (size > 0) logIo->Seek(static_cast<u32>(size));
+    if (size > 0)
+        logIo->Seek(static_cast<u32>(size));
 
     u32 remaining = PendingLogBytes();
-    if (remaining > LOG_FLUSH_CHUNK_SIZE) remaining = LOG_FLUSH_CHUNK_SIZE;
+    if (remaining > LOG_FLUSH_CHUNK_SIZE)
+        remaining = LOG_FLUSH_CHUNK_SIZE;
 
     while (remaining != 0) {
         u32 chunk = LOG_BUFFER_SIZE - sLogReadPos;
-        if (chunk > remaining) chunk = remaining;
+        if (chunk > remaining)
+            chunk = remaining;
 
         const s32 wrote = logIo->Write(chunk, &sLogBuffer[sLogReadPos]);
-        if (wrote <= 0) break;
+        if (wrote <= 0)
+            break;
 
         sLogReadPos = (sLogReadPos + static_cast<u32>(wrote)) % LOG_BUFFER_SIZE;
         remaining -= static_cast<u32>(wrote);
@@ -88,7 +96,8 @@ int OSReportLogHook(const char *format, ...) {
 
     if (written > 0) {
         u32 length = static_cast<u32>(written);
-        if (length >= sizeof(buffer)) length = sizeof(buffer) - 1;
+        if (length >= sizeof(buffer))
+            length = sizeof(buffer) - 1;
         QueueOSReportLog(buffer, length);
     }
 

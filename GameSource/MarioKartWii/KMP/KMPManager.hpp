@@ -320,8 +320,7 @@ public:
     Holder<STGI> *GetSTGIHolder() const;  // 80518b78
 
     s16 CalcNextCP(u8 playerId, const Vec3 &playerPosition, u32 curCP, float &completion, bool isOnline);  // 80511500 fills completion
-    s16 CalcNextCPRecursive(u8 playerId, const Vec &playerPosition, u32 depth, bool r7, Holder<CKPT> *ckptSection,
-                            float &completion, u16 flags);  // 80511110
+    s16 CalcNextCPRecursive(u8 playerId, const Vec &playerPosition, u32 depth, bool r7, Holder<CKPT> *ckptSection, float &completion, u16 flags);  // 80511110
 
     void ResetCKPTScannedState() const;  // 80511e00
 

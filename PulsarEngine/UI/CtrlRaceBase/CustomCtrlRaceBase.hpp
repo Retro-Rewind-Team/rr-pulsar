@@ -14,8 +14,7 @@ class CustomCtrlBuilder {
 
 public:
     static void BuildCustomRaceCtrls(Pages::RaceHUD &racePage, u32 count);
-    CustomCtrlBuilder(CountFunc &count, CreateFunc &create)
-        : countCtrls(count), createCtrls(create), next(sHooks) {
+    CustomCtrlBuilder(CountFunc &count, CreateFunc &create) : countCtrls(count), createCtrls(create), next(sHooks) {
         sHooks = this;
     }
 

@@ -38,9 +38,7 @@ void Racedata_InitRace(Racedata *racedata) {
         racedata->racesScenario.settings.modeFlags &= ~1;
         racedata->racesScenario.settings.engineClass = CC_100;
     }
-    const bool isFroom = controller != nullptr &&
-                         (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-                          controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     const GameMode mode = racedata->racesScenario.settings.gamemode;
     const bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
     if (isFroom && !isBattle && System::sInstance->IsContext(PULSAR_MIRRORMODE)) {
@@ -50,7 +48,8 @@ void Racedata_InitRace(Racedata *racedata) {
         ExtendedTeamManager::sInstance->ConfigureOfflineTeams();
         racedata->racesScenario.settings.modeFlags &= ~ExtendedTeamManager::TEAM_MODE_FLAG;
     }
-    if (returnAddress == kmRuntimeAddr(0x80553c94)) Race::RandomizeCPUCharacterTables(racedata->racesScenario);
+    if (returnAddress == kmRuntimeAddr(0x80553c94))
+        Race::RandomizeCPUCharacterTables(racedata->racesScenario);
 }
 
 kmCall(0x80530878, Racedata_InitRace);
@@ -83,7 +82,8 @@ void VSTeamsView_AssignTeams(Pages::Menu *_this) {
 kmCall(0x8083e528, VSTeamsView_AssignTeams);
 
 void CharacterSelect_LoadNextPage(Pages::Menu *_this, PageId pageId, float delay) {
-    if (pageId == PAGE_VS_TEAMS_VIEW && IsExtendedTeamVSSelected()) pageId = PAGE_KART_SELECT;
+    if (pageId == PAGE_VS_TEAMS_VIEW && IsExtendedTeamVSSelected())
+        pageId = PAGE_KART_SELECT;
     _this->LoadNextPageWithDelayById(pageId, delay);
 }
 kmCall(0x8083e54c, CharacterSelect_LoadNextPage);
@@ -204,7 +204,8 @@ void SELECTStageMgr_PrepareRace(Pages::SELECTStageMgr *_this) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const Network::ExpSELECTHandler &handler = Network::ExpSELECTHandler::Get();
     for (u32 player = 0; player < 12; ++player) {
-        if (Racedata::sInstance->menusScenario.players[player].playerType != PLAYER_REAL_ONLINE) continue;
+        if (Racedata::sInstance->menusScenario.players[player].playerType != PLAYER_REAL_ONLINE)
+            continue;
         const u8 aid = controller->aidsBelongingToPlayerIds[player];
         const bool isGuest = player > 0 && controller->aidsBelongingToPlayerIds[player - 1] == aid;
         Race::racePlayerSlots[player] = handler.receivedPackets[aid].reserved >> (isGuest ? 0 : 8);
@@ -429,8 +430,10 @@ struct TeamScore {
     int score;
     bool present;
 
-    TeamScore() : team(TEAM_COUNT), score(0), present(false) {}
-    TeamScore(ExtendedTeamID team) : team(team), score(0), present(false) {}
+    TeamScore() : team(TEAM_COUNT), score(0), present(false) {
+    }
+    TeamScore(ExtendedTeamID team) : team(team), score(0), present(false) {
+    }
 };
 
 static int sort_by_score(const void *a, const void *b) {

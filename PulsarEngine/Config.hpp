@@ -105,7 +105,8 @@ struct ConfigFile {
 
     template <class T>
     static inline void CheckSection(const T &t) {
-        if (t.header.magic != T::magic || t.header.version != T::curVersion) Debug::FatalError(error);
+        if (t.header.magic != T::magic || t.header.version != T::curVersion)
+            Debug::FatalError(error);
     }
 
     static const u32 magic = 'PULS';
@@ -114,7 +115,8 @@ struct ConfigFile {
 
 template <>
 static inline void ConfigFile::CheckSection<PulBMG>(const PulBMG &bmg) {
-    if (bmg.header.magic != 0x4D455347626D6731) Debug::FatalError(error);
+    if (bmg.header.magic != 0x4D455347626D6731)
+        Debug::FatalError(error);
 }
 
 }  // namespace Pulsar

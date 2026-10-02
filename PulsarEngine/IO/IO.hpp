@@ -50,7 +50,9 @@ public:
     static IO *sInstance;
     static IO *CreateInstance(IOType type, EGG::Heap *heap, EGG::TaskThread *const taskThread);
     template <typename T>
-    T *Alloc(u32 size) const { return EGG::Heap::alloc<T>(nw4r::ut::RoundUp(size, 0x20), 0x20, this->heap); }
+    T *Alloc(u32 size) const {
+        return EGG::Heap::alloc<T>(nw4r::ut::RoundUp(size, 0x20), 0x20, this->heap);
+    }
     virtual s32 GetFileSize() = 0;
 
     virtual s32 Read(u32 size, void *bufferIn) = 0;
@@ -59,8 +61,12 @@ public:
     virtual s32 Overwrite(u32 length, const void *buffer) = 0;
     virtual void Close() = 0;
 
-    const int GetFileCount() const { return this->fileCount; }
-    const char *GetFolderName() const { return this->folderName; };
+    const int GetFileCount() const {
+        return this->fileCount;
+    }
+    const char *GetFolderName() const {
+        return this->folderName;
+    };
     virtual void CloseFolder() = 0;
     void PrintFullFilePath(char *path, const char *fileName) const {
         snprintf(path, IOS::ipcMaxPath, "%s/%s", &this->folderName, fileName);
@@ -88,12 +94,15 @@ public:
     const IOType type;
 
 protected:
-    IO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread)
-        : type(type), heap(heap), taskThread(taskThread), fileCount(0), fileNames(nullptr) {
+    IO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread) : type(type), heap(heap), taskThread(taskThread), fileCount(0), fileNames(nullptr) {
         folderName[0] = '\0';
     }
-    void Bind(const char *path) { strncpy(this->folderName, path, IOS::ipcMaxPath); }
-    void CloseFile() { this->Close(); }
+    void Bind(const char *path) {
+        strncpy(this->folderName, path, IOS::ipcMaxPath);
+    }
+    void CloseFile() {
+        this->Close();
+    }
 
     EGG::Heap *heap;
     EGG::TaskThread *const taskThread;

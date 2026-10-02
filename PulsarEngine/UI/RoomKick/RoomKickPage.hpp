@@ -39,7 +39,8 @@ private:
     void OnBackPress(u32 hudSlotId);
     void OnButtonClick(PushButton &button, u32 hudSlotId);
     void OnButtonSelect(PushButton &button, u32 hudSlotId);
-    void OnButtonDeselect(PushButton &button, u32 hudSlotId) {}
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId) {
+    }
     void OnYesNoClick(u32 choice, PushButton &button);
 
     PushButton miis[12];

@@ -8,26 +8,52 @@ class Info {
 public:
     friend class System;
 
-    inline u32 GetKey() const { return this->roomKey; }
-    inline bool HasTrophies() const { return this->hasTTTrophies; }
-    inline bool Has200cc() const { return this->has200cc; }
-    inline bool HasUMTs() const { return this->hasUMTs; }
-    inline bool HasFeather() const { return this->hasFeather; }
-    inline bool HasMegaTC() const { return this->hasMegaTC; }
-    inline u32 GetWiimmfiRegion() const { return this->wiimmfiRegion; }
-    inline u32 GetProb100() const { return this->prob100cc; }
-    inline u32 GetProb150() const { return this->prob150cc; }
-    inline u32 GetTrackBlocking() const { return 12; }
+    inline u32 GetKey() const {
+        return this->roomKey;
+    }
+    inline bool HasTrophies() const {
+        return this->hasTTTrophies;
+    }
+    inline bool Has200cc() const {
+        return this->has200cc;
+    }
+    inline bool HasUMTs() const {
+        return this->hasUMTs;
+    }
+    inline bool HasFeather() const {
+        return this->hasFeather;
+    }
+    inline bool HasMegaTC() const {
+        return this->hasMegaTC;
+    }
+    inline u32 GetWiimmfiRegion() const {
+        return this->wiimmfiRegion;
+    }
+    inline u32 GetProb100() const {
+        return this->prob100cc;
+    }
+    inline u32 GetProb150() const {
+        return this->prob150cc;
+    }
+    inline u32 GetTrackBlocking() const {
+        return 12;
+    }
     inline u16 GetCupIconCount() const {
         u16 count = this->cupIconCount;
-        if (count == 0) count = 100;
+        if (count == 0)
+            count = 100;
         return count;
     }
-    inline u16 GetChooseNextTrackTimer() const { return this->chooseNextTrackTimer; }
+    inline u16 GetChooseNextTrackTimer() const {
+        return this->chooseNextTrackTimer;
+    }
 
 private:
-    Info() {}
-    void Init(const Info &rawInfo) { memcpy(this, &rawInfo, sizeof(Info)); }
+    Info() {
+    }
+    void Init(const Info &rawInfo) {
+        memcpy(this, &rawInfo, sizeof(Info));
+    }
     u32 roomKey;  // 0x0 transmitted to other players
     u32 prob100cc;  // 0x4
     u32 prob150cc;  // 0x8

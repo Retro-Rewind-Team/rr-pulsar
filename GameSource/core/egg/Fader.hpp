@@ -13,7 +13,7 @@ enum EStatus {
     FADE_IN = 2,
     FADE_OUT = 3
 };
-}
+}  // namespace Fader
 
 class ColorFader {
 public:

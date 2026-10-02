@@ -59,8 +59,7 @@ private:
 
     u32 GetTextId(const TextUpDownValueControl::TextControl &text) const {
         TextUpDownValueControl *valueControl = static_cast<TextUpDownValueControl *>(text.parentGroup->parentControl);
-        return static_cast<int>(reinterpret_cast<u32>(valueControl) - reinterpret_cast<u32>(&this->textUpDown[0])) /
-               sizeof(TextUpDownValueControl);
+        return static_cast<int>(reinterpret_cast<u32>(valueControl) - reinterpret_cast<u32>(&this->textUpDown[0])) / sizeof(TextUpDownValueControl);
     }
 
     RadioButtonControl radioButtonControls[Settings::Params::maxRadioCount];

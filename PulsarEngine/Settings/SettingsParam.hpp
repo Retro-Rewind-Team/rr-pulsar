@@ -137,7 +137,8 @@ public:
 
     static inline u32 GetSettingIndex(SettingId id) {
         for (u32 i = 0; i < SETTING_COUNT; ++i) {
-            if (settingDefs[i].id == id) return i;
+            if (settingDefs[i].id == id)
+                return i;
         }
         return SETTING_COUNT;
     }
@@ -164,8 +165,7 @@ public:
         return contextDefs[context];
     }
 
-    static u32 BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO,
-                                  bool isOTT, bool isRoyale, bool isExtendedTeams);
+    static u32 BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO, bool isOTT, bool isRoyale, bool isExtendedTeams);
 };
 
 }  // namespace Settings

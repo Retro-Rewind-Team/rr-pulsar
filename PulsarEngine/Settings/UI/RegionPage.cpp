@@ -18,8 +18,7 @@ static Settings::SettingsContext returnContext = Settings::SETTINGS_CONTEXT_OFFL
 
 bool RegionPage::IsOpen() {
     const SectionMgr *manager = SectionMgr::sInstance;
-    return regionScene && manager != nullptr && manager->curSection != nullptr &&
-           manager->curSection->sectionId == SECTION_P1_WIFI;
+    return regionScene && manager != nullptr && manager->curSection != nullptr && manager->curSection->sectionId == SECTION_P1_WIFI;
 }
 
 void RegionPage::Open(Pages::Menu &source, PushButton &button) {
@@ -29,7 +28,8 @@ void RegionPage::Open(Pages::Menu &source, PushButton &button) {
 }
 
 bool RegionPage::CreatePages(ExpSection &section) {
-    if (!regionScene || section.sectionId != SECTION_P1_WIFI) return false;
+    if (!regionScene || section.sectionId != SECTION_P1_WIFI)
+        return false;
     ExpSection::CreateAndInitPage(section, id);
     return true;
 }
@@ -44,8 +44,7 @@ static void AddInitialLayers(ExpSection &section, SectionId sectionId) {
         returnToSettings = false;
         SettingsPageSelect *settings = section.GetPulPage<SettingsPageSelect>();
         if (settings != nullptr) {
-            const PageId previous = sectionId == SECTION_OPTIONS ? PAGE_OPTIONS : sectionId == SECTION_LOCAL_MULTIPLAYER ? PAGE_MULTIPLAYER_MENU
-                                                                                                                         : PAGE_SINGLE_PLAYER_MENU;
+            const PageId previous = sectionId == SECTION_OPTIONS ? PAGE_OPTIONS : sectionId == SECTION_LOCAL_MULTIPLAYER ? PAGE_MULTIPLAYER_MENU : PAGE_SINGLE_PLAYER_MENU;
             settings->SetContext(returnContext, previous);
             section.RemoveTopLayerPage();
             ExpSection::AddPageLayer(section, SettingsPageSelect::id);
@@ -54,8 +53,7 @@ static void AddInitialLayers(ExpSection &section, SectionId sectionId) {
 }
 kmCall(0x8062213c, AddInitialLayers);
 
-RegionPage::RegionPage()
-    : firstRow(0), frames(0), previewCountry(0), previewSubregion(0), subregionPage(false), miiDisplayed(false), ready(false), leaving(false) {
+RegionPage::RegionPage() : firstRow(0), frames(0), previewCountry(0), previewSubregion(0), subregionPage(false), miiDisplayed(false), ready(false), leaving(false) {
     onPrevious.subject = this;
     onPrevious.ptmf = &RegionPage::OnPrevious;
     onNext.subject = this;
@@ -133,7 +131,8 @@ void RegionPage::OnDeactivate() {
 }
 
 u32 RegionPage::GetChoiceCount() const {
-    if (!subregionPage) return Region::GetCountryChoiceCount();
+    if (!subregionPage)
+        return Region::GetCountryChoiceCount();
     const u32 count = Region::GetSubregionCount(previewCountry);
     return count == 0 ? 0 : count + 1;
 }
@@ -146,7 +145,8 @@ void RegionPage::RefreshRows() {
         const bool hidden = index >= count;
         button.isHidden = hidden;
         button.manipulator.inaccessible = hidden;
-        if (hidden) continue;
+        if (hidden)
+            continue;
 
         if (!subregionPage) {
             const u8 country = Region::GetCountryAt(index);
@@ -170,29 +170,28 @@ void RegionPage::RefreshRows() {
 }
 
 void RegionPage::Preview() {
-    if (!ready || GlobeMgr::sInstance == nullptr) return;
+    if (!ready || GlobeMgr::sInstance == nullptr)
+        return;
     GlobeMgr *globe = GlobeMgr::sInstance;
     miiName.isHidden = true;
     globe->earthmodel->isMiiShown = false;
     globe->ResetGlobeMii();
     SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr &&
-        sectionMgr->sectionParams->localPlayerMiis.miiCount != 0) {
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr && sectionMgr->sectionParams->localPlayerMiis.miiCount != 0) {
         Mii *mii = sectionMgr->sectionParams->localPlayerMiis.GetMii(0);
-        if (mii != nullptr) globe->SetMii(*mii);
+        if (mii != nullptr)
+            globe->SetMii(*mii);
     }
     u16 longitude, latitude;
     Region::GetPreview(previewCountry, previewSubregion, longitude, latitude);
-    globe->SetPosition(1, static_cast<s16>(latitude) * (360.0f / 65536.0f),
-                       static_cast<s16>(longitude) * (360.0f / 65536.0f));
+    globe->SetPosition(1, static_cast<s16>(latitude) * (360.0f / 65536.0f), static_cast<s16>(longitude) * (360.0f / 65536.0f));
     miiDisplayed = false;
     UpdateMiiNameAndFlag();
 }
 
 void RegionPage::UpdateMiiNameAndFlag() {
     SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr &&
-        sectionMgr->sectionParams->localPlayerMiis.miiCount != 0) {
+    if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr && sectionMgr->sectionParams->localPlayerMiis.miiCount != 0) {
         Mii *mii = sectionMgr->sectionParams->localPlayerMiis.GetMii(0);
         if (mii != nullptr) {
             Text::Info info;
@@ -224,7 +223,8 @@ void RegionPage::UpdateMiiNameAndFlag() {
 
 void RegionPage::OpenSubregions(u8 country) {
     for (u32 i = 0; i < rowCount; ++i) {
-        if (buttons[i].IsSelected()) buttons[i].HandleDeselect(0, -1);
+        if (buttons[i].IsSelected())
+            buttons[i].HandleDeselect(0, -1);
     }
     previewCountry = country;
     previewSubregion = 0;
@@ -236,7 +236,8 @@ void RegionPage::OpenSubregions(u8 country) {
 }
 
 void RegionPage::SaveAndExit(u8 country, u8 subregion) {
-    if (leaving) return;
+    if (leaving)
+        return;
     Settings::Mgr::Get().SetDisplayLocation(country, subregion);
     previewCountry = country;
     previewSubregion = subregion;
@@ -247,16 +248,19 @@ void RegionPage::SaveAndExit(u8 country, u8 subregion) {
 }
 
 void RegionPage::OnClick(PushButton &button, u32) {
-    if (leaving) return;
+    if (leaving)
+        return;
     const u32 selected = button.buttonId;
     if (selected == rowCount) {
         OnBack(0);
         return;
     }
-    if (selected >= rowCount) return;
+    if (selected >= rowCount)
+        return;
 
     const u32 index = firstRow + selected;
-    if (index >= GetChoiceCount()) return;
+    if (index >= GetChoiceCount())
+        return;
 
     if (!subregionPage) {
         const u8 country = Region::GetCountryAt(index);
@@ -272,13 +276,16 @@ void RegionPage::OnClick(PushButton &button, u32) {
         return;
     }
     const Region::Subregion *subregion = Region::GetSubregionAt(previewCountry, index - 1);
-    if (subregion != nullptr) SaveAndExit(previewCountry, subregion->state);
+    if (subregion != nullptr)
+        SaveAndExit(previewCountry, subregion->state);
 }
 
 void RegionPage::OnSelect(PushButton &button, u32) {
-    if (leaving || button.buttonId >= rowCount) return;
+    if (leaving || button.buttonId >= rowCount)
+        return;
     const u32 index = firstRow + button.buttonId;
-    if (index >= GetChoiceCount()) return;
+    if (index >= GetChoiceCount())
+        return;
 
     if (!subregionPage) {
         previewCountry = Region::GetCountryAt(index);
@@ -287,7 +294,8 @@ void RegionPage::OnSelect(PushButton &button, u32) {
         previewSubregion = 0;
     } else {
         const Region::Subregion *subregion = Region::GetSubregionAt(previewCountry, index - 1);
-        if (subregion == nullptr) return;
+        if (subregion == nullptr)
+            return;
         previewSubregion = subregion->state;
     }
     Preview();
@@ -302,19 +310,23 @@ void RegionPage::OnNext(SheetSelectControl &, u32) {
 }
 
 void RegionPage::ChangeListPage(bool next) {
-    if (leaving) return;
+    if (leaving)
+        return;
     const u32 pageCount = (GetChoiceCount() + rowCount - 1) / rowCount;
-    if (pageCount < 2) return;
+    if (pageCount < 2)
+        return;
     firstRow = ((firstRow / rowCount + (next ? 1 : pageCount - 1)) % pageCount) * rowCount;
     RefreshRows();
     buttons[0].Select(0);
 }
 
 void RegionPage::OnBack(u32) {
-    if (leaving) return;
+    if (leaving)
+        return;
     if (subregionPage) {
         for (u32 i = 0; i < rowCount; ++i) {
-            if (buttons[i].IsSelected()) buttons[i].HandleDeselect(0, -1);
+            if (buttons[i].IsSelected())
+                buttons[i].HandleDeselect(0, -1);
         }
         subregionPage = false;
         previewSubregion = 0;
@@ -338,7 +350,8 @@ void RegionPage::BeforeControlUpdate() {
 
 void RegionPage::ComposeGlobe() {
     GlobeMgr *globe = GlobeMgr::sInstance;
-    if (leaving || globe == nullptr || globe->earthmodel == nullptr) return;
+    if (leaving || globe == nullptr || globe->earthmodel == nullptr)
+        return;
 
     if (!ready && frames > 2) {
         ready = true;
@@ -358,7 +371,8 @@ static void UpdateGlobe(GlobeMgr &globe) {
     globe.Update();
     if (RegionPage::IsOpen()) {
         RegionPage *page = ExpSection::GetSection()->GetPulPage<RegionPage>();
-        if (page != nullptr) page->ComposeGlobe();
+        if (page != nullptr)
+            page->ComposeGlobe();
     }
 }
 kmCall(0x80553b3c, UpdateGlobe);

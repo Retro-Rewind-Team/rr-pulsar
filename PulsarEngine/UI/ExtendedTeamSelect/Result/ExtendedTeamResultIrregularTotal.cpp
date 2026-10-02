@@ -42,8 +42,10 @@ struct TeamScore {
     int score;
     bool present;
 
-    TeamScore() : team(TEAM_COUNT), score(0), present(false) {}
-    TeamScore(ExtendedTeamID team) : team(team), score(0), present(false) {}
+    TeamScore() : team(TEAM_COUNT), score(0), present(false) {
+    }
+    TeamScore(ExtendedTeamID team) : team(team), score(0), present(false) {
+    }
 };
 
 int sort_by_score(const void *a, const void *b) {

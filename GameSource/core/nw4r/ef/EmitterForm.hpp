@@ -22,8 +22,8 @@ enum EmitFormType {
 
 class EmitterForm {
 public:
-    virtual void Emission(Emitter *emitter, ParticleManager *particleMgr, int count, u32 flags, float *params, u16 particleSLifetime,
-                          float particleLifetimesRandomness, const nw4r::math::MTX34 *space) = 0;
+    virtual void Emission(
+      Emitter *emitter, ParticleManager *particleMgr, int count, u32 flags, float *params, u16 particleSLifetime, float particleLifetimesRandomness, const nw4r::math::MTX34 *space) = 0;
 };
 
 class EmitFormBuilder {
