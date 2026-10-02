@@ -395,7 +395,6 @@ public:
             this->titleText->SetMessage(this->titleBmg);
         if (this->bottomText != nullptr)
             this->bottomText->SetMessage(BMG_MISSION_MODE_BOTTOM);
-        this->HideMissionBottomText();
         this->UpdateButtonMessages();
         if (returnToStageSelect) {
             returnToStageSelect = false;
@@ -519,7 +518,6 @@ public:
             this->ResetOtherButtonText(this->stageButtons, button);
             this->UpdateMissionButtonAccess();
         }
-        this->HideMissionBottomText();
     }
 
     void OnBackPress(u32) {
@@ -569,11 +567,6 @@ private:
         this->UpdateButtonMessages();
         for (u32 i = 0; i < BUTTON_COUNT; ++i) this->SetStageBorderVisible(this->levelButtons[i], this->IsLevelAccessible(i));
         this->UpdateMissionButtonAccess();
-    }
-
-    void HideMissionBottomText() {
-        if (this->bottomText != nullptr)
-            this->bottomText->isHidden = true;
     }
 
     void ResetOtherButtonText(PushButton *buttons, PushButton &selected) {
@@ -757,7 +750,8 @@ private:
     void ShowLevelSelect() {
         this->levelSelected = false;
         this->ResetPlusHold();
-        this->HideMissionBottomText();
+        this->bottomText->isHidden = false;
+        this->bottomText->SetMessage(BMG_MISSION_LEVEL_BOTTOM, nullptr);
 
         for (u32 i = 0; i < BUTTON_COUNT; ++i) {
             this->levelButtons[i].isHidden = false;
@@ -775,7 +769,7 @@ private:
 
     void ShowStageSelect() {
         this->levelSelected = true;
-        this->HideMissionBottomText();
+        this->bottomText->isHidden = true;
 
         for (u32 i = 0; i < BUTTON_COUNT; ++i) {
             const bool selected = i == (selectedLevel % BUTTON_COUNT);
