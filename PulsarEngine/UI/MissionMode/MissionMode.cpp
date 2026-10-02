@@ -894,6 +894,9 @@ void ConfigureMissionInformationPage(Page &page) {
     if (page.pageId != PAGE_MISSION_INFORMATION_PROMPT)
         return;
 
+    Pages::Menu &menu = static_cast<Pages::Menu &>(page);
+    menu.backButton.onSelectHandler = nullptr;
+
     PushButton *buttons[2] = {};
     u32 buttonCount = 0;
     for (u32 i = 0; i < page.controlGroup.controlCount; ++i) {
