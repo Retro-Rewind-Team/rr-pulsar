@@ -1,7 +1,6 @@
 #include <kamek.hpp>
 #include <UI/MissionMode/MissionMode.hpp>
 #include <UI/MissionMode/MissionModel.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Gamemodes/MissionMode/MissionIntro.hpp>
 #include <Gamemodes/MissionMode/MissionModeRanking.hpp>
@@ -1010,7 +1009,6 @@ static void LeaveMissionMenuMode(const Pages::SinglePlayer *page, u32 id) {
         memset(scenario.mission, 0, sizeof(scenario.mission));
         for (u32 playerId = 1; playerId < 12; ++playerId) scenario.players[playerId].playerType = PLAYER_NONE;
     }
-    CustomCharacters::RefreshMenuDriverModel(Racedata::sInstance->menusScenario.players[0].characterId);
     MissionModel::Reset();
 }
 
