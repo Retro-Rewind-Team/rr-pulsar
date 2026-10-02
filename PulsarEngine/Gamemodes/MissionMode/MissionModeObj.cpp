@@ -18,21 +18,18 @@ static u16 GetMissionU16(const void *mission, u32 offset) {
 }
 
 static bool IsMissionCoinObjective(const RacedataScenario &scenario) {
-    return IsMissionScenario(scenario) &&
-           GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == 8;
+    return IsMissionScenario(scenario) && GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == 8;
 }
 
 static bool IsMissionBreakItemBoxObjective(const RacedataScenario &scenario) {
-    return IsMissionScenario(scenario) &&
-           GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_BREAK_ITEM_BOXES;
+    return IsMissionScenario(scenario) && GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_BREAK_ITEM_BOXES;
 }
 
 static void PreventMissionItemBoxRespawn(Objects::Itembox *itembox) {
     register u32 itemBoxPtr;
     asm(mr itemBoxPtr, r3;);
 
-    if (itembox != nullptr && Racedata::sInstance != nullptr &&
-        IsMissionBreakItemBoxObjective(Racedata::sInstance->racesScenario)) {
+    if (itembox != nullptr && Racedata::sInstance != nullptr && IsMissionBreakItemBoxObjective(Racedata::sInstance->racesScenario)) {
         itembox->respawnTime = ITEMBOX_NO_RESPAWN_TIME;
     }
 
@@ -46,8 +43,7 @@ static u32 AddMissionCoin(void *coinManager, const KMP::Holder<GOBJ> *object) {
     typedef u32 (*AddCoinFn)(void *, const KMP::Holder<GOBJ> *);
     static const AddCoinFn sAddCoin = reinterpret_cast<AddCoinFn>(&sMissionCoinAddIntroBranch);
 
-    if (Racedata::sInstance != nullptr && object != nullptr && object->raw != nullptr &&
-        coinManager != nullptr && IsMissionCoinObjective(Racedata::sInstance->racesScenario)) {
+    if (Racedata::sInstance != nullptr && object != nullptr && object->raw != nullptr && coinManager != nullptr && IsMissionCoinObjective(Racedata::sInstance->racesScenario)) {
         RacedataSettings &settings = Racedata::sInstance->racesScenario.settings;
         const GameType oldGameType = settings.gametype;
         object->raw->settings[0] = 1;

@@ -29,7 +29,8 @@ static const u32 MISSION_NORMAL_INTRO_STAGE = 0;
 static const u32 MISSION_INTRO_TITLE_OFFSET = 0x1B8;
 
 static bool StringEndsWith(const char *str, const char *suffix) {
-    if (str == nullptr || suffix == nullptr) return false;
+    if (str == nullptr || suffix == nullptr)
+        return false;
 
     const char *strEnd = str;
     while (*strEnd != '\0') ++strEnd;
@@ -38,10 +39,12 @@ static bool StringEndsWith(const char *str, const char *suffix) {
     while (*suffixEnd != '\0') ++suffixEnd;
 
     while (suffixEnd != suffix) {
-        if (strEnd == str) return false;
+        if (strEnd == str)
+            return false;
         --strEnd;
         --suffixEnd;
-        if (*strEnd != *suffixEnd) return false;
+        if (*strEnd != *suffixEnd)
+            return false;
     }
     return true;
 }
@@ -50,13 +53,12 @@ typedef Page *(*GetMissionInstructionPageFn)(int);
 
 kmRuntimeUse(0x80842a78);
 static Page *GetMissionInstructionPageForIntro(int pageId) {
-    static const GetMissionInstructionPageFn original =
-        reinterpret_cast<GetMissionInstructionPageFn>(kmRuntimeAddr(0x80842a78));
+    static const GetMissionInstructionPageFn original = reinterpret_cast<GetMissionInstructionPageFn>(kmRuntimeAddr(0x80842a78));
     Page *page = original(pageId);
-    if (page == nullptr || pageId != PAGE_MISSION_INFORMATION_PROMPT) return page;
+    if (page == nullptr || pageId != PAGE_MISSION_INFORMATION_PROMPT)
+        return page;
 
-    if (Racedata::sInstance == nullptr ||
-        !IsMissionScenario(Racedata::sInstance->menusScenario))
+    if (Racedata::sInstance == nullptr || !IsMissionScenario(Racedata::sInstance->menusScenario))
         return page;
 
     u32 *stage = reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(page) + MISSION_INFO_STAGE_OFFSET);
@@ -70,7 +72,8 @@ kmCall(0x808440d8, GetMissionInstructionPageForIntro);
 kmCall(0x8084e624, GetMissionInstructionPageForIntro);
 
 static const RacedataScenario *GetMissionIntroScenario() {
-    if (Racedata::sInstance == nullptr) return nullptr;
+    if (Racedata::sInstance == nullptr)
+        return nullptr;
 
     if (IsMissionScenario(Racedata::sInstance->racesScenario))
         return &Racedata::sInstance->racesScenario;
@@ -82,22 +85,22 @@ static const RacedataScenario *GetMissionIntroScenario() {
 kmRuntimeUse(0x80855200);
 typedef void (*RaceIntroOnInitFn)(Pages::RaceIntro *);
 static void RaceIntroOnInit(Pages::RaceIntro *intro) {
-    static const RaceIntroOnInitFn original =
-        reinterpret_cast<RaceIntroOnInitFn>(kmRuntimeAddr(0x80855200));
-    if (intro == nullptr) return;
+    static const RaceIntroOnInitFn original = reinterpret_cast<RaceIntroOnInitFn>(kmRuntimeAddr(0x80855200));
+    if (intro == nullptr)
+        return;
     original(intro);
 
     const RacedataScenario *scenario = GetMissionIntroScenario();
-    if (scenario == nullptr || !IsMissionBossObjective(*scenario)) return;
+    if (scenario == nullptr || !IsMissionBossObjective(*scenario))
+        return;
 
-    LayoutUIControl *cupDisplay = reinterpret_cast<LayoutUIControl *>(
-        reinterpret_cast<u8 *>(intro) + MISSION_INTRO_TITLE_OFFSET);
-    if (cupDisplay->layout.resources == nullptr) return;
+    LayoutUIControl *cupDisplay = reinterpret_cast<LayoutUIControl *>(reinterpret_cast<u8 *>(intro) + MISSION_INTRO_TITLE_OFFSET);
+    if (cupDisplay->layout.resources == nullptr)
+        return;
     Pulsar::UI::ChangeImage(*cupDisplay, "cup_icon", "mr_boss.tpl");
 
-    if (selectedMissionStageBmgId == 0 || selectedMissionId != scenario->settings.raceNumber ||
-        selectedLevel >= MISSION_SELECTION_COUNT || selectedMission >= MISSION_SELECTION_COUNT ||
-        scenario->settings.cupId != selectedLevel)
+    if (selectedMissionStageBmgId == 0 || selectedMissionId != scenario->settings.raceNumber || selectedLevel >= MISSION_SELECTION_COUNT || selectedMission >= MISSION_SELECTION_COUNT
+      || scenario->settings.cupId != selectedLevel)
         return;
 
     Text::Info info;
@@ -110,7 +113,8 @@ kmWritePointer(0x808da590, RaceIntroOnInit);
 
 static void SetVSIntroBmgId(LayoutUIControl *trackName) {
     const CupsConfig *cupsConfig = CupsConfig::sInstance;
-    if (trackName == nullptr || cupsConfig == nullptr) return;
+    if (trackName == nullptr || cupsConfig == nullptr)
+        return;
 
     PulsarId winning = cupsConfig->GetWinning();
     if (Racedata::sInstance != nullptr && IsMissionScenario(Racedata::sInstance->racesScenario)) {
@@ -119,12 +123,14 @@ static void SetVSIntroBmgId(LayoutUIControl *trackName) {
             winning = missionMusicTrack;
     }
 
-    if (CupsConfig::IsReg(winning) || !cupsConfig->IsValidTrack(winning)) return;
+    if (CupsConfig::IsReg(winning) || !cupsConfig->IsValidTrack(winning))
+        return;
 
     const u32 bmgId = Pulsar::UI::GetTrackBMGId(winning, false);
     Text::Info info;
     info.bmgToPass[0] = bmgId;
-    if (Pulsar::UI::SetTrackNameAuthorMessage(*trackName, winning, bmgId)) return;
+    if (Pulsar::UI::SetTrackNameAuthorMessage(*trackName, winning, bmgId))
+        return;
 
     info.bmgToPass[1] = Pulsar::UI::GetTrackAuthorBMGId(winning, bmgId);
     trackName->SetMessage(Pulsar::UI::BMG_INFO_DISPLAY, &info);
@@ -149,7 +155,8 @@ void SetMissionIntroSelection(u32 level, u32 mission, u8 missionId, u16 stageBmg
 
 void SetMissionIntroInfoSelection(Pulsar::UI::ExpSection &section, u32 level, u32 stage) {
     Page *infoPage = section.pages[PAGE_MISSION_INFORMATION_PROMPT];
-    if (infoPage == nullptr) return;
+    if (infoPage == nullptr)
+        return;
 
     u8 *pageBytes = reinterpret_cast<u8 *>(infoPage);
     *reinterpret_cast<u32 *>(pageBytes + MISSION_INFO_STAGE_OFFSET) = stage;
@@ -157,16 +164,15 @@ void SetMissionIntroInfoSelection(Pulsar::UI::ExpSection &section, u32 level, u3
 }
 
 bool ResolveMissionBossIntroPath(const nw4r::snd::DVDSoundArchive *archive, const char *&extFilePath, u32 &length) {
-    if (archive == nullptr || Racedata::sInstance == nullptr ||
-        !IsMissionScenario(Racedata::sInstance->menusScenario) ||
-        !HasMissionFeature(Racedata::sInstance->menusScenario, BOSS_MISSION) ||
-        !StringEndsWith(extFilePath, "/o_Crs_In_Fan_battle.brstm"))
+    if (archive == nullptr || Racedata::sInstance == nullptr || !IsMissionScenario(Racedata::sInstance->menusScenario) || !HasMissionFeature(Racedata::sInstance->menusScenario, BOSS_MISSION)
+      || !StringEndsWith(extFilePath, "/o_Crs_In_Fan_battle.brstm"))
         return false;
 
     snprintf(missionIntroPath, sizeof(missionIntroPath), "%sstrm/o_Crs_In_Fan_mission.brstm", archive->extFileRoot);
 
     DVD::FileInfo fileInfo;
-    if (!DVD::Open(missionIntroPath, &fileInfo)) return false;
+    if (!DVD::Open(missionIntroPath, &fileInfo))
+        return false;
     const u32 replacementLength = fileInfo.length;
     DVD::Close(&fileInfo);
 

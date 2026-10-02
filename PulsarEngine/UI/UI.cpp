@@ -65,7 +65,8 @@ void ExpSection::CreatePages(ExpSection &self, SectionId id) {
         MissionModel::SaveMenuCombo();
         Pulsar::MissionMode::PrepareMenuScenario();
     }
-    if (!self.hasAutoVote) self.CreateSectionPages(id);
+    if (!self.hasAutoVote)
+        self.CreateSectionPages(id);
     self.CreatePulPages();
 }
 kmCall(0x80622088, ExpSection::CreatePages);
@@ -398,8 +399,7 @@ kmBranchDefCpp(0x80630818, 0x80631574, void) {
     Pages::Menu *levelPage = static_cast<Pages::Menu *>(section->pages[PAGE_MISSION_LEVEL_SELECT_UNUSED]);
     levelPage->prevPageId = PAGE_SINGLE_PLAYER_MENU;
     Pulsar::UI::MissionMode::PrepareMissionStageSelectReturn();
-    Page *volatile addedPage =
-        ExpSection::AddPageLayerAnimatedReturnTopLayer(*section, PAGE_MISSION_LEVEL_SELECT_UNUSED, 0xff);
+    Page *volatile addedPage = ExpSection::AddPageLayerAnimatedReturnTopLayer(*section, PAGE_MISSION_LEVEL_SELECT_UNUSED, 0xff);
     (void)addedPage;
 }
 

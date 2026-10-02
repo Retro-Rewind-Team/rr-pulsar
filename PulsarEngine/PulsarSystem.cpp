@@ -299,8 +299,7 @@ void System::UpdateContext() {
     bool is200 = Race::Is200cc() && this->info.Has200cc();
     bool is500 = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC) == HOSTCC_500 && isFroom;
     if (isMission) {
-        is200 = MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ENGINE_200CC) &&
-                racedataSettings.engineClass == CC_100;
+        is200 = MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ENGINE_200CC) && racedataSettings.engineClass == CC_100;
         is500 = MissionMode::HasMissionFeature(Racedata::sInstance->menusScenario, MissionMode::ENGINE_500CC);
     }
     bool isOTTOnline = settings.GetSettingValue(Pulsar::Settings::SETTING_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;

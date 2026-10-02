@@ -65,7 +65,8 @@ static void LoadCorrectBRCTR(PushButton &button, const char *folder, const char 
     const u32 ttExtraButtonCount = GetTTExtraButtonCount(page);
     if (IsBTMRModeButton(page, idx)) {
         ctr = "PulBTMRTwo";
-        if (idx != 3) varId = 1;
+        if (idx != 3)
+            varId = 1;
         char btmrVariant[0x15];
         snprintf(btmrVariant, 0x15, "%s_%d", ctr, varId);
         variant = btmrVariant;
@@ -92,7 +93,8 @@ static void LoadCorrectBRCTR(PushButton &button, const char *folder, const char 
     }
 
     button.Load(folder, ctr, variant, localPlayerField, 0, false);
-    if (IsBTMRModeButton(page, idx)) button.SetMessage(MissionMode::GetBTMRModeButtonBMG(page, idx));
+    if (IsBTMRModeButton(page, idx))
+        button.SetMessage(MissionMode::GetBTMRModeButtonBMG(page, idx));
     page->curMovieCount = 0;
 }
 kmCall(0x8084f084, LoadCorrectBRCTR);
@@ -103,13 +105,19 @@ static int FixCalcDistance(const ControlManipulator &subject, const ControlManip
     const Pages::SinglePlayer *page = static_cast<PushButton *>(subject.actionHandlers[0]->subject)->parentGroup->GetParentPage<Pages::SinglePlayer>();
     const s32 settingsButtonId = GetSettingsButtonId(page);
 
-    if (subId == 0 && direction == DIRECTION_DOWN && IsTTModeButton(page, destId)) return 1;
-    if (subId == 2 && direction == DIRECTION_UP && IsTTModeButton(page, destId)) return 1;
-    if (IsTTModeButton(page, subId) && (direction == DIRECTION_UP && destId == 0 || direction == DIRECTION_DOWN && destId == 2)) return 1;
+    if (subId == 0 && direction == DIRECTION_DOWN && IsTTModeButton(page, destId))
+        return 1;
+    if (subId == 2 && direction == DIRECTION_UP && IsTTModeButton(page, destId))
+        return 1;
+    if (IsTTModeButton(page, subId) && (direction == DIRECTION_UP && destId == 0 || direction == DIRECTION_DOWN && destId == 2))
+        return 1;
 
-    if (subId == 2 && direction == DIRECTION_DOWN && IsBTMRModeButton(page, destId)) return 1;
-    if (subId == settingsButtonId && direction == DIRECTION_UP && IsBTMRModeButton(page, destId)) return 1;
-    if (IsBTMRModeButton(page, subId) && (direction == DIRECTION_UP && destId == 2 || direction == DIRECTION_DOWN && destId == settingsButtonId)) return 1;
+    if (subId == 2 && direction == DIRECTION_DOWN && IsBTMRModeButton(page, destId))
+        return 1;
+    if (subId == settingsButtonId && direction == DIRECTION_UP && IsBTMRModeButton(page, destId))
+        return 1;
+    if (IsBTMRModeButton(page, subId) && (direction == DIRECTION_UP && destId == 2 || direction == DIRECTION_DOWN && destId == settingsButtonId))
+        return 1;
 
     return subject.CalcDistanceBothWrapping(other, direction);
 }
@@ -141,7 +149,8 @@ void OnButtonSelect(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId
                 }
                 break;
             case (3):
-                if (id > 3) bmgId = bmgId + id - 3;
+                if (id > 3)
+                    bmgId = bmgId + id - 3;
                 break;
         }
         page->bottomText->SetMessage(bmgId);
@@ -153,7 +162,8 @@ kmWritePointer(0x808D9F64, &OnButtonSelect);
 // Sets the ttMode based on which button was clicked
 void OnButtonClick(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId) {
     const u32 id = button.buttonId;
-    if (MissionMode::OnButtonClick(page, button, hudSlotId)) return;
+    if (MissionMode::OnButtonClick(page, button, hudSlotId))
+        return;
     if (IsSettingsButton(page, id)) {
         // Navigate to page selection first
         ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_SINGLE_PLAYER_MENU);
@@ -180,7 +190,8 @@ void OnButtonClick(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId)
                 }
                 break;
             case (3):
-                if (id > 3) mode = (TTMode)(id - 3);
+                if (id > 3)
+                    mode = (TTMode)(id - 3);
                 break;
         }
         system->ttMode = mode;
@@ -194,7 +205,8 @@ static void TriggerClickHandler(PtmfHolder_2A<Page, void, PushButton &, u32> &ha
         OnButtonClick(static_cast<Pages::SinglePlayer *>(page), button, hudSlotId);
         return;
     }
-    if (page == nullptr) return;
+    if (page == nullptr)
+        return;
     (page->*handler.ptmf.ptr)(button, hudSlotId);
 }
 kmCall(0x805be3f0, TriggerClickHandler);

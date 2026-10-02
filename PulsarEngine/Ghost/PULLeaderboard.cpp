@@ -167,8 +167,7 @@ kmCall(0x8085da54, Leaderboard::GetEntry);
 // Correct BMG if you beat the expert
 kmWrite32(0x8085d744, 0x38805000);
 int Leaderboard::ExpertBMGDisplay(CourseId courseId) {
-    if (Racedata::sInstance != nullptr &&
-        Racedata::sInstance->racesScenario.settings.gamemode == MODE_MISSION_TOURNAMENT) {
+    if (Racedata::sInstance != nullptr && Racedata::sInstance->racesScenario.settings.gamemode == MODE_MISSION_TOURNAMENT) {
         return 1;
     }
 

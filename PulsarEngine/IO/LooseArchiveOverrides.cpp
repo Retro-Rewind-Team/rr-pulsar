@@ -2761,6 +2761,23 @@ static const char *ResolveWholeFileOverrideSource(const char *path, char *resolv
     return resolvedPath;
 }
 
+// Redirect shared DVD path lookups so whole-file overrides also cover streams and non-SZS files.
+static s32 ConvertPathToEntryNumWithLooseOverride(const char *path) {
+    if (path == nullptr)
+        return -1;
+
+    char resolvedPath[OVERRIDE_MAX_PATH];
+    s32 sourceEntryNum = kInvalidDVDEntryNum;
+    const char *finalPath = ResolveWholeFileOverrideSource(path, resolvedPath, sizeof(resolvedPath), nullptr, &sourceEntryNum);
+    if (sourceEntryNum >= 0)
+        return sourceEntryNum;
+    return DVD::ConvertPathToEntryNum(finalPath);
+}
+kmCall(0x800910b4, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x8009130c, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x80222500, ConvertPathToEntryNumWithLooseOverride);
+kmCall(0x8052a914, ConvertPathToEntryNumWithLooseOverride);
+
 static BOOL DVDOpenWithLooseOverride(const char *path, DVD::FileInfo *info) {
     if (path == nullptr || info == nullptr)
         return false;

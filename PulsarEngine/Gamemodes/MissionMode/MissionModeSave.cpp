@@ -43,7 +43,8 @@ static char sPath[IOS::ipcMaxPath] __attribute__((aligned(32))) = {};
 static const char *GetPath() {
     if (sPath[0] == '\0') {
         const System *sys = System::sInstance;
-        if (!sys) return nullptr;
+        if (!sys)
+            return nullptr;
         snprintf(sPath, IOS::ipcMaxPath, "%s/RRMission.pul", sys->GetModFolder());
     }
     return sPath;
@@ -51,18 +52,21 @@ static const char *GetPath() {
 
 static bool GetCurrentLicenseId(u32 &licenseId) {
     RKSYS::Mgr *mgr = RKSYS::Mgr::sInstance;
-    if (mgr == nullptr || mgr->curLicenseId >= MAX_LICENSES) return false;
+    if (mgr == nullptr || mgr->curLicenseId >= MAX_LICENSES)
+        return false;
     licenseId = mgr->curLicenseId;
     return true;
 }
 
 static void Load() {
-    if (sLoaded) return;
+    if (sLoaded)
+        return;
     sLoaded = true;
 
     IO *io = IO::sInstance;
     const char *path = GetPath();
-    if (!io || !path) return;
+    if (!io || !path)
+        return;
     if (!io->OpenFile(path, FILE_MODE_READ)) {
         return;
     }
@@ -93,8 +97,10 @@ static void Load() {
 
         const u32 licenseId = i / MAX_MISSIONS;
         const u32 missionId = i % MAX_MISSIONS;
-        if ((eBuf.e.flags & 1) == 0) continue;
-        if (eBuf.e.rating > MAX_RATING) continue;
+        if ((eBuf.e.flags & 1) == 0)
+            continue;
+        if (eBuf.e.rating > MAX_RATING)
+            continue;
 
         MissionEntry &entry = sMissions[licenseId][missionId];
         entry.finishTimeMillis = eBuf.e.finishTimeMillis;
@@ -107,7 +113,8 @@ static void Load() {
 static bool Save() {
     IO *io = IO::sInstance;
     const char *path = GetPath();
-    if (!io || !path) return false;
+    if (!io || !path)
+        return false;
 
     struct {
         PackedHeader h;
@@ -138,7 +145,8 @@ static bool Save() {
 }
 
 static u8 ConvertMissionRankToRating(u32 missionRank) {
-    if (missionRank > 5) return 0;
+    if (missionRank > 5)
+        return 0;
     return static_cast<u8>(6 - missionRank);
 }
 
@@ -148,20 +156,23 @@ void SaveMissionResult(u32 finishTimeMillis, u32 missionRank) {
     Load();
 
     u32 licenseId = 0;
-    if (!GetCurrentLicenseId(licenseId)) return;
-    if (RKSYS::Mgr::sInstance == nullptr || RKSYS::Mgr::sInstance->curLicenseId >= MAX_LICENSES ||
-        Racedata::sInstance == nullptr ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT) {
+    if (!GetCurrentLicenseId(licenseId))
+        return;
+    if (RKSYS::Mgr::sInstance == nullptr || RKSYS::Mgr::sInstance->curLicenseId >= MAX_LICENSES || Racedata::sInstance == nullptr
+      || Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT) {
         return;
     }
 
     const u32 missionId = Racedata::sInstance->racesScenario.settings.raceNumber;
     const u8 rating = ConvertMissionRankToRating(missionRank);
-    if (missionId >= MAX_MISSIONS || rating == 0) return;
+    if (missionId >= MAX_MISSIONS || rating == 0)
+        return;
 
     MissionEntry &entry = sMissions[licenseId][missionId];
-    if (entry.hasData && finishTimeMillis > entry.finishTimeMillis) return;
-    if (entry.hasData && finishTimeMillis == entry.finishTimeMillis && rating <= entry.rating) return;
+    if (entry.hasData && finishTimeMillis > entry.finishTimeMillis)
+        return;
+    if (entry.hasData && finishTimeMillis == entry.finishTimeMillis && rating <= entry.rating)
+        return;
 
     entry.finishTimeMillis = finishTimeMillis;
     entry.rating = rating;
@@ -175,10 +186,12 @@ bool GetMissionRecord(u32 missionId, u32 &finishTimeMillis, u8 &rating) {
     Load();
 
     u32 licenseId = 0;
-    if (missionId >= MAX_MISSIONS || !GetCurrentLicenseId(licenseId)) return false;
+    if (missionId >= MAX_MISSIONS || !GetCurrentLicenseId(licenseId))
+        return false;
 
     const MissionEntry &entry = sMissions[licenseId][missionId];
-    if (!entry.hasData) return false;
+    if (!entry.hasData)
+        return false;
     finishTimeMillis = entry.finishTimeMillis;
     rating = entry.rating;
     return true;
@@ -187,7 +200,8 @@ bool GetMissionRecord(u32 missionId, u32 &finishTimeMillis, u8 &rating) {
 bool DeleteMissionSave() {
     IO *io = IO::sInstance;
     const char *path = GetPath();
-    if (!io || !path) return false;
+    if (!io || !path)
+        return false;
 
     if (io->type == IOType_SD) {
         memset(sMissions, 0, sizeof(sMissions));
@@ -203,8 +217,7 @@ bool DeleteMissionSave() {
     if (io->type == IOType_RIIVO) {
         const s32 fd = IO::OpenFix("file", IOS::MODE_NONE);
         if (fd >= 0) {
-            const s32 result = IOS::IOCtl(fd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_DELETE), (void *)path,
-                                          strlen(path) + 1, nullptr, 0);
+            const s32 result = IOS::IOCtl(fd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_DELETE), (void *)path, strlen(path) + 1, nullptr, 0);
             IOS::Close(fd);
             deleted = result >= 0;
         }
@@ -213,7 +226,8 @@ bool DeleteMissionSave() {
         snprintf(realPath, sizeof(realPath), "/shared2/Pulsar%s", path);
         deleted = ISFS::Delete(realPath) >= 0;
     }
-    if (!deleted) return false;
+    if (!deleted)
+        return false;
 
     memset(sMissions, 0, sizeof(sMissions));
     sLoaded = true;

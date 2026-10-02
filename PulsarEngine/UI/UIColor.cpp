@@ -84,16 +84,17 @@ void GetHUDBaseColor(void *self, RGBA16 *c) {
 kmBranch(0x805f04d8, GetHUDBaseColor);
 
 static void SetHUDRacePaneColor(nw4r::lyt::Pane *pane, u32 idx, nw4r::ut::Color color) {
-    if (pane == nullptr) return;
+    if (pane == nullptr)
+        return;
 
     pane->SetVtxColor(idx, color);
 
-    if (strcmp(pane->name, "lap_text") != 0 || pane->parent == nullptr ||
-        strcmp(pane->parent->name, "race_null") != 0)
+    if (strcmp(pane->name, "lap_text") != 0 || pane->parent == nullptr || strcmp(pane->parent->name, "race_null") != 0)
         return;
 
     nw4r::lyt::Pane *slash = pane->parent->FindPaneByName("slash", true);
-    if (slash != nullptr) slash->SetVtxColor(idx, color);
+    if (slash != nullptr)
+        slash->SetVtxColor(idx, color);
 }
 
 void GetHUDRaceColor(nw4r::lyt::Pane *_this, u32 idx, nw4r::ut::Color color) {

@@ -41,11 +41,9 @@ typedef CtrlRaceTime *(*CtrlRaceTimeConstructorFn)(CtrlRaceTime *, u32, u32);
 kmRuntimeUse(0x807f7bd0);
 
 static CtrlRaceTime *MissionCtrlRaceTimeConstructor(CtrlRaceTime *self, u32 variantId, u32 type) {
-    static const CtrlRaceTimeConstructorFn original =
-        reinterpret_cast<CtrlRaceTimeConstructorFn>(kmRuntimeAddr(0x807f7bd0));
+    static const CtrlRaceTimeConstructorFn original = reinterpret_cast<CtrlRaceTimeConstructorFn>(kmRuntimeAddr(0x807f7bd0));
     self = original(self, variantId, type);
-    if (Racedata::sInstance != nullptr &&
-        IsMissionScenario(Racedata::sInstance->racesScenario))
+    if (Racedata::sInstance != nullptr && IsMissionScenario(Racedata::sInstance->racesScenario))
         reinterpret_cast<u8 *>(self)[0x1b4] = 1;
     return self;
 }
@@ -67,20 +65,20 @@ static u16 GetMissionU16(const void *mission, u32 offset) {
 }
 
 static bool IsMissionCameraLockedBackwards() {
-    if (Racedata::sInstance == nullptr) return false;
+    if (Racedata::sInstance == nullptr)
+        return false;
 
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    return IsMissionScenario(scenario) &&
-           GetMissionU16(scenario.mission, MISSION_CAMERA_MODE_OFFSET) == MISSION_CAMERA_MODE_BACKWARDS;
+    return IsMissionScenario(scenario) && GetMissionU16(scenario.mission, MISSION_CAMERA_MODE_OFFSET) == MISSION_CAMERA_MODE_BACKWARDS;
 }
 
 kmRuntimeUse(0x80521768);
 typedef void (*MissionControllerUpdateFn)(Input::RealControllerHolder *, bool);
 static void MissionControllerUpdate(Input::RealControllerHolder *holder, bool isPaused) {
-    static const MissionControllerUpdateFn original =
-        reinterpret_cast<MissionControllerUpdateFn>(kmRuntimeAddr(0x80521768));
+    static const MissionControllerUpdateFn original = reinterpret_cast<MissionControllerUpdateFn>(kmRuntimeAddr(0x80521768));
     original(holder, isPaused);
-    if (isPaused || !IsMissionCameraLockedBackwards()) return;
+    if (isPaused || !IsMissionCameraLockedBackwards())
+        return;
 
     holder->inputStates[0].buttonActions &= static_cast<u16>(~MISSION_ACCELERATE_BUTTON);
     holder->inputStates[0].buttonActions |= MISSION_REAR_VIEW_FLAG;
@@ -90,10 +88,10 @@ kmWritePointer(0x808b2d9c, MissionControllerUpdate);
 kmRuntimeUse(0x805a9bec);
 typedef void (*MissionRaceCameraUpdateFn)(void *, bool);
 static void MissionRaceCameraUpdate(void *cameraLink, bool isPaused) {
-    static const MissionRaceCameraUpdateFn original =
-        reinterpret_cast<MissionRaceCameraUpdateFn>(kmRuntimeAddr(0x805a9bec));
+    static const MissionRaceCameraUpdateFn original = reinterpret_cast<MissionRaceCameraUpdateFn>(kmRuntimeAddr(0x805a9bec));
     original(cameraLink, isPaused);
-    if (isPaused || !IsMissionCameraLockedBackwards()) return;
+    if (isPaused || !IsMissionCameraLockedBackwards())
+        return;
 
     RaceCamera *camera = reinterpret_cast<RaceCamera *>(reinterpret_cast<u8 *>(cameraLink) - MISSION_CAMERA_LINK_OFFSET);
     camera->bitfield |= MISSION_REAR_VIEW_FLAG;
@@ -101,7 +99,8 @@ static void MissionRaceCameraUpdate(void *cameraLink, bool isPaused) {
 kmWritePointer(0x808b6c80, MissionRaceCameraUpdate);
 
 static bool IsMissionVSObjective(const RacedataScenario &scenario) {
-    if (!IsMissionScenario(scenario)) return false;
+    if (!IsMissionScenario(scenario))
+        return false;
 
     const u16 objective = GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET);
     return objective == MISSION_OBJECTIVE_VS_RACE_01 || objective == MISSION_OBJECTIVE_VS_RACE_02;
@@ -113,15 +112,13 @@ kmRuntimeUse(0x805acc34);
 typedef void (*UpdateRaceCameraFn)(void *);
 static void UpdateRaceCamera(void *camera) {
     if (Racedata::sInstance != nullptr && IsMissionVSObjective(Racedata::sInstance->racesScenario)) {
-        if (Raceinfo::sInstance != nullptr &&
-            Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_IS_FINISHING))
+        if (Raceinfo::sInstance != nullptr && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_IS_FINISHING))
             sMissionCameraHold = true;
         return;
     }
 
     sMissionCameraHold = false;
-    static const UpdateRaceCameraFn original =
-        reinterpret_cast<UpdateRaceCameraFn>(kmRuntimeAddr(0x805acc34));
+    static const UpdateRaceCameraFn original = reinterpret_cast<UpdateRaceCameraFn>(kmRuntimeAddr(0x805acc34));
     original(camera);
 }
 kmCall(0x805ab800, UpdateRaceCamera);
@@ -129,9 +126,9 @@ kmCall(0x805ab800, UpdateRaceCamera);
 kmRuntimeUse(0x80516808);
 typedef s16 (*FindMissionCameraAreaFn)(KMP::Manager *, const Vec3 &, u32, u8);
 static s16 FindMissionCameraArea(KMP::Manager *manager, const Vec3 &position, u32 areaIdToTestFirst, u8 areaType) {
-    static const FindMissionCameraAreaFn original =
-        reinterpret_cast<FindMissionCameraAreaFn>(kmRuntimeAddr(0x80516808));
-    if (sMissionCameraHold) return static_cast<s16>(areaIdToTestFirst);
+    static const FindMissionCameraAreaFn original = reinterpret_cast<FindMissionCameraAreaFn>(kmRuntimeAddr(0x80516808));
+    if (sMissionCameraHold)
+        return static_cast<s16>(areaIdToTestFirst);
     return original(manager, position, areaIdToTestFirst, areaType);
 }
 kmCall(0x805ab830, FindMissionCameraArea);
@@ -141,29 +138,28 @@ bool IsMissionToGateObjective(const RacedataScenario &scenario) {
 }
 
 bool IsMissionTrickScoreObjective(const RacedataScenario &scenario) {
-    return IsMissionScenario(scenario) &&
-           GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_TRICK_SCORE;
+    return IsMissionScenario(scenario) && GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_TRICK_SCORE;
 }
 
 static bool IsMissionPlayerWheelie() {
-    if (Racedata::sInstance == 0 ||
-        !IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario) ||
-        Kart::Manager::sInstance == 0)
+    if (Racedata::sInstance == 0 || !IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario) || Kart::Manager::sInstance == 0)
         return false;
 
     const u8 playerId = Racedata::sInstance->racesScenario.settings.hudPlayerIds[0];
-    if (playerId >= Kart::Manager::sInstance->playerCount) return false;
+    if (playerId >= Kart::Manager::sInstance->playerCount)
+        return false;
 
     Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(playerId);
-    return player != 0 && player->pointers.kartStatus != 0 &&
-           (player->pointers.kartStatus->bitfield0 & MISSION_WHEELIE) != 0;
+    return player != 0 && player->pointers.kartStatus != 0 && (player->pointers.kartStatus->bitfield0 & MISSION_WHEELIE) != 0;
 }
 
 u8 GetMissionLapCount(const RacedataScenario &scenario) {
-    if (!IsMissionScenario(scenario)) return 0;
+    if (!IsMissionScenario(scenario))
+        return 0;
 
     const u16 objective = GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET);
-    if (objective != 1 && objective != 2) return 0;
+    if (objective != 1 && objective != 2)
+        return 0;
 
     const u32 requestedLaps = GetMissionValue(scenario.mission, MISSION_SCORE_REQUIRED_OFFSET);
     if (requestedLaps < MISSION_LAP_COUNT_MIN || requestedLaps > MISSION_LAP_COUNT_MAX)
@@ -172,8 +168,7 @@ u8 GetMissionLapCount(const RacedataScenario &scenario) {
 }
 
 bool HasMissionFeature(const RacedataScenario &scenario, MissionFeatureFlag feature) {
-    return IsMissionScenario(scenario) &&
-           (scenario.mission[MISSION_FEATURE_FLAGS_OFFSET] & static_cast<u8>(feature)) != 0;
+    return IsMissionScenario(scenario) && (scenario.mission[MISSION_FEATURE_FLAGS_OFFSET] & static_cast<u8>(feature)) != 0;
 }
 
 u8 GetMissionItemMode(const RacedataScenario &scenario) {
@@ -182,14 +177,12 @@ u8 GetMissionItemMode(const RacedataScenario &scenario) {
 
 u32 GetMissionCustomItems(const RacedataScenario &scenario) {
     const u8 *bytes = &scenario.mission[MISSION_CUSTOM_ITEMS_OFFSET];
-    return (static_cast<u32>(bytes[0]) << 24) |
-           (static_cast<u32>(bytes[1]) << 16) |
-           (static_cast<u32>(bytes[2]) << 8) |
-           static_cast<u32>(bytes[3]);
+    return (static_cast<u32>(bytes[0]) << 24) | (static_cast<u32>(bytes[1]) << 16) | (static_cast<u32>(bytes[2]) << 8) | static_cast<u32>(bytes[3]);
 }
 
 void ApplyMissionScenarioSettings(RacedataScenario &scenario) {
-    if (!IsMissionScenario(scenario)) return;
+    if (!IsMissionScenario(scenario))
+        return;
 
     const u8 flags = scenario.mission[MISSION_FEATURE_FLAGS_OFFSET];
     const u8 engine = scenario.mission[MISSION_ENGINE_OFFSET];
@@ -217,22 +210,21 @@ static void MissionRaceManagerPlayerEndLap(void *player) {
     if (Racedata::sInstance != nullptr)
         scenario = &Racedata::sInstance->racesScenario;
 
-    const bool skipMissionLap = scenario != nullptr && IsMissionScenario(*scenario) &&
-                                !IsMissionVSObjective(*scenario) &&
-                                !IsMissionBossObjective(*scenario);
-    if (skipMissionLap) return;
+    const bool skipMissionLap = scenario != nullptr && IsMissionScenario(*scenario) && !IsMissionVSObjective(*scenario) && !IsMissionBossObjective(*scenario);
+    if (skipMissionLap)
+        return;
 
     const u8 requestedLaps = scenario != nullptr ? GetMissionLapCount(*scenario) : 0;
-    const bool enabledCompetitionPath = scenario != nullptr && requestedLaps != 0 &&
-                                        (scenario->settings.modeFlags & MISSION_COMPETITION_MODE_FLAG) == 0;
+    const bool enabledCompetitionPath = scenario != nullptr && requestedLaps != 0 && (scenario->settings.modeFlags & MISSION_COMPETITION_MODE_FLAG) == 0;
     const u32 oldModeFlags = enabledCompetitionPath ? scenario->settings.modeFlags : 0;
-    if (enabledCompetitionPath) scenario->settings.modeFlags |= MISSION_COMPETITION_MODE_FLAG;
+    if (enabledCompetitionPath)
+        scenario->settings.modeFlags |= MISSION_COMPETITION_MODE_FLAG;
 
-    static const RaceManagerPlayerEndLapFn sRaceManagerPlayerEndLap =
-        reinterpret_cast<RaceManagerPlayerEndLapFn>(kmRuntimeAddr(0x805349b8));
+    static const RaceManagerPlayerEndLapFn sRaceManagerPlayerEndLap = reinterpret_cast<RaceManagerPlayerEndLapFn>(kmRuntimeAddr(0x805349b8));
     sRaceManagerPlayerEndLap(player);
 
-    if (enabledCompetitionPath) scenario->settings.modeFlags = oldModeFlags;
+    if (enabledCompetitionPath)
+        scenario->settings.modeFlags = oldModeFlags;
 }
 
 kmCall(0x80534fbc, MissionRaceManagerPlayerEndLap);
@@ -241,8 +233,7 @@ kmCall(0x805350d4, MissionRaceManagerPlayerEndLap);
 kmRuntimeUse(0x80725c98);
 static void PreventMissionBackwardsLakitu(void *action) {
     typedef void (*EnableBackwardsActionFn)(void *);
-    static const EnableBackwardsActionFn original =
-        reinterpret_cast<EnableBackwardsActionFn>(kmRuntimeAddr(0x80725c98));
+    static const EnableBackwardsActionFn original = reinterpret_cast<EnableBackwardsActionFn>(kmRuntimeAddr(0x80725c98));
     original(action);
 
     if (Racedata::sInstance == nullptr || IsMissionVSObjective(Racedata::sInstance->racesScenario))
@@ -254,17 +245,18 @@ static void PreventMissionBackwardsLakitu(void *action) {
 kmWritePointer(0x808c9888, PreventMissionBackwardsLakitu);
 
 static u16 GetMissionCPUCount(const RacedataScenario &scenario) {
-    return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) |
-                            static_cast<u16>(scenario.mission[0x59]));
+    return static_cast<u16>((static_cast<u16>(scenario.mission[0x58]) << 8) | static_cast<u16>(scenario.mission[0x59]));
 }
 
 void PopulateMissionCPUs(RacedataScenario &scenario) {
-    if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT) return;
+    if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
+        return;
 
     ApplyMissionScenarioSettings(scenario);
 
     u16 cpuCount = GetMissionCPUCount(scenario);
-    if (cpuCount > 11) cpuCount = 11;
+    if (cpuCount > 11)
+        cpuCount = 11;
 
     for (u32 i = 1; i < 12; ++i) scenario.players[i].playerType = PLAYER_NONE;
     for (u32 i = 0; i < cpuCount; ++i) {
@@ -277,8 +269,7 @@ void PopulateMissionCPUs(RacedataScenario &scenario) {
 }
 
 void FinalizeMissionRaceScenario() {
-    if (Racedata::sInstance == nullptr ||
-        !IsMissionScenario(Racedata::sInstance->menusScenario))
+    if (Racedata::sInstance == nullptr || !IsMissionScenario(Racedata::sInstance->menusScenario))
         return;
 
     RacedataScenario &menuScenario = Racedata::sInstance->menusScenario;
@@ -289,9 +280,7 @@ void FinalizeMissionRaceScenario() {
 
 kmRuntimeUse(0x805983f4);
 void MovePlayersToMissionSuccessPoint() {
-    if (Racedata::sInstance == nullptr ||
-        !IsMissionScenario(Racedata::sInstance->racesScenario) ||
-        Kart::Manager::sInstance == nullptr || Kart::Manager::sInstance->players == nullptr) {
+    if (Racedata::sInstance == nullptr || !IsMissionScenario(Racedata::sInstance->racesScenario) || Kart::Manager::sInstance == nullptr || Kart::Manager::sInstance->players == nullptr) {
         sMissionCameraHold = false;
         return;
     }
@@ -301,11 +290,11 @@ void MovePlayersToMissionSuccessPoint() {
     const u8 hudPlayerId = scenario.settings.hudPlayerIds[0];
 
     typedef void (*GoToMissionSuccessPointFn)(void *);
-    const GoToMissionSuccessPointFn goToMissionSuccessPoint =
-        reinterpret_cast<GoToMissionSuccessPointFn>(kmRuntimeAddr(0x805983f4));
+    const GoToMissionSuccessPointFn goToMissionSuccessPoint = reinterpret_cast<GoToMissionSuccessPointFn>(kmRuntimeAddr(0x805983f4));
     for (u32 i = 0; i < manager->playerCount; ++i) {
         Kart::Player *player = manager->GetKartPlayer(i);
-        if (player == nullptr || player->kartSub == nullptr) continue;
+        if (player == nullptr || player->kartSub == nullptr)
+            continue;
         if (i == hudPlayerId) {
             goToMissionSuccessPoint(player->kartSub);
             continue;
@@ -321,12 +310,12 @@ void MovePlayersToMissionSuccessPoint() {
 
 kmRuntimeUse(0x80518b2c);
 typedef KMP::Holder<MSPT> *(*GetMissionPointHolderFn)(KMP::Manager *, u16);
-static const GetMissionPointHolderFn sGetMissionPointHolder =
-    reinterpret_cast<GetMissionPointHolderFn>(kmRuntimeAddr(0x80518b2c));
+static const GetMissionPointHolderFn sGetMissionPointHolder = reinterpret_cast<GetMissionPointHolderFn>(kmRuntimeAddr(0x80518b2c));
 
 static KMP::Holder<MSPT> *GetMissionPointHolderWithKTPTFallback(KMP::Manager *manager, u16 idx) {
     KMP::Holder<MSPT> *holder = sGetMissionPointHolder(manager, idx);
-    if (holder != nullptr) return holder;
+    if (holder != nullptr)
+        return holder;
     KMP::Holder<KTPT> *ktpt = manager->GetHolder<KTPT>(0);
     return reinterpret_cast<KMP::Holder<MSPT> *>(ktpt);
 }
@@ -334,12 +323,12 @@ kmCall(0x805847b0, GetMissionPointHolderWithKTPTFallback);
 
 kmRuntimeUse(0x805362dc);
 typedef void (*GetInitialPhysicsValuesFn)(Raceinfo *, Vec3 *, Vec3 *, u8);
-static const GetInitialPhysicsValuesFn sGetInitialPhysicsValues =
-    reinterpret_cast<GetInitialPhysicsValuesFn>(kmRuntimeAddr(0x805362dc));
+static const GetInitialPhysicsValuesFn sGetInitialPhysicsValues = reinterpret_cast<GetInitialPhysicsValuesFn>(kmRuntimeAddr(0x805362dc));
 
 static bool HasMissionCPUs(const RacedataScenario &scenario) {
     for (u32 i = 1; i < 12; ++i)
-        if (scenario.players[i].playerType == PLAYER_CPU) return true;
+        if (scenario.players[i].playerType == PLAYER_CPU)
+            return true;
     return false;
 }
 
@@ -349,8 +338,7 @@ bool ShouldHidePositionCounter(const RacedataScenario &scenario) {
 
 static void SetMissionStartPosition(Raceinfo *raceinfo, Vec3 *position, Vec3 *angles, u8 playerId) {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT || !HasMissionCPUs(scenario) ||
-        playerId >= scenario.playerCount) {
+    if (scenario.settings.gamemode != MODE_MISSION_TOURNAMENT || !HasMissionCPUs(scenario) || playerId >= scenario.playerCount) {
         sGetInitialPhysicsValues(raceinfo, position, angles, playerId);
         return;
     }
@@ -375,7 +363,8 @@ kmCall(0x8058ee78, SetMissionStartPosition);
 kmCall(0x805a70e8, SetMissionStartPosition);
 
 bool IsMissionScoreObjective(const RacedataScenario &scenario) {
-    if (!IsMissionScenario(scenario)) return false;
+    if (!IsMissionScenario(scenario))
+        return false;
 
     switch (GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET)) {
         case 0:
@@ -394,45 +383,42 @@ bool IsMissionScoreObjective(const RacedataScenario &scenario) {
 }
 
 bool IsMissionBossObjective(const RacedataScenario &scenario) {
-    return IsMissionScenario(scenario) &&
-           (HasMissionFeature(scenario, BOSS_MISSION) ||
-            GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_ENEMY_DOWN_02);
+    return IsMissionScenario(scenario) && (HasMissionFeature(scenario, BOSS_MISSION) || GetMissionU16(scenario.mission, MISSION_OBJECTIVE_OFFSET) == MISSION_OBJECTIVE_ENEMY_DOWN_02);
 }
 
 static u32 GetMissionScoreDisplayTarget(const void *raceConfig) {
     if (Racedata::sInstance != 0 && IsMissionScoreObjective(Racedata::sInstance->racesScenario))
-        return GetMissionValue(Racedata::sInstance->racesScenario.mission,
-                               MISSION_SCORE_REQUIRED_OFFSET);
+        return GetMissionValue(Racedata::sInstance->racesScenario.mission, MISSION_SCORE_REQUIRED_OFFSET);
     return GetMissionValue(raceConfig, 0xBCC);
 }
 
 kmRuntimeUse(0x807f784c);
 static void FixMissionScoreLayout(CtrlRaceScore *self) {
-    if (IsMissionPlayerWheelie()) return;
+    if (IsMissionPlayerWheelie())
+        return;
 
     typedef void (*CtrlRaceScoreOnUpdateFn)(CtrlRaceScore *);
-    static const CtrlRaceScoreOnUpdateFn sCtrlRaceScoreOnUpdate =
-        reinterpret_cast<CtrlRaceScoreOnUpdateFn>(kmRuntimeAddr(0x807f784c));
+    static const CtrlRaceScoreOnUpdateFn sCtrlRaceScoreOnUpdate = reinterpret_cast<CtrlRaceScoreOnUpdateFn>(kmRuntimeAddr(0x807f784c));
     sCtrlRaceScoreOnUpdate(self);
 
     if (Racedata::sInstance != 0 && IsMissionToGateObjective(Racedata::sInstance->racesScenario))
         self->isHidden = true;
 
-    if (Racedata::sInstance == 0 ||
-        !IsMissionScoreObjective(Racedata::sInstance->racesScenario))
+    if (Racedata::sInstance == 0 || !IsMissionScoreObjective(Racedata::sInstance->racesScenario))
         return;
 
     nw4r::lyt::Pane *slash = self->layout.GetPaneByName("slash");
-    if (slash == nullptr) return;
+    if (slash == nullptr)
+        return;
 
     static const float SCORE_SLASH_ONE_DIGIT_OFFSET = 22.0f;
-    const u32 target = GetMissionValue(Racedata::sInstance->racesScenario.mission,
-                                       MISSION_SCORE_REQUIRED_OFFSET);
+    const u32 target = GetMissionValue(Racedata::sInstance->racesScenario.mission, MISSION_SCORE_REQUIRED_OFFSET);
     static CtrlRaceScore *sAdjustedControl = nullptr;
     static float sSlashBaseX = 0.0f;
 
     if (target >= 10) {
-        if (sAdjustedControl == self) sAdjustedControl = nullptr;
+        if (sAdjustedControl == self)
+            sAdjustedControl = nullptr;
         return;
     }
 

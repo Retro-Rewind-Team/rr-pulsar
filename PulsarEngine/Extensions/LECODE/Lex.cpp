@@ -60,8 +60,7 @@ kmCall(0x80512820, LexMgr::LoadLEXAndKMP);
 
 bool ApplyHIPT(CtrlRaceRankNum &tracker) {  // return value: if true, tracker is hidden
     bool isInactive = tracker.CtrlRaceRankNum::IsInactive();
-    if (Racedata::sInstance != nullptr &&
-        Pulsar::MissionMode::ShouldHidePositionCounter(Racedata::sInstance->racesScenario))
+    if (Racedata::sInstance != nullptr && Pulsar::MissionMode::ShouldHidePositionCounter(Racedata::sInstance->racesScenario))
         return true;
     if (!isInactive) {
         const u8 playerId = tracker.GetPlayerId();

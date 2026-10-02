@@ -29,19 +29,18 @@ const BMGHolder *GetMissionBmg() {
     static const void *loadedFile = nullptr;
     static bool loadAttempted = false;
 
-    if (!loadAttempted && RootScene::sInstance != nullptr &&
-        RootScene::sInstance->expHeapGroup.heaps[1] != nullptr) {
+    if (!loadAttempted && RootScene::sInstance != nullptr && RootScene::sInstance->expHeapGroup.heaps[1] != nullptr) {
         loadAttempted = true;
         u32 fileSize = 0;
-        void *file = SystemManager::RipFromDisc(
-            MISSION_BMG_FILE, RootScene::sInstance->expHeapGroup.heaps[1], true, &fileSize);
+        void *file = SystemManager::RipFromDisc(MISSION_BMG_FILE, RootScene::sInstance->expHeapGroup.heaps[1], true, &fileSize);
         if (file != nullptr && fileSize >= sizeof(BMGHeader)) {
             missionBmg.Init(*reinterpret_cast<const BMGHeader *>(file));
             loadedFile = file;
         }
     }
 
-    if (loadedFile == nullptr) return nullptr;
+    if (loadedFile == nullptr)
+        return nullptr;
     return &missionBmg;
 }
 
@@ -119,14 +118,20 @@ static const char *const MISSION_STAGE_BORDER_PANES[] = {
 
 class MissionEndPage : public Pages::RaceMenu {
 public:
-    MissionEndPage(bool successful) : successful(successful) {}
+    MissionEndPage(bool successful) : successful(successful) {
+    }
 
-    int GetMessageBMG() const override { return 0; }
-    u32 GetButtonCount() const override { return BUTTON_COUNT; }
+    int GetMessageBMG() const override {
+        return 0;
+    }
+    u32 GetButtonCount() const override {
+        return BUTTON_COUNT;
+    }
 
     void OnInit() override {
         Pages::RaceMenu::OnInit();
-        if (!successful) return;
+        if (!successful)
+            return;
 
         for (u32 i = 0; i < 4; ++i) {
             PositionAndScale position = this->buttons[0].positionAndscale[i];
@@ -143,8 +148,12 @@ public:
         return successful ? successfulVariants : failedVariants;
     }
 
-    bool IsPausePage() const override { return false; }
-    const char *GetButtonsBRCTRName() const override { return "AfterMenuMR"; }
+    bool IsPausePage() const override {
+        return false;
+    }
+    const char *GetButtonsBRCTRName() const override {
+        return "AfterMenuMR";
+    }
 
 private:
     static const u32 BUTTON_COUNT = 3;
@@ -158,16 +167,24 @@ public:
         this->onButtonClickHandler.ptmf = &MissionPausePage::OnButtonClick;
     }
 
-    int GetMessageBMG() const override { return 0; }
-    u32 GetButtonCount() const override { return BUTTON_COUNT; }
+    int GetMessageBMG() const override {
+        return 0;
+    }
+    u32 GetButtonCount() const override {
+        return BUTTON_COUNT;
+    }
 
     const u32 *GetVariantsIdxArray() const override {
         static const u32 variants[BUTTON_COUNT] = {0, 2, 18, 1};
         return variants;
     }
 
-    bool IsPausePage() const override { return true; }
-    const char *GetButtonsBRCTRName() const override { return "PauseMenuMR"; }
+    bool IsPausePage() const override {
+        return true;
+    }
+    const char *GetButtonsBRCTRName() const override {
+        return "PauseMenuMR";
+    }
 
 private:
     static const u32 BUTTON_COUNT = 4;
@@ -211,11 +228,13 @@ static u16 ReadBigEndian16(const u8 *data) {
 static void ResetMissionButtonFreeText(PushButton &button, bool locked = false) {
     if (button.animator.animationGroups != nullptr && button.animator.animationCount > 2) {
         AnimationGroup &textLightGroup = button.animator.GetAnimationGroupById(2);
-        if (textLightGroup.animationsCount > 1) textLightGroup.PlayAnimationAtFrame(1, 0.0f);
+        if (textLightGroup.animationsCount > 1)
+            textLightGroup.PlayAnimationAtFrame(1, 0.0f);
     }
 
     nw4r::lyt::Pane *text = button.layout.GetPaneByName("text");
-    if (text == nullptr || text->GetMaterial() == nullptr) return;
+    if (text == nullptr || text->GetMaterial() == nullptr)
+        return;
 
     nw4r::lyt::Material *material = text->GetMaterial();
     material->UnbindAllAnimation();
@@ -230,10 +249,12 @@ static void ResetMissionButtonFreeText(PushButton &button, bool locked = false) 
 }
 
 static void SetMissionButtonSelectedText(PushButton &button) {
-    if (button.animator.animationGroups == nullptr || button.animator.animationCount <= 2) return;
+    if (button.animator.animationGroups == nullptr || button.animator.animationCount <= 2)
+        return;
 
     AnimationGroup &textLightGroup = button.animator.GetAnimationGroupById(2);
-    if (textLightGroup.animationsCount > 0) textLightGroup.PlayAnimationAtFrame(0, 0.0f);
+    if (textLightGroup.animationsCount > 0)
+        textLightGroup.PlayAnimationAtFrame(0, 0.0f);
 }
 
 static void SetMissionRank(PushButton &button, u8 rating, bool hideLevelIcon) {
@@ -241,7 +262,8 @@ static void SetMissionRank(PushButton &button, u8 rating, bool hideLevelIcon) {
         button.SetPaneVisibility("level_icon", false);
 
     nw4r::lyt::Pane *rankPane = button.layout.GetPaneByName(MISSION_STAGE_RANK_PANE);
-    if (rankPane == nullptr) return;
+    if (rankPane == nullptr)
+        return;
 
     const bool hasRank = rating >= 1 && rating <= 6;
     button.SetPaneVisibility(MISSION_STAGE_RANK_PANE, hasRank);
@@ -254,9 +276,7 @@ static void SetMissionRank(PushButton &button, u8 rating, bool hideLevelIcon) {
 }
 
 static const char *GetMissionObjectiveIcon(u16 objective) {
-    return objective < sizeof(MISSION_OBJECTIVE_ICONS) / sizeof(MISSION_OBJECTIVE_ICONS[0])
-               ? MISSION_OBJECTIVE_ICONS[objective]
-               : 0;
+    return objective < sizeof(MISSION_OBJECTIVE_ICONS) / sizeof(MISSION_OBJECTIVE_ICONS[0]) ? MISSION_OBJECTIVE_ICONS[objective] : 0;
 }
 
 class MissionSelectPage : public Pages::MenuInteractable {
@@ -264,7 +284,16 @@ public:
     static const u32 BUTTON_COUNT = 8;
 
     MissionSelectPage()
-        : levelSelected(false), plusHoldStartTime(0), plusHoldInProgress(false), plusHoldTriggered(false), missionUiFile(nullptr), missionUiSize(0), missionKmtFile(nullptr), missionKmtSize(0), missionConfigFile(nullptr), missionConfigSize(0) {
+        : levelSelected(false),
+          plusHoldStartTime(0),
+          plusHoldInProgress(false),
+          plusHoldTriggered(false),
+          missionUiFile(nullptr),
+          missionUiSize(0),
+          missionKmtFile(nullptr),
+          missionKmtSize(0),
+          missionConfigFile(nullptr),
+          missionConfigSize(0) {
         this->onButtonClickHandler.subject = this;
         this->onButtonClickHandler.ptmf = &MissionSelectPage::OnButtonClick;
         this->onButtonSelectHandler.subject = this;
@@ -303,10 +332,12 @@ public:
 
     void OnUpdate() override {
         SectionMgr *sectionMgr = SectionMgr::sInstance;
-        if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+        if (sectionMgr == nullptr || sectionMgr->curSection == nullptr)
+            return;
 
         Section *section = sectionMgr->curSection;
-        if (!section->IsPageTopLayer(*this)) return;
+        if (!section->IsPageTopLayer(*this))
+            return;
 
         if (this->levelSelected) {
             this->ResetPlusHold();
@@ -341,7 +372,8 @@ public:
             this->ResetPlusHold();
             return;
         }
-        if (this->plusHoldTriggered) return;
+        if (this->plusHoldTriggered)
+            return;
 
         const u64 now = OS::GetTime();
         if (!this->plusHoldInProgress) {
@@ -349,7 +381,8 @@ public:
             this->plusHoldInProgress = true;
             return;
         }
-        if (OS::TicksToMilliseconds(now - this->plusHoldStartTime) < 2000) return;
+        if (OS::TicksToMilliseconds(now - this->plusHoldStartTime) < 2000)
+            return;
 
         this->plusHoldTriggered = true;
         this->ShowDeleteSavePopup();
@@ -359,8 +392,10 @@ public:
         ::Pages::Menu::OnActivate();
         MissionModel::ResetDriverAnimation(0);
         MissionModel::RequestBackgroundModel();
-        if (this->titleText != nullptr) this->titleText->SetMessage(this->titleBmg);
-        if (this->bottomText != nullptr) this->bottomText->SetMessage(BMG_MISSION_MODE_BOTTOM);
+        if (this->titleText != nullptr)
+            this->titleText->SetMessage(this->titleBmg);
+        if (this->bottomText != nullptr)
+            this->bottomText->SetMessage(BMG_MISSION_MODE_BOTTOM);
         this->HideMissionBottomText();
         this->UpdateButtonMessages();
         if (returnToStageSelect) {
@@ -371,20 +406,26 @@ public:
         }
     }
 
-    int GetActivePlayerBitfield() const override { return this->activePlayerBitfield; }
-    int GetPlayerBitfield() const override { return this->playerBitfield; }
-    ManipulatorManager &GetManipulatorManager() override { return this->controlsManipulatorManager; }
+    int GetActivePlayerBitfield() const override {
+        return this->activePlayerBitfield;
+    }
+    int GetPlayerBitfield() const override {
+        return this->playerBitfield;
+    }
+    ManipulatorManager &GetManipulatorManager() override {
+        return this->controlsManipulatorManager;
+    }
 
     UIControl *CreateControl(u32 controlId) override {
-        if (controlId >= BUTTON_COUNT * 2) return nullptr;
+        if (controlId >= BUTTON_COUNT * 2)
+            return nullptr;
 
         const bool isStage = controlId >= BUTTON_COUNT;
         const u32 index = isStage ? controlId - BUTTON_COUNT : controlId;
         PushButton &button = isStage ? this->stageButtons[index] : this->levelButtons[index];
 
         this->AddControl(controlId, button, 0);
-        button.Load(UI::buttonFolder, isStage ? "MissionStage" : "MissionLevel",
-                    MISSION_LEVEL_BUTTON_VARIANTS[index], 1, 0, false);
+        button.Load(UI::buttonFolder, isStage ? "MissionStage" : "MissionLevel", MISSION_LEVEL_BUTTON_VARIANTS[index], 1, 0, false);
         button.buttonId = static_cast<s32>(controlId);
         this->SetMissionButtonHandlers(button);
         this->PositionButton(button, isStage ? 95.0f : -185.0f);
@@ -397,9 +438,12 @@ public:
         return &button;
     }
 
-    void SetButtonHandlers(PushButton &) override {}
+    void SetButtonHandlers(PushButton &) override {
+    }
 
-    UIControl *CreateExternalControl(u32) override { return nullptr; }
+    UIControl *CreateExternalControl(u32) override {
+        return nullptr;
+    }
 
     void UpdateButtonMessage(u32 buttonId) {
         Text::Info info;
@@ -423,7 +467,8 @@ public:
     void OnButtonClick(PushButton &button, u32) {
         if (button.buttonId < static_cast<s32>(BUTTON_COUNT)) {
             const u32 level = static_cast<u32>(button.buttonId);
-            if (this->levelSelected || !this->IsLevelAccessible(level)) return;
+            if (this->levelSelected || !this->IsLevelAccessible(level))
+                return;
             selectedLevel = level;
             selectedMission = 0;
             Pulsar::MissionMode::ResetMissionIntroSelection();
@@ -432,10 +477,12 @@ public:
             return;
         }
 
-        if (!this->levelSelected) return;
+        if (!this->levelSelected)
+            return;
 
         const u32 stageId = static_cast<u32>(button.buttonId) - BUTTON_COUNT;
-        if (!this->IsStageAccessible(selectedLevel, stageId)) return;
+        if (!this->IsStageAccessible(selectedLevel, stageId))
+            return;
         selectedMission = stageId;
         Pulsar::MissionMode::ResetMissionIntroSelection();
         u16 stageBmgId = 0;
@@ -448,8 +495,7 @@ public:
             const bool scenarioLoaded = this->LoadMissionScenario();
             MissionModel::SetScenarioLoaded(scenarioLoaded);
             if (scenarioLoaded && hasStageBmgId) {
-                Pulsar::MissionMode::SetMissionIntroSelection(selectedLevel, selectedMission,
-                                                              settings.raceNumber, stageBmgId);
+                Pulsar::MissionMode::SetMissionIntroSelection(selectedLevel, selectedMission, settings.raceNumber, stageBmgId);
             }
         }
         ExpSection *section = ExpSection::GetSection();
@@ -461,14 +507,16 @@ public:
 
     void OnButtonSelect(PushButton &button, u32) {
         if (button.buttonId < static_cast<s32>(BUTTON_COUNT)) {
-            if (this->levelSelected) return;
+            if (this->levelSelected)
+                return;
             this->ResetOtherButtonText(this->levelButtons, button);
             const u32 level = static_cast<u32>(button.buttonId);
             this->UpdateStageButtonMessages(level);
             for (u32 i = 0; i < BUTTON_COUNT; ++i) ResetMissionButtonFreeText(this->stageButtons[i]);
             this->UpdateMissionButtonAccess(level);
         } else {
-            if (!this->levelSelected) return;
+            if (!this->levelSelected)
+                return;
             this->ResetOtherButtonText(this->stageButtons, button);
             this->UpdateMissionButtonAccess();
         }
@@ -487,7 +535,9 @@ public:
         this->LoadPrevPage(this->backButton);
     }
 
-    void OnBackButtonClick(PushButton &, u32 hudSlotId) { this->OnBackPress(hudSlotId); }
+    void OnBackButtonClick(PushButton &, u32 hudSlotId) {
+        this->OnBackPress(hudSlotId);
+    }
 
 private:
     void ResetPlusHold() {
@@ -498,10 +548,12 @@ private:
 
     void ShowDeleteSavePopup() {
         Section *section = SectionMgr::sInstance->curSection;
-        if (section == nullptr) return;
+        if (section == nullptr)
+            return;
 
         Pages::YesNoPopUp *popup = section->Get<Pages::YesNoPopUp>();
-        if (popup == nullptr) return;
+        if (popup == nullptr)
+            return;
 
         popup->Reset();
         popup->SetMessageBoxMsg(BMG_MISSION_SAVE_DELETE_CONFIRM, nullptr);
@@ -512,21 +564,23 @@ private:
     }
 
     void OnDeleteSaveClick(u32 choice, PushButton &) {
-        if (choice != 0 || !Pulsar::MissionMode::DeleteMissionSave()) return;
+        if (choice != 0 || !Pulsar::MissionMode::DeleteMissionSave())
+            return;
 
         this->UpdateButtonMessages();
-        for (u32 i = 0; i < BUTTON_COUNT; ++i)
-            this->SetStageBorderVisible(this->levelButtons[i], this->IsLevelAccessible(i));
+        for (u32 i = 0; i < BUTTON_COUNT; ++i) this->SetStageBorderVisible(this->levelButtons[i], this->IsLevelAccessible(i));
         this->UpdateMissionButtonAccess();
     }
 
     void HideMissionBottomText() {
-        if (this->bottomText != nullptr) this->bottomText->isHidden = true;
+        if (this->bottomText != nullptr)
+            this->bottomText->isHidden = true;
     }
 
     void ResetOtherButtonText(PushButton *buttons, PushButton &selected) {
         for (u32 i = 0; i < BUTTON_COUNT; ++i)
-            if (&buttons[i] != &selected) ResetMissionButtonFreeText(buttons[i]);
+            if (&buttons[i] != &selected)
+                ResetMissionButtonFreeText(buttons[i]);
     }
 
     void SetMissionButtonHandlers(PushButton &button) {
@@ -545,8 +599,10 @@ private:
             const bool stageAccessible = this->IsStageAccessible(level, i);
             this->SetMissionButtonActive(this->levelButtons[i], !this->levelSelected && levelAccessible);
             this->SetMissionButtonActive(this->stageButtons[i], this->levelSelected && stageAccessible);
-            if (!levelAccessible) ResetMissionButtonFreeText(this->levelButtons[i], true);
-            if (!stageAccessible) ResetMissionButtonFreeText(this->stageButtons[i], true);
+            if (!levelAccessible)
+                ResetMissionButtonFreeText(this->levelButtons[i], true);
+            if (!stageAccessible)
+                ResetMissionButtonFreeText(this->stageButtons[i], true);
         }
     }
 
@@ -554,25 +610,30 @@ private:
         u8 missionId = 0;
         u32 finishTimeMillis = 0;
         u8 rating = 0;
-        return this->GetMissionId(level, stageId, missionId) &&
-               Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating);
+        return this->GetMissionId(level, stageId, missionId) && Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating);
     }
 
     bool IsLevelAccessible(u32 level) const {
-        if (level == 0) return true;
-        if (level >= BUTTON_COUNT) return false;
+        if (level == 0)
+            return true;
+        if (level >= BUTTON_COUNT)
+            return false;
 
         for (u32 stageId = 0; stageId < BUTTON_COUNT; ++stageId)
-            if (!this->HasMissionRecord(level - 1, stageId)) return false;
+            if (!this->HasMissionRecord(level - 1, stageId))
+                return false;
         return true;
     }
 
     bool IsStageAccessible(u32 level, u32 stageId) const {
-        if (level >= BUTTON_COUNT || stageId >= BUTTON_COUNT) return false;
-        if (stageId < BUTTON_COUNT - 1) return true;
+        if (level >= BUTTON_COUNT || stageId >= BUTTON_COUNT)
+            return false;
+        if (stageId < BUTTON_COUNT - 1)
+            return true;
 
         for (u32 previousStage = 0; previousStage < stageId; ++previousStage)
-            if (!this->HasMissionRecord(level, previousStage)) return false;
+            if (!this->HasMissionRecord(level, previousStage))
+                return false;
         return true;
     }
 
@@ -600,8 +661,7 @@ private:
         u8 missionId = 0;
         u32 finishTimeMillis = 0;
         u8 rating = 0;
-        if (!this->GetMissionId(level, stageId, missionId) ||
-            !Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating))
+        if (!this->GetMissionId(level, stageId, missionId) || !Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating))
             rating = 0;
         SetMissionRank(this->stageButtons[stageId], rating, true);
     }
@@ -624,10 +684,12 @@ private:
 
     bool GetMissionId(u32 level, u32 stageId, u8 &missionId) const {
         const u8 *record = this->GetMissionStageRecord(level, stageId);
-        if (record == nullptr) return false;
+        if (record == nullptr)
+            return false;
 
         const u16 mappedMissionId = ReadBigEndian16(record);
-        if (static_cast<s16>(mappedMissionId) < 0) return false;
+        if (static_cast<s16>(mappedMissionId) < 0)
+            return false;
 
         missionId = static_cast<u8>(mappedMissionId & 0xff);
         return true;
@@ -635,10 +697,12 @@ private:
 
     bool GetMissionStageBmgId(u32 level, u32 stageId, u16 &bmgId) const {
         const u8 *record = this->GetMissionStageRecord(level, stageId);
-        if (record == nullptr) return false;
+        if (record == nullptr)
+            return false;
 
         const u16 mappedBmgId = ReadBigEndian16(record + sizeof(u16));
-        if (static_cast<s16>(mappedBmgId) < 0) return false;
+        if (static_cast<s16>(mappedBmgId) < 0)
+            return false;
 
         bmgId = mappedBmgId;
         return true;
@@ -649,15 +713,15 @@ private:
             return nullptr;
 
         const u32 uiOffset = level * MISSION_UI_LEVEL_SIZE + stageId * MISSION_UI_STAGE_SIZE;
-        if (uiOffset + MISSION_UI_STAGE_SIZE > this->missionUiSize) return nullptr;
+        if (uiOffset + MISSION_UI_STAGE_SIZE > this->missionUiSize)
+            return nullptr;
 
         return this->missionUiFile + uiOffset;
     }
 
     bool GetMissionObjective(u32 level, u32 stageId, u16 &objective) const {
         u8 missionId = 0;
-        if (!this->GetMissionId(level, stageId, missionId) || this->missionKmtFile == nullptr ||
-            this->missionKmtSize < MISSION_KMT_HEADER_SIZE)
+        if (!this->GetMissionId(level, stageId, missionId) || this->missionKmtFile == nullptr || this->missionKmtSize < MISSION_KMT_HEADER_SIZE)
             return false;
 
         const u16 missionCount = ReadBigEndian16(this->missionKmtFile + 0x08);
@@ -666,8 +730,7 @@ private:
             return false;
 
         objective = ReadBigEndian16(this->missionKmtFile + missionOffset + MISSION_OBJECTIVE_OFFSET);
-        if ((this->missionKmtFile[missionOffset + MISSION_FEATURE_FLAGS_OFFSET] &
-             Pulsar::MissionMode::BOSS_MISSION) != 0)
+        if ((this->missionKmtFile[missionOffset + MISSION_FEATURE_FLAGS_OFFSET] & Pulsar::MissionMode::BOSS_MISSION) != 0)
             objective = MISSION_OBJECTIVE_ENEMY_DOWN_02;
         return true;
     }
@@ -679,14 +742,15 @@ private:
             u8 missionId = 0;
             u32 finishTimeMillis = 0;
             u8 rating = 0;
-            if (!this->GetMissionId(level, stageId, missionId)) continue;
+            if (!this->GetMissionId(level, stageId, missionId))
+                continue;
 
             hasMissions = true;
-            if (!Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating) || rating == 0 ||
-                rating > 6)
+            if (!Pulsar::MissionMode::GetMissionRecord(missionId, finishTimeMillis, rating) || rating == 0 || rating > 6)
                 return 0;
 
-            if (lowestRating == 0 || rating < lowestRating) lowestRating = rating;
+            if (lowestRating == 0 || rating < lowestRating)
+                lowestRating = rating;
         }
         return hasMissions ? lowestRating : 0;
     }
@@ -718,7 +782,8 @@ private:
             const bool selected = i == (selectedLevel % BUTTON_COUNT);
             this->levelButtons[i].isHidden = !selected;
             SetStageBorderVisible(this->levelButtons[i], selected && this->IsLevelAccessible(i));
-            if (!selected) ResetMissionButtonFreeText(this->levelButtons[i]);
+            if (!selected)
+                ResetMissionButtonFreeText(this->levelButtons[i]);
 
             SetStageBorderVisible(this->stageButtons[i], this->IsStageAccessible(selectedLevel, i));
             this->stageButtons[i].isHidden = false;
@@ -734,31 +799,30 @@ private:
 
     void LoadMissionResources() {
         if (ArchiveMgr::sInstance != nullptr) {
-            this->missionUiFile = static_cast<const u8 *>(
-                ArchiveMgr::sInstance->GetFile(ARCHIVE_HOLDER_UI, "parameter/mission_ui_single.bin", &this->missionUiSize));
+            this->missionUiFile = static_cast<const u8 *>(ArchiveMgr::sInstance->GetFile(ARCHIVE_HOLDER_UI, "parameter/mission_ui_single.bin", &this->missionUiSize));
         }
 
         const GameScene *scene = GameScene::GetCurrent();
-        if (scene == nullptr || scene->structsHeaps.heaps[1] == nullptr) return;
+        if (scene == nullptr || scene->structsHeaps.heaps[1] == nullptr)
+            return;
 
-        this->missionKmtFile = static_cast<const u8 *>(SystemManager::RipFromDisc(
-            "/Race/MissionRun/mission_single.kmt", scene->structsHeaps.heaps[1], true, &this->missionKmtSize));
-        this->missionConfigFile = static_cast<const u8 *>(SystemManager::RipFromDisc(
-            MISSION_CONFIG_FILE, scene->structsHeaps.heaps[1], true, &this->missionConfigSize));
+        this->missionKmtFile = static_cast<const u8 *>(SystemManager::RipFromDisc("/Race/MissionRun/mission_single.kmt", scene->structsHeaps.heaps[1], true, &this->missionKmtSize));
+        this->missionConfigFile = static_cast<const u8 *>(SystemManager::RipFromDisc(MISSION_CONFIG_FILE, scene->structsHeaps.heaps[1], true, &this->missionConfigSize));
     }
 
     bool LoadMissionScenario() {
-        if (Racedata::sInstance == nullptr || this->missionUiFile == nullptr || this->missionKmtFile == nullptr ||
-            this->missionUiSize < MISSION_UI_LEVEL_SIZE * BUTTON_COUNT ||
-            this->missionKmtSize < MISSION_KMT_HEADER_SIZE) {
+        if (Racedata::sInstance == nullptr || this->missionUiFile == nullptr || this->missionKmtFile == nullptr || this->missionUiSize < MISSION_UI_LEVEL_SIZE * BUTTON_COUNT
+          || this->missionKmtSize < MISSION_KMT_HEADER_SIZE) {
             return false;
         }
 
         u8 missionId = 0;
-        if (!this->GetMissionId(selectedLevel, selectedMission, missionId)) return false;
+        if (!this->GetMissionId(selectedLevel, selectedMission, missionId))
+            return false;
         const u16 missionCount = ReadBigEndian16(this->missionKmtFile + 0x08);
         const u32 missionOffset = MISSION_KMT_HEADER_SIZE + static_cast<u32>(missionId) * MISSION_KMT_ENTRY_SIZE;
-        if (missionId >= missionCount || missionOffset + MISSION_KMT_ENTRY_SIZE > this->missionKmtSize) return false;
+        if (missionId >= missionCount || missionOffset + MISSION_KMT_ENTRY_SIZE > this->missionKmtSize)
+            return false;
 
         Pulsar::MissionMode::LoadMissionCharacterTablesFromConfig(this->missionConfigFile, this->missionConfigSize);
         RacedataScenario &scenario = Racedata::sInstance->menusScenario;
@@ -808,7 +872,8 @@ static void InstallMissionPage(ExpSection &section, PageId id, Page *page) {
 }  // namespace
 
 void PrepareMissionEndPage() {
-    if (missionEndPagePrepared) return;
+    if (missionEndPagePrepared)
+        return;
     ExpSection *section = ExpSection::GetSection();
     u32 rank;
     if (::Pulsar::MissionMode::GetMissionResultRank(rank)) {
@@ -824,25 +889,30 @@ void PrepareMissionEndPage() {
     missionEndPagePrepared = true;
 }
 
-Page *CreateMissionPausePage() { return new MissionPausePage(); }
+Page *CreateMissionPausePage() {
+    return new MissionPausePage();
+}
 
 void PrepareMissionStageSelectReturn() {
     returnToStageSelect = true;
 }
 
 void ConfigureMissionInformationPage(Page &page) {
-    if (page.pageId != PAGE_MISSION_INFORMATION_PROMPT) return;
+    if (page.pageId != PAGE_MISSION_INFORMATION_PROMPT)
+        return;
 
     PushButton *buttons[2] = {};
     u32 buttonCount = 0;
     for (u32 i = 0; i < page.controlGroup.controlCount; ++i) {
         UIControl *control = page.controlGroup.GetControl(i);
-        if (control == nullptr || strcmp(control->GetClassName(), "PushButton") != 0) continue;
+        if (control == nullptr || strcmp(control->GetClassName(), "PushButton") != 0)
+            continue;
         if (buttonCount < sizeof(buttons) / sizeof(buttons[0]))
             buttons[buttonCount++] = static_cast<PushButton *>(control);
     }
 
-    if (buttonCount == 0) return;
+    if (buttonCount == 0)
+        return;
 
     PushButton *okButton = buttons[0];
     PushButton *tutorialButton = nullptr;
@@ -885,13 +955,21 @@ void CreateRacePages(ExpSection &section) {
     }
 }
 
-u32 GetMissionButtonId(const Pages::SinglePlayer *page) { return page->externControlCount - 2; }
+u32 GetMissionButtonId(const Pages::SinglePlayer *page) {
+    return page->externControlCount - 2;
+}
 
-bool IsMissionButton(const Pages::SinglePlayer *page, u32 id) { return id == GetMissionButtonId(page); }
+bool IsMissionButton(const Pages::SinglePlayer *page, u32 id) {
+    return id == GetMissionButtonId(page);
+}
 
-bool IsBTMRModeButton(const Pages::SinglePlayer *page, u32 id) { return id == 3 || IsMissionButton(page, id); }
+bool IsBTMRModeButton(const Pages::SinglePlayer *page, u32 id) {
+    return id == 3 || IsMissionButton(page, id);
+}
 
-u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer *page, u32 id) { return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON; }
+u32 GetBTMRModeButtonBMG(const Pages::SinglePlayer *page, u32 id) {
+    return IsMissionButton(page, id) ? BMG_MISSION_MODE_BUTTON : BMG_BATTLE_MODE_BUTTON;
+}
 
 static bool IsMissionMenuTTButton(const Pages::SinglePlayer *page, u32 id) {
     return id == 1 || (id > 3 && id < GetMissionButtonId(page));
@@ -913,7 +991,8 @@ static void LeaveMissionMenuMode(const Pages::SinglePlayer *page, u32 id) {
             mode = MODE_BATTLE;
             break;
         default:
-            if (!IsMissionMenuTTButton(page, id)) return;
+            if (!IsMissionMenuTTButton(page, id))
+                return;
             mode = MODE_TIME_TRIAL;
             break;
     }
@@ -924,12 +1003,12 @@ static void LeaveMissionMenuMode(const Pages::SinglePlayer *page, u32 id) {
     };
     for (u32 i = 0; i < sizeof(scenarios) / sizeof(scenarios[0]); ++i) {
         RacedataScenario &scenario = *scenarios[i];
-        if (!::Pulsar::MissionMode::IsMissionScenario(scenario)) continue;
+        if (!::Pulsar::MissionMode::IsMissionScenario(scenario))
+            continue;
 
         scenario.settings.gamemode = mode;
         memset(scenario.mission, 0, sizeof(scenario.mission));
-        for (u32 playerId = 1; playerId < 12; ++playerId)
-            scenario.players[playerId].playerType = PLAYER_NONE;
+        for (u32 playerId = 1; playerId < 12; ++playerId) scenario.players[playerId].playerType = PLAYER_NONE;
     }
     CustomCharacters::RefreshMenuDriverModel(Racedata::sInstance->menusScenario.players[0].characterId);
     MissionModel::Reset();

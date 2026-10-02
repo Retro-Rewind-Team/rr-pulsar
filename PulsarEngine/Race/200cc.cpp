@@ -17,7 +17,8 @@ bool Has200ccPhysics() {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (MissionMode::IsMissionScenario(scenario))
         return MissionMode::HasMissionFeature(scenario, MissionMode::ENGINE_200CC);
-    if (Is200cc()) return true;
+    if (Is200cc())
+        return true;
 
     if (System::sInstance->IsOfflineVS())
         return System::offlineCustomEngineClass >= 175;
@@ -37,10 +38,11 @@ static bool IsBrakeDriftingEnabled() {
     const GameMode mode = scenario.settings.gamemode;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    if (isOnlineRoomActive && System::sInstance->IsVanillaMode()) return false;
-    return Has200ccPhysics() || System::sInstance->IsContext(Pulsar::PULSAR_500) ||
-           (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED &&
-            mode != MODE_TIME_TRIAL && !System::sInstance->IsContext(PULSAR_MODE_OTT));
+    if (isOnlineRoomActive && System::sInstance->IsVanillaMode())
+        return false;
+    return Has200ccPhysics() || System::sInstance->IsContext(Pulsar::PULSAR_500)
+      || (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL
+        && !System::sInstance->IsContext(PULSAR_MODE_OTT));
 }
 
 static void CannonExitSpeed() {

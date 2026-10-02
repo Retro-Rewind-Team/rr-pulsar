@@ -88,12 +88,18 @@ static ItemId GetItemId(ItemObjId objectId) {
 
 static bool IsItemEnabled(ItemObjId objectId, u32 bitfield) {
     const ItemId itemId = GetItemId(objectId);
-    if (itemId == ITEM_NONE) return false;
-    if (((bitfield >> itemId) & 1) != 0) return true;
-    if (objectId == OBJ_GREEN_SHELL) return (bitfield & (1 << TRIPLE_GREEN_SHELL)) != 0;
-    if (objectId == OBJ_RED_SHELL) return (bitfield & (1 << TRIPLE_RED_SHELL)) != 0;
-    if (objectId == OBJ_BANANA) return (bitfield & (1 << TRIPLE_BANANA)) != 0;
-    if (objectId == OBJ_MUSHROOM) return (bitfield & (1 << TRIPLE_MUSHROOM)) != 0;
+    if (itemId == ITEM_NONE)
+        return false;
+    if (((bitfield >> itemId) & 1) != 0)
+        return true;
+    if (objectId == OBJ_GREEN_SHELL)
+        return (bitfield & (1 << TRIPLE_GREEN_SHELL)) != 0;
+    if (objectId == OBJ_RED_SHELL)
+        return (bitfield & (1 << TRIPLE_RED_SHELL)) != 0;
+    if (objectId == OBJ_BANANA)
+        return (bitfield & (1 << TRIPLE_BANANA)) != 0;
+    if (objectId == OBJ_MUSHROOM)
+        return (bitfield & (1 << TRIPLE_MUSHROOM)) != 0;
     return false;
 }
 
@@ -120,7 +126,8 @@ static ItemObjId GetRandomItem(u32 rnd) {
         for (size_t i = 0; i < sizeof(ITEM_WEIGHTS) / sizeof(ItemWeight); ++i) {
             const u32 weight = ITEM_WEIGHTS[i].threshold - previousThreshold;
             previousThreshold = ITEM_WEIGHTS[i].threshold;
-            if (IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield)) totalWeight += weight;
+            if (IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield))
+                totalWeight += weight;
         }
 
         if (totalWeight != 0) {
@@ -129,8 +136,10 @@ static ItemObjId GetRandomItem(u32 rnd) {
             for (size_t i = 0; i < sizeof(ITEM_WEIGHTS) / sizeof(ItemWeight); ++i) {
                 const u32 weight = ITEM_WEIGHTS[i].threshold - previousThreshold;
                 previousThreshold = ITEM_WEIGHTS[i].threshold;
-                if (!IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield)) continue;
-                if (value < weight) return ITEM_WEIGHTS[i].id;
+                if (!IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield))
+                    continue;
+                if (value < weight)
+                    return ITEM_WEIGHTS[i].id;
                 value -= weight;
             }
         }
@@ -138,7 +147,8 @@ static ItemObjId GetRandomItem(u32 rnd) {
         // Triple items share the corresponding object's rain representation.
         // If a mask contains only unsupported entries, use a safe fallback.
         for (size_t i = 0; i < sizeof(ITEM_WEIGHTS) / sizeof(ItemWeight); ++i)
-            if (IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield)) return ITEM_WEIGHTS[i].id;
+            if (IsItemEnabled(ITEM_WEIGHTS[i].id, bitfield))
+                return ITEM_WEIGHTS[i].id;
         return OBJ_MUSHROOM;
     }
 
@@ -168,9 +178,9 @@ bool IsItemRainEnabled() {
     if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_FROOM_HOST
       || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) {
         GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-        if (mode == MODE_MISSION_TOURNAMENT) return true;
-        return mode == MODE_VS_RACE || mode == MODE_GRAND_PRIX ||
-               mode == MODE_PUBLIC_VS || mode == MODE_PRIVATE_VS;
+        if (mode == MODE_MISSION_TOURNAMENT)
+            return true;
+        return mode == MODE_VS_RACE || mode == MODE_GRAND_PRIX || mode == MODE_PUBLIC_VS || mode == MODE_PRIVATE_VS;
     }
     return false;
 }

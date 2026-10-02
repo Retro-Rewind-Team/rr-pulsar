@@ -101,7 +101,8 @@ void TransmissionSelect::OnActivate() {
 }
 
 void TransmissionSelect::OnDeactivate() {
-    if (MissionModel::IsMissionMenuSection()) MissionModel::HideComboModel();
+    if (MissionModel::IsMissionMenuSection())
+        MissionModel::HideComboModel();
     Pages::DriftSelect::OnDeactivate();
 }
 

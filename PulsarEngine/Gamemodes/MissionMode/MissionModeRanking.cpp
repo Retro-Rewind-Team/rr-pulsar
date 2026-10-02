@@ -53,20 +53,18 @@ static u16 GetMissionU16(const void *mission, u32 offset) {
 }
 
 static bool IsMissionVSObjective() {
-    if (Racedata::sInstance == 0 ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
+    if (Racedata::sInstance == 0 || Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
         return false;
 
-    const u16 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission,
-                                        MISSION_OBJECTIVE_OFFSET);
+    const u16 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission, MISSION_OBJECTIVE_OFFSET);
     return objective == 1 || objective == 2;
 }
 
 static u32 GetMissionTrickScore(void *mission) {
-    if (Racedata::sInstance == 0 ||
-        !IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
+    if (Racedata::sInstance == 0 || !IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
         return 0;
-    if (Kart::Manager::sInstance == 0) return sMissionTrickScore;
+    if (Kart::Manager::sInstance == 0)
+        return sMissionTrickScore;
 
     const u32 missionStatus = GetMissionValue(mission, MISSION_STATUS_OFFSET);
     if (sMissionTrickState != mission || (sMissionTrickStatus != 0 && missionStatus == 0)) {
@@ -79,18 +77,18 @@ static u32 GetMissionTrickScore(void *mission) {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const u8 playerId = scenario.settings.hudPlayerIds[0];
     Kart::Player *player = Kart::Manager::sInstance->GetKartPlayer(playerId);
-    if (player == 0 || player->pointers.kartStatus == 0) return sMissionTrickScore;
+    if (player == 0 || player->pointers.kartStatus == 0)
+        return sMissionTrickScore;
 
-    const u32 trickFlags = player->pointers.kartStatus->bitfield1 &
-                           (MISSION_IN_A_TRICK | MISSION_ZIPPER_TRICK);
-    if (trickFlags != 0 && sMissionTrickFlags == 0) ++sMissionTrickScore;
+    const u32 trickFlags = player->pointers.kartStatus->bitfield1 & (MISSION_IN_A_TRICK | MISSION_ZIPPER_TRICK);
+    if (trickFlags != 0 && sMissionTrickFlags == 0)
+        ++sMissionTrickScore;
     sMissionTrickFlags = trickFlags;
     return sMissionTrickScore;
 }
 
 static void StopMissionTimerOnSuccess(const void *mission) {
-    if (GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1 ||
-        Raceinfo::sInstance == 0 || Raceinfo::sInstance->timerMgr == 0)
+    if (GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1 || Raceinfo::sInstance == 0 || Raceinfo::sInstance->timerMgr == 0)
         return;
     Raceinfo::sInstance->timerMgr->hasRaceStarted = false;
 }
@@ -99,16 +97,13 @@ typedef void (*MissionEndRaceFn)(void *);
 kmRuntimeUse(0x80535de8);
 
 static void FixMissionEndRace(void *raceMode) {
-    if (IsMissionVSObjective() && Raceinfo::sInstance != 0 &&
-        Raceinfo::sInstance->players != 0 && Raceinfo::sInstance->players[0] != 0 &&
-        Raceinfo::sInstance->players[0]->position != 1) {
+    if (IsMissionVSObjective() && Raceinfo::sInstance != 0 && Raceinfo::sInstance->players != 0 && Raceinfo::sInstance->players[0] != 0 && Raceinfo::sInstance->players[0]->position != 1) {
         SetMissionState(raceMode);
         sMissionTimeRankFailure = true;
         SetMissionValue(raceMode, MISSION_STATUS_OFFSET, 2);
     }
 
-    static const MissionEndRaceFn endRace =
-        reinterpret_cast<MissionEndRaceFn>(kmRuntimeAddr(0x80535de8));
+    static const MissionEndRaceFn endRace = reinterpret_cast<MissionEndRaceFn>(kmRuntimeAddr(0x80535de8));
     endRace(raceMode);
 }
 
@@ -118,10 +113,10 @@ typedef void (*LapRunCalcMissionFn)(void *);
 kmRuntimeUse(0x8053e018);
 
 static void FixLapRunCalcMission(void *mission) {
-    static const LapRunCalcMissionFn calc =
-        reinterpret_cast<LapRunCalcMissionFn>(kmRuntimeAddr(0x8053e018));
+    static const LapRunCalcMissionFn calc = reinterpret_cast<LapRunCalcMissionFn>(kmRuntimeAddr(0x8053e018));
     calc(mission);
-    if (!IsMissionVSObjective() || GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1) return;
+    if (!IsMissionVSObjective() || GetMissionValue(mission, MISSION_STATUS_OFFSET) != 1)
+        return;
     SetMissionState(mission);
     StopMissionTimerOnSuccess(mission);
     if (!IsRankReported())
@@ -138,40 +133,37 @@ static void SetMissionValue(void *mission, u32 offset, u32 value) {
 
 kmRuntimeUse(0x8053e194);
 typedef void (*SetMissionObjectiveCompleteFn)(void *, u32, u32);
-static const SetMissionObjectiveCompleteFn sSetMissionObjectiveComplete =
-    reinterpret_cast<SetMissionObjectiveCompleteFn> kmRuntimeAddr(0x8053e194);
+static const SetMissionObjectiveCompleteFn sSetMissionObjectiveComplete = reinterpret_cast<SetMissionObjectiveCompleteFn> kmRuntimeAddr(0x8053e194);
 static u32 GetRank(const void *mission);
 
 static bool HasMissionScoreRequirement(void *mission) {
-    return GetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET) >=
-           GetMissionValue(Racedata::sInstance->racesScenario.mission,
-                           MISSION_SCORE_REQUIRED_OFFSET);
+    return GetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET) >= GetMissionValue(Racedata::sInstance->racesScenario.mission, MISSION_SCORE_REQUIRED_OFFSET);
 }
 
 static void FixMissionScoreCalcRank(void *mission) {
-    if (Racedata::sInstance == 0 ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
+    if (Racedata::sInstance == 0 || Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
         return;
 
     SetMissionState(mission);
     if (IsMissionTrickScoreObjective(Racedata::sInstance->racesScenario))
         SetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET, GetMissionTrickScore(mission));
     const u32 score = GetMissionValue(mission, MISSION_SCORE_REQUIRED_OFFSET);
-    const u32 requiredScore = GetMissionValue(Racedata::sInstance->racesScenario.mission,
-                                              MISSION_SCORE_REQUIRED_OFFSET);
-    if (score < requiredScore) return;
+    const u32 requiredScore = GetMissionValue(Racedata::sInstance->racesScenario.mission, MISSION_SCORE_REQUIRED_OFFSET);
+    if (score < requiredScore)
+        return;
 
     const u32 raceManager = GetMissionValue(mission, 4);
-    const u32 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission,
-                                        MISSION_OBJECTIVE_OFFSET);
+    const u32 objective = GetMissionU16(Racedata::sInstance->racesScenario.mission, MISSION_OBJECTIVE_OFFSET);
     const u32 rank = IsRankReported() ? GetRank(mission) : 0;
     sSetMissionObjectiveComplete(reinterpret_cast<void *>(raceManager), objective, rank);
     StopMissionTimerOnSuccess(mission);
-    if (!IsRankReported()) SetRankFromTime(mission);
+    if (!IsRankReported())
+        SetRankFromTime(mission);
 }
 
 static bool GetMissionFinishTimeMillis(u32 &finishTimeMillis) {
-    if (Raceinfo::sInstance == 0) return false;
+    if (Raceinfo::sInstance == 0)
+        return false;
 
     Timer *finishTime = 0;
     if (Raceinfo::sInstance->players != 0 && Raceinfo::sInstance->players[0] != 0)
@@ -183,8 +175,7 @@ static bool GetMissionFinishTimeMillis(u32 &finishTimeMillis) {
         finishTime = &Raceinfo::sInstance->timerMgr->timers[0];
     }
 
-    finishTimeMillis = (static_cast<u32>(finishTime->minutes) * 60 + finishTime->seconds) * 1000 +
-                       finishTime->milliseconds;
+    finishTimeMillis = (static_cast<u32>(finishTime->minutes) * 60 + finishTime->seconds) * 1000 + finishTime->milliseconds;
     return true;
 }
 
@@ -206,18 +197,18 @@ static u32 GetRank(const void *mission) {
 }
 
 static bool SetRankFromTime(void *mission) {
-    if (Racedata::sInstance == 0 ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
+    if (Racedata::sInstance == 0 || Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT)
         return false;
 
     u32 finishTimeMillis = 0;
-    if (!GetMissionFinishTimeMillis(finishTimeMillis)) return false;
-    if (sMissionRankReported) return true;
+    if (!GetMissionFinishTimeMillis(finishTimeMillis))
+        return false;
+    if (sMissionRankReported)
+        return true;
 
     const u8 *const missionData = Racedata::sInstance->racesScenario.mission;
     for (u32 rank = 0; rank < MISSION_RANK_COUNT; ++rank) {
-        const u32 thresholdSeconds = GetMissionValue(missionData,
-                                                     MISSION_RANK_THRESHOLDS_OFFSET + rank * sizeof(u32));
+        const u32 thresholdSeconds = GetMissionValue(missionData, MISSION_RANK_THRESHOLDS_OFFSET + rank * sizeof(u32));
         if (thresholdSeconds != 0 && finishTimeMillis < thresholdSeconds * 1000) {
             sMissionTimeRankFailure = false;
             sMissionRankReported = true;
@@ -235,25 +226,21 @@ static bool SetRankFromTime(void *mission) {
 }
 
 static void UpdateRankFromCurrentMission() {
-    if (sMissionState != 0 && GetMissionValue(sMissionState, MISSION_STATUS_OFFSET) == 1 &&
-        !sMissionRankReported) {
+    if (sMissionState != 0 && GetMissionValue(sMissionState, MISSION_STATUS_OFFSET) == 1 && !sMissionRankReported) {
         SetRankFromTime(sMissionState);
     }
 }
 
 static bool IsPresentationFailure() {
-    if (Racedata::sInstance == 0 || sMissionState == 0 ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT) {
+    if (Racedata::sInstance == 0 || sMissionState == 0 || Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT) {
         return false;
     }
 
-    return GetMissionValue(sMissionState, MISSION_STATUS_OFFSET) == 2 &&
-           (sMissionTimeRankFailure || !HasMissionScoreRequirement(sMissionState));
+    return GetMissionValue(sMissionState, MISSION_STATUS_OFFSET) == 2 && (sMissionTimeRankFailure || !HasMissionScoreRequirement(sMissionState));
 }
 
 static bool GetResultRank(u32 &rank) {
-    if (Racedata::sInstance == 0 || sMissionState == 0 ||
-        Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT) {
+    if (Racedata::sInstance == 0 || sMissionState == 0 || Racedata::sInstance->racesScenario.settings.gamemode != MODE_MISSION_TOURNAMENT) {
         return false;
     }
 
@@ -287,8 +274,7 @@ static void FixMissionTimeout(void *mission) {
 static void FixMissionTimeoutEnd(void *mission) {
     SetMissionState(mission);
     CallMissionFunction(mission, 0xc);
-    if (!HasMissionScoreRequirement(mission) && Raceinfo::sInstance != 0 &&
-        Raceinfo::sInstance->stage == RACESTAGE_IS_FINISHING) {
+    if (!HasMissionScoreRequirement(mission) && Raceinfo::sInstance != 0 && Raceinfo::sInstance->stage == RACESTAGE_IS_FINISHING) {
         Raceinfo::sInstance->stage = RACESTAGE_FINISHED;
     }
     StopMissionTimerOnSuccess(mission);
@@ -298,17 +284,16 @@ static void FixMissionTimeoutEnd(void *mission) {
 
 static u32 FixMissionCanEnd(void *mission) {
     SetMissionState(mission);
-    const bool timerExpired = Raceinfo::sInstance != 0 && Raceinfo::sInstance->timerMgr != 0 &&
-                              Raceinfo::sInstance->timerMgr->hasRaceTimeRanOut;
+    const bool timerExpired = Raceinfo::sInstance != 0 && Raceinfo::sInstance->timerMgr != 0 && Raceinfo::sInstance->timerMgr->hasRaceTimeRanOut;
     const u32 status = GetMissionValue(mission, MISSION_STATUS_OFFSET);
-    const bool timeoutFailure = timerExpired && status == 1 &&
-                                !HasMissionScoreRequirement(mission);
+    const bool timeoutFailure = timerExpired && status == 1 && !HasMissionScoreRequirement(mission);
     if (timeoutFailure) {
         SetMissionValue(mission, MISSION_STATUS_OFFSET, 2);
         return 1;
     }
     StopMissionTimerOnSuccess(mission);
-    if (status == 1 && !IsRankReported()) SetRankFromTime(mission);
+    if (status == 1 && !IsRankReported())
+        SetRankFromTime(mission);
     return status != 0;
 }
 
@@ -319,7 +304,8 @@ static u32 GetMissionPresentationStatus(u32 playerId) {
     const u32 status = getStatus(playerId);
 
     UpdateRankFromCurrentMission();
-    if (IsPresentationFailure()) return 2;
+    if (IsPresentationFailure())
+        return 2;
     return status;
 }
 

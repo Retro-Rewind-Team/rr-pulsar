@@ -29,8 +29,7 @@ static u8 missionTimerWarningSecond = 0xFF;
 static void PlayMissionTimerWarningSound() {
     const Racedata *racedata = Racedata::sInstance;
     const Raceinfo *raceInfo = Raceinfo::sInstance;
-    if (racedata == nullptr || !MissionMode::IsMissionScenario(racedata->racesScenario) ||
-        raceInfo == nullptr || raceInfo->stage != RACESTAGE_RACE) {
+    if (racedata == nullptr || !MissionMode::IsMissionScenario(racedata->racesScenario) || raceInfo == nullptr || raceInfo->stage != RACESTAGE_RACE) {
         missionTimerWarningSecond = 0xFF;
         return;
     }
@@ -41,16 +40,15 @@ static void PlayMissionTimerWarningSound() {
         missionTimerWarningSecond = 0xFF;
         return;
     }
-    if (timer.seconds == missionTimerWarningSecond) return;
+    if (timer.seconds == missionTimerWarningSecond)
+        return;
 
-    Audio::RaceRSARPlayer *rsarSoundPlayer =
-        static_cast<Audio::RaceRSARPlayer *>(Audio::RSARPlayer::sInstance);
-    if (rsarSoundPlayer == nullptr) return;
+    Audio::RaceRSARPlayer *rsarSoundPlayer = static_cast<Audio::RaceRSARPlayer *>(Audio::RSARPlayer::sInstance);
+    if (rsarSoundPlayer == nullptr)
+        return;
 
     missionTimerWarningSecond = timer.seconds;
-    const u32 soundId = timer.seconds >= 3
-                            ? SOUND_ID_BATTLE_COUNTDOWN_10_9_8
-                            : SOUND_ID_BATTLE_COUNTDOWN_3_2_1;
+    const u32 soundId = timer.seconds >= 3 ? SOUND_ID_BATTLE_COUNTDOWN_10_9_8 : SOUND_ID_BATTLE_COUNTDOWN_3_2_1;
     rsarSoundPlayer->PlaySound(soundId, INVALID_HUD_SLOT_ID);
 }
 
