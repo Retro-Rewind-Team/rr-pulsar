@@ -420,7 +420,7 @@ kmCall(0x8083d9dc, CharacterSelectName);
 
 static void RequestDriverModel(MenuModelMgr *manager, u8 playerId, CharacterId characterId) {
     const u32 character = static_cast<u32>(characterId);
-    if (manager->isActive && character < CHARACTER_COUNT && selectedSlots[character] != 0)
+    if (manager->isActive && character < CHARACTER_COUNT && loadedSlots[character] != selectedSlots[character])
         LoadDriverBRRES(characterId, selectedSlots[character]);
     manager->RequestDriverModel(playerId, characterId);
 }

@@ -1,6 +1,8 @@
 #include <kamek.hpp>
+#include <Driver/CustomCharacters.hpp>
 #include <UI/MissionMode/MissionModel.hpp>
 #include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
@@ -23,6 +25,9 @@ static KartId comboModelKart;
 static bool savedMenuCombo;
 static CharacterId savedCharacter;
 static KartId savedKart;
+static bool missionCharacterSlotApplied;
+static CharacterId missionCharacter;
+static u8 savedMissionCharacterSlot;
 static bool missionLoadedCharacters[0x18];
 static const u32 BACK_MODEL_CONTROL_OFFSET = 0x1C8;
 
@@ -30,8 +35,10 @@ class MissionDriftSelect : public Pages::DriftSelect {
 public:
     void OnActivate() override {
         Pages::DriftSelect::OnActivate();
-        if (!IsMissionMenuSection()) return;
-        if (this->extraControlNumber > 0) UpdateComboModel(this->modelPosition[0]);
+        if (!IsMissionMenuSection())
+            return;
+        if (this->extraControlNumber > 0)
+            UpdateComboModel(this->modelPosition[0]);
     }
 
     void OnDeactivate() override {
@@ -46,8 +53,7 @@ public:
 }  // namespace
 
 void ResetDriverAnimation(u8 hudSlotId) {
-    if (MenuModelMgr::sInstance == nullptr || !MenuModelMgr::sInstance->isActive ||
-        MenuModelMgr::sInstance->driverModels == nullptr)
+    if (MenuModelMgr::sInstance == nullptr || !MenuModelMgr::sInstance->isActive || MenuModelMgr::sInstance->driverModels == nullptr)
         return;
 
     MenuDriverModelMgr *driverModels = MenuModelMgr::sInstance->driverModels;
@@ -65,31 +71,31 @@ void ResetDriverAnimation(u8 hudSlotId) {
 }
 
 void RestoreMenuDriverModel(CharacterId character) {
-    if (MenuModelMgr::sInstance == nullptr || !MenuModelMgr::sInstance->isActive ||
-        MenuModelMgr::sInstance->driverModels == nullptr)
+    if (MenuModelMgr::sInstance == nullptr || !MenuModelMgr::sInstance->isActive || MenuModelMgr::sInstance->driverModels == nullptr)
         return;
 
     MenuDriverModelMgr *driverModels = MenuModelMgr::sInstance->driverModels;
-    if (driverModels->playerCount == 0) return;
+    if (driverModels->playerCount == 0)
+        return;
 
     driverModels->SetPlayerCharacter(0, character);
     ResetDriverAnimation(0);
 }
 
 void ResetMissionDriverModels() {
-    if (MenuModelMgr::sInstance == nullptr || !MenuModelMgr::sInstance->isActive ||
-        MenuModelMgr::sInstance->driverModels == nullptr)
+    if (MenuModelMgr::sInstance == nullptr || !MenuModelMgr::sInstance->isActive || MenuModelMgr::sInstance->driverModels == nullptr)
         return;
 
     MenuDriverModelMgr *driverModels = MenuModelMgr::sInstance->driverModels;
-    if (driverModels->models == nullptr) return;
+    if (driverModels->models == nullptr)
+        return;
 
     for (u32 character = 0; character < sizeof(missionLoadedCharacters); ++character) {
-        if (!missionLoadedCharacters[character]) continue;
+        if (!missionLoadedCharacters[character])
+            continue;
 
         MenuDriverModel *driver = &driverModels->models[character];
-        if (driver->model != nullptr && driver->model->modelTransformator != nullptr &&
-            reinterpret_cast<u32>(driver->model->modelTransformator) >= 0x1000) {
+        if (driver->model != nullptr && driver->model->modelTransformator != nullptr && reinterpret_cast<u32>(driver->model->modelTransformator) >= 0x1000) {
             driver->charSelTransformator = driver->model->modelTransformator;
             driver->onKartTransformator = nullptr;
             driver->Init();
@@ -99,15 +105,22 @@ void ResetMissionDriverModels() {
 }
 
 void Reset() {
+    if (missionCharacterSlotApplied) {
+        const u32 character = static_cast<u32>(missionCharacter);
+        Driver::selectedSlots[character] = savedMissionCharacterSlot;
+        if (MenuModelMgr::sInstance != nullptr && MenuModelMgr::sInstance->isActive && MenuModelMgr::sInstance->driverModels != nullptr)
+            Driver::LoadDriverBRRES(missionCharacter, savedMissionCharacterSlot);
+        missionCharacterSlotApplied = false;
+    }
     scenarioLoaded = false;
     comboModelLoaded = false;
 
     if (SectionMgr::sInstance == nullptr || SectionMgr::sInstance->curSection == nullptr)
         return;
 
-    Pages::ModelRenderer *renderer =
-        static_cast<Pages::ModelRenderer *>(SectionMgr::sInstance->curSection->pages[PAGE_MODEL_RENDERER]);
-    if (renderer != nullptr) renderer->params[0].isVisible = false;
+    Pages::ModelRenderer *renderer = static_cast<Pages::ModelRenderer *>(SectionMgr::sInstance->curSection->pages[PAGE_MODEL_RENDERER]);
+    if (renderer != nullptr)
+        renderer->params[0].isVisible = false;
 }
 
 void SaveMenuCombo() {
@@ -138,8 +151,7 @@ void RestoreMenuCombo() {
     }
 
     if (SectionMgr::sInstance->curSection != nullptr) {
-        Pages::ModelRenderer *renderer = static_cast<Pages::ModelRenderer *>(
-            SectionMgr::sInstance->curSection->pages[PAGE_MODEL_RENDERER]);
+        Pages::ModelRenderer *renderer = static_cast<Pages::ModelRenderer *>(SectionMgr::sInstance->curSection->pages[PAGE_MODEL_RENDERER]);
         if (renderer != nullptr) {
             renderer->params[0].character = savedCharacter;
             renderer->params[0].kart = savedKart;
@@ -154,17 +166,33 @@ void RestoreMenuCombo() {
 void SetScenarioLoaded(bool loaded) {
     scenarioLoaded = loaded;
     comboModelLoaded = false;
+    if (!loaded || Racedata::sInstance == nullptr || !::Pulsar::MissionMode::IsMissionScenario(Racedata::sInstance->menusScenario))
+        return;
+
+    const CharacterId characterId = Racedata::sInstance->menusScenario.players[0].characterId;
+    const u32 character = static_cast<u32>(characterId);
+    if (character >= Driver::CHARACTER_COUNT)
+        return;
+
+    const u8 configuredSlot = ::Pulsar::MissionMode::GetMissionCharacterTable(Racedata::sInstance->menusScenario, 0);
+    if (configuredSlot == ::Pulsar::MissionMode::MISSION_CHARACTER_TABLE_UNSET)
+        return;
+
+    missionCharacter = characterId;
+    savedMissionCharacterSlot = Driver::selectedSlots[character];
+    missionCharacterSlotApplied = true;
+    Driver::selectedSlots[character] = configuredSlot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[character][configuredSlot] ? configuredSlot : 0;
+    if (MenuModelMgr::sInstance != nullptr && MenuModelMgr::sInstance->isActive && MenuModelMgr::sInstance->driverModels != nullptr)
+        Driver::LoadDriverBRRES(characterId, Driver::selectedSlots[character]);
 }
 
 bool IsMissionMenuSection() {
-    if (!scenarioLoaded || Racedata::sInstance == nullptr ||
-        Racedata::sInstance->menusScenario.settings.gamemode != MODE_MISSION_TOURNAMENT ||
-        SectionMgr::sInstance == nullptr || SectionMgr::sInstance->curSection == nullptr)
+    if (!scenarioLoaded || Racedata::sInstance == nullptr || Racedata::sInstance->menusScenario.settings.gamemode != MODE_MISSION_TOURNAMENT || SectionMgr::sInstance == nullptr
+      || SectionMgr::sInstance->curSection == nullptr)
         return false;
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
-    return sectionId == SECTION_SINGLE_P_FROM_MENU || sectionId == SECTION_SINGLE_P_TT_CHANGE_CHARA ||
-           sectionId == SECTION_SINGLE_P_VS_NEXT_RACE || sectionId == SECTION_SINGLE_P_MR_CHOOSE_MISSION;
+    return sectionId == SECTION_SINGLE_P_FROM_MENU || sectionId == SECTION_SINGLE_P_TT_CHANGE_CHARA || sectionId == SECTION_SINGLE_P_VS_NEXT_RACE || sectionId == SECTION_SINGLE_P_MR_CHOOSE_MISSION;
 }
 
 kmRuntimeUse(0x805f2e84);
@@ -173,16 +201,17 @@ void RequestBackgroundModel() {
     if (section != nullptr && section->pages[PAGE_BACKMODEL] != nullptr) {
         typedef void (*RequestModelFn)(void *, BackModelType);
         const RequestModelFn requestModel = reinterpret_cast<RequestModelFn>(kmRuntimeAddr(0x805f2e84));
-        requestModel(reinterpret_cast<u8 *>(section->pages[PAGE_BACKMODEL]) + BACK_MODEL_CONTROL_OFFSET,
-                     BACKMODEL_BALOON);
+        requestModel(reinterpret_cast<u8 *>(section->pages[PAGE_BACKMODEL]) + BACK_MODEL_CONTROL_OFFSET, BACKMODEL_BALOON);
         return;
     }
 
-    if (MenuModelMgr::sInstance != nullptr) MenuModelMgr::sInstance->RequestBackModel(BACKMODEL_BALOON);
+    if (MenuModelMgr::sInstance != nullptr)
+        MenuModelMgr::sInstance->RequestBackModel(BACKMODEL_BALOON);
 }
 
 void CreateModelPage(ExpSection &section) {
-    if (section.pages[PAGE_MODEL_RENDERER] == nullptr) section.CreateAndInitPage(section, PAGE_MODEL_RENDERER);
+    if (section.pages[PAGE_MODEL_RENDERER] == nullptr)
+        section.CreateAndInitPage(section, PAGE_MODEL_RENDERER);
 
     Pages::ModelRenderer *renderer = section.Get<Pages::ModelRenderer>();
     if (renderer != comboModelRenderer) {
@@ -211,8 +240,7 @@ void UpdateComboModel(NoteModelControl &model) {
     const RacedataPlayer &player = Racedata::sInstance->menusScenario.players[0];
     const s32 characterId = static_cast<s32>(player.characterId);
     const s32 kartId = static_cast<s32>(player.kartId);
-    if (characterId < static_cast<s32>(MARIO) || characterId > static_cast<s32>(ROSALINA_BIKER) ||
-        kartId < static_cast<s32>(STANDARD_KART_S) || kartId > static_cast<s32>(PHANTOM)) {
+    if (characterId < static_cast<s32>(MARIO) || characterId > static_cast<s32>(ROSALINA_BIKER) || kartId < static_cast<s32>(STANDARD_KART_S) || kartId > static_cast<s32>(PHANTOM)) {
         renderer->params[0].isVisible = false;
         model.isHidden = true;
         return;
@@ -235,17 +263,19 @@ bool LoadComboModel(NoteModelControl &model) {
     }
 
     UpdateComboModel(model);
-    if (model.isHidden) return false;
+    if (model.isHidden)
+        return false;
 
     ExpSection *section = ExpSection::GetSection();
-    if (section == nullptr || Racedata::sInstance == nullptr) return false;
+    if (section == nullptr || Racedata::sInstance == nullptr)
+        return false;
 
     Pages::ModelRenderer *renderer = section->Get<Pages::ModelRenderer>();
-    if (renderer == nullptr) return false;
+    if (renderer == nullptr)
+        return false;
 
     const RacedataPlayer &player = Racedata::sInstance->menusScenario.players[0];
-    if (comboModelLoaded && comboModelRenderer == renderer && comboModelCharacter == player.characterId &&
-        comboModelKart == player.kartId)
+    if (comboModelLoaded && comboModelRenderer == renderer && comboModelCharacter == player.characterId && comboModelKart == player.kartId)
         return true;
 
     ResetDriverAnimation(0);
@@ -265,14 +295,18 @@ bool LoadComboModel(NoteModelControl &model) {
 }
 
 void HideComboModel() {
-    if (!IsMissionMenuSection()) return;
+    if (!IsMissionMenuSection())
+        return;
 
     ExpSection *section = ExpSection::GetSection();
     Pages::ModelRenderer *renderer = section->Get<Pages::ModelRenderer>();
-    if (renderer != nullptr) renderer->params[0].isVisible = false;
+    if (renderer != nullptr)
+        renderer->params[0].isVisible = false;
 }
 
-Page *CreateDriftSelectPage() { return new MissionDriftSelect(); }
+Page *CreateDriftSelectPage() {
+    return new MissionDriftSelect();
+}
 
 }  // namespace MissionModel
 }  // namespace UI
