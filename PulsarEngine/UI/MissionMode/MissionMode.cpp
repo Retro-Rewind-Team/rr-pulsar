@@ -15,6 +15,9 @@
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
+#include <MarioKartWii/UI/Page/Other/YesNo.hpp>
+#include <MarioKartWii/Input/ControllerHolder.hpp>
+#include <core/rvl/OS/OS.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -74,7 +77,6 @@ static const char *const MISSION_OBJECTIVE_ICONS[] = {
     "mr_trick",
 };
 static const char MISSION_CONFIG_FILE[] = "Binaries/ConfigMR.pul";
-static const u32 BMG_OK = 0x7D0;
 static const u32 MISSION_PAUSE_END_MENU_SOUND_ID = 0xD5;
 static const char *const MISSION_STAGE_RANK_PANE = "mission_rank";
 
@@ -262,7 +264,7 @@ public:
     static const u32 BUTTON_COUNT = 8;
 
     MissionSelectPage()
-        : levelSelected(false), missionUiFile(nullptr), missionUiSize(0), missionKmtFile(nullptr), missionKmtSize(0), missionConfigFile(nullptr), missionConfigSize(0) {
+        : levelSelected(false), plusHoldStartTime(0), plusHoldInProgress(false), plusHoldTriggered(false), missionUiFile(nullptr), missionUiSize(0), missionKmtFile(nullptr), missionKmtSize(0), missionConfigFile(nullptr), missionConfigSize(0) {
         this->onButtonClickHandler.subject = this;
         this->onButtonClickHandler.ptmf = &MissionSelectPage::OnButtonClick;
         this->onButtonSelectHandler.subject = this;
@@ -271,6 +273,8 @@ public:
         this->onBackPressHandler.ptmf = &MissionSelectPage::OnBackPress;
         this->onBackButtonClickHandler.subject = this;
         this->onBackButtonClickHandler.ptmf = &MissionSelectPage::OnBackButtonClick;
+        this->onDeleteSaveClickHandler.subject = this;
+        this->onDeleteSaveClickHandler.ptmf = &MissionSelectPage::OnDeleteSaveClick;
 
         this->internControlCount = BUTTON_COUNT * 2;
         this->externControlCount = 0;
@@ -295,6 +299,60 @@ public:
 
     void OnControlsInitialized() override {
         ::Pages::Menu::OnControlsInitialized();
+    }
+
+    void OnUpdate() override {
+        SectionMgr *sectionMgr = SectionMgr::sInstance;
+        if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+
+        Section *section = sectionMgr->curSection;
+        if (!section->IsPageTopLayer(*this)) return;
+
+        if (this->levelSelected) {
+            this->ResetPlusHold();
+            return;
+        }
+
+        Input::RealControllerHolder *controllerHolder = sectionMgr->pad.padInfos[0].controllerHolder;
+        if (controllerHolder == nullptr || controllerHolder->curController == nullptr) {
+            this->ResetPlusHold();
+            return;
+        }
+
+        u16 startButton = 0;
+        switch (controllerHolder->curController->GetType()) {
+            case CLASSIC:
+                startButton = WPAD::WPAD_CL_BUTTON_PLUS;
+                break;
+            case GCN:
+                startButton = PAD::PAD_BUTTON_START;
+                break;
+            case WHEEL:
+            case NUNCHUCK:
+                startButton = WPAD::WPAD_BUTTON_PLUS;
+                break;
+            default:
+                this->ResetPlusHold();
+                return;
+        }
+
+        const bool isHeld = (controllerHolder->inputStates[0].buttonRaw & startButton) != 0;
+        if (!isHeld) {
+            this->ResetPlusHold();
+            return;
+        }
+        if (this->plusHoldTriggered) return;
+
+        const u64 now = OS::GetTime();
+        if (!this->plusHoldInProgress) {
+            this->plusHoldStartTime = now;
+            this->plusHoldInProgress = true;
+            return;
+        }
+        if (OS::TicksToMilliseconds(now - this->plusHoldStartTime) < 2000) return;
+
+        this->plusHoldTriggered = true;
+        this->ShowDeleteSavePopup();
     }
 
     void OnActivate() override {
@@ -432,6 +490,36 @@ public:
     void OnBackButtonClick(PushButton &, u32 hudSlotId) { this->OnBackPress(hudSlotId); }
 
 private:
+    void ResetPlusHold() {
+        this->plusHoldStartTime = 0;
+        this->plusHoldInProgress = false;
+        this->plusHoldTriggered = false;
+    }
+
+    void ShowDeleteSavePopup() {
+        Section *section = SectionMgr::sInstance->curSection;
+        if (section == nullptr) return;
+
+        Pages::YesNoPopUp *popup = section->Get<Pages::YesNoPopUp>();
+        if (popup == nullptr) return;
+
+        popup->Reset();
+        popup->SetMessageBoxMsg(BMG_MISSION_SAVE_DELETE_CONFIRM, nullptr);
+        popup->PrepareButton(0, BMG_YES, nullptr, 0, this->onDeleteSaveClickHandler);
+        popup->PrepareButton(1, BMG_NO, nullptr, 0, this->onDeleteSaveClickHandler);
+        popup->initialButtonIdx = 1;
+        section->AddPageLayer(PAGE_VOTERANDOM_MESSAGE_BOX);
+    }
+
+    void OnDeleteSaveClick(u32 choice, PushButton &) {
+        if (choice != 0 || !Pulsar::MissionMode::DeleteMissionSave()) return;
+
+        this->UpdateButtonMessages();
+        for (u32 i = 0; i < BUTTON_COUNT; ++i)
+            this->SetStageBorderVisible(this->levelButtons[i], this->IsLevelAccessible(i));
+        this->UpdateMissionButtonAccess();
+    }
+
     void HideMissionBottomText() {
         if (this->bottomText != nullptr) this->bottomText->isHidden = true;
     }
@@ -605,6 +693,7 @@ private:
 
     void ShowLevelSelect() {
         this->levelSelected = false;
+        this->ResetPlusHold();
         this->HideMissionBottomText();
 
         for (u32 i = 0; i < BUTTON_COUNT; ++i) {
@@ -688,6 +777,9 @@ private:
     }
 
     bool levelSelected;
+    u64 plusHoldStartTime;
+    bool plusHoldInProgress;
+    bool plusHoldTriggered;
     const u8 *missionUiFile;
     u32 missionUiSize;
     const u8 *missionKmtFile;
@@ -701,6 +793,7 @@ private:
     PtmfHolder_2A<MissionSelectPage, void, PushButton &, u32> onButtonSelectHandler;
     PtmfHolder_1A<MissionSelectPage, void, u32> onBackPressHandler;
     PtmfHolder_2A<MissionSelectPage, void, PushButton &, u32> onBackButtonClickHandler;
+    PtmfHolder_2A<MissionSelectPage, void, u32, PushButton &> onDeleteSaveClickHandler;
 };
 
 static void InstallMissionPage(ExpSection &section, PageId id, Page *page) {
@@ -845,6 +938,8 @@ static void LeaveMissionMenuMode(const Pages::SinglePlayer *page, u32 id) {
 void CreateSinglePlayerPages(ExpSection &section) {
     if (section.pages[PAGE_SINGLE_PLAYER_MENU] == nullptr)
         section.CreateAndInitPage(section, PAGE_SINGLE_PLAYER_MENU);
+    if (section.pages[PAGE_VOTERANDOM_MESSAGE_BOX] == nullptr)
+        section.CreateAndInitPage(section, PAGE_VOTERANDOM_MESSAGE_BOX);
 
     MissionModel::CreateModelPage(section);
 

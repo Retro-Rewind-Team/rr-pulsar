@@ -1,5 +1,6 @@
 #include <Gamemodes/MissionMode/MissionModeSave.hpp>
 #include <IO/IO.hpp>
+#include <IO/RiivoIO.hpp>
 #include <PulsarSystem.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
@@ -103,10 +104,10 @@ static void Load() {
     io->Close();
 }
 
-static void Save() {
+static bool Save() {
     IO *io = IO::sInstance;
     const char *path = GetPath();
-    if (!io || !path) return;
+    if (!io || !path) return false;
 
     struct {
         PackedHeader h;
@@ -129,10 +130,11 @@ static void Save() {
     }
 
     if (!io->OpenFile(path, FILE_MODE_WRITE) && !io->CreateAndOpen(path, FILE_MODE_WRITE)) {
-        return;
+        return false;
     }
-    io->Overwrite(sizeof(file), &file);
+    const bool saved = io->Overwrite(sizeof(file), &file) == static_cast<s32>(sizeof(file));
     io->Close();
+    return saved;
 }
 
 static u8 ConvertMissionRankToRating(u32 missionRank) {
@@ -179,6 +181,42 @@ bool GetMissionRecord(u32 missionId, u32 &finishTimeMillis, u8 &rating) {
     if (!entry.hasData) return false;
     finishTimeMillis = entry.finishTimeMillis;
     rating = entry.rating;
+    return true;
+}
+
+bool DeleteMissionSave() {
+    IO *io = IO::sInstance;
+    const char *path = GetPath();
+    if (!io || !path) return false;
+
+    if (io->type == IOType_SD) {
+        memset(sMissions, 0, sizeof(sMissions));
+        if (!Save()) {
+            sLoaded = false;
+            return false;
+        }
+        sLoaded = true;
+        return true;
+    }
+
+    bool deleted = false;
+    if (io->type == IOType_RIIVO) {
+        const s32 fd = IO::OpenFix("file", IOS::MODE_NONE);
+        if (fd >= 0) {
+            const s32 result = IOS::IOCtl(fd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_DELETE), (void *)path,
+                                          strlen(path) + 1, nullptr, 0);
+            IOS::Close(fd);
+            deleted = result >= 0;
+        }
+    } else if (io->type == IOType_DOLPHIN) {
+        char realPath[IOS::ipcMaxPath];
+        snprintf(realPath, sizeof(realPath), "/shared2/Pulsar%s", path);
+        deleted = ISFS::Delete(realPath) >= 0;
+    }
+    if (!deleted) return false;
+
+    memset(sMissions, 0, sizeof(sMissions));
+    sLoaded = true;
     return true;
 }
 

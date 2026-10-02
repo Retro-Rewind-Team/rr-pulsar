@@ -2660,3 +2660,4 @@ HasFinishedLoadingGroups__Q25Audio10RSARPlayerFv = 0x807141ec
 IsBattle__12CtrlRaceTimeFRC8Racedata = 0x807f82f4
 FillTimerGlobal__12CtrlRaceTimeFP5Timer = 0x807f82ac
 IsCPU__Q24Kart4LinkCFv = 0x80590664
+IsPageTopLayer__7SectionCFRC4Page = 0x80622e6c

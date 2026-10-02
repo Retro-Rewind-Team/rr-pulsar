@@ -1,3 +1,4 @@
 #BMG
 2849  = \z{a02,2000000000}
-  
+6978  = Delete saved mission data?
+6979  = Keep
