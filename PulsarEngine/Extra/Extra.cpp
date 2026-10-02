@@ -136,7 +136,7 @@ kmCall(0x807AE2E4, OnBlueShellExplosion);
 kmWrite32(0x807BB9C8, 0x38000384);  // li r0, 900 (15 seconds)
 
 // Remove special itembox table properties [ZPL]
-static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 cpuItemBoxType, u32 lotteryType) {
+/* static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 cpuItemBoxType, u32 lotteryType) {
     const Pulsar::CupsConfig *cupsConfig = Pulsar::CupsConfig::sInstance;
     const Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
     const char *fileName = !Pulsar::CupsConfig::IsReg(pulsarId) ? cupsConfig->GetFileName(pulsarId, cupsConfig->GetCurVariantIdx()) : 0;
@@ -149,7 +149,7 @@ static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 c
     player->DecideItem(playerItemBoxType, cpuItemBoxType, lotteryType);
 }
 kmCall(0x80828d70, RemoveSpecialItem);
-kmCall(0x80828da4, RemoveSpecialItem);
+kmCall(0x80828da4, RemoveSpecialItem); */
 
 // Anti Mii Crash
 asmFunc AntiWiper() {
