@@ -18,7 +18,7 @@ extern u8 racePlayerSlots[12];
 
 void RandomizeCPUCharacterTables(const RacedataScenario &scenario);
 u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAward = false);
-void LoadCustomCharacterIcon(CharacterId character, u32 slot, nw4r::lyt::Pane *pane, nw4r::lyt::Pane *shadow0, nw4r::lyt::Pane *shadow1 = nullptr);
+void LoadCustomCharacterIcon(CharacterId character, u32 slot, nw4r::lyt::Pane *pane, nw4r::lyt::Pane *shadow0, nw4r::lyt::Pane *shadow1 = nullptr, bool minimap = false);
 
 }  // namespace Race
 }  // namespace Pulsar

@@ -192,12 +192,15 @@ static asmFunc LinkAwardAnimations() {
 }
 kmCall(0x807897e0, LinkAwardAnimations);
 
-void LoadCustomCharacterIcon(CharacterId character, u32 slot, nw4r::lyt::Pane *pane, nw4r::lyt::Pane *shadow0, nw4r::lyt::Pane *shadow1) {
+void LoadCustomCharacterIcon(CharacterId character, u32 slot, nw4r::lyt::Pane *pane, nw4r::lyt::Pane *shadow0, nw4r::lyt::Pane *shadow1, bool minimap) {
     if (static_cast<u32>(character) >= Driver::CHARACTER_COUNT || slot == 0)
         return;
 
-    char path[0x40];
-    snprintf(path, sizeof(path), "/Race/Map/%s-%u.tpl", ArchiveMgr::GetKartArchivePostfix(character), slot);
+    char path[0x80];
+    if (minimap)
+        snprintf(path, sizeof(path), "/Race/Map/%s-%u.tpl", ArchiveMgr::GetKartArchivePostfix(character), slot);
+    else
+        snprintf(path, sizeof(path), "/Race/Portrait/%s-%u-css.tpl", ArchiveMgr::GetKartArchivePostfix(character), slot);
     if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) < 0)
         return;
 

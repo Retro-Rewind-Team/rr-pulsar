@@ -137,7 +137,7 @@ kmCall(0x805e2bdc, SetGhostInfoCharacterIcon);
 static void LoadMinimapIcon(CtrlRace2DMapCharacter *control) {
     control->CtrlRaceBase::InitSelf();
     const CharacterId character = Racedata::sInstance->racesScenario.players[control->playerId].characterId;
-    Race::LoadCustomCharacterIcon(character, Race::GetPlayerCustomCharacterSlot(control->playerId, character), control->charaPane, control->charaShadow0Pane, control->charaShadow1Pane);
+    Race::LoadCustomCharacterIcon(character, Race::GetPlayerCustomCharacterSlot(control->playerId, character), control->charaPane, control->charaShadow0Pane, control->charaShadow1Pane, true);
 }
 kmCall(0x807eb22c, LoadMinimapIcon);
 
