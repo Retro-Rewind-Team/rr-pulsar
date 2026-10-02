@@ -20,6 +20,7 @@
 #include <Race/CustomCharacters.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <runtimeWrite.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -31,6 +32,7 @@ void Racedata_InitRace(Racedata *racedata) {
     register u32 returnAddress;
     asm(mflr returnAddress;);
     racedata->InitRace();
+    Pulsar::MissionMode::FinalizeMissionRaceScenario();
 
     const RacedataSettings &settings = racedata->menusScenario.settings;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;

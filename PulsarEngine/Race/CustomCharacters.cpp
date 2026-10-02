@@ -2,6 +2,8 @@
 #include <IO/LooseArchiveOverrides.hpp>
 #include <Race/CustomCharacters.hpp>
 #include <Settings/Settings.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
+#include <Gamemodes/MissionMode/MissionMusic.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/3D/Model/ModelDirector.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
@@ -20,6 +22,13 @@ u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAwa
     const u32 characterId = static_cast<u32>(character);
     if (characterId >= Driver::CHARACTER_COUNT)
         return 0;
+    if (playerId < 12 && Racedata::sInstance != nullptr) {
+        const RacedataScenario &missionScenario = isAward ? Racedata::sInstance->awardScenario : Racedata::sInstance->racesScenario;
+        if (Pulsar::MissionMode::IsMissionScenario(missionScenario)) {
+            const u8 missionSlot = Pulsar::MissionMode::GetMissionCharacterTable(missionScenario, playerId);
+            return missionSlot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][missionSlot] ? missionSlot : 0;
+        }
+    }
     if (playerId >= 12 || Racedata::sInstance == nullptr)
         return Driver::selectedSlots[characterId];
     const RacedataScenario &scenario = isAward ? Racedata::sInstance->awardScenario : Racedata::sInstance->racesScenario;

@@ -7,6 +7,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/File/StatsParam.hpp>
 #include <Race/200ccParams.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <PulsarSystem.hpp>
 #include <Settings/Settings.hpp>
@@ -84,6 +85,10 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
     }
 
     if (racedata != nullptr) {
+        const RacedataScenario &scenario = racedata->racesScenario;
+        const u8 missionLapCount = MissionMode::GetMissionLapCount(scenario);
+        if (missionLapCount != 0)
+            lapCount = missionLapCount;
         racedata->racesScenario.settings.lapCount = lapCount;
         if (lapKoActive)
             racedata->menusScenario.settings.lapCount = lapCount;
@@ -113,7 +118,10 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     const GameMode gameMode = Racedata::sInstance->menusScenario.settings.gamemode;
     const GameType gameType = Racedata::sInstance->menusScenario.settings.gametype;
     SpeedModConv speedModConv;
-    const bool is200 = Is200cc();
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+    const bool isMission = MissionMode::IsMissionScenario(scenario);
+    const bool is200 = isMission ? MissionMode::HasMissionFeature(scenario, MissionMode::ENGINE_200CC) : Is200cc();
+    const bool is500 = isMission ? MissionMode::HasMissionFeature(scenario, MissionMode::ENGINE_500CC) : System::sInstance->IsContext(Pulsar::PULSAR_500);
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     const System *system = System::sInstance;
@@ -133,6 +141,10 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         factor = 3.0f;
     } else if (is200) {
         factor = Race::speedFactor;
+    } else if (is500 && (isMission || gameMode == MODE_PRIVATE_VS || gameMode == MODE_VS_RACE || gameMode == MODE_PUBLIC_VS || gameMode == MODE_GRAND_PRIX)) {
+        factor = 3.0f;
+    } else if (is500 && (gameMode == MODE_BATTLE || gameMode == MODE_PUBLIC_BATTLE || gameMode == MODE_PRIVATE_BATTLE)) {
+        factor = 1.214;
     } else if (System::sInstance->IsContext(PULSAR_MODE_OTT) && gameMode == MODE_PUBLIC_VS) {
         factor = 1.0f;
     }
