@@ -3,6 +3,7 @@
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
+#include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
 #include <MarioKartWii/3D/Model/ModelDirector.hpp>
 #include <MarioKartWii/3D/Scn/ScnMgr.hpp>
 #include <MarioKartWii/Kart/KartFunctions.hpp>
@@ -205,6 +206,9 @@ kmBranch(0x807e2f7c, MiiOutfitCInitialFocus);
 // Constructor
 kmWrite32(0x8083018c, 0x1CA40003);
 
+// Mii head attachment must advance over all three body slots for each player.
+kmWrite32(0x80830548, 0x3B9C0078);
+
 // Per-player Mii body loader
 kmWrite32(0x80831148, 0x1C9A0003);
 
@@ -219,6 +223,23 @@ kmWrite32(0x80830ed4, 0x1C840003);  // Main character-select branch
 // two Mii body variants (A/B); Outfit C needs extra room during the ctor-time 0x80831100 loads.
 kmWrite32(0x8059e3bc, 0x3F800002);  // lis r28, 0x2 -> 0x20000 seed
 kmWrite32(0x8059e3cc, 0x7F83E378);  // mr r3, r28 -> 0x20000 bytes
+
+// Local multiplayer replaces the body models whenever a different Mii is selected.
+// Unregister all three before freeAll invalidates their scene-list links.
+static void RemoveMiiOutfitCModels(MenuDriverModelMgr *manager, u8 playerId) {
+    for (u32 i = 0; i < 3; ++i) {
+        MenuDriverModel &driverModel = manager->models[0x18 + playerId * 3 + i];
+        if (driverModel.model != nullptr) {
+            if (driverModel.model->bitfield & 0x100000) {
+                driverModel.model->ToggleVisible(false);
+                driverModel.model->GetScnManager()->RemoveModelDirector(driverModel.model);
+            }
+            driverModel.model = nullptr;
+        }
+    }
+}
+kmCall(0x808315bc, RemoveMiiOutfitCModels);
+kmWrite32(0x808315c0, 0x48000060);
 
 // Main Mii slot selector
 asmFunc MiiOutfitCDriverSlot() {
