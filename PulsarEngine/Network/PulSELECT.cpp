@@ -14,6 +14,7 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <Driver/CustomCharacters.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -85,6 +86,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *s
     } else
         len = sizeof(PulSELECT);
     src->reserved = 0;
+    for (u32 i = 0; i < 2; ++i) src->transmission[i] = UI::GetSelectedTransmission(i);
     for (u32 i = 0; i < controller->subs[controller->currentSub].localPlayerCount; ++i) {
         const u32 character = src->playersData[i].character;
         if (character < Driver::CHARACTER_COUNT)
@@ -118,6 +120,7 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
         src->curBlockingArrayIdx = 0;
         src->lastGroupedTrackPlayed = false;
         src->reserved = 0;
+        memset(src->transmission, 0, sizeof(src->transmission));
         for (u32 i = 0; i < MAX_TRACK_BLOCKING; ++i) {
             src->blockedTracks[i] = 0xFFFF;
         }
@@ -198,6 +201,7 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
     }
 
     memcpy(&dest, src, sizeof(PulSELECT));
+    memcpy(UI::remoteTransmission[aid], src->transmission, sizeof(src->transmission));
 }
 kmCall(0x80661130, AfterSELECTReception);
 
@@ -535,6 +539,7 @@ void InitPatch() {
     select->toSendPacket.pulVote = 0x43;
     select->toSendPacket.pulWinningTrack = 0xff;
     select->toSendPacket.acVerifyTag = 0;
+    memset(UI::remoteTransmission, 0, sizeof(UI::remoteTransmission));
     const Settings::Mgr &settings = Settings::Mgr::Get();
     bool allowChangeCombo;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;

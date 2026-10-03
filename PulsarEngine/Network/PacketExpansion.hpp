@@ -35,6 +35,7 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u8 chooseNextStatus;
     bool hasTrack;
     u16 nextTrack;  // PulsarId
+    u8 transmission[2];
 
     // These fields are only populated/read when their respective game modes are enabled
     // They are always present in the struct for memory layout, but zeroed when not in use
@@ -130,6 +131,8 @@ struct PulSELECT : public RKNet::SELECTPacket {
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
     u16 reserved;  // Custom character slots: P1 in the high byte, P2 in the low byte
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+
+    u8 transmission[2];
 
     // Anti-cheat verification tag - proves sender has correct encryption key
     u32 acVerifyTag;  // Must be last encrypted field for alignment

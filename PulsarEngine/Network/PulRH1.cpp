@@ -7,6 +7,7 @@
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -36,6 +37,7 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u3
         packetHolder.packet->pulsarTrackId = static_cast<u16>(CupsConfig::sInstance->GetWinning());
         packetHolder.packet->variantIdx = CupsConfig::sInstance->GetCurVariantIdx();
     }
+    for (u32 i = 0; i < 2; ++i) packetHolder.packet->transmission[i] = UI::GetSelectedTransmission(i);
 
     if (!system->IsContext(PULSAR_MODE_KO)) {
         packetHolder.packet->timeInDanger = 0;
@@ -77,6 +79,9 @@ static void AfterRH1Reception(register u8 *aidArrDest, const RKNet::PacketHolder
 
     const PulRH1 *packet = holder.packet;
     const u32 packetSize = holder.packetSize;
+    for (u32 i = 0; i < 2; ++i) {
+        UI::remoteTransmission[senderAid][i] = packetSize >= PulRH1SizeBase ? packet->transmission[i] : TRANSMISSION_DEFAULT;
+    }
     CourseId track;
     if (packetSize >= PulRH1SizeBase)
         track = static_cast<CourseId>(packet->pulsarTrackId);

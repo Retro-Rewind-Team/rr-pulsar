@@ -185,6 +185,9 @@ void ExpSection::CreatePulPages() {
     if (this->Get<Pages::DriftSelect>() != nullptr) {
         this->CreateAndInitPage(*this, TransmissionSelect::id);
     }
+    if (this->Get<Pages::MultiDriftSelect>() != nullptr) {
+        this->CreateAndInitPage(*this, MultiTransmissionSelect::id);
+    }
 
     const bool canOpenRestrictionSettings = this->Get<ExpFroom>() != nullptr || this->sectionId == SECTION_P1_WIFI || this->sectionId == SECTION_P1_WIFI_FROM_FROOM_RACE
       || this->sectionId == SECTION_P1_WIFI_FROM_FIND_FRIEND || this->sectionId == SECTION_P2_WIFI || this->sectionId == SECTION_P2_WIFI_FROM_FROOM_RACE;
@@ -315,6 +318,9 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
             break;
         case TransmissionSelect::id:
             page = new TransmissionSelect;
+            break;
+        case MultiTransmissionSelect::id:
+            page = new MultiTransmissionSelect;
             break;
         case CustomItemPage::id:
             page = new CustomItemPage;

@@ -16,6 +16,7 @@ static Transmission selectedTransmission[4] = {
     TRANSMISSION_INSIDE,
     TRANSMISSION_INSIDE,
 };
+u8 remoteTransmission[12][2];
 
 static bool IsVanillaModeOnline() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
@@ -147,6 +148,80 @@ kmCall(0x80846d2c, LoadTransmissionSelectBeforeDrift);
 kmCall(0x80846d64, LoadTransmissionSelectBeforeDrift);
 kmCall(0x80846e1c, LoadTransmissionSelectBeforeDrift);
 kmCall(0x80846e40, LoadTransmissionSelectBeforeDrift);
+
+void MultiTransmissionSelect::OnInit() {
+    Pages::MultiDriftSelect::OnInit();
+    this->titleText->SetMessage(BMG_TRANSMISSION_SELECT);
+    for (u32 i = 0; i < this->externControlCount; ++i) {
+        this->externControls[i]->SetMessage(i % 2 == 0 ? BMG_OUTSIDE_TRANSMISSION : BMG_INSIDE_TRANSMISSION);
+    }
+    this->onButtonClickHandler.subject = this;
+    this->onButtonClickHandler.ptmf = static_cast<void (Pages::MenuInteractable::*)(PushButton &, u32)>(&MultiTransmissionSelect::OnButtonClick);
+}
+
+UIControl *MultiTransmissionSelect::CreateExternalControl(u32 externControlId) {
+    const u32 hudSlotId = externControlId / 2;
+    PushButton *button = new PushButton;
+    this->boundingBoxes[hudSlotId].AddControl(externControlId % 2, button);
+    button->Load("button", SectionMgr::sInstance->sectionParams->localPlayerCount < 3 ? "drift_2" : "drift_4", externControlId % 2 == 0 ? "ButtonAuto" : "ButtonManual", 1 << hudSlotId, 0, false);
+    return button;
+}
+
+void MultiTransmissionSelect::OnActivate() {
+    this->Pages::Menu::OnActivate();
+    StopRandomComboRoulette();
+    this->titleText->SetMessage(BMG_TRANSMISSION_SELECT);
+    for (u32 i = 0; i < this->externControlCount; ++i) {
+        this->externControls[i]->isHidden = false;
+    }
+    for (u32 hudSlotId = 0; hudSlotId < SectionMgr::sInstance->sectionParams->localPlayerCount; ++hudSlotId) {
+        this->controlsManipulatorManager.InitHolders(hudSlotId, true);
+        this->externControls[hudSlotId * 2 + (GetSelectedTransmission(hudSlotId) == TRANSMISSION_OUTSIDE ? 0 : 1)]->SelectInitial(hudSlotId);
+    }
+    this->backButton.PushButton::SetPlayerBitfield(1);
+}
+
+void MultiTransmissionSelect::AfterControlUpdate() {
+    if (this->currentState != STATE_ACTIVE || this->timer == nullptr || this->timer->countdown > 0.0f)
+        return;
+
+    for (u32 hudSlotId = 0; hudSlotId < SectionMgr::sInstance->sectionParams->localPlayerCount; ++hudSlotId) {
+        if (!this->controlsManipulatorManager.holders[hudSlotId].info.enabled)
+            continue;
+        u32 buttonId = hudSlotId * 2 + (GetSelectedTransmission(hudSlotId) == TRANSMISSION_OUTSIDE ? 0 : 1);
+        if (this->externControls[hudSlotId * 2]->IsSelected()) {
+            buttonId = hudSlotId * 2;
+        } else if (this->externControls[hudSlotId * 2 + 1]->IsSelected()) {
+            buttonId = hudSlotId * 2 + 1;
+        }
+        this->externControls[buttonId]->SelectFocus();
+        this->OnButtonClick(*this->externControls[buttonId], hudSlotId);
+    }
+}
+
+void MultiTransmissionSelect::OnButtonClick(PushButton &button, u32 hudSlotId) {
+    if (button.buttonId == -100) {
+        if (hudSlotId == 0)
+            this->LoadPrevPage(button);
+        return;
+    }
+    SetSelectedTransmission(hudSlotId, button.buttonId % 2 == 0 ? TRANSMISSION_OUTSIDE : TRANSMISSION_INSIDE);
+    this->controlsManipulatorManager.InitHolders(hudSlotId, false);
+    this->externControls[button.buttonId ^ 1]->isHidden = true;
+    if (this->AreAllPlayersActive()) {
+        this->LoadNextPageById(PAGE_MULTIPLAYER_DRIFT_SELECT, button);
+    }
+}
+
+static void LoadMultiTransmissionSelectBeforeDrift(Pages::MultiKartSelect &menu, PageId id, float delay) {
+    if (!ShouldSkipTransmissionSelect(System::sInstance)) {
+        ExpSection::GetSection()->GetPulPage<MultiTransmissionSelect>()->timer = menu.timer;
+        id = static_cast<PageId>(MultiTransmissionSelect::id);
+    }
+    menu.LoadNextPageWithDelayById(id, delay);
+}
+kmCall(0x8084a218, LoadMultiTransmissionSelectBeforeDrift);
+kmCall(0x8084a24c, LoadMultiTransmissionSelectBeforeDrift);
 
 void LoadTransmissionSelectAfterDrift(Pages::Menu &menu, PageId id, PushButton &button) {
     System *system = System::sInstance;

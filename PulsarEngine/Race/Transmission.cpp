@@ -50,6 +50,12 @@ static int GetGhostRkgIndex(u32 playerId) {
 static Transmission GetPlayerTransmission(u32 playerId) {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const RacedataPlayer &player = scenario.players[playerId];
+    if (player.playerType == PLAYER_REAL_ONLINE) {
+        const RKNet::Controller *controller = RKNet::Controller::sInstance;
+        const u8 aid = controller->aidsBelongingToPlayerIds[playerId];
+        const bool isGuest = playerId > 0 && controller->aidsBelongingToPlayerIds[playerId - 1] == aid;
+        return static_cast<Transmission>(UI::remoteTransmission[aid][isGuest ? 1 : 0]);
+    }
     if (player.playerType == PLAYER_GHOST) {
         const int rkgIndex = GetGhostRkgIndex(playerId);
         if (rkgIndex >= 0) {
@@ -71,11 +77,11 @@ static bool CanApplyTransmission(u32 playerId) {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (playerId >= scenario.playerCount)
         return false;
-    if (scenario.localPlayerCount > 1)
+    if (RKNet::Controller::sInstance->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN && System::sInstance->IsVanillaMode())
         return false;
 
     const PlayerType playerType = scenario.players[playerId].playerType;
-    return playerType == PLAYER_REAL_LOCAL || playerType == PLAYER_GHOST;
+    return playerType == PLAYER_REAL_LOCAL || playerType == PLAYER_REAL_ONLINE || playerType == PLAYER_GHOST;
 }
 
 static void ApplyTransmission(Kart::Stats &stats, u32 playerId) {

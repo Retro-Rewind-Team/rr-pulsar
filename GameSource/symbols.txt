@@ -1835,6 +1835,7 @@ BeforeEntranceAnimations__Q25Pages4MenuFv = 0x808389d4
 GetNextPage__Q25Pages4MenuCFv = 0x80838a70
 BeforeExitAnimations__Q25Pages4MenuFv = 0x80838a78
 HandleStartPress__Q25Pages4MenuFUi = 0x80838b14
+AreAllPlayersActive__Q25Pages4MenuFv = 0x808388f0
 __vt__Q25Pages4Menu = 0x808d8d78
 
 #BattleKartSelect
@@ -1966,6 +1967,23 @@ GetActivePlayerBitfield__Q25Pages15MultiKartSelectCFv = 0x8084a7c0
 SetButtonHandlers__Q25Pages15MultiKartSelectFR10PushButton = 0x8084a7c8
 __dt__Q25Pages15MultiKartSelectFv = 0x8084a824
 GetRuntimeTypeInfo__Q25Pages15MultiKartSelectCFv = 0x8084a904
+
+#MultiDriftSelect
+__ct__Q25Pages16MultiDriftSelectFv = 0x8062b8bc
+__dt__Q25Pages16MultiDriftSelectFv = 0x8084b984
+OnInit__Q25Pages16MultiDriftSelectFv = 0x8084aac4
+OnActivate__Q25Pages16MultiDriftSelectFv = 0x8084b280
+AfterControlUpdate__Q25Pages16MultiDriftSelectFv = 0x8084b388
+OnResume__Q25Pages16MultiDriftSelectFv = 0x8084b8c4
+GetRuntimeTypeInfo__Q25Pages16MultiDriftSelectCFv = 0x8084ba04
+OnExternalButtonSelect__Q25Pages16MultiDriftSelectFR10PushButtonUi = 0x8084b7ec
+GetActivePlayerBitfield__Q25Pages16MultiDriftSelectCFv = 0x8084af84
+GetPlayerBitfield__Q25Pages16MultiDriftSelectCFv = 0x8084af8c
+GetManipulatorManager__Q25Pages16MultiDriftSelectFv = 0x8084af7c
+OnControlsInitialized__Q25Pages16MultiDriftSelectFv = 0x8084aff0
+CreateExternalControl__Q25Pages16MultiDriftSelectFUi = 0x8084aff4
+CreateControl__Q25Pages16MultiDriftSelectFUi = 0x8084b150
+SetButtonHandlers__Q25Pages16MultiDriftSelectFR10PushButton = 0x8084af94
 
 #DriftSelect
 __ct__Q25Pages11DriftSelectFv = 0x806273cc
