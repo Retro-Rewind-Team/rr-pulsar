@@ -174,6 +174,7 @@ static void VSRaceRandomFix(SectionParams *params) {
 };
 kmBranch(0x805e32ec, VSRaceRandomFix);
 kmWrite32(0x8084e5e4, 0x60000000);  // nop racedata courseId store since it's done in the function
+kmWrite32(0x8084b794, 0x60000000);  // same store in multiplayer drift selection
 
 static void AdvanceOrderedVSTrack(const CupsConfig &cupsConfig, PulsarCupId &cupId, u32 &rowIdx) {
     ++rowIdx;
