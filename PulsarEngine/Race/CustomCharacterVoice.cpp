@@ -331,8 +331,7 @@ static void LoadCharacterVoices() {
                     ++matchedGroupCount;
             }
 
-            if (bestAlias < 0 || (matchesSource && !bestMatchesSource)
-              || (matchesSource == bestMatchesSource && matchedGroupCount > bestMatchedGroupCount)) {
+            if (bestAlias < 0 || (matchesSource && !bestMatchesSource) || (matchesSource == bestMatchesSource && matchedGroupCount > bestMatchedGroupCount)) {
                 bestAlias = static_cast<s8>(alias);
                 bestMatchedGroupCount = matchedGroupCount;
                 bestMatchesSource = matchesSource;
