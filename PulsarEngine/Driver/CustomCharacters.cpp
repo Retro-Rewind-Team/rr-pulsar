@@ -287,10 +287,8 @@ static void PageBeforeControlUpdate(Page *page) {
 
         if ((pressed & (previousButton | nextButton)) == previousButton) {
             cycleDirections[player] = -1;
-            Audio::RSARPlayer::PlaySoundById(SOUND_ID_LEFT_ARROW_PRESS, 0, 0);
         } else if ((pressed & (previousButton | nextButton)) == nextButton) {
             cycleDirections[player] = 1;
-            Audio::RSARPlayer::PlaySoundById(SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
         }
     }
 }
@@ -314,7 +312,8 @@ static void PageAfterControlUpdate(Page *page) {
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (character >= CHARACTER_COUNT || changed[character])
             continue;
-        changed[character] = true;
+        if (MenuModelMgr::sInstance->driverModels->players[player].playerModel->state != MenuDriverModel::MENUDRIVERMODEL_STATE_IDLE)
+            continue;
 
         u32 slot = selectedSlots[character];
         for (u32 tries = 0; tries <= MAX_CUSTOM_CHARACTER_SLOTS; ++tries) {
@@ -325,9 +324,14 @@ static void PageAfterControlUpdate(Page *page) {
             if (characterTables[character][slot])
                 break;
         }
+        if (slot == selectedSlots[character])
+            continue;
+        changed[character] = true;
         selectedSlots[character] = slot;
         if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot))
             selectedSlots[character] = 0;
+        else
+            Audio::RSARPlayer::PlaySoundById(direction < 0 ? SOUND_ID_LEFT_ARROW_PRESS : SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
         UI::SetCharacterSelectIcon(
           characterSelectPage->ctrlMenuCharSelect.GetButtonDriver(static_cast<CharacterId>(character)), "chara_c_down", GetCharacterIconPaneName(static_cast<CharacterId>(character)));
     }

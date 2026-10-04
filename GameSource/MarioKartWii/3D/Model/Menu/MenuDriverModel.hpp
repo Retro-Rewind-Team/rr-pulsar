@@ -23,6 +23,7 @@ public:
 class MenuDriverModel : public MenuModel {
 public:
     enum State {
+        MENUDRIVERMODEL_STATE_IDLE = 0,
         MENUDRIVERMODEL_STATE_ONCHARSELECT = 1,
         MENUDRIVERMODEL_STATE_ONKARTSELECT = 2
     };
