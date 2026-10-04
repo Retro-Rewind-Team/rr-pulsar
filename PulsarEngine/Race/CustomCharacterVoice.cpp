@@ -291,12 +291,28 @@ static void LoadCharacterVoices() {
         sPlayerHasCustomVoice[playerId] = true;
         char targetCode[0x20];
         GetCharacterVoiceCode(static_cast<CharacterId>(character), targetCode, sizeof(targetCode));
+        const u32 source = static_cast<u32>(sPlayerVoiceSources[playerId]);
         s8 bestAlias = -1;
-        u32 bestGroupCount = 0;
         u32 bestMatchedGroupCount = 0;
+        bool bestMatchesSource = false;
         for (u32 alias = 0; alias < Driver::CHARACTER_COUNT; ++alias) {
             if (usedCharacters[alias])
                 continue;
+
+            bool matchesSource = Audio::CharacterActor::voiceActionTables[alias] == Audio::CharacterActor::voiceActionTables[source];
+            for (u32 locality = 0; locality < 2 && matchesSource; ++locality) {
+                const u16 *sourceRanges = Audio::CharacterActor::voiceRanges[locality][source];
+                const u16 *aliasRanges = Audio::CharacterActor::voiceRanges[locality][alias];
+                // Cannon voices use a separate file, so compare the regular voice layout only.
+                for (u32 index = 0; index < 0x1c * 2; ++index) {
+                    if (sourceRanges[index] != aliasRanges[index]
+                      && static_cast<s32>(sourceRanges[index]) - sourceRanges[Audio::CHARACTER_SOURCE_BOOST * 2]
+                        != static_cast<s32>(aliasRanges[index]) - aliasRanges[Audio::CHARACTER_SOURCE_BOOST * 2]) {
+                        matchesSource = false;
+                        break;
+                    }
+                }
+            }
 
             char aliasCode[0x20];
             GetCharacterVoiceCode(static_cast<CharacterId>(alias), aliasCode, sizeof(aliasCode));
@@ -315,12 +331,13 @@ static void LoadCharacterVoices() {
                     ++matchedGroupCount;
             }
 
-            if (bestAlias < 0 || matchedGroupCount > bestMatchedGroupCount) {
+            if (bestAlias < 0 || (matchesSource && !bestMatchesSource)
+              || (matchesSource == bestMatchesSource && matchedGroupCount > bestMatchedGroupCount)) {
                 bestAlias = static_cast<s8>(alias);
-                bestGroupCount = groupCount;
                 bestMatchedGroupCount = matchedGroupCount;
+                bestMatchesSource = matchesSource;
             }
-            if (matchedGroupCount == groupCount)
+            if (matchesSource && matchedGroupCount == groupCount)
                 break;
         }
         sPlayerVoiceAliases[playerId] = bestAlias;
