@@ -37,7 +37,6 @@ static u32 authorNameControlStorage[4][AUTHOR_NAME_CONTROL_WORDS];
 static bool authorNameControlLoaded[4];
 static bool loadingAuthorNameControl;
 static u32 authorTextBmgIds[4];
-static u32 characterNameBmgIds[4];
 static ModelDirector *customModels[CHARACTER_COUNT];
 static EGG::ExpHeap *customHeaps[CHARACTER_COUNT];
 static ToadetteHair *originalHair;
@@ -358,11 +357,7 @@ static void PageAfterControlUpdate(Page *page) {
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (character >= CHARACTER_COUNT)
             continue;
-        const u32 nameBmgId = UI::GetCharacterNameBMGId(character, false, 12);
-        if (changed[character] || characterNameBmgIds[player] != nameBmgId) {
-            characterSelectPage->names[player].SetMessage(nameBmgId);
-            characterNameBmgIds[player] = nameBmgId;
-        }
+        characterSelectPage->names[player].SetMessage(UI::GetCharacterNameBMGId(character, false, 12));
     }
 
     for (u32 player = 0; player < 4; ++player) {
@@ -392,7 +387,6 @@ static void CharacterSelectName(ControlLoader *loader, const char *folderName, c
     const u32 hud = name.unknown_0x178;
     if (hud >= 4)
         return;
-    characterNameBmgIds[hud] = 0;
 
     CharaName *author = reinterpret_cast<CharaName *>(&authorNameControlStorage[hud][0]);
     authorNameControlLoaded[hud] = false;
