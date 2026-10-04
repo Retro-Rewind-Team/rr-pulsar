@@ -100,7 +100,8 @@ void CtrlRaceMusicInfoDisplay::Load() {
 }
 
 bool CtrlRaceMusicInfoDisplay::IsDisplayActive() {
-    if (!Settings::Mgr::IsCreated() || Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) != CTMUSIC_ENABLED)
+    if (!Settings::Mgr::IsCreated() || Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) != CTMUSIC_ENABLED
+      || Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) != MUSIC_DEFAULT)
         return false;
 
     Raceinfo *raceInfo = Raceinfo::sInstance;
