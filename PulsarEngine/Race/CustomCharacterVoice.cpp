@@ -750,16 +750,23 @@ void PatchLoadedCustomVoiceGroup(nw4r::snd::detail::SoundArchiveLoader *loader, 
             continue;
 
         char path[0x100];
+        char customTypeSuffix[0x80];
+        snprintf(customTypeSuffix, sizeof(customTypeSuffix), "%s", typeSuffix);
         bool wavePatched = false;
         bool filePatched = false;
-        if (sPlayerVoiceSourceSuffixes[static_cast<u32>(playerId)][0] != '\0') {
-            snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u%s.%s.%s", targetCode, sPlayerVoiceSlots[static_cast<u32>(playerId)], typeSuffix, extension,
-              sPlayerVoiceSourceSuffixes[static_cast<u32>(playerId)]);
-            filePatched = PatchVoiceGroupItem(loader, groupId, index, groupInfo, item, allocater, groupData, waveData, path, magic, wavePatched);
-        }
-        if (!filePatched) {
-            snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u%s.%s", targetCode, sPlayerVoiceSlots[static_cast<u32>(playerId)], typeSuffix, extension);
-            filePatched = PatchVoiceGroupItem(loader, groupId, index, groupInfo, item, allocater, groupData, waveData, path, magic, wavePatched);
+        for (;;) {
+            if (sPlayerVoiceSourceSuffixes[static_cast<u32>(playerId)][0] != '\0') {
+                snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u%s.%s.%s", targetCode, sPlayerVoiceSlots[static_cast<u32>(playerId)], customTypeSuffix, extension,
+                  sPlayerVoiceSourceSuffixes[static_cast<u32>(playerId)]);
+                filePatched = PatchVoiceGroupItem(loader, groupId, index, groupInfo, item, allocater, groupData, waveData, path, magic, wavePatched);
+            }
+            if (!filePatched) {
+                snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u%s.%s", targetCode, sPlayerVoiceSlots[static_cast<u32>(playerId)], customTypeSuffix, extension);
+                filePatched = PatchVoiceGroupItem(loader, groupId, index, groupInfo, item, allocater, groupData, waveData, path, magic, wavePatched);
+            }
+            if (filePatched || strncmp(customTypeSuffix, "_GOL_TA_", 8) != 0)
+                break;
+            memmove(customTypeSuffix + 5, customTypeSuffix + 8, strlen(customTypeSuffix + 8) + 1);
         }
 
         u32 sourceCharacter = sPlayerVoiceSources[static_cast<u32>(playerId)] < 0 ? baseCharacter : static_cast<u32>(sPlayerVoiceSources[static_cast<u32>(playerId)]);
