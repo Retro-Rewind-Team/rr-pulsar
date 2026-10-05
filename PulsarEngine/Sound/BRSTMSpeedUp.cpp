@@ -21,8 +21,6 @@ static const Audio::RaceState RACE_STATE_FINAL_LAP_JINGLE = static_cast<Audio::R
 static const u8 INVALID_HUD_SLOT_ID = 0xFF;
 static u8 finalLapSpeedupHudSlot = INVALID_HUD_SLOT_ID;
 void UpdateSW2RRRacePercentageMusic();
-void Update119RacePercentageMusic();
-void UpdateSW2DKSRacePercentageMusic();
 
 static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 hudSlotId) {
     u8 isSpeedUp = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSICSPEEDUP);
@@ -94,8 +92,6 @@ static void RaceSoundManager_CheckRaceState(void *raceSoundManager) {
 
     reinterpret_cast<void (*)(void *)>(kmRuntimeAddr(0x807125d4))(raceSoundManager);
     UpdateSW2RRRacePercentageMusic();
-    Update119RacePercentageMusic();
-    UpdateSW2DKSRacePercentageMusic();
 }
 kmCall(0x80710f84, RaceSoundManager_CheckRaceState);
 

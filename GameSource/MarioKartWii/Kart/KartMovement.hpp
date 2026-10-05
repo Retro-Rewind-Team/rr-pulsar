@@ -374,7 +374,9 @@ extern float hardSpeedCap;
 extern float bulletSpeed;
 extern float minDriftSpeedRatio;
 extern float regularBoostAccel;
+extern float slipstreamAccel;
 extern float starSpeed;
+extern float slipstreamSpeed;  // Also the mushroom/boost panel minimum speed.
 extern float speedRatioCC[4];  // 0 50cc 1 100cc 2 150 3 battle
 extern float megaTCSpeed;
 extern float unknown_70;
