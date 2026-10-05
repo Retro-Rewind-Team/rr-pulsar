@@ -153,6 +153,11 @@ void SetMissionIntroSelection(u32 level, u32 mission, u8 missionId, u16 stageBmg
     selectedMissionStageBmgId = stageBmgId;
 }
 
+void GetMissionIntroSelection(u32 &level, u32 &stage) {
+	level = selectedLevel;
+	stage = selectedMission;
+}
+
 void SetMissionIntroInfoSelection(Pulsar::UI::ExpSection &section, u32 level, u32 stage) {
     Page *infoPage = section.pages[PAGE_MISSION_INFORMATION_PROMPT];
     if (infoPage == nullptr)

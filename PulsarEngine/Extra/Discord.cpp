@@ -1,6 +1,9 @@
 #include <Dolphin/DolphinIOS.hpp>
+#include <Gamemodes/MissionMode/MissionIntro.hpp>
+#include <Gamemodes/MissionMode/MissionMode.hpp>
 #include <UI/UI.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
@@ -315,16 +318,27 @@ void DiscordRichPresence(Section *_this) {
 
     wchar_t trackNameW[0x100];
     char trackName[0x100];
+	char missionState[0x100];
 
     memset(trackNameW, 0, 0x100);
 
-    u32 bmgId = Pulsar::UI::GetCurTrackBMG();
-    const wchar_t *msg = Pulsar::UI::GetCustomMsg(bmgId);
-    if (msg && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO)) {
-        CleanBMGMessage(trackNameW, msg);
-        ConvertUTF16toUtf8(trackName, trackNameW, 32);
-        state = trackName;
-    }
+	const bool isMission = Racedata::sInstance && Pulsar::MissionMode::IsMissionScenario(Racedata::sInstance->racesScenario);
+	if (!isMission) {
+		u32 bmgId = Pulsar::UI::GetCurTrackBMG();
+		const wchar_t *msg = Pulsar::UI::GetCustomMsg(bmgId);
+		if (msg && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO)) {
+			CleanBMGMessage(trackNameW, msg);
+			ConvertUTF16toUtf8(trackName, trackNameW, 32);
+			state = trackName;
+		}
+	}
+
+	if (isMission && Raceinfo::sInstance && Raceinfo::sInstance->IsAtLeastStage(RACESTAGE_INTRO)) {
+		u32 level, stage;
+		Pulsar::MissionMode::GetMissionIntroSelection(level, stage);
+		snprintf(missionState, sizeof(missionState), "Mission %u-%u", level + 1, stage + 1);
+		state = missionState;
+	}
 
     RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller) {
@@ -378,7 +392,7 @@ void DiscordRichPresence(Section *_this) {
             details = "In a 4P Battle";
             break;
         case SECTION_MISSION_MODE:
-            details = "In Mission Mode";
+            details = "Playing a Mission";
             break;
         case SECTION_TOURNAMENT:
             details = "In a Tournament";
