@@ -17,8 +17,7 @@ enum AREARenderType {
 class ClipInfo {  // as with entity, used by items, karts, objects...
     ClipInfo();  // 80787bd8
     ~ClipInfo();  // 80787be4
-    void Init(Vec3 *position, bool isDefaultyEnabled, u16 area8GroupIds, AREARenderType type, u32 r7, u32 r8,
-              float near, float maxSpeed, float farDistance);  // 80787c24
+    void Init(Vec3 *position, bool isDefaultyEnabled, u16 area8GroupIds, AREARenderType type, u32 r7, u32 r8, float near, float maxSpeed, float farDistance);  // 80787c24
 
     Vec3 *position;  // 0
     float nearDistance;  // 0x4
@@ -94,8 +93,7 @@ class ClipInfoMgr {
     ClipInfoMgr();  // 807875ec inlined
     ~ClipInfoMgr();  // 807876d0
     void Update();  // 80787774
-    ClipInfo *Insert(Vec3 *position, bool isDefaultyEnabled, AREARenderType type, u32 r7, u32 r8,
-                     float nearDistance, float maxSpeed, float farDistance);  // 80787ab8 maxSpeed unused
+    ClipInfo *Insert(Vec3 *position, bool isDefaultyEnabled, AREARenderType type, u32 r7, u32 r8, float nearDistance, float maxSpeed, float farDistance);  // 80787ab8 maxSpeed unused
 
     EGG::TDisposer<ClipInfoMgr> disposer;  // 0x0 //80787340 vtable 808d17f8
     ClipInfo *clipInfoArray;  // 0x10 array size 512

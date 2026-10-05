@@ -42,7 +42,8 @@ static u8 ReturnCorrectId(u8 localId) {
     const RaceCameraMgr *cameraMgr = RaceCameraMgr::sInstance;
     if (system != nullptr && cameraMgr != nullptr && system->IsContext(PULSAR_MODE_KO) && system->koMgr != nullptr && system->koMgr->isSpectating) {
         const u8 cameraIdx = cameraMgr->focusedPlayerIdx;
-        if (cameraIdx >= cameraMgr->cameraCount || cameraMgr->cameras[cameraIdx] == nullptr) return 0;
+        if (cameraIdx >= cameraMgr->cameraCount || cameraMgr->cameras[cameraIdx] == nullptr)
+            return 0;
         return cameraMgr->cameras[cameraIdx]->playerId;
     }
     return localId;
@@ -125,7 +126,8 @@ static u8 SwapUISelectInfo() {
             curHudSlotId = mgr->IsKOdAid(aid, 0) || mgr->IsDisconnectedAid(aid, 0);  // if only one localPlayer but slot 0 is out, the surviving player was originally the guest
             const RKNet::Controller *controller = RKNet::Controller::sInstance;
             const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
-            if (curHudSlotId == 1 && aid == sub.localAid && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();
+            if (curHudSlotId == 1 && aid == sub.localAid && !mgr->GetIsSwapped())
+                mgr->SwapControllersAndUI();
         }
     }
 
@@ -145,7 +147,8 @@ static u8 SwapRaceMiis() {
 
     bool isKO = system->IsContext(PULSAR_MODE_KO);
     if (isKO) {
-        if (aid < 12) curHudSlotId = system->koMgr->IsKOdAid(aid, 0);
+        if (aid < 12)
+            curHudSlotId = system->koMgr->IsKOdAid(aid, 0);
         if (curHudSlotId == 1) {
             RacedataScenario &scenario = Racedata::sInstance->menusScenario;
             char mainPlayer[sizeof(RacedataPlayer)];
@@ -172,7 +175,8 @@ void StoreItemsForSpectating(RKNet::ITEMHandler &itemHandler) {
     if (System::sInstance->IsContext(PULSAR_MODE_KO)) {  // guaranteed to be spectating already via a check in the func
         const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
         for (int playerId = 0; playerId < System::sInstance->nonTTGhostPlayersCount; ++playerId) {
-            if (scenario.players[playerId].playerType != PLAYER_REAL_ONLINE) continue;
+            if (scenario.players[playerId].playerType != PLAYER_REAL_ONLINE)
+                continue;
             const ItemId item = itemHandler.GetStoredItem(playerId);
             Item::Player &itemPlayer = Item::Manager::sInstance->players[playerId];
             itemPlayer.inventory.currentItemId = item;

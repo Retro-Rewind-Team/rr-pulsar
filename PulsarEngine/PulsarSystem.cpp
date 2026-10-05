@@ -18,6 +18,7 @@
 #include <MarioKartWii/UI/Page/Other/FriendList.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <RetroRewindChannel.hpp>
+#include <Driver/CustomCharacters.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <hooks.hpp>
@@ -30,11 +31,9 @@ System::Inherit *System::inherit = nullptr;
 
 static void ApplyVanillaModeRestrictions(System *system, bool clearOttAndItemModes) {
     system->context |= (1 << PULSAR_REGS) | (1 << PULSAR_THUNDERCLOUD);
-    system->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_CTS) | (1 << PULSAR_200_WW) |
-                         (1 << PULSAR_ELIMINATION) | (1 << PULSAR_FFA));
-    system->context2 &= ~((1 << PULSAR_ITEMMODERANDOM) | (1 << PULSAR_ITEMMODEBLAST) |
-                          (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) |
-                          (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
+    system->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_CTS) | (1 << PULSAR_200_WW) | (1 << PULSAR_ELIMINATION) | (1 << PULSAR_FFA));
+    system->context2 &= ~(
+      (1 << PULSAR_ITEMMODERANDOM) | (1 << PULSAR_ITEMMODEBLAST) | (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) | (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
     system->context2 |= (1 << PULSAR_TRANSMISSIONVANILLA);
     if (clearOttAndItemModes) {
         system->context &= ~(1 << PULSAR_MODE_OTT);
@@ -43,9 +42,8 @@ static void ApplyVanillaModeRestrictions(System *system, bool clearOttAndItemMod
     }
 }
 
-static void OverrideFroomVanillaModeSettings(bool &isTrackSelectionRegs, bool &isTrackSelectionRetros, bool &isTrackSelectionCts,
-                                             bool &isTransmissionInside, bool &isTransmissionOutside, bool &isTransmissionVanilla,
-                                             bool &isThunderCloud, bool &isAllItemsCanLand, bool &isItemBoxRespawnFast) {
+static void OverrideFroomVanillaModeSettings(bool &isTrackSelectionRegs, bool &isTrackSelectionRetros, bool &isTrackSelectionCts, bool &isTransmissionInside, bool &isTransmissionOutside,
+  bool &isTransmissionVanilla, bool &isThunderCloud, bool &isAllItemsCanLand, bool &isItemBoxRespawnFast) {
     isTrackSelectionRegs = true;
     isTrackSelectionRetros = false;
     isTrackSelectionCts = false;
@@ -59,10 +57,12 @@ static void OverrideFroomVanillaModeSettings(bool &isTrackSelectionRegs, bool &i
 
 bool System::IsVanillaMode() const {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN) return false;
+    if (controller == nullptr || controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN)
+        return false;
 
     const bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
-    if (isFroom) return this->IsContext(PULSAR_VANILLAMODE);
+    if (isFroom)
+        return this->IsContext(PULSAR_VANILLAMODE);
 
     const bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
     return isRegionalRoom && (this->netMgr.region == 0x15 || this->netMgr.region == 0x0B);
@@ -70,8 +70,7 @@ bool System::IsVanillaMode() const {
 
 bool System::IsOfflineVS() const {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    return controller != nullptr && controller->roomType == RKNet::ROOMTYPE_NONE &&
-           Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
+    return controller != nullptr && controller->roomType == RKNet::ROOMTYPE_NONE && Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
 }
 
 static inline bool ShouldForceNandIoSaves() {
@@ -79,7 +78,8 @@ static inline bool ShouldForceNandIoSaves() {
 }
 
 void System::CreateSystem() {
-    if (sInstance != nullptr) return;
+    if (sInstance != nullptr)
+        return;
     EGG::Heap *heap = RKSystem::mInstance.EGGSystem;
     const EGG::Heap *prev = heap->BecomeCurrentHeap();
     System *system;
@@ -110,14 +110,17 @@ void System::CreateSystem() {
 }
 BootHook CreateSystem(System::CreateSystem, 0);
 
-System::System() : heap(RKSystem::mInstance.EGGSystem), taskThread(EGG::TaskThread::Create(8, 0, 0x4000, this->heap)),
-                   // Modes
-                   koMgr(nullptr),
-                   lapKoMgr(nullptr) {
+System::System()
+    : heap(RKSystem::mInstance.EGGSystem),
+      taskThread(EGG::TaskThread::Create(8, 0, 0x4000, this->heap)),
+      // Modes
+      koMgr(nullptr),
+      lapKoMgr(nullptr) {
 }
 
 static void PatchBMGOffsets(BMGHolder &holder, u32 cupOffset, u32 trackOffset) {
-    if (holder.messageIds == nullptr) return;
+    if (holder.messageIds == nullptr)
+        return;
     BMGMessageIds *msgIds = const_cast<BMGMessageIds *>(holder.messageIds);
     const u32 variantTrackOffset = trackOffset << 4;
     for (u16 i = 0; i < msgIds->msgCount; ++i) {
@@ -140,13 +143,13 @@ static void LoadConfigFileNames(const ConfigFile &config, u32 readBytes, u32 fir
     const u8 *configStart = reinterpret_cast<const u8 *>(&config);
     const u8 *fileSection = reinterpret_cast<const u8 *>(&bmgSection.header) + bmgSection.header.fileLength;
     const u32 offset = static_cast<u32>(fileSection - configStart);
-    if (offset >= readBytes) return;
+    if (offset >= readBytes)
+        return;
 
     CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char *>(fileSection), readBytes - offset, firstTrack, trackCount);
 }
 
-void System::Init(const ConfigFile &confRT, const ConfigFile &confCT, const ConfigFile &confBT,
-                  u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes) {
+void System::Init(const ConfigFile &confRT, const ConfigFile &confCT, const ConfigFile &confBT, u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes) {
     IOType type = IOType_ISO;
     bool isDolphin = Dolphin::IsEmulator();
     s32 ret = IO::OpenFix("file", IOS::MODE_NONE);
@@ -176,6 +179,7 @@ void System::Init(const ConfigFile &confRT, const ConfigFile &confCT, const Conf
     this->info.Init(confRT.GetSection<InfoHolder>().info);
     this->InitIO(type);
     this->InitSettings(&CupsConfig::sInstance->trophyCount[0]);
+    Driver::CreateCharacterTable();
 
     if (IsNewChannel()) {
         NewChannel_Init();
@@ -231,7 +235,8 @@ void System::Init(const ConfigFile &confRT, const ConfigFile &confCT, const Conf
 void System::InitIO(IOType type) const {
     IO *io = IO::CreateInstance(type, this->heap, this->taskThread);
     bool ret;
-    if (io->type == IOType_DOLPHIN) ret = ISFS::CreateDir("/shared2/Pulsar", 0, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE);
+    if (io->type == IOType_DOLPHIN)
+        ret = ISFS::CreateDir("/shared2/Pulsar", 0, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE);
     const char *modFolder = this->GetModFolder();
     ret = io->CreateFolder(modFolder);
     if (!ret && io->type == IOType_DOLPHIN) {
@@ -270,7 +275,8 @@ void System::UpdateContext() {
     const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
 
     bool isFroom = isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-    bool isRegionalRoom = isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
+    bool isRegionalRoom =
+      isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
     bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
     bool isBalloonBattle = isBattle && racedataSettings.battleType == BATTLE_BALLOON;
     bool isNotPublic = isFroom || controller->roomType == RKNet::ROOMTYPE_NONE;
@@ -281,8 +287,8 @@ void System::UpdateContext() {
     const bool isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && mode == MODE_VS_RACE;
     const bool isOfflineGrandPrix = controller->roomType == RKNet::ROOMTYPE_NONE && mode == MODE_GRAND_PRIX;
     const bool isOfflineTeamVS = isOfflineVS && (racedataSettings.modeFlags & UI::ExtendedTeamManager::TEAM_MODE_FLAG);
-    bool isExtendedTeams = (settings.GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED || isOfflineTeamVS) &&
-                           (!isOfflineVS || isOfflineTeamVS) && !isOfflineGrandPrix;
+    bool isExtendedTeams =
+      (settings.GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED || isOfflineTeamVS) && (!isOfflineVS || isOfflineTeamVS) && !isOfflineGrandPrix;
     const bool disableOfflineKO = isExtendedTeams && isOfflineVS;
     bool isKO = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_ENABLED && isOfflineVS && !disableOfflineKO;
     bool isOTT = false;
@@ -415,9 +421,8 @@ void System::UpdateContext() {
     }
 
     if (isVanillaMode && isFroom) {
-        OverrideFroomVanillaModeSettings(isTrackSelectionRegs, isTrackSelectionRetros, isTrackSelectionCts, isTransmissionInside,
-                                         isTransmissionOutside, isTransmissionVanilla, isThunderCloud, isAllItemsCanLand,
-                                         isItemBoxRespawnFast);
+        OverrideFroomVanillaModeSettings(isTrackSelectionRegs, isTrackSelectionRetros, isTrackSelectionCts, isTransmissionInside, isTransmissionOutside, isTransmissionVanilla, isThunderCloud,
+          isAllItemsCanLand, isItemBoxRespawnFast);
     }
 
     this->netMgr.hostContext = newContext;
@@ -436,35 +441,18 @@ void System::UpdateContext() {
     u32 newContextValue = (isCT) << PULSAR_CT;
     u32 newContextValue2 = 0;
     if (isCT) {
-        newContextValue |= (is200) << PULSAR_200 | (isFeather) << PULSAR_FEATHER |
-                           (isUMTs) << PULSAR_UMTS | (is500) << PULSAR_500 |
-                           (isOTT) << PULSAR_MODE_OTT | (isKO) << PULSAR_MODE_KO |
-                           (isCharRestrict) << PULSAR_CHARRESTRICT | (isVehicleRestrict) << PULSAR_VEHICLERESTRICT |
-                           (isChangeCombo) << PULSAR_CHANGECOMBO |
-                           (isTrackSelectionRegs) << PULSAR_REGS | (isKOFinal) << PULSAR_KOFINAL |
-                           (isExtendedTeams) << PULSAR_EXTENDEDTEAMS | (isTrackSelectionRetros) << PULSAR_RETROS |
-                           (isTrackSelectionCts) << PULSAR_CTS | (isTeamBattle) << PULSAR_FFA |
-                           (isElimination) << PULSAR_ELIMINATION | (isLapBasedKO) << PULSAR_MODE_LAPKO |
-                           (isStartRetro) << PULSAR_STARTRETROS | (isStartCT) << PULSAR_STARTCTS |
-                           (isStartRTS) << PULSAR_STARTREGS | (isStart200) << PULSAR_START200 |
-                           (isStartOTT) << PULSAR_STARTOTT | (isStartItemRain) << PULSAR_STARTITEMRAIN |
-                           (isThunderCloud) << PULSAR_THUNDERCLOUD;
+        newContextValue |= (is200) << PULSAR_200 | (isFeather) << PULSAR_FEATHER | (isUMTs) << PULSAR_UMTS | (is500) << PULSAR_500 | (isOTT) << PULSAR_MODE_OTT | (isKO) << PULSAR_MODE_KO
+          | (isCharRestrict) << PULSAR_CHARRESTRICT | (isVehicleRestrict) << PULSAR_VEHICLERESTRICT | (isChangeCombo) << PULSAR_CHANGECOMBO | (isTrackSelectionRegs) << PULSAR_REGS
+          | (isKOFinal) << PULSAR_KOFINAL | (isExtendedTeams) << PULSAR_EXTENDEDTEAMS | (isTrackSelectionRetros) << PULSAR_RETROS | (isTrackSelectionCts) << PULSAR_CTS | (isTeamBattle) << PULSAR_FFA
+          | (isElimination) << PULSAR_ELIMINATION | (isLapBasedKO) << PULSAR_MODE_LAPKO | (isStartRetro) << PULSAR_STARTRETROS | (isStartCT) << PULSAR_STARTCTS | (isStartRTS) << PULSAR_STARTREGS
+          | (isStart200) << PULSAR_START200 | (isStartOTT) << PULSAR_STARTOTT | (isStartItemRain) << PULSAR_STARTITEMRAIN | (isThunderCloud) << PULSAR_THUNDERCLOUD;
 
-        newContextValue2 |= (isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE | (isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE |
-                            (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA | (isItemModeRandom) << PULSAR_ITEMMODERANDOM |
-                            (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN |
-                            (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS |
-                            (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND |
-                            (isHAW) << PULSAR_HAW | (isItemBoxRespawnFast) << PULSAR_ITEMBOXRESPAWN |
-                            (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR |
-                            (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE |
-                            (isKoPerRace2) << PULSAR_KOPERRACE_2 |
-                            (isKoPerRace3) << PULSAR_KOPERRACE_3 |
-                            (isKoPerRace4) << PULSAR_KOPERRACE_4 |
-                            (isKoRoyaleLaps1_5x) << PULSAR_KOROYALE_LAPS_1_5X |
-                            (isKoRoyaleLaps2_0x) << PULSAR_KOROYALE_LAPS_2_0X |
-                            (isVanillaMode) << PULSAR_VANILLAMODE |
-                            (isMirrorMode) << PULSAR_MIRRORMODE;
+        newContextValue2 |= (isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE | (isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE | (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA
+          | (isItemModeRandom) << PULSAR_ITEMMODERANDOM | (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN | (isItemModeStorm) << PULSAR_ITEMMODESTORM
+          | (isMiiHeads) << PULSAR_MIIHEADS | (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND | (isHAW) << PULSAR_HAW | (isItemBoxRespawnFast) << PULSAR_ITEMBOXRESPAWN | (isRanking) << PULSAR_RANKING
+          | (isVR) << PULSAR_VR | (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE | (isKoPerRace2) << PULSAR_KOPERRACE_2 | (isKoPerRace3) << PULSAR_KOPERRACE_3
+          | (isKoPerRace4) << PULSAR_KOPERRACE_4 | (isKoRoyaleLaps1_5x) << PULSAR_KOROYALE_LAPS_1_5X | (isKoRoyaleLaps2_0x) << PULSAR_KOROYALE_LAPS_2_0X | (isVanillaMode) << PULSAR_VANILLAMODE
+          | (isMirrorMode) << PULSAR_MIRRORMODE;
     }
 
     // Combine the new context with preserved bits
@@ -557,7 +545,8 @@ void System::UpdateContext() {
     }
 
     if (isKO) {
-        if (this->koMgr == nullptr && sceneId != SCENE_ID_GLOBE) this->koMgr = new (this->heap) KO::Mgr;
+        if (this->koMgr == nullptr && sceneId != SCENE_ID_GLOBE)
+            this->koMgr = new (this->heap) KO::Mgr;
     }
     if (!isKO && this->koMgr != nullptr || isKO && sceneId == SCENE_ID_GLOBE) {
         delete this->koMgr;
@@ -592,10 +581,12 @@ static Pulsar::Settings::Hook UpdateOTTContext(System::ClearOttContext);
 s32 System::OnSceneEnter(Random &random) {
     System *self = System::sInstance;
     self->UpdateContext();
-    if (self->IsContext(PULSAR_MODE_OTT)) OTT::AddGhostToVS();
+    if (self->IsContext(PULSAR_MODE_OTT))
+        OTT::AddGhostToVS();
     if (self->IsContext(PULSAR_MODE_KO) && self->koMgr != nullptr && self->koMgr->IsOfflineVS()) {
         self->koMgr->ForceOfflineVSRaceCount();
-        if (GameScene::GetCurrent()->id == SCENE_ID_RACE) self->koMgr->PrepareOfflineVSNextRace();
+        if (GameScene::GetCurrent()->id == SCENE_ID_RACE)
+            self->koMgr->PrepareOfflineVSNextRace();
     }
     if (self->IsContext(PULSAR_HAW) && self->IsContext(PULSAR_MODE_KO) && GameScene::GetCurrent()->id == SCENE_ID_RACE && SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber > 0) {
         KO::HAWChangeData();
@@ -610,7 +601,8 @@ asmFunc System::GetRaceCount() {
         lis r5, sInstance @ha;
         lwz r5, sInstance @l(r5);
         lbz r0, System.netMgr.racesPerGP(r5);
-        blr;)
+        blr;
+    )
 }
 
 asmFunc System::GetNonTTGhostPlayersCount() {
@@ -619,7 +611,8 @@ asmFunc System::GetNonTTGhostPlayersCount() {
         lis r12, sInstance @ha;
         lwz r12, sInstance @l(r12);
         lbz r29, System.nonTTGhostPlayersCount(r12);
-        blr;)
+        blr;
+    )
 }
 
 // Unlock Everything Without Save (_tZ)

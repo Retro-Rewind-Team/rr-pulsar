@@ -10,7 +10,9 @@ namespace ut {
 namespace {
 
 template <typename T>
-static inline T Abs(T a) { return (a < 0) ? static_cast<T>(-a) : a; }
+static inline T Abs(T a) {
+    return (a < 0) ? static_cast<T>(-a) : a;
+}
 
 template <>
 inline float Abs<float>(register float value) {
@@ -20,10 +22,14 @@ inline float Abs<float>(register float value) {
 }
 
 template <typename T>
-static inline T Min(T lhs, T rhs) { return lhs < rhs ? lhs : rhs; }
+static inline T Min(T lhs, T rhs) {
+    return lhs < rhs ? lhs : rhs;
+}
 
 template <typename T>
-static inline T Max(T lhs, T rhs) { return lhs > rhs ? lhs : rhs; }
+static inline T Max(T lhs, T rhs) {
+    return lhs > rhs ? lhs : rhs;
+}
 
 template <typename T>
 static inline T RoundUp(T value, u32 base) {
@@ -49,8 +55,7 @@ static inline const void *AddOffsetToPtr(const void *pointer, T offset) {
 }
 
 template <typename T>
-inline const T *
-ConvertOffsToPtr(const void *baseAddress, unsigned int offset) {
+inline const T *ConvertOffsToPtr(const void *baseAddress, unsigned int offset) {
     return reinterpret_cast<const T *>(static_cast<const u8 *>(baseAddress) + offset);
 }
 
@@ -68,8 +73,10 @@ static inline int ComparePtr(const void *lhs, const void *rhs) {
 
 class NonCopyable {
 protected:
-    NonCopyable() {}
-    ~NonCopyable() {}
+    NonCopyable() {
+    }
+    ~NonCopyable() {
+    }
 
 private:
     NonCopyable(const NonCopyable &);
@@ -87,8 +94,12 @@ inline void Unlock(OS::Mutex &mutex) {
 template <typename Type>
 class AutoLock : private NonCopyable {
 public:
-    AutoLock(Type &lockObj) : lock(lockObj) { Lock(lockObj); }
-    ~AutoLock() { Unlock(lock); }
+    AutoLock(Type &lockObj) : lock(lockObj) {
+        Lock(lockObj);
+    }
+    ~AutoLock() {
+        Unlock(lock);
+    }
 
 private:
     Type &lock;
@@ -97,8 +108,11 @@ typedef AutoLock<OS::Mutex> AutoMutexLock;
 
 class AutoInterruptLock : private NonCopyable {
 public:
-    AutoInterruptLock() : oldState(OS::DisableInterrupts()) {}
-    ~AutoInterruptLock() { (void)OS::RestoreInterrupts(oldState); }
+    AutoInterruptLock() : oldState(OS::DisableInterrupts()) {
+    }
+    ~AutoInterruptLock() {
+        (void)OS::RestoreInterrupts(oldState);
+    }
 
 private:
     BOOL oldState;

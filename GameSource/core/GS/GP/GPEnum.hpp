@@ -259,7 +259,6 @@ enum ErrorCode {
     // RemoveBlock
     GP_REMOVEBLOCK = 0x1300,
     GP_REMOVEBLOCK_NOT_BLOCKED
-
 };
 
 }  // namespace GP

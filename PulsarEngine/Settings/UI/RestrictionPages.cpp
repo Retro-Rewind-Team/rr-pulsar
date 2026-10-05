@@ -56,7 +56,8 @@ void CharacterRestrictionPage::AfterControlUpdate() {
 
 void CharacterRestrictionPage::BindButtons() {
     CtrlMenuCharacterSelect::ButtonDriver *buttons = ctrlMenuCharSelect.driverButtonsArray;
-    if (buttons == nullptr) return;
+    if (buttons == nullptr)
+        return;
     for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
         buttons[slot].SetOnClickHandler(restrictionButtonClickHandler, 0);
         buttons[slot].SetOnSelectHandler(restrictionButtonSelectHandler);
@@ -67,7 +68,8 @@ void CharacterRestrictionPage::BindButtons() {
 void CharacterRestrictionPage::UpdateButtonVisuals() {
     const u32 mask = Settings::Mgr::Get().GetCharacterRestrictionMask();
     CtrlMenuCharacterSelect::ButtonDriver *buttons = ctrlMenuCharSelect.driverButtonsArray;
-    if (buttons == nullptr) return;
+    if (buttons == nullptr)
+        return;
     for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
         const bool enabled = ((mask >> slot) & 1) != 0;
         if (buttons[slot].IsSelected())
@@ -86,9 +88,11 @@ void CharacterRestrictionPage::UpdateButtonVisuals() {
 void CharacterRestrictionPage::OnRestrictionButtonClick(PushButton &button, u32) {
     CtrlMenuCharacterSelect::ButtonDriver *driver = static_cast<CtrlMenuCharacterSelect::ButtonDriver *>(&button);
     const u32 slot = driver - ctrlMenuCharSelect.driverButtonsArray;
-    if (slot >= Restrictions::CHARACTER_SLOT_COUNT) return;
+    if (slot >= Restrictions::CHARACTER_SLOT_COUNT)
+        return;
     u32 mask = Settings::Mgr::Get().GetCharacterRestrictionMask() ^ (1u << slot);
-    if ((mask & Restrictions::ALL_CHARACTERS) == 0) mask = Restrictions::ALL_CHARACTERS;
+    if ((mask & Restrictions::ALL_CHARACTERS) == 0)
+        mask = Restrictions::ALL_CHARACTERS;
     Settings::Mgr::Get().SetCharacterRestrictionMask(mask);
     UpdateButtonVisuals();
 }
@@ -99,7 +103,9 @@ void CharacterRestrictionPage::OnRestrictionButtonSelect(PushButton &button, u32
     UpdateButtonVisuals();
 }
 
-void CharacterRestrictionPage::OnRestrictionButtonDeselect(PushButton &, u32) { UpdateButtonVisuals(); }
+void CharacterRestrictionPage::OnRestrictionButtonDeselect(PushButton &, u32) {
+    UpdateButtonVisuals();
+}
 
 void CharacterRestrictionPage::OnRestrictionBackPress(u32) {
     backButton.SelectFocus();
@@ -168,7 +174,8 @@ void VehicleRestrictionWeightPage::OnActivate() {
 
 void VehicleRestrictionWeightPage::OnButtonClick(PushButton &button, u32) {
     VehicleRestrictionPage *page = ExpSection::GetSection()->GetPulPage<VehicleRestrictionPage>();
-    if (page == nullptr || button.buttonId < 0 || button.buttonId >= 3) return;
+    if (page == nullptr || button.buttonId < 0 || button.buttonId >= 3)
+        return;
     page->SetWeight(button.buttonId);
     nextPageId = static_cast<PageId>(VehicleRestrictionPage::id);
     EndStateAnimated(0, button.GetAnimationFrameSize());
@@ -184,10 +191,11 @@ void VehicleRestrictionWeightPage::OnBackPress(u32) {
     EndStateAnimated(0, backButton.GetAnimationFrameSize());
 }
 
-void VehicleRestrictionWeightPage::OnBackButtonClick(PushButton &, u32 hudSlotId) { OnBackPress(hudSlotId); }
+void VehicleRestrictionWeightPage::OnBackButtonClick(PushButton &, u32 hudSlotId) {
+    OnBackPress(hudSlotId);
+}
 
-VehicleRestrictionPage::VehicleRestrictionPage()
-    : weight(0), savedCharacter(CHARACTER_NONE), savedComboCharacter(CHARACTER_NONE), hasSavedCharacter(false) {
+VehicleRestrictionPage::VehicleRestrictionPage() : weight(0), savedCharacter(CHARACTER_NONE), savedComboCharacter(CHARACTER_NONE), hasSavedCharacter(false) {
     restrictionButtonClickHandler.subject = this;
     restrictionButtonClickHandler.ptmf = &VehicleRestrictionPage::OnRestrictionButtonClick;
     restrictionButtonSelectHandler.subject = this;
@@ -210,7 +218,8 @@ void VehicleRestrictionPage::OnInit() {
 
 void VehicleRestrictionPage::OnActivate() {
     static const CharacterId displayCharacters[3] = {BABY_MARIO, MARIO, WARIO};
-    if (weight >= Restrictions::VEHICLE_WEIGHT_COUNT) weight = 0;
+    if (weight >= Restrictions::VEHICLE_WEIGHT_COUNT)
+        weight = 0;
 
     if (!hasSavedCharacter) {
         savedCharacter = SectionMgr::sInstance->sectionParams->characters[0];
@@ -225,12 +234,14 @@ void VehicleRestrictionPage::OnActivate() {
     if (modelMgr != nullptr && modelMgr->kartModels != nullptr && archiveMgr != nullptr) {
         if (modelMgr->driverModels != nullptr) {
             MenuDriverModel *driverModel = modelMgr->driverModels->players[0].playerModel;
-            if (driverModel != nullptr) driverModel->SwitchState(0, MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT);
+            if (driverModel != nullptr)
+                driverModel->SwitchState(0, MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT);
         }
         modelMgr->RequestDriverModel(0, displayCharacters[weight]);
         if (modelMgr->driverModels != nullptr) {
             MenuDriverModel *driverModel = modelMgr->driverModels->players[0].playerModel;
-            if (driverModel != nullptr) driverModel->SwitchState(0, MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT);
+            if (driverModel != nullptr)
+                driverModel->SwitchState(0, MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT);
         }
         archiveMgr->WaitForLoad();
         modelMgr->ResetKartModels(0);
@@ -259,7 +270,8 @@ void VehicleRestrictionPage::SetButtonHandlers(PushButton &button) {
 }
 
 void VehicleRestrictionPage::RestoreCharacter() {
-    if (!hasSavedCharacter) return;
+    if (!hasSavedCharacter)
+        return;
     SectionMgr::sInstance->sectionParams->characters[0] = savedCharacter;
     SectionMgr::sInstance->sectionParams->combos[0].selCharacter = savedComboCharacter;
     hasSavedCharacter = false;
@@ -268,7 +280,8 @@ void VehicleRestrictionPage::RestoreCharacter() {
 void VehicleRestrictionPage::BindButtons() {
     for (u32 position = 0; position < Restrictions::VEHICLES_PER_WEIGHT; ++position) {
         ButtonMachine *button = GetButtonMachineById(static_cast<u8>(kartsSortedByWeight[weight][position]));
-        if (button == nullptr) continue;
+        if (button == nullptr)
+            continue;
         SetButtonHandlers(*button);
     }
 }
@@ -277,18 +290,22 @@ void VehicleRestrictionPage::UpdateButtonVisuals() {
     const u16 mask = Settings::Mgr::Get().GetVehicleRestrictionMask(weight);
     for (u32 position = 0; position < Restrictions::VEHICLES_PER_WEIGHT; ++position) {
         ButtonMachine *button = GetButtonMachineById(static_cast<u8>(kartsSortedByWeight[weight][position]));
-        if (button == nullptr) continue;
+        if (button == nullptr)
+            continue;
         lyt::Pane *pane = button->layout.GetPaneByName("chara");
-        if (pane != nullptr) ResetMatColor(pane, (mask >> position) & 1 ? 0 : restrictionDisabledColor);
+        if (pane != nullptr)
+            ResetMatColor(pane, (mask >> position) & 1 ? 0 : restrictionDisabledColor);
     }
 }
 
 void VehicleRestrictionPage::OnRestrictionButtonClick(PushButton &button, u32) {
     const KartId kart = static_cast<KartId>(button.buttonId);
     const u32 position = Restrictions::GetVehiclePosition(kart);
-    if (position >= Restrictions::VEHICLES_PER_WEIGHT) return;
+    if (position >= Restrictions::VEHICLES_PER_WEIGHT)
+        return;
     u16 mask = Settings::Mgr::Get().GetVehicleRestrictionMask(weight) ^ (1 << position);
-    if ((mask & Restrictions::ALL_VEHICLES) == 0) mask = Restrictions::ALL_VEHICLES;
+    if ((mask & Restrictions::ALL_VEHICLES) == 0)
+        mask = Restrictions::ALL_VEHICLES;
     Settings::Mgr::Get().SetVehicleRestrictionMask(weight, mask);
     UpdateButtonVisuals();
 }

@@ -22,18 +22,26 @@ bool IsLapKOEnabled(const System *system) {
 
 u8 GetLapKOTargetCount(const System *system, const Racedata *racedata, u8 fallback) {
     u8 playerCount = 0;
-    if (system != nullptr) playerCount = system->nonTTGhostPlayersCount;
-    if (playerCount == 0 && racedata != nullptr) playerCount = racedata->racesScenario.playerCount;
-    if (playerCount == 0) playerCount = fallback;
-    if (playerCount < 2) playerCount = 2;
-    if (playerCount > 12) playerCount = 12;
+    if (system != nullptr)
+        playerCount = system->nonTTGhostPlayersCount;
+    if (playerCount == 0 && racedata != nullptr)
+        playerCount = racedata->racesScenario.playerCount;
+    if (playerCount == 0)
+        playerCount = fallback;
+    if (playerCount < 2)
+        playerCount = 2;
+    if (playerCount > 12)
+        playerCount = 12;
     return playerCount;
 }
 
 static u8 GetBattleRoyaleLapCount(u8 baseLapCount, const System *system) {
-    if (baseLapCount <= 1 || system == nullptr) return baseLapCount;
-    if (system->IsContext(PULSAR_KOROYALE_LAPS_1_5X)) return static_cast<u8>((baseLapCount * 3 + 1) / 2);
-    if (system->IsContext(PULSAR_KOROYALE_LAPS_2_0X)) return static_cast<u8>(baseLapCount * 2);
+    if (baseLapCount <= 1 || system == nullptr)
+        return baseLapCount;
+    if (system->IsContext(PULSAR_KOROYALE_LAPS_1_5X))
+        return static_cast<u8>((baseLapCount * 3 + 1) / 2);
+    if (system->IsContext(PULSAR_KOROYALE_LAPS_2_0X))
+        return static_cast<u8>(baseLapCount * 2);
     return baseLapCount;
 }
 
@@ -62,7 +70,8 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
         } else {
             const Settings::Mgr &settings = Settings::Mgr::Get();
             koPerRace = static_cast<u8>(settings.GetSettingValue(Pulsar::Settings::SETTING_KOPERRACE) + 1);
-            if (koPerRace == 0) koPerRace = 1;
+            if (koPerRace == 0)
+                koPerRace = 1;
             system->lapKoMgr->SetKoPerRace(koPerRace);
         }
 
@@ -70,12 +79,14 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
         lapCount = (totalRounds == 0) ? 1 : totalRounds;
     } else if (system != nullptr && system->IsContext(PULSAR_MODE_BATTLEROYALE)) {
         lapCount = GetBattleRoyaleLapCount(lapCount, system);
-        if (lapCount > 12) lapCount = 12;
+        if (lapCount > 12)
+            lapCount = 12;
     }
 
     if (racedata != nullptr) {
         racedata->racesScenario.settings.lapCount = lapCount;
-        if (lapKoActive) racedata->menusScenario.settings.lapCount = lapCount;
+        if (lapKoActive)
+            racedata->menusScenario.settings.lapCount = lapCount;
         if (lapCount > 9) {
             SetLapCounterResourceName('R', 'R');  // RRp_number.brctr
         }
@@ -104,20 +115,18 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     SpeedModConv speedModConv;
     const bool is200 = Is200cc();
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isFroom = controller != nullptr &&
-                         (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     const System *system = System::sInstance;
-    const u16 customEngineClass = system->IsOfflineVS() ? System::offlineCustomEngineClass
-                                                        : (isFroom ? system->netMgr.hostCustomEngineClass : 0);
+    const u16 customEngineClass = system->IsOfflineVS() ? System::offlineCustomEngineClass : (isFroom ? system->netMgr.hostCustomEngineClass : 0);
     speedModConv.kmpValue = (KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->speedMod << 16);
-    if (speedModConv.speedMod == 0.0f) speedModConv.speedMod = 1.0f;
+    if (speedModConv.speedMod == 0.0f)
+        speedModConv.speedMod = 1.0f;
     float factor = 1.0f;
     if (gameType == GAMETYPE_ONLINE_SPECTATOR && System::sInstance->netMgr.region != 0x0C) {
         factor = 1.0f;
     } else if (customEngineClass >= 100) {
         const u16 cc = customEngineClass;
-        factor = cc <= 150 ? 0.9f + static_cast<float>(cc - 100) * 0.002f
-                           : 1.0f + static_cast<float>(cc - 150) * 0.01f;
+        factor = cc <= 150 ? 0.9f + static_cast<float>(cc - 100) * 0.002f : 1.0f + static_cast<float>(cc - 150) * 0.01f;
     } else if (is200 && System::sInstance->IsContext(Pulsar::PULSAR_500)) {
         factor = 2.66f;
     } else if (is200 && Racedata::sInstance->racesScenario.settings.engineClass == CC_50) {

@@ -26,8 +26,8 @@ public:
     void AfterControlUpdate() override;  // 0x4c 805e46c8
     const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805e6b14s
 
-    void SetMessage(const Mii &mii, u16 longitude, u16 latitude, u32 country, u32 msgBmgId, u32 messageType,
-                    const Mii &mii2, const PtmfHolder_1A<FriendMatchingPlayer, void, Mii &> *onMessageSent);  // 805e5a0c
+    void SetMessage(
+      const Mii &mii, u16 longitude, u16 latitude, u32 country, u32 msgBmgId, u32 messageType, const Mii &mii2, const PtmfHolder_1A<FriendMatchingPlayer, void, Mii &> *onMessageSent);  // 805e5a0c
     static u32 GetFriendActivityBMG(u32 friendStatus);  // 805e6744 I'm in a Worldwide VS Race!
 
     ManipulatorManager manipulatorManager;  // 0x44

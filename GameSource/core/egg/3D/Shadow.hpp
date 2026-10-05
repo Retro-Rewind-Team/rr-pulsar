@@ -6,8 +6,7 @@
 
 namespace EGG {
 
-class ShadowTexture {
-};
+class ShadowTexture {};
 
 class ShadowTextureManager {
     ShadowTextureManager();  // 8023ff24

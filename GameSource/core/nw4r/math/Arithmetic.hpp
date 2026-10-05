@@ -14,8 +14,12 @@ float FExp(float);
 float FLog(float);
 }  // namespace detail
 
-inline float FExp(float value) { return detail::FExp(value); }
-inline float FLog(float value) { return (value > 0.0f) ? detail::FLog(value) : NAN; }
+inline float FExp(float value) {
+    return detail::FExp(value);
+}
+inline float FLog(float value) {
+    return (value > 0.0f) ? detail::FLog(value) : NAN;
+}
 float FrSqrt(float);
 
 }  // namespace math

@@ -33,8 +33,7 @@ static_assert(sizeof(stat) == 88, "stat size");
 
 class SDIO : public IO {
 public:
-    SDIO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread)
-        : IO(type, heap, taskThread), isFolderOpen(false) {
+    SDIO(IOType type, EGG::Heap *heap, EGG::TaskThread *taskThread) : IO(type, heap, taskThread), isFolderOpen(false) {
         offset_assert(stat, st_mode, 8);
         offset_assert(file_struct, filesize, 0);
         fileNames = nullptr;

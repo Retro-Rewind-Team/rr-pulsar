@@ -46,11 +46,13 @@ void fillLeaderboardResult(CtrlRaceResult &result, u8 playerId) {
     const System *system = System::sInstance;
     const bool isKO = system->IsContext(PULSAR_MODE_KO);
     KO::Status koStatus = KO::NORMAL;
-    if (isKO) koStatus = system->koMgr->GetPlayerStatus(playerId);
+    if (isKO)
+        koStatus = system->koMgr->GetPlayerStatus(playerId);
 
     if (koStatus != KO::NORMAL && !hasLeaderboardDisplayToggled) {
         u32 bmgId = UI::BMG_KO_TIE;
-        if (koStatus == KO::KOD) bmgId = UI::BMG_KO_OUT;
+        if (koStatus == KO::KOD)
+            bmgId = UI::BMG_KO_OUT;
         result.SetTextBoxMessage("player_name", bmgId);
         result.ResetTextBoxMessage("time");
     } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_TIMES) {

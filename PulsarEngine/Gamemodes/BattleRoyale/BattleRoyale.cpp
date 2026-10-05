@@ -1,6 +1,8 @@
 #include <PulsarSystem.hpp>
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
+#include <Gamemodes/EliminationDisplay.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
+#include <Gamemodes/Spectating.hpp>
 #include <MarioKartWii/3D/Model/ModelDirector.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/Obj/ItemObj.hpp>
@@ -65,13 +67,15 @@ void EjectItemsFromItemDamage(u8 playerId);
 kmRuntimeUse(0x807a1ed8);
 
 static u8 GetBalloonCount(void *mgr, u8 playerId) {
-    if (mgr == nullptr || playerId >= maxPlayers) return 0;
+    if (mgr == nullptr || playerId >= maxPlayers)
+        return 0;
     const u8 *base = reinterpret_cast<const u8 *>(mgr);
     return base[balloonPlayerArrayOffset + playerId * balloonPlayerSize];
 }
 
 static u8 GetBalloonPoolCount(void *mgr) {
-    if (mgr == nullptr) return 0;
+    if (mgr == nullptr)
+        return 0;
     return reinterpret_cast<u8 *>(mgr)[2];
 }
 
@@ -102,10 +106,12 @@ static u32 GetBalloonMgrTime(void *mgr) {
 }
 
 static void LoadBalloonModel(void *mgr, u8 poolIdx) {
-    if (poolIdx >= maxBattleRoyaleBalloons || sLoadedBalloonModels[poolIdx]) return;
+    if (poolIdx >= maxBattleRoyaleBalloons || sLoadedBalloonModels[poolIdx])
+        return;
 
     void *balloon = GetBalloonFromPool(mgr, poolIdx);
-    if (balloon == nullptr) return;
+    if (balloon == nullptr)
+        return;
 
     void **vtable = *reinterpret_cast<void ***>(balloon);
     GeoObjectLoadFn load = reinterpret_cast<GeoObjectLoadFn>(vtable[0x20 / sizeof(void *)]);
@@ -118,53 +124,65 @@ static void ClearLoadedBalloonModels() {
 }
 
 static u8 GetBattleRoyaleBalloonPoolTeam(u8 poolIdx, u8 fallbackTeam) {
-    if (!ShouldApplyBattleRoyale()) return fallbackTeam;
+    if (!ShouldApplyBattleRoyale())
+        return fallbackTeam;
 
     const Racedata *racedata = Racedata::sInstance;
-    if (racedata == nullptr) return fallbackTeam;
+    if (racedata == nullptr)
+        return fallbackTeam;
 
     const u8 playerId = static_cast<u8>(poolIdx / 5);
-    if (playerId >= maxPlayers) return fallbackTeam;
+    if (playerId >= maxPlayers)
+        return fallbackTeam;
 
     u8 team = static_cast<u8>(racedata->racesScenario.players[playerId].team);
-    if (team > 1) team = 0;
+    if (team > 1)
+        team = 0;
     return team;
 }
 
 static void LoadStartingBalloonModels(void *mgr) {
-    if (mgr == nullptr) return;
+    if (mgr == nullptr)
+        return;
 
     const u8 playerCount = reinterpret_cast<u8 *>(mgr)[0];
     u8 modelsToLoad = static_cast<u8>(playerCount * preloadedBalloonsPerPlayer);
     const u8 poolCount = GetBalloonPoolCount(mgr);
-    if (modelsToLoad > poolCount) modelsToLoad = poolCount;
+    if (modelsToLoad > poolCount)
+        modelsToLoad = poolCount;
 
     for (u8 poolIdx = 0; poolIdx < modelsToLoad; ++poolIdx) LoadBalloonModel(mgr, poolIdx);
 }
 
 static void AddBattleRoyaleBalloons(RaceBalloonManager *mgr, u8 playerId, u8 teamId, u8 isInitial, int delay, u8 count, int interval) {
-    if (mgr == nullptr || playerId >= maxPlayers || count == 0) return;
-    if (teamId > 1) teamId = 0;
+    if (mgr == nullptr || playerId >= maxPlayers || count == 0)
+        return;
+    if (teamId > 1)
+        teamId = 0;
 
     u8 current = GetBalloonCount(mgr, playerId);
-    if (current >= 5) return;
-    if (count > 5 - current) count = static_cast<u8>(5 - current);
+    if (current >= 5)
+        return;
+    if (count > 5 - current)
+        count = static_cast<u8>(5 - current);
 
     const u8 poolCount = GetBalloonPoolCount(mgr);
     const u8 freePlayerId = reinterpret_cast<u8 *>(mgr)[0];
     const u32 time = GetBalloonMgrTime(mgr) + delay;
 
     for (u8 poolIdx = 0, added = 0; poolIdx < poolCount && added < count; ++poolIdx) {
-        if (GetBalloonPoolPlayerId(mgr, poolIdx) != freePlayerId ||
-            GetBattleRoyaleBalloonPoolTeam(poolIdx, GetBalloonPoolTeamId(mgr, poolIdx)) != teamId) {
+        if (GetBalloonPoolPlayerId(mgr, poolIdx) != freePlayerId || GetBattleRoyaleBalloonPoolTeam(poolIdx, GetBalloonPoolTeamId(mgr, poolIdx)) != teamId) {
             continue;
         }
 
-        if (poolIdx >= maxBattleRoyaleBalloons) continue;
+        if (poolIdx >= maxBattleRoyaleBalloons)
+            continue;
         LoadBalloonModel(mgr, poolIdx);
-        if (!sLoadedBalloonModels[poolIdx]) continue;
+        if (!sLoadedBalloonModels[poolIdx])
+            continue;
         void *balloon = GetBalloonFromPool(mgr, poolIdx);
-        if (balloon == nullptr) continue;
+        if (balloon == nullptr)
+            continue;
 
         const u8 balloonIndex = current++;
         reinterpret_cast<GeoObj::ObjBalloon *>(balloon)->OnAdd(time + added * interval, playerId, balloonIndex, isInitial);
@@ -178,11 +196,13 @@ static void AddBattleRoyaleBalloons(RaceBalloonManager *mgr, u8 playerId, u8 tea
 }
 
 static void AddBalloons(RaceBalloonManager *mgr, u8 playerId, u8 count) {
-    if (mgr == nullptr || playerId >= maxPlayers || count == 0) return;
+    if (mgr == nullptr || playerId >= maxPlayers || count == 0)
+        return;
 
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     u8 team = static_cast<u8>(scenario.players[playerId].team);
-    if (team > 1) team = 0;
+    if (team > 1)
+        team = 0;
 
     if (ShouldApplyBattleRoyale()) {
         AddBattleRoyaleBalloons(mgr, playerId, team, 1, 0, count, 0);
@@ -195,22 +215,28 @@ static void AddBalloons(RaceBalloonManager *mgr, u8 playerId, u8 count) {
 static u8 GetStartingBalloonCountSetting() {
     const System *system = System::sInstance;
     if (system != nullptr) {
-        if (system->IsContext(PULSAR_KOPERRACE_4)) return 4;
-        if (system->IsContext(PULSAR_KOPERRACE_3)) return 3;
-        if (system->IsContext(PULSAR_KOPERRACE_2)) return 2;
+        if (system->IsContext(PULSAR_KOPERRACE_4))
+            return 4;
+        if (system->IsContext(PULSAR_KOPERRACE_3))
+            return 3;
+        if (system->IsContext(PULSAR_KOPERRACE_2))
+            return 2;
     }
     return 1;
 }
 
 static void StartBalloonLossBlink(u8 playerId) {
     Raceinfo *raceinfo = Raceinfo::sInstance;
-    if (raceinfo == nullptr || !raceinfo->IsAtLeastStage(RACESTAGE_RACE)) return;
+    if (raceinfo == nullptr || !raceinfo->IsAtLeastStage(RACESTAGE_RACE))
+        return;
 
     Kart::Manager *kartMgr = Kart::Manager::sInstance;
-    if (kartMgr == nullptr || playerId >= kartMgr->playerCount) return;
+    if (kartMgr == nullptr || playerId >= kartMgr->playerCount)
+        return;
 
     Kart::Player *player = kartMgr->GetKartPlayer(playerId);
-    if (player == nullptr) return;
+    if (player == nullptr)
+        return;
 
     RacedataSettings &settings = Racedata::sInstance->racesScenario.settings;
     const GameMode prevMode = settings.gamemode;
@@ -229,17 +255,20 @@ static void StartBalloonLossBlink(u8 playerId) {
 }
 
 static void EnableSecondKartModelDrawIfReady(ModelDirector *model, bool enable) {
-    if (model == nullptr || model->scnMdlEx[0] == nullptr || model->scnMdlEx[1] == nullptr) return;
+    if (model == nullptr || model->scnMdlEx[0] == nullptr || model->scnMdlEx[1] == nullptr)
+        return;
     model->EnableDraw(enable);
 }
 kmCall(0x80592ec8, EnableSecondKartModelDrawIfReady);
 
 static bool RemoveBalloon(RaceBalloonManager *mgr, u8 playerId) {
-    if (mgr == nullptr || playerId >= maxPlayers || GetBalloonCount(mgr, playerId) == 0) return false;
+    if (mgr == nullptr || playerId >= maxPlayers || GetBalloonCount(mgr, playerId) == 0)
+        return false;
 
     const u8 previousBalloonCount = GetBalloonCount(mgr, playerId);
     mgr->Remove(playerId, 1, 1, 0, 1, 0);
-    if (GetBalloonCount(mgr, playerId) >= previousBalloonCount) return false;
+    if (GetBalloonCount(mgr, playerId) >= previousBalloonCount)
+        return false;
 
     StartBalloonLossBlink(playerId);
     return true;
@@ -252,16 +281,20 @@ static bool IsOnline() {
 
 static bool IsLocalPlayer(u8 playerId) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE) return true;
-    if (playerId >= maxPlayers) return false;
+    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE)
+        return true;
+    if (playerId >= maxPlayers)
+        return false;
     return controller->aidsBelongingToPlayerIds[playerId] == controller->subs[controller->currentSub].localAid;
 }
 
 static void QueueBalloonEvent(u8 eventPlayerId) {
-    if (!IsOnline()) return;
+    if (!IsOnline())
+        return;
 
     ++sLocalBalloonLossSeq;
-    if (sLocalBalloonLossSeq == 0) ++sLocalBalloonLossSeq;
+    if (sLocalBalloonLossSeq == 0)
+        ++sLocalBalloonLossSeq;
 
     u8 writeIdx = sPendingBalloonEventWriteIdx;
     if (sPendingBalloonEventSize == pendingBalloonEventCount) {
@@ -277,20 +310,24 @@ static void QueueBalloonEvent(u8 eventPlayerId) {
 }
 
 static void QueueLocalBalloonLoss(u8 playerId) {
-    if (!IsLocalPlayer(playerId)) return;
+    if (!IsLocalPlayer(playerId))
+        return;
     QueueBalloonEvent(playerId);
 }
 
 static void QueueBalloonMoveFromLocalLoss(u8 losingPlayerId, u8 gainingPlayerId) {
-    if (losingPlayerId >= maxPlayers || gainingPlayerId >= maxPlayers) return;
+    if (losingPlayerId >= maxPlayers || gainingPlayerId >= maxPlayers)
+        return;
     QueueBalloonEvent(static_cast<u8>(balloonMoveEventBase + losingPlayerId * maxPlayers + gainingPlayerId));
 }
 
 static u8 GetPackedLocalBalloonCounts(RaceBalloonManager *balloonMgr) {
-    if (balloonMgr == nullptr) return 0xFF;
+    if (balloonMgr == nullptr)
+        return 0xFF;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE) return 0xFF;
+    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE)
+        return 0xFF;
 
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     u8 packed = 0xFF;
@@ -298,10 +335,12 @@ static u8 GetPackedLocalBalloonCounts(RaceBalloonManager *balloonMgr) {
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
 
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && localIdx < 2; ++playerId) {
-        if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid) continue;
+        if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid)
+            continue;
 
         u8 count = GetBalloonCount(balloonMgr, playerId);
-        if (count > 5) count = 5;
+        if (count > 5)
+            count = 5;
         if (localIdx == 0) {
             packed = static_cast<u8>((packed & 0xF0) | count);
         } else {
@@ -324,14 +363,16 @@ static void WriteLocalFinishTimes(Network::PulRH1 &packet) {
 
     const Raceinfo *raceinfo = Raceinfo::sInstance;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (raceinfo == nullptr || controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE) return;
+    if (raceinfo == nullptr || controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE)
+        return;
 
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     u8 localIdx = 0;
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
 
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && localIdx < 2; ++playerId) {
-        if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid) continue;
+        if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid)
+            continue;
 
         const RaceinfoPlayer *player = raceinfo->players[playerId];
         if (player != nullptr && player->raceFinishTime != nullptr && player->raceFinishTime->isActive) {
@@ -364,28 +405,33 @@ static u16 GetCurrentRaceFrames() {
 }
 
 static bool HasPoweredHitLossThisFrame(u8 playerId) {
-    if (playerId >= maxPlayers) return false;
+    if (playerId >= maxPlayers)
+        return false;
     return sPoweredHitLossFrame[playerId] == GetCurrentRaceFrames();
 }
 
 static bool HasMushroomStolenFromVictim(u8 gainingPlayerId, u8 losingPlayerId) {
-    if (gainingPlayerId >= maxPlayers || losingPlayerId >= maxPlayers) return true;
+    if (gainingPlayerId >= maxPlayers || losingPlayerId >= maxPlayers)
+        return true;
     return (sMushroomStealVictimMask[gainingPlayerId] & (1 << losingPlayerId)) != 0;
 }
 
 static bool IsMushroomStealVictimProtected(u8 playerId) {
     Kart::Manager *kartMgr = Kart::Manager::sInstance;
-    if (kartMgr == nullptr || playerId >= kartMgr->playerCount) return true;
+    if (kartMgr == nullptr || playerId >= kartMgr->playerCount)
+        return true;
 
     Kart::Player *player = kartMgr->GetKartPlayer(playerId);
-    if (player == nullptr || player->pointers.kartStatus == nullptr) return true;
+    if (player == nullptr || player->pointers.kartStatus == nullptr)
+        return true;
 
     const Kart::Status &status = *player->pointers.kartStatus;
     return (status.bitfield1 & 0x80000000) != 0 || (status.bitfield2 & 0x8000) != 0;
 }
 
 static void RecordMushroomStealVictim(u8 gainingPlayerId, u8 losingPlayerId) {
-    if (gainingPlayerId >= maxPlayers || losingPlayerId >= maxPlayers) return;
+    if (gainingPlayerId >= maxPlayers || losingPlayerId >= maxPlayers)
+        return;
     sMushroomStealVictimMask[gainingPlayerId] |= 1 << losingPlayerId;
     sMushroomStealVictimTimers[gainingPlayerId][losingPlayerId] = mushroomStealLockFrames;
 }
@@ -394,30 +440,38 @@ static void UpdateMushroomStealVictimMasks() {
     for (u8 gainingPlayerId = 0; gainingPlayerId < maxPlayers; ++gainingPlayerId) {
         for (u8 losingPlayerId = 0; losingPlayerId < maxPlayers; ++losingPlayerId) {
             u8 &timer = sMushroomStealVictimTimers[gainingPlayerId][losingPlayerId];
-            if (timer == 0) continue;
+            if (timer == 0)
+                continue;
 
             --timer;
-            if (timer == 0) sMushroomStealVictimMask[gainingPlayerId] &= ~(1 << losingPlayerId);
+            if (timer == 0)
+                sMushroomStealVictimMask[gainingPlayerId] &= ~(1 << losingPlayerId);
         }
     }
 }
 
 static void RemovePoweredHitBalloon(u8 playerId) {
-    if (!ShouldApplyBattleRoyale() || playerId >= maxPlayers) return;
-    if (HasPoweredHitLossThisFrame(playerId)) return;
+    if (!ShouldApplyBattleRoyale() || playerId >= maxPlayers)
+        return;
+    if (HasPoweredHitLossThisFrame(playerId))
+        return;
 
-    if (!RemoveBalloon(RaceBalloonManager::sInstance, playerId)) return;
+    if (!RemoveBalloon(RaceBalloonManager::sInstance, playerId))
+        return;
     QueueLocalBalloonLoss(playerId);
     sPoweredHitLossFrame[playerId] = GetCurrentRaceFrames();
 }
 
 static bool MoveBalloon(RaceBalloonManager *mgr, u8 toPlayer, u8 fromPlayer) {
-    if (mgr == nullptr || toPlayer >= maxPlayers || fromPlayer >= maxPlayers) return false;
-    if (GetBalloonCount(mgr, fromPlayer) == 0) return false;
+    if (mgr == nullptr || toPlayer >= maxPlayers || fromPlayer >= maxPlayers)
+        return false;
+    if (GetBalloonCount(mgr, fromPlayer) == 0)
+        return false;
 
     const u8 previousBalloonCount = GetBalloonCount(mgr, fromPlayer);
     mgr->Move(toPlayer, fromPlayer, 0, 1, 0);
-    if (GetBalloonCount(mgr, fromPlayer) >= previousBalloonCount) return false;
+    if (GetBalloonCount(mgr, fromPlayer) >= previousBalloonCount)
+        return false;
 
     StartBalloonLossBlink(fromPlayer);
     return true;
@@ -425,7 +479,8 @@ static bool MoveBalloon(RaceBalloonManager *mgr, u8 toPlayer, u8 fromPlayer) {
 
 static void ClearActiveGoldenMushroom(u8 playerId) {
     Item::Manager *itemMgr = Item::Manager::sInstance;
-    if (itemMgr == nullptr || playerId >= itemMgr->playerCount) return;
+    if (itemMgr == nullptr || playerId >= itemMgr->playerCount)
+        return;
 
     Item::PlayerInventory &inventory = itemMgr->players[playerId].inventory;
     if (inventory.currentItemId == GOLDEN_MUSHROOM && inventory.hasGolden && inventory.goldenTimer != 0) {
@@ -437,10 +492,10 @@ static void AddStartingBalloons(RaceBalloonManager *mgr, int playerId, u32 teamI
     if (ShouldApplyBattleRoyale()) {
         const u8 current = GetBalloonCount(mgr, static_cast<u8>(playerId));
         const u8 target = GetStartingBalloonCountSetting();
-        if (current >= target) return;
+        if (current >= target)
+            return;
 
-        AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay,
-                                static_cast<u8>(target - current), interval);
+        AddBattleRoyaleBalloons(mgr, static_cast<u8>(playerId), static_cast<u8>(teamId), static_cast<u8>(isInitial), delay, static_cast<u8>(target - current), interval);
         return;
     }
 
@@ -450,17 +505,18 @@ kmCall(0x80869ba8, AddStartingBalloons);
 
 bool ShouldApplyBattleRoyale() {
     const System *system = System::sInstance;
-    if (system == nullptr || !system->IsContext(PULSAR_MODE_BATTLEROYALE)) return false;
+    if (system == nullptr || !system->IsContext(PULSAR_MODE_BATTLEROYALE))
+        return false;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return false;
-    return controller->roomType == RKNet::ROOMTYPE_NONE ||
-           controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-           controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    if (controller == nullptr)
+        return false;
+    return controller->roomType == RKNet::ROOMTYPE_NONE || controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
 }
 
 static void CallRaceModeHit(void *raceMode, u32 vtableOffset, u32 firstPlayerId, u32 secondPlayerId) {
-    if (raceMode == nullptr) return;
+    if (raceMode == nullptr)
+        return;
     void **vtable = *reinterpret_cast<void ***>(raceMode);
     RaceModeHitFn fn = reinterpret_cast<RaceModeHitFn>(vtable[vtableOffset / sizeof(void *)]);
     fn(raceMode, firstPlayerId, secondPlayerId);
@@ -468,22 +524,28 @@ static void CallRaceModeHit(void *raceMode, u32 vtableOffset, u32 firstPlayerId,
 
 static bool IsPlayerFinished(const Raceinfo &raceinfo, u8 playerId) {
     RaceinfoPlayer *player = raceinfo.players[playerId];
-    if (player == nullptr) return false;
+    if (player == nullptr)
+        return false;
     return (player->stateFlags & 0x2) != 0;
 }
 
 static bool IsPlayerEliminated(u8 playerId) {
-    if (!ShouldApplyBattleRoyale() || playerId >= maxPlayers) return false;
+    if (!ShouldApplyBattleRoyale() || playerId >= maxPlayers)
+        return false;
     const System *system = System::sInstance;
-    if (system != nullptr && system->lapKoMgr != nullptr && !system->lapKoMgr->IsActive(playerId)) return true;
+    if (system != nullptr && system->lapKoMgr != nullptr && !system->lapKoMgr->IsActive(playerId))
+        return true;
     const Raceinfo *raceinfo = Raceinfo::sInstance;
-    if (raceinfo != nullptr && IsPlayerFinished(*raceinfo, playerId)) return true;
+    if (raceinfo != nullptr && IsPlayerFinished(*raceinfo, playerId))
+        return true;
     return GetBalloonCount(RaceBalloonManager::sInstance, playerId) == 0;
 }
 
 static void StartOobWipeWithoutEliminatedPlayers(Kart::Link *link, u32 state) {
-    if (link == nullptr || link->pointers == nullptr || link->pointers->camera == nullptr) return;
-    if (IsPlayerEliminated(link->GetPlayerIdx())) return;
+    if (link == nullptr || link->pointers == nullptr || link->pointers->camera == nullptr)
+        return;
+    if (IsPlayerEliminated(link->GetPlayerIdx()))
+        return;
     link->pointers->kartStatus->StartOobWipe(state);
 }
 kmCall(0x80573f88, StartOobWipeWithoutEliminatedPlayers);
@@ -493,18 +555,22 @@ kmCall(0x80598508, StartOobWipeWithoutEliminatedPlayers);
 kmCall(0x805986cc, StartOobWipeWithoutEliminatedPlayers);
 
 static bool IsPlayerOnlineRaceComplete(const Raceinfo &raceinfo, u8 playerId) {
-    if (!IsOnline()) return false;
+    if (!IsOnline())
+        return false;
 
     RaceinfoPlayer *player = raceinfo.players[playerId];
-    if (player == nullptr) return false;
+    if (player == nullptr)
+        return false;
     return IsPlayerFinished(raceinfo, playerId) && player->currentLap >= player->maxLap;
 }
 
 static bool AreOnSameBattleRoyaleTeam(u8 firstPlayerId, u8 secondPlayerId) {
-    if (firstPlayerId >= maxPlayers || secondPlayerId >= maxPlayers) return false;
+    if (firstPlayerId >= maxPlayers || secondPlayerId >= maxPlayers)
+        return false;
 
     const Racedata *racedata = Racedata::sInstance;
-    if (racedata == nullptr) return false;
+    if (racedata == nullptr)
+        return false;
 
     const System *system = System::sInstance;
     UI::ExtendedTeamManager *extendedTeamMgr = UI::ExtendedTeamManager::sInstance;
@@ -513,7 +579,8 @@ static bool AreOnSameBattleRoyaleTeam(u8 firstPlayerId, u8 secondPlayerId) {
         return firstTeam != UI::TEAM_COUNT && firstTeam == extendedTeamMgr->GetPlayerTeam(secondPlayerId);
     }
 
-    if ((racedata->racesScenario.settings.modeFlags & UI::ExtendedTeamManager::TEAM_MODE_FLAG) == 0) return false;
+    if ((racedata->racesScenario.settings.modeFlags & UI::ExtendedTeamManager::TEAM_MODE_FLAG) == 0)
+        return false;
 
     const Team firstTeam = racedata->racesScenario.players[firstPlayerId].team;
     return firstTeam != TEAM_NONE && firstTeam == racedata->racesScenario.players[secondPlayerId].team;
@@ -528,15 +595,20 @@ static void OnRemoveHit(void *raceMode, u32 hitterPlayerId, u32 hittedPlayerId) 
         return;
     }
 
-    if (hitterPlayerId == hittedPlayerId) return;
-    if (AreOnSameBattleRoyaleTeam(static_cast<u8>(hitterPlayerId), static_cast<u8>(hittedPlayerId))) return;
-    if (HasPoweredHitLossThisFrame(static_cast<u8>(hittedPlayerId))) return;
-    if (IsOnline() && !IsLocalPlayer(static_cast<u8>(hittedPlayerId))) return;
-    if (IsPlayerFinished(*Raceinfo::sInstance, static_cast<u8>(hittedPlayerId))) return;
-    if (*reinterpret_cast<ItemObjId *>(itemObj + 0x4) == OBJ_BLUE_SHELL &&
-        GetBalloonCount(RaceBalloonManager::sInstance, static_cast<u8>(hittedPlayerId)) == 1)
+    if (hitterPlayerId == hittedPlayerId)
         return;
-    if (!RemoveBalloon(RaceBalloonManager::sInstance, static_cast<u8>(hittedPlayerId))) return;
+    if (AreOnSameBattleRoyaleTeam(static_cast<u8>(hitterPlayerId), static_cast<u8>(hittedPlayerId)))
+        return;
+    if (HasPoweredHitLossThisFrame(static_cast<u8>(hittedPlayerId)))
+        return;
+    if (IsOnline() && !IsLocalPlayer(static_cast<u8>(hittedPlayerId)))
+        return;
+    if (IsPlayerFinished(*Raceinfo::sInstance, static_cast<u8>(hittedPlayerId)))
+        return;
+    if (*reinterpret_cast<ItemObjId *>(itemObj + 0x4) == OBJ_BLUE_SHELL && GetBalloonCount(RaceBalloonManager::sInstance, static_cast<u8>(hittedPlayerId)) == 1)
+        return;
+    if (!RemoveBalloon(RaceBalloonManager::sInstance, static_cast<u8>(hittedPlayerId)))
+        return;
     QueueLocalBalloonLoss(static_cast<u8>(hittedPlayerId));
 }
 
@@ -546,28 +618,39 @@ static void OnMoveHit(void *raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
         return;
     }
 
-    if (losingPlayerId == gainingPlayerId) return;
-    if (HasPoweredHitLossThisFrame(static_cast<u8>(losingPlayerId))) return;
+    if (losingPlayerId == gainingPlayerId)
+        return;
+    if (HasPoweredHitLossThisFrame(static_cast<u8>(losingPlayerId)))
+        return;
 
     RaceBalloonManager *balloonMgr = RaceBalloonManager::sInstance;
     const u8 losingPlayer = static_cast<u8>(losingPlayerId);
     const u8 gainingPlayer = static_cast<u8>(gainingPlayerId);
-    if (AreOnSameBattleRoyaleTeam(losingPlayer, gainingPlayer)) return;
-    if (HasMushroomStolenFromVictim(gainingPlayer, losingPlayer)) return;
+    if (AreOnSameBattleRoyaleTeam(losingPlayer, gainingPlayer))
+        return;
+    if (HasMushroomStolenFromVictim(gainingPlayer, losingPlayer))
+        return;
 
-    if (IsOnline() && !IsLocalPlayer(losingPlayer)) return;
+    if (IsOnline() && !IsLocalPlayer(losingPlayer))
+        return;
 
     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
-    if (previousBalloonCount <= 1) return;
-    if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer)) return;
-    if (IsMushroomStealVictimProtected(losingPlayer)) return;
+    if (previousBalloonCount <= 1)
+        return;
+    if (IsPlayerFinished(*Raceinfo::sInstance, losingPlayer))
+        return;
+    if (IsMushroomStealVictimProtected(losingPlayer))
+        return;
 
-    if (!MoveBalloon(balloonMgr, gainingPlayer, losingPlayer)) return;
+    if (!MoveBalloon(balloonMgr, gainingPlayer, losingPlayer))
+        return;
 
     RecordMushroomStealVictim(gainingPlayer, losingPlayer);
-    if (IsOnline()) QueueBalloonMoveFromLocalLoss(losingPlayer, gainingPlayer);
+    if (IsOnline())
+        QueueBalloonMoveFromLocalLoss(losingPlayer, gainingPlayer);
 
-    if (IsLocalPlayer(gainingPlayer)) ClearActiveGoldenMushroom(gainingPlayer);
+    if (IsLocalPlayer(gainingPlayer))
+        ClearActiveGoldenMushroom(gainingPlayer);
 }
 
 static void OnMoveHitFromRemoveCall(void *raceMode, u32 firstPlayerId, u32 secondPlayerId) {
@@ -580,10 +663,12 @@ static void OnMoveHitFromRemoveCall(void *raceMode, u32 firstPlayerId, u32 secon
 }
 
 static void FinishPoweredHitAction(void *action, u32 sourcePlayerObjId) {
-    if (sourcePlayerObjId >= maxPlayers) return;
+    if (sourcePlayerObjId >= maxPlayers)
+        return;
 
     const u8 playerId = reinterpret_cast<Kart::Link *>(action)->GetPlayerIdx();
-    if (AreOnSameBattleRoyaleTeam(playerId, static_cast<u8>(sourcePlayerObjId))) return;
+    if (AreOnSameBattleRoyaleTeam(playerId, static_cast<u8>(sourcePlayerObjId)))
+        return;
     RemovePoweredHitBalloon(playerId);
 }
 
@@ -643,8 +728,10 @@ static asmFunc ForceItemCollisionModeWhenBattleRoyale() {
         beq vanilla;
         li r4, 3;
         blr;
-        vanilla : lwz r4, 0xb70(r5);
-        blr;)
+    vanilla:
+        lwz r4, 0xb70(r5);
+        blr;
+    )
 }
 kmCall(0x80572814, ForceItemCollisionModeWhenBattleRoyale);
 
@@ -657,8 +744,10 @@ static asmFunc CompareKartCollisionModeWhenBattleRoyale() {
         beq vanilla;
         cmpwi r29, 1;
         blr;
-        vanilla : cmpwi r29, 0;
-        blr;)
+    vanilla:
+        cmpwi r29, 0;
+        blr;
+    )
 }
 kmCall(0x80570100, CompareKartCollisionModeWhenBattleRoyale);
 kmCall(0x80570494, CompareKartCollisionModeWhenBattleRoyale);
@@ -674,8 +763,10 @@ static asmFunc ForceKartCollisionBattleTypeWhenBattleRoyale() {
         beq vanilla;
         li r5, 3;
         blr;
-        vanilla : lwz r5, 0xb70(r4);
-        blr;)
+    vanilla:
+        lwz r5, 0xb70(r4);
+        blr;
+    )
 }
 kmCall(0x8057012c, ForceKartCollisionBattleTypeWhenBattleRoyale);
 kmCall(0x805704c4, ForceKartCollisionBattleTypeWhenBattleRoyale);
@@ -692,12 +783,14 @@ static asmFunc SetBalloonPoolCount() {
         cmpwi r12, 0;
         bnelr;
         rlwinm r0, r0, 1, 24, 30;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x808698c8, SetBalloonPoolCount);
 
 static void LoadConstructedBalloonModel(GeoObj::ObjBalloon *balloon) {
-    if (sCreatingBattleRoyaleBalloonManager) return;
+    if (sCreatingBattleRoyaleBalloonManager)
+        return;
 
     void **vtable = *reinterpret_cast<void ***>(balloon);
     GeoObjectLoadFn load = reinterpret_cast<GeoObjectLoadFn>(vtable[0x20 / sizeof(void *)]);
@@ -795,8 +888,7 @@ static void DestroyBattleRoyaleItemOnFallBoundary(Item::Obj *itemObj) {
     ItemCollisionUpdateFn original = reinterpret_cast<ItemCollisionUpdateFn>(kmRuntimeAddr(0x807a1ed8));
     original(itemObj);
 
-    if (!ShouldApplyBattleRoyale() || itemObj->itemObjId == OBJ_BLUE_SHELL || !IsTouchingFallBoundary(*itemObj) ||
-        (itemObj->bitfield74 & 1) != 0)
+    if (!ShouldApplyBattleRoyale() || itemObj->itemObjId == OBJ_BLUE_SHELL || !IsTouchingFallBoundary(*itemObj) || (itemObj->bitfield74 & 1) != 0)
         return;
     itemObj->DisappearDueToExcess(true);
 }
@@ -805,7 +897,8 @@ kmCall(0x8079f560, DestroyBattleRoyaleItemOnFallBoundary);
 
 // Original code by CLF78
 static void DisableItemPoof(Item::Obj *itemObj) {
-    if (ShouldApplyBattleRoyale() && !IsTouchingFallBoundary(*itemObj)) return;
+    if (ShouldApplyBattleRoyale() && !IsTouchingFallBoundary(*itemObj))
+        return;
     itemObj->TryDisappearDueToExcess();
 }
 kmCall(0x807965c0, DisableItemPoof);
@@ -861,19 +954,21 @@ static void InitForRace(LapKO::Mgr &lapKoMgr, RaceBalloonManager *balloonMgr) {
 }
 
 static void EndRaceForElimination(u8 playerId) {
-    if (playerId >= maxPlayers || sEliminationCount >= maxPlayers) return;
+    if (playerId >= maxPlayers || sEliminationCount >= maxPlayers)
+        return;
     ++sEliminationCount;
 
     const System *system = System::sInstance;
     u8 playerCount = system == nullptr ? maxPlayers : system->nonTTGhostPlayersCount;
-    if (playerCount > maxPlayers) playerCount = maxPlayers;
+    if (playerCount > maxPlayers)
+        playerCount = maxPlayers;
 
     const u8 placement = static_cast<u8>(playerCount - sEliminationCount + 1);
     LapKO::EndRaceWithEliminationFinishTime(playerId, placement);
 }
 
 static void TickLapKoPieces(LapKO::Mgr &lapKoMgr, Raceinfo &raceinfo) {
-    lapKoMgr.TickEliminationDisplay();
+    EliminationDisplay::Tick();
 
     RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
@@ -882,10 +977,7 @@ static void TickLapKoPieces(LapKO::Mgr &lapKoMgr, Raceinfo &raceinfo) {
         lapKoMgr.HostMonitorDisconnects(*controller, sub);
     }
 
-    if (lapKoMgr.isSpectating) {
-        lapKoMgr.UpdateSpectatorInputs(raceinfo);
-        lapKoMgr.MaintainSpectatorView(raceinfo);
-    }
+    Spectating::Update(raceinfo);
 
     lapKoMgr.ProcessPendingItemReweight();
 }
@@ -916,7 +1008,8 @@ static u8 GetSoleActiveUnfinishedPlayer(const LapKO::Mgr &lapKoMgr, const Racein
     u8 remainingCount = 0;
 
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers; ++playerId) {
-        if (!lapKoMgr.IsActive(playerId) || IsPlayerFinished(raceinfo, playerId)) continue;
+        if (!lapKoMgr.IsActive(playerId) || IsPlayerFinished(raceinfo, playerId))
+            continue;
         remainingPlayerId = playerId;
         ++remainingCount;
     }
@@ -926,28 +1019,33 @@ static u8 GetSoleActiveUnfinishedPlayer(const LapKO::Mgr &lapKoMgr, const Racein
 
 static void FinishSoleActiveUnfinishedPlayer(LapKO::Mgr &lapKoMgr, Raceinfo &raceinfo) {
     const u8 playerId = GetSoleActiveUnfinishedPlayer(lapKoMgr, raceinfo);
-    if (playerId >= maxPlayers) return;
+    if (playerId >= maxPlayers)
+        return;
 
     RaceinfoPlayer *player = raceinfo.players[playerId];
-    if (player == nullptr) return;
+    if (player == nullptr)
+        return;
 
     Timer now(false);
     raceinfo.CloneTimer(&now);
     now.SetActive(true);
     player->EndRace(now, false, 0);
     raceinfo.EndPlayerRace(playerId);
-    if (IsOnline()) raceinfo.CheckEndRaceOnline(playerId);
+    if (IsOnline())
+        raceinfo.CheckEndRaceOnline(playerId);
     lapKoMgr.raceFinished = true;
 }
 
 static void ApplyRemoteFinishTimes(RKNet::Controller &controller, u8 aid, const Network::PulRH1 &packet) {
     Raceinfo *raceinfo = Raceinfo::sInstance;
-    if (raceinfo == nullptr || packet.battleRoyaleFinishMask == 0) return;
+    if (raceinfo == nullptr || packet.battleRoyaleFinishMask == 0)
+        return;
 
     u8 remotePlayerIdx = 0;
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && remotePlayerIdx < 2; ++playerId) {
-        if (controller.aidsBelongingToPlayerIds[playerId] != aid) continue;
+        if (controller.aidsBelongingToPlayerIds[playerId] != aid)
+            continue;
 
         if ((packet.battleRoyaleFinishMask & (1 << remotePlayerIdx)) != 0) {
             RaceinfoPlayer *player = raceinfo->players[playerId];
@@ -964,18 +1062,23 @@ static void ApplyRemoteFinishTimes(RKNet::Controller &controller, u8 aid, const 
 }
 
 static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNet::ControllerSub &sub, RaceBalloonManager *balloonMgr) {
-    if (!IsOnline()) return;
+    if (!IsOnline())
+        return;
 
     for (u8 aid = 0; aid < maxPlayers; ++aid) {
-        if (aid == sub.localAid) continue;
-        if ((sub.availableAids & (1 << aid)) == 0) continue;
+        if (aid == sub.localAid)
+            continue;
+        if ((sub.availableAids & (1 << aid)) == 0)
+            continue;
 
         const u32 bufferIdx = controller.lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
         RKNet::SplitRACEPointers *split = controller.splitReceivedRACEPackets[bufferIdx][aid];
-        if (split == nullptr) continue;
+        if (split == nullptr)
+            continue;
 
         const RKNet::PacketHolder<Network::PulRH1> *holder = split->GetPacketHolder<Network::PulRH1>();
-        if (holder == nullptr || holder->packetSize < Network::PulRH1SizeFull) continue;
+        if (holder == nullptr || holder->packetSize < Network::PulRH1SizeFull)
+            continue;
 
         const Network::PulRH1 *packet = holder->packet;
         ApplyRemoteFinishTimes(controller, aid, *packet);
@@ -988,13 +1091,13 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNe
                 const u8 move = eventPlayerId - balloonMoveEventBase;
                 const u8 losingPlayerId = move / maxPlayers;
                 const u8 gainingPlayerId = move % maxPlayers;
-                if (losingPlayerId < maxPlayers && gainingPlayerId < maxPlayers &&
-                    controller.aidsBelongingToPlayerIds[losingPlayerId] == aid &&
-                    !HasMushroomStolenFromVictim(gainingPlayerId, losingPlayerId)) {
+                if (losingPlayerId < maxPlayers && gainingPlayerId < maxPlayers && controller.aidsBelongingToPlayerIds[losingPlayerId] == aid
+                  && !HasMushroomStolenFromVictim(gainingPlayerId, losingPlayerId)) {
                     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayerId);
                     if (previousBalloonCount > 1 && MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId)) {
                         RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
-                        if (IsLocalPlayer(gainingPlayerId)) ClearActiveGoldenMushroom(gainingPlayerId);
+                        if (IsLocalPlayer(gainingPlayerId))
+                            ClearActiveGoldenMushroom(gainingPlayerId);
                     }
                 }
             } else if (eventPlayerId < maxPlayers && controller.aidsBelongingToPlayerIds[eventPlayerId] == aid) {
@@ -1003,12 +1106,14 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNe
         }
 
         const u8 packedCounts = packet->battleRoyaleBalloonCounts;
-        if (packedCounts == 0xFF) continue;
+        if (packedCounts == 0xFF)
+            continue;
 
         u8 remotePlayerIdx = 0;
         const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
         for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && remotePlayerIdx < 2; ++playerId) {
-            if (controller.aidsBelongingToPlayerIds[playerId] != aid) continue;
+            if (controller.aidsBelongingToPlayerIds[playerId] != aid)
+                continue;
 
             const u8 target = (remotePlayerIdx == 0) ? static_cast<u8>(packedCounts & 0x0F) : static_cast<u8>((packedCounts >> 4) & 0x0F);
             if (target <= 5) {
@@ -1016,13 +1121,16 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNe
                 while (current < target) {
                     AddBalloons(balloonMgr, playerId, 1);
                     const u8 next = GetBalloonCount(balloonMgr, playerId);
-                    if (next <= current) break;
+                    if (next <= current)
+                        break;
                     current = next;
                 }
                 while (current > target) {
-                    if (!RemoveBalloon(balloonMgr, playerId)) break;
+                    if (!RemoveBalloon(balloonMgr, playerId))
+                        break;
                     const u8 next = GetBalloonCount(balloonMgr, playerId);
-                    if (next >= current) break;
+                    if (next >= current)
+                        break;
                     current = next;
                 }
             }
@@ -1032,7 +1140,8 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNe
 }
 
 static void TickLocalBalloonEvents() {
-    if (sPendingBalloonEventSize == 0) return;
+    if (sPendingBalloonEventSize == 0)
+        return;
 
     u8 &timer = sPendingBalloonEventTimer[sPendingBalloonEventReadIdx];
     if (timer > 0) {
@@ -1057,10 +1166,12 @@ static void FrameUpdate() {
     System *system = System::sInstance;
     LapKO::Mgr *lapKoMgr = system->lapKoMgr;
     Raceinfo *raceinfo = Raceinfo::sInstance;
-    if (lapKoMgr == nullptr || raceinfo == nullptr) return;
+    if (lapKoMgr == nullptr || raceinfo == nullptr)
+        return;
 
     RaceBalloonManager *balloonMgr = RaceBalloonManager::sInstance;
-    if (balloonMgr == nullptr) return;
+    if (balloonMgr == nullptr)
+        return;
 
     if (sLastRaceFrames != 0xffff && raceinfo->raceFrames < sLastRaceFrames) {
         sInitialized = false;
@@ -1071,7 +1182,8 @@ static void FrameUpdate() {
         InitForRace(*lapKoMgr, balloonMgr);
     }
 
-    if (!sInitialized) return;
+    if (!sInitialized)
+        return;
 
     TickLapKoPieces(*lapKoMgr, *raceinfo);
 

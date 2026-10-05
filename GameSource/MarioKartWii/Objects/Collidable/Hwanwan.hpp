@@ -22,8 +22,7 @@ public:
     void UpdateModelMatrix() override;  // 0x6c 806ec74c
     void UpdateShadow() override;  // 0x70 806ebe90
     ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 806e9cac
-    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
-                                         ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806e9d6c
+    ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) override;  // 0xc4 806e9d6c
 
     // StatePtmfTrigger vtable 808c7640 at 0xb0
     //~HwanwanBall() override; thunk 806ec7c0

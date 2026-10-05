@@ -24,7 +24,9 @@ public:
     UIControl *CreateExternalControl(u32 id) override;  // 0x84
     UIControl *CreateControl(u32 id) override;  // 0x88
     void SetButtonHandlers(PushButton &button) override;  // 80853aac 0x8C
-    static inline Team GetPlayerTeam(u8 teamsArrayIdx) { return static_cast<Team>(teams[teamsArrayIdx]); }
+    static inline Team GetPlayerTeam(u8 teamsArrayIdx) {
+        return static_cast<Team>(teams[teamsArrayIdx]);
+    }
 
 private:
     void OnArrowClick(PushButton &button, u32 hudSlotId);

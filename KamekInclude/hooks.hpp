@@ -11,28 +11,20 @@
 #define kctInjectCall 4
 #define kctPatchExit 5
 
-#define kmIdentifier(key, counter) \
-    _k##key##counter
+#define kmIdentifier(key, counter) _k##key##counter
 #ifndef __INTELLISENSE__
-#define kmHookInt(counter) \
-    __declspec(section ".kamek") static const unsigned int kmIdentifier(Hook, counter)
+#define kmHookInt(counter) __declspec(section ".kamek") static const unsigned int kmIdentifier(Hook, counter)
 #else
-#define kmHookInt(counter) \
-    static const unsigned int kmIdentifier(Hook, counter)
+#define kmHookInt(counter) static const unsigned int kmIdentifier(Hook, counter)
 #endif
 
 // general hook definition macros
 // TODO: debugging data (file, line, ...) for diagnostic use by Kamek maybe? :3
-#define kmHook0(type) \
-    kmHookInt(__COUNTER__)[2] = {0, (type)}
-#define kmHook1(type, arg0) \
-    kmHookInt(__COUNTER__)[3] = {1, (type), (unsigned int)(arg0)}
-#define kmHook2(type, arg0, arg1) \
-    kmHookInt(__COUNTER__)[4] = {2, (type), (unsigned int)(arg0), (unsigned int)(arg1)}
-#define kmHook3(type, arg0, arg1, arg2) \
-    kmHookInt(__COUNTER__)[5] = {3, (type), (unsigned int)(arg0), (unsigned int)(arg1), (unsigned int)(arg2)}
-#define kmHook4(type, arg0, arg1, arg2, arg3) \
-    kmHookInt(__COUNTER__)[6] = {4, (type), (unsigned int)(arg0), (unsigned int)(arg1), (unsigned int)(arg2), (unsigned int)(arg3)}
+#define kmHook0(type) kmHookInt(__COUNTER__)[2] = {0, (type)}
+#define kmHook1(type, arg0) kmHookInt(__COUNTER__)[3] = {1, (type), (unsigned int)(arg0)}
+#define kmHook2(type, arg0, arg1) kmHookInt(__COUNTER__)[4] = {2, (type), (unsigned int)(arg0), (unsigned int)(arg1)}
+#define kmHook3(type, arg0, arg1, arg2) kmHookInt(__COUNTER__)[5] = {3, (type), (unsigned int)(arg0), (unsigned int)(arg1), (unsigned int)(arg2)}
+#define kmHook4(type, arg0, arg1, arg2, arg3) kmHookInt(__COUNTER__)[6] = {4, (type), (unsigned int)(arg0), (unsigned int)(arg1), (unsigned int)(arg2), (unsigned int)(arg3)}
 
 // kmCondWrite
 //   Write value to address, conditionally
@@ -79,10 +71,8 @@
     kmPatchExitPoint(kmIdentifier(UserFunc, counter), exitPoint);   \
     static returnType kmIdentifier(UserFunc, counter)(__VA_ARGS__)
 
-#define kmBranchDefCpp(addr, exitPoint, returnType, ...) \
-    kmBranchDefInt(__COUNTER__, addr, exitPoint, returnType, __VA_ARGS__)
-#define kmBranchDefAsm(addr, exitPoint) \
-    kmBranchDefInt(__COUNTER__, addr, exitPoint, asm void, )
+#define kmBranchDefCpp(addr, exitPoint, returnType, ...) kmBranchDefInt(__COUNTER__, addr, exitPoint, returnType, __VA_ARGS__)
+#define kmBranchDefAsm(addr, exitPoint) kmBranchDefInt(__COUNTER__, addr, exitPoint, asm void, )
 
 // kmCallDefCpp, kmCallDefAsm
 //   Set up a branch with link (bl) from a specific instruction to a function
@@ -92,24 +82,19 @@
     kmCall(addr, kmIdentifier(UserFunc, counter));                  \
     static returnType kmIdentifier(UserFunc, counter)(__VA_ARGS__)
 
-#define kmCallDefCpp(addr, returnType, ...) \
-    kmCallDefInt(__COUNTER__, addr, returnType, __VA_ARGS__)
-#define kmCallDefAsm(addr) \
-    kmCallDefInt(__COUNTER__, addr, asm void, )
+#define kmCallDefCpp(addr, returnType, ...) kmCallDefInt(__COUNTER__, addr, returnType, __VA_ARGS__)
+#define kmCallDefAsm(addr) kmCallDefInt(__COUNTER__, addr, asm void, )
 
-#define kmOnLoad(func) \
-    static int kmIdentifier(Int, counter) = func()
+#define kmOnLoad(func) static int kmIdentifier(Int, counter) = func()
 
 #define kmOnLoadDefInt(counter, returnType)              \
     static returnType kmIdentifier(UserFunc, counter)(); \
     kmOnLoad(kmIdentifier(UserFunc, counter));           \
     static returnType kmIdentifier(UserFunc, counter)()
 
-#define kmOnLoadDefCpp() \
-    kmOnLoadDefInt(__COUNTER__, int)
+#define kmOnLoadDefCpp() kmOnLoadDefInt(__COUNTER__, int)
 
-#define kmOnLoadDefAsm() \
-    kmOnLoadDefInt(__COUNTER__, asm int)
+#define kmOnLoadDefAsm() kmOnLoadDefInt(__COUNTER__, asm int)
 
 #define kmWrite24(address, instruction)                  \
     kmWrite16(address, (instruction & 0xFFFF00) >> 0x8); \

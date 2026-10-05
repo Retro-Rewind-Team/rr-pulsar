@@ -19,11 +19,10 @@ static void ConvertROOMPacketToData(const PulROOM &packet) {
     system->netMgr.hostContext2 = packet.hostSystemContext2;
     system->netMgr.customItemsBitfield = packet.customItemsBitfield;
     system->netMgr.racesPerGP = packet.raceCount;
-    system->netMgr.hostCustomEngineClass = packet.customEngineClass >= 100 && packet.customEngineClass <= 9999
-                                               ? packet.customEngineClass
-                                               : 0;
+    system->netMgr.hostCustomEngineClass = packet.customEngineClass >= 100 && packet.customEngineClass <= 9999 ? packet.customEngineClass : 0;
     system->netMgr.characterRestrictionMask = packet.characterRestrictionMask & Restrictions::ALL_CHARACTERS;
-    if (system->netMgr.characterRestrictionMask == 0) system->netMgr.characterRestrictionMask = Restrictions::ALL_CHARACTERS;
+    if (system->netMgr.characterRestrictionMask == 0)
+        system->netMgr.characterRestrictionMask = Restrictions::ALL_CHARACTERS;
     for (u32 weight = 0; weight < Restrictions::VEHICLE_WEIGHT_COUNT; ++weight) {
         system->netMgr.vehicleRestrictionMasks[weight] = packet.vehicleRestrictionMasks[weight] & Restrictions::ALL_VEHICLES;
         if (system->netMgr.vehicleRestrictionMasks[weight] == 0)
@@ -36,32 +35,31 @@ static void ConvertROOMPacketToData(const PulROOM &packet) {
 static void WriteHostSettingsPreviewToPacket(PulROOM *packet, const Settings::Mgr &settings) {
     const bool isBattle = packet->message == 2 || packet->message == 3;
     const bool isExtendedTeams = settings.GetSettingValue(Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
-    const bool isKO = !isBattle && !isExtendedTeams &&
-                      settings.GetSettingValue(Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
+    const bool isKO = !isBattle && !isExtendedTeams && settings.GetSettingValue(Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
     const bool isOTT = settings.GetSettingValue(Settings::SETTING_OTTONLINE) != OTTSETTING_ONLINE_DISABLED;
     const bool isRoyale = settings.GetSettingValue(Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
     Settings::SettingsPageId pages[6];
-    const u32 pageCount = Settings::Params::BuildHostRulePages(
-        pages, isBattle, isKO, isOTT, isRoyale, isExtendedTeams);
+    const u32 pageCount = Settings::Params::BuildHostRulePages(pages, isBattle, isKO, isOTT, isRoyale, isExtendedTeams);
 
     memset(packet->hostSettingsPreview, 0, sizeof(packet->hostSettingsPreview));
     u32 offset = 0;
     for (u32 page = 0; page < pageCount; ++page) {
         const Settings::SettingsPageDef &def = Settings::Params::GetPageDef(pages[page]);
         const u32 valueCount = def.radioCount + def.scrollerCount;
-        if (offset + valueCount > HOST_SETTINGS_PREVIEW_COUNT) break;
+        if (offset + valueCount > HOST_SETTINGS_PREVIEW_COUNT)
+            break;
         u8 *dest = packet->hostSettingsPreview + offset;
 
         for (u32 i = 0; i < def.radioCount; ++i) dest[i] = settings.GetSettingValue(def.radioSettings[i]);
-        for (u32 i = 0; i < def.scrollerCount; ++i)
-            dest[def.radioCount + i] = settings.GetSettingValue(def.scrollerSettings[i]);
+        for (u32 i = 0; i < def.scrollerCount; ++i) dest[def.radioCount + i] = settings.GetSettingValue(def.scrollerSettings[i]);
         offset += valueCount;
     }
 }
 
 static void WriteBlockedTracksToPacket(PulROOM *packet) {
     System *system = System::sInstance;
-    if (!system) return;
+    if (!system)
+        return;
 
     const Network::Mgr &netMgr = system->netMgr;
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();
@@ -81,14 +79,17 @@ static void WriteBlockedTracksToPacket(PulROOM *packet) {
 
 static void HandleExtendedTeamUpdates(const PulROOM &packet) {
     SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr)
+        return;
     UI::ExtendedTeamSelect *ets = sectionMgr->curSection->Get<UI::ExtendedTeamSelect>();
-    if (ets == nullptr) return;
+    if (ets == nullptr)
+        return;
     for (int id = 0; id < 12; ++id) {
         const u8 byte = id / 2;
         const u8 shift = (id % 2) * 4;
         UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F);
-        if (team < UI::TEAM_COUNT) ets->UpdatePlayerTeam(id, team);
+        if (team < UI::TEAM_COUNT)
+            ets->UpdatePlayerTeam(id, team);
     }
 }
 
@@ -109,12 +110,10 @@ static bool ApplyHostContextLocally(u32 hostContext, u32 hostContext2) {
     const bool isStartItemRain = hostContext & (1 << PULSAR_STARTITEMRAIN);
     const bool isVanillaMode = hostContext2 & (1 << PULSAR_VANILLAMODE);
 
-    u32 context = (isStartRetro << PULSAR_STARTRETROS) | (isStartCT << PULSAR_STARTCTS) |
-                  (isStartRTS << PULSAR_STARTREGS) | (isStart200 << PULSAR_START200) |
-                  (isStartOTT << PULSAR_STARTOTT) | (isStartItemRain << PULSAR_STARTITEMRAIN) |
-                  (isCharRestrict << PULSAR_CHARRESTRICT) | (isVehicleRestrict << PULSAR_VEHICLERESTRICT) |
-                  (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
-    u32 context2 = (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE) | (isVanillaForced << PULSAR_TRANSMISSIONVANILLA) | (isVanillaMode << PULSAR_VANILLAMODE);
+    u32 context = (isStartRetro << PULSAR_STARTRETROS) | (isStartCT << PULSAR_STARTCTS) | (isStartRTS << PULSAR_STARTREGS) | (isStart200 << PULSAR_START200) | (isStartOTT << PULSAR_STARTOTT)
+      | (isStartItemRain << PULSAR_STARTITEMRAIN) | (isCharRestrict << PULSAR_CHARRESTRICT) | (isVehicleRestrict << PULSAR_VEHICLERESTRICT) | (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
+    u32 context2 =
+      (isInsideForced << PULSAR_TRANSMISSIONINSIDE) | (isOutsideForced << PULSAR_TRANSMISSIONOUTSIDE) | (isVanillaForced << PULSAR_TRANSMISSIONVANILLA) | (isVanillaMode << PULSAR_VANILLAMODE);
     system->context = context;
     system->context2 = context2;
 
@@ -148,8 +147,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         destPacket->customEngineClass = ccSetting == HOSTCC_CUSTOM ? system->netMgr.customEngineClass : 0;
         system->netMgr.hostCustomEngineClass = destPacket->customEngineClass;
         destPacket->characterRestrictionMask = settings.GetCharacterRestrictionMask();
-        for (u32 weight = 0; weight < Restrictions::VEHICLE_WEIGHT_COUNT; ++weight)
-            destPacket->vehicleRestrictionMasks[weight] = settings.GetVehicleRestrictionMask(weight);
+        for (u32 weight = 0; weight < Restrictions::VEHICLE_WEIGHT_COUNT; ++weight) destPacket->vehicleRestrictionMasks[weight] = settings.GetVehicleRestrictionMask(weight);
         WriteHostSettingsPreviewToPacket(destPacket, settings);
         const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
@@ -229,35 +227,20 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         }
 
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT |  // ott
-                                         (ottOnline == OTTSETTING_ONLINE_FEATHER) << PULSAR_FEATHER |  // ott feather
-                                         (settings.GetSettingValue(Pulsar::Settings::SETTING_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED) << PULSAR_UMTS |  // ott umts
-                                         koSetting << PULSAR_MODE_KO | lapKoSetting << PULSAR_MODE_LAPKO |
-                                         charRestrict << PULSAR_CHARRESTRICT | vehicleRestrict << PULSAR_VEHICLERESTRICT |
-                                         koFinal << PULSAR_KOFINAL |
-                                         changeCombo << PULSAR_CHANGECOMBO | normalTC << PULSAR_THUNDERCLOUD |
-                                         (settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC) == HOSTCC_500) << PULSAR_500 | regsOnly << PULSAR_REGS |
-                                         retrosOnly << PULSAR_RETROS | ctsOnly << PULSAR_CTS |
-                                         battleTeam << PULSAR_FFA | extendedTeams << PULSAR_EXTENDEDTEAMS |
-                                         battleElim << PULSAR_ELIMINATION | isStartRetro << PULSAR_STARTRETROS |
-                                         isStartCT << PULSAR_STARTCTS | isStartRTS << PULSAR_STARTREGS |
-                                         isStart200 << PULSAR_START200 | isStartOTT << PULSAR_STARTOTT |
-                                         isStartItemRain << PULSAR_STARTITEMRAIN;
+          (ottOnline == OTTSETTING_ONLINE_FEATHER) << PULSAR_FEATHER |  // ott feather
+          (settings.GetSettingValue(Pulsar::Settings::SETTING_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED) << PULSAR_UMTS |  // ott umts
+          koSetting << PULSAR_MODE_KO | lapKoSetting << PULSAR_MODE_LAPKO | charRestrict << PULSAR_CHARRESTRICT | vehicleRestrict << PULSAR_VEHICLERESTRICT | koFinal << PULSAR_KOFINAL
+          | changeCombo << PULSAR_CHANGECOMBO | normalTC << PULSAR_THUNDERCLOUD | (settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC) == HOSTCC_500) << PULSAR_500 | regsOnly << PULSAR_REGS
+          | retrosOnly << PULSAR_RETROS | ctsOnly << PULSAR_CTS | battleTeam << PULSAR_FFA | extendedTeams << PULSAR_EXTENDEDTEAMS | battleElim << PULSAR_ELIMINATION
+          | isStartRetro << PULSAR_STARTRETROS | isStartCT << PULSAR_STARTCTS | isStartRTS << PULSAR_STARTREGS | isStart200 << PULSAR_START200 | isStartOTT << PULSAR_STARTOTT
+          | isStartItemRain << PULSAR_STARTITEMRAIN;
 
-        destPacket->hostSystemContext2 |= transmissionInside << PULSAR_TRANSMISSIONINSIDE | transmissionOutside << PULSAR_TRANSMISSIONOUTSIDE |
-                                          transmissionVanilla << PULSAR_TRANSMISSIONVANILLA | miiHeads << PULSAR_MIIHEADS |
-                                          itemModeRandom << PULSAR_ITEMMODERANDOM | itemModeBlast << PULSAR_ITEMMODEBLAST |
-                                          itemModeRain << PULSAR_ITEMMODERAIN | itemModeStorm << PULSAR_ITEMMODESTORM |
-                                          allItemsCanLand << PULSAR_ALLITEMSCANLAND |
-                                          settings.GetSettingValue(Pulsar::Settings::SETTING_HOSTWINS) << PULSAR_HAW | itemBoxRespawnFast << PULSAR_ITEMBOXRESPAWN |
-                                          rankings << PULSAR_RANKING | vr << PULSAR_VR | battleRoyale << PULSAR_MODE_BATTLEROYALE |
-                                          itemModeNone << PULSAR_ITEMMODENONE |
-                                          koPerRace2 << PULSAR_KOPERRACE_2 |
-                                          koPerRace3 << PULSAR_KOPERRACE_3 |
-                                          koPerRace4 << PULSAR_KOPERRACE_4 |
-                                          koRoyaleLaps1_5x << PULSAR_KOROYALE_LAPS_1_5X |
-                                          koRoyaleLaps2_0x << PULSAR_KOROYALE_LAPS_2_0X |
-                                          vanillaMode << PULSAR_VANILLAMODE |
-                                          mirrorMode << PULSAR_MIRRORMODE;
+        destPacket->hostSystemContext2 |= transmissionInside << PULSAR_TRANSMISSIONINSIDE | transmissionOutside << PULSAR_TRANSMISSIONOUTSIDE | transmissionVanilla << PULSAR_TRANSMISSIONVANILLA
+          | miiHeads << PULSAR_MIIHEADS | itemModeRandom << PULSAR_ITEMMODERANDOM | itemModeBlast << PULSAR_ITEMMODEBLAST | itemModeRain << PULSAR_ITEMMODERAIN | itemModeStorm << PULSAR_ITEMMODESTORM
+          | allItemsCanLand << PULSAR_ALLITEMSCANLAND | settings.GetSettingValue(Pulsar::Settings::SETTING_HOSTWINS) << PULSAR_HAW | itemBoxRespawnFast << PULSAR_ITEMBOXRESPAWN
+          | rankings << PULSAR_RANKING | vr << PULSAR_VR | battleRoyale << PULSAR_MODE_BATTLEROYALE | itemModeNone << PULSAR_ITEMMODENONE | koPerRace2 << PULSAR_KOPERRACE_2
+          | koPerRace3 << PULSAR_KOPERRACE_3 | koPerRace4 << PULSAR_KOPERRACE_4 | koRoyaleLaps1_5x << PULSAR_KOROYALE_LAPS_1_5X | koRoyaleLaps2_0x << PULSAR_KOROYALE_LAPS_2_0X
+          | vanillaMode << PULSAR_VANILLAMODE | mirrorMode << PULSAR_MIRRORMODE;
 
         if (!vanillaMode) {
             destPacket->customItemsBitfield = settings.GetCustomItems();
@@ -332,7 +315,8 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM> *packetHolder,
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr || packetHolder == nullptr) {
-        if (packet != nullptr) memcpy(packet, &src, sizeof(RKNet::ROOMPacket));
+        if (packet != nullptr)
+            memcpy(packet, &src, sizeof(RKNet::ROOMPacket));
         return;
     }
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
@@ -373,10 +357,7 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM> *packetHolder,
         }
     }
 
-    if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS &&
-        !isHost &&
-        isFromHost &&
-        packetHolder->packetSize == sizeof(PulROOM)) {
+    if (src.messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS && !isHost && isFromHost && packetHolder->packetSize == sizeof(PulROOM)) {
         HandleExtendedTeamUpdates(src);
     }
 
@@ -388,7 +369,8 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM> *packetHolder,
             extendedTeamManager->SetDoneStatusForAID(aid);
     }
 
-    if (packet != nullptr) memcpy(packet, &src, sizeof(RKNet::ROOMPacket));  // default
+    if (packet != nullptr)
+        memcpy(packet, &src, sizeof(RKNet::ROOMPacket));  // default
 }
 kmCall(0x8065add8, AfterROOMReception);
 

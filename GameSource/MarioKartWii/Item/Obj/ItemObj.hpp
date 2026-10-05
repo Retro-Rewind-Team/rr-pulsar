@@ -79,13 +79,12 @@ public:
     void PrepareShootEVENTPacket();  // 807a31c0
 
     // Load
-    void LoadGraphics(const char *brresName, const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse, AnmParam *anmParam,
-                      g3d::ScnMdl::BufferOption option, void *funcPtr, u32 directorBitfield);  // 807a0040
-    void LoadGraphicsImplicitBRRESNoFunc(const char *mdlName, const char *shadowSrc, AnmParam *anmParam,
-                                         g3d::ScnMdl::BufferOption option, u32 directorBitfield);  // 8079ff5c brresName will be deduced from mdlName, shadow list always 0
+    void LoadGraphics(const char *brresName, const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse, AnmParam *anmParam, g3d::ScnMdl::BufferOption option, void *funcPtr,
+      u32 directorBitfield);  // 807a0040
+    void LoadGraphicsImplicitBRRESNoFunc(
+      const char *mdlName, const char *shadowSrc, AnmParam *anmParam, g3d::ScnMdl::BufferOption option, u32 directorBitfield);  // 8079ff5c brresName will be deduced from mdlName, shadow list always 0
     void LoadGraphicsDefault(const char *brresName, const char *mdlName, const char *shadowSrc, AnmParam *param);  // 8079ffa4
-    void LoadGraphicsImplicitBRRES(const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse, AnmParam *anmParam,
-                                   g3d::ScnMdl::BufferOption option, void *funcPtr);  // 8079ffdc
+    void LoadGraphicsImplicitBRRES(const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse, AnmParam *anmParam, g3d::ScnMdl::BufferOption option, void *funcPtr);  // 8079ffdc
     // calls loadGraphics with brresName == nullptr which causes it to be copied from mdlName
     void LoadItemLight();  // 807a0380 only for teams
 

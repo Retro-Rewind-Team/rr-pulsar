@@ -34,8 +34,7 @@ public:
     void Select(u32 hudSlotId);
 
     // Adds Loop, Select, SelectIn and Ok groups to the anims array
-    void LoadWithAnims(const char **newAnims, const char *folderName, const char *ctrName,
-                       const char *variant, u32 localPlayerBitfield, u32 r8);  // 805bd720
+    void LoadWithAnims(const char **newAnims, const char *folderName, const char *ctrName, const char *variant, u32 localPlayerBitfield, u32 r8);  // 805bd720
     void Load(const char *folderName, const char *ctrName, const char *variant, u32 localPlayerBitfield, u32 r8, bool inaccessible);  // 805bd518
     void SetOnClickHandler(const PtmfHolder_2A<Page, void, PushButton &, u32> &handler, u8 r5);
     void SetOnSelectHandler(const PtmfHolder_2A<Page, void, PushButton &, u32> &handler);  // 805bdae0

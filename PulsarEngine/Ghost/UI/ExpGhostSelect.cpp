@@ -18,8 +18,7 @@ static void DestroyMultiGhostManager(Section &section, PageId pageId) {
 kmCall(0x8062cf98, DestroyMultiGhostManager);
 
 // GhostInfoControl BRCTR
-static void LoadCustomGhostInfoBRCTR(ControlLoader &loader, const char *folderName, const char *ctrName,
-                                     const char *variantName, const char **anims) {
+static void LoadCustomGhostInfoBRCTR(ControlLoader &loader, const char *folderName, const char *ctrName, const char *variantName, const char **anims) {
     loader.Load(folderName, "PULGhostInfo", variantName, anims);
 }
 kmCall(0x805e28c0, LoadCustomGhostInfoBRCTR);
@@ -75,7 +74,8 @@ void ExpGhostSelect::OnActivate() {
                 this->favGhostIndex = i;
             }
         }
-        if (this->favGhostIndex == this->page) isStarVisibleOnActivate = true;
+        if (this->favGhostIndex == this->page)
+            isStarVisibleOnActivate = true;
     }
     this->info->SetPaneVisibility("star", isStarVisibleOnActivate);
 }
@@ -84,8 +84,7 @@ void ExpGhostSelect::OnDeactivate() {
     Ghosts::Mgr::sInstance->SaveLeaderboard();
 }
 // Creates space by making the usual 3 buttons smaller, could be done without a BRCTR but this is easier to maintain
-static void LoadButtonWithCustBRCTR(PushButton &button, const char *folderName, const char *ctrName, const char *variant,
-                                    u32 localPlayerBitfield, u32 r8, bool inaccessible) {
+static void LoadButtonWithCustBRCTR(PushButton &button, const char *folderName, const char *ctrName, const char *variant, u32 localPlayerBitfield, u32 r8, bool inaccessible) {
     button.Load(folderName, "GhostListButton", variant, localPlayerBitfield, r8, inaccessible);
 }
 kmCall(0x80639ab8, LoadButtonWithCustBRCTR);
@@ -153,7 +152,8 @@ void ExpGhostSelect::OnLeftArrowPress(SheetSelectControl &control, u32 hudSlotId
 void ExpGhostSelect::OnNewPage() {
     ToggleButton &button = this->selectGhostButton;
     if (this->page == this->selectedGhostsPages[0] || this->page == this->selectedGhostsPages[1] || this->page == this->selectedGhostsPages[2]) {
-        if (!button.GetState()) button.ToggleState(true);
+        if (!button.GetState())
+            button.ToggleState(true);
     } else if (button.GetState())
         button.ToggleState(false);
 
@@ -224,7 +224,8 @@ void BeforeEntranceAnimations(Pages::TTSplits *page) {
     }
 
     // No saving and no new record in OTT for now
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT)) return;
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT))
+        return;
 
     // enhanced replay
     if (sectionMgr->curSection->sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionMgr->curSection->sectionId <= SECTION_WATCH_GHOST_FROM_MENU) {
@@ -288,7 +289,8 @@ static void SetTTCupTrophyBMG(CtrlMenuInstructionText &bottomText, PulsarCupId c
     text.intToPass[1] = totalCount;
     text.bmgToPass[0] = BMG_TT_MODE_BOTTOM_CUP + system->ttMode;
     u32 bmgId = BMG_TT_BOTTOM_CUP_NOTROPHY;
-    if (totalCount > 0 && system->GetInfo().HasTrophies()) bmgId = BMG_TT_BOTTOM_CUP;
+    if (totalCount > 0 && system->GetInfo().HasTrophies())
+        bmgId = BMG_TT_BOTTOM_CUP;
     bottomText.SetMessage(bmgId, &text);
 }
 
@@ -344,7 +346,8 @@ const Text::Info GetCourseBottomText(PulsarId id, u8 variantIdx, u32 *bmgId) {
     Text::Info text;
     text.bmgToPass[0] = BMG_TT_MODE_BOTTOM_CUP + system->ttMode;
     u32 passedBmgId = BMG_NO_TROPHY;
-    if (hasTrophy) passedBmgId = BMG_TROPHY;
+    if (hasTrophy)
+        passedBmgId = BMG_TROPHY;
     text.bmgToPass[1] = passedBmgId;
     return text;
 }

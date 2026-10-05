@@ -1,5 +1,5 @@
 #include <Gamemodes/Battle/BattleElimination.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
+#include <Gamemodes/EliminationDisplay.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
 #include <MarioKartWii/UI/Layout/ControlLoader.hpp>
@@ -38,15 +38,18 @@ asmFunc playElimSound() {
         lmw r3, 0x8(sp);
         addi sp, sp, 0x80;
         mtlr r11;
-        blr;)
+        blr;
+    )
 }
 
 static const wchar_t *CopyNameSafe(const wchar_t *src, size_t srcMax, wchar_t *dst, size_t dstLen) {
-    if (src == nullptr || dst == nullptr || dstLen == 0) return nullptr;
+    if (src == nullptr || dst == nullptr || dstLen == 0)
+        return nullptr;
     size_t i = 0;
     for (; i + 1 < dstLen && i < srcMax; ++i) {
         const wchar_t ch = src[i];
-        if (ch == L'\0') break;
+        if (ch == L'\0')
+            break;
         dst[i] = ch;
     }
     if (i == 0) {
@@ -58,8 +61,10 @@ static const wchar_t *CopyNameSafe(const wchar_t *src, size_t srcMax, wchar_t *d
 }
 
 static const wchar_t *CopyCharacterNameFromBMG(const BMGHolder &holder, s32 bmgId, wchar_t *scratch, size_t length) {
-    if (scratch == nullptr || length <= 1) return nullptr;
-    if (holder.bmgFile == nullptr) return nullptr;
+    if (scratch == nullptr || length <= 1)
+        return nullptr;
+    if (holder.bmgFile == nullptr)
+        return nullptr;
     const s32 msgId = holder.GetMsgId(bmgId);
     const wchar_t *source = holder.GetMsgByMsgId(msgId);
     return CopyNameSafe(source, length - 1, scratch, length);
@@ -83,15 +88,14 @@ private:
     bool soundPlayedThisDisplay;
 };
 
-static UI::CustomCtrlBuilder sLapKOElimMessageBuilder(
-    CtrlRaceLapKOElimMessage::Count, CtrlRaceLapKOElimMessage::Create);
+static UI::CustomCtrlBuilder sLapKOElimMessageBuilder(CtrlRaceLapKOElimMessage::Count, CtrlRaceLapKOElimMessage::Create);
 
 u32 CtrlRaceLapKOElimMessage::Count() {
     const System *system = System::sInstance;
-    const bool lapKoDisplay = system->lapKoMgr != nullptr &&
-                              (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
+    const bool lapKoDisplay = system->lapKoMgr != nullptr && (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
     const bool battleDisplay = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
-    if (!lapKoDisplay && !battleDisplay) return 0;
+    if (!lapKoDisplay && !battleDisplay)
+        return 0;
     const Racedata *racedata = Racedata::sInstance;
     const RacedataScenario &scenario = racedata->racesScenario;
     return scenario.localPlayerCount == 0 ? 1 : scenario.localPlayerCount;
@@ -123,26 +127,18 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     this->UpdatePausePosition();
 
     const System *system = System::sInstance;
-    const bool lapKoContext = system->lapKoMgr != nullptr &&
-                              (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
+    const bool lapKoContext = system->lapKoMgr != nullptr && (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
     const bool battleContext = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
 
     u16 timer = 0;
     u8 eliminationCount = 0;
     u8 playerIds[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
-    if (lapKoContext) {
-        const Mgr &mgr = *system->lapKoMgr;
-        timer = mgr.GetEliminationDisplayTimer();
-        eliminationCount = mgr.GetRecentEliminationCount();
+    if (lapKoContext || battleContext) {
+        timer = EliminationDisplay::GetTimer();
+        eliminationCount = EliminationDisplay::GetRecentCount();
         for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
-            playerIds[idx] = mgr.GetRecentEliminationId(idx);
-        }
-    } else if (battleContext) {
-        timer = ::Pulsar::BattleElim::GetEliminationDisplayTimer();
-        eliminationCount = ::Pulsar::BattleElim::GetRecentEliminationCount();
-        for (u8 idx = 0; idx < eliminationCount && idx < 4; ++idx) {
-            playerIds[idx] = ::Pulsar::BattleElim::GetRecentEliminationId(idx);
+            playerIds[idx] = EliminationDisplay::GetRecentPlayerId(idx);
         }
     }
 
@@ -167,7 +163,8 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
 }
 
 void CtrlRaceLapKOElimMessage::UpdateMessage(const u8 *playerIds, u8 count) {
-    if (this->textBox == nullptr || playerIds == nullptr) return;
+    if (this->textBox == nullptr || playerIds == nullptr)
+        return;
     wchar_t message[128];
     message[0] = L'\0';
     const size_t messageCapacity = sizeof(message) / sizeof(message[0]);
@@ -178,12 +175,15 @@ void CtrlRaceLapKOElimMessage::UpdateMessage(const u8 *playerIds, u8 count) {
     for (u8 idx = 0; idx < displayCount; ++idx) {
         const u8 playerId = playerIds[idx];
         const wchar_t *displayName = this->GetPlayerDisplayName(playerId, nameBuffer, sizeof(nameBuffer) / sizeof(nameBuffer[0]));
-        if (displayName == nullptr) continue;
+        if (displayName == nullptr)
+            continue;
         const size_t remaining = messageCapacity - messageLength;
-        if (remaining <= 1) break;
+        if (remaining <= 1)
+            break;
         const wchar_t *format = nameCount == 0 ? L"\n%ls" : L", %ls";
         const int nameLength = ::swprintf(message + messageLength, remaining, format, displayName);
-        if (nameLength <= 0) continue;
+        if (nameLength <= 0)
+            continue;
         messageLength += static_cast<size_t>(nameLength);
         ++nameCount;
     }
@@ -204,12 +204,15 @@ void CtrlRaceLapKOElimMessage::UpdateMessage(const u8 *playerIds, u8 count) {
 }
 
 void CtrlRaceLapKOElimMessage::Show(bool visible) {
-    if (this->root != nullptr) this->root->alpha = visible ? 255 : 0;
-    if (this->textBox != nullptr) this->textBox->alpha = visible ? 255 : 0;
+    if (this->root != nullptr)
+        this->root->alpha = visible ? 255 : 0;
+    if (this->textBox != nullptr)
+        this->textBox->alpha = visible ? 255 : 0;
 }
 
 const wchar_t *CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar_t *scratch, size_t length) const {
-    if (playerId >= 12 || scratch == nullptr || length == 0) return nullptr;
+    if (playerId >= 12 || scratch == nullptr || length == 0)
+        return nullptr;
     const Racedata *racedata = Racedata::sInstance;
 
     const RacedataScenario &scenario = racedata->racesScenario;
@@ -219,27 +222,29 @@ const wchar_t *CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar
     if (player.mii.isLoaded) {
         if (player.mii.info.name[0] != L'\0') {
             const wchar_t *copied = CopyNameSafe(player.mii.info.name, 11, scratch, length);
-            if (copied != nullptr) return copied;
+            if (copied != nullptr)
+                return copied;
         }
         if (player.mii.rawStoreMii.miiName[0] != L'\0') {
             const wchar_t *copied = CopyNameSafe(player.mii.rawStoreMii.miiName, 10, scratch, length);
-            if (copied != nullptr) return copied;
+            if (copied != nullptr)
+                return copied;
         }
     }
 
-    u32 characterBmgId = CustomCharacters::SkinNameBmgId(
-        player.characterId,
-        CustomCharacters::RaceSkinTable(playerId, player.characterId));
-    if (characterBmgId == 0) characterBmgId = GetCharacterBMGId(player.characterId, true);
+    const u32 characterBmgId = GetCharacterBMGId(player.characterId, true);
     const wchar_t *bmgName = nullptr;
     if (characterBmgId != 0) {
         bmgName = UI::GetCustomMsg(static_cast<s32>(characterBmgId));
-        if (CopyCharacterNameFromBMG(this->curFileBmgs, static_cast<s32>(characterBmgId), scratch, length) != nullptr) return scratch;
-        if (CopyCharacterNameFromBMG(this->commonBmgs, static_cast<s32>(characterBmgId), scratch, length) != nullptr) return scratch;
+        if (CopyCharacterNameFromBMG(this->curFileBmgs, static_cast<s32>(characterBmgId), scratch, length) != nullptr)
+            return scratch;
+        if (CopyCharacterNameFromBMG(this->commonBmgs, static_cast<s32>(characterBmgId), scratch, length) != nullptr)
+            return scratch;
 
         const SectionMgr *sectionMgr = SectionMgr::sInstance;
         if (sectionMgr != nullptr && sectionMgr->systemBMG != nullptr) {
-            if (CopyCharacterNameFromBMG(*sectionMgr->systemBMG, static_cast<s32>(characterBmgId), scratch, length) != nullptr) return scratch;
+            if (CopyCharacterNameFromBMG(*sectionMgr->systemBMG, static_cast<s32>(characterBmgId), scratch, length) != nullptr)
+                return scratch;
         }
 
         if (bmgName != nullptr) {

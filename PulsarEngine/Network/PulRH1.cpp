@@ -7,15 +7,16 @@
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 
 namespace Pulsar {
 namespace Network {
 
 static bool IsFriendRoom() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (!controller) return false;
-    return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-            controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    if (!controller)
+        return false;
+    return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
 }
 
 // Fixes for spectating
@@ -28,13 +29,15 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u3
     const bool battleRoyaleEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_BATTLEROYALE);
     const bool eliminationSyncEnabled = inFriendRoom && (system->IsContext(PULSAR_MODE_LAPKO) || battleRoyaleEnabled);
     const u32 targetSize = battleRoyaleEnabled ? PulRH1SizeFull : (eliminationSyncEnabled ? PulRH1SizeLapKo : PulRH1SizeBase);
-    if (eliminationSyncEnabled || battleRoyaleEnabled) packetHolder.packetSize = targetSize;
+    if (eliminationSyncEnabled || battleRoyaleEnabled)
+        packetHolder.packetSize = targetSize;
 
     if (system->IsContext(PULSAR_CT)) {
         packetHolder.packetSize = targetSize;
         packetHolder.packet->pulsarTrackId = static_cast<u16>(CupsConfig::sInstance->GetWinning());
         packetHolder.packet->variantIdx = CupsConfig::sInstance->GetCurVariantIdx();
     }
+    for (u32 i = 0; i < 2; ++i) packetHolder.packet->transmission[i] = UI::GetSelectedTransmission(i);
 
     if (!system->IsContext(PULSAR_MODE_KO)) {
         packetHolder.packet->timeInDanger = 0;
@@ -76,6 +79,9 @@ static void AfterRH1Reception(register u8 *aidArrDest, const RKNet::PacketHolder
 
     const PulRH1 *packet = holder.packet;
     const u32 packetSize = holder.packetSize;
+    for (u32 i = 0; i < 2; ++i) {
+        UI::remoteTransmission[senderAid][i] = packetSize >= PulRH1SizeBase ? packet->transmission[i] : TRANSMISSION_DEFAULT;
+    }
     CourseId track;
     if (packetSize >= PulRH1SizeBase)
         track = static_cast<CourseId>(packet->pulsarTrackId);
@@ -88,10 +94,10 @@ static void AfterRH1Reception(register u8 *aidArrDest, const RKNet::PacketHolder
         aidArrDest[i] = mappedAid < 12 ? mappedAid : 0xFF;
     }
     for (u32 i = 0; i < 2; ++i) {
-        if (packet->kartAndCharacter[i] == 0xFFFF) continue;
+        if (packet->kartAndCharacter[i] == 0xFFFF)
+            continue;
 
-        if (static_cast<u32>(data->kartIds[i]) > PHANTOM ||
-            static_cast<u32>(data->charIds[i]) > ROSALINA_BIKER) {
+        if (static_cast<u32>(data->kartIds[i]) > PHANTOM || static_cast<u32>(data->charIds[i]) > ROSALINA_BIKER) {
             data->kartIds[i] = STANDARD_KART_M;
             data->charIds[i] = MARIO;
         }
@@ -102,11 +108,11 @@ kmCall(0x806652d0, AfterRH1Reception);
 static bool GetValidReceivedTrackId(CourseId receivedTrack, PulsarId &id) {
     const CupsConfig *cupsConfig = CupsConfig::sInstance;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (cupsConfig == nullptr || controller == nullptr || receivedTrack == COURSEID_NONE) return false;
+    if (cupsConfig == nullptr || controller == nullptr || receivedTrack == COURSEID_NONE)
+        return false;
 
     const RKNet::RoomType roomType = controller->roomType;
-    if (roomType != RKNet::ROOMTYPE_VS_REGIONAL && roomType != RKNet::ROOMTYPE_JOINING_REGIONAL &&
-        roomType != RKNet::ROOMTYPE_BT_REGIONAL)
+    if (roomType != RKNet::ROOMTYPE_VS_REGIONAL && roomType != RKNet::ROOMTYPE_JOINING_REGIONAL && roomType != RKNet::ROOMTYPE_BT_REGIONAL)
         id = CupsConfig::ConvertTrack_RealIdToPulsarId(receivedTrack);
     else
         id = static_cast<PulsarId>(receivedTrack);
@@ -145,7 +151,8 @@ const u8 *GetRH1aidArray(const RKNet::RH1Handler &rh1) {
     for (int i = 0; i < 12; ++i) {
         const RKNet::RH1Data &cur = rh1.rh1Data[i];
         PulsarId id;
-        if (GetValidReceivedTrackId(cur.trackId, id)) return &cur.aidsBelongingToPlayer[0];
+        if (GetValidReceivedTrackId(cur.trackId, id))
+            return &cur.aidsBelongingToPlayer[0];
     }
     return nullptr;
 }

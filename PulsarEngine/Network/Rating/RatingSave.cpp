@@ -59,16 +59,19 @@ static bool IsUsableProfileId(s32 id) {
 static const char *GetPath() {
     if (sPath[0] == '\0') {
         const System *sys = System::sInstance;
-        if (!sys) return nullptr;
+        if (!sys)
+            return nullptr;
         snprintf(sPath, IOS::ipcMaxPath, "%s/RRRating.pul", sys->GetModFolder());
     }
     return sPath;
 }
 
 static ProfileEntry *FindProfile(s32 id) {
-    if (!IsUsableProfileId(id)) return nullptr;
+    if (!IsUsableProfileId(id))
+        return nullptr;
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
-        if (sProfiles[i].profileId == id) return &sProfiles[i];
+        if (sProfiles[i].profileId == id)
+            return &sProfiles[i];
     }
     return nullptr;
 }
@@ -90,15 +93,19 @@ static ProfileEntry *AllocProfile(s32 id) {
 }
 
 static ProfileEntry *GetProfile(s32 id, bool create) {
-    if (!IsUsableProfileId(id)) return nullptr;
+    if (!IsUsableProfileId(id))
+        return nullptr;
     ProfileEntry *e = FindProfile(id);
-    if (e) return e;
-    if (create) return AllocProfile(id);
+    if (e)
+        return e;
+    if (create)
+        return AllocProfile(id);
     return nullptr;
 }
 
 static s32 ResolveProfileIdForLicense(u32 licenseId) {
-    if (licenseId >= MAX_LICENSES) return 0;
+    if (licenseId >= MAX_LICENSES)
+        return 0;
 
     RKSYS::Mgr *mgr = RKSYS::Mgr::sInstance;
     if (mgr != nullptr) {
@@ -118,12 +125,14 @@ static ProfileEntry *GetProfileForLicense(u32 licenseId, bool create) {
 }
 
 static void Load() {
-    if (sLoaded) return;
+    if (sLoaded)
+        return;
     sLoaded = true;
 
     IO *io = IO::sInstance;
     const char *path = GetPath();
-    if (!io || !path || !io->OpenFile(path, FILE_MODE_READ)) return;
+    if (!io || !path || !io->OpenFile(path, FILE_MODE_READ))
+        return;
 
     union {
         PackedHeader h;
@@ -144,7 +153,8 @@ static void Load() {
             PackedEntry e;
             u8 pad[32];
         } eBuf __attribute__((aligned(32))) = {};
-        if (io->Read(sizeof(PackedEntry), &eBuf.e) != (s32)sizeof(PackedEntry)) break;
+        if (io->Read(sizeof(PackedEntry), &eBuf.e) != (s32)sizeof(PackedEntry))
+            break;
         if ((eBuf.e.flags & 1) && IsUsableProfileId(eBuf.e.profileId)) {
             sProfiles[i].profileId = eBuf.e.profileId;
             sProfiles[i].vr = eBuf.e.vr;
@@ -158,7 +168,8 @@ static void Load() {
 static void Save() {
     IO *io = IO::sInstance;
     const char *path = GetPath();
-    if (!io || !path) return;
+    if (!io || !path)
+        return;
 
     struct {
         PackedHeader h;
@@ -176,19 +187,18 @@ static void Save() {
         file.e[i].flags = sProfiles[i].hasData ? 1u : 0u;
     }
 
-    if (!io->OpenFile(path, FILE_MODE_WRITE) && !io->CreateAndOpen(path, FILE_MODE_WRITE)) return;
+    if (!io->OpenFile(path, FILE_MODE_WRITE) && !io->CreateAndOpen(path, FILE_MODE_WRITE))
+        return;
     io->Overwrite(sizeof(file), &file);
     io->Close();
 }
 
 static u16 ClampU16(float v) {
-    return (v < (float)MIN_RATING) ? MIN_RATING : (v > (float)MAX_RATING) ? MAX_RATING
-                                                                          : (u16)v;
+    return (v < (float)MIN_RATING) ? MIN_RATING : (v > (float)MAX_RATING) ? MAX_RATING : (u16)v;
 }
 
 static float ClampF(float v) {
-    return (v < (float)MIN_RATING) ? (float)MIN_RATING : (v > (float)MAX_RATING) ? (float)MAX_RATING
-                                                                                 : v;
+    return (v < (float)MIN_RATING) ? (float)MIN_RATING : (v > (float)MAX_RATING) ? (float)MAX_RATING : v;
 }
 
 void SaveProfileVR(s32 profileId, float vr) {
@@ -246,13 +256,16 @@ void SetUserBR(u32 licenseId, float br) {
 }
 
 void BindLicenseProfileId(u32 licenseId, s32 profileId) {
-    if (licenseId >= MAX_LICENSES) return;
-    if (IsUsableProfileId(profileId)) sBoundProfileIds[licenseId] = profileId;
+    if (licenseId >= MAX_LICENSES)
+        return;
+    if (IsUsableProfileId(profileId))
+        sBoundProfileIds[licenseId] = profileId;
 }
 
 static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr &lic) {
     Load();
-    if (idx >= MAX_LICENSES) return;
+    if (idx >= MAX_LICENSES)
+        return;
 
     sBackups[idx].originalVr = ClampU16((float)lic.vr.points);
     sBackups[idx].originalBr = ClampU16((float)lic.br.points);
@@ -260,7 +273,8 @@ static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr &lic) {
 
     const s32 profileId = ResolveProfileIdForLicense(idx);
     ProfileEntry *e = GetProfile(profileId, true);
-    if (!e) return;
+    if (!e)
+        return;
 
     if (!e->hasData) {
         e->vr = (float)sBackups[idx].originalVr / 100.0f;
@@ -274,7 +288,8 @@ static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr &lic) {
 
 static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr &lic) {
     Load();
-    if (idx >= MAX_LICENSES) return;
+    if (idx >= MAX_LICENSES)
+        return;
 
     if (!sBackups[idx].hasOriginal) {
         sBackups[idx].originalVr = ClampU16((float)lic.vr.points);
@@ -284,7 +299,8 @@ static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr &lic) {
 
     const s32 profileId = ResolveProfileIdForLicense(idx);
     ProfileEntry *e = GetProfile(profileId, true);
-    if (!e) return;
+    if (!e)
+        return;
 
     if (!e->hasData) {
         e->vr = (float)sBackups[idx].originalVr / 100.0f;
@@ -298,24 +314,28 @@ static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr &lic) {
 
 extern "C" int SaveManager_ReadLicenseHook() {
     RKSYS::Mgr *mgr = RKSYS::Mgr::sInstance;
-    if (!mgr) return 1;
+    if (!mgr)
+        return 1;
 
     RKSYS::LicenseMgr *lic = nullptr;
     asm("mr %0, r31" : "=r"(lic));
-    if (!lic) return 1;
+    if (!lic)
+        return 1;
 
     u32 base = reinterpret_cast<u32>(&mgr->licenses[0]);
     u32 addr = reinterpret_cast<u32>(lic);
     if (addr >= base) {
         u32 idx = (addr - base) / sizeof(RKSYS::LicenseMgr);
-        if (idx < MAX_LICENSES) ApplyToLicense(idx, *lic);
+        if (idx < MAX_LICENSES)
+            ApplyToLicense(idx, *lic);
     }
     return 1;
 }
 
 extern "C" void SaveManager_WriteLicenseHook(RKSYS::Binary *raw, u32 idx) {
     RKSYS::Mgr *mgr = RKSYS::Mgr::sInstance;
-    if (!mgr || idx >= MAX_LICENSES) return;
+    if (!mgr || idx >= MAX_LICENSES)
+        return;
 
     StoreFromLicense(idx, mgr->licenses[idx]);
 

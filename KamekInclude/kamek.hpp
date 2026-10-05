@@ -229,12 +229,16 @@ protected:
 
     template <typename A1>
     struct CastArg {
-        static A1 from(void *p) { return reinterpret_cast<A1>(p); }
+        static A1 from(void *p) {
+            return reinterpret_cast<A1>(p);
+        }
     };
 
     template <typename T>
     struct CastArg<T &> {
-        static T &from(void *p) { return *reinterpret_cast<T *>(p); }
+        static T &from(void *p) {
+            return *reinterpret_cast<T *>(p);
+        }
     };
 
     template <typename A1>
@@ -253,19 +257,27 @@ protected:
     }
 
     // 0-arg
-    DoFuncsHook(void (*f)(), DoFuncsHook **prev) { Init(reinterpret_cast<void *>(f), &Invoke0, prev); }
+    DoFuncsHook(void (*f)(), DoFuncsHook **prev) {
+        Init(reinterpret_cast<void *>(f), &Invoke0, prev);
+    }
 
     // 1-arg
     template <typename A1>
-    DoFuncsHook(void (*f)(A1), DoFuncsHook **prev) { Init(reinterpret_cast<void *>(f), &Invoke1<A1>, prev); }
+    DoFuncsHook(void (*f)(A1), DoFuncsHook **prev) {
+        Init(reinterpret_cast<void *>(f), &Invoke1<A1>, prev);
+    }
 
     // 2-arg
     template <typename A1, typename A2>
-    DoFuncsHook(void (*f)(A1, A2), DoFuncsHook **prev) { Init(reinterpret_cast<void *>(f), &Invoke2<A1, A2>, prev); }
+    DoFuncsHook(void (*f)(A1, A2), DoFuncsHook **prev) {
+        Init(reinterpret_cast<void *>(f), &Invoke2<A1, A2>, prev);
+    }
 
     // 3-arg
     template <typename A1, typename A2, typename A3>
-    DoFuncsHook(void (*f)(A1, A2, A3), DoFuncsHook **prev) { Init(reinterpret_cast<void *>(f), &Invoke3<A1, A2, A3>, prev); }
+    DoFuncsHook(void (*f)(A1, A2, A3), DoFuncsHook **prev) {
+        Init(reinterpret_cast<void *>(f), &Invoke3<A1, A2, A3>, prev);
+    }
 
     void Init(void *f, Invoker inv, DoFuncsHook **prev);
 
@@ -277,8 +289,11 @@ class RaceLoadHook : public DoFuncsHook {
 
 public:
     template <typename F>
-    RaceLoadHook(F f) : DoFuncsHook(f, &raceLoadHooks) {}
-    static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) { DoFuncsHook::Exec(raceLoadHooks, a1, a2, a3); }
+    RaceLoadHook(F f) : DoFuncsHook(f, &raceLoadHooks) {
+    }
+    static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) {
+        DoFuncsHook::Exec(raceLoadHooks, a1, a2, a3);
+    }
 };
 
 class FrameLoadHook : public DoFuncsHook {
@@ -286,8 +301,11 @@ class FrameLoadHook : public DoFuncsHook {
 
 public:
     template <typename F>
-    FrameLoadHook(F f) : DoFuncsHook(f, &FrameLoadHooks) {}
-    static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) { DoFuncsHook::Exec(FrameLoadHooks, a1, a2, a3); }
+    FrameLoadHook(F f) : DoFuncsHook(f, &FrameLoadHooks) {
+    }
+    static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) {
+        DoFuncsHook::Exec(FrameLoadHooks, a1, a2, a3);
+    }
 };
 
 class RaceFrameHook : public DoFuncsHook {
@@ -295,8 +313,11 @@ class RaceFrameHook : public DoFuncsHook {
 
 public:
     template <typename F>
-    RaceFrameHook(F f) : DoFuncsHook(f, &raceFrameHooks) {}
-    static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) { DoFuncsHook::Exec(raceFrameHooks, a1, a2, a3); }
+    RaceFrameHook(F f) : DoFuncsHook(f, &raceFrameHooks) {
+    }
+    static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) {
+        DoFuncsHook::Exec(raceFrameHooks, a1, a2, a3);
+    }
 };
 
 class SectionLoadHook : public DoFuncsHook {
@@ -304,8 +325,11 @@ class SectionLoadHook : public DoFuncsHook {
 
 public:
     template <typename F>
-    SectionLoadHook(F f) : DoFuncsHook(f, &sHooks) {}
-    static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) { DoFuncsHook::Exec(sHooks, a1, a2, a3); }
+    SectionLoadHook(F f) : DoFuncsHook(f, &sHooks) {
+    }
+    static void Exec(void *a1 = nullptr, void *a2 = nullptr, void *a3 = nullptr) {
+        DoFuncsHook::Exec(sHooks, a1, a2, a3);
+    }
 };
 
 // REL has NOT loaded yet, so do NOT do anything with REL addr, it will not work

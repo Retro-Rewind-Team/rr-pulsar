@@ -8,9 +8,11 @@ namespace LapKO {
 
 static void FrameUpdate() {
     System *system = System::sInstance;
-    if (!system->IsContext(PULSAR_MODE_LAPKO)) return;
+    if (!system->IsContext(PULSAR_MODE_LAPKO))
+        return;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
+    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST)
+        return;
     system->lapKoMgr->UpdateFrame();
 }
 static RaceFrameHook lapKoFrameHook(FrameUpdate);
@@ -26,10 +28,13 @@ static void WifiEdits() {
 #endif
 
     System *system = System::sInstance;
-    if (system == nullptr) return;
-    if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)) return;
+    if (system == nullptr)
+        return;
+    if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE))
+        return;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST) return;
+    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST)
+        return;
 
     sWifiRaceTimeLimit = 900000;
     sDisableIdleDisconnect = true;
@@ -41,7 +46,8 @@ asmFunc LoadWifiRaceTimeLimit() {
         nofralloc;
         lis r4, sWifiRaceTimeLimit @ha;
         lwz r4, sWifiRaceTimeLimit @l(r4);
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8053F3BC, LoadWifiRaceTimeLimit);
 
@@ -58,8 +64,10 @@ asmFunc UpdateIdleDisconnectCounter() {
         beq increment;
         li r0, 0;
         blr;
-        increment : addi r0, r3, 1;
-        blr;)
+    increment:
+        addi r0, r3, 1;
+        blr;
+    )
 }
 kmCall(0x80521408, UpdateIdleDisconnectCounter);
 kmCall(0x8053EF6C, UpdateIdleDisconnectCounter);
@@ -85,9 +93,11 @@ asmFunc cameraIDHUD() {
         lwz r3, 0(r3);
         lwz r3, 4(r3);
         lbz r3, 0(r3);
-        original :;
+    original:
+        ;
         lwz r0, 0x14(sp);
-        blr;)
+        blr;
+    )
 }
 
 static void camerIDHUDLocal() {
@@ -113,7 +123,9 @@ asmFunc HideMapIcon() {
         beq end;
         ori r5, r5, 0x10;
 
-        end : blr;)
+    end:
+        blr;
+    )
 }
 kmCall(0x807EB290, HideMapIcon);
 
@@ -124,7 +136,9 @@ asmFunc HideNametag() {
         andis.r12, r12, 0xC;
         beq end;
         ori r0, r0, 0x10;
-        end : blr;)
+    end:
+        blr;
+    )
 }
 kmCall(0x807F09A4, HideNametag);
 
@@ -133,12 +147,14 @@ static ItemId DecideItemHook(Item::ItemSlotData *slotData, u16 setting, u8 posit
 
     System *system = System::sInstance;
     if (ItemRain::IsItemRainEnabled()) {
-        if (item == GREEN_SHELL || item == RED_SHELL || item == BLUE_SHELL || item == BANANA || item == BOBOMB || item == TRIPLE_BANANA || item == TRIPLE_GREEN_SHELL || item == TRIPLE_RED_SHELL || item == FAKE_ITEM_BOX) {
+        if (item == GREEN_SHELL || item == RED_SHELL || item == BLUE_SHELL || item == BANANA || item == BOBOMB || item == TRIPLE_BANANA || item == TRIPLE_GREEN_SHELL || item == TRIPLE_RED_SHELL
+          || item == FAKE_ITEM_BOX) {
             return MUSHROOM;
         }
     }
 
-    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO)) return item;
+    if (system == nullptr || !system->IsContext(PULSAR_MODE_LAPKO))
+        return item;
 
     if (item == BLUE_SHELL) {
         LapKO::Mgr *lapKoMgr = system->lapKoMgr;
@@ -147,7 +163,8 @@ static ItemId DecideItemHook(Item::ItemSlotData *slotData, u16 setting, u8 posit
         }
 
         const Raceinfo *ri = Raceinfo::sInstance;
-        if (ri == nullptr) return item;
+        if (ri == nullptr)
+            return item;
 
         u8 playerCount = Item::Manager::sInstance->playerCount;
         if (playerCount < 6) {
@@ -156,12 +173,14 @@ static ItemId DecideItemHook(Item::ItemSlotData *slotData, u16 setting, u8 posit
             u8 firstId = ri->playerIdInEachPosition[0];
             u8 secondId = ri->playerIdInEachPosition[1];
 
-            if (firstId >= 12 || secondId >= 12) return item;
+            if (firstId >= 12 || secondId >= 12)
+                return item;
 
             RaceinfoPlayer *first = ri->players[firstId];
             RaceinfoPlayer *second = ri->players[secondId];
 
-            if (first == nullptr || second == nullptr) return item;
+            if (first == nullptr || second == nullptr)
+                return item;
 
             float diff = first->raceCompletion - second->raceCompletion;
 
@@ -177,8 +196,10 @@ kmCall(0x807ba160, DecideItemHook);
 // Fix Lap Counter Color in LapKO [Saucy]
 extern "C" void LapCounterColorFixHelper(CtrlRaceBase *self) {
     System *system = System::sInstance;
-    if (self == nullptr) return;
-    if (system == nullptr || (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE))) return;
+    if (self == nullptr)
+        return;
+    if (system == nullptr || (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)))
+        return;
 
     const char *leftPane = nullptr;
     if (self->layout.GetPaneByName("lap_lefft") != nullptr) {
@@ -194,8 +215,10 @@ extern "C" void LapCounterColorFixHelper(CtrlRaceBase *self) {
         rightPane = "lap_right";
     }
 
-    if (leftPane != nullptr) self->HudSlotColorEnable(leftPane, true);
-    if (rightPane != nullptr) self->HudSlotColorEnable(rightPane, true);
+    if (leftPane != nullptr)
+        self->HudSlotColorEnable(leftPane, true);
+    if (rightPane != nullptr)
+        self->HudSlotColorEnable(rightPane, true);
 }
 
 asmFunc LapCounterColorFix() {
@@ -213,7 +236,8 @@ asmFunc LapCounterColorFix() {
         addi sp, sp, 0x10;
 
         mr r3, r28;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x807EF7E8, LapCounterColorFix);
 

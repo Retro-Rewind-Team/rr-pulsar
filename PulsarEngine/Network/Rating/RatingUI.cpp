@@ -23,13 +23,12 @@ static u8 GetNameRatingIcon(u8 wheelType, u8 starRating) {
 }
 kmBranch(0x805e3d38, GetNameRatingIcon);
 
-static void SetRaceNameBadgeMessage(LayoutUIControl *control, const char *paneName, u32 bmgId,
-                                    const Text::Info *info) {
-    if (control == nullptr) return;
+static void SetRaceNameBadgeMessage(LayoutUIControl *control, const char *paneName, u32 bmgId, const Text::Info *info) {
+    if (control == nullptr)
+        return;
 
     static const u32 onlineRankBmgBase = 0x25ee;
-    if (bmgId >= onlineRankBmgBase + Ranking::SPECIAL_BADGE_FIRST &&
-        bmgId <= onlineRankBmgBase + Ranking::SPECIAL_BADGE_LAST) {
+    if (bmgId >= onlineRankBmgBase + Ranking::SPECIAL_BADGE_FIRST && bmgId <= onlineRankBmgBase + Ranking::SPECIAL_BADGE_LAST) {
         const u32 badge = bmgId - onlineRankBmgBase;
         wchar_t badgeText[] = {static_cast<wchar_t>(0xF07C + badge), L'\0'};
         Text::Info badgeInfo;
@@ -80,7 +79,8 @@ static void FormatRatingText(float rating, bool hasDecimal, wchar_t *buf, Text::
 }
 
 static void FillVRControl(Pages::VR *page, u32 idx, u32 playerId, u32 team, u8 type, bool isLocal) {
-    if (!page || idx >= 12) return;
+    if (!page || idx >= 12)
+        return;
 
     LayoutUIControl &ctrl = page->vrControls[idx];
     ctrl.ResetMsg();

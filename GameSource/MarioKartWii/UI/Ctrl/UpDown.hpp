@@ -55,8 +55,7 @@ public:
     void SetColor_BaseColours(RGBA16 *colour) override;  // 0x2c thunk 80642a50 func 80641028 color_base seems to always be null so doesn't do anything
 
     void SetOnTextChangeHandler(const PtmfHolder_2A<Page, void, TextControl &, u32> &handler);  // 806407d4
-    void Load(const char *folderName, const char *ctrName, const char *variant,
-              const char *textControlCtrName, const char *textControlVariant);  // 806406b0
+    void Load(const char *folderName, const char *ctrName, const char *variant, const char *textControlCtrName, const char *textControlVariant);  // 806406b0
 
     const PtmfHolder_2A<Page, void, TextControl &, u32> &onTextChangeHandler;  // 0x178 when you scroll, r5 has button ID
     TextControl textControl[2];  // array 0x17C
@@ -108,9 +107,8 @@ public:
     void SetOnSelectHandler(const PtmfHolder_2A<Page, void, UpDownControl &, u32> &handler);  // 8063f030
     void SetOnDeselectHandler(const PtmfHolder_2A<Page, void, UpDownControl &, u32> &handler);  // 8063f038
 
-    void Load(u32 optionCount, u32 initialOptionId, const char *folderName, const char *ctrName, const char *variant,
-              const char *buttonRCtrName, const char *buttonRvariant, char *buttonLCtrName, const char *buttonLvariant,
-              UpDownDisplayedText *text, u32 localPlayerBitfield, u8 unk_13, bool isNotSelectable, bool isLooped, bool onClickSendsToNextControl);  // 8063ebdc
+    void Load(u32 optionCount, u32 initialOptionId, const char *folderName, const char *ctrName, const char *variant, const char *buttonRCtrName, const char *buttonRvariant, char *buttonLCtrName,
+      const char *buttonLvariant, UpDownDisplayedText *text, u32 localPlayerBitfield, u8 unk_13, bool isNotSelectable, bool isLooped, bool onClickSendsToNextControl);  // 8063ebdc
     void HandleSelect(u32 hudSlotId, u32 curChildId);  // 8063f694
     void HandleDeselect(u32 hudSlotId, u32 curChildId);  // 8063f7c4
     void HandleClick(u32 hudSlotId, u32 curChildId);  // 8063f8f8

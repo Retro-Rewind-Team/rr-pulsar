@@ -12,8 +12,11 @@ namespace Race {
 void MegaTC(Kart::Movement &movement, int frames, int unk0, int unk1) {
     const System *system = System::sInstance;
     bool isMegaTC = true;
-    if (system->IsContext(PULSAR_THUNDERCLOUD)) isMegaTC = false;
-    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) isMegaTC = true;
+    if (system->IsContext(PULSAR_THUNDERCLOUD))
+        isMegaTC = false;
+    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100
+      && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST))
+        isMegaTC = true;
     if (isMegaTC && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW)
         movement.ActivateMega();
     else
@@ -21,15 +24,16 @@ void MegaTC(Kart::Movement &movement, int frames, int unk0, int unk1) {
 }
 kmCall(0x80580630, MegaTC);
 
-void LoadCorrectTCBRRES(Item::ObjKumo &objKumo, const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse,
-                        Item::Obj::AnmParam *anmParam) {
+void LoadCorrectTCBRRES(Item::ObjKumo &objKumo, const char *mdlName, const char *shadowSrc, u8 whichShadowListToUse, Item::Obj::AnmParam *anmParam) {
     const System *system = System::sInstance;
     bool isMegaTC = true;
-    if (system->IsContext(PULSAR_THUNDERCLOUD)) isMegaTC = false;
-    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) isMegaTC = true;
+    if (system->IsContext(PULSAR_THUNDERCLOUD))
+        isMegaTC = false;
+    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100
+      && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST))
+        isMegaTC = true;
     if (isMegaTC && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_JOINING_WW)
-        objKumo.LoadGraphics("megaTC.brres", mdlName, shadowSrc, 1, anmParam,
-                             static_cast<nw4r::g3d::ScnMdl::BufferOption>(0), nullptr, 0);
+        objKumo.LoadGraphics("megaTC.brres", mdlName, shadowSrc, 1, anmParam, static_cast<nw4r::g3d::ScnMdl::BufferOption>(0), nullptr, 0);
     else
         objKumo.LoadGraphicsImplicitBRRES(mdlName, shadowSrc, 1, anmParam, static_cast<nw4r::g3d::ScnMdl::BufferOption>(0), nullptr);
 }

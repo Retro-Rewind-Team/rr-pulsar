@@ -65,7 +65,7 @@ public:
     CtrlMenuCharacterSelect ctrlMenuCharSelect;  // 0x6C4
     Mii *localPlayerMiis;
     u8 unknwon_0x8F8[0x904 - 0x8f8];
-    u32 localPlayerBitfield;  // 0x904
+    u32 localPlayerCount;  // 0x904
     u32 unknwon_0x908;
     CountDown *timer;  // 0x90c
     CharaName *names;

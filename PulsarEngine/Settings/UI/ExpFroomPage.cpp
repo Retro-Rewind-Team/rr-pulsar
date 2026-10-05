@@ -39,7 +39,8 @@ void ExpFroom::OnInit() {
 }
 
 void ExpFroom::OnResume() {
-    if (this->areControlsHidden) GlobeMgr::sInstance->DisplayMii();
+    if (this->areControlsHidden)
+        GlobeMgr::sInstance->DisplayMii();
     this->areControlsHidden = false;
     FriendRoom::OnResume();
 }
@@ -68,13 +69,13 @@ void ExpFroom::OnActivate() {
     ExtendedTeamManager::sInstance->Reset();
 
     RoomKickPage *kickPage = SectionMgr::sInstance->curSection->Get<RoomKickPage>();
-    if (kickPage) kickPage->ClearKickHistory();
+    if (kickPage)
+        kickPage->ClearKickHistory();
 }
 
 void ExpFroom::OnSettingsButtonClick(PushButton &button, u32 hudSlotId) {
     this->areControlsHidden = true;
-    ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
-        Settings::SETTINGS_CONTEXT_ONLINE, PAGE_NONE);
+    ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(Settings::SETTINGS_CONTEXT_ONLINE, PAGE_NONE);
     ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_NONE;
     this->AddPageLayer(static_cast<PageId>(this->topSettingsPage), 0);
 }
@@ -123,7 +124,8 @@ void ExpFroom::AfterControlUpdate() {
         const RKNet::Controller *controller = RKNet::Controller::sInstance;
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         bool teamHidden = true;
-        if (sub.hostAid == sub.localAid && sub.playerCount >= 2) teamHidden = false;
+        if (sub.hostAid == sub.localAid && sub.playerCount >= 2)
+            teamHidden = false;
         this->teamsButton.isHidden = teamHidden;
         this->teamsButton.manipulator.inaccessible = teamHidden;
     }

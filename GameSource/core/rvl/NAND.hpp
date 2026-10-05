@@ -84,7 +84,6 @@ enum Perm {
     NAND_PERM_GROUP_WRITE = 0x08,
     NAND_PERM_OWNER_READ = 0x10,
     NAND_PERM_OWNER_WRITE = 0x20
-
 };
 enum Result {
     NAND_RESULT_OK = 0,
@@ -126,8 +125,7 @@ Result Close(FileInfo *info);  // 8019ca80
 Result SafeOpen(const char *path, FileInfo *info, u8 accType, void *buffer, u32 length);  // 8018cb74
 Result SafeClose(FileInfo *info);  // 8019cf28
 Result CloseAsync(FileInfo *info, Callback callback, CommandBlock *commandBlock);  // 8019caec
-Result SafeOpenAsync(const char *path, FileInfo *info, u8 accType, void *buf, u32 length,
-                     Callback callback, CommandBlock *commandBlock);  // 8019d130
+Result SafeOpenAsync(const char *path, FileInfo *info, u8 accType, void *buf, u32 length, Callback callback, CommandBlock *commandBlock);  // 8019d130
 Result SafeClose(FileInfo *info, Callback callback, CommandBlock *commandBlock);  // 8019d720
 
 // DIR API
@@ -157,8 +155,7 @@ namespace Private {
 // File API
 Result Create(const char *path, u8 perm, u8 attr);  // 8019b4b0
 Result CreateAsync(const char *path, u8 perm, u8 attr, Callback callback, CommandBlock *commandBlock);  // 8019b524
-Result SafeOpenAsync(const char *path, FileInfo *info, u8 accType, void *buffer, u32 length,
-                     Callback callback, CommandBlock *commandBlock);  // 8019d104
+Result SafeOpenAsync(const char *path, FileInfo *info, u8 accType, void *buffer, u32 length, Callback callback, CommandBlock *commandBlock);  // 8019d104
 
 // DIR API
 Result CreateDir(const char *path, u8 perm, u8 attr);  // 8019bc54

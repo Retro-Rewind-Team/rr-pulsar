@@ -15,8 +15,7 @@ public:
         void Update() override;  // 8063851c
         const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 80638e30
         const char *GetClassName() const override;  // 80638038
-        void Load(u32 buttonId, const char *folderName, const char *ctrName, const char *variant,
-                  const char **anims, bool r8, bool inaccessible);  // 806381a4
+        void Load(u32 buttonId, const char *folderName, const char *ctrName, const char *variant, const char **anims, bool r8, bool inaccessible);  // 806381a4
         void HandleSelect(u32 hudSlotId, u32 childId);  // 80638988
         void HandleDeselect(u32 hudSlotId, u32 childId);  // 80638a7c
         void HandleClick(u32 hudSlotId, u32 childId);  // 80638c64
@@ -42,8 +41,7 @@ public:
     const char *GetClassName() const override;  // 80637ac4
     virtual void OnDeactivateingEnd();  // 0x3c 80637d20
     virtual void func_0x40();  // 80638e20
-    void Load(u32 buttonsCount, u32 initialButtonId, const char *folderName, const char *ctrName,
-              const char **optionVariants, u32 localPlayerBitfield, bool r10, bool inaccessible);  // 80637ba4
+    void Load(u32 buttonsCount, u32 initialButtonId, const char *folderName, const char *ctrName, const char **optionVariants, u32 localPlayerBitfield, bool r10, bool inaccessible);  // 80637ba4
     void SetOnClickHandler(const PtmfHolder_3A<Page, void, OptionButton &, u32, u32> &onClickHandler);  // 80637d24
     void SetEnabledHudSlots(u32 playerBitField);  // 80637d2c
     void SelectInitial(u32 buttonId);  // 80637da8

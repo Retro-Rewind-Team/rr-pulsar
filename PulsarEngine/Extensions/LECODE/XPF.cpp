@@ -16,7 +16,8 @@ GOBJ *XPFMgr::GetDefinitionObject(u16 objId) {
     objId = objId & ~0x1000;
     for (int i = 0; i < objectCount; ++i) {
         GOBJ *gobj = kmp->GetHolder<GOBJ>(i)->raw;
-        if (gobj->objID == objId) return gobj;
+        if (gobj->objID == objId)
+            return gobj;
     }
     return nullptr;
 }
@@ -50,12 +51,16 @@ void XPFMgr::EvaluateConditions() {
 
     for (int i = 0; i < objectCount; ++i) {
         GOBJ *gobj = kmp->GetHolder<GOBJ>(i)->raw;
-        if (gobj->presenceFlags < 0x1000) continue;  // Not a LECODE XPF
-        if (gobj->objID >= 0x2000) continue;  // We don't calc definition objects
+        if (gobj->presenceFlags < 0x1000)
+            continue;  // Not a LECODE XPF
+        if (gobj->objID >= 0x2000)
+            continue;  // We don't calc definition objects
 
         bool enabled = false;
-        if (gobj->padding < 0x2000 & gobj->padding >= 0x1000) enabled = CalcPredefinedCondition(gobj->padding);
-        if (gobj->padding >= 0x2000) enabled = CalcDefinitionObjectCondition(GetDefinitionObject(gobj->padding), (gobj->padding & 0x1000));
+        if (gobj->padding < 0x2000 & gobj->padding >= 0x1000)
+            enabled = CalcPredefinedCondition(gobj->padding);
+        if (gobj->padding >= 0x2000)
+            enabled = CalcDefinitionObjectCondition(GetDefinitionObject(gobj->padding), (gobj->padding & 0x1000));
 
         if (!enabled) {
             gobj->presenceFlags = 0x0;
@@ -68,18 +73,22 @@ void XPFMgr::EvaluateConditions() {
 }
 
 bool XPFMgr::CalcDefinitionObjectCondition(GOBJ *gobj, bool neg) {
-    if (gobj == nullptr) return false;
+    if (gobj == nullptr)
+        return false;
 
     bool ret = false;
 
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     DEF_OBJ_MODE mode = DEF_OBJ_BITS;
-    if (gobj->objID >= 0x4000) mode = DEF_OBJ_OR;
-    if (gobj->objID >= 0x6000) mode = DEF_OBJ_AND;
+    if (gobj->objID >= 0x4000)
+        mode = DEF_OBJ_OR;
+    if (gobj->objID >= 0x6000)
+        mode = DEF_OBJ_AND;
 
     if (gobj->padding != 0) {
         bool entry = CalcPredefinedCondition(gobj->padding);
-        if (!entry) return false;
+        if (!entry)
+            return false;
     }
 
     switch (mode) {
@@ -98,14 +107,16 @@ bool XPFMgr::CalcDefinitionObjectCondition(GOBJ *gobj, bool neg) {
 
         case DEF_OBJ_OR:
             for (int i = 0; i < 8; ++i) {
-                if (gobj->settings[i] == 0) continue;
+                if (gobj->settings[i] == 0)
+                    continue;
                 ret = ret || CalcPredefinedCondition(gobj->settings[i]);
             }
             break;
         case DEF_OBJ_AND:
             ret = true;
             for (int i = 0; i < 8; ++i) {
-                if (gobj->settings[i] == 0) continue;
+                if (gobj->settings[i] == 0)
+                    continue;
                 ret = ret && CalcPredefinedCondition(gobj->settings[i]);
             }
             break;
@@ -113,7 +124,8 @@ bool XPFMgr::CalcDefinitionObjectCondition(GOBJ *gobj, bool neg) {
             ret = false;
             break;
     }
-    if (neg) ret = !ret;
+    if (neg)
+        ret = !ret;
     return ret;
 }
 
@@ -124,12 +136,15 @@ bool XPFMgr::CalcConditionBits(u16 val, u8 field) {
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     const GameMode mode = scenario.settings.gamemode;
     if (mode <= MODE_6 || mode >= MODE_AWARD) {
-        if (val & ((1 << (localPlayerCount - 1)))) ret = true;
+        if (val & ((1 << (localPlayerCount - 1))))
+            ret = true;
     } else {
         u8 range = playerCount > 6 ? (playerCount - 3) / 3 : 0;
-        if (val & ((1 << (4 + (range * 2) + (localPlayerCount - 1))))) ret = true;
+        if (val & ((1 << (4 + (range * 2) + (localPlayerCount - 1)))))
+            ret = true;
     }
-    if ((val & 0x4000) && field == 2 && (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE)) ret = true;
+    if ((val & 0x4000) && field == 2 && (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE))
+        ret = true;
     return ret;
 }
 
@@ -224,22 +239,30 @@ bool XPFMgr::CalcPredefinedCondition(u16 val) {
                 ret = false;
                 break;
         }
-        if (neg) ret = !ret;
+        if (neg)
+            ret = !ret;
     }
     // Engine class checks
     else if (val >= 0x1e00 && val < 0x1f00) {
         // u16 mask = val & 0x7f;
         EngineClass enClass = scenario.settings.engineClass;
-        if ((val & 0x1) && enClass == CC_BATTLE) ret = true;
-        if ((val & 0x2) && enClass == CC_50) ret = true;
-        if ((val & 0x4) && enClass == CC_100) ret = true;
-        if ((val & 0x8) && enClass == CC_150) ret = true;
-        if ((val & 0x10) && Pulsar::Race::Is200cc()) ret = true;
-        if ((val & 0x20) && enClass == CC_150 && (scenario.settings.modeFlags & 1)) ret = true;
+        if ((val & 0x1) && enClass == CC_BATTLE)
+            ret = true;
+        if ((val & 0x2) && enClass == CC_50)
+            ret = true;
+        if ((val & 0x4) && enClass == CC_100)
+            ret = true;
+        if ((val & 0x8) && enClass == CC_150)
+            ret = true;
+        if ((val & 0x10) && Pulsar::Race::Is200cc())
+            ret = true;
+        if ((val & 0x20) && enClass == CC_150 && (scenario.settings.modeFlags & 1))
+            ret = true;
         // if((val & 0x40) && enClass == CC_200 && (scenario->settings.modeFlags & 1)) ret = true;
     } else if (val >= 0x1f00) {
         u16 mask = val & 0xff;
-        if ((mask & (1 << this->randScenario))) ret = true;
+        if ((mask & (1 << this->randScenario)))
+            ret = true;
     }
 
     return ret;

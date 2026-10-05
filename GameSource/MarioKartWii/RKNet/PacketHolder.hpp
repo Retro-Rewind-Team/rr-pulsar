@@ -33,9 +33,15 @@ public:
     explicit PacketHolder(u32 bufferSize);
     ~PacketHolder();  // 8065a2ac
 
-    void Clear() { reinterpret_cast<DefaultPacketHolder *>(this)->Clear(); }
-    void Copy(const T *src, u32 len) { reinterpret_cast<DefaultPacketHolder *>(this)->Copy(src, len); }
-    void Append(const void *src, u32 len) { reinterpret_cast<DefaultPacketHolder *>(this)->Append(src, len); }
+    void Clear() {
+        reinterpret_cast<DefaultPacketHolder *>(this)->Clear();
+    }
+    void Copy(const T *src, u32 len) {
+        reinterpret_cast<DefaultPacketHolder *>(this)->Copy(src, len);
+    }
+    void Append(const void *src, u32 len) {
+        reinterpret_cast<DefaultPacketHolder *>(this)->Append(src, len);
+    }
 
     T *packet;  // 0x0 packet ptr
     u32 bufferSize;  // 0x4 maximum data size 0x50

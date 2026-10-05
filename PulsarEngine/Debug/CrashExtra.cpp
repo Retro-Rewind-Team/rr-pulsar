@@ -5,7 +5,6 @@
 #include <PulsarSystem.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 
 namespace Pulsar {
@@ -112,21 +111,25 @@ const char *GetVanillaTrackSzs(CourseId courseId) {
 }
 
 void CopyTrackSzs(char *dest, u32 size, const char *src) {
-    if (dest == nullptr || size == 0) return;
+    if (dest == nullptr || size == 0)
+        return;
     dest[0] = '\0';
-    if (src == nullptr || src[0] == '\0') return;
+    if (src == nullptr || src[0] == '\0')
+        return;
     snprintf(dest, size, "%s", src);
 }
 
 void PopulateLastTrackSzs(CrashExtra &extra) {
     CupsConfig *cupsConfig = CupsConfig::sInstance;
-    if (cupsConfig == nullptr) return;
+    if (cupsConfig == nullptr)
+        return;
 
     const PulsarId winning = cupsConfig->GetWinning();
     if (winning != PULSARID_NONE) {
         if (!CupsConfig::IsReg(winning)) {
             const char *fileName = cupsConfig->GetFileName(winning, cupsConfig->GetCurVariantIdx());
-            if (fileName == nullptr || fileName[0] == '\0') fileName = cupsConfig->GetFileName(winning, 0);
+            if (fileName == nullptr || fileName[0] == '\0')
+                fileName = cupsConfig->GetFileName(winning, 0);
             if (fileName != nullptr && fileName[0] != '\0') {
                 snprintf(extra.lastTrackSzs, sizeof(extra.lastTrackSzs), "%s.szs", fileName);
                 return;
@@ -140,7 +143,8 @@ void PopulateLastTrackSzs(CrashExtra &extra) {
         }
     }
 
-    if (Racedata::sInstance == nullptr) return;
+    if (Racedata::sInstance == nullptr)
+        return;
     const char *fallback = GetVanillaTrackSzs(Racedata::sInstance->racesScenario.settings.courseId);
     CopyTrackSzs(extra.lastTrackSzs, sizeof(extra.lastTrackSzs), fallback);
 }
@@ -154,7 +158,8 @@ void PopulateCrashExtra(ExceptionFile &exception) {
     if (sectionMgr != nullptr && sectionMgr->curSection != nullptr) {
         extra.sectionId = static_cast<s32>(sectionMgr->curSection->sectionId);
         Page *topPage = sectionMgr->curSection->GetTopLayerPage();
-        if (topPage != nullptr) extra.pageId = static_cast<s32>(topPage->pageId);
+        if (topPage != nullptr)
+            extra.pageId = static_cast<s32>(topPage->pageId);
     }
 
     const System *system = System::sInstance;
@@ -165,9 +170,6 @@ void PopulateCrashExtra(ExceptionFile &exception) {
 
     if (IOOverrides::AreLooseArchiveOverridesEnabledForDebug()) {
         extra.flags |= EXCEPTION_FLAG_LOOSE_ARCHIVE_OVERRIDES_ENABLED;
-    }
-    if (CustomCharacters::IsCustomCharacterTableActive()) {
-        extra.flags |= EXCEPTION_FLAG_CUSTOM_CHARACTER_ENABLED;
     }
     extra.looseOverrideFileCount = IOOverrides::GetLooseArchiveOverrideFileCount();
     const u8 myStuffValue = *reinterpret_cast<volatile u8 *>(0x80001200);

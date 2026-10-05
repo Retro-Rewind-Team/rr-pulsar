@@ -13,34 +13,8 @@ static char pulPath[0x100];
 
 u8 GetSW2RRRacePercentageMusicTier();
 bool IsSW2RRLoaded();
-u8 Get119RacePercentageMusicTier();
-bool Is119Loaded();
-u8 GetSW2DKSRacePercentageMusicTier();
-bool IsSW2DKSLoaded();
-bool ResolveArcadeFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool Resolve3DSFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveDSFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveGBAFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveGCNFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveN64FanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveSNESFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveSW2FanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveSW2RRFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveTourFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveWiiACFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveWiiUBBFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
-bool ResolveWiiUFanfarePath(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath);
 
-static bool IsCTMusicEnabled() {
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CTMUSIC) == CTMUSIC_ENABLED;
-}
-
-static bool AreCustomEndingFanfaresEnabled() {
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CUSTOMENDINGFANFARES) ==
-        CUSTOMENDINGFANFARES_ENABLED;
-}
-
-static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFilePath) {
+static bool ResolveKCMenuMusicPath(const SectionId section, const char *&extFilePath) {
     if (section >= SECTION_MAIN_MENU_FROM_BOOT && section <= SECTION_MAIN_MENU_FROM_LICENSE) {
         extFilePath = titleMusicFile;
         return true;
@@ -60,113 +34,100 @@ static bool ResolveKCMenuMusicPath(const SectionId section, const char*& extFile
     return false;
 }
 
-static bool CheckBRSTMPath(const char* path) {
+static bool CheckBRSTMPath(const char *path) {
     return DVD::ConvertPathToEntryNum(path) >= 0;
 }
 
-static bool StringEndsWith(const char* str, const char* suffix) {
-    if (str == nullptr || suffix == nullptr) return false;
+static bool StringEndsWith(const char *str, const char *suffix) {
+    if (str == nullptr || suffix == nullptr)
+        return false;
 
-    const char* strEnd = str;
+    const char *strEnd = str;
     while (*strEnd != '\0') ++strEnd;
 
-    const char* suffixEnd = suffix;
+    const char *suffixEnd = suffix;
     while (*suffixEnd != '\0') ++suffixEnd;
 
     while (suffixEnd != suffix) {
-        if (strEnd == str) return false;
+        if (strEnd == str)
+            return false;
         --strEnd;
         --suffixEnd;
-        if (*strEnd != *suffixEnd) return false;
+        if (*strEnd != *suffixEnd)
+            return false;
     }
     return true;
 }
 
-static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive* archive, const char*& extFilePath) {
-    if (archive == nullptr || !IsSW2RRLoaded() || !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm")) return false;
+static bool ResolveSW2RRFanfareGP1Path(const nw4r::snd::DVDSoundArchive *archive, const char *&extFilePath) {
+    if (archive == nullptr || !IsSW2RRLoaded() || !StringEndsWith(extFilePath, "/o_FanfareGP1_32.brstm"))
+        return false;
 
     snprintf(pulPath, sizeof(pulPath), "%sstrm/o_FanfareRRGP1_32.brstm", archive->extFileRoot);
-    if (!CheckBRSTMPath(pulPath)) return false;
+    if (!CheckBRSTMPath(pulPath))
+        return false;
 
     extFilePath = pulPath;
     return true;
 }
 
-s32 CheckBRSTMRoot(const char* root, PulsarId id, const char* lapSpecifier,
-                   const char* racePercentageSpecifier = "") {
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+s32 CheckBRSTMRoot(const char *root, PulsarId id, const char *lapSpecifier, const char *racePercentageSpecifier = "") {
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
-    const char* creatorName = cupsConfig->GetFileName(id, variantIdx);
+    const char *creatorName = cupsConfig->GetFileName(id, variantIdx);
     if (creatorName != nullptr) {
         snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, creatorName, lapSpecifier, racePercentageSpecifier);
-        if (CheckBRSTMPath(pulPath)) return 0;
+        if (CheckBRSTMPath(pulPath))
+            return 0;
     }
     if (variantIdx != 0) {
         creatorName = cupsConfig->GetFileName(id, 0);
         if (creatorName != nullptr) {
             snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, creatorName, lapSpecifier, racePercentageSpecifier);
-            if (CheckBRSTMPath(pulPath)) return 0;
+            if (CheckBRSTMPath(pulPath))
+                return 0;
         }
     }
     char trackName[0x100];
     UI::GetTrackBMG(trackName, id);
     snprintf(pulPath, 0x100, "%sstrm/%s%s%s.brstm", root, trackName, lapSpecifier, racePercentageSpecifier);
-    if (CheckBRSTMPath(pulPath)) return 0;
+    if (CheckBRSTMPath(pulPath))
+        return 0;
 
-    snprintf(pulPath, 0x50, "%sstrm/%d%s%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier,
-             racePercentageSpecifier);
-    if (CheckBRSTMPath(pulPath)) return 0;
+    snprintf(pulPath, 0x50, "%sstrm/%d%s%s.brstm", root, CupsConfig::ConvertTrack_PulsarIdToRealId(id), lapSpecifier, racePercentageSpecifier);
+    if (CheckBRSTMPath(pulPath))
+        return 0;
     return -1;
 }
 
-s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive* archive, PulsarId id, const char* lapSpecifier,
-               const char* racePercentageSpecifier = "") {
+s32 CheckBRSTM(const nw4r::snd::DVDSoundArchive *archive, PulsarId id, const char *lapSpecifier, const char *racePercentageSpecifier = "") {
     return CheckBRSTMRoot(archive->extFileRoot, id, lapSpecifier, racePercentageSpecifier);
 }
 
-static const char* GetSW2RRRacePercentageSpecifier() {
+static const char *GetSW2RRRacePercentageSpecifier() {
     switch (GetSW2RRRacePercentageMusicTier()) {
-        case 1: return "-1";
-        case 2: return "-2";
-        case 3: return "-3";
-        default: return "";
+        case 1:
+            return "-1";
+        case 2:
+            return "-2";
+        case 3:
+            return "-3";
+        default:
+            return "";
     }
-}
-
-static const char* Get119RacePercentageSpecifier() {
-    switch (Get119RacePercentageMusicTier()) {
-        case 1: return "-1";
-        case 2: return "-2";
-        default: return "";
-    }
-}
-
-static const char* GetSW2DKSRacePercentageSpecifier() {
-    switch (GetSW2DKSRacePercentageMusicTier()) {
-        case 1: return "-1";
-        case 2: return "-2";
-        case 3: return "-3";
-        case 4: return "-4";
-        case 5: return "-5";
-        default: return "";
-    }
-}
-
-static const char* GetRacePercentageSpecifier() {
-    if (IsSW2RRLoaded()) return GetSW2RRRacePercentageSpecifier();
-    if (Is119Loaded()) return Get119RacePercentageSpecifier();
-    if (IsSW2DKSLoaded()) return GetSW2DKSRacePercentageSpecifier();
-    return "";
 }
 
 bool HasSW2RRTieredBRSTM(u8 tier) {
-    if (tier == 0 || tier > 3) return true;
+    if (tier == 0 || tier > 3)
+        return true;
 
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    if (cupsConfig == nullptr) return false;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
+    if (cupsConfig == nullptr)
+        return false;
 
     const PulsarId track = cupsConfig->GetWinning();
-    if (CupsConfig::IsReg(track)) return false;
+    if (CupsConfig::IsReg(track))
+        return false;
 
     char racePercentageSpecifier[3];
     snprintf(racePercentageSpecifier, sizeof(racePercentageSpecifier), "-%u", tier);
@@ -174,95 +135,45 @@ bool HasSW2RRTieredBRSTM(u8 tier) {
     return CheckBRSTMRoot("/sound/", track, "_n", racePercentageSpecifier) >= 0;
 }
 
-bool Has119TieredBRSTM(u8 tier) {
-    if (tier == 0 || tier > 2) return true;
-
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    if (cupsConfig == nullptr) return false;
-
-    const PulsarId track = cupsConfig->GetWinning();
-    if (CupsConfig::IsReg(track)) return false;
-
-    char racePercentageSpecifier[3];
-    snprintf(racePercentageSpecifier, sizeof(racePercentageSpecifier), "-%u", tier);
-
-    return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0 ||
-        CheckBRSTMRoot("/sound/", track, "_N", false, racePercentageSpecifier) >= 0;
-}
-
-bool HasSW2DKSTieredBRSTM(u8 tier) {
-    if (tier == 0 || tier > 5) return true;
-
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    if (cupsConfig == nullptr) return false;
-
-    const PulsarId track = cupsConfig->GetWinning();
-    if (CupsConfig::IsReg(track)) return false;
-
-    char racePercentageSpecifier[3];
-    snprintf(racePercentageSpecifier, sizeof(racePercentageSpecifier), "-%u", tier);
-
-    if (tier == 5 && CheckBRSTMRoot("/sound/", track, "_f", true, racePercentageSpecifier) >= 0) {
-        return true;
-    }
-    return CheckBRSTMRoot("/sound/", track, "_n", false, racePercentageSpecifier) >= 0 ||
-        CheckBRSTMRoot("/sound/", track, "_N", false, racePercentageSpecifier) >= 0;
-}
-
-nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void* buffer, int size,
-                                       const char* extFilePath, u32 r7, u32 length) {
-    const bool isBRSTMOn = IsCTMusicEnabled();
+nw4r::ut::FileStream *MusicSlotsExpand(nw4r::snd::DVDSoundArchive *archive, void *buffer, int size, const char *extFilePath, u32 r7, u32 length) {
+    const Pulsar::CTMusic isBRSTMOn = static_cast<Pulsar::CTMusic>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC));
     const char firstChar = extFilePath[0xC];
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     const PulsarId track = cupsConfig->GetWinning();
     register SoundIDs toPlayId;
     asm(mr toPlayId, r20;);
 
-    if (AreCustomEndingFanfaresEnabled()) {
-        ResolveSW2RRFanfarePath(archive, extFilePath);
-        ResolveSW2FanfarePath(archive, extFilePath);
-        ResolveTourFanfarePath(archive, extFilePath);
-        ResolveArcadeFanfarePath(archive, extFilePath);
-        ResolveWiiUBBFanfarePath(archive, extFilePath);
-        ResolveWiiACFanfarePath(archive, extFilePath);
-        ResolveWiiUFanfarePath(archive, extFilePath);
-        Resolve3DSFanfarePath(archive, extFilePath);
-        ResolveDSFanfarePath(archive, extFilePath);
-        ResolveGCNFanfarePath(archive, extFilePath);
-        ResolveGBAFanfarePath(archive, extFilePath);
-        ResolveN64FanfarePath(archive, extFilePath);
-        ResolveSNESFanfarePath(archive, extFilePath);
-    }
+    ResolveSW2RRFanfareGP1Path(archive, extFilePath);
+
     if (toPlayId == SOUND_ID_KC) {
         const SectionId section = SectionMgr::sInstance->curSection->sectionId;
         if (ResolveKCMenuMusicPath(section, extFilePath)) {
             return archive->OpenExtStream(buffer, size, extFilePath, 0, length);
         }
     }
-    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn) {
+    if ((firstChar == 'n' || firstChar == 'S' || firstChar == 'r') && isBRSTMOn == Pulsar::CTMUSIC_ENABLED) {
         if (!CupsConfig::IsReg(track)) {
             register u32 strLength;
             asm(mr strLength, r28;);
             const char finalChar = extFilePath[strLength];
             const bool isFinalLap = finalChar == 'f' || finalChar == 'F';
 
-            const char* racePercentageSpecifier = GetRacePercentageSpecifier();
+            const char *racePercentageSpecifier = GetSW2RRRacePercentageSpecifier();
             const bool hasRacePercentageSpecifier = racePercentageSpecifier[0] != '\0';
-            const bool is119RacePercentageSpecifier = hasRacePercentageSpecifier && Is119Loaded();
 
             if (isFinalLap && hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_final", racePercentageSpecifier) >= 0) {
                 extFilePath = pulPath;
             } else if (hasRacePercentageSpecifier && CheckBRSTM(archive, track, "_n", racePercentageSpecifier) >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
-                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
+                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.06f;
                 }
             } else if (isFinalLap && CheckBRSTM(archive, track, "_final") >= 0) {
                 extFilePath = pulPath;
             } else if (CheckBRSTM(archive, track, "_n") >= 0) {
                 extFilePath = pulPath;
                 if (isFinalLap) {
-                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.1f;
+                    Audio::Manager::sInstance->soundArchivePlayer->soundPlayerArray->soundList.GetFront().ambientParam.pitch = 1.06f;
                 }
             }
         }
@@ -271,5 +182,5 @@ nw4r::ut::FileStream* MusicSlotsExpand(nw4r::snd::DVDSoundArchive* archive, void
 }
 kmCall(0x8009e0e4, MusicSlotsExpand);
 
-}
-}
+}  // namespace Sound
+}  // namespace Pulsar

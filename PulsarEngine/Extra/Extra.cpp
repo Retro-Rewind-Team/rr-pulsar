@@ -12,7 +12,6 @@
 #include <Dolphin/DolphinIOS.hpp>
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <include/c_string.h>
 
 namespace Codes {
@@ -39,8 +38,10 @@ asmFunc GetItemDelimiterShock() {
         addi r12, r12, 0x12C;
         mtlr r12;
         blr;
-        validLightning : mulli r29, r3, 0xF0;
-        blr;)
+    validLightning:
+        mulli r29, r3, 0xF0;
+        blr;
+    )
 }
 
 asmFunc GetItemDelimiterBlooper() {
@@ -60,8 +61,10 @@ asmFunc GetItemDelimiterBlooper() {
         addi r12, r12, 0x1A8;
         mtlr r12;
         blr;
-        validBlooper : addi r11, r1, 0x50;
-        blr;)
+    validBlooper:
+        addi r11, r1, 0x50;
+        blr;
+    )
 }
 
 asmFunc GetItemDelimiterPOW() {
@@ -81,14 +84,15 @@ asmFunc GetItemDelimiterPOW() {
         addi r12, r12, 0x48;
         mtlr r12;
         blr;
-        validPOW : mr r30, r3;
-        blr;)
+    validPOW:
+        mr r30, r3;
+        blr;
+    )
 }
 
 void EnableDelimitersForAllItems() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-                                                   controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     sBlockOnlineItemDelimiters = !isFroom && !Pulsar::ItemRain::IsItemRainEnabled();
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
@@ -97,7 +101,8 @@ kmCall(0x807A81C0, GetItemDelimiterBlooper);
 kmCall(0x807B1B44, GetItemDelimiterPOW);
 
 static bool CanItemNotBeObtained(Item::ItemSlotData *slotData, ItemObjId objId, bool hasTimer) {
-    if (!sBlockOnlineItemDelimiters || !hasTimer) return false;
+    if (!sBlockOnlineItemDelimiters || !hasTimer)
+        return false;
 
     switch (objId) {
         case OBJ_LIGHTNING:
@@ -121,7 +126,8 @@ static void OnBlueShellExplosion(Item::ObjKouraTogezo *blueShell, u32 soundId) {
     PlayGlobalItemSound(blueShell, soundId);
 
     const Pulsar::System *system = Pulsar::System::sInstance;
-    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled() || itemSlotData == nullptr) return;
+    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled() || itemSlotData == nullptr)
+        return;
 
     const u32 previousTimer = itemSlotData->itemSpawnTimers[1];
     itemSlotData->ResetBlueShellTimer();
@@ -130,11 +136,12 @@ kmCall(0x807AE2E4, OnBlueShellExplosion);
 kmWrite32(0x807BB9C8, 0x38000384);  // li r0, 900 (15 seconds)
 
 // Remove special itembox table properties [ZPL]
-static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 cpuItemBoxType, u32 lotteryType) {
+/* static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 cpuItemBoxType, u32 lotteryType) {
     const Pulsar::CupsConfig *cupsConfig = Pulsar::CupsConfig::sInstance;
     const Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
     const char *fileName = !Pulsar::CupsConfig::IsReg(pulsarId) ? cupsConfig->GetFileName(pulsarId, cupsConfig->GetCurVariantIdx()) : 0;
-    if (fileName == 0 || fileName[0] == '\0') fileName = cupsConfig->GetFileName(pulsarId, 0);
+    if (fileName == 0 || fileName[0] == '\0')
+        fileName = cupsConfig->GetFileName(pulsarId, 0);
     if (fileName != 0 && strcmp(fileName, "Z129") == 0) {  // Haunted Woods
         playerItemBoxType = 0;
         cpuItemBoxType = 0;
@@ -142,21 +149,24 @@ static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 c
     player->DecideItem(playerItemBoxType, cpuItemBoxType, lotteryType);
 }
 kmCall(0x80828d70, RemoveSpecialItem);
-kmCall(0x80828da4, RemoveSpecialItem);
+kmCall(0x80828da4, RemoveSpecialItem); */
 
 // Anti Mii Crash
 asmFunc AntiWiper() {
     ASM(
         nofralloc;
-        loc_0x0 : cmpwi r4, 0x6;
+    loc_0x0:
+        cmpwi r4, 0x6;
         ble validMii;
         lhz r12, 0xE(r30);
         cmpwi r12, 0x0;
         bne validMii;
         li r31, 0x0;
         li r4, 0x6;
-        validMii : mr r29, r4;
-        blr;)
+    validMii:
+        mr r29, r4;
+        blr;
+    )
 }
 kmCall(0x800CB6C0, AntiWiper);
 kmWrite32(0x80526660, 0x38000001);  // Credits to Ro for the last line.
@@ -166,7 +176,8 @@ extern "C" void __ptmf_test(void *);
 asmFunc AntiItemColCrash() {
     ASM(
         nofralloc;
-        loc_0x0 : stwu r1, -0xC(r1);
+    loc_0x0:
+        stwu r1, -0xC(r1);
         stw r31, 8(r1);
         mflr r31;
         addi r3, r29, 0x174;
@@ -175,25 +186,30 @@ asmFunc AntiItemColCrash() {
         bne end;
         addi r31, r31, 0x14;
 
-        end : mtlr r31;
+    end:
+        mtlr r31;
         lwz r31, 8(r1);
         addi r1, r1, 0xC;
         mr r3, r29;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x807A1A54, AntiItemColCrash);
 
 // Item Spam Anti-Freeze
 asmFunc ItemSpamAntiFreeze() {
     ASM(
-        loc_0x0 : lbz r12, 0x1C(r27);
+    loc_0x0:
+        lbz r12, 0x1C(r27);
         add r12, r30, r12;
         cmpwi r12, 0xE0;
         blt + loc_0x18;
         li r0, 0;
         stb r0, 0x19(r27);
 
-        loc_0x18 : lbz r0, 0x19(r27);)
+    loc_0x18:
+        lbz r0, 0x19(r27);
+    )
 }
 kmCall(0x8065BBD4, ItemSpamAntiFreeze);
 
@@ -215,7 +231,8 @@ kmWrite32(0x80655578, 0x60000000);
 // Mushroom Glitch Fix [Vega, ported by ZPL]
 static Item::PlayerRoulette *ApplyMushroomGlitchFix(Item::PlayerRoulette *roulette) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
+    if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode())
+        ++roulette->itemNum;
     return roulette;
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);
@@ -236,6 +253,9 @@ kmWrite32(0x800ECAAC, 0x7C7E1B78);
 
 // Disable Camera Shaking from Bombs [ZPL]
 kmWrite32(0x805a906c, 0x4E800020);
+
+// Disable Quicksand Dossun camera shake [ZPL]
+kmWrite32(0x8080DCE4, 0x60000000);
 
 // No VR/BR Loss on Disconnect [Bully]
 kmWrite32(0x80856560, 0x60000000);  // Disable VR loss
@@ -264,16 +284,20 @@ asmFunc GetUltraUncut() {
         cmpwi r12, 0x0;
         beq + vanillaUncut;
 
-        loc_0x0 : lbz r3, 0x1C(r29);
+    loc_0x0:
+        lbz r3, 0x1C(r29);
         cmplwi r3, 0x1;
         ble + loc_0x10;
         mr r0, r30;
 
-        loc_0x10 : cmplw r30, r0;
+    loc_0x10:
+        cmplw r30, r0;
         blr;
 
-        vanillaUncut : cmplw r30, r0;
-        blr;)
+    vanillaUncut:
+        cmplw r30, r0;
+        blr;
+    )
 }
 kmCall(0x8053511C, GetUltraUncut);
 
@@ -282,14 +306,17 @@ extern "C" void sInstance__8Racedata(void *);
 asmFunc AntiLagStart() {
     ASM(
         nofralloc;
-        loc_0x0 : lwz r12, sInstance__8Racedata @l(r30);
+    loc_0x0:
+        lwz r12, sInstance__8Racedata @l(r30);
         lwz r12, 0xB70(r12);
         cmpwi r12, 0x7;
         blt - loc_0x14;
         li r3, 0x1;
 
-        loc_0x14 : cmpwi r3, 0x0;
-        blr;)
+    loc_0x14:
+        cmpwi r3, 0x0;
+        blr;
+    )
 }
 kmCall(0x80533430, AntiLagStart);
 
@@ -303,7 +330,8 @@ asmFunc StarOffroadFix() {
         andi.r11, r0, 0x80;
         andis.r12, r0, 0x8000;
         or.r0, r11, r12;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8057C3F8, StarOffroadFix);
 
@@ -323,7 +351,8 @@ asmFunc Deflicker() {
         cmpwi r5, 0x0;
         bnelr;
         li r0, 0x0;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8021A028, Deflicker);
 
@@ -357,9 +386,11 @@ asmFunc halfpipeWarpFix() {
         rlwinm r11, r11, 0, 22, 20;
         stw r11, 8(r4);
 
-        loc_0x20 :;
+    loc_0x20:
+        ;
         mr r4, r11;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8058BF58, halfpipeWarpFix);
 
@@ -376,9 +407,11 @@ asmFunc respawnBoostFix1() {
         xoris r5, r5, 16384;
         stw r5, 16(r4);
 
-        loc_0x20 :;
+    loc_0x20:
+        ;
         li r4, 0x3;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x80581E40, respawnBoostFix1);
 
@@ -394,9 +427,11 @@ asmFunc respawnBoostFix2() {
         xoris r5, r5, 16384;
         stw r5, 16(r4);
 
-        loc_0x20 :;
+    loc_0x20:
+        ;
         li r4, 0x3;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x805820B0, respawnBoostFix2);
 
@@ -414,19 +449,6 @@ kmWrite32(0x807f0644, 0x48000024);
 
 // Fix Mii opponents having silent / Rosalina voice Bug [B_squo]
 kmWrite32(0x8086975C, 0x4082001C);
-
-// Mute only Luma's two sound handles when the selected custom character has loose or silent voices [ZPL]
-static nw4r::snd::SoundHandle *MuteRosalinaLumaSounds(Audio::RaceActor *actor, u32 soundId) {
-    Audio::CharacterActor *const characterActor = static_cast<Audio::CharacterActor *>(actor);
-    const Racedata *racedata = Racedata::sInstance;
-    if ((soundId == 0xf68 || soundId == 0xf69) && racedata->racesScenario.players[characterActor->playerId].characterId == ROSALINA) {
-        const u8 table = Pulsar::CustomCharacters::RaceSkinTable(characterActor->playerId, ROSALINA);
-        const Pulsar::CustomCharacters::LooseVoiceInfo &voiceInfo = Pulsar::CustomCharacters::GetLooseVoiceInfo(ROSALINA, table);
-        if (voiceInfo.hasFiles || voiceInfo.silent) return nullptr;
-    }
-    return actor->Audio::RaceActor::HoldSoundLimited(soundId);
-}
-kmWritePointer(0x808dbcd8, MuteRosalinaLumaSounds);
 
 // Online Miis look at the camera when finishing in Live View [B_squo]
 kmWrite32(0x80596770, 0x60000000);
@@ -451,9 +473,11 @@ asmFunc friendRoomJoinCancel() {
 
         li r3, 3;
 
-        end :;
+    end:
+        ;
         cmpwi r3, 3;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x805DD85C, friendRoomJoinCancel);
 
@@ -466,8 +490,10 @@ asmFunc burnoutIconFix() {
         beq - loc_0x10;
         ori r0, r0, 0x1;
 
-        loc_0x10 :;
-        blr;)
+    loc_0x10:
+        ;
+        blr;
+    )
 }
 kmCall(0x807EB38C, burnoutIconFix);
 
@@ -475,12 +501,15 @@ kmCall(0x807EB38C, burnoutIconFix);
 asmFunc pokeyDeathFix() {
     ASM(
         nofralloc;
-        loc_0x0 :;
+    loc_0x0:
+        ;
         cmpwi r0, 0x1;
         beq - loc_0xC;
         cmpwi r0, 0x3;
-        loc_0xC :;
-        blr;)
+    loc_0xC:
+        ;
+        blr;
+    )
 }
 kmCall(0x8077AC50, pokeyDeathFix);
 
@@ -509,7 +538,8 @@ asmFunc exhaustPipeboostFix() {
         lwzx r3, r3, r4;
         li r0, 0x0;
         stw r0, 24(r3);
-        blr;)
+        blr;
+    )
 }
 kmCall(0x805674B8, exhaustPipeboostFix);
 
@@ -539,15 +569,18 @@ kmWrite32(0x80797C44, 0x3C600A0C);
 asmFunc InvalidCameraPointerFix() {
     ASM(
         nofralloc;
-        loc_0x0 : cmpwi r31, 0;
+    loc_0x0:
+        cmpwi r31, 0;
         bne + loc_0x18;
         mflr r12;
         addi r12, r12, 0xA0;
         mtlr r12;
         blr;
 
-        loc_0x18 : lwz r3, 0x0(r31);
-        blr;)
+    loc_0x18:
+        lwz r3, 0x0(r31);
+        blr;
+    )
 }
 kmCall(0x805ABE14, InvalidCameraPointerFix);
 
@@ -572,5 +605,9 @@ kmWrite32(0x800F20B4, 0x60000000);
 
 // Fix online position tracking on tracks with multiple lap counters [ZPL]
 kmWrite32(0x805354D0, 0x38A00000);  // li r5, 0; use checkpoint-based lap counting for remote racers
+
+// Use the standard voice IDs in Time Trial [ZPL]
+kmWrite32(0x808665b8, 0x2c030002);
+kmWrite32(0x80864e7c, 0x2c000002);
 
 }  // namespace Codes

@@ -66,7 +66,8 @@ void CustomEngineClassPage::OnInit() {
             char paneName[16];
             snprintf(paneName, sizeof(paneName), "text_n_%02d", i);
             lyt::Pane *pane = numericBox.layout.GetPaneByName(paneName);
-            if (pane != nullptr) pane->trans.x += offset;
+            if (pane != nullptr)
+                pane->trans.x += offset;
         }
     }
 
@@ -78,7 +79,8 @@ void CustomEngineClassPage::OnActivate() {
     numericBox.RemoveAllDigits();
 
     u16 cc = Settings::Mgr::Get().GetCustomEngineClass();
-    if (cc < 100 || cc > 9999) cc = 150;
+    if (cc < 100 || cc > 9999)
+        cc = 150;
     System::sInstance->netMgr.customEngineClass = cc;
 
     u16 divisor = cc >= 1000 ? 1000 : 100;
@@ -114,8 +116,10 @@ void CustomEngineClassPage::OnBackSpaceClick(PushButton &backSpaceButton, u32 hu
 
 void CustomEngineClassPage::OnOkButtonClick(PushButton &button, u32) {
     u32 cc = GetEngineClass();
-    if (cc < 100) cc = 100;
-    if (cc > 9999) cc = 9999;
+    if (cc < 100)
+        cc = 100;
+    if (cc > 9999)
+        cc = 9999;
     System *system = System::sInstance;
     system->netMgr.customEngineClass = static_cast<u16>(cc);
     Settings::Mgr &settings = Settings::Mgr::Get();
@@ -140,21 +144,16 @@ void CustomEngineClassPage::OnBackPress(u32) {
     EndStateAnimated(1, 0.0f);
 }
 
-static bool IsMirrorUnlockedOrOfflineCustom(const RKSYS::LicenseCompletion *completion, u32 absoluteBit) {
-    if (System::sInstance->IsOfflineVS()) return true;
-    return completion->IsCompleted(absoluteBit);
-}
-kmCall(0x808531bc, IsMirrorUnlockedOrOfflineCustom);
-
 static void OfflineVSSettingsOnActivate(Pages::VSSettings *page) {
     System *system = System::sInstance;
-    const bool isOfflineVS = system->IsOfflineVS();
     RadioButtonControl &engineClass = page->radioButtonControls[0];
-    if (isOfflineVS && System::offlineCustomEngineClass >= 100) engineClass.chosenButtonId = 3;
+    if (System::offlineCustomEngineClass >= 100)
+        engineClass.chosenButtonId = 3;
 
     page->Pages::VSSettings::OnActivate();
 
-    if (!isOfflineVS || engineClass.buttonsCount < 4) return;
+    if (engineClass.buttonsCount < 4)
+        return;
     engineClass.optionButtonsArray[3].SetMessage(Settings::Params::GetOptionBmg(Settings::SETTING_FROOMCC, 3));
     if (System::offlineCustomEngineClass >= 100) {
         page->bottomText->SetMessage(Settings::Params::GetDescriptionBmg(Settings::SETTING_FROOMCC, 3));
@@ -164,7 +163,7 @@ kmWritePointer(0x808da3f8, OfflineVSSettingsOnActivate);
 
 static void OfflineVSSettingsOnRadioClick(Pages::VSSettings *page, RadioButtonControl &radio, u32 hudSlotId, u32 optionId) {
     System *system = System::sInstance;
-    if (!system->IsOfflineVS() || radio.id != 0) {
+    if (radio.id != 0) {
         page->OnRadioClick(radio, hudSlotId, optionId);
         return;
     }
@@ -177,11 +176,13 @@ static void OfflineVSSettingsOnRadioClick(Pages::VSSettings *page, RadioButtonCo
 
     page->OnRadioClick(radio, hudSlotId, 2);
     u16 cc = Settings::Mgr::Get().GetCustomEngineClass();
-    if (cc < 100 || cc > 9999) cc = 150;
+    if (cc < 100 || cc > 9999)
+        cc = 150;
     System::offlineCustomEngineClass = cc;
 
     ExpSection *section = ExpSection::GetSection();
-    if (section == nullptr || section->GetPulPage<CustomEngineClassPage>() == nullptr) return;
+    if (section == nullptr || section->GetPulPage<CustomEngineClassPage>() == nullptr)
+        return;
 
     page->nextPageId = static_cast<PageId>(CustomEngineClassPage::id);
     page->EndStateAnimated(0, 0.0f);
@@ -190,7 +191,7 @@ kmWritePointer(0x808da2d8, OfflineVSSettingsOnRadioClick);
 
 static void OfflineVSSettingsOnRadioChange(Pages::VSSettings *page, RadioButtonControl &radio, u32 hudSlotId, u32 optionId) {
     page->OnRadioChange(radio, hudSlotId, optionId);
-    if (System::sInstance->IsOfflineVS() && radio.id == 0 && optionId == 3) {
+    if (radio.id == 0 && optionId == 3) {
         page->bottomText->SetMessage(Settings::Params::GetDescriptionBmg(Settings::SETTING_FROOMCC, 3));
     }
 }

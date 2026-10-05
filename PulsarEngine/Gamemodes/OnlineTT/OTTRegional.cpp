@@ -71,7 +71,8 @@ u8 ReceiveMode(const DWC::AccFriendData *data, char *dest, int *size) {
     }
 
     int copySize = *size;
-    if (copySize > 16) copySize = 16;
+    if (copySize > 16)
+        copySize = 16;
     for (int i = 0; i < copySize; ++i) {
         dest[i] = temp[i];
     }
@@ -103,7 +104,8 @@ asmFunc FriendStatusUsedIdx() {
         mr r30, r28;
         lis r12, friendStatusButtonUsedIdx @ha;
         stb r29, friendStatusButtonUsedIdx @l(r12);
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8064b548, FriendStatusUsedIdx);
 kmCall(0x8064de54, FriendStatusUsedIdx);  // after race
@@ -176,12 +178,14 @@ void FriendButtonColorOnActivate(AnimationGroup &group, u32 idx, float frame) {
     group.PlayAnimationAtFrame(idx, frame);
     register FriendButton *button;
     asm(mr button, r30;);
-    if (button->status == 4) FriendButtonWindowColor(*button);
+    if (button->status == 4)
+        FriendButtonWindowColor(*button);
 }
 bool FriendButtonColorOnUpdate(FriendButton &button, u32 idx, float frame) {
     register u32 status;
     asm(mr status, r31;);
-    if (status == 4) FriendButtonWindowColor(button);
+    if (status == 4)
+        FriendButtonWindowColor(button);
     return button.IsSelected();
 }
 kmCall(0x805d3b40, FriendButtonColorOnActivate);
@@ -208,7 +212,8 @@ void SetGlobeMsgColor(Pages::Globe::MessageWindow &msg, ut::Color color) {
         picture->vertexColours[1] = color;
         picture->vertexColours[2] = color;
         picture->vertexColours[3] = color;
-        if (color == -1) continue;
+        if (color == -1)
+            continue;
         UI::ResetMatColor(picture, 0);
         UI::UnbindRLMC(picture->material);
     }

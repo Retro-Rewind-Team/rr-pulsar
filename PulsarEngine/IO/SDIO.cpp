@@ -65,7 +65,8 @@ bool SDIO::CreateFolder(const char *path) {
 }
 
 void SDIO::ReadFolder(const char *path) {
-    if (!this->OpenFolderStream(path)) return;
+    if (!this->OpenFolderStream(path))
+        return;
 
     fileNames = new (heap) IOS::IPCPath[maxFileCount];
     if (fileNames == nullptr) {
@@ -74,16 +75,17 @@ void SDIO::ReadFolder(const char *path) {
     }
 
     bool isDirectory = false;
-    while (fileCount < maxFileCount &&
-           this->ReadFolderEntry(fileNames[fileCount], IOS::ipcMaxPath, isDirectory)) {
-        if (!isDirectory) ++fileCount;
+    while (fileCount < maxFileCount && this->ReadFolderEntry(fileNames[fileCount], IOS::ipcMaxPath, isDirectory)) {
+        if (!isDirectory)
+            ++fileCount;
     }
     this->CloseFolderStream();
 }
 
 bool SDIO::OpenFolderStream(const char *path) {
     this->CloseFolder();
-    if (path == nullptr || __sd_vtable->diropen(&dirData, path) == nullptr) return false;
+    if (path == nullptr || __sd_vtable->diropen(&dirData, path) == nullptr)
+        return false;
 
     snprintf(folderName, IOS::ipcMaxPath, "%s", path);
     isFolderOpen = true;
@@ -91,17 +93,20 @@ bool SDIO::OpenFolderStream(const char *path) {
 }
 
 bool SDIO::ReadFolderEntry(char *outFilename, u32 outFilenameSize, bool &outIsDirectory) {
-    if (!isFolderOpen || outFilename == nullptr || outFilenameSize == 0) return false;
+    if (!isFolderOpen || outFilename == nullptr || outFilenameSize == 0)
+        return false;
 
     char filename[SD_MAX_FILENAME_LENGTH];
     stat entryStat;
     while (true) {
         memset(&entryStat, 0, sizeof(entryStat));
         memset(filename, 0, sizeof(filename));
-        if (__sd_vtable->dirnext(&dirData, filename, &entryStat) != 0) return false;
+        if (__sd_vtable->dirnext(&dirData, filename, &entryStat) != 0)
+            return false;
 
         const int written = snprintf(outFilename, outFilenameSize, "%s", filename);
-        if (written <= 0 || static_cast<u32>(written) >= outFilenameSize) continue;
+        if (written <= 0 || static_cast<u32>(written) >= outFilenameSize)
+            continue;
 
         outIsDirectory = (entryStat.st_mode & S_IFMT) == S_IFDIR;
         return true;
@@ -109,7 +114,8 @@ bool SDIO::ReadFolderEntry(char *outFilename, u32 outFilenameSize, bool &outIsDi
 }
 
 void SDIO::CloseFolderStream() {
-    if (!isFolderOpen) return;
+    if (!isFolderOpen)
+        return;
     __sd_vtable->dirclose(&dirData);
     isFolderOpen = false;
 }

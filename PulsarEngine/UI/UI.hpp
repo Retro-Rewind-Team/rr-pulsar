@@ -8,7 +8,11 @@ namespace Pulsar {
 namespace UI {
 
 void ChangeImage(LayoutUIControl &control, const char *paneName, const char *tplName);
+void SetCharacterSelectIcon(LayoutUIControl *control, const char *paneName, const char *picturePane);
 const wchar_t *GetCustomMsg(s32 bmgId);
+u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId, bool isAward = false);
+u32 GetCharacterAuthorBMGId(u32 character, u32 slot);
+bool SetCustomCharacterAuthorMessage(LayoutUIControl &control, u32 bmgId);
 void UnbindRLMC(lyt::Material *mat);
 void ResetMatColor(lyt::Pane *pane, u32 color);
 void ResetFroomSettingsPreviewShown();
@@ -28,7 +32,6 @@ bool AdvanceFroomSettingsPreview(Settings::SettingsPageId &page);
 
 */
 enum PulPageId {
-
     PULPAGE_INITIAL = 0x100,
     PULPAGE_CHOOSENEXT = PULPAGE_INITIAL,
     PULPAGE_VARIANTSELECT,
@@ -50,13 +53,16 @@ enum PulPageId {
     PULPAGE_CHARACTERRESTRICTION,
     PULPAGE_VEHICLERESTRICTIONWEIGHT,
     PULPAGE_VEHICLERESTRICTION,
+    PULPAGE_MULTITRANSMISSIONSELECT,
 
-    PULPAGE_MAX = PULPAGE_VEHICLERESTRICTION - PULPAGE_INITIAL + 1
+    PULPAGE_MAX = PULPAGE_MULTITRANSMISSIONSELECT - PULPAGE_INITIAL + 1
 };
 
 class ExpSection : public Section {  // u32 id -> either a standard pageId but can also be a PulPageId
 public:
-    static ExpSection *GetSection() { return reinterpret_cast<ExpSection *>(SectionMgr::sInstance->curSection); }
+    static ExpSection *GetSection() {
+        return reinterpret_cast<ExpSection *>(SectionMgr::sInstance->curSection);
+    }
 
     static void CreatePages(ExpSection &self, SectionId id);
     void CreatePulPages();
@@ -77,7 +83,9 @@ public:
         static_assert(is_base_of<Page, T>::value, "Not a Page");
         return static_cast<T *>(this->pulPages[id - PULPAGE_INITIAL]);
     }
-    inline void SetPulPage(Page *t, PulPageId id) { this->pulPages[id - PULPAGE_INITIAL] = t; }
+    inline void SetPulPage(Page *t, PulPageId id) {
+        this->pulPages[id - PULPAGE_INITIAL] = t;
+    }
 
     Page *pulPages[PULPAGE_MAX];
     bool hasAutoVote;

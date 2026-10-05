@@ -21,7 +21,8 @@ static void NonGhostPlayerCount(RacedataScenario &scenario, u8 *playerCount, u8 
     u8 realPlayers = *playerCount;
     if (scenario.settings.gamemode != MODE_TIME_TRIAL)
         for (int i = 0; i < 12; ++i)
-            if (scenario.players[i].playerType == PLAYER_GHOST) --realPlayers;
+            if (scenario.players[i].playerType == PLAYER_GHOST)
+                --realPlayers;
     system->nonTTGhostPlayersCount = realPlayers;
 }
 kmCall(0x8052fc78, NonGhostPlayerCount);
@@ -31,7 +32,8 @@ kmWrite32(0x807997e0, 0x60000000);
 static void SetStartingItem(Item::PlayerInventory &inventory, ItemId id, bool isItemForcedDueToCapacity) {
     register u32 playerId;
     asm(mr playerId, r29;);
-    if (Racedata::sInstance->racesScenario.players[playerId].playerType == PLAYER_CPU) return;
+    if (Racedata::sInstance->racesScenario.players[playerId].playerType == PLAYER_CPU)
+        return;
     const System *system = System::sInstance;
     const bool isTT = DriverMgr::isTT;
     if (isTT || system->IsContext(PULSAR_MODE_OTT)) {
@@ -44,7 +46,8 @@ static void SetStartingItem(Item::PlayerInventory &inventory, ItemId id, bool is
         if (isFeather && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_JOINING_REGIONAL)
             id = BLOOPER;
         inventory.SetItem(id, isItemForcedDueToCapacity);
-        if (isFeather) inventory.currentItemCount = 3;
+        if (isFeather)
+            inventory.currentItemCount = 3;
     }
 }
 kmCall(0x80799808, SetStartingItem);
@@ -76,7 +79,8 @@ kmWrite32(0x807eb160, 0x88de01b4);
 static void BattleGlitchEnable() {
     const u8 val = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BATTLEGLITCH);
     float maxDistance = 7500.0f;
-    if (val == BATTLE_GLITCH_ENABLED) maxDistance = 75000.0f;
+    if (val == BATTLE_GLITCH_ENABLED)
+        maxDistance = 75000.0f;
     System *system = System::sInstance;
     if (system->IsContext(PULSAR_MODE_OTT)) {
         const Input::RealControllerHolder *controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
@@ -95,8 +99,10 @@ static void BattleGlitchEnable() {
                 toggleInput = WPAD::WPAD_CL_TRIGGER_ZL;
                 break;
         }
-        if ((newInputs & toggleInput) == toggleInput) system->ottHideNames = !system->ottHideNames;
-        if (system->ottHideNames) maxDistance -= maxDistance;
+        if ((newInputs & toggleInput) == toggleInput)
+            system->ottHideNames = !system->ottHideNames;
+        if (system->ottHideNames)
+            maxDistance -= maxDistance;
     }
     RaceBalloons::maxDistanceNames = maxDistance;
 }
@@ -158,8 +164,11 @@ kmWrite24(0x808A9C16, 'PUL');  // item_window_new -> item_window_PUL
 const char *ChangeItemWindowPane(ItemId id, u32 itemCount) {
     const bool feather = System::sInstance->IsContext(PULSAR_FEATHER);
     bool MegaTC = true;
-    if (System::sInstance->IsContext(PULSAR_THUNDERCLOUD)) MegaTC = false;
-    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) MegaTC = true;
+    if (System::sInstance->IsContext(PULSAR_THUNDERCLOUD))
+        MegaTC = false;
+    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100
+      && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST))
+        MegaTC = true;
     const char *paneName;
     if (id == BLOOPER && feather) {
         if (itemCount == 2)

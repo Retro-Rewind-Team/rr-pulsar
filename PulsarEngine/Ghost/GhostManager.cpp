@@ -3,8 +3,9 @@
 #include <IO/IO.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
+#include <Race/CustomCharacters.hpp>
+#include <Driver/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace Ghosts {
@@ -41,12 +42,14 @@ void Mgr::Init(PulsarId id, u8 variantIdx) {
     if (variantIdx > 0) {
         char parentPath[IOS::ipcMaxPath];
         cupsConfig->GetTrackGhostFolder(parentPath, id, 0);
-        if (!io->FolderExists(parentPath)) io->CreateFolder(parentPath);
+        if (!io->FolderExists(parentPath))
+            io->CreateFolder(parentPath);
     }
     cupsConfig->GetTrackGhostFolder(folderPath, id, variantIdx);
 
     bool exists = io->FolderExists(folderPath);
-    if (!exists) io->CreateFolder(folderPath);
+    if (!exists)
+        io->CreateFolder(folderPath);
     char folderModePath[IOS::ipcMaxPath];
     snprintf(folderModePath, IOS::ipcMaxPath, "%s/%s", folderPath, System::ttModeFolders[ttMode]);
     exists = io->FolderExists(folderModePath);
@@ -73,6 +76,8 @@ void Mgr::Init(PulsarId id, u8 variantIdx) {
         DVD::ReadPrio(&info, &this->rkg, info.length, 0, 2);
         if (this->rkg.CheckValidity()) {
             curData.Init(rkg);
+            // Keep the recorded skin in GhostData padding for the ghost info portrait.
+            curData.unknown_0xc9[0] = rkg.header.unknown_6 <= Driver::MAX_CUSTOM_CHARACTER_SLOTS ? rkg.header.unknown_6 : 0;
             expertCRC32 = this->GetRKGcrc32(this->rkg);
             if (this->cb != nullptr) {
                 rkg.DecompressTo(*decompressed);
@@ -86,7 +91,8 @@ void Mgr::Init(PulsarId id, u8 variantIdx) {
                 this->expertGhost.isActive = true;
             }
             curData.padding = expertFileIdx;
-            if (ttMode <= TTMODE_200 && this->leaderboard.GetFavGhost(ttMode)[0] == '?') this->favGhostFileIndex[ttMode] = expertFileIdx;
+            if (ttMode <= TTMODE_200 && this->leaderboard.GetFavGhost(ttMode)[0] == '?')
+                this->favGhostFileIndex[ttMode] = expertFileIdx;
         }
         DVD::Close(&info);
     }
@@ -98,6 +104,7 @@ void Mgr::Init(PulsarId id, u8 variantIdx) {
         s32 ret = io->ReadFolderFile(&this->rkg, i, sizeof(RKG));
         if (ret > 0 && this->rkg.CheckValidity() && this->GetRKGcrc32(this->rkg) != expertCRC32) {
             curData.Init(rkg);
+            curData.unknown_0xc9[0] = rkg.header.unknown_6 <= Driver::MAX_CUSTOM_CHARACTER_SLOTS ? rkg.header.unknown_6 : 0;
             if (this->cb != nullptr) {
                 rkg.DecompressTo(*decompressed);
                 this->cb(*decompressed, IS_LOADING_LEADERBOARDS, counter);
@@ -203,8 +210,10 @@ void Mgr::LoadAllGhosts(u32 maxGhosts, bool isGhostRace) {
 }
 
 bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry &entry, u32 ldbPosition, bool isFlap) {
-    if (!areGhostsSaving) return false;
-    if (isFlap) this->leaderboard.Update(ENTRY_FLAP, this->entry, -1);
+    if (!areGhostsSaving)
+        return false;
+    if (isFlap)
+        this->leaderboard.Update(ENTRY_FLAP, this->entry, -1);
     GhostData data;
     data.Fill(0);
     RKG buffer;
@@ -214,15 +223,15 @@ bool Mgr::SaveGhost(const RKSYS::LicenseLdbEntry &entry, u32 ldbPosition, bool i
     buffer.header.unknown_3 = Pulsar::UI::GetSelectedTransmission(0);
 
     const bool createdRkg = data.CreateRKG(buffer);
-    if (createdRkg) {
-        buffer.header.customCharacterTable = CustomCharacters::SelectedTable(static_cast<CharacterId>(buffer.header.characterId));
-    }
+    if (createdRkg)
+        buffer.header.unknown_6 = Race::GetPlayerCustomCharacterSlot(0, Racedata::sInstance->racesScenario.players[0].characterId);
     if (createdRkg && buffer.CompressTo(this->rkg)) {
         if (this->cb != nullptr) {
             this->cb(buffer, IS_SAVING_GHOST, -1);
         }
         u32 crc32 = Mgr::GetRKGcrc32(this->rkg);
-        if (ldbPosition <= ENTRY_10TH) this->leaderboard.Update(ldbPosition, entry, crc32);
+        if (ldbPosition <= ENTRY_10TH)
+            this->leaderboard.Update(ldbPosition, entry, crc32);
         const System *system = System::sInstance;
         system->taskThread->Request(&Mgr::CreateAndSaveFiles, this, 0);
 
@@ -297,7 +306,8 @@ void Mgr::InsertCustomGroupToList(GhostList *list, CourseId) {
     u32 index = 0;
     const u32 rkgCount = IO::sInstance->GetFileCount();
     for (int i = 0; i < rkgCount; ++i) {
-        if (index == 37) break;
+        if (index == 37)
+            break;
         const GhostData &data = self->GetGhostData(i);
         if (data.isValid) {
             list->entries[index].data = &data;
@@ -341,7 +351,8 @@ static bool RacedataCheckCorrectRKG() {
     else {
         register u32 id;
         asm(mr id, r27;);
-        if (Racedata::sInstance->menusScenario.players[0].playerType != PLAYER_GHOST) offset = 1;
+        if (Racedata::sInstance->menusScenario.players[0].playerType != PLAYER_GHOST)
+            offset = 1;
         index = id - offset;
     }
     return Racedata::sInstance->ghosts[index].CheckValidity();
@@ -358,7 +369,8 @@ static void GhostHeaderGetCorrectRKG(GhostData &header) {
     else {
         register u32 id;
         asm(mr id, r27;);
-        if (scenario.players[0].playerType != PLAYER_GHOST) offset = 1;
+        if (scenario.players[0].playerType != PLAYER_GHOST)
+            offset = 1;
         scenario.players[id].hudSlotId = id;
         scenario.settings.hudPlayerIds[id] = id;
         index = id - offset;
@@ -371,7 +383,8 @@ kmCall(0x8052f5e4, GhostHeaderGetCorrectRKG);
 void Mgr::LoadCorrectMainGhost(Pages::GhostManager &ghostManager, u8 r4) {
     Mgr *self = Mgr::sInstance;
     self->LoadGhost(*ghostManager.rkgPointer, self->GetGhostData(self->mainGhostIndex).padding);
-    if (ghostManager.state == SAVED_GHOST_RACE_FROM_MENU) ghostManager.state = STAFF_GHOST_RACE_FROM_MENU;
+    if (ghostManager.state == SAVED_GHOST_RACE_FROM_MENU)
+        ghostManager.state = STAFF_GHOST_RACE_FROM_MENU;
 }
 kmCall(0x805e158c, Mgr::LoadCorrectMainGhost);
 

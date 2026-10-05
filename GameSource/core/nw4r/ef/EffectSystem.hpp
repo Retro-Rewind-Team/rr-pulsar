@@ -37,8 +37,7 @@ public:
     u32 RetireParticleAll(u32 groupID);  // 80027630
     void Calc(u32 groupID, CalcOption option = CALC_TYPE_NORMAL);  // 8022464c
     void Draw(const DrawInfo &drawInfo, u32 groupID);  // 800276c0
-    void SetProcessCamera(const math::VEC3 &position, const math::MTX34 &matrix,
-                          float near, float far);  // 80027750
+    void SetProcessCamera(const math::VEC3 &position, const math::MTX34 &matrix, float near, float far);  // 80027750
     void SortEffect(SortEffectOperatorLess less, u32 groupID);  // 80027830
     static bool SortEffectOperatorZ(const Effect *op1, const Effect *op2);  // 800279b0
 

@@ -41,7 +41,8 @@ static asmFunc SetFFAmode() {
         mtlr r0;
         lwz r0, 0x10(r1);
         addi r1, r1, 0x20;
-        blr;);
+        blr;
+    )
 }
 kmCall(0x8053056c, SetFFAmode);
 
@@ -83,8 +84,7 @@ static void SetFFABattleResourceNames(bool isFFA, bool isElimination) {
     positionName[1] = isFFA ? 'r' : 'o';
     battlePointName[0] = isFFA ? 'r' : 'b';
     battlePointName[1] = isFFA ? 'r' : 'a';
-    minigameName[0] = isElimination ? 'E' : isFFA ? 'R'
-                                                  : 'm';
+    minigameName[0] = isElimination ? 'E' : isFFA ? 'R' : 'm';
     balloonName[0] = isFFA ? 'f' : 'b';
 }
 

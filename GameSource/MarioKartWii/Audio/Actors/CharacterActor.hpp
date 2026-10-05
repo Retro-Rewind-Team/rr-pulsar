@@ -99,6 +99,7 @@ public:
     bool unknown_0x6ff;
     u8 unknown_0x700[8];
     static CharacterVoiceActionTable voiceActionTables[24];  // 808afc18
+    static const u16 *voiceRanges[2][48];  // 808db9f0 local, non-local
     static u32 charactersGroupIds[24];  // 808afb58
 };  // 0x708
 // size_assert(CharacterActor, 0x708);

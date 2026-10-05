@@ -35,7 +35,7 @@ struct PULLdbEntry {
     u8 padding2[1];
     u16 milliseconds;  // 0x54
     bool isActive;  // 0x56
-    u8 padding3[1];
+    u8 customCharacterSlot;  // 0x57, zero for entries saved before custom portraits
     CharacterId character;  // 0x58
     KartId kart;  // 0x5C
     ControllerType controllerType;  // 0x60
@@ -56,12 +56,18 @@ public:
     s8 GetRepeatCount(const RKG &rkg) const;
     void Update(u32 position, const RKSYS::LicenseLdbEntry &entry, u32 rkgCRC32);
     void Save(const char *folderPath);
-    void AddTrophy() { this->hasTrophy[System::sInstance->ttMode] = true; }
-    const PULLdbEntry &GetPulEntry(EntryLaps lap) const { return this->entries[System::sInstance->ttMode][lap]; }
+    void AddTrophy() {
+        this->hasTrophy[System::sInstance->ttMode] = true;
+    }
+    const PULLdbEntry &GetPulEntry(EntryLaps lap) const {
+        return this->entries[System::sInstance->ttMode][lap];
+    }
     void EntryToTimer(Timer &dest, u8 id) const;
     void EntryToGameEntry(RKSYS::LicenseLdbEntry &dest, u8 id) const;
     void SetFavGhost(u32 fileIdx, TTMode mode, bool add);
-    const char *GetFavGhost(TTMode mode) const { return this->favGhost[mode]; }
+    const char *GetFavGhost(TTMode mode) const {
+        return this->favGhost[mode];
+    }
     static void CreateFile(PulsarId id);
     static const RKSYS::LicenseLdbEntry *GetEntry(u32 index);  // pointer as the game expects as such
     static int ExpertBMGDisplay(CourseId courseId);

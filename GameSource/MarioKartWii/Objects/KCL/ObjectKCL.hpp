@@ -26,44 +26,35 @@ public:
     virtual void InitCollision();  // 0xb8 80682924
     virtual void RegisterEntity(float radius);  // 0xbc 8081a85c
 
-    virtual bool vf_0xc0(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                         KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xc0
-    virtual bool vf_0xc4(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                         KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xc4
-    virtual bool vf_0xc8(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                         KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xc8
-    virtual bool vf_0xcc(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                         KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xcc
+    virtual bool vf_0xc0(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xc0
+    virtual bool vf_0xc4(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xc4
+    virtual bool vf_0xc8(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xc8
+    virtual bool vf_0xcc(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xcc
 
-    virtual bool IsCollidingNoTerrainInfoNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                                         KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xd0
-    virtual bool IsCollidingAddEntryNoTerrainInfoNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                                                 KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xd4
-    virtual bool IsColliding(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                             KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xd8
-    virtual bool IsCollidingNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                            KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xdc
+    virtual bool IsCollidingNoTerrainInfoNoTriangleCheck(
+      const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xd0
+    virtual bool IsCollidingAddEntryNoTerrainInfoNoTriangleCheck(
+      const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xd4
+    virtual bool IsColliding(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xd8
+    virtual bool IsCollidingNoTriangleCheck(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xdc
 
     virtual void UpdateKCL(const Vec3 &position, KCLBitfield accepted, bool isBiggerThanDefaultScale, float radius);  // 0xe0 80682914
 
     // These 4 mostly call 0xf4-0x100 with timeOffset = 0 and radius = 0
     virtual bool IsCollidingNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                          KCLTypeHolder *ret) = 0;  // 0xe4
+      KCLTypeHolder *ret) = 0;  // 0xe4
     virtual bool IsCollidingAddEntryNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                                  KCLTypeHolder *ret) = 0;  // 0xe8
+      KCLTypeHolder *ret) = 0;  // 0xe8
     virtual bool vf_0xec(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                         KCLTypeHolder *ret) = 0;  // 0xec
+      KCLTypeHolder *ret) = 0;  // 0xec
     virtual bool IsCollidingAddEntry(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                     KCLTypeHolder *ret) = 0;  // 0xf0
+      KCLTypeHolder *ret) = 0;  // 0xf0
 
-    virtual bool IsCollidingNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                          KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xf4
-    virtual bool IsCollidingAddEntryNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                                  KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xf8
-    virtual bool vf_0xfc(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                         KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xfc
-    virtual bool IsCollidingAddEntry(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info,
-                                     KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0x100 the one used for players
+    virtual bool IsCollidingNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xf4
+    virtual bool IsCollidingAddEntryNoTerrainInfo(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xf8
+    virtual bool vf_0xfc(const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0xfc
+    virtual bool IsCollidingAddEntry(
+      const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) = 0;  // 0x100 the one used for players
 
     virtual bool AreItemsAllowed();  // 0x104 8068290c if false, items will disappear on the object
     virtual float vf_0x108();  // 0x108 80682900

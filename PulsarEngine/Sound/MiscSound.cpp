@@ -39,13 +39,16 @@ static bool IsOnlineRaceSection(SectionId sectionId) {
 }
 
 static bool ShouldRefreshWifiMenuMusic(u32 soundId) {
-    if (soundId != SOUND_ID_WIFI_MUSIC) return false;
+    if (soundId != SOUND_ID_WIFI_MUSIC)
+        return false;
 
     const u8 musicSetting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC);
-    if (musicSetting != MUSIC_DISABLE_RACE) return false;
+    if (musicSetting != MUSIC_DISABLE_RACE)
+        return false;
 
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr) return false;
+    if (sectionMgr == nullptr)
+        return false;
 
     return IsOnlineRaceSection(sectionMgr->prevSectionId);
 }
@@ -53,7 +56,8 @@ static bool ShouldRefreshWifiMenuMusic(u32 soundId) {
 // RaceAudioMgr SetRaceState patch that skips the entire func, effectively disabling the mgr
 static void DisableRaceMusic(Audio::SinglePlayer &singlePlayer, u32 soundId, s16 delay) {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) == MUSIC_DEFAULT;
-    if (isEnabled) singlePlayer.PlaySound(soundId, delay);
+    if (isEnabled)
+        singlePlayer.PlaySound(soundId, delay);
 }
 kmCall(0x80711fcc, DisableRaceMusic);  // RaceMgr::SetRaceState
 kmCall(0x80711df4, DisableRaceMusic);  // RaceMgr::SetRaceState
@@ -64,13 +68,15 @@ kmCall(0x8064a340, DisableRaceMusic);  // wifi waiting
 
 static void PreventPrepareRaceMusic(u32 unused, Audio::Handle *handle, u32 soundId) {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) == MUSIC_DEFAULT;
-    if (isEnabled) Audio::Manager::sInstance->PrepareSound(handle, soundId);
+    if (isEnabled)
+        Audio::Manager::sInstance->PrepareSound(handle, soundId);
 }
 kmCall(0x806f8eb4, PreventPrepareRaceMusic);
 
 static void DisableMenuMusic(Audio::SinglePlayer &singlePlayer, u32 soundId, s16 delay) {
     const bool isEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSIC) != MUSIC_DISABLE_ALL;
-    if (isEnabled) singlePlayer.PlaySound(soundId, delay);
+    if (isEnabled)
+        singlePlayer.PlaySound(soundId, delay);
 }
 kmCall(0x806fa64c, DisableMenuMusic);
 
@@ -105,7 +111,8 @@ static void DisableAndChangeBGMusic(Audio::SinglePlayer &singlePlayer, u32 sound
             }
         }
         singlePlayer.PlaySound(soundId, 0);
-        if (customBGPath != nullptr) singlePlayer.StopInactiveSounds();
+        if (customBGPath != nullptr)
+            singlePlayer.StopInactiveSounds();
     }
 }
 kmCall(0x806fa664, DisableAndChangeBGMusic);
@@ -159,11 +166,9 @@ static u8 megaThunderCloudEnabled = 1;
 static u8 specialItemReceiveSoundPitchPending = 0;
 
 static void RefreshSpecialItemReceiveSoundSetting() {
-    specialItemReceiveSoundEnabled =
-        Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPECIALITEMRECEIVE) == SPECIALITEMRECEIVE_ENABLED;
+    specialItemReceiveSoundEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_SPECIALITEMRECEIVE) == SPECIALITEMRECEIVE_ENABLED;
     megaThunderCloudEnabled =
-        Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_MEGA &&
-        (System::sInstance == nullptr || !System::sInstance->IsContext(PULSAR_THUNDERCLOUD));
+      Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_MEGA && (System::sInstance == nullptr || !System::sInstance->IsContext(PULSAR_THUNDERCLOUD));
 }
 Settings::Hook RefreshSpecialItemReceiveSoundSettingHook(RefreshSpecialItemReceiveSoundSetting);
 RaceLoadHook RefreshSpecialItemReceiveSoundSettingRaceHook(RefreshSpecialItemReceiveSoundSetting);
@@ -193,7 +198,7 @@ static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
         cmpwi r28, 0xF;
         bne - end;
 
-        custom :;
+    custom:
         stwu r1, -0x10(r1);
         stw r11, 0x8(r1);
         li r0, 1;
@@ -202,8 +207,9 @@ static asmFunc UseThundercloudReceiveSoundForSpecialItems() {
         lwz r11, 0x8(r1);
         addi r1, r1, 0x10;
 
-        end :;
-        blr;);
+    end:
+        blr;
+    )
 }
 kmCall(0x8079814c, UseThundercloudReceiveSoundForSpecialItems);
 
@@ -232,10 +238,11 @@ static asmFunc UseSpecialReceiveSoundForMegaThundercloud() {
         lis r11, specialItemReceiveSoundPitchPending @ha;
         stb r0, specialItemReceiveSoundPitchPending @l(r11);
 
-        restore :;
+    restore:
         lwz r11, 0x8(r1);
         addi r1, r1, 0x10;
-        blr;);
+        blr;
+    )
 }
 kmCall(0x80798028, UseSpecialReceiveSoundForMegaThundercloud);
 

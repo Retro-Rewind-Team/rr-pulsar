@@ -1,5 +1,6 @@
 #include <Ghost/PULLeaderboard.hpp>
 #include <Ghost/GhostManager.hpp>
+#include <Race/CustomCharacters.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <runtimeWrite.hpp>
@@ -44,10 +45,12 @@ Leaderboard::Leaderboard(const char *folderPath, PulsarId id, bool createNew) {
     snprintf(path, IOS::ipcMaxPath, filePathFormat, folderPath);
     IO *io = IO::sInstance;
     s32 ret = io->OpenFile(path, FILE_MODE_READ_WRITE);
-    if (ret) ret = io->Read(sizeof(Leaderboard), this);
+    if (ret)
+        ret = io->Read(sizeof(Leaderboard), this);
 
     if (!ret || this->crc32 != crc32 || magic != fileMagic) {
-        if (createNew) this->CreateFile(id);
+        if (createNew)
+            this->CreateFile(id);
         new (this) Leaderboard;
         this->SetTrack(id);
     }
@@ -67,7 +70,8 @@ void Leaderboard::CreateFile(PulsarId id) {
 };
 
 void Leaderboard::SetTrack(PulsarId id) {
-    if (CupsConfig::IsReg(id)) return;
+    if (CupsConfig::IsReg(id))
+        return;
     this->crc32 = CupsConfig::sInstance->GetCRC32(id);
     char trackName[0x100];
     UI::GetTrackBMG(trackName, id);
@@ -80,7 +84,8 @@ s32 Leaderboard::GetPosition(const Timer &other) const {
     Timer timer;
     for (int i = ENTRY_10TH; i >= 0; i--) {
         this->EntryToTimer(timer, i);
-        if (timer > other) position = i;
+        if (timer > other)
+            position = i;
     }
     return position;
 }
@@ -91,7 +96,8 @@ s8 Leaderboard::GetRepeatCount(const RKG &rkg) const {
     s8 repeats = 0;
     for (int i = 0; i < 11; ++i) {
         const PULLdbEntry &cur = this->entries[mode][i];
-        if (cur.milliseconds == header.milliseconds && cur.seconds == header.seconds && cur.minutes == header.minutes) repeats++;
+        if (cur.milliseconds == header.milliseconds && cur.seconds == header.seconds && cur.minutes == header.minutes)
+            repeats++;
     }
     return repeats;
 }
@@ -110,6 +116,7 @@ void Leaderboard::Update(u32 position, const RKSYS::LicenseLdbEntry &entry, u32 
     this->entries[mode][position].isActive = entry.timer.isActive;
     this->entries[mode][position].controllerType = entry.controllerType;
     this->entries[mode][position].character = entry.character;
+    this->entries[mode][position].customCharacterSlot = Race::GetPlayerCustomCharacterSlot(0, entry.character);
     this->entries[mode][position].kart = entry.kart;
 }
 
@@ -167,7 +174,8 @@ int Leaderboard::ExpertBMGDisplay(CourseId courseId) {
         return realIsFastStaffGhostUnlocked(realCourseId);
     }
 
-    if (System::sInstance == nullptr || System::sInstance->heap == nullptr) return 1;
+    if (System::sInstance == nullptr || System::sInstance->heap == nullptr)
+        return 1;
 
     Mgr *manager = Mgr::sInstance;
     if (manager == nullptr) {
@@ -182,7 +190,8 @@ int Leaderboard::ExpertBMGDisplay(CourseId courseId) {
     Timer bestTime;
     manager->GetLeaderboard().EntryToTimer(bestTime, ENTRY_1ST);
     const Timer &expert = manager->GetExpert();
-    if (expert.isActive && bestTime.isActive && expert > bestTime) return 2;
+    if (expert.isActive && bestTime.isActive && expert > bestTime)
+        return 2;
     return 1;
 }
 kmCall(0x805e2360, Leaderboard::ExpertBMGDisplay);
@@ -197,7 +206,8 @@ kmWrite32(0x8085dc10, 0x38000002);
 void Leaderboard::SetFavGhost(u32 fileIdx, TTMode mode, bool add) {
     char *dest = &this->favGhost[mode][0];
     dest[0] = '\0';
-    if (add) strncpy(dest, Mgr::GetGhostFileName(fileIdx), IOS::ipcMaxFileName);
+    if (add)
+        strncpy(dest, Mgr::GetGhostFileName(fileIdx), IOS::ipcMaxFileName);
 }
 }  // namespace Ghosts
 }  // namespace Pulsar

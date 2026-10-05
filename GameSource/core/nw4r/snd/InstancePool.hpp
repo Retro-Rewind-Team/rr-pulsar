@@ -16,12 +16,10 @@ public:
 };
 
 template <typename T>
-class MemoryPool : private detail::PoolImpl {
-};
+class MemoryPool : private detail::PoolImpl {};
 
 template <typename T>
-class InstancePool : private detail::PoolImpl {
-};
+class InstancePool : private detail::PoolImpl {};
 }  // namespace detail
 }  // namespace snd
 }  // namespace nw4r

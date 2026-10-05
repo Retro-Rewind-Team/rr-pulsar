@@ -13,10 +13,12 @@ namespace Pulsar {
 
 static bool ParseHexKey(const char *text, u32 &value) {
     value = 0;
-    if (text == nullptr || *text == '\0') return false;
+    if (text == nullptr || *text == '\0')
+        return false;
     while (*text != '\0') {
         char c = *text++;
-        if (c == '\r' || c == '\n') break;
+        if (c == '\r' || c == '\n')
+            break;
         value <<= 4;
         if (c >= '0' && c <= '9')
             value |= static_cast<u32>(c - '0');
@@ -31,7 +33,8 @@ static bool ParseHexKey(const char *text, u32 &value) {
 }
 
 static void TrimLine(char *line) {
-    if (line == nullptr) return;
+    if (line == nullptr)
+        return;
     char *start = line;
     while (*start == ' ' || *start == '\t') ++start;
     if (start != line) {
@@ -52,11 +55,14 @@ static void TrimLine(char *line) {
 const size_t trackMaxFileName = 48;
 
 static char *DuplicateFileName(const char *src) {
-    if (src == nullptr || *src == '\0') return nullptr;
+    if (src == nullptr || *src == '\0')
+        return nullptr;
     size_t len = strlen(src);
-    if (len == 0) return nullptr;
+    if (len == 0)
+        return nullptr;
     const size_t maxLen = trackMaxFileName;
-    if (len > maxLen) len = maxLen;
+    if (len > maxLen)
+        len = maxLen;
     char *copy = new char[maxLen + 1];
     memcpy(copy, src, len);
     copy[len] = '\0';
@@ -73,7 +79,8 @@ static inline u32 GetStoredTrackCount(u32 cupCount) {
 
 static inline u16 CombineTrophyCount(u16 first, u16 second) {
     u32 total = first + second;
-    if (total > 0xFFFF) total = 0xFFFF;
+    if (total > 0xFFFF)
+        total = 0xFFFF;
     return static_cast<u16>(total);
 }
 
@@ -101,18 +108,19 @@ static u32 CountSourceVariants(const Track *tracks, u32 trackCount) {
 
 CupsConfig *CupsConfig::sInstance = nullptr;
 
-CupsConfig::CupsConfig(const CupsHolder &rawCups) : regsMode(rawCups.regsMode),
-                                                    hasRegs(false),
-                                                    hasOddCups(false),
-                                                    winningCourse(PULSARID_NONE),
-                                                    selectedCourse(PULSARID_FIRSTREG),
-                                                    curVariantIdx(0),
-                                                    pendingVariantIdx(0),
-                                                    hasPendingVariant(false),
-                                                    lastSelectedCup(PULSARCUPID_FIRSTREG),
-                                                    lastSelectedCupButtonIdx(0),
-                                                    isAlphabeticalLayout(false),
-                                                    lastVariantIdxByTrack(nullptr) {
+CupsConfig::CupsConfig(const CupsHolder &rawCups)
+    : regsMode(rawCups.regsMode),
+      hasRegs(false),
+      hasOddCups(false),
+      winningCourse(PULSARID_NONE),
+      selectedCourse(PULSARID_FIRSTREG),
+      curVariantIdx(0),
+      pendingVariantIdx(0),
+      hasPendingVariant(false),
+      lastSelectedCup(PULSARCUPID_FIRSTREG),
+      lastSelectedCupButtonIdx(0),
+      isAlphabeticalLayout(false),
+      lastVariantIdxByTrack(nullptr) {
     memset(this->vsTrackVariantIdx, 0, sizeof(this->vsTrackVariantIdx));
     lastVariantIdxByTrack = new u8[0x2000];
     memset(lastVariantIdxByTrack, 0, 0x2000);
@@ -177,8 +185,10 @@ CupsConfig::CupsConfig(const CupsHolder &rawCups) : regsMode(rawCups.regsMode),
             u16 jPos = 0xFFFF;
 
             for (int k = 0; k < ctsCount; ++k) {
-                if (originalAlphabeticalArray[k] == lastTrackIndices[i]) iPos = k;
-                if (originalAlphabeticalArray[k] == lastTrackIndices[j]) jPos = k;
+                if (originalAlphabeticalArray[k] == lastTrackIndices[i])
+                    iPos = k;
+                if (originalAlphabeticalArray[k] == lastTrackIndices[j])
+                    jPos = k;
             }
             if (iPos > jPos) {
                 u16 temp = lastTrackIndices[i];
@@ -277,16 +287,18 @@ CupsConfig::CupsConfig(const CupsHolder &rtCups, const CupsHolder &ctCups, const
     memcpy(mainTracks + rtTrackCount, ctSourceTracks, sizeof(Track) * ctTrackCount);
     memcpy(mainTracks + rtTrackCount + ctTrackCount, btSourceTracks, sizeof(Track) * btTrackCount);
     if (ctsCount > rtTrackCount + ctTrackCount + btTrackCount) {
-        memset(mainTracks + rtTrackCount + ctTrackCount + btTrackCount, 0,
-               sizeof(Track) * (ctsCount - rtTrackCount - ctTrackCount - btTrackCount));
+        memset(mainTracks + rtTrackCount + ctTrackCount + btTrackCount, 0, sizeof(Track) * (ctsCount - rtTrackCount - ctTrackCount - btTrackCount));
     }
 
     const u8 *rtVarData = reinterpret_cast<const u8 *>(&rtCups.tracks[0]) + sizeof(Track) * rtStoredTrackCount;
     const u8 *ctVarData = reinterpret_cast<const u8 *>(&ctCups.tracks[0]) + sizeof(Track) * ctStoredTrackCount;
     const u8 *btVarData = reinterpret_cast<const u8 *>(&btCups.tracks[0]) + sizeof(Track) * btStoredTrackCount;
-    if (rtVariantCount != 0) memcpy(variants, rtVarData, sizeof(Variant) * rtVariantCount);
-    if (ctVariantCount != 0) memcpy(variants + rtVariantCount, ctVarData, sizeof(Variant) * ctVariantCount);
-    if (btVariantCount != 0) memcpy(variants + rtVariantCount + ctVariantCount, btVarData, sizeof(Variant) * btVariantCount);
+    if (rtVariantCount != 0)
+        memcpy(variants, rtVarData, sizeof(Variant) * rtVariantCount);
+    if (ctVariantCount != 0)
+        memcpy(variants + rtVariantCount, ctVarData, sizeof(Variant) * ctVariantCount);
+    if (btVariantCount != 0)
+        memcpy(variants + rtVariantCount + ctVariantCount, btVarData, sizeof(Variant) * btVariantCount);
 
     for (u32 i = 0; i < static_cast<u32>(ctsCount); ++i) {
         alphabeticalArray[i] = i;
@@ -304,8 +316,10 @@ CupsConfig::CupsConfig(const CupsHolder &rtCups, const CupsHolder &ctCups, const
                 u16 iPos = 0xFFFF;
                 u16 jPos = 0xFFFF;
                 for (u32 k = 0; k < ctTrackCount; ++k) {
-                    if (ctOrigAlphabetical[k] == static_cast<u16>(ctTrackIndices[i] - rtTrackCount)) iPos = k;
-                    if (ctOrigAlphabetical[k] == static_cast<u16>(ctTrackIndices[j] - rtTrackCount)) jPos = k;
+                    if (ctOrigAlphabetical[k] == static_cast<u16>(ctTrackIndices[i] - rtTrackCount))
+                        iPos = k;
+                    if (ctOrigAlphabetical[k] == static_cast<u16>(ctTrackIndices[j] - rtTrackCount))
+                        jPos = k;
                 }
                 if (iPos > jPos) {
                     u16 temp = ctTrackIndices[i];
@@ -347,12 +361,14 @@ inline int CupsConfig::GetCorrectMusicSlot() const {
     CourseId realId = mgr->courseId;
     if (realId <= 0x1F) {  //! battle
         realId = ConvertTrack_PulsarIdToRealId(this->winningCourse);
-        if (!IsReg(this->winningCourse)) realId = static_cast<CourseId>(this->cur.musicSlot);
+        if (!IsReg(this->winningCourse))
+            realId = static_cast<CourseId>(this->cur.musicSlot);
     }
     int ret = Audio::ItemAlterationMgr::courseToSoundIdTable[realId];
     register Audio::RaceState futureState;
     asm(mr futureState, r31;);
-    if (futureState == Audio::RACE_STATE_FAST && ret == SOUND_ID_GALAXY_COLOSSEUM) ret = SOUND_ID_GALAXY_COLOSSEUM - 1;
+    if (futureState == Audio::RACE_STATE_FAST && ret == SOUND_ID_GALAXY_COLOSSEUM)
+        ret = SOUND_ID_GALAXY_COLOSSEUM - 1;
     return ret;
 }
 
@@ -376,7 +392,8 @@ void CupsConfig::GetTrackGhostFolder(char *dest, PulsarId pulsarId, u8 variantId
 }
 
 void CupsConfig::LoadFileNames(const char *buffer, u32 length, u32 trackIdxOffset, u32 sourceTrackCount) {
-    if (buffer == nullptr || length == 0 || this->GetCtsTrackCount() == 0) return;
+    if (buffer == nullptr || length == 0 || this->GetCtsTrackCount() == 0)
+        return;
     char *temp = new char[length + 1];
     memcpy(temp, buffer, length);
     temp[length] = '\0';
@@ -403,23 +420,29 @@ void CupsConfig::LoadFileNames(const char *buffer, u32 length, u32 trackIdxOffse
             cursor += strlen(cursor);
         }
         TrimLine(lineStart);
-        if (*lineStart == '\0') continue;
+        if (*lineStart == '\0')
+            continue;
         char *equals = strchr(lineStart, '=');
-        if (equals == nullptr) continue;
+        if (equals == nullptr)
+            continue;
         *equals = '\0';
         char *keyStr = lineStart;
         char *valueStr = equals + 1;
         TrimLine(keyStr);
         TrimLine(valueStr);
-        if (*keyStr == '\0' || *valueStr == '\0') continue;
+        if (*keyStr == '\0' || *valueStr == '\0')
+            continue;
         u32 key = 0;
-        if (!ParseHexKey(keyStr, key)) continue;
+        if (!ParseHexKey(keyStr, key))
+            continue;
         char *pipe = strchr(valueStr, '|');
-        if (pipe == nullptr) continue;
+        if (pipe == nullptr)
+            continue;
         *pipe = '\0';
         TrimLine(valueStr);
         const u32 rawTrackIdx = key & 0x0FFF;
-        if (sourceTrackCount != 0 && rawTrackIdx >= sourceTrackCount) continue;
+        if (sourceTrackCount != 0 && rawTrackIdx >= sourceTrackCount)
+            continue;
         const u32 variantIdx = key >> 12;
         u32 trackIdx = rawTrackIdx + trackIdxOffset;
         if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount())) {
@@ -434,11 +457,14 @@ void CupsConfig::LoadFileNames(const char *buffer, u32 length, u32 trackIdxOffse
 }
 
 void CupsConfig::RegisterFileName(u32 trackIdx, u32 variantIdx, const char *name) {
-    if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount()) || name == nullptr || *name == '\0') return;
+    if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount()) || name == nullptr || *name == '\0')
+        return;
     char *stored = DuplicateFileName(name);
-    if (stored == nullptr) return;
+    if (stored == nullptr)
+        return;
     if (variantIdx == 0) {
-        if (trackFileNames[trackIdx] != nullptr) delete[] trackFileNames[trackIdx];
+        if (trackFileNames[trackIdx] != nullptr)
+            delete[] trackFileNames[trackIdx];
         trackFileNames[trackIdx] = stored;
         return;
     }
@@ -452,19 +478,25 @@ void CupsConfig::RegisterFileName(u32 trackIdx, u32 variantIdx, const char *name
         delete[] stored;
         return;
     }
-    if (variantFileNames[variantArrayIdx] != nullptr) delete[] variantFileNames[variantArrayIdx];
+    if (variantFileNames[variantArrayIdx] != nullptr)
+        delete[] variantFileNames[variantArrayIdx];
     variantFileNames[variantArrayIdx] = stored;
 }
 
 const char *CupsConfig::GetFileName(PulsarId id, u8 variantIdx) const {
-    if (IsReg(id)) return nullptr;
+    if (IsReg(id))
+        return nullptr;
     const u32 trackIdx = ConvertTrack_PulsarIdToRealId(id);
-    if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount())) return nullptr;
-    if (variantIdx == 0) return trackFileNames[trackIdx];
-    if (variantIdx - 1 >= this->mainTracks[trackIdx].variantCount || this->variantFileNames == nullptr) return nullptr;
+    if (trackIdx >= static_cast<u32>(this->GetCtsTrackCount()))
+        return nullptr;
+    if (variantIdx == 0)
+        return trackFileNames[trackIdx];
+    if (variantIdx - 1 >= this->mainTracks[trackIdx].variantCount || this->variantFileNames == nullptr)
+        return nullptr;
     const u32 base = this->variantsOffs[trackIdx] / sizeof(Variant);
     const u32 variantArrayIdx = base + (variantIdx - 1);
-    if (variantArrayIdx >= this->totalVariantCount) return nullptr;
+    if (variantArrayIdx >= this->totalVariantCount)
+        return nullptr;
     return variantFileNames[variantArrayIdx];
 }
 
@@ -490,25 +522,31 @@ void CupsConfig::ClearPendingVariant() {
 
 u8 CupsConfig::GetLastSelectedVariant(PulsarId id) const {
     const u32 trackIdx = static_cast<u32>(id);
-    if (trackIdx >= 0x2000 || this->lastVariantIdxByTrack == nullptr) return 0;
+    if (trackIdx >= 0x2000 || this->lastVariantIdxByTrack == nullptr)
+        return 0;
     return this->lastVariantIdxByTrack[trackIdx];
 }
 
 void CupsConfig::SetLastSelectedVariant(PulsarId id, u8 variantIdx) {
     const u32 trackIdx = static_cast<u32>(id);
-    if (trackIdx >= 0x2000 || this->lastVariantIdxByTrack == nullptr) return;
+    if (trackIdx >= 0x2000 || this->lastVariantIdxByTrack == nullptr)
+        return;
     this->lastVariantIdxByTrack[trackIdx] = variantIdx;
 }
 
 void CupsConfig::SetWinning(PulsarId id, u32 variantIdx) {
-    if (!IsValidTrack(id)) return;
+    if (!IsValidTrack(id))
+        return;
 
-    if (variantIdx == 0xFF) variantIdx = 0;
-    if (IsReg(id)) variantIdx = 0;
+    if (variantIdx == 0xFF)
+        variantIdx = 0;
+    if (IsReg(id))
+        variantIdx = 0;
 
     if (!IsReg(id)) {
         const Track &track = GetTrack(id);
-        if (variantIdx > track.variantCount) variantIdx = 0;
+        if (variantIdx > track.variantCount)
+            variantIdx = 0;
         cur.crc32 = track.crc32;
 
         u8 slot;
@@ -539,7 +577,8 @@ void CupsConfig::ToggleCTs(bool enabled) {
     const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
     if ((controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) && !isBattle) {
-        if (System::sInstance->IsContext(PULSAR_REGS)) isRegsOnly = true;
+        if (System::sInstance->IsContext(PULSAR_REGS))
+            isRegsOnly = true;
     }
     if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_WW || controller->roomType == RKNet::ROOMTYPE_BT_WW || controller->roomType == RKNet::ROOMTYPE_JOINING_WW)) {
         isRegsOnly = true;
@@ -607,13 +646,18 @@ PulsarId CupsConfig::RandomizeTrack() const {
     TrackSelection ctSelection = TRACKSELECTION_ALL;
     TrackSelection regsSelection = TRACKSELECTION_ALL;
     if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) {
-        if (System::sInstance->IsContext(PULSAR_RETROS)) retroSelection = TRACKSELECTION_RETROS;
-        if (System::sInstance->IsContext(PULSAR_CTS)) ctSelection = TRACKSELECTION_CTS;
-        if (System::sInstance->IsContext(PULSAR_REGS)) regsSelection = TRACKSELECTION_REGS;
+        if (System::sInstance->IsContext(PULSAR_RETROS))
+            retroSelection = TRACKSELECTION_RETROS;
+        if (System::sInstance->IsContext(PULSAR_CTS))
+            ctSelection = TRACKSELECTION_CTS;
+        if (System::sInstance->IsContext(PULSAR_REGS))
+            regsSelection = TRACKSELECTION_REGS;
     }
     if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
-        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D) retroSelection = TRACKSELECTION_RETROS;
-        if (System::sInstance->netMgr.region == 0x14) ctSelection = TRACKSELECTION_CTS;
+        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D)
+            retroSelection = TRACKSELECTION_RETROS;
+        if (System::sInstance->netMgr.region == 0x14)
+            ctSelection = TRACKSELECTION_CTS;
     }
     if (retroSelection == TRACKSELECTION_RETROS && regsSelection != TRACKSELECTION_REGS && !isBattle)
         pulsarId = random.NextLimited(this->GetRetroTrackCount()) + 0x100;
@@ -625,7 +669,8 @@ PulsarId CupsConfig::RandomizeTrack() const {
         pulsarId = random.NextLimited(this->GetBattleTrackCount()) + 0x100 + this->GetRetroTrackCount() + this->GetCTOnlyTrackCount();
     else if (this->HasRegs()) {
         pulsarId = random.NextLimited(this->GetCtsTrackCount() + 32);
-        if (pulsarId > 31) pulsarId += (0x100 - 32);
+        if (pulsarId > 31)
+            pulsarId += (0x100 - 32);
     } else
         pulsarId = random.NextLimited(this->GetRetroTrackCount() + this->GetCTOnlyTrackCount()) + 0x100;
     return static_cast<PulsarId>(pulsarId);
@@ -643,38 +688,49 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
     TrackSelection ctSelection = TRACKSELECTION_ALL;
     TrackSelection regsSelection = TRACKSELECTION_ALL;
     if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
-        if (System::sInstance->IsContext(PULSAR_RETROS)) retroSelection = TRACKSELECTION_RETROS;
-        if (System::sInstance->IsContext(PULSAR_CTS)) ctSelection = TRACKSELECTION_CTS;
-        if (System::sInstance->IsContext(PULSAR_REGS)) regsSelection = TRACKSELECTION_REGS;
+        if (System::sInstance->IsContext(PULSAR_RETROS))
+            retroSelection = TRACKSELECTION_RETROS;
+        if (System::sInstance->IsContext(PULSAR_CTS))
+            ctSelection = TRACKSELECTION_CTS;
+        if (System::sInstance->IsContext(PULSAR_REGS))
+            regsSelection = TRACKSELECTION_REGS;
     }
     if (controller->roomType == RKNet::ROOMTYPE_NONE) {
-        if (System::sInstance->IsContext(PULSAR_RETROS)) retroSelection = TRACKSELECTION_ALL;
-        if (System::sInstance->IsContext(PULSAR_CTS)) ctSelection = TRACKSELECTION_ALL;
-        if (System::sInstance->IsContext(PULSAR_REGS)) regsSelection = TRACKSELECTION_REGS;
+        if (System::sInstance->IsContext(PULSAR_RETROS))
+            retroSelection = TRACKSELECTION_ALL;
+        if (System::sInstance->IsContext(PULSAR_CTS))
+            ctSelection = TRACKSELECTION_ALL;
+        if (System::sInstance->IsContext(PULSAR_REGS))
+            regsSelection = TRACKSELECTION_REGS;
     }
     if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
-        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D) retroSelection = TRACKSELECTION_RETROS;
-        if (System::sInstance->netMgr.region == 0x14) ctSelection = TRACKSELECTION_CTS;
+        if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D)
+            retroSelection = TRACKSELECTION_RETROS;
+        if (System::sInstance->netMgr.region == 0x14)
+            ctSelection = TRACKSELECTION_CTS;
     }
     if (retroSelection == TRACKSELECTION_RETROS && regsSelection != TRACKSELECTION_REGS && !isBattle) {
         const u32 countRetro = this->retroCupCount;
         const u32 minRetro = countRetro < 8 ? 8 : 0;
         const u32 nextIdxRetro = ((idx + direction + countRetro) % countRetro) + minRetro;
-        if (!this->hasRegs && nextIdxRetro < 8) return static_cast<PulsarCupId>(nextIdxRetro + countRetro + 0x38);
+        if (!this->hasRegs && nextIdxRetro < 8)
+            return static_cast<PulsarCupId>(nextIdxRetro + countRetro + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxRetro);
     } else if (ctSelection == TRACKSELECTION_CTS && regsSelection != TRACKSELECTION_REGS && !isBattle) {
         const u32 countCT = this->ctOnlyCupCount;
         const u32 lastCupIndex = this->GetTotalCupCount() - 1;
         const u32 startIdx = 8 + this->retroCupCount;
         const u32 nextIdxCT = startIdx + ((idx - startIdx + direction + countCT) % countCT);
-        if (!this->hasRegs && nextIdxCT < 8) return static_cast<PulsarCupId>(nextIdxCT + countCT + 0x38);
+        if (!this->hasRegs && nextIdxCT < 8)
+            return static_cast<PulsarCupId>(nextIdxCT + countCT + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxCT);
     } else if (isBattle) {
         const u32 countBT = this->battleCupCount;
         const u32 lastCupIndex = this->GetTotalCupCount() - 1;
         const u32 startIdx = 8 + this->retroCupCount + this->ctOnlyCupCount;
         const u32 nextIdxBT = startIdx + ((idx - startIdx + direction + countBT) % countBT);
-        if (!this->hasRegs && nextIdxBT < 8) return static_cast<PulsarCupId>(nextIdxBT + countBT + 0x38);
+        if (!this->hasRegs && nextIdxBT < 8)
+            return static_cast<PulsarCupId>(nextIdxBT + countBT + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdxBT);
     } else if (regsSelection == TRACKSELECTION_REGS) {
         const u32 count = 8;
@@ -684,7 +740,8 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         const u32 count = this->retroCupCount + this->ctOnlyCupCount;
         const u32 min = count < 8 ? 8 : 0;
         const u32 nextIdx = ((idx + direction + count) % count) + min;
-        if (!this->hasRegs && nextIdx < 8) return static_cast<PulsarCupId>(nextIdx + count + 0x38);
+        if (!this->hasRegs && nextIdx < 8)
+            return static_cast<PulsarCupId>(nextIdx + count + 0x38);
         return ConvertCup_IdxToPulsarId(nextIdx);
     }
 }
@@ -717,7 +774,8 @@ u32 CupsConfig::ConvertCup_PulsarIdToRealId(PulsarCupId pulsarCupId) {
 
 u32 CupsConfig::ConvertCup_PulsarIdToIdx(PulsarCupId pulsarCupId) {
     u32 idx = pulsarCupId;
-    if (!IsRegCup(pulsarCupId)) idx = pulsarCupId - 0x38;
+    if (!IsRegCup(pulsarCupId))
+        idx = pulsarCupId - 0x38;
     return idx;
 }
 
@@ -741,7 +799,8 @@ CourseId CupsConfig::ConvertTrack_PulsarIdToRealId(PulsarId pulsarId) {
 PulsarId CupsConfig::ConvertTrack_RealIdToPulsarId(CourseId id) {
     if (id < 32)
         for (int i = 0; i < 32; ++i)
-            if (id == idToCourseId[i]) return static_cast<PulsarId>(i);
+            if (id == idToCourseId[i])
+                return static_cast<PulsarId>(i);
     return static_cast<PulsarId>(id);
 }
 
@@ -753,15 +812,10 @@ PulsarId CupsConfig::ConvertTrack_IdxToPulsarId(u32 idx) const {
     return static_cast<PulsarId>(idx);
 }
 
-const u8 CupsConfig::idToCourseId[32] = {
-    0x08, 0x01, 0x02, 0x04,  // mushroom cup
+const u8 CupsConfig::idToCourseId[32] = {0x08, 0x01, 0x02, 0x04,  // mushroom cup
     0x10, 0x14, 0x19, 0x1A,  // shell cup
     0x00, 0x05, 0x06, 0x07,  // flower cup
-    0x1B, 0x1F, 0x17, 0x12,
-    0x09, 0x0F, 0x0B, 0x03,
-    0x15, 0x1E, 0x1D, 0x11,
-    0x0E, 0x0A, 0x0C, 0x0D,
-    0x18, 0x16, 0x13, 0x1C
+    0x1B, 0x1F, 0x17, 0x12, 0x09, 0x0F, 0x0B, 0x03, 0x15, 0x1E, 0x1D, 0x11, 0x0E, 0x0A, 0x0C, 0x0D, 0x18, 0x16, 0x13, 0x1C
 
 };
 

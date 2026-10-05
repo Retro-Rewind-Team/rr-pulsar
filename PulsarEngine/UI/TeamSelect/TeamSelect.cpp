@@ -57,7 +57,8 @@ void TeamSelect::OnInit() {
 
 void TeamSelect::BeforeEntranceAnimations() {
     Pages::Menu::BeforeEntranceAnimations();
-    if (this->toggle.GetState() != this->isEnabled) this->toggle.ToggleState(this->isEnabled);
+    if (this->toggle.GetState() != this->isEnabled)
+        this->toggle.ToggleState(this->isEnabled);
     this->toggle.SelectInitial(0);
     const u32 bmgId = this->toggle.GetState() ? BMG_TEAMS_ENABLED : BMG_TEAMS_DISABLED;
     this->toggle.SetMessage(bmgId);
@@ -70,7 +71,8 @@ void TeamSelect::BeforeEntranceAnimations() {
         u32 idx = this->CalcIdx(teamsArrayIdx);
         if (idx != 0xFF) {
             const u8 curTeam = this->teams[teamsArrayIdx];
-            if (curTeam == 1) this->RotateArrow(this->arrows[idx], 1);
+            if (curTeam == 1)
+                this->RotateArrow(this->arrows[idx], 1);
             this->SetColours(idx, curTeam);
             this->miis[idx].animator.GetAnimationGroupById(0).PlayAnimationAtFrameAndDisable(!curTeam, 0.0f);
         }
@@ -80,7 +82,8 @@ void TeamSelect::BeforeEntranceAnimations() {
 void TeamSelect::BeforeControlUpdate() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub *sub = &controller->subs[0];
-    if (sub->connectionUserDatas[0].playersAtConsole == 0) sub = &controller->subs[1];
+    if (sub->connectionUserDatas[0].playersAtConsole == 0)
+        sub = &controller->subs[1];
 
     int idx = 0;
     for (int aid = 0; aid < 12; ++aid) {
@@ -114,7 +117,8 @@ void TeamSelect::BeforeControlUpdate() {
 }
 
 UIControl *TeamSelect::CreateControl(u32 id) {
-    if (id > 26) return nullptr;
+    if (id > 26)
+        return nullptr;
     const u32 count = this->controlCount;
     this->controlCount++;
     char variant[0x40];
@@ -206,13 +210,15 @@ void TeamSelect::OnButtonClick(PushButton &button, u32 hudSlotId) {
 u8 TeamSelect::CalcTeamsArrayIdx(u32 idx) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub *sub = &controller->subs[0];
-    if (sub->connectionUserDatas[0].playersAtConsole == 0) sub = &controller->subs[1];
+    if (sub->connectionUserDatas[0].playersAtConsole == 0)
+        sub = &controller->subs[1];
 
     u32 curIdx = 0;
     for (u8 curAid = 0; curAid < 12; ++curAid) {
         if (sub->availableAids & (1 << curAid)) {
             for (int player = 0; player < sub->connectionUserDatas[curAid].playersAtConsole; ++player) {
-                if (curIdx == idx) return curAid + 12 * player;
+                if (curIdx == idx)
+                    return curAid + 12 * player;
                 ++curIdx;
             }
         }
@@ -223,11 +229,13 @@ u8 TeamSelect::CalcTeamsArrayIdx(u32 idx) {
 u32 TeamSelect::CalcIdx(u8 teamsArrayIdx) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub *sub = &controller->subs[0];
-    if (sub->connectionUserDatas[0].playersAtConsole == 0) sub = &controller->subs[1];
+    if (sub->connectionUserDatas[0].playersAtConsole == 0)
+        sub = &controller->subs[1];
 
     bool isGuest = teamsArrayIdx >= 12;
     u8 aid = isGuest ? teamsArrayIdx - 12 : teamsArrayIdx;
-    if (!(sub->availableAids & (1 << aid)) || isGuest && sub->connectionUserDatas[aid].playersAtConsole < 2) return 0xFF;
+    if (!(sub->availableAids & (1 << aid)) || isGuest && sub->connectionUserDatas[aid].playersAtConsole < 2)
+        return 0xFF;
 
     u32 idx = 0;
     for (u8 curAid = 0; curAid < aid; ++curAid) {
@@ -302,7 +310,8 @@ void TeamSelect::SetColours(u32 idx, u8 team) {
 static void SetTeams(RKNet::SELECTHandler *handler, u32 &teams) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub *sub = &controller->subs[0];
-    if (sub->connectionUserDatas[0].playersAtConsole == 0) sub = &controller->subs[1];
+    if (sub->connectionUserDatas[0].playersAtConsole == 0)
+        sub = &controller->subs[1];
 
     bool isValid = false;
     Team firstTeam = UI::TeamSelect::GetPlayerTeam(0);  // guaranteed to exist since a room always has aid0
@@ -311,13 +320,15 @@ static void SetTeams(RKNet::SELECTHandler *handler, u32 &teams) {
             if (sub->availableAids & (1 << aid)) {
                 for (int player = 0; player < sub->connectionUserDatas[aid].playersAtConsole; ++player) {
                     Team curSlotTeam = UI::TeamSelect::GetPlayerTeam(aid + 12 * player);
-                    if (curSlotTeam != firstTeam) isValid = true;
+                    if (curSlotTeam != firstTeam)
+                        isValid = true;
                     teams = teams | (curSlotTeam & 1) << (aid * 2 + player);
                 }
             }
         }
     }
-    if (!isValid) handler->DecidePrivateTeams(teams);
+    if (!isValid)
+        handler->DecidePrivateTeams(teams);
 }
 kmCall(0x806619d8, SetTeams);
 }  // namespace UI

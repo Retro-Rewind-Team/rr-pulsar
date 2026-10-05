@@ -20,8 +20,7 @@ public:
     virtual void Reset();  // 0x64 806525a0
 
     void SetMessageBoxMsg(u32 bmgId, Text::Info *text);  // 806525fc
-    void PrepareButton(u32 buttonId, u32 bmgId, Text::Info *text, u32 endAnimDir,
-                       const PtmfHolder_2A<Page, void, u32, PushButton &> &onClickPtmf);  // 80652604
+    void PrepareButton(u32 buttonId, u32 bmgId, Text::Info *text, u32 endAnimDir, const PtmfHolder_2A<Page, void, u32, PushButton &> &onClickPtmf);  // 80652604
     void OnButtonClick(PushButton &button, u32 hudSlotId);  // 80652678
     void SelectInitialButton();  // 80652700
 

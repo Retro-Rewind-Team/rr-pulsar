@@ -31,7 +31,8 @@ private:
     u32 GetChoiceCount() const;
     void OnClick(PushButton &button, u32 hudSlotId);
     void OnSelect(PushButton &button, u32 hudSlotId);
-    void OnDeselect(PushButton &, u32) {}
+    void OnDeselect(PushButton &, u32) {
+    }
     void OnBack(u32 hudSlotId);
     void OnPrevious(SheetSelectControl &, u32);
     void OnNext(SheetSelectControl &, u32);

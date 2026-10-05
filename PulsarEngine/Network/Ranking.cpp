@@ -65,28 +65,34 @@ static s32 BadgeTypeToIcon(u32 badgeType) {
 }
 
 static u32 ParseBadgeJson(const char *body, int bodyLen, u32 pid) {
-    if (body == nullptr || bodyLen <= 0 || pid == 0) return 0;
+    if (body == nullptr || bodyLen <= 0 || pid == 0)
+        return 0;
 
     Network::Json::Value root;
-    if (!Network::Json::Parse(body, static_cast<u32>(bodyLen), root)) return 0;
+    if (!Network::Json::Parse(body, static_cast<u32>(bodyLen), root))
+        return 0;
 
     Network::Json::Value badgeMap;
-    if (!Network::Json::Find(root, "badges", badgeMap)) return 0;
+    if (!Network::Json::Find(root, "badges", badgeMap))
+        return 0;
 
     char pidKey[16];
     snprintf(pidKey, sizeof(pidKey), "%u", pid);
 
     Network::Json::Value badges;
-    if (!Network::Json::Find(badgeMap, pidKey, badges)) return 0;
+    if (!Network::Json::Find(badgeMap, pidKey, badges))
+        return 0;
 
     u32 badgeMask = 0;
     const char *cursor = nullptr;
     Network::Json::Value badge;
     while (Network::Json::Next(badges, cursor, badge)) {
         u32 badgeType = 0;
-        if (!Network::Json::GetU32(badge, badgeType)) return 0;
+        if (!Network::Json::GetU32(badge, badgeType))
+            return 0;
         const s32 icon = BadgeTypeToIcon(badgeType);
-        if (icon >= SPECIAL_BADGE_FIRST && icon <= SPECIAL_BADGE_LAST) badgeMask |= 1u << icon;
+        if (icon >= SPECIAL_BADGE_FIRST && icon <= SPECIAL_BADGE_LAST)
+            badgeMask |= 1u << icon;
     }
     return badgeMask;
 }
@@ -104,16 +110,15 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
     const float winRate = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
 
     const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
-    const float userVr = rksysMgr != nullptr ? PointRating::GetUserVR(rksysMgr->curLicenseId)
-                                             : static_cast<float>(licenseVr.points);
+    const float userVr = rksysMgr != nullptr ? PointRating::GetUserVR(rksysMgr->curLicenseId) : static_cast<float>(licenseVr.points);
     float clampedVr = userVr > 1000.0f ? 1000.0f : userVr;
-    if (clampedVr < 0.0f) clampedVr = 0.0f;
+    if (clampedVr < 0.0f)
+        clampedVr = 0.0f;
     const float normalizedVr = clampedVr / 1000.0f * 100.0f;
 
     const float normalizedFirsts = times1st >= 2250 ? 100.0f : 100.0f * times1st / 2250.0f;
     const float normalizedDistance = distTravelled >= 40000.0f ? 100.0f : 100.0f * distTravelled / 40000.0f;
-    const float normalizedFirstDistance =
-        distInFirst >= 10000.0f ? 100.0f : 100.0f * distInFirst / 10000.0f;
+    const float normalizedFirstDistance = distInFirst >= 10000.0f ? 100.0f : 100.0f * distInFirst / 10000.0f;
 
     const float vrWeight = 0.60f;
     const float winRateWeight = 0.15f;
@@ -121,14 +126,11 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
     const float distanceWeight = 0.05f;
     const float firstDistanceWeight = 0.05f;
 
-    const float weightedScore = (vrWeight * normalizedVr) + (winRateWeight * winRate) +
-                                (firstsWeight * normalizedFirsts) +
-                                (distanceWeight * normalizedDistance) +
-                                (firstDistanceWeight * normalizedFirstDistance);
+    const float weightedScore =
+      (vrWeight * normalizedVr) + (winRateWeight * winRate) + (firstsWeight * normalizedFirsts) + (distanceWeight * normalizedDistance) + (firstDistanceWeight * normalizedFirstDistance);
 
     // Map the weighted metrics from the low and high anchors to a 10-100 score.
-    const float highAnchor = vrWeight * 100.0f + winRateWeight * 55.0f + firstsWeight * 100.0f +
-                             distanceWeight * 100.0f + firstDistanceWeight * 100.0f;
+    const float highAnchor = vrWeight * 100.0f + winRateWeight * 55.0f + firstsWeight * 100.0f + distanceWeight * 100.0f + firstDistanceWeight * 100.0f;
     const float lowAnchor = vrWeight * 5.0f + winRateWeight * 50.0f;
     const float scoreScale = 90.0f / (highAnchor - lowAnchor);
     const float scoreOffset = 100.0f - scoreScale * highAnchor;
@@ -142,14 +144,22 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
 }
 
 static int ScoreToRank(float score) {
-    if (score >= 100.0f) return 9;
-    if (score >= 94.0f) return 8;
-    if (score >= 84.0f) return 7;
-    if (score >= 72.0f) return 6;
-    if (score >= 60.0f) return 5;
-    if (score >= 48.0f) return 4;
-    if (score >= 36.0f) return 3;
-    if (score >= 24.0f) return 2;
+    if (score >= 100.0f)
+        return 9;
+    if (score >= 94.0f)
+        return 8;
+    if (score >= 84.0f)
+        return 7;
+    if (score >= 72.0f)
+        return 6;
+    if (score >= 60.0f)
+        return 5;
+    if (score >= 48.0f)
+        return 4;
+    if (score >= 36.0f)
+        return 3;
+    if (score >= 24.0f)
+        return 2;
     return 1;
 }
 
@@ -160,9 +170,7 @@ struct RankText {
 };
 
 static const RankText &GetRankText() {
-    static const RankText english = {
-        L"Rank: %ls\nScore: %d",
-        L"No license loaded.",
+    static const RankText english = {L"Rank: %ls\nScore: %d", L"No license loaded.",
         L"Retro Rewind Rank:\n"
         L"VR: %u / 100000\n"
         L"Win Rate: %.1f%% / 65%%\n"
@@ -171,9 +179,7 @@ static const RankText &GetRankText() {
         L"1st Distance: %.1f km / 10000 km\n"
         L"Score: %.2f points (need +%.2f for Rank %ls)\n"};
 
-    static const RankText japanese = {
-        L"\u30E9\u30F3\u30AF: %ls\n\u30B9\u30B3\u30A2: %d",
-        L"\u30E9\u30A4\u30BB\u30F3\u30B9\u304C\u8AAD\u307F\u8FBC\u307E\u308C\u3066\u3044\u307E\u305B\u3093\u3002",
+    static const RankText japanese = {L"\u30E9\u30F3\u30AF: %ls\n\u30B9\u30B3\u30A2: %d", L"\u30E9\u30A4\u30BB\u30F3\u30B9\u304C\u8AAD\u307F\u8FBC\u307E\u308C\u3066\u3044\u307E\u305B\u3093\u3002",
         L"Retro Rewind\u30E9\u30F3\u30AF:\n"
         L"VR: %u / 100000\n"
         L"\u52DD\u7387: %.1f%% / 65%%\n"
@@ -182,9 +188,7 @@ static const RankText &GetRankText() {
         L"1\u4F4D\u8DDD\u96E2: %.1f km / 10000 km\n"
         L"\u30B9\u30B3\u30A2: %.2f (\u5FC5\u8981: %.2f / \u30E9\u30F3\u30AF %ls)\n"};
 
-    static const RankText french = {
-        L"Rang : %ls\nScore : %d",
-        L"Aucune licence charg\u00E9e.",
+    static const RankText french = {L"Rang : %ls\nScore : %d", L"Aucune licence charg\u00E9e.",
         L"Rang Retro Rewind :\n"
         L"VR : %u / 100000\n"
         L"Taux de victoire : %.1f%% / 65%%\n"
@@ -193,9 +197,7 @@ static const RankText &GetRankText() {
         L"Distance en 1re : %.1f km / 10000 km\n"
         L"Score : %.2f points (il faut %.2f pour le rang %ls)\n"};
 
-    static const RankText german = {
-        L"Rang: %ls\nPunktzahl: %d",
-        L"Keine Lizenz geladen.",
+    static const RankText german = {L"Rang: %ls\nPunktzahl: %d", L"Keine Lizenz geladen.",
         L"Retro Rewind-Rang:\n"
         L"VR: %u / 100000\n"
         L"Siegrate: %.1f%% / 65%%\n"
@@ -204,9 +206,7 @@ static const RankText &GetRankText() {
         L"Distanz auf Platz 1: %.1f km / 10000 km\n"
         L"Punktzahl: %.2f Punkte (%.2f ben\u00F6tigt f\u00FCr Rang %ls)\n"};
 
-    static const RankText dutch = {
-        L"Rang: %ls\nScore: %d",
-        L"Geen licentie geladen.",
+    static const RankText dutch = {L"Rang: %ls\nScore: %d", L"Geen licentie geladen.",
         L"Retro Rewind-rang:\n"
         L"VR: %u / 100000\n"
         L"Winstpercentage: %.1f%% / 65%%\n"
@@ -215,9 +215,7 @@ static const RankText &GetRankText() {
         L"Afstand op plek 1: %.1f km / 10000 km\n"
         L"Score: %.2f punten (%.2f nodig voor rang %ls)\n"};
 
-    static const RankText spanish = {
-        L"Rango: %ls\nPuntuaci\u00F3n: %d",
-        L"No hay licencia cargada.",
+    static const RankText spanish = {L"Rango: %ls\nPuntuaci\u00F3n: %d", L"No hay licencia cargada.",
         L"Rango de Retro Rewind:\n"
         L"VR: %u / 100000\n"
         L"Tasa de victorias: %.1f%% / 65%%\n"
@@ -226,9 +224,7 @@ static const RankText &GetRankText() {
         L"Distancia en 1.er lugar: %.1f km / 10000 km\n"
         L"Puntuaci\u00F3n: %.2f puntos (faltan %.2f para el rango %ls)\n"};
 
-    static const RankText finnish = {
-        L"Sijoitus: %ls\nPisteet: %d",
-        L"Lisenssi\u00E4 ei ole ladattu.",
+    static const RankText finnish = {L"Sijoitus: %ls\nPisteet: %d", L"Lisenssi\u00E4 ei ole ladattu.",
         L"Retro Rewind -sijoitus:\n"
         L"VR: %u / 100000\n"
         L"Voittoprosentti: %.1f%% / 65%%\n"
@@ -237,9 +233,7 @@ static const RankText &GetRankText() {
         L"Matka 1. sijalla: %.1f km / 10000 km\n"
         L"Pisteet: %.2f (tarvitaan %.2f sijoitukseen %ls)\n"};
 
-    static const RankText italian = {
-        L"Grado: %ls\nPunteggio: %d",
-        L"Nessuna licenza caricata.",
+    static const RankText italian = {L"Grado: %ls\nPunteggio: %d", L"Nessuna licenza caricata.",
         L"Grado Retro Rewind:\n"
         L"VR: %u / 100000\n"
         L"Tasso di vittoria: %.1f%% / 65%%\n"
@@ -248,9 +242,7 @@ static const RankText &GetRankText() {
         L"Distanza in 1a posizione: %.1f km / 10000 km\n"
         L"Punteggio: %.2f punti (ne servono %.2f per il grado %ls)\n"};
 
-    static const RankText korean = {
-        L"\uB7AD\uD06C: %ls\n\uC810\uC218: %d",
-        L"\uB85C\uB4DC\uB41C \uB77C\uC774\uC13C\uC2A4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
+    static const RankText korean = {L"\uB7AD\uD06C: %ls\n\uC810\uC218: %d", L"\uB85C\uB4DC\uB41C \uB77C\uC774\uC13C\uC2A4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
         L"Retro Rewind \uB7AD\uD06C:\n"
         L"VR: %u / 100000\n"
         L"\uC2B9\uB960: %.1f%% / 65%%\n"
@@ -259,8 +251,7 @@ static const RankText &GetRankText() {
         L"1\uC704 \uC8FC\uD589 \uAC70\uB9AC: %.1f km / 10000 km\n"
         L"\uC810\uC218: %.2f (\uD544\uC694: %.2f / \uB7AD\uD06C %ls)\n"};
 
-    static const RankText russian = {
-        L"\u0420\u0430\u043D\u0433: %ls\n\u041E\u0447\u043A\u0438: %d",
+    static const RankText russian = {L"\u0420\u0430\u043D\u0433: %ls\n\u041E\u0447\u043A\u0438: %d",
         L"\u041B\u0438\u0446\u0435\u043D\u0437\u0438\u044F \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u0430.",
         L"\u0420\u0430\u043D\u0433 Retro Rewind:\n"
         L"VR: %u / 100000\n"
@@ -270,9 +261,7 @@ static const RankText &GetRankText() {
         L"\u0414\u0438\u0441\u0442\u0430\u043D\u0446\u0438\u044F \u043D\u0430 1-\u043C \u043C\u0435\u0441\u0442\u0435: %.1f km / 10000 km\n"
         L"\u041E\u0447\u043A\u0438: %.2f (\u043D\u0443\u0436\u043D\u043E %.2f \u0434\u043B\u044F \u0440\u0430\u043D\u0433\u0430 %ls)\n"};
 
-    static const RankText turkish = {
-        L"R\u00FCtbe: %ls\nPuan: %d",
-        L"Y\u00FCkl\u00FC lisans yok.",
+    static const RankText turkish = {L"R\u00FCtbe: %ls\nPuan: %d", L"Y\u00FCkl\u00FC lisans yok.",
         L"Retro Rewind r\u00FCtbesi:\n"
         L"VR: %u / 100000\n"
         L"Kazanma oran\u0131: %.1f%% / 65%%\n"
@@ -281,9 +270,7 @@ static const RankText &GetRankText() {
         L"Birincilik mesafesi: %.1f km / 10000 km\n"
         L"Puan: %.2f (gerekli: %.2f / r\u00FCtbe %ls)\n"};
 
-    static const RankText czech = {
-        L"Hodnost: %ls\nSk\u00F3re: %d",
-        L"Nen\u00ED na\u010Dten\u00E1 \u017E\u00E1dn\u00E1 licence.",
+    static const RankText czech = {L"Hodnost: %ls\nSk\u00F3re: %d", L"Nen\u00ED na\u010Dten\u00E1 \u017E\u00E1dn\u00E1 licence.",
         L"Hodnost Retro Rewind:\n"
         L"VR: %u / 100000\n"
         L"M\u00EDra v\u00FDher: %.1f%% / 65%%\n"
@@ -349,7 +336,8 @@ static const wchar_t *RankToLabel(int rank) {
 
 int GetCurrentLicenseRankVS() {
     const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
-    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
+    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0)
+        return -1;
     const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
@@ -362,7 +350,8 @@ int GetCurrentLicenseRankVS() {
 
 int GetCurrentLicenseScore() {
     const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
-    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
+    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0)
+        return -1;
     const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
@@ -374,19 +363,23 @@ int GetCurrentLicenseScore() {
 }
 
 int FormatRankMessage(wchar_t *dst, size_t dstLen) {
-    if (dst == nullptr || dstLen == 0) return -1;
+    if (dst == nullptr || dstLen == 0)
+        return -1;
     const RankText &text = GetRankText();
     int rank = GetCurrentLicenseRankVS();
     int score = GetCurrentLicenseScore();
-    if (rank < 0) rank = 0;
-    if (score < 0) score = 0;
+    if (rank < 0)
+        rank = 0;
+    if (score < 0)
+        score = 0;
     const wchar_t *rankLabel = RankToLabel(rank);
 
     return ::swprintf(dst, dstLen, text.summaryFormat, rankLabel, score);
 }
 
 int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
-    if (dst == nullptr || dstLen == 0) return -1;
+    if (dst == nullptr || dstLen == 0)
+        return -1;
     const RankText &text = GetRankText();
     const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) {
@@ -400,7 +393,8 @@ int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
     const float winPct = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
 
     float vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
-    if (vr < 0.0f) vr = 0.0f;
+    if (vr < 0.0f)
+        vr = 0.0f;
     const u32 vrClamped = static_cast<u32>(vr * 100.0f + 0.5f);
 
     const u32 times1st = license.GetTimes1stPlaceAchieved();
@@ -417,21 +411,21 @@ int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
     static const float kRankThresholds[] = {12.0f, 24.0f, 36.0f, 48.0f, 60.0f, 72.0f, 84.0f, 94.0f, 100.0f};
     const float nextThreshold = rank >= 9 ? 100.0f : kRankThresholds[rank];
     float scoreNeededForNextRank = rank >= 9 ? 0.0f : nextThreshold - score;
-    if (scoreNeededForNextRank < 0.0f) scoreNeededForNextRank = 0.0f;
+    if (scoreNeededForNextRank < 0.0f)
+        scoreNeededForNextRank = 0.0f;
     const int nextRank = rank >= 9 ? 9 : rank + 1;
     const wchar_t *nextRankLabel = RankToLabel(nextRank);
 
-    return ::swprintf(
-        dst, dstLen,
-        text.detailsFormat,
-        vrClamped, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
+    return ::swprintf(dst, dstLen, text.detailsFormat, vrClamped, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
 }
 
 static u32 GetCurrentLicensePID() {
     RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
-    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return 0;
+    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4)
+        return 0;
     RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
-    if (license.dwcAccUserData.gsProfileId <= 0) return 0;
+    if (license.dwcAccUserData.gsProfileId <= 0)
+        return 0;
     return static_cast<u32>(license.dwcAccUserData.gsProfileId);
 }
 
@@ -446,7 +440,8 @@ bool HasSpecialBadges() {
 u32 GetSpecialBadgeCount() {
     u32 count = 0;
     for (u8 badge = SPECIAL_BADGE_FIRST; badge <= SPECIAL_BADGE_LAST; ++badge) {
-        if (IsSpecialBadgeAvailable(badge)) ++count;
+        if (IsSpecialBadgeAvailable(badge))
+            ++count;
     }
     return count;
 }
@@ -454,14 +449,17 @@ u32 GetSpecialBadgeCount() {
 u8 GetSpecialBadgeAt(u32 index) {
     u32 current = 0;
     for (u8 badge = SPECIAL_BADGE_FIRST; badge <= SPECIAL_BADGE_LAST; ++badge) {
-        if (!IsSpecialBadgeAvailable(badge)) continue;
-        if (current++ == index) return badge;
+        if (!IsSpecialBadgeAvailable(badge))
+            continue;
+        if (current++ == index)
+            return badge;
     }
     return NORMAL_RANKING_BADGE;
 }
 
 static s32 GetFetchedBadgeForPID(u32 pid) {
-    if (pid == 0 || pid != s_badgePid || !Settings::Mgr::IsCreated()) return -1;
+    if (pid == 0 || pid != s_badgePid || !Settings::Mgr::IsCreated())
+        return -1;
 
     const Settings::Mgr &settings = Settings::Mgr::Get();
     if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) != STREAMERMODE_DISABLED) {
@@ -475,7 +473,8 @@ static void OnBadgeResponse(s32 result, void *response, void *userdata) {
     Network::FinishNHTTPRequest();
     BadgeRequestCtx *ctx = reinterpret_cast<BadgeRequestCtx *>(userdata);
     if (ctx == nullptr || ctx->generation != s_badgeRequestGeneration || response == nullptr) {
-        if (response != nullptr) NHTTPDestroyResponse(response);
+        if (response != nullptr)
+            NHTTPDestroyResponse(response);
         s_badgeRequestActive = false;
         s_badgeMask = 0;
         return;
@@ -501,23 +500,25 @@ static void OnBadgeResponse(s32 result, void *response, void *userdata) {
 }
 
 static void StartBadgeRequest(u32 pid) {
-    if (pid == 0 || s_badgeRequestActive) return;
+    if (pid == 0 || s_badgeRequestActive)
+        return;
 
-    if (!Network::PrepareNHTTPRequest()) return;
+    if (!Network::PrepareNHTTPRequest())
+        return;
 
     if (s_badgeRequestWorkBuf == nullptr) {
         s_badgeRequestWorkBuf = Network::NHTTPAlloc(BADGE_REQUEST_WORK_BUF_SIZE, 0x20);
-        if (s_badgeRequestWorkBuf == nullptr) return;
+        if (s_badgeRequestWorkBuf == nullptr)
+            return;
     }
     memset(s_badgeRequestWorkBuf, 0, BADGE_REQUEST_WORK_BUF_SIZE);
 
     s_badgeRequestCtx.generation = s_badgeRequestGeneration;
     s_badgeRequestCtx.pid = pid;
 
-    void *request = NHTTPCreateRequest(BADGE_URL, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
-                                       reinterpret_cast<void *>(&OnBadgeResponse),
-                                       reinterpret_cast<void *>(&s_badgeRequestCtx));
-    if (request == nullptr) return;
+    void *request = NHTTPCreateRequest(BADGE_URL, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE, reinterpret_cast<void *>(&OnBadgeResponse), reinterpret_cast<void *>(&s_badgeRequestCtx));
+    if (request == nullptr)
+        return;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet >= 0) {
@@ -544,7 +545,8 @@ static void StartBadgeRefresh(u32 pid) {
 
 static void BeginBadgeDownloads() {
     const u32 pid = GetCurrentLicensePID();
-    if (pid == 0) return;
+    if (pid == 0)
+        return;
 
     if (s_badgeRequestActive) {
         s_badgeRefreshPending = true;
@@ -556,7 +558,8 @@ static void BeginBadgeDownloads() {
 }
 
 static void ProcessPendingBadgeRequests() {
-    if (s_badgeRequestActive) return;
+    if (s_badgeRequestActive)
+        return;
 
     if (s_badgeRefreshPending) {
         StartBadgeRefresh(s_pendingBadgePid);
@@ -582,7 +585,8 @@ asmFunc AsmHook_WFCMainOnActivateBadgeRefresh() {
         lwz r0, 0x24(r1);
         mtlr r0;
         addi r1, r1, 0x20;
-        blr;);
+        blr;
+    )
 }
 kmCall(0x8064bcd0, AsmHook_WFCMainOnActivateBadgeRefresh);
 
@@ -590,7 +594,8 @@ static u8 GetOnlineRankingIcon(u8, u8) {
     if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
         const u32 pid = GetCurrentLicensePID();
         const s32 badge = GetFetchedBadgeForPID(pid);
-        if (badge >= 0) return static_cast<u8>(badge);
+        if (badge >= 0)
+            return static_cast<u8>(badge);
     }
 
 #ifdef BETA
@@ -599,9 +604,11 @@ static u8 GetOnlineRankingIcon(u8, u8) {
 
     const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING)) return 0;
+    if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING))
+        return 0;
     int rank = GetCurrentLicenseRankVS();
-    if (rank < 0) rank = 0;
+    if (rank < 0)
+        rank = 0;
     const RKSYS::LicenseMgr &license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
     const u32 totalVs = license.GetWFCVSWins() + license.GetWFCVSLosses();
     if (totalVs <= MIN_VS_MATCHES) {

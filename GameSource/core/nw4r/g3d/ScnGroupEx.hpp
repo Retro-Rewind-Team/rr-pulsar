@@ -41,8 +41,7 @@ class ScnGroupEx : public ScnGroup {
 public:
     // maxMdlCount: max amount of objects that can be rendered together; resMdl: the model data shared by all children
     static ScnGroupEx *Construct(G3dHeap *heap, u32 *size, u32 maxChildren, u32 maxMdlCount, ResMdl resMdl);  // 80076070
-    ScnGroupEx(G3dHeap *heap, ScnObj **array, u32 maxNumChildren, ScnObjGatherEx *collection,
-               bool gatherOpa, bool gatherXlu);
+    ScnGroupEx(G3dHeap *heap, ScnObj **array, u32 maxNumChildren, ScnObjGatherEx *collection, bool gatherOpa, bool gatherXlu);
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 80076710 vtable 802732f8
     void G3dProc(u32 g3dproc, u32 param, void *info);  // 0xC 80076250
     ~ScnGroupEx() override;  // 0x10 80076580

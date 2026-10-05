@@ -14,9 +14,8 @@
 namespace Kart {
 class Player : public Link {
 public:
-    Player(u8 idx, KartId kart, CharacterId character, bool isBike, const StatsAndBsp &statsAndBsp, void *unknown,
-           KartDriverDispParam::Entry *kartDriverDispEntry, KartPartsDispParam::Entry *kartPartsDispEntry,
-           BikePartsDispParam::Entry *bikePartsDispEntry, DriverDispParam::Entry *driverDispEntry);  // 8058ddbc
+    Player(u8 idx, KartId kart, CharacterId character, bool isBike, const StatsAndBsp &statsAndBsp, void *unknown, KartDriverDispParam::Entry *kartDriverDispEntry,
+      KartPartsDispParam::Entry *kartPartsDispEntry, BikePartsDispParam::Entry *bikePartsDispEntry, DriverDispParam::Entry *driverDispEntry);  // 8058ddbc
 
     void Init();  // 8058e22c
     void UpdateKartSub();  // 8058eeb4

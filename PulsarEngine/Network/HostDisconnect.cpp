@@ -15,9 +15,9 @@ kmRuntimeUse(0x80656920);
 
 static bool IsInFriendRoom() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr) return false;
-    return controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-           controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    if (controller == nullptr)
+        return false;
+    return controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
 }
 
 static void OnConnectionClosed(RKNet::Controller *controller, u32 aid) {

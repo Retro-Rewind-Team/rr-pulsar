@@ -41,7 +41,8 @@ void ExpCupSelect::OnActivate() {
 
 // Patch distance func to remove horizontal wrapping
 static void CupSelectDistanceFunc(ControlsManipulatorManager *manipulator, u32 type) {
-    if (CupsConfig::sInstance->GetCtsTrackCount() != 0) type = 1;
+    if (CupsConfig::sInstance->GetCtsTrackCount() != 0)
+        type = 1;
     manipulator->SetDistanceFunc(type);
 }
 kmCall(0x80841248, CupSelectDistanceFunc);
@@ -111,7 +112,8 @@ void ExpCupSelect::AfterControlUpdate() {
             bool isCurOnScreen = false;
             for (int i = 0; i < 8; ++i) {
                 u32 cupIdx = (button0Idx + i) % cupCount;
-                if (cupIdx == randomizedCupButtonIdx) isCurOnScreen = true;
+                if (cupIdx == randomizedCupButtonIdx)
+                    isCurOnScreen = true;
             }
             u32 low = nw4r::ut::Abs<s32>(randomizedCupButtonIdx - button0Idx);
             low = nw4r::ut::Min(low, cupCount - low);
@@ -147,7 +149,8 @@ void ExpCupSelect::OnBackPress(u32 hudSlotId) {
 }
 
 // Disable movies
-void ExpCupSelect::OnMoviesActivate(u32 r4) {}
+void ExpCupSelect::OnMoviesActivate(u32 r4) {
+}
 
 kmWrite32(0x808404f8, 0x60000000);
 

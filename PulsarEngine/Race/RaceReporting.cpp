@@ -77,16 +77,8 @@ void EndPlayerRaceHook(Raceinfo *_this, u8 playerIdx) {
         float time = (finishTime->minutes * 60.0f) + (finishTime->seconds) + (finishTime->milliseconds / 1000.0f);
 
         char buffer[128];
-        snprintf(buffer,
-                 sizeof(buffer),
-                 "hi=%d|ch=%d|ve=%d|ft=%u|fp=%d|f1=%u|pc=%d",
-                 racePlayer->hudSlotId,
-                 racePlayer->characterId,
-                 racePlayer->kartId,
-                 *(u32 *)&time,
-                 racePlayer->finishPos,
-                 _this->players[playerIdx]->framesInFirst,
-                 raceData->racesScenario.playerCount);
+        snprintf(buffer, sizeof(buffer), "hi=%d|ch=%d|ve=%d|ft=%u|fp=%d|f1=%u|pc=%d", racePlayer->hudSlotId, racePlayer->characterId, racePlayer->kartId, *(u32 *)&time, racePlayer->finishPos,
+          _this->players[playerIdx]->framesInFirst, raceData->racesScenario.playerCount);
 
         Network::Report("wl:mkw_race_result", buffer);
     }

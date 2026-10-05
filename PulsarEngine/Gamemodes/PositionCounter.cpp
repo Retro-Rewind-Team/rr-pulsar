@@ -12,17 +12,21 @@ u8 PositionCounter::posTrackerAnmFrames[2] = {0, 0};
 
 void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum &posTracker) {
     const System *system = System::sInstance;
-    if (system == nullptr) return;
+    if (system == nullptr)
+        return;
 
     const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
-    if (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE) return;
+    if (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE)
+        return;
 
     const u8 hudSlotId = posTracker.hudSlotId;
-    if (hudSlotId >= 2) return;
+    if (hudSlotId >= 2)
+        return;
 
     lyt::Picture *posPane = static_cast<nw4r::lyt::Picture *>(posTracker.layout.GetPaneByName("position"));
-    if (posPane == nullptr) return;
+    if (posPane == nullptr)
+        return;
 
     ut::Color color = 0xffffffff;
     bool isInDanger = false;
@@ -31,7 +35,8 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum &posTracker) {
     // Determine player ID based on mode
     const Racedata *racedata = Racedata::sInstance;
     const Raceinfo *raceinfo = Raceinfo::sInstance;
-    if (racedata == nullptr || raceinfo == nullptr) return;
+    if (racedata == nullptr || raceinfo == nullptr)
+        return;
 
     const bool isKO = system->IsContext(PULSAR_MODE_KO);
     const bool isLapKO = system->IsContext(PULSAR_MODE_LAPKO);
@@ -76,7 +81,8 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum &posTracker) {
                         // Players considered in danger are those in the last 'elimCount' positions among active racers.
                         // Example: activeCount=5, elimCount=2 -> positions 4 and 5 are in danger.
                         const u8 dangerStartPos = static_cast<u8>(activeCount - elimCount + 1);
-                        if (position >= dangerStartPos) isInDanger = true;
+                        if (position >= dangerStartPos)
+                            isInDanger = true;
                     }
                 }
             }
@@ -104,7 +110,8 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum &posTracker) {
 }
 
 void PositionCounter::UpdateAnimationFrame(u8 hudSlotId, bool isInDanger) {
-    if (hudSlotId >= 2) return;
+    if (hudSlotId >= 2)
+        return;
 
     if (isInDanger) {
         ++posTrackerAnmFrames[hudSlotId];

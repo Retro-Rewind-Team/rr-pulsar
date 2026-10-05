@@ -39,18 +39,22 @@ static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
 static bool IsStartRegionalContext() {
     const System *system = System::sInstance;
-    if (system == nullptr) return false;
+    if (system == nullptr)
+        return false;
 
-    return system->IsContext(PULSAR_STARTRETROS) || system->IsContext(PULSAR_STARTCTS) || system->IsContext(PULSAR_STARTREGS) ||
-           system->IsContext(PULSAR_START200) || system->IsContext(PULSAR_STARTOTT) || system->IsContext(PULSAR_STARTITEMRAIN);
+    return system->IsContext(PULSAR_STARTRETROS) || system->IsContext(PULSAR_STARTCTS) || system->IsContext(PULSAR_STARTREGS) || system->IsContext(PULSAR_START200)
+      || system->IsContext(PULSAR_STARTOTT) || system->IsContext(PULSAR_STARTITEMRAIN);
 }
 
 bool CustomItemPage::ShouldSkipFriendRoomPreview() {
     const System *system = System::sInstance;
-    if (system == nullptr) return false;
+    if (system == nullptr)
+        return false;
 
-    if (IsStartRegionalContext()) return true;
-    if (system->IsContext(PULSAR_MODE_OTT)) return true;
+    if (IsStartRegionalContext())
+        return true;
+    if (system->IsContext(PULSAR_MODE_OTT))
+        return true;
     return (system->netMgr.hostContext & (1 << PULSAR_MODE_OTT)) != 0;
 }
 
@@ -79,7 +83,8 @@ CustomItemPage::CustomItemPage() {
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, onBackPressHandler, false, false);
 }
 
-CustomItemPage::~CustomItemPage() {}
+CustomItemPage::~CustomItemPage() {
+}
 
 void CustomItemPage::OnInit() {
     ::Pages::Menu::OnInit();
@@ -121,7 +126,8 @@ void CustomItemPage::OnActivate() {
     }
 
     ::Pages::Menu::OnActivate();
-    if (this->Pages::Menu::titleText != nullptr) this->Pages::Menu::titleText->SetMessage(this->titleBmg);
+    if (this->Pages::Menu::titleText != nullptr)
+        this->Pages::Menu::titleText->SetMessage(this->titleBmg);
     this->UpdateButtonVisuals();
     this->backButton.isHidden = this->isFriendRoomPreview;
     this->backButton.manipulator.inaccessible = this->isFriendRoomPreview;
@@ -167,31 +173,37 @@ void CustomItemPage::OnDeactivate() {
 
 void CustomItemPage::BeforeEntranceAnimations() {
     ::Pages::Menu::BeforeEntranceAnimations();
-    if (!this->isFriendRoomPreview) this->OnButtonSelect(buttons[0], 0);
+    if (!this->isFriendRoomPreview)
+        this->OnButtonSelect(buttons[0], 0);
 }
 
 void CustomItemPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
-    if (this->isFriendRoomPreview) return;
+    if (this->isFriendRoomPreview)
+        return;
 
     u32 bitfield = Settings::Mgr::Get().GetCustomItems();
     if (button.buttonId == 19) {
         // Randomize - using a LCG
         static u32 seed = 0;
-        if (seed == 0) seed = OS::GetTick();
+        if (seed == 0)
+            seed = OS::GetTick();
         seed = seed * 1103515245 + 12345;
         bitfield = (seed >> 13) & 0x7FFFF;  // 19 bits
-        if (bitfield == 0) bitfield = 0x7FFFF;  // Re-enable all if all are disabled
+        if (bitfield == 0)
+            bitfield = 0x7FFFF;  // Re-enable all if all are disabled
     } else {
         // Toggle bit
         bitfield ^= (1 << button.buttonId);
-        if (bitfield == 0) bitfield = 0x7FFFF;  // Safe fallback
+        if (bitfield == 0)
+            bitfield = 0x7FFFF;  // Safe fallback
     }
     Settings::Mgr::Get().SetCustomItems(bitfield);
     this->UpdateButtonVisuals();
 }
 
 void CustomItemPage::OnButtonSelect(PushButton &button, u32 hudSlotId) {
-    if (this->isFriendRoomPreview) return;
+    if (this->isFriendRoomPreview)
+        return;
 
     button.SetPaneVisibility("hilight_curr", true);
 }
@@ -201,7 +213,8 @@ void CustomItemPage::OnButtonDeselect(PushButton &button, u32 hudSlotId) {
 }
 
 void CustomItemPage::OnBackPress(u32 hudSlotId) {
-    if (this->isFriendRoomPreview) return;
+    if (this->isFriendRoomPreview)
+        return;
 
     this->nextPageId = static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT);
     this->EndStateAnimated(0, 0.0f);
@@ -215,24 +228,28 @@ void CustomItemPage::StartFriendRoomPreview(PageId nextPageId) {
 }
 
 u32 CustomItemPage::GetDisplayBitfield() const {
-    if (this->isFriendRoomPreview) return Race::GetEffectiveCustomItemsBitfield();
+    if (this->isFriendRoomPreview)
+        return Race::GetEffectiveCustomItemsBitfield();
     return Settings::Mgr::Get().GetCustomItems();
 }
 
 void CustomItemPage::UpdateButtonVisuals() {
     u32 bitfield = this->GetDisplayBitfield();
-    if (bitfield == 0) bitfield = ALL_CUSTOM_ITEMS;  // Should have been handled but just in case
+    if (bitfield == 0)
+        bitfield = ALL_CUSTOM_ITEMS;  // Should have been handled but just in case
 
     for (int i = 0; i < 19; ++i) {
         bool enabled = (bitfield >> i) & 1;
         // Enabled: No tint (fully transparent), Disabled: red tint
         u32 color = enabled ? 0x00000000 : 0xA0000080;
         lyt::Pane *pane = buttons[i].layout.GetPaneByName("item_curr");
-        if (pane) ResetMatColor(pane, color);
+        if (pane)
+            ResetMatColor(pane, color);
     }
     // Button 19 (Randomize) is always fully transparent
     lyt::Pane *randPane = buttons[19].layout.GetPaneByName("item_curr");
-    if (randPane) ResetMatColor(randPane, 0x00000000);
+    if (randPane)
+        ResetMatColor(randPane, 0x00000000);
 }
 
 void CustomItemPage::SetButtonIcon(PushButton &button, u32 itemId) {

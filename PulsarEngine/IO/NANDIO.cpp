@@ -53,7 +53,8 @@ void NANDIO::ReadFolder(const char *path) {
         char curFile[IOS::ipcMaxPath];
         while (tmpArray[0] != '\0') {
             u32 length = strlen(tmpArray);
-            if (length > 255) break;
+            if (length > 255)
+                break;
             if (length <= IOS::ipcMaxFileName) {
                 snprintf(curFile, IOS::ipcMaxPath, "%s/%s", realPath, tmpArray);
                 s32 curFilefd = ISFS::Open(curFile, ISFS::MODE_NONE);

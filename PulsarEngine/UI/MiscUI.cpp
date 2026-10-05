@@ -40,7 +40,8 @@ kmCall(0x80850604, CenterTopMenuWifiWaku);
 static PageId AfterWifiResults(PageId id) {
     const System *system = System::sInstance;
 
-    if (system->IsContext(PULSAR_MODE_KO)) id = system->koMgr->KickPlayersOut(id);  // return KO::RaceEndPage with the choice to spectate if the local players are out
+    if (system->IsContext(PULSAR_MODE_KO))
+        id = system->koMgr->KickPlayersOut(id);  // return KO::RaceEndPage with the choice to spectate if the local players are out
     return id;
 }
 kmBranch(0x80646754, AfterWifiResults);
@@ -115,7 +116,8 @@ static void DisplayDate(CtrlMenuPageTitleText *titleText) {
 kmCall(0x805eac64, DisplayDate);
 
 static void CustomRoomDenyText(Pages::MessageBoxTransparent *msgBox, u32 bmgId, const Text::Info *info) {
-    if (Pulsar::System::sInstance->netMgr.denyType == Network::DENY_TYPE_BAD_PACK) bmgId = BMG_ROOM_DENY;
+    if (Pulsar::System::sInstance->netMgr.denyType == Network::DENY_TYPE_BAD_PACK)
+        bmgId = BMG_ROOM_DENY;
     msgBox->SetMessageWindowText(bmgId, info);
 }
 kmCall(0x805dd90c, CustomRoomDenyText);
@@ -201,7 +203,8 @@ CameraParamBin *GetKartParamCamera(u32 weight, u32 screenCount) {
 kmCall(0x805a20d4, GetKartParamCamera);
 
 static void SafeControlGroupInsert(ControlGroup *controlGroup, int index, UIControl *control, u32 drawPass) {
-    if (control == nullptr) return;
+    if (control == nullptr)
+        return;
     controlGroup->SetControl(index, *control, drawPass);
 }
 kmBranch(0x80602470, SafeControlGroupInsert);

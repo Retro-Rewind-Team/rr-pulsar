@@ -14,8 +14,8 @@ struct SearchNodes {
     // counts the textures with the same name as the char arg; if r5 is false, the name is assumed to be just a prefix (uses strstr and not strcmp)
 };
 
-u32 SetMaterialTexObj(g3d::ResMat resMat, g3d::ScnMdl::CopiedMatAccess *copiedMatAccess, const char *texName,
-                      GX::TexObj *texObj, bool setFilterAndWrapMode, u32 r8, u8 countSetFilterAndWrap);  // 80228b18 returns number of modified textures
+u32 SetMaterialTexObj(g3d::ResMat resMat, g3d::ScnMdl::CopiedMatAccess *copiedMatAccess, const char *texName, GX::TexObj *texObj, bool setFilterAndWrapMode, u32 r8,
+  u8 countSetFilterAndWrap);  // 80228b18 returns number of modified textures
 
 }  // namespace G3DUtility
 

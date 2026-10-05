@@ -756,7 +756,8 @@ static const u16 subregionOrder[] = {
 };
 
 const Country *GetCountry(u32 id) {
-    if (id >= 1 && id <= countryCount) return &countries[id - 1];
+    if (id >= 1 && id <= countryCount)
+        return &countries[id - 1];
     return nullptr;
 }
 
@@ -770,12 +771,14 @@ u8 GetCountryAt(u32 listIndex) {
 
 u32 GetListIndex(u8 country) {
     for (u32 i = 0; i < GetCountryChoiceCount(); ++i)
-        if (countryOrder[i] == country) return i;
+        if (countryOrder[i] == country)
+            return i;
     return 0;
 }
 
 u8 GetSelectedCountry() {
-    if (!Settings::Mgr::IsCreated()) return 0;
+    if (!Settings::Mgr::IsCreated())
+        return 0;
     const u8 country = Settings::Mgr::Get().GetDisplayCountry();
     return GetListIndex(country) == 0 ? 0 : country;
 }
@@ -787,29 +790,34 @@ u32 GetSubregionCount(u8 country) {
 
 const Subregion *GetSubregionAt(u8 country, u32 index) {
     const Country *entry = GetCountry(country);
-    if (entry == nullptr || index >= entry->subregionCount) return nullptr;
+    if (entry == nullptr || index >= entry->subregionCount)
+        return nullptr;
     return &subregions[subregionOrder[entry->subregionOffset + index]];
 }
 
 const Subregion *GetSubregion(u8 country, u8 state) {
     const Country *parent = GetCountry(country);
-    if (parent == nullptr) return nullptr;
+    if (parent == nullptr)
+        return nullptr;
     for (u32 i = 0; i < parent->subregionCount; ++i) {
         const Subregion *entry = &subregions[parent->subregionOffset + i];
-        if (entry->state == state) return entry;
+        if (entry->state == state)
+            return entry;
     }
     return nullptr;
 }
 
 u8 GetSelectedSubregion() {
-    if (!Settings::Mgr::IsCreated()) return 0;
+    if (!Settings::Mgr::IsCreated())
+        return 0;
     const u8 state = Settings::Mgr::Get().GetDisplaySubregion();
     return GetSubregion(GetSelectedCountry(), state) == nullptr ? 0 : state;
 }
 
 u8 GetWiiCountry() {
     const SystemManager *system = SystemManager::sInstance;
-    if (system == nullptr) return 0;
+    if (system == nullptr)
+        return 0;
     const u8 country = system->simpleAddr.id >> 24;
     return GetCountry(country) == nullptr ? 0 : country;
 }
@@ -826,10 +834,10 @@ u8 GetLineRegion(u8 country) {
 
 bool GetLocation(u32 &location, u16 &longitude, u16 &latitude) {
     const Country *entry = GetCountry(GetSelectedCountry());
-    if (entry == nullptr) return false;
+    if (entry == nullptr)
+        return false;
     const Subregion *subregion = GetSubregion(GetSelectedCountry(), GetSelectedSubregion());
-    location = (static_cast<u32>(GetSelectedCountry()) << 24) |
-               (static_cast<u32>(subregion == nullptr ? entry->state : subregion->state) << 16);
+    location = (static_cast<u32>(GetSelectedCountry()) << 24) | (static_cast<u32>(subregion == nullptr ? entry->state : subregion->state) << 16);
     longitude = subregion == nullptr ? entry->longitude : subregion->longitude;
     latitude = subregion == nullptr ? entry->latitude : subregion->latitude;
     return true;
@@ -857,21 +865,24 @@ void GetPreview(u8 country, u8 state, u16 &longitude, u16 &latitude) {
 static bool ReadCountry(const SystemManager &system, u32 &dest, bool showFlag) {
     u32 location;
     u16 longitude, latitude;
-    if (!GetLocation(location, longitude, latitude)) return system.GetCountry(dest, showFlag);
+    if (!GetLocation(location, longitude, latitude))
+        return system.GetCountry(dest, showFlag);
     dest = location;
     return true;
 }
 static bool ReadLongitude(const SystemManager &system, u16 &dest, bool showFlag) {
     u32 location;
     u16 longitude, latitude;
-    if (!GetLocation(location, longitude, latitude)) return system.GetLongitude(dest, showFlag);
+    if (!GetLocation(location, longitude, latitude))
+        return system.GetLongitude(dest, showFlag);
     dest = longitude;
     return true;
 }
 static bool ReadLatitude(const SystemManager &system, u16 &dest, bool showFlag) {
     u32 location;
     u16 longitude, latitude;
-    if (!GetLocation(location, longitude, latitude)) return system.GetLatitude(dest, showFlag);
+    if (!GetLocation(location, longitude, latitude))
+        return system.GetLatitude(dest, showFlag);
     dest = latitude;
     return true;
 }

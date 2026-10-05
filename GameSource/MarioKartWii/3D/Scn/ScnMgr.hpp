@@ -209,8 +209,7 @@ class ScnMgrMii : public ScnMgr {
     ~ScnMgrMii() override;  // 8059e9e4 vtable 808b6920
     void LoadLights() override;  // 0x38 8059ea3c
 
-    static void ScnRflDrawProc(nw4r::g3d::ScnRfl *scnRfl, const RFL::CharModel *charModel,
-                               u32 mask_diff, u32 mask_spec, GX::Color ambientColor, bool opa);  // 805afe88
+    static void ScnRflDrawProc(nw4r::g3d::ScnRfl *scnRfl, const RFL::CharModel *charModel, u32 mask_diff, u32 mask_spec, GX::Color ambientColor, bool opa);  // 805afe88
 
     u8 r4arg;
     u8 padding[3];

@@ -37,10 +37,8 @@ class CompressGBAOdh {
         u8 unknown_0x438[0x47c - 0x438];
     };  // 0x47c
 
-    u32 CreateImage(const void *sourceImage, void *destBuffer, u16 width, u16 height, u32 r7OfFuncAbove,
-                    u32 destBufferSize, void *workBuffer, u32 r11);  // 8023321c returns size of the created image
-    s32 Initialize(Params &params, const Resolution &resolution, u32 r7OfFuncAbove,
-                   void *workBuffer, void *destBuffer, u32 destBufferSize);  // 802333bc ret value of 0 = success
+    u32 CreateImage(const void *sourceImage, void *destBuffer, u16 width, u16 height, u32 r7OfFuncAbove, u32 destBufferSize, void *workBuffer, u32 r11);  // 8023321c returns size of the created image
+    s32 Initialize(Params &params, const Resolution &resolution, u32 r7OfFuncAbove, void *workBuffer, void *destBuffer, u32 destBufferSize);  // 802333bc ret value of 0 = success
     s32 ColorConversion(const Params &params, const void *sourceImage, u32 r11);  // 80233d00
     s32 Process(Params &params);  // 8023354c returns the size of the created image if success
     void WriteImageHeader(const Params &params, u32 totalImageSize);  // 80233c94 "AJPG"

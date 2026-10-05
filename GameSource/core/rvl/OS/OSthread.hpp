@@ -57,8 +57,7 @@ struct Thread {  // priority between 0 and 31
 };
 // size_assert(Thread, 0x318);
 
-void OSCreateThread(Thread *thread, void (*runFunc)(void *arg), void *arg,
-                    void *stack, u32 stackSize, u32 priority, u16 detached);  // 801a9e84
+void OSCreateThread(Thread *thread, void (*runFunc)(void *arg), void *arg, void *stack, u32 stackSize, u32 priority, u16 detached);  // 801a9e84
 void SelectThread(Thread *thread);
 
 // Stops a thread then terminates it

@@ -16,7 +16,8 @@ enum VoteState {
 };
 
 struct Mgr {
-    Mgr() : hideNames(false) {}
+    Mgr() : hideNames(false) {
+    }
     void Reset() {
         voteState = COMBO_NONE;
         aidsInRace = 0;

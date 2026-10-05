@@ -98,14 +98,14 @@ struct FriendsMatchControl {
     TransportInfo transportInfo;  // 0xc20 transport control object
 };  // 0x1438
 
-BOOL SetupGameServer(u8 maxPlayerCount, MatchedSCCallback matchedCb, void *matchedParam, NewClientCallback newClientCb, void *newClientParam,
-                     ConnectionAttemptCallback attemptCb, void *attemptParam, u32 r10);  // 800d1984
+BOOL SetupGameServer(u8 maxPlayerCount, MatchedSCCallback matchedCb, void *matchedParam, NewClientCallback newClientCb, void *newClientParam, ConnectionAttemptCallback attemptCb, void *attemptParam,
+  u32 r10);  // 800d1984
 
-void iSetupGameServer(u8 maxPlayerCount, MatchedSCCallback matchedCb, void *matchedParam, NewClientCallback newClientCb, void *newClientParam,
-                      ConnectionAttemptCallback attemptCb, void *attemptParam, u32 r10);  // 800d54a0
+void iSetupGameServer(u8 maxPlayerCount, MatchedSCCallback matchedCb, void *matchedParam, NewClientCallback newClientCb, void *newClientParam, ConnectionAttemptCallback attemptCb, void *attemptParam,
+  u32 r10);  // 800d54a0
 
-void InitFriendsMatch(FriendsMatchControl *unused, AccUserData *userdata, int productID, const char *gameName, const char *secretKey,
-                      int sendBufSize, int recvBufSize, AccFriendData friendList[], int friendListLen);  // 800d0d68
+void InitFriendsMatch(FriendsMatchControl *unused, AccUserData *userdata, int productID, const char *gameName, const char *secretKey, int sendBufSize, int recvBufSize, AccFriendData friendList[],
+  int friendListLen);  // 800d0d68
 
 void iLoginCallback(Error error, int profileID, void *param);  // 800d2f1c
 

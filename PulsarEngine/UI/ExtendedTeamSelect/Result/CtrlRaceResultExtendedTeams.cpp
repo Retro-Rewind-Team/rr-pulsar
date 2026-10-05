@@ -1,7 +1,8 @@
 #include <UI/ExtendedTeamSelect/Result/CtrlRaceResultExtendedTeams.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
+#include <UI/UI.hpp>
+#include <Race/CustomCharacters.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -80,10 +81,8 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
                 info.miis[0] = miiGroup.GetMii(playerId);
                 this->items[i].SetTextBoxMessage("mii_name", BMG_MII_NAME, &info);
             } else {
-                if (!CustomCharacters::SetRaceNameTextIfCustom(this->items[i], "mii_name", playerId)) {
-                    u32 characterBmg = GetCharacterBMGId(characterId, true);
-                    this->items[i].SetTextBoxMessage("mii_name", characterBmg, nullptr);
-                }
+                u32 characterBmg = GetCharacterNameBMGId(characterId, true, playerId);
+                this->items[i].SetTextBoxMessage("mii_name", characterBmg, nullptr);
             }
         } else {
             info.miis[0] = miiGroup.GetMii(playerId);
@@ -97,6 +96,8 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         } else {
             this->items[i].SetPicturePane("chara_icon", GetCharacterIconPaneName(characterId));
             this->items[i].SetPicturePane("chara_icon_sha", GetCharacterIconPaneName(characterId));
+            Race::LoadCustomCharacterIcon(
+              characterId, Race::GetPlayerCustomCharacterSlot(playerId, characterId), this->items[i].layout.GetPaneByName("chara_icon"), this->items[i].layout.GetPaneByName("chara_icon_sha"));
         }
 
         int prevScore = this->players[i].prevBattleScore;
@@ -170,11 +171,7 @@ void CtrlRaceResultExtendedTeams::Load(ExtendedTeamID teamID, int numTeams, int 
 
     this->InitControlGroup(6 + 1);
 
-    const char *anims[] = {
-        "Loop", "Loop", nullptr,
-        "Select", "SelectOn", "SelectOff", nullptr,
-        "Select2", "Select2On", "Select2Off", nullptr,
-        nullptr};
+    const char *anims[] = {"Loop", "Loop", nullptr, "Select", "SelectOn", "SelectOff", nullptr, "Select2", "Select2On", "Select2Off", nullptr, nullptr};
 
     for (int i = 0; i < 6; i++) {
         snprintf(variant, 20, "BlueRed%d", i);
@@ -214,9 +211,7 @@ void CtrlRaceResultExtendedTeams::Load(ExtendedTeamID teamID, int numTeams, int 
     this->resultTeamPoint = new LayoutUIControl();
     this->AddControl(6, this->resultTeamPoint);
 
-    const char *teamPointAnims[] = {
-        "team", "blue", "red", nullptr,
-        nullptr};
+    const char *teamPointAnims[] = {"team", "blue", "red", nullptr, nullptr};
 
     ControlLoader pointLoader(this->resultTeamPoint);
     pointLoader.Load("result", "ResultTeamPoint", "red", teamPointAnims);

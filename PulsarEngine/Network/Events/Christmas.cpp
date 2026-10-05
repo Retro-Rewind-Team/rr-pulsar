@@ -21,15 +21,15 @@ static bool IsPublicOnlineRoom(const RKNet::RoomType roomType) {
 }
 
 static bool IsInChristmasWindow(const ServerDateTime &sdt) {
-    if (!sdt.isValid) return false;
+    if (!sdt.isValid)
+        return false;
     const unsigned month = static_cast<unsigned>(sdt.month);
     const unsigned day = static_cast<unsigned>(sdt.day);
     return (month == 12 && day >= 23 && day <= 31) || (month == 1 && day >= 1 && day <= 3);
 }
 
 static void SetSnowPatchesEnabled() {
-    sForceSnowEffects = IsInChristmasWindow(ServerDateTime::sInstance[0]) &&
-                        IsPublicOnlineRoom(RKNet::Controller::sInstance->roomType);
+    sForceSnowEffects = IsInChristmasWindow(ServerDateTime::sInstance[0]) && IsPublicOnlineRoom(RKNet::Controller::sInstance->roomType);
 }
 static SectionLoadHook setsnowpatches(SetSnowPatchesEnabled);
 
@@ -45,7 +45,9 @@ asmFunc LoadSnowEffectFlag() {
         addi r1, r1, 0x10;
         bne end;
         lbz r0, 0x13e(r30);
-        end : blr;)
+    end:
+        blr;
+    )
 }
 kmCall(0x80691180, LoadSnowEffectFlag);
 kmCall(0x80696C88, LoadSnowEffectFlag);

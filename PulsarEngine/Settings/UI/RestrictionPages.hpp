@@ -24,7 +24,9 @@ private:
     void OnRestrictionButtonSelect(PushButton &button, u32 hudSlotId);
     void OnRestrictionButtonDeselect(PushButton &button, u32 hudSlotId);
     void OnRestrictionBackPress(u32 hudSlotId);
-    void OnRestrictionBackButtonClick(PushButton &button, u32 hudSlotId) { OnRestrictionBackPress(hudSlotId); }
+    void OnRestrictionBackButtonClick(PushButton &button, u32 hudSlotId) {
+        OnRestrictionBackPress(hudSlotId);
+    }
     void BindButtons();
     void UpdateButtonVisuals();
 
@@ -44,9 +46,15 @@ public:
     void OnActivate() override;
     UIControl *CreateControl(u32 id) override;
     void SetButtonHandlers(PushButton &button) override;
-    int GetActivePlayerBitfield() const override { return activePlayerBitfield; }
-    int GetPlayerBitfield() const override { return playerBitfield; }
-    ManipulatorManager &GetManipulatorManager() override { return controlsManipulatorManager; }
+    int GetActivePlayerBitfield() const override {
+        return activePlayerBitfield;
+    }
+    int GetPlayerBitfield() const override {
+        return playerBitfield;
+    }
+    ManipulatorManager &GetManipulatorManager() override {
+        return controlsManipulatorManager;
+    }
 
 private:
     void OnButtonClick(PushButton &button, u32 hudSlotId);
@@ -67,13 +75,17 @@ public:
     void OnActivate() override;
     void OnDeactivate() override;
     void SetButtonHandlers(PushButton &button) override;
-    void SetWeight(u32 newWeight) { weight = newWeight; }
+    void SetWeight(u32 newWeight) {
+        weight = newWeight;
+    }
 
 private:
     void OnRestrictionButtonClick(PushButton &button, u32 hudSlotId);
     void OnRestrictionButtonSelect(PushButton &button, u32 hudSlotId);
     void OnRestrictionBackPress(u32 hudSlotId);
-    void OnRestrictionBackButtonClick(PushButton &button, u32 hudSlotId) { OnRestrictionBackPress(hudSlotId); }
+    void OnRestrictionBackButtonClick(PushButton &button, u32 hudSlotId) {
+        OnRestrictionBackPress(hudSlotId);
+    }
     void BindButtons();
     void UpdateButtonVisuals();
     void RestoreCharacter();

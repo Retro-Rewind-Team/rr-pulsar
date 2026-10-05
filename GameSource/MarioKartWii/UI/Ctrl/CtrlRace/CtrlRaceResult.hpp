@@ -1,6 +1,7 @@
 #ifndef _CTRLRACERESULT_
 #define _CTRLRACERESULT_
 #include <kamek.hpp>
+#include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Ctrl/UIControl.hpp>
 
 //_sinit_ at 807f64f4
@@ -19,6 +20,7 @@ public:
     void Fill(u8 position, u8 playerId);  // 807f5fec fills position bmg, controller/star rank bmg, character icon, prepares animationsposition is 1-indexed, ie if 1 bmg will be "1st"
     void FillScore(u32 score, u32 ptsBmgId);  // 807f56d4 fills score bmgId
     void FillName(u8 playerId);  // 807f52f4
+    void FillCharacter(CharacterId character);  // 807f544c
     void FillFinishTime(u8 playerId);  // 807f595c
     u8 id;  // 0x174 top row will have id 0 for example
     u8 unknown_0x175[0x180 - 0x175];

@@ -27,7 +27,8 @@
 kmWrite32(0x800c9980, 0x4800000c);  // b 0x800c998c
 
 static void NHTTPConfigureHttpsForRequest(void *request) {
-    if (request == nullptr) return;
+    if (request == nullptr)
+        return;
     typedef s32 (*Fn)(void *, ...);
     (reinterpret_cast<Fn>(&NHTTPSetRootCADefault))(request);
     (reinterpret_cast<Fn>(&NHTTPSetVerifyOption))(request, 1);
@@ -59,12 +60,14 @@ static const VRLeaderboardText &GetVRLeaderboardText() {
     };
 
     u32 idx = static_cast<u32>(Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
-    if (idx >= (sizeof(texts) / sizeof(texts[0]))) idx = LANGUAGE_ENGLISH;
+    if (idx >= (sizeof(texts) / sizeof(texts[0])))
+        idx = LANGUAGE_ENGLISH;
     return texts[idx];
 }
 
 static void BMGHolderLoadWithFallback(BMGHolder *self, const char *name) {
-    if (self == nullptr) return;
+    if (self == nullptr)
+        return;
 
     self->bmgFile = nullptr;
     self->info = nullptr;
@@ -72,9 +75,11 @@ static void BMGHolderLoadWithFallback(BMGHolder *self, const char *name) {
     self->str1Block = nullptr;
     self->messageIds = nullptr;
 
-    if (name == nullptr) return;
+    if (name == nullptr)
+        return;
     ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
-    if (archiveMgr == nullptr) return;
+    if (archiveMgr == nullptr)
+        return;
 
     char path[96];
     snprintf(path, sizeof(path), "message/%s.bmg", name);
@@ -83,7 +88,8 @@ static void BMGHolderLoadWithFallback(BMGHolder *self, const char *name) {
     if (file == nullptr) {
         file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/Common.bmg", nullptr);
     }
-    if (file == nullptr) return;
+    if (file == nullptr)
+        return;
 
     self->Init(*reinterpret_cast<const BMGHeader *>(file));
 }
@@ -133,13 +139,14 @@ static void SetLeaderboardRowTextColor(LayoutUIControl &row, const nw4r::ut::Col
     }
 }
 
-static void SetTextBoxIfPresent(LayoutUIControl &control, const char *paneName, u32 bmgId,
-                                const Text::Info *info) {
-    if (control.layout.GetPaneByName(paneName) != nullptr) control.SetTextBoxMessage(paneName, bmgId, info);
+static void SetTextBoxIfPresent(LayoutUIControl &control, const char *paneName, u32 bmgId, const Text::Info *info) {
+    if (control.layout.GetPaneByName(paneName) != nullptr)
+        control.SetTextBoxMessage(paneName, bmgId, info);
 }
 
 static void SetPaneVisibleIfPresent(LayoutUIControl &control, const char *paneName, bool visible) {
-    if (control.layout.GetPaneByName(paneName) != nullptr) control.SetPaneVisibility(paneName, visible);
+    if (control.layout.GetPaneByName(paneName) != nullptr)
+        control.SetPaneVisibility(paneName, visible);
 }
 
 static void ClearLeaderboardRow(LayoutUIControl &row, wchar_t *nameText) {
@@ -159,17 +166,24 @@ static void ClearLeaderboardRow(LayoutUIControl &row, wchar_t *nameText) {
 }
 
 static int Base64CharValue(char c) {
-    if (c >= 'A' && c <= 'Z') return c - 'A';
-    if (c >= 'a' && c <= 'z') return c - 'a' + 26;
-    if (c >= '0' && c <= '9') return c - '0' + 52;
-    if (c == '+') return 62;
-    if (c == '/') return 63;
-    if (c == '=') return -2;  // padding
+    if (c >= 'A' && c <= 'Z')
+        return c - 'A';
+    if (c >= 'a' && c <= 'z')
+        return c - 'a' + 26;
+    if (c >= '0' && c <= '9')
+        return c - '0' + 52;
+    if (c == '+')
+        return 62;
+    if (c == '/')
+        return 63;
+    if (c == '=')
+        return -2;  // padding
     return -1;
 }
 
 static int DecodeBase64(const char *in, u8 *out, int outCap) {
-    if (in == nullptr || out == nullptr || outCap <= 0) return 0;
+    if (in == nullptr || out == nullptr || outCap <= 0)
+        return 0;
 
     int outLen = 0;
     int buf[4];
@@ -177,32 +191,39 @@ static int DecodeBase64(const char *in, u8 *out, int outCap) {
 
     for (const char *p = in; *p != '\0'; ++p) {
         const char c = *p;
-        if (c == ' ' || c == '\n' || c == '\r' || c == '\t') continue;
+        if (c == ' ' || c == '\n' || c == '\r' || c == '\t')
+            continue;
 
         const int v = Base64CharValue(c);
-        if (v == -1) continue;
+        if (v == -1)
+            continue;
         buf[bufCount++] = v;
-        if (bufCount != 4) continue;
+        if (bufCount != 4)
+            continue;
 
         const int v0 = buf[0];
         const int v1 = buf[1];
         const int v2 = buf[2];
         const int v3 = buf[3];
 
-        if (v0 < 0 || v1 < 0) break;
-        const u32 triple = (static_cast<u32>(v0) << 18) | (static_cast<u32>(v1) << 12) |
-                           (static_cast<u32>((v2 < 0) ? 0 : v2) << 6) | (static_cast<u32>((v3 < 0) ? 0 : v3));
+        if (v0 < 0 || v1 < 0)
+            break;
+        const u32 triple = (static_cast<u32>(v0) << 18) | (static_cast<u32>(v1) << 12) | (static_cast<u32>((v2 < 0) ? 0 : v2) << 6) | (static_cast<u32>((v3 < 0) ? 0 : v3));
 
-        if (outLen < outCap) out[outLen++] = static_cast<u8>((triple >> 16) & 0xff);
+        if (outLen < outCap)
+            out[outLen++] = static_cast<u8>((triple >> 16) & 0xff);
         if (v2 != -2) {
-            if (outLen < outCap) out[outLen++] = static_cast<u8>((triple >> 8) & 0xff);
+            if (outLen < outCap)
+                out[outLen++] = static_cast<u8>((triple >> 8) & 0xff);
         }
         if (v3 != -2) {
-            if (outLen < outCap) out[outLen++] = static_cast<u8>(triple & 0xff);
+            if (outLen < outCap)
+                out[outLen++] = static_cast<u8>(triple & 0xff);
         }
 
         bufCount = 0;
-        if (v2 == -2 || v3 == -2) break;
+        if (v2 == -2 || v3 == -2)
+            break;
     }
 
     return outLen;
@@ -210,27 +231,32 @@ static int DecodeBase64(const char *in, u8 *out, int outCap) {
 
 static void ExtractMiiNameFromStoreData(const RFL::StoreData *storeData, wchar_t *outName, size_t outNameLen) {
     if (outName == nullptr || outNameLen == 0 || storeData == nullptr) {
-        if (outName != nullptr && outNameLen > 0) outName[0] = L'\0';
+        if (outName != nullptr && outNameLen > 0)
+            outName[0] = L'\0';
         return;
     }
 
     size_t o = 0;
     for (int i = 0; i < 10 && o + 1 < outNameLen; ++i) {
         const u16 code = storeData->miiName[i];
-        if (code == 0) break;
+        if (code == 0)
+            break;
         outName[o++] = static_cast<wchar_t>(code);
     }
     outName[o] = L'\0';
 }
 
 static bool IsFriendCodeInLicenseFriends(u64 friendCode) {
-    if (friendCode == 0) return false;
+    if (friendCode == 0)
+        return false;
     RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
-    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return false;
+    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4)
+        return false;
 
     RKSYS::LicenseFriends &licenseFriends = rksysMgr->licenses[rksysMgr->curLicenseId].GetFriends();
     for (u32 i = 0; i < 30; ++i) {
-        if (licenseFriends.friends[i].friendCode == friendCode) return true;
+        if (licenseFriends.friends[i].friendCode == friendCode)
+            return true;
     }
     return false;
 }
@@ -374,11 +400,14 @@ void VRLeaderboardPage::OnUpdate() {
         }
     }
 
-    if (s_fetchState != FETCH_READY || !s_hasApplied) return;
-    if (SectionMgr::sInstance == nullptr) return;
+    if (s_fetchState != FETCH_READY || !s_hasApplied)
+        return;
+    if (SectionMgr::sInstance == nullptr)
+        return;
 
     const Input::RealControllerHolder *controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
-    if (controllerHolder == nullptr || controllerHolder->curController == nullptr) return;
+    if (controllerHolder == nullptr || controllerHolder->curController == nullptr)
+        return;
 
     const ControllerType controllerType = controllerHolder->curController->GetType();
     const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
@@ -477,8 +506,7 @@ void VRLeaderboardPage::ApplyResults() {
         labelInfo.strings[0] = s_rowLabelVR;
         SetTextBoxIfPresent(*rows[i], "total_point", UI::BMG_TEXT, &labelInfo);
 
-        const bool isCurrentUser = (s_currentUserFriendCode != 0 && s_entries[idx].friendCode != 0 &&
-                                    s_currentUserFriendCode == s_entries[idx].friendCode);
+        const bool isCurrentUser = (s_currentUserFriendCode != 0 && s_entries[idx].friendCode != 0 && s_currentUserFriendCode == s_entries[idx].friendCode);
         bool isFriend = false;
         if (!isCurrentUser && s_entries[idx].friendCode != 0) {
             RKNet::FriendMgr *friendMgr = RKNet::FriendMgr::sInstance;
@@ -511,8 +539,7 @@ void VRLeaderboardPage::ApplyResults() {
     }
 
     wchar_t pageText[16];
-    swprintf(pageText, sizeof(pageText) / sizeof(pageText[0]), L"< %d/%d >", static_cast<int>(curPage) + 1,
-             kPageCount);
+    swprintf(pageText, sizeof(pageText) / sizeof(pageText[0]), L"< %d/%d >", static_cast<int>(curPage) + 1, kPageCount);
     Text::Info info;
     info.strings[0] = pageText;
     bottomText->SetMessage(UI::BMG_TEXT, &info);
@@ -529,7 +556,8 @@ void VRLeaderboardPage::ApplyError() {
 }
 
 void VRLeaderboardPage::StartFetch(VRLeaderboardPage *page) {
-    if (s_fetchState == FETCH_REQUESTING) return;
+    if (s_fetchState == FETCH_REQUESTING)
+        return;
     if (page == nullptr || s_entries == nullptr) {
         s_fetchState = FETCH_ERROR;
         return;
@@ -569,9 +597,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage *page) {
 
     snprintf(s_requestUrl, sizeof(s_requestUrl), "http://rwfc.net/api/leaderboard/in-game?page=%u", apiPage);
 
-    void *request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
-                                       reinterpret_cast<void *>(&VRLeaderboardPage::OnLeaderboardReceived),
-                                       ctx);
+    void *request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize, reinterpret_cast<void *>(&VRLeaderboardPage::OnLeaderboardReceived), ctx);
     if (request == nullptr) {
         s_fetchState = FETCH_ERROR;
         return;
@@ -594,7 +620,8 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void *response, void *
     NHTTPRequestCtx *ctx = reinterpret_cast<NHTTPRequestCtx *>(userdata);
 
     if (ctx == nullptr || ctx->generation != s_requestGeneration) {
-        if (response != nullptr) NHTTPDestroyResponse(response);
+        if (response != nullptr)
+            NHTTPDestroyResponse(response);
         return;
     }
 
@@ -652,16 +679,19 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void *response, void *
 }
 
 int VRLeaderboardPage::ParseResponse(const char *json, Entry *outEntries, int maxEntries) {
-    if (json == nullptr || outEntries == nullptr || maxEntries <= 0) return 0;
+    if (json == nullptr || outEntries == nullptr || maxEntries <= 0)
+        return 0;
 
     Network::Json::Value array;
-    if (!Network::Json::FindArray(json, array)) return 0;
+    if (!Network::Json::FindArray(json, array))
+        return 0;
 
     int count = 0;
     const char *cursor = nullptr;
     Network::Json::Value object;
     while (count < maxEntries && Network::Json::Next(array, cursor, object)) {
-        if (object.start == nullptr || object.start >= object.end || *object.start != '{') continue;
+        if (object.start == nullptr || object.start >= object.end || *object.start != '{')
+            continue;
 
         outEntries[count].name[0] = L'\0';
         outEntries[count].vr = 0;
@@ -672,28 +702,24 @@ int VRLeaderboardPage::ParseResponse(const char *json, Entry *outEntries, int ma
         char miiB64[192];
         if (Network::Json::Get(object, "miiData", miiB64, sizeof(miiB64))) {
             DecodeBase64(miiB64, reinterpret_cast<u8 *>(&outEntries[count].miiData), sizeof(outEntries[count].miiData));
-            ExtractMiiNameFromStoreData(&outEntries[count].miiData, outEntries[count].name,
-                                        sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
+            ExtractMiiNameFromStoreData(&outEntries[count].miiData, outEntries[count].name, sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
         }
 
         if (outEntries[count].name[0] == L'\0') {
-            Network::Json::Get(object, "name", outEntries[count].name,
-                               sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
+            Network::Json::Get(object, "name", outEntries[count].name, sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
         }
 
         Network::Json::Get(object, "vr", outEntries[count].vr);
         Network::Json::Get(object, "rank", outEntries[count].rank);
 
         Network::Json::Value friendCode;
-        if (Network::Json::Find(object, "friendCode", friendCode) ||
-            Network::Json::Find(object, "friend_code", friendCode)) {
+        if (Network::Json::Find(object, "friendCode", friendCode) || Network::Json::Find(object, "friend_code", friendCode)) {
             if (friendCode.start < friendCode.end && *friendCode.start == '"') {
                 char fcStr[32];
                 if (Network::Json::GetString(friendCode, fcStr, sizeof(fcStr))) {
                     for (const char *fc = fcStr; *fc != '\0'; ++fc) {
                         if (*fc >= '0' && *fc <= '9') {
-                            outEntries[count].friendCode = outEntries[count].friendCode * 10 +
-                                                           static_cast<u64>(*fc - '0');
+                            outEntries[count].friendCode = outEntries[count].friendCode * 10 + static_cast<u64>(*fc - '0');
                         }
                     }
                 }
@@ -710,18 +736,19 @@ int VRLeaderboardPage::ParseResponse(const char *json, Entry *outEntries, int ma
 }
 
 void VRLeaderboardPage::OverrideOwnMiiData(Entry *entries, int entryCount, u64 ownFriendCode) {
-    if (entries == nullptr || entryCount <= 0 || ownFriendCode == 0) return;
+    if (entries == nullptr || entryCount <= 0 || ownFriendCode == 0)
+        return;
 
     RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
-    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return;
+    if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4)
+        return;
 
     RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
 
     for (int i = 0; i < entryCount; ++i) {
         if (entries[i].friendCode == ownFriendCode) {
             Mii::ComputeRFLStoreData(entries[i].miiData, &license.createID);
-            ExtractMiiNameFromStoreData(&entries[i].miiData, entries[i].name,
-                                        sizeof(entries[i].name) / sizeof(entries[i].name[0]));
+            ExtractMiiNameFromStoreData(&entries[i].miiData, entries[i].name, sizeof(entries[i].name) / sizeof(entries[i].name[0]));
         }
     }
 }

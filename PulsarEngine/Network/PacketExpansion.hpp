@@ -35,6 +35,7 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u8 chooseNextStatus;
     bool hasTrack;
     u16 nextTrack;  // PulsarId
+    u8 transmission[2];
 
     // These fields are only populated/read when their respective game modes are enabled
     // They are always present in the struct for memory layout, but zeroed when not in use
@@ -102,7 +103,6 @@ enum SELECTComboStatus {
     SELECT_COMBO_WAITING_FOR_START,
 
     SELECT_COMBO_HOST_START,
-
 };
 
 struct PulSELECT : public RKNet::SELECTPacket {
@@ -129,8 +129,10 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     bool lastGroupedTrackPlayed;  // Whether most recent track was a grouped track
-    u16 characterTables;  // six bits per local hud slot, up to two local slots
+    u16 reserved;  // Custom character slots: P1 in the high byte, P2 in the low byte
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+
+    u8 transmission[2];
 
     // Anti-cheat verification tag - proves sender has correct encryption key
     u32 acVerifyTag;  // Must be last encrypted field for alignment
@@ -142,7 +144,8 @@ struct PulITEM : public RKNet::ITEMPacket {};
 struct PulEVENT : public RKNet::EVENTPacket {};  // NOT RECOMMENDED as this has variable length
 #pragma pack(pop)
 
-static const u32 totalRACESize = sizeof(RKNet::RACEPacketHeader) + sizeof(PulRH1) + sizeof(PulRH2) + sizeof(PulSELECT) + 2 * sizeof(PulRACEDATA) + sizeof(PulUSER) + 2 * sizeof(PulITEM) + sizeof(PulEVENT);
+static const u32 totalRACESize =
+  sizeof(RKNet::RACEPacketHeader) + sizeof(PulRH1) + sizeof(PulRH2) + sizeof(PulSELECT) + 2 * sizeof(PulRACEDATA) + sizeof(PulUSER) + 2 * sizeof(PulITEM) + sizeof(PulEVENT);
 
 class CustomRKNetController {  // Exists to make received packets a pointer array so that the size can be variable
 public:
@@ -203,7 +206,9 @@ static_assert(sizeof(PulROOM) < sizeof(PulSELECT), "ROOM SELECT");
 
 class ExpSELECTHandler {
 public:
-    static ExpSELECTHandler &Get() { return *reinterpret_cast<ExpSELECTHandler *>(RKNet::SELECTHandler::sInstance); };
+    static ExpSELECTHandler &Get() {
+        return *reinterpret_cast<ExpSELECTHandler *>(RKNet::SELECTHandler::sInstance);
+    };
     static void DecideTrack(ExpSELECTHandler &self);
 
     // Get the vote variant index for a specific player

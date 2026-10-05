@@ -11,13 +11,19 @@ namespace UI {
 class OTTGhostDiff : public CtrlRaceGhostDiffTime {
 public:
     void OnUpdate() override;
-    void SetIdx(u8 idx) { this->padding3[0] = idx; }
-    u8 GetIdx() const { return this->padding3[0]; }
+    void SetIdx(u8 idx) {
+        this->padding3[0] = idx;
+    }
+    u8 GetIdx() const {
+        return this->padding3[0];
+    }
 };
 class MultiGhostDiff : public UIControl {
 public:
     MultiGhostDiff();
-    ~MultiGhostDiff() override { delete (diffTimes); }
+    ~MultiGhostDiff() override {
+        delete (diffTimes);
+    }
     static u32 Count();
     static void Create(Page &page, u32 index, u32 count);
 

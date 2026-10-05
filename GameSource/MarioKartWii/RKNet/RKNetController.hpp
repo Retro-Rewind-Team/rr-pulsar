@@ -60,9 +60,13 @@ public:
     ~SplitRACEPointers();  // 8065a474
 
     template <class T>
-    PacketHolder<T> *GetPacketHolder() { return (PacketHolder<T> *)(this->packetHolders[T::idx]); };
+    PacketHolder<T> *GetPacketHolder() {
+        return (PacketHolder<T> *)(this->packetHolders[T::idx]);
+    };
     template <class T>
-    const PacketHolder<T> *GetPacketHolder() const { return (PacketHolder<T> *)(this->packetHolders[T::idx]); };
+    const PacketHolder<T> *GetPacketHolder() const {
+        return (PacketHolder<T> *)(this->packetHolders[T::idx]);
+    };
     PacketHolder<void> *packetHolders[8];
 
 };  // 0x20

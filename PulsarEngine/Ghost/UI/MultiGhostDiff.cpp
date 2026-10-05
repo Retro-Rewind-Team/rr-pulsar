@@ -30,9 +30,11 @@ MultiGhostDiff::MultiGhostDiff() {
         count = 2;
     else {
         RacedataScenario *scenario = &Racedata::sInstance->menusScenario;
-        if (scenario->players[0].playerType == PLAYER_GHOST) this->isGhostReplay = true;
+        if (scenario->players[0].playerType == PLAYER_GHOST)
+            this->isGhostReplay = true;
         for (int i = 1; i < 4; ++i)
-            if (scenario->players[i].playerType == PLAYER_GHOST) ++count;
+            if (scenario->players[i].playerType == PLAYER_GHOST)
+                ++count;
     }
     this->diffTimeCount = count;
 }

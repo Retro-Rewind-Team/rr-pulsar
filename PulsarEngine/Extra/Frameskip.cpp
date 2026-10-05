@@ -16,7 +16,8 @@ kmWrite32(0x80654400, 0x60000000);
 asmFunc GetFrameskip1() {
     ASM(
         nofralloc;
-        loc_0x0 : lis r3, 0x8000;
+    loc_0x0:
+        lis r3, 0x8000;
         lbz r4, 5665(r3);
         cmpwi r4, 0x0;
         beq + loc_0x34;
@@ -30,7 +31,8 @@ asmFunc GetFrameskip1() {
         stb r0, 136(r30);
         b loc_0x70;
 
-        loc_0x34 : lis r3, 0x8000;
+    loc_0x34:
+        lis r3, 0x8000;
         lbz r4, 5664(r3);
         cmpwi r4, 0x1;
         bne + loc_0x70;
@@ -46,10 +48,13 @@ asmFunc GetFrameskip1() {
         stb r0, 5665(r4);
         b loc_0x74;
 
-        loc_0x70 : stb r0, 5664(r3);
+    loc_0x70:
+        stb r0, 5664(r3);
 
-        loc_0x74 : cmpwi r0, 0x0;
-        blr;)
+    loc_0x74:
+        cmpwi r0, 0x0;
+        blr;
+    )
 }
 kmCall(0x80562AD0, GetFrameskip1);
 
@@ -64,7 +69,8 @@ extern "C" void beginFrame(void *);
 asmFunc GetFrameskip2() {
     ASM(
         nofralloc;
-        loc_0x0 : mr r3, r21;
+    loc_0x0:
+        mr r3, r21;
         mr r4, r25;
         stwu r1, -40(r1);
         stw r28, 24(r1);
@@ -84,7 +90,8 @@ asmFunc GetFrameskip2() {
         addi r9, r9, 0x1;
         stb r9, 8(r30);
 
-        loc_0x4C : cmpwi cr7, r4, 0x0;
+    loc_0x4C:
+        cmpwi cr7, r4, 0x0;
         li r9, 0x0;
         beq - cr7, loc_0x170;
         lis r9, isTT__9DriverMgr @ha;
@@ -130,7 +137,8 @@ asmFunc GetFrameskip2() {
         cmpwi cr7, r9, 0x0;
         beq - cr7, loc_0x3FC;
 
-        loc_0x108 : lbz r8, 8(r30);
+    loc_0x108:
+        lbz r8, 8(r30);
         lis r7, 0x8000;
         lwz r10, 5688(r7);
         add r9, r27, r9;
@@ -149,7 +157,8 @@ asmFunc GetFrameskip2() {
         bctrl;
         li r9, 0x0;
 
-        loc_0x150 : lwz r0, 44(r1);
+    loc_0x150:
+        lwz r0, 44(r1);
         lwz r24, 8(r1);
         lwz r25, 12(r1);
         mtlr r0;
@@ -158,13 +167,15 @@ asmFunc GetFrameskip2() {
         lwz r29, 28(r1);
         lwz r31, 36(r1);
 
-        loc_0x170 : mr r3, r9;
+    loc_0x170:
+        mr r3, r9;
         lwz r28, 24(r1);
         lwz r30, 32(r1);
         addi r1, r1, 0x28;
         b loc_0x424;
 
-        loc_0x184 : cmpwi cr7, r9, 0x0;
+    loc_0x184:
+        cmpwi cr7, r9, 0x0;
         ble - cr7, loc_0x2D8;
         lis r10, 0x8000;
         stw r9, 5696(r10);
@@ -208,7 +219,8 @@ asmFunc GetFrameskip2() {
         beq - loc_0x230;
         addi r7, r29, 0x2;
 
-        loc_0x230 : lis r6, 0x8000;
+    loc_0x230:
+        lis r6, 0x8000;
         lhz r8, 16(r9);
         lwz r10, 5712(r6);
         add r8, r7, r8;
@@ -216,7 +228,8 @@ asmFunc GetFrameskip2() {
         sth r8, 16(r9);
         stw r10, 5712(r6);
 
-        loc_0x24C : lis r31, 0x8000;
+    loc_0x24C:
+        lis r31, 0x8000;
         mr r3, r30;
         addi r31, r31, 0x1654;
         lis r12, beginFrame @h;
@@ -246,14 +259,16 @@ asmFunc GetFrameskip2() {
         li r9, 0x1;
         b loc_0x150;
 
-        loc_0x2C0 : lwz r31, 36(r1);
+    loc_0x2C0:
+        lwz r31, 36(r1);
         mr r3, r9;
         lwz r28, 24(r1);
         lwz r30, 32(r1);
         addi r1, r1, 0x28;
         b loc_0x424;
 
-        loc_0x2D8 : lis r9, 0x8000;
+    loc_0x2D8:
+        lis r9, 0x8000;
         li r10, 0x0;
         stw r10, 5696(r9);
         lis r12, GetTime__2OSFv @h;
@@ -277,7 +292,8 @@ asmFunc GetFrameskip2() {
         subi r8, r8, 0x1;
         stb r8, 5666(r7);
 
-        loc_0x334 : cmpwi cr7, r24, 0x0;
+    loc_0x334:
+        cmpwi cr7, r24, 0x0;
         b loc_0x24C;
         lis r31, sInstance__Q25RKNet9PacketMgr @ha;
         lwz r9, sInstance__Q25RKNet9PacketMgr @l(r31);
@@ -328,7 +344,8 @@ asmFunc GetFrameskip2() {
         addi r1, r1, 0x28;
         b loc_0x424;
 
-        loc_0x3FC : lis r12, GetTime__2OSFv @h;
+    loc_0x3FC:
+        lis r12, GetTime__2OSFv @h;
         ori r12, r12, GetTime__2OSFv @l;
         mtctr r12;
         bctrl;
@@ -339,9 +356,11 @@ asmFunc GetFrameskip2() {
         stw r4, 4(r10);
         b loc_0x108;
 
-        loc_0x424 : mr r25, r3;
+    loc_0x424:
+        mr r25, r3;
         cmpwi r25, 0x0;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x800095C4, GetFrameskip2);
 kmWrite32(0x80001614, 0x000F7709);
@@ -354,12 +373,15 @@ static SectionLoadHook ResetFrameskipHook(ResetFrameskipState);
 
 static bool IsNoLightningFlashTrack(const Pulsar::CupsConfig &cupsConfig) {
     const Pulsar::PulsarId pulsarId = cupsConfig.GetWinning();
-    if (Pulsar::CupsConfig::IsReg(pulsarId)) return false;
+    if (Pulsar::CupsConfig::IsReg(pulsarId))
+        return false;
 
     const u8 variantIdx = cupsConfig.GetCurVariantIdx();
     const char *fileName = cupsConfig.GetFileName(pulsarId, variantIdx);
-    if (fileName == nullptr || fileName[0] == '\0') fileName = cupsConfig.GetFileName(pulsarId, 0);
-    if (fileName == nullptr) return false;
+    if (fileName == nullptr || fileName[0] == '\0')
+        fileName = cupsConfig.GetFileName(pulsarId, 0);
+    if (fileName == nullptr)
+        return false;
 
     return strcmp(fileName, "sw2WS") == 0 || strcmp(fileName, "sw2MBC") == 0 || strcmp(fileName, "117") == 0;
 }
@@ -369,11 +391,8 @@ static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr *mgr) {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const u32 localPlayerCount = scenario.localPlayerCount;
     const bool isNoLightningFlashTrack = IsNoLightningFlashTrack(*cupsConfig);
-    const bool isNoLightningFlashSetting =
-        Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LIGHTNINGFLASH) ==
-        Pulsar::LIGHTNING_FLASH_DISABLED;
-    if (*(u32 *)0x80001638 >= 8 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack ||
-        isNoLightningFlashSetting || localPlayerCount > 1) {
+    const bool isNoLightningFlashSetting = Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LIGHTNINGFLASH) == Pulsar::LIGHTNING_FLASH_DISABLED;
+    if (*(u32 *)0x80001638 >= 8 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack || isNoLightningFlashSetting || localPlayerCount > 1) {
         return;
     }
     mgr->Update();

@@ -34,9 +34,8 @@ public:
 
 class Values {
 public:
-    Values(u32 playerIdx, KartId kart, CharacterId character, bool isBike, const StatsAndBsp &statsAndBsp, void *unknown,
-           KartDriverDispParam::Entry *kartDriverDispEntry, KartPartsDispParam::Entry *kartPartsDispEntry,
-           BikePartsDispParam::Entry *bikePartsDispEntry, DriverDispParam::Entry *driverDispEntry);  // 80592fc0
+    Values(u32 playerIdx, KartId kart, CharacterId character, bool isBike, const StatsAndBsp &statsAndBsp, void *unknown, KartDriverDispParam::Entry *kartDriverDispEntry,
+      KartPartsDispParam::Entry *kartPartsDispEntry, BikePartsDispParam::Entry *bikePartsDispEntry, DriverDispParam::Entry *driverDispEntry);  // 80592fc0
 
     struct Tallies {
         float totalDistance;  // speednorm added every frame

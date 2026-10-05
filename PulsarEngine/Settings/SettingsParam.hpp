@@ -2,175 +2,182 @@
 #define _SETTINGS_PARAMS_
 
 #include <kamek.hpp>
-#include <PulsarSystem.hpp>
-#include <Config.hpp>
 
 namespace Pulsar {
-namespace UI {
-class SettingsPanel;
-}
 namespace Settings {
 
+// Each SettingId is the setting title's BMG ID.
+enum SettingId {
+    SETTING_BRAKEDRIFT = 0x63000,
+    SETTING_HARDAI = 0x63001,
+    SETTING_INPUTDISPLAY = 0x63002,
+    SETTING_MIIHEADS = 0x63003,
+    SETTING_SPEEDOMETER = 0x63004,
+    SETTING_BATTLEGLITCH = 0x64000,
+    SETTING_FPS = 0x64001,
+    SETTING_BLOOM = 0x64002,
+    SETTING_FOV = 0x64003,
+    SETTING_NAMETAG = 0x64004,
+    SETTING_LIGHTNINGFLASH = 0x64005,
+    SETTING_FASTMENUS = 0x65000,
+    SETTING_LAYOUT = 0x65001,
+    SETTING_BOOT = 0x65A00,
+    SETTING_HUDCOLOR = 0x65A01,
+    SETTING_ONLINERANDOMBUTTON = 0x66000,
+    SETTING_PREDICTIONREMOVAL = 0x66001,
+    SETTING_STREAMERMODE = 0x66002,
+    SETTING_INFINITEMATCHMAKINGTIMEOUT = 0x66003,
+    SETTING_DISPLAYCUSTOMSKINS = 0x66004,
+    SETTING_CTMUSIC = 0x67000,
+    SETTING_MUSIC = 0x67001,
+    SETTING_MUSICSPEEDUP = 0x67002,
+    SETTING_SPECIALITEMRECEIVE = 0x67003,
+    SETTING_BATTLETEAMS = 0x68000,
+    SETTING_BATTLEELIMINATION = 0x68001,
+    SETTING_FROOMCC = 0x69000,
+    SETTING_KARTSELECT = 0x69001,
+    SETTING_CHARSELECT = 0x69002,
+    SETTING_RANKINGS = 0x69003,
+    SETTING_VR = 0x69004,
+    SETTING_RACECOUNT = 0x69A00,
+    SETTING_ITEMMODE = 0x69A01,
+    SETTING_TRACKSELECTION = 0x69A02,
+    SETTING_HOSTWINS = 0x6A000,
+    SETTING_ALLOWMIIHEADS = 0x6A001,
+    SETTING_ITEMBOXRESPAWN = 0x6A002,
+    SETTING_THUNDERCLOUD = 0x6A003,
+    SETTING_FORCETRANSMISSION = 0x6A004,
+    SETTING_ALLITEMSCANLAND = 0x6A005,
+    SETTING_VANILLAMODE = 0x6A006,
+    SETTING_MIRROR = 0x6A007,
+    SETTING_OTTONLINE = 0x6B000,
+    SETTING_OTTOFFLINE = 0x6B001,
+    SETTING_OTTALLOWCHANGECOMBO = 0x6B002,
+    SETTING_OTTALLOWUMTS = 0x6B003,
+    SETTING_OTTMUTEPTANDPLAYERS = 0x6B004,
+    SETTING_KOENABLED = 0x6C000,
+    SETTING_KOFINAL = 0x6C001,
+    SETTING_KO1V1FINALE = 0x6C002,
+    SETTING_KOPERRACE = 0x6CA00,
+    SETTING_RACESPERKO = 0x6CA01,
+    SETTING_KOELIMTHRESHOLD = 0x6CA02,
+    SETTING_KOELIMCHANGE = 0x6CA03,
+    SETTING_KOROYALEENABLED = 0x70000,
+    SETTING_KOROYALEBALLOONS = 0x70A00,
+    SETTING_KOROYALELAPMULTIPLIER = 0x70A01,
+    SETTING_EXTENDEDTEAMSENABLED = 0x6D000,
+    SETTING_EXTENDEDTEAMSLINE = 0x6D001,
+    SETTING_EXTENDEDTEAMSPLAYERS = 0x6DA00,
+    SETTING_LOOSEARCHIVEOVERRIDES = 0x6E000,
+    SETTING_LANGUAGE = 0x6EA00,
+    SETTING_WWMODE = 0x5AD000,
+    SETTING_COUNT = 63
+};
+
+enum SettingsPageId {
+    SETTINGS_PAGE_RACE1,
+    SETTINGS_PAGE_RACE2,
+    SETTINGS_PAGE_MENU,
+    SETTINGS_PAGE_SOUND,
+    SETTINGS_PAGE_ONLINE,
+    SETTINGS_PAGE_BATTLE,
+    SETTINGS_PAGE_FROOM1,
+    SETTINGS_PAGE_FROOM2,
+    SETTINGS_PAGE_OTT_OFFLINE,
+    SETTINGS_PAGE_OTT_ONLINE,
+    SETTINGS_PAGE_KO,
+    SETTINGS_PAGE_ROYALE,
+    SETTINGS_PAGE_EXTENDED_TEAMS,
+    SETTINGS_PAGE_MISC,
+    SETTINGS_PAGE_ITEMS,
+    SETTINGS_PAGE_RACE1_OFFLINE,
+    SETTINGS_PAGE_RACE2_OFFLINE,
+    SETTINGS_PAGE_COUNT
+};
+
+enum SettingsContext {
+    SETTINGS_CONTEXT_OFFLINE,
+    SETTINGS_CONTEXT_ONLINE,
+    SETTINGS_CONTEXT_VOTING,
+    SETTINGS_CONTEXT_COUNT
+};
+
+struct SettingDef {
+    SettingId id;
+    u8 optionCount;
+};
+
+struct SettingsPageDef {
+    u32 nameBmg;
+    const SettingId *radioSettings;
+    u8 radioCount;
+    const SettingId *scrollerSettings;
+    u8 scrollerCount;
+    bool isSpecial;
+};
+
+struct SettingsContextDef {
+    const SettingsPageId *pages;
+    u8 pageCount;
+};
+
 class Params {
-   public:
-    static const int pulsarPageCount = 0;
-    static const int userPageCount = 14;
-    static const int pageCount = pulsarPageCount + userPageCount;
+public:
+    static const int maxRadioCount = 8;
+    static const int maxScrollerCount = 5;
+    static const int maxContextPageCount = 13;
 
-    static const int maxRadioCount = 8;  // per page, due to space
-    static const int maxScrollerCount = 5;  // per page, due to space
+    static const SettingDef settingDefs[SETTING_COUNT];
+    static const SettingsPageDef pageDefs[SETTINGS_PAGE_COUNT];
+    static const SettingsContextDef contextDefs[SETTINGS_CONTEXT_COUNT];
 
-    // Pulsar and User
-    static u8 radioCount[pageCount];
-    static u8 scrollerCount[pageCount];
-    static u8 buttonsPerPagePerRow[pageCount][maxRadioCount];
-    static u8 optionsPerPagePerScroller[pageCount][maxScrollerCount];
-};
+    static inline bool IsValidSettingId(SettingId id) {
+        return GetSettingIndex(id) < SETTING_COUNT;
+    }
 
-// Contains all the settings.
-enum Type {
-};
+    static inline u32 GetSettingIndex(SettingId id) {
+        for (u32 i = 0; i < SETTING_COUNT; ++i) {
+            if (settingDefs[i].id == id)
+                return i;
+        }
+        return SETTING_COUNT;
+    }
 
-// If you want to add settings to your packs, they go in this enum, and GetUserSettingValue should be used to obtain the value of a given setting
-enum UserType {
-    SETTINGSTYPE_RACE1,
-    SETTINGSTYPE_RACE2,
-    SETTINGSTYPE_MENU,
-    SETTINGSTYPE_ONLINE,
-    SETTINGSTYPE_SOUND,
-    SETTINGSTYPE_BATTLE,
-    SETTINGSTYPE_FROOM1,
-    SETTINGSTYPE_FROOM2,
-    SETTINGSTYPE_OTT,
-    SETTINGSTYPE_KO,
-    SETTINGSTYPE_EXTENDEDTEAMS,
-    SETTINGSTYPE_MISC,
-    SETTINGSTYPE_ITEMS,
-    SETTINGSTYPE_KOROYALE,
+    static inline const SettingDef &GetSettingDef(SettingId id) {
+        return settingDefs[GetSettingIndex(id)];
+    }
 
+    static inline u32 GetOptionBmg(SettingId id, u32 option) {
+        const u32 bmg = static_cast<u32>(id);
+        return (bmg & ~0xF) + ((bmg & 0xF) + 1) * 0x10 + option;
+    }
+
+    static inline u32 GetDescriptionBmg(SettingId id, u32 option) {
+        const u32 bmg = static_cast<u32>(id);
+        return (bmg & ~0xF) + ((bmg & 0xF) + 1) * 0x100 + option;
+    }
+
+    static inline const SettingsPageDef &GetPageDef(SettingsPageId id) {
+        return pageDefs[id];
+    }
+
+    static inline const SettingsContextDef &GetContextDef(SettingsContext context) {
+        return contextDefs[context];
+    }
+
+    static u32 BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO, bool isOTT, bool isRoyale, bool isExtendedTeams);
 };
 
 }  // namespace Settings
 
-// 1) Race 1
-enum Race1Settings {
-    RADIO_BRAKEDRIFT = 0,
-    RADIO_HARDAI = 1,
-    RADIO_INPUTDISPLAY = 2,
-    RADIO_MIIHEADS = 3,
-    RADIO_SPEEDOMETER = 4,
-};
-
-// 2) Race 2
-enum Race2Settings {
-    RADIO_BATTLEGLITCH = 0,
-    RADIO_FPS = 1,
-    RADIO_BLOOM = 2,
-    RADIO_FOV = 3,
-    RADIO_NAMETAG = 4,
-};
-
-// 3) Menu
-enum MenuSettings {
-    RADIO_FASTMENUS = 0,
-    RADIO_LAYOUT = 1,
-    SCROLL_BOOT = 0 + 8,
-    SCROLL_HUDCOLOR = 1 + 8,
-};
-
-// 4) Online
-enum OnlineSettings {
-    RADIO_ONLINERANDOMBUTTON = 0,
-    RADIO_PREDICTIONREMOVAL = 1,
-    RADIO_STREAMERMODE = 2,
-    RADIO_INFINITEMATCHMAKINGTIMEOUT = 3,
-    RADIO_DISPLAYCUSTOMSKINS = 4
-};
-
-// 5) Sound
-enum SoundSettings {
-    RADIO_CTMUSIC = 0,
-    RADIO_MUSIC = 1,
-    RADIO_MUSICSPEEDUP = 2,
-    RADIO_SPECIALITEMRECEIVE = 3,
-    RADIO_CUSTOMENDINGFANFARES = 4,
-};
-
-// 6) Battle
-enum BattleSettings {
-    RADIO_BATTLETEAMS = 0,
-    RADIO_BATTLEELIMINATION = 1,
-};
-
-// 7) Friend Room 1
-enum FriendRoom1Settings {
-    RADIO_FROOMCC = 0,
-    RADIO_KARTSELECT = 1,
-    RADIO_CHARSELECT = 2,
-    RADIO_RANKINGS = 3,
-    RADIO_VR = 4,
-    SCROLLER_RACECOUNT = 0 + 8,
-
-};
-
-// 8) Friend Room 2
-enum FriendRoom2Settings {
-    RADIO_HOSTWINS = 0,
-    RADIO_ALLOWMIIHEADS = 1,
-    RADIO_ITEMBOXRESPAWN = 2,
-    RADIO_THUNDERCLOUD = 3,
-    RADIO_FORCETRANSMISSION = 4,
-    RADIO_ALLITEMSCANLAND = 5,
-    RADIO_VANILLAMODE = 6,
-    SCROLLER_STARTWORLDWIDE = 0 + 8,
-    SCROLLER_ITEMMODE = 1 + 8,
-    SCROLLER_TRACKSELECTION = 2 + 8,
-};
-
-// 9) OTT
-enum OTTSettings {
-    RADIO_OTTONLINE = 0,
-    RADIO_OTTOFFLINE = 1,
-    RADIO_OTTALLOWCHANGECOMBO = 2,
-    RADIO_OTTALLOWUMTS = 3,
-    RADIO_OTTMUTEPTANDPLAYERS = 4
-};
-
-// 10) KO
-enum KOSettings {
-    RADIO_KOENABLED = 0,
-    RADIO_KOFINAL = 1,
-    RADIO_KO1V1FINALE = 2,
-    SCROLLER_KOPERRACE = 0 + 8,
-    SCROLLER_RACESPERKO = 1 + 8,
-    SCROLLER_KOELIMTHRESHOLD = 2 + 8,
-    SCROLLER_KOELIMCHANGE = 3 + 8
-};
-
-// 11) KO Royale
-enum KORoyaleSettings {
-    RADIO_KOROYALEENABLED = 0,
-    SCROLLER_KOROYALEBALLOONS = 0 + 8,
-    SCROLLER_KOROYALELAPMULTIPLIER = 1 + 8
-};
-
-// 11) Extended Teams
-enum ExtendedTeamsSettings {
-    RADIO_EXTENDEDTEAMSENABLED = 0,
-    RADIO_EXTENDEDTEAMSLINE = 1,
-    SCROLLER_EXTENDEDTEAMSPLAYERS = 0 + 8
-};
-
-// 12) Misc
-enum MiscSettings {
-    RADIO_LOOSEARCHIVEOVERRIDES = 0,
-    SCROLLER_LANGUAGE = 0 + 8,
-    SCROLLER_WWMODE = 2 + 8,
-};
-
 enum LooseArchiveOverridesSetting {
     LOOSEARCHIVEOVERRIDES_ENABLED = 0,
     LOOSEARCHIVEOVERRIDES_DISABLED = 1
+};
+
+enum DisplayCustomSkins {
+    DISPLAYCUSTOMSKINS_ENABLED,
+    DISPLAYCUSTOMSKINS_DISABLED
 };
 
 // 1) Race 1 values
@@ -236,6 +243,11 @@ enum RaceSettingNAMETAG {
     NAMETAG_MII = 0x1
 };
 
+enum RaceSettingLIGHTNINGFLASH {
+    LIGHTNING_FLASH_ENABLED = 0x0,
+    LIGHTNING_FLASH_DISABLED = 0x1
+};
+
 // 3) Menu values
 enum MenuSettingFastMenus {
     FASTMENUS_DISABLED = 0x0,
@@ -291,11 +303,6 @@ enum MatchmakingTimeoutSetting {
     MATCHMAKINGTIMEOUT_INFINITE = 0x1
 };
 
-enum DisplayCustomSkins {
-    DISPLAYCUSTOMSKINS_ENABLED = 0x0,
-    DISPLAYCUSTOMSKINS_DISABLED = 0x1
-};
-
 // 5) Sound values
 enum CTMusic {
     CTMUSIC_ENABLED,
@@ -318,11 +325,6 @@ enum SpecialItemReceive {
     SPECIALITEMRECEIVE_DISABLED = 0x1
 };
 
-enum CustomEndingFanfares {
-    CUSTOMENDINGFANFARES_ENABLED = 0x0,
-    CUSTOMENDINGFANFARES_DISABLED = 0x1
-};
-
 // 6) Battle values
 enum BattleFFA {
     BATTLE_FFA_DISABLED,
@@ -339,20 +341,18 @@ enum HostSettingHostCC {
     HOSTCC_NORMAL,
     HOSTCC_150,
     HOSTCC_100,
-    HOSTCC_500
+    HOSTCC_500,
+    HOSTCC_CUSTOM
 };
 
-enum KartRestriction {
-    KART_DEFAULTSELECTION,
-    KART_KARTONLY,
-    KART_BIKEONLY
+enum VehicleRestrictionSetting {
+    VEHICLE_RESTRICT_DISABLED,
+    VEHICLE_RESTRICT_ENABLED
 };
 
-enum CharacterRestriction {
-    CHAR_DEFAULTSELECTION,
-    CHAR_LIGHTONLY,
-    CHAR_MEDIUMONLY,
-    CHAR_HEAVYONLY
+enum CharacterRestrictionSetting {
+    CHARACTER_RESTRICT_DISABLED,
+    CHARACTER_RESTRICT_ENABLED
 };
 
 enum RankingSetting {
@@ -427,6 +427,11 @@ enum AllItemsCanLandSetting {
 enum VanillaModeSetting {
     VANILLAMODE_DISABLED,
     VANILLAMODE_ENABLED
+};
+
+enum MirrorModeSetting {
+    MIRRORMODE_DISABLED,
+    MIRRORMODE_ENABLED
 };
 
 // 9) OTT values

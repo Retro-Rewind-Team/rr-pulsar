@@ -48,7 +48,8 @@ kmRuntimeUse(0x805690a0);
 static ItemObjId GetRandomEjectItem(Random &random) {
     const u32 roll = random.NextLimited(itemWeightTotal);
     for (u32 i = 0; i < sizeof(ejectItemWeights) / sizeof(ejectItemWeights[0]); ++i) {
-        if (roll < ejectItemWeights[i].threshold) return ejectItemWeights[i].itemObjId;
+        if (roll < ejectItemWeights[i].threshold)
+            return ejectItemWeights[i].itemObjId;
     }
     return OBJ_BULLET_BILL;
 }
@@ -74,12 +75,15 @@ static void SpawnEjectItem(Item::Manager &itemMgr, Item::Player &player, Random 
 }
 
 static void EjectBattleRoyaleItems(Item::Player &player) {
-    if (!ShouldUseItemDamageEject()) return;
+    if (!ShouldUseItemDamageEject())
+        return;
 
     Item::Manager *itemMgr = Item::Manager::sInstance;
     Raceinfo *raceinfo = Raceinfo::sInstance;
-    if (itemMgr == nullptr || raceinfo == nullptr || raceinfo->timerMgr == nullptr) return;
-    if (player.id >= itemMgr->playerCount || player.isRemote) return;
+    if (itemMgr == nullptr || raceinfo == nullptr || raceinfo->timerMgr == nullptr)
+        return;
+    if (player.id >= itemMgr->playerCount || player.isRemote)
+        return;
 
     Random &random = raceinfo->timerMgr->random;
     const u32 count = static_cast<u32>(random.NextLimited(3) + 1);
@@ -88,11 +92,13 @@ static void EjectBattleRoyaleItems(Item::Player &player) {
 
 void EjectItemsFromItemDamage(u8 playerId) {
     Item::Manager *itemMgr = Item::Manager::sInstance;
-    if (itemMgr == nullptr || playerId >= itemMgr->playerCount) return;
+    if (itemMgr == nullptr || playerId >= itemMgr->playerCount)
+        return;
 
     const Raceinfo *raceinfo = Raceinfo::sInstance;
     const u16 raceFrames = raceinfo == nullptr ? 0xffff : raceinfo->raceFrames;
-    if (sLastEjectFrame[playerId] == raceFrames) return;
+    if (sLastEjectFrame[playerId] == raceFrames)
+        return;
     sLastEjectFrame[playerId] = raceFrames;
 
     EjectBattleRoyaleItems(itemMgr->players[playerId]);

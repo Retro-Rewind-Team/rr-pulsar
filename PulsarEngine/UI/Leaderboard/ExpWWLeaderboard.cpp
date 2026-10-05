@@ -55,8 +55,7 @@ void CtrlRaceResult_calcSelf_Hook(CtrlRaceResult *self) {
             float targetVal = *reinterpret_cast<float *>(&inputs->target);
 
             bool finished = false;
-            if ((inputs->step > 0 && inputs->current >= targetVal) ||
-                (inputs->step < 0 && inputs->current <= targetVal)) {
+            if ((inputs->step > 0 && inputs->current >= targetVal) || (inputs->step < 0 && inputs->current <= targetVal)) {
                 inputs->current = targetVal;
                 finished = true;
             }
@@ -120,7 +119,8 @@ void FormatRatingDelta(float delta, wchar_t *buffer, u32 bufferSize) {
             centis += 100;
         }
     }
-    if (centis < 0) centis = -centis;
+    if (centis < 0)
+        centis = -centis;
 
     if (delta >= 0.0f) {
         if (whole == 0)
@@ -141,7 +141,8 @@ inline bool IsValidPlayerId(u8 playerId) {
 
 bool IsBattleMode(const RacedataScenario &scenario) {
     int diff = static_cast<int>(scenario.settings.gamemode) - static_cast<int>(MODE_BATTLE);
-    if (diff < 0 || diff >= 8) return false;
+    if (diff < 0 || diff >= 8)
+        return false;
     return ((1u << diff) & 0xC1u) != 0;
 }
 
@@ -151,22 +152,27 @@ u8 DetermineAnimationVariant(u32 rowIndex) {
 
 void *GetSaveGhostManagerPointer() {
     SectionMgr *mgr = SectionMgr::sInstance;
-    if (mgr == 0) return 0;
+    if (mgr == 0)
+        return 0;
     return *reinterpret_cast<void **>(reinterpret_cast<u32>(mgr) + 0x90);
 }
 
 void UpdateBattleScores(const RacedataScenario &scenario, Raceinfo *raceInfo) {
-    if (raceInfo == 0) return;
+    if (raceInfo == 0)
+        return;
     SectionMgr *mgr = SectionMgr::sInstance;
-    if (mgr == 0 || mgr->sectionParams == 0) return;
+    if (mgr == 0 || mgr->sectionParams == 0)
+        return;
 
     const Team winningTeam = mgr->sectionParams->lastBattleWinningTeam;
     const s16 bonus = (scenario.settings.battleType == BATTLE_BALLOON) ? 3 : 5;
 
     for (u8 i = 0; i < scenario.playerCount; ++i) {
-        if (scenario.players[i].team != winningTeam) continue;
+        if (scenario.players[i].team != winningTeam)
+            continue;
         RaceinfoPlayer *infoPlayer = raceInfo->players[i];
-        if (infoPlayer == 0) continue;
+        if (infoPlayer == 0)
+            continue;
         infoPlayer->battleScore = static_cast<s16>(infoPlayer->battleScore + bonus);
     }
 }
@@ -273,15 +279,17 @@ u8 ResolvePlayerIdForRow(bool isBattle, const PlayerEntry *sortedEntries, u32 ro
 }
 
 bool ShouldSkipScoreDisplay(bool isBattle, u8 playerId, const RacedataScenario &raceScenario, const RKNet::Controller *controller) {
-    if (isBattle || controller == nullptr) return false;
-    if (!IsValidPlayerId(playerId)) return false;
-    if (raceScenario.players[playerId].playerType == PLAYER_REAL_LOCAL) return false;
+    if (isBattle || controller == nullptr)
+        return false;
+    if (!IsValidPlayerId(playerId))
+        return false;
+    if (raceScenario.players[playerId].playerType == PLAYER_REAL_LOCAL)
+        return false;
 
     const u8 aidCurrent = controller->aidsBelongingToPlayerIds[playerId];
-    const u8 aidPrevious = (playerId > 0 && IsValidPlayerId(static_cast<u8>(playerId - 1)))
-                               ? controller->aidsBelongingToPlayerIds[playerId - 1]
-                               : 0xFF;
-    if (aidCurrent == 0xFF) return false;
+    const u8 aidPrevious = (playerId > 0 && IsValidPlayerId(static_cast<u8>(playerId - 1))) ? controller->aidsBelongingToPlayerIds[playerId - 1] : 0xFF;
+    if (aidCurrent == 0xFF)
+        return false;
     return aidCurrent == aidPrevious;
 }
 
@@ -335,10 +343,12 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate *page) {
     for (u32 row = 0; row < rowCount; ++row) {
         const u8 rank = static_cast<u8>(row + 1);
         const u8 playerId = ResolvePlayerIdForRow(isBattle, sortedEntries, row, raceInfo);
-        if (!IsValidPlayerId(playerId)) continue;
+        if (!IsValidPlayerId(playerId))
+            continue;
 
         CtrlRaceResult *result = page->results != 0 ? page->results[row] : 0;
-        if (result == 0) continue;
+        if (result == 0)
+            continue;
 
         result->Fill(rank, playerId);
 

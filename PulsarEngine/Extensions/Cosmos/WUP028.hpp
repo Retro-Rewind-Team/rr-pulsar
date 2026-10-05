@@ -79,9 +79,12 @@ struct InterruptMsg4 {
 
 class WUP028Manager {
 public:
-    WUP028Manager() : isStarted(false), isWorking(false), isInit(false), adapterId(-1U) {}
+    WUP028Manager() : isStarted(false), isWorking(false), isInit(false), adapterId(-1U) {
+    }
     static void CreateStaticInstance();
-    static WUP028Manager *GetStaticInstance() { return sInstance; }
+    static WUP028Manager *GetStaticInstance() {
+        return sInstance;
+    }
     void CustomPADRead(PAD::Status *status);
 
 private:

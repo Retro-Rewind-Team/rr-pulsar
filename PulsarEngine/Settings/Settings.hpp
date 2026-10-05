@@ -40,8 +40,11 @@ class Hook : public DoFuncsHook {
     static DoFuncsHook *settingsHooks;
 
 public:
-    Hook(Func &f) : DoFuncsHook(f, &settingsHooks) {}
-    static void Exec() { DoFuncsHook::Exec(settingsHooks); }
+    Hook(Func &f) : DoFuncsHook(f, &settingsHooks) {
+    }
+    static void Exec() {
+        DoFuncsHook::Exec(settingsHooks);
+    }
 };
 
 class Mgr {
@@ -71,84 +74,123 @@ private:
         Hook::Exec();
         this->RequestSave();
     }
-    void RequestSave() { System::sInstance->taskThread->Request(&Mgr::SaveTask, nullptr, 0); }
-    void RequestTrophiesSave() { System::sInstance->taskThread->Request(&Mgr::SaveTask, reinterpret_cast<void *>(1), 0); }
+    void RequestSave() {
+        System::sInstance->taskThread->Request(&Mgr::SaveTask, nullptr, 0);
+    }
+    void RequestTrophiesSave() {
+        System::sInstance->taskThread->Request(&Mgr::SaveTask, reinterpret_cast<void *>(1), 0);
+    }
     void Save();
     void SaveTrophies();
     void AddTrophy(u32 crc32, u8 variantIdx, TTMode mode);
     u32 CountTrophiesInTrackRange(u32 firstTrackIdx, u32 trackCount, TTMode mode) const;
-    void SetLastSelectedCup(PulsarCupId id) { this->rawBin->GetSection<MiscParams>().lastSelectedCup = id; }
+    void SetLastSelectedCup(PulsarCupId id) {
+        this->rawBin->GetSection<MiscParams>().lastSelectedCup = id;
+    }
 
 public:
     Mgr() : rawBin(nullptr), trophyEntries(nullptr), trophyEntryCount(0) {
         for (int i = 0; i < 4; ++i) this->trophyCount[i] = 0;
     }
-    static Mgr &Get() { return *sInstance; }
-    static const Mgr &GetConst() { return *sInstance; }
-    static bool IsCreated() { return sInstance != nullptr; }
+    static Mgr &Get() {
+        return *sInstance;
+    }
+    static const Mgr &GetConst() {
+        return *sInstance;
+    }
+    static bool IsCreated() {
+        return sInstance != nullptr;
+    }
 
     bool HasTrophy(u32 crc32, u8 variantIdx, TTMode mode) const;
     bool HasTrophy(u32 crc32, TTMode mode) const;
     bool HasTrophy(PulsarId id, u8 variantIdx, TTMode mode) const;
     bool HasTrophy(PulsarId id, TTMode mode) const;
     bool HasTrophyForAllVariants(PulsarId id, TTMode mode) const;
-    u16 GetTotalTrophyCount(TTMode mode) const { return totalTrophyCount[mode]; }
+    u16 GetTotalTrophyCount(TTMode mode) const {
+        return totalTrophyCount[mode];
+    }
     u16 GetTotalTrophyCount(PulsarId id, TTMode mode) const;
-    int GetTrophyCount(TTMode mode) const { return this->trophyCount[mode]; }
+    int GetTrophyCount(TTMode mode) const {
+        return this->trophyCount[mode];
+    }
     int GetTrophyCount(PulsarId id, TTMode mode) const;
-    PulsarCupId GetSavedSelectedCup() const { return this->rawBin->GetSection<MiscParams>().lastSelectedCup; }
-    u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
-    void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }
+    PulsarCupId GetSavedSelectedCup() const {
+        return this->rawBin->GetSection<MiscParams>().lastSelectedCup;
+    }
+    u32 GetCustomItems() const {
+        return this->rawBin->GetSection<MiscParams>().customItemsBitfield;
+    }
+    void SetCustomItems(u32 val) {
+        this->rawBin->GetSection<MiscParams>().customItemsBitfield = val;
+    }
     u32 GetCharacterRestrictionMask() const {
-        if (rawBin == nullptr) return Restrictions::ALL_CHARACTERS;
+        if (rawBin == nullptr)
+            return Restrictions::ALL_CHARACTERS;
         const u32 mask = rawBin->GetSection<MiscParams>().reserved[0] & Restrictions::ALL_CHARACTERS;
         return mask == 0 ? Restrictions::ALL_CHARACTERS : mask;
     }
     u16 GetVehicleRestrictionMask(u32 weight) const {
-        if (rawBin == nullptr || weight >= Restrictions::VEHICLE_WEIGHT_COUNT) return Restrictions::ALL_VEHICLES;
+        if (rawBin == nullptr || weight >= Restrictions::VEHICLE_WEIGHT_COUNT)
+            return Restrictions::ALL_VEHICLES;
         const u16 mask = static_cast<u16>(rawBin->GetSection<MiscParams>().reserved[weight + 1]) & Restrictions::ALL_VEHICLES;
         return mask == 0 ? Restrictions::ALL_VEHICLES : mask;
     }
     void SetCharacterRestrictionMask(u32 mask) {
-        if (rawBin == nullptr) return;
+        if (rawBin == nullptr)
+            return;
         mask &= Restrictions::ALL_CHARACTERS;
-        if (mask == 0) mask = Restrictions::ALL_CHARACTERS;
+        if (mask == 0)
+            mask = Restrictions::ALL_CHARACTERS;
         MiscParams &params = rawBin->GetSection<MiscParams>();
-        if (params.reserved[0] == mask) return;
+        if (params.reserved[0] == mask)
+            return;
         params.reserved[0] = mask;
         RequestSave();
     }
     void SetVehicleRestrictionMask(u32 weight, u16 mask) {
-        if (rawBin == nullptr || weight >= Restrictions::VEHICLE_WEIGHT_COUNT) return;
+        if (rawBin == nullptr || weight >= Restrictions::VEHICLE_WEIGHT_COUNT)
+            return;
         mask &= Restrictions::ALL_VEHICLES;
-        if (mask == 0) mask = Restrictions::ALL_VEHICLES;
+        if (mask == 0)
+            mask = Restrictions::ALL_VEHICLES;
         MiscParams &params = rawBin->GetSection<MiscParams>();
-        if (params.reserved[weight + 1] == mask) return;
+        if (params.reserved[weight + 1] == mask)
+            return;
         params.reserved[weight + 1] = mask;
         RequestSave();
     }
-    u16 GetCustomEngineClass() const { return this->rawBin->GetSection<MiscParams>().customEngineClass; }
+    u16 GetCustomEngineClass() const {
+        return this->rawBin->GetSection<MiscParams>().customEngineClass;
+    }
     void SetCustomEngineClass(u16 value) {
-        if (value < 100 || value > 9999) value = 150;
+        if (value < 100 || value > 9999)
+            value = 150;
         MiscParams &params = this->rawBin->GetSection<MiscParams>();
-        if (params.customEngineClass == value) return;
+        if (params.customEngineClass == value)
+            return;
         params.customEngineClass = value;
         this->RequestSave();
     }
-    u8 GetRankingBadge() const { return this->rawBin->GetSection<MiscParams>().rankingBadge; }
+    u8 GetRankingBadge() const {
+        return this->rawBin->GetSection<MiscParams>().rankingBadge;
+    }
     u8 GetDisplayCountry() const {
-        if (rawBin == nullptr) return 0;
+        if (rawBin == nullptr)
+            return 0;
         const MiscParams &params = rawBin->GetSection<MiscParams>();
         return params.regionMagic == 'RGN1' && params.displayCountry < 255 ? params.displayCountry : 0;
     }
     u8 GetDisplaySubregion() const {
-        if (rawBin == nullptr) return 0;
+        if (rawBin == nullptr)
+            return 0;
         const MiscParams &params = rawBin->GetSection<MiscParams>();
         return params.regionMagic == 'RGN1' && GetDisplayCountry() != 0 ? params.displaySubregion : 0;
     }
     void SetDisplayLocation(u8 country, u8 state);
     void SetRankingBadge(u8 badge) {
-        if (this->rawBin == nullptr || this->rawBin->GetSection<MiscParams>().rankingBadge == badge) return;
+        if (this->rawBin == nullptr || this->rawBin->GetSection<MiscParams>().rankingBadge == badge)
+            return;
         this->rawBin->GetSection<MiscParams>().rankingBadge = badge;
         this->RequestSave();
     }

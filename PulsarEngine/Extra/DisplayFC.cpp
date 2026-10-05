@@ -48,32 +48,34 @@ asmFunc saveFcAndCountryHook() {
     ASM(
         nofralloc;
         pushStack
-            mr r4,
+        mr r4,
         r19;
         bl saveFcAndCountry;
         popStack
-            lbz r4,
+        lbz r4,
         0x185(r3);
         lis r12, saveFcAndCountryHookExit @h;
         ori r12, r12, saveFcAndCountryHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 asmFunc saveFcAndCountryInLiveHook() {
     ASM(
         nofralloc;
         pushStack
-            mr r4,
+        mr r4,
         r19;
         bl saveFcAndCountry;
         popStack
-            lbz r4,
+        lbz r4,
         0x185(r3);
         lis r12, saveFcAndCountryInLiveHookExit @h;
         ori r12, r12, saveFcAndCountryInLiveHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 kmBranch(0x806513e0, saveFcAndCountryHook);
@@ -94,7 +96,8 @@ unsigned char isInLiveViewSection(unsigned int sectionID) {
 }
 
 unsigned char get8bit(unsigned char c) {
-    if (c < 0x3a) return c - 0x30;
+    if (c < 0x3a)
+        return c - 0x30;
     return c - 87;
 }
 
@@ -138,7 +141,8 @@ void displayFcAndCountry(LayoutUIControl *r3, unsigned int r4) {
     unsigned int hudSlot = Racedata::sInstance->GetHudSlotId(r4);
 
     if (!isInOnlineSection(SectionMgr::sInstance->curSection->sectionId)) {
-        if (r3->layout.GetPaneByName("flag")) r3->SetPaneVisibility("flag", 0);
+        if (r3->layout.GetPaneByName("flag"))
+            r3->SetPaneVisibility("flag", 0);
         return;
     }
     if (hudSlot < 2 && (!isInLiveViewSection(SectionMgr::sInstance->curSection->sectionId))) {  // for local player
@@ -158,7 +162,8 @@ void displayFcAndCountry(LayoutUIControl *r3, unsigned int r4) {
         r3->SetPaneVisibility("flag", 0);
     }
 
-    if (!r3->layout.GetPaneByName("user_id")) return;
+    if (!r3->layout.GetPaneByName("user_id"))
+        return;
     calcFc(pid, fcDisplayStr);
     textInfo.strings[0] = fcDisplayStr;
     r3->SetTextBoxMessage("user_id", UI::BMG_TEXT, &textInfo);
@@ -169,13 +174,14 @@ asmFunc displayFcAndCountryHook() {
         nofralloc;
         stw r0, 0x154(sp);
         pushStack
-            bl displayFcAndCountry;
+        bl displayFcAndCountry;
         popStack
-            lis r12,
+        lis r12,
         displayFcAndCountryHookExit @h;
         ori r12, r12, displayFcAndCountryHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 asmFunc displayFcAndCountryInResultFillNameHook() {
@@ -183,13 +189,14 @@ asmFunc displayFcAndCountryInResultFillNameHook() {
         nofralloc;
         stw r0, 0xE4(sp);
         pushStack
-            bl displayFcAndCountry;
+        bl displayFcAndCountry;
         popStack
-            lis r12,
+        lis r12,
         displayFcAndCountryInResultFillNameHookExit @h;
         ori r12, r12, displayFcAndCountryInResultFillNameHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 asmFunc displayFcAndCountryInResultFillTimeHook() {
@@ -197,13 +204,14 @@ asmFunc displayFcAndCountryInResultFillTimeHook() {
         nofralloc;
         stw r0, 0xE4(sp);
         pushStack
-            bl displayFcAndCountry;
+        bl displayFcAndCountry;
         popStack
-            lis r12,
+        lis r12,
         displayFcAndCountryInResultFillTimeHookExit @h;
         ori r12, r12, displayFcAndCountryInResultFillTimeHookExit @l;
         mtlr r12;
-        blr;)
+        blr;
+    )
 }
 
 kmBranch(0x807f004c, displayFcAndCountryHook);

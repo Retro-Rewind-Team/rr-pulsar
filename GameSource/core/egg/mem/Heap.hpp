@@ -31,7 +31,9 @@ public:
 
     static void *alloc(u32 size, int align, Heap *heap = nullptr);
     template <class T>
-    static inline T *alloc(u32 size, int align, Heap *heap = nullptr) { return static_cast<T *>(alloc(size, align, heap)); }
+    static inline T *alloc(u32 size, int align, Heap *heap = nullptr) {
+        return static_cast<T *>(alloc(size, align, heap));
+    }
 
     static Heap *findHeap(MEM::iHeapHead *rvlHeap);
     Heap *findParentHeap();
@@ -66,7 +68,9 @@ inline void *operator new(size_t size, EGG::Heap *heap) {
     return operator new(size, heap, 4);
 }
 
-inline void *operator new(size_t, void *ptr) { return ptr; }
+inline void *operator new(size_t, void *ptr) {
+    return ptr;
+}
 
 void *operator new[](size_t size, int alignment);
 

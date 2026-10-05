@@ -30,8 +30,8 @@ public:
     const char *GetClassName() const override;  // 0x2c 805c9894
     virtual void vf_0x3c();  // 0x3c 805c9ebc
 
-    void Load(u32 digitCount, const char *folderName, const char *boxCtrName, const char *variant, const char *digitCtrName,
-              const char *digitVariant, u32 localPlayerBitfield, bool r5, bool inaccessible);  // 805c9a7c r5 == manipulator's init r5
+    void Load(u32 digitCount, const char *folderName, const char *boxCtrName, const char *variant, const char *digitCtrName, const char *digitVariant, u32 localPlayerBitfield, bool r5,
+      bool inaccessible);  // 805c9a7c r5 == manipulator's init r5
     void SelectInitial(u32 hudSlotId);  // 805c9ec0
     void Select(u32 hudSlotId);  // 805c9f14
     void RemoveAllDigits();  // 805c9f34

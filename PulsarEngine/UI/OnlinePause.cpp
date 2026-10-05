@@ -20,20 +20,24 @@ namespace UI {
 
 static bool IsOnlinePauseMode() {
     const Racedata *racedata = Racedata::sInstance;
-    if (!racedata) return false;
+    if (!racedata)
+        return false;
 
     const GameMode mode = racedata->menusScenario.settings.gamemode;
     return mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE;
 }
 
 static Page *GetActiveOnlinePausePage(Section *section) {
-    if (section == nullptr) return nullptr;
+    if (section == nullptr)
+        return nullptr;
 
     Page *pausePage = section->pages[PAGE_VS_RACE_PAUSE_MENU];
-    if (pausePage && pausePage->currentState != STATE_DEACTIVATED) return pausePage;
+    if (pausePage && pausePage->currentState != STATE_DEACTIVATED)
+        return pausePage;
 
     pausePage = section->pages[PAGE_BATTLE_PAUSE_MENU];
-    if (pausePage && pausePage->currentState != STATE_DEACTIVATED) return pausePage;
+    if (pausePage && pausePage->currentState != STATE_DEACTIVATED)
+        return pausePage;
 
     return nullptr;
 }
@@ -59,7 +63,8 @@ void SetInputPaused(bool paused) {
 kmRuntimeUse(0x809c4680);
 void SetRaceHUDVisibility(bool visible) {
     Page *raceHUD = *reinterpret_cast<Page **>(kmRuntimeAddr(0x809c4680));
-    if (!raceHUD) return;
+    if (!raceHUD)
+        return;
 
     // ControlGroup is at page + 0x24
     // controlArray is at group + 0x0
@@ -85,18 +90,14 @@ void AddOnlinePausePages() {
     SectionId sid = section->sectionId;
 
     // Online Race Sections (including Live View)
-    if (sid == SECTION_P1_WIFI_VS || sid == SECTION_P2_WIFI_VS ||
-        sid == SECTION_P1_WIFI_FRIEND_VS || sid == SECTION_P1_WIFI_FRIEND_TEAMVS ||
-        sid == SECTION_P2_WIFI_FRIEND_VS || sid == SECTION_P2_WIFI_FRIEND_TEAMVS ||
-        sid == SECTION_P1_WIFI_VS_LIVEVIEW || sid == SECTION_P2_WIFI_VS_LIVEVIEW) {
+    if (sid == SECTION_P1_WIFI_VS || sid == SECTION_P2_WIFI_VS || sid == SECTION_P1_WIFI_FRIEND_VS || sid == SECTION_P1_WIFI_FRIEND_TEAMVS || sid == SECTION_P2_WIFI_FRIEND_VS
+      || sid == SECTION_P2_WIFI_FRIEND_TEAMVS || sid == SECTION_P1_WIFI_VS_LIVEVIEW || sid == SECTION_P2_WIFI_VS_LIVEVIEW) {
         section->CreateAndInitPage(PAGE_VS_RACE_PAUSE_MENU);
         section->CreateAndInitPage(PAGE_QUIT_CONFIRMATION);
     }
     // Online Battle Sections (including Live View)
-    else if (sid == SECTION_P1_WIFI_BT || sid == SECTION_P2_WIFI_BT ||
-             sid == SECTION_P1_WIFI_FRIEND_BALLOON || sid == SECTION_P1_WIFI_FRIEND_COIN ||
-             sid == SECTION_P2_WIFI_FRIEND_BALLOON || sid == SECTION_P2_WIFI_FRIEND_COIN ||
-             sid == SECTION_P1_WIFI_BT_LIVEVIEW || sid == SECTION_P2_WIFI_BT_LIVEVIEW) {
+    else if (sid == SECTION_P1_WIFI_BT || sid == SECTION_P2_WIFI_BT || sid == SECTION_P1_WIFI_FRIEND_BALLOON || sid == SECTION_P1_WIFI_FRIEND_COIN || sid == SECTION_P2_WIFI_FRIEND_BALLOON
+      || sid == SECTION_P2_WIFI_FRIEND_COIN || sid == SECTION_P1_WIFI_BT_LIVEVIEW || sid == SECTION_P2_WIFI_BT_LIVEVIEW) {
         section->CreateAndInitPage(PAGE_BATTLE_PAUSE_MENU);
         section->CreateAndInitPage(PAGE_QUIT_CONFIRMATION);
     }
@@ -118,8 +119,7 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void *sceneSoundManager) 
             bool isLiveView = false;
             if (sectionMgr && sectionMgr->curSection) {
                 SectionId sid = sectionMgr->curSection->sectionId;
-                isLiveView = (sid == SECTION_P1_WIFI_VS_LIVEVIEW || sid == SECTION_P2_WIFI_VS_LIVEVIEW ||
-                              sid == SECTION_P1_WIFI_BT_LIVEVIEW || sid == SECTION_P2_WIFI_BT_LIVEVIEW);
+                isLiveView = (sid == SECTION_P1_WIFI_VS_LIVEVIEW || sid == SECTION_P2_WIFI_VS_LIVEVIEW || sid == SECTION_P1_WIFI_BT_LIVEVIEW || sid == SECTION_P2_WIFI_BT_LIVEVIEW);
             }
 
             // Subtract 210 VR points when quitting through pause menu in VS
@@ -173,16 +173,20 @@ void OnlineHUDVisibilityHook() {
         const Raceinfo *raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_IS_FINISHING)) {
             Section *section = 0;
-            if (SectionMgr::sInstance) section = SectionMgr::sInstance->curSection;
+            if (SectionMgr::sInstance)
+                section = SectionMgr::sInstance->curSection;
             if (section) {
                 // If the player finishes while paused, the underlying race UI can transition/dispose.
                 // Force-close pause layers to prevent stale pages from being updated during section layer processing.
                 Page *vsPause = section->pages[PAGE_VS_RACE_PAUSE_MENU];
                 Page *btPause = section->pages[PAGE_BATTLE_PAUSE_MENU];
                 Page *quitConf = section->pages[PAGE_QUIT_CONFIRMATION];
-                if (vsPause && vsPause->currentState != STATE_DEACTIVATED) vsPause->EndState();
-                if (btPause && btPause->currentState != STATE_DEACTIVATED) btPause->EndState();
-                if (quitConf && quitConf->currentState != STATE_DEACTIVATED) quitConf->EndState();
+                if (vsPause && vsPause->currentState != STATE_DEACTIVATED)
+                    vsPause->EndState();
+                if (btPause && btPause->currentState != STATE_DEACTIVATED)
+                    btPause->EndState();
+                if (quitConf && quitConf->currentState != STATE_DEACTIVATED)
+                    quitConf->EndState();
             }
 
             // Always release input pause at race finish and restore music volume
@@ -200,9 +204,7 @@ void OnlineHUDVisibilityHook() {
             Page *btPause = section->pages[PAGE_BATTLE_PAUSE_MENU];
             Page *quitConf = section->pages[PAGE_QUIT_CONFIRMATION];
 
-            if ((vsPause && vsPause->currentState != STATE_DEACTIVATED) ||
-                (btPause && btPause->currentState != STATE_DEACTIVATED) ||
-                (quitConf && quitConf->currentState != STATE_DEACTIVATED)) {
+            if ((vsPause && vsPause->currentState != STATE_DEACTIVATED) || (btPause && btPause->currentState != STATE_DEACTIVATED) || (quitConf && quitConf->currentState != STATE_DEACTIVATED)) {
                 isPauseOpen = true;
             }
 

@@ -52,7 +52,8 @@ enum MiiType {
 
 class Mii {  // online, rflId is hudSlotId and middleDBIdx is aid
 public:
-    Mii() {}
+    Mii() {
+    }
     virtual ~Mii();  // 80529034 vtable 808b3148
     void Init(u32 type);  // 80525f88 could be reset
     static bool ComputeRFLStoreData(RFL::StoreData &dest, const RFL::CreateID *createId);  // 8052758c
@@ -62,8 +63,8 @@ public:
 
     // rflId stored to idx if type == 3, presumably normal mii, middleDBIdx is most often playerId
     bool GetRFLArgs(RFL::IDX rflIdx, u32 middleDBIdx, MiiType type, RFL::MiddleDB *dbDest, RFL::DataSource *sourceDest, RFL::IDX *idxDest);  // 80526460
-    nw4r::g3d::ScnRfl *CreateScnRfl(EGG::Allocator *allocator, RFL::Resolution resolution, u32 expressionFlag,
-                                    nw4r::g3d::ScnRfl *copyFrom, u32 sizeUserData);  // 8052663c copies copyFrom CharInfo if not null
+    nw4r::g3d::ScnRfl *CreateScnRfl(
+      EGG::Allocator *allocator, RFL::Resolution resolution, u32 expressionFlag, nw4r::g3d::ScnRfl *copyFrom, u32 sizeUserData);  // 8052663c copies copyFrom CharInfo if not null
 
     MiiType type;
     u8 rflIdx;  // 0x8

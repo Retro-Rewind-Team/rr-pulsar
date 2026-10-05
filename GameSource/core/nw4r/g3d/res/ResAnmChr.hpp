@@ -11,7 +11,8 @@ namespace g3d {
 
 struct ChrAnmResult {
     void GetScale(math::VEC3 *scale) const;  // 800555c0
-    enum Flag {};
+    enum Flag {
+    };
     u32 flags;
     math::VEC3 ratio;
     math::VEC3 rotation;

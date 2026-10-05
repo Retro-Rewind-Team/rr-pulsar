@@ -19,10 +19,13 @@ private:
 */
 class ToggleButton : public PushButton {
 public:
-    ToggleButton() : state(false) {}
+    ToggleButton() : state(false) {
+    }
     void Load(u32 localPlayerBitfield, const char *folderName, const char *ctrName, const char *variant);
     void ToggleState(bool state);  // changes the state without an animation
-    inline bool GetState() const { return this->state; }
+    inline bool GetState() const {
+        return this->state;
+    }
 
 private:
     void OnClick(u32 hudSlotId, u32 r5) override;

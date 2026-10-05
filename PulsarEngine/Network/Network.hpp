@@ -20,7 +20,16 @@ enum DenyType {
 
 class Mgr {  // Manages network related stuff within Pulsar
 public:
-    Mgr() : racesPerGP(3), curBlockingArrayIdx(0), lastGroupedTrackPlayed(false), region(0x0A), customItemsBitfield(0x7FFFF), customEngineClass(150), hostCustomEngineClass(0), characterRestrictionMask(Restrictions::ALL_CHARACTERS), hasHostSettingsPreview(false) {
+    Mgr()
+        : racesPerGP(3),
+          curBlockingArrayIdx(0),
+          lastGroupedTrackPlayed(false),
+          region(0x0A),
+          customItemsBitfield(0x7FFFF),
+          customEngineClass(150),
+          hostCustomEngineClass(0),
+          characterRestrictionMask(Restrictions::ALL_CHARACTERS),
+          hasHostSettingsPreview(false) {
         for (u32 i = 0; i < Restrictions::VEHICLE_WEIGHT_COUNT; ++i) vehicleRestrictionMasks[i] = Restrictions::ALL_VEHICLES;
     }
     u32 hostContext;

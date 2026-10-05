@@ -1,7 +1,19 @@
 #include <RetroRewind.hpp>
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
+#include <MarioKartWii/Archive/ArchiveMgr.hpp>
+#include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
+#include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
+#include <MarioKartWii/3D/Model/ModelDirector.hpp>
+#include <MarioKartWii/3D/Scn/ScnMgr.hpp>
 #include <MarioKartWii/Kart/KartFunctions.hpp>
+#include <core/egg/DVD/DvdRipper.hpp>
+#include <core/rvl/OS/OS.hpp>
+#include <core/rvl/os/OSCache.hpp>
+#include <core/rvl/dvd/dvd.hpp>
+#include <IO/SDIO.hpp>
+#include <RetroRewindChannel.hpp>
+#include <Settings/Settings.hpp>
 
 namespace Pulsar {
 
@@ -22,9 +34,10 @@ asmFunc MiiOutfitC1() {
         beq - end;
 
         li r26, 4;
-        end :;
+    end:
         cmplwi r0, 1;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8083E018, MiiOutfitC1);
 
@@ -41,9 +54,10 @@ asmFunc MiiOutfitC2() {
         beq - end;
 
         li r29, 4;
-        end :;
+    end:
         cmplwi r0, 1;
-        blr;)
+        blr;
+    )
 }
 kmCall(0x8083E64C, MiiOutfitC2);
 
@@ -72,11 +86,12 @@ asmFunc GetKartDriverDispEntryHook() {
 
         subi r4, r4, 2;
 
-        compute :;
+    compute:
         mulli r3, r4, 0x38;
         add r0, r5, r0;
         add r3, r3, r0;
-        blr;);
+        blr;
+    )
 }
 kmBranch(0x805924b4, GetKartDriverDispEntryHook);
 
@@ -155,7 +170,7 @@ asmFunc MiiOutfitCInitialFocus() {
         bne - select;
         b skip;
 
-        checkC :;
+    checkC:
         // Saved character is Outfit C: only match an Outfit C button.
         subi r5, r3, 0x1C;
         cmplwi r5, 0xD;
@@ -173,22 +188,26 @@ asmFunc MiiOutfitCInitialFocus() {
         andi.r5, r5, 1;
         beq - skip;
 
-        select :;
+    select:
         lis r12, __kAutoMap_0x807e2fb0 @h;
         ori r12, r12, __kAutoMap_0x807e2fb0 @l;
         mtctr r12;
         bctr;
 
-        skip :;
+    skip:
         lis r12, __kAutoMap_0x807e3064 @h;
         ori r12, r12, __kAutoMap_0x807e3064 @l;
         mtctr r12;
-        bctr;);
+        bctr;
+    )
 }
 kmBranch(0x807e2f7c, MiiOutfitCInitialFocus);
 
 // Constructor
 kmWrite32(0x8083018c, 0x1CA40003);
+
+// Mii head attachment must advance over all three body slots for each player.
+kmWrite32(0x80830548, 0x3B9C0078);
 
 // Per-player Mii body loader
 kmWrite32(0x80831148, 0x1C9A0003);
@@ -204,6 +223,23 @@ kmWrite32(0x80830ed4, 0x1C840003);  // Main character-select branch
 // two Mii body variants (A/B); Outfit C needs extra room during the ctor-time 0x80831100 loads.
 kmWrite32(0x8059e3bc, 0x3F800002);  // lis r28, 0x2 -> 0x20000 seed
 kmWrite32(0x8059e3cc, 0x7F83E378);  // mr r3, r28 -> 0x20000 bytes
+
+// Local multiplayer replaces the body models whenever a different Mii is selected.
+// Unregister all three before freeAll invalidates their scene-list links.
+static void RemoveMiiOutfitCModels(MenuDriverModelMgr *manager, u8 playerId) {
+    for (u32 i = 0; i < 3; ++i) {
+        MenuDriverModel &driverModel = manager->models[0x18 + playerId * 3 + i];
+        if (driverModel.model != nullptr) {
+            if (driverModel.model->bitfield & 0x100000) {
+                driverModel.model->ToggleVisible(false);
+                driverModel.model->GetScnManager()->RemoveModelDirector(driverModel.model);
+            }
+            driverModel.model = nullptr;
+        }
+    }
+}
+kmCall(0x808315bc, RemoveMiiOutfitCModels);
+kmWrite32(0x808315c0, 0x48000060);
 
 // Main Mii slot selector
 asmFunc MiiOutfitCDriverSlot() {
@@ -227,7 +263,7 @@ asmFunc MiiOutfitCDriverSlot() {
         stw r11, 0(r31);
         b done;
 
-        checkC :;
+    checkC:
         // Mii C check: r5 in {0x1C, 0x1D, 0x22, 0x23, 0x28, 0x29}.
         subi r0, r5, 0x1C;
         cmplwi r0, 0xD;
@@ -242,8 +278,9 @@ asmFunc MiiOutfitCDriverSlot() {
         addi r11, r11, 4;
         stw r11, 0(r31);
 
-        done :;
-        blr;)
+    done:
+        blr;
+    )
 }
 kmBranch(0x80830ee4, MiiOutfitCDriverSlot);
 kmPatchExitPoint(MiiOutfitCDriverSlot, 0x80830f18);
@@ -265,7 +302,7 @@ asmFunc MiiOutfitCDriverSlotSpecial() {
         addi r8, r8, 1;
         b doneSp;
 
-        checkCSp :;
+    checkCSp:
         // Mii C check.
         subi r0, r5, 0x1C;
         cmplwi r0, 0xD;
@@ -277,10 +314,104 @@ asmFunc MiiOutfitCDriverSlotSpecial() {
 
         addi r8, r8, 2;
 
-        doneSp :;
-        blr;)
+    doneSp:
+        blr;
+    )
 }
 kmBranch(0x80830d7c, MiiOutfitCDriverSlotSpecial);
 kmPatchExitPoint(MiiOutfitCDriverSlotSpecial, 0x80830da4);
+
+static u32 LoadMiiOutfitCBRRES(void *holder, CharacterId character) {
+    MenuModelBRRESHandle *brresHandle = static_cast<MenuModelBRRESHandle *>(holder);
+    switch (character) {
+        case MII_S_C_MALE:
+        case MII_S_C_FEMALE:
+        case MII_M_C_MALE:
+        case MII_M_C_FEMALE:
+        case MII_L_C_MALE:
+        case MII_L_C_FEMALE:
+            break;
+        default:
+            return brresHandle->BindDriverBRRES(character);
+    }
+
+    const char *postfix = ArchiveMgr::GetKartArchivePostfix(character);
+    char path[0x60];
+    snprintf(path, sizeof(path), "/Scene/Model/Driver/%s.brres", postfix);
+
+    ScnMgr *scnMgr = ScnMgr::sInstance[0];
+    EGG::Heap *heap = scnMgr != nullptr ? scnMgr->curHeap : static_cast<EGG::Heap *>(nullptr);
+    void *file = nullptr;
+    u32 fileSize = 0;
+
+    if (IsNewChannel()) {
+        SDIO sd(IOType_SD, nullptr, nullptr);
+        char paths[3][0x80];
+        snprintf(paths[0], sizeof(paths[0]), "/RetroRewind6/Character/Driver/%s.brres", postfix);
+        u32 pathCount = 1;
+        if (Settings::Mgr::Get().GetSettingValue(Settings::SETTING_LOOSEARCHIVEOVERRIDES) == LOOSEARCHIVEOVERRIDES_ENABLED) {
+            snprintf(paths[1], sizeof(paths[1]), "/RetroRewind6/Patches/Scene/Model/Driver/%s.brres", postfix);
+            snprintf(paths[2], sizeof(paths[2]), "/RetroRewind6/Patches/%s.brres", postfix);
+            pathCount = 3;
+        }
+
+        bool found = false;
+        for (u32 i = 0; i < pathCount; ++i) {
+            if (sd.OpenFile(paths[i], FILE_MODE_READ)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            return brresHandle->BindDriverBRRES(character);
+
+        const s32 signedFileSize = sd.GetFileSize();
+        if (signedFileSize <= 0 || static_cast<u32>(signedFileSize) > 0x7fffffe0 || heap == nullptr) {
+            sd.Close();
+            return 0;
+        }
+        fileSize = static_cast<u32>(signedFileSize);
+        const u32 allocSize = (fileSize + 0x20) & ~0x1f;
+        file = EGG::Heap::alloc(allocSize, 0x20, heap);
+        if (file == nullptr) {
+            sd.Close();
+            return 0;
+        }
+        const s32 bytesRead = sd.Read(fileSize, file);
+        sd.Close();
+        if (bytesRead != static_cast<s32>(fileSize)) {
+            heap->free(file);
+            return 0;
+        }
+        if (allocSize > fileSize)
+            memset(static_cast<u8 *>(file) + fileSize, 0, allocSize - fileSize);
+        OS::DCStoreRange(file, allocSize);
+    } else {
+        DVD::FileInfo info = {};
+        if (!DVD::Open(path, &info))
+            return brresHandle->BindDriverBRRES(character);
+        fileSize = info.length;
+        DVD::Close(&info);
+        if (fileSize == 0)
+            return brresHandle->BindDriverBRRES(character);
+        if (heap == nullptr)
+            return 0;
+        file = EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, &fileSize);
+    }
+
+    if (file == nullptr || fileSize == 0)
+        return 0;
+    if ((reinterpret_cast<u32>(file) & 0x1f) != 0) {
+        heap->free(file);
+        return 0;
+    }
+
+    brresHandle->menuModelBRRES.data = reinterpret_cast<nw4r::g3d::ResFileData *>(file);
+    ModelDirector::BindBRRESImpl(brresHandle->menuModelBRRES, path, nullptr, 0);
+    return 1;
+}
+kmCall(0x80830368, LoadMiiOutfitCBRRES);
+kmCall(0x80831234, LoadMiiOutfitCBRRES);
+kmCall(0x8083183c, LoadMiiOutfitCBRRES);
 
 }  // namespace Pulsar

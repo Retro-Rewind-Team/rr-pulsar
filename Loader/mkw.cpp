@@ -3,20 +3,8 @@
 
 static void loadIntoMKW();
 
-LoaderParams paramsPAL = {
-    (OSReport_t)0x801A25D0,
-    (OSFatal_t)0x801A4EC4,
-    (DVDConvertPathToEntrynum_t)0x8015DF4C,
-    (DVDFastOpen_t)0x8015E254,
-    (DVDReadPrio_t)0x8015E834,
-    (DVDClose_t)0x8015E568,
-    (sprintf_t)0x80011A2C,
-    (RKSystem *)0x802A4080,
-    (NETSHA1Init_t)0x801D24F4,
-    (NETSHA1Update_t)0x801D2544,
-    (NETSHA1GetDigest_t)0x801D25F8,
-    PAL,
-    0x80510238};
+LoaderParams paramsPAL = {(OSReport_t)0x801A25D0, (OSFatal_t)0x801A4EC4, (DVDConvertPathToEntrynum_t)0x8015DF4C, (DVDFastOpen_t)0x8015E254, (DVDReadPrio_t)0x8015E834, (DVDClose_t)0x8015E568,
+    (sprintf_t)0x80011A2C, (RKSystem *)0x802A4080, (NETSHA1Init_t)0x801D24F4, (NETSHA1Update_t)0x801D2544, (NETSHA1GetDigest_t)0x801D25F8, PAL, 0x80510238};
 LoaderParams paramsNTSC_U = {
     (OSReport_t)0x801A2530,
     (OSFatal_t)0x801A4E24,
@@ -48,20 +36,8 @@ LoaderParams paramsNTSC_J = {
     NTSC_J,
     0x8050fc50,
 };
-LoaderParams paramsNTSC_K = {
-    (OSReport_t)0x801A292C,
-    (OSFatal_t)0x801A5220,
-    (DVDConvertPathToEntrynum_t)0x8015DFC4,
-    (DVDFastOpen_t)0x8015E2CC,
-    (DVDReadPrio_t)0x8015E8AC,
-    (DVDClose_t)0x8015E5E0,
-    (sprintf_t)0x80011A94,
-    (RKSystem *)0x80292080,
-    (NETSHA1Init_t)0x801D2850,
-    (NETSHA1Update_t)0x801D28A0,
-    (NETSHA1GetDigest_t)0x801D2954,
-    NTSC_K,
-    0x804fe2f0};
+LoaderParams paramsNTSC_K = {(OSReport_t)0x801A292C, (OSFatal_t)0x801A5220, (DVDConvertPathToEntrynum_t)0x8015DFC4, (DVDFastOpen_t)0x8015E2CC, (DVDReadPrio_t)0x8015E8AC, (DVDClose_t)0x8015E5E0,
+    (sprintf_t)0x80011A94, (RKSystem *)0x80292080, (NETSHA1Init_t)0x801D2850, (NETSHA1Update_t)0x801D28A0, (NETSHA1GetDigest_t)0x801D2954, NTSC_K, 0x804fe2f0};
 
 static void LoadIntoMKW() {
     const u8 regionMem = *(u8 *)(0x80000003);

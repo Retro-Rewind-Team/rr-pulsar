@@ -8,7 +8,7 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/rvl/DWC/DWCAccount.hpp>
 #include <Network/Rating/PlayerRating.hpp>
-#include <CustomCharacters/CustomCharacters.hpp>
+#include <Race/CustomCharacters.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 
 namespace Discord {
@@ -76,7 +76,8 @@ static const CustomSkinDiscordImage customSkinDiscordImages[] = {
     // MII_A
     // MII_B
     // MII_C
-    {CHARACTER_NONE, 0, nullptr}};
+    {CHARACTER_NONE, 0, nullptr},
+};
 
 // Returns default Discord asset key and display name in Character Selection Screen order.
 static void GetDefaultCharacterInfo(CharacterId character, const char *&outKey, const char *&outName) {
@@ -222,7 +223,8 @@ static void GetDefaultCharacterInfo(CharacterId character, const char *&outKey, 
 }
 
 static const wchar_t *ResolveSkinBmgMessage(u32 bmgId) {
-    if (bmgId == 0) return nullptr;
+    if (bmgId == 0)
+        return nullptr;
 
     const wchar_t *msg = Pulsar::UI::GetCustomMsg(static_cast<s32>(bmgId));
     if (msg != nullptr && msg[0] != L'\0') {
@@ -234,7 +236,8 @@ static const wchar_t *ResolveSkinBmgMessage(u32 bmgId) {
         const s32 msgId = sectionMgr->systemBMG->GetMsgId(static_cast<s32>(bmgId));
         if (msgId >= 0) {
             msg = sectionMgr->systemBMG->GetMsgByMsgId(msgId);
-            if (msg != nullptr && msg[0] != L'\0') return msg;
+            if (msg != nullptr && msg[0] != L'\0')
+                return msg;
         }
     }
 
@@ -249,7 +252,8 @@ static const wchar_t *ResolveSkinBmgMessage(u32 bmgId) {
                 const s32 msgId = holder.GetMsgId(static_cast<s32>(bmgId));
                 if (msgId >= 0) {
                     msg = holder.GetMsgByMsgId(msgId);
-                    if (msg != nullptr && msg[0] != L'\0') return msg;
+                    if (msg != nullptr && msg[0] != L'\0')
+                        return msg;
                 }
             }
         }
@@ -259,17 +263,13 @@ static const wchar_t *ResolveSkinBmgMessage(u32 bmgId) {
 }
 
 static const char *GetSkinDiscordImageKey(CharacterId character, u8 table, const char *defaultKey) {
-    if (table == Pulsar::CustomCharacters::TABLE_DEFAULT) {
+    if (table == 0) {
         return defaultKey;
     }
 
-    const CharacterId stateChar = Pulsar::CustomCharacters::StateCharacter(character);
-
     // Check developer mapping table
     for (u32 i = 0; customSkinDiscordImages[i].character != CHARACTER_NONE; ++i) {
-        if ((customSkinDiscordImages[i].character == character ||
-             customSkinDiscordImages[i].character == stateChar) &&
-            customSkinDiscordImages[i].table == table) {
+        if (customSkinDiscordImages[i].character == character && customSkinDiscordImages[i].table == table) {
             if (customSkinDiscordImages[i].key != nullptr && customSkinDiscordImages[i].key[0] != '\0') {
                 return customSkinDiscordImages[i].key;
             }
@@ -278,7 +278,7 @@ static const char *GetSkinDiscordImageKey(CharacterId character, u8 table, const
 
     // Check if an asset key string is defined via BMG (0x8a00 | table)
     static char bmgImageKey[256];
-    const u32 imageBmgId = (static_cast<u32>(character) << 16) | Pulsar::CustomCharacters::CUSTOM_CHARACTER_IMAGE_BMG_START | table;
+    const u32 imageBmgId = (static_cast<u32>(character) << 16) | Pulsar::UI::BMG_CUSTOM_CHARACTER_IMAGE_START | table;
     const wchar_t *imageMsg = ResolveSkinBmgMessage(imageBmgId);
     if (imageMsg != nullptr && imageMsg[0] != L'\0') {
         wchar_t cleanKey[0x100];
@@ -293,7 +293,7 @@ static const char *GetSkinDiscordImageKey(CharacterId character, u8 table, const
     return defaultKey;
 }
 
-static void SetCharacterSmallImage(CharacterId character, u8 table = Pulsar::CustomCharacters::TABLE_DEFAULT) {
+static void SetCharacterSmallImage(CharacterId character, u8 table = 0) {
     const char *defaultKey = "";
     const char *defaultName = "";
     GetDefaultCharacterInfo(character, defaultKey, defaultName);
@@ -305,10 +305,10 @@ static void SetCharacterSmallImage(CharacterId character, u8 table = Pulsar::Cus
     const char *finalName = defaultName;
     char customNameUtf8[64];
 
-    if (table != Pulsar::CustomCharacters::TABLE_DEFAULT) {
+    if (table != 0) {
         finalKey = GetSkinDiscordImageKey(character, table, defaultKey);
 
-        const u32 bmgId = Pulsar::CustomCharacters::SkinNameBmgId(character, table);
+        const u32 bmgId = (static_cast<u32>(character) << 16) | Pulsar::UI::BMG_CUSTOM_CHARACTER_NAME_START | table;
         if (bmgId != 0) {
             const wchar_t *msg = ResolveSkinBmgMessage(bmgId);
             if (msg != nullptr && msg[0] != L'\0') {
@@ -341,7 +341,8 @@ void CleanBMGMessage(wchar_t *dest, const wchar_t *src) {
 }
 
 void ConvertUTF16toUtf8(char *dest, const wchar_t *src, size_t max_len) {
-    if (max_len == 0) return;
+    if (max_len == 0)
+        return;
 
     size_t destIndex = 0;
     for (size_t i = 0;; i++) {
@@ -350,14 +351,17 @@ void ConvertUTF16toUtf8(char *dest, const wchar_t *src, size_t max_len) {
             break;
         }
         if (c <= 0x007F) {
-            if (destIndex + 1 >= max_len) break;
+            if (destIndex + 1 >= max_len)
+                break;
             dest[destIndex++] = (char)c;
         } else if (c <= 0x07FF) {
-            if (destIndex + 2 >= max_len) break;
+            if (destIndex + 2 >= max_len)
+                break;
             dest[destIndex++] = 0xC0 | ((c >> 6) & 0x1F);
             dest[destIndex++] = 0x80 | (c & 0x3F);
         } else {
-            if (destIndex + 3 >= max_len) break;
+            if (destIndex + 3 >= max_len)
+                break;
             dest[destIndex++] = 0xE0 | ((c >> 12) & 0x0F);
             dest[destIndex++] = 0x80 | ((c >> 6) & 0x3F);
             dest[destIndex++] = 0x80 | (c & 0x3F);
@@ -370,8 +374,7 @@ static bool GetFirstLocalRacePlayer(u8 &outPlayerId, CharacterId &outCharacterId
     const GameScene *scene = GameScene::GetCurrent();
     Racedata *raceData = Racedata::sInstance;
     Raceinfo *raceInfo = Raceinfo::sInstance;
-    if (scene == nullptr || scene->id != SCENE_ID_RACE || raceData == nullptr || raceInfo == nullptr ||
-        !raceInfo->IsAtLeastStage(RACESTAGE_INTRO)) {
+    if (scene == nullptr || scene->id != SCENE_ID_RACE || raceData == nullptr || raceInfo == nullptr || !raceInfo->IsAtLeastStage(RACESTAGE_INTRO)) {
         return false;
     }
 
@@ -393,15 +396,6 @@ static bool GetFirstLocalRacePlayer(u8 &outPlayerId, CharacterId &outCharacterId
         }
     }
     return false;
-}
-
-static CharacterId GetFirstLocalRaceCharacter() {
-    u8 playerId = 0;
-    CharacterId characterId = CHARACTER_NONE;
-    if (GetFirstLocalRacePlayer(playerId, characterId)) {
-        return characterId;
-    }
-    return CHARACTER_NONE;
 }
 
 void DiscordRichPresence(Section *_this) {
@@ -455,8 +449,8 @@ void DiscordRichPresence(Section *_this) {
     CharacterId localCharId = CHARACTER_NONE;
     if (GetFirstLocalRacePlayer(localPlayerId, localCharId)) {
         charID = localCharId;
-        const u8 table = Pulsar::CustomCharacters::RaceSkinTable(localPlayerId, localCharId);
-        SetCharacterSmallImage(localCharId, table);
+        const u32 slot = Pulsar::Race::GetPlayerCustomCharacterSlot(localPlayerId, localCharId);
+        SetCharacterSmallImage(localCharId, slot);
     } else {
         charID = CHARACTER_NONE;
     }
@@ -622,17 +616,7 @@ void DiscordRichPresence(Section *_this) {
         details = newDetails;
     }
 
-    Dolphin::SetDiscordPresence(
-        details,
-        state,
-        "image_logo",
-        largeImageText,
-        smallImageKey,
-        smallImageText,
-        startTimeStamp,
-        0,
-        minPlayers,
-        maxPlayers);
+    Dolphin::SetDiscordPresence(details, state, "image_logo", largeImageText, smallImageKey, smallImageText, startTimeStamp, 0, minPlayers, maxPlayers);
 }
 
 kmCall(0x80635540, DiscordRichPresence);

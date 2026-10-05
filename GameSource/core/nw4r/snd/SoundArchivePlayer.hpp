@@ -35,8 +35,8 @@ public:
     class WsdCallback : public detail::WsdPlayer::WsdCallback {
     public:
         WsdCallback(const SoundArchivePlayer &player);  // inlined
-        virtual bool GetWaveSoundData(detail::WaveSoundInfo *info, detail::WaveSoundNoteInfo *noteInfo, detail::WaveInfo *waveData,
-                                      const void *waveSoundData, int index, int noteIndex, u32 userData) const;  // 800a2c80 vtable 80274a10
+        virtual bool GetWaveSoundData(detail::WaveSoundInfo *info, detail::WaveSoundNoteInfo *noteInfo, detail::WaveInfo *waveData, const void *waveSoundData, int index, int noteIndex,
+          u32 userData) const;  // 800a2c80 vtable 80274a10
         const SoundArchivePlayer &soundArchivePlayer;
     };
 
@@ -50,7 +50,7 @@ public:
     // SoundStartable vtable 802749f4 at 0xC
     //~SoundArchivePlayer() override; //thunk 800a2da0 func 800a0830
     StartResult detail_SetupSound(SoundHandle *handle, u32 soundId, bool holdFlag,
-                                  SoundArchive::SoundInfo *soundInfo) override;  // thunk 800a2d90 func 800a1800
+      SoundArchive::SoundInfo *soundInfo) override;  // thunk 800a2d90 func 800a1800
     u32 ConvertLabelStringToSoundId(const char *label) override;  // thunk 800a2d80 func 8009ddf0
 
     bool IsAvailable() const;  // 800a08f0
@@ -70,23 +70,21 @@ public:
 
     // AmbientInfo is almost always a Sound3DParam based one in mkwii, with Sound3DManager as the ParamUpdate and ArgAllocater callback,
     // and a Sound3DActor (what's trying to setup a sound) as the ArgUpdate
-    StartResult SetupSoundImpl(SoundHandle *handle, u32 soundId, detail::BasicSound::AmbientInfo *info,
-                               SoundActor *actor, bool holdFlag, SoundArchive::SoundInfo *soundInfo);  // 800a1820 returns 0 if success
-    SoundStartable::StartResult PrepareSeqImpl(detail::SeqSound *sound, const SoundArchive::SoundInfo *soundInfo,
-                                               const SoundArchive::SeqSoundInfo *seqInfo, SoundStartable::StartInfo::StartOffsetType startOffsetType, int startOffset,
-                                               const void *externalSeqDataAddress, const char *externalSeqStartLabel);  // 800a2260
-    SoundStartable::StartResult PrepareStrmImpl(detail::StrmSound *strmSound, const SoundArchive::SoundInfo *soundInfo,
-                                                const SoundArchive::StrmSoundInfo *strmInfo, SoundStartable::StartInfo::StartOffsetType type, int startOffset);  // 800a25c0
-    SoundStartable::StartResult PrepareWaveSoundImpl(detail::WaveSound *sound, const SoundArchive::SoundInfo *soundInfo,
-                                                     const SoundArchive::WaveSoundInfo *waveInfo, SoundStartable::StartInfo::StartOffsetType type, int startOffset);  // 800a2770
+    StartResult SetupSoundImpl(
+      SoundHandle *handle, u32 soundId, detail::BasicSound::AmbientInfo *info, SoundActor *actor, bool holdFlag, SoundArchive::SoundInfo *soundInfo);  // 800a1820 returns 0 if success
+    SoundStartable::StartResult PrepareSeqImpl(detail::SeqSound *sound, const SoundArchive::SoundInfo *soundInfo, const SoundArchive::SeqSoundInfo *seqInfo,
+      SoundStartable::StartInfo::StartOffsetType startOffsetType, int startOffset, const void *externalSeqDataAddress, const char *externalSeqStartLabel);  // 800a2260
+    SoundStartable::StartResult PrepareStrmImpl(detail::StrmSound *strmSound, const SoundArchive::SoundInfo *soundInfo, const SoundArchive::StrmSoundInfo *strmInfo,
+      SoundStartable::StartInfo::StartOffsetType type, int startOffset);  // 800a25c0
+    SoundStartable::StartResult PrepareWaveSoundImpl(
+      detail::WaveSound *sound, const SoundArchive::SoundInfo *soundInfo, const SoundArchive::WaveSoundInfo *waveInfo, SoundStartable::StartInfo::StartOffsetType type, int startOffset);  // 800a2770
 
     bool LoadGroup(SoundArchive::GroupId groupId, SoundMemoryAllocatable *allocater, u32 loadBlockSize);  // 800a28b0
     bool LoadGroup(const char *groupName, SoundMemoryAllocatable *allocater, u32 loadBlockSize = 0);  // 800a2a20
 
     template <typename T>
-    T *AllocSound(
-        detail::SoundInstanceManager<T> *manager, SoundArchive::SoundId soundId, int priority, int ambientPriority,
-        detail::BasicSound::AmbientInfo *ambientArgInfo);  // inlined in setupsound
+    T *AllocSound(detail::SoundInstanceManager<T> *manager, SoundArchive::SoundId soundId, int priority, int ambientPriority,
+      detail::BasicSound::AmbientInfo *ambientArgInfo);  // inlined in setupsound
 
     SoundArchive *soundArchive;  // start of it 10 most times storing a dvdsoundarchive instead
     u32 *groupTable;

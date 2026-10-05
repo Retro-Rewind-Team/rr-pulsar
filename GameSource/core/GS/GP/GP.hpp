@@ -4,7 +4,6 @@
 #include <core/GS/GP/GPTypes.hpp>
 
 // GameSpy presence & messaging
-namespace GP {
-}  // namespace GP
+namespace GP {}  // namespace GP
 
 #endif

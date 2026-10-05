@@ -91,16 +91,7 @@ bool SetDiscordClient(char *clientID);
  * @return Indicates success or failure
  */
 bool SetDiscordPresence(
-    char *details,
-    char *state,
-    char *largeImageKey,
-    char *largeImageText,
-    char *smallImageKey,
-    char *smallImageText,
-    u64 startTimestamp,
-    u64 endTimestamp,
-    u32 partySize,
-    u32 partyMax);
+  char *details, char *state, char *largeImageKey, char *largeImageText, char *smallImageKey, char *smallImageText, u64 startTimestamp, u64 endTimestamp, u32 partySize, u32 partyMax);
 
 /**
  * @brief Reset the Discord presence

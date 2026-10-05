@@ -40,7 +40,8 @@ static u32 GetRoomAverageVR(const Pages::SELECTStageMgr &stageMgr) {
 
     for (u32 i = 0; i < count; ++i) {
         const PlayerInfo &player = stageMgr.infos[i];
-        if (player.vr == 0xffff) continue;
+        if (player.vr == 0xffff)
+            continue;
 
         // RR stores ratings as whole points plus two decimal digits. Convert
         // them back to the VR value shown by the UI before averaging.
@@ -60,7 +61,8 @@ static u32 GetRoomAverageVR(const Pages::SELECTStageMgr &stageMgr) {
 
 static void SetRoomAverageMessage(CtrlMenuInstructionText *instructionText, u32 bmgId, const Text::Info *text) {
     if (!IsRoomAverageBmg(bmgId) || instructionText == nullptr) {
-        if (instructionText != nullptr) instructionText->SetMessage(bmgId, text);
+        if (instructionText != nullptr)
+            instructionText->SetMessage(bmgId, text);
         return;
     }
 

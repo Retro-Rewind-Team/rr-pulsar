@@ -236,8 +236,8 @@ struct ResvDeny {
     */
 };
 
-void iMatchInit(MatchControl *control, GP::Connection *gpConnection, GT2::Socket *gt2Socket, GT2::ConnectionCallbacks *gt2Callbacks,
-                const char *gameName, const char *secretKey, const AccFriendData friendList[], int friendListLen);  // 800d4bbc
+void iMatchInit(MatchControl *control, GP::Connection *gpConnection, GT2::Socket *gt2Socket, GT2::ConnectionCallbacks *gt2Callbacks, const char *gameName, const char *secretKey,
+  const AccFriendData friendList[], int friendListLen);  // 800d4bbc
 
 void SendMatchCommand(MatchCommand type, u32 pid, u32 ip, u16 port, void *data, u32 dataSize);  // 800dbd38
 void SendResvCommand(u32 pid, u32 r4);  // 800deddc
@@ -245,8 +245,7 @@ void ProcessRecvMatchCommand(MatchCommand type, u32 pid, u32 qr2IP, u32 qr2Port,
 MatchCommand CheckResvCommand(u32 pid, u32 publicIP, u16 port, MatchType matchType, BOOL isPriorityNN, void *userdata);  // 800de6b8 userdata = RKNet::ConnectionUserData in mkwii
 u8 AddMatchKeyString(u8 keyID, const char *keyString, const char *valueSrc);  // 800d45f4
 u8 AddMatchKeyInt(u8 keyID, const char *keyString, const int *valueSrc);  // 800d4258
-BOOL ConnectToAnybodyAsync(u8 numEntry, const char *addFilter, MatchedCallback matchedCallback, void *matchedParam,
-                           EvalPlayerCallback evalCallback, void *evalParam);  // 800d1840
+BOOL ConnectToAnybodyAsync(u8 numEntry, const char *addFilter, MatchedCallback matchedCallback, void *matchedParam, EvalPlayerCallback evalCallback, void *evalParam);  // 800d1840
 }  // namespace DWC
 
 #endif

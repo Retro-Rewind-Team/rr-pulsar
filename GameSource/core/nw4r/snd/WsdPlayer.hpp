@@ -13,8 +13,7 @@ public:
     class WsdCallback {
     public:
         virtual ~WsdCallback();  // 800a0670
-        virtual bool GetWaveSoundData(WaveSoundInfo *info, WaveSoundNoteInfo *noteInfo, WaveInfo *waveData,
-                                      const void *waveSoundData, int index, int noteIndex, u32 callbackData) const = 0;
+        virtual bool GetWaveSoundData(WaveSoundInfo *info, WaveSoundNoteInfo *noteInfo, WaveInfo *waveData, const void *waveSoundData, int index, int noteIndex, u32 callbackData) const = 0;
     };
 
     enum StartOffsetType {
@@ -43,8 +42,7 @@ public:
     void OnShutdownSoundThread() override;  // thunk 800aeea0 func 800aedf0
 
     void InitParam(int voiceOutCount, const WsdCallback *callback, u32 callbackData);  // 800addf0
-    bool Prepare(const void *waveSoundBase, int index, StartOffsetType startOffsetType, int startOffset,
-                 int voiceOutCount, const WsdCallback *callback, u32 callbackData);  // 800adea0
+    bool Prepare(const void *waveSoundBase, int index, StartOffsetType startOffsetType, int startOffset, int voiceOutCount, const WsdCallback *callback, u32 callbackData);  // 800adea0
     void SetChannelPriority(int priority);  // 800ae2a0
     void SetReleasePriorityFix(bool fix);  // 800ae2b0
     int GetPlaySamplePosition() const;  // 800ae420

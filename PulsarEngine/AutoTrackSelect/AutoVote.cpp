@@ -9,7 +9,8 @@
 namespace Pulsar {
 namespace UI {
 
-AutoVote::AutoVote() : readyDuration(0) {}
+AutoVote::AutoVote() : readyDuration(0) {
+}
 
 void AutoVote::OnActivate() {
     Pages::AutoEnding *msg = SectionMgr::sInstance->curSection->Get<Pages::AutoEnding>(PAGE_AUTO_ENDING2);
@@ -17,8 +18,10 @@ void AutoVote::OnActivate() {
     this->AddPageLayer(PAGE_AUTO_ENDING2, 0);
 }
 
-void AutoVote::BeforeControlUpdate() {}
-void AutoVote::OnResume() {}
+void AutoVote::BeforeControlUpdate() {
+}
+void AutoVote::OnResume() {
+}
 
 void AutoVote::OnInit() {
     this->timerControl.isHidden = true;
@@ -71,8 +74,7 @@ void AutoVote::OnUpdate() {
         for (int i = 0; i < params->localPlayerCount; ++i) {
             const PlayerCombo &combo = params->combos[i];
             select.toSendPacket.variantIdx = cupsConfig->GetCurVariantIdx();
-            reinterpret_cast<RKNet::SELECTHandler &>(select).SetPlayerData(combo.selCharacter, combo.selKart,
-                                                                           static_cast<CourseId>(vote), i, combo.rank);
+            reinterpret_cast<RKNet::SELECTHandler &>(select).SetPlayerData(combo.selCharacter, combo.selKart, static_cast<CourseId>(vote), i, combo.rank);
         }
         bool isReady = hasValidHostVote;
         if (sub.connectionCount == 1 || this->duration > 5000) {
@@ -90,7 +92,8 @@ void AutoVote::OnUpdate() {
             select.toSendPacket.phase = 2;
         } else if (select.receivedPackets[hostAid].phase != 2)
             isReady = false;
-        if (isReady) ++readyDuration;
+        if (isReady)
+            ++readyDuration;
         if (readyDuration > 180) {
             reinterpret_cast<RKNet::SELECTHandler &>(select).AllocatePlayerIdsToAids();
             this->status = STATUS_VOTES_PAGE;

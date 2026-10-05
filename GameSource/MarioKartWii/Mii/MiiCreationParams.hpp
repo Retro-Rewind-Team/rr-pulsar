@@ -23,10 +23,9 @@ class MiiCreationParams2 {
 class MiiCreationParams {
     virtual ~MiiCreationParams();  // 806b8f4c vtable 808c2368
 
-    void InitAndReset(u16 maxCreatedMiis, bool preventRepetition, bool allowCurPlayersMiis, bool allowRandomMiiOnNoIdx,
-                      bool doubleProbOfFavouriteMiis, RFL::Sex allowedSex, bool isGameChar);  // 805297e4
-    void Init(u16 maxCreatedMiis, bool preventRepetition, bool allowCurPlayersMiis, bool allowRandomMiiOnNoIdx,
-              bool doubleProbOfFavouriteMiis, RFL::Sex allowedSex, bool isGameChar);  // 80529804
+    void InitAndReset(
+      u16 maxCreatedMiis, bool preventRepetition, bool allowCurPlayersMiis, bool allowRandomMiiOnNoIdx, bool doubleProbOfFavouriteMiis, RFL::Sex allowedSex, bool isGameChar);  // 805297e4
+    void Init(u16 maxCreatedMiis, bool preventRepetition, bool allowCurPlayersMiis, bool allowRandomMiiOnNoIdx, bool doubleProbOfFavouriteMiis, RFL::Sex allowedSex, bool isGameChar);  // 80529804
     void Reset();  // 80529824
 
     u16 maxCreatedMiis;  // 0x4

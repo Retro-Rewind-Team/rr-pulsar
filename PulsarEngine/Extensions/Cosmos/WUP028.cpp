@@ -78,7 +78,8 @@ void WUP028Manager::OnInit() {
 }
 
 void WUP028Manager::CustomPADRead(PAD::Status *status) {
-    if (!this->isStarted) return;
+    if (!this->isStarted)
+        return;
     if (this->isWorking && this->isInit) {
         if (OS::TicksToMilliseconds(OS::GetTime() - this->lastDataWrite) > GCN_TIMEOUT_MS) {
             for (int i = 0; i < 4; i++) this->status[i].error = -1;
@@ -86,14 +87,10 @@ void WUP028Manager::CustomPADRead(PAD::Status *status) {
         for (int i = 0; i < 4; i++) {
             {
                 const u32 compareVal = 3;
-                if (
-                    ut::Abs(status[i].triggerL - this->status[i].triggerL) > compareVal ||
-                    ut::Abs(status[i].triggerR - this->status[i].triggerR) > compareVal ||
-                    ut::Abs(status[i].stickX - this->status[i].stickX) > compareVal ||
-                    ut::Abs(status[i].stickY - this->status[i].stickY) > compareVal ||
-                    ut::Abs(status[i].cStickX - this->status[i].cStickX) > compareVal ||
-                    ut::Abs(status[i].cStickY - this->status[i].cStickY) > compareVal ||
-                    status[i].buttons != this->status[i].buttons) {
+                if (ut::Abs(status[i].triggerL - this->status[i].triggerL) > compareVal || ut::Abs(status[i].triggerR - this->status[i].triggerR) > compareVal
+                  || ut::Abs(status[i].stickX - this->status[i].stickX) > compareVal || ut::Abs(status[i].stickY - this->status[i].stickY) > compareVal
+                  || ut::Abs(status[i].cStickX - this->status[i].cStickX) > compareVal || ut::Abs(status[i].cStickY - this->status[i].cStickY) > compareVal
+                  || status[i].buttons != this->status[i].buttons) {
                     VI::ResetSIIdle();
                 }
             }
@@ -106,7 +103,8 @@ void WUP028Manager::CustomPADRead(PAD::Status *status) {
 
 void PatchPADRead(PAD::Status *status) {
     WUP028Manager *mgr = WUP028Manager::GetStaticInstance();
-    if (mgr) mgr->CustomPADRead(status);
+    if (mgr)
+        mgr->CustomPADRead(status);
 }
 kmCall(0x80523910, PatchPADRead);
 kmCall(0x805237c4, PatchPADRead);
@@ -165,33 +163,27 @@ void WUP028Manager::OnUsbPoll(s32 ret) {
             OS::RestoreInterrupts(isr);
         }
         OS::DCFlushRange(PollMsgBuffer, sizeof(PollMsgBuffer));
-        ret = IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_INTERRUPT_IN,
-                              &PollMsg4, sizeof(PollMsg4), nullptr, 0,
-                              WUP028Manager::OnUsbPollCallback, nullptr);
+        ret = IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_INTERRUPT_IN, &PollMsg4, sizeof(PollMsg4), nullptr, 0, WUP028Manager::OnUsbPollCallback, nullptr);
     }
-    if (ret) OnError();
+    if (ret)
+        OnError();
 }
 
 void WUP028Manager::OnInitVer4() {
-    s32 ret = IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_GET_DEVICE_CHANGE,
-                              nullptr, 0, &this->deviceChangeSizeBuffer, 0x600,
-                              WUP028Manager::OnUsbChangeVer4Callback, nullptr);
+    s32 ret = IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_GET_DEVICE_CHANGE, nullptr, 0, &this->deviceChangeSizeBuffer, 0x600, WUP028Manager::OnUsbChangeVer4Callback, nullptr);
 }
 
 void WUP028Manager::OnUsbChangeVer4(s32 hid) {
     if (hid >= 0) {
         bool found = false;
         for (int i = 0; i < 0x180 && this->deviceChangeSizeBuffer[i] < 0x600; i += this->deviceChangeSizeBuffer[i] / 4) {
-            if (this->deviceChangeSizeBuffer[i] == USB_DESCRIPTOR_SIZE &&
-                this->deviceChangeSizeBuffer[i + 4] == DEVICE_ID) {
+            if (this->deviceChangeSizeBuffer[i] == USB_DESCRIPTOR_SIZE && this->deviceChangeSizeBuffer[i + 4] == DEVICE_ID) {
                 found = true;
                 u32 deviceId = this->deviceChangeSizeBuffer[i + 1];
                 if (adapterId != deviceId) {
                     this->adapterId = deviceId;
                     InitMsg4.device = this->adapterId;
-                    (void)IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_INTERRUPT_OUT,
-                                          &InitMsg4, sizeof(InitMsg4), nullptr, 0,
-                                          WUP028Manager::OnUsbInitVer4Callback, nullptr);
+                    (void)IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_INTERRUPT_OUT, &InitMsg4, sizeof(InitMsg4), nullptr, 0, WUP028Manager::OnUsbInitVer4Callback, nullptr);
                 }
                 break;
             }
@@ -200,12 +192,11 @@ void WUP028Manager::OnUsbChangeVer4(s32 hid) {
                 this->isInit = true;
                 this->isWorking = false;
             }
-            hid = IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_GET_DEVICE_CHANGE,
-                                  nullptr, 0, this->deviceChangeSizeBuffer, 0x600,
-                                  WUP028Manager::OnUsbChangeVer4Callback, nullptr);
+            hid = IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_GET_DEVICE_CHANGE, nullptr, 0, this->deviceChangeSizeBuffer, 0x600, WUP028Manager::OnUsbChangeVer4Callback, nullptr);
         }
     }
-    if (hid) OnError();
+    if (hid)
+        OnError();
 }
 
 void WUP028Manager::OnUsbInitVer4(s32 ret) {
@@ -213,9 +204,7 @@ void WUP028Manager::OnUsbInitVer4(s32 ret) {
         this->isInit = true;
         PollMsg4.device = this->adapterId;
         OS::DCFlushRange(PollMsgBuffer, sizeof(PollMsgBuffer));
-        ret = IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_INTERRUPT_IN,
-                              &PollMsg4, sizeof(PollMsg4), nullptr, 0,
-                              WUP028Manager::OnUsbPollCallback, nullptr);
+        ret = IOS::IOCtlAsync(this->hidFd, IOS::IOCTL_HID4_INTERRUPT_IN, &PollMsg4, sizeof(PollMsg4), nullptr, 0, WUP028Manager::OnUsbPollCallback, nullptr);
     } else
         OnError();
 }

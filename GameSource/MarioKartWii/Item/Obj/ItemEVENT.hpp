@@ -80,7 +80,8 @@ public:
     void QueueReceivedEntry(ItemObjId itemObjId, RKNet::EVENTAction action, u32 unused, void *data, u32 time = 0);  // 8079c0ac
 
     // fill if bool is true, return new position of packet
-    static void *FillOrExtractBitfield(u16 *packetEntry, u16 *dest, u8 *collisionPlayerId, bool extractOrFill);  // 8079b338 dest is essentially always Obj::eventBitfield, returns the new position of the packet
+    static void *FillOrExtractBitfield(
+      u16 *packetEntry, u16 *dest, u8 *collisionPlayerId, bool extractOrFill);  // 8079b338 dest is essentially always Obj::eventBitfield, returns the new position of the packet
     static void *FillOrExtractShootPos(s16 *shootPacketPosPtr, Vec3 *position, bool extractOrFill);  // 8079ad38 inlined in fillorextractshoot
     static void *FillOrExtractShoot(ShootEntry *shootPacket, Obj *obj, bool extractOrFill);  // 8079b4ac returns ptr to position in the packet
     static void *FillOrExtractPosDiff(void *packetPosDiffPtr, Vec3 &objPos, Vec3 &lastObjPos, bool extractOrFill);  // 8079af08

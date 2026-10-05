@@ -13,7 +13,8 @@ static const u64 CreateSwitchFocusPlayerPtmfs(u32 arg) {
 
     SectionId id = SectionMgr::sInstance->curSection->sectionId;
     const System *system = System::sInstance;
-    if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating || id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU) id = SECTION_P1_WIFI_VS_LIVEVIEW;
+    if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating || id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU)
+        id = SECTION_P1_WIFI_VS_LIVEVIEW;
     fakeSection = id;
     u64 ret = ((static_cast<u64>(arg)) << 32) | (reinterpret_cast<u32>(&fakeSection) & 0xffffffffL);
     return ret;
@@ -31,23 +32,24 @@ asmFunc CreateSwitchFocusedPlayerPtmfs() {  // when spectating
         cmpwi cr1, r0, SECTION_WATCH_GHOST_FROM_MENU;
         bgt + cr1, end;
         crclr 4 * cr0 + lt;
-        end : blr;
-
+    end:
+        blr;
     )
 }
 
 static void CreateAdditionalCameras(RaceCameraMgr *mgr) {
     const SectionId id = SectionMgr::sInstance->nextSectionId;
-    if (id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU) mgr->isOnlineSpectating = true;
+    if (id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU)
+        mgr->isOnlineSpectating = true;
     mgr->SetInstance(mgr);
 }
 kmCall(0x805a8520, CreateAdditionalCameras);
 
 Racedata *RemoveLiveview() {
     register RaceCameraMgr *mgr;
-    asm(mr mgr, r31;);
-    const SectionId id = SectionMgr::sInstance->nextSectionId;
-    if (id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU) mgr->isOnlineSpectating = false;
+    asm(mr mgr, r31;) const SectionId id = SectionMgr::sInstance->nextSectionId;
+    if (id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU)
+        mgr->isOnlineSpectating = false;
     return Racedata::sInstance;
 }
 kmCall(0x805a8c68, RemoveLiveview);
@@ -56,7 +58,8 @@ static void AddOpeningPanToEveryone(RaceCamera *camera, u8 playerId, GameScreen 
     register RaceCameraMgr *mgr;
     asm(mr mgr, r31;);
     const SectionId id = SectionMgr::sInstance->nextSectionId;
-    if (id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU) rawBCP = mgr->rawBCP;
+    if (id >= SECTION_WATCH_GHOST_FROM_CHANNEL && id <= SECTION_WATCH_GHOST_FROM_MENU)
+        rawBCP = mgr->rawBCP;
     new (camera) RaceCamera(playerId, screen, rawBCP, r7);
 }
 kmCall(0x805a8774, AddOpeningPanToEveryone);

@@ -28,8 +28,7 @@ static void FailDecompress(ArchiveFile *file) {
     file->status = ARCHIVE_STATUS_NONE;
 }
 
-static u8 *AllocDecompressedArchive(u32 allocSize, EGG::Heap *primaryHeap, EGG::Heap *fallbackHeap,
-                                    EGG::Heap *&outHeap) {
+static u8 *AllocDecompressedArchive(u32 allocSize, EGG::Heap *primaryHeap, EGG::Heap *fallbackHeap, EGG::Heap *&outHeap) {
     outHeap = primaryHeap;
     u8 *buffer = static_cast<u8 *>(EGG::Heap::alloc(allocSize, 0x20, primaryHeap));
     if (buffer == nullptr && fallbackHeap != nullptr && fallbackHeap != primaryHeap) {
@@ -39,9 +38,9 @@ static u8 *AllocDecompressedArchive(u32 allocSize, EGG::Heap *primaryHeap, EGG::
     return buffer;
 }
 
-static EGG::Heap *SelectStructuralDecodeScratchHeap(const char *archiveBaseLower, u32 allocSize,
-                                                    EGG::Heap *archiveHeap, EGG::Heap *dumpHeap) {
-    if (!HasStructuralLooseOverrides(archiveBaseLower)) return nullptr;
+static EGG::Heap *SelectStructuralDecodeScratchHeap(const char *archiveBaseLower, u32 allocSize, EGG::Heap *archiveHeap, EGG::Heap *dumpHeap) {
+    if (!HasStructuralLooseOverrides(archiveBaseLower))
+        return nullptr;
 
     EGG::Heap *candidates[3];
     candidates[0] = dumpHeap;
@@ -50,15 +49,19 @@ static EGG::Heap *SelectStructuralDecodeScratchHeap(const char *archiveBaseLower
 
     for (u32 i = 0; i < 3; ++i) {
         EGG::Heap *candidate = candidates[i];
-        if (candidate == nullptr || candidate == archiveHeap) continue;
+        if (candidate == nullptr || candidate == archiveHeap)
+            continue;
         bool alreadyChecked = false;
         for (u32 j = 0; j < i; ++j) {
-            if (candidates[j] == candidate) alreadyChecked = true;
+            if (candidates[j] == candidate)
+                alreadyChecked = true;
         }
-        if (alreadyChecked) continue;
+        if (alreadyChecked)
+            continue;
 
         const u32 available = candidate->getAllocatableSize(0x20);
-        if (available >= allocSize) return candidate;
+        if (available >= allocSize)
+            return candidate;
     }
 
     return nullptr;
@@ -113,8 +116,7 @@ static void SafeDecompress(ArchiveFile *file, const char *path, EGG::Heap *heap,
     u8 *archiveBase = decompressedBuffer;
     if (canApplyOverrides) {
         // `ApplyLooseOverrides()` may swap `archiveBase` to a repacked buffer on another heap.
-        ApplyLooseOverrides(archiveBaseLower, archiveBase, finalSize, sourceArchiveHeap, archiveHeap, &appliedOverrides,
-                            &patchedNodes, &missingOverrides, compressedData);
+        ApplyLooseOverrides(archiveBaseLower, archiveBase, finalSize, sourceArchiveHeap, archiveHeap, &appliedOverrides, &patchedNodes, &missingOverrides, compressedData);
     }
     if (archiveBase == decompressedBuffer) {
         archiveHeap = sourceArchiveHeap;

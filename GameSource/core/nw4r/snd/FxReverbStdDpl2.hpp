@@ -12,8 +12,7 @@ class FxReverbStdDpl2 : public FxBase {
     ~FxReverbStdDpl2() override;  // 800869a0 vtable 80274450
     bool StartUp() override;  // 0xc 80095270
     void Shutdown() override;  // 0x10 800953a0
-    void UpdateBuffer(int numChannels, void *buffer[], u32 bufferSize,
-                      SampleFormat format, float sampleRate, OutputMode mode) override;  // 0x14 80095740
+    void UpdateBuffer(int numChannels, void *buffer[], u32 bufferSize, SampleFormat format, float sampleRate, OutputMode mode) override;  // 0x14 80095740
     void OnChangeOutputMode() override;  // 0x18 800957e0
     virtual bool AssignWorkBuffer(void *buffer, u32 size);  // 80095250
     virtual void ReleaseWorkBuffer();  // 80095260

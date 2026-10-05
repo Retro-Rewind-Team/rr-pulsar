@@ -26,7 +26,8 @@ static const u8 hudColors[12][3] = {
 
 void UpdateHUDColor() {
     u8 setting = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_HUDCOLOR);
-    if (setting >= 12) setting = 0;
+    if (setting >= 12)
+        setting = 0;
     hudR = hudColors[setting][0];
     hudG = hudColors[setting][1];
     hudB = hudColors[setting][2];
@@ -42,7 +43,8 @@ static const RGBA16 localPlayerHUDColors[4][2] = {
 };
 
 static bool SetLocalPlayerHUDColors(u32 playerId, RGBA16 *c0, RGBA16 *c1) {
-    if (playerId < 1 || playerId > 4) return false;
+    if (playerId < 1 || playerId > 4)
+        return false;
 
     *c0 = localPlayerHUDColors[playerId - 1][0];
     *c1 = localPlayerHUDColors[playerId - 1][1];
@@ -50,7 +52,8 @@ static bool SetLocalPlayerHUDColors(u32 playerId, RGBA16 *c0, RGBA16 *c1) {
 }
 
 void GetHUDColor(const ControlManipulator *self, RGBA16 *c0, RGBA16 *c1) {
-    if (self != nullptr && SetLocalPlayerHUDColors(self->allowedPlayerId, c0, c1)) return;
+    if (self != nullptr && SetLocalPlayerHUDColors(self->allowedPlayerId, c0, c1))
+        return;
 
     UpdateHUDColor();
     c0->red = hudR;
@@ -65,7 +68,8 @@ void GetHUDColor(const ControlManipulator *self, RGBA16 *c0, RGBA16 *c1) {
 kmBranch(0x805f03dc, GetHUDColor);
 
 void GetHUDSlotColor(u8 hudSlotId, RGBA16 *c0, RGBA16 *c1) {
-    if (GetLocalPlayerCount() > 1 && SetLocalPlayerHUDColors(hudSlotId + 1, c0, c1)) return;
+    if (GetLocalPlayerCount() > 1 && SetLocalPlayerHUDColors(hudSlotId + 1, c0, c1))
+        return;
     GetHUDColor(nullptr, c0, c1);
 }
 kmBranch(0x805f0440, GetHUDSlotColor);

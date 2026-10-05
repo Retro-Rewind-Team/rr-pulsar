@@ -42,13 +42,16 @@ static bool ShouldResetTrackBlocking(SectionId id) {
 
 static void ResetTrackBlockingOnRoomEnd() {
     SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr)
+        return;
 
     const SectionId sectionId = sectionMgr->curSection->sectionId;
-    if (!ShouldResetTrackBlocking(sectionId)) return;
+    if (!ShouldResetTrackBlocking(sectionId))
+        return;
 
     System *system = System::sInstance;
-    if (system == nullptr) return;
+    if (system == nullptr)
+        return;
 
     Mgr &netMgr = system->netMgr;
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();
@@ -66,7 +69,8 @@ static SectionLoadHook resetTrackBlockingHook(ResetTrackBlockingOnRoomEnd);
 static void CalcSectionAfterRace(SectionMgr *sectionMgr, SectionId id) {
     const System *system = System::sInstance;
     if (id != SECTION_NONE) {
-        if (system->IsContext(PULSAR_MODE_KO)) id = system->koMgr->GetSectionAfterKO(id);
+        if (system->IsContext(PULSAR_MODE_KO))
+            id = system->koMgr->GetSectionAfterKO(id);
         sectionMgr->SetNextSection(id, 0);
         register Pages::WWRaceEndWait *wait;
         asm(mr wait, r31);

@@ -35,7 +35,8 @@ asmFunc EnhancedPauseMenu1() {
 
         li r4, 0x4C;
 
-        decreaseRaceNum : lwz r6, 0x98(r3);
+    decreaseRaceNum:
+        lwz r6, 0x98(r3);
         lwz r31, 0x60(r6);
         subi r31, r31, 1;
         stw r31, 0x60(r6);
@@ -43,8 +44,10 @@ asmFunc EnhancedPauseMenu1() {
         li r31, 5;
         stw r31, 0x1764(r12);
 
-        end : mr r31, r5;
-        blr;)
+    end:
+        mr r31, r5;
+        blr;
+    )
 }
 kmCall(0x806024d8, EnhancedPauseMenu1);
 
@@ -61,8 +64,10 @@ asmFunc EnhancedPauseMenu2() {
         stw r4, 0xE08(r3);
         stw r4, 0xEF8(r3);
 
-        end : li r3, 0x6C4;
-        blr;)
+    end:
+        li r3, 0x6C4;
+        blr;
+    )
 }
 kmCall(0x80623df4, EnhancedPauseMenu2);
 

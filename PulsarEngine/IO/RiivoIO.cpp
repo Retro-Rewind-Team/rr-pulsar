@@ -29,7 +29,8 @@ s32 RiivoIO::GetDevice_fd() const {
 #pragma suppress_warnings reset
 
 RiivoMode RiivoIO::GetRiivoMode(u32 mode) const {
-    if ((mode & 0x3) != 0) mode -= 1;
+    if ((mode & 0x3) != 0)
+        mode -= 1;
     return static_cast<RiivoMode>(mode);
 }
 
@@ -57,8 +58,7 @@ void RiivoIO::ReadFolder(const char *path) {
     s32 riivo_fd = this->GetDevice_fd();
     this->Bind(path);
     alignas(0x20) IOS::IOCtlvRequest request[3];
-    alignas(0x20) s32 folder_fd = IOS::IOCtl(riivo_fd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_OPENDIR),
-                                             (void *)this->folderName, strlen(this->folderName) + 1, nullptr, 0);
+    alignas(0x20) s32 folder_fd = IOS::IOCtl(riivo_fd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_OPENDIR), (void *)this->folderName, strlen(this->folderName) + 1, nullptr, 0);
     alignas(0x20) char fileName[riivoMaxPath];
     alignas(0x20) RiivoStats stats;
     if (folder_fd >= 0 && !this->isBusy) {
@@ -74,8 +74,10 @@ void RiivoIO::ReadFolder(const char *path) {
             request[2].address = &stats;
             request[2].size = sizeof(RiivoStats);
             s32 retIOCtlv = IOS::IOCtlv(riivo_fd, static_cast<IOS::IOCtlType>(RIIVO_IOCTL_NEXTDIR), 1, 2, request);
-            if (retIOCtlv != 0) break;
-            if ((stats.mode & S_IFDIR) == S_IFDIR) continue;
+            if (retIOCtlv != 0)
+                break;
+            if ((stats.mode & S_IFDIR) == S_IFDIR)
+                continue;
 
             snprintf(tmpArray[count], IOS::ipcMaxPath, "%s", fileName);
             count++;

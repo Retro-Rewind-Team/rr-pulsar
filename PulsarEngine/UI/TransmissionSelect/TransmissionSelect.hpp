@@ -2,6 +2,7 @@
 #define _PUL_TRANSMISSIONSELECT_
 
 #include <MarioKartWii/UI/Page/Menu/DriftSelect.hpp>
+#include <MarioKartWii/UI/Page/Menu/MultiDriftSelect.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <UI/UI.hpp>
 
@@ -10,6 +11,7 @@ namespace UI {
 
 Transmission GetSelectedTransmission(u32 hudSlotId);
 void SetSelectedTransmission(u32 hudSlotId, Transmission transmission);
+extern u8 remoteTransmission[12][2];
 
 class TransmissionSelect : public Pages::DriftSelect {
 public:
@@ -19,6 +21,17 @@ public:
     void OnActivate() override;
     void AfterControlUpdate() override;
     void OnExternalButtonSelect(PushButton &button, u32 hudSlotId) override;
+    void OnButtonClick(PushButton &button, u32 hudSlotId);
+};
+
+class MultiTransmissionSelect : public Pages::MultiDriftSelect {
+public:
+    static const PulPageId id = PULPAGE_MULTITRANSMISSIONSELECT;
+
+    void OnInit() override;
+    void OnActivate() override;
+    void AfterControlUpdate() override;
+    UIControl *CreateExternalControl(u32 externControlId) override;
     void OnButtonClick(PushButton &button, u32 hudSlotId);
 };
 

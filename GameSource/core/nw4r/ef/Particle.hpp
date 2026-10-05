@@ -47,8 +47,8 @@ public:
     ~Particle();  // 80032450
     void SendClosing() override;  // 80032490 vtable 802724e8
     void DestroyFunc() override;  // 800324a0
-    virtual bool Initialize(u16 life, nw4r::math::VEC3 position, nw4r::math::VEC3 velocity, ParticleManager *particleMgr,
-                            const nw4r::math::MTX34 *space, float omentum, const EmitterInheritSetting *setting, Particle *sourceParticle);  // 800327d0
+    virtual bool Initialize(u16 life, nw4r::math::VEC3 position, nw4r::math::VEC3 velocity, ParticleManager *particleMgr, const nw4r::math::MTX34 *space, float omentum,
+      const EmitterInheritSetting *setting, Particle *sourceParticle);  // 800327d0
 
     ParticleParameter parameter;  // 0x20
     ParticleManager *particleManager;  // 0xc8

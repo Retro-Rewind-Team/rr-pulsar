@@ -33,13 +33,12 @@ public:
     void DetachAllAnmFromBlend(u32 listIdx);  // 8055591c
 
     // the args are named based on Director's LinkAnimation's args
-    void LinkAnimationByName(u32 idx, EGG::Heap *heap, EGG::Allocator *allocator, g3d::ResMdl &rawMdl, g3d::ResFile &rawBrres,
-                             const char *name, AnmType type, bool hasBlend, const char *brasd, ArchiveSource sourceOfBRASD, u8 playerIdForBRASD);  // 8055597c
+    void LinkAnimationByName(u32 idx, EGG::Heap *heap, EGG::Allocator *allocator, g3d::ResMdl &rawMdl, g3d::ResFile &rawBrres, const char *name, AnmType type, bool hasBlend, const char *brasd,
+      ArchiveSource sourceOfBRASD, u8 playerIdForBRASD);  // 8055597c
     // for example, the 2nd SRT of the brres would be brresAnmTypeIdx == 2, type == 2
-    void LinkAnimationByBRRESIdx(u32 idx, EGG::Heap *heap, EGG::Allocator *allocator, g3d::ResMdl &rawMdl, g3d::ResFile &rawBrres,
-                                 u32 brresAnmTypeIdx, AnmType type);  // 805567b4
-    void LinkChrAnmToBone(u32 idx, EGG::Heap *heap, EGG::Allocator *allocator, g3d::ResMdl &rawMdl, g3d::ResFile &rawBrres,
-                          const char *name, AnmType type, const char *boneToAnimate, bool bindNonSpecifiedBones);  // 80556f10
+    void LinkAnimationByBRRESIdx(u32 idx, EGG::Heap *heap, EGG::Allocator *allocator, g3d::ResMdl &rawMdl, g3d::ResFile &rawBrres, u32 brresAnmTypeIdx, AnmType type);  // 805567b4
+    void LinkChrAnmToBone(u32 idx, EGG::Heap *heap, EGG::Allocator *allocator, g3d::ResMdl &rawMdl, g3d::ResFile &rawBrres, const char *name, AnmType type, const char *boneToAnimate,
+      bool bindNonSpecifiedBones);  // 80556f10
     void LinkEmptyAnm(u32 animId);  // 805571a4 will create an empty AnmHolder, used for conditional animations to prevent nullptr reads
 
     snd::detail::AnimSoundFile *GetBRASD(AnmType type, const char *anmName, const char *brasd, ArchiveSource sourceOfBRASD, u8 playerIdForBRASD);  // 805570ec inlined

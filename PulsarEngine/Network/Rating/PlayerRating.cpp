@@ -20,17 +20,16 @@ static const int SPLINE_BIAS = 7499;
 static const float SPLINE_SCALE = 0.00020004f;  // 1/(2*SPLINE_BIAS)
 
 static inline float Clamp(float val, float min, float max) {
-    return (val < min) ? min : (val > max) ? max
-                                           : val;
+    return (val < min) ? min : (val > max) ? max : val;
 }
 
 static float EvaluateSpline(float x) {
     float result = 0.0f;
     for (int i = -2; i <= 6; ++i) {
-        int idx = (i < 0) ? 0 : (i > 4) ? 4
-                                        : i;
+        int idx = (i < 0) ? 0 : (i > 4) ? 4 : i;
         float d = x - (float)i;
-        if (d < 0.0f) d = -d;
+        if (d < 0.0f)
+            d = -d;
 
         float w = 0.0f;
         if (d <= 1.0f) {
@@ -57,21 +56,26 @@ static float CalcNegPoints(float self, float opponent) {
 }
 
 static float GetGainCap(float rating) {
-    if (rating < 1500.0f) return 1e6f;
-    if (rating >= 9000.0f) return 0.10f;
+    if (rating < 1500.0f)
+        return 1e6f;
+    if (rating >= 9000.0f)
+        return 0.10f;
     float t = (rating - 1500.0f) / 7500.0f;
     return 0.10f + 999.9f * (1.0f - t);
 }
 
 static float GetLossCap(float rating) {
-    if (rating >= 500.0f) return -2.09f;
+    if (rating >= 500.0f)
+        return -2.09f;
     float t = (rating - 150.0f) / 350.0f;
     return -0.5f + (-2.09f + 0.5f) * t;
 }
 
 static float GetLowVrLossDivider(float rating) {
-    if (rating >= 150.0f) return 1.0f;
-    if (rating <= 0.0f) return 7.5f;
+    if (rating >= 150.0f)
+        return 1.0f;
+    if (rating <= 0.0f)
+        return 7.5f;
     float t = rating / 150.0f;
     return 7.5f - 6.5f * t;
 }
@@ -87,8 +91,7 @@ static bool IsRegionalVS() {
 
 static bool IsRankedFroom() {
     RKNet::Controller *ctrl = RKNet::Controller::sInstance;
-    return ctrl && (ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) &&
-           System::sInstance->IsContext(PULSAR_VR);
+    return ctrl && (ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && System::sInstance->IsContext(PULSAR_VR);
 }
 
 static bool IsRegionalBT() {
@@ -103,7 +106,8 @@ static bool IsRankedMode(const RacedataSettings &settings) {
 static int CountLocalPlayersBefore(const RacedataScenario &scenario, int idx) {
     int count = 0;
     for (int i = 0; i < idx; ++i) {
-        if (scenario.players[i].playerType == PLAYER_REAL_LOCAL) count++;
+        if (scenario.players[i].playerType == PLAYER_REAL_LOCAL)
+            count++;
     }
     return count;
 }
@@ -122,13 +126,13 @@ static float GetPlayerRating(const RacedataScenario &scenario, int idx) {
             }
         }
     } else if (player.playerType == PLAYER_REAL_ONLINE) {
-        const Network::CustomRKNetController *ctrl =
-            reinterpret_cast<const Network::CustomRKNetController *>(RKNet::Controller::sInstance);
+        const Network::CustomRKNetController *ctrl = reinterpret_cast<const Network::CustomRKNetController *>(RKNet::Controller::sInstance);
         u8 aid = ctrl->aidsBelongingToPlayerIds[idx];
 
         int slot = 0;
         for (int i = 0; i < idx; ++i) {
-            if (ctrl->aidsBelongingToPlayerIds[i] == aid) slot++;
+            if (ctrl->aidsBelongingToPlayerIds[i] == aid)
+                slot++;
         }
         if (slot < 2) {
             float base = (float)player.rating.points;
@@ -150,7 +154,8 @@ void FormatRatingDigits(float rating, wchar_t *buffer, u32 bufferSize) {
         whole++;
         centis -= 100;
     }
-    if (centis < 0) centis = -centis;
+    if (centis < 0)
+        centis = -centis;
 
     if (whole == 0)
         swprintf(buffer, bufferSize, L"%d", centis);
@@ -160,13 +165,16 @@ void FormatRatingDigits(float rating, wchar_t *buffer, u32 bufferSize) {
 
 static void SaveLocalRating(const RacedataScenario &scenario, int idx, float rating) {
     const RacedataPlayer &player = scenario.players[idx];
-    if (player.playerType != PLAYER_REAL_LOCAL || CountLocalPlayersBefore(scenario, idx) != 0) return;
+    if (player.playerType != PLAYER_REAL_LOCAL || CountLocalPlayersBefore(scenario, idx) != 0)
+        return;
 
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-    if (!rksys) return;
+    if (!rksys)
+        return;
 
     if (IsBattle(scenario.settings.gamemode)) {
-        if (IsRegionalBT() || IsRankedFroom()) SetUserBR(rksys->curLicenseId, rating);
+        if (IsRegionalBT() || IsRankedFroom())
+            SetUserBR(rksys->curLicenseId, rating);
     } else if ((IsRegionalVS() && scenario.settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom()) {
         SetUserVR(rksys->curLicenseId, rating);
     }
@@ -180,7 +188,8 @@ static void UpdatePlayerRating(RacedataScenario &scenario, int idx, float delta)
 }
 
 void RR_UpdatePoints(RacedataScenario *scenario) {
-    if (scenario->settings.gametype != GAMETYPE_DEFAULT) return;
+    if (scenario->settings.gametype != GAMETYPE_DEFAULT)
+        return;
 
     const u32 playerCount = scenario->playerCount;
     Raceinfo *raceInfo = Raceinfo::sInstance;
@@ -204,7 +213,8 @@ void RR_UpdatePoints(RacedataScenario *scenario) {
         if (isRanked) {
             float myRating = GetPlayerRating(*scenario, i);
             for (u32 j = 0; j < playerCount; ++j) {
-                if (i == j) continue;
+                if (i == j)
+                    continue;
                 float oppRating = GetPlayerRating(*scenario, j);
 
                 if (isBattle) {
@@ -241,7 +251,8 @@ void RR_UpdatePoints(RacedataScenario *scenario) {
         float oldRating = GetPlayerRating(*scenario, i);
         if (isVR && oldRating < 150.0f && deltas[i] < 0.0f) {
             float divider = GetLowVrLossDivider(oldRating);
-            if (divider > 1.0f) deltas[i] /= divider;
+            if (divider > 1.0f)
+                deltas[i] /= divider;
         }
         deltas[i] *= multiplier;
         deltas[i] = Clamp(deltas[i], GetLossCap(oldRating), GetGainCap(oldRating));
@@ -261,12 +272,11 @@ void RR_UpdatePoints(RacedataScenario *scenario) {
     }
 }
 static bool ShouldUseCustomRating() {
-    if (System::sInstance->IsContext(PULSAR_FFA)) return true;
+    if (System::sInstance->IsContext(PULSAR_FFA))
+        return true;
 
     RKNet::Controller *ctrl = RKNet::Controller::sInstance;
-    return !(((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) &&
-              !System::sInstance->IsContext(PULSAR_VR)) ||
-             ctrl->roomType == RKNet::ROOMTYPE_NONE);
+    return !(((ctrl->roomType == RKNet::ROOMTYPE_FROOM_HOST || ctrl->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && !System::sInstance->IsContext(PULSAR_VR)) || ctrl->roomType == RKNet::ROOMTYPE_NONE);
 }
 
 void UpdatePoints(RacedataScenario *scenario) {

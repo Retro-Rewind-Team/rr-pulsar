@@ -24,19 +24,39 @@ public:
     };
     typedef void (*RKGCallback)(const RKG &decompressed, CBTiming timing, int index);
 
-    static const Mgr *GetInstance() { return sInstance; }
+    static const Mgr *GetInstance() {
+        return sInstance;
+    }
     static Mgr *CreateInstance();
     static void DestroyInstance();
-    static void SetCb(RKGCallback userCb) { cb = userCb; }
-    const Leaderboard &GetLeaderboard() const { return this->leaderboard; }
-    const GhostData &GetGhostData(u32 idx) const { return this->files[idx]; }
-    u32 GetSelGhostIdx(u32 idx) const { return this->selGhostsIndex[idx]; }
+    static void SetCb(RKGCallback userCb) {
+        cb = userCb;
+    }
+    const Leaderboard &GetLeaderboard() const {
+        return this->leaderboard;
+    }
+    const GhostData &GetGhostData(u32 idx) const {
+        return this->files[idx];
+    }
+    u32 GetSelGhostIdx(u32 idx) const {
+        return this->selGhostsIndex[idx];
+    }
 
-    bool HasExpert() const { return this->expertGhost.isActive; }
-    const PulsarId GetPulsarId() const { return this->pulsarId; }
-    u8 GetVariantIdx() const { return this->variantIdx; }
-    const Timer &GetExpert() const { return this->expertGhost; }
-    u32 GetFavGhostFileIndex(TTMode mode) const { return this->favGhostFileIndex[mode]; }
+    bool HasExpert() const {
+        return this->expertGhost.isActive;
+    }
+    const PulsarId GetPulsarId() const {
+        return this->pulsarId;
+    }
+    u8 GetVariantIdx() const {
+        return this->variantIdx;
+    }
+    const Timer &GetExpert() const {
+        return this->expertGhost;
+    }
+    u32 GetFavGhostFileIndex(TTMode mode) const {
+        return this->favGhostFileIndex[mode];
+    }
     void ToggleGhostSaving(bool savingIsEnabled) {
         areGhostsSaving = savingIsEnabled;
     }
@@ -87,7 +107,9 @@ private:
     void DisableGhost(const GhostListEntry &entry);
     void LoadAllGhosts(u32 maxGhosts, bool isGhostRace);
     void CreateGhost(RKSYS::LicenseLdbEntry *entry, u32 position);
-    void SetFavGhost(const GhostListEntry &entry, TTMode mode, bool add) { this->leaderboard.SetFavGhost(entry.padding[0], mode, add); }
+    void SetFavGhost(const GhostListEntry &entry, TTMode mode, bool add) {
+        this->leaderboard.SetFavGhost(entry.padding[0], mode, add);
+    }
     static void CreateAndSaveFiles(Mgr *self);
     static char folderPath[IOS::ipcMaxPath];
     static RKGCallback cb;  // int = ghost index

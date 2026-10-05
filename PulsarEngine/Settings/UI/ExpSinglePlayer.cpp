@@ -54,7 +54,8 @@ static void LoadCorrectBRCTR(PushButton &button, const char *folder, const char 
                 break;
             case (8):
                 ctr = "PulTTFour";
-                if (idx != 1) varId = idx - 3;
+                if (idx != 1)
+                    varId = idx - 3;
                 break;
         }
         char ttVariant[0x15];
@@ -72,16 +73,19 @@ static int FixCalcDistance(const ControlManipulator &subject, const ControlManip
     const s32 destId = static_cast<PushButton *>(other.actionHandlers[0]->subject)->buttonId;
     switch (subId) {
         case (0):
-            if (direction == DIRECTION_DOWN && destId == 1) return 1;
+            if (direction == DIRECTION_DOWN && destId == 1)
+                return 1;
             break;
         case (2):
-            if (direction == DIRECTION_UP && destId == 1) return 1;
+            if (direction == DIRECTION_UP && destId == 1)
+                return 1;
             break;
         case (1):
         case (4):
         case (5):
         case (6):
-            if (direction == DIRECTION_UP && destId == 0 || direction == DIRECTION_DOWN && destId == 2) return 1;
+            if (direction == DIRECTION_UP && destId == 0 || direction == DIRECTION_DOWN && destId == 2)
+                return 1;
     }
     return subject.CalcDistanceBothWrapping(other, direction);
 }
@@ -114,7 +118,8 @@ void OnButtonSelect(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId
                     }
                     break;
                 case (8):
-                    if (id > 3) bmgId = bmgId + id - 3;
+                    if (id > 3)
+                        bmgId = bmgId + id - 3;
                     break;
             }
         }
@@ -129,15 +134,15 @@ void OnButtonClick(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId)
     const u32 id = button.buttonId;
     if (page->externControlCount > 4 && id == page->externControlCount - 1) {
         // Navigate to page selection first
-        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
-            Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_SINGLE_PLAYER_MENU);
+        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_SINGLE_PLAYER_MENU);
         ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_SINGLE_PLAYER_MENU;
         page->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
         page->EndStateAnimated(0, button.GetAnimationFrameSize());
         return;
     }
 
-    if (id == 1 || id > 3) button.buttonId = 1;
+    if (id == 1 || id > 3)
+        button.buttonId = 1;
     page->Pages::SinglePlayer::OnButtonClick(button, hudSlotId);
     button.buttonId = id;
     System *system = System::sInstance;
@@ -153,7 +158,8 @@ void OnButtonClick(Pages::SinglePlayer *page, PushButton &button, u32 hudSlotId)
                 }
                 break;
             case (8):
-                if (id > 3) mode = (TTMode)(id - 3);
+                if (id > 3)
+                    mode = (TTMode)(id - 3);
                 break;
         }
         system->ttMode = mode;
@@ -167,7 +173,8 @@ kmWritePointer(0x808BBED0, OnButtonClick);
 static void SetCC() {
     const System *system = System::sInstance;
     EngineClass cc = CC_150;
-    if (system->ttMode == TTMODE_200 || system->ttMode == TTMODE_200_FEATHER) cc = CC_100;
+    if (system->ttMode == TTMODE_200 || system->ttMode == TTMODE_200_FEATHER)
+        cc = CC_100;
     Racedata::sInstance->menusScenario.settings.engineClass = cc;
 }
 kmBranch(0x805e1ef4, SetCC);

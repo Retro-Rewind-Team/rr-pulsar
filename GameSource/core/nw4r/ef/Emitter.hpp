@@ -55,8 +55,7 @@ public:
     void SendClosing() override;  // 80027d10 vtable 802722c0
     void DestroyFunc() override;  // 80027d20
     virtual bool Initialize(Effect *parent, EmitterResource *eh, u8 drawWeight);  // 80028260
-    virtual Emitter *CreateEmitter(EmitterResource *res, EmitterInheritSetting *setting, Particle *particle,
-                                   u16 calcRemain = 0, nw4r::math::VEC3 *position = nullptr);  // //800283d0 creates a child
+    virtual Emitter *CreateEmitter(EmitterResource *res, EmitterInheritSetting *setting, Particle *particle, u16 calcRemain = 0, nw4r::math::VEC3 *position = nullptr);  // //800283d0 creates a child
 
     virtual void CalcEmitter();  // 800292e0
     virtual void CalcParticle();  // 800294a0
@@ -65,13 +64,12 @@ public:
 
     bool Closing(ParticleManager *target);  // 80027e10
     const nw4r::math::MTX34 *CalcGlobalMtx(math::MTX34 *dest);  // 80029a60
-    bool CreateEmitterTmp(EmitterResource *eh, EmitterInheritSetting *setting, Particle *pp,
-                          u16 calcRemain, math::VEC3 *position = nullptr);  // 800286b0
+    bool CreateEmitterTmp(EmitterResource *eh, EmitterInheritSetting *setting, Particle *pp, u16 calcRemain, math::VEC3 *position = nullptr);  // 800286b0
     void Emission(ParticleManager *particleMgr, const math::MTX34 *space);  // 80028e90
     u32 ForeachParticleManager(ForeachFunc foreachFunc, u32 param, bool includeWait, bool eachEmitter);  // 80029d30
     bool InitializeDatas(EmitterResource *res, Effect *ef);  // 80027f90
     static nw4r::math::MTX34 *RestructMatrix(nw4r::math::MTX34 *dest, nw4r::math::MTX34 *orig, bool isInheritS, bool isInheritR, s8 inheritT,
-                                             bool movePivot);  // 80029830
+      bool movePivot);  // 80029830
     u32 RetireParticleManagerAll();  // 80027ec0
     u32 RetireParticleAll();  // 80027c80
     void SetMtxDirty();  // 80029bb0

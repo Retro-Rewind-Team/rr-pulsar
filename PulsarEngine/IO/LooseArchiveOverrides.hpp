@@ -28,10 +28,14 @@ class Heap;
 namespace Pulsar {
 namespace IOOverrides {
 
-enum { OVERRIDE_MAX_PATH = 256,
-       OVERRIDE_MAX_NAME = 64 };
+enum {
+    OVERRIDE_MAX_PATH = 256,
+    OVERRIDE_MAX_NAME = 64
+};
 
 bool IsModsPath(const char *path);
+
+s32 ConvertPathToEntryNumWithLooseOverride(const char *path);
 
 const char *ResolveWholeFileOverride(const char *path, char *resolvedPath, u32 resolvedSize, bool *outRedirected);
 
@@ -39,9 +43,8 @@ bool ShouldApplyLooseOverrides(const char *path, char *archiveBaseLower, u32 arc
 
 bool HasStructuralLooseOverrides(const char *archiveBaseLower);
 
-bool ApplyLooseOverrides(const char *archiveBaseLower, u8 *&archiveBase, u32 &archiveSize, EGG::Heap *sourceHeap,
-                         EGG::Heap *&archiveHeap, u32 *outAppliedOverrides, u32 *outPatchedNodes,
-                         u32 *outMissingOverrides, const u8 *compressedData);
+bool ApplyLooseOverrides(const char *archiveBaseLower, u8 *&archiveBase, u32 &archiveSize, EGG::Heap *sourceHeap, EGG::Heap *&archiveHeap, u32 *outAppliedOverrides, u32 *outPatchedNodes,
+  u32 *outMissingOverrides, const u8 *compressedData);
 
 bool AreLooseArchiveOverridesEnabledForDebug();
 bool GetLooseBRSAROverrideSizes(u32 fileId, u32 &outFileSize, u32 &outWaveDataSize);

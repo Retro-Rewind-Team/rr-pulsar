@@ -14,7 +14,8 @@ kmWrite32(0x8000785c, 0x3be00002);  // li r31, 2 if KPAD controller was used
 static bool CheckControllerStrap() {
     register u32 ret;
     asm(mr ret, r31;);
-    if (ret == 0) return false;
+    if (ret == 0)
+        return false;
     register u8 usedChannel;
     u16 type = 0x24;
     if (ret == 1) {  // GCN

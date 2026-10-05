@@ -8,7 +8,9 @@ namespace UI {
 
 kmWrite32(0x805fd754, 0x60000000);  // nop the InitControl call in the init func
 
-ExpOptions::ExpOptions() { this->onButtonClickHandler.ptmf = &ExpOptions::ExpandedOnButtonClick; }
+ExpOptions::ExpOptions() {
+    this->onButtonClickHandler.ptmf = &ExpOptions::ExpandedOnButtonClick;
+}
 
 void ExpOptions::OnInit() {
     this->InitControlGroup(5 + 1);
@@ -24,8 +26,7 @@ void ExpOptions::OnInit() {
 
 void ExpOptions::ExpandedOnButtonClick(PushButton &pushButton, u32 hudSlotId) {
     if (pushButton.buttonId == 5) {
-        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
-            Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_OPTIONS);
+        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_OPTIONS);
         ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_OPTIONS;
         this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
         this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());

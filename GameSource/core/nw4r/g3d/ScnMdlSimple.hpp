@@ -28,8 +28,8 @@ public:
     };
     static ScnMdlSimple *Construct(G3dHeap *heap, u32 *size, ResMdl mdl, int numbViews = 1);  // 80070d20
 
-    ScnMdlSimple(G3dHeap *pHeap, ResMdl mdl, math::MTX34 *worldMtxArray, u32 *worldMtxAttribArray,
-                 math::MTX34 *viewPosMtxArray, math::MTX33 *viewNrmMtxArray, math::MTX34 *viewTexMtxArray, int nView, int numViewMtx);
+    ScnMdlSimple(G3dHeap *pHeap, ResMdl mdl, math::MTX34 *worldMtxArray, u32 *worldMtxAttribArray, math::MTX34 *viewPosMtxArray, math::MTX33 *viewNrmMtxArray, math::MTX34 *viewTexMtxArray, int nView,
+      int numViewMtx);
 
     bool IsDerivedFrom(TypeObj type) const override;  // 0x8 80072db0 vtable 80273200
     void G3dProc(u32 g3dproc, u32 param, void *info);  // 0xC 800714b0

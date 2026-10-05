@@ -68,8 +68,8 @@ public:
         const char *GetBRRESName() const override;  // 0x34 8076e9f4
         const char *GetSubFileName() const override;  // 0x38 8076ea00
         ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 8076e4e8
-        ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
-                                             ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) const override;  // 0xc4 8076e5d8
+        ObjToItemInteraction OnItemCollision(
+          const Kart::Player &kartPlayer, ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) const override;  // 0xc4 8076e5d8
 
         u8 unknown_0xb0[8];
         EGG::Effect *rk_block;  // 0xb8

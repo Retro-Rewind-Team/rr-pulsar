@@ -41,7 +41,8 @@ static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 
     if (raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL && maxLap != raceDataSettings.lapCount) {
         finalLapSpeedupHudSlot = INVALID_HUD_SLOT_ID;
     }
-    if (maxLap == 1) return;
+    if (maxLap == 1)
+        return;
     if (maxLap == raceDataSettings.lapCount) {
         register Audio::KartActor *kartActor;
         asm(mr kartActor, r29;);

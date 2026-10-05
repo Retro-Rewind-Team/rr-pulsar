@@ -65,7 +65,8 @@ float GetRadius__Q24Item3ObjFUi(Item::Obj *, u32);
 
 static ItemObjId GetRandomItem(u32 rnd) {
     for (size_t i = 0; i < sizeof(ITEM_WEIGHTS) / sizeof(ItemWeight); ++i) {
-        if (rnd < ITEM_WEIGHTS[i].threshold) return ITEM_WEIGHTS[i].id;
+        if (rnd < ITEM_WEIGHTS[i].threshold)
+            return ITEM_WEIGHTS[i].id;
     }
     return OBJ_LIGHTNING;
 }
@@ -76,38 +77,42 @@ static float RandomOffset(Random &rng, float range) {
 
 bool IsItemRainEnabled() {
     System *sys = System::sInstance;
-    if (!sys) return false;
-    if (!sys->IsContext(PULSAR_ITEMMODERAIN) && !sys->IsContext(PULSAR_ITEMMODESTORM)) return false;
-    if (sys->IsContext(PULSAR_MODE_OTT)) return false;
+    if (!sys)
+        return false;
+    if (!sys->IsContext(PULSAR_ITEMMODERAIN) && !sys->IsContext(PULSAR_ITEMMODESTORM))
+        return false;
+    if (sys->IsContext(PULSAR_MODE_OTT))
+        return false;
 
     RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (!controller || !Racedata::sInstance) return false;
-    if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
-        controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
-        controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
-        controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST ||
-        controller->roomType == RKNet::ROOMTYPE_NONE) {
+    if (!controller || !Racedata::sInstance)
+        return false;
+    if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_FROOM_HOST
+      || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) {
         GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-        return mode == MODE_VS_RACE || mode == MODE_GRAND_PRIX ||
-               mode == MODE_PUBLIC_VS || mode == MODE_PRIVATE_VS;
+        return mode == MODE_VS_RACE || mode == MODE_GRAND_PRIX || mode == MODE_PUBLIC_VS || mode == MODE_PRIVATE_VS;
     }
     return false;
 }
 
 static bool IsLocalPlayer(s32 idx) {
     Kart::Manager *km = Kart::Manager::sInstance;
-    if (!km || idx < 0 || idx >= km->playerCount) return false;
+    if (!km || idx < 0 || idx >= km->playerCount)
+        return false;
 
     Kart::Player *player = km->players[idx];
-    if (!player) return false;
+    if (!player)
+        return false;
     return player->IsLocal();
 }
 
 static u8 GetRandomPlayerId(s32 fallbackPlayerId) {
     Kart::Manager *km = Kart::Manager::sInstance;
     RaceTimerMgr *tm = nullptr;
-    if (Raceinfo::sInstance) tm = Raceinfo::sInstance->timerMgr;
-    if (!km || !tm || km->playerCount <= 0) return static_cast<u8>(fallbackPlayerId);
+    if (Raceinfo::sInstance)
+        tm = Raceinfo::sInstance->timerMgr;
+    if (!km || !tm || km->playerCount <= 0)
+        return static_cast<u8>(fallbackPlayerId);
 
     return static_cast<u8>(tm->random.NextLimited(km->playerCount));
 }
@@ -115,27 +120,28 @@ static u8 GetRandomPlayerId(s32 fallbackPlayerId) {
 static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff, bool isStorm) {
     Kart::Manager *km = Kart::Manager::sInstance;
     Item::Manager *im = Item::Manager::sInstance;
-    if (!km || !im || itemId >= 0xF || playerIdx < 0 || playerIdx >= km->playerCount) return;
+    if (!km || !im || itemId >= 0xF || playerIdx < 0 || playerIdx >= km->playerCount)
+        return;
 
     Kart::Player *player = km->players[playerIdx];
-    if (!player) return;
+    if (!player)
+        return;
 
     Item::ObjHolder *holder = &im->itemObjHolders[itemId];
     const Kart::PhysicsHolder *physics = player->pointers.kartBody->kartPhysicsHolder;
     const Vec3 &pos = physics->position;
     const Mtx34 &mtx = physics->transforMtx;
 
-    Vec3 spawnPos(
-        pos.x + fOff * mtx.mtx[0][2] + rOff * mtx.mtx[0][0],
-        pos.y + SPAWN_HEIGHT,
-        pos.z + fOff * mtx.mtx[2][2] + rOff * mtx.mtx[2][0]);
+    Vec3 spawnPos(pos.x + fOff * mtx.mtx[0][2] + rOff * mtx.mtx[0][0], pos.y + SPAWN_HEIGHT, pos.z + fOff * mtx.mtx[2][2] + rOff * mtx.mtx[2][0]);
 
     Item::Obj *obj = nullptr;
     const u8 ownerPlayerId = GetRandomPlayerId(playerIdx);
     holder->Spawn(1u, &obj, ownerPlayerId, spawnPos, false);
-    if (!obj) return;
+    if (!obj)
+        return;
 
-    if (!obj->entity) LoadEntity__Q24Item3ObjFb(obj, false);
+    if (!obj->entity)
+        LoadEntity__Q24Item3ObjFb(obj, false);
 
     obj->bitfield78 &= ~0x20000;
     obj->playerUsedItemId = ownerPlayerId;
@@ -145,8 +151,10 @@ static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff,
     Vec3 dir(0.0f, 0.0f, -1.0f), zero(0.0f, 0.0f, 0.0f);
     InitProperties__Q24Item3ObjFUiP4Vec3P4Vec3P4Vec3(obj, 0, &dir, &zero, &zero);
 
-    if (obj->itemObjId == OBJ_BOBOMB && !isStorm) obj->duration += BOBOMB_DURATION_EXTRA;
-    if (isStorm) obj->duration = static_cast<u32>(obj->duration * 0.01f);
+    if (obj->itemObjId == OBJ_BOBOMB && !isStorm)
+        obj->duration += BOBOMB_DURATION_EXTRA;
+    if (isStorm)
+        obj->duration = static_cast<u32>(obj->duration * 0.01f);
 
     if (obj->itemObjId == OBJ_BOBOMB) {
         Item::ObjBomb *bomb = static_cast<Item::ObjBomb *>(obj);
@@ -161,14 +169,16 @@ static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff,
 static bool TryGenerateItemSpawn(RaceTimerMgr *tm, bool isStorm, float *outFOff, float *outROff, ItemObjId *outItemId) {
     u32 frame = tm->raceFrameCounter;
     Item::Manager *im = Item::Manager::sInstance;
-    if (!im) return false;
+    if (!im)
+        return false;
     Item::ObjHolder *holder = nullptr;
     ItemObjId itemId;
     bool found = false;
 
     for (int r = 0; r < 5; r++) {
         itemId = GetRandomItem(tm->random.NextLimited(0x8000));
-        if (itemId == OBJ_LIGHTNING && frame < LIGHTNING_MIN_FRAME) continue;
+        if (itemId == OBJ_LIGHTNING && frame < LIGHTNING_MIN_FRAME)
+            continue;
         holder = &im->itemObjHolders[itemId];
         if (holder->bodyCount < holder->capacity) {
             found = true;
@@ -183,7 +193,8 @@ static bool TryGenerateItemSpawn(RaceTimerMgr *tm, bool isStorm, float *outFOff,
             }
         }
     }
-    if (!found || !holder) return false;
+    if (!found || !holder)
+        return false;
 
     *outFOff = MIN_FORWARD_OFFSET + (tm->random.NextLimited(0x8000) / 32767.0f) * XZ_RANGE;
     *outROff = RandomOffset(tm->random, XZ_RANGE);
@@ -193,11 +204,14 @@ static bool TryGenerateItemSpawn(RaceTimerMgr *tm, bool isStorm, float *outFOff,
 }
 
 static void OnTimerUpdate(u32 oldFrame) {
-    if (!Raceinfo::sInstance) return;
+    if (!Raceinfo::sInstance)
+        return;
     RaceTimerMgr *tm = Raceinfo::sInstance->timerMgr;
-    if (!tm) return;
+    if (!tm)
+        return;
     tm->raceFrameCounter = oldFrame + 1;
-    if (!IsItemRainEnabled()) return;
+    if (!IsItemRainEnabled())
+        return;
 
     Item::Manager *im = Item::Manager::sInstance;
     if (im) {
@@ -216,22 +230,27 @@ static void OnTimerUpdate(u32 oldFrame) {
         }
     }
 
-    if (!(tm->hasRaceStarted & 1)) return;
+    if (!(tm->hasRaceStarted & 1))
+        return;
 
     SectionMgr *sm = SectionMgr::sInstance;
-    if (!sm || !sm->curSection) return;
+    if (!sm || !sm->curSection)
+        return;
     Page *page = sm->curSection->GetTopLayerPage();
-    if (!page) return;
+    if (!page)
+        return;
 
     PageId pid = page->pageId;
-    if (pid == PAGE_GP_CLASS_SELECT || pid == PAGE_CHARACTER_SELECT ||
-        pid == PAGE_CUP_SELECT || pid == PAGE_COURSE_SELECT) return;
+    if (pid == PAGE_GP_CLASS_SELECT || pid == PAGE_CHARACTER_SELECT || pid == PAGE_CUP_SELECT || pid == PAGE_COURSE_SELECT)
+        return;
 
     u32 frame = tm->raceFrameCounter;
-    if (frame == sState.lastFrame) return;
+    if (frame == sState.lastFrame)
+        return;
     sState.lastFrame = frame;
 
-    if (frame % 6 != 0) return;
+    if (frame % 6 != 0)
+        return;
 
     if (frame == 0x2) {
         if (pid != PAGE_TT_LEADERBOARDS)
@@ -241,7 +260,8 @@ static void OnTimerUpdate(u32 oldFrame) {
     }
 
     Kart::Manager *km = Kart::Manager::sInstance;
-    if (!km) return;
+    if (!km)
+        return;
     s32 count = km->playerCount;
 
     if (count >= 13) {
@@ -253,7 +273,8 @@ static void OnTimerUpdate(u32 oldFrame) {
     u32 spawnsPerPlayer = isStorm ? 3 : 1;
 
     for (s32 idx = 0; idx < count; idx++) {
-        if (!IsLocalPlayer(idx)) continue;
+        if (!IsLocalPlayer(idx))
+            continue;
 
         for (u32 s = 0; s < spawnsPerPlayer; s++) {
             float fOff, rOff;
@@ -288,7 +309,8 @@ static void BombExplosion() {
 }
 
 static void SafeBombExplosionResize(void *entity, float radius, float maxSpeed) {
-    if (entity) Resize__Q24Item6EntityFff(entity, radius, maxSpeed);
+    if (entity)
+        Resize__Q24Item6EntityFff(entity, radius, maxSpeed);
 }
 
 kmCall(0x80535C7C, OnTimerUpdate);
