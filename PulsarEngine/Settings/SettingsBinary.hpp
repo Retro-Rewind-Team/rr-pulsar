@@ -8,7 +8,7 @@ namespace Pulsar {
 namespace Settings {
 
 enum SectionIndexes {
-    SECTION_PAGES,
+    SECTION_SETTINGS,
     SECTION_MISC,
     SECTION_TROPHIES,
     SECTION_GP
@@ -19,25 +19,15 @@ struct TrackTrophy {
     bool hastrophy[4];
 };  // 0x8
 
-struct Page {
-    union {
-        struct {
-            u8 radioSetting[6];
-            u8 scrollSetting[6];
-        };
-        u8 settings[12];
-    };
-};
-
-struct PagesHolder {
-    static const u32 pageMagic = 'PAGE';
+struct SettingsHolder {
+    static const u32 magic = 'SETT';
     static const u32 version = 1;
-    static const u32 index = SECTION_PAGES;
+    static const u32 index = SECTION_SETTINGS;
+    static const u32 valueCapacity = (SETTING_COUNT + 3) & ~3;
     Pulsar::SectionHeader header;
-    u32 pulsarPageCount;
-    u32 userPageCount;
-    Page pages[1];  // 0x14
+    u8 values[valueCapacity];
 };
+static_assert(sizeof(SettingsHolder) == 0x4c, "SettingsHolder layout changed");
 
 struct MiscParams {
     static const u32 miscMagic = 'MISC';
@@ -45,10 +35,19 @@ struct MiscParams {
     static const u32 index = SECTION_MISC;
     Pulsar::SectionHeader header;
     u32 customItemsBitfield;
-    u32 reserved[19];  // 0xc
+    u32 regionMagic;  // 0x10, 'RGN1'; validates the formerly reserved setting bytes
+    u8 displayCountry;  // 0 = Wii location, 1..254 = AnyGlobeChanger country ID
+    u8 displaySubregion;  // 0 = country default, otherwise AnyGlobeChanger state ID
+    u8 displayCountryPadding[2];
+    u16 customEngineClass;
+    u16 customEngineClassPadding;
+    u32 reserved[15];
+    u8 rankingBadge;  // 0x58, 0 is the normal ranking badge
+    u8 rankingBadgePadding[3];
     PulsarCupId lastSelectedCup;  // 0x5c
     u32 trackCount;  // 0x60
 };
+static_assert(sizeof(MiscParams) == 0x64, "MiscParams layout changed");
 
 struct TrophiesHolder {
     static const u32 tropMagic = 'TROP';
@@ -83,49 +82,29 @@ struct BinaryHeader {
     u32 offsets[1];  // 0x10
 };
 
-// Legacy layout used when migrating version 1 settings files.
-struct BinaryHeaderV1 {
-    u32 magic;
-    u32 version;
-    u32 fileSize;
-    u32 offsetToPages;
-    u32 offsetToMisc;
-    u32 offsetToTrophies;
-    u32 offsetToGP;
-};
-
-struct PagesHolderV1 {
-    static const u32 pageMagic = 'PAGE';
-    static const u32 version = 1;
-    static const u32 index = SECTION_PAGES;
-    Pulsar::SectionHeader header;
-    u32 pageCount;
-    Page pages[1];
-};
-
 class alignas(0x20) Binary {
     static const u32 binMagic = 'PULP';
     static const u32 sectionCount = 4;
-    static const u32 curVersion = 6;
+    static const u32 curVersion = 7;
 
-    Binary(u32 pulsarPageCount, u32 userPageCount, u32 trackCount);
+    Binary(u32 trackCount);
 
     template <typename T>
-    inline T& GetSection() {
-        return *reinterpret_cast<T*>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
+    inline T &GetSection() {
+        return *reinterpret_cast<T *>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
     }
     template <typename T>
-    inline const T& GetSection() const {
-        return *reinterpret_cast<const T*>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
+    inline const T &GetSection() const {
+        return *reinterpret_cast<const T *>(ut::AddU32ToPtr(this, this->header.offsets[T::index]));
     }
     template <class T>
-    bool CheckSection(const T& t) {
+    bool CheckSection(const T &t) {
         if (t.header.magic != T::magic) return false;
         return true;
     }
 
     BinaryHeader header;
-    PagesHolder pages;
+    SettingsHolder settings;
     friend class Mgr;
 };
 

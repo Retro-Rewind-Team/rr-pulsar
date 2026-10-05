@@ -11,26 +11,26 @@ class Player;
 class Obj;
 
 class Point {
-   public:
-    bool Update(const Vec3& playerPosition);  // 807b8a9c
-    bool Update2(const Vec3& playerPosition);  // 807b8f30
+public:
+    bool Update(const Vec3 &playerPosition);  // 807b8a9c
+    bool Update2(const Vec3 &playerPosition);  // 807b8f30
 
     u8 ITPT;
     u8 unknown_0x1[3];
     Vec3 position;
 };  // Total Size 0x10
 
-void CalcNextPoint(const Point& currentPoint, Point& nextPoint, u8 playerId, bool usePlayerPath);  // 807b91e4
+void CalcNextPoint(const Point &currentPoint, Point &nextPoint, u8 playerId, bool usePlayerPath);  // 807b91e4
 
 class PlayerRoulette {  // only exists for local players
-   public:
+public:
     PlayerRoulette();  // 807b9f48
-    void Init(Player* itemPlayer);  // 807b9f80
+    void Init(Player *itemPlayer);  // 807b9f80
     bool Update();  // 807ba37c returns true when the roulette just ended
     void OnRouletteEnd();  // 807ba2d8
     // r4 is the GOBJ setting (either player or CPU based on isHuman bool), position means different things based on gamemode ofc
     void DecideItem(u16 itemBoxType, u8 position, bool isHuman, u32 lotteryType);  // 807b9fb0
-    Player* itemPlayer;
+    Player *itemPlayer;
     u32 isTheRouletteSpinning;
     u32 frames;  // how many frames has the roulette been spinning for
     u32 totalSpinDuration;
@@ -49,9 +49,9 @@ class PlayerRoulette {  // only exists for local players
 };  // Total Size 0x34
 
 class PlayerInventory {
-   public:
+public:
     PlayerInventory();  // 807bc0f8
-    void Init(Player* itemPlayer);  // 807bc130
+    void Init(Player *itemPlayer);  // 807bc130
     void Update();  // 807bc6e8
     void SetItem(ItemId id, bool isItemForcedDueToCapacity);  // 807bc940
     void RemoveItems(u32 count);  // 807bc97c called by UseFunctions of player; if count would be 0 after removing count items, clears the inventory
@@ -59,10 +59,10 @@ class PlayerInventory {
     void LoseItemFromDmg();  // 807bc610
     void EjectItems();  // 807bc350 when items are lost due to dmg, they fly out
 
-    Player* itemPlayer;
+    Player *itemPlayer;
     ItemId currentItemId;  // 0x4
     u32 currentItemCount;  // 0x8
-    Obj* lostObjs[3];  // 0xc objs that fly out of player on dmg
+    Obj *lostObjs[3];  // 0xc objs that fly out of player on dmg
     u32 loseDelayDueToDmg;  // 0x18 when hit by a shock/bomb, delay - 7 = frames it'll take to lose the items, and prevents further loss while this is not 0
     bool hasGolden;  // 0x1c
     u8 unknown_0x1D[0x22 - 0x1D];
@@ -73,7 +73,7 @@ class PlayerInventory {
 };  // Total Size 0x2C
 
 class Player : public Kart::Link {
-   public:
+public:
     Player();  // 8079754c
     ~Player();  // 8079951c
     void Init(u8 playerId);  // 807976e0
@@ -97,7 +97,7 @@ class Player : public Kart::Link {
     bool HasTripleItems(u8 checkRouletteOrInventory);  // 80798dbc r4 == 1 -> checks inventory
 
     int GetHeldCount(ItemObjId objId) const;  // 80798f0c
-    void OnObjTetherEnd(Obj* tetheredObj);  // 80798928 mostly 3D related operations
+    void OnObjTetherEnd(Obj *tetheredObj);  // 80798928 mostly 3D related operations
 
     u16 bitfield; /* 0xc
     Bitfield bits:
@@ -118,8 +118,8 @@ class Player : public Kart::Link {
     bool isHuman;  // 0x19
     bool isRemote;  // 0x1a
     bool isBike;  // 0x1b
-    Kart::Player* kartPlayer;  // 0x1c
-    DriverController* model2;
+    Kart::Player *kartPlayer;  // 0x1c
+    DriverController *model2;
     Vec3 unknown_0x24;
     u8 unknown_0x30[0x44 - 0x30];
     Point itemPoint;  // 0x44

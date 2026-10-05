@@ -21,12 +21,12 @@ struct Context {
 };  // total size 0x2C8
 // size_assert(Context, 0x2c8);
 
-void SetCurrentContext(Context* context);
-Context* GetCurrentContext();  // 801a1ecc
-u32 SaveContext(Context* context);
-void LoadContext(Context* context);
-void ClearContext(Context* context);
-void InitContext(Context* context, u32 pc, u32 sp);
+void SetCurrentContext(Context *context);
+Context *GetCurrentContext();  // 801a1ecc
+u32 SaveContext(Context *context);
+void LoadContext(Context *context);
+void ClearContext(Context *context);
+void InitContext(Context *context, u32 pc, u32 sp);
 
 }  // namespace OS
 #endif

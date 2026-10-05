@@ -19,8 +19,8 @@ void SetUserBR(u32 licenseId, float br);
 void BindLicenseProfileId(u32 licenseId, s32 profileId);
 void SaveProfileVR(s32 profileId, float vr);
 void SaveProfileBR(s32 profileId, float br);
-void FormatRatingDigits(float rating, wchar_t* buffer, u32 bufferSize);
-void UpdatePoints(RacedataScenario* scenario);
+void FormatRatingDigits(float rating, wchar_t *buffer, u32 bufferSize);
+void UpdatePoints(RacedataScenario *scenario);
 
 extern u8 remoteDecimalVR[12][2];
 extern float lastRaceDeltas[12];
@@ -28,7 +28,6 @@ extern float lastRaceDeltas[12];
 float GetMultiplier();
 bool IsWeekendMultiplierActive();
 bool IsWeekendMultiplierActiveForRegion(u8 region);
-bool IsItemRainEventActive();
 
 }  // namespace PointRating
 }  // namespace Pulsar

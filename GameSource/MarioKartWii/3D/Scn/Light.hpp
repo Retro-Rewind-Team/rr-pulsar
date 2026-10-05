@@ -8,7 +8,7 @@
 class ScnMgr;
 
 class Light {
-    Light(EGG::ScnRootEx* scnRoot, EGG::LightMgr* lightMgr, u8 lightSetId);  // 805603a8
+    Light(EGG::ScnRootEx *scnRoot, EGG::LightMgr *lightMgr, u8 lightSetId);  // 805603a8
     void InitLightObject(u8 srcLightObjIdx);  // 80560afc copies data from src to internal lightObj
     void Init(u8 srcLightObjIdx, u8 ambientLightIdx);  // 80560648 sets color/position values based on ids
 
@@ -19,8 +19,8 @@ class Light {
     void Update();  // 80560d20
     u8 lightSetId;  // 0x10 idx + 8, 8 reserved?
     u8 padding2[3];
-    EGG::LightMgr* lightMgr;  // 0x14
-    EGG::LightObject* lightObj;  // 0x18
+    EGG::LightMgr *lightMgr;  // 0x14
+    EGG::LightObject *lightObj;  // 0x18
     u32 ambientLightIdx;  // 0x1c
     u8 unknown_0x20;
     u8 srcLightObjIdx;  // 0x21
@@ -39,9 +39,9 @@ class Light {
 };  // 0x58
 
 class LightMgrHolder {
-   public:
-    explicit LightMgrHolder(ScnMgr* parent);  // 80561024 inlined
-    Light* AcquireLight();  // 80561398
+public:
+    explicit LightMgrHolder(ScnMgr *parent);  // 80561024 inlined
+    Light *AcquireLight();  // 80561398
     nw4r::ut::List acquiredLightsList;  // 0x0
     nw4r::ut::List freeLightsList;  // 0xC
     virtual ~LightMgrHolder();  // 0x14 80561948 vtable 808b4a7c
@@ -49,13 +49,13 @@ class LightMgrHolder {
     virtual void vf_0x10();  // 80561450
     virtual void Update();  // 8056156c or Draw
     virtual void LoadBLMAP();  // 805615f0
-    ScnMgr* scnManager;  // 0x1C
-    EGG::LightMgr* lightMgr;  // 0x20
+    ScnMgr *scnManager;  // 0x1C
+    EGG::LightMgr *lightMgr;  // 0x20
     u32 list2MembersCount;  // 0x24
 };  // 0x28
 
 class LightMgrHolderRace : public LightMgrHolder {
-    explicit LightMgrHolderRace(ScnMgr* parent);  // 80561688
+    explicit LightMgrHolderRace(ScnMgr *parent);  // 80561688
     ~LightMgrHolderRace() override;  // 80561ec0 vtable 808b4a60
     void LoadBLIGHT() override;  // 80561988
     void LoadBLMAP() override;  // 80561A88
@@ -63,7 +63,7 @@ class LightMgrHolderRace : public LightMgrHolder {
 };  // 0x28
 
 class LightMgrHolderMenu : public LightMgrHolder {
-    explicit LightMgrHolderMenu(ScnMgr* parent);  // 80561688
+    explicit LightMgrHolderMenu(ScnMgr *parent);  // 80561688
     ~LightMgrHolderMenu() override;  // 80561ec0 vtable 808b4a44
     void LoadBLIGHT() override;  // 80561be8
     void LoadBLMAP() override;  // 80561c40

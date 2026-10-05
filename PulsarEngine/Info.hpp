@@ -5,7 +5,7 @@
 namespace Pulsar {
 #pragma pack(push, 1)
 class Info {
-   public:
+public:
     friend class System;
 
     inline u32 GetKey() const { return this->roomKey; }
@@ -25,9 +25,9 @@ class Info {
     }
     inline u16 GetChooseNextTrackTimer() const { return this->chooseNextTrackTimer; }
 
-   private:
+private:
     Info() {}
-    void Init(const Info& rawInfo) { memcpy(this, &rawInfo, sizeof(Info)); }
+    void Init(const Info &rawInfo) { memcpy(this, &rawInfo, sizeof(Info)); }
     u32 roomKey;  // 0x0 transmitted to other players
     u32 prob100cc;  // 0x4
     u32 prob150cc;  // 0x8

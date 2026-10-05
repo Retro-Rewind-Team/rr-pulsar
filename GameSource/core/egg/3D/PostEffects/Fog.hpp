@@ -5,7 +5,7 @@
 
 namespace EGG {
 class Fog {
-   public:
+public:
     Fog();  // 80226f04
     virtual void vf_0x08();  // 802a3028
     virtual void vf_0x0c();
@@ -20,7 +20,7 @@ class Fog {
 };  // 0x20
 
 class FogMgr {
-   public:
+public:
     explicit FogMgr(u16 maxFogCount);  // 802271bc
     virtual void Mount();  // 8022734c vtable 802a3058
     virtual void Save();
@@ -34,7 +34,7 @@ class FogMgr {
     u16 fogCount;  // 0x8 = screenCount
     u16 fogCount2;  // 0xA
     u8 padding2[2];
-    Fog** fogs;  // 0xC
+    Fog **fogs;  // 0xC
     u8 unknown_0x10[0x20 - 0xC];
 };  // 0x20
 }  // namespace EGG

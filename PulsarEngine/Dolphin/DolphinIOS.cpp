@@ -38,7 +38,7 @@ bool IsEmulator() {
     return s_isEmulator;
 }
 
-bool GetElapsedTime(u32& elapsedTime) {
+bool GetElapsedTime(u32 &elapsedTime) {
     if (OpenDolphin() < 0) {
         return false;
     }
@@ -55,7 +55,7 @@ bool GetElapsedTime(u32& elapsedTime) {
                &request) >= 0;
 }
 
-bool GetVersion(char* version, u32 length) {
+bool GetVersion(char *version, u32 length) {
     if (OpenDolphin() < 0) {
         return false;
     }
@@ -72,7 +72,7 @@ bool GetVersion(char* version, u32 length) {
                &request) >= 0;
 }
 
-bool SetDiscordClient(char* clientID) {
+bool SetDiscordClient(char *clientID) {
     if (OpenDolphin() < 0) {
         return false;
     }
@@ -92,12 +92,12 @@ bool SetDiscordClient(char* clientID) {
 }
 
 bool SetDiscordPresence(
-    char* details,
-    char* state,
-    char* largeImageKey,
-    char* largeImageText,
-    char* smallImageKey,
-    char* smallImageText,
+    char *details,
+    char *state,
+    char *largeImageKey,
+    char *largeImageText,
+    char *smallImageKey,
+    char *smallImageText,
     u64 startTimestamp,
     u64 endTimestamp,
     u32 partySize,
@@ -158,7 +158,7 @@ bool ResetDiscord() {
                nullptr) >= 0;
 }
 
-bool GetSystemTime(u64& systemTime) {
+bool GetSystemTime(u64 &systemTime) {
     if (OpenDolphin() < 0) {
         return false;
     }

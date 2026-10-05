@@ -5,14 +5,14 @@
 
 namespace Pulsar {
 namespace Race {
-s16 COOB(KMP::Manager* kmpMgr, const Vec3& position, u32 areaIdToTestFirst, u8 areaType) {
+s16 COOB(KMP::Manager *kmpMgr, const Vec3 &position, u32 areaIdToTestFirst, u8 areaType) {
     s16 foundIdx = kmpMgr->FindAREA(position, areaIdToTestFirst, areaType);
     if (foundIdx >= 0) {
-        register Kart::Collision* collision;
+        register Kart::Collision *collision;
         asm(mr collision, r31;);
-        RaceinfoPlayer* raceInfoPlayer = Raceinfo::sInstance->players[collision->pointers->values->playerIdx];
+        RaceinfoPlayer *raceInfoPlayer = Raceinfo::sInstance->players[collision->pointers->values->playerIdx];
 
-        AREA* area = kmpMgr->areaSection->holdersArray[foundIdx]->raw;
+        AREA *area = kmpMgr->areaSection->holdersArray[foundIdx]->raw;
         u16 s1 = area->setting1;
         u16 s2 = area->setting2;
         if (area->routeId == 1) {

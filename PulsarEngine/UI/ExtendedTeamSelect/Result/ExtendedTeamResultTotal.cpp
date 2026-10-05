@@ -17,7 +17,7 @@ PageId ExtendedTeamResultTotal::GetNextPage() const {
 }
 
 void ExtendedTeamResultTotal::OnInit() {
-    RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    RacedataScenario &scenario = Racedata::sInstance->racesScenario;
 
     int teamCount = 0;
     bool teamPresent[TEAM_COUNT];

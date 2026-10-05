@@ -20,7 +20,7 @@ namespace Pulsar {
 static void ChangeGhostOpacity(u8 focusedPlayerIdx);
 
 namespace UI {
-static void CreateTTHUD(Section* section, PageId id) {
+static void CreateTTHUD(Section *section, PageId id) {
     section->CreateAndInitPage(PAGE_TT_HUD);
     section->CreateAndInitPage(PAGE_TT_SPLITS);
     ChangeGhostOpacity(0);
@@ -29,14 +29,14 @@ kmCall(0x8062ccd4, CreateTTHUD);
 kmCall(0x8062cc5c, CreateTTHUD);
 kmCall(0x8062cc98, CreateTTHUD);
 
-static PageId TTPauseNextPage(const Pages::RaceHUD& page) {
+static PageId TTPauseNextPage(const Pages::RaceHUD &page) {
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) return PAGE_GHOST_REPLAY_PAUSE_MENU;
     return page.GetPausePageId();
 }
 kmCall(0x808569e0, TTPauseNextPage);
 
-static void OnContinueButtonTTPauseClick(Pages::GhostReplayPause& page, PageId id) {
+static void OnContinueButtonTTPauseClick(Pages::GhostReplayPause &page, PageId id) {
     const u32 stage = Raceinfo::sInstance->stage;
     if (stage == 0x4) id = PAGE_TT_SPLITS;  // if race is finished, repurpose the continue button
     page.nextPage = id;
@@ -44,10 +44,10 @@ static void OnContinueButtonTTPauseClick(Pages::GhostReplayPause& page, PageId i
 }
 kmCall(0x8085a1e0, OnContinueButtonTTPauseClick);
 
-static bool WillGhostBeCompared(const Racedata& racedata) {
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
+static bool WillGhostBeCompared(const Racedata &racedata) {
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
     const SectionId sectionId = sectionMgr->curSection->sectionId;
-    register Timer* ghostTimer;
+    register Timer *ghostTimer;
     asm(addi ghostTimer, r15, 0x48;);
     if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) {
         ghostTimer->minutes = 0xFFFF;  // guarantee a cheer
@@ -66,7 +66,7 @@ static u8 CharCheerGetCorrectArguments(int r3, u8 id) {
 }
 kmCall(0x808570c4, CharCheerGetCorrectArguments);
 
-static void PatchFinishRaceBMGID(LayoutUIControl& control, u32 bmgId, const Text::Info* text) {
+static void PatchFinishRaceBMGID(LayoutUIControl &control, u32 bmgId, const Text::Info *text) {
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) bmgId = BMG_FINISH;
     control.SetMessage(bmgId, text);
@@ -74,7 +74,7 @@ static void PatchFinishRaceBMGID(LayoutUIControl& control, u32 bmgId, const Text
 kmCall(0x8085728c, PatchFinishRaceBMGID);
 }  // namespace UI
 
-static int ChangePlayerType(const RacedataPlayer& player, u8 id) {
+static int ChangePlayerType(const RacedataPlayer &player, u8 id) {
     PlayerType type = Racedata::sInstance->racesScenario.players[id].playerType;
     if (type == PLAYER_GHOST && id == 0) return 0;
     return type;
@@ -85,14 +85,14 @@ kmWrite32(0x80594448, 0x2c030000);
 kmWrite32(0x80594450, 0x2c030001);
 kmWrite32(0x80594458, 0x2c030003);
 
-bool PatchIsLocalCheck(const Kart::Player& kartPlayer) {
+bool PatchIsLocalCheck(const Kart::Player &kartPlayer) {
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) return false;
     return kartPlayer.IsLocal();
 }
 kmCall(0x80783770, PatchIsLocalCheck);
 
-static bool EnableCPUDrivingAfterRace(const KartAIController& aiController) {
+static bool EnableCPUDrivingAfterRace(const KartAIController &aiController) {
     const u8 id = aiController.GetPlayerIdx();
     const PlayerType type = Racedata::sInstance->racesScenario.players[id].playerType;
     if (type == PLAYER_GHOST && id != 0) return true;
@@ -113,7 +113,7 @@ asmFunc PatchSoundIssues() {
 }
 kmCall(0x80716064, PatchSoundIssues);
 
-void* PatchMiiHeadsOpacity(MiiHeadsModel& model, Mii* mii, MiiDriverModel* driverModel, u32 r6, nw4r::g3d::ScnMdl::BufferOption option,
+void *PatchMiiHeadsOpacity(MiiHeadsModel &model, Mii *mii, MiiDriverModel *driverModel, u32 r6, nw4r::g3d::ScnMdl::BufferOption option,
                            u32 r8, u32 id) {
     if (Raceinfo::sInstance != nullptr && id == 0) model.scnObjDrawOptionsIdx = 0xA;
     return model.InitModel(mii, driverModel, r6, option, r8, id);
@@ -123,11 +123,11 @@ kmCall(0x807dc0e8, PatchMiiHeadsOpacity);
 static void ChangeGhostOpacity(u8 focusedPlayerIdx) {
     const SectionId id = SectionMgr::sInstance->curSection->sectionId;
     if (id < SECTION_WATCH_GHOST_FROM_CHANNEL || id > SECTION_WATCH_GHOST_FROM_MENU) return;
-    Kart::Manager* kartMgr = Kart::Manager::sInstance;
+    Kart::Manager *kartMgr = Kart::Manager::sInstance;
     for (int i = 0; i < kartMgr->playerCount; ++i) {
         u32 scnObjDrawOptionsIdx = i == focusedPlayerIdx ? 0xA : 1;
-        Kart::Pointers& pointers = kartMgr->players[i]->pointers;
-        DriverController* driver = pointers.driverController;
+        Kart::Pointers &pointers = kartMgr->players[i]->pointers;
+        DriverController *driver = pointers.driverController;
 
         pointers.kartBody->UpdateModelDrawPriority(scnObjDrawOptionsIdx);
         if (driver->driverModel != nullptr) driver->driverModel->UpdateDrawPriority(scnObjDrawOptionsIdx);

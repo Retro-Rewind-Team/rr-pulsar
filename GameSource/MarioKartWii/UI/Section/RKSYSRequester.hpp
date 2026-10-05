@@ -13,7 +13,7 @@ enum RequestType {  // array position in the class
 };
 
 class RKSYSRequester {
-   public:
+public:
     struct Request {
         u32 licenseId;  // 0x0
         GhostGroupType ghostType;  // 0x4
@@ -36,14 +36,14 @@ class RKSYSRequester {
     void RequestSaveLicense();  // 806213e4 inlined
     void NotifyNewLicenseContent();  // 80621410 sets the bool
     void RequestSaveLicenseIfNewContent();  // 80621434
-    void RequestSaveGhost(GhostGroupType type, CourseId courseId, GhostData* data);  // 80621484
-    void RequestSaveGhost_0x18(u32 unknown_0x18, GhostGroupType type, CourseId courseId, GhostData* data);  // 8062182c
+    void RequestSaveGhost(GhostGroupType type, CourseId courseId, GhostData *data);  // 80621484
+    void RequestSaveGhost_0x18(u32 unknown_0x18, GhostGroupType type, CourseId courseId, GhostData *data);  // 8062182c
     void RequestEraseGhost(GhostGroupType type, u8 ghostIndex, CourseId courseId);  // 80621bd0
     void RequestEraseGhostFromLicense(u32 licenseId, GhostGroupType type, u8 ghostIndex, CourseId courseId);  // 80621c08
     void RequestGetDLdGhost(GhostGroupType type, u8 ghostIndex, CourseId courseId, bool checkValidity);  // 80621c3c
     void RequestGetGhostFromLicense(u32 licenseId, GhostGroupType type, u8 ghostIndex, CourseId courseId, bool checkValidity);  // 80621c78
-    void RequestGetGroupGhosts(const GhostGroup& group);  // 80621cb0
-    void RequestGetGroupGhostsFromLicense(u32 licenseId, const GhostGroup& group);  // 80621ce0
+    void RequestGetGroupGhosts(const GhostGroup &group);  // 80621cb0
+    void RequestGetGroupGhostsFromLicense(u32 licenseId, const GhostGroup &group);  // 80621ce0
     bool hasRequest[6];  // see enum
     u8 padding[2];
     RequestType curRequest;  // 0x8
@@ -62,7 +62,7 @@ class RKSYSRequester {
     u8 padding3[3];
     Request eraseGhostParams;  // 0x110
     u32 getFromGroupLicenseId;  // 0x120 if request[5] and is -1, will load all ghosts from group, else will load all ghosts from group of that license
-    const GhostGroup* ghostGroup;  // 0x124
+    const GhostGroup *ghostGroup;  // 0x124
 };  // total size 0x128
 // size_assert(RKSYSRequester, 0x128);
 

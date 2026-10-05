@@ -8,13 +8,13 @@ namespace ef {
 
 struct HandleBase {
     HandleBase();  // 80037560
-    HandleBase(const HandleBase& hnd);  // 80037570
-    LinkedObject* GetPtr() const;  // 800375f0
+    HandleBase(const HandleBase &hnd);  // 80037570
+    LinkedObject *GetPtr() const;  // 800375f0
     bool IsValid() const;  // 800375c0
-    HandleBase& operator=(const HandleBase& other);  // 80037570
-    HandleBase& operator=(LinkedObject* obj);  // 80037590
+    HandleBase &operator=(const HandleBase &other);  // 80037570
+    HandleBase &operator=(LinkedObject *obj);  // 80037590
     u32 objId;
-    LinkedObject* object;
+    LinkedObject *object;
 };  // total size 0x8
 
 template <class T>

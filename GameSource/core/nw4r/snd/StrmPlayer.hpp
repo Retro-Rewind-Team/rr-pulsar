@@ -19,7 +19,7 @@ struct StrmDataInfo {
 };
 namespace detail {
 class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
-   public:
+public:
     static const int maxTrackCount = 8;
     static const int maxBlockSize = 8 * 1024;  // That can be played
     static const int maxChannelCount = 16;
@@ -36,34 +36,34 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
 
     struct StrmTrack {
         bool isActive;
-        Voice* voice;
+        Voice *voice;
         StrmFileReader::StrmTrackInfo trackInfo;
         float volume;
         float pan;
     };
 
     class StrmHeaderLoadTask : public Task {
-       public:
+    public:
         ~StrmHeaderLoadTask() override;  // 800a5960 80274ae8
         void Execute() override;  // 800a8070
         void Cancel() override;  // 800a80c0
         void OnCancel() override;  // 800a80d0
-        StrmPlayer* strmPlayer;  // 0x10
-        ut::FileStream* stream;  // 0x14
+        StrmPlayer *strmPlayer;  // 0x10
+        ut::FileStream *stream;  // 0x14
         StartOffsetType type;  // copied from 0x168 of the strm player
         s32 startOffset;
     };  // total size 0x20
     // size_assert(StrmHeaderLoadTask, 0x20);
 
     class StrmDataLoadTask : public Task {
-       public:
+    public:
         StrmDataLoadTask();  // 800a8180
         ~StrmDataLoadTask() override;  // 800a59c0 vtable 80274ad0
         void Execute() override;  // 800a81d0
         void Cancel() override;  // 800a82a0
         void OnCancel() override;  // 800a8330
-        StrmPlayer* strmPlayer;
-        ut::FileStream* fileStream;
+        StrmPlayer *strmPlayer;
+        ut::FileStream *fileStream;
         u32 size;
         s32 offset;
         u32 blockSize;
@@ -73,7 +73,7 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
     };  // 0x34
 
     struct StrmChannel {
-        void* bufferAddress;
+        void *bufferAddress;
         AdpcmParam adpcmParam;
         AdpcmLoopParam adpcmLoopParam;
         u16 adpcmPredScale;
@@ -96,17 +96,17 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
     void OnUpdateVoiceSoundThread() override;  // thunk 800a8450 func 800a83f0
     void OnShutdownSoundThread() override;  // thunk 800a8440 func 800a8400
 
-    int Setup(StrmBufferPool* buffer, int allocChannelCount, u16 allocTrackFlag, int voiceOutCount);  // 800a5b20
+    int Setup(StrmBufferPool *buffer, int allocChannelCount, u16 allocTrackFlag, int voiceOutCount);  // 800a5b20
     void Shutdown();  // 800a5d40
-    int Prepare(ut::FileStream* stream, StartOffsetType type, int startOffset);  // 800a5dd0
-    bool ReadStrmDataInfo(StrmDataInfo* info) const;  // 800a6490
+    int Prepare(ut::FileStream *stream, StartOffsetType type, int startOffset);  // 800a5dd0
+    bool ReadStrmDataInfo(StrmDataInfo *info) const;  // 800a6490
     void InitParam();  // 800a6530
-    void LoadHeader(ut::FileStream* stream, StartOffsetType type, int startOffset);  // 800a6670
-    bool LoadStreamData(ut::FileStream* stream, int offset, u32 size, u32 blockSize, int bufferBlockIdx, bool updateAdpcmLoop);  // 800a6970
+    void LoadHeader(ut::FileStream *stream, StartOffsetType type, int startOffset);  // 800a6670
+    bool LoadStreamData(ut::FileStream *stream, int offset, u32 size, u32 blockSize, int bufferBlockIdx, bool updateAdpcmLoop);  // 800a6970
     bool SetupPlayer();  // 800a6be0
     bool AllocVoices(int voiceOutCount);  // 800a6de0
     void Update();  // 800a6ed0
-    void UpdateVoiceParams(StrmTrack* track);  // 800a7090
+    void UpdateVoiceParams(StrmTrack *track);  // 800a7090
     void UpdateBuffer();  // 800a7410
     void UpdateLoopAddress(u32 start, u32 end);  // 800a75b0
     void UpdatePlayingBlockIndex();  // 800a76c0
@@ -114,10 +114,10 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
     void SetLoopEndToZeroBuffer(int endBufferBlockIndex);  // 800a7a20
     void UpdateLoadingBlockIndex();  // 800a7b10
     void UpdatePauseStatus();  // 800a7d40
-    bool CalcStartOffset(s32* startBlockIndex, u32* startBlockOffset, s32* loopCount);  // 800a7e00
-    void VoiceCallbackFunc(Voice* voice, Voice::VoiceCallbackStatus status, void* arg);  // 800a7f20
+    bool CalcStartOffset(s32 *startBlockIndex, u32 *startBlockOffset, s32 *loopCount);  // 800a7e00
+    void VoiceCallbackFunc(Voice *voice, Voice::VoiceCallbackStatus status, void *arg);  // 800a7f20
     void SetTrackVolume(float volume, u32 trackBitFlag);  // 800a7fc0
-    StrmTrack* GetPlayerTrack(u32 index);  // 800a8050
+    StrmTrack *GetPlayerTrack(u32 index);  // 800a8050
 
     StrmFileReader::StrmInfo strmInfo;  // 0xDC copied from HEAD
     bool isSetup;  // 0x11c or setting up
@@ -162,8 +162,8 @@ class StrmPlayer : public BasicPlayer, public SoundThread::PlayerCallback {
     ut::LinkList<StrmDataLoadTask, offsetof(StrmDataLoadTask, link)> strmDataLoadTasklist;  // 0x190
     InstancePool<StrmDataLoadTask> strmDataLoadTaskPool;  // 0x19c
     StrmDataLoadTask dataTasks[maxBlockBufferCount];  // 0x1a0
-    StrmBufferPool* strmBufferPool;  // 0x820
-    ut::FileStream* stream;  // 0x824 mostly DVDFileStream
+    StrmBufferPool *strmBufferPool;  // 0x820
+    ut::FileStream *stream;  // 0x824 mostly DVDFileStream
     u32 trackCount;  // channel / 2 0x828, it can be different because it's obtained from the number of bit set in the brsar entry allocTrackFlag, but it's mostly always /2
     u32 channelsNeeded;  // 0x82c sound ID dependant
     s32 voiceOutCount;

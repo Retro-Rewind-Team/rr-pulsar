@@ -17,8 +17,8 @@ namespace Pulsar {
 // For hooks which are shared by different things
 namespace UI {
 
-PageId TTSplitsGetNextPage(const Pages::TTSplits& splits) {
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+PageId TTSplitsGetNextPage(const Pages::TTSplits &splits) {
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
     const bool isOTTF = System::sInstance->IsContext(PULSAR_MODE_OTT) &&
                             (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST) ||
@@ -40,13 +40,13 @@ PageId TTSplitsGetNextPage(const Pages::TTSplits& splits) {
 }
 kmBranch(0x808561dc, TTSplitsGetNextPage);
 
-void LoadCorrectPageAfterMultiDrift(Pages::MultiDriftSelect* page, u32 animDirection, float animLength) {
+void LoadCorrectPageAfterMultiDrift(Pages::MultiDriftSelect *page, u32 animDirection, float animLength) {
     page->EndStateAnimated(animLength, animDirection);
-    System* system = System::sInstance;
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    System *system = System::sInstance;
+    SectionMgr *sectionMgr = SectionMgr::sInstance;
     if (system->ottMgr.voteState == OTT::COMBO_SELECTION) {
         system->ottMgr.voteState = OTT::COMBO_SELECTED;
-        Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
+        Network::ExpSELECTHandler &handler = Network::ExpSELECTHandler::Get();
         for (int i = 0; i < 2; ++i) {
             handler.toSendPacket.playersData[i].character = sectionMgr->sectionParams->characters[i];
             handler.toSendPacket.playersData[i].kart = sectionMgr->sectionParams->karts[i];
@@ -65,14 +65,14 @@ kmCall(0x8084b68c, LoadCorrectPageAfterMultiDrift);
 // In 2P online this can leave both locals in manual before voting starts.
 kmWrite32(0x8084b120, 0x60000000);
 
-void RaceMenuExtraControls(Pages::RaceMenu& page, u32 gameControlCount) {
+void RaceMenuExtraControls(Pages::RaceMenu &page, u32 gameControlCount) {
     const SectionId curSectionId = SectionMgr::sInstance->curSection->sectionId;
     if (curSectionId >= SECTION_P1_WIFI_FRIEND_VS || curSectionId >= SECTION_P2_WIFI_FRIEND_COIN) {
-        const ExpSection* section = ExpSection::GetSection();
+        const ExpSection *section = ExpSection::GetSection();
         if (page.pageId == ChooseNextTrack::fakeId && section->GetPulPage<ChooseNextTrack>() == &page)
-            return static_cast<ChooseNextTrack&>(page).InitExtraControls(gameControlCount);
+            return static_cast<ChooseNextTrack &>(page).InitExtraControls(gameControlCount);
         else if (page.pageId == KO::RaceEndPage::fakeId && section->GetPulPage<KO::RaceEndPage>() == &page)
-            return static_cast<KO::RaceEndPage&>(page).InitExtraControls(gameControlCount);
+            return static_cast<KO::RaceEndPage &>(page).InitExtraControls(gameControlCount);
     }
     page.InitControlGroup(gameControlCount);
 }

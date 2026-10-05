@@ -10,9 +10,9 @@ class PadControl : LayoutUIControl {
     ~PadControl() override;  // 806012f8 808ba4f8
     void InitSelf() override;  // 80601410 0x18
     void OnUpdate() override;  // 8060147c 0x1c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 8060194c
-    const char* GetClassName() const override;  // 0x2c 806012b0
-    void Load(const char* folderName, const char* ctrName, const char* variant, u32 hudSlotId, u8 team, u32 unknown_0x180, u32 padID);  // 80601350
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 8060194c
+    const char *GetClassName() const override;  // 0x2c 806012b0
+    void Load(const char *folderName, const char *ctrName, const char *variant, u32 hudSlotId, u8 team, u32 unknown_0x180, u32 padID);  // 80601350
     void SetParams(u32 hudSlotId, u8 team, u32 unknown_0x180);  // 80601554
     void SetPadID(u32 padID);  // 80601564
     void UpdateFromParams();  // 806015a4 update displayed image and msg based on params (0x174/0x180)
@@ -30,10 +30,10 @@ class RecognizePadWindow : public LayoutUIControl {
     ~RecognizePadWindow() override;  // 80601820
     void InitSelf() override;  // 806018f4 0x18
     void OnUpdate() override;  // 806018f8 0x1c
-    void SetPositionAnim(PositionAndScale& positionAndScale, float curFrame) override;  // 806018fc 0x20
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 80601934
-    const char* GetClassName() const override;  // 0x2c 806017d4
-    void Load(const char* folderName, const char* ctrName, const char* variant);  // 80601878
+    void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame) override;  // 806018fc 0x20
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80601934
+    const char *GetClassName() const override;  // 0x2c 806017d4
+    void Load(const char *folderName, const char *ctrName, const char *variant);  // 80601878
 };
 // size_assert(RecognizePadWindow, 0x174);
 
@@ -47,7 +47,7 @@ class RecognizePad : public System {
     void BeforeEntranceAnimations() override;  // 0x38 8061c384
     void AfterExitAnimations() override;  // 0x44 8061c3c8
     void AfterControlUpdate() override;  // 0x4c 8061c2e4
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8061d1e0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 8061d1e0
     bool CheckForConditions() override;  // 0x64 8061c40c checks if controller has been disconnected obviously
     bool isVisible() override;  // 0x68 8061c518
     PadControl padControl;  // 0x44
@@ -64,14 +64,14 @@ class RecognizePad : public System {
 class RecognizePadMenu : public RecognizePad {
     RecognizePadMenu();  // 8061c53c
     ~RecognizePadMenu() override;  // 8061c5a4 vtable 808bb528
-    const char* GetClassName() const override;  // 8061d1c8 0xc
+    const char *GetClassName() const override;  // 8061d1c8 0xc
     bool IsDVDEnabled() override;  // 8061c86c 0x18
     void BeforeEntranceAnimations() override;  // 0x38 8061c628
     void AfterEntranceAnimations() override;  // 0x3c 8061c720
     void BeforeExitAnimations() override;  // 0x40 8061c76c
     void AfterExitAnimations() override;  // 0x44 8061c780
     void BeforeControlUpdate() override;  // 0x48 8061c7c4
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 8061d1d4
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 8061d1d4
 };  // 0x4c0
 }  // namespace Pages
 

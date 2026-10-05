@@ -17,12 +17,12 @@
 namespace Pulsar {
 namespace Debug {
 
-OS::Thread* crashThread = nullptr;
+OS::Thread *crashThread = nullptr;
 static u16 crashError = 0;
 
 using namespace nw4r;
 
-void FatalError(const char* string) {
+void FatalError(const char *string) {
     GX::Color fg;
     fg.rgba = 0xFFFFFFFF;
     GX::Color bg = {0};
@@ -68,13 +68,13 @@ kmWrite32(0x80023948, 0x281e0007);
 
 // Lines on the screen and x-pos
 static void SetConsoleParams() {
-    db::detail::ConsoleHead* console = EGG::Exception::console;
+    db::detail::ConsoleHead *console = EGG::Exception::console;
     console->viewLines = 0x16;
     console->viewPosX = 0x10;
 }
 BootHook ConsoleParams(SetConsoleParams, 1);
 
-ExceptionFile::ExceptionFile(const OS::Context& context) : magic('PULD'), region(*reinterpret_cast<u32*>(OS::BootInfo::mInstance.diskID.gameName)), version(EXCEPTION_FILE_VERSION) {
+ExceptionFile::ExceptionFile(const OS::Context &context) : magic('PULD'), region(*reinterpret_cast<u32 *>(OS::BootInfo::mInstance.diskID.gameName)), version(EXCEPTION_FILE_VERSION) {
     this->srr0.name = 'srr0';
     this->srr0.gpr = context.srr0;
     this->srr1.name = 'srr1';
@@ -96,25 +96,25 @@ ExceptionFile::ExceptionFile(const OS::Context& context) : magic('PULD'), region
     }
     this->fpscr.name = 'fscr';
     this->fpscr.fpr = context.fpscr;
-    u32* sp = (u32*)context.gpr[1];
+    u32 *sp = (u32 *)context.gpr[1];
     for (int i = 0; i < 10; ++i) {
         if (sp == nullptr || (u32)sp == 0xFFFFFFFF) break;
         this->frames[i].sp = (u32)sp;
         this->frames[i].lr = sp[1];
-        sp = (u32*)*sp;
+        sp = (u32 *)*sp;
     }
 }
 
-static void WriteHeaderCrash(u16 error, const OS::Context* context, u32 dsisr, u32 dar) {
+static void WriteHeaderCrash(u16 error, const OS::Context *context, u32 dsisr, u32 dar) {
     crashError = error;
-    crashThread = const_cast<OS::Thread*>(reinterpret_cast<const OS::Thread*>(context));
-    db::ExceptionHead& exception = db::ExceptionHead::mInstance;
+    crashThread = const_cast<OS::Thread *>(reinterpret_cast<const OS::Thread *>(context));
+    db::ExceptionHead &exception = db::ExceptionHead::mInstance;
     exception.displayedInfo = 0x23;
     exception.callbackArgs = nullptr;
 
     if (IsNewChannel() && !Dolphin::IsEmulator()) {
         // just "hide" the console/xfb
-        db::DirectPrint_ChangeXfb((void*)0, 0, 0);
+        db::DirectPrint_ChangeXfb((void *)0, 0, 0);
         // we just set the flag, generate dump file and return to the channel
         NewChannel_WriteCrashEphFile();
     } else {
@@ -125,8 +125,8 @@ static void WriteHeaderCrash(u16 error, const OS::Context* context, u32 dsisr, u
 kmCall(0x80023484, WriteHeaderCrash);
 
 static void CreateCrashFile(s32 channel, KPAD::Status buff[], u32 count) {
-    IO* io = IO::sInstance;
-    OS::Thread* thread = crashThread;
+    IO *io = IO::sInstance;
+    OS::Thread *thread = crashThread;
     OS::DetachThread(thread);
     OS::CancelThread(thread);
 
@@ -135,7 +135,7 @@ static void CreateCrashFile(s32 channel, KPAD::Status buff[], u32 count) {
         exception.error = static_cast<OS::Error>(crashError);
         PopulateCrashExtra(exception);
         char path[IOS::ipcMaxPath];
-        const System* system = System::sInstance;
+        const System *system = System::sInstance;
         snprintf(path, IOS::ipcMaxPath, "%s/Crash.pul", system->GetModFolder());
         io->CreateAndOpen(path, IOS::MODE_READ_WRITE);
         io->Overwrite(sizeof(ExceptionFile), &exception);

@@ -12,7 +12,7 @@ namespace OTT {
 
 bool IsVSGhost(u32 playerId) {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
-        const Racedata* racedata = Racedata::sInstance;
+        const Racedata *racedata = Racedata::sInstance;
         if (racedata->racesScenario.players[playerId].playerType == PLAYER_GHOST) return true;
     }
     return false;
@@ -24,8 +24,8 @@ inline s32 GetVSGhostId() {
 }
 
 void AddGhostToVS() {
-    const System* system = System::sInstance;
-    Racedata* racedata = Racedata::sInstance;
+    const System *system = System::sInstance;
+    Racedata *racedata = Racedata::sInstance;
     if (GameScene::GetCurrent()->id == SCENE_ID_RACE && system->IsContext(PULSAR_MODE_OTT) && racedata->menusScenario.settings.gametype != GAMETYPE_ONLINE_SPECTATOR) {
         u8 playerCount;
         u8 screenCount;
@@ -42,19 +42,19 @@ void AddGhostToVS() {
 
         char folderPath[IOS::ipcMaxPath];
         const PulsarId id = CupsConfig::sInstance->GetWinning();
-        const CupsConfig* cupsConfig = CupsConfig::sInstance;
+        const CupsConfig *cupsConfig = CupsConfig::sInstance;
         const u8 variantIdx = cupsConfig->GetCurVariantIdx();
         cupsConfig->GetTrackGhostFolder(folderPath, id, variantIdx);
 
         alignas(0x20) Ghosts::Leaderboard leaderboard(folderPath, id, false);
         const TTMode ttMode = static_cast<TTMode>(racedata->menusScenario.settings.engineClass % 2 + 2 * system->IsContext(PULSAR_FEATHER));
-        const char* favGhost = leaderboard.GetFavGhost(ttMode);
+        const char *favGhost = leaderboard.GetFavGhost(ttMode);
         char initial = favGhost[0];
 
         if (initial == '\0') return;
 
-        IO* io = IO::sInstance;
-        RKG* rkg = io->Alloc<RKG>(sizeof(RKG));
+        IO *io = IO::sInstance;
+        RKG *rkg = io->Alloc<RKG>(sizeof(RKG));
 
         racedata->ghosts[0].ClearBuffer();
         char ghostPath[IOS::ipcMaxPath];
@@ -72,7 +72,7 @@ void AddGhostToVS() {
         }
         if (rkg->CheckValidity()) {
             if (rkg->header.kartId > HONEYCOUPE || rkg->header.driftType == 1 || system->IsContext(PULSAR_UMTS)) {
-                RKG* dest = &racedata->ghosts[0];
+                RKG *dest = &racedata->ghosts[0];
                 racedata->menusScenario.rkg = dest;
                 if (rkg->header.compressed) {
                     rkg->DecompressTo(*dest);  // 0x2800
@@ -86,7 +86,7 @@ void AddGhostToVS() {
 }
 
 void FinishGhostRace() {
-    register Input::GhostActionStream* stream;
+    register Input::GhostActionStream *stream;
     asm(mr stream, r31;);
     stream->mode = Input::GhostStream::MODE_OFF;
     s32 id = GetVSGhostId();
@@ -99,7 +99,7 @@ kmCall(0x80523010, FinishGhostRace);
 
 kmCall(0x8078d0b8, System::GetNonTTGhostPlayersCount);
 
-bool CPUItemFix(KartAIController& kartAI) {
+bool CPUItemFix(KartAIController &kartAI) {
     if (IsVSGhost(kartAI.pointers->values->playerIdx)) return true;
     return kartAI.IsCPU();
 }
@@ -109,12 +109,12 @@ u32 LdbRows(u32 def) {
 }
 kmBranch(0x8085c500, LdbRows);
 
-void FixPositions(RaceinfoPlayer& player) {
+void FixPositions(RaceinfoPlayer &player) {
     register u32 idx;
     asm(mr idx, r29);
     if (IsVSGhost(idx)) {
         GhostData ghost(Racedata::sInstance->ghosts[0]);
-        SectionMgr* sectionMgr = SectionMgr::sInstance;
+        SectionMgr *sectionMgr = SectionMgr::sInstance;
         sectionMgr->sectionParams->playerMiis.LoadMii(idx, &ghost.miiData);
         return;
     }
@@ -123,14 +123,14 @@ void FixPositions(RaceinfoPlayer& player) {
 }
 kmCall(0x80533040, FixPositions);
 
-void DoNotSetGhostsDCd(Raceinfo& raceInfo, u8 playerId) {
+void DoNotSetGhostsDCd(Raceinfo &raceInfo, u8 playerId) {
     if (IsVSGhost(playerId)) return;
     raceInfo.SetPlayerDisconnected(playerId);
 }
 kmCall(0x80654478, DoNotSetGhostsDCd);
 
-void Update(Raceinfo& raceinfo) {
-    RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+void Update(Raceinfo &raceinfo) {
+    RacedataScenario &scenario = Racedata::sInstance->racesScenario;
 
     const u8 old = scenario.playerCount;
     scenario.playerCount = System::sInstance->nonTTGhostPlayersCount;

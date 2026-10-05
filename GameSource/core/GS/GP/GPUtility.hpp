@@ -6,9 +6,9 @@
 
 namespace GP {
 
-void strzcpy(char* dest, const char* src, u32 len);  // 80108e78 length of buffer, including space for '\0'
+void strzcpy(char *dest, const char *src, u32 len);  // 80108e78 length of buffer, including space for '\0'
 
-GP::Result gpiAppendStringToBuffer(Connection** connection, IBuffer* outputBuffer, const char* buffer);
+GP::Result gpiAppendStringToBuffer(Connection **connection, IBuffer *outputBuffer, const char *buffer);
 
 }  // namespace GP
 #endif

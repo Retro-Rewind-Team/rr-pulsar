@@ -7,10 +7,10 @@
 namespace Pulsar {
 namespace Debug {
 
-void FatalError(const char* string);
+void FatalError(const char *string);
 void LaunchSoftware();
 struct GPR {
-    void Set(const OS::Context& context, u32 idx, u32 regValue) {
+    void Set(const OS::Context &context, u32 idx, u32 regValue) {
         gpr = context.gpr[idx];
         name = 'r00:' + regValue;
     }
@@ -19,7 +19,7 @@ struct GPR {
 };
 
 struct FPR {
-    void Set(const OS::Context& context, u32 idx, u32 regValue) {
+    void Set(const OS::Context &context, u32 idx, u32 regValue) {
         fpr = context.fpr[idx];
         name = 'f00:' + regValue;
     }
@@ -46,8 +46,7 @@ enum {
 };
 
 struct CrashExtra {
-    CrashExtra() : version(EXCEPTION_FILE_VERSION), sectionId(-1), pageId(-1), context(0), context2(0), flags(0),
-                   looseOverrideFileCount(0), myStuffState(EXCEPTION_MYSTUFF_DISABLED) {
+    CrashExtra() : version(EXCEPTION_FILE_VERSION), sectionId(-1), pageId(-1), context(0), context2(0), flags(0), looseOverrideFileCount(0), myStuffState(EXCEPTION_MYSTUFF_DISABLED) {
         lastTrackSzs[0] = '\0';
     }
 
@@ -63,7 +62,7 @@ struct CrashExtra {
 };
 
 struct ExceptionFile {
-    explicit ExceptionFile(const OS::Context& context);
+    explicit ExceptionFile(const OS::Context &context);
 
     u32 magic;
     u32 region;

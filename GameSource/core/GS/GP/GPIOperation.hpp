@@ -15,9 +15,9 @@ struct IConnectData {
     BOOL newuser;
 };
 
-Result iAddOperation(Connection* connection, int type, void* data, IOperation** op, Enum blocking, Callback callback, void* param);
+Result iAddOperation(Connection *connection, int type, void *data, IOperation **op, Enum blocking, Callback callback, void *param);
 
-void iRemoveOperation(Connection* connection, IOperation* operation);
+void iRemoveOperation(Connection *connection, IOperation *operation);
 }  // namespace GP
 
 #endif

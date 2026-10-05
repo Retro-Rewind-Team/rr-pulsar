@@ -8,7 +8,7 @@
 namespace nw4r {
 namespace ef {
 
-void BreffRelocate(EffectProject*);
+void BreffRelocate(EffectProject *);
 
 struct EmitterInheritSetting {
     enum EmitterInheritSettingFlag {
@@ -115,7 +115,7 @@ struct ParticleParameterDesc {
     float textureRotate[3];
     nw4r::math::VEC2 textureTranslate[3];
 
-    TextureData* texture[3];
+    TextureData *texture[3];
     u16 textureWrap;
     u8 textureReverse;
 
@@ -129,16 +129,16 @@ struct ParticleParameterDesc {
 };
 
 struct EmitterResource {
-    char* name;
+    char *name;
     u32 headersize;
 
     // lwzu 8 + 4 + lwz 4 = GetPtclTrack(i), which is a animCurveData used for ResAnimCurve
 };
 
 class ResEmitter {
-   public:
+public:
     ResAnimCurve GetEmitTrack(u16 num);  // 8004bc80 often inlinted in egg
-    EmitterResource* data;
+    EmitterResource *data;
 };
 
 }  // namespace ef

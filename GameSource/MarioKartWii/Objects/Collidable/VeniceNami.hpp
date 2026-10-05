@@ -7,13 +7,13 @@
 namespace Objects {
 
 class VeniceNami : public ObjectCollidable {  // ObjectNum 0x4 = 4
-   public:
-    explicit VeniceNami(const KMP::Holder<GOBJ>& gobjHolder);  // 8082e854
+public:
+    explicit VeniceNami(const KMP::Holder<GOBJ> &gobjHolder);  // 8082e854
     ~VeniceNami() override;  // 8082f3c8 vtable 808d8a60
     void Update() override;  // 0x14 8082ef80
     u32 GetPropertiesBitfield() override;  // 0x2c 8082f3c0
 
-    virtual const char* GetSubFileName() const;  // 0x38 8082f3ac
+    virtual const char *GetSubFileName() const;  // 0x38 8082f3ac
     void LoadModels() override;  // 0x44 8082e9f4
     virtual void LoadAnimations();  // 0x5c 8082ebe8
     virtual void UpdateModelMatrix();  // 0x6c 8082ec9c

@@ -9,7 +9,7 @@ namespace snd {
 namespace detail {
 
 class AxManager {
-   public:
+public:
     typedef void (*AxCallback)();
     struct CallbackListNode {
         ut::LinkListNode link;

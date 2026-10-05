@@ -28,7 +28,7 @@ struct BinaryLightMAPInfo {
 };
 
 class LightTexture : public CapTexture, public IBinary<LightTexture> {
-   public:
+public:
     struct BinaryLightTex : IBinary::Binary {
         // BinaryHeader header; //LTEX
         u16 subObjectsCount;
@@ -39,16 +39,16 @@ class LightTexture : public CapTexture, public IBinary<LightTexture> {
         // BinaryLightTexEntry entries;
     };
 
-    LightTexture(u16 r4, const char* name, LightMap* lightMapBinary);  // 8022d730
+    LightTexture(u16 r4, const char *name, LightMap *lightMapBinary);  // 8022d730
 
     // CapTexture vtable 802a3148 at 0x10
     ~LightTexture() override;  // 8022d9ac
     void Configure() override;  // 8022da48
 
     // IBinary vtable 802a315c at 0x28
-    void SetBinaryImpl(const IBinary::Binary& rawLTEX) override;  // 0x8  thunk 8022e79c func 8022e4d4 vtable 802a315c
-    void GetBinaryImpl(IBinary::Binary* ltexDest) const override;  // 0xc  thunk 8022e7a4 func 8022e6dc
-    const char* GetBinaryType() const override;  // 0x10 thunk 8022e7ac func 8022e4c4
+    void SetBinaryImpl(const IBinary::Binary &rawLTEX) override;  // 0x8  thunk 8022e79c func 8022e4d4 vtable 802a315c
+    void GetBinaryImpl(IBinary::Binary *ltexDest) const override;  // 0xc  thunk 8022e7a4 func 8022e6dc
+    const char *GetBinaryType() const override;  // 0x10 thunk 8022e7ac func 8022e4c4
     u32 GetBinarySize() const override;  // 0x14 thunk 8022e7b4 func 8022e788
     u8 GetVersion() const override;  // 0x18 8022e780
     void DoubleMount() override;  // 0x1c 8022e77c
@@ -61,10 +61,10 @@ class LightTexture : public CapTexture, public IBinary<LightTexture> {
     u16 unknown_0x40;  // 0x40
     u8 unknown_0x42[2];  // 0x42
     u32 type;  // 0x44
-    float* clrIntensityArr;  // 0x48
-    int* gradientRefs;  // 0x4c
+    float *clrIntensityArr;  // 0x48
+    int *gradientRefs;  // 0x4c
     char name[32];  // 0x50
-    LightMap* lmap;  // 0x70
+    LightMap *lmap;  // 0x70
     u8 status;  // 0x74
     u8 tevStageCount;
     u8 indStageCount;
@@ -76,27 +76,27 @@ class LightTexture : public CapTexture, public IBinary<LightTexture> {
 };  // 0x80
 
 class LightMap : public IBinary<LightMap> {
-   public:
+public:
     struct BLMAP : IBinary::Binary {
         // BinaryHeader header; //BLMAP
         BinaryLightMAPInfo info;
         LightTexture::BinaryLightTex objects;
     };
-    explicit LightMap(LightMgr* mgr);  // 8022e7bc
+    explicit LightMap(LightMgr *mgr);  // 8022e7bc
 
-    void SetBinaryImpl(const IBinary::Binary& rawBLMAP) override;  // 0x8  8022f2a8 vtable 802a3190
-    void GetBinaryImpl(IBinary::Binary* blmapDest) const override;  // 0xc  8022f358
-    const char* GetBinaryType() const override;  // 0x10 8022f298
+    void SetBinaryImpl(const IBinary::Binary &rawBLMAP) override;  // 0x8  8022f2a8 vtable 802a3190
+    void GetBinaryImpl(IBinary::Binary *blmapDest) const override;  // 0xc  8022f358
+    const char *GetBinaryType() const override;  // 0x10 8022f298
     u32 GetBinarySize() const override;  // 0x14 8022f708
     u8 GetVersion() const override;  // 0x18 8022f3e0
     void DoubleMount() override;  // 0x1c 8022f3dc
 
-    void CreateCapTexturesByPrefix(const char* prefix, ScnMdlEx* scnMdlEx);  // 8022eaa4
+    void CreateCapTexturesByPrefix(const char *prefix, ScnMdlEx *scnMdlEx);  // 8022eaa4
 
     u8 unknown_0x4[0x6 - 0x4];
     u16 ltexCount;  // 0x6
-    LightTexture** lightTextures;  // 0x8
-    LightMgr* mgr;  // 0xC
+    LightTexture **lightTextures;  // 0x8
+    LightMgr *mgr;  // 0xC
     u8 unknown_0x10[0x2C - 0x10];
 };  // 0x2C
 

@@ -23,12 +23,12 @@ struct ResTagDLData {
 
 template <class T>
 class ResCommon {
-   public:
-    T* data;
+public:
+    T *data;
 };
 
 class ResName : public ResCommon<const ResNameData> {
-   public:
+public:
     bool operator==(const ResName rhs) const;
 };
 }  // namespace g3d

@@ -3,33 +3,34 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/RH1.hpp>
 #include <PulsarSystem.hpp>
+#include <Race/200ccParams.hpp>
 #include <Extensions/LECODE/XPF.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
 
 // Total copy of https://github.com/Gabriela-Orzechowska/LE-CODE-XPF/tree/main all credits goes to Gabriela
 namespace LECODE {
 
-GOBJ* XPFMgr::GetDefinitionObject(u16 objId) {
-    KMP::Manager* kmp = KMP::Manager::sInstance;
+GOBJ *XPFMgr::GetDefinitionObject(u16 objId) {
+    KMP::Manager *kmp = KMP::Manager::sInstance;
     u16 objectCount = kmp->gobjSection->pointCount;
     objId = objId & ~0x1000;
     for (int i = 0; i < objectCount; ++i) {
-        GOBJ* gobj = kmp->GetHolder<GOBJ>(i)->raw;
+        GOBJ *gobj = kmp->GetHolder<GOBJ>(i)->raw;
         if (gobj->objID == objId) return gobj;
     }
     return nullptr;
 }
 
 void XPFMgr::EvaluateConditions() {
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
     if (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE)
         this->randScenario = 0;
     else {
         s32 seed;
         if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
-            const RKNet::Controller* controller = RKNet::Controller::sInstance;
-            const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+            const RKNet::Controller *controller = RKNet::Controller::sInstance;
+            const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
             u32 seed;
             const u8 hostAid = sub.hostAid;
             if (sub.localAid == hostAid)
@@ -44,11 +45,11 @@ void XPFMgr::EvaluateConditions() {
         this->randScenario = random.NextLimited(8);
     }
 
-    KMP::Manager* kmp = KMP::Manager::sInstance;
+    KMP::Manager *kmp = KMP::Manager::sInstance;
     u16 objectCount = kmp->gobjSection->pointCount;
 
     for (int i = 0; i < objectCount; ++i) {
-        GOBJ* gobj = kmp->GetHolder<GOBJ>(i)->raw;
+        GOBJ *gobj = kmp->GetHolder<GOBJ>(i)->raw;
         if (gobj->presenceFlags < 0x1000) continue;  // Not a LECODE XPF
         if (gobj->objID >= 0x2000) continue;  // We don't calc definition objects
 
@@ -66,12 +67,12 @@ void XPFMgr::EvaluateConditions() {
     return;
 }
 
-bool XPFMgr::CalcDefinitionObjectCondition(GOBJ* gobj, bool neg) {
+bool XPFMgr::CalcDefinitionObjectCondition(GOBJ *gobj, bool neg) {
     if (gobj == nullptr) return false;
 
     bool ret = false;
 
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     DEF_OBJ_MODE mode = DEF_OBJ_BITS;
     if (gobj->objID >= 0x4000) mode = DEF_OBJ_OR;
     if (gobj->objID >= 0x6000) mode = DEF_OBJ_AND;
@@ -118,7 +119,7 @@ bool XPFMgr::CalcDefinitionObjectCondition(GOBJ* gobj, bool neg) {
 
 bool XPFMgr::CalcConditionBits(u16 val, u8 field) {
     bool ret = false;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const u8 localPlayerCount = scenario.localPlayerCount;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
     const GameMode mode = scenario.settings.gamemode;
@@ -136,7 +137,7 @@ bool XPFMgr::CalcPredefinedCondition(u16 val) {
     const bool isBattle = IsBattle();
 
     bool ret = false;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
     const u8 localPlayerCount = scenario.localPlayerCount;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
@@ -233,8 +234,7 @@ bool XPFMgr::CalcPredefinedCondition(u16 val) {
         if ((val & 0x2) && enClass == CC_50) ret = true;
         if ((val & 0x4) && enClass == CC_100) ret = true;
         if ((val & 0x8) && enClass == CC_150) ret = true;
-        // for 200cc implement your own code
-        if ((val & 0x10 && enClass == CC_100)) ret = true;
+        if ((val & 0x10) && Pulsar::Race::Is200cc()) ret = true;
         if ((val & 0x20) && enClass == CC_150 && (scenario.settings.modeFlags & 1)) ret = true;
         // if((val & 0x40) && enClass == CC_200 && (scenario->settings.modeFlags & 1)) ret = true;
     } else if (val >= 0x1f00) {
@@ -245,8 +245,8 @@ bool XPFMgr::CalcPredefinedCondition(u16 val) {
     return ret;
 }
 
-void XPFMgr::EvaluateXPFAndCreateObjs(ObjectsMgr* mgr, bool isMii) {
-    Pulsar::System* system = Pulsar::System::sInstance;
+void XPFMgr::EvaluateXPFAndCreateObjs(ObjectsMgr *mgr, bool isMii) {
+    Pulsar::System *system = Pulsar::System::sInstance;
     if (system->IsContext(Pulsar::PULSAR_CT)) {
         system->lecodeMgr.xpfMgr.EvaluateConditions();
     }

@@ -25,6 +25,6 @@ struct RSAPublicKey {
  * @param sha           SHA-256 digest of the content to verify
  * @return True on success.
  */
-bool RSAVerify(const RSAPublicKey* key, u8* signature, const u8* sha);
+bool RSAVerify(const RSAPublicKey *key, u8 *signature, const u8 *sha);
 
 #endif

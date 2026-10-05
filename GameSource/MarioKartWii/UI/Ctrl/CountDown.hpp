@@ -17,17 +17,17 @@ struct CountDown {
 };  // total size 0xC
 
 class CountDownTimerControl : public LayoutUIControl {
-   public:
+public:
     CountDownTimerControl();  // 805C3CD4
     ~CountDownTimerControl() override;  // 805c3d18 808b7dc0
     void InitSelf() override;  // 0x18 805c3dfc
     void OnUpdate() override;  // 0x1c 805c407c
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x28 805c4748
-    const char* GetClassName() const override;  // 0x2c 805c3cc8
-    void Load(CountDown& countdown);  // 805c3d70
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 805c4748
+    const char *GetClassName() const override;  // 0x2c 805c3cc8
+    void Load(CountDown &countdown);  // 805c3d70
     void AnimateCurrentCountDown();  // 805c4380 changes tpls based on current countdown
     void Reset();  // 805c4430
-    CountDown* countdown;  // 0x174
+    CountDown *countdown;  // 0x174
     bool isTimerDone;
     u8 unknown_0x179[0x17C - 0x179];
 };  // total size 0x17C

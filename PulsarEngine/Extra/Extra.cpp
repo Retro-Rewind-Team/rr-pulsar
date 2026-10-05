@@ -2,12 +2,18 @@
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
+#include <MarioKartWii/Kart/KartPointers.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemPlayer.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
+#include <MarioKartWii/Item/Obj/KouraTogezo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <core/rvl/OS/OS.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <PulsarSystem.hpp>
+#include <SlotExpansion/CupsConfig.hpp>
+#include <CustomCharacters/CustomCharacters.hpp>
+#include <include/c_string.h>
 
 namespace Codes {
 
@@ -80,7 +86,7 @@ asmFunc GetItemDelimiterPOW() {
 }
 
 void EnableDelimitersForAllItems() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST ||
                                                    controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     sBlockOnlineItemDelimiters = !isFroom && !Pulsar::ItemRain::IsItemRainEnabled();
@@ -90,7 +96,7 @@ kmCall(0x807B7C34, GetItemDelimiterShock);
 kmCall(0x807A81C0, GetItemDelimiterBlooper);
 kmCall(0x807B1B44, GetItemDelimiterPOW);
 
-static bool CanItemNotBeObtained(Item::ItemSlotData* slotData, ItemObjId objId, bool hasTimer) {
+static bool CanItemNotBeObtained(Item::ItemSlotData *slotData, ItemObjId objId, bool hasTimer) {
     if (!sBlockOnlineItemDelimiters || !hasTimer) return false;
 
     switch (objId) {
@@ -109,20 +115,34 @@ static bool CanItemNotBeObtained(Item::ItemSlotData* slotData, ItemObjId objId, 
 kmBranch(0x807BB380, CanItemNotBeObtained);
 
 // Blue Shell Cooldown [ZPL]
-extern "C" Item::ItemSlotData* itemSlotData;
-static void UpdateBlueShellCooldown() {
-    const Pulsar::System* system = Pulsar::System::sInstance;
-    if (system->IsVanillaMode() || system->IsContext(Pulsar::PULSAR_ITEMMODERANDOM) || system->IsContext(Pulsar::PULSAR_ITEMMODEBLAST)) return;
+extern "C" Item::ItemSlotData *itemSlotData;
+extern "C" void PlayGlobalItemSound(Item::Obj *obj, u32 soundId);
+static void OnBlueShellExplosion(Item::ObjKouraTogezo *blueShell, u32 soundId) {
+    PlayGlobalItemSound(blueShell, soundId);
 
-    const Item::Manager* manager = Item::Manager::sInstance;
-    if (manager == nullptr || itemSlotData == nullptr) return;
+    const Pulsar::System *system = Pulsar::System::sInstance;
+    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled() || itemSlotData == nullptr) return;
 
-    static u16 previousSpawnCount = 0;
-    const u16 totalSpawnedCount = manager->itemObjHolders[OBJ_BLUE_SHELL].totalSpawnedCount;
-    if (totalSpawnedCount > previousSpawnCount) itemSlotData->itemSpawnTimers[1] = 1200;  // 15 seconds
-    previousSpawnCount = totalSpawnedCount;
+    const u32 previousTimer = itemSlotData->itemSpawnTimers[1];
+    itemSlotData->ResetBlueShellTimer();
 }
-static RaceFrameHook UpdateBlueShellCooldownHook(UpdateBlueShellCooldown);
+kmCall(0x807AE2E4, OnBlueShellExplosion);
+kmWrite32(0x807BB9C8, 0x38000384);  // li r0, 900 (15 seconds)
+
+// Remove special itembox table properties [ZPL]
+static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 cpuItemBoxType, u32 lotteryType) {
+    const Pulsar::CupsConfig *cupsConfig = Pulsar::CupsConfig::sInstance;
+    const Pulsar::PulsarId pulsarId = cupsConfig->GetWinning();
+    const char *fileName = !Pulsar::CupsConfig::IsReg(pulsarId) ? cupsConfig->GetFileName(pulsarId, cupsConfig->GetCurVariantIdx()) : 0;
+    if (fileName == 0 || fileName[0] == '\0') fileName = cupsConfig->GetFileName(pulsarId, 0);
+    if (fileName != 0 && strcmp(fileName, "Z129") == 0) {  // Haunted Woods
+        playerItemBoxType = 0;
+        cpuItemBoxType = 0;
+    }
+    player->DecideItem(playerItemBoxType, cpuItemBoxType, lotteryType);
+}
+kmCall(0x80828d70, RemoveSpecialItem);
+kmCall(0x80828da4, RemoveSpecialItem);
 
 // Anti Mii Crash
 asmFunc AntiWiper() {
@@ -142,7 +162,7 @@ kmCall(0x800CB6C0, AntiWiper);
 kmWrite32(0x80526660, 0x38000001);  // Credits to Ro for the last line.
 
 // Anti Item Collission Crash [Marioiscool246]
-extern "C" void __ptmf_test(void*);
+extern "C" void __ptmf_test(void *);
 asmFunc AntiItemColCrash() {
     ASM(
         nofralloc;
@@ -186,31 +206,33 @@ kmWrite32(0x80860A90, 0x38600000);
 kmWrite32(0x80643BC4, 0x60000000);
 kmWrite32(0x80643C2C, 0x60000000);
 
-// Skip Credits Launch [ZPL]
-kmWrite32(0x805BC85C, 0x60000000);  // Skip setting game mode to CREDITS for normal credits
-kmWrite32(0x805BC864, 0x3880003D);  // Go straight to congratulations
-kmWrite32(0x805BC870, 0x60000000);  // Skip setting credits course for normal credits
-kmWrite32(0x805BC8A0, 0x60000000);  // Skip setting game mode to CREDITS for true credits
-kmWrite32(0x805BC8A8, 0x3880003E);  // Go straight to congratulations complete
-kmWrite32(0x805BC8B4, 0x60000000);  // Skip setting credits course for true credits
+// Skip credits [ZPL]
+kmWrite32(0x805BC788, 0x38600000);
 
 // No Disconnect on Countdown [_tZ]
 kmWrite32(0x80655578, 0x60000000);
 
-// Mushroom Glitch Fix [Vabold]
-static Item::PlayerRoulette* ApplyMushroomGlitchFix(Item::PlayerRoulette* roulette) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+// Mushroom Glitch Fix [Vega, ported by ZPL]
+static Item::PlayerRoulette *ApplyMushroomGlitchFix(Item::PlayerRoulette *roulette) {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller != nullptr && Pulsar::System::sInstance->IsVanillaMode()) ++roulette->itemNum;
     return roulette;
 }
 kmCall(0x807BA078, ApplyMushroomGlitchFix);
 
+// Slow Ramp Offroad Fix [vabold, ported by ZPL]
+static Kart::Status *ClearSlowRampMushroomRequirement(Kart::Pointers *pointers) {
+    Kart::Status *status = pointers->kartStatus;
+    if (!Pulsar::System::sInstance->IsVanillaMode()) {
+        status->bitfield2 &= ~0x00100000;
+    }
+    return status;
+}
+kmCall(0x80582670, ClearSlowRampMushroomRequirement);
+
 // Allow WFC on Wiimmfi Patched ISOs
 kmWrite32(0x800EE3A0, 0x2C030000);
 kmWrite32(0x800ECAAC, 0x7C7E1B78);
-
-// NHTTP already emits the Host header from the request URL; remove DWC's duplicate auth header [ZPL]
-kmWrite32(0x800ED868, 0x60000000);
 
 // Disable Camera Shaking from Bombs [ZPL]
 kmWrite32(0x805a906c, 0x4E800020);
@@ -230,21 +252,33 @@ kmWrite32(0x8053c710, 0x38000000);
 kmWrite32(0x8053D67C, 0x38000000);
 
 // Ultra Uncut [MrBean35000vr + Chadderz]
+extern "C" RKNet::Controller *sInstance__Q25RKNet10Controller;
 asmFunc GetUltraUncut() {
     ASM(
         nofralloc;
+        lis r12, sInstance__Q25RKNet10Controller @ha;
+        lwz r12, sInstance__Q25RKNet10Controller @l(r12);
+        cmpwi r12, 0x0;
+        beq + vanillaUncut;
+        lwz r12, 0xE8(r12);
+        cmpwi r12, 0x0;
+        beq + vanillaUncut;
+
         loc_0x0 : lbz r3, 0x1C(r29);
         cmplwi r3, 0x1;
         ble + loc_0x10;
         mr r0, r30;
 
         loc_0x10 : cmplw r30, r0;
+        blr;
+
+        vanillaUncut : cmplw r30, r0;
         blr;)
 }
 kmCall(0x8053511C, GetUltraUncut);
 
 // Anti Lag Start [Ro]
-extern "C" void sInstance__8Racedata(void*);
+extern "C" void sInstance__8Racedata(void *);
 asmFunc AntiLagStart() {
     ASM(
         nofralloc;
@@ -381,6 +415,19 @@ kmWrite32(0x807f0644, 0x48000024);
 // Fix Mii opponents having silent / Rosalina voice Bug [B_squo]
 kmWrite32(0x8086975C, 0x4082001C);
 
+// Mute only Luma's two sound handles when the selected custom character has loose or silent voices [ZPL]
+static nw4r::snd::SoundHandle *MuteRosalinaLumaSounds(Audio::RaceActor *actor, u32 soundId) {
+    Audio::CharacterActor *const characterActor = static_cast<Audio::CharacterActor *>(actor);
+    const Racedata *racedata = Racedata::sInstance;
+    if ((soundId == 0xf68 || soundId == 0xf69) && racedata->racesScenario.players[characterActor->playerId].characterId == ROSALINA) {
+        const u8 table = Pulsar::CustomCharacters::RaceSkinTable(characterActor->playerId, ROSALINA);
+        const Pulsar::CustomCharacters::LooseVoiceInfo &voiceInfo = Pulsar::CustomCharacters::GetLooseVoiceInfo(ROSALINA, table);
+        if (voiceInfo.hasFiles || voiceInfo.silent) return nullptr;
+    }
+    return actor->Audio::RaceActor::HoldSoundLimited(soundId);
+}
+kmWritePointer(0x808dbcd8, MuteRosalinaLumaSounds);
+
 // Online Miis look at the camera when finishing in Live View [B_squo]
 kmWrite32(0x80596770, 0x60000000);
 
@@ -392,7 +439,7 @@ kmWrite32(0x80827968, 0x38000000);
 kmWrite32(0x8082A4F8, 0x3800000A);
 
 // Cancel Friend Room Joining by Pressing B [Ro]
-extern "C" void ptr_inputBase(void*);
+extern "C" void ptr_inputBase(void *);
 asmFunc friendRoomJoinCancel() {
     ASM(
         nofralloc;
@@ -428,11 +475,11 @@ kmCall(0x807EB38C, burnoutIconFix);
 asmFunc pokeyDeathFix() {
     ASM(
         nofralloc;
-        loc_0x0:;
+        loc_0x0 :;
         cmpwi r0, 0x1;
-        beq- loc_0xC;
+        beq - loc_0xC;
         cmpwi r0, 0x3;
-        loc_0xC:;
+        loc_0xC :;
         blr;)
 }
 kmCall(0x8077AC50, pokeyDeathFix);
@@ -447,7 +494,7 @@ kmWrite16(0x808a22ec, 'RR');
 kmWrite32(0x8053F478, 0x4800000C);
 
 // Clear Exhaust Pipe Boost Particle After Damage [Ro]
-extern "C" void exhaustPipeboost(void*);
+extern "C" void exhaustPipeboost(void *);
 asmFunc exhaustPipeboostFix() {
     ASM(
         nofralloc;
@@ -517,5 +564,13 @@ kmWrite8(0x808ad02b, 'R');
 
 // Allow 18 rank symbols instead of 12 [ZPL]
 kmWrite32(0x805e3d48, 0x38C00012);
+
+// Fix Online Crash [ImZeraora]
+kmWrite32(0x800F20AC, 0x8001000C);
+kmWrite32(0x800F20B0, 0x90010008);
+kmWrite32(0x800F20B4, 0x60000000);
+
+// Fix online position tracking on tracks with multiple lap counters [ZPL]
+kmWrite32(0x805354D0, 0x38A00000);  // li r5, 0; use checkpoint-based lap counting for remote racers
 
 }  // namespace Codes

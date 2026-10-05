@@ -5,10 +5,10 @@
 namespace Pulsar {
 
 ServerDateTime serverDateTimeInstance;
-ServerDateTime* ServerDateTime::sInstance = &serverDateTimeInstance;
+ServerDateTime *ServerDateTime::sInstance = &serverDateTimeInstance;
 
-static void SyncGameDate(const ServerDateTime& sdt) {
-    SystemManager* systemManager = SystemManager::sInstance;
+static void SyncGameDate(const ServerDateTime &sdt) {
+    SystemManager *systemManager = SystemManager::sInstance;
     if (systemManager == nullptr || !sdt.isValid) return;
 
     systemManager->year = (u8)(sdt.year - 2000);
@@ -17,8 +17,8 @@ static void SyncGameDate(const ServerDateTime& sdt) {
     systemManager->isValidDate = true;
 }
 
-static void StoreDateTime(const OS::CalendarTime& calendarTime, u64 serverTicks) {
-    ServerDateTime* sdt = ServerDateTime::sInstance;
+static void StoreDateTime(const OS::CalendarTime &calendarTime, u64 serverTicks) {
+    ServerDateTime *sdt = ServerDateTime::sInstance;
     if (sdt != nullptr) {
         sdt->SetDateTime(calendarTime, serverTicks, OS::GetTime());
         SyncGameDate(*sdt);
@@ -27,7 +27,7 @@ static void StoreDateTime(const OS::CalendarTime& calendarTime, u64 serverTicks)
     }
 }
 
-extern "C" s64 HookOSCalendarTimeToTicks(OS::CalendarTime* calendarTime) {
+extern "C" s64 HookOSCalendarTimeToTicks(OS::CalendarTime *calendarTime) {
     const s64 ticks = OS::CalendarTimeToTicks(calendarTime);
     StoreDateTime(*calendarTime, ticks);
     return ticks;
@@ -35,7 +35,7 @@ extern "C" s64 HookOSCalendarTimeToTicks(OS::CalendarTime* calendarTime) {
 kmCall(0x800ee5a4, HookOSCalendarTimeToTicks);
 
 static void UpdateServerDateTime() {
-    ServerDateTime* sdt = ServerDateTime::sInstance;
+    ServerDateTime *sdt = ServerDateTime::sInstance;
     if (sdt == nullptr || !sdt->Update()) return;
     SyncGameDate(*sdt);
 }

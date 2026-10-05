@@ -5,7 +5,7 @@ namespace Pulsar {
 namespace UI {
 
 // Displays the nametag as the color of the Mii [Conradi]
-extern "C" void sInstance__8Racedata(void*);
+extern "C" void sInstance__8Racedata(void *);
 extern "C" u8 sUseMiiTagColor = false;
 asmFunc MiiTag() {
     ASM(
@@ -30,7 +30,7 @@ asmFunc MiiTag() {
 }
 
 void PatchMiiTag() {
-    u32 tagColor = static_cast<Pulsar::RaceSettingNAMETAG>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE2), Pulsar::RADIO_NAMETAG));
+    u32 tagColor = static_cast<Pulsar::RaceSettingNAMETAG>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_NAMETAG));
     sUseMiiTagColor = tagColor == Pulsar::NAMETAG_MII;
 }
 static SectionLoadHook MiiTagHook(PatchMiiTag);

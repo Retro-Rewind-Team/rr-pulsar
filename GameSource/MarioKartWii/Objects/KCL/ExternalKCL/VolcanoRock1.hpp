@@ -5,12 +5,12 @@
 
 namespace Objects {
 class VolcanoRock1 : public ObjectExternKCL {  // ObjectNum 0x1f7 = 503
-    explicit VolcanoRock1(const KMP::Holder<GOBJ>& gobjHolder);  // 8081a198
+    explicit VolcanoRock1(const KMP::Holder<GOBJ> &gobjHolder);  // 8081a198
     ~VolcanoRock1() override;  // 8081a690 vtable 808d6868
     void Update() override;  // 0x14 8081a370
     u32 GetPropertiesBitfield() override;  // 0x2c 8081a688
-    const char* GetSubFileName() const override;  // 0x38 8081a668
-    const Mtx34& GetTransformationMatrix(u32 framesOffset) override;  // 0x12c 8081a60c
+    const char *GetSubFileName() const override;  // 0x38 8081a668
+    const Mtx34 &GetTransformationMatrix(u32 framesOffset) override;  // 0x12c 8081a60c
     float GetPeriod() const override;  // 0x134 8081a5d0
 
     Vec3 CalcTranslation(u32 timeInFrames);  // 8081a414

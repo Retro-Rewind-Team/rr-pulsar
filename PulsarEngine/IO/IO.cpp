@@ -8,10 +8,10 @@
 
 namespace Pulsar {
 
-IO* IO::sInstance = nullptr;
+IO *IO::sInstance = nullptr;
 
-IO* IO::CreateInstance(IOType type, EGG::Heap* heap, EGG::TaskThread* const taskThread) {
-    IO* io;
+IO *IO::CreateInstance(IOType type, EGG::Heap *heap, EGG::TaskThread *const taskThread) {
+    IO *io;
 
     switch (type) {
         case IOType_RIIVO:
@@ -30,13 +30,13 @@ IO* IO::CreateInstance(IOType type, EGG::Heap* heap, EGG::TaskThread* const task
     return io;
 }
 
-void IO::CreateFolderAsync(CreateRequest* request) {
-    IO* io = IO::sInstance;
+void IO::CreateFolderAsync(CreateRequest *request) {
+    IO *io = IO::sInstance;
     io->CreateFolder(request->path);
     request->isFree = true;
 }
 
-s32 IO::ReadFolderFileFromPath(void* bufferIn, const char* path, u32 maxLength) {
+s32 IO::ReadFolderFileFromPath(void *bufferIn, const char *path, u32 maxLength) {
     this->OpenFile(path, FILE_MODE_READ);
     const u32 size = this->GetFileSize();
     const u32 length = size <= maxLength ? size : maxLength;

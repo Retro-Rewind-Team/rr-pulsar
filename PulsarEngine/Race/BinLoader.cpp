@@ -17,7 +17,7 @@ void *GetCustomKartParam(ArchiveMgr *archive, ArchiveSource type, const char *na
 kmCall(0x80591a30, GetCustomKartParam);
 
 void *GetCustomKartAIParam(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
-    if (static_cast<Pulsar::HardAI>(Pulsar::Settings::Mgr::Get().GetUserSettingValue(static_cast<Pulsar::Settings::UserType>(Pulsar::Settings::SETTINGSTYPE_RACE1), Pulsar::RADIO_HARDAI)) == Pulsar::HARDAI_ENABLED) {
+    if (static_cast<Pulsar::HardAI>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_HARDAI)) == Pulsar::HARDAI_ENABLED) {
         name = "kartAISpdParamRR.bin";
     }
 

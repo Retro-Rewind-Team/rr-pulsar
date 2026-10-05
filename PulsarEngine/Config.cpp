@@ -7,10 +7,10 @@ namespace Pulsar {
 
 u32 ConfigFile::readBytes = 0;
 
-ConfigFile* ConfigFile::LoadConfigFile(const char* path, u32& readBytesOut) {
-    EGG::ExpHeap* mem2Heap = RKSystem::mInstance.sceneManager->currentScene->mainMEMHeap;
-    ConfigFile* conf = static_cast<ConfigFile*>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, mem2Heap,
-                                                                              EGG::DvdRipper::ALLOC_FROM_TAIL, 0, &readBytesOut, nullptr));
+ConfigFile *ConfigFile::LoadConfigFile(const char *path, u32 &readBytesOut) {
+    EGG::ExpHeap *mem2Heap = RKSystem::mInstance.sceneManager->currentScene->mainMEMHeap;
+    ConfigFile *conf = static_cast<ConfigFile *>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, mem2Heap,
+                                                                               EGG::DvdRipper::ALLOC_FROM_TAIL, 0, &readBytesOut, nullptr));
     if (conf == nullptr)
         Debug::FatalError(error);
     else {
@@ -23,8 +23,8 @@ ConfigFile* ConfigFile::LoadConfigFile(const char* path, u32& readBytesOut) {
     return conf;
 }
 
-ConfigFile& ConfigFile::LoadConfig() {
-    ConfigFile* conf = LoadConfigFile("Binaries/Config.pul", readBytes);
+ConfigFile &ConfigFile::LoadConfig() {
+    ConfigFile *conf = LoadConfigFile("Binaries/Config.pul", readBytes);
     return *conf;
 }
 

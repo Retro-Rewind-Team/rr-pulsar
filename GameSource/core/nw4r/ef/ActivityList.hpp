@@ -7,7 +7,7 @@ namespace nw4r {
 namespace ef {
 
 class ActivityList {
-   public:
+public:
     ActivityList();  // 80027250
     ut::List activeList;  // 0x0
     ut::List closingList;  // 0xc

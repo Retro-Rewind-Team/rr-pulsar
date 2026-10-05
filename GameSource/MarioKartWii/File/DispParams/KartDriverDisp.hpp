@@ -3,7 +3,7 @@
 #include <kamek.hpp>
 
 class KartDriverDispParam {  // https://wiki.tockdom.com/wiki/KartDriverDispParam.bin
-   public:
+public:
     struct Entry {
         Vec2 driverYZPos;
         float bonesValues[12];

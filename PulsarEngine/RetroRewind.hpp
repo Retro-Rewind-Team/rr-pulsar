@@ -4,7 +4,6 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 
-extern u32 FPSPatchHook;
 extern u32 PredictionHook;
 extern u32 ItemRainOnlineFixHook;
 extern u32 BloomHook;
@@ -44,9 +43,7 @@ extern u8 CUSTOM_DRIVER;
 
 namespace RetroRewind {
 class System : public Pulsar::System {
-   public:
-    static bool Is500cc();
-
+public:
     enum WeightClass {
         LIGHTWEIGHT,
         MEDIUMWEIGHT,
@@ -81,11 +78,12 @@ class System : public Pulsar::System {
         BUTTON_BOWSER,
         BUTTON_DRY_BOWSER,
         BUTTON_MII_A,
-        BUTTON_MII_B
+        BUTTON_MII_B,
+        BUTTON_MII_C
     };
 
     WeightClass weight;
-    static Pulsar::System* Create();  // My Create function, needs to return Pulsar
+    static Pulsar::System *Create();  // My Create function, needs to return Pulsar
     static WeightClass GetWeightClass(CharacterId);
 };
 }  // namespace RetroRewind

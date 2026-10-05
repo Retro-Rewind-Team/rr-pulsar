@@ -1,5 +1,5 @@
-#include <kamekLoader.hpp>
 #include <core/rvl/OS/OSBootInfo.hpp>
+#include <kamekLoader.hpp>
 
 static void loadIntoMKW();
 
@@ -11,7 +11,7 @@ LoaderParams paramsPAL = {
     (DVDReadPrio_t)0x8015E834,
     (DVDClose_t)0x8015E568,
     (sprintf_t)0x80011A2C,
-    (RKSystem*)0x802A4080,
+    (RKSystem *)0x802A4080,
     (NETSHA1Init_t)0x801D24F4,
     (NETSHA1Update_t)0x801D2544,
     (NETSHA1GetDigest_t)0x801D25F8,
@@ -25,7 +25,7 @@ LoaderParams paramsNTSC_U = {
     (DVDReadPrio_t)0x8015E794,
     (DVDClose_t)0x8015E4C8,
     (sprintf_t)0x80010ECC,
-    (RKSystem*)0x8029fd00,
+    (RKSystem *)0x8029fd00,
     (NETSHA1Init_t)0x801D2454,
     (NETSHA1Update_t)0x801D24A4,
     (NETSHA1GetDigest_t)0x801D2558,
@@ -41,7 +41,7 @@ LoaderParams paramsNTSC_J = {
     (DVDReadPrio_t)0x8015E754,
     (DVDClose_t)0x8015E488,
     (sprintf_t)0x80011950,
-    (RKSystem*)0x802a3a00,
+    (RKSystem *)0x802a3a00,
     (NETSHA1Init_t)0x801D2414,
     (NETSHA1Update_t)0x801D2464,
     (NETSHA1GetDigest_t)0x801D2518,
@@ -56,7 +56,7 @@ LoaderParams paramsNTSC_K = {
     (DVDReadPrio_t)0x8015E8AC,
     (DVDClose_t)0x8015E5E0,
     (sprintf_t)0x80011A94,
-    (RKSystem*)0x80292080,
+    (RKSystem *)0x80292080,
     (NETSHA1Init_t)0x801D2850,
     (NETSHA1Update_t)0x801D28A0,
     (NETSHA1GetDigest_t)0x801D2954,
@@ -64,9 +64,9 @@ LoaderParams paramsNTSC_K = {
     0x804fe2f0};
 
 static void LoadIntoMKW() {
-    const u8 regionMem = *(u8*)(0x80000003);
+    const u8 regionMem = *(u8 *)(0x80000003);
 
-    LoaderParams* params = nullptr;
+    LoaderParams *params = nullptr;
     switch (regionMem) {
         case 'P':
             params = &paramsPAL;
@@ -83,7 +83,7 @@ static void LoadIntoMKW() {
         default:
             // If we don't have a valid region, draw the color red and hang the game
             // Dolphin currently ignores this register
-            unsigned int* HW_VISOLID = (unsigned int*)0xcd000024;
+            unsigned int *HW_VISOLID = (unsigned int *)0xcd000024;
             *HW_VISOLID = 0x5aef5101;
             for (;;) {
                 continue;

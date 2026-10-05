@@ -27,7 +27,7 @@ void ExtendedTeamResultIrregularTotal::OnInit() {
     this->textMessage.isHidden = false;
 }
 
-void patch_InitControlGroup(Page* _this, int count) {
+void patch_InitControlGroup(Page *_this, int count) {
     if (_this->pageId == PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR) {
         return _this->InitControlGroup(count + 1);
     }
@@ -46,12 +46,12 @@ struct TeamScore {
     TeamScore(ExtendedTeamID team) : team(team), score(0), present(false) {}
 };
 
-int sort_by_score(const void* a, const void* b) {
-    return ((TeamScore*)b)->score - ((TeamScore*)a)->score;
+int sort_by_score(const void *a, const void *b) {
+    return ((TeamScore *)b)->score - ((TeamScore *)a)->score;
 }
 
 void ExtendedTeamResultIrregularTotal::FillRows() {
-    RacedataScenario& menuScenario = Racedata::sInstance->menusScenario;
+    RacedataScenario &menuScenario = Racedata::sInstance->menusScenario;
 
     int teamCount = 0;
     TeamScore scores[TEAM_COUNT];
@@ -75,19 +75,19 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
         this->results[i]->isHidden = true;
     }
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     ExtendedTeamID selfTeams[2] = {TEAM_COUNT, TEAM_COUNT};
     for (int i = 0; i < menuScenario.playerCount; i++) {
         if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 0) {
             selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
             if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
-                RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
+                RKNet::ControllerSub &currentSub = controller->subs[controller->currentSub];
                 selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 0);
             }
         } else if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 1) {
             selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
             if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
-                RKNet::ControllerSub& currentSub = controller->subs[controller->currentSub];
+                RKNet::ControllerSub &currentSub = controller->subs[controller->currentSub];
                 selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 1);
             }
         }
@@ -96,8 +96,8 @@ void ExtendedTeamResultIrregularTotal::FillRows() {
     for (int i = 0; i < teamCount; i++) {
         this->results[i]->isHidden = false;
 
-        nw4r::lyt::Material* mat;
-        nw4r::lyt::Pane* pane;
+        nw4r::lyt::Material *mat;
+        nw4r::lyt::Pane *pane;
         if (scores[i].team == selfTeams[0] || scores[i].team == selfTeams[1]) {
             this->results[i]->Fill(i + 1, 0);
             pane = this->results[i]->layout.GetPaneByName("select_base");

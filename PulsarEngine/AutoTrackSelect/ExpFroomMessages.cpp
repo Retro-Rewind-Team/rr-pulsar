@@ -12,16 +12,16 @@ s32 ExpFroomMessages::clickedButtonIdx = 0;
 
 // Expand message count from 4 to 10 for worldwide start options
 static void OnStartButtonFroomMsgActivate() {
-    register ExpFroomMessages* msg;
+    register ExpFroomMessages *msg;
     asm(mr msg, r31;);
     msg->msgCount = 10;  // 4 normal + 6 worldwide options
 }
 kmCall(0x805dc480, OnStartButtonFroomMsgActivate);
 
-u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
+u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket &packet) {
     register u32 rowIdx;
     asm(mr rowIdx, r24;);  // r24 contains the actual message index
-    register const ExpFroomMessages* messages;
+    register const ExpFroomMessages *messages;
     asm(mr messages, r19;);
     u32 bmgId;
     bmgId = Pages::FriendRoomManager::GetMessageBmg(packet, 0);
@@ -42,10 +42,10 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
     }
 
     if (rowIdx == 0) {
-        const bool isOTT = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
-        const bool isKO = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) != KOSETTING_DISABLED;
-        const bool isExtendedTeam = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
-        const bool isRoyale = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
+        const bool isOTT = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
+        const bool isKO = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
+        const bool isExtendedTeam = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+        const bool isRoyale = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
 
         if (isOTT && isKO) {
             bmgId = BMG_PLAY_OTTKO;
@@ -78,11 +78,11 @@ static void RemapAndStoreSentMessage() {
         packet = packet & 0xFF0000FF;
     }
 
-    *(volatile u32*)((u8*)manager + 0x2c60) = packet;
+    *(volatile u32 *)((u8 *)manager + 0x2c60) = packet;
 }
 kmCall(0x805dce38, RemapAndStoreSentMessage);
 
-void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Text::Info* info) {
+void CorrectRoomStartButton(Pages::Globe::MessageWindow &control, u32 bmgId, Text::Info *info) {
     Network::SetGlobeMsgColor(control, -1);
     if (bmgId == BMG_PLAY_GP || bmgId == BMG_PLAY_TEAM_GP) {
         const u32 hostContext = System::sInstance->netMgr.hostContext;

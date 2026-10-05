@@ -30,7 +30,7 @@ bool IsEmulator();
  * @param elapsedTime The elapsed time in milliseconds
  * @return Indicates success or failure
  */
-bool GetElapsedTime(u32& elapsedTime);
+bool GetElapsedTime(u32 &elapsedTime);
 
 /**
  * @brief Get the version of Dolphin
@@ -38,28 +38,28 @@ bool GetElapsedTime(u32& elapsedTime);
  * @param length Length of the output string buffer
  * @return Indicates success or failure
  */
-bool GetVersion(char* version, u32 length);
+bool GetVersion(char *version, u32 length);
 
 /**
  * @brief Sets the emulation speed limit (percent)
  * @param speedLimit The speed limit in percent
  * @return Indicates success or failure
  */
-bool GetSpeedLimit(u32& speedLimit);
+bool GetSpeedLimit(u32 &speedLimit);
 
 /**
  * @brief Sets the emulation speed limit (percent)
  * @param speedLimit The speed limit in percent
  * @return Indicates success or failure
  */
-bool SetSpeedLimit(u32& speedLimit);
+bool SetSpeedLimit(u32 &speedLimit);
 
 /**
  * @brief Get the CPU speed
  * @param cpuSpeed The CPU speed in ticks per second
  * @return Indicates success or failure
  */
-bool GetCPUSpeed(u32& cpuSpeed);
+bool GetCPUSpeed(u32 &cpuSpeed);
 
 /**
  * @brief Get the real product code of the game
@@ -67,14 +67,14 @@ bool GetCPUSpeed(u32& cpuSpeed);
  * @param length Length of the output string buffer
  * @return Indicates success or failure
  */
-bool GetRealProductCode(char* productCode, u32 length);
+bool GetRealProductCode(char *productCode, u32 length);
 
 /**
  * @brief Set the Discord client ID
  * @param clientID The client ID
  * @return Indicates success or failure
  */
-bool SetDiscordClient(char* clientID);
+bool SetDiscordClient(char *clientID);
 
 /**
  * @brief Set the Discord presence
@@ -91,12 +91,12 @@ bool SetDiscordClient(char* clientID);
  * @return Indicates success or failure
  */
 bool SetDiscordPresence(
-    char* details,
-    char* state,
-    char* largeImageKey,
-    char* largeImageText,
-    char* smallImageKey,
-    char* smallImageText,
+    char *details,
+    char *state,
+    char *largeImageKey,
+    char *largeImageText,
+    char *smallImageKey,
+    char *smallImageText,
     u64 startTimestamp,
     u64 endTimestamp,
     u32 partySize,
@@ -113,7 +113,7 @@ bool ResetDiscord();
  * @param systemTime The system time in milliseconds
  * @return Indicates success or failure
  */
-bool GetSystemTime(u64& systemTime);
+bool GetSystemTime(u64 &systemTime);
 
 }  // namespace Dolphin
 

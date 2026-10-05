@@ -19,7 +19,7 @@ static u32 CountEnabledItems(u32 bitfield) {
     return count;
 }
 
-static void ChangeBlueOBJProperties(Item::ObjProperties* dest, const Item::ObjProperties& rel) {
+static void ChangeBlueOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
     bool itemModeBlast = false;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
@@ -43,7 +43,7 @@ static void ChangeBlueOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
 
 kmCall(0x80790b74, ChangeBlueOBJProperties);
 
-static void ChangeBillOBJProperties(Item::ObjProperties* dest, const Item::ObjProperties& rel) {
+static void ChangeBillOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
     bool itemModeBlast = false;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
@@ -64,7 +64,7 @@ static void ChangeBillOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
 
 kmCall(0x80790bf4, ChangeBillOBJProperties);
 
-static void ChangeBombOBJProperties(Item::ObjProperties* dest, const Item::ObjProperties& rel) {
+static void ChangeBombOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
     bool itemModeBlast = false;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
@@ -85,7 +85,7 @@ static void ChangeBombOBJProperties(Item::ObjProperties* dest, const Item::ObjPr
 
 kmCall(0x80790bb4, ChangeBombOBJProperties);
 
-static void ChangeItemOBJProperties(Item::ObjProperties* dest, const Item::ObjProperties& rel) {
+static void ChangeItemOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     new (dest) Item::ObjProperties(rel);
     if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != 0x7FFFF || Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
         dest->limit = 16;

@@ -25,7 +25,7 @@ class Actions : public ActionsBase {  // the funcs obviously have the same body 
     void Update() override;  // 0x10 8074b034
     void OnEnd() override;  // 0x14 8074b064
 
-    T* subject;  // 0x4
+    T *subject;  // 0x4
     Ptmf_0A<T, void> actionStartPtmf;  // 0x8
     Ptmf_0A<T, void> updatePtmf;  // 0x14
     Ptmf_0A<T, void> actionEndPtmf;  // 0x20
@@ -34,10 +34,10 @@ class Actions : public ActionsBase {  // the funcs obviously have the same body 
 class Base {
     Base();  // 8074ae2c
     bool SetInitialActions();  // 8074afb4 uses the default action contained
-    bool HasSameActions(ActionsBase* actions);  // 8074afcc returns curActions == actions
-    bool SetNextActions(ActionsBase* actions);  // 8074afe0
-    ActionsBase* curActions;  // 0x0
-    ActionsBase* nextActions;  // 0x4
+    bool HasSameActions(ActionsBase *actions);  // 8074afcc returns curActions == actions
+    bool SetNextActions(ActionsBase *actions);  // 8074afe0
+    ActionsBase *curActions;  // 0x0
+    ActionsBase *nextActions;  // 0x4
     Actions<> defaultActions;  // 0x8 ptmfs values: virtual func 0x10/0x34 | values virtual func 0x14 / 0x34 | virtual invalid
     virtual ~Base();  // offset 0x34 80721c14 vtable 808cbc18
     virtual void UpdateActions();  // 0xc 8074af38
@@ -47,7 +47,7 @@ class Base {
 
 // returns (1 + slope%)*(point - fixedPoint) + fixedPoint, ie the function of slope (1 + slope%) such that f(point) = point
 // for example used as lakitu flies down from the skies before countdown actually starts
-static Vec3 CalcLinearTransfo(const Vec3& fixedPoint, const Vec3& point, float slopePercent);  // 8071f044
+static Vec3 CalcLinearTransfo(const Vec3 &fixedPoint, const Vec3 &point, float slopePercent);  // 8071f044
 
 }  // namespace AI
 

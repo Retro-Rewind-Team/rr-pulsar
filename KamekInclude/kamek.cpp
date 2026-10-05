@@ -1,19 +1,19 @@
 #include <kamek.hpp>
 
-DoFuncsHook* SectionLoadHook::sHooks = nullptr;
-DoFuncsHook* RaceLoadHook::raceLoadHooks = nullptr;
-DoFuncsHook* FrameLoadHook::FrameLoadHooks = nullptr;
-DoFuncsHook* RaceFrameHook::raceFrameHooks = nullptr;
+DoFuncsHook *SectionLoadHook::sHooks = nullptr;
+DoFuncsHook *RaceLoadHook::raceLoadHooks = nullptr;
+DoFuncsHook *FrameLoadHook::FrameLoadHooks = nullptr;
+DoFuncsHook *RaceFrameHook::raceFrameHooks = nullptr;
 
-void DoFuncsHook::Init(void* f, Invoker inv, DoFuncsHook** prev) {
+void DoFuncsHook::Init(void *f, Invoker inv, DoFuncsHook **prev) {
     this->funcPtr = f;
     this->invoker = inv;
     this->next = *prev;
     *prev = this;
 }
 
-void DoFuncsHook::Exec(DoFuncsHook* first, void* a1, void* a2, void* a3) {
-    for (DoFuncsHook* p = first; p; p = p->next) {
+void DoFuncsHook::Exec(DoFuncsHook *first, void *a1, void *a2, void *a3) {
+    for (DoFuncsHook *p = first; p; p = p->next) {
         p->invoker(p->funcPtr, a1, a2, a3);
     }
 }

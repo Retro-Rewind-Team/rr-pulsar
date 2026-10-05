@@ -43,16 +43,16 @@ class DrawPathBloom : public DrawPathBase, IBinary<DrawPathBloom> {
     void DrawImpl(u16 scnProcIdx) override;  // 0x18 8021ccc0
 
     // IBinary vtable 802a2c7c at 0x14
-    void SetBinaryImpl(const IBinary::Binary& rawBBLM) override;  // 0x8  thunk 8021e8a4 func 8021d860
-    void GetBinaryImpl(IBinary::Binary* bblmDest) const override;  // 0xc  thunk 8021e8b4 func 8021df0c
-    const char* GetBinaryType() const override;  // 0x10 thunk 8021e8bc func 8021d850
+    void SetBinaryImpl(const IBinary::Binary &rawBBLM) override;  // 0x8  thunk 8021e8a4 func 8021d860
+    void GetBinaryImpl(IBinary::Binary *bblmDest) const override;  // 0xc  thunk 8021e8b4 func 8021df0c
+    const char *GetBinaryType() const override;  // 0x10 thunk 8021e8bc func 8021d850
     u32 GetBinarySize() const override;  // 0x14 8021e884
     u8 GetVersion() const override;  // 0x18 thunk 8021e8c4 func 8021e894
     void DoubleMount() override;  // 0x1c thunk 8021e8ac func 8021e260
 
     u8 unknown_0x18[0x24 - 0x18];
-    PostEffectBlur* bloom[2];  // 0x24
-    PostEffectBloom* bloom;  // 0x2c
+    PostEffectBlur *bloom[2];  // 0x24
+    PostEffectBloom *bloom;  // 0x2c
     u8 unknown_0x30[0xcc - 0x30];
 };  // 0xcc
 }  // namespace EGG

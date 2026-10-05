@@ -55,13 +55,13 @@ struct RITP {
 class LexMgr {
     inline void Reset();
 
-   public:
-    static const KMPHeader* LoadLEXAndKMP(u32, const char* kmpString);
-    LEXHeader* lex;
-    SET1* set1;
-    HIPT::List* hiptList;
+public:
+    static const KMPHeader *LoadLEXAndKMP(u32, const char *kmpString);
+    LEXHeader *lex;
+    SET1 *set1;
+    HIPT::List *hiptList;
     u32 hiptLength;
-    Kart::Movement::CannonParams* cann;
+    Kart::Movement::CannonParams *cann;
 };
 
 }  // namespace LECODE

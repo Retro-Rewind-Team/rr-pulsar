@@ -18,16 +18,16 @@ extern u8 ReadThreadStack[4 * 1024];  // 809bf4b0
 BOOL CreateReadThread(s32 priority);  // 8055259c
 void ReadThreadStart();  // 8055263c
 void ReadThreadCancel();  // 8055265c
-void* PopReadedBuffer();  // 80552794
-void PushReadedBuffer(void* buffer);
-void* PopFreeReadBuffer();  // 805527dc
+void *PopReadedBuffer();  // 80552794
+void PushReadedBuffer(void *buffer);
+void *PopFreeReadBuffer();  // 805527dc
 
-void PushFreeReadBuffer(void* buffer);  // 80552810 free used buffers
-void* PopReadedBuffer2();  // 80552824
-void PushReadedBuffer2(void* buffer);  // 80552858
+void PushFreeReadBuffer(void *buffer);  // 80552810 free used buffers
+void *PopReadedBuffer2();  // 80552824
+void PushReadedBuffer2(void *buffer);  // 80552858
 
 // Thread run funcs
-void* Reader(void* ptr);  // 805526a4 ptr will be null
+void *Reader(void *ptr);  // 805526a4 ptr will be null
 
 }  // namespace THP
 #endif

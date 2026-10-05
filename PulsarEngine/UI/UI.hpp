@@ -2,16 +2,17 @@
 #define _PULUI_
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/UIControl.hpp>
+#include <Settings/SettingsParam.hpp>
 
 namespace Pulsar {
 namespace UI {
 
-void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tplName);
-const wchar_t* GetCustomMsg(s32 bmgId);
-void UnbindRLMC(lyt::Material* mat);
-void ResetMatColor(lyt::Pane* pane, u32 color);
+void ChangeImage(LayoutUIControl &control, const char *paneName, const char *tplName);
+const wchar_t *GetCustomMsg(s32 bmgId);
+void UnbindRLMC(lyt::Material *mat);
+void ResetMatColor(lyt::Pane *pane, u32 color);
 void ResetFroomSettingsPreviewShown();
-bool AdvanceFroomSettingsPreview(u32& sheetIdx);
+bool AdvanceFroomSettingsPreview(Settings::SettingsPageId &page);
 /*Expanded pages: (do not necessitate a PulPageId)
 -ExpGhostSelect
 -ExpFroom
@@ -38,41 +39,47 @@ enum PulPageId {
     PULPAGE_CUSTOMITEMS,
     PULPAGE_SETTINGS,
     PULPAGE_SETTINGSPAGESELECT,
+    PULPAGE_BADGESELECT,
     PULPAGE_EXTENDEDTEAMSELECT,
     PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL,
     PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR,
     PULPAGE_VRLEADERBOARD,
     PULPAGE_TRANSMISSIONSELECT,
+    PULPAGE_CUSTOMENGINECLASS,
+    PULPAGE_REGION,
+    PULPAGE_CHARACTERRESTRICTION,
+    PULPAGE_VEHICLERESTRICTIONWEIGHT,
+    PULPAGE_VEHICLERESTRICTION,
 
-    PULPAGE_MAX = PULPAGE_TRANSMISSIONSELECT - PULPAGE_INITIAL + 1
+    PULPAGE_MAX = PULPAGE_VEHICLERESTRICTION - PULPAGE_INITIAL + 1
 };
 
 class ExpSection : public Section {  // u32 id -> either a standard pageId but can also be a PulPageId
-   public:
-    static ExpSection* GetSection() { return reinterpret_cast<ExpSection*>(SectionMgr::sInstance->curSection); }
+public:
+    static ExpSection *GetSection() { return reinterpret_cast<ExpSection *>(SectionMgr::sInstance->curSection); }
 
-    static void CreatePages(ExpSection& self, SectionId id);
+    static void CreatePages(ExpSection &self, SectionId id);
     void CreatePulPages();
-    static void CreateAndInitPage(ExpSection& self, u32 id);
+    static void CreateAndInitPage(ExpSection &self, u32 id);
     static void SetNextPage(u32 id, u32 animDirection);
-    static void DisposePulPages(SectionPad& pad, bool enablePointer);
-    static void AddPageLayer(ExpSection& self, u32 id);
-    static Page* AddPageLayerAnimatedReturnTopLayer(ExpSection& self, u32 id, u32 animDirection);
+    static void DisposePulPages(SectionPad &pad, bool enablePointer);
+    static void AddPageLayer(ExpSection &self, u32 id);
+    static Page *AddPageLayerAnimatedReturnTopLayer(ExpSection &self, u32 id, u32 animDirection);
 
     template <class T>
-    inline T* GetPulPage() const {
+    inline T *GetPulPage() const {
         static_assert(is_base_of<Page, T>::value, "Not a Page");
-        return static_cast<T*>(this->pulPages[T::id - PULPAGE_INITIAL]);
+        return static_cast<T *>(this->pulPages[T::id - PULPAGE_INITIAL]);
     }
 
     template <class T>
-    inline T* GetPulPage(PulPageId id) const {
+    inline T *GetPulPage(PulPageId id) const {
         static_assert(is_base_of<Page, T>::value, "Not a Page");
-        return static_cast<T*>(this->pulPages[id - PULPAGE_INITIAL]);
+        return static_cast<T *>(this->pulPages[id - PULPAGE_INITIAL]);
     }
-    inline void SetPulPage(Page* t, PulPageId id) { this->pulPages[id - PULPAGE_INITIAL] = t; }
+    inline void SetPulPage(Page *t, PulPageId id) { this->pulPages[id - PULPAGE_INITIAL] = t; }
 
-    Page* pulPages[PULPAGE_MAX];
+    Page *pulPages[PULPAGE_MAX];
     bool hasAutoVote;
 };
 
@@ -168,6 +175,7 @@ enum BMG {
     BMG_TEAM_SELECT = 0x284a,
     BMG_ROOM_DENY = 0x284b,
     BMG_TOO_MANY_DENIES = 0x284c,
+    BMG_CUSTOM_ENGINE_INSTRUCTION = 0x284f,
 
     BMG_VS_BUTTON = 0x6900,
 
@@ -231,6 +239,8 @@ enum BMG {
 
     // Ranking
     BMG_RANKING_TEXT = 0x691d,
+    BMG_RANKING_BADGE = 0x6967,
+    BMR_RANKING_BUTTON = 0x62f0f,
 
     // Start Worldwide Message
     BMG_RETRO_START_MESSAGE = 0x6920,
@@ -243,6 +253,7 @@ enum BMG {
     // Custom Characters
     BMG_CUSTOM_CHARACTER_NAME_START = 0x6a00,
     BMG_CUSTOM_CHARACTER_AUTHOR_START = 0x7a00,
+    BMG_CUSTOM_CHARACTER_IMAGE_START = 0x8a00,
 
     // Language
     BMG_LANGUAGE_RESET_REQUIRED = 0x295f,
@@ -282,14 +293,12 @@ enum BMG {
     BMG_CUPS = 0x10000,
     BMG_TRACKS = 0x20000,
     BMG_AUTHORS = 0x30000,
+    BMG_MUSIC_CREDITS = 0x170000,
+    BMG_VARIANT_MUSIC_CREDITS = 0x620000,
 
     // ADD 0x50000 to all of these for YOUR settings, 0x52f01 = the button text etc...
-    BMG_SETTINGS_PAGE = 0x2f01,
     BMG_SETTINGS_BOTTOM = 0x2f10,
     BMG_SETTINGS_TITLE = 0x2f20,
-    BMG_RADIO_SETTINGS = 0x3000,
-    BMG_SCROLLER_SETTINGS = 0x3A00,
-    BMG_USERSETTINGSOFFSET = 0x60000,  // user settings therefore start at 0x53000 for radio settings, 0x53A00 for scrollers
 
     // Custom texts (extended teams, explanations, etc..)
     BMG_EXTENDEDTEAMS_EXPLANATION = 0x83337,
@@ -298,6 +307,24 @@ enum BMG {
     BMG_EXTENDEDTEAMS_TEAM_NAME = 0x83340,
     BMG_EXTENDEDTEAMS_WINNER = 0x83350,
     BMG_EXTENDEDTEAMS_PLAY = 0x83352,
+    BMG_EXTENDEDTEAMS_START = 0x83353,
+
+    BMG_REGION_BUTTON = 0x83360,
+    BMG_REGION_SAVE = 0x83361,
+    BMG_REGION_COUNTRY = 0x83362,
+    BMG_REGION_USE_WII_LOCATION = 0x83363,
+    BMG_REGION_DEFAULT_LOCATION = 0x83364,
+    BMG_REGION_USES_WII_LOCATION = 0x83365,
+    BMG_REGION_NO_SUBREGIONS = 0x83366,
+    BMG_REGION_WII_LOCATION = 0x83367,
+    BMG_REGION_CURRENT = 0x83368,
+    BMG_REGION_PREVIEW = 0x83369,
+    BMG_REGION_SAVED = 0x8336a,
+
+    BMG_RESTRICTION_LIGHT = 0x1183370,
+    BMG_RESTRICTION_MEDIUM = 0x1183371,
+    BMG_RESTRICTION_HEAVY = 0x1183372,
+    BMG_RESTRICTION_WEIGHT_BOTTOM = 0x1183373,
 };
 
 const char controlFolder[] = "control";

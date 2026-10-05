@@ -13,7 +13,7 @@ namespace EGG {
 class DrawPathBase : public ScreenEffect, public IScnProc {
     DrawPathBase();  // 8021c2e0
     void Calc();  // 8021c4bc
-    void CreateProcs(EGG::Allocator* allocator);  // 8021c370
+    void CreateProcs(EGG::Allocator *allocator);  // 8021c370
 
     // ScreenEffect vtable 802a2c20 at 0x4
     ~DrawPathBase() override;  // 8021c4e0

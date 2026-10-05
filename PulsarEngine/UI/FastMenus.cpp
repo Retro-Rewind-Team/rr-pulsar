@@ -6,15 +6,15 @@
 namespace Pulsar {
 namespace UI {
 // Adapted from east_'s code
-static void FasterMenusOnSceneChange(SectionMgr* sectionMgr, u32 delay, u32 color) {
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, RADIO_FASTMENUS) == FASTMENUS_ENABLED) delay = 0;
+static void FasterMenusOnSceneChange(SectionMgr *sectionMgr, u32 delay, u32 color) {
+    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FASTMENUS) == FASTMENUS_ENABLED) delay = 0;
     sectionMgr->RequestSceneChange(delay, color);
 }
 kmCall(0x80602510, FasterMenusOnSceneChange);
 
 // Adapted from east_'s code
 static void FasterMenuPatchTransitionDelay() {
-    const u8 val = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, RADIO_FASTMENUS);
+    const u8 val = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FASTMENUS);
     float transitionDelay = 176.0f;
     if (val == FASTMENUS_ENABLED) {
         transitionDelay -= transitionDelay;

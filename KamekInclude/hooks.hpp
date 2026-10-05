@@ -7,12 +7,9 @@
 // hook type IDs _must_ match what's in the Kamek source!
 #define kctWrite 1
 #define kctConditionalWrite 2
-#define kctRegionWrite 3
-#define kctInjectBranch 4
-#define kctInjectCall 5
-#define kctRegionInjectBranch 6
-#define kctRegionInjectCall 7
-#define kctPatchExit 8
+#define kctInjectBranch 3
+#define kctInjectCall 4
+#define kctPatchExit 5
 
 #define kmIdentifier(key, counter) \
     _k##key##counter

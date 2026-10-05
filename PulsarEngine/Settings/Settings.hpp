@@ -6,6 +6,7 @@
 #include <Config.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <Settings/SettingsBinary.hpp>
+#include <Network/Settings/SelectionRestrictions.hpp>
 #include <Ghost/GhostManager.hpp>
 
 namespace Pulsar {
@@ -15,7 +16,7 @@ class Mgr;
 namespace UI {
 class SettingsPanel;
 class CustomItemPage;
-}
+}  // namespace UI
 namespace Settings {
 
 struct TrophyEntry {
@@ -36,57 +37,54 @@ struct TrophyFile {
 };
 
 class Hook : public DoFuncsHook {
-    static DoFuncsHook* settingsHooks;
+    static DoFuncsHook *settingsHooks;
 
-   public:
-    Hook(Func& f) : DoFuncsHook(f, &settingsHooks) {}
+public:
+    Hook(Func &f) : DoFuncsHook(f, &settingsHooks) {}
     static void Exec() { DoFuncsHook::Exec(settingsHooks); }
 };
 
 class Mgr {
-   private:
-    static Mgr* sInstance;
-    static void SaveTask(void*);
-    void Init(const u16* totalTrophyCount, const char* settingsPath, const char* trophiesPath);
+private:
+    static Mgr *sInstance;
+    static void SaveTask(void *);
+    void Init(const u16 *totalTrophyCount, const char *settingsPath, const char *trophiesPath);
     int GetSettingsBinSize(u32 trackCount) const;
     char filePath[IOS::ipcMaxPath];
     char trophiesFilePath[IOS::ipcMaxPath];
-    Binary* rawBin;
+    Binary *rawBin;
 
-    TrophyEntry* FindTrackTrophy(u32 crc32, u8 variantIdx);
-    const TrophyEntry* FindTrackTrophy(u32 crc32, u8 variantIdx) const;
-    void InitTrophyEntries(const u16* totalTrophyCount);
+    TrophyEntry *FindTrackTrophy(u32 crc32, u8 variantIdx);
+    const TrophyEntry *FindTrackTrophy(u32 crc32, u8 variantIdx) const;
+    void InitTrophyEntries(const u16 *totalTrophyCount);
     void LoadTrophiesFromFiles();
     void MigrateLegacyTrophies();
-    bool LoadLegacyTrophies(TrophiesHolder*& holder) const;
-    bool WriteTrophyFile(const TrophyEntry& trophy) const;
-    bool ReadTrophyFile(TrophyEntry& trophy) const;
-    void GetTrophyFolder(char* dest, u32 crc32, u8 variantIdx) const;
-    void GetTrophyFilePath(char* dest, u32 crc32, u8 variantIdx) const;
+    bool LoadLegacyTrophies(TrophiesHolder *&holder) const;
+    bool WriteTrophyFile(const TrophyEntry &trophy) const;
+    bool ReadTrophyFile(TrophyEntry &trophy) const;
+    void GetTrophyFolder(char *dest, u32 crc32, u8 variantIdx) const;
+    void GetTrophyFilePath(char *dest, u32 crc32, u8 variantIdx) const;
     bool EnsureTrophyFoldersExist(u32 crc32, u8 variantIdx) const;
     void AdjustSections();
-    void SetSettingValue(Type type, u32 setting, u8 value);
-    void SetUserSettingValue(UserType type, u32 setting, u8 value);
     void AdjustSectionsSizes();
-    Binary* CreateFromOld(const Binary* old);
     void Update() {
         Hook::Exec();
         this->RequestSave();
     }
     void RequestSave() { System::sInstance->taskThread->Request(&Mgr::SaveTask, nullptr, 0); }
-    void RequestTrophiesSave() { System::sInstance->taskThread->Request(&Mgr::SaveTask, reinterpret_cast<void*>(1), 0); }
+    void RequestTrophiesSave() { System::sInstance->taskThread->Request(&Mgr::SaveTask, reinterpret_cast<void *>(1), 0); }
     void Save();
     void SaveTrophies();
     void AddTrophy(u32 crc32, u8 variantIdx, TTMode mode);
     u32 CountTrophiesInTrackRange(u32 firstTrackIdx, u32 trackCount, TTMode mode) const;
     void SetLastSelectedCup(PulsarCupId id) { this->rawBin->GetSection<MiscParams>().lastSelectedCup = id; }
 
-   public:
+public:
     Mgr() : rawBin(nullptr), trophyEntries(nullptr), trophyEntryCount(0) {
         for (int i = 0; i < 4; ++i) this->trophyCount[i] = 0;
     }
-    static Mgr& Get() { return *sInstance; }
-    static const Mgr& GetConst() { return *sInstance; }
+    static Mgr &Get() { return *sInstance; }
+    static const Mgr &GetConst() { return *sInstance; }
     static bool IsCreated() { return sInstance != nullptr; }
 
     bool HasTrophy(u32 crc32, u8 variantIdx, TTMode mode) const;
@@ -101,11 +99,64 @@ class Mgr {
     PulsarCupId GetSavedSelectedCup() const { return this->rawBin->GetSection<MiscParams>().lastSelectedCup; }
     u32 GetCustomItems() const { return this->rawBin->GetSection<MiscParams>().customItemsBitfield; }
     void SetCustomItems(u32 val) { this->rawBin->GetSection<MiscParams>().customItemsBitfield = val; }
+    u32 GetCharacterRestrictionMask() const {
+        if (rawBin == nullptr) return Restrictions::ALL_CHARACTERS;
+        const u32 mask = rawBin->GetSection<MiscParams>().reserved[0] & Restrictions::ALL_CHARACTERS;
+        return mask == 0 ? Restrictions::ALL_CHARACTERS : mask;
+    }
+    u16 GetVehicleRestrictionMask(u32 weight) const {
+        if (rawBin == nullptr || weight >= Restrictions::VEHICLE_WEIGHT_COUNT) return Restrictions::ALL_VEHICLES;
+        const u16 mask = static_cast<u16>(rawBin->GetSection<MiscParams>().reserved[weight + 1]) & Restrictions::ALL_VEHICLES;
+        return mask == 0 ? Restrictions::ALL_VEHICLES : mask;
+    }
+    void SetCharacterRestrictionMask(u32 mask) {
+        if (rawBin == nullptr) return;
+        mask &= Restrictions::ALL_CHARACTERS;
+        if (mask == 0) mask = Restrictions::ALL_CHARACTERS;
+        MiscParams &params = rawBin->GetSection<MiscParams>();
+        if (params.reserved[0] == mask) return;
+        params.reserved[0] = mask;
+        RequestSave();
+    }
+    void SetVehicleRestrictionMask(u32 weight, u16 mask) {
+        if (rawBin == nullptr || weight >= Restrictions::VEHICLE_WEIGHT_COUNT) return;
+        mask &= Restrictions::ALL_VEHICLES;
+        if (mask == 0) mask = Restrictions::ALL_VEHICLES;
+        MiscParams &params = rawBin->GetSection<MiscParams>();
+        if (params.reserved[weight + 1] == mask) return;
+        params.reserved[weight + 1] = mask;
+        RequestSave();
+    }
+    u16 GetCustomEngineClass() const { return this->rawBin->GetSection<MiscParams>().customEngineClass; }
+    void SetCustomEngineClass(u16 value) {
+        if (value < 100 || value > 9999) value = 150;
+        MiscParams &params = this->rawBin->GetSection<MiscParams>();
+        if (params.customEngineClass == value) return;
+        params.customEngineClass = value;
+        this->RequestSave();
+    }
+    u8 GetRankingBadge() const { return this->rawBin->GetSection<MiscParams>().rankingBadge; }
+    u8 GetDisplayCountry() const {
+        if (rawBin == nullptr) return 0;
+        const MiscParams &params = rawBin->GetSection<MiscParams>();
+        return params.regionMagic == 'RGN1' && params.displayCountry < 255 ? params.displayCountry : 0;
+    }
+    u8 GetDisplaySubregion() const {
+        if (rawBin == nullptr) return 0;
+        const MiscParams &params = rawBin->GetSection<MiscParams>();
+        return params.regionMagic == 'RGN1' && GetDisplayCountry() != 0 ? params.displaySubregion : 0;
+    }
+    void SetDisplayLocation(u8 country, u8 state);
+    void SetRankingBadge(u8 badge) {
+        if (this->rawBin == nullptr || this->rawBin->GetSection<MiscParams>().rankingBadge == badge) return;
+        this->rawBin->GetSection<MiscParams>().rankingBadge = badge;
+        this->RequestSave();
+    }
 
     // GP
     static u8 GetGPStatus(u32 idx, u32 cc) {
-        Mgr* mgr = Mgr::sInstance;
-        GPSection& gp = mgr->rawBin->GetSection<GPSection>();
+        Mgr *mgr = Mgr::sInstance;
+        GPSection &gp = mgr->rawBin->GetSection<GPSection>();
         return gp.gpStatus[idx].gpCCStatus[cc];
     }
     static GPRank ComputeRankFromStatus(u8 gpStatus) {
@@ -114,24 +165,21 @@ class Mgr {
     static u32 ComputeTrophyFromStatus(u8 gpStatus) {
         return gpStatus & 0b11;
     }
-    static void SaveGPResult(RKSYSRequester* requester, u32 r4, u32 r5, u32 r6, u32 r7, u32 r8, u32 r9, bool isNew);
-    u8 GetSettingValue(Type type, u32 setting) const;
-    u8 GetUserSettingValue(UserType type, u32 setting) const;
+    static void SaveGPResult(RKSYSRequester *requester, u32 r4, u32 r5, u32 r6, u32 r7, u32 r8, u32 r9, bool isNew);
+    u8 GetSettingValue(SettingId id) const;
+    void SetSettingValue(SettingId id, u8 value);
     static void Create();
 
-   private:
+private:
     u16 totalTrophyCount[4];
     u16 trophyCount[4];
-    TrophyEntry* trophyEntries;
+    TrophyEntry *trophyEntries;
     u32 trophyEntryCount;
-    u32 pulsarPageCount;
-    u32 userPageCount;
-
     friend class System;
     friend class UI::SettingsPanel;
     // Two ghosts functions which save the settings
-    friend bool Ghosts::Mgr::SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool isFlap);
-    friend void Ghosts::Mgr::CreateAndSaveFiles(Ghosts::Mgr* manager);
+    friend bool Ghosts::Mgr::SaveGhost(const RKSYS::LicenseLdbEntry &entry, u32 ldbPosition, bool isFlap);
+    friend void Ghosts::Mgr::CreateAndSaveFiles(Ghosts::Mgr *manager);
     friend class UI::ExpGhostSelect;
 };
 }  // namespace Settings

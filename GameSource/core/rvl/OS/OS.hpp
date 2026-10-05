@@ -21,21 +21,21 @@ typedef u32 Tick;
 struct CalendarTime {
     int sec, min, hour, mday, mon, year, wday, yday, msec, usec;
 };
-void TicksToCalendarTime(u64 time, CalendarTime* result);
-s64 CalendarTimeToTicks(CalendarTime* time);
+void TicksToCalendarTime(u64 time, CalendarTime *result);
+s64 CalendarTimeToTicks(CalendarTime *time);
 
-void Report(const char* format, ...);
+void Report(const char *format, ...);
 u64 GetTime();
 u32 GetTick();
-void Fatal(GX::Color foreground, GX::Color background, const char* message);
-int CalcCRC32(void* data, u32 length);
+void Fatal(GX::Color foreground, GX::Color background, const char *message);
+int CalcCRC32(void *data, u32 length);
 int DisableInterrupts();  // 801a65ac
 int EnableInterrupts();  // 801a65c0
 int RestoreInterrupts(int level);  // 801a65d4
 int DisableScheduler();
 void Restart(u32 resetCode);
 
-void* GetArenaLo();  // 801a10cc
+void *GetArenaLo();  // 801a10cc
 
 template <typename T>
 inline T MillisecondsToTicks(T ms) {

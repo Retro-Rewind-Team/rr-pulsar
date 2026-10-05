@@ -8,9 +8,9 @@
 namespace Pulsar {
 namespace Race {
 
-Kart::Stats* ApplyStatChanges(KartId kartId, CharacterId characterId, KartType kartType);
+Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType kartType);
 
-static void ApplyInside(Kart::Stats& stats) {
+static void ApplyInside(Kart::Stats &stats) {
     if (stats.type == INSIDE_BIKE) {
         stats.targetAngle = 0.0f;
     } else if (stats.type == KART) {
@@ -22,7 +22,7 @@ static void ApplyInside(Kart::Stats& stats) {
     }
 }
 
-static void ApplyInsideBike(Kart::Stats& stats) {
+static void ApplyInsideBike(Kart::Stats &stats) {
     if (stats.type == INSIDE_BIKE) {
         stats.targetAngle = 0.0f;
     } else if (stats.type == OUTSIDE_BIKE) {
@@ -31,7 +31,7 @@ static void ApplyInsideBike(Kart::Stats& stats) {
     }
 }
 
-static void ApplyOutside(Kart::Stats& stats) {
+static void ApplyOutside(Kart::Stats &stats) {
     if (stats.type == INSIDE_BIKE) {
         stats.type = OUTSIDE_BIKE;
         stats.targetAngle = 45.0f;
@@ -41,15 +41,15 @@ static void ApplyOutside(Kart::Stats& stats) {
 }
 
 static int GetGhostRkgIndex(u32 playerId) {
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const u8 offset = scenario.players[0].playerType != PLAYER_GHOST ? 1 : 0;
     const int rkgIndex = static_cast<int>(playerId) - offset;
     return rkgIndex >= 0 ? rkgIndex : -1;
 }
 
 static Transmission GetPlayerTransmission(u32 playerId) {
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
-    const RacedataPlayer& player = scenario.players[playerId];
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+    const RacedataPlayer &player = scenario.players[playerId];
     if (player.playerType == PLAYER_GHOST) {
         const int rkgIndex = GetGhostRkgIndex(playerId);
         if (rkgIndex >= 0) {
@@ -67,7 +67,7 @@ static bool CanApplyTransmission(u32 playerId) {
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
     if (roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_BT_WW) return false;
 
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (playerId >= scenario.playerCount) return false;
     if (scenario.localPlayerCount > 1) return false;
 
@@ -75,7 +75,7 @@ static bool CanApplyTransmission(u32 playerId) {
     return playerType == PLAYER_REAL_LOCAL || playerType == PLAYER_GHOST;
 }
 
-static void ApplyTransmission(Kart::Stats& stats, u32 playerId) {
+static void ApplyTransmission(Kart::Stats &stats, u32 playerId) {
     if (!CanApplyTransmission(playerId)) return;
 
     const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
@@ -99,14 +99,14 @@ static void ApplyTransmission(Kart::Stats& stats, u32 playerId) {
     }
 }
 
-static Kart::Stats* ApplyPlayerTransmission(Kart::Stats* stats, u32 playerId) {
+static Kart::Stats *ApplyPlayerTransmission(Kart::Stats *stats, u32 playerId) {
     if (playerId >= 12 || stats == nullptr) return stats;
 
     ApplyTransmission(*stats, playerId);
     return stats;
 }
 
-static Kart::Stats* ApplyPlayerStatChanges(KartId kartId, CharacterId characterId, KartType kartType) {
+static Kart::Stats *ApplyPlayerStatChanges(KartId kartId, CharacterId characterId, KartType kartType) {
     register u32 playerId;
     asm(mr playerId, r28;);
     return ApplyPlayerTransmission(ApplyStatChanges(kartId, characterId, kartType), playerId);

@@ -93,13 +93,13 @@ struct InstInfo {
 };
 
 class BankFileReader {
-   public:
-    BankFileReader(const void* bankData);
-    const BankFile::InstParam* GetInstParam(int prgNumber, int key, int velocity) const;  // 8008d630
-    bool ReadInstInfo(InstInfo* instInfo, int prgNo, int key, int velocity) const;  // 8008d740
-    const BankFile::InstrumentRef* GetReferenceToSubRegion(const BankFile::InstrumentRef* ref, int splitKey) const;  // 8008d8e0
-    bool ReadWaveInfo(WaveInfo* waveParam, const InstInfo::WaveDataLocation& waveDataLocation,
-                      const void* rawWavArchive, const WaveInfo** waveInfoAddress) const;  // 8008da00
+public:
+    BankFileReader(const void *bankData);
+    const BankFile::InstParam *GetInstParam(int prgNumber, int key, int velocity) const;  // 8008d630
+    bool ReadInstInfo(InstInfo *instInfo, int prgNo, int key, int velocity) const;  // 8008d740
+    const BankFile::InstrumentRef *GetReferenceToSubRegion(const BankFile::InstrumentRef *ref, int splitKey) const;  // 8008d8e0
+    bool ReadWaveInfo(WaveInfo *waveParam, const InstInfo::WaveDataLocation &waveDataLocation,
+                      const void *rawWavArchive, const WaveInfo **waveInfoAddress) const;  // 8008da00
 };
 }  // namespace detail
 

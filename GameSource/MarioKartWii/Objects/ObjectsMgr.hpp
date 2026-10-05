@@ -10,24 +10,24 @@
 #include <MarioKartWii/Mii/MiiCreationParams.hpp>
 
 class ObjFlowHolder {
-    explicit ObjFlowHolder(const char* fileName);  // 8082c10c
+    explicit ObjFlowHolder(const char *fileName);  // 8082c10c
     virtual ~ObjFlowHolder();  // 8082c1f4 vtable 808d8210
-    u32 GetObjIDByName(const char* objName);  // 8082c178
+    u32 GetObjIDByName(const char *objName);  // 8082c178
     u16 objCount;
     u8 padding[2];
-    ObjFlowEntry* entries;  // 0x8 array size objectCount
-    IndexToIDTable* idxToIDTable;  // 0xC
+    ObjFlowEntry *entries;  // 0x8 array size objectCount
+    IndexToIDTable *idxToIDTable;  // 0xC
 };  // 0x10
 // size_assert(ObjFlowHolder, 0x10);
 
 class GeoHitTableHolder {
-    explicit GeoHitTableHolder(const char* fileName);  // 807f9278
+    explicit GeoHitTableHolder(const char *fileName);  // 807f9278
     virtual ~GeoHitTableHolder();  // 807f9348 vtable 808d4160
-    GeoHitTableEntry* curEntry;  // 0x4 used by the ctor
+    GeoHitTableEntry *curEntry;  // 0x4 used by the ctor
     u16 objCount;  // 0x8
     u16 itemCount;  // 0xA 15 in mkwii
-    u16** interactions;  // 0xC use objId and then enum in GeoHitTable.hpp to access an object interaction with an item/the opposite
-    IndexToIDTable* idxToIDTable;  // 0x10
+    u16 **interactions;  // 0xC use objId and then enum in GeoHitTable.hpp to access an object interaction with an item/the opposite
+    IndexToIDTable *idxToIDTable;  // 0x10
 };
 
 class GeoHitTableItemHolder : public GeoHitTableHolder {
@@ -57,54 +57,54 @@ enum ObjArrayList {  // this is filled using GetBitfieldProperties
 struct ObjectArray {
     u16 count;
     u16 padding;
-    Object** array;
+    Object **array;
 };  // 0x8
 
 class ManagedObjects {
-    void RegisterObject(Object* object);  // 806c4ed4
-    Object* objects[0x3c];
+    void RegisterObject(Object *object);  // 806c4ed4
+    Object *objects[0x3c];
     u32 managedObjCount;
 };  // 0xf4
 
 class ObjectsMgr {
-   public:
-    static ObjectsMgr* sInstance;  // 809c4330
-    static ObjectsMgr* CreateInstance();  // 8082a784 also inits
+public:
+    static ObjectsMgr *sInstance;  // 809c4330
+    static ObjectsMgr *CreateInstance();  // 8082a784 also inits
     static void DestroyInstance();  // 8082a824
-    static char* objectsNamesList;  // 808abb2c
+    static char *objectsNamesList;  // 808abb2c
 
     ObjectsMgr();  // 8082a38c
     virtual ~ObjectsMgr();  // 8082a694 vtable 808d7fec
     void Start();  // 8082a2b4
     void Update();  // 8082a8f4
     void CreateAllObjects(bool isMii);  // 80826e8c
-    void CreateObject(const KMP::Holder<GOBJ>& gobj);  // 80821e14 "ObjectGenerator"
-    void HandleItemCollision(ItemObj* itemObj, const Vec3& position, float unknown);  // 8082adbc
-    void AddObject(Object* object);  // 8082b0e8
-    void ProcessCollision(const Kart::Player& kartPlayer, ObjectCollisionPolyhedra* collision);  // 8082ab04
+    void CreateObject(const KMP::Holder<GOBJ> &gobj);  // 80821e14 "ObjectGenerator"
+    void HandleItemCollision(ItemObj *itemObj, const Vec3 &position, float unknown);  // 8082adbc
+    void AddObject(Object *object);  // 8082b0e8
+    void ProcessCollision(const Kart::Player &kartPlayer, ObjectCollisionPolyhedra *collision);  // 8082ab04
     int GetManagedObjectsCount();  // 8082b3b8
-    Object* GetManagedObject(u32 idx);  // 8082b3a8
-    void RegisterManagedObject(Object* object);  // 8082b3a0
+    Object *GetManagedObject(u32 idx);  // 8082b3a8
+    void RegisterManagedObject(Object *object);  // 8082b3a0
     static float GetPseaVeniceHeightDiff(float height);  // 8082b3d4 height - psea/venice height
     static float GetPseaVeniceHeight();  // 8082b3ec height - psea/venice height
     static float GetPseaVeniceHeightMinus260();  // 8082b400
 
-    ObjFlowHolder* objFlow;  // 0x4
-    GeoHitTableItemHolder* geoHitTableItem;  // 0x8
-    GeoHitTableObjHolder* geoHitTableItemObj;  // 0xC
-    GeoHitTableKartHolder* geoHitTableKart;  // 0x10
-    GeoHitTableKartObjHolder* geoHitTableKartObj;  // 0x14
+    ObjFlowHolder *objFlow;  // 0x4
+    GeoHitTableItemHolder *geoHitTableItem;  // 0x8
+    GeoHitTableObjHolder *geoHitTableItemObj;  // 0xC
+    GeoHitTableKartHolder *geoHitTableKart;  // 0x10
+    GeoHitTableKartObjHolder *geoHitTableKartObj;  // 0x14
     ObjectArray arrays[5];  // 0x18, 0x20, 0x28, 0x30, 0x38 use enum, doesn't have ObjectKCLs
-    Object* object_0x40;  // 0x40
-    Vec3* collisionsSpeeds;  // 0x44
-    ObjToKartHit* kartInteractionArray;  // 0x48
+    Object *object_0x40;  // 0x40
+    Vec3 *collisionsSpeeds;  // 0x44
+    ObjToKartHit *kartInteractionArray;  // 0x48
     u8 unknown_0x4C[4];
-    Object* pseaOrVenice_Nami;  // 0x50
+    Object *pseaOrVenice_Nami;  // 0x50
     bool isGameModeMoreThan7;  // 0x54
     bool isTT;  // 0x55
     u8 padding6[2];
-    ManagedObjects* managedObjects;  // 0x58 only for DC, MH, DC, rSGB, rDH, galaxy colosseum ie tracks with a object that is managed
-    MiiCreationParams* miiCreationParams;  // 0x5c to create official miis randomly for objects that require it, at most one exists and it is initiated by whichever object needs it first
+    ManagedObjects *managedObjects;  // 0x58 only for DC, MH, DC, rSGB, rDH, galaxy colosseum ie tracks with a object that is managed
+    MiiCreationParams *miiCreationParams;  // 0x5c to create official miis randomly for objects that require it, at most one exists and it is initiated by whichever object needs it first
     bool unknown_0x60;
     u8 padding7[3];
     Mtx34 transformationMatrixes[4];  // 0x64

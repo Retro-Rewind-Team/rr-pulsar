@@ -7,7 +7,7 @@ namespace HybridDrift {
 static bool isVanillaModeOnline = false;
 
 static void UpdateVanillaModeOnline() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     isVanillaModeOnline = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN &&
                           Pulsar::System::sInstance->IsVanillaMode();
 }
@@ -23,8 +23,7 @@ asmFunc GetHybridDrift1() {
         lwz r0, 0x14(r3);
         blr;
 
-        hybrid:
-        lwz r0, 0x14(r3);
+        hybrid : lwz r0, 0x14(r3);
 
         // Check if we're an inside drifting, if we are, end the code (Bug is only for outside drift bikes)
         lwz r12, 0(r28);
@@ -60,8 +59,7 @@ asmFunc GetHybridDrift3() {
         lwz r0, 0x4(r3);
         blr;
 
-        hybrid:
-        lwz r0, 0x14(r3);
+        hybrid : lwz r0, 0x14(r3);
         rlwinm.r12, r0, 0, 18, 18;
         beq end2;
         ori r0, r0, 0x10;
@@ -80,8 +78,7 @@ asmFunc GetHybridDrift4() {
         lwz r0, 0x4(r4);
         blr;
 
-        hybrid:
-        lwz r0, 0x14(r4);
+        hybrid : lwz r0, 0x14(r4);
         rlwinm.r12, r0, 0, 18, 18;
         beq end2;
         ori r0, r0, 0x10;
@@ -100,8 +97,7 @@ asmFunc GetHybridDrift6() {
         rlwinm.r0, r0, 0, 27, 27;
         blr;
 
-        hybrid:
-        rlwinm.r0, r0, 0, 27, 27;
+        hybrid : rlwinm.r0, r0, 0, 27, 27;
         li r0, 0;
         stw r0, 0x1C8(r3);)
 }
@@ -116,8 +112,7 @@ asmFunc GetHybridDrift7() {
         mr r3, r30;
         blr;
 
-        hybrid:
-        lwz r3, 0x4(r30);
+        hybrid : lwz r3, 0x4(r30);
         andi.r4, r3, 0x84;
         beq end;
         lwz r4, 0x14(r30);

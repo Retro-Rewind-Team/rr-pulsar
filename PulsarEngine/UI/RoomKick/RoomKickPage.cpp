@@ -50,8 +50,8 @@ void RoomKickPage::BeforeEntranceAnimations() {
 }
 
 void RoomKickPage::BeforeControlUpdate() {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKNet::ControllerSub* sub = &controller->subs[0];
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub *sub = &controller->subs[0];
     if (sub->connectionUserDatas[sub->localAid].playersAtConsole == 0)
         sub = &controller->subs[1];
 
@@ -62,7 +62,7 @@ void RoomKickPage::BeforeControlUpdate() {
                 this->miiIdx[idx] = aid * 2 + player;
                 this->aidIdx[idx] = aid;
 
-                LayoutUIControl& mii = this->miis[idx];
+                LayoutUIControl &mii = this->miis[idx];
 
                 mii.isHidden = false;
                 mii.SetMiiPane("chara", *this->miiGroup, this->miiIdx[idx], 2);
@@ -101,14 +101,14 @@ void RoomKickPage::BeforeControlUpdate() {
     }
 }
 
-UIControl* RoomKickPage::CreateControl(u32 id) {
+UIControl *RoomKickPage::CreateControl(u32 id) {
     const u32 count = this->controlCount;
     char variant[0x40];
     if (id < 12) {
         this->AddControl(count, this->miis[id], 0);
         snprintf(variant, 0x40, "KickMii%d", id);
 
-        const char* anims[] = {
+        const char *anims[] = {
             "State",
             "Offline",
             "Online",
@@ -129,7 +129,7 @@ UIControl* RoomKickPage::CreateControl(u32 id) {
     } else if (id == 12) {
         this->AddControl(count, this->name, 0);
         ControlLoader loader(&this->name);
-        const char* brctr = "TeamName";
+        const char *brctr = "TeamName";
         loader.Load(UI::controlFolder, brctr, brctr, nullptr);
 
         this->controlCount++;
@@ -147,15 +147,15 @@ int RoomKickPage::GetPlayerBitfield() const {
     return this->playerBitfield;
 }
 
-ManipulatorManager& RoomKickPage::GetManipulatorManager() {
+ManipulatorManager &RoomKickPage::GetManipulatorManager() {
     return this->controlsManipulatorManager;
 }
 
-UIControl* RoomKickPage::CreateExternalControl(u32 id) {
+UIControl *RoomKickPage::CreateExternalControl(u32 id) {
     return nullptr;
 }
 
-void RoomKickPage::SetButtonHandlers(PushButton& button) {
+void RoomKickPage::SetButtonHandlers(PushButton &button) {
     button.SetOnClickHandler(this->onButtonClickHandler, 0);
     button.SetOnSelectHandler(this->onButtonSelectHandler);
     button.SetOnDeselectHandler(this->onButtonDeselectHandler);
@@ -167,9 +167,9 @@ void RoomKickPage::OnBackPress(u32 hudSlotId) {
     this->EndStateAnimated(1, 0.0f);
 }
 
-void RoomKickPage::OnYesNoClick(u32 choice, PushButton& button) {
+void RoomKickPage::OnYesNoClick(u32 choice, PushButton &button) {
     if (choice == 0) {
-        DWC::NodeInfo* nodes = DWC::MatchControl::sInstance->nodes;
+        DWC::NodeInfo *nodes = DWC::MatchControl::sInstance->nodes;
         for (int i = 0; i < 32; ++i) {
             if (nodes[i].aid == this->aidIdx[this->selectedIdx]) {
                 this->kickedPIDs[this->kickedCount % 64] = nodes[i].pid;
@@ -186,14 +186,14 @@ void RoomKickPage::ClearKickHistory() {
     this->kickedCount = 0;
 }
 
-u32* RoomKickPage::GetKickHistory(u32& outCount) {
+u32 *RoomKickPage::GetKickHistory(u32 &outCount) {
     outCount = this->kickedCount;
     return this->kickedPIDs;
 }
 
-void RoomKickPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    RKNet::ControllerSub* sub = &controller->subs[controller->currentSub];
+void RoomKickPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub *sub = &controller->subs[controller->currentSub];
 
     this->nextPageId = PAGE_NONE;
     this->prevPageId = PAGE_FRIEND_ROOM;
@@ -201,7 +201,7 @@ void RoomKickPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
     const u32 btnIdx = button.buttonId;
     if (btnIdx < this->playerCount) {
         if (sub->localAid != this->aidIdx[btnIdx]) {
-            Pages::YesNoPopUp* msgBox = SectionMgr::sInstance->curSection->Get<Pages::YesNoPopUp>();
+            Pages::YesNoPopUp *msgBox = SectionMgr::sInstance->curSection->Get<Pages::YesNoPopUp>();
 
             Text::Info info;
             info.miis[0] = this->miiGroup->GetMii(this->miiIdx[this->selectedIdx]);
@@ -219,7 +219,7 @@ void RoomKickPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
     }
 }
 
-void RoomKickPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+void RoomKickPage::OnButtonSelect(PushButton &button, u32 hudSlotId) {
     const u32 btnIdx = button.buttonId;
     if (btnIdx < this->playerCount) {
         Text::Info info;

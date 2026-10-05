@@ -12,7 +12,7 @@ namespace detail {
 
 template <class T>
 class SoundInstanceManager {
-   public:
+public:
     MemoryPool<T> pool;
     ut::LinkList<T, offsetof(T, priorityLink)> priorityList;
     OS::Mutex mutex;  // 0x10

@@ -6,7 +6,7 @@
 namespace Pulsar {
 namespace Debug {
 
-void PopulateCrashExtra(ExceptionFile& exception);
+void PopulateCrashExtra(ExceptionFile &exception);
 
 }  // namespace Debug
 }  // namespace Pulsar

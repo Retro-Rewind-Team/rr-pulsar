@@ -7,7 +7,7 @@ namespace nw4r {
 namespace ef {
 
 class ReferencedObject : public LinkedObject {
-   public:
+public:
     enum LifeStatus {
         NW4R_EF_LS_CLOSED,
         NW4R_EF_LS_ACTIVE,

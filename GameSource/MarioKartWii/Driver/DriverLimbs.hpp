@@ -8,14 +8,14 @@ using namespace nw4r;
 class DriverController;
 
 class DriverCalcWorldCB : public ModelCalcBase, public EmptyModelCalcParent, public g3d::ICalcWorldCallback {
-   public:
+public:
     // vtable 808d2cf8 empty, 808d2d00 ICalcWorldCallback
-    DriverCalcWorldCB(ModelDirector* driverMdl, DriverController* controller);  // 807d9798
+    DriverCalcWorldCB(ModelDirector *driverMdl, DriverController *controller);  // 807d9798
     ~DriverCalcWorldCB() override;  // thunk 807d9b90 func 807d45e8
-    void ExecCallbackB(g3d::WorldMtxManip* manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj) override;  // thunk 807d9b88 func 807d99ec
-    void ExecCallbackC(math::MTX34* mat, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj) override;  // thunk 807d9b80 func 807d9b0c
+    void ExecCallbackB(g3d::WorldMtxManip *manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj) override;  // thunk 807d9b88 func 807d99ec
+    void ExecCallbackC(math::MTX34 *mat, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj) override;  // thunk 807d9b80 func 807d9b0c
 
-    DriverController* controller;  // 0x10
+    DriverController *controller;  // 0x10
     u8 unknown_0x14[4];
     Mtx34 kartTimesModelMtx;  // 0x18
     Mtx34 kartTimesModelMtx2;  // 0x48
@@ -26,18 +26,18 @@ class DriverCalcWorldCB : public ModelCalcBase, public EmptyModelCalcParent, pub
 };  // 0x84
 
 class DriverLimbs : public DriverCalcWorldCB {
-   public:
-    DriverLimbs(ModelDirector* driverMdl, DriverController* controller);  // 807d42e8
+public:
+    DriverLimbs(ModelDirector *driverMdl, DriverController *controller);  // 807d42e8
     // vtable 808d2c48 empty, 808d2c50 ICalcWorldCallback
     ~DriverLimbs() override;  // thunk 807d9764 func 807d9688
-    void ExecCallbackA(g3d::ChrAnmResult* result, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj);  // thunk 807d975c func 807d5760
-    void ExecCallbackB(g3d::WorldMtxManip* manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj) override;  // thunk 807d9754 func 807d5a98
-    void ExecCallbackC(math::MTX34* mat, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj) override;  // thunk 807d974c func 807d63e0
+    void ExecCallbackA(g3d::ChrAnmResult *result, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj);  // thunk 807d975c func 807d5760
+    void ExecCallbackB(g3d::WorldMtxManip *manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj) override;  // thunk 807d9754 func 807d5a98
+    void ExecCallbackC(math::MTX34 *mat, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj) override;  // thunk 807d974c func 807d63e0
 
-    void CalcLeftArm(g3d::WorldMtxManip* manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj);  // 807d69e8
-    void CalcRightArm(g3d::WorldMtxManip* manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj);  // 807d6b28
-    void CalcLeftLeg(g3d::WorldMtxManip* manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj);  // 807d6cac
-    void CalcRightLeg(g3d::WorldMtxManip* manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld* obj);  // 807d6f58
+    void CalcLeftArm(g3d::WorldMtxManip *manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj);  // 807d69e8
+    void CalcRightArm(g3d::WorldMtxManip *manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj);  // 807d6b28
+    void CalcLeftLeg(g3d::WorldMtxManip *manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj);  // 807d6cac
+    void CalcRightLeg(g3d::WorldMtxManip *manip, g3d::ResMdl mdl, g3d::FuncObjCalcWorld *obj);  // 807d6f58
 
     u8 unknown_0x84[0x90 - 0x84];
     u32 currentBone;  // 0x90
@@ -54,7 +54,7 @@ class DriverLimbs : public DriverCalcWorldCB {
     Mtx34 rightLegAttach;  // 0x204
 
     u32 unknown_0x234;
-    Ptmf_3A<DriverLimbs, void, g3d::WorldMtxManip, g3d::ResMdl, g3d::FuncObjCalcWorld>* limbCalcFuncs;  // 0x238 one func for each bone
+    Ptmf_3A<DriverLimbs, void, g3d::WorldMtxManip, g3d::ResMdl, g3d::FuncObjCalcWorld> *limbCalcFuncs;  // 0x238 one func for each bone
     u8 unknown_0x238[0x23f - 0x238];
     bool drawFrame;  // 0x23f
     u8 unknown_0x240[0x3f4 - 0x240];

@@ -59,7 +59,7 @@ struct CameraAnmResult {
 };
 
 class ResAnmCamera : public ResCommon<ResAnmCameraData> {
-    void GetAnmResult(CameraAnmResult* result, float frame) const;  // 80055fd0
+    void GetAnmResult(CameraAnmResult *result, float frame) const;  // 80055fd0
 };
 
 }  // namespace g3d

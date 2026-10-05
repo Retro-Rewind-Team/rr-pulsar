@@ -16,7 +16,7 @@ namespace Pulsar {
 namespace UI {
 
 class RoomKickPage : public Pages::MenuInteractable {
-   public:
+public:
     static const PulPageId id = PULPAGE_ROOMKICK;
 
     RoomKickPage();
@@ -27,25 +27,25 @@ class RoomKickPage : public Pages::MenuInteractable {
 
     int GetActivePlayerBitfield() const override;
     int GetPlayerBitfield() const override;
-    ManipulatorManager& GetManipulatorManager() override;
-    UIControl* CreateExternalControl(u32 id) override;
-    UIControl* CreateControl(u32 id) override;
-    void SetButtonHandlers(PushButton& button) override;
+    ManipulatorManager &GetManipulatorManager() override;
+    UIControl *CreateExternalControl(u32 id) override;
+    UIControl *CreateControl(u32 id) override;
+    void SetButtonHandlers(PushButton &button) override;
 
     void ClearKickHistory();
-    u32* GetKickHistory(u32& outCount);
+    u32 *GetKickHistory(u32 &outCount);
 
-   private:
+private:
     void OnBackPress(u32 hudSlotId);
-    void OnButtonClick(PushButton& button, u32 hudSlotId);
-    void OnButtonSelect(PushButton& button, u32 hudSlotId);
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId) {}
-    void OnYesNoClick(u32 choice, PushButton& button);
+    void OnButtonClick(PushButton &button, u32 hudSlotId);
+    void OnButtonSelect(PushButton &button, u32 hudSlotId);
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId) {}
+    void OnYesNoClick(u32 choice, PushButton &button);
 
     PushButton miis[12];
     MiiName name;
 
-    MiiGroup* miiGroup;
+    MiiGroup *miiGroup;
     int miiIdx[12];
     int aidIdx[12];
     int playerCount;
@@ -55,7 +55,7 @@ class RoomKickPage : public Pages::MenuInteractable {
     u32 kickedPIDs[64];
     u32 kickedCount;
 
-    PtmfHolder_2A<RoomKickPage, void, u32, PushButton&> onYesNoClickHandler;
+    PtmfHolder_2A<RoomKickPage, void, u32, PushButton &> onYesNoClickHandler;
 };
 
 }  // namespace UI

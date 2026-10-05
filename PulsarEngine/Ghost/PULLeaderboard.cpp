@@ -9,14 +9,14 @@ namespace Ghosts {
 typedef int (*FastStaffGhostUnlockFunc)(CourseId courseId);
 
 kmRuntimeUse(0x80550468);
-const FastStaffGhostUnlockFunc realIsFastStaffGhostUnlocked = reinterpret_cast<FastStaffGhostUnlockFunc>kmRuntimeAddr(0x80550468);
+const FastStaffGhostUnlockFunc realIsFastStaffGhostUnlocked = reinterpret_cast<FastStaffGhostUnlockFunc> kmRuntimeAddr(0x80550468);
 
-bool ResolveTrackFromCourseId(CourseId courseId, PulsarId& trackId, CourseId& realCourseId, u8& variantIdx) {
+bool ResolveTrackFromCourseId(CourseId courseId, PulsarId &trackId, CourseId &realCourseId, u8 &variantIdx) {
     trackId = static_cast<PulsarId>(courseId);
     realCourseId = courseId;
     variantIdx = 0;
 
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     if (cupsConfig != nullptr) {
         const PulsarId winning = cupsConfig->GetWinning();
         const CourseId winningSlot = cupsConfig->GetCorrectTrackSlot();
@@ -39,10 +39,10 @@ Leaderboard::Leaderboard() {
     for (int mode = 0; mode < 4; ++mode) this->hasTrophy[mode] = false;
 }
 
-Leaderboard::Leaderboard(const char* folderPath, PulsarId id, bool createNew) {
+Leaderboard::Leaderboard(const char *folderPath, PulsarId id, bool createNew) {
     char path[IOS::ipcMaxPath];
     snprintf(path, IOS::ipcMaxPath, filePathFormat, folderPath);
-    IO* io = IO::sInstance;
+    IO *io = IO::sInstance;
     s32 ret = io->OpenFile(path, FILE_MODE_READ_WRITE);
     if (ret) ret = io->Read(sizeof(Leaderboard), this);
 
@@ -58,7 +58,7 @@ Leaderboard::Leaderboard(const char* folderPath, PulsarId id, bool createNew) {
 void Leaderboard::CreateFile(PulsarId id) {
     char path[IOS::ipcMaxPath];
     snprintf(path, IOS::ipcMaxPath, filePathFormat, Mgr::folderPath);
-    IO* io = IO::sInstance;
+    IO *io = IO::sInstance;
     io->CreateAndOpen(path, FILE_MODE_READ_WRITE);
     alignas(0x20) Leaderboard tempCopy;
     tempCopy.SetTrack(id);
@@ -75,7 +75,7 @@ void Leaderboard::SetTrack(PulsarId id) {
 }
 
 // Get ldb position
-s32 Leaderboard::GetPosition(const Timer& other) const {
+s32 Leaderboard::GetPosition(const Timer &other) const {
     s32 position = -1;
     Timer timer;
     for (int i = ENTRY_10TH; i >= 0; i--) {
@@ -85,19 +85,19 @@ s32 Leaderboard::GetPosition(const Timer& other) const {
     return position;
 }
 
-s8 Leaderboard::GetRepeatCount(const RKG& rkg) const {
+s8 Leaderboard::GetRepeatCount(const RKG &rkg) const {
     const TTMode mode = System::sInstance->ttMode;
-    const RKGHeader& header = rkg.header;
+    const RKGHeader &header = rkg.header;
     s8 repeats = 0;
     for (int i = 0; i < 11; ++i) {
-        const PULLdbEntry& cur = this->entries[mode][i];
+        const PULLdbEntry &cur = this->entries[mode][i];
         if (cur.milliseconds == header.milliseconds && cur.seconds == header.seconds && cur.minutes == header.minutes) repeats++;
     }
     return repeats;
 }
 
 // updates the ldb with a new entry and a rkg crc32
-void Leaderboard::Update(u32 position, const RKSYS::LicenseLdbEntry& entry, u32 rkgCRC32) {
+void Leaderboard::Update(u32 position, const RKSYS::LicenseLdbEntry &entry, u32 rkgCRC32) {
     const TTMode mode = System::sInstance->ttMode;
     if (position != ENTRY_FLAP) {  // if 10 then flap
         for (int i = ENTRY_10TH; i > position; i--) memcpy(&this->entries[mode][i], &this->entries[mode][i - 1], sizeof(PULLdbEntry));
@@ -114,16 +114,16 @@ void Leaderboard::Update(u32 position, const RKSYS::LicenseLdbEntry& entry, u32 
 }
 
 // saves and writes to the file
-void Leaderboard::Save(const char* folderPath) {
+void Leaderboard::Save(const char *folderPath) {
     char path[IOS::ipcMaxPath];
     snprintf(path, IOS::ipcMaxPath, filePathFormat, folderPath);
-    IO* file = IO::sInstance;
+    IO *file = IO::sInstance;
     file->OpenFile(path, FILE_MODE_WRITE);
     file->Overwrite(sizeof(Leaderboard), this);
     file->Close();
 }
 
-void Leaderboard::EntryToTimer(Timer& dest, u8 id) const {
+void Leaderboard::EntryToTimer(Timer &dest, u8 id) const {
     TTMode mode = System::sInstance->ttMode;
     dest.minutes = this->entries[mode][id].minutes;
     dest.seconds = this->entries[mode][id].seconds;
@@ -131,7 +131,7 @@ void Leaderboard::EntryToTimer(Timer& dest, u8 id) const {
     dest.isActive = this->entries[mode][id].isActive;
 }
 
-void Leaderboard::EntryToGameEntry(RKSYS::LicenseLdbEntry& dest, u8 id) const {
+void Leaderboard::EntryToGameEntry(RKSYS::LicenseLdbEntry &dest, u8 id) const {
     this->EntryToTimer(dest.timer, id);
     TTMode mode = System::sInstance->ttMode;
     memcpy(&dest.miiData, &this->entries[mode][id].mii, sizeof(RFL::StoreData));
@@ -141,8 +141,8 @@ void Leaderboard::EntryToGameEntry(RKSYS::LicenseLdbEntry& dest, u8 id) const {
 }
 
 // PULEntry to LicenseLdbEntry
-const RKSYS::LicenseLdbEntry* Leaderboard::GetEntry(u32 index) {
-    Mgr* manager = Mgr::sInstance;
+const RKSYS::LicenseLdbEntry *Leaderboard::GetEntry(u32 index) {
+    Mgr *manager = Mgr::sInstance;
     manager->GetLeaderboard().EntryToGameEntry(manager->entry, index);
     return &manager->entry;
 }
@@ -169,7 +169,7 @@ int Leaderboard::ExpertBMGDisplay(CourseId courseId) {
 
     if (System::sInstance == nullptr || System::sInstance->heap == nullptr) return 1;
 
-    Mgr* manager = Mgr::sInstance;
+    Mgr *manager = Mgr::sInstance;
     if (manager == nullptr) {
         manager = new (System::sInstance->heap, 0x20) Mgr;
         Mgr::sInstance = manager;
@@ -181,7 +181,7 @@ int Leaderboard::ExpertBMGDisplay(CourseId courseId) {
 
     Timer bestTime;
     manager->GetLeaderboard().EntryToTimer(bestTime, ENTRY_1ST);
-    const Timer& expert = manager->GetExpert();
+    const Timer &expert = manager->GetExpert();
     if (expert.isActive && bestTime.isActive && expert > bestTime) return 2;
     return 1;
 }
@@ -195,7 +195,7 @@ kmCall(0x8085dc0c, Leaderboard::ExpertBMGDisplay);
 kmWrite32(0x8085dc10, 0x38000002);
 
 void Leaderboard::SetFavGhost(u32 fileIdx, TTMode mode, bool add) {
-    char* dest = &this->favGhost[mode][0];
+    char *dest = &this->favGhost[mode][0];
     dest[0] = '\0';
     if (add) strncpy(dest, Mgr::GetGhostFileName(fileIdx), IOS::ipcMaxFileName);
 }

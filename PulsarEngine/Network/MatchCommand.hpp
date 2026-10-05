@@ -17,6 +17,7 @@ struct ResvInfo {
         u32 info[4];
     };
     ResvInfo() {
+        memset(modFolderName, 0, sizeof(modFolderName));
         padding[0] = 0;
         padding[1] = 0;
     }
@@ -29,7 +30,7 @@ struct ResvInfo {
 static_assert(sizeof(ResvInfo) == 0x24, "ResvInfo size");
 
 struct ResvPacket : DWC::Reservation {
-    ResvPacket(const DWC::Reservation& src);
+    ResvPacket(const DWC::Reservation &src);
     ResvInfo pulInfo;
 };
 static_assert(sizeof(ResvPacket) == 0x48, "ResvPacket size");

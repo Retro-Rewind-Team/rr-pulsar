@@ -11,7 +11,7 @@ struct SimpleAddress {
     u16 longitude;
 };  // 0x1008
 // size_assert(SimpleAddress, 0x1008);
-BOOL GetSimpleAddressData(SimpleAddress* pData);  // 801b2074
+BOOL GetSimpleAddressData(SimpleAddress *pData);  // 801b2074
 
 }  // namespace SC
 

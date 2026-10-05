@@ -3,7 +3,7 @@
 #include <kamek.hpp>
 
 class Rating {
-   public:
+public:
     Rating();  // 805444d0
     virtual ~Rating();  // 8052da10 vtable 808b32a0
     void AddPoints(u16 points);  // 8052d270

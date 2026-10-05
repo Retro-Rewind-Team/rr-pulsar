@@ -20,34 +20,34 @@ void LexMgr::Reset() {
     this->hiptLength = 0;
 }
 
-const KMPHeader* LexMgr::LoadLEXAndKMP(u32, const char* kmpString) {
-    Pulsar::System* system = Pulsar::System::sInstance;
+const KMPHeader *LexMgr::LoadLEXAndKMP(u32, const char *kmpString) {
+    Pulsar::System *system = Pulsar::System::sInstance;
     Pulsar::Race::ResetConditionalObjectsTrackState();
     Pulsar::Race::ResetConditionalRouteGroupsState();
 
-    LexMgr& self = system->lecodeMgr.lexMgr;
+    LexMgr &self = system->lecodeMgr.lexMgr;
     self.Reset();
     if (system->IsContext(Pulsar::PULSAR_CT)) {
-        LEXHeader* header = static_cast<LEXHeader*>(ArchiveMgr::sInstance->GetFile(ARCHIVE_HOLDER_COURSE, "course.lex"));
+        LEXHeader *header = static_cast<LEXHeader *>(ArchiveMgr::sInstance->GetFile(ARCHIVE_HOLDER_COURSE, "course.lex"));
         if (header != nullptr) {
             if (header->magic == LEXHeader::goodMagic && header->majorVersion == 1) {
-                LEXSectionHeader* section = reinterpret_cast<LEXSectionHeader*>(reinterpret_cast<u8*>(header) + header->offsetToFirstSection);
+                LEXSectionHeader *section = reinterpret_cast<LEXSectionHeader *>(reinterpret_cast<u8 *>(header) + header->offsetToFirstSection);
                 while (section->magic != 0) {
-                    u8* data = reinterpret_cast<u8*>(section) + sizeof(LEXSectionHeader);
+                    u8 *data = reinterpret_cast<u8 *>(section) + sizeof(LEXSectionHeader);
                     switch (section->magic) {
                         case SET1::magic:
-                            self.set1 = reinterpret_cast<SET1*>(section);
+                            self.set1 = reinterpret_cast<SET1 *>(section);
                             break;
                         case HIPT::magic:
-                            self.hiptList = reinterpret_cast<HIPT::List*>(data);
+                            self.hiptList = reinterpret_cast<HIPT::List *>(data);
                             self.hiptLength = section->dataSize / sizeof(HIPT::List);
                             break;
                         case CANN::magic:
-                            self.cann = reinterpret_cast<Kart::Movement::CannonParams*>(data + sizeof(u32));
+                            self.cann = reinterpret_cast<Kart::Movement::CannonParams *>(data + sizeof(u32));
                             break;
                         default:
                     }
-                    section = reinterpret_cast<LEXSectionHeader*>(data + section->dataSize);
+                    section = reinterpret_cast<LEXSectionHeader *>(data + section->dataSize);
                 }
             }
         }
@@ -57,22 +57,22 @@ const KMPHeader* LexMgr::LoadLEXAndKMP(u32, const char* kmpString) {
 }
 kmCall(0x80512820, LexMgr::LoadLEXAndKMP);
 
-bool ApplyHIPT(CtrlRaceRankNum& tracker) {  // return value: if true, tracker is hidden
+bool ApplyHIPT(CtrlRaceRankNum &tracker) {  // return value: if true, tracker is hidden
     bool isInactive = tracker.CtrlRaceRankNum::IsInactive();
     if (!isInactive) {
         const u8 playerId = tracker.GetPlayerId();
-        const LexMgr& mgr = Pulsar::System::sInstance->lecodeMgr.lexMgr;
-        const HIPT::List* list = mgr.hiptList;
+        const LexMgr &mgr = Pulsar::System::sInstance->lecodeMgr.lexMgr;
+        const HIPT::List *list = mgr.hiptList;
         if (list != nullptr) {
-            const RacedataSettings& settings = Racedata::sInstance->racesScenario.settings;
-            const RaceinfoPlayer* player = Raceinfo::sInstance->players[playerId];
+            const RacedataSettings &settings = Racedata::sInstance->racesScenario.settings;
+            const RaceinfoPlayer *player = Raceinfo::sInstance->players[playerId];
             const GameMode mode = settings.gamemode;
             const u8 lapCount = settings.lapCount;
             const u16 curLap = player->currentLap;
             const u16 curCP = player->checkpoint;  // check if applies to CP
 
             for (int i = 0; i < mgr.hiptLength; ++i) {
-                const HIPT::List& cur = list[i];
+                const HIPT::List &cur = list[i];
                 bool appliesToMode = false;
                 switch (cur.contextCondition) {
                     case 1:  // offline only
@@ -105,10 +105,10 @@ bool ApplyHIPT(CtrlRaceRankNum& tracker) {  // return value: if true, tracker is
 }
 kmWritePointer(0x808D3EE0, ApplyHIPT);  // Vtable of CtrlRaceRankNum::IsInactive
 
-Kart::Movement::CannonParams* ApplyCANN(Kart::Movement::CannonParams* cannonPtr, const CNPT& rawCNPT) {
+Kart::Movement::CannonParams *ApplyCANN(Kart::Movement::CannonParams *cannonPtr, const CNPT &rawCNPT) {
     s16 type = rawCNPT.type;
     if (type < 0) type = 0;
-    Kart::Movement::CannonParams* lexCann = Pulsar::System::sInstance->lecodeMgr.lexMgr.cann;
+    Kart::Movement::CannonParams *lexCann = Pulsar::System::sInstance->lecodeMgr.lexMgr.cann;
     if (lexCann != nullptr) cannonPtr = lexCann;
     return &cannonPtr[type];
 }
@@ -116,14 +116,14 @@ kmCall(0x805850b8, ApplyCANN);
 kmWrite32(0x805850bc, 0x60000000);
 
 // If extracting, position will be obj->position, if filling, position will be a copy of obj->position which may have been divided by the SET1 factors
-void* ModifyItemPos(s16* packet) {
-    register Item::Obj* obj;
+void *ModifyItemPos(s16 *packet) {
+    register Item::Obj *obj;
     asm(mr obj, r29;);
     register bool extractOrFill;
     asm(mr extractOrFill, r30);
 
-    SET1* set = Pulsar::System::sInstance->lecodeMgr.lexMgr.set1;
-    Vec3* position = reinterpret_cast<Vec3*>(obj != nullptr ? &obj->position : nullptr);
+    SET1 *set = Pulsar::System::sInstance->lecodeMgr.lexMgr.set1;
+    Vec3 *position = reinterpret_cast<Vec3 *>(obj != nullptr ? &obj->position : nullptr);
     if (obj != nullptr && set != nullptr) {
         Vec3 copy = *position;
         if (extractOrFill) {
@@ -133,7 +133,7 @@ void* ModifyItemPos(s16* packet) {
             position = &copy;  // do NOT modify position itself as this is a fill operation
         }
     }  //-4 because +4 is added after the exitPoint
-    void* ret = reinterpret_cast<u8*>(Item::EVENTBuffer::FillOrExtractShootPos(reinterpret_cast<s16*>(reinterpret_cast<u8*>(packet) + 0x4), position, extractOrFill)) - 4;
+    void *ret = reinterpret_cast<u8 *>(Item::EVENTBuffer::FillOrExtractShootPos(reinterpret_cast<s16 *>(reinterpret_cast<u8 *>(packet) + 0x4), position, extractOrFill)) - 4;
     if (obj != nullptr && set != nullptr && !extractOrFill) {  // position guaranteed to have been edited by the func call since we're extracting
         position->x *= set->itemPosFactor.x;
         position->y *= set->itemPosFactor.y;

@@ -12,7 +12,7 @@ Melg
 
 namespace Pages {
 class Empty : public Page {
-   public:
+public:
     Empty();  // 805c9774
     ~Empty() override;  // 805c97b8 vtable 808b81b8
     void OnInit() override;  // 805c9820

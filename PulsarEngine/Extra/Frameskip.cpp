@@ -1,4 +1,4 @@
-﻿#include <RetroRewind.hpp>
+#include <RetroRewind.hpp>
 #include <include/c_string.h>
 #include <MarioKartWii/3D/GameScreenEffects/GameScreenEffects.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
@@ -53,14 +53,14 @@ asmFunc GetFrameskip1() {
 }
 kmCall(0x80562AD0, GetFrameskip1);
 
-extern "C" void isTT__9DriverMgr(void*);
-extern "C" void DisableInterrupts__2OSFv(void*);
-extern "C" void RestoreInterrupts__2OSFi(void*);
-extern "C" void GetTime__2OSFv(void*);
-extern "C" void sInstance__Q25RKNet9PacketMgr(void*);
-extern "C" void sInstance__8Racedata(void*);
-extern "C" void GXDrawDone(void*);
-extern "C" void beginFrame(void*);
+extern "C" void isTT__9DriverMgr(void *);
+extern "C" void DisableInterrupts__2OSFv(void *);
+extern "C" void RestoreInterrupts__2OSFi(void *);
+extern "C" void GetTime__2OSFv(void *);
+extern "C" void sInstance__Q25RKNet9PacketMgr(void *);
+extern "C" void sInstance__8Racedata(void *);
+extern "C" void GXDrawDone(void *);
+extern "C" void beginFrame(void *);
 asmFunc GetFrameskip2() {
     ASM(
         nofralloc;
@@ -348,28 +348,32 @@ kmWrite32(0x80001614, 0x000F7709);
 kmWrite32(0x80001634, 0x00000006);
 
 static void ResetFrameskipState() {
-    *(u32*)0x80001638 = 0;
+    *(u32 *)0x80001638 = 0;
 }
 static SectionLoadHook ResetFrameskipHook(ResetFrameskipState);
 
-static bool IsNoLightningFlashTrack(const Pulsar::CupsConfig& cupsConfig) {
+static bool IsNoLightningFlashTrack(const Pulsar::CupsConfig &cupsConfig) {
     const Pulsar::PulsarId pulsarId = cupsConfig.GetWinning();
     if (Pulsar::CupsConfig::IsReg(pulsarId)) return false;
 
     const u8 variantIdx = cupsConfig.GetCurVariantIdx();
-    const char* fileName = cupsConfig.GetFileName(pulsarId, variantIdx);
+    const char *fileName = cupsConfig.GetFileName(pulsarId, variantIdx);
     if (fileName == nullptr || fileName[0] == '\0') fileName = cupsConfig.GetFileName(pulsarId, 0);
     if (fileName == nullptr) return false;
 
-    return strcmp(fileName, "sw2WS") == 0 || strcmp(fileName, "117") == 0;
+    return strcmp(fileName, "sw2WS") == 0 || strcmp(fileName, "sw2MBC") == 0 || strcmp(fileName, "117") == 0;
 }
 
-static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr* mgr) {
-    const Pulsar::CupsConfig* cupsConfig = Pulsar::CupsConfig::sInstance;
-    const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr *mgr) {
+    const Pulsar::CupsConfig *cupsConfig = Pulsar::CupsConfig::sInstance;
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const u32 localPlayerCount = scenario.localPlayerCount;
     const bool isNoLightningFlashTrack = IsNoLightningFlashTrack(*cupsConfig);
-    if (*(u32*)0x80001638 >= 8 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack || localPlayerCount > 1) {
+    const bool isNoLightningFlashSetting =
+        Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LIGHTNINGFLASH) ==
+        Pulsar::LIGHTNING_FLASH_DISABLED;
+    if (*(u32 *)0x80001638 >= 8 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack ||
+        isNoLightningFlashSetting || localPlayerCount > 1) {
         return;
     }
     mgr->Update();

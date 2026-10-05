@@ -7,7 +7,7 @@
 namespace DWC {  // this is C, but don't care
 
 extern u32 authServer;  // 80386338
-extern const char* authServerHosts[3];  // 8027a474
+extern const char *authServerHosts[3];  // 8027a474
 
 }  // namespace DWC
 

@@ -7,7 +7,7 @@
 namespace DWC {  // this is C, but don't care
 
 typedef void (*UserSendCallback)(int size, u8 aid);
-typedef void (*UserRecvCallback)(u8 aid, u8* buffer, int size);
+typedef void (*UserRecvCallback)(u8 aid, u8 *buffer, int size);
 typedef void (*UserRecvTimeoutCallback)(u8 aid);
 typedef void (*UserPingCallback)(int latency, u8 aid);
 
@@ -29,8 +29,8 @@ enum SendStatus {
 };
 
 struct TransportConnection {
-    const u8* sendBuffer;
-    u8* recvBuffer;  // 0x4 RACEPacket
+    const u8 *sendBuffer;
+    u8 *recvBuffer;  // 0x4 RACEPacket
     int recvBufferSize;  // 0x8
     int sendingSize;  // 0xc  Size of data being sent
     int recvingSize;  // 0x10 Size of data being received
@@ -46,7 +46,7 @@ struct TransportConnection {
 };  // 0x2c
 
 struct TransportInfo {
-    static TransportInfo* sInstance;  // 80386318
+    static TransportInfo *sInstance;  // 80386318
 
     TransportConnection connections[32];  // Data used to manage each connection
 
@@ -62,11 +62,11 @@ struct TransportInfo {
 
 };  // 0x818
 
-BOOL SetRecvBuffer(u8 aid, void* recvBuffer, int size);  // 800e8750
-void iInitTransport(TransportInfo* info);  // 800e87c8
-void iRecvCallback(GT2::Connection* connection, GT2::Byte* message, int size, GT2::Bool reliable);  // 800e8814
-void iPingCallback(GT2::Connection* connection, int latency);  // 800e88f8
-BOOL SendUnreliable(u8 aid, const void* buffer, int size);  // 800e8654
+BOOL SetRecvBuffer(u8 aid, void *recvBuffer, int size);  // 800e8750
+void iInitTransport(TransportInfo *info);  // 800e87c8
+void iRecvCallback(GT2::Connection *connection, GT2::Byte *message, int size, GT2::Bool reliable);  // 800e8814
+void iPingCallback(GT2::Connection *connection, int latency);  // 800e88f8
+BOOL SendUnreliable(u8 aid, const void *buffer, int size);  // 800e8654
 }  // namespace DWC
 
 #endif

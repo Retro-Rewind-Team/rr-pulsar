@@ -19,7 +19,7 @@ class FriendCodesController {
     virtual void TrySaveMgrToRKSYS();  // 805d32b8 checks bool at 0x8 and if FriendMgr is ready
     virtual void ResetMgrKeys();  // 0x10 805d3450 calls RKNet::FriendMgr::SetKeysForUnusedIdxs with keys == nullptr
     virtual void SaveMgrToRKSYS();  // 0x14 805d331c
-    FriendList* friendList;
+    FriendList *friendList;
     bool hasNewData;  // 0x8
     u8 unknown_0x9[0x10 - 0x9];
     u64 friendCodes[30];  // 0x10
@@ -33,7 +33,7 @@ class FriendReceiver {  // receives data (mii) of a friend that was added (until
     virtual void vf_0x10();  // 0x10 805d376c
     virtual void SaveToRKSYS();  // 0x14 805d36bc
 
-    FriendList* friendList;
+    FriendList *friendList;
     bool hasNewData;  // 0x8
     u8 unknown_0x9[0x10 - 0x9];
     RFL::StoreData rawMii;  // 0x10
@@ -67,11 +67,11 @@ class FriendList {
     void Update();  // 805d2264
 
     int GetFriendCount() const;  // 805d24c0
-    u32 AddFriend(const u64& friendCode);  // 805d255c returns idx of new friend
+    u32 AddFriend(const u64 &friendCode);  // 805d255c returns idx of new friend
     void RemoveFriend(u32 idx);  // 805d2700
-    u32 GetFriendIdx(const u64& friendCode);  // 805d2778
-    const FriendListEntry* GetFriendEntry(u32 idx) const;  // 805d2874
-    const Friend* GetFriend(u32 idx) const;  // 805d2890
+    u32 GetFriendIdx(const u64 &friendCode);  // 805d2778
+    const FriendListEntry *GetFriendEntry(u32 idx) const;  // 805d2874
+    const Friend *GetFriend(u32 idx) const;  // 805d2890
     u32 GetFriendStatus(u32 idx) const;  // 805d28c8 returns -1 if not friend, 0 if slot open, friendStatus otherwise
     bool IsFriendStatusLessThan25(u32 idx) const;  // 805d2900
 

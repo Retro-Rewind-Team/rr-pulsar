@@ -11,19 +11,19 @@
 namespace RKNet {
 
 class PacketMgr {
-   public:
-    static PacketMgr* sInstance;  // 809c1f50
-    static PacketMgr* CreateInstance();  // 80653208
+public:
+    static PacketMgr *sInstance;  // 809c1f50
+    static PacketMgr *CreateInstance();  // 80653208
     static void DestroyInstance();  // 80653284
     PacketMgr();  // 80653df4
     ~PacketMgr();  // 80653ecc
     void Reset();  // 806532d8
     void Update();  // 80653728
 
-    void ExportRACEDATA(RACEDATAPacket& racedataPacket);  // 80653960
-    RACEDATAPacket& GetRACEDATA(u8 playerId);  // 80653abc
-    void ExportRH2(RACEHEADER2Packet& rh2Packet);  // 80653c08
-    RACEHEADER2Packet& GetRH2(u8 playerId);  // 80653cb8
+    void ExportRACEDATA(RACEDATAPacket &racedataPacket);  // 80653960
+    RACEDATAPacket &GetRACEDATA(u8 playerId);  // 80653abc
+    void ExportRH2(RACEHEADER2Packet &rh2Packet);  // 80653c08
+    RACEHEADER2Packet &GetRH2(u8 playerId);  // 80653cb8
     void ClearSentRACEDATA();  // 80653d14
     void ClearSentRH2();  // 80653d78
 
@@ -38,7 +38,7 @@ class PacketMgr {
     void SetPlayerITEMItem(u8 playerId, ItemId itemId);  // 8065471c
     bool IsITEMItemNew() const;  // 80654734
     ItemId GetITEMStoredItem(u8 playerId) const;  // 80654740
-    void AddEVENTEntry(ItemObjId itemObjId, EVENTAction action, void* data, u32 dataLength);  // 8065474c creator
+    void AddEVENTEntry(ItemObjId itemObjId, EVENTAction action, void *data, u32 dataLength);  // 8065474c creator
     bool HasFreeEVENTEntries() const;  // 80654758
     int GetFreeEVENTEntriesCount() const;  // 80654764
     int GetEVENTFreeDataSpace() const;  // 80654810

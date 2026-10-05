@@ -62,23 +62,23 @@ struct FriendUpdate {
 };
 
 // char* statusData = GameSpy status, handled by the game itself, in mkwii, RKNet::StatusData
-BOOL IsBuddyFriendData(const AccFriendData* frienddata);  // 800eb870
-u8 GetFriendStatusData(const AccFriendData* friendData, char* statusData, int* size);  // 800ce190
-void CreateUserData(AccUserData* userdata, u32 gamecode);  // 800ebf9c
-BOOL CheckUserData(const AccUserData* userdata);  // 800ebfd4
-BOOL CheckDirtyFlag(const AccUserData* userdata);  // 800ec314
-void ClearDirtyFlag(AccUserData* userdata);  // 800ec320
+BOOL IsBuddyFriendData(const AccFriendData *frienddata);  // 800eb870
+u8 GetFriendStatusData(const AccFriendData *friendData, char *statusData, int *size);  // 800ce190
+void CreateUserData(AccUserData *userdata, u32 gamecode);  // 800ebf9c
+BOOL CheckUserData(const AccUserData *userdata);  // 800ebfd4
+BOOL CheckDirtyFlag(const AccUserData *userdata);  // 800ec314
+void ClearDirtyFlag(AccUserData *userdata);  // 800ec320
 
-u64 CreateFriendKey(const AccUserData* userData);  // 800ec6bc creates a friend code from userdata
-BOOL CheckFriendKey(const AccUserData* userdata, u64 friendkey);  // 800eb8d8
-void CreateFriendKeyToken(AccFriendData* dest, u32 unused, u64 friendCode);  // 800ec764
-BOOL IsEqualFriendData(const AccFriendData* lhs, const AccFriendData* rhs);  // 800ec9cc
-BOOL SetOwnStatusData(const char* statusData, u32 size);  // 800ce24c
-BOOL CheckHasProfile(const AccUserData* userdata);  // 800ec150 has created a PID
+u64 CreateFriendKey(const AccUserData *userData);  // 800ec6bc creates a friend code from userdata
+BOOL CheckFriendKey(const AccUserData *userdata, u64 friendkey);  // 800eb8d8
+void CreateFriendKeyToken(AccFriendData *dest, u32 unused, u64 friendCode);  // 800ec764
+BOOL IsEqualFriendData(const AccFriendData *lhs, const AccFriendData *rhs);  // 800ec9cc
+BOOL SetOwnStatusData(const char *statusData, u32 size);  // 800ce24c
+BOOL CheckHasProfile(const AccUserData *userdata);  // 800ec150 has created a PID
 
-BOOL IsValidFriendData(const AccFriendData* frienddata);  // 800ebf84
+BOOL IsValidFriendData(const AccFriendData *frienddata);  // 800ebf84
 
-int GetGsProfileId(const AccUserData* userdata, const AccFriendData* frienddata);  // 800ec498
+int GetGsProfileId(const AccUserData *userdata, const AccFriendData *frienddata);  // 800ec498
 }  // namespace DWC
 
 #endif

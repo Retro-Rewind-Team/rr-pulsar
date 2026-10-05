@@ -7,7 +7,7 @@ namespace nw4r {
 namespace ef {
 
 struct TextureData {
-    char* name;
+    char *name;
     u16 width;
     u16 height;
     u32 dataSize;  // If changed, this will be corrupted when relocated. Cannot be changed or referenced.
@@ -20,13 +20,13 @@ struct TextureData {
     u8 mag_filt;
     u8 reserved[1];
     float lod_bias;
-    u8* texture;
-    u8* tlut;
+    u8 *texture;
+    u8 *tlut;
     u8 reserved2[28];
 };
 
 class ResTexture {
-    TextureData* textureData;
+    TextureData *textureData;
 };
 
 }  // namespace ef

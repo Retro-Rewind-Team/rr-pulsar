@@ -3,7 +3,7 @@
 #include <kamek.hpp>
 
 class DriverDispParam {  // https://wiki.tockdom.com/wiki/DriverDispParam.bin
-   public:
+public:
     struct Entry {
         u32 unused[2];
         Vec2 coinStackYZOffset;

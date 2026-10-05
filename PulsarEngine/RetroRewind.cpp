@@ -1,4 +1,5 @@
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <Race/200ccParams.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/Settings.hpp>
@@ -8,17 +9,14 @@
 #include <MarioKartWii/Objects/Collidable/Itembox/Itembox.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
+#include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/rvl/OS/OS.hpp>
 
 namespace RetroRewind {
-Pulsar::System* System::Create() {
+Pulsar::System *System::Create() {
     return new System();  // now Pulsar::sInstance is of type RetroRewind
 }
 Pulsar::System::Inherit CreateRetroRewind(System::Create);
-
-bool System::Is500cc() {
-    return Racedata::sInstance->racesScenario.settings.engineClass == CC_50;
-}
 
 System::WeightClass System::GetWeightClass(const CharacterId id) {
     switch (id) {
@@ -54,28 +52,20 @@ System::WeightClass System::GetWeightClass(const CharacterId id) {
     }
 }
 
-// Force 30 FPS [Vabold]
-kmWrite32(0x80554224, 0x3C808000);
-kmWrite32(0x80554228, 0x88841204);
-kmWrite32(0x8055422C, 0x48000044);
-
-static bool IsTTMode(const GameMode mode) {
-    return mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE;
-}
-
 void FPSPatch() {
-    FPSPatchHook = 0x00;
-    const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_RACE2, Pulsar::RADIO_FPS) == Pulsar::FPS_HALF &&
-        !IsTTMode(mode)) {
-        FPSPatchHook = 0x00FF0100;
+    GameScene *scene = const_cast<GameScene *>(GameScene::GetCurrent());
+    bool use30FPS = Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FPS) == Pulsar::FPS_HALF;
+    if (use30FPS && scene->id == SCENE_ID_RACE) {
+        const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
+        if (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE) use30FPS = false;
     }
+    scene->SetFramerate(use30FPS ? 1 : 0);
 }
 static SectionLoadHook PatchFPS(FPSPatch);
 static RaceLoadHook PatchFPSOnRaceLoad(FPSPatch);
 
-void ItemBoxRespawn(Objects::Itembox* itembox) {
-    bool is200 = Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW;
+void ItemBoxRespawn(Objects::Itembox *itembox) {
+    const bool is200 = Pulsar::Race::Is200cc();
     bool isFastRespawn = Pulsar::ITEMBOX_DEFAULTRESPAWN;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
         isFastRespawn = Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMBOXRESPAWN) ? Pulsar::ITEMBOX_FASTRESPAWN : Pulsar::ITEMBOX_DEFAULTRESPAWN;
@@ -91,16 +81,16 @@ kmCall(0x80828EDC, ItemBoxRespawn);
 
 void PredictionPatch() {
     float predictionValue = 0.1f;
-    if (Pulsar::Settings::Mgr::Get().GetUserSettingValue(Pulsar::Settings::SETTINGSTYPE_ONLINE, Pulsar::RADIO_PREDICTIONREMOVAL) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
+    if (Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_PREDICTIONREMOVAL) == Pulsar::PREDICTIONREMOVAL_ENABLED) {
         predictionValue = 1.0f;
     }
-    PredictionHook = *reinterpret_cast<u32*>(&predictionValue);
+    PredictionHook = *reinterpret_cast<u32 *>(&predictionValue);
 }
 static SectionLoadHook PatchPrediction(PredictionPatch);
 
 // Clear contexts from worldwides upon disconnecting from WFC. [Opt]
 static void ClearContextsUponWFCDisconnect() {
-    Pulsar::System* system = Pulsar::System::sInstance;
+    Pulsar::System *system = Pulsar::System::sInstance;
     SectionId id = SectionMgr::sInstance->curSection->sectionId;
 
     // Single-player menu
@@ -110,8 +100,16 @@ static void ClearContextsUponWFCDisconnect() {
     const bool isLocalMultiplayerMenu = (id == SECTION_LOCAL_MULTIPLAYER);
 
     if (isSinglePlayerMenu || isLocalMultiplayerMenu) {
-        // Reset OTT context the same way StartWW does
         system->context = 0;
+        system->context2 = 0;
+        system->netMgr.hostContext = 0;
+        system->netMgr.hostContext2 = 0;
+        system->netMgr.hostCustomEngineClass = 0;
+        system->netMgr.characterRestrictionMask = Pulsar::Restrictions::ALL_CHARACTERS;
+        for (u32 weight = 0; weight < Pulsar::Restrictions::VEHICLE_WEIGHT_COUNT; ++weight) {
+            system->netMgr.vehicleRestrictionMasks[weight] = Pulsar::Restrictions::ALL_VEHICLES;
+        }
+        system->netMgr.hasHostSettingsPreview = false;
         system->UpdateContext();
     }
 }

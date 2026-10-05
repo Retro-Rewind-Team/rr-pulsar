@@ -9,7 +9,7 @@ namespace Item {
 class Player;
 
 class PlayerObj : public Kart::Link {  // most of the values are only updated when an item is used or tethered
-   public:
+public:
     enum UseType {
         ONLY_USE,  // mushroom
 
@@ -24,7 +24,7 @@ class PlayerObj : public Kart::Link {  // most of the values are only updated wh
     static Ptmf_0A<PlayerObj, void> UpdateHandlers[5];  // 808d1900, one per use type
     PlayerObj();  // 80791760
     ~PlayerObj();  // 8079765c
-    void Init(Player* itemPlayer);  // 80791840
+    void Init(Player *itemPlayer);  // 80791840
 
     void TrailPrepare();  // 80792b08
     void TripleTrailPrepare();  // 807931dc
@@ -44,15 +44,15 @@ class PlayerObj : public Kart::Link {  // most of the values are only updated wh
     bool UpdateParams();  // 80791e5c positions, matrixes etc... returns true if scale was changed
 
     void ComputeWheelPosRelativeToKart();  // 807955c4
-    float CalcInitialObjSpeedAndDir(PlayerObj& playerObj, bool r4, Vec3& directionDest);  // 80794e88
+    float CalcInitialObjSpeedAndDir(PlayerObj &playerObj, bool r4, Vec3 &directionDest);  // 80794e88
 
-    Player* itemPlayer;  // 0xC
+    Player *itemPlayer;  // 0xC
     u8 playerId;  // 0x10
     u8 padding[3];
     ItemObjId itemObjId;  // 0x14 seems to only change for items you can hold "behind" (including triple shells)
     ItemId itemId;  // same 0x18
     u32 useType;  // 0x1c 0x0 if can only be used (mushroom eg) 0x1 if trailing behind 0x2 if trailing behind triples, 0x3 if spinning, 0x4 if no item
-    ItemObj* usedObjs[3];  // 0x20 stored by ObjHolder::Spawn
+    ItemObj *usedObjs[3];  // 0x20 stored by ObjHolder::Spawn
 
     Vec3 unknown_vecs0x2c[3];  // 0x2c
 
@@ -82,7 +82,7 @@ class PlayerObj : public Kart::Link {  // most of the values are only updated wh
 
     u8 unknown_0x120[0x148 - 0x120];
 
-    void* unknown_0x148[2];  // 0x148
+    void *unknown_0x148[2];  // 0x148
     u8 unknown_0x150[4];
     bool isNotDragged;  // 0x154
     u8 unknown_0x155[0x174 - 0x155];

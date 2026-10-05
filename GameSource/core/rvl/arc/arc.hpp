@@ -26,48 +26,48 @@ struct Node {
 };  // total size 0xc
 
 struct Handle {
-    Header* header;
-    Node* nodes;
-    void* rawFile;
+    Header *header;
+    Node *nodes;
+    void *rawFile;
     u32 entryNum;
-    char* fstStringPtr;
+    char *fstStringPtr;
     u32 fstSize;
     u32 curDir;
 };  // total size 0x1c
 
 struct FileInfo {
-    Handle* handle;
+    Handle *handle;
     u32 startOffset;
     u32 length;
 };
 
 struct Dir {
-    Handle* handle;
+    Handle *handle;
     u32 entryNum;
     u32 location;
     u32 next;
 };
 
 struct DirEntry {
-    Handle* handle;
+    Handle *handle;
     u32 entryNum;
     BOOL isDir;
-    char* name;
+    char *name;
 };
 
-BOOL InitHandle(void* Start, Handle* handle);  // 80124500
-BOOL Open(Handle* handle, const char* fileName, FileInfo* fileInfo);  // 801245a0
-BOOL FastOpen(Handle* handle, s32 entrynum, FileInfo* fileInfo);  // 80124844
-s32 ConvertPathToEntrynum(Handle* handle, const char* pathPtr);  // 80124894
-BOOL EntrynumIsDir(const Handle* handle, s32 entrynum);  // 80124af8
-void* GetStartAddrInMem(FileInfo* fileInfo);  // 80124cc0
-u32 GetStartOffset(FileInfo* fileInfo);  // 80124cd4
-u32 GetLength(FileInfo* fileInfo);  // 80124cdc
-BOOL Close(FileInfo* fileInfo);  // 80124ce4
-BOOL ChangeDir(Handle* handle, const char* dirName);  // 80124cec
-BOOL OpenDir(Handle* handle, const char* dirName, Dir* dir);  // 80124d44
-BOOL ReadDir(Dir* dir, DirEntry* dirent);  // 80124dc0
-BOOL CloseDir(Dir* dir);  // 80124e78
+BOOL InitHandle(void *Start, Handle *handle);  // 80124500
+BOOL Open(Handle *handle, const char *fileName, FileInfo *fileInfo);  // 801245a0
+BOOL FastOpen(Handle *handle, s32 entrynum, FileInfo *fileInfo);  // 80124844
+s32 ConvertPathToEntrynum(Handle *handle, const char *pathPtr);  // 80124894
+BOOL EntrynumIsDir(const Handle *handle, s32 entrynum);  // 80124af8
+void *GetStartAddrInMem(FileInfo *fileInfo);  // 80124cc0
+u32 GetStartOffset(FileInfo *fileInfo);  // 80124cd4
+u32 GetLength(FileInfo *fileInfo);  // 80124cdc
+BOOL Close(FileInfo *fileInfo);  // 80124ce4
+BOOL ChangeDir(Handle *handle, const char *dirName);  // 80124cec
+BOOL OpenDir(Handle *handle, const char *dirName, Dir *dir);  // 80124d44
+BOOL ReadDir(Dir *dir, DirEntry *dirent);  // 80124dc0
+BOOL CloseDir(Dir *dir);  // 80124e78
 
 }  // namespace ARC
 

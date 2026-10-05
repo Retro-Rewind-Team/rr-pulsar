@@ -7,11 +7,11 @@ namespace Pulsar {
 namespace UI {
 
 class ExpFroomMessages : public Pages::FriendRoomMessages {
-   public:
+public:
     static bool isOnModeSelection;
     static s32 clickedButtonIdx;
-    void OnModeButtonClick(PushButton& button, u32 hudSlotId);
-    void OnCourseButtonClick(PushButton& button, u32 hudSlotId);
+    void OnModeButtonClick(PushButton &button, u32 hudSlotId);
+    void OnCourseButtonClick(PushButton &button, u32 hudSlotId);
 };
 
 }  // namespace UI

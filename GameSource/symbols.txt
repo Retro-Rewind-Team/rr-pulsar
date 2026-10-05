@@ -720,7 +720,10 @@ CreatePath__Q23EGG11ScnRendererFUiPQ23EGG9Allocator = 0x8023bd38
 
 #ScnMgr
 AppendScreenSpecificModelDirector__6ScnMgrFP13ModelDirector = 0x805635cc
+CalcMain__6ScnMgrFv = 0x80564adc
+UpdateScnRoot__6ScnMgrFUi = 0x80562888
 RemoveFromGroup__13ModelDirectorFv = 0x8055f2fc
+Update__13ModelDirectorFUi = 0x8055d23c
 
 #TaskThread
 Create__Q23EGG10TaskThreadFiiUiPQ23EGG4Heap = 0x802428e8
@@ -766,6 +769,7 @@ MountFromRawArchive__11ArchiveFileFPvUiPQ23EGG4Heapb = 0x80518fbc
 Dump__11ArchiveFileFPCcPQ23EGG4Heapi = 0x805190f0
 Decompress__11ArchiveFileFPCcPQ23EGG4HeapPQ33EGG7Archive8FileInfo = 0x80519508
 Unmount__11ArchiveFileFv = 0x805192cc
+GetFile__11ArchiveFileCFPCcPUi = 0x80519420
 Unmount__10ArchiveMgrFP14ArchivesHolder = 0x805411e4
 DumpArchive__14ArchivesHolderFPcPQ23EGG4Heap = 0x8052ab6c
 LoadCourseArchive__10ArchiveMgrF8CourseIdPQ23EGG4Heapb = 0x80540760
@@ -910,6 +914,9 @@ sInstance__Q24NAND7Manager = 0x809bd720
 __ct__Q25RKSYS15LicenseLdbEntryFv = 0x80544358
 __dt__Q25RKSYS15LicenseLdbEntryFv = 0x8054437c
 
+#LicenseCompletion
+IsCompleted__Q25RKSYS17LicenseCompletionCFUi = 0x8054994c
+
 #LicenseManager
 GetFavouriteCharacter__Q25RKSYS10LicenseMgrCFv = 0x805493b0
 GetFavouriteKart__Q25RKSYS10LicenseMgrCFv = 0x80549470
@@ -1041,6 +1048,7 @@ RequestDriverModel__12MenuModelMgrFUc11CharacterId = 0x8059e568
 RequestKartModel__12MenuModelMgrFUc6KartId = 0x8059e580
 RequestModel__18DriverModelControlF11CharacterId = 0x805f3494
 RequestModel__19VehicleModelControlF6KartId = 0x805f3bc4
+SetAnimationType__19VehicleModelControlF6PageId = 0x805f3b98
 RequestCharacterModel__Q25Pages13ModelRendererFUc11CharacterId = 0x805f56e0
 RequestKartModel__Q25Pages13ModelRendererFUc6KartId = 0x805f5958
 PrepareParams__Q25Pages13ModelRendererFUc = 0x805f5c94
@@ -1090,6 +1098,7 @@ SpawnItemInternal__Q24Item9ObjHolderFPQ24Item3Obj = 0x807961f0
 Spawn__Q24Item3ObjF9ItemObjIdUcRC4Vec3b = 0x8079e550
 InitProperties__Q24Item3ObjFUiP4Vec3P4Vec3P4Vec3 = 0x807a6f74
 LoadEntity__Q24Item3ObjFb = 0x8079ee30
+PlayGlobalItemSound = 0x807a2f00
 AddHitFreeEVENTEntry__Q24Item3ObjF9ItemObjIdUiUcUs = 0x8079c3c4
 GetRadius__Q24Item3ObjFUi = 0x8079ec44
 ProcessKartCollision__Q24Item3ObjFPQ24Kart6PlayerUi = 0x807a3790
@@ -1135,6 +1144,7 @@ CreatePageById__7SectionF6PageId = 0x80623390
 CreateSectionPages__7SectionF9SectionId = 0x8062c3a4
 AddInitialLayers__7SectionF9SectionId = 0x80630094
 GetSceneId__7SectionF9SectionId = 0x80631588
+GetSoundId__7SectionF9SectionId = 0x80631c68
 IsGameplaySection__F9SectionId = 0x808609fc
 RemoveTopLayerPage__7SectionFv = 0x80623288
 UpdateLayers__7SectionFv = 0x80623068
@@ -1595,6 +1605,16 @@ GetRuntimeTypeInfo__4PageCFv = 0x805bed68
 AfterControlUpdate__4PageFv = 0x805bf2d8
 GetControl__12ControlGroupCFUi = 0x805c2ac0
 OnActivate__4PageFv = 0x805c9888
+Load__14NumericEditBoxFUiPCcPCcPCcPCcPCcUibb = 0x805c9a7c
+RemoveAllDigits__14NumericEditBoxFv = 0x805c9f34
+ComputeSum__14NumericEditBoxFv = 0x805ca068
+AddDigit__14NumericEditBoxFUi = 0x805ca0c8
+RemoveDigit__14NumericEditBoxFv = 0x805ca250
+OnDigitClick__Q25Pages14RegisterFriendFR10PushButtonUi = 0x8061e348
+OnBackSpaceClick__Q25Pages14RegisterFriendFR10PushButtonUi = 0x8061e3b4
+__ct__Q25Pages14RegisterFriendFv = 0x8061dcb8
+__dt__Q25Pages14RegisterFriendFv = 0x8061def0
+GetRuntimeTypeInfo__Q25Pages14RegisterFriendCFv = 0x8061e804
 __ct__4PageFv = 0x8060197c
 __dt__4PageFv = 0x80601a04
 Init__4PageF6PageId = 0x80601a60
@@ -1903,12 +1923,15 @@ GetManipulatorManager__Q25Pages10KartSelectFv = 0x80846a1c
 GetActivePlayerBitfield__Q25Pages10KartSelectCFv = 0x80846a24
 AfterControlUpdate__Q25Pages10KartSelectFv = 0x80846a2c
 OnExternalButtonSelect__Q25Pages10KartSelectFR10PushButtonUi = 0x80846ea4
+GetButtonMachineById__Q25Pages10KartSelectFUc = 0x808471c4
+InitButtonMachine__Q25Pages10KartSelectFR13ButtonMachinei = 0x80847344
 BeforeEntranceAnimations__Q25Pages10KartSelectFv = 0x80847630
 BeforeExitAnimations__Q25Pages10KartSelectFv = 0x80847690
 GetPlayerBitfield__Q25Pages10KartSelectCFv = 0x80847bec
 __dt__Q25Pages10KartSelectFv = 0x80847bf4
 GetRuntimeTypeInfo__Q25Pages10KartSelectCFv = 0x80847c90
 kartsSortedByWeight = 0x808ab770
+kartUIOrderToIDArray__Q25Pages10KartSelect = 0x808ad678
 
 #MultiKartSelect
 __ct__Q25Pages15MultiKartSelectFv = 0x8062b4f4
@@ -1951,7 +1974,10 @@ OnExternalButtonSelect__Q25Pages12SinglePlayerFR10PushButtonUi = 0x8084f688
 
 #VSSettings
 __ct__Q25Pages10VSSettingsFv = 0x806284c8
+OnActivate__Q25Pages10VSSettingsFv = 0x8085354c
 OnButtonDeselect__Q25Pages10VSSettingsFR10PushButtonUi = 0x808536b0
+OnRadioClick__Q25Pages10VSSettingsFR18RadioButtonControlUiUi = 0x80853714
+OnRadioChange__Q25Pages10VSSettingsFR18RadioButtonControlUiUi = 0x8085389c
 typeInfo__Q25Pages10VSSettings = 0x809c4618
 
 ##RACEHUD
@@ -2159,8 +2185,15 @@ Update__Q26Lakitu7ManagerFv = 0x8071e6c0
 IsCPU__16KartAIControllerCFv = 0x8072624c
 
 #GlobeMgr
+GetCountry__13SystemManagerCFRUib = 0x8000af78
+GetLatitude__13SystemManagerCFRUsb = 0x8000afec
+GetLongitude__13SystemManagerCFRUsb = 0x8000b0a0
+SetPosition__8GlobeMgrFUiff = 0x80750808
+Update__8GlobeMgrFv = 0x80750344
+SetMii__8GlobeMgrFRC3Mii = 0x807509a0
 DisplayMii__8GlobeMgrFv = 0x807509b4
 ResetGlobeMii__8GlobeMgrFv = 0x807509d0
+IsMiiShown__8GlobeMgrFv = 0x807507fc
 sInstance__8GlobeMgr = 0x809c2cb8
 
 #Entity
@@ -2186,6 +2219,7 @@ LoadObjProperties__4ItemFv = 0x80790ad8
 #Player
 Update__19ItemHolderPlayerSubFv = 0x80795668
 Update__Q24Item6PlayerFv = 0x80797928
+DecideItem__Q24Item6PlayerFUsUsUi = 0x80798c38
 ActivateMegaMushroom__Q24Item6PlayerFv = 0x807986b4
 UseBlooper__Q24Item6PlayerFv = 0x807a81b4
 UseMegaMushroom__Q24Item6PlayerFv = 0x807a9e50
@@ -2218,7 +2252,11 @@ ProcessOtherCollision__Q24Item3ObjFUiRC4Vec3RC4Vec3 = 0x807a18fc
 sInstance__Q24Item12ItemSlotDataFv = 0x809c3670
 DecideItem__Q24Item12ItemSlotDataFUsUcbbPQ24Item6Player = 0x807bb42c
 DecideRouletteItem__Q24Item12ItemSlotDataFUsUc6ItemIdb = 0x807bb8d0
+ResetBlueShellTimer__Q24Item12ItemSlotDataFv = 0x807bb9c8
 itemSlotData = 0x809c3670
+
+#Blue Shell
+Reset__Q24Item14ObjKouraTogezoFv = 0x807ac49c
 
 #Inventory
 EjectItems__Q24Item15PlayerInventoryFv = 0x807bc350
@@ -2358,6 +2396,7 @@ GetCharacterBMGId__F11CharacterIdb = 0x80833774
 GetMiiCharacterId__FRC3Mii = 0x80831af4
 GetCharacterIconPaneName__F11CharacterId = 0x80860acc
 SetButtonColours__Q223CtrlMenuCharacterSelect12ButtonDriverFUi = 0x807e4130
+ResetButtonColours__Q223CtrlMenuCharacterSelect12ButtonDriverFUi = 0x807e3efc
 OnButtonDriverSelect__Q25Pages15CharacterSelectFPQ223CtrlMenuCharacterSelect12ButtonDriverUiUc = 0x8083e5f4
 IsKartUnlocked = 0x8081cfb4
 IsKartUnlocked__F6KartIdUi = 0x8081cfb4
@@ -2374,7 +2413,6 @@ NHTTPSetClientCertDefault__Fv = 0x801d9798
 sprintf = 0x80011a2c
 
 WWFC_CUSTOM_REGION = 0x80005efc
-FPSPatchHook = 0x80001202
 OTTFixHook = 0x80001208
 ItemRainOnlineFixHook = 0x8000120A
 PredictionHook = 0x80891B28
@@ -2549,9 +2587,11 @@ LoadKartArchive__10ArchiveMgrFUc6KartId11CharacterIdUiUiPQ23EGG4HeapPQ23EGG4Heap
 LoadKartArchiveHolder2__10ArchiveMgrFUc6KartId11CharacterIdUiUiPQ23EGG4HeapPQ23EGG4Heap = 0x80540f90
 GetKartArchivePostfix__10ArchiveMgrF11CharacterId = 0x805419c8
 LoadKartArchiveAsync__10ArchiveMgrFUc = 0x80541e44
+RequestLoadKartArchives__10ArchiveMgrFUc11CharacterIdUi = 0x80542210
 sInstance__6ScnMgr = 0x809c1850
 MenuUpdate__10SectionMgrFv = 0x8063583c
 StartSound__Q25Audio13RaceAnimActorFUi = 0x80701140
+HoldSoundLimited__Q25Audio9RaceActorFUi = 0x807014e8
 StartSound__Q25Audio9RaceActorFUiPCQ44nw4r3snd14SoundStartable9StartInfo = 0x807011c8
 __ct__9CharaNameFv = 0x8083d840
 __ct__20MenuModelBRRESHandleFv = 0x8081e284
@@ -2594,3 +2634,6 @@ Update__Q24Item5PointFRC4Vec3 = 0x807b8a9c
 Update2__Q24Item5PointFRC4Vec3 = 0x807b8f30
 CalcNextPoint__4ItemFRCQ24Item5PointRQ24Item5PointUcb = 0x807b91e4
 Update__Q24Kart6KillerFv = 0x8059bc44
+
+AssignTeams__Q25Pages11VSTeamsViewFv = 0x8084ffc8
+IsMultiplayer__Q25Pages4MenuFv = 0x808388b4

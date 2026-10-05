@@ -99,7 +99,7 @@ struct StrmFile {
 };
 
 class StrmFileReader {
-   public:
+public:
     struct StrmInfo {  //-C for all offsets
         SampleFormat sampleFormat;  // 0x0 3 for strm, 800a4ec4, base on soundtype
         bool isLooped;  // 0x4
@@ -130,22 +130,22 @@ class StrmFileReader {
     };
 
     StrmFileReader();  // 800a4e90
-    bool ReadStrmInfo(StrmInfo* info);  // 800a4ea0
-    bool ReadStrmTrackInfo(StrmTrackInfo* trackInfo, int trackIndex) const;  // 800a4fb0
-    const StrmFile::Header* header;
-    const StrmFile::HeadBlock* headBlock;
+    bool ReadStrmInfo(StrmInfo *info);  // 800a4ea0
+    bool ReadStrmTrackInfo(StrmTrackInfo *trackInfo, int trackIndex) const;  // 800a4fb0
+    const StrmFile::Header *header;
+    const StrmFile::HeadBlock *headBlock;
 };
 
 class StrmFileLoader {
-   public:
-    StrmFileLoader(ut::FileStream& fileStream);  // inlined
-    bool LoadFileHeader(void* buffer, u32 maxADPCoffset);  // 800a5270
-    bool ReadStrmInfo(StrmFileReader::StrmInfo* info);  // 800a5490
-    bool ReadStrmTrackInfo(StrmFileReader::StrmTrackInfo* trackInfo, int trackIndex) const;  // 800a54d0
+public:
+    StrmFileLoader(ut::FileStream &fileStream);  // inlined
+    bool LoadFileHeader(void *buffer, u32 maxADPCoffset);  // 800a5270
+    bool ReadStrmInfo(StrmFileReader::StrmInfo *info);  // 800a5490
+    bool ReadStrmTrackInfo(StrmFileReader::StrmTrackInfo *trackInfo, int trackIndex) const;  // 800a54d0
     int GetChannelCount() const;  // 800a5440
-    bool ReadAdpcmInfo(AdpcmParam* adpcmParam, AdpcmLoopParam* adpcmLoopParam, int channelIndex) const;  // 800a5510
-    bool ReadAdpcBlockData(u16* yn1, u16* yn2, int blockIndex, int channelCount);  // 800a56a0
-    ut::FileStream& stream;
+    bool ReadAdpcmInfo(AdpcmParam *adpcmParam, AdpcmLoopParam *adpcmLoopParam, int channelIndex) const;  // 800a5510
+    bool ReadAdpcBlockData(u16 *yn1, u16 *yn2, int blockIndex, int channelCount);  // 800a56a0
+    ut::FileStream &stream;
     StrmFileReader fileReader;
 };  // total size 0xC
 

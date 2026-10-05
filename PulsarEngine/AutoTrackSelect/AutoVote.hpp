@@ -8,7 +8,7 @@
 namespace Pulsar {
 namespace UI {
 class AutoVote : public Pages::SELECTStageMgr {
-   public:
+public:
     AutoVote();
     void OnInit() override;
     void OnDispose() override;
@@ -17,7 +17,7 @@ class AutoVote : public Pages::SELECTStageMgr {
     void OnResume() override;
     void OnUpdate() override;
 
-   private:
+private:
     u32 readyDuration;
 };
 }  // namespace UI

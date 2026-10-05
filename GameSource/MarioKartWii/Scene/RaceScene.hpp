@@ -4,7 +4,7 @@
 #include <core/nw4r/ut/RomFont.hpp>
 
 class RaceScene : public GameScene {
-   public:
+public:
     static void UpdateRaceInstances();  // 80554ad4 "main_race_update"
     static void UpdateSomeInstances();  // 80554d90 inlined SectionMgr but also 809c496c and 809c1f50
     RaceScene();  // 80553b88
@@ -23,7 +23,7 @@ class RaceScene : public GameScene {
     bool isPaused() override;  // 0x54 80554e14
     void vf_0x58() override;  // 0x58 805549ac
     nw4r::ut::RomFont romFont;  // 0x254c
-    ExpHeap* kartModelHeap;  // 0x2568 //0x2568
+    ExpHeap *kartModelHeap;  // 0x2568 //0x2568
 };  // 0x256c
 
 #endif

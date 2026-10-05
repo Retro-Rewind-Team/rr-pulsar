@@ -1,4 +1,5 @@
 #include <RetroRewind.hpp>
+#include <Network/Json.hpp>
 #include <Network/Ranking.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <Network/WiiLink.hpp>
@@ -10,7 +11,6 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/System/Rating.hpp>
 #include <Network/Rating/PlayerRating.hpp>
-#include <core/rvl/DWC/DWCAccount.hpp>
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
@@ -23,152 +23,143 @@
 namespace Pulsar {
 namespace Ranking {
 
-static const char* ANT_BADGE_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/badges/ant.txt";
-static const char* DEV_BADGE_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/badges/dev.txt";
-static const char* DONO_BADGE_URL = "http://" WWFC_DOMAIN ":8000/RetroRewind/badges/dono.txt";
-static const u32 BADGE_REQUEST_WORK_BUF_SIZE = 0x1000;
-
-enum BadgeRequestKind {
-    BADGE_REQUEST_NONE,
-    BADGE_REQUEST_ANT,
-    BADGE_REQUEST_DEV,
-    BADGE_REQUEST_DONO
-};
-
 struct BadgeRequestCtx {
     u32 generation;
-    BadgeRequestKind kind;
-    u64 friendCode;
+    u32 pid;
 };
 
 static BadgeRequestCtx s_badgeRequestCtx;
-static void* s_badgeRequestWorkBuf = nullptr;
+static void *s_badgeRequestWorkBuf = nullptr;
 static u32 s_badgeRequestGeneration = 0;
-static u64 s_badgeFriendCode = 0;
-static bool s_antBadgeFC = false;
-static bool s_devBadgeFC = false;
-static bool s_donoBadgeFC = false;
+static u32 s_badgePid = 0;
+static u32 s_badgeMask = 0;
 static bool s_badgeRequestActive = false;
 static bool s_badgeRefreshPending = false;
-static BadgeRequestKind s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
-static u64 s_pendingBadgeFriendCode = 0;
+static u32 s_pendingBadgePid = 0;
+static const u32 MIN_VS_MATCHES = 100;
 
-static bool ParseBadgeFriendCodeList(const char* body, int bodyLen, u64 friendCode) {
-    if (body == nullptr || bodyLen <= 0 || friendCode == 0) return false;
-
-    const char* p = body;
-    const char* end = body + bodyLen;
-    while (p < end) {
-        u64 parsed = 0;
-        u32 digitCount = 0;
-
-        while (p < end && *p != '\n' && *p != '\r') {
-            const char c = *p;
-            if (c == '/' && p + 1 < end && p[1] == '/') {
-                while (p < end && *p != '\n' && *p != '\r') ++p;
-                break;
-            }
-            if (c == '#' || c == ',') {
-                while (p < end && *p != '\n' && *p != '\r') ++p;
-                break;
-            }
-            if (c >= '0' && c <= '9') {
-                parsed = parsed * 10 + static_cast<u64>(c - '0');
-                ++digitCount;
-            }
-            ++p;
-        }
-
-        if (digitCount == 12 && parsed == friendCode) return true;
-        while (p < end && (*p == '\n' || *p == '\r')) ++p;
+static s32 BadgeTypeToIcon(u32 badgeType) {
+    // Several API badge types share one of the existing ranking icon slots.
+    switch (static_cast<BadgeType>(badgeType)) {
+        case BADGE_RETRO_REWIND_DEVELOPER:
+        case BADGE_WHEEL_WIZARD_DEVELOPER:
+            return 10;
+        case BADGE_RWFC_MODERATOR:
+            return 11;
+        case BADGE_MAJOR_CONTRIBUTOR:
+            return 12;
+        case BADGE_CONTRIBUTOR:
+            return 13;
+        case BADGE_SUPPORTER:
+        case BADGE_HEART:
+            return 14;
+        case BADGE_TRANSLATOR:
+            return 15;
+        case BADGE_DISCORD_STAFF:
+            return 16;
+        case BADGE_BETA_TESTER:
+            return 17;
+        default:
+            return -1;
     }
-    return false;
 }
 
-static bool IsDevBadgeFC(u64 fc) {
-    return fc != 0 && fc == s_badgeFriendCode && s_devBadgeFC;
+static u32 ParseBadgeJson(const char *body, int bodyLen, u32 pid) {
+    if (body == nullptr || bodyLen <= 0 || pid == 0) return 0;
+
+    Network::Json::Value root;
+    if (!Network::Json::Parse(body, static_cast<u32>(bodyLen), root)) return 0;
+
+    Network::Json::Value badgeMap;
+    if (!Network::Json::Find(root, "badges", badgeMap)) return 0;
+
+    char pidKey[16];
+    snprintf(pidKey, sizeof(pidKey), "%u", pid);
+
+    Network::Json::Value badges;
+    if (!Network::Json::Find(badgeMap, pidKey, badges)) return 0;
+
+    u32 badgeMask = 0;
+    const char *cursor = nullptr;
+    Network::Json::Value badge;
+    while (Network::Json::Next(badges, cursor, badge)) {
+        u32 badgeType = 0;
+        if (!Network::Json::GetU32(badge, badgeType)) return 0;
+        const s32 icon = BadgeTypeToIcon(badgeType);
+        if (icon >= SPECIAL_BADGE_FIRST && icon <= SPECIAL_BADGE_LAST) badgeMask |= 1u << icon;
+    }
+    return badgeMask;
 }
 
-static bool IsDonoBadgeFC(u64 fc) {
-    return fc != 0 && fc == s_badgeFriendCode && s_donoBadgeFC;
+static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
+    const Rating &licenseVr = license.GetVR();
+    const u32 vsWins = license.GetWFCVSWins();
+    const u32 vsLosses = license.GetWFCVSLosses();
+    const u32 totalVs = vsWins + vsLosses;
+
+    const u32 times1st = license.GetTimes1stPlaceAchieved();
+    const float distTravelled = license.GetDistanceTravelled();
+    const float distInFirst = license.GetDistancetravelledwhilein1stplace();
+
+    const float winRate = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
+
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
+    const float userVr = rksysMgr != nullptr ? PointRating::GetUserVR(rksysMgr->curLicenseId)
+                                             : static_cast<float>(licenseVr.points);
+    float clampedVr = userVr > 1000.0f ? 1000.0f : userVr;
+    if (clampedVr < 0.0f) clampedVr = 0.0f;
+    const float normalizedVr = clampedVr / 1000.0f * 100.0f;
+
+    const float normalizedFirsts = times1st >= 2250 ? 100.0f : 100.0f * times1st / 2250.0f;
+    const float normalizedDistance = distTravelled >= 40000.0f ? 100.0f : 100.0f * distTravelled / 40000.0f;
+    const float normalizedFirstDistance =
+        distInFirst >= 10000.0f ? 100.0f : 100.0f * distInFirst / 10000.0f;
+
+    const float vrWeight = 0.60f;
+    const float winRateWeight = 0.15f;
+    const float firstsWeight = 0.15f;
+    const float distanceWeight = 0.05f;
+    const float firstDistanceWeight = 0.05f;
+
+    const float weightedScore = (vrWeight * normalizedVr) + (winRateWeight * winRate) +
+                                (firstsWeight * normalizedFirsts) +
+                                (distanceWeight * normalizedDistance) +
+                                (firstDistanceWeight * normalizedFirstDistance);
+
+    // Map the weighted metrics from the low and high anchors to a 10-100 score.
+    const float highAnchor = vrWeight * 100.0f + winRateWeight * 55.0f + firstsWeight * 100.0f +
+                             distanceWeight * 100.0f + firstDistanceWeight * 100.0f;
+    const float lowAnchor = vrWeight * 5.0f + winRateWeight * 50.0f;
+    const float scoreScale = 90.0f / (highAnchor - lowAnchor);
+    const float scoreOffset = 100.0f - scoreScale * highAnchor;
+
+    float score = scoreScale * weightedScore + scoreOffset;
+    if (score < 0.0f)
+        score = 0.0f;
+    else if (score > 100.0f)
+        score = 100.0f;
+    return score;
 }
 
-static bool IsAntBadgeFC(u64 fc) {
-    return fc != 0 && fc == s_badgeFriendCode && s_antBadgeFC;
-}
-
-static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr& license) {
-    const Rating& vr = license.GetVR();
-    u32 vsWins = license.GetWFCVSWins();
-    u32 vsLosses = license.GetWFCVSLosses();
-    u32 totalVs = vsWins + vsLosses;
-
-    u32 times1st = license.GetTimes1stPlaceAchieved();
-    float distTravelled = license.GetDistanceTravelled();
-    float distInFirst = license.GetDistancetravelledwhilein1stplace();
-
-    float racingWinPct = (totalVs > 0) ? (100.0f * (float)vsWins / (float)totalVs) : 45.0f;
-
-    const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
-    const float userVr = rksys != nullptr ? PointRating::GetUserVR(rksys->curLicenseId) : static_cast<float>(vr.points);
-    float vrClamped = userVr > 1000.0f ? 1000.0f : userVr;
-    if (vrClamped < 0) vrClamped = 0;
-    float vrNorm = (vrClamped / 1000.0f) * 100.0f;
-
-    float firstsNorm = (times1st >= 2250.0f) ? 100.0f : (100.0f * times1st / 2250.0f);
-    float distNorm = (distTravelled >= 40000.0f) ? 100.0f : (100.0f * distTravelled / 40000.0f);
-    float distFirstNorm = (distInFirst >= 10000.0f) ? 100.0f : (100.0f * distInFirst / 10000.0f);
-
-    const float W_VR = 0.60f;
-    const float W_RWIN = 0.15f;
-    const float W_FIRSTS = 0.15f;
-    const float W_DIST = 0.05f;
-    const float W_DIST1ST = 0.05f;
-
-    float baseM = (W_VR * vrNorm) + (W_RWIN * racingWinPct) + (W_FIRSTS * firstsNorm) + (W_DIST * distNorm) + (W_DIST1ST * distFirstNorm);
-
-    // Anchors
-    const float AH_VR = 100.0f, AH_RWIN = 55.0f, AH_FIRSTS = 100.0f, AH_DIST = 100.0f, AH_DIST1ST = 100.0f;  // -> 100
-    const float AL_VR = 5.0f, AL_RWIN = 50.0f, AL_FIRSTS = 0.0f, AL_DIST = 0.0f, AL_DIST1ST = 0.0f;  // -> 10
-    float M1 = W_VR * AH_VR + W_RWIN * AH_RWIN + W_FIRSTS * AH_FIRSTS + W_DIST * AH_DIST + W_DIST1ST * AH_DIST1ST;  // ~100.0
-    float M2 = W_VR * AL_VR + W_RWIN * AL_RWIN + W_FIRSTS * AL_FIRSTS + W_DIST * AL_DIST + W_DIST1ST * AL_DIST1ST;  // ~10.0
-    float alpha = 90.0f / (M1 - M2);
-    float beta = 100.0f - alpha * M1;
-
-    float finalScore = alpha * baseM + beta;
-    if (finalScore < 0.0f)
-        finalScore = 0.0f;
-    else if (finalScore > 100.0f)
-        finalScore = 100.0f;
-    return finalScore;
-}
-
-static int ScoreToRank(float finalScore) {
-    if (finalScore >= 100.0f) return 9;
-    if (finalScore >= 94.0f) return 8;
-    if (finalScore >= 84.0f) return 7;
-    if (finalScore >= 72.0f) return 6;
-    if (finalScore >= 60.0f) return 5;
-    if (finalScore >= 48.0f) return 4;
-    if (finalScore >= 36.0f) return 3;
-    if (finalScore >= 24.0f) return 2;
+static int ScoreToRank(float score) {
+    if (score >= 100.0f) return 9;
+    if (score >= 94.0f) return 8;
+    if (score >= 84.0f) return 7;
+    if (score >= 72.0f) return 6;
+    if (score >= 60.0f) return 5;
+    if (score >= 48.0f) return 4;
+    if (score >= 36.0f) return 3;
+    if (score >= 24.0f) return 2;
     return 1;
 }
 
 struct RankText {
-    const wchar_t* summaryFormat;
-    const wchar_t* noLicenseLoaded;
-    const wchar_t* detailsFormat;
+    const wchar_t *summaryFormat;
+    const wchar_t *noLicenseLoaded;
+    const wchar_t *detailsFormat;
 };
 
-static Language GetCurrentLanguage() {
-    return static_cast<Language>(
-        Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Settings::UserType>(Settings::SETTINGSTYPE_MISC),
-            SCROLLER_LANGUAGE));
-}
-
-static const RankText& GetRankText() {
+static const RankText &GetRankText() {
     static const RankText english = {
         L"Rank: %ls\nScore: %d",
         L"No license loaded.",
@@ -178,7 +169,7 @@ static const RankText& GetRankText() {
         L"1st Places: %u / 2250\n"
         L"Distance: %.1f km / 40000 km\n"
         L"1st Distance: %.1f km / 10000 km\n"
-        L"Score: %.2f points (need %.2f for Rank %ls)\n"};
+        L"Score: %.2f points (need +%.2f for Rank %ls)\n"};
 
     static const RankText japanese = {
         L"\u30E9\u30F3\u30AF: %ls\n\u30B9\u30B3\u30A2: %d",
@@ -301,7 +292,7 @@ static const RankText& GetRankText() {
         L"Vzd\u00E1lenost na 1. m\u00EDst\u011B: %.1f km / 10000 km\n"
         L"Sk\u00F3re: %.2f bod\u016F (pot\u0159eba %.2f pro hodnost %ls)\n"};
 
-    switch (GetCurrentLanguage()) {
+    switch (static_cast<Language>(Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE))) {
         case LANGUAGE_JAPANESE:
             return japanese;
         case LANGUAGE_FRENCH:
@@ -331,7 +322,7 @@ static const RankText& GetRankText() {
     }
 }
 
-static const wchar_t* RankToLabel(int rank) {
+static const wchar_t *RankToLabel(int rank) {
     switch (rank) {
         case 1:
             return L"\uF07D";
@@ -357,84 +348,78 @@ static const wchar_t* RankToLabel(int rank) {
 }
 
 int GetCurrentLicenseRankVS() {
-    const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
-    const RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
-    const u32 MIN_VS_MATCHES = 100;
+    const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
     const u32 totalVs = vsWins + vsLosses;
     if (totalVs < MIN_VS_MATCHES) {
         return 0;
     }
-    float score = ComputeVsScoreFromLicense(license);
-    return ScoreToRank(score);
+    return ScoreToRank(ComputeVsScoreFromLicense(license));
 }
 
 int GetCurrentLicenseScore() {
-    const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) return -1;
-    const RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
-    const u32 MIN_VS_MATCHES = 100;
+    const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
     const u32 totalVs = vsWins + vsLosses;
     if (totalVs < MIN_VS_MATCHES) {
         return 0;
     }
-    float score = ComputeVsScoreFromLicense(license);
-    return static_cast<int>(score);
+    return static_cast<int>(ComputeVsScoreFromLicense(license));
 }
 
-int FormatRankMessage(wchar_t* dst, size_t dstLen) {
+int FormatRankMessage(wchar_t *dst, size_t dstLen) {
     if (dst == nullptr || dstLen == 0) return -1;
-    const RankText& text = GetRankText();
+    const RankText &text = GetRankText();
     int rank = GetCurrentLicenseRankVS();
     int score = GetCurrentLicenseScore();
     if (rank < 0) rank = 0;
     if (score < 0) score = 0;
-    const wchar_t* rankLabel = RankToLabel(rank);
+    const wchar_t *rankLabel = RankToLabel(rank);
 
     return ::swprintf(dst, dstLen, text.summaryFormat, rankLabel, score);
 }
 
-int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
+int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
     if (dst == nullptr || dstLen == 0) return -1;
-    const RankText& text = GetRankText();
-    const RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    const RankText &text = GetRankText();
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0) {
         return ::swprintf(dst, dstLen, text.noLicenseLoaded);
     }
 
-    const RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
     const u32 totalVs = vsWins + vsLosses;
-    const u32 MIN_VS_MATCHES = 100;
-
-    float winPct = (totalVs > 0) ? (100.0f * (float)vsWins / (float)totalVs) : 45.0f;
+    const float winPct = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
 
     float vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
     if (vr < 0.0f) vr = 0.0f;
-    u32 vrClamped = static_cast<u32>(vr * 100.0f + 0.5f);
+    const u32 vrClamped = static_cast<u32>(vr * 100.0f + 0.5f);
 
-    u32 times1st = license.GetTimes1stPlaceAchieved();
-    float distTravelled = license.GetDistanceTravelled();
-    float distInFirst = license.GetDistancetravelledwhilein1stplace();
+    const u32 times1st = license.GetTimes1stPlaceAchieved();
+    const float distTravelled = license.GetDistanceTravelled();
+    const float distInFirst = license.GetDistancetravelledwhilein1stplace();
 
-    int rank = GetCurrentLicenseRankVS();
+    int rank = 0;
     float score = 0.0f;
     if (totalVs >= MIN_VS_MATCHES) {
         score = ComputeVsScoreFromLicense(license);
+        rank = ScoreToRank(score);
     }
 
-    if (rank < 0) rank = 0;
     static const float kRankThresholds[] = {12.0f, 24.0f, 36.0f, 48.0f, 60.0f, 72.0f, 84.0f, 94.0f, 100.0f};
-    float nextThreshold = (rank >= 9) ? 100.0f : kRankThresholds[rank];
-    float scoreNeededForNextRank = (rank >= 9) ? 0.0f : (nextThreshold - score);
+    const float nextThreshold = rank >= 9 ? 100.0f : kRankThresholds[rank];
+    float scoreNeededForNextRank = rank >= 9 ? 0.0f : nextThreshold - score;
     if (scoreNeededForNextRank < 0.0f) scoreNeededForNextRank = 0.0f;
-    int nextRank = (rank >= 9) ? 9 : (rank + 1);
-    const wchar_t* nextRankLabel = RankToLabel(nextRank);
+    const int nextRank = rank >= 9 ? 9 : rank + 1;
+    const wchar_t *nextRankLabel = RankToLabel(nextRank);
 
     return ::swprintf(
         dst, dstLen,
@@ -442,164 +427,142 @@ int FormatRankDetailsMessage(wchar_t* dst, size_t dstLen) {
         vrClamped, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
 }
 
-// Address found by B_squo, original idea by Zeraora, developed by ZPL
-static u64 GetCurrentLicenseFriendCode() {
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+static u32 GetCurrentLicensePID() {
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return 0;
-    RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
-    return DWC::CreateFriendKey(&license.dwcAccUserData);
+    RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    if (license.dwcAccUserData.gsProfileId <= 0) return 0;
+    return static_cast<u32>(license.dwcAccUserData.gsProfileId);
 }
 
-static s32 GetFetchedBadgeForFC(u64 friendCode) {
-    if (friendCode == 0 || !Settings::Mgr::IsCreated()) return -1;
+bool IsSpecialBadgeAvailable(u8 badge) {
+    return badge >= SPECIAL_BADGE_FIRST && badge <= SPECIAL_BADGE_LAST && (s_badgeMask & (1u << badge)) != 0;
+}
 
-    const Settings::Mgr& settings = Settings::Mgr::Get();
-    if (settings.GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_STREAMERMODE) != STREAMERMODE_DISABLED) {
+bool HasSpecialBadges() {
+    return s_badgePid != 0 && s_badgeMask != 0;
+}
+
+u32 GetSpecialBadgeCount() {
+    u32 count = 0;
+    for (u8 badge = SPECIAL_BADGE_FIRST; badge <= SPECIAL_BADGE_LAST; ++badge) {
+        if (IsSpecialBadgeAvailable(badge)) ++count;
+    }
+    return count;
+}
+
+u8 GetSpecialBadgeAt(u32 index) {
+    u32 current = 0;
+    for (u8 badge = SPECIAL_BADGE_FIRST; badge <= SPECIAL_BADGE_LAST; ++badge) {
+        if (!IsSpecialBadgeAvailable(badge)) continue;
+        if (current++ == index) return badge;
+    }
+    return NORMAL_RANKING_BADGE;
+}
+
+static s32 GetFetchedBadgeForPID(u32 pid) {
+    if (pid == 0 || pid != s_badgePid || !Settings::Mgr::IsCreated()) return -1;
+
+    const Settings::Mgr &settings = Settings::Mgr::Get();
+    if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) != STREAMERMODE_DISABLED) {
         return -1;
     }
-    if (IsAntBadgeFC(friendCode)) return 10;
-    if (IsDevBadgeFC(friendCode)) return 11;
-    if (IsDonoBadgeFC(friendCode)) return 12;
-    return -1;
+    const u8 selectedBadge = settings.GetRankingBadge();
+    return IsSpecialBadgeAvailable(selectedBadge) ? selectedBadge : -1;
 }
 
-static const char* GetBadgeUrl(BadgeRequestKind kind) {
-    switch (kind) {
-        case BADGE_REQUEST_ANT:
-            return ANT_BADGE_URL;
-        case BADGE_REQUEST_DEV:
-            return DEV_BADGE_URL;
-        case BADGE_REQUEST_DONO:
-            return DONO_BADGE_URL;
-        case BADGE_REQUEST_NONE:
-        default:
-            return "";
-    }
-}
-
-static BadgeRequestKind GetNextBadgeRequestKind(BadgeRequestKind kind) {
-    switch (kind) {
-        case BADGE_REQUEST_ANT:
-            return BADGE_REQUEST_DEV;
-        case BADGE_REQUEST_DEV:
-            return BADGE_REQUEST_DONO;
-        case BADGE_REQUEST_DONO:
-        case BADGE_REQUEST_NONE:
-        default:
-            return BADGE_REQUEST_NONE;
-    }
-}
-
-static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode);
-static void StartBadgeRefresh(u64 friendCode);
-
-static void OnBadgeListDownloaded(s32 result, void* response, void* userdata) {
+static void OnBadgeResponse(s32 result, void *response, void *userdata) {
     Network::FinishNHTTPRequest();
-    BadgeRequestCtx* ctx = reinterpret_cast<BadgeRequestCtx*>(userdata);
-    const BadgeRequestKind nextKind =
-        (ctx != nullptr && ctx->generation == s_badgeRequestGeneration) ? GetNextBadgeRequestKind(ctx->kind) : BADGE_REQUEST_NONE;
+    BadgeRequestCtx *ctx = reinterpret_cast<BadgeRequestCtx *>(userdata);
     if (ctx == nullptr || ctx->generation != s_badgeRequestGeneration || response == nullptr) {
         if (response != nullptr) NHTTPDestroyResponse(response);
         s_badgeRequestActive = false;
-        if (!s_badgeRefreshPending && response == nullptr && nextKind != BADGE_REQUEST_NONE) s_nextBadgeRequestKind = nextKind;
+        s_badgeMask = 0;
         return;
     }
 
     if (result == 0) {
-        char* body = nullptr;
-        const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res*>(response), &body);
-        if (body != nullptr && bodyLen > 0 && ParseBadgeFriendCodeList(body, bodyLen, ctx->friendCode)) {
-            if (ctx->kind == BADGE_REQUEST_ANT) {
-                s_antBadgeFC = true;
-            } else if (ctx->kind == BADGE_REQUEST_DEV) {
-                s_devBadgeFC = true;
-            } else if (ctx->kind == BADGE_REQUEST_DONO) {
-                s_donoBadgeFC = true;
+        char *body = nullptr;
+        const int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res *>(response), &body);
+        s_badgeMask = ParseBadgeJson(body, bodyLen, ctx->pid);
+        if (Settings::Mgr::IsCreated()) {
+            Settings::Mgr &settings = Settings::Mgr::Get();
+            const u8 selectedBadge = settings.GetRankingBadge();
+            if (selectedBadge != NORMAL_RANKING_BADGE && !IsSpecialBadgeAvailable(selectedBadge)) {
+                settings.SetRankingBadge(NORMAL_RANKING_BADGE);
             }
         }
+    } else {
+        s_badgeMask = 0;
     }
 
     NHTTPDestroyResponse(response);
     s_badgeRequestActive = false;
-
-    if (!s_badgeRefreshPending && nextKind != BADGE_REQUEST_NONE) s_nextBadgeRequestKind = nextKind;
 }
 
-static bool StartBadgeListRequest(BadgeRequestKind kind, u64 friendCode) {
-    if (kind == BADGE_REQUEST_NONE || friendCode == 0) return false;
-    if (s_badgeRequestActive) return false;
+static void StartBadgeRequest(u32 pid) {
+    if (pid == 0 || s_badgeRequestActive) return;
 
-    if (!Network::PrepareNHTTPRequest()) return false;
+    if (!Network::PrepareNHTTPRequest()) return;
 
     if (s_badgeRequestWorkBuf == nullptr) {
         s_badgeRequestWorkBuf = Network::NHTTPAlloc(BADGE_REQUEST_WORK_BUF_SIZE, 0x20);
-        if (s_badgeRequestWorkBuf == nullptr) return false;
+        if (s_badgeRequestWorkBuf == nullptr) return;
     }
     memset(s_badgeRequestWorkBuf, 0, BADGE_REQUEST_WORK_BUF_SIZE);
 
     s_badgeRequestCtx.generation = s_badgeRequestGeneration;
-    s_badgeRequestCtx.kind = kind;
-    s_badgeRequestCtx.friendCode = friendCode;
+    s_badgeRequestCtx.pid = pid;
 
-    const char* url = GetBadgeUrl(kind);
-    void* request = NHTTPCreateRequest(url, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
-                                       reinterpret_cast<void*>(&OnBadgeListDownloaded),
-                                       reinterpret_cast<void*>(&s_badgeRequestCtx));
-    if (request == nullptr) return false;
+    void *request = NHTTPCreateRequest(BADGE_URL, 0, s_badgeRequestWorkBuf, BADGE_REQUEST_WORK_BUF_SIZE,
+                                       reinterpret_cast<void *>(&OnBadgeResponse),
+                                       reinterpret_cast<void *>(&s_badgeRequestCtx));
+    if (request == nullptr) return;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet >= 0) {
         Network::MarkNHTTPRequestActive();
         s_badgeRequestActive = true;
     }
-    return sendRet >= 0;
 }
 
-static void StartBadgeRefresh(u64 friendCode) {
+static void StartBadgeRefresh(u32 pid) {
     s_badgeRefreshPending = false;
-    s_pendingBadgeFriendCode = 0;
+    s_pendingBadgePid = 0;
 
-    if (friendCode == 0) return;
-
-    ++s_badgeRequestGeneration;
-    s_badgeFriendCode = friendCode;
-    s_antBadgeFC = false;
-    s_devBadgeFC = false;
-    s_donoBadgeFC = false;
-    s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
-
-    if (!StartBadgeListRequest(BADGE_REQUEST_ANT, s_badgeFriendCode)) {
-        StartBadgeListRequest(BADGE_REQUEST_DEV, s_badgeFriendCode);
-    }
-}
-
-static void BeginBadgeDownloads() {
-    const u64 friendCode = GetCurrentLicenseFriendCode();
-    if (friendCode == 0) return;
-
-    if (s_badgeRequestActive || s_nextBadgeRequestKind != BADGE_REQUEST_NONE) {
-        s_badgeRefreshPending = true;
-        s_pendingBadgeFriendCode = friendCode;
+    if (pid == 0) {
+        s_badgePid = 0;
+        s_badgeMask = 0;
         return;
     }
 
-    StartBadgeRefresh(friendCode);
+    ++s_badgeRequestGeneration;
+    s_badgePid = pid;
+    s_badgeMask = 0;
+    StartBadgeRequest(s_badgePid);
+}
+
+static void BeginBadgeDownloads() {
+    const u32 pid = GetCurrentLicensePID();
+    if (pid == 0) return;
+
+    if (s_badgeRequestActive) {
+        s_badgeRefreshPending = true;
+        s_pendingBadgePid = pid;
+        return;
+    }
+
+    StartBadgeRefresh(pid);
 }
 
 static void ProcessPendingBadgeRequests() {
     if (s_badgeRequestActive) return;
 
     if (s_badgeRefreshPending) {
-        StartBadgeRefresh(s_pendingBadgeFriendCode);
-        return;
-    }
-
-    if (s_nextBadgeRequestKind != BADGE_REQUEST_NONE) {
-        BadgeRequestKind kind = s_nextBadgeRequestKind;
-        s_nextBadgeRequestKind = BADGE_REQUEST_NONE;
-        StartBadgeListRequest(kind, s_badgeFriendCode);
+        StartBadgeRefresh(s_pendingBadgePid);
     }
 }
+
 static FrameLoadHook BadgeRequestFrameHook(ProcessPendingBadgeRequests);
 
 asmFunc AsmHook_WFCMainOnActivateBadgeRefresh() {
@@ -625,22 +588,21 @@ kmCall(0x8064bcd0, AsmHook_WFCMainOnActivateBadgeRefresh);
 
 static u8 GetOnlineRankingIcon(u8, u8) {
     if (RKNet::USERHandler::sInstance != nullptr && RKNet::USERHandler::sInstance->isInitialized) {
-        const u64 myFc = RKNet::USERHandler::sInstance->toSendPacket.fc;
-        const s32 badge = GetFetchedBadgeForFC(myFc);
+        const u32 pid = GetCurrentLicensePID();
+        const s32 badge = GetFetchedBadgeForPID(pid);
         if (badge >= 0) return static_cast<u8>(badge);
     }
 
 #ifdef BETA
-    return 10;
+    return 17;
 #endif
 
-    const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
+    const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
     if (mode != MODE_PUBLIC_VS && !System::sInstance->IsContext(PULSAR_RANKING)) return 0;
     int rank = GetCurrentLicenseRankVS();
     if (rank < 0) rank = 0;
-    const RKSYS::LicenseMgr& license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
-    const u32 MIN_VS_MATCHES = 100;
+    const RKSYS::LicenseMgr &license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
     const u32 totalVs = license.GetWFCVSWins() + license.GetWFCVSLosses();
     if (totalVs <= MIN_VS_MATCHES) {
         rank = 0;

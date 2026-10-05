@@ -3,7 +3,7 @@
 #include <MarioKartWii/Scene/GameScene.hpp>
 
 class GlobeScene : public GameScene {
-   public:
+public:
     GlobeScene();  // 80553850
     ~GlobeScene() override;  // 80553894 vtable 808b41c0
     void OnCalc() override;  // 0x30 80553b10

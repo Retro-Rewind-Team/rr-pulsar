@@ -19,8 +19,8 @@ class Character;
 typedef Actions<Character> CharacterActions;
 
 class Character : public Base {  // for example, controls the character (miis) looking at the camera at the end of a race
-   public:
-    Character(Inputs& inputs);  // 80735948
+public:
+    Character(Inputs &inputs);  // 80735948
     ~Character() override;  // 80736258 vtable 808caec0
     virtual void Init();  // 0x18 807362dc
     virtual void Update();  // 0x1c 807363c0
@@ -51,8 +51,8 @@ class Character : public Base {  // for example, controls the character (miis) l
     virtual void UpdateLookAhead();  // 0x80 807379ac just a blr obviously
     virtual void OnStartLookAtCamera();  // 0x84 807379b0
     virtual void UpdateLookAtCamera();  // 0x88 807379bc
-    virtual bool vf_0x8c(const KartAIController& other);  // 0x8c 807369bc
-    virtual bool ArePlayersClose(const KartAIController& controller, float maxDistance);  // 0x90 80736764
+    virtual bool vf_0x8c(const KartAIController &other);  // 0x8c 807369bc
+    virtual bool ArePlayersClose(const KartAIController &controller, float maxDistance);  // 0x90 80736764
     virtual void vf_0x94();  // 0x94 80736ca0
 
     CharacterActions actions0;  // 0x38
@@ -65,15 +65,15 @@ class Character : public Base {  // for example, controls the character (miis) l
     CharacterActions action7;  // 0x16c
     CharacterActions lookAhead;  // 0x198
     CharacterActions lookAtCamera;  // 0x1c4
-    Inputs& inputs;
+    Inputs &inputs;
     u8 unknown_0x1f0[0x204 - 0x1f4];
     u32 otherPlayerIdx;  // 0x204
     u8 unknown_0x208[0x21c - 0x208];
 };  // 0x21c
 
 class CharacterBattle : public Character {
-   public:
-    CharacterBattle(Inputs& inputs);  // 80738558
+public:
+    CharacterBattle(Inputs &inputs);  // 80738558
     ~CharacterBattle() override;  // 80738594 vtable 808cae28
     void Init() override;  // 0x18 807385ec
     void OnStartAction1() override;  // 0x30 80738624
@@ -81,8 +81,8 @@ class CharacterBattle : public Character {
 };
 
 class CharacterAwards : public Character {
-   public:
-    CharacterAwards(Inputs& inputs);  // 80738664
+public:
+    CharacterAwards(Inputs &inputs);  // 80738664
     ~CharacterAwards() override;  // 807386A0 vtable 808cad90
     void Init() override;  // 0x18 807386f8
     void OnStartAction1() override;  // 0x30 80738730

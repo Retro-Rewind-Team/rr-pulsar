@@ -13,8 +13,8 @@ namespace Pulsar {
 
 void LoadCorrectSectionForBattle() {
     if (!IsBattle) return;
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
-    const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
+    SectionMgr *sectionMgr = SectionMgr::sInstance;
+    const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
     if (sectionMgr->nextSectionId == SECTION_VS_RACE_INTRO && mode == MODE_BATTLE) {
         sectionMgr->nextSectionId = SECTION_BALLOON_BATTLE_INTRO;

@@ -24,8 +24,8 @@ class Inputs {
     void AddInputs(u16 inputsToAdd);  // 8073199c ORs the bitfield with the internal bitfield
     void RemoveInputs(u16 inputsToRemove);  // 807319ac
 
-    KartAIController& controller;
-    Input::State* state;  // 0x4
+    KartAIController &controller;
+    Input::State *state;  // 0x4
     u32 unknown_0x8;
     u16 inputsBitfield;  // 1 is accelerating
     u8 padding[2];
@@ -33,7 +33,7 @@ class Inputs {
 };  // 0x14
 
 class Player : public Base {
-    Player(KartAIController& controller);  // 807319c4
+    Player(KartAIController &controller);  // 807319c4
     ~Player() override;  // offset 0x34 807323a0 vtable 808ca73c
 
     virtual void Init();  // 0x18 80732508
@@ -61,22 +61,22 @@ class Player : public Base {
     PlayerActions postRaceDriving;  // 0xe8
     PlayerActions battleDriving;  // 0x114 also missions
 
-    KartAIController& controller;  // 0x140
+    KartAIController &controller;  // 0x140
 
-    Inputs* inputs;  // 0x140
-    CPUDriving* cpuDriving;  // 0x144
+    Inputs *inputs;  // 0x140
+    CPUDriving *cpuDriving;  // 0x144
     u8 unknown_0x148[4];
     u32 unknown_0x14c;
-    Input::State* state;  // 0x150
+    Input::State *state;  // 0x150
     u32 unknown_0x154;
-    Character* driverAI;
+    Character *driverAI;
     u32 unknown_0x15c;
     u8 unknown_0x160[3];
     bool hasRaceEnded;  // 0x163
 };  // 0x164
 
 class PlayerKart : public Player {
-    PlayerKart(KartAIController& controller);  // 807332a4
+    PlayerKart(KartAIController &controller);  // 807332a4
     ~PlayerKart() override;  // 807332fc vtable 808ca818
     void Init() override;  // 0x18 80733354
     void Update() override;  // 0x1c 807333b8
@@ -86,7 +86,7 @@ class PlayerKart : public Player {
 };
 
 class PlayerBike : public Player {
-    PlayerBike(KartAIController& controller);  // 807331b4
+    PlayerBike(KartAIController &controller);  // 807331b4
     ~PlayerBike() override;  // 80733238 vtable 808ca7c0
     void Init() override;  // 0x18 80733290
     void Update() override;  // 0x1c 80733294

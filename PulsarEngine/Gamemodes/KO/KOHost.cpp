@@ -1,3 +1,4 @@
+#include <PulsarSystem.hpp>
 #include <MarioKartWii/RKNet/SELECT.hpp>
 #include <MarioKartWii/RKNet/ITEM.hpp>
 #include <MarioKartWii/3D/Camera/CameraMgr.hpp>
@@ -20,15 +21,16 @@ namespace Pulsar {
 namespace KO {
 
 void HAWChangeData() {
-    const System* system = System::sInstance;
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
-    RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+    const System *system = System::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
+    RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     const u8 localAid = sub.localAid;
     if (system->IsContext(PULSAR_MODE_KO)) {
         u8 oldAidsBelonging[12];
         u8 oldPlayerIds[12][2];
+        memset(oldPlayerIds, 0xFF, sizeof(oldPlayerIds));
 
-        Mgr* mgr = system->koMgr;
+        Mgr *mgr = system->koMgr;
         mgr->PatchAids(sub);
         int inCounter = 0;
         int koCounter = 0;
@@ -49,18 +51,22 @@ void HAWChangeData() {
         }
         for (int playerId = 0; playerId < 12; ++playerId) {
             u8 aid = oldAidsBelonging[playerId];
+            if (aid >= 12) continue;
             u8 hudSlotId = 0;
             if (playerId != 0 && oldAidsBelonging[playerId - 1] == aid) hudSlotId = 1;
-            oldPlayerIds[aid][hudSlotId] = playerId;
+            if (mgr->IsKOdAid(aid, hudSlotId) || mgr->IsDisconnectedAid(aid, hudSlotId)) continue;
+            const u8 compactSlot = oldPlayerIds[aid][0] == 0xFF ? 0 : 1;
+            oldPlayerIds[aid][compactSlot] = playerId;
         }
 
-        Racedata* racedata = Racedata::sInstance;
-        SectionMgr* sectionMgr = SectionMgr::sInstance;
-        SectionParams* params = sectionMgr->sectionParams;
-        if (sub.localPlayerCount == 2 && !mgr->IsKOdAid(localAid, 0) && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();
+        Racedata *racedata = Racedata::sInstance;
+        SectionMgr *sectionMgr = SectionMgr::sInstance;
+        SectionParams *params = sectionMgr->sectionParams;
+        const bool isMainOut = mgr->IsKOdAid(localAid, 0) || mgr->IsDisconnectedAid(localAid, 0);
+        if (sub.localPlayerCount == 1 && isMainOut && !mgr->GetIsSwapped()) mgr->SwapControllersAndUI();
 
         for (int playerId = 0; playerId < 12; ++playerId) {
-            RacedataPlayer& player = racedata->menusScenario.players[playerId];
+            RacedataPlayer &player = racedata->menusScenario.players[playerId];
             const u8 aid = controller->aidsBelongingToPlayerIds[playerId];
 
             if (aid >= 12) {
@@ -70,16 +76,16 @@ void HAWChangeData() {
                 u8 hudSlotId = 0;
                 if (playerId != 0 && controller->aidsBelongingToPlayerIds[playerId - 1] == aid) hudSlotId = 1;
                 const u8 oldPlayerId = oldPlayerIds[aid][hudSlotId];
-                const RacedataPlayer& prev = racedata->menusScenario.players[oldPlayerId];
+                const RacedataPlayer &prev = racedata->menusScenario.players[oldPlayerId];
                 memcpy(&player, &prev, sizeof(RacedataPlayer));
                 if (aid == localAid)
                     player.playerType = PLAYER_REAL_LOCAL;
                 else
                     player.playerType = PLAYER_REAL_ONLINE;
-                MiiGroup& playerMiis = params->playerMiis;
+                MiiGroup &playerMiis = params->playerMiis;
                 playerMiis.mii[playerId] = playerMiis.mii[oldPlayerId];
                 for (int i = 0; i < 7; ++i) {
-                    MiiTexObj* tex = playerMiis.texObj[i];
+                    MiiTexObj *tex = playerMiis.texObj[i];
                     if (tex != nullptr) memcpy(&tex[playerId], &tex[oldPlayerId], sizeof(MiiTexObj));
                 }
             }

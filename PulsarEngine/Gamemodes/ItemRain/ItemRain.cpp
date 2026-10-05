@@ -56,11 +56,11 @@ struct State {
 static State sState;
 
 extern "C" {
-void SpawnItemInternal__Q24Item9ObjHolderFPQ24Item3Obj(Item::ObjHolder*, Item::Obj*);
-void InitProperties__Q24Item3ObjFUiP4Vec3P4Vec3P4Vec3(Item::Obj*, u32, const Vec3*, const Vec3*, const Vec3*);
-void LoadEntity__Q24Item3ObjFb(Item::Obj*, bool);
-void Resize__Q24Item6EntityFff(void*, float, float);
-float GetRadius__Q24Item3ObjFUi(Item::Obj*, u32);
+void SpawnItemInternal__Q24Item9ObjHolderFPQ24Item3Obj(Item::ObjHolder *, Item::Obj *);
+void InitProperties__Q24Item3ObjFUiP4Vec3P4Vec3P4Vec3(Item::Obj *, u32, const Vec3 *, const Vec3 *, const Vec3 *);
+void LoadEntity__Q24Item3ObjFb(Item::Obj *, bool);
+void Resize__Q24Item6EntityFff(void *, float, float);
+float GetRadius__Q24Item3ObjFUi(Item::Obj *, u32);
 }
 
 static ItemObjId GetRandomItem(u32 rnd) {
@@ -70,17 +70,17 @@ static ItemObjId GetRandomItem(u32 rnd) {
     return OBJ_LIGHTNING;
 }
 
-static float RandomOffset(Random& rng, float range) {
+static float RandomOffset(Random &rng, float range) {
     return ((rng.NextLimited(0x8000) / 32767.0f) - 0.5f) * 2.0f * range;
 }
 
 bool IsItemRainEnabled() {
-    System* sys = System::sInstance;
+    System *sys = System::sInstance;
     if (!sys) return false;
     if (!sys->IsContext(PULSAR_ITEMMODERAIN) && !sys->IsContext(PULSAR_ITEMMODESTORM)) return false;
     if (sys->IsContext(PULSAR_MODE_OTT)) return false;
 
-    RKNet::Controller* controller = RKNet::Controller::sInstance;
+    RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (!controller || !Racedata::sInstance) return false;
     if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL ||
         controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL ||
@@ -95,17 +95,17 @@ bool IsItemRainEnabled() {
 }
 
 static bool IsLocalPlayer(s32 idx) {
-    Kart::Manager* km = Kart::Manager::sInstance;
+    Kart::Manager *km = Kart::Manager::sInstance;
     if (!km || idx < 0 || idx >= km->playerCount) return false;
 
-    Kart::Player* player = km->players[idx];
+    Kart::Player *player = km->players[idx];
     if (!player) return false;
     return player->IsLocal();
 }
 
 static u8 GetRandomPlayerId(s32 fallbackPlayerId) {
-    Kart::Manager* km = Kart::Manager::sInstance;
-    RaceTimerMgr* tm = nullptr;
+    Kart::Manager *km = Kart::Manager::sInstance;
+    RaceTimerMgr *tm = nullptr;
     if (Raceinfo::sInstance) tm = Raceinfo::sInstance->timerMgr;
     if (!km || !tm || km->playerCount <= 0) return static_cast<u8>(fallbackPlayerId);
 
@@ -113,24 +113,24 @@ static u8 GetRandomPlayerId(s32 fallbackPlayerId) {
 }
 
 static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff, bool isStorm) {
-    Kart::Manager* km = Kart::Manager::sInstance;
-    Item::Manager* im = Item::Manager::sInstance;
+    Kart::Manager *km = Kart::Manager::sInstance;
+    Item::Manager *im = Item::Manager::sInstance;
     if (!km || !im || itemId >= 0xF || playerIdx < 0 || playerIdx >= km->playerCount) return;
 
-    Kart::Player* player = km->players[playerIdx];
+    Kart::Player *player = km->players[playerIdx];
     if (!player) return;
 
-    Item::ObjHolder* holder = &im->itemObjHolders[itemId];
-    const Kart::PhysicsHolder* physics = player->pointers.kartBody->kartPhysicsHolder;
-    const Vec3& pos = physics->position;
-    const Mtx34& mtx = physics->transforMtx;
+    Item::ObjHolder *holder = &im->itemObjHolders[itemId];
+    const Kart::PhysicsHolder *physics = player->pointers.kartBody->kartPhysicsHolder;
+    const Vec3 &pos = physics->position;
+    const Mtx34 &mtx = physics->transforMtx;
 
     Vec3 spawnPos(
         pos.x + fOff * mtx.mtx[0][2] + rOff * mtx.mtx[0][0],
         pos.y + SPAWN_HEIGHT,
         pos.z + fOff * mtx.mtx[2][2] + rOff * mtx.mtx[2][0]);
 
-    Item::Obj* obj = nullptr;
+    Item::Obj *obj = nullptr;
     const u8 ownerPlayerId = GetRandomPlayerId(playerIdx);
     holder->Spawn(1u, &obj, ownerPlayerId, spawnPos, false);
     if (!obj) return;
@@ -149,20 +149,20 @@ static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff,
     if (isStorm) obj->duration = static_cast<u32>(obj->duration * 0.01f);
 
     if (obj->itemObjId == OBJ_BOBOMB) {
-        Item::ObjBomb* bomb = static_cast<Item::ObjBomb*>(obj);
+        Item::ObjBomb *bomb = static_cast<Item::ObjBomb *>(obj);
         bomb->timer = 90;
-        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x1ac) = Item::ObjBomb::STATE_TICKING;
+        *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(obj) + 0x1ac) = Item::ObjBomb::STATE_TICKING;
     }
 
     if (Raceinfo::sInstance->timerMgr)
-        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164) = Raceinfo::sInstance->timerMgr->raceFrameCounter;
+        *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(obj) + 0x164) = Raceinfo::sInstance->timerMgr->raceFrameCounter;
 }
 
-static bool TryGenerateItemSpawn(RaceTimerMgr* tm, bool isStorm, float* outFOff, float* outROff, ItemObjId* outItemId) {
+static bool TryGenerateItemSpawn(RaceTimerMgr *tm, bool isStorm, float *outFOff, float *outROff, ItemObjId *outItemId) {
     u32 frame = tm->raceFrameCounter;
-    Item::Manager* im = Item::Manager::sInstance;
+    Item::Manager *im = Item::Manager::sInstance;
     if (!im) return false;
-    Item::ObjHolder* holder = nullptr;
+    Item::ObjHolder *holder = nullptr;
     ItemObjId itemId;
     bool found = false;
 
@@ -175,7 +175,7 @@ static bool TryGenerateItemSpawn(RaceTimerMgr* tm, bool isStorm, float* outFOff,
             break;
         }
         if (holder->spawnedCount > 0) {
-            u32 spawnFrame = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(holder->itemObj[0]) + 0x164);
+            u32 spawnFrame = *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(holder->itemObj[0]) + 0x164);
             u32 wait = isStorm ? 90 : 180;
             if (frame - spawnFrame >= wait) {
                 found = true;
@@ -194,20 +194,20 @@ static bool TryGenerateItemSpawn(RaceTimerMgr* tm, bool isStorm, float* outFOff,
 
 static void OnTimerUpdate(u32 oldFrame) {
     if (!Raceinfo::sInstance) return;
-    RaceTimerMgr* tm = Raceinfo::sInstance->timerMgr;
+    RaceTimerMgr *tm = Raceinfo::sInstance->timerMgr;
     if (!tm) return;
     tm->raceFrameCounter = oldFrame + 1;
     if (!IsItemRainEnabled()) return;
 
-    Item::Manager* im = Item::Manager::sInstance;
+    Item::Manager *im = Item::Manager::sInstance;
     if (im) {
         u32 currentFrame = tm->raceFrameCounter;
         for (int i = 0; i < 15; i++) {
-            Item::ObjHolder& holder = im->itemObjHolders[i];
+            Item::ObjHolder &holder = im->itemObjHolders[i];
             for (u32 j = 0; j < holder.capacity; j++) {
-                Item::Obj* obj = holder.itemObj[j];
+                Item::Obj *obj = holder.itemObj[j];
                 if (obj && (obj->bitfield74 & 1) == 0) {
-                    u32 spawnFrame = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x164);
+                    u32 spawnFrame = *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(obj) + 0x164);
                     if (spawnFrame != 0 && (currentFrame - spawnFrame) > 300) {
                         obj->DisappearDueToExcess(false);
                     }
@@ -218,9 +218,9 @@ static void OnTimerUpdate(u32 oldFrame) {
 
     if (!(tm->hasRaceStarted & 1)) return;
 
-    SectionMgr* sm = SectionMgr::sInstance;
+    SectionMgr *sm = SectionMgr::sInstance;
     if (!sm || !sm->curSection) return;
-    Page* page = sm->curSection->GetTopLayerPage();
+    Page *page = sm->curSection->GetTopLayerPage();
     if (!page) return;
 
     PageId pid = page->pageId;
@@ -240,7 +240,7 @@ static void OnTimerUpdate(u32 oldFrame) {
             tm->random.seed = sState.seed;
     }
 
-    Kart::Manager* km = Kart::Manager::sInstance;
+    Kart::Manager *km = Kart::Manager::sInstance;
     if (!km) return;
     s32 count = km->playerCount;
 
@@ -267,8 +267,8 @@ static void OnTimerUpdate(u32 oldFrame) {
 
 kmRuntimeUse(0x808D1BDC);
 static void BombExplosion() {
-    register Item::Obj* obj;
-    register void* r0_val;
+    register Item::Obj *obj;
+    register void *r0_val;
     asm {
         mr obj, r30
         mr r0_val, r0
@@ -276,18 +276,18 @@ static void BombExplosion() {
 
     if (obj->itemObjId == OBJ_BOBOMB) {
         if (obj->entity) {
-            Item::ObjBomb* bomb = reinterpret_cast<Item::ObjBomb*>(obj);
+            Item::ObjBomb *bomb = reinterpret_cast<Item::ObjBomb *>(obj);
             bomb->timer = 300;
-            r0_val = *reinterpret_cast<void**>(kmRuntimeAddr(0x808D1BDC));
+            r0_val = *reinterpret_cast<void **>(kmRuntimeAddr(0x808D1BDC));
         } else {
             obj->KillFromOtherCollision(false);
             return;
         }
     }
-    *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x170) = r0_val;
+    *reinterpret_cast<void **>(reinterpret_cast<u8 *>(obj) + 0x170) = r0_val;
 }
 
-static void SafeBombExplosionResize(void* entity, float radius, float maxSpeed) {
+static void SafeBombExplosionResize(void *entity, float radius, float maxSpeed) {
     if (entity) Resize__Q24Item6EntityFff(entity, radius, maxSpeed);
 }
 

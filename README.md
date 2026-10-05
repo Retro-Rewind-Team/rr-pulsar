@@ -16,7 +16,7 @@ Pulsar is licensed under MIT. Pulsar can be found under the MIT license in [Puls
 
 # Features
 Retro Rewind is based on Pulsar. The original feature list from Pulsar can be found in the Pulsar repository.
-Retro Rewind's feature list is always documented on the [Retro Rewind Tockdom page](https://wiki.tockdom.com/wiki/Retro_Rewind). The feature list may be behind the actual features available in the repository.
+Retro Rewind's feature list is always documented on the [Retro Rewind Custom Mario Kart Wiiki page](https://mkwiiki.org/wiki/Retro_Rewind). The feature list may be behind the actual features available in the repository.
 
 # Building
 

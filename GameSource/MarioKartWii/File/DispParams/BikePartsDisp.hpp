@@ -4,7 +4,7 @@
 #include <MarioKartWii/File/DispParams/CommonDisp.hpp>
 
 class BikePartsDispParam {  // https://wiki.tockdom.com/wiki/BikePartsDispParam.bin
-   public:
+public:
     struct Entry {
         float cameraYDist;
         float tiresFwRotSpeed;

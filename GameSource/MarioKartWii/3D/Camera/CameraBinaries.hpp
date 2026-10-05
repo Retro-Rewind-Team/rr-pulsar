@@ -25,15 +25,15 @@ struct CameraParamBin {  // https://wiki.tockdom.com/wiki/KartCameraParam.bin
 };
 
 class BCPInfo {
-   public:
-    void Load(const BCP& raw);  // 805a6e40
+public:
+    void Load(const BCP &raw);  // 805a6e40
     u32 bcp0x0;
     u16 idxPointToIgnore;
     Vec3 scale;
     Vec3 rot;
     Vec3 startDist;
-    Vec3* positions;  // 0x30
-    Vec3* speedDiffs;  // 0x34
+    Vec3 *positions;  // 0x30
+    Vec3 *speedDiffs;  // 0x34
 };
 
 #endif

@@ -14,7 +14,7 @@ struct ModelRendererParams {
 };  // total size 0xC
 
 class ModelRendererValues {
-   public:
+public:
     void SetValues(Vec2 translation, float scale);  // 805f8b24
     Vec2 translation;
     float scale;
@@ -35,14 +35,14 @@ struct ModelRendererValuesFormat {
 
 class ModelRendererValuesHolder {
     void Init();  // 805f5ffc
-    ModelRendererValues* GetValues(CharacterId id, u32 variantType, u32 type);  // 805f5fa4 variant type from model control
+    ModelRendererValues *GetValues(CharacterId id, u32 variantType, u32 type);  // 805f5fa4 variant type from model control
     ModelRendererValuesFormat modelRendererValuesFormat[2];  // widePage vs non wide page
     u8 alignment[48];  // 0x1950 48 for 48 characters, 0 default, 1 centered, idk others
 };  // total size 0x1980
 
 namespace Pages {
 class ModelRenderer : public Page {  // ID 0x7f
-   public:
+public:
     static const PageId id = PAGE_MODEL_RENDERER;
     ModelRenderer();  // 805f4fd0
     ~ModelRenderer() override;  // 805f51c8 vtable 808b9c00
@@ -52,7 +52,7 @@ class ModelRenderer : public Page {  // ID 0x7f
     void BeforeEntranceAnimations() override;  // 0x38 805f56d4
     void BeforeExitAnimations() override;  // 0x40 805f56d8
     void BeforeControlUpdate() override;  // 0x48 805f56dc
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 805f5fdc
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 805f5fdc
     void RequestCharacterModel(u8 hudSlotId, CharacterId id);  // 805f56e0
     void RequestKartModel(u8 hudSlotId, KartId id);  // 805f5958
     void RequestBackgroundModel(BackModelType type);  // 805f5984
@@ -62,8 +62,8 @@ class ModelRenderer : public Page {  // ID 0x7f
     static u32 GetModelCount(SectionId sectionId);  // 805f5d58
     static void PrepareParams(u8 playerId);  // 805f5c94 transition from charSelect to kartSelect
 
-    GX::TexObj* GetModelTexObj(u8 hudSlotId);  // 805f5a4c for karts and characters
-    GX::TexObj* GetBackgroundModelTexObj() const;  // 805f5a70
+    GX::TexObj *GetModelTexObj(u8 hudSlotId);  // 805f5a4c for karts and characters
+    GX::TexObj *GetBackgroundModelTexObj() const;  // 805f5a70
     ManipulatorManager manipulatorManager;  // 0x44
     ModelRendererParams params[4];  // 0x54 one per local player
     u8 modelCount;  // 0x84

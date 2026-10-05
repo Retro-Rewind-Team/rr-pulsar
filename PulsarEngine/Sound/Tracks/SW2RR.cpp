@@ -24,10 +24,10 @@ static bool sw2rrTier3ReloadPending = false;
 bool HasSW2RRTieredBRSTM(u8 tier);
 
 static bool IsCTMusicEnabled() {
-    return Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_SOUND, RADIO_CTMUSIC) == CTMUSIC_ENABLED;
+    return Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) == CTMUSIC_ENABLED;
 }
 
-static bool StringsEqual(const char* lhs, const char* rhs) {
+static bool StringsEqual(const char *lhs, const char *rhs) {
     if (lhs == nullptr || rhs == nullptr) return false;
     while (*lhs != '\0' && *rhs != '\0') {
         if (*lhs != *rhs) return false;
@@ -37,20 +37,20 @@ static bool StringsEqual(const char* lhs, const char* rhs) {
     return *lhs == *rhs;
 }
 
-static bool IsSW2RRFileName(const char* fileName) {
+static bool IsSW2RRFileName(const char *fileName) {
     return StringsEqual(fileName, "sw2RR") || StringsEqual(fileName, "SW2RR") ||
-        StringsEqual(fileName, "sw2RR.szs") || StringsEqual(fileName, "SW2RR.szs");
+           StringsEqual(fileName, "sw2RR.szs") || StringsEqual(fileName, "SW2RR.szs");
 }
 
 bool IsSW2RRLoaded() {
-    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
     if (cupsConfig == nullptr) return false;
 
     const PulsarId track = cupsConfig->GetWinning();
     if (CupsConfig::IsReg(track)) return false;
 
     const u8 variantIdx = cupsConfig->GetCurVariantIdx();
-    const char* fileName = cupsConfig->GetFileName(track, variantIdx);
+    const char *fileName = cupsConfig->GetFileName(track, variantIdx);
     if (fileName == nullptr || fileName[0] == '\0') {
         fileName = cupsConfig->GetFileName(track, 0);
     }
@@ -76,7 +76,7 @@ static void ResetSW2RRMusicState() {
 }
 
 static u32 GetActiveSinglePlayerSoundId() {
-    Audio::SinglePlayer* singlePlayer = Audio::SinglePlayer::sInstance;
+    Audio::SinglePlayer *singlePlayer = Audio::SinglePlayer::sInstance;
     if (singlePlayer == nullptr || singlePlayer->activeHandle == nullptr ||
         singlePlayer->activeHandle->basicSound == nullptr) {
         return 0;
@@ -87,11 +87,12 @@ static u32 GetActiveSinglePlayerSoundId() {
 static void ReloadMainRaceMusic(u32 soundId) {
     if (soundId == 0) return;
 
-    Audio::SinglePlayer* singlePlayer = Audio::SinglePlayer::sInstance;
+    Audio::SinglePlayer *singlePlayer = Audio::SinglePlayer::sInstance;
     if (singlePlayer == nullptr) return;
 
     singlePlayer->canNotCancel = false;
     singlePlayer->canNotPrepareOther = false;
+    singlePlayer->StopInactiveSounds();
     singlePlayer->PrepareSound(soundId, false);
     singlePlayer->StopSound();
     singlePlayer->PlayPreparedSound(0);
@@ -102,7 +103,7 @@ static void ReloadActiveRaceMusic() {
     ReloadMainRaceMusic(GetActiveSinglePlayerSoundId());
 }
 
-static bool UpdatePendingTier3Reload(const Audio::RaceMgr& raceAudioMgr) {
+static bool UpdatePendingTier3Reload(const Audio::RaceMgr &raceAudioMgr) {
     if (!sw2rrTier3ReloadPending || raceAudioMgr.raceState != RACE_STATE_FINAL_LAP_MUSIC) return false;
 
     sw2rrTier3ReloadPending = false;
@@ -111,21 +112,23 @@ static bool UpdatePendingTier3Reload(const Audio::RaceMgr& raceAudioMgr) {
 }
 
 static u8 GetHudSlotIdForPlayer(u8 playerId) {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr) return 0;
     return racedata->GetHudSlotId(playerId);
 }
 
-static void PlaySW2RRTierChangeJingle(Audio::RaceMgr& raceAudioMgr, u8 tier, u8 playerId) {
+static void PlaySW2RRTierChangeJingle(Audio::RaceMgr &raceAudioMgr, u8 tier, u8 playerId) {
     if (tier >= 3) {
         if (raceAudioMgr.raceState == RACE_STATE_FINAL_LAP_MUSIC) {
             raceAudioMgr.raceState = Audio::RACE_STATE_NORMAL;
         }
+        Audio::SinglePlayer *singlePlayer = Audio::SinglePlayer::sInstance;
+        if (singlePlayer != nullptr) singlePlayer->StopInactiveSounds();
         raceAudioMgr.SetRaceState(Audio::RACE_STATE_FAST);
         return;
     }
 
-    Audio::RaceRSARPlayer* rsarPlayer = static_cast<Audio::RaceRSARPlayer*>(Audio::RSARPlayer::sInstance);
+    Audio::RaceRSARPlayer *rsarPlayer = static_cast<Audio::RaceRSARPlayer *>(Audio::RSARPlayer::sInstance);
     if (rsarPlayer == nullptr) return;
 
     const u8 hudSlotId = GetHudSlotIdForPlayer(playerId);
@@ -138,8 +141,8 @@ void UpdateSW2RRRacePercentageMusic() {
         return;
     }
 
-    Audio::RaceMgr* raceAudioMgr = Audio::RaceMgr::sInstance;
-    const Raceinfo* raceInfo = Raceinfo::sInstance;
+    Audio::RaceMgr *raceAudioMgr = Audio::RaceMgr::sInstance;
+    const Raceinfo *raceInfo = Raceinfo::sInstance;
     if (raceAudioMgr == nullptr || raceInfo == nullptr || raceInfo->players == nullptr) return;
     if (raceInfo->timerMgr == nullptr || !raceInfo->timerMgr->hasRaceStarted) {
         ResetSW2RRMusicState();
@@ -181,5 +184,5 @@ void UpdateSW2RRRacePercentageMusic() {
 
 static RaceLoadHook ResetSW2RRMusicStateOnRaceLoad(ResetSW2RRMusicState);
 
-}
-}
+}  // namespace Sound
+}  // namespace Pulsar

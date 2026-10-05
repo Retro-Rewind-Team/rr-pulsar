@@ -78,17 +78,17 @@ enum GHTTPResult {
     DWC_GHTTP_MEMORY_ERROR = DWC_GHTTP_NUM + 1  // DWC memory allocation failed.
 };
 
-typedef void (*GHTTPCompletedCallback)(const void* buf, int len, GHTTPResult result, void* param);
-typedef void (*GHTTPProgressCallback)(GHTTPState state, const void* buf, int len, int bytesReceived, int totalSize, void* param);
+typedef void (*GHTTPCompletedCallback)(const void *buf, int len, GHTTPResult result, void *param);
+typedef void (*GHTTPProgressCallback)(GHTTPState state, const void *buf, int len, int bytesReceived, int totalSize, void *param);
 
 bool ProcessGHTTP();  // 800cd4a8
-bool InitGHTTP(const char* gameName);  // 800cd3b0 just call with nullptr, gameName is unused
+bool InitGHTTP(const char *gameName);  // 800cd3b0 just call with nullptr, gameName is unused
 bool ShutdownGHTTP();  // 800cd3f4
 
-int GetGHTTPDataEx(const char* url, u32 bufferSize, bool clearBuffer, GHTTPProgressCallback progressCB, GHTTPCompletedCallback compleCB, void* param);  // 800cd864
+int GetGHTTPDataEx(const char *url, u32 bufferSize, bool clearBuffer, GHTTPProgressCallback progressCB, GHTTPCompletedCallback compleCB, void *param);  // 800cd864
 
-void GHTTPNewPost(GHTTP::Post* post);  // 800cd66c
-int PostGHTTPData(const char* url, GHTTP::Post* post, GHTTPCompletedCallback compleCB, void* param);  // 800cd6d4
+void GHTTPNewPost(GHTTP::Post *post);  // 800cd66c
+int PostGHTTPData(const char *url, GHTTP::Post *post, GHTTPCompletedCallback compleCB, void *param);  // 800cd6d4
 
 }  // namespace DWC
 

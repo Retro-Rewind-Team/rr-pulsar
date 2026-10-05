@@ -4,6 +4,7 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <PulsarSystem.hpp>
+#include <Race/200ccParams.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOHost.hpp>
@@ -23,16 +24,17 @@
 
 namespace Pulsar {
 
-System* System::sInstance = nullptr;
-System::Inherit* System::inherit = nullptr;
+System *System::sInstance = nullptr;
+u16 System::offlineCustomEngineClass = 0;
+System::Inherit *System::inherit = nullptr;
 
-static void ApplyVanillaModeRestrictions(System* system, bool clearOttAndItemModes) {
+static void ApplyVanillaModeRestrictions(System *system, bool clearOttAndItemModes) {
     system->context |= (1 << PULSAR_REGS) | (1 << PULSAR_THUNDERCLOUD);
     system->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_CTS) | (1 << PULSAR_200_WW) |
                          (1 << PULSAR_ELIMINATION) | (1 << PULSAR_FFA));
     system->context2 &= ~((1 << PULSAR_ITEMMODERANDOM) | (1 << PULSAR_ITEMMODEBLAST) |
-                         (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) |
-                         (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
+                          (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) |
+                          (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
     system->context2 |= (1 << PULSAR_TRANSMISSIONVANILLA);
     if (clearOttAndItemModes) {
         system->context &= ~(1 << PULSAR_MODE_OTT);
@@ -41,9 +43,9 @@ static void ApplyVanillaModeRestrictions(System* system, bool clearOttAndItemMod
     }
 }
 
-static void OverrideFroomVanillaModeSettings(bool& isTrackSelectionRegs, bool& isTrackSelectionRetros, bool& isTrackSelectionCts,
-                                             bool& isTransmissionInside, bool& isTransmissionOutside, bool& isTransmissionVanilla,
-                                             bool& isThunderCloud, bool& isAllItemsCanLand, bool& isItemBoxRespawnFast) {
+static void OverrideFroomVanillaModeSettings(bool &isTrackSelectionRegs, bool &isTrackSelectionRetros, bool &isTrackSelectionCts,
+                                             bool &isTransmissionInside, bool &isTransmissionOutside, bool &isTransmissionVanilla,
+                                             bool &isThunderCloud, bool &isAllItemsCanLand, bool &isItemBoxRespawnFast) {
     isTrackSelectionRegs = true;
     isTrackSelectionRetros = false;
     isTrackSelectionCts = false;
@@ -56,7 +58,7 @@ static void OverrideFroomVanillaModeSettings(bool& isTrackSelectionRegs, bool& i
 }
 
 bool System::IsVanillaMode() const {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr || controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN) return false;
 
     const bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
@@ -66,15 +68,21 @@ bool System::IsVanillaMode() const {
     return isRegionalRoom && (this->netMgr.region == 0x15 || this->netMgr.region == 0x0B);
 }
 
+bool System::IsOfflineVS() const {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    return controller != nullptr && controller->roomType == RKNet::ROOMTYPE_NONE &&
+           Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
+}
+
 static inline bool ShouldForceNandIoSaves() {
-    return *reinterpret_cast<volatile u32*>(0x800017D8) == 0x01;
+    return *reinterpret_cast<volatile u32 *>(0x800017D8) == 0x01;
 }
 
 void System::CreateSystem() {
     if (sInstance != nullptr) return;
-    EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
-    const EGG::Heap* prev = heap->BecomeCurrentHeap();
-    System* system;
+    EGG::Heap *heap = RKSystem::mInstance.EGGSystem;
+    const EGG::Heap *prev = heap->BecomeCurrentHeap();
+    System *system;
     if (inherit != nullptr) {
         system = inherit->create();
     } else
@@ -85,9 +93,9 @@ void System::CreateSystem() {
     u32 rtReadBytes = 0;
     u32 ctReadBytes = 0;
     u32 btReadBytes = 0;
-    ConfigFile* confRT = ConfigFile::LoadConfigFile("Binaries/ConfigRT.pul", rtReadBytes);
-    ConfigFile* confCT = ConfigFile::LoadConfigFile("Binaries/ConfigCT.pul", ctReadBytes);
-    ConfigFile* confBT = ConfigFile::LoadConfigFile("Binaries/ConfigBT.pul", btReadBytes);
+    ConfigFile *confRT = ConfigFile::LoadConfigFile("Binaries/ConfigRT.pul", rtReadBytes);
+    ConfigFile *confCT = ConfigFile::LoadConfigFile("Binaries/ConfigCT.pul", ctReadBytes);
+    ConfigFile *confBT = ConfigFile::LoadConfigFile("Binaries/ConfigBT.pul", btReadBytes);
     ConfigFile::readBytes = rtReadBytes;
 
     system->Init(*confRT, *confCT, *confBT, rtReadBytes, ctReadBytes, btReadBytes);
@@ -108,31 +116,36 @@ System::System() : heap(RKSystem::mInstance.EGGSystem), taskThread(EGG::TaskThre
                    lapKoMgr(nullptr) {
 }
 
-static void PatchBMGOffsets(BMGHolder& holder, u32 cupOffset, u32 trackOffset) {
+static void PatchBMGOffsets(BMGHolder &holder, u32 cupOffset, u32 trackOffset) {
     if (holder.messageIds == nullptr) return;
-    BMGMessageIds* msgIds = const_cast<BMGMessageIds*>(holder.messageIds);
+    BMGMessageIds *msgIds = const_cast<BMGMessageIds *>(holder.messageIds);
     const u32 variantTrackOffset = trackOffset << 4;
     for (u16 i = 0; i < msgIds->msgCount; ++i) {
-        u32& mid = msgIds->messageIds[i];
-        if (mid >= 0x500000) mid += variantTrackOffset;
-        else if (mid >= 0x400000) mid += variantTrackOffset;
-        else if (mid >= 0x30000) mid += trackOffset;
-        else if (mid >= 0x20000) mid += trackOffset;
-        else if (mid >= 0x10000) mid += cupOffset;
+        u32 &mid = msgIds->messageIds[i];
+        if (mid >= 0x500000)
+            mid += variantTrackOffset;
+        else if (mid >= 0x400000)
+            mid += variantTrackOffset;
+        else if (mid >= 0x30000)
+            mid += trackOffset;
+        else if (mid >= 0x20000)
+            mid += trackOffset;
+        else if (mid >= 0x10000)
+            mid += cupOffset;
     }
 }
 
-static void LoadConfigFileNames(const ConfigFile& config, u32 readBytes, u32 firstTrack, u32 trackCount) {
-    const PulBMG& bmgSection = config.GetSection<PulBMG>();
-    const u8* configStart = reinterpret_cast<const u8*>(&config);
-    const u8* fileSection = reinterpret_cast<const u8*>(&bmgSection.header) + bmgSection.header.fileLength;
+static void LoadConfigFileNames(const ConfigFile &config, u32 readBytes, u32 firstTrack, u32 trackCount) {
+    const PulBMG &bmgSection = config.GetSection<PulBMG>();
+    const u8 *configStart = reinterpret_cast<const u8 *>(&config);
+    const u8 *fileSection = reinterpret_cast<const u8 *>(&bmgSection.header) + bmgSection.header.fileLength;
     const u32 offset = static_cast<u32>(fileSection - configStart);
     if (offset >= readBytes) return;
 
-    CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char*>(fileSection), readBytes - offset, firstTrack, trackCount);
+    CupsConfig::sInstance->LoadFileNames(reinterpret_cast<const char *>(fileSection), readBytes - offset, firstTrack, trackCount);
 }
 
-void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const ConfigFile& confBT,
+void System::Init(const ConfigFile &confRT, const ConfigFile &confCT, const ConfigFile &confBT,
                   u32 rtReadBytes, u32 ctReadBytes, u32 btReadBytes) {
     IOType type = IOType_ISO;
     bool isDolphin = Dolphin::IsEmulator();
@@ -152,12 +165,12 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     }
 
     strncpy(this->modFolderName, confRT.header.modFolderName, IOS::ipcMaxFileName);
-    static char* pulMagic = reinterpret_cast<char*>(0x800017CC);
+    static char *pulMagic = reinterpret_cast<char *>(0x800017CC);
     strcpy(pulMagic, "PUL2");
 
-    const CupsHolder& rtCups = confRT.GetSection<CupsHolder>();
-    const CupsHolder& ctCups = confCT.GetSection<CupsHolder>();
-    const CupsHolder& btCups = confBT.GetSection<CupsHolder>();
+    const CupsHolder &rtCups = confRT.GetSection<CupsHolder>();
+    const CupsHolder &ctCups = confCT.GetSection<CupsHolder>();
+    const CupsHolder &btCups = confBT.GetSection<CupsHolder>();
 
     CupsConfig::sInstance = new CupsConfig(rtCups, ctCups, btCups);
     this->info.Init(confRT.GetSection<InfoHolder>().info);
@@ -176,7 +189,7 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
     LoadConfigFileNames(confBT, btReadBytes, rtTrackCount + ctTrackCount, btTrackCount);
 
     const PulsarCupId last = Settings::Mgr::sInstance->GetSavedSelectedCup();
-    CupsConfig* cupsConfig = CupsConfig::sInstance;
+    CupsConfig *cupsConfig = CupsConfig::sInstance;
     cupsConfig->SetLayout();
     if (last != -1 && cupsConfig->IsValidCup(last) && cupsConfig->GetTotalCupCount() > 8) {
         cupsConfig->lastSelectedCup = last;
@@ -190,19 +203,19 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
         this->netMgr.lastTracks[i] = PULSARID_NONE;
     }
 
-    EGG::Heap* bmgHeap = RootScene::sInstance->expHeapGroup.heaps[1];
+    EGG::Heap *bmgHeap = RootScene::sInstance->expHeapGroup.heaps[1];
 
-    const BMGHeader* const rtBMG = &confRT.GetSection<PulBMG>().header;
+    const BMGHeader *const rtBMG = &confRT.GetSection<PulBMG>().header;
     this->rawBmg = EGG::Heap::alloc<BMGHeader>(rtBMG->fileLength, 0x4, bmgHeap);
     memcpy(this->rawBmg, rtBMG, rtBMG->fileLength);
     this->customBmgs.Init(*this->rawBmg);
 
-    const BMGHeader* const ctBMG = &confCT.GetSection<PulBMG>().header;
+    const BMGHeader *const ctBMG = &confCT.GetSection<PulBMG>().header;
     this->rawBmgCT = EGG::Heap::alloc<BMGHeader>(ctBMG->fileLength, 0x4, bmgHeap);
     memcpy(this->rawBmgCT, ctBMG, ctBMG->fileLength);
     this->customBmgsCT.Init(*this->rawBmgCT);
 
-    const BMGHeader* const btBMG = &confBT.GetSection<PulBMG>().header;
+    const BMGHeader *const btBMG = &confBT.GetSection<PulBMG>().header;
     this->rawBmgBT = EGG::Heap::alloc<BMGHeader>(btBMG->fileLength, 0x4, bmgHeap);
     memcpy(this->rawBmgBT, btBMG, btBMG->fileLength);
     this->customBmgsBT.Init(*this->rawBmgBT);
@@ -216,10 +229,10 @@ void System::Init(const ConfigFile& confRT, const ConfigFile& confCT, const Conf
 // IO
 #pragma suppress_warnings on
 void System::InitIO(IOType type) const {
-    IO* io = IO::CreateInstance(type, this->heap, this->taskThread);
+    IO *io = IO::CreateInstance(type, this->heap, this->taskThread);
     bool ret;
     if (io->type == IOType_DOLPHIN) ret = ISFS::CreateDir("/shared2/Pulsar", 0, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE, IOS::MODE_READ_WRITE);
-    const char* modFolder = this->GetModFolder();
+    const char *modFolder = this->GetModFolder();
     ret = io->CreateFolder(modFolder);
     if (!ret && io->type == IOType_DOLPHIN) {
         char path[0x100];
@@ -232,14 +245,14 @@ void System::InitIO(IOType type) const {
 }
 #pragma suppress_warnings reset
 
-void System::InitSettings(const u16* totalTrophyCount) const {
-    Settings::Mgr* settings = new (this->heap) Settings::Mgr;
+void System::InitSettings(const u16 *totalTrophyCount) const {
+    Settings::Mgr *settings = new (this->heap) Settings::Mgr;
     char settingsPath[IOS::ipcMaxPath];
-    #ifdef BETA
+#ifdef BETA
     snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettingsBeta.pul");
-    #else
+#else
     snprintf(settingsPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRGameSettings.pul");
-    #endif
+#endif
     char trophiesPath[IOS::ipcMaxPath];
     snprintf(trophiesPath, IOS::ipcMaxPath, "%s/%s", this->GetModFolder(), "RRSettings.pul");  // Original settings file
     settings->Init(totalTrophyCount, settingsPath, trophiesPath);
@@ -247,16 +260,16 @@ void System::InitSettings(const u16* totalTrophyCount) const {
 }
 
 void System::UpdateContext() {
-    const RacedataSettings& racedataSettings = Racedata::sInstance->menusScenario.settings;
+    const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
     this->ottMgr.Reset();
-    const Settings::Mgr& settings = Settings::Mgr::Get();
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    Network::Mgr& netMgr = this->netMgr;
+    const Settings::Mgr &settings = Settings::Mgr::Get();
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    Network::Mgr &netMgr = this->netMgr;
     const u32 sceneId = GameScene::GetCurrent()->id;
     const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
 
-    bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    bool isFroom = isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     bool isRegionalRoom = isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
     bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
     bool isBalloonBattle = isBattle && racedataSettings.battleType == BATTLE_BALLOON;
@@ -266,46 +279,48 @@ void System::UpdateContext() {
     bool isCT = true;
     bool isHAW = false;
     const bool isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && mode == MODE_VS_RACE;
-    bool isKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_ENABLED && isOfflineVS;
+    const bool isOfflineGrandPrix = controller->roomType == RKNet::ROOMTYPE_NONE && mode == MODE_GRAND_PRIX;
+    const bool isOfflineTeamVS = isOfflineVS && (racedataSettings.modeFlags & UI::ExtendedTeamManager::TEAM_MODE_FLAG);
+    bool isExtendedTeams = (settings.GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED || isOfflineTeamVS) &&
+                           (!isOfflineVS || isOfflineTeamVS) && !isOfflineGrandPrix;
+    const bool disableOfflineKO = isExtendedTeams && isOfflineVS;
+    bool isKO = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_ENABLED && isOfflineVS && !disableOfflineKO;
     bool isOTT = false;
-    bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
-    bool is500 = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_FROOMCC) == HOSTCC_500 && isFroom;
-    bool isOTTOnline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
-    bool isMiiHeads = settings.GetUserSettingValue(Settings::SETTINGSTYPE_RACE1, RADIO_MIIHEADS);
-    bool is200Online = settings.GetUserSettingValue(Settings::SETTINGSTYPE_MISC, SCROLLER_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
-    bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
-    bool isLapBasedKO = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOENABLED) == KOSETTING_LAPBASED && isNotPublic && !isBattle && !isTimeTrial;
-    bool isKOFinal = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KO, RADIO_KOFINAL) == KOSETTING_FINAL_ALWAYS;
-    bool isCharRestrictLight = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_LIGHTONLY;
-    bool isCharRestrictMid = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_MEDIUMONLY;
-    bool isCharRestrictHeavy = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_CHARSELECT) == CHAR_HEAVYONLY;
-    bool isKartRestrictKart = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_KARTONLY;
-    bool isKartRestrictBike = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_KARTSELECT) == KART_BIKEONLY;
-    bool isThunderCloud = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && (isNotPublic || (isRegionalRoom && netMgr.region == 0x15));
-    bool isItemModeRandom = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
-    bool isItemModeBlast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
-    bool isItemModeNone = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_NONE;
-    bool isItemModeRain = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMRAIN;
-    bool isItemModeStorm = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_ITEMMODE) == GAMEMODE_ITEMSTORM;
-    bool isTrackSelectionRegs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_REGS;
-    bool isTrackSelectionRetros = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
-    bool isTrackSelectionCts = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, SCROLLER_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
-    bool isChangeCombo = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWCHANGECOMBO) == OTTSETTING_COMBO_ENABLED;
-    bool isItemBoxRespawnFast = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
-    bool isTransmissionInside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE && (isFroom || (isRegionalRoom && netMgr.region == 0x15));
-    bool isTransmissionOutside = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE && (isFroom || (isRegionalRoom && netMgr.region == 0x15));
-    bool isTransmissionVanilla = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && (isFroom || (isRegionalRoom && netMgr.region == 0x15));
-    bool isAllItemsCanLand = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
-    bool isVanillaMode = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_VANILLAMODE) == VANILLAMODE_ENABLED && isFroom;
-    bool isTeamBattle = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
-    bool isElimination = settings.GetUserSettingValue(Settings::SETTINGSTYPE_BATTLE, RADIO_BATTLEELIMINATION) && isBalloonBattle;
-    bool isVR = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_VR) == VR_ENABLED && isNotPublic;
-    bool isBattleRoyale = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, RADIO_KOROYALEENABLED) == KOROYALESETTING_ENABLED && isNotPublic && !isBattle && !isTimeTrial;
-    const u8 koRoyaleBalloons = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, SCROLLER_KOROYALEBALLOONS);
+    bool is200 = Race::Is200cc() && this->info.Has200cc();
+    bool is500 = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC) == HOSTCC_500 && isFroom;
+    bool isOTTOnline = settings.GetSettingValue(Pulsar::Settings::SETTING_WWMODE) == WWMODE_OTT && mode == MODE_PUBLIC_VS;
+    bool isMiiHeads = settings.GetSettingValue(Pulsar::Settings::SETTING_MIIHEADS);
+    bool is200Online = settings.GetSettingValue(Pulsar::Settings::SETTING_WWMODE) == WWMODE_200 && mode == MODE_PUBLIC_VS;
+    bool isLapBasedKO = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_LAPBASED && isNotPublic && !isBattle && !isTimeTrial && !disableOfflineKO;
+    bool isKOFinal = settings.GetSettingValue(Pulsar::Settings::SETTING_KOFINAL) == KOSETTING_FINAL_ALWAYS && !disableOfflineKO;
+    bool isCharRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_CHARSELECT) == CHARACTER_RESTRICT_ENABLED && isFroom;
+    bool isVehicleRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == VEHICLE_RESTRICT_ENABLED && isFroom;
+    bool isThunderCloud = settings.GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && (isNotPublic || (isRegionalRoom && netMgr.region == 0x15));
+    bool isItemModeRandom = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
+    bool isItemModeBlast = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
+    bool isItemModeNone = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_NONE;
+    bool isItemModeRain = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_ITEMRAIN;
+    bool isItemModeStorm = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_ITEMSTORM;
+    bool isTrackSelectionRegs = settings.GetSettingValue(Pulsar::Settings::SETTING_TRACKSELECTION) == TRACKSELECTION_REGS;
+    bool isTrackSelectionRetros = settings.GetSettingValue(Pulsar::Settings::SETTING_TRACKSELECTION) == TRACKSELECTION_RETROS && mode != MODE_PUBLIC_VS;
+    bool isTrackSelectionCts = settings.GetSettingValue(Pulsar::Settings::SETTING_TRACKSELECTION) == TRACKSELECTION_CTS && mode != MODE_PUBLIC_VS;
+    bool isChangeCombo = settings.GetSettingValue(Pulsar::Settings::SETTING_OTTALLOWCHANGECOMBO) == OTTSETTING_COMBO_ENABLED;
+    bool isItemBoxRespawnFast = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMBOXRESPAWN) == ITEMBOX_FASTRESPAWN;
+    bool isTransmissionInside = settings.GetSettingValue(Pulsar::Settings::SETTING_FORCETRANSMISSION) == FORCE_TRANSMISSION_INSIDE && (isFroom || (isRegionalRoom && netMgr.region == 0x15));
+    bool isTransmissionOutside = settings.GetSettingValue(Pulsar::Settings::SETTING_FORCETRANSMISSION) == FORCE_TRANSMISSION_OUTSIDE && (isFroom || (isRegionalRoom && netMgr.region == 0x15));
+    bool isTransmissionVanilla = settings.GetSettingValue(Pulsar::Settings::SETTING_FORCETRANSMISSION) == FORCE_TRANSMISSION_VANILLA && (isFroom || (isRegionalRoom && netMgr.region == 0x15));
+    bool isAllItemsCanLand = settings.GetSettingValue(Pulsar::Settings::SETTING_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
+    bool isVanillaMode = settings.GetSettingValue(Pulsar::Settings::SETTING_VANILLAMODE) == VANILLAMODE_ENABLED && isFroom;
+    bool isMirrorMode = settings.GetSettingValue(Pulsar::Settings::SETTING_MIRROR) == MIRRORMODE_ENABLED && isFroom;
+    bool isTeamBattle = settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLETEAMS) == BATTLE_FFA_DISABLED && isBattle;
+    bool isElimination = settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLEELIMINATION) && isBalloonBattle;
+    bool isVR = settings.GetSettingValue(Pulsar::Settings::SETTING_VR) == VR_ENABLED && isNotPublic;
+    bool isBattleRoyale = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED && isNotPublic && !isBattle && !isTimeTrial;
+    const u8 koRoyaleBalloons = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALEBALLOONS);
     bool isKoPerRace2 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_2;
     bool isKoPerRace3 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_3;
     bool isKoPerRace4 = koRoyaleBalloons == KOROYALESETTING_BALLOONS_4;
-    const u8 koRoyaleLapMultiplier = settings.GetUserSettingValue(Settings::SETTINGSTYPE_KOROYALE, SCROLLER_KOROYALELAPMULTIPLIER);
+    const u8 koRoyaleLapMultiplier = settings.GetSettingValue(Pulsar::Settings::SETTING_KOROYALELAPMULTIPLIER);
     bool isKoRoyaleLaps1_5x = koRoyaleLapMultiplier == KOROYALESETTING_LAPS_1_5X;
     bool isKoRoyaleLaps2_0x = koRoyaleLapMultiplier == KOROYALESETTING_LAPS_2_0X;
     bool isStartRetro = false;
@@ -314,7 +329,7 @@ void System::UpdateContext() {
     bool isStart200 = false;
     bool isStartOTT = false;
     bool isStartItemRain = false;
-    bool isRanking = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM1, RADIO_RANKINGS) == RANKINGS_ENABLED && isFroom;
+    bool isRanking = settings.GetSettingValue(Pulsar::Settings::SETTING_RANKINGS) == RANKINGS_ENABLED && isFroom;
     bool isFeather = this->info.HasFeather();
     bool isUMTs = this->info.HasUMTs();
     u32 newContext = 0;
@@ -331,11 +346,8 @@ void System::UpdateContext() {
                 newContext = netMgr.hostContext;
                 newContext2 = netMgr.hostContext2;
                 isKOFinal = newContext & (1 << PULSAR_KOFINAL);
-                isCharRestrictLight = newContext & (1 << PULSAR_CHARRESTRICTLIGHT);
-                isCharRestrictMid = newContext & (1 << PULSAR_CHARRESTRICTMID);
-                isCharRestrictHeavy = newContext & (1 << PULSAR_CHARRESTRICTHEAVY);
-                isKartRestrictKart = newContext & (1 << PULSAR_KARTRESTRICT);
-                isKartRestrictBike = newContext & (1 << PULSAR_BIKERESTRICT);
+                isCharRestrict = newContext & (1 << PULSAR_CHARRESTRICT);
+                isVehicleRestrict = newContext & (1 << PULSAR_VEHICLERESTRICT);
                 isItemModeRandom = newContext2 & (1 << PULSAR_ITEMMODERANDOM);
                 isItemModeBlast = newContext2 & (1 << PULSAR_ITEMMODEBLAST);
                 isItemModeRain = newContext2 & (1 << PULSAR_ITEMMODERAIN);
@@ -376,6 +388,7 @@ void System::UpdateContext() {
                 isKoRoyaleLaps1_5x = newContext2 & (1 << PULSAR_KOROYALE_LAPS_1_5X);
                 isKoRoyaleLaps2_0x = newContext2 & (1 << PULSAR_KOROYALE_LAPS_2_0X);
                 isVanillaMode = newContext2 & (1 << PULSAR_VANILLAMODE);
+                isMirrorMode = newContext2 & (1 << PULSAR_MIRRORMODE);
                 if (isOTT) {
                     isUMTs = newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -387,17 +400,18 @@ void System::UpdateContext() {
                 isCT = true;
         }
     } else {
-        const u8 ottOffline = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTOFFLINE);
+        const u8 ottOffline = settings.GetSettingValue(Pulsar::Settings::SETTING_OTTOFFLINE);
         isOTT = (mode == MODE_GRAND_PRIX || mode == MODE_VS_RACE) ? (ottOffline != OTTSETTING_OFFLINE_DISABLED) : false;  // offlineOTT
         if (isOTT) {
             isFeather &= (ottOffline == OTTSETTING_OFFLINE_FEATHER);
-            isUMTs = settings.GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED;
+            isUMTs = settings.GetSettingValue(Pulsar::Settings::SETTING_OTTALLOWUMTS) != OTTSETTING_UMTS_DISABLED;
             isBattleRoyale = false;
         }
     }
 
     if (isFroom && controller->roomType == RKNet::ROOMTYPE_FROOM_HOST) {
-        isVanillaMode = settings.GetUserSettingValue(Settings::SETTINGSTYPE_FROOM2, RADIO_VANILLAMODE) == VANILLAMODE_ENABLED;
+        isVanillaMode = settings.GetSettingValue(Pulsar::Settings::SETTING_VANILLAMODE) == VANILLAMODE_ENABLED;
+        isMirrorMode = settings.GetSettingValue(Pulsar::Settings::SETTING_MIRROR) == MIRRORMODE_ENABLED;
     }
 
     if (isVanillaMode && isFroom) {
@@ -425,9 +439,8 @@ void System::UpdateContext() {
         newContextValue |= (is200) << PULSAR_200 | (isFeather) << PULSAR_FEATHER |
                            (isUMTs) << PULSAR_UMTS | (is500) << PULSAR_500 |
                            (isOTT) << PULSAR_MODE_OTT | (isKO) << PULSAR_MODE_KO |
-                           (isCharRestrictLight) << PULSAR_CHARRESTRICTLIGHT | (isCharRestrictMid) << PULSAR_CHARRESTRICTMID |
-                           (isCharRestrictHeavy) << PULSAR_CHARRESTRICTHEAVY | (isKartRestrictKart) << PULSAR_KARTRESTRICT |
-                           (isKartRestrictBike) << PULSAR_BIKERESTRICT | (isChangeCombo) << PULSAR_CHANGECOMBO |
+                           (isCharRestrict) << PULSAR_CHARRESTRICT | (isVehicleRestrict) << PULSAR_VEHICLERESTRICT |
+                           (isChangeCombo) << PULSAR_CHANGECOMBO |
                            (isTrackSelectionRegs) << PULSAR_REGS | (isKOFinal) << PULSAR_KOFINAL |
                            (isExtendedTeams) << PULSAR_EXTENDEDTEAMS | (isTrackSelectionRetros) << PULSAR_RETROS |
                            (isTrackSelectionCts) << PULSAR_CTS | (isTeamBattle) << PULSAR_FFA |
@@ -450,7 +463,8 @@ void System::UpdateContext() {
                             (isKoPerRace4) << PULSAR_KOPERRACE_4 |
                             (isKoRoyaleLaps1_5x) << PULSAR_KOROYALE_LAPS_1_5X |
                             (isKoRoyaleLaps2_0x) << PULSAR_KOROYALE_LAPS_2_0X |
-                            (isVanillaMode) << PULSAR_VANILLAMODE;
+                            (isVanillaMode) << PULSAR_VANILLAMODE |
+                            (isMirrorMode) << PULSAR_MIRRORMODE;
     }
 
     // Combine the new context with preserved bits
@@ -567,7 +581,7 @@ void System::UpdateContextWrapper() {
 static Pulsar::Settings::Hook UpdateContext(System::UpdateContextWrapper);
 
 void System::ClearOttContext() {
-    bool isOTTEnabled = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_OTT, RADIO_OTTOFFLINE);
+    bool isOTTEnabled = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_OTTOFFLINE);
     if (!isOTTEnabled) {
         sInstance->context &= ~(1 << PULSAR_MODE_OTT);
     }
@@ -575,8 +589,8 @@ void System::ClearOttContext() {
 
 static Pulsar::Settings::Hook UpdateOTTContext(System::ClearOttContext);
 
-s32 System::OnSceneEnter(Random& random) {
-    System* self = System::sInstance;
+s32 System::OnSceneEnter(Random &random) {
+    System *self = System::sInstance;
     self->UpdateContext();
     if (self->IsContext(PULSAR_MODE_OTT)) OTT::AddGhostToVS();
     if (self->IsContext(PULSAR_MODE_KO) && self->koMgr != nullptr && self->koMgr->IsOfflineVS()) {
@@ -612,21 +626,28 @@ asmFunc System::GetNonTTGhostPlayersCount() {
 kmWrite32(0x80549974, 0x38600001);
 
 // Skip ESRB page
-kmRegionWrite32(0x80604094, 0x4800001c, 'E');
+void removeESRB() {
+    const u8 regionMem = *(u8 *)(0x80000003);
+
+    if (regionMem == 'E')
+        *(u32 *)0x80604094 = 0x4800001c;
+}
+
+BootHook RemoveESRBHook(removeESRB, 0);
 
 // Retro Rewind Pack ID
 kmWrite32(0x800017D0, 0x0A);
 
 // Retro Rewind Internal Version
-kmWrite32(0x800017D4, 6116);
+kmWrite32(0x800017D4, 6128);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";
 const char System::breff[] = "/Effect/Pulsar.breff";
 const char System::breft[] = "/Effect/Pulsar.breft";
-const char* System::ttModeFolders[] = {"150", "200", "150F", "200F"};
+const char *System::ttModeFolders[] = {"150", "200", "150F", "200F"};
 
-void FriendSelectPage_joinFriend(Pages::FriendInfo* _this, u32 animDir, float animLength) {
+void FriendSelectPage_joinFriend(Pages::FriendInfo *_this, u32 animDir, float animLength) {
     Pulsar::System::sInstance->netMgr.region = RKNet::Controller::sInstance->friends[_this->selectedFriendIdx].statusData.regionId;
     return _this->EndStateAnimated(animDir, animLength);
 }

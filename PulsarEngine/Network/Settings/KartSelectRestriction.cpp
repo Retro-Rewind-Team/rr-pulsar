@@ -1,58 +1,43 @@
-#include <RetroRewind.hpp>
-#include <MarioKartWii/RKNet/RKNetController.hpp>
-#include <MarioKartWii/UI/Ctrl/UIControl.hpp>
-#include <Network/MatchCommand.hpp>
+#include <Network/Settings/SelectionRestrictions.hpp>
+#include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
+#include <MarioKartWii/UI/Section/SectionMgr.hpp>
 
-// Original code from VP, adapted to Pulsar 2.0.
-namespace RetroRewind {
+namespace Pulsar {
 namespace UI {
 
-static bool IsFriendRoom() {
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    return roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+static void ApplyVehicleRestrictions(Pages::KartSelect *page) {
+    page->Menu::OnActivate();
+    if (Restrictions::IsVehicleRestrictionConfigActive() || !Restrictions::IsVehicleRestrictionEnabled()) return;
+
+    for (u32 i = 0; i < 36; ++i) {
+        const KartId kart = Pages::KartSelect::kartUIOrderToIDArray[i];
+        page->isUnlocked[i] = Restrictions::IsVehicleEnabled(kart);
+    }
+}
+kmCall(0x80845524, ApplyVehicleRestrictions);
+
+static void SetVehicleAnimationTypeAndDefault(VehicleModelControl *model, PageId pageId) {
+    model->SetAnimationType(pageId);
+    if (!Restrictions::IsVehicleRestrictionEnabled()) return;
+
+    Pages::KartSelect *page = SectionMgr::sInstance->curSection->Get<Pages::KartSelect>();
+    if (page == nullptr || model != &page->vehicleModel) return;
+
+    const u32 weight = GetCharacterWeightClass(SectionMgr::sInstance->sectionParams->characters[0]);
+    for (u32 position = 0; position < Restrictions::VEHICLES_PER_WEIGHT; ++position) {
+        const KartId kart = kartsSortedByWeight[weight][position];
+        if (!Restrictions::IsVehicleEnabled(kart)) continue;
+
+        ButtonMachine *button = page->GetButtonMachineById(static_cast<u8>(kart));
+        if (button == nullptr || button->manipulator.inaccessible) continue;
+        page->SelectButton(*button);
+        break;
+    }
 }
 
-u8 RestrictKartSelection() {
-    SectionMgr::sInstance->sectionParams->kartsDisplayType = 2;
-    Pulsar::KartRestriction kartRest = Pulsar::KART_DEFAULTSELECTION;
-    Pulsar::KartRestriction bikeRest = Pulsar::KART_DEFAULTSELECTION;
-
-    if (IsFriendRoom()) {
-        kartRest = System::sInstance->IsContext(Pulsar::PULSAR_KARTRESTRICT) ? Pulsar::KART_KARTONLY : Pulsar::KART_DEFAULTSELECTION;
-        bikeRest = System::sInstance->IsContext(Pulsar::PULSAR_BIKERESTRICT) ? Pulsar::KART_BIKEONLY : Pulsar::KART_DEFAULTSELECTION;
-    }
-
-    if (kartRest == Pulsar::KART_KARTONLY) {
-        SectionMgr::sInstance->sectionParams->kartsDisplayType = 0;
-    }
-    if (bikeRest == Pulsar::KART_BIKEONLY) {
-        SectionMgr::sInstance->sectionParams->kartsDisplayType = 1;
-    }
-
-    return SectionMgr::sInstance->sectionParams->kartsDisplayType;
-}
-kmCall(0x808455a4, RestrictKartSelection);
-kmWrite32(0x808455a8, 0x907f06ec);
-
-bool IsKartAccessible(KartId kart, u32 r4) {
-    bool ret = IsKartUnlocked(kart, r4);
-    Pulsar::KartRestriction kartRest = Pulsar::KART_DEFAULTSELECTION;
-    Pulsar::KartRestriction bikeRest = Pulsar::KART_DEFAULTSELECTION;
-
-    if (IsFriendRoom()) {
-        kartRest = System::sInstance->IsContext(Pulsar::PULSAR_KARTRESTRICT) ? Pulsar::KART_KARTONLY : Pulsar::KART_DEFAULTSELECTION;
-        bikeRest = System::sInstance->IsContext(Pulsar::PULSAR_BIKERESTRICT) ? Pulsar::KART_BIKEONLY : Pulsar::KART_DEFAULTSELECTION;
-    }
-
-    if ((kart < STANDARD_BIKE_S && bikeRest == Pulsar::KART_BIKEONLY) ||
-        (kart >= STANDARD_BIKE_S && kartRest == Pulsar::KART_KARTONLY)) {
-        ret = false;
-    }
-
-    return ret;
-}
-kmCall(0x8084a45c, IsKartAccessible);
+kmCall(0x80847658, SetVehicleAnimationTypeAndDefault);
+kmCall(0x80847678, SetVehicleAnimationTypeAndDefault);
 
 }  // namespace UI
-}  // namespace RetroRewind
+}  // namespace Pulsar

@@ -13,19 +13,19 @@ class BattleModeSelect : public MenuInteractable {  // ID 0x75
     void OnActivate() override;  // 0x30 8083b400
     void OnDeactivate() override;  // 0x34 8083b9f4
     void AfterControlUpdate() override;  // 0x4c 8083b8cc
-    const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override;  // 0x60 8083bb2c
-    void OnExternalButtonSelect(PushButton& button, u32 hudSlotId) override;  // 0x64 8083b9ac
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x60 8083bb2c
+    void OnExternalButtonSelect(PushButton &button, u32 hudSlotId) override;  // 0x64 8083b9ac
     int GetActivePlayerBitfield() const override;  // 0x68 8083ba48
     int GetPlayerBitfield() const override;  // 0x6C 8083ba40
-    ManipulatorManager& GetManipulatorManager() override;  // 0x70 8083b244
-    UIControl* CreateExternalControl(u32 externControlId) override;  // 0x84 8083b24c
-    UIControl* CreateControl(u32 controlId) override;  // 0x88 8083b3f8
-    void SetButtonHandlers(PushButton& button) override;  // 0x8C 8083ba50
+    ManipulatorManager &GetManipulatorManager() override;  // 0x70 8083b244
+    UIControl *CreateExternalControl(u32 externControlId) override;  // 0x84 8083b24c
+    UIControl *CreateControl(u32 controlId) override;  // 0x88 8083b3f8
+    void SetButtonHandlers(PushButton &button) override;  // 0x8C 8083ba50
 
-    void OnButtonClick(PushButton& button, u32 hudSlotId);  // 8083b8d0
-    void OnButtonDeselect(PushButton& button, u32 hudSlotId);  // 8083b9e4
+    void OnButtonClick(PushButton &button, u32 hudSlotId);  // 8083b8d0
+    void OnButtonDeselect(PushButton &button, u32 hudSlotId);  // 8083b9e4
     void OnBackPress(u32 hudSlotId);  // 8083b9e8
-    static Page* GetPageById(PageId id = PAGE_BATTLE_MODE_SELECT);  // 8085212c
+    static Page *GetPageById(PageId id = PAGE_BATTLE_MODE_SELECT);  // 8085212c
 
     // onButtonClick    vtable = 0x808bd1a4 function = 8083b8d0
     // onButtonSelect   vtable = 0x808bd1a4 offset   = 0x64 call is virtual

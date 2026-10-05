@@ -3,7 +3,7 @@
 #include <kamek.hpp>
 
 class KartPartsDispParam {  // https://wiki.tockdom.com/wiki/KartPartsDispParam.bin
-   public:
+public:
     struct Entry {
         float cameraYDist;
         float tiresFwRotSpeed;

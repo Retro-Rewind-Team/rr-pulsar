@@ -6,7 +6,7 @@
 namespace Pulsar {
 
 struct ServerDateTime {
-    static ServerDateTime* sInstance;
+    static ServerDateTime *sInstance;
 
     u16 year;  // Full year (e.g., 2025)
     u8 month;  // 1-12
@@ -18,16 +18,15 @@ struct ServerDateTime {
     u64 serverTicks;
     u64 gameTicksAtSync;
 
-    ServerDateTime() :
-        year(0),
-        month(0),
-        day(0),
-        hour(0),
-        minute(0),
-        second(0),
-        isValid(false),
-        serverTicks(0),
-        gameTicksAtSync(0) {}
+    ServerDateTime() : year(0),
+                       month(0),
+                       day(0),
+                       hour(0),
+                       minute(0),
+                       second(0),
+                       isValid(false),
+                       serverTicks(0),
+                       gameTicksAtSync(0) {}
 
     void SetDateTime(u16 y, u8 mo, u8 d, u8 h, u8 mi, u8 s) {
         year = y;
@@ -39,7 +38,7 @@ struct ServerDateTime {
         isValid = true;
     }
 
-    void SetDateTime(const OS::CalendarTime& time, u64 ticks, u64 gameTicks) {
+    void SetDateTime(const OS::CalendarTime &time, u64 ticks, u64 gameTicks) {
         serverTicks = ticks;
         gameTicksAtSync = gameTicks;
         SetDateTime((u16)time.year, (u8)(time.mon + 1), (u8)time.mday, (u8)time.hour, (u8)time.min, (u8)time.sec);
@@ -109,13 +108,12 @@ struct ServerDateTime {
 
     bool IsVRMultiplierWeekend() const {
         if (!IsWeekend()) return false;
-        u32 weekNum = GetWeekNumber();
-        return (weekNum % 2) == 1;  // Odd weeks get the multiplier
+        return (GetWeekNumber() % 2) == 1;
     }
 
     static u8 GetVRMultiplierRegion(u32 weekNum) {
-        static const u8 regions[] = {0x0C, 0x0B, 0x0D};  // vs_12, vs_11, vs_13
-        u32 cycleIndex = (weekNum / 2) % 3;  // Every 2 weeks, cycle to next region
+        static const u8 regions[] = {0x0C, 0x0B, 0x0D, 0x14, 0x15};  // 200cc, OTT, Item Rain, CT, RT
+        u32 cycleIndex = (weekNum / 2) % 5;
         return regions[cycleIndex];
     }
 

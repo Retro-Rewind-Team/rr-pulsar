@@ -14,7 +14,7 @@ namespace Pulsar {
 namespace UI {
 
 class ExtendedTeamResultIrregularTotal : public Pages::GPVSLeaderboardTotal {
-   public:
+public:
     static const PulPageId id = PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR;
 
     PageId GetNextPage() const override;

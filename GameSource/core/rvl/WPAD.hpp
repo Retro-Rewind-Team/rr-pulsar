@@ -171,8 +171,8 @@ typedef void (*ConnectCallback)(s32 channel, s32 reason);
 typedef void (*ExtensionCallback)(s32 channel, s32 result);
 typedef void (*FlushCallback)(u32 result);
 typedef void (*WPADSyncDeviceCallback)(s32 result, s32 num);
-typedef void* (*WPADAlloc)(u32 size);
-typedef u8 (*WPADFree)(void* ptr);
+typedef void *(*WPADAlloc)(u32 size);
+typedef u8 (*WPADFree)(void *ptr);
 void Init();  // 801bf5c4
 
 // WUD Wrapper
@@ -185,28 +185,28 @@ u32 GetWorkMemorySize();  // 801bf648
 s32 GetStatus();  // 801bf64c
 
 u8 GetRadioSensitivity(s32 channel);  // 801bf650
-void GetAddress(s32 chan, WUD::BTD_ADDR* addr);  // 801bf694
+void GetAddress(s32 chan, WUD::BTD_ADDR *addr);  // 801bf694
 u8 GetSensorBarPosition();  // 801bf714
-void GetAccGravityUnit(s32 channel, u32 type, Acc* acc);  // 801c07d0
+void GetAccGravityUnit(s32 channel, u32 type, Acc *acc);  // 801c07d0
 void Disconnect(s32 channel);  // 801c08cc
-s32 Probe(s32 channel, u32* type);  // 801c0990
+s32 Probe(s32 channel, u32 *type);  // 801c0990
 SamplingCallback SetSamplingCallback(s32 channel, SamplingCallback callback);  // 801c0a1c
 ConnectCallback SetConnectCallback(s32 channel, ConnectCallback callback);  // 801c0a84
 ExtensionCallback SetExtensionCallback(s32 channel, ExtensionCallback callback);  // 801c0aec
 u32 GetDataFormat(s32 channel);  // 801c0b54
 s32 SetDataFormat(s32 channel, u32 fmt);  // 801c0b9c
-s32 GetInfoAsync(s32 channel, Info* info, Callback callback);  // 801c0ca4
+s32 GetInfoAsync(s32 channel, Info *info, Callback callback);  // 801c0ca4
 void ControlMotor(s32 channel, u32 command);  // 801c0ec4
 void EnableMotor(BOOL enable);  // 801c0f90
 BOOL IsMotorEnabled();  // 801c0fc4
 BOOL SaveConfig(FlushCallback callback);  // 801c11e0
-void Read(s32 channel, void* status);  // 801c128c
-void SetAutoSamplingbuffer(s32 channel, void* buffer, u32 length);  // 801c142c
+void Read(s32 channel, void *status);  // 801c128c
+void SetAutoSamplingbuffer(s32 channel, void *buffer, u32 length);  // 801c142c
 BOOL IsSpeakerEnabled(s32 channel);  // 801c17ec
 s32 ControlSpeaker(s32 channel, u32 command, Callback callback);  // 801c1830
 u8 GetSpeakerVolume();  // 801c2e4c
 void SetSpeakerVolume(u8 volume);  // 801c2e80
-s32 SendStreamData(s32 channel, void* buffer, u16 length);  // 801c30008
+s32 SendStreamData(s32 channel, void *buffer, u16 length);  // 801c30008
 BOOL CanSendStreamData(s32 channel);  // 801c308c
 u8 GetDpdSensitivity();  // 801c329c
 BOOL IsDpdEnabled(s32 channel);  // 801c32a4

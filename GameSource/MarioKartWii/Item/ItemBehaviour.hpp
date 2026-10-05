@@ -32,7 +32,7 @@ struct Behavior {
     u8 unknown_0x10;
     u8 padding2[3];  // Ignored when copying to array
     UseType useType;  // 0x14
-    void (*useFunction)(Player& player);  // 0x18 Item is draggable if this is null
+    void (*useFunction)(Player &player);  // 0x18 Item is draggable if this is null
 };  // Total size 0x1c
 
 void InitAllBehavior();

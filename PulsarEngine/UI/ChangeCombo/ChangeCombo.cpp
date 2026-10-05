@@ -12,6 +12,9 @@
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
 #include <CustomCharacters/CustomCharacters.hpp>
+#include <Network/Rating/PlayerRating.hpp>
+#include <Network/Settings/SelectionRestrictions.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -26,18 +29,64 @@ static bool IsRegionalRoom() {
     return roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
 }
 
-static bool ShouldHideComboButtons(const System& system) {
+static bool ShouldHideComboButtons(const System &system) {
     if (system.IsContext(PULSAR_MODE_KO) && system.koMgr != nullptr && system.koMgr->isSpectating) return true;
     if (system.IsContext(PULSAR_MODE_OTT) && system.IsContext(PULSAR_CHANGECOMBO) == OTTSETTING_COMBO_ENABLED) return true;
     return system.IsContext(PULSAR_MODE_OTT) && IsRegionalRoom();
 }
 
-static u8 GetKartOptionCount(Pulsar::KartRestriction kartRest, Pulsar::KartRestriction bikeRest) {
-    return (kartRest == KART_KARTONLY || bikeRest == KART_BIKEONLY) ? 6 : 12;
+static CharacterId GetCharacterForSlot(u32 slot, u32 hudSlotId) {
+    if (slot < 24) return static_cast<CharacterId>(CtrlMenuCharacterSelect::buttonIdToCharacterId[slot]);
+
+    SectionParams *params = SectionMgr::sInstance->sectionParams;
+    if (params == nullptr || hudSlotId >= params->localPlayerMiis.miiCount) return CHARACTER_NONE;
+    Mii *mii = params->localPlayerMiis.GetMii(hudSlotId);
+    if (mii == nullptr) return CHARACTER_NONE;
+
+    CharacterId character = GetMiiCharacterId(*mii);
+    if (character < MII_S_A_MALE || character > MII_L_C_FEMALE) return character;
+    u32 groupStart = MII_S_A_MALE;
+    if (character >= MII_L_A_MALE)
+        groupStart = MII_L_A_MALE;
+    else if (character >= MII_M_A_MALE)
+        groupStart = MII_M_A_MALE;
+    const u32 gender = (static_cast<u32>(character) - groupStart) & 1;
+    return static_cast<CharacterId>(groupStart + gender + (slot - 24) * 2);
 }
 
-static const u32 settingsPreviewSheetCount = 4;
-static u32 s_settingsPreviewSheets[settingsPreviewSheetCount];
+static CharacterId GetRandomEnabledCharacter(Random &random, u32 hudSlotId, CharacterId avoid) {
+    CharacterId choices[Restrictions::CHARACTER_SLOT_COUNT];
+    u32 count = 0;
+    const u32 mask = Restrictions::GetCharacterMask();
+    for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
+        if (((mask >> slot) & 1) == 0) continue;
+        const CharacterId character = GetCharacterForSlot(slot, hudSlotId);
+        if (character != CHARACTER_NONE && character != avoid) choices[count++] = character;
+    }
+    if (count == 0) return avoid;
+    return choices[random.NextLimited(count)];
+}
+
+static u32 GetRandomEnabledVehiclePosition(Random &random, u32 weight, u32 avoid = 12) {
+    u8 choices[Restrictions::VEHICLES_PER_WEIGHT];
+    u32 count = 0;
+    const u16 mask = Restrictions::GetVehicleMask(weight);
+    for (u32 position = 0; position < Restrictions::VEHICLES_PER_WEIGHT; ++position) {
+        if (((mask >> position) & 1) != 0 && position != avoid) choices[count++] = position;
+    }
+    if (count == 0) return avoid < Restrictions::VEHICLES_PER_WEIGHT ? avoid : Restrictions::GetFirstEnabledVehiclePosition(weight);
+    return choices[random.NextLimited(count)];
+}
+
+static u32 GetEnabledVehicleOrdinal(u32 weight, u32 position) {
+    const u16 mask = Restrictions::GetVehicleMask(weight);
+    u32 ordinal = 0;
+    for (u32 i = 0; i < position; ++i) ordinal += (mask >> i) & 1;
+    return ordinal;
+}
+
+static const u32 settingsPreviewPageCapacity = 6;
+static Settings::SettingsPageId s_settingsPreviewPages[settingsPreviewPageCapacity];
 static u32 s_settingsPreviewSheetCount = 0;
 static u32 s_settingsPreviewSheetIdx = 0;
 static bool s_settingsPreviewComplete = false;
@@ -59,23 +108,22 @@ void ResetFroomSettingsPreviewShown() {
 }
 
 static void BuildSettingsPreviewSheets() {
-    s_settingsPreviewSheetCount = 0;
-    s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_FROOM1;
-    s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_FROOM2;
-
-    const System* system = System::sInstance;
-    if (system->IsContext(PULSAR_MODE_KO)) {
-        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_KO;
-    }
-    if (system->IsContext(PULSAR_MODE_OTT)) {
-        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_OTT;
-    }
-    if (system->IsContext(PULSAR_MODE_BATTLEROYALE) && !system->IsContext(PULSAR_MODE_OTT)) {
-        s_settingsPreviewSheets[s_settingsPreviewSheetCount++] = Settings::SETTINGSTYPE_KOROYALE;
-    }
+    const System *system = System::sInstance;
+    const Network::Mgr &netMgr = system->netMgr;
+    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
+    const bool isBattle = sectionId == SECTION_P1_WIFI_FROOM_BALLOON_VOTING ||
+                          sectionId == SECTION_P2_WIFI_FROOM_BALLOON_VOTING ||
+                          sectionId == SECTION_P1_WIFI_FROOM_COIN_VOTING ||
+                          sectionId == SECTION_P2_WIFI_FROOM_COIN_VOTING;
+    s_settingsPreviewSheetCount = Settings::Params::BuildHostRulePages(
+        s_settingsPreviewPages, isBattle,
+        (netMgr.hostContext & (1 << PULSAR_MODE_KO)) || (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO)),
+        netMgr.hostContext & (1 << PULSAR_MODE_OTT), netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE),
+        netMgr.hostContext & (1 << PULSAR_EXTENDEDTEAMS));
 }
 
-static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr& page) {
+static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr &page) {
+    if (!System::sInstance->netMgr.hasHostSettingsPreview) return false;
     if (s_settingsPreviewShownThisRoom) return false;
     if (s_settingsPreviewComplete) return false;
     if (s_settingsPreviewSheetCount == 0) BuildSettingsPreviewSheets();
@@ -86,13 +134,13 @@ static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr& page) {
         return false;
     }
 
-    const u32 sheetIdx = s_settingsPreviewSheets[s_settingsPreviewSheetIdx++];
-    SettingsPanel::StartVotingPreview(sheetIdx);
+    const Settings::SettingsPageId settingsPage = s_settingsPreviewPages[s_settingsPreviewSheetIdx++];
+    SettingsPanel::StartVotingPreview(settingsPage);
     page.AddPageLayer(static_cast<PageId>(SettingsPanel::id), 0);
     return true;
 }
 
-bool AdvanceFroomSettingsPreview(u32& sheetIdx) {
+bool AdvanceFroomSettingsPreview(Settings::SettingsPageId &settingsPage) {
     if (s_settingsPreviewShownThisRoom) return false;
     if (s_settingsPreviewComplete) return false;
     if (s_settingsPreviewSheetCount == 0) BuildSettingsPreviewSheets();
@@ -103,17 +151,17 @@ bool AdvanceFroomSettingsPreview(u32& sheetIdx) {
         return false;
     }
 
-    sheetIdx = s_settingsPreviewSheets[s_settingsPreviewSheetIdx++];
+    settingsPage = s_settingsPreviewPages[s_settingsPreviewSheetIdx++];
     return true;
 }
 
-static void SELECTStageMgrOnActivate(Pages::SELECTStageMgr* page) {
+static void SELECTStageMgrOnActivate(Pages::SELECTStageMgr *page) {
     ResetSettingsPreview();
     page->Pages::SELECTStageMgr::OnActivate();
 }
 kmWritePointer(0x808C06CC, SELECTStageMgrOnActivate);
 
-static void SELECTStageMgrOnResume(Pages::SELECTStageMgr* page) {
+static void SELECTStageMgrOnResume(Pages::SELECTStageMgr *page) {
     if (page->status == Pages::SELECTStageMgr::STATUS_WAITING && IsFroomVotingSection(SectionMgr::sInstance->curSection->sectionId)) {
         if (TryPushNextSettingsPreview(*page)) return;
     }
@@ -143,11 +191,11 @@ void ExpVR::OnInit() {
     this->InitControlGroup(0x12);
     VR::OnInit();
     bool hideSettings = false;
-    const System* system = System::sInstance;
+    const System *system = System::sInstance;
 
-    const Section* curSection = SectionMgr::sInstance->curSection;
-    Pages::SELECTStageMgr* selectStageMgr = curSection->Get<Pages::SELECTStageMgr>();
-    CountDown* timer = &selectStageMgr->countdown;
+    const Section *curSection = SectionMgr::sInstance->curSection;
+    Pages::SELECTStageMgr *selectStageMgr = curSection->Get<Pages::SELECTStageMgr>();
+    CountDown *timer = &selectStageMgr->countdown;
 
     bool isKOd = false;
     if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating) isKOd = true;
@@ -155,7 +203,8 @@ void ExpVR::OnInit() {
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL))) isKOd = true;
 
     bool isRandomHidden = false;
-    if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
+    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED) isRandomHidden = true;
+    if (Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled()) isRandomHidden = true;
 
     this->AddControl(0xF, this->randomComboButton, 0);
     this->randomComboButton.isHidden = isKOd || isRandomHidden;
@@ -174,26 +223,26 @@ void ExpVR::OnInit() {
     this->settingsButton.SetOnSelectHandler(this->onButtonSelectHandler);
     this->topSettingsPage = SettingsPageSelect::id;
 
-    SettingsPanel* settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
+    SettingsPanel *settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
     settingsPanel->timer = timer;
 
-    Pages::CharacterSelect* charPage = curSection->Get<Pages::CharacterSelect>();
+    Pages::CharacterSelect *charPage = curSection->Get<Pages::CharacterSelect>();
     charPage->timer = timer;
     charPage->ctrlMenuCharSelect.timer = timer;
 
-    Pages::KartSelect* kartPage = curSection->Get<Pages::KartSelect>();
+    Pages::KartSelect *kartPage = curSection->Get<Pages::KartSelect>();
     if (kartPage != nullptr) kartPage->timer = timer;
 
-    Pages::BattleKartSelect* kartBattlePage = curSection->Get<Pages::BattleKartSelect>();
+    Pages::BattleKartSelect *kartBattlePage = curSection->Get<Pages::BattleKartSelect>();
     if (kartBattlePage != nullptr) kartBattlePage->timer = timer;
 
-    Pages::MultiKartSelect* multiKartPage = curSection->Get<Pages::MultiKartSelect>();
+    Pages::MultiKartSelect *multiKartPage = curSection->Get<Pages::MultiKartSelect>();
     if (multiKartPage != nullptr) multiKartPage->timer = timer;
 
-    Pages::DriftSelect* driftPage = curSection->Get<Pages::DriftSelect>();
+    Pages::DriftSelect *driftPage = curSection->Get<Pages::DriftSelect>();
     if (driftPage != nullptr) driftPage->timer = timer;
 
-    Pages::MultiDriftSelect* multiDriftPage = curSection->Get<Pages::MultiDriftSelect>();
+    Pages::MultiDriftSelect *multiDriftPage = curSection->Get<Pages::MultiDriftSelect>();
     if (multiDriftPage != nullptr) {
         multiDriftPage->nextSectionOnButtonClick = SECTION_NONE;
         multiDriftPage->timer = timer;
@@ -201,36 +250,17 @@ void ExpVR::OnInit() {
 }
 
 static void RandomizeCombo() {
+    if (Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled()) return;
     Random random;
-    const SectionMgr* sectionMgr = SectionMgr::sInstance;
-    Pulsar::CharacterRestriction charRestrictLight = Pulsar::CHAR_DEFAULTSELECTION;
-    Pulsar::CharacterRestriction charRestrictMid = Pulsar::CHAR_DEFAULTSELECTION;
-    Pulsar::CharacterRestriction charRestrictHeavy = Pulsar::CHAR_DEFAULTSELECTION;
-    Pulsar::KartRestriction kartRest = Pulsar::KART_DEFAULTSELECTION;
-    Pulsar::KartRestriction bikeRest = Pulsar::KART_DEFAULTSELECTION;
-    if (IsFriendRoom()) {
-        charRestrictLight = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTLIGHT) ? Pulsar::CHAR_LIGHTONLY : Pulsar::CHAR_DEFAULTSELECTION;
-        charRestrictMid = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTMID) ? Pulsar::CHAR_MEDIUMONLY : Pulsar::CHAR_DEFAULTSELECTION;
-        charRestrictHeavy = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTHEAVY) ? Pulsar::CHAR_HEAVYONLY : Pulsar::CHAR_DEFAULTSELECTION;
-        kartRest = System::sInstance->IsContext(Pulsar::PULSAR_KARTRESTRICT) ? Pulsar::KART_KARTONLY : Pulsar::KART_DEFAULTSELECTION;
-        bikeRest = System::sInstance->IsContext(Pulsar::PULSAR_BIKERESTRICT) ? Pulsar::KART_BIKEONLY : Pulsar::KART_DEFAULTSELECTION;
-    }
-    const Section* section = sectionMgr->curSection;
-    SectionParams* sectionParams = sectionMgr->sectionParams;
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
+    const Section *section = sectionMgr->curSection;
+    SectionParams *sectionParams = sectionMgr->sectionParams;
     for (int hudId = 0; hudId < sectionParams->localPlayerCount; ++hudId) {
-        CharacterId character = random.NextLimited<CharacterId>(24);
-        if (charRestrictLight == CHAR_LIGHTONLY) {
-            character = static_cast<CharacterId>(CtrlMenuCharacterSelect::buttonIdToCharacterId[static_cast<RetroRewind::System::CharButtonId>(random.NextLimited<u8>(8))]);
-        }
-        if (charRestrictMid == CHAR_MEDIUMONLY) {
-            character = static_cast<CharacterId>(CtrlMenuCharacterSelect::buttonIdToCharacterId[static_cast<RetroRewind::System::CharButtonId>(random.NextLimited<u8>(8) + 8)]);
-        }
-        if (charRestrictHeavy == CHAR_HEAVYONLY) {
-            character = static_cast<CharacterId>(CtrlMenuCharacterSelect::buttonIdToCharacterId[static_cast<RetroRewind::System::CharButtonId>(random.NextLimited<u8>(8) + 16)]);
-        }
-        const u8 kartCount = GetKartOptionCount(kartRest, bikeRest);
-        const u32 randomizedKartPos = random.NextLimited(kartCount);
-        const KartId kart = kartsSortedByWeight[GetCharacterWeightClass(character)][randomizedKartPos];
+        const CharacterId character = GetRandomEnabledCharacter(random, hudId, CHARACTER_NONE);
+        if (character == CHARACTER_NONE) continue;
+        const u32 weight = GetCharacterWeightClass(character);
+        const u32 randomizedKartPos = GetRandomEnabledVehiclePosition(random, weight);
+        const KartId kart = kartsSortedByWeight[weight][randomizedKartPos];
 
         sectionParams->characters[hudId] = character;
         sectionParams->karts[hudId] = kart;
@@ -238,19 +268,19 @@ static void RandomizeCombo() {
         sectionParams->combos[hudId].selKart = kart;
         CustomCharacters::RandomizeSelectedCharacterTable(character);
 
-        ExpCharacterSelect* charSelect = section->Get<ExpCharacterSelect>();  // guaranteed to exist on this page
+        ExpCharacterSelect *charSelect = section->Get<ExpCharacterSelect>();  // guaranteed to exist on this page
         charSelect->randomizedCharIdx[hudId] = character;
         charSelect->rolledCharIdx[hudId] = character;
         charSelect->rouletteCounter = ExpVR::randomDuration;
         charSelect->ctrlMenuCharSelect.selectedCharacter = character;
         charSelect->controlsManipulatorManager.inaccessible = true;
-        ExpBattleKartSelect* battleKartSelect = section->Get<ExpBattleKartSelect>();
+        ExpBattleKartSelect *battleKartSelect = section->Get<ExpBattleKartSelect>();
         if (battleKartSelect != nullptr) {
             battleKartSelect->selectedKart = random.NextLimited(2);
             battleKartSelect->controlsManipulatorManager.inaccessible = true;
         }
 
-        ExpKartSelect* kartSelect = section->Get<ExpKartSelect>();
+        ExpKartSelect *kartSelect = section->Get<ExpKartSelect>();
         if (kartSelect != nullptr) {
             kartSelect->rouletteCounter = ExpVR::randomDuration;
             kartSelect->randomizedKartPos = randomizedKartPos;
@@ -258,30 +288,28 @@ static void RandomizeCombo() {
             kartSelect->controlsManipulatorManager.inaccessible = true;
         }
 
-        ExpMultiKartSelect* multiKartSelect = section->Get<ExpMultiKartSelect>();
+        ExpMultiKartSelect *multiKartSelect = section->Get<ExpMultiKartSelect>();
         if (multiKartSelect != nullptr) {
             multiKartSelect->rouletteCounter = ExpVR::randomDuration;
-            multiKartSelect->rolledKartPos[0] = randomizedKartPos;
-            u32 options = GetKartOptionCount(kartRest, bikeRest);
-            if (IsBattle()) options = 2;
-            multiKartSelect->rolledKartPos[1] = random.NextLimited(options);
+            multiKartSelect->rolledKartPos[hudId] = IsBattle() ? random.NextLimited(2) : GetEnabledVehicleOrdinal(weight, randomizedKartPos);
             multiKartSelect->controlsManipulatorManager.inaccessible = true;
         }
     }
 }
 
-void ExpVR::RandomizeComboVR(PushButton& randomComboButton, u32 hudSlotId) {
+void ExpVR::RandomizeComboVR(PushButton &randomComboButton, u32 hudSlotId) {
+    if (Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled()) return;
     this->comboButtonState = 1;
     this->EndStateAnimated(0, randomComboButton.GetAnimationFrameSize());
     RandomizeCombo();
 }
 
-void ExpVR::ChangeCombo(PushButton& changeComboButton, u32 hudSlotId) {
+void ExpVR::ChangeCombo(PushButton &changeComboButton, u32 hudSlotId) {
     this->comboButtonState = 2;
     this->EndStateAnimated(0, changeComboButton.GetAnimationFrameSize());
 }
 
-void ExpVR::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
+void ExpVR::OnSettingsButtonClick(PushButton &button, u32 hudSlotId) {
     this->savedOkHidden = this->okButton.isHidden;
     this->savedBackHidden = this->ctrlMenuBackButton.isHidden;
     this->savedBottomHidden = this->ctrlMenuBottomMessage.isHidden;
@@ -297,10 +325,10 @@ void ExpVR::OnSettingsButtonClick(PushButton& button, u32 hudSlotId) {
     this->randomComboButton.isHidden = true;
     this->changeComboButton.isHidden = true;
     this->settingsButton.isHidden = true;
-    SettingsPanel* settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
+    SettingsPanel *settingsPanel = ExpSection::GetSection()->GetPulPage<SettingsPanel>();
     settingsPanel->prevPageId = PAGE_NONE;
-    SettingsPageSelect* settingsPageSelect = ExpSection::GetSection()->GetPulPage<SettingsPageSelect>();
-    settingsPageSelect->prevPageId = PAGE_NONE;
+    SettingsPageSelect *settingsPageSelect = ExpSection::GetSection()->GetPulPage<SettingsPageSelect>();
+    settingsPageSelect->SetContext(Settings::SETTINGS_CONTEXT_VOTING, PAGE_NONE);
     this->AddPageLayer(static_cast<PageId>(this->topSettingsPage), 0);
 }
 
@@ -321,11 +349,12 @@ void ExpVR::AfterControlUpdate() {
         this->changeComboButton.isHidden = true;
         this->settingsButton.isHidden = true;
     } else {
-        const System* system = System::sInstance;
+        const System *system = System::sInstance;
         const bool isKOd = ShouldHideComboButtons(*system);
 
         const bool isRandomHidden =
-            Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_ONLINE, RADIO_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED;
+            Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_ONLINERANDOMBUTTON) == RANDOMBUTTON_DISABLED ||
+            Restrictions::IsCharacterRestrictionEnabled() || Restrictions::IsVehicleRestrictionEnabled();
 
         this->randomComboButton.isHidden = isKOd || isRandomHidden;
         this->changeComboButton.isHidden = isKOd;
@@ -359,7 +388,7 @@ void ExpVR::OnResume() {
     VR::OnResume();
 }
 
-void ExpVR::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
+void ExpVR::ExtOnButtonSelect(PushButton &button, u32 hudSlotId) {
     if (button.buttonId == 5) {
         u32 bmgId = BMG_SETTINGS_BOTTOM + 1;
         if (this->topSettingsPage == PAGE_VS_TEAMS_VIEW)
@@ -371,7 +400,7 @@ void ExpVR::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {
     }
 }
 
-static void AddChangeComboPages(Section* section, PageId id) {
+static void AddChangeComboPages(Section *section, PageId id) {
     section->CreateAndInitPage(static_cast<PageId>(SettingsPanel::id));
     section->CreateAndInitPage(id);
     section->CreateAndInitPage(PAGE_CHARACTER_SELECT);
@@ -407,16 +436,64 @@ ExpCharacterSelect::ExpCharacterSelect() : rouletteCounter(-1) {
     rolledCharIdx[1] = CHARACTER_NONE;
 }
 
+void ExpCharacterSelect::OnActivate() {
+    Pages::CharacterSelect::OnActivate();
+
+    CtrlMenuCharacterSelect::ButtonDriver *buttons = ctrlMenuCharSelect.driverButtonsArray;
+    if (buttons == nullptr) return;
+
+    const u32 playerBitfield = GetPlayerBitfield();
+    const u32 miiCSlot = RetroRewind::System::BUTTON_MII_C;
+    CtrlMenuCharacterSelect::ButtonDriver &miiCButton = buttons[miiCSlot];
+    const CharacterId miiCCharacter = GetCharacterForSlot(miiCSlot, 0);
+    if (miiCCharacter != CHARACTER_NONE) miiCButton.buttonId = miiCCharacter;
+
+    bool miiCUnlocked = Restrictions::IsOnlyMiiOutfitCEnabled();
+    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+    if (!miiCUnlocked && rksys != nullptr) miiCUnlocked = PointRating::GetUserVR(rksys->curLicenseId) >= 300.0f;
+
+    CtrlMenuCharacterSelect::ButtonDriver *defaultButton = nullptr;
+    if (!Restrictions::IsCharacterRestrictionEnabled()) {
+        miiCButton.SetPlayerBitfield(miiCUnlocked ? playerBitfield : 0);
+        if (!miiCUnlocked) {
+            miiCButton.SetPicturePane("chara", "cha_26_hatena");
+            miiCButton.SetPicturePane("chara_shadow", "cha_26_hatena");
+            miiCButton.SetPicturePane("chara_light_01", "cha_26_hatena");
+            miiCButton.SetPicturePane("chara_light_02", "cha_26_hatena");
+            miiCButton.SetPicturePane("chara_c_down", "cha_26_hatena");
+            if (miiCButton.IsSelected()) defaultButton = &buttons[RetroRewind::System::BUTTON_MARIO];
+        }
+    } else {
+        for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
+            CtrlMenuCharacterSelect::ButtonDriver &button = buttons[slot];
+            const bool enabled = Restrictions::IsCharacterSlotEnabled(slot) && (slot != miiCSlot || miiCUnlocked);
+            if (enabled) {
+                button.SetPlayerBitfield(playerBitfield);
+                if (defaultButton == nullptr) defaultButton = &button;
+                continue;
+            }
+
+            button.SetPlayerBitfield(0);
+            button.SetPicturePane("chara", "cha_26_hatena");
+            button.SetPicturePane("chara_shadow", "cha_26_hatena");
+            button.SetPicturePane("chara_light_01", "cha_26_hatena");
+            button.SetPicturePane("chara_light_02", "cha_26_hatena");
+            button.SetPicturePane("chara_c_down", "cha_26_hatena");
+        }
+    }
+
+    if (defaultButton == nullptr) return;
+    for (u32 slot = 0; slot < Restrictions::CHARACTER_SLOT_COUNT; ++slot) {
+        CtrlMenuCharacterSelect::ButtonDriver &button = buttons[slot];
+        if (&button != defaultButton && button.IsSelected()) button.HandleDeselect(0, -1);
+    }
+    defaultButton->Select(0);
+    defaultButton->SetButtonColours(0);
+    OnButtonDriverSelect(defaultButton, defaultButton->buttonId, 0);
+}
+
 void ExpCharacterSelect::BeforeControlUpdate() {
     const s32 roulette = this->rouletteCounter;
-    Pulsar::CharacterRestriction charRestrictLight = Pulsar::CHAR_DEFAULTSELECTION;
-    Pulsar::CharacterRestriction charRestrictMid = Pulsar::CHAR_DEFAULTSELECTION;
-    Pulsar::CharacterRestriction charRestrictHeavy = Pulsar::CHAR_DEFAULTSELECTION;
-    if (IsFriendRoom()) {
-        charRestrictLight = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTLIGHT) ? Pulsar::CHAR_LIGHTONLY : Pulsar::CHAR_DEFAULTSELECTION;
-        charRestrictMid = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTMID) ? Pulsar::CHAR_MEDIUMONLY : Pulsar::CHAR_DEFAULTSELECTION;
-        charRestrictHeavy = System::sInstance->IsContext(Pulsar::PULSAR_CHARRESTRICTHEAVY) ? Pulsar::CHAR_HEAVYONLY : Pulsar::CHAR_DEFAULTSELECTION;
-    }
     if (roulette > 0) {
         --this->rouletteCounter;
         this->controlsManipulatorManager.inaccessible = true;
@@ -431,28 +508,17 @@ void ExpCharacterSelect::BeforeControlUpdate() {
         if (roulette == 1)
             this->rolledCharIdx[hudId] = this->randomizedCharIdx[hudId];
         else if (isGoodFrame)
-            while (this->rolledCharIdx[hudId] == prevChar) {
-                this->rolledCharIdx[hudId] = static_cast<CharacterId>(random.NextLimited(24));
-                if (charRestrictLight == CHAR_LIGHTONLY) {
-                    this->rolledCharIdx[hudId] = static_cast<CharacterId>(CtrlMenuCharacterSelect::buttonIdToCharacterId[static_cast<RetroRewind::System::CharButtonId>(random.NextLimited<u8>(8))]);
-                }
-                if (charRestrictMid == CHAR_MEDIUMONLY) {
-                    this->rolledCharIdx[hudId] = static_cast<CharacterId>(CtrlMenuCharacterSelect::buttonIdToCharacterId[static_cast<RetroRewind::System::CharButtonId>(random.NextLimited<u8>(8) + 8)]);
-                }
-                if (charRestrictHeavy == CHAR_HEAVYONLY) {
-                    this->rolledCharIdx[hudId] = static_cast<CharacterId>(CtrlMenuCharacterSelect::buttonIdToCharacterId[static_cast<RetroRewind::System::CharButtonId>(random.NextLimited<u8>(8) + 16)]);
-                }
-            }
+            this->rolledCharIdx[hudId] = GetRandomEnabledCharacter(random, hudId, prevChar);
         if (isGoodFrame) {
             this->ctrlMenuCharSelect.GetButtonDriver(prevChar)->HandleDeselect(hudId, -1);
-            CtrlMenuCharacterSelect::ButtonDriver* nextButton = this->ctrlMenuCharSelect.GetButtonDriver(rolledCharIdx[hudId]);
+            CtrlMenuCharacterSelect::ButtonDriver *nextButton = this->ctrlMenuCharSelect.GetButtonDriver(rolledCharIdx[hudId]);
             nextButton->HandleSelect(hudId, -1);
             nextButton->Select(0);
 
         } else if (roulette == 0) {
             if (this->buttonCooldown == 0) {
                 this->ctrlMenuCharSelect.GetButtonDriver(randomizedCharIdx[hudId])->HandleClick(hudId, -1);
-                if (Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_MENU, RADIO_FASTMENUS) == FASTMENUS_ENABLED)
+                if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FASTMENUS) == FASTMENUS_ENABLED)
                     this->buttonCooldown = 30;
                 else
                     this->buttonCooldown = 150;
@@ -468,8 +534,8 @@ void ExpBattleKartSelect::BeforeControlUpdate() {
     if (kart >= 0 && this->currentState == 0x4) {
         this->controlsManipulatorManager.inaccessible = true;
         this->selectedKart = -1;
-        PushButton* otherButton = this->controlGroup.GetControl<PushButton>(kart ^ 1);
-        PushButton* kartButton = this->controlGroup.GetControl<PushButton>(kart);
+        PushButton *otherButton = this->controlGroup.GetControl<PushButton>(kart ^ 1);
+        PushButton *kartButton = this->controlGroup.GetControl<PushButton>(kart);
         otherButton->HandleDeselect(0, -1);
         kartButton->HandleSelect(0, -1);
         kartButton->Select(0);
@@ -479,30 +545,36 @@ void ExpBattleKartSelect::BeforeControlUpdate() {
 
 ExpKartSelect::ExpKartSelect() : randomizedKartPos(-1), rolledKartPos(-1), rouletteCounter(-1) {}
 
+void ExpKartSelect::OnActivate() {
+    Pages::KartSelect::OnActivate();
+    if (!Restrictions::IsVehicleRestrictionEnabled()) return;
+
+    const u32 weight = GetCharacterWeightClass(SectionMgr::sInstance->sectionParams->characters[0]);
+    const u32 position = Restrictions::GetFirstEnabledVehiclePosition(weight);
+    ButtonMachine *button = GetButtonMachineById(static_cast<u8>(kartsSortedByWeight[weight][position]));
+    if (button == nullptr) return;
+    button->SelectInitial(0);
+    button->HandleSelect(0, -1);
+    OnExternalButtonSelect(*button, 0);
+}
+
 void ExpKartSelect::BeforeControlUpdate() {
     s32 roulette = this->rouletteCounter;
-    Pulsar::KartRestriction kartRest = Pulsar::KART_DEFAULTSELECTION;
-    Pulsar::KartRestriction bikeRest = Pulsar::KART_DEFAULTSELECTION;
-    if (IsFriendRoom()) {
-        kartRest = System::sInstance->IsContext(Pulsar::PULSAR_KARTRESTRICT) ? Pulsar::KART_KARTONLY : Pulsar::KART_DEFAULTSELECTION;
-        bikeRest = System::sInstance->IsContext(Pulsar::PULSAR_BIKERESTRICT) ? Pulsar::KART_BIKEONLY : Pulsar::KART_DEFAULTSELECTION;
-    }
     if (roulette > 0) {
         this->controlsManipulatorManager.inaccessible = true;
         Random random;
         const u32 prevRoll = this->rolledKartPos;
-        ButtonMachine* prevButton = this->GetKartButton(prevRoll);
+        ButtonMachine *prevButton = this->GetKartButton(prevRoll);
         prevButton->HandleDeselect(0, -1);
 
         u32 nextRoll = prevRoll;
         const bool isGoodFrame = roulette % 4 == 1;
-        const u8 kartCount = GetKartOptionCount(kartRest, bikeRest);
         if (roulette == 1)
             nextRoll = this->randomizedKartPos;
         else if (isGoodFrame)
-            while (nextRoll == prevRoll) nextRoll = random.NextLimited(kartCount);
+            nextRoll = GetRandomEnabledVehiclePosition(random, GetCharacterWeightClass(SectionMgr::sInstance->sectionParams->characters[0]), prevRoll);
         if (isGoodFrame) {
-            ButtonMachine* nextButton = this->GetKartButton(nextRoll);
+            ButtonMachine *nextButton = this->GetKartButton(nextRoll);
             nextButton->HandleSelect(0, -1);
             nextButton->Select(0);
             this->rolledKartPos = nextRoll;
@@ -514,16 +586,9 @@ void ExpKartSelect::BeforeControlUpdate() {
     }
 }
 
-ButtonMachine* ExpKartSelect::GetKartButton(u32 idx) const {
-    Pulsar::KartRestriction kartRest = Pulsar::KART_DEFAULTSELECTION;
-    Pulsar::KartRestriction bikeRest = Pulsar::KART_DEFAULTSELECTION;
-    if (IsFriendRoom()) {
-        kartRest = System::sInstance->IsContext(Pulsar::PULSAR_KARTRESTRICT) ? Pulsar::KART_KARTONLY : Pulsar::KART_DEFAULTSELECTION;
-        bikeRest = System::sInstance->IsContext(Pulsar::PULSAR_BIKERESTRICT) ? Pulsar::KART_BIKEONLY : Pulsar::KART_DEFAULTSELECTION;
-    }
-    const u8 buttonsPerRow = (kartRest == KART_KARTONLY || bikeRest == KART_BIKEONLY) ? 1 : 2;
-    const UIControl* globalButtonHolder = this->controlGroup.GetControl(buttonsPerRow);  // holds the 6 controls (6 rows) that each hold a pair of buttons
-    return globalButtonHolder->childrenGroup.GetControl(idx / buttonsPerRow)->childrenGroup.GetControl<ButtonMachine>(idx % buttonsPerRow);
+ButtonMachine *ExpKartSelect::GetKartButton(u32 idx) const {
+    const u32 weight = GetCharacterWeightClass(SectionMgr::sInstance->sectionParams->characters[0]);
+    return const_cast<ExpKartSelect *>(this)->GetButtonMachineById(static_cast<u8>(kartsSortedByWeight[weight][idx]));
 }
 
 ExpMultiKartSelect::ExpMultiKartSelect() : rouletteCounter(-1) {
@@ -557,14 +622,14 @@ void ExpMultiKartSelect::BeforeControlUpdate() {
 }
 
 void StopRandomComboRoulette() {
-    ExpCharacterSelect* charSelect = SectionMgr::sInstance->curSection->Get<ExpCharacterSelect>();
+    ExpCharacterSelect *charSelect = SectionMgr::sInstance->curSection->Get<ExpCharacterSelect>();
     if (charSelect != nullptr && charSelect->rouletteCounter != -1) {
         charSelect->rouletteCounter = -1;
     }
 }
 
-void DriftSelectBeforeControlUpdate(Pages::DriftSelect* driftSelect) {
-    ExpCharacterSelect* charSelect = SectionMgr::sInstance->curSection->Get<ExpCharacterSelect>();
+void DriftSelectBeforeControlUpdate(Pages::DriftSelect *driftSelect) {
+    ExpCharacterSelect *charSelect = SectionMgr::sInstance->curSection->Get<ExpCharacterSelect>();
     if (charSelect->rouletteCounter != -1 && driftSelect->currentState == 0x4) {
         driftSelect->controlsManipulatorManager.inaccessible = false;
         StopRandomComboRoulette();
@@ -572,9 +637,9 @@ void DriftSelectBeforeControlUpdate(Pages::DriftSelect* driftSelect) {
 }
 kmWritePointer(0x808D9DF8, DriftSelectBeforeControlUpdate);
 
-void MultiDriftSelectBeforeControlUpdate(Pages::MultiDriftSelect* multiDriftSelect) {
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
-    ExpCharacterSelect* charSelect = sectionMgr->curSection->Get<ExpCharacterSelect>();
+void MultiDriftSelectBeforeControlUpdate(Pages::MultiDriftSelect *multiDriftSelect) {
+    SectionMgr *sectionMgr = SectionMgr::sInstance;
+    ExpCharacterSelect *charSelect = sectionMgr->curSection->Get<ExpCharacterSelect>();
     if (charSelect->rouletteCounter != -1 && multiDriftSelect->currentState == 0x4) {
         multiDriftSelect->controlsManipulatorManager.inaccessible = false;
         StopRandomComboRoulette();
@@ -582,9 +647,9 @@ void MultiDriftSelectBeforeControlUpdate(Pages::MultiDriftSelect* multiDriftSele
 }
 kmWritePointer(0x808D9C10, MultiDriftSelectBeforeControlUpdate);
 
-void AddCharSelectLayer(Pages::SELECTStageMgr& page, PageId id, u32 animDirection) {
-    const System* system = System::sInstance;
-    const ExpVR* votingPage = SectionMgr::sInstance->curSection->Get<ExpVR>();  // always present when 0x90 is present
+void AddCharSelectLayer(Pages::SELECTStageMgr &page, PageId id, u32 animDirection) {
+    const System *system = System::sInstance;
+    const ExpVR *votingPage = SectionMgr::sInstance->curSection->Get<ExpVR>();  // always present when 0x90 is present
     if (system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating) {
         id = PAGE_VOTE;
         page.status = Pages::SELECTStageMgr::STATUS_VOTES_PAGE;

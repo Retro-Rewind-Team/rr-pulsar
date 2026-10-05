@@ -18,21 +18,21 @@ SubObjectArray<W_Itembox::Box>
 
 class W_Itembox : public ObjectCollidable {  // ObjectNum 0xd3 = 211
     class Box : public Itembox {  // one box of the line
-       public:
-        explicit Box(const KMP::Holder<GOBJ>& gobjHolder);  // 8076ccc8 inlined
+    public:
+        explicit Box(const KMP::Holder<GOBJ> &gobjHolder);  // 8076ccc8 inlined
         ~Box() override;  // 8076cd04 vtable 808cec78
         void OnStart() override;  // 0xc 8076cd44
         void Update() override;  // 0x14 8076cdb8
         u32 GetPropertiesBitfield() override;  // 0x2c 8076cf70
-        const char* GetBRRESName() const override;  // 0x34 8076cf58
-        const char* GetSubFileName() const override;  // 0x38 8076cf64
-        ObjToKartHit OnCollision(const Kart::Player& kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 8076cefc
-        ObjToItemInteraction OnItemCollision(const Kart::Player& kartPlayer,
-                                             ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3& itemSpeed) const override;  // 0xc4 8076cf34
+        const char *GetBRRESName() const override;  // 0x34 8076cf58
+        const char *GetSubFileName() const override;  // 0x38 8076cf64
+        ObjToKartHit OnCollision(const Kart::Player &kartPlayer, ObjToKartHit defaultHit, KartToObjHit kartToObj) override;  // 0xc0 8076cefc
+        ObjToItemInteraction OnItemCollision(const Kart::Player &kartPlayer,
+                                             ObjToItemInteraction defaultInteraction, ItemToObjInteraction itemToObj, const Vec3 &itemSpeed) const override;  // 0xc4 8076cf34
 
         u32 hasSpawned;  // 0xc8 0 unspawned, 1 spawned
     };  // 0xcc
-    explicit W_Itembox(const KMP::Holder<GOBJ>& gobjHolder);  // 8076c85c
+    explicit W_Itembox(const KMP::Holder<GOBJ> &gobjHolder);  // 8076c85c
     ~W_Itembox() override;  // 8076ca44 vtable 808ceb70
     void OnStart() override;  // 0xc 8076cac4
     void Update() override;  // 0x14 8076cb08

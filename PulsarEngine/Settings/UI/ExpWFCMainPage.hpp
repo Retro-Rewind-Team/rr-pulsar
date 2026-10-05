@@ -9,7 +9,7 @@ namespace Pulsar {
 namespace UI {
 
 class ExpWFCMain : public Pages::WFCMainMenu {
-   public:
+public:
     ExpWFCMain() {
         this->onSettingsClick.subject = this;
         this->onSettingsClick.ptmf = &ExpWFCMain::OnSettingsButtonClick;
@@ -29,20 +29,20 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     void OnInit() override;
     void BeforeControlUpdate() override;
 
-   private:
-    void OnSettingsButtonClick(PushButton& pushButton, u32 r5);
-    void ExtOnButtonSelect(PushButton& pushButton, u32 hudSlotId);
-    void OnMainButtonClick(PushButton& pushButton, u32 hudSlotId);
-    void OnOtherButtonClick(PushButton& pushButton, u32 hudSlotId);
-    void OnBattleButtonClick(PushButton& pushButton, u32 hudSlotId);
-    void OnLeaderboardButtonClick(PushButton& pushButton, u32 hudSlotId);
+private:
+    void OnSettingsButtonClick(PushButton &pushButton, u32 r5);
+    void ExtOnButtonSelect(PushButton &pushButton, u32 hudSlotId);
+    void OnMainButtonClick(PushButton &pushButton, u32 hudSlotId);
+    void OnOtherButtonClick(PushButton &pushButton, u32 hudSlotId);
+    void OnBattleButtonClick(PushButton &pushButton, u32 hudSlotId);
+    void OnLeaderboardButtonClick(PushButton &pushButton, u32 hudSlotId);
     void ExtOnStartPress(u32 hudSlotId);
 
-    PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onSettingsClick;
-    PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onMainClick;
-    PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onOtherClick;
-    PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onBattleClick;
-    PtmfHolder_2A<ExpWFCMain, void, PushButton&, u32> onLeaderboardClick;
+    PtmfHolder_2A<ExpWFCMain, void, PushButton &, u32> onSettingsClick;
+    PtmfHolder_2A<ExpWFCMain, void, PushButton &, u32> onMainClick;
+    PtmfHolder_2A<ExpWFCMain, void, PushButton &, u32> onOtherClick;
+    PtmfHolder_2A<ExpWFCMain, void, PushButton &, u32> onBattleClick;
+    PtmfHolder_2A<ExpWFCMain, void, PushButton &, u32> onLeaderboardClick;
     PtmfHolder_1A<ExpWFCMain, void, u32> onStartPress;
     PushButton settingsButton;
     PushButton mainButton;
@@ -52,26 +52,26 @@ class ExpWFCMain : public Pages::WFCMainMenu {
     LayoutUIControl playerCount;
     LayoutUIControl rankInfo;
 
-   public:
+public:
     PulPageId topSettingsPage;
     static u32 lastClickedMainMenuButton;
 };
 
 class ExpWFCModeSel : public Pages::WFCModeSelect {
-   public:
+public:
     ExpWFCModeSel() : region(0xA) {
         this->onButtonSelectHandler.ptmf = &ExpWFCModeSel::OnModeButtonSelect;
         this->onModeButtonClickHandler.ptmf = &ExpWFCModeSel::OnModeButtonClick;
     }
     void OnInit() override;
     void BeforeControlUpdate() override;
-    static void InitButton(ExpWFCModeSel& self);
+    static void InitButton(ExpWFCModeSel &self);
     static void OnActivatePatch();
     static void ClearModeContexts();
 
-   public:
-    void OnModeButtonSelect(PushButton& modeButton, u32 hudSlotId);  // 8064c718
-    void OnModeButtonClick(PushButton& pushButton, u32 r5);
+public:
+    void OnModeButtonSelect(PushButton &modeButton, u32 hudSlotId);  // 8064c718
+    void OnModeButtonClick(PushButton &pushButton, u32 r5);
 
     PushButton ctButton;
     PushButton regButton;

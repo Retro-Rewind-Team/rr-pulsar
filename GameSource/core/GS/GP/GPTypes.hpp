@@ -8,28 +8,28 @@
 
 namespace GP {
 struct Connection;
-typedef void (*Callback)(Connection* connection, void* arg, void* param);
+typedef void (*Callback)(Connection *connection, void *arg, void *param);
 
 struct ICallback {
     Callback callback;
-    void* param;
+    void *param;
 };
 
 struct IBuffer {
-    char* buffer;
+    char *buffer;
     int size;
     int len;
     int pos;
 };
 
 struct IOperation {
-    void* data;
+    void *data;
     BOOL blocking;
     ICallback callback;
     int state;
     int id;
     Result result;
-    IOperation* next;
+    IOperation *next;
 };
 
 typedef struct {
@@ -57,7 +57,7 @@ struct Connection {
     int cmSocket;
     int connectState;
     IBuffer socketBuffer;
-    char* inputBuffer;
+    char *inputBuffer;
     int inputBufferSize;
     IBuffer outputBuffer;
     // Replaced by UDP Layer
@@ -88,12 +88,12 @@ struct Connection {
 
     ErrorCode errorCode;
     BOOL fatalError;
-    FILE* diskCache;
-    IOperation* operationList;
-    void* profileList;
-    void* peerList;
-    void* callbackList;
-    void* lastCallback;
+    FILE *diskCache;
+    IOperation *operationList;
+    void *profileList;
+    void *peerList;
+    void *callbackList;
+    void *lastCallback;
     IBuffer updateproBuffer;
     IBuffer updateuiBuffer;
     GS::DArray transfers;
@@ -114,7 +114,7 @@ struct UniqueMatch {
 struct GetReverseBuddiesListResponseArg {
     Result result;
     int numOfUniqueMatchs;
-    UniqueMatch* matches;
+    UniqueMatch *matches;
 };
 
 }  // namespace GP

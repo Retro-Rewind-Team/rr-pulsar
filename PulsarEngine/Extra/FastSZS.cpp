@@ -5,9 +5,9 @@
 namespace Pulsar {
 namespace Extra {
 
-extern "C" u32 decodeSZSAsm(void* dst, const void* src);
+extern "C" u32 decodeSZSAsm(void *dst, const void *src);
 
-u32 Decomp_decodeSZS_hook(const void* src, void* dest) {
+u32 Decomp_decodeSZS_hook(const void *src, void *dest) {
     if (src == nullptr || dest == nullptr) return 0;
     return decodeSZSAsm(dest, src);
 }

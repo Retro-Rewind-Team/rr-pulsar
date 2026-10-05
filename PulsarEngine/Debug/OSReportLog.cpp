@@ -1,5 +1,6 @@
 #include <kamek.hpp>
 #include <PulsarSystem.hpp>
+#include <IO/IO.hpp>
 #include <IO/SDIO.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <include/c_stdarg.h>
@@ -10,7 +11,7 @@
 namespace Pulsar {
 namespace Debug {
 
-const char* OS_REPORT_LOG_PATH = "/RetroRewind6/OSReport.txt";
+const char *OS_REPORT_LOG_PATH = "/RetroRewind6/OSReport.txt";
 const u32 LOG_BUFFER_SIZE = 0x4000;
 const u32 LOG_FLUSH_CHUNK_SIZE = 0x400;
 
@@ -24,7 +25,7 @@ u32 PendingLogBytes() {
     return LOG_BUFFER_SIZE - sLogReadPos + sLogWritePos;
 }
 
-void QueueOSReportLog(const char* text, u32 length) {
+void QueueOSReportLog(const char *text, u32 length) {
     if (text == nullptr || length == 0) return;
 
     for (u32 i = 0; i < length; ++i) {
@@ -41,16 +42,21 @@ void FlushOSReportLog() {
     sWritingOSReportLog = true;
 
     SDIO sd(IOType_SD, nullptr, nullptr);
-    if (!sd.OpenFile(OS_REPORT_LOG_PATH, IOS::MODE_WRITE)) {
-        sd.CreateFolder("/RetroRewind6");
-        if (!sd.CreateAndOpen(OS_REPORT_LOG_PATH, IOS::MODE_WRITE)) {
+    IO *logIo = &sd;
+    if (IO::sInstance != nullptr && IO::sInstance->type == IOType_DOLPHIN) {
+        logIo = IO::sInstance;
+    }
+
+    if (!logIo->OpenFile(OS_REPORT_LOG_PATH, IOS::MODE_WRITE)) {
+        logIo->CreateFolder("/RetroRewind6");
+        if (!logIo->CreateAndOpen(OS_REPORT_LOG_PATH, IOS::MODE_WRITE)) {
             sWritingOSReportLog = false;
             return;
         }
     }
 
-    const s32 size = sd.GetFileSize();
-    if (size > 0) sd.Seek(static_cast<u32>(size));
+    const s32 size = logIo->GetFileSize();
+    if (size > 0) logIo->Seek(static_cast<u32>(size));
 
     u32 remaining = PendingLogBytes();
     if (remaining > LOG_FLUSH_CHUNK_SIZE) remaining = LOG_FLUSH_CHUNK_SIZE;
@@ -59,19 +65,19 @@ void FlushOSReportLog() {
         u32 chunk = LOG_BUFFER_SIZE - sLogReadPos;
         if (chunk > remaining) chunk = remaining;
 
-        const s32 wrote = sd.Write(chunk, &sLogBuffer[sLogReadPos]);
+        const s32 wrote = logIo->Write(chunk, &sLogBuffer[sLogReadPos]);
         if (wrote <= 0) break;
 
         sLogReadPos = (sLogReadPos + static_cast<u32>(wrote)) % LOG_BUFFER_SIZE;
         remaining -= static_cast<u32>(wrote);
     }
 
-    sd.Close();
+    logIo->Close();
 
     sWritingOSReportLog = false;
 }
 
-int OSReportLogHook(const char* format, ...) {
+int OSReportLogHook(const char *format, ...) {
     va_list args;
     va_start(args, format);
     const int printed = vprintf(format, args);

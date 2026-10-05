@@ -37,7 +37,7 @@ struct ResAnmTexSrtData {  // https://wiki.tockdom.com/wiki/SRT0_(File_Format)
 };
 
 class ResAnmTexSrt : public ResCommon<ResAnmTexSrtData>, public TexSrtTypedef {
-    void GetResult(TexSrtAnmResult* result, u32 anmId, float frame);  // 800538e0
+    void GetResult(TexSrtAnmResult *result, u32 anmId, float frame);  // 800538e0
 };
 
 }  // namespace g3d

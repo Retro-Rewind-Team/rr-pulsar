@@ -7,7 +7,7 @@
 namespace nw4r {
 namespace lyt {
 class DrawInfo {
-   public:
+public:
     DrawInfo();  // 80082620
     virtual ~DrawInfo();  // 800826a0 vtable 802737b0
     math::MTX34 matrix;

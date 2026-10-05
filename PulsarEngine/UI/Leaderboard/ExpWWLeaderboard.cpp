@@ -18,9 +18,9 @@ namespace UI {
 
 typedef Pages::GPVSLeaderboardUpdate::Player PlayerEntry;
 
-typedef void (*FillDeltaFn)(CtrlRaceResult*, u32, u8);
-typedef void (*ApplyExtraPageFn)(Page*);
-typedef void (*MarkLicensesDirtyFn)(void*);
+typedef void (*FillDeltaFn)(CtrlRaceResult *, u32, u8);
+typedef void (*ApplyExtraPageFn)(Page *);
+typedef void (*MarkLicensesDirtyFn)(void *);
 
 kmRuntimeUse(0x807f579c);
 kmRuntimeUse(0x8064f65c);
@@ -44,15 +44,15 @@ struct CtrlRaceResult_Inputs {
 
 static const u32 FLOAT_MODE_MAGIC = 0x1337CAFE;
 
-void CtrlRaceResult_calcSelf_Hook(CtrlRaceResult* self) {
-    CtrlRaceResult_Inputs* inputs = reinterpret_cast<CtrlRaceResult_Inputs*>(self);
+void CtrlRaceResult_calcSelf_Hook(CtrlRaceResult *self) {
+    CtrlRaceResult_Inputs *inputs = reinterpret_cast<CtrlRaceResult_Inputs *>(self);
 
     if (inputs->messageId == FLOAT_MODE_MAGIC) {
         if (inputs->timer > 0.0f) {
             inputs->current += inputs->step;
             inputs->timer -= 1.0f;
 
-            float targetVal = *reinterpret_cast<float*>(&inputs->target);
+            float targetVal = *reinterpret_cast<float *>(&inputs->target);
 
             bool finished = false;
             if ((inputs->step > 0 && inputs->current >= targetVal) ||
@@ -81,7 +81,7 @@ void CtrlRaceResult_calcSelf_Hook(CtrlRaceResult* self) {
             }
         }
     } else {
-        reinterpret_cast<void (*)(CtrlRaceResult*)>(kmRuntimeAddr(0x807f5a50))(self);
+        reinterpret_cast<void (*)(CtrlRaceResult *)>(kmRuntimeAddr(0x807f5a50))(self);
     }
 }
 
@@ -104,7 +104,7 @@ static s32 NormalizeRatingDelta(s32 rawDelta) {
     return rawDelta;
 }
 
-void FormatRatingDelta(float delta, wchar_t* buffer, u32 bufferSize) {
+void FormatRatingDelta(float delta, wchar_t *buffer, u32 bufferSize) {
     int whole = (int)delta;
     int centis;
     if (delta >= 0.0f) {
@@ -139,7 +139,7 @@ inline bool IsValidPlayerId(u8 playerId) {
     return playerId < 12;
 }
 
-bool IsBattleMode(const RacedataScenario& scenario) {
+bool IsBattleMode(const RacedataScenario &scenario) {
     int diff = static_cast<int>(scenario.settings.gamemode) - static_cast<int>(MODE_BATTLE);
     if (diff < 0 || diff >= 8) return false;
     return ((1u << diff) & 0xC1u) != 0;
@@ -149,15 +149,15 @@ u8 DetermineAnimationVariant(u32 rowIndex) {
     return rowIndex == 0 ? 1 : 0;
 }
 
-void* GetSaveGhostManagerPointer() {
-    SectionMgr* mgr = SectionMgr::sInstance;
+void *GetSaveGhostManagerPointer() {
+    SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == 0) return 0;
-    return *reinterpret_cast<void**>(reinterpret_cast<u32>(mgr) + 0x90);
+    return *reinterpret_cast<void **>(reinterpret_cast<u32>(mgr) + 0x90);
 }
 
-void UpdateBattleScores(const RacedataScenario& scenario, Raceinfo* raceInfo) {
+void UpdateBattleScores(const RacedataScenario &scenario, Raceinfo *raceInfo) {
     if (raceInfo == 0) return;
-    SectionMgr* mgr = SectionMgr::sInstance;
+    SectionMgr *mgr = SectionMgr::sInstance;
     if (mgr == 0 || mgr->sectionParams == 0) return;
 
     const Team winningTeam = mgr->sectionParams->lastBattleWinningTeam;
@@ -165,22 +165,22 @@ void UpdateBattleScores(const RacedataScenario& scenario, Raceinfo* raceInfo) {
 
     for (u8 i = 0; i < scenario.playerCount; ++i) {
         if (scenario.players[i].team != winningTeam) continue;
-        RaceinfoPlayer* infoPlayer = raceInfo->players[i];
+        RaceinfoPlayer *infoPlayer = raceInfo->players[i];
         if (infoPlayer == 0) continue;
         infoPlayer->battleScore = static_cast<s16>(infoPlayer->battleScore + bonus);
     }
 }
 
-RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScenario& raceScenario, const RacedataScenario& menuScenario) {
+RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScenario &raceScenario, const RacedataScenario &menuScenario) {
     RatingDisplay display = {};
     const float MAX_RATING = 10000.0f;
     const float MIN_RATING = 1.0f;
 
-    const RacedataPlayer& racePlayer = raceScenario.players[playerId];
-    const RacedataPlayer& menuPlayer = menuScenario.players[playerId];
+    const RacedataPlayer &racePlayer = raceScenario.players[playerId];
+    const RacedataPlayer &menuPlayer = menuScenario.players[playerId];
 
     if (racePlayer.playerType == PLAYER_REAL_LOCAL) {
-        RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+        RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
         if (rksys && rksys->curLicenseId >= 0) {
             float current = isBattle ? PointRating::GetUserBR(rksys->curLicenseId) : PointRating::GetUserVR(rksys->curLicenseId);
             float delta = PointRating::lastRaceDeltas[playerId];
@@ -214,7 +214,7 @@ RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScena
             return display;
         }
     } else if (racePlayer.playerType == PLAYER_REAL_ONLINE) {
-        const Network::CustomRKNetController* controller = reinterpret_cast<const Network::CustomRKNetController*>(RKNet::Controller::sInstance);
+        const Network::CustomRKNetController *controller = reinterpret_cast<const Network::CustomRKNetController *>(RKNet::Controller::sInstance);
         u8 aid = controller->aidsBelongingToPlayerIds[playerId];
 
         int playerIndexOnConsole = 0;
@@ -262,7 +262,7 @@ RatingDisplay BuildRatingDisplay(u8 playerId, bool isBattle, const RacedataScena
     return display;
 }
 
-u8 ResolvePlayerIdForRow(bool isBattle, const PlayerEntry* sortedEntries, u32 rowIndex, const Raceinfo* raceInfo) {
+u8 ResolvePlayerIdForRow(bool isBattle, const PlayerEntry *sortedEntries, u32 rowIndex, const Raceinfo *raceInfo) {
     if (isBattle) {
         return sortedEntries[rowIndex].playerId;
     }
@@ -272,7 +272,7 @@ u8 ResolvePlayerIdForRow(bool isBattle, const PlayerEntry* sortedEntries, u32 ro
     return static_cast<u8>(rowIndex);
 }
 
-bool ShouldSkipScoreDisplay(bool isBattle, u8 playerId, const RacedataScenario& raceScenario, const RKNet::Controller* controller) {
+bool ShouldSkipScoreDisplay(bool isBattle, u8 playerId, const RacedataScenario &raceScenario, const RKNet::Controller *controller) {
     if (isBattle || controller == nullptr) return false;
     if (!IsValidPlayerId(playerId)) return false;
     if (raceScenario.players[playerId].playerType == PLAYER_REAL_LOCAL) return false;
@@ -287,9 +287,9 @@ bool ShouldSkipScoreDisplay(bool isBattle, u8 playerId, const RacedataScenario& 
 
 kmRuntimeUse(0x8085c16c);
 kmRuntimeUse(0x8085cc84);
-void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
-    Raceinfo* raceInfo = Raceinfo::sInstance;
-    Racedata* raceData = Racedata::sInstance;
+void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate *page) {
+    Raceinfo *raceInfo = Raceinfo::sInstance;
+    Racedata *raceData = Racedata::sInstance;
     if (raceInfo == nullptr || raceData == nullptr) {
         return;
     }
@@ -297,8 +297,8 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
     void (*prepareLicenses)() = reinterpret_cast<void (*)()>(kmRuntimeAddr(0x8085c16c));
     prepareLicenses();
 
-    const RacedataScenario& raceScenario = raceData->racesScenario;
-    const RacedataScenario& menuScenario = raceData->menusScenario;
+    const RacedataScenario &raceScenario = raceData->racesScenario;
+    const RacedataScenario &menuScenario = raceData->menusScenario;
 
     const bool isBattle = IsBattleMode(raceScenario);
     if (isBattle) {
@@ -313,7 +313,7 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
         rowCount = playerCount;
     }
 
-    PlayerEntry* sortedEntries = page->sortedArray;
+    PlayerEntry *sortedEntries = page->sortedArray;
 
     if (isBattle) {
         if (sortedEntries == nullptr) {
@@ -321,30 +321,30 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
         }
         for (u32 i = 0; i < rowCount; ++i) {
             sortedEntries[i].playerId = static_cast<u8>(i);
-            RaceinfoPlayer* infoPlayer = raceInfo->players[i];
+            RaceinfoPlayer *infoPlayer = raceInfo->players[i];
             sortedEntries[i].totalScore = (infoPlayer != 0) ? static_cast<u32>(infoPlayer->battleScore) : 0;
             sortedEntries[i].lastRaceScore = 0;
         }
-        typedef int (*Comparator)(const void*, const void*);
+        typedef int (*Comparator)(const void *, const void *);
         static const Comparator sortPlayers = reinterpret_cast<Comparator>(kmRuntimeAddr(0x8085cc84));
         qsort(sortedEntries, rowCount, sizeof(PlayerEntry), sortPlayers);
     }
 
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
 
     for (u32 row = 0; row < rowCount; ++row) {
         const u8 rank = static_cast<u8>(row + 1);
         const u8 playerId = ResolvePlayerIdForRow(isBattle, sortedEntries, row, raceInfo);
         if (!IsValidPlayerId(playerId)) continue;
 
-        CtrlRaceResult* result = page->results != 0 ? page->results[row] : 0;
+        CtrlRaceResult *result = page->results != 0 ? page->results[row] : 0;
         if (result == 0) continue;
 
         result->Fill(rank, playerId);
 
         if (isBattle) {
-            const PlayerEntry& topEntry = sortedEntries[0];
-            const PlayerEntry& currentEntry = sortedEntries[row];
+            const PlayerEntry &topEntry = sortedEntries[0];
+            const PlayerEntry &currentEntry = sortedEntries[row];
             if (topEntry.totalScore != 0 && currentEntry.totalScore == topEntry.totalScore) {
                 result->SetTextBoxMessage("position", 0x541);
             } else {
@@ -361,9 +361,9 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
                 float endVal = display.total;
                 float startVal = endVal - display.delta;
 
-                CtrlRaceResult_Inputs* inputs = reinterpret_cast<CtrlRaceResult_Inputs*>(result);
+                CtrlRaceResult_Inputs *inputs = reinterpret_cast<CtrlRaceResult_Inputs *>(result);
                 inputs->current = startVal;
-                inputs->target = *reinterpret_cast<u32*>(&endVal);
+                inputs->target = *reinterpret_cast<u32 *>(&endVal);
                 inputs->step = display.delta / 60.0f;
                 inputs->timer = 60.0f;
                 inputs->messageId = FLOAT_MODE_MAGIC;
@@ -395,11 +395,11 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
         result->FillName(playerId);
     }
 
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    SectionMgr *sectionMgr = SectionMgr::sInstance;
     if (sectionMgr != nullptr && sectionMgr->curSection != nullptr) {
         const SectionId sectionId = sectionMgr->curSection->sectionId;
         if ((sectionId >= 0x68 && sectionId <= 0x69) || (sectionId >= 0x6c && sectionId <= 0x6d)) {
-            Page* extraPage = sectionMgr->curSection->pages[0x48];
+            Page *extraPage = sectionMgr->curSection->pages[0x48];
             sApplyExtraPage(extraPage);
         } else {
             sApplyExtraPage(0);
@@ -408,7 +408,7 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate* page) {
 
     page->func_0x6c();
 
-    void* saveGhostManager = GetSaveGhostManagerPointer();
+    void *saveGhostManager = GetSaveGhostManagerPointer();
     if (saveGhostManager != nullptr) {
         sMarkLicensesDirty(saveGhostManager);
     }

@@ -9,8 +9,8 @@
 namespace Kart {
 
 class Status {
-   public:
-    explicit Status(const Values& values);  // 805943b4
+public:
+    explicit Status(const Values &values);  // 805943b4
     void Reset();  // 8059455c
     void Init();  // 80594594
 
@@ -103,7 +103,7 @@ class Status {
        0x40     6 ghost
        0x1000   12 has stopped
     */
-    Link* link;  // 0x18
+    Link *link;  // 0x18
     u32 airtime;
     u8 unknown_0x20[0x28 - 0x20];
     Vec3 floorNor;

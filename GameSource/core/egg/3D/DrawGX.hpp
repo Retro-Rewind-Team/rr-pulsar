@@ -50,18 +50,18 @@ class DrawGX {
     */
 
     struct DisplayList {
-        u8* list;  // 0x0
+        u8 *list;  // 0x0
         u32 size;  // 0x4
     };
 
     static DisplayList lists[18];  // 803840b0 16 = postEffect
 
-    static void Initialize(EGG::Heap* heap);  // 8021a4d8
+    static void Initialize(EGG::Heap *heap);  // 8021a4d8
 
     static GX::TexMapID GetDefaultTexMap();  // 8021a580
     static void BeginDrawCircleZ(u32 colorChanType, u32 zModesIdx);  // 8021a588
 
-    static void ClearEfb(const Matrix34f& posMtx, bool colorUpdate, bool alphaUpdate, bool useTexture, GX::Color tevColor, bool vtxTypeRelated);  // 8021ad78
+    static void ClearEfb(const Matrix34f &posMtx, bool colorUpdate, bool alphaUpdate, bool useTexture, GX::Color tevColor, bool vtxTypeRelated);  // 8021ad78
     static void SetMatChannels(u32 colorChanType);  // 8021afe4
     static void SetMatTexGen(u32 texGenType);  // 8021b0b8
     static void SetMatIndirect();  // 8021b134
@@ -69,8 +69,8 @@ class DrawGX {
     static void SetMatPE(u32 zModesIdx, u32 blendModesIdx);  // 8021b29c
     static void SetVtxState(u32 type);  // 8021b300
     static void InitDL();  // 8021af5c
-    static void DrawDL(u32 idx, const Matrix34f& posMtx);  // 8021bff0
-    static void DrawDL(u32 idx, const Matrix34f& posMtx, GX::Color matColor);  // 8021c058
+    static void DrawDL(u32 idx, const Matrix34f &posMtx);  // 8021bff0
+    static void DrawDL(u32 idx, const Matrix34f &posMtx, GX::Color matColor);  // 8021c058
     static void SetZMode(u32 zModesIdx);  // 8021c0f8
     static void SetBlendMode(u32 blendModesIdx);  // 8021c118
     static void SetupTranslucent(bool cullFrontFaces);  // 8021c13c will cull back faces otherwise

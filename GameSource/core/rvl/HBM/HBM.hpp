@@ -10,7 +10,7 @@ namespace HBM {
 typedef int (*SoundCallback)(int evt, int num);
 
 struct KPadData {
-    KPAD::Status* kpad;
+    KPAD::Status *kpad;
     Vec2D pos;
     u32 use_devtype;
 };  // 0x10
@@ -30,11 +30,11 @@ enum SelectBtnNum {  // decided upon button, as in the one that was ultimately s
 };
 
 struct DataInfo {
-    void* layout;
-    void* spkSe;
-    void* msg;
-    void* config;
-    void* mem;  // 0x10
+    void *layout;
+    void *spkSe;
+    void *msg;
+    void *config;
+    void *mem;  // 0x10
     SoundCallback soundCB;
     int backFlag;
     int region;
@@ -44,14 +44,14 @@ struct DataInfo {
     u32 memSize;
     float frameDelta;  // 0x30
     Vec2D adjust;  // 0x34
-    MEM::Allocator* pAllocator;  // 0x3c
+    MEM::Allocator *pAllocator;  // 0x3c
 };  // 0x40
 
-void Create(const DataInfo* dataInfo);  // 801773d0
+void Create(const DataInfo *dataInfo);  // 801773d0
 void Init();  // 80177520
 
-void CreateSound(const void* soundData, void* memBuf, u32 memSize);  // 80177740
-SelectBtnNum Calc(const ControllerData* controller);  // 80177554
+void CreateSound(const void *soundData, void *memBuf, u32 memSize);  // 80177740
+SelectBtnNum Calc(const ControllerData *controller);  // 80177554
 void Draw();  // 801775a4
 SelectBtnNum GetSelectBtnNum();  // 80177700
 void SetAdjustFlag(int flag);  // 80177724

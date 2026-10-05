@@ -5,8 +5,8 @@
 
 namespace Objects {
 class Balloon : public ObjectCollidable {  // ObjectNum 0xd2 = 210 skyship, 0xda = 218 castleballoon1, 0xca = 202 MashBalloonGC
-   public:
-    explicit Balloon(const KMP::Holder<GOBJ>& gobjHolder);  // 806dd2d8
+public:
+    explicit Balloon(const KMP::Holder<GOBJ> &gobjHolder);  // 806dd2d8
     ~Balloon() override;  // 806dd440 vtable 808c5f18
     void OnStart() override;  // 0xC 806dd480
     void vf_0x10() override;  // 0x10 806dd5dc

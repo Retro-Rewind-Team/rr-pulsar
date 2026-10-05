@@ -31,6 +31,7 @@ namespace Pulsar_Pack_Creator
         public string versionsImportString;
         public string slotsImportString;
         public string musicSlotsImportString;
+        public string musicCreditsImportString;
 
         //Variant data
         private static readonly string defaultFileName = "AnimalCrossing1.szs";
@@ -51,8 +52,15 @@ namespace Pulsar_Pack_Creator
             versionsImportString = data[3];
             slotsImportString = data[4];
             musicSlotsImportString = data[5];
+            musicCreditsImportString = data[6];
         }
-        private void FillVariant(Cup.Track.Variant variant)
+
+        public void FocusMusicCredits()
+        {
+            MusicCreditsImport.Focus();
+            MusicCreditsImport.SelectAll();
+        }
+        private void FillVariant(Cup.Track.Variant variant, string musicCredit)
         {
 
             FilesImport.Text += variant.fileName + "\n";
@@ -61,10 +69,14 @@ namespace Pulsar_Pack_Creator
             VersionsImport.Text += variant.versionName != Cup.defaultVersion ? variant.versionName + "\n" : null;
             SlotsImport.Text += PulsarGame.MarioKartWii.idxToFullNames[Array.IndexOf(PulsarGame.MarioKartWii.idxToCourseId, variant.slot)] + "\n";
             MusicSlotsImport.Text += PulsarGame.MarioKartWii.musicIdxToFullNames[Array.IndexOf(PulsarGame.MarioKartWii.musicIdxToCourseId, variant.musicSlot)] + "\n";
+            MusicCreditsImport.Text += musicCredit + "\n";
         }
         public void Init(int idx = 0xff)
         {
             this.type = idx == 0xff ? Type.MASSIMPORT : Type.VARIANT;
+            Width = 1450;
+            MusicCreditsImportBorder.Visibility = Visibility.Visible;
+            MusicCreditsImportLabel.Visibility = Visibility.Visible;
             if (type == Type.MASSIMPORT)
             {
                 CommonName.Visibility = Visibility.Hidden;
@@ -75,6 +87,7 @@ namespace Pulsar_Pack_Creator
                 VersionsImport.Text = versionsImportString;
                 SlotsImport.Text = slotsImportString;
                 MusicSlotsImport.Text = musicSlotsImportString;
+                MusicCreditsImport.Text = musicCreditsImportString;
             }
             else
             {
@@ -94,11 +107,12 @@ namespace Pulsar_Pack_Creator
                 {
                     FilesImport.Text = defaultFileName;
                     NamesImport.Text = defaultName;
+                    MusicCreditsImport.Text = track.musicCredit + "\n";
                 }
                 else
                 {
-                    FillVariant(main);
-                    foreach (Cup.Track.Variant variant in track.variants) { FillVariant(variant); }
+                    FillVariant(main, track.musicCredit);
+                    foreach (Cup.Track.Variant variant in track.variants) { FillVariant(variant, variant.musicCredit); }
                 }
             }
             FilesImportLabel.Text = fileLabels[(int)type];
@@ -110,6 +124,55 @@ namespace Pulsar_Pack_Creator
             Hide();
         }
 
+        private static void ReassignMassImportedVariants(List<Cup> cups, int cupCount, string[] importedTrackNames)
+        {
+            Dictionary<string, List<Cup.Track.Variant>> variantsByTrackName =
+                new Dictionary<string, List<Cup.Track.Variant>>(StringComparer.InvariantCultureIgnoreCase);
+            HashSet<string> importedNames =
+                new HashSet<string>(importedTrackNames, StringComparer.InvariantCultureIgnoreCase);
+
+            for (int cupIdx = 0; cupIdx < cupCount && cupIdx < cups.Count; cupIdx++)
+            {
+                for (int trackIdx = 0; trackIdx < 4; trackIdx++)
+                {
+                    Cup.Track track = cups[cupIdx].tracks[trackIdx];
+                    string trackName = !string.IsNullOrEmpty(track.commonName) ? track.commonName : track.main.trackName;
+                    if (!string.IsNullOrEmpty(trackName) && track.variants.Count > 0)
+                    {
+                        variantsByTrackName[trackName] = new List<Cup.Track.Variant>(track.variants);
+                    }
+                }
+            }
+
+            for (int cupIdx = 0; cupIdx < cupCount && cupIdx < cups.Count; cupIdx++)
+            {
+                for (int trackIdx = 0; trackIdx < 4; trackIdx++)
+                {
+                    Cup.Track track = cups[cupIdx].tracks[trackIdx];
+                    string trackName = !string.IsNullOrEmpty(track.commonName) ? track.commonName : track.main.trackName;
+                    if (!string.IsNullOrEmpty(trackName) && importedNames.Contains(trackName))
+                    {
+                        track.variants = new List<Cup.Track.Variant>();
+                    }
+                }
+            }
+
+            int importedTrackCount = Math.Min(importedTrackNames.Length, cupCount * 4);
+            for (int importedIdx = 0; importedIdx < importedTrackCount; importedIdx++)
+            {
+                Cup.Track track = cups[importedIdx / 4].tracks[importedIdx % 4];
+                List<Cup.Track.Variant> variants;
+                if (variantsByTrackName.TryGetValue(importedTrackNames[importedIdx], out variants))
+                {
+                    track.variants = new List<Cup.Track.Variant>(variants);
+                }
+                else
+                {
+                    track.variants = new List<Cup.Track.Variant>();
+                }
+            }
+        }
+
         private void OnSaveImportClick(object sender, RoutedEventArgs e)
         {
             //Need to add checks here i.e. slot validity, number of lines in each text box
@@ -119,6 +182,16 @@ namespace Pulsar_Pack_Creator
             string[] versionsImport = VersionsImport.Text.Replace("\r", "").Trim('\n').Split("\n").ToArray();
             string[] slotsImport = SlotsImport.Text.Replace("\r", "").Trim('\n').ToUpperInvariant().Split("\n").ToArray();
             string[] musicSlotsImport = MusicSlotsImport.Text.Replace("\r", "").Trim('\n').ToUpperInvariant().Split("\n").ToArray();
+            string[] musicCreditsImport = MusicCreditsImport.Text.Replace("\r", "").Split('\n');
+            if (musicCreditsImport.Length > 0 && musicCreditsImport[musicCreditsImport.Length - 1] == "")
+                Array.Resize(ref musicCreditsImport, musicCreditsImport.Length - 1);
+
+            if (musicCreditsImport.Length > namesImport.Length)
+            {
+                MsgWindow.Show($"Music Credits has {musicCreditsImport.Length - namesImport.Length} line(s) too many.", this);
+                return;
+            }
+            Array.Resize(ref musicCreditsImport, namesImport.Length);
 
             List<string[]> importStringArrays = new List<string[]> { namesImport, authorsImport, slotsImport, musicSlotsImport };
 
@@ -243,6 +316,11 @@ namespace Pulsar_Pack_Creator
                 }
             }
 
+            if (type == Type.MASSIMPORT)
+            {
+                ReassignMassImportedVariants(parent.cups, parent.ctsCupCount, namesImport);
+            }
+
             Hide();
             int cupIdx = 0;
             if (type == Type.VARIANT)
@@ -279,7 +357,9 @@ namespace Pulsar_Pack_Creator
                 if (type == Type.MASSIMPORT)
                 {
                     // Also set commonName (BMG_TRACKS) for the track
-                    parent.cups[cupIdx].tracks[row].commonName = importStringArrays[0][line];
+                    Cup.Track track = parent.cups[cupIdx].tracks[row];
+                    track.commonName = importStringArrays[0][line];
+                    track.musicCredit = musicCreditsImport[line] ?? "";
                     if (cupIdx == parent.curCup)
                     {
                         parent.UpdateCurCup(0);
@@ -291,7 +371,16 @@ namespace Pulsar_Pack_Creator
                         cupIdx = (cupIdx + 1 + parent.ctsCupCount) % (parent.ctsCupCount);
                     }
                 }
-                else if (type == Type.VARIANT && line > 0) parent.cups[cupIdx].tracks[this.row].variants.Add(variant);
+                else if (type == Type.VARIANT)
+                {
+                    Cup.Track track = parent.cups[cupIdx].tracks[this.row];
+                    if (line == 0) track.musicCredit = musicCreditsImport[line] ?? "";
+                    else
+                    {
+                        variant.musicCredit = musicCreditsImport[line] ?? "";
+                        track.variants.Add(variant);
+                    }
+                }
             }
             if (type == Type.VARIANT) parent.UpdateCurCupTrack(this.row);
         }

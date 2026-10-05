@@ -4,7 +4,7 @@
 
 namespace GS {
 
-typedef void (*ArrayElementFreeFn)(void* elem);
+typedef void (*ArrayElementFreeFn)(void *elem);
 
 struct DArray {
     int count;
@@ -12,7 +12,7 @@ struct DArray {
     int elemsize;
     int growby;
     ArrayElementFreeFn elemfreefn;
-    void* list;  // array of elements
+    void *list;  // array of elements
 };
 
 }  // namespace GS

@@ -21,19 +21,19 @@ enum LoginState {
 };
 
 // Login complete callback
-typedef void (*LoginCallback)(Error error, int profileID, void* param);
+typedef void (*LoginCallback)(Error error, int profileID, void *param);
 
 struct LoginControl {
-    static LoginControl* sInstance;  // 803862E8
-    GP::Connection** gpConnection;
+    static LoginControl *sInstance;  // 803862E8
+    GP::Connection **gpConnection;
     LoginState state;  // 0x4
     int gameID;  // gamespy
     u32 gamecode;  // nintendo
-    const u16* playerName;  // 0x10
+    const u16 *playerName;  // 0x10
     LoginCallback callback;  // 0x14
-    void* param;  // 0x18
+    void *param;  // 0x18
 
-    AccUserData* userdata;  // 0x1c
+    AccUserData *userdata;  // 0x1c
     u8 unknown_0x20[0x8];
     // void* bmwork; //0x20
     // void* http; //0x24
@@ -48,9 +48,9 @@ struct LoginControl {
     u8 padding[3];
 };  // 0x268
 
-void iLoginInit(LoginControl* control, AccUserData* userdata, GP::Connection** gpConnection, int productID, u32 gamecode, const u16* playerName, LoginCallback callback, void* param);  // 800cff58
+void iLoginInit(LoginControl *control, AccUserData *userdata, GP::Connection **gpConnection, int productID, u32 gamecode, const u16 *playerName, LoginCallback callback, void *param);  // 800cff58
 void iLoginAsync(void);  // 800d00ac
-AccUserData* iGetUserData();  // 800d0274
+AccUserData *iGetUserData();  // 800d0274
 }  // namespace DWC
 
 #endif

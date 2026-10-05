@@ -11,13 +11,13 @@ namespace Pulsar {
 namespace UI {
 
 kmRuntimeUse(0x807e5434);
-static void CourseSelect_OnCourseButtonClick(CtrlMenuCourseSelectCourse* self, PushButton& courseButton, u32 hudSlotId) {
-    CupsConfig* cups = CupsConfig::sInstance;
-    ExpSection* section = ExpSection::GetSection();
-    typedef void (*OrigFn)(CtrlMenuCourseSelectCourse*, PushButton&, u32);
+static void CourseSelect_OnCourseButtonClick(CtrlMenuCourseSelectCourse *self, PushButton &courseButton, u32 hudSlotId) {
+    CupsConfig *cups = CupsConfig::sInstance;
+    ExpSection *section = ExpSection::GetSection();
+    typedef void (*OrigFn)(CtrlMenuCourseSelectCourse *, PushButton &, u32);
     OrigFn orig = (OrigFn)kmRuntimeAddr(0x807e5434);
 
-    VariantSelect* variantPage = section->GetPulPage<VariantSelect>();
+    VariantSelect *variantPage = section->GetPulPage<VariantSelect>();
     bool isVariantContext = (variantPage != nullptr && self == &variantPage->CtrlMenuCourseSelectCourse);
     bool handled = false;
 
@@ -27,13 +27,13 @@ static void CourseSelect_OnCourseButtonClick(CtrlMenuCourseSelectCourse* self, P
 
         bool hasVariants = false;
         if (!cups->IsReg(selected)) {
-            const Track& track = cups->GetTrack(selected);
+            const Track &track = cups->GetTrack(selected);
             if (track.variantCount > 0) hasVariants = true;
         }
 
         if (hasVariants) {
             cups->SetSelected(selected);
-            Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
+            Pages::CourseSelect *coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
             if (coursePage != nullptr) {
                 variantPage->SetBaseRowIdx(static_cast<u8>(courseButton.buttonId));
                 coursePage->LoadNextPageById(static_cast<PageId>(PULPAGE_VARIANTSELECT), courseButton);
@@ -42,7 +42,7 @@ static void CourseSelect_OnCourseButtonClick(CtrlMenuCourseSelectCourse* self, P
             return;
         }
 
-        Pages::CourseSelect* coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
+        Pages::CourseSelect *coursePage = SectionMgr::sInstance->curSection->Get<Pages::CourseSelect>();
         if (coursePage != nullptr) {
             cups->SetSelected(selected);
             coursePage->LoadNextPage(coursePage->CtrlMenuCourseSelectCourse, courseButton, hudSlotId);

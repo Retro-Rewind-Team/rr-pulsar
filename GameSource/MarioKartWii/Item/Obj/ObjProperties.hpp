@@ -13,9 +13,9 @@ void InitAllObjProperties();  // 80790afc
 struct ObjProperties {
     static ObjProperties objProperties[15];  // 809c2f48
 
-    ObjProperties(const ObjProperties& rel);  // 80790e7c copy constructor from rodata's static array "copyFromRel"
+    ObjProperties(const ObjProperties &rel);  // 80790e7c copy constructor from rodata's static array "copyFromRel"
     static void ComputeCapacities();  // 80790fb8
-    Obj** (*CreateArray)(u32 count);  // 0
+    Obj **(*CreateArray)(u32 count);  // 0
     u32 limit;  // 0x4
     u32 competitionLimit;
     u32 capacity;  // 0xc
@@ -23,7 +23,7 @@ struct ObjProperties {
     u8 unknown_0x14[4];
 
     Ptmf_0A<Obj, void> updateObjThunkPtmf;  // 0x18
-    int (*PrepareEVENTPacket)(const EVENTBuffer::Entry* recvEntry, Obj* obj, u32 r5);  // 0x24 also stores stuff, but unsure, returns size of the packet
+    int (*PrepareEVENTPacket)(const EVENTBuffer::Entry *recvEntry, Obj *obj, u32 r5);  // 0x24 also stores stuff, but unsure, returns size of the packet
     u32 eventPacketSize;  // 0x28
     u8 unknown_0x2c[4];
     float backwardDrawDistance;  // 0x30

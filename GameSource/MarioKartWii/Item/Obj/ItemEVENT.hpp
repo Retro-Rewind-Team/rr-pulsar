@@ -45,7 +45,7 @@ struct TCLostEntry {  // ItemObjId itemObjId, u8 playerId, u8 r5, u16 eventBitfi
 };  // 0x3 +2 for time u16 = 0x5
 
 class EVENTBuffer {
-   public:
+public:
     struct Entry {
         u8 data[0x18];
         ItemObjId objId;  // 0x18
@@ -65,8 +65,8 @@ class EVENTBuffer {
         u8 unknown;
         u16 unknown_0x2;
     };  // 0x4
-    static void* curPacket;  // 809c3624, size 0x21, stores a packet for the currently calc'd item
-    static EVENTBuffer* sInstance;  // 809c3620
+    static void *curPacket;  // 809c3624, size 0x21, stores a packet for the currently calc'd item
+    static EVENTBuffer *sInstance;  // 809c3620
     static void CreateInstance();  // 8079a8a4
     static void DestroyInstance();  // 8079ab68
 
@@ -76,34 +76,34 @@ class EVENTBuffer {
     void UpdateSend();  // 8079bd94 will send the queued send entries if space is freed up
     void UpdateReceive();  // 8079bed0
 
-    void QueueSendEntry(ItemObjId itemObjId, RKNet::EVENTAction action, void* data, u32 dataLength);  // 8079bfec
-    void QueueReceivedEntry(ItemObjId itemObjId, RKNet::EVENTAction action, u32 unused, void* data, u32 time = 0);  // 8079c0ac
+    void QueueSendEntry(ItemObjId itemObjId, RKNet::EVENTAction action, void *data, u32 dataLength);  // 8079bfec
+    void QueueReceivedEntry(ItemObjId itemObjId, RKNet::EVENTAction action, u32 unused, void *data, u32 time = 0);  // 8079c0ac
 
     // fill if bool is true, return new position of packet
-    static void* FillOrExtractBitfield(u16* packetEntry, u16* dest, u8* collisionPlayerId, bool extractOrFill);  // 8079b338 dest is essentially always Obj::eventBitfield, returns the new position of the packet
-    static void* FillOrExtractShootPos(s16* shootPacketPosPtr, Vec3* position, bool extractOrFill);  // 8079ad38 inlined in fillorextractshoot
-    static void* FillOrExtractShoot(ShootEntry* shootPacket, Obj* obj, bool extractOrFill);  // 8079b4ac returns ptr to position in the packet
-    static void* FillOrExtractPosDiff(void* packetPosDiffPtr, Vec3& objPos, Vec3& lastObjPos, bool extractOrFill);  // 8079af08
-    static void* FillOrExtractTargetingShoot(void* targetingShootItptPtr, u8* itpt, bool extractOrFill);  // 8079b398
-    static void* FillOrExtractBombShoot(void* bombShootPacketFloatPtr, float* objBomb1d0, bool extractOrFill);  // 8079b440
+    static void *FillOrExtractBitfield(u16 *packetEntry, u16 *dest, u8 *collisionPlayerId, bool extractOrFill);  // 8079b338 dest is essentially always Obj::eventBitfield, returns the new position of the packet
+    static void *FillOrExtractShootPos(s16 *shootPacketPosPtr, Vec3 *position, bool extractOrFill);  // 8079ad38 inlined in fillorextractshoot
+    static void *FillOrExtractShoot(ShootEntry *shootPacket, Obj *obj, bool extractOrFill);  // 8079b4ac returns ptr to position in the packet
+    static void *FillOrExtractPosDiff(void *packetPosDiffPtr, Vec3 &objPos, Vec3 &lastObjPos, bool extractOrFill);  // 8079af08
+    static void *FillOrExtractTargetingShoot(void *targetingShootItptPtr, u8 *itpt, bool extractOrFill);  // 8079b398
+    static void *FillOrExtractBombShoot(void *bombShootPacketFloatPtr, float *objBomb1d0, bool extractOrFill);  // 8079b440
     static u8 GetPlayerIdFromBitfield(u16 bitfield);  // 8079ad30
-    static u8 GetUSEPlayerId(const UseEntry& entry);  // 8079c8e4 only works for entries where it makes sense to have a playerId (mostly USE)
-    static u16 GetEntryBitfield(const ShootEntry& entry, ItemObjId itemObjId);  // 8079c8c8 used for shoot/hit dragged/drop
-    static void GetHitFreeEntryPlayerIdAndType(u8* playerId, u32* type);  // 8079c880
+    static u8 GetUSEPlayerId(const UseEntry &entry);  // 8079c8e4 only works for entries where it makes sense to have a playerId (mostly USE)
+    static u16 GetEntryBitfield(const ShootEntry &entry, ItemObjId itemObjId);  // 8079c8c8 used for shoot/hit dragged/drop
+    static void GetHitFreeEntryPlayerIdAndType(u8 *playerId, u32 *type);  // 8079c880
 
     EGG::TDisposer<EVENTBuffer> disposer;  // 8079a778 vtable 808d1970
     u8 lastSendEntryIdx;  // 0x11
     u8 nextSendEntryIdx;
     u8 padding[2];
-    SendEntryValues* sendEntryValues;  // 0x14 0xa2 size if 0xff, that idx is already used, otherwise, just the value
-    Entry* sendQueuePosition;  // 0x18 in case there's a lack of space in EVENTMgr
+    SendEntryValues *sendEntryValues;  // 0x14 0xa2 size if 0xff, that idx is already used, otherwise, just the value
+    Entry *sendQueuePosition;  // 0x18 in case there's a lack of space in EVENTMgr
     u32 unknown_0x1c;
 
     u8 lastReceivedEntryIdx;  // 0x20
     u8 nextReceivedEntryIdx;  // 0x21
     u8 padding2[2];
-    RecvEntryValues* receivedEntryValues;  // 0x24
-    Entry* receivedQueue;  // 0x28
+    RecvEntryValues *receivedEntryValues;  // 0x24
+    Entry *receivedQueue;  // 0x28
 
 };  // 0x44
 

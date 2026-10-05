@@ -29,9 +29,9 @@ static bool IsRoomAverageBmg(u32 bmgId) {
     }
 }
 
-static u32 GetRoomAverageVR(const Pages::SELECTStageMgr& stageMgr) {
-    const RKNet::Controller* controller = RKNet::Controller::sInstance;
-    const RKSYS::Mgr* rksys = RKSYS::Mgr::sInstance;
+static u32 GetRoomAverageVR(const Pages::SELECTStageMgr &stageMgr) {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     const u8 localAid = controller != nullptr ? controller->subs[controller->currentSub].localAid : 0xff;
 
     u32 totalVR = 0;
@@ -39,7 +39,7 @@ static u32 GetRoomAverageVR(const Pages::SELECTStageMgr& stageMgr) {
     const u32 count = stageMgr.playerCount < 12 ? stageMgr.playerCount : 12;
 
     for (u32 i = 0; i < count; ++i) {
-        const PlayerInfo& player = stageMgr.infos[i];
+        const PlayerInfo &player = stageMgr.infos[i];
         if (player.vr == 0xffff) continue;
 
         // RR stores ratings as whole points plus two decimal digits. Convert
@@ -58,13 +58,13 @@ static u32 GetRoomAverageVR(const Pages::SELECTStageMgr& stageMgr) {
     return playerCount == 0 ? 0 : (totalVR + playerCount / 2) / playerCount;
 }
 
-static void SetRoomAverageMessage(CtrlMenuInstructionText* instructionText, u32 bmgId, const Text::Info* text) {
+static void SetRoomAverageMessage(CtrlMenuInstructionText *instructionText, u32 bmgId, const Text::Info *text) {
     if (!IsRoomAverageBmg(bmgId) || instructionText == nullptr) {
         if (instructionText != nullptr) instructionText->SetMessage(bmgId, text);
         return;
     }
 
-    Pages::SELECTStageMgr* stageMgr = nullptr;
+    Pages::SELECTStageMgr *stageMgr = nullptr;
     if (SectionMgr::sInstance != nullptr && SectionMgr::sInstance->curSection != nullptr) {
         stageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
     }

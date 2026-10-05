@@ -14,13 +14,13 @@ enum CompressionType {
     COMPRESSION_ASR
 };
 
-u32 getExpandSize(u8* rawFile);  // 8021997c size of extracted file
-u32 decode(u8* rawFile, u8* destBuffer);  // 80218ba4 returns size of decoded file
-u32 decodeSZS(u8* rawFile, u8* destBuffer);  // 80218c2c
-u32 decodeASH(u8* rawFile, u8* destBuffer);  // 80218dc0
-u32 decodeASR(u8* rawFile, u8* destBuffer);  // 80218ff0
+u32 getExpandSize(u8 *rawFile);  // 8021997c size of extracted file
+u32 decode(u8 *rawFile, u8 *destBuffer);  // 80218ba4 returns size of decoded file
+u32 decodeSZS(u8 *rawFile, u8 *destBuffer);  // 80218c2c
+u32 decodeASH(u8 *rawFile, u8 *destBuffer);  // 80218dc0
+u32 decodeASR(u8 *rawFile, u8 *destBuffer);  // 80218ff0
 
-bool checkCompressed(u8* rawFile);  // 802198f8
+bool checkCompressed(u8 *rawFile);  // 802198f8
 }  // namespace Decomp
 }  // namespace EGG
 

@@ -16,7 +16,6 @@ namespace Pulsar_Pack_Creator.IO {
             Full
         }
         public Builder(MainWindow window, BuildParams buildParams, bool createXML) : base(window) {
-            this.window = window;
             modFolder = $"output/{parameters.modFolderName}temp";
             cups = window.cups.AsReadOnly();
 
@@ -47,8 +46,6 @@ namespace Pulsar_Pack_Creator.IO {
         readonly string[] inputFiles;
         readonly string modFolder;
         readonly string date;
-        readonly MainWindow window;
-        readonly HashSet<uint> generatedBMGIds = new HashSet<uint>();
 
         PulsarGame.BinaryHeader configHeader = new PulsarGame.BinaryHeader(configMagic, (int)CONFIGVERSION);
         PulsarGame.InfoHolder infoSection = new PulsarGame.InfoHolder(infoMagic, INFOVERSION);
@@ -89,10 +86,6 @@ namespace Pulsar_Pack_Creator.IO {
                     bmgLines[i] = bmgLines[i].Replace("{date}", $"{date}");
                 }
                 File.WriteAllLines("temp/BMG.txt", bmgLines);
-                foreach (string bmgLine in bmgLines) {
-                    if (TryParseBMGLine(bmgLine, out uint bmgId, out _))
-                        generatedBMGIds.Add(bmgId);
-                }
 
                 using (bin = new BigEndianWriter(File.Create("temp/Config.pul"))) using (MemoryStream fileSectStream = new MemoryStream()) {
                     using (bmgSW = new StreamWriter("temp/BMG.txt", true)) using (fileSW = new StreamWriter(fileSectStream)) using (crcToFile = new StreamWriter($"{modFolder}/Ghosts/FolderToTrackName.txt"))
@@ -108,8 +101,6 @@ namespace Pulsar_Pack_Creator.IO {
                         Result cupRet = WriteCups();
                         if (cupRet != Result.Success)
                             return cupRet;
-
-                        WriteUserBMGs();
                     }
                     Result bmgRet = RequestBMGAction(true);
                     if (bmgRet != Result.Success)
@@ -225,6 +216,7 @@ namespace Pulsar_Pack_Creator.IO {
 
                 }  // using memorystream
                 File.Copy("temp/Config.pul", $"{modFolder}/Binaries/Config.pul", true);
+                TracklistSpreadsheet.Write($"{modFolder}/Tracklist.xlsx", cups, ctsCupCount);
                 string finalDirName = $"output/{parameters.modFolderName}";
                 if (Directory.Exists(finalDirName)) {
                     try {
@@ -327,8 +319,11 @@ namespace Pulsar_Pack_Creator.IO {
             Result ret;
             // Write the common name to the base BMG_TRACKS block
             string commonName = string.IsNullOrEmpty(track.commonName) ? track.main.trackName : track.commonName;
-            if (!isFake)
+            if (!isFake) {
                 WriteBMG((uint)BMGIds.BMG_TRACKS + idx, commonName);
+                if (!string.IsNullOrWhiteSpace(track.musicCredit))
+                    WriteBMG((uint)BMGIds.BMG_MUSIC_CREDITS + idx, track.musicCredit);
+            }
 
             // If the track has variants, the main track variant should be written into the first variant block (1).
             ret = WriteVariant(track.main, idx, 0, expertFileNames, isFake, track.variants.Count > 0);
@@ -475,6 +470,8 @@ namespace Pulsar_Pack_Creator.IO {
 
                 WriteBMG(bmgId, trackName);
                 WriteBMG(authorId, variant.authorName);
+                if (!isFake && !string.IsNullOrWhiteSpace(variant.musicCredit))
+                    WriteBMG((uint)BMGIds.BMG_VARIANT_MUSIC_CREDITS + idxShifted + variantIdx, variant.musicCredit);
             }
 
             fileSW.WriteLine($"{(variantIdx << 12) + idx:X}={variant.fileName}|" +
@@ -483,21 +480,7 @@ namespace Pulsar_Pack_Creator.IO {
         }
 
         private void WriteBMG(uint bmgId, string content) {
-            generatedBMGIds.Add(bmgId);
             bmgSW.WriteLine($"  {bmgId:X}    = {content}");
-        }
-
-        private void WriteUserBMGs() {
-            if (window.userBMGs.Count == 0)
-                return;
-
-            bmgSW.WriteLine(bmgSW.NewLine);
-            foreach (KeyValuePair<uint, string> bmg in window.userBMGs.OrderBy(b => b.Key)) {
-                if (generatedBMGIds.Contains(bmg.Key))
-                    continue;
-
-                bmgSW.WriteLine($"  {bmg.Key:X}    = {bmg.Value}");
-            }
         }
 
         public Result WriteInfo() {

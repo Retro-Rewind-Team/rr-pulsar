@@ -1,5 +1,5 @@
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
-#include <Network/WiiLink.hpp>
+#include <Network/Json.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <UI/UI.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
@@ -9,7 +9,6 @@
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/RKSYS/LicenseMgr.hpp>
-#include <MarioKartWii/System/Friend.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/Mii/Mii.hpp>
 #include <core/RK/RKSystem.hpp>
@@ -27,9 +26,9 @@
 
 kmWrite32(0x800c9980, 0x4800000c);  // b 0x800c998c
 
-static void NHTTPConfigureHttpsForRequest(void* request) {
+static void NHTTPConfigureHttpsForRequest(void *request) {
     if (request == nullptr) return;
-    typedef s32 (*Fn)(void*, ...);
+    typedef s32 (*Fn)(void *, ...);
     (reinterpret_cast<Fn>(&NHTTPSetRootCADefault))(request);
     (reinterpret_cast<Fn>(&NHTTPSetVerifyOption))(request, 1);
 }
@@ -38,18 +37,11 @@ namespace Pulsar {
 namespace UI {
 
 struct VRLeaderboardText {
-    const wchar_t* loading;
-    const wchar_t* error;
+    const wchar_t *loading;
+    const wchar_t *error;
 };
 
-static Language GetCurrentLanguage() {
-    return static_cast<Language>(
-        Settings::Mgr::Get().GetUserSettingValue(
-            static_cast<Settings::UserType>(Settings::SETTINGSTYPE_MISC),
-            SCROLLER_LANGUAGE));
-}
-
-static const VRLeaderboardText& GetVRLeaderboardText() {
+static const VRLeaderboardText &GetVRLeaderboardText() {
     static const VRLeaderboardText texts[] = {
         {L"Loading...", L"Load failed."},
         {L"\u8AAD\u8FBC\u4E2D...", L"\u8AAD\u8FBC\u5931\u6557\u3002"},
@@ -66,12 +58,12 @@ static const VRLeaderboardText& GetVRLeaderboardText() {
         {L"Na\u010D\u00EDt\u00E1n\u00ED...", L"Na\u010Dten\u00ED selhalo."},
     };
 
-    u32 idx = static_cast<u32>(GetCurrentLanguage());
+    u32 idx = static_cast<u32>(Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LANGUAGE));
     if (idx >= (sizeof(texts) / sizeof(texts[0]))) idx = LANGUAGE_ENGLISH;
     return texts[idx];
 }
 
-static void BMGHolderLoadWithFallback(BMGHolder* self, const char* name) {
+static void BMGHolderLoadWithFallback(BMGHolder *self, const char *name) {
     if (self == nullptr) return;
 
     self->bmgFile = nullptr;
@@ -81,32 +73,29 @@ static void BMGHolderLoadWithFallback(BMGHolder* self, const char* name) {
     self->messageIds = nullptr;
 
     if (name == nullptr) return;
-    ArchiveMgr* archiveMgr = ArchiveMgr::sInstance;
+    ArchiveMgr *archiveMgr = ArchiveMgr::sInstance;
     if (archiveMgr == nullptr) return;
 
     char path[96];
     snprintf(path, sizeof(path), "message/%s.bmg", name);
 
-    void* file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, path, nullptr);
+    void *file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, path, nullptr);
     if (file == nullptr) {
         file = archiveMgr->GetFile(ARCHIVE_HOLDER_UI, "message/Common.bmg", nullptr);
     }
     if (file == nullptr) return;
 
-    self->Init(*reinterpret_cast<const BMGHeader*>(file));
+    self->Init(*reinterpret_cast<const BMGHeader *>(file));
 }
 kmBranch(0x805f8b90, BMGHolderLoadWithFallback);
 
 VRLeaderboardPage::FetchState VRLeaderboardPage::s_fetchState = VRLeaderboardPage::FETCH_IDLE;
 bool VRLeaderboardPage::s_hasApplied = false;
-VRLeaderboardPage::Entry* VRLeaderboardPage::s_entries = nullptr;
+VRLeaderboardPage::Entry *VRLeaderboardPage::s_entries = nullptr;
 
-static wchar_t s_statusText[128];
-static wchar_t s_bottomStatusText[128];
 static wchar_t s_rowTextDash[] = L"----";
 static wchar_t s_rowLabelVR[] = L"VR";
 static wchar_t s_rowBlank[] = L"";
-static wchar_t s_positionText[8];
 static u64 s_requestStartTime = 0;
 static bool s_nhttpStarted = false;
 static const u32 s_nhttpWorkBufSize = 0x20000;
@@ -126,17 +115,17 @@ struct NHTTPRequestCtx {
 // This page only issues a new request after the prior one has completed, so a single
 // persistent request context/work buffer avoids lifetime bugs without affecting boot.
 static NHTTPRequestCtx s_requestCtx;
-static void* s_requestWorkBuf = nullptr;
+static void *s_requestWorkBuf = nullptr;
 static char s_requestUrl[256];
 
 static u32 GetAPIPageForInGamePage(u32 inGamePage) {
     return inGamePage / VRLeaderboardPage::kPagesPerAPIFetch + 1;
 }
 
-static void SetLeaderboardRowTextColor(LayoutUIControl& row, const nw4r::ut::Color& textColor) {
-    const char* textBoxNames[] = {"player_name", "position", "total_score", "total_point"};
+static void SetLeaderboardRowTextColor(LayoutUIControl &row, const nw4r::ut::Color &textColor) {
+    const char *textBoxNames[] = {"player_name", "position", "total_score", "total_point"};
     for (int j = 0; j < 4; ++j) {
-        nw4r::lyt::TextBox* textBox = reinterpret_cast<nw4r::lyt::TextBox*>(row.layout.GetPaneByName(textBoxNames[j]));
+        nw4r::lyt::TextBox *textBox = reinterpret_cast<nw4r::lyt::TextBox *>(row.layout.GetPaneByName(textBoxNames[j]));
         if (textBox != nullptr) {
             textBox->color1[0] = textColor;
             textBox->color1[1] = textColor;
@@ -144,20 +133,16 @@ static void SetLeaderboardRowTextColor(LayoutUIControl& row, const nw4r::ut::Col
     }
 }
 
-static bool HasPane(const LayoutUIControl& control, const char* paneName) {
-    if (paneName == nullptr) return false;
-    return control.layout.GetPaneByName(paneName) != nullptr;
+static void SetTextBoxIfPresent(LayoutUIControl &control, const char *paneName, u32 bmgId,
+                                const Text::Info *info) {
+    if (control.layout.GetPaneByName(paneName) != nullptr) control.SetTextBoxMessage(paneName, bmgId, info);
 }
 
-static void SetTextBoxIfPresent(LayoutUIControl& control, const char* paneName, u32 bmgId, Text::Info* info) {
-    if (HasPane(control, paneName)) control.SetTextBoxMessage(paneName, bmgId, info);
+static void SetPaneVisibleIfPresent(LayoutUIControl &control, const char *paneName, bool visible) {
+    if (control.layout.GetPaneByName(paneName) != nullptr) control.SetPaneVisibility(paneName, visible);
 }
 
-static void SetPaneVisibleIfPresent(LayoutUIControl& control, const char* paneName, bool visible) {
-    if (HasPane(control, paneName)) control.SetPaneVisibility(paneName, visible);
-}
-
-static void ClearLeaderboardRow(LayoutUIControl& row, wchar_t* nameText) {
+static void ClearLeaderboardRow(LayoutUIControl &row, wchar_t *nameText) {
     Text::Info nameInfo;
     nameInfo.strings[0] = nameText;
     SetTextBoxIfPresent(row, "player_name", UI::BMG_TEXT, &nameInfo);
@@ -173,117 +158,6 @@ static void ClearLeaderboardRow(LayoutUIControl& row, wchar_t* nameText) {
     SetPaneVisibleIfPresent(row, "chara_icon_sha", false);
 }
 
-static void CopyAsciiToWide(wchar_t* dst, size_t dstLen, const char* src) {
-    if (dst == nullptr || dstLen == 0) return;
-    if (src == nullptr) {
-        dst[0] = L'\0';
-        return;
-    }
-    size_t out = 0;
-    for (; out + 1 < dstLen && src[out] != '\0'; ++out) {
-        const unsigned char c = static_cast<unsigned char>(src[out]);
-        dst[out] = (c < 0x80) ? static_cast<wchar_t>(c) : L'?';
-    }
-    dst[out] = L'\0';
-}
-
-static const char* FindStr(const char* haystack, const char* needle) {
-    if (haystack == nullptr || needle == nullptr) return nullptr;
-    const size_t needleLen = strlen(needle);
-    if (needleLen == 0) return haystack;
-    for (const char* p = haystack; *p != '\0'; ++p) {
-        if (strncmp(p, needle, needleLen) == 0) return p;
-    }
-    return nullptr;
-}
-
-static const char* SkipWhitespace(const char* p) {
-    while (p != nullptr && (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t')) ++p;
-    return p;
-}
-
-static unsigned char ParseJsonEscape(const char*& p) {
-    const unsigned char esc = static_cast<unsigned char>(*p++);
-    if (esc == '\0') return '?';
-    switch (esc) {
-        case '"':
-        case '\\':
-        case '/':
-            return esc;
-        case 'b':
-            return '\b';
-        case 'f':
-            return '\f';
-        case 'n':
-            return '\n';
-        case 'r':
-            return '\r';
-        case 't':
-            return '\t';
-        case 'u':
-            for (int i = 0; i < 4 && *p != '\0'; ++i) ++p;
-            return '?';
-        default:
-            return '?';
-    }
-}
-
-static const char* ParseJsonStringIntoWide(const char* p, wchar_t* out, size_t outLen) {
-    if (out == nullptr || outLen == 0) return nullptr;
-    out[0] = L'\0';
-    p = SkipWhitespace(p);
-    if (p == nullptr || *p != '"') return nullptr;
-    ++p;
-
-    size_t o = 0;
-    while (*p != '\0' && *p != '"') {
-        unsigned char c = static_cast<unsigned char>(*p++);
-        if (c == '\\') c = ParseJsonEscape(p);
-        if (o + 1 < outLen) out[o++] = (c < 0x80) ? static_cast<wchar_t>(c) : L'?';
-    }
-    if (*p == '"') ++p;
-    out[o] = L'\0';
-    return p;
-}
-
-template <typename T>
-static const char* ParseJsonUInt(const char* p, T& out) {
-    out = 0;
-    p = SkipWhitespace(p);
-    if (p == nullptr || *p == '-' || *p < '0' || *p > '9') return nullptr;
-    while (*p >= '0' && *p <= '9') {
-        out = out * 10 + static_cast<T>(*p - '0');
-        ++p;
-    }
-    return p;
-}
-
-static const char* ParseJsonU32(const char* p, u32& out) {
-    return ParseJsonUInt(p, out);
-}
-
-static const char* ParseJsonU64(const char* p, u64& out) {
-    return ParseJsonUInt(p, out);
-}
-
-static const char* ParseJsonStringIntoAscii(const char* p, char* out, size_t outLen) {
-    if (out == nullptr || outLen == 0) return nullptr;
-    out[0] = '\0';
-    p = SkipWhitespace(p);
-    if (p == nullptr || *p != '"') return nullptr;
-    ++p;
-
-    size_t o = 0;
-    while (*p != '\0' && *p != '"') {
-        unsigned char c = static_cast<unsigned char>(*p++);
-        if (c == '\\') c = ParseJsonEscape(p);
-        if (o + 1 < outLen) out[o++] = static_cast<char>(c);
-    }
-    if (*p == '"') ++p;
-    out[o] = '\0';
-    return p;
-}
-
 static int Base64CharValue(char c) {
     if (c >= 'A' && c <= 'Z') return c - 'A';
     if (c >= 'a' && c <= 'z') return c - 'a' + 26;
@@ -294,14 +168,14 @@ static int Base64CharValue(char c) {
     return -1;
 }
 
-static int DecodeBase64(const char* in, u8* out, int outCap) {
+static int DecodeBase64(const char *in, u8 *out, int outCap) {
     if (in == nullptr || out == nullptr || outCap <= 0) return 0;
 
     int outLen = 0;
     int buf[4];
     int bufCount = 0;
 
-    for (const char* p = in; *p != '\0'; ++p) {
+    for (const char *p = in; *p != '\0'; ++p) {
         const char c = *p;
         if (c == ' ' || c == '\n' || c == '\r' || c == '\t') continue;
 
@@ -334,7 +208,7 @@ static int DecodeBase64(const char* in, u8* out, int outCap) {
     return outLen;
 }
 
-static void ExtractMiiNameFromStoreData(const RFL::StoreData* storeData, wchar_t* outName, size_t outNameLen) {
+static void ExtractMiiNameFromStoreData(const RFL::StoreData *storeData, wchar_t *outName, size_t outNameLen) {
     if (outName == nullptr || outNameLen == 0 || storeData == nullptr) {
         if (outName != nullptr && outNameLen > 0) outName[0] = L'\0';
         return;
@@ -349,55 +223,12 @@ static void ExtractMiiNameFromStoreData(const RFL::StoreData* storeData, wchar_t
     outName[o] = L'\0';
 }
 
-static const char* FindStrInRange(const char* start, const char* end, const char* needle) {
-    if (start == nullptr || end == nullptr || needle == nullptr) return nullptr;
-    const size_t needleLen = strlen(needle);
-    if (needleLen == 0) return start;
-    for (const char* p = start; p + needleLen <= end; ++p) {
-        if (strncmp(p, needle, needleLen) == 0) return p;
-    }
-    return nullptr;
-}
-
-static const char* FindMatchingObjectEnd(const char* objStart) {
-    if (objStart == nullptr || *objStart != '{') return nullptr;
-    int depth = 0;
-    bool inString = false;
-    bool escape = false;
-    for (const char* p = objStart; *p != '\0'; ++p) {
-        const char c = *p;
-        if (inString) {
-            if (escape) {
-                escape = false;
-                continue;
-            }
-            if (c == '\\') {
-                escape = true;
-                continue;
-            }
-            if (c == '"') inString = false;
-            continue;
-        }
-        if (c == '"') {
-            inString = true;
-            continue;
-        }
-        if (c == '{') {
-            ++depth;
-        } else if (c == '}') {
-            --depth;
-            if (depth == 0) return p;
-        }
-    }
-    return nullptr;
-}
-
 static bool IsFriendCodeInLicenseFriends(u64 friendCode) {
     if (friendCode == 0) return false;
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return false;
 
-    RKSYS::LicenseFriends& licenseFriends = rksysMgr->licenses[rksysMgr->curLicenseId].GetFriends();
+    RKSYS::LicenseFriends &licenseFriends = rksysMgr->licenses[rksysMgr->curLicenseId].GetFriends();
     for (u32 i = 0; i < 30; ++i) {
         if (licenseFriends.friends[i].friendCode == friendCode) return true;
     }
@@ -463,7 +294,7 @@ void VRLeaderboardPage::OnInit() {
         ControlLoader loader(rows[i]);
         char variant[8];
         snprintf(variant, sizeof(variant), "rank%d", i + 1);
-        static const char* noAnims[] = {nullptr};
+        static const char *noAnims[] = {nullptr};
         loader.Load("result", "ResultVS", variant, noAnims);
 
         SetPaneVisibleIfPresent(*rows[i], "handle_text", false);
@@ -484,7 +315,7 @@ void VRLeaderboardPage::OnActivate() {
     ResetRowsToLoading();
 
     if (s_entries == nullptr) {
-        EGG::Heap* heap = RKSystem::mInstance.EGGSystem;
+        EGG::Heap *heap = RKSystem::mInstance.EGGSystem;
         if (heap != nullptr) {
             s_entries = new (heap, 0x20) Entry[kMaxEntries];
         }
@@ -543,53 +374,49 @@ void VRLeaderboardPage::OnUpdate() {
         }
     }
 
-    if (s_fetchState == FETCH_READY && s_hasApplied) {
-        const Input::RealControllerHolder* controllerHolder = nullptr;
-        if (SectionMgr::sInstance != nullptr) controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
-        if (controllerHolder != nullptr && controllerHolder->curController != nullptr) {
-            const ControllerType controllerType = controllerHolder->curController->GetType();
-            const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
-            const u16 newInputs = (inputs & ~controllerHolder->inputStates[1].buttonRaw);
+    if (s_fetchState != FETCH_READY || !s_hasApplied) return;
+    if (SectionMgr::sInstance == nullptr) return;
 
-            bool pageChanged = false;
-            bool pageWentLeft = false;
-            u16 leftButton = 0;
-            u16 rightButton = 0;
+    const Input::RealControllerHolder *controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
+    if (controllerHolder == nullptr || controllerHolder->curController == nullptr) return;
 
-            if (controllerType == CLASSIC) {
-                leftButton = WPAD::WPAD_CL_TRIGGER_L | WPAD::WPAD_CL_BUTTON_LEFT;
-                rightButton = WPAD::WPAD_CL_TRIGGER_R | WPAD::WPAD_CL_BUTTON_RIGHT;
-            } else if (controllerType == WHEEL) {
-                leftButton = WPAD::WPAD_BUTTON_UP;
-                rightButton = WPAD::WPAD_BUTTON_DOWN;
-            } else if (controllerType == NUNCHUCK) {
-                leftButton = WPAD::WPAD_BUTTON_LEFT;
-                rightButton = WPAD::WPAD_BUTTON_RIGHT;
-            } else {
-                leftButton = PAD::PAD_BUTTON_L | PAD::PAD_BUTTON_LEFT;
-                rightButton = PAD::PAD_BUTTON_R | PAD::PAD_BUTTON_RIGHT;
-            }
+    const ControllerType controllerType = controllerHolder->curController->GetType();
+    const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
+    const u16 newInputs = inputs & ~controllerHolder->inputStates[1].buttonRaw;
 
-            if ((newInputs & leftButton) != 0 && curPage > 0) {
-                --curPage;
-                pageChanged = true;
-                pageWentLeft = true;
-            } else if ((newInputs & rightButton) != 0 && curPage + 1 < kPageCount) {
-                ++curPage;
-                pageChanged = true;
-                pageWentLeft = false;
-            }
+    u16 leftButton = 0;
+    u16 rightButton = 0;
+    if (controllerType == CLASSIC) {
+        leftButton = WPAD::WPAD_CL_TRIGGER_L | WPAD::WPAD_CL_BUTTON_LEFT;
+        rightButton = WPAD::WPAD_CL_TRIGGER_R | WPAD::WPAD_CL_BUTTON_RIGHT;
+    } else if (controllerType == WHEEL) {
+        leftButton = WPAD::WPAD_BUTTON_UP;
+        rightButton = WPAD::WPAD_BUTTON_DOWN;
+    } else if (controllerType == NUNCHUCK) {
+        leftButton = WPAD::WPAD_BUTTON_LEFT;
+        rightButton = WPAD::WPAD_BUTTON_RIGHT;
+    } else {
+        leftButton = PAD::PAD_BUTTON_L | PAD::PAD_BUTTON_LEFT;
+        rightButton = PAD::PAD_BUTTON_R | PAD::PAD_BUTTON_RIGHT;
+    }
 
-            if (pageChanged) {
-                this->PlaySound(pageWentLeft ? SOUND_ID_LEFT_ARROW_PRESS : SOUND_ID_RIGHT_ARROW_PRESS, -1);
-                if (GetAPIPageForInGamePage(curPage) == s_loadedAPIPage) {
-                    ApplyResults();
-                } else {
-                    ResetRowsToLoading();
-                    StartFetch(this);
-                }
-            }
-        }
+    bool pageWentLeft;
+    if ((newInputs & leftButton) != 0 && curPage > 0) {
+        --curPage;
+        pageWentLeft = true;
+    } else if ((newInputs & rightButton) != 0 && curPage + 1 < kPageCount) {
+        ++curPage;
+        pageWentLeft = false;
+    } else {
+        return;
+    }
+
+    this->PlaySound(pageWentLeft ? SOUND_ID_LEFT_ARROW_PRESS : SOUND_ID_RIGHT_ARROW_PRESS, -1);
+    if (GetAPIPageForInGamePage(curPage) == s_loadedAPIPage) {
+        ApplyResults();
+    } else {
+        ResetRowsToLoading();
+        StartFetch(this);
     }
 }
 
@@ -598,19 +425,19 @@ void VRLeaderboardPage::OnBackPress(u32 /*hudSlotId*/) {
     this->EndStateAnimated(1, 0.0f);
 }
 
-void VRLeaderboardPage::OnBackButtonClick(PushButton& button, u32 /*hudSlotId*/) {
+void VRLeaderboardPage::OnBackButtonClick(PushButton &button, u32 /*hudSlotId*/) {
     this->nextPageId = PAGE_WFC_MAIN;
     this->EndStateAnimated(1, button.GetAnimationFrameSize());
 }
 
 void VRLeaderboardPage::ResetRowsToLoading() {
-    const VRLeaderboardText& text = GetVRLeaderboardText();
+    const VRLeaderboardText &text = GetVRLeaderboardText();
     Text::Info bottomInfo;
-    bottomInfo.strings[0] = const_cast<wchar_t*>(text.loading);
+    bottomInfo.strings[0] = const_cast<wchar_t *>(text.loading);
     bottomText->SetMessage(UI::BMG_TEXT, &bottomInfo);
 
     for (int i = 0; i < kRowsPerPage; ++i) {
-        ClearLeaderboardRow(*rows[i], const_cast<wchar_t*>(text.loading));
+        ClearLeaderboardRow(*rows[i], const_cast<wchar_t *>(text.loading));
     }
 }
 
@@ -623,26 +450,27 @@ void VRLeaderboardPage::ApplyResults() {
     const int base = static_cast<int>(curPage % kPagesPerAPIFetch) * kRowsPerPage;
     for (int i = 0; i < kRowsPerPage; ++i) {
         const int idx = base + i;
-        if (idx < 0 || idx >= s_loadedEntryCount) {
+        if (idx >= s_loadedEntryCount) {
             ClearLeaderboardRow(*rows[i], s_rowTextDash);
             continue;
         }
 
         const u32 rank = s_entries[idx].rank != 0 ? s_entries[idx].rank : static_cast<u32>(curPage) * kRowsPerPage + i + 1;
-        swprintf(s_positionText, sizeof(s_positionText) / sizeof(s_positionText[0]), L"#%u", rank);
-        swprintf(s_entries[idx].line, sizeof(s_entries[idx].line) / sizeof(s_entries[idx].line[0]), L"%ls", s_entries[idx].name);
+        wchar_t positionText[8];
+        swprintf(positionText, sizeof(positionText) / sizeof(positionText[0]), L"#%u", rank);
 
         Text::Info nameInfo;
-        nameInfo.strings[0] = s_entries[idx].line;
+        nameInfo.strings[0] = s_entries[idx].name;
         SetTextBoxIfPresent(*rows[i], "player_name", UI::BMG_TEXT, &nameInfo);
 
         Text::Info posInfo;
-        posInfo.strings[0] = s_positionText;
+        posInfo.strings[0] = positionText;
         SetTextBoxIfPresent(*rows[i], "position", UI::BMG_TEXT, &posInfo);
 
-        swprintf(s_statusText, sizeof(s_statusText) / sizeof(s_statusText[0]), L"%u", s_entries[idx].vr);
+        wchar_t vrText[16];
+        swprintf(vrText, sizeof(vrText) / sizeof(vrText[0]), L"%u", s_entries[idx].vr);
         Text::Info valueInfo;
-        valueInfo.strings[0] = s_statusText;
+        valueInfo.strings[0] = vrText;
         SetTextBoxIfPresent(*rows[i], "total_score", UI::BMG_TEXT, &valueInfo);
 
         Text::Info labelInfo;
@@ -653,7 +481,7 @@ void VRLeaderboardPage::ApplyResults() {
                                     s_currentUserFriendCode == s_entries[idx].friendCode);
         bool isFriend = false;
         if (!isCurrentUser && s_entries[idx].friendCode != 0) {
-            RKNet::FriendMgr* friendMgr = RKNet::FriendMgr::sInstance;
+            RKNet::FriendMgr *friendMgr = RKNet::FriendMgr::sInstance;
             if (friendMgr != nullptr && friendMgr->IsAvailable()) {
                 const s32 friendIdx = friendMgr->GetFriendIdx(s_entries[idx].friendCode);
                 isFriend = (friendIdx >= 0);
@@ -682,19 +510,17 @@ void VRLeaderboardPage::ApplyResults() {
         SetPaneVisibleIfPresent(*rows[i], "chara_icon_sha", true);
     }
 
-    swprintf(s_bottomStatusText, sizeof(s_bottomStatusText) / sizeof(s_bottomStatusText[0]), L"< %d/%d >",
-             static_cast<int>(curPage) + 1, kPageCount);
+    wchar_t pageText[16];
+    swprintf(pageText, sizeof(pageText) / sizeof(pageText[0]), L"< %d/%d >", static_cast<int>(curPage) + 1,
+             kPageCount);
     Text::Info info;
-    info.strings[0] = s_bottomStatusText;
+    info.strings[0] = pageText;
     bottomText->SetMessage(UI::BMG_TEXT, &info);
 }
 
 void VRLeaderboardPage::ApplyError() {
-    swprintf(s_statusText, sizeof(s_statusText) / sizeof(s_statusText[0]), L"%ls",
-             GetVRLeaderboardText().error);
-
     Text::Info bottomInfo;
-    bottomInfo.strings[0] = s_statusText;
+    bottomInfo.strings[0] = const_cast<wchar_t *>(GetVRLeaderboardText().error);
     bottomText->SetMessage(UI::BMG_TEXT, &bottomInfo);
 
     for (int i = 0; i < kRowsPerPage; ++i) {
@@ -702,7 +528,7 @@ void VRLeaderboardPage::ApplyError() {
     }
 }
 
-void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
+void VRLeaderboardPage::StartFetch(VRLeaderboardPage *page) {
     if (s_fetchState == FETCH_REQUESTING) return;
     if (page == nullptr || s_entries == nullptr) {
         s_fetchState = FETCH_ERROR;
@@ -716,9 +542,9 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
     ++s_requestGeneration;
 
     s_currentUserFriendCode = 0;
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr != nullptr && rksysMgr->curLicenseId >= 0) {
-        RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+        RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
         s_currentUserFriendCode = DWC::CreateFriendKey(&license.dwcAccUserData);
     }
 
@@ -729,7 +555,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
         return;
     }
 
-    NHTTPRequestCtx* ctx = &s_requestCtx;
+    NHTTPRequestCtx *ctx = &s_requestCtx;
     ctx->generation = s_requestGeneration;
     ctx->apiPage = apiPage;
     if (s_requestWorkBuf == nullptr) {
@@ -741,18 +567,17 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
     }
     memset(s_requestWorkBuf, 0, s_nhttpWorkBufSize);
 
-    char* url = s_requestUrl;
-    snprintf(url, sizeof(s_requestUrl), "http://%s:8000/api/leaderboard/in-game?page=%u", WWFC_DOMAIN, apiPage);
+    snprintf(s_requestUrl, sizeof(s_requestUrl), "http://rwfc.net/api/leaderboard/in-game?page=%u", apiPage);
 
-    void* request = NHTTPCreateRequest(url, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
-                                       reinterpret_cast<void*>(&VRLeaderboardPage::OnLeaderboardReceived),
+    void *request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize,
+                                       reinterpret_cast<void *>(&VRLeaderboardPage::OnLeaderboardReceived),
                                        ctx);
     if (request == nullptr) {
         s_fetchState = FETCH_ERROR;
         return;
     }
 
-    if (strncmp(url, "https://", 8) == 0) {
+    if (strncmp(s_requestUrl, "https://", 8) == 0) {
         NHTTPConfigureHttpsForRequest(request);
     }
     const s32 sendRet = NHTTPSendRequestAsync(request);
@@ -764,15 +589,17 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage* page) {
     Network::MarkNHTTPRequestActive();
 }
 
-void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* userdata) {
+void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void *response, void *userdata) {
     Network::FinishNHTTPRequest();
-    NHTTPRequestCtx* ctx = reinterpret_cast<NHTTPRequestCtx*>(userdata);
-    if (response == nullptr) {
-        s_fetchState = FETCH_ERROR;
+    NHTTPRequestCtx *ctx = reinterpret_cast<NHTTPRequestCtx *>(userdata);
+
+    if (ctx == nullptr || ctx->generation != s_requestGeneration) {
+        if (response != nullptr) NHTTPDestroyResponse(response);
         return;
     }
-    if (ctx != nullptr && ctx->generation != s_requestGeneration) {
-        NHTTPDestroyResponse(response);
+
+    if (response == nullptr) {
+        s_fetchState = FETCH_ERROR;
         return;
     }
     if (s_entries == nullptr) {
@@ -787,8 +614,8 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
         return;
     }
 
-    char* body = nullptr;
-    int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res*>(response), &body);
+    char *body = nullptr;
+    int bodyLen = NHTTP::GetBodyAll(reinterpret_cast<NHTTP::Res *>(response), &body);
     if (body == nullptr || bodyLen <= 0) {
         NHTTPDestroyResponse(response);
         s_fetchState = FETCH_ERROR;
@@ -796,7 +623,7 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     }
 
     const u32 responseBufSize = static_cast<u32>(bodyLen) + 1;
-    char* responseBuf = reinterpret_cast<char*>(Network::NHTTPAlloc(responseBufSize, 4));
+    char *responseBuf = reinterpret_cast<char *>(Network::NHTTPAlloc(responseBufSize, 4));
     if (responseBuf == nullptr) {
         NHTTPDestroyResponse(response);
         s_fetchState = FETCH_ERROR;
@@ -807,9 +634,9 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     responseBuf[bodyLen] = '\0';
 
     NHTTPDestroyResponse(response);
-    s_loadedAPIPage = ctx != nullptr ? ctx->apiPage : 0;
+    s_loadedAPIPage = ctx->apiPage;
 
-    int parsed = ParseResponse(responseBuf, s_entries, kMaxEntries);
+    const int parsed = ParseResponse(responseBuf, s_entries, kMaxEntries);
     Network::NHTTPFree(responseBuf);
     if (parsed <= 0) {
         s_fetchState = FETCH_ERROR;
@@ -820,33 +647,21 @@ void VRLeaderboardPage::OnLeaderboardReceived(s32 result, void* response, void* 
     OverrideOwnMiiData(s_entries, parsed, s_currentUserFriendCode);
 
     s_loadedEntryCount = parsed;
-    for (int i = parsed; i < kMaxEntries; ++i) {
-        CopyAsciiToWide(s_entries[i].name, sizeof(s_entries[i].name) / sizeof(s_entries[i].name[0]), "----");
-        s_entries[i].vr = 0;
-        s_entries[i].rank = 0;
-        s_entries[i].friendCode = 0;
-    }
     s_fetchState = FETCH_READY;
     s_hasApplied = false;
 }
 
-int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int maxEntries) {
+int VRLeaderboardPage::ParseResponse(const char *json, Entry *outEntries, int maxEntries) {
     if (json == nullptr || outEntries == nullptr || maxEntries <= 0) return 0;
 
-    const char* p = FindStr(json, "[");
-    if (p == nullptr) return 0;
-
-    ++p;
+    Network::Json::Value array;
+    if (!Network::Json::FindArray(json, array)) return 0;
 
     int count = 0;
-
-    while (*p != '\0' && count < maxEntries) {
-        while (*p != '\0' && *p != '{' && *p != ']') ++p;
-        if (*p == ']' || *p == '\0') break;
-
-        const char* objStart = p;
-        const char* objEnd = FindMatchingObjectEnd(objStart);
-        if (objEnd == nullptr) break;
+    const char *cursor = nullptr;
+    Network::Json::Value object;
+    while (count < maxEntries && Network::Json::Next(array, cursor, object)) {
+        if (object.start == nullptr || object.start >= object.end || *object.start != '{') continue;
 
         outEntries[count].name[0] = L'\0';
         outEntries[count].vr = 0;
@@ -854,87 +669,53 @@ int VRLeaderboardPage::ParseResponse(const char* json, Entry* outEntries, int ma
         outEntries[count].friendCode = 0;
         memset(&outEntries[count].miiData, 0, sizeof(outEntries[count].miiData));
 
-        const char* miiKey = FindStrInRange(objStart, objEnd, "\"miiData\"");
-        const char* nameKey = FindStrInRange(objStart, objEnd, "\"name\"");
-        const char* vrKey = FindStrInRange(objStart, objEnd, "\"vr\"");
-        const char* rankKey = FindStrInRange(objStart, objEnd, "\"rank\"");
-        const char* friendCodeKey = FindStrInRange(objStart, objEnd, "\"friendCode\"");
-        if (friendCodeKey == nullptr) {
-            friendCodeKey = FindStrInRange(objStart, objEnd, "\"friend_code\"");
+        char miiB64[192];
+        if (Network::Json::Get(object, "miiData", miiB64, sizeof(miiB64))) {
+            DecodeBase64(miiB64, reinterpret_cast<u8 *>(&outEntries[count].miiData), sizeof(outEntries[count].miiData));
+            ExtractMiiNameFromStoreData(&outEntries[count].miiData, outEntries[count].name,
+                                        sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
         }
 
-        if (miiKey != nullptr) {
-            const char* colon = FindStrInRange(miiKey, objEnd, ":");
-            if (colon != nullptr) {
-                char miiB64[192];
-                const char* after = ParseJsonStringIntoAscii(colon + 1, miiB64, sizeof(miiB64));
-                (void)after;
-                DecodeBase64(miiB64, reinterpret_cast<u8*>(&outEntries[count].miiData), sizeof(outEntries[count].miiData));
-                ExtractMiiNameFromStoreData(&outEntries[count].miiData, outEntries[count].name,
-                                            sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
-            }
+        if (outEntries[count].name[0] == L'\0') {
+            Network::Json::Get(object, "name", outEntries[count].name,
+                               sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
         }
 
-        if (outEntries[count].name[0] == L'\0' && nameKey != nullptr) {
-            const char* colon = FindStrInRange(nameKey, objEnd, ":");
-            if (colon != nullptr) {
-                (void)ParseJsonStringIntoWide(colon + 1, outEntries[count].name,
-                                              sizeof(outEntries[count].name) / sizeof(outEntries[count].name[0]));
-            }
-        }
+        Network::Json::Get(object, "vr", outEntries[count].vr);
+        Network::Json::Get(object, "rank", outEntries[count].rank);
 
-        if (vrKey != nullptr) {
-            const char* colon = FindStrInRange(vrKey, objEnd, ":");
-            if (colon != nullptr) {
-                u32 vrValue = 0;
-                (void)ParseJsonU32(colon + 1, vrValue);
-                outEntries[count].vr = vrValue;
-            }
-        }
-
-        if (rankKey != nullptr) {
-            const char* colon = FindStrInRange(rankKey, objEnd, ":");
-            if (colon != nullptr) {
-                u32 rankValue = 0;
-                (void)ParseJsonU32(colon + 1, rankValue);
-                outEntries[count].rank = rankValue;
-            }
-        }
-
-        if (friendCodeKey != nullptr) {
-            const char* colon = FindStrInRange(friendCodeKey, objEnd, ":");
-            if (colon != nullptr) {
-                colon = SkipWhitespace(colon + 1);
-                if (colon != nullptr && *colon == '"') {
-                    char fcStr[32];
-                    ParseJsonStringIntoAscii(colon, fcStr, sizeof(fcStr));
-                    u64 friendCodeValue = 0;
-                    for (const char* p = fcStr; *p != '\0'; ++p) {
-                        if (*p >= '0' && *p <= '9') friendCodeValue = friendCodeValue * 10 + static_cast<u64>(*p - '0');
+        Network::Json::Value friendCode;
+        if (Network::Json::Find(object, "friendCode", friendCode) ||
+            Network::Json::Find(object, "friend_code", friendCode)) {
+            if (friendCode.start < friendCode.end && *friendCode.start == '"') {
+                char fcStr[32];
+                if (Network::Json::GetString(friendCode, fcStr, sizeof(fcStr))) {
+                    for (const char *fc = fcStr; *fc != '\0'; ++fc) {
+                        if (*fc >= '0' && *fc <= '9') {
+                            outEntries[count].friendCode = outEntries[count].friendCode * 10 +
+                                                           static_cast<u64>(*fc - '0');
+                        }
                     }
-                    outEntries[count].friendCode = friendCodeValue;
-                } else {
-                    ParseJsonU64(colon, outEntries[count].friendCode);
                 }
+            } else {
+                Network::Json::GetU64(friendCode, outEntries[count].friendCode);
             }
         }
 
         if (outEntries[count].name[0] != L'\0') {
             ++count;
         }
-
-        p = objEnd + 1;
     }
     return count;
 }
 
-void VRLeaderboardPage::OverrideOwnMiiData(Entry* entries, int entryCount, u64 ownFriendCode) {
+void VRLeaderboardPage::OverrideOwnMiiData(Entry *entries, int entryCount, u64 ownFriendCode) {
     if (entries == nullptr || entryCount <= 0 || ownFriendCode == 0) return;
 
-    RKSYS::Mgr* rksysMgr = RKSYS::Mgr::sInstance;
+    RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     if (rksysMgr == nullptr || rksysMgr->curLicenseId < 0 || rksysMgr->curLicenseId >= 4) return;
 
-    RKSYS::LicenseMgr& license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
 
     for (int i = 0; i < entryCount; ++i) {
         if (entries[i].friendCode == ownFriendCode) {

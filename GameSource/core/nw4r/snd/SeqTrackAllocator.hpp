@@ -9,10 +9,10 @@ namespace detail {
 class SeqTrack;
 class SeqPlayer;
 class SeqTrackAllocator {
-   public:
+public:
     virtual ~SeqTrackAllocator() {}
-    virtual SeqTrack* AllocTrack(SeqPlayer* player) = 0;
-    virtual void FreeTrack(SeqTrack* track) = 0;
+    virtual SeqTrack *AllocTrack(SeqPlayer *player) = 0;
+    virtual void FreeTrack(SeqTrack *track) = 0;
     virtual int GetAllocatableTrackCount() const = 0;
 };
 }  // namespace detail

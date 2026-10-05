@@ -22,9 +22,11 @@ void ExpOptions::OnInit() {
     this->settingsButton.SelectInitial(0);
 }
 
-void ExpOptions::ExpandedOnButtonClick(PushButton& pushButton, u32 hudSlotId) {
+void ExpOptions::ExpandedOnButtonClick(PushButton &pushButton, u32 hudSlotId) {
     if (pushButton.buttonId == 5) {
-        // Navigate to settings page selection menu first
+        ExpSection::GetSection()->GetPulPage<SettingsPageSelect>()->SetContext(
+            Settings::SETTINGS_CONTEXT_OFFLINE, PAGE_OPTIONS);
+        ExpSection::GetSection()->GetPulPage<SettingsPanel>()->prevPageId = PAGE_OPTIONS;
         this->nextPageId = static_cast<PageId>(SettingsPageSelect::id);
         this->EndStateAnimated(0, pushButton.GetAnimationFrameSize());
     } else {
@@ -32,7 +34,7 @@ void ExpOptions::ExpandedOnButtonClick(PushButton& pushButton, u32 hudSlotId) {
     }
 }
 
-static void PatchOptionsBRCTR(PushButton* button, const char* folderName, const char* ctrName, const char* variant, u32 playerCount, u32 r8, bool inaccessible) {
+static void PatchOptionsBRCTR(PushButton *button, const char *folderName, const char *ctrName, const char *variant, u32 playerCount, u32 r8, bool inaccessible) {
     button->Load(folderName, "SettingsButton", variant, playerCount, r8, inaccessible);
 }
 kmCall(0x805fd7bc, PatchOptionsBRCTR);  // so that the positions are correct

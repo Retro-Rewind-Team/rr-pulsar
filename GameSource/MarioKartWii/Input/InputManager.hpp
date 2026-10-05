@@ -18,9 +18,9 @@ namespace Input {
 
 //_sinit_ at 0x805230b0
 class Manager {
-   public:
-    static Manager* sInstance;  // 809bd70c
-    static Manager* GetInstance();  // 8052313c
+public:
+    static Manager *sInstance;  // 809bd70c
+    static Manager *GetInstance();  // 8052313c
     static void DestroyInstance();  // 8052318c
     Manager();  // 805232f0
     virtual ~Manager();  // 805231dc vtable 808b2fc8
@@ -34,11 +34,11 @@ class Manager {
     void Update();  // 805238f0
     static int ConvertType(ControllerType type);  // 80523a58 if wiimote based, returns 0, gcn returns 1, other returns 3
     void ResetDummyController();  // 80523eac
-    bool TrySetController(u32 hudSlotId, void* r5 = nullptr);  // 80523ebc controller is set if A is pressed
-    void UpdateGCNInputs(u8 id, PAD::Status* status);
+    bool TrySetController(u32 hudSlotId, void *r5 = nullptr);  // 80523ebc controller is set if A is pressed
+    void UpdateGCNInputs(u8 id, PAD::Status *status);
     void ResetRealController(u8 id);  // 80524264
     void InitControllerHolders();  // 805242d8
-    void InitGhostController(u8 id, const RKGInputs* rawInputs, bool isAuto);  // 8052453c
+    void InitGhostController(u8 id, const RKGInputs *rawInputs, bool isAuto);  // 8052453c
     void StartGhostReading();  // 80524580
     void EndGhostWriting(u8 hudSlotId);  // 805245cc
     void EndAllGhostWriting();  // 805245dc
@@ -47,9 +47,9 @@ class Manager {
     bool SyncWiimotes();  // 80524788 returns true if all wiimotes are connected
     void ResetSelfWiiAndGCNControllers();  // 80523724
     static void RequestRumbleByDuration(u8 hudSlotId, u32 duration, bool replaceActiveIfNoFreeRumble, float f1);  // 0x805249b0
-    void EnableAllPointers(bool* prevStatus);  // 80524840
-    void ToggleAllPointers(const bool* statusOfEach);  // 805248d8
-    int CopyPADStatus(u32 channel, PAD::Status* dest);  // 80524628 returns value based on error
+    void EnableAllPointers(bool *prevStatus);  // 80524840
+    void ToggleAllPointers(const bool *statusOfEach);  // 805248d8
+    int CopyPADStatus(u32 channel, PAD::Status *dest);  // 80524628 returns value based on error
 
     void DisableGhostReading();  // 80524568
     void PrepareRealControllerHolderForRace(u8 hudSlotId);  // 80524558

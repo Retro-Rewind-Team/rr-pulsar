@@ -6,14 +6,14 @@
 namespace GP {
 struct ICallback {
     Callback callback;
-    void* param;
+    void *param;
 };
 struct ICallbackData {
     ICallback callback;
-    void* arg;
+    void *arg;
     int type;
     int operationID;
-    struct GPICallbackData* next;
+    struct GPICallbackData *next;
 };
 
 enum IAddCallbackType {

@@ -54,8 +54,8 @@ struct ResShpData {
 };
 
 class ResShp : public ResCommon<ResShpData> {
-   public:
-    void GetAnmResult(ShpAnmResult* result, u32 anmId, float frame, const ShpAnmVtxSet* shpArray) const;  // 80056da0
+public:
+    void GetAnmResult(ShpAnmResult *result, u32 anmId, float frame, const ShpAnmVtxSet *shpArray) const;  // 80056da0
 };
 
 }  // namespace g3d

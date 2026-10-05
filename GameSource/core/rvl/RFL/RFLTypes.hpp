@@ -253,10 +253,10 @@ struct StoreData {  // http://wiibrew.org/wiki/Mii_data#Mii_format
 #pragma pack(pop)
 
 struct Manager {
-    void* startAddr;
-    MEM::HeapHandle* expHeap;  // 0x4 size 0x620e0
-    MEM::HeapHandle* expHeap2;  // 0x8 size 0x24800
-    MEM::HeapHandle* userHeap;  // 0xC size remaining 1st heap
+    void *startAddr;
+    MEM::HeapHandle *expHeap;  // 0x4 size 0x620e0
+    MEM::HeapHandle *expHeap2;  // 0x8 size 0x24800
+    MEM::HeapHandle *userHeap;  // 0xC size remaining 1st heap
     DBManager dbManager;  // 0x10
     u8 unknown_0x14[0xc0 - 0x14];
     Loader loader;  // 0xc0
@@ -273,7 +273,7 @@ struct WiFiInformation {
     u8 maxAid;
     u16 localAid;
     u32 unknown_0x4[2];
-    void* buffer;  // 0xc just an array of WiFiPackets
+    void *buffer;  // 0xc just an array of WiFiPackets
 };
 
 struct WiFiPacket {

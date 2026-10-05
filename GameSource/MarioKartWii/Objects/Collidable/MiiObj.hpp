@@ -11,11 +11,11 @@ namespace Objects {
 // ObjectNum 0x2e8 = 744 MiiObjD01,  ObjectNum 0x2e9 = 745 MiiObjD02,  ObjectNum 0x2ea = 746 MiiObjD03
 
 class MiiObj : public ObjectCollidable {
-   public:
-    static MiiCreationParams* miiCreationParams;  // 809c2da0
-    static Mii** miis;  // 809c2da8
-    static u32* processedMiisCount;  // 809c2dac
-    explicit MiiObj(const KMP::Holder<GOBJ>& gobjHolder);  // 807730d4
+public:
+    static MiiCreationParams *miiCreationParams;  // 809c2da0
+    static Mii **miis;  // 809c2da8
+    static u32 *processedMiisCount;  // 809c2dac
+    explicit MiiObj(const KMP::Holder<GOBJ> &gobjHolder);  // 807730d4
     ~MiiObj() override;  // 80773114 vtable 808cf800
     void OnStart() override;  // 0xC 80773180
     u32 GetPropertiesBitfield() override;  // 0x2c 807736c0

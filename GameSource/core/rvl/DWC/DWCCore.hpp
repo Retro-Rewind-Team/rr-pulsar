@@ -51,25 +51,25 @@ enum ReportFlag {
 extern char loginRegion[8];  // 80384fd0
 
 // Connection close call-back cb
-typedef void (*ConnectionClosedCallback)(Error error, BOOL isLocal, BOOL isServer, u8 aid, int index, void* param);
+typedef void (*ConnectionClosedCallback)(Error error, BOOL isLocal, BOOL isServer, u8 aid, int index, void *param);
 
 struct ConnectionInfo {  // gt2 connection data, mkwii's "ConnectionUserData" is the param, and then passed to CheckResvCommand and ultimately to RKNet::ConnectionAttemptCb
     u8 index;  // Stored connection list index
     u8 aid;  // Unique ID for host
     u16 reserve;  // Reserved
-    void* param;  // user data
+    void *param;  // user data
 };
 
 struct FriendsMatchControl {
-    static FriendsMatchControl* sInstance;  // 803862F0
+    static FriendsMatchControl *sInstance;  // 803862F0
 
-    GT2::Socket* gt2Socket;  // Pointer to the GT2 socket structure of the host
+    GT2::Socket *gt2Socket;  // Pointer to the GT2 socket structure of the host
     GT2::ConnectionCallbacks gt2Callbacks;  // 0x4 gt2 connection call-back collection
     int gt2SendBufSize;  // 0x14 GT2 socket send buffer size
     int gt2RecvBufSize;  // 0x18 GT2 socket receive buffer size
 
-    GP::Connection* gpConnection;  // 0x1c Pointer to gp connection structure
-    AccUserData* userdata;  // 0x20 Pointer to DWCUserData structure
+    GP::Connection *gpConnection;  // 0x1c Pointer to gp connection structure
+    AccUserData *userdata;  // 0x20 Pointer to DWCUserData structure
 
     State state;  // 0x24
     State prevState;  // 0x28
@@ -78,19 +78,19 @@ struct FriendsMatchControl {
     u8 padding[2];
     wchar_t playerName[26];  // 0x30 Player name
     int profileID;  // 0x64 User profile ID
-    const char* gameName;  // 0x6c Pointer to the game name received from GameSpy
+    const char *gameName;  // 0x6c Pointer to the game name received from GameSpy
     // const char* secretKey; //0x70
 
     LoginCallback loginCallback;  // 0x70
-    void* loginParam;  // 0x74 RKNet::Controller in mkwii
+    void *loginParam;  // 0x74 RKNet::Controller in mkwii
     UpdateServersCallback updateServersCallback;  // 0x78
-    void* updateServersParam;  // 0x7c RKNet::Controller in mkwii
+    void *updateServersParam;  // 0x7c RKNet::Controller in mkwii
     MatchedCallback matchedCallback;  // 0x80
-    void* matchedParam;  // 0x84
+    void *matchedParam;  // 0x84
     MatchedSCCallback matchedSCCallback;  // 0x88
-    void* matchedSCParam;  // 0x8c RKNet::Controller in mkwii
+    void *matchedSCParam;  // 0x8c RKNet::Controller in mkwii
     ConnectionClosedCallback closedCallback;  // 0x90
-    void* closedParam;  // 0x94 RKNet::Controller in mkwii
+    void *closedParam;  // 0x94 RKNet::Controller in mkwii
 
     LoginControl loginControl;  // 0x98 login control object
     FriendControl friendControl;  // 0x300
@@ -98,18 +98,18 @@ struct FriendsMatchControl {
     TransportInfo transportInfo;  // 0xc20 transport control object
 };  // 0x1438
 
-BOOL SetupGameServer(u8 maxPlayerCount, MatchedSCCallback matchedCb, void* matchedParam, NewClientCallback newClientCb, void* newClientParam,
-                     ConnectionAttemptCallback attemptCb, void* attemptParam, u32 r10);  // 800d1984
+BOOL SetupGameServer(u8 maxPlayerCount, MatchedSCCallback matchedCb, void *matchedParam, NewClientCallback newClientCb, void *newClientParam,
+                     ConnectionAttemptCallback attemptCb, void *attemptParam, u32 r10);  // 800d1984
 
-void iSetupGameServer(u8 maxPlayerCount, MatchedSCCallback matchedCb, void* matchedParam, NewClientCallback newClientCb, void* newClientParam,
-                      ConnectionAttemptCallback attemptCb, void* attemptParam, u32 r10);  // 800d54a0
+void iSetupGameServer(u8 maxPlayerCount, MatchedSCCallback matchedCb, void *matchedParam, NewClientCallback newClientCb, void *newClientParam,
+                      ConnectionAttemptCallback attemptCb, void *attemptParam, u32 r10);  // 800d54a0
 
-void InitFriendsMatch(FriendsMatchControl* unused, AccUserData* userdata, int productID, const char* gameName, const char* secretKey,
+void InitFriendsMatch(FriendsMatchControl *unused, AccUserData *userdata, int productID, const char *gameName, const char *secretKey,
                       int sendBufSize, int recvBufSize, AccFriendData friendList[], int friendListLen);  // 800d0d68
 
-void iLoginCallback(Error error, int profileID, void* param);  // 800d2f1c
+void iLoginCallback(Error error, int profileID, void *param);  // 800d2f1c
 
-int Printf(u32 level, const char*, ...);
+int Printf(u32 level, const char *, ...);
 
 int CloseConnectionHard(u8 aid);  // 800d2000
 }  // namespace DWC

@@ -9,7 +9,7 @@ static bool readingNAND = false;
 static bool isNewNotSeparateSavegame = false;
 
 char GetRegion() {
-    return *(char*)0x80000003;
+    return *(char *)0x80000003;
 }
 
 /*
@@ -25,7 +25,7 @@ bool useRedirectedRKSYS() {
 }
 
 /* Must be preallocated */
-void SDIO_RKSYS_path(char* path, u32 pathlen) {
+void SDIO_RKSYS_path(char *path, u32 pathlen) {
     snprintf(path, pathlen, "/riivolution/save/RetroWF%s/RMC%c/rksys.dat", useRedirectedRKSYS() ? "C2" : "C", GetRegion());
 }
 
@@ -40,7 +40,7 @@ void SDIO_RKSYS_CreatePath() {
     IO::sInstance->CreateFolder(path);
 }
 
-NandUtils::Result SDIO_ReadRKSYS(NandMgr* nm, void* buffer, u32 size, u32 offset, bool r7)  // 8052c0b0
+NandUtils::Result SDIO_ReadRKSYS(NandMgr *nm, void *buffer, u32 size, u32 offset, bool r7)  // 8052c0b0
 {
     if (IsNewChannel() && !readingNAND) {
         bool res;
@@ -65,7 +65,7 @@ NandUtils::Result SDIO_ReadRKSYS(NandMgr* nm, void* buffer, u32 size, u32 offset
 }
 kmBranch(0x8052c0b0, SDIO_ReadRKSYS);
 
-NandUtils::Result SDIO_CheckRKSYSLength(NandMgr* nm, u32 length)  // 8052c20c
+NandUtils::Result SDIO_CheckRKSYSLength(NandMgr *nm, u32 length)  // 8052c20c
 {
     if (IsNewChannel()) {
         bool res;
@@ -101,7 +101,7 @@ NandUtils::Result SDIO_CheckRKSYSLength(NandMgr* nm, u32 length)  // 8052c20c
 }
 kmBranch(0x8052c20c, SDIO_CheckRKSYSLength);
 
-NandUtils::Result SDIO_WriteToRKSYS(NandMgr* nm, const void* buffer, u32 size, u32 offset, bool r7)  // 8052c2d0
+NandUtils::Result SDIO_WriteToRKSYS(NandMgr *nm, const void *buffer, u32 size, u32 offset, bool r7)  // 8052c2d0
 {
     if (IsNewChannel()) {
         /* After copying an existing RKSYS, skip the game's first blank-save write. */
@@ -144,7 +144,7 @@ NandUtils::Result SDIO_WriteToRKSYS(NandMgr* nm, const void* buffer, u32 size, u
 }
 kmBranch(0x8052c2d0, SDIO_WriteToRKSYS);
 
-NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
+NandUtils::Result SDIO_CreateRKSYS(NandMgr *nm, u32 length)  // 8052c68c
 {
     /* Separate savegame creates an empty file; shared savegame copies NAND RKSYS. */
 
@@ -172,7 +172,7 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
             readingNAND = true;
 
             const int rksys_size = 0x2BC000;
-            const int chunk_size = 1024*10;
+            const int chunk_size = 1024 * 10;
 
             char chunk[chunk_size];
             int read = 0;
@@ -180,7 +180,7 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
 
             while (read < rksys_size) {
                 IO::sInstance->Close();
-                NandUtils::Result r = SDIO_ReadRKSYS(nm, (void*)chunk, chunk_size, chunk_size * i, true);
+                NandUtils::Result r = SDIO_ReadRKSYS(nm, (void *)chunk, chunk_size, chunk_size * i, true);
 
                 IO::sInstance->OpenFile(path, mode);
 
@@ -195,7 +195,7 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
                 }
 
                 IO::sInstance->Seek(chunk_size * i);
-                IO::sInstance->Write(chunk_size, (void*)chunk);
+                IO::sInstance->Write(chunk_size, (void *)chunk);
 
                 i++;
                 read += chunk_size;
@@ -214,7 +214,7 @@ NandUtils::Result SDIO_CreateRKSYS(NandMgr* nm, u32 length)  // 8052c68c
 }
 kmBranch(0x8052c68c, SDIO_CreateRKSYS);
 
-NandUtils::Result SDIO_DeleteRKSYS(NandMgr* nm, u32 length, bool r5)  // 8052c7e4
+NandUtils::Result SDIO_DeleteRKSYS(NandMgr *nm, u32 length, bool r5)  // 8052c7e4
 {
     if (IsNewChannel()) {
         /* The SD backend has no delete hook here; the next write will replace the file. */

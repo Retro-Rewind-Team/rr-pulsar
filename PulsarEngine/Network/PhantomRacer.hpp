@@ -9,7 +9,7 @@ namespace Network {
 
 void MarkPhantomAid(u32 aid);
 void ClearPhantomAid(u32 aid);
-void AppendPhantomSelectInfos(Pages::SELECTStageMgr& stageMgr);
+void AppendPhantomSelectInfos(Pages::SELECTStageMgr &stageMgr);
 
 }  // namespace Network
 }  // namespace Pulsar

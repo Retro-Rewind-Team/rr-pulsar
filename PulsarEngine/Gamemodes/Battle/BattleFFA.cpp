@@ -14,7 +14,7 @@
 namespace Pulsar {
 namespace Battle {
 
-static void SetFFAmodeHelper(Racedata* racedata) {
+static void SetFFAmodeHelper(Racedata *racedata) {
     if (System::sInstance->IsContext(PULSAR_FFA)) {
         racedata->racesScenario.settings.modeFlags = 0;
     } else {
@@ -74,16 +74,17 @@ kmBranch(0x80633880, GetWifiBattleControls);
 kmBranch(0x806336d0, GetWifiFriendControls);
 
 static void SetFFABattleResourceNames(bool isFFA, bool isElimination) {
-    volatile char* positionName = reinterpret_cast<volatile char*>(kmRuntimeAddr(0x808aa1ac));
-    volatile char* battlePointName = reinterpret_cast<volatile char*>(kmRuntimeAddr(0x808a98dd));
-    volatile char* minigameName = reinterpret_cast<volatile char*>(kmRuntimeAddr(0x80890209));
-    volatile char* balloonName = reinterpret_cast<volatile char*>(kmRuntimeAddr(0x808dc540));
+    volatile char *positionName = reinterpret_cast<volatile char *>(kmRuntimeAddr(0x808aa1ac));
+    volatile char *battlePointName = reinterpret_cast<volatile char *>(kmRuntimeAddr(0x808a98dd));
+    volatile char *minigameName = reinterpret_cast<volatile char *>(kmRuntimeAddr(0x80890209));
+    volatile char *balloonName = reinterpret_cast<volatile char *>(kmRuntimeAddr(0x808dc540));
 
     positionName[0] = isFFA ? 'r' : 'p';
     positionName[1] = isFFA ? 'r' : 'o';
     battlePointName[0] = isFFA ? 'r' : 'b';
     battlePointName[1] = isFFA ? 'r' : 'a';
-    minigameName[0] = isElimination ? 'E' : isFFA ? 'R' : 'm';
+    minigameName[0] = isElimination ? 'E' : isFFA ? 'R'
+                                                  : 'm';
     balloonName[0] = isFFA ? 'f' : 'b';
 }
 

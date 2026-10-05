@@ -37,7 +37,9 @@ namespace Pulsar_Pack_Creator.IO
     {
         BMG_CUPS = 0x10000,
         BMG_TRACKS = 0x20000,
-        BMG_AUTHORS = 0x30000
+        BMG_AUTHORS = 0x30000,
+        BMG_MUSIC_CREDITS = 0x170000,
+        BMG_VARIANT_MUSIC_CREDITS = 0x620000
     };
     abstract class IOBase
     {
@@ -94,7 +96,7 @@ namespace Pulsar_Pack_Creator.IO
             return value + (aligment - 1) & ~(aligment - 1);
         }
 
-        protected static bool TryParseBMGLine(string line, out uint bmgId, out string content)
+        internal static bool TryParseBMGLine(string line, out uint bmgId, out string content)
         {
             bmgId = 0;
             content = "";
