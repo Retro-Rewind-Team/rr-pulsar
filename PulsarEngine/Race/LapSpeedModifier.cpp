@@ -148,6 +148,7 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     Kart::hardSpeedCap = 120.0f * factor;
     Kart::bulletSpeed = 145.0f * factor;
     Kart::starSpeed = 105.0f * factor;
+    Kart::slipstreamSpeed = factor > 1.0f ? 115.0f * factor : 115.0f;
     Kart::megaTCSpeed = 95.0f * factor;
 
     stats->baseSpeed *= factor;
@@ -163,6 +164,7 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     Kart::minDriftSpeedRatio = 0.55f * (factor > 1.0f ? (1.0f / factor) : 1.0f);
     Kart::unknown_70 = 70.0f * factor;
     Kart::regularBoostAccel = 3.0f * factor;
+    Kart::slipstreamAccel = factor > 1.0f ? 0.7f * factor : 0.7f;
 
     return stats;
 }

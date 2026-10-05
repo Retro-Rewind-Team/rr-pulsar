@@ -1081,9 +1081,11 @@ bulletSpeed__4Kart = 0x808b59f8
 minDriftSpeedRatio__4Kart = 0x808b5b1c
 mtSpeedMultiplier__4Kart = 0x808b5c60
 starSpeed__4Kart = 0x808B5CAC
+slipstreamSpeed__4Kart = 0x808b5cb0
 megaTCSpeed__4Kart = 0x808B5CBC
 speedRatioCC__4Kart = 0x808b5cd4
 regularBoostAccel__4Kart = 0x808b5c78
+slipstreamAccel__4Kart = 0x808b5b94
 unknown_70__4Kart = 0x808cb550
 
 #KartStatus
