@@ -24,6 +24,8 @@ public:
     void OnInit() override;
     void BeforeEntranceAnimations() override;
     void BeforeControlUpdate() override;
+    void OnActivate() override;
+    void OnStartPress(u32 hudSlotId) override;
 
     int GetActivePlayerBitfield() const override;
     int GetPlayerBitfield() const override;

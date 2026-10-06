@@ -33,6 +33,7 @@ void ExpFroom::OnInit() {
 
     this->AddControl(7, kickButton, 0);
     this->kickButton.Load(UI::buttonFolder, "FroomButton", "Kick", 1, 0, false);
+    this->kickButton.SetMessage(BMG_KICK_BUTTON);
     this->kickButton.buttonId = 7;
     this->kickButton.SetOnClickHandler(this->onKickClickHandler, 0);
     this->kickButton.SetOnSelectHandler(this->onButtonSelectHandler);
@@ -56,7 +57,7 @@ void ExpFroom::ExtOnButtonSelect(PushButton &button, u32 hudSlotId) {
     } else if (button.buttonId == 6)
         this->bottomText.SetMessage(BMG_TEAMS_BOTTOM, 0);
     else if (button.buttonId == 7)
-        this->bottomText.SetMessage(BMG_KICK_BOTTOM, 0);
+        this->bottomText.SetMessage(BMG_KICK_MESSAGE_BOTTOM, 0);
     else
         this->OnButtonSelect(button, hudSlotId);
 }

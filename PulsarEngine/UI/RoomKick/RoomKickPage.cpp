@@ -9,7 +9,7 @@ RoomKickPage::RoomKickPage() {
     internControlCount = 13;
     extraControlNumber = 0;
     controlSources = 2;
-    titleBmg = BMG_KICK_BOTTOM;
+    titleBmg = BMG_KICK_BUTTON;
     nextPageId = PAGE_NONE;
     prevPageId = PAGE_FRIEND_ROOM;
     nextSection = SECTION_NONE;
@@ -28,18 +28,26 @@ RoomKickPage::RoomKickPage() {
     onButtonDeselectHandler.ptmf = &RoomKickPage::OnButtonDeselect;
     onBackPressHandler.subject = this;
     onBackPressHandler.ptmf = &RoomKickPage::OnBackPress;
+    onStartPressHandler.subject = this;
+    onStartPressHandler.ptmf = &RoomKickPage::OnStartPress;
     onYesNoClickHandler.subject = this;
     onYesNoClickHandler.ptmf = &RoomKickPage::OnYesNoClick;
 
     this->controlsManipulatorManager.Init(1, false);
     this->SetManipulatorManager(controlsManipulatorManager);
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, onBackPressHandler, false, false);
+    this->controlsManipulatorManager.SetGlobalHandler(START_PRESS, onStartPressHandler, false, false);
     activePlayerBitfield = 1;
 }
 
 void RoomKickPage::OnInit() {
     this->miiGroup = &SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>()->miiGroup;
     Menu::OnInit();
+}
+
+void RoomKickPage::OnActivate() {
+    this->bottomText->SetMessage(BMG_KICK_BOTTOM, nullptr);
+    MenuInteractable::OnActivate();
 }
 
 void RoomKickPage::BeforeEntranceAnimations() {
@@ -169,16 +177,23 @@ void RoomKickPage::OnBackPress(u32 hudSlotId) {
 
 void RoomKickPage::OnYesNoClick(u32 choice, PushButton &button) {
     if (choice == 0) {
+        const RKNet::Controller *controller = RKNet::Controller::sInstance;
+        const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
+        const u32 aids = this->selectedIdx == -1 ? sub.availableAids : 1 << this->aidIdx[this->selectedIdx];
         DWC::NodeInfo *nodes = DWC::MatchControl::sInstance->nodes;
-        for (int i = 0; i < 32; ++i) {
-            if (nodes[i].aid == this->aidIdx[this->selectedIdx]) {
-                this->kickedPIDs[this->kickedCount % 64] = nodes[i].pid;
-                ++this->kickedCount;
-                break;
+        for (int aid = 0; aid < 12; ++aid) {
+            if (sub.hostAid == sub.localAid && aid != sub.localAid && (aids & (1 << aid))) {
+                for (int i = 0; i < 32; ++i) {
+                    if (nodes[i].aid == aid) {
+                        this->kickedPIDs[this->kickedCount % 64] = nodes[i].pid;
+                        ++this->kickedCount;
+                        break;
+                    }
+                }
+
+                DWC::CloseConnectionHard(aid);
             }
         }
-
-        DWC::CloseConnectionHard(this->aidIdx[this->selectedIdx]);
     }
 }
 
@@ -200,11 +215,12 @@ void RoomKickPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
 
     const u32 btnIdx = button.buttonId;
     if (btnIdx < this->playerCount) {
-        if (sub->localAid != this->aidIdx[btnIdx]) {
+        if (sub->hostAid == sub->localAid && sub->localAid != this->aidIdx[btnIdx]) {
             Pages::YesNoPopUp *msgBox = SectionMgr::sInstance->curSection->Get<Pages::YesNoPopUp>();
 
+            this->selectedIdx = btnIdx;
             Text::Info info;
-            info.miis[0] = this->miiGroup->GetMii(this->miiIdx[this->selectedIdx]);
+            info.miis[0] = this->miiGroup->GetMii(this->miiIdx[btnIdx]);
             msgBox->Reset();
             msgBox->SetMessageBoxMsg(BMG_KICK_CONFIRM, &info);
             msgBox->PrepareButton(0, BMG_YES, nullptr, 0, this->onYesNoClickHandler);
@@ -216,6 +232,25 @@ void RoomKickPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
 
             this->EndStateAnimated(1, 0.0f);
         }
+    }
+}
+
+void RoomKickPage::OnStartPress(u32 hudSlotId) {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
+    if (sub.hostAid == sub.localAid) {
+        this->selectedIdx = -1;
+        Pages::YesNoPopUp *msgBox = SectionMgr::sInstance->curSection->Get<Pages::YesNoPopUp>();
+
+        msgBox->Reset();
+        msgBox->SetMessageBoxMsg(BMG_KICK_ALL_CONFIRM, nullptr);
+        msgBox->PrepareButton(0, BMG_YES, nullptr, 0, this->onYesNoClickHandler);
+        msgBox->PrepareButton(1, BMG_NO, nullptr, 0, this->onYesNoClickHandler);
+        msgBox->initialButtonIdx = 1;
+
+        this->nextPageId = PAGE_VOTERANDOM_MESSAGE_BOX;
+        this->prevPageId = PAGE_FRIEND_ROOM;
+        this->EndStateAnimated(1, 0.0f);
     }
 }
 
