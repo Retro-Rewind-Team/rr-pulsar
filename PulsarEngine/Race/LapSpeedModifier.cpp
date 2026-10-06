@@ -122,8 +122,8 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     if (speedModConv.speedMod == 0.0f)
         speedModConv.speedMod = 1.0f;
     float factor = 1.0f;
-    if (gameType == GAMETYPE_ONLINE_SPECTATOR && System::sInstance->netMgr.region != 0x0C) {
-        factor = 1.0f;
+    if (gameType == GAMETYPE_ONLINE_SPECTATOR && !isFroom) {
+        factor = system->netMgr.region == 0x0C ? Race::speedFactor : 1.0f;
     } else if (customEngineClass >= 100) {
         const u16 cc = customEngineClass;
         factor = cc <= 150 ? 0.9f + static_cast<float>(cc - 100) * 0.002f : 1.0f + static_cast<float>(cc - 150) * 0.01f;
