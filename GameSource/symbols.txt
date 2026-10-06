@@ -2591,6 +2591,7 @@ ToadetteFix2 = 0x807c8aa8
 __ct__12ToadetteHairFRQ34nw4r3g3d7ResFileP13ModelDirectorUi = 0x807da5c0
 
 #Sound
+Initialize__Q23EGG12SoundHeapMgrFPQ23EGG4HeapUi = 0x8021318c
 GetGroupCount__Q34nw4r3snd12SoundArchiveCFv = 0x8009ded0
 ConvertLabelStringToGroupId__Q34nw4r3snd12SoundArchiveCFPCc = 0x8009df10
 detail_ReadGroupItemInfo__Q34nw4r3snd12SoundArchiveCFUiUiPQ44nw4r3snd12SoundArchive13GroupItemInfo = 0x8009dfd0
