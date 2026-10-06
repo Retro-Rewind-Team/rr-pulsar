@@ -610,4 +610,17 @@ kmWrite32(0x805354D0, 0x38A00000);  // li r5, 0; use checkpoint-based lap counti
 kmWrite32(0x808665b8, 0x2c030002);
 kmWrite32(0x80864e7c, 0x2c000002);
 
+// Opponents Use Player Voicelines [pflu280]
+kmWrite32(0x80863F20, 0x60000000);
+kmWrite32(0x80864938, 0x4800000C);
+kmWrite32(0x808649D4, 0x60000000);
+kmWrite32(0x80864A34, 0x38800001);
+kmWrite32(0x80865174, 0x4800000C);
+kmWrite32(0x80865C00, 0x4800000C);
+kmWrite32(0x80865C3C, 0x4800000C);
+kmWrite32(0x808663BC, 0x48000040);
+kmWrite32(0x8086646C, 0x48000040);
+kmWrite32(0x808A13B4, 0x00C00000);
+kmWrite32(0x808A13B8, 0x00C00000);
+
 }  // namespace Codes
