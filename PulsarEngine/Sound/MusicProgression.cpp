@@ -122,8 +122,8 @@ RKNet::RACEHEADER2Packet &ReceiveCheckpointFinalLap(RKNet::PacketMgr &mgr, u8 pl
     const RKNet::PacketHolder<Network::PulRH2> &holder = *controller.splitReceivedRACEPackets[controller.lastReceivedBufferUsed[aid][2]][aid]->GetPacketHolder<Network::PulRH2>();
     RaceinfoPlayer &player = *Raceinfo::sInstance->players[playerId];
     // Only the owner's RH2 can advance a remote racer; the native RH2 finish-time path remains authoritative.
-    if (holder.packetSize >= sizeof(Network::PulRH2) && (holder.packet->checkpointFinalLapPlayers & (1u << playerId))
-      && !(checkpointFinalLapPlayers & (1u << playerId)) && !(player.stateFlags & 0x30)) {
+    if (holder.packetSize >= sizeof(Network::PulRH2) && (holder.packet->checkpointFinalLapPlayers & (1u << playerId)) && !(checkpointFinalLapPlayers & (1u << playerId))
+      && !(player.stateFlags & 0x30)) {
         const u8 lapCount = Racedata::sInstance->racesScenario.settings.lapCount;
         player.raceCompletion += lapCount - player.currentLap;
         player.raceCompletionMax = player.raceCompletion;
