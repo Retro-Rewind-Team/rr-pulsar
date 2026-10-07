@@ -370,7 +370,7 @@ void SettingsPanel::SaveSettings(bool) {
 }
 
 void SettingsPanel::LoadPrevMenuAndSaveSettings(PushButton &button) {
-    nextPageId = static_cast<PageId>(SettingsPageSelect::id);
+    nextPageId = static_cast<PageId>(settingsPageId == Settings::SETTINGS_PAGE_TTPRACTICE ? PULPAGE_TTPRACTICECONFIRM : SettingsPageSelect::id);
     EndStateAnimated(0, button.GetAnimationFrameSize());
     SaveSettings(true);
 }
