@@ -13,10 +13,7 @@ static const u16 GOLDEN_MUSHROOM_TIMER_FRAMES = 480;
 static const u16 GOLDEN_MUSHROOM_WARNING_FRAMES = 120;
 
 // X/Y offsets are relative to the item window's HUD position.
-static const float GOLDEN_TIMER_BAR_EDGE_EXTENSION = 4.0f;
-static const float GOLDEN_TIMER_BAR_HEIGHT = 3.0f;
-static const float GOLDEN_TIMER_BAR_Y_OFFSET = -20.5f;
-static const u32 GOLDEN_TIMER_BAR_POSITION_INDEX = 1;
+static const float GOLDEN_TIMER_BAR_HEIGHT = 4.0f;
 static const u8 GOLDEN_TIMER_BAR_YELLOW_GREEN = 220;
 static const u8 GOLDEN_TIMER_BAR_ALPHA = 220;
 
@@ -94,19 +91,19 @@ static bool TryBuildGoldenTimerBar(CtrlRaceItemWindow &itemWindow, GoldenTimerBa
 
     const float remaining = inventory.goldenTimer > GOLDEN_MUSHROOM_TIMER_FRAMES ? 1.0f : static_cast<float>(inventory.goldenTimer) / static_cast<float>(GOLDEN_MUSHROOM_TIMER_FRAMES);
 
-    nw4r::lyt::Pane *itemWindowPane = itemWindow.GetPane();
+    nw4r::lyt::Pane *itemWindowPane = itemWindow.hilight_next;
     if (itemWindowPane == nullptr)
         return false;
 
-    const PositionAndScale &itemWindowPosition = itemWindow.positionAndscale[GOLDEN_TIMER_BAR_POSITION_INDEX];
-    const float barScaleX = itemWindowPosition.scale.x;
-    const float barScaleY = itemWindowPosition.scale.z;
-    const float fullWidth = (itemWindowPane->size.x + GOLDEN_TIMER_BAR_EDGE_EXTENSION * 2.0f) * barScaleX;
+    const float barScaleX = itemWindowPane->effectiveMtx[0][0];
+    const float barScaleY = itemWindowPane->effectiveMtx[1][1];
+    const float fullWidth = (itemWindowPane->size.x - 12.0f) * barScaleX;
     if (fullWidth <= 0.0f)
         return false;
 
-    bar.x = itemWindowPosition.position.x - fullWidth * 0.5f;
-    bar.y = itemWindowPosition.position.y + GOLDEN_TIMER_BAR_Y_OFFSET * barScaleY;
+    bar.x = itemWindowPane->effectiveMtx[0][3] - fullWidth * 0.5f;
+    // The glass texture's interior sits slightly above the pane's center.
+    bar.y = itemWindowPane->effectiveMtx[1][3] - (itemWindowPane->size.z * 0.4f + 1.875f) * barScaleY;
     bar.width = fullWidth * remaining;
     bar.height = GOLDEN_TIMER_BAR_HEIGHT * barScaleY;
     bar.red = 255;
@@ -118,14 +115,24 @@ static bool TryBuildGoldenTimerBar(CtrlRaceItemWindow &itemWindow, GoldenTimerBa
 
 static void DrawGoldenMushroomTimer(CtrlRaceItemWindow &itemWindow) {
     GoldenTimerBar bar;
-    if (TryBuildGoldenTimerBar(itemWindow, bar))
+    if (TryBuildGoldenTimerBar(itemWindow, bar)) {
+        nw4r::lyt::Pane *frame = itemWindow.hilight_next;
+        Mtx originalMtx;
+        memcpy(originalMtx, frame->effectiveMtx, sizeof(originalMtx));
+        // Draw the existing glass frame again, compressed beneath the item window.
+        frame->effectiveMtx[1][3] -= (frame->size.z * 0.4f + 4.0f) * originalMtx[1][1];
+        for (u32 i = 0; i < 3; ++i) frame->effectiveMtx[1][i] *= 6.5f / frame->size.z;
+        GX::SetZMode(false, GX::GX_ALWAYS, false);
+        frame->DrawSelf(SectionMgr::sInstance->curSection->drawInfo);
+        memcpy(frame->effectiveMtx, originalMtx, sizeof(originalMtx));
         DrawGoldenTimerQuad(bar);
+    }
 }
 
 static void DrawItemWindowWithGoldenTimer(CtrlRaceItemWindow &itemWindow, u32 curZIdx) {
-    if (!itemWindow.IsInactive())
-        DrawGoldenMushroomTimer(itemWindow);
     itemWindow.LayoutUIControl::Draw(curZIdx);
+    if ((itemWindow.parentGroup->parentControl != nullptr || curZIdx == itemWindow.zIdx) && !itemWindow.isHidden && !itemWindow.IsInactive())
+        DrawGoldenMushroomTimer(itemWindow);
 }
 kmWritePointer(0x808d3cdc, DrawItemWindowWithGoldenTimer);
 
