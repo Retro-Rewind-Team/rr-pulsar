@@ -21,6 +21,7 @@ class Player;
 typedef AI::Actions<Player> Action;
 
 class EnableLakituAction {
+public:
     virtual ~EnableLakituAction();  // 80725a0c vtable 808c98b4
     virtual void ResetState();  // 80725a4c
     virtual void EnableAction() = 0;  // if the conditions are met
@@ -40,6 +41,7 @@ class EnableCountdownAction : public EnableLakituAction {
 };  // total size 0x8
 
 class EnableDisplayLapAction : public EnableLakituAction {
+public:
     EnableDisplayLapAction(u8 playerId);  // 80725b48
     ~EnableDisplayLapAction() override;  // 80725b68 vtable 808c988c
     void ResetState() override;  // 80725ba8  runs every frame the action is not enabled, enables by comparing with stored maxLap

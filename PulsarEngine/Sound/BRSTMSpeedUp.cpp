@@ -20,7 +20,8 @@ using namespace nw4r;
 static const Audio::RaceState RACE_STATE_FINAL_LAP_JINGLE = static_cast<Audio::RaceState>(0x6);
 static const u8 INVALID_HUD_SLOT_ID = 0xFF;
 static u8 finalLapSpeedupHudSlot = INVALID_HUD_SLOT_ID;
-void UpdateSW2RRRacePercentageMusic();
+void UpdateCheckpointMusic();
+bool IsCheckpointFinalLap();
 
 static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 hudSlotId) {
     u8 isSpeedUp = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MUSICSPEEDUP);
@@ -45,7 +46,7 @@ static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 
         register Audio::KartActor *kartActor;
         asm(mr kartActor, r29;);
         snd::detail::BasicSound &sound = kartActor->soundArchivePlayer->soundPlayerArray[0].soundList.GetFront();
-        if (isSpeedUp == SPEEDUP_ENABLED || sound.soundId == SOUND_ID_GALAXY_COLOSSEUM) {
+        if ((isSpeedUp == SPEEDUP_ENABLED || sound.soundId == SOUND_ID_GALAXY_COLOSSEUM) && !IsCheckpointFinalLap()) {
             if (isFirstFinalLapTrigger) {
                 finalLapSpeedupHudSlot = hudSlotId;
                 raceAudioMgr->raceState = RACE_STATE_FINAL_LAP_JINGLE;
@@ -91,7 +92,7 @@ static void RaceSoundManager_CheckRaceState(void *raceSoundManager) {
     }
 
     reinterpret_cast<void (*)(void *)>(kmRuntimeAddr(0x807125d4))(raceSoundManager);
-    UpdateSW2RRRacePercentageMusic();
+    UpdateCheckpointMusic();
 }
 kmCall(0x80710f84, RaceSoundManager_CheckRaceState);
 

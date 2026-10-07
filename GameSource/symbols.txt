@@ -911,6 +911,7 @@ Disconnect__14RaceinfoPlayerFv = 0x80534cbc
 EndRace__14RaceinfoPlayerFRC5TimerbUi = 0x805347f4
 Vanish__14RaceinfoPlayerFv = 0x80534c78
 FillTimerWithSplits__14RaceinfoPlayerFUcP5Timer = 0x8053572c
+UpdateCheckPoint__14RaceinfoPlayerFUsbf = 0x80534df8
 
 ##RKSYS
 #NAND
@@ -2106,6 +2107,7 @@ Free__Q25RKNet10ControllerFPv = 0x806583b4
 
 #PacketMgr
 sInstance__Q25RKNet9PacketMgr = 0x809c1f50
+GetRH2__Q25RKNet9PacketMgrFUc = 0x80653cb8
 
 #PacketHolder
 Copy__Q25RKNet15PacketHolder<v>FPCvUi = 0x8065a34c
@@ -2225,6 +2227,14 @@ courseToSoundIdTable__Q25Audio17ItemAlterationMgr = 0x808a1d80
 ##LAKITU
 #LakituManager
 Update__Q26Lakitu7ManagerFv = 0x8071e6c0
+
+#LakituPlayer
+OnStartLap__Q26Lakitu6PlayerFv = 0x80723c7c
+GetPlayerIdx__Q26Lakitu6PlayerCFv = 0x8072239c
+SetModelsVisibility__Q26Lakitu10PlayerBaseFbUiUi = 0x80721128
+
+#LakituEnableDisplayLapAction
+EnableAction__Q26Lakitu22EnableDisplayLapActionFv = 0x80725bd8
 
 ##AI
 #KartAIController

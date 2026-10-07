@@ -85,6 +85,7 @@ class Movement {
 };  // 0x168
 
 class PlayerBase {
+public:
     PlayerBase();  // 80720f44 inlined
     virtual ~PlayerBase();  // 80720f8c vtable 808c9740
     virtual void Init();  // 8072101c
@@ -111,6 +112,7 @@ class PlayerBase {
 };  // 0x60
 
 class Player : public PlayerBase, public AI::Base {
+public:
     enum ActionState {
         STARTING,
         ACTIVATING,

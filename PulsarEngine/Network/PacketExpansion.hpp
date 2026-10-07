@@ -70,7 +70,9 @@ static const u32 PulRH1SizeBase = sizeof(PulRH1) - PulRH1LapKoSize - PulRH1Battl
 static const u32 PulRH1SizeLapKo = PulRH1SizeBase + PulRH1LapKoSize;
 static const u32 PulRH1SizeFull = sizeof(PulRH1);
 
-struct PulRH2 : public RKNet::RACEHEADER2Packet {};
+struct PulRH2 : public RKNet::RACEHEADER2Packet {
+    u16 checkpointFinalLapPlayers;
+};
 struct PulROOM : public RKNet::ROOMPacket {
     // Generic ROOM settings
     u64 hostSystemContext;  // System's context but with just gamemodes taken from the settings

@@ -17,6 +17,8 @@
 #include <IO/LooseArchiveOverrides.hpp>
 #include <Race/CustomCharacterVoice.hpp>
 #include <Sound/LooseBRSAROverrides.hpp>
+#include <SlotExpansion/CupsConfig.hpp>
+#include <Settings/Settings.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/nw4r/snd.hpp>
@@ -29,8 +31,6 @@
 namespace Pulsar {
 namespace Sound {
 using namespace nw4r;
-
-bool IsSW2RRLoaded();
 
 namespace {
 typedef void *(*LoadFileFn)(snd::detail::SoundArchiveLoader *loader, snd::SoundArchive::FileId fileId, snd::SoundMemoryAllocatable *allocater);
@@ -653,19 +653,37 @@ static void PatchLoadedGroupItemWithCustomSoundEffect(const snd::SoundArchive &a
     DVD::Close(&info);
 }
 
-static void PatchLoadedRaceGroupItemWithSW2RRBank(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId, snd::SoundMemoryAllocatable *allocater, u32 itemCount,
+static void PatchLoadedRaceGroupItemWithTrackBank(const snd::SoundArchive &archive, snd::SoundArchive::GroupId groupId, snd::SoundMemoryAllocatable *allocater, u32 itemCount,
   const snd::SoundArchive::GroupItemInfo &item, u32 groupSize, u32 waveDataSize, void *groupData, void *waveData) {
+    if (Settings::Mgr::Get().GetSettingValue(Settings::SETTING_CTMUSIC) != CTMUSIC_ENABLED)
+        return;
     DVD::FileInfo info;
     const char revokart[] = "/patches/revo_kart.brsar";
-    if (groupId != BRSAR_GROUP_RACE || !IsSW2RRLoaded() || groupData == nullptr || item.size < 4 || DVD::Open(revokart, &info))
+    if (groupId != BRSAR_GROUP_RACE || groupData == nullptr || item.size < 4 || DVD::Open(revokart, &info))
         return;
 
     const u8 *itemData = static_cast<const u8 *>(groupData) + item.offset;
     if (memcmp(itemData, "RWSD", 4) != 0)
         return;
 
-    const char path[] = "/sound/strm/RRGRP_RACE.brwsd";
-    if (!DVD::Open(path, &info))
+    const CupsConfig &cupsConfig = *CupsConfig::sInstance;
+    const PulsarId track = cupsConfig.GetWinning();
+    if (CupsConfig::IsReg(track))
+        return;
+    const u8 variantIdx = cupsConfig.GetCurVariantIdx();
+    char path[0x100];
+    bool found = false;
+    for (u8 i = 0; i < (variantIdx == 0 ? 1 : 2); ++i) {
+        const char *fileName = cupsConfig.GetFileName(track, i == 0 ? variantIdx : 0);
+        if (fileName == nullptr)
+            continue;
+        snprintf(path, sizeof(path), "/sound/strm/%s_GRP_RACE.brwsd", fileName);
+        if (DVD::Open(path, &info)) {
+            found = true;
+            break;
+        }
+    }
+    if (!found)
         return;
 
     LooseBRSARLayout layout;
@@ -883,7 +901,7 @@ static void PatchLoadedGroupWithLooseBRSAROverrides(const snd::SoundArchive &arc
             }
         }
 
-        PatchLoadedRaceGroupItemWithSW2RRBank(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size, groupInfo.waveDataSize, groupData, waveData);
+        PatchLoadedRaceGroupItemWithTrackBank(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size, groupInfo.waveDataSize, groupData, waveData);
         PatchLoadedGroupItemWithCustomSoundEffect(archive, groupId, allocater, groupInfo.itemCount, item, groupInfo.size, groupData);
     }
 }

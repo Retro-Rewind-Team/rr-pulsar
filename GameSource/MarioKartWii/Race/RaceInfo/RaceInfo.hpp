@@ -73,7 +73,7 @@ public:
     void EndRace(const Timer &finishTime, bool hasNoCameras, u32 r6);  // 805347f4
     void Vanish();  // 80534c78 for example when a ghost ends its race
     void Disconnect();  // 80534cbc sets state to |0x10
-    void UpdateCheckPoint(u16 cpId, bool isDrivingBackwards, float completion);
+    KMP::Holder<CKPT> *UpdateCheckPoint(u16 cpId, bool isRemote, float completion);  // 80534df8
     void CopyCPUInputs(const Input::State &cpuState);  // 80535718
 
     u8 unknown_0x4[0x8 - 0x4];
