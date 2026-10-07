@@ -2,6 +2,7 @@
 #include <MarioKartWii/Audio/AudioManager.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Sound/MiscSound.hpp>
+#include <IO/LooseArchiveOverrides.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <RetroRewind.hpp>
@@ -35,7 +36,7 @@ static bool ResolveKCMenuMusicPath(const SectionId section, const char *&extFile
 }
 
 static bool CheckBRSTMPath(const char *path) {
-    return DVD::ConvertPathToEntryNum(path) >= 0;
+    return IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0;
 }
 
 static bool StringEndsWith(const char *str, const char *suffix) {
