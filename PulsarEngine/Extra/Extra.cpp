@@ -612,30 +612,4 @@ kmWrite32(0x805354D0, 0x38A00000);  // li r5, 0; use checkpoint-based lap counti
 kmWrite32(0x808665b8, 0x2c030002);
 kmWrite32(0x80864e7c, 0x2c000002);
 
-// Opponents Use Player Voicelines [pflu280]
-kmWrite32(0x80863F20, 0x60000000);
-kmWrite32(0x80864938, 0x4800000C);
-kmWrite32(0x808649D4, 0x60000000);
-kmWrite32(0x80864A34, 0x38800001);
-kmWrite32(0x80865174, 0x4800000C);
-kmWrite32(0x80865C00, 0x4800000C);
-kmWrite32(0x80865C3C, 0x4800000C);
-kmWrite32(0x808663BC, 0x48000040);
-kmWrite32(0x8086646C, 0x48000040);
-
-// Fit the expanded voice heap in available memory [ZPL]
-static EGG::ExpHeap *CreateRaceSoundHeap(int size, EGG::Heap *parent, u16 flags) {
-    if (parent->getAllocatableSize(4) >= 0x00C00100)
-        size = 0x00C00100;
-    return EGG::ExpHeap::Create(size, parent, flags);
-}
-kmCall(0x805542D8, CreateRaceSoundHeap);
-
-static void InitializeGameSoundHeap(EGG::SoundHeapMgr *manager, EGG::Heap *heap, u32 size) {
-    if (heap->getAllocatableSize(0x20) >= 0x00C00000)
-        size = 0x00C00000;
-    manager->Initialize(heap, size);
-}
-kmCall(0x806FE024, InitializeGameSoundHeap);
-
 }  // namespace Codes
