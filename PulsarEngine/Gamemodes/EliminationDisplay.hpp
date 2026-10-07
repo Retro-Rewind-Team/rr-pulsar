@@ -6,10 +6,13 @@
 namespace Pulsar {
 namespace EliminationDisplay {
 
+extern u8 recentAttackerIds[4];
+extern bool recentHits[4];
+
 void Reset();
 void ResetBattleTracking();
 void Tick();
-void RecordRoundElimination(u8 playerId, u8 concludedRound);
+void RecordRoundElimination(u8 playerId, u8 concludedRound, u8 attackerPlayerId = 0xff, bool isHit = false);
 void TrackBattleElimination(u8 playerId, bool eliminated);
 u16 GetTimer();
 u8 GetRecentCount();

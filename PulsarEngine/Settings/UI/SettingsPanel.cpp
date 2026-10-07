@@ -140,6 +140,10 @@ void SettingsPanel::ApplyVotingPreviewHostSettings() {
         const Settings::SettingsPageDef &def = Settings::Params::GetPageDef(pages[page]);
         for (u32 i = 0; i < def.radioCount && offset < Network::HOST_SETTINGS_PREVIEW_COUNT; ++i) {
             const Settings::SettingId id = def.radioSettings[i];
+            if (id == Settings::SETTING_KOROYALEDISPLAY) {
+                s_hostPreviewValues[Settings::Params::GetSettingIndex(id)] = Settings::Mgr::Get().GetSettingValue(id);
+                continue;
+            }
             const Settings::SettingDef &setting = Settings::Params::GetSettingDef(id);
             const u8 value = netMgr.hostSettingsPreview[offset++];
             s_hostPreviewValues[Settings::Params::GetSettingIndex(id)] = value < setting.optionCount || (id == Settings::SETTING_FROOMCC && value == HOSTCC_CUSTOM) ? value : 0;
