@@ -148,7 +148,7 @@ static void HideChannelButton() {
 }
 BootHook hideChannelButton(HideChannelButton, 0);
 
- asmFunc LoadMainMenuControlCount() {
+asmFunc LoadMainMenuControlCount() {
     ASM(
         nofralloc;
         lis r4, sMainMenuControlCount @ha;

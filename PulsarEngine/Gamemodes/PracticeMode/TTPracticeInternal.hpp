@@ -49,8 +49,8 @@ extern bool canRefillOnUse[4];
 void ClearSavedRespawns();
 bool IsAnalogRespawnInputHeld(float stickX, float stickY);
 asmFunc PlayRespawnSaveSound();
-void UpdatePlayerRespawnShortcut(Item::Player& player);
-void UpdatePlayerAndPracticeWheel(Item::Player& player);
+void UpdatePlayerRespawnShortcut(Item::Player &player);
+void UpdatePlayerAndPracticeWheel(Item::Player &player);
 
 }  // namespace TTPractice
 }  // namespace Pulsar

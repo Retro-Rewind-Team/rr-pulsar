@@ -225,7 +225,8 @@ void BeforeEntranceAnimations(Pages::TTSplits *page) {
     }
 
     // No saving and no new record in OTT or TT Practice.
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT) || (TTPractice::IsPracticeMode() && gamemode == MODE_TIME_TRIAL)) return;
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT) || (TTPractice::IsPracticeMode() && gamemode == MODE_TIME_TRIAL))
+        return;
 
     // enhanced replay
     if (sectionMgr->curSection->sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionMgr->curSection->sectionId <= SECTION_WATCH_GHOST_FROM_MENU) {

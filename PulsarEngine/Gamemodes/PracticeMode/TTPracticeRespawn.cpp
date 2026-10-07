@@ -13,10 +13,10 @@ kmRuntimeUse(0x80590288);  // Kart::Link::SetKartRotation
 kmRuntimeUse(0x80590e28);  // Kart::Link::UpdateCameraOnRespawn
 kmRuntimeUse(0x8059c118);  // Kart::Killer::CancelBullet
 
-typedef void (*SetKartPositionFn)(Kart::Link* link, const Vec3& position);
-typedef void (*SetKartRotationFn)(Kart::Link* link, const Quat& rotation);
-typedef void (*UpdateCameraOnRespawnFn)(const Kart::Link* link);
-typedef void (*CancelBulletFn)(Kart::Killer* killer);
+typedef void (*SetKartPositionFn)(Kart::Link *link, const Vec3 &position);
+typedef void (*SetKartRotationFn)(Kart::Link *link, const Quat &rotation);
+typedef void (*UpdateCameraOnRespawnFn)(const Kart::Link *link);
+typedef void (*CancelBulletFn)(Kart::Killer *killer);
 
 static SetKartPositionFn GetSetKartPosition() {
     static const SetKartPositionFn function = reinterpret_cast<SetKartPositionFn>(kmRuntimeAddr(0x80590238));
@@ -51,21 +51,22 @@ bool IsAnalogRespawnInputHeld(float stickX, float stickY) {
     return IsAnalogRespawnShortcutHeld(stickX, stickY) || IsAnalogRespawnSaveHeld(stickX, stickY);
 }
 
-static bool IsRespawnShortcutHeld(Item::Player& player) {
-    Input::ControllerHolder& holder = player.GetControllerHolder();
-    if (holder.curController == nullptr) return false;
+static bool IsRespawnShortcutHeld(Item::Player &player) {
+    Input::ControllerHolder &holder = player.GetControllerHolder();
+    if (holder.curController == nullptr)
+        return false;
 
     const ControllerType type = holder.curController->GetType();
     switch (type) {
         case NUNCHUCK:
             return (holder.uiinputStates[0].rawButtons & WPAD::WPAD_BUTTON_UP) != 0;
         case CLASSIC: {
-            Input::WiiController* controller = static_cast<Input::WiiController*>(holder.curController);
-            const Vec2D& stickR = controller->kpadStatus[0].extStatus.cl.stickR;
+            Input::WiiController *controller = static_cast<Input::WiiController *>(holder.curController);
+            const Vec2D &stickR = controller->kpadStatus[0].extStatus.cl.stickR;
             return IsAnalogRespawnShortcutHeld(stickR.x, stickR.z);
         }
         case GCN: {
-            Input::GCNController* controller = static_cast<Input::GCNController*>(holder.curController);
+            Input::GCNController *controller = static_cast<Input::GCNController *>(holder.curController);
             return IsAnalogRespawnShortcutHeld(controller->cStickHorizontal, controller->cStickVertical);
         }
         default:
@@ -73,21 +74,22 @@ static bool IsRespawnShortcutHeld(Item::Player& player) {
     }
 }
 
-static bool IsRespawnSaveHeld(Item::Player& player) {
-    Input::ControllerHolder& holder = player.GetControllerHolder();
-    if (holder.curController == nullptr) return false;
+static bool IsRespawnSaveHeld(Item::Player &player) {
+    Input::ControllerHolder &holder = player.GetControllerHolder();
+    if (holder.curController == nullptr)
+        return false;
 
     const ControllerType type = holder.curController->GetType();
     switch (type) {
         case NUNCHUCK:
             return (holder.uiinputStates[0].rawButtons & WPAD::WPAD_BUTTON_DOWN) != 0;
         case CLASSIC: {
-            Input::WiiController* controller = static_cast<Input::WiiController*>(holder.curController);
-            const Vec2D& stickR = controller->kpadStatus[0].extStatus.cl.stickR;
+            Input::WiiController *controller = static_cast<Input::WiiController *>(holder.curController);
+            const Vec2D &stickR = controller->kpadStatus[0].extStatus.cl.stickR;
             return IsAnalogRespawnSaveHeld(stickR.x, stickR.z);
         }
         case GCN: {
-            Input::GCNController* controller = static_cast<Input::GCNController*>(holder.curController);
+            Input::GCNController *controller = static_cast<Input::GCNController *>(holder.curController);
             return IsAnalogRespawnSaveHeld(controller->cStickHorizontal, controller->cStickVertical);
         }
         default:
@@ -95,14 +97,16 @@ static bool IsRespawnSaveHeld(Item::Player& player) {
     }
 }
 
-static Kart::PhysicsHolder* GetKartPhysicsHolder(Kart::Player& kartPlayer) {
-    if (kartPlayer.pointers.kartBody == nullptr) return nullptr;
+static Kart::PhysicsHolder *GetKartPhysicsHolder(Kart::Player &kartPlayer) {
+    if (kartPlayer.pointers.kartBody == nullptr)
+        return nullptr;
     return kartPlayer.pointers.kartBody->kartPhysicsHolder;
 }
 
-static void ClearHitboxGroupMotion(Kart::HitboxGroup* hitboxGroup) {
+static void ClearHitboxGroupMotion(Kart::HitboxGroup *hitboxGroup) {
     const Vec3 zero(0.0f, 0.0f, 0.0f);
-    if (hitboxGroup == nullptr) return;
+    if (hitboxGroup == nullptr)
+        return;
 
     hitboxGroup->collisionData.vel = zero;
     hitboxGroup->collisionData.movement = zero;
@@ -111,17 +115,18 @@ static void ClearHitboxGroupMotion(Kart::HitboxGroup* hitboxGroup) {
     hitboxGroup->unknown_0x94 = 0.0f;
     hitboxGroup->unknown_0x98 = 0.0f;
 
-    Kart::Hitbox* hitboxes = hitboxGroup->hitboxes;
-    if (hitboxes == nullptr) return;
+    Kart::Hitbox *hitboxes = hitboxGroup->hitboxes;
+    if (hitboxes == nullptr)
+        return;
 
     for (u16 i = 0; i < hitboxGroup->hitboxCount; ++i) {
-        Kart::Hitbox& hitbox = hitboxes[i];
+        Kart::Hitbox &hitbox = hitboxes[i];
         hitbox.lastPosition = hitbox.position;
         hitbox.unknown_0x24 = zero;
     }
 }
 
-static void ClearKartMotionHistory(Kart::Player& kartPlayer, Kart::PhysicsHolder* physicsHolder, const Vec3& position) {
+static void ClearKartMotionHistory(Kart::Player &kartPlayer, Kart::PhysicsHolder *physicsHolder, const Vec3 &position) {
     const Vec3 zero(0.0f, 0.0f, 0.0f);
 
     if (physicsHolder != nullptr) {
@@ -134,14 +139,16 @@ static void ClearKartMotionHistory(Kart::Player& kartPlayer, Kart::PhysicsHolder
         ClearHitboxGroupMotion(physicsHolder->hitboxGroup);
     }
 
-    Kart::Pointers& pointers = kartPlayer.pointers;
-    if (pointers.values == nullptr || pointers.wheels == nullptr) return;
+    Kart::Pointers &pointers = kartPlayer.pointers;
+    if (pointers.values == nullptr || pointers.wheels == nullptr)
+        return;
 
     for (u16 i = 0; i < pointers.values->wheelCount0; ++i) {
-        Kart::Wheel* wheel = pointers.wheels[i];
-        if (wheel == nullptr || wheel->wheelPhysics == nullptr) continue;
+        Kart::Wheel *wheel = pointers.wheels[i];
+        if (wheel == nullptr || wheel->wheelPhysics == nullptr)
+            continue;
 
-        Kart::WheelPhysics& wheelPhysics = *wheel->wheelPhysics;
+        Kart::WheelPhysics &wheelPhysics = *wheel->wheelPhysics;
         wheelPhysics.unknown_0x2c = zero;
         wheelPhysics.lastPosDiff = zero;
         wheelPhysics.unknown_0x48 = zero;
@@ -151,7 +158,7 @@ static void ClearKartMotionHistory(Kart::Player& kartPlayer, Kart::PhysicsHolder
     }
 }
 
-static void ClearKartMomentum(Kart::Player& kartPlayer, Kart::Physics& physics, Kart::PhysicsHolder* physicsHolder) {
+static void ClearKartMomentum(Kart::Player &kartPlayer, Kart::Physics &physics, Kart::PhysicsHolder *physicsHolder) {
     const Vec3 zero(0.0f, 0.0f, 0.0f);
 
     physics.ResetSpeed();
@@ -173,10 +180,9 @@ static void ClearKartMomentum(Kart::Player& kartPlayer, Kart::Physics& physics, 
 
     ClearKartMotionHistory(kartPlayer, physicsHolder, physics.position);
 
-    Kart::Status* status = kartPlayer.pointers.kartStatus;
+    Kart::Status *status = kartPlayer.pointers.kartStatus;
     if (status != nullptr) {
-        status->bitfield0 &= ~(0x8000u | 0x800000u | 0x100000u | 0x2000000u | 0x8000000u | 0x40000000u |
-                               0x80000000u);
+        status->bitfield0 &= ~(0x8000u | 0x800000u | 0x100000u | 0x2000000u | 0x8000000u | 0x40000000u | 0x80000000u);
         status->bitfield1 &= ~(0x200u | 0x800u | 0x2000u | 0x100000u);
         status->bitfield2 &= ~(0x1u | 0x2u | 0x400000u | KART_STATUS_IN_BULLET);
         status->airtime = 0;
@@ -186,8 +192,9 @@ static void ClearKartMomentum(Kart::Player& kartPlayer, Kart::Physics& physics, 
         status->bool_0x97 = false;
     }
 
-    Kart::Movement* movement = kartPlayer.pointers.kartMovement;
-    if (movement == nullptr) return;
+    Kart::Movement *movement = kartPlayer.pointers.kartMovement;
+    if (movement == nullptr)
+        return;
 
     movement->engineSpeed = 0.0f;
     movement->lastSpeed = 0.0f;
@@ -233,16 +240,17 @@ static void ClearKartMomentum(Kart::Player& kartPlayer, Kart::Physics& physics, 
     movement->rawTurn = 0.0f;
 }
 
-static void CancelBulletIfActive(Kart::Player& kartPlayer) {
-    Kart::Status* status = kartPlayer.pointers.kartStatus;
-    Kart::Killer* killer = kartPlayer.pointers.kartKiller;
-    if (status == nullptr || killer == nullptr || (status->bitfield2 & KART_STATUS_IN_BULLET) == 0) return;
+static void CancelBulletIfActive(Kart::Player &kartPlayer) {
+    Kart::Status *status = kartPlayer.pointers.kartStatus;
+    Kart::Killer *killer = kartPlayer.pointers.kartKiller;
+    if (status == nullptr || killer == nullptr || (status->bitfield2 & KART_STATUS_IN_BULLET) == 0)
+        return;
 
     GetCancelBullet()(killer);
 }
 
-static void SaveRaceProgress(RaceinfoPlayer& player, u32 hudSlotId) {
-    SavedRaceProgress& progress = savedRespawnRaceProgress[hudSlotId];
+static void SaveRaceProgress(RaceinfoPlayer &player, u32 hudSlotId) {
+    SavedRaceProgress &progress = savedRespawnRaceProgress[hudSlotId];
     progress.checkpoint = player.checkpoint;
     progress.raceCompletion = player.raceCompletion;
     progress.raceCompletionMax = player.raceCompletionMax;
@@ -255,8 +263,8 @@ static void SaveRaceProgress(RaceinfoPlayer& player, u32 hudSlotId) {
     progress.maxKCP = player.maxKCP;
 }
 
-static void RestoreRaceProgress(RaceinfoPlayer& player, u32 hudSlotId) {
-    const SavedRaceProgress& progress = savedRespawnRaceProgress[hudSlotId];
+static void RestoreRaceProgress(RaceinfoPlayer &player, u32 hudSlotId) {
+    const SavedRaceProgress &progress = savedRespawnRaceProgress[hudSlotId];
     player.checkpoint = progress.checkpoint;
     player.raceCompletion = progress.raceCompletion;
     player.raceCompletionMax = progress.raceCompletionMax;
@@ -269,8 +277,7 @@ static void RestoreRaceProgress(RaceinfoPlayer& player, u32 hudSlotId) {
     player.maxKCP = progress.maxKCP;
 }
 
-static void RestoreSavedKartTransform(Kart::Player& kartPlayer, Kart::Physics& physics, Kart::PhysicsHolder* physicsHolder,
-                                      RaceinfoPlayer& raceinfoPlayer, u32 hudSlotId) {
+static void RestoreSavedKartTransform(Kart::Player &kartPlayer, Kart::Physics &physics, Kart::PhysicsHolder *physicsHolder, RaceinfoPlayer &raceinfoPlayer, u32 hudSlotId) {
     Vec3 restorePosition = savedRespawnPositions[hudSlotId];
 
     CancelBulletIfActive(kartPlayer);
@@ -282,25 +289,33 @@ static void RestoreSavedKartTransform(Kart::Player& kartPlayer, Kart::Physics& p
     GetUpdateCameraOnRespawn()(&kartPlayer);
 }
 
-static void UpdateRespawnShortcut(Item::Player& player) {
-    if (!IsEnabled()) return;
-    if (!player.isHuman || player.isRemote || player.hudSlotId >= 4) return;
+static void UpdateRespawnShortcut(Item::Player &player) {
+    if (!IsEnabled())
+        return;
+    if (!player.isHuman || player.isRemote || player.hudSlotId >= 4)
+        return;
 
-    const Racedata* racedata = Racedata::sInstance;
-    Kart::Manager* kartManager = Kart::Manager::sInstance;
-    if (racedata == nullptr || kartManager == nullptr) return;
+    const Racedata *racedata = Racedata::sInstance;
+    Kart::Manager *kartManager = Kart::Manager::sInstance;
+    if (racedata == nullptr || kartManager == nullptr)
+        return;
 
     const u8 playerId = racedata->racesScenario.settings.hudPlayerIds[player.hudSlotId];
-    Kart::Player* kartPlayer = kartManager->GetKartPlayer(playerId);
-    if (kartPlayer == nullptr) return;
-    Raceinfo* raceinfo = Raceinfo::sInstance;
-    if (raceinfo == nullptr || raceinfo->players == nullptr) return;
-    RaceinfoPlayer* raceinfoPlayer = raceinfo->players[playerId];
-    if (raceinfoPlayer == nullptr) return;
-    Kart::PhysicsHolder* physicsHolder = GetKartPhysicsHolder(*kartPlayer);
-    if (physicsHolder == nullptr) return;
-    Kart::Physics* physics = physicsHolder->physics;
-    if (physics == nullptr) return;
+    Kart::Player *kartPlayer = kartManager->GetKartPlayer(playerId);
+    if (kartPlayer == nullptr)
+        return;
+    Raceinfo *raceinfo = Raceinfo::sInstance;
+    if (raceinfo == nullptr || raceinfo->players == nullptr)
+        return;
+    RaceinfoPlayer *raceinfoPlayer = raceinfo->players[playerId];
+    if (raceinfoPlayer == nullptr)
+        return;
+    Kart::PhysicsHolder *physicsHolder = GetKartPhysicsHolder(*kartPlayer);
+    if (physicsHolder == nullptr)
+        return;
+    Kart::Physics *physics = physicsHolder->physics;
+    if (physics == nullptr)
+        return;
 
     if (kartPlayer->IsRespawning()) {
         respawnShortcutTimers[player.hudSlotId] = 0;
@@ -311,10 +326,13 @@ static void UpdateRespawnShortcut(Item::Player& player) {
     const u32 hudSlotId = player.hudSlotId;
     if (IsRespawnSaveHeld(player)) {
         respawnShortcutTimers[hudSlotId] = 0;
-        u16& timer = respawnSaveTimers[hudSlotId];
-        if (timer == RESPAWN_HOLD_FRAMES) return;
-        if (timer < RESPAWN_HOLD_FRAMES) ++timer;
-        if (timer < RESPAWN_HOLD_FRAMES) return;
+        u16 &timer = respawnSaveTimers[hudSlotId];
+        if (timer == RESPAWN_HOLD_FRAMES)
+            return;
+        if (timer < RESPAWN_HOLD_FRAMES)
+            ++timer;
+        if (timer < RESPAWN_HOLD_FRAMES)
+            return;
 
         savedRespawnPositions[hudSlotId] = physics->position;
         savedRespawnRotations[hudSlotId] = physics->mainRot;
@@ -331,18 +349,22 @@ static void UpdateRespawnShortcut(Item::Player& player) {
         return;
     }
 
-    u16& timer = respawnShortcutTimers[hudSlotId];
-    if (timer == RESPAWN_HOLD_FRAMES) return;
-    if (timer < RESPAWN_HOLD_FRAMES) ++timer;
-    if (timer < RESPAWN_HOLD_FRAMES) return;
+    u16 &timer = respawnShortcutTimers[hudSlotId];
+    if (timer == RESPAWN_HOLD_FRAMES)
+        return;
+    if (timer < RESPAWN_HOLD_FRAMES)
+        ++timer;
+    if (timer < RESPAWN_HOLD_FRAMES)
+        return;
 
-    if (!hasSavedRespawn[hudSlotId]) return;
+    if (!hasSavedRespawn[hudSlotId])
+        return;
     RestoreSavedKartTransform(*kartPlayer, *physics, physicsHolder, *raceinfoPlayer, hudSlotId);
 }
 
-void UpdatePlayerAndPracticeWheel(Item::Player& player);
+void UpdatePlayerAndPracticeWheel(Item::Player &player);
 
-void UpdatePlayerRespawnShortcut(Item::Player& player) {
+void UpdatePlayerRespawnShortcut(Item::Player &player) {
     UpdateRespawnShortcut(player);
 }
 

@@ -11,14 +11,15 @@ namespace Pulsar {
 namespace TTPractice {
 
 static const float MODE_BUTTON_X_OFFSET = -110.0f;
-static const char* const DRIFT_BUTTON_VARIANTS[2] = {"ButtonNormal", "ButtonManual"};
+static const char *const DRIFT_BUTTON_VARIANTS[2] = {"ButtonNormal", "ButtonManual"};
 
-static void StartPracticeRace(Pages::Menu& page, PushButton& button) {
-    Racedata* racedata = Racedata::sInstance;
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
-    if (racedata == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || RKSYS::Mgr::sInstance == nullptr) return;
+static void StartPracticeRace(Pages::Menu &page, PushButton &button) {
+    Racedata *racedata = Racedata::sInstance;
+    SectionMgr *sectionMgr = SectionMgr::sInstance;
+    if (racedata == nullptr || sectionMgr == nullptr || sectionMgr->sectionParams == nullptr || RKSYS::Mgr::sInstance == nullptr)
+        return;
 
-    SectionParams* params = sectionMgr->sectionParams;
+    SectionParams *params = sectionMgr->sectionParams;
     const CourseId courseId = racedata->menusScenario.settings.courseId;
     params->ghostType = BEST_TIME;
     params->courseId = courseId;
@@ -31,8 +32,8 @@ static void StartPracticeRace(Pages::Menu& page, PushButton& button) {
     page.ChangeSectionById(SECTION_TT, button);
 }
 
-static void LoadGhostSelectOrPracticeConfirm(Pages::Menu& page, PageId id, PushButton& button) {
-    Racedata* racedata = Racedata::sInstance;
+static void LoadGhostSelectOrPracticeConfirm(Pages::Menu &page, PageId id, PushButton &button) {
+    Racedata *racedata = Racedata::sInstance;
     if (!IsPracticeMode() || racedata == nullptr || racedata->menusScenario.settings.gamemode != MODE_TIME_TRIAL) {
         page.LoadNextPageById(id, button);
         return;
@@ -64,7 +65,8 @@ SelectPage::SelectPage() {
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
 }
 
-SelectPage::~SelectPage() {}
+SelectPage::~SelectPage() {
+}
 
 void SelectPage::OnInit() {
     Pages::Menu::OnInit();
@@ -76,10 +78,11 @@ void SelectPage::OnInit() {
     this->bottom.Load();
 }
 
-UIControl* SelectPage::CreateExternalControl(u32 controlId) {
-    if (controlId >= 2) return nullptr;
+UIControl *SelectPage::CreateExternalControl(u32 controlId) {
+    if (controlId >= 2)
+        return nullptr;
 
-    PushButton& button = this->buttons[controlId];
+    PushButton &button = this->buttons[controlId];
     this->AddControl(this->controlCount++, button, 0);
     const u32 layoutId = 1 - controlId;
     button.Load(UI::buttonFolder, "GlobePadEasy", DRIFT_BUTTON_VARIANTS[layoutId], this->activePlayerBitfield, 0, false);
@@ -95,7 +98,7 @@ UIControl* SelectPage::CreateExternalControl(u32 controlId) {
     return &button;
 }
 
-UIControl* SelectPage::CreateControl(u32 controlId) {
+UIControl *SelectPage::CreateControl(u32 controlId) {
     return nullptr;
 }
 
@@ -111,12 +114,12 @@ void SelectPage::BeforeEntranceAnimations() {
     this->OnButtonSelect(this->buttons[0], 0);
 }
 
-void SelectPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
+void SelectPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
     SetPracticeMode(button.buttonId == 1);
     this->LoadNextPageById(PAGE_CHARACTER_SELECT, button);
 }
 
-void SelectPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+void SelectPage::OnButtonSelect(PushButton &button, u32 hudSlotId) {
     this->bottom.SetMessage(button.buttonId == 0 ? UI::BMG_TT_NORMAL_BOTTOM : UI::BMG_TT_PRACTICE_BOTTOM);
 }
 
@@ -147,7 +150,8 @@ ConfirmPage::ConfirmPage() {
     this->controlsManipulatorManager.SetGlobalHandler(BACK_PRESS, this->onBackPressHandler, false, false);
 }
 
-ConfirmPage::~ConfirmPage() {}
+ConfirmPage::~ConfirmPage() {
+}
 
 void ConfirmPage::OnInit() {
     Pages::Menu::OnInit();
@@ -159,10 +163,11 @@ void ConfirmPage::OnInit() {
     this->bottom.Load();
 }
 
-UIControl* ConfirmPage::CreateExternalControl(u32 controlId) {
-    if (controlId >= 2) return nullptr;
+UIControl *ConfirmPage::CreateExternalControl(u32 controlId) {
+    if (controlId >= 2)
+        return nullptr;
 
-    PushButton& button = this->buttons[controlId];
+    PushButton &button = this->buttons[controlId];
     this->AddControl(this->controlCount++, button, 0);
     const u32 layoutId = 1 - controlId;
     button.Load(UI::buttonFolder, "GlobePadEasy", DRIFT_BUTTON_VARIANTS[layoutId], this->activePlayerBitfield, 0, false);
@@ -177,7 +182,7 @@ UIControl* ConfirmPage::CreateExternalControl(u32 controlId) {
     return &button;
 }
 
-UIControl* ConfirmPage::CreateControl(u32 controlId) {
+UIControl *ConfirmPage::CreateControl(u32 controlId) {
     return nullptr;
 }
 
@@ -193,13 +198,13 @@ void ConfirmPage::BeforeEntranceAnimations() {
     this->OnButtonSelect(this->buttons[0], 0);
 }
 
-void ConfirmPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
+void ConfirmPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
     if (button.buttonId == 0) {
         StartPracticeRace(*this, button);
         return;
     }
 
-    UI::SettingsPanel* settingsPanel = UI::ExpSection::GetSection()->GetPulPage<UI::SettingsPanel>();
+    UI::SettingsPanel *settingsPanel = UI::ExpSection::GetSection()->GetPulPage<UI::SettingsPanel>();
     if (settingsPanel != nullptr) {
         settingsPanel->SetPage(Settings::SETTINGS_PAGE_TTPRACTICE);
         settingsPanel->prevPageId = static_cast<PageId>(ConfirmPage::id);
@@ -207,7 +212,7 @@ void ConfirmPage::OnButtonClick(PushButton& button, u32 hudSlotId) {
     this->LoadNextPageById(static_cast<PageId>(UI::SettingsPanel::id), button);
 }
 
-void ConfirmPage::OnButtonSelect(PushButton& button, u32 hudSlotId) {
+void ConfirmPage::OnButtonSelect(PushButton &button, u32 hudSlotId) {
     this->bottom.SetMessage(button.buttonId == 0 ? UI::BMG_TT_START_RACE_BOTTOM : UI::BMG_TT_PRACTICE_SETTINGS_BOTTOM);
 }
 

@@ -7,9 +7,7 @@
 namespace Pulsar {
 namespace TTPractice {
 
-extern const ItemId ITEM_WHEEL_ITEMS[ITEM_COUNT] = {
-    TRIPLE_MUSHROOM, GOLDEN_MUSHROOM, MEGA_MUSHROOM, STAR, BULLET_BILL, THUNDER_CLOUD, MUSHROOM
-};
+extern const ItemId ITEM_WHEEL_ITEMS[ITEM_COUNT] = {TRIPLE_MUSHROOM, GOLDEN_MUSHROOM, MEGA_MUSHROOM, STAR, BULLET_BILL, THUNDER_CLOUD, MUSHROOM};
 
 static bool isPracticeMode = false;
 u32 selectedItemIndexes[4] = {0, 0, 0, 0};
@@ -49,27 +47,30 @@ bool IsPracticeMode() {
 }
 
 bool AreItemBoxesEnabled() {
-    if (!Settings::Mgr::IsCreated()) return true;
+    if (!Settings::Mgr::IsCreated())
+        return true;
     return Settings::Mgr::Get().GetSettingValue(Settings::SETTING_TTPRACTICE_ITEMBOXES) == TTPRACTICE_ITEMBOXES_ENABLED;
 }
 
 bool IsObjectFreezeEnabled() {
-    if (!Settings::Mgr::IsCreated()) return true;
+    if (!Settings::Mgr::IsCreated())
+        return true;
     return Settings::Mgr::Get().GetSettingValue(Settings::SETTING_TTPRACTICE_OBJECTFREEZE) == TTPRACTICE_OBJECTFREEZE_ENABLED;
 }
 
 ItemId GetStartingItem(u32 hudSlotId) {
-    if (hudSlotId >= 4) hudSlotId = 0;
+    if (hudSlotId >= 4)
+        hudSlotId = 0;
     return ITEM_WHEEL_ITEMS[selectedItemIndexes[hudSlotId]];
 }
 
 bool IsEnabled() {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     return isPracticeMode && racedata != nullptr && racedata->racesScenario.settings.gamemode == MODE_TIME_TRIAL;
 }
 
-extern "C" void fun_playSound(void*);
-extern "C" void ptr_menuPageOrSomething(void*);
+extern "C" void fun_playSound(void *);
+extern "C" void ptr_menuPageOrSomething(void *);
 asmFunc PlayRespawnSaveSound() {
     ASM(
         nofralloc;

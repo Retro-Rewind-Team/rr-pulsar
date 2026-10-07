@@ -17,17 +17,15 @@ kmRuntimeUse(0x80819400);  // Objects::VolcanoPiece::Update
 kmRuntimeUse(0x808199a8);  // Objects::VolcanoPiece::IsCollidingNoTriangleCheckImpl
 kmRuntimeUse(0x80819da0);  // Objects::VolcanoPiece::IsCollidingImpl
 
-typedef void (*ItemBoxUpdateFn)(Objects::Itembox* itembox);
-typedef void (*ObjectExternKCLUpdateKCLFn)(Objects::VolcanoPiece* piece, const Vec3& position, KCLBitfield accepted,
-                                           bool isBiggerThanDefaultScale, float radius);
-typedef void (*VolcanoPieceUpdateKCLFn)(Objects::VolcanoPiece* piece, const Vec3& position, KCLBitfield accepted,
-                                        bool isBiggerThanDefaultScale, float radius);
-typedef void (*VolcanoPieceUpdateDiffPosVectorFn)(Objects::VolcanoPiece* piece, const Vec3& src);
-typedef void (*VolcanoPieceUpdateCollisionPositionFn)(Objects::VolcanoPiece* piece, u32 timeOffset);
-typedef void (*VolcanoPieceSetYScaleFn)(Objects::VolcanoPiece* piece, u32 timeOffset);
-typedef void (*VolcanoPieceUpdateFn)(Objects::VolcanoPiece* piece);
-typedef bool (*VolcanoPieceCollisionFn)(Objects::VolcanoPiece* piece, const Vec3& pos, const Vec3& prevPos, KCLBitfield accepted,
-                                        CollisionInfo* info, KCLTypeHolder* ret, u32 timeOffset, float radius);
+typedef void (*ItemBoxUpdateFn)(Objects::Itembox *itembox);
+typedef void (*ObjectExternKCLUpdateKCLFn)(Objects::VolcanoPiece *piece, const Vec3 &position, KCLBitfield accepted, bool isBiggerThanDefaultScale, float radius);
+typedef void (*VolcanoPieceUpdateKCLFn)(Objects::VolcanoPiece *piece, const Vec3 &position, KCLBitfield accepted, bool isBiggerThanDefaultScale, float radius);
+typedef void (*VolcanoPieceUpdateDiffPosVectorFn)(Objects::VolcanoPiece *piece, const Vec3 &src);
+typedef void (*VolcanoPieceUpdateCollisionPositionFn)(Objects::VolcanoPiece *piece, u32 timeOffset);
+typedef void (*VolcanoPieceSetYScaleFn)(Objects::VolcanoPiece *piece, u32 timeOffset);
+typedef void (*VolcanoPieceUpdateFn)(Objects::VolcanoPiece *piece);
+typedef bool (*VolcanoPieceCollisionFn)(
+  Objects::VolcanoPiece *piece, const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius);
 
 static ItemBoxUpdateFn GetItemBoxUpdate() {
     static const ItemBoxUpdateFn function = reinterpret_cast<ItemBoxUpdateFn>(kmRuntimeAddr(0x80828860));
@@ -45,14 +43,12 @@ static VolcanoPieceUpdateKCLFn GetVolcanoPieceUpdateKCL() {
 }
 
 static VolcanoPieceUpdateDiffPosVectorFn GetVolcanoPieceUpdateDiffPosVector() {
-    static const VolcanoPieceUpdateDiffPosVectorFn function =
-        reinterpret_cast<VolcanoPieceUpdateDiffPosVectorFn>(kmRuntimeAddr(0x80805924));
+    static const VolcanoPieceUpdateDiffPosVectorFn function = reinterpret_cast<VolcanoPieceUpdateDiffPosVectorFn>(kmRuntimeAddr(0x80805924));
     return function;
 }
 
 static VolcanoPieceUpdateCollisionPositionFn GetVolcanoPieceUpdateCollisionPosition() {
-    static const VolcanoPieceUpdateCollisionPositionFn function =
-        reinterpret_cast<VolcanoPieceUpdateCollisionPositionFn>(kmRuntimeAddr(0x80818334));
+    static const VolcanoPieceUpdateCollisionPositionFn function = reinterpret_cast<VolcanoPieceUpdateCollisionPositionFn>(kmRuntimeAddr(0x80818334));
     return function;
 }
 
@@ -76,7 +72,7 @@ static VolcanoPieceCollisionFn GetVolcanoPieceIsCollidingImpl() {
     return function;
 }
 
-static void UpdatePracticeItemBox(Objects::Itembox* itembox) {
+static void UpdatePracticeItemBox(Objects::Itembox *itembox) {
     if (itembox != nullptr && IsEnabled() && !AreItemBoxesEnabled()) {
         itembox->isActive = 0;
         itembox->timer = 0;
@@ -144,8 +140,9 @@ static bool ShouldFreezePracticeObjects() {
 }
 
 static u32 GetFrozenObjectTimeOffset(u32 fallback) {
-    const Raceinfo* raceinfo = Raceinfo::sInstance;
-    if (raceinfo == nullptr) return fallback;
+    const Raceinfo *raceinfo = Raceinfo::sInstance;
+    if (raceinfo == nullptr)
+        return fallback;
     return raceinfo->raceFrames;
 }
 
@@ -153,8 +150,7 @@ static u32 GetPracticeObjectTimeOffset(u32 timeOffset) {
     return ShouldFreezePracticeObjects() ? GetFrozenObjectTimeOffset(timeOffset) : timeOffset;
 }
 
-static void UpdatePracticeVolcanoPieceKCL(Objects::VolcanoPiece* piece, const Vec3& position, KCLBitfield accepted,
-                                          bool isBiggerThanDefaultScale, float radius) {
+static void UpdatePracticeVolcanoPieceKCL(Objects::VolcanoPiece *piece, const Vec3 &position, KCLBitfield accepted, bool isBiggerThanDefaultScale, float radius) {
     if (piece != nullptr && ShouldFreezePracticeObjects()) {
         GetObjectExternKCLUpdateKCL()(piece, position, accepted, isBiggerThanDefaultScale, radius);
         return;
@@ -164,7 +160,7 @@ static void UpdatePracticeVolcanoPieceKCL(Objects::VolcanoPiece* piece, const Ve
 }
 kmWritePointer(0x808d67ec, UpdatePracticeVolcanoPieceKCL);
 
-static void UpdatePracticeVolcanoPieceDiffPosVector(Objects::VolcanoPiece* piece, const Vec3& src) {
+static void UpdatePracticeVolcanoPieceDiffPosVector(Objects::VolcanoPiece *piece, const Vec3 &src) {
     if (piece != nullptr && ShouldFreezePracticeObjects()) {
         static const Vec3 zero(0.0f, 0.0f, 0.0f);
         GetVolcanoPieceUpdateDiffPosVector()(piece, zero);
@@ -175,33 +171,31 @@ static void UpdatePracticeVolcanoPieceDiffPosVector(Objects::VolcanoPiece* piece
 }
 kmWritePointer(0x808d6834, UpdatePracticeVolcanoPieceDiffPosVector);
 
-static void UpdatePracticeVolcanoPieceCollisionPosition(Objects::VolcanoPiece* piece, u32 timeOffset) {
+static void UpdatePracticeVolcanoPieceCollisionPosition(Objects::VolcanoPiece *piece, u32 timeOffset) {
     GetVolcanoPieceUpdateCollisionPosition()(piece, GetPracticeObjectTimeOffset(timeOffset));
 }
 kmWritePointer(0x808d682c, UpdatePracticeVolcanoPieceCollisionPosition);
 
-static void SetPracticeVolcanoPieceYScale(Objects::VolcanoPiece* piece, u32 timeOffset) {
+static void SetPracticeVolcanoPieceYScale(Objects::VolcanoPiece *piece, u32 timeOffset) {
     GetVolcanoPieceSetYScale()(piece, GetPracticeObjectTimeOffset(timeOffset));
 }
 kmWritePointer(0x808d6830, SetPracticeVolcanoPieceYScale);
 
-static void UpdatePracticeVolcanoPiece(Objects::VolcanoPiece* piece) {
-    if (piece != nullptr && ShouldFreezePracticeObjects()) return;
+static void UpdatePracticeVolcanoPiece(Objects::VolcanoPiece *piece) {
+    if (piece != nullptr && ShouldFreezePracticeObjects())
+        return;
     GetVolcanoPieceUpdate()(piece);
 }
 kmWritePointer(0x808d6720, UpdatePracticeVolcanoPiece);
 
-static bool IsPracticeVolcanoPieceCollidingNoTriangleCheckImpl(Objects::VolcanoPiece* piece, const Vec3& pos, const Vec3& prevPos,
-                                                               KCLBitfield accepted, CollisionInfo* info, KCLTypeHolder* ret,
-                                                               u32 timeOffset, float radius) {
-    return GetVolcanoPieceIsCollidingNoTriangleCheckImpl()(piece, pos, prevPos, accepted, info, ret,
-                                                           GetPracticeObjectTimeOffset(timeOffset), radius);
+static bool IsPracticeVolcanoPieceCollidingNoTriangleCheckImpl(
+  Objects::VolcanoPiece *piece, const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) {
+    return GetVolcanoPieceIsCollidingNoTriangleCheckImpl()(piece, pos, prevPos, accepted, info, ret, GetPracticeObjectTimeOffset(timeOffset), radius);
 }
 kmWritePointer(0x808d6854, IsPracticeVolcanoPieceCollidingNoTriangleCheckImpl);
 
-static bool IsPracticeVolcanoPieceCollidingImpl(Objects::VolcanoPiece* piece, const Vec3& pos, const Vec3& prevPos,
-                                                KCLBitfield accepted, CollisionInfo* info, KCLTypeHolder* ret, u32 timeOffset,
-                                                float radius) {
+static bool IsPracticeVolcanoPieceCollidingImpl(
+  Objects::VolcanoPiece *piece, const Vec3 &pos, const Vec3 &prevPos, KCLBitfield accepted, CollisionInfo *info, KCLTypeHolder *ret, u32 timeOffset, float radius) {
     return GetVolcanoPieceIsCollidingImpl()(piece, pos, prevPos, accepted, info, ret, GetPracticeObjectTimeOffset(timeOffset), radius);
 }
 kmWritePointer(0x808d6858, IsPracticeVolcanoPieceCollidingImpl);

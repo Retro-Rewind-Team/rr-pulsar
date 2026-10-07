@@ -46,7 +46,8 @@ static void SetStartingItem(Item::PlayerInventory &inventory, ItemId id, bool is
             isFeather = system->IsContext(PULSAR_FEATHER);
         if (isFeather && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_JOINING_REGIONAL)
             id = BLOOPER;
-        if (isTT && TTPractice::IsPracticeMode()) id = TTPractice::GetStartingItem(playerId);
+        if (isTT && TTPractice::IsPracticeMode())
+            id = TTPractice::GetStartingItem(playerId);
         inventory.SetItem(id, isItemForcedDueToCapacity);
         if (isFeather)
             inventory.currentItemCount = 3;

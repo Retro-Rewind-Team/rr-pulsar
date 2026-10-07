@@ -736,7 +736,8 @@ static void ConditionalKCLObjectUpdate(Object *object) {
     ConditionalState state;
     EvaluateConditionalState(*object, state);
     ApplyKCLConditionalState(*object, state);
-    if (state.isActive || state.isCollisionActive) object->Update();
+    if (state.isActive || state.isCollisionActive)
+        object->Update();
 }
 kmCall(0x8081b658, ConditionalKCLObjectUpdate);  // ObjectKCL::Update call in ObjectDriveableDirector::calc
 

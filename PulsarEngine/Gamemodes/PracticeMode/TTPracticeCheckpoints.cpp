@@ -41,7 +41,7 @@ struct CheckpointVertex {
     bool translucent;
 };
 
-typedef void (*ScnMgrDrawModelsImplFn)(ScnMgr* mgr, GameScreen* screen);
+typedef void (*ScnMgrDrawModelsImplFn)(ScnMgr *mgr, GameScreen *screen);
 
 static ScnMgrDrawModelsImplFn GetScnMgrDrawModelsImpl() {
     static const ScnMgrDrawModelsImplFn function = reinterpret_cast<ScnMgrDrawModelsImplFn>(kmRuntimeAddr(0x805625a8));
@@ -49,21 +49,26 @@ static ScnMgrDrawModelsImplFn GetScnMgrDrawModelsImpl() {
 }
 
 DisplayMode GetDisplayMode() {
-    if (!Settings::Mgr::IsCreated()) return DISPLAY_DISABLED;
+    if (!Settings::Mgr::IsCreated())
+        return DISPLAY_DISABLED;
 
     const u8 setting = Settings::Mgr::Get().GetSettingValue(Settings::SETTING_TTPRACTICE_CHECKPOINTDISPLAY);
-    if (setting == TTPRACTICE_CHECKPOINTDISPLAY_KEY_ONLY) return DISPLAY_KEY_ONLY;
-    if (setting == TTPRACTICE_CHECKPOINTDISPLAY_ALL) return DISPLAY_ALL;
+    if (setting == TTPRACTICE_CHECKPOINTDISPLAY_KEY_ONLY)
+        return DISPLAY_KEY_ONLY;
+    if (setting == TTPRACTICE_CHECKPOINTDISPLAY_ALL)
+        return DISPLAY_ALL;
     return DISPLAY_DISABLED;
 }
 
-static KMP::Holder<CKPT>* GetCheckpointHolder(KMP::Manager& kmp, u16 idx) {
-    if (kmp.ckptSection == nullptr || idx >= kmp.ckptSection->pointCount) return nullptr;
+static KMP::Holder<CKPT> *GetCheckpointHolder(KMP::Manager &kmp, u16 idx) {
+    if (kmp.ckptSection == nullptr || idx >= kmp.ckptSection->pointCount)
+        return nullptr;
     return kmp.ckptSection->holdersArray[idx];
 }
 
-static KMP::Holder<JGPT>* GetJugemPointHolder(KMP::Manager& kmp, u16 idx) {
-    if (kmp.jgptSection == nullptr || idx >= kmp.jgptSection->pointCount) return nullptr;
+static KMP::Holder<JGPT> *GetJugemPointHolder(KMP::Manager &kmp, u16 idx) {
+    if (kmp.jgptSection == nullptr || idx >= kmp.jgptSection->pointCount)
+        return nullptr;
     return kmp.jgptSection->holdersArray[idx];
 }
 
@@ -84,7 +89,7 @@ static GX::Color MakeRegularCheckpointColor() {
     return MakeCheckpointColor(0x20, 0x8c, 0xff, 75);
 }
 
-static void SetupCheckpointGX(const EGG::Matrix34f& viewMtx) {
+static void SetupCheckpointGX(const EGG::Matrix34f &viewMtx) {
     GX::ClearVtxDesc();
     GX::SetVtxDesc(GX::GX_VA_POS, GX::GX_DIRECT);
     GX::SetVtxDesc(GX::GX_VA_CLR0, GX::GX_DIRECT);
@@ -103,22 +108,24 @@ static void SetupCheckpointGX(const EGG::Matrix34f& viewMtx) {
     GX::SetCurrentMtx(0);
 }
 
-static void SubmitCheckpointVertex(const CheckpointVertex& vertex, GX::Color color) {
-    if (vertex.translucent) color.a = 0x60;
+static void SubmitCheckpointVertex(const CheckpointVertex &vertex, GX::Color color) {
+    if (vertex.translucent)
+        color.a = 0x60;
     GX_Position3f32(vertex.pos.x, vertex.pos.y, vertex.pos.z);
     GX_Color4u8(color.r, color.g, color.b, color.a);
 }
 
-static void SetCheckpointVertex(CheckpointVertex& vertex, float x, float y, float z, bool translucent) {
+static void SetCheckpointVertex(CheckpointVertex &vertex, float x, float y, float z, bool translucent) {
     vertex.pos.x = x;
     vertex.pos.y = y;
     vertex.pos.z = z;
     vertex.translucent = translucent;
 }
 
-static void DrawCheckpointPlane(KMP::Manager& kmp, const CKPT& checkpoint, GX::Color color) {
-    KMP::Holder<JGPT>* jugemPoint = GetJugemPointHolder(kmp, checkpoint.respawn);
-    if (jugemPoint == nullptr || jugemPoint->raw == nullptr) return;
+static void DrawCheckpointPlane(KMP::Manager &kmp, const CKPT &checkpoint, GX::Color color) {
+    KMP::Holder<JGPT> *jugemPoint = GetJugemPointHolder(kmp, checkpoint.respawn);
+    if (jugemPoint == nullptr || jugemPoint->raw == nullptr)
+        return;
 
     const float top = jugemPoint->raw->position.y + CHECKPOINT_TOP_OFFSET;
     const float bottom = jugemPoint->raw->position.y + CHECKPOINT_BOTTOM_OFFSET;
@@ -137,25 +144,28 @@ static void DrawCheckpointPlane(KMP::Manager& kmp, const CKPT& checkpoint, GX::C
     GX::SetLineWidth(8, GX::GX_TO_ZERO);
     GX::Begin(GX::GX_LINESTRIP, GX::GX_VTXFMT0, 5);
     for (u32 vert = 0; vert < 5; ++vert) {
-        const CheckpointVertex& vertex = face[vert % 4];
+        const CheckpointVertex &vertex = face[vert % 4];
         GX_Position3f32(vertex.pos.x, vertex.pos.y, vertex.pos.z);
         GX_Color4u8(color.r, color.g, color.b, color.a);
     }
     GXEnd();
 }
 
-static void DrawCheckpointPath(KMP::Manager& kmp, const CKPH& checkPath, DisplayMode displayMode) {
+static void DrawCheckpointPath(KMP::Manager &kmp, const CKPH &checkPath, DisplayMode displayMode) {
     const u16 start = checkPath.start;
     const u16 end = static_cast<u16>(checkPath.start + checkPath.length);
-    if (kmp.ckptSection == nullptr) return;
+    if (kmp.ckptSection == nullptr)
+        return;
 
     for (u16 i = start; i < end && i < kmp.ckptSection->pointCount; ++i) {
-        KMP::Holder<CKPT>* holder = GetCheckpointHolder(kmp, i);
-        if (holder == nullptr || holder->raw == nullptr) continue;
+        KMP::Holder<CKPT> *holder = GetCheckpointHolder(kmp, i);
+        if (holder == nullptr || holder->raw == nullptr)
+            continue;
 
-        const CKPT& checkpoint = *holder->raw;
+        const CKPT &checkpoint = *holder->raw;
         const bool isKeyCheckpoint = checkpoint.type != 0xff;
-        if (!isKeyCheckpoint && displayMode != DISPLAY_ALL) continue;
+        if (!isKeyCheckpoint && displayMode != DISPLAY_ALL)
+            continue;
 
         GX::Color color;
         if (isKeyCheckpoint) {
@@ -168,30 +178,36 @@ static void DrawCheckpointPath(KMP::Manager& kmp, const CKPH& checkPath, Display
     }
 }
 
-static GameScreen* GetActiveModelScreen(GameScreen* screen) {
-    if (screen != nullptr) return screen;
-    Renderer* const* currentRenderer = reinterpret_cast<Renderer* const*>(kmRuntimeAddr(0x809c1848));
-    if (currentRenderer[0] == nullptr) return nullptr;
+static GameScreen *GetActiveModelScreen(GameScreen *screen) {
+    if (screen != nullptr)
+        return screen;
+    Renderer *const *currentRenderer = reinterpret_cast<Renderer *const *>(kmRuntimeAddr(0x809c1848));
+    if (currentRenderer[0] == nullptr)
+        return nullptr;
     return &currentRenderer[0]->screen;
 }
 
-static void DrawPracticeCheckpoints(GameScreen* screen) {
+static void DrawPracticeCheckpoints(GameScreen *screen) {
     const DisplayMode displayMode = GetDisplayMode();
-    if (displayMode == DISPLAY_DISABLED) return;
-    if (!IsEnabled() || screen == nullptr || screen->perspectiveCam == nullptr) return;
+    if (displayMode == DISPLAY_DISABLED)
+        return;
+    if (!IsEnabled() || screen == nullptr || screen->perspectiveCam == nullptr)
+        return;
 
-    KMP::Manager* kmp = KMP::Manager::sInstance;
-    if (kmp == nullptr || kmp->ckptSection == nullptr || kmp->ckphSection == nullptr || kmp->jgptSection == nullptr) return;
+    KMP::Manager *kmp = KMP::Manager::sInstance;
+    if (kmp == nullptr || kmp->ckptSection == nullptr || kmp->ckphSection == nullptr || kmp->jgptSection == nullptr)
+        return;
 
     SetupCheckpointGX(screen->perspectiveCam->GetViewMatrix());
     for (u16 i = 0; i < kmp->ckphSection->pointCount; ++i) {
-        KMP::Holder<CKPH>* holder = kmp->ckphSection->holdersArray[i];
-        if (holder == nullptr || holder->raw == nullptr) continue;
+        KMP::Holder<CKPH> *holder = kmp->ckphSection->holdersArray[i];
+        if (holder == nullptr || holder->raw == nullptr)
+            continue;
         DrawCheckpointPath(*kmp, *holder->raw, displayMode);
     }
 }
 
-static void DrawPracticeModelsAndCheckpoints(ScnMgr* mgr, GameScreen* screen) {
+static void DrawPracticeModelsAndCheckpoints(ScnMgr *mgr, GameScreen *screen) {
     GetScnMgrDrawModelsImpl()(mgr, screen);
     DrawPracticeCheckpoints(GetActiveModelScreen(screen));
 }

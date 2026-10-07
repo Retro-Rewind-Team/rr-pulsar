@@ -32,7 +32,7 @@ struct GoldenTimerBar {
 };
 
 static bool IsPracticeTimeTrial() {
-    const Racedata* racedata = Racedata::sInstance;
+    const Racedata *racedata = Racedata::sInstance;
     return IsPracticeMode() && racedata != nullptr && racedata->racesScenario.settings.gamemode == MODE_TIME_TRIAL;
 }
 
@@ -60,7 +60,7 @@ static void SetupGoldenTimerGX() {
     GX::SetCurrentMtx(0);
 }
 
-static void DrawGoldenTimerQuad(const GoldenTimerBar& bar) {
+static void DrawGoldenTimerQuad(const GoldenTimerBar &bar) {
     SetupGoldenTimerGX();
 
     GX::Begin(GX::GX_QUADS, GX::GX_VTXFMT0, 4);
@@ -75,31 +75,35 @@ static void DrawGoldenTimerQuad(const GoldenTimerBar& bar) {
     GXEnd();
 }
 
-static bool TryBuildGoldenTimerBar(CtrlRaceItemWindow& itemWindow, GoldenTimerBar& bar) {
-    if (!IsPracticeTimeTrial()) return false;
+static bool TryBuildGoldenTimerBar(CtrlRaceItemWindow &itemWindow, GoldenTimerBar &bar) {
+    if (!IsPracticeTimeTrial())
+        return false;
 
-    Item::Manager* manager = Item::Manager::sInstance;
-    if (manager == nullptr) return false;
+    Item::Manager *manager = Item::Manager::sInstance;
+    if (manager == nullptr)
+        return false;
 
     const u8 playerId = itemWindow.GetPlayerId();
-    if (playerId >= 12) return false;
+    if (playerId >= 12)
+        return false;
 
-    Item::Player& player = manager->players[playerId];
-    const Item::PlayerInventory& inventory = player.inventory;
-    if (inventory.currentItemId != GOLDEN_MUSHROOM || !inventory.hasGolden || inventory.goldenTimer == 0) return false;
+    Item::Player &player = manager->players[playerId];
+    const Item::PlayerInventory &inventory = player.inventory;
+    if (inventory.currentItemId != GOLDEN_MUSHROOM || !inventory.hasGolden || inventory.goldenTimer == 0)
+        return false;
 
-    const float remaining = inventory.goldenTimer > GOLDEN_MUSHROOM_TIMER_FRAMES
-                                ? 1.0f
-                                : static_cast<float>(inventory.goldenTimer) / static_cast<float>(GOLDEN_MUSHROOM_TIMER_FRAMES);
+    const float remaining = inventory.goldenTimer > GOLDEN_MUSHROOM_TIMER_FRAMES ? 1.0f : static_cast<float>(inventory.goldenTimer) / static_cast<float>(GOLDEN_MUSHROOM_TIMER_FRAMES);
 
-    nw4r::lyt::Pane* itemWindowPane = itemWindow.GetPane();
-    if (itemWindowPane == nullptr) return false;
+    nw4r::lyt::Pane *itemWindowPane = itemWindow.GetPane();
+    if (itemWindowPane == nullptr)
+        return false;
 
-    const PositionAndScale& itemWindowPosition = itemWindow.positionAndscale[GOLDEN_TIMER_BAR_POSITION_INDEX];
+    const PositionAndScale &itemWindowPosition = itemWindow.positionAndscale[GOLDEN_TIMER_BAR_POSITION_INDEX];
     const float barScaleX = itemWindowPosition.scale.x;
     const float barScaleY = itemWindowPosition.scale.z;
     const float fullWidth = (itemWindowPane->size.x + GOLDEN_TIMER_BAR_EDGE_EXTENSION * 2.0f) * barScaleX;
-    if (fullWidth <= 0.0f) return false;
+    if (fullWidth <= 0.0f)
+        return false;
 
     bar.x = itemWindowPosition.position.x - fullWidth * 0.5f;
     bar.y = itemWindowPosition.position.y + GOLDEN_TIMER_BAR_Y_OFFSET * barScaleY;
@@ -112,13 +116,15 @@ static bool TryBuildGoldenTimerBar(CtrlRaceItemWindow& itemWindow, GoldenTimerBa
     return true;
 }
 
-static void DrawGoldenMushroomTimer(CtrlRaceItemWindow& itemWindow) {
+static void DrawGoldenMushroomTimer(CtrlRaceItemWindow &itemWindow) {
     GoldenTimerBar bar;
-    if (TryBuildGoldenTimerBar(itemWindow, bar)) DrawGoldenTimerQuad(bar);
+    if (TryBuildGoldenTimerBar(itemWindow, bar))
+        DrawGoldenTimerQuad(bar);
 }
 
-static void DrawItemWindowWithGoldenTimer(CtrlRaceItemWindow& itemWindow, u32 curZIdx) {
-    if (!itemWindow.IsInactive()) DrawGoldenMushroomTimer(itemWindow);
+static void DrawItemWindowWithGoldenTimer(CtrlRaceItemWindow &itemWindow, u32 curZIdx) {
+    if (!itemWindow.IsInactive())
+        DrawGoldenMushroomTimer(itemWindow);
     itemWindow.LayoutUIControl::Draw(curZIdx);
 }
 kmWritePointer(0x808d3cdc, DrawItemWindowWithGoldenTimer);
