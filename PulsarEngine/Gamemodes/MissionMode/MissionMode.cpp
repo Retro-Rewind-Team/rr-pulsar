@@ -373,6 +373,7 @@ bool IsMissionScoreObjective(const RacedataScenario &scenario) {
         case 5:
         case 6:
         case 8:
+        case 0x09:
         case 0xb:
         case 0xc:
         case 0xd:
@@ -400,9 +401,6 @@ static void FixMissionScoreLayout(CtrlRaceScore *self) {
     typedef void (*CtrlRaceScoreOnUpdateFn)(CtrlRaceScore *);
     static const CtrlRaceScoreOnUpdateFn sCtrlRaceScoreOnUpdate = reinterpret_cast<CtrlRaceScoreOnUpdateFn>(kmRuntimeAddr(0x807f784c));
     sCtrlRaceScoreOnUpdate(self);
-
-    if (Racedata::sInstance != 0 && IsMissionToGateObjective(Racedata::sInstance->racesScenario))
-        self->isHidden = true;
 
     if (Racedata::sInstance == 0 || !IsMissionScoreObjective(Racedata::sInstance->racesScenario))
         return;
