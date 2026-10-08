@@ -162,6 +162,8 @@ static void DoSpawnItem(ItemObjId itemId, s32 playerIdx, float fOff, float rOff,
         *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(obj) + 0x1ac) = Item::ObjBomb::STATE_TICKING;
     }
 
+    obj->bitfield7c |= spawnedItemFlag;
+
     if (Raceinfo::sInstance->timerMgr)
         *reinterpret_cast<u32 *>(reinterpret_cast<u8 *>(obj) + 0x164) = Raceinfo::sInstance->timerMgr->raceFrameCounter;
 }

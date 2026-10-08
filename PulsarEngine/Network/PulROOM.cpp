@@ -45,13 +45,17 @@ static void WriteHostSettingsPreviewToPacket(PulROOM *packet, const Settings::Mg
     u32 offset = 0;
     for (u32 page = 0; page < pageCount; ++page) {
         const Settings::SettingsPageDef &def = Settings::Params::GetPageDef(pages[page]);
-        const u32 valueCount = def.radioCount + def.scrollerCount;
+        const u32 valueCount = def.radioCount + def.scrollerCount - (pages[page] == Settings::SETTINGS_PAGE_ROYALE ? 1 : 0);
         if (offset + valueCount > HOST_SETTINGS_PREVIEW_COUNT)
             break;
         u8 *dest = packet->hostSettingsPreview + offset;
 
-        for (u32 i = 0; i < def.radioCount; ++i) dest[i] = settings.GetSettingValue(def.radioSettings[i]);
-        for (u32 i = 0; i < def.scrollerCount; ++i) dest[def.radioCount + i] = settings.GetSettingValue(def.scrollerSettings[i]);
+        u32 index = 0;
+        for (u32 i = 0; i < def.radioCount; ++i) {
+            if (def.radioSettings[i] != Settings::SETTING_KOROYALEDISPLAY)
+                dest[index++] = settings.GetSettingValue(def.radioSettings[i]);
+        }
+        for (u32 i = 0; i < def.scrollerCount; ++i) dest[index++] = settings.GetSettingValue(def.scrollerSettings[i]);
         offset += valueCount;
     }
 }

@@ -61,10 +61,12 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u16 battleRoyaleFinishMinutes[2];
     u8 battleRoyaleFinishSeconds[2];
     u16 battleRoyaleFinishMilliseconds[2];
+    u8 battleRoyaleEliminationAttackerIds[2];  // final balloon attacker per local player, 0xff means unknown
+    u8 battleRoyaleHitAttackerId;  // queued hit attacker, bit 7 means final balloon; 0xff means unknown
 };
 
 // Size constants for conditional packet expansion
-static const u32 PulRH1BattleRoyaleSize = 14;
+static const u32 PulRH1BattleRoyaleSize = 17;
 static const u32 PulRH1LapKoSize = 16;
 static const u32 PulRH1SizeBase = sizeof(PulRH1) - PulRH1LapKoSize - PulRH1BattleRoyaleSize;
 static const u32 PulRH1SizeLapKo = PulRH1SizeBase + PulRH1LapKoSize;
