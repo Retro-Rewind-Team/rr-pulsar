@@ -97,7 +97,8 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage *startMsg, u32 bmgId, 
         info->intToPass[1] = system->netMgr.racesPerGP + 1;
     }
     const u16 customEngineClass = system->IsOfflineVS() ? System::offlineCustomEngineClass : system->netMgr.hostCustomEngineClass;
-    if (customEngineClass >= 100) {
+    if (customEngineClass >= 100
+      && (system->IsOfflineVS() || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
         swprintf(s_customEngineClassText, sizeof(s_customEngineClassText) / sizeof(s_customEngineClassText[0]), L"%ucc", customEngineClass);
         info->bmgToPass[0] = BMG_TEXT;
         info->strings[0] = s_customEngineClassText;
