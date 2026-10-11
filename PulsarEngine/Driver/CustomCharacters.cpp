@@ -24,12 +24,9 @@ namespace Driver {
 
 bool characterTables[CHARACTER_COUNT][MAX_CUSTOM_CHARACTER_SLOTS + 1];
 
-u8 selectedSlots[CHARACTER_COUNT];
-static u8 loadedSlots[CHARACTER_COUNT];
+u8 selectedSlots[4][CHARACTER_COUNT];
+static u8 loadedSlots[4];
 static s8 cycleDirections[4];
-static ModelDirector *originalModels[CHARACTER_COUNT];
-static ModelTransformator *originalTransformators[CHARACTER_COUNT];
-static bool originalWasVisible[CHARACTER_COUNT];
 enum {
     AUTHOR_NAME_CONTROL_WORDS = (sizeof(CharaName) + sizeof(u32) - 1) / sizeof(u32)
 };
@@ -37,10 +34,9 @@ static u32 authorNameControlStorage[4][AUTHOR_NAME_CONTROL_WORDS];
 static bool authorNameControlLoaded[4];
 static bool loadingAuthorNameControl;
 static u32 authorTextBmgIds[4];
-static ModelDirector *customModels[CHARACTER_COUNT];
-static EGG::ExpHeap *customHeaps[CHARACTER_COUNT];
-static ToadetteHair *originalHair;
-static ToadetteHair *customHair;
+static MenuDriverModel *customModels[4];
+static EGG::ExpHeap *customHeaps[4];
+static ToadetteHair *customHair[4];
 
 void CreateCharacterTable() {
     char path[0x80];
@@ -54,19 +50,22 @@ void CreateCharacterTable() {
             snprintf(path, sizeof(path), "/Scene/Model/Driver/%s-%u.brres", name, slot);
             characterTables[character][slot] = IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0;
         }
-        if (!characterTables[character][selectedSlots[character]])
-            selectedSlots[character] = 0;
+        for (u32 player = 0; player < 4; ++player) {
+            if (!characterTables[character][selectedSlots[player][character]])
+                selectedSlots[player][character] = 0;
+        }
     }
 }
 static Settings::Hook CreateCharacterTableHook(CreateCharacterTable);
 
-static s32 LoadKartArchive(char *path, u32 size, const char *format, const char *name) {
+static s32 LoadKartArchive(char *path, u32 size, const char *format, const char *name, const ArchivesHolder *archive) {
+    const u32 player = archive - ArchiveMgr::sInstance->kartModelsHolders;
     u32 character = 0;
     while (character < CHARACTER_COUNT && strcmp(name, ArchiveMgr::GetKartArchivePostfix(static_cast<CharacterId>(character))) != 0) {
         ++character;
     }
 
-    const u32 slot = character < CHARACTER_COUNT ? selectedSlots[character] : 0;
+    const u32 slot = character < CHARACTER_COUNT ? selectedSlots[player][character] : 0;
     const char *battleSuffix = strstr(format, "_BT") != nullptr ? "_BT" : "";
     if (slot != 0) {
         char archivePath[0x80];
@@ -84,76 +83,60 @@ kmCall(0x80541fa0, LoadKartArchive);
 kmCall(0x80542140, LoadKartArchive);
 kmCall(0x80542180, LoadKartArchive);
 
-static void UnloadDriverBRRES(u32 character) {
-    if (customModels[character] == nullptr)
+// Pass the per-player archive in r7 at each verified snprintf call site.
+kmWrite32(0x8054115c, 0x7fe7fb78);  // mr r7, r31
+kmWrite32(0x8054119c, 0x7fe7fb78);  // mr r7, r31
+kmWrite32(0x80541f5c, 0x7fc7f378);  // mr r7, r30
+kmWrite32(0x80541f9c, 0x7fc7f378);  // mr r7, r30
+kmWrite32(0x8054213c, 0x7fc7f378);  // mr r7, r30
+kmWrite32(0x8054217c, 0x7fc7f378);  // mr r7, r30
+
+static void UnloadDriverBRRES(u32 player) {
+    if (customModels[player] == nullptr)
         return;
 
-    ModelDirector *model = customModels[character];
+    MenuDriverModelMgr *manager = MenuModelMgr::sInstance->driverModels;
+    if (manager->players[player].playerModel == customModels[player])
+        manager->SetPlayerCharacter(player, manager->players[player].id);
+    ModelDirector *model = customModels[player]->model;
     ScnMgr *scnMgr = ScnMgr::sInstance[model->scnMgrIdx];
     if ((model->bitfield & 0x100000) && scnMgr != nullptr) {
         model->ToggleVisible(false);
         scnMgr->RemoveModelDirector(model);
     }
-
-    MenuDriverModel *driverModel = &MenuModelMgr::sInstance->driverModels->models[character];
-    if (character == TOADETTE) {
-        if (customHair != nullptr) {
-            customHair->ToggleVisible(false);
-            ScnMgr::sInstance[customHair->scnMgrIdx]->RemoveModelDirector(customHair);
-            MenuModelMgr::sInstance->driverModels->bangs = originalHair;
-            customHair = nullptr;
-            originalHair = nullptr;
-        }
-        ToadetteHair *hair = MenuModelMgr::sInstance->driverModels->bangs;
-        hair->toadette = originalModels[character];
-        hair->cb->toadette = originalModels[character];
-        for (u32 i = 0; i < 2; ++i) {
-            ModelCalcCBBoneLinked *callback = static_cast<ModelCalcCBBoneLinked *>(static_cast<EmptyModelCalcParent *>(hair->scnMdlEx[i]->scnObj->callback));
-            callback->other = originalModels[character];
-        }
-        hair->Update(scnMgr->curScnRootIdx);
+    if (customHair[player] != nullptr) {
+        customHair[player]->ToggleVisible(false);
+        ScnMgr::sInstance[customHair[player]->scnMgrIdx]->RemoveModelDirector(customHair[player]);
+        customHair[player] = nullptr;
     }
-    driverModel->model = originalModels[character];
-    driverModel->charSelTransformator = originalTransformators[character];
-    if (scnMgr != nullptr) {
-        driverModel->Init();
-        originalModels[character]->Update(scnMgr->curScnRootIdx);
-        originalModels[character]->ToggleVisible(originalWasVisible[character]);
-    }
-
-    customModels[character] = nullptr;
-    loadedSlots[character] = 0;
-    customHeaps[character]->destroy();
-    customHeaps[character] = nullptr;
-    originalModels[character] = nullptr;
-    originalTransformators[character] = nullptr;
-    originalWasVisible[character] = false;
+    customModels[player] = nullptr;
+    loadedSlots[player] = 0;
+    customHeaps[player]->destroy();
+    customHeaps[player] = nullptr;
 }
 
-bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
+bool LoadDriverBRRES(u8 player, CharacterId characterId, u32 slot) {
     const u32 character = static_cast<u32>(characterId);
     if (character >= CHARACTER_COUNT || slot > MAX_CUSTOM_CHARACTER_SLOTS || !characterTables[character][slot])
         return false;
-    if (loadedSlots[character] == slot)
+    if (customModels[player] != nullptr && customModels[player]->id == character && loadedSlots[player] == slot)
         return true;
 
-    UnloadDriverBRRES(character);
-    if (slot == 0)
+    UnloadDriverBRRES(player);
+    if (slot == 0 && SectionMgr::sInstance->sectionParams->localPlayerCount == 1)
         return true;
-
-    MenuDriverModelMgr *manager = MenuModelMgr::sInstance->driverModels;
-    MenuDriverModel *driverModel = &manager->models[character];
-    if (driverModel->model == nullptr)
-        return false;
 
     char path[0x80];
-    snprintf(path, sizeof(path), "/Scene/Model/Driver/%s-%u.brres", ArchiveMgr::GetKartArchivePostfix(characterId), slot);
-    const s32 entryNum = IOOverrides::ConvertPathToEntryNumWithLooseOverride(path);
-    DVD::FileInfo fileInfo = {};
-    if (entryNum < 0 || !DVD::FastOpen(entryNum, &fileInfo))
-        return false;
-    const u32 fileSize = fileInfo.length;
-    DVD::Close(&fileInfo);
+    u32 fileSize = 0;
+    if (slot != 0) {
+        snprintf(path, sizeof(path), "/Scene/Model/Driver/%s-%u.brres", ArchiveMgr::GetKartArchivePostfix(characterId), slot);
+        const s32 entryNum = IOOverrides::ConvertPathToEntryNumWithLooseOverride(path);
+        DVD::FileInfo fileInfo = {};
+        if (entryNum < 0 || !DVD::FastOpen(entryNum, &fileInfo))
+            return false;
+        fileSize = fileInfo.length;
+        DVD::Close(&fileInfo);
+    }
 
     GameScene *scene = const_cast<GameScene *>(GameScene::GetCurrent());
     // GameScene locks its dynamic heaps after setup, so briefly allow this child heap allocation.
@@ -173,16 +156,24 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
     scnMgr->curHeap = heap;
     scnMgr->curAllocator = allocator;
     menuAllocator = allocator;
-
-    ModelDirector *model = new (heap) ModelDirector(2, 0);
-    g3d::ResFile brres;
-    brres.data = static_cast<g3d::ResFileData *>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
-    if (brres.data != nullptr)
-        ModelDirector::BindBRRESImpl(brres, path, nullptr, 0);
+    EGG::Heap *oldCurrentHeap = heap->BecomeCurrentHeap();
+    MenuDriverModel *driverModel = new (heap) MenuDriverModel;
+    ModelDirector *model = driverModel->model;
     MenuModelBRRESHandle brresHandle;
-    brresHandle.menuModelBRRES = brres;
-    const bool loaded = brres.data != nullptr && brresHandle.LoadDriverModel(*model, characterId);
-
+    bool bound;
+    if (slot == 0) {
+        // BindDriverBRRES also resolves the stock menu versions of Peach, Daisy and Rosalina.
+        bound = brresHandle.BindDriverBRRES(characterId);
+    } else {
+        brresHandle.menuModelBRRES.data = static_cast<g3d::ResFileData *>(EGG::DvdRipper::LoadToMainRAM(path, nullptr, heap, EGG::DvdRipper::ALLOC_FROM_HEAD, 0, nullptr, nullptr));
+        bound = brresHandle.menuModelBRRES.data != nullptr;
+        if (bound)
+            ModelDirector::BindBRRESImpl(brresHandle.menuModelBRRES, path, nullptr, 0);
+    }
+    const bool loaded = bound && brresHandle.LoadDriverModel(*model, characterId);
+    if (loaded && character == TOADETTE && ModelDirector::MdlExists("hair", brresHandle.menuModelBRRES))
+        customHair[player] = new (heap) ToadetteHair(brresHandle.menuModelBRRES, model, 1);
+    oldCurrentHeap->BecomeCurrentHeap();
     scnMgr->curHeap = oldHeap;
     scnMgr->curAllocator = oldAllocator;
     menuAllocator = oldMenuAllocator;
@@ -197,46 +188,65 @@ bool LoadDriverBRRES(CharacterId characterId, u32 slot) {
         return false;
     }
 
-    if (originalModels[character] == nullptr) {
-        originalModels[character] = driverModel->model;
-        originalTransformators[character] = driverModel->charSelTransformator;
-        originalWasVisible[character] = (originalModels[character]->bitfield & 0x200000) != 0;
-    }
-
-    originalModels[character]->ToggleVisible(false);
-    customModels[character] = model;
-    customHeaps[character] = heap;
-    loadedSlots[character] = slot;
-    driverModel->model = model;
+    customModels[player] = driverModel;
+    customHeaps[player] = heap;
+    loadedSlots[player] = slot;
+    driverModel->id = character;
+    driverModel->state = MenuDriverModel::MENUDRIVERMODEL_STATE_IDLE;
     driverModel->charSelTransformator = model->modelTransformator;
+    driverModel->onKartTransformator = nullptr;
     driverModel->Init();
     model->Update(scnMgr->curScnRootIdx);
-    if (character == TOADETTE) {
-        if (ModelDirector::MdlExists("hair", brres)) {
-            originalHair = manager->bangs;
-            originalHair->ToggleVisible(false);
-            scnMgr->curHeap = heap;
-            scnMgr->curAllocator = allocator;
-            menuAllocator = allocator;
-            EGG::Heap *oldCurrentHeap = heap->BecomeCurrentHeap();
-            customHair = new (heap) ToadetteHair(brres, model, 1);
-            oldCurrentHeap->BecomeCurrentHeap();
-            scnMgr->curHeap = oldHeap;
-            scnMgr->curAllocator = oldAllocator;
-            menuAllocator = oldMenuAllocator;
-            manager->bangs = customHair;
-        }
-        ToadetteHair *hair = manager->bangs;
-        hair->toadette = model;
-        hair->cb->toadette = model;
-        for (u32 i = 0; i < 2; ++i) {
-            ModelCalcCBBoneLinked *callback = static_cast<ModelCalcCBBoneLinked *>(static_cast<EmptyModelCalcParent *>(hair->scnMdlEx[i]->scnObj->callback));
-            callback->other = model;
-        }
-        hair->Update(scnMgr->curScnRootIdx);
-    }
+    if (customHair[player] != nullptr)
+        customHair[player]->Update(scnMgr->curScnRootIdx);
     return true;
 }
+
+// Stock character buttons are exclusive; Miis already allow multiple players.
+kmWrite32(0x807e29fc, 0x39000000);  // li r8, 0
+
+static void UpdateDriverModels(MenuDriverModelMgr *manager) {
+    for (u32 player = 0; player < manager->playerCount; ++player) {
+        if (customModels[player] != nullptr) {
+            customModels[player]->Update();
+            customModels[player]->ToggleVisible(false);
+        }
+        if (customHair[player] != nullptr)
+            customHair[player]->ToggleVisible(false);
+    }
+    manager->Update();
+    for (u32 player = 0; player < manager->playerCount; ++player) {
+        if (customHair[player] != nullptr && manager->players[player].playerModel == customModels[player]) {
+            customHair[player]->ToggleVisible(true);
+            ModelTransformator *transformator = customModels[player]->model->modelTransformator;
+            bool lockHair = false;
+            if (customModels[player]->state == MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT && transformator->IsTypeActive(ANMTYPE_CHR)) {
+                const AnmHolder *anm = transformator->GetAnmHolderByType(ANMTYPE_CHR);
+                lockHair = anm->GetFrameCount() <= anm->GetFrame();
+            }
+            customHair[player]->ToggleLock(lockHair);
+        }
+    }
+}
+kmCall(0x8059e4cc, UpdateDriverModels);
+
+static void DrawDriverModels(MenuDriverModelMgr *manager, u8 playerId) {
+    for (u32 player = 0; player < manager->playerCount; ++player) {
+        if (customModels[player] != nullptr)
+            customModels[player]->ToggleTransparent(false);
+        if (customHair[player] != nullptr)
+            customHair[player]->ToggleTransparent(false);
+    }
+    manager->Draw(playerId);
+    if (manager->players[playerId].playerModel == customModels[playerId]) {
+        // The stock renderer otherwise shows its second Toadette hair on any duplicate model.
+        if (manager->secondBangs != nullptr)
+            manager->secondBangs->ToggleTransparent(false);
+        if (customHair[playerId] != nullptr)
+            customHair[playerId]->ToggleTransparent(manager->players[playerId].isVisible);
+    }
+}
+kmCall(0x8059e528, DrawDriverModels);
 
 static void PageBeforeControlUpdate(Page *page) {
     typedef void (*PageFunction)(Page *);
@@ -301,7 +311,6 @@ static void PageAfterControlUpdate(Page *page) {
         return;
 
     Pages::CharacterSelect *characterSelectPage = static_cast<Pages::CharacterSelect *>(page);
-    bool changed[CHARACTER_COUNT] = {};
     for (u32 player = 0; player < 4; ++player) {
         const s8 direction = cycleDirections[player];
         cycleDirections[player] = 0;
@@ -309,12 +318,12 @@ static void PageAfterControlUpdate(Page *page) {
             continue;
 
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
-        if (character >= CHARACTER_COUNT || changed[character])
+        if (character >= CHARACTER_COUNT)
             continue;
         if (MenuModelMgr::sInstance->driverModels->players[player].playerModel->state != MenuDriverModel::MENUDRIVERMODEL_STATE_IDLE)
             continue;
 
-        u32 slot = selectedSlots[character];
+        u32 slot = selectedSlots[player][character];
         for (u32 tries = 0; tries <= MAX_CUSTOM_CHARACTER_SLOTS; ++tries) {
             if (direction < 0)
                 slot = slot == 0 ? MAX_CUSTOM_CHARACTER_SLOTS : slot - 1;
@@ -323,31 +332,16 @@ static void PageAfterControlUpdate(Page *page) {
             if (characterTables[character][slot])
                 break;
         }
-        if (slot == selectedSlots[character])
+        if (slot == selectedSlots[player][character])
             continue;
-        changed[character] = true;
-        selectedSlots[character] = slot;
-        if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot))
-            selectedSlots[character] = 0;
+        selectedSlots[player][character] = slot;
+        if (!LoadDriverBRRES(player, static_cast<CharacterId>(character), slot))
+            selectedSlots[player][character] = 0;
         else
             Audio::RSARPlayer::PlaySoundById(direction < 0 ? SOUND_ID_LEFT_ARROW_PRESS : SOUND_ID_RIGHT_ARROW_PRESS, 0, 0);
-        UI::SetCharacterSelectIcon(
-          characterSelectPage->ctrlMenuCharSelect.GetButtonDriver(static_cast<CharacterId>(character)), "chara_c_down", GetCharacterIconPaneName(static_cast<CharacterId>(character)));
-    }
-
-    for (u32 character = 0; character < CHARACTER_COUNT; ++character) {
-        bool focused = false;
-        for (u32 player = 0; player < 4; ++player) {
-            if ((characterSelectPage->playerBitfield & (1 << player)) != 0 && static_cast<u32>(characterSelectPage->models[player].curCharacter) == character) {
-                focused = true;
-                break;
-            }
-        }
-
-        const u32 slot = focused ? selectedSlots[character] : 0;
-        if ((customModels[character] != nullptr && loadedSlots[character] != slot) || (customModels[character] == nullptr && slot != 0)) {
-            if (!LoadDriverBRRES(static_cast<CharacterId>(character), slot))
-                selectedSlots[character] = 0;
+        if (player == 0) {
+            UI::SetCharacterSelectIcon(
+              characterSelectPage->ctrlMenuCharSelect.GetButtonDriver(static_cast<CharacterId>(character)), "chara_c_down", GetCharacterIconPaneName(static_cast<CharacterId>(character)));
         }
     }
 
@@ -357,7 +351,12 @@ static void PageAfterControlUpdate(Page *page) {
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (character >= CHARACTER_COUNT)
             continue;
-        characterSelectPage->names[player].SetMessage(UI::GetCharacterNameBMGId(character, false, 12));
+        MenuDriverModelMgr *manager = MenuModelMgr::sInstance->driverModels;
+        if (!LoadDriverBRRES(player, static_cast<CharacterId>(character), selectedSlots[player][character]))
+            selectedSlots[player][character] = 0;
+        else if (customModels[player] != nullptr)
+            manager->players[player].playerModel = customModels[player];
+        characterSelectPage->names[player].SetMessage(UI::GetCharacterNameBMGId(character, false, 12 + player));
     }
 
     for (u32 player = 0; player < 4; ++player) {
@@ -370,7 +369,7 @@ static void PageAfterControlUpdate(Page *page) {
             continue;
         }
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
-        const u32 authorBmgId = character < CHARACTER_COUNT ? UI::GetCharacterAuthorBMGId(character, selectedSlots[character]) : 0;
+        const u32 authorBmgId = character < CHARACTER_COUNT ? UI::GetCharacterAuthorBMGId(character, selectedSlots[player][character]) : 0;
         if (authorTextBmgIds[player] == authorBmgId)
             continue;
         author->isHidden = authorBmgId == 0 || !UI::SetCustomCharacterAuthorMessage(*author, authorBmgId);
@@ -418,16 +417,22 @@ kmCall(0x8083d9dc, CharacterSelectName);
 
 static void RequestDriverModel(MenuModelMgr *manager, u8 playerId, CharacterId characterId) {
     const u32 character = static_cast<u32>(characterId);
-    if (manager->isActive && character < CHARACTER_COUNT && selectedSlots[character] != 0)
-        LoadDriverBRRES(characterId, selectedSlots[character]);
     manager->RequestDriverModel(playerId, characterId);
+    if (!manager->isActive || playerId >= SectionMgr::sInstance->sectionParams->localPlayerCount)
+        return;
+    if (character < CHARACTER_COUNT) {
+        if (LoadDriverBRRES(playerId, characterId, selectedSlots[playerId][character]) && customModels[playerId] != nullptr)
+            manager->driverModels->players[playerId].playerModel = customModels[playerId];
+    } else {
+        UnloadDriverBRRES(playerId);
+    }
 }
 kmCall(0x805f5604, RequestDriverModel);
 kmCall(0x805f5918, RequestDriverModel);
 kmBranch(0x805f5704, RequestDriverModel);
 
 static void ResetScnMgr() {
-    for (u32 character = 0; character < CHARACTER_COUNT; ++character) UnloadDriverBRRES(character);
+    for (u32 player = 0; player < 4; ++player) UnloadDriverBRRES(player);
     ScnMgr::Reset();
 }
 kmCall(0x8051b118, ResetScnMgr);

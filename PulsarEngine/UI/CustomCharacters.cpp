@@ -23,7 +23,7 @@ void SetCharacterSelectIcon(LayoutUIControl *control, const char *paneName, cons
     control->SetPicturePane("chara_light_01", picturePane);
     control->SetPicturePane("chara_light_02", picturePane);
     Race::LoadCustomCharacterIcon(
-      character, Driver::selectedSlots[character], control->layout.GetPaneByName("chara"), control->layout.GetPaneByName("chara_shadow"), control->layout.GetPaneByName("chara_light_01"));
+      character, Driver::selectedSlots[0][character], control->layout.GetPaneByName("chara"), control->layout.GetPaneByName("chara_shadow"), control->layout.GetPaneByName("chara_light_01"));
     *control->layout.GetPaneByName("chara_light_02")->GetMaterial()->GetTexMapAry() = *control->layout.GetPaneByName("chara")->GetMaterial()->GetTexMapAry();
     *control->layout.GetPaneByName("chara_c_down")->GetMaterial()->GetTexMapAry() = *control->layout.GetPaneByName("chara")->GetMaterial()->GetTexMapAry();
 }

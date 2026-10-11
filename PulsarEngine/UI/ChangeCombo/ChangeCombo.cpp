@@ -288,7 +288,7 @@ static void RandomizeCombo() {
         u32 slotCount = 0;
         for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
             if (Driver::characterTables[character][slot] && random.NextLimited(++slotCount) == 0)
-                Driver::selectedSlots[character] = slot;
+                Driver::selectedSlots[hudId][character] = slot;
         }
         const u32 weight = GetCharacterWeightClass(character);
         const u32 randomizedKartPos = GetRandomEnabledVehiclePosition(random, weight);
@@ -552,7 +552,7 @@ void ExpCharacterSelect::BeforeControlUpdate() {
             nextButton->HandleSelect(hudId, -1);
             nextButton->Select(hudId);
             if (rolledCharIdx[hudId] < Driver::CHARACTER_COUNT)
-                this->names[hudId].SetMessage(GetCharacterNameBMGId(rolledCharIdx[hudId], false, 12));
+                this->names[hudId].SetMessage(GetCharacterNameBMGId(rolledCharIdx[hudId], false, 12 + hudId));
 
         } else if (roulette == 0) {
             if (this->buttonCooldown == 0) {

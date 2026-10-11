@@ -54,6 +54,7 @@ public:
     MenuDriverModelMgr(u8 playerCount);  // 80830180
     virtual ~MenuDriverModelMgr();  // 80831bd4 vtable 808d8c38
     void Update();  // 808307b0
+    void Draw(u8 playerId);  // 80830a80
     void TogglePlayerModel(u8 playerId, bool isVisible);  // 80830c3c
     void SetPlayerCharacter(u8 playerId, CharacterId id);  // 80830d00 updates players[id] values
     void PrepareDriverOnKartAnms(u8 playerId);  // 80830c64 prepares a new Transformator since the model has 2 "stances", alone and on a kart
@@ -68,7 +69,7 @@ public:
     Mii *miis;  // 0x44 one per player
     MiiHeadsModel *miiHeads;  // 0x48 one per player
     ToadetteHair *bangs;  // 0x4c
-    u32 unknown_0x50;  // 0x50
+    ToadetteHair *secondBangs;  // 0x50
 };  // 0x54
 
 #endif
