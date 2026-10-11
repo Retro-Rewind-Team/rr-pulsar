@@ -4,6 +4,7 @@
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuDriverModel.hpp>
+#include <MarioKartWii/3D/Model/Menu/MenuKartModel.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/3D/Scn/ScnMgr.hpp>
 #include <MarioKartWii/Driver/Toadette.hpp>
@@ -98,6 +99,15 @@ static void UnloadDriverBRRES(u32 player) {
     MenuDriverModelMgr *manager = MenuModelMgr::sInstance->driverModels;
     if (manager->players[player].playerModel == customModels[player])
         manager->SetPlayerCharacter(player, manager->players[player].id);
+    MenuKartModelMgr *kartModels = MenuModelMgr::sInstance->kartModels;
+    for (u32 hud = 0; hud < kartModels->playerCount; ++hud) {
+        if (!kartModels->players[hud].isLocked)
+            continue;
+        for (u32 kart = 0; kart < kartModels->modelCount; ++kart) {
+            if (kartModels->players[hud].modelsArray[kart].driverModel == customModels[player])
+                kartModels->players[hud].modelsArray[kart].driverModel = &manager->models[customModels[player]->id];
+        }
+    }
     ModelDirector *model = customModels[player]->model;
     ScnMgr *scnMgr = ScnMgr::sInstance[model->scnMgrIdx];
     if ((model->bitfield & 0x100000) && scnMgr != nullptr) {
@@ -140,7 +150,9 @@ bool LoadDriverBRRES(u8 player, CharacterId characterId, u32 slot) {
 
     GameScene *scene = const_cast<GameScene *>(GameScene::GetCurrent());
     // GameScene locks its dynamic heaps after setup, so briefly allow this child heap allocation.
-    EGG::Heap *parentHeap = scene->structsHeaps.heaps[scene->id == SCENE_ID_GLOBE ? 1 : 0];
+    EGG::Heap *parentHeap = scene->structsHeaps.heaps[0];
+    if (scene->structsHeaps.heaps[1]->getAllocatableSize(4) > parentHeap->getAllocatableSize(4))
+        parentHeap = scene->structsHeaps.heaps[1];
     const u16 heapFlags = parentHeap->dameFlag;
     parentHeap->dameFlag &= ~1;
     EGG::ExpHeap *heap = EGG::ExpHeap::Create(fileSize + 0xe1000, parentHeap, 0);
@@ -199,6 +211,7 @@ bool LoadDriverBRRES(u8 player, CharacterId characterId, u32 slot) {
     model->Update(scnMgr->curScnRootIdx);
     if (customHair[player] != nullptr)
         customHair[player]->Update(scnMgr->curScnRootIdx);
+    heap->adjust();
     return true;
 }
 
@@ -320,7 +333,7 @@ static void PageAfterControlUpdate(Page *page) {
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (character >= CHARACTER_COUNT)
             continue;
-        if (MenuModelMgr::sInstance->driverModels->players[player].playerModel->state != MenuDriverModel::MENUDRIVERMODEL_STATE_IDLE)
+        if (characterSelectPage->controlsManipulatorManager.inaccessible || !characterSelectPage->controlsManipulatorManager.holders[player].info.enabled)
             continue;
 
         u32 slot = selectedSlots[player][character];
