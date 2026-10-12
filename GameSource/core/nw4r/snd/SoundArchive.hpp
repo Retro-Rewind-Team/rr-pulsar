@@ -137,6 +137,12 @@ struct SoundArchive::SoundInfo {  // https://wiki.tockdom.com/wiki/BRSAR_(File_F
     u32 panCurve;
 };  // total size 0x20
 
+struct SoundArchive::WaveSoundInfo {  // filled by detail_ReadWaveSoundInfo
+    s32 subNo;
+    u32 channelPriority;
+    bool releasePriorityFixFlag;
+};  // total size 0xc
+
 struct SoundArchive::StrmSoundInfo {  // https://wiki.tockdom.com/wiki/BRSAR_(File_Format)#RSTM
     u32 startPosition;
     u16 allocChannelCount;
