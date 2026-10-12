@@ -232,7 +232,7 @@ const wchar_t *CtrlRaceLapKOElimMessage::GetPlayerDisplayName(u8 playerId, wchar
         }
     }
 
-    const u32 characterBmgId = GetCharacterBMGId(player.characterId, true);
+    const u32 characterBmgId = UI::GetCharacterNameBMGId(player.characterId, false, playerId);
     const wchar_t *bmgName = nullptr;
     if (characterBmgId != 0) {
         bmgName = UI::GetCustomMsg(static_cast<s32>(characterBmgId));
