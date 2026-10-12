@@ -8,6 +8,8 @@
 #include <MarioKartWii/Audio/Actors/CharacterActor.hpp>
 #include <MarioKartWii/Driver/DriverController.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/System/Random.hpp>
+#include <core/RK/RKSystem.hpp>
 #include <core/nw4r/snd/SoundArchive.hpp>
 #include <core/nw4r/snd/WsdFile.hpp>
 #include <core/rvl/OS/OSCache.hpp>
@@ -608,6 +610,277 @@ static bool ReadVoiceFileToMemory(DVD::FileInfo &file, void *dest, u32 size, u32
     OS::DCStoreRange(dest, size);
     return true;
 }
+
+// A skin with its own voice says one of its trick lines in the menus (JP_ACT, which Kart::Trick::Start plays).
+// Only the skin's RWSD and those waves are read, into the sound heap: SoundHeap::Alloc ties them to the
+// section's heap level, so the next section frees them and stops a voice still using them.
+struct MenuTrickVoice {
+    s8 character;
+    u8 slot;
+    u16 soundCount;
+    u32 fileId;
+    u32 firstSound;
+    void *wsd;
+    void *waves;
+};
+static MenuTrickVoice sMenuTrickVoices[24];
+static u32 sMenuTrickVoiceCount;
+// The trick lines take at most this much of the sound heap per section (about 2.7 MB is free on the
+// character select), so the menu's other sounds keep their room; past it a skin keeps the base line.
+static const u32 kMenuTrickVoiceBudget = 0x100000;
+static u32 sMenuTrickVoiceBytes;
+
+static void ResetMenuTrickVoices() {
+    sMenuTrickVoiceCount = 0;
+    sMenuTrickVoiceBytes = 0;
+}
+static SectionLoadHook ResetMenuTrickVoicesOnSectionLoad(ResetMenuTrickVoices);
+
+static void *AllocMenuVoiceBuffer(u32 size) {
+    EGG::ExpAudioMgr *audioManager = RKSystem::mInstance.audioManager;
+    if (audioManager == nullptr || size > kMenuTrickVoiceBudget || AlignVoiceBuffer(size) > kMenuTrickVoiceBudget - sMenuTrickVoiceBytes)
+        return nullptr;
+    void *buffer = audioManager->EGG::SoundHeapMgr::heap.Alloc(AlignVoiceBuffer(size));
+    if (buffer != nullptr)
+        sMenuTrickVoiceBytes += AlignVoiceBuffer(size);
+    return buffer;
+}
+
+static void WriteVoiceBE32(u8 *data, u32 value) {
+    data[0] = static_cast<u8>(value >> 24);
+    data[1] = static_cast<u8>(value >> 16);
+    data[2] = static_cast<u8>(value >> 8);
+    data[3] = static_cast<u8>(value);
+}
+
+// The tests below and in the two readers after it subtract instead of add, so no value from the file can wrap them.
+static u32 GetVoiceDataRef(const u8 *wsd, u32 wsdSize, u32 base, u32 refOffset) {
+    if (wsdSize < 8 || refOffset > wsdSize - 8 || wsd[refOffset] != nw4r::snd::detail::Util::REF_TYPE_OFFSET)
+        return 0;
+    const u32 offset = ReadVoiceBE32(wsd + refOffset + 4);
+    return base <= wsdSize - 4 && offset <= wsdSize - 4 - base ? base + offset : 0;
+}
+
+// Appends the wave index of each note of the RWSD's wave sound subNo.
+static bool ReadTrickWaveIndices(const u8 *wsd, u32 wsdSize, u32 subNo, s32 *waveIndices, u32 &waveCount, u32 maxWaves) {
+    if (wsdSize < 0x14)
+        return false;
+    const u32 dataBlock = ReadVoiceBE32(wsd + 0x10);
+    if (dataBlock > wsdSize - 0xc || subNo >= ReadVoiceBE32(wsd + dataBlock + 8) || subNo > (wsdSize - dataBlock - 0xc) / 8)
+        return false;
+    const u32 base = dataBlock + 8;
+    const u32 sound = GetVoiceDataRef(wsd, wsdSize, base, dataBlock + 0xc + subNo * 8);
+    const u32 notes = sound != 0 ? GetVoiceDataRef(wsd, wsdSize, base, sound + 0x10) : 0;
+    if (notes == 0)
+        return false;
+    const u32 noteCount = ReadVoiceBE32(wsd + notes);
+    for (u32 note = 0; note < noteCount; ++note) {
+        const u32 noteInfo = GetVoiceDataRef(wsd, wsdSize, base, notes + 4 + note * 8);
+        if (noteInfo == 0 || waveCount >= maxWaves)
+            return false;
+        waveIndices[waveCount++] = static_cast<s32>(ReadVoiceBE32(wsd + noteInfo));
+    }
+    return true;
+}
+
+// An RWAR with the skin's whole table whose DATA holds only the given waves: WaveArchiveReader::GetWaveFile
+// (0x800AD160) reads only the entry a note asks for, and an RWAV is self-contained. Waves start 8-aligned
+// in the files, so each is read through a 32-byte window and keeps its alignment.
+static void *ReadTrickWaves(DVD::FileInfo &file, const VoiceFileLayout &layout, const s32 *waveIndices, u32 waveCount) {
+    u8 header[0x20] __attribute__((aligned(32)));
+    u8 table[0x640] __attribute__((aligned(32)));
+    if (!ReadVoiceFileRange(file, header, sizeof(header), layout.waveOffset))
+        return nullptr;
+    const u32 tableOffset = ReadVoiceBE32(header + 0x10);
+    const u32 tableSize = ReadVoiceBE32(header + 0x14);
+    const u32 dataOffset = ReadVoiceBE32(header + 0x18);
+    if (layout.waveOffset > static_cast<u32>(file.length) || layout.waveSize > static_cast<u32>(file.length) - layout.waveOffset || (tableOffset & 0x1f) != 0 || tableSize < 0xc
+      || tableSize > sizeof(table) || AlignVoiceBuffer(tableSize) > layout.waveSize || tableOffset > layout.waveSize - AlignVoiceBuffer(tableSize) || dataOffset >= layout.waveSize
+      || !ReadVoiceFileRange(file, table, AlignVoiceBuffer(tableSize), layout.waveOffset + tableOffset))
+        return nullptr;
+    const u32 entryCount = ReadVoiceBE32(table + 8);
+    if (entryCount > (tableSize - 0xc) / 0xc)
+        return nullptr;
+
+    const u32 newDataOffset = 0x20 + AlignVoiceBuffer(tableSize);
+    u32 windowStarts[8];
+    u32 windowSizes[8];
+    u32 size = newDataOffset + 0x20;
+    for (u32 index = 0; index < waveCount; ++index) {
+        if (waveIndices[index] < 0 || static_cast<u32>(waveIndices[index]) >= entryCount)
+            return nullptr;
+        const u8 *entry = table + 0xc + waveIndices[index] * 0xc;
+        const u32 waveStart = ReadVoiceBE32(entry + 4);
+        const u32 waveSize = ReadVoiceBE32(entry + 8);
+        if (entry[0] != nw4r::snd::detail::Util::REF_TYPE_OFFSET || waveStart > layout.waveSize - dataOffset || waveSize > layout.waveSize - dataOffset - waveStart)
+            return nullptr;
+        const u32 start = layout.waveOffset + dataOffset + waveStart;
+        windowStarts[index] = start & ~0x1f;
+        windowSizes[index] = AlignVoiceBuffer(start + waveSize) - windowStarts[index];
+        if (windowStarts[index] + windowSizes[index] > static_cast<u32>(file.length) || windowSizes[index] > kMenuTrickVoiceBudget - size)
+            return nullptr;
+        size += windowSizes[index];
+    }
+
+    u8 *waves = static_cast<u8 *>(AllocMenuVoiceBuffer(size));
+    if (waves == nullptr)
+        return nullptr;
+    memset(waves, 0, size);
+    memcpy(waves, header, sizeof(header));
+    // Only the loaded waves keep their table entries; any other index finds a null address and plays nothing.
+    memcpy(waves + 0x20, table, 0xc);
+    u32 next = 0x20;
+    for (u32 index = 0; index < waveCount; ++index) {
+        if (!ReadVoiceFileRange(file, waves + newDataOffset + next, windowSizes[index], windowStarts[index]))
+            return nullptr;
+        u8 *entry = waves + 0x20 + 0xc + waveIndices[index] * 0xc;
+        const u8 *source = table + 0xc + waveIndices[index] * 0xc;
+        const u32 start = layout.waveOffset + dataOffset + ReadVoiceBE32(source + 4);
+        memcpy(entry, source, 0xc);
+        WriteVoiceBE32(entry + 4, next + (start & 0x1f));
+        next += windowSizes[index];
+    }
+    memcpy(waves + newDataOffset, "DATA", 4);
+    WriteVoiceBE32(waves + newDataOffset + 4, next);
+    WriteVoiceBE32(waves + 0x08, size);
+    WriteVoiceBE32(waves + 0x10, 0x20);
+    WriteVoiceBE32(waves + 0x18, newDataOffset);
+    WriteVoiceBE32(waves + 0x1c, next);
+    OS::DCStoreRange(waves, size);
+    return waves;
+}
+
+// Fills voice for the skin; waves stays null when the line cannot be read, so the skin keeps the base line
+// for the section without reading or allocating again.
+static void LoadMenuTrickVoice(MenuTrickVoice &voice, CharacterId character, u32 slot, s8 source, const char *sourceSuffix) {
+    voice.character = static_cast<s8>(character);
+    voice.slot = static_cast<u8>(slot);
+    voice.waves = nullptr;
+    nw4r::snd::SoundArchive *archive = Audio::Manager::soundArchive;
+    const u16 *ranges = Audio::CharacterActor::voiceRanges[0][source];
+    const u32 firstSound = ranges[Audio::CHARACTER_SOURCE_STUNT_1FLIP * 2];
+    const u32 lastSound = ranges[Audio::CHARACTER_SOURCE_STUNT_1FLIP * 2 + 1];
+    nw4r::snd::SoundArchive::SoundInfo soundInfo;
+    char code[0x20];
+    if (lastSound < firstSound || lastSound - firstSound >= 4 || archive->GetSoundType(firstSound) != nw4r::snd::SoundArchive::SOUND_TYPE_WAVE || !archive->ReadSoundInfo(firstSound, &soundInfo)
+      || !GetCharacterVoiceCode(character, code, sizeof(code)))
+        return;
+
+    char path[0x100];
+    if (sourceSuffix[0] != '\0')
+        snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u_PC.brwsd.%s", code, slot, sourceSuffix);
+    else
+        snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u_PC.brwsd", code, slot);
+    DVD::FileInfo file;
+    if (!DVD::Open(path, &file))
+        return;
+
+    VoiceFileLayout layout;
+    if (ReadVoiceFileLayout(file, "RWSD", layout) && layout.waveSize > 0) {
+        u8 *wsd = static_cast<u8 *>(AllocMenuVoiceBuffer(layout.fileSize));
+        s32 waveIndices[8];
+        u32 waveCount = 0;
+        bool readable = wsd != nullptr && ReadVoiceFileToMemory(file, wsd, layout.fileSize, 0);
+        for (u32 sound = firstSound; readable && sound <= lastSound; ++sound) {
+            nw4r::snd::SoundArchive::SoundInfo info;
+            nw4r::snd::SoundArchive::WaveSoundInfo waveInfo;
+            readable = archive->ReadSoundInfo(sound, &info) && info.soundFile == soundInfo.soundFile && archive->detail_ReadWaveSoundInfo(sound, &waveInfo)
+              && ReadTrickWaveIndices(wsd, layout.fileSize, waveInfo.subNo, waveIndices, waveCount, 8);
+        }
+        void *waves = readable ? ReadTrickWaves(file, layout, waveIndices, waveCount) : nullptr;
+        if (waves != nullptr) {
+            voice.soundCount = static_cast<u16>(lastSound - firstSound + 1);
+            voice.fileId = soundInfo.soundFile;
+            voice.firstSound = firstSound;
+            voice.wsd = wsd;
+            voice.waves = waves;
+        }
+    }
+    DVD::Close(&file);
+}
+
+// Starts the skin's trick line into handle as 0x80868ABC starts a menu line (the last one stopped, the
+// volume set). The file overrides stay until the section ends: a note looks its waves up by file id when it
+// starts (WsdCallback::GetWaveSoundData), a frame or two later. A second skin of the same layout confirmed in
+// that window leaves the first one's notes only its own waves, and an index it did not load plays nothing.
+static bool PlayMenuTrickVoice(CharacterId character, u32 slot, s8 source, const char *sourceSuffix, nw4r::snd::SoundHandle &handle) {
+    MenuTrickVoice *voice = nullptr;
+    for (u32 index = 0; index < sMenuTrickVoiceCount; ++index)
+        if (sMenuTrickVoices[index].character == character && sMenuTrickVoices[index].slot == slot)
+            voice = &sMenuTrickVoices[index];
+    if (voice == nullptr) {
+        if (sMenuTrickVoiceCount >= sizeof(sMenuTrickVoices) / sizeof(sMenuTrickVoices[0]))
+            return false;
+        voice = &sMenuTrickVoices[sMenuTrickVoiceCount++];
+        LoadMenuTrickVoice(*voice, character, slot, source, sourceSuffix);
+    }
+    if (voice->waves == nullptr)
+        return false;
+
+    Sound::SetLooseBRSARGroupItemBuffer(voice->fileId, false, voice->wsd);
+    Sound::SetLooseBRSARGroupItemBuffer(voice->fileId, true, voice->waves);
+    if (handle.basicSound != nullptr)
+        handle.basicSound->Stop(2);
+    // As Audio::Manager::StartSound (0x80717744): nothing while the manager is locked, else the archive player.
+    // Called through the header, StartSound lands in another vtable slot and returns false.
+    Audio::Manager *audio = Audio::Manager::sInstance;
+    Random random;
+    const u32 soundId = voice->firstSound + random.NextLimited(voice->soundCount);
+    if (audio->isLocked || audio->soundArchivePlayer->detail_StartSound(&handle, soundId, nullptr) != nw4r::snd::SoundStartable::START_SUCCESS || handle.basicSound == nullptr)
+        return false;
+    handle.basicSound->SetVolume(0, 0.85f);
+    return true;
+}
+
+// The menu voices (character, kart and team select) exist only per base character, so a skin with its own
+// voice says a trick line of its own, a silent skin nothing (-1 makes the picker return), and a skin without
+// voice files keeps the base line.
+static s32 GetMenuVoiceCharacter(u8 *manager, s32 character, u32 hud) {
+    // The game sets soundArchive only when the first race's sound actors are built (0x80700554), from the
+    // manager's own archive; a menu before any race reads null, so it is set here the same way.
+    if (Audio::Manager::soundArchive == nullptr && Audio::Manager::sInstance != nullptr)
+        Audio::Manager::soundArchive = Audio::Manager::sInstance->dvdSoundArchiveptr;
+    if (character < 0 || character >= Driver::CHARACTER_COUNT || Audio::Manager::soundArchive == nullptr)
+        return character;
+    const u32 slot = hud < 4 ? Driver::selectedSlots[hud][character] : 0;
+    if (slot == 0)
+        return character;
+    s8 source;
+    char sourceSuffix[0x20];
+    if (FindCustomVoiceSource(static_cast<CharacterId>(character), slot, source, sourceSuffix, sizeof(sourceSuffix))) {
+        // The picker's own handle for the hud, manager + 0x2430 + hud * 4, as 0x80868B6C reads it.
+        nw4r::snd::SoundHandle &handle = *reinterpret_cast<nw4r::snd::SoundHandle *>(manager + 0x2430 + hud * 4);
+        return PlayMenuTrickVoice(static_cast<CharacterId>(character), slot, source, sourceSuffix, handle) ? -1 : character;
+    }
+    return IsSilentSlot(static_cast<CharacterId>(character), slot) ? -1 : character;
+}
+
+// 0x80868ad0 is the picker's first test of the character (cmpwi r5, 0) after its prologue; r3, r4 and r6
+// (manager, voice type, hud) are still needed, and a negative r5 takes the picker's own "no sound" return.
+static asmFunc MenuVoiceCharacter() {
+    ASM(
+        nofralloc;
+        stwu r1, -0x20(r1);
+        mflr r0;
+        stw r0, 0x24(r1);
+        stw r3, 0x8(r1);
+        stw r4, 0xc(r1);
+        stw r6, 0x10(r1);
+        mr r4, r5;
+        mr r5, r6;
+        bl GetMenuVoiceCharacter;
+        mr r5, r3;
+        lwz r3, 0x8(r1);
+        lwz r4, 0xc(r1);
+        lwz r6, 0x10(r1);
+        lwz r0, 0x24(r1);
+        mtlr r0;
+        addi r1, r1, 0x20;
+        cmpwi r5, 0;
+        blr;
+    )
+}
+kmCall(0x80868ad0, MenuVoiceCharacter);
 
 static bool PatchVoiceGroupItem(nw4r::snd::detail::SoundArchiveLoader *loader, u32 groupId, u32 itemIndex, const nw4r::snd::SoundArchive::GroupInfo &groupInfo,
   const nw4r::snd::SoundArchive::GroupItemInfo &item, nw4r::snd::SoundMemoryAllocatable *allocater, void *groupData, void *waveData, const char *path, const char *magic, bool &wavePatched) {
