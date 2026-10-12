@@ -35,6 +35,7 @@ typedef void (*CharacterVoiceActionTable)(s32 *type, bool isReal);
 
 class DriverSoundManager {
 public:
+    bool PlayMenuVoice(s32 type, CharacterId character, u32 hud);  // 80868abc
     RandomSoundPicker *GetCharacterVoiceSoundSet(CharacterId character, u32 type);  // 80868f1c
 
     static DriverSoundManager sInstance;  // 809c4740

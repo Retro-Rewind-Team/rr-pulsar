@@ -16,6 +16,7 @@ public:
     void Destroy();  // 800a2fa0
     int SaveState();  // 800a3100
     void LoadState(int level);  // 800a3160
+    static void DisposeCallback(void *buffer, u32 size, void *arg);  // 800a31e0
     OS::Mutex mutex;  // 4
     detail::FrameHeap frameHeap;  // 0x1C
 };  // total size 0x2C

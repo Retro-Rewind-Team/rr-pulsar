@@ -8,8 +8,11 @@
 #include <MarioKartWii/Audio/Actors/CharacterActor.hpp>
 #include <MarioKartWii/Driver/DriverController.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <MarioKartWii/Scene/RootScene.hpp>
+#include <MarioKartWii/System/Random.hpp>
 #include <core/nw4r/snd/SoundArchive.hpp>
 #include <core/nw4r/snd/WsdFile.hpp>
+#include <core/nw4r/snd/WaveArchive.hpp>
 #include <core/rvl/OS/OSCache.hpp>
 #include <core/rvl/dvd/dvd.hpp>
 #include <include/c_stdio.h>
@@ -26,6 +29,24 @@ static bool sPlayerHasCustomVoice[12];
 static bool sPlayerIsSilent[12];
 static char sPlayerVoiceSourceSuffixes[12][0x20];
 static bool sVoiceAssignmentsReady;
+
+struct MenuTrickVoice {
+    s8 character;
+    u8 slot;
+    u16 soundCount;
+    u32 fileId;
+    u32 firstSound;
+    void *wsd;
+    void *waves;
+    bool silent;
+};
+
+static MenuTrickVoice sMenuTrickVoices[4];
+static void InitMenuTrickVoiceBuffers() {
+    // Child scenes consume the remaining parent heap, so reserve these before the first menu is created.
+    for (u32 hud = 0; hud < 4; ++hud) sMenuTrickVoices[hud].wsd = RootScene::sInstance->mainMEMHeap->alloc(0x40000, 0x20);
+}
+static BootHook InitMenuTrickVoiceBuffersOnBoot(InitMenuTrickVoiceBuffers, 4);
 
 static bool ReadWaveSoundInfoSafely(const nw4r::snd::detail::WsdFileReader *reader, nw4r::snd::detail::WaveSoundInfo *info, int index) {
     using namespace nw4r::snd::detail;
@@ -172,7 +193,9 @@ static bool VoiceFileExists(const char *characterCode, u32 slot, const char *typ
     return IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0;
 }
 
-static bool HasSuffixedVoiceFiles(const char *characterCode, u32 slot, const char *sourceSuffix) {
+static bool HasSuffixedVoiceFiles(const char *characterCode, u32 slot, const char *sourceSuffix, const char *type = nullptr) {
+    if (type != nullptr)
+        return VoiceFileExists(characterCode, slot, type, "brwsd", sourceSuffix);
     nw4r::snd::SoundArchive *archive = Audio::Manager::soundArchive;
     if (archive == nullptr)
         return false;
@@ -188,7 +211,9 @@ static bool HasSuffixedVoiceFiles(const char *characterCode, u32 slot, const cha
     return false;
 }
 
-static bool HasUnsuffixedVoiceFiles(const char *characterCode, u32 slot) {
+static bool HasUnsuffixedVoiceFiles(const char *characterCode, u32 slot, const char *type = nullptr) {
+    if (type != nullptr)
+        return VoiceFileExists(characterCode, slot, type, "brwsd", nullptr);
     nw4r::snd::SoundArchive *archive = Audio::Manager::soundArchive;
     if (archive == nullptr)
         return false;
@@ -204,20 +229,20 @@ static bool HasUnsuffixedVoiceFiles(const char *characterCode, u32 slot) {
     return false;
 }
 
-static bool FindCustomVoiceSource(CharacterId character, u32 slot, s8 &sourceCharacter, char *sourceSuffix, u32 sourceSuffixSize) {
+static bool FindCustomVoiceSource(CharacterId character, u32 slot, s8 &sourceCharacter, char *sourceSuffix, u32 sourceSuffixSize, const char *type = nullptr) {
     char characterCode[0x20];
     if (!GetCharacterVoiceCode(character, characterCode, sizeof(characterCode)))
         return false;
 
     for (u32 source = 0; source < Driver::CHARACTER_COUNT; ++source) {
-        if (HasSuffixedVoiceFiles(characterCode, slot, sVoiceSourceNames[source])) {
+        if (HasSuffixedVoiceFiles(characterCode, slot, sVoiceSourceNames[source], type)) {
             sourceCharacter = static_cast<s8>(source);
             snprintf(sourceSuffix, sourceSuffixSize, "%s", sVoiceSourceNames[source]);
             return true;
         }
 
         const char *postfix = ArchiveMgr::GetKartArchivePostfix(static_cast<CharacterId>(source));
-        if (postfix != nullptr && HasSuffixedVoiceFiles(characterCode, slot, postfix)) {
+        if (postfix != nullptr && HasSuffixedVoiceFiles(characterCode, slot, postfix, type)) {
             sourceCharacter = static_cast<s8>(source);
             snprintf(sourceSuffix, sourceSuffixSize, "%s", postfix);
             return true;
@@ -229,14 +254,14 @@ static bool FindCustomVoiceSource(CharacterId character, u32 slot, s8 &sourceCha
         for (char *letter = sourceCode; *letter != '\0'; ++letter)
             if (*letter >= 'A' && *letter <= 'Z')
                 *letter += 'a' - 'A';
-        if ((postfix == nullptr || strcmp(postfix, sourceCode) != 0) && HasSuffixedVoiceFiles(characterCode, slot, sourceCode)) {
+        if ((postfix == nullptr || strcmp(postfix, sourceCode) != 0) && HasSuffixedVoiceFiles(characterCode, slot, sourceCode, type)) {
             sourceCharacter = static_cast<s8>(source);
             snprintf(sourceSuffix, sourceSuffixSize, "%s", sourceCode);
             return true;
         }
     }
 
-    if (!HasUnsuffixedVoiceFiles(characterCode, slot))
+    if (!HasUnsuffixedVoiceFiles(characterCode, slot, type))
         return false;
     sourceCharacter = static_cast<s8>(character);
     sourceSuffix[0] = '\0';
@@ -608,6 +633,168 @@ static bool ReadVoiceFileToMemory(DVD::FileInfo &file, void *dest, u32 size, u32
     OS::DCStoreRange(dest, size);
     return true;
 }
+
+static bool PlayCustomMenuVoice(Audio::DriverSoundManager *manager, s32 type, s32 character, u32 hud) {
+    using namespace nw4r::snd::detail;
+    if (character < 0 || character >= Driver::CHARACTER_COUNT)
+        return manager->PlayMenuVoice(type, static_cast<CharacterId>(character), hud);
+    const u32 slot = Driver::selectedSlots[hud][character];
+    if (slot == 0)
+        return manager->PlayMenuVoice(type, static_cast<CharacterId>(character), hud);
+    Audio::Manager *audio = Audio::Manager::sInstance;
+    // The game normally initializes this archive pointer when the first race's actors are created.
+    if (Audio::Manager::soundArchive == nullptr)
+        Audio::Manager::soundArchive = audio->dvdSoundArchiveptr;
+    nw4r::snd::SoundArchive *archive = Audio::Manager::soundArchive;
+    nw4r::snd::SoundHandle &handle = *reinterpret_cast<nw4r::snd::SoundHandle *>(reinterpret_cast<u8 *>(manager) + 0x2430 + hud * 4);
+    MenuTrickVoice *voice = &sMenuTrickVoices[hud];
+    if (voice->character != character || voice->slot != slot) {
+        if (voice->waves != nullptr) {
+            // A fade would leave the old sound reading the buffer while it is overwritten.
+            if (handle.basicSound != nullptr)
+                handle.basicSound->Stop(0);
+            if (audio->soundArchivePlayer->detail_GetFileAddress(voice->fileId) == voice->wsd)
+                Sound::SetLooseBRSARGroupItemBuffer(voice->fileId, false, nullptr);
+            if (audio->soundArchivePlayer->detail_GetFileWaveDataAddress(voice->fileId) == voice->waves)
+                Sound::SetLooseBRSARGroupItemBuffer(voice->fileId, true, nullptr);
+            // The native heap callback invalidates readers and DSP voices without freeing the buffer.
+            nw4r::snd::SoundHeap::DisposeCallback(voice->wsd, 0x40000, nullptr);
+        }
+        voice->character = static_cast<s8>(character);
+        voice->slot = static_cast<u8>(slot);
+        voice->waves = nullptr;
+        voice->silent = false;
+        s8 source;
+        char sourceSuffix[0x20];
+        if (!FindCustomVoiceSource(static_cast<CharacterId>(character), slot, source, sourceSuffix, sizeof(sourceSuffix), "_PC")) {
+            voice->silent = IsSilentSlot(static_cast<CharacterId>(character), slot);
+            return !voice->silent && manager->PlayMenuVoice(type, static_cast<CharacterId>(character), hud);
+        }
+        const u16 *ranges = Audio::CharacterActor::voiceRanges[0][source];
+        voice->firstSound = ranges[Audio::CHARACTER_SOURCE_STUNT_1FLIP * 2];
+        voice->soundCount = ranges[Audio::CHARACTER_SOURCE_STUNT_1FLIP * 2 + 1] - voice->firstSound + 1;
+        nw4r::snd::SoundArchive::SoundInfo soundInfo;
+        if (archive->GetSoundType(voice->firstSound) != nw4r::snd::SoundArchive::SOUND_TYPE_WAVE || !archive->ReadSoundInfo(voice->firstSound, &soundInfo))
+            return manager->PlayMenuVoice(type, static_cast<CharacterId>(character), hud);
+        voice->fileId = soundInfo.soundFile;
+
+        char code[0x20];
+        GetCharacterVoiceCode(static_cast<CharacterId>(character), code, sizeof(code));
+        char path[0x100];
+        if (sourceSuffix[0] != '\0')
+            snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u_PC.brwsd.%s", code, slot, sourceSuffix);
+        else
+            snprintf(path, sizeof(path), "/sound/GRP_VO_%s-%u_PC.brwsd", code, slot);
+        DVD::FileInfo file;
+        if (!DVD::Open(path, &file))
+            return manager->PlayMenuVoice(type, static_cast<CharacterId>(character), hud);
+        do {
+            VoiceFileLayout layout;
+            if (!ReadVoiceFileLayout(file, "RWSD", layout) || layout.waveSize == 0)
+                break;
+            if (AlignVoiceBuffer(layout.fileSize) > 0x40000)
+                break;
+            if (voice->wsd == nullptr)
+                break;
+            if (!ReadVoiceFileToMemory(file, voice->wsd, layout.fileSize, 0))
+                break;
+
+            WsdFileReader reader(voice->wsd);
+            void *base = reinterpret_cast<u8 *>(const_cast<WsdFile::DataBlock *>(reader.dataBlock)) + sizeof(nw4r::ut::BinaryBlockHeader);
+            s32 waveIndices[8];
+            u32 waveCount = 0;
+            bool readable = true;
+            for (u32 sound = voice->firstSound; readable && sound < voice->firstSound + voice->soundCount; ++sound) {
+                nw4r::snd::SoundArchive::WaveSoundInfo info;
+                readable = archive->detail_ReadWaveSoundInfo(sound, &info);
+                if (!readable)
+                    break;
+                const Util::DataRef<WsdFile::Wsd> &ref = reader.dataBlock->refWsd[info.subNo];
+                const WsdFile::Wsd *wsd = static_cast<WsdFile::Wsd *>(Util::GetDataRefAddressImpl(static_cast<Util::RefType>(ref.refType), ref.value, base));
+                const WsdFile::NoteTable *notes = static_cast<WsdFile::NoteTable *>(Util::GetDataRefAddressImpl(static_cast<Util::RefType>(wsd->refNoteTable.refType), wsd->refNoteTable.value, base));
+                if (notes->count > 8 - waveCount) {
+                    readable = false;
+                    break;
+                }
+                for (u32 note = 0; note < notes->count; ++note) {
+                    WaveSoundNoteInfo noteInfo;
+                    reader.ReadWaveSoundNoteInfo(&noteInfo, info.subNo, note);
+                    waveIndices[waveCount++] = noteInfo.waveIndex;
+                }
+            }
+            if (!readable)
+                break;
+
+            WaveArchive::FileHeader header __attribute__((aligned(32)));
+            u8 tableBuffer[0x640] __attribute__((aligned(32)));
+            if (!ReadVoiceFileRange(file, &header, sizeof(header), layout.waveOffset) || AlignVoiceBuffer(header.tableChunkSize) > sizeof(tableBuffer)
+              || !ReadVoiceFileRange(file, tableBuffer, AlignVoiceBuffer(header.tableChunkSize), layout.waveOffset + header.tableChunkOffset))
+                break;
+            const WaveArchive::TableBlock *table = reinterpret_cast<WaveArchive::TableBlock *>(tableBuffer);
+            const u32 dataOffset = sizeof(header) + AlignVoiceBuffer(header.tableChunkSize);
+            u32 windowStarts[8];
+            u32 windowSizes[8];
+            u32 size = dataOffset + 0x20;
+            for (u32 index = 0; index < waveCount; ++index) {
+                const WaveArchive::TableItem &entry = table->fileTable.item[waveIndices[index]];
+                const u32 start = layout.waveOffset + header.dataChunkOffset + entry.waveFileRef.value;
+                // DVD reads require 32-byte windows; the embedded RWAV may start only 8-byte aligned.
+                windowStarts[index] = start & ~0x1f;
+                windowSizes[index] = AlignVoiceBuffer(start + entry.waveFileSize) - windowStarts[index];
+                size += windowSizes[index];
+            }
+            if (size > 0x40000 - AlignVoiceBuffer(layout.fileSize))
+                break;
+            u8 *waves = static_cast<u8 *>(voice->wsd) + AlignVoiceBuffer(layout.fileSize);
+            memset(waves, 0, size);
+            memcpy(waves, &header, sizeof(header));
+            WaveArchive::FileHeader *loadedHeader = reinterpret_cast<WaveArchive::FileHeader *>(waves);
+            WaveArchive::TableBlock *loadedTable = reinterpret_cast<WaveArchive::TableBlock *>(waves + sizeof(header));
+            loadedTable->blockHeader = table->blockHeader;
+            loadedTable->fileTable.count = table->fileTable.count;
+            u32 next = 0x20;
+            for (u32 index = 0; index < waveCount; ++index) {
+                if (!ReadVoiceFileRange(file, waves + dataOffset + next, windowSizes[index], windowStarts[index])) {
+                    readable = false;
+                    break;
+                }
+                const WaveArchive::TableItem &entry = table->fileTable.item[waveIndices[index]];
+                loadedTable->fileTable.item[waveIndices[index]] = entry;
+                loadedTable->fileTable.item[waveIndices[index]].waveFileRef.value = next + ((layout.waveOffset + header.dataChunkOffset + entry.waveFileRef.value) & 0x1f);
+                next += windowSizes[index];
+            }
+            if (!readable)
+                break;
+            WaveArchive::DataBlock *data = reinterpret_cast<WaveArchive::DataBlock *>(waves + dataOffset);
+            data->blockHeader.magic = 'DATA';
+            data->blockHeader.size = next;
+            loadedHeader->fileHeader.fileSize = size;
+            loadedHeader->tableChunkOffset = sizeof(header);
+            loadedHeader->dataChunkOffset = dataOffset;
+            loadedHeader->dataChunkSize = next;
+            // Unloaded table entries stay null; loaded entries retain the RWSD's original wave indices.
+            OS::DCStoreRange(waves, size);
+            voice->waves = waves;
+        } while (false);
+        DVD::Close(&file);
+    }
+    if (voice->waves == nullptr)
+        return !voice->silent && manager->PlayMenuVoice(type, static_cast<CharacterId>(character), hud);
+
+    Sound::SetLooseBRSARGroupItemBuffer(voice->fileId, false, voice->wsd);
+    Sound::SetLooseBRSARGroupItemBuffer(voice->fileId, true, voice->waves);
+    if (handle.basicSound != nullptr)
+        handle.basicSound->Stop(2);
+    Random random;
+    // Match Audio::Manager::StartSound directly; the header's virtual slot differs in this binary.
+    if (audio->isLocked || audio->soundArchivePlayer->detail_StartSound(&handle, voice->firstSound + random.NextLimited(voice->soundCount), nullptr) != nw4r::snd::SoundStartable::START_SUCCESS)
+        return manager->PlayMenuVoice(type, static_cast<CharacterId>(character), hud);
+    handle.basicSound->SetVolume(0, 0.85f);
+    return true;
+}
+kmBranch(0x808689d4, PlayCustomMenuVoice);
+kmBranch(0x80868a34, PlayCustomMenuVoice);
+kmBranch(0x80868ab4, PlayCustomMenuVoice);
 
 static bool PatchVoiceGroupItem(nw4r::snd::detail::SoundArchiveLoader *loader, u32 groupId, u32 itemIndex, const nw4r::snd::SoundArchive::GroupInfo &groupInfo,
   const nw4r::snd::SoundArchive::GroupItemInfo &item, nw4r::snd::SoundMemoryAllocatable *allocater, void *groupData, void *waveData, const char *path, const char *magic, bool &wavePatched) {
