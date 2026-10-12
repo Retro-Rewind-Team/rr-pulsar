@@ -1607,6 +1607,7 @@ Load__25CtrlRaceWifiFinishMessageFUiUc = 0x807f8c54
 
 ##PAGES
 #Page
+CheckActions__4PageFv = 0x80601c64
 Exit__4PageFv = 0x80601f44
 Deactivate__4PageFv = 0x80601c08
 func_0x5C__4PageFv = 0x805bb220

@@ -261,12 +261,11 @@ static void DrawDriverModels(MenuDriverModelMgr *manager, u8 playerId) {
 }
 kmCall(0x8059e528, DrawDriverModels);
 
-static void PageBeforeControlUpdate(Page *page) {
-    typedef void (*PageFunction)(Page *);
-    PageFunction *vtable = *reinterpret_cast<PageFunction **>(page);
-    vtable[18](page);
-    if (page->pageId != PAGE_CHARACTER_SELECT)
+static void PageCheckActions(Page *page) {
+    if (page->pageId != PAGE_CHARACTER_SELECT) {
+        page->CheckActions();
         return;
+    }
 
     Pages::CharacterSelect *characterSelectPage = static_cast<Pages::CharacterSelect *>(page);
     memset(cycleDirections, 0, sizeof(cycleDirections));
@@ -313,8 +312,10 @@ static void PageBeforeControlUpdate(Page *page) {
             cycleDirections[player] = 1;
         }
     }
+    // Remap skin inputs before the manipulator can dispatch Forward or Back.
+    page->CheckActions();
 }
-kmCall(0x806022fc, PageBeforeControlUpdate);
+kmCall(0x806225dc, PageCheckActions);
 
 static void PageAfterControlUpdate(Page *page) {
     typedef void (*PageFunction)(Page *);
