@@ -290,10 +290,13 @@ static void PageCheckActions(Page *page) {
                 nextButton = WPAD::WPAD_CL_TRIGGER_R;
                 break;
             case NUNCHUCK:
-                previousButton = WPAD::WPAD_BUTTON_C;
-                nextButton = WPAD::WPAD_BUTTON_Z;
-                if (raw & WPAD::WPAD_BUTTON_C)
-                    holder->uiinputStates[0].buttonActions &= ~0x100;
+                previousButton = WPAD::WPAD_BUTTON_1;
+                nextButton = WPAD::WPAD_BUTTON_2;
+                holder->uiinputStates[0].buttonActions &= ~0x3;
+                if (raw & WPAD::WPAD_BUTTON_A)
+                    holder->uiinputStates[0].buttonActions |= 0x1;
+                if (raw & WPAD::WPAD_BUTTON_B)
+                    holder->uiinputStates[0].buttonActions |= 0x2;
                 break;
             default:
                 previousButton = WPAD::WPAD_BUTTON_B;
@@ -362,6 +365,15 @@ static void PageAfterControlUpdate(Page *page) {
     for (u32 player = 0; player < 4; ++player) {
         if ((characterSelectPage->playerBitfield & (1 << player)) == 0)
             continue;
+        const ControllerType controllerType = SectionPad::GetType(SectionMgr::sInstance->pad.GetCurrentID(player));
+        characterSelectPage->names[player].SetPaneVisibility("cc_prev_gc", controllerType == GCN);
+        characterSelectPage->names[player].SetPaneVisibility("cc_next_gc", controllerType == GCN);
+        characterSelectPage->names[player].SetPaneVisibility("cc_prev_cls", controllerType == CLASSIC);
+        characterSelectPage->names[player].SetPaneVisibility("cc_next_cls", controllerType == CLASSIC);
+        characterSelectPage->names[player].SetPaneVisibility("cc_prev_nc", controllerType == NUNCHUCK);
+        characterSelectPage->names[player].SetPaneVisibility("cc_next_nc", controllerType == NUNCHUCK);
+        characterSelectPage->names[player].SetPaneVisibility("cc_prev_wh", controllerType == WHEEL);
+        characterSelectPage->names[player].SetPaneVisibility("cc_next_wh", controllerType == WHEEL);
         const u32 character = static_cast<u32>(characterSelectPage->models[player].curCharacter);
         if (character >= CHARACTER_COUNT)
             continue;
