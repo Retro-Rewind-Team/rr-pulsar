@@ -90,7 +90,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *s
     for (u32 i = 0; i < controller->subs[controller->currentSub].localPlayerCount; ++i) {
         const u32 character = src->playersData[i].character;
         if (character < Driver::CHARACTER_COUNT)
-            src->reserved |= Driver::selectedSlots[character] << (8 * (1 - i));
+            src->reserved |= Driver::selectedSlots[i][character] << (8 * (1 - i));
     }
     packetHolder->Copy(src, len);
 }

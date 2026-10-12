@@ -842,7 +842,7 @@ static s32 GetMenuVoiceCharacter(u8 *manager, s32 character, u32 hud) {
         Audio::Manager::soundArchive = Audio::Manager::sInstance->dvdSoundArchiveptr;
     if (character < 0 || character >= Driver::CHARACTER_COUNT || Audio::Manager::soundArchive == nullptr)
         return character;
-    const u32 slot = Driver::selectedSlots[character];
+    const u32 slot = hud < 4 ? Driver::selectedSlots[hud][character] : 0;
     if (slot == 0)
         return character;
     s8 source;

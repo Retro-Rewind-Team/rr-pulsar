@@ -33,7 +33,7 @@ public:
     CharacterId character;  // 0xC
     EGG::Allocator *allocator;  // 0x10
 
-    u8 unknown_0x10[0x18 - 0x10];
+    MenuDriverModel *driverModel;  // 0x14
     MenuKartDisplayModel unk;  // 0x18
     u16 bitField;  // 0x24 1 = not unlocked
     u8 unknown_0x26[0x2c - 0x26];

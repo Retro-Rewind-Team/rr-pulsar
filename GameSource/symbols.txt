@@ -954,6 +954,7 @@ NextFloatLimited__6RandomFf = 0x805556a8
 
 ##3D
 #Model Director
+ToggleTransparent__13ModelDirectorFb = 0x8055f34c
 __ct__13ModelDirectorFUiUi = 0x8055b50c
 BindBRRES__13ModelDirectorFRQ34nw4r3g3d7ResFile13ArchiveSourcePCc = 0x8055b618
 RipAndBindBRRES__13ModelDirectorFRQ34nw4r3g3d7ResFilePCcPQ23EGG7ExpHeapb = 0x8055b754
@@ -1065,6 +1066,11 @@ RequestCharacterModel__Q25Pages13ModelRendererFUc11CharacterId = 0x805f56e0
 RequestKartModel__Q25Pages13ModelRendererFUc6KartId = 0x805f5958
 PrepareParams__Q25Pages13ModelRendererFUc = 0x805f5c94
 SetPlayerCharacter__18MenuDriverModelMgrFUc11CharacterId = 0x80830d00
+Update__18MenuDriverModelMgrFv = 0x808307b0
+Draw__18MenuDriverModelMgrFUc = 0x80830a80
+__ct__15MenuDriverModelFv = 0x8082f860
+Init__15MenuDriverModelFv = 0x8082f8f8
+Update__15MenuDriverModelFv = 0x8082ff0c
 __ct__18MenuDriverModelMgrFUc = 0x80830180
 TogglePlayerModel__12MenuModelMgrFUcb = 0x80830c3c
 TogglePlayerModel__18MenuDriverModelMgrFUcb = 0x80830c3c
@@ -1602,6 +1608,7 @@ Load__25CtrlRaceWifiFinishMessageFUiUc = 0x807f8c54
 
 ##PAGES
 #Page
+CheckActions__4PageFv = 0x80601c64
 Exit__4PageFv = 0x80601f44
 Deactivate__4PageFv = 0x80601c08
 func_0x5C__4PageFv = 0x805bb220
@@ -2587,12 +2594,12 @@ RequestUnpause__12RacePauseMgrFv = 0x80860100
 sInstance__Q25Pages12RacePauseMgr = 0x809c4730
 RequestUnpause__Q25Pages12RacePauseMgrFv = 0x80860100
 Update__12MenuModelMgrFv = 0x8059e4a8
-Update__18MenuDriverModelMgrFv = 0x808307b0
 Load__16MenuKartModelMgrFv = 0x80832d00
 DVDCreate = 0x8052a1b0
 __dt__15MenuDriverModelFv = 0x80830708
 __dt__18ModelTransformatorFv = 0x80556774
 GetAnmHolderByType__18ModelTransformatorCF7AnmType = 0x80557340
+IsTypeActive__18ModelTransformatorCF7AnmType = 0x80557360
 PlayAnmNoBlend__18ModelTransformatorFUiff = 0x805573cc
 Set__Q24Item3ObjF9ItemObjId = 0x8079e5f4
 LoadItemLight__Q24Item3ObjFv = 0x807a0380
@@ -2600,6 +2607,7 @@ RequestSceneReinit__10SectionMgrFUiUi = 0x80635b2c
 ToadetteFix1 = 0x807c89bc
 ToadetteFix2 = 0x807c8aa8
 __ct__12ToadetteHairFRQ34nw4r3g3d7ResFileP13ModelDirectorUi = 0x807da5c0
+ToggleLock__12ToadetteHairFb = 0x807db028
 
 #Sound
 Initialize__Q23EGG12SoundHeapMgrFPQ23EGG4HeapUi = 0x8021318c

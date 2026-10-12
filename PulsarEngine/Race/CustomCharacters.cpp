@@ -20,11 +20,12 @@ u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAwa
     const u32 characterId = static_cast<u32>(character);
     if (characterId >= Driver::CHARACTER_COUNT)
         return 0;
+    // Menu callers use 12 + the local HUD slot to bypass race player IDs.
     if (playerId >= 12 || Racedata::sInstance == nullptr)
-        return Driver::selectedSlots[characterId];
+        return Driver::selectedSlots[playerId >= 12 ? playerId - 12 : 0][characterId];
     const RacedataScenario &scenario = isAward ? Racedata::sInstance->awardScenario : Racedata::sInstance->racesScenario;
     if (playerId >= scenario.playerCount || scenario.players[playerId].characterId != character)
-        return Driver::selectedSlots[characterId];
+        return Driver::selectedSlots[0][characterId];
     const RacedataPlayer &player = scenario.players[playerId];
     if (player.playerType == PLAYER_GHOST) {
         const u8 offset = Racedata::sInstance->racesScenario.players[0].playerType != PLAYER_GHOST ? 1 : 0;
@@ -50,7 +51,7 @@ void RandomizeCPUCharacterTables(const RacedataScenario &scenario) {
         if (entry.playerType == PLAYER_REAL_ONLINE)
             continue;
         if (entry.playerType != PLAYER_CPU) {
-            racePlayerSlots[player] = Driver::selectedSlots[character];
+            racePlayerSlots[player] = entry.playerType == PLAYER_REAL_LOCAL ? Driver::selectedSlots[entry.hudSlotId][character] : 0;
             continue;
         }
         if (scenario.settings.raceNumber != 0)
