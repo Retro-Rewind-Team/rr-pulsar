@@ -40,7 +40,7 @@ void EndRaceWithEliminationFinishTime(u8 playerId, u8 placement) {
     finishTime.SetActive(true);
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE) {
+    if (controller != nullptr) {
         *player->raceFinishTime = finishTime;
         player->stateFlags |= 0x2;
         return;
