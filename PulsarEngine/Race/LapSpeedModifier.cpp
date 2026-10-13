@@ -150,6 +150,8 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     Kart::starSpeed = 105.0f * factor;
     if (gameMode != MODE_TIME_TRIAL) {
         Kart::slipstreamSpeed = factor > 1.0f ? 115.0f * factor : 115.0f;
+    } else {
+        Kart::slipstreamSpeed = 115.0f;
     }
     Kart::megaTCSpeed = 95.0f * factor;
 
@@ -168,6 +170,8 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     Kart::regularBoostAccel = 3.0f * factor;
     if (gameMode != MODE_TIME_TRIAL) {
         Kart::slipstreamAccel = factor > 1.0f ? 0.7f * factor : 0.7f;
+    } else {
+        Kart::slipstreamAccel = 0.7f;
     }
     return stats;
 }
