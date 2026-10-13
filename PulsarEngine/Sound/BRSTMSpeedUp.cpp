@@ -7,6 +7,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceGhostDiffTime.hpp>
 #include <Settings/Settings.hpp>
+#include <Ghost/ReplaySpeed.hpp>
 
 /*Music speedup:
 When the player reaches the final lap (if the track has >1 laps) and if the setting is set, the music will
@@ -56,7 +57,7 @@ static void MusicSpeedup(Audio::RaceRSARPlayer *rsarSoundPlayer, u32 jingle, u8 
                 const Timer &raceTimer = raceInfo->timerMgr->timers[0];
                 const Timer &playerTimer = raceInfo->players[raceDataSettings.hudPlayerIds[finalLapSpeedupHudSlot]]->lapSplits[maxLap - 2];
                 const Timer difference = CtrlRaceGhostDiffTime::SubtractTimers(raceTimer, playerTimer);
-                if (difference.minutes < 1 && difference.seconds < 5) {
+                if (::Pulsar::IsReplayMusicSpeedupWindowOpen(difference)) {
                     sound.ambientParam.pitch += 0.0002f;
                 }
             }

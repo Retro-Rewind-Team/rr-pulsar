@@ -37,6 +37,7 @@
 #include <Settings/UI/RestrictionPages.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
+#include <UI/PracticeMode/TTPractice.hpp>
 #include <UI/VRLeaderboard/VRLeaderboard.hpp>
 
 namespace Pulsar {
@@ -154,6 +155,8 @@ void ExpSection::CreatePulPages() {
             this->CreateAndInitPage(*this, SettingsPageSelect::id);
             this->CreateAndInitPage(*this, PULPAGE_BADGESELECT);
             this->CreateAndInitPage(*this, VRLeaderboardPage::id);
+            this->CreateAndInitPage(*this, TTPractice::SelectPage::id);
+            this->CreateAndInitPage(*this, TTPractice::ConfirmPage::id);
             break;
         case SECTION_LOCAL_MULTIPLAYER:  // 0x54
             this->CreateAndInitPage(*this, SettingsPanel::id);
@@ -324,6 +327,12 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
             break;
         case CustomItemPage::id:
             page = new CustomItemPage;
+            break;
+        case TTPractice::SelectPage::id:
+            page = new TTPractice::SelectPage;
+            break;
+        case TTPractice::ConfirmPage::id:
+            page = new TTPractice::ConfirmPage;
             break;
         default:
             page = self.CreatePageById(initId);

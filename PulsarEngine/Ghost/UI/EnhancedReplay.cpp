@@ -1,9 +1,10 @@
-
 #include <MarioKartWii/UI/Page/RaceHUD/RaceHUD.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/GhostReplayPause.hpp>
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <Ghost/ReplaySpeed.hpp>
 #include <UI/UI.hpp>
+
 kmWrite32(0x80630450, 0x3880000d);  // To use the correct onInit
 kmWrite32(0x80630474, 0x3880000d);
 kmWrite32(0x80630498, 0x3880000d);
@@ -21,6 +22,7 @@ static void ChangeGhostOpacity(u8 focusedPlayerIdx);
 
 namespace UI {
 static void CreateTTHUD(Section *section, PageId id) {
+	ResetReplaySpeed();
     section->CreateAndInitPage(PAGE_TT_HUD);
     section->CreateAndInitPage(PAGE_TT_SPLITS);
     ChangeGhostOpacity(0);

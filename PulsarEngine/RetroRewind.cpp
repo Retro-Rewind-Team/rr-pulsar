@@ -11,6 +11,8 @@
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/rvl/OS/OS.hpp>
+#include <runtimeWrite.hpp>
+#include <Gamemodes/PracticeMode/TTPractice.hpp>
 
 namespace RetroRewind {
 Pulsar::System *System::Create() {
@@ -66,6 +68,12 @@ static SectionLoadHook PatchFPS(FPSPatch);
 static RaceLoadHook PatchFPSOnRaceLoad(FPSPatch);
 
 void ItemBoxRespawn(Objects::Itembox *itembox) {
+    if (Pulsar::TTPractice::IsPracticeMode() && !Pulsar::TTPractice::AreItemBoxesEnabled()) {
+        itembox->respawnTime = 0x7fffffff;
+        itembox->isActive = 0;
+        return;
+    }
+
     const bool is200 = Pulsar::Race::Is200cc();
     bool isFastRespawn = Pulsar::ITEMBOX_DEFAULTRESPAWN;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST
@@ -79,7 +87,22 @@ void ItemBoxRespawn(Objects::Itembox *itembox) {
         itembox->isActive = 0;
     }
 }
-kmCall(0x80828EDC, ItemBoxRespawn);
+
+static asmFunc ItemBoxRespawnWrapper() {
+    ASM(
+        nofralloc;
+        stwu sp, -0x10(sp);
+        mflr r0;
+        stw r0, 0x14(sp);
+        stw r3, 0x8(sp);
+        bl ItemBoxRespawn;
+        lwz r3, 0x8(sp);
+        lwz r0, 0x14(sp);
+        mtlr r0;
+        addi sp, sp, 0x10;
+        blr;)
+}
+kmCall(0x80828EDC, ItemBoxRespawnWrapper);
 
 void PredictionPatch() {
     float predictionValue = 0.1f;

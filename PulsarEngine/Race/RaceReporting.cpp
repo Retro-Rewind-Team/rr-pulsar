@@ -2,6 +2,7 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Driver/DriverManager.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <Ghost/ReplaySpeed.hpp>
 #include <Network/GPReport.hpp>
 
 namespace Pulsar {
@@ -9,7 +10,7 @@ namespace Pulsar {
 RaceStage sLastRaceStage = RACESTAGE_RACE;
 
 void UpdateRaceInstances() {
-    RaceScene::UpdateRaceInstances();
+    ReplaySimulationUpdate();
     if (!DriverMgr::isOnlineRace)
         return;
 
