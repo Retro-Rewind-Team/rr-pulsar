@@ -1,4 +1,5 @@
 #include <Gamemodes/Battle/BattleElimination.hpp>
+#include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <Gamemodes/EliminationDisplay.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
@@ -112,12 +113,17 @@ void CtrlRaceLapKOElimMessage::Create(Page &page, u32 index, u32 count) {
 void CtrlRaceLapKOElimMessage::Load(u8 hudSlot) {
     this->hudSlotId = hudSlot;
     ControlLoader loader(this);
-    loader.Load(UI::raceFolder, "CTInfo", "CTInfo", nullptr);
+    loader.Load(UI::raceFolder, BattleRoyale::ShouldApplyBattleRoyale() ? "KillFeed" : "CTInfo", "CTInfo", nullptr);
     this->root = this->layout.GetPaneByName("root");
     if (this->root == nullptr) {
         this->root = this->rootPane;
     }
     this->textBox = static_cast<nw4r::lyt::TextBox *>(this->layout.GetPaneByName("TextBox_00"));
+    if (BattleRoyale::ShouldApplyBattleRoyale()) {
+        // Text position uses a 3x3 grid; preserve its row and align each line right.
+        this->textBox->alignment = this->textBox->alignment / 3 * 3 + 2;
+        this->textBox->flags.hasextAlignment = 3;
+    }
     this->lastDisplayTimer = 0;
     this->soundPlayedThisDisplay = false;
     this->Show(false);
@@ -150,7 +156,7 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
     }
 
     this->Show(true);
-    if (timer != this->lastDisplayTimer) {
+    if (timer != this->lastDisplayTimer || BattleRoyale::ShouldApplyBattleRoyale()) {
         this->UpdateMessage(playerIds, eliminationCount);
         this->lastDisplayTimer = timer;
     }
@@ -165,11 +171,13 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
 void CtrlRaceLapKOElimMessage::UpdateMessage(const u8 *playerIds, u8 count) {
     if (this->textBox == nullptr || playerIds == nullptr)
         return;
-    wchar_t message[128];
+    wchar_t message[256];
     message[0] = L'\0';
     const size_t messageCapacity = sizeof(message) / sizeof(message[0]);
     size_t messageLength = 0;
     wchar_t nameBuffer[64];
+    wchar_t attackerNameBuffer[64];
+    const bool battleRoyale = BattleRoyale::ShouldApplyBattleRoyale();
     const u8 displayCount = (count > 4) ? static_cast<u8>(4) : count;
     u8 nameCount = 0;
     for (u8 idx = 0; idx < displayCount; ++idx) {
@@ -180,14 +188,23 @@ void CtrlRaceLapKOElimMessage::UpdateMessage(const u8 *playerIds, u8 count) {
         const size_t remaining = messageCapacity - messageLength;
         if (remaining <= 1)
             break;
-        const wchar_t *format = nameCount == 0 ? L"\n%ls" : L", %ls";
-        const int nameLength = ::swprintf(message + messageLength, remaining, format, displayName);
+        int nameLength;
+        if (battleRoyale) {
+            const wchar_t *attackerName = this->GetPlayerDisplayName(EliminationDisplay::recentHits[idx] ? EliminationDisplay::recentAttackerIds[idx] : BattleRoyale::eliminationAttackerIds[playerId], attackerNameBuffer, sizeof(attackerNameBuffer) / sizeof(attackerNameBuffer[0]));
+            if (attackerName != nullptr)
+                nameLength = ::swprintf(message + messageLength, remaining, EliminationDisplay::recentHits[idx] ? L"\n%ls was hit by %ls!" : L"\n%ls was eliminated by %ls!", displayName, attackerName);
+            else
+                nameLength = ::swprintf(message + messageLength, remaining, L"\n%ls has been eliminated!", displayName);
+        } else {
+            const wchar_t *format = nameCount == 0 ? L"\n%ls" : L", %ls";
+            nameLength = ::swprintf(message + messageLength, remaining, format, displayName);
+        }
         if (nameLength <= 0)
             continue;
         messageLength += static_cast<size_t>(nameLength);
         ++nameCount;
     }
-    if (nameCount > 0) {
+    if (nameCount > 0 && !battleRoyale) {
         const size_t remaining = messageCapacity - messageLength;
         if (remaining > 1) {
             const wchar_t *suffix = nameCount == 1 ? L" has been eliminated!" : L" have been eliminated!";

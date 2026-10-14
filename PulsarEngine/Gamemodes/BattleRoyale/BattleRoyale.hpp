@@ -10,6 +10,8 @@ struct PulRH1;
 
 namespace BattleRoyale {
 
+extern u8 eliminationAttackerIds[12];
+
 bool ShouldApplyBattleRoyale();
 void WriteRH1Packet(Network::PulRH1 &packet);
 
