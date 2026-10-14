@@ -72,8 +72,10 @@ private:
     PtmfHolder_2A<SettingsPanel, void, TextUpDownValueControl::TextControl &, u32> onTextChangeHandler;
     PtmfHolder_2A<SettingsPanel, void, PushButton &, u32> onBackButtonClickHandler;
 
-    u8 radioValues[Settings::Params::maxRadioCount];
-    u8 scrollerValues[Settings::Params::maxScrollerCount];
+    u32 pageIndex;
+    u32 pageCount;
+    u8 radioValues[Settings::SETTING_COUNT];
+    u8 scrollerValues[Settings::SETTING_COUNT];
 
 public:
     CountDown *timer;

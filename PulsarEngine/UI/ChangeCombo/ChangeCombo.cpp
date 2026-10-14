@@ -127,6 +127,9 @@ static void BuildSettingsPreviewSheets() {
     s_settingsPreviewSheetCount =
       Settings::Params::BuildHostRulePages(s_settingsPreviewPages, isBattle, (netMgr.hostContext & (1 << PULSAR_MODE_KO)) || (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO)),
         netMgr.hostContext & (1 << PULSAR_MODE_OTT), netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE), netMgr.hostContext & (1 << PULSAR_EXTENDEDTEAMS));
+    s_settingsPreviewPages[0] = Settings::SETTINGS_PAGE_FROOM;
+    for (u32 i = 1; i + 1 < s_settingsPreviewSheetCount; ++i) s_settingsPreviewPages[i] = s_settingsPreviewPages[i + 1];
+    --s_settingsPreviewSheetCount;
 }
 
 static bool TryPushNextSettingsPreview(Pages::SELECTStageMgr &page) {

@@ -76,14 +76,14 @@ enum SettingId {
 };
 
 enum SettingsPageId {
-    SETTINGS_PAGE_RACE1,
-    SETTINGS_PAGE_RACE2,
+    SETTINGS_PAGE_RACE,
     SETTINGS_PAGE_MENU,
     SETTINGS_PAGE_SOUND,
     SETTINGS_PAGE_ONLINE,
     SETTINGS_PAGE_BATTLE,
     SETTINGS_PAGE_FROOM1,
     SETTINGS_PAGE_FROOM2,
+    SETTINGS_PAGE_FROOM,
     SETTINGS_PAGE_OTT_OFFLINE,
     SETTINGS_PAGE_OTT_ONLINE,
     SETTINGS_PAGE_KO,
@@ -91,8 +91,7 @@ enum SettingsPageId {
     SETTINGS_PAGE_EXTENDED_TEAMS,
     SETTINGS_PAGE_MISC,
     SETTINGS_PAGE_ITEMS,
-    SETTINGS_PAGE_RACE1_OFFLINE,
-    SETTINGS_PAGE_RACE2_OFFLINE,
+    SETTINGS_PAGE_RACE_OFFLINE,
     SETTINGS_PAGE_COUNT
 };
 
@@ -124,8 +123,8 @@ struct SettingsContextDef {
 
 class Params {
 public:
-    static const int maxRadioCount = 8;
-    static const int maxScrollerCount = 5;
+    static const int maxRadioCount = 6;
+    static const int maxScrollerCount = 2;
     static const int maxContextPageCount = 13;
 
     static const SettingDef settingDefs[SETTING_COUNT];

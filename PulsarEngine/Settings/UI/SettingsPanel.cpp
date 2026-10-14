@@ -41,8 +41,10 @@ static bool IsBattleVotingSection(SectionId id) {
 }
 
 SettingsPanel::SettingsPanel() {
-    settingsPageId = Settings::SETTINGS_PAGE_RACE1;
-    externControlCount = 1;
+    settingsPageId = Settings::SETTINGS_PAGE_RACE;
+    pageIndex = 0;
+    pageCount = 1;
+    externControlCount = 3;
     internControlCount = Settings::Params::maxRadioCount + Settings::Params::maxScrollerCount;
     hasBackButton = true;
     nextPageId = static_cast<PageId>(id);
@@ -101,6 +103,7 @@ SettingsPanel::~SettingsPanel() {
 
 void SettingsPanel::SetPage(Settings::SettingsPageId id) {
     settingsPageId = id;
+    pageIndex = 0;
 }
 
 void SettingsPanel::StartVotingPreview(Settings::SettingsPageId firstPage) {
@@ -162,7 +165,14 @@ void SettingsPanel::OnInit() {
 UIControl *SettingsPanel::CreateExternalControl(u32 id) {
     PushButton *button = new (PushButton);
     AddControl(controlCount++, *button, 0);
-    button->Load(UI::buttonFolder, "Settings", "SAVE", activePlayerBitfield, 0, false);
+    button->Load(UI::buttonFolder, "Settings", id == 0 ? "SAVE" : id == 1 ? "LEFT" : "RIGHT", activePlayerBitfield, 0, false);
+    button->buttonId = id;
+    if (id != 0) {
+        Text::Info info;
+        wchar_t arrow[2] = {id == 1 ? L'\u2190' : L'\u2192', 0};
+        info.strings[0] = arrow;
+        button->SetMessage(BMG_TEXT, &info);
+    }
     return button;
 }
 
@@ -225,74 +235,11 @@ void SettingsPanel::OnActivate() {
     const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     titleBmg = page.nameBmg + 0x1F;
     LoadCurrentValues();
-
-    externControls[0]->isHidden = s_votingSettingsPreviewActive;
-    externControls[0]->manipulator.inaccessible = s_votingSettingsPreviewActive;
-    backButton.isHidden = s_votingSettingsPreviewActive;
-    backButton.manipulator.inaccessible = s_votingSettingsPreviewActive;
-    controlsManipulatorManager.inaccessible = s_votingSettingsPreviewActive;
     if (!s_votingSettingsPreviewActive)
         externControls[0]->SelectInitial(0);
     bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
-
-    for (u32 i = 0; i < Settings::Params::maxRadioCount; ++i) {
-        RadioButtonControl &radio = radioButtonControls[i];
-        const bool hidden = i >= page.radioCount;
-        radio.isHidden = hidden;
-        radio.manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
-        if (!hidden) {
-            const Settings::SettingId id = page.radioSettings[i];
-            const Settings::SettingDef &def = Settings::Params::GetSettingDef(id);
-            radio.buttonsCount = def.optionCount;
-            radio.chosenButtonId = radioValues[i];
-            radio.selectedButtonId = radioValues[i];
-            radio.SetMessage(id);
-            for (u32 option = 0; option < 4; ++option) {
-                const bool optionHidden = option >= def.optionCount;
-                radio.optionButtonsArray[option].isHidden = optionHidden;
-                if (!optionHidden)
-                    radio.optionButtonsArray[option].SetMessage(Settings::Params::GetOptionBmg(id, option));
-            }
-        }
-    }
-
-    for (u32 i = 0; i < Settings::Params::maxScrollerCount; ++i) {
-        UpDownControl &scroller = upDownControls[i];
-        TextUpDownValueControl &value = textUpDown[i];
-        const bool hidden = i >= page.scrollerCount;
-        scroller.isHidden = hidden;
-        scroller.manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
-        value.isHidden = hidden;
-        if (!hidden) {
-            const Settings::SettingId id = page.scrollerSettings[i];
-            const Settings::SettingDef &def = Settings::Params::GetSettingDef(id);
-            scroller.optionsCount = def.optionCount;
-            scroller.curSelectedOption = scrollerValues[i];
-            scroller.SetMessage(id);
-            value.activeTextValueControl->SetMessage(Settings::Params::GetOptionBmg(id, scrollerValues[i]));
-        }
-    }
-
     MenuInteractable::OnActivate();
-
-    externControls[0]->isHidden = s_votingSettingsPreviewActive;
-    externControls[0]->manipulator.inaccessible = s_votingSettingsPreviewActive;
-    backButton.isHidden = s_votingSettingsPreviewActive;
-    backButton.manipulator.inaccessible = s_votingSettingsPreviewActive;
-    controlsManipulatorManager.inaccessible = s_votingSettingsPreviewActive;
-    for (u32 i = 0; i < Settings::Params::maxRadioCount; ++i) {
-        const bool hidden = i >= page.radioCount;
-        radioButtonControls[i].isHidden = hidden;
-        radioButtonControls[i].manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
-        if (s_votingSettingsPreviewActive && !hidden)
-            radioButtonControls[i].Init();
-    }
-    for (u32 i = 0; i < Settings::Params::maxScrollerCount; ++i) {
-        const bool hidden = i >= page.scrollerCount;
-        upDownControls[i].isHidden = hidden;
-        upDownControls[i].manipulator.inaccessible = hidden || s_votingSettingsPreviewActive;
-        textUpDown[i].isHidden = hidden;
-    }
+    SetControlsHidden(false);
 }
 
 void SettingsPanel::OnResume() {
@@ -303,25 +250,79 @@ void SettingsPanel::OnResume() {
 void SettingsPanel::SetControlsHidden(bool hidden) {
     const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     const bool controlsHidden = hidden || s_votingSettingsPreviewActive;
+    u32 firstRow = 0;
+    u32 firstScroller = 0;
+    u32 radioCount = 0;
+    u32 scrollerCount = 0;
+    u32 radioOffset = 0;
+    u32 scrollerOffset = 0;
+    pageCount = 0;
+    do {
+        u32 pageRadioCount = page.radioCount - radioOffset;
+        if (pageRadioCount > Settings::Params::maxRadioCount)
+            pageRadioCount = Settings::Params::maxRadioCount;
+        u32 pageScrollerCount = page.scrollerCount - scrollerOffset;
+        if (pageScrollerCount > Settings::Params::maxScrollerCount)
+            pageScrollerCount = Settings::Params::maxScrollerCount;
+        if (pageCount == pageIndex) {
+            firstRow = radioOffset;
+            firstScroller = scrollerOffset;
+            radioCount = pageRadioCount;
+            scrollerCount = pageScrollerCount;
+        }
+        radioOffset += pageRadioCount;
+        scrollerOffset += pageScrollerCount;
+        ++pageCount;
+    } while (radioOffset < page.radioCount || scrollerOffset < page.scrollerCount);
 
     titleText->isHidden = hidden;
     bottomText->isHidden = hidden;
-    externControls[0]->isHidden = controlsHidden;
-    externControls[0]->manipulator.inaccessible = controlsHidden;
+    for (u32 i = 0; i < externControlCount; ++i) {
+        const bool buttonHidden = controlsHidden || (i != 0 && pageCount == 1);
+        externControls[i]->isHidden = buttonHidden;
+        externControls[i]->manipulator.inaccessible = buttonHidden;
+    }
     backButton.isHidden = controlsHidden;
     backButton.manipulator.inaccessible = controlsHidden;
     controlsManipulatorManager.inaccessible = controlsHidden;
 
     for (u32 i = 0; i < Settings::Params::maxRadioCount; ++i) {
-        const bool rowHidden = hidden || i >= page.radioCount;
-        radioButtonControls[i].isHidden = rowHidden;
-        radioButtonControls[i].manipulator.inaccessible = rowHidden || s_votingSettingsPreviewActive;
+        RadioButtonControl &radio = radioButtonControls[i];
+        const bool rowHidden = hidden || i >= radioCount;
+        radio.id = firstRow + i;
+        if (!rowHidden) {
+            const Settings::SettingId id = page.radioSettings[radio.id];
+            const Settings::SettingDef &def = Settings::Params::GetSettingDef(id);
+            radio.buttonsCount = def.optionCount;
+            radio.chosenButtonId = radioValues[radio.id];
+            radio.selectedButtonId = radioValues[radio.id];
+            radio.SetMessage(id);
+            for (u32 option = 0; option < 4; ++option) {
+                const bool optionHidden = option >= def.optionCount;
+                radio.optionButtonsArray[option].isHidden = optionHidden;
+                if (!optionHidden)
+                    radio.optionButtonsArray[option].SetMessage(Settings::Params::GetOptionBmg(id, option));
+            }
+            radio.Init();
+        }
+        radio.isHidden = rowHidden;
+        radio.manipulator.inaccessible = rowHidden || s_votingSettingsPreviewActive;
     }
     for (u32 i = 0; i < Settings::Params::maxScrollerCount; ++i) {
-        const bool rowHidden = hidden || i >= page.scrollerCount;
-        upDownControls[i].isHidden = rowHidden;
-        upDownControls[i].manipulator.inaccessible = rowHidden || s_votingSettingsPreviewActive;
-        textUpDown[i].isHidden = rowHidden;
+        UpDownControl &scroller = upDownControls[i];
+        TextUpDownValueControl &value = textUpDown[i];
+        const bool rowHidden = hidden || i >= scrollerCount;
+        scroller.id = firstScroller + i;
+        if (!rowHidden) {
+            const Settings::SettingId id = page.scrollerSettings[scroller.id];
+            const Settings::SettingDef &def = Settings::Params::GetSettingDef(id);
+            scroller.SetMessage(id);
+            scroller.SelectInitial(def.optionCount, scrollerValues[scroller.id]);
+            scroller.Init();
+        }
+        scroller.isHidden = rowHidden;
+        scroller.manipulator.inaccessible = rowHidden || s_votingSettingsPreviewActive;
+        value.isHidden = rowHidden;
     }
 }
 
@@ -399,7 +400,14 @@ void SettingsPanel::OnBackButtonClick(PushButton &, u32 hudSlotId) {
     OnBackPress(hudSlotId);
 }
 
-void SettingsPanel::OnSaveButtonClick(PushButton &button, u32) {
+void SettingsPanel::OnSaveButtonClick(PushButton &button, u32 hudSlotId) {
+    if (button.buttonId != 0) {
+        externControls[0]->Select(hudSlotId);
+        pageIndex = (pageIndex + (button.buttonId == 1 ? pageCount - 1 : 1)) % pageCount;
+        SetControlsHidden(false);
+        bottomText->SetMessage(BMG_SETTINGS_BOTTOM);
+        return;
+    }
     if (HasModifiedMiscSettings())
         LoadMainMenuAndSaveSettings(button);
     else
@@ -447,7 +455,7 @@ void SettingsPanel::OnUpDownClick(UpDownControl &, u32) {
 }
 
 void SettingsPanel::OnTextChange(TextUpDownValueControl::TextControl &text, u32 optionId) {
-    const u32 index = GetTextId(text);
+    const u32 index = upDownControls[GetTextId(text)].id;
     const Settings::SettingsPageDef &page = Settings::Params::GetPageDef(settingsPageId);
     if (index >= page.scrollerCount)
         return;
@@ -468,6 +476,12 @@ void SettingsPanel::OnUpDownSelect(UpDownControl &scroller, u32) {
 void SettingsPanel::BeforeControlUpdate() {
     if (s_votingSettingsPreviewActive) {
         if (++s_votingSettingsPreviewFrame >= votingSettingsPreviewDuration) {
+            if (pageIndex + 1 < pageCount) {
+                ++pageIndex;
+                s_votingSettingsPreviewFrame = 0;
+                SetControlsHidden(false);
+                return;
+            }
             Settings::SettingsPageId nextPage;
             if (AdvanceFroomSettingsPreview(nextPage)) {
                 s_votingSettingsPreviewFrame = 0;
