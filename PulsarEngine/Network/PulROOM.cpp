@@ -11,7 +11,7 @@
 namespace Pulsar {
 namespace Network {
 
-static_assert(HOST_SETTINGS_PREVIEW_COUNT == 27, "Update settings preview capacity checks with the ROOM payload");
+static_assert(HOST_SETTINGS_PREVIEW_COUNT == 30, "Update settings preview capacity checks with the ROOM payload");
 
 static void ConvertROOMPacketToData(const PulROOM &packet) {
     System *system = System::sInstance;
@@ -240,7 +240,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
           | allItemsCanLand << PULSAR_ALLITEMSCANLAND | settings.GetSettingValue(Pulsar::Settings::SETTING_HOSTWINS) << PULSAR_HAW | itemBoxRespawnFast << PULSAR_ITEMBOXRESPAWN
           | rankings << PULSAR_RANKING | vr << PULSAR_VR | battleRoyale << PULSAR_MODE_BATTLEROYALE | itemModeNone << PULSAR_ITEMMODENONE | koPerRace2 << PULSAR_KOPERRACE_2
           | koPerRace3 << PULSAR_KOPERRACE_3 | koPerRace4 << PULSAR_KOPERRACE_4 | koRoyaleLaps1_5x << PULSAR_KOROYALE_LAPS_1_5X | koRoyaleLaps2_0x << PULSAR_KOROYALE_LAPS_2_0X
-          | vanillaMode << PULSAR_VANILLAMODE | mirrorMode << PULSAR_MIRRORMODE;
+          | vanillaMode << PULSAR_VANILLAMODE | mirrorMode << PULSAR_MIRRORMODE | (settings.GetSettingValue(Settings::SETTING_ALLOWBRAKEDRIFT) != 0) << PULSAR_NOBRAKEDRIFT
+          | (settings.GetSettingValue(Settings::SETTING_ALLOWUMTS) != 0) << PULSAR_NOUMTS | (settings.GetSettingValue(Settings::SETTING_ALLOWHYBRIDDRIFT) != 0) << PULSAR_NOHYBRIDDRIFT;
 
         if (!vanillaMode) {
             destPacket->customItemsBitfield = settings.GetCustomItems();

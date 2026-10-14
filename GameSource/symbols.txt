@@ -509,6 +509,7 @@ DCFlushRange = 0x801a162c
 DCStoreRange__FPvUi = 0x801a165c
 DCFlushRange__2OSFPvUi = 0x801a162c
 ICInvalidateRange = 0x801a1710
+ICInvalidateRange__2OSFPvUi = 0x801a1710
 OSGetCurrentContext = 0x801a1ecc
 Report__2OSFPCce = 0x801A25D0
 Fatal__2OSFQ22GX5ColorQ22GX5ColorPCc = 0x801a4ec4

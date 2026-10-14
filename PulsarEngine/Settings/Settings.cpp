@@ -104,6 +104,20 @@ void Mgr::Init(const u16 *totalTrophyCount, const char *settingsPath, const char
     }
     io->Close();
 
+    if (buffer->GetSection<SettingsHolder>().header.size < sizeof(SettingsHolder)) {
+        const u32 oldSettingsEnd = buffer->header.offsets[SettingsHolder::index] + buffer->GetSection<SettingsHolder>().header.size;
+        const u32 extraSize = sizeof(SettingsHolder) - buffer->GetSection<SettingsHolder>().header.size;
+        Binary *expanded = io->Alloc<Binary>(buffer->header.fileSize + extraSize);
+        memcpy(expanded, buffer, oldSettingsEnd);
+        memset(ut::AddU32ToPtr(expanded, oldSettingsEnd), 0, extraSize);
+        memcpy(ut::AddU32ToPtr(expanded, oldSettingsEnd + extraSize), ut::AddU32ToPtr(buffer, oldSettingsEnd), buffer->header.fileSize - oldSettingsEnd);
+        expanded->header.fileSize += extraSize;
+        for (u32 i = SettingsHolder::index + 1; i < Binary::sectionCount; ++i) expanded->header.offsets[i] += extraSize;
+        expanded->GetSection<SettingsHolder>().header.size = sizeof(SettingsHolder);
+        delete buffer;
+        buffer = expanded;
+    }
+
     TrophiesHolder &trophies = buffer->GetSection<TrophiesHolder>();
     for (int i = 0; i < 4; ++i) {
         u32 curTotalCount = this->GetTotalTrophyCount(static_cast<TTMode>(i));

@@ -20,28 +20,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <Race/200ccParams.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
-#include <MarioKartWii/RKNet/RKNetController.hpp>
 
 namespace Pulsar {
 namespace UI {
 
 const s8 CtrlRaceInputViewer::DPAD_HOLD_FOR_N_FRAMES = 10;
 
-static bool IsBrakeDriftingEnabled() {
-    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    const GameMode mode = scenario.settings.gamemode;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    if (isOnlineRoomActive && System::sInstance->IsVanillaMode())
-        return false;
-    return Race::Has200ccPhysics()
-      || (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL
-        && !System::sInstance->IsContext(PULSAR_MODE_OTT));
-}
-
 void CtrlRaceInputViewer::Init() {
     char name[32];
-    bool isBrakedriftToggled = IsBrakeDriftingEnabled();
+    bool isBrakedriftToggled = Race::IsBrakeDriftingEnabled();
     bool isNunchuk = (static_cast<Pulsar::InputDisplay>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_INPUTDISPLAY)) == Pulsar::INPUTDISPLAY_CHUK);
     RacedataScenario &raceScenario = Racedata::sInstance->racesScenario;
 
@@ -152,7 +139,7 @@ void CtrlRaceInputViewer::OnUpdate() {
             setTrigger(Trigger_R, R ? TriggerState_Pressed : TriggerState_Off);
             setStick(stick);
 
-            bool isBrakedriftToggled = IsBrakeDriftingEnabled();
+            bool isBrakedriftToggled = Race::IsBrakeDriftingEnabled();
             if (isBrakedriftToggled) {
                 bool BD = input->buttonActions & 0x10;
                 setTrigger(Trigger_BD, BD ? TriggerState_Pressed : TriggerState_Off);

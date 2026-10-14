@@ -401,6 +401,7 @@ void System::UpdateContext() {
                     isChangeCombo = newContext & (1 << PULSAR_CHANGECOMBO);
                     isBattleRoyale = false;
                 }
+                isUMTs &= (newContext2 & (1 << PULSAR_NOUMTS)) == 0;
                 break;
             default:
                 isCT = true;
@@ -452,7 +453,7 @@ void System::UpdateContext() {
           | (isMiiHeads) << PULSAR_MIIHEADS | (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND | (isHAW) << PULSAR_HAW | (isItemBoxRespawnFast) << PULSAR_ITEMBOXRESPAWN | (isRanking) << PULSAR_RANKING
           | (isVR) << PULSAR_VR | (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE | (isKoPerRace2) << PULSAR_KOPERRACE_2 | (isKoPerRace3) << PULSAR_KOPERRACE_3
           | (isKoPerRace4) << PULSAR_KOPERRACE_4 | (isKoRoyaleLaps1_5x) << PULSAR_KOROYALE_LAPS_1_5X | (isKoRoyaleLaps2_0x) << PULSAR_KOROYALE_LAPS_2_0X | (isVanillaMode) << PULSAR_VANILLAMODE
-          | (isMirrorMode) << PULSAR_MIRRORMODE;
+          | (isMirrorMode) << PULSAR_MIRRORMODE | (newContext2 & ((1 << PULSAR_NOBRAKEDRIFT) | (1 << PULSAR_NOUMTS) | (1 << PULSAR_NOHYBRIDDRIFT)));
     }
 
     // Combine the new context with preserved bits

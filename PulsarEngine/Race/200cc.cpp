@@ -29,16 +29,19 @@ bool Has200ccPhysics() {
     return System::sInstance->netMgr.hostCustomEngineClass >= 200;
 }
 
-static bool IsBrakeDriftingEnabled() {
+bool IsBrakeDriftingEnabled() {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
     if (isOnlineRoomActive && System::sInstance->IsVanillaMode())
         return false;
-    return Has200ccPhysics()
-      || (static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL
-        && !System::sInstance->IsContext(PULSAR_MODE_OTT));
+    if (Has200ccPhysics())
+        return true;
+    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && System::sInstance->IsContext(PULSAR_NOBRAKEDRIFT))
+        return false;
+    return static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL
+      && !System::sInstance->IsContext(PULSAR_MODE_OTT);
 }
 
 static void CannonExitSpeed() {

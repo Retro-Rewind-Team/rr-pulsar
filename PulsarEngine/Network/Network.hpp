@@ -9,7 +9,7 @@ namespace Network {
 
 static const u32 MAX_TRACK_BLOCKING = 12;  // Maximum number of blocked tracks synced via packets
 
-static const u32 HOST_SETTINGS_PREVIEW_COUNT = 27;
+static const u32 HOST_SETTINGS_PREVIEW_COUNT = 30;
 
 enum DenyType {
     DENY_TYPE_NORMAL,

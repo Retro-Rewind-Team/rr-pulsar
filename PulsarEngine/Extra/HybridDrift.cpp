@@ -1,22 +1,54 @@
 #include <RetroRewind.hpp>
 #include <runtimeWrite.hpp>
+#include <core/rvl/OS/OSCache.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 
 namespace HybridDrift {
 
-static bool isVanillaModeOnline = false;
+static bool isHybridDriftDisabled = false;
 
-static void UpdateVanillaModeOnline() {
+kmRuntimeUse(0x8059450C);
+kmRuntimeUse(0x80594A60);
+kmRuntimeUse(0x805A35BC);
+kmRuntimeUse(0x80745AB0);
+kmRuntimeUse(0x808CB70A);
+
+static void UpdateHybridDrift() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    isVanillaModeOnline = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN && Pulsar::System::sInstance->IsVanillaMode();
+    const Pulsar::System *system = Pulsar::System::sInstance;
+    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    isHybridDriftDisabled = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN
+      && (system->IsVanillaMode() || (isFroom && (system->netMgr.hostContext2 & (1 << Pulsar::PULSAR_NOHYBRIDDRIFT))));
+
+    u32 *patch = reinterpret_cast<u32 *>(kmRuntimeAddr(0x8059450C));
+    *patch = isHybridDriftDisabled ? 0x60000010 : 0x60002010;
+    OS::DCFlushRange(patch, sizeof(u32));
+    OS::ICInvalidateRange(patch, sizeof(u32));
+    patch = reinterpret_cast<u32 *>(kmRuntimeAddr(0x80594A60));
+    *patch = isHybridDriftDisabled ? 0x40820048 : 0x60000000;
+    OS::DCFlushRange(patch, sizeof(u32));
+    OS::ICInvalidateRange(patch, sizeof(u32));
+    patch = reinterpret_cast<u32 *>(kmRuntimeAddr(0x805A35BC));
+    // The original relative call displacement differs between game regions.
+    static const u32 originalCall = *patch;
+    *patch = isHybridDriftDisabled ? originalCall : 0x38600000;
+    OS::DCFlushRange(patch, sizeof(u32));
+    OS::ICInvalidateRange(patch, sizeof(u32));
+    patch = reinterpret_cast<u32 *>(kmRuntimeAddr(0x80745AB0));
+    *patch = isHybridDriftDisabled ? 0x41820008 : 0x48000008;
+    OS::DCFlushRange(patch, sizeof(u32));
+    OS::ICInvalidateRange(patch, sizeof(u32));
+    u16 *data = reinterpret_cast<u16 *>(kmRuntimeAddr(0x808CB70A));
+    data[0] = isHybridDriftDisabled ? 0x0400 : 0;
+    data[1] = isHybridDriftDisabled ? 0x0003 : 0;
 }
-static SectionLoadHook VanillaModeOnlineHook(UpdateVanillaModeOnline);
+static SectionLoadHook HybridDriftHook(UpdateHybridDrift);
 
 // original code by Ismy and CLF78, with fixes by Ro.
 asmFunc GetHybridDrift1() {
     ASM(
-        lis r12, isVanillaModeOnline @ha;
-        lbz r12, isVanillaModeOnline @l(r12);
+        lis r12, isHybridDriftDisabled @ha;
+        lbz r12, isHybridDriftDisabled @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         lwz r0, 0x14(r3);
@@ -55,8 +87,8 @@ kmCall(0x80578DCC, GetHybridDrift1);
 
 asmFunc GetHybridDrift3() {
     ASM(
-        lis r12, isVanillaModeOnline @ha;
-        lbz r12, isVanillaModeOnline @l(r12);
+        lis r12, isHybridDriftDisabled @ha;
+        lbz r12, isHybridDriftDisabled @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         lwz r0, 0x4(r3);
@@ -77,8 +109,8 @@ kmCall(0x8057DFA8, GetHybridDrift3);
 
 asmFunc GetHybridDrift4() {
     ASM(
-        lis r12, isVanillaModeOnline @ha;
-        lbz r12, isVanillaModeOnline @l(r12);
+        lis r12, isHybridDriftDisabled @ha;
+        lbz r12, isHybridDriftDisabled @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         lwz r0, 0x4(r4);
@@ -99,8 +131,8 @@ kmCall(0x8057E018, GetHybridDrift4);
 
 asmFunc GetHybridDrift6() {
     ASM(
-        lis r12, isVanillaModeOnline @ha;
-        lbz r12, isVanillaModeOnline @l(r12);
+        lis r12, isHybridDriftDisabled @ha;
+        lbz r12, isHybridDriftDisabled @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         rlwinm.r0, r0, 0, 27, 27;
@@ -116,8 +148,8 @@ kmCall(0x8057E108, GetHybridDrift6);
 
 asmFunc GetHybridDrift7() {
     ASM(
-        lis r12, isVanillaModeOnline @ha;
-        lbz r12, isVanillaModeOnline @l(r12);
+        lis r12, isHybridDriftDisabled @ha;
+        lbz r12, isHybridDriftDisabled @l(r12);
         cmpwi r12, 0;
         beq + hybrid;
         mr r3, r30;
@@ -138,11 +170,5 @@ asmFunc GetHybridDrift7() {
     )
 }
 kmCall(0x80594AA8, GetHybridDrift7);
-
-kmWrite8(0x8059450E, 0x00000020);
-kmWrite32(0x80594A60, 0x60000000);
-kmWrite32(0x805A35BC, 0x38600000);
-kmWrite16(0x80745AB0, 0x00004800);
-kmWrite32(0x808CB70A, 0x00000000);
 
 }  // namespace HybridDrift

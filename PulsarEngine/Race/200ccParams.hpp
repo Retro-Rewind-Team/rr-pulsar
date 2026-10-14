@@ -25,6 +25,7 @@ inline bool Is200cc() {
 }
 
 bool Has200ccPhysics();
+bool IsBrakeDriftingEnabled();
 
 }  // namespace Race
 }  // namespace Pulsar
