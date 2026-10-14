@@ -839,6 +839,7 @@ InitGhostController__Q25Input7ManagerFUcPCQ25Input9RKGInputsb = 0x8052453c
 sInstance__Q25Input7Manager = 0x809bd70c
 
 #ControllerHolder
+Update__Q25Input16ControllerHolderFb = 0x80521198
 __vt__Q25Input16ControllerHolder = 0x808b2dd8
 
 #RealControllerHolder
