@@ -26,6 +26,7 @@ wcschr = 0x80017a48
 cos = 0x8001b590
 sin = 0x8001ba98
 pow = 0x8001bbf0
+pow__Fdd = 0x8001bbf0
 strlen = 0x80021254
 __div2u = 0x80021604
 __mod2u = 0x80021828
