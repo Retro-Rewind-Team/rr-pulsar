@@ -37,6 +37,8 @@ void LoadPosMtxImm(const float mtx[3][4], u32 pnidx);
 void SetCurrentMtx(u32 mtx);
 void LoadPosMtxIndx(u32 indx);
 OS::Thread *GetCurrentThread();  // 8016d39c
+void Flush();  // 8016e654
+void DrawDone();  // 8016eab0 waits until the GPU has run every command sent
 void SetDrawSync(u16 token);  // sets a token, which will be stored in a reg when it reaches the end of the pipeline
 u16 ReadDrawSync();  // if matches token set with, geometry has been rendered
 void SetLineWidth(u8 width, TexOffset offset);
