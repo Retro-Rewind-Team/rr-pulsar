@@ -308,11 +308,13 @@ GXSetTexCoordGen2 = 0x8016e37c
 GXSetNumTexGens = 0x8016e5a4
 GXSetMisc = 0x8016e5c8
 GXFlush = 0x8016e654
+Flush__2GXFv = 0x8016e654
 GXResetWriteGatherPipe = 0x8016e6b0
 __GXAbort = 0x8016e6e4
 GXAbortFrame = 0x8016e848
 GXSetDrawSync = 0x8016e9fc
 GXDrawDone = 0x8016eab0
+DrawDone__2GXFv = 0x8016eab0
 GXTexModeSync = 0x8016eb70
 GXPokeAlphaMode = 0x8016eb94
 GXPokeAlphaRead = 0x8016eba4
@@ -798,6 +800,7 @@ InitAllkartArchivesLoaders__10ArchiveMgrFUiUc = 0x805422cc
 
 ##SCENE
 GetCurrent__9GameSceneFv = 0x8051bed0
+Reset__9GameSceneFv = 0x8051b0f4
 CreateHeap__9GameSceneFUiUi = 0x8051b8e4
 DestroyHeap__9GameSceneFPQ23EGG4Heap = 0x8051b988
 
