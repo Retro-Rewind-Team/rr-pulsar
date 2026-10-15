@@ -128,20 +128,6 @@ u8 Mgr::GetRoundKoCount(u8 playerCount) const {
         koCount = playerCount - 2;
     }
 
-    if (this->koPerRace >= 2 && this->alwaysFinal && playerCount > 2) {
-        if (playerCount == 3) {
-            koCount = 1;
-        } else if (playerCount == 4 && this->koPerRace >= 2) {
-            koCount = 2;
-        }
-    } else {
-        if (playerCount == 3 && this->koPerRace >= 3) {
-            koCount = 2;
-        } else if (playerCount == 4 && this->koPerRace >= 4) {
-            koCount = 3;
-        }
-    }
-
     // A round must never take out every remaining player, or the match ends with no winner.
     if (koCount >= playerCount) {
         koCount = static_cast<u8>(playerCount - 1);
