@@ -1,0 +1,30 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install compilation tools
+        run: bash scripts/install_tools.sh
+
+      - name: Compile
+        run: make -j8
+
+      - name: Compile Loader
+        run: make loader -j8
+
+      - name: Check for link success
+        run: |
+          if ! [ -e ./build/Code.pul ] || ! [ -e ./build/Loader.pul ]; then
+            exit 1
+          fi
