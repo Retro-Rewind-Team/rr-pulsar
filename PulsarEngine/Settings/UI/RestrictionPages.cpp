@@ -52,6 +52,11 @@ void CharacterRestrictionPage::OnDeactivate() {
 
 void CharacterRestrictionPage::AfterControlUpdate() {
     Pages::CharacterSelect::AfterControlUpdate();
+    for (u32 player = 0; player < localPlayerCount; ++player) {
+        MenuDriverModel *driverModel = MenuModelMgr::sInstance->driverModels->players[player].playerModel;
+        if (driverModel->state != MenuDriverModel::MENUDRIVERMODEL_STATE_IDLE)
+            driverModel->SwitchState(player, MenuDriverModel::MENUDRIVERMODEL_STATE_IDLE);
+    }
     UpdateButtonVisuals();
 }
 
