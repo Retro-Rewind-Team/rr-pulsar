@@ -129,7 +129,7 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
         const float x = static_cast<float>(customEngineClass);
         const float t = x > 500.0f ? x - 500.0f : 0.0f;
         factor = 0.7f + 0.002f * x + (x > 150.0f ? 0.008f * (x - 150.0f) : 0.0f) - (x > 200.0f ? 0.005f * (x - 200.0f) : 0.0f) - (x > 300.0f ? 0.0025f * (x - 300.0f) : 0.0f)
-          + (x > 400.0f ? 0.005f * (x - 400.0f) : 0.0f) + (3.75f / 0.98f) * (pow(1.0f + t / 500.0f, 0.98f) - 1.0f) - 0.0075f * t;
+          - (x > 400.0f ? 0.001f * (x - 400.0f) : 0.0f) + (1.5f / 0.98f) * (pow(1.0f + t / 500.0f, 0.98f) - 1.0f) - 0.0015f * t;
     } else if (is200 && System::sInstance->IsContext(Pulsar::PULSAR_500)) {
         factor = 2.66f;
     } else if (is200 && Racedata::sInstance->racesScenario.settings.engineClass == CC_50) {
