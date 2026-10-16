@@ -6,13 +6,17 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
+#include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <Driver/CustomCharacters.hpp>
+#include <UI/TransmissionSelect/TransmissionSelect.hpp>
 
 namespace Pulsar {
 namespace KO {
 
 static const u8 offlineVSRaceCount = 255;
 
-Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false), isOfflineVS(false), offlineRaceNumber(0) {
+Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false), isOfflineVS(false), offlineRaceNumber(0), fieldSize(0), localsArranged(false) {
+    for (u8 i = 0; i < 4; ++i) this->localOrder[i] = i;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     this->baseLocPlayerCount = sub.localPlayerCount;
@@ -75,11 +79,43 @@ void Mgr::FinishOfflineVSIfAllLocalPlayersAreOut() {
     }
 }
 
+// The field's racers, without the VS ghost OTT puts in its last free slot (or over its 12th player).
+static u8 CountRacers(const RacedataScenario &scenario) {
+    u8 count = 0;
+    for (int playerId = 0; playerId < 12; ++playerId) {
+        const PlayerType type = scenario.players[playerId].playerType;
+        if (type != PLAYER_NONE && type != PLAYER_GHOST)
+            ++count;
+    }
+    return count;
+}
+
 void Mgr::PrepareOfflineVSNextRace() {
     if (!this->isOfflineVS || this->winnerPlayerId != 0xFF)
         return;
 
     RacedataScenario &scenario = Racedata::sInstance->menusScenario;
+    this->ArrangeLocals(false);
+    // A new series: its first race, or more racers than the last knockout left (the menus filled a new field).
+    if (scenario.settings.raceNumber == 0 || CountRacers(scenario) > this->fieldSize) {
+        this->fieldSize = 0;
+        for (u8 i = 0; i < 4; ++i) this->localOrder[i] = i;
+    }
+    // The game gives the k-th local slot k, so the surviving locals' slots come first, the knocked out ones' after.
+    u8 from[4];
+    u8 localCount = 0;
+    for (int knockedOut = 0; knockedOut < 2; ++knockedOut) {
+        u8 local = 0;
+        for (u8 playerId = 0; playerId < scenario.playerCount; ++playerId) {
+            if (scenario.players[playerId].playerType != PLAYER_REAL_LOCAL)
+                continue;
+            if (this->IsKOdPlayerId(playerId) == (knockedOut != 0))
+                from[localCount++] = this->localOrder[local];
+            ++local;
+        }
+    }
+    memcpy(this->localOrder, from, localCount);
+
     u8 remainingCount = 0;
     for (u8 playerId = 0; playerId < scenario.playerCount; ++playerId) {
         if (!this->IsKOdPlayerId(playerId)) {
@@ -98,6 +134,7 @@ void Mgr::PrepareOfflineVSNextRace() {
         scenario.players[playerId].SetPrevFinishPos(playerId + 1);
     }
     scenario.ComputePlayerCounts(&scenario.playerCount, &scenario.screenCount, &scenario.localPlayerCount);
+    this->fieldSize = CountRacers(scenario);
     for (u8 playerId = 0; playerId < 12; ++playerId) {
         this->status[playerId][0] = NORMAL;
         this->status[playerId][1] = NORMAL;
@@ -109,6 +146,7 @@ Mgr::~Mgr() {
     controller->subs[1].localPlayerCount = this->baseLocPlayerCount;
     if (this->GetIsSwapped())
         this->SwapControllersAndUI();
+    this->ArrangeLocals(false);
 }
 
 bool Mgr::Is1v1KoRace(u32 currentRaceNumber) const {
@@ -604,6 +642,56 @@ void Mgr::SwapControllersAndUI() {
     params->karts[1] = mainKart;
     memcpy(&params->combos[0], &params->combos[1], sizeof(PlayerCombo));
     this->hasSwapped = !this->hasSwapped;
+}
+
+void Mgr::ArrangeLocals(bool inRace) {
+    if (inRace == this->localsArranged)
+        return;
+    u8 from[4];
+    for (u8 i = 0; i < 4; ++i) {
+        if (inRace)
+            from[i] = this->localOrder[i];
+        else
+            from[this->localOrder[i]] = i;
+    }
+    this->MoveLocals(from);
+    this->localsArranged = inRace;
+}
+
+// Slot i takes slot from[i]'s pad, skins and transmission. Only a holder's controller binding moves, as the game rebinds
+// a holder: its rumble belongs to the holder.
+void Mgr::MoveLocals(const u8 *from) {
+    struct Local {
+        Input::Controller *controller;
+        Input::ControllerParams params;
+        u32 padId;
+        u8 skins[Driver::CHARACTER_COUNT];
+        Transmission transmission;
+    };
+    Input::Manager *input = Input::Manager::sInstance;
+    PadInfo *padInfos = SectionMgr::sInstance->pad.padInfos;
+    Local locals[4];
+    for (u8 i = 0; i < 4; ++i) {
+        const Input::RealControllerHolder &holder = input->realControllerHolders[i];
+        Local &local = locals[i];
+        local.controller = holder.curController;
+        local.params = holder.params;
+        local.padId = padInfos[i].controllerID;
+        memcpy(local.skins, Driver::selectedSlots[i], sizeof(local.skins));
+        local.transmission = UI::GetSelectedTransmission(i);
+    }
+    for (u8 i = 0; i < 4; ++i) {
+        if (from[i] == i)
+            continue;
+        const Local &local = locals[from[i]];
+        Input::RealControllerHolder &holder = input->realControllerHolders[i];
+        holder.SetController(local.controller);
+        holder.controller3 = local.controller;
+        holder.params = local.params;
+        padInfos[i].controllerID = local.padId;
+        memcpy(Driver::selectedSlots[i], local.skins, sizeof(local.skins));
+        UI::SetSelectedTransmission(i, local.transmission);
+    }
 }
 }  // namespace KO
 }  // namespace Pulsar
