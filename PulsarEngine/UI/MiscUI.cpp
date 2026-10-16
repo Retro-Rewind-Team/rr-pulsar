@@ -61,10 +61,10 @@ static void LaunchRiivolutionButton(SectionMgr *sectionMgr) {
 }
 kmCall(0x80553a60, LaunchRiivolutionButton);
 
-// Top left message when a race is about to start in a froom
+// Engine class text in race-start messages and the offline VS intro
 static wchar_t s_customEngineClassText[8];
 
-static void FixStartMessageFroom(CtrlRaceWifiStartMessage *startMsg, u32 bmgId, Text::Info *info) {
+static void FixStartMessage(LayoutUIControl *startMsg, u32 bmgId, Text::Info *info) {
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
     const System *system = System::sInstance;
     const SectionId id = sectionMgr->curSection->sectionId;
@@ -105,7 +105,8 @@ static void FixStartMessageFroom(CtrlRaceWifiStartMessage *startMsg, u32 bmgId, 
     }
     startMsg->SetMessage(bmgId, info);
 }
-kmCall(0x807f8b7c, FixStartMessageFroom);
+kmCall(0x807f8b7c, FixStartMessage);
+kmCall(0x8085544c, FixStartMessage);
 
 static void DisplayDate(CtrlMenuPageTitleText *titleText) {
     Text::Info text;
