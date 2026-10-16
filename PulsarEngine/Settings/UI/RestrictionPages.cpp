@@ -39,8 +39,8 @@ void CharacterRestrictionPage::OnInit() {
 
 void CharacterRestrictionPage::OnActivate() {
     Restrictions::SetCharacterRestrictionConfigActive(true);
+    for (u32 player = 0; player < localPlayerCount; ++player) models[player].RequestModel(models[player].curCharacter);
     Pages::CharacterSelect::OnActivate();
-    Restrictions::SetCharacterRestrictionConfigActive(false);
     BindButtons();
     UpdateButtonVisuals();
 }
@@ -218,6 +218,7 @@ void VehicleRestrictionPage::OnInit() {
 }
 
 void VehicleRestrictionPage::OnActivate() {
+    Restrictions::SetVehicleRestrictionConfigActive(true);
     static const CharacterId displayCharacters[3] = {BABY_MARIO, MARIO, WARIO};
     if (weight >= Restrictions::VEHICLE_WEIGHT_COUNT)
         weight = 0;
@@ -252,9 +253,7 @@ void VehicleRestrictionPage::OnActivate() {
         modelMgr->kartModels->Load();
     }
 
-    Restrictions::SetVehicleRestrictionConfigActive(true);
     Pages::KartSelect::OnActivate();
-    Restrictions::SetVehicleRestrictionConfigActive(false);
     BindButtons();
     UpdateButtonVisuals();
 }

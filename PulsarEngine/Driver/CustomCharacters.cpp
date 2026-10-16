@@ -1,5 +1,6 @@
 #include <Driver/CustomCharacters.hpp>
 #include <IO/LooseArchiveOverrides.hpp>
+#include <Network/Settings/SelectionRestrictions.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
@@ -66,7 +67,8 @@ static s32 LoadKartArchive(char *path, u32 size, const char *format, const char 
         ++character;
     }
 
-    const u32 slot = character < CHARACTER_COUNT ? selectedSlots[player][character] : 0;
+    const u32 slot = character < CHARACTER_COUNT && !Restrictions::IsCharacterRestrictionConfigActive() && !Restrictions::IsVehicleRestrictionConfigActive()
+      ? selectedSlots[player][character] : 0;
     const char *battleSuffix = strstr(format, "_BT") != nullptr ? "_BT" : "";
     if (slot != 0) {
         char archivePath[0x80];
@@ -126,6 +128,8 @@ static void UnloadDriverBRRES(u32 player) {
 }
 
 bool LoadDriverBRRES(u8 player, CharacterId characterId, u32 slot) {
+    if (Restrictions::IsCharacterRestrictionConfigActive() || Restrictions::IsVehicleRestrictionConfigActive())
+        slot = 0;
     const u32 character = static_cast<u32>(characterId);
     if (character >= CHARACTER_COUNT || slot > MAX_CUSTOM_CHARACTER_SLOTS || !characterTables[character][slot])
         return false;
@@ -406,7 +410,7 @@ kmCall(0x80602318, PageAfterControlUpdate);
 
 static void CharacterSelectName(ControlLoader *loader, const char *folderName, const char *ctrName, const char *variant, const char **animNames) {
     loader->Load(folderName, ctrName, variant, animNames);
-    if (loadingAuthorNameControl)
+    if (loadingAuthorNameControl || Restrictions::IsCharacterRestrictionConfigActive())
         return;
     CharaName &name = *static_cast<CharaName *>(loader->layoutUIControl);
     const u32 hud = name.unknown_0x178;

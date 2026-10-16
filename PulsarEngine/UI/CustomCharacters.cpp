@@ -1,4 +1,5 @@
 #include <Driver/CustomCharacters.hpp>
+#include <Network/Settings/SelectionRestrictions.hpp>
 #include <Ghost/GhostManager.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceResult.hpp>
@@ -14,7 +15,7 @@ namespace UI {
 void SetCharacterSelectIcon(LayoutUIControl *control, const char *paneName, const char *picturePane) {
     control->SetPicturePane(paneName, picturePane);
     const CharacterId character = static_cast<CharacterId>(static_cast<PushButton *>(control)->buttonId);
-    if (static_cast<u32>(character) >= Driver::CHARACTER_COUNT)
+    if (static_cast<u32>(character) >= Driver::CHARACTER_COUNT || Restrictions::IsCharacterRestrictionConfigActive())
         return;
 
     // Restore the stock textures before applying a skin, including when cycling back to slot zero.
