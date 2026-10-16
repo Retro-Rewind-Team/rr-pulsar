@@ -19,28 +19,6 @@ static void UpdateHybridDrift() {
     const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
     isHybridDriftDisabled = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN
       && (system->IsVanillaMode() || (isFroom && (system->netMgr.hostContext2 & (1 << Pulsar::PULSAR_NOHYBRIDDRIFT))));
-
-    u32 *patch = reinterpret_cast<u32 *>(kmRuntimeAddr(0x8059450C));
-    *patch = isHybridDriftDisabled ? 0x60000010 : 0x60002010;
-    OS::DCFlushRange(patch, sizeof(u32));
-    OS::ICInvalidateRange(patch, sizeof(u32));
-    patch = reinterpret_cast<u32 *>(kmRuntimeAddr(0x80594A60));
-    *patch = isHybridDriftDisabled ? 0x40820048 : 0x60000000;
-    OS::DCFlushRange(patch, sizeof(u32));
-    OS::ICInvalidateRange(patch, sizeof(u32));
-    patch = reinterpret_cast<u32 *>(kmRuntimeAddr(0x805A35BC));
-    // The original relative call displacement differs between game regions.
-    static const u32 originalCall = *patch;
-    *patch = isHybridDriftDisabled ? originalCall : 0x38600000;
-    OS::DCFlushRange(patch, sizeof(u32));
-    OS::ICInvalidateRange(patch, sizeof(u32));
-    patch = reinterpret_cast<u32 *>(kmRuntimeAddr(0x80745AB0));
-    *patch = isHybridDriftDisabled ? 0x41820008 : 0x48000008;
-    OS::DCFlushRange(patch, sizeof(u32));
-    OS::ICInvalidateRange(patch, sizeof(u32));
-    u16 *data = reinterpret_cast<u16 *>(kmRuntimeAddr(0x808CB70A));
-    data[0] = isHybridDriftDisabled ? 0x0400 : 0;
-    data[1] = isHybridDriftDisabled ? 0x0003 : 0;
 }
 static SectionLoadHook HybridDriftHook(UpdateHybridDrift);
 
@@ -170,5 +148,11 @@ asmFunc GetHybridDrift7() {
     )
 }
 kmCall(0x80594AA8, GetHybridDrift7);
+
+kmWrite8(0x8059450E, 0x00000020);
+kmWrite32(0x80594A60, 0x60000000);
+kmWrite32(0x805A35BC, 0x38600000);
+kmWrite16(0x80745AB0, 0x00004800);
+kmWrite32(0x808CB70A, 0x00000000);
 
 }  // namespace HybridDrift
