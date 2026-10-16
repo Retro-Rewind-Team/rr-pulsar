@@ -67,8 +67,7 @@ static s32 LoadKartArchive(char *path, u32 size, const char *format, const char 
         ++character;
     }
 
-    const u32 slot = character < CHARACTER_COUNT && !Restrictions::IsCharacterRestrictionConfigActive() && !Restrictions::IsVehicleRestrictionConfigActive()
-      ? selectedSlots[player][character] : 0;
+    const u32 slot = character < CHARACTER_COUNT && !Restrictions::IsCharacterRestrictionConfigActive() && !Restrictions::IsVehicleRestrictionConfigActive() ? selectedSlots[player][character] : 0;
     const char *battleSuffix = strstr(format, "_BT") != nullptr ? "_BT" : "";
     if (slot != 0) {
         char archivePath[0x80];
