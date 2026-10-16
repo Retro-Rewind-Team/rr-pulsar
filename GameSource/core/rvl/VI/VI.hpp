@@ -3,6 +3,7 @@
 #include <types.hpp>
 namespace VI {
 typedef void (*RetraceCallback)(u32 retraceCount);
+void WaitForRetrace();  // 801b99ec
 void *GetNextFrameBuffer();  // 801bab24
 
 enum TVMode {

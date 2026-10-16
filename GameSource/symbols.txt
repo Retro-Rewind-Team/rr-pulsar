@@ -542,6 +542,7 @@ CalcCRC32__2OSFPvUi = 0x801d1ca0
 Read__3PADFPQ23PAD6Status = 0x801af44c
 
 #VI
+WaitForRetrace__2VIFv = 0x801b99ec
 ResetSIIdle__2VIFv = 0x801bb0d0
 #NET
 NETSHA1Init = 0x801d24f4

@@ -6,6 +6,7 @@
 #include <MarioKartWii/3D/Model/Menu/MenuModelMgr.hpp>
 #include <MarioKartWii/3D/Model/Menu/MenuKartModel.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <core/rvl/VI/VI.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -243,10 +244,11 @@ void VehicleRestrictionPage::OnActivate() {
             if (driverModel != nullptr)
                 driverModel->SwitchState(0, MenuDriverModel::MENUDRIVERMODEL_STATE_ONCHARSELECT);
         }
-        archiveMgr->WaitForLoad();
+        // WaitForLoad draws only the fader; keep the current menu frame while loading here.
+        while (archiveMgr->taskThread->isTaskExist()) VI::WaitForRetrace();
         modelMgr->ResetKartModels(0);
         archiveMgr->RequestLoadKartArchives(0, displayCharacters[weight], 2);
-        archiveMgr->WaitForLoad();
+        while (archiveMgr->taskThread->isTaskExist()) VI::WaitForRetrace();
         modelMgr->kartModels->Load();
     }
 
