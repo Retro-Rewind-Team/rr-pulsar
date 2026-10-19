@@ -44,7 +44,7 @@ static float EvaluateSpline(float x) {
 }
 
 static float CalcPosPoints(float self, float opponent) {
-    float sample = (float)SPLINE_BIAS + (opponent - self) * 4.0f;
+    float sample = (float)SPLINE_BIAS + (opponent - self);
     sample = Clamp(sample, 0.0f, (float)(SPLINE_BIAS * 2));
     return Clamp(EvaluateSpline(SPLINE_SCALE * sample), 0.01f, 0.24f);
 }
