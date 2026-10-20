@@ -46,22 +46,13 @@ static float EvaluateSpline(float x) {
 static float CalcPosPoints(float self, float opponent) {
     float sample = (float)SPLINE_BIAS + (opponent - self);
     sample = Clamp(sample, 0.0f, (float)(SPLINE_BIAS * 2));
-    return Clamp(EvaluateSpline(SPLINE_SCALE * sample), 0.01f, 0.24f);
+    return Clamp(EvaluateSpline(SPLINE_SCALE * sample), 0.01f, 0.24f) * (0.1f + 0.9f * (1.0f - Clamp((self - 1500.0f) / 7000.0f, 0.0f, 1.0f)));
 }
 
 static float CalcNegPoints(float self, float opponent) {
     float sample = (float)SPLINE_BIAS - (opponent - self) * 16.0f;
     sample = Clamp(sample, 0.0f, (float)(SPLINE_BIAS * 2));
     return Clamp(-EvaluateSpline(SPLINE_SCALE * sample), -0.19f, 0.0f);
-}
-
-static float GetGainCap(float rating) {
-    if (rating < 1500.0f)
-        return 1e6f;
-    if (rating >= 9000.0f)
-        return 0.10f;
-    float t = (rating - 1500.0f) / 7500.0f;
-    return 0.10f + 999.9f * (1.0f - t);
 }
 
 static float GetLossCap(float rating) {
@@ -198,8 +189,12 @@ void RR_UpdatePoints(RacedataScenario *scenario) {
     bool isVR = !isBattle && ((IsRegionalVS() && scenario->settings.gamemode == MODE_PUBLIC_VS) || IsRankedFroom());
 
     float deltas[12] = {};
+    float totalVR = 0.0f;
     bool allDisconnected = false;
     if (isVR) {
+        for (u32 i = 0; i < playerCount; ++i) {
+            totalVR += GetPlayerRating(*scenario, i);
+        }
         const RKNet::Controller *rkCtrl = RKNet::Controller::sInstance;
         if (rkCtrl->subs[rkCtrl->currentSub].connectionCount <= 1) {
             allDisconnected = true;
@@ -226,7 +221,8 @@ void RR_UpdatePoints(RacedataScenario *scenario) {
                 } else {
                     u8 oppPos = raceInfo->players[j]->position;
                     if (myPos < oppPos)
-                        deltas[i] += CalcPosPoints(myRating, oppRating);
+                        deltas[i] +=
+                          CalcPosPoints(myRating, oppRating) * (isVR && myRating - totalVR / (float)playerCount >= 750.0f && (totalVR - myRating) / (float)(playerCount - 1) <= 300.0f ? 0.15f : 1.0f);
                     else if (oppPos < myPos)
                         deltas[i] += CalcNegPoints(myRating, oppRating);
                 }
@@ -255,7 +251,9 @@ void RR_UpdatePoints(RacedataScenario *scenario) {
                 deltas[i] /= divider;
         }
         deltas[i] *= multiplier;
-        deltas[i] = Clamp(deltas[i], GetLossCap(oldRating), GetGainCap(oldRating));
+        float lossCap = GetLossCap(oldRating);
+        if (deltas[i] < lossCap)
+            deltas[i] = lossCap;
 
         if (isVR) {
             if (allDisconnected) {
