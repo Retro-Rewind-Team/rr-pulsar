@@ -8,6 +8,8 @@
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
+#include <Race/CustomCharacters.hpp>
+#include <MarioKartWii/Race/RaceData.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -22,6 +24,17 @@ static bool IsFriendRoom() {
 // Fixes for spectating
 void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u32 len) {
     packetHolder.Copy(packet, len);
+
+    u8 characterSlots[2] = {0, 0};
+    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+    for (u32 player = 0; player < scenario.playerCount && player < 12; ++player) {
+        const RacedataPlayer &entry = scenario.players[player];
+        if (entry.playerType == PLAYER_REAL_LOCAL && entry.hudSlotId >= 0 && entry.hudSlotId < 2
+          && (packetHolder.packet->kartAndCharacter[entry.hudSlotId] & 0xFF) == static_cast<u32>(entry.characterId)) {
+            characterSlots[entry.hudSlotId] = Race::GetPlayerCustomCharacterSlot(player, entry.characterId);
+        }
+    }
+    packetHolder.packet->SetCustomCharacterSlots(characterSlots[0], characterSlots[1]);
 
     const System *system = System::sInstance;
 
@@ -70,6 +83,35 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u3
 }
 kmCall(0x80655458, BeforeRH1Send);
 kmCall(0x806550e4, BeforeRH1Send);
+
+void ImportSpectatorCharacterSlots(const RacedataScenario &scenario) {
+    // Live view bypasses SELECTStageMgr::PrepareRace, which normally imports skins.
+    // Start from defaults so previous races and older senders cannot leak slots.
+    memset(Race::racePlayerSlots, 0, sizeof(Race::racePlayerSlots));
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    if (controller == nullptr)
+        return;
+
+    u8 playersPerAid[12] = {0};
+    for (u32 player = 0; player < scenario.playerCount && player < 12; ++player) {
+        const u8 aid = controller->aidsBelongingToPlayerIds[player];
+        if (aid >= 12)
+            continue;
+        const u32 hudSlotId = playersPerAid[aid]++;
+        if (scenario.players[player].playerType != PLAYER_REAL_ONLINE || hudSlotId >= 2)
+            continue;
+        const u32 buffer = controller->lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
+        if (buffer >= 2 || controller->splitReceivedRACEPackets[buffer][aid] == nullptr)
+            continue;
+        const RKNet::PacketHolder<PulRH1> *holder = controller->splitReceivedRACEPackets[buffer][aid]->GetPacketHolder<PulRH1>();
+        if (holder == nullptr || holder->packet == nullptr || holder->packetSize < sizeof(RKNet::RACEHEADER1Packet))
+            continue;
+        const PulRH1 &packet = *holder->packet;
+        if ((packet.kartAndCharacter[hudSlotId] & 0xFF) != static_cast<u32>(scenario.players[player].characterId))
+            continue;
+        Race::racePlayerSlots[player] = packet.GetCustomCharacterSlot(hudSlotId);
+    }
+}
 
 static void AfterRH1Reception(register u8 *aidArrDest, const RKNet::PacketHolder<PulRH1> &holder, u32 len) {
     register RKNet::RH1Data *data;
