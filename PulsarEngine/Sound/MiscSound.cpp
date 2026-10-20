@@ -4,6 +4,10 @@
 #include <MarioKartWii/Audio/SinglePlayer.hpp>
 #include <MarioKartWii/Audio/Other/AudioStreamsMgr.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
+#include <MarioKartWii/Scene/GameScene.hpp>
+#include <core/egg/Audio/AudioHeap.hpp>
+#include <core/egg/mem/ExpHeap.hpp>
+#include <core/rvl/os/OS.hpp>
 #include <core/nw4r/snd/BasicSound.hpp>
 #include <Sound/MiscSound.hpp>
 #include <Settings/Settings.hpp>
@@ -287,5 +291,79 @@ kmWrite32(0x80719920, 0x48000010);
 
 // disable THP and demo by blring SinglePlayer::CalcTitlePageNext
 kmWrite32(0x806fa738, 0x4e800020);
+
+static nw4r::snd::detail::FrameHeap *raceSoundHeap = nullptr;
+struct RaceSoundBuffer {
+    void *buffer;
+    u32 size;
+    MEM::HeapHandle heap;
+    void (*callback)(void *, u32, void *);
+    void *arg;
+};
+
+static EGG::ExpHeap *CreateRaceSoundHeap(int, EGG::Heap *parent, u16 flags) {
+    // Only NW4R states and disposal records need a private heap. Reserving
+    // 10 MiB of contiguous MEM2 fails after large course and UI archives load.
+    return EGG::ExpHeap::Create(0x40100, parent, flags);
+}
+kmCall(0x805542d8, CreateRaceSoundHeap);
+
+static void InitializeRaceSoundHeap(EGG::SoundHeapMgr *manager, EGG::Heap *heap, u32 size) {
+    raceSoundHeap = nullptr;
+    if (GameScene::GetCurrent()->id == SCENE_ID_RACE) {
+        raceSoundHeap = &manager->heap.frameHeap;
+        size = heap->getAllocatableSize(0x20);
+    }
+    manager->Initialize(heap, size);
+}
+kmCall(0x806fe024, InitializeRaceSoundHeap);
+
+static void DisposeRaceSoundBuffer(void *buffer, u32, void *) {
+    RaceSoundBuffer *entry = static_cast<RaceSoundBuffer *>(buffer);
+    if (entry->callback != nullptr)
+        entry->callback(entry->buffer, entry->size, entry->arg);
+    const int interrupts = OS::DisableInterrupts();
+    MEM::FreeToExpHeap(entry->heap, entry->buffer);
+    OS::RestoreInterrupts(interrupts);
+}
+
+static void *AllocRaceSoundBuffer(nw4r::snd::detail::FrameHeap *heap, u32 size, void *callback, void *arg) {
+    if (heap != raceSoundHeap)
+        return heap->Alloc(size, callback, arg);
+
+    const GameScene *scene = GameScene::GetCurrent();
+    MEM::HeapHandle parent = scene->structsHeaps.heaps[1]->rvlHeap;
+    // Scene heaps prohibit ordinary EGG allocations after setup. Audio still loads
+    // on its own thread, so serialize the underlying MEM allocation directly.
+    int interrupts = OS::DisableInterrupts();
+    void *buffer = MEM::AllocFromExpHeapEx(parent, size, 0x20);
+    if (buffer == nullptr) {
+        parent = scene->structsHeaps.heaps[0]->rvlHeap;
+        buffer = MEM::AllocFromExpHeapEx(parent, size, 0x20);
+    }
+    OS::RestoreInterrupts(interrupts);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+
+    // FrameHeap invokes this callback on both LoadState and Destroy, preserving
+    // sound invalidation and freeing the external buffer at its original level.
+    RaceSoundBuffer *entry = static_cast<RaceSoundBuffer *>(heap->Alloc(sizeof(RaceSoundBuffer), reinterpret_cast<void *>(DisposeRaceSoundBuffer), nullptr));
+    if (entry == nullptr) {
+        interrupts = OS::DisableInterrupts();
+        MEM::FreeToExpHeap(parent, buffer);
+        OS::RestoreInterrupts(interrupts);
+        return nullptr;
+    }
+    entry->buffer = buffer;
+    entry->size = size;
+    entry->heap = parent;
+    entry->callback = reinterpret_cast<void (*)(void *, u32, void *)>(callback);
+    entry->arg = arg;
+    return buffer;
+}
+kmCall(0x800a2ff0, AllocRaceSoundBuffer);
+kmCall(0x800a3060, AllocRaceSoundBuffer);
+
 }  // namespace Sound
 }  // namespace Pulsar

@@ -478,6 +478,10 @@ IOCtl__3IOSFiQ23IOS9IOCtlTypePviPvi = 0x80194290
 IOCtlv__3IOSFiQ23IOS9IOCtlTypeiiPQ23IOS13IOCtlvRequest = 0x801945e0
 fs_fd__3IOS = 0x80385920
 
+#MEM
+AllocFromExpHeapEx__3MEMFPQ23MEM9iHeapHeadUii = 0x80198d88
+FreeToExpHeap__3MEMFPQ23MEM9iHeapHeadPv = 0x80199038
+
 #NAND
 Create__4NANDFPCcUcUc = 0x8019b43c
 Read__4NANDFPQ24NAND8FileInfoPvUi = 0x8019b7a4
@@ -624,6 +628,7 @@ F_PI__Q24nw4r4math = 0x803878F8
 SinFIdx__Q24nw4r4mathFf = 0x80085110
 
 #snd
+Alloc__Q44nw4r3snd6detail9FrameHeapFUiPvPv = 0x80092450
 Stop__Q44nw4r3snd6detail10BasicSoundFi = 0x8008e330
 OpenExtStream__Q34nw4r3snd15DVDSoundArchiveFPQ44nw4r3snd15DVDSoundArchive13DvdFileStreamUiPcUiUi = 0x800912c0
 GetSoundType__Q34nw4r3snd12SoundArchiveCFUi = 0x8009df30

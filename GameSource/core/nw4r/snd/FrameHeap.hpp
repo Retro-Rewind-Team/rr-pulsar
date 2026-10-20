@@ -28,6 +28,7 @@ class FrameHeap {
     int GetCurrentLevel() const;  // 80092800
     bool Create(void *startAddress, u32 size);  // 80092090
     void Destroy();  // 80092230
+public:
     void *Alloc(u32 size, void *callbackFunc, void *callbackArg);  // 80092450
     u32 GetFreeSize() const;  // 80092810
     void *MEMiHeapHead;
