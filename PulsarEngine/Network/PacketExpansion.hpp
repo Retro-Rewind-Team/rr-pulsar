@@ -12,6 +12,8 @@
 #include <MarioKartWii/RKNet/USER.hpp>
 #include <Network/Network.hpp>
 
+class RacedataScenario;
+
 namespace Pulsar {
 namespace Network {
 
@@ -27,6 +29,17 @@ struct PulPlayerData {  // SELECT struct
 static_assert(sizeof(PulPlayerData) == 0x8, "PulPlayerData size");
 
 struct PulRH1 : public RKNet::RACEHEADER1Packet {
+    // Use vanilla padding at 0x25..0x27 without changing any transmitted sizes.
+    // The marker distinguishes skin slots from padding sent by older clients.
+    void SetCustomCharacterSlots(u8 player1, u8 player2) {
+        unknown_0x25[0] = 0x53;
+        unknown_0x25[1] = player1;
+        unknown_0x25[2] = player2;
+    }
+    u8 GetCustomCharacterSlot(u32 hudSlotId) const {
+        return unknown_0x25[0] == 0x53 && hudSlotId < 2 ? unknown_0x25[1 + hudSlotId] : 0;
+    }
+
     // Pulsar data (always sent)
     u16 pulsarTrackId;  // current
     u8 variantIdx;
@@ -238,6 +251,7 @@ public:
 };
 
 u8 GetLastRecvSECTIONSize(u8 aid, u8 sectionIdx);
+void ImportSpectatorCharacterSlots(const RacedataScenario &scenario);
 
 }  // namespace Network
 }  // namespace Pulsar
