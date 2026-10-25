@@ -1,0 +1,56 @@
+name: release
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          path: main
+
+      - name: Checkout secure
+        uses: actions/checkout@v7
+        with:
+          repository: Retro-Rewind-Team/rr-secure
+          token: ${{ secrets.RELEASE_TOKEN }}
+          path: rr-secure
+
+      - name: Install compilation tools
+        working-directory: main
+        run: bash scripts/install_tools.sh
+
+      - name: Compile
+        working-directory: main
+        run: CFLAGS="-DPROD" make -j8
+
+      - name: Compile Loader
+        working-directory: main
+        run: make loader -j8
+
+      - name: Check for link success
+        working-directory: main
+        run: |
+          if ! [ -e ./build/Code.pul ] || ! [ -e ./build/Loader.pul ]; then
+            exit 1
+          fi
+
+      - name: Release
+        working-directory: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          gh release create "$tag" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="${tag#v}" \
+              --generate-notes \
+              ./build/Code.pul \
+              ./build/Loader.pul
+
