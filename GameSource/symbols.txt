@@ -899,6 +899,7 @@ GetPlayerIdOfLocalPlayer__8RacedataCFUc = 0x80531f70
 ComputePlayerCounts__16RacedataScenarioCFPUcPUcPUc = 0x8052f788
 InitRNG__16RacedataScenarioFv = 0x8052f924
 UpdatePoints__16RacedataScenarioFv = 0x8052e950
+__as__16RacedataScenarioFRC16RacedataScenario = 0x805305ac
 #RacedataPlayer
 ComputeGPRank__14RacedataPlayerFv = 0x8052daf0
 SetPrevFinishPos__14RacedataPlayerFUc = 0x8052e658
