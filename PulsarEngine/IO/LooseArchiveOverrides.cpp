@@ -1366,16 +1366,18 @@ static bool ReadDVDFileFromSource(const char *path, s32 sourceEntryNum, u8 *&out
         return false;
     }
 
-    u8 *data = EGG::Heap::alloc<u8>(info.length, 0x20, heap);
+    const u32 readSize = Align32(info.length);
+    u8 *data = EGG::Heap::alloc<u8>(readSize, 0x20, heap);
     if (data == nullptr) {
         DVD::Close(&info);
         return false;
     }
 
-    InvalidateRange(data, info.length);
-    const s32 read = DVD::ReadPrio(&info, data, info.length, 0, 2);
+    // DVD DMA transfers require a 32-byte length, even when the file itself is shorter.
+    InvalidateRange(data, readSize);
+    const s32 read = DVD::ReadPrio(&info, data, readSize, 0, 2);
     DVD::Close(&info);
-    if (read != info.length) {
+    if (read < info.length) {
         EGG::Heap::free(data, heap);
         return false;
     }
