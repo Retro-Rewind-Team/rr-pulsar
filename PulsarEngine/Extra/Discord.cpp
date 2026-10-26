@@ -1,4 +1,5 @@
 #include <Dolphin/DolphinIOS.hpp>
+#include <IO/LooseArchiveOverrides.hpp>
 #include <UI/UI.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
@@ -29,119 +30,6 @@ static void SetSmallImage(const char *key, const char *text) {
 
 void CleanBMGMessage(wchar_t *dest, const wchar_t *src);
 void ConvertUTF16toUtf8(char *dest, const wchar_t *src, size_t max_len);
-
-struct CustomSkinDiscordImage {
-    CharacterId character;
-    u8 table;
-    const char *key;
-};
-
-// Icons exported from Retro Rewind 6.13.4; skins without distinct icons use the existing fallback.
-// Source paths and pack contributor credits: https://github.com/DarthMDev/rr-character-icons
-// Thanks to nerfko for the original hosted URL list that inspired these mappings.
-// Arranged in Character Selection Screen order (Light -> Medium -> Heavy).
-#define DISCORD_SKIN_IMAGE(file) "https://raw.githubusercontent.com/DarthMDev/rr-character-icons/627eb8314a6e0e50b278462fb65e2af20c2e0f58/icons/" file
-
-static const CustomSkinDiscordImage customSkinDiscordImages[] = {
-    // BABY_MARIO
-    {BABY_MARIO, 1, DISCORD_SKIN_IMAGE("bmr-1.png")},  // Baby Wario
-    {BABY_MARIO, 3, DISCORD_SKIN_IMAGE("bmr-3.png")},  // Coin Coffer
-    {BABY_MARIO, 4, DISCORD_SKIN_IMAGE("bmr-4.png")},  // Shy Guy
-    {BABY_MARIO, 5, DISCORD_SKIN_IMAGE("bmr-5.png")},  // Paper Mario
-    {BABY_MARIO, 6, DISCORD_SKIN_IMAGE("bmr-6.png")},  // Cheep Cheep
-    // BABY_LUIGI
-    {BABY_LUIGI, 1, DISCORD_SKIN_IMAGE("blg-1.png")},  // Baby Waluigi
-    {BABY_LUIGI, 2, DISCORD_SKIN_IMAGE("blg-2.png")},  // Professor E. Gadd
-    {BABY_LUIGI, 3, DISCORD_SKIN_IMAGE("blg-3.png")},  // Spike
-    {BABY_LUIGI, 4, DISCORD_SKIN_IMAGE("blg-4.png")},  // Fuzzy
-    {BABY_LUIGI, 5, DISCORD_SKIN_IMAGE("blg-5.png")},  // Virus Trio
-    // TOAD
-    {TOAD, 1, DISCORD_SKIN_IMAGE("ko-1.png")},  // Captain Toad
-    {TOAD, 3, DISCORD_SKIN_IMAGE("ko-3.png")},  // Swoop
-    {TOAD, 4, DISCORD_SKIN_IMAGE("ko-4.png")},  // Toadsworth
-    {TOAD, 5, DISCORD_SKIN_IMAGE("ko-5.png")},  // Tuxie
-    // TOADETTE
-    {TOADETTE, 3, DISCORD_SKIN_IMAGE("kk-3.png")},  // Blooper
-    {TOADETTE, 4, DISCORD_SKIN_IMAGE("kk-4.png")},  // Para-Biddybud
-    // BABY_PEACH
-    {BABY_PEACH, 2, DISCORD_SKIN_IMAGE("bpc-2.png")},  // Pikachu
-    {BABY_PEACH, 3, DISCORD_SKIN_IMAGE("bpc-3.png")},  // Lemmy
-    {BABY_PEACH, 4, DISCORD_SKIN_IMAGE("bpc-4.png")},  // Kirby
-    // BABY_DAISY
-    {BABY_DAISY, 2, DISCORD_SKIN_IMAGE("bds-2.png")},  // Rocky Wrench
-    {BABY_DAISY, 3, DISCORD_SKIN_IMAGE("bds-3.png")},  // Connie
-    {BABY_DAISY, 4, DISCORD_SKIN_IMAGE("bds-4.png")},  // Talking Flower
-    // KOOPA_TROOPA
-    {KOOPA_TROOPA, 1, DISCORD_SKIN_IMAGE("nk-1.png")},  // Koopa Paratroopa
-    {KOOPA_TROOPA, 2, DISCORD_SKIN_IMAGE("nk-2.png")},  // Lakitu
-    {KOOPA_TROOPA, 5, DISCORD_SKIN_IMAGE("nk-5.png")},  // Sidestepper
-    // DRY_BONES
-    {DRY_BONES, 3, DISCORD_SKIN_IMAGE("ka-3.png")},  // Goomba
-    {DRY_BONES, 4, DISCORD_SKIN_IMAGE("ka-4.png")},  // Peepa
-    // MARIO
-    {MARIO, 3, DISCORD_SKIN_IMAGE("mr-3.png")},  // Snowman
-    {MARIO, 4, DISCORD_SKIN_IMAGE("mr-4.png")},  // Mario (SM64)
-    {MARIO, 5, DISCORD_SKIN_IMAGE("mr-5.png")},  // Mario (SNES)
-    // LUIGI
-    {LUIGI, 3, DISCORD_SKIN_IMAGE("lg-3.png")},  // Monty Mole
-    {LUIGI, 4, DISCORD_SKIN_IMAGE("lg-4.png")},  // Sonic
-    {LUIGI, 5, DISCORD_SKIN_IMAGE("lg-5.png")},  // Don-Chan
-    // YOSHI
-    {YOSHI, 3, DISCORD_SKIN_IMAGE("ys-3.png")},  // Piranha Plant
-    // BIRDO
-    {BIRDO, 2, DISCORD_SKIN_IMAGE("ca-2.png")},  // Mega Man
-    {BIRDO, 3, DISCORD_SKIN_IMAGE("ca-3.png")},  // Dolphin
-    {BIRDO, 4, DISCORD_SKIN_IMAGE("ca-4.png")},  // Shadow
-    // PEACH
-    {PEACH, 5, DISCORD_SKIN_IMAGE("pc-5.png")},  // Shantae
-    // DAISY
-    {DAISY, 3, DISCORD_SKIN_IMAGE("ds-3.png")},  // Daisy (Swimwear)
-    {DAISY, 4, DISCORD_SKIN_IMAGE("ds-4.png")},  // Ludwig
-    {DAISY, 5, DISCORD_SKIN_IMAGE("ds-5.png")},  // Bill Board
-    // DIDDY_KONG
-    {DIDDY_KONG, 2, DISCORD_SKIN_IMAGE("dd-2.png")},  // Dixie Kong
-    {DIDDY_KONG, 3, DISCORD_SKIN_IMAGE("dd-3.png")},  // The Chimp
-    {DIDDY_KONG, 4, DISCORD_SKIN_IMAGE("dd-4.png")},  // Iggy
-    {DIDDY_KONG, 5, DISCORD_SKIN_IMAGE("dd-5.png")},  // Fox McCloud
-    // BOWSER_JR
-    {BOWSER_JR, 2, DISCORD_SKIN_IMAGE("jr-2.png")},  // Hammer Bro
-    {BOWSER_JR, 3, DISCORD_SKIN_IMAGE("jr-3.png")},  // Kamek
-    {BOWSER_JR, 5, DISCORD_SKIN_IMAGE("jr-5.png")},  // Nabbit
-    {BOWSER_JR, 6, DISCORD_SKIN_IMAGE("jr-6.png")},  // Ant Trooper
-    // WARIO
-    {WARIO, 3, DISCORD_SKIN_IMAGE("wr-3.png")},  // King Bob-omb
-    {WARIO, 5, DISCORD_SKIN_IMAGE("wr-5.png")},  // Morton
-    {WARIO, 6, DISCORD_SKIN_IMAGE("wr-6.png")},  // Snooza Koopa
-    // WALUIGI
-    {WALUIGI, 3, DISCORD_SKIN_IMAGE("wl-3.png")},  // Wiggler
-    {WALUIGI, 5, DISCORD_SKIN_IMAGE("wl-5.png")},  // Captain Falcon
-    // KING_BOO
-    {KING_BOO, 2, DISCORD_SKIN_IMAGE("kt-2.png")},  // Gooper Blooper
-    {KING_BOO, 3, DISCORD_SKIN_IMAGE("kt-3.png")},  // Goku
-    // ROSALINA
-    {ROSALINA, 3, DISCORD_SKIN_IMAGE("rs-3.png")},  // Pauline
-    {ROSALINA, 5, DISCORD_SKIN_IMAGE("rs-5.png")},  // Honey Queen
-    // DONKEY_KONG
-    {DONKEY_KONG, 3, DISCORD_SKIN_IMAGE("dk-3.png")},  // Kritter
-    {DONKEY_KONG, 4, DISCORD_SKIN_IMAGE("dk-4.png")},  // Pokey
-    {DONKEY_KONG, 5, DISCORD_SKIN_IMAGE("dk-5.png")},  // King K. Rool
-    {DONKEY_KONG, 6, DISCORD_SKIN_IMAGE("dk-6.png")},  // Pianta
-    // FUNKY_KONG
-    {FUNKY_KONG, 2, DISCORD_SKIN_IMAGE("fk-2.png")},  // Chain Chomp
-    {FUNKY_KONG, 5, DISCORD_SKIN_IMAGE("fk-5.png")},  // R.O.B.
-    {FUNKY_KONG, 6, DISCORD_SKIN_IMAGE("fk-6.png")},  // Jaxi
-    {FUNKY_KONG, 7, DISCORD_SKIN_IMAGE("fk-7.png")},  // Donkey Kong Jr.
-    // BOWSER
-    {BOWSER, 3, DISCORD_SKIN_IMAGE("kp-3.png")},  // Chargin' Chuck
-    {BOWSER, 4, DISCORD_SKIN_IMAGE("kp-4.png")},  // Boom Boom
-    // DRY_BOWSER
-    {DRY_BOWSER, 2, DISCORD_SKIN_IMAGE("bk-2.png")},  // Lubba
-    {DRY_BOWSER, 3, DISCORD_SKIN_IMAGE("bk-3.png")},  // Petey Piranha
-    {DRY_BOWSER, 4, DISCORD_SKIN_IMAGE("bk-4.png")},  // Plessie
-    {CHARACTER_NONE, 0, nullptr},
-};
-
-#undef DISCORD_SKIN_IMAGE
 
 // Returns default Discord asset key and display name in Character Selection Screen order.
 static void GetDefaultCharacterInfo(CharacterId character, const char *&outKey, const char *&outName) {
@@ -347,26 +235,13 @@ static const char *GetSkinDiscordImageKey(CharacterId character, u8 table, const
             break;
     }
 
-    // Check the hosted skin images
-    for (u32 i = 0; customSkinDiscordImages[i].character != CHARACTER_NONE; ++i) {
-        if (customSkinDiscordImages[i].character == imageCharacter && customSkinDiscordImages[i].table == table) {
-            if (customSkinDiscordImages[i].key != nullptr && customSkinDiscordImages[i].key[0] != '\0') {
-                return customSkinDiscordImages[i].key;
-            }
-        }
-    }
-
-    // Check if an asset key string is defined via BMG (0x8a00 | table)
-    static char bmgImageKey[256];
-    const u32 imageBmgId = (static_cast<u32>(character) << 16) | Pulsar::UI::BMG_CUSTOM_CHARACTER_IMAGE_START | table;
-    const wchar_t *imageMsg = ResolveSkinBmgMessage(imageBmgId);
-    if (imageMsg != nullptr && imageMsg[0] != L'\0') {
-        wchar_t cleanKey[0x100];
-        CleanBMGMessage(cleanKey, imageMsg);
-        ConvertUTF16toUtf8(bmgImageKey, cleanKey, sizeof(bmgImageKey));
-        if (bmgImageKey[0] != '\0') {
-            return bmgImageKey;
-        }
+    const char *postfix = ArchiveMgr::GetKartArchivePostfix(imageCharacter);
+    char path[0x80];
+    snprintf(path, sizeof(path), "/Race/Portrait/%s-%u-css.tpl", postfix, table);
+    if (Pulsar::IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0) {
+        static char imageKey[256];
+        snprintf(imageKey, sizeof(imageKey), "https://raw.githubusercontent.com/zachpl-mk/rr-character-icons/main/icons/%s-%u.png", postfix, table);
+        return imageKey;
     }
 
     // Fallback to default character image key
