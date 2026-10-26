@@ -50,6 +50,8 @@ void Racedata_InitRace(Racedata *racedata) {
     }
     if (returnAddress == kmRuntimeAddr(0x80553c94))
         Race::RandomizeCPUCharacterTables(racedata->racesScenario);
+    if (racedata->racesScenario.settings.gametype == GAMETYPE_ONLINE_SPECTATOR)
+        Network::ImportSpectatorCharacterSlots(racedata->racesScenario);
 }
 
 kmCall(0x80530878, Racedata_InitRace);
