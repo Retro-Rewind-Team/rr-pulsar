@@ -35,7 +35,7 @@ u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAwa
         const u32 slot = Racedata::sInstance->ghosts[rkgIndex].header.unknown_6;
         return slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][slot] ? slot : 0;
     }
-    if (player.playerType != PLAYER_REAL_LOCAL && Settings::Mgr::Get().GetSettingValue(Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_DISABLED)
+    if (player.playerType != PLAYER_REAL_LOCAL && (scenario.localPlayerCount > 1 || Settings::Mgr::Get().GetSettingValue(Settings::SETTING_DISPLAYCUSTOMSKINS) == DISPLAYCUSTOMSKINS_DISABLED))
         return 0;
     const u32 slot = racePlayerSlots[playerId];
     return slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][slot] ? slot : 0;
