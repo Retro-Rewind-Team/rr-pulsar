@@ -1608,6 +1608,13 @@ static bool ParseScannedOverride(const char *relativePath, ParsedScannedOverride
 
     out.isTagged = TryParseArchiveTag(relativePath, out.strippedName, sizeof(out.strippedName), out.archiveTagLower, sizeof(out.archiveTagLower));
     if (out.isTagged) {
+        char voiceName[OVERRIDE_MAX_PATH];
+        ToLowerCopy(voiceName, FindBasename(out.strippedName), sizeof(voiceName));
+        if (StartsWith(voiceName, "grp_vo_") && (EndsWithIgnoreCase(voiceName, ".brwsd") || EndsWithIgnoreCase(voiceName, ".brbnk"))) {
+            out.isTagged = false;
+            out.isWholeFile = true;
+            return true;
+        }
         out.isDelete = StripDeleteSuffixInPlace(out.strippedName);
         if (out.strippedName[0] == '\0')
             return false;
