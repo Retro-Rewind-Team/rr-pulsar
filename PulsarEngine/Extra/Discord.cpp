@@ -1,4 +1,5 @@
 #include <Dolphin/DolphinIOS.hpp>
+#include <IO/LooseArchiveOverrides.hpp>
 #include <UI/UI.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
@@ -29,55 +30,6 @@ static void SetSmallImage(const char *key, const char *text) {
 
 void CleanBMGMessage(wchar_t *dest, const wchar_t *src);
 void ConvertUTF16toUtf8(char *dest, const wchar_t *src, size_t max_len);
-
-struct CustomSkinDiscordImage {
-    CharacterId character;
-    u8 table;
-    const char *key;
-};
-
-// Developer mapping table for custom skin Discord images.
-// Arranged in Character Selection Screen order (Light -> Medium -> Heavy -> Miis).
-// Add entries here if you upload custom skin icons to the Discord Developer Portal.
-// Example: { BABY_PEACH, 2, "custom_peach_skin" },
-// If not specified here (or in BMG), presence cleanly falls back to the base character's image.
-static const CustomSkinDiscordImage customSkinDiscordImages[] = {
-    // --- Light ---
-    // BABY_MARIO
-    // BABY_LUIGI
-    // TOAD
-    // TOADETTE
-    // BABY_PEACH
-    // BABY_DAISY
-    // KOOPA_TROOPA
-    // DRY_BONES
-
-    // --- Medium ---
-    // MARIO
-    // LUIGI
-    // YOSHI
-    // BIRDO
-    // PEACH
-    // DAISY
-    // DIDDY_KONG
-    // BOWSER_JR
-
-    // --- Heavy ---
-    // WARIO
-    // WALUIGI
-    // KING_BOO
-    // ROSALINA
-    // DONKEY_KONG
-    // FUNKY_KONG
-    // BOWSER
-    // DRY_BOWSER
-
-    // --- Miis ---
-    // MII_A
-    // MII_B
-    // MII_C
-    {CHARACTER_NONE, 0, nullptr},
-};
 
 // Returns default Discord asset key and display name in Character Selection Screen order.
 static void GetDefaultCharacterInfo(CharacterId character, const char *&outKey, const char *&outName) {
@@ -267,26 +219,29 @@ static const char *GetSkinDiscordImageKey(CharacterId character, u8 table, const
         return defaultKey;
     }
 
-    // Check developer mapping table
-    for (u32 i = 0; customSkinDiscordImages[i].character != CHARACTER_NONE; ++i) {
-        if (customSkinDiscordImages[i].character == character && customSkinDiscordImages[i].table == table) {
-            if (customSkinDiscordImages[i].key != nullptr && customSkinDiscordImages[i].key[0] != '\0') {
-                return customSkinDiscordImages[i].key;
-            }
-        }
+    // Kart and bike variants share the same hosted skin images.
+    CharacterId imageCharacter = character;
+    switch (character) {
+        case PEACH_BIKER:
+            imageCharacter = PEACH;
+            break;
+        case DAISY_BIKER:
+            imageCharacter = DAISY;
+            break;
+        case ROSALINA_BIKER:
+            imageCharacter = ROSALINA;
+            break;
+        default:
+            break;
     }
 
-    // Check if an asset key string is defined via BMG (0x8a00 | table)
-    static char bmgImageKey[256];
-    const u32 imageBmgId = (static_cast<u32>(character) << 16) | Pulsar::UI::BMG_CUSTOM_CHARACTER_IMAGE_START | table;
-    const wchar_t *imageMsg = ResolveSkinBmgMessage(imageBmgId);
-    if (imageMsg != nullptr && imageMsg[0] != L'\0') {
-        wchar_t cleanKey[0x100];
-        CleanBMGMessage(cleanKey, imageMsg);
-        ConvertUTF16toUtf8(bmgImageKey, cleanKey, sizeof(bmgImageKey));
-        if (bmgImageKey[0] != '\0') {
-            return bmgImageKey;
-        }
+    const char *postfix = ArchiveMgr::GetKartArchivePostfix(imageCharacter);
+    char path[0x80];
+    snprintf(path, sizeof(path), "/Race/Portrait/%s-%u-css.tpl", postfix, table);
+    if (Pulsar::IOOverrides::ConvertPathToEntryNumWithLooseOverride(path) >= 0) {
+        static char imageKey[256];
+        snprintf(imageKey, sizeof(imageKey), "https://raw.githubusercontent.com/zachpl-mk/rr-character-icons/main/icons/%s-%u.png", postfix, table);
+        return imageKey;
     }
 
     // Fallback to default character image key
