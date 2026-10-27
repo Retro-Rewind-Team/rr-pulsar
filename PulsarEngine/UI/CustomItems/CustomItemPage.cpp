@@ -32,8 +32,7 @@ static const char *itemTpls[] = {
     "tt_item_killer.tpl",  // 15: BULLET_BILL
     "tt_item_kame_green_3.tpl",  // 16: TRIPLE_GREEN_SHELL
     "tt_item_kame_red_3.tpl",  // 17: TRIPLE_RED_SHELL
-    "item_banana_3.tpl",  // 18: TRIPLE_BANANA
-    "tt_hatena_64x64.tpl"  // 19: RANDOMIZE
+    "item_banana_3.tpl"  // 18: TRIPLE_BANANA
 };
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
@@ -61,14 +60,10 @@ bool CustomItemPage::ShouldSkipFriendRoomPreview() {
 CustomItemPage::CustomItemPage() {
     this->onButtonClickHandler.subject = this;
     this->onButtonClickHandler.ptmf = &CustomItemPage::OnButtonClick;
-    this->onButtonSelectHandler.subject = this;
-    this->onButtonSelectHandler.ptmf = &CustomItemPage::OnButtonSelect;
-    this->onButtonDeselectHandler.subject = this;
-    this->onButtonDeselectHandler.ptmf = &CustomItemPage::OnButtonDeselect;
     this->onBackPressHandler.subject = this;
     this->onBackPressHandler.ptmf = &CustomItemPage::OnBackPress;
 
-    this->internControlCount = 20;
+    this->internControlCount = 22;
     this->externControlCount = 0;
     this->hasBackButton = true;
     this->activePlayerBitfield = 1;
@@ -91,26 +86,21 @@ void CustomItemPage::OnInit() {
 }
 
 UIControl *CustomItemPage::CreateControl(u32 controlId) {
-    if (controlId < 20) {
+    if (controlId < 22) {
         this->AddControl(controlId, buttons[controlId], 0);
         char variant[32];
         snprintf(variant, 32, "CustomItem_%d", controlId);
-        buttons[controlId].Load(UI::buttonFolder, "item_window_new", variant, 1, 0, false);
+        if (controlId < 19) {
+            buttons[controlId].Load(UI::buttonFolder, "item_window_new", variant, 1, 0, false);
+        } else {
+            buttons[controlId].Load(UI::buttonFolder, "SettingsPageSelect", variant, 1, 0, false);
+            buttons[controlId].SetMessage(BMG_CUSTOM_ITEMS_ALL_ENABLED + controlId - 19);
+        }
         buttons[controlId].buttonId = controlId;
         buttons[controlId].SetOnClickHandler(this->onButtonClickHandler, 0);
-        buttons[controlId].SetOnSelectHandler(this->onButtonSelectHandler);
-        buttons[controlId].SetOnDeselectHandler(this->onButtonDeselectHandler);
 
-        // Fix for missing "touch" pane in the brlyt. PushButton expects it for its manipulator.
-        nw4r::lyt::Pane *touchPane = buttons[controlId].layout.GetPaneByName("race_null");
-        if (touchPane) {
-            buttons[controlId].manipulator.boundingBox.touchPane = touchPane;
-        }
-
-        // Hide highlight initially
-        buttons[controlId].SetPaneVisibility("hilight_curr", false);
-
-        this->SetButtonIcon(buttons[controlId], controlId);
+        if (controlId < 19)
+            this->SetButtonIcon(buttons[controlId], controlId);
         return &buttons[controlId];
     }
     return nullptr;
@@ -131,17 +121,14 @@ void CustomItemPage::OnActivate() {
     this->UpdateButtonVisuals();
     this->backButton.isHidden = this->isFriendRoomPreview;
     this->backButton.manipulator.inaccessible = this->isFriendRoomPreview;
-    buttons[19].isHidden = this->isFriendRoomPreview;
-    buttons[19].manipulator.inaccessible = this->isFriendRoomPreview;
+    for (int i = 19; i < 22; ++i) buttons[i].isHidden = this->isFriendRoomPreview;
     if (this->isFriendRoomPreview) {
-        for (int i = 0; i < 20; ++i) {
+        for (int i = 0; i < 22; ++i) {
             buttons[i].manipulator.inaccessible = true;
-            buttons[i].SetPaneVisibility("hilight_curr", false);
         }
     } else {
-        for (int i = 0; i < 20; ++i) buttons[i].manipulator.inaccessible = false;
+        for (int i = 0; i < 22; ++i) buttons[i].manipulator.inaccessible = false;
         this->SelectButton(buttons[0]);
-        this->OnButtonSelect(buttons[0], 0);
     }
 }
 
@@ -164,52 +151,28 @@ void CustomItemPage::AfterControlUpdate() {
     }
 }
 
-void CustomItemPage::OnDeactivate() {
-    ::Pages::Menu::OnDeactivate();
-    for (int i = 0; i < 20; ++i) {
-        buttons[i].SetPaneVisibility("hilight_curr", false);
-    }
-}
-
-void CustomItemPage::BeforeEntranceAnimations() {
-    ::Pages::Menu::BeforeEntranceAnimations();
-    if (!this->isFriendRoomPreview)
-        this->OnButtonSelect(buttons[0], 0);
-}
-
 void CustomItemPage::OnButtonClick(PushButton &button, u32 hudSlotId) {
     if (this->isFriendRoomPreview)
         return;
 
     u32 bitfield = Settings::Mgr::Get().GetCustomItems();
     if (button.buttonId == 19) {
+        bitfield = ALL_CUSTOM_ITEMS;
+    } else if (button.buttonId == 20) {
+        bitfield = 0;
+    } else if (button.buttonId == 21) {
         // Randomize - using a LCG
         static u32 seed = 0;
         if (seed == 0)
             seed = OS::GetTick();
         seed = seed * 1103515245 + 12345;
         bitfield = (seed >> 13) & 0x7FFFF;  // 19 bits
-        if (bitfield == 0)
-            bitfield = 0x7FFFF;  // Re-enable all if all are disabled
     } else {
         // Toggle bit
         bitfield ^= (1 << button.buttonId);
-        if (bitfield == 0)
-            bitfield = 0x7FFFF;  // Safe fallback
     }
     Settings::Mgr::Get().SetCustomItems(bitfield);
     this->UpdateButtonVisuals();
-}
-
-void CustomItemPage::OnButtonSelect(PushButton &button, u32 hudSlotId) {
-    if (this->isFriendRoomPreview)
-        return;
-
-    button.SetPaneVisibility("hilight_curr", true);
-}
-
-void CustomItemPage::OnButtonDeselect(PushButton &button, u32 hudSlotId) {
-    button.SetPaneVisibility("hilight_curr", false);
 }
 
 void CustomItemPage::OnBackPress(u32 hudSlotId) {
@@ -235,26 +198,19 @@ u32 CustomItemPage::GetDisplayBitfield() const {
 
 void CustomItemPage::UpdateButtonVisuals() {
     u32 bitfield = this->GetDisplayBitfield();
-    if (bitfield == 0)
-        bitfield = ALL_CUSTOM_ITEMS;  // Should have been handled but just in case
 
     for (int i = 0; i < 19; ++i) {
         bool enabled = (bitfield >> i) & 1;
-        // Enabled: No tint (fully transparent), Disabled: red tint
-        u32 color = enabled ? 0x00000000 : 0xA0000080;
-        lyt::Pane *pane = buttons[i].layout.GetPaneByName("item_curr");
-        if (pane)
-            ResetMatColor(pane, color);
+        lyt::Pane *pane = buttons[i].layout.GetPaneByName("icon");
+        for (u32 vertex = 0; vertex < 4; ++vertex) pane->SetVtxColor(vertex, enabled ? 0xFFFFFFFF : 0x60606080);
     }
-    // Button 19 (Randomize) is always fully transparent
-    lyt::Pane *randPane = buttons[19].layout.GetPaneByName("item_curr");
-    if (randPane)
-        ResetMatColor(randPane, 0x00000000);
 }
 
 void CustomItemPage::SetButtonIcon(PushButton &button, u32 itemId) {
-    if (itemId < 20) {
-        ChangeImage(button, "item_curr", itemTpls[itemId]);
+    if (itemId < 19) {
+        ChangeImage(button, "icon", itemTpls[itemId]);
+        ChangeImage(button, "icon_light_01", itemTpls[itemId]);
+        ChangeImage(button, "icon_light_02", itemTpls[itemId]);
     }
 }
 

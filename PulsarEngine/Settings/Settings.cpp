@@ -137,9 +137,6 @@ void Mgr::Init(const u16 *totalTrophyCount, const char *settingsPath, const char
     }
     if (Region::GetSubregion(params.displayCountry, params.displaySubregion) == nullptr)
         params.displaySubregion = 0;
-    if (params.customItemsBitfield == 0) {
-        params.customItemsBitfield = 0x7FFFF;
-    }
     if (params.customEngineClass < 100 || params.customEngineClass > 9999) {
         params.customEngineClass = 150;
     }

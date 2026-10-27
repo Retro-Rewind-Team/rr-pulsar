@@ -16,12 +16,8 @@ public:
     ~CustomItemPage() override;
     void OnInit() override;
     void OnActivate() override;
-    void OnDeactivate() override;
-    void BeforeEntranceAnimations() override;
 
     void OnButtonClick(PushButton &button, u32 hudSlotId);
-    void OnButtonSelect(PushButton &button, u32 hudSlotId);
-    void OnButtonDeselect(PushButton &button, u32 hudSlotId);
     void OnBackPress(u32 hudSlotId);
     void AfterControlUpdate() override;
     void StartFriendRoomPreview(PageId nextPageId);
@@ -47,12 +43,10 @@ private:
     void SetButtonIcon(PushButton &button, u32 itemId);
 
     CountDown previewTimer;
-    PushButton buttons[20];  // 19 items + 1 randomize
+    PushButton buttons[22];  // 19 items + 3 selection buttons
     PageId friendRoomPreviewNextPageId;
     bool isFriendRoomPreview;
     PtmfHolder_2A<CustomItemPage, void, PushButton &, u32> onButtonClickHandler;
-    PtmfHolder_2A<CustomItemPage, void, PushButton &, u32> onButtonSelectHandler;
-    PtmfHolder_2A<CustomItemPage, void, PushButton &, u32> onButtonDeselectHandler;
     PtmfHolder_1A<CustomItemPage, void, u32> onBackPressHandler;
 };
 

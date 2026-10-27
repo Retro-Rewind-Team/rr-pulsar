@@ -232,7 +232,7 @@ static bool ShouldExcludeRestrictedFallbackItems(u32 bitfield) {
 static ItemId GetItemFromTable(u32 position, bool isHuman, u16 setting, bool isFallback) {
     u32 bitfield = GetEffectiveCustomItemsBitfield();
     if (bitfield == 0)
-        bitfield = ALL_ITEMS_BITFIELD;
+        return ITEM_NONE;
 
     Item::ItemSlotData *slotData = itemSlotData;
     if (slotData == nullptr)
@@ -332,9 +332,6 @@ static void CustomLimitCheck() {
     }
 
     u32 bitfield = GetEffectiveCustomItemsBitfield();
-    if (bitfield == 0)
-        bitfield = ALL_ITEMS_BITFIELD;
-
     if (itemId < ITEM_COUNT) {
         if (!((bitfield >> itemId) & 1)) {
             itemLimit = 0;

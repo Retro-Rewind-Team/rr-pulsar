@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKNet/RH1.hpp>
 #include <PulsarSystem.hpp>
 #include <Race/200ccParams.hpp>
+#include <Race/CustomItems.hpp>
 #include <Extensions/LECODE/XPF.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
 
@@ -269,6 +270,8 @@ bool XPFMgr::CalcPredefinedCondition(u16 val) {
 }
 
 void XPFMgr::EvaluateXPFAndCreateObjs(ObjectsMgr *mgr, bool isMii) {
+    if (Pulsar::Race::GetEffectiveCustomItemsBitfield() == 0)
+        Racedata::sInstance->racesScenario.settings.itemMode = ITEMS_NONE;
     Pulsar::System *system = Pulsar::System::sInstance;
     if (system->IsContext(Pulsar::PULSAR_CT)) {
         system->lecodeMgr.xpfMgr.EvaluateConditions();
