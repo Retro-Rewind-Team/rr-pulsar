@@ -60,9 +60,9 @@ void GetHUDColor(const ControlManipulator *self, RGBA16 *c0, RGBA16 *c1) {
     c0->green = hudG;
     c0->blue = hudB;
     c0->alpha = 0xFD;
-    c1->red = hudR;
-    c1->green = hudG;
-    c1->blue = hudB;
+    c1->red = hudR > 50 ? hudR - 50 : 0;
+    c1->green = hudG > 50 ? hudG - 50 : 0;
+    c1->blue = hudB > 50 ? hudB - 50 : 0;
     c1->alpha = 0xFD;
 }
 kmBranch(0x805f03dc, GetHUDColor);
