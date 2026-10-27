@@ -33,7 +33,7 @@ static const char *itemTpls[] = {
     "tt_item_kame_green_3.tpl",  // 16: TRIPLE_GREEN_SHELL
     "tt_item_kame_red_3.tpl",  // 17: TRIPLE_RED_SHELL
     "item_banana_3.tpl",  // 18: TRIPLE_BANANA
-    "tt_item_random.tpl"  // 19: RANDOMIZE
+    "tt_hatena_64x64.tpl"  // 19: RANDOMIZE
 };
 static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
 
