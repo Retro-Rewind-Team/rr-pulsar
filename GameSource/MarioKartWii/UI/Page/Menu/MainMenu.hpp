@@ -34,6 +34,7 @@ class MainMenu : public MenuInteractable {  // ID 0x5a
     // onButtonDeselect  vtable = 0x808bd2f4 function = 808515a0
     // onBackPress       vtable = 0x808BD2e8 function = 808516ac
     // onStartPress      vtable = 0x808bd2e8 offset   = 0x7c
+public:
     LayoutUIControl buttonTitles[4];  // 0x6c4 the blue thing englobing buttons
     PushButton *topMenuSingle;  // 0xc94 pushbutton part of ctrlmenumoviebutton
     PushButton *topMenuMulti2P;  // 0xc98 same
