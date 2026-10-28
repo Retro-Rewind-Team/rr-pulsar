@@ -35,7 +35,7 @@ static bool IsUMTEnabled() {
         return false;
 
     const bool isRegionalRoom = roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || roomType == RKNet::ROOMTYPE_BT_REGIONAL;
-    return !isRegionalRoom || (system->netMgr.region != 0x15 && system->netMgr.region != 0x0B);
+    return !isRegionalRoom || system->netMgr.region != 0x15;
 }
 
 kmWrite32(0x8057ee5c, 0x2c050004);  // changes >= 3 to >= 4 for UMT
