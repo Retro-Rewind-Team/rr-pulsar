@@ -126,9 +126,7 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void *sceneSoundManager) 
             if (mode == MODE_PUBLIC_VS && !isLiveView) {
                 RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
                 if (rksys) {
-                    float currentVR = PointRating::GetUserVR(rksys->curLicenseId);
-                    float newVR = currentVR - 2.1f;
-                    PointRating::SetUserVR(rksys->curLicenseId, newVR);
+                    PointRating::SetUserVR(rksys->curLicenseId, PointRating::GetUserVR(rksys->curLicenseId) - 210.0f);
                 }
             }
 

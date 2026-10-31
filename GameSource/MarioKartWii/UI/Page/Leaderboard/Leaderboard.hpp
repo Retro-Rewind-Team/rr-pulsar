@@ -6,6 +6,9 @@
 namespace Pages {
 class Leaderboard : public Page {  // used for tt leaderboard, GP/VS score table etc..
 public:
+    static void UpdateLicenseRating();  // 8085c16c
+    static void SaveRatingsAndStats();  // 8064f65c
+
     Leaderboard();  // 8085be44
     ~Leaderboard() override;  // 80625198 vtable 808da9cc
     virtual PageId GetNextPage() const = 0;

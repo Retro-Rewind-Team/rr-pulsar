@@ -82,7 +82,7 @@ void CheckVRAndLogin(wchar_t *miiName, int unk, void *callback, RKNet::Controlle
         return;
 
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-    if (requested && !s_leaderboardRequestActive && s_topVR != 0 && rksys != nullptr && static_cast<u32>(PointRating::GetUserVR(rksys->curLicenseId) * 100.0f + 0.5f) >= s_topVR + 2000) {
+    if (requested && !s_leaderboardRequestActive && s_topVR != 0 && rksys != nullptr && static_cast<u32>(PointRating::GetUserVR(rksys->curLicenseId) + 0.5f) >= s_topVR + 2000) {
         self->errorParams.errorParam1 = 1;
         self->errorParams.dwcErrorCode = 42069;
         self->connectionState = static_cast<RKNet::ConnectionState>(7);

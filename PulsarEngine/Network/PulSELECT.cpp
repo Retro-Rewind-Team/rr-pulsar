@@ -38,10 +38,10 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *s
         else
             rating = PointRating::GetUserVR(licenseId);
 
-        float decimal = rating - (int)rating;
-        src->decimalVR[0] = (u8)(decimal * 100.0f + 0.5f);
+        // Keep the existing quotient/remainder encoding for online peers.
+        src->decimalVR[0] = (u8)(rating - (int)(rating / 100.0f) * 100.0f + 0.5f);
         if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
-            src->playersData[0].sumPoints = static_cast<u16>(rating);
+            src->playersData[0].sumPoints = static_cast<u16>(rating / 100.0f);
         }
     } else {
         src->decimalVR[0] = 0;

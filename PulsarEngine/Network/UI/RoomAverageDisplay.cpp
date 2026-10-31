@@ -43,11 +43,10 @@ static u32 GetRoomAverageVR(const Pages::SELECTStageMgr &stageMgr) {
         if (player.vr == 0xffff)
             continue;
 
-        // RR stores ratings as whole points plus two decimal digits. Convert
-        // them back to the VR value shown by the UI before averaging.
+        // SELECT stores VR / 100 plus the remainder in decimalVR.
         u32 vr = static_cast<u32>(player.vr) * 100;
         if (player.aid == localAid && player.hudSlotid == 0 && rksys != nullptr && rksys->curLicenseId >= 0) {
-            vr = static_cast<u32>(PointRating::GetUserVR(rksys->curLicenseId) * 100.0f + 0.5f);
+            vr = static_cast<u32>(PointRating::GetUserVR(rksys->curLicenseId) + 0.5f);
         } else if (player.aid < 12 && player.hudSlotid < 2) {
             vr += PointRating::remoteDecimalVR[player.aid][player.hudSlotid];
         }

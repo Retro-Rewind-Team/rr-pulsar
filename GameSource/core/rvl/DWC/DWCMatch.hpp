@@ -236,6 +236,8 @@ struct ResvDeny {
     */
 };
 
+void iQR2ServerKeyCallback(int key, void *buffer);  // 800e4c88
+
 void iMatchInit(MatchControl *control, GP::Connection *gpConnection, GT2::Socket *gt2Socket, GT2::ConnectionCallbacks *gt2Callbacks, const char *gameName, const char *secretKey,
   const AccFriendData friendList[], int friendListLen);  // 800d4bbc
 

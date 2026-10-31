@@ -27,9 +27,7 @@ static void ApplyVRMultiplierHighlight(PushButton &button, bool hasMultiplier) {
 }
 
 static void FormatRatingLabel(float rating, const wchar_t *suffix, wchar_t *buffer, u32 bufferSize) {
-    wchar_t digits[32];
-    PointRating::FormatRatingDigits(rating, digits, sizeof(digits) / sizeof(digits[0]));
-    swprintf(buffer, bufferSize, (rating >= 1000.0f) ? L"%ls%ls\uF06D" : L"%ls%ls", digits, suffix);
+    swprintf(buffer, bufferSize, rating >= 100000.0f ? L"%d%ls\uF06D" : L"%d%ls", (int)(rating + 0.5f), suffix);
 }
 
 static void SetButtonHidden(PushButton &button, bool hidden) {

@@ -149,6 +149,7 @@ SSL_Initialised = 0x80386d4c
 #DWC
 Printf__3DWCFUiPCce = 0x800cd068
 SetOwnStatusData__3DWCFPCcUi = 0x800ce24c
+iQR2ServerKeyCallback__3DWCFiPv = 0x800e4c88
 AddMatchKeyString__3DWCFUcPCcPCc = 0x800d45f4
 AddMatchKeyInt__3DWCFUcPCcPCi = 0x800d4258
 InitGHTTP__3DWCFPCc = 0x800cd3b0
@@ -241,6 +242,9 @@ TableMapSafe = 0x800f017c
 
 #qr2
 qr2_register_keyA = 0x801115d4
+qr2_buffer_addA = 0x8010f434
+qr2_keybuffer_add = 0x8010f354
+qr2_init_socketA = 0x8010ecac
 
 #GHTTP
 PostAddFileFromMemoryA__5GHTTPFPPQ25GHTTP7GHIPostPCcPCviPCcPCc = 0x80113944
@@ -1586,6 +1590,8 @@ FillName__14CtrlRaceResultFUc = 0x807f52f4
 FillCharacter__14CtrlRaceResultF11CharacterId = 0x807f544c
 FillFinishTime__14CtrlRaceResultFUc = 0x807f595c
 FillScore__14CtrlRaceResultFUiUi = 0x807f56d4
+FillDelta__14CtrlRaceResultFUiUc = 0x807f579c
+OnUpdate__14CtrlRaceResultFv = 0x807f5a50
 __dt__14CtrlRaceResultFv = 0x807f6490
 __vt__14CtrlRaceResult = 0x808d3ee8
 
@@ -2079,6 +2085,8 @@ __dt__Q25Pages11LeaderboardFv = 0x80625198
 GetRuntimeTypeInfo__Q25Pages11LeaderboardCFv = 0x8085c390
 AfterControlUpdate__Q25Pages11LeaderboardFv = 0x8085c0c4
 OnActivate__Q25Pages11LeaderboardFv = 0x8085bf94
+UpdateLicenseRating__Q25Pages11LeaderboardFv = 0x8085c16c
+SaveRatingsAndStats__Q25Pages11LeaderboardFv = 0x8064f65c
 GetRowCount__Q25Pages21GPVSLeaderboardUpdateCFv = 0x8085c4f4
 func_0x6c__Q25Pages21GPVSLeaderboardUpdateFv = 0x8085c5a0
 FillRows__Q25Pages21GPVSLeaderboardUpdateFv = 0x8085c858
@@ -2598,9 +2606,6 @@ OSRestoreInterrupts = 0x801a65d4
 reset__14RaceInputStateFv = 0x8051e85c
 DWCi_RetryReserving = 0x800df094
 DWCi_RandomizeServers = 0x800e4ad0
-qr2_buffer_addA = 0x8010f434
-DWCi_QR2ServerKeyCallback = 0x800e4c88
-qr2_init_socketA = 0x8010ecac
 RequestPause__12RacePauseMgrFv = 0x808600dc
 RequestUnpause__12RacePauseMgrFv = 0x80860100
 sInstance__Q25Pages12RacePauseMgr = 0x809c4730

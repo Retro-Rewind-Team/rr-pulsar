@@ -19,6 +19,7 @@ public:
 
     void Fill(u8 position, u8 playerId);  // 807f5fec fills position bmg, controller/star rank bmg, character icon, prepares animationsposition is 1-indexed, ie if 1 bmg will be "1st"
     void FillScore(u32 score, u32 ptsBmgId);  // 807f56d4 fills score bmgId
+    void FillDelta(u32 delta, u8 animationVariant);  // 807f579c
     void FillName(u8 playerId);  // 807f52f4
     void FillCharacter(CharacterId character);  // 807f544c
     void FillFinishTime(u8 playerId);  // 807f595c

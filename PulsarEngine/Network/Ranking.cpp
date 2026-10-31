@@ -110,11 +110,11 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
     const float winRate = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
 
     const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
-    const float userVr = rksysMgr != nullptr ? PointRating::GetUserVR(rksysMgr->curLicenseId) : static_cast<float>(licenseVr.points);
-    float clampedVr = userVr > 1000.0f ? 1000.0f : userVr;
+    const float userVr = rksysMgr != nullptr ? PointRating::GetUserVR(rksysMgr->curLicenseId) : licenseVr.points * 100.0f;
+    float clampedVr = userVr > 100000.0f ? 100000.0f : userVr;
     if (clampedVr < 0.0f)
         clampedVr = 0.0f;
-    const float normalizedVr = clampedVr / 1000.0f * 100.0f;
+    const float normalizedVr = clampedVr / 100000.0f * 100.0f;
 
     const float normalizedFirsts = times1st >= 2250 ? 100.0f : 100.0f * times1st / 2250.0f;
     const float normalizedDistance = distTravelled >= 40000.0f ? 100.0f : 100.0f * distTravelled / 40000.0f;
@@ -395,7 +395,7 @@ int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
     float vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
     if (vr < 0.0f)
         vr = 0.0f;
-    const u32 vrClamped = static_cast<u32>(vr * 100.0f + 0.5f);
+    const u32 vrClamped = static_cast<u32>(vr + 0.5f);
 
     const u32 times1st = license.GetTimes1stPlaceAchieved();
     const float distTravelled = license.GetDistanceTravelled();

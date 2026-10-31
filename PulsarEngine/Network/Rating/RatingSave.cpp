@@ -38,6 +38,7 @@ struct PackedHeader {
     u16 count;
 };
 
+// Version 1 stores ratings in the original units. Convert only at the file boundary.
 struct PackedEntry {
     s32 profileId;
     float vr;
@@ -66,41 +67,28 @@ static const char *GetPath() {
     return sPath;
 }
 
-static ProfileEntry *FindProfile(s32 id) {
+static ProfileEntry *GetProfile(s32 id, bool create) {
     if (!IsUsableProfileId(id))
         return nullptr;
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         if (sProfiles[i].profileId == id)
             return &sProfiles[i];
     }
-    return nullptr;
-}
-
-static ProfileEntry *AllocProfile(s32 id) {
+    if (!create)
+        return nullptr;
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         if (!sProfiles[i].hasData) {
             sProfiles[i].profileId = id;
             return &sProfiles[i];
         }
     }
-    ProfileEntry &rep = sProfiles[sReplaceIdx];
+    ProfileEntry &profile = sProfiles[sReplaceIdx];
     sReplaceIdx = (sReplaceIdx + 1) % MAX_PROFILES;
-    rep.hasData = false;
-    rep.vr = 0.0f;
-    rep.br = 0.0f;
-    rep.profileId = id;
-    return &rep;
-}
-
-static ProfileEntry *GetProfile(s32 id, bool create) {
-    if (!IsUsableProfileId(id))
-        return nullptr;
-    ProfileEntry *e = FindProfile(id);
-    if (e)
-        return e;
-    if (create)
-        return AllocProfile(id);
-    return nullptr;
+    profile.hasData = false;
+    profile.vr = 0.0f;
+    profile.br = 0.0f;
+    profile.profileId = id;
+    return &profile;
 }
 
 static s32 ResolveProfileIdForLicense(u32 licenseId) {
@@ -118,10 +106,6 @@ static s32 ResolveProfileIdForLicense(u32 licenseId) {
 
     const s32 boundProfileId = sBoundProfileIds[licenseId];
     return IsUsableProfileId(boundProfileId) ? boundProfileId : 0;
-}
-
-static ProfileEntry *GetProfileForLicense(u32 licenseId, bool create) {
-    return GetProfile(ResolveProfileIdForLicense(licenseId), create);
 }
 
 static void Load() {
@@ -157,8 +141,8 @@ static void Load() {
             break;
         if ((eBuf.e.flags & 1) && IsUsableProfileId(eBuf.e.profileId)) {
             sProfiles[i].profileId = eBuf.e.profileId;
-            sProfiles[i].vr = eBuf.e.vr;
-            sProfiles[i].br = eBuf.e.br;
+            sProfiles[i].vr = eBuf.e.vr * 100.0f;
+            sProfiles[i].br = eBuf.e.br * 100.0f;
             sProfiles[i].hasData = true;
         }
     }
@@ -182,8 +166,8 @@ static void Save() {
 
     for (u32 i = 0; i < MAX_PROFILES; ++i) {
         file.e[i].profileId = sProfiles[i].profileId;
-        file.e[i].vr = sProfiles[i].vr;
-        file.e[i].br = sProfiles[i].br;
+        file.e[i].vr = sProfiles[i].vr / 100.0f;
+        file.e[i].br = sProfiles[i].br / 100.0f;
         file.e[i].flags = sProfiles[i].hasData ? 1u : 0u;
     }
 
@@ -193,52 +177,52 @@ static void Save() {
     io->Close();
 }
 
-static u16 ClampU16(float v) {
-    return (v < (float)MIN_RATING) ? MIN_RATING : (v > (float)MAX_RATING) ? MAX_RATING : (u16)v;
+static u16 ClampLicenseRating(float rating) {
+    return (rating < 1.0f) ? 1 : (rating > 10000.0f) ? 10000 : (u16)rating;
 }
 
-static float ClampF(float v) {
-    return (v < (float)MIN_RATING) ? (float)MIN_RATING : (v > (float)MAX_RATING) ? (float)MAX_RATING : v;
+static float ClampRating(float rating) {
+    return (rating < (float)MIN_RATING) ? (float)MIN_RATING : (rating > (float)MAX_RATING) ? (float)MAX_RATING : rating;
 }
 
 void SaveProfileVR(s32 profileId, float vr) {
     Load();
-    ProfileEntry *e = GetProfile(profileId, true);
-    if (e) {
-        e->vr = ClampF(vr);
-        e->hasData = true;
+    ProfileEntry *profile = GetProfile(profileId, true);
+    if (profile) {
+        profile->vr = ClampRating(vr);
+        profile->hasData = true;
         Save();
     }
 }
 
 void SaveProfileBR(s32 profileId, float br) {
     Load();
-    ProfileEntry *e = GetProfile(profileId, true);
-    if (e) {
-        e->br = ClampF(br);
-        e->hasData = true;
+    ProfileEntry *profile = GetProfile(profileId, true);
+    if (profile) {
+        profile->br = ClampRating(br);
+        profile->hasData = true;
         Save();
     }
 }
 
 float GetUserVR(u32 licenseId) {
     Load();
-    ProfileEntry *e = GetProfileForLicense(licenseId, false);
-    return (e && e->hasData) ? e->vr : DEFAULT_RATING;
+    ProfileEntry *profile = GetProfile(ResolveProfileIdForLicense(licenseId), false);
+    return (profile && profile->hasData) ? profile->vr : DEFAULT_RATING;
 }
 
 float GetUserBR(u32 licenseId) {
     Load();
-    ProfileEntry *e = GetProfileForLicense(licenseId, false);
-    return (e && e->hasData) ? e->br : DEFAULT_RATING;
+    ProfileEntry *profile = GetProfile(ResolveProfileIdForLicense(licenseId), false);
+    return (profile && profile->hasData) ? profile->br : DEFAULT_RATING;
 }
 
 void SetUserVR(u32 licenseId, float vr) {
     Load();
-    ProfileEntry *e = GetProfileForLicense(licenseId, true);
-    if (e) {
-        e->vr = ClampF(vr);
-        e->hasData = true;
+    ProfileEntry *profile = GetProfile(ResolveProfileIdForLicense(licenseId), true);
+    if (profile) {
+        profile->vr = ClampRating(vr);
+        profile->hasData = true;
         Save();
         ReportCurrentRatings(licenseId);
     }
@@ -246,10 +230,10 @@ void SetUserVR(u32 licenseId, float vr) {
 
 void SetUserBR(u32 licenseId, float br) {
     Load();
-    ProfileEntry *e = GetProfileForLicense(licenseId, true);
-    if (e) {
-        e->br = ClampF(br);
-        e->hasData = true;
+    ProfileEntry *profile = GetProfile(ResolveProfileIdForLicense(licenseId), true);
+    if (profile) {
+        profile->br = ClampRating(br);
+        profile->hasData = true;
         Save();
         ReportCurrentRatings(licenseId);
     }
@@ -262,54 +246,30 @@ void BindLicenseProfileId(u32 licenseId, s32 profileId) {
         sBoundProfileIds[licenseId] = profileId;
 }
 
-static void ApplyToLicense(u32 idx, RKSYS::LicenseMgr &lic) {
-    Load();
-    if (idx >= MAX_LICENSES)
-        return;
-
-    sBackups[idx].originalVr = ClampU16((float)lic.vr.points);
-    sBackups[idx].originalBr = ClampU16((float)lic.br.points);
-    sBackups[idx].hasOriginal = true;
-
-    const s32 profileId = ResolveProfileIdForLicense(idx);
-    ProfileEntry *e = GetProfile(profileId, true);
-    if (!e)
-        return;
-
-    if (!e->hasData) {
-        e->vr = (float)sBackups[idx].originalVr / 100.0f;
-        e->br = (float)sBackups[idx].originalBr / 100.0f;
-        e->hasData = true;
-        Save();
-    }
-    lic.vr.points = ClampU16(e->vr);
-    lic.br.points = ClampU16(e->br);
-}
-
-static void StoreFromLicense(u32 idx, RKSYS::LicenseMgr &lic) {
+static void ApplyProfileToLicense(u32 idx, RKSYS::LicenseMgr &lic) {
     Load();
     if (idx >= MAX_LICENSES)
         return;
 
     if (!sBackups[idx].hasOriginal) {
-        sBackups[idx].originalVr = ClampU16((float)lic.vr.points);
-        sBackups[idx].originalBr = ClampU16((float)lic.br.points);
+        sBackups[idx].originalVr = ClampLicenseRating((float)lic.vr.points);
+        sBackups[idx].originalBr = ClampLicenseRating((float)lic.br.points);
         sBackups[idx].hasOriginal = true;
     }
 
     const s32 profileId = ResolveProfileIdForLicense(idx);
-    ProfileEntry *e = GetProfile(profileId, true);
-    if (!e)
+    ProfileEntry *profile = GetProfile(profileId, true);
+    if (!profile)
         return;
 
-    if (!e->hasData) {
-        e->vr = (float)sBackups[idx].originalVr / 100.0f;
-        e->br = (float)sBackups[idx].originalBr / 100.0f;
-        e->hasData = true;
+    if (!profile->hasData) {
+        profile->vr = (float)sBackups[idx].originalVr;
+        profile->br = (float)sBackups[idx].originalBr;
+        profile->hasData = true;
         Save();
     }
-    lic.vr.points = ClampU16(e->vr);
-    lic.br.points = ClampU16(e->br);
+    lic.vr.points = ClampLicenseRating(profile->vr / 100.0f);
+    lic.br.points = ClampLicenseRating(profile->br / 100.0f);
 }
 
 extern "C" int SaveManager_ReadLicenseHook() {
@@ -326,8 +286,10 @@ extern "C" int SaveManager_ReadLicenseHook() {
     u32 addr = reinterpret_cast<u32>(lic);
     if (addr >= base) {
         u32 idx = (addr - base) / sizeof(RKSYS::LicenseMgr);
-        if (idx < MAX_LICENSES)
-            ApplyToLicense(idx, *lic);
+        if (idx < MAX_LICENSES) {
+            sBackups[idx].hasOriginal = false;
+            ApplyProfileToLicense(idx, *lic);
+        }
     }
     return 1;
 }
@@ -337,7 +299,7 @@ extern "C" void SaveManager_WriteLicenseHook(RKSYS::Binary *raw, u32 idx) {
     if (!mgr || idx >= MAX_LICENSES)
         return;
 
-    StoreFromLicense(idx, mgr->licenses[idx]);
+    ApplyProfileToLicense(idx, mgr->licenses[idx]);
 
     if (raw && sBackups[idx].hasOriginal) {
         raw->core.licenses[idx].magic = 'RKPD';

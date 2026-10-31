@@ -486,7 +486,7 @@ void ExpCharacterSelect::OnActivate() {
     bool miiCUnlocked = Restrictions::IsOnlyMiiOutfitCEnabled();
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (!miiCUnlocked && rksys != nullptr)
-        miiCUnlocked = PointRating::GetUserVR(rksys->curLicenseId) >= 300.0f;
+        miiCUnlocked = PointRating::GetUserVR(rksys->curLicenseId) >= 30000.0f;
 
     CtrlMenuCharacterSelect::ButtonDriver *defaultButton = nullptr;
     if (!Restrictions::IsCharacterRestrictionEnabled()) {

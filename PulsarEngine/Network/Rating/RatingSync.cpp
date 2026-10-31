@@ -18,71 +18,36 @@
 namespace Pulsar {
 namespace PointRating {
 
-static bool s_syncReportingSuppressed = false;
 static const u32 s_nhttpWorkBufSize = 0x1000;
 static u32 s_requestGeneration = 0;
 static bool s_requestInFlight = false;
 static void *s_requestWorkBuf = nullptr;
 static char s_requestUrl[160];
-static s32 s_pendingInitialReportProfileId = 0;
-static u32 s_pendingInitialReportLicenseId = 0;
-static bool s_pendingLoginDownload = false;
 static s32 s_pendingProfileId = 0;
 static u32 s_pendingLicenseId = 0;
 
-struct RequestCtx {
+struct RatingRequest {
     u32 generation;
     s32 profileId;
     u32 licenseId;
 };
 
-static RequestCtx s_requestCtx;
-
-static int ClampRatingForSync(float rating) {
-    int scaled = (int)(rating * 100.0f + 0.5f);
-    if (scaled < 1)
-        return 1;
-    if (scaled > 1000000)
-        return 1000000;
-    return scaled;
-}
-
-void SetSyncReportingSuppressed(bool suppress) {
-    s_syncReportingSuppressed = suppress;
-}
+static RatingRequest s_requestCtx;
 
 void ReportCurrentRatings(u32 licenseId) {
-    if (s_syncReportingSuppressed)
-        return;
-
-    const int vrScaled = ClampRatingForSync(GetUserVR(licenseId));
-    const int brScaled = ClampRatingForSync(GetUserBR(licenseId));
+    const int vr = (int)(GetUserVR(licenseId) + 0.5f);
+    const int br = (int)(GetUserBR(licenseId) + 0.5f);
 
     char buffer[64];
-    if (snprintf(buffer, sizeof(buffer), "vr=%d|br=%d", vrScaled, brScaled) < 0)
+    if (snprintf(buffer, sizeof(buffer), "vr=%d|br=%d", vr < 1 ? 1 : vr > MAX_RATING ? MAX_RATING : vr, br < 1 ? 1 : br > MAX_RATING ? MAX_RATING : br) < 0)
         return;
     Network::Report("wl:mkw_vrbr", buffer);
-}
-
-static bool IsRequestStillRelevant(const RequestCtx &ctx) {
-    if (ctx.generation != s_requestGeneration)
-        return false;
-    if (ctx.profileId <= 0)
-        return false;
-
-    RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-    if (rksys == nullptr || ctx.licenseId >= 4)
-        return false;
-    if (rksys->curLicenseId != ctx.licenseId)
-        return false;
-
-    return true;
 }
 
 static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
     Network::FinishNHTTPRequest();
     s_requestInFlight = false;
-    RequestCtx *ctx = reinterpret_cast<RequestCtx *>(userdata);
+    RatingRequest *ctx = reinterpret_cast<RatingRequest *>(userdata);
     if (ctx == nullptr || response == nullptr)
         return;
 
@@ -110,7 +75,8 @@ static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
 
     NHTTPDestroyResponse(response);
 
-    if (!IsRequestStillRelevant(*ctx))
+    const RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+    if (ctx->generation != s_requestGeneration || rksys == nullptr || ctx->licenseId >= 4 || rksys->curLicenseId != ctx->licenseId)
         return;
 
     Network::Json::Value root;
@@ -120,63 +86,52 @@ static void OnRatingsDownloaded(s32 result, void *response, void *userdata) {
         return;
     }
 
-    int vrScaled = 0;
-    int brScaled = 0;
-    if (!Network::Json::Get(root, "vr", vrScaled))
+    int vr = 0;
+    int br = 0;
+    if (!Network::Json::Get(root, "vr", vr))
         return;
-    if (!Network::Json::Get(root, "br", brScaled))
+    if (!Network::Json::Get(root, "br", br))
         return;
 
-    SetSyncReportingSuppressed(true);
-    SaveProfileVR(ctx->profileId, (float)vrScaled / 100.0f);
-    SaveProfileBR(ctx->profileId, (float)brScaled / 100.0f);
-    SetSyncReportingSuppressed(false);
+    SaveProfileVR(ctx->profileId, (float)vr);
+    SaveProfileBR(ctx->profileId, (float)br);
 }
 
-static bool BeginLoginRatingDownload(s32 profileId, u32 licenseId) {
-    if (profileId <= 0)
-        return false;
+static void TryStartPendingLoginRatingDownload() {
+    if (s_pendingProfileId == 0 || s_requestInFlight)
+        return;
+    if (!Network::PrepareNHTTPRequest())
+        return;
 
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-    if (rksys == nullptr || licenseId >= 4)
-        return false;
-    BindLicenseProfileId(licenseId, profileId);
+    if (rksys == nullptr || s_pendingLicenseId >= 4)
+        return;
+    BindLicenseProfileId(s_pendingLicenseId, s_pendingProfileId);
 
     if (s_requestWorkBuf == nullptr) {
         s_requestWorkBuf = Network::NHTTPAlloc(s_nhttpWorkBufSize, 0x20);
         if (s_requestWorkBuf == nullptr)
-            return false;
+            return;
     }
     memset(s_requestWorkBuf, 0, s_nhttpWorkBufSize);
 
     s_requestCtx.generation = s_requestGeneration;
-    s_requestCtx.profileId = profileId;
-    s_requestCtx.licenseId = licenseId;
+    s_requestCtx.profileId = s_pendingProfileId;
+    s_requestCtx.licenseId = s_pendingLicenseId;
 
-    if (snprintf(s_requestUrl, sizeof(s_requestUrl), "http://nas.%s/api/mkw_rr_ratings?pid=%ld", WWFC_DOMAIN, (long)profileId) < 0) {
-        return false;
+    if (snprintf(s_requestUrl, sizeof(s_requestUrl), "http://nas.%s/api/mkw_rr_ratings?pid=%ld", WWFC_DOMAIN, (long)s_pendingProfileId) < 0) {
+        return;
     }
 
     void *request = NHTTPCreateRequest(s_requestUrl, 0, s_requestWorkBuf, s_nhttpWorkBufSize, reinterpret_cast<void *>(&OnRatingsDownloaded), reinterpret_cast<void *>(&s_requestCtx));
     if (request == nullptr)
-        return false;
+        return;
 
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet < 0)
-        return false;
+        return;
     Network::MarkNHTTPRequestActive();
     s_requestInFlight = true;
-    return true;
-}
-
-static void TryStartPendingLoginRatingDownload() {
-    if (!s_pendingLoginDownload || s_requestInFlight)
-        return;
-    if (!Network::PrepareNHTTPRequest())
-        return;
-    if (!BeginLoginRatingDownload(s_pendingProfileId, s_pendingLicenseId))
-        return;
-    s_pendingLoginDownload = false;
     s_pendingProfileId = 0;
     s_pendingLicenseId = 0;
 }
@@ -192,7 +147,6 @@ void StartLoginRatingDownload(s32 profileId, u32 licenseId) {
         return;
     BindLicenseProfileId(licenseId, profileId);
     ++s_requestGeneration;
-    s_pendingLoginDownload = true;
     s_pendingProfileId = profileId;
     s_pendingLicenseId = licenseId;
 }

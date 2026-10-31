@@ -565,8 +565,8 @@ void DiscordRichPresence(Section *_this) {
 
     if (_this->sectionId >= SECTION_P1_WIFI && _this->sectionId <= SECTION_P2_WIFI_FRIEND_COIN) {
         char newDetails[0x100];
-        int vrScaled = (int)(vr * 100.0f + 0.5f);
-        int brScaled = (int)(br * 100.0f + 0.5f);
+        int vrScaled = (int)(vr + 0.5f);
+        int brScaled = (int)(br + 0.5f);
         snprintf(newDetails, 0x100, "%s (VR: %d BR: %d)", details, vrScaled, brScaled);
         details = newDetails;
     }

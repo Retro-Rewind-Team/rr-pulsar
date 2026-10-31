@@ -42,42 +42,6 @@ static void SetRaceNameBadgeMessage(LayoutUIControl *control, const char *paneNa
 kmCall(0x807f05dc, SetRaceNameBadgeMessage);
 kmCall(0x807f6248, SetRaceNameBadgeMessage);
 
-static float GetRatingForDisplay(Pages::SELECTStageMgr *mgr, u32 playerId, bool isLocal, bool isBR, bool *hasDecimal) {
-    *hasDecimal = false;
-    if (isLocal) {
-        RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-        if (mgr->infos[playerId].hudSlotid == 0 && rksys && rksys->curLicenseId >= 0) {
-            *hasDecimal = true;
-            return isBR ? GetUserBR(rksys->curLicenseId) : GetUserVR(rksys->curLicenseId);
-        }
-        return (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
-    }
-    u8 aid = mgr->infos[playerId].aid;
-    u8 slot = mgr->infos[playerId].hudSlotid;
-    if (aid < 12 && slot < 2) {
-        *hasDecimal = true;
-        float base = (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
-        return base + (float)remoteDecimalVR[aid][slot] / 100.0f;
-    }
-    return (float)(isBR ? mgr->infos[playerId].br : mgr->infos[playerId].vr);
-}
-
-static void FormatRatingText(float rating, bool hasDecimal, wchar_t *buf, Text::Info *info, u32 *valMsg, u32 *unitMsg, u32 unitId) {
-    if ((u16)rating == 0xffff) {
-        *valMsg = 0x25e7;
-        return;
-    }
-    if (hasDecimal) {
-        FormatRatingDigits(rating, buf, 64);
-        info->strings[0] = buf;
-        *valMsg = UI::BMG_TEXT;
-    } else {
-        *valMsg = 0x13f1;
-        info->intToPass[0] = (u16)rating;
-    }
-    *unitMsg = unitId;
-}
-
 static void FillVRControl(Pages::VR *page, u32 idx, u32 playerId, u32 team, u8 type, bool isLocal) {
     if (!page || idx >= 12)
         return;
@@ -104,9 +68,32 @@ static void FillVRControl(Pages::VR *page, u32 idx, u32 playerId, u32 team, u8 t
         u32 valMsg = 0, unitMsg = 0;
 
         if (type == 1 || type == 2) {
-            bool hasDecimal;
-            float rating = GetRatingForDisplay(mgr, playerId, isLocal, type == 2, &hasDecimal);
-            FormatRatingText(rating, hasDecimal, buf, &ptsInfo, &valMsg, &unitMsg, (type == 1) ? 0x25e4 : 0x25e5);
+            const PlayerInfo &player = mgr->infos[playerId];
+            float rating = (type == 2 ? player.br : player.vr) * 100.0f;
+            bool isExpanded = false;
+            if (isLocal) {
+                const RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+                if (player.hudSlotid == 0 && rksys && rksys->curLicenseId >= 0) {
+                    rating = type == 2 ? GetUserBR(rksys->curLicenseId) : GetUserVR(rksys->curLicenseId);
+                    isExpanded = true;
+                }
+            } else if (player.aid < 12 && player.hudSlotid < 2) {
+                rating += remoteDecimalVR[player.aid][player.hudSlotid];
+                isExpanded = true;
+            }
+            if ((u16)(rating / 100.0f) == 0xffff) {
+                valMsg = 0x25e7;
+            } else {
+                if (isExpanded) {
+                    swprintf(buf, 64, L"%d", (int)(rating + 0.5f));
+                    ptsInfo.strings[0] = buf;
+                    valMsg = UI::BMG_TEXT;
+                } else {
+                    valMsg = 0x13f1;
+                    ptsInfo.intToPass[0] = (u16)(rating / 100.0f);
+                }
+                unitMsg = type == 1 ? 0x25e4 : 0x25e5;
+            }
         }
 
         if (valMsg) {
@@ -147,7 +134,7 @@ static void FillWFCRecordsControl(Page * /*page*/, int row, LayoutUIControl *con
         const float rating = (row == 0) ? GetUserVR(rksys->curLicenseId) : GetUserBR(rksys->curLicenseId);
         wchar_t buf[64];
         Text::Info info;
-        FormatRatingDigits(rating, buf, 64);
+        swprintf(buf, 64, L"%d", (int)(rating + 0.5f));
         info.strings[0] = buf;
         control->SetTextBoxMessage("score", UI::BMG_TEXT, &info);
         return;

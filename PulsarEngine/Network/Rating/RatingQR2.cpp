@@ -1,5 +1,6 @@
 #include <kamek.hpp>
-#include <runtimeWrite.hpp>
+#include <core/GS/QR2/QR2.hpp>
+#include <core/rvl/DWC/DWCMatch.hpp>
 #include <core/rvl/os/OS.hpp>
 #include <core/rvl/RFL/RFL.hpp>
 #include <include/c_stdio.h>
@@ -20,20 +21,6 @@ static wchar_t fakeMiiName[11];
 
 namespace PointRating {
 
-kmRuntimeUse(0x8010f434);
-kmRuntimeUse(0x800e4c88);
-kmRuntimeUse(0x8010f354);
-kmRuntimeUse(0x800e5524);
-
-typedef void (*qr2_buffer_addA_t)(void *buffer, const char *value);
-static const qr2_buffer_addA_t qr2_buffer_addA = (qr2_buffer_addA_t)kmRuntimeAddr(0x8010f434);
-
-typedef void (*qr2_keybuffer_add_t)(void *buffer, int key);
-static const qr2_keybuffer_add_t qr2_keybuffer_add = (qr2_keybuffer_add_t)kmRuntimeAddr(0x8010f354);
-
-typedef void (*ServerKeyCallback)(int key, void *buffer);
-static const ServerKeyCallback OriginalServerKeyCallback = (ServerKeyCallback)kmRuntimeAddr(0x800e4c88);
-
 typedef void (*KeyListCallback)(int keyType, void *buffer);
 static KeyListCallback OriginalKeyListCallback = nullptr;
 
@@ -51,54 +38,39 @@ static bool IsStreamerModeActiveForServer() {
     return true;
 }
 
-static int ClampRatingForQr2(float vr) {
-    int scaled = (int)(vr * 100.0f);
-    if (scaled < 1) {
-        scaled = 1;
-    } else if (scaled > 1000000) {
-        scaled = 1000000;
-    }
-    return scaled;
-}
-
-static void MyServerKeyCallback(int key, void *buffer) {
+static void RatingServerKeyCallback(int key, void *buffer) {
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     u32 licenseId = 0;
     if (rksys) {
         licenseId = rksys->curLicenseId;
     }
 
-    if (key == 0x65) {  // ev
-        float vr = PointRating::GetUserVR(licenseId);
-        char buf[32];
-        snprintf(buf, sizeof(buf), "%d", ClampRatingForQr2(vr));
-        qr2_buffer_addA(buffer, buf);
+    if (key == 0x65 || key == 0x66) {  // ev / eb
+        const float rating = key == 0x65 ? GetUserVR(licenseId) : GetUserBR(licenseId);
+        char bufferText[32];
+        const int points = (int)rating;
+        snprintf(bufferText, sizeof(bufferText), "%d", points < 1 ? 1 : points > MAX_RATING ? MAX_RATING : points);
+        qr2_buffer_addA(buffer, bufferText);
         return;
     }
-    if (key == 0x66) {  // eb
-        float br = PointRating::GetUserBR(licenseId);
-        char buf[32];
-        snprintf(buf, sizeof(buf), "%d", ClampRatingForQr2(br));
-        qr2_buffer_addA(buffer, buf);
-        return;
-    }
-    OriginalServerKeyCallback(key, buffer);
+    DWC::iQR2ServerKeyCallback(key, buffer);
 }
 
-static void MyKeyListCallback(int keyType, void *buffer) {
+static void RatingKeyListCallback(int keyType, void *buffer) {
     if (OriginalKeyListCallback) {
         OriginalKeyListCallback(keyType, buffer);
     }
     if (keyType == 0) {  // QR2_SERVER_KEY
         // Add ev and eb if they aren't already in the buffer (they are missing in private rooms)
-        unsigned char *b = (unsigned char *)buffer;
-        int count = *(int *)(b + 0x100);
+        // QR2 keeps the key count immediately after its 256-byte key array.
+        u8 *keys = reinterpret_cast<u8 *>(buffer);
+        int count = *reinterpret_cast<int *>(keys + 0x100);
         bool hasEv = false;
         bool hasEb = false;
         for (int i = 0; i < count; i++) {
-            if (b[i] == 0x65)
+            if (keys[i] == 0x65)
                 hasEv = true;
-            if (b[i] == 0x66)
+            if (keys[i] == 0x66)
                 hasEb = true;
         }
         if (!hasEv)
@@ -108,18 +80,13 @@ static void MyKeyListCallback(int keyType, void *buffer) {
     }
 }
 
-kmRuntimeUse(0x8010ecac);
-typedef int (*qr2_init_socketA_t)(void *q, int s, int bound_port, const char *gamename, const char *secret_key, int is_public, int nat_negotiate, void *server_key_callback, void *player_key_callback,
-  void *team_key_callback, void *key_list_callback, void *count_callback, void *adderror_callback, void *userdata);
-static const qr2_init_socketA_t qr2_init_socketA_Real = (qr2_init_socketA_t)kmRuntimeAddr(0x8010ecac);
-
-static int Hook_qr2_init_socketA(void *q, int s, int bound_port, const char *gamename, const char *secret_key, int is_public, int nat_negotiate, void *server_key_callback, void *player_key_callback,
-  void *team_key_callback, void *key_list_callback, void *count_callback, void *adderror_callback, void *userdata) {
-    OriginalKeyListCallback = (KeyListCallback)key_list_callback;
-    return qr2_init_socketA_Real(q, s, bound_port, gamename, secret_key, is_public, nat_negotiate, (void *)MyServerKeyCallback, player_key_callback, team_key_callback, (void *)MyKeyListCallback,
-      count_callback, adderror_callback, userdata);
+static int InitRatingQR2(void *q, int socket, int boundPort, const char *gameName, const char *secretKey, int isPublic, int natNegotiate, void *serverKeyCallback, void *playerKeyCallback,
+  void *teamKeyCallback, void *keyListCallback, void *countCallback, void *addErrorCallback, void *userdata) {
+    OriginalKeyListCallback = reinterpret_cast<KeyListCallback>(keyListCallback);
+    return qr2_init_socketA(q, socket, boundPort, gameName, secretKey, isPublic, natNegotiate, reinterpret_cast<void *>(RatingServerKeyCallback), playerKeyCallback, teamKeyCallback,
+      reinterpret_cast<void *>(RatingKeyListCallback), countCallback, addErrorCallback, userdata);
 }
-kmCall(0x800d4f28, Hook_qr2_init_socketA);
+kmCall(0x800d4f28, InitRatingQR2);
 
 static RFL::StoreData s_originalMiis[2];
 static bool s_originalMiisStored = false;
@@ -156,7 +123,7 @@ static void ReplaceUserPacketMiiForServer(RKNet::USERHandler *handler) {
 // clang-format off
 asm void AsmHook_AfterMiiCopyLoop() {
     nofralloc
-    // Save volatile registers used by the caller
+    // The caller keeps the USER handler in r31.
     stwu    r1, -0x20(r1)
     mflr    r12
     stw     r12, 0x24(r1)
@@ -164,11 +131,9 @@ asm void AsmHook_AfterMiiCopyLoop() {
     stw     r4, 0xc(r1)
     stw     r30, 0x10(r1)
 
-    // Call our C++ function with r31 (USERHandler*) as argument
     mr      r3, r31
     bl      ReplaceUserPacketMiiForServer
 
-    // Restore registers
     lwz     r30, 0x10(r1)
     lwz     r4, 0xc(r1)
     lwz     r3, 0x8(r1)
@@ -179,7 +144,6 @@ asm void AsmHook_AfterMiiCopyLoop() {
     // Execute the replaced instruction: lis r4, -0x7f64 (0x80a0)
     lis     r4, -0x7f64
 
-    // Return
     blr
 }  // clang-format on
 kmCall(0x80663088, AsmHook_AfterMiiCopyLoop);
@@ -210,7 +174,6 @@ asm void AsmHook_BeforeDWCLoginAsync() {
     // r3 already has the Mii pointer
     bl      GetLoginMiiName
     
-    // r3 now has the name pointer to use
     // Restore registers for DWC_LoginAsync
     lwz     r4, 0x10(r1)
     lwz     r5, 0x14(r1)
@@ -219,7 +182,6 @@ asm void AsmHook_BeforeDWCLoginAsync() {
     mtlr    r0
     addi    r1, r1, 0x30
     
-    // Return with r3 = name pointer
     blr
 }  // clang-format on
 kmCall(0x80658cd8, AsmHook_BeforeDWCLoginAsync);

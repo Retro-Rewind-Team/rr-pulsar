@@ -26,14 +26,6 @@
 
 kmWrite32(0x800c9980, 0x4800000c);  // b 0x800c998c
 
-static void NHTTPConfigureHttpsForRequest(void *request) {
-    if (request == nullptr)
-        return;
-    typedef s32 (*Fn)(void *, ...);
-    (reinterpret_cast<Fn>(&NHTTPSetRootCADefault))(request);
-    (reinterpret_cast<Fn>(&NHTTPSetVerifyOption))(request, 1);
-}
-
 namespace Pulsar {
 namespace UI {
 
@@ -124,10 +116,6 @@ static NHTTPRequestCtx s_requestCtx;
 static void *s_requestWorkBuf = nullptr;
 static char s_requestUrl[256];
 
-static u32 GetAPIPageForInGamePage(u32 inGamePage) {
-    return inGamePage / VRLeaderboardPage::kPagesPerAPIFetch + 1;
-}
-
 static void SetLeaderboardRowTextColor(LayoutUIControl &row, const nw4r::ut::Color &textColor) {
     const char *textBoxNames[] = {"player_name", "position", "total_score", "total_point"};
     for (int j = 0; j < 4; ++j) {
@@ -165,22 +153,6 @@ static void ClearLeaderboardRow(LayoutUIControl &row, wchar_t *nameText) {
     SetPaneVisibleIfPresent(row, "chara_icon_sha", false);
 }
 
-static int Base64CharValue(char c) {
-    if (c >= 'A' && c <= 'Z')
-        return c - 'A';
-    if (c >= 'a' && c <= 'z')
-        return c - 'a' + 26;
-    if (c >= '0' && c <= '9')
-        return c - '0' + 52;
-    if (c == '+')
-        return 62;
-    if (c == '/')
-        return 63;
-    if (c == '=')
-        return -2;  // padding
-    return -1;
-}
-
 static int DecodeBase64(const char *in, u8 *out, int outCap) {
     if (in == nullptr || out == nullptr || outCap <= 0)
         return 0;
@@ -194,7 +166,19 @@ static int DecodeBase64(const char *in, u8 *out, int outCap) {
         if (c == ' ' || c == '\n' || c == '\r' || c == '\t')
             continue;
 
-        const int v = Base64CharValue(c);
+        int v = -1;
+        if (c >= 'A' && c <= 'Z')
+            v = c - 'A';
+        else if (c >= 'a' && c <= 'z')
+            v = c - 'a' + 26;
+        else if (c >= '0' && c <= '9')
+            v = c - '0' + 52;
+        else if (c == '+')
+            v = 62;
+        else if (c == '/')
+            v = 63;
+        else if (c == '=')
+            v = -2;
         if (v == -1)
             continue;
         buf[bufCount++] = v;
@@ -441,7 +425,7 @@ void VRLeaderboardPage::OnUpdate() {
     }
 
     this->PlaySound(pageWentLeft ? SOUND_ID_LEFT_ARROW_PRESS : SOUND_ID_RIGHT_ARROW_PRESS, -1);
-    if (GetAPIPageForInGamePage(curPage) == s_loadedAPIPage) {
+    if (curPage / kPagesPerAPIFetch + 1 == s_loadedAPIPage) {
         ApplyResults();
     } else {
         ResetRowsToLoading();
@@ -563,7 +547,7 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage *page) {
         return;
     }
 
-    const u32 apiPage = GetAPIPageForInGamePage(page->curPage);
+    const u32 apiPage = page->curPage / kPagesPerAPIFetch + 1;
     s_fetchState = FETCH_REQUESTING;
     s_hasApplied = false;
     s_requestStartTime = OS::GetTime();
@@ -604,7 +588,9 @@ void VRLeaderboardPage::StartFetch(VRLeaderboardPage *page) {
     }
 
     if (strncmp(s_requestUrl, "https://", 8) == 0) {
-        NHTTPConfigureHttpsForRequest(request);
+        typedef s32 (*ConfigureHTTPS)(void *, ...);
+        reinterpret_cast<ConfigureHTTPS>(&NHTTPSetRootCADefault)(request);
+        reinterpret_cast<ConfigureHTTPS>(&NHTTPSetVerifyOption)(request, 1);
     }
     const s32 sendRet = NHTTPSendRequestAsync(request);
     if (sendRet < 0) {
