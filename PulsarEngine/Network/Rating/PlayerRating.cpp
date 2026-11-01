@@ -114,7 +114,7 @@ void UpdatePoints(RacedataScenario *scenario) {
                     float sample = Clamp((float)SPLINE_BIAS + (oppRating - myRating), 0.0f, (float)(SPLINE_BIAS * 2));
                     float gain = Clamp(EvaluateSpline(SPLINE_SCALE * sample), 1.0f, 24.0f);
                     gain *= 0.1f + 0.9f * (1.0f - Clamp((myRating - 150000.0f) / 700000.0f, 0.0f, 1.0f));
-                    if (isVR && myRating - totalVR / (float)playerCount >= 75000.0f && (totalVR - myRating) / (float)(playerCount - 1) <= 30000.0f)
+                    if (isVR && System::sInstance->netMgr.region == 0x0A && myRating - totalVR / (float)playerCount >= 75000.0f && (totalVR - myRating) / (float)(playerCount - 1) <= 30000.0f)
                         gain *= 0.15f;
                     deltas[i] += gain;
                 } else if (lost) {
