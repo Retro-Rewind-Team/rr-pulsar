@@ -5,17 +5,11 @@
 namespace Pulsar {
 namespace BattleFFA {
 
-void BattleLeaderboardPageSkip(Pages::BattleLeaderboardUpdate *self) {
-    if (self->currentState == STATE_ACTIVE) {
-        if (self->duration >= static_cast<u32>(1)) {
-            self->EndStateAnimated(0, 0.0f);
-        }
-    }
-}
-
 void UpdatePage(Page *self) {
     if (self->pageId == Pages::BattleLeaderboardUpdate::id) {
-        BattleLeaderboardPageSkip(static_cast<Pages::BattleLeaderboardUpdate *>(self));
+        Pages::BattleLeaderboardUpdate *page = static_cast<Pages::BattleLeaderboardUpdate *>(self);
+        if (page->currentState == STATE_ACTIVE && page->duration >= static_cast<u32>(1))
+            page->EndStateAnimated(0, 0.0f);
     }
 }
 kmBranch(0x805BB22C, UpdatePage);

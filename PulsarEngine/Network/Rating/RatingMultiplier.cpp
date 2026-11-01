@@ -1,5 +1,4 @@
 #include <RetroRewind.hpp>
-#include <Gamemodes/Battle/BattleElimination.hpp>
 #include <core/RK/RKSystem.hpp>
 #include <core/egg/mem/Heap.hpp>
 #include <core/rvl/DWC/NHTTP.hpp>
@@ -132,7 +131,7 @@ float GetMultiplier() {
     if (IsWeekendMultiplierActiveForRegion(currentRegion)) {
         multiplier *= 1.5f;
     }
-    if (BattleElim::ShouldApplyBattleElimination()) {
+    if ((System::sInstance->IsContext(PULSAR_ELIMINATION) && System::sInstance->IsContext(PULSAR_FFA))) {
         const RKNet::Controller *controller = RKNet::Controller::sInstance;
         const int playerCount = controller->subs[controller->currentSub].playerCount;
         if (playerCount > 5)

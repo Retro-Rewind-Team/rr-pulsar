@@ -23,16 +23,12 @@ static bool IsBattleMode(GameMode mode) {
     return mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE;
 }
 
-static bool IsBattleElimination(const System &system) {
-    return system.IsContext(PULSAR_ELIMINATION) && system.IsContext(PULSAR_FFA);
-}
-
 static bool IsEligiblePlayer(const Raceinfo &raceinfo, u8 playerId) {
     if (playerId >= maxPlayers)
         return false;
 
     const System *system = System::sInstance;
-    if (IsBattleElimination(*system)) {
+    if ((system->IsContext(PULSAR_ELIMINATION) && system->IsContext(PULSAR_FFA))) {
         return raceinfo.players != nullptr && raceinfo.players[playerId] != nullptr && raceinfo.players[playerId]->battleScore != 0;
     }
 
@@ -268,7 +264,7 @@ void Start(const Raceinfo &raceinfo) {
     EnsureTargetIsActive(raceinfo);
 
     const GameMode mode = Racedata::sInstance->menusScenario.settings.gamemode;
-    const bool useVanillaBattleCamera = IsBattleElimination(*System::sInstance) && mode == MODE_BATTLE;
+    const bool useVanillaBattleCamera = (System::sInstance->IsContext(PULSAR_ELIMINATION) && System::sInstance->IsContext(PULSAR_FFA)) && mode == MODE_BATTLE;
     if (sTargetPlayer < maxPlayers && !useVanillaBattleCamera)
         FocusCameraOnPlayer(sTargetPlayer);
 }
@@ -279,14 +275,14 @@ void Update(Raceinfo &raceinfo) {
     sLastRaceFrames = raceinfo.raceFrames;
 
     const System *system = System::sInstance;
-    if (IsBattleElimination(*system) && raceinfo.IsAtLeastStage(RACESTAGE_RACE) && !sIsSpectating && HasEliminatedLocalPlayer(raceinfo)) {
+    if ((system->IsContext(PULSAR_ELIMINATION) && system->IsContext(PULSAR_FFA)) && raceinfo.IsAtLeastStage(RACESTAGE_RACE) && !sIsSpectating && HasEliminatedLocalPlayer(raceinfo)) {
         Start(raceinfo);
     }
     if (!sIsSpectating)
         return;
 
     const GameMode mode = Racedata::sInstance->menusScenario.settings.gamemode;
-    const bool useVanillaBattleCamera = IsBattleElimination(*system) && mode == MODE_BATTLE;
+    const bool useVanillaBattleCamera = (system->IsContext(PULSAR_ELIMINATION) && system->IsContext(PULSAR_FFA)) && mode == MODE_BATTLE;
     if (!useVanillaBattleCamera) {
         UpdateInputs(raceinfo);
 

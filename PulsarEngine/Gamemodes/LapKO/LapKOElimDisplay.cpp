@@ -1,4 +1,3 @@
-#include <Gamemodes/Battle/BattleElimination.hpp>
 #include <Gamemodes/EliminationDisplay.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceBase.hpp>
@@ -93,7 +92,7 @@ static UI::CustomCtrlBuilder sLapKOElimMessageBuilder(CtrlRaceLapKOElimMessage::
 u32 CtrlRaceLapKOElimMessage::Count() {
     const System *system = System::sInstance;
     const bool lapKoDisplay = system->lapKoMgr != nullptr && (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
-    const bool battleDisplay = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
+    const bool battleDisplay = (system->IsContext(PULSAR_ELIMINATION) && system->IsContext(PULSAR_FFA));
     if (!lapKoDisplay && !battleDisplay)
         return 0;
     const Racedata *racedata = Racedata::sInstance;
@@ -128,7 +127,7 @@ void CtrlRaceLapKOElimMessage::OnUpdate() {
 
     const System *system = System::sInstance;
     const bool lapKoContext = system->lapKoMgr != nullptr && (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE));
-    const bool battleContext = ::Pulsar::BattleElim::ShouldApplyBattleElimination();
+    const bool battleContext = (system->IsContext(PULSAR_ELIMINATION) && system->IsContext(PULSAR_FFA));
 
     u16 timer = 0;
     u8 eliminationCount = 0;

@@ -1,5 +1,4 @@
 #include <RetroRewind.hpp>
-#include <Gamemodes/Battle/BattleElimination.hpp>
 #include <Gamemodes/EliminationDisplay.hpp>
 #include <Gamemodes/Spectating.hpp>
 #include <MarioKartWii/Race/Racedata.hpp>
@@ -16,19 +15,10 @@ namespace BattleElim {
 
 static const u8 MAX_BATTLE_PLAYERS = 12;
 
-static bool IsValidPlayerId(u32 pid) {
-    return pid < MAX_BATTLE_PLAYERS;
-}
-
-bool ShouldApplyBattleElimination() {
-    const System *system = System::sInstance;
-    return system->IsContext(PULSAR_ELIMINATION) && system->IsContext(PULSAR_FFA);
-}
-
 static void SetInitialBattleScores(RacedataScenario &scenario, u16 startScore) {
     Raceinfo *raceinfo = Raceinfo::sInstance;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
-    if (!ShouldApplyBattleElimination()) {
+    if (!(System::sInstance->IsContext(PULSAR_ELIMINATION) && System::sInstance->IsContext(PULSAR_FFA))) {
         EliminationDisplay::ResetBattleTracking();
         return;
     }
@@ -47,7 +37,7 @@ static RaceFrameHook BattleElimInitScoresHook(SetInitialBattleScores);
 static void SetVanishOnElim(u8 playerIdx) {
     Raceinfo *raceinfo = Raceinfo::sInstance;
     const u8 playerCount = Pulsar::System::sInstance->nonTTGhostPlayersCount;
-    if (!ShouldApplyBattleElimination()) {
+    if (!(System::sInstance->IsContext(PULSAR_ELIMINATION) && System::sInstance->IsContext(PULSAR_FFA))) {
         EliminationDisplay::ResetBattleTracking();
         return;
     }
@@ -72,7 +62,7 @@ static RaceFrameHook BattleElimVanishHook(SetVanishOnElim);
 
 static void UpdateSpectating(LapKO::Mgr *lapKOMgr) {
     (void)lapKOMgr;
-    if (!ShouldApplyBattleElimination())
+    if (!(System::sInstance->IsContext(PULSAR_ELIMINATION) && System::sInstance->IsContext(PULSAR_FFA)))
         return;
     Spectating::Update(*Raceinfo::sInstance);
 }
@@ -87,7 +77,7 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
     const u8 localPlayerCount = scenario.localPlayerCount;
     if (!raceinfo->IsAtLeastStage(RACESTAGE_RACE))
         return;
-    if (!ShouldApplyBattleElimination())
+    if (!(System::sInstance->IsContext(PULSAR_ELIMINATION) && System::sInstance->IsContext(PULSAR_FFA)))
         return;
     u32 eliminatedCount = 0;
     for (u8 playerIdx = 0; playerIdx < playerCount && playerIdx < MAX_BATTLE_PLAYERS; ++playerIdx) {
@@ -104,7 +94,7 @@ static void SetTimerToZeroWhenAllPlayersEliminated() {
         } else {
             for (u8 localIdx = 0; localIdx < playerCount && localIdx < localPlayerCount; ++localIdx) {
                 const u32 pid = Racedata::sInstance->GetPlayerIdOfLocalPlayer(localIdx);
-                if (!IsValidPlayerId(pid)) {
+                if (pid >= MAX_BATTLE_PLAYERS) {
                     allLocalEliminated = false;
                     break;
                 }
@@ -156,23 +146,15 @@ asmFunc ForceBalloonBattle() {
 }
 kmCall(0x806619AC, ForceBalloonBattle);
 
-static bool IsGhostReplay() {
-    const Racedata *racedata = Racedata::sInstance;
-    if (racedata == nullptr || racedata->racesScenario.players[0].playerType != PLAYER_GHOST)
-        return false;
-
-    const SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr)
-        return false;
-
-    const SectionId sectionId = sectionMgr->curSection->sectionId;
-    return sectionId == SECTION_TT_REPLAY || (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU);
-}
-
 extern "C" u32 SelectRaceFanfare(u32 soundId) {
-    // Check the active race here: a replay section alone does not prove the driver is a ghost.
-    if (IsGhostReplay())
-        return SOUND_ID_BATTLE_WIN_RESULTS;
+    const Racedata *racedata = Racedata::sInstance;
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
+    if (racedata != nullptr && racedata->racesScenario.players[0].playerType == PLAYER_GHOST &&
+        sectionMgr != nullptr && sectionMgr->curSection != nullptr) {
+        const SectionId sectionId = sectionMgr->curSection->sectionId;
+        if (sectionId == SECTION_TT_REPLAY || (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU))
+            return SOUND_ID_BATTLE_WIN_RESULTS;
+    }
     if (sBattleFanfareMode == 1)
         return soundId == 0x6b ? 0x6f : 0x6d;
     if (sBattleFanfareMode == 2 && soundId == 0x68)
@@ -195,7 +177,7 @@ void BattleElim() {
     if (!racedata)
         return;
 
-    const bool eliminationActive = ShouldApplyBattleElimination();
+    const bool eliminationActive = (System::sInstance->IsContext(PULSAR_ELIMINATION) && System::sInstance->IsContext(PULSAR_FFA));
     sForceBalloonBattle = eliminationActive;
     sBattleFanfareMode = eliminationActive ? 1 : system->IsContext(PULSAR_MODE_LAPKO) ? 2 : 0;
 }
@@ -213,14 +195,14 @@ void BattleTimer() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     sBattleDuration = 180;
-    if (ShouldApplyBattleElimination()) {
-        if (sub.playerCount == 12 || sub.playerCount == 11 || sub.playerCount == 10) {
+    if ((System::sInstance->IsContext(PULSAR_ELIMINATION) && System::sInstance->IsContext(PULSAR_FFA))) {
+        if (sub.playerCount >= 10 && sub.playerCount <= 12) {
             sBattleDuration = 300;
-        } else if (sub.playerCount == 9 || sub.playerCount == 8 || sub.playerCount == 7) {
+        } else if (sub.playerCount >= 7 && sub.playerCount <= 9) {
             sBattleDuration = 240;
-        } else if (sub.playerCount == 6 || sub.playerCount == 5 || sub.playerCount == 4) {
+        } else if (sub.playerCount >= 4 && sub.playerCount <= 6) {
             sBattleDuration = 180;
-        } else if (sub.playerCount == 3 || sub.playerCount == 2 || sub.playerCount == 1) {
+        } else if (sub.playerCount >= 1 && sub.playerCount <= 3) {
             sBattleDuration = 120;
         }
     }
