@@ -12,8 +12,8 @@
  * please consider crediting patchzy and/or Retro Rewind team.
  */
 
-#ifndef _PULSAR_LOOSE_ARCHIVE_OVERRIDES_
-#define _PULSAR_LOOSE_ARCHIVE_OVERRIDES_
+#ifndef _PULSAR_IO_PATCHES_
+#define _PULSAR_IO_PATCHES_
 
 #include <kamek.hpp>
 
@@ -37,7 +37,7 @@ bool IsModsPath(const char *path);
 
 s32 ConvertPathToEntryNumWithLooseOverride(const char *path);
 
-const char *ResolveWholeFileOverride(const char *path, char *resolvedPath, u32 resolvedSize, bool *outRedirected);
+const char *ResolveWholeFileOverride(const char *path, char *resolvedPath, u32 resolvedSize, bool *outRedirected, s32 *outSourceEntryNum = nullptr);
 
 bool ShouldApplyLooseOverrides(const char *path, char *archiveBaseLower, u32 archiveBaseLowerSize);
 
@@ -48,11 +48,10 @@ bool ApplyLooseOverrides(const char *archiveBaseLower, u8 *&archiveBase, u32 &ar
 
 bool AreLooseArchiveOverridesEnabledForDebug();
 bool GetLooseBRSAROverrideSizes(u32 fileId, u32 &outFileSize, u32 &outWaveDataSize);
-bool ReadLooseBRSAROverrideFile(u32 fileId, void *dest, u32 size);
-bool ReadLooseBRSAROverrideWaveData(u32 fileId, void *dest, u32 size);
+bool ReadLooseBRSAROverrideRange(u32 fileId, void *dest, u32 size, bool waveData);
 u32 GetLooseArchiveOverrideFileCount();
 
 }  // namespace IOOverrides
 }  // namespace Pulsar
 
-#endif  // _PULSAR_LOOSE_ARCHIVE_OVERRIDES_
+#endif  // _PULSAR_IO_PATCHES_

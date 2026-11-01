@@ -1,8 +1,8 @@
 #include <Driver/CustomCharacters.hpp>
-#include <IO/LooseArchiveOverrides.hpp>
+#include <IO/Patches.hpp>
 #include <Race/CustomCharacters.hpp>
 #include <Race/CustomCharacterVoice.hpp>
-#include <Sound/LooseBRSAROverrides.hpp>
+#include <Sound/BRSARPatches.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/Audio/AudioManager.hpp>
 #include <MarioKartWii/Audio/Actors/CharacterActor.hpp>

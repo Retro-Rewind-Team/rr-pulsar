@@ -3,7 +3,7 @@
 
 #include <Debug/CrashExtra.hpp>
 #include <PulsarSystem.hpp>
-#include <IO/LooseArchiveOverrides.hpp>
+#include <IO/Patches.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 

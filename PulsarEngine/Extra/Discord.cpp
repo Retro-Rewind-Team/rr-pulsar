@@ -1,5 +1,5 @@
 #include <Dolphin/DolphinIOS.hpp>
-#include <IO/LooseArchiveOverrides.hpp>
+#include <IO/Patches.hpp>
 #include <UI/UI.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>

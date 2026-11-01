@@ -1,5 +1,5 @@
 #include <Driver/CustomCharacters.hpp>
-#include <IO/LooseArchiveOverrides.hpp>
+#include <IO/Patches.hpp>
 #include <Network/Settings/SelectionRestrictions.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
