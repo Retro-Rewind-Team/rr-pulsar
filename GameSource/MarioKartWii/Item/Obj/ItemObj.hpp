@@ -117,6 +117,7 @@ public:
     void TryDisappearDueToExcess();  // 8079fe30 when too many of this type exist on the map
     void DisappearDueToExcess(bool sendBreakEVENT);  // 807a6c14
     void CheckOtherObjsCollision();  // 807a1c94
+    void ProcessObjectCollisions();  // 807a1ed8
     bool CheckKartCollision(Kart::Player *kartPlayer, u32 r5);  // 807a14d4
 
     void FinishKill();  // 8079e884 removes entity and calls OnFinishKill

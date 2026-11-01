@@ -33,20 +33,6 @@ static bool AreOnSameItemBubbleTeam(u8 firstPlayerId, u8 secondPlayerId) {
     return firstTeam != TEAM_NONE && firstTeam == scenario.players[secondPlayerId].team;
 }
 
-static bool IsOnAnyLocalItemBubbleTeam(u8 playerId) {
-    const Racedata *racedata = Racedata::sInstance;
-    if (racedata == nullptr)
-        return false;
-
-    const RacedataScenario &scenario = racedata->racesScenario;
-    for (u8 localPlayer = 0; localPlayer < scenario.localPlayerCount; ++localPlayer) {
-        const u8 localPlayerId = static_cast<u8>(racedata->GetPlayerIdOfLocalPlayer(localPlayer));
-        if (AreOnSameItemBubbleTeam(playerId, localPlayerId))
-            return true;
-    }
-    return false;
-}
-
 static bool IsVanillaFourPlayerItemLightScreen(u8 playerId) {
     const Racedata *racedata = Racedata::sInstance;
     if (racedata == nullptr)
@@ -61,50 +47,6 @@ static bool IsVanillaFourPlayerItemLightScreen(u8 playerId) {
     return relativeType >= 5 || ((1 << relativeType) & 0x19) == 0;
 }
 
-static void SetupVanillaItemLightAnimation(Item::Obj *obj) {
-    if (obj->item_light == nullptr)
-        return;
-
-    const Racedata *racedata = Racedata::sInstance;
-    if (racedata == nullptr)
-        return;
-
-    const RacedataScenario &scenario = racedata->racesScenario;
-    const u8 screenCount = scenario.screenCount;
-    if (obj->bitfield78 & 0x10000) {
-        for (u32 i = 0; i < screenCount; ++i) obj->item_light->DisableScreen(i);
-        return;
-    }
-
-    const u8 playerId = obj->playerUsedItemId;
-    if (playerId >= scenario.playerCount)
-        return;
-
-    const Team team = scenario.players[playerId].team;
-    ModelTransformator *transformator = obj->item_light->modelTransformator;
-    if (transformator != nullptr) {
-        transformator->PlayAnmNoBlend(team != TEAM_RED, 0.0f, 1.0f);
-        transformator->PlayAnmNoBlend(2, 0.0f, 1.0f);
-    }
-
-    if (scenario.settings.gametype != GAMETYPE_ONLINE_SPECTATOR) {
-        RaceCameraMgr *cameraMgr = RaceCameraMgr::sInstance;
-        if (cameraMgr == nullptr || cameraMgr->sortedCameras == nullptr)
-            return;
-
-        for (u32 i = 0; i < screenCount; ++i) {
-            RaceCamera *camera = cameraMgr->sortedCameras[i];
-            if (camera != nullptr && camera->playerId < scenario.playerCount && scenario.players[camera->playerId].team == team)
-                obj->item_light->EnableScreen(i);
-            else
-                obj->item_light->DisableScreen(i);
-        }
-
-        if (screenCount == 4 && IsVanillaFourPlayerItemLightScreen(2) && !IsVanillaFourPlayerItemLightScreen(3))
-            obj->item_light->DisableScreen(3);
-    }
-}
-
 static void LoadGraphicsAndItemLight(Item::Obj *obj, const char *mdlName, const char *shadowSrc, Item::Obj::AnmParam *anmParam, nw4r::g3d::ScnMdl::BufferOption option, u32 directorBitfield) {
     obj->LoadGraphicsImplicitBRRESNoFunc(mdlName, shadowSrc, anmParam, option, directorBitfield);
     if (BattleRoyale::ShouldApplyBattleRoyale())
@@ -116,7 +58,47 @@ kmCall(0x807ab3f4, LoadGraphicsAndItemLight);  // ObjKouraRed non-teams path
 
 static void SetupItemLightAnimation(Item::Obj *obj) {
     if (!BattleRoyale::ShouldApplyBattleRoyale()) {
-        SetupVanillaItemLightAnimation(obj);
+        if (obj->item_light == nullptr)
+            return;
+
+        const Racedata *racedata = Racedata::sInstance;
+        if (racedata == nullptr)
+            return;
+
+        const RacedataScenario &scenario = racedata->racesScenario;
+        const u8 screenCount = scenario.screenCount;
+        if (obj->bitfield78 & 0x10000) {
+            for (u32 i = 0; i < screenCount; ++i) obj->item_light->DisableScreen(i);
+            return;
+        }
+
+        const u8 playerId = obj->playerUsedItemId;
+        if (playerId >= scenario.playerCount)
+            return;
+
+        const Team team = scenario.players[playerId].team;
+        ModelTransformator *transformator = obj->item_light->modelTransformator;
+        if (transformator != nullptr) {
+            transformator->PlayAnmNoBlend(team != TEAM_RED, 0.0f, 1.0f);
+            transformator->PlayAnmNoBlend(2, 0.0f, 1.0f);
+        }
+
+        if (scenario.settings.gametype != GAMETYPE_ONLINE_SPECTATOR) {
+            RaceCameraMgr *cameraMgr = RaceCameraMgr::sInstance;
+            if (cameraMgr == nullptr || cameraMgr->sortedCameras == nullptr)
+                return;
+
+            for (u32 i = 0; i < screenCount; ++i) {
+                RaceCamera *camera = cameraMgr->sortedCameras[i];
+                if (camera != nullptr && camera->playerId < scenario.playerCount && scenario.players[camera->playerId].team == team)
+                    obj->item_light->EnableScreen(i);
+                else
+                    obj->item_light->DisableScreen(i);
+            }
+
+            if (screenCount == 4 && IsVanillaFourPlayerItemLightScreen(2) && !IsVanillaFourPlayerItemLightScreen(3))
+                obj->item_light->DisableScreen(3);
+        }
         return;
     }
 
@@ -139,7 +121,6 @@ static void SetupItemLightAnimation(Item::Obj *obj) {
     if (playerId >= scenario.playerCount)
         return;
 
-    // Play blue CLR animation (index 1) and the CHR loop animation (index 2).
     ModelTransformator *transformator = obj->item_light->modelTransformator;
     if (transformator == nullptr)
         return;
@@ -165,8 +146,6 @@ static void SetupItemLightAnimation(Item::Obj *obj) {
 kmBranch(0x8079e38c, SetupItemLightAnimation);
 
 static void SpawnSetupAndFixFIBTexture(Item::Obj *obj, int objId) {
-    // Call the original Item::Obj::Set which internally calls SpawnModel - this makes the
-    // FIB visible and freezes the animation at the default (red) frame.
     obj->Set(static_cast<ItemObjId>(objId));
 
     if (!BattleRoyale::ShouldApplyBattleRoyale())
@@ -175,9 +154,18 @@ static void SpawnSetupAndFixFIBTexture(Item::Obj *obj, int objId) {
     if (obj->itemObjId != OBJ_FAKE_ITEM_BOX)
         return;
 
-    // Use the friendly texture for items owned by a local player's teammate.
-    const u8 playerId = obj->playerUsedItemId;
-    if (!IsOnAnyLocalItemBubbleTeam(playerId))
+    const Racedata *racedata = Racedata::sInstance;
+    if (racedata == nullptr)
+        return;
+    bool sameTeam = false;
+    for (u8 localPlayer = 0; localPlayer < racedata->racesScenario.localPlayerCount; ++localPlayer) {
+        const u8 localPlayerId = static_cast<u8>(racedata->GetPlayerIdOfLocalPlayer(localPlayer));
+        if (AreOnSameItemBubbleTeam(obj->playerUsedItemId, localPlayerId)) {
+            sameTeam = true;
+            break;
+        }
+    }
+    if (!sameTeam)
         return;
 
     ModelDirector *mdl = obj->modelDirector;
@@ -187,7 +175,6 @@ static void SpawnSetupAndFixFIBTexture(Item::Obj *obj, int objId) {
     if (transformator == nullptr)
         return;
 
-    // Freeze PAT and CLR animations at frame 1.0 (blue team texture).
     AnmHolder *patHolder = transformator->GetAnmHolderByType(ANMTYPE_TEXPAT);
     AnmHolder *clrHolder = transformator->GetAnmHolderByType(ANMTYPE_CLR);
     if (patHolder != nullptr)

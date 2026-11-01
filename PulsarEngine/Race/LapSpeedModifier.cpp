@@ -36,16 +36,6 @@ u8 GetLapKOTargetCount(const System *system, const Racedata *racedata, u8 fallba
     return playerCount;
 }
 
-static u8 GetBattleRoyaleLapCount(u8 baseLapCount, const System *system) {
-    if (baseLapCount <= 1 || system == nullptr)
-        return baseLapCount;
-    if (system->IsContext(PULSAR_KOROYALE_LAPS_1_5X))
-        return static_cast<u8>((baseLapCount * 3 + 1) / 2);
-    if (system->IsContext(PULSAR_KOROYALE_LAPS_2_0X))
-        return static_cast<u8>(baseLapCount * 2);
-    return baseLapCount;
-}
-
 kmRuntimeUse(0x808a9cc7);  // lap_number.brctr
 static void SetLapCounterResourceName(char first, char second) {
     volatile char *name = reinterpret_cast<volatile char *>(kmRuntimeAddr(0x808a9cc7));
@@ -79,7 +69,12 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
         const u8 totalRounds = LapKO::Mgr::BuildPlan(basePlayers, koPerRace, lapCount, nullptr, LapKO::Mgr::MaxRounds);
         lapCount = (totalRounds == 0) ? 1 : totalRounds;
     } else if (system != nullptr && system->IsContext(PULSAR_MODE_BATTLEROYALE)) {
-        lapCount = GetBattleRoyaleLapCount(lapCount, system);
+        if (lapCount > 1) {
+            if (system->IsContext(PULSAR_KOROYALE_LAPS_1_5X))
+                lapCount = static_cast<u8>((lapCount * 3 + 1) / 2);
+            else if (system->IsContext(PULSAR_KOROYALE_LAPS_2_0X))
+                lapCount = static_cast<u8>(lapCount * 2);
+        }
         if (lapCount > 12)
             lapCount = 12;
     }

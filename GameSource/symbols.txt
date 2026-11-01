@@ -1028,6 +1028,16 @@ DeleteMii__8MiiGroupFUc = 0x805faa84
 PlaySoundById__Q25Audio10RSARPlayerFUiUiP4Page = 0x807146a8
 
 ##KART
+#KartDamage
+ApplySpinDamage__Q24Kart6DamageFUiUi = 0x80567d3c
+ApplyBananaDamage__Q24Kart6DamageFUi = 0x80567f68
+ApplyFireDamage__Q24Kart6DamageFUi = 0x80568000
+ApplyShockDamage__Q24Kart6DamageFUi = 0x8056804c
+ApplyZapperDamage__Q24Kart6DamageFUi = 0x80568058
+ApplyPOWDamage__Q24Kart6DamageFUi = 0x80568064
+ApplyShellFIBDamage__Q24Kart6DamageFUi = 0x8056865c
+ApplyLaunchDamage__Q24Kart6DamageFUi = 0x805690a0
+
 #KartCollision
 CheckKartCollision__Q24Kart9CollisionFRCQ24Kart6Player = 0x8056f7f0
 DisableBumping = 0x80570D00
@@ -1135,6 +1145,7 @@ SpawnItemInternal__Q24Item9ObjHolderFPQ24Item3Obj = 0x807961f0
 #ItemObj
 Spawn__Q24Item3ObjF9ItemObjIdUcRC4Vec3b = 0x8079e550
 InitProperties__Q24Item3ObjFUiP4Vec3P4Vec3P4Vec3 = 0x807a6f74
+ProcessObjectCollisions__Q24Item3ObjFv = 0x807a1ed8
 LoadEntity__Q24Item3ObjFb = 0x8079ee30
 PlayGlobalItemSound = 0x807a2f00
 AddHitFreeEVENTEntry__Q24Item3ObjF9ItemObjIdUiUcUs = 0x8079c3c4

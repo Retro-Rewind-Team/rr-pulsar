@@ -12,6 +12,7 @@ namespace BattleRoyale {
 
 bool ShouldApplyBattleRoyale();
 void WriteRH1Packet(Network::PulRH1 &packet);
+void EjectItemsFromItemDamage(u8 playerId);
 
 }  // namespace BattleRoyale
 }  // namespace Pulsar

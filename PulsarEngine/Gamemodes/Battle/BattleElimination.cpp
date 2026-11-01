@@ -149,8 +149,7 @@ kmCall(0x806619AC, ForceBalloonBattle);
 extern "C" u32 SelectRaceFanfare(u32 soundId) {
     const Racedata *racedata = Racedata::sInstance;
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
-    if (racedata != nullptr && racedata->racesScenario.players[0].playerType == PLAYER_GHOST &&
-        sectionMgr != nullptr && sectionMgr->curSection != nullptr) {
+    if (racedata != nullptr && racedata->racesScenario.players[0].playerType == PLAYER_GHOST && sectionMgr != nullptr && sectionMgr->curSection != nullptr) {
         const SectionId sectionId = sectionMgr->curSection->sectionId;
         if (sectionId == SECTION_TT_REPLAY || (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU))
             return SOUND_ID_BATTLE_WIN_RESULTS;
