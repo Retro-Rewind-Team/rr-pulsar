@@ -9,7 +9,7 @@ namespace Network {
 
 static const u32 MAX_TRACK_BLOCKING = 12;  // Maximum number of blocked tracks synced via packets
 
-static const u32 HOST_SETTINGS_PREVIEW_COUNT = 30;
+static const u32 HOST_SETTINGS_PREVIEW_COUNT = 31;
 
 enum DenyType {
     DENY_TYPE_NORMAL,
@@ -51,7 +51,9 @@ public:
     u16 vehicleRestrictionMasks[Restrictions::VEHICLE_WEIGHT_COUNT];
     u8 hostSettingsPreview[HOST_SETTINGS_PREVIEW_COUNT];
     bool hasHostSettingsPreview;
+    u8 padding2[2];  // Keep the following System members aligned under packet packing.
 };
+static_assert(sizeof(Mgr) == 0x6c, "Network manager layout must not depend on packet packing");
 
 }  // namespace Network
 }  // namespace Pulsar

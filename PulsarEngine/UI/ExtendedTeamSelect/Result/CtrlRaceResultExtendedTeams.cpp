@@ -90,7 +90,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         }
 
         // Is a Mii character
-        if (isOnline || characterId >= MII_S_A_MALE) {
+        if ((isOnline && playerType != PLAYER_CPU) || characterId >= MII_S_A_MALE) {
             this->items[i].SetMiiPane("chara_icon", miiGroup, playerId, 2);
             this->items[i].SetMiiPane("chara_icon_sha", miiGroup, playerId, 2);
         } else {

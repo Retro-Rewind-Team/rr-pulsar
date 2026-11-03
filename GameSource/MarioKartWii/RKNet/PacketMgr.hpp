@@ -20,7 +20,7 @@ public:
     void Reset();  // 806532d8
     void Update();  // 80653728
 
-    void ExportRACEDATA(RACEDATAPacket &racedataPacket);  // 80653960
+    void ExportRACEDATA(const RACEDATAPacket &racedataPacket, u32 size, u32 playerId);  // 80653960
     RACEDATAPacket &GetRACEDATA(u8 playerId);  // 80653abc
     void ExportRH2(RACEHEADER2Packet &rh2Packet);  // 80653c08
     RACEHEADER2Packet &GetRH2(u8 playerId);  // 80653cb8

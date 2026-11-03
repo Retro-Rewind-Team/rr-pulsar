@@ -18,6 +18,8 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <Race/CustomCharacters.hpp>
+#include <MarioKartWii/GlobalFunctions.hpp>
+#include <UI/UI.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <runtimeWrite.hpp>
 
@@ -30,6 +32,9 @@ kmRuntimeUse(0x80553c94);
 void Racedata_InitRace(Racedata *racedata) {
     register u32 returnAddress;
     asm(mflr returnAddress;);
+    const GameMode raceMode = racedata->menusScenario.settings.gamemode;
+    if (raceMode == MODE_PRIVATE_VS || raceMode == MODE_PUBLIC_VS || raceMode == MODE_PRIVATE_BATTLE || raceMode == MODE_PUBLIC_BATTLE)
+        FroomCPUs::PrepareRace(racedata->menusScenario);
     racedata->InitRace();
 
     const RacedataSettings &settings = racedata->menusScenario.settings;
@@ -371,6 +376,14 @@ kmCall(0x807f4f8c, CtrlRaceResult_InitPatchAnimation);
 
 void WifiAwardResultItem_fillPlayerResult(Pages::WifiAwardResultItem *_this, u8 playerIdx, bool isTeamVS, int localPlayerCount) {
     _this->FillResult(playerIdx, isTeamVS, localPlayerCount);
+
+    if (FroomCPUs::IsCPU(playerIdx)) {
+        const CharacterId character = Racedata::sInstance->racesScenario.players[playerIdx].characterId;
+        _this->SetPicturePane("chara_icon", GetCharacterIconPaneName(character));
+        _this->SetPicturePane("chara_icon_sha", GetCharacterIconPaneName(character));
+        Race::LoadCustomCharacterIcon(character, Race::GetPlayerCustomCharacterSlot(playerIdx, character), _this->layout.GetPaneByName("chara_icon"), _this->layout.GetPaneByName("chara_icon_sha"));
+        _this->SetTextBoxMessage("mii_name", GetCharacterNameBMGId(character, true, playerIdx));
+    }
 
     if (ExtendedTeamManager::IsActivated()) {
         nw4r::lyt::Pane *pane, *pane2;

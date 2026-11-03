@@ -66,9 +66,10 @@ public:
     RaceinfoPlayer(u8 id, u8 lapCount);  // 80533ed8
     virtual ~RaceinfoPlayer();  // 80532f48 vtable 808b34a4
     void Init();  // 80534194
+    void Update();  // 80535304
     u8 UpdateGPHiddenScore();  // 805368f8
     void FillTimerWithSplits(u8 lap, Timer *timer);  // 8053572c
-    void UpdateRealLocal();  // 805342e8 inlined
+    void EndRace(u32 reason, bool approximateTime);  // 805342e8
     void EndLap();  // 805349b8
     void EndRace(const Timer &finishTime, bool hasNoCameras, u32 r6);  // 805347f4
     void Vanish();  // 80534c78 for example when a ghost ends its race

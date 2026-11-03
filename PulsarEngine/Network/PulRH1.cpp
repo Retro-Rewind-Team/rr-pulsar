@@ -41,8 +41,17 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u3
     const bool inFriendRoom = IsFriendRoom();
     const bool battleRoyaleEnabled = inFriendRoom && system->IsContext(PULSAR_MODE_BATTLEROYALE);
     const bool eliminationSyncEnabled = inFriendRoom && (system->IsContext(PULSAR_MODE_LAPKO) || battleRoyaleEnabled);
-    const u32 targetSize = battleRoyaleEnabled ? PulRH1SizeFull : (eliminationSyncEnabled ? PulRH1SizeLapKo : PulRH1SizeBase);
-    if (eliminationSyncEnabled || battleRoyaleEnabled)
+    const bool froomCPUsEnabled = FroomCPUs::IsEnabled();
+    const u32 targetSize = froomCPUsEnabled ? PulRH1SizeFroomCPUs : (battleRoyaleEnabled ? PulRH1SizeFull : (eliminationSyncEnabled ? PulRH1SizeLapKo : PulRH1SizeBase));
+    if (froomCPUsEnabled)
+        memcpy(&packetHolder.packet->cpuRoster, &FroomCPUs::roster, sizeof(FroomCPUs::roster));
+    if (froomCPUsEnabled) {
+        for (u32 playerId = 0; playerId < 12; ++playerId) {
+            if (FroomCPUs::IsCPU(playerId))
+                packetHolder.packet->aidsBelongingToPlayerIds[playerId] = 0xFF;
+        }
+    }
+    if (eliminationSyncEnabled || battleRoyaleEnabled || froomCPUsEnabled)
         packetHolder.packetSize = targetSize;
 
     if (system->IsContext(PULSAR_CT)) {
@@ -88,6 +97,10 @@ void ImportSpectatorCharacterSlots(const RacedataScenario &scenario) {
     // Live view bypasses SELECTStageMgr::PrepareRace, which normally imports skins.
     // Start from defaults so previous races and older senders cannot leak slots.
     memset(Race::racePlayerSlots, 0, sizeof(Race::racePlayerSlots));
+    for (u32 playerId = 0; playerId < 12; ++playerId) {
+        if (FroomCPUs::IsCPU(playerId))
+            Race::racePlayerSlots[playerId] = FroomCPUs::roster.entries[FroomCPUs::playerSlots[playerId]].characterSlot;
+    }
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr)
         return;
@@ -121,6 +134,8 @@ static void AfterRH1Reception(register u8 *aidArrDest, const RKNet::PacketHolder
 
     const PulRH1 *packet = holder.packet;
     const u32 packetSize = holder.packetSize;
+    if (packetSize >= PulRH1SizeFroomCPUs)
+        FroomCPUs::ReadSELECT(packet->cpuRoster, senderAid);
     for (u32 i = 0; i < 2; ++i) {
         UI::remoteTransmission[senderAid][i] = packetSize >= PulRH1SizeBase ? packet->transmission[i] : TRANSMISSION_DEFAULT;
     }

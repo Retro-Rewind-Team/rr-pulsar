@@ -598,7 +598,7 @@ bool Mgr::EnterSpectateIfLocal(u8 eliminatedId) {
         RKNet::Controller *controller = RKNet::Controller::sInstance;
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         const u8 aid = controller->aidsBelongingToPlayerIds[eliminatedId];
-        if (aid >= 12 || aid != sub.localAid)
+        if (aid >= 12 || aid != sub.localAid || racedata->racesScenario.players[eliminatedId].playerType != PLAYER_REAL_LOCAL)
             return false;
 
         Raceinfo *raceinfo = Raceinfo::sInstance;

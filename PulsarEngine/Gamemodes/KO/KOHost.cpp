@@ -50,6 +50,8 @@ void HAWChangeData() {
             }
         }
         for (int playerId = 0; playerId < 12; ++playerId) {
+            if (FroomCPUs::IsCPU(playerId))
+                continue;
             u8 aid = oldAidsBelonging[playerId];
             if (aid >= 12)
                 continue;

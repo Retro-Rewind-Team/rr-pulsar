@@ -11,6 +11,7 @@
 #include <MarioKartWii/RKNet/RH2.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
 #include <Network/Network.hpp>
+#include <Network/FroomCPUs.hpp>
 
 class RacedataScenario;
 
@@ -74,14 +75,18 @@ struct PulRH1 : public RKNet::RACEHEADER1Packet {
     u16 battleRoyaleFinishMinutes[2];
     u8 battleRoyaleFinishSeconds[2];
     u16 battleRoyaleFinishMilliseconds[2];
+
+    FroomCPUs::Roster cpuRoster;
 };
 
 // Size constants for conditional packet expansion
 static const u32 PulRH1BattleRoyaleSize = 14;
 static const u32 PulRH1LapKoSize = 16;
-static const u32 PulRH1SizeBase = sizeof(PulRH1) - PulRH1LapKoSize - PulRH1BattleRoyaleSize;
+static const u32 PulRH1SizeFull = sizeof(PulRH1) - sizeof(FroomCPUs::Roster);
+static const u32 PulRH1SizeBase = PulRH1SizeFull - PulRH1LapKoSize - PulRH1BattleRoyaleSize;
 static const u32 PulRH1SizeLapKo = PulRH1SizeBase + PulRH1LapKoSize;
-static const u32 PulRH1SizeFull = sizeof(PulRH1);
+static const u32 PulRH1SizeFroomCPUs = sizeof(PulRH1);
+static_assert(PulRH1SizeFroomCPUs <= 0xFF, "RH1 section size is one byte");
 
 struct PulRH2 : public RKNet::RACEHEADER2Packet {
     u16 checkpointFinalLapPlayers;
@@ -149,9 +154,13 @@ struct PulSELECT : public RKNet::SELECTPacket {
 
     u8 transmission[2];
 
+    FroomCPUs::Roster cpuRoster;
+
     // Anti-cheat verification tag - proves sender has correct encryption key
     u32 acVerifyTag;  // Must be last encrypted field for alignment
 };
+
+static_assert(sizeof(PulSELECT) <= 0xFF, "SELECT section size is one byte");
 
 struct PulRACEDATA : public RKNet::RACEDATAPacket {};
 struct PulUSER : public RKNet::USERPacket {};

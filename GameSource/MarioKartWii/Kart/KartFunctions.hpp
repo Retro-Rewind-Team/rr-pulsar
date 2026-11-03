@@ -16,6 +16,8 @@
 
 namespace Kart {
 
+void ResetPlayerTypeFlags();  // 80592fa8
+
 typedef StatsParamFile::Entry Stats;
 
 struct ParamBins {

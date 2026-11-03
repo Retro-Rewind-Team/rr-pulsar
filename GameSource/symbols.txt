@@ -162,6 +162,7 @@ GetFriendStatusData__3DWCFPCQ23DWC13AccFriendDataPcPi = 0x800ce190
 CloseConnectionHard__3DWCFUc = 0x800d2000
 SendMatchCommand__3DWCFQ23DWC12MatchCommandUiUiUsPvUi = 0x800dbd38
 SetRecvBuffer__3DWCFUcPvi = 0x800e8750
+SendUnreliable__3DWCFUcPCvi = 0x800e8654
 Patch_AuthServerOverride = 0x800ecaac
 Patch_HostHeader = 0x800ed868
 Patch_WiimmfiHook1 = 0x800ee3a0
@@ -924,8 +925,10 @@ sInstance__8Raceinfo = 0x809bd730
 __dt__14RaceinfoPlayerFv = 0x80532f48
 __ct__14RaceinfoPlayerFUcUc = 0x80533ed8
 Init__14RaceinfoPlayerFv = 0x80534194
+Update__14RaceinfoPlayerFv = 0x80535304
 Disconnect__14RaceinfoPlayerFv = 0x80534cbc
 EndRace__14RaceinfoPlayerFRC5TimerbUi = 0x805347f4
+EndRace__14RaceinfoPlayerFUib = 0x805342e8
 Vanish__14RaceinfoPlayerFv = 0x80534c78
 FillTimerWithSplits__14RaceinfoPlayerFUcP5Timer = 0x8053572c
 UpdateCheckPoint__14RaceinfoPlayerFUsbf = 0x80534df8
@@ -1081,6 +1084,9 @@ GetDriftState__Q24Kart6PlayerCFv = 0x805911d8
 
 #Misc
 ComputeStats__4KartF6KartId11CharacterId = 0x80591fa4
+CharacterIdToKartIdByIdx__F11CharacterIdUc = 0x8081cef4
+ExportRACEDATA__Q25RKNet9PacketMgrFRCQ25RKNet14RACEDATAPacketUiUi = 0x80653960
+ResetPlayerTypeFlags__4KartFv = 0x80592fa8
 sInstance__12MenuModelMgr = 0x809c1988
 DestroyInstance__12MenuModelMgrFv = 0x8059e04c
 RequestDriverModel__12MenuModelMgrFUc11CharacterId = 0x8059e568
@@ -2146,6 +2152,7 @@ Free__Q25RKNet10ControllerFPv = 0x806583b4
 
 #PacketMgr
 sInstance__Q25RKNet9PacketMgr = 0x809c1f50
+GetRACEDATA__Q25RKNet9PacketMgrFUc = 0x80653abc
 GetRH2__Q25RKNet9PacketMgrFUc = 0x80653cb8
 
 #PacketHolder
@@ -2186,6 +2193,11 @@ HasFreeEntries__Q25RKNet12EVENTHandlerCFv = 0x8065b8d4
 sInstance__Q25RKNet12EVENTHandler = 0x809c20f0
 
 #ITEM
+SetItem__Q25RKNet11ITEMHandlerFUc6ItemId = 0x8065c6c0
+UpdateStoredItem__Q25RKNet11ITEMHandlerFUc = 0x8065e938
+UpdateDraggedItem__Q25RKNet11ITEMHandlerFUc = 0x8065ed74
+Init__Q24Item6PlayerFUc = 0x807976e0
+Update__Q24Item7ManagerFv = 0x80799850
 GetStoredItem__Q25RKNet11ITEMHandlerCFUc = 0x8065d21c
 ImportNewPackets__Q25RKNet11ITEMHandlerFv = 0x8065dd3c
 sInstance__Q25RKNet11ITEMHandler = 0x809c20f8
@@ -2276,7 +2288,12 @@ SetModelsVisibility__Q26Lakitu10PlayerBaseFbUiUi = 0x80721128
 EnableAction__Q26Lakitu22EnableDisplayLapActionFv = 0x80725bd8
 
 ##AI
+#AIManager
+SetCCAndDifficulty__Q22AI7ManagerFv = 0x8073999c
+
 #KartAIController
+Init__16KartAIControllerFv = 0x80726110
+Update__16KartAIControllerFv = 0x807261b8
 IsCPU__16KartAIControllerCFv = 0x8072624c
 
 #GlobeMgr

@@ -92,6 +92,7 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *s
         if (character < Driver::CHARACTER_COUNT)
             src->reserved |= Driver::selectedSlots[i][character] << (8 * (1 - i));
     }
+    FroomCPUs::WriteSELECT(src->cpuRoster, src->selectId);
     packetHolder->Copy(src, len);
 }
 kmCall(0x80661040, BeforeSELECTSend);
@@ -200,6 +201,8 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
         }
     }
 
+    if (holder != nullptr && holder->packetSize >= sizeof(PulSELECT))
+        FroomCPUs::ReadSELECT(src->cpuRoster, aid);
     memcpy(&dest, src, sizeof(PulSELECT));
     memcpy(UI::remoteTransmission[aid], src->transmission, sizeof(src->transmission));
 }
