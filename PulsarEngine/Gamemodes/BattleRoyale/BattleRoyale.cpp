@@ -87,6 +87,8 @@ static u8 GetBattleRoyaleBalloonPoolTeam(u8 poolIdx, u8 fallbackTeam) {
     const u8 playerId = static_cast<u8>(poolIdx / 5);
     if (playerId >= maxPlayers)
         return fallbackTeam;
+    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
+        return TEAM_RED;
 
     u8 team = static_cast<u8>(racedata->racesScenario.players[playerId].team);
     if (team > 1)
@@ -110,8 +112,8 @@ static void LoadStartingBalloonModels(RaceBalloonManager *mgr) {
 static void AddBattleRoyaleBalloons(RaceBalloonManager *mgr, u8 playerId, u8 teamId, u8 isInitial, int delay, u8 count, int interval) {
     if (mgr == nullptr || playerId >= maxPlayers || count == 0)
         return;
-    if (teamId > 1)
-        teamId = 0;
+    if (teamId > 1 || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count))
+        teamId = TEAM_RED;
 
     u8 current = GetBalloonCount(mgr, playerId);
     if (current >= 5)
@@ -148,7 +150,7 @@ static void AddBattleRoyaleBalloons(RaceBalloonManager *mgr, u8 playerId, u8 tea
     }
 }
 
-static void AddBalloons(RaceBalloonManager *mgr, u8 playerId, u8 count) {
+void AddBalloons(RaceBalloonManager *mgr, u8 playerId, u8 count) {
     if (mgr == nullptr || playerId >= maxPlayers || count == 0)
         return;
 
@@ -214,8 +216,20 @@ static void EnableSecondKartModelDrawIfReady(ModelDirector *model, bool enable) 
 }
 kmCall(0x80592ec8, EnableSecondKartModelDrawIfReady);
 
+static bool IsLocalPlayer(u8 playerId) {
+    const RKNet::Controller *controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE)
+        return true;
+    if (playerId >= maxPlayers)
+        return false;
+    return controller->aidsBelongingToPlayerIds[playerId] == controller->subs[controller->currentSub].localAid;
+}
+
 static bool RemoveBalloon(RaceBalloonManager *mgr, u8 playerId) {
     if (mgr == nullptr || playerId >= maxPlayers || GetBalloonCount(mgr, playerId) == 0)
+        return false;
+    // CPU replicas receive absolute counts from the host, including this loss.
+    if ((System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count) && !IsLocalPlayer(playerId))
         return false;
 
     const u8 previousBalloonCount = GetBalloonCount(mgr, playerId);
@@ -278,7 +292,8 @@ void WriteRH1Packet(Network::PulRH1 &packet) {
         u8 localIdx = 0;
         const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
         for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && localIdx < 2; ++playerId) {
-            if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid)
+            if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid
+              || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count))
                 continue;
 
             u8 count = GetBalloonCount(balloonMgr, playerId);
@@ -306,11 +321,12 @@ void WriteRH1Packet(Network::PulRH1 &packet) {
         u8 localIdx = 0;
         const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
         for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && localIdx < 2; ++playerId) {
-            if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid)
+            if (controller->aidsBelongingToPlayerIds[playerId] != sub.localAid
+              || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count))
                 continue;
 
             const RaceinfoPlayer *player = raceinfo->players[playerId];
-            if (player != nullptr && player->raceFinishTime != nullptr && player->raceFinishTime->isActive) {
+            if (player != nullptr && player->raceFinishTime != nullptr && (player->stateFlags & 2)) {
                 packet.battleRoyaleFinishMask |= 1 << localIdx;
                 packet.battleRoyaleFinishMinutes[localIdx] = player->raceFinishTime->minutes;
                 packet.battleRoyaleFinishSeconds[localIdx] = player->raceFinishTime->seconds;
@@ -394,6 +410,22 @@ static bool MoveBalloon(RaceBalloonManager *mgr, u8 toPlayer, u8 fromPlayer) {
         return false;
     if (GetBalloonCount(mgr, fromPlayer) == 0)
         return false;
+
+    if ((System::sInstance->IsContext(PULSAR_FROOMCPUS) && fromPlayer < 12 && FroomCPUs::playerSlots[fromPlayer] < FroomCPUs::roster.count) && !IsLocalPlayer(fromPlayer)) {
+        if (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || toPlayer >= 12 || FroomCPUs::playerSlots[toPlayer] >= FroomCPUs::roster.count)
+            AddBalloons(mgr, toPlayer, 1);
+        return true;
+    }
+    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && toPlayer < 12 && FroomCPUs::playerSlots[toPlayer] < FroomCPUs::roster.count) {
+        if (!IsLocalPlayer(toPlayer))
+            return RemoveBalloon(mgr, fromPlayer);
+        // Native transfers retain the victim's color; CPU gains use a red pool balloon.
+        if (GetBalloonCount(mgr, toPlayer) != 0 && RemoveBalloon(mgr, fromPlayer)) {
+            AddBalloons(mgr, toPlayer, 1);
+            return true;
+        }
+        return false;
+    }
 
     const u8 previousBalloonCount = GetBalloonCount(mgr, fromPlayer);
     mgr->Move(toPlayer, fromPlayer, 0, 1, 0);
@@ -818,7 +850,8 @@ static void ProcessBalloonEliminations(LapKO::Mgr &lapKoMgr, RaceBalloonManager 
             if (raceinfo != nullptr) {
                 if (IsOnlineRoom()) {
                     RaceinfoPlayer *player = raceinfo->players[playerId];
-                    if (player != nullptr && IsPlayerFinished(*raceinfo, playerId) && player->currentLap >= player->maxLap) {
+                    if (player != nullptr && (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || playerId >= 12 || FroomCPUs::playerSlots[playerId] >= FroomCPUs::roster.count)
+                      && IsPlayerFinished(*raceinfo, playerId) && player->currentLap >= player->maxLap) {
                         sPreviousBalloonCount[playerId] = current;
                         continue;
                     }
@@ -874,7 +907,7 @@ static void ApplyRemoteFinishTimes(RKNet::Controller &controller, u8 aid, const 
     u8 remotePlayerIdx = 0;
     const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
     for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && remotePlayerIdx < 2; ++playerId) {
-        if (controller.aidsBelongingToPlayerIds[playerId] != aid)
+        if (controller.aidsBelongingToPlayerIds[playerId] != aid || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count))
             continue;
 
         if ((packet.battleRoyaleFinishMask & (1 << remotePlayerIdx)) != 0) {
@@ -924,7 +957,8 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNe
                 if (losingPlayerId < maxPlayers && gainingPlayerId < maxPlayers && controller.aidsBelongingToPlayerIds[losingPlayerId] == aid
                   && !HasMushroomStolenFromVictim(gainingPlayerId, losingPlayerId)) {
                     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayerId);
-                    if (previousBalloonCount > 1 && MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId)) {
+                    if ((previousBalloonCount > 1 || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && losingPlayerId < 12 && FroomCPUs::playerSlots[losingPlayerId] < FroomCPUs::roster.count))
+                      && MoveBalloon(balloonMgr, gainingPlayerId, losingPlayerId)) {
                         RecordMushroomStealVictim(gainingPlayerId, losingPlayerId);
                         if (IsLocalPlayer(gainingPlayerId))
                             ClearActiveGoldenMushroom(gainingPlayerId);
@@ -942,7 +976,7 @@ static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNe
         u8 remotePlayerIdx = 0;
         const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
         for (u8 playerId = 0; playerId < playerCount && playerId < maxPlayers && remotePlayerIdx < 2; ++playerId) {
-            if (controller.aidsBelongingToPlayerIds[playerId] != aid)
+            if (controller.aidsBelongingToPlayerIds[playerId] != aid || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count))
                 continue;
 
             const u8 target = (remotePlayerIdx == 0) ? static_cast<u8>(packedCounts & 0x0F) : static_cast<u8>((packedCounts >> 4) & 0x0F);

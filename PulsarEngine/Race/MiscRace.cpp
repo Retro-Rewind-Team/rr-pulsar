@@ -55,14 +55,15 @@ kmCall(0x80799808, SetStartingItem);
 
 // From JoshuaMK, ported to C++ by Brawlbox and adapted as a setting
 static int MiiHeads(Racedata *racedata, u32 unused, u32 unused2, u8 id) {
-    CharacterId charId = racedata->racesScenario.players[id].characterId;
+    const RacedataPlayer &player = racedata->racesScenario.players[id];
+    CharacterId charId = player.characterId;
     bool miiHeadFroom = ALLOW_MIIHEADS_ENABLED;
     bool isFroom = IsFriendRoom();
     if (isFroom)
         miiHeadFroom = System::sInstance->IsContext(PULSAR_MIIHEADS) ? ALLOW_MIIHEADS_ENABLED : ALLOW_MIIHEADS_DISABLED;
     if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MIIHEADS) == MII_ENABLED && isFroom) {
         if (miiHeadFroom == ALLOW_MIIHEADS_ENABLED) {
-            if (charId < MII_M) {
+            if (charId < MII_M && player.playerType != PLAYER_CPU) {
                 if (id == 0)
                     charId = MII_M;
                 else if (IsOnlineConnected())

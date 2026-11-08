@@ -6,6 +6,7 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <GlobalFunction.hpp>
+#include <Network/FroomCPUs.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -47,6 +48,7 @@ void UpdatePoints(RacedataScenario *scenario) {
     const bool isRankedFroom = isFroom && System::sInstance->IsContext(PULSAR_VR);
     if (!System::sInstance->IsContext(PULSAR_FFA) && ((isFroom && !isRankedFroom) || IsOfflineRoom())) {
         scenario->UpdatePoints();
+        FroomCPUs::SaveResults();
         return;
     }
 
@@ -172,6 +174,7 @@ void UpdatePoints(RacedataScenario *scenario) {
         }
         lastRaceDeltas[i] = next - oldRating;
     }
+    FroomCPUs::SaveResults();
 }
 kmCall(0x8085cf64, UpdatePoints);
 kmBranch(0x8085ea60, UpdatePoints);

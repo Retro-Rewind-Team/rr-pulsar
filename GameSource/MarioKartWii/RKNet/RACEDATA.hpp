@@ -5,8 +5,6 @@
 
 namespace RKNet {
 
-#pragma pack(push, 1)
-
 struct RACEDATAPacket {
     static const u32 idx = 4;
     u8 _[0x40];
@@ -52,7 +50,6 @@ struct RACEDATAPacket {
     u8 already_drifted : 1;
     u8 rank : 1;
 };
-#pragma pack(pop)
 // size_assert(RACEDATAPacket, 0x40);
 */
 

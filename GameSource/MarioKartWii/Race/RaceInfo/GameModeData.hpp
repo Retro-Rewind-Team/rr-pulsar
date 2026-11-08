@@ -85,7 +85,10 @@ public:
     GMDataOnlineVSPlayer();  // 80532488
     ~GMDataOnlineVSPlayer();  // 805324ac
     Timer raceFinishTime;
-    u8 unknown_0xc[0x14 - 0xc];
+    u16 receivedFinishMask;  // 0xc
+    u16 acknowledgedFinishMask;  // 0xe
+    u16 disconnectedMask;  // 0x10
+    u16 playersAheadMask;  // 0x12
 };  // Total size 0x14
 
 class RH2Packer {  // 808b33c0, 808b3390, 808b33a8, 808b3378, 808b3360, 808b33f0

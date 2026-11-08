@@ -8,6 +8,7 @@
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRace2DMap.hpp>
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
 #include <UI/UI.hpp>
+#include <Network/FroomCPUs.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -32,7 +33,8 @@ kmCall(0x807e2b38, SetCharacterSelectIcon);
 
 u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId, bool isAward) {
     if (character < Driver::CHARACTER_COUNT
-      && (playerId >= 12 || Racedata::sInstance->racesScenario.settings.gamemode < MODE_PRIVATE_VS || Racedata::sInstance->racesScenario.settings.gamemode > MODE_PRIVATE_BATTLE)) {
+      && (playerId >= 12 || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
+        || Racedata::sInstance->racesScenario.settings.gamemode < MODE_PRIVATE_VS || Racedata::sInstance->racesScenario.settings.gamemode > MODE_PRIVATE_BATTLE)) {
         const u32 slot = Race::GetPlayerCustomCharacterSlot(playerId, static_cast<CharacterId>(character), isAward);
         if (slot != 0) {
             const u32 customBmgId = (character << 16) | BMG_CUSTOM_CHARACTER_NAME_START | slot;
@@ -104,6 +106,20 @@ static void SetRaceResultCharacterIcon(LayoutUIControl *control, const char *pan
     Race::LoadCustomCharacterIcon(character, Race::GetPlayerCustomCharacterSlot(playerId, character), control->layout.GetPaneByName("chara_icon"), control->layout.GetPaneByName("chara_icon_sha"));
 }
 kmCall(0x807f60e4, SetRaceResultCharacterIcon);
+
+static void SetRaceResultMiiIcon(LayoutUIControl *control, const char *paneName, const MiiGroup &group, u32 playerId, u8 texture) {
+    if (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || playerId >= 12 || FroomCPUs::playerSlots[playerId] >= FroomCPUs::roster.count) {
+        control->SetMiiPane(paneName, group, playerId, texture);
+        return;
+    }
+    const CharacterId character = Racedata::sInstance->racesScenario.players[playerId].characterId;
+    control->SetPicturePane(paneName, GetCharacterIconPaneName(character));
+    Race::LoadCustomCharacterIcon(character, Race::GetPlayerCustomCharacterSlot(playerId, character), control->layout.GetPaneByName(paneName), nullptr);
+}
+kmCall(0x807f6098, SetRaceResultMiiIcon);
+kmCall(0x807f60b0, SetRaceResultMiiIcon);
+kmCall(0x807f6e80, SetRaceResultMiiIcon);
+kmCall(0x807f6e98, SetRaceResultMiiIcon);
 
 static void SetTeamResultCharacterIcon(LayoutUIControl *control, const char *paneName, const char *picturePane) {
     register u32 playerId;

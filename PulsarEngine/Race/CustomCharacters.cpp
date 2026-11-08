@@ -1,6 +1,7 @@
 #include <Driver/CustomCharacters.hpp>
 #include <IO/Patches.hpp>
 #include <Race/CustomCharacters.hpp>
+#include <Network/FroomCPUs.hpp>
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/3D/Model/ModelDirector.hpp>
@@ -52,6 +53,10 @@ void RandomizeCPUCharacterTables(const RacedataScenario &scenario) {
             continue;
         if (entry.playerType != PLAYER_CPU) {
             racePlayerSlots[player] = entry.playerType == PLAYER_REAL_LOCAL ? Driver::selectedSlots[entry.hudSlotId][character] : 0;
+            continue;
+        }
+        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && player < 12 && FroomCPUs::playerSlots[player] < FroomCPUs::roster.count) {
+            racePlayerSlots[player] = FroomCPUs::roster.entries[FroomCPUs::playerSlots[player]].characterSlot;
             continue;
         }
         if (scenario.settings.raceNumber != 0)
