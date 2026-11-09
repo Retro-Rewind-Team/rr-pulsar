@@ -1,7 +1,6 @@
 #include <RetroRewind.hpp>
 #include <include/c_string.h>
 #include <MarioKartWii/3D/GameScreenEffects/GameScreenEffects.hpp>
-#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <kamek.hpp>
 
@@ -392,7 +391,7 @@ static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr *mgr) {
     const u32 localPlayerCount = scenario.localPlayerCount;
     const bool isNoLightningFlashTrack = IsNoLightningFlashTrack(*cupsConfig);
     const bool isNoLightningFlashSetting = Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LIGHTNINGFLASH) == Pulsar::LIGHTNING_FLASH_DISABLED;
-    if (*(u32 *)0x80001638 >= 8 || Pulsar::ItemRain::IsItemRainEnabled() || isNoLightningFlashTrack || isNoLightningFlashSetting || localPlayerCount > 1) {
+    if (*(u32 *)0x80001638 >= 8 || isNoLightningFlashTrack || isNoLightningFlashSetting || localPlayerCount > 1) {
         return;
     }
     mgr->Update();

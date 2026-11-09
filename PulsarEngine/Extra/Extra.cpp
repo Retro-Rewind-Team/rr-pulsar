@@ -1,4 +1,3 @@
-#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
@@ -95,7 +94,7 @@ asmFunc GetItemDelimiterPOW() {
 void EnableDelimitersForAllItems() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-    sBlockOnlineItemDelimiters = !isFroom && !Pulsar::ItemRain::IsItemRainEnabled();
+    sBlockOnlineItemDelimiters = !isFroom;
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
 kmCall(0x807B7C34, GetItemDelimiterShock);
@@ -128,7 +127,7 @@ static void OnBlueShellExplosion(Item::ObjKouraTogezo *blueShell, u32 soundId) {
     PlayGlobalItemSound(blueShell, soundId);
 
     const Pulsar::System *system = Pulsar::System::sInstance;
-    if (system->IsVanillaMode() || Pulsar::ItemRain::IsItemRainEnabled() || itemSlotData == nullptr)
+    if (system->IsVanillaMode() || itemSlotData == nullptr)
         return;
 
     const u32 previousTimer = itemSlotData->itemSpawnTimers[1];
