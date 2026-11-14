@@ -34,6 +34,8 @@ public:
     u8 padding[2];
     u32 nextState;  // held at -1 if there is no next state
     u32 timer;  // 0xc
+    u16 stateCount;  // 0x10
+    u8 unknown_0x12[2];
     u16 *ptmfIdxArray;  // 0x14
     void *ptrToStructContainingPtmfArray;  // 0x18 807a4d74 here for example
     Obj *obj;  // 0x1c

@@ -1,3 +1,4 @@
+#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <kamek.hpp>
 #include <MarioKartWii/Kart/KartCollision.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
@@ -16,7 +17,7 @@ static bool IsAllItemsCanLandActive() {
         case RKNet::ROOMTYPE_FROOM_HOST:
         case RKNet::ROOMTYPE_FROOM_NONHOST:
         case RKNet::ROOMTYPE_NONE:
-            return system->IsContext(PULSAR_ITEMMODESTORM) || system->IsContext(PULSAR_ITEMMODERAIN) || system->IsContext(PULSAR_ALLITEMSCANLAND);
+            return ItemRain::IsItemRainEnabled() || system->IsContext(PULSAR_ALLITEMSCANLAND);
         case RKNet::ROOMTYPE_VS_REGIONAL:
         case RKNet::ROOMTYPE_JOINING_REGIONAL:
             return system->IsContext(PULSAR_ITEMMODERAIN);

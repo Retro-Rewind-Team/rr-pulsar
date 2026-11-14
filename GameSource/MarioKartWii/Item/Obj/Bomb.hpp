@@ -36,7 +36,7 @@ public:
     void UpdateThunk();  // 807a3900
     void Update();  // 807a4cdc
 
-    u8 unknown_0x1c4[0x1c4 - 0x1a4];
+    u8 unknown_0x1c4[0x1d4 - 0x1c4];
     ModelDirector *bombCore;  // 0x1d4
     u8 unknown_0x1d8[0x4];
     u32 timer;  // 0x1dc how long a bomb lasts before exploding

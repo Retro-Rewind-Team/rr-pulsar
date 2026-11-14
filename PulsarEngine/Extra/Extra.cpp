@@ -1,3 +1,4 @@
+#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <hooks.hpp>
 #include <kamek.hpp>
 #include <MarioKartWii/Kart/KartStatus.hpp>
@@ -94,7 +95,7 @@ asmFunc GetItemDelimiterPOW() {
 void EnableDelimitersForAllItems() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-    sBlockOnlineItemDelimiters = !isFroom;
+    sBlockOnlineItemDelimiters = !isFroom && !Pulsar::ItemRain::IsItemRainEnabled();
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);
 kmCall(0x807B7C34, GetItemDelimiterShock);

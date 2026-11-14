@@ -166,7 +166,8 @@ public:
     KCLTypeHolder kclType;  // 0xd4
     Collision collision;  // 0xd8
     void *unknown_0x134;
-    u8 unknown_0x138[0x160 - 0x138];
+    u8 unknown_0x138[0x15c - 0x138];
+    u32 activeFrames;  // 0x15c
     u32 duration;  // 0x160
     u8 unknown_0x164[4];  // 0x164
     Ptmf_0A<Obj, void> updatePtmf;  // 0x168 Update, UpdateKill
