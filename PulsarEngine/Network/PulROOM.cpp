@@ -223,7 +223,6 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
             normalTC = 1;
             allItemsCanLand = 0;
             itemBoxRespawnFast = 0;
-            destPacket->customItemsBitfield = 0x7FFFF;
         }
 
         destPacket->hostSystemContext |= (ottOnline != OTTSETTING_OFFLINE_DISABLED) << PULSAR_MODE_OTT |  // ott
@@ -243,9 +242,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
           | vanillaMode << PULSAR_VANILLAMODE | mirrorMode << PULSAR_MIRRORMODE | (settings.GetSettingValue(Settings::SETTING_ALLOWBRAKEDRIFT) != 0) << PULSAR_NOBRAKEDRIFT
           | (settings.GetSettingValue(Settings::SETTING_ALLOWUMTS) != 0) << PULSAR_NOUMTS | (settings.GetSettingValue(Settings::SETTING_ALLOWHYBRIDDRIFT) != 0) << PULSAR_NOHYBRIDDRIFT;
 
-        if (!vanillaMode) {
-            destPacket->customItemsBitfield = settings.GetCustomItems();
-        }
+        destPacket->customItemsBitfield = vanillaMode ? Race::ALL_CUSTOM_ITEMS : settings.GetCustomItems();
 
         u8 raceCount;
         if (koSetting == KOSETTING_ENABLED)

@@ -1,5 +1,6 @@
 #include <Settings/Settings.hpp>
 #include <PulsarSystem.hpp>
+#include <Race/CustomItems.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <IO/IO.hpp>
 
@@ -29,7 +30,7 @@ Binary::Binary(u32 trackCount) {
     params.header.size = sizeof(MiscParams);
     params.trackCount = trackCount;
     params.lastSelectedCup = PULSARCUPID_NONE;
-    params.customItemsBitfield = 0x7FFFF;
+    params.customItemsBitfield = Race::ALL_CUSTOM_ITEMS;
     params.customEngineClass = 150;
 
     TrophiesHolder &trophies = this->GetSection<TrophiesHolder>();

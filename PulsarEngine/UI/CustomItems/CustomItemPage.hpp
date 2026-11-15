@@ -5,6 +5,7 @@
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
 #include <MarioKartWii/UI/Ctrl/Menu/CtrlMenuText.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
+#include <Race/CustomItems.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -14,7 +15,6 @@ class CustomItemPage : public ::Pages::MenuInteractable {
 public:
     CustomItemPage();
     ~CustomItemPage() override;
-    void OnInit() override;
     void OnActivate() override;
 
     void OnButtonClick(PushButton &button, u32 hudSlotId);
@@ -23,7 +23,6 @@ public:
     void StartFriendRoomPreview(PageId nextPageId);
     static bool ShouldSkipFriendRoomPreview();
 
-    // Menu virtuals
     int GetActivePlayerBitfield() const override {
         return this->activePlayerBitfield;
     }
@@ -38,12 +37,17 @@ public:
     static const PulPageId id = PULPAGE_CUSTOMITEMS;
 
 private:
-    u32 GetDisplayBitfield() const;
     void UpdateButtonVisuals();
-    void SetButtonIcon(PushButton &button, u32 itemId);
+
+    enum {
+        ENABLE_ALL = Race::CUSTOM_ITEM_COUNT,
+        DISABLE_ALL,
+        RANDOMIZE,
+        BUTTON_COUNT
+    };
 
     CountDown previewTimer;
-    PushButton buttons[22];  // 19 items + 3 selection buttons
+    PushButton buttons[BUTTON_COUNT];
     PageId friendRoomPreviewNextPageId;
     bool isFriendRoomPreview;
     PtmfHolder_2A<CustomItemPage, void, PushButton &, u32> onButtonClickHandler;

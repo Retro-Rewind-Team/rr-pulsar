@@ -10,15 +10,6 @@
 namespace RetroRewind {
 namespace Race {
 
-static u32 CountEnabledItems(u32 bitfield) {
-    u32 count = 0;
-    while (bitfield) {
-        count += bitfield & 1;
-        bitfield >>= 1;
-    }
-    return count;
-}
-
 static void ChangeBlueOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
     bool itemModeBlast = false;
@@ -33,10 +24,12 @@ static void ChangeBlueOBJProperties(Item::ObjProperties *dest, const Item::ObjPr
         dest->limit = 5;
     } else {
         u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
-        if (Pulsar::BattleRoyale::ShouldApplyBattleRoyale() || (bitfield != 0x7FFFF && CountEnabledItems(bitfield) <= 5)) {
+        if (Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
             dest->limit = 12;
         } else {
-            dest->limit = 1;
+            u32 enabledCount = 0;
+            for (; bitfield != 0; bitfield >>= 1) enabledCount += bitfield & 1;
+            dest->limit = enabledCount <= 5 ? 12 : 1;
         }
     }
 }
@@ -87,7 +80,7 @@ kmCall(0x80790bb4, ChangeBombOBJProperties);
 
 static void ChangeItemOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     new (dest) Item::ObjProperties(rel);
-    if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != 0x7FFFF || Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
+    if (Pulsar::Race::GetEffectiveCustomItemsBitfield() != Pulsar::Race::ALL_CUSTOM_ITEMS || Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
         dest->limit = 16;
     } else {
         dest->limit = 1;

@@ -3,6 +3,7 @@
 
 #include <Config.hpp>
 #include <Network/Settings/SelectionRestrictions.hpp>
+#include <Race/CustomItems.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -25,7 +26,7 @@ public:
           curBlockingArrayIdx(0),
           lastGroupedTrackPlayed(false),
           region(0x0A),
-          customItemsBitfield(0x7FFFF),
+          customItemsBitfield(Race::ALL_CUSTOM_ITEMS),
           customEngineClass(150),
           hostCustomEngineClass(0),
           characterRestrictionMask(Restrictions::ALL_CHARACTERS),

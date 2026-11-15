@@ -24,8 +24,6 @@
 namespace Pulsar {
 namespace UI {
 
-static const u32 ALL_CUSTOM_ITEMS = 0x7FFFF;
-
 kmRuntimeUse(0x80553c94);
 void Racedata_InitRace(Racedata *racedata) {
     register u32 returnAddress;
@@ -117,11 +115,9 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting *_this) {
         nextPageId = static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT);
     }
 
-    if (Race::GetEffectiveCustomItemsBitfield() != ALL_CUSTOM_ITEMS && !CustomItemPage::ShouldSkipFriendRoomPreview()) {
-        CustomItemPage *page = ExpSection::GetSection()->GetPulPage<CustomItemPage>();
-        page->StartFriendRoomPreview(nextPageId);
-        _this->AddPageLayer(static_cast<PageId>(CustomItemPage::id), 0);
-        return;
+    if (Race::GetEffectiveCustomItemsBitfield() != Race::ALL_CUSTOM_ITEMS && !CustomItemPage::ShouldSkipFriendRoomPreview()) {
+        ExpSection::GetSection()->GetPulPage<CustomItemPage>()->StartFriendRoomPreview(nextPageId);
+        nextPageId = static_cast<PageId>(CustomItemPage::id);
     }
 
     _this->AddPageLayer(nextPageId, 0);
