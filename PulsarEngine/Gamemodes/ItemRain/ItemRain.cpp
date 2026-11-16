@@ -1,5 +1,7 @@
 #include <kamek.hpp>
 #include <Gamemodes/ItemRain/ItemRain.hpp>
+#include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
+#include <MarioKartWii/3D/Model/ModelDirector.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/Obj/Bomb.hpp>
@@ -140,6 +142,8 @@ static void SpawnItemRain() {
     Item::Obj *obj = holder.itemObj[previousCount];
     // Direct spawns are local: do not send an EVENT for an object other consoles do not have.
     obj->bitfield7c &= ~0x20;
+    if (BattleRoyale::ShouldApplyBattleRoyale() && obj->item_light != nullptr)
+        obj->item_light->ToggleVisible(true);
     spawnedItems[nextSpawnedItem].obj = obj;
     spawnedItems[nextSpawnedItem].frame = frame;
     spawnedItems[nextSpawnedItem].eventBitfield = obj->eventBitfield;
@@ -150,6 +154,9 @@ static RaceFrameHook spawnItemRainHook(SpawnItemRain);
 static void ActivateBobombs(Item::Manager *manager, ItemObjId item, Matrix34f *matrix, Vec3 *direction, u32 playerId) {
     Item::ObjHolder &holder = manager->itemObjHolders[item];
     const u32 previousCount = holder.spawnedCount;
+    // Choose the owner before bubble and FIB initialization, past CreateItemDirect's remote-player check.
+    if (spawningRain)
+        playerId = Raceinfo::sInstance->timerMgr->random.NextLimited(Racedata::sInstance->racesScenario.playerCount);
     manager->GenerateItemDirect(item, matrix, direction, playerId);
     if (spawningRain && item == OBJ_BOBOMB) {
         Item::ObjBomb *bomb = static_cast<Item::ObjBomb *>(holder.itemObj[previousCount]);
