@@ -32,8 +32,7 @@ System::Inherit *System::inherit = nullptr;
 static void ApplyVanillaModeRestrictions(System *system, bool clearOttAndItemModes) {
     system->context |= (1 << PULSAR_REGS) | (1 << PULSAR_THUNDERCLOUD);
     system->context &= ~((1 << PULSAR_RETROS) | (1 << PULSAR_CTS) | (1 << PULSAR_200_WW) | (1 << PULSAR_ELIMINATION) | (1 << PULSAR_FFA));
-    system->context2 &= ~(
-      (1 << PULSAR_ITEMMODERANDOM) | (1 << PULSAR_ITEMMODEBLAST) | (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) | (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
+    system->context2 &= ~((1 << PULSAR_ITEMMODERANDOM) | (1 << PULSAR_TRANSMISSIONINSIDE) | (1 << PULSAR_TRANSMISSIONOUTSIDE) | (1 << PULSAR_ALLITEMSCANLAND) | (1 << PULSAR_ITEMBOXRESPAWN));
     system->context2 |= (1 << PULSAR_TRANSMISSIONVANILLA);
     if (clearOttAndItemModes) {
         system->context &= ~(1 << PULSAR_MODE_OTT);
@@ -303,7 +302,6 @@ void System::UpdateContext() {
     bool isVehicleRestrict = settings.GetSettingValue(Pulsar::Settings::SETTING_KARTSELECT) == VEHICLE_RESTRICT_ENABLED && isFroom;
     bool isThunderCloud = settings.GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && (isNotPublic || (isRegionalRoom && netMgr.region == 0x15));
     bool isItemModeRandom = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_RANDOM && isNotPublic;
-    bool isItemModeBlast = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_BLAST && isNotPublic;
     bool isItemModeNone = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_NONE;
     bool isItemModeRain = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_ITEMRAIN;
     bool isItemModeStorm = settings.GetSettingValue(Pulsar::Settings::SETTING_ITEMMODE) == GAMEMODE_ITEMSTORM;
@@ -355,7 +353,6 @@ void System::UpdateContext() {
                 isCharRestrict = newContext & (1 << PULSAR_CHARRESTRICT);
                 isVehicleRestrict = newContext & (1 << PULSAR_VEHICLERESTRICT);
                 isItemModeRandom = newContext2 & (1 << PULSAR_ITEMMODERANDOM);
-                isItemModeBlast = newContext2 & (1 << PULSAR_ITEMMODEBLAST);
                 isItemModeRain = newContext2 & (1 << PULSAR_ITEMMODERAIN);
                 isItemModeStorm = newContext2 & (1 << PULSAR_ITEMMODESTORM);
                 isTrackSelectionRegs = newContext & (1 << PULSAR_REGS);
@@ -449,9 +446,9 @@ void System::UpdateContext() {
           | (isStart200) << PULSAR_START200 | (isStartOTT) << PULSAR_STARTOTT | (isStartItemRain) << PULSAR_STARTITEMRAIN | (isThunderCloud) << PULSAR_THUNDERCLOUD;
 
         newContextValue2 |= (isTransmissionInside) << PULSAR_TRANSMISSIONINSIDE | (isTransmissionOutside) << PULSAR_TRANSMISSIONOUTSIDE | (isTransmissionVanilla) << PULSAR_TRANSMISSIONVANILLA
-          | (isItemModeRandom) << PULSAR_ITEMMODERANDOM | (isItemModeBlast) << PULSAR_ITEMMODEBLAST | (isItemModeRain) << PULSAR_ITEMMODERAIN | (isItemModeStorm) << PULSAR_ITEMMODESTORM
-          | (isMiiHeads) << PULSAR_MIIHEADS | (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND | (isHAW) << PULSAR_HAW | (isItemBoxRespawnFast) << PULSAR_ITEMBOXRESPAWN | (isRanking) << PULSAR_RANKING
-          | (isVR) << PULSAR_VR | (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE | (isKoPerRace2) << PULSAR_KOPERRACE_2 | (isKoPerRace3) << PULSAR_KOPERRACE_3
+          | (isItemModeRandom) << PULSAR_ITEMMODERANDOM | (isItemModeRain) << PULSAR_ITEMMODERAIN | (isItemModeStorm) << PULSAR_ITEMMODESTORM | (isMiiHeads) << PULSAR_MIIHEADS
+          | (isAllItemsCanLand) << PULSAR_ALLITEMSCANLAND | (isHAW) << PULSAR_HAW | (isItemBoxRespawnFast) << PULSAR_ITEMBOXRESPAWN | (isRanking) << PULSAR_RANKING | (isVR) << PULSAR_VR
+          | (isBattleRoyale) << PULSAR_MODE_BATTLEROYALE | (isItemModeNone) << PULSAR_ITEMMODENONE | (isKoPerRace2) << PULSAR_KOPERRACE_2 | (isKoPerRace3) << PULSAR_KOPERRACE_3
           | (isKoPerRace4) << PULSAR_KOPERRACE_4 | (isKoRoyaleLaps1_5x) << PULSAR_KOROYALE_LAPS_1_5X | (isKoRoyaleLaps2_0x) << PULSAR_KOROYALE_LAPS_2_0X | (isVanillaMode) << PULSAR_VANILLAMODE
           | (isMirrorMode) << PULSAR_MIRRORMODE | (newContext2 & ((1 << PULSAR_NOBRAKEDRIFT) | (1 << PULSAR_NOUMTS) | (1 << PULSAR_NOHYBRIDDRIFT)));
     }

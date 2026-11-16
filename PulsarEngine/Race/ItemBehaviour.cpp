@@ -12,15 +12,11 @@ namespace Race {
 
 static void ChangeBlueOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
-    bool itemModeBlast = false;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
         itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM);
-        itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST);
     }
     new (dest) Item::ObjProperties(rel);
-    if (itemModeBlast) {
-        dest->limit = 25;
-    } else if (itemModeRandom) {
+    if (itemModeRandom) {
         dest->limit = 5;
     } else {
         u32 bitfield = Pulsar::Race::GetEffectiveCustomItemsBitfield();
@@ -38,16 +34,12 @@ kmCall(0x80790b74, ChangeBlueOBJProperties);
 
 static void ChangeBillOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
-    bool itemModeBlast = false;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
         itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM);
-        itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST);
     }
     new (dest) Item::ObjProperties(rel);
     if (itemModeRandom) {
         dest->limit = 25;
-    } else if (itemModeBlast) {
-        dest->limit = 5;
     } else if (Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
         dest->limit = 16;
     } else {
@@ -59,16 +51,12 @@ kmCall(0x80790bf4, ChangeBillOBJProperties);
 
 static void ChangeBombOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
-    bool itemModeBlast = false;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
         itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM);
-        itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST);
     }
     new (dest) Item::ObjProperties(rel);
     if (itemModeRandom) {
         dest->limit = 20;
-    } else if (itemModeBlast) {
-        dest->limit = 25;
     } else if (Pulsar::BattleRoyale::ShouldApplyBattleRoyale()) {
         dest->limit = 16;
     } else {

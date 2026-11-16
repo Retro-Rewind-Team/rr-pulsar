@@ -27,16 +27,12 @@ kmCall(0x8073ae9c, GetCustomKartAIParam);
 
 void *GetCustomItemSlot(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
     const bool itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM);
-    const bool itemModeBlast = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODEBLAST);
     const bool itemModeNone = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODENONE);
-    if (!itemModeRandom && !itemModeBlast && !itemModeNone) {
+    if (!itemModeRandom && !itemModeNone) {
         name = "ItemSlotRR.bin";
     }
     if (itemModeRandom) {
         name = "ItemSlotRandom.bin";
-    }
-    if (itemModeBlast) {
-        name = "ItemSlotBlast.bin";
     }
     if (itemModeNone) {
         name = "ItemSlot.bin";
