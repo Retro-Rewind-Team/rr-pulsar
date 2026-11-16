@@ -13,6 +13,8 @@
 #include <MarioKartWii/Race/RaceBalloon.hpp>
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
+#include <Network/Settings/SelectionRestrictions.hpp>
+#include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <core/rvl/DWC/DWCTransport.hpp>
 
 namespace Pulsar {
@@ -29,6 +31,77 @@ Progress progress[12];
 u32 packetFrames[12];
 u16 validPackets;
 
+void GenerateRoster(u32 humanCount) {
+    if (roster.count != 0 || humanCount >= 12)
+        return;
+    memset(&roster, 0, sizeof(roster));
+    Random random;
+
+    // CPUs never use Mii slots; fall back to every character if the restriction only allows Miis.
+    u32 characters = 0;
+    for (u32 character = 0; character < 24; ++character) {
+        if (Restrictions::IsCharacterEnabled(static_cast<CharacterId>(character)))
+            ++characters;
+    }
+    const bool restrictCharacters = characters != 0;
+    if (!restrictCharacters)
+        characters = 24;
+
+    roster.count = 12 - humanCount;
+    for (u32 i = 0; i < roster.count; ++i) {
+        Entry &entry = roster.entries[i];
+        u32 selectedCharacter = random.NextLimited(characters);
+        for (u32 character = 0; character < 24; ++character) {
+            if (!restrictCharacters || Restrictions::IsCharacterEnabled(static_cast<CharacterId>(character))) {
+                if (selectedCharacter == 0) {
+                    entry.character = character;
+                    break;
+                }
+                --selectedCharacter;
+            }
+        }
+        const s32 weight = GetCharacterWeightClass(static_cast<CharacterId>(entry.character));
+        if (weight >= 0 && weight < static_cast<s32>(Restrictions::VEHICLE_WEIGHT_COUNT)) {
+            const u16 vehicleMask = Restrictions::GetVehicleMask(weight);
+            u32 vehicles = 0;
+            for (u32 position = 0; position < Restrictions::VEHICLES_PER_WEIGHT; ++position) {
+                if ((vehicleMask >> position) & 1)
+                    ++vehicles;
+            }
+            u32 selectedVehicle = random.NextLimited(vehicles);
+            for (u32 position = 0; position < Restrictions::VEHICLES_PER_WEIGHT; ++position) {
+                if ((vehicleMask >> position) & 1) {
+                    if (selectedVehicle == 0) {
+                        entry.kart = kartsSortedByWeight[weight][position];
+                        break;
+                    }
+                    --selectedVehicle;
+                }
+            }
+        } else
+            entry.kart = CharacterIdToKartIdByIdx(static_cast<CharacterId>(entry.character), random.NextLimited(12));
+        entry.previousPosition = humanCount + i + 1;
+        entry.team = System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) ? (humanCount + i) % UI::TEAM_COUNT : i & 1;
+        u32 slots = 0;
+        for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
+            if (Driver::characterTables[entry.character][slot])
+                ++slots;
+        }
+        if (slots != 0) {
+            u32 selected = random.NextLimited(slots);
+            for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
+                if (Driver::characterTables[entry.character][slot]) {
+                    if (selected == 0) {
+                        entry.characterSlot = slot;
+                        break;
+                    }
+                    --selected;
+                }
+            }
+        }
+    }
+}
+
 void WriteSELECT(Roster &dest, u32 selectId) {
     memset(&dest, 0, sizeof(dest));
     if (!System::sInstance->IsContext(PULSAR_FROOMCPUS))
@@ -40,35 +113,8 @@ void WriteSELECT(Roster &dest, u32 selectId) {
 
     if (selectId != lastSelectId) {
         // Zero CPUs is a valid initial field; GP knockout must not refill it later.
-        if (roster.count == 0 && (lastSelectId == 0 || !System::sInstance->IsContext(PULSAR_MODE_KO))) {
-            memset(&roster, 0, sizeof(roster));
-            Random random;
-            roster.count = 12 - sub.playerCount;
-            for (u32 i = 0; i < roster.count; ++i) {
-                Entry &entry = roster.entries[i];
-                entry.character = random.NextLimited(24);
-                entry.kart = CharacterIdToKartIdByIdx(static_cast<CharacterId>(entry.character), random.NextLimited(12));
-                entry.previousPosition = sub.playerCount + i + 1;
-                entry.team = i & 1;
-                u32 slots = 0;
-                for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
-                    if (Driver::characterTables[entry.character][slot])
-                        ++slots;
-                }
-                if (slots != 0) {
-                    u32 selected = random.NextLimited(slots);
-                    for (u32 slot = 0; slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS; ++slot) {
-                        if (Driver::characterTables[entry.character][slot]) {
-                            if (selected == 0) {
-                                entry.characterSlot = slot;
-                                break;
-                            }
-                            --selected;
-                        }
-                    }
-                }
-            }
-        }
+        if (roster.count == 0 && (lastSelectId == 0 || !System::sInstance->IsContext(PULSAR_MODE_KO)))
+            GenerateRoster(sub.playerCount);
         lastSelectId = selectId;
     }
     memcpy(&dest, &roster, sizeof(dest));

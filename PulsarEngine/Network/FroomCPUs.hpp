@@ -67,6 +67,7 @@ extern Progress progress[12];
 extern u32 packetFrames[12];
 extern u16 validPackets;
 
+void GenerateRoster(u32 humanCount);
 void WriteSELECT(Roster &dest, u32 selectId);
 void ReadSELECT(const Roster &src, u32 aid);
 void PrepareRace(RacedataScenario &scenario);
