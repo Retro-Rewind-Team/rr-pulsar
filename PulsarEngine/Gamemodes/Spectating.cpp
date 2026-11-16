@@ -248,6 +248,14 @@ static bool HasEliminatedLocalPlayer(const Raceinfo &raceinfo) {
     return false;
 }
 
+bool IsSpectating() {
+    return sIsSpectating;
+}
+
+u8 GetTargetPlayer() {
+    return sTargetPlayer;
+}
+
 void Reset() {
     sIsSpectating = false;
     sTargetPlayer = 0xFF;

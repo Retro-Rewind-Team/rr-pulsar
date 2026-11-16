@@ -4,6 +4,7 @@
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
+#include <Gamemodes/Spectating.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -80,6 +81,48 @@ static bool SkipOpeningPanCheck(const RaceCameraMgr &cameraMgr) {
         return cameraMgr.HasEveryOpeningPanEnded();
 }
 kmCall(0x8053342c, SkipOpeningPanCheck);
+
+// Show the nametag of the spectated player
+static u8 GetSpectatedPlayerId() {
+    const System *system = System::sInstance;
+    if (system == nullptr)
+        return 0xFF;
+
+    if (system->IsContext(PULSAR_MODE_KO) && system->koMgr != nullptr && system->koMgr->isSpectating) {
+        const RaceCameraMgr *cameraMgr = RaceCameraMgr::sInstance;
+        if (cameraMgr == nullptr)
+            return 0xFF;
+        const u8 cameraIdx = cameraMgr->focusedPlayerIdx;
+        if (cameraIdx >= cameraMgr->cameraCount || cameraMgr->cameras[cameraIdx] == nullptr)
+            return 0xFF;
+        const u8 playerId = cameraMgr->cameras[cameraIdx]->playerId;
+        return playerId < 12 ? playerId : 0xFF;
+    }
+
+    if (Spectating::IsSpectating()) {
+        const u8 target = Spectating::GetTargetPlayer();
+        if (target < 12)
+            return target;
+    }
+    return 0xFF;
+}
+
+// Never match the loop player while spectating
+static s32 BalloonSelfSkipId(const Racedata *racedata, u8 hudSlotId) {
+    if (hudSlotId == 0 && GetSpectatedPlayerId() != 0xFF)
+        return -1;
+    return static_cast<s32>(racedata->GetPlayerIdOfLocalPlayer(hudSlotId));
+}
+kmCall(0x807f15ac, BalloonSelfSkipId);
+
+// Use the spectated kart instead of the eliminated local kart
+static s32 BalloonRespawnCheckId(const Racedata *racedata, u8 hudSlotId) {
+    const u8 spectated = GetSpectatedPlayerId();
+    if (hudSlotId == 0 && spectated != 0xFF)
+        return spectated;
+    return static_cast<s32>(racedata->GetPlayerIdOfLocalPlayer(hudSlotId));
+}
+kmCall(0x807f15ec, BalloonRespawnCheckId);
 
 }  // namespace Race
 }  // namespace Pulsar
