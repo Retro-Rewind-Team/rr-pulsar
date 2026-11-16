@@ -12,6 +12,7 @@
 #include <MarioKartWii/AI/AIManager.hpp>
 #include <MarioKartWii/Race/RaceBalloon.hpp>
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
+#include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 #include <Network/Settings/SelectionRestrictions.hpp>
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
@@ -449,17 +450,26 @@ static void ApplyProgress() {
                     packet.acknowledge |= 1 << slot;
             }
         }
-        if (raceinfo.stage == RACESTAGE_RACE && !system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE)
-          && (scenario.settings.gamemode == MODE_PRIVATE_VS || scenario.settings.gamemode == MODE_PUBLIC_VS)) {
+        if (raceinfo.stage == RACESTAGE_RACE && (scenario.settings.gamemode == MODE_PRIVATE_VS || scenario.settings.gamemode == MODE_PUBLIC_VS)) {
+            // LapKO and Battle Royale also resolve a real player through elimination.
+            LapKO::Mgr *lapKoMgr = nullptr;
+            if (system->IsContext(PULSAR_MODE_LAPKO) || system->IsContext(PULSAR_MODE_BATTLEROYALE))
+                lapKoMgr = system->lapKoMgr;
+            if (lapKoMgr != nullptr && lapKoMgr->raceFinished)
+                return;
             bool hasRealPlayer = false;
             for (u32 playerId = 0; playerId < scenario.playerCount; ++playerId) {
                 if (playerId < 12 && playerSlots[playerId] < roster.count)
                     continue;
                 hasRealPlayer = true;
-                if (!(raceinfo.players[playerId]->stateFlags & 0x12))
+                const bool eliminated = lapKoMgr != nullptr && !lapKoMgr->IsActive(playerId);
+                if (!(raceinfo.players[playerId]->stateFlags & 0x12) && !eliminated)
                     return;
             }
             if (hasRealPlayer) {
+                // Stop further eliminations; the remaining CPUs finish at their current standings.
+                if (lapKoMgr != nullptr)
+                    lapKoMgr->raceFinished = true;
                 for (u32 playerId = 0; playerId < scenario.playerCount; ++playerId) {
                     RaceinfoPlayer &player = *raceinfo.players[playerId];
                     if ((playerId < 12 && playerSlots[playerId] < roster.count) && !(player.stateFlags & 0x12))
