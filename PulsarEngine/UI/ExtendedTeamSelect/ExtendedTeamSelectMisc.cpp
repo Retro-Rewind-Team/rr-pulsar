@@ -18,6 +18,7 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <Race/CustomCharacters.hpp>
+#include <Gamemodes/KO/KOMgr.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <runtimeWrite.hpp>
 
@@ -48,7 +49,10 @@ void Racedata_InitRace(Racedata *racedata) {
     }
     if (returnAddress == kmRuntimeAddr(0x80553c94))
         Race::RandomizeCPUCharacterTables(racedata->racesScenario);
-    if (racedata->racesScenario.settings.gametype == GAMETYPE_ONLINE_SPECTATOR)
+    // KO spectators already imported slots through SELECT
+    const System *system = System::sInstance;
+    const bool isKOSpectator = system->IsContext(PULSAR_MODE_KO) && system->koMgr->isSpectating;
+    if (racedata->racesScenario.settings.gametype == GAMETYPE_ONLINE_SPECTATOR && !isKOSpectator)
         Network::ImportSpectatorCharacterSlots(racedata->racesScenario);
 }
 
