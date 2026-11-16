@@ -32,14 +32,13 @@ static void ConvertROOMPacketToData(const PulROOM &packet) {
     system->netMgr.hasHostSettingsPreview = true;
 }
 
-static void WriteHostSettingsPreviewToPacket(PulROOM *packet, const Settings::Mgr &settings) {
+static void WriteHostSettingsPreviewToPacket(PulROOM *packet, const Settings::Mgr &settings, bool isExtendedTeamsStart) {
     const bool isBattle = packet->message == 2 || packet->message == 3;
-    const bool isExtendedTeams = settings.GetSettingValue(Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
-    const bool isKO = !isBattle && !isExtendedTeams && settings.GetSettingValue(Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
+    const bool isKO = !isBattle && !isExtendedTeamsStart && settings.GetSettingValue(Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
     const bool isOTT = settings.GetSettingValue(Settings::SETTING_OTTONLINE) != OTTSETTING_ONLINE_DISABLED;
     const bool isRoyale = settings.GetSettingValue(Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
     Settings::SettingsPageId pages[6];
-    const u32 pageCount = Settings::Params::BuildHostRulePages(pages, isBattle, isKO, isOTT, isRoyale, isExtendedTeams);
+    const u32 pageCount = Settings::Params::BuildHostRulePages(pages, isBattle, isKO, isOTT, isRoyale);
 
     memset(packet->hostSettingsPreview, 0, sizeof(packet->hostSettingsPreview));
     u32 offset = 0;
@@ -133,22 +132,28 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     Pulsar::System *system = Pulsar::System::sInstance;
     PulROOM *destPacket = packetHolder->packet;
+    bool isExtendedTeamsStart = false;
     if (destPacket->messageType == 1 && sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);  // this has been changed by copy so it's safe to do this
 
+        const Settings::Mgr &settings = Settings::Mgr::Get();
+
         // Store original message index for worldwide option detection
+        // The Team VS start option (message 1) starts an Extended Team VS, which is sent as a regular VS start
+        // Battle starts (messages 2 and 3) with the battle teams setting enabled use Extended Teams instead of vanilla teams
         const u8 originalMessage = destPacket->message;
-        if (originalMessage >= 4 && originalMessage <= 9) {
+        const bool isExtendedTeamsBattleStart = (originalMessage == 2 || originalMessage == 3) && settings.GetSettingValue(Pulsar::Settings::SETTING_BATTLETEAMS) == BATTLE_FFA_ENABLED;
+        isExtendedTeamsStart = originalMessage == 1 || isExtendedTeamsBattleStart;
+        if (originalMessage == 1 || (originalMessage >= 4 && originalMessage <= 9)) {
             destPacket->message = 0;
         }
 
-        const Settings::Mgr &settings = Settings::Mgr::Get();
         const u8 ccSetting = settings.GetSettingValue(Pulsar::Settings::SETTING_FROOMCC);
         destPacket->customEngineClass = ccSetting == HOSTCC_CUSTOM ? system->netMgr.customEngineClass : 0;
         system->netMgr.hostCustomEngineClass = destPacket->customEngineClass;
         destPacket->characterRestrictionMask = settings.GetCharacterRestrictionMask();
         for (u32 weight = 0; weight < Restrictions::VEHICLE_WEIGHT_COUNT; ++weight) destPacket->vehicleRestrictionMasks[weight] = settings.GetVehicleRestrictionMask(weight);
-        WriteHostSettingsPreviewToPacket(destPacket, settings);
+        WriteHostSettingsPreviewToPacket(destPacket, settings, isExtendedTeamsStart);
         const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
 
@@ -183,7 +188,7 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         u8 allItemsCanLand = settings.GetSettingValue(Pulsar::Settings::SETTING_ALLITEMSCANLAND) == ALLITEMSCANLAND_ENABLED;
         const u8 vanillaMode = settings.GetSettingValue(Pulsar::Settings::SETTING_VANILLAMODE) == VANILLAMODE_ENABLED;
         const u8 mirrorMode = settings.GetSettingValue(Pulsar::Settings::SETTING_MIRROR) == MIRRORMODE_ENABLED;
-        const u8 extendedTeams = settings.GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+        const u8 extendedTeams = isExtendedTeamsStart;
         u8 normalTC = settings.GetSettingValue(Pulsar::Settings::SETTING_THUNDERCLOUD) == THUNDERCLOUD_NORMAL && isNotPublic;
         u8 vr = settings.GetSettingValue(Pulsar::Settings::SETTING_VR) == VR_ENABLED && isNotPublic;
         const u8 isStartRetro = (originalMessage == 4);
@@ -204,11 +209,11 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
 
         if (extendedTeams) {
             koSetting = KOSETTING_DISABLED;
+            lapKoSetting = 0;
             vr = VR_DISABLED;
-            if (destPacket->message == 2 || destPacket->message == 3) {
-                battleTeam = BATTLE_FFA_ENABLED;
-            } else {
-                battleTeam = BATTLE_FFA_DISABLED;
+            if (isBattle) {
+                battleTeam = 1;  // race the battle without vanilla teams, Extended Teams assigns the teams
+                battleElim = 0;  // elimination stays FFA-only
             }
         }
 
@@ -281,10 +286,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         }
     }
 
-    const bool isExtendedTeams = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
     const bool isUpdateTeamMessage = destPacket->messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS;
-    const bool isStartVSRaceMessage = destPacket->messageType == 1 && (destPacket->message == 0 || destPacket->message == 2 || destPacket->message == 3);
-    if ((isUpdateTeamMessage || (isStartVSRaceMessage && isExtendedTeams)) && sub.localAid == sub.hostAid) {
+    if ((isUpdateTeamMessage || isExtendedTeamsStart) && sub.localAid == sub.hostAid) {
         packetHolder->packetSize = sizeof(PulROOM);
         const UI::ExtendedTeamPlayer *playerInfo = UI::ExtendedTeamManager::sInstance->GetPlayerInfo();
 

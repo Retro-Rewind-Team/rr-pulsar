@@ -27,6 +27,8 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket &packet) {
     bmgId = Pages::FriendRoomManager::GetMessageBmg(packet, 0);
 
     switch (rowIdx) {
+        case 1:
+            return BMG_EXTENDEDTEAMS_PLAY;
         case 4:
             return BMG_RETRO_START_MESSAGE;
         case 5:
@@ -44,7 +46,6 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket &packet) {
     if (rowIdx == 0) {
         const bool isOTT = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_OTTONLINE) == OTTSETTING_ONLINE_NORMAL;
         const bool isKO = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) != KOSETTING_DISABLED;
-        const bool isExtendedTeam = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
         const bool isRoyale = Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_KOROYALEENABLED) == KOROYALESETTING_ENABLED;
 
         if (isOTT && isKO) {
@@ -57,8 +58,6 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket &packet) {
             bmgId = BMG_PLAY_ROYALE;
         } else if (isKO) {
             bmgId = BMG_PLAY_KO;
-        } else if (isExtendedTeam) {
-            bmgId = BMG_EXTENDEDTEAMS_PLAY;
         } else {
             bmgId = BMG_PLAY_GP;
         }
@@ -73,8 +72,10 @@ static void RemapAndStoreSentMessage() {
     asm(mr packet, r30;);
     asm(mr manager, r28;);
 
+    const u32 messageType = (packet >> 24) & 0xFF;
     u32 message = (packet >> 8) & 0xFFFF;
-    if (message >= 4 && message <= 9) {
+    const bool isExtendedTeamsStart = messageType == 1 && message == 1;  // Team VS row starts an Extended Team VS, stored locally as a regular VS start
+    if (isExtendedTeamsStart || (message >= 4 && message <= 9)) {
         packet = packet & 0xFF0000FF;
     }
 

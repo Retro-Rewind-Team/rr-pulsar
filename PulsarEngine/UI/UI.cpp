@@ -20,7 +20,6 @@
 
 // Pulsar Custom Pages:
 #include <UI/CustomItems/CustomItemPage.hpp>
-#include <UI/TeamSelect/TeamSelect.hpp>
 #include <UI/RoomKick/RoomKickPage.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
 #include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultTotal.hpp>
@@ -172,7 +171,6 @@ void ExpSection::CreatePulPages() {
     }
     if (this->Get<ExpFroom>() != nullptr) {
         this->CreateAndInitPage(*this, RoomKickPage::id);
-        this->CreateAndInitPage(*this, PULPAGE_TEAMSELECT);
         this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMSELECT);
         this->CreateAndInitPage(*this, CustomEngineClassPage::id);
     }
@@ -263,9 +261,6 @@ void ExpSection::CreateAndInitPage(ExpSection &self, u32 id) {
         case ChooseNextTrack::id:
             initId = ChooseNextTrack::fakeId;
             page = new ChooseNextTrack;
-            break;
-        case TeamSelect::id:
-            page = new TeamSelect;
             break;
         case RoomKickPage::id:
             page = new RoomKickPage;

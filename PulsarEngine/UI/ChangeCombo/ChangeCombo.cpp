@@ -126,7 +126,7 @@ static void BuildSettingsPreviewSheets() {
       || sectionId == SECTION_P2_WIFI_FROOM_COIN_VOTING;
     s_settingsPreviewSheetCount =
       Settings::Params::BuildHostRulePages(s_settingsPreviewPages, isBattle, (netMgr.hostContext & (1 << PULSAR_MODE_KO)) || (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO)),
-        netMgr.hostContext & (1 << PULSAR_MODE_OTT), netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE), netMgr.hostContext & (1 << PULSAR_EXTENDEDTEAMS));
+        netMgr.hostContext & (1 << PULSAR_MODE_OTT), netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE));
     s_settingsPreviewPages[0] = Settings::SETTINGS_PAGE_FROOM;
     for (u32 i = 1; i + 1 < s_settingsPreviewSheetCount; ++i) s_settingsPreviewPages[i] = s_settingsPreviewPages[i + 1];
     --s_settingsPreviewSheetCount;

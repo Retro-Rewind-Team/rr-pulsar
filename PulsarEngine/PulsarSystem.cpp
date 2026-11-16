@@ -284,10 +284,8 @@ void System::UpdateContext() {
     bool isCT = true;
     bool isHAW = false;
     const bool isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && mode == MODE_VS_RACE;
-    const bool isOfflineGrandPrix = controller->roomType == RKNet::ROOMTYPE_NONE && mode == MODE_GRAND_PRIX;
     const bool isOfflineTeamVS = isOfflineVS && (racedataSettings.modeFlags & UI::ExtendedTeamManager::TEAM_MODE_FLAG);
-    bool isExtendedTeams =
-      (settings.GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED || isOfflineTeamVS) && (!isOfflineVS || isOfflineTeamVS) && !isOfflineGrandPrix;
+    bool isExtendedTeams = isOfflineTeamVS;
     const bool disableOfflineKO = isExtendedTeams && isOfflineVS;
     bool isKO = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_ENABLED && isOfflineVS && !disableOfflineKO;
     bool isOTT = false;

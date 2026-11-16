@@ -48,7 +48,7 @@ static const SettingId royaleRadios[] = {SETTING_KOROYALEENABLED, SETTING_ALLITE
 
 static const SettingId royaleScrollers[] = {SETTING_KOROYALEBALLOONS, SETTING_KOROYALELAPMULTIPLIER};
 
-static const SettingId extendedTeamsRadios[] = {SETTING_EXTENDEDTEAMSENABLED, SETTING_EXTENDEDTEAMSLINE};
+static const SettingId extendedTeamsRadios[] = {SETTING_EXTENDEDTEAMSLINE};
 
 static const SettingId extendedTeamsScrollers[] = {SETTING_EXTENDEDTEAMSPLAYERS};
 
@@ -107,21 +107,17 @@ const SettingsContextDef Params::contextDefs[SETTINGS_CONTEXT_COUNT] = {
     {votingPages, ARRAY_COUNT(votingPages)},
 };
 
-u32 Params::BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO, bool isOTT, bool isRoyale, bool isExtendedTeams) {
+u32 Params::BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO, bool isOTT, bool isRoyale) {
     u32 count = 0;
     dest[count++] = SETTINGS_PAGE_FROOM1;
     dest[count++] = SETTINGS_PAGE_FROOM2;
 
     if (isBattle) {
         dest[count++] = SETTINGS_PAGE_BATTLE;
-        if (isExtendedTeams)
-            dest[count++] = SETTINGS_PAGE_EXTENDED_TEAMS;
         return count;
     }
 
-    if (isExtendedTeams)
-        dest[count++] = SETTINGS_PAGE_EXTENDED_TEAMS;
-    else if (isKO)
+    if (isKO)
         dest[count++] = SETTINGS_PAGE_KO;
 
     if (isOTT)

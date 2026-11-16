@@ -168,7 +168,7 @@ public:
         return contextDefs[context];
     }
 
-    static u32 BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO, bool isOTT, bool isRoyale, bool isExtendedTeams);
+    static u32 BuildHostRulePages(SettingsPageId *dest, bool isBattle, bool isKO, bool isOTT, bool isRoyale);
 };
 
 }  // namespace Settings
@@ -528,11 +528,6 @@ enum KORoyaleSettingLapMultiplier {
 };
 
 // 11) Extended Teams values
-enum ExtendedTeams {
-    EXTENDEDTEAMS_DISABLED,
-    EXTENDEDTEAMS_ENABLED
-};
-
 enum ExtendedTeamsLine {
     EXTENDEDTEAMS_LINE_TEAM,
     EXTENDEDTEAMS_LINE_REGION

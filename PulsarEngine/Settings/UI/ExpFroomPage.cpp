@@ -3,7 +3,6 @@
 #include <PulsarSystem.hpp>
 #include <Settings/UI/ExpFroomPage.hpp>
 #include <Settings/Settings.hpp>
-#include <UI/TeamSelect/TeamSelect.hpp>
 #include <UI/UI.hpp>
 #include <Settings/UI/ExpWFCMainPage.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
@@ -83,11 +82,7 @@ void ExpFroom::OnSettingsButtonClick(PushButton &button, u32 hudSlotId) {
 
 void ExpFroom::OnTeamsButtonClick(PushButton &button, u32 hudSlotId) {
     this->areControlsHidden = true;
-    if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED) {
-        this->AddPageLayer(static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT), 0);
-    } else {
-        this->AddPageLayer(static_cast<PageId>(PULPAGE_TEAMSELECT), 0);
-    }
+    this->AddPageLayer(static_cast<PageId>(PULPAGE_EXTENDEDTEAMSELECT), 0);
 }
 
 void ExpFroom::OnKickButtonClick(PushButton &button, u32 hudSlotId) {

@@ -134,10 +134,9 @@ void SettingsPanel::ApplyVotingPreviewHostSettings() {
     const bool isKO = (netMgr.hostContext & (1 << PULSAR_MODE_KO)) || (netMgr.hostContext & (1 << PULSAR_MODE_LAPKO));
     const bool isOTT = netMgr.hostContext & (1 << PULSAR_MODE_OTT);
     const bool isRoyale = netMgr.hostContext2 & (1 << PULSAR_MODE_BATTLEROYALE);
-    const bool isExtendedTeams = netMgr.hostContext & (1 << PULSAR_EXTENDEDTEAMS);
 
     Settings::SettingsPageId pages[6];
-    const u32 pageCount = Settings::Params::BuildHostRulePages(pages, isBattle, isKO, isOTT, isRoyale, isExtendedTeams);
+    const u32 pageCount = Settings::Params::BuildHostRulePages(pages, isBattle, isKO, isOTT, isRoyale);
     u32 offset = 0;
     for (u32 page = 0; page < pageCount; ++page) {
         const Settings::SettingsPageDef &def = Settings::Params::GetPageDef(pages[page]);

@@ -130,8 +130,9 @@ kmWriteNop(0x805de76c);  // Remove the call that opens the character selection s
 kmCall(0x805dddb0, PrepareOnlinePages);
 
 // This function is called when the host presses one of the start button in the Friend Room
-// If Extended Teams is enabled, it will send a "Regular VS" message instead of a "Team VS" message
-// Because I only patched the regular VS UIs for this mode
+// The "Team VS" message is kept as-is here so BeforeROOMSend can detect an Extended Team VS start;
+// it is remapped to a "Regular VS" message there and in RemapAndStoreSentMessage,
+// because only the regular VS UIs are patched for this mode
 //
 // Keep pkt as a raw word here; this hook works on the packed ROOM message value.
 void SetBroadcastROOMPacket(RKNet::ROOMHandler *_this, u32 pkt) {
@@ -144,10 +145,6 @@ void SetBroadcastROOMPacket(RKNet::ROOMHandler *_this, u32 pkt) {
 
     UI::ExtendedTeamSelect *extendedTeamSelect = SectionMgr::sInstance->curSection->Get<UI::ExtendedTeamSelect>();
     Pages::FriendRoomManager *friendRoomBackPage = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
-    if (System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS) && messageType == 1 && message == 1) {
-        message = 0;
-    }
-
     pkt = (messageType << 24) | (message << 8) | messageSequence;
     for (int i = 0; i < 12; ++i) {
         if (i != sub->localAid) {
