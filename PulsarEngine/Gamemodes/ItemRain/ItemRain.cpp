@@ -13,9 +13,8 @@
 namespace Pulsar {
 namespace ItemRain {
 
-static void SpawnItemRain(Item::Manager *manager) {
-    manager->Update();
-
+static void SpawnItemRain() {
+    Item::Manager *manager = Item::Manager::sInstance;
     const Raceinfo *race = Raceinfo::sInstance;
     const System *system = System::sInstance;
     if (race->stage < RACESTAGE_RACE || !race->timerMgr->hasRaceStarted) {
@@ -146,7 +145,7 @@ static void SpawnItemRain(Item::Manager *manager) {
     spawnedItems[nextSpawnedItem].eventBitfield = obj->eventBitfield;
     nextSpawnedItem = (nextSpawnedItem + 1) % (sizeof(spawnedItems) / sizeof(spawnedItems[0]));
 }
-kmCall(0x80554c68, SpawnItemRain);
+static RaceFrameHook spawnItemRainHook(SpawnItemRain);
 
 static void ActivateBobombs(Item::Manager *manager, ItemObjId item, Matrix34f *matrix, Vec3 *direction, u32 playerId) {
     Item::ObjHolder &holder = manager->itemObjHolders[item];
