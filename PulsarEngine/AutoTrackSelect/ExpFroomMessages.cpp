@@ -3,7 +3,7 @@
 #include <Settings/SettingsParam.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
-#include <Gamemodes/OnlineTT/OTTRegional.hpp>
+#include <Network/FriendStatusColors.hpp>
 
 namespace Pulsar {
 namespace UI {

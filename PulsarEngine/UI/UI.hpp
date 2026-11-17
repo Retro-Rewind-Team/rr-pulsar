@@ -230,12 +230,15 @@ enum BMG {
 
     // RT
     BMG_TITLE_TEXT_RT = 0x6912,
+    BMG_RETRO_PLAYING = 0x6956,
 
     // CT
     BMG_TITLE_TEXT_CT = 0x6913,
+    BMG_CUSTOM_PLAYING = 0x6957,
 
     // Regs
     BMG_TITLE_TEXT_REGS = 0x691b,
+    BMG_REGS_PLAYING = 0x6958,
 
     // BT
     BMG_TITLE_TEXT_BT = 0x6918,
