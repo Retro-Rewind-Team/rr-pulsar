@@ -5,6 +5,7 @@
 #include <Sound/MiscSound.hpp>
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -29,12 +30,11 @@ static bool IsUMTEnabled() {
         return true;
 
     // IsVanillaMode() returns false once RKNet shuts down, while race effects are still being updated.
-    const RKNet::RoomType roomType = controller->roomType;
-    const bool isFroom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    const bool isFroom = IsFriendRoom();
     if (isFroom && system->IsContext(PULSAR_VANILLAMODE))
         return false;
 
-    const bool isRegionalRoom = roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || roomType == RKNet::ROOMTYPE_BT_REGIONAL;
+    const bool isRegionalRoom = IsRegionalRoom();
     return !isRegionalRoom || system->netMgr.region != 0x15;
 }
 
@@ -60,8 +60,7 @@ kmWrite32(0x80588938, 0x7c040378);  // setup "charged" for next function
 kmWrite32(0x8058893c, 0x48000010);  // takes MT charge check and parses it into SetBikeDriftTiers
 void SetBikeDriftTiers(Kart::MovementBike &movement, bool charged) {
     bool isSMT = true;
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    if (roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_BT_WW)
+    if (GetRoomType() == RKNet::ROOMTYPE_VS_WW || GetRoomType() == RKNet::ROOMTYPE_BT_WW)
         isSMT = false;
     if (!IsUMTEnabled())
         isSMT = false;
@@ -196,8 +195,7 @@ void LoadOrangeSparkEffects(ExpPlayerEffects &effects, EGG::Effect **effectArray
     KartType type = effects.kartPlayer->GetType();
     const u32 mtCharge = effects.kartPlayer->pointers.kartMovement->mtCharge;
     bool isSMT = true;
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    if (roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_BT_WW)
+    if (GetRoomType() == RKNet::ROOMTYPE_VS_WW || GetRoomType() == RKNet::ROOMTYPE_BT_WW)
         isSMT = false;
     if (!IsUMTEnabled())
         isSMT = false;

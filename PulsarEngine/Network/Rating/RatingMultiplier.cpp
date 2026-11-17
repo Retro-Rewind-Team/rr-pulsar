@@ -11,6 +11,7 @@
 #include <PulsarSystem.hpp>
 #include <include/c_stdio.h>
 #include <include/c_string.h>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -76,7 +77,7 @@ static void OnMultiplierDownloaded(s32 result, void *response, void * /*userdata
 
 static void UpdateMultiplierDownloadForWfcConnection() {
     RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isConnectedToWfc = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+    const bool isConnectedToWfc = IsOnlineConnected();
 
     if (isConnectedToWfc && !s_wasConnectedToWfc) {
         s_multiplierRequestDone = false;

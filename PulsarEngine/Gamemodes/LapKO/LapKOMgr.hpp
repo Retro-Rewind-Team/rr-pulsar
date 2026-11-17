@@ -71,7 +71,6 @@ public:
     void BroadcastEvent(u8 playerId, u8 concludedRound);
     void BroadcastBatch(const u8 *elimIds, u8 elimCount, u8 concludedRound);
     void UpdateActivePlayerCounts();
-    bool IsFriendRoomOnline() const;
     void EnsureRaceInitialized(Raceinfo &raceinfo);
     void HostMonitorDisconnects(RKNet::Controller &controller, const RKNet::ControllerSub &sub);
     void UpdateLapProgress(Raceinfo &raceinfo);

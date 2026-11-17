@@ -7,6 +7,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Ctrl/CtrlRace/CtrlRaceGhostDiffTime.hpp>
 #include <Settings/Settings.hpp>
+#include <GlobalFunction.hpp>
 
 /*Music speedup:
 When the player reaches the final lap (if the track has >1 laps) and if the setting is set, the music will
@@ -77,7 +78,7 @@ static void RaceSoundManager_CheckRaceState(void *raceSoundManager) {
     const Racedata *racedata = Racedata::sInstance;
     const RKNet::Controller *rknet = RKNet::Controller::sInstance;
     Audio::RaceMgr *raceAudioMgr = Audio::RaceMgr::sInstance;
-    if (racedata != nullptr && rknet != nullptr && raceAudioMgr != nullptr && rknet->roomType != RKNet::ROOMTYPE_NONE) {
+    if (racedata != nullptr && rknet != nullptr && raceAudioMgr != nullptr && IsOnlineRoom()) {
         const RacedataSettings &settings = racedata->racesScenario.settings;
         if (settings.lapCount == 1 && raceAudioMgr->raceState == Audio::RACE_STATE_NORMAL) {
             const u8 localPlayerId = raceAudioMgr->playerIdFirstLocalPlayer;

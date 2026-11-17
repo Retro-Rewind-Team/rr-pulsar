@@ -5,6 +5,7 @@
 #include <Network/Rating/PlayerRating.hpp>
 #include <Settings/Settings.hpp>
 #include <UI/PlayerCount.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -19,22 +20,8 @@ kmRuntimeUse(0x800d1984);
 static u32 sPreviousRoomGroupId = 0;
 extern "C" u32 sMatchmakingTimeoutMs = 0x4e20;
 
-static bool IsPublicMatchmakingRoomType(const RKNet::RoomType roomType) {
-    switch (roomType) {
-        case RKNet::ROOMTYPE_VS_WW:
-        case RKNet::ROOMTYPE_VS_REGIONAL:
-        case RKNet::ROOMTYPE_BT_WW:
-        case RKNet::ROOMTYPE_BT_REGIONAL:
-        case RKNet::ROOMTYPE_JOINING_WW:
-        case RKNet::ROOMTYPE_JOINING_REGIONAL:
-            return true;
-        default:
-            return false;
-    }
-}
-
 static void RememberPreviousPublicRoomGroupId(const RKNet::Controller *controller) {
-    if (controller == nullptr || !IsPublicMatchmakingRoomType(controller->roomType))
+    if (controller == nullptr || !IsPublicRoom())
         return;
 
     const u32 currentSub = static_cast<u32>(controller->currentSub) & 1;
@@ -70,8 +57,7 @@ typedef int (*DWCSetupGameServer_t)(int maxPlayers, void *callback, void *callba
 static const DWCSetupGameServer_t DWCSetupGameServer = (DWCSetupGameServer_t)kmRuntimeAddr(0x800d1984);
 
 static int PreventInfiniteMatchmakingRoomCreation(int maxPlayers, void *callback, void *callbackParam, void *option0, void *option1, void *playerValidCallback, void *playerUserData, void *userData) {
-    const RKNet::Controller *const net = RKNet::Controller::sInstance;
-    if (IsInfiniteMatchmakingEnabled() && net != nullptr && IsPublicMatchmakingRoomType(net->roomType)) {
+    if (IsInfiniteMatchmakingEnabled() && IsPublicRoom()) {
         return 0;
     }
 
@@ -121,8 +107,7 @@ void CustomRandomizeServers() {
 
     const bool isInfiniteMatchmakingEnabled = IsInfiniteMatchmakingEnabled();
     const u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
-    RKNet::Controller *const net = RKNet::Controller::sInstance;
-    const bool isBattle = net != nullptr && (net->roomType == RKNet::ROOMTYPE_BT_WW || net->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
+    const bool isBattle = IsPublicBattleRoom();
     const int playerRating = isBattle ? (int)(PointRating::GetUserBR(licenseId) + 0.5f) : (int)(PointRating::GetUserVR(licenseId) + 0.5f);
     const char *const ratingKey = isBattle ? "eb" : "ev";
     const int maximumRoomVR = playerRating + 4000000;  // 40,000 VR, stored at 100x precision.

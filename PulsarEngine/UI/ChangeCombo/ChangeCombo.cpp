@@ -15,26 +15,17 @@
 #include <Network/Settings/SelectionRestrictions.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Driver/CustomCharacters.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
-
-static bool IsFriendRoom() {
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    return roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
-}
-
-static bool IsRegionalRoom() {
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    return roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
-}
 
 static bool ShouldHideComboButtons(const System &system) {
     if (system.IsContext(PULSAR_MODE_KO) && system.koMgr != nullptr && system.koMgr->isSpectating)
         return true;
     if (system.IsContext(PULSAR_MODE_OTT) && system.IsContext(PULSAR_CHANGECOMBO) == OTTSETTING_COMBO_ENABLED)
         return true;
-    return system.IsContext(PULSAR_MODE_OTT) && IsRegionalRoom();
+    return system.IsContext(PULSAR_MODE_OTT) && IsRegionalVSRoom();
 }
 
 static CharacterId GetCharacterForSlot(u32 slot, u32 hudSlotId) {
@@ -220,8 +211,7 @@ void ExpVR::OnInit() {
         isKOd = true;
     if (System::sInstance->IsContext(PULSAR_MODE_OTT) && system->IsContext(PULSAR_CHANGECOMBO) == OTTSETTING_COMBO_ENABLED)
         isKOd = true;
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT)
-      && ((RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL) || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL)))
+    if (System::sInstance->IsContext(PULSAR_MODE_OTT) && IsRegionalVSRoom())
         isKOd = true;
 
     bool isRandomHidden = false;

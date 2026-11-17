@@ -6,6 +6,7 @@
 #include <Gamemodes/KO/KORaceEndPage.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace KO {
@@ -16,7 +17,7 @@ Mgr::Mgr() : winnerPlayerId(0xFF), isSpectating(false), hasSwapped(false), isOff
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     this->baseLocPlayerCount = sub.localPlayerCount;
-    this->isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
+    this->isOfflineVS = Pulsar::IsOfflineVS();
     if (this->isOfflineVS) {
         const Settings::Mgr &settings = Settings::Mgr::Get();
         this->koPerRace = settings.GetSettingValue(Pulsar::Settings::SETTING_KOPERRACE) + 1;

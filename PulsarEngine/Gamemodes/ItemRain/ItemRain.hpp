@@ -1,5 +1,6 @@
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <PulsarSystem.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Item {
 class Obj;
@@ -11,7 +12,7 @@ namespace ItemRain {
 inline bool IsItemRainEnabled() {
     const System *system = System::sInstance;
     const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    return mode != MODE_TIME_TRIAL && mode != MODE_GHOST_RACE && !system->IsContext(PULSAR_MODE_OTT) && (system->IsContext(PULSAR_ITEMMODERAIN) || system->IsContext(PULSAR_ITEMMODESTORM));
+    return !IsTimeTrialOrGhostMode(mode) && !system->IsContext(PULSAR_MODE_OTT) && (system->IsContext(PULSAR_ITEMMODERAIN) || system->IsContext(PULSAR_ITEMMODESTORM));
 }
 
 struct SpawnedItem {

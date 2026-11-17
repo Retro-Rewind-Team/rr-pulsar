@@ -7,6 +7,7 @@
 #include <Race/CustomItems.hpp>
 #include <Extensions/LECODE/XPF.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
+#include <GlobalFunction.hpp>
 
 // Total copy of https://github.com/Gabriela-Orzechowska/LE-CODE-XPF/tree/main all credits goes to Gabriela
 namespace LECODE {
@@ -26,11 +27,11 @@ GOBJ *XPFMgr::GetDefinitionObject(u16 objId) {
 void XPFMgr::EvaluateConditions() {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
-    if (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE)
+    if (Pulsar::IsTimeTrialOrGhostMode(mode))
         this->randScenario = 0;
     else {
         s32 seed;
-        if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
+        if (Pulsar::IsOnlineMode(mode)) {
             const RKNet::Controller *controller = RKNet::Controller::sInstance;
             const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
             u32 seed;
@@ -144,7 +145,7 @@ bool XPFMgr::CalcConditionBits(u16 val, u8 field) {
         if (val & ((1 << (4 + (range * 2) + (localPlayerCount - 1)))))
             ret = true;
     }
-    if ((val & 0x4000) && field == 2 && (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE))
+    if ((val & 0x4000) && field == 2 && (Pulsar::IsTimeTrialOrGhostMode(mode)))
         ret = true;
     return ret;
 }
@@ -219,7 +220,7 @@ bool XPFMgr::CalcPredefinedCondition(u16 val) {
                 ret = mode <= MODE_6 || mode >= MODE_AWARD;
                 break;
             case 0x101a:
-                ret = mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE;
+                ret = Pulsar::IsTimeTrialOrGhostMode(mode);
                 break;
             case 0x101c:
                 ret = isBattle;

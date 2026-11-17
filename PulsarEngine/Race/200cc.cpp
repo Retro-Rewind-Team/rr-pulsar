@@ -6,6 +6,7 @@
 #include <PulsarSystem.hpp>
 #include <RetroRewind.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <GlobalFunction.hpp>
 
 // Unoptimized code which is mostly a port of Stebler's version which itself comes from CTGP's, speed factor is in the LapSpeedModifier code
 
@@ -16,15 +17,15 @@ bool Has200ccPhysics() {
     if (Is200cc())
         return true;
 
-    if (System::sInstance->IsOfflineVS())
+    if (IsOfflineVS())
         return System::offlineCustomEngineClass >= 175;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || (controller->roomType != RKNet::ROOMTYPE_FROOM_HOST && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST))
+    if (controller == nullptr || !IsFriendRoom())
         return false;
 
     const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-    if (mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE)
+    if (IsBattleMode(mode))
         return false;
     return System::sInstance->netMgr.hostCustomEngineClass >= 200;
 }
@@ -32,15 +33,14 @@ bool Has200ccPhysics() {
 bool IsBrakeDriftingEnabled() {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isOnlineRoomActive = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+    const bool isOnlineRoomActive = IsOnlineConnected();
     if (isOnlineRoomActive && System::sInstance->IsVanillaMode())
         return false;
     if (Has200ccPhysics())
         return true;
-    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) && System::sInstance->IsContext(PULSAR_NOBRAKEDRIFT))
+    if (isOnlineRoomActive && IsFriendRoom() && System::sInstance->IsContext(PULSAR_NOBRAKEDRIFT))
         return false;
-    return static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && mode != MODE_TIME_TRIAL
+    return static_cast<Pulsar::BrakeDrift>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_BRAKEDRIFT)) == Pulsar::BRAKEDRIFT_ENABLED && !IsTimeTrialMode(mode)
       && !System::sInstance->IsContext(PULSAR_MODE_OTT);
 }
 

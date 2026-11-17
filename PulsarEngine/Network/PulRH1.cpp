@@ -10,16 +10,10 @@
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
 #include <Race/CustomCharacters.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Network {
-
-static bool IsFriendRoom() {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (!controller)
-        return false;
-    return (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-}
 
 // Fixes for spectating
 void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u32 len) {
@@ -153,8 +147,7 @@ static bool GetValidReceivedTrackId(CourseId receivedTrack, PulsarId &id) {
     if (cupsConfig == nullptr || controller == nullptr || receivedTrack == COURSEID_NONE)
         return false;
 
-    const RKNet::RoomType roomType = controller->roomType;
-    if (roomType != RKNet::ROOMTYPE_VS_REGIONAL && roomType != RKNet::ROOMTYPE_JOINING_REGIONAL && roomType != RKNet::ROOMTYPE_BT_REGIONAL)
+    if (!IsRegionalRoom())
         id = CupsConfig::ConvertTrack_RealIdToPulsarId(receivedTrack);
     else
         id = static_cast<PulsarId>(receivedTrack);
@@ -171,9 +164,8 @@ CourseId ReturnCorrectId(const RKNet::RH1Handler &rh1Handler) {
         if (cur.timer != 0 && GetValidReceivedTrackId(curTrack, id)) {
             u8 variantIdx = 0;
             const RKNet::Controller *controller = RKNet::Controller::sInstance;
-            const RKNet::RoomType roomType = controller->roomType;  // only ever called when joining (this is used to correct liveview), therefore simply checkings roomtype is enough
 
-            if (roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || roomType == RKNet::ROOMTYPE_BT_REGIONAL) {
+            if (IsRegionalRoom()) {
                 const u32 lastBufferUsed = controller->lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
                 if (lastBufferUsed < 2 && controller->splitReceivedRACEPackets[lastBufferUsed][aid] != nullptr) {
                     const RKNet::PacketHolder<Network::PulRH1> *holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();

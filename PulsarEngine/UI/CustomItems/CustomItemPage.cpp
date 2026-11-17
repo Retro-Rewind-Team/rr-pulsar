@@ -6,6 +6,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <core/rvl/OS/OS.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -126,7 +127,7 @@ void CustomItemPage::AfterControlUpdate() {
     }
 
     const Pages::FriendRoomManager *mgr = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
-    if (mgr && mgr->startedGameMode < 4 && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
+    if (mgr && mgr->startedGameMode < 4 && IsFriendRoom()) {
         this->LoadPrevPageById(static_cast<PageId>(PULPAGE_SETTINGSPAGESELECT), this->buttons[0]);
     }
 }

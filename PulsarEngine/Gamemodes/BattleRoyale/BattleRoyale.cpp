@@ -20,6 +20,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <Settings/Settings.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace BattleRoyale {
@@ -228,7 +229,7 @@ static bool RemoveBalloon(RaceBalloonManager *mgr, u8 playerId) {
 
 static bool IsLocalPlayer(u8 playerId) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE)
+    if (controller == nullptr || IsOfflineRoom())
         return true;
     if (playerId >= maxPlayers)
         return false;
@@ -236,7 +237,7 @@ static bool IsLocalPlayer(u8 playerId) {
 }
 
 static void QueueBalloonEvent(u8 eventPlayerId) {
-    if (!(RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE))
+    if (!IsOnlineRoom())
         return;
 
     ++sLocalBalloonLossSeq;
@@ -272,7 +273,7 @@ void WriteRH1Packet(Network::PulRH1 &packet) {
     RaceBalloonManager *balloonMgr = RaceBalloonManager::sInstance;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     packet.battleRoyaleBalloonCounts = 0xFF;
-    if (balloonMgr != nullptr && controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE) {
+    if (balloonMgr != nullptr && IsOnlineRoom()) {
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         u8 localIdx = 0;
         const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
@@ -300,7 +301,7 @@ void WriteRH1Packet(Network::PulRH1 &packet) {
 
     const Raceinfo *raceinfo = Raceinfo::sInstance;
     controller = RKNet::Controller::sInstance;
-    if (raceinfo != nullptr && controller != nullptr && controller->roomType != RKNet::ROOMTYPE_NONE) {
+    if (raceinfo != nullptr && IsOnlineRoom()) {
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         u8 localIdx = 0;
         const u8 playerCount = System::sInstance->nonTTGhostPlayersCount;
@@ -437,7 +438,7 @@ bool ShouldApplyBattleRoyale() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr)
         return false;
-    return controller->roomType == RKNet::ROOMTYPE_NONE || controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    return IsFriendRoomOrOffline();
 }
 
 static void CallRaceModeHit(void *raceMode, u32 vtableOffset, u32 firstPlayerId, u32 secondPlayerId) {
@@ -517,7 +518,7 @@ static void OnRemoveHit(void *raceMode, u32 hitterPlayerId, u32 hittedPlayerId) 
         return;
     if (HasPoweredHitLossThisFrame(static_cast<u8>(hittedPlayerId)))
         return;
-    if ((RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) && !IsLocalPlayer(static_cast<u8>(hittedPlayerId)))
+    if (IsOnlineRoom() && !IsLocalPlayer(static_cast<u8>(hittedPlayerId)))
         return;
     if (IsPlayerFinished(*Raceinfo::sInstance, static_cast<u8>(hittedPlayerId)))
         return;
@@ -555,7 +556,7 @@ static void OnMoveHit(void *raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
     if (HasMushroomStolenFromVictim(gainingPlayer, losingPlayer))
         return;
 
-    if ((RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE) && !IsLocalPlayer(losingPlayer))
+    if (IsOnlineRoom() && !IsLocalPlayer(losingPlayer))
         return;
 
     const u8 previousBalloonCount = GetBalloonCount(balloonMgr, losingPlayer);
@@ -570,7 +571,7 @@ static void OnMoveHit(void *raceMode, u32 losingPlayerId, u32 gainingPlayerId) {
         return;
 
     RecordMushroomStealVictim(gainingPlayer, losingPlayer);
-    if ((RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE))
+    if (IsOnlineRoom())
         QueueBalloonMoveFromLocalLoss(losingPlayer, gainingPlayer);
 
     if (IsLocalPlayer(gainingPlayer))
@@ -815,7 +816,7 @@ static void ProcessBalloonEliminations(LapKO::Mgr &lapKoMgr, RaceBalloonManager 
         if (lapKoMgr.IsActive(playerId) && sPreviousBalloonCount[playerId] != 0 && current == 0) {
             Raceinfo *raceinfo = Raceinfo::sInstance;
             if (raceinfo != nullptr) {
-                if ((RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE)) {
+                if (IsOnlineRoom()) {
                     RaceinfoPlayer *player = raceinfo->players[playerId];
                     if (player != nullptr && IsPlayerFinished(*raceinfo, playerId) && player->currentLap >= player->maxLap) {
                         sPreviousBalloonCount[playerId] = current;
@@ -832,8 +833,7 @@ static void ProcessBalloonEliminations(LapKO::Mgr &lapKoMgr, RaceBalloonManager 
                     LapKO::EndRaceWithEliminationFinishTime(playerId, placement);
                 }
             }
-            lapKoMgr.ProcessElimination(
-              playerId, LapKO::Mgr::ELIMINATION_CAUSE_ROUND, (RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE), true);
+            lapKoMgr.ProcessElimination(playerId, LapKO::Mgr::ELIMINATION_CAUSE_ROUND, IsOnlineRoom(), true);
         }
         sPreviousBalloonCount[playerId] = current;
     }
@@ -861,7 +861,7 @@ static void FinishSoleActiveUnfinishedPlayer(LapKO::Mgr &lapKoMgr, Raceinfo &rac
     now.SetActive(true);
     player->EndRace(now, false, 0);
     raceinfo.EndPlayerRace(playerId);
-    if ((RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE))
+    if (IsOnlineRoom())
         raceinfo.CheckEndRaceOnline(playerId);
     lapKoMgr.raceFinished = true;
 }
@@ -892,7 +892,7 @@ static void ApplyRemoteFinishTimes(RKNet::Controller &controller, u8 aid, const 
 }
 
 static void ConsumeRemoteBalloonLosses(RKNet::Controller &controller, const RKNet::ControllerSub &sub, RaceBalloonManager *balloonMgr) {
-    if (!(RKNet::Controller::sInstance != nullptr && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE))
+    if (!IsOnlineRoom())
         return;
 
     for (u8 aid = 0; aid < maxPlayers; ++aid) {
@@ -1045,7 +1045,7 @@ static void FrameUpdate() {
     {
         RKNet::Controller *controller = RKNet::Controller::sInstance;
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
-        if (lapKoMgr->isHost && controller->roomType != RKNet::ROOMTYPE_NONE)
+        if (lapKoMgr->isHost && IsOnlineRoom())
             lapKoMgr->HostMonitorDisconnects(*controller, sub);
     }
     Spectating::Update(*raceinfo);

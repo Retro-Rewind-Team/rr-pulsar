@@ -21,6 +21,7 @@
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <runtimeWrite.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -32,14 +33,13 @@ void Racedata_InitRace(Racedata *racedata) {
     racedata->InitRace();
 
     const RacedataSettings &settings = racedata->menusScenario.settings;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller->roomType == RKNet::ROOMTYPE_NONE && (settings.modeFlags & 1)) {
+    if (IsOfflineRoom() && (settings.modeFlags & 1)) {
         racedata->racesScenario.settings.modeFlags &= ~1;
         racedata->racesScenario.settings.engineClass = CC_100;
     }
-    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const bool isFroom = IsFriendRoom();
     const GameMode mode = racedata->racesScenario.settings.gamemode;
-    const bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
+    const bool isBattle = IsBattleMode(mode);
     if (isFroom && !isBattle && System::sInstance->IsContext(PULSAR_MIRRORMODE)) {
         racedata->racesScenario.settings.modeFlags |= 1;
     }
@@ -68,8 +68,7 @@ static bool IsExtendedTeamVSSelected() {
 
 u32 RaceMenuPage_GetSectionSoundId(SectionId sectionId) {
     const RacedataSettings &settings = Racedata::sInstance->menusScenario.settings;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (sectionId == SECTION_VS_RACE_AWARD && controller->roomType == RKNet::ROOMTYPE_NONE && (settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG)) {
+    if (sectionId == SECTION_VS_RACE_AWARD && IsOfflineRoom() && (settings.modeFlags & ExtendedTeamManager::TEAM_MODE_FLAG)) {
         sectionId = SECTION_MAIN_MENU_FROM_MENU;
         SectionMgr::sInstance->nextSectionId = sectionId;
     }
@@ -101,7 +100,7 @@ void PrepareOnlinePages(Pages::FriendRoomWaiting *_this) {
         RKNet::Controller *controller = RKNet::Controller::sInstance;
         if (controller) {
             RKNet::StatusData &status = controller->localStatusData;
-            const bool isHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST;
+            const bool isHost = IsFriendRoomHost();
             const u32 mode = friendRoomManager->startedGameMode;
             const bool isBattle = mode >= 2;
 
@@ -225,13 +224,13 @@ void CtrlRace2DMapCharacter_CalcTransform(CtrlRace2DMapCharacter *_this, const V
         for (int i = 0; i < menuScenario.playerCount; i++) {
             if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 0) {
                 selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-                if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
+                if (IsFriendRoom()) {
                     RKNet::ControllerSub &currentSub = controller->subs[controller->currentSub];
                     selfTeams[0] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 0);
                 }
             } else if (menuScenario.players[i].playerType == PLAYER_REAL_LOCAL && menuScenario.players[i].hudSlotId == 1) {
                 selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
-                if (controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST)) {
+                if (IsFriendRoom()) {
                     RKNet::ControllerSub &currentSub = controller->subs[controller->currentSub];
                     selfTeams[1] = ExtendedTeamManager::sInstance->GetPlayerTeamByAID(currentSub.localAid, 1);
                 }

@@ -4,6 +4,7 @@
 #include <SlotExpansion/UI/ExpCupSelect.hpp>
 #include <UI/UI.hpp>
 #include <Settings/Settings.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -95,7 +96,7 @@ void ExpCupSelect::AfterControlUpdate() {
     CupSelect::AfterControlUpdate();
     CupsConfig *cupsConfig = CupsConfig::sInstance;
     const GameMode gamemode = Racedata::sInstance->menusScenario.settings.gamemode;
-    const bool isValid = gamemode == MODE_TIME_TRIAL || gamemode == MODE_VS_RACE;
+    const bool isValid = IsTimeTrialMode(gamemode) || gamemode == MODE_VS_RACE;
     if (!isValid) {
         this->randomControl.isHidden = true;
     } else {

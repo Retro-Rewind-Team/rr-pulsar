@@ -10,13 +10,10 @@
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <UI/UI.hpp>
 #include <MarioKartWii/UI/Text/Text.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
-
-static bool IsTimeTrialVariantMenu() {
-    return Racedata::sInstance != nullptr && Racedata::sInstance->menusScenario.settings.gamemode == MODE_TIME_TRIAL;
-}
 
 VariantSelect::VariantSelect() {
     this->onBackPressHandler.subject = this;
@@ -104,7 +101,7 @@ void VariantSelect::OnInit() {
 void VariantSelect::UpdateBottomText() {
     if (this->bottomText == nullptr)
         return;
-    if (!IsTimeTrialVariantMenu() || this->selectedPulsarId == PULSARID_NONE)
+    if (!(Racedata::sInstance != nullptr && IsTimeTrialMode(Racedata::sInstance->menusScenario.settings.gamemode)) || this->selectedPulsarId == PULSARID_NONE)
         return;
 
     u32 bmgId = 0;

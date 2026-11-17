@@ -7,6 +7,7 @@
 #include <PulsarSystem.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
 #include <Race/ConditionalTrackState.hpp>
+#include <GlobalFunction.hpp>
 
 // https://wiki.tockdom.com/wiki/LEX_(File_Format)
 
@@ -79,7 +80,7 @@ bool ApplyHIPT(CtrlRaceRankNum &tracker) {  // return value: if true, tracker is
                         appliesToMode = mode <= MODE_BATTLE;
                         break;
                     case 2:  // online only
-                        appliesToMode = mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE;
+                        appliesToMode = Pulsar::IsOnlineMode(mode);
                         break;
                     case 3:  // everywhere
                         appliesToMode = true;

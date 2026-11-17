@@ -24,6 +24,7 @@
 #include <Gamemodes/OnlineTT/OnlineTT.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Settings/Settings.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 
@@ -66,7 +67,7 @@ kmBranch(0x80514b2c, CondStartPos);
 
 bool CondAIRelatedTTCheck(bool, const Racedata &racedata) {  // most notably the animation on overtake
     const GameMode mode = racedata.racesScenario.settings.gamemode;
-    bool isTT = (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE);
+    bool isTT = IsTimeTrialOrGhostMode(mode);
     if (System::sInstance->IsContext(PULSAR_MODE_OTT))
         isTT = true;
     return isTT;

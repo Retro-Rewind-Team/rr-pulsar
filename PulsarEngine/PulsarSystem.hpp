@@ -122,7 +122,6 @@ public:
         return (this->context2 & (1 << context2)) != 0;
     }
     bool IsVanillaMode() const;
-    bool IsOfflineVS() const;
     static s32 OnSceneEnter(Random &random);
 
     const char *GetModFolder() const {

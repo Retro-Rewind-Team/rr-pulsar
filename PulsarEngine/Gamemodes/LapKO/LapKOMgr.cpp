@@ -10,6 +10,7 @@
 #include <Settings/Settings.hpp>
 #include <Settings/SettingsParam.hpp>
 #include <runtimeWrite.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace LapKO {
@@ -67,7 +68,7 @@ static bool FinishOfflineWhenLocalPlayersResolved(Mgr &mgr) {
         return false;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || controller->roomType != RKNet::ROOMTYPE_NONE)
+    if (controller == nullptr || IsOnlineRoom())
         return false;
 
     const Racedata *racedata = Racedata::sInstance;
@@ -201,7 +202,7 @@ void Mgr::InitForRace() {
     EliminationDisplay::Reset();
     this->disconnectGraceFrames = 180;
 
-    if (controller->roomType != RKNet::ROOMTYPE_NONE) {
+    if (IsOnlineRoom()) {
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         this->hostAid = sub.hostAid;
         this->isHost = (sub.localAid == sub.hostAid);
@@ -247,7 +248,7 @@ void Mgr::OnLapComplete(u8 playerId, RaceinfoPlayer &player) {
         this->crossOrder[this->orderCursor] = playerId;
         ++this->orderCursor;
     }
-    if (!this->IsFriendRoomOnline() || this->isHost) {
+    if (!IsFriendRoom() || this->isHost) {
         this->TryResolveRound();
     }
 }
@@ -284,7 +285,7 @@ void Mgr::TryResolveRound() {
         const bool lastOne = (i == elimCount - 1);
         this->ProcessElimination(eliminatedList[i], ELIMINATION_CAUSE_ROUND, false, !lastOne);
     }
-    if (this->IsFriendRoomOnline() && this->isHost) {
+    if (IsFriendRoom() && this->isHost) {
         this->BroadcastBatch(eliminatedList, elimCount, concludedRound);
     }
 }
@@ -360,7 +361,7 @@ void Mgr::ProcessElimination(u8 playerId, EliminationCause cause, bool fromNetwo
 
     if (this->isHost && !fromNetwork) {
         this->pendingNoRoundAdvance = suppressRoundAdvance;
-        if (this->IsFriendRoomOnline()) {
+        if (IsFriendRoom()) {
             u8 single[1] = {playerId};
             this->BroadcastBatch(single, 1, concludedRound);
         } else {
@@ -403,7 +404,7 @@ void Mgr::ConcludeRace(u8 winnerId) {
     this->raceFinished = true;
 
     Raceinfo *raceinfo = Raceinfo::sInstance;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
+    if (IsOfflineRoom()) {
         this->FinishOfflineAtCurrentStandings();
         return;
     }
@@ -543,7 +544,7 @@ void Mgr::UpdateFrame() {
 
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
 
-    if (this->isHost && controller->roomType != RKNet::ROOMTYPE_NONE) {
+    if (this->isHost && IsOnlineRoom()) {
         this->HostMonitorDisconnects(*controller, sub);
     }
 
@@ -575,7 +576,7 @@ void Mgr::ReweightItemProbabilitiesNow() {
     if (slot->playerCount == activePlayers)
         return;
     slot->playerCount = activePlayers;
-    const bool isOnline = (RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_NONE);
+    const bool isOnline = IsOnlineRoom();
     if (isOnline) {
         slot->SetupOnlineVSProbabilities();
     } else {
@@ -588,7 +589,7 @@ bool Mgr::EnterSpectateIfLocal(u8 eliminatedId) {
         return true;
 
     const Racedata *racedata = Racedata::sInstance;
-    const bool isOffline = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE;
+    const bool isOffline = IsOfflineRoom();
     if (isOffline && eliminatedId < racedata->racesScenario.playerCount) {
         const RacedataPlayer &eliminatedPlayer = racedata->racesScenario.players[eliminatedId];
         if (eliminatedPlayer.playerType == PLAYER_REAL_LOCAL) {
@@ -622,11 +623,6 @@ u8 Mgr::GetUsualTrackLapCount() const {
             usual = 3;  // KMP data can report zero before track info is loaded.
     }
     return usual;
-}
-
-bool Mgr::IsFriendRoomOnline() const {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    return controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
 }
 
 void Mgr::EnsureRaceInitialized(Raceinfo &raceinfo) {
@@ -708,7 +704,7 @@ void Mgr::HostDistributeEvents(RKNet::Controller &controller, const RKNet::Contr
             holder->packetSize = Network::PulRH1SizeLapKo;
         Network::PulRH1 *packet = holder->packet;
 
-        if (this->hasPendingEvent && this->IsFriendRoomOnline()) {
+        if (this->hasPendingEvent && IsFriendRoom()) {
             packet->pulsarTrackId = static_cast<u16>(packet->trackId);
             packet->variantIdx = 0;
             packet->lapKoSeq = this->pendingSequence;
@@ -728,7 +724,7 @@ void Mgr::HostDistributeEvents(RKNet::Controller &controller, const RKNet::Contr
         } else {
             packet->lapKoSeq = 0;
             packet->lapKoElimCount = 0;
-            if (this->IsFriendRoomOnline()) {
+            if (IsFriendRoom()) {
                 packet->pulsarTrackId = static_cast<u16>(packet->trackId);
                 packet->variantIdx = 0;
             }
@@ -752,7 +748,7 @@ void Mgr::ClientConsumeHostEvents(RKNet::Controller &controller, const RKNet::Co
         return;
 
     const Network::PulRH1 *packet = holder->packet;
-    if (this->IsFriendRoomOnline() && packet->lapKoSeq != 0 && packet->lapKoElimCount != 0) {
+    if (IsFriendRoom() && packet->lapKoSeq != 0 && packet->lapKoElimCount != 0) {
         const u8 rawCount = packet->lapKoElimCount;
         const u8 elimCount = static_cast<u8>(rawCount & 0x7F);
         if (elimCount > 0 && elimCount <= 12) {

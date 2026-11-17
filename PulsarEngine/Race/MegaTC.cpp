@@ -4,6 +4,7 @@
 #include <PulsarSystem.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Settings/SettingsParam.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -14,10 +15,9 @@ void MegaTC(Kart::Movement &movement, int frames, int unk0, int unk1) {
     bool isMegaTC = true;
     if (system->IsContext(PULSAR_THUNDERCLOUD))
         isMegaTC = false;
-    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100
-      && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST))
+    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && IsFriendRoom())
         isMegaTC = true;
-    if (isMegaTC && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW)
+    if (isMegaTC && GetRoomType() != RKNet::ROOMTYPE_VS_WW)
         movement.ActivateMega();
     else
         movement.ApplyLightningEffect(frames, unk0, unk1);
@@ -29,10 +29,9 @@ void LoadCorrectTCBRRES(Item::ObjKumo &objKumo, const char *mdlName, const char 
     bool isMegaTC = true;
     if (system->IsContext(PULSAR_THUNDERCLOUD))
         isMegaTC = false;
-    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100
-      && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST))
+    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && IsFriendRoom())
         isMegaTC = true;
-    if (isMegaTC && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_JOINING_WW)
+    if (isMegaTC && !IsWorldwideVSRoom())
         objKumo.LoadGraphics("megaTC.brres", mdlName, shadowSrc, 1, anmParam, static_cast<nw4r::g3d::ScnMdl::BufferOption>(0), nullptr, 0);
     else
         objKumo.LoadGraphicsImplicitBRRES(mdlName, shadowSrc, 1, anmParam, static_cast<nw4r::g3d::ScnMdl::BufferOption>(0), nullptr);

@@ -5,6 +5,7 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -42,9 +43,9 @@ static float EvaluateSpline(float x) {
 
 void UpdatePoints(RacedataScenario *scenario) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isFroom = controller && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const bool isFroom = IsFriendRoom();
     const bool isRankedFroom = isFroom && System::sInstance->IsContext(PULSAR_VR);
-    if (!System::sInstance->IsContext(PULSAR_FFA) && ((isFroom && !isRankedFroom) || controller->roomType == RKNet::ROOMTYPE_NONE)) {
+    if (!System::sInstance->IsContext(PULSAR_FFA) && ((isFroom && !isRankedFroom) || IsOfflineRoom())) {
         scenario->UpdatePoints();
         return;
     }
@@ -55,9 +56,9 @@ void UpdatePoints(RacedataScenario *scenario) {
     const u32 playerCount = scenario->playerCount;
     Raceinfo *raceInfo = Raceinfo::sInstance;
     const GameMode mode = scenario->settings.gamemode;
-    const bool isBattle = mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE;
+    const bool isBattle = IsBattleMode(mode);
     bool isRanked = scenario->settings.gamemode > MODE_6 && scenario->settings.gamemode < MODE_AWARD;
-    const bool isRegionalVS = controller && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
+    const bool isRegionalVS = IsRegionalVSRoom();
     const bool isVR = !isBattle && ((isRegionalVS && mode == MODE_PUBLIC_VS) || isRankedFroom);
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     u32 localPlayerId = 12;
@@ -163,7 +164,7 @@ void UpdatePoints(RacedataScenario *scenario) {
         scenario->players[i].rating.points = (u16)(next / 100.0f);
         if (i == localPlayerId && rksys) {
             if (isBattle) {
-                if ((controller && controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL) || isRankedFroom)
+                if (GetRoomType() == RKNet::ROOMTYPE_BT_REGIONAL || isRankedFroom)
                     SetUserBR(rksys->curLicenseId, next);
             } else if (isVR) {
                 SetUserVR(rksys->curLicenseId, next);

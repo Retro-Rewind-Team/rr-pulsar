@@ -1,6 +1,7 @@
 #include <MarioKartWii/Input/InputManager.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <Settings/Settings.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -12,7 +13,7 @@ static void UpdateAutoAcceleration(Input::RealControllerHolder &holder, bool isP
 
     const u32 slot = &holder - Input::Manager::sInstance->realControllerHolders;
     const bool pressed = (holder.curController->inputState.buttonActions & 0x1) != 0;
-    if (Raceinfo::sInstance == nullptr || Raceinfo::sInstance->stage != RACESTAGE_RACE || holder.blockInputs || Racedata::sInstance->racesScenario.settings.gamemode == MODE_TIME_TRIAL
+    if (Raceinfo::sInstance == nullptr || Raceinfo::sInstance->stage != RACESTAGE_RACE || holder.blockInputs || IsTimeTrialMode(Racedata::sInstance->racesScenario.settings.gamemode)
       || System::sInstance->IsContext(PULSAR_MODE_OTT) || Settings::Mgr::Get().GetSettingValue(Settings::SETTING_AUTOACCELERATION) == 0) {
         autoAccelerating[slot] = false;
     } else if (!isPaused) {

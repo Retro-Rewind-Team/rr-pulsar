@@ -12,6 +12,7 @@
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <core/nw4r/lyt/TextBox.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -67,8 +68,7 @@ bool IsTrackBlocked(PulsarId id) {
             return true;
     }
 
-    RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
+    if (IsRegionalVSRoom()) {
         if (IsGroupedTrack(id) && system->netMgr.lastGroupedTrackPlayed) {
             return true;
         }

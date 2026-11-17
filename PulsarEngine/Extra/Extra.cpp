@@ -15,6 +15,7 @@
 #include <PulsarSystem.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <include/c_string.h>
+#include <GlobalFunction.hpp>
 
 namespace Codes {
 
@@ -93,8 +94,7 @@ asmFunc GetItemDelimiterPOW() {
 }
 
 void EnableDelimitersForAllItems() {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const bool isFroom = Pulsar::IsFriendRoom();
     sBlockOnlineItemDelimiters = !isFroom && !Pulsar::ItemRain::IsItemRainEnabled();
 }
 static SectionLoadHook PatchItemDelimiters(EnableDelimitersForAllItems);

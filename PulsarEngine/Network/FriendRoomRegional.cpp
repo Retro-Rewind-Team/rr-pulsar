@@ -10,6 +10,7 @@
 #include <PulsarSystem.hpp>
 #include <Network/Network.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -59,8 +60,8 @@ static bool ConvertFriendRoomStateToRegional() {
     if (controller == nullptr || system == nullptr)
         return false;
 
-    const bool wasHost = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST;
-    const bool wasNonHost = controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    const bool wasHost = IsFriendRoomHost();
+    const bool wasNonHost = IsFriendRoom() && !IsFriendRoomHost();
     if (!wasHost && !wasNonHost)
         return false;
 
@@ -167,7 +168,7 @@ static void ApplyNextSection(SectionMgr *sectionMgr, SectionId nextSectionId, u3
 
 static void SetNextSectionRegionalHook(SectionMgr *sectionMgr, SectionId nextSectionId, u32 animDirection) {
     SetRegionId(REGIONID);
-    bool isFroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    bool isFroom = IsFriendRoom();
     if ((Pulsar::System::sInstance->IsContext(PULSAR_STARTRETROS) || Pulsar::System::sInstance->IsContext(PULSAR_STARTCTS) || Pulsar::System::sInstance->IsContext(PULSAR_STARTREGS)
           || Pulsar::System::sInstance->IsContext(PULSAR_START200) || Pulsar::System::sInstance->IsContext(PULSAR_STARTOTT) || Pulsar::System::sInstance->IsContext(PULSAR_STARTITEMRAIN))
       && isFroom) {
@@ -182,7 +183,7 @@ static void SetNextSectionRegionalHook(SectionMgr *sectionMgr, SectionId nextSec
 
         RKNet::Controller *controller = RKNet::Controller::sInstance;
         if (controller != nullptr) {
-            if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+            if (IsFriendRoom()) {
                 hasConverted = false;
                 if (ShouldConvert(nextSectionId)) {
                     SectionId regionalSection = ConvertToRegionalSection(nextSectionId);

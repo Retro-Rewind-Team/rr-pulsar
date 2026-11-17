@@ -3,12 +3,13 @@
 #include <PulsarSystem.hpp>
 #include <MarioKartWii/RKSYS/LicenseMgr.hpp>
 #include <MarioKartWii/UI/Page/Menu/VSSettings.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
 
 PageId CustomEngineClassPage::GetNextPage() const {
-    return System::sInstance->IsOfflineVS() ? PAGE_VS_SETTINGS : static_cast<PageId>(PULPAGE_SETTINGS);
+    return IsOfflineVS() ? PAGE_VS_SETTINGS : static_cast<PageId>(PULPAGE_SETTINGS);
 }
 
 void CustomEngineClassPage::OnInit() {
@@ -123,7 +124,7 @@ void CustomEngineClassPage::OnOkButtonClick(PushButton &button, u32) {
     System *system = System::sInstance;
     system->netMgr.customEngineClass = static_cast<u16>(cc);
     Settings::Mgr &settings = Settings::Mgr::Get();
-    if (system->IsOfflineVS())
+    if (IsOfflineVS())
         System::offlineCustomEngineClass = static_cast<u16>(cc);
     else
         settings.SetSettingValue(Settings::SETTING_FROOMCC, HOSTCC_CUSTOM);

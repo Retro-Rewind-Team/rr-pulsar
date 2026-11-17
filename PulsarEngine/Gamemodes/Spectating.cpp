@@ -8,6 +8,7 @@
 #include <PulsarSystem.hpp>
 #include <core/rvl/PAD.hpp>
 #include <core/rvl/WPAD.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Spectating {
@@ -18,10 +19,6 @@ static bool sIsSpectating = false;
 static u8 sTargetPlayer = 0xFF;
 static bool sManualTarget = false;
 static u16 sLastRaceFrames = 0xFFFF;
-
-static bool IsBattleMode(GameMode mode) {
-    return mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE;
-}
 
 static bool IsEligiblePlayer(const Raceinfo &raceinfo, u8 playerId) {
     if (playerId >= maxPlayers)
@@ -37,7 +34,7 @@ static bool IsEligiblePlayer(const Raceinfo &raceinfo, u8 playerId) {
         return false;
 
     const GameMode mode = Racedata::sInstance->menusScenario.settings.gamemode;
-    if (IsBattleMode(mode) && raceinfo.players != nullptr && raceinfo.players[playerId] != nullptr && raceinfo.players[playerId]->battleScore == 0) {
+    if (IsOnlineBattleMode(mode) && raceinfo.players != nullptr && raceinfo.players[playerId] != nullptr && raceinfo.players[playerId]->battleScore == 0) {
         return false;
     }
     return true;

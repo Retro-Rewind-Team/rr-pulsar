@@ -7,6 +7,7 @@
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -157,12 +158,12 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
         const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
         const GameMode mode = racedataSettings.gamemode;
 
-        bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+        bool isFroom = IsFriendRoom();
         bool isFroomStart = destPacket->message == 0;
         bool isBattle = destPacket->message == 2 || destPacket->message == 3;
         bool isBalloonBattle = destPacket->message == 2;
-        bool isNotPublic = isFroom || controller->roomType == RKNet::ROOMTYPE_NONE;
-        bool isTimeTrial = mode == MODE_TIME_TRIAL;
+        bool isNotPublic = isFroom || IsOfflineRoom();
+        bool isTimeTrial = IsTimeTrialMode(mode);
 
         u8 koSetting = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_ENABLED;
         u8 lapKoSetting = settings.GetSettingValue(Pulsar::Settings::SETTING_KOENABLED) == KOSETTING_LAPBASED && isNotPublic && !isBattle && !isTimeTrial;

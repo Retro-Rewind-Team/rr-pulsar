@@ -13,6 +13,7 @@
 #include <Settings/SettingsParam.hpp>
 #include <runtimeWrite.hpp>
 #include <include/c_math.h>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -52,8 +53,7 @@ RaceinfoPlayer *LoadCustomLapCount(RaceinfoPlayer *player, u8 id) {
     const bool lapKoActive = IsLapKOEnabled(system);
     if (lapKoActive) {
         const u8 basePlayers = GetLapKOTargetCount(system, racedata, 1);
-        const RKNet::Controller *controller = RKNet::Controller::sInstance;
-        const bool offlineLapKO = (controller->roomType == RKNet::ROOMTYPE_NONE);
+        const bool offlineLapKO = IsOfflineRoom();
 
         u8 koPerRace = 1;
         if (!offlineLapKO) {
@@ -110,10 +110,9 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     const GameType gameType = Racedata::sInstance->menusScenario.settings.gametype;
     SpeedModConv speedModConv;
     const bool is200 = Is200cc();
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+    const bool isFroom = IsFriendRoom();
     const System *system = System::sInstance;
-    const u16 customEngineClass = system->IsOfflineVS() ? System::offlineCustomEngineClass : (isFroom ? system->netMgr.hostCustomEngineClass : 0);
+    const u16 customEngineClass = IsOfflineVS() ? System::offlineCustomEngineClass : (isFroom ? system->netMgr.hostCustomEngineClass : 0);
     speedModConv.kmpValue = (KMP::Manager::sInstance->stgiSection->holdersArray[0]->raw->speedMod << 16);
     if (speedModConv.speedMod == 0.0f)
         speedModConv.speedMod = 1.0f;
@@ -146,7 +145,7 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     Kart::hardSpeedCap = 120.0f * factor;
     Kart::bulletSpeed = 145.0f * factor;
     Kart::starSpeed = 105.0f * factor;
-    if (gameMode != MODE_TIME_TRIAL) {
+    if (!IsTimeTrialMode(gameMode)) {
         Kart::slipstreamSpeed = factor > 1.0f ? 115.0f * factor : 115.0f;
     } else {
         Kart::slipstreamSpeed = 115.0f;
@@ -166,7 +165,7 @@ Kart::Stats *ApplyStatChanges(KartId kartId, CharacterId characterId, KartType k
     Kart::minDriftSpeedRatio = 0.55f * (factor > 1.0f ? (1.0f / factor) : 1.0f);
     Kart::unknown_70 = 70.0f * factor;
     Kart::regularBoostAccel = 3.0f * factor;
-    if (gameMode != MODE_TIME_TRIAL) {
+    if (!IsTimeTrialMode(gameMode)) {
         Kart::slipstreamAccel = factor > 1.0f ? 0.7f * factor : 0.7f;
     } else {
         Kart::slipstreamAccel = 0.7f;

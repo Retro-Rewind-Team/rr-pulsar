@@ -5,6 +5,7 @@
 #include <MarioKartWii/System/random.hpp>
 #include <Network/GPReport.hpp>
 #include <core/nw4r/ut/Misc.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -66,7 +67,7 @@ void ExtendedTeamSelect::BeforeEntranceAnimations() {
 
     Pages::FriendRoomManager *friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
 
-    this->isHost = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST;
+    this->isHost = IsFriendRoomHost();
     this->instructionText.SetMessage(this->isHost ? BMG_TEAM_SELECT : BMG_EXTENDEDTEAMS_NONHOST_TITLE);
 
     this->backButton.isHidden = this->manager->hasFriendRoomStarted;

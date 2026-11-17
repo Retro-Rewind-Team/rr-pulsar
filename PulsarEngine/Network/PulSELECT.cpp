@@ -15,13 +15,10 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <Driver/CustomCharacters.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Network {
-
-static bool IsRegionalRoom(RKNet::RoomType roomType) {
-    return roomType == RKNet::ROOMTYPE_VS_REGIONAL || roomType == RKNet::ROOMTYPE_JOINING_REGIONAL;
-}
 
 void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *src, u32 len) {  // len is sizeof(RKNet::SELECTPacket) by default
     const System *system = System::sInstance;
@@ -277,7 +274,7 @@ static bool IsTrackBlocked(const System &system, PulsarId trackId) {
             return true;
     }
 
-    if (IsGroupedTrack(trackId) && IsRegionalRoom(RKNet::Controller::sInstance->roomType)) {
+    if (IsGroupedTrack(trackId) && IsRegionalVSRoom()) {
         const u32 lastIdx = (system.netMgr.curBlockingArrayIdx + blockingCount - 1) % blockingCount;
         if (IsGroupedTrack(system.netMgr.lastTracks[lastIdx]))
             return true;
@@ -312,8 +309,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler &self) {
     RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     const u8 hostAid = controller->subs[controller->currentSub].hostAid;
     const RKNet::OnlineMode mode = self.mode;
-    const RKNet::RoomType roomType = controller->roomType;
-    const bool isFriendRoom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    const bool isFriendRoom = IsFriendRoom();
     const bool isFriendRoomVS = isFriendRoom && (mode == RKNet::ONLINEMODE_PRIVATE_VS || mode == RKNet::ONLINEMODE_PUBLIC_VS);
 
     if (mode == RKNet::ONLINEMODE_PRIVATE_VS && system->IsContext(PULSAR_MODE_KO))
@@ -453,11 +449,9 @@ kmCall(0x80644414, SetCorrectTrack);
 // Overwrites CC rules -> 10% 100, 65% 150, 25% mirror and/or in frooms, overwritten by host setting
 static void DecideCC(ExpSELECTHandler &handler) {
     const u8 ccSetting = Settings::Mgr::Get().GetSettingValue(Settings::SETTING_FROOMCC);
-    RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const RKNet::RoomType roomType = controller->roomType;
     u8 ccClass = 1;  // 1 100, 2 150, 3 mirror
-    const bool isRegional = IsRegionalRoom(roomType);
-    const bool isWorldWide = roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_JOINING_WW;
+    const bool isRegional = IsRegionalVSRoom();
+    const bool isWorldWide = IsWorldwideVSRoom();
     const bool force200 = isRegional && System::sInstance->IsContext(PULSAR_200_WW);
     const bool forceOtt = isRegional && System::sInstance->IsContext(PULSAR_MODE_OTT);
     if (isRegional || isWorldWide || forceOtt) {
@@ -473,9 +467,9 @@ static void DecideCC(ExpSELECTHandler &handler) {
     }
     if (force200)
         ccClass = 1;
-    else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && (ccSetting == HOSTCC_NORMAL || ccSetting == HOSTCC_150 || ccSetting == HOSTCC_CUSTOM))
+    else if (IsFriendRoomHost() && (ccSetting == HOSTCC_NORMAL || ccSetting == HOSTCC_150 || ccSetting == HOSTCC_CUSTOM))
         ccClass = 2;
-    else if (roomType == RKNet::ROOMTYPE_FROOM_HOST && (ccSetting == HOSTCC_500 || ccSetting == HOSTCC_100))
+    else if (IsFriendRoomHost() && (ccSetting == HOSTCC_500 || ccSetting == HOSTCC_100))
         ccClass = 1;
     handler.toSendPacket.engineClass = ccClass;
 }
@@ -542,8 +536,7 @@ void InitPatch() {
     memset(UI::remoteTransmission, 0, sizeof(UI::remoteTransmission));
     const Settings::Mgr &settings = Settings::Mgr::Get();
     bool allowChangeCombo;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)
+    if (GetRoomType() == RKNet::ROOMTYPE_VS_REGIONAL)
         allowChangeCombo = true;
     else
         allowChangeCombo = settings.GetSettingValue(Pulsar::Settings::SETTING_OTTALLOWCHANGECOMBO);

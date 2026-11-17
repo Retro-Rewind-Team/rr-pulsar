@@ -6,6 +6,7 @@
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKNet/ROOM.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -156,11 +157,10 @@ public:
         if (!System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS))
             return false;
 
-        if (settings.gamemode != MODE_PRIVATE_VS && settings.gamemode != MODE_PRIVATE_BATTLE)
+        if (!IsFriendRoomMode(settings.gamemode))
             return false;
 
-        RKNet::Controller *controller = RKNet::Controller::sInstance;
-        return controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
+        return IsFriendRoom();
     }
 
 private:

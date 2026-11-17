@@ -3,6 +3,7 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <UI/UI.hpp>
 #include <Race/CustomCharacters.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -73,7 +74,7 @@ void CtrlRaceResultExtendedTeams::InitSelf() {
         bool isOnline = false;
         // Not a Mii character
         if (characterId <= ROSALINA) {
-            if (scenario.settings.gamemode >= MODE_PRIVATE_VS && scenario.settings.gamemode <= MODE_PRIVATE_BATTLE) {
+            if (IsOnlineMode(scenario.settings.gamemode)) {
                 isOnline = true;
             }
 

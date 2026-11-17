@@ -8,6 +8,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <Settings/Settings.hpp>
 #include <PulsarSystem.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 
@@ -573,17 +574,16 @@ void CupsConfig::ToggleCTs(bool enabled) {
     bool isRegsOnly = false;
     const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
-    if ((controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) && !isBattle) {
+    const bool isOnlineRoomActive = IsOnlineConnected();
+    const bool isBattle = IsBattleMode(mode);
+    if (IsFriendRoomOrOffline() && !isBattle) {
         if (System::sInstance->IsContext(PULSAR_REGS))
             isRegsOnly = true;
     }
-    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_WW || controller->roomType == RKNet::ROOMTYPE_BT_WW || controller->roomType == RKNet::ROOMTYPE_JOINING_WW)) {
+    if (isOnlineRoomActive && IsWorldwideRoom()) {
         isRegsOnly = true;
     }
-    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) && System::sInstance->IsVanillaMode()) {
+    if (isOnlineRoomActive && IsRegionalVSRoom() && System::sInstance->IsVanillaMode()) {
         isRegsOnly = true;
     }
     if (isRegsOnly) {
@@ -637,15 +637,14 @@ PulsarId CupsConfig::RandomizeTrack() const {
     const Settings::Mgr &settings = Settings::Mgr::Get();
     const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
+    const bool isOnlineRoomActive = IsOnlineConnected();
+    const bool isBattle = IsBattleMode(mode);
     Random random;
     u32 pulsarId;
     TrackSelection retroSelection = TRACKSELECTION_ALL;
     TrackSelection ctSelection = TRACKSELECTION_ALL;
     TrackSelection regsSelection = TRACKSELECTION_ALL;
-    if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) {
+    if (IsFriendRoomOrOffline()) {
         if (System::sInstance->IsContext(PULSAR_RETROS))
             retroSelection = TRACKSELECTION_RETROS;
         if (System::sInstance->IsContext(PULSAR_CTS))
@@ -653,7 +652,7 @@ PulsarId CupsConfig::RandomizeTrack() const {
         if (System::sInstance->IsContext(PULSAR_REGS))
             regsSelection = TRACKSELECTION_REGS;
     }
-    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
+    if (isOnlineRoomActive && IsRegionalVSRoom()) {
         if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D)
             retroSelection = TRACKSELECTION_RETROS;
         if (System::sInstance->netMgr.region == 0x14)
@@ -681,13 +680,12 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
     const u32 idx = ConvertCup_PulsarIdToIdx(pulsarId);
     const RacedataSettings &racedataSettings = Racedata::sInstance->menusScenario.settings;
     const GameMode mode = racedataSettings.gamemode;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
-    const bool isBattle = (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE);
+    const bool isOnlineRoomActive = IsOnlineConnected();
+    const bool isBattle = IsBattleMode(mode);
     TrackSelection retroSelection = TRACKSELECTION_ALL;
     TrackSelection ctSelection = TRACKSELECTION_ALL;
     TrackSelection regsSelection = TRACKSELECTION_ALL;
-    if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    if (IsFriendRoom()) {
         if (System::sInstance->IsContext(PULSAR_RETROS))
             retroSelection = TRACKSELECTION_RETROS;
         if (System::sInstance->IsContext(PULSAR_CTS))
@@ -695,7 +693,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         if (System::sInstance->IsContext(PULSAR_REGS))
             regsSelection = TRACKSELECTION_REGS;
     }
-    if (controller->roomType == RKNet::ROOMTYPE_NONE) {
+    if (IsOfflineRoom()) {
         if (System::sInstance->IsContext(PULSAR_RETROS))
             retroSelection = TRACKSELECTION_ALL;
         if (System::sInstance->IsContext(PULSAR_CTS))
@@ -703,7 +701,7 @@ PulsarCupId CupsConfig::GetNextCupId(PulsarCupId pulsarId, s32 direction) const 
         if (System::sInstance->IsContext(PULSAR_REGS))
             regsSelection = TRACKSELECTION_REGS;
     }
-    if (isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL)) {
+    if (isOnlineRoomActive && IsRegionalVSRoom()) {
         if (System::sInstance->netMgr.region == 0x0A || System::sInstance->netMgr.region == 0x0B || System::sInstance->netMgr.region == 0x0C || System::sInstance->netMgr.region == 0x0D)
             retroSelection = TRACKSELECTION_RETROS;
         if (System::sInstance->netMgr.region == 0x14)

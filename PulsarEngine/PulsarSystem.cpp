@@ -22,6 +22,7 @@
 #include <Dolphin/DolphinIOS.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <hooks.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 
@@ -55,21 +56,15 @@ static void OverrideFroomVanillaModeSettings(bool &isTrackSelectionRegs, bool &i
 }
 
 bool System::IsVanillaMode() const {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || controller->connectionState == RKNet::CONNECTIONSTATE_SHUTDOWN)
+    if (!IsOnlineConnected())
         return false;
 
-    const bool isFroom = controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    const bool isFroom = IsFriendRoom();
     if (isFroom)
         return this->IsContext(PULSAR_VANILLAMODE);
 
-    const bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
+    const bool isRegionalRoom = IsRegionalRoom();
     return isRegionalRoom && (this->netMgr.region == 0x15);
-}
-
-bool System::IsOfflineVS() const {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    return controller != nullptr && controller->roomType == RKNet::ROOMTYPE_NONE && Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
 }
 
 static inline bool ShouldForceNandIoSaves() {
@@ -271,19 +266,18 @@ void System::UpdateContext() {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     Network::Mgr &netMgr = this->netMgr;
     const u32 sceneId = GameScene::GetCurrent()->id;
-    const bool isOnlineRoomActive = controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN;
+    const bool isOnlineRoomActive = IsOnlineConnected();
 
-    bool isFroom = isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-    bool isRegionalRoom =
-      isOnlineRoomActive && (controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL);
-    bool isBattle = mode == MODE_BATTLE || mode == MODE_PRIVATE_BATTLE || mode == MODE_PUBLIC_BATTLE;
+    bool isFroom = isOnlineRoomActive && IsFriendRoom();
+    bool isRegionalRoom = isOnlineRoomActive && IsRegionalRoom();
+    bool isBattle = IsBattleMode(mode);
     bool isBalloonBattle = isBattle && racedataSettings.battleType == BATTLE_BALLOON;
-    bool isNotPublic = isFroom || controller->roomType == RKNet::ROOMTYPE_NONE;
-    bool isTimeTrial = mode == MODE_TIME_TRIAL;
+    bool isNotPublic = isFroom || IsOfflineRoom();
+    bool isTimeTrial = IsTimeTrialMode(mode);
 
     bool isCT = true;
     bool isHAW = false;
-    const bool isOfflineVS = controller->roomType == RKNet::ROOMTYPE_NONE && mode == MODE_VS_RACE;
+    const bool isOfflineVS = IsOfflineVS();
     const bool isOfflineTeamVS = isOfflineVS && (racedataSettings.modeFlags & UI::ExtendedTeamManager::TEAM_MODE_FLAG);
     bool isExtendedTeams = isOfflineTeamVS;
     const bool disableOfflineKO = isExtendedTeams && isOfflineVS;
@@ -411,7 +405,7 @@ void System::UpdateContext() {
         }
     }
 
-    if (isFroom && controller->roomType == RKNet::ROOMTYPE_FROOM_HOST) {
+    if (isFroom && IsFriendRoomHost()) {
         isVanillaMode = settings.GetSettingValue(Pulsar::Settings::SETTING_VANILLAMODE) == VANILLAMODE_ENABLED;
         isMirrorMode = settings.GetSettingValue(Pulsar::Settings::SETTING_MIRROR) == MIRRORMODE_ENABLED;
     }
@@ -428,7 +422,7 @@ void System::UpdateContext() {
     u32 preserved2 = this->context2 & (1 << PULSAR_ITEMMODERAIN);
 
     // When leaving public rooms, clear any region-preserved bits.
-    if (!isOnlineRoomActive || controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || controller->roomType == RKNet::ROOMTYPE_NONE) {
+    if (!isOnlineRoomActive || IsFriendRoomOrOffline()) {
         preserved &= ~((1 << PULSAR_200_WW) | (1 << PULSAR_MODE_OTT) | (1 << PULSAR_ELIMINATION));
         preserved2 &= ~((1 << PULSAR_ITEMMODERAIN) | (1 << PULSAR_ITEMMODESTORM));
     }

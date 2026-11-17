@@ -15,6 +15,7 @@
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <Race/ConditionalTrackState.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -385,7 +386,7 @@ static void EvaluateConditionalState(const Object &object, ConditionalState &sta
 
     const RacedataScenario &scenario = raceData->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
-    const bool isTTMode = (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE);
+    const bool isTTMode = IsTimeTrialOrGhostMode(mode);
 
     if (isTTMode) {
         // Keep collision/update active whenever any replay-relevant player can interact with this object.

@@ -7,6 +7,7 @@
 #include <Ghost/GhostManager.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -184,14 +185,14 @@ void ExpGhostSelect::Reset() {
 
 // Requests a ghost save when the current run earns a flap or top-10 time.
 void BeforeEntranceAnimations(Pages::TTSplits *page) {
-    const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
+    const GameMode gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
     const SectionMgr *sectionMgr = SectionMgr::sInstance;
     SectionParams *sectionParams = sectionMgr->sectionParams;
     sectionParams->isNewTime = false;
     sectionParams->fastestLapId = 0xFFFFFFFF;
     if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
         page->maxActiveFrames = 0x12C;
-    } else if (gamemode == MODE_TIME_TRIAL) {
+    } else if (IsTimeTrialMode(gamemode)) {
         page->maxActiveFrames = 0xFFFFFFFF;
     }
     sectionParams->unknown_0x3D8 = false;
@@ -305,14 +306,14 @@ static void UpdateCupHoverText(Page *page, CtrlMenuCupSelectCup &cups, PushButto
     UpdateText__Q25Pages9CupSelectFP20CtrlMenuCupSelectCup(page, &cups);
 
     Pages::Menu *menuPage = reinterpret_cast<Pages::Menu *>(page);
-    if (Racedata::sInstance->menusScenario.settings.gamemode == MODE_TIME_TRIAL && menuPage->bottomText != nullptr) {
+    if (IsTimeTrialMode(Racedata::sInstance->menusScenario.settings.gamemode) && menuPage->bottomText != nullptr) {
         SetTTCupTrophyBMG(*menuPage->bottomText, static_cast<PulsarCupId>(button.buttonId));
     }
 }
 kmCall(0x807e5ca4, UpdateCupHoverText);
 
 void IndividualTrophyBMG(Pages::CourseSelect &courseSelect, CtrlMenuCourseSelectCourse &course, PushButton &button, u32 hudSlotId) {
-    if (Racedata::sInstance->menusScenario.settings.gamemode != MODE_TIME_TRIAL) {
+    if (!IsTimeTrialMode(Racedata::sInstance->menusScenario.settings.gamemode)) {
         courseSelect.UpdateBottomText(course, button, hudSlotId);
     } else {
         const System *system = System::sInstance;

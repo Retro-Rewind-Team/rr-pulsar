@@ -5,6 +5,7 @@
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <PulsarSystem.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 
@@ -17,7 +18,7 @@ void PositionCounter::UpdatePositionDisplay(CtrlRaceRankNum &posTracker) {
 
     const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     const GameMode mode = scenario.settings.gamemode;
-    if (mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE)
+    if (IsBattleMode(mode))
         return;
 
     const u8 hudSlotId = posTracker.hudSlotId;

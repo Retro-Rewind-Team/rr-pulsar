@@ -5,6 +5,7 @@
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <core/rvl/OS/OS.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -13,14 +14,13 @@ u32 CtrlRaceTrackInfoDisplay::lastCourse = -1;
 u32 CtrlRaceMusicInfoDisplay::lastCourse = -1;
 
 u32 CtrlRaceTrackInfoDisplay::Count() {
-    const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
+    const GameMode gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
     const PulsarId winning = CupsConfig::sInstance->GetWinning();
     if (CupsConfig::IsReg(winning))
         return 0;
-    if ((gamemode == MODE_GRAND_PRIX) || (gamemode == MODE_VS_RACE) || (gamemode == MODE_PUBLIC_VS) || (gamemode == MODE_PRIVATE_VS) || (gamemode == MODE_BATTLE) || (gamemode == MODE_PRIVATE_BATTLE)
-      || (gamemode == MODE_PUBLIC_BATTLE))
+    if ((gamemode == MODE_GRAND_PRIX) || (gamemode == MODE_VS_RACE) || (gamemode == MODE_PUBLIC_VS) || (gamemode == MODE_PRIVATE_VS) || IsBattleMode(gamemode))
         return 1;
-    if (gamemode == MODE_TIME_TRIAL && winning != lastCourse) {
+    if (IsTimeTrialMode(gamemode) && winning != lastCourse) {
         lastCourse = winning;
         return 1;
     }
@@ -57,7 +57,7 @@ u32 CtrlRaceMusicInfoDisplay::Count() {
     if (!Settings::Mgr::IsCreated() || Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_CTMUSIC) != CTMUSIC_ENABLED)
         return 0;
 
-    const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
+    const GameMode gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
     const PulsarId winning = CupsConfig::sInstance->GetWinning();
     if (CupsConfig::IsReg(winning))
         return 0;
@@ -66,7 +66,7 @@ u32 CtrlRaceMusicInfoDisplay::Count() {
     if (credit == nullptr || credit[0] == L'\0')
         return 0;
 
-    if (gamemode == MODE_TIME_TRIAL) {
+    if (IsTimeTrialMode(gamemode)) {
         if (winning == lastCourse)
             return 0;
         lastCourse = winning;

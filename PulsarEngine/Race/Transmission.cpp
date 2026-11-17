@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <PulsarSystem.hpp>
 #include <UI/TransmissionSelect/TransmissionSelect.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -70,14 +71,13 @@ static Transmission GetPlayerTransmission(u32 playerId) {
 }
 
 static bool CanApplyTransmission(u32 playerId) {
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
-    if (roomType == RKNet::ROOMTYPE_VS_WW || roomType == RKNet::ROOMTYPE_BT_WW)
+    if (GetRoomType() == RKNet::ROOMTYPE_VS_WW || GetRoomType() == RKNet::ROOMTYPE_BT_WW)
         return false;
 
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     if (playerId >= scenario.playerCount)
         return false;
-    if (RKNet::Controller::sInstance->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN && System::sInstance->IsVanillaMode())
+    if (IsOnlineConnected() && System::sInstance->IsVanillaMode())
         return false;
 
     const PlayerType playerType = scenario.players[playerId].playerType;
@@ -88,7 +88,6 @@ static void ApplyTransmission(Kart::Stats &stats, u32 playerId) {
     if (!CanApplyTransmission(playerId))
         return;
 
-    const RKNet::RoomType roomType = RKNet::Controller::sInstance->roomType;
     if (System::sInstance->IsContext(PULSAR_TRANSMISSIONINSIDE)) {
         ApplyInside(stats);
         return;

@@ -12,6 +12,7 @@
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <UI/UI.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -88,7 +89,7 @@ void WWLeaderboardFillRows(Pages::WWLeaderboardUpdate *page) {
     const RacedataScenario &menuScenario = raceData->menusScenario;
 
     const GameMode mode = raceScenario.settings.gamemode;
-    const bool isBattle = mode == MODE_BATTLE || mode == MODE_PUBLIC_BATTLE || mode == MODE_PRIVATE_BATTLE;
+    const bool isBattle = IsBattleMode(mode);
     if (isBattle) {
         const SectionMgr *sectionMgr = SectionMgr::sInstance;
         if (sectionMgr != nullptr && sectionMgr->sectionParams != nullptr) {

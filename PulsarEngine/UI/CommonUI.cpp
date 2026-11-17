@@ -12,6 +12,7 @@
 #include <Network/PacketExpansion.hpp>
 #include <AutoTrackSelect/ChooseNextTrack.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 // For hooks which are shared by different things
@@ -20,10 +21,8 @@ namespace UI {
 PageId TTSplitsGetNextPage(const Pages::TTSplits &splits) {
     const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
     const GameMode mode = scenario.settings.gamemode;
-    const bool isOTTF = System::sInstance->IsContext(PULSAR_MODE_OTT) && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST)
-      || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE && mode != MODE_TIME_TRIAL);
-    const bool isOTTW = System::sInstance->IsContext(PULSAR_MODE_OTT) && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL)
-      || (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL);
+    const bool isOTTF = (System::sInstance->IsContext(PULSAR_MODE_OTT) && IsFriendRoomHost()) || (IsFriendRoom() && !IsFriendRoomHost()) || (IsOfflineRoom() && !IsTimeTrialMode(mode));
+    const bool isOTTW = (System::sInstance->IsContext(PULSAR_MODE_OTT) && GetRoomType() == RKNet::ROOMTYPE_VS_REGIONAL) || GetRoomType() == RKNet::ROOMTYPE_JOINING_REGIONAL;
 
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if (isOTTW)

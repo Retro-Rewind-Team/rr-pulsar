@@ -5,6 +5,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Race/CustomItems.hpp>
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
+#include <GlobalFunction.hpp>
 
 // Original code from VP, adapted to Pulsar 2.0.
 namespace RetroRewind {
@@ -12,7 +13,7 @@ namespace Race {
 
 static void ChangeBlueOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    if (Pulsar::IsFriendRoom()) {
         itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM);
     }
     new (dest) Item::ObjProperties(rel);
@@ -34,7 +35,7 @@ kmCall(0x80790b74, ChangeBlueOBJProperties);
 
 static void ChangeBillOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    if (Pulsar::IsFriendRoom()) {
         itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM);
     }
     new (dest) Item::ObjProperties(rel);
@@ -51,7 +52,7 @@ kmCall(0x80790bf4, ChangeBillOBJProperties);
 
 static void ChangeBombOBJProperties(Item::ObjProperties *dest, const Item::ObjProperties &rel) {
     bool itemModeRandom = false;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    if (Pulsar::IsFriendRoom()) {
         itemModeRandom = System::sInstance->IsContext(Pulsar::PULSAR_ITEMMODERANDOM);
     }
     new (dest) Item::ObjProperties(rel);

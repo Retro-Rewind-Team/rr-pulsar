@@ -11,6 +11,7 @@
 #include <MarioKartWii/RKNet/ITEM.hpp>
 #include <Settings/Settings.hpp>
 #include <RetroRewind.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -19,7 +20,7 @@ static void NonGhostPlayerCount(RacedataScenario &scenario, u8 *playerCount, u8 
     scenario.ComputePlayerCounts(playerCount, screenCount, localPlayerCount);
     System *system = System::sInstance;
     u8 realPlayers = *playerCount;
-    if (scenario.settings.gamemode != MODE_TIME_TRIAL)
+    if (!IsTimeTrialMode(scenario.settings.gamemode))
         for (int i = 0; i < 12; ++i)
             if (scenario.players[i].playerType == PLAYER_GHOST)
                 --realPlayers;
@@ -43,7 +44,7 @@ static void SetStartingItem(Item::PlayerInventory &inventory, ItemId id, bool is
             isFeather = (mode == TTMODE_150_FEATHER || mode == TTMODE_200_FEATHER);
         } else
             isFeather = system->IsContext(PULSAR_FEATHER);
-        if (isFeather && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_REGIONAL && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_JOINING_REGIONAL)
+        if (isFeather && !IsRegionalVSRoom())
             id = BLOOPER;
         inventory.SetItem(id, isItemForcedDueToCapacity);
         if (isFeather)
@@ -56,7 +57,7 @@ kmCall(0x80799808, SetStartingItem);
 static int MiiHeads(Racedata *racedata, u32 unused, u32 unused2, u8 id) {
     CharacterId charId = racedata->racesScenario.players[id].characterId;
     bool miiHeadFroom = ALLOW_MIIHEADS_ENABLED;
-    bool isFroom = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    bool isFroom = IsFriendRoom();
     if (isFroom)
         miiHeadFroom = System::sInstance->IsContext(PULSAR_MIIHEADS) ? ALLOW_MIIHEADS_ENABLED : ALLOW_MIIHEADS_DISABLED;
     if (Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_MIIHEADS) == MII_ENABLED && isFroom) {
@@ -64,7 +65,7 @@ static int MiiHeads(Racedata *racedata, u32 unused, u32 unused2, u8 id) {
             if (charId < MII_M) {
                 if (id == 0)
                     charId = MII_M;
-                else if (RKNet::Controller::sInstance->connectionState != 0)
+                else if (IsOnlineConnected())
                     charId = MII_M;
             }
         }
@@ -166,8 +167,7 @@ const char *ChangeItemWindowPane(ItemId id, u32 itemCount) {
     bool MegaTC = true;
     if (System::sInstance->IsContext(PULSAR_THUNDERCLOUD))
         MegaTC = false;
-    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100
-      && (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST))
+    if (Racedata::sInstance->racesScenario.settings.engineClass == CC_100 && IsFriendRoom())
         MegaTC = true;
     const char *paneName;
     if (id == BLOOPER && feather) {
@@ -177,7 +177,7 @@ const char *ChangeItemWindowPane(ItemId id, u32 itemCount) {
             paneName = "feather_3";
         else
             paneName = "feather";
-    } else if (id == THUNDER_CLOUD && MegaTC && RKNet::Controller::sInstance->roomType != RKNet::ROOMTYPE_VS_WW)
+    } else if (id == THUNDER_CLOUD && MegaTC && GetRoomType() != RKNet::ROOMTYPE_VS_WW)
         paneName = "megaTC";
     else
         paneName = GetItemIconPaneName(id, itemCount);

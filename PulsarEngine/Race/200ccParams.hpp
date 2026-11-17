@@ -3,6 +3,7 @@
 #include <kamek.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -17,11 +18,11 @@ inline bool Is200cc() {
     const RKNet::Controller &controller = *RKNet::Controller::sInstance;
     const RacedataSettings &raceSettings = racedata.racesScenario.settings;
     const GameMode gameMode = racedata.menusScenario.settings.gamemode;
-    const bool isOffline500cc = controller.roomType == RKNet::ROOMTYPE_NONE && raceSettings.engineClass == CC_50;
-    const bool isOfflineMirror = controller.roomType == RKNet::ROOMTYPE_NONE && (racedata.menusScenario.settings.modeFlags & 1);
-    if (gameMode == MODE_BATTLE || gameMode == MODE_PRIVATE_BATTLE || gameMode == MODE_PUBLIC_BATTLE)
+    const bool isOffline500cc = IsOfflineRoom() && raceSettings.engineClass == CC_50;
+    const bool isOfflineMirror = IsOfflineRoom() && (racedata.menusScenario.settings.modeFlags & 1);
+    if (IsBattleMode(gameMode))
         return false;
-    return isOffline500cc || (raceSettings.engineClass == CC_100 && controller.roomType != RKNet::ROOMTYPE_VS_WW && !isOfflineMirror);
+    return isOffline500cc || (raceSettings.engineClass == CC_100 && GetRoomType() != RKNet::ROOMTYPE_VS_WW && !isOfflineMirror);
 }
 
 bool Has200ccPhysics();

@@ -14,18 +14,10 @@
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <hooks.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
-
-static bool IsOnlinePauseMode() {
-    const Racedata *racedata = Racedata::sInstance;
-    if (!racedata)
-        return false;
-
-    const GameMode mode = racedata->menusScenario.settings.gamemode;
-    return mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE;
-}
 
 static Page *GetActiveOnlinePausePage(Section *section) {
     if (section == nullptr)
@@ -114,7 +106,7 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void *sceneSoundManager) 
     const Racedata *racedata = Racedata::sInstance;
     if (racedata) {
         const GameMode mode = racedata->menusScenario.settings.gamemode;
-        if (mode >= MODE_PRIVATE_VS && mode <= MODE_PRIVATE_BATTLE) {
+        if (IsOnlineMode(mode)) {
             SectionMgr *sectionMgr = SectionMgr::sInstance;
             bool isLiveView = false;
             if (sectionMgr && sectionMgr->curSection) {
@@ -142,7 +134,7 @@ kmCall(0x8085a2d0, OnOnlineQuitConfirm_DisconnectAndStopSound);
 // The default quit-confirmation cancel path restores the previous page.
 // For online pause, cancel should dismiss the whole pause stack instead.
 static void CloseOnlineQuitConfirmation(Pages::RaceMenu *page, PageId nextPage) {
-    if (page && page->pageId == PAGE_QUIT_CONFIRMATION && IsOnlinePauseMode()) {
+    if (page && page->pageId == PAGE_QUIT_CONFIRMATION && (Racedata::sInstance != nullptr && IsOnlineMode(Racedata::sInstance->menusScenario.settings.gamemode))) {
         Section *section = SectionMgr::sInstance ? SectionMgr::sInstance->curSection : 0;
         Page *pausePage = GetActiveOnlinePausePage(section);
 
@@ -167,7 +159,7 @@ static void CloseOnlineQuitConfirmation(Pages::RaceMenu *page, PageId nextPage) 
 kmCall(0x8085bbc8, CloseOnlineQuitConfirmation);
 
 void OnlineHUDVisibilityHook() {
-    if (IsOnlinePauseMode()) {
+    if (Racedata::sInstance != nullptr && IsOnlineMode(Racedata::sInstance->menusScenario.settings.gamemode)) {
         const Raceinfo *raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_IS_FINISHING)) {
             Section *section = 0;
@@ -219,7 +211,7 @@ static RaceFrameHook OnlineHUDVisibility(OnlineHUDVisibilityHook);
 
 kmRuntimeUse(0x808600dc);
 void OnlinePauseControl(void *r3) {
-    if (IsOnlinePauseMode()) {
+    if (Racedata::sInstance != nullptr && IsOnlineMode(Racedata::sInstance->menusScenario.settings.gamemode)) {
         const Raceinfo *raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_RACE)) {
             SetRaceHUDVisibility(false);
@@ -239,7 +231,7 @@ kmCall(0x80856b38, OnlinePauseControl);
 
 kmRuntimeUse(0x80860100);
 void OnlineUnpauseControl(void *r3) {
-    if (IsOnlinePauseMode()) {
+    if (Racedata::sInstance != nullptr && IsOnlineMode(Racedata::sInstance->menusScenario.settings.gamemode)) {
         const Raceinfo *raceInfo = Raceinfo::sInstance;
         if (raceInfo && raceInfo->IsAtLeastStage(RACESTAGE_IS_FINISHING)) {
             // Race is ending; ensure we don't keep any pause state alive.

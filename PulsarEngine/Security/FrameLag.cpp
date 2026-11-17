@@ -4,6 +4,7 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/System/ElineManager.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Security {
 
@@ -29,7 +30,7 @@ void EveryFrame(ElineMgr *_this) {
     _this->Update();
 
     RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (!controller || controller->roomType == RKNet::ROOMTYPE_NONE) {
+    if (!controller || Pulsar::IsOfflineRoom()) {
         return;
     }
 

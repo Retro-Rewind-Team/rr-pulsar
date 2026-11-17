@@ -11,6 +11,7 @@
 #include <MarioKartWii/Mii/Mii.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Settings/Settings.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -32,7 +33,7 @@ static bool IsStreamerModeActiveForServer() {
     RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller == nullptr)
         return false;
-    if (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    if (IsFriendRoom()) {
         return false;
     }
     return true;

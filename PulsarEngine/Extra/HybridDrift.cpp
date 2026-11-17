@@ -2,6 +2,7 @@
 #include <runtimeWrite.hpp>
 #include <core/rvl/OS/OSCache.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <GlobalFunction.hpp>
 
 namespace HybridDrift {
 
@@ -14,11 +15,9 @@ kmRuntimeUse(0x80745AB0);
 kmRuntimeUse(0x808CB70A);
 
 static void UpdateHybridDrift() {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const Pulsar::System *system = Pulsar::System::sInstance;
-    const bool isFroom = controller != nullptr && (controller->roomType == RKNet::ROOMTYPE_FROOM_HOST || controller->roomType == RKNet::ROOMTYPE_FROOM_NONHOST);
-    isHybridDriftDisabled = controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN
-      && (system->IsVanillaMode() || (isFroom && (system->netMgr.hostContext2 & (1 << Pulsar::PULSAR_NOHYBRIDDRIFT))));
+    const bool isFroom = Pulsar::IsFriendRoom();
+    isHybridDriftDisabled = Pulsar::IsOnlineConnected() && (system->IsVanillaMode() || (isFroom && (system->netMgr.hostContext2 & (1 << Pulsar::PULSAR_NOHYBRIDDRIFT))));
 }
 static SectionLoadHook HybridDriftHook(UpdateHybridDrift);
 

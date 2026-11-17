@@ -1,25 +1,12 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Network/ServerDateTime.hpp>
 #include <hooks.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Network {
 
 extern "C" u8 sForceSnowEffects = false;
-static bool IsPublicOnlineRoom(const RKNet::RoomType roomType) {
-    switch (roomType) {
-        case RKNet::ROOMTYPE_VS_WW:
-        case RKNet::ROOMTYPE_VS_REGIONAL:
-        case RKNet::ROOMTYPE_BT_WW:
-        case RKNet::ROOMTYPE_BT_REGIONAL:
-        case RKNet::ROOMTYPE_JOINING_WW:
-        case RKNet::ROOMTYPE_JOINING_REGIONAL:
-            return true;
-        default:
-            return false;
-    }
-}
-
 static bool IsInChristmasWindow(const ServerDateTime &sdt) {
     if (!sdt.isValid)
         return false;
@@ -29,7 +16,7 @@ static bool IsInChristmasWindow(const ServerDateTime &sdt) {
 }
 
 static void SetSnowPatchesEnabled() {
-    sForceSnowEffects = IsInChristmasWindow(ServerDateTime::sInstance[0]) && IsPublicOnlineRoom(RKNet::Controller::sInstance->roomType);
+    sForceSnowEffects = IsInChristmasWindow(ServerDateTime::sInstance[0]) && IsPublicRoom();
 }
 static SectionLoadHook setsnowpatches(SetSnowPatchesEnabled);
 

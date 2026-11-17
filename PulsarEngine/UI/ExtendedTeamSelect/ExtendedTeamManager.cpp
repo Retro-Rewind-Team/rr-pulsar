@@ -4,6 +4,7 @@
 #include <MarioKartWii/System/random.hpp>
 #include <MarioKartWii/UI/Page/Other/FriendRoom.hpp>
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -148,7 +149,7 @@ bool ExtendedTeamManager::AreAllOtherPlayersDone(u8 localAid) {
 
 void ExtendedTeamManager::Update() {
     Pages::FriendRoomManager *friendRoomManager = SectionMgr::sInstance->curSection->Get<Pages::FriendRoomManager>();
-    this->isHost = RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST;
+    this->isHost = IsFriendRoomHost();
     u8 localAid = RKNet::Controller::sInstance->subs[RKNet::Controller::sInstance->currentSub].localAid;
     if (!this->isHost) {
         if (this->status == STATUS_NONE) {

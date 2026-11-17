@@ -6,6 +6,7 @@
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <RetroRewindChannel.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -19,8 +20,7 @@ static Transmission selectedTransmission[4] = {
 u8 remoteTransmission[12][2];
 
 static bool IsVanillaModeOnline() {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    return controller != nullptr && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN && System::sInstance->IsVanillaMode();
+    return IsOnlineConnected() && System::sInstance->IsVanillaMode();
 }
 
 static bool ShouldSkipTransmissionSelect(const System *system) {

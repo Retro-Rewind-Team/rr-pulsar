@@ -11,6 +11,7 @@
 #include <MarioKartWii/Kart/KartManager.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/rvl/OS/OS.hpp>
+#include <GlobalFunction.hpp>
 
 namespace RetroRewind {
 Pulsar::System *System::Create() {
@@ -57,7 +58,7 @@ void FPSPatch() {
     bool use30FPS = Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_FPS) == Pulsar::FPS_HALF;
     if (use30FPS && scene->id == SCENE_ID_RACE) {
         const GameMode mode = Racedata::sInstance->racesScenario.settings.gamemode;
-        if (mode == MODE_TIME_TRIAL || mode == MODE_GHOST_RACE)
+        if (Pulsar::IsTimeTrialOrGhostMode(mode))
             use30FPS = false;
     }
     scene->SetFramerate(use30FPS ? 1 : 0);
@@ -68,8 +69,7 @@ static RaceLoadHook PatchFPSOnRaceLoad(FPSPatch);
 void ItemBoxRespawn(Objects::Itembox *itembox) {
     const bool is200 = Pulsar::Race::Is200cc();
     bool isFastRespawn = Pulsar::ITEMBOX_DEFAULTRESPAWN;
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST
-      || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
+    if (Pulsar::IsFriendRoomOrOffline()) {
         isFastRespawn = Pulsar::System::sInstance->IsContext(Pulsar::PULSAR_ITEMBOXRESPAWN) ? Pulsar::ITEMBOX_FASTRESPAWN : Pulsar::ITEMBOX_DEFAULTRESPAWN;
     }
     itembox->respawnTime = 150;

@@ -1,6 +1,7 @@
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace LapKO {
@@ -9,8 +10,7 @@ static void FrameUpdate() {
     System *system = System::sInstance;
     if (!system->IsContext(PULSAR_MODE_LAPKO))
         return;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST)
+    if (IsPublicRoom())
         return;
     system->lapKoMgr->UpdateFrame();
 }
@@ -31,8 +31,7 @@ static void WifiEdits() {
         return;
     if (!system->IsContext(PULSAR_MODE_LAPKO) && !system->IsContext(PULSAR_MODE_BATTLEROYALE))
         return;
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller->roomType != RKNet::ROOMTYPE_NONE && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST && controller->roomType != RKNet::ROOMTYPE_FROOM_HOST)
+    if (IsPublicRoom())
         return;
 
     sWifiRaceTimeLimit = 900000;

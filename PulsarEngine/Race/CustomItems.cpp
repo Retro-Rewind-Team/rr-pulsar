@@ -9,6 +9,7 @@
 #include <Settings/Settings.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <PulsarSystem.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace Race {
@@ -20,10 +21,9 @@ u32 GetEffectiveCustomItemsBitfield() {
     if (controller == nullptr)
         return Settings::Mgr::Get().GetCustomItems();
 
-    const RKNet::RoomType roomType = controller->roomType;
-    const bool isFriendRoom = roomType == RKNet::ROOMTYPE_FROOM_HOST || roomType == RKNet::ROOMTYPE_FROOM_NONHOST;
+    const bool isFriendRoom = IsFriendRoom();
     if (!isFriendRoom) {
-        if (roomType != RKNet::ROOMTYPE_NONE)
+        if (IsOnlineRoom())
             return ALL_CUSTOM_ITEMS;
         return Settings::Mgr::Get().GetCustomItems();
     }

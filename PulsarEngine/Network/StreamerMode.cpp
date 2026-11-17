@@ -8,6 +8,7 @@
 #include <Settings/Settings.hpp>
 #include <PulsarSystem.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace PointRating {
@@ -97,7 +98,7 @@ static void ReplaceWithRandomPlayerMii(RKNet::USERHandler *handler, u32 aid, RKN
     if (settings.GetSettingValue(Pulsar::Settings::SETTING_STREAMERMODE) == STREAMERMODE_DISABLED) {
         return;
     }
-    if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_HOST || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_FROOM_NONHOST) {
+    if (IsFriendRoom()) {
         return;
     }
 

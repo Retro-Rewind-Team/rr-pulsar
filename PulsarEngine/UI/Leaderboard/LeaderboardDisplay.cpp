@@ -6,6 +6,7 @@
 #include <UI/UI.hpp>
 #include <PulsarSystem.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -28,7 +29,7 @@ void nextLeaderboardDisplayType() {
     if (displayLeaderboardType == LEADERBOARD_DISPLAY_NAMES) {
         displayLeaderboardType = LEADERBOARD_DISPLAY_TIMES;
     } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_TIMES) {
-        if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_NONE) {
+        if (IsOfflineRoom()) {
             displayLeaderboardType = LEADERBOARD_DISPLAY_NAMES;
         } else {
             displayLeaderboardType = LEADERBOARD_DISPLAY_FC;
