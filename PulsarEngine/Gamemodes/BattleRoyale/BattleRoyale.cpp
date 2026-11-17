@@ -241,15 +241,6 @@ static bool RemoveBalloon(RaceBalloonManager *mgr, u8 playerId) {
     return true;
 }
 
-static bool IsLocalPlayer(u8 playerId) {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || IsOfflineRoom())
-        return true;
-    if (playerId >= maxPlayers)
-        return false;
-    return controller->aidsBelongingToPlayerIds[playerId] == controller->subs[controller->currentSub].localAid;
-}
-
 static void QueueBalloonEvent(u8 eventPlayerId) {
     if (!IsOnlineRoom())
         return;
