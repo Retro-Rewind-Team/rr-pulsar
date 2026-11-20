@@ -16,6 +16,10 @@ namespace Pulsar {
 namespace Race {
 
 u8 racePlayerSlots[12];
+// The award race's players in podium order, as the last race's player IDs they were copied from.
+static u8 awardRacePlayers[12];
+static u32 awardRacePlayerCount;
+
 u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAward) {
     const u32 characterId = static_cast<u32>(character);
     if (characterId >= Driver::CHARACTER_COUNT)
@@ -23,8 +27,11 @@ u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAwa
     // Menu callers use 12 + the local HUD slot to bypass race player IDs.
     if (playerId >= 12 || Racedata::sInstance == nullptr)
         return Driver::selectedSlots[playerId >= 12 ? playerId - 12 : 0][characterId];
+    if (!isAward && Racedata::sInstance->racesScenario.settings.gamemode == MODE_AWARD)
+        return playerId < awardRacePlayerCount ? GetPlayerCustomCharacterSlot(awardRacePlayers[playerId], character, true) : 0;
     const RacedataScenario &scenario = isAward ? Racedata::sInstance->awardScenario : Racedata::sInstance->racesScenario;
-    if (playerId >= scenario.playerCount || scenario.players[playerId].characterId != character)
+    // awardScenario keeps the last race's twelve players under a smaller playerCount.
+    if (scenario.players[playerId].playerType == PLAYER_NONE || scenario.players[playerId].characterId != character)
         return Driver::selectedSlots[0][characterId];
     const RacedataPlayer &player = scenario.players[playerId];
     if (player.playerType == PLAYER_GHOST) {
@@ -40,6 +47,24 @@ u32 GetPlayerCustomCharacterSlot(u32 playerId, CharacterId character, bool isAwa
     const u32 slot = racePlayerSlots[playerId];
     return slot <= Driver::MAX_CUSTOM_CHARACTER_SLOTS && Driver::characterTables[characterId][slot] ? slot : 0;
 }
+
+// InitAwards+0x20 copies the last race into awardScenario before it picks the award race's players.
+static RacedataScenario &CopyAwardScenario(RacedataScenario &award, const RacedataScenario &race) {
+    awardRacePlayerCount = 0;
+    return award = race;
+}
+kmCall(0x80530884, CopyAwardScenario);
+
+// Each InitAwards branch reads a picked player's character first (GetCharacterId), in podium order.
+static CharacterId GetAwardRacePlayerCharacter(const RacedataPlayer &player) {
+    awardRacePlayers[awardRacePlayerCount++] = &player - Racedata::sInstance->racesScenario.players;
+    return player.characterId;
+}
+kmCall(0x80530964, GetAwardRacePlayerCharacter);
+kmCall(0x80530b08, GetAwardRacePlayerCharacter);
+kmCall(0x80530c4c, GetAwardRacePlayerCharacter);
+kmCall(0x80530d70, GetAwardRacePlayerCharacter);
+kmCall(0x80530e48, GetAwardRacePlayerCharacter);
 
 void RandomizeCPUCharacterTables(const RacedataScenario &scenario) {
     Random random;
@@ -89,6 +114,11 @@ static s32 LoadCustomCharactersForPlayer(char *path, u32 size, const char *forma
         snprintf(archivePath, sizeof(archivePath), "/Race/Kart/%s%s-%s-%u%s.szs", vehicleName, teamSuffix, characterName, slot, modeSuffix);
         if (IOOverrides::ConvertPathToEntryNumWithLooseOverride(archivePath) >= 0)
             return snprintf(path, size, "Race/Kart/%s%s-%s-%u%s", vehicleName, teamSuffix, characterName, slot, modeSuffix);
+        // Skins ship no low-detail (_4) karts, which a multi-screen race gives its CPUs: a CPU drawn as its base
+        // character is named and shown as one. The archives load before the race's voices, balloons and results.
+        const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+        if (playerId < 12 && scenario.settings.gamemode != MODE_AWARD && scenario.players[playerId].playerType == PLAYER_CPU)
+            racePlayerSlots[playerId] = 0;
     }
     return snprintf(path, size, format, vehicleName, teamSuffix, characterName, modeSuffix);
 }
