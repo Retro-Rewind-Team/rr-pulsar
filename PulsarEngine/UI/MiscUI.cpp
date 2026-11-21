@@ -124,7 +124,7 @@ static void CustomRoomDenyText(Pages::MessageBoxTransparent *msgBox, u32 bmgId, 
 }
 kmCall(0x805dd90c, CustomRoomDenyText);
 
-SectionParams &FavouriteCombo(SectionParams &params) {
+void FavouriteCombo(SectionParams &params) {
     const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
     s32 curLicense = rksysMgr->curLicenseId;
     if (curLicense >= 0) {
@@ -153,10 +153,16 @@ SectionParams &FavouriteCombo(SectionParams &params) {
             params.combos[0].selKart = favKart;
         }
     }
-
-    return params;
 }
-kmBranch(0x805e4228, FavouriteCombo);
+
+static void SetCurLicenseAndFavouriteCombo(RKSYS::Mgr *rksysMgr, u32 idx) {
+    const SectionMgr *sectionMgr = SectionMgr::sInstance;
+    SectionParams *sectionParams = sectionMgr->sectionParams;
+    rksysMgr->SetCurLicense(idx);
+    FavouriteCombo(*sectionParams);
+}
+kmCall(0x805eb810, SetCurLicenseAndFavouriteCombo);
+kmCall(0x805b9ac8, SetCurLicenseAndFavouriteCombo);
 
 u8 ModifyCheckRankings() {
     register Pages::RaceMenu *ttEnd;
