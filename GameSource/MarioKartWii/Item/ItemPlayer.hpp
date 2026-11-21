@@ -30,11 +30,26 @@ public:
     void OnRouletteEnd();  // 807ba2d8
     // r4 is the GOBJ setting (either player or CPU based on isHuman bool), position means different things based on gamemode ofc
     void DecideItem(u16 itemBoxType, u8 position, bool isHuman, u32 lotteryType);  // 807b9fb0
+
+    struct ScrollParams {
+        float scrollPositionStart;  // 0x0 0
+        float normalLotteryScrollSpeedStart;  // 0x4 1.1
+        float timingLotteryScrollSpeedStart;  // 0x8 0.17
+        float scrollSpeedMultiplier;  // 0xc 0.9675
+        float scrollSpeedAddition;  // 0x10 0.002
+        float pickNextItemPosition;  // 0x14 1.0
+    };
+
+    static ScrollParams scrollParams;  // 808a62d0
+
     Player *itemPlayer;
     u32 isTheRouletteSpinning;
     u32 frames;  // how many frames has the roulette been spinning for
     u32 totalSpinDuration;
-    float unknown_0x10[2];
+    // how fast the items scroll by (measured in items per frame) (every frame; scrollSpeed = scrollSpeed * scrollSpeedMultiplier + scrollSpeedAddition)
+    float scrollSpeed;  // 0x10
+    // how far the current item has scrolled (0.0 - 1.0). Grows by scrollSpeed every frame. When >= pickNextItemPosition subtracts pickNextItemPosition and next item is picked.
+    float scrollPosition;  // 0x14
     ItemId currentRandomItem;  // 0x18
     ItemId nextRandomItem;  // 0x1c
     ItemId nextItemId;  // 0x20
