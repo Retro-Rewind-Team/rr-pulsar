@@ -10,6 +10,7 @@
 #include <PulsarSystem.hpp>
 #include <Network/Rating/PlayerRating.hpp>
 #include <Network/ServerDateTime.hpp>
+#include <Network/PCP/PCP.hpp>
 #include <include/c_wchar.h>
 
 namespace Pulsar {
@@ -30,6 +31,108 @@ static void FormatRatingLabel(float rating, const wchar_t *suffix, wchar_t *buff
     swprintf(buffer, bufferSize, rating >= 100000.0f ? L"%d%ls\uF06D" : L"%d%ls", (int)(rating + 0.5f), suffix);
 }
 
+// PCP status in the page title
+// Active: "<title> - PCP" in green. Refused by the router: "<title> - PCP E<result>" in red.
+// Every other state shows the plain title.
+
+static const wchar_t PCP_COLOR_GREEN[] = {0x001A, 0x0800, 0x0001, 0x0033};  // BMG escape: text color
+static const wchar_t PCP_COLOR_RED[] = {0x001A, 0x0800, 0x0001, 0x0017};
+
+// What the title shows; it is only redrawn when this changes.
+enum PcpTitle {
+    PCP_TITLE_PLAIN = 0,
+    PCP_TITLE_ACTIVE = 1,
+    PCP_TITLE_REJECTED = 0x100,  // + the router's result code
+};
+
+static u32 s_wfcTitleBmg = 0;
+static s32 s_wfcTitleKey = -1;
+static wchar_t s_wfcTitleBuffer[128];
+
+static s32 GetTitleKey(const Network::PCP::UiStatus &pcp) {
+    if (pcp.state == Network::PCP::UI_ACTIVE)
+        return PCP_TITLE_ACTIVE;
+    if (pcp.state == Network::PCP::UI_REJECTED)
+        return PCP_TITLE_REJECTED + pcp.result;
+    return PCP_TITLE_PLAIN;
+}
+
+// Copies BMG text without cutting an escape sequence in half. An escape starts with 0x001A; the
+// high byte of the next character is its length in bytes. Returns the number of characters.
+static u32 CopyBmgText(wchar_t *dest, const wchar_t *src, u32 maxLen) {
+    u32 out = 0;
+    while (*src != L'\0') {
+        u32 count = 1;
+        if (*src == 0x001A)
+            count = (static_cast<u16>(src[1]) >> 8) / sizeof(wchar_t);
+        if (count == 0 || out + count >= maxLen)
+            break;
+        for (u32 i = 0; i < count; ++i) dest[out++] = src[i];
+        src += count;
+    }
+    dest[out] = L'\0';
+    return out;
+}
+
+// base + color + " - PCP" (or " - PCP E<result>"). Whatever does not fit is left out.
+static void BuildPcpTitle(wchar_t *buf, u32 maxLen, const wchar_t *base, const Network::PCP::UiStatus &pcp) {
+    u32 len = CopyBmgText(buf, base, maxLen);
+    const wchar_t *color = pcp.state == Network::PCP::UI_ACTIVE ? PCP_COLOR_GREEN : PCP_COLOR_RED;
+    if (len + 4 < maxLen) {
+        for (u32 i = 0; i < 4; ++i) buf[len++] = color[i];
+    }
+    buf[len] = L'\0';
+    if (maxLen - len > 16) {
+        if (pcp.state == Network::PCP::UI_REJECTED)
+            swprintf(buf + len, maxLen - len, L" - PCP E%d", static_cast<int>(pcp.result));
+        else
+            swprintf(buf + len, maxLen - len, L" - PCP");
+    }
+}
+
+static const wchar_t *GetTitleText(const LayoutUIControl &title, u32 bmgId) {
+    const BMGHolder *holders[2] = {&title.commonBmgs, &title.curFileBmgs};
+    for (u32 i = 0; i < 2; ++i) {
+        if (holders[i]->info == nullptr)
+            continue;
+        const s32 msgId = holders[i]->GetMsgId(bmgId);
+        if (msgId < 0)
+            continue;
+        const wchar_t *msg = holders[i]->GetMsgByMsgId(msgId);
+        if (msg != nullptr)
+            return msg;
+    }
+    return GetCustomMsg(bmgId);
+}
+
+// Sets the title for the current PCP status. force = false: only if what it shows changed.
+static void UpdateWFCMainTitle(CtrlMenuPageTitleText &title, bool force) {
+    Network::PCP::UiStatus pcp;
+    Network::PCP::GetUiStatus(pcp);
+    const s32 key = GetTitleKey(pcp);
+    if (!force && key == s_wfcTitleKey)
+        return;
+    s_wfcTitleKey = key;
+
+    const wchar_t *base = key != PCP_TITLE_PLAIN ? GetTitleText(title, s_wfcTitleBmg) : static_cast<const wchar_t *>(nullptr);
+    if (base == nullptr) {
+        title.SetMessage(s_wfcTitleBmg);
+        return;
+    }
+    BuildPcpTitle(s_wfcTitleBuffer, sizeof(s_wfcTitleBuffer) / sizeof(s_wfcTitleBuffer[0]), base, pcp);
+    Text::Info info;
+    info.strings[0] = s_wfcTitleBuffer;
+    title.SetMessage(BMG_TEXT, &info);
+}
+
+// Replaces the game's call that sets the WFC menu title.
+static void WFCMainTitle(CtrlMenuPageTitleText &title, u32 bmgId, Text::Info *info) {
+    s_wfcTitleBmg = bmgId;
+    UpdateWFCMainTitle(title, true);
+}
+kmCall(0x8064b9e8, WFCMainTitle);
+kmCall(0x8064b9fc, WFCMainTitle);
+
 static void SetButtonHidden(PushButton &button, bool hidden) {
     button.isHidden = hidden;
     button.manipulator.inaccessible = hidden;
@@ -44,6 +147,8 @@ kmWrite24(0x80899a5B, 'PUL');  // 8064ba90
 
 void ExpWFCMain::OnInit() {
     this->InitControlGroup(13);
+    s_wfcTitleBmg = 0;
+    s_wfcTitleKey = -1;
     WFCMainMenu::OnInit();
     this->AddControl(6, settingsButton, 0);
 
@@ -165,6 +270,9 @@ void ExpWFCMain::BeforeControlUpdate() {
     rankInfoTxt.strings[0] = rankBuf;
     this->rankInfo.SetTextBoxMessage("go", UI::BMG_TEXT, &rankInfoTxt);
     this->rankInfo.SetPaneVisibility("capsul_null", true);
+
+    if (s_wfcTitleBmg != 0)
+        UpdateWFCMainTitle(this->ctrlMenuPageTitleText, false);
 }
 
 // ExpWFCModeSel
