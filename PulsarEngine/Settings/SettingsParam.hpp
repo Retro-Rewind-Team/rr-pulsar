@@ -439,7 +439,8 @@ enum MirrorModeSetting {
 
 enum FriendRoomCPUs {
     FROOMCPUS_DISABLED,
-    FROOMCPUS_ENABLED
+    FROOMCPUS_ENABLED,
+    FROOMCPUS_ENABLED_HARD
 };
 
 // 9) OTT values

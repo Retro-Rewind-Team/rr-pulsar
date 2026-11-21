@@ -148,6 +148,7 @@ void PrepareRace(RacedataScenario &scenario) {
         if (holder != nullptr && holder->packetSize >= Network::PulRH1SizeFroomCPUs) {
             System::sInstance->context2 |= 1 << PULSAR_FROOMCPUS;
             System::sInstance->netMgr.hostContext2 |= 1 << PULSAR_FROOMCPUS;
+            System::sInstance->context2 |= System::sInstance->netMgr.hostContext2 & (1 << PULSAR_FROOMCPUSHARD);
             ReadSELECT(holder->packet->cpuRoster, sub.hostAid);
         }
     }

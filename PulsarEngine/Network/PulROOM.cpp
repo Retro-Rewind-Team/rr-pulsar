@@ -248,7 +248,8 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM> *packetHolder, PulROOM *
           | koPerRace3 << PULSAR_KOPERRACE_3 | koPerRace4 << PULSAR_KOPERRACE_4 | koRoyaleLaps1_5x << PULSAR_KOROYALE_LAPS_1_5X | koRoyaleLaps2_0x << PULSAR_KOROYALE_LAPS_2_0X
           | vanillaMode << PULSAR_VANILLAMODE | mirrorMode << PULSAR_MIRRORMODE | (settings.GetSettingValue(Settings::SETTING_ALLOWBRAKEDRIFT) != 0) << PULSAR_NOBRAKEDRIFT
           | (settings.GetSettingValue(Settings::SETTING_ALLOWUMTS) != 0) << PULSAR_NOUMTS | (settings.GetSettingValue(Settings::SETTING_ALLOWHYBRIDDRIFT) != 0) << PULSAR_NOHYBRIDDRIFT
-          | (!vr && !isBattle && settings.GetSettingValue(Settings::SETTING_FROOMCPUS) == FROOMCPUS_ENABLED) << PULSAR_FROOMCPUS;
+          | (!vr && !isBattle && settings.GetSettingValue(Settings::SETTING_FROOMCPUS) != FROOMCPUS_DISABLED) << PULSAR_FROOMCPUS
+          | (!vr && !isBattle && settings.GetSettingValue(Settings::SETTING_FROOMCPUS) == FROOMCPUS_ENABLED_HARD) << PULSAR_FROOMCPUSHARD;
 
         destPacket->customItemsBitfield = vanillaMode ? Race::ALL_CUSTOM_ITEMS : settings.GetCustomItems();
 
