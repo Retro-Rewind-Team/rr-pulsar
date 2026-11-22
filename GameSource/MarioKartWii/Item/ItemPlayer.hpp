@@ -68,6 +68,7 @@ public:
     u8 unknown_0x1D[0x22 - 0x1D];
     u16 goldenTimer;
     u8 unknown_0x24[0x28 - 0x24];
+    bool isRemote;  // 0x28
     bool isItemForcedDueToCapacity;  // 0x29
     u8 padding[2];
 };  // Total Size 0x2C
