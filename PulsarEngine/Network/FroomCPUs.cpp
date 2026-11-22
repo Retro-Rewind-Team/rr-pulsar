@@ -17,6 +17,7 @@
 #include <Network/Settings/SelectionRestrictions.hpp>
 #include <MarioKartWii/UI/Page/Menu/KartSelect.hpp>
 #include <core/rvl/DWC/DWCTransport.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace FroomCPUs {
@@ -139,7 +140,7 @@ void ReadSELECT(const Roster &src, u32 aid) {
 void PrepareRace(RacedataScenario &scenario) {
     memset(playerSlots, 0xFF, sizeof(playerSlots));
     RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || (controller->roomType != RKNet::ROOMTYPE_FROOM_HOST && controller->roomType != RKNet::ROOMTYPE_FROOM_NONHOST))
+    if (!IsFriendRoom())
         return;
     if (scenario.settings.gametype == GAMETYPE_ONLINE_SPECTATOR && !System::sInstance->IsContext(PULSAR_VR)
       && (scenario.settings.gamemode == MODE_PRIVATE_VS || scenario.settings.gamemode == MODE_PUBLIC_VS)) {

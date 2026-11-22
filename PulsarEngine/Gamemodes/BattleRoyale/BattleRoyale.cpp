@@ -218,7 +218,7 @@ kmCall(0x80592ec8, EnableSecondKartModelDrawIfReady);
 
 static bool IsLocalPlayer(u8 playerId) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    if (controller == nullptr || controller->roomType == RKNet::ROOMTYPE_NONE)
+    if (controller == nullptr || IsOfflineRoom())
         return true;
     if (playerId >= maxPlayers)
         return false;

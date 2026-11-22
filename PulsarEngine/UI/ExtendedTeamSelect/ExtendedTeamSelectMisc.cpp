@@ -33,7 +33,7 @@ void Racedata_InitRace(Racedata *racedata) {
     register u32 returnAddress;
     asm(mflr returnAddress;);
     const GameMode raceMode = racedata->menusScenario.settings.gamemode;
-    if (raceMode == MODE_PRIVATE_VS || raceMode == MODE_PUBLIC_VS || raceMode == MODE_PRIVATE_BATTLE || raceMode == MODE_PUBLIC_BATTLE)
+    if (IsOnlineMode(raceMode))
         FroomCPUs::PrepareRace(racedata->menusScenario);
     racedata->InitRace();
 

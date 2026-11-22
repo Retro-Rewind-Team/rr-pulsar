@@ -9,6 +9,7 @@
 #include <MarioKartWii/UI/Ctrl/PushButton.hpp>
 #include <UI/UI.hpp>
 #include <Network/FroomCPUs.hpp>
+#include <GlobalFunction.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -34,7 +35,7 @@ kmCall(0x807e2b38, SetCharacterSelectIcon);
 u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId, bool isAward) {
     if (character < Driver::CHARACTER_COUNT
       && (playerId >= 12 || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
-        || Racedata::sInstance->racesScenario.settings.gamemode < MODE_PRIVATE_VS || Racedata::sInstance->racesScenario.settings.gamemode > MODE_PRIVATE_BATTLE)) {
+        || !IsOnlineMode(Racedata::sInstance->racesScenario.settings.gamemode))) {
         const u32 slot = Race::GetPlayerCustomCharacterSlot(playerId, static_cast<CharacterId>(character), isAward);
         if (slot != 0) {
             const u32 customBmgId = (character << 16) | BMG_CUSTOM_CHARACTER_NAME_START | slot;
