@@ -958,6 +958,7 @@ GetDistanceTravelled__Q25RKSYS10LicenseMgrCFv = 0x80547714
 GetDistancetravelledwhilein1stplace__Q25RKSYS10LicenseMgrCFv = 0x8054789c
 
 #RKSYSMgr
+SetCurLicense__Q25RKSYS3MgrFUi = 0x80544cd8
 CheckLicenseMagic__Q25RKSYS3MgrCFUc = 0x80544d10
 sInstance__Q25RKSYS3Mgr = 0x809bd748
 
