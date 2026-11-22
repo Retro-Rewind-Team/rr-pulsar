@@ -11,6 +11,7 @@ class ExpCupSelect : public Pages::CupSelect {
 public:
     ExpCupSelect();
     static void UpdateCupData(PulsarCupId id, LayoutUIControl &control);
+    static void LayoutCupButtons(CtrlMenuCupSelectCup &cups);
     void OnActivate() override;
     void AfterControlUpdate() override;
     UIControl *CreateControl(u32 controlId) override;
@@ -22,6 +23,8 @@ private:
     void OnLeftArrowSelect(SheetSelectControl &control, u32 hudSlotId);
     void OnArrowSelect(s32 direction);
     void OnBackPress(u32 hudSlotId);
+    void UpdateArrowButtons();
+    void UpdateCupButtons();
 
     PtmfHolder_2A<ExpCupSelect, void, SheetSelectControl &, u32> onRightArrowSelectHandler;
     PtmfHolder_2A<ExpCupSelect, void, SheetSelectControl &, u32> onLeftArrowSelectHandler;

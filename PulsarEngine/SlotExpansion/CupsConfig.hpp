@@ -41,6 +41,9 @@ public:
     static void SetLayout();
     void GetExpertPath(char *dest, PulsarId id, TTMode mode, u8 variantIdx) const;
     void LoadFileNames(const char *buffer, u32 length, u32 trackIdxOffset = 0, u32 sourceTrackCount = 0);
+    PulsarCupId GetCupInButton(u32 buttonIdx) const {
+        return GetNextCupId(lastSelectedCup, buttonIdx - lastSelectedCupButtonIdx);
+    }
 
     // Ghosts
     int GetCRC32(PulsarId id) const;

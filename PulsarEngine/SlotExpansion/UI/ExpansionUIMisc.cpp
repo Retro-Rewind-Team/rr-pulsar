@@ -443,14 +443,9 @@ kmCall(0x80644344, WinningTrackBMG);
 // Rewrote InitSelf to start with correct TPLs
 static void ExtCupSelectCupInitSelf(CtrlMenuCupSelectCup *cups) {
     const CupsConfig *cupsConfig = CupsConfig::sInstance;
-    PulsarCupId selCup = cupsConfig->lastSelectedCup;
-    cups->curCupID = selCup;
+    ExpCupSelect::LayoutCupButtons(*cups);
     PushButton **buttons = reinterpret_cast<PushButton **>(cups->childrenGroup.controlArray);
-
     for (int i = 0; i < 8; ++i) {
-        const PulsarCupId id = cupsConfig->GetNextCupId(selCup, i - cupsConfig->lastSelectedCupButtonIdx);
-        buttons[i]->buttonId = id;
-        ExpCupSelect::UpdateCupData(id, *buttons[i]);
         buttons[i]->SetOnClickHandler(cups->onCupButtonClickHandler, 0);
         buttons[i]->SetOnSelectHandler(cups->onCupButtonSelectHandler);
         buttons[i]->SetPlayerBitfield(SectionMgr::sInstance->curSection->Get<Pages::CupSelect>()->GetPlayerBitfield());
@@ -463,7 +458,7 @@ static void ExtCourseSelectCupInitSelf(CtrlMenuCourseSelectCup *courseCups) {
     const CupsConfig *cupsConfig = CupsConfig::sInstance;
     for (int i = 0; i < 8; ++i) {
         CtrlMenuCourseSelectCupSub &cur = courseCups->cupIcons[i];
-        const PulsarCupId id = cupsConfig->GetNextCupId(cupsConfig->lastSelectedCup, i - cupsConfig->lastSelectedCupButtonIdx);
+        const PulsarCupId id = cupsConfig->GetCupInButton(i);
         ExpCupSelect::UpdateCupData(id, cur);
         cur.animator.GetAnimationGroupById(0).PlayAnimationAtFrame(0, 0.0f);
         const bool clicked = cupsConfig->lastSelectedCupButtonIdx == i;
