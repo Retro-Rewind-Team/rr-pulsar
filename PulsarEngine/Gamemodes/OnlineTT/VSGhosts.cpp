@@ -152,8 +152,11 @@ asmFunc PatchImportRH2() {
     ASM(
         nofralloc;
         lwz r0, 0x38(r3);  // default
+        cmpwi r0, 1;  // Online CPUs use their host's dedicated progress updates.
+        beq + localPlayer;
         cmpwi r0, 3;
         bne + end;
+    localPlayer:
         li r0, 0;  // fake that the ghost is a local player
     end:
         blr;

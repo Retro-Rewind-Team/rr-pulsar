@@ -1,6 +1,7 @@
 #include <RetroRewind.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <GlobalFunction.hpp>
 #include <core/rvl/OS/OS.hpp>
 #if defined(PROD)
 #include <Security/BinVerifier.hpp>
@@ -17,7 +18,9 @@ void *GetCustomKartParam(ArchiveMgr *archive, ArchiveSource type, const char *na
 kmCall(0x80591a30, GetCustomKartParam);
 
 void *GetCustomKartAIParam(ArchiveMgr *archive, ArchiveSource type, const char *name, u32 *length) {
-    if (static_cast<Pulsar::HardAI>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_HARDAI)) == Pulsar::HARDAI_ENABLED) {
+    const bool offlineHardAI = Pulsar::IsOfflineRoom() && static_cast<Pulsar::HardAI>(Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_HARDAI)) == Pulsar::HARDAI_ENABLED;
+    const bool froomHardAI = Pulsar::IsFriendRoom() && System::sInstance->IsContext(Pulsar::PULSAR_FROOMCPUS) && System::sInstance->IsContext(Pulsar::PULSAR_FROOMCPUSHARD);
+    if (offlineHardAI || froomHardAI) {
         name = "kartAISpdParamRR.bin";
     }
 

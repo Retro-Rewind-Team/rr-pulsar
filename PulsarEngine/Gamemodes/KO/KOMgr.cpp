@@ -426,6 +426,7 @@ void Mgr::ProcessKOs(Pages::GPVSLeaderboardUpdate::Player *playerArr, size_t nit
         sectionParams->vsRaceNumber = sectionParams->vsRaceCount;
     if (!hasTies)
         self->AdvanceOfflineRaceNumber();
+    FroomCPUs::SaveResults();
 }
 kmCall(0x8085cb94, Mgr::ProcessKOs);
 
@@ -451,7 +452,8 @@ void Mgr::Update() {
         }
 
         const u8 winnerPlayerId = self->winnerPlayerId;
-        if (winnerPlayerId != 0xFF && !self->IsOfflineVS()) {
+        if (winnerPlayerId != 0xFF && !self->IsOfflineVS()
+          && (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || winnerPlayerId >= 12 || FroomCPUs::playerSlots[winnerPlayerId] >= FroomCPUs::roster.count)) {
             const RKNet::Controller *controller = RKNet::Controller::sInstance;
             const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
             if (controller->aidsBelongingToPlayerIds[winnerPlayerId] == sub.localAid) {
@@ -516,7 +518,8 @@ u32 Mgr::GetAidAndSlotFromPlayerId(u8 playerId) const {
     if ((aid == localAid && sub.localPlayerCount == 2) || (aid != localAid && sub.connectionUserDatas[aid].playersAtConsole == 2)) {
         if (playerId > 0 && controller->aidsBelongingToPlayerIds[playerId - 1] == aid)
             slot = 1;
-        else if (playerId < 11 && this->status[aid][0] == KOD && controller->aidsBelongingToPlayerIds[playerId + 1] != aid)
+        else if (playerId < 11 && this->status[aid][0] == KOD
+          && (controller->aidsBelongingToPlayerIds[playerId + 1] != aid || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && FroomCPUs::playerSlots[playerId + 1] < FroomCPUs::roster.count)))
             slot = 1;
     }
     return (slot << 16) | aid;  // 10001
@@ -549,10 +552,24 @@ kmCall(0x80651814, OnDisconnectKO);
 PageId Mgr::KickPlayersOut(PageId defaultId) {  // only called if KOMode
 
     PageId ret = defaultId;
-    const System *system = System::sInstance;
+    System *system = System::sInstance;
 
     Mgr *mgr = system->koMgr;
     RacedataScenario &scenario = Racedata::sInstance->racesScenario;
+    if (System::sInstance->IsContext(PULSAR_FROOMCPUS)) {
+        bool hasActiveHuman = false;
+        for (u32 playerId = 0; playerId < scenario.playerCount; ++playerId) {
+            if ((playerId >= 12 || FroomCPUs::playerSlots[playerId] >= FroomCPUs::roster.count) && !mgr->IsKOdPlayerId(playerId) && !mgr->IsDisconnectedPlayerId(playerId)) {
+                hasActiveHuman = true;
+                break;
+            }
+        }
+        if (!hasActiveHuman) {
+            system->netMgr.racesPerGP = SectionMgr::sInstance->sectionParams->onlineParams.currentRaceNumber;
+            SectionMgr::sInstance->sectionParams->localPlayerCount = mgr->baseLocPlayerCount;
+            return defaultId;
+        }
+    }
     const bool isMainOut = mgr->IsKOdPlayerId(scenario.settings.hudPlayerIds[0]) || mgr->IsDisconnectedPlayerId(scenario.settings.hudPlayerIds[0]);
     if (system->nonTTGhostPlayersCount > 2) {
         if (scenario.localPlayerCount == 1) {

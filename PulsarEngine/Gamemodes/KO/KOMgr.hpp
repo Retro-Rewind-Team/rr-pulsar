@@ -6,6 +6,7 @@
 #include <MarioKartWii/UI/Page/Leaderboard/GPVSLeaderboardTotal.hpp>
 #include <MarioKartWii/Race/RaceData.hpp>
 #include <PulsarSystem.hpp>
+#include <Network/FroomCPUs.hpp>
 
 namespace Pulsar {
 namespace KO {
@@ -79,6 +80,8 @@ public:
     }
 
     Status GetPlayerStatus(u8 playerId) const {
+        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
+            return static_cast<Status>(FroomCPUs::roster.entries[FroomCPUs::playerSlots[playerId]].status);
         u32 aidSlot = this->GetAidAndSlotFromPlayerId(playerId);
         return this->GetAidStatus(aidSlot & 0xFFFF, aidSlot >> 16);
     }
@@ -140,6 +143,10 @@ public:
 
 private:
     void SetStatus(u8 playerId, Status status) {
+        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count) {
+            FroomCPUs::roster.entries[FroomCPUs::playerSlots[playerId]].status = status;
+            return;
+        }
         u32 aidSlot = this->GetAidAndSlotFromPlayerId(playerId);
         this->status[aidSlot & 0xFFFF][aidSlot >> 16] = status;
     }

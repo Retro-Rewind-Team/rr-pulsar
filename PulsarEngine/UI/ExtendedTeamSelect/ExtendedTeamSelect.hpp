@@ -107,7 +107,8 @@ private:
 
     bool shouldDisconnect;
     bool isHost;
-    u32 playerCount;
+    u32 playerCount;  // Human rows only
+    u32 cpuCount;  // CPU rows after the humans
 
 public:
     static const void ChangeVRButtonColors(LayoutUIControl &button, ExtendedTeamID team);

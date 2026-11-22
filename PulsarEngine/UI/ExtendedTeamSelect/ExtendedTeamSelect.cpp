@@ -4,6 +4,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/System/random.hpp>
 #include <Network/GPReport.hpp>
+#include <Network/FroomCPUs.hpp>
 #include <core/nw4r/ut/Misc.hpp>
 #include <GlobalFunction.hpp>
 
@@ -26,6 +27,8 @@ ExtendedTeamSelect::ExtendedTeamSelect() {
 
     this->shouldDisconnect = false;
     this->isHost = false;
+    this->playerCount = 0;
+    this->cpuCount = 0;
     this->onBackPressHandler.subject = this;
     this->onBackPressHandler.ptmf = &ExtendedTeamSelect::OnBackPress;
 
@@ -152,6 +155,8 @@ void ExtendedTeamSelect::BeforeControlUpdate() {
                 Text::Info textInfo;
                 textInfo.miis[0] = this->miiGroup->GetMii(id);
 
+                this->teamPlayerControl[count].SetPaneVisibility("chara_icon", true);
+                this->teamPlayerControl[count].SetPaneVisibility("chara_icon_sha", true);
                 this->teamPlayerControl[count].SetMiiPane("chara_icon", *this->miiGroup, id, 2);
                 this->teamPlayerControl[count].SetMiiPane("chara_icon_sha", *this->miiGroup, id, 2);
                 this->teamPlayerControl[count].SetTextBoxMessage("mii_name", BMG_MII_NAME, &textInfo);
@@ -176,13 +181,47 @@ void ExtendedTeamSelect::BeforeControlUpdate() {
         }
     }
 
+    this->playerCount = count;
+
+    // CPU rows follow the humans. The host owns the roster; clients mirror the teams from ROOM.
+    this->cpuCount = 0;
+    // The full context isn't rebuilt until the race starts, so read the host's ROOM context here.
+    if ((System::sInstance->netMgr.hostContext2 & (1 << PULSAR_FROOMCPUS)) && this->manager->hasFriendRoomStarted) {
+        if (this->isHost)
+            FroomCPUs::GenerateRoster(count);
+        const u32 cpuCount = this->isHost ? FroomCPUs::roster.count : 12 - count;
+        for (u32 i = 0; i < cpuCount && count < 12; ++i) {
+            wchar_t name[16];
+            ::swprintf(name, 16, L"CPU %d", i + 1);
+            Text::Info textInfo;
+            textInfo.strings[0] = name;
+
+            this->teamPlayerControl[count].SetPaneVisibility("chara_icon", false);
+            this->teamPlayerControl[count].SetPaneVisibility("chara_icon_sha", false);
+            this->teamPlayerControl[count].SetTextBoxMessage("mii_name", BMG_TEXT, &textInfo);
+
+            ExtendedTeamID team = this->manager->GetPlayerTeamDeprecated(count);
+            if (this->isHost)
+                team = static_cast<ExtendedTeamID>(FroomCPUs::roster.entries[i].team);
+            this->UpdatePlayerTeam(count, team);
+            this->manager->SetPlayerIndexes(count, count, sub.hostAid, 2 + i);
+
+            this->teamPlayerControl[count].isHidden = false;
+            this->teamPlayerArrows[count].isHidden = !this->isHost;
+            this->teamPlayerArrows[count].manipulator.inaccessible = !this->isHost;
+            this->teamPlayerControl[count].animator.GetAnimationGroupById(1).PlayAnimationAtFrame(1, 0.0f);  // Local::NetOther
+            this->teamPlayerControl[count].animator.GetAnimationGroupById(2).PlayAnimationAtFrame(1, 0.0f);  // FlashLocal::FlashNetOther
+
+            ++this->cpuCount;
+            count++;
+        }
+    }
+
     for (int i = count; i < 12; i++) {
         this->teamPlayerControl[i].isHidden = true;
         this->teamPlayerArrows[i].isHidden = true;
         this->teamPlayerArrows[i].manipulator.inaccessible = true;
     }
-
-    this->playerCount = count;
 
     if (this->playerCount <= 1 && (this->manager->IsSelectingStatus() || this->manager->IsWaitingStatus()) && !this->shouldDisconnect) {
         Pages::MessageBox *messageBox = SectionMgr::sInstance->curSection->Get<Pages::MessageBox>();
@@ -315,7 +354,10 @@ void ExtendedTeamSelect::OnStartRaceClick(PushButton &button, u32 hudSlotId) {
 
 void ExtendedTeamSelect::OnArrowClick(PushButton &button, u32 hudSlotId) {
     u32 id = button.buttonId - 2;
-    this->UpdatePlayerTeam(id, static_cast<ExtendedTeamID>((this->manager->GetPlayerTeam(id) + 1) % TEAM_COUNT));
+    const ExtendedTeamID team = static_cast<ExtendedTeamID>((this->manager->GetPlayerTeam(id) + 1) % TEAM_COUNT);
+    this->UpdatePlayerTeam(id, team);
+    if (this->isHost && id >= this->playerCount && id - this->playerCount < this->cpuCount && id - this->playerCount < FroomCPUs::roster.count)
+        FroomCPUs::roster.entries[id - this->playerCount].team = team;
     this->manager->SendUpdateTeamsPacket();
 }
 

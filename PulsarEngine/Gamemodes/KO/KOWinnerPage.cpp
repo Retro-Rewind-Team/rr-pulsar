@@ -56,6 +56,14 @@ void WinnerPage::DisplayWinner() {
     this->manipulator.activeLocalPlayerBitfield = 1;
     this->msgWindow.isHidden = true;
     const Mgr *mgr = System::sInstance->koMgr;
+    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && mgr->winnerPlayerId < 12 && FroomCPUs::playerSlots[mgr->winnerPlayerId] < FroomCPUs::roster.count) {
+        const CharacterId character = Racedata::sInstance->racesScenario.players[mgr->winnerPlayerId].characterId;
+        this->miiAndName.isHidden = true;
+        this->titleText.SetMessage(UI::GetCharacterNameBMGId(character, true, mgr->winnerPlayerId));
+        this->titleText.isHidden = false;
+        this->PlaySound(SOUND_ID_NEW_RECORD, -1);
+        return;
+    }
     MiiGroup &playerMiis = SectionMgr::sInstance->sectionParams->playerMiis;
     this->miiAndName.SetMiiPane("chara", playerMiis, mgr->winnerPlayerId, 5);
     this->miiAndName.isHidden = false;
@@ -71,6 +79,11 @@ void WinnerPage::AfterControlUpdate() {
 
     if (this->status == WAITING_STATS) {
         const Mgr *mgr = System::sInstance->koMgr;
+        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && mgr->winnerPlayerId < 12 && FroomCPUs::playerSlots[mgr->winnerPlayerId] < FroomCPUs::roster.count) {
+            this->status = NO_STATS_TIME_ELAPSED;
+            this->DisplayWinner();
+            return;
+        }
         RKNet::Controller *controller = RKNet::Controller::sInstance;
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         const u8 winnerAid = controller->aidsBelongingToPlayerIds[mgr->winnerPlayerId];
