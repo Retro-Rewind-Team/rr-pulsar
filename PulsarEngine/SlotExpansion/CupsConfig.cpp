@@ -587,8 +587,9 @@ void CupsConfig::ToggleCTs(bool enabled) {
         isRegsOnly = true;
     }
     if (isRegsOnly) {
+        hasRegs = true;
+        lastSelectedCupButtonIdx = lastSelectedCup;
         if (lastSelectedCup > 7) {
-            hasRegs = true;
             selectedCourse = PULSARID_FIRSTREG;
             lastSelectedCup = PULSARCUPID_FIRSTREG;  // CT cup -> regs
             lastSelectedCupButtonIdx = 0;

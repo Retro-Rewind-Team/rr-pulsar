@@ -20,24 +20,42 @@ ExpCupSelect::ExpCupSelect() {
     randomizedId = PULSARID_NONE;
     this->controlsManipulatorManager.SetGlobalHandler(START_PRESS, onStartPressHandler, false, false);
 
-    CupsConfig *cupsConfig = CupsConfig::sInstance;
-    cupsConfig->ToggleCTs(System::sInstance->IsContext(PULSAR_CT));
-    if (cupsConfig->GetTotalCupCount() <= 8) {
-        this->arrows.leftArrow.manipulator.inaccessible = true;
-        this->arrows.leftArrow.isHidden = true;
-        this->arrows.rightArrow.manipulator.inaccessible = true;
-        this->arrows.rightArrow.isHidden = true;
+    CupsConfig::sInstance->ToggleCTs(System::sInstance->IsContext(PULSAR_CT));
+    this->UpdateArrowButtons();
+}
+
+void ExpCupSelect::UpdateArrowButtons() {
+    const bool hidden = CupsConfig::sInstance->GetTotalCupCount() <= 8;
+
+    this->arrows.leftArrow.manipulator.inaccessible = hidden;
+    this->arrows.leftArrow.isHidden = hidden;
+    this->arrows.rightArrow.manipulator.inaccessible = hidden;
+    this->arrows.rightArrow.isHidden = hidden;
+}
+
+void ExpCupSelect::LayoutCupButtons(CtrlMenuCupSelectCup &cups) {
+    const CupsConfig *cupsConfig = CupsConfig::sInstance;
+    PushButton **buttons = reinterpret_cast<PushButton **>(cups.childrenGroup.controlArray);
+    cups.curCupID = cupsConfig->GetCupInButton(cupsConfig->lastSelectedCupButtonIdx);
+    for (int i = 0; i < 8; ++i) {
+        const PulsarCupId id = cupsConfig->GetCupInButton(i);
+        buttons[i]->buttonId = id;
+        UpdateCupData(id, *buttons[i]);
+        buttons[i]->manipulator.inaccessible = false;
     }
 }
 
 void ExpCupSelect::OnActivate() {
     this->randomizedId = PULSARID_NONE;
-    PushButton **buttons = reinterpret_cast<PushButton **>(this->ctrlMenuCupSelectCup.childrenGroup.controlArray);
-    for (int i = 0; i < 8; ++i) buttons[i]->manipulator.inaccessible = false;
-    const bool hasCTs = CupsConfig::sInstance->GetCtsTrackCount() != 0;
-    this->arrows.leftArrow.manipulator.inaccessible = !hasCTs;
-    this->arrows.rightArrow.manipulator.inaccessible = !hasCTs;
+    CupsConfig::sInstance->ToggleCTs(System::sInstance->IsContext(PULSAR_CT));
+    this->UpdateArrowButtons();
+    this->UpdateCupButtons();
     Pages::CupSelect::OnActivate();
+}
+
+void ExpCupSelect::UpdateCupButtons() {
+    LayoutCupButtons(this->ctrlMenuCupSelectCup);
+    this->ctrlMenuCupSelectCourse.UpdateTrackList(this->ctrlMenuCupSelectCup.curCupID);
 }
 
 // Patch distance func to remove horizontal wrapping
