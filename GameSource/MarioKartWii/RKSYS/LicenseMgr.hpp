@@ -155,6 +155,18 @@ struct LicenseStaffGhostStatus {
     u32 bitfield;  // if bit is set, that track slot's easy/expert (depending on which instance) staff ghost has been beaten
 };
 
+enum RuleIdx {
+    RULE_1P_VS,
+    RULE_1P_BATTLE,
+    RULE_MULTI_VS,
+    RULE_MULTI_BATTLE
+};
+
+enum CourseChoice {
+    COURSECHOICE_CHOOSE,
+    COURSECHOICE_RANDOM
+};
+
 class LicenseMgr {
 public:
     LicenseMgr();  // 8054400c
