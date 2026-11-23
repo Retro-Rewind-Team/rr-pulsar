@@ -1,8 +1,4 @@
-#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <RetroRewind.hpp>
-#include <include/c_string.h>
-#include <MarioKartWii/3D/GameScreenEffects/GameScreenEffects.hpp>
-#include <SlotExpansion/CupsConfig.hpp>
 #include <kamek.hpp>
 
 namespace Frameskip {
@@ -22,7 +18,7 @@ asmFunc GetFrameskip1() {
         cmpwi r4, 0x0;
         beq + loc_0x34;
         lis r4, 0x8000;
-        lwz r4, 5668(r4);
+        lwz r4, 5676(r4);
         cmpwi r4, 0x0;
         bne - loc_0x74;
         li r4, 0x0;
@@ -39,7 +35,7 @@ asmFunc GetFrameskip1() {
         cmpwi r0, 0x0;
         bne + loc_0x70;
         lis r4, 0x8000;
-        lwz r4, 5668(r4);
+        lwz r4, 5676(r4);
         cmpwi r4, 0x0;
         beq + loc_0x70;
         li r0, 0x1;
@@ -365,38 +361,5 @@ asmFunc GetFrameskip2() {
 kmCall(0x800095C4, GetFrameskip2);
 kmWrite32(0x80001614, 0x000F7709);
 kmWrite32(0x80001634, 0x00000006);
-
-static void ResetFrameskipState() {
-    *(u32 *)0x80001638 = 0;
-}
-static SectionLoadHook ResetFrameskipHook(ResetFrameskipState);
-
-static bool IsNoLightningFlashTrack(const Pulsar::CupsConfig &cupsConfig) {
-    const Pulsar::PulsarId pulsarId = cupsConfig.GetWinning();
-    if (Pulsar::CupsConfig::IsReg(pulsarId))
-        return false;
-
-    const u8 variantIdx = cupsConfig.GetCurVariantIdx();
-    const char *fileName = cupsConfig.GetFileName(pulsarId, variantIdx);
-    if (fileName == nullptr || fileName[0] == '\0')
-        fileName = cupsConfig.GetFileName(pulsarId, 0);
-    if (fileName == nullptr)
-        return false;
-
-    return strcmp(fileName, "sw2WS") == 0 || strcmp(fileName, "sw2MBC") == 0 || strcmp(fileName, "117") == 0;
-}
-
-static void PatchedGameScreenEffectsMgrUpdate(GameScreenEffectsMgr *mgr) {
-    const Pulsar::CupsConfig *cupsConfig = Pulsar::CupsConfig::sInstance;
-    const RacedataScenario &scenario = Racedata::sInstance->racesScenario;
-    const u32 localPlayerCount = scenario.localPlayerCount;
-    const bool isNoLightningFlashTrack = IsNoLightningFlashTrack(*cupsConfig);
-    const bool isNoLightningFlashSetting = Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LIGHTNINGFLASH) == Pulsar::LIGHTNING_FLASH_DISABLED;
-    if (*(u32 *)0x80001638 >= 8 || isNoLightningFlashTrack || isNoLightningFlashSetting || localPlayerCount > 1 || Pulsar::ItemRain::IsItemRainEnabled()) {
-        return;
-    }
-    mgr->Update();
-}
-kmCall(0x805A9050, PatchedGameScreenEffectsMgrUpdate);
 
 }  // namespace Frameskip

@@ -8,6 +8,7 @@
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/Obj/KouraTogezo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/3D/GameScreenEffects/GameScreenEffects.hpp>
 #include <core/rvl/OS/OS.hpp>
 #include <core/egg/Audio/AudioHeap.hpp>
 #include <core/egg/mem/ExpHeap.hpp>
@@ -152,6 +153,13 @@ static void RemoveSpecialItem(Item::Player *player, u16 playerItemBoxType, u16 c
 }
 kmCall(0x80828d70, RemoveSpecialItem);
 kmCall(0x80828da4, RemoveSpecialItem);
+
+static void PatchLightningFlash(GameScreenEffectsMgr *mgr) {
+    if (Pulsar::Settings::Mgr::Get().GetSettingValue(Pulsar::Settings::SETTING_LIGHTNINGFLASH) == Pulsar::LIGHTNING_FLASH_DISABLED)
+        return;
+    mgr->Update();
+}
+kmCall(0x805A9050, PatchLightningFlash);
 
 // Anti Mii Crash
 asmFunc AntiWiper() {
