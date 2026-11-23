@@ -229,11 +229,11 @@ static void ResolveOrderedVSStart(const CupsConfig &cupsConfig, PulsarId selecte
     rowIdx = static_cast<u32>(selectedTrack) % 4;
 }
 
-static void FillOrderedVSTracks(SectionParams *params, CupsConfig &cupsConfig, PulsarId selectedTrack, u8 selectedVariantIdx) {
+static void FillOrderedVSTracks(SectionParams *params, CupsConfig &cupsConfig, PulsarId selectedTrack, u8 selectedVariantIdx, u32 startIdx) {
     PulsarCupId cupId;
     u32 rowIdx;
     ResolveOrderedVSStart(cupsConfig, selectedTrack, cupId, rowIdx);
-    u32 idx = 0;
+    u32 idx = startIdx;
 
     AppendOrderedVSTrackVariants(params, cupsConfig, cupId, rowIdx, idx, selectedVariantIdx, false);
     while (idx < 32) {
@@ -256,16 +256,17 @@ static void VSRaceSelectedFix(SectionParams *params) {
     if (selectedTrack == PULSARID_NONE)
         selectedTrack = cupsConfig->GetWinning();
     const u8 selectedVariantIdx = cupsConfig->GetCurVariantIdx();
+    const u32 raceIdx = params->vsRaceNumber % params->vsRaceLimit;
 
     if (IsRandomCourseChoice(*params)) {
-        params->vsTracks[0] = static_cast<CourseId>(selectedTrack);
-        cupsConfig->vsTrackVariantIdx[0] = ClampOrderedVSVariantIdx(*cupsConfig, selectedTrack, selectedVariantIdx);
-        FillRandomVSTracks(params, *cupsConfig, 1);
+        params->vsTracks[raceIdx] = static_cast<CourseId>(selectedTrack);
+        cupsConfig->vsTrackVariantIdx[raceIdx] = ClampOrderedVSVariantIdx(*cupsConfig, selectedTrack, selectedVariantIdx);
+        FillRandomVSTracks(params, *cupsConfig, raceIdx + 1);
     } else {
-        FillOrderedVSTracks(params, *cupsConfig, selectedTrack, selectedVariantIdx);
+        FillOrderedVSTracks(params, *cupsConfig, selectedTrack, selectedVariantIdx, raceIdx);
     }
 
-    cupsConfig->SetWinning(static_cast<PulsarId>(params->vsTracks[0]), cupsConfig->vsTrackVariantIdx[0]);
+    cupsConfig->SetWinning(static_cast<PulsarId>(params->vsTracks[raceIdx]), cupsConfig->vsTrackVariantIdx[raceIdx]);
     Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
 };
 kmCall(0x80840a24, VSRaceSelectedFix);
