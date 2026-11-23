@@ -164,7 +164,8 @@ enum RuleIdx {
 
 enum CourseChoice {
     COURSECHOICE_CHOOSE,
-    COURSECHOICE_RANDOM
+    COURSECHOICE_RANDOM,
+    COURSECHOICE_INORDER
 };
 
 class LicenseMgr {
