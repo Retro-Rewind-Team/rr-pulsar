@@ -119,7 +119,7 @@ static void SafePlayerObjSpawn(Item::ObjHolder *holder, u32 quantity, Item::Obj 
 }
 
 static bool IsItemAvailable(ItemId id, const Item::ItemSlotData *slotData, u32 bitfield) {
-    if (id == LIGHTNING && slotData->itemSpawnTimers[0] > 0)
+    if (id == LIGHTNING && slotData->itemSpawnTimers[0] > 0 && bitfield == ALL_CUSTOM_ITEMS)
         return false;
 
     return bitfield != ALL_CUSTOM_ITEMS || Item::Manager::IsThereCapacityForItem(id);
