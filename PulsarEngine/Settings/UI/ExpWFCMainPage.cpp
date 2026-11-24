@@ -8,7 +8,6 @@
 #include <Network/Ranking.hpp>
 #include <UI/PlayerCount.hpp>
 #include <PulsarSystem.hpp>
-#include <Network/Rating/PlayerRating.hpp>
 #include <Network/ServerDateTime.hpp>
 #include <include/c_wchar.h>
 
@@ -16,6 +15,14 @@ namespace Pulsar {
 namespace UI {
 
 static wchar_t s_rankDetailsBuffer[512];
+
+static bool IsWeekendMultiplierActive(u8 region) {
+    ServerDateTime *dateTime = ServerDateTime::sInstance;
+    if (dateTime == nullptr || !dateTime->isValid)
+        return false;
+    dateTime->Update();
+    return dateTime->IsVRMultiplierWeekend() && dateTime->GetCurrentVRMultiplierRegion() == region;
+}
 
 static void ApplyVRMultiplierHighlight(PushButton &button, bool hasMultiplier) {
     nw4r::lyt::TextBox *textBox = reinterpret_cast<nw4r::lyt::TextBox *>(button.layout.GetPaneByName("go"));
@@ -237,8 +244,8 @@ void ExpWFCModeSel::InitButton(ExpWFCModeSel &self) {
     float vr = 0.0f;
     float br = 0.0f;
     if (rksysMgr->curLicenseId >= 0) {
-        vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
-        br = PointRating::GetUserBR(rksysMgr->curLicenseId);
+        vr = rksysMgr->licenses[rksysMgr->curLicenseId].vr.points;
+        br = rksysMgr->licenses[rksysMgr->curLicenseId].br.points;
     }
 
     wchar_t buffer[64];
@@ -491,8 +498,8 @@ void ExpWFCModeSel::BeforeControlUpdate() {
     float vr = 0.0f;
     float br = 0.0f;
     if (rksysMgr->curLicenseId >= 0) {
-        vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
-        br = PointRating::GetUserBR(rksysMgr->curLicenseId);
+        vr = rksysMgr->licenses[rksysMgr->curLicenseId].vr.points;
+        br = rksysMgr->licenses[rksysMgr->curLicenseId].br.points;
     }
 
     wchar_t buffer[64];
@@ -506,11 +513,11 @@ void ExpWFCModeSel::BeforeControlUpdate() {
         this->vrButton.SetTextBoxMessage("go", Pulsar::UI::BMG_TEXT, &info);
     }
 
-    ApplyVRMultiplierHighlight(this->twoHundredButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0C));
-    ApplyVRMultiplierHighlight(this->ottButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0B));
-    ApplyVRMultiplierHighlight(this->itemRainButton, PointRating::IsWeekendMultiplierActiveForRegion(0x0D));
-    ApplyVRMultiplierHighlight(this->ctButton, PointRating::IsWeekendMultiplierActiveForRegion(0x14));
-    ApplyVRMultiplierHighlight(this->regButton, PointRating::IsWeekendMultiplierActiveForRegion(0x15));
+    ApplyVRMultiplierHighlight(this->twoHundredButton, IsWeekendMultiplierActive(0x0C));
+    ApplyVRMultiplierHighlight(this->ottButton, IsWeekendMultiplierActive(0x0B));
+    ApplyVRMultiplierHighlight(this->itemRainButton, IsWeekendMultiplierActive(0x0D));
+    ApplyVRMultiplierHighlight(this->ctButton, IsWeekendMultiplierActive(0x14));
+    ApplyVRMultiplierHighlight(this->regButton, IsWeekendMultiplierActive(0x15));
 }
 
 }  // namespace UI

@@ -8,7 +8,6 @@
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 #include <Network/PulSELECT.hpp>
-#include <Network/Rating/PlayerRating.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
@@ -22,28 +21,6 @@ namespace Network {
 
 void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *src, u32 len) {  // len is sizeof(RKNet::SELECTPacket) by default
     const System *system = System::sInstance;
-
-    const ExpSELECTHandler &handler = ExpSELECTHandler::Get();
-    const bool isBattle = (handler.mode == RKNet::ONLINEMODE_PUBLIC_BATTLE || handler.mode == RKNet::ONLINEMODE_PRIVATE_BATTLE);
-    const RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-
-    float rating;
-    if (rksys) {
-        u32 licenseId = rksys->curLicenseId;
-        if (isBattle)
-            rating = PointRating::GetUserBR(licenseId);
-        else
-            rating = PointRating::GetUserVR(licenseId);
-
-        // Keep the existing quotient/remainder encoding for online peers.
-        src->decimalVR[0] = (u8)(rating - (int)(rating / 100.0f) * 100.0f + 0.5f);
-        if (System::sInstance->IsContext(PULSAR_VR) && !System::sInstance->IsContext(PULSAR_MODE_KO)) {
-            src->playersData[0].sumPoints = static_cast<u16>(rating / 100.0f);
-        }
-    } else {
-        src->decimalVR[0] = 0;
-    }
-    src->decimalVR[1] = 0;
 
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     if (controller->subs[controller->currentSub].localPlayerCount == 2) {
@@ -101,10 +78,6 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
     asm(mr aid, r19;);
     register RKNet::PacketHolder<PulSELECT> *holder;
     asm(mr holder, r27);
-
-    for (int i = 0; i < 2; ++i) {
-        PointRating::remoteDecimalVR[aid][i] = src->decimalVR[i];
-    }
 
     PulSELECT &dest = handler->receivedPackets[aid];
     if (holder != nullptr && holder->packetSize == sizeof(RKNet::SELECTPacket)) {

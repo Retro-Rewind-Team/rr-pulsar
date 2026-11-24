@@ -8,7 +8,6 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/Scene/GameScene.hpp>
 #include <core/rvl/DWC/DWCAccount.hpp>
-#include <Network/Rating/PlayerRating.hpp>
 #include <Race/CustomCharacters.hpp>
 #include <MarioKartWii/Archive/ArchiveMgr.hpp>
 
@@ -383,8 +382,8 @@ void DiscordRichPresence(Section *_this) {
 
     if (rksysMgr && rksysMgr->curLicenseId >= 0) {
         RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
-        vr = Pulsar::PointRating::GetUserVR(rksysMgr->curLicenseId);
-        br = Pulsar::PointRating::GetUserBR(rksysMgr->curLicenseId);
+        vr = license.vr.points;
+        br = license.br.points;
         fc = DWC::CreateFriendKey(&license.dwcAccUserData);
     }
 

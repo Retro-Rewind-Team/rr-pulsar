@@ -2,7 +2,6 @@
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
-#include <Network/Rating/PlayerRating.hpp>
 #include <Settings/Settings.hpp>
 #include <UI/PlayerCount.hpp>
 #include <GlobalFunction.hpp>
@@ -106,11 +105,11 @@ void CustomRandomizeServers() {
         return;
 
     const bool isInfiniteMatchmakingEnabled = IsInfiniteMatchmakingEnabled();
-    const u32 licenseId = RKSYS::Mgr::sInstance->curLicenseId;
     const bool isBattle = IsPublicBattleRoom();
-    const int playerRating = isBattle ? (int)(PointRating::GetUserBR(licenseId) + 0.5f) : (int)(PointRating::GetUserVR(licenseId) + 0.5f);
+    const RKSYS::LicenseMgr &license = RKSYS::Mgr::sInstance->licenses[RKSYS::Mgr::sInstance->curLicenseId];
+    const int playerRating = isBattle ? license.br.points : license.vr.points;
     const char *const ratingKey = isBattle ? "eb" : "ev";
-    const int maximumRoomVR = playerRating + 4000000;  // 40,000 VR, stored at 100x precision.
+    const int maximumRoomVR = playerRating + 40000;  // 40,000 VR
     // Preserve the high-VR rooms only when no otherwise eligible room exists.
     bool hasRoomWithinVRLimit = isBattle;
 

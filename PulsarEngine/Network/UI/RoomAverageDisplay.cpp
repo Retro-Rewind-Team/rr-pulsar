@@ -6,7 +6,6 @@
 #include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
 #include <MarioKartWii/UI/Section/Section.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
-#include <Network/Rating/PlayerRating.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
@@ -30,10 +29,6 @@ static bool IsRoomAverageBmg(u32 bmgId) {
 }
 
 static u32 GetRoomAverageVR(const Pages::SELECTStageMgr &stageMgr) {
-    const RKNet::Controller *controller = RKNet::Controller::sInstance;
-    const RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
-    const u8 localAid = controller != nullptr ? controller->subs[controller->currentSub].localAid : 0xff;
-
     u32 totalVR = 0;
     u32 playerCount = 0;
     const u32 count = stageMgr.playerCount < 12 ? stageMgr.playerCount : 12;
@@ -43,15 +38,7 @@ static u32 GetRoomAverageVR(const Pages::SELECTStageMgr &stageMgr) {
         if (player.vr == 0xffff)
             continue;
 
-        // SELECT stores VR / 100 plus the remainder in decimalVR.
-        u32 vr = static_cast<u32>(player.vr) * 100;
-        if (player.aid == localAid && player.hudSlotid == 0 && rksys != nullptr && rksys->curLicenseId >= 0) {
-            vr = static_cast<u32>(PointRating::GetUserVR(rksys->curLicenseId) + 0.5f);
-        } else if (player.aid < 12 && player.hudSlotid < 2) {
-            vr += PointRating::remoteDecimalVR[player.aid][player.hudSlotid];
-        }
-
-        totalVR += vr;
+        totalVR += player.vr;
         ++playerCount;
     }
 

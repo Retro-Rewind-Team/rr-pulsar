@@ -12,7 +12,6 @@
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
-#include <Network/Rating/PlayerRating.hpp>
 #include <hooks.hpp>
 #include <GlobalFunction.hpp>
 
@@ -118,7 +117,8 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void *sceneSoundManager) 
             if (mode == MODE_PUBLIC_VS && !isLiveView) {
                 RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
                 if (rksys) {
-                    PointRating::SetUserVR(rksys->curLicenseId, PointRating::GetUserVR(rksys->curLicenseId) - 210.0f);
+                    Rating &vr = rksys->licenses[rksys->curLicenseId].vr;
+                    vr.points = vr.points - 210;
                 }
             }
 

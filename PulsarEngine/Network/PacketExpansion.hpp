@@ -141,8 +141,6 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 elimThresholdPlayers;
     u8 elimChangeCount;
 
-    u8 decimalVR[2];
-
     u8 voteVariantIdx[2];
 
     // Track blocking sync for regional rooms (late joiner support)

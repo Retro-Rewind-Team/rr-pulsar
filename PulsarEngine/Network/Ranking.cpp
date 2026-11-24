@@ -10,7 +10,12 @@
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/System/Rating.hpp>
-#include <Network/Rating/PlayerRating.hpp>
+#include <MarioKartWii/UI/Ctrl/UIControl.hpp>
+#include <MarioKartWii/UI/Text/Text.hpp>
+#include <UI/UI.hpp>
+#include <MarioKartWii/UI/Ctrl/UIControl.hpp>
+#include <MarioKartWii/UI/Text/Text.hpp>
+#include <UI/UI.hpp>
 #include <core/rvl/DWC/NHTTP.hpp>
 #include <core/rvl/NHTTP/NHTTP.hpp>
 #include <MarioKartWii/RKNet/USER.hpp>
@@ -98,7 +103,6 @@ static u32 ParseBadgeJson(const char *body, int bodyLen, u32 pid) {
 }
 
 static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
-    const Rating &licenseVr = license.GetVR();
     const u32 vsWins = license.GetWFCVSWins();
     const u32 vsLosses = license.GetWFCVSLosses();
     const u32 totalVs = vsWins + vsLosses;
@@ -109,11 +113,8 @@ static float ComputeVsScoreFromLicense(const RKSYS::LicenseMgr &license) {
 
     const float winRate = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
 
-    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
-    const float userVr = rksysMgr != nullptr ? PointRating::GetUserVR(rksysMgr->curLicenseId) : licenseVr.points * 100.0f;
-    float clampedVr = userVr > 100000.0f ? 100000.0f : userVr;
-    if (clampedVr < 0.0f)
-        clampedVr = 0.0f;
+    const float userVr = static_cast<float>(license.vr.points);
+    const float clampedVr = userVr > 100000.0f ? 100000.0f : userVr;
     const float normalizedVr = clampedVr / 100000.0f * 100.0f;
 
     const float normalizedFirsts = times1st >= 2250 ? 100.0f : 100.0f * times1st / 2250.0f;
@@ -392,10 +393,7 @@ int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
     const u32 totalVs = vsWins + vsLosses;
     const float winPct = totalVs > 0 ? 100.0f * static_cast<float>(vsWins) / static_cast<float>(totalVs) : 45.0f;
 
-    float vr = PointRating::GetUserVR(rksysMgr->curLicenseId);
-    if (vr < 0.0f)
-        vr = 0.0f;
-    const u32 vrClamped = static_cast<u32>(vr + 0.5f);
+    const u32 vr = license.vr.points;
 
     const u32 times1st = license.GetTimes1stPlaceAchieved();
     const float distTravelled = license.GetDistanceTravelled();
@@ -416,7 +414,7 @@ int FormatRankDetailsMessage(wchar_t *dst, size_t dstLen) {
     const int nextRank = rank >= 9 ? 9 : rank + 1;
     const wchar_t *nextRankLabel = RankToLabel(nextRank);
 
-    return ::swprintf(dst, dstLen, text.detailsFormat, vrClamped, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
+    return ::swprintf(dst, dstLen, text.detailsFormat, vr, winPct, times1st, distTravelled, distInFirst, score, scoreNeededForNextRank, nextRankLabel);
 }
 
 static u32 GetCurrentLicensePID() {
@@ -618,6 +616,33 @@ static u8 GetOnlineRankingIcon(u8, u8) {
     return static_cast<u8>(rank);
 }
 kmCall(0x806436a0, GetOnlineRankingIcon);
+
+static u8 GetNameRatingIcon(u8 wheelType, u8 starRating) {
+    if (starRating >= SPECIAL_BADGE_FIRST && starRating <= SPECIAL_BADGE_LAST) {
+        return starRating;
+    }
+    return wheelType * 4 + starRating;
+}
+kmBranch(0x805e3d38, GetNameRatingIcon);
+
+static void SetRaceNameBadgeMessage(LayoutUIControl *control, const char *paneName, u32 bmgId, const Text::Info *info) {
+    if (control == nullptr)
+        return;
+
+    static const u32 onlineRankBmgBase = 0x25ee;
+    if (bmgId >= onlineRankBmgBase + SPECIAL_BADGE_FIRST && bmgId <= onlineRankBmgBase + SPECIAL_BADGE_LAST) {
+        const u32 badge = bmgId - onlineRankBmgBase;
+        wchar_t badgeText[] = {static_cast<wchar_t>(0xF07C + badge), L'\0'};
+        Text::Info badgeInfo;
+        badgeInfo.strings[0] = badgeText;
+        control->SetTextBoxMessage(paneName, UI::BMG_TEXT, &badgeInfo);
+        return;
+    }
+
+    control->SetTextBoxMessage(paneName, bmgId, info);
+}
+kmCall(0x807f05dc, SetRaceNameBadgeMessage);
+kmCall(0x807f6248, SetRaceNameBadgeMessage);
 
 }  // namespace Ranking
 }  // namespace Pulsar

@@ -11,7 +11,6 @@
 #include <MarioKartWii/UI/Page/Other/VR.hpp>
 #include <MarioKartWii/UI/Ctrl/CountDown.hpp>
 #include <Settings/UI/SettingsPageSelect.hpp>
-#include <Network/Rating/PlayerRating.hpp>
 #include <Network/Settings/SelectionRestrictions.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <Driver/CustomCharacters.hpp>
@@ -476,7 +475,7 @@ void ExpCharacterSelect::OnActivate() {
     bool miiCUnlocked = Restrictions::IsOnlyMiiOutfitCEnabled();
     RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
     if (!miiCUnlocked && rksys != nullptr)
-        miiCUnlocked = PointRating::GetUserVR(rksys->curLicenseId) >= 30000.0f;
+        miiCUnlocked = rksys->licenses[rksys->curLicenseId].vr.points >= 30000;
 
     CtrlMenuCharacterSelect::ButtonDriver *defaultButton = nullptr;
     if (!Restrictions::IsCharacterRestrictionEnabled()) {
