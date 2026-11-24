@@ -24,6 +24,10 @@ void *GetCustomKartAIParam(ArchiveMgr *archive, ArchiveSource type, const char *
         name = "kartAISpdParamRR.bin";
     }
 
+#if defined(RR_TESTS)
+    name = "kartAISpdParamRR.bin";
+#endif
+
     return archive->GetFile(type, name, length);
 }
 kmCall(0x8073ae9c, GetCustomKartAIParam);
