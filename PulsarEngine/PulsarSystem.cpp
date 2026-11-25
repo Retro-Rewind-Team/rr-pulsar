@@ -21,6 +21,7 @@
 #include <Driver/CustomCharacters.hpp>
 #include <Dolphin/DolphinIOS.hpp>
 #include <Network/PacketExpansion.hpp>
+#include <IO/RRRating.hpp>
 #include <hooks.hpp>
 #include <GlobalFunction.hpp>
 
@@ -241,6 +242,7 @@ void System::InitIO(IOType type) const {
     char ghostPath[IOS::ipcMaxPath];
     snprintf(ghostPath, IOS::ipcMaxPath, "%s%s", modFolder, "/Ghosts");
     io->CreateFolder(ghostPath);
+    RRRating::Init(*IO::CreateInstance(type, this->heap, this->taskThread));
 }
 #pragma suppress_warnings reset
 

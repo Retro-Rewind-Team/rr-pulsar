@@ -1,7 +1,9 @@
 #include <kamek.hpp>
 #include <runtimeWrite.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/RKNet/USER.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <IO/RRRating.hpp>
 #include <Settings/Settings.hpp>
 #include <UI/PlayerCount.hpp>
 #include <GlobalFunction.hpp>
@@ -173,9 +175,24 @@ kmBranch(0x800e4ad0, CustomRandomizeServers);
 
 static void UpdateMatchmakingInfos(RKNet::Controller *self) {
     self->UpdateSubsAndVR();
+    // The native update copies the 16-bit USER values into the QR2 keys.
+    if (RKNet::USERHandler::sInstance->isInitialized) {
+        const RKSYS::Mgr &save = *RKSYS::Mgr::sInstance;
+        const RKSYS::LicenseMgr &license = save.licenses[save.curLicenseId];
+        self->vr = license.vr.points;
+        self->br = license.br.points;
+    }
     RememberPreviousPublicRoomGroupId(self);
 }
 kmCall(0x80657990, UpdateMatchmakingInfos);
+
+static int FormatRatingSearch(char *dest, u32 size, const char *format, const char *key) {
+    return snprintf(dest, size, format, key, 1, key, static_cast<int>(RRRating::maxRating));
+}
+kmWrite32(0x8065929c, 0x480000b0);  // b 0x8065934c
+kmCall(0x80659374, FormatRatingSearch);
+kmWrite32(0x8065937c, 0x480000b0);  // b 0x8065942c
+kmCall(0x80659454, FormatRatingSearch);
 
 // Reset when starting ConnectToAnyoneAsync
 static void OnConnectToAnyoneAsync(RKNet::Controller *self) {

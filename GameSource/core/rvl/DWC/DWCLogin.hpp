@@ -53,4 +53,6 @@ void iLoginAsync(void);  // 800d00ac
 AccUserData *iGetUserData();  // 800d0274
 }  // namespace DWC
 
+extern "C" BOOL DWC_LoginAsync(const wchar_t *name, const char *reserved, DWC::LoginCallback callback, void *param);  // 800d13f8
+
 #endif

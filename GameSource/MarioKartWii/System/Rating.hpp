@@ -6,9 +6,10 @@ class Rating {
 public:
     Rating();  // 805444d0
     virtual ~Rating();  // 8052da10 vtable 808b32a0
-    void AddPoints(u16 points);  // 8052d270
+    void AddPoints(s32 points);  // 8052d270
+    static float CalcPoints(s32 difference, bool won);  // 8052d068
+    static float EvaluateCurve(float sample);  // 8052cef8
 
-    u16 points;
-    u8 padding[2];
+    u32 points;
 };  // 0x8
 #endif

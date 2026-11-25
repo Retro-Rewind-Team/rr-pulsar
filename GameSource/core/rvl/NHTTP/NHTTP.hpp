@@ -27,5 +27,6 @@ struct Req {};
 struct Res {};
 BOOL AddPostDataAscii(Req *req, char *label, char *value);  // 801d9198
 int GetBodyAll(Res *res, char **value);  // 801d937c
+int GetResultCode(Res *res);  // 801d93e4
 }  // namespace NHTTP
 #endif

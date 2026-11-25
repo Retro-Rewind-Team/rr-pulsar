@@ -564,6 +564,7 @@ Patch_WiimmfiHook2 = 0x801d4efc
 
 #NHTTP
 GetBodyAll__5NHTTPFPQ25NHTTP3ResPPc = 0x801d937c
+GetResultCode__5NHTTPFPQ25NHTTP3Res = 0x801d93e4
 NHTTPStartup__FPvPvUi = 0x801d8d30
 NHTTPCreateRequest = 0x801d8ff8
 NHTTPSetRootCADefault = 0x801d9738
@@ -1176,6 +1177,7 @@ UpdateTimers__12TimerManagerFv = 0x80535904
 ExtractAllArgs__17NdevArgsExtractorCFv = 0x805b9344
 
 #SectionParams
+CopyMiisToRacedata__13SectionParamsFv = 0x805e39d8
 ChangeLicense__13SectionParamsFv = 0x805e40a8
 
 #SectionPad
@@ -2221,6 +2223,9 @@ DecidePrivateTeams__Q25RKNet13SELECTHandlerFRUi = 0x80662588
 Update__Q25RKNet13SELECTHandlerFv = 0x806602fc
 
 #Rating
+AddPoints__6RatingFi = 0x8052d270
+CalcPoints__6RatingFib = 0x8052d068
+EvaluateCurve__6RatingFf = 0x8052cef8
 GetLowerRange__Q25RKNet16RatingRangeMakerCFUsb = 0x8065a5e0
 GetUpperRange__Q25RKNet16RatingRangeMakerCFUsb = 0x8065a64c
 

@@ -153,6 +153,8 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 transmission[2];
 
     FroomCPUs::Roster cpuRoster;
+    u32 vr;
+    u32 br;
 
     // Anti-cheat verification tag - proves sender has correct encryption key
     u32 acVerifyTag;  // Must be last encrypted field for alignment

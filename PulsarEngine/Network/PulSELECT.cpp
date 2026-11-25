@@ -67,6 +67,10 @@ void BeforeSELECTSend(RKNet::PacketHolder<PulSELECT> *packetHolder, PulSELECT *s
             src->reserved |= Driver::selectedSlots[i][character] << (8 * (1 - i));
     }
     FroomCPUs::WriteSELECT(src->cpuRoster, src->selectId);
+    const RKSYS::Mgr &save = *RKSYS::Mgr::sInstance;
+    const RKSYS::LicenseMgr &license = save.licenses[save.curLicenseId];
+    src->vr = license.vr.points;
+    src->br = license.br.points;
     packetHolder->Copy(src, len);
 }
 kmCall(0x80661040, BeforeSELECTSend);
@@ -80,6 +84,10 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
     asm(mr holder, r27);
 
     PulSELECT &dest = handler->receivedPackets[aid];
+    if (holder == nullptr || holder->packetSize != sizeof(PulSELECT)) {
+        src->vr = 0;
+        src->br = 0;
+    }
     if (holder != nullptr && holder->packetSize == sizeof(RKNet::SELECTPacket)) {
         const u16 pulWinning = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->winningCourse));
         src->pulWinningTrack = pulWinning;  // this is safe because src is a ptr to the buffer of holder which is always big enough
@@ -528,6 +536,8 @@ void InitPatch() {
         PulSELECT &cur = select->receivedPackets[aid];
         cur.pulVote = 0x43;
         cur.pulWinningTrack = 0xff;
+        cur.vr = 0;
+        cur.br = 0;
         cur.acVerifyTag = 0;
         reinterpret_cast<RKNet::SELECTHandler *>(select)->ResetPacket(select->receivedPackets[aid]);
     }
