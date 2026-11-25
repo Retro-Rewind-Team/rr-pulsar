@@ -5,6 +5,7 @@
 #include <MarioKartWii/UI/Page/Other/Votes.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/Archive/ArchiveFile.hpp>
 #include <PulsarSystem.hpp>
@@ -148,15 +149,12 @@ asmFunc UseCorrectCourseWrapper() {
 kmBranch(0x8052f224, UseCorrectCourseWrapper);
 kmPatchExitPoint(UseCorrectCourseWrapper, 0x8052f228);
 
-static void VSRaceRandomFix(SectionParams *params) {
-    params->vsRaceLimit = 32;
-    CupsConfig *cupsConfig = CupsConfig::sInstance;
-    Random random;
+static void FillRandomVSTracks(SectionParams *params, CupsConfig &cupsConfig, int startIdx) {
     PulsarId id;
     bool isRepeat;
-    for (int i = 0; i < 32; ++i) {
+    for (int i = startIdx; i < 32; ++i) {
         do {
-            id = cupsConfig->RandomizeTrack();
+            id = cupsConfig.RandomizeTrack();
             isRepeat = false;
             for (int j = 0; j < i; ++j) {
                 if (params->vsTracks[j] == id) {
@@ -166,8 +164,14 @@ static void VSRaceRandomFix(SectionParams *params) {
             }
         } while (isRepeat);
         params->vsTracks[i] = static_cast<CourseId>(id);
-        cupsConfig->vsTrackVariantIdx[i] = static_cast<u8>(cupsConfig->RandomizeVariant(id));
+        cupsConfig.vsTrackVariantIdx[i] = static_cast<u8>(cupsConfig.RandomizeVariant(id));
     }
+}
+
+static void VSRaceRandomFix(SectionParams *params) {
+    params->vsRaceLimit = 32;
+    CupsConfig *cupsConfig = CupsConfig::sInstance;
+    FillRandomVSTracks(params, *cupsConfig, 0);
 
     cupsConfig->SetWinning(static_cast<PulsarId>(params->vsTracks[0]), cupsConfig->vsTrackVariantIdx[0]);
     Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
@@ -225,28 +229,47 @@ static void ResolveOrderedVSStart(const CupsConfig &cupsConfig, PulsarId selecte
     rowIdx = static_cast<u32>(selectedTrack) % 4;
 }
 
+static void FillOrderedVSTracks(SectionParams *params, CupsConfig &cupsConfig, PulsarId selectedTrack, u8 selectedVariantIdx, u32 startIdx) {
+    PulsarCupId cupId;
+    u32 rowIdx;
+    ResolveOrderedVSStart(cupsConfig, selectedTrack, cupId, rowIdx);
+    u32 idx = startIdx;
+
+    AppendOrderedVSTrackVariants(params, cupsConfig, cupId, rowIdx, idx, selectedVariantIdx, false);
+    while (idx < 32) {
+        AppendOrderedVSTrackVariants(params, cupsConfig, cupId, rowIdx, idx, 0, true);
+    }
+}
+
+static bool IsRandomCourseChoice(const SectionParams &params) {
+    const RKSYS::Mgr *rksysMgr = RKSYS::Mgr::sInstance;
+    const RKSYS::LicenseMgr &license = rksysMgr->licenses[rksysMgr->curLicenseId];
+    const RKSYS::RuleIdx ruleIdx = params.localPlayerCount == 1 ? RKSYS::RULE_1P_VS : RKSYS::RULE_MULTI_VS;
+    return license.courseChoice[ruleIdx] == RKSYS::COURSECHOICE_RANDOM;
+}
+
 // Same as GP, racedata only ever has courseId
-static void VSRaceOrderedFix(SectionParams *params) {
+static void VSRaceSelectedFix(SectionParams *params) {
     params->vsRaceLimit = 32;
     CupsConfig *cupsConfig = CupsConfig::sInstance;
     PulsarId selectedTrack = cupsConfig->GetSelected();
     if (selectedTrack == PULSARID_NONE)
         selectedTrack = cupsConfig->GetWinning();
-    PulsarCupId cupId;
-    u32 rowIdx;
-    ResolveOrderedVSStart(*cupsConfig, selectedTrack, cupId, rowIdx);
     const u8 selectedVariantIdx = cupsConfig->GetCurVariantIdx();
-    u32 idx = 0;
+    const u32 raceIdx = params->vsRaceNumber % params->vsRaceLimit;
 
-    AppendOrderedVSTrackVariants(params, *cupsConfig, cupId, rowIdx, idx, selectedVariantIdx, false);
-    while (idx < 32) {
-        AppendOrderedVSTrackVariants(params, *cupsConfig, cupId, rowIdx, idx, 0, true);
+    if (IsRandomCourseChoice(*params)) {
+        params->vsTracks[raceIdx] = static_cast<CourseId>(selectedTrack);
+        cupsConfig->vsTrackVariantIdx[raceIdx] = ClampOrderedVSVariantIdx(*cupsConfig, selectedTrack, selectedVariantIdx);
+        FillRandomVSTracks(params, *cupsConfig, raceIdx + 1);
+    } else {
+        FillOrderedVSTracks(params, *cupsConfig, selectedTrack, selectedVariantIdx, raceIdx);
     }
 
-    cupsConfig->SetWinning(static_cast<PulsarId>(params->vsTracks[0]), cupsConfig->vsTrackVariantIdx[0]);
+    cupsConfig->SetWinning(static_cast<PulsarId>(params->vsTracks[raceIdx]), cupsConfig->vsTrackVariantIdx[raceIdx]);
     Racedata::sInstance->menusScenario.settings.courseId = cupsConfig->GetCorrectTrackSlot();
 };
-kmCall(0x80840a24, VSRaceOrderedFix);
+kmCall(0x80840a24, VSRaceSelectedFix);
 
 CourseId VSNextTrackFix(PulsarId pulsarId) {  // properly sets the next track
     CupsConfig *cupsConfig = CupsConfig::sInstance;
