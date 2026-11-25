@@ -124,7 +124,7 @@ public:
     // virtual void OnUpdate(); //0x1c 805bd2e0
     // virtual void SetPositionAnim(PositionAndScale &positionAndScale, float curFrame); //0x20 8063d194
     // virtual void OnPlayAnimSound(); //0x24 805bd2dc
-    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80636bd0
+    const ut::detail::RuntimeTypeInfo *GetRuntimeTypeInfo() const override;  // 0x28 80606bd0
     const char *GetClassName() const override;  // 0x2c 8063d788
     void vf_0x30() override;  // 0x30 8063e61c
     // virtual void func_0x34(); //0x34 805bd2d8
