@@ -2140,6 +2140,7 @@ CalcTeamScoreDiff__Q25Pages19TeamLeaderboardBaseFv = 0x8085e85c
 Init__Q25RKNet10ControllerFUc = 0x80655c10
 ScheduleShutdown__Q25RKNet10ControllerFv = 0x806561a8
 ResetRH1andROOM__Q25RKNet10ControllerFv = 0x80656898
+SetDisconnectInfo__Q25RKNet10ControllerFUii = 0x80656920
 ProcessPlayerDisconnect__Q25RKNet10ControllerFUi = 0x80658990
 ProcessRACEPacket__Q25RKNet10ControllerFUiRCQ25RKNet16RACEPacketHeaderUi = 0x80659a84
 StartSearchRegional__Q25RKNet10ControllerFUi = 0x80656270

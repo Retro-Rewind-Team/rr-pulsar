@@ -196,6 +196,7 @@ public:
     void JoinRoom(u32 friendIdx, u32 localPlayerCount);  // 80656704
     void StartRoom(u32 localPlayerCount);  // 806567d8
     void ResetRH1andROOM();  // 80656898 called by GlobeSearch::OnResume
+    void SetDisconnectInfo(u32 category, s32 errorCode);  // 80656920 category 1 = error code, sets connectionState to error
 
     void UpdateServersAsyncAlt();  // 80656aec
     void UpdateServersAsync();  // 80656b44

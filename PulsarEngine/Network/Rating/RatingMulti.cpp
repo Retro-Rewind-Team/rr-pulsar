@@ -1,4 +1,5 @@
 #include <Network/Rating/RatingMulti.hpp>
+#include <Network/Rating/VRModification.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <Network/ServerDateTime.hpp>
 #include <PulsarSystem.hpp>
@@ -48,8 +49,7 @@ static void FetchMultiplier(DWC::Error error, int profileId, void *param) {
     if (request == nullptr)
         return;
     request->generation = loginGeneration;
-    void *httpRequest =
-      NHTTPCreateRequest(multiplierUrl, 0, request->buffer, sizeof(request->buffer), reinterpret_cast<void *>(&OnMultiplierReceived), request);
+    void *httpRequest = NHTTPCreateRequest(multiplierUrl, 0, request->buffer, sizeof(request->buffer), reinterpret_cast<void *>(&OnMultiplierReceived), request);
     if (httpRequest == nullptr) {
         NHTTPFree(request);
         return;
@@ -62,6 +62,8 @@ static void FetchMultiplier(DWC::Error error, int profileId, void *param) {
 }
 
 static BOOL LoginWithMultiplier(const wchar_t *name, const char *reserved, DWC::LoginCallback callback, void *param) {
+    if (PreventVRModification())
+        return false;
     {
         nw4r::ut::AutoInterruptLock lock;
         ++loginGeneration;
