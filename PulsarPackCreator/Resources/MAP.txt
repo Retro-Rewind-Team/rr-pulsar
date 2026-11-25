@@ -16398,8 +16398,8 @@
 80606994 RadioButtonControl::OptionButton::Init
 80606a14 RadioButtonControl::OptionButton::Update
 80606ad0 RadioButtonControl::OptionButton::GetParentControl
-80606bd0 GetInstanceUnusedControl?
-80606bdc GetInstanceUnusedControl?
+80606bd0 LayoutUIControl::GetRuntimeTypeInfo
+80606bdc UIControl::GetRuntimeTypeInfo
 80606be8 0x80606be8
 80606c48 RadioButtonControl::OptionButton::ToggleChose
 80606dc4 0x80606dc4
