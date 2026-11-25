@@ -1361,7 +1361,7 @@ SetSoundIds__9UIControlFUiUi = 0x8063d3a4
 SetPosition__9UIControlFf = 0x8063d0b8
 
 #LayoutUIControl
-GetRuntimeTypeInfo__15LayoutUIControlCFv = 0x80636bd0
+GetRuntimeTypeInfo__15LayoutUIControlCFv = 0x80606bd0
 GetClassName__15LayoutUIControlCFv = 0x8063d788
 __ct__15LayoutUIControlFv = 0x8063d798
 __dt__15LayoutUIControlFv = 0x8063d8c0
