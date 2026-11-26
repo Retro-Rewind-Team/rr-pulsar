@@ -1,4 +1,5 @@
 #include <Network/Rating/RatingMulti.hpp>
+#include <Network/Rating/ServersideRating.hpp>
 #include <Network/Rating/VRModification.hpp>
 #include <Network/NHTTPHelper.hpp>
 #include <Network/ServerDateTime.hpp>
@@ -41,6 +42,8 @@ static void OnMultiplierReceived(s32 result, void *response, void *userdata) {
 }
 
 static void FetchMultiplier(DWC::Error error, int profileId, void *param) {
+    if (error == DWC::DWC_ERROR_NONE)
+        StoreRatingUponConnection(profileId);
     originalLoginCallback(error, profileId, param);
     if (error != DWC::DWC_ERROR_NONE || !PrepareNHTTPRequest())
         return;

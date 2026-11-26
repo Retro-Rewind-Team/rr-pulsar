@@ -226,14 +226,18 @@ kmWrite32(0x80544f80, 0x7fe4fb78);  // mr r4, r31
 kmCall(0x80544f84, ReadLicenseRating);
 kmWrite32(0x80544f88, 0x48000028);  // Skip the original VR and BR reads and setters.
 
-static void WriteLicenseRating(const RKSYS::Binary &raw, const RKSYS::LicenseMgr &src, u32 licenseId) {
-    const s32 pid = raw.core.licenses[licenseId].dwcUserData.gsProfileId;
-    if (ratingIO == nullptr || pid <= 0)
-        return;
+bool StoreRating(const RKSYS::Binary &raw, u32 pid, u32 vr, u32 br) {
+    if (ratingIO == nullptr)
+        return false;
 
     nw4r::ut::AutoMutexLock lock(ratingMutex);
-    if (CreateRatingFile(*ratingIO, System::sInstance->GetModFolder(), raw))
-        WriteRatingToFile(*ratingIO, pid, src.vr.points, src.br.points);
+    return CreateRatingFile(*ratingIO, System::sInstance->GetModFolder(), raw) && WriteRatingToFile(*ratingIO, pid, vr, br);
+}
+
+static void WriteLicenseRating(const RKSYS::Binary &raw, const RKSYS::LicenseMgr &src, u32 licenseId) {
+    const s32 pid = raw.core.licenses[licenseId].dwcUserData.gsProfileId;
+    if (pid > 0)
+        StoreRating(raw, pid, src.vr.points, src.br.points);
 }
 kmWrite32(0x8054699c, 0x7fe4fb78);  // mr r4, r31
 kmCall(0x805469a8, WriteLicenseRating);

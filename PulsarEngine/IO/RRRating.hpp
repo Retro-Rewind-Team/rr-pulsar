@@ -4,6 +4,10 @@
 #include <kamek.hpp>
 #include <core/rvl/OS/OSMutex.hpp>
 
+namespace RKSYS {
+struct Binary;
+}
+
 namespace Pulsar {
 class IO;
 
@@ -55,6 +59,7 @@ struct PendingRace {
 };
 
 void Init(IO &io);
+bool StoreRating(const RKSYS::Binary &raw, u32 pid, u32 vr, u32 br);
 
 }  // namespace RRRating
 }  // namespace Pulsar
