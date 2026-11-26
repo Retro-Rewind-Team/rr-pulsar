@@ -1,3 +1,4 @@
+#include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <Settings/Settings.hpp>
 #include <Settings/Region.hpp>
 #include <Network/Ranking.hpp>
@@ -640,11 +641,32 @@ void Mgr::AdjustSectionsSizes() {
     delete oldBin;
 }
 
+static GPRank GrandPrixRank(RacedataPlayer *player) {
+    if (SectionMgr::sInstance->curSection->sectionId == SECTION_GP_AWARD) {
+        if (player->score >= 60)
+            return GPRANK_3STARS;
+        if (player->score >= 55)
+            return GPRANK_2STARS;
+        if (player->score >= 50)
+            return GPRANK_1STAR;
+        if (player->score >= 45)
+            return GPRANK_A;
+        if (player->score >= 40)
+            return GPRANK_B;
+        return GPRANK_C;
+    }
+    return player->ComputeGPRank();
+}
+kmCall(0x805bc5b0, GrandPrixRank);
+kmCall(0x805bc6d0, GrandPrixRank);
+kmCall(0x805bcbd8, GrandPrixRank);
+kmCall(0x805bd0c8, GrandPrixRank);
+
 void Mgr::SaveGPResult(RKSYSRequester *requester, u32 r4, u32 r5, u32 r6, u32 r7, u32 r8, u32 r9, bool isNew) {
     const PulsarCupId id = CupsConfig::sInstance->lastSelectedCup;
     if (!CupsConfig::IsRegCup(id)) {
         const u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
-        const GPRank rank = Racedata::sInstance->awardScenario.players[0].ComputeGPRank();
+        const GPRank rank = GrandPrixRank(&Racedata::sInstance->awardScenario.players[0]);
         register u32 trophy;
         asm(mr trophy, r31;);
         register u32 cc;
