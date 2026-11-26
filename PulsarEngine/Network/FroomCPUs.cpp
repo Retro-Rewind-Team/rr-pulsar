@@ -12,6 +12,7 @@
 #include <MarioKartWii/AI/AIManager.hpp>
 #include <MarioKartWii/Race/RaceBalloon.hpp>
 #include <Gamemodes/BattleRoyale/BattleRoyale.hpp>
+#include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/LapKO/LapKOMgr.hpp>
 #include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 #include <Network/Settings/SelectionRestrictions.hpp>
@@ -131,7 +132,8 @@ void ReadSELECT(const Roster &src, u32 aid) {
         return;
     for (u32 i = 0; i < src.count; ++i) {
         if (src.entries[i].character >= 24 || src.entries[i].kart > PHANTOM || src.entries[i].characterSlot > Driver::MAX_CUSTOM_CHARACTER_SLOTS
-          || GetCharacterWeightClass(static_cast<CharacterId>(src.entries[i].character)) != GetKartWeightClass(static_cast<KartId>(src.entries[i].kart)))
+          || GetCharacterWeightClass(static_cast<CharacterId>(src.entries[i].character)) != GetKartWeightClass(static_cast<KartId>(src.entries[i].kart)) || src.entries[i].team >= UI::TEAM_COUNT
+          || src.entries[i].status > KO::DISCONNECTED || src.entries[i].previousPosition > 12)
             return;
     }
     memcpy(&roster, &src, sizeof(roster));
