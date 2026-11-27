@@ -1,5 +1,6 @@
 #include <kamek.hpp>
 #include <Race/CustomItems.hpp>
+#include <Gamemodes/ItemRain/ItemRain.hpp>
 #include <MarioKartWii/Item/ItemManager.hpp>
 #include <MarioKartWii/Item/ItemSlot.hpp>
 #include <MarioKartWii/Item/ItemBehaviour.hpp>
@@ -126,6 +127,9 @@ static bool IsItemAvailable(ItemId id, const Item::ItemSlotData *slotData, u32 b
 }
 
 static ItemId GetItemFromTable(Item::Player *itemPlayer, u8 position, bool isHuman, u16 setting, bool isFallback) {
+    if (isFallback && ItemRain::IsItemRainEnabled())
+        return MUSHROOM;
+
     if (itemPlayer != nullptr && itemPlayer->id < 12 && Raceinfo::sInstance != nullptr) {
         const RaceinfoPlayer *racePlayer = Raceinfo::sInstance->players[itemPlayer->id];
         if (racePlayer != nullptr)
