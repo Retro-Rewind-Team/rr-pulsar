@@ -674,6 +674,8 @@ void Mgr::SaveGPResult(RKSYSRequester *requester, u32 r4, u32 r5, u32 r6, u32 r7
     } else if (isNew)
         requester->NotifyNewLicenseContent();
 }
+kmWrite32(0x805bd0cc, 0x801e175c);
+kmWrite32(0x805bd0fc, 0x801e1780);
 kmWrite32(0x805bd1d4, 0x418200d8);
 kmCall(0x805bd2ac, Mgr::SaveGPResult);
 

@@ -116,6 +116,10 @@ inline bool IsOfflineVS() {
     return controller != nullptr && controller->roomType == RKNet::ROOMTYPE_NONE && Racedata::sInstance->menusScenario.settings.gamemode == MODE_VS_RACE;
 }
 
+inline bool IsOffline100cc() {
+    return IsOfflineRoom() && (Racedata::sInstance->menusScenario.settings.modeFlags & 1);
+}
+
 }  // namespace Pulsar
 
 #endif
