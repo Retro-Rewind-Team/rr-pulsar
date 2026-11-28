@@ -91,7 +91,8 @@ void UpdateLastSelCup(Pages::CupSelect *page, CtrlMenuCupSelectCup &cups, PushBu
         if (buttons[i] == &button)
             cupsConfig->lastSelectedCupButtonIdx = i;
     page->LoadNextPage(cups, button, hudSlotId);
-    Racedata::sInstance->menusScenario.settings.cupId = cupsConfig->lastSelectedCup % 8;
+    const PulsarCupId cupId = cupsConfig->lastSelectedCup;
+    Racedata::sInstance->menusScenario.settings.cupId = CupsConfig::IsRegCup(cupId) ? CupsConfig::ConvertCup_PulsarIdToRealId(cupId) : cupId % 8;
 }
 kmCall(0x807e5da8, UpdateLastSelCup);
 
