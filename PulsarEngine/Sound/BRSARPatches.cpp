@@ -862,7 +862,7 @@ void SetLooseBRSARGroupItemBuffer(u32 fileId, bool waveData, void *buffer) {
 // Track Count also needs to be reduced, otherwise the game will play track which are not populated with data
 bool LoadBRSTMVolumeAndFixTrackCount(snd::detail::StrmFileLoader &fileLoader, snd::detail::StrmFileReader::StrmInfo &info) {
     register snd::detail::StrmSound *sound;
-    asm(subi sound, r29, 0x100);
+    asm(subi sound, r29, 0x100;);
 
     u8 volume = *reinterpret_cast<const u8 *>(ut::AddU32ToPtr(fileLoader.fileReader.header, 0x3F));
     if (volume != 0) {

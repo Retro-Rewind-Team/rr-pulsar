@@ -528,7 +528,7 @@ static bool AreOnSameBattleRoyaleTeam(u8 firstPlayerId, u8 secondPlayerId) {
 
 static void OnRemoveHit(void *raceMode, u32 hitterPlayerId, u32 hittedPlayerId) {
     register u8 *itemObj;
-    asm { mr itemObj, r31 }
+    asm(mr itemObj, r31;);
 
     if (!ShouldApplyBattleRoyale()) {
         CallRaceModeHit(raceMode, 0x2c, hitterPlayerId, hittedPlayerId);

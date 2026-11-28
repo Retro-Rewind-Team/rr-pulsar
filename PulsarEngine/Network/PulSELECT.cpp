@@ -81,7 +81,7 @@ static void AfterSELECTReception(PulSELECT *unused, PulSELECT *src, u32 len) {
     register u8 aid;
     asm(mr aid, r19;);
     register RKNet::PacketHolder<PulSELECT> *holder;
-    asm(mr holder, r27);
+    asm(mr holder, r27;);
 
     PulSELECT &dest = handler->receivedPackets[aid];
     if (holder == nullptr || holder->packetSize != sizeof(PulSELECT)) {
@@ -488,7 +488,7 @@ GetRecvPulSELECTPacket(0x8066063c);
 
 u16 GetTrack(const ExpSELECTHandler &handler, u8 aid, u8 hudSlotId, register void *subR6) {
     register RKNet::ControllerSub *sub;
-    asm(addi sub, subR6, 0x38);
+    asm(addi sub, subR6, 0x38;);
     if (aid >= 12)
         return NO_TRACK_SELECTED;
     if (sub->localAid == aid)

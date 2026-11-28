@@ -30,13 +30,12 @@ extern s32 *s_auth_work;
 extern s32 s_auth_error;
 }
 
-static asm void DWCi_Auth_SendRequest(int param_1, int param_2, int param_3, int param_4, int param_5, int param_6) {
-    // clang-format off
-    nofralloc
-
-    stwu r1, -0x1B0(r1)
-    b Real_DWCi_Auth_SendRequest
-    // clang-format on
+static asmFunc DWCi_Auth_SendRequest(int param_1, int param_2, int param_3, int param_4, int param_5, int param_6) {
+    ASM(
+        nofralloc;
+        stwu r1, -0x1B0(r1);
+        b Real_DWCi_Auth_SendRequest;
+    )
 }
 
 bool GenerateRandomSalt(u8 *out) {

@@ -119,7 +119,7 @@ kmBranch(0x8085c500, LdbRows);
 
 void FixPositions(RaceinfoPlayer &player) {
     register u32 idx;
-    asm(mr idx, r29);
+    asm(mr idx, r29;);
     if (IsVSGhost(idx)) {
         GhostData ghost(Racedata::sInstance->ghosts[0]);
         SectionMgr *sectionMgr = SectionMgr::sInstance;
