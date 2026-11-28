@@ -17,6 +17,7 @@ struct RatingRequest {
     RatingResponse *response;
 };
 
+void ReportRating(u32 vr, u32 br);
 void StoreRatingUponConnection(int profileId);
 
 }  // namespace Network

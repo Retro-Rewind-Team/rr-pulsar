@@ -1,6 +1,7 @@
 #include <Network/Rating/ServersideRating.hpp>
 #include <IO/RRRating.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <MarioKartWii/UI/Page/Leaderboard/Leaderboard.hpp>
 #include <Network/GPReport.hpp>
 #include <Network/Json.hpp>
 #include <Network/NHTTPHelper.hpp>
@@ -14,6 +15,24 @@
 
 namespace Pulsar {
 namespace Network {
+
+void ReportRating(u32 vr, u32 br) {
+    char report[sizeof("vr=4294967295|br=4294967295")];
+    snprintf(report, sizeof(report), "vr=%u|br=%u", vr, br);
+    Report("wl:mkw_vrbr", report);
+}
+
+static void SaveAndReportRatings() {
+    const RKSYS::Mgr &save = *RKSYS::Mgr::sInstance;
+    const RKSYS::LicenseMgr &license = save.licenses[save.curLicenseId];
+    const u32 oldVR = license.vr.points;
+    const u32 oldBR = license.br.points;
+    Pages::Leaderboard::SaveRatingsAndStats();
+    if (license.vr.points != oldVR || license.br.points != oldBR)
+        ReportRating(license.vr.points, license.br.points);
+}
+kmCall(0x8064f354, SaveAndReportRatings);
+kmCall(0x8085d520, SaveAndReportRatings);
 
 static void OnRatingReceived(s32 result, void *response, void *userdata) {
     RatingRequest *request = static_cast<RatingRequest *>(userdata);
@@ -90,15 +109,12 @@ void StoreRatingUponConnection(int profileId) {
     const s32 difference = static_cast<s32>(response.vr) - static_cast<s32>(license.vr.points);
     // The server returns this pair before the first rating report.
     if (response.status == 200 && (response.vr != 5000 || response.br != 5000) && (difference < -500 || difference > 500)) {
-        if (RRRating::StoreRating(*save.rawRKSYS, profileId, response.vr, response.br)) {
-            license.vr.points = response.vr;
-            license.br.points = response.br;
-        }
-    } else {
-        char report[sizeof("vr=1000000|br=1000000")];
-        snprintf(report, sizeof(report), "vr=%u|br=%u", license.vr.points, license.br.points);
-        Report("wl:mkw_vrbr", report);
+        if (!RRRating::StoreRating(*save.rawRKSYS, profileId, response.vr, response.br))
+            return;
+        license.vr.points = response.vr;
+        license.br.points = response.br;
     }
+    ReportRating(license.vr.points, license.br.points);
 }
 
 }  // namespace Network

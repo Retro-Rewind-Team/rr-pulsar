@@ -9,6 +9,7 @@
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
+#include <Network/Rating/ServersideRating.hpp>
 #include <MarioKartWii/Audio/RSARPlayer.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <MarioKartWii/UI/Page/RaceMenu/RaceMenu.hpp>
@@ -117,8 +118,9 @@ static void OnOnlineQuitConfirm_DisconnectAndStopSound(void *sceneSoundManager) 
             if (mode == MODE_PUBLIC_VS && !isLiveView) {
                 RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
                 if (rksys) {
-                    Rating &vr = rksys->licenses[rksys->curLicenseId].vr;
-                    vr.points = vr.points - 210;
+                    RKSYS::LicenseMgr &license = rksys->licenses[rksys->curLicenseId];
+                    license.vr.points -= 210;
+                    Network::ReportRating(license.vr.points, license.br.points);
                 }
             }
 
