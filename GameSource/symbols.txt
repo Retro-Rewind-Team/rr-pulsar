@@ -957,6 +957,7 @@ GetWFCBattleLosses__Q25RKSYS10LicenseMgrCFv = 0x805475c8
 GetTimes1stPlaceAchieved__Q25RKSYS10LicenseMgrCFv = 0x80547864
 GetDistanceTravelled__Q25RKSYS10LicenseMgrCFv = 0x80547714
 GetDistancetravelledwhilein1stplace__Q25RKSYS10LicenseMgrCFv = 0x8054789c
+GetCup__Q25RKSYS10LicenseMgrCFUiUi = 0x80547128
 
 #RKSYSMgr
 SetCurLicense__Q25RKSYS3MgrFUi = 0x80544cd8

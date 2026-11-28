@@ -7,6 +7,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
+#include <MarioKartWii/RKSYS/RKSYSMgr.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpCupSelect.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
@@ -355,12 +356,22 @@ kmCall(0x808553b4, SetGPIntroInfo);
 static void SetGPBottomText(CtrlMenuInstructionText &bottomText, u32 bmgId, Text::Info &info) {
     register ExpCupSelect *cupPage;
     asm(mr cupPage, r31;);
+    register u32 cc;
+    asm(mr cc, r28;);
     PulsarCupId id = static_cast<PulsarCupId>(cupPage->ctrlMenuCupSelectCup.curCupID);
+    u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
 
-    if (!CupsConfig::IsRegCup(id)) {
-        u32 realCupId = CupsConfig::ConvertCup_PulsarIdToRealId(id);
-        register u32 cc;
-        asm(mr cc, r28;);
+    if (CupsConfig::IsRegCup(id)) {
+        const RKSYS::Mgr *rksys = RKSYS::Mgr::sInstance;
+        const RKSYS::LicenseCup &cup = rksys->licenses[rksys->curLicenseId].GetCup(cc, realCupId);
+        info.bmgToPass[1] = BMG_GP_BLANK;
+        info.bmgToPass[2] = BMG_GP_BLANK;
+        if (cup.timer.isActive) {
+            if (cup.cupType != NO_TROPHY)
+                info.bmgToPass[1] = BMG_GP_GOLD_TROPHY + cup.cupType;
+            info.bmgToPass[2] = BMG_GP_RANK_3STARS + cup.rank;
+        }
+    } else {
         u8 status = Settings::Mgr::GetGPStatus(realCupId, cc);
         u32 trophyBmg;
         u32 rankBmg;
