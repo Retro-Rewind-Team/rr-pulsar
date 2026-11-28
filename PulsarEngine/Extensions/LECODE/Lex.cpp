@@ -124,7 +124,7 @@ void *ModifyItemPos(s16 *packet) {
     register Item::Obj *obj;
     asm(mr obj, r29;);
     register bool extractOrFill;
-    asm(mr extractOrFill, r30);
+    asm(mr extractOrFill, r30;);
 
     SET1 *set = Pulsar::System::sInstance->lecodeMgr.lexMgr.set1;
     Vec3 *position = reinterpret_cast<Vec3 *>(obj != nullptr ? &obj->position : nullptr);

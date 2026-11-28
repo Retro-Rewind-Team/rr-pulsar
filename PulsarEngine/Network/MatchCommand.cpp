@@ -81,7 +81,7 @@ kmWrite32(0x800dc9f4, 0x906100d8);
 
 static void HasBeenPulsarDenied(u32 level, const char *string) {
     register u32 error;
-    asm(mr error, r0);
+    asm(mr error, r0;);
     DenyType type = DENY_TYPE_NORMAL;
     Mgr &mgr = Pulsar::System::sInstance->netMgr;
     if (error != 0x12) {

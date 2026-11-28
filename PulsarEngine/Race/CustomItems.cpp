@@ -260,11 +260,7 @@ static void CustomLimitCheck() {
     register int itemCount;
     register int itemLimit;
     register u32 itemId;
-    asm {
-        mr itemCount, r3
-        mr itemLimit, r0
-        mr itemId, r21
-    }
+    asm(mr itemCount, r3; mr itemLimit, r0; mr itemId, r21;);
 
     const u32 bitfield = GetEffectiveCustomItemsBitfield();
     if (itemId < CUSTOM_ITEM_COUNT) {
@@ -275,18 +271,16 @@ static void CustomLimitCheck() {
         }
     }
 
-    asm {
-        mr r3, itemCount
-        mr r0, itemLimit
-        subf. r0, r3, r0
-    }
+    // clang-format off
+    asm(mr r3, itemCount; mr r0, itemLimit; subf. r0, r3, r0;);
+    // clang-format on
 }
 kmBranch(0x807bb7d8, CustomLimitCheck);
 kmPatchExitPoint(CustomLimitCheck, 0x807bb7dc);  // Return to the ble instruction
 
 static void CalcItemFallback() {
     register Item::PlayerRoulette *roulette;
-    asm(mr roulette, r31);
+    asm(mr roulette, r31;);
     roulette->nextItemId = GetFallbackItem(roulette);
 }
 kmBranch(0x807ba48c, CalcItemFallback);
@@ -294,7 +288,7 @@ kmPatchExitPoint(CalcItemFallback, 0x807ba494);
 
 static ItemId DecideItemFallback() {
     register ItemId itemId;
-    asm(mr itemId, r24);
+    asm(mr itemId, r24;);
     if (itemId != ITEM_NONE)
         return itemId;
 
@@ -302,12 +296,7 @@ static ItemId DecideItemFallback() {
     register bool isHuman;
     register u32 itemBoxType;
     register Item::Player *itemPlayer;
-    asm {
-        mr position, r21
-        mr isHuman, r20
-        mr itemBoxType, r22
-        mr itemPlayer, r18
-    }
+    asm(mr position, r21; mr isHuman, r20; mr itemBoxType, r22; mr itemPlayer, r18;);
     const ItemId fallbackItem = GetItemFromTable(itemPlayer, static_cast<u8>(position), isHuman, static_cast<u16>(itemBoxType), true);
     if (itemPlayer != nullptr && itemPlayer->id < 12)
         sUsedFallbackItem[itemPlayer->id] = true;
@@ -327,7 +316,7 @@ kmCall(0x807923ac, CallPlayerObjPtmfIfValid);
 
 static void InitItemFallback1() {
     register Item::PlayerRoulette *roulette;
-    asm(mr roulette, r23);
+    asm(mr roulette, r23;);
     roulette->nextItemId = GetFallbackItem(roulette);
 }
 kmBranch(0x807ba138, InitItemFallback1);
@@ -335,7 +324,7 @@ kmPatchExitPoint(InitItemFallback1, 0x807ba140);
 
 static void InitItemFallback2() {
     register Item::PlayerRoulette *roulette;
-    asm(mr roulette, r23);
+    asm(mr roulette, r23;);
     roulette->nextItemId = GetFallbackItem(roulette);
 }
 kmBranch(0x807ba194, InitItemFallback2);

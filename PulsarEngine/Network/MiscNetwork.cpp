@@ -73,7 +73,7 @@ static void CalcSectionAfterRace(SectionMgr *sectionMgr, SectionId id) {
             id = system->koMgr->GetSectionAfterKO(id);
         sectionMgr->SetNextSection(id, 0);
         register Pages::WWRaceEndWait *wait;
-        asm(mr wait, r31);
+        asm(mr wait, r31;);
         wait->EndStateAnimated(0.0f, 0);
         sectionMgr->RequestSceneChange(0, 0xFF);
     }

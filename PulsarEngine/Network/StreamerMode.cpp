@@ -60,32 +60,33 @@ static void ReplaceUserPacketMiiForServer(RKNet::USERHandler *handler) {
     RFL::GetStoreData(miiSlot1, RFL::RFLDataSource_Default, randomIdx);
 }
 
-// clang-format off
-asm void AsmHook_AfterMiiCopyLoop() {
-    nofralloc
-    // The caller keeps the USER handler in r31.
-    stwu    r1, -0x20(r1)
-    mflr    r12
-    stw     r12, 0x24(r1)
-    stw     r3, 0x8(r1)
-    stw     r4, 0xc(r1)
-    stw     r30, 0x10(r1)
+asmFunc AsmHook_AfterMiiCopyLoop() {
+    ASM(
+        nofralloc;
+        // The caller keeps the USER handler in r31.
+        stwu    r1, -0x20(r1);
+        mflr    r12;
+        stw     r12, 0x24(r1);
+        stw     r3, 0x8(r1);
+        stw     r4, 0xc(r1);
+        stw     r30, 0x10(r1);
 
-    mr      r3, r31
-    bl      ReplaceUserPacketMiiForServer
+        mr      r3, r31;
+        bl      ReplaceUserPacketMiiForServer;
 
-    lwz     r30, 0x10(r1)
-    lwz     r4, 0xc(r1)
-    lwz     r3, 0x8(r1)
-    lwz     r12, 0x24(r1)
-    addi    r1, r1, 0x20
-    mtlr    r12
+        lwz     r30, 0x10(r1);
+        lwz     r4, 0xc(r1);
+        lwz     r3, 0x8(r1);
+        lwz     r12, 0x24(r1);
+        addi    r1, r1, 0x20;
+        mtlr    r12;
 
-    // Execute the replaced instruction: lis r4, -0x7f64 (0x80a0)
-    lis     r4, -0x7f64
+        // Execute the replaced instruction: lis r4, -0x7f64 (0x80a0)
+        lis     r4, -0x7f64;
 
-    blr
-}  // clang-format on
+        blr;
+    )
+}
 kmCall(0x80663088, AsmHook_AfterMiiCopyLoop);
 
 static wchar_t *GetLoginMiiName(Mii *mii) {
@@ -99,31 +100,32 @@ static wchar_t *GetLoginMiiName(Mii *mii) {
     return mii->info.name;
 }
 
-// clang-format off
-asm void AsmHook_BeforeDWCLoginAsync() {
-    nofralloc
-    
-    stwu    r1, -0x30(r1)
-    mflr    r0
-    stw     r0, 0x34(r1)
-    // Save registers that DWC_LoginAsync needs
-    stw     r4, 0x10(r1)
-    stw     r5, 0x14(r1)
-    stw     r6, 0x18(r1)
-    
-    // r3 already has the Mii pointer
-    bl      GetLoginMiiName
-    
-    // Restore registers for DWC_LoginAsync
-    lwz     r4, 0x10(r1)
-    lwz     r5, 0x14(r1)
-    lwz     r6, 0x18(r1)
-    lwz     r0, 0x34(r1)
-    mtlr    r0
-    addi    r1, r1, 0x30
-    
-    blr
-}  // clang-format on
+asmFunc AsmHook_BeforeDWCLoginAsync() {
+    ASM(
+        nofralloc;
+
+        stwu    r1, -0x30(r1);
+        mflr    r0;
+        stw     r0, 0x34(r1);
+        // Save registers that DWC_LoginAsync needs
+        stw     r4, 0x10(r1);
+        stw     r5, 0x14(r1);
+        stw     r6, 0x18(r1);
+
+        // r3 already has the Mii pointer
+        bl      GetLoginMiiName;
+
+        // Restore registers for DWC_LoginAsync
+        lwz     r4, 0x10(r1);
+        lwz     r5, 0x14(r1);
+        lwz     r6, 0x18(r1);
+        lwz     r0, 0x34(r1);
+        mtlr    r0;
+        addi    r1, r1, 0x30;
+
+        blr;
+    )
+}
 kmCall(0x80658cd8, AsmHook_BeforeDWCLoginAsync);
 
 static void RerandomizeBaseIndex() {

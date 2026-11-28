@@ -172,7 +172,7 @@ kmCall(0x8079a110, ActivateBobombs);
 
 static ItemId ReplaceItemBoxResult(Item::ItemSlotData *slotData, u16 itemBoxType, u8 position, ItemId previousItem, bool isSpecialBox) {
     register Item::PlayerRoulette *roulette;
-    asm(mr roulette, r23);
+    asm(mr roulette, r23;);
 
     if (IsItemRainEnabled()) {
         switch (roulette->nextItemId) {
