@@ -58,7 +58,7 @@ void fillLeaderboardResult(CtrlRaceResult &result, u8 playerId) {
         result.ResetTextBoxMessage("time");
     } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_TIMES) {
         result.FillFinishTime(playerId);
-    } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_NAMES || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)) {
+    } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_NAMES || FroomCPUs::IsCPU(playerId)) {
         result.FillName(playerId);
     } else if (displayLeaderboardType == LEADERBOARD_DISPLAY_FC) {
         if (playerId < 12) {

@@ -33,9 +33,7 @@ void SetCharacterSelectIcon(LayoutUIControl *control, const char *paneName, cons
 kmCall(0x807e2b38, SetCharacterSelectIcon);
 
 u32 GetCharacterNameBMGId(u32 character, bool useGenericMiiName, u32 playerId, bool isAward) {
-    if (character < Driver::CHARACTER_COUNT
-      && (playerId >= 12 || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
-        || !IsOnlineMode(Racedata::sInstance->racesScenario.settings.gamemode))) {
+    if (character < Driver::CHARACTER_COUNT && (playerId >= 12 || FroomCPUs::IsCPU(playerId) || !IsOnlineMode(Racedata::sInstance->racesScenario.settings.gamemode))) {
         const u32 slot = Race::GetPlayerCustomCharacterSlot(playerId, static_cast<CharacterId>(character), isAward);
         if (slot != 0) {
             const u32 customBmgId = (character << 16) | BMG_CUSTOM_CHARACTER_NAME_START | slot;
@@ -109,7 +107,7 @@ static void SetRaceResultCharacterIcon(LayoutUIControl *control, const char *pan
 kmCall(0x807f60e4, SetRaceResultCharacterIcon);
 
 static void SetRaceResultMiiIcon(LayoutUIControl *control, const char *paneName, const MiiGroup &group, u32 playerId, u8 texture) {
-    if (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || playerId >= 12 || FroomCPUs::playerSlots[playerId] >= FroomCPUs::roster.count) {
+    if (!FroomCPUs::IsCPU(playerId)) {
         control->SetMiiPane(paneName, group, playerId, texture);
         return;
     }

@@ -53,7 +53,7 @@ void RandomizeCPUCharacterTables(const RacedataScenario &scenario) {
             racePlayerSlots[player] = entry.playerType == PLAYER_REAL_LOCAL ? Driver::selectedSlots[entry.hudSlotId][character] : 0;
             continue;
         }
-        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && player < 12 && FroomCPUs::playerSlots[player] < FroomCPUs::roster.count) {
+        if (FroomCPUs::IsCPU(player)) {
             racePlayerSlots[player] = FroomCPUs::roster.entries[FroomCPUs::playerSlots[player]].characterSlot;
             continue;
         }

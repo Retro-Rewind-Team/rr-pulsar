@@ -72,6 +72,7 @@ void WriteSELECT(Roster &dest, u32 selectId);
 void ReadSELECT(const Roster &src, u32 aid);
 void PrepareRace(RacedataScenario &scenario);
 void SaveResults();
+bool IsCPU(u32 playerId);
 
 }  // namespace FroomCPUs
 }  // namespace Pulsar
