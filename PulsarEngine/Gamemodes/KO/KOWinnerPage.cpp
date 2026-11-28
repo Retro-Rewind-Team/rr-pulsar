@@ -56,7 +56,7 @@ void WinnerPage::DisplayWinner() {
     this->manipulator.activeLocalPlayerBitfield = 1;
     this->msgWindow.isHidden = true;
     const Mgr *mgr = System::sInstance->koMgr;
-    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && mgr->winnerPlayerId < 12 && FroomCPUs::playerSlots[mgr->winnerPlayerId] < FroomCPUs::roster.count) {
+    if (FroomCPUs::IsCPU(mgr->winnerPlayerId)) {
         const CharacterId character = Racedata::sInstance->racesScenario.players[mgr->winnerPlayerId].characterId;
         this->miiAndName.isHidden = true;
         this->titleText.SetMessage(UI::GetCharacterNameBMGId(character, true, mgr->winnerPlayerId));
@@ -79,7 +79,7 @@ void WinnerPage::AfterControlUpdate() {
 
     if (this->status == WAITING_STATS) {
         const Mgr *mgr = System::sInstance->koMgr;
-        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && mgr->winnerPlayerId < 12 && FroomCPUs::playerSlots[mgr->winnerPlayerId] < FroomCPUs::roster.count) {
+        if (FroomCPUs::IsCPU(mgr->winnerPlayerId)) {
             this->status = NO_STATS_TIME_ELAPSED;
             this->DisplayWinner();
             return;

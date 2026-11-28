@@ -41,7 +41,7 @@ void BeforeRH1Send(RKNet::PacketHolder<PulRH1> &packetHolder, PulRH1 *packet, u3
         memcpy(&packetHolder.packet->cpuRoster, &FroomCPUs::roster, sizeof(FroomCPUs::roster));
     if (froomCPUsEnabled) {
         for (u32 playerId = 0; playerId < 12; ++playerId) {
-            if (playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
+            if (FroomCPUs::IsCPU(playerId))
                 packetHolder.packet->aidsBelongingToPlayerIds[playerId] = 0xFF;
         }
     }
@@ -92,7 +92,7 @@ void ImportSpectatorCharacterSlots(const RacedataScenario &scenario) {
     // Start from defaults so previous races and older senders cannot leak slots.
     memset(Race::racePlayerSlots, 0, sizeof(Race::racePlayerSlots));
     for (u32 playerId = 0; playerId < 12; ++playerId) {
-        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
+        if (FroomCPUs::IsCPU(playerId))
             Race::racePlayerSlots[playerId] = FroomCPUs::roster.entries[FroomCPUs::playerSlots[playerId]].characterSlot;
     }
     const RKNet::Controller *controller = RKNet::Controller::sInstance;

@@ -452,8 +452,7 @@ void Mgr::Update() {
         }
 
         const u8 winnerPlayerId = self->winnerPlayerId;
-        if (winnerPlayerId != 0xFF && !self->IsOfflineVS()
-          && (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || winnerPlayerId >= 12 || FroomCPUs::playerSlots[winnerPlayerId] >= FroomCPUs::roster.count)) {
+        if (winnerPlayerId != 0xFF && !self->IsOfflineVS() && !FroomCPUs::IsCPU(winnerPlayerId)) {
             const RKNet::Controller *controller = RKNet::Controller::sInstance;
             const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
             if (controller->aidsBelongingToPlayerIds[winnerPlayerId] == sub.localAid) {
@@ -518,8 +517,7 @@ u32 Mgr::GetAidAndSlotFromPlayerId(u8 playerId) const {
     if ((aid == localAid && sub.localPlayerCount == 2) || (aid != localAid && sub.connectionUserDatas[aid].playersAtConsole == 2)) {
         if (playerId > 0 && controller->aidsBelongingToPlayerIds[playerId - 1] == aid)
             slot = 1;
-        else if (playerId < 11 && this->status[aid][0] == KOD
-          && (controller->aidsBelongingToPlayerIds[playerId + 1] != aid || (System::sInstance->IsContext(PULSAR_FROOMCPUS) && FroomCPUs::playerSlots[playerId + 1] < FroomCPUs::roster.count)))
+        else if (playerId < 11 && this->status[aid][0] == KOD && (controller->aidsBelongingToPlayerIds[playerId + 1] != aid || FroomCPUs::IsCPU(playerId + 1)))
             slot = 1;
     }
     return (slot << 16) | aid;  // 10001
@@ -559,7 +557,7 @@ PageId Mgr::KickPlayersOut(PageId defaultId) {  // only called if KOMode
     if (System::sInstance->IsContext(PULSAR_FROOMCPUS)) {
         bool hasActiveHuman = false;
         for (u32 playerId = 0; playerId < scenario.playerCount; ++playerId) {
-            if ((playerId >= 12 || FroomCPUs::playerSlots[playerId] >= FroomCPUs::roster.count) && !mgr->IsKOdPlayerId(playerId) && !mgr->IsDisconnectedPlayerId(playerId)) {
+            if (!FroomCPUs::IsCPU(playerId) && !mgr->IsKOdPlayerId(playerId) && !mgr->IsDisconnectedPlayerId(playerId)) {
                 hasActiveHuman = true;
                 break;
             }

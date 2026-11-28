@@ -373,7 +373,7 @@ kmCall(0x807f4f8c, CtrlRaceResult_InitPatchAnimation);
 void WifiAwardResultItem_fillPlayerResult(Pages::WifiAwardResultItem *_this, u8 playerIdx, bool isTeamVS, int localPlayerCount) {
     _this->FillResult(playerIdx, isTeamVS, localPlayerCount);
 
-    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerIdx < 12 && FroomCPUs::playerSlots[playerIdx] < FroomCPUs::roster.count) {
+    if (FroomCPUs::IsCPU(playerIdx)) {
         const CharacterId character = Racedata::sInstance->racesScenario.players[playerIdx].characterId;
         _this->SetPicturePane("chara_icon", GetCharacterIconPaneName(character));
         _this->SetPicturePane("chara_icon_sha", GetCharacterIconPaneName(character));

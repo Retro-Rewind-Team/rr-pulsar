@@ -50,7 +50,7 @@ void HAWChangeData() {
             }
         }
         for (int playerId = 0; playerId < 12; ++playerId) {
-            if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
+            if (FroomCPUs::IsCPU(playerId))
                 continue;
             u8 aid = oldAidsBelonging[playerId];
             if (aid >= 12)

@@ -80,7 +80,7 @@ public:
     }
 
     Status GetPlayerStatus(u8 playerId) const {
-        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count)
+        if (FroomCPUs::IsCPU(playerId))
             return static_cast<Status>(FroomCPUs::roster.entries[FroomCPUs::playerSlots[playerId]].status);
         u32 aidSlot = this->GetAidAndSlotFromPlayerId(playerId);
         return this->GetAidStatus(aidSlot & 0xFFFF, aidSlot >> 16);
@@ -143,7 +143,7 @@ public:
 
 private:
     void SetStatus(u8 playerId, Status status) {
-        if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && FroomCPUs::playerSlots[playerId] < FroomCPUs::roster.count) {
+        if (FroomCPUs::IsCPU(playerId)) {
             FroomCPUs::roster.entries[FroomCPUs::playerSlots[playerId]].status = status;
             return;
         }

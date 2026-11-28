@@ -34,6 +34,10 @@ Progress progress[12];
 u32 packetFrames[12];
 u16 validPackets;
 
+bool IsCPU(u32 playerId) {
+    return System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count;
+}
+
 void GenerateRoster(u32 humanCount) {
     if (roster.count != 0 || humanCount >= 12)
         return;
@@ -214,7 +218,7 @@ void SaveResults() {
         return;
     const RacedataScenario &scenario = Racedata::sInstance->menusScenario;
     for (u32 playerId = 0; playerId < scenario.playerCount; ++playerId) {
-        if (playerId >= 12 || playerSlots[playerId] >= roster.count)
+        if (!IsCPU(playerId))
             continue;
         Entry &entry = roster.entries[playerSlots[playerId]];
         entry.score = scenario.players[playerId].score;
@@ -226,7 +230,7 @@ static void InitKartNetworkType() {
     Kart::ResetPlayerTypeFlags();
     register u32 playerId;
     asm(mr playerId, r28;);
-    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count) {
+    if (IsCPU(playerId)) {
         const RKNet::Controller *controller = RKNet::Controller::sInstance;
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         // Use the native factory's region-specific flags without changing CPU identity.
@@ -238,7 +242,7 @@ kmCall(0x8058f5d8, InitKartNetworkType);
 static u32 SetKartNetworkType() {
     register u32 playerId;
     asm(mr playerId, r28;);
-    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count)
+    if (IsCPU(playerId))
         Racedata::sInstance->racesScenario.players[playerId].playerType = PLAYER_CPU;
     return 8;  // Replaced allocation size at Kart::Manager::SetupPlayer + 0x8c.
 }
@@ -248,7 +252,7 @@ static void InitCPUAI(KartAIController &ai) {
     const u32 playerId = ai.GetPlayerIdx();
     RacedataPlayer &player = Racedata::sInstance->racesScenario.players[playerId];
     const PlayerType type = player.playerType;
-    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count) {
+    if (IsCPU(playerId)) {
         const RKNet::Controller *controller = RKNet::Controller::sInstance;
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         if (sub.localAid != sub.hostAid)
@@ -261,7 +265,7 @@ kmCall(0x80596000, InitCPUAI);
 
 static void UpdateCPUAI(KartAIController &ai) {
     const u32 playerId = ai.GetPlayerIdx();
-    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count) {
+    if (IsCPU(playerId)) {
         const RKNet::Controller *controller = RKNet::Controller::sInstance;
         const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
         if (sub.localAid != sub.hostAid)
@@ -279,7 +283,7 @@ static void SetCPUDifficulty(AI::Manager &manager) {
 kmCall(0x80738fd0, SetCPUDifficulty);
 
 static void ExportRaceData(RKNet::PacketMgr &mgr, const RKNet::RACEDATAPacket &packet, u32 size, u32 playerId) {
-    if (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || playerId >= 12 || playerSlots[playerId] >= roster.count) {
+    if (!IsCPU(playerId)) {
         mgr.ExportRACEDATA(packet, size, playerId);
         return;
     }
@@ -317,12 +321,12 @@ static void ExportRaceData(RKNet::PacketMgr &mgr, const RKNet::RACEDATAPacket &p
 kmCall(0x8058cb14, ExportRaceData);
 
 static RKNet::RACEDATAPacket &ImportRaceData(RKNet::PacketMgr &mgr, u8 playerId) {
-    return (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count) ? racePackets[playerId] : mgr.GetRACEDATA(playerId);
+    return IsCPU(playerId) ? racePackets[playerId] : mgr.GetRACEDATA(playerId);
 }
 kmCall(0x8058a1d0, ImportRaceData);
 
 static u32 GetCPUFrame(const RKNet::PacketMgr &mgr, u32 playerId) {
-    return (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count) ? packetFrames[playerId] : mgr.GetPlayerRH1Timer(playerId);
+    return IsCPU(playerId) ? packetFrames[playerId] : mgr.GetPlayerRH1Timer(playerId);
 }
 kmCall(0x80589ab4, GetCPUFrame);
 kmCall(0x80589ad8, GetCPUFrame);
@@ -348,7 +352,7 @@ static BOOL SendRaceAndCPUs(u8 aid, const void *buffer, int size) {
     u32 slot = 0;
     for (u32 playerId = 0; playerId <= 12; ++playerId) {
         if (playerId < 12) {
-            if ((playerId >= 12 || playerSlots[playerId] >= roster.count) || !(validPackets & (1 << playerId)))
+            if (!IsCPU(playerId) || !(validPackets & (1 << playerId)))
                 continue;
             const int interrupts = OS::DisableInterrupts();
             packet.rh1.playerIds[slot] = playerId;
@@ -361,7 +365,7 @@ static BOOL SendRaceAndCPUs(u8 aid, const void *buffer, int size) {
             packet.items[slot].acknowledge = 0;
             u32 remoteSlot = 0;
             for (u32 i = 0; i < Racedata::sInstance->racesScenario.playerCount && remoteSlot < 2; ++i) {
-                if ((i >= 12 || playerSlots[i] >= roster.count) && controller->aidsBelongingToPlayerIds[i] == aid) {
+                if (!IsCPU(i) && controller->aidsBelongingToPlayerIds[i] == aid) {
                     const RKNet::ITEMPacket &human = RKNet::ITEMHandler::sInstance->receivedPackets[i];
                     if (remoteSlot == 0)
                         packet.items[slot].acknowledgeTimer1 = human.timer;
@@ -416,7 +420,7 @@ static u32 CheckRacePacket(RKNet::RACEPacketHeader &header, u32 size) {
         return ~crc;
     for (u32 slot = 0; slot < 2; ++slot) {
         const u32 playerId = packet.rh1.playerIds[slot];
-        if ((playerId >= 12 || playerSlots[playerId] >= roster.count) || ((validPackets & (1 << playerId)) && static_cast<s32>(packet.rh1.timer - packetFrames[playerId]) <= 0))
+        if (!IsCPU(playerId) || ((validPackets & (1 << playerId)) && static_cast<s32>(packet.rh1.timer - packetFrames[playerId]) <= 0))
             continue;
         memcpy(&racePackets[playerId], &packet.racedata[slot], sizeof(RKNet::RACEDATAPacket));
         memcpy(&progress[playerId], &packet.rh1.progress[slot], sizeof(Progress));
@@ -439,7 +443,7 @@ static void ApplyProgress() {
     if (sub.localAid == sub.hostAid) {
         RKNet::ITEMHandler &handler = *RKNet::ITEMHandler::sInstance;
         for (u32 playerId = 0; playerId < Racedata::sInstance->racesScenario.playerCount; ++playerId) {
-            if (playerId >= 12 || playerSlots[playerId] >= roster.count)
+            if (!IsCPU(playerId))
                 continue;
             RKNet::ITEMPacket &packet = handler.receivedPackets[playerId];
             packet.acknowledge = 0;
@@ -463,7 +467,7 @@ static void ApplyProgress() {
                 return;
             bool hasRealPlayer = false;
             for (u32 playerId = 0; playerId < scenario.playerCount; ++playerId) {
-                if (playerId < 12 && playerSlots[playerId] < roster.count)
+                if (IsCPU(playerId))
                     continue;
                 hasRealPlayer = true;
                 const bool eliminated = lapKoMgr != nullptr && !lapKoMgr->IsActive(playerId);
@@ -476,7 +480,7 @@ static void ApplyProgress() {
                     lapKoMgr->raceFinished = true;
                 for (u32 playerId = 0; playerId < scenario.playerCount; ++playerId) {
                     RaceinfoPlayer &player = *raceinfo.players[playerId];
-                    if ((playerId < 12 && playerSlots[playerId] < roster.count) && !(player.stateFlags & 0x12))
+                    if (IsCPU(playerId) && !(player.stateFlags & 0x12))
                         player.EndRace(4, true);
                 }
             }
@@ -487,7 +491,7 @@ static void ApplyProgress() {
 RaceFrameHook applyProgress(ApplyProgress);
 
 static void UpdateRacePlayer(RaceinfoPlayer &player) {
-    if (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || player.id >= 12 || playerSlots[player.id] >= roster.count) {
+    if (!IsCPU(player.id)) {
         player.Update();
         return;
     }
@@ -563,7 +567,7 @@ kmCall(0x8053320c, UpdateRacePlayer);
 static u32 GetItemSlot(const RKNet::PacketMgr &, u32 playerId) {
     // CPU ITEM records occupy their existing per-player receive slots. Returning
     // the equivalent offset lets native item setters reuse those records safely.
-    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count)
+    if (IsCPU(playerId))
         return 2 + playerId;
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     for (u32 slot = 0; slot < 2; ++slot) {
@@ -575,7 +579,7 @@ static u32 GetItemSlot(const RKNet::PacketMgr &, u32 playerId) {
 kmBranch(0x80654918, GetItemSlot);
 
 static void DecideCPUItem(RKNet::ITEMHandler &handler, u8 playerId, ItemId item) {
-    if (!System::sInstance->IsContext(PULSAR_FROOMCPUS) || playerId >= 12 || playerSlots[playerId] >= roster.count) {
+    if (!IsCPU(playerId)) {
         handler.SetItem(playerId, item);
         return;
     }
@@ -592,7 +596,7 @@ static void InitItemPlayer(Item::Player &player, u8 playerId) {
     const RKNet::Controller *controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub &sub = controller->subs[controller->currentSub];
     const PlayerType type = entry.playerType;
-    if (System::sInstance->IsContext(PULSAR_FROOMCPUS) && playerId < 12 && playerSlots[playerId] < roster.count && sub.localAid != sub.hostAid)
+    if (IsCPU(playerId) && sub.localAid != sub.hostAid)
         entry.playerType = PLAYER_REAL_ONLINE;
     player.Init(playerId);
     entry.playerType = type;
@@ -609,7 +613,7 @@ static void UpdateItems(Item::Manager &manager) {
         return;
     RKNet::ITEMHandler &handler = *RKNet::ITEMHandler::sInstance;
     for (u32 playerId = 0; playerId < manager.playerCount; ++playerId) {
-        if (playerId < 12 && playerSlots[playerId] < roster.count) {
+        if (IsCPU(playerId)) {
             const Item::Player &player = manager.players[playerId];
             RKNet::ITEMPacket &packet = handler.receivedPackets[playerId];
             if (player.inventory.currentItemId != ITEM_NONE) {
