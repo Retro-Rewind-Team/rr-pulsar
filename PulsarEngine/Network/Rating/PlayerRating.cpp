@@ -234,6 +234,14 @@ static void ApplyRaceRating(Rating &rating, s32 change) {
     if (delta < 0.0f && rating.points < 15000)
         delta /= 7.5f - 6.5f * (rating.points / 15000.0f);
     delta = ApplyRatingMultiplier(delta);
+    if (delta < 0.0f && rating.points < 50000) {
+        // Loss cap ramps from -209 VR at 50,000 to -50 VR at 15,000 and keeps shrinking below that.
+        float lossCap = -50.0f - 159.0f * ((static_cast<float>(rating.points) - 15000.0f) / 35000.0f);
+        if (lossCap > 0.0f)
+            lossCap = 0.0f;
+        if (delta < lossCap)
+            delta = lossCap;
+    }
     const s32 next = static_cast<s32>(rating.points + delta);
     rating.AddPoints(next - static_cast<s32>(rating.points));
 }
