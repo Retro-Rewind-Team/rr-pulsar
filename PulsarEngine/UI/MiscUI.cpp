@@ -97,6 +97,8 @@ static void FixStartMessage(LayoutUIControl *startMsg, u32 bmgId, Text::Info *in
         info->intToPass[0] = raceNumber;
         info->intToPass[1] = system->netMgr.racesPerGP + 1;
     }
+    if (IsOffline100cc())
+        info->bmgToPass[0] = BMG_100CC;
     const u16 customEngineClass = IsOfflineVS() ? System::offlineCustomEngineClass : system->netMgr.hostCustomEngineClass;
     if (customEngineClass >= 100 && (IsOfflineVS() || IsFriendRoom())) {
         swprintf(s_customEngineClassText, sizeof(s_customEngineClassText) / sizeof(s_customEngineClassText[0]), L"%ucc", customEngineClass);

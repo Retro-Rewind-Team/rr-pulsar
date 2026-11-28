@@ -327,6 +327,8 @@ static u32 GetCupBmgIdForInfo(PulsarCupId id, wchar_t *fallbackName, u32 fallbac
 }
 
 static void SetAwardsResultCupInfo(LayoutUIControl &awardType, const char *textBoxName, u32 bmgId, Text::Info &info) {
+    if (IsOffline100cc())
+        info.bmgToPass[0] = BMG_100CC;
     PulsarCupId id = CupsConfig::sInstance->lastSelectedCup;
     if (!CupsConfig::IsRegCup(id)) {
         awardType.layout.GetPaneByName("cup_icon")->flag &= ~1;
@@ -338,6 +340,8 @@ static void SetAwardsResultCupInfo(LayoutUIControl &awardType, const char *textB
 kmCall(0x805bcb88, SetAwardsResultCupInfo);
 
 static void SetGPIntroInfo(LayoutUIControl &titleText, u32 bmgId, Text::Info &info) {
+    if (IsOffline100cc())
+        info.bmgToPass[0] = BMG_100CC;
     PulsarCupId id = CupsConfig::sInstance->lastSelectedCup;
     if (!CupsConfig::IsRegCup(id)) {
         titleText.layout.GetPaneByName("cup_icon")->flag &= ~1;

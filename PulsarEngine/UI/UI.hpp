@@ -99,6 +99,7 @@ enum BMG {
     BMG_SCORE_PTS = 0x521,
     BMG_SCORE_POINTS = 0x523,
     BMG_DISPLAY_TIME = 0x578,
+    BMG_100CC = 0x58c,
     BMG_YES = 0x7d2,
     BMG_NO = 0x7d3,
     BMG_TIME_TRIALS = 0xbb9,
